@@ -53,6 +53,21 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
     private $stagedQueryTimeoutSeconds = 0;
 
     /**
+     * Request-lifetime cache of viewDoneIsServeable().  The AJAX gate, the
+     * progress reader, and the pending-build response share the same answer
+     * within a single request; without this cache each call reissues a SHOW
+     * TABLES probe through the centralized DAO, which on a slow host pays the
+     * full diagnostic latency on every probe and pushes the gate response
+     * over criterion 6's <2s budget.
+     *
+     * Reset to null on every fetch entry / write that mutates view_done so a
+     * fresh request never sees a stale answer.
+     *
+     * @var bool|null
+     */
+    private $viewDoneIsServeableCache = null;
+
+    /**
      * Persisted progress tracker between requests.  When a stage exits before
      * completing all its batches (PHP timeout, per-stage budget reached), the
      * next request resumes from the stored high-water id.
@@ -176,14 +191,30 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
      * @return bool
      */
     public function viewDoneIsServeable(): bool {
+        if ($this->viewDoneIsServeableCache !== null) {
+            return $this->viewDoneIsServeableCache;
+        }
         if (!$this->viewDoneTableExists()) {
+            $this->viewDoneIsServeableCache = false;
             return false;
         }
         // Invalidated (built_at == 0) is NOT serveable: the freshness option
         // was just cleared by a redirect create/update/delete, so any read
         // would return wildly out-of-date data.  The build must run before
         // the next fetch.
-        return $this->viewDoneBuiltAt() > 0;
+        $this->viewDoneIsServeableCache = ($this->viewDoneBuiltAt() > 0);
+        return $this->viewDoneIsServeableCache;
+    }
+
+    /**
+     * Invalidate the request-lifetime serveability cache.  Called from any
+     * code path that mutates view_done (rename/drop/build completion) so a
+     * subsequent read in the same request sees fresh state.
+     *
+     * @return void
+     */
+    private function invalidateViewDoneServeableCache(): void {
+        $this->viewDoneIsServeableCache = null;
     }
 
     /**
@@ -210,7 +241,13 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
             'stage' => max(0, $stage),
             'of' => 11,
             'build_started' => max(0, $startedAt),
-            'progress_text' => $this->describeBuildProgressForNotice(),
+            // Cheap text derived from option reads only.  The row-count rich
+            // version (describeBuildProgressForNotice) issues two extra DAO
+            // queries (countViewBuildRows + countLiveRedirects) which on a
+            // slow host can multiply the gate's response time several-fold.
+            // Callers that want the rich text can call describeBuildProgressForNotice
+            // directly; AJAX gate / poll responses use the cheap form.
+            'progress_text' => $stage > 0 ? ('stage ' . $stage . '/11') : 'not yet started',
         );
     }
 
@@ -349,6 +386,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
                 delete_option($this->getLowercasePrefix() . $optName);
             }
         }
+        $this->invalidateViewDoneServeableCache();
     }
 
     /**
@@ -606,8 +644,9 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
             if (function_exists('update_option')) {
                 update_option($this->viewDoneFreshnessOptionName(), time(), false);
             }
-            // Build fully done — wipe progress so the next rebuild starts clean.
+            // Build fully done. Wipe progress so the next rebuild starts clean.
             $this->clearAllProgressOptions();
+            $this->invalidateViewDoneServeableCache();
         }
 
         return true;
