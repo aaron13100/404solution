@@ -155,6 +155,29 @@ class ABJ_404_Solution_DataAccess {
     /** Maximum number of regex redirects to cache per-request (memory guard) */
     const REGEX_CACHE_MAX_COUNT = 50;
 
+    // Staged-view rebuild pipeline tunables (used by
+    // ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait). Declared on the
+    // class because PHP traits cannot have constants until 8.2 and the plugin
+    // declares Requires PHP: 7.4. The trait references them via `self::` which
+    // resolves to this class at use time.
+    const VIEW_DONE_FRESHNESS_TTL_SECONDS = 120;
+    const VIEW_DONE_BUILD_LOCK_NAME = 'abj404_view_build';
+    // Default batch size for the resumable bulk INSERT (S2) and per-id-range
+    // UPDATEs (S4/S5). Tuned to fit comfortably within a single per-query
+    // timeout on a slow shared host (5 to 10s typical). Override via define()
+    // or the abj404_view_build_batch_size filter.
+    const VIEW_BUILD_DEFAULT_BATCH_SIZE = 2000;
+    // Max wall-clock time a single request will spend executing batches in
+    // any one stage before yielding so the request can finish. Resumable
+    // builds pick up the remaining batches on the next request (driven by
+    // WP-Cron or by JS poll-triggered re-requests).
+    const VIEW_BUILD_PER_STAGE_BUDGET_SECONDS = 10;
+    // After this many seconds with no progress, an abandoned partial build
+    // is considered stale: the buffer table and high-water options are
+    // dropped on the next entry and the build restarts from scratch.
+    const VIEW_BUILD_RESUME_TTL_SECONDS = 600;
+    const VIEW_BUILD_FOREGROUND_LEASE_SECONDS = 120;
+
     /** @var array<int, array<string, mixed>>|null Per-request cache for regex redirects (static to persist across getInstance calls) */
     private static $regexRedirectsCache = null;
 

@@ -1,5 +1,11 @@
 # Changelog #
 
+## Version 4.1.15 (May 6, 2026) ##
+
+**Bug Fixes**
+
+* Fixed a plugin load fatal on PHP 7.4 to 8.1 hosts that was introduced in 4.1.14. A constant inside a trait (added with the staged view rebuild) is only valid in PHP 8.2 and later; the declared minimum is PHP 7.4, so this restores compatibility for all supported PHP versions.
+
 ## Version 4.1.14 (May 6, 2026) ##
 
 **Bug Fixes**
