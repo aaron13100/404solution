@@ -748,18 +748,18 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
 
     /** Drop both the build buffer and the leftover deleteme.  Used on fresh-start only. */
     private function dropTransientStagedTables(): void {
-        $build = $this->viewBuildTableName();
-        $deleteme = $this->viewDeletemeTableName();
-        $this->queryAndGetResults('DROP TABLE IF EXISTS `' . $build . '`',
+        $buildTempTable = $this->viewBuildTableName();
+        $deletemeTempTable = $this->viewDeletemeTableName();
+        $this->queryAndGetResults('DROP TABLE IF EXISTS `' . $buildTempTable . '`',
             array('log_errors' => false));
-        $this->queryAndGetResults('DROP TABLE IF EXISTS `' . $deleteme . '`',
+        $this->queryAndGetResults('DROP TABLE IF EXISTS `' . $deletemeTempTable . '`',
             array('log_errors' => false));
     }
 
     /** Drop only the deleteme leftover from a prior crashed RENAME swap. */
     private function dropDeletemeTable(): void {
-        $deleteme = $this->viewDeletemeTableName();
-        $this->queryAndGetResults('DROP TABLE IF EXISTS `' . $deleteme . '`',
+        $deletemeTempTable = $this->viewDeletemeTableName();
+        $this->queryAndGetResults('DROP TABLE IF EXISTS `' . $deletemeTempTable . '`',
             array('log_errors' => false));
     }
 
@@ -1061,20 +1061,20 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
      * @return void
      */
     private function stageRenameSwap(): void {
-        $build = $this->viewBuildTableName();
+        $buildTempTable = $this->viewBuildTableName();
         $done = $this->viewDoneTableName();
-        $deleteme = $this->viewDeletemeTableName();
+        $deletemeTempTable = $this->viewDeletemeTableName();
 
         // Defensive: ensure deleteme is gone before the swap (S0 already did
         // this, but a poorly-timed parallel rebuild could have created it).
-        $this->queryAndGetResults('DROP TABLE IF EXISTS `' . $deleteme . '`',
+        $this->queryAndGetResults('DROP TABLE IF EXISTS `' . $deletemeTempTable . '`',
             array('log_errors' => false));
 
         if ($this->viewDoneTableExists()) {
-            $sql = 'RENAME TABLE `' . $done . '` TO `' . $deleteme . '`,'
-                 . ' `' . $build . '` TO `' . $done . '`';
+            $sql = 'RENAME TABLE `' . $done . '` TO `' . $deletemeTempTable . '`,'
+                 . ' `' . $buildTempTable . '` TO `' . $done . '`';
         } else {
-            $sql = 'RENAME TABLE `' . $build . '` TO `' . $done . '`';
+            $sql = 'RENAME TABLE `' . $buildTempTable . '` TO `' . $done . '`';
         }
 
         $result = $this->queryAndGetResults($sql, array('log_errors' => true));
@@ -1084,7 +1084,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
             throw new \Exception('RENAME TABLE swap failed: ' . $err);
         }
 
-        $this->queryAndGetResults('DROP TABLE IF EXISTS `' . $deleteme . '`',
+        $this->queryAndGetResults('DROP TABLE IF EXISTS `' . $deletemeTempTable . '`',
             array('log_errors' => false));
     }
 
