@@ -3752,3 +3752,11 @@ msgstr "Felsökningsinformation"
 
 msgid "Preparing table data in the background."
 msgstr "Förbereder tabelldata i bakgrunden."
+
+#: includes/ajax/ViewBuildPendingResponseBuilder.php includes/ajax/ViewUpdater.php
+msgid "Preparing the redirects view table. Please wait."
+msgstr "Förbereder tabellen med omdirigeringar. Vänligen vänta."
+
+#: includes/DataAccessTrait_ViewQueriesStaged.php
+msgid "(404 page)"
+msgstr "(404-sida)"

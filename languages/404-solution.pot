@@ -2726,3 +2726,11 @@ msgstr ""
 
 msgid "Preparing table data in the background."
 msgstr ""
+
+#: includes/ajax/ViewBuildPendingResponseBuilder.php includes/ajax/ViewUpdater.php
+msgid "Preparing the redirects view table. Please wait."
+msgstr ""
+
+#: includes/DataAccessTrait_ViewQueriesStaged.php
+msgid "(404 page)"
+msgstr ""

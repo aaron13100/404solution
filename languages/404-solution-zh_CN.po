@@ -3758,3 +3758,11 @@ msgstr "调试信息"
 
 msgid "Preparing table data in the background."
 msgstr "正在后台准备表格数据。"
+
+#: includes/ajax/ViewBuildPendingResponseBuilder.php includes/ajax/ViewUpdater.php
+msgid "Preparing the redirects view table. Please wait."
+msgstr "正在准备重定向列表，请稍候。"
+
+#: includes/DataAccessTrait_ViewQueriesStaged.php
+msgid "(404 page)"
+msgstr "(404 页面)"

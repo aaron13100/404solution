@@ -3745,3 +3745,11 @@ msgstr "Informasi debug"
 
 msgid "Preparing table data in the background."
 msgstr "Menyiapkan data tabel di latar belakang."
+
+#: includes/ajax/ViewBuildPendingResponseBuilder.php includes/ajax/ViewUpdater.php
+msgid "Preparing the redirects view table. Please wait."
+msgstr "Menyiapkan tabel tampilan pengalihan. Mohon tunggu."
+
+#: includes/DataAccessTrait_ViewQueriesStaged.php
+msgid "(404 page)"
+msgstr "(halaman 404)"

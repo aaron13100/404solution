@@ -3752,3 +3752,11 @@ msgstr "Informações de depuração"
 
 msgid "Preparing table data in the background."
 msgstr "Preparando os dados da tabela em segundo plano."
+
+#: includes/ajax/ViewBuildPendingResponseBuilder.php includes/ajax/ViewUpdater.php
+msgid "Preparing the redirects view table. Please wait."
+msgstr "Preparando a tabela de redirecionamentos. Aguarde."
+
+#: includes/DataAccessTrait_ViewQueriesStaged.php
+msgid "(404 page)"
+msgstr "(página 404)"

@@ -3759,3 +3759,11 @@ msgstr "Отладочная информация"
 
 msgid "Preparing table data in the background."
 msgstr "Подготовка данных таблицы в фоновом режиме."
+
+#: includes/ajax/ViewBuildPendingResponseBuilder.php includes/ajax/ViewUpdater.php
+msgid "Preparing the redirects view table. Please wait."
+msgstr "Подготовка таблицы перенаправлений. Подождите."
+
+#: includes/DataAccessTrait_ViewQueriesStaged.php
+msgid "(404 page)"
+msgstr "(страница 404)"

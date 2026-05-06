@@ -3750,3 +3750,11 @@ msgstr "Debug-Informationen"
 
 msgid "Preparing table data in the background."
 msgstr "Tabellendaten werden im Hintergrund vorbereitet."
+
+#: includes/ajax/ViewBuildPendingResponseBuilder.php includes/ajax/ViewUpdater.php
+msgid "Preparing the redirects view table. Please wait."
+msgstr "Die Weiterleitungstabelle wird vorbereitet. Bitte warten."
+
+#: includes/DataAccessTrait_ViewQueriesStaged.php
+msgid "(404 page)"
+msgstr "(404-Seite)"

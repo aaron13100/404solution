@@ -3746,3 +3746,11 @@ msgstr "Informations de débogage"
 
 msgid "Preparing table data in the background."
 msgstr "Préparation des données du tableau en arrière-plan."
+
+#: includes/ajax/ViewBuildPendingResponseBuilder.php includes/ajax/ViewUpdater.php
+msgid "Preparing the redirects view table. Please wait."
+msgstr "Préparation du tableau des redirections. Veuillez patienter."
+
+#: includes/DataAccessTrait_ViewQueriesStaged.php
+msgid "(404 page)"
+msgstr "(page 404)"

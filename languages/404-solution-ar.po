@@ -3781,3 +3781,11 @@ msgstr "معلومات التصحيح"
 
 msgid "Preparing table data in the background."
 msgstr "جارٍ تحضير بيانات الجدول في الخلفية."
+
+#: includes/ajax/ViewBuildPendingResponseBuilder.php includes/ajax/ViewUpdater.php
+msgid "Preparing the redirects view table. Please wait."
+msgstr "جارٍ تحضير جدول عمليات إعادة التوجيه. يُرجى الانتظار."
+
+#: includes/DataAccessTrait_ViewQueriesStaged.php
+msgid "(404 page)"
+msgstr "(صفحة 404)"

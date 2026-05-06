@@ -3752,3 +3752,11 @@ msgstr "Foutopsporingsinformatie"
 
 msgid "Preparing table data in the background."
 msgstr "Tabelgegevens worden op de achtergrond voorbereid."
+
+#: includes/ajax/ViewBuildPendingResponseBuilder.php includes/ajax/ViewUpdater.php
+msgid "Preparing the redirects view table. Please wait."
+msgstr "De tabel met omleidingen wordt voorbereid. Even geduld."
+
+#: includes/DataAccessTrait_ViewQueriesStaged.php
+msgid "(404 page)"
+msgstr "(404-pagina)"
