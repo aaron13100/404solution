@@ -129,9 +129,11 @@ trait ABJ_404_Solution_DataAccess_ViewSnapshotCacheTrait {
         $out['stage_completed_at'] = is_scalar($stageCompletedAt) ? intval($stageCompletedAt) : 0;
 
         $attempts = is_array($out['attempts_by_stage']) ? $out['attempts_by_stage'] : array();
+        $attemptsRows = $attempts['rows'] ?? 0;
+        $attemptsCount = $attempts['count'] ?? 0;
         $out['attempts_by_stage'] = array(
-            'rows' => is_scalar($attempts['rows'] ?? 0) ? intval($attempts['rows']) : 0,
-            'count' => is_scalar($attempts['count'] ?? 0) ? intval($attempts['count']) : 0,
+            'rows' => is_scalar($attemptsRows) ? intval($attemptsRows) : 0,
+            'count' => is_scalar($attemptsCount) ? intval($attemptsCount) : 0,
         );
 
         $timings = is_array($out['timings_by_stage']) ? $out['timings_by_stage'] : array();
@@ -181,9 +183,6 @@ trait ABJ_404_Solution_DataAccess_ViewSnapshotCacheTrait {
 
     /** @return array<string, int> */
     private function getViewBuildProgressFingerprint(): array {
-        if (!method_exists($this, 'readProgressOption')) {
-            return array();
-        }
         return array(
             'started_at' => $this->readProgressOption('started_at', 0),
             'current_stage' => $this->readProgressOption('current_stage', 0),
@@ -224,7 +223,8 @@ trait ABJ_404_Solution_DataAccess_ViewSnapshotCacheTrait {
             return false;
         }
         $attempts = is_array($state['attempts_by_stage'] ?? null) ? $state['attempts_by_stage'] : array('rows' => 0, 'count' => 0);
-        $attempts[$stage] = max(0, (is_scalar($attempts[$stage] ?? 0) ? intval($attempts[$stage]) : 0) - 1);
+        $rawAttempt = $attempts[$stage] ?? 0;
+        $attempts[$stage] = max(0, (is_scalar($rawAttempt) ? intval($rawAttempt) : 0) - 1);
         $state['attempts_by_stage'] = $attempts;
         $state['build_progress_at_stage_start'] = is_array($currentProgress)
             ? $currentProgress : $this->getViewBuildProgressFingerprint();
@@ -405,18 +405,20 @@ trait ABJ_404_Solution_DataAccess_ViewSnapshotCacheTrait {
             return $this->formatViewWarmupResponse($state, $state['status'] === 'ready');
         } catch (Throwable $e) {
             $elapsedMs = (int)round((microtime(true) - $startMs) * 1000);
-            $state['last_error'] = $e->getMessage();
+            $errorMessage = $e->getMessage();
+            $state['last_error'] = $errorMessage;
             $state['stage_completed_at'] = time();
-            $currentAttempts = is_scalar($attempts[$stage] ?? 0) ? intval($attempts[$stage]) : 0;
+            $currentAttempts = $attempts[$stage] ?? 0;
             if ($this->forgiveWarmupAttemptIfBuildProgressed($state, $stage)) {
                 $attempts = is_array($state['attempts_by_stage']) ? $state['attempts_by_stage'] : $attempts;
-                $currentAttempts = is_scalar($attempts[$stage] ?? 0) ? intval($attempts[$stage]) : 0;
+                $rawAttemptCount = $attempts[$stage] ?? 0;
+                $currentAttempts = is_scalar($rawAttemptCount) ? intval($rawAttemptCount) : 0;
             }
             $state['status'] = ($currentAttempts >= self::VIEW_SNAPSHOT_WARMUP_MAX_ATTEMPTS) ? 'blocked' : 'idle';
 
             $timingsByStage = is_array($state['timings_by_stage'] ?? null) ? $state['timings_by_stage'] : array();
             $timings = $this->normalizeStageTiming($timingsByStage[$stage] ?? null);
-            $timings['last_error'] = $state['last_error'];
+            $timings['last_error'] = $errorMessage;
             $timingsByStage[$stage] = $timings;
             $state['timings_by_stage'] = $timingsByStage;
 
@@ -426,7 +428,7 @@ trait ABJ_404_Solution_DataAccess_ViewSnapshotCacheTrait {
                 $stage,
                 $elapsedMs,
                 $attemptCount + 1,
-                $state['last_error']
+                $errorMessage
             ));
 
             $this->logViewWarmupFailure($sub, $tableOptions, $state);

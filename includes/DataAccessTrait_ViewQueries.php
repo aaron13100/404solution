@@ -657,7 +657,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
             // the precomputed dest_for_view/status_for_view/type_for_view
             // columns, so route through the staged path.
             try {
-                $countValue = $this->runRedirectsForViewCountStaged((string)$sub, is_array($tableOptions) ? $tableOptions : array());
+                $countValue = $this->runRedirectsForViewCountStaged((string)$sub, $tableOptions);
                 $this->redirectsForViewCountRequestCache[$requestCountCacheKey] = $countValue;
                 if ($canUseSnapshotCache && $countCacheKey === '') {
                     $countCacheKey = $this->getViewSnapshotCacheKey('abj404_view_count', $sub, $tableOptions);
@@ -682,7 +682,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
                     $diagnostics = $this->captureViewQueryFailureDiagnostics(
                         (string)$sub,
                         $stagedFailureMarker,
-                        is_array($tableOptions) ? $tableOptions : array(),
+                        $tableOptions,
                         array('last_error' => $e->getMessage(), 'timed_out' => false)
                     );
                     $diagnostics['failed_query_label'] = 'getRedirectsForViewCount';

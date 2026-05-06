@@ -296,7 +296,13 @@ class ABJ_404_Solution_ViewUpdater {
         if (!isset($GLOBALS['abj404_ajax_context']) || !is_array($GLOBALS['abj404_ajax_context'])) {
             return;
         }
-        $context = $GLOBALS['abj404_ajax_context'];
+        $rawContext = $GLOBALS['abj404_ajax_context'];
+        $context = array();
+        foreach ($rawContext as $key => $value) {
+            if (is_string($key)) {
+                $context[$key] = $value;
+            }
+        }
         self::setStage($context, (string)$stage);
         $GLOBALS['abj404_ajax_context'] = $context;
     }
@@ -493,10 +499,7 @@ class ABJ_404_Solution_ViewUpdater {
         $depth = 0;
         while ($current !== null && $depth < 5) {
             if ($current instanceof ABJ_404_Solution_ViewQueryFailureException) {
-                $diagnostics = $current->getDiagnostics();
-                if (is_array($diagnostics)) {
-                    return $diagnostics;
-                }
+                return $current->getDiagnostics();
             }
             $current = $current->getPrevious();
             $depth++;

@@ -1122,8 +1122,8 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
         // disabled = 0 (active rows) except the dedicated TRASH tab.
         $trashClause = 'AND disabled = ' . intval($trashValue);
 
-        $scoreRange = is_string($tableOptions['score_range'] ?? '')
-            ? (string)($tableOptions['score_range'] ?? 'all') : 'all';
+        $rawScoreRange = $tableOptions['score_range'] ?? 'all';
+        $scoreRange = is_string($rawScoreRange) ? $rawScoreRange : 'all';
         $scoreRangeClause = '';
         switch ($scoreRange) {
             case 'high':   $scoreRangeClause = 'AND score >= 80'; break;
@@ -1132,8 +1132,8 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
             case 'manual': $scoreRangeClause = 'AND score IS NULL'; break;
         }
 
-        $rawFilterText = is_string($tableOptions['filterText'] ?? null)
-            ? (string)$tableOptions['filterText'] : '';
+        $rawFilterText = $tableOptions['filterText'] ?? '';
+        $rawFilterText = is_string($rawFilterText) ? $rawFilterText : '';
         $filterTextClause = '';
         if ($rawFilterText !== '') {
             $sanitized = str_replace(array('*', '/', '$'), '', $rawFilterText);
@@ -1160,9 +1160,10 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
         $order = strtoupper((string)preg_replace('/[^a-zA-Z]/', '', trim($rawOrderValStr)));
         if ($order !== 'DESC') { $order = 'ASC'; }
 
-        $paged = max(1, intval(is_scalar($tableOptions['paged'] ?? 1) ? (int)$tableOptions['paged'] : 1));
+        $rawPaged = $tableOptions['paged'] ?? 1;
+        $paged = max(1, is_scalar($rawPaged) ? intval($rawPaged) : 1);
         $rawPerpage = $tableOptions['perpage'] ?? ABJ404_OPTION_DEFAULT_PERPAGE;
-        $perpage = max(1, intval(is_scalar($rawPerpage) ? (int)$rawPerpage : ABJ404_OPTION_DEFAULT_PERPAGE));
+        $perpage = max(1, is_scalar($rawPerpage) ? intval($rawPerpage) : (int)ABJ404_OPTION_DEFAULT_PERPAGE);
         $limitStart = ($paged - 1) * $perpage;
 
         $done = $this->viewDoneTableName();
@@ -1197,8 +1198,8 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
         // (disabled = 0), same as every non-TRASH tab.
         $trashClause = 'AND disabled = ' . intval($trashValue);
 
-        $scoreRange = is_string($tableOptions['score_range'] ?? '')
-            ? (string)($tableOptions['score_range'] ?? 'all') : 'all';
+        $rawScoreRange = $tableOptions['score_range'] ?? 'all';
+        $scoreRange = is_string($rawScoreRange) ? $rawScoreRange : 'all';
         $scoreRangeClause = '';
         switch ($scoreRange) {
             case 'high':   $scoreRangeClause = 'AND score >= 80'; break;
@@ -1207,8 +1208,8 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
             case 'manual': $scoreRangeClause = 'AND score IS NULL'; break;
         }
 
-        $rawFilterText = is_string($tableOptions['filterText'] ?? null)
-            ? (string)$tableOptions['filterText'] : '';
+        $rawFilterText = $tableOptions['filterText'] ?? '';
+        $rawFilterText = is_string($rawFilterText) ? $rawFilterText : '';
         $filterTextClause = '';
         if ($rawFilterText !== '') {
             $sanitized = str_replace(array('*', '/', '$'), '', $rawFilterText);
@@ -1250,16 +1251,28 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
         $statusTypes = '';
         if ($filter == 0 || $filter == ABJ404_TRASH_FILTER) {
             if ($sub === 'abj404_redirects') {
-                $statusTypes = implode(', ', is_array($abj404_redirect_types) ? $abj404_redirect_types : array());
+                $types = array();
+                if (is_array($abj404_redirect_types)) {
+                    foreach ($abj404_redirect_types as $t) {
+                        $types[] = is_scalar($t) ? intval($t) : 0;
+                    }
+                }
+                $statusTypes = implode(', ', $types);
             } else if ($sub === 'abj404_captured') {
-                $statusTypes = implode(', ', is_array($abj404_captured_types) ? $abj404_captured_types : array());
+                $types = array();
+                if (is_array($abj404_captured_types)) {
+                    foreach ($abj404_captured_types as $t) {
+                        $types[] = is_scalar($t) ? intval($t) : 0;
+                    }
+                }
+                $statusTypes = implode(', ', $types);
             }
         } else if ($filter == ABJ404_STATUS_MANUAL) {
             $statusTypes = implode(', ', array(ABJ404_STATUS_MANUAL, ABJ404_STATUS_REGEX));
         } else if ($filter == ABJ404_HANDLED_FILTER) {
             $statusTypes = implode(', ', array(ABJ404_STATUS_IGNORED, ABJ404_STATUS_LATER));
         } else {
-            $statusTypes = (string)$filter;
+            $statusTypes = is_scalar($filter) ? (string)$filter : '';
         }
         $cleaned = preg_replace('/[^\d, ]/', '', $statusTypes);
         return is_string($cleaned) ? $cleaned : '';
@@ -1450,7 +1463,8 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
         $first = $rows[0];
         $first = is_array($first) ? $first : array();
         $value = reset($first);
-        return ((string)$value === $tableName);
+        $valueStr = is_scalar($value) ? (string)$value : '';
+        return ($valueStr === $tableName);
     }
 
     /** @return bool */

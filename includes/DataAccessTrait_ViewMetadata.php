@@ -331,7 +331,8 @@ trait ABJ_404_Solution_DataAccess_ViewMetadataTrait {
                 'log_errors' => false,
                 'skip_repair' => true,
             ));
-            $err = is_string($result['last_error'] ?? '') ? $result['last_error'] : '';
+            $lastErrorRaw = $result['last_error'] ?? '';
+            $err = is_string($lastErrorRaw) ? $lastErrorRaw : '';
             if ($err !== '' || !empty($result['timed_out'])) {
                 return 'error: ' . ($err !== '' ? $err : 'timed out');
             }
@@ -366,7 +367,8 @@ trait ABJ_404_Solution_DataAccess_ViewMetadataTrait {
                 'log_errors' => false,
                 'skip_repair' => true,
             ));
-            $err = is_string($result['last_error'] ?? '') ? $result['last_error'] : '';
+            $lastErrorRaw = $result['last_error'] ?? '';
+            $err = is_string($lastErrorRaw) ? $lastErrorRaw : '';
             if ($err !== '' || !empty($result['timed_out'])) {
                 return 'error: ' . ($err !== '' ? $err : 'timed out');
             }
@@ -501,7 +503,8 @@ trait ABJ_404_Solution_DataAccess_ViewMetadataTrait {
                 'log_errors' => false,
                 'skip_repair' => true,
             ));
-            $err = is_string($result['last_error'] ?? '') ? $result['last_error'] : '';
+            $lastErrorRaw = $result['last_error'] ?? '';
+            $err = is_string($lastErrorRaw) ? $lastErrorRaw : '';
             if ($err !== '') {
                 $out['error'] = $err;
                 $out['missing'] = $out['expected'];
@@ -520,7 +523,7 @@ trait ABJ_404_Solution_DataAccess_ViewMetadataTrait {
                     }
                 }
             }
-            $out['present'] = array_values(array_keys($present));
+            $out['present'] = array_keys($present);
             $missing = array();
             foreach ($expectedKeys as $expected) {
                 if (!array_key_exists($expected, $present)) {
