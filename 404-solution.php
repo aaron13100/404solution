@@ -338,6 +338,7 @@ if (!function_exists('abj404_shortCodeListener')) {
 				$inc . 'sql/createRedirectConditionsTable.sql',
 				$inc . 'sql/createRedirectsTable.sql',
 				$inc . 'sql/createSpellingCacheTable.sql',
+				$inc . 'sql/createViewBuildTable.sql',
 				$inc . 'sql/createViewCacheTable.sql',
 				$inc . 'sql/deleteOldLogs.sql',
 				$inc . 'sql/getAdditionalPostData.sql',
