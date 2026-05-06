@@ -26,12 +26,12 @@ if (!defined('ABSPATH')) {
  */
 trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
 
-    // Tunable constants (VIEW_DONE_FRESHNESS_TTL_SECONDS, VIEW_DONE_BUILD_LOCK_NAME,
-    // VIEW_BUILD_DEFAULT_BATCH_SIZE, VIEW_BUILD_PER_STAGE_BUDGET_SECONDS,
-    // VIEW_BUILD_RESUME_TTL_SECONDS, VIEW_BUILD_FOREGROUND_LEASE_SECONDS) live
-    // on the using class ABJ_404_Solution_DataAccess. PHP traits cannot have
-    // constants until 8.2 and the plugin declares Requires PHP: 7.4. The
-    // `self::` references in this trait resolve to the using class at use time.
+    // Tunable constants live on ABJ_404_Solution_ViewBuildConfig (see
+    // includes/ViewBuildConfig.php) instead of as `const` declarations on
+    // this trait, because PHP traits cannot have constants until 8.2 and
+    // the plugin declares Requires PHP: 7.4. References below are written
+    // as the FQN class constant rather than `self::` so they resolve the
+    // same way regardless of which class consumes the trait.
 
     /** @var bool Process-local guard so a single request never rebuilds twice. */
     private static $viewBuildAlreadyRanThisRequest = false;
@@ -105,7 +105,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
     public function claimForegroundViewBuildLease(): void {
         if (!function_exists('update_option')) { return; }
         update_option($this->getLowercasePrefix() . 'abj404_view_build_foreground_until',
-            time() + self::VIEW_BUILD_FOREGROUND_LEASE_SECONDS, false);
+            time() + ABJ_404_Solution_ViewBuildConfig::VIEW_BUILD_FOREGROUND_LEASE_SECONDS, false);
     }
     /** @return bool */
     private function foregroundViewBuildLeaseActive(): bool {
@@ -144,7 +144,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
         }
         $haveDone = $this->viewDoneTableExists();
         $builtAt = $this->viewDoneBuiltAt();
-        $isFresh = $haveDone && $builtAt > 0 && (time() - $builtAt) < self::VIEW_DONE_FRESHNESS_TTL_SECONDS;
+        $isFresh = $haveDone && $builtAt > 0 && (time() - $builtAt) < ABJ_404_Solution_ViewBuildConfig::VIEW_DONE_FRESHNESS_TTL_SECONDS;
         $isInvalidated = $haveDone && $builtAt === 0;
 
         if ($isFresh) {
@@ -310,7 +310,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
             ? max(0, intval($tableOptions['_abj404_query_timeout'])) : 0;
         $haveDone = $this->viewDoneTableExists();
         $builtAt = $this->viewDoneBuiltAt();
-        $isFresh = $haveDone && $builtAt > 0 && (time() - $builtAt) < self::VIEW_DONE_FRESHNESS_TTL_SECONDS;
+        $isFresh = $haveDone && $builtAt > 0 && (time() - $builtAt) < ABJ_404_Solution_ViewBuildConfig::VIEW_DONE_FRESHNESS_TTL_SECONDS;
         $isInvalidated = $haveDone && $builtAt === 0;
 
         if (!$haveDone || $isInvalidated) {
@@ -352,7 +352,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
      */
     public function rebuildViewDoneInBackground(): void {
         if ($this->foregroundViewBuildLeaseActive()) {
-            $this->scheduleViewDoneRebuild(self::VIEW_BUILD_FOREGROUND_LEASE_SECONDS);
+            $this->scheduleViewDoneRebuild(ABJ_404_Solution_ViewBuildConfig::VIEW_BUILD_FOREGROUND_LEASE_SECONDS);
             return;
         }
         if (!$this->acquireViewBuildLock()) { return; }
@@ -533,7 +533,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
      * @return int  Always >= 1.
      */
     private function viewBuildBatchSize(): int {
-        $size = self::VIEW_BUILD_DEFAULT_BATCH_SIZE;
+        $size = ABJ_404_Solution_ViewBuildConfig::VIEW_BUILD_DEFAULT_BATCH_SIZE;
         if (defined('ABJ404_VIEW_BUILD_BATCH_SIZE')) {
             $size = intval(ABJ404_VIEW_BUILD_BATCH_SIZE);
         }
@@ -553,7 +553,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
      * @return float  Seconds; always > 0.
      */
     private function viewBuildPerStageBudgetSeconds(): float {
-        $budget = (float)self::VIEW_BUILD_PER_STAGE_BUDGET_SECONDS;
+        $budget = (float)ABJ_404_Solution_ViewBuildConfig::VIEW_BUILD_PER_STAGE_BUDGET_SECONDS;
         if (defined('ABJ404_VIEW_BUILD_PER_STAGE_BUDGET_SECONDS')) {
             $budget = (float)ABJ404_VIEW_BUILD_PER_STAGE_BUDGET_SECONDS;
         }
@@ -595,7 +595,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
         $startedAt = $this->readProgressOption('started_at', 0);
         $bufferExists = $this->stagedTableExists($this->viewBuildTableName());
         $isResuming = $startedAt > 0
-            && (time() - $startedAt) < self::VIEW_BUILD_RESUME_TTL_SECONDS
+            && (time() - $startedAt) < ABJ_404_Solution_ViewBuildConfig::VIEW_BUILD_RESUME_TTL_SECONDS
             && $bufferExists;
 
         if (!$isResuming) {
@@ -1233,12 +1233,12 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
         if ($builtAt <= 0) {
             return false;
         }
-        return (time() - $builtAt) < self::VIEW_DONE_FRESHNESS_TTL_SECONDS;
+        return (time() - $builtAt) < ABJ_404_Solution_ViewBuildConfig::VIEW_DONE_FRESHNESS_TTL_SECONDS;
     }
 
     /** @return bool */
     private function acquireViewBuildLock(): bool {
-        $name = $this->getLowercasePrefix() . self::VIEW_DONE_BUILD_LOCK_NAME;
+        $name = $this->getLowercasePrefix() . ABJ_404_Solution_ViewBuildConfig::VIEW_DONE_BUILD_LOCK_NAME;
         $sql = "SELECT GET_LOCK('" . esc_sql($name) . "', 0) AS got";
         $result = $this->queryAndGetResults($sql, array('log_errors' => false));
         $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
@@ -1253,7 +1253,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
     private function releaseViewBuildLock(): void {
         // @utf8-audit: opt-out - $name is built from $wpdb->prefix + a class
         // constant; never user input, cannot contain invalid UTF-8 bytes.
-        $name = $this->getLowercasePrefix() . self::VIEW_DONE_BUILD_LOCK_NAME;
+        $name = $this->getLowercasePrefix() . ABJ_404_Solution_ViewBuildConfig::VIEW_DONE_BUILD_LOCK_NAME;
         $this->queryAndGetResults("SELECT RELEASE_LOCK('" . esc_sql($name) . "')",
             array('log_errors' => false));
     }
