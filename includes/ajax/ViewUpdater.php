@@ -365,8 +365,8 @@ class ABJ_404_Solution_ViewUpdater {
         }
         echo json_encode($payload);
 
-        // Test hook: allow unit tests to call handlers without terminating the test process.
-        if (defined('ABJ404_TEST_NO_EXIT') && ABJ404_TEST_NO_EXIT) {
+        // Test hook: tests register `abj404_should_exit` returning false to skip exit.
+        if (!apply_filters('abj404_should_exit', true, array('source' => 'viewUpdater_emitJson'))) {
             return;
         }
 
@@ -542,7 +542,7 @@ class ABJ_404_Solution_ViewUpdater {
             }
             @ini_set('display_errors', '0');
         }
-        if (!(defined('ABJ404_TEST_DISABLE_OB') && ABJ404_TEST_DISABLE_OB)) {
+        if (apply_filters('abj404_should_manage_output_buffer', true, array('source' => 'viewUpdater_startAjaxDebugContext'))) {
             @ob_start();
         }
 
@@ -559,7 +559,7 @@ class ABJ_404_Solution_ViewUpdater {
 
     /** @return string */
     private static function getAndClearAjaxBufferedOutput() {
-        if (defined('ABJ404_TEST_DISABLE_OB') && ABJ404_TEST_DISABLE_OB) {
+        if (!apply_filters('abj404_should_manage_output_buffer', true, array('source' => 'viewUpdater_getAndClearAjaxBufferedOutput'))) {
             return '';
         }
 

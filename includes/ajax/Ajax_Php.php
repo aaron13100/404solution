@@ -167,7 +167,8 @@ class ABJ_404_Solution_Ajax_Php {
 	 * Consistent JSON response helper for endpoints that previously echoed JSON and exited.
 	 *
 	 * In production, wp_send_json() terminates the request.
-	 * In unit tests, callers can stub wp_send_json() or define ABJ404_TEST_NO_EXIT.
+	 * In unit tests, callers can stub wp_send_json() or hook the
+	 * `abj404_should_exit` filter to return false (skips the trailing exit).
 	 *
 	 * @param mixed $payload
 	 * @param int $status
@@ -188,7 +189,7 @@ class ABJ_404_Solution_Ajax_Php {
 			}
 		}
 		echo json_encode($payload);
-		if (defined('ABJ404_TEST_NO_EXIT') && ABJ404_TEST_NO_EXIT) {
+		if (!apply_filters('abj404_should_exit', true, array('source' => 'ajaxPhp_sendJson'))) {
 			return;
 		}
 		exit;
