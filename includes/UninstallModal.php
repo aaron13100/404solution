@@ -420,6 +420,13 @@ class ABJ_404_Solution_UninstallModal {
 
             // If the saved value doesn't match what we tried to save, it's a real failure
             if ($saved_value !== $preferences) {
+                $logger = abj_service('logging');
+                if ($logger !== null) {
+                    $logger->warn('UninstallModal preference save failed: option ' . $option_name .
+                        ' did not round-trip after update_option/update_site_option (multisite=' .
+                        (is_multisite() ? '1' : '0') .
+                        '). Returning HTTP 500 to AJAX caller.');
+                }
                 wp_send_json_error(array(
                     'message' => __('Could not save preferences. Your choices may not be preserved.', '404-solution')
                 ), 500);

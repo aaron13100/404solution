@@ -498,17 +498,26 @@ abstract class ABJ_404_Solution_Functions {
     function createDirectoryWithErrorMessages($directory) {
     	if (!is_dir($directory)) {
     		if (file_exists($directory) || file_exists(rtrim($directory, '/'))) {
-    			unlink($directory);
-    			
+    			$unlinkErr = null;
+    			if (!@unlink($directory)) {
+    				$lastErr = error_get_last();
+    				$unlinkErr = is_array($lastErr) && isset($lastErr['message']) ? $lastErr['message'] : 'unknown';
+    			}
+
     			if (file_exists($directory) || file_exists(rtrim($directory, '/'))) {
     				error_log("ABJ-404-SOLUTION (ERROR) " . date('Y-m-d H:i:s T') . ": Error creating the directory " .
-    						$directory . ". A file with that name alraedy exists.");
+    						$directory . ". A file with that name already exists" .
+    						($unlinkErr !== null ? " and unlink() failed: " . $unlinkErr : "") .
+    						". Action: aborting directory creation, returning false.");
     				return false;
     			}
-    			
-    		} else if (!mkdir($directory, 0755, true)) {
+
+    		} else if (!@mkdir($directory, 0755, true)) {
+    			$lastErr = error_get_last();
+    			$mkdirErr = is_array($lastErr) && isset($lastErr['message']) ? $lastErr['message'] : 'unknown';
     			error_log("ABJ-404-SOLUTION (ERROR) " . date('Y-m-d H:i:s T') . ": Error creating the directory " .
-    					$directory . ". Unknown issue.");
+    					$directory . ". mkdir() failed: " . $mkdirErr .
+    					". Action: aborting directory creation, returning false.");
     			return false;
     		}
     	}

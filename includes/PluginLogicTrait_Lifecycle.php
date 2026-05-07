@@ -124,8 +124,19 @@ trait ABJ_404_Solution_PluginLogicTrait_Lifecycle {
             self::activateSingleSite();
             restore_current_blog();
         } catch (Exception $e) {
-            // Log error but continue with other sites
-            error_log('404 Solution: Network activation failed for site ' . $blog_id_int . ': ' . $e->getMessage());
+            // Log to BOTH the PHP error log (so a host opened ticket can find
+            // it without a debug bundle) and the plugin debug log (so it lands
+            // in the support-bundle excerpt). Continue with other sites: a
+            // single-site failure must not block network activation overall.
+            $remaining = max(0, count($pending));
+            $errorLine = '404 Solution: Network activation failed for site ' . $blog_id_int .
+                ': ' . $e->getMessage() . '. Remaining sites=' . $remaining .
+                '. Action: skipping this site, continuing with next.';
+            error_log($errorLine);
+            $logger = abj_service('logging');
+            if ($logger !== null) {
+                $logger->errorMessage($errorLine, $e instanceof \Exception ? $e : null);
+            }
             restore_current_blog();
         }
 

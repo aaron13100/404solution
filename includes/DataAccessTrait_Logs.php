@@ -1364,7 +1364,13 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
             if ($maxLogId < 0) {
                 $maxLogId = 0;
             }
-        } catch (Throwable $unused) {
+        } catch (Throwable $e) {
+            // getMaxLogId() failed (table missing, query timeout). Fall back to
+            // 0 so the cache key still varies; the trend transient will recompute
+            // until the underlying query recovers. Log at debug level: this is a
+            // transient cache-key derivation, not a load-bearing failure.
+            $this->logger->debugMessage(__FUNCTION__ . ' getMaxLogId() failed: ' .
+                $e->getMessage() . '. Falling back to maxLogId=0 (cache key uses 0).');
             $maxLogId = 0;
         }
 

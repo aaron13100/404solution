@@ -105,6 +105,12 @@ class ABJ_404_Solution_Ajax_EngineProfiles {
         $resultId = ABJ_404_Solution_EngineProfileResolver::getInstance()->saveProfile($data);
 
         if ($resultId === false) {
+            $logger = abj_service('logging');
+            if ($logger !== null) {
+                $logger->warn('Ajax_EngineProfiles::handleSave: saveProfile() returned false. id=' . (int)$id .
+                    ', name=' . $name . ', is_regex=' . (int)$isRegex .
+                    '. Returning HTTP 200 with success=false to AJAX caller.');
+            }
             wp_send_json_error(['message' => __('Failed to save engine profile.', '404-solution')]);
             return; // @phpstan-ignore deadCode.unreachable
         }
@@ -129,6 +135,11 @@ class ABJ_404_Solution_Ajax_EngineProfiles {
 
         $ok = ABJ_404_Solution_EngineProfileResolver::getInstance()->deleteProfile($id);
         if (!$ok) {
+            $logger = abj_service('logging');
+            if ($logger !== null) {
+                $logger->warn('Ajax_EngineProfiles::handleDelete: deleteProfile(' . (int)$id .
+                    ') returned false (row missing or DB error). Returning HTTP 200 with success=false to AJAX caller.');
+            }
             wp_send_json_error(['message' => __('Failed to delete engine profile.', '404-solution')]);
             return; // @phpstan-ignore deadCode.unreachable
         }

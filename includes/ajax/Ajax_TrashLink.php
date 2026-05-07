@@ -51,6 +51,17 @@ class ABJ_404_Solution_Ajax_TrashLink {
         if ($data['result'] === 'success') {
             wp_send_json_success($data, 200);
         } else {
+            $logger = abj_service('logging');
+            if ($logger !== null) {
+                $resultsetForLog = is_scalar($data['resultset'])
+                    ? (string)$data['resultset']
+                    : wp_json_encode($data['resultset']);
+                $logger->warn('trashAction failed: id=' . (string)$idToTrash .
+                    ', trash=' . (string)$trashAction .
+                    ', subpage=' . (string)$subpage .
+                    ', dao_resultset=' . (string)$resultsetForLog .
+                    '. Returning HTTP 500 to AJAX caller.');
+            }
             wp_send_json_error(array(
                 'message' => __('Error: Unable to move redirect to trash.', '404-solution'),
                 'resultset' => $data['resultset'],

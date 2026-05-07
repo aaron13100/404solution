@@ -60,6 +60,11 @@ class ABJ_404_Solution_Ajax_SettingsModeToggle {
                 'message' => __('Settings mode updated', '404-solution')
             ));
         } else {
+            $logger = abj_service('logging');
+            if ($logger !== null) {
+                $logger->warn('Ajax_SettingsModeToggle::handleModeToggle: setSettingsMode("' . $mode .
+                    '") returned false (option write failed or value unchanged). Returning HTTP 500 to AJAX caller.');
+            }
             wp_send_json_error(array('message' => __('Failed to update settings mode', '404-solution')), 500);
         }
     }
