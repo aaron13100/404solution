@@ -612,7 +612,55 @@ function abj404TryClaimSharedBuildOwner(ownerId) {
         progressText: 'starting'
     });
     current = abj404ReadSharedBuildState();
-    return !current || current.ownerId === ownerId;
+    var claimed = !current || current.ownerId === ownerId;
+    if (claimed) {
+        abj404RegisterReleaseSharedBuildOnUnload(ownerId);
+    }
+    return claimed;
+}
+
+/**
+ * Release the shared build owner state if THIS tab is still the owner when
+ * the page is unloaded. Without this, a tab that claims ownership and then
+ * navigates away (form submit, link click, browser back) leaves the
+ * localStorage state stuck at status:running. The next tab, including the
+ * same tab loading its next page, falls into abj404FollowSharedBuildThenRetry
+ * and waits the full 45 s stale-detection window before claiming itself,
+ * blocking the redirects-table placeholder for that whole period.
+ *
+ * pagehide is preferred over beforeunload: it fires for both bfcache and
+ * full unloads, and unlike beforeunload it does not block the navigation
+ * UX. localStorage writes inside pagehide handlers are honoured by all
+ * browsers we support.
+ *
+ * Idempotent and per-claim: once:true guarantees the listener detaches
+ * after firing, so repeated claims within one page lifetime do not stack
+ * handlers. The owner-id check ensures we never clobber state that another
+ * tab has since taken over.
+ *
+ * @param {string} ownerId
+ * @returns {void}
+ */
+function abj404RegisterReleaseSharedBuildOnUnload(ownerId) {
+    if (!abj404CanUseSharedBuildCoordination()) {
+        return;
+    }
+    if (typeof window === 'undefined' || typeof window.addEventListener !== 'function') {
+        return;
+    }
+    var release = function() {
+        try {
+            var current = abj404ReadSharedBuildState();
+            if (current && current.ownerId === ownerId) {
+                window.localStorage.removeItem('abj404ViewBuildAdvanceState');
+            }
+        } catch (e) {
+            // allow-silent-catch: pagehide handlers cannot recover from
+            // storage failures, and any throw here would be discarded by the
+            // browser anyway. Best-effort release is the contract.
+        }
+    };
+    window.addEventListener('pagehide', release, { once: true });
 }
 
 function abj404UpdateSharedBuildOwner(ownerId, status, progress) {
