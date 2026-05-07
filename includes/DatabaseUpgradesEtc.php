@@ -841,6 +841,17 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 	    		if (!preg_match('/\{(wp_(abj404_\w+))\}/', $ddlContent, $m)) {
 	    			continue;
 	    		}
+	    		// Transient staged-build tables (view_build, view_done, view_deleteme)
+	    		// are owned by ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait.
+	    		// stageCreateBuildTable() creates view_build on demand, stageRenameSwap()
+	    		// renames it to view_done, and view_deleteme is the ephemeral previous-
+	    		// generation served table that gets dropped right after the swap. None
+	    		// of them should participate in the permanent-DDL bootstrap, repair, or
+	    		// missing-table check loops. Their absence between builds is normal,
+	    		// not a corruption signal.
+	    		if (in_array($m[2], array('abj404_view_build', 'abj404_view_done', 'abj404_view_deleteme'), true)) {
+	    			continue;
+	    		}
 	    		$result[] = [
 	    			'placeholder' => '{' . $m[1] . '}',
 	    			'bareTableName' => $m[2],

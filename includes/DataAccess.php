@@ -736,15 +736,27 @@ class ABJ_404_Solution_DataAccess {
             return;
         }
 
+        // Honor an explicit log_errors=false: the caller has accepted that
+        // this query may fail and does not want the failure routed through
+        // Logging::errorMessage() (which can email the developer and surface
+        // admin notices). The error is still returned in $result['last_error']
+        // so callers can react to it. May 2026: a regression in this function
+        // was emailing 35 of 38 4.1.15 sites about benign SHOW CREATE TABLE
+        // probes of the transient view_build table. log_errors=false must
+        // mean "do not log".
+        $logErrors = !array_key_exists('log_errors', $options) || (bool)$options['log_errors'];
+        if (!$logErrors) {
+            return;
+        }
+
         $sqlInfo = (defined('WP_DEBUG') && WP_DEBUG) ? $query : $this->extractSqlFilename($query);
         $elapsed = isset($result['elapsed_time']) && is_numeric($result['elapsed_time'])
             ? round((float)$result['elapsed_time'], 4) : 0;
-        $logErrors = !array_key_exists('log_errors', $options) || (bool)$options['log_errors'];
         $message = 'SQL query error observed: ' . $lastError
             . ', SQL: ' . $sqlInfo
             . ', source: ' . $this->extractSqlFilename($query)
             . ', route: ' . ($producesRows ? 'get_results' : 'query')
-            . ', log_errors_option: ' . ($logErrors ? 'true' : 'false')
+            . ', log_errors_option: ' . ($logErrors ? 'true' : 'false') /** @phpstan-ignore ternary.alwaysTrue */
             . ', execution_time: ' . $elapsed;
 
         $this->logger->errorMessage($message);
