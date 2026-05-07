@@ -473,6 +473,7 @@ trait ABJ_404_Solution_DataAccess_ViewSnapshotCacheTrait {
     /**
      * @param array<string, mixed> $state
      * @param bool $ready
+     * @param array<string, mixed> $extra
      * @return array<string, mixed>
      */
     private function formatViewWarmupResponse(array $state, bool $ready, array $extra = array()): array {
