@@ -548,14 +548,33 @@ function abj404PollViewBuildAdvance(config) {
             if (stopped) {
                 return;
             }
-            stopped = true;
-            onError({
-                status: jqXHR && jqXHR.status ? jqXHR.status : '',
+            // 4xx is terminal: nonce expired, auth lost, route gone. Retrying
+            // these will never succeed and surfacing the error promptly is
+            // the correct UX. 5xx and network errors (status 0) are treated
+            // as a no-progress tick: the build itself may be fine on the
+            // next request, and the existing noProgressDeadlineMs (240s)
+            // already catches a genuinely-stuck server. This keeps a single
+            // transient blip from killing the poll loop after the user has
+            // been waiting through a long build.
+            var status = jqXHR && jqXHR.status ? jqXHR.status : 0;
+            var isTransient = (status === 0) || (status >= 500 && status < 600);
+            if (!isTransient) {
+                stopped = true;
+                onError({
+                    status: status,
+                    textStatus: textStatus,
+                    errorThrown: errorThrown,
+                    lastError: textStatus || errorThrown || 'ajax-error',
+                    attemptCount: attemptCount
+                });
+                return;
+            }
+            abj404UpdateAjaxDebugLog('View build advance transient AJAX failure (continuing)', {
+                status: status,
                 textStatus: textStatus,
-                errorThrown: errorThrown,
-                lastError: textStatus || errorThrown || 'ajax-error',
                 attemptCount: attemptCount
             });
+            window.setTimeout(fireOnce, intervalMs);
         });
     };
 

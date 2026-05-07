@@ -209,6 +209,48 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
     }
 
     /**
+     * True when an error from a staged-build query represents a kill the
+     * host inflicted on us (out of our control) that the build can resume
+     * from on the next request. The staged pipeline persists progress
+     * (current_stage, batch high-water ids) on every batch boundary, so
+     * any of these classes can be safely converted to "yield this tick"
+     * without losing work.
+     *
+     * Covered: query-timeout kills (max_statement_time / max_execution_time
+     * exceeded, "Query execution was interrupted"), transient connection
+     * loss ("server has gone away", "Lost connection"), and lock-wait /
+     * deadlock kills. Any of these on a slow shared host will end the
+     * stage's query without ending the request, and we want the build to
+     * keep making forward progress on the next tick instead of returning
+     * a 500 that breaks the JS poll loop.
+     *
+     * @param string $errorText
+     * @return bool
+     */
+    private function isResumableStagedKill(string $errorText): bool {
+        if (!is_string($errorText) || $errorText === '') {
+            return false;
+        }
+        if ($this->isQueryTimeoutError($errorText)) {
+            return true;
+        }
+        if ($this->isTransientConnectionError($errorText)) {
+            return true;
+        }
+        if ($this->isDeadlockOrLockTimeoutError($errorText)) {
+            return true;
+        }
+        // "Query execution was interrupted" is the bare MariaDB / MySQL
+        // message variant that does not always carry the "max_statement_time"
+        // substring (server-side KILL QUERY, client cancellation, replica
+        // failover). Same resume semantics.
+        if (stripos($errorText, 'query execution was interrupted') !== false) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
      * Extract a table name from a MySQL "table is full" error message.
      * MySQL formats this as: The table 'table_name' is full
      * @param string $errorText

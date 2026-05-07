@@ -306,7 +306,10 @@ class ABJ_404_Solution_ErrorHandler {
 			$canShowDetails = false;
 		}
 
-		if (!(defined('ABJ404_TEST_DISABLE_OB') && ABJ404_TEST_DISABLE_OB)) {
+		$shouldManageOb = function_exists('apply_filters')
+			? apply_filters('abj404_should_manage_output_buffer', true, array('source' => 'renderAdminFatalFallback'))
+			: true;
+		if ($shouldManageOb) {
 			while (ob_get_level() > 0) {
 				@ob_end_clean();
 			}
@@ -372,7 +375,10 @@ class ABJ_404_Solution_ErrorHandler {
             }
         }
         echo json_encode($payload);
-        if (defined('ABJ404_TEST_NO_EXIT') && ABJ404_TEST_NO_EXIT) {
+        $shouldExit = function_exists('apply_filters')
+            ? apply_filters('abj404_should_exit', true, array('source' => 'errorHandler_emitJson'))
+            : true;
+        if (!$shouldExit) {
             return true;
         }
         exit;
@@ -428,7 +434,10 @@ class ABJ_404_Solution_ErrorHandler {
             }
 
             $bufferedOutput = '';
-            if (!(defined('ABJ404_TEST_DISABLE_OB') && ABJ404_TEST_DISABLE_OB)) {
+            $shouldManageOb = function_exists('apply_filters')
+                ? apply_filters('abj404_should_manage_output_buffer', true, array('source' => 'errorHandler_processFatalError'))
+                : true;
+            if ($shouldManageOb) {
                 if (ob_get_level() > 0) {
                     $bufferedOutput = (string)ob_get_contents();
                 }

@@ -1221,7 +1221,7 @@ class ABJ_404_Solution_PluginLogic {
             } else {
                 wp_redirect($finalDestination, $status, ABJ404_NAME);
             }
-            if (defined('ABJ404_TEST_NO_EXIT') && ABJ404_TEST_NO_EXIT) {
+            if (!apply_filters('abj404_should_exit', true, array('source' => 'forceRedirect_header'))) {
                 return false;
             }
             exit;
@@ -1240,7 +1240,7 @@ class ABJ_404_Solution_PluginLogic {
                 'Page moved: <a href="' . esc_url($finalDestination) . '">' .
                     esc_html($finalDestination) . '</a>';
         echo $c;
-        if (defined('ABJ404_TEST_NO_EXIT') && ABJ404_TEST_NO_EXIT) {
+        if (!apply_filters('abj404_should_exit', true, array('source' => 'forceRedirect_js'))) {
             return false;
         }
         exit;

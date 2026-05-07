@@ -440,8 +440,24 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
     private function runTimedViewBuildStage(int $stageNumber, string $stageKey, callable $callback) {
         $started = microtime(true);
         try {
+            // Public extension point. Sites can hook this for telemetry, custom
+            // progress dashboards, or chaos-testing the build's resume contract.
+            // The do_action call is inside the try so a callback that throws
+            // (test injection, host kill simulator) is treated identically to
+            // a real SQL error from the stage callback below.
+            if (function_exists('do_action')) {
+                do_action('abj404_view_build_stage_starting', $stageNumber, $stageKey);
+            }
             $result = $callback();
         } catch (\Throwable $e) {
+            // Resumable kill class: host killed the query (max_statement_time,
+            // gone-away, lock-wait, killed connection). The next tick reads
+            // persisted progress and resumes from the same stage. Do NOT
+            // propagate; that would break the JS poll loop.
+            if ($this->isResumableStagedKill($e->getMessage())) {
+                $this->logTimedViewBuildStage($stageNumber, $stageKey, 'killed_resumable', $started);
+                return false;
+            }
             $this->logTimedViewBuildStage($stageNumber, $stageKey, 'error', $started);
             throw $e;
         }
@@ -645,9 +661,11 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
 
         if ($stage < 1) {
             $this->markBuildStage('staged_build_s1_create');
-            $this->runTimedViewBuildStage(1, 'staged_build_s1_create', function () {
+            if ($this->runTimedViewBuildStage(1, 'staged_build_s1_create', function () {
                 $this->stageCreateBuildTable();
-            });
+            }) === false) {
+                return false; // host killed S1; next tick resumes from S1
+            }
             // Stamp started_at on the very first stage so the resume-TTL
             // clock starts from buffer creation.
             if ($this->readProgressOption('started_at', 0) === 0) {
@@ -669,9 +687,11 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
 
         if ($stage < 3) {
             $this->markBuildStage('staged_build_s3_index_fd');
-            $this->runTimedViewBuildStage(3, 'staged_build_s3_index_fd', function () {
+            if ($this->runTimedViewBuildStage(3, 'staged_build_s3_index_fd', function () {
                 $this->stageAddPreJoinIndexes();
-            });
+            }) === false) {
+                return false; // host killed S3; next tick resumes from S3
+            }
             $this->writeProgressOption('current_stage', 3);
             $stage = 3;
         }
@@ -698,33 +718,39 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
 
         if ($stage < 6) {
             $this->markBuildStage('staged_build_s6_update_home');
-            $this->runTimedViewBuildStage(6, 'staged_build_s6_update_home', function () {
+            if ($this->runTimedViewBuildStage(6, 'staged_build_s6_update_home', function () {
                 $this->stageUpdateHome();
-            });
+            }) === false) {
+                return false; // host killed S6; next tick resumes from S6
+            }
             $this->writeProgressOption('current_stage', 6);
             $stage = 6;
         }
 
         if ($stage < 7) {
             $this->markBuildStage('staged_build_s7_update_external');
-            $this->runTimedViewBuildStage(7, 'staged_build_s7_update_external', function () {
+            if ($this->runTimedViewBuildStage(7, 'staged_build_s7_update_external', function () {
                 $this->stageUpdateExternal();
-            });
+            }) === false) {
+                return false; // host killed S7; next tick resumes from S7
+            }
             $this->writeProgressOption('current_stage', 7);
             $stage = 7;
         }
 
         if ($stage < 8) {
             $this->markBuildStage('staged_build_s8_update_special');
-            $this->runTimedViewBuildStage(8, 'staged_build_s8_update_special', function () {
+            if ($this->runTimedViewBuildStage(8, 'staged_build_s8_update_special', function () {
                 $this->stageUpdateSpecial();
-            });
+            }) === false) {
+                return false; // host killed S8; next tick resumes from S8
+            }
             $this->writeProgressOption('current_stage', 8);
             $stage = 8;
         }
 
         if ($stage < 9) {
-            $this->runTimedViewBuildStage(9, 'staged_build_s9_update_hits', function () {
+            $s9Result = $this->runTimedViewBuildStage(9, 'staged_build_s9_update_hits', function () {
                 if ($this->logsHitsTableExists()) {
                     $this->markBuildStage('staged_build_s9_update_hits');
                     $this->stageUpdateHits();
@@ -733,6 +759,9 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
                 $this->markBuildStage('staged_build_s9_update_hits', 'skipped; logs hits table unavailable');
                 return 'skipped';
             });
+            if ($s9Result === false) {
+                return false; // host killed S9; next tick resumes from S9
+            }
             // Skipped or not, we've moved past S9.
             $this->writeProgressOption('current_stage', 9);
             $stage = 9;
@@ -740,18 +769,22 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
 
         if ($stage < 10) {
             $this->markBuildStage('staged_build_s10_index_sort');
-            $this->runTimedViewBuildStage(10, 'staged_build_s10_index_sort', function () {
+            if ($this->runTimedViewBuildStage(10, 'staged_build_s10_index_sort', function () {
                 $this->stageAddSortIndexes();
-            });
+            }) === false) {
+                return false; // host killed S10; next tick resumes from S10
+            }
             $this->writeProgressOption('current_stage', 10);
             $stage = 10;
         }
 
         if ($stage < 11) {
             $this->markBuildStage('staged_build_s11_swap');
-            $this->runTimedViewBuildStage(11, 'staged_build_s11_swap', function () {
+            if ($this->runTimedViewBuildStage(11, 'staged_build_s11_swap', function () {
                 $this->stageRenameSwap();
-            });
+            }) === false) {
+                return false; // host killed S11; next tick resumes from S11
+            }
             if (function_exists('update_option')) {
                 update_option($this->viewDoneFreshnessOptionName(), time(), false);
             }
