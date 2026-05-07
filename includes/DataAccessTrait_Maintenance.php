@@ -658,25 +658,11 @@ trait ABJ_404_Solution_DataAccess_MaintenanceTrait {
             return array();
         }
 
-	        $row = is_array($rows[0] ?? null) ? $rows[0] : array();
-	        $cacheId = isset($row['id']) && is_numeric($row['id']) ? (int)$row['id'] : 0;
-	        $json = isset($row['matchdata']) && is_string($row['matchdata']) ? $row['matchdata'] : '';
-	        $returnValue = json_decode($json, true);
-	        if (!is_array($returnValue)) {
-	            $type = gettype($returnValue);
-	            $this->logger->warn("Invalid spelling cache matchdata for URL '" .
-	                esc_html($requestedURLRaw) . "': expected decoded array, got {$type}; deleting cache row " .
-	                $cacheId . ".");
-	            if ($cacheId > 0) {
-	                $this->queryAndGetResults(
-	                    "DELETE FROM {wp_abj404_spelling_cache} WHERE id = %d",
-	                    array('query_params' => array($cacheId), 'log_errors' => false)
-	                );
-	            }
-	            return array();
-	        }
+        $row = is_array($rows[0] ?? null) ? $rows[0] : array();
+        $json = isset($row['matchdata']) && is_string($row['matchdata']) ? $row['matchdata'] : '';
+        $returnValue = json_decode($json, true);
 
-	        return $returnValue;
-	    }
+        return $returnValue;
+    }
 
 }

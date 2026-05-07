@@ -173,19 +173,13 @@ trait SpellCheckerTrait_URLMatching {
 	 * @param array<int, object> $rowsAsObject
 	 * @return array<int, array<string, mixed>>
 	 */
-	    function getOnlyIDandTermID(array $rowsAsObject): array {
-			$rows = array();
-			$objectRow = array_pop($rowsAsObject);
-			while ($objectRow != null) {
-	            if (!is_object($objectRow)) {
-	                $this->logger->warn("Spell checker received invalid term row: expected object, got " .
-	                    gettype($objectRow) . "; skipping row.");
-	                $objectRow = array_pop($rowsAsObject);
-	                continue;
-	            }
-	            $rows[] = array(
-	                'id' => property_exists($objectRow, 'id') == true ? $objectRow->id : null,
-	                'term_id' => property_exists($objectRow, 'term_id') == true ? $objectRow->term_id : null,
+	function getOnlyIDandTermID(array $rowsAsObject): array {
+		$rows = array();
+		$objectRow = array_pop($rowsAsObject);
+		while ($objectRow != null) {
+            $rows[] = array(
+                'id' => property_exists($objectRow, 'id') == true ? $objectRow->id : null,
+                'term_id' => property_exists($objectRow, 'term_id') == true ? $objectRow->term_id : null,
             	'url' => property_exists($objectRow, 'url') == true ? $objectRow->url : null
                 );
             $objectRow = array_pop($rowsAsObject);

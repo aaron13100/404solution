@@ -297,9 +297,6 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
 				$targetCollation = $this->resolveTargetUtf8mb4Collation($abjTableNames, $tableCollations);
 				
 				foreach ($abjTableNames as $tableName) {
-					if ($this->isBinaryIndexedHitsTable($tableName)) {
-						continue;
-					}
 					$abjTableData = $tableCollations[$tableName] ?? null;
 			
 					if ($abjTableData === null) {
@@ -404,44 +401,16 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
 				}
 				$colCollation = trim($rawColCollation);
 				$colCharset = explode('_', $colCollation)[0] ?? '';
-				$field = '';
-				foreach ($row as $key => $value) {
-					if ($this->f->strtolower((string)$key) === 'field' && is_string($value)) {
-						$field = $value;
-						break;
-					}
-				}
-
-				if ($this->isAllowedBinaryIndexedJoinColumn($tableName, $field, $colCollation)) {
-					continue;
-				}
 
 				if ($colCharset !== $targetCharset || $colCollation !== $targetCollation) {
 					return true;
 				}
 			}
 
-				return false;
-			}
+			return false;
+		}
 
-			private function isBinaryIndexedHitsTable($tableName): bool {
-				return strpos($this->f->strtolower((string)$tableName), '_abj404_logs_hits') !== false;
-			}
-
-			private function isAllowedBinaryIndexedJoinColumn($tableName, string $field, string $collation): bool {
-				if ($collation !== 'utf8mb4_bin') {
-					return false;
-				}
-				$table = $this->f->strtolower((string)$tableName);
-				if ($field === 'canonical_url'
-						&& (strpos($table, '_abj404_logsv2') !== false
-							|| strpos($table, '_abj404_redirects') !== false)) {
-					return true;
-				}
-				return $field === 'requested_url' && $this->isBinaryIndexedHitsTable($table);
-			}
-
-	    /** @return void */
+    /** @return void */
     public function runDailyInsuranceCheck() {
         // Always verify current site only
         // Per-site cron execution ensures network coverage without O(N²) duplication
