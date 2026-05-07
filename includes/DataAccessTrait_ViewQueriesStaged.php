@@ -553,16 +553,41 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
     }
 
     /**
-     * Read the per-stage wall-clock budget after which the request yields
-     * mid-stage (resumed on the next request).
+     * Wall-clock budget after which a batched stage (S2 / S4 / S5) yields
+     * to the next request rather than starting another batch. This is NOT a
+     * query cancellation: any in-flight INSERT or UPDATE-JOIN runs to its
+     * own MySQL timeout. It only stops the loop from issuing more batches
+     * once the request is close to the real ceiling.
+     *
+     * Default: derive from PHP's max_execution_time minus a 2s response
+     * cushion. WP-CLI / cron with no PHP time limit (max_execution_time = 0)
+     * fall back to ABJ_404_Solution_ViewBuildConfig::VIEW_BUILD_PER_STAGE_BUDGET_SECONDS
+     * since unbounded loops would still be undesirable in those contexts.
+     *
+     * Explicit overrides (define / filter) win over auto-detection so
+     * operators can tune it for their host. The minimum floor of 0.1s is
+     * preserved so tests that set a tiny override still complete a batch.
      *
      * @return float  Seconds; always > 0.
      */
     private function viewBuildPerStageBudgetSeconds(): float {
+        $explicitOverride = false;
         $budget = (float)ABJ_404_Solution_ViewBuildConfig::VIEW_BUILD_PER_STAGE_BUDGET_SECONDS;
+
         if (defined('ABJ404_VIEW_BUILD_PER_STAGE_BUDGET_SECONDS')) {
             $budget = (float)ABJ404_VIEW_BUILD_PER_STAGE_BUDGET_SECONDS;
+            $explicitOverride = true;
         }
+
+        if (!$explicitOverride) {
+            $maxExec = (int)ini_get('max_execution_time');
+            if ($maxExec >= 5) {
+                // Use almost the whole window; keep 2s back so the HTTP
+                // response, observers, and shutdown hooks have time to run.
+                $budget = (float)($maxExec - 2);
+            }
+        }
+
         if (function_exists('apply_filters')) {
             $filtered = apply_filters('abj404_view_build_per_stage_budget_seconds', $budget);
             if (is_scalar($filtered)) {
