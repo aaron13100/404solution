@@ -135,7 +135,7 @@ trait ABJ_404_Solution_PluginLogicTrait_Lifecycle {
             error_log($errorLine);
             $logger = abj_service('logging');
             if ($logger !== null) {
-                $logger->errorMessage($errorLine, $e instanceof \Exception ? $e : null);
+                $logger->errorMessage($errorLine, $e);
             }
             restore_current_blog();
         }

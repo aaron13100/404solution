@@ -501,7 +501,7 @@ abstract class ABJ_404_Solution_Functions {
     			$unlinkErr = null;
     			if (!@unlink($directory)) {
     				$lastErr = error_get_last();
-    				$unlinkErr = is_array($lastErr) && isset($lastErr['message']) ? $lastErr['message'] : 'unknown';
+    				$unlinkErr = is_array($lastErr) ? $lastErr['message'] : 'unknown';
     			}
 
     			if (file_exists($directory) || file_exists(rtrim($directory, '/'))) {
@@ -514,7 +514,7 @@ abstract class ABJ_404_Solution_Functions {
 
     		} else if (!@mkdir($directory, 0755, true)) {
     			$lastErr = error_get_last();
-    			$mkdirErr = is_array($lastErr) && isset($lastErr['message']) ? $lastErr['message'] : 'unknown';
+    			$mkdirErr = is_array($lastErr) ? $lastErr['message'] : 'unknown';
     			error_log("ABJ-404-SOLUTION (ERROR) " . date('Y-m-d H:i:s T') . ": Error creating the directory " .
     					$directory . ". mkdir() failed: " . $mkdirErr .
     					". Action: aborting directory creation, returning false.");
