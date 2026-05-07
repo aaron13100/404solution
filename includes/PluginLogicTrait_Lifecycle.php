@@ -174,8 +174,26 @@ trait ABJ_404_Solution_PluginLogicTrait_Lifecycle {
         }
         if (is_plugin_active_for_network(plugin_basename(ABJ404_FILE))) {
             switch_to_blog($blog_id);
-            self::activateSingleSite();
-            restore_current_blog();
+            try {
+                self::activateSingleSite();
+            } catch (\Throwable $e) {
+                // Per-subsite infrastructure failure (disk-full, read-only-replica
+                // during CREATE TABLE on the brand-new subsite). Log at WARN so
+                // dev email reports are not triggered, but always restore the
+                // blog context so the request that created the subsite is not
+                // left in a corrupted switch_to_blog state. The plugin remains
+                // functional on every other site in the network.
+                $logger = abj_service('logging');
+                if ($logger !== null && method_exists($logger, 'warn')) {
+                    $logger->warn(sprintf(
+                        '404 Solution: subsite activation failed for blog_id=%d: %s',
+                        (int)$blog_id,
+                        $e->getMessage()
+                    ));
+                }
+            } finally {
+                restore_current_blog();
+            }
         }
     }
 
@@ -195,9 +213,26 @@ trait ABJ_404_Solution_PluginLogicTrait_Lifecycle {
             return;
         }
         if (is_plugin_active_for_network(plugin_basename(ABJ404_FILE))) {
-            switch_to_blog((int)$site->blog_id);
-            self::activateSingleSite();
-            restore_current_blog();
+            $blogId = (int)$site->blog_id;
+            switch_to_blog($blogId);
+            try {
+                self::activateSingleSite();
+            } catch (\Throwable $e) {
+                // Same per-subsite degradation contract as activateNewSite()
+                // above (legacy hook). See that method's comment for the
+                // rationale; this path is the WordPress 5.1+ replacement
+                // (wp_initialize_site).
+                $logger = abj_service('logging');
+                if ($logger !== null && method_exists($logger, 'warn')) {
+                    $logger->warn(sprintf(
+                        '404 Solution: subsite activation failed for blog_id=%d: %s',
+                        $blogId,
+                        $e->getMessage()
+                    ));
+                }
+            } finally {
+                restore_current_blog();
+            }
         }
     }
 
