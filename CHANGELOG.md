@@ -1,5 +1,18 @@
 # Changelog #
 
+## Version 4.1.16 (May 8, 2026) ##
+
+**Bug Fixes**
+
+* Fixed the Captured 404s and Page Redirects admin pages getting stuck on "Creating build buffer (1/11)" forever on hosts with the standard 30-second PHP execution limit (the default on most shared hosting). The cache rebuild was yielding before inserting any rows because it was reserving more PHP time than the request actually had, so each rebuild request returned without making progress. The first batch of every rebuild step now always runs, so the rebuild reliably moves forward on a typical 30-second host.
+* Fixed Captured 404s and Page Redirects admin pages still failing to load when the database killed a single rebuild step (max statement time exceeded, lost connection, lock timeout): the entire rebuild used to give up, but it now resumes on the next request from where it left off, at every step.
+* Fixed brief network blips and intermittent 5xx responses during a long rebuild causing the admin page to show "Could not finish refreshing data" instead of continuing to wait. Transient errors are now treated as a no-progress tick and the page keeps polling.
+
+**Improvements**
+
+* The admin-table rebuild now adapts its batch size to the host. If a batch is killed by the database, the next attempt uses a smaller batch, and the smaller size is remembered for the rest of the rebuild so slow shared hosts converge on a size they can actually finish.
+* Per-query timeouts during the rebuild are now sized to the host's own statement timeout (MariaDB max_statement_time / MySQL max_execution_time), so a kill produces a clean classifiable error the rebuild can resume from rather than a dropped connection.
+
 ## Version 4.1.15 (May 6, 2026) ##
 
 **Bug Fixes**

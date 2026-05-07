@@ -885,7 +885,12 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
     private function stageInsertRedirectsBatched(): bool {
         $this->markBuildStage('staged_build_s2_insert');
         $deadline = microtime(true) + $this->viewBuildPerStageBudgetSeconds();
-        $perQueryLimit = max(1.0, (float)$this->viewBuildPerStageBudgetSeconds());
+        // Pre-flight check uses the SQL hint (smaller than the wall-clock
+        // budget by design), not the budget itself. This is the worst-case
+        // time a single batch can take before SET STATEMENT max_statement_time
+        // fires. The budget is a loop-level wall clock; a single batch never
+        // takes a full budget to run.
+        $perQueryLimit = max(1.0, (float)$this->intelligentStagedQueryTimeoutSeconds());
 
         $totalCount = $this->countLiveRedirects();
         if ($totalCount <= 0) {
@@ -908,12 +913,20 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
                 return false;
             }
             // Pre-flight: only start a batch when the request has enough PHP
-            // time left to finish it at our full per-query limit. Without
-            // this, a batch we started with too little time would get killed
-            // mid-flight and we could not safely tell whether the kill was
-            // a real batch-too-big problem or just request-time exhaustion.
-            // Yield without shrinking.
-            if ($this->phpTimeRemainingSeconds() < $perQueryLimit + 2.0) {
+            // time left to finish it at our SQL hint. Without this, a batch
+            // we started with too little time would get killed mid-flight by
+            // PHP's max_execution_time and we could not safely tell whether
+            // the kill was a real batch-too-big problem or just request-time
+            // exhaustion. Yield without shrinking.
+            //
+            // Always allow the first batch of a tick to run, even when PHP
+            // time looks tight: phpTimeRemainingSeconds() reflects the time
+            // left at the START of the stage, which on a typical 30s shared
+            // host is already below the SQL hint after WP boot. Without this
+            // first-batch escape, the build would yield on every request
+            // without ever inserting a row -- exactly the "stuck at stage
+            // 1/11" symptom that stranded large-site installs.
+            if ($batchNumber > 0 && $this->phpTimeRemainingSeconds() < $perQueryLimit + 1.0) {
                 $this->markBuildStage('staged_build_s2_insert',
                     'batch ' . $this->humanBatchProgress($copiedSoFar, $totalCount) . ' (yielded; tight time)');
                 return false;
@@ -1069,7 +1082,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
     private function runIdRangeBatchedUpdate(string $stageKey, string $highWaterKey, string $sqlFile): bool {
         $this->markBuildStage($stageKey);
         $deadline = microtime(true) + $this->viewBuildPerStageBudgetSeconds();
-        $perQueryLimit = max(1.0, (float)$this->viewBuildPerStageBudgetSeconds());
+        $perQueryLimit = max(1.0, (float)$this->intelligentStagedQueryTimeoutSeconds());
         // s4_high_water -> s4_batch_size; s5_high_water -> s5_batch_size.
         $batchSizeKey = str_replace('_high_water', '_batch_size', $highWaterKey);
 
@@ -1090,9 +1103,11 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
                 return false;
             }
             // Pre-flight: yield without shrinking when there is not enough
-            // PHP request time left to finish a batch at the full per-query
-            // limit. Same rationale as in stageInsertRedirectsBatched.
-            if ($this->phpTimeRemainingSeconds() < $perQueryLimit + 2.0) {
+            // PHP request time left to finish a batch at the SQL hint. Same
+            // rationale as in stageInsertRedirectsBatched, including the
+            // first-batch escape so a tight-PHP-time request still makes
+            // forward progress instead of yielding indefinitely.
+            if ($batchNumber > 0 && $this->phpTimeRemainingSeconds() < $perQueryLimit + 1.0) {
                 $this->markBuildStage($stageKey,
                     'batch ' . $this->humanBatchProgress($highWater, $totalMaxId) . ' (yielded; tight time)');
                 return false;
