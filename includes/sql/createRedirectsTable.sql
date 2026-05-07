@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS {wp_abj404_redirects} (
     `score` decimal(5,2) DEFAULT NULL COMMENT 'Match confidence score (0-100), NULL for manual redirects',
     `start_ts` bigint(20) DEFAULT NULL COMMENT 'Unix timestamp when redirect becomes active (NULL = always)',
     `end_ts` bigint(20) DEFAULT NULL COMMENT 'Unix timestamp when redirect expires (NULL = never)',
-    `canonical_url` varchar(2048) DEFAULT NULL COMMENT 'Cached CONCAT(/, TRIM(BOTH / FROM url)) so the captured-page JOIN to logs_hits.requested_url is index-friendly. NULL until backfilled by buildRedirectsCanonicalUrlChunk().',
+    `canonical_url` varchar(2048) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL COMMENT 'Cached CONCAT(/, TRIM(BOTH / FROM url)) so the captured-page JOIN to logs_hits.requested_url is index-friendly. NULL until backfilled by buildRedirectsCanonicalUrlChunk().',
     PRIMARY KEY  (`id`),
     KEY `status` (`status`),
     KEY `type` (`type`),
@@ -25,4 +25,3 @@ CREATE TABLE IF NOT EXISTS {wp_abj404_redirects} (
     KEY `idx_status_disabled` (`status`, `disabled`),
     KEY `idx_canonical_url` (`canonical_url`(190)) USING BTREE
 ) COMMENT='404 Solution Plugin Redirects Table' AUTO_INCREMENT=1
-

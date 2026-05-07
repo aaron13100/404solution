@@ -9,21 +9,15 @@
 
    The JOIN reads the persisted canonical_url column on BOTH sides:
    logsv2.canonical_url (added 4.1.x) and redirects.canonical_url
-   (added 4.1.10). When both columns are populated the planner can use
-   idx_canonical_url on the logsv2 side as an indexed equality lookup
-   instead of recomputing CONCAT/TRIM per row. The COALESCE fallback on
-   each side covers rows where the chunked backfill hasn't reached yet —
-   reads stay correct regardless of backfill state. Once both backfills
-   complete, the no-COALESCE form (driven by the
-   logsv2CanonicalUrlBackfillComplete flag) lets the planner pick the
-   smaller side as the driving table.
+   (added 4.1.10). The rebuild caller refuses to run until both backfills
+   are complete, so this SQL keeps the hot join as a clean indexed equality
+   with no COALESCE/CONCAT fallback on either side.
 
    failed_hits is the count of 404-only hits per canonical URL — i.e.
    logsv2 rows where dest_url is empty/NULL. Used by
    flagDeadDestinationRedirects() to find redirects whose final_dest
    itself is 404'ing, without scanning raw logsv2 in cron. */
-SELECT  COALESCE({wp_abj404_logsv2}.canonical_url,
-                 CONCAT('/', TRIM(BOTH '/' FROM {wp_abj404_logsv2}.requested_url))) AS requested_url,
+SELECT  {wp_abj404_logsv2}.canonical_url AS requested_url,
         MIN({wp_abj404_logsv2}.id) AS logsid,
         MAX({wp_abj404_logsv2}.timestamp) AS last_used,
         COUNT(*) AS logshits,
@@ -32,10 +26,6 @@ SELECT  COALESCE({wp_abj404_logsv2}.canonical_url,
 FROM    {wp_abj404_logsv2}
 
         INNER JOIN {wp_abj404_redirects}
-        ON COALESCE({wp_abj404_logsv2}.canonical_url,
-                    CONCAT('/', TRIM(BOTH '/' FROM {wp_abj404_logsv2}.requested_url))) =
-           COALESCE({wp_abj404_redirects}.canonical_url,
-                    CONCAT('/', TRIM(BOTH '/' FROM {wp_abj404_redirects}.url)))
+        ON {wp_abj404_logsv2}.canonical_url = {wp_abj404_redirects}.canonical_url
 
-GROUP BY COALESCE({wp_abj404_logsv2}.canonical_url,
-                  CONCAT('/', TRIM(BOTH '/' FROM {wp_abj404_logsv2}.requested_url)))
+GROUP BY {wp_abj404_logsv2}.canonical_url

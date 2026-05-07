@@ -1075,35 +1075,52 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
      * @return array<int, object>
      */
     function addURLToTermsRows($rows) {
-    	// add url data
-    	global $wp_rewrite;
-    	$extraPermaStructureCache = array();
-    	foreach ($rows as $row) {
-    		$taxonomy = isset($row->taxonomy) ? (string)$row->taxonomy : '';
-    		if (!array_key_exists($taxonomy, $extraPermaStructureCache)) {
-    			$extraPermaStructureCache[$taxonomy] = $wp_rewrite->get_extra_permastruct($taxonomy);
-    		}
-    		$struct = $extraPermaStructureCache[$taxonomy];
-    		
-    		$slug = isset($row->slug) ? (string)$row->slug : '';
-    		$url = str_replace('%' . $taxonomy . '%', $slug, $struct);
-    		
-    		// TODO verify one of the urls?
-    		/*
-    		if (!$verifiedOne) {
-    			$id = $row->term_id;
-    			$link = get_tag_link($id);
-    			$link = get_category_link($id);
-    			// $link should equal $url
-		    	$verifiedOne = true;
-    		}
-    		*/
-    		
-    		/** @var \stdClass $row */
-    		$row->url = $url;
-    	}
-    	
-    	return $rows;
+        // add url data
+        global $wp_rewrite;
+        $extraPermaStructureCache = array();
+        $normalizedRows = array();
+        foreach ($rows as $row) {
+            if (!is_object($row)) {
+                $this->logger->warn("Published term row has invalid shape: expected object, got " .
+                    gettype($row) . "; skipping row.");
+                continue;
+            }
+            $taxonomy = isset($row->taxonomy) ? (string)$row->taxonomy : '';
+            if ($taxonomy === '') {
+                $this->logger->warn("Published term row is missing taxonomy; skipping term_id=" .
+                    (isset($row->term_id) && is_scalar($row->term_id) ? (string)$row->term_id : 'unknown') . ".");
+                continue;
+            }
+            if (!array_key_exists($taxonomy, $extraPermaStructureCache)) {
+                $extraPermaStructureCache[$taxonomy] = $wp_rewrite->get_extra_permastruct($taxonomy);
+            }
+            $struct = $extraPermaStructureCache[$taxonomy];
+            if (!is_string($struct) || $struct === '') {
+                $this->logger->warn("No permalink structure for taxonomy {$taxonomy}; skipping term_id=" .
+                    (isset($row->term_id) && is_scalar($row->term_id) ? (string)$row->term_id : 'unknown') . ".");
+                continue;
+            }
+
+            $slug = isset($row->slug) ? (string)$row->slug : '';
+            $url = str_replace('%' . $taxonomy . '%', $slug, $struct);
+
+            // TODO verify one of the urls?
+            /*
+            if (!$verifiedOne) {
+                $id = $row->term_id;
+                $link = get_tag_link($id);
+                $link = get_category_link($id);
+                // $link should equal $url
+                $verifiedOne = true;
+            }
+            */
+
+            /** @var \stdClass $row */
+            $row->url = $url;
+            $normalizedRows[] = $row;
+        }
+
+        return $normalizedRows;
     }
     
     /** Returns rows with the defined categories.
