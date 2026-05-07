@@ -32,6 +32,15 @@ final class ABJ_404_Solution_ViewBuildConfig {
     const VIEW_BUILD_DEFAULT_BATCH_SIZE = 2000;
 
     /**
+     * Floor for the adaptive batch shrink. When a stage's batch query is
+     * killed by the host (max_statement_time, lock-wait), the runtime halves
+     * the per-stage batch size and persists the new value so the next tick
+     * resumes at the smaller size. Floor at this value so we never spin on
+     * a 1-row batch that adds N database round-trips per row.
+     */
+    const VIEW_BUILD_MIN_BATCH_SIZE = 50;
+
+    /**
      * Max wall-clock time a single request will spend executing batches in
      * any one stage before yielding so the request can finish. Resumable
      * builds pick up the remaining batches on the next request (driven by

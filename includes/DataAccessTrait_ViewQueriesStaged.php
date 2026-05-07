@@ -70,6 +70,14 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
         's2_high_water' => 'abj404_view_build_s2_high_water',
         's4_high_water' => 'abj404_view_build_s4_high_water',
         's5_high_water' => 'abj404_view_build_s5_high_water',
+        // Per-stage adaptive batch sizes. When a host kills a batch query at
+        // its full per-query limit (genuine batch-too-big), the runtime
+        // halves the corresponding entry and persists it so the next tick
+        // resumes at the smaller size. Reset to absent on a fresh build via
+        // clearAllProgressOptions; preserved across resumes.
+        's2_batch_size' => 'abj404_view_build_s2_batch_size',
+        's4_batch_size' => 'abj404_view_build_s4_batch_size',
+        's5_batch_size' => 'abj404_view_build_s5_batch_size',
     );
 
     /** @return void */
@@ -568,6 +576,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
         return max(1, $size);
     }
 
+
     /**
      * Wall-clock budget after which a batched stage (S2 / S4 / S5) yields
      * to the next request rather than starting another batch. This is NOT a
@@ -646,8 +655,8 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
             && $bufferExists;
 
         if (!$isResuming) {
-            // Fresh start: scrap any partial state.  An abandoned partial
-            // build older than the resume TTL is not safe to continue —
+            // Fresh start: scrap any partial state. An abandoned partial
+            // build older than the resume TTL is not safe to continue;
             // wp_posts/wp_terms/wp_options state may have drifted.
             $this->clearAllProgressOptions();
             $this->dropTransientStagedTables();
@@ -656,6 +665,15 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
             // RENAME swap.  Keep the buffer + progress options intact.
             $this->dropDeletemeTable();
         }
+
+        // Set our own per-query timeout for every staged-build query
+        // run during this advance call. Sized below the host's session
+        // max_statement_time so our hint fires first, producing a
+        // classifiable "max_statement_time exceeded" error we can react
+        // to (Path B: shrink the batch). Without this, MariaDB's silent
+        // server-level kill produces a less-classifiable connection or
+        // generic-query error.
+        $this->stagedQueryTimeoutSeconds = (int)round($this->intelligentStagedQueryTimeoutSeconds());
 
         $stage = $this->readProgressOption('current_stage', 0);
 
@@ -866,39 +884,76 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
      */
     private function stageInsertRedirectsBatched(): bool {
         $this->markBuildStage('staged_build_s2_insert');
-        $batchSize = $this->viewBuildBatchSize();
         $deadline = microtime(true) + $this->viewBuildPerStageBudgetSeconds();
+        $perQueryLimit = max(1.0, (float)$this->viewBuildPerStageBudgetSeconds());
 
         $totalCount = $this->countLiveRedirects();
         if ($totalCount <= 0) {
-            // Empty redirects table — nothing to copy.
+            // Empty redirects table; nothing to copy.
             $this->writeProgressOption('s2_high_water', 0);
             return true;
         }
 
+        $batchNumber = 0;
         while (true) {
             $copiedSoFar = $this->countViewBuildRows();
             if ($copiedSoFar >= $totalCount) {
                 break; // covered the table
             }
+            // Wall-clock yield (Path A): per-stage budget exhausted. NOT a
+            // batch-size problem; do not shrink.
             if (microtime(true) >= $deadline) {
                 $this->markBuildStage('staged_build_s2_insert',
                     'batch ' . $this->humanBatchProgress($copiedSoFar, $totalCount) . ' (yielded)');
                 return false;
             }
+            // Pre-flight: only start a batch when the request has enough PHP
+            // time left to finish it at our full per-query limit. Without
+            // this, a batch we started with too little time would get killed
+            // mid-flight and we could not safely tell whether the kill was
+            // a real batch-too-big problem or just request-time exhaustion.
+            // Yield without shrinking.
+            if ($this->phpTimeRemainingSeconds() < $perQueryLimit + 2.0) {
+                $this->markBuildStage('staged_build_s2_insert',
+                    'batch ' . $this->humanBatchProgress($copiedSoFar, $totalCount) . ' (yielded; tight time)');
+                return false;
+            }
 
+            $batchSize = $this->viewBuildBatchSizeForStage('s2_batch_size');
+            $batchNumber++;
             $loBound = $this->maxBuildBufferId();
             $beforeMax = $loBound;
-            $afterMax = $this->runInsertBatch($loBound, $batchSize);
+            try {
+                // Public extension point. Sites hook this for per-batch
+                // telemetry; tests bind a callback that throws to simulate
+                // a host kill. Inside the try/catch so a hook-thrown
+                // resumable error is handled exactly the same way as a
+                // real kill from the SQL call below.
+                if (function_exists('do_action')) {
+                    do_action('abj404_view_build_batch_starting', 's2_insert', $batchNumber, $batchSize);
+                }
+                $afterMax = $this->runInsertBatch($loBound, $batchSize);
+            } catch (\Throwable $e) {
+                if ($this->isResumableStagedKill($e->getMessage())) {
+                    // Path B: batch genuinely too big at the host limit.
+                    // Halve, persist, yield. Next tick uses smaller size.
+                    $newSize = $this->recordStageBatchKilled('s2_batch_size');
+                    $this->markBuildStage('staged_build_s2_insert',
+                        'batch killed at size ' . $batchSize
+                        . '; shrunk to ' . $newSize . ', yielded');
+                    return false;
+                }
+                throw $e;
+            }
             if ($afterMax === $beforeMax) {
-                // No rows above $loBound to copy.  Either the redirects table
+                // No rows above $loBound to copy. Either the redirects table
                 // shrank during the build, or all remaining ids are <= loBound
                 // (impossible given strict id-range semantics, but defensive).
                 // Treat as done; the read query will reflect whatever was
                 // captured.
                 break;
             }
-            // Mirror MAX(id) into the option for diagnostics.  This is
+            // Mirror MAX(id) into the option for diagnostics. This is
             // best-effort; correctness does NOT depend on this write.
             $this->writeProgressOption('s2_high_water', $afterMax);
 
@@ -1013,30 +1068,58 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
      */
     private function runIdRangeBatchedUpdate(string $stageKey, string $highWaterKey, string $sqlFile): bool {
         $this->markBuildStage($stageKey);
-        $batchSize = $this->viewBuildBatchSize();
         $deadline = microtime(true) + $this->viewBuildPerStageBudgetSeconds();
+        $perQueryLimit = max(1.0, (float)$this->viewBuildPerStageBudgetSeconds());
+        // s4_high_water -> s4_batch_size; s5_high_water -> s5_batch_size.
+        $batchSizeKey = str_replace('_high_water', '_batch_size', $highWaterKey);
 
         $highWater = $this->readProgressOption($highWaterKey, 0);
         $totalMaxId = $this->maxBuildBufferId();
         if ($totalMaxId <= 0) {
-            // Buffer is empty (no redirects).  Nothing to update.
+            // Buffer is empty (no redirects). Nothing to update.
             $this->writeProgressOption($highWaterKey, 0);
             return true;
         }
 
+        $batchNumber = 0;
         while ($highWater < $totalMaxId) {
+            // Wall-clock yield (Path A); not a batch-size problem.
             if (microtime(true) >= $deadline) {
                 $this->markBuildStage($stageKey,
                     'batch ' . $this->humanBatchProgress($highWater, $totalMaxId) . ' (yielded)');
                 return false;
             }
+            // Pre-flight: yield without shrinking when there is not enough
+            // PHP request time left to finish a batch at the full per-query
+            // limit. Same rationale as in stageInsertRedirectsBatched.
+            if ($this->phpTimeRemainingSeconds() < $perQueryLimit + 2.0) {
+                $this->markBuildStage($stageKey,
+                    'batch ' . $this->humanBatchProgress($highWater, $totalMaxId) . ' (yielded; tight time)');
+                return false;
+            }
 
+            $batchSize = $this->viewBuildBatchSizeForStage($batchSizeKey);
+            $batchNumber++;
             $hiBound = min($totalMaxId, $highWater + $batchSize);
             $extra = array(
                 '{LO_BOUND}' => (string)$highWater,
                 '{HI_BOUND}' => (string)$hiBound,
             );
-            $this->runStagedSqlFile($sqlFile, $extra);
+            try {
+                if (function_exists('do_action')) {
+                    do_action('abj404_view_build_batch_starting', $stageKey, $batchNumber, $batchSize);
+                }
+                $this->runStagedSqlFile($sqlFile, $extra);
+            } catch (\Throwable $e) {
+                if ($this->isResumableStagedKill($e->getMessage())) {
+                    $newSize = $this->recordStageBatchKilled($batchSizeKey);
+                    $this->markBuildStage($stageKey,
+                        'batch killed at size ' . $batchSize
+                        . '; shrunk to ' . $newSize . ', yielded');
+                    return false;
+                }
+                throw $e;
+            }
             $highWater = $hiBound;
             $this->writeProgressOption($highWaterKey, $highWater);
 
