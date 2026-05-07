@@ -378,11 +378,24 @@ function abj404StartStageProgressPolling(config) {
  *   - requestId: in-flight stage tracking id for the build-advance request.
  *   - subpage:   used by the status-line message lookup.
  *   - intervalMs: poll cadence; default 1000ms.
- *   - maxAttempts: hard cap on ticks; default 240 (~4 min at 1s cadence).
+ *   - noProgressDeadlineMs: how long to keep polling without observing
+ *       any forward progress before giving up; default 240000 (4 min).
+ *       Replaces the prior fixed maxAttempts cap (~4 min): on large
+ *       installs (Bruno's 484K rows, May 2026) the build legitimately
+ *       takes longer than that, so the cap was firing while the build
+ *       was still progressing. The new contract: as long as the server
+ *       returns a different `progress.fingerprint` within the window,
+ *       keep polling; only give up when no progress has been observed
+ *       for the whole window. 240s and not 60s because a single S2/S4/S5
+ *       batch can take 60 to 120s on slow shared hosts and the high-water
+ *       counter only advances at end-of-batch; doubling that gives a
+ *       comfortable margin before declaring the build genuinely stuck.
+ *   - maxAttempts: optional absolute safety-net cap; default 0 (unbounded
+ *       so long as progress is observed within noProgressDeadlineMs).
  *   - onProgress(progress): called after every tick.
  *   - onReady(progress):    called once when status === 'ready'.
  *   - onError(meta):        called if the endpoint returns 5xx or hits
- *                           the attempt cap.
+ *                           the no-progress deadline.
  *
  * Returns a `stop()` function the caller can invoke to cancel polling
  * (e.g. when the admin navigates away).
@@ -397,7 +410,11 @@ function abj404PollViewBuildAdvance(config) {
     }
     var stopped = false;
     var attemptCount = 0;
-    var maxAttempts = parseInt(config.maxAttempts, 10) || 240;
+    // maxAttempts default 0 = unbounded. Callers can still pass a safety-net
+    // cap if they want one, but the no-progress-deadline below is the real
+    // contract.
+    var maxAttempts = parseInt(config.maxAttempts, 10) || 0;
+    var noProgressDeadlineMs = parseInt(config.noProgressDeadlineMs, 10) || 240000;
     var intervalMs = parseInt(config.intervalMs, 10) || 1000;
     var onProgress = (typeof config.onProgress === 'function') ? config.onProgress : function() {};
     var onReady = (typeof config.onReady === 'function') ? config.onReady : function() {};
@@ -407,6 +424,32 @@ function abj404PollViewBuildAdvance(config) {
     // invalidates view_done exactly once. Re-sending it on subsequent calls
     // would reset build progress mid-rebuild and cause stages to repeat.
     var sendForceViewRebuild = (config.forceViewRebuild === true);
+
+    // Progress-fingerprint tracking: the server returns a `fingerprint`
+    // object in `progress` that mutates whenever the build advances
+    // (started_at / current_stage / s{2,4,5}_high_water). We give up only
+    // when this string-serialized fingerprint stays unchanged for the
+    // full noProgressDeadlineMs window.
+    var lastFingerprintKey = '';
+    var lastProgressTickAtMs = Date.now();
+
+    var serializeFingerprint = function(progress) {
+        if (!progress || typeof progress !== 'object') { return ''; }
+        var fp = progress.fingerprint;
+        if (!fp || typeof fp !== 'object') {
+            // Fall back to coarser fields if the server didn't send fingerprint
+            // (older server, mocked test, etc). stage alone advances rarely on
+            // S2/S4/S5 so this fallback is best-effort only.
+            return [progress.stage || 0, progress.build_started || 0].join('|');
+        }
+        return [
+            fp.started_at || 0,
+            fp.current_stage || 0,
+            fp.s2_high_water || 0,
+            fp.s4_high_water || 0,
+            fp.s5_high_water || 0
+        ].join('|');
+    };
 
     var formatProgressMessage = function(progress) {
         if (!progress || typeof progress !== 'object') {
@@ -425,11 +468,29 @@ function abj404PollViewBuildAdvance(config) {
             return;
         }
         attemptCount++;
-        if (attemptCount > maxAttempts) {
+        // Optional absolute safety-net cap. Off by default (0); kept as an
+        // escape hatch for callers that want one (tests, etc).
+        if (maxAttempts > 0 && attemptCount > maxAttempts) {
             stopped = true;
             onError({
                 lastError: 'View build advance exceeded ' + maxAttempts + ' attempts',
                 attemptCount: attemptCount
+            });
+            return;
+        }
+        // No-progress deadline. The build is presumed stuck (worker died,
+        // database deadlock, GET_LOCK held by a dead session, etc.) when
+        // the fingerprint hasn't changed in noProgressDeadlineMs.
+        var sinceLastProgressMs = Date.now() - lastProgressTickAtMs;
+        if (sinceLastProgressMs > noProgressDeadlineMs) {
+            stopped = true;
+            onError({
+                lastError: 'View build advance made no progress for '
+                    + Math.round(sinceLastProgressMs / 1000) + 's '
+                    + '(deadline ' + Math.round(noProgressDeadlineMs / 1000) + 's)',
+                attemptCount: attemptCount,
+                noProgressDeadlineMs: noProgressDeadlineMs,
+                sinceLastProgressMs: sinceLastProgressMs
             });
             return;
         }
@@ -457,12 +518,19 @@ function abj404PollViewBuildAdvance(config) {
             }
             var progress = (result && result.progress) ? result.progress : {};
             var status = (result && typeof result.status === 'string') ? result.status : '';
+            // Update no-progress deadline tracking BEFORE checking ready/locked.
+            var fingerprintKey = serializeFingerprint(progress);
+            if (fingerprintKey !== '' && fingerprintKey !== lastFingerprintKey) {
+                lastFingerprintKey = fingerprintKey;
+                lastProgressTickAtMs = Date.now();
+            }
             jQuery('.abj404-refresh-status').text(formatProgressMessage(progress));
             abj404UpdateAjaxDebugLog('View build advance: ' + (progress.progress_text || ''), {
                 status: status,
                 stage: progress.stage,
                 of: progress.of,
                 build_started: progress.build_started,
+                fingerprint: progress.fingerprint || null,
                 attemptCount: attemptCount
             });
             onProgress(progress);

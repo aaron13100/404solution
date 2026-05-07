@@ -36,8 +36,20 @@ final class ABJ_404_Solution_ViewBuildConfig {
      * any one stage before yielding so the request can finish. Resumable
      * builds pick up the remaining batches on the next request (driven by
      * WP-Cron or by JS poll-triggered re-requests).
+     *
+     * Set to match VIEW_SNAPSHOT_WARMUP_STAGE_TIMEOUT_SECONDS (28s) so a
+     * single staged query has the full warmup query timeout to complete
+     * within one budget tick. The prior 10s value caused Bruno Martinez's
+     * 484K-row install (May 2026) to yield mid-stage before any single
+     * INSERT batch could finish on a slow shared host, so the build never
+     * made forward progress within the JS poller's deadline.
+     *
+     * Higher values (>28s) start to risk PHP killing the request at
+     * max_execution_time on shared hosts that default to 30s; the build
+     * still resumes safely on the next request via MAX(id) on the buffer,
+     * but a graceful yield is preferable.
      */
-    const VIEW_BUILD_PER_STAGE_BUDGET_SECONDS = 10;
+    const VIEW_BUILD_PER_STAGE_BUDGET_SECONDS = 28;
 
     /**
      * After this many seconds with no progress, an abandoned partial build

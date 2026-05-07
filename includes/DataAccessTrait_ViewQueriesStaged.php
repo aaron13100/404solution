@@ -233,6 +233,11 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
      *   - of:            11 (total number of build sub-stages)
      *   - build_started: unix ts when this resumable build began (0 if none)
      *   - progress_text: short human-readable summary (e.g. "stage 2/11")
+     *   - fingerprint:   per-tick mutation counters used by the JS poller
+     *                    to detect within-stage progress (S2/S4/S5 advance
+     *                    high-water ids across multiple ticks while
+     *                    current_stage stays the same). The poller gives
+     *                    up only when this fingerprint stops changing.
      *
      * @return array<string, mixed>
      */
@@ -252,6 +257,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
             // Callers that want the rich text can call describeBuildProgressForNotice
             // directly; AJAX gate / poll responses use the cheap form.
             'progress_text' => $stage > 0 ? ('stage ' . $stage . '/11') : 'not yet started',
+            'fingerprint' => $this->getViewBuildProgressFingerprint(),
         );
     }
 
