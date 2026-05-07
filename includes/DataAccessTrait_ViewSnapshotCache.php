@@ -57,6 +57,21 @@ trait ABJ_404_Solution_DataAccess_ViewSnapshotCacheTrait {
         return $this->getLowercasePrefix() . 'abj404_view_cache_lock_' . md5((string)$cacheKey);
     }
 
+    /** @return string */
+    private function getViewSnapshotWarmupGlobalLockKey(): string {
+        return 'abj404_view_table_warmup_global';
+    }
+
+    /** @return bool */
+    protected function acquireViewSnapshotWarmupGlobalLock(): bool {
+        return $this->acquireViewSnapshotRefreshLock($this->getViewSnapshotWarmupGlobalLockKey());
+    }
+
+    /** @return void */
+    protected function releaseViewSnapshotWarmupGlobalLock(): void {
+        $this->releaseViewSnapshotRefreshLock($this->getViewSnapshotWarmupGlobalLockKey());
+    }
+
     /** @param string $cacheKey @return string */
     private function getViewWarmupStateOptionName(string $cacheKey): string {
         return $this->getLowercasePrefix() . 'abj404_view_warmup_' . md5((string)$cacheKey);
@@ -353,6 +368,16 @@ trait ABJ_404_Solution_DataAccess_ViewSnapshotCacheTrait {
             return $this->formatViewWarmupResponse($state, false);
         }
 
+        if (!$this->acquireViewSnapshotWarmupGlobalLock()) {
+            $state['status'] = 'running';
+            $state['last_error'] = 'Another table cache warmup is already running for this site.';
+            return $this->formatViewWarmupResponse($state, false, array(
+                'locked' => true,
+                'lockScope' => 'site',
+                'retryAfterMs' => 2500,
+            ));
+        }
+
         $attempts[$stage] = $attemptCount + 1;
         $state['status'] = 'running';
         $state['stage_started_at'] = $now;
@@ -371,11 +396,17 @@ trait ABJ_404_Solution_DataAccess_ViewSnapshotCacheTrait {
         try {
             if ($stage === 'rows') {
                 $this->getRedirectsForView($sub, $stageOptions);
+                if (!$this->viewRowsSnapshotAvailable($sub, $tableOptions)) {
+                    throw new \Exception('Warmup rows stage completed but the row snapshot was not available afterward.');
+                }
                 $state['status'] = 'idle';
                 $state['stage'] = 'count';
                 $state['query_label'] = 'getRedirectsForViewCount';
             } else {
                 $this->getRedirectsForViewCount($sub, $stageOptions);
+                if (!$this->viewTableSnapshotAvailable($sub, $tableOptions)) {
+                    throw new \Exception('Warmup count stage completed but the full table snapshot was not available afterward.');
+                }
                 $state['status'] = 'ready';
                 $state['stage'] = 'count';
                 $state['query_label'] = 'getRedirectsForViewCount';
@@ -434,6 +465,8 @@ trait ABJ_404_Solution_DataAccess_ViewSnapshotCacheTrait {
             $this->logViewWarmupFailure($sub, $tableOptions, $state);
             $this->setViewWarmupState($optionName, $state);
             return $this->formatViewWarmupResponse($state, false);
+        } finally {
+            $this->releaseViewSnapshotWarmupGlobalLock();
         }
     }
 
@@ -442,7 +475,7 @@ trait ABJ_404_Solution_DataAccess_ViewSnapshotCacheTrait {
      * @param bool $ready
      * @return array<string, mixed>
      */
-    private function formatViewWarmupResponse(array $state, bool $ready): array {
+    private function formatViewWarmupResponse(array $state, bool $ready, array $extra = array()): array {
         $stageValue = $state['stage'] ?? 'rows';
         $stage = is_string($stageValue) ? $stageValue : 'rows';
         $statusValue = $state['status'] ?? 'idle';
@@ -450,7 +483,7 @@ trait ABJ_404_Solution_DataAccess_ViewSnapshotCacheTrait {
         $stageStartedAt = $state['stage_started_at'] ?? 0;
         $stageCompletedAt = $state['stage_completed_at'] ?? 0;
         $lastError = $state['last_error'] ?? '';
-        return array(
+        $response = array(
             'status' => $status,
             'ready' => $ready || $status === 'ready',
             'stage' => $stage,
@@ -462,6 +495,12 @@ trait ABJ_404_Solution_DataAccess_ViewSnapshotCacheTrait {
             'timingsByStage' => is_array($state['timings_by_stage'] ?? null) ? $state['timings_by_stage'] : array(),
             'lastError' => is_string($lastError) ? $lastError : '',
         );
+        foreach ($extra as $key => $value) {
+            if (is_string($key)) {
+                $response[$key] = $value;
+            }
+        }
+        return $response;
     }
 
     /**

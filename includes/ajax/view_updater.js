@@ -471,6 +471,10 @@ function abj404PollViewBuildAdvance(config) {
                 onReady(progress);
                 return;
             }
+            if (progress.locked === true) {
+                window.setTimeout(fireOnce, (parseInt(config.lockedIntervalMs, 10) || 3500) + Math.floor(Math.random() * 750));
+                return;
+            }
             window.setTimeout(fireOnce, intervalMs);
         }).fail(function(jqXHR, textStatus, errorThrown) {
             if (stopped) {
@@ -489,6 +493,121 @@ function abj404PollViewBuildAdvance(config) {
 
     fireOnce();
     return stop;
+}
+
+function abj404CanUseSharedBuildCoordination() {
+    try {
+        var key = 'abj404_coord_test';
+        window.localStorage.setItem(key, '1');
+        window.localStorage.removeItem(key);
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
+
+function abj404ReadSharedBuildState() {
+    if (!abj404CanUseSharedBuildCoordination()) {
+        return null;
+    }
+    try {
+        var raw = window.localStorage.getItem('abj404ViewBuildAdvanceState');
+        return raw ? JSON.parse(raw) : null;
+    } catch (e) {
+        return null;
+    }
+}
+
+function abj404WriteSharedBuildState(state) {
+    if (!abj404CanUseSharedBuildCoordination()) {
+        return;
+    }
+    try {
+        window.localStorage.setItem('abj404ViewBuildAdvanceState', JSON.stringify(state || {}));
+    } catch (e) {}
+}
+
+function abj404TryClaimSharedBuildOwner(ownerId) {
+    if (!abj404CanUseSharedBuildCoordination()) {
+        return true;
+    }
+    var now = Date.now();
+    var current = abj404ReadSharedBuildState();
+    if (current && current.status === 'running' && current.ownerId && current.ownerId !== ownerId
+            && (now - (parseInt(current.updatedAt, 10) || 0)) < 45000) {
+        return false;
+    }
+    abj404WriteSharedBuildState({
+        ownerId: ownerId,
+        status: 'running',
+        updatedAt: now,
+        progressText: 'starting'
+    });
+    current = abj404ReadSharedBuildState();
+    return !current || current.ownerId === ownerId;
+}
+
+function abj404UpdateSharedBuildOwner(ownerId, status, progress) {
+    if (!abj404CanUseSharedBuildCoordination()) {
+        return;
+    }
+    abj404WriteSharedBuildState({
+        ownerId: ownerId,
+        status: status || 'running',
+        updatedAt: Date.now(),
+        stage: progress && progress.stage,
+        of: progress && progress.of,
+        progressText: progress && progress.progress_text
+    });
+}
+
+function abj404FollowSharedBuildThenRetry(triggerItem, $config) {
+    var startedAt = Date.now();
+    var maxWaitMs = 300000;
+    var poll = function() {
+        var state = abj404ReadSharedBuildState();
+        var updatedAt = state ? (parseInt(state.updatedAt, 10) || 0) : 0;
+        var stale = !state || !updatedAt || (Date.now() - updatedAt) > 45000;
+        if (state && state.status === 'ready') {
+            window.abj404ViewBuildAdvanceRunning = false;
+            paginationLinksChange(triggerItem, {
+                backgroundRefresh: false,
+                detectOnly: false,
+                cacheMode: 'cache_or_pending',
+                onComplete: function(meta) {
+                    if (meta && meta.cachePending) {
+                        startPlaceholderTableHydration(triggerItem);
+                        return;
+                    }
+                    if ($config && $config.length > 0) {
+                        $config.attr('data-pagination-initial-load', '0');
+                    }
+                },
+                onError: function(errorMeta) {
+                    if ($config && $config.length > 0) {
+                        $config.attr('data-pagination-initial-load', '0');
+                    }
+                    showTableWarmupFailure(errorMeta || {});
+                }
+            });
+            return;
+        }
+        if (stale) {
+            window.abj404ViewBuildAdvanceRunning = false;
+            startViewBuildPollingThenRetry(triggerItem, $config, 1);
+            return;
+        }
+        if ((Date.now() - startedAt) > maxWaitMs) {
+            window.abj404ViewBuildAdvanceRunning = false;
+            showTableWarmupFailure({lastError: 'Timed out waiting for another tab to finish preparing redirects view.'});
+            return;
+        }
+        if (state && state.progressText) {
+            jQuery('.abj404-refresh-status').text('Preparing redirects view (' + state.progressText + ')');
+        }
+        window.setTimeout(poll, 1500 + Math.floor(Math.random() * 500));
+    };
+    poll();
 }
 
 function abj404FormatAjaxFailureDetails(meta) {
@@ -943,6 +1062,7 @@ function startViewBuildPollingThenRetry(triggerItem, $config, fetchAttemptNumber
     var inflightNonce = $ajaxConfigEl.attr('data-pagination-inflight-nonce') || '';
     var subpage = $ajaxConfigEl.attr('data-pagination-ajax-subpage') || getURLParameter('subpage');
     var buildRequestId = abj404GenerateRequestId();
+    var sharedOwnerId = abj404GenerateRequestId();
 
     if (!baseUrl || !inflightNonce) {
         // No advance endpoint config: drop placeholders so the page is usable.
@@ -951,6 +1071,12 @@ function startViewBuildPollingThenRetry(triggerItem, $config, fetchAttemptNumber
             $config.attr('data-pagination-initial-load', '0');
         }
         showTableWarmupFailure({lastError: 'View build advance endpoint config missing'});
+        return;
+    }
+
+    if (!abj404TryClaimSharedBuildOwner(sharedOwnerId)) {
+        abj404UpdateAjaxDebugLog('View build advance: following another active tab', {});
+        abj404FollowSharedBuildThenRetry(triggerItem, $config);
         return;
     }
 
@@ -969,9 +1095,14 @@ function startViewBuildPollingThenRetry(triggerItem, $config, fetchAttemptNumber
         subpage: subpage,
         page: getURLParameter('page') || '',
         intervalMs: 1000,
+        lockedIntervalMs: 3500,
+        onProgress: function(progress) {
+            abj404UpdateSharedBuildOwner(sharedOwnerId, 'running', progress || {});
+        },
         onReady: function() {
             stopBuildStageProgressPolling(true);
             window.abj404ViewBuildAdvanceRunning = false;
+            abj404UpdateSharedBuildOwner(sharedOwnerId, 'ready', {progress_text: 'ready'});
             jQuery('.abj404-refresh-status').text('');
             // Re-issue the fetch now that view_done is ready.  Use the same
             // cache_or_pending mode so a cold snapshot triggers the existing
@@ -1001,6 +1132,7 @@ function startViewBuildPollingThenRetry(triggerItem, $config, fetchAttemptNumber
         onError: function(errorMeta) {
             stopBuildStageProgressPolling(true);
             window.abj404ViewBuildAdvanceRunning = false;
+            abj404UpdateSharedBuildOwner(sharedOwnerId, 'error', {progress_text: (errorMeta && errorMeta.lastError) || 'error'});
             if ($config && $config.length > 0) {
                 $config.attr('data-pagination-initial-load', '0');
             }
@@ -1063,7 +1195,7 @@ function startPlaceholderTableHydration(triggerItem) {
                 if (attemptNumber < maxAttempts) {
                     window.setTimeout(function() {
                         runAttempt(attemptNumber + 1);
-                    }, 700);
+                    }, meta && meta.locked ? (parseInt(meta.retryAfterMs, 10) || 2500) : 700);
                     return;
                 }
                 showTableWarmupFailure(meta || {});
