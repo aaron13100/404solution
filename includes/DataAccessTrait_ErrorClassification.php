@@ -59,7 +59,8 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
             $this->isIncorrectKeyFileError($errorText) ||
             $this->isCrashedTableError($errorText) ||
             $this->isDeadlockOrLockTimeoutError($errorText) ||
-            $this->isTransientConnectionError($errorText)
+            $this->isTransientConnectionError($errorText) ||
+            $this->isAccessDeniedError($errorText)
         ) {
             $this->logger->warn("Server-side DB issue (handled): " . $errorText);
             $this->noteDatabaseIssueFromError($errorText);
@@ -134,6 +135,26 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
         return ($this->f->strpos($lower, 'read only') !== false ||
             $this->f->strpos($lower, 'read-only') !== false ||
             $this->f->strpos($lower, 'super_read_only') !== false);
+    }
+
+    /**
+     * Detect MySQL/MariaDB access-denied errors. ER_DBACCESS_DENIED_ERROR
+     * (1044) and ER_TABLEACCESS_DENIED_ERROR (1142) fire when the configured
+     * DB user lacks rights for the requested operation: typical on hosting
+     * providers where the plugin's CREATE TABLE / DROP TABLE privileges are
+     * revoked, or where wp_options has been moved between databases.
+     * Server config issue, not a plugin bug. Should be a WARN, not an ERROR.
+     *
+     * @param string $errorText
+     * @return bool
+     */
+    private function isAccessDeniedError(string $errorText): bool {
+        if (!is_string($errorText) || $errorText === '') {
+            return false;
+        }
+        $lower = strtolower($errorText);
+        return ($this->f->strpos($lower, 'access denied') !== false ||
+            $this->f->strpos($lower, 'command denied') !== false);
     }
 
     /** @param string $errorText @return bool */

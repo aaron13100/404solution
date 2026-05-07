@@ -749,6 +749,21 @@ class ABJ_404_Solution_DataAccess {
             return;
         }
 
+        // Honor ignore_errors: callers pass substring patterns for errors
+        // that are expected and benign for that query (e.g. RENAME TABLE
+        // with ignore_errors=["already exists"] in renameAbj404TablesToLowerCase
+        // when the lowercase target name pre-exists). Without this check,
+        // the observation logger fires ERROR before the downstream
+        // ignore_errors branch can suppress, which emails the developer.
+        // May 2026: 16+ sites in the email-flood cohort hit this path.
+        $ignoreErrorStrings = isset($options['ignore_errors']) && is_array($options['ignore_errors'])
+            ? $options['ignore_errors'] : array();
+        foreach ($ignoreErrorStrings as $needle) {
+            if (is_string($needle) && $needle !== '' && strpos($lastError, $needle) !== false) {
+                return;
+            }
+        }
+
         $sqlInfo = (defined('WP_DEBUG') && WP_DEBUG) ? $query : $this->extractSqlFilename($query);
         $elapsed = isset($result['elapsed_time']) && is_numeric($result['elapsed_time'])
             ? round((float)$result['elapsed_time'], 4) : 0;
@@ -759,7 +774,48 @@ class ABJ_404_Solution_DataAccess {
             . ', log_errors_option: ' . ($logErrors ? 'true' : 'false') /** @phpstan-ignore ternary.alwaysTrue */
             . ', execution_time: ' . $elapsed;
 
+        // Infrastructure errors (collation mismatch, disk full, read-only,
+        // host quota, deadlock, transient connection drop, etc.) are server
+        // and host issues, not plugin bugs. Log as WARN so they appear in
+        // the debug log without triggering Logging::errorMessage() email
+        // reports. The downstream code at queryAndGetResults() lines 1067+
+        // already classifies these for its own reporting branch; doing the
+        // same classification here keeps the two layers consistent.
+        // May 2026: 4 of 38 4.1.13 sites in the email-flood cohort were
+        // "Illegal mix of collations" reports that should have been WARN.
+        if ($this->isInfrastructureSqlError($lastError)) {
+            $this->logger->warn($message);
+            return;
+        }
+
         $this->logger->errorMessage($message);
+    }
+
+    /**
+     * Pure classifier: true if the SQL error string matches a known
+     * infrastructure / host / hosting-environment failure pattern. These
+     * are conditions the plugin can detect and degrade past, not plugin
+     * bugs. Centralizing the union here keeps logObservedSqlError() and
+     * the downstream reporting branch in queryAndGetResults() consistent.
+     *
+     * @param string $errorText
+     * @return bool
+     */
+    private function isInfrastructureSqlError(string $errorText): bool {
+        if ($errorText === '') {
+            return false;
+        }
+        return $this->isDiskFullError($errorText)
+            || $this->isReadOnlyError($errorText)
+            || $this->isQuotaLimitError($errorText)
+            || $this->isInvalidDataError($errorText)
+            || $this->isCollationError($errorText)
+            || $this->isMissingPluginTableError($errorText)
+            || $this->isIncorrectKeyFileError($errorText)
+            || $this->isCrashedTableError($errorText)
+            || $this->isDeadlockOrLockTimeoutError($errorText)
+            || $this->isTransientConnectionError($errorText)
+            || $this->isAccessDeniedError($errorText);
     }
 
     /**
@@ -1075,7 +1131,8 @@ class ABJ_404_Solution_DataAccess {
                 $this->isCrashedTableError($lastErrorForClassification) ||
                 $this->isDeadlockOrLockTimeoutError($lastErrorForClassification) ||
                 $this->isTransientConnectionError($lastErrorForClassification) ||
-                $this->isQueryTimeoutError($lastErrorForClassification)
+                $this->isQueryTimeoutError($lastErrorForClassification) ||
+                $this->isAccessDeniedError($lastErrorForClassification)
             )) {
                 $this->logger->warn("Server-side DB issue (handled): " . $lastErrorForClassification);
                 $reportError = false;
