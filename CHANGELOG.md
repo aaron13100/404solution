@@ -7,6 +7,7 @@
 * Fixed the Captured 404s and Page Redirects admin pages getting stuck on "Creating build buffer (1/11)" forever on hosts with the standard 30-second PHP execution limit (the default on most shared hosting). The cache rebuild was yielding before inserting any rows because it was reserving more PHP time than the request actually had, so each rebuild request returned without making progress. The first batch of every rebuild step now always runs, so the rebuild reliably moves forward on a typical 30-second host.
 * Fixed Captured 404s and Page Redirects admin pages still failing to load when the database killed a single rebuild step (max statement time exceeded, lost connection, lock timeout): the entire rebuild used to give up, but it now resumes on the next request from where it left off, at every step.
 * Fixed brief network blips and intermittent 5xx responses during a long rebuild causing the admin page to show "Could not finish refreshing data" instead of continuing to wait. Transient errors are now treated as a no-progress tick and the page keeps polling.
+* Fixed the rebuild getting stuck retrying the same single-statement step (index build, hit-count update, or sort-index step) when the host's database statement timeout was shorter than that step needed to complete. Those steps used to retry with the same too-tight timeout forever; now the per-query timeout is extended for the retry so the step can finish.
 
 **Improvements**
 
