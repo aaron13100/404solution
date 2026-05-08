@@ -1437,7 +1437,9 @@ class ABJ_404_Solution_ViewUpdater {
             // call of an ?abj404_force_view_rebuild=1 page-load. Invalidating
             // here (rather than in the fetch path) keeps the rebuild owned by
             // a single requestId so every staged sub-stage shows up in the
-            // debug log.
+            // debug log. Best-effort: any read happening in parallel sees
+            // the rebuild starting; the authoritative invalidate happens
+            // inside advanceViewBuildOnce's locked region (forceRebuild=true).
             if ($forceViewRebuild) {
                 if (method_exists($abj404dao, 'invalidateViewSnapshotCache')) {
                     $abj404dao->invalidateViewSnapshotCache();
@@ -1447,7 +1449,13 @@ class ABJ_404_Solution_ViewUpdater {
             }
 
             self::tryClaimForegroundViewBuildLease($abj404dao);
-            $progress = $abj404dao->advanceViewBuildOnce();
+            // Pass forceRebuild down so advanceViewBuildOnce takes the lock
+            // with a 30s timeout (waiting for any in-flight cron/sibling
+            // build to finish), re-invalidates inside the locked region,
+            // and runs the build under THIS request's AJAX context. That is
+            // what makes every staged_build_s* sub-stage event reach the
+            // browser's "AJAX Load Times / Debug Info" panel.
+            $progress = $abj404dao->advanceViewBuildOnce($forceViewRebuild);
             $statusValue = is_array($progress) && isset($progress['status']) && is_string($progress['status'])
                 ? $progress['status'] : 'pending';
 

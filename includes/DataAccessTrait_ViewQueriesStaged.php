@@ -40,6 +40,18 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
     private $stagedQueryTimeoutSeconds = 0;
 
     /**
+     * Most recent "batch X/Y" progress detail captured from the inner loops of
+     * resumable stages (S2/S4/S5). Preserved across the per-stage yield log so
+     * the user-visible status doesn't drop from "batch 1.28M/1.97M (yielded)"
+     * back to a bare "yielded in N ms" right before the next tick resumes.
+     *
+     * Reset to '' at the start of every runTimedViewBuildStage() invocation.
+     *
+     * @var string
+     */
+    private $lastBatchProgressDetail = '';
+
+    /**
      * Request-lifetime cache of viewDoneIsServeable().  The AJAX gate, the
      * progress reader, and the pending-build response share the same answer
      * within a single request; without this cache each call reissues a SHOW
@@ -219,6 +231,19 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
     }
 
     /**
+     * Public accessor for the unix-time the view_done snapshot was last
+     * successfully built. Returns 0 when never built or when the freshness
+     * option has been cleared by an invalidation. Used by the admin footer
+     * (and any diagnostic surface) to render a "Cache view freshness: 5m"
+     * indicator without exposing the internal option name.
+     *
+     * @return int  Unix timestamp, or 0.
+     */
+    public function getViewDoneBuiltAtTimestamp(): int {
+        return $this->viewDoneBuiltAt();
+    }
+
+    /**
      * Invalidate the request-lifetime serveability cache.  Called from any
      * code path that mutates view_done (rename/drop/build completion) so a
      * subsequent read in the same request sees fresh state.
@@ -282,18 +307,65 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
      * surfaces them.  This is intentionally NOT silent: a failing build that
      * never advances would otherwise leave the JS poller spinning forever.
      *
+     * @param bool $forceRebuild  Diagnostic mode (?abj404_force_view_rebuild=1):
+     *   - skip the viewDoneIsServeable() short-circuit so we always run the
+     *     staged build under the caller's request context, making every
+     *     staged_build_s* sub-stage event visible in the AJAX debug log;
+     *   - wait up to 30s for the build lock so a sibling cron / tab build
+     *     finishes and we can take ownership of the next build cleanly;
+     *   - re-invalidate inside the locked region so we run a fresh build
+     *     rather than the data the prior lock holder just produced;
+     *   - reset the per-request once-guard so a force-rebuild always proceeds
+     *     even if a sibling code path already ran a build in this request.
+     *
      * @return array<string, mixed>
      */
-    public function advanceViewBuildOnce(): array {
-        if ($this->viewDoneIsServeable()) {
+    public function advanceViewBuildOnce(bool $forceRebuild = false): array {
+        if ($forceRebuild) {
+            // Allow the build to run even if a sibling read path on the same
+            // request already entered the once-guard; the diagnostic flow
+            // explicitly wants to rerun.
+            self::$viewBuildAlreadyRanThisRequest = false;
+        }
+        if (!$forceRebuild && $this->viewDoneIsServeable()) {
             return $this->getViewBuildProgress();
         }
-        if (!$this->acquireViewBuildLock()) {
+        // 10s wait when forced so a cron build mid-flight can release the
+        // lock before we take it. Without this, force-rebuild would return
+        // locked=true, the JS poller would back off, the cron build would
+        // finish in the background under no AJAX context, and the next
+        // poll would see view_done as fresh -- no stage diagnostics ever
+        // reach the debug log. 10s leaves comfortable headroom inside a
+        // 30s PHP request: the typical cron build completes in seconds,
+        // and if it doesn't we still return locked=true and the JS poller
+        // can retry on the next page load.
+        $lockTimeoutSeconds = $forceRebuild ? 10 : 0;
+        if (!$this->acquireViewBuildLock($lockTimeoutSeconds)) {
+            // Force-rebuild lock losses are interesting: a 10s wait that
+            // still failed means another build held the lock longer than
+            // expected (cron stuck, sibling tab mid-S2/S4/S5, dead session
+            // holding GET_LOCK). Always-locked is one of the symptoms
+            // Bruno/Troy report when their build never finishes, so log
+            // every miss with the path so we can tell which caller blocked.
+            $this->logger->debugMessage(sprintf(
+                '[staged] advanceViewBuildOnce: lock not acquired '
+                . '(forceRebuild=%s, waited up to %ds)',
+                $forceRebuild ? 'true' : 'false', $lockTimeoutSeconds
+            ));
             $progress = $this->getViewBuildProgress();
             $progress['locked'] = true;
             return $progress;
         }
         try {
+            if ($forceRebuild) {
+                // Whatever the prior lock holder produced (cron, sibling tab,
+                // a finished S11 swap) we discard inside the locked region
+                // so the rebuild happens fresh under the caller's request
+                // context. invalidateViewDone() also flips the per-request
+                // serveability cache so getViewBuildProgress() at the end
+                // reflects the rebuilt state, not the stale-cached one.
+                $this->invalidateViewDone();
+            }
             $isComplete = $this->runStagedBuildOnce();
         } finally {
             $this->releaseViewBuildLock();
@@ -366,10 +438,20 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
      */
     public function rebuildViewDoneInBackground(): void {
         if ($this->foregroundViewBuildLeaseActive()) {
+            $this->logger->debugMessage(
+                '[staged] rebuildViewDoneInBackground: deferring; '
+                . 'foreground build lease active. Rescheduled.'
+            );
             $this->scheduleViewDoneRebuild(ABJ_404_Solution_ViewBuildConfig::VIEW_BUILD_FOREGROUND_LEASE_SECONDS);
             return;
         }
-        if (!$this->acquireViewBuildLock()) { return; }
+        if (!$this->acquireViewBuildLock()) {
+            $this->logger->debugMessage(
+                '[staged] rebuildViewDoneInBackground: lock not acquired '
+                . '(another worker is building); skipping this cron tick.'
+            );
+            return;
+        }
         try {
             $isComplete = $this->runStagedBuildOnce();
             if (!$isComplete) {
@@ -426,6 +508,16 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
         if (!class_exists('ABJ_404_Solution_ViewUpdater')) {
             return;
         }
+        // Capture inner-loop batch markers ("batch 1282000/1971286",
+        // "batch ... (yielded)", "batch killed at size N; shrunk ...") so
+        // logTimedViewBuildStage() can preserve them in the per-stage yield
+        // marker. Skip strings that already contain ", yielded" so the final
+        // yield write does not loop back into the captured detail.
+        if ($detail !== ''
+            && strncmp($detail, 'batch ', 6) === 0
+            && strpos($detail, ', yielded') === false) {
+            $this->lastBatchProgressDetail = $detail;
+        }
         $label = $detail !== '' ? ($stageKey . ':' . $detail) : $stageKey;
         // The class is autoloaded by Loader.php; markInflightStage is a
         // best-effort no-op when no AJAX context exists.
@@ -447,6 +539,10 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
      */
     private function runTimedViewBuildStage(int $stageNumber, string $stageKey, callable $callback) {
         $started = microtime(true);
+        // Reset per-stage so a yield marker for this stage cannot accidentally
+        // pick up a prior stage's batch detail. Inner loops (S2/S4/S5)
+        // populate this via markBuildStage() as they emit "batch X/Y" lines.
+        $this->lastBatchProgressDetail = '';
         try {
             // Public extension point. Sites can hook this for telemetry, custom
             // progress dashboards, or chaos-testing the build's resume contract.
@@ -489,7 +585,17 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
      */
     private function logTimedViewBuildStage(int $stageNumber, string $stageKey, string $status, float $started): void {
         $elapsedMs = (int)round((microtime(true) - $started) * 1000);
-        $this->markBuildStage($stageKey, $status . ' in ' . $elapsedMs . ' ms');
+        $markerDetail = $status . ' in ' . $elapsedMs . ' ms';
+        // Preserve mid-stage batch progress in the user-visible yield marker
+        // so the polled status does not drop from "batch 1282000/1971286
+        // (yielded; tight time)" back to a bare "yielded in N ms" between
+        // ticks. Only applied to yield-class statuses; "completed" already
+        // reads cleanly without batch context.
+        if (($status === 'yielded' || $status === 'killed_resumable')
+            && $this->lastBatchProgressDetail !== '') {
+            $markerDetail = $this->lastBatchProgressDetail . ', ' . $markerDetail;
+        }
+        $this->markBuildStage($stageKey, $markerDetail);
         $this->logger->debugMessage(sprintf(
             '[staged] build stage %d/11 %s %s in %d ms',
             $stageNumber,
@@ -654,13 +760,34 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
             && (time() - $startedAt) < ABJ_404_Solution_ViewBuildConfig::VIEW_BUILD_RESUME_TTL_SECONDS
             && $bufferExists;
 
+        // Single line per advance request that pins down WHICH path was
+        // taken and why. On a build that takes hours across many requests,
+        // this is the entry point for any "stuck at stage N" investigation:
+        // a single grep for [staged] in the debug log shows whether each
+        // request was resuming, restarting, or skipping due to the per-request
+        // guard.
+        $currentStage = $this->readProgressOption('current_stage', 0);
         if (!$isResuming) {
+            $reason = ($startedAt <= 0)
+                ? 'no prior started_at'
+                : (!$bufferExists
+                    ? 'buffer table missing (prior crash or fresh install)'
+                    : ('prior build older than resume TTL ('
+                        . (time() - $startedAt) . 's elapsed)'));
+            $this->logger->debugMessage(sprintf(
+                '[staged] runStagedBuildOnce: fresh start (%s); current_stage=%d',
+                $reason, $currentStage
+            ));
             // Fresh start: scrap any partial state. An abandoned partial
             // build older than the resume TTL is not safe to continue;
             // wp_posts/wp_terms/wp_options state may have drifted.
             $this->clearAllProgressOptions();
             $this->dropTransientStagedTables();
         } else {
+            $this->logger->debugMessage(sprintf(
+                '[staged] runStagedBuildOnce: resuming (started_at=%d, %ds ago); current_stage=%d',
+                $startedAt, time() - $startedAt, $currentStage
+            ));
             // Resuming: drop only the leftover deleteme from a prior crashed
             // RENAME swap.  Keep the buffer + progress options intact.
             $this->dropDeletemeTable();
@@ -846,21 +973,35 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
         }
 
         $attempts = array(
-            $base,
-            $base . ' ENGINE=MyISAM',
-            $base . ' ENGINE=InnoDB',
+            'default' => $base,
+            'MyISAM'  => $base . ' ENGINE=MyISAM',
+            'InnoDB'  => $base . ' ENGINE=InnoDB',
         );
         $lastError = '';
+        $errorsSoFar = array();
         $opts = $this->stagedQueryOptions();
         $opts['log_errors'] = false;
-        foreach ($attempts as $sql) {
+        foreach ($attempts as $engineLabel => $sql) {
             $result = $this->queryAndGetResults($sql, $opts);
             $err = isset($result['last_error']) && is_string($result['last_error'])
                 ? trim($result['last_error']) : '';
             if ($err === '' && empty($result['timed_out'])) {
+                if ($engineLabel !== 'default') {
+                    // Default engine failed but a fallback won. Worth knowing
+                    // because hosts that need a fallback often have other
+                    // engine-specific quirks downstream (lock waits, ALTER
+                    // semantics, etc.).
+                    $this->logger->warn(sprintf(
+                        '[staged] S1 createViewBuildTable: default engine '
+                        . 'failed (%s); succeeded on fallback %s.',
+                        substr(implode('; ', $errorsSoFar), 0, 200),
+                        $engineLabel
+                    ));
+                }
                 return;
             }
             $lastError = $err !== '' ? $err : 'unknown';
+            $errorsSoFar[] = $engineLabel . ': ' . $lastError;
         }
         throw new \Exception('Could not create view build table on any storage engine: ' . $lastError);
     }
@@ -951,6 +1092,11 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
                     // Path B: batch genuinely too big at the host limit.
                     // Halve, persist, yield. Next tick uses smaller size.
                     $newSize = $this->recordStageBatchKilled('s2_batch_size');
+                    $this->logger->warn(sprintf(
+                        '[staged] S2 batch killed by host at size %d; '
+                        . 'shrunk s2_batch_size to %d. Trigger: %s',
+                        $batchSize, $newSize, substr($e->getMessage(), 0, 200)
+                    ));
                     $this->markBuildStage('staged_build_s2_insert',
                         'batch killed at size ' . $batchSize
                         . '; shrunk to ' . $newSize . ', yielded');
@@ -964,6 +1110,12 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
                 // (impossible given strict id-range semantics, but defensive).
                 // Treat as done; the read query will reflect whatever was
                 // captured.
+                $this->logger->warn(sprintf(
+                    '[staged] S2 stopping early: INSERT batch did not advance '
+                    . 'MAX(id) (loBound=%d, beforeMax=%d, afterMax=%d, '
+                    . 'copiedSoFar=%d, totalCount=%d). Treating as done.',
+                    $loBound, $beforeMax, $afterMax, $copiedSoFar, $totalCount
+                ));
                 break;
             }
             // Mirror MAX(id) into the option for diagnostics. This is
@@ -1128,6 +1280,12 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
             } catch (\Throwable $e) {
                 if ($this->isResumableStagedKill($e->getMessage())) {
                     $newSize = $this->recordStageBatchKilled($batchSizeKey);
+                    $this->logger->warn(sprintf(
+                        '[staged] %s batch killed by host at size %d; '
+                        . 'shrunk %s to %d. Trigger: %s',
+                        $stageKey, $batchSize, $batchSizeKey, $newSize,
+                        substr($e->getMessage(), 0, 200)
+                    ));
                     $this->markBuildStage($stageKey,
                         'batch killed at size ' . $batchSize
                         . '; shrunk to ' . $newSize . ', yielded');
@@ -1290,8 +1448,13 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
             $msg = $e->getMessage();
             if (stripos($msg, 'Duplicate key name') !== false
                 || stripos($msg, 'errno: 1061') !== false) {
-                // The index already exists from a prior partial run — that is
-                // the expected resume-time state, not a failure.
+                // The index already exists from a prior partial run; the
+                // expected resume-time state, not a failure. Log at debug so
+                // a "why did this stage take 0ms" question has an answer.
+                $this->logger->debugMessage(sprintf(
+                    '[staged] %s: index already exists, tolerated as resume.',
+                    $relativePath
+                ));
                 return;
             }
             throw $e;
@@ -1398,10 +1561,19 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
         return (time() - $builtAt) < ABJ_404_Solution_ViewBuildConfig::VIEW_DONE_FRESHNESS_TTL_SECONDS;
     }
 
-    /** @return bool */
-    private function acquireViewBuildLock(): bool {
+    /**
+     * @param int $timeoutSeconds  GET_LOCK wait-time. 0 (default) is the
+     *   non-blocking acquire used by every steady-state path: if cron or a
+     *   sibling tab holds the lock, we yield immediately so the caller can
+     *   return locked=true. Use a positive value only for the diagnostic
+     *   force-rebuild path, where we want to block until the in-flight
+     *   build releases so we can own the next one.
+     * @return bool
+     */
+    private function acquireViewBuildLock(int $timeoutSeconds = 0): bool {
         $name = $this->getLowercasePrefix() . ABJ_404_Solution_ViewBuildConfig::VIEW_DONE_BUILD_LOCK_NAME;
-        $sql = "SELECT GET_LOCK('" . esc_sql($name) . "', 0) AS got";
+        $timeout = max(0, $timeoutSeconds);
+        $sql = "SELECT GET_LOCK('" . esc_sql($name) . "', " . $timeout . ") AS got";
         $result = $this->queryAndGetResults($sql, array('log_errors' => false));
         $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
         if (empty($rows) || !is_array($rows[0])) {

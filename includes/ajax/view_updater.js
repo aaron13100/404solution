@@ -451,18 +451,6 @@ function abj404PollViewBuildAdvance(config) {
         ].join('|');
     };
 
-    var formatProgressMessage = function(progress) {
-        if (!progress || typeof progress !== 'object') {
-            return 'Building redirects view...';
-        }
-        var stage = parseInt(progress.stage, 10) || 0;
-        var of = parseInt(progress.of, 10) || 11;
-        var text = (typeof progress.progress_text === 'string' && progress.progress_text)
-            ? progress.progress_text
-            : ('stage ' + stage + '/' + of);
-        return 'Preparing redirects view (' + text + ')';
-    };
-
     var fireOnce = function() {
         if (stopped) {
             return;
@@ -524,7 +512,12 @@ function abj404PollViewBuildAdvance(config) {
                 lastFingerprintKey = fingerprintKey;
                 lastProgressTickAtMs = Date.now();
             }
-            jQuery('.abj404-refresh-status').text(formatProgressMessage(progress));
+            // Visible status text is owned by abj404StartStageProgressPolling,
+            // which reads the inflight transient and shows the live mid-stage
+            // detail (batch X/Y, yielded in N ms). Writing here from
+            // progress.stage (a snapshot of the lagging current_stage option)
+            // raced with that poller and made the displayed stage flicker
+            // backwards when a stage was yielding mid-batch.
             abj404UpdateAjaxDebugLog('View build advance: ' + (progress.progress_text || ''), {
                 status: status,
                 stage: progress.stage,

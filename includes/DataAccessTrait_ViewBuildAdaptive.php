@@ -156,8 +156,20 @@ trait ABJ_404_Solution_DataAccess_ViewBuildAdaptiveTrait {
      *     before the host silent kill, giving us a clean classifiable
      *     error rather than a dropped connection)
      *
-     * Floored at 5s so trivial probes always have headroom. When the
-     * host has no limit set, only the per-stage budget applies.
+     * Floored at 1s. The whole point of the function is to fire OUR
+     * kill before the host's; with the prior 5s floor, on hosts with
+     * `max_statement_time = 3` we would emit a 5s hint that the host
+     * pre-empts at 3s, defeating the classifiable-kill design. 1s is
+     * the smallest sensible floor (sub-second queries are noise) but
+     * still lets the function honor genuinely-tight host limits.
+     * (2026-05-08, deadline-math-audit-2026-05-08.md concern #2.)
+     *
+     * Our-limit floor stays at 5s: that one represents "this query
+     * is so small that the per-stage budget overhead dominates" and
+     * has nothing to do with the host kill. The host-limit code path
+     * uses 1s.
+     *
+     * When the host has no limit set, only the per-stage budget applies.
      *
      * @return float  Seconds.
      */
@@ -165,7 +177,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildAdaptiveTrait {
         $ourLimit = max(5.0, (float)$this->viewBuildPerStageBudgetSeconds() - 2.0);
         $hostLimit = $this->detectHostStagedQueryLimitSeconds();
         if ($hostLimit > 0.0) {
-            return max(5.0, min($ourLimit, $hostLimit - 1.0));
+            return max(1.0, min($ourLimit, $hostLimit - 1.0));
         }
         return $ourLimit;
     }
