@@ -88,5 +88,19 @@ final class ABJ_404_Solution_ViewBuildConfig {
 
     const VIEW_BUILD_FOREGROUND_LEASE_SECONDS = 120;
 
+    /**
+     * Cap on the per-query SET STATEMENT max_statement_time hint applied
+     * to a non-batched stage (S3 / S9 / S10) on retry after a kill. The
+     * hint is also bounded by the request's remaining PHP execution time
+     * minus a 2s safety margin -- this constant is the absolute ceiling
+     * regardless of how much PHP time is left.
+     *
+     * 240s matches the JS poller's no-progress deadline: if a single
+     * non-batched query needs longer than that, the user-facing UI gives
+     * up anyway, so giving the query more time would only delay the
+     * eventual failure.
+     */
+    const VIEW_BUILD_NON_BATCHED_KILL_RETRY_CAP_SECONDS = 240;
+
     private function __construct() {}
 }

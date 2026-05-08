@@ -181,4 +181,41 @@ trait ABJ_404_Solution_DataAccess_ViewBuildAdaptiveTrait {
         }
         return $ourLimit;
     }
+
+    /**
+     * Per-query timeout for the next attempt of a non-batched stage that
+     * has been killed at least once already. When the persisted streak is
+     * 0 (no prior kill on this stage in the current build) returns the
+     * normal intelligent timeout; otherwise returns an extended timeout
+     * that intentionally overrides the host's session max_statement_time.
+     *
+     * The override works because MariaDB 10.1+ honors
+     * `SET STATEMENT max_statement_time=N FOR <query>` even when N is
+     * larger than the session limit: SET STATEMENT scopes the override
+     * to the wrapped statement only. Without this, S3 / S9 / S10 -- the
+     * non-batched stages -- would hit the host limit and retry with the
+     * same timeout forever, looping with no escape valve (the batched
+     * stages have one in the form of adaptive batch shrink; non-batched
+     * stages don't, so we extend in the time dimension instead).
+     *
+     * Bounded by:
+     *   - VIEW_BUILD_NON_BATCHED_KILL_RETRY_CAP_SECONDS (absolute ceiling)
+     *   - phpTimeRemainingSeconds() - 2.0 (so the request returns inside
+     *     PHP max_execution_time even if the query still gets killed)
+     *   - max(1.0, ...) so we never ship a non-positive hint
+     *
+     * @param string $stageKillStreakOptKey  Progress option key name,
+     *   e.g. 's3_kill_streak'. Production callers register the key in
+     *   the staged trait's progress option name map.
+     * @return int  Seconds.
+     */
+    private function extendedTimeoutForKilledNonBatchedStage(string $stageKillStreakOptKey): int {
+        $streak = $this->readProgressOption($stageKillStreakOptKey, 0);
+        if ($streak <= 0) {
+            return (int)round($this->intelligentStagedQueryTimeoutSeconds());
+        }
+        $cap = (float)ABJ_404_Solution_ViewBuildConfig::VIEW_BUILD_NON_BATCHED_KILL_RETRY_CAP_SECONDS;
+        $phpRemaining = max(1.0, $this->phpTimeRemainingSeconds() - 2.0);
+        return (int)round(max(1.0, min($cap, $phpRemaining)));
+    }
 }

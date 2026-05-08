@@ -90,6 +90,16 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
         's2_batch_size' => 'abj404_view_build_s2_batch_size',
         's4_batch_size' => 'abj404_view_build_s4_batch_size',
         's5_batch_size' => 'abj404_view_build_s5_batch_size',
+        // Per-stage consecutive kill counter for non-batched stages
+        // (S3 / S9 / S10). Incremented when a stage's single SQL
+        // statement is killed by the host (max_statement_time, gone-away,
+        // lock-wait); reset to 0 when the stage completes. When > 0 the
+        // next attempt for that stage uses an extended SET STATEMENT
+        // timeout that overrides the host's session limit -- the
+        // non-batched analog of adaptive batch shrink.
+        's3_kill_streak'  => 'abj404_view_build_s3_kill_streak',
+        's9_kill_streak'  => 'abj404_view_build_s9_kill_streak',
+        's10_kill_streak' => 'abj404_view_build_s10_kill_streak',
     );
 
     /** @return void */
@@ -577,6 +587,58 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
     }
 
     /**
+     * Run a non-batched stage (S3 / S9 / S10) with the kill-streak
+     * escape valve applied. Behaves like runTimedViewBuildStage() except:
+     *
+     *   - Before invoking the stage, looks up the persisted kill streak
+     *     for $streakOptKey. If >= 1, swaps in an extended per-query
+     *     timeout (extendedTimeoutForKilledNonBatchedStage) so the
+     *     SET STATEMENT max_statement_time hint can exceed the host's
+     *     session limit on retry.
+     *   - On `false` return (resumable kill), increments the streak so
+     *     the next request resumes with the extended timeout already in
+     *     effect.
+     *   - On any non-`false` return (completed or 'skipped'), resets the
+     *     streak to 0 -- the next rebuild starts fresh.
+     *
+     * The original $stagedQueryTimeoutSeconds is restored before
+     * returning so subsequent stages run with their own intelligent
+     * timeout, not the extended one (which was only meant for the
+     * stuck non-batched stage).
+     *
+     * @param int      $stageNumber   1-based staged build number.
+     * @param string   $stageKey      Stable stage key for AJAX progress.
+     * @param string   $streakOptKey  Progress option key, e.g. 's3_kill_streak'.
+     * @param callable $callback
+     * @return bool|string  Forwards runTimedViewBuildStage's return:
+     *                      true on completion, false on resumable kill,
+     *                      'skipped' when the stage skipped itself.
+     */
+    private function runNonBatchedStageWithKillStreakEscape(
+        int $stageNumber,
+        string $stageKey,
+        string $streakOptKey,
+        callable $callback
+    ) {
+        $savedTimeout = $this->stagedQueryTimeoutSeconds;
+        $this->stagedQueryTimeoutSeconds = $this->extendedTimeoutForKilledNonBatchedStage($streakOptKey);
+        try {
+            $result = $this->runTimedViewBuildStage($stageNumber, $stageKey, $callback);
+        } finally {
+            $this->stagedQueryTimeoutSeconds = $savedTimeout;
+        }
+        if ($result === false) {
+            $this->writeProgressOption(
+                $streakOptKey,
+                $this->readProgressOption($streakOptKey, 0) + 1
+            );
+        } else {
+            $this->writeProgressOption($streakOptKey, 0);
+        }
+        return $result;
+    }
+
+    /**
      * @param int $stageNumber
      * @param string $stageKey
      * @param string $status
@@ -832,9 +894,14 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
 
         if ($stage < 3) {
             $this->markBuildStage('staged_build_s3_index_fd');
-            if ($this->runTimedViewBuildStage(3, 'staged_build_s3_index_fd', function () {
-                $this->stageAddPreJoinIndexes();
-            }) === false) {
+            // Non-batched: kill-streak escape valve extends the per-query
+            // timeout above the host's session limit on retry. Without
+            // this, a CREATE INDEX that exceeds max_statement_time on
+            // big buffers loops with the same timeout forever.
+            if ($this->runNonBatchedStageWithKillStreakEscape(
+                3, 'staged_build_s3_index_fd', 's3_kill_streak',
+                function () { $this->stageAddPreJoinIndexes(); }
+            ) === false) {
                 return false; // host killed S3; next tick resumes from S3
             }
             $this->writeProgressOption('current_stage', 3);
@@ -895,15 +962,23 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
         }
 
         if ($stage < 9) {
-            $s9Result = $this->runTimedViewBuildStage(9, 'staged_build_s9_update_hits', function () {
-                if ($this->logsHitsTableExists()) {
-                    $this->markBuildStage('staged_build_s9_update_hits');
-                    $this->stageUpdateHits();
-                    return null;
+            // Non-batched: temp-table aggregate over wp_abj404_logs_hits +
+            // UPDATE JOIN against the buffer. Kill-streak escape valve
+            // extends the per-query timeout on retry so a logs_hits scan
+            // that doesn't fit in the host's max_statement_time can
+            // eventually finish.
+            $s9Result = $this->runNonBatchedStageWithKillStreakEscape(
+                9, 'staged_build_s9_update_hits', 's9_kill_streak',
+                function () {
+                    if ($this->logsHitsTableExists()) {
+                        $this->markBuildStage('staged_build_s9_update_hits');
+                        $this->stageUpdateHits();
+                        return null;
+                    }
+                    $this->markBuildStage('staged_build_s9_update_hits', 'skipped; logs hits table unavailable');
+                    return 'skipped';
                 }
-                $this->markBuildStage('staged_build_s9_update_hits', 'skipped; logs hits table unavailable');
-                return 'skipped';
-            });
+            );
             if ($s9Result === false) {
                 return false; // host killed S9; next tick resumes from S9
             }
@@ -914,9 +989,13 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
 
         if ($stage < 10) {
             $this->markBuildStage('staged_build_s10_index_sort');
-            if ($this->runTimedViewBuildStage(10, 'staged_build_s10_index_sort', function () {
-                $this->stageAddSortIndexes();
-            }) === false) {
+            // Non-batched: same kill-streak escape valve as S3 -- a
+            // CREATE INDEX that exceeds the host's max_statement_time on
+            // big buffers needs an extended retry timeout to complete.
+            if ($this->runNonBatchedStageWithKillStreakEscape(
+                10, 'staged_build_s10_index_sort', 's10_kill_streak',
+                function () { $this->stageAddSortIndexes(); }
+            ) === false) {
                 return false; // host killed S10; next tick resumes from S10
             }
             $this->writeProgressOption('current_stage', 10);
