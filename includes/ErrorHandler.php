@@ -404,6 +404,17 @@ class ABJ_404_Solution_ErrorHandler {
             return false;
         }
 
+        // Defensive: error_get_last() during an OOM fatal can return a 'message'
+        // field that contains the full crash context (gigabytes on a runaway
+        // memory exhaustion). json_encoding that downstream then OOMs the
+        // shutdown handler itself. Cap the message length so the handler
+        // never fails recursively due to its own logging path.
+        if (isset($lasterror['message']) && is_string($lasterror['message'])
+            && strlen($lasterror['message']) > 8192) {
+            $lasterror['message'] = substr($lasterror['message'], 0, 8192)
+                . '... (truncated; original length ' . strlen($lasterror['message']) . ' bytes)';
+        }
+
         $ctx = isset($GLOBALS['abj404_ajax_context']) && is_array($GLOBALS['abj404_ajax_context'])
             ? $GLOBALS['abj404_ajax_context'] : null;
 

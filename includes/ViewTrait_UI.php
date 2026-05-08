@@ -187,7 +187,19 @@ trait ViewTrait_UI {
         if (!is_object($this->dao) || !method_exists($this->dao, 'getViewDoneBuiltAtTimestamp')) {
             return 'n/a';
         }
-        $builtAt = (int)$this->dao->getViewDoneBuiltAtTimestamp();
+        // Defensive: a unit-test DAO may be a Mockery mock that throws
+        // BadMethodCallException when called without an expectation; any
+        // future DAO implementation could also throw on a transient read
+        // failure. The freshness label is a footer cosmetic. Treat any
+        // failure as n/a so it never blocks the page render. Without this
+        // try/catch, dozens of pre-existing unit tests that mock the DAO
+        // without explicitly stubbing this method threw on every footer
+        // render.
+        try {
+            $builtAt = (int)$this->dao->getViewDoneBuiltAtTimestamp();
+        } catch (\Throwable $e) {
+            return 'n/a';
+        }
         if ($builtAt <= 0) {
             return 'n/a';
         }
