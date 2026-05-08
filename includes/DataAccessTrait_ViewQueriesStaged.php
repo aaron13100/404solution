@@ -610,9 +610,11 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
      * @param string   $stageKey      Stable stage key for AJAX progress.
      * @param string   $streakOptKey  Progress option key, e.g. 's3_kill_streak'.
      * @param callable $callback
-     * @return bool|string  Forwards runTimedViewBuildStage's return:
-     *                      true on completion, false on resumable kill,
-     *                      'skipped' when the stage skipped itself.
+     * @return mixed   Forwards runTimedViewBuildStage's return value:
+     *                 typically true|null on completion, false on
+     *                 resumable kill, 'skipped' when the callback
+     *                 self-skips (S9 with no logs_hits table). Callers
+     *                 only check `=== false` so the broader type is fine.
      */
     private function runNonBatchedStageWithKillStreakEscape(
         int $stageNumber,
