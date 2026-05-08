@@ -3757,6 +3757,10 @@ msgstr "Время загрузки AJAX"
 msgid "Debug Info"
 msgstr "Отладочная информация"
 
+#: includes/html/adminFooter.html
+msgid "Cache view freshness"
+msgstr "Актуальность кэшированного представления"
+
 msgid "Preparing table data in the background."
 msgstr "Подготовка данных таблицы в фоновом режиме."
 

@@ -3763,6 +3763,10 @@ msgstr "AJAX 読み込み時間"
 msgid "Debug Info"
 msgstr "デバッグ情報"
 
+#: includes/html/adminFooter.html
+msgid "Cache view freshness"
+msgstr "キャッシュビューの鮮度"
+
 msgid "Preparing table data in the background."
 msgstr "バックグラウンドでテーブルデータを準備しています。"
 

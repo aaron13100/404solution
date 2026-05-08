@@ -3750,6 +3750,10 @@ msgstr "Tempos de carregamento AJAX"
 msgid "Debug Info"
 msgstr "Informações de depuração"
 
+#: includes/html/adminFooter.html
+msgid "Cache view freshness"
+msgstr "Atualização da visualização em cache"
+
 msgid "Preparing table data in the background."
 msgstr "Preparando os dados da tabela em segundo plano."
 

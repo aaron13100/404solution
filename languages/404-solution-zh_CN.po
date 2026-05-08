@@ -3756,6 +3756,10 @@ msgstr "AJAX 加载时间"
 msgid "Debug Info"
 msgstr "调试信息"
 
+#: includes/html/adminFooter.html
+msgid "Cache view freshness"
+msgstr "缓存视图新鲜度"
+
 msgid "Preparing table data in the background."
 msgstr "正在后台准备表格数据。"
 

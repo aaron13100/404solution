@@ -3779,6 +3779,10 @@ msgstr "أوقات تحميل AJAX"
 msgid "Debug Info"
 msgstr "معلومات التصحيح"
 
+#: includes/html/adminFooter.html
+msgid "Cache view freshness"
+msgstr "حداثة عرض ذاكرة التخزين المؤقت"
+
 msgid "Preparing table data in the background."
 msgstr "جارٍ تحضير بيانات الجدول في الخلفية."
 
