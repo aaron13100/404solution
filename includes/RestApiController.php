@@ -532,7 +532,7 @@ class ABJ_404_Solution_RestApiController {
         // Check for an existing redirect stored in the database.
         $redirect = $this->dao->getExistingRedirectForURL($normalizedUrl);
 
-        if (!is_array($redirect) || empty($redirect) || !isset($redirect['id']) || intval($redirect['id']) === 0) {
+        if (!is_array($redirect) || empty($redirect) || !isset($redirect['id']) || !is_scalar($redirect['id']) || intval($redirect['id']) === 0) {
             // Also check regex redirects.
             $regexRedirects = $this->dao->getRedirectsWithRegEx();
             $matchedRegex   = null;
