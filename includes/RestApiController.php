@@ -438,18 +438,31 @@ class ABJ_404_Solution_RestApiController {
             $redirects = isset($data['redirects']) && is_array($data['redirects']) ? $data['redirects'] : array();
             $captured  = isset($data['captured']) && is_array($data['captured']) ? $data['captured'] : array();
 
+            // Resolve each key once via `??` so the array access is bounded
+            // and Undefined-array-key warnings do not fire on a fresh-install
+            // state where the snapshot keys are absent. The ternary form
+            // `is_scalar($x['k'] ?? 0) ? $x['k'] : 0` reads the key twice
+            // and triggers the warning on the truthy branch.
+            $rAuto301   = $redirects['auto301']   ?? 0;
+            $rAuto302   = $redirects['auto302']   ?? 0;
+            $rManual301 = $redirects['manual301'] ?? 0;
+            $rManual302 = $redirects['manual302'] ?? 0;
+            $rTrashed   = $redirects['trashed']   ?? 0;
+            $cCaptured  = $captured['captured']   ?? 0;
+            $cIgnored   = $captured['ignored']    ?? 0;
+            $cTrashed   = $captured['trashed']    ?? 0;
             $stats = array(
                 'redirects' => array(
-                    'auto_301'   => intval(is_scalar($redirects['auto301'] ?? 0) ? $redirects['auto301'] : 0),
-                    'auto_302'   => intval(is_scalar($redirects['auto302'] ?? 0) ? $redirects['auto302'] : 0),
-                    'manual_301' => intval(is_scalar($redirects['manual301'] ?? 0) ? $redirects['manual301'] : 0),
-                    'manual_302' => intval(is_scalar($redirects['manual302'] ?? 0) ? $redirects['manual302'] : 0),
-                    'trashed'    => intval(is_scalar($redirects['trashed'] ?? 0) ? $redirects['trashed'] : 0),
+                    'auto_301'   => intval(is_scalar($rAuto301)   ? $rAuto301   : 0),
+                    'auto_302'   => intval(is_scalar($rAuto302)   ? $rAuto302   : 0),
+                    'manual_301' => intval(is_scalar($rManual301) ? $rManual301 : 0),
+                    'manual_302' => intval(is_scalar($rManual302) ? $rManual302 : 0),
+                    'trashed'    => intval(is_scalar($rTrashed)   ? $rTrashed   : 0),
                 ),
                 'captured' => array(
-                    'captured' => intval(is_scalar($captured['captured'] ?? 0) ? $captured['captured'] : 0),
-                    'ignored'  => intval(is_scalar($captured['ignored'] ?? 0) ? $captured['ignored'] : 0),
-                    'trashed'  => intval(is_scalar($captured['trashed'] ?? 0) ? $captured['trashed'] : 0),
+                    'captured' => intval(is_scalar($cCaptured) ? $cCaptured : 0),
+                    'ignored'  => intval(is_scalar($cIgnored)  ? $cIgnored  : 0),
+                    'trashed'  => intval(is_scalar($cTrashed)  ? $cTrashed  : 0),
                 ),
             );
 

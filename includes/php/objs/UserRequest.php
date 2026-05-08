@@ -47,7 +47,7 @@ class ABJ_404_Solution_UserRequest {
         $f = abj_service('functions');
         $abj404logic = abj_service('plugin_logic');
         
-        $urlToParse = $f->normalizeUrlString($_SERVER['REQUEST_URI']);
+        $urlToParse = $f->normalizeUrlString($_SERVER['REQUEST_URI'] ?? '');
       	
         // if the user somehow requested an invalid URL that's too long then fix it.
         if ($f->strlen($urlToParse) > ABJ404_MAX_URL_LENGTH) {
