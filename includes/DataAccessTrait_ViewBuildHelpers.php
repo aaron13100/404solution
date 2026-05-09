@@ -614,12 +614,128 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
 
     /** @return void */
     private function scheduleViewDoneRebuild(int $delaySeconds = 1): void {
-        if (function_exists('wp_next_scheduled') && function_exists('wp_schedule_single_event')) {
-            $hook = 'abj404_rebuildViewDone';
-            $next = wp_next_scheduled($hook);
-            if ($next === false) {
-                wp_schedule_single_event(time() + max(1, intval($delaySeconds)), $hook);
-            }
+        if (!function_exists('wp_next_scheduled') || !function_exists('wp_schedule_single_event')) {
+            return;
         }
+        $hook = 'abj404_rebuildViewDone';
+        // DISABLE_WP_CRON: wp_schedule_single_event still returns true (the
+        // event is registered in the option) but no PHP process advances it
+        // unless an external cron hits wp-cron.php. Same failure mode the
+        // N-gram subsystem detects at DatabaseUpgradesEtcTrait_NGram.php:53.
+        // Surface a deduplicated admin notice so the build is not silently
+        // stuck, then continue scheduling so a manual admin trigger or
+        // external cron can still pick the event up.
+        if (defined('DISABLE_WP_CRON') && constant('DISABLE_WP_CRON')) {
+            $this->setViewBuildCronStuckNotice();
+        }
+        $next = wp_next_scheduled($hook);
+        if ($next !== false) {
+            return;
+        }
+        // Pass wp_error=true so a failed schedule returns a WP_Error we can
+        // route into a notice instead of silently dropping. WP cron schedule
+        // can fail when the cron lock is held, the cron option is unwritable,
+        // or a custom cron implementation rejects the event.
+        $scheduled = wp_schedule_single_event(
+            time() + max(1, intval($delaySeconds)),
+            $hook,
+            array(),
+            true
+        );
+        $isError = (function_exists('is_wp_error') && is_wp_error($scheduled));
+        if ($scheduled === false || $isError) {
+            $detail = '';
+            if ($isError && is_object($scheduled) && method_exists($scheduled, 'get_error_message')) {
+                $detail = (string)$scheduled->get_error_message();
+            } elseif ($isError && is_object($scheduled) && isset($scheduled->errors) && is_array($scheduled->errors)) {
+                $firstKey = array_key_first($scheduled->errors);
+                $detail = $firstKey !== null ? (string)$firstKey : '';
+            }
+            $this->setViewBuildScheduleFailedNotice($detail);
+        }
+    }
+
+    /**
+     * Deduplicated admin notice (24h transient) telling the admin that
+     * WP-Cron is disabled so the staged view-build will not advance unless
+     * an external cron is configured or the admin reopens the Redirects
+     * screen. Companion to the N-gram subsystem detection.
+     *
+     * @return void
+     */
+    private function setViewBuildCronStuckNotice(): void {
+        if (!function_exists('set_transient')) {
+            return;
+        }
+        $key = 'abj404_view_build_stuck_wp_cron_disabled';
+        if (function_exists('get_transient') && get_transient($key) !== false) {
+            return; // dedup window still active
+        }
+        $payload = array(
+            'type'         => 'view_build_stuck_cron_disabled',
+            'message'      => $this->localizeOrDefaultViewBuildNotice(
+                'WordPress cron is disabled (DISABLE_WP_CRON) and no external '
+                . 'cron has been observed running wp-cron.php recently. The 404 '
+                . 'Solution staged view-build will not advance in the background '
+                . 'until cron runs. To resolve: either remove DISABLE_WP_CRON from '
+                . 'wp-config.php, or configure a system cron job that requests '
+                . 'wp-cron.php every few minutes.'
+            ),
+            'timestamp'    => time(),
+            'error_string' => '',
+        );
+        set_transient($key, $payload, 86400);
+    }
+
+    /**
+     * Deduplicated admin notice (24h transient) when wp_schedule_single_event
+     * itself returns false / WP_Error -- the cron lock is held, the cron
+     * option is unwritable, or a custom cron implementation rejected the
+     * event. Distinct from the DISABLE_WP_CRON case: scheduling itself
+     * failed, so the build will not advance even with external cron.
+     *
+     * @param string $detail
+     * @return void
+     */
+    private function setViewBuildScheduleFailedNotice(string $detail): void {
+        if (!function_exists('set_transient')) {
+            return;
+        }
+        $key = 'abj404_view_build_cron_schedule_failed';
+        if (function_exists('get_transient') && get_transient($key) !== false) {
+            return; // dedup window still active
+        }
+        $message = 'Scheduling the 404 Solution staged view-build cron event failed. '
+            . 'The build will not advance in the background until this clears. '
+            . 'This usually indicates the WordPress cron lock is held, the cron '
+            . 'option is unwritable, or a custom cron implementation rejected '
+            . 'the event. Check your hosting provider and any cron-replacement '
+            . 'plugins.';
+        if ($detail !== '') {
+            $message .= ' (' . $detail . ')';
+        }
+        $payload = array(
+            'type'         => 'view_build_schedule_failed',
+            'message'      => $this->localizeOrDefaultViewBuildNotice($message),
+            'timestamp'    => time(),
+            'error_string' => $detail,
+        );
+        set_transient($key, $payload, 86400);
+    }
+
+    /**
+     * Tiny helper so the staged-build notices read the same way as the
+     * existing setPluginDbNotice() copy: call __() when WordPress is loaded,
+     * otherwise return the raw English. Kept local to the trait because
+     * setPluginDbNotice's localizeOrDefault() is private to DataAccess.php.
+     *
+     * @param string $text
+     * @return string
+     */
+    private function localizeOrDefaultViewBuildNotice(string $text): string {
+        if (function_exists('__')) {
+            return __($text, '404-solution');
+        }
+        return $text;
     }
 }

@@ -476,6 +476,10 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
             }
         }
         $this->invalidateViewDoneServeableCache();
+        // Kick off a background rebuild and surface any cron-stuck /
+        // schedule-failure conditions to the admin via deduplicated notice.
+        // scheduleViewDoneRebuild() is idempotent (checks wp_next_scheduled).
+        $this->scheduleViewDoneRebuild();
     }
 
     /**
