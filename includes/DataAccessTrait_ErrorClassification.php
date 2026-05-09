@@ -243,6 +243,26 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
             stripos($errorText, 'max_statement_time') !== false);
     }
 
+    /**
+     * Detect MySQL/MariaDB max_allowed_packet errors. Default error message:
+     * "Got a packet bigger than 'max_allowed_packet' bytes" (errno 1153).
+     * Routed by the staged-build orchestrator into batch-shrink recovery so
+     * a host with a small packet limit doesn't loop forever on the same
+     * oversized INSERT.
+     *
+     * @param string $errorText
+     * @return bool
+     */
+    private function isPacketTooLarge(string $errorText): bool {
+        if (!is_string($errorText) || $errorText === '') {
+            return false;
+        }
+        $lower = strtolower($errorText);
+        return ($this->f->strpos($lower, 'max_allowed_packet') !== false ||
+            $this->f->strpos($lower, 'got a packet bigger') !== false ||
+            $this->f->strpos($lower, '1153') !== false);
+    }
+
     /** @param string $errorText @return bool */
     private function isDeadlockOrLockTimeoutError(string $errorText): bool {
         if (!is_string($errorText) || $errorText === '') {
@@ -366,6 +386,14 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
         // substring (server-side KILL QUERY, client cancellation, replica
         // failover). Same resume semantics.
         if (stripos($errorText, 'query execution was interrupted') !== false) {
+            return true;
+        }
+        // max_allowed_packet exceeded: the next tick's batch-shrink path
+        // will halve the batch size and retry, exactly like a host-killed
+        // batch. Without this, an oversized INSERT loops with the same
+        // packet error and never converges (same infinite-retry shape as
+        // the access-denied bug pre-classifier).
+        if ($this->isPacketTooLarge($errorText)) {
             return true;
         }
         return false;

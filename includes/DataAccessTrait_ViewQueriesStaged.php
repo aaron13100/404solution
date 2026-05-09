@@ -877,6 +877,13 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
             // Capture $wpdb->prefix BEFORE the S1 callback so subsequent
             // stage entries can detect a mid-build switch_to_blog().
             $this->capturePrefixAtBuildStart();
+            // Probe sql_mode + max_allowed_packet for THIS connection. The
+            // probe persists in `view_build_state` and (best-effort) clears
+            // STRICT_TRANS_TABLES / ONLY_FULL_GROUP_BY for the build session
+            // so any future query the build adds inherits non-strict
+            // semantics. The S2 INSERT is already strict-safe via REGEXP-
+            // guarded CAST so this is belt-and-suspenders for new code.
+            $this->probeSqlModeForBuild();
             $this->logger->debugMessage(sprintf(
                 '[staged] runStagedBuildOnce: capturing prefix at S1 entry: prefix=%s',
                 $this->capturedPrefixForLog()
