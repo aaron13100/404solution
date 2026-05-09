@@ -352,6 +352,17 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
                 // failure. The admin pressed "rebuild" explicitly, so
                 // re-attempting denied DDL is the intended action.
                 $this->clearStagedBuildDegradedState();
+            } else {
+                // Same runner-startup reconciliation as the cron entry: an
+                // AJAX advance picking up after a previous crash must
+                // preserve the buffer S2-S10 already built rather than
+                // throwing it away to start over. Force-rebuild skips
+                // this because the admin explicitly asked to rebuild
+                // from scratch.
+                $reconcileResult = $this->reconcileStagedTablesAtRunnerStartup();
+                if ($reconcileResult === 'promoted') {
+                    return $this->getViewBuildProgress();
+                }
             }
             $isComplete = $this->runStagedBuildOnce();
         } finally {
@@ -440,6 +451,20 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
             return;
         }
         try {
+            // Runner-startup reconciliation: clean up inconsistent staged-
+            // table state from a previous run that crashed mid-S11 or was
+            // OOM-killed before the swap option write. Runs BEFORE
+            // runStagedBuildOnce() so its halt-gate / once-guard short-
+            // circuits cannot suppress the cleanup, and it can short-
+            // circuit the rebuild itself when it manages to recover the
+            // previous run's buffer in place.
+            $reconcileResult = $this->reconcileStagedTablesAtRunnerStartup();
+            if ($reconcileResult === 'promoted') {
+                // The previous run's view_build was renamed to view_done
+                // in place; freshness is recorded; view_done is now
+                // serveable. No need to re-run the staged build this tick.
+                return;
+            }
             $isComplete = $this->runStagedBuildOnce();
             if (!$isComplete) {
                 // Build yielded mid-stage; schedule another tick to continue.
@@ -454,6 +479,224 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
         } finally {
             $this->releaseViewBuildLock();
         }
+    }
+
+    /**
+     * Reconcile staged-build table state from a previous run that ended
+     * in an inconsistent place, before this run's stages execute. Called
+     * from rebuildViewDoneInBackground() AFTER the build lock is
+     * acquired (so we cannot race a sibling worker on the same site)
+     * and BEFORE runStagedBuildOnce() (so the staged orchestrator sees
+     * a clean starting state regardless of which entry path took the
+     * lock).
+     *
+     * Cases handled:
+     *
+     *   1. Orphan `{wp_abj404_view_deleteme}` from a prior crashed S11
+     *      swap (or a critical-stage halt that left the previous run's
+     *      deleteme on disk). Drop it. Always safe; deleteme is a
+     *      transient by design.
+     *
+     *   2. `{wp_abj404_view_build}` exists, `{wp_abj404_view_done}` does
+     *      NOT, AND no resumable build progress is recorded: the
+     *      previous run completed S2-S10 but crashed before the S11
+     *      RENAME swap published the buffer. Promote the buffer in
+     *      place via `RENAME TABLE view_build TO view_done`, mark
+     *      fresh, clear progress. Preserves the work of S2-S10 instead
+     *      of throwing it away.
+     *
+     *   3. Both `{wp_abj404_view_build}` and `{wp_abj404_view_done}`
+     *      exist, AND no resumable build progress is recorded: the
+     *      previous run halted between stages with both tables on
+     *      disk. Treat view_done as the live one and drop view_build
+     *      so the next fresh build starts from a known empty buffer.
+     *
+     * Resumable progress = `started_at` within
+     * VIEW_BUILD_RESUME_TTL_SECONDS AND `current_stage` > 0. When a
+     * resumable build is in flight we leave view_build alone so the
+     * next tick can continue from the persisted high-water id (cases
+     * 2 and 3 are skipped; case 1 still runs).
+     *
+     * Reconciliation actions are best-effort: when DROP / RENAME is
+     * denied by the host (privilege loss between runs), surface a
+     * deduplicated admin notice naming the specific tables and
+     * recommending manual cleanup. The build then falls through to
+     * runStagedBuildOnce() which will hit its own host-failure
+     * classifier.
+     *
+     * @return string  One of:
+     *                 'none'     - no reconciliation needed.
+     *                 'cleaned'  - orphan tables dropped; build can proceed.
+     *                 'promoted' - view_build was renamed to view_done;
+     *                              view_done is fresh; rebuild can be
+     *                              skipped this tick.
+     *                 'failed'   - reconciliation could not complete
+     *                              (privilege denied); admin notice set.
+     */
+    public function reconcileStagedTablesAtRunnerStartup(): string {
+        $deletemeTable = $this->viewDeletemeTableName();
+        $buildTable    = $this->viewBuildTableName();
+        $doneTable     = $this->viewDoneTableName();
+
+        $action = 'none';
+        $haveDeleteme = $this->stagedTableExists($deletemeTable);
+
+        if ($haveDeleteme) {
+            $r = $this->queryAndGetResults(
+                'DROP TABLE IF EXISTS `' . $deletemeTable . '`',
+                array('log_errors' => false)
+            );
+            $err = isset($r['last_error']) && is_string($r['last_error']) ? trim($r['last_error']) : '';
+            if ($err === '' || !$this->stagedTableExists($deletemeTable)) {
+                $this->logger->infoMessage(sprintf(
+                    '[staged] reconcile: dropped orphan view_deleteme `%s` from a previous failed run',
+                    $deletemeTable
+                ));
+                $action = 'cleaned';
+            } else {
+                $this->logger->warn(sprintf(
+                    '[staged] reconcile: orphan view_deleteme `%s` could not be dropped: %s',
+                    $deletemeTable, substr($err, 0, 200)
+                ));
+                if (method_exists($this, 'setStagedBuildHaltNotice')) {
+                    $this->setStagedBuildHaltNotice('orphan_deleteme', sprintf(
+                        'An orphan staged-build table `%s` from a previous failed run could not be dropped (privilege denied?): %s. Manual cleanup: `DROP TABLE %s`.',
+                        $deletemeTable, substr($err, 0, 200), $deletemeTable
+                    ));
+                }
+                $action = 'failed';
+            }
+        }
+
+        // Resumable build in flight? Leave view_build / view_done alone
+        // so the next tick can continue from the persisted high-water
+        // id; orphan deleteme cleanup above already ran and is enough.
+        $startedAt = method_exists($this, 'readProgressOption')
+            ? $this->readProgressOption('started_at', 0) : 0;
+        $currentStage = method_exists($this, 'readProgressOption')
+            ? $this->readProgressOption('current_stage', 0) : 0;
+        $resumeWindowOk = $startedAt > 0
+            && (time() - $startedAt) < ABJ_404_Solution_ViewBuildConfig::VIEW_BUILD_RESUME_TTL_SECONDS;
+        if ($resumeWindowOk && $currentStage > 0) {
+            return $action;
+        }
+
+        $haveBuild = $this->stagedTableExists($buildTable);
+        $haveDone  = $this->stagedTableExists($doneTable);
+
+        // Case 2: view_build exists, view_done missing. Promote the
+        // buffer in place rather than re-running S1-S11 from scratch
+        // -- but only when an integrity probe says the buffer is
+        // plausibly complete. Without the integrity check we could
+        // publish a partially-built buffer (S2 stopped halfway, or
+        // invalidateViewDone() cleared progress while a redirect edit
+        // had also added rows we never picked up).
+        if ($haveBuild && !$haveDone) {
+            if (!$this->bufferIntegrityPassesForPromote($buildTable)) {
+                $this->logger->infoMessage(sprintf(
+                    '[staged] reconcile: not promoting view_build `%s` (integrity probe failed); dropping for fresh rebuild',
+                    $buildTable
+                ));
+                $this->queryAndGetResults('DROP TABLE IF EXISTS `' . $buildTable . '`',
+                    array('log_errors' => false));
+                return 'cleaned';
+            }
+            $sql = 'RENAME TABLE `' . $buildTable . '` TO `' . $doneTable . '`';
+            $r = $this->queryAndGetResults($sql, array('log_errors' => true));
+            $err = isset($r['last_error']) && is_string($r['last_error']) ? trim($r['last_error']) : '';
+            if ($err === '' && $this->stagedTableExists($doneTable)) {
+                $this->logger->infoMessage(sprintf(
+                    '[staged] reconcile: promoted view_build to view_done '
+                    . '(`%s` -> `%s`); previous run crashed before S11 swap',
+                    $buildTable, $doneTable
+                ));
+                if (function_exists('update_option')) {
+                    update_option($this->viewDoneFreshnessOptionName(), $this->clock()->now(), false);
+                }
+                $this->clearAllProgressOptions();
+                $this->invalidateViewDoneServeableCache();
+                return 'promoted';
+            }
+            $this->logger->warn(sprintf(
+                '[staged] reconcile: could not promote view_build to view_done: %s',
+                substr($err, 0, 200)
+            ));
+            if (method_exists($this, 'setStagedBuildHaltNotice')) {
+                $this->setStagedBuildHaltNotice('promote_build_failed', sprintf(
+                    'A staged-build buffer `%s` exists from a previous run but could not be promoted to `%s` (privilege denied?): %s. Manual cleanup: `RENAME TABLE %s TO %s` or `DROP TABLE %s`.',
+                    $buildTable, $doneTable, substr($err, 0, 200),
+                    $buildTable, $doneTable, $buildTable
+                ));
+            }
+            return 'failed';
+        }
+
+        // Case 3: both tables exist. view_done is the live one; the
+        // orphan view_build is from a halted previous run. Drop it so
+        // the next fresh build starts from a known empty buffer.
+        if ($haveBuild && $haveDone) {
+            $r = $this->queryAndGetResults(
+                'DROP TABLE IF EXISTS `' . $buildTable . '`',
+                array('log_errors' => false)
+            );
+            $err = isset($r['last_error']) && is_string($r['last_error']) ? trim($r['last_error']) : '';
+            if ($err === '' || !$this->stagedTableExists($buildTable)) {
+                $this->logger->infoMessage(sprintf(
+                    '[staged] reconcile: dropped orphan view_build `%s` (view_done is live; previous run halted before swap)',
+                    $buildTable
+                ));
+                return 'cleaned';
+            }
+            $this->logger->warn(sprintf(
+                '[staged] reconcile: orphan view_build `%s` could not be dropped: %s',
+                $buildTable, substr($err, 0, 200)
+            ));
+            if (method_exists($this, 'setStagedBuildHaltNotice')) {
+                $this->setStagedBuildHaltNotice('orphan_build', sprintf(
+                    'A staged-build buffer `%s` exists from a previous run alongside the live view_done, but could not be dropped: %s. Manual cleanup: `DROP TABLE %s`.',
+                    $buildTable, substr($err, 0, 200), $buildTable
+                ));
+            }
+            return 'failed';
+        }
+
+        return $action;
+    }
+
+    /**
+     * Integrity probe used by the case-2 promote branch of
+     * reconcileStagedTablesAtRunnerStartup(). Returns true only when the
+     * buffer is plausibly complete: row count matches the live redirects
+     * table within a small tolerance (one redirect could have been
+     * added during the build window). Returns false on any probe error
+     * so a transient DB hiccup never publishes a buffer of unknown
+     * shape as the live snapshot.
+     *
+     * Row-count parity is a coarse check (it cannot detect stale POST
+     * resolutions when wp_posts has changed mid-flight). Promote is
+     * already an opportunistic recovery; if we're wrong, the next
+     * invalidate-driven rebuild will replace view_done.
+     *
+     * @param string $bufferTable
+     * @return bool
+     */
+    private function bufferIntegrityPassesForPromote(string $bufferTable): bool {
+        $bufferRows = $this->countViewBuildRows();
+        if ($bufferRows <= 0) {
+            return false;
+        }
+        $liveRows = $this->countLiveRedirects();
+        if ($liveRows <= 0) {
+            // No redirects in the live table -- treat any buffer as
+            // unsafe to publish (a bug pruned all redirects, or the
+            // count probe itself errored).
+            return false;
+        }
+        // Allow the buffer to differ from live by up to one row in
+        // either direction so an admin who created or deleted a single
+        // redirect during the build window does not block promotion.
+        $diff = abs($bufferRows - $liveRows);
+        return $diff <= 1;
     }
 
     /**

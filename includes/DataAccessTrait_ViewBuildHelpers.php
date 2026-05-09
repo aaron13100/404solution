@@ -356,6 +356,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
         // routings) and we want to fail soft.
         $prevSuppress = method_exists($wpdb, 'suppress_errors') ? $wpdb->suppress_errors(true) : false;
         try {
+            // DAO-bypass-approved: probe live @@SESSION on this connection.
             $row = $wpdb->get_row(
                 "SELECT @@SESSION.sql_mode AS sql_mode, @@SESSION.max_allowed_packet AS max_allowed_packet",
                 ARRAY_A
@@ -480,6 +481,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
         $escapedStr = is_array($escaped) ? '' : (string)$escaped;
         $prevSuppress = method_exists($wpdb, 'suppress_errors') ? $wpdb->suppress_errors(true) : false;
         try {
+            // DAO-bypass-approved: SET SESSION must run on the live wpdb connection.
             $ok = $wpdb->query("SET SESSION sql_mode = '" . $escapedStr . "'");
         } catch (\Throwable $e) {
             $ok = false;
