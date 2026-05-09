@@ -203,7 +203,7 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 
 ## Changelog ##
 
-## Version 4.1.17 (May 9, 2026) ##
+## Version 4.1.17 (May 10, 2026) ##
 
 **Bug Fixes**
 
