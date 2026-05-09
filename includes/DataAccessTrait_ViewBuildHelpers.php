@@ -567,7 +567,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
             }
         }
 
-        // @cache-write-audit: opt-out. $result is a captured snapshot of
+        // @cache-write-audit: opt-out - $result is a captured snapshot of
         // session-variable state used for diagnostics, not a cached query
         // result. A failed SHOW VARIABLES populates defaults that are still
         // safe to persist (the dashboard reader treats sql_mode=='' as a
@@ -623,7 +623,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
             $relaxed[] = $flag;
         }
         $newMode = implode(',', $relaxed);
-        // @utf8-audit: opt-out. sql_mode flags are server-controlled
+        // @utf8-audit: opt-out - sql_mode flags are server-controlled
         // uppercase ASCII identifiers (STRICT_TRANS_TABLES, ONLY_FULL_GROUP_BY,
         // etc.); $newMode is built from filtered $flags whose source is
         // SHOW SESSION VARIABLES output, never user input.
@@ -1215,7 +1215,12 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
         if ($scheduled === false) {
             $this->setViewBuildScheduleFailedNotice('');
         } elseif ($isError) {
-            $this->setViewBuildScheduleFailedNotice((string)$scheduled->get_error_message());
+            $errMsg = '';
+            if (is_object($scheduled) && method_exists($scheduled, 'get_error_message')) {
+                $msg = $scheduled->get_error_message();
+                $errMsg = is_string($msg) ? $msg : '';
+            }
+            $this->setViewBuildScheduleFailedNotice($errMsg);
         }
     }
 
