@@ -102,11 +102,18 @@ class ABJ_404_Solution_DataAccess {
     private static $tableRepairInProgress = false;
     /** @var bool Prevent recursive invalid-data retry attempts. */
     private static $invalidDataRetryInProgress = false;
-    /** @var bool Prevent recursive collation auto-recovery — correctCollations()
+    /** @var bool Prevent recursive collation auto-recovery. correctCollations()
      *  emits ALTER TABLE statements that re-enter queryAndGetResults(); without
      *  this guard a collation error inside correctCollations() would deadlock on
      *  the cooldown transient and recurse indefinitely. */
     private static $collationRecoveryInProgress = false;
+    /** @var bool Per-request cache: this server rejected the
+     *  `SET STATEMENT max_statement_time=N FOR ...` timeout wrapper, so
+     *  applyQueryTimeout() must skip wrapping for the rest of the request.
+     *  Reset between requests because server config can change (privilege
+     *  grants, proxy upgrades). See classifySetStatementFailure() and
+     *  retryWithoutSetStatementWrapper(). */
+    private static $setStatementWrapperUnsupported = false;
     /** @var string Current wpdb result type for queryAndGetResults (ARRAY_A or OBJECT). */
     private $currentResultType = ARRAY_A;
     /** @var bool Ensure view cache table DDL runs at most once per request. */
@@ -114,6 +121,31 @@ class ABJ_404_Solution_DataAccess {
     /** @param bool $value @return void */
     public static function setViewSnapshotTableEnsured(bool $value): void {
         self::$viewSnapshotTableEnsured = $value;
+    }
+
+    /**
+     * Reset the per-request "SET STATEMENT wrapper unsupported" cache.
+     * Public because the flag is request-scoped: callers that span requests
+     * (long-lived CLI workers, ParaTest workers reusing the process) need a
+     * way to clear the cache between request-equivalents. Tests use this to
+     * isolate the negative cache from other test methods.
+     *
+     * @param bool $value
+     * @return void
+     */
+    public static function setSetStatementWrapperUnsupported(bool $value): void {
+        self::$setStatementWrapperUnsupported = $value;
+    }
+
+    /**
+     * Read the per-request "SET STATEMENT wrapper unsupported" cache.
+     * Used by callers (and tests) that need to confirm whether a previous
+     * query in this request hit the wrapper-rejection path.
+     *
+     * @return bool
+     */
+    public static function isSetStatementWrapperUnsupported(): bool {
+        return self::$setStatementWrapperUnsupported;
     }
 
     /** @var ABJ_404_Solution_Functions */
@@ -1029,6 +1061,23 @@ class ABJ_404_Solution_DataAccess {
             $sqlInfo = (defined('WP_DEBUG') && WP_DEBUG) ? $query : $this->extractSqlFilename($query);
             $this->logger->errorMessage("Query result is not an array. Query: " . $sqlInfo,
         			new Exception("Query result is not an array."));
+        }
+
+        // SET STATEMENT timeout wrapper rejected by server (SUPER privilege
+        // denied, ProxySQL syntax error, audit-firewall blacklist). Strip
+        // the wrapper, retry, and cache the unsupported flag so subsequent
+        // timeout-wrapped queries in this request skip the wrapper too.
+        // Runs first among the recovery paths because the wrapper is the
+        // outermost layer: every other retry path re-executes $query, so
+        // leaving the wrapper in place would re-trigger the same rejection.
+        $lastErrorForSetStatement = is_string($result['last_error'] ?? null) ? $result['last_error'] : '';
+        if ($lastErrorForSetStatement !== ''
+            && $this->classifySetStatementFailure($lastErrorForSetStatement)
+            && $this->queryHasSetStatementWrapper($query)) {
+            $this->retryWithoutSetStatementWrapper($query, $result, $resultType);
+            // After this point $query holds the unwrapped form; downstream
+            // retry paths see the new error (or none) on the unwrapped statement.
+            $producesRows = $this->queryProducesResultRows($query);
         }
 
         if ($result['last_error'] !== '' && $this->isTransientConnectionError($result['last_error'])) {

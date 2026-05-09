@@ -157,6 +157,53 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
             $this->f->strpos($lower, 'command denied') !== false);
     }
 
+    /**
+     * True when an error indicates that the `SET STATEMENT max_statement_time=N FOR ...`
+     * timeout wrapper itself was rejected by the server (privilege denied or
+     * syntax not understood). Distinct from an error in the wrapped query.
+     *
+     * Hosts that reject the wrapper:
+     *   1. MariaDB requiring SUPER for SET STATEMENT (errno 1227 / SQLSTATE 42000)
+     *   2. ProxySQL / older audit firewalls that do not parse the prefix and
+     *      return a syntax error (errno 1064 / SQLSTATE 42000) on "SET STATEMENT"
+     *   3. Galera clusters that reject SET STATEMENT in some replication modes
+     *
+     * The caller MUST also confirm the failed query actually started with
+     * a `SET STATEMENT max_statement_time=` prefix before treating the error
+     * as a wrapper rejection. Generic access-denied or syntax errors on
+     * other query shapes are not recoverable by stripping a wrapper that
+     * was never there.
+     *
+     * @param string $errorText
+     * @return bool
+     */
+    private function classifySetStatementFailure(string $errorText): bool {
+        if ($errorText === '') {
+            return false;
+        }
+        $lower = strtolower($errorText);
+        // SUPER privilege required (MariaDB SET STATEMENT requires SUPER on
+        // some configurations). The error is access-denied class, but the
+        // SUPER-privilege phrasing is the unambiguous tell. Generic
+        // table-access-denied uses "for user" or names a table.
+        if ($this->f->strpos($lower, 'super privilege') !== false ||
+            $this->f->strpos($lower, 'super_privilege') !== false ||
+            $this->f->strpos($lower, '(at least one of) the super') !== false) {
+            return true;
+        }
+        // ProxySQL / firewall syntax-error path: "syntax error" or
+        // "you have an error in your sql syntax" combined with "SET STATEMENT"
+        // mentioned in the error context. The wpdb->last_error often echoes
+        // a leading slice of the offending query.
+        if (($this->f->strpos($lower, 'syntax error') !== false ||
+             $this->f->strpos($lower, 'error in your sql syntax') !== false ||
+             $this->f->strpos($lower, '1064') !== false) &&
+            $this->f->strpos($lower, 'set statement') !== false) {
+            return true;
+        }
+        return false;
+    }
+
     /** @param string $errorText @return bool */
     private function isCollationError(string $errorText): bool {
         if (!is_string($errorText) || $errorText === '') {
