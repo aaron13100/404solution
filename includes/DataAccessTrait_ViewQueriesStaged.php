@@ -1073,6 +1073,10 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
         // admin notice and gates the per-stage budget into a tighter
         // cron-tick mode when set_time_limit() is in disable_functions.
         $this->probePhpEnvironmentForBuild();
+        // Probe filesystem-side host constraints (open_basedir, upload_tmp_dir,
+        // tmpdir disk-free) once per request. Read-and-warn-only: surfaces a
+        // deduplicated admin notice if anything is out of range; never blocks.
+        $this->probeFilesystemEnvironmentForBuild();
 
         // Build is in the dedup window after a critical-stage permanent
         // host failure. Re-running would just produce the same denied
@@ -1144,6 +1148,10 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
             // semantics. The S2 INSERT is already strict-safe via REGEXP-
             // guarded CAST so this is belt-and-suspenders for new code.
             $this->probeSqlModeForBuild();
+            // Probe operational + DDL-safety MySQL session variables once at
+            // S1 entry. Read-and-warn-only: surfaces a single consolidated
+            // admin notice when any variable is out of range; never blocks.
+            $this->probeSessionVariablesAtS1Entry();
             $this->logger->debugMessage(sprintf(
                 '[staged] runStagedBuildOnce: capturing prefix at S1 entry: prefix=%s',
                 $this->capturedPrefixForLog()

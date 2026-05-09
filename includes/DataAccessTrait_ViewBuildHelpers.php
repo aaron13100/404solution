@@ -643,12 +643,22 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
         if (function_exists('delete_option')) {
             delete_option($this->sqlModeProbeOptionName());
         }
+        // The session-variables probe (operational + DDL-safety MySQL vars)
+        // shares the same lifecycle as the sql_mode probe: a fresh build must
+        // re-evaluate session config in case the host was tuned between runs.
+        // Trait method lives on ABJ_404_Solution_DataAccess_ViewBuildSessionEnvProbeTrait.
+        if (method_exists($this, 'clearSessionVariablesProbeCache')) {
+            $this->clearSessionVariablesProbeCache();
+        }
     }
 
     // PHP-runtime environment probe (set_time_limit / memory_limit) lives
     // on the sibling ABJ_404_Solution_DataAccess_ViewBuildPhpEnvProbeTrait.
+    // The MySQL-session operational + DDL-safety probe lives on the sibling
+    // ABJ_404_Solution_DataAccess_ViewBuildSessionEnvProbeTrait.
     // clearAllProgressOptions() above calls clearPhpEnvironmentProbeCache()
-    // from that trait so a fresh build re-evaluates the host on next entry.
+    // and (via clearSqlModeProbeCache) clearSessionVariablesProbeCache so a
+    // fresh build re-evaluates the host on next entry.
 
     /**
      * Sanitize a URL string at the build/log boundary so a NULL byte or a

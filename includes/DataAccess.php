@@ -14,6 +14,7 @@ require_once __DIR__ . '/DataAccessTrait_ViewQueriesStagedRead.php';
 require_once __DIR__ . '/DataAccessTrait_ViewBuildAdaptive.php';
 require_once __DIR__ . '/DataAccessTrait_ViewBuildHelpers.php';
 require_once __DIR__ . '/DataAccessTrait_ViewBuildPhpEnvProbe.php';
+require_once __DIR__ . '/DataAccessTrait_ViewBuildSessionEnvProbe.php';
 require_once __DIR__ . '/DataAccessTrait_ViewBuildHostFailurePolicy.php';
 require_once __DIR__ . '/DataAccessTrait_ViewSnapshotCache.php';
 require_once __DIR__ . '/DataAccessTrait_QueryTimeouts.php';
@@ -173,6 +174,7 @@ class ABJ_404_Solution_DataAccess {
     use ABJ_404_Solution_DataAccess_ViewBuildAdaptiveTrait;
     use ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait;
     use ABJ_404_Solution_DataAccess_ViewBuildPhpEnvProbeTrait;
+    use ABJ_404_Solution_DataAccess_ViewBuildSessionEnvProbeTrait;
     use ABJ_404_Solution_DataAccess_ViewBuildHostFailurePolicyTrait;
     use ABJ_404_Solution_DataAccess_ViewSnapshotCacheTrait;
     use ABJ_404_Solution_DataAccess_LogsTrait;

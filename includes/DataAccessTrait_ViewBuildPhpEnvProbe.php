@@ -43,6 +43,12 @@ trait ABJ_404_Solution_DataAccess_ViewBuildPhpEnvProbeTrait {
     /** Recommended floor for memory_limit in bytes (128M). */
     private const PHP_MEMORY_LIMIT_RECOMMENDED_BYTES = 134217728;
 
+    /** Minimum free space (bytes) on @@tmpdir's volume before warning (100MB). */
+    private const PHP_TMPDIR_FREE_FLOOR_BYTES = 104857600;
+
+    /** Cached filesystem probe result for the current request. */
+    private $filesystemEnvironmentProbeCache = null;
+
     /** @return string  Option name for the persisted PHP environment probe. */
     private function phpEnvironmentProbeOptionName(): string {
         return 'abj404_view_build_php_env_probe';
@@ -239,8 +245,232 @@ trait ABJ_404_Solution_DataAccess_ViewBuildPhpEnvProbeTrait {
     /** @return void */
     private function clearPhpEnvironmentProbeCache(): void {
         $this->phpEnvironmentProbeCache = null;
+        $this->filesystemEnvironmentProbeCache = null;
         if (function_exists('delete_option')) {
             delete_option($this->phpEnvironmentProbeOptionName());
+            delete_option($this->filesystemEnvironmentProbeOptionName());
+        }
+    }
+
+    /** @return string */
+    private function filesystemEnvironmentProbeOptionName(): string {
+        return 'abj404_view_build_fs_env_probe';
+    }
+
+    /**
+     * Probe filesystem-side host constraints that can silently degrade or
+     * abort the staged view-build pipeline:
+     *
+     *   - `open_basedir` set and our tmp/upload paths fall outside it: any
+     *     `disk_free_space()` / fopen() against those paths returns false
+     *     and the build cannot diagnose why.
+     *   - `upload_tmp_dir` outside open_basedir: same constraint.
+     *   - `@@tmpdir` (MySQL temp dir) on a near-full volume: S9 hits aggregate
+     *     can fail with "table is full" or "No space left on device" when the
+     *     temp file the optimizer materializes for the GROUP BY exceeds free
+     *     bytes.
+     *
+     * Read-and-warn-only: never throws, never blocks the build. Logs at
+     * warning level (per defensive philosophy §8 -- infrastructure issues the
+     * plugin can degrade past) and surfaces a deduplicated admin notice so
+     * the operator can ask the host to widen open_basedir or clear disk space
+     * before the next build attempt.
+     *
+     * Filterable via `apply_filters('abj404_filesystem_env_probe', $defaults)`
+     * so tests and operators can simulate hardened-host scenarios without
+     * mutating the running PHP / MySQL process.
+     *
+     * @return array<string,mixed>
+     */
+    public function probeFilesystemEnvironmentForBuild(): array {
+        if (is_array($this->filesystemEnvironmentProbeCache)) {
+            return $this->filesystemEnvironmentProbeCache;
+        }
+
+        $rawOpenBasedir = (string)ini_get('open_basedir');
+        $rawUploadTmpDir = (string)ini_get('upload_tmp_dir');
+        $sysTmpDir = function_exists('sys_get_temp_dir') ? (string)sys_get_temp_dir() : '';
+
+        $pluginTmpCandidates = array_filter(array(
+            $sysTmpDir,
+            $rawUploadTmpDir,
+        ), function ($p) { return is_string($p) && $p !== ''; });
+
+        $openBasedirPaths = $this->splitOpenBasedirPaths($rawOpenBasedir);
+
+        $tmpOutsideOpenBasedir = false;
+        $uploadTmpOutsideOpenBasedir = false;
+        if (!empty($openBasedirPaths)) {
+            foreach ($pluginTmpCandidates as $candidate) {
+                if (!$this->pathFallsWithinAny($candidate, $openBasedirPaths)) {
+                    $tmpOutsideOpenBasedir = true;
+                    break;
+                }
+            }
+            if ($rawUploadTmpDir !== ''
+                && !$this->pathFallsWithinAny($rawUploadTmpDir, $openBasedirPaths)) {
+                $uploadTmpOutsideOpenBasedir = true;
+            }
+        }
+
+        $tmpDirForCheck = $rawUploadTmpDir !== '' ? $rawUploadTmpDir : $sysTmpDir;
+        $tmpFreeBytes = -1;
+        if ($tmpDirForCheck !== ''
+            && function_exists('disk_free_space')
+            && (empty($openBasedirPaths) || $this->pathFallsWithinAny($tmpDirForCheck, $openBasedirPaths))) {
+            $prev = function_exists('error_reporting') ? error_reporting(0) : 0;
+            try {
+                $bytes = @disk_free_space($tmpDirForCheck);
+                $tmpFreeBytes = ($bytes === false || $bytes === null) ? -1 : (int)$bytes;
+            } catch (\Throwable $e) { // allow-silent-catch: best-effort probe; reset error_reporting in finally
+                $tmpFreeBytes = -1;
+            }
+            if (function_exists('error_reporting')) {
+                error_reporting($prev);
+            }
+        }
+        $tmpDiskLow = ($tmpFreeBytes >= 0 && $tmpFreeBytes < self::PHP_TMPDIR_FREE_FLOOR_BYTES);
+
+        $result = array(
+            'open_basedir_raw'                 => $rawOpenBasedir,
+            'open_basedir_paths'               => $openBasedirPaths,
+            'upload_tmp_dir_raw'               => $rawUploadTmpDir,
+            'sys_tmp_dir'                      => $sysTmpDir,
+            'tmp_outside_open_basedir'         => $tmpOutsideOpenBasedir,
+            'upload_tmp_outside_open_basedir'  => $uploadTmpOutsideOpenBasedir,
+            'tmp_free_bytes'                   => $tmpFreeBytes,
+            'tmp_disk_low'                     => $tmpDiskLow,
+            'tmp_disk_floor_bytes'             => self::PHP_TMPDIR_FREE_FLOOR_BYTES,
+        );
+
+        if (function_exists('apply_filters')) {
+            $filtered = apply_filters('abj404_filesystem_env_probe', $result);
+            if (is_array($filtered)) {
+                $result = array_merge($result, $filtered);
+            }
+        }
+
+        $warnings = array();
+        if (!empty($result['tmp_outside_open_basedir'])) {
+            $warnings[] = sprintf(
+                'open_basedir (%s) does not include the system temp directory (%s); '
+                . 'PHP-side temp file work may fail.',
+                $result['open_basedir_raw'], $result['sys_tmp_dir']
+            );
+        }
+        if (!empty($result['upload_tmp_outside_open_basedir'])) {
+            $warnings[] = sprintf(
+                'upload_tmp_dir (%s) is outside open_basedir (%s); ini upload paths cannot be probed.',
+                $result['upload_tmp_dir_raw'], $result['open_basedir_raw']
+            );
+        }
+        if (!empty($result['tmp_disk_low'])) {
+            $warnings[] = sprintf(
+                'temp directory (%s) has %d bytes free (< %d MB floor); the S9 hits '
+                . 'aggregate or any MySQL temp materialization may fail with "No space left on device".',
+                $tmpDirForCheck,
+                (int)$result['tmp_free_bytes'],
+                (int)(self::PHP_TMPDIR_FREE_FLOOR_BYTES / 1048576)
+            );
+        }
+        $result['warnings'] = $warnings;
+
+        foreach ($warnings as $w) {
+            $this->logger->warn('[staged] ' . $w);
+        }
+        if (!empty($warnings)) {
+            $this->setFilesystemEnvAdminNotice($result);
+        }
+
+        if (function_exists('update_option')) {
+            update_option($this->filesystemEnvironmentProbeOptionName(), $result, false);
+        }
+
+        $this->filesystemEnvironmentProbeCache = $result;
+        return $result;
+    }
+
+    /**
+     * Split a raw open_basedir value (`PATH_SEPARATOR`-delimited) into a
+     * trimmed list of absolute path prefixes. Empty input returns array().
+     *
+     * @param string $raw
+     * @return array<int,string>
+     */
+    private function splitOpenBasedirPaths(string $raw): array {
+        $raw = trim($raw);
+        if ($raw === '') { return array(); }
+        $sep = defined('PATH_SEPARATOR') ? PATH_SEPARATOR : ':';
+        $parts = array_map('trim', explode($sep, $raw));
+        return array_values(array_filter($parts, function ($p) { return $p !== ''; }));
+    }
+
+    /**
+     * True when $candidate falls within at least one of $allowed (string
+     * prefix match after normalizing trailing separators). Normalizes both
+     * sides via realpath() when available so symlinks resolve consistently.
+     *
+     * @param string             $candidate
+     * @param array<int,string>  $allowed
+     * @return bool
+     */
+    private function pathFallsWithinAny(string $candidate, array $allowed): bool {
+        if ($candidate === '' || empty($allowed)) { return true; }
+        $normCandidate = $this->normalizePathPrefix($candidate);
+        foreach ($allowed as $a) {
+            $normA = $this->normalizePathPrefix($a);
+            if ($normA === '') { continue; }
+            if (strncmp($normCandidate, $normA, strlen($normA)) === 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Normalize a path for prefix comparison: realpath() if it exists, else
+     * trim trailing separators. Returns '' on bad input.
+     *
+     * @param string $path
+     * @return string
+     */
+    private function normalizePathPrefix(string $path): string {
+        $path = trim($path);
+        if ($path === '') { return ''; }
+        if (function_exists('realpath')) {
+            $real = @realpath($path);
+            if (is_string($real) && $real !== '') {
+                return rtrim($real, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+            }
+        }
+        return rtrim($path, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+    }
+
+    /**
+     * Surface a deduplicated admin notice describing filesystem-side host
+     * issues. One per 24h via transient (per CLAUDE.md self-healing rules).
+     *
+     * @param array<string,mixed> $probe
+     * @return void
+     */
+    private function setFilesystemEnvAdminNotice(array $probe): void {
+        $key = 'abj404_view_build_filesystem_env_notice';
+        $payload = array(
+            'kind'     => 'filesystem_env',
+            'warnings' => isset($probe['warnings']) && is_array($probe['warnings']) ? $probe['warnings'] : array(),
+            'message'  => 'The 404 Solution view-build pipeline detected filesystem '
+                . 'host constraints that may degrade the next rebuild: '
+                . implode(' | ', isset($probe['warnings']) && is_array($probe['warnings']) ? $probe['warnings'] : array()),
+            'when'     => $this->clock()->now(),
+        );
+        if (function_exists('set_transient')) {
+            set_transient(
+                $key,
+                $payload,
+                ABJ_404_Solution_ViewBuildConfig::VIEW_BUILD_DEGRADED_NOTICE_TTL_SECONDS
+            );
+        } elseif (function_exists('update_option')) {
+            update_option($key, $payload, false);
         }
     }
 }
