@@ -140,6 +140,26 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
     }
 
     /**
+     * Subset of {@see $viewBuildProgressOptionNames} keys whose writes route
+     * through {@see verifyOptionWriteCoherent} instead of bare update_option.
+     *
+     * The helper costs an extra get_option per write (a wp_cache_get on
+     * coherent hosts; one extra DB round-trip on hosts that fail the
+     * verification). That cost is justified for state where a stale read
+     * could cause a destructive stage to re-run or a batch high-water mark
+     * to rewind, but not for kill-streak counters or started_at where a
+     * single tick of stale data is harmless.
+     *
+     * @var array<int,string>
+     */
+    private static $viewBuildProgressHighStakesShortNames = array(
+        'current_stage',
+        's2_high_water',
+        's4_high_water',
+        's5_high_water',
+    );
+
+    /**
      * @param string $shortName  Progress key.
      * @param int    $value
      * @return void
@@ -152,9 +172,127 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
         if ($name === '') {
             return;
         }
+        $intValue = max(0, intval($value));
+        // High-stakes view_build_state writes route through the cache-coherent
+        // helper (read-back + wp_cache_delete + retry) so a persistent object
+        // cache returning a stale value cannot let a parallel worker rewind
+        // current_stage or a batch high-water and re-run a destructive stage.
+        // Lower-stakes writes use the bare update_option path -- the read-back
+        // cost is non-trivial and a single tick of stale streak data is
+        // harmless.
+        if (in_array($shortName, self::$viewBuildProgressHighStakesShortNames, true)) {
+            $this->verifyOptionWriteCoherent($name, $intValue);
+            return;
+        }
         // autoload=false so progress writes (potentially many per request)
         // don't bloat the alloptions cache that loads on every WP page.
-        update_option($name, max(0, intval($value)), false);
+        update_option($name, $intValue, false);
+    }
+
+    /**
+     * Cache-coherent option write. Persistent object caches (Redis,
+     * Memcached, mu-cluster split routing) can serve a stale `get_option`
+     * value for one tick after `update_option` writes the row. For
+     * high-stakes options (staged-build current_stage, batch high-water
+     * marks) that single tick is enough to let a parallel worker rewind to
+     * a just-completed stage and re-run destructive work.
+     *
+     * Procedure:
+     *   1. update_option($name, $expected, autoload=false).
+     *   2. get_option($name) and strict-compare to $expected.
+     *   3. On mismatch: wp_cache_delete($name, 'options') and the
+     *      'alloptions' bucket (covers both keying strategies WP uses), then
+     *      update_option + get_option once more.
+     *   4. On persistent mismatch: set a 24h transient
+     *      'abj404_option_cache_incoherent' carrying name + observed value
+     *      so other code can short-circuit cache-coherence-sensitive logic,
+     *      log a warning, return false.
+     *   5. On success (first or retry): return true.
+     *
+     * Idempotent and safe to call repeatedly. Loose-equal comparison is
+     * intentional: option values round-trip through serialization and
+     * scalar coercion, so an int 4 may come back as the string "4".
+     *
+     * @param string $optionName  WordPress option name (already fully prefixed).
+     * @param mixed  $expected    Value just written -- compared against the read-back.
+     * @return bool  True on coherent write (first try or retry); false when the
+     *               cache layer fails to invalidate even after wp_cache_delete.
+     */
+    public function verifyOptionWriteCoherent(string $optionName, $expected): bool {
+        if (!function_exists('update_option') || !function_exists('get_option')) {
+            return false;
+        }
+        update_option($optionName, $expected, false);
+        $actual = get_option($optionName, null);
+        if ($this->optionReadBackMatches($actual, $expected)) {
+            return true;
+        }
+        // First read disagrees with the just-written value: flush both
+        // candidate cache keys and retry. Use a typeof-guarded call because
+        // wp_cache_delete is part of WP core but not loaded in unit-test
+        // bootstraps that don't pull in cache.php.
+        if (function_exists('wp_cache_delete')) {
+            wp_cache_delete($optionName, 'options');
+            // alloptions is the bundled bucket WP loads on every page; even
+            // for autoload=false writes some object-cache backends miss the
+            // per-key invalidation and need the bucket flushed.
+            wp_cache_delete('alloptions', 'options');
+        }
+        update_option($optionName, $expected, false);
+        $retry = get_option($optionName, null);
+        if ($this->optionReadBackMatches($retry, $expected)) {
+            return true;
+        }
+
+        // Persistent mismatch: surface to other code via a deduplicated
+        // transient and log a warning. Don't email -- this is a host-config
+        // problem, not a plugin defect.
+        if (function_exists('set_transient')) {
+            set_transient(
+                'abj404_option_cache_incoherent',
+                array(
+                    'option'   => $optionName,
+                    'expected' => is_scalar($expected) ? (string)$expected : 'non-scalar',
+                    'observed' => is_scalar($retry) ? (string)$retry : 'non-scalar',
+                    'when'     => time(),
+                ),
+                86400
+            );
+        }
+        if (is_object($this->logger)) {
+            $message = sprintf(
+                '[staged] option write incoherent on this host: %s expected=%s observed=%s '
+                . '(persistent object cache likely returning stale values; '
+                . 'wp_cache_delete + retry did not invalidate).',
+                $optionName,
+                is_scalar($expected) ? (string)$expected : '<non-scalar>',
+                is_scalar($retry)    ? (string)$retry    : '<non-scalar>'
+            );
+            if (method_exists($this->logger, 'warn')) {
+                $this->logger->warn($message);
+            } elseif (method_exists($this->logger, 'debugMessage')) {
+                $this->logger->debugMessage($message);
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Loose-equal read-back comparison. WP option values round-trip through
+     * serialize() and may come back as a different scalar type than written
+     * (int 4 -> string "4"). The semantic question is "did the persisted
+     * value reflect the write," so we compare via string casts when both
+     * sides are scalar; otherwise fall back to ==.
+     *
+     * @param mixed $actual
+     * @param mixed $expected
+     * @return bool
+     */
+    private function optionReadBackMatches($actual, $expected): bool {
+        if (is_scalar($actual) && is_scalar($expected)) {
+            return (string)$actual === (string)$expected;
+        }
+        return $actual == $expected;
     }
 
     /** @return void */
