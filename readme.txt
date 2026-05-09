@@ -5,7 +5,7 @@ Tags: 404, redirect, 404 redirect, broken links, spell check
 Requires at least: 5.0
 Requires PHP: 7.4
 Tested up to: 6.9
-Stable tag: 4.1.16
+Stable tag: 4.1.17
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -200,6 +200,22 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 6. **Email Digest** — Weekly HTML email summarizing captured 404s, resolution rate, and a ranked table of top 404 URLs with color-coded hit badges.
 
 == Changelog ==
+
+= Version 4.1.17 (May 9, 2026) =
+
+**Bug Fixes**
+
+* Fixed repeated "Access denied" errors and silently-stuck Captured 404s and Page Redirects pages on shared and managed hosting environments where certain database privileges are restricted. The rebuild now skips the affected step and continues, instead of retrying the same denied operation on every cron run and emailing the site administrator.
+* Fixed the rebuild silently never starting on managed or sharded MySQL services (such as PlanetScale and Vitess) that do not support standard MySQL named locks. The plugin now uses an alternate locking mechanism on these hosts.
+* Fixed the rebuild getting permanently stuck after a previous run was interrupted (for example, by a server restart mid-rebuild). The plugin now detects and cleans up leftover state at the start of the next rebuild so it can complete normally.
+* Fixed the rebuild silently waiting forever when WordPress scheduled tasks (cron) are disabled and no external cron is configured. The plugin now shows a clear admin notice with guidance on how to resolve it.
+* Improved compatibility with multisite networks during long-running rebuilds that span multiple background tasks.
+* Improved compatibility with persistent object caches (Redis, Memcached) so that rebuild progress is reliably saved even when the cache layer is briefly inconsistent.
+* Improved compatibility with HyperDB, LudicrousDB, and other custom database drop-ins.
+
+**Improvements**
+
+* The plugin now self-detects unusual PHP and database hosting limits (memory limit, time limit, strict SQL modes, query packet size) at the start of each rebuild and adapts to work within them, instead of failing on restrictive hosts.
 
 = Version 4.1.16 (May 8, 2026) =
 
@@ -539,26 +555,4 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 * Fixed log hits stripping valid multibyte Unicode from URLs.
 * Fixed spelling cache returning wrong data type, breaking suggestions.
 * Fixed database error storms flooding site admin emails.
-
-= Version 3.3.7 (Mar 20, 2026) =
-* Improvement: The plugin now automatically repairs corrupted plugin tables (MySQL errno 1034 "Incorrect key file") and retries the failed operation, so transient disk-level corruption no longer causes user-visible errors.
-* Improvement: The activity log table is now stored on InnoDB, eliminating the "table is full" (errno 1114) failure mode that affected MyISAM tables. If the log table fills up, the plugin automatically trims the oldest 1,000 entries to free space and retries.
-* Improvement: Admin notices for database problems now only appear on the plugin's own settings page rather than on every WordPress admin screen.
-* Fix: Corrected a latent PHP error in the "Incorrect key file" recovery path that would have triggered a fatal error instead of attempting repair.
-
-= Version 3.3.6 (Mar 20, 2026) =
-* Fix: Prevented a spurious database error during schema upgrades where a comment in an internal SQL file was mistakenly interpreted as a column definition, causing a malformed ALTER TABLE statement to be logged. No data was affected.
-
-= Version 3.3.5 (Mar 20, 2026) =
-* Improvement: Large source files refactored into focused trait files — no functional changes, but the codebase is easier to navigate and maintain.
-* Improvement: Strict type checking (PHPStan level 9) enforced throughout the codebase, catching and fixing potential type-mismatch errors before they could affect users.
-
-= Version 3.3.4 (Mar 19, 2026) =
-* Fix: Fixed an upgrade bug introduced in 3.3.3 that accidentally cleared the admin page view cache. No redirect data was affected — the cache rebuilds automatically on the next page load.
-* Fix: Added a safety check to prevent future upgrades from accidentally wiping plugin caches.
-* Fix: Sites affected by the 3.3.3 bug will have their cache table automatically repaired on the first admin page load after updating.
-
-= Version 3.3.3 (Mar 19, 2026) =
-* Fix: Uninstaller no longer produces a PHPStan type error when `$wpdb->get_results()` returns null on edge-case database configurations.
-* Improvement: Plugin table cleanup on blog deletion, uninstall, and collation repair now uses dynamic discovery, ensuring any future tables are automatically included.
 
