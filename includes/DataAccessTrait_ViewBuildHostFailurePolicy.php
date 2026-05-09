@@ -261,6 +261,12 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHostFailurePolicyTrait {
         if (function_exists('delete_transient')) {
             delete_transient($this->buildHaltTransientKey());
         }
+        // A force rebuild explicitly restarts the pipeline; the captured
+        // prefix is per-build, not per-host, so wipe it so the fresh S1
+        // re-captures from the (presumably correct) current $wpdb->prefix.
+        if (method_exists($this, 'clearPrefixAtStageOne')) {
+            $this->clearPrefixAtStageOne();
+        }
     }
 
     /**

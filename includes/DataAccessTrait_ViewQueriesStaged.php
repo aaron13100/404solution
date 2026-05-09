@@ -475,6 +475,10 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
                 delete_option($this->getLowercasePrefix() . $optName);
             }
         }
+        // The S1-prefix capture is part of the same fresh-start lifecycle:
+        // a redirect-edit invalidation forces the next request to S1 from
+        // scratch, so the prior capture is no longer authoritative.
+        $this->clearPrefixAtStageOne();
         $this->invalidateViewDoneServeableCache();
         // Kick off a background rebuild and surface any cron-stuck /
         // schedule-failure conditions to the admin via deduplicated notice.
@@ -743,6 +747,49 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
     }
 
     /**
+     * Verify `$wpdb->prefix` has not changed since S1 captured it. When the
+     * snapshot and the live prefix disagree, surface a deduplicated admin
+     * notice, log the mismatch with both prefixes for post-mortem, and
+     * return true so the orchestrator halts before S2-S11 run any DML
+     * against a different blog's tables (Codex finding #8: a mu-plugin
+     * calling `switch_to_blog()` between cron ticks would otherwise let
+     * the build write across prefixes silently).
+     *
+     * Idempotent: calling on the matching path is cheap (one option read or
+     * one in-memory string compare) and never mutates state.
+     *
+     * @param int $aboutToRunStage  1..11; included in the notice for context.
+     * @return bool  True on mismatch -- caller should `return false` from
+     *               runStagedBuildOnce immediately. False when prefix matches
+     *               (or no capture exists) -- caller proceeds with the stage.
+     */
+    private function haltIfPrefixChangedSinceStageOne(int $aboutToRunStage): bool {
+        if ($this->verifyPrefixUnchangedSinceStageOne()) {
+            return false;
+        }
+        global $wpdb;
+        $current = (isset($wpdb->prefix) && is_string($wpdb->prefix)) ? $wpdb->prefix : '';
+        $captured = $this->capturedPrefixForLog();
+        $msg = sprintf(
+            'Multisite blog context changed during view rebuild; rebuild '
+            . 'aborted to prevent cross-blog data corruption. '
+            . 'captured_prefix=%s current_prefix=%s aborted_at_stage=%d',
+            $captured,
+            $current,
+            $aboutToRunStage
+        );
+        if (method_exists($this, 'setStagedBuildHaltNotice')) {
+            $this->setStagedBuildHaltNotice('multisite_prefix_changed', $msg);
+        }
+        $this->logger->warn('[staged] ' . $msg);
+        // Do NOT clear progress / captured prefix here: the original blog's
+        // resume on a future request will see its (untouched) progress and
+        // prefix capture, verify cleanly, and continue. Clearing here would
+        // be writing through the WRONG blog's options table anyway.
+        return true;
+    }
+
+    /**
      * Run the staged build from wherever we left off, atomically swap into
      * view_done when all stages have completed.
      *
@@ -827,6 +874,13 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
         $stage = $this->readProgressOption('current_stage', 0);
 
         if ($stage < 1) {
+            // Capture $wpdb->prefix BEFORE the S1 callback so subsequent
+            // stage entries can detect a mid-build switch_to_blog().
+            $this->capturePrefixAtBuildStart();
+            $this->logger->debugMessage(sprintf(
+                '[staged] runStagedBuildOnce: capturing prefix at S1 entry: prefix=%s',
+                $this->capturedPrefixForLog()
+            ));
             $this->markBuildStage('staged_build_s1_create');
             $r = $this->runTimedViewBuildStage(1, 'staged_build_s1_create', function () {
                 $this->stageCreateBuildTable();
@@ -844,6 +898,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
         }
 
         if ($stage < 2) {
+            if ($this->haltIfPrefixChangedSinceStageOne(2)) { return false; }
             $r = $this->runTimedViewBuildStage(2, 'staged_build_s2_insert', function () {
                 return $this->stageInsertRedirectsBatched();
             });
@@ -855,6 +910,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
         }
 
         if ($stage < 3) {
+            if ($this->haltIfPrefixChangedSinceStageOne(3)) { return false; }
             if ($this->isStageMarkedSkipped(3)) {
                 // Permanent host-side denial recorded on a prior tick.
                 // Advance current_stage past S3 without touching the SQL.
@@ -879,6 +935,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
         }
 
         if ($stage < 4) {
+            if ($this->haltIfPrefixChangedSinceStageOne(4)) { return false; }
             $r = $this->runTimedViewBuildStage(4, 'staged_build_s4_update_posts', function () {
                 return $this->stageUpdatePostsBatched();
             });
@@ -890,6 +947,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
         }
 
         if ($stage < 5) {
+            if ($this->haltIfPrefixChangedSinceStageOne(5)) { return false; }
             $r = $this->runTimedViewBuildStage(5, 'staged_build_s5_update_terms', function () {
                 return $this->stageUpdateTermsBatched();
             });
@@ -901,6 +959,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
         }
 
         if ($stage < 6) {
+            if ($this->haltIfPrefixChangedSinceStageOne(6)) { return false; }
             $this->markBuildStage('staged_build_s6_update_home');
             $r = $this->runTimedViewBuildStage(6, 'staged_build_s6_update_home', function () {
                 $this->stageUpdateHome();
@@ -913,6 +972,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
         }
 
         if ($stage < 7) {
+            if ($this->haltIfPrefixChangedSinceStageOne(7)) { return false; }
             $this->markBuildStage('staged_build_s7_update_external');
             $r = $this->runTimedViewBuildStage(7, 'staged_build_s7_update_external', function () {
                 $this->stageUpdateExternal();
@@ -925,6 +985,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
         }
 
         if ($stage < 8) {
+            if ($this->haltIfPrefixChangedSinceStageOne(8)) { return false; }
             $this->markBuildStage('staged_build_s8_update_special');
             $r = $this->runTimedViewBuildStage(8, 'staged_build_s8_update_special', function () {
                 $this->stageUpdateSpecial();
@@ -937,6 +998,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
         }
 
         if ($stage < 9) {
+            if ($this->haltIfPrefixChangedSinceStageOne(9)) { return false; }
             if ($this->isStageMarkedSkipped(9)) {
                 $this->writeProgressOption('current_stage', 9);
                 $stage = 9;
@@ -968,6 +1030,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
         }
 
         if ($stage < 10) {
+            if ($this->haltIfPrefixChangedSinceStageOne(10)) { return false; }
             if ($this->isStageMarkedSkipped(10)) {
                 $this->writeProgressOption('current_stage', 10);
                 $stage = 10;
@@ -989,6 +1052,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
         }
 
         if ($stage < 11) {
+            if ($this->haltIfPrefixChangedSinceStageOne(11)) { return false; }
             $this->markBuildStage('staged_build_s11_swap');
             $r = $this->runTimedViewBuildStage(11, 'staged_build_s11_swap', function () {
                 $this->stageRenameSwap();
@@ -1000,6 +1064,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
                 update_option($this->viewDoneFreshnessOptionName(), time(), false);
             }
             // Build fully done. Wipe progress so the next rebuild starts clean.
+            // clearAllProgressOptions() also clears the prefix_at_s1 capture.
             $this->clearAllProgressOptions();
             $this->invalidateViewDoneServeableCache();
         }
