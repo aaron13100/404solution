@@ -322,6 +322,18 @@ function abj404StartStageProgressPolling(config) {
 
         var stage = typeof stageResult.stage === 'string' ? stageResult.stage : '';
         var queryLabel = typeof stageResult.queryLabel === 'string' ? stageResult.queryLabel : '';
+        // When the build finishes between two polls, the inflight transient's
+        // top-level stage clears but the events list still records every
+        // completed stage. Fall back to the last event so the visible label
+        // still shows progress on fast builds (small sites, after-cache hits)
+        // instead of being stuck on the "(...)" placeholder.
+        if (!stage && !queryLabel && stageEvents.length > 0) {
+            var lastEvent = stageEvents[stageEvents.length - 1];
+            if (lastEvent && typeof lastEvent.stage === 'string') {
+                stage = lastEvent.stage;
+                queryLabel = (typeof lastEvent.queryLabel === 'string') ? lastEvent.queryLabel : '';
+            }
+        }
         if (allowUiUpdate && (stage || queryLabel)) {
             var message = abj404FormatRefreshingStageMessage(baseMessage, stage, queryLabel, config.subpage || '');
             jQuery('.abj404-refresh-status').text(message);
