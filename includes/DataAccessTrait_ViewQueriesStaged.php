@@ -347,6 +347,11 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
                 // serveability cache so getViewBuildProgress() at the end
                 // reflects the rebuilt state, not the stale-cached one.
                 $this->invalidateViewDone();
+                // Force-rebuild also clears any per-stage permanent skip
+                // markers and the build-halted gate from a prior host
+                // failure. The admin pressed "rebuild" explicitly, so
+                // re-attempting denied DDL is the intended action.
+                $this->clearStagedBuildDegradedState();
             }
             $isComplete = $this->runStagedBuildOnce();
         } finally {
@@ -536,13 +541,25 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
             }
             $result = $callback();
         } catch (\Throwable $e) {
-            // Resumable kill class: host killed the query (max_statement_time,
-            // gone-away, lock-wait, killed connection). The next tick reads
-            // persisted progress and resumes from the same stage. Do NOT
-            // propagate; that would break the JS poll loop.
-            if ($this->isResumableStagedKill($e->getMessage())) {
-                $this->logTimedViewBuildStage($stageNumber, $stageKey, 'killed_resumable', $started);
+            // Catch-block classification + side effects (skip / halt / streak)
+            // live on the HostFailurePolicy trait so this orchestrator stays
+            // focused on stage sequencing. classifyAndHandleStageFailure()
+            // returns one of: 'resumable_yield', 'skipped', 'halted',
+            // 'completed' (post-S11 reconcile), or 'rethrow'.
+            $outcome = method_exists($this, 'classifyAndHandleStageFailure')
+                ? $this->classifyAndHandleStageFailure($stageNumber, $stageKey, $e->getMessage(), $started)
+                : 'rethrow';
+            if ($outcome === 'resumable_yield') {
                 return false;
+            }
+            if ($outcome === 'skipped') {
+                return 'skipped';
+            }
+            if ($outcome === 'halted') {
+                return 'halted';
+            }
+            if ($outcome === 'completed') {
+                return null;
             }
             $this->logTimedViewBuildStage($stageNumber, $stageKey, 'error', $started);
             throw $e;
@@ -553,6 +570,14 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
             $status = 'yielded';
         } else if ($result === 'skipped') {
             $status = 'skipped';
+        }
+        // Wall-clock yield (false return) implies the stage's batch loop ran
+        // far enough to exhaust the per-stage budget, which is observable
+        // forward progress. Reset the no-progress streak so legitimate
+        // long-running batched stages do not eventually trip the halt.
+        // Completion / skip likewise reset.
+        if (method_exists($this, 'resetStageNoProgressStreak')) {
+            $this->resetStageNoProgressStreak($stageNumber);
         }
         $this->logTimedViewBuildStage($stageNumber, $stageKey, $status, $started);
         return $result;
@@ -733,10 +758,18 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
     private function runStagedBuildOnce(): bool {
         if (self::$viewBuildAlreadyRanThisRequest) {
             // Already either ran to completion or yielded earlier in this
-            // request — don't re-enter.  Caller should not block on this.
+            // request, do not re-enter. Caller should not block on this.
             return $this->viewDoneIsFresh();
         }
         self::$viewBuildAlreadyRanThisRequest = true;
+
+        // Build is in the dedup window after a critical-stage permanent
+        // host failure. Re-running would just produce the same denied
+        // DDL again. Cron ticks during the window are no-ops; an explicit
+        // force rebuild clears the gate via clearStagedBuildDegradedState().
+        if ($this->isBuildHaltedForHostFailure()) {
+            return $this->viewDoneIsFresh();
+        }
 
         // Decide: resume or restart from scratch?
         $startedAt = $this->readProgressOption('started_at', 0);
@@ -791,10 +824,11 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
 
         if ($stage < 1) {
             $this->markBuildStage('staged_build_s1_create');
-            if ($this->runTimedViewBuildStage(1, 'staged_build_s1_create', function () {
+            $r = $this->runTimedViewBuildStage(1, 'staged_build_s1_create', function () {
                 $this->stageCreateBuildTable();
-            }) === false) {
-                return false; // host killed S1; next tick resumes from S1
+            });
+            if ($r === false || $r === 'halted') {
+                return false; // host killed S1 or halt set; next tick gated on halt window
             }
             // Stamp started_at on the very first stage so the resume-TTL
             // clock starts from buffer creation.
@@ -806,35 +840,45 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
         }
 
         if ($stage < 2) {
-            if (!$this->runTimedViewBuildStage(2, 'staged_build_s2_insert', function () {
+            $r = $this->runTimedViewBuildStage(2, 'staged_build_s2_insert', function () {
                 return $this->stageInsertRedirectsBatched();
-            })) {
-                return false; // budget exhausted; resume on next request
+            });
+            if ($r === false || $r === 'halted') {
+                return false; // budget exhausted, kill, or halt; resume / no-op next request
             }
             $this->writeProgressOption('current_stage', 2);
             $stage = 2;
         }
 
         if ($stage < 3) {
-            $this->markBuildStage('staged_build_s3_index_fd');
-            // Non-batched: kill-streak escape valve extends the per-query
-            // timeout above the host's session limit on retry. Without
-            // this, a CREATE INDEX that exceeds max_statement_time on
-            // big buffers loops with the same timeout forever.
-            if ($this->runNonBatchedStageWithKillStreakEscape(
-                3, 'staged_build_s3_index_fd', 's3_kill_streak',
-                function () { $this->stageAddPreJoinIndexes(); }
-            ) === false) {
-                return false; // host killed S3; next tick resumes from S3
+            if ($this->isStageMarkedSkipped(3)) {
+                // Permanent host-side denial recorded on a prior tick.
+                // Advance current_stage past S3 without touching the SQL.
+                $this->writeProgressOption('current_stage', 3);
+                $stage = 3;
+            } else {
+                $this->markBuildStage('staged_build_s3_index_fd');
+                // Non-batched: kill-streak escape valve extends the per-query
+                // timeout above the host's session limit on retry. Without
+                // this, a CREATE INDEX that exceeds max_statement_time on
+                // big buffers loops with the same timeout forever.
+                $r = $this->runNonBatchedStageWithKillStreakEscape(
+                    3, 'staged_build_s3_index_fd', 's3_kill_streak',
+                    function () { $this->stageAddPreJoinIndexes(); }
+                );
+                if ($r === false || $r === 'halted') {
+                    return false;
+                }
+                $this->writeProgressOption('current_stage', 3);
+                $stage = 3;
             }
-            $this->writeProgressOption('current_stage', 3);
-            $stage = 3;
         }
 
         if ($stage < 4) {
-            if (!$this->runTimedViewBuildStage(4, 'staged_build_s4_update_posts', function () {
+            $r = $this->runTimedViewBuildStage(4, 'staged_build_s4_update_posts', function () {
                 return $this->stageUpdatePostsBatched();
-            })) {
+            });
+            if ($r === false || $r === 'halted') {
                 return false;
             }
             $this->writeProgressOption('current_stage', 4);
@@ -842,9 +886,10 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
         }
 
         if ($stage < 5) {
-            if (!$this->runTimedViewBuildStage(5, 'staged_build_s5_update_terms', function () {
+            $r = $this->runTimedViewBuildStage(5, 'staged_build_s5_update_terms', function () {
                 return $this->stageUpdateTermsBatched();
-            })) {
+            });
+            if ($r === false || $r === 'halted') {
                 return false;
             }
             $this->writeProgressOption('current_stage', 5);
@@ -853,10 +898,11 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
 
         if ($stage < 6) {
             $this->markBuildStage('staged_build_s6_update_home');
-            if ($this->runTimedViewBuildStage(6, 'staged_build_s6_update_home', function () {
+            $r = $this->runTimedViewBuildStage(6, 'staged_build_s6_update_home', function () {
                 $this->stageUpdateHome();
-            }) === false) {
-                return false; // host killed S6; next tick resumes from S6
+            });
+            if ($r === false || $r === 'halted') {
+                return false;
             }
             $this->writeProgressOption('current_stage', 6);
             $stage = 6;
@@ -864,10 +910,11 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
 
         if ($stage < 7) {
             $this->markBuildStage('staged_build_s7_update_external');
-            if ($this->runTimedViewBuildStage(7, 'staged_build_s7_update_external', function () {
+            $r = $this->runTimedViewBuildStage(7, 'staged_build_s7_update_external', function () {
                 $this->stageUpdateExternal();
-            }) === false) {
-                return false; // host killed S7; next tick resumes from S7
+            });
+            if ($r === false || $r === 'halted') {
+                return false;
             }
             $this->writeProgressOption('current_stage', 7);
             $stage = 7;
@@ -875,62 +922,75 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
 
         if ($stage < 8) {
             $this->markBuildStage('staged_build_s8_update_special');
-            if ($this->runTimedViewBuildStage(8, 'staged_build_s8_update_special', function () {
+            $r = $this->runTimedViewBuildStage(8, 'staged_build_s8_update_special', function () {
                 $this->stageUpdateSpecial();
-            }) === false) {
-                return false; // host killed S8; next tick resumes from S8
+            });
+            if ($r === false || $r === 'halted') {
+                return false;
             }
             $this->writeProgressOption('current_stage', 8);
             $stage = 8;
         }
 
         if ($stage < 9) {
-            // Non-batched: temp-table aggregate over wp_abj404_logs_hits +
-            // UPDATE JOIN against the buffer. Kill-streak escape valve
-            // extends the per-query timeout on retry so a logs_hits scan
-            // that doesn't fit in the host's max_statement_time can
-            // eventually finish.
-            $s9Result = $this->runNonBatchedStageWithKillStreakEscape(
-                9, 'staged_build_s9_update_hits', 's9_kill_streak',
-                function () {
-                    if ($this->logsHitsTableExists()) {
-                        $this->markBuildStage('staged_build_s9_update_hits');
-                        $this->stageUpdateHits();
-                        return null;
+            if ($this->isStageMarkedSkipped(9)) {
+                $this->writeProgressOption('current_stage', 9);
+                $stage = 9;
+            } else {
+                // Non-batched: temp-table aggregate over wp_abj404_logs_hits +
+                // UPDATE JOIN against the buffer. Kill-streak escape valve
+                // extends the per-query timeout on retry so a logs_hits scan
+                // that doesn't fit in the host's max_statement_time can
+                // eventually finish.
+                $s9Result = $this->runNonBatchedStageWithKillStreakEscape(
+                    9, 'staged_build_s9_update_hits', 's9_kill_streak',
+                    function () {
+                        if ($this->logsHitsTableExists()) {
+                            $this->markBuildStage('staged_build_s9_update_hits');
+                            $this->stageUpdateHits();
+                            return null;
+                        }
+                        $this->markBuildStage('staged_build_s9_update_hits', 'skipped; logs hits table unavailable');
+                        return 'skipped';
                     }
-                    $this->markBuildStage('staged_build_s9_update_hits', 'skipped; logs hits table unavailable');
-                    return 'skipped';
+                );
+                if ($s9Result === false || $s9Result === 'halted') {
+                    return false;
                 }
-            );
-            if ($s9Result === false) {
-                return false; // host killed S9; next tick resumes from S9
+                // Skipped or not, advance past S9.
+                $this->writeProgressOption('current_stage', 9);
+                $stage = 9;
             }
-            // Skipped or not, we've moved past S9.
-            $this->writeProgressOption('current_stage', 9);
-            $stage = 9;
         }
 
         if ($stage < 10) {
-            $this->markBuildStage('staged_build_s10_index_sort');
-            // Non-batched: same kill-streak escape valve as S3 -- a
-            // CREATE INDEX that exceeds the host's max_statement_time on
-            // big buffers needs an extended retry timeout to complete.
-            if ($this->runNonBatchedStageWithKillStreakEscape(
-                10, 'staged_build_s10_index_sort', 's10_kill_streak',
-                function () { $this->stageAddSortIndexes(); }
-            ) === false) {
-                return false; // host killed S10; next tick resumes from S10
+            if ($this->isStageMarkedSkipped(10)) {
+                $this->writeProgressOption('current_stage', 10);
+                $stage = 10;
+            } else {
+                $this->markBuildStage('staged_build_s10_index_sort');
+                // Non-batched: same kill-streak escape valve as S3. A
+                // CREATE INDEX that exceeds the host's max_statement_time on
+                // big buffers needs an extended retry timeout to complete.
+                $r = $this->runNonBatchedStageWithKillStreakEscape(
+                    10, 'staged_build_s10_index_sort', 's10_kill_streak',
+                    function () { $this->stageAddSortIndexes(); }
+                );
+                if ($r === false || $r === 'halted') {
+                    return false;
+                }
+                $this->writeProgressOption('current_stage', 10);
+                $stage = 10;
             }
-            $this->writeProgressOption('current_stage', 10);
-            $stage = 10;
         }
 
         if ($stage < 11) {
             $this->markBuildStage('staged_build_s11_swap');
-            if ($this->runTimedViewBuildStage(11, 'staged_build_s11_swap', function () {
+            $r = $this->runTimedViewBuildStage(11, 'staged_build_s11_swap', function () {
                 $this->stageRenameSwap();
-            }) === false) {
-                return false; // host killed S11; next tick resumes from S11
+            });
+            if ($r === false || $r === 'halted') {
+                return false;
             }
             if (function_exists('update_option')) {
                 update_option($this->viewDoneFreshnessOptionName(), time(), false);

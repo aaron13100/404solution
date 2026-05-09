@@ -209,6 +209,80 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
     }
 
     /**
+     * True when an error from a staged-build query represents a permanent
+     * host-side environmental constraint we cannot recover from by retrying:
+     * GRANT-revoked privilege (CREATE TEMPORARY TABLES, ALTER, RENAME),
+     * read-only replica, exhausted disk/quota, table marked crashed (a
+     * crashed plugin table on a stage that does DDL we can't repair our
+     * way out of). Re-running the same query on the next cron tick will
+     * just produce the same error.
+     *
+     * Used by classifyStageFailure() to decide between "skip optional stage"
+     * and "halt critical stage". Resumable kills (max_statement_time, lock
+     * waits, gone-away) are NOT permanent and are already handled by
+     * isResumableStagedKill().
+     *
+     * Programmer-class errors (syntax, undefined column, unknown function)
+     * deliberately return false: we want those to surface as bugs, not be
+     * silently degraded around. (Codex pushback in test docblock for
+     * testStage9SyntaxErrorIsNotSilentlySkipped.)
+     *
+     * @param string $errorText
+     * @return bool
+     */
+    private function isPermanentHostSideStagedFailure(string $errorText): bool {
+        if (!is_string($errorText) || $errorText === '') {
+            return false;
+        }
+        if ($this->isResumableStagedKill($errorText)) {
+            return false;
+        }
+        return ($this->isAccessDeniedError($errorText)
+            || $this->isReadOnlyError($errorText)
+            || $this->isDiskFullError($errorText)
+            || $this->isQuotaLimitError($errorText));
+    }
+
+    /**
+     * Per-stage classification for an error raised inside the staged view
+     * build. Routes the orchestrator's catch block instead of the legacy
+     * binary "resumable-kill or rethrow" decision: the staged build has
+     * stages that can be skipped without breaking publication (S3/S9/S10:
+     * adds/aggregates) and stages that genuinely cannot proceed without
+     * (S1 create, S2 insert, S11 swap).
+     *
+     * Returns one of:
+     *   - 'resumable' : kill class the next tick can retry (existing behavior)
+     *   - 'skip'      : permanent host failure on an optional stage; mark
+     *                   the stage permanently skipped, advance past it
+     *   - 'halt'      : permanent host failure on a critical stage; stop
+     *                   re-trying, surface a deduplicated admin notice
+     *   - 'rethrow'   : programmer-class or unknown error; let it propagate
+     *                   so the dev mailbox carries actionable context
+     *
+     * The per-stage policy lives on
+     * ABJ_404_Solution_ViewBuildConfig::stageFailurePolicy() so it can be
+     * tuned without touching this classifier.
+     *
+     * @param int    $stageNumber  1..11
+     * @param string $errorText
+     * @return string
+     */
+    public function classifyStageFailure(int $stageNumber, string $errorText): string {
+        if (!is_string($errorText) || $errorText === '') {
+            return 'rethrow';
+        }
+        if ($this->isResumableStagedKill($errorText)) {
+            return 'resumable';
+        }
+        if (!$this->isPermanentHostSideStagedFailure($errorText)) {
+            return 'rethrow';
+        }
+        $policy = ABJ_404_Solution_ViewBuildConfig::stageFailurePolicy($stageNumber);
+        return $policy === 'optional' ? 'skip' : 'halt';
+    }
+
+    /**
      * True when an error from a staged-build query represents a kill the
      * host inflicted on us (out of our control) that the build can resume
      * from on the next request. The staged pipeline persists progress

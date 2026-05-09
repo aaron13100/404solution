@@ -19,6 +19,7 @@ return array(
     'ABJ_404_Solution_AjaxSecurityTrait' => $base . 'includes/ajax/AjaxSecurityTrait.php',
     'ABJ_404_Solution_AjaxFailureLoggingTrait' => $base . 'includes/ajax/AjaxFailureLoggingTrait.php',
     'ABJ_404_Solution_DataAccess_ErrorClassificationTrait' => $base . 'includes/DataAccessTrait_ErrorClassification.php',
+    'ABJ_404_Solution_DataAccess_ViewBuildHostFailurePolicyTrait' => $base . 'includes/DataAccessTrait_ViewBuildHostFailurePolicy.php',
     'ABJ_404_Solution_DataAccess_LogsTrait' => $base . 'includes/DataAccessTrait_Logs.php',
     'ABJ_404_Solution_DataAccess_LogsHitsRebuildTrait' => $base . 'includes/DataAccessTrait_LogsHitsRebuild.php',
     'ABJ_404_Solution_DataAccess_MaintenanceTrait' => $base . 'includes/DataAccessTrait_Maintenance.php',

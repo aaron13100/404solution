@@ -67,6 +67,27 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
         's3_kill_streak'  => 'abj404_view_build_s3_kill_streak',
         's9_kill_streak'  => 'abj404_view_build_s9_kill_streak',
         's10_kill_streak' => 'abj404_view_build_s10_kill_streak',
+        // Per-stage no-progress resumable-kill streak. Counts consecutive
+        // ticks where the stage callback raised a resumable-kill error
+        // (host kill, lock wait, gone-away) without making any forward
+        // progress. After VIEW_BUILD_FLOOR_KILL_STREAK_HALT_THRESHOLD
+        // strikes the build halts: the host cannot complete this stage's
+        // smallest unit of work so further retries only loop. Reset to
+        // 0 on any successful completion or wall-clock yield with
+        // progress. Distinct from s{N}_kill_streak: that one extends the
+        // per-query timeout for non-batched stages; this one detects
+        // genuine "host can never finish" and halts.
+        's1_no_progress_streak'  => 'abj404_view_build_s1_no_progress',
+        's2_no_progress_streak'  => 'abj404_view_build_s2_no_progress',
+        's3_no_progress_streak'  => 'abj404_view_build_s3_no_progress',
+        's4_no_progress_streak'  => 'abj404_view_build_s4_no_progress',
+        's5_no_progress_streak'  => 'abj404_view_build_s5_no_progress',
+        's6_no_progress_streak'  => 'abj404_view_build_s6_no_progress',
+        's7_no_progress_streak'  => 'abj404_view_build_s7_no_progress',
+        's8_no_progress_streak'  => 'abj404_view_build_s8_no_progress',
+        's9_no_progress_streak'  => 'abj404_view_build_s9_no_progress',
+        's10_no_progress_streak' => 'abj404_view_build_s10_no_progress',
+        's11_no_progress_streak' => 'abj404_view_build_s11_no_progress',
     );
 
     /**

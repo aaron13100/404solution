@@ -102,5 +102,76 @@ final class ABJ_404_Solution_ViewBuildConfig {
      */
     const VIEW_BUILD_NON_BATCHED_KILL_RETRY_CAP_SECONDS = 240;
 
+    /**
+     * Floor-kill streak threshold. After this many consecutive kills at
+     * VIEW_BUILD_MIN_BATCH_SIZE on the same stage, the build halts: the
+     * host cannot finish the plugin's smallest unit of work, retrying
+     * will only loop forever and trip the JS poller's no-progress
+     * deadline. Surfaces as a "host_unfit" admin notice.
+     */
+    const VIEW_BUILD_FLOOR_KILL_STREAK_HALT_THRESHOLD = 5;
+
+    /**
+     * TTL for the deduplicated admin notice transients raised when a
+     * stage is permanently skipped or the build halts. One notice per
+     * 24h per failure type per the self-healing reliability rules in
+     * CLAUDE.md (notices on the plugin's own admin screen, never email,
+     * never wp-admin-wide banner).
+     */
+    const VIEW_BUILD_DEGRADED_NOTICE_TTL_SECONDS = 86400;
+
+    /**
+     * Per-stage failure policy used by the host-failure classifier. When
+     * a stage's callback raises an error that the classifier identifies
+     * as a permanent host-side constraint (access denied, read-only,
+     * disk-full, quota), this map decides whether the build can degrade
+     * gracefully past the stage ('optional': skip + advance) or must
+     * stop retrying and surface a critical notice ('critical': halt).
+     *
+     * Optional stages (skippable on permanent failure):
+     *   - S3 (ALTER ADD INDEX on view_build): build runs slower without
+     *     the index, but completes correctly.
+     *   - S9 (CREATE TEMPORARY hits aggregate): hit-count column is
+     *     null/0 but the rest of the redirect listing is intact.
+     *   - S10 (ALTER ADD sort indexes): sorted reads slower, correct.
+     *
+     * Critical stages (halt on permanent failure):
+     *   - S1 (create build buffer): nothing can run without the buffer.
+     *   - S2 (insert redirects): empty buffer means empty published view.
+     *   - S4-S8 (UPDATE-JOIN against wp_posts/wp_terms/external/special):
+     *     resolved fields are mandatory for the rendered view; partial
+     *     resolution would produce a broken admin screen.
+     *   - S11 (RENAME swap): without the swap, view_done is never
+     *     published and the build is wasted work.
+     *
+     * @var array<int, string>
+     */
+    private const STAGE_FAILURE_POLICY = array(
+        1  => 'critical',
+        2  => 'critical',
+        3  => 'optional',
+        4  => 'critical',
+        5  => 'critical',
+        6  => 'critical',
+        7  => 'critical',
+        8  => 'critical',
+        9  => 'optional',
+        10 => 'optional',
+        11 => 'critical',
+    );
+
+    /**
+     * Look up the per-stage failure policy. Stages not registered in
+     * STAGE_FAILURE_POLICY default to 'critical' (fail safely: any
+     * unknown stage that fails permanently halts rather than silently
+     * skipping data the user expects).
+     *
+     * @param int $stageNumber  1-based staged build number.
+     * @return string  'optional' or 'critical'.
+     */
+    public static function stageFailurePolicy(int $stageNumber): string {
+        return self::STAGE_FAILURE_POLICY[$stageNumber] ?? 'critical';
+    }
+
     private function __construct() {}
 }
