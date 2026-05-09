@@ -362,7 +362,7 @@ function abj404StartStageProgressPolling(config) {
                 requestId: config.requestId
             }
         }).done(function(stageResult) {
-            processStageResult(stageResult, !stopped);
+            processStageResult(stageResult, !stopped || forceFinalFetch === true);
         });
     };
     jQuery('.abj404-refresh-status').text(baseMessage + ' (...)');
