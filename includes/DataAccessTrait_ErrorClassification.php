@@ -392,7 +392,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
      * @return bool
      */
     private function isResumableStagedKill(string $errorText): bool {
-        if (!is_string($errorText) || $errorText === '') {
+        if ($errorText === '') {
             return false;
         }
         if ($this->isQueryTimeoutError($errorText)) {
@@ -471,7 +471,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
     }
 
     private function noteDatabaseIssueFromError(string $errorText): void {
-        if (!is_string($errorText) || trim($errorText) === '') {
+        if (trim($errorText) === '') {
             return;
         }
         if ($this->isDiskFullError($errorText)) {
@@ -524,7 +524,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
 
     /** @param string $errorText @return bool */
     private function isMissingPluginTableError(string $errorText): bool {
-        if (!is_string($errorText) || $errorText === '') {
+        if ($errorText === '') {
             return false;
         }
         $lower = strtolower($errorText);

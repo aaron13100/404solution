@@ -45,27 +45,41 @@ trait ABJ_404_Solution_DataAccess_ViewBuildSessionEnvProbeTrait {
      */
     private $sessionVariablesProbeCache = null;
 
-    /**
-     * Out-of-range thresholds for the operational + DDL-safety MySQL session
-     * variables probed at S1 entry. Centralized so the probe and tests agree
-     * on the floor in one place.
-     */
-    private const SESSION_PROBE_THRESHOLDS = array(
-        'innodb_lock_wait_timeout_min'         => 30,           // seconds
-        'tmp_table_size_min'                   => 16777216,     // 16M
-        'max_heap_table_size_min'              => 16777216,     // 16M
-        'long_query_time_min'                  => 1.0,          // seconds (warn if log on AND below)
-        'innodb_buffer_pool_size_min'          => 268435456,    // 256M
-        'wait_timeout_min'                     => 600,          // seconds
-        'interactive_timeout_min'              => 600,          // seconds
-        'thread_stack_min'                     => 196608,       // 192K (well below typical 256K-1M)
-        'open_files_limit_min'                 => 1024,
-        'innodb_online_alter_log_max_size_min' => 134217728,    // 128M
-    );
-
     /** @return string  Option name for the persisted session-variables probe. */
     private function sessionVariablesProbeOptionName(): string {
         return 'abj404_view_build_session_env_probe';
+    }
+
+    /**
+     * Read an int from a probe values map, returning 0 when the value is
+     * non-numeric. Avoids the (int) cast on `mixed` which PHPStan level 9
+     * flags as `cast.int`.
+     *
+     * @param array<string,mixed> $values
+     */
+    private static function probeIntFromValues(array $values, string $key): int {
+        $v = $values[$key] ?? 0;
+        return is_numeric($v) ? (int)$v : 0;
+    }
+
+    /**
+     * Read a float from a probe values map, returning 0.0 when non-numeric.
+     *
+     * @param array<string,mixed> $values
+     */
+    private static function probeFloatFromValues(array $values, string $key): float {
+        $v = $values[$key] ?? 0;
+        return is_numeric($v) ? (float)$v : 0.0;
+    }
+
+    /**
+     * Read a string from a probe values map, returning '' when not scalar.
+     *
+     * @param array<string,mixed> $values
+     */
+    private static function probeStringFromValues(array $values, string $key): string {
+        $v = $values[$key] ?? '';
+        return is_scalar($v) ? (string)$v : '';
     }
 
     /**
@@ -225,9 +239,9 @@ trait ABJ_404_Solution_DataAccess_ViewBuildSessionEnvProbeTrait {
      */
     private function classifySessionVariableWarnings(array $values): array {
         $warnings = array();
-        $t = self::SESSION_PROBE_THRESHOLDS;
+        $t = ABJ_404_Solution_ViewBuildConfig::SESSION_PROBE_THRESHOLDS;
 
-        $iLockWait = (int)($values['innodb_lock_wait_timeout'] ?? 0);
+        $iLockWait = self::probeIntFromValues($values, 'innodb_lock_wait_timeout');
         if ($iLockWait > 0 && $iLockWait < $t['innodb_lock_wait_timeout_min']) {
             $warnings[] = sprintf(
                 'innodb_lock_wait_timeout=%ds (< %ds); the staged build may abort '
@@ -236,8 +250,8 @@ trait ABJ_404_Solution_DataAccess_ViewBuildSessionEnvProbeTrait {
             );
         }
 
-        $tmpTable = (int)($values['tmp_table_size'] ?? 0);
-        $maxHeap = (int)($values['max_heap_table_size'] ?? 0);
+        $tmpTable = self::probeIntFromValues($values, 'tmp_table_size');
+        $maxHeap = self::probeIntFromValues($values, 'max_heap_table_size');
         if ($tmpTable > 0 && $tmpTable < $t['tmp_table_size_min']) {
             $warnings[] = sprintf(
                 'tmp_table_size=%d (< %d MB); MySQL will spill GROUP BY work to '
@@ -254,9 +268,10 @@ trait ABJ_404_Solution_DataAccess_ViewBuildSessionEnvProbeTrait {
         }
 
         $rawSlow = $values['slow_query_log'] ?? '';
+        $rawSlowStr = is_scalar($rawSlow) ? (string)$rawSlow : '';
         $slowOn = (is_numeric($rawSlow) && (int)$rawSlow > 0)
-            || strtoupper((string)$rawSlow) === 'ON';
-        $longTime = (float)($values['long_query_time'] ?? 0);
+            || strtoupper($rawSlowStr) === 'ON';
+        $longTime = self::probeFloatFromValues($values, 'long_query_time');
         if ($slowOn && $longTime > 0 && $longTime < $t['long_query_time_min']) {
             $warnings[] = sprintf(
                 'slow_query_log=ON with long_query_time=%.3fs (< %.1fs); the staged '
@@ -265,7 +280,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildSessionEnvProbeTrait {
             );
         }
 
-        $bufferPool = (int)($values['innodb_buffer_pool_size'] ?? 0);
+        $bufferPool = self::probeIntFromValues($values, 'innodb_buffer_pool_size');
         if ($bufferPool > 0 && $bufferPool < $t['innodb_buffer_pool_size_min']) {
             $warnings[] = sprintf(
                 'innodb_buffer_pool_size=%d (< %d MB); large logsv2 reads at S2/S9 '
@@ -274,8 +289,8 @@ trait ABJ_404_Solution_DataAccess_ViewBuildSessionEnvProbeTrait {
             );
         }
 
-        $waitTimeout = (int)($values['wait_timeout'] ?? 0);
-        $interactiveTimeout = (int)($values['interactive_timeout'] ?? 0);
+        $waitTimeout = self::probeIntFromValues($values, 'wait_timeout');
+        $interactiveTimeout = self::probeIntFromValues($values, 'interactive_timeout');
         if ($waitTimeout > 0 && $waitTimeout < $t['wait_timeout_min']) {
             $warnings[] = sprintf(
                 'wait_timeout=%ds (< %ds); the build connection can drop mid-stage '
@@ -290,14 +305,14 @@ trait ABJ_404_Solution_DataAccess_ViewBuildSessionEnvProbeTrait {
             );
         }
 
-        $flush = strtoupper((string)($values['innodb_flush_method'] ?? ''));
+        $flush = strtoupper(self::probeStringFromValues($values, 'innodb_flush_method'));
         if ($flush === 'O_DSYNC') {
             $warnings[] = 'innodb_flush_method=O_DSYNC; this is the slowest flush '
                 . 'mode and large stage writes will be much slower than O_DIRECT.';
         }
 
-        $charset = strtolower((string)($values['character_set_server'] ?? ''));
-        $collation = strtolower((string)($values['collation_server'] ?? ''));
+        $charset = strtolower(self::probeStringFromValues($values, 'character_set_server'));
+        $collation = strtolower(self::probeStringFromValues($values, 'collation_server'));
         if ($charset !== '' && strpos($charset, 'utf8mb4') !== 0) {
             $warnings[] = sprintf(
                 'character_set_server=%s (not utf8mb4); 4-byte characters in URLs '
@@ -313,19 +328,19 @@ trait ABJ_404_Solution_DataAccess_ViewBuildSessionEnvProbeTrait {
             );
         }
 
-        $requirePk = strtoupper((string)($values['sql_require_primary_key'] ?? ''));
+        $requirePk = strtoupper(self::probeStringFromValues($values, 'sql_require_primary_key'));
         if ($requirePk === 'ON' || $requirePk === '1') {
             $warnings[] = 'sql_require_primary_key=ON; future CREATE TABLE without '
                 . 'a primary key will be rejected by the server.';
         }
 
-        $filePerTable = strtoupper((string)($values['innodb_file_per_table'] ?? ''));
+        $filePerTable = strtoupper(self::probeStringFromValues($values, 'innodb_file_per_table'));
         if ($filePerTable === 'OFF' || $filePerTable === '0') {
             $warnings[] = 'innodb_file_per_table=OFF; new InnoDB tables share the '
                 . 'system tablespace and cannot be reclaimed by DROP.';
         }
 
-        $threadStack = (int)($values['thread_stack'] ?? 0);
+        $threadStack = self::probeIntFromValues($values, 'thread_stack');
         if ($threadStack > 0 && $threadStack < $t['thread_stack_min']) {
             $warnings[] = sprintf(
                 'thread_stack=%d bytes (< %dK); deeply nested SQL may exhaust '
@@ -333,7 +348,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildSessionEnvProbeTrait {
                 $threadStack, (int)($t['thread_stack_min'] / 1024)
             );
         }
-        $openFiles = (int)($values['open_files_limit'] ?? 0);
+        $openFiles = self::probeIntFromValues($values, 'open_files_limit');
         if ($openFiles > 0 && $openFiles < $t['open_files_limit_min']) {
             $warnings[] = sprintf(
                 'open_files_limit=%d (< %d); high-concurrency table opens may '
@@ -342,7 +357,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildSessionEnvProbeTrait {
             );
         }
 
-        $alterLog = (int)($values['innodb_online_alter_log_max_size'] ?? 0);
+        $alterLog = self::probeIntFromValues($values, 'innodb_online_alter_log_max_size');
         if ($alterLog > 0 && $alterLog < $t['innodb_online_alter_log_max_size_min']) {
             $warnings[] = sprintf(
                 'innodb_online_alter_log_max_size=%d (< %d MB); the S3 / S10 '

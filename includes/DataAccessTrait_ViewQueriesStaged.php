@@ -534,54 +534,50 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
      *                              (privilege denied); admin notice set.
      */
     public function reconcileStagedTablesAtRunnerStartup(): string {
-        $deletemeTable = $this->viewDeletemeTableName();
-        $buildTable    = $this->viewBuildTableName();
-        $doneTable     = $this->viewDoneTableName();
+        $tempDeletemeTable = $this->viewDeletemeTableName();
+        $tempBuildTable    = $this->viewBuildTableName();
+        $doneTable         = $this->viewDoneTableName();
 
         $action = 'none';
-        $haveDeleteme = $this->stagedTableExists($deletemeTable);
+        $haveDeleteme = $this->stagedTableExists($tempDeletemeTable);
 
         if ($haveDeleteme) {
             $r = $this->queryAndGetResults(
-                'DROP TABLE IF EXISTS `' . $deletemeTable . '`',
+                'DROP TABLE IF EXISTS `' . $tempDeletemeTable . '`',
                 array('log_errors' => false)
             );
             $err = isset($r['last_error']) && is_string($r['last_error']) ? trim($r['last_error']) : '';
-            if ($err === '' || !$this->stagedTableExists($deletemeTable)) {
+            if ($err === '' || !$this->stagedTableExists($tempDeletemeTable)) {
                 $this->logger->infoMessage(sprintf(
                     '[staged] reconcile: dropped orphan view_deleteme `%s` from a previous failed run',
-                    $deletemeTable
+                    $tempDeletemeTable
                 ));
                 $action = 'cleaned';
             } else {
                 $this->logger->warn(sprintf(
                     '[staged] reconcile: orphan view_deleteme `%s` could not be dropped: %s',
-                    $deletemeTable, substr($err, 0, 200)
+                    $tempDeletemeTable, substr($err, 0, 200)
                 ));
-                if (method_exists($this, 'setStagedBuildHaltNotice')) {
-                    $this->setStagedBuildHaltNotice('orphan_deleteme', sprintf(
-                        'An orphan staged-build table `%s` from a previous failed run could not be dropped (privilege denied?): %s. Manual cleanup: `DROP TABLE %s`.',
-                        $deletemeTable, substr($err, 0, 200), $deletemeTable
-                    ));
-                }
+                $this->setStagedBuildHaltNotice('orphan_deleteme', sprintf(
+                    'An orphan staged-build buffer `%s` from a previous failed run could not be removed (privilege denied?): %s. Manual cleanup: drop the buffer table `%s` from your database (e.g. via phpMyAdmin or your hosting MySQL console).',
+                    $tempDeletemeTable, substr($err, 0, 200), $tempDeletemeTable
+                ));
                 $action = 'failed';
             }
         }
 
-        // Resumable build in flight? Leave view_build / view_done alone
+        // Resumable build in flight? Leave $tempBuildTable / view_done alone
         // so the next tick can continue from the persisted high-water
         // id; orphan deleteme cleanup above already ran and is enough.
-        $startedAt = method_exists($this, 'readProgressOption')
-            ? $this->readProgressOption('started_at', 0) : 0;
-        $currentStage = method_exists($this, 'readProgressOption')
-            ? $this->readProgressOption('current_stage', 0) : 0;
+        $startedAt = $this->readProgressOption('started_at', 0);
+        $currentStage = $this->readProgressOption('current_stage', 0);
         $resumeWindowOk = $startedAt > 0
             && (time() - $startedAt) < ABJ_404_Solution_ViewBuildConfig::VIEW_BUILD_RESUME_TTL_SECONDS;
         if ($resumeWindowOk && $currentStage > 0) {
             return $action;
         }
 
-        $haveBuild = $this->stagedTableExists($buildTable);
+        $haveBuild = $this->stagedTableExists($tempBuildTable);
         $haveDone  = $this->stagedTableExists($doneTable);
 
         // Case 2: view_build exists, view_done missing. Promote the
@@ -592,23 +588,23 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
         // invalidateViewDone() cleared progress while a redirect edit
         // had also added rows we never picked up).
         if ($haveBuild && !$haveDone) {
-            if (!$this->bufferIntegrityPassesForPromote($buildTable)) {
+            if (!$this->bufferIntegrityPassesForPromote($tempBuildTable)) {
                 $this->logger->infoMessage(sprintf(
                     '[staged] reconcile: not promoting view_build `%s` (integrity probe failed); dropping for fresh rebuild',
-                    $buildTable
+                    $tempBuildTable
                 ));
-                $this->queryAndGetResults('DROP TABLE IF EXISTS `' . $buildTable . '`',
+                $this->queryAndGetResults('DROP TABLE IF EXISTS `' . $tempBuildTable . '`',
                     array('log_errors' => false));
                 return 'cleaned';
             }
-            $sql = 'RENAME TABLE `' . $buildTable . '` TO `' . $doneTable . '`';
+            $sql = 'RENAME TABLE `' . $tempBuildTable . '` TO `' . $doneTable . '`';
             $r = $this->queryAndGetResults($sql, array('log_errors' => true));
             $err = isset($r['last_error']) && is_string($r['last_error']) ? trim($r['last_error']) : '';
             if ($err === '' && $this->stagedTableExists($doneTable)) {
                 $this->logger->infoMessage(sprintf(
                     '[staged] reconcile: promoted view_build to view_done '
                     . '(`%s` -> `%s`); previous run crashed before S11 swap',
-                    $buildTable, $doneTable
+                    $tempBuildTable, $doneTable
                 ));
                 if (function_exists('update_option')) {
                     update_option($this->viewDoneFreshnessOptionName(), $this->clock()->now(), false);
@@ -621,42 +617,38 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
                 '[staged] reconcile: could not promote view_build to view_done: %s',
                 substr($err, 0, 200)
             ));
-            if (method_exists($this, 'setStagedBuildHaltNotice')) {
-                $this->setStagedBuildHaltNotice('promote_build_failed', sprintf(
-                    'A staged-build buffer `%s` exists from a previous run but could not be promoted to `%s` (privilege denied?): %s. Manual cleanup: `RENAME TABLE %s TO %s` or `DROP TABLE %s`.',
-                    $buildTable, $doneTable, substr($err, 0, 200),
-                    $buildTable, $doneTable, $buildTable
-                ));
-            }
+            $this->setStagedBuildHaltNotice('promote_build_failed', sprintf(
+                'A staged-build buffer `%s` exists from a previous run but could not be promoted to `%s` (privilege denied?): %s. Manual cleanup: rename the buffer `%s` to `%s`, or remove the buffer `%s` from your database (e.g. via phpMyAdmin or your hosting MySQL console).',
+                $tempBuildTable, $doneTable, substr($err, 0, 200),
+                $tempBuildTable, $doneTable, $tempBuildTable
+            ));
             return 'failed';
         }
 
         // Case 3: both tables exist. view_done is the live one; the
-        // orphan view_build is from a halted previous run. Drop it so
+        // orphan $tempBuildTable is from a halted previous run. Drop it so
         // the next fresh build starts from a known empty buffer.
         if ($haveBuild && $haveDone) {
             $r = $this->queryAndGetResults(
-                'DROP TABLE IF EXISTS `' . $buildTable . '`',
+                'DROP TABLE IF EXISTS `' . $tempBuildTable . '`',
                 array('log_errors' => false)
             );
             $err = isset($r['last_error']) && is_string($r['last_error']) ? trim($r['last_error']) : '';
-            if ($err === '' || !$this->stagedTableExists($buildTable)) {
+            if ($err === '' || !$this->stagedTableExists($tempBuildTable)) {
                 $this->logger->infoMessage(sprintf(
                     '[staged] reconcile: dropped orphan view_build `%s` (view_done is live; previous run halted before swap)',
-                    $buildTable
+                    $tempBuildTable
                 ));
                 return 'cleaned';
             }
             $this->logger->warn(sprintf(
                 '[staged] reconcile: orphan view_build `%s` could not be dropped: %s',
-                $buildTable, substr($err, 0, 200)
+                $tempBuildTable, substr($err, 0, 200)
             ));
-            if (method_exists($this, 'setStagedBuildHaltNotice')) {
-                $this->setStagedBuildHaltNotice('orphan_build', sprintf(
-                    'A staged-build buffer `%s` exists from a previous run alongside the live view_done, but could not be dropped: %s. Manual cleanup: `DROP TABLE %s`.',
-                    $buildTable, substr($err, 0, 200), $buildTable
-                ));
-            }
+            $this->setStagedBuildHaltNotice('orphan_build', sprintf(
+                'A staged-build buffer `%s` from a previous run still exists alongside the live view_done, but could not be removed: %s. Manual cleanup: drop the buffer `%s` from your database (e.g. via phpMyAdmin or your hosting MySQL console).',
+                $tempBuildTable, substr($err, 0, 200), $tempBuildTable
+            ));
             return 'failed';
         }
 
@@ -797,9 +789,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
             // focused on stage sequencing. classifyAndHandleStageFailure()
             // returns one of: 'resumable_yield', 'skipped', 'halted',
             // 'completed' (post-S11 reconcile), or 'rethrow'.
-            $outcome = method_exists($this, 'classifyAndHandleStageFailure')
-                ? $this->classifyAndHandleStageFailure($stageNumber, $stageKey, $e->getMessage(), $started)
-                : 'rethrow';
+            $outcome = $this->classifyAndHandleStageFailure($stageNumber, $stageKey, $e->getMessage(), $started);
             if ($outcome === 'resumable_yield') {
                 return false;
             }
@@ -827,9 +817,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
         // forward progress. Reset the no-progress streak so legitimate
         // long-running batched stages do not eventually trip the halt.
         // Completion / skip likewise reset.
-        if (method_exists($this, 'resetStageNoProgressStreak')) {
-            $this->resetStageNoProgressStreak($stageNumber);
-        }
+        $this->resetStageNoProgressStreak($stageNumber);
         $this->logTimedViewBuildStage($stageNumber, $stageKey, $status, $started);
         return $result;
     }
@@ -1033,9 +1021,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
             $current,
             $aboutToRunStage
         );
-        if (method_exists($this, 'setStagedBuildHaltNotice')) {
-            $this->setStagedBuildHaltNotice('multisite_prefix_changed', $msg);
-        }
+        $this->setStagedBuildHaltNotice('multisite_prefix_changed', $msg);
         $this->logger->warn('[staged] ' . $msg);
         // Do NOT clear progress / captured prefix here: the original blog's
         // resume on a future request will see its (untouched) progress and

@@ -50,7 +50,7 @@ trait ABJ_404_Solution_DataAccess_ConnectionTrait {
             if (!$isConnected) {
                 $this->logger->debugMessage("Database connection lost, attempting to reconnect...");
 
-                if (method_exists($wpdb, 'db_connect') || is_callable(array($wpdb, 'db_connect'))) {
+                if (is_object($wpdb) && method_exists($wpdb, 'db_connect')) {
                     $wpdb->db_connect();
                 }
 

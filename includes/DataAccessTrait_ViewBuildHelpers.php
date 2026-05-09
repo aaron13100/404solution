@@ -567,6 +567,11 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
             }
         }
 
+        // @cache-write-audit: opt-out. $result is a captured snapshot of
+        // session-variable state used for diagnostics, not a cached query
+        // result. A failed SHOW VARIABLES populates defaults that are still
+        // safe to persist (the dashboard reader treats sql_mode=='' as a
+        // probe failure and skips its row).
         if (function_exists('update_option')) {
             update_option($this->sqlModeProbeOptionName(), $result, false);
         }
@@ -618,6 +623,10 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
             $relaxed[] = $flag;
         }
         $newMode = implode(',', $relaxed);
+        // @utf8-audit: opt-out. sql_mode flags are server-controlled
+        // uppercase ASCII identifiers (STRICT_TRANS_TABLES, ONLY_FULL_GROUP_BY,
+        // etc.); $newMode is built from filtered $flags whose source is
+        // SHOW SESSION VARIABLES output, never user input.
         $escaped = function_exists('esc_sql') ? esc_sql($newMode) : str_replace("'", "''", $newMode);
         $escapedStr = is_array($escaped) ? '' : (string)$escaped;
         $prevSuppress = method_exists($wpdb, 'suppress_errors') ? $wpdb->suppress_errors(true) : false;
@@ -630,7 +639,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
         if (method_exists($wpdb, 'suppress_errors')) {
             $wpdb->suppress_errors($prevSuppress);
         }
-        $err = (isset($wpdb->last_error) && is_string($wpdb->last_error)) ? $wpdb->last_error : '';
+        $err = $wpdb->last_error;
         if ($ok === false || $err !== '') {
             return false;
         }
@@ -647,9 +656,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
         // shares the same lifecycle as the sql_mode probe: a fresh build must
         // re-evaluate session config in case the host was tuned between runs.
         // Trait method lives on ABJ_404_Solution_DataAccess_ViewBuildSessionEnvProbeTrait.
-        if (method_exists($this, 'clearSessionVariablesProbeCache')) {
-            $this->clearSessionVariablesProbeCache();
-        }
+        $this->clearSessionVariablesProbeCache();
     }
 
     // PHP-runtime environment probe (set_time_limit / memory_limit) lives
@@ -1035,7 +1042,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
         // racing on the same option, at most one wins. set_transient is
         // NOT race-safe in this way (it overwrites), so we deliberately
         // use add_option directly.
-        $added = add_option($optionName, (string)$expiresAt, '', 'no');
+        $added = add_option($optionName, (string)$expiresAt, '', false);
         if ($added) {
             $this->usingTransientFallbackLock = true;
             return true;
@@ -1205,15 +1212,10 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
             true
         );
         $isError = (function_exists('is_wp_error') && is_wp_error($scheduled));
-        if ($scheduled === false || $isError) {
-            $detail = '';
-            if ($isError && is_object($scheduled) && method_exists($scheduled, 'get_error_message')) {
-                $detail = (string)$scheduled->get_error_message();
-            } elseif ($isError && is_object($scheduled) && isset($scheduled->errors) && is_array($scheduled->errors)) {
-                $firstKey = array_key_first($scheduled->errors);
-                $detail = $firstKey !== null ? (string)$firstKey : '';
-            }
-            $this->setViewBuildScheduleFailedNotice($detail);
+        if ($scheduled === false) {
+            $this->setViewBuildScheduleFailedNotice('');
+        } elseif ($isError) {
+            $this->setViewBuildScheduleFailedNotice((string)$scheduled->get_error_message());
         }
     }
 

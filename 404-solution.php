@@ -1219,12 +1219,14 @@ if (!function_exists('abj404_show_view_build_cron_notices')) {
 			if (!is_array($notice) || empty($notice['message'])) {
 				continue;
 			}
+			$noticeMessage = is_string($notice['message']) ? $notice['message'] : '';
 			echo '<div class="notice notice-warning"><p><strong>404 Solution:</strong> '
-				. esc_html($notice['message']) . '</p>';
+				. esc_html($noticeMessage) . '</p>';
 			if (!empty($notice['error_string'])) {
+				$noticeErrorString = is_string($notice['error_string']) ? $notice['error_string'] : '';
 				echo '<details><summary>' . esc_html(__('Show details', '404-solution'))
 					. '</summary><pre style="white-space:pre-wrap;word-break:break-all;max-width:100%;margin:6px 0;">'
-					. esc_html($notice['error_string']) . '</pre></details>';
+					. esc_html($noticeErrorString) . '</pre></details>';
 			}
 			echo '</div>';
 		}
@@ -1374,7 +1376,15 @@ function abj404_loadSomethingWhenWordPressIsReady() {
 
 	$action = null;
 	if ($isAdminRequest) {
-		$action = isset($_GET['action']) ? sanitize_text_field($_GET['action']) : (isset($_POST['action']) ? sanitize_text_field($_POST['action']) : null);
+		$actionGet = isset($_GET['action']) && is_string($_GET['action']) ? $_GET['action'] : '';
+		$actionPost = isset($_POST['action']) && is_string($_POST['action']) ? $_POST['action'] : '';
+		if ($actionGet !== '') {
+			$action = sanitize_text_field($actionGet);
+		} else if ($actionPost !== '') {
+			$action = sanitize_text_field($actionPost);
+		} else {
+			$action = null;
+		}
 	}
 	if ($isAdminRequest && abj404_is_local_debug_host() && current_user_can('manage_options') && isset($_GET['abj404_set_sim_db_ms'])) {
 		$nonceOk = isset($_GET['_wpnonce']) ? wp_verify_nonce($_GET['_wpnonce'], 'abj404_set_sim_db_ms') : false;

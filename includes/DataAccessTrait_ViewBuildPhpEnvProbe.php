@@ -40,13 +40,11 @@ trait ABJ_404_Solution_DataAccess_ViewBuildPhpEnvProbeTrait {
      */
     private $phpEnvironmentProbeCache = null;
 
-    /** Recommended floor for memory_limit in bytes (128M). */
-    private const PHP_MEMORY_LIMIT_RECOMMENDED_BYTES = 134217728;
-
-    /** Minimum free space (bytes) on @@tmpdir's volume before warning (100MB). */
-    private const PHP_TMPDIR_FREE_FLOOR_BYTES = 104857600;
-
-    /** Cached filesystem probe result for the current request. */
+    /**
+     * Cached filesystem probe result for the current request.
+     *
+     * @var array<string,mixed>|null
+     */
     private $filesystemEnvironmentProbeCache = null;
 
     /** @return string  Option name for the persisted PHP environment probe. */
@@ -75,9 +73,13 @@ trait ABJ_404_Solution_DataAccess_ViewBuildPhpEnvProbeTrait {
      *
      * Filterable via `apply_filters('abj404_php_env_probe', $defaults)` so
      * tests and operators can simulate disable_functions / low memory_limit
-     * without mutating the running PHP process.
+     * without mutating the running PHP process. Filter callers may add or
+     * widen keys, so the return type is the loose `array<string,mixed>`.
+     * Internally guaranteed keys: set_time_limit_available (bool),
+     * memory_limit_raw (string), memory_limit_bytes (int), memory_limit_low
+     * (bool).
      *
-     * @return array{set_time_limit_available: bool, memory_limit_raw: string, memory_limit_bytes: int, memory_limit_low: bool}
+     * @return array<string,mixed>
      */
     public function probePhpEnvironmentForBuild(): array {
         if (is_array($this->phpEnvironmentProbeCache)) {
@@ -98,7 +100,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildPhpEnvProbeTrait {
             // memory_limit_bytes == 0 means unlimited (-1 in php.ini), which
             // is fine and is NOT "low".
             'memory_limit_low'         => ($memoryBytes > 0
-                && $memoryBytes < self::PHP_MEMORY_LIMIT_RECOMMENDED_BYTES),
+                && $memoryBytes < ABJ_404_Solution_ViewBuildConfig::PHP_MEMORY_LIMIT_RECOMMENDED_BYTES),
         );
 
         if (function_exists('apply_filters')) {
@@ -115,7 +117,9 @@ trait ABJ_404_Solution_DataAccess_ViewBuildPhpEnvProbeTrait {
             );
         }
         if (!empty($result['memory_limit_low'])) {
-            $this->setLowMemoryLimitAdminNotice((int)$result['memory_limit_bytes']);
+            $resultMemoryBytes = isset($result['memory_limit_bytes']) && is_numeric($result['memory_limit_bytes'])
+                ? (int)$result['memory_limit_bytes'] : 0;
+            $this->setLowMemoryLimitAdminNotice($resultMemoryBytes);
         }
 
         if (function_exists('update_option')) {
@@ -145,7 +149,8 @@ trait ABJ_404_Solution_DataAccess_ViewBuildPhpEnvProbeTrait {
      */
     public function probeMemoryLimitForS9(): int {
         $probe = $this->probePhpEnvironmentForBuild();
-        return (int)($probe['memory_limit_bytes'] ?? 0);
+        $bytes = $probe['memory_limit_bytes'] ?? 0;
+        return is_numeric($bytes) ? (int)$bytes : 0;
     }
 
     /**
@@ -200,7 +205,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildPhpEnvProbeTrait {
         $payload = array(
             'kind'         => 'low_memory_limit',
             'bytes'        => $memoryBytes,
-            'recommended'  => self::PHP_MEMORY_LIMIT_RECOMMENDED_BYTES,
+            'recommended'  => ABJ_404_Solution_ViewBuildConfig::PHP_MEMORY_LIMIT_RECOMMENDED_BYTES,
             'message'      => sprintf(
                 'Your PHP memory_limit (%s) is below the recommended 128M; '
                 . 'the redirect view rebuild may fail on large sites.',
@@ -294,7 +299,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildPhpEnvProbeTrait {
         $pluginTmpCandidates = array_filter(array(
             $sysTmpDir,
             $rawUploadTmpDir,
-        ), function ($p) { return is_string($p) && $p !== ''; });
+        ), function ($p) { return $p !== ''; });
 
         $openBasedirPaths = $this->splitOpenBasedirPaths($rawOpenBasedir);
 
@@ -321,7 +326,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildPhpEnvProbeTrait {
             $prev = function_exists('error_reporting') ? error_reporting(0) : 0;
             try {
                 $bytes = @disk_free_space($tmpDirForCheck);
-                $tmpFreeBytes = ($bytes === false || $bytes === null) ? -1 : (int)$bytes;
+                $tmpFreeBytes = ($bytes === false) ? -1 : (int)$bytes;
             } catch (\Throwable $e) { // allow-silent-catch: best-effort probe; reset error_reporting in finally
                 $tmpFreeBytes = -1;
             }
@@ -329,7 +334,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildPhpEnvProbeTrait {
                 error_reporting($prev);
             }
         }
-        $tmpDiskLow = ($tmpFreeBytes >= 0 && $tmpFreeBytes < self::PHP_TMPDIR_FREE_FLOOR_BYTES);
+        $tmpDiskLow = ($tmpFreeBytes >= 0 && $tmpFreeBytes < ABJ_404_Solution_ViewBuildConfig::PHP_TMPDIR_FREE_FLOOR_BYTES);
 
         $result = array(
             'open_basedir_raw'                 => $rawOpenBasedir,
@@ -340,7 +345,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildPhpEnvProbeTrait {
             'upload_tmp_outside_open_basedir'  => $uploadTmpOutsideOpenBasedir,
             'tmp_free_bytes'                   => $tmpFreeBytes,
             'tmp_disk_low'                     => $tmpDiskLow,
-            'tmp_disk_floor_bytes'             => self::PHP_TMPDIR_FREE_FLOOR_BYTES,
+            'tmp_disk_floor_bytes'             => ABJ_404_Solution_ViewBuildConfig::PHP_TMPDIR_FREE_FLOOR_BYTES,
         );
 
         if (function_exists('apply_filters')) {
@@ -351,17 +356,25 @@ trait ABJ_404_Solution_DataAccess_ViewBuildPhpEnvProbeTrait {
         }
 
         $warnings = array();
+        $resultOpenBasedirRaw = isset($result['open_basedir_raw']) && is_scalar($result['open_basedir_raw'])
+            ? (string)$result['open_basedir_raw'] : '';
+        $resultSysTmpDir = isset($result['sys_tmp_dir']) && is_scalar($result['sys_tmp_dir'])
+            ? (string)$result['sys_tmp_dir'] : '';
+        $resultUploadTmpDirRaw = isset($result['upload_tmp_dir_raw']) && is_scalar($result['upload_tmp_dir_raw'])
+            ? (string)$result['upload_tmp_dir_raw'] : '';
+        $resultTmpFreeBytes = isset($result['tmp_free_bytes']) && is_numeric($result['tmp_free_bytes'])
+            ? (int)$result['tmp_free_bytes'] : -1;
         if (!empty($result['tmp_outside_open_basedir'])) {
             $warnings[] = sprintf(
                 'open_basedir (%s) does not include the system temp directory (%s); '
                 . 'PHP-side temp file work may fail.',
-                $result['open_basedir_raw'], $result['sys_tmp_dir']
+                $resultOpenBasedirRaw, $resultSysTmpDir
             );
         }
         if (!empty($result['upload_tmp_outside_open_basedir'])) {
             $warnings[] = sprintf(
                 'upload_tmp_dir (%s) is outside open_basedir (%s); ini upload paths cannot be probed.',
-                $result['upload_tmp_dir_raw'], $result['open_basedir_raw']
+                $resultUploadTmpDirRaw, $resultOpenBasedirRaw
             );
         }
         if (!empty($result['tmp_disk_low'])) {
@@ -369,8 +382,8 @@ trait ABJ_404_Solution_DataAccess_ViewBuildPhpEnvProbeTrait {
                 'temp directory (%s) has %d bytes free (< %d MB floor); the S9 hits '
                 . 'aggregate or any MySQL temp materialization may fail with "No space left on device".',
                 $tmpDirForCheck,
-                (int)$result['tmp_free_bytes'],
-                (int)(self::PHP_TMPDIR_FREE_FLOOR_BYTES / 1048576)
+                $resultTmpFreeBytes,
+                (int)(ABJ_404_Solution_ViewBuildConfig::PHP_TMPDIR_FREE_FLOOR_BYTES / 1048576)
             );
         }
         $result['warnings'] = $warnings;
@@ -439,7 +452,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildPhpEnvProbeTrait {
         if ($path === '') { return ''; }
         if (function_exists('realpath')) {
             $real = @realpath($path);
-            if (is_string($real) && $real !== '') {
+            if (is_string($real)) {
                 return rtrim($real, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
             }
         }
@@ -455,12 +468,17 @@ trait ABJ_404_Solution_DataAccess_ViewBuildPhpEnvProbeTrait {
      */
     private function setFilesystemEnvAdminNotice(array $probe): void {
         $key = 'abj404_view_build_filesystem_env_notice';
+        $rawWarnings = isset($probe['warnings']) && is_array($probe['warnings']) ? $probe['warnings'] : array();
+        $stringWarnings = array();
+        foreach ($rawWarnings as $w) {
+            if (is_string($w)) { $stringWarnings[] = $w; }
+        }
         $payload = array(
             'kind'     => 'filesystem_env',
-            'warnings' => isset($probe['warnings']) && is_array($probe['warnings']) ? $probe['warnings'] : array(),
+            'warnings' => $stringWarnings,
             'message'  => 'The 404 Solution view-build pipeline detected filesystem '
                 . 'host constraints that may degrade the next rebuild: '
-                . implode(' | ', isset($probe['warnings']) && is_array($probe['warnings']) ? $probe['warnings'] : array()),
+                . implode(' | ', $stringWarnings),
             'when'     => $this->clock()->now(),
         );
         if (function_exists('set_transient')) {

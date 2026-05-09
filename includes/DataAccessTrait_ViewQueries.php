@@ -1335,7 +1335,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
 
         $row = $resultRows[0];
         $minId = is_array($row) ? array_values($row)[0] : (array_values((array)$row)[0] ?? 0);
-        return (int)($minId ?? 0);
+        return is_numeric($minId) ? (int)$minId : 0;
     }
 
     /**

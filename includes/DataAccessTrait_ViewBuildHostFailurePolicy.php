@@ -264,9 +264,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHostFailurePolicyTrait {
         // A force rebuild explicitly restarts the pipeline; the captured
         // prefix is per-build, not per-host, so wipe it so the fresh S1
         // re-captures from the (presumably correct) current $wpdb->prefix.
-        if (method_exists($this, 'clearPrefixAtStageOne')) {
-            $this->clearPrefixAtStageOne();
-        }
+        $this->clearPrefixAtStageOne();
     }
 
     /**
@@ -393,7 +391,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHostFailurePolicyTrait {
         if ($stageNumber < 1 || $stageNumber > 11) {
             return '';
         }
-        $prefix = method_exists($this, 'getLowercasePrefix') ? $this->getLowercasePrefix() : '';
+        $prefix = $this->getLowercasePrefix();
         return $prefix . 'abj404_view_build_s' . $stageNumber . '_no_progress';
     }
 

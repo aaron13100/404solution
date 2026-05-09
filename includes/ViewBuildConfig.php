@@ -186,5 +186,30 @@ final class ABJ_404_Solution_ViewBuildConfig {
         return self::STAGE_FAILURE_POLICY[$stageNumber] ?? 'critical';
     }
 
+    /** Recommended floor for memory_limit (128M) in the PHP env probe. */
+    const PHP_MEMORY_LIMIT_RECOMMENDED_BYTES = 134217728;
+
+    /** Floor for free space on @@tmpdir's volume before warning (100MB). */
+    const PHP_TMPDIR_FREE_FLOOR_BYTES = 104857600;
+
+    /**
+     * Out-of-range thresholds for the operational + DDL-safety MySQL session
+     * variables probed at S1 entry.  Centralized here (rather than on the
+     * trait) because PHP < 8.2 forbids constants in trait bodies and the
+     * plugin supports 7.4+.
+     */
+    const SESSION_PROBE_THRESHOLDS = array(
+        'innodb_lock_wait_timeout_min'         => 30,
+        'tmp_table_size_min'                   => 16777216,
+        'max_heap_table_size_min'              => 16777216,
+        'long_query_time_min'                  => 1.0,
+        'innodb_buffer_pool_size_min'          => 268435456,
+        'wait_timeout_min'                     => 600,
+        'interactive_timeout_min'              => 600,
+        'thread_stack_min'                     => 196608,
+        'open_files_limit_min'                 => 1024,
+        'innodb_online_alter_log_max_size_min' => 134217728,
+    );
+
     private function __construct() {}
 }
