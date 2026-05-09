@@ -24,6 +24,19 @@ final class ABJ_404_Solution_ViewBuildConfig {
     const VIEW_DONE_BUILD_LOCK_NAME = 'abj404_view_build';
 
     /**
+     * Safety-net TTL for the option-row used as the fallback build lock on
+     * managed/sharded MySQL providers (PlanetScale, Vitess, ProxySQL splits)
+     * where session-scoped GET_LOCK is unavailable.  Sized at one full
+     * advance-tick budget plus headroom: a single request never holds the
+     * lock longer than VIEW_BUILD_PER_STAGE_BUDGET_SECONDS, but a crashed
+     * request must not strand the lock indefinitely.  Production code
+     * always releases the option in `releaseViewBuildLock`; this TTL only
+     * applies when the releasing request died (PHP fatal, OOM, lost
+     * connection) and the next worker needs to take over.
+     */
+    const VIEW_BUILD_TRANSIENT_LOCK_TTL_SECONDS = 600;
+
+    /**
      * Default batch size for the resumable bulk INSERT (S2) and per-id-range
      * UPDATEs (S4/S5). Tuned to fit comfortably within a single per-query
      * timeout on a slow shared host (5 to 10s typical). Override via define()
