@@ -310,8 +310,11 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
         $this->clearPrefixAtStageOne();
         // Same lifecycle: a fresh build must re-probe the live session so a
         // hosting move that changed sql_mode (or a schema swap that changed
-        // max_allowed_packet) is picked up at the next S1 entry.
+        // max_allowed_packet) is picked up at the next S1 entry. The PHP
+        // environment probe (set_time_limit / memory_limit) is reset for the
+        // same reason: an ini change between builds must take effect.
         $this->clearSqlModeProbeCache();
+        $this->clearPhpEnvironmentProbeCache();
     }
 
     /**
@@ -641,6 +644,11 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
             delete_option($this->sqlModeProbeOptionName());
         }
     }
+
+    // PHP-runtime environment probe (set_time_limit / memory_limit) lives
+    // on the sibling ABJ_404_Solution_DataAccess_ViewBuildPhpEnvProbeTrait.
+    // clearAllProgressOptions() above calls clearPhpEnvironmentProbeCache()
+    // from that trait so a fresh build re-evaluates the host on next entry.
 
     /**
      * Sanitize a URL string at the build/log boundary so a NULL byte or a

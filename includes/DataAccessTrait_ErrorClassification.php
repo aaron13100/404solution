@@ -276,13 +276,35 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
     }
 
     /**
+     * Detect PHP "Allowed memory size of N bytes exhausted" / "Out of memory"
+     * messages. Real OOM is a fatal that bypasses try/catch, but a Throwable
+     * wrapper (e.g. PHP 8 Error subclass surfaced from a memory-aware hook,
+     * or an explicit guard that pre-rejects an over-budget allocation) can
+     * carry the same wording. Routed through the staged-build classifier so
+     * S9 (optional) skips on OOM instead of bubbling out as a stage error.
+     *
+     * @param string $errorText
+     * @return bool
+     */
+    public function isOutOfMemoryError(string $errorText): bool {
+        if ($errorText === '') {
+            return false;
+        }
+        $lower = strtolower($errorText);
+        return ($this->f->strpos($lower, 'allowed memory size') !== false ||
+            $this->f->strpos($lower, 'out of memory') !== false ||
+            $this->f->strpos($lower, 'memory exhausted') !== false ||
+            $this->f->strpos($lower, 'memory_limit') !== false);
+    }
+
+    /**
      * True when an error from a staged-build query represents a permanent
      * host-side environmental constraint we cannot recover from by retrying:
      * GRANT-revoked privilege (CREATE TEMPORARY TABLES, ALTER, RENAME),
      * read-only replica, exhausted disk/quota, table marked crashed (a
      * crashed plugin table on a stage that does DDL we can't repair our
-     * way out of). Re-running the same query on the next cron tick will
-     * just produce the same error.
+     * way out of), or a PHP-side OOM. Re-running the same query on the
+     * next cron tick will just produce the same error.
      *
      * Used by classifyStageFailure() to decide between "skip optional stage"
      * and "halt critical stage". Resumable kills (max_statement_time, lock
@@ -307,7 +329,8 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
         return ($this->isAccessDeniedError($errorText)
             || $this->isReadOnlyError($errorText)
             || $this->isDiskFullError($errorText)
-            || $this->isQuotaLimitError($errorText));
+            || $this->isQuotaLimitError($errorText)
+            || $this->isOutOfMemoryError($errorText));
     }
 
     /**

@@ -971,13 +971,25 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
             $explicitOverride = true;
         }
 
+        // When set_time_limit() is in disable_functions, the build cannot
+        // extend its time mid-request. Widen the cushion (4s vs. 2s) and
+        // cap below the default budget so each tick yields earlier and the
+        // next cron tick resumes inside its own fresh request budget.
+        $setTimeLimitAvailable = $this->probeSetTimeLimitAvailability();
+
         if (!$explicitOverride) {
             $maxExec = (int)ini_get('max_execution_time');
             if ($maxExec >= 5) {
-                // Use almost the whole window; keep 2s back so the HTTP
-                // response, observers, and shutdown hooks have time to run.
-                $budget = (float)($maxExec - 2);
+                $cushion = $setTimeLimitAvailable ? 2 : 4;
+                $budget = (float)max(1, $maxExec - $cushion);
             }
+        }
+        if (!$explicitOverride && !$setTimeLimitAvailable) {
+            $tightCap = max(
+                1.0,
+                (float)ABJ_404_Solution_ViewBuildConfig::VIEW_BUILD_PER_STAGE_BUDGET_SECONDS - 4.0
+            );
+            $budget = min($budget, $tightCap);
         }
 
         if (function_exists('apply_filters')) {
@@ -1056,6 +1068,11 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
             return $this->viewDoneIsFresh();
         }
         self::$viewBuildAlreadyRanThisRequest = true;
+
+        // Probe the PHP runtime once per request: surfaces a low-memory
+        // admin notice and gates the per-stage budget into a tighter
+        // cron-tick mode when set_time_limit() is in disable_functions.
+        $this->probePhpEnvironmentForBuild();
 
         // Build is in the dedup window after a critical-stage permanent
         // host failure. Re-running would just produce the same denied
