@@ -53,15 +53,23 @@ class ABJ_404_Solution_ErrorHandler {
      * @return boolean
      */
     static function NormalErrorHandler($errno, $errstr, $errfile, $errline) {
-        // Respect PHP's `@` error-suppression operator. While inside @somefunc(),
-        // PHP sets error_reporting() to 0 for the duration of the call. A custom
-        // handler that ignores this state still escalates intentionally-suppressed
-        // warnings to error-level logging — defeating the suppression.
-        // Concrete case: @opcache_invalidate() at PluginLogic.php:1042 on hosts
-        // with opcache.restrict_api set was producing email-threshold reports
-        // because this guard was missing. Returning false here lets PHP's default
-        // handler honour the suppression.
-        if (error_reporting() === 0) {
+        // Respect PHP's `@` error-suppression operator. Up to PHP 7.x the @
+        // operator zeroed error_reporting() for the duration of the call;
+        // PHP 8.0+ instead leaves error_reporting() non-zero but masks out
+        // the specific level being silenced. A custom handler that ignores
+        // this state still escalates intentionally-suppressed warnings to
+        // error-level logging, defeating the suppression.
+        // Concrete case: @opcache_invalidate() at PluginLogic.php:1036 on
+        // hosts with opcache.restrict_api set produces an E_WARNING. The
+        // legacy `error_reporting() === 0` check matched on PHP 7.x but
+        // not on PHP 8.0+ (where the @ leaves the mask non-zero), so 24
+        // such ERROR entries reached the email reporter in the May 10
+        // debug zip, including 2 from current 4.1.17 sites on PHP 8.3.
+        // The bitwise form covers both eras: on PHP 7.x error_reporting()
+        // is 0 and `& $errno` is 0; on PHP 8.0+ the specific level bit is
+        // cleared and `& $errno` is also 0. Returning false here lets
+        // PHP's default handler honour the suppression.
+        if ((error_reporting() & $errno) === 0) {
             return false;
         }
 
