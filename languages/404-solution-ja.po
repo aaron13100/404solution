@@ -1642,8 +1642,8 @@ msgid "Error: Invalid language selected"
 msgstr "エラー：無効な言語が選択されました"
 
 #: includes/html/adminOptionsGeneral.html
-msgid "When an error is detected by the plugin, email the entire log file to the developer. This is not required for the plugin to function, but it is helpful for the developer and for future versions of the plugin. This reveals: everything in the debug log, the admin email address, installed PHP extensions, active plugins, PHP version, WordPress version, MySQL version, total published pages and posts, etc. (everything asked for when an issue is reported). Log files are checked daily when maintenance is run."
-msgstr "プラグインがエラーを検出すると、ログファイル全体を開発者にメールで送信します。これはプラグインが機能するために必要ではありませんが、開発者および将来のバージョンのプラグインにとって役立ちます。これにより、デバッグログのすべて、管理者のメールアドレス、インストールされたPHP拡張機能、アクティブなプラグイン、PHPバージョン、WordPressバージョン、MySQLバージョン、公開されたページと投稿の合計数など（問題が報告されたときに要求されるすべて）が明らかになります。ログファイルはメンテナンスの実行時に毎日チェックされます。"
+msgid "When the plugin detects an error, it transmits a copy of the debug log to the developer for diagnosis. Transmission may be by email or by HTTPS upload to a developer-operated server; the contents are the same. This is not required for the plugin to work, but it helps the developer fix bugs in future versions. The report includes: everything in the debug log, the admin email address, installed PHP extensions, active plugins, PHP version, WordPress version, MySQL version, total published pages and posts, etc. (everything asked for when a support issue is opened). Reports are checked daily when maintenance runs."
+msgstr "プラグインがエラーを検出すると、診断のためにデバッグログのコピーを開発者に送信します。送信方法はメールまたは開発者が運営するサーバーへのHTTPSアップロードのいずれかで、内容は同じです。これはプラグインの動作に必須ではありませんが、開発者が将来のバージョンで不具合を修正するのに役立ちます。レポートには次のものが含まれます：デバッグログのすべての内容、管理者のメールアドレス、インストール済みのPHP拡張機能、有効なプラグイン、PHPのバージョン、WordPressのバージョン、MySQLのバージョン、公開されたページと投稿の総数など（サポート問い合わせを開く際に尋ねられるすべての情報）。レポートはメンテナンスの実行時に毎日確認されます。"
 
 #: includes/html/viewSuggestions.html
 msgid "Display the closest matching pages by using the shortcode [abj404_solution_page_suggestions]."

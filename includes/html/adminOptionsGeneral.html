@@ -1,7 +1,7 @@
 <p>
     <label for="send_error_logs">{Help the developer by sending error logs}:</label>
     <input type="checkbox" name="send_error_logs" id="send_error_logs" value="1" {selectedSendErrorLogs}>
-    <BR/>&nbsp;&nbsp;&nbsp;{When an error is detected by the plugin, email the entire log file to the developer. This is not required for the plugin to function, but it is helpful for the developer and for future versions of the plugin. This reveals: everything in the debug log, the admin email address, installed PHP extensions, active plugins, PHP version, WordPress version, MySQL version, total published pages and posts, etc. (everything asked for when an issue is reported). Log files are checked daily when maintenance is run.}
+    <BR/>&nbsp;&nbsp;&nbsp;{When the plugin detects an error, it transmits a copy of the debug log to the developer for diagnosis. Transmission may be by email or by HTTPS upload to a developer-operated server; the contents are the same. This is not required for the plugin to work, but it helps the developer fix bugs in future versions. The report includes: everything in the debug log, the admin email address, installed PHP extensions, active plugins, PHP version, WordPress version, MySQL version, total published pages and posts, etc. (everything asked for when a support issue is opened). Reports are checked daily when maintenance runs.}
 </p>
 
 <p>

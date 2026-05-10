@@ -1645,8 +1645,8 @@ msgid "Error: Invalid language selected"
 msgstr "错误：选择了无效的语言"
 
 #: includes/html/adminOptionsGeneral.html
-msgid "When an error is detected by the plugin, email the entire log file to the developer. This is not required for the plugin to function, but it is helpful for the developer and for future versions of the plugin. This reveals: everything in the debug log, the admin email address, installed PHP extensions, active plugins, PHP version, WordPress version, MySQL version, total published pages and posts, etc. (everything asked for when an issue is reported). Log files are checked daily when maintenance is run."
-msgstr "当插件检测到错误时，将整个日志文件通过电子邮件发送给开发人员。这不是插件运行所必需的，但对开发人员和插件的未来版本很有帮助。这会显示：调试日志中的所有内容、管理员电子邮件地址、已安装的PHP扩展、活动插件、PHP版本、WordPress版本、MySQL版本、已发布页面和文章总数等（报告问题时所询问的所有内容）。日志文件在运行维护时每天检查。"
+msgid "When the plugin detects an error, it transmits a copy of the debug log to the developer for diagnosis. Transmission may be by email or by HTTPS upload to a developer-operated server; the contents are the same. This is not required for the plugin to work, but it helps the developer fix bugs in future versions. The report includes: everything in the debug log, the admin email address, installed PHP extensions, active plugins, PHP version, WordPress version, MySQL version, total published pages and posts, etc. (everything asked for when a support issue is opened). Reports are checked daily when maintenance runs."
+msgstr "当插件检测到错误时，会将调试日志的副本传输给开发者以进行诊断。传输方式可以是电子邮件，也可以通过HTTPS上传到由开发者运营的服务器；其内容是相同的。这不是插件正常运行所必需的，但有助于开发者在未来版本中修复缺陷。报告包括：调试日志中的所有内容、管理员电子邮件地址、已安装的PHP扩展、活动的插件、PHP版本、WordPress版本、MySQL版本、已发布的页面和文章的总数等（开启支持工单时所询问的所有内容）。报告在每日维护运行时进行检查。"
 
 #: includes/html/viewSuggestions.html
 # translation-verified: Technical shortcode name [abj404_solution_page_suggestions] intentionally in English
