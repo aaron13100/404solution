@@ -141,11 +141,24 @@ function abj404_autoloader($class) {
 			),
 			'ABJ_404_Solution_DataAccess' => array(
 				$inc . 'DataAccessTrait_Maintenance.php',
+				$inc . 'DataAccessTrait_Connection.php',
+				$inc . 'DataAccessTrait_ViewMetadata.php',
 				$inc . 'DataAccessTrait_ViewQueries.php',
+				$inc . 'DataAccessTrait_ViewQueriesStaged.php',
+				$inc . 'DataAccessTrait_ViewBuildStageCallbacks.php',
+				$inc . 'DataAccessTrait_ViewQueriesStagedRead.php',
+				$inc . 'DataAccessTrait_ViewBuildAdaptive.php',
+				$inc . 'DataAccessTrait_ViewBuildHelpers.php',
+				$inc . 'DataAccessTrait_ViewBuildPhpEnvProbe.php',
+				$inc . 'DataAccessTrait_ViewBuildSessionEnvProbe.php',
+				$inc . 'DataAccessTrait_ViewBuildHostFailurePolicy.php',
+				$inc . 'DataAccessTrait_ViewSnapshotCache.php',
 				$inc . 'DataAccessTrait_Logs.php',
+				$inc . 'DataAccessTrait_LogsHitsRebuild.php',
 				$inc . 'DataAccessTrait_Redirects.php',
 				$inc . 'DataAccessTrait_Stats.php',
 				$inc . 'DataAccessTrait_ErrorClassification.php',
+				$inc . 'DataAccessTrait_QueryTimeouts.php',
 			),
 			'ABJ_404_Solution_PluginLogic' => array(
 				$inc . 'PluginLogicTrait_UrlNormalization.php',
@@ -165,6 +178,29 @@ function abj404_autoloader($class) {
 				$inc . 'DatabaseUpgradesEtcTrait_NGram.php',
 				$inc . 'DatabaseUpgradesEtcTrait_Maintenance.php',
 				$inc . 'DatabaseUpgradesEtcTrait_PluginUpdate.php',
+				$inc . 'DatabaseUpgradesEtcTrait_TableRepair.php',
+				$inc . 'DatabaseUpgradesEtcTrait_Indexes.php',
+			),
+			// AJAX handler classes that pull in shared traits via `use`.
+			// Without these entries, a corrupted upload that loses the trait
+			// file would cause an uncatchable compile fatal in the host class.
+			'ABJ_404_Solution_Ajax_TrashLink' => array(
+				$inc . 'ajax/AjaxSecurityTrait.php',
+			),
+			'ABJ_404_Solution_Ajax_TrendData' => array(
+				$inc . 'ajax/AjaxSecurityTrait.php',
+			),
+			'ABJ_404_Solution_Ajax_CrossPluginImporter' => array(
+				$inc . 'ajax/AjaxSecurityTrait.php',
+			),
+			'ABJ_404_Solution_Ajax_EngineProfiles' => array(
+				$inc . 'ajax/AjaxSecurityTrait.php',
+			),
+			'ABJ_404_Solution_Ajax_SettingsModeToggle' => array(
+				$inc . 'ajax/AjaxSecurityTrait.php',
+			),
+			'ABJ_404_Solution_ViewUpdater' => array(
+				$inc . 'ajax/AjaxFailureLoggingTrait.php',
 			),
 		);
 	}
