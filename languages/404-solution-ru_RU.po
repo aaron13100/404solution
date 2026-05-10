@@ -279,6 +279,9 @@ msgstr "Отзыв успешно отправлен."
 msgid "Note: Feedback email could not be sent."
 msgstr "Примечание: Письмо с отзывом не может быть отправлено."
 
+msgid "Thanks for the feedback!"
+msgstr "Спасибо за отзыв!"
+
 msgid "All"
 msgstr "Все"
 

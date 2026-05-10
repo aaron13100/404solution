@@ -278,6 +278,9 @@ msgstr "Feedback har skickats."
 msgid "Note: Feedback email could not be sent."
 msgstr "Obs: Feedback-e-post kunde inte skickas."
 
+msgid "Thanks for the feedback!"
+msgstr "Tack för feedbacken!"
+
 msgid "All"
 msgstr "Alla"
 

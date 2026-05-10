@@ -282,6 +282,9 @@ msgstr "تم إرسال الملاحظات بنجاح."
 msgid "Note: Feedback email could not be sent."
 msgstr "ملاحظة: تعذر إرسال بريد الملاحظات."
 
+msgid "Thanks for the feedback!"
+msgstr "شكرًا لك على الملاحظات!"
+
 msgid "All"
 msgstr "الكل"
 

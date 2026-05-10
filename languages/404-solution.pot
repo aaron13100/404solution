@@ -1206,6 +1206,10 @@ msgstr ""
 msgid "Feedback could not be sent."
 msgstr ""
 
+#: includes/UninstallModal.php
+msgid "Thanks for the feedback!"
+msgstr ""
+
 #: includes/WordPress_Connector.php
 msgid "second"
 msgstr ""

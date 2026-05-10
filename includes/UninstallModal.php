@@ -434,24 +434,40 @@ class ABJ_404_Solution_UninstallModal {
             // If values match, the false return was just because value was unchanged (which is OK)
         }
 
-        // Send feedback email only if user explicitly opted in
-        $should_send_email = $preferences['send_feedback'];
+        // Queue feedback for asynchronous send only if user explicitly opted in.
+        // The actual HTTP POST + email-fallback runs out-of-band on the next
+        // page load via wp_schedule_single_event(), so this AJAX call never
+        // blocks on the network, even on slow SMTP / WAN paths.
+        if ($preferences['send_feedback']) {
+            $debugLog = '';
+            // Only fetch the log excerpt when the user opted into diagnostics.
+            // abj_service() is contractually non-throwing (returns null for
+            // unresolved services), so guarding with method_exists() is enough
+            // to keep this fire-and-forget path from needing a try/catch shim.
+            if (!empty($preferences['include_diagnostics']) && function_exists('abj_service')) {
+                $logger = abj_service('logging');
+                if (is_object($logger) && method_exists($logger, 'getSanitizedLogExcerptForSupport')) {
+                    $excerpt = $logger->getSanitizedLogExcerptForSupport();
+                    if (is_string($excerpt)) {
+                        $debugLog = $excerpt;
+                    }
+                }
+            }
 
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('404 Solution: send_feedback=' . ($preferences['send_feedback'] ? 'true' : 'false') . ', should_send_email=' . ($should_send_email ? 'true' : 'false'));
-        }
+            $extras = array(
+                'uninstall_reason'    => $preferences['uninstall_reason'],
+                'selected_issues'     => $preferences['selected_issues'],
+                'followup_details'    => $preferences['followup_details'],
+                'better_plugin_name'  => $preferences['better_plugin_name'],
+                'other_reason_text'   => $preferences['other_reason_text'],
+                'contact_email'       => $preferences['feedback_email'],
+                'include_diagnostics' => (bool)$preferences['include_diagnostics'],
+                'debug_log'           => $debugLog,
+            );
+            $payload = ABJ_404_Solution_FeedbackTransport::buildPayload('uninstall', $extras);
+            ABJ_404_Solution_FeedbackTransport::queue($payload, 'uninstall');
 
-        $email_sent = false;
-        if ($should_send_email) {
-            $email_sent = self::sendFeedbackEmail($preferences);
-        }
-
-        // Build success message
-        if ($should_send_email) {
-            // User sent feedback - show appropriate message
-            $message = $email_sent
-                ? __('Feedback sent successfully.', '404-solution')
-                : __('Feedback could not be sent.', '404-solution');
+            $message = __('Thanks for the feedback!', '404-solution');
         } else {
             // User skipped feedback - minimal message (won't be shown anyway due to instant redirect)
             $message = '';
@@ -659,177 +675,136 @@ class ABJ_404_Solution_UninstallModal {
     }
 
     /**
-     * Send feedback email to plugin author
+     * Email-fallback for FeedbackTransport when the HTTP POST fails. Builds a
+     * deactivation-feedback email body from a FeedbackTransport payload and
+     * dispatches it via wp_mail(). Public because the cron-context fallback in
+     * FeedbackTransport::sendNow() invokes this for type='uninstall'.
      *
-     * @param array<string, mixed> $preferences User preferences including feedback
-     * @return bool True if email sent successfully, false otherwise
+     * The payload is the array produced by FeedbackTransport::buildPayload(),
+     * carrying the uninstall extras (uninstall_reason, selected_issues,
+     * followup_details, better_plugin_name, other_reason_text, contact_email,
+     * include_diagnostics, debug_log). The diagnostic block is rebuilt live
+     * from the same in-class helpers the AJAX path used pre-migration so the
+     * email retains its existing shape and call surface (getPluginStatistics,
+     * getContentCounts, getDatabaseInfo, getActivePluginsList).
+     *
+     * @param array<string, mixed> $payload FeedbackTransport-built payload.
+     * @return bool True if wp_mail() reported success, false otherwise.
      */
-    private static function sendFeedbackEmail(array $preferences): bool {
-        // Get site information
+    public static function sendFeedbackEmail(array $payload): bool {
         global $wp_version;
 
-        $site_name = get_bloginfo('name');
-        $admin_email = get_option('admin_email');
+        $site_name = function_exists('get_bloginfo') ? (string)get_bloginfo('name') : '';
+        $rawAdminEmail = function_exists('get_option') ? get_option('admin_email') : '';
+        $admin_email = is_string($rawAdminEmail) ? $rawAdminEmail : '';
 
-        // Get plugin information
-        $plugin_stats = self::getPluginStatistics();
+        $contactEmail = isset($payload['contact_email']) && is_string($payload['contact_email']) ? $payload['contact_email'] : '';
+        $includeDiag = !empty($payload['include_diagnostics']);
 
-        // Gather system information (excluding site URL for privacy)
-        $db_info = self::getDatabaseInfo();
-        $content_counts = self::getContentCounts();
-        $system_info = array(
-            'WordPress Version' => $wp_version,
-            'PHP Version' => phpversion(),
-            'Plugin Version' => defined('ABJ404_VERSION') ? ABJ404_VERSION : 'Unknown',
-            'MySQL Version' => $db_info['version'],
-            'DB Charset' => $db_info['charset'],
-            'DB Collation' => $db_info['collation'],
-            'Multisite' => is_multisite() ? 'Yes' : 'No',
-            'Active Plugins' => self::getActivePluginsList(),
-            'Category Count' => $content_counts['categories'],
-            'Tag Count' => $content_counts['tags'],
-            'Total Pages' => $content_counts['pages'],
-            'Total Posts' => $content_counts['posts'],
-            // Redirect counts
-            'Redirects (active)' => $plugin_stats['redirects']['all'],
-            '  - Manual' => $plugin_stats['redirects']['manual'],
-            '  - Automatic' => $plugin_stats['redirects']['auto'],
-            '  - Regex' => $plugin_stats['redirects']['regex'],
-            '  - Trashed' => $plugin_stats['redirects']['trash'],
-            // Captured 404s
-            'Captured 404s (active)' => $plugin_stats['captured']['all'],
-            '  - New' => $plugin_stats['captured']['captured'],
-            '  - Ignored' => $plugin_stats['captured']['ignored'],
-            '  - Later' => $plugin_stats['captured']['later'],
-            '  - Trash' => $plugin_stats['captured']['trash'],
-            // Database stats
-            'Log Entries in DB' => $plugin_stats['log_count'],
-            'Log Table Size' => $plugin_stats['log_table_size_mb'] . ' MB',
-            'Debug File Size' => $plugin_stats['debug_file_size_mb'] . ' MB',
-        );
-
-        // Build email subject
         $subject = sprintf('[404 Solution] Deactivation Feedback from %s', $site_name);
 
-        // Build email body
         $body = "Deactivation feedback received:\n\n";
-        $body .= "═══════════════════════════════════════\n";
+        $body .= "===============================================\n";
         $body .= "USER FEEDBACK\n";
-        $body .= "═══════════════════════════════════════\n\n";
+        $body .= "===============================================\n\n";
 
-        $uninstallReason = isset($preferences['uninstall_reason']) && is_string($preferences['uninstall_reason']) ? $preferences['uninstall_reason'] : '';
-        if (!empty($uninstallReason)) {
+        $uninstallReason = isset($payload['uninstall_reason']) && is_string($payload['uninstall_reason']) ? $payload['uninstall_reason'] : '';
+        if ($uninstallReason !== '') {
             $body .= "Reason: " . ucfirst(str_replace('-', ' ', $uninstallReason)) . "\n\n";
         }
 
-        // Show selected issues (checkboxes)
-        $selectedIssues = isset($preferences['selected_issues']) && is_string($preferences['selected_issues']) ? $preferences['selected_issues'] : '';
-        if (!empty($selectedIssues)) {
+        $selectedIssues = isset($payload['selected_issues']) && is_string($payload['selected_issues']) ? $payload['selected_issues'] : '';
+        if ($selectedIssues !== '') {
             $body .= "Specific Issues:\n";
-            $issues = explode(',', $selectedIssues);
-            foreach ($issues as $issue) {
-                $body .= "  ☑ " . ucfirst(str_replace('-', ' ', $issue)) . "\n";
+            foreach (explode(',', $selectedIssues) as $issue) {
+                $body .= "  [x] " . ucfirst(str_replace('-', ' ', $issue)) . "\n";
             }
             $body .= "\n";
         }
 
-        // Show additional details from follow-up textarea
-        if (!empty($preferences['followup_details'])) {
-            $body .= "Additional Details:\n" . $preferences['followup_details'] . "\n\n";
+        $followup = isset($payload['followup_details']) && is_string($payload['followup_details']) ? $payload['followup_details'] : '';
+        if ($followup !== '') {
+            $body .= "Additional Details:\n" . $followup . "\n\n";
         }
 
-        // Show better plugin name if provided
-        if (!empty($preferences['better_plugin_name'])) {
-            $body .= "Switching to: " . $preferences['better_plugin_name'] . "\n\n";
+        $betterPlugin = isset($payload['better_plugin_name']) && is_string($payload['better_plugin_name']) ? $payload['better_plugin_name'] : '';
+        if ($betterPlugin !== '') {
+            $body .= "Switching to: " . $betterPlugin . "\n\n";
         }
 
-        // Show other reason details if provided
-        if (!empty($preferences['other_reason_text'])) {
-            $body .= "Other Reason Details:\n" . $preferences['other_reason_text'] . "\n\n";
+        $otherReason = isset($payload['other_reason_text']) && is_string($payload['other_reason_text']) ? $payload['other_reason_text'] : '';
+        if ($otherReason !== '') {
+            $body .= "Other Reason Details:\n" . $otherReason . "\n\n";
         }
 
-        if (!empty($preferences['feedback_email'])) {
-            $body .= "User Email: " . $preferences['feedback_email'] . "\n\n";
+        if ($contactEmail !== '') {
+            $body .= "User Email: " . $contactEmail . "\n\n";
         }
 
-        // Include diagnostics if user opted in
-        if (!empty($preferences['include_diagnostics'])) {
-            // Plugin debug log excerpt
-            $body .= "═══════════════════════════════════════\n";
+        if ($includeDiag) {
+            $plugin_stats = self::getPluginStatistics();
+            $db_info = self::getDatabaseInfo();
+            $content_counts = self::getContentCounts();
+            $system_info = array(
+                'WordPress Version' => $wp_version,
+                'PHP Version'       => phpversion(),
+                'Plugin Version'    => defined('ABJ404_VERSION') ? ABJ404_VERSION : 'Unknown',
+                'MySQL Version'     => $db_info['version'],
+                'DB Charset'        => $db_info['charset'],
+                'DB Collation'      => $db_info['collation'],
+                'Multisite'         => is_multisite() ? 'Yes' : 'No',
+                'Active Plugins'    => self::getActivePluginsList(),
+                'Category Count'    => $content_counts['categories'],
+                'Tag Count'         => $content_counts['tags'],
+                'Total Pages'       => $content_counts['pages'],
+                'Total Posts'       => $content_counts['posts'],
+                'Redirects (active)' => $plugin_stats['redirects']['all'],
+                '  - Manual'        => $plugin_stats['redirects']['manual'],
+                '  - Automatic'     => $plugin_stats['redirects']['auto'],
+                '  - Regex'         => $plugin_stats['redirects']['regex'],
+                '  - Trashed'       => $plugin_stats['redirects']['trash'],
+                'Captured 404s (active)' => $plugin_stats['captured']['all'],
+                '  - New'           => $plugin_stats['captured']['captured'],
+                '  - Ignored'       => $plugin_stats['captured']['ignored'],
+                '  - Later'         => $plugin_stats['captured']['later'],
+                '  - Trash'         => $plugin_stats['captured']['trash'],
+                'Log Entries in DB' => $plugin_stats['log_count'],
+                'Log Table Size'    => $plugin_stats['log_table_size_mb'] . ' MB',
+                'Debug File Size'   => $plugin_stats['debug_file_size_mb'] . ' MB',
+            );
+
+            $body .= "===============================================\n";
             $body .= "PLUGIN DEBUG LOG\n";
-            $body .= "═══════════════════════════════════════\n\n";
+            $body .= "===============================================\n\n";
+            $debugLog = isset($payload['debug_log']) && is_string($payload['debug_log']) ? $payload['debug_log'] : '';
+            $body .= ($debugLog !== '' ? $debugLog : 'Log excerpt unavailable.') . "\n\n";
 
-            if (class_exists('ABJ_404_Solution_Logging')) {
-                try {
-                    $logger = abj_service('logging');
-                    $logExcerpt = $logger->getSanitizedLogExcerptForSupport();
-                    $body .= $logExcerpt . "\n\n";
-                } catch (Exception $e) {
-                    $body .= "Unable to retrieve log excerpt\n\n";
-                }
-            } else {
-                $body .= "Log excerpt unavailable (logging class not loaded)\n\n";
-            }
-
-            // Database collation snapshot to diagnose charset-related issues
-            $body .= "═══════════════════════════════════════\n";
+            $body .= "===============================================\n";
             $body .= "DATABASE COLLATIONS\n";
-            $body .= "═══════════════════════════════════════\n\n";
+            $body .= "===============================================\n\n";
             $body .= self::getDatabaseCollationSnapshot() . "\n\n";
 
-            // System information
-            $body .= "═══════════════════════════════════════\n";
+            $body .= "===============================================\n";
             $body .= "SYSTEM INFORMATION\n";
-            $body .= "═══════════════════════════════════════\n\n";
-
+            $body .= "===============================================\n\n";
             foreach ($system_info as $label => $value) {
                 $body .= sprintf("%-20s: %s\n", $label, $value);
             }
         }
 
-        $body .= "\n═══════════════════════════════════════\n";
+        $body .= "\n===============================================\n";
         $body .= "This feedback was sent automatically when the user deactivated the plugin.\n";
 
-        // Set email headers
         $headers = array(
             'Content-Type: text/plain; charset=UTF-8',
             'From: ' . $site_name . ' <' . $admin_email . '>'
         );
-
-        // Add reply-to if user provided email
-        if (!empty($preferences['feedback_email'])) {
-            $headers[] = 'Reply-To: ' . $preferences['feedback_email'];
+        if ($contactEmail !== '') {
+            $headers[] = 'Reply-To: ' . $contactEmail;
         }
 
-        // Send email to plugin author
         $to = defined('ABJ404_AUTHOR_EMAIL') ? ABJ404_AUTHOR_EMAIL : '404solution@ajexperience.com';
-
-        // Log email attempt (only in debug mode)
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('404 Solution: Attempting to send feedback email to ' . $to);
-            error_log('404 Solution: Email subject: ' . $subject);
-            error_log('404 Solution: Feedback checkbox was checked: send_feedback=' . ($preferences['send_feedback'] ? 'true' : 'false'));
-        }
-
-        // Hook to log wp_mail failures (only in debug mode)
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            add_action('wp_mail_failed', function($error) {
-                error_log('404 Solution: wp_mail() FAILED - ' . $error->get_error_message());
-            });
-        }
-
-        $result = wp_mail($to, $subject, $body, $headers);
-
-        // Log result (only in debug mode)
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            if ($result) {
-                error_log('404 Solution: wp_mail() returned TRUE - email sent successfully');
-            } else {
-                error_log('404 Solution: wp_mail() returned FALSE - email send failed');
-            }
-        }
-
-        return $result;
+        return (bool) wp_mail($to, $subject, $body, $headers);
     }
 
     /**

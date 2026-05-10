@@ -281,6 +281,9 @@ msgstr "Retour envoyé avec succès."
 msgid "Note: Feedback email could not be sent."
 msgstr "Note : L'e-mail de retour n'a pas pu être envoyé."
 
+msgid "Thanks for the feedback!"
+msgstr "Merci pour votre retour !"
+
 msgid "All"
 msgstr "Tous"
 

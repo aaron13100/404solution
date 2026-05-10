@@ -278,6 +278,9 @@ msgstr "フィードバックが正常に送信されました。"
 msgid "Note: Feedback email could not be sent."
 msgstr "注意：フィードバックメールを送信できませんでした。"
 
+msgid "Thanks for the feedback!"
+msgstr "フィードバックをありがとうございます！"
+
 msgid "All"
 msgstr "すべて"
 

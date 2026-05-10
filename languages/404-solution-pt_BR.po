@@ -278,6 +278,9 @@ msgstr "Feedback enviado com sucesso."
 msgid "Note: Feedback email could not be sent."
 msgstr "Nota: O e-mail de feedback não pôde ser enviado."
 
+msgid "Thanks for the feedback!"
+msgstr "Obrigado pelo feedback!"
+
 msgid "All"
 msgstr "Todos"
 

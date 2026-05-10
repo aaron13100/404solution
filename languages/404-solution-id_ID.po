@@ -277,6 +277,9 @@ msgstr "Masukan berhasil dikirim."
 msgid "Note: Feedback email could not be sent."
 msgstr "Catatan: Email masukan tidak dapat dikirim."
 
+msgid "Thanks for the feedback!"
+msgstr "Terima kasih atas masukannya!"
+
 msgid "All"
 msgstr "Semua"
 

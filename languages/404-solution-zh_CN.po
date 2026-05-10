@@ -278,6 +278,9 @@ msgstr "反馈发送成功。"
 msgid "Note: Feedback email could not be sent."
 msgstr "注意：反馈邮件无法发送。"
 
+msgid "Thanks for the feedback!"
+msgstr "感谢您的反馈！"
+
 msgid "All"
 msgstr "全部"
 

@@ -265,9 +265,10 @@ class ABJ_404_Solution_FeedbackTransport {
     }
 
     /**
-     * Last-resort wp_mail() fallback. Uses ABJ404_AUTHOR_EMAIL as the
-     * recipient; body is a JSON dump of the payload (callers in c347/c348
-     * will replace this with the existing prettier email-body builders).
+     * Last-resort wp_mail() fallback. For type='uninstall', delegates to
+     * UninstallModal::sendFeedbackEmail() which renders the prettier body the
+     * AJAX path used to send synchronously. Other types currently fall through
+     * to a JSON dump (c347/c348 will swap them for Logging::emailLogFileToDeveloper).
      *
      * @param array<string, mixed> $payload
      * @param string $type
@@ -276,6 +277,9 @@ class ABJ_404_Solution_FeedbackTransport {
     private static function emailFallback(array $payload, string $type): bool {
         if (!function_exists('wp_mail')) {
             return false;
+        }
+        if ($type === 'uninstall' && class_exists('ABJ_404_Solution_UninstallModal')) {
+            return ABJ_404_Solution_UninstallModal::sendFeedbackEmail($payload);
         }
         $to = defined('ABJ404_AUTHOR_EMAIL') ? ABJ404_AUTHOR_EMAIL : '404solution@ajexperience.com';
         $version = defined('ABJ404_VERSION') ? ABJ404_VERSION : '';

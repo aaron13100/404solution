@@ -302,6 +302,9 @@ msgstr "Feedback sent successfully."
 msgid "Note: Feedback email could not be sent."
 msgstr "Note: Feedback email could not be sent."
 
+msgid "Thanks for the feedback!"
+msgstr "Thanks for the feedback!"
+
 msgid "All"
 msgstr "All"
 
