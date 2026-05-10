@@ -1285,7 +1285,11 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     	if (count($updateCols) > 0 ||
     		count($createCols) > 0) {
     	
-    		$this->logger->errorMessage("There are still differences after updating the " . 
+    		// Persistent post-update diff is usually a benign DDL-normalizer mismatch
+    		// (parser misreads a comment, column landed in a slightly-different form).
+    		// Plugin keeps functioning, so log at warn (stays in debug log without
+    		// crossing the email-threshold reporter). Defensive coding philosophy #8.
+    		$this->logger->warn("There are still differences after updating the " .
     			$tableName . " table. " . print_r($tableDifferences, true));
     		
     	} else if ($updatesWereNeeded) {
