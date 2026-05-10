@@ -860,6 +860,7 @@ class ABJ_404_Solution_DataAccess {
             || $this->isIncorrectKeyFileError($errorText)
             || $this->isCrashedTableError($errorText)
             || $this->isDeadlockOrLockTimeoutError($errorText)
+            || $this->isGaleraConflictError($errorText)
             || $this->isTransientConnectionError($errorText)
             || $this->isAccessDeniedError($errorText);
     }
@@ -1193,6 +1194,7 @@ class ABJ_404_Solution_DataAccess {
                 $this->isIncorrectKeyFileError($lastErrorForClassification) ||
                 $this->isCrashedTableError($lastErrorForClassification) ||
                 $this->isDeadlockOrLockTimeoutError($lastErrorForClassification) ||
+                $this->isGaleraConflictError($lastErrorForClassification) ||
                 $this->isTransientConnectionError($lastErrorForClassification) ||
                 $this->isQueryTimeoutError($lastErrorForClassification) ||
                 $this->isAccessDeniedError($lastErrorForClassification)

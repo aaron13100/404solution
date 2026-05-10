@@ -59,6 +59,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
             $this->isIncorrectKeyFileError($errorText) ||
             $this->isCrashedTableError($errorText) ||
             $this->isDeadlockOrLockTimeoutError($errorText) ||
+            $this->isGaleraConflictError($errorText) ||
             $this->isTransientConnectionError($errorText) ||
             $this->isAccessDeniedError($errorText)
         ) {
@@ -273,6 +274,40 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
             $this->f->strpos($lower, 'lock wait timeout exceeded') !== false ||
             $this->f->strpos($lower, 'error 1213') !== false ||
             $this->f->strpos($lower, 'error 1205') !== false);
+    }
+
+    /**
+     * Detect MariaDB Galera optimistic-concurrency rejections.
+     *
+     * Galera (wsrep) clusters use optimistic concurrency control: a node
+     * accepts a write locally, then certifies it against the cluster on
+     * commit. If another node already wrote to the same row, certification
+     * fails and the local transaction is rolled back with errno 1020 /
+     * ER_CHECKREAD ("Record has changed since last read in table 'X'").
+     * Other related markers carry "wsrep_" or "cluster conflict" wording.
+     *
+     * Structurally this is the same retry-able conflict shape as InnoDB
+     * deadlock (errno 1213) and lock-wait timeout (errno 1205), but the
+     * error wording is different so isDeadlockOrLockTimeoutError() does
+     * not match. Like deadlock, the next cron tick can simply retry; it
+     * is a server-side coordination failure, not a plugin bug, and must
+     * be logged at WARN (not ERROR, which emails the admin).
+     *
+     * Source: 4.1.15 site (ohafiatv) running MariaDB 11.8.3 emitted 3 of
+     * these errors from updatePermalinkCache.sql; another cluster node was
+     * writing the same {prefix}_abj404_permalink_cache row.
+     *
+     * @param string $errorText
+     * @return bool
+     */
+    private function isGaleraConflictError(string $errorText): bool {
+        if (!is_string($errorText) || $errorText === '') {
+            return false;
+        }
+        $lower = strtolower($errorText);
+        return ($this->f->strpos($lower, 'record has changed since last read') !== false ||
+            $this->f->strpos($lower, 'wsrep_local_state') !== false ||
+            $this->f->strpos($lower, 'cluster conflict') !== false);
     }
 
     /**
