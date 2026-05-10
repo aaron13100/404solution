@@ -1083,6 +1083,24 @@ add_action('abj404_logsv2_canonical_backfill', 'abj404_logsv2CanonicalUrlBackfil
 add_action('abj404_updatePermalinkCacheAction', 'abj404_updatePermalinkCacheListener', 10, 2);
 add_action('abj404_rebuildViewDone', 'abj404_rebuildViewDoneListener');
 add_action('abj404_send_digest', 'abj404_sendDigestCronListener');
+add_action('abj404_send_queued_report', 'abj404_sendQueuedReportListener', 10, 1);
+if (!function_exists('abj404_sendQueuedReportListener')) {
+/**
+ * Cron handler for FeedbackTransport queued sends. Loads Loader.php so the
+ * autoloader resolves ABJ_404_Solution_FeedbackTransport, then dispatches.
+ *
+ * @param string $uuid
+ * @return void
+ */
+function abj404_sendQueuedReportListener($uuid) {
+    try {
+        require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
+        ABJ_404_Solution_FeedbackTransport::handleQueuedSend(is_string($uuid) ? $uuid : '');
+    } catch (\Throwable $e) {
+        error_log('404 Solution cron (feedback transport): ' . $e->getMessage());
+    }
+}
+}
 if (!function_exists('abj404_sendDigestCronListener')) {
 /** @return void */
 function abj404_sendDigestCronListener() {

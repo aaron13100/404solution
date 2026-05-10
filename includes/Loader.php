@@ -7,6 +7,9 @@ if (!defined('ABSPATH')) {
 
 // Constants
 if (!defined('ABJ404_AUTHOR_EMAIL')) { define( 'ABJ404_AUTHOR_EMAIL', '404solution@ajexperience.com' ); }
+// Default endpoint for the FeedbackTransport HTTP reports POST. Site owners
+// and tests can override via the 'abj404_report_endpoint' filter.
+if (!defined('ABJ404_REPORT_ENDPOINT')) { define( 'ABJ404_REPORT_ENDPOINT', 'https://404solution.ajexperience.com/api/v1/reports' ); }
 /* plugin_dir_url( __FILE__ ) */
 if (!defined('ABJ404_URL')) { define( 'ABJ404_URL', plugin_dir_url(ABJ404_FILE)); } // https://site-url/wp-content/plugins/404-solution/
 
