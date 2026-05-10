@@ -262,4 +262,44 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_IndexesTrait {
 	            $this->logger->infoMessage("Added canonical_url to {$logsTable} (bare ALTER fallback).");
 	        }
 	    }
+
+	    /**
+	     * Add the canonical_url column to the redirects table with online DDL
+	     * when supported.
+	     *
+	     * Sibling of ensureLogsv2CanonicalUrlColumn() applied to the redirects
+	     * side. The column shipped in 4.1.11 and is normally added by dbDelta
+	     * on plugin update. On hosts where dbDelta silently fails to ALTER ADD
+	     * it, every captured-404 INSERT errors out with "Unknown column
+	     * 'canonical_url' in 'field list'" until verifyColumns eventually
+	     * retries the column add. One site in the May 10 debug zip emitted
+	     * 1671 such errors over 10 days on 4.1.12. Calling this helper eagerly
+	     * from runInitialCreateTables() shortens that window: every cron tick
+	     * that runs the bootstrap loop retries the ALTER on its own,
+	     * independent of the verifyColumns DDL diff path.
+	     *
+	     * @param string $redirectsTable
+	     * @return void
+	     */
+	    private function ensureRedirectsCanonicalUrlColumn(string $redirectsTable): void {
+	        if ($this->columnExists($redirectsTable, 'canonical_url')) {
+	            return;
+	        }
+	        $inplaceQuery = "ALTER TABLE " . $redirectsTable .
+	            " ADD COLUMN `canonical_url` VARCHAR(2048) DEFAULT NULL," .
+	            " ALGORITHM=INPLACE, LOCK=NONE";
+	        $result = $this->dao->queryAndGetResults($inplaceQuery,
+	            array('log_too_slow' => false, 'log_errors' => false));
+	        if (empty($result['last_error'])) {
+	            $this->logger->infoMessage("Added canonical_url to {$redirectsTable} (ALGORITHM=INPLACE, LOCK=NONE).");
+	            return;
+	        }
+	        $bareQuery = "ALTER TABLE " . $redirectsTable .
+	            " ADD COLUMN `canonical_url` VARCHAR(2048) DEFAULT NULL";
+	        $bare = $this->dao->queryAndGetResults($bareQuery,
+	            array('log_too_slow' => false));
+	        if (empty($bare['last_error'])) {
+	            $this->logger->infoMessage("Added canonical_url to {$redirectsTable} (bare ALTER fallback).");
+	        }
+	    }
 }

@@ -901,6 +901,15 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 	    		if ($ddlEntry['bareTableName'] === 'abj404_logsv2') {
 	    			$this->ensureLogsv2CanonicalUrlColumn($tableName);
 	    		}
+	    		// Same logic for the redirects side. canonical_url is required by
+	    		// setupRedirect() and was added in 4.1.11; on a small fraction of
+	    		// sites dbDelta silently fails to add it, so every captured 404
+	    		// emits "Unknown column 'canonical_url' in 'field list'" until
+	    		// verifyColumns eventually retries. Eagerly running the targeted
+	    		// add closes that window.
+	    		if ($ddlEntry['bareTableName'] === 'abj404_redirects') {
+	    			$this->ensureRedirectsCanonicalUrlColumn($tableName);
+	    		}
 
 	    		$this->verifyColumns($tableName, $query);
 	    	}

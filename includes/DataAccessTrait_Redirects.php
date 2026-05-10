@@ -420,6 +420,85 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
     }
 
     /**
+     * Per-instance memoized cache of column-existence probes against the
+     * redirects table. Keyed by lowercased column name. Empty array means
+     * the cache has not been primed yet for any column.
+     *
+     * Per-instance (not static) so the DAO singleton resets on process end
+     * without leaking state across test methods that build their own DAO.
+     *
+     * @var array<string, bool>
+     */
+    private $redirectsTableColumnsCache = array();
+
+    /**
+     * Probe whether the redirects table has the named column right now.
+     *
+     * Used by setupRedirect() to drop columns from the INSERT payload when
+     * they are missing on this site (e.g. canonical_url on installs where
+     * dbDelta silently failed to ALTER ADD it). Result is cached for the
+     * life of the DAO instance: the first call runs SHOW COLUMNS FROM
+     * {wp_abj404_redirects}, every subsequent call hits the cache.
+     *
+     * Defensive against host failure: if SHOW COLUMNS errors out (table
+     * missing, permission denied, etc.), returns true so the INSERT path
+     * proceeds with the full payload. Better to surface the eventual
+     * INSERT failure (which is already routed through queryAndGetResults
+     * with auto-repair) than to silently strip a column we cannot probe.
+     *
+     * @param string $columnName
+     * @return bool
+     */
+    private function redirectsTableHasColumn(string $columnName): bool {
+        $key = strtolower($columnName);
+        if ($this->redirectsTableColumnsCache !== array()) {
+            // Cache primed: definitive yes/no for any column we saw on the
+            // table. Absence in the cache means the column does not exist.
+            return isset($this->redirectsTableColumnsCache[$key]);
+        }
+        global $wpdb;
+        if (!isset($wpdb)) {
+            // No DB handle (early-bootstrap path or test harness without
+            // wpdb global). Default permissive so the caller's normal
+            // payload path runs; do not cache so a later call retries.
+            return true;
+        }
+        $redirectsTable = $this->doTableNameReplacements("{wp_abj404_redirects}");
+        // Probe via queryAndGetResults so the DAO's centralized error
+        // classification, retry, and timeout handling apply. log_errors=false
+        // because a missing-table or permission-denied response is a probe
+        // signal here, not a bug to surface to the admin.
+        $result = $this->queryAndGetResults(
+            "SHOW COLUMNS FROM `" . esc_sql($redirectsTable) . "`",
+            array('log_errors' => false, 'log_too_slow' => false)
+        );
+        $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
+        if ($rows === array()) {
+            // Probe failed (table missing, permission denied, host-side
+            // restriction). Default permissive so the centralized DAO error
+            // handler classifies any resulting INSERT failure with full
+            // context. Do not cache: the next call may succeed once the
+            // missing-table auto-repair runs.
+            return true;
+        }
+        $primed = array();
+        foreach ($rows as $row) {
+            if (!is_array($row)) { continue; }
+            foreach ($row as $field => $value) {
+                if (strtolower((string)$field) !== 'field') { continue; }
+                $primed[strtolower((string)$value)] = true;
+            }
+        }
+        if ($primed === array()) {
+            // SHOW COLUMNS returned rows but none had a parseable Field
+            // entry. Treat as a probe failure (do not cache).
+            return true;
+        }
+        $this->redirectsTableColumnsCache = $primed;
+        return isset($this->redirectsTableColumnsCache[$key]);
+    }
+
+    /**
      * SQL expression that emits the canonical form of an arbitrary URL column.
      *
      * Used by the (rare) callsites that still need to canonicalize at JOIN
@@ -495,14 +574,25 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
                 'code' => $code,
                 'disabled' => $disabled,
                 'timestamp' => $now,
-                // Pre-compute the canonical form so the captured-page JOIN to
-                // logs_hits.requested_url is a single indexed equality lookup
-                // instead of CONCAT('/', TRIM(...)) per row at query time. The
-                // formula must stay in lockstep with hitsCanonicalUrlSqlExpression()
-                // (read side) and the buildRedirectsCanonicalUrlChunk() backfill.
-                'canonical_url' => self::computeRedirectsCanonicalUrl($fromURL),
             );
-            $insertFormats = array('%s', '%d', '%d', '%s', '%d', '%d', '%d', '%s');
+            $insertFormats = array('%s', '%d', '%d', '%s', '%d', '%d', '%d');
+            // Schema-drift tolerance: canonical_url shipped in 4.1.11. On
+            // installs where dbDelta silently failed to add it, every
+            // captured-404 INSERT errors with "Unknown column 'canonical_url'
+            // in 'field list'" (1671 such errors observed on a single 4.1.12
+            // site over 10 days in the May 10 debug zip). Probe before
+            // referencing the column. The probe result is cached per-request
+            // by self::redirectsTableHasColumn() so the SHOW COLUMNS cost
+            // amortizes across multiple captured-404 hits in the same request.
+            // Pre-compute the canonical form so the captured-page JOIN to
+            // logs_hits.requested_url is a single indexed equality lookup
+            // instead of CONCAT('/', TRIM(...)) per row at query time. The
+            // formula must stay in lockstep with hitsCanonicalUrlSqlExpression()
+            // (read side) and the buildRedirectsCanonicalUrlChunk() backfill.
+            if ($this->redirectsTableHasColumn('canonical_url')) {
+                $insertData['canonical_url'] = self::computeRedirectsCanonicalUrl($fromURL);
+                $insertFormats[] = '%s';
+            }
             if ($engine !== null) {
                 $insertData['engine'] = substr((string)$engine, 0, 64);
                 $insertFormats[] = '%s';
