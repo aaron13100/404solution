@@ -42,10 +42,11 @@ class ABJ_404_Solution_Uninstaller {
         // 4. Clean up scheduled cron jobs
         self::cleanupCronJobs();
 
-        // 5. Send feedback via email if requested
-        if (($preferences['send_feedback'] ?? false) && !empty($preferences['uninstall_reason'] ?? '')) {
-            self::sendFeedbackEmail($preferences);
-        }
+        // Feedback is sent at deactivate-time by UninstallModal (the modal AJAX
+        // handler dispatches before WordPress deletes the plugin). WordPress
+        // enforces deactivate-before-delete, so any feedback the user opted into
+        // has already been queued/sent by the time uninstall.php runs. Sending
+        // again here from the persisted preferences would be a double-send.
     }
 
     /**
@@ -269,104 +270,6 @@ class ABJ_404_Solution_Uninstaller {
         foreach ($legacy_hooks as $hook) {
             wp_clear_scheduled_hook($hook);
         }
-    }
-
-    /**
-     * Send feedback email to plugin author
-     *
-     * @param array<string, mixed> $preferences User preferences including feedback data
-     * @return void
-     */
-    private static function sendFeedbackEmail(array $preferences): void {
-        // Plugin author email
-        $to = '404solution@ajexperience.com';
-
-        $subject = '404 Solution - Uninstall Feedback';
-
-        // Build email message
-        $message = "Uninstall feedback received from 404 Solution plugin\n\n";
-
-        // Uninstall reason
-        if (!empty($preferences['uninstall_reason'])) {
-            $reason_labels = array(
-                'temporary' => 'Temporary deactivation for debugging',
-                'not-working' => 'The plugin is not working as expected',
-                'found-better' => 'Found a better plugin',
-                'no-longer-needed' => 'No longer needed this functionality',
-                'too-complicated' => 'Too complicated to configure',
-                'performance' => 'Performance issues',
-                'other' => 'Other reason'
-            );
-
-            $reason = isset($reason_labels[$preferences['uninstall_reason']])
-                ? $reason_labels[$preferences['uninstall_reason']]
-                : $preferences['uninstall_reason'];
-
-            $message .= "Reason: " . $reason . "\n\n";
-        }
-
-        // Additional feedback details
-        if (!empty($preferences['feedback_details'])) {
-            $message .= "Additional Details:\n" . $preferences['feedback_details'] . "\n\n";
-        }
-
-        // User contact email (if provided)
-        if (!empty($preferences['feedback_email'])) {
-            $message .= "User Email: " . $preferences['feedback_email'] . "\n\n";
-        }
-
-        // System information
-        $message .= "--- System Information ---\n";
-        $message .= "WordPress Version: " . get_bloginfo('version') . "\n";
-        $message .= "PHP Version: " . PHP_VERSION . "\n";
-        $message .= "Plugin Version: " . ABJ404_VERSION . "\n";
-        $message .= "Site URL: " . get_site_url() . "\n";
-        $message .= "Site Language: " . get_locale() . "\n";
-
-        // Get installed plugins information
-        if (!function_exists('get_plugins')) {
-            require_once ABSPATH . 'wp-admin/includes/plugin.php';
-        }
-
-        $all_plugins = get_plugins();
-        $active_plugins_raw = get_option('active_plugins', array());
-        $active_plugins = is_array($active_plugins_raw) ? $active_plugins_raw : array();
-
-        // Add installed plugins list
-        $message .= "\n--- Installed Plugins ---\n";
-        if (!empty($all_plugins)) {
-            foreach ($all_plugins as $plugin_path => $plugin_data) {
-                if (!is_array($plugin_data)) { continue; }
-                $is_active = in_array($plugin_path, $active_plugins) ? ' (Active)' : ' (Inactive)';
-                $pluginName = isset($plugin_data['Name']) && is_string($plugin_data['Name']) ? $plugin_data['Name'] : 'Unknown';
-                $pluginVersion = isset($plugin_data['Version']) && is_string($plugin_data['Version']) ? $plugin_data['Version'] : '';
-                $message .= sprintf(
-                    "%s %s%s\n",
-                    $pluginName,
-                    $pluginVersion,
-                    $is_active
-                );
-            }
-        } else {
-            $message .= "No plugins found\n";
-        }
-
-        // Data deletion choices
-        $message .= "\n--- User's Data Choices ---\n";
-        $message .= "Deleted Redirects: " . ($preferences['delete_redirects'] ? 'Yes' : 'No') . "\n";
-        $message .= "Deleted Logs: " . ($preferences['delete_logs'] ? 'Yes' : 'No') . "\n";
-
-        // Email headers
-        $headers = array('Content-Type: text/plain; charset=UTF-8');
-
-        // Add reply-to if user provided their email
-        $feedbackEmail = isset($preferences['feedback_email']) && is_string($preferences['feedback_email']) ? $preferences['feedback_email'] : '';
-        if ($feedbackEmail !== '' && is_email($feedbackEmail)) {
-            $headers[] = 'Reply-To: ' . $feedbackEmail;
-        }
-
-        // Send email (non-blocking, failures won't stop uninstall)
-        @wp_mail($to, $subject, $message, $headers);
     }
 
     /**
