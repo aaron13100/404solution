@@ -246,13 +246,21 @@ class ABJ_404_Solution_Logging {
     }
     
     /** Email the log file to the plugin developer.
+     *
+     * Cron-context entry: builds a FeedbackTransport payload from the freshly-
+     * scanned latest-error line plus dedup state, and dispatches via
+     * FeedbackTransport::sendNow() (sync HTTP POST + email fallback). Returns
+     * true iff any transport (HTTP or email) succeeded; the dedup pointer is
+     * advanced before sending so a transport failure does not cause repeated
+     * sends of the same error line on the next cron tick.
+     *
      * @return bool
      */
     function emailErrorLogIfNecessary(): bool {
         $abj404dao = abj_service('data_access');
         $abj404logic = abj_service('plugin_logic');
         $options = $abj404logic->getOptions(true);
-        
+
         if (!file_exists($this->getDebugFilePath())) {
             $this->debugMessage("No log file found so no errors were found.");
             return false;
@@ -260,17 +268,17 @@ class ABJ_404_Solution_Logging {
 
         // get the number of the last line with an error message.
         $latestErrorLineFound = $this->getLatestErrorLine();
-        
+
         // if no error was found then we're done.
         if ($latestErrorLineFound['num'] == -1) {
             $this->debugMessage("No errors found in the log file.");
             return false;
         }
-        
+
         // -------------------
         // get/check the last line that was emailed to the admin.
         $sentDateFile = $this->getDebugFilePathSentFile();
-        
+
         $sentLine = -1;
         if (file_exists($sentDateFile)) {
             $sentLine = absint(
@@ -281,19 +289,19 @@ class ABJ_404_Solution_Logging {
         	$sentLine = is_scalar($options[self::LAST_SENT_LINE]) ? (int)$options[self::LAST_SENT_LINE] : -1;
        		$this->debugMessage("Last sent line from options: " . $sentLine);
         }
-        
+
         // if we already sent the error line then don't send the log file again.
         if ($latestErrorLineFound['num'] <= $sentLine) {
-            $this->debugMessage("The latest error line from the log file was already emailed. " . $latestErrorLineFound['num'] . 
+            $this->debugMessage("The latest error line from the log file was already emailed. " . $latestErrorLineFound['num'] .
                     ' <= ' . $sentLine);
             return false;
         }
-        
+
         // only email the error file if the latest version of the plugin is installed.
         if (!$abj404dao->shouldEmailErrorFile()) {
             return false;
         }
-        
+
         // update the latest error line emailed to the developer.
         $options[self::LAST_SENT_LINE] = $latestErrorLineFound['num'];
         $abj404logic->updateOptions($options);
@@ -302,17 +310,23 @@ class ABJ_404_Solution_Logging {
         if ($fileContents != $latestErrorLineFound['num']) {
         	$this->errorMessage("There was an issue writing to the file " . $sentDateFile);
         	return false;
-        	
-        } else {
-        	$this->emailLogFileToDeveloper((string)($latestErrorLineFound['line'] ?? ''),
-        		$latestErrorLineFound['total_error_count'], (int)$sentLine);
-        	return true;
         }
+
+        $payload = ABJ_404_Solution_FeedbackTransport::buildPayload('error', array(
+            'error_signature' => (string)($latestErrorLineFound['line'] ?? ''),
+            'previously_sent_line' => (int)$sentLine,
+            'error_count_in_log' => (int)$latestErrorLineFound['total_error_count'],
+        ));
+        return ABJ_404_Solution_FeedbackTransport::sendNow($payload, 'error');
     }
-    
+
     /**
      * Roll a 1-in-N dice and send a full debug zip as a heartbeat if it hits.
      * Called during daily maintenance for opted-in sites when no error email was sent.
+     *
+     * Dispatches via FeedbackTransport::sendNow() (HTTP POST + email fallback)
+     * with type='heartbeat' so the same payload shape is shared with the error
+     * path.
      *
      * @param int $oneInN Probability denominator (default 200 = ~once per 6 months).
      * @return bool True if a heartbeat was sent.
@@ -326,27 +340,38 @@ class ABJ_404_Solution_Logging {
         }
         $this->debugMessage("Heartbeat dice roll hit (1-in-{$oneInN}). Sending heartbeat log.");
         $errorInfo = $this->getLatestErrorLine();
-        $this->emailLogFileToDeveloper(
-            'Heartbeat — no errors to report.',
-            $errorInfo['total_error_count'],
-            0,
-            true
-        );
+
+        $payload = ABJ_404_Solution_FeedbackTransport::buildPayload('heartbeat', array(
+            'error_signature' => 'Heartbeat: no errors to report.',
+            'previously_sent_line' => 0,
+            'error_count_in_log' => (int)$errorInfo['total_error_count'],
+        ));
+        ABJ_404_Solution_FeedbackTransport::sendNow($payload, 'heartbeat');
         return true;
     }
 
     /**
-     * @param string $errorLineMessage
-     * @param int $totalErrorCount
-     * @param int $previouslySentLine
-     * @param bool $isHeartbeat
-     * @return void
+     * Email-fallback for FeedbackTransport when the HTTP POST of an error or
+     * heartbeat report fails. Builds an HTML email body purely from the
+     * FeedbackTransport payload (single source of truth shared with the HTTP
+     * path) and attaches a zip of the current debug log file(s).
+     *
+     * Public because FeedbackTransport::sendNow() invokes it via the service
+     * container for type='error' and type='heartbeat'.
+     *
+     * @param array<string, mixed> $payload FeedbackTransport-built payload.
+     * @return bool True if wp_mail() reported success, false otherwise.
      */
-    function emailLogFileToDeveloper(string $errorLineMessage, int $totalErrorCount, int $previouslySentLine, bool $isHeartbeat = false): void {
-        global $wpdb;
-        
-        // email the log file.
-        $this->debugMessage("Creating zip file of error log file. " . 
+    function emailLogFileToDeveloper(array $payload): bool {
+        $isHeartbeat = (isset($payload['report_type']) && $payload['report_type'] === 'heartbeat');
+        $errorLineMessage = isset($payload['error_signature']) && is_scalar($payload['error_signature'])
+            ? (string)$payload['error_signature'] : '';
+        $totalErrorCount = isset($payload['error_count_in_log']) && is_scalar($payload['error_count_in_log'])
+            ? (int)$payload['error_count_in_log'] : 0;
+        $previouslySentLine = isset($payload['previously_sent_line']) && is_scalar($payload['previously_sent_line'])
+            ? (int)$payload['previously_sent_line'] : 0;
+
+        $this->debugMessage("Creating zip file of error log file. " .
         	"Previously sent error line: " . $previouslySentLine);
         $logFileZip = $this->getZipFilePath();
         if (file_exists($logFileZip)) {
@@ -354,101 +379,85 @@ class ABJ_404_Solution_Logging {
         }
         $zip = new ZipArchive;
         if ($zip->open($logFileZip, ZipArchive::CREATE) === TRUE) {
-            $zip->addFile($this->getDebugFilePath(), basename($this->getDebugFilePath()));
+            if (file_exists($this->getDebugFilePath())) {
+                $zip->addFile($this->getDebugFilePath(), basename($this->getDebugFilePath()));
+            }
             if (file_exists($this->getDebugFilePathOld())) {
             	$zip->addFile($this->getDebugFilePathOld(), basename($this->getDebugFilePathOld()));
             }
             $zip->close();
         }
-        
-        // Get WordPress content counts
-        $count_posts = wp_count_posts();
-        $published_posts = $count_posts->publish;
-        $count_pages = wp_count_posts('page');
-        $published_pages = $count_pages->publish;
 
-        // Get category and tag counts
-        $category_count = wp_count_terms(array('taxonomy' => 'category'));
-        $tag_count = wp_count_terms(array('taxonomy' => 'post_tag'));
-        // Handle WP_Error for categories/tags
-        if (is_wp_error($category_count)) {
-            $category_count = 0;
-        }
-        if (is_wp_error($tag_count)) {
-            $tag_count = 0;
-        }
+        $logTableSizeMB = round((int)($payload['log_table_size_bytes'] ?? 0) / (1024 * 1024), 2);
+        $debugFileSizeMB = round((int)($payload['debug_file_size_bytes'] ?? 0) / (1024 * 1024), 2);
 
-        // Get plugin-specific counts
-        $abj404dao = abj_service('data_access');
-        $redirectCounts = $abj404dao->getRedirectStatusCounts(true);
-        $capturedCounts = $abj404dao->getCapturedStatusCounts(true);
-        $totalLogsInDB = $abj404dao->getLogsCount(0);
-
-        // Get storage sizes
-        $logTableSizeBytes = $abj404dao->getLogDiskUsage();
-        $logTableSizeMB = round($logTableSizeBytes / (1024 * 1024), 2);
-        $debugFileSize = file_exists($this->getDebugFilePath()) ? filesize($this->getDebugFilePath()) : 0;
-        $debugFileSizeMB = round($debugFileSize / (1024 * 1024), 2);
-
-        $attachments = array();
-        $attachments[] = $logFileZip;
         $to = ABJ404_AUTHOR_EMAIL;
         $subject = ABJ404_PP . ($isHeartbeat ? ' heartbeat' : ' error') . ' log file. Plugin version: ' . ABJ404_VERSION;
+        $extensions = isset($payload['extensions']) && is_array($payload['extensions']) ? $payload['extensions'] : array();
+        $activePlugins = isset($payload['active_plugins']) && is_array($payload['active_plugins']) ? $payload['active_plugins'] : array();
+        $isMultisite = !empty($payload['is_multisite']);
+
         $bodyLines = array();
         $bodyLines[] = $subject . ". Sent " . date('Y/m/d h:i:s T');
         $bodyLines[] = " ";
         $bodyLines[] = "Error: " . $errorLineMessage;
         $bodyLines[] = " ";
-        $bodyLines[] = "PHP version: " . PHP_VERSION;
-        $bodyLines[] = "WordPress version: " . get_bloginfo('version');
-        $bodyLines[] = "Plugin version: " . ABJ404_VERSION;
-        $bodyLines[] = "MySQL version: " . $wpdb->db_version();
-        $bodyLines[] = "Site URL: " . get_site_url();
-        $bodyLines[] = "Multisite: " . (is_multisite() ? 'yes' : 'no');
-        if (is_multisite() && function_exists('is_plugin_active_for_network')) {
+        $bodyLines[] = "PHP version: " . (string)($payload['php_version'] ?? PHP_VERSION);
+        $bodyLines[] = "WordPress version: " . (string)($payload['wp_version'] ?? '');
+        $bodyLines[] = "Plugin version: " . (string)($payload['plugin_version'] ?? ABJ404_VERSION);
+        $bodyLines[] = "MySQL version: " . (string)($payload['db_version'] ?? '');
+        $bodyLines[] = "Site URL: " . (string)($payload['site_url'] ?? '');
+        $bodyLines[] = "Multisite: " . ($isMultisite ? 'yes' : 'no');
+        if ($isMultisite && function_exists('is_plugin_active_for_network')) {
             $bodyLines[] = "Network activated: " . (is_plugin_active_for_network(plugin_basename(ABJ404_FILE)) ? 'yes' : 'no');
         }
-        $bodyLines[] = "WP_MEMORY_LIMIT: " . WP_MEMORY_LIMIT;
-        $bodyLines[] = "Extensions: " . implode(", ", get_loaded_extensions());
+        $bodyLines[] = "WP_MEMORY_LIMIT: " . (defined('WP_MEMORY_LIMIT') ? WP_MEMORY_LIMIT : '');
+        $bodyLines[] = "Extensions: " . implode(", ", $extensions);
         $bodyLines[] = " ";
         $bodyLines[] = "--- WordPress Content Counts ---";
-        $bodyLines[] = "Published posts: " . $published_posts;
-        $bodyLines[] = "Published pages: " . $published_pages;
-        $bodyLines[] = "Categories: " . $category_count;
-        $bodyLines[] = "Tags: " . $tag_count;
+        $bodyLines[] = "Published posts: " . (string)($payload['published_posts_count'] ?? '0');
+        $bodyLines[] = "Published pages: " . (string)($payload['published_pages_count'] ?? '0');
+        $bodyLines[] = "Categories: " . (string)($payload['categories_count'] ?? '0');
+        $bodyLines[] = "Tags: " . (string)($payload['tags_count'] ?? '0');
         $bodyLines[] = " ";
         $bodyLines[] = "--- 404 Solution Counts ---";
-        $bodyLines[] = "Total redirects (active): " . $redirectCounts['all'];
-        $bodyLines[] = "  - Manual redirects: " . $redirectCounts['manual'];
-        $bodyLines[] = "  - Automatic redirects: " . $redirectCounts['auto'];
-        $bodyLines[] = "  - Regex redirects: " . $redirectCounts['regex'];
-        $bodyLines[] = "  - Trashed redirects: " . $redirectCounts['trash'];
-        $bodyLines[] = "Captured 404s (active): " . $capturedCounts['all'];
-        $bodyLines[] = "  - Captured (new): " . $capturedCounts['captured'];
-        $bodyLines[] = "  - Ignored: " . $capturedCounts['ignored'];
-        $bodyLines[] = "  - Later: " . $capturedCounts['later'];
-        $bodyLines[] = "  - Trashed: " . $capturedCounts['trash'];
-        $bodyLines[] = "Log entries in database: " . $totalLogsInDB;
+        $bodyLines[] = "Total redirects (active): " . (string)($payload['redirects_active_total'] ?? '0');
+        $bodyLines[] = "  - Manual redirects: " . (string)($payload['redirects_manual_count'] ?? '0');
+        $bodyLines[] = "  - Automatic redirects: " . (string)($payload['redirects_automatic_count'] ?? '0');
+        $bodyLines[] = "  - Regex redirects: " . (string)($payload['redirects_regex_count'] ?? '0');
+        $bodyLines[] = "  - Trashed redirects: " . (string)($payload['redirects_trashed_count'] ?? '0');
+        $bodyLines[] = "Captured 404s (active): " . (string)($payload['captured_404s_active_total'] ?? '0');
+        $bodyLines[] = "  - Captured (new): " . (string)($payload['captured_404s_new_count'] ?? '0');
+        $bodyLines[] = "  - Ignored: " . (string)($payload['captured_404s_ignored_count'] ?? '0');
+        $bodyLines[] = "  - Later: " . (string)($payload['captured_404s_later_count'] ?? '0');
+        $bodyLines[] = "  - Trashed: " . (string)($payload['captured_404s_trashed_count'] ?? '0');
+        $bodyLines[] = "Log entries in database: " . (string)($payload['log_entries_count'] ?? '0');
         $bodyLines[] = "Log table size: " . $logTableSizeMB . " MB";
         $bodyLines[] = " ";
         $bodyLines[] = "Total error count in log file: " . $totalErrorCount;
         $bodyLines[] = "Debug file name: " . $this->getDebugFilename();
         $bodyLines[] = "Debug file size: " . $debugFileSizeMB . " MB";
         $bodyLines[] = "Active plugins: <pre>" .
-          json_encode(get_option('active_plugins'), JSON_PRETTY_PRINT) . "</pre>";
-          
+          json_encode($activePlugins, JSON_PRETTY_PRINT) . "</pre>";
+
         $body = implode("<BR/>\n", $bodyLines);
-        
+
         $headers = array('Content-Type: text/html; charset=UTF-8');
         $headers[] = 'From: ' . get_option('admin_email');
-        
-        // send the email
+
+        $attachments = array();
+        if (file_exists($logFileZip)) {
+            $attachments[] = $logFileZip;
+        }
+
         $this->debugMessage("Sending error log zip file as attachment.");
-        wp_mail($to, $subject, $body, $headers, $attachments);
-        
-        // delete the zip file.
-        ABJ_404_Solution_Functions::safeUnlink($logFileZip);
+        $result = wp_mail($to, $subject, $body, $headers, $attachments);
+
+        if (file_exists($logFileZip)) {
+            ABJ_404_Solution_Functions::safeUnlink($logFileZip);
+        }
         $this->debugMessage("Mail sent. Log zip file deleted.");
+        return (bool)$result;
     }
     
     /**

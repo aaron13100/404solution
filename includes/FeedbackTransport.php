@@ -289,10 +289,16 @@ class ABJ_404_Solution_FeedbackTransport {
     }
 
     /**
-     * Last-resort wp_mail() fallback. For type='uninstall', delegates to
-     * UninstallModal::sendFeedbackEmail() which renders the prettier body the
-     * AJAX path used to send synchronously. Other types currently fall through
-     * to a JSON dump (c347/c348 will swap them for Logging::emailLogFileToDeveloper).
+     * Last-resort wp_mail() fallback. Routes to the type-specific email body
+     * builder so HTTP and email transports share a single source of truth:
+     *   - 'uninstall' delegates to UninstallModal::sendFeedbackEmail($payload)
+     *   - 'error' / 'heartbeat' delegates to Logging::emailLogFileToDeveloper($payload)
+     *     (attaches a zip of the current debug log and renders the same HTML
+     *     body the email transport used pre-migration).
+     *
+     * If the type-specific delegate is unavailable (class not loaded, service
+     * container empty), falls back to a generic JSON dump so the data is at
+     * least preserved somewhere.
      *
      * @param array<string, mixed> $payload
      * @param string $type
@@ -304,6 +310,16 @@ class ABJ_404_Solution_FeedbackTransport {
         }
         if ($type === 'uninstall' && class_exists('ABJ_404_Solution_UninstallModal')) {
             return ABJ_404_Solution_UninstallModal::sendFeedbackEmail($payload);
+        }
+        if (($type === 'error' || $type === 'heartbeat') && function_exists('abj_service')) {
+            try {
+                $logger = abj_service('logging');
+                if (is_object($logger) && method_exists($logger, 'emailLogFileToDeveloper')) {
+                    return (bool) $logger->emailLogFileToDeveloper($payload);
+                }
+            } catch (\Throwable $e) {
+                @error_log('404 Solution: FeedbackTransport email-fallback delegate (' . $type . ') failed: ' . $e->getMessage());
+            }
         }
         $to = defined('ABJ404_AUTHOR_EMAIL') ? ABJ404_AUTHOR_EMAIL : '404solution@ajexperience.com';
         $version = defined('ABJ404_VERSION') ? ABJ404_VERSION : '';
