@@ -1187,15 +1187,25 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
             return;
         }
         $hook = 'abj404_rebuildViewDone';
-        // DISABLE_WP_CRON: wp_schedule_single_event still returns true (the
-        // event is registered in the option) but no PHP process advances it
-        // unless an external cron hits wp-cron.php. Same failure mode the
-        // N-gram subsystem detects at DatabaseUpgradesEtcTrait_NGram.php:53.
-        // Surface a deduplicated admin notice so the build is not silently
-        // stuck, then continue scheduling so a manual admin trigger or
-        // external cron can still pick the event up.
-        if (defined('DISABLE_WP_CRON') && constant('DISABLE_WP_CRON')) {
-            $this->setViewBuildCronStuckNotice();
+        // Detect a stuck WordPress cron by reading WP's own scheduled-event
+        // metadata. When cron is firing normally, wp_reschedule_event()
+        // (wp-cron.php:129) advances each recurring event's next_run_time
+        // to the future before the handler executes, so wp_get_ready_cron_jobs()
+        // returns events whose timestamps are at most a few minutes overdue.
+        // When cron stops, those timestamps stay frozen in the past and the
+        // earliest one grows older with every passing hour. >= 24h overdue
+        // is unambiguously broken; this works whether DISABLE_WP_CRON is set
+        // or not, and produces no false positives for sites with working
+        // external cron (the great majority of DISABLE_WP_CRON installs).
+        $stuckHours = $this->getCronStuckHours();
+        if ($stuckHours >= 24) {
+            $this->setViewBuildCronStuckNotice($stuckHours);
+        } elseif (function_exists('delete_transient')) {
+            // Cron is healthy. Self-heal: clear any stale cron-stuck notice
+            // so a previous false-positive (or a recovered failure) does
+            // not linger up to 24h waiting for the dedup transient to
+            // expire on its own.
+            delete_transient('abj404_view_build_stuck_wp_cron_disabled');
         }
         $next = wp_next_scheduled($hook);
         if ($next !== false) {
@@ -1226,13 +1236,15 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
 
     /**
      * Deduplicated admin notice (24h transient) telling the admin that
-     * WP-Cron is disabled so the staged view-build will not advance unless
-     * an external cron is configured or the admin reopens the Redirects
-     * screen. Companion to the N-gram subsystem detection.
+     * WordPress cron has stopped advancing. Triggered by isCronStuck()
+     * detecting that the earliest overdue cron event is at least 24 hours
+     * older than now, which means recurring events are no longer being
+     * rescheduled and cron-dependent plugin features are stalled.
      *
+     * @param int $hoursStuck how many hours the earliest overdue event has been waiting
      * @return void
      */
-    private function setViewBuildCronStuckNotice(): void {
+    private function setViewBuildCronStuckNotice(int $hoursStuck): void {
         if (!function_exists('set_transient')) {
             return;
         }
@@ -1240,20 +1252,59 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
         if (function_exists('get_transient') && get_transient($key) !== false) {
             return; // dedup window still active
         }
+        $template = $this->localizeOrDefaultViewBuildNotice(
+            'WordPress cron does not appear to be running. The earliest overdue '
+            . 'cron event has been waiting at least %d hours, so cron-dependent '
+            . 'plugin features (staged view-build, daily cleanup, log updates, '
+            . 'digest emails) are not advancing. To resolve: if DISABLE_WP_CRON '
+            . 'is set in wp-config.php either remove it, or configure a system '
+            . 'cron job that requests wp-cron.php periodically.'
+        );
         $payload = array(
             'type'         => 'view_build_stuck_cron_disabled',
-            'message'      => $this->localizeOrDefaultViewBuildNotice(
-                'WordPress cron is disabled (DISABLE_WP_CRON) and no external '
-                . 'cron has been observed running wp-cron.php recently. The 404 '
-                . 'Solution staged view-build will not advance in the background '
-                . 'until cron runs. To resolve: either remove DISABLE_WP_CRON from '
-                . 'wp-config.php, or configure a system cron job that requests '
-                . 'wp-cron.php every few minutes.'
-            ),
+            'message'      => sprintf($template, $hoursStuck),
             'timestamp'    => time(),
             'error_string' => '',
         );
         set_transient($key, $payload, 86400);
+    }
+
+    /**
+     * @return int hours since the earliest overdue WordPress cron event,
+     *             or 0 when cron is healthy / cannot be inspected.
+     *
+     * Uses WP core bookkeeping rather than a heartbeat option:
+     * `wp_reschedule_event()` (wp-cron.php:129) updates each recurring
+     * event's next_run_time to a future timestamp before its handler
+     * executes. So if cron is running, every recurring event lives in the
+     * future and `wp_get_ready_cron_jobs()` returns at most a few-minute
+     * window of events that have just become due. If cron stops, those
+     * timestamps stay frozen in the past and the earliest one keeps
+     * aging.
+     */
+    private function getCronStuckHours(): int {
+        if (!function_exists('wp_get_ready_cron_jobs')) {
+            return 0;
+        }
+        $ready = wp_get_ready_cron_jobs();
+        if (!is_array($ready) || empty($ready)) {
+            return 0;
+        }
+        $earliest = 0;
+        foreach (array_keys($ready) as $ts) {
+            $tsInt = (int) $ts;
+            if ($tsInt > 0 && ($earliest === 0 || $tsInt < $earliest)) {
+                $earliest = $tsInt;
+            }
+        }
+        if ($earliest <= 0) {
+            return 0;
+        }
+        $delta = time() - $earliest;
+        if ($delta <= 0) {
+            return 0;
+        }
+        return (int) floor($delta / 3600);
     }
 
     /**

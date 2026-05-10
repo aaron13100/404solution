@@ -1233,8 +1233,9 @@ add_action('admin_notices', 'abj404_show_plugin_db_notice');
 if (!function_exists('abj404_show_view_build_cron_notices')) {
 	/**
 	 * Render the staged-view-build cron-stuck and schedule-failure notices.
-	 * Set by DataAccess::scheduleViewDoneRebuild() when DISABLE_WP_CRON is true
-	 * or when wp_schedule_single_event itself fails. 24h dedup transients.
+	 * Set by DataAccess::scheduleViewDoneRebuild() when WordPress cron has
+	 * stopped advancing (earliest overdue ready-job >= 24h old) or when
+	 * wp_schedule_single_event itself fails. 24h dedup transients.
 	 *
 	 * @return void
 	 */
