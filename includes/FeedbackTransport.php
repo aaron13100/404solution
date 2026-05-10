@@ -170,7 +170,7 @@ class ABJ_404_Solution_FeedbackTransport {
             'site_url' => function_exists('home_url') ? (string)home_url() : '',
             'locale' => function_exists('get_locale') ? (string)get_locale() : '',
             'resource_limits' => self::resourceLimits(),
-            'wp_memory_limit_bytes' => self::memoryLimitBytes(),
+            'wp_memory_limit_bytes' => self::tryInt(function () { return self::memoryLimitBytes(); }),
             'extensions' => function_exists('get_loaded_extensions') ? get_loaded_extensions() : array(),
             'active_plugins' => self::activePlugins(),
             'active_theme' => self::activeTheme(),
@@ -178,12 +178,36 @@ class ABJ_404_Solution_FeedbackTransport {
             'table_prefix' => $tablePrefix,
             'wp_debug' => defined('WP_DEBUG') && WP_DEBUG,
             'server_software' => isset($_SERVER['SERVER_SOFTWARE']) && is_scalar($_SERVER['SERVER_SOFTWARE']) ? (string)$_SERVER['SERVER_SOFTWARE'] : '',
-            'content_counts' => self::contentCounts(),
-            'redirect_counts' => self::redirectCounts(),
-            'captured_counts' => self::capturedCounts(),
-            'logs_table' => self::logsTableStats(),
-            'debug_file' => self::debugFileStats(),
         );
+
+        // Null (not 0) on lookup failure so the server can distinguish
+        // "actually zero" from "we don't know" per server-schema contract.
+        $payload['published_posts_count'] = self::tryInt(function () { return self::countPublishedPosts(); });
+        $payload['published_pages_count'] = self::tryInt(function () { return self::countPublishedPages(); });
+        $payload['categories_count']      = self::tryInt(function () { return self::countCategories(); });
+        $payload['tags_count']            = self::tryInt(function () { return self::countTags(); });
+
+        // Server schema flattens the DAO's ['all','manual','auto','regex','trash']
+        // map. 'redirects_active_total' is the DAO 'all' (manual+auto+regex).
+        $redirectCounts = self::tryArray(function () { return self::redirectCountsRaw(); });
+        $payload['redirects_active_total']    = self::pluckInt($redirectCounts, 'all');
+        $payload['redirects_manual_count']    = self::pluckInt($redirectCounts, 'manual');
+        $payload['redirects_automatic_count'] = self::pluckInt($redirectCounts, 'auto');
+        $payload['redirects_regex_count']     = self::pluckInt($redirectCounts, 'regex');
+        $payload['redirects_trashed_count']   = self::pluckInt($redirectCounts, 'trash');
+
+        // DAO key 'captured' is the "new" status; server renames it.
+        $capturedCounts = self::tryArray(function () { return self::capturedCountsRaw(); });
+        $payload['captured_404s_active_total']  = self::pluckInt($capturedCounts, 'all');
+        $payload['captured_404s_new_count']     = self::pluckInt($capturedCounts, 'captured');
+        $payload['captured_404s_ignored_count'] = self::pluckInt($capturedCounts, 'ignored');
+        $payload['captured_404s_later_count']   = self::pluckInt($capturedCounts, 'later');
+        $payload['captured_404s_trashed_count'] = self::pluckInt($capturedCounts, 'trash');
+
+        $payload['log_entries_count']     = self::tryInt(function () { return self::logEntriesCount(); });
+        $payload['log_table_size_bytes']  = self::tryInt(function () { return self::logTableSizeBytes(); });
+        $payload['error_count_in_log']    = self::tryInt(function () { return self::errorCountInLog(); });
+        $payload['debug_file_size_bytes'] = self::tryInt(function () { return self::debugFileSizeBytes(); });
 
         if (self::isDevelopmentEnvironment()) {
             $payload['environment_type'] = 'development';
@@ -365,133 +389,243 @@ class ABJ_404_Solution_FeedbackTransport {
     }
 
     /**
-     * Best-effort WP content counts (posts, pages, categories, tags). Each
-     * lookup is independently guarded so a missing taxonomy or non-bootstrap
-     * test context can't throw.
+     * Call an int-returning helper, returning null if it throws. Lets
+     * buildPayload() assemble a partial report when one count source fails.
+     *
+     * @param callable $fn
+     * @return int|null
+     */
+    private static function tryInt(callable $fn): ?int {
+        try {
+            $v = $fn();
+            return is_int($v) ? $v : null;
+        } catch (\Throwable $e) {
+            @error_log('404 Solution: FeedbackTransport count lookup failed: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Call an array-returning helper, returning [] if it throws.
+     *
+     * @param callable $fn
+     * @return array<string, int>
+     */
+    private static function tryArray(callable $fn): array {
+        try {
+            $v = $fn();
+            if (!is_array($v)) {
+                return array();
+            }
+            /** @var array<string, int> $coerced */
+            $coerced = array();
+            foreach ($v as $k => $val) {
+                if (is_string($k) && is_int($val)) {
+                    $coerced[$k] = $val;
+                }
+            }
+            return $coerced;
+        } catch (\Throwable $e) {
+            @error_log('404 Solution: FeedbackTransport array lookup failed: ' . $e->getMessage());
+            return array();
+        }
+    }
+
+    /**
+     * Pull a single int from a count map, returning null when the key is
+     * absent. Distinguishes "DAO returned an empty array" (failure, null)
+     * from "DAO returned 0 for this status" (real zero) in the payload.
+     *
+     * @param array<string, mixed> $map
+     * @param string $key
+     * @return int|null
+     */
+    private static function pluckInt(array $map, string $key): ?int {
+        if (!array_key_exists($key, $map)) {
+            return null;
+        }
+        $v = $map[$key];
+        return is_scalar($v) ? (int)$v : null;
+    }
+
+    /**
+     * @return int wp_count_posts('post')->publish.
+     */
+    private static function countPublishedPosts(): int {
+        if (!function_exists('wp_count_posts')) {
+            throw new \RuntimeException('wp_count_posts unavailable');
+        }
+        $posts = wp_count_posts();
+        if (is_object($posts) && isset($posts->publish) && is_scalar($posts->publish)) {
+            return (int)$posts->publish;
+        }
+        throw new \RuntimeException('wp_count_posts returned unexpected shape');
+    }
+
+    /**
+     * @return int wp_count_posts('page')->publish.
+     */
+    private static function countPublishedPages(): int {
+        if (!function_exists('wp_count_posts')) {
+            throw new \RuntimeException('wp_count_posts unavailable');
+        }
+        $pages = wp_count_posts('page');
+        if (is_object($pages) && isset($pages->publish) && is_scalar($pages->publish)) {
+            return (int)$pages->publish;
+        }
+        throw new \RuntimeException('wp_count_posts(page) returned unexpected shape');
+    }
+
+    /**
+     * @return int wp_count_terms('category').
+     */
+    private static function countCategories(): int {
+        if (!function_exists('wp_count_terms')) {
+            throw new \RuntimeException('wp_count_terms unavailable');
+        }
+        $v = wp_count_terms(array('taxonomy' => 'category'));
+        if (function_exists('is_wp_error') && is_wp_error($v)) {
+            throw new \RuntimeException('wp_count_terms(category) returned WP_Error');
+        }
+        if (is_scalar($v)) {
+            return (int)$v;
+        }
+        throw new \RuntimeException('wp_count_terms(category) returned unexpected shape');
+    }
+
+    /**
+     * @return int wp_count_terms('post_tag').
+     */
+    private static function countTags(): int {
+        if (!function_exists('wp_count_terms')) {
+            throw new \RuntimeException('wp_count_terms unavailable');
+        }
+        $v = wp_count_terms(array('taxonomy' => 'post_tag'));
+        if (function_exists('is_wp_error') && is_wp_error($v)) {
+            throw new \RuntimeException('wp_count_terms(post_tag) returned WP_Error');
+        }
+        if (is_scalar($v)) {
+            return (int)$v;
+        }
+        throw new \RuntimeException('wp_count_terms(post_tag) returned unexpected shape');
+    }
+
+    /**
+     * Raw redirect-status counts straight from DataAccess. Throws when the
+     * DAO isn't booted or the method is missing; tryArray() catches.
      *
      * @return array<string, int>
      */
-    private static function contentCounts(): array {
-        $out = array(
-            'published_posts' => 0,
-            'published_pages' => 0,
-            'categories' => 0,
-            'tags' => 0,
-        );
-        if (function_exists('wp_count_posts')) {
-            $posts = wp_count_posts();
-            if (is_object($posts) && isset($posts->publish) && is_scalar($posts->publish)) {
-                $out['published_posts'] = (int)$posts->publish;
-            }
-            $pages = wp_count_posts('page');
-            if (is_object($pages) && isset($pages->publish) && is_scalar($pages->publish)) {
-                $out['published_pages'] = (int)$pages->publish;
-            }
+    private static function redirectCountsRaw(): array {
+        $dao = self::dao();
+        if ($dao === null || !method_exists($dao, 'getRedirectStatusCounts')) {
+            throw new \RuntimeException('DataAccess::getRedirectStatusCounts unavailable');
         }
-        if (function_exists('wp_count_terms')) {
-            $cats = wp_count_terms(array('taxonomy' => 'category'));
-            if (is_scalar($cats)) {
-                $out['categories'] = (int)$cats;
-            }
-            $tags = wp_count_terms(array('taxonomy' => 'post_tag'));
-            if (is_scalar($tags)) {
-                $out['tags'] = (int)$tags;
+        $raw = $dao->getRedirectStatusCounts(true);
+        if (!is_array($raw)) {
+            throw new \RuntimeException('getRedirectStatusCounts returned non-array');
+        }
+        $out = array();
+        foreach ($raw as $k => $v) {
+            if (is_string($k) && is_scalar($v)) {
+                $out[$k] = (int)$v;
             }
         }
         return $out;
     }
 
     /**
-     * Plugin's redirect counts grouped by status. Returns zeros if the
-     * service container isn't yet booted (early test contexts).
+     * Raw captured-404 status counts straight from DataAccess.
      *
      * @return array<string, int>
      */
-    private static function redirectCounts(): array {
-        $defaults = array('all' => 0, 'manual' => 0, 'auto' => 0, 'regex' => 0, 'trash' => 0);
-        $dao = self::dao();
-        if ($dao === null || !method_exists($dao, 'getRedirectStatusCounts')) {
-            return $defaults;
-        }
-        $raw = $dao->getRedirectStatusCounts(true);
-        if (!is_array($raw)) {
-            return $defaults;
-        }
-        return self::intCounts($raw, $defaults);
-    }
-
-    /**
-     * Plugin's captured-404 counts grouped by status. Returns zeros if the
-     * service container isn't yet booted.
-     *
-     * @return array<string, int>
-     */
-    private static function capturedCounts(): array {
-        $defaults = array('all' => 0, 'captured' => 0, 'ignored' => 0, 'later' => 0, 'trash' => 0);
+    private static function capturedCountsRaw(): array {
         $dao = self::dao();
         if ($dao === null || !method_exists($dao, 'getCapturedStatusCounts')) {
-            return $defaults;
+            throw new \RuntimeException('DataAccess::getCapturedStatusCounts unavailable');
         }
         $raw = $dao->getCapturedStatusCounts(true);
         if (!is_array($raw)) {
-            return $defaults;
+            throw new \RuntimeException('getCapturedStatusCounts returned non-array');
         }
-        return self::intCounts($raw, $defaults);
+        $out = array();
+        foreach ($raw as $k => $v) {
+            if (is_string($k) && is_scalar($v)) {
+                $out[$k] = (int)$v;
+            }
+        }
+        return $out;
     }
 
     /**
-     * Logs table size + row count. Both surfaced as bytes / count integers.
-     *
-     * @return array{rows: int, size_bytes: int}
+     * @return int Row count of {prefix}abj404_logsv2.
      */
-    private static function logsTableStats(): array {
-        $rows = 0;
-        $bytes = 0;
+    private static function logEntriesCount(): int {
         $dao = self::dao();
-        if ($dao !== null) {
-            if (method_exists($dao, 'getLogsCount')) {
-                $r = $dao->getLogsCount(0);
-                if (is_scalar($r)) { $rows = (int)$r; }
-            }
-            if (method_exists($dao, 'getLogDiskUsage')) {
-                $b = $dao->getLogDiskUsage();
-                if (is_scalar($b)) { $bytes = (int)$b; }
-            }
+        if ($dao === null || !method_exists($dao, 'getLogsCount')) {
+            throw new \RuntimeException('DataAccess::getLogsCount unavailable');
         }
-        return array('rows' => $rows, 'size_bytes' => $bytes);
+        $v = $dao->getLogsCount(0);
+        if (is_scalar($v)) {
+            return (int)$v;
+        }
+        throw new \RuntimeException('getLogsCount returned unexpected shape');
     }
 
     /**
-     * Plugin debug-log file size + total error count parsed from it. Both
-     * are best-effort: a missing log file or unbooted Logging service simply
-     * returns zeros.
-     *
-     * @return array{size_bytes: int, total_errors: int}
+     * @return int data_length + index_length for the log table.
      */
-    private static function debugFileStats(): array {
-        $size = 0;
-        $errors = 0;
-        if (function_exists('abj_service')) {
-            try {
-                $logger = abj_service('logging');
-                if (is_object($logger) && method_exists($logger, 'getDebugFilePath')) {
-                    $path = $logger->getDebugFilePath();
-                    if (is_string($path) && $path !== '' && file_exists($path)) {
-                        $fs = @filesize($path);
-                        if (is_int($fs)) { $size = $fs; }
-                    }
-                }
-                if (is_object($logger) && method_exists($logger, 'getLatestErrorLine')) {
-                    $info = $logger->getLatestErrorLine();
-                    if (is_array($info) && isset($info['total_error_count']) && is_scalar($info['total_error_count'])) {
-                        $errors = (int)$info['total_error_count'];
-                    }
-                }
-            } catch (\Throwable $e) {
-                @error_log('404 Solution: FeedbackTransport debugFileStats lookup failed: ' . $e->getMessage());
-            }
+    private static function logTableSizeBytes(): int {
+        $dao = self::dao();
+        if ($dao === null || !method_exists($dao, 'getLogDiskUsage')) {
+            throw new \RuntimeException('DataAccess::getLogDiskUsage unavailable');
         }
-        return array('size_bytes' => $size, 'total_errors' => $errors);
+        $v = $dao->getLogDiskUsage();
+        if (is_scalar($v)) {
+            return (int)$v;
+        }
+        throw new \RuntimeException('getLogDiskUsage returned unexpected shape');
+    }
+
+    /**
+     * @return int Total (ERROR) line count in the debug file.
+     */
+    private static function errorCountInLog(): int {
+        if (!function_exists('abj_service')) {
+            throw new \RuntimeException('abj_service unavailable');
+        }
+        $logger = abj_service('logging');
+        if (!is_object($logger) || !method_exists($logger, 'getLatestErrorLine')) {
+            throw new \RuntimeException('Logging::getLatestErrorLine unavailable');
+        }
+        $info = $logger->getLatestErrorLine();
+        if (is_array($info) && isset($info['total_error_count']) && is_scalar($info['total_error_count'])) {
+            return (int)$info['total_error_count'];
+        }
+        throw new \RuntimeException('getLatestErrorLine returned unexpected shape');
+    }
+
+    /**
+     * @return int filesize() of the plugin debug log.
+     */
+    private static function debugFileSizeBytes(): int {
+        if (!function_exists('abj_service')) {
+            throw new \RuntimeException('abj_service unavailable');
+        }
+        $logger = abj_service('logging');
+        if (!is_object($logger) || !method_exists($logger, 'getDebugFilePath')) {
+            throw new \RuntimeException('Logging::getDebugFilePath unavailable');
+        }
+        $path = $logger->getDebugFilePath();
+        if (!is_string($path) || $path === '' || !file_exists($path)) {
+            // Missing file is a real zero, not a failure.
+            return 0;
+        }
+        $fs = @filesize($path);
+        if (is_int($fs)) {
+            return $fs;
+        }
+        throw new \RuntimeException('filesize() failed');
     }
 
     /**
@@ -512,24 +646,6 @@ class ABJ_404_Solution_FeedbackTransport {
         } catch (\Throwable $e) {
             return null;
         }
-    }
-
-    /**
-     * Coerce a raw ['key' => mixed] count map into an int map shaped by
-     * $defaults. Keys missing from $raw default to 0.
-     *
-     * @param array<mixed, mixed> $raw
-     * @param array<string, int>  $defaults
-     * @return array<string, int>
-     */
-    private static function intCounts(array $raw, array $defaults): array {
-        $out = $defaults;
-        foreach ($defaults as $k => $_) {
-            if (array_key_exists($k, $raw) && is_scalar($raw[$k])) {
-                $out[$k] = (int)$raw[$k];
-            }
-        }
-        return $out;
     }
 
     /**
