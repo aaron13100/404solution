@@ -11,6 +11,24 @@ if (!defined('ABSPATH')) {
  */
 class ABJ_404_Solution_ImportExportService {
 
+    /**
+     * Option key that stores resumable-import progress. Keyed by sha256
+     * content hash of the uploaded CSV so a different file (or a different
+     * version of the same file) does not falsely resume from stale state.
+     * See `doImportFile()` and the timeout-resume contract in
+     * tests/ImportExportTimeoutResumeTest.php.
+     */
+    const IMPORT_PROGRESS_OPTION = 'abj404_import_progress';
+
+    /**
+     * Persist progress every N data rows so a hard PHP timeout (where no
+     * exception can be caught) still leaves a usable checkpoint. Trade-off:
+     * higher N is fewer option-writes but loses more rows on hard kill; lower
+     * N writes more but keeps the resume window tight. 50 keeps writes
+     * around once per second at typical row-processing rates.
+     */
+    const IMPORT_PROGRESS_CHECKPOINT_INTERVAL = 50;
+
     /** @var ABJ_404_Solution_DataAccess */
     private $dao;
 
@@ -486,10 +504,34 @@ class ABJ_404_Solution_ImportExportService {
             return __('Error opening the file.', '404-solution');
         }
 
+        // Resume support: content-hash-keyed checkpoint. If a prior import
+        // of the SAME file content (same sha256) paused mid-stream, pick up
+        // at the recorded row count instead of restarting from row 1.
+        // Dry runs never write to the DB, so they never resume / persist.
+        $hashResult = hash_file('sha256', $_FILES['import_file']['tmp_name']);
+        $contentHash = ($dryRun || !is_string($hashResult)) ? '' : $hashResult;
+        $resumeFromDataRow = 0;
+        if (!$dryRun) {
+            $existingProgress = $this->getResumeProgress($contentHash);
+            if ($existingProgress !== null) {
+                $resumeFromDataRow = self::progressInt($existingProgress, 'rows_processed', 0);
+                $processedRows    = self::progressInt($existingProgress, 'processed_count', $resumeFromDataRow);
+                $validRows        = self::progressInt($existingProgress, 'valid_count', 0);
+                $invalidRows      = self::progressInt($existingProgress, 'invalid_count', 0);
+                $overwrittenRows  = self::progressInt($existingProgress, 'overwritten_count', 0);
+                if (isset($existingProgress['issues']) && is_array($existingProgress['issues'])) {
+                    /** @var array<int, string> $persistedIssues */
+                    $persistedIssues = $existingProgress['issues'];
+                    $anyIssuesToNote = $persistedIssues;
+                }
+            }
+        }
+
         $delimiter = $this->detectCsvDelimiterFromFile($file_handle);
         rewind($file_handle);
 
         $headerColumns = null;
+        $dataRowsSeen = 0;
         while (($row = fgetcsv($file_handle, 0, $delimiter, '"', '\\')) !== false) {
             $data = array_map(function($v) {
                 return trim((string)$v);
@@ -501,6 +543,14 @@ class ABJ_404_Solution_ImportExportService {
 
             if ($headerColumns === null && $this->isCompatibleImportHeaderRow($data)) {
                 $headerColumns = $this->normalizeImportHeaders($data);
+                continue;
+            }
+
+            // Resume: skip data rows already processed in a prior (paused) run.
+            // The header has just been parsed above, so the skip applies only
+            // to data rows (the unit the resume counter is keyed on).
+            if ($dataRowsSeen < $resumeFromDataRow) {
+                $dataRowsSeen++;
                 continue;
             }
 
@@ -517,27 +567,84 @@ class ABJ_404_Solution_ImportExportService {
 
             if (isset($dataArray['from_url']) &&
                     ($dataArray['from_url'] === 'from_url' || $dataArray['from_url'] === 'request')) {
+                $dataRowsSeen++;
                 continue;
             }
 
-            $processedRows++;
-            $wasOverwrite = false;
-            if ($overwriteExisting && isset($dataArray['from_url']) && is_string($dataArray['from_url'])) {
-                $existing = $this->dao->getExistingRedirectForURL($dataArray['from_url']);
-                $wasOverwrite = (is_array($existing) && isset($existing['id']) && (int)$existing['id'] !== 0);
-            }
-            $issues = $this->loadDataArrayFromFile($dataArray, $dryRun, $overwriteExisting);
-            if (count($issues) > 0) {
-                $invalidRows++;
-            } else {
-                $validRows++;
-                if ($wasOverwrite) {
-                    $overwrittenRows++;
+            try {
+                $processedRows++;
+                $wasOverwrite = false;
+                if ($overwriteExisting && isset($dataArray['from_url']) && is_string($dataArray['from_url'])) {
+                    $existing = $this->dao->getExistingRedirectForURL($dataArray['from_url']);
+                    $wasOverwrite = (is_array($existing) && isset($existing['id']) && (int)$existing['id'] !== 0);
                 }
+                $issues = $this->loadDataArrayFromFile($dataArray, $dryRun, $overwriteExisting);
+                if (count($issues) > 0) {
+                    $invalidRows++;
+                } else {
+                    $validRows++;
+                    if ($wasOverwrite) {
+                        $overwrittenRows++;
+                    }
+                }
+                $anyIssuesToNote = array_merge($anyIssuesToNote, $issues);
+                $dataRowsSeen++;
+            } catch (\Throwable $e) {
+                // Mid-import failure (PHP timeout exception, DB error, etc.).
+                // Persist what we completed so the next call with the same
+                // file content resumes from $dataRowsSeen (the failed row
+                // gets retried; its from_url is the resume frontier). The
+                // row we were processing did NOT succeed, so processedRows
+                // is rolled back by 1 to keep counters truthful.
+                if (!$dryRun) {
+                    $this->persistImportProgress($contentHash, array(
+                        'rows_processed'    => $dataRowsSeen,
+                        'processed_count'   => max(0, $processedRows - 1),
+                        'valid_count'       => $validRows,
+                        'invalid_count'     => $invalidRows,
+                        'overwritten_count' => $overwrittenRows,
+                        'issues'            => $anyIssuesToNote,
+                        'last_error'        => $e->getMessage(),
+                        'paused_at'         => time(),
+                    ));
+                }
+                fclose($file_handle);
+                $this->logger->warn(sprintf(
+                    'Import paused at row %d of %d due to: %s',
+                    $dataRowsSeen + 1,
+                    $dataRowsSeen + 1,
+                    $e->getMessage()
+                ));
+                return sprintf(
+                    __('Import paused at row %1$d. %2$d redirect(s) imported so far. Re-upload the same file to resume from row %1$d.', '404-solution'),
+                    $dataRowsSeen + 1,
+                    $validRows
+                );
             }
-            $anyIssuesToNote = array_merge($anyIssuesToNote, $issues);
+
+            // Periodic checkpoint so a hard PHP timeout (uncatchable fatal)
+            // still leaves a recent progress marker. Skipped during dry runs
+            // since they perform no DB writes.
+            if (!$dryRun && ($dataRowsSeen % self::IMPORT_PROGRESS_CHECKPOINT_INTERVAL) === 0) {
+                $this->persistImportProgress($contentHash, array(
+                    'rows_processed'    => $dataRowsSeen,
+                    'processed_count'   => $processedRows,
+                    'valid_count'       => $validRows,
+                    'invalid_count'     => $invalidRows,
+                    'overwritten_count' => $overwrittenRows,
+                    'issues'            => $anyIssuesToNote,
+                ));
+            }
         }
         fclose($file_handle);
+
+        // Full traversal completed successfully: clear any prior progress
+        // so a future unrelated upload of byte-identical content (e.g.
+        // re-applying the same exports) starts fresh, not "resumes" from
+        // the file's end.
+        if (!$dryRun) {
+            $this->clearImportProgress();
+        }
 
         if ($dryRun) {
             $msg = sprintf(
@@ -565,6 +672,84 @@ class ABJ_404_Solution_ImportExportService {
         }
 
         return __('The file seems to have loaded okay. Please check the redirects page.', '404-solution');
+    }
+
+    /**
+     * Type-narrowing helper for `mixed` values pulled out of the persisted
+     * progress array. Keeps PHPStan level 9 happy without sprinkling
+     * `is_int / is_numeric` guards through `doImportFile()`.
+     *
+     * @param array<string, mixed> $progress
+     * @param string $key
+     * @param int $default
+     * @return int
+     */
+    private static function progressInt(array $progress, string $key, int $default): int {
+        if (!isset($progress[$key])) {
+            return $default;
+        }
+        $v = $progress[$key];
+        if (is_int($v)) {
+            return $v;
+        }
+        if (is_numeric($v)) {
+            return (int)$v;
+        }
+        return $default;
+    }
+
+    /**
+     * Look up resumable-import progress for the supplied content hash.
+     * Returns the persisted progress array only when the recorded hash
+     * matches; mismatches (different file content) and absent records both
+     * return null so the caller can begin a fresh import.
+     *
+     * @param string $contentHash sha256 of the current upload's contents.
+     * @return array<string, mixed>|null
+     */
+    private function getResumeProgress($contentHash) {
+        if ($contentHash === '' || !function_exists('get_option')) {
+            return null;
+        }
+        $progress = get_option(self::IMPORT_PROGRESS_OPTION, null);
+        if (!is_array($progress) || !isset($progress['hash']) || !is_string($progress['hash'])) {
+            return null;
+        }
+        if ($progress['hash'] !== $contentHash) {
+            return null;
+        }
+        /** @var array<string, mixed> $progress */
+        return $progress;
+    }
+
+    /**
+     * Persist a resumable-import checkpoint keyed by the file's sha256
+     * hash. Writes are idempotent (latest wins) and small (counters + a
+     * short issue list), so calling this every N rows is cheap.
+     *
+     * @param string $contentHash
+     * @param array<string, mixed> $state
+     * @return void
+     */
+    private function persistImportProgress($contentHash, $state) {
+        if ($contentHash === '' || !function_exists('update_option')) {
+            return;
+        }
+        $state['hash'] = $contentHash;
+        update_option(self::IMPORT_PROGRESS_OPTION, $state);
+    }
+
+    /**
+     * Clear the resume marker after a fully-successful import so a future
+     * upload of byte-identical content starts fresh rather than "resuming"
+     * from end-of-file.
+     *
+     * @return void
+     */
+    private function clearImportProgress() {
+        if (function_exists('delete_option')) {
+            delete_option(self::IMPORT_PROGRESS_OPTION);
+        }
     }
 
     /**
