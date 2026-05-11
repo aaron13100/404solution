@@ -963,6 +963,139 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
         return $this->stagedTableExists($this->viewDoneTableName());
     }
 
+    /**
+     * Cheap "does view_done have at least one row" probe used by
+     * viewDoneIsServeable() to make the post-invalidate stale-but-present
+     * decision honest. Without this, viewDoneIsServeable() might report a
+     * just-promoted-but-empty buffer as serveable; the admin would render
+     * an empty redirects screen indefinitely with no rebuild scheduled.
+     *
+     * SELECT 1 ... LIMIT 1 is the cheapest existence query MySQL can do;
+     * within a request the result is memoized inside viewDoneIsServeable()
+     * so the probe fires once even on hot AJAX paths.
+     *
+     * @return bool
+     */
+    private function viewDoneHasRows(): bool {
+        if (!$this->viewDoneTableExists()) {
+            return false;
+        }
+        $sql = 'SELECT 1 FROM `' . $this->viewDoneTableName() . '` LIMIT 1';
+        $result = $this->queryAndGetResults($sql, array('log_errors' => false));
+        $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
+        return !empty($rows);
+    }
+
+    /**
+     * Option name for the floor timestamp on the data currently stored in
+     * the view_done table. Distinct from viewDoneFreshnessOptionName():
+     *
+     *   - viewDoneFreshnessOptionName() (built_at): cleared on invalidate.
+     *     "Last build that has not been invalidated." Drives the freshness
+     *     TTL gate that decides whether to schedule a background rebuild.
+     *
+     *   - viewDoneDataBuiltAtOptionName() (data_built_at): preserved across
+     *     invalidate. "When was the snapshot currently on disk produced."
+     *     Drives the hard-stale notice and lets us answer "how old is the
+     *     data the admin is looking at" honestly even after invalidation.
+     *
+     * @return string
+     */
+    private function viewDoneDataBuiltAtOptionName(): string {
+        return $this->getLowercasePrefix() . 'abj404_view_done_data_built_at';
+    }
+
+    /**
+     * Unix timestamp when the data currently in the view_done table was
+     * produced. Survives invalidateViewDone() so the read path can compute
+     * an honest "data on disk is N hours old" age regardless of whether the
+     * freshness signal has been cleared.
+     *
+     * @return int
+     */
+    private function viewDoneDataBuiltAt(): int {
+        if (!function_exists('get_option')) {
+            return 0;
+        }
+        $built = get_option($this->viewDoneDataBuiltAtOptionName(), 0);
+        return is_scalar($built) ? max(0, intval($built)) : 0;
+    }
+
+    /**
+     * Set a deduplicated admin notice when the data in view_done is older
+     * than VIEW_DONE_HARD_STALE_NOTICE_AGE_SECONDS. Surfaced on the plugin's
+     * own admin screen by abj404_show_view_build_cron_notices in
+     * 404-solution.php; never sent via email or shown wp-admin-wide.
+     *
+     * Same 24h dedup TTL as the other view-build notices so the three
+     * notice families share a consistent lifecycle.
+     *
+     * @param int $ageSeconds Current age of data on disk.
+     * @return void
+     */
+    private function setViewDoneHardStaleNotice(int $ageSeconds): void {
+        if (!function_exists('set_transient')) {
+            return;
+        }
+        $key = 'abj404_view_done_hard_stale';
+        if (function_exists('get_transient') && get_transient($key) !== false) {
+            return; // dedup window still active
+        }
+        $hours = max(1, intval(floor($ageSeconds / 3600)));
+        $template = $this->localizeOrDefaultViewBuildNotice(
+            'The 404 Solution redirects table data is more than %d hours old. '
+            . 'A background rebuild is scheduled but has not completed; the '
+            . 'redirects screen is showing the most recent successful snapshot. '
+            . 'Check WordPress cron health and the staged-build progress.'
+        );
+        $payload = array(
+            'type'         => 'view_done_hard_stale',
+            'message'      => sprintf($template, $hours),
+            'timestamp'    => time(),
+            'error_string' => '',
+            'age_hours'    => $hours,
+        );
+        // allow-cache-empty: notice payload is intentional; error_string is empty by definition for stale-data state.
+        set_transient($key, $payload, ABJ_404_Solution_ViewBuildConfig::VIEW_BUILD_DEGRADED_NOTICE_TTL_SECONDS);
+    }
+
+    /**
+     * Self-heal: clear the hard-stale notice when a successful build
+     * completes and the data on disk is no longer stale. Called from
+     * markViewDoneBuildCompleted() so the notice does not linger for the
+     * full 24h dedup TTL after the build catches up.
+     *
+     * @return void
+     */
+    private function clearViewDoneHardStaleNotice(): void {
+        if (function_exists('delete_transient')) {
+            delete_transient('abj404_view_done_hard_stale');
+        }
+    }
+
+    /**
+     * Read-path hook: when serving stale data from view_done, surface the
+     * hard-stale notice if the data is older than the configured threshold.
+     *
+     * No-ops when data_built_at is missing (legacy installs that pre-date
+     * the data-built-at signal) so a one-time migration does not generate
+     * spurious 24h notices on the first read after upgrade. The next
+     * successful build sets the signal and from then on the staleness
+     * check is honest.
+     *
+     * @return void
+     */
+    private function maybeRaiseViewDoneHardStaleNotice(): void {
+        $built = $this->viewDoneDataBuiltAt();
+        if ($built <= 0) {
+            return;
+        }
+        $age = time() - $built;
+        if ($age >= ABJ_404_Solution_ViewBuildConfig::VIEW_DONE_HARD_STALE_NOTICE_AGE_SECONDS) {
+            $this->setViewDoneHardStaleNotice($age);
+        }
+    }
+
     /** @param string $tableName @return bool */
     private function stagedTableExists(string $tableName): bool {
         global $wpdb;

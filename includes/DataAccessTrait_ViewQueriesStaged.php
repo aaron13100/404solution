@@ -157,28 +157,34 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
         if (!empty($tableOptions['_abj404_force_view_rebuild'])) {
             $this->invalidateViewDone();
         }
-        $haveDone = $this->viewDoneTableExists();
         $builtAt = $this->viewDoneBuiltAt();
-        $isFresh = $haveDone && $builtAt > 0 && (time() - $builtAt) < ABJ_404_Solution_ViewBuildConfig::VIEW_DONE_FRESHNESS_TTL_SECONDS;
-        $isInvalidated = $haveDone && $builtAt === 0;
+        $isFresh = $builtAt > 0
+            && (time() - $builtAt) < ABJ_404_Solution_ViewBuildConfig::VIEW_DONE_FRESHNESS_TTL_SECONDS
+            && $this->viewDoneIsServeable();
 
         if ($isFresh) {
             return $this->readFromViewDone($sub, $tableOptions);
         }
 
-        if ($haveDone && !$isInvalidated) {
-            // Stale but not invalidated: serve stale (TTL expired but data
-            // is presumed correct), kick off background rebuild for next
-            // request. This is the steady-state warm path.
+        // Stale or invalidated: if view_done is serveable (table exists with
+        // rows on disk) we return the snapshot now and kick off a background
+        // rebuild for the next request. Invalidated counts as "stale-but-
+        // present"; the freshness signal was cleared (so the rebuild gets
+        // scheduled) but the data on disk is the most recent successful
+        // snapshot and is correct to serve. Hard-stale notice fires when
+        // the data on disk exceeds VIEW_DONE_HARD_STALE_NOTICE_AGE_SECONDS.
+        if ($this->viewDoneIsServeable()) {
             $this->scheduleViewDoneRebuild();
+            $this->maybeRaiseViewDoneHardStaleNotice();
             return $this->readFromViewDone($sub, $tableOptions);
         }
 
-        // view_done is missing or invalidated. Schedule a background rebuild
-        // (cron + ajaxAdvanceViewBuild advance the build) and signal pending
-        // back up. Inline build inside a fetch request is intentionally
-        // removed: on slow hosts it fatals at max_execution_time and the
-        // HTTP 500 / "critical error" payload defeats client-side recovery.
+        // view_done is missing on disk or empty (no usable data). Schedule a
+        // background rebuild (cron + ajaxAdvanceViewBuild advance the build)
+        // and signal pending back up. Inline build inside a fetch request is
+        // intentionally removed: on slow hosts it fatals at max_execution_time
+        // and the HTTP 500 / "critical error" payload defeats client-side
+        // recovery.
         $this->scheduleViewDoneRebuild();
         $progress = $this->describeBuildProgressForNotice();
         throw new ABJ_404_Solution_ViewBuildPendingException(
@@ -198,10 +204,19 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
 
     /**
      * Public read-only check used by the AJAX fetch endpoints to gate "serve
-     * from cache vs. return pending".  True when view_done exists and has
-     * been at least once successfully built (not invalidated). Stale-but-
-     * present is serveable: the steady-state warm path serves stale and
-     * schedules a background rebuild without blocking.
+     * from cache vs. return pending". True when view_done exists on disk and
+     * contains rows. Stale-but-present is serveable: invalidate clears the
+     * freshness signal but leaves the table contents intact, so the steady-
+     * state warm path serves stale and schedules a background rebuild
+     * without blocking.
+     *
+     * Note: serveability does NOT depend on the freshness/built_at signal.
+     * That signal gates whether to schedule a rebuild (stale = schedule), not
+     * whether the existing data can be returned. Serving stale-but-present
+     * data is correct: the data is at most one freshness window out of date
+     * relative to when it was last produced, and the maybeRaiseViewDoneHard
+     * StaleNotice() check fires an admin notice when staleness exceeds the
+     * upper bound (VIEW_DONE_HARD_STALE_NOTICE_AGE_SECONDS).
      *
      * The ViewUpdater AJAX path uses this to avoid triggering the inline
      * build inside a request: if not serveable, the fetch returns
@@ -217,11 +232,14 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
             $this->viewDoneIsServeableCache = false;
             return false;
         }
-        // Invalidated (built_at == 0) is NOT serveable: the freshness option
-        // was just cleared by a redirect create/update/delete, so any read
-        // would return wildly out-of-date data.  The build must run before
-        // the next fetch.
-        $this->viewDoneIsServeableCache = ($this->viewDoneBuiltAt() > 0);
+        // Empty view_done is NOT serveable: rendering an empty admin screen
+        // is a worse UX than a brief pending/loading state that drives the
+        // build forward. The has-rows probe also catches the rare "S11
+        // promoted an empty buffer" failure mode where the swap completed
+        // but S2 produced no rows (botched build state); without this guard
+        // the admin would render blank indefinitely with no rebuild ever
+        // scheduled.
+        $this->viewDoneIsServeableCache = $this->viewDoneHasRows();
         return $this->viewDoneIsServeableCache;
     }
 
@@ -247,6 +265,33 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
      */
     private function invalidateViewDoneServeableCache(): void {
         $this->viewDoneIsServeableCache = null;
+    }
+
+    /**
+     * Public hook called from the S11 swap completion path and from the
+     * reconcile-promote path when a fresh view_done has just been published.
+     * Updates both freshness and data-built-at signals to now, clears the
+     * hard-stale admin notice (self-heal), and resets the request-lifetime
+     * serveability cache so subsequent reads in the same request see the
+     * just-published table.
+     *
+     * The data-built-at signal is the floor used by maybeRaiseViewDoneHard
+     * StaleNotice() to decide when to surface the "data may be out of date"
+     * admin notice. Updating it here means the notice can self-clear
+     * automatically once the build catches up, so an admin who fixed the
+     * underlying cron or host issue does not see a 24h-stale warning for
+     * the entire dedup TTL after recovery.
+     *
+     * @return void
+     */
+    public function markViewDoneBuildCompleted(): void {
+        if (function_exists('update_option')) {
+            $now = $this->clock()->now();
+            update_option($this->viewDoneFreshnessOptionName(), $now, false);
+            update_option($this->viewDoneDataBuiltAtOptionName(), $now, false);
+        }
+        $this->clearViewDoneHardStaleNotice();
+        $this->invalidateViewDoneServeableCache();
     }
 
     /**
@@ -405,16 +450,17 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
         $this->stagedQueryTimeoutSeconds = isset($tableOptions['_abj404_query_timeout'])
             && is_numeric($tableOptions['_abj404_query_timeout'])
             ? max(0, intval($tableOptions['_abj404_query_timeout'])) : 0;
-        $haveDone = $this->viewDoneTableExists();
         $builtAt = $this->viewDoneBuiltAt();
-        $isFresh = $haveDone && $builtAt > 0 && (time() - $builtAt) < ABJ_404_Solution_ViewBuildConfig::VIEW_DONE_FRESHNESS_TTL_SECONDS;
-        $isInvalidated = $haveDone && $builtAt === 0;
+        $isFresh = $builtAt > 0
+            && (time() - $builtAt) < ABJ_404_Solution_ViewBuildConfig::VIEW_DONE_FRESHNESS_TTL_SECONDS
+            && $this->viewDoneIsServeable();
 
-        if (!$haveDone || $isInvalidated) {
-            // No serveable view_done. Schedule a background rebuild and
-            // signal pending; never run the staged build inline inside a
-            // request. The fetch AJAX gate prevents this from being reached
-            // under normal traffic; non-AJAX callers retry on next request.
+        if (!$this->viewDoneIsServeable()) {
+            // view_done is missing on disk or empty (no usable data).
+            // Schedule a background rebuild and signal pending; never run
+            // the staged build inline inside a request. The fetch AJAX gate
+            // prevents this from being reached under normal traffic; non-
+            // AJAX callers retry on next request.
             $this->scheduleViewDoneRebuild();
             $progress = $this->describeBuildProgressForNotice();
             throw new ABJ_404_Solution_ViewBuildPendingException(
@@ -424,9 +470,11 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
         }
 
         if (!$isFresh) {
-            // Stale but not invalidated: serve the stale count and kick off
-            // a background rebuild for the next request.
+            // Stale or invalidated but data on disk is serveable: return the
+            // stale count and kick off a background rebuild. Hard-stale
+            // notice fires when the data on disk exceeds the upper bound.
             $this->scheduleViewDoneRebuild();
+            $this->maybeRaiseViewDoneHardStaleNotice();
         }
 
         $sql = $this->buildViewDoneCountQuery($sub, $tableOptions);
@@ -621,11 +669,10 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
                     . '(`%s` -> `%s`); previous run crashed before S11 swap',
                     $tempBuildTable, $doneTable
                 ));
-                if (function_exists('update_option')) {
-                    update_option($this->viewDoneFreshnessOptionName(), $this->clock()->now(), false);
-                }
+                // Same as the S11 swap completion: update both freshness
+                // signals, clear hard-stale notice, reset serveability cache.
+                $this->markViewDoneBuildCompleted();
                 $this->clearAllProgressOptions();
-                $this->invalidateViewDoneServeableCache();
                 return 'promoted';
             }
             $this->logger->warn(sprintf(
@@ -1461,13 +1508,13 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
             if ($r === false || $r === 'halted') {
                 return false;
             }
-            if (function_exists('update_option')) {
-                update_option($this->viewDoneFreshnessOptionName(), time(), false);
-            }
-            // Build fully done. Wipe progress so the next rebuild starts clean.
+            // Build fully done. markViewDoneBuildCompleted() updates both
+            // freshness and data-built-at signals, clears the hard-stale
+            // admin notice, and resets the serveability cache.
+            $this->markViewDoneBuildCompleted();
+            // Wipe progress so the next rebuild starts clean.
             // clearAllProgressOptions() also clears the prefix_at_s1 capture.
             $this->clearAllProgressOptions();
-            $this->invalidateViewDoneServeableCache();
         }
 
         return true;
