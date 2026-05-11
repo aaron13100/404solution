@@ -1121,6 +1121,11 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
                 $this->backfillRedirectsCanonicalUrl();
                 $this->renameAbj404TablesToLowerCase();
 
+                // Canonical self-heal prologue runs after schema creation so
+                // SelfHealingPrologueReachabilityTest sees per-subsite activation
+                // reach the same recovery primitives as the daily cron.
+                $this->runSelfHealPrologue();
+
                 ABJ_404_Solution_PluginLogic::doRegisterCrons();
 
                 $logic = abj_service('plugin_logic');
@@ -1167,6 +1172,12 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
                 $this->backfillRedirectsCanonicalUrl();
                 $this->renameAbj404TablesToLowerCase();
                 $this->correctIssuesAfter();
+
+                // Canonical self-heal prologue closes the per-subsite upgrade
+                // batch so SelfHealingPrologueReachabilityTest can prove the
+                // multisite upgrade path reaches the same recovery primitives
+                // as the daily cron tick.
+                $this->runSelfHealPrologue();
 
                 $logic = abj_service('plugin_logic');
                 $logic->doUpdateDBVersionOption();

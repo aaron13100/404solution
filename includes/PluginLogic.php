@@ -764,6 +764,12 @@ class ABJ_404_Solution_PluginLogic {
 
         // wp_abj404_logsv2 exists since 1.7.
         $upgradesEtc = abj_service('database_upgrades');
+        // Route the upgrade path through the canonical self-heal prologue so
+        // SelfHealingPrologueReachabilityTest can statically prove that
+        // upgrades reach the same recovery primitives as the daily cron.
+        // The prologue is idempotent and cheap when tables already exist;
+        // on installs missing a table it acts as a pre-upgrade repair pass.
+        $upgradesEtc->runSelfHealPrologue();
         $upgradesEtc->createDatabaseTables(true);
 
         // abj404_duplicateCronAction is no longer needed as of 1.7.

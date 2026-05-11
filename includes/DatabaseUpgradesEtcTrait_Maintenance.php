@@ -418,6 +418,58 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
     }
 
     /**
+     * Self-healing boot prologue. The single named token every "heavy boot"
+     * entry point routes through before doing useful work.
+     *
+     * Pattern 1 in docs/PROACTIVE_BUG_DISCOVERY.md: bugs recurred because each
+     * recovery primitive (repairStrippedViewCacheTable, updateTableEngineToInnoDB,
+     * createIndexes, correctCollations, adoptOrphanedTables) was reachable from
+     * one boot path only. Activation reached some, the daily cron reached
+     * others, fresh installs reached different subsets. Centralising the
+     * fan-out here makes the reachability invariant testable
+     * (SelfHealingPrologueReachabilityTest) instead of relying on a developer
+     * to remember to wire every primitive into every new entry point.
+     *
+     * Documented order, delegated to verifyAndRepairCurrentSite() (the
+     * existing per-site insurance check):
+     *
+     *   1. Discover required tables from create*Table.sql files (same source
+     *      of truth as runInitialCreateTables()).
+     *   2. If ANY table is missing, call createDatabaseTables(false), which
+     *      funnels through reallyCreateDatabaseTables() into runInitialCreateTables(),
+     *      reaching:
+     *        a. repairStrippedViewCacheTable() (3.3.3 column-drop recovery),
+     *        b. verifyTableMaterialized() (d9024114 per-table CREATE verify),
+     *        c. verifyColumns() (schema-drift tolerance),
+     *      then updateTableEngineToInnoDB(), correctCollations(), createIndexes(),
+     *      and renameAbj404TablesToLowerCase() into adoptOrphanedTables().
+     *   3. If all tables exist, run the drift-correction sweep:
+     *        a. correctCollations() (utf8mb4 drift),
+     *        b. createIndexes() (lost-index recovery after hosting migrations),
+     *        c. updateTableEngineToInnoDB() (MyISAM reversion recovery).
+     *   4. adoptOrphanedTables() covers prefix migrations even when tables
+     *      under the current prefix exist.
+     *
+     * Idempotent: safe to call multiple times in the same request. The
+     * SHOW TABLES check makes the tables-exist branch cheap (~1ms per table).
+     *
+     * Light-path entry points (frontend 404 dispatch, admin AJAX, REST,
+     * WP-CLI commands, on-demand caches like permalink-cache rebuild) opt
+     * out via the SelfHealingPrologueReachabilityTest allowlist because
+     * (a) the prologue runs nightly via the daily cron tick so drift is
+     * caught within 24h, and (b) running it on every request would be a
+     * perf regression and risks cron-lock contention under high traffic.
+     * Those paths rely on
+     * `queryAndGetResults::attemptMissingTableRepairAndRetry()` for
+     * per-query recovery instead.
+     *
+     * @return void
+     */
+    public function runSelfHealPrologue() {
+        $this->verifyAndRepairCurrentSite();
+    }
+
+    /**
      * Verify and repair tables for the current site only.
      *
      * Derives the list of required tables dynamically from create*Table.sql files
@@ -569,8 +621,10 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
      */
     public function runDatabaseMaintenanceTasks() {
         // Insurance: Verify tables exist (per-site or network-wide based on activation mode)
-        // This catches failed activations, database corruption, and edge cases
-        $this->runDailyInsuranceCheck();
+        // This catches failed activations, database corruption, and edge cases.
+        // Routed through runSelfHealPrologue() so the SelfHealingPrologueReachabilityTest
+        // can confirm the daily cron reaches the canonical prologue token.
+        $this->runSelfHealPrologue();
 
         // Ngram cache maintenance: sync missing entries and cleanup orphaned ones
         $this->syncMissingNGrams();

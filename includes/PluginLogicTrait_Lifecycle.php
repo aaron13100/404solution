@@ -92,6 +92,14 @@ trait ABJ_404_Solution_PluginLogicTrait_Lifecycle {
         $upgradesEtc = abj_service('database_upgrades');
         $upgradesEtc->createDatabaseTables();
 
+        // Route through the canonical self-heal prologue so activation
+        // reaches every recovery primitive in the same order as the daily
+        // cron. createDatabaseTables() above is the full schema-creation
+        // path for a fresh install; the prologue is a cheap idempotent
+        // drift-correction pass that the SelfHealingPrologueReachabilityTest
+        // can statically observe.
+        $upgradesEtc->runSelfHealPrologue();
+
         ABJ_404_Solution_PluginLogic::doRegisterCrons();
 
         $abj404logic->doUpdateDBVersionOption();
