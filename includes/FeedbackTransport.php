@@ -41,6 +41,11 @@ class ABJ_404_Solution_FeedbackTransport {
      * (deactivate AJAX). Returns immediately; the actual send happens in a
      * single-shot cron event.
      *
+     * Schedules the cron event and then kicks WP-Cron via spawn_cron() so the
+     * send happens on the next request cycle instead of waiting for a natural
+     * cron tick. On low-traffic sites a natural tick can be hours away, which
+     * is long enough for the deactivate flow to forget about the report.
+     *
      * @param array<string, mixed> $payload
      * @param string $type
      * @return void
@@ -53,6 +58,13 @@ class ABJ_404_Solution_FeedbackTransport {
         );
         set_transient(self::TRANSIENT_PREFIX . $uuid, $envelope, self::TRANSIENT_TTL);
         wp_schedule_single_event(time(), self::CRON_HOOK, array($uuid));
+
+        // Trigger spawn_cron so the listener runs on the next request rather
+        // than waiting for the next page load on a logged-in admin. spawn_cron
+        // is a no-op when DISABLE_WP_CRON is true or a cron is already running.
+        if (function_exists('spawn_cron')) {
+            spawn_cron();
+        }
     }
 
     /**
@@ -106,7 +118,16 @@ class ABJ_404_Solution_FeedbackTransport {
         $key = self::TRANSIENT_PREFIX . $uuid;
         $envelope = get_transient($key);
         if (!is_array($envelope) || !isset($envelope['payload']) || !is_array($envelope['payload'])) {
-            // Transient expired or never written; nothing to do.
+            // Transient expired before WP-Cron fired, or the cron event fired
+            // twice and the second invocation found the key already cleared.
+            // Log so the data loss is visible to admins; 24h TTL means this
+            // path is reachable on sites where WP-Cron is broken or paused.
+            self::log('warn', sprintf(
+                'abj404_transport: queued send missed - transient absent or malformed (key=%s). ' .
+                'Most commonly: WP-Cron did not fire within the %d second TTL.',
+                $key,
+                self::TRANSIENT_TTL
+            ));
             delete_transient($key);
             return;
         }
@@ -171,10 +192,13 @@ class ABJ_404_Solution_FeedbackTransport {
             'locale' => function_exists('get_locale') ? (string)get_locale() : '',
             'resource_limits' => self::resourceLimits(),
             'wp_memory_limit_bytes' => self::tryInt(function () { return self::memoryLimitBytes(); }),
-            'extensions' => function_exists('get_loaded_extensions') ? get_loaded_extensions() : array(),
+            'extensions' => self::loadedExtensionsMap(),
             'active_plugins' => self::activePlugins(),
             'active_theme' => self::activeTheme(),
-            'object_cache' => function_exists('wp_using_ext_object_cache') ? (bool)wp_using_ext_object_cache() : false,
+            // Server schema declares object_cache as string. "external" when
+            // a drop-in is installed (W3 Total Cache, Redis Object Cache),
+            // "default" when WordPress is using its in-process cache.
+            'object_cache' => (function_exists('wp_using_ext_object_cache') && wp_using_ext_object_cache()) ? 'external' : 'default',
             'table_prefix' => $tablePrefix,
             'wp_debug' => defined('WP_DEBUG') && WP_DEBUG,
             'server_software' => isset($_SERVER['SERVER_SOFTWARE']) && is_scalar($_SERVER['SERVER_SOFTWARE']) ? (string)$_SERVER['SERVER_SOFTWARE'] : '',
@@ -281,11 +305,41 @@ class ABJ_404_Solution_FeedbackTransport {
             : 'https://404solution.ajexperience.com/api/v1/reports';
         if (function_exists('apply_filters')) {
             $filtered = apply_filters('abj404_report_endpoint', $default);
-            if (is_string($filtered) && $filtered !== '') {
+            // Reject anything that isn't a non-empty http(s) URL so a buggy
+            // filter callback can never coerce wp_remote_post into a SSRF /
+            // file:// / data: request, or block on a malformed host.
+            if (is_string($filtered) && $filtered !== '' && self::isHttpUrl($filtered)) {
                 return $filtered;
+            }
+            if ($filtered !== $default) {
+                self::log('warn', sprintf(
+                    'abj404_transport: abj404_report_endpoint filter returned an invalid value; using default. got=%s',
+                    is_scalar($filtered) ? (string)$filtered : gettype($filtered)
+                ));
             }
         }
         return $default;
+    }
+
+    /**
+     * Strict-shape URL check: only accept http:// or https:// with a host
+     * component. parse_url('http://') yields a parseable structure with no
+     * host, so we test for that explicitly.
+     *
+     * @param string $url
+     * @return bool
+     */
+    private static function isHttpUrl(string $url): bool {
+        $scheme = function_exists('wp_parse_url')
+            ? wp_parse_url($url, PHP_URL_SCHEME)
+            : parse_url($url, PHP_URL_SCHEME);
+        if (!is_string($scheme) || ($scheme !== 'http' && $scheme !== 'https')) {
+            return false;
+        }
+        $host = function_exists('wp_parse_url')
+            ? wp_parse_url($url, PHP_URL_HOST)
+            : parse_url($url, PHP_URL_HOST);
+        return is_string($host) && $host !== '';
     }
 
     /**
@@ -369,13 +423,41 @@ class ABJ_404_Solution_FeedbackTransport {
      * @return array<string, mixed>
      */
     private static function resourceLimits(): array {
+        // Server schema (see /api/v1/reports) requires every resource_limits
+        // value to be an integer. ini_get() returns shorthand strings like
+        // "256M" or "30s"; converting here keeps the server validator and the
+        // database column types aligned (BIGINT for bytes, INT for seconds).
         return array(
-            'php_memory' => function_exists('ini_get') ? (string)ini_get('memory_limit') : '',
-            'wp_memory' => defined('WP_MEMORY_LIMIT') ? WP_MEMORY_LIMIT : '',
-            'max_execution_time' => function_exists('ini_get') ? (string)ini_get('max_execution_time') : '',
-            'post_max_size' => function_exists('ini_get') ? (string)ini_get('post_max_size') : '',
-            'upload_max_filesize' => function_exists('ini_get') ? (string)ini_get('upload_max_filesize') : '',
+            'php_memory' => function_exists('ini_get') ? self::iniSizeToBytes((string)ini_get('memory_limit')) : 0,
+            'wp_memory'  => defined('WP_MEMORY_LIMIT') ? self::iniSizeToBytes((string)WP_MEMORY_LIMIT) : 0,
+            'php_max_execution_seconds' => function_exists('ini_get') ? (int)ini_get('max_execution_time') : 0,
+            'php_post_max_size' => function_exists('ini_get') ? self::iniSizeToBytes((string)ini_get('post_max_size')) : 0,
+            'php_upload_max_size' => function_exists('ini_get') ? self::iniSizeToBytes((string)ini_get('upload_max_filesize')) : 0,
         );
+    }
+
+    /**
+     * Convert PHP's shorthand byte notation ("256M", "1G", "1024K", "-1") to
+     * an integer count of bytes. Returns 0 for empty input or the special
+     * "no limit" value -1, since the server schema requires non-negative
+     * integers. Plain-numeric strings ("512") are treated as already-bytes.
+     *
+     * @param string $value
+     * @return int
+     */
+    private static function iniSizeToBytes(string $value): int {
+        $str = trim($value);
+        if ($str === '' || $str === '-1' || $str === '0') {
+            return 0;
+        }
+        $unit = strtolower(substr($str, -1));
+        $num = (int) $str;
+        switch ($unit) {
+            case 'g': return $num * 1024 * 1024 * 1024;
+            case 'm': return $num * 1024 * 1024;
+            case 'k': return $num * 1024;
+            default:  return $num;
+        }
     }
 
     /**
@@ -390,18 +472,7 @@ class ABJ_404_Solution_FeedbackTransport {
         if (!defined('WP_MEMORY_LIMIT')) {
             return 0;
         }
-        $str = trim((string)WP_MEMORY_LIMIT);
-        if ($str === '' || $str === '-1') {
-            return 0;
-        }
-        $unit = strtolower(substr($str, -1));
-        $num = (int) $str;
-        switch ($unit) {
-            case 'g': return $num * 1024 * 1024 * 1024;
-            case 'm': return $num * 1024 * 1024;
-            case 'k': return $num * 1024;
-            default:  return $num;
-        }
+        return self::iniSizeToBytes((string)WP_MEMORY_LIMIT);
     }
 
     /**
@@ -665,6 +736,35 @@ class ABJ_404_Solution_FeedbackTransport {
     }
 
     /**
+     * Build an object-shaped extension map: {curl: true, mbstring: true, ...}.
+     * Server schema declares extensions as `object` so it can mark known
+     * extensions as boolean columns (has_curl, has_mbstring, etc.). Sending
+     * the raw `get_loaded_extensions()` array of strings would be rejected
+     * by the server validator with "must be object".
+     *
+     * @return array<string, bool>
+     */
+    private static function loadedExtensionsMap(): array {
+        if (!function_exists('get_loaded_extensions')) {
+            return array();
+        }
+        $names = get_loaded_extensions();
+        if (!is_array($names)) {
+            return array();
+        }
+        $out = array();
+        foreach ($names as $name) {
+            if (is_string($name) && $name !== '') {
+                // Lowercase the key so the server's has_<ext> column mapping
+                // is case-stable: ini-loaded extensions report as "Core",
+                // "OpenSSL", etc. while the server probes "curl", "openssl".
+                $out[strtolower($name)] = true;
+            }
+        }
+        return $out;
+    }
+
+    /**
      * @return array<int, string>
      */
     private static function activePlugins(): array {
@@ -685,25 +785,28 @@ class ABJ_404_Solution_FeedbackTransport {
     }
 
     /**
-     * @return array{name: string, version: string}
+     * Return a short human-readable theme identifier ("Name 1.2.3"). Server
+     * schema declares active_theme as `string`, not the {name, version}
+     * object the email transport historically sent.
+     *
+     * @return string
      */
-    private static function activeTheme(): array {
+    private static function activeTheme(): string {
         if (!function_exists('wp_get_theme')) {
-            return array('name' => '', 'version' => '');
+            return '';
         }
         $theme = wp_get_theme();
-        if (!is_object($theme)) {
-            return array('name' => '', 'version' => '');
+        if (!is_object($theme) || !method_exists($theme, 'get')) {
+            return '';
         }
-        $name = '';
-        $version = '';
-        if (method_exists($theme, 'get')) {
-            $rawName = $theme->get('Name');
-            $rawVer = $theme->get('Version');
-            if (is_string($rawName)) { $name = $rawName; }
-            if (is_string($rawVer)) { $version = $rawVer; }
+        $rawName = $theme->get('Name');
+        $rawVer = $theme->get('Version');
+        $name = is_string($rawName) ? trim($rawName) : '';
+        $version = is_string($rawVer) ? trim($rawVer) : '';
+        if ($name === '' && $version === '') {
+            return '';
         }
-        return array('name' => $name, 'version' => $version);
+        return $version === '' ? $name : trim($name . ' ' . $version);
     }
 
     /**
