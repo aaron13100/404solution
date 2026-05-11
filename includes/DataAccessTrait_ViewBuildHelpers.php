@@ -1510,7 +1510,10 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
             . 'plugin features (staged view-build, daily cleanup, log updates, '
             . 'digest emails) are not advancing. To resolve: if DISABLE_WP_CRON '
             . 'is set in wp-config.php either remove it, or configure a system '
-            . 'cron job that requests wp-cron.php periodically.'
+            . 'cron job that requests wp-cron.php periodically. To force the '
+            . 'redirect view to rebuild right now in your browser (workaround '
+            . 'while cron is broken), open the 404 Solution Redirects page '
+            . 'with ?abj404_force_view_rebuild=1 appended to the URL.'
         );
         $payload = array(
             'type'         => 'view_build_stuck_cron_disabled',
@@ -1583,7 +1586,10 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
             . 'This usually indicates the WordPress cron lock is held, the cron '
             . 'option is unwritable, or a custom cron implementation rejected '
             . 'the event. Check your hosting provider and any cron-replacement '
-            . 'plugins.';
+            . 'plugins. To force the redirect view to rebuild right now in your '
+            . 'browser (workaround while cron scheduling is failing), open the '
+            . '404 Solution Redirects page with ?abj404_force_view_rebuild=1 '
+            . 'appended to the URL.';
         if ($detail !== '') {
             $message .= ' (' . $detail . ')';
         }
