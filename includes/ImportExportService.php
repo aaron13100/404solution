@@ -454,9 +454,11 @@ class ABJ_404_Solution_ImportExportService {
         }
 
         $dryRun = isset($_POST['dry_run']) && sanitize_text_field((string)$_POST['dry_run']) === '1';
+        $overwriteExisting = isset($_POST['overwrite_existing']) && sanitize_text_field((string)$_POST['overwrite_existing']) === '1';
         $processedRows = 0;
         $validRows = 0;
         $invalidRows = 0;
+        $overwrittenRows = 0;
 
         $allowed_extensions = array('csv', 'txt');
         $file_ext = strtolower(pathinfo($_FILES['import_file']['name'], PATHINFO_EXTENSION));
@@ -519,11 +521,19 @@ class ABJ_404_Solution_ImportExportService {
             }
 
             $processedRows++;
-            $issues = $this->loadDataArrayFromFile($dataArray, $dryRun);
+            $wasOverwrite = false;
+            if ($overwriteExisting && isset($dataArray['from_url']) && is_string($dataArray['from_url'])) {
+                $existing = $this->dao->getExistingRedirectForURL($dataArray['from_url']);
+                $wasOverwrite = (is_array($existing) && isset($existing['id']) && (int)$existing['id'] !== 0);
+            }
+            $issues = $this->loadDataArrayFromFile($dataArray, $dryRun, $overwriteExisting);
             if (count($issues) > 0) {
                 $invalidRows++;
             } else {
                 $validRows++;
+                if ($wasOverwrite) {
+                    $overwrittenRows++;
+                }
             }
             $anyIssuesToNote = array_merge($anyIssuesToNote, $issues);
         }
@@ -547,26 +557,43 @@ class ABJ_404_Solution_ImportExportService {
             return __('Error:', '404-solution') . ' ' . implode(", <BR/>\n", $anyIssuesToNote);
         }
 
+        if ($overwriteExisting && $overwrittenRows > 0) {
+            return sprintf(
+                __('The file seems to have loaded okay. %d existing redirect(s) were overwritten. Please check the redirects page.', '404-solution'),
+                $overwrittenRows
+            );
+        }
+
         return __('The file seems to have loaded okay. Please check the redirects page.', '404-solution');
     }
 
     /**
      * @param array<string, mixed> $dataArray
      * @param bool $dryRun
+     * @param bool $overwriteExisting When true, an existing redirect with the
+     *   same from_url is updated instead of being skipped. Default false
+     *   preserves historical safe-by-default behavior.
      * @return array<int, string>
      */
-    function loadDataArrayFromFile($dataArray, $dryRun = false) {
+    function loadDataArrayFromFile($dataArray, $dryRun = false, $overwriteExisting = false) {
         $fromURL = isset($dataArray['from_url']) && is_string($dataArray['from_url']) ? $dataArray['from_url'] : '';
         if ($fromURL === 'from_url' || $fromURL === 'request') {
             return array();
         }
 
-        $status = ABJ404_STATUS_MANUAL;
+        // Explicit regex signal from the CSV takes priority over the narrow
+        // URL-chars sniff further down. Recognized signals (any one wins):
+        //   1. Native CSV `status` column literal 'Regex' (case-insensitive)
+        //   2. Native CSV `status` numeric ABJ404_STATUS_REGEX value
+        //   3. Redirection-plugin `regex` column '1' / 'true' / 'yes'
+        $explicitRegex = $this->isExplicitRegexRow($dataArray);
+        $status = $explicitRegex ? ABJ404_STATUS_REGEX : ABJ404_STATUS_MANUAL;
         $final_dest = isset($dataArray['to_url']) && is_string($dataArray['to_url']) ? $dataArray['to_url'] : '';
         $anyIssuesToNote = array();
 
         $maybeExisting2 = $this->dao->getExistingRedirectForURL($fromURL);
-        if ((count($maybeExisting2) > 0 && $maybeExisting2['id'] != 0)) {
+        $existingId = (count($maybeExisting2) > 0 && isset($maybeExisting2['id'])) ? (int)$maybeExisting2['id'] : 0;
+        if ($existingId !== 0 && !$overwriteExisting) {
             $msg = __('Ignored importing redirect because a redirect with the same from URL already exists. URL:', '404-solution') . ' ' . $fromURL;
             $this->logger->warn($msg);
             $anyIssuesToNote[] = $msg;
@@ -583,9 +610,14 @@ class ABJ_404_Solution_ImportExportService {
             $type = ABJ404_TYPE_HOME;
         } else if (strpos($final_dest, 'http') !== false) {
             $type = ABJ404_TYPE_EXTERNAL;
-            $urlPattern = '/[!#$&\'()*+,;=]/';
-            if (preg_match($urlPattern, $fromURL)) {
-                $status = ABJ404_STATUS_REGEX;
+            if (!$explicitRegex) {
+                // Legacy narrow sniff: only fires when no explicit regex signal
+                // was present in the CSV. Catches old exports that lack a
+                // status/regex column but encode a regex via URL metachars.
+                $urlPattern = '/[!#$&\'()*+,;=]/';
+                if (preg_match($urlPattern, $fromURL)) {
+                    $status = ABJ404_STATUS_REGEX;
+                }
             }
         } else if (strpos($final_dest, '/') === 0) {
             $type = $typePost;
@@ -625,10 +657,10 @@ class ABJ_404_Solution_ImportExportService {
                 $type = $typeTag;
                 $final_dest = (string)$postFromTag->term_id;
             } else {
-                // Slug doesn't resolve to any post/category/tag — use EXTERNAL
-                // so the path is used as-is by the redirect pipeline. Storing a
-                // non-numeric final_dest with TYPE_POST would cause the redirect
-                // to silently 404 (get_permalink() expects a numeric ID).
+                // Slug doesn't resolve to any post/category/tag (use EXTERNAL
+                // so the path is used as-is by the redirect pipeline). Storing
+                // a non-numeric final_dest with TYPE_POST would cause the
+                // redirect to silently 404 (get_permalink() expects an ID).
                 $type = ABJ404_TYPE_EXTERNAL;
                 $this->logger->warn(__("Couldn't find post from slug. slug:", '404-solution') . ' ' . $slug);
             }
@@ -639,10 +671,45 @@ class ABJ_404_Solution_ImportExportService {
                 ? $dataArray['engine'] : 'import';
             $code = isset($dataArray['code']) && is_numeric($dataArray['code'])
                 ? (string)(int)$dataArray['code'] : '301';
-            $this->dao->setupRedirect($fromURL, (string)$status, (string)$type, (string)$final_dest, $code, 0, $engine);
+
+            if ($existingId !== 0 && $overwriteExisting) {
+                // Overwrite path: mutate the existing row so the user's bulk
+                // CSV edit (e.g. Manual to Regex on 55 city patterns) lands
+                // without per-row admin clicks.
+                $this->dao->updateRedirect((int)$type, (string)$final_dest, $fromURL, $existingId, $code, (int)$status);
+            } else {
+                $this->dao->setupRedirect($fromURL, (string)$status, (string)$type, (string)$final_dest, $code, 0, $engine);
+            }
         }
 
         return $anyIssuesToNote;
+    }
+
+    /**
+     * Decide whether a parsed CSV row explicitly asks for STATUS_REGEX, based
+     * on the `status` column (native format) or `regex` column (Redirection
+     * format). Case-insensitive; tolerant of common truthy spellings.
+     *
+     * @param array<string, mixed> $dataArray
+     * @return bool
+     */
+    private function isExplicitRegexRow(array $dataArray): bool {
+        if (isset($dataArray['status']) && is_scalar($dataArray['status'])) {
+            $raw = strtolower(trim((string)$dataArray['status']));
+            if ($raw === 'regex') {
+                return true;
+            }
+            if (is_numeric($raw) && (int)$raw === (int)ABJ404_STATUS_REGEX) {
+                return true;
+            }
+        }
+        if (isset($dataArray['regex']) && is_scalar($dataArray['regex'])) {
+            $raw = strtolower(trim((string)$dataArray['regex']));
+            if ($raw === '1' || $raw === 'true' || $raw === 'yes') {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -769,6 +836,18 @@ class ABJ_404_Solution_ImportExportService {
         $codeIndex = $this->findImportHeaderIndex($normalizedHeaders, array('code', 'redirect_code', 'http_code'));
         if ($codeIndex !== -1 && array_key_exists($codeIndex, $row)) {
             $result['code'] = trim((string)$row[$codeIndex]);
+        }
+
+        // Native CSV: textual status (Manual / Regex / Auto / Captured / Ignored / Later).
+        $statusIndex = $this->findImportHeaderIndex($normalizedHeaders, array('status', 'redirect_status'));
+        if ($statusIndex !== -1 && array_key_exists($statusIndex, $row)) {
+            $result['status'] = trim((string)$row[$statusIndex]);
+        }
+
+        // Redirection-plugin CSV: explicit `regex` flag column (0/1).
+        $regexIndex = $this->findImportHeaderIndex($normalizedHeaders, array('regex', 'is_regex'));
+        if ($regexIndex !== -1 && array_key_exists($regexIndex, $row)) {
+            $result['regex'] = trim((string)$row[$regexIndex]);
         }
 
         return $result;

@@ -1,5 +1,5 @@
 
-<form method="POST" name="import-redirects" action="{toolsImportRedirectsLink}" 
+<form method="POST" name="import-redirects" action="{toolsImportRedirectsLink}"
 	enctype="multipart/form-data">
     <input type="hidden" name="action" value="importRedirectsFile">
     <p>{Import a CSV file with the redirects and captured 404s.}
@@ -7,6 +7,13 @@
     <p>{Supported formats are: <B>from_url,status,type,to_url,wp_type</B>}
     {and <B>from_url,to_url</B>}
 	</p>
+
+    <p style="margin-top:6px;">
+        <label style="display:inline-flex; align-items:center; gap:6px;">
+            <input type="checkbox" name="overwrite_existing" value="1">
+            {Overwrite existing redirects when from URL already exists (otherwise duplicate rows are skipped).}
+        </label>
+    </p>
 
     <input type="file" id="abj404-import-file-input" name="import_file" class="button-secondary" onchange="form.submit()">
     <div id="abj404-import-format-hint" data-abj404-import-format-hint style="margin-top:8px; font-size:12px; opacity:0.9;"></div>
