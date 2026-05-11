@@ -247,12 +247,17 @@ class ABJ_404_Solution_FrontendRequestPipeline {
         $this->recordRedirectLookupTiming($lookupStart);
         $this->logAReallyLongDebugMessage($options, $requestedURL, $redirect);
         $autoRedirectsAreOn = !array_key_exists('auto_redirects', $options) || $options['auto_redirects'] == '1';
+        $deferredAutoRedirect = null;
 
         if ($requestedURL != "") {
             $matched = $this->evaluateRedirectCandidate($redirect, '', $options);
             if ($matched !== null) {
-                $this->processRedirect($requestedURL, $matched, 'existing');
-                exit;
+                if ($this->isAutoRedirect($matched)) {
+                    $deferredAutoRedirect = $matched;
+                } else {
+                    $this->processRedirect($requestedURL, $matched, 'existing');
+                    exit;
+                }
             }
 
             if ($requestedURLWithoutComments != $requestedURL) {
@@ -261,8 +266,14 @@ class ABJ_404_Solution_FrontendRequestPipeline {
                 $this->recordRedirectLookupTiming($lookupStart);
                 $matched = $this->evaluateRedirectCandidate($wcRedirect, ' (without comments)', $options);
                 if ($matched !== null) {
-                    $this->processRedirect($requestedURL, $matched, 'existing');
-                    exit;
+                    if ($this->isAutoRedirect($matched)) {
+                        if ($deferredAutoRedirect === null) {
+                            $deferredAutoRedirect = $matched;
+                        }
+                    } else {
+                        $this->processRedirect($requestedURL, $matched, 'existing');
+                        exit;
+                    }
                 }
             }
 
@@ -270,6 +281,11 @@ class ABJ_404_Solution_FrontendRequestPipeline {
             if ($sentTo404Page) {
                 $this->emitBenchmarkHeadersIfEnabled();
                 return;
+            }
+
+            if ($deferredAutoRedirect !== null) {
+                $this->processRedirect($requestedURL, $deferredAutoRedirect, 'existing');
+                exit;
             }
 
             if ($autoRedirectsAreOn) {
@@ -479,6 +495,15 @@ class ABJ_404_Solution_FrontendRequestPipeline {
         }, $condTrace));
         $this->addTraceStep('Conditions' . $labelSuffix, 'Blocked by conditions', $condDetail);
         return null;
+    }
+
+    /**
+     * @param array<string, mixed> $redirect
+     * @return bool
+     */
+    private function isAutoRedirect(array $redirect): bool {
+        return isset($redirect['status']) && is_scalar($redirect['status']) &&
+            (int)$redirect['status'] === (int)ABJ404_STATUS_AUTO;
     }
 
     /**

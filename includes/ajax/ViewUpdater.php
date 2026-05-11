@@ -165,7 +165,7 @@ class ABJ_404_Solution_ViewUpdater {
     private static function getStageDiagnostics($stage) {
         $map = array(
             'table_redirects' => array(
-                'query_label' => 'getAdminRedirectsPageTable() -> getRedirectsForView() / getRedirectsForView.sql',
+                'query_label' => 'getAdminRedirectsPageTable() -> read redirects rows from staged view snapshot',
                 'what_happening' => 'Loading Redirects table rows',
             ),
             'redirect_status_counts' => array(
@@ -173,7 +173,7 @@ class ABJ_404_Solution_ViewUpdater {
                 'what_happening' => 'Counting Redirects status tabs',
             ),
             'table_captured' => array(
-                'query_label' => 'getCapturedURLSPageTable() -> getRedirectsForView() / getRedirectsForView.sql',
+                'query_label' => 'getCapturedURLSPageTable() -> read captured rows from staged view snapshot',
                 'what_happening' => 'Loading Captured 404 URLs table rows',
             ),
             'captured_status_counts' => array(
@@ -185,11 +185,11 @@ class ABJ_404_Solution_ViewUpdater {
                 'what_happening' => 'Loading Logs table rows',
             ),
             'paginationLinksTop' => array(
-                'query_label' => 'getPaginationLinks(top) -> getRedirectsForViewCount() / getRedirectsForView.sql',
+                'query_label' => 'getPaginationLinks(top) -> read top pagination count from staged view snapshot',
                 'what_happening' => 'Rendering top pagination links',
             ),
             'paginationLinksBottom' => array(
-                'query_label' => 'getPaginationLinks(bottom) -> getRedirectsForViewCount() / getRedirectsForView.sql',
+                'query_label' => 'getPaginationLinks(bottom) -> read bottom pagination count from staged view snapshot',
                 'what_happening' => 'Rendering bottom pagination links',
             ),
             'table_cache_rows' => array(

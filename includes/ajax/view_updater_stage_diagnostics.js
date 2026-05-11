@@ -15,7 +15,7 @@
 function abj404AjaxStageDiagnostics(stage, subpage) {
     var map = {
         table_redirects: {
-            queryLabel: 'getAdminRedirectsPageTable() -> getRedirectsForView() / getRedirectsForView.sql',
+            queryLabel: 'getAdminRedirectsPageTable() -> read redirects rows from staged view snapshot',
             whatsHappening: 'Loading Redirects table rows',
             stageNumber: 1
         },
@@ -25,7 +25,7 @@ function abj404AjaxStageDiagnostics(stage, subpage) {
             stageNumber: 2
         },
         table_captured: {
-            queryLabel: 'getCapturedURLSPageTable() -> getRedirectsForView() / getRedirectsForView.sql',
+            queryLabel: 'getCapturedURLSPageTable() -> read captured rows from staged view snapshot',
             whatsHappening: 'Loading Captured 404 URLs table rows',
             stageNumber: 1
         },
@@ -40,12 +40,12 @@ function abj404AjaxStageDiagnostics(stage, subpage) {
             stageNumber: 1
         },
         paginationLinksTop: {
-            queryLabel: 'getPaginationLinks(top) -> getRedirectsForViewCount() / getRedirectsForView.sql',
+            queryLabel: 'getPaginationLinks(top) -> read top pagination count from staged view snapshot',
             whatsHappening: 'Rendering top pagination links',
             stageNumber: 3
         },
         paginationLinksBottom: {
-            queryLabel: 'getPaginationLinks(bottom) -> getRedirectsForViewCount() / getRedirectsForView.sql',
+            queryLabel: 'getPaginationLinks(bottom) -> read bottom pagination count from staged view snapshot',
             whatsHappening: 'Rendering bottom pagination links',
             stageNumber: 4
         },
@@ -141,7 +141,7 @@ function abj404AjaxStageDiagnostics(stage, subpage) {
     }
     if (subpage === 'abj404_captured') {
         return {
-            queryLabel: 'getCapturedURLSPageTable() -> getRedirectsForView() / getRedirectsForView.sql',
+            queryLabel: 'getCapturedURLSPageTable() -> read captured rows from staged view snapshot',
             whatsHappening: 'Loading Captured 404 URLs table rows',
             stageNumber: 1
         };
@@ -154,7 +154,7 @@ function abj404AjaxStageDiagnostics(stage, subpage) {
         };
     }
     return {
-        queryLabel: 'getAdminRedirectsPageTable() -> getRedirectsForView() / getRedirectsForView.sql',
+        queryLabel: 'getAdminRedirectsPageTable() -> read redirects rows from staged view snapshot',
         whatsHappening: 'Loading Redirects table rows',
         stageNumber: 1
     };

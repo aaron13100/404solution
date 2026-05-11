@@ -26,7 +26,81 @@ function validateAddManualRedirectForm(event) {
     return true;
 }
 
+function abj404_sourceUrlLooksLikeRegex(url) {
+    if (typeof url !== 'string' || url === '') {
+        return false;
+    }
+
+    var regexIndicators = [
+        /\(\.\*\)/,
+        /\(\.\+\)/,
+        /\(\?:/,
+        /\(\?=/,
+        /\(\?!/,
+        /\[\^[^\]]+\]/,
+        /\[[a-z]-[a-z]\]/i,
+        /\[[0-9]-[0-9]\]/,
+        /\\d/,
+        /\\w/,
+        /\\s/,
+        /\.\*/,
+        /\.\+/,
+        /\.\?/,
+        /\{\d+,?\d*\}/,
+        /\|/,
+        /\*/,
+        /\^/
+    ];
+
+    for (var i = 0; i < regexIndicators.length; i++) {
+        if (regexIndicators[i].test(url)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function abj404_bindRegexAutoCheck($sourceInput) {
+    if (!$sourceInput.length) {
+        return;
+    }
+
+    $sourceInput.each(function() {
+        var $input = jQuery(this);
+        var $form = $input.closest('form');
+        var $checkbox = $form.find('input[name="is_regex_url"]').first();
+        var lastValue = $input.val();
+
+        if (!$checkbox.length) {
+            return;
+        }
+
+        $checkbox.on('change', function() {
+            if (!$checkbox.prop('checked') && abj404_sourceUrlLooksLikeRegex($input.val())) {
+                $checkbox.data('abj404-user-overrode-regex', true);
+            }
+        });
+
+        $input.on('input keyup change', function() {
+            var currentValue = $input.val();
+            if (currentValue !== lastValue) {
+                $checkbox.data('abj404-user-overrode-regex', false);
+                lastValue = currentValue;
+            }
+
+            if (!$checkbox.prop('checked') &&
+                    !$checkbox.data('abj404-user-overrode-regex') &&
+                    abj404_sourceUrlLooksLikeRegex(currentValue)) {
+                $checkbox.prop('checked', true).trigger('change');
+            }
+        });
+    });
+}
+
 jQuery(document).ready(function($) {	
+    abj404_bindRegexAutoCheck(jQuery('#url, input[name="manual_redirect_url"]'));
+
     var field = jQuery('#redirect_to_user_field');
     field.keyup(function() {
         jQuery('#redirect_to_user_field').css('background-color', '');
