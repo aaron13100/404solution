@@ -139,6 +139,19 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
         if ($name === '') {
             return $default;
         }
+        // Broken-cache bypass for high-stakes reads (current_stage,
+        // s2/s4/s5_high_water). A prior verifyOptionWriteCoherent() set the
+        // abj404_option_cache_incoherent transient because wp_cache_delete +
+        // retry could not get a fresh value. Without this bypass the next
+        // read of current_stage returns the stale cached 0 and every
+        // advanceViewBuildOnce re-enters S1.
+        if (in_array($shortName, self::$viewBuildProgressHighStakesShortNames, true)
+                && function_exists('get_transient')
+                && get_transient('abj404_option_cache_incoherent') !== false
+                && function_exists('wp_cache_delete')) {
+            wp_cache_delete($name, 'options');
+            wp_cache_delete('alloptions', 'options');
+        }
         $value = get_option($name, $default);
         return is_scalar($value) ? max(0, intval($value)) : $default;
     }
@@ -378,11 +391,21 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
      * value reflect the write," so we compare via string casts when both
      * sides are scalar; otherwise fall back to ==.
      *
+     * Null asymmetry is treated as a mismatch. PHP's loose-equal would
+     * otherwise have `null == 0`, `null == ''`, `null == false` all return
+     * true, so a cache layer that served null ("option not found") for a
+     * value-of-zero write (s2/s4/s5_high_water reset on a fresh build) would
+     * have spuriously passed verification. An unwritten cache slot is not
+     * the same value as a written falsy value.
+     *
      * @param mixed $actual
      * @param mixed $expected
      * @return bool
      */
     private function optionReadBackMatches($actual, $expected): bool {
+        if (($actual === null) !== ($expected === null)) {
+            return false;
+        }
         if (is_scalar($actual) && is_scalar($expected)) {
             return (string)$actual === (string)$expected;
         }
