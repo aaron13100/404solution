@@ -723,12 +723,14 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
     /**
      * Mark the served view_done table stale so the next request triggers a
      * rebuild. Hooked from invalidateViewSnapshotCache() so redirect
-     * create/update/delete invalidates the precomputed view too.
-     *
-     * Also clears any in-flight resumable-build progress: a redirect change
-     * during a partial build would leave the partial buffer with stale data
-     * for ids the change touched, so the safest move is to restart the build
-     * on the next request rather than stitch onto a half-built buffer.
+     * create/update/delete invalidates the precomputed view too. Also clears
+     * any in-flight progress AND drops view_build / view_deleteme in the
+     * same call (gated by SHOW TABLES so steady-state invalidate stays
+     * cheap), making the "progress lost but buffer present" state unreachable
+     * so the next request never classifies a leftover buffer as an orphan
+     * to drop (Troy 2026-05: two "[staged] reconcile: dropped orphan
+     * view_build" INFO lines 6 min apart). Buffer-drop helper lives in
+     * DataAccessTrait_ViewBuildStageCallbacks.
      *
      * @return void
      */
@@ -743,6 +745,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
         // a redirect-edit invalidation forces the next request to S1 from
         // scratch, so the prior capture is no longer authoritative.
         $this->clearPrefixAtStageOne();
+        $this->dropTransientBuffersIfPresent();
         $this->invalidateViewDoneServeableCache();
         // Kick off a background rebuild and surface any cron-stuck /
         // schedule-failure conditions to the admin via deduplicated notice.

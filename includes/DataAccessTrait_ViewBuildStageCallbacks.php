@@ -56,6 +56,28 @@ trait ABJ_404_Solution_DataAccess_ViewBuildStageCallbacksTrait {
     }
 
     /**
+     * Drop view_build / view_deleteme only if either exists on disk. Gated by
+     * SHOW TABLES so a steady-state invalidate (no buffer present, the common
+     * case for redirect-edit invalidations) does not pile DROP IF EXISTS DDL
+     * on the hot path. Called from invalidateViewDone() so the buffer drop
+     * is atomic with the progress-option clear.
+     *
+     * @return void
+     */
+    private function dropTransientBuffersIfPresent(): void {
+        $buffer = $this->viewBuildTableName();
+        $deleteme = $this->viewDeletemeTableName();
+        if ($this->stagedTableExists($buffer)) {
+            $this->queryAndGetResults('DROP TABLE IF EXISTS `' . $buffer . '`',
+                array('log_errors' => false));
+        }
+        if ($this->stagedTableExists($deleteme)) {
+            $this->queryAndGetResults('DROP TABLE IF EXISTS `' . $deleteme . '`',
+                array('log_errors' => false));
+        }
+    }
+
+    /**
      * S1: create the build buffer. Tries the system default storage
      * engine, then falls back to MyISAM, then to InnoDB so it works on
      * hosts that disable one or the other.
