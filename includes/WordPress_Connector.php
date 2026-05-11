@@ -328,8 +328,46 @@ class ABJ_404_Solution_WordPress_Connector {
         }
 
         if ($isListPage || $isStatsPage) {
-            ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-view-updater', plugin_dir_url(__FILE__) . 'ajax/view_updater.js',
-                    array('jquery', 'jquery-ui-autocomplete'));
+            // The view-updater module was split into focused collaborators (see
+            // includes/ajax/view_updater*.js) so each file stays under the
+            // FileSizeLimitsTest threshold. Enqueue order matters: every file
+            // below uses globals defined by the modules listed before it. The
+            // bootstrap (view_updater.js) declares the jQuery.ready entry
+            // point and must load LAST so the helpers are defined when ready
+            // fires. WordPress's $deps array enforces this ordering on the
+            // emitted <script> tags.
+            $vuBase = plugin_dir_url(__FILE__) . 'ajax/';
+            ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-view-updater-stage-diagnostics',
+                $vuBase . 'view_updater_stage_diagnostics.js', array('jquery'));
+            ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-view-updater-compare',
+                $vuBase . 'view_updater_compare.js', array('jquery'));
+            ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-view-updater-toast',
+                $vuBase . 'view_updater_toast.js', array('jquery'));
+            ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-view-updater-stats',
+                $vuBase . 'view_updater_stats.js',
+                array('jquery', 'abj404-view-updater-toast'));
+            ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-view-updater-build-advance',
+                $vuBase . 'view_updater_build_advance.js',
+                array('jquery', 'abj404-view-updater-stage-diagnostics'));
+            ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-view-updater-table-init',
+                $vuBase . 'view_updater_table_init.js',
+                array('jquery', 'abj404-view-updater-toast', 'abj404-view-updater-stats'));
+            ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-view-updater-table-warmup',
+                $vuBase . 'view_updater_table_warmup.js',
+                array('jquery', 'abj404-view-updater-stage-diagnostics',
+                      'abj404-view-updater-build-advance', 'abj404-view-updater-table-init'));
+            ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-view-updater-pagination',
+                $vuBase . 'view_updater_pagination.js',
+                array('jquery', 'abj404-view-updater-compare', 'abj404-view-updater-stage-diagnostics',
+                      'abj404-view-updater-build-advance', 'abj404-view-updater-table-init',
+                      'abj404-view-updater-table-warmup', 'abj404-view-updater-toast'));
+            ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-view-updater',
+                $vuBase . 'view_updater.js',
+                array('jquery', 'jquery-ui-autocomplete',
+                      'abj404-view-updater-stage-diagnostics', 'abj404-view-updater-compare',
+                      'abj404-view-updater-toast', 'abj404-view-updater-stats',
+                      'abj404-view-updater-build-advance', 'abj404-view-updater-table-init',
+                      'abj404-view-updater-table-warmup', 'abj404-view-updater-pagination'));
         }
 
         if ($isLogsPage) {
