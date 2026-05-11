@@ -1967,10 +1967,47 @@ html[data-theme="obsidian"] .abj404-tab-branding {
     font-size: 14px;
 }
 
+/*
+ * Inline progress badge shown by the page-redirects AJAX pipeline while a
+ * cold-cache build is running (case-a). The same `.abj404-refresh-status`
+ * span sits in both the filter row and the bottom pagination strip and is
+ * populated by view_updater_build_advance.js / view_updater_table_warmup.js
+ * via jQuery.text(). When empty it stays out of the layout so the existing
+ * case-b toast (which collapses to a 28px spinner after 2s) remains the
+ * dominant signal once the table is already visible.
+ */
 .abj404-refresh-status {
-    color: var(--abj404-text-muted, #646970);
-    font-size: 12px;
-    min-height: 16px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: var(--abj404-info-bg, #e7f3ff);
+    color: var(--abj404-info-text, #0c5a99);
+    border: 1px solid var(--abj404-info-border, #b6dcff);
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.4;
+    vertical-align: middle;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.abj404-refresh-status:empty {
+    display: none;
+}
+
+.abj404-refresh-status::before {
+    content: "";
+    width: 12px;
+    height: 12px;
+    flex: 0 0 auto;
+    border: 2px solid var(--abj404-info-border, #b6dcff);
+    border-top-color: var(--abj404-info-text, #0c5a99);
+    border-radius: 50%;
+    animation: abj404-spin 0.8s linear infinite;
 }
 
 .abj404-pagination-controls {
