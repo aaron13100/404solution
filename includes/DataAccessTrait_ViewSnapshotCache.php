@@ -201,6 +201,8 @@ trait ABJ_404_Solution_DataAccess_ViewSnapshotCacheTrait {
         return array(
             'started_at' => $this->readProgressOption('started_at', 0),
             'current_stage' => $this->readProgressOption('current_stage', 0),
+            'last_started_stage' => $this->readProgressOption('last_started_stage', 0),
+            'last_completed_stage' => $this->readProgressOption('last_completed_stage', 0),
             's2_high_water' => $this->readProgressOption('s2_high_water', 0),
             's4_high_water' => $this->readProgressOption('s4_high_water', 0),
             's5_high_water' => $this->readProgressOption('s5_high_water', 0),

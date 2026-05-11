@@ -36,6 +36,18 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
     /** @var bool Process-local guard so a single request never rebuilds twice. */
     private static $viewBuildAlreadyRanThisRequest = false;
 
+    /** @var bool Process-local guard so shutdown diagnostics register once. */
+    private static $viewBuildShutdownLoggerRegistered = false;
+
+    /** @var bool True while a stage has started but has not reached normal logging. */
+    private $viewBuildStageOpenForShutdown = false;
+
+    /** @var int Stage currently open for shutdown diagnostics. */
+    private $viewBuildShutdownStageNumber = 0;
+
+    /** @var string Stage key currently open for shutdown diagnostics. */
+    private $viewBuildShutdownStageKey = '';
+
     // $stagedQueryTimeoutSeconds is declared on the sibling
     // ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait so the same field
     // backs both stagedQueryOptions() (helpers trait) and the per-stage
@@ -77,6 +89,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
     /** @return void */
     public static function resetViewBuildOncePerRequestGuard(): void {
         self::$viewBuildAlreadyRanThisRequest = false;
+        self::$viewBuildShutdownLoggerRegistered = false;
     }
 
     /** @return string */
@@ -512,7 +525,8 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
      *      so the next fresh build starts from a known empty buffer.
      *
      * Resumable progress = `started_at` within
-     * VIEW_BUILD_RESUME_TTL_SECONDS AND `current_stage` > 0. When a
+     * VIEW_BUILD_RESUME_TTL_SECONDS and either a completed stage
+     * (`current_stage` > 0) or a durable started-stage marker. When a
      * resumable build is in flight we leave view_build alone so the
      * next tick can continue from the persisted high-water id (cases
      * 2 and 3 are skipped; case 1 still runs).
@@ -571,9 +585,10 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
         // id; orphan deleteme cleanup above already ran and is enough.
         $startedAt = $this->readProgressOption('started_at', 0);
         $currentStage = $this->readProgressOption('current_stage', 0);
+        $lastStartedStage = $this->readProgressOption('last_started_stage', 0);
         $resumeWindowOk = $startedAt > 0
             && (time() - $startedAt) < ABJ_404_Solution_ViewBuildConfig::VIEW_BUILD_RESUME_TTL_SECONDS;
-        if ($resumeWindowOk && $currentStage > 0) {
+        if ($resumeWindowOk && ($currentStage > 0 || $lastStartedStage > 0)) {
             return $action;
         }
 
@@ -774,6 +789,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
         // populate this via markBuildStage() as they emit "batch X/Y" lines.
         $this->lastBatchProgressDetail = '';
         try {
+            $this->markViewBuildStageStarted($stageNumber, $stageKey);
             // Public extension point. Sites can hook this for telemetry, custom
             // progress dashboards, or chaos-testing the build's resume contract.
             // The do_action call is inside the try so a callback that throws
@@ -818,8 +834,106 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
         // long-running batched stages do not eventually trip the halt.
         // Completion / skip likewise reset.
         $this->resetStageNoProgressStreak($stageNumber);
+        if ($status === 'completed' || $status === 'skipped') {
+            $this->markViewBuildStageCompleted($stageNumber);
+        }
         $this->logTimedViewBuildStage($stageNumber, $stageKey, $status, $started);
         return $result;
+    }
+
+    /**
+     * Persist stage-start metadata before a stage does work. This survives
+     * PHP/request death where the completion marker and catch block never run.
+     *
+     * @param int $stageNumber
+     * @param string $stageKey
+     * @return void
+     */
+    private function markViewBuildStageStarted(int $stageNumber, string $stageKey): void {
+        $now = time();
+        if ($this->readProgressOption('started_at', 0) === 0) {
+            $this->writeProgressOption('started_at', $now);
+        }
+        $this->writeProgressOption('last_started_stage', $stageNumber);
+        $this->writeProgressOption('last_started_at', $now);
+        $this->viewBuildStageOpenForShutdown = true;
+        $this->viewBuildShutdownStageNumber = $stageNumber;
+        $this->viewBuildShutdownStageKey = $stageKey;
+        $this->logger->debugMessage(sprintf(
+            '[staged] build stage %d/11 %s starting',
+            $stageNumber,
+            $stageKey
+        ));
+    }
+
+    /**
+     * @param int $stageNumber
+     * @return void
+     */
+    private function markViewBuildStageCompleted(int $stageNumber): void {
+        $this->writeProgressOption('last_completed_stage', $stageNumber);
+        $this->writeProgressOption('last_completed_at', time());
+    }
+
+    /** @return void */
+    private function clearViewBuildOpenStageForShutdown(): void {
+        $this->viewBuildStageOpenForShutdown = false;
+        $this->viewBuildShutdownStageNumber = 0;
+        $this->viewBuildShutdownStageKey = '';
+    }
+
+    /** @return void */
+    private function registerViewBuildShutdownDiagnostics(): void {
+        if (self::$viewBuildShutdownLoggerRegistered || !function_exists('register_shutdown_function')) {
+            return;
+        }
+        self::$viewBuildShutdownLoggerRegistered = true;
+        register_shutdown_function(function () {
+            $this->logViewBuildShutdownDiagnostics();
+        });
+    }
+
+    /** @return void */
+    private function logViewBuildShutdownDiagnostics(): void {
+        if (!$this->viewBuildStageOpenForShutdown) {
+            return;
+        }
+        $stageNumber = $this->viewBuildShutdownStageNumber > 0
+            ? $this->viewBuildShutdownStageNumber
+            : $this->readProgressOption('last_started_stage', 0);
+        if ($stageNumber <= 0) {
+            return;
+        }
+        $lastCompleted = $this->readProgressOption('last_completed_stage', 0);
+        if ($lastCompleted >= $stageNumber) {
+            return;
+        }
+
+        $errorText = 'none';
+        if (function_exists('error_get_last')) {
+            $lastError = error_get_last();
+            if (is_array($lastError)) {
+                $message = isset($lastError['message']) && is_scalar($lastError['message'])
+                    ? (string)$lastError['message'] : '';
+                $file = isset($lastError['file']) && is_scalar($lastError['file'])
+                    ? (string)$lastError['file'] : '';
+                $line = isset($lastError['line']) && is_scalar($lastError['line'])
+                    ? (string)$lastError['line'] : '';
+                $errorText = trim($message . ($file !== '' ? ' in ' . $file : '') . ($line !== '' ? ':' . $line : ''));
+                if ($errorText === '') {
+                    $errorText = 'error_get_last returned an empty error';
+                }
+            }
+        }
+
+        $this->logger->warn(sprintf(
+            '[staged] shutdown while build stage %d/11 %s was still open; '
+            . 'last_completed_stage=%d; fatal_context=%s',
+            $stageNumber,
+            $this->viewBuildShutdownStageKey,
+            $lastCompleted,
+            substr($errorText, 0, 240)
+        ));
     }
 
     /**
@@ -903,6 +1017,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
             $status,
             $elapsedMs
         ));
+        $this->clearViewBuildOpenStageForShutdown();
     }
 
     // progressOptionName / readProgressOption / writeProgressOption /
@@ -1054,6 +1169,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
             return $this->viewDoneIsFresh();
         }
         self::$viewBuildAlreadyRanThisRequest = true;
+        $this->registerViewBuildShutdownDiagnostics();
 
         // Probe the PHP runtime once per request: surfaces a low-memory
         // admin notice and gates the per-stage budget into a tighter

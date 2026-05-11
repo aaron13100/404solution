@@ -79,10 +79,24 @@ trait ABJ_404_Solution_DataAccess_ViewBuildStageCallbacksTrait {
         $opts = $this->stagedQueryOptions();
         $opts['log_errors'] = false;
         foreach ($attempts as $engineLabel => $sql) {
+            $attemptStarted = microtime(true);
+            $this->logger->debugMessage(sprintf(
+                '[staged] S1 createViewBuildTable attempt starting: engine=%s',
+                $engineLabel
+            ));
             $result = $this->queryAndGetResults($sql, $opts);
             $err = isset($result['last_error']) && is_string($result['last_error'])
                 ? trim($result['last_error']) : '';
-            if ($err === '' && empty($result['timed_out'])) {
+            $timedOut = !empty($result['timed_out']);
+            $elapsedMs = (int)round((microtime(true) - $attemptStarted) * 1000);
+            $this->logger->debugMessage(sprintf(
+                '[staged] S1 createViewBuildTable attempt finished: engine=%s elapsed_ms=%d timed_out=%s last_error=%s',
+                $engineLabel,
+                $elapsedMs,
+                $timedOut ? 'true' : 'false',
+                $err !== '' ? substr($err, 0, 240) : 'none'
+            ));
+            if ($err === '' && !$timedOut) {
                 if ($engineLabel !== 'default') {
                     // Default engine failed but a fallback won. Worth knowing
                     // because hosts that need a fallback often have other

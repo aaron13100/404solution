@@ -67,6 +67,10 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
     private static $viewBuildProgressOptionNames = array(
         'started_at'    => 'abj404_view_build_started_at',
         'current_stage' => 'abj404_view_build_current_stage',
+        'last_started_stage' => 'abj404_view_build_last_started_stage',
+        'last_started_at'    => 'abj404_view_build_last_started_at',
+        'last_completed_stage' => 'abj404_view_build_last_completed_stage',
+        'last_completed_at'    => 'abj404_view_build_last_completed_at',
         's2_high_water' => 'abj404_view_build_s2_high_water',
         's4_high_water' => 'abj404_view_build_s4_high_water',
         's5_high_water' => 'abj404_view_build_s5_high_water',
@@ -181,12 +185,63 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
         // cost is non-trivial and a single tick of stale streak data is
         // harmless.
         if (in_array($shortName, self::$viewBuildProgressHighStakesShortNames, true)) {
-            $this->verifyOptionWriteCoherent($name, $intValue);
+            $writeOk = $this->verifyOptionWriteCoherent($name, $intValue);
+            $readBack = function_exists('get_option') ? get_option($name, null) : null;
+            $this->logViewBuildProgressOptionWrite($shortName, $name, $intValue, $writeOk, $readBack, 'coherent');
             return;
         }
         // autoload=false so progress writes (potentially many per request)
         // don't bloat the alloptions cache that loads on every WP page.
-        update_option($name, $intValue, false);
+        $writeOk = update_option($name, $intValue, false);
+        $readBack = function_exists('get_option') ? get_option($name, null) : null;
+        $this->logViewBuildProgressOptionWrite($shortName, $name, $intValue, $writeOk, $readBack, 'direct');
+    }
+
+    /**
+     * Log only the stage-resume metadata writes that are needed to diagnose
+     * S1 success-vs-progress-write failures without flooding logs for every
+     * batched high-water update.
+     *
+     * @param string $shortName
+     * @param string $optionName
+     * @param int    $expected
+     * @param mixed  $updateReturn
+     * @param mixed  $readBack
+     * @param string $path
+     * @return void
+     */
+    private function logViewBuildProgressOptionWrite(
+        string $shortName,
+        string $optionName,
+        int $expected,
+        $updateReturn,
+        $readBack,
+        string $path
+    ): void {
+        if (!in_array($shortName, array(
+            'started_at',
+            'current_stage',
+            'last_started_stage',
+            'last_started_at',
+            'last_completed_stage',
+            'last_completed_at',
+        ), true)) {
+            return;
+        }
+        if (!is_object($this->logger) || !method_exists($this->logger, 'debugMessage')) {
+            return;
+        }
+
+        $readBackForLog = is_scalar($readBack) ? (string)$readBack : gettype($readBack);
+        $this->logger->debugMessage(sprintf(
+            '[staged] view build progress option write: key=%s option=%s expected=%d path=%s update_option_return=%s read_back=%s',
+            $shortName,
+            $optionName,
+            $expected,
+            $path,
+            $updateReturn ? 'true' : 'false',
+            substr($readBackForLog, 0, 240)
+        ));
     }
 
     /**
@@ -248,6 +303,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
         // transient and log a warning. Don't email -- this is a host-config
         // problem, not a plugin defect.
         if (function_exists('set_transient')) {
+            // allow-cache-empty: payload is diagnostic state; empty observed/error fields are still actionable.
             set_transient(
                 'abj404_option_cache_incoherent',
                 array(
@@ -853,6 +909,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
             return false;
         }
         /** @var \wpdb $wpdb */
+        // DAO-bypass-approved: prepare only; execution still routes through queryAndGetResults().
         $sql = $wpdb->prepare('SHOW TABLES LIKE %s', $tableName);
         if (!is_string($sql) || $sql === '') {
             return false;
@@ -1092,6 +1149,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
      */
     private function ensureFallbackLockNoticeAndLog(): void {
         if (function_exists('set_transient')) {
+            // allow-cache-empty: notice must exist even when the host returns no named-lock error text.
             set_transient(
                 'abj404_view_build_get_lock_unsupported_notice',
                 array(
@@ -1266,6 +1324,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
             'timestamp'    => time(),
             'error_string' => '',
         );
+        // allow-cache-empty: intentional notice payload; error_string is empty by definition for cron-disabled state.
         set_transient($key, $payload, 86400);
     }
 
@@ -1340,6 +1399,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
             'timestamp'    => time(),
             'error_string' => $detail,
         );
+        // allow-cache-empty: schedule-failure notice remains useful even when WP returns no detail string.
         set_transient($key, $payload, 86400);
     }
 
