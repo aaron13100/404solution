@@ -650,9 +650,23 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
             );
             $err = isset($r['last_error']) && is_string($r['last_error']) ? trim($r['last_error']) : '';
             if ($err === '' || !$this->stagedTableExists($tempBuildTable)) {
-                $this->logger->infoMessage(sprintf(
-                    '[staged] reconcile: dropped orphan view_build `%s` (view_done is live; previous run halted before swap)',
-                    $tempBuildTable
+                // WARN (not INFO) so this signal survives a site with DEBUG
+                // disabled. Carries the four progress fields support needs
+                // to distinguish "build keeps restarting at S1" from
+                // "build invalidated on every redirect edit / cron tick"
+                // from "multi-tab/cron lock contention orphaning each
+                // partial build" without asking for another debug zip.
+                $lastCompletedStage = $this->readProgressOption('last_completed_stage', 0);
+                $age = $startedAt > 0 ? max(0, time() - $startedAt) : 0;
+                $this->logger->warn(sprintf(
+                    '[staged] reconcile: dropped orphan view_build `%s` (view_done is live; previous run halted before swap); '
+                    . 'current_stage=%d last_started_stage=%d last_completed_stage=%d started_at=%d age=%ds',
+                    $tempBuildTable,
+                    $currentStage,
+                    $lastStartedStage,
+                    $lastCompletedStage,
+                    $startedAt,
+                    $age
                 ));
                 return 'cleaned';
             }
@@ -1209,7 +1223,11 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
                     ? 'buffer table missing (prior crash or fresh install)'
                     : ('prior build older than resume TTL ('
                         . (time() - $startedAt) . 's elapsed)'));
-            $this->logger->debugMessage(sprintf(
+            // INFO (not DEBUG) so this signal survives a site that has
+            // disabled DEBUG. Without it, a stuck-at-S1 redirects page on
+            // such a site leaves no log evidence of whether each request
+            // is restarting fresh or resuming.
+            $this->logger->infoMessage(sprintf(
                 '[staged] runStagedBuildOnce: fresh start (%s); current_stage=%d',
                 $reason, $currentStage
             ));
@@ -1219,7 +1237,10 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
             $this->clearAllProgressOptions();
             $this->dropTransientStagedTables();
         } else {
-            $this->logger->debugMessage(sprintf(
+            // INFO (not DEBUG): see fresh-start branch above. The pair
+            // (fresh start vs. resuming) is the entry point for any
+            // stuck-build investigation and must survive DEBUG-off sites.
+            $this->logger->infoMessage(sprintf(
                 '[staged] runStagedBuildOnce: resuming (started_at=%d, %ds ago); current_stage=%d',
                 $startedAt, time() - $startedAt, $currentStage
             ));

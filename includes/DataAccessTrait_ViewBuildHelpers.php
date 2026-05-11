@@ -277,15 +277,35 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
         if (!function_exists('update_option') || !function_exists('get_option')) {
             return false;
         }
+        // Capture the prior persisted value so a first-read-back-fail WARN
+        // (below, for current_stage only) can carry prior + new + observed,
+        // letting support see whether the cache returned the previous value
+        // or some unrelated state from a parallel request.
+        $prior = get_option($optionName, null);
         update_option($optionName, $expected, false);
         $actual = get_option($optionName, null);
         if ($this->optionReadBackMatches($actual, $expected)) {
             return true;
         }
-        // First read disagrees with the just-written value: flush both
-        // candidate cache keys and retry. Use a typeof-guarded call because
-        // wp_cache_delete is part of WP core but not loaded in unit-test
-        // bootstraps that don't pull in cache.php.
+        // First read disagrees with the just-written value. Surface a WARN
+        // for current_stage specifically (the most diagnostically valuable
+        // stage-progress key) so the signal survives a site with DEBUG off.
+        // Other high-stakes keys (s2/s4/s5_high_water) stay silent on the
+        // first miss to avoid log volume; they still hit the persistent-
+        // mismatch WARN further down if the retry also fails.
+        if ($this->isCurrentStageOptionName($optionName) && is_object($this->logger)
+                && method_exists($this->logger, 'warn')) {
+            $this->logger->warn(sprintf(
+                '[staged] option write incoherent (first read-back) on %s: prior=%s new=%s observed=%s; flushing cache and retrying',
+                $optionName,
+                is_scalar($prior)    ? (string)$prior    : '<non-scalar>',
+                is_scalar($expected) ? (string)$expected : '<non-scalar>',
+                is_scalar($actual)   ? (string)$actual   : '<non-scalar>'
+            ));
+        }
+        // Flush both candidate cache keys and retry. Use a typeof-guarded
+        // call because wp_cache_delete is part of WP core but not loaded
+        // in unit-test bootstraps that don't pull in cache.php.
         if (function_exists('wp_cache_delete')) {
             wp_cache_delete($optionName, 'options');
             // alloptions is the bundled bucket WP loads on every page; even
@@ -331,6 +351,24 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
             }
         }
         return false;
+    }
+
+    /**
+     * Whether the fully-prefixed option name refers to the view-build
+     * `current_stage` key (the prefix component varies by site). Used by
+     * verifyOptionWriteCoherent() to scope its first-read-back-fail WARN to
+     * the most diagnostically valuable stage-progress key.
+     *
+     * @param string $optionName
+     * @return bool
+     */
+    private function isCurrentStageOptionName(string $optionName): bool {
+        $suffix = self::$viewBuildProgressOptionNames['current_stage'] ?? '';
+        if ($suffix === '') {
+            return false;
+        }
+        $len = strlen($suffix);
+        return $len > 0 && substr($optionName, -$len) === $suffix;
     }
 
     /**
