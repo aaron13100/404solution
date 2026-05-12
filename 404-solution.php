@@ -95,6 +95,7 @@ if (has_filter('abj404_debug_whitelist')) {
     $GLOBALS['abj404_whitelist'] = apply_filters('abj404_debug_whitelist', $GLOBALS['abj404_whitelist']);
 }
 
+if (!function_exists('abj404_autoloader')) {
 /**
  * @param string $class
  * @return void
@@ -235,6 +236,7 @@ function abj404_autoloader($class) {
 	}
 
 	require_once $classFile;
+}
 }
 spl_autoload_register('abj404_autoloader');
 
