@@ -262,22 +262,25 @@ class ABJ_404_Solution_Ajax_SupportRequest {
      * endpoint may eventually return a canonical id; until then the client
      * gets something it can show to the user as "your reference number".
      *
+     * Format: `YYYY-MM-DD-HH-MM-SS-xxxxxxx` (UTC timestamp plus 7 hex
+     * chars). The timestamp prefix is self-sorting and human-meaningful:
+     * an admin can glance at the reference and see roughly when the
+     * request was sent, which is far more useful than an opaque UUID
+     * when paired with a support email later. The 7-char hex suffix
+     * (16^7, about 268M values) disambiguates concurrent sends with
+     * plenty of headroom for a non-load-bearing identifier.
+     *
      * @return string
      */
     private static function generateReferenceId(): string {
-        if (function_exists('wp_generate_uuid4')) {
-            return (string)wp_generate_uuid4();
-        }
-        // Pre-WP-4.7 fallback. random_bytes is available on PHP 7+ which is
-        // the plugin's floor.
+        $timestamp = gmdate('Y-m-d-H-i-s');
         try {
-            $data = random_bytes(16);
-            $data[6] = chr((ord($data[6]) & 0x0f) | 0x40);
-            $data[8] = chr((ord($data[8]) & 0x3f) | 0x80);
-            return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
-        // allow-silent-catch: random_bytes only fails when CSPRNG is unavailable; uniqid fallback still produces a unique-enough reference id, and the id is purely informational (it's not load-bearing for any auth or correctness check)
+            $suffix = substr(bin2hex(random_bytes(4)), 0, 7);
+            return $timestamp . '-' . $suffix;
+        // allow-silent-catch: random_bytes only fails when CSPRNG is unavailable; the mt_rand fallback still produces a unique-enough reference id, and the id is purely informational (it's not load-bearing for any auth or correctness check)
         } catch (\Throwable $e) {
-            return uniqid('abj404_', true);
+            $suffix = str_pad(dechex(mt_rand(0, 0xfffffff)), 7, '0', STR_PAD_LEFT);
+            return $timestamp . '-' . $suffix;
         }
     }
 }
