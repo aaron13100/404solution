@@ -500,9 +500,9 @@ class ABJ_404_Solution_ErrorHandler {
             if ($isPluginAdmin === null) {
                 // Best-effort fallback: show details to real WordPress admins if PluginLogic is broken.
                 if (function_exists('wp_get_current_user')) {
-                    $user = wp_get_current_user();
-                    if (is_object($user) && property_exists($user, 'roles') && is_array($user->roles)) {
-                        $isPluginAdmin = in_array('administrator', $user->roles, true);
+                    $user = ABJ_404_Solution_UserRef::fromWpUser(wp_get_current_user());
+                    if ($user !== null) {
+                        $isPluginAdmin = $user->isAdministrator();
                     }
                 }
                 if ($isPluginAdmin !== true && function_exists('is_super_admin') && is_super_admin()) {

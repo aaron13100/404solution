@@ -89,6 +89,8 @@ return array(
     'ABJ_404_Solution_EngineProfileSaveRequest' => $base . 'includes/EngineProfileSaveRequest.php',
     'ABJ_404_Solution_SuggestionDisplayOptions' => $base . 'includes/SuggestionDisplayOptions.php',
     'ABJ_404_Solution_PostRef' => $base . 'includes/PostRef.php',
+    'ABJ_404_Solution_UserRef' => $base . 'includes/UserRef.php',
+    'ABJ_404_Solution_SiteRef' => $base . 'includes/SiteRef.php',
     'ABJ_404_Solution_FrontendRequestPipeline' => $base . 'includes/FrontendRequestPipeline.php',
     'ABJ_404_Solution_ImportExportService' => $base . 'includes/ImportExportService.php',
     'ABJ_404_Solution_Logging' => $base . 'includes/Logging.php',

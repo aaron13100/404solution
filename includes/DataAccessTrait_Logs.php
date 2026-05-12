@@ -633,8 +633,8 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
         } else {
             $referer = '';
         }
-        $current_user = wp_get_current_user();
-        $current_user_name = $current_user->user_login;
+        $current_user = ABJ_404_Solution_UserRef::fromWpUser(wp_get_current_user());
+        $current_user_name = $current_user !== null ? $current_user->getLogin() : '';
         $ipAddressToSave = is_string($_SERVER['REMOTE_ADDR'] ?? '') ? (string)$_SERVER['REMOTE_ADDR'] : '';
         $ipAddressToSave = filter_var($ipAddressToSave, FILTER_VALIDATE_IP) ? 
             esc_sql($ipAddressToSave) : '';

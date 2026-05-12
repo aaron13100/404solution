@@ -498,10 +498,14 @@ trait ViewTrait_Stats {
             
 	        } else {
 	        	echo "Non-admin request to view debug file.";
-	        	$current_user = wp_get_current_user();
-	        	$userInfo = "Login: " . ($current_user->user_login ?? '') . ", display name: " .
-	         		($current_user->display_name ?? '') . ", Email: " . ($current_user->user_email ?? '') .
-	         		", UserID: " . $current_user->ID;
+	        	$current_user = ABJ_404_Solution_UserRef::fromWpUser(wp_get_current_user());
+	        	$userLogin = $current_user !== null ? $current_user->getLogin() : '';
+	        	$userDisplay = $current_user !== null ? $current_user->getDisplayName() : '';
+	        	$userEmail = $current_user !== null ? $current_user->getEmail() : '';
+	        	$userId = $current_user !== null ? $current_user->getId() : 0;
+	        	$userInfo = "Login: " . $userLogin . ", display name: " .
+	         		$userDisplay . ", Email: " . $userEmail .
+	         		", UserID: " . $userId;
 	            $this->logger->infoMessage("Non-admin request to view debug file. User info: " .
 	            	$userInfo);
 	        }

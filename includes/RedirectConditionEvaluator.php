@@ -167,11 +167,11 @@ class ABJ_404_Solution_RedirectConditionEvaluator {
             return false;
         }
 
-        $currentUser = wp_get_current_user();
-        if (!($currentUser instanceof WP_User) || !$currentUser->exists()) {
+        $currentUser = ABJ_404_Solution_UserRef::fromWpUser(wp_get_current_user());
+        if ($currentUser === null || !$currentUser->exists()) {
             $hasRole = false;
         } else {
-            $hasRole = in_array($value, $currentUser->roles, true);
+            $hasRole = $currentUser->hasRole($value);
         }
 
         if ($operator === 'not_equals') {

@@ -97,11 +97,11 @@ class ABJ_404_Solution_Privacy {
             return null;
         }
 
-        $user = get_user_by('email', $email_address);
-        if (!is_object($user) || !isset($user->user_login)) {
+        $user = ABJ_404_Solution_UserRef::fromWpUser(get_user_by('email', $email_address));
+        if ($user === null) {
             return null;
         }
-        $username = (string)$user->user_login;
+        $username = $user->getLogin();
         return $username !== '' ? $username : null;
     }
 

@@ -209,7 +209,10 @@ trait ABJ_404_Solution_PluginLogicTrait_Lifecycle {
      * Handle new blog creation in multisite (WordPress >= 5.1).
      * This is triggered by the wp_initialize_site action.
      *
-     * @param WP_Site $site The site object for the new site
+     * @param mixed $site The WP_Site object for the new site. Normalized via
+     *     ABJ_404_Solution_SiteRef so a malformed payload (third-party filter
+     *     mutating the action argument, or a missing blog_id) early-returns
+     *     instead of calling switch_to_blog(0).
      * @param array<string, mixed> $args Additional arguments passed to the hook
      * @return void
      */
@@ -221,7 +224,11 @@ trait ABJ_404_Solution_PluginLogicTrait_Lifecycle {
             return;
         }
         if (is_plugin_active_for_network(plugin_basename(ABJ404_FILE))) {
-            $blogId = (int)$site->blog_id;
+            $siteRef = ABJ_404_Solution_SiteRef::fromWpSite($site);
+            if ($siteRef === null) {
+                return;
+            }
+            $blogId = $siteRef->getBlogId();
             switch_to_blog($blogId);
             try {
                 self::activateSingleSite();
