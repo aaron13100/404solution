@@ -1,4 +1,9 @@
 <?php
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
 /**
  * Wire-schema for ABJ_404_Solution_FeedbackTransport payloads.
  *
@@ -40,10 +45,6 @@
  * report type. Each value is a flat FieldSpec map ready to feed to
  * ABJ_404_Solution_PayloadSchema::validate().
  */
-
-if (!defined('ABSPATH')) {
-    exit;
-}
 
 return (function (): array {
 
