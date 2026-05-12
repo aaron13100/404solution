@@ -745,7 +745,12 @@ class ABJ_404_Solution_WordPress_Connector {
     }
 
     /**
-     * Adds a "Send Feedback" link to the plugin row on the Plugins page.
+     * Adds a "Send debug log to developer" deep link to the plugin row on
+     * the Plugins page. The link routes to the Settings page anchored at
+     * the support-request section, with the auto-open query args so the
+     * consent modal opens on arrival. The modal is the only path that
+     * transmits the support-request payload; this link itself triggers
+     * nothing on click beyond the navigation.
      *
      * @param array<int|string, string> $links
      * @param string $file
@@ -755,20 +760,6 @@ class ABJ_404_Solution_WordPress_Connector {
         if ($file !== ABJ404_NAME) {
             return $links;
         }
-        $email   = defined('ABJ404_AUTHOR_EMAIL') ? ABJ404_AUTHOR_EMAIL : '404solution@ajexperience.com';
-        $subject = rawurlencode('Feedback: 404 Solution');
-        $links[] = '<a href="mailto:' . esc_attr($email) . '?subject=' . $subject . '">'
-            . esc_html__('Send Feedback', '404-solution') . '</a>';
-
-        // "Send debug log to developer" row action. Sends the admin to the
-        // plugin's Settings page anchored at the support-request section so
-        // the modal auto-opens. Lives under plugin_row_meta (not
-        // plugin_action_links) so it sits in the secondary row with the
-        // existing Send Feedback link. The auto-open behavior is driven
-        // by the abj404_support_open=1 query arg so a user landing
-        // on Settings via this row action immediately sees the modal,
-        // and abj404_support_trigger pins the originating screen for the
-        // server-side audit log.
         $supportUrl = admin_url('options-general.php?page=' . ABJ404_PP
             . '&subpage=abj404_options'
             . '&abj404_support_open=1&abj404_support_trigger=plugins_row_action'
