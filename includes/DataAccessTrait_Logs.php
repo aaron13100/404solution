@@ -342,26 +342,27 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
             $logsid = esc_sql($abj404logic->sanitizeForSQL(is_scalar($rawLogsId) ? (string)$rawLogsId : ''));
         }
 
-        // Whitelist allowed columns for orderby to prevent SQL injection
+        // Perf audit F5: ORDER BY on logsv2 must use an indexed column,
+        // otherwise large sites incur a full filesort that can exceed proxy
+        // timeouts (logsv2 grows unbounded with 404 traffic).
+        // Indexes on logsv2: PRIMARY (id), KEY timestamp, KEY requested_url,
+        // KEY username, KEY min_log_id, KEY idx_requested_url_timestamp,
+        // KEY idx_canonical_url. The `url` alias resolves to requested_url
+        // in MySQL ORDER BY (SELECT aliases take precedence over JOIN columns).
+        // Non-indexed columns previously accepted here (remote_host/user_ip,
+        // referrer, dest_url/action, engine) and the bogus `logshits` (not
+        // a column of logsv2) silently fall back to `timestamp`.
         $allowedOrderbyColumns = array(
             'timestamp',
             'requested_url',
             'url',
-            'dest_url',
             'id',
-            'referrer',
             'min_log_id',
-            'logshits',
-            'action',
-            'remote_host',
-            'user_ip',
-            'username',
-            'engine',
         );
         $rawOrderByVal = $tableOptions['orderby'];
         $orderby = sanitize_text_field($abj404logic->sanitizeForSQL(is_string($rawOrderByVal) ? $rawOrderByVal : ''));
         if (!in_array($orderby, $allowedOrderbyColumns, true)) {
-            $orderby = 'timestamp'; // Safe default
+            $orderby = 'timestamp'; // Safe default; indexed.
         }
 
         // Whitelist allowed order directions

@@ -124,13 +124,17 @@ trait ViewTrait_Logs {
 
         $tableOptions = $this->logic->getTableOptions($sub);
 
-        // Build column headers with sorting
-        // Engine is displayed inside the Action cell; User is displayed inside the Date cell
+        // Build column headers with sorting.
+        // Engine is displayed inside the Action cell; User is displayed inside the Date cell.
+        // Perf audit F5: only `url` (alias for requested_url) and `timestamp`
+        // have indexes on logsv2. IP / Referrer / Action map to unindexed
+        // columns, so we render them as plain non-clickable headers to avoid
+        // offering a sort that would trigger filesort on large logs tables.
         $columns = array(
             'url' => array('title' => __('URL', '404-solution'), 'orderby' => 'url'),
-            'host' => array('title' => __('IP Address', '404-solution'), 'orderby' => 'remote_host'),
-            'refer' => array('title' => __('Referrer', '404-solution'), 'orderby' => 'referrer'),
-            'dest' => array('title' => __('Action', '404-solution'), 'orderby' => 'action'),
+            'host' => array('title' => __('IP Address', '404-solution'), 'orderby' => ''),
+            'refer' => array('title' => __('Referrer', '404-solution'), 'orderby' => ''),
+            'dest' => array('title' => __('Action', '404-solution'), 'orderby' => ''),
             'timestamp' => array('title' => __('Date', '404-solution'), 'orderby' => 'timestamp'),
         );
 
@@ -140,11 +144,16 @@ trait ViewTrait_Logs {
         // Detail toggle column (not sortable)
         $html .= '<th scope="col" class="abj404-trace-th"></th>';
 
-        // Generate sortable column headers
+        // Generate column headers (sortable if the underlying column is indexed).
         foreach ($columns as $key => $col) {
+            $orderbyCol = $col['orderby'];
+            if ($orderbyCol === '') {
+                $html .= '<th scope="col">' . esc_html($col['title']) . '</th>';
+                continue;
+            }
             $sortUrl = "?page=" . ABJ404_PP . "&subpage=abj404_logs";
-            $sortUrl .= "&orderby=" . $col['orderby'];
-            $sortState = $this->getHeaderSortState($tableOptions, (string)$col['orderby'], false);
+            $sortUrl .= "&orderby=" . $orderbyCol;
+            $sortState = $this->getHeaderSortState($tableOptions, $orderbyCol, false);
             $newOrder = $sortState['nextOrder'];
             $sortUrl .= "&order=" . $newOrder;
 
