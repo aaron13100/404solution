@@ -3785,3 +3785,47 @@ msgstr "Un souci ? Envoyez votre journal de débogage au développeur. Cela envo
 #: includes/WordPress_Connector.php
 msgid "Send debug log to developer"
 msgstr "Envoyer le journal de débogage au développeur"
+
+#: includes/html/toolsImportForm.html
+msgid "Overwrite existing redirects when from URL already exists (otherwise duplicate rows are skipped)."
+msgstr "Écraser les redirections existantes lorsque l'URL source existe déjà (sinon les lignes en double sont ignorées)."
+
+#: includes/ImportExportService.php
+msgid "Import paused at row %1$d. %2$d redirect(s) imported so far. Re-upload the same file to resume from row %1$d."
+msgstr "Importation interrompue à la ligne %1$d. %2$d redirection(s) importée(s) jusqu'à présent. Re-téléchargez le même fichier pour reprendre à partir de la ligne %1$d."
+
+#: includes/ImportExportService.php
+msgid "The file seems to have loaded okay. %d existing redirect(s) were overwritten. Please check the redirects page."
+msgstr "Le fichier semble avoir été chargé correctement. %d redirection(s) existante(s) ont été écrasées. Veuillez vérifier la page des redirections."
+
+#: includes/ajax/Ajax_SupportRequest.php
+msgid "HTTP %d from the developer endpoint"
+msgstr "HTTP %d depuis le point de terminaison du développeur"
+
+#: includes/ajax/Ajax_SupportRequest.php
+msgid "the request never reached the developer endpoint"
+msgstr "la requête n'a jamais atteint le point de terminaison du développeur"
+
+#: includes/ajax/Ajax_SupportRequest.php
+msgid "the report could not be packaged (%s)"
+msgstr "le rapport n'a pas pu être empaqueté (%s)"
+
+#: includes/ajax/Ajax_SupportRequest.php
+msgid "transport failure: %s"
+msgstr "échec du transport : %s"
+
+#: includes/ajax/Ajax_SupportRequest.php
+msgid "the HTTP transport failed for an unknown reason"
+msgstr "le transport HTTP a échoué pour une raison inconnue"
+
+#: includes/ajax/Ajax_SupportRequest.php
+msgid "Email fallback via wp_mail() also failed. Check that this site can send mail."
+msgstr "Le repli par e-mail via wp_mail() a également échoué. Vérifiez que ce site peut envoyer des e-mails."
+
+#: includes/ajax/Ajax_SupportRequest.php
+msgid "No email fallback was attempted."
+msgstr "Aucun repli par e-mail n'a été tenté."
+
+#: includes/ajax/Ajax_SupportRequest.php
+msgid "Could not send support request: %1$s. %2$s"
+msgstr "Échec de l'envoi de la demande d'assistance : %1$s. %2$s"

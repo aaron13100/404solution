@@ -3791,3 +3791,47 @@ msgstr "Har du problem? Skicka din felsökningslogg till utvecklaren. Detta skic
 #: includes/WordPress_Connector.php
 msgid "Send debug log to developer"
 msgstr "Skicka felsökningsloggen till utvecklaren"
+
+#: includes/html/toolsImportForm.html
+msgid "Overwrite existing redirects when from URL already exists (otherwise duplicate rows are skipped)."
+msgstr "Skriv över befintliga omdirigeringar när käll-URL:en redan finns (annars hoppas dubblettrader över)."
+
+#: includes/ImportExportService.php
+msgid "Import paused at row %1$d. %2$d redirect(s) imported so far. Re-upload the same file to resume from row %1$d."
+msgstr "Importen pausad vid rad %1$d. %2$d omdirigering(ar) importerade hittills. Ladda upp samma fil igen för att fortsätta från rad %1$d."
+
+#: includes/ImportExportService.php
+msgid "The file seems to have loaded okay. %d existing redirect(s) were overwritten. Please check the redirects page."
+msgstr "Filen verkar ha lästs in korrekt. %d befintlig(a) omdirigering(ar) skrevs över. Kontrollera omdirigeringssidan."
+
+#: includes/ajax/Ajax_SupportRequest.php
+msgid "HTTP %d from the developer endpoint"
+msgstr "HTTP %d från utvecklarens slutpunkt"
+
+#: includes/ajax/Ajax_SupportRequest.php
+msgid "the request never reached the developer endpoint"
+msgstr "begäran nådde aldrig utvecklarens slutpunkt"
+
+#: includes/ajax/Ajax_SupportRequest.php
+msgid "the report could not be packaged (%s)"
+msgstr "rapporten kunde inte paketeras (%s)"
+
+#: includes/ajax/Ajax_SupportRequest.php
+msgid "transport failure: %s"
+msgstr "transportfel: %s"
+
+#: includes/ajax/Ajax_SupportRequest.php
+msgid "the HTTP transport failed for an unknown reason"
+msgstr "HTTP-transporten misslyckades av okänd anledning"
+
+#: includes/ajax/Ajax_SupportRequest.php
+msgid "Email fallback via wp_mail() also failed. Check that this site can send mail."
+msgstr "Reservutskicket via e-post med wp_mail() misslyckades också. Kontrollera att denna webbplats kan skicka e-post."
+
+#: includes/ajax/Ajax_SupportRequest.php
+msgid "No email fallback was attempted."
+msgstr "Inget reservutskick via e-post försöktes."
+
+#: includes/ajax/Ajax_SupportRequest.php
+msgid "Could not send support request: %1$s. %2$s"
+msgstr "Kunde inte skicka supportförfrågan: %1$s. %2$s"

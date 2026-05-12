@@ -3791,3 +3791,47 @@ msgstr "Está com problemas? Envie seu log de depuração para o desenvolvedor. 
 #: includes/WordPress_Connector.php
 msgid "Send debug log to developer"
 msgstr "Enviar log de depuração para o desenvolvedor"
+
+#: includes/html/toolsImportForm.html
+msgid "Overwrite existing redirects when from URL already exists (otherwise duplicate rows are skipped)."
+msgstr "Sobrescrever redirecionamentos existentes quando a URL de origem já existir (caso contrário, linhas duplicadas são ignoradas)."
+
+#: includes/ImportExportService.php
+msgid "Import paused at row %1$d. %2$d redirect(s) imported so far. Re-upload the same file to resume from row %1$d."
+msgstr "Importação pausada na linha %1$d. %2$d redirecionamento(s) importado(s) até agora. Reenvie o mesmo arquivo para continuar a partir da linha %1$d."
+
+#: includes/ImportExportService.php
+msgid "The file seems to have loaded okay. %d existing redirect(s) were overwritten. Please check the redirects page."
+msgstr "O arquivo parece ter sido carregado corretamente. %d redirecionamento(s) existente(s) foram sobrescritos. Verifique a página de redirecionamentos."
+
+#: includes/ajax/Ajax_SupportRequest.php
+msgid "HTTP %d from the developer endpoint"
+msgstr "HTTP %d do endpoint do desenvolvedor"
+
+#: includes/ajax/Ajax_SupportRequest.php
+msgid "the request never reached the developer endpoint"
+msgstr "a requisição nunca chegou ao endpoint do desenvolvedor"
+
+#: includes/ajax/Ajax_SupportRequest.php
+msgid "the report could not be packaged (%s)"
+msgstr "o relatório não pôde ser empacotado (%s)"
+
+#: includes/ajax/Ajax_SupportRequest.php
+msgid "transport failure: %s"
+msgstr "falha de transporte: %s"
+
+#: includes/ajax/Ajax_SupportRequest.php
+msgid "the HTTP transport failed for an unknown reason"
+msgstr "o transporte HTTP falhou por um motivo desconhecido"
+
+#: includes/ajax/Ajax_SupportRequest.php
+msgid "Email fallback via wp_mail() also failed. Check that this site can send mail."
+msgstr "O fallback de e-mail via wp_mail() também falhou. Verifique se este site pode enviar e-mail."
+
+#: includes/ajax/Ajax_SupportRequest.php
+msgid "No email fallback was attempted."
+msgstr "Nenhum fallback de e-mail foi tentado."
+
+#: includes/ajax/Ajax_SupportRequest.php
+msgid "Could not send support request: %1$s. %2$s"
+msgstr "Não foi possível enviar a solicitação de suporte: %1$s. %2$s"
