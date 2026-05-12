@@ -85,12 +85,27 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
         $deletionTime = $deletionDays * 86400;
         $then = $now - $deletionTime;
 
+        // setSqlBigSelects() must run before any branch that touches the
+        // deletion query path so a large logs_hits/redirects join cannot
+        // trip MAX_JOIN_SIZE on legacy hosts that still default it small.
+        // Kept above the rollup-existence guard so callers still see the
+        // session pragma flip even on the skip path.
+        $this->setSqlBigSelects();
+
+        // F6 audit: getMostUnusedRedirects.sql joins logs_hits. If the rollup
+        // does not exist yet (fresh install, never built), schedule a rebuild
+        // and skip this run. The next daily cron will have it. Without the
+        // table the LEFT JOIN errors instead of degrading to "never used".
+        if (!$this->logsHitsTableExists()) {
+            $this->logger->debugMessage(__FUNCTION__ . " skipping: logs_hits table missing; scheduling rebuild.");
+            $this->scheduleHitsTableRebuild();
+            return 0;
+        }
+
         // Load and prepare SQL query
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getMostUnusedRedirects.sql");
         $query = $this->f->str_replace('{status_list}', $statusList, $query);
         $query = $this->f->str_replace('{timelimit}', (string)$then, $query);
-
-        $this->setSqlBigSelects();
 
         // Execute query and get results
         $results = $this->queryAndGetResults($query);
