@@ -65,14 +65,14 @@ trait ABJ_404_Solution_DataAccess_ViewBuildStageCallbacksTrait {
      * @return void
      */
     private function dropTransientBuffersIfPresent(): void {
-        $buffer = $this->viewBuildTableName();
-        $deleteme = $this->viewDeletemeTableName();
-        if ($this->stagedTableExists($buffer)) {
-            $this->queryAndGetResults('DROP TABLE IF EXISTS `' . $buffer . '`',
+        $buildTempTable = $this->viewBuildTableName();
+        $deletemeTempTable = $this->viewDeletemeTableName();
+        if ($this->stagedTableExists($buildTempTable)) {
+            $this->queryAndGetResults('DROP TABLE IF EXISTS `' . $buildTempTable . '`',
                 array('log_errors' => false));
         }
-        if ($this->stagedTableExists($deleteme)) {
-            $this->queryAndGetResults('DROP TABLE IF EXISTS `' . $deleteme . '`',
+        if ($this->stagedTableExists($deletemeTempTable)) {
+            $this->queryAndGetResults('DROP TABLE IF EXISTS `' . $deletemeTempTable . '`',
                 array('log_errors' => false));
         }
     }
