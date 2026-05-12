@@ -1461,3 +1461,78 @@ function abj404_loadSomethingWhenWordPressIsReady() {
 }
 }
 add_action('admin_init', 'abj404_loadSomethingWhenWordPressIsReady');
+
+if (!function_exists('abj404_maybePageLoadFallbackAdvance')) {
+/**
+ * Admin-only, plugin-page-only synchronous fallback that advances the
+ * staged view-build by one tick (about 2s) when WP-Cron is broken.
+ *
+ * Pairs with the cron-stuck admin notice (c374): the notice tells the
+ * admin their cron is broken; this fallback unblocks the page in the
+ * meantime so they can fix cron without staring at the loading
+ * indicator forever. The actual gate logic and budget compression live
+ * in ABJ_404_Solution_DataAccess::runPageLoadFallbackAdvance() so they
+ * can be unit-tested directly; this wrapper is the admin_init hook
+ * that wires the DAO method into the request lifecycle.
+ *
+ * Guards (in order, all required):
+ *  - boot succeeded (plugin class loadable);
+ *  - is_admin() (frontend / REST / heartbeat requests are not in scope);
+ *  - not AJAX or cron (those have their own advance paths);
+ *  - request is for the plugin admin page (abj404_solution); other
+ *    wp-admin pages are unrelated and should not be taxed with build
+ *    work on every navigation;
+ *  - current user has the plugin admin capability (manage_options) so
+ *    an unauthenticated request cannot trigger build work;
+ *  - DataAccess exposes runPageLoadFallbackAdvance (defense for older
+ *    in-place upgrades whose DAO class predates this method).
+ *
+ * The DAO method itself owns the cron-stuck check, the transient gate,
+ * the per-stage budget compression, and the build-lock semantics.
+ *
+ * @return void
+ */
+function abj404_maybePageLoadFallbackAdvance() {
+    if (!$GLOBALS['abj404_boot_ok']) {
+        return;
+    }
+    if (!is_admin()) {
+        return;
+    }
+    if (function_exists('wp_doing_ajax') && wp_doing_ajax()) {
+        return;
+    }
+    if (function_exists('wp_doing_cron') && wp_doing_cron()) {
+        return;
+    }
+    $currentPage = isset($_GET['page']) && is_string($_GET['page'])
+        ? sanitize_text_field((string)$_GET['page']) : '';
+    if ($currentPage !== 'abj404_solution') {
+        return;
+    }
+    if (!function_exists('current_user_can') || !current_user_can('manage_options')) {
+        return;
+    }
+    try {
+        require_once(plugin_dir_path(__FILE__) . "includes/Loader.php");
+        $dao = ABJ_404_Solution_DataAccess::getInstance();
+        if (is_object($dao) && method_exists($dao, 'runPageLoadFallbackAdvance')) {
+            $dao->runPageLoadFallbackAdvance();
+        }
+    } catch (\Throwable $e) {
+        // Page-load fallback is best-effort. A failure here must not
+        // break admin page rendering. Log at warning level (error_log
+        // suffices for this surface) so the failure is observable
+        // without triggering the plugin's dev-email-report path. Per
+        // CLAUDE.md self-healing rule #6: infrastructure failures are
+        // warnings, not errors, when the plugin still functions.
+        error_log('404 Solution: page-load fallback advance failed: ' . $e->getMessage());
+    }
+}
+}
+// Priority 20 runs after abj404_loadSomethingWhenWordPressIsReady (default
+// priority 10), so the textdomain is loaded and any pending exportRedirects
+// has run before we burn ~2s of stage budget. Inverting that order would
+// risk an export action being preceded by inline staged-build work, which
+// changes the apparent latency of the export.
+add_action('admin_init', 'abj404_maybePageLoadFallbackAdvance', 20);

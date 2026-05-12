@@ -227,5 +227,36 @@ final class ABJ_404_Solution_ViewBuildConfig {
         'innodb_online_alter_log_max_size_min' => 134217728,
     );
 
+    /**
+     * Transient gate key for the c384 on-page-load fallback advance.
+     * One inline advance per gate window; bursts of admin sub-requests
+     * (prefetch, browser refresh, multiple tabs) inside the window
+     * short-circuit so the page-load cost cannot compound. Defined
+     * here (rather than on the consuming trait) because PHP < 8.2
+     * forbids constants in trait bodies.
+     */
+    const PAGE_LOAD_FALLBACK_GATE_KEY = 'abj404_page_load_fallback_advance';
+
+    /**
+     * Seconds the page-load fallback gate transient survives. 60s is
+     * short enough that an attentive admin sees real per-load progress
+     * (one stage per minute of navigation) and long enough that a
+     * burst of clicks within a single working moment does not stack
+     * inline build work.
+     */
+    const PAGE_LOAD_FALLBACK_GATE_SECONDS = 60;
+
+    /**
+     * Per-stage budget seconds during a page-load fallback advance.
+     * The admin is blocking on the response, so a single tick must
+     * not exceed roughly the human-perceived "loading" tolerance.
+     * Picked at 2.0s because that matches the c377 page-load contract
+     * and stays well under the WordPress admin heartbeat default. The
+     * fallback registers this as a ceiling via add_filter on
+     * abj404_view_build_per_stage_budget_seconds (clamping with min(),
+     * not overwriting, so any operator-set smaller budget wins).
+     */
+    const PAGE_LOAD_FALLBACK_BUDGET_SECONDS = 2.0;
+
     private function __construct() {}
 }
