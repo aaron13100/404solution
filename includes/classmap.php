@@ -71,6 +71,8 @@ return array(
     'ABJ_404_Solution_InternalLinkScanner' => $base . 'includes/InternalLinkScanner.php',
     'ABJ_404_Solution_Ajax_SettingsModeToggle' => $base . 'includes/ajax/Ajax_SettingsModeToggle.php',
     'ABJ_404_Solution_Ajax_SupportRequest' => $base . 'includes/ajax/Ajax_SupportRequest.php',
+    'ABJ_404_Solution_Ajax_SupportRequestPreview' => $base . 'includes/ajax/Ajax_SupportRequestPreview.php',
+    'ABJ_404_Solution_SupportRequestButton' => $base . 'includes/SupportRequestButton.php',
     'ABJ_404_Solution_Ajax_SuggestionCompute' => $base . 'includes/ajax/Ajax_SuggestionCompute.php',
     'ABJ_404_Solution_Ajax_SuggestionPolling' => $base . 'includes/ajax/Ajax_SuggestionPolling.php',
     'ABJ_404_Solution_Ajax_TrashLink' => $base . 'includes/ajax/Ajax_TrashLink.php',

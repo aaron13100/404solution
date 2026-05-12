@@ -221,6 +221,7 @@ class ABJ_404_Solution_WordPress_Connector {
         ABJ_404_Solution_Ajax_EngineProfiles::registerActions();
         ABJ_404_Solution_Ajax_SettingsModeToggle::init();
         ABJ_404_Solution_Ajax_SupportRequest::init();
+        ABJ_404_Solution_Ajax_SupportRequestPreview::init();
         ABJ_404_Solution_UninstallModal::init();
         ABJ_404_Solution_SetupWizard::init();
         if (class_exists('ABJ_404_Solution_Privacy')) {
@@ -437,6 +438,8 @@ class ABJ_404_Solution_WordPress_Connector {
             array()
         );
 
+        self::registerSupportRequestAssets();
+
         ABJ_404_Solution_WPUtils::my_wp_enq_style('abj404solution-styles', ABJ404_URL . 'includes/html/404solutionStyles.css',
                 array());
         ABJ_404_Solution_WPUtils::my_wp_enq_style('abj404solution-themes', ABJ404_URL . 'includes/html/adminThemes.css',
@@ -450,6 +453,43 @@ class ABJ_404_Solution_WordPress_Connector {
         } catch (Throwable $e) {
             self::reportAdminRuntimeError('admin_enqueue_scripts', $e);
         }
+    }
+
+    /**
+     * Enqueue the reusable support-request button assets. Loaded on
+     * every plugin admin page so any screen can drop a
+     * SupportRequestButton::render() mount-point without a per-screen
+     * enqueue checklist that drifts as new mount points are added.
+     *
+     * The inline bootstrap exposes window.ABJ404.ajaxurl plus
+     * window.ABJ404.nonces.{support_request, support_request_preview}
+     * so the JS client and the modal component can both reach the
+     * nonces without wp_localize_script's per-handle binding.
+     *
+     * @return void
+     */
+    private static function registerSupportRequestAssets() {
+        ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-support-request-client',
+            plugin_dir_url(__FILE__) . 'ajax/SupportRequest.js', array());
+        ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-support-request-button',
+            ABJ404_URL . 'includes/js/support-request-button.js',
+            array('abj404-support-request-client'));
+        if (!function_exists('wp_add_inline_script')) {
+            return;
+        }
+        $supportNonce = wp_create_nonce(ABJ_404_Solution_Ajax_SupportRequest::NONCE_ACTION);
+        $previewNonce = wp_create_nonce(ABJ_404_Solution_Ajax_SupportRequestPreview::NONCE_ACTION);
+        $ajaxUrl = function_exists('admin_url') ? admin_url('admin-ajax.php') : '/wp-admin/admin-ajax.php';
+        $payload = wp_json_encode(array(
+            'ajaxurl' => $ajaxUrl,
+            'nonces' => array(
+                'support_request' => $supportNonce,
+                'support_request_preview' => $previewNonce,
+            ),
+        ));
+        $bootstrap = 'window.ABJ404=window.ABJ404||{};Object.assign(window.ABJ404,'
+            . (is_string($payload) ? $payload : '{}') . ');';
+        wp_add_inline_script('abj404-support-request-client', $bootstrap, 'before');
     }
 
     /** Detect if dark mode is enabled from various sources.
