@@ -468,6 +468,9 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
         // classification, retry, and timeout handling apply. log_errors=false
         // because a missing-table or permission-denied response is a probe
         // signal here, not a bug to surface to the admin.
+        // @utf8-audit: opt-out - $redirectsTable is built by doTableNameReplacements
+        // from $wpdb->prefix plus the literal token {wp_abj404_redirects}; no user
+        // input flows in, so invalid-UTF-8 to SQL is structurally impossible.
         $result = $this->queryAndGetResults(
             "SHOW COLUMNS FROM `" . esc_sql($redirectsTable) . "`",
             array('log_errors' => false, 'log_too_slow' => false)
