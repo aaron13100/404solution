@@ -150,6 +150,7 @@ function abj404_autoloader($class) {
 				$inc . 'DataAccessTrait_ViewQueriesStagedRead.php',
 				$inc . 'DataAccessTrait_ViewBuildAdaptive.php',
 				$inc . 'DataAccessTrait_ViewBuildHelpers.php',
+				$inc . 'DataAccessTrait_ViewBuildLockAndCron.php',
 				$inc . 'DataAccessTrait_ViewBuildPhpEnvProbe.php',
 				$inc . 'DataAccessTrait_ViewBuildSessionEnvProbe.php',
 				$inc . 'DataAccessTrait_ViewBuildHostFailurePolicy.php',

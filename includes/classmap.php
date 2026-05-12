@@ -30,6 +30,7 @@ return array(
     'ABJ_404_Solution_DataAccess_ViewBuildAdaptiveTrait' => $base . 'includes/DataAccessTrait_ViewBuildAdaptive.php',
     'ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait' => $base . 'includes/DataAccessTrait_ViewBuildHelpers.php',
     'ABJ_404_Solution_DataAccess_ViewBuildHostFailurePolicyTrait' => $base . 'includes/DataAccessTrait_ViewBuildHostFailurePolicy.php',
+    'ABJ_404_Solution_DataAccess_ViewBuildLockAndCronTrait' => $base . 'includes/DataAccessTrait_ViewBuildLockAndCron.php',
     'ABJ_404_Solution_DataAccess_ViewBuildPhpEnvProbeTrait' => $base . 'includes/DataAccessTrait_ViewBuildPhpEnvProbe.php',
     'ABJ_404_Solution_DataAccess_ViewBuildSessionEnvProbeTrait' => $base . 'includes/DataAccessTrait_ViewBuildSessionEnvProbe.php',
     'ABJ_404_Solution_DataAccess_ViewBuildStageCallbacksTrait' => $base . 'includes/DataAccessTrait_ViewBuildStageCallbacks.php',
