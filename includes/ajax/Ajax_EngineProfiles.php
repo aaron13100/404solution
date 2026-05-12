@@ -54,20 +54,16 @@ class ABJ_404_Solution_Ajax_EngineProfiles {
     public static function handleSave(): void {
         self::requireAdminWithNonce('abj404_engine_profiles_nonce');
 
-        $id           = isset($_POST['id'])              ? absint($_POST['id'])                                      : 0;
-        $name         = isset($_POST['name'])            ? sanitize_text_field(wp_unslash((string)$_POST['name']))   : '';
-        $urlPattern   = isset($_POST['url_pattern'])     ? wp_unslash((string)$_POST['url_pattern'])                 : '';
-        $isRegex      = isset($_POST['is_regex'])        ? (int)(bool)$_POST['is_regex']                             : 0;
-        $engines      = isset($_POST['enabled_engines']) ? wp_unslash((string)$_POST['enabled_engines'])             : '[]';
-        $priority     = isset($_POST['priority'])        ? (int)$_POST['priority']                                   : 0;
-        $status       = isset($_POST['status'])          ? (int)(bool)$_POST['status']                               : 1;
+        // Boundary normalizer: $_POST shape probing lives in the VO, not here.
+        // See ABJ_404_Solution_EngineProfileSaveRequest.
+        $req = ABJ_404_Solution_EngineProfileSaveRequest::fromPost($_POST);
 
-        if (trim($name) === '') {
+        if (trim($req->getName()) === '') {
             wp_send_json_error(['message' => __('Profile name is required.', '404-solution')]);
             return; // @phpstan-ignore deadCode.unreachable
         }
 
-        if (trim($urlPattern) === '') {
+        if (trim($req->getUrlPattern()) === '') {
             wp_send_json_error(['message' => __('URL pattern is required.', '404-solution')]);
             return; // @phpstan-ignore deadCode.unreachable
         }
@@ -75,10 +71,10 @@ class ABJ_404_Solution_Ajax_EngineProfiles {
         // Validate regex pattern before saving.
         // Patterns are stored WITHOUT PHP delimiters (users write ^/shop/ not #^/shop/#).
         // The resolver wraps with # delimiters at match-time when the first char is not
-        // a common delimiter — we must mirror that same logic here so validation matches
+        // a common delimiter; we mirror that same logic here so validation matches
         // what will actually be executed.
-        if ($isRegex) {
-            $testPattern      = $urlPattern;
+        if ($req->isRegex()) {
+            $testPattern      = $req->getUrlPattern();
             $commonDelimiters = ['/', '#', '~', '!', '@', '|', '%'];
             if (!in_array(substr($testPattern, 0, 1), $commonDelimiters, true)) {
                 $testPattern = '#' . $testPattern . '#';
@@ -92,23 +88,13 @@ class ABJ_404_Solution_Ajax_EngineProfiles {
             }
         }
 
-        $data = array(
-            'id'              => $id,
-            'name'            => $name,
-            'url_pattern'     => $urlPattern,
-            'is_regex'        => $isRegex,
-            'enabled_engines' => $engines,
-            'priority'        => $priority,
-            'status'          => $status,
-        );
-
-        $resultId = ABJ_404_Solution_EngineProfileResolver::getInstance()->saveProfile($data);
+        $resultId = ABJ_404_Solution_EngineProfileResolver::getInstance()->saveProfile($req->toResolverPayload());
 
         if ($resultId === false) {
             $logger = abj_service('logging');
             if ($logger !== null) {
-                $logger->warn('Ajax_EngineProfiles::handleSave: saveProfile() returned false. id=' . (int)$id .
-                    ', name=' . $name . ', is_regex=' . (int)$isRegex .
+                $logger->warn('Ajax_EngineProfiles::handleSave: saveProfile() returned false. id=' . $req->getId() .
+                    ', name=' . $req->getName() . ', is_regex=' . $req->getIsRegexInt() .
                     '. Returning HTTP 200 with success=false to AJAX caller.');
             }
             wp_send_json_error(['message' => __('Failed to save engine profile.', '404-solution')]);

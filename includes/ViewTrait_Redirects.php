@@ -107,20 +107,21 @@ trait ViewTrait_Redirects {
             
             /** @var array<string, mixed> $redirect */
             $redirect = reset($redirects_multiple);
+            $row = ABJ_404_Solution_RedirectRow::fromRaw($redirect);
             $isRegexChecked = '';
-            if (($redirect['status'] ?? '') == ABJ404_STATUS_REGEX) {
+            if ($row !== null && $row->isRegex()) {
                 $isRegexChecked = ' checked ';
             }
 
-            $redirectId = is_scalar($redirect['id'] ?? '') ? (string)($redirect['id'] ?? '') : '';
-            $redirectUrl = is_string($redirect['url'] ?? '') ? (string)($redirect['url'] ?? '') : '';
+            $redirectId = $row !== null ? (string)$row->getId() : '';
+            $redirectUrl = $row !== null ? $row->getUrl() : '';
             echo '<input type="hidden" name="id" value="' . esc_attr($redirectId) . '">';
 
             // URL field (with optional "Matched by" note for auto-created redirects)
             echo '<div class="abj404-form-group">';
             echo '<label class="abj404-form-label" for="url">' . esc_html__('URL', '404-solution') . ' *</label>';
             echo '<input type="text" id="url" name="url" class="abj404-form-input" value="' . esc_attr($redirectUrl) . '" required>';
-            $redirectEngine = is_string($redirect['engine'] ?? '') ? trim((string)($redirect['engine'] ?? '')) : '';
+            $redirectEngine = $row !== null ? $row->getEngine() : '';
             if ($redirectEngine !== '') {
                 $humanEngine = $this->humanizeEngineName($redirectEngine);
                 echo '<p class="abj404-form-help abj404-matched-by">' . esc_html__('Auto-matched by:', '404-solution') . ' ' . esc_html($humanEngine) . '</p>';
@@ -144,8 +145,8 @@ trait ViewTrait_Redirects {
             }
 
             // Scheduled redirect dates (rendered inside Advanced Options in echoEditRedirect)
-            $startTs = isset($redirect['start_ts']) && is_numeric($redirect['start_ts']) ? (int)$redirect['start_ts'] : 0;
-            $endTs = isset($redirect['end_ts']) && is_numeric($redirect['end_ts']) ? (int)$redirect['end_ts'] : 0;
+            $startTs = $row !== null ? $row->getStartTs() : 0;
+            $endTs = $row !== null ? $row->getEndTs() : 0;
             $startDate = $startTs > 0 ? date('Y-m-d', $startTs) : '';
             $endDate = $endTs > 0 ? date('Y-m-d', $endTs) : '';
 

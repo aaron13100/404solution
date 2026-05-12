@@ -798,9 +798,14 @@ class ABJ_404_Solution_FrontendRequestPipeline {
             $urlSlugOnly = $this->logic->removeHomeDirectory($requestedURL);
             $spellChecker = abj_service('spell_checker');
             $options = $this->logic->getOptions();
-            $suggestCats = isset($options['suggest_cats']) && is_string($options['suggest_cats']) ? $options['suggest_cats'] : '1';
-            $suggestTags = isset($options['suggest_tags']) && is_string($options['suggest_tags']) ? $options['suggest_tags'] : '1';
-            $spellChecker->findMatchingPosts($urlSlugOnly, $suggestCats, $suggestTags);
+            // Boundary normalizer: option shape-probing for the suggest_* slice
+            // lives in the VO. See ABJ_404_Solution_SuggestionDisplayOptions.
+            $suggestOpts = ABJ_404_Solution_SuggestionDisplayOptions::fromOptionsArray($options);
+            $spellChecker->findMatchingPosts(
+                $urlSlugOnly,
+                $suggestOpts->getSuggestCatsString(),
+                $suggestOpts->getSuggestTagsString()
+            );
             $spellChecker->triggerAsyncSuggestionComputation($requestedURL);
         }
 

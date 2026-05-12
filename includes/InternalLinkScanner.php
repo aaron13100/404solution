@@ -50,12 +50,14 @@ class ABJ_404_Solution_InternalLinkScanner {
             }
 
             foreach ($posts as $post) {
-                if (!is_object($post)) {
+                // Boundary normalizer: WP_Post shape-probing lives in the VO.
+                $ref = ABJ_404_Solution_PostRef::fromWpPost($post);
+                if ($ref === null) {
                     continue;
                 }
-                $content  = property_exists($post, 'post_content') ? (string)$post->post_content : '';
-                $postId   = property_exists($post, 'ID')           ? intval($post->ID)            : 0;
-                $postTitle = property_exists($post, 'post_title')  ? (string)$post->post_title    : '';
+                $content   = $ref->getContent();
+                $postId    = $ref->getId();
+                $postTitle = $ref->getTitle();
 
                 if ($content === '') {
                     continue;

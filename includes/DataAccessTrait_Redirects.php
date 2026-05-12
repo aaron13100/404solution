@@ -641,14 +641,12 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
                 return true;
             }
 
-            $post = get_post($destId);
-            if (!is_object($post)) {
+            // Boundary normalizer: WP_Post shape-probing lives in the VO.
+            $ref = ABJ_404_Solution_PostRef::fromWpPost(get_post($destId));
+            if ($ref === null) {
                 return false;
             }
-
-            $postStatus = strtolower($post->post_status);
-
-            return in_array($postStatus, array('publish', 'published'), true);
+            return $ref->isPublished();
         }
 
         if ($type === ABJ404_TYPE_CAT || $type === ABJ404_TYPE_TAG) {
