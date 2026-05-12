@@ -41,16 +41,202 @@
     'use strict';
 
     var SELECTOR = '.abj404-support-request-mount';
+    var LINK_SELECTOR = '.abj404-support-request-link';
+    var STYLE_TAG_ID = 'abj404-srb-styles';
+
+    /**
+     * Polished modal styles. Injected once per page on first build so
+     * the modal works on a fatal-fallback page where the plugin's
+     * stylesheet may not be loaded. Kept self-contained (no external
+     * font, no external image).
+     */
+    var STYLE_BLOCK = [
+        '.abj404-srb-overlay {',
+        '  box-sizing: border-box;',
+        '  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", Arial, sans-serif;',
+        '  padding: 24px;',
+        '}',
+        '.abj404-srb-overlay * { box-sizing: border-box; }',
+        '.abj404-srb-dialog {',
+        '  width: 100%;',
+        '  max-width: 560px;',
+        '  max-height: calc(100vh - 48px);',
+        '  overflow-y: auto;',
+        '  border-radius: 8px;',
+        '  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.28), 0 0 0 1px rgba(0, 0, 0, 0.04);',
+        '  padding: 26px 30px 22px;',
+        '  color: #1f2937;',
+        '}',
+        '.abj404-srb-title {',
+        '  margin: 0 0 8px;',
+        '  font-size: 18px;',
+        '  font-weight: 600;',
+        '  line-height: 1.3;',
+        '  color: #111827;',
+        '}',
+        '.abj404-srb-explainer {',
+        '  margin: 0 0 16px;',
+        '  color: #4b5563;',
+        '  line-height: 1.55;',
+        '  font-size: 14px;',
+        '}',
+        '.abj404-srb-context-summary {',
+        '  margin: 0 0 16px;',
+        '  padding: 10px 12px;',
+        '  background: #f3f4f6;',
+        '  border-left: 3px solid #2271b1;',
+        '  border-radius: 3px;',
+        '  font-size: 13px;',
+        '  color: #374151;',
+        '}',
+        '.abj404-srb-categories-heading {',
+        '  margin: 0 0 6px;',
+        '  font-size: 13px;',
+        '  font-weight: 600;',
+        '  color: #1f2937;',
+        '}',
+        '.abj404-srb-categories {',
+        '  margin: 0 0 18px;',
+        '  padding-left: 22px;',
+        '  font-size: 13px;',
+        '  color: #4b5563;',
+        '  line-height: 1.55;',
+        '}',
+        '.abj404-srb-categories li {',
+        '  margin: 0 0 2px;',
+        '  list-style: disc;',
+        '}',
+        '.abj404-srb-payload-details {',
+        '  margin: 0 0 18px;',
+        '  border: 1px solid #e5e7eb;',
+        '  border-radius: 6px;',
+        '  overflow: hidden;',
+        '  background: #fff;',
+        '}',
+        '.abj404-srb-payload-details > summary {',
+        '  cursor: pointer;',
+        '  padding: 10px 14px;',
+        '  background: #f9fafb;',
+        '  font-weight: 500;',
+        '  color: #2271b1;',
+        '  user-select: none;',
+        '  outline-offset: -2px;',
+        '}',
+        '.abj404-srb-payload-details[open] > summary {',
+        '  border-bottom: 1px solid #e5e7eb;',
+        '}',
+        '.abj404-srb-payload-preview {',
+        '  margin: 0;',
+        '  padding: 12px 14px;',
+        '  background: #fff;',
+        '  color: #111827;',
+        '  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;',
+        '  font-size: 12px;',
+        '  line-height: 1.5;',
+        '  max-height: 220px;',
+        '  overflow: auto;',
+        '  white-space: pre-wrap;',
+        '  word-break: break-word;',
+        '}',
+        '.abj404-srb-form { display: block; }',
+        '.abj404-srb-field-label {',
+        '  display: block;',
+        '  margin: 0 0 14px;',
+        '  font-weight: 500;',
+        '  color: #1f2937;',
+        '  font-size: 13px;',
+        '}',
+        '.abj404-srb-field-label-text {',
+        '  display: block;',
+        '  margin-bottom: 5px;',
+        '}',
+        '.abj404-srb-user-message,',
+        '.abj404-srb-reply-email {',
+        '  display: block;',
+        '  width: 100%;',
+        '  border: 1px solid #d1d5db;',
+        '  border-radius: 4px;',
+        '  padding: 8px 10px;',
+        '  font-size: 14px;',
+        '  line-height: 1.45;',
+        '  font-family: inherit;',
+        '  color: #111827;',
+        '  background: #fff;',
+        '  transition: border-color 0.15s ease, box-shadow 0.15s ease;',
+        '}',
+        '.abj404-srb-user-message:focus,',
+        '.abj404-srb-reply-email:focus {',
+        '  border-color: #2271b1;',
+        '  outline: none;',
+        '  box-shadow: 0 0 0 2px rgba(34, 113, 177, 0.2);',
+        '}',
+        '.abj404-srb-user-message {',
+        '  resize: vertical;',
+        '  min-height: 96px;',
+        '  font-family: inherit;',
+        '}',
+        '.abj404-srb-consent {',
+        '  margin: 4px 0 16px;',
+        '  font-size: 12px;',
+        '  color: #4b5563;',
+        '  line-height: 1.5;',
+        '}',
+        '.abj404-srb-success,',
+        '.abj404-srb-error {',
+        '  margin: 12px 0 4px;',
+        '  padding: 10px 14px;',
+        '  border-radius: 4px;',
+        '  font-size: 13px;',
+        '  line-height: 1.45;',
+        '}',
+        '.abj404-srb-success { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }',
+        '.abj404-srb-error { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }',
+        '.abj404-srb-buttons {',
+        '  display: flex;',
+        '  gap: 10px;',
+        '  justify-content: flex-end;',
+        '  align-items: center;',
+        '  margin-top: 22px;',
+        '  flex-wrap: wrap;',
+        '}',
+        '.abj404-srb-buttons .abj404-srb-send {',
+        '  min-width: 110px;',
+        '}',
+        '@media (max-width: 540px) {',
+        '  .abj404-srb-overlay { padding: 12px; }',
+        '  .abj404-srb-dialog { padding: 20px 18px 16px; max-height: calc(100vh - 24px); }',
+        '  .abj404-srb-buttons { flex-direction: column-reverse; align-items: stretch; }',
+        '  .abj404-srb-buttons .abj404-srb-send,',
+        '  .abj404-srb-buttons .abj404-srb-cancel { width: 100%; min-width: 0; }',
+        '}'
+    ].join('\n');
+
+    function ensureStyles() {
+        if (!document.head || document.getElementById(STYLE_TAG_ID)) {
+            return;
+        }
+        var style = document.createElement('style');
+        style.id = STYLE_TAG_ID;
+        style.appendChild(document.createTextNode(STYLE_BLOCK));
+        document.head.appendChild(style);
+    }
     var I18N_FALLBACK = {
         button: 'Send debug log to developer',
         modalTitle: 'Send debug log to developer',
-        explainer: 'This sends a one-time diagnostic report (URLs, PHP/WP/DB versions, debug log excerpt, active plugins, site URL) to the plugin developer.',
+        explainer: 'This sends a one-time diagnostic report to the plugin developer so they can investigate the issue you are seeing.',
+        categoriesHeading: 'This report includes:',
+        categorySiteUrl: 'Site URL',
+        categoryVersions: 'Plugin, PHP, WordPress, and database versions',
+        categoryActivePlugins: 'List of active plugins',
+        categoryDebugLog: 'Recent debug log excerpt',
+        categoryUserMessage: 'Optional message and reply email you provide below',
         showPayloadOpen: "Show what's in this report",
         showPayloadClose: 'Hide report contents',
         loadingPreview: 'Loading report contents...',
         previewError: 'Could not load preview. The full report is still safe to send.',
         userMessageLabel: 'What went wrong? (optional, helps us diagnose)',
         replyEmailLabel: 'Where should we reply? (optional)',
+        consent: 'By clicking Send report, you consent to transmitting the information above to the plugin developer for support purposes. The data is used only to diagnose your issue and is not shared with third parties.',
         send: 'Send report',
         cancel: 'Cancel',
         sending: 'Sending...',
@@ -132,6 +318,10 @@
         var modal = null;
         var modalEls = null;
 
+        // The button replaces rootEl's contents and serves as the
+        // explicit click target. attachLink() (below) reuses this same
+        // controller but binds the click handler to a caller-provided
+        // anchor element instead, leaving its inline DOM intact.
         button.addEventListener('click', function () {
             openModal();
         });
@@ -189,9 +379,18 @@
         }
 
         function buildModalDOM() {
+            ensureStyles();
             var titleId = 'abj404-srb-title-' + Math.random().toString(36).slice(2, 8);
             var title = el('h2', { id: titleId, className: 'abj404-srb-title', text: t('modalTitle') });
             var explainer = el('p', { className: 'abj404-srb-explainer', text: t('explainer') });
+
+            // Data-category list (GDPR: admin sees every category of
+            // data that will be transmitted before the consent step).
+            var categoriesHeading = el('p', { className: 'abj404-srb-categories-heading', text: t('categoriesHeading') });
+            var categoriesList = el('ul', { className: 'abj404-srb-categories' });
+            ['categorySiteUrl', 'categoryVersions', 'categoryActivePlugins', 'categoryDebugLog', 'categoryUserMessage'].forEach(function (key) {
+                categoriesList.appendChild(el('li', { text: t(key) }));
+            });
 
             var contextNode = null;
             if (contextSummary) {
@@ -239,25 +438,30 @@
             });
 
             var userMessageLabel = el('label', { className: 'abj404-srb-field-label' });
-            userMessageLabel.textContent = t('userMessageLabel');
+            var userMessageLabelText = el('span', { className: 'abj404-srb-field-label-text', text: t('userMessageLabel') });
             var userMessageInput = el('textarea', {
                 className: 'abj404-srb-user-message',
                 rows: '4',
                 maxlength: '2000'
             });
+            userMessageLabel.appendChild(userMessageLabelText);
             userMessageLabel.appendChild(userMessageInput);
 
             var replyEmailLabel = el('label', { className: 'abj404-srb-field-label' });
-            replyEmailLabel.textContent = t('replyEmailLabel');
+            var replyEmailLabelText = el('span', { className: 'abj404-srb-field-label-text', text: t('replyEmailLabel') });
             var replyEmailInput = el('input', {
                 type: 'email',
                 className: 'abj404-srb-reply-email'
             });
+            replyEmailLabel.appendChild(replyEmailLabelText);
             replyEmailLabel.appendChild(replyEmailInput);
+
+            var consent = el('p', { className: 'abj404-srb-consent', text: t('consent') });
 
             var formBlock = el('div', { className: 'abj404-srb-form' }, [
                 userMessageLabel,
-                replyEmailLabel
+                replyEmailLabel,
+                consent
             ]);
 
             var successBlock = el('div', {
@@ -291,6 +495,8 @@
                 title,
                 explainer,
                 contextNode,
+                categoriesHeading,
+                categoriesList,
                 details,
                 formBlock,
                 errorBlock,
@@ -302,24 +508,21 @@
                 className: 'abj404-srb-overlay'
             }, [dialog]);
             overlay.style.display = 'none';
-            // Inline minimal styles so the modal works on a
-            // fatal-fallback page where the plugin's CSS may not be
-            // loaded. Keep this small; rich styling lives in admin CSS.
+            // Inline only the layout-mode / positioning props so the
+            // overlay floats correctly even before our injected
+            // <style> tag has parsed. Visual polish (padding, radius,
+            // shadow, typography) lives in STYLE_BLOCK, injected
+            // once by ensureStyles() in buildModalDOM().
             overlay.style.position = 'fixed';
             overlay.style.top = '0';
             overlay.style.left = '0';
             overlay.style.right = '0';
             overlay.style.bottom = '0';
-            overlay.style.background = 'rgba(0,0,0,0.5)';
+            overlay.style.background = 'rgba(15, 23, 42, 0.55)';
             overlay.style.zIndex = '160000';
             overlay.style.alignItems = 'center';
             overlay.style.justifyContent = 'center';
             dialog.style.background = '#fff';
-            dialog.style.padding = '20px';
-            dialog.style.maxWidth = '600px';
-            dialog.style.maxHeight = '80vh';
-            dialog.style.overflow = 'auto';
-            dialog.style.borderRadius = '4px';
 
             // Wire button + ESC + overlay-click handlers.
             sendButton.addEventListener('click', function () {
@@ -413,6 +616,47 @@
                 return { modal: modal, lastFocus: lastFocus };
             }
         };
+    }
+
+    /**
+     * Bind a click handler on an existing anchor / clickable element
+     * so that activating it opens the support-request modal in-place
+     * (preventDefault) instead of navigating elsewhere. Used for the
+     * `plugin_row_meta` link on wp-admin/plugins.php so the admin can
+     * send a debug log without leaving the Plugins listing and without
+     * depending on the plugin's Settings page rendering correctly.
+     *
+     * The link's own `href` is left untouched so it still acts as a
+     * fallback when JavaScript fails to load on the host page.
+     *
+     * @param {HTMLElement} linkEl
+     * @param {Object} opts
+     * @param {string} opts.triggered_from
+     * @param {string} [opts.context_summary]
+     * @returns {Object} controller with .openModal(), .closeModal(), .destroy()
+     */
+    function attachLink(linkEl, opts) {
+        opts = opts || {};
+        if (!linkEl || !opts.triggered_from) {
+            return { destroy: function () {}, openModal: function () {}, getState: function () { return 'idle'; } };
+        }
+        // mount() owns the modal lifecycle. Give it a detached host so
+        // the button it renders is never visible. The visible trigger
+        // is the linkEl supplied by the caller.
+        var hiddenHost = document.createElement('span');
+        hiddenHost.style.display = 'none';
+        var controller = mount(hiddenHost, opts);
+        var onClick = function (e) {
+            e.preventDefault();
+            controller.openModal();
+        };
+        linkEl.addEventListener('click', onClick);
+        var baseDestroy = controller.destroy;
+        controller.destroy = function () {
+            linkEl.removeEventListener('click', onClick);
+            baseDestroy();
+        };
+        return controller;
     }
 
     /**
@@ -512,6 +756,29 @@
                 triggerMatchController = controller;
             }
         }
+        // Link-style triggers (e.g. the wp-admin/plugins.php row-meta
+        // entry) open the modal in-place without leaving the host
+        // page. Same idempotency contract as the mount divs above.
+        var linkTriggers = document.querySelectorAll(LINK_SELECTOR);
+        for (var j = 0; j < linkTriggers.length; j++) {
+            var linkNode = linkTriggers[j];
+            if (linkNode.getAttribute('data-abj404-srb-mounted') === '1') {
+                continue;
+            }
+            var linkTriggeredFrom = linkNode.getAttribute('data-triggered-from') || '';
+            var linkContextSummary = linkNode.getAttribute('data-context-summary') || '';
+            var linkController = attachLink(linkNode, {
+                triggered_from: linkTriggeredFrom,
+                context_summary: linkContextSummary
+            });
+            linkNode.setAttribute('data-abj404-srb-mounted', '1');
+            if (!firstMountedController) {
+                firstMountedController = linkController;
+            }
+            if (requestedTrigger && linkTriggeredFrom === requestedTrigger && !triggerMatchController) {
+                triggerMatchController = linkController;
+            }
+        }
         if (shouldAutoOpen) {
             var target = triggerMatchController || firstMountedController;
             if (target && typeof target.openModal === 'function') {
@@ -569,6 +836,7 @@
     window.ABJ404 = window.ABJ404 || {};
     window.ABJ404.SupportRequestButton = {
         mount: mount,
+        attachLink: attachLink,
         mountAll: mountAll,
         // Exposed for the JS unit test; not part of the public API.
         __loadPreview: loadPreview

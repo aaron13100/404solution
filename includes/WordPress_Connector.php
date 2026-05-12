@@ -205,6 +205,8 @@ class ABJ_404_Solution_WordPress_Connector {
             'ABJ_404_Solution_WordPress_Connector::addMainSettingsPageLink');
         add_action('admin_enqueue_scripts',
             'ABJ_404_Solution_WordPress_Connector::add_scripts', 11);
+        add_action('admin_enqueue_scripts',
+            'ABJ_404_Solution_WordPress_Connector::enqueueSupportRequestAssetsOnPluginsPage', 11);
         add_action('admin_head',
             'ABJ_404_Solution_WordPress_Connector::outputCriticalThemeCSS', 1);
 
@@ -468,7 +470,31 @@ class ABJ_404_Solution_WordPress_Connector {
      *
      * @return void
      */
-    private static function registerSupportRequestAssets() {
+    /**
+     * Enqueue the support-request button assets specifically for the
+     * wp-admin/plugins.php screen so the row-meta link added by
+     * `addPluginRowMeta()` can open its consent modal in-place. The
+     * plugin's main `add_scripts()` enqueue is gated to the plugin's
+     * settings page and would skip plugins.php otherwise.
+     *
+     * Scope: this hook runs on every admin page but no-ops unless the
+     * current screen is plugins.php, keeping the asset footprint tight.
+     *
+     * @param string $hook the admin page slug WP passes to admin_enqueue_scripts
+     * @return void
+     */
+    static function enqueueSupportRequestAssetsOnPluginsPage($hook) {
+        if ($hook !== 'plugins.php') {
+            return;
+        }
+        try {
+            self::registerSupportRequestAssets();
+        } catch (Throwable $e) {
+            self::reportAdminRuntimeError('admin_enqueue_scripts:plugins.php', $e);
+        }
+    }
+
+    private static function registerSupportRequestAssets(): void {
         ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-support-request-client',
             plugin_dir_url(__FILE__) . 'ajax/SupportRequest.js', array());
         ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-support-request-button',
@@ -745,12 +771,19 @@ class ABJ_404_Solution_WordPress_Connector {
     }
 
     /**
-     * Adds a "Send debug log to developer" deep link to the plugin row on
-     * the Plugins page. The link routes to the Settings page anchored at
-     * the support-request section, with the auto-open query args so the
-     * consent modal opens on arrival. The modal is the only path that
-     * transmits the support-request payload; this link itself triggers
-     * nothing on click beyond the navigation.
+     * Adds a "Send debug log to developer" link to the plugin row on
+     * the Plugins page. The link opens the support-request consent
+     * modal in-place on wp-admin/plugins.php (handled by
+     * support-request-button.js, which attaches to elements matching
+     * .abj404-support-request-link). Opening in-place is deliberate:
+     * the Plugins listing is the screen an admin reaches when the
+     * plugin's own Settings page is broken, so the modal must not
+     * depend on Settings rendering correctly.
+     *
+     * The href falls back to the same-page anchor `#abj404-support-request`
+     * so the link is still well-formed if support-request-button.js
+     * fails to load. The modal itself is the only path that transmits
+     * the support-request payload; clicking the link never POSTs.
      *
      * @param array<int|string, string> $links
      * @param string $file
@@ -760,11 +793,9 @@ class ABJ_404_Solution_WordPress_Connector {
         if ($file !== ABJ404_NAME) {
             return $links;
         }
-        $supportUrl = admin_url('options-general.php?page=' . ABJ404_PP
-            . '&subpage=abj404_options'
-            . '&abj404_support_open=1&abj404_support_trigger=plugins_row_action'
-            . '#abj404-support-request');
-        $links[] = '<a href="' . esc_url($supportUrl) . '">'
+        $links[] = '<a href="#abj404-support-request"'
+            . ' class="abj404-support-request-link"'
+            . ' data-triggered-from="plugins_row_action">'
             . esc_html__('Send debug log to developer', '404-solution') . '</a>';
         return $links;
     }
