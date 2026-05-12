@@ -370,7 +370,54 @@ class ABJ_404_Solution_FeedbackTransport {
         if ($code >= 200 && $code < 300) {
             return array('ok' => true, 'status' => $code);
         }
-        return array('ok' => false, 'reason' => 'http_' . $code, 'status' => $code);
+        // Surface the server's structured error message in `detail`. The dev
+        // endpoint's setErrorHandler returns
+        // {statusCode, error: 'validation_failed', message: '<human>', field?}
+        // on schema rejections; without this extraction the admin only sees
+        // "HTTP 400" and has no way to tell which field was wrong.
+        $rawBody = function_exists('wp_remote_retrieve_body') ? wp_remote_retrieve_body($response) : '';
+        $detail = self::extractServerErrorDetail(is_string($rawBody) ? $rawBody : '');
+        return array('ok' => false, 'reason' => 'http_' . $code, 'status' => $code, 'detail' => $detail);
+    }
+
+    /**
+     * Pull the response body off a wp_remote_post() result and, when it's a
+     * JSON error envelope, extract a one-line "<message> [field=<path>]"
+     * detail. Falls back to a short truncated body when the response isn't
+     * structured JSON, so opaque HTML error pages from a misrouted endpoint
+     * still leave a fingerprint in the admin notice.
+     *
+     * @param string $body Raw response body from wp_remote_retrieve_body().
+     * @return string Empty string if no useful detail could be extracted.
+     */
+    private static function extractServerErrorDetail(string $body): string {
+        if ($body === '') {
+            return '';
+        }
+        $decoded = json_decode($body, true);
+        if (is_array($decoded)) {
+            $message = '';
+            if (isset($decoded['message']) && is_scalar($decoded['message'])) {
+                $message = trim((string)$decoded['message']);
+            }
+            $field = '';
+            if (isset($decoded['field']) && is_scalar($decoded['field'])) {
+                $field = trim((string)$decoded['field']);
+            }
+            if ($message !== '' && $field !== '') {
+                return $message . ' [field=' . $field . ']';
+            }
+            if ($message !== '') {
+                return $message;
+            }
+        }
+        // Non-JSON body (HTML error page, plain text). Trim to a sane size
+        // so a 1 MB rendered 502 page can't blow up the admin notice.
+        $trimmed = trim($body);
+        if ($trimmed === '') {
+            return '';
+        }
+        return strlen($trimmed) > 240 ? substr($trimmed, 0, 240) . '...' : $trimmed;
     }
 
     /**
