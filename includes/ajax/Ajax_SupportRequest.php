@@ -146,9 +146,15 @@ class ABJ_404_Solution_Ajax_SupportRequest {
         $fallbackUsed = ABJ_404_Solution_FeedbackTransport::lastSendUsedFallback();
 
         if (!$ok) {
+            $diag = ABJ_404_Solution_FeedbackTransport::lastSendDiagnostics();
             wp_send_json_error(array(
-                'message' => __('Failed to send support request. Please try again later.', '404-solution'),
+                'message' => self::buildFailureMessage($diag),
                 'fallback_used' => $fallbackUsed,
+                'http_status'   => $diag['http_status'],
+                'http_reason'   => $diag['http_reason'],
+                'http_detail'   => $diag['http_detail'],
+                'email_attempted' => $diag['email_attempted'],
+                'email_ok'      => $diag['email_ok'],
             ), 502);
             return; // @phpstan-ignore deadCode.unreachable
         }
@@ -158,6 +164,74 @@ class ABJ_404_Solution_Ajax_SupportRequest {
             'reference_id' => self::generateReferenceId(),
             'fallback_used' => $fallbackUsed,
         ));
+    }
+
+    /**
+     * Build a user-facing failure message that names the specific
+     * failure (HTTP status, transport reason, email-fallback outcome)
+     * instead of the generic "could not send" stock copy. Required by
+     * CLAUDE.md > Error visibility: every error path must preserve the
+     * underlying code and context. Without this, an admin whose
+     * support request fails has no way to tell whether the developer
+     * endpoint is unreachable, the response was a 5xx, wp_mail() is
+     * disabled, etc.
+     *
+     * The phrase is intentionally explicit. The detail string from a
+     * WP_Error is wrapped in parentheses so the headline stays
+     * scannable.
+     *
+     * @param array{http_status: int|null, http_reason: string, http_detail: string, email_attempted: bool, email_ok: bool|null} $diag
+     * @return string
+     */
+    private static function buildFailureMessage(array $diag): string {
+        $status = $diag['http_status'];
+        $reason = (string)$diag['http_reason'];
+        $detail = (string)$diag['http_detail'];
+
+        $httpPhrase = '';
+        if (is_int($status) && $status > 0) {
+            $httpPhrase = sprintf(
+                /* translators: %d = numeric HTTP status code returned by the developer endpoint. */
+                __('HTTP %d from the developer endpoint', '404-solution'),
+                $status
+            );
+        } elseif ($reason === 'wp_error') {
+            $httpPhrase = __('the request never reached the developer endpoint', '404-solution');
+        } elseif ($reason === 'json_encode_failed' || $reason === 'gzencode_failed') {
+            $httpPhrase = sprintf(
+                /* translators: %s = internal reason slug, e.g. json_encode_failed. */
+                __('the report could not be packaged (%s)', '404-solution'),
+                $reason
+            );
+        } elseif ($reason !== '') {
+            $httpPhrase = sprintf(
+                /* translators: %s = internal reason slug from the HTTP transport. */
+                __('transport failure: %s', '404-solution'),
+                $reason
+            );
+        } else {
+            $httpPhrase = __('the HTTP transport failed for an unknown reason', '404-solution');
+        }
+
+        if ($detail !== '') {
+            $httpPhrase .= ' (' . $detail . ')';
+        }
+
+        // sendNow() only routes here when HTTP failed AND the wp_mail()
+        // fallback ALSO returned false. We surface that explicitly so the
+        // admin knows both transports were exhausted, not just one.
+        if (!empty($diag['email_attempted'])) {
+            $emailPhrase = __('Email fallback via wp_mail() also failed. Check that this site can send mail.', '404-solution');
+        } else {
+            $emailPhrase = __('No email fallback was attempted.', '404-solution');
+        }
+
+        return sprintf(
+            /* translators: 1 = primary cause sentence, 2 = email-fallback status sentence. */
+            __('Could not send support request: %1$s. %2$s', '404-solution'),
+            $httpPhrase,
+            $emailPhrase
+        );
     }
 
     /**

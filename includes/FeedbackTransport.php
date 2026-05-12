@@ -49,6 +49,37 @@ class ABJ_404_Solution_FeedbackTransport {
     private static $lastSendUsedFallback = false;
 
     /**
+     * Diagnostic details from the most recent sendNow() call. Populated
+     * unconditionally so callers (e.g. the support-request AJAX handler)
+     * can surface the actual failure code and reason to the user instead
+     * of a generic "could not send" message.
+     *
+     * Shape:
+     *   http_status:      int|null  HTTP status code from the developer
+     *                                endpoint when the wp_remote_post()
+     *                                call completed, or null when the
+     *                                request never reached HTTP.
+     *   http_reason:      string    Short slug (json_encode_failed,
+     *                                gzencode_failed, wp_error,
+     *                                http_<code>) usable for log greps.
+     *   http_detail:      string    Free-form context (WP_Error message,
+     *                                etc). May be empty.
+     *   email_attempted:  bool      true when HTTP failed and the email
+     *                                fallback ran.
+     *   email_ok:         bool|null Result of the email fallback when it
+     *                                ran; null when not attempted.
+     *
+     * @var array{http_status: int|null, http_reason: string, http_detail: string, email_attempted: bool, email_ok: bool|null}
+     */
+    private static $lastSendDiagnostics = array(
+        'http_status'     => null,
+        'http_reason'     => '',
+        'http_detail'     => '',
+        'email_attempted' => false,
+        'email_ok'        => null,
+    );
+
+    /**
      * Queue a payload for asynchronous send. Used by interactive paths
      * (deactivate AJAX). Returns immediately; the actual send happens in a
      * single-shot cron event.
@@ -97,6 +128,14 @@ class ABJ_404_Solution_FeedbackTransport {
         $reasonStr = isset($result['reason']) && is_scalar($result['reason']) ? (string)$result['reason'] : '';
         $detailStr = isset($result['detail']) && is_scalar($result['detail']) ? (string)$result['detail'] : '';
 
+        self::$lastSendDiagnostics = array(
+            'http_status'     => $statusStr !== '' ? (int)$statusStr : null,
+            'http_reason'     => $reasonStr,
+            'http_detail'     => $detailStr,
+            'email_attempted' => false,
+            'email_ok'        => null,
+        );
+
         if (!empty($result['ok'])) {
             self::log('info', sprintf(
                 'abj404_transport: type=%s http_status=%s fallback_used=false ms_elapsed=%d',
@@ -117,7 +156,23 @@ class ABJ_404_Solution_FeedbackTransport {
         ));
 
         self::$lastSendUsedFallback = true;
-        return self::emailFallback($payload, $type);
+        self::$lastSendDiagnostics['email_attempted'] = true;
+        $emailOk = self::emailFallback($payload, $type);
+        self::$lastSendDiagnostics['email_ok'] = $emailOk;
+        return $emailOk;
+    }
+
+    /**
+     * Diagnostic context from the most recent sendNow() call. Callers
+     * that surface a user-facing failure message must include the
+     * http_status / http_reason here so the message is actionable.
+     * "Could not send" alone is the diagnostic black-hole this method
+     * exists to prevent (CLAUDE.md > Error visibility).
+     *
+     * @return array{http_status: int|null, http_reason: string, http_detail: string, email_attempted: bool, email_ok: bool|null}
+     */
+    public static function lastSendDiagnostics(): array {
+        return self::$lastSendDiagnostics;
     }
 
     /**
