@@ -161,13 +161,27 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
         $query = $this->buildHighImpactCapturedCountQuery();
 
         $result = $this->queryWithTimeout($query, 60);
-        $hadError = !empty($result['last_error']) || !empty($result['timed_out']);
+        $timedOut = !empty($result['timed_out']);
+        $hadError = !empty($result['last_error']) || $timedOut;
         $rows = is_array($result['rows']) ? $result['rows'] : array();
         $count = (!empty($rows) && isset($rows[0]['cnt'])) ? intval($rows[0]['cnt']) : 0;
 
-        // Do not cache on error/timeout — the rollup is fine, the query just
-        // failed transiently (network blip, replication lag, etc.). Caching 0
-        // for 24h would silently hide real repeat-visitor URLs.
+        // Timeout self-heal (Bruno regression). Without this branch every
+        // admin pageview re-pays the 60s timeout cost. We schedule a hits
+        // table rebuild so the next post-cache request can return real
+        // data, and cache 0 for the short STATUS_CACHE_TIMEOUT_SELFHEAL_TTL
+        // window (5 min) so subsequent pageviews are instant. The short
+        // TTL is far less than STATUS_CACHE_TTL (24h), so a transient
+        // timeout cannot hide repeat-visitor URLs for a full day.
+        if ($timedOut) {
+            $this->scheduleHitsTableRebuild();
+            // allow-cache-empty: timeout self-heal sentinel, 5-minute window. Real value returns once the rebuild completes and the short cache expires.
+            set_transient(self::CACHE_KEY_HIGH_IMPACT_CAPTURED, 0, self::STATUS_CACHE_TIMEOUT_SELFHEAL_TTL);
+            return 0;
+        }
+
+        // Non-timeout errors (network blip, replication lag, etc.) return
+        // 0 without caching so the next request retries promptly.
         if ($hadError) {
             return 0;
         }
