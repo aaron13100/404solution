@@ -460,12 +460,17 @@ class ABJ_404_Solution_DataAccess {
         
         $replacements = array();
         $tables = (isset($wpdb->tables) && is_array($wpdb->tables)) ? $wpdb->tables : array();
+        // Resolve prefix once; null $wpdb (boot-time and unit-test contexts) and
+        // mocks without ->prefix both fall through to 'wp_' instead of triggering
+        // PHP 8+ "Attempt to read property on null" warnings. Infection's
+        // initial-tests phase exits non-zero on any such warning.
+        $prefix = isset($wpdb->prefix) ? $wpdb->prefix : 'wp_';
         foreach ($tables as $tableName) {
-            $replacements['{wp_' . $tableName . '}'] = $wpdb->prefix . $tableName;
+            $replacements['{wp_' . $tableName . '}'] = $prefix . $tableName;
         }
         // wpdb properties are not guaranteed on mocks; provide safe fallbacks.
-        $replacements['{wp_users}'] = $wpdb->users ?? ($wpdb->prefix . 'users');
-        $replacements['{wp_prefix}'] = $wpdb->prefix ?? 'wp_';
+        $replacements['{wp_users}'] = isset($wpdb->users) ? $wpdb->users : ($prefix . 'users');
+        $replacements['{wp_prefix}'] = $prefix;
         $replacements['{wp_prefix_lower}'] = $this->getLowercasePrefix();
 
         // Resolve {wpdb_collate} so any SQL file can force a consistent collation
