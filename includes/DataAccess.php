@@ -106,6 +106,24 @@ class ABJ_404_Solution_DataAccess {
     const HITS_TABLE_LAST_DECISION_FLAG = 'abj404_logs_hits_last_decision';
     /** @var string Runtime flag: last successful hits-table rebuild completion (Unix timestamp). */
     const HITS_TABLE_LAST_REFRESHED_FLAG = 'abj404_logs_hits_last_refreshed_at';
+    /**
+     * @var string Runtime flag: Unix timestamp of the first request that
+     *             observed MAX(logsv2.id) > stored rollup watermark and the
+     *             gap has remained open since. Drives the broken-cron
+     *             admin notice; cleared on rebuild or when the gap closes.
+     */
+    const HITS_TABLE_FIRST_STALE_DETECTED_FLAG = 'abj404_logs_hits_first_stale_detected_at';
+    /** @var string Deduplicated admin-notice transient for stale logs_hits rollup. */
+    const HITS_TABLE_STALE_NOTICE_TRANSIENT = 'abj404_logs_hits_rollup_stale';
+    /**
+     * @var int Minimum age (seconds) of a persisted MAX(logsv2.id) >
+     *          rollup-watermark gap before surfacing a broken-cron admin
+     *          notice. 1 hour is well past the normal cron cycle for the
+     *          5-minute HITS_TABLE_MAX_AGE_SECONDS rollup, so a gap that
+     *          stays open this long is unambiguously a broken or
+     *          stopped cron event (abj404_updateLogsHitsTableAction).
+     */
+    const HITS_TABLE_STALE_NOTICE_THRESHOLD_SECONDS = 3600;
 
     /** @var self|null */
     private static $instance = null;

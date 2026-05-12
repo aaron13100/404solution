@@ -1442,6 +1442,7 @@ if (!function_exists('abj404_show_view_build_cron_notices')) {
 			'abj404_view_build_stuck_wp_cron_disabled',
 			'abj404_view_build_cron_schedule_failed',
 			'abj404_view_done_hard_stale',
+			'abj404_logs_hits_rollup_stale',
 		);
 		foreach ($keys as $key) {
 			$notice = get_transient($key);

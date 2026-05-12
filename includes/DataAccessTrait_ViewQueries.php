@@ -1171,6 +1171,11 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
             return;
         }
 
+        // Diagnostic: track the max_log_id age signal so a stalled rollup
+        // surfaces a broken-cron admin notice instead of silently showing
+        // stale hit-count columns. Self-heals when the gap closes.
+        $this->recordLogsHitsRollupStalenessSignal();
+
         // Check if rebuild is needed (logs have changed since last build)
         if (!$this->hitsTableNeedsRebuild()) {
             // No new log entries - skip rebuild to reduce server load

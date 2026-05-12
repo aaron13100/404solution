@@ -22,6 +22,114 @@ if (!defined('ABSPATH')) {
  */
 trait ABJ_404_Solution_DataAccess_LogsHitsRebuildTrait {
 
+    /**
+     * Detect a stalled `logs_hits` rollup using the `max_log_id` age signal.
+     *
+     * Compares `MAX(logsv2.id)` against the watermark stored in the
+     * `logs_hits` table comment by the most recent successful rebuild. A
+     * persistent gap means rows have continued arriving in `logsv2` while
+     * the cron-driven rebuild (`abj404_updateLogsHitsTableAction`) has not
+     * advanced the rollup, which is almost always a broken or disabled
+     * WordPress cron, since the rebuild itself is fast and bounded.
+     *
+     * State machine, recorded as runtime flags:
+     *  - gap absent: clear both the first-detected flag and any open
+     *    admin-notice transient (self-heal).
+     *  - gap present, no prior flag: stamp the first-detected timestamp
+     *    and wait. A single observation is not enough to claim cron is
+     *    broken, since a healthy rollup may be momentarily behind while
+     *    cron runs.
+     *  - gap present, flag age at or above threshold: set a deduplicated
+     *    24h admin-notice transient that the existing notice renderer in
+     *    404-solution.php surfaces on the plugin's own admin screen.
+     *
+     * Called from `maybeUpdateRedirectsForViewHitsTable()` so every admin
+     * paint of the redirects page re-evaluates the signal; cleared on a
+     * successful rebuild inside `createRedirectsForViewHitsTable()`.
+     *
+     * @return void
+     */
+    function recordLogsHitsRollupStalenessSignal(): void {
+        $currentMaxLogId = $this->getMaxLogId();
+        $storedMaxLogId = $this->getStoredMaxLogId();
+
+        if ($currentMaxLogId <= $storedMaxLogId) {
+            $this->clearLogsHitsRollupStaleSignal();
+            return;
+        }
+
+        $rawFirstStale = $this->getRuntimeFlag(self::HITS_TABLE_FIRST_STALE_DETECTED_FLAG);
+        $firstStale = is_scalar($rawFirstStale) ? (int)$rawFirstStale : 0;
+        if ($firstStale <= 0) {
+            $this->setRuntimeFlag(self::HITS_TABLE_FIRST_STALE_DETECTED_FLAG, time(), 86400);
+            return;
+        }
+
+        $age = time() - $firstStale;
+        if ($age >= self::HITS_TABLE_STALE_NOTICE_THRESHOLD_SECONDS) {
+            $this->setLogsHitsRollupStaleNotice($age);
+        }
+    }
+
+    /**
+     * Self-heal: clear the staleness detection flag and any open admin
+     * notice. Called when the gap closes (rebuild caught up) or directly
+     * from `createRedirectsForViewHitsTable()` after a successful rebuild.
+     *
+     * @return void
+     */
+    private function clearLogsHitsRollupStaleSignal(): void {
+        if (function_exists('delete_transient')) {
+            delete_transient(self::HITS_TABLE_FIRST_STALE_DETECTED_FLAG);
+            delete_transient(self::HITS_TABLE_STALE_NOTICE_TRANSIENT);
+            return;
+        }
+        if (function_exists('delete_option')) {
+            delete_option(self::HITS_TABLE_FIRST_STALE_DETECTED_FLAG);
+            delete_option(self::HITS_TABLE_STALE_NOTICE_TRANSIENT);
+        }
+    }
+
+    /**
+     * Set a deduplicated admin notice that the cron-driven rollup rebuild
+     * has not been advancing. Same 24h dedup TTL as the sibling
+     * view-build cron-stuck notices so the broken-cron notice family
+     * shares a consistent lifecycle.
+     *
+     * @param int $ageSeconds How long the rollup has been behind.
+     * @return void
+     */
+    private function setLogsHitsRollupStaleNotice(int $ageSeconds): void {
+        if (!function_exists('set_transient')) {
+            return;
+        }
+        $key = self::HITS_TABLE_STALE_NOTICE_TRANSIENT;
+        if (function_exists('get_transient') && get_transient($key) !== false) {
+            return; // dedup window still active
+        }
+        $hours = max(1, intval(floor($ageSeconds / 3600)));
+        $template = $this->localizeOrDefaultViewBuildNotice(
+            'The 404 Solution redirects-hits rollup has been behind MAX(logsv2.id) '
+            . 'for at least %d hour(s). The cron-driven rebuild event '
+            . '(abj404_updateLogsHitsTableAction) does not appear to be firing, so '
+            . 'the redirects list will show stale "hits" and "last hit" columns '
+            . 'until cron resumes. To resolve: if DISABLE_WP_CRON is set in '
+            . 'wp-config.php either remove it, or configure a system cron job '
+            . 'that requests wp-cron.php periodically. To force a rebuild right '
+            . 'now in your browser, open the 404 Solution Redirects page with '
+            . '?abj404_force_view_rebuild=1 appended to the URL.'
+        );
+        $payload = array(
+            'type'         => 'logs_hits_rollup_stale',
+            'message'      => sprintf($template, $hours),
+            'timestamp'    => time(),
+            'error_string' => '',
+            'age_hours'    => $hours,
+        );
+        // allow-cache-empty: intentional notice payload; error_string is empty by definition for stale-rollup state.
+        set_transient($key, $payload, 86400);
+    }
+
     /** @return bool */
     function hitsTableNeedsRebuild() {
         $storedMaxId = $this->getStoredMaxLogId();
@@ -231,6 +339,12 @@ trait ABJ_404_Solution_DataAccess_LogsHitsRebuildTrait {
         );
         $this->executeAsTransaction($statements);
         $this->setRuntimeFlag(self::HITS_TABLE_LAST_REFRESHED_FLAG, time(), 86400);
+        // Self-heal the broken-cron diagnostic: a successful rebuild means
+        // the cron event fired and the rollup is current, so any earlier
+        // "rollup is stale" admin notice (and the first-detected flag that
+        // produced it) is obsolete and should not linger for the full 24h
+        // dedup TTL.
+        $this->clearLogsHitsRollupStaleSignal();
         $wasRefreshed = true;
 
         $this->logger->debugMessage(__FUNCTION__ . " refreshed " . $finalDestTable . " in " . $elapsedTime .
