@@ -3772,3 +3772,15 @@ msgstr "Sumber permintaan dukungan tidak valid."
 #: includes/ajax/Ajax_SupportRequest.php
 msgid "Failed to send support request. Please try again later."
 msgstr "Gagal mengirim permintaan dukungan. Silakan coba lagi nanti."
+
+#: includes/ViewTrait_Settings.php
+msgid "Need help? Contact the developer"
+msgstr "Butuh bantuan? Hubungi pengembang"
+
+#: includes/ViewTrait_Settings.php
+msgid "Having trouble? Send your debug log to the developer. This sends a one-time diagnostic report (URLs, PHP/WP/DB versions, a debug log excerpt, active plugins, site URL) so we can diagnose the issue without asking you to copy-paste anything."
+msgstr "Mengalami masalah? Kirim log debug Anda ke pengembang. Ini mengirim laporan diagnostik sekali pakai (URL, versi PHP/WP/DB, cuplikan log debug, plugin aktif, URL situs) sehingga kami dapat mendiagnosis masalahnya tanpa meminta Anda menyalin-tempel apa pun."
+
+#: includes/WordPress_Connector.php
+msgid "Send debug log to developer"
+msgstr "Kirim log debug ke pengembang"

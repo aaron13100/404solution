@@ -3777,3 +3777,15 @@ msgstr "Ungültige Quelle der Supportanfrage."
 #: includes/ajax/Ajax_SupportRequest.php
 msgid "Failed to send support request. Please try again later."
 msgstr "Supportanfrage konnte nicht gesendet werden. Bitte versuchen Sie es später erneut."
+
+#: includes/ViewTrait_Settings.php
+msgid "Need help? Contact the developer"
+msgstr "Brauchen Sie Hilfe? Wenden Sie sich an den Entwickler"
+
+#: includes/ViewTrait_Settings.php
+msgid "Having trouble? Send your debug log to the developer. This sends a one-time diagnostic report (URLs, PHP/WP/DB versions, a debug log excerpt, active plugins, site URL) so we can diagnose the issue without asking you to copy-paste anything."
+msgstr "Probleme? Senden Sie Ihr Debug-Protokoll an den Entwickler. Dies sendet einmalig einen Diagnosebericht (URLs, PHP/WP/DB-Versionen, Auszug aus dem Debug-Protokoll, aktive Plugins, Website-URL), damit wir das Problem diagnostizieren können, ohne dass Sie etwas kopieren und einfügen müssen."
+
+#: includes/WordPress_Connector.php
+msgid "Send debug log to developer"
+msgstr "Debug-Protokoll an Entwickler senden"

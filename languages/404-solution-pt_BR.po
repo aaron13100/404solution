@@ -3779,3 +3779,15 @@ msgstr "Origem da solicitação de suporte inválida."
 #: includes/ajax/Ajax_SupportRequest.php
 msgid "Failed to send support request. Please try again later."
 msgstr "Falha ao enviar a solicitação de suporte. Por favor, tente novamente mais tarde."
+
+#: includes/ViewTrait_Settings.php
+msgid "Need help? Contact the developer"
+msgstr "Precisa de ajuda? Entre em contato com o desenvolvedor"
+
+#: includes/ViewTrait_Settings.php
+msgid "Having trouble? Send your debug log to the developer. This sends a one-time diagnostic report (URLs, PHP/WP/DB versions, a debug log excerpt, active plugins, site URL) so we can diagnose the issue without asking you to copy-paste anything."
+msgstr "Está com problemas? Envie seu log de depuração para o desenvolvedor. Isso envia um relatório de diagnóstico único (URLs, versões do PHP/WP/DB, um trecho do log de depuração, plugins ativos, URL do site) para que possamos diagnosticar o problema sem precisar pedir para você copiar e colar nada."
+
+#: includes/WordPress_Connector.php
+msgid "Send debug log to developer"
+msgstr "Enviar log de depuração para o desenvolvedor"

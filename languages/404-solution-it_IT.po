@@ -3776,3 +3776,15 @@ msgstr "Origine della richiesta di assistenza non valida."
 #: includes/ajax/Ajax_SupportRequest.php
 msgid "Failed to send support request. Please try again later."
 msgstr "Impossibile inviare la richiesta di assistenza. Riprova più tardi."
+
+#: includes/ViewTrait_Settings.php
+msgid "Need help? Contact the developer"
+msgstr "Hai bisogno di aiuto? Contatta lo sviluppatore"
+
+#: includes/ViewTrait_Settings.php
+msgid "Having trouble? Send your debug log to the developer. This sends a one-time diagnostic report (URLs, PHP/WP/DB versions, a debug log excerpt, active plugins, site URL) so we can diagnose the issue without asking you to copy-paste anything."
+msgstr "Hai problemi? Invia il tuo log di debug allo sviluppatore. Questo invia un rapporto diagnostico una tantum (URL, versioni PHP/WP/DB, un estratto del log di debug, plugin attivi, URL del sito) così possiamo diagnosticare il problema senza chiederti di copiare e incollare nulla."
+
+#: includes/WordPress_Connector.php
+msgid "Send debug log to developer"
+msgstr "Invia il log di debug allo sviluppatore"

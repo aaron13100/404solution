@@ -3785,3 +3785,15 @@ msgstr "无效的支持请求来源。"
 #: includes/ajax/Ajax_SupportRequest.php
 msgid "Failed to send support request. Please try again later."
 msgstr "支持请求发送失败。请稍后重试。"
+
+#: includes/ViewTrait_Settings.php
+msgid "Need help? Contact the developer"
+msgstr "需要帮助？请联系开发者"
+
+#: includes/ViewTrait_Settings.php
+msgid "Having trouble? Send your debug log to the developer. This sends a one-time diagnostic report (URLs, PHP/WP/DB versions, a debug log excerpt, active plugins, site URL) so we can diagnose the issue without asking you to copy-paste anything."
+msgstr "遇到问题？将调试日志发送给开发者。这将发送一份一次性的诊断报告（包含网址、PHP/WP/数据库版本、调试日志摘录、已启用插件、站点网址），以便我们诊断问题，无需您复制粘贴任何内容。"
+
+#: includes/WordPress_Connector.php
+msgid "Send debug log to developer"
+msgstr "将调试日志发送给开发者"

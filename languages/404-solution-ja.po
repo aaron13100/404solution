@@ -3792,3 +3792,15 @@ msgstr "サポートリクエストの送信元が無効です。"
 #: includes/ajax/Ajax_SupportRequest.php
 msgid "Failed to send support request. Please try again later."
 msgstr "サポートリクエストの送信に失敗しました。後ほどもう一度お試しください。"
+
+#: includes/ViewTrait_Settings.php
+msgid "Need help? Contact the developer"
+msgstr "お困りですか？開発者にお問い合わせください"
+
+#: includes/ViewTrait_Settings.php
+msgid "Having trouble? Send your debug log to the developer. This sends a one-time diagnostic report (URLs, PHP/WP/DB versions, a debug log excerpt, active plugins, site URL) so we can diagnose the issue without asking you to copy-paste anything."
+msgstr "お困りですか？デバッグログを開発者に送信してください。一度限りの診断レポート（URL、PHP/WP/DBのバージョン、デバッグログの抜粋、有効なプラグイン、サイトURL）が送信されるため、コピーやペーストをお願いすることなく問題を診断できます。"
+
+#: includes/WordPress_Connector.php
+msgid "Send debug log to developer"
+msgstr "デバッグログを開発者に送信"

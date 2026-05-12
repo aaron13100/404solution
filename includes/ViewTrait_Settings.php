@@ -125,6 +125,31 @@ trait ViewTrait_Settings {
                 $abj404view->getCardIcon('document')
             );
 
+            // "Need help?" support-request section. Anchored at
+            // #abj404-support-request so the plugins-page row action
+            // (which appends that fragment) lands the admin right here
+            // and the JS component auto-opens the modal on arrival.
+            // Lives on the plugin's own Settings page so it does not
+            // violate CLAUDE.md Self-Healing §4 (no support buttons
+            // on screens outside abj404_solution).
+            $supportButton = class_exists('ABJ_404_Solution_SupportRequestButton')
+                ? ABJ_404_Solution_SupportRequestButton::render('settings_debug')
+                : '';
+            $supportSectionHtml = '<div id="abj404-support-request">'
+                . '<p>'
+                . esc_html__('Having trouble? Send your debug log to the developer. This sends a one-time diagnostic report (URLs, PHP/WP/DB versions, a debug log excerpt, active plugins, site URL) so we can diagnose the issue without asking you to copy-paste anything.', '404-solution')
+                . '</p>'
+                . $supportButton
+                . '</div>';
+            $abj404view->echoOptionsSection(
+                "abj404-support-request-section",
+                "abj404-support-request-section",
+                __('Need help? Contact the developer', '404-solution'),
+                $supportSectionHtml,
+                true,
+                $abj404view->getCardIcon('lightbulb')
+            );
+
             $contentAdvancedSystem = $abj404view->getAdminOptionsPageAdvancedSystem($options);
             $abj404view->echoOptionsSection(
                 "abj404-advanced-system",

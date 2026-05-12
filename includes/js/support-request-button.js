@@ -482,9 +482,20 @@
      * Auto-mount every .abj404-support-request-mount on the page using
      * its data-* attributes. Idempotent: a div that already has a
      * mounted button is skipped.
+     *
+     * After mounting, applies the URL-driven auto-open behavior: when
+     * the request arrives at the plugin's Settings or degraded-admin
+     * screen with `?abj404_support_open=1` (and optional
+     * `abj404_support_trigger=<slug>`), the matching mount's modal is
+     * opened immediately. This is how the Plugins-page row action and
+     * other deep links land the user directly on the support modal.
      */
     function mountAll() {
         var mounts = document.querySelectorAll(SELECTOR);
+        var firstMountedController = null;
+        var triggerMatchController = null;
+        var requestedTrigger = readAutoOpenTrigger();
+        var shouldAutoOpen = autoOpenRequested();
         for (var i = 0; i < mounts.length; i++) {
             var node = mounts[i];
             if (node.getAttribute('data-abj404-srb-mounted') === '1') {
@@ -492,9 +503,67 @@
             }
             var triggeredFrom = node.getAttribute('data-triggered-from') || '';
             var contextSummary = node.getAttribute('data-context-summary') || '';
-            mount(node, { triggered_from: triggeredFrom, context_summary: contextSummary });
+            var controller = mount(node, { triggered_from: triggeredFrom, context_summary: contextSummary });
             node.setAttribute('data-abj404-srb-mounted', '1');
+            if (!firstMountedController) {
+                firstMountedController = controller;
+            }
+            if (requestedTrigger && triggeredFrom === requestedTrigger && !triggerMatchController) {
+                triggerMatchController = controller;
+            }
         }
+        if (shouldAutoOpen) {
+            var target = triggerMatchController || firstMountedController;
+            if (target && typeof target.openModal === 'function') {
+                target.openModal();
+            }
+        }
+    }
+
+    /**
+     * Returns true when the current URL signals that a support modal
+     * should auto-open on page load. Two signals:
+     *   - query arg `abj404_support_open=1` (durable across refresh)
+     *   - fragment `#abj404-support-request` (anchor target on the
+     *     Settings page, so the section is in view AND the modal opens)
+     */
+    function autoOpenRequested() {
+        try {
+            var loc = window.location || {};
+            var search = String(loc.search || '');
+            if (search.indexOf('abj404_support_open=1') !== -1) {
+                return true;
+            }
+            var hash = String(loc.hash || '');
+            if (hash === '#abj404-support-request') {
+                return true;
+            }
+        // allow-silent-catch: defensive guard for non-browser test harnesses where window.location is mocked or absent; auto-open is a UX nicety and must never throw on the boot path
+        } catch (e) {
+            return false;
+        }
+        return false;
+    }
+
+    /**
+     * Optional trigger slug hint from the deep link. When present we
+     * prefer the matching mount (`data-triggered-from`) over the first
+     * one on the page, so a row-action click that says "I came from the
+     * plugins page" opens the mount marked as plugins_row_action.
+     */
+    function readAutoOpenTrigger() {
+        try {
+            var loc = window.location || {};
+            var search = String(loc.search || '');
+            var match = search.match(/[?&]abj404_support_trigger=([^&#]+)/);
+            if (match) {
+                return decodeURIComponent(match[1]);
+            }
+        // allow-silent-catch: defensive guard for non-browser test harnesses where window.location is mocked or absent; trigger hint is optional and must never throw on the boot path
+        } catch (e) {
+            return '';
+        }
+        return '';
     }
 
     window.ABJ404 = window.ABJ404 || {};

@@ -333,6 +333,20 @@ if (!function_exists('abj404_shortCodeListener')) {
 				$inc . 'FrontendRequestPipeline.php',
 				$inc . 'ImportExportService.php',
 				$inc . 'QueryBudgetInstrumentation.php',
+				// Support-request button + AJAX. Listed here so that a
+				// corrupt install which lost any of these files is
+				// surfaced to the admin (the "missing files" list on
+				// the degraded admin page is what tells the user what
+				// to re-upload). The degraded admin page itself uses
+				// these files when present to render the in-page
+				// support button.
+				$inc . 'SupportRequestButton.php',
+				$inc . 'FeedbackTransport.php',
+				$inc . 'ajax/AjaxSecurityTrait.php',
+				$inc . 'ajax/Ajax_SupportRequest.php',
+				$inc . 'ajax/Ajax_SupportRequestPreview.php',
+				$inc . 'ajax/SupportRequest.js',
+				$inc . 'js/support-request-button.js',
 				// View + traits
 				$inc . 'View.php',
 				$inc . 'ViewTrait_Shared.php',
@@ -632,13 +646,115 @@ if ($GLOBALS['abj404_boot_ok']) {
 		}, 1);
 	}
 } elseif (function_exists('is_admin') && is_admin()) {
-	// Boot failed — register degraded admin page so the admin sees instructions
+	// Boot failed. Register degraded admin page so the admin sees instructions
 	// instead of a white screen or missing menu item.
 	add_action('admin_menu', 'abj404_degraded_admin_menu');
 	add_action('admin_notices', 'abj404_degraded_admin_notice');
+	// Best-effort: wire the support-request flow even on the degraded
+	// boot path so an admin who lands here can still send a debug report.
+	// This is the most valuable placement for the button, because the user
+	// often cannot reach the normal plugin UI from this screen. Deferred
+	// to plugins_loaded so the function (defined below) is available
+	// regardless of source-order; PHP does not hoist function definitions
+	// out of conditional blocks.
+	if (function_exists('add_action')) {
+		add_action('plugins_loaded', 'abj404_degraded_register_support_request');
+	}
 }
 
 // --- Degraded-mode functions (always defined, no plugin class dependencies) ---
+
+if (!function_exists('abj404_degraded_register_support_request')) {
+	/**
+	 * Wire the support-request flow on the degraded boot path so an admin
+	 * stuck on the corrupt-install screen can still send a debug log. The
+	 * normal registration runs inside WordPress_Connector::registerAdminHooks()
+	 * which only executes on a successful boot; without this helper, the
+	 * AJAX handler that the modal POSTs to does not exist on the degraded
+	 * path and the click silently 400s.
+	 *
+	 * Strictly best-effort. Every step is guarded with file_exists() and
+	 * class_exists() so a corrupted install that is missing any of the
+	 * support-request files just falls back to the mailto link in the
+	 * degraded admin page. We must not throw a fatal here, because we
+	 * already ARE on the degraded path.
+	 *
+	 * @return void
+	 */
+	function abj404_degraded_register_support_request() {
+		$inc = ABJ404_PATH . 'includes/';
+		$supportFiles = array(
+			$inc . 'ajax/AjaxSecurityTrait.php',
+			$inc . 'FeedbackTransport.php',
+			$inc . 'SupportRequestButton.php',
+			$inc . 'ajax/Ajax_SupportRequest.php',
+			$inc . 'ajax/Ajax_SupportRequestPreview.php',
+		);
+		foreach ($supportFiles as $file) {
+			if (!file_exists($file)) {
+				return;
+			}
+		}
+		try {
+			foreach ($supportFiles as $file) {
+				require_once $file;
+			}
+		// allow-silent-catch: degraded boot path. If any of the support-request files compile-fatals on require we want to fall through to the mailto fallback rather than crash the corrupt-install screen the user is here to read.
+		} catch (\Throwable $e) {
+			return;
+		}
+		if (!class_exists('ABJ_404_Solution_Ajax_SupportRequest')
+			|| !class_exists('ABJ_404_Solution_Ajax_SupportRequestPreview')) {
+			return;
+		}
+		// Register the AJAX handlers directly. The normal init() path goes
+		// through ABJ_404_Solution_WPUtils::safeAddAction() but that helper
+		// may itself be missing on a corrupt install; falling back to
+		// add_action() avoids that dependency.
+		$supportInstance = ABJ_404_Solution_Ajax_SupportRequest::getInstance();
+		$previewInstance = ABJ_404_Solution_Ajax_SupportRequestPreview::getInstance();
+		add_action('wp_ajax_abj404_support_request', array($supportInstance, 'handleRequest'));
+		add_action('wp_ajax_abj404_support_request_preview', array($previewInstance, 'handleRequest'));
+		// Enqueue the JS assets on the degraded admin page only. Using a
+		// closure keeps this self-contained without registering a new
+		// global function on the corrupted boot path.
+		add_action('admin_enqueue_scripts', function($hook) use ($inc) {
+			$ppSlug = defined('ABJ404_PP') ? ABJ404_PP : 'abj404_solution';
+			$isOurPage = is_string($hook) && (
+				strpos($hook, $ppSlug) !== false
+				|| strpos($hook, 'abj404_solution') !== false
+			);
+			if (!$isOurPage) {
+				return;
+			}
+			$clientJs = $inc . 'ajax/SupportRequest.js';
+			$buttonJs = $inc . 'js/support-request-button.js';
+			if (!file_exists($clientJs) || !file_exists($buttonJs)) {
+				return;
+			}
+			$baseUrl = plugin_dir_url(__FILE__) . 'includes/';
+			$ver = defined('ABJ404_VERSION') ? ABJ404_VERSION : (string)time();
+			wp_enqueue_script('abj404-support-request-client',
+				$baseUrl . 'ajax/SupportRequest.js', array(), $ver, true);
+			wp_enqueue_script('abj404-support-request-button',
+				$baseUrl . 'js/support-request-button.js',
+				array('abj404-support-request-client'), $ver, true);
+			$supportNonce = wp_create_nonce(ABJ_404_Solution_Ajax_SupportRequest::NONCE_ACTION);
+			$previewNonce = wp_create_nonce(ABJ_404_Solution_Ajax_SupportRequestPreview::NONCE_ACTION);
+			$ajaxUrl = admin_url('admin-ajax.php');
+			$payload = wp_json_encode(array(
+				'ajaxurl' => $ajaxUrl,
+				'nonces' => array(
+					'support_request' => $supportNonce,
+					'support_request_preview' => $previewNonce,
+				),
+			));
+			$bootstrap = 'window.ABJ404=window.ABJ404||{};Object.assign(window.ABJ404,'
+				. (is_string($payload) ? $payload : '{}') . ');';
+			wp_add_inline_script('abj404-support-request-client', $bootstrap, 'before');
+		});
+	}
+}
 
 if (!function_exists('abj404_degraded_admin_menu')) {
 	/** @return void */
@@ -741,6 +857,51 @@ if (!function_exists('abj404_degraded_admin_page')) {
 		echo '</li>';
 		echo '<li>Activate the fresh copy. Your redirects and settings are stored in the database and will not be lost.</li>';
 		echo '</ol>';
+		echo '</div>';
+
+		// Support-request card. This is the most valuable placement for
+		// the "Send debug log to developer" button: an admin who reached
+		// this screen needs help and may not be able to navigate the
+		// normal plugin UI. When the SupportRequestButton class is
+		// present (most corruption is partial), render the mount div so
+		// the JS component can take over. Always emit a mailto fallback
+		// underneath in case the JS files are themselves among the
+		// missing files.
+		echo '<div class="card" style="max-width:800px;">';
+		echo '<h2>Need help? Contact the developer</h2>';
+		echo '<p>Send the developer a one-time diagnostic report including the missing-file list above. Your redirects and settings are not shared.</p>';
+		$missingCount = is_array($missingFiles) ? count($missingFiles) : 0;
+		$contextSummary = 'Corrupt install: ' . $missingCount . ' missing file(s)';
+		$bootErrorForSummary = is_scalar($bootError) ? (string)$bootError : '';
+		if ($bootErrorForSummary !== '') {
+			$contextSummary .= '. Boot error: ' . substr($bootErrorForSummary, 0, 200);
+		}
+		if (class_exists('ABJ_404_Solution_SupportRequestButton')) {
+			echo ABJ_404_Solution_SupportRequestButton::render('system_corrupt_install', $contextSummary);
+		}
+		$mailEmail = defined('ABJ404_AUTHOR_EMAIL') ? (string)ABJ404_AUTHOR_EMAIL : '404solution@ajexperience.com';
+		$mailSubject = rawurlencode('404 Solution: corrupt install report');
+		$homeUrlText = '(unknown)';
+		if (function_exists('home_url')) {
+			$homeUrlVal = home_url();
+			$homeUrlText = is_string($homeUrlVal) ? $homeUrlVal : '(unknown)';
+		}
+		$missingFileLines = '';
+		if (is_array($missingFiles)) {
+			$stringMissingFiles = array();
+			foreach ($missingFiles as $entry) {
+				$stringMissingFiles[] = is_scalar($entry) ? (string)$entry : '';
+			}
+			$missingFileLines = implode("\n", $stringMissingFiles);
+		}
+		$bootErrorText = is_scalar($bootError) ? (string)$bootError : '';
+		$mailBody = rawurlencode("Site URL: " . $homeUrlText . "\n"
+			. "Missing files (" . (int)$missingCount . "):\n"
+			. $missingFileLines
+			. "\n\nBoot error:\n" . $bootErrorText);
+		echo '<p style="margin-top:8px;">Or email manually: ';
+		echo '<a href="mailto:' . esc_attr($mailEmail) . '?subject=' . $mailSubject . '&body=' . $mailBody . '">';
+		echo esc_html($mailEmail) . '</a></p>';
 		echo '</div>';
 
 		echo '</div>'; // .wrap

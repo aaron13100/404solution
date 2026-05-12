@@ -3808,3 +3808,15 @@ msgstr "مصدر طلب الدعم غير صالح."
 #: includes/ajax/Ajax_SupportRequest.php
 msgid "Failed to send support request. Please try again later."
 msgstr "فشل إرسال طلب الدعم. يُرجى المحاولة مرة أخرى لاحقًا."
+
+#: includes/ViewTrait_Settings.php
+msgid "Need help? Contact the developer"
+msgstr "هل تحتاج إلى مساعدة؟ تواصل مع المطور"
+
+#: includes/ViewTrait_Settings.php
+msgid "Having trouble? Send your debug log to the developer. This sends a one-time diagnostic report (URLs, PHP/WP/DB versions, a debug log excerpt, active plugins, site URL) so we can diagnose the issue without asking you to copy-paste anything."
+msgstr "هل تواجه مشكلة؟ أرسل سجل التصحيح إلى المطور. يتم إرسال تقرير تشخيصي لمرة واحدة (روابط URL، إصدارات PHP/WP/DB، مقتطف من سجل التصحيح، الإضافات المفعلة، رابط الموقع) حتى نتمكن من تشخيص المشكلة دون أن نطلب منك نسخ ولصق أي شيء."
+
+#: includes/WordPress_Connector.php
+msgid "Send debug log to developer"
+msgstr "أرسل سجل التصحيح إلى المطور"

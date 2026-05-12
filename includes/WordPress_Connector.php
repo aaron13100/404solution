@@ -759,6 +759,22 @@ class ABJ_404_Solution_WordPress_Connector {
         $subject = rawurlencode('Feedback: 404 Solution');
         $links[] = '<a href="mailto:' . esc_attr($email) . '?subject=' . $subject . '">'
             . esc_html__('Send Feedback', '404-solution') . '</a>';
+
+        // "Send debug log to developer" row action. Sends the admin to the
+        // plugin's Settings page anchored at the support-request section so
+        // the modal auto-opens. Lives under plugin_row_meta (not
+        // plugin_action_links) so it sits in the secondary row with the
+        // existing Send Feedback link. The auto-open behavior is driven
+        // by the abj404_support_open=1 query arg so a user landing
+        // on Settings via this row action immediately sees the modal,
+        // and abj404_support_trigger pins the originating screen for the
+        // server-side audit log.
+        $supportUrl = admin_url('options-general.php?page=' . ABJ404_PP
+            . '&subpage=abj404_options'
+            . '&abj404_support_open=1&abj404_support_trigger=plugins_row_action'
+            . '#abj404-support-request');
+        $links[] = '<a href="' . esc_url($supportUrl) . '">'
+            . esc_html__('Send debug log to developer', '404-solution') . '</a>';
         return $links;
     }
 

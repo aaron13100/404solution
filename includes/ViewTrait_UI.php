@@ -9,7 +9,45 @@ if (!defined('ABSPATH')) {
  */
 trait ViewTrait_UI {
 
-	/** Get the text to notify the user when some URLs have been captured and need attention. 
+    /**
+     * Render an error notice (notice notice-error) on a plugin admin page
+     * with the "Send debug log to developer" support button appended inside
+     * the same notice block. This is the wrapper for the existing
+     * <div class="notice notice-error"> pattern across the plugin so every
+     * user-facing error notice on a plugin screen ships a one-click way to
+     * report the failure.
+     *
+     * The button mount div renders after the message paragraph so the JS
+     * component bootstraps it on DOMContentLoaded. The trigger source is
+     * allowlisted server-side by Ajax_SupportRequest::ALLOWED_TRIGGER_SOURCES;
+     * passing a slug not in that list will render a button that 400s on
+     * click. The integration test pins the matching set.
+     *
+     * Only call this from screens that live under the plugin's own pages
+     * (CLAUDE.md Self-Healing §4 bans support buttons on generic wp-admin
+     * notices).
+     *
+     * @param string      $messageHtml    Pre-escaped/-allowed inner HTML
+     *                                    for the <p> inside the notice.
+     *                                    Callers escape per their own
+     *                                    needs (esc_html / wp_kses_post).
+     * @param string      $triggeredFrom  One of
+     *   ABJ_404_Solution_Ajax_SupportRequest::ALLOWED_TRIGGER_SOURCES.
+     * @param string|null $contextSummary Optional one-line summary shown
+     *   in the support-request modal.
+     * @return string Notice HTML, ready to echo.
+     */
+    public static function renderErrorNoticeWithSupportButton(string $messageHtml,
+            string $triggeredFrom, ?string $contextSummary = null): string {
+        $buttonHtml = class_exists('ABJ_404_Solution_SupportRequestButton')
+            ? ABJ_404_Solution_SupportRequestButton::render($triggeredFrom, $contextSummary)
+            : '';
+        return '<div class="notice notice-error"><p>' . $messageHtml . '</p>'
+            . $buttonHtml
+            . '</div>';
+    }
+
+	/** Get the text to notify the user when some URLs have been captured and need attention.
      * @param int $captured the number of captured URLs
      * @return string html
      */
@@ -43,14 +81,23 @@ trait ViewTrait_UI {
 
                 echo '<div class="wrap">';
                 echo '<h1>' . esc_html(PLUGIN_NAME) . '</h1>';
-                echo '<div class="notice notice-error"><p>';
-                echo '<strong>' . esc_html__('Permission denied.', '404-solution') . '</strong> ';
-                echo esc_html__('Your user account does not have permission to access this page.', '404-solution');
-                echo '</p><p>';
-                echo esc_html__('Please verify that your WordPress role has the', '404-solution') . ' ';
-                echo '<code>manage_options</code> ' . esc_html__('capability.', '404-solution') . ' ';
-                echo esc_html__('If you have a security plugin installed, it may be restricting access to this page.', '404-solution');
-                echo '</p></div></div>';
+                $permMessage = '<strong>' . esc_html__('Permission denied.', '404-solution') . '</strong> '
+                    . esc_html__('Your user account does not have permission to access this page.', '404-solution')
+                    . '</p><p>'
+                    . esc_html__('Please verify that your WordPress role has the', '404-solution') . ' '
+                    . '<code>manage_options</code> ' . esc_html__('capability.', '404-solution') . ' '
+                    . esc_html__('If you have a security plugin installed, it may be restricting access to this page.', '404-solution');
+                $subpageForContext = is_object($instance->dao) && method_exists($instance->dao, 'getPostOrGetSanitize')
+                    ? (string)$instance->dao->getPostOrGetSanitize('subpage') : '';
+                $triggerForPerm = ($subpageForContext === 'abj404_captured')
+                    ? 'captured_404s_page' : 'redirects_page';
+                echo self::renderErrorNoticeWithSupportButton(
+                    $permMessage,
+                    $triggerForPerm,
+                    'Permission denied on plugin admin page (action=' .
+                        ($action == '' ? '(none)' : $action) . ')'
+                );
+                echo '</div>';
                 return;
             }
 
@@ -80,13 +127,23 @@ trait ViewTrait_UI {
         } catch (\Throwable $e) {
             $encodedEx = json_encode($e);
             $instance->logger->errorMessage("Caught exception: " . stripcslashes(wp_kses_post(is_string($encodedEx) ? $encodedEx : '')));
+            $subpageForContext = is_object($instance->dao) && method_exists($instance->dao, 'getPostOrGetSanitize')
+                ? (string)$instance->dao->getPostOrGetSanitize('subpage') : '';
+            $triggerForRenderError = ($subpageForContext === 'abj404_captured')
+                ? 'captured_404s_page' : 'redirects_page';
+            $renderErrorMessage = '<strong>404 Solution:</strong> An error occurred while rendering this page.</p>'
+                . '<details><summary>Show error details</summary>'
+                . '<pre style="white-space:pre-wrap;word-break:break-all;max-width:100%;margin:6px 0;">'
+                . esc_html($e->getMessage() . "\n" . $e->getTraceAsString())
+                . '</pre>'
+                . '</details>'
+                . '<p>';
             echo '<div class="wrap">';
-            echo '<div class="notice notice-error">';
-            echo '<p><strong>404 Solution:</strong> An error occurred while rendering this page.</p>';
-            echo '<details><summary>Show error details</summary>';
-            echo '<pre style="white-space:pre-wrap;word-break:break-all;max-width:100%;margin:6px 0;">' . esc_html($e->getMessage() . "\n" . $e->getTraceAsString()) . '</pre>';
-            echo '</details>';
-            echo '</div>';
+            echo self::renderErrorNoticeWithSupportButton(
+                $renderErrorMessage,
+                $triggerForRenderError,
+                'Render error: ' . substr($e->getMessage(), 0, 200)
+            );
             echo '</div>';
         }
     }
