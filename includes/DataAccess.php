@@ -198,6 +198,16 @@ class ABJ_404_Solution_DataAccess {
     /** Cache TTL in seconds (24 hours - safety net, primary refresh is event-driven invalidation) */
     const STATUS_CACHE_TTL = 86400;
 
+    /**
+     * Short-TTL window used after a query timeout to break the
+     * "page reloads, page re-times-out" loop on slow hosts. 5 minutes is
+     * long enough that an admin browsing session does not re-pay the
+     * timeout cost, and short enough that once the scheduled hits-table
+     * rebuild completes, the next request after the window picks up the
+     * rebuilt rollup. See getHighImpactCapturedCount() self-heal branch.
+     */
+    const STATUS_CACHE_TIMEOUT_SELFHEAL_TTL = 300;
+
     /** Maximum number of regex redirects to cache per-request (memory guard) */
     const REGEX_CACHE_MAX_COUNT = 50;
 
@@ -867,6 +877,7 @@ class ABJ_404_Solution_DataAccess {
             || $this->isDeadlockOrLockTimeoutError($errorText)
             || $this->isGaleraConflictError($errorText)
             || $this->isTransientConnectionError($errorText)
+            || $this->isQueryTimeoutError($errorText)
             || $this->isAccessDeniedError($errorText);
     }
 
@@ -1141,9 +1152,15 @@ class ABJ_404_Solution_DataAccess {
 
         // Query timeout (MySQL errno 3024 / MariaDB errno 1969): log the slow
         // query so it appears in debug reports, then return empty results.
+        // Logged at WARN, not ERROR. Timeouts are a host max_statement_time
+        // limit (server-side issue, not a plugin bug). Every caller checks
+        // $result['timed_out'] for graceful fallback. errorMessage() would
+        // trigger the daily developer email digest. Bruno's site
+        // (showmetech.com.br, ~285K captured 404s) emailed every time
+        // getHighImpactCapturedCount() exceeded 60s.
         if ($result['last_error'] !== '' && $this->isQueryTimeoutError($result['last_error'])) {
             $sqlInfo = (defined('WP_DEBUG') && WP_DEBUG) ? $query : $this->extractSqlFilename($query);
-            $this->logger->errorMessage(
+            $this->logger->warn(
                 'Query timed out after ' . $timeoutSeconds . 's. ' .
                 'Query: ' . substr(preg_replace('/\s+/', ' ', trim($sqlInfo)) ?? $sqlInfo, 0, 500)
             );
@@ -1284,6 +1301,7 @@ class ABJ_404_Solution_DataAccess {
      */
     private function setRuntimeFlag(string $key, $value, int $ttlSeconds): void {
         if (function_exists('set_transient')) {
+            // allow-cache-empty: passthrough helper. Callers store admin-notice payloads, cooldown timestamps, and lock-state markers, not query results.
             set_transient($key, $value, $ttlSeconds);
             return;
         }

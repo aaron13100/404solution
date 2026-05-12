@@ -61,6 +61,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
             $this->isDeadlockOrLockTimeoutError($errorText) ||
             $this->isGaleraConflictError($errorText) ||
             $this->isTransientConnectionError($errorText) ||
+            $this->isQueryTimeoutError($errorText) ||
             $this->isAccessDeniedError($errorText)
         ) {
             $this->logger->warn("Server-side DB issue (handled): " . $errorText);
@@ -662,7 +663,14 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
                     return;
                 }
 
-                // Repair failed — now escalate to ERROR so it triggers email notification.
+                // Repair failed. Log at WARN, not ERROR. Per the self-healing
+                // philosophy in CLAUDE.md (item 4): "Notify if recovery fails ...
+                // Never send email." The admin notice set below is the user-facing
+                // surface, gated to the plugin's own admin page. errorMessage()
+                // triggers the daily email digest; warn() does not. Previously
+                // this site emailed the developer once per cooldown expiry (every
+                // 1h) for any permanently-broken table, which is the email-storm
+                // pattern Bruno's and the kstal-site logs both exhibit.
                 // Include the specific table that failed plus an explicit post-CREATE
                 // existence check so the debug log distinguishes "CREATE didn't materialize
                 // the table" (concurrency race, swallowed SQL error in queryAndGetResults,
@@ -672,12 +680,12 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
                     ? " Table: " . $missingTable . "."
                     : '';
                 $existenceContext = $tableStillMissing
-                    ? ' Table is still missing after CREATE TABLE ran — '
+                    ? ' Table is still missing after CREATE TABLE ran. '
                     . 'createDatabaseTables() did not materialize this table '
                     . '(likely a concurrent DROP, swallowed SQL error in queryAndGetResults, '
                     . 'or insufficient CREATE TABLE privileges).'
                     : '';
-                $this->logger->errorMessage("Missing plugin table auto-repair failed."
+                $this->logger->warn("Missing plugin table auto-repair failed."
                     . $tableContext
                     . $existenceContext
                     . " Original error: " . $originalSqlError
