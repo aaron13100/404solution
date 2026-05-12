@@ -69,39 +69,36 @@ class ABJ_404_Solution_Ajax_SuggestionPolling {
         $urlKey = md5($normalizedURL);
         $transientKey = 'abj404_suggest_' . $urlKey;
 
-        // Check transient for status
+        // Check transient for status. Normalize at the boundary: any
+        // raw-shape probing (status string check, started/created int
+        // coercion) lives in SuggestionTransient::fromRaw, not here.
         $dataRaw = get_transient($transientKey);
 
         if ($dataRaw === false) {
-            // Transient not found - computation may not have started
+            // Transient not found, computation may not have started
             wp_send_json(array('status' => 'not_found'));
             return; // @phpstan-ignore deadCode.unreachable
         }
 
-        /** @var array<string, mixed> $data */
-        $data = is_array($dataRaw) ? $dataRaw : array();
-
-        if (!isset($data['status'])) {
+        $transient = ABJ_404_Solution_SuggestionTransient::fromRaw($dataRaw);
+        if ($transient === null) {
             wp_send_json(array('status' => 'error', 'message' => 'Invalid transient data'), 500);
             return; // @phpstan-ignore deadCode.unreachable
         }
 
-        if ($data['status'] === 'pending') {
-            // Check if computation has been running too long (indicates worker crash)
-            // Worker claims work by setting started=time(), if still pending after 90s, it likely crashed
-            // Matches the worker recovery threshold in Ajax_SuggestionCompute.php:67
-            $startedAt = (isset($data['started']) && is_scalar($data['started'])) ? (int)$data['started'] : 0;
-            $createdAt = (isset($data['created']) && is_scalar($data['created'])) ? (int)$data['created'] : 0;
-
-            if ($startedAt > 0 && (self::clock()->now() - $startedAt) > 90) {
-                // Computation started but hasn't completed in 90 seconds - worker likely crashed
+        if ($transient->isPending()) {
+            // Worker-recovery semantics live on the VO so each consumer doesn't
+            // re-derive the 90s / 15s windows. Matches Ajax_SuggestionCompute's
+            // claim window (the producer side of the same contract).
+            $now = self::clock()->now();
+            if ($transient->isWorkerStuck($now)) {
                 // Return 200 so the JS success handler catches it immediately (not error retry loop)
                 wp_send_json(array('status' => 'timeout', 'message' => 'Computation timed out'));
                 return; // @phpstan-ignore deadCode.unreachable
             }
 
-            if ($startedAt === 0 && $createdAt > 0 && (self::clock()->now() - $createdAt) > 15) {
-                // No worker has claimed work in 15 seconds - background dispatch likely failed
+            if ($transient->isDispatchStuck($now)) {
+                // No worker claimed within the dispatch window; background dispatch likely failed
                 // (common on single-threaded servers where wp_remote_post loopback fails)
                 wp_send_json(array('status' => 'timeout', 'message' => 'Worker failed to start'));
                 return; // @phpstan-ignore deadCode.unreachable
@@ -112,28 +109,19 @@ class ABJ_404_Solution_Ajax_SuggestionPolling {
             return; // @phpstan-ignore deadCode.unreachable
         }
 
-        if ($data['status'] === 'error') {
-            // Computation crashed - return error immediately with generic message
-            // Detailed error info is logged server-side, not exposed to frontend
+        if ($transient->isError()) {
+            // Computation crashed; return error immediately with generic message.
+            // Detailed error info is logged server-side, not exposed to frontend.
             wp_send_json(array('status' => 'error', 'message' => 'Suggestion computation failed'), 500);
             return; // @phpstan-ignore deadCode.unreachable
         }
 
-        if ($data['status'] === 'complete') {
-            // Suggestions ready - render HTML and return
-            // Use normalized URL to match how ShortCode processes URLs
-            $suggestionsData = (isset($data['suggestions']) && is_array($data['suggestions'])) ? $data['suggestions'] : array();
-            $html = ABJ_404_Solution_ShortCode::renderSuggestionsHTML(
-                $suggestionsData,
-                $normalizedURL
-            );
-            wp_send_json(array('status' => 'complete', 'html' => $html));
-            return; // @phpstan-ignore deadCode.unreachable
-        }
-
-        // Unknown status
-        $statusVal = $data['status'];
-        $statusStr = is_string($statusVal) ? $statusVal : (is_scalar($statusVal) ? (string)$statusVal : 'unknown');
-        wp_send_json(array('status' => 'error', 'message' => 'Unknown status: ' . esc_html($statusStr)), 500);
+        // Suggestions ready (isComplete by elimination, status enum is closed).
+        // Use normalized URL to match how ShortCode processes URLs.
+        $html = ABJ_404_Solution_ShortCode::renderSuggestionsHTML(
+            $transient->getSuggestionsPacket(),
+            $normalizedURL
+        );
+        wp_send_json(array('status' => 'complete', 'html' => $html));
     }
 }

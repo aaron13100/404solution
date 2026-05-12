@@ -96,55 +96,52 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
         $urlKey = md5($normalizedURL);
         $transientKey = 'abj404_suggest_' . $urlKey;
 
-        $existingRaw = get_transient($transientKey);
-        /** @var array<string, mixed>|false $existing */
-        $existing = is_array($existingRaw) ? $existingRaw : false;
+        $existing = ABJ_404_Solution_SuggestionTransient::fromRaw(get_transient($transientKey));
 
         $providedToken = isset($_POST['token']) ? sanitize_text_field($_POST['token']) : '';
 
         // Security: Require a valid token for ALL computation requests.
         // This prevents DoS attacks via direct calls to admin-ajax.php.
-        if (empty($existing) || !isset($existing['token'])) {
-            // No transient or no token stored - unauthorized direct call.
+        if ($existing === null || $existing->getToken() === '') {
+            // No transient or no token stored, unauthorized direct call.
             wp_die('Unauthorized');
         }
 
-        $storedToken = $existing['token'];
+        $storedToken = $existing->getToken();
 
-        $existingStatus = isset($existing['status']) && is_string($existing['status']) ? $existing['status'] : '';
-        if ($existingStatus === 'complete') {
+        if ($existing->isComplete()) {
             wp_die(); // Already done, nothing to do
         }
 
-        // Verify token matches — authenticates that request came from a legitimate trigger.
+        // Verify token matches: authenticates that request came from a legitimate trigger.
         if (empty($providedToken) || $providedToken !== $storedToken) {
             wp_die('Invalid token');
         }
 
-        // Check if we should compute or skip (handles duplicate workers)
-        // started=0 means no worker has claimed yet (trigger sets this)
-        // started>0 means a worker has claimed the work
-        if ($existingStatus === 'pending') {
-            $startedAt = isset($existing['started']) && is_scalar($existing['started']) ? (int)$existing['started'] : 0;
-
-            if ($startedAt === 0) {
-                // First worker - claim the work by setting started=time()
+        // Check if we should compute or skip (handles duplicate workers).
+        // isClaimed() = started > 0 (a worker claimed the work).
+        // isWorkerStuck() = claimed but > WORKER_STUCK_SECONDS old (presumed dead).
+        if ($existing->isPending()) {
+            if (!$existing->isClaimed()) {
+                // First worker, claim the work by setting started=now()
                 // TTL of 120s gives slow hosts enough time to complete computation
-                $existingUrl = isset($existing['url']) ? $existing['url'] : '';
-                $existingCreated = (isset($existing['created']) && is_scalar($existing['created'])) ? (int)$existing['created'] : self::clock()->now();
-                set_transient($transientKey, array(
-                    'status' => 'pending',
-                    'url' => $existingUrl,
-                    'started' => self::clock()->now(),  // Claim the work
-                    'created' => $existingCreated,  // Preserve creation timestamp
-                    'token' => $storedToken
-                ), 120);
+                $existingCreated = $existing->getCreatedAt() > 0 ? $existing->getCreatedAt() : self::clock()->now();
+                set_transient(
+                    $transientKey,
+                    ABJ_404_Solution_SuggestionTransient::pendingArray(
+                        $existing->getUrl(),
+                        $storedToken,
+                        self::clock()->now(),  // Claim the work
+                        $existingCreated       // Preserve creation timestamp
+                    ),
+                    120
+                );
                 // Proceed to compute
-            } elseif ((self::clock()->now() - $startedAt) < 90) {
-                // Another worker claimed recently and is still computing - skip
+            } elseif (!$existing->isWorkerStuck(self::clock()->now())) {
+                // Another worker claimed recently and is still computing, skip
                 wp_die();
             }
-            // Else: started > 90s ago, worker may have died - proceed as recovery
+            // Else: worker exceeded the stuck window, proceed as recovery
         }
 
         // Register crash detection handler BEFORE expensive computation
@@ -187,14 +184,19 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
         );
 
         // Store results in transient (preserve token for audit trail)
-        // TTL of 120 seconds: enough time for polling to retrieve results on slow hosts
-        set_transient($transientKey, array(
-            'status' => 'complete',
-            'suggestions' => $suggestionsPacket,
-            'url' => $requestedURL,
-            'completed' => self::clock()->now(),
-            'token' => $storedToken  // Preserve token for debugging/audit
-        ), 120); // 2 minute TTL
+        // TTL of 120 seconds: enough time for polling to retrieve results on slow hosts.
+        // allow-cache-empty: factory-built typed array; completeArray always returns a
+        // non-empty associative array with at minimum a 'status' key.
+        set_transient(
+            $transientKey,
+            ABJ_404_Solution_SuggestionTransient::completeArray(
+                $requestedURL,
+                is_array($suggestionsPacket) ? $suggestionsPacket : [],
+                self::clock()->now(),
+                $storedToken  // Preserve token for debugging/audit
+            ),
+            120
+        );
 
         $suggestionCount = isset($suggestionsPacket[0]) ? count((array)$suggestionsPacket[0]) : 0;
         $logger->debugMessage("Ajax_SuggestionCompute: Completed computation for " .
@@ -236,17 +238,18 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
             return; // Normal exit or non-fatal error - let completion handler update transient
         }
 
-        // Check current transient state - don't overwrite if already complete
-        $existingData = get_transient($transientKey);
-        if (is_array($existingData) && isset($existingData['status']) && $existingData['status'] === 'complete') {
-            return; // Another worker completed successfully - don't mark as error
+        // Check current transient state, don't overwrite if already complete
+        $existing = ABJ_404_Solution_SuggestionTransient::fromRaw(get_transient($transientKey));
+        if ($existing !== null && $existing->isComplete()) {
+            return; // Another worker completed successfully, don't mark as error
         }
 
         // Mark as error with generic user-facing message (don't leak implementation details)
-        set_transient($transientKey, array(
-            'status' => 'error',
-            'token' => $token
-        ), 120);
+        set_transient(
+            $transientKey,
+            ABJ_404_Solution_SuggestionTransient::errorArray($token),
+            120
+        );
 
         // Log detailed error info for debugging (not exposed to frontend)
         $logMessage = sprintf(

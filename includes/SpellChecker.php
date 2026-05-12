@@ -295,13 +295,21 @@ class ABJ_404_Solution_SpellChecker {
 			return;
 		}
 
-		// Store as 'complete' so shortcode renders immediately
-		set_transient($transientKey, array(
-			'status' => 'complete',
-			'suggestions' => $permalinksPacket,
-			'url' => $normalizedURL,
-			'completed' => time()
-		), 300); // 5 minute TTL
+		// Store as 'complete' so shortcode renders immediately.
+		// No token here: this writer is the synchronous fallback path
+		// and the consumer never re-enters the worker token gate.
+		// allow-cache-empty: factory-built typed array; SuggestionTransient::completeArray
+		// always returns a non-empty associative array with at minimum a 'status' key.
+		set_transient(
+			$transientKey,
+			ABJ_404_Solution_SuggestionTransient::completeArray(
+				$normalizedURL,
+				$permalinksPacket,
+				time(),
+				''
+			),
+			300
+		); // 5 minute TTL
 
 		$this->logger->debugMessage("Cached spell-check suggestions for shortcode: " .
 			esc_html($normalizedURL));
@@ -323,31 +331,35 @@ class ABJ_404_Solution_SpellChecker {
 		$urlKey = md5($normalizedURL);
 		$transientKey = 'abj404_suggest_' . $urlKey;
 
-		// Check if already computing or complete - prevent duplicate work
-		$existing = get_transient($transientKey);
-		if ($existing !== false) {
-			$existingStatus = (is_array($existing) && isset($existing['status']) && is_string($existing['status'])) ? $existing['status'] : 'unknown';
+		// Check if already computing or complete, prevent duplicate work
+		$existing = ABJ_404_Solution_SuggestionTransient::fromRaw(get_transient($transientKey));
+		if ($existing !== null) {
 			$this->logger->debugMessage("Async suggestions: skipping, transient already exists for " .
-				esc_html($normalizedURL) . " (status: " . esc_html($existingStatus) . ")");
+				esc_html($normalizedURL) . " (status: " . esc_html($existing->getStatus()) . ")");
 			return false;
 		}
 
-		// Generate a unique token for this computation request
-		// This prevents unauthorized direct calls to the AJAX endpoint (DoS protection)
+		// Generate a unique token for this computation request.
+		// This prevents unauthorized direct calls to the AJAX endpoint (DoS protection).
 		$token = wp_generate_password(32, false);
 
-		// Mark as pending BEFORE firing request (race condition protection)
-		// TTL of 120 seconds: gives slow hosts enough time to start the worker
+		// Mark as pending BEFORE firing request (race condition protection).
+		// TTL of 120 seconds gives slow hosts enough time to start the worker.
 		// Note: started=0 means no worker has claimed the work yet. The first worker
 		// will set started=time() when it claims the work. This prevents the bug where
 		// the first worker skips itself thinking another worker is already computing.
-		set_transient($transientKey, array(
-			'status' => 'pending',
-			'url' => $normalizedURL,
-			'started' => 0,  // 0 = no worker has claimed yet; worker sets time() when claiming
-			'created' => time(),  // track creation time to detect worker no-show
-			'token' => $token
-		), 120); // 2 minute TTL (allows slow wp_remote_post)
+		// allow-cache-empty: factory-built typed array; pendingArray always returns a
+		// non-empty associative array with at minimum a 'status' key.
+		set_transient(
+			$transientKey,
+			ABJ_404_Solution_SuggestionTransient::pendingArray(
+				$normalizedURL,
+				$token,
+				0,       // no worker has claimed yet
+				time()   // track creation time to detect worker no-show
+			),
+			120
+		); // 2 minute TTL (allows slow wp_remote_post)
 
 		$this->logger->debugMessage("Async suggestions: triggering background computation for " .
 			esc_html($normalizedURL));

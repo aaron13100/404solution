@@ -84,6 +84,7 @@ return array(
     'ABJ_404_Solution_FunctionsPreg' => $base . 'includes/php/FunctionsPreg.php',
     'ABJ_404_Solution_FeedbackTransport' => $base . 'includes/FeedbackTransport.php',
     'ABJ_404_Solution_PayloadSchema' => $base . 'includes/PayloadSchema.php',
+    'ABJ_404_Solution_SuggestionTransient' => $base . 'includes/SuggestionTransient.php',
     'ABJ_404_Solution_FrontendRequestPipeline' => $base . 'includes/FrontendRequestPipeline.php',
     'ABJ_404_Solution_ImportExportService' => $base . 'includes/ImportExportService.php',
     'ABJ_404_Solution_Logging' => $base . 'includes/Logging.php',

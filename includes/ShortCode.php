@@ -319,25 +319,24 @@ class ABJ_404_Solution_ShortCode {
             return "<!-- " . ABJ404_PP . " - No 404 was detected. No suggestions to offer. -->\n";
         }
 
-        // Check for cached suggestion computation (transient-based)
+        // Check for cached suggestion computation (transient-based).
+        // Normalize at the boundary: see ABJ_404_Solution_SuggestionTransient.
         $urlKey = md5($urlRequest);
         $transientKey = 'abj404_suggest_' . $urlKey;
-        $cachedData = get_transient($transientKey);
+        $cached = ABJ_404_Solution_SuggestionTransient::fromRaw(get_transient($transientKey));
 
-        if ($cachedData !== false && is_array($cachedData)) {
-            if (isset($cachedData['status']) && $cachedData['status'] === 'complete') {
-                // Suggestions ready - use cached data
-                /** @var array<int, mixed> $cachedSuggestions */
-                $cachedSuggestions = isset($cachedData['suggestions']) && is_array($cachedData['suggestions']) ? $cachedData['suggestions'] : array();
+        if ($cached !== null) {
+            if ($cached->isComplete()) {
+                // Suggestions ready, use cached data
                 $content .= self::renderSuggestionsHTML(
-                    $cachedSuggestions,
+                    $cached->getSuggestionsPacket(),
                     $urlRequest
                 );
                 $content .= "\n<!-- " . ABJ404_PP . " - End 404 suggestions (cached) -->\n";
                 return $content;
 
-            } elseif (isset($cachedData['status']) && $cachedData['status'] === 'pending') {
-                // Still computing - show loading placeholder
+            } elseif ($cached->isPending()) {
+                // Still computing, show loading placeholder
                 self::enqueueAsyncPollingScript($urlRequest);
                 $content .= self::renderAsyncPlaceholder($urlRequest, $options);
                 $content .= "\n<!-- " . ABJ404_PP . " - Suggestions loading -->\n";
