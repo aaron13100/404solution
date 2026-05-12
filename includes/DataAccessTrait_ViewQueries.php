@@ -331,6 +331,46 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
         // Sanitize logID to prevent SQL injection
         $logID = absint($logID);
 
+        // Audit F4: cache the unfiltered total. InnoDB has no maintained row
+        // counter so `SELECT COUNT(id) FROM logsv2` is a full index scan that
+        // dominates the Logs admin tab on multi-million-row logsv2. The cache
+        // is keyed on (blog_id, max_log_id) so new inserts move the key
+        // (fresh value picked up immediately); deletions are bounded by the
+        // LOGS_COUNT_CACHE_TTL_SECONDS staleness window. The filtered path
+        // (logID != 0) is per-URL and has unbounded key cardinality, so it
+        // stays uncached.
+        $cacheKey = null;
+        if ($logID === 0 && function_exists('get_transient')) {
+            $blogId = 1;
+            if (function_exists('get_current_blog_id')) {
+                $rawBlogId = function_exists('absint')
+                    ? absint(get_current_blog_id())
+                    : abs(intval(get_current_blog_id()));
+                if ($rawBlogId > 0) {
+                    $blogId = $rawBlogId;
+                }
+            }
+            $maxLogId = 0;
+            try {
+                $maxLogId = intval($this->getMaxLogId());
+                if ($maxLogId < 0) {
+                    $maxLogId = 0;
+                }
+            } catch (Throwable $e) {
+                // getMaxLogId() failed (table missing, query timeout). Fall back
+                // to maxLogId=0 so the cache key still varies; the count will
+                // recompute on every request until the underlying query recovers.
+                $this->logger->debugMessage(__FUNCTION__ . ' getMaxLogId() failed: '
+                    . $e->getMessage() . '. Falling back to maxLogId=0.');
+                $maxLogId = 0;
+            }
+            $cacheKey = 'abj404_logs_count_v1_' . $blogId . '_' . $maxLogId;
+            $cached = get_transient($cacheKey);
+            if (is_numeric($cached)) {
+                return (int)$cached;
+            }
+        }
+
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getLogsCount.sql");
 
         if ($logID != 0) {
@@ -343,17 +383,26 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
         // centralized 60s timeout. Bypassing via $wpdb->get_row() leaves the
         // admin page with no upper bound on slow logsv2 lookups.
         $result = $this->queryAndGetResults($query);
-        if (!empty($result['timed_out']) || (isset($result['last_error']) && $result['last_error'] != '')) {
-            return 0;
-        }
+        $hadError = !empty($result['timed_out'])
+            || (isset($result['last_error']) && $result['last_error'] != '');
 
         $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
-        if (empty($rows)) {
-            return 0;
+        $count = 0;
+        if (!empty($rows)) {
+            $first = $rows[0];
+            $value = is_array($first) ? reset($first) : $first;
+            $count = intval($value);
         }
-        $first = $rows[0];
-        $value = is_array($first) ? reset($first) : $first;
-        return intval($value);
+
+        // Only cache on success. A DB error / timeout would otherwise pin a
+        // zero for LOGS_COUNT_CACHE_TTL_SECONDS, so the Logs admin tab would
+        // show "0 entries" until the cache expires. Mirrors the
+        // getDailyActivityTrend() write-on-success policy.
+        if (!$hadError && $cacheKey !== null && function_exists('set_transient')) {
+            set_transient($cacheKey, $count, self::LOGS_COUNT_CACHE_TTL_SECONDS);
+        }
+
+        return $count;
     }
 
     /**

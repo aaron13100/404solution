@@ -80,6 +80,15 @@ class ABJ_404_Solution_DataAccess {
     const PERIODIC_STATS_REFRESH_COOLDOWN_SECONDS = 30;
     /** @var int Max age for cached daily-activity trend data (Stats tab Chart.js). */
     const TREND_DATA_CACHE_TTL_SECONDS = 900;
+    /**
+     * @var int Short TTL for the cached `getLogsCount(0)` total row count.
+     *          Audit F4: InnoDB has no maintained row counter, so the
+     *          Logs admin tab's `SELECT COUNT(id) FROM logsv2` is a full
+     *          index scan. New inserts move the cache key (`max_log_id`)
+     *          so fresh data is picked up immediately; bulk deletes do
+     *          not move the key, so the TTL bounds staleness at 60 s.
+     */
+    const LOGS_COUNT_CACHE_TTL_SECONDS = 60;
     /** @var int Retention for dashboard stats snapshot payload (stale snapshot is acceptable for fast first paint). */
     const STATS_DASHBOARD_CACHE_TTL_SECONDS = 86400;
     /** @var int Minimum time between full stats snapshot recomputes. */
