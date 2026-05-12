@@ -157,6 +157,7 @@ function abj404_autoloader($class) {
 				$inc . 'DataAccessTrait_Logs.php',
 				$inc . 'DataAccessTrait_LogsHitsRebuild.php',
 				$inc . 'DataAccessTrait_Redirects.php',
+				$inc . 'DataAccessTrait_PublishedContent.php',
 				$inc . 'DataAccessTrait_Stats.php',
 				$inc . 'DataAccessTrait_ErrorClassification.php',
 				$inc . 'DataAccessTrait_QueryTimeouts.php',
@@ -362,6 +363,7 @@ if (!function_exists('abj404_shortCodeListener')) {
 				$inc . 'DataAccessTrait_ViewQueries.php',
 				$inc . 'DataAccessTrait_Logs.php',
 				$inc . 'DataAccessTrait_Redirects.php',
+				$inc . 'DataAccessTrait_PublishedContent.php',
 				$inc . 'DataAccessTrait_Stats.php',
 				// PluginLogic + traits
 				$inc . 'PluginLogic.php',
