@@ -18,13 +18,13 @@ trait ABJ_404_Solution_PluginLogicTrait_Lifecycle {
         for ($i = 0; $i < count($crons); $i++) {
             $cron_name = $crons[$i];
             $timestamp1 = wp_next_scheduled($cron_name);
-            while ($timestamp1 != False) {
+            while ($timestamp1 != false) {
                 wp_unschedule_event($timestamp1, $cron_name);
                 $timestamp1 = wp_next_scheduled($cron_name);
             }
 
             $timestamp2 = wp_next_scheduled($cron_name, array(''));
-            while ($timestamp2 != False) {
+            while ($timestamp2 != false) {
                 wp_unschedule_event($timestamp2, $cron_name, array(''));
                 $timestamp2 = wp_next_scheduled($cron_name, array(''));
             }

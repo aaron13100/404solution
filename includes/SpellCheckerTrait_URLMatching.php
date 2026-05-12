@@ -59,8 +59,8 @@ trait SpellCheckerTrait_URLMatching {
 
 				// If regex has capture groups and destination has replacement markers, resolve them.
 				$permLinkStr = isset($permalink['link']) && is_string($permalink['link']) ? $permalink['link'] : '';
-				$hasCaptureGroup = ($this->f->strpos($regexURLStr, '(') !== FALSE);
-				$hasReplacementToken = ($this->f->strpos($permLinkStr, '$') !== FALSE);
+				$hasCaptureGroup = ($this->f->strpos($regexURLStr, '(') !== false);
+				$hasReplacementToken = ($this->f->strpos($permLinkStr, '$') !== false);
 				if ($hasCaptureGroup && $hasReplacementToken) {
 					$results = array();
 					$this->f->regexMatch($regexURLStr, $requestedURL, $results);

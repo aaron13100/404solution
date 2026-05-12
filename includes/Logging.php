@@ -378,7 +378,7 @@ class ABJ_404_Solution_Logging {
             ABJ_404_Solution_Functions::safeUnlink($logFileZip);
         }
         $zip = new ZipArchive;
-        if ($zip->open($logFileZip, ZipArchive::CREATE) === TRUE) {
+        if ($zip->open($logFileZip, ZipArchive::CREATE) === true) {
             if (file_exists($this->getDebugFilePath())) {
                 $zip->addFile($this->getDebugFilePath(), basename($this->getDebugFilePath()));
             }

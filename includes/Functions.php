@@ -536,7 +536,7 @@ abstract class ABJ_404_Solution_Functions {
         $abj404logging = abj_service('logging');
         $permalink = array();
 
-        if ($idAndType == NULL) {
+        if ($idAndType == null) {
             $permalink['score'] = -999;
             return $permalink;
         }
