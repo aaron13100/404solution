@@ -34,6 +34,7 @@ return array(
     'ABJ_404_Solution_DataAccess_ViewBuildPhpEnvProbeTrait' => $base . 'includes/DataAccessTrait_ViewBuildPhpEnvProbe.php',
     'ABJ_404_Solution_DataAccess_ViewBuildSessionEnvProbeTrait' => $base . 'includes/DataAccessTrait_ViewBuildSessionEnvProbe.php',
     'ABJ_404_Solution_DataAccess_ViewBuildStageCallbacksTrait' => $base . 'includes/DataAccessTrait_ViewBuildStageCallbacks.php',
+    'ABJ_404_Solution_DataAccess_ViewBuildStageRunnerTrait' => $base . 'includes/DataAccessTrait_ViewBuildStageRunner.php',
     'ABJ_404_Solution_DataAccess_ViewMetadataTrait' => $base . 'includes/DataAccessTrait_ViewMetadata.php',
     'ABJ_404_Solution_DataAccess_ViewQueriesTrait' => $base . 'includes/DataAccessTrait_ViewQueries.php',
     'ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait' => $base . 'includes/DataAccessTrait_ViewQueriesStaged.php',

@@ -146,6 +146,7 @@ function abj404_autoloader($class) {
 				$inc . 'DataAccessTrait_ViewMetadata.php',
 				$inc . 'DataAccessTrait_ViewQueries.php',
 				$inc . 'DataAccessTrait_ViewQueriesStaged.php',
+				$inc . 'DataAccessTrait_ViewBuildStageRunner.php',
 				$inc . 'DataAccessTrait_ViewBuildStageCallbacks.php',
 				$inc . 'DataAccessTrait_ViewQueriesStagedRead.php',
 				$inc . 'DataAccessTrait_ViewBuildAdaptive.php',

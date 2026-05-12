@@ -173,6 +173,7 @@ class ABJ_404_Solution_DataAccess {
     use ABJ_404_Solution_DataAccess_ViewMetadataTrait;
     use ABJ_404_Solution_DataAccess_ViewQueriesTrait;
     use ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait;
+    use ABJ_404_Solution_DataAccess_ViewBuildStageRunnerTrait;
     use ABJ_404_Solution_DataAccess_ViewBuildStageCallbacksTrait;
     use ABJ_404_Solution_DataAccess_ViewQueriesStagedReadTrait;
     use ABJ_404_Solution_DataAccess_ViewBuildAdaptiveTrait;
