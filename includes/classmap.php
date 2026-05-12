@@ -70,6 +70,7 @@ return array(
     'ABJ_404_Solution_GoogleSearchConsole' => $base . 'includes/GoogleSearchConsole.php',
     'ABJ_404_Solution_InternalLinkScanner' => $base . 'includes/InternalLinkScanner.php',
     'ABJ_404_Solution_Ajax_SettingsModeToggle' => $base . 'includes/ajax/Ajax_SettingsModeToggle.php',
+    'ABJ_404_Solution_Ajax_SupportRequest' => $base . 'includes/ajax/Ajax_SupportRequest.php',
     'ABJ_404_Solution_Ajax_SuggestionCompute' => $base . 'includes/ajax/Ajax_SuggestionCompute.php',
     'ABJ_404_Solution_Ajax_SuggestionPolling' => $base . 'includes/ajax/Ajax_SuggestionPolling.php',
     'ABJ_404_Solution_Ajax_TrashLink' => $base . 'includes/ajax/Ajax_TrashLink.php',

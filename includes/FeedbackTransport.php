@@ -37,6 +37,18 @@ class ABJ_404_Solution_FeedbackTransport {
     const HTTP_TIMEOUT = 10;
 
     /**
+     * Records whether the most recent sendNow() call fell back to wp_mail()
+     * after the HTTP POST failed. Read-only for callers that need to surface
+     * "we sent via email instead of HTTP" in their own response (e.g. the
+     * support-request AJAX handler returning {fallback_used: true}). Reset
+     * at the top of every sendNow() call so concurrent reads don't see a
+     * stale value from a previous unrelated send.
+     *
+     * @var bool
+     */
+    private static $lastSendUsedFallback = false;
+
+    /**
      * Queue a payload for asynchronous send. Used by interactive paths
      * (deactivate AJAX). Returns immediately; the actual send happens in a
      * single-shot cron event.
@@ -76,6 +88,7 @@ class ABJ_404_Solution_FeedbackTransport {
      * @return bool true if any transport (HTTP or email) succeeded.
      */
     public static function sendNow(array $payload, string $type): bool {
+        self::$lastSendUsedFallback = false;
         $started = microtime(true);
         $result = self::httpSend($payload);
         $elapsedMs = (int) round((microtime(true) - $started) * 1000);
@@ -103,7 +116,20 @@ class ABJ_404_Solution_FeedbackTransport {
             $detailStr
         ));
 
+        self::$lastSendUsedFallback = true;
         return self::emailFallback($payload, $type);
+    }
+
+    /**
+     * Whether the most recent sendNow() call used the wp_mail() fallback
+     * after the HTTP POST failed. Callers (e.g. the support-request AJAX
+     * handler) read this immediately after sendNow() to surface the
+     * transport result to the user.
+     *
+     * @return bool
+     */
+    public static function lastSendUsedFallback(): bool {
+        return self::$lastSendUsedFallback;
     }
 
     /**
@@ -150,7 +176,7 @@ class ABJ_404_Solution_FeedbackTransport {
      * Build a payload from current site state. $extra carries type-specific
      * fields (uninstall_reason, debug_log, error_signature, etc.).
      *
-     * @param string $type One of 'error', 'heartbeat', 'uninstall'.
+     * @param string $type One of 'error', 'heartbeat', 'uninstall', 'support_request'.
      * @param array<string, mixed> $extra
      * @return array<string, mixed>
      */
@@ -349,6 +375,9 @@ class ABJ_404_Solution_FeedbackTransport {
      *   - 'error' / 'heartbeat' delegates to Logging::emailLogFileToDeveloper($payload)
      *     (attaches a zip of the current debug log and renders the same HTML
      *     body the email transport used pre-migration).
+     *   - 'support_request' is built inline (subject + body include the
+     *     user's message and reply email at the top, then the standard
+     *     diagnostic block + log excerpt).
      *
      * If the type-specific delegate is unavailable (class not loaded, service
      * container empty), falls back to a generic JSON dump so the data is at
@@ -364,6 +393,9 @@ class ABJ_404_Solution_FeedbackTransport {
         }
         if ($type === 'uninstall' && class_exists('ABJ_404_Solution_UninstallModal')) {
             return ABJ_404_Solution_UninstallModal::sendFeedbackEmail($payload);
+        }
+        if ($type === 'support_request') {
+            return self::supportRequestEmailFallback($payload);
         }
         if (($type === 'error' || $type === 'heartbeat') && function_exists('abj_service')) {
             try {
@@ -381,6 +413,70 @@ class ABJ_404_Solution_FeedbackTransport {
         $json = function_exists('wp_json_encode') ? wp_json_encode($payload, JSON_PRETTY_PRINT) : json_encode($payload, JSON_PRETTY_PRINT);
         $body = is_string($json) ? $json : '';
         $headers = array('Content-Type: text/plain; charset=UTF-8');
+        $result = wp_mail($to, $subject, $body, $headers);
+        return (bool)$result;
+    }
+
+    /**
+     * Build the wp_mail() body for type='support_request' fallbacks. The
+     * user-facing fields (their message and reply address) lead the body so
+     * a reviewer can act on the request without scrolling past the
+     * diagnostic block. The standard payload dump and any captured log
+     * excerpt follow as appendices.
+     *
+     * @param array<string, mixed> $payload
+     * @return bool
+     */
+    private static function supportRequestEmailFallback(array $payload): bool {
+        $to = defined('ABJ404_AUTHOR_EMAIL') ? ABJ404_AUTHOR_EMAIL : '404solution@ajexperience.com';
+        $version = defined('ABJ404_VERSION') ? ABJ404_VERSION : '';
+        $subject = sprintf('[404 Solution] Support request v%s', $version);
+
+        $userMessage = isset($payload['user_message']) && is_scalar($payload['user_message'])
+            ? (string)$payload['user_message'] : '';
+        $replyEmail = isset($payload['reply_email']) && is_scalar($payload['reply_email'])
+            ? (string)$payload['reply_email'] : '';
+        $triggeredFrom = isset($payload['triggered_from']) && is_scalar($payload['triggered_from'])
+            ? (string)$payload['triggered_from'] : '';
+        $logExcerpt = isset($payload['debug_log_excerpt']) && is_scalar($payload['debug_log_excerpt'])
+            ? (string)$payload['debug_log_excerpt'] : '';
+
+        $bodyLines = array();
+        $bodyLines[] = '=== USER SUPPORT REQUEST ===';
+        $bodyLines[] = '';
+        $bodyLines[] = 'Reply-To: ' . ($replyEmail !== '' ? $replyEmail : '(not provided)');
+        $bodyLines[] = 'Triggered from: ' . ($triggeredFrom !== '' ? $triggeredFrom : '(unknown)');
+        $bodyLines[] = '';
+        $bodyLines[] = '--- User message ---';
+        $bodyLines[] = $userMessage !== '' ? $userMessage : '(no message provided)';
+        $bodyLines[] = '';
+        $bodyLines[] = '=== DIAGNOSTICS ===';
+        $bodyLines[] = '';
+        $scalar = static function ($v, string $fallback = ''): string {
+            return is_scalar($v) ? (string)$v : $fallback;
+        };
+        $bodyLines[] = 'Plugin version: ' . $scalar($payload['plugin_version'] ?? null);
+        $bodyLines[] = 'PHP version: ' . $scalar($payload['php_version'] ?? null, PHP_VERSION);
+        $bodyLines[] = 'WP version: ' . $scalar($payload['wp_version'] ?? null);
+        $bodyLines[] = 'DB: ' . $scalar($payload['db_type'] ?? null) . ' ' . $scalar($payload['db_version'] ?? null);
+        $bodyLines[] = 'Site URL: ' . $scalar($payload['site_url'] ?? null);
+        $bodyLines[] = 'Multisite: ' . (!empty($payload['is_multisite']) ? 'yes' : 'no');
+        $bodyLines[] = '';
+        if ($logExcerpt !== '') {
+            $bodyLines[] = '=== DEBUG LOG EXCERPT ===';
+            $bodyLines[] = '';
+            $bodyLines[] = $logExcerpt;
+            $bodyLines[] = '';
+        }
+        $bodyLines[] = '=== FULL PAYLOAD (JSON) ===';
+        $json = function_exists('wp_json_encode') ? wp_json_encode($payload, JSON_PRETTY_PRINT) : json_encode($payload, JSON_PRETTY_PRINT);
+        $bodyLines[] = is_string($json) ? $json : '';
+
+        $body = implode("\n", $bodyLines);
+        $headers = array('Content-Type: text/plain; charset=UTF-8');
+        if ($replyEmail !== '') {
+            $headers[] = 'Reply-To: ' . $replyEmail;
+        }
         $result = wp_mail($to, $subject, $body, $headers);
         return (bool)$result;
     }

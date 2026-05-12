@@ -3767,3 +3767,15 @@ msgstr "Förbereder tabellen med omdirigeringar. Vänligen vänta."
 #: includes/DataAccessTrait_ViewQueriesStaged.php
 msgid "(404 page)"
 msgstr "(404-sida)"
+
+#: includes/ajax/Ajax_SupportRequest.php
+msgid "Please wait before sending another support request."
+msgstr "Vänta innan du skickar ytterligare en supportförfrågan."
+
+#: includes/ajax/Ajax_SupportRequest.php
+msgid "Invalid support request source."
+msgstr "Ogiltig källa för supportförfrågan."
+
+#: includes/ajax/Ajax_SupportRequest.php
+msgid "Failed to send support request. Please try again later."
+msgstr "Det gick inte att skicka supportförfrågan. Försök igen senare."

@@ -3796,3 +3796,15 @@ msgstr "جارٍ تحضير جدول عمليات إعادة التوجيه. ي�
 #: includes/DataAccessTrait_ViewQueriesStaged.php
 msgid "(404 page)"
 msgstr "(صفحة 404)"
+
+#: includes/ajax/Ajax_SupportRequest.php
+msgid "Please wait before sending another support request."
+msgstr "يُرجى الانتظار قبل إرسال طلب دعم آخر."
+
+#: includes/ajax/Ajax_SupportRequest.php
+msgid "Invalid support request source."
+msgstr "مصدر طلب الدعم غير صالح."
+
+#: includes/ajax/Ajax_SupportRequest.php
+msgid "Failed to send support request. Please try again later."
+msgstr "فشل إرسال طلب الدعم. يُرجى المحاولة مرة أخرى لاحقًا."

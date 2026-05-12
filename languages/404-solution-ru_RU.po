@@ -3774,3 +3774,15 @@ msgstr "Подготовка таблицы перенаправлений. По
 #: includes/DataAccessTrait_ViewQueriesStaged.php
 msgid "(404 page)"
 msgstr "(страница 404)"
+
+#: includes/ajax/Ajax_SupportRequest.php
+msgid "Please wait before sending another support request."
+msgstr "Пожалуйста, подождите перед отправкой ещё одного запроса в поддержку."
+
+#: includes/ajax/Ajax_SupportRequest.php
+msgid "Invalid support request source."
+msgstr "Недопустимый источник запроса в поддержку."
+
+#: includes/ajax/Ajax_SupportRequest.php
+msgid "Failed to send support request. Please try again later."
+msgstr "Не удалось отправить запрос в поддержку. Попробуйте позже."

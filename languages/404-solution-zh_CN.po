@@ -3773,3 +3773,15 @@ msgstr "正在准备重定向列表，请稍候。"
 #: includes/DataAccessTrait_ViewQueriesStaged.php
 msgid "(404 page)"
 msgstr "(404 页面)"
+
+#: includes/ajax/Ajax_SupportRequest.php
+msgid "Please wait before sending another support request."
+msgstr "请稍候，再发送下一个支持请求。"
+
+#: includes/ajax/Ajax_SupportRequest.php
+msgid "Invalid support request source."
+msgstr "无效的支持请求来源。"
+
+#: includes/ajax/Ajax_SupportRequest.php
+msgid "Failed to send support request. Please try again later."
+msgstr "支持请求发送失败。请稍后重试。"

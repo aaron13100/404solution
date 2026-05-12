@@ -200,6 +200,9 @@ function abj404_autoloader($class) {
 			'ABJ_404_Solution_Ajax_SettingsModeToggle' => array(
 				$inc . 'ajax/AjaxSecurityTrait.php',
 			),
+			'ABJ_404_Solution_Ajax_SupportRequest' => array(
+				$inc . 'ajax/AjaxSecurityTrait.php',
+			),
 			'ABJ_404_Solution_ViewUpdater' => array(
 				$inc . 'ajax/AjaxFailureLoggingTrait.php',
 			),

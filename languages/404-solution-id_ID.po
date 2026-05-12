@@ -3760,3 +3760,15 @@ msgstr "Menyiapkan tabel tampilan pengalihan. Mohon tunggu."
 #: includes/DataAccessTrait_ViewQueriesStaged.php
 msgid "(404 page)"
 msgstr "(halaman 404)"
+
+#: includes/ajax/Ajax_SupportRequest.php
+msgid "Please wait before sending another support request."
+msgstr "Harap tunggu sebelum mengirim permintaan dukungan lain."
+
+#: includes/ajax/Ajax_SupportRequest.php
+msgid "Invalid support request source."
+msgstr "Sumber permintaan dukungan tidak valid."
+
+#: includes/ajax/Ajax_SupportRequest.php
+msgid "Failed to send support request. Please try again later."
+msgstr "Gagal mengirim permintaan dukungan. Silakan coba lagi nanti."

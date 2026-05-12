@@ -3765,3 +3765,15 @@ msgstr "Die Weiterleitungstabelle wird vorbereitet. Bitte warten."
 #: includes/DataAccessTrait_ViewQueriesStaged.php
 msgid "(404 page)"
 msgstr "(404-Seite)"
+
+#: includes/ajax/Ajax_SupportRequest.php
+msgid "Please wait before sending another support request."
+msgstr "Bitte warten Sie, bevor Sie eine weitere Supportanfrage senden."
+
+#: includes/ajax/Ajax_SupportRequest.php
+msgid "Invalid support request source."
+msgstr "Ungültige Quelle der Supportanfrage."
+
+#: includes/ajax/Ajax_SupportRequest.php
+msgid "Failed to send support request. Please try again later."
+msgstr "Supportanfrage konnte nicht gesendet werden. Bitte versuchen Sie es später erneut."

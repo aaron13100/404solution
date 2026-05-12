@@ -3780,3 +3780,15 @@ msgstr "リダイレクト一覧表を準備しています。お待ちくださ
 #: includes/DataAccessTrait_ViewQueriesStaged.php
 msgid "(404 page)"
 msgstr "(404ページ)"
+
+#: includes/ajax/Ajax_SupportRequest.php
+msgid "Please wait before sending another support request."
+msgstr "別のサポートリクエストを送信する前にしばらくお待ちください。"
+
+#: includes/ajax/Ajax_SupportRequest.php
+msgid "Invalid support request source."
+msgstr "サポートリクエストの送信元が無効です。"
+
+#: includes/ajax/Ajax_SupportRequest.php
+msgid "Failed to send support request. Please try again later."
+msgstr "サポートリクエストの送信に失敗しました。後ほどもう一度お試しください。"

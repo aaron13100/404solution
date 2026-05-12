@@ -3767,3 +3767,15 @@ msgstr "De tabel met omleidingen wordt voorbereid. Even geduld."
 #: includes/DataAccessTrait_ViewQueriesStaged.php
 msgid "(404 page)"
 msgstr "(404-pagina)"
+
+#: includes/ajax/Ajax_SupportRequest.php
+msgid "Please wait before sending another support request."
+msgstr "Wacht even voordat u nog een ondersteuningsverzoek verzendt."
+
+#: includes/ajax/Ajax_SupportRequest.php
+msgid "Invalid support request source."
+msgstr "Ongeldige bron voor ondersteuningsverzoek."
+
+#: includes/ajax/Ajax_SupportRequest.php
+msgid "Failed to send support request. Please try again later."
+msgstr "Versturen van ondersteuningsverzoek mislukt. Probeer het later opnieuw."

@@ -220,6 +220,7 @@ class ABJ_404_Solution_WordPress_Connector {
 
         ABJ_404_Solution_Ajax_EngineProfiles::registerActions();
         ABJ_404_Solution_Ajax_SettingsModeToggle::init();
+        ABJ_404_Solution_Ajax_SupportRequest::init();
         ABJ_404_Solution_UninstallModal::init();
         ABJ_404_Solution_SetupWizard::init();
         if (class_exists('ABJ_404_Solution_Privacy')) {
