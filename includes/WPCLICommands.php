@@ -155,8 +155,8 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
 
         $status     = $regex ? (string)ABJ404_STATUS_REGEX : (string)ABJ404_STATUS_MANUAL;
         $insertedId = $dao->setupRedirect($from, $status, $type, $dest, (string)$code, 0, 'wp-cli');
-
         if ($insertedId) {
+            $dao->markViewDoneInvalidatedByAdminMutation();
             $displayDest = $isTerminalCode ? "(none — {$code})" : "{$to}";
             \WP_CLI::success("Redirect created (ID: {$insertedId}): {$from} → {$displayDest} [{$code}]");
         } else {
@@ -217,6 +217,7 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
         $error = $dao->moveRedirectsToTrash($id, 1);
 
         if ($error === '') {
+            $dao->markViewDoneInvalidatedByAdminMutation();
             \WP_CLI::success("Redirect ID {$id} moved to trash.");
         } else {
             \WP_CLI::error("No redirect with ID {$id} found, or database error: {$error}");

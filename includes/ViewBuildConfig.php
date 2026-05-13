@@ -118,6 +118,22 @@ final class ABJ_404_Solution_ViewBuildConfig {
     const VIEW_DONE_HARD_STALE_NOTICE_AGE_SECONDS = 86400;
 
     /**
+     * Sanity cap on how long an admin-initiated mutation flag (set by
+     * markViewDoneInvalidatedByAdminMutation()) can keep view_done
+     * unserveable. While the flag is active, viewDoneIsServeable() returns
+     * false so the AJAX gate returns viewBuildPending and the JS poller
+     * waits for a build that covers the mutation. If the build never
+     * completes (cron broken, DB locked) the gate falls back to fbc270d8
+     * stale-serving at this timeout so the admin redirects page is not
+     * blocked indefinitely.
+     *
+     * Five minutes is a comfortable upper bound for staged rebuilds on
+     * Bruno/Troy-grade installs (~11 stages, multi-second per stage).
+     * Above this, the admin sees stale data plus the hard-stale notice.
+     */
+    const VIEW_DONE_MUTATION_INVALIDATED_SANITY_SECONDS = 300;
+
+    /**
      * Cap on the per-query SET STATEMENT max_statement_time hint applied
      * to a non-batched stage (S3 / S9 / S10) on retry after a kill. The
      * hint is also bounded by the request's remaining PHP execution time

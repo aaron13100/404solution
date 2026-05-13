@@ -31,6 +31,11 @@ class ABJ_404_Solution_Ajax_TrashLink {
         
         $data = array();
         $data['resultset'] = $abj404dao->moveRedirectsToTrash((int)$idToTrash, (int)$trashAction);
+        if (empty($data['resultset'])) {
+            // Mark view_done as needing a rebuild so the next admin AJAX
+            // fetch lands on fresh data that reflects this trash action.
+            $abj404dao->markViewDoneInvalidatedByAdminMutation();
+        }
 
         // Return fresh tab counts so the JS can update the tab badges.
         // Bypass cache since the trash action just changed the counts.

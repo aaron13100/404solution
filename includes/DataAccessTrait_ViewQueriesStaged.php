@@ -95,6 +95,38 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
         return $this->getLowercasePrefix() . 'abj404_view_done_built_at';
     }
 
+    /**
+     * Option storing the unix timestamp of the most recent ADMIN-INITIATED
+     * mutation (add/edit/trash/delete via the redirects UI). Distinct from
+     * the freshness signal cleared by invalidateViewDone() (cron, maintenance,
+     * upgrade, correctCollations also call invalidateViewDone but must keep
+     * fbc270d8 stale-serving). Sites whose admin clicks Save expect the
+     * just-saved row to render immediately, not the pre-mutation snapshot.
+     *
+     * viewDoneIsServeable() consults this option together with the
+     * data_built_at floor: while a mutation timestamp is more recent than
+     * the latest fresh build, view_done is treated as unserveable so the
+     * AJAX gate returns viewBuildPending and the JS poller waits for a
+     * build that covers the mutation.
+     *
+     * Bounded to 5 minutes via MUTATION_INVALIDATED_SANITY_SECONDS so a
+     * broken cron / stuck build cannot keep view_done unserveable forever.
+     *
+     * @return string
+     */
+    private function viewDoneMutationInvalidatedAtOptionName(): string {
+        return $this->getLowercasePrefix() . 'abj404_view_done_mutation_invalidated_at';
+    }
+
+    /** @return int Unix timestamp of the last admin-initiated mutation, or 0. */
+    private function viewDoneMutationInvalidatedAt(): int {
+        if (!function_exists('get_option')) {
+            return 0;
+        }
+        $val = get_option($this->viewDoneMutationInvalidatedAtOptionName(), 0);
+        return is_scalar($val) ? max(0, intval($val)) : 0;
+    }
+
     // Foreground admin/AJAX flows hold this lease briefly so staged-build
     // diagnostics reach the browser instead of being hidden inside cron. Cron
     // checks foregroundViewBuildLeaseActive() and reschedules itself instead
@@ -215,6 +247,25 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
             $this->viewDoneIsServeableCache = false;
             return false;
         }
+        // Admin-mutation gate: when the admin just added/edited/trashed/
+        // deleted a redirect, the snapshot on disk does not yet reflect
+        // their change. Returning serveable here would let the AJAX fetch
+        // hand back the pre-mutation rows; the admin would not see their
+        // own action take effect until the next cron rebuild. Treat as
+        // unserveable so the gate returns viewBuildPending and the JS
+        // poller waits for a build that covers the mutation. Bounded by
+        // MUTATION_INVALIDATED_SANITY_SECONDS so a stuck build cannot
+        // block the page indefinitely; after that window the gate falls
+        // back to fbc270d8 stale-serving plus the hard-stale notice.
+        $mutationAt = $this->viewDoneMutationInvalidatedAt();
+        if ($mutationAt > 0
+                && $mutationAt > time() - ABJ_404_Solution_ViewBuildConfig::VIEW_DONE_MUTATION_INVALIDATED_SANITY_SECONDS) {
+            $dataBuiltAt = $this->viewDoneDataBuiltAt();
+            if ($dataBuiltAt <= $mutationAt) {
+                $this->viewDoneIsServeableCache = false;
+                return false;
+            }
+        }
         // Empty view_done is NOT serveable: rendering an empty admin screen
         // is a worse UX than a brief pending/loading state that drives the
         // build forward. The has-rows probe also catches the rare "S11
@@ -224,6 +275,33 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
         // scheduled.
         $this->viewDoneIsServeableCache = $this->viewDoneHasRows();
         return $this->viewDoneIsServeableCache;
+    }
+
+    /**
+     * Mark view_done as needing a fresh build because the admin just
+     * mutated a redirect through the UI (add/edit/trash/delete). Sets the
+     * mutation-invalidated-at option which gates viewDoneIsServeable()
+     * until markViewDoneBuildCompleted() runs (or the sanity timeout
+     * VIEW_DONE_MUTATION_INVALIDATED_SANITY_SECONDS elapses).
+     *
+     * Differs from invalidateViewDone() (which serves stale-but-present
+     * per fbc270d8 to avoid Loading-redirects on slow hosts during cron /
+     * maintenance / correctCollations). Admin actions need immediate
+     * feedback: after clicking Save, the user expects to see the new row,
+     * not the snapshot from before. This method is the single seam
+     * controllers call to opt into that stricter contract.
+     *
+     * Composes invalidateViewDone() so the existing freshness-clear /
+     * progress-clear / buffer-drop / rebuild-schedule lifecycle still
+     * runs; the new mutation flag is purely additive.
+     *
+     * @return void
+     */
+    public function markViewDoneInvalidatedByAdminMutation(): void {
+        if (function_exists('update_option')) {
+            update_option($this->viewDoneMutationInvalidatedAtOptionName(), time(), false);
+        }
+        $this->invalidateViewDone();
     }
 
     /**
@@ -274,6 +352,14 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
             update_option($this->viewDoneDataBuiltAtOptionName(), $now, false);
         }
         $this->clearViewDoneHardStaleNotice();
+        // Clear the admin-mutation gate: the fresh build covers any
+        // mutation that triggered it, so viewDoneIsServeable() no longer
+        // needs to block reads. Leaving it set would force "Loading
+        // redirects" for the full 5-minute sanity window after every
+        // admin save even though fresh data is on disk.
+        if (function_exists('delete_option')) {
+            delete_option($this->viewDoneMutationInvalidatedAtOptionName());
+        }
         $this->invalidateViewDoneServeableCache();
     }
 
