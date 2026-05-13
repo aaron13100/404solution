@@ -203,13 +203,6 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 
 = Version 4.1.18 (May 13, 2026) =
 
-**Privacy**
-
-* Diagnostic data sent on uninstall (site URL, plugin lifecycle counts, recent error signatures, environment info) is now suppressed unless you explicitly check "Include technical details" in the uninstall feedback modal. Previously, some of these fields shipped regardless of the checkbox.
-* Added a plugin-side privacy policy describing exactly what diagnostic data the plugin can send, when, and how to opt out, with cross-links from the uninstall modal and the readme.
-* Apache mod_status hostnames are now stripped from server identification strings before they leave the site.
-* URI query strings on path-only log lines are now scrubbed before logging, so query parameters that could carry tokens or session ids do not leak into the debug log.
-
 **Bug Fixes**
 
 * Fixed the admin table cache rebuild getting stuck on the same step after a dropped database connection. The rebuild now auto-resumes from where it stopped on the next request, instead of retrying the same failing query forever.
