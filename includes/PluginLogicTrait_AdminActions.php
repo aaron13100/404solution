@@ -242,6 +242,10 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
         if (($this->dao->getPostOrGetSanitize('action') == 'importRedirectsFile') && $this->userIsPluginAdmin()) {
             check_admin_referer('abj404_importRedirectsFile'); // this verifies the nonce (must match View.php form nonce)
             $result = $this->doImportFile();
+            // Admin-initiated mutation: force a fresh view_done rebuild before
+            // the next AJAX fetch so the newly-imported rows appear on the
+            // redirects table immediately, not on the next cron rebuild.
+            $this->dao->markViewDoneInvalidatedByAdminMutation();
             return $result;
         }
 
@@ -285,6 +289,10 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
                 } else {
                     $rowsAffected = is_scalar($result['rows_affected']) ? (string)$result['rows_affected'] : '0';
                     $message = sprintf(__("Records imported: %s", '404-solution'), esc_html($rowsAffected));
+                    // Admin-initiated mutation: force a fresh view_done rebuild
+                    // before the next AJAX fetch so the newly-imported rows
+                    // appear on the redirects table immediately.
+                    $this->dao->markViewDoneInvalidatedByAdminMutation();
                 }
 
             } catch (Exception $e) {
