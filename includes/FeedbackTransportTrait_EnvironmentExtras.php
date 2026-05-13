@@ -147,6 +147,40 @@ trait ABJ_404_Solution_FeedbackTransport_EnvironmentExtrasTrait {
             // captures the recurring error which is often different
             // and which the email-on-first-error path would never send.
             'recent_error_signatures' => self::tryMixedArray(function () { return self::probeRecentErrorSignatures(); }),
+
+            // opcache detail beyond the on/off enum already shipped
+            // in `php_opcache_enabled`. validate_timestamps=0 +
+            // revalidate_freq high explains "fresh install still
+            // buggy after upgrade" reports where the host serves
+            // cached bytecode from the prior version.
+            'opcache_settings' => self::tryMixedArray(function () { return self::probeOpcacheSettings(); }),
+
+            // open_basedir restriction string (or null when not set).
+            // Hardened shared hosts use this to box file access;
+            // explains "permission denied" failures on paths the
+            // plugin can otherwise write.
+            'open_basedir' => self::probeOpenBasedir(),
+
+            // Multisite identity: is this the main site, what blog
+            // and network are we on, is the plugin network-activated?
+            // Behavior differs significantly across these axes
+            // (network-active vs single-site-active changes hook
+            // registration and upgrade scheduling).
+            'multisite_role' => self::tryMixedArray(function () { return self::probeMultisiteRole(); }),
+
+            // .htaccess writability at the WP home path. When false
+            // the plugin's Apache-rule install path cannot succeed
+            // and we fall back to the DB-only redirect handler.
+            // Differentiates "redirects not firing" reports between
+            // "Apache rule never wrote" and "DB handler bug".
+            'htaccess_writable' => self::probeHtaccessWritable(),
+
+            // /tmp filesystem free bytes. Some shared hosts have
+            // separate /tmp quotas from the WP install path; tmp
+            // exhaustion breaks MySQL tmp tables (Created_tmp_disk_*
+            // counter) and PHP file uploads. disk_free_bytes on the
+            // uploads dir cannot see this.
+            'tmp_free_bytes' => self::tryInt(function () { return self::probeTmpFreeBytesOrThrow(); }),
         );
 
         if (function_exists('apply_filters')) {
@@ -1057,5 +1091,171 @@ trait ABJ_404_Solution_FeedbackTransport_EnvironmentExtrasTrait {
         // Collapse runs of whitespace.
         $s = preg_replace('/\s+/', ' ', $s) ?? $s;
         return trim($s);
+    }
+
+    /**
+     * opcache detail fields beyond the on/off enum. Each value is
+     * explicitly nullable: ini_get() returns false when the directive
+     * is unknown, and "we couldn't read it" is materially different
+     * from a stamped 0/false the host configured deliberately.
+     *
+     * Shape:
+     *   { revalidate_freq: int|null,
+     *     validate_timestamps: bool|null,
+     *     enable_cli: bool|null }
+     *
+     * @return array<string, mixed>
+     */
+    private static function probeOpcacheSettings(): array {
+        $out = array(
+            'revalidate_freq'     => null,
+            'validate_timestamps' => null,
+            'enable_cli'          => null,
+        );
+        if (!function_exists('ini_get')) {
+            return $out;
+        }
+        $rf = ini_get('opcache.revalidate_freq');
+        if ($rf !== false) {
+            $out['revalidate_freq'] = (int)$rf;
+        }
+        $vt = ini_get('opcache.validate_timestamps');
+        if ($vt !== false) {
+            $out['validate_timestamps'] = ((int)$vt === 1 || strtolower((string)$vt) === 'on');
+        }
+        $ec = ini_get('opcache.enable_cli');
+        if ($ec !== false) {
+            $out['enable_cli'] = ((int)$ec === 1 || strtolower((string)$ec) === 'on');
+        }
+        return $out;
+    }
+
+    /**
+     * open_basedir restriction string, or null when not configured.
+     * Returned wholesale (path list) so the server side can match it
+     * against the plugin's known write targets; the value is not PII
+     * and the per-host shapes vary enough that any normalization here
+     * would lose signal.
+     *
+     * @return string|null
+     */
+    private static function probeOpenBasedir(): ?string {
+        if (!function_exists('ini_get')) {
+            return null;
+        }
+        $v = ini_get('open_basedir');
+        if (!is_string($v) || $v === '') {
+            return null;
+        }
+        return $v;
+    }
+
+    /**
+     * Multisite identity for the request the report originates from.
+     * When `is_multisite()` is false the rest of the shape is omitted
+     * rather than emitted as nulls per probe (a single-site install
+     * has no blog_id/network_id and the keys would be misleading).
+     *
+     * Shape (multisite):
+     *   { is_multisite: true,
+     *     is_main_site: bool|null,
+     *     blog_id: int|null,
+     *     network_id: int|null,
+     *     network_activated: bool|null }
+     *
+     * Shape (single-site):
+     *   { is_multisite: false }
+     *
+     * @return array<string, mixed>
+     */
+    private static function probeMultisiteRole(): array {
+        $isMultisite = function_exists('is_multisite') && (bool)is_multisite();
+        $out = array('is_multisite' => $isMultisite);
+        if (!$isMultisite) {
+            return $out;
+        }
+        $out['is_main_site'] = function_exists('is_main_site') ? (bool)is_main_site() : null;
+        $out['blog_id'] = function_exists('get_current_blog_id') ? (int)get_current_blog_id() : null;
+        $out['network_id'] = function_exists('get_current_network_id') ? (int)get_current_network_id() : null;
+
+        $networkActivated = null;
+        if (function_exists('is_plugin_active_for_network') && function_exists('plugin_basename') && defined('ABJ404_FILE')) {
+            try {
+                $networkActivated = (bool) is_plugin_active_for_network(plugin_basename(ABJ404_FILE));
+            } catch (\Throwable $e) {
+                // allow-silent-catch: best-effort multisite probe; is_plugin_active_for_network requires wp-admin context that may not be loaded on front-end / cron paths, leave null
+                @error_log('404 Solution: probeMultisiteRole network-activated check failed: ' . $e->getMessage());
+                $networkActivated = null;
+            }
+        }
+        $out['network_activated'] = $networkActivated;
+        return $out;
+    }
+
+    /**
+     * Whether the .htaccess at the WP home path is writable by the
+     * plugin. Differentiates "Apache rule install will succeed" from
+     * "must use the DB-only redirect handler". Falls back to ABSPATH
+     * when get_home_path() is unavailable (front-end / cron context
+     * loads it on demand from wp-admin/includes/file.php).
+     *
+     * @return bool
+     */
+    private static function probeHtaccessWritable(): bool {
+        $path = self::resolveHtaccessPath();
+        if ($path === '') {
+            return false;
+        }
+        // is_writable() returns false on a non-existent file too,
+        // which matches the install-method intent: if the file does
+        // not yet exist and we cannot write the directory either, the
+        // Apache-rule path cannot succeed.
+        return @is_writable($path);
+    }
+
+    /**
+     * Best path to test for .htaccess writability. Prefers
+     * get_home_path() (which honors WordPress in-subdir installs);
+     * falls back to ABSPATH for early-boot / front-end contexts where
+     * wp-admin/includes/file.php has not been loaded.
+     *
+     * @return string
+     */
+    private static function resolveHtaccessPath(): string {
+        if (function_exists('get_home_path')) {
+            $home = (string) get_home_path();
+            if ($home !== '') {
+                return rtrim($home, "/\\") . '/.htaccess';
+            }
+        }
+        if (defined('ABSPATH') && ABSPATH !== '') {
+            return rtrim(ABSPATH, "/\\") . '/.htaccess';
+        }
+        return '';
+    }
+
+    /**
+     * Free bytes on the system temp directory's filesystem. Some
+     * shared hosts mount /tmp as a separate quota from the WP install
+     * path; the disk_free_bytes probe (which targets the uploads dir)
+     * cannot see /tmp exhaustion. Throws when disk_free_space is
+     * disabled so the caller's tryInt wrapper records null rather
+     * than a misleading zero.
+     *
+     * @return int
+     */
+    private static function probeTmpFreeBytesOrThrow(): int {
+        if (!function_exists('disk_free_space')) {
+            throw new \RuntimeException('disk_free_space unavailable');
+        }
+        $tmp = function_exists('sys_get_temp_dir') ? sys_get_temp_dir() : '';
+        if ($tmp === '') {
+            throw new \RuntimeException('sys_get_temp_dir returned empty');
+        }
+        $v = @disk_free_space($tmp);
+        if ($v === false) {
+            throw new \RuntimeException('disk_free_space returned false for ' . $tmp);
+        }
+        return (int)$v;
     }
 }

@@ -155,7 +155,7 @@ return (function (): array {
             'key_type' => 'string',
             // value_type intentionally omitted: this is the JSON
             // passthrough, mixed scalar/object/array values allowed.
-            'description' => 'Best-effort site diagnostics: MySQL globals + status counters + session probe, disk free/total, PHP SAPI / opcache, plugin table sizes (with data_free fragmentation), view-build freshness state, active connection count, per-index cardinality, hosting + panel class, object-cache backend, DB charset/collate + per-column collation, WP+PHP timezone, plugin install/upgrade lifecycle, top recurring error signatures. Anything new diagnosed for a recurring-user failure goes here first, then optionally graduates to a typed column.',
+            'description' => 'Best-effort site diagnostics: MySQL globals + status counters + session probe, disk free/total, PHP SAPI / opcache (on/off + detail settings), plugin table sizes (with data_free fragmentation), view-build freshness state, active connection count, per-index cardinality, hosting + panel class, object-cache backend, DB charset/collate + per-column collation, WP+PHP timezone, plugin install/upgrade lifecycle, top recurring error signatures, opcache revalidate/validate/cli detail, open_basedir restriction, multisite role + network-activation, .htaccess writability, /tmp filesystem free bytes. Anything new diagnosed for a recurring-user failure goes here first, then optionally graduates to a typed column.',
         ],
     ];
 
