@@ -162,6 +162,7 @@ function abj404_autoloader($class) {
 				$inc . 'DataAccessTrait_PublishedContent.php',
 				$inc . 'DataAccessTrait_Stats.php',
 				$inc . 'DataAccessTrait_ErrorClassification.php',
+				$inc . 'DataAccessTrait_SqlErrorReporting.php',
 				$inc . 'DataAccessTrait_QueryTimeouts.php',
 			),
 			'ABJ_404_Solution_PluginLogic' => array(

@@ -25,6 +25,7 @@ return array(
     'ABJ_404_Solution_DataAccess_MaintenanceTrait' => $base . 'includes/DataAccessTrait_Maintenance.php',
     'ABJ_404_Solution_DataAccess_PublishedContentTrait' => $base . 'includes/DataAccessTrait_PublishedContent.php',
     'ABJ_404_Solution_DataAccess_QueryTimeoutsTrait' => $base . 'includes/DataAccessTrait_QueryTimeouts.php',
+    'ABJ_404_Solution_DataAccess_SqlErrorReportingTrait' => $base . 'includes/DataAccessTrait_SqlErrorReporting.php',
     'ABJ_404_Solution_DataAccess_RedirectsTrait' => $base . 'includes/DataAccessTrait_Redirects.php',
     'ABJ_404_Solution_DataAccess_StatsTrait' => $base . 'includes/DataAccessTrait_Stats.php',
     'ABJ_404_Solution_DataAccess_ViewBuildAdaptiveTrait' => $base . 'includes/DataAccessTrait_ViewBuildAdaptive.php',
