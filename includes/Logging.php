@@ -473,7 +473,17 @@ class ABJ_404_Solution_Logging {
         $handle = null;
         $collectingErrorLines = false;
         try {
-            if ($handle = fopen($this->getDebugFilePath(), "r")) {
+            $debugPath = $this->getDebugFilePath();
+            // Check existence before fopen so PHP does not emit a warning on a
+            // missing debug file. The file is absent on fresh installs and in
+            // most test fixtures. Return the empty initialized array (no error
+            // line) in that case rather than letting fopen warn and return
+            // false. failOnWarning=true in phpunit.xml means an unguarded
+            // warning here trips the whole preflight gate.
+            if (!is_string($debugPath) || $debugPath === '' || !file_exists($debugPath)) {
+                return $latestErrorLineFound;
+            }
+            if ($handle = fopen($debugPath, "r")) {
                 // read the file one line at a time.
                 while (($line = fgets($handle)) !== false) {
                     $linesRead++;
