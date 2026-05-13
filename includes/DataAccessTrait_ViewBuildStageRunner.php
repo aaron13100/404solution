@@ -127,6 +127,24 @@ trait ABJ_404_Solution_DataAccess_ViewBuildStageRunnerTrait {
             }
             $result = $callback();
         } catch (\Throwable $e) {
+            // B17 (Bruno 2026-05-13): when the host kills our connection
+            // mid-stage (wait_timeout < build duration, MySQL errno 2006 /
+            // 2013, "MySQL server has gone away" / "Lost connection during
+            // query"), explicitly reconnect BEFORE the classifier and its
+            // option-write side effects run. queryAndGetResults() already
+            // calls ensureConnection() on its own ingress, so this is
+            // belt-and-suspenders for the catch-block path: if a future
+            // refactor moved any catch-block option write outside the DAO,
+            // a still-broken handle would silently lose the progress /
+            // streak / notice updates the classifier depends on. The
+            // explicit reconnect also pins the "resume from last completed
+            // stage, not S1" contract at the stage runner level rather
+            // than at the DAO level. ensureConnection() is idempotent
+            // (returns true when already connected) so the cost on the
+            // non-connection-drop paths is one mysqli_ping per stage exit.
+            if ($this->isTransientConnectionError($e->getMessage())) {
+                $this->ensureConnection();
+            }
             // Catch-block classification + side effects (skip / halt / streak)
             // live on the HostFailurePolicy trait so this orchestrator stays
             // focused on stage sequencing. classifyAndHandleStageFailure()

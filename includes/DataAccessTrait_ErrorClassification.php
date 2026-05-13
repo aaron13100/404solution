@@ -91,6 +91,24 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
                 return true;
             }
         }
+        // Numeric client-error codes for the connection-drop class. Some PDO
+        // / driver surfaces (and translated MySQL builds where the English
+        // text is missing) emit "(2006)", "[2006]", "errno 2006", or a
+        // SQLSTATE-formatted "SQLSTATE[HY000]: General error: 2006 ..." with
+        // no canonical "server has gone away" wording. Match the unambiguous
+        // bracketed / parenthesized / errno-prefixed forms so a bare "2006"
+        // appearing in some unrelated text (year, ID, row count) does not
+        // misclassify. 2006 = CR_SERVER_GONE_ERROR, 2013 = CR_SERVER_LOST.
+        foreach (array('2006', '2013') as $code) {
+            if ($this->f->strpos($lower, '[' . $code . ']') !== false
+                || $this->f->strpos($lower, '(' . $code . ')') !== false
+                || $this->f->strpos($lower, 'errno ' . $code) !== false
+                || $this->f->strpos($lower, 'errno: ' . $code) !== false
+                || $this->f->strpos($lower, 'error: ' . $code . ' ') !== false
+                || $this->f->strpos($lower, 'error ' . $code . ':') !== false) {
+                return true;
+            }
+        }
         return false;
     }
 
