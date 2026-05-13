@@ -722,26 +722,6 @@ class ABJ_404_Solution_FeedbackTransport {
     }
 
     /**
-     * Call a structured-data helper, returning [] if it throws or
-     * returns a non-array. Unlike tryArray(), preserves mixed values
-     * (strings, nested arrays, bools, floats) so diagnostic probes
-     * can ship their natural shape into the JSON passthrough column
-     * without being silently filtered to integer-only entries.
-     *
-     * @param callable $fn
-     * @return array<mixed, mixed>
-     */
-    private static function tryMixedArray(callable $fn): array {
-        try {
-            $v = $fn();
-            return is_array($v) ? $v : array();
-        } catch (\Throwable $e) {
-            @error_log('404 Solution: FeedbackTransport structured probe failed: ' . $e->getMessage());
-            return array();
-        }
-    }
-
-    /**
      * Pull a single int from a count map, returning null when the key is
      * absent. Distinguishes "DAO returned an empty array" (failure, null)
      * from "DAO returned 0 for this status" (real zero) in the payload.
