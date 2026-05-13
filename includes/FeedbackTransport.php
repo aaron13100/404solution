@@ -336,6 +336,93 @@ class ABJ_404_Solution_FeedbackTransport {
     }
 
     /**
+     * Build a schema-conforming payload with diagnostic and site-identifying
+     * fields stripped. Used by the uninstall flow when the user unchecks the
+     * "Include technical details" opt-in (docs/diagnostic-catalog.md F1):
+     * the server still needs a well-formed payload to record the feedback,
+     * but the modal text presents that checkbox as the diagnostic opt-in,
+     * so unchecking it must actually suppress site_url, environment_extras,
+     * counts, server_software, active_plugins, etc.
+     *
+     * Routing-only fields (plugin_version, report_type, is_uninstall) stay
+     * at their real values; everything else gets the schema-allowed empty /
+     * null / enum-default. Type-specific extras from `$extra` are merged on
+     * top so the user's actual feedback (uninstall_reason, contact_email,
+     * followup_details) still rides through.
+     *
+     * @param string $type One of 'error', 'heartbeat', 'uninstall', 'support_request'.
+     * @param array<string, mixed> $extra
+     * @return array<string, mixed>
+     */
+    public static function buildMinimalPayload(string $type, array $extra = array()): array {
+        $payload = array(
+            // Routing fields - kept at real values so the server can route
+            // and version-tag the report.
+            'plugin_version' => defined('ABJ404_VERSION') ? ABJ404_VERSION : '',
+            'report_type'    => $type,
+            'is_uninstall'   => ($type === 'uninstall'),
+
+            // Site-identifying fields - blanked.
+            'site_url'        => '',
+            'locale'          => '',
+            'db_type'         => 'mysql',
+            'db_version'      => '',
+            'table_prefix'    => '',
+            'wp_version'      => '',
+            'is_multisite'    => false,
+            'wp_debug'        => false,
+            'php_version'     => '',
+            'server_software' => '',
+
+            // Environment fields - empty / null defaults that still satisfy
+            // the schema (object/array shapes and int|null nullability).
+            'resource_limits'       => array(),
+            'wp_memory_limit_bytes' => null,
+            'extensions'            => array(),
+            'active_plugins'        => array(),
+            'active_theme'          => '',
+            'object_cache'          => 'default',
+
+            // Content counts - null (the "unknown" sentinel).
+            'published_posts_count' => null,
+            'published_pages_count' => null,
+            'categories_count'      => null,
+            'tags_count'            => null,
+
+            // Redirect counts - null.
+            'redirects_active_total'    => null,
+            'redirects_manual_count'    => null,
+            'redirects_automatic_count' => null,
+            'redirects_regex_count'     => null,
+            'redirects_trashed_count'   => null,
+
+            // Captured-404 counts - null.
+            'captured_404s_active_total'  => null,
+            'captured_404s_new_count'     => null,
+            'captured_404s_ignored_count' => null,
+            'captured_404s_later_count'   => null,
+            'captured_404s_trashed_count' => null,
+
+            // Log / debug file health - null.
+            'log_entries_count'     => null,
+            'log_table_size_bytes'  => null,
+            'error_count_in_log'    => null,
+            'debug_file_size_bytes' => null,
+
+            // JSON passthrough - empty.
+            'environment_extras' => array(),
+        );
+
+        // Type-specific extras the user explicitly opted in to. These ride
+        // through unchanged so the feedback text/email survives the redaction.
+        foreach ($extra as $k => $v) {
+            $payload[(string)$k] = $v;
+        }
+
+        return $payload;
+    }
+
+    /**
      * HTTP transport. Returns ['ok' => bool, 'status' => int|null,
      * 'reason' => string|null, 'detail' => string|null].
      *

@@ -346,7 +346,7 @@ class ABJ_404_Solution_UninstallModal {
                 <!-- Technical Details Opt-in -->
                 <label style="margin: 10px 0 15px 0; display: block;">
                     <input type="checkbox" id="abj404-include-diagnostics" checked>
-                    <?php _e('Include technical details (system info + sanitized log excerpt) to help diagnose the issue', '404-solution'); ?>
+                    <?php _e('Include technical details (site URL, system info, plugin counts, and a sanitized log excerpt) to help diagnose the issue', '404-solution'); ?>
                 </label>
             </div>
         </div>
@@ -439,12 +439,13 @@ class ABJ_404_Solution_UninstallModal {
         // page load via wp_schedule_single_event(), so this AJAX call never
         // blocks on the network, even on slow SMTP / WAN paths.
         if ($preferences['send_feedback']) {
+            $includeDiagnostics = !empty($preferences['include_diagnostics']);
             $debugLog = '';
             // Only fetch the log excerpt when the user opted into diagnostics.
             // abj_service() is contractually non-throwing (returns null for
             // unresolved services), so guarding with method_exists() is enough
             // to keep this fire-and-forget path from needing a try/catch shim.
-            if (!empty($preferences['include_diagnostics']) && function_exists('abj_service')) {
+            if ($includeDiagnostics && function_exists('abj_service')) {
                 $logger = abj_service('logging');
                 if (is_object($logger) && method_exists($logger, 'getSanitizedLogExcerptForSupport')) {
                     $excerpt = $logger->getSanitizedLogExcerptForSupport();
@@ -461,10 +462,19 @@ class ABJ_404_Solution_UninstallModal {
                 'better_plugin_name'  => $preferences['better_plugin_name'],
                 'other_reason_text'   => $preferences['other_reason_text'],
                 'contact_email'       => $preferences['feedback_email'],
-                'include_diagnostics' => (bool)$preferences['include_diagnostics'],
+                'include_diagnostics' => $includeDiagnostics,
                 'debug_log'           => $debugLog,
             );
-            $payload = ABJ_404_Solution_FeedbackTransport::buildPayload('uninstall', $extras);
+            // F1 (docs/diagnostic-catalog.md): the "Include technical details"
+            // checkbox is the modal's diagnostic opt-in. When unchecked, we
+            // must NOT collect or ship site_url, environment_extras, counts,
+            // server_software, active_plugins, or any other diagnostic /
+            // site-identifying field. The minimal-payload builder keeps the
+            // payload schema-valid (server still accepts the feedback) while
+            // suppressing every diagnostic row.
+            $payload = $includeDiagnostics
+                ? ABJ_404_Solution_FeedbackTransport::buildPayload('uninstall', $extras)
+                : ABJ_404_Solution_FeedbackTransport::buildMinimalPayload('uninstall', $extras);
             ABJ_404_Solution_FeedbackTransport::queue($payload, 'uninstall');
 
             $message = __('Thanks for the feedback!', '404-solution');
