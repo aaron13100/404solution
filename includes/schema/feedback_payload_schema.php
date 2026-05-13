@@ -139,6 +139,24 @@ return (function (): array {
             'enum' => ['development'],
             'required' => false,
         ],
+
+        // Bruno/Troy diagnostic passthrough. Sites where the redirects
+        // tab times out or rebuild stalls cannot be triaged from typed
+        // columns alone: the binding constraints are MySQL globals
+        // (innodb_buffer_pool_size, tmp_table_size), disk headroom,
+        // and PHP SAPI specifics that the server doesn't pre-declare.
+        // Stored on the server in the JSON passthrough column (the
+        // existing `extras_json` field on the reports row), keyed by
+        // a stable namespace so future probes can land here without
+        // schema changes on either side. Producer-side detail:
+        // FeedbackTransport::environmentExtras().
+        'environment_extras' => [
+            'type' => 'object',
+            'key_type' => 'string',
+            // value_type intentionally omitted: this is the JSON
+            // passthrough, mixed scalar/object/array values allowed.
+            'description' => 'Best-effort site diagnostics: MySQL globals + status counters + session probe, disk free/total, PHP SAPI / opcache, plugin table sizes (with data_free fragmentation), view-build freshness state, active connection count, per-index cardinality, hosting + panel class, object-cache backend, DB charset/collate + per-column collation, WP+PHP timezone, plugin install/upgrade lifecycle, top recurring error signatures. Anything new diagnosed for a recurring-user failure goes here first, then optionally graduates to a typed column.',
+        ],
     ];
 
     $errorExtras = [

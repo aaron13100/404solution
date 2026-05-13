@@ -4,6 +4,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+require_once dirname(__FILE__) . '/FeedbackTransportTrait_EnvironmentExtras.php';
+
 /**
  * HTTP-first transport for plugin feedback reports.
  *
@@ -30,6 +32,8 @@ if (!defined('ABSPATH')) {
  * until then.
  */
 class ABJ_404_Solution_FeedbackTransport {
+
+    use ABJ_404_Solution_FeedbackTransport_EnvironmentExtrasTrait;
 
     const TRANSIENT_PREFIX = 'abj404_pending_report_';
     const TRANSIENT_TTL = 86400; // 24 hours
@@ -313,6 +317,7 @@ class ABJ_404_Solution_FeedbackTransport {
         $payload['log_table_size_bytes']  = self::tryInt(function () { return self::logTableSizeBytes(); });
         $payload['error_count_in_log']    = self::tryInt(function () { return self::errorCountInLog(); });
         $payload['debug_file_size_bytes'] = self::tryInt(function () { return self::debugFileSizeBytes(); });
+        $payload['environment_extras']    = self::environmentExtras();
 
         if (self::isDevelopmentEnvironment()) {
             $payload['environment_type'] = 'development';
@@ -712,6 +717,26 @@ class ABJ_404_Solution_FeedbackTransport {
             return $coerced;
         } catch (\Throwable $e) {
             @error_log('404 Solution: FeedbackTransport array lookup failed: ' . $e->getMessage());
+            return array();
+        }
+    }
+
+    /**
+     * Call a structured-data helper, returning [] if it throws or
+     * returns a non-array. Unlike tryArray(), preserves mixed values
+     * (strings, nested arrays, bools, floats) so diagnostic probes
+     * can ship their natural shape into the JSON passthrough column
+     * without being silently filtered to integer-only entries.
+     *
+     * @param callable $fn
+     * @return array<mixed, mixed>
+     */
+    private static function tryMixedArray(callable $fn): array {
+        try {
+            $v = $fn();
+            return is_array($v) ? $v : array();
+        } catch (\Throwable $e) {
+            @error_log('404 Solution: FeedbackTransport structured probe failed: ' . $e->getMessage());
             return array();
         }
     }
