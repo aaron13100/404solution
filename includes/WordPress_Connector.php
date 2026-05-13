@@ -332,46 +332,7 @@ class ABJ_404_Solution_WordPress_Connector {
         }
 
         if ($isListPage || $isStatsPage) {
-            // The view-updater module was split into focused collaborators (see
-            // includes/ajax/view_updater*.js) so each file stays under the
-            // FileSizeLimitsTest threshold. Enqueue order matters: every file
-            // below uses globals defined by the modules listed before it. The
-            // bootstrap (view_updater.js) declares the jQuery.ready entry
-            // point and must load LAST so the helpers are defined when ready
-            // fires. WordPress's $deps array enforces this ordering on the
-            // emitted <script> tags.
-            $vuBase = plugin_dir_url(__FILE__) . 'ajax/';
-            ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-view-updater-stage-diagnostics',
-                $vuBase . 'view_updater_stage_diagnostics.js', array('jquery'));
-            ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-view-updater-compare',
-                $vuBase . 'view_updater_compare.js', array('jquery'));
-            ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-view-updater-toast',
-                $vuBase . 'view_updater_toast.js', array('jquery'));
-            ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-view-updater-stats',
-                $vuBase . 'view_updater_stats.js',
-                array('jquery', 'abj404-view-updater-toast'));
-            ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-view-updater-build-advance',
-                $vuBase . 'view_updater_build_advance.js',
-                array('jquery', 'abj404-view-updater-stage-diagnostics'));
-            ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-view-updater-table-init',
-                $vuBase . 'view_updater_table_init.js',
-                array('jquery', 'abj404-view-updater-toast', 'abj404-view-updater-stats'));
-            ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-view-updater-table-warmup',
-                $vuBase . 'view_updater_table_warmup.js',
-                array('jquery', 'abj404-view-updater-stage-diagnostics',
-                      'abj404-view-updater-build-advance', 'abj404-view-updater-table-init'));
-            ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-view-updater-pagination',
-                $vuBase . 'view_updater_pagination.js',
-                array('jquery', 'abj404-view-updater-compare', 'abj404-view-updater-stage-diagnostics',
-                      'abj404-view-updater-build-advance', 'abj404-view-updater-table-init',
-                      'abj404-view-updater-table-warmup', 'abj404-view-updater-toast'));
-            ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-view-updater',
-                $vuBase . 'view_updater.js',
-                array('jquery', 'jquery-ui-autocomplete',
-                      'abj404-view-updater-stage-diagnostics', 'abj404-view-updater-compare',
-                      'abj404-view-updater-toast', 'abj404-view-updater-stats',
-                      'abj404-view-updater-build-advance', 'abj404-view-updater-table-init',
-                      'abj404-view-updater-table-warmup', 'abj404-view-updater-pagination'));
+            self::enqueueViewUpdaterModules(plugin_dir_url(__FILE__) . 'ajax/');
         }
 
         if ($isLogsPage) {
@@ -492,6 +453,56 @@ class ABJ_404_Solution_WordPress_Connector {
         } catch (Throwable $e) {
             self::reportAdminRuntimeError('admin_enqueue_scripts:plugins.php', $e);
         }
+    }
+
+    /**
+     * Enqueue the view-updater module bundle (the AJAX-driven admin table
+     * orchestration). Split out of add_scripts() to keep that function under
+     * the ModularityTest body-line cap. Enqueue order matters: every file
+     * below uses globals defined by the modules listed before it; the
+     * bootstrap (view_updater.js) declares the jQuery.ready entry point and
+     * must load LAST so the helpers are defined when ready fires.
+     * WordPress's $deps array enforces this ordering on the emitted
+     * <script> tags. The B20 nonce-refresh helper exposes
+     * abj404AjaxWithNonceRetry which every sibling uses via a soft typeof
+     * reference, so its enqueue must precede them.
+     *
+     * @param string $vuBase URL prefix for the ajax/ assets directory.
+     * @return void
+     */
+    private static function enqueueViewUpdaterModules(string $vuBase): void {
+        $enq = array('ABJ_404_Solution_WPUtils', 'my_wp_enq_scrpt');
+        $enq('abj404-view-updater-nonce-refresh',
+            $vuBase . 'view_updater_nonce_refresh.js', array('jquery'));
+        $enq('abj404-view-updater-stage-diagnostics',
+            $vuBase . 'view_updater_stage_diagnostics.js', array('jquery'));
+        $enq('abj404-view-updater-compare',
+            $vuBase . 'view_updater_compare.js', array('jquery'));
+        $enq('abj404-view-updater-toast',
+            $vuBase . 'view_updater_toast.js', array('jquery'));
+        $enq('abj404-view-updater-stats', $vuBase . 'view_updater_stats.js',
+            array('jquery', 'abj404-view-updater-toast', 'abj404-view-updater-nonce-refresh'));
+        $enq('abj404-view-updater-build-advance', $vuBase . 'view_updater_build_advance.js',
+            array('jquery', 'abj404-view-updater-stage-diagnostics', 'abj404-view-updater-nonce-refresh'));
+        $enq('abj404-view-updater-table-init', $vuBase . 'view_updater_table_init.js',
+            array('jquery', 'abj404-view-updater-toast', 'abj404-view-updater-stats',
+                'abj404-view-updater-nonce-refresh'));
+        $enq('abj404-view-updater-table-warmup', $vuBase . 'view_updater_table_warmup.js',
+            array('jquery', 'abj404-view-updater-stage-diagnostics',
+                'abj404-view-updater-build-advance', 'abj404-view-updater-table-init',
+                'abj404-view-updater-nonce-refresh'));
+        $enq('abj404-view-updater-pagination', $vuBase . 'view_updater_pagination.js',
+            array('jquery', 'abj404-view-updater-compare', 'abj404-view-updater-stage-diagnostics',
+                'abj404-view-updater-build-advance', 'abj404-view-updater-table-init',
+                'abj404-view-updater-table-warmup', 'abj404-view-updater-toast',
+                'abj404-view-updater-nonce-refresh'));
+        $enq('abj404-view-updater', $vuBase . 'view_updater.js',
+            array('jquery', 'jquery-ui-autocomplete',
+                'abj404-view-updater-stage-diagnostics', 'abj404-view-updater-compare',
+                'abj404-view-updater-toast', 'abj404-view-updater-stats',
+                'abj404-view-updater-build-advance', 'abj404-view-updater-table-init',
+                'abj404-view-updater-table-warmup', 'abj404-view-updater-pagination',
+                'abj404-view-updater-nonce-refresh'));
     }
 
     private static function registerSupportRequestAssets(): void {

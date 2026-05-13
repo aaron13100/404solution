@@ -175,7 +175,9 @@ function paginationLinksChange(triggerItem, options) {
         cacheMode: cacheMode
     });
 
-    jQuery.ajax({
+    var ajaxRunner = (typeof abj404AjaxWithNonceRetry === 'function')
+        ? abj404AjaxWithNonceRetry : jQuery.ajax;
+    ajaxRunner({
         url: baseUrl,
         type: 'POST',
         dataType: "json",
@@ -481,7 +483,9 @@ function paginationLinksChange(triggerItem, options) {
                     .text(detailLines.join('\n'));
                 $notice.append($titleEl).append($detailsEl);
                 if (shouldFetchInflightStage) {
-                    jQuery.ajax({
+                    var inflightAjaxRunner = (typeof abj404AjaxWithNonceRetry === 'function')
+                        ? abj404AjaxWithNonceRetry : jQuery.ajax;
+                    inflightAjaxRunner({
                         url: baseUrl,
                         type: 'POST',
                         dataType: 'json',

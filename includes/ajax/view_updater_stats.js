@@ -98,7 +98,9 @@ function triggerStatsBackgroundRefreshIfEnabled() {
     var runRefresh = function() {
         var startMs = Date.now();
         abj404UpdateAjaxDebugLog('Starting Stats AJAX: ' + action);
-        jQuery.ajax({
+        var statsAjaxRunner = (typeof abj404AjaxWithNonceRetry === 'function')
+            ? abj404AjaxWithNonceRetry : jQuery.ajax;
+        statsAjaxRunner({
             url: window.ajaxurl || 'admin-ajax.php',
             type: 'POST',
             dataType: 'json',

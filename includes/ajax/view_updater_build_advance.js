@@ -89,11 +89,16 @@ function abj404StartStageProgressPolling(config) {
             }
         }
     };
+    var stageAjaxRunner = (typeof abj404AjaxWithNonceRetry === 'function')
+        ? abj404AjaxWithNonceRetry : jQuery.ajax;
     var updateStage = function(forceFinalFetch) {
         if (stopped && forceFinalFetch !== true) {
             return;
         }
-        jQuery.ajax({
+        // Use the callback-style success/error keys (not .done()/.fail() on
+        // the returned jqXHR) so the B20 expired-nonce retry wrapper can
+        // intercept the 403 before the user's handler sees the failure.
+        stageAjaxRunner({
             url: config.baseUrl,
             type: 'POST',
             dataType: 'json',
@@ -102,9 +107,10 @@ function abj404StartStageProgressPolling(config) {
                 action: 'ajaxFetchInflightStage',
                 nonce: config.nonce,
                 requestId: config.requestId
+            },
+            success: function(stageResult) {
+                processStageResult(stageResult, !stopped || forceFinalFetch === true);
             }
-        }).done(function(stageResult) {
-            processStageResult(stageResult, !stopped || forceFinalFetch === true);
         });
     };
     jQuery('.abj404-refresh-status').text(baseMessage + ' (...)');
@@ -248,80 +254,88 @@ function abj404PollViewBuildAdvance(config) {
             requestData.forceViewRebuild = '1';
             sendForceViewRebuild = false;
         }
-        jQuery.ajax({
+        var advanceAjaxRunner = (typeof abj404AjaxWithNonceRetry === 'function')
+            ? abj404AjaxWithNonceRetry : jQuery.ajax;
+        // Use the callback-style success/error keys (not .done()/.fail() on
+        // the returned jqXHR) so the B20 expired-nonce retry wrapper can
+        // intercept the 403 before the user's handler sees the failure.
+        advanceAjaxRunner({
             url: config.baseUrl,
             type: 'POST',
             dataType: 'json',
             timeout: 30000,
-            data: requestData
-        }).done(function(result) {
-            if (stopped) {
-                return;
-            }
-            var progress = (result && result.progress) ? result.progress : {};
-            var status = (result && typeof result.status === 'string') ? result.status : '';
-            // Update no-progress deadline tracking BEFORE checking ready/locked.
-            var fingerprintKey = serializeFingerprint(progress);
-            if (fingerprintKey !== '' && fingerprintKey !== lastFingerprintKey) {
-                lastFingerprintKey = fingerprintKey;
-                lastProgressTickAtMs = Date.now();
-            }
-            // Visible status text is owned by abj404StartStageProgressPolling,
-            // which reads the inflight transient and shows the live mid-stage
-            // detail (batch X/Y, yielded in N ms). Writing here from
-            // progress.stage (a snapshot of the lagging current_stage option)
-            // raced with that poller and made the displayed stage flicker
-            // backwards when a stage was yielding mid-batch.
-            abj404UpdateAjaxDebugLog('View build advance: ' + (progress.progress_text || ''), {
-                status: status,
-                stage: progress.stage,
-                of: progress.of,
-                build_started: progress.build_started,
-                fingerprint: progress.fingerprint || null,
-                attemptCount: attemptCount
-            });
-            onProgress(progress);
-            if (status === 'ready') {
-                stopped = true;
-                onReady(progress);
-                return;
-            }
-            if (progress.locked === true) {
-                window.setTimeout(fireOnce, (parseInt(config.lockedIntervalMs, 10) || 3500) + Math.floor(Math.random() * 750));
-                return;
-            }
-            window.setTimeout(fireOnce, intervalMs);
-        }).fail(function(jqXHR, textStatus, errorThrown) {
-            if (stopped) {
-                return;
-            }
-            // 4xx is terminal: nonce expired, auth lost, route gone. Retrying
-            // these will never succeed and surfacing the error promptly is
-            // the correct UX. 5xx and network errors (status 0) are treated
-            // as a no-progress tick: the build itself may be fine on the
-            // next request, and the existing noProgressDeadlineMs (240s)
-            // already catches a genuinely-stuck server. This keeps a single
-            // transient blip from killing the poll loop after the user has
-            // been waiting through a long build.
-            var status = jqXHR && jqXHR.status ? jqXHR.status : 0;
-            var isTransient = (status === 0) || (status >= 500 && status < 600);
-            if (!isTransient) {
-                stopped = true;
-                onError({
+            data: requestData,
+            success: function(result) {
+                if (stopped) {
+                    return;
+                }
+                var progress = (result && result.progress) ? result.progress : {};
+                var status = (result && typeof result.status === 'string') ? result.status : '';
+                // Update no-progress deadline tracking BEFORE checking ready/locked.
+                var fingerprintKey = serializeFingerprint(progress);
+                if (fingerprintKey !== '' && fingerprintKey !== lastFingerprintKey) {
+                    lastFingerprintKey = fingerprintKey;
+                    lastProgressTickAtMs = Date.now();
+                }
+                // Visible status text is owned by abj404StartStageProgressPolling,
+                // which reads the inflight transient and shows the live mid-stage
+                // detail (batch X/Y, yielded in N ms). Writing here from
+                // progress.stage (a snapshot of the lagging current_stage option)
+                // raced with that poller and made the displayed stage flicker
+                // backwards when a stage was yielding mid-batch.
+                abj404UpdateAjaxDebugLog('View build advance: ' + (progress.progress_text || ''), {
                     status: status,
-                    textStatus: textStatus,
-                    errorThrown: errorThrown,
-                    lastError: textStatus || errorThrown || 'ajax-error',
+                    stage: progress.stage,
+                    of: progress.of,
+                    build_started: progress.build_started,
+                    fingerprint: progress.fingerprint || null,
                     attemptCount: attemptCount
                 });
-                return;
+                onProgress(progress);
+                if (status === 'ready') {
+                    stopped = true;
+                    onReady(progress);
+                    return;
+                }
+                if (progress.locked === true) {
+                    window.setTimeout(fireOnce, (parseInt(config.lockedIntervalMs, 10) || 3500) + Math.floor(Math.random() * 750));
+                    return;
+                }
+                window.setTimeout(fireOnce, intervalMs);
+            },
+            error: function(jqXHR, textStatus, errorThrown) {
+                if (stopped) {
+                    return;
+                }
+                // 4xx is terminal: nonce expired (already handled by the
+                // B20 retry wrapper), auth lost, route gone. Retrying these
+                // will never succeed and surfacing the error promptly is the
+                // correct UX. 5xx and network errors (status 0) are treated
+                // as a no-progress tick: the build itself may be fine on
+                // the next request, and the existing noProgressDeadlineMs
+                // (240s) already catches a genuinely-stuck server. This
+                // keeps a single transient blip from killing the poll loop
+                // after the user has been waiting through a long build.
+                var status = jqXHR && jqXHR.status ? jqXHR.status : 0;
+                var isTransient = (status === 0) || (status >= 500 && status < 600);
+                if (!isTransient) {
+                    stopped = true;
+                    onError({
+                        status: status,
+                        textStatus: textStatus,
+                        errorThrown: errorThrown,
+                        lastError: textStatus || errorThrown || 'ajax-error',
+                        attemptCount: attemptCount
+                    });
+                    return;
+                }
+                abj404UpdateAjaxDebugLog('View build advance transient AJAX failure (continuing)', {
+                    status: status,
+                    textStatus: textStatus,
+                    attemptCount: attemptCount
+                });
+                window.setTimeout(fireOnce, intervalMs);
             }
-            abj404UpdateAjaxDebugLog('View build advance transient AJAX failure (continuing)', {
-                status: status,
-                textStatus: textStatus,
-                attemptCount: attemptCount
-            });
-            window.setTimeout(fireOnce, intervalMs);
         });
     };
 

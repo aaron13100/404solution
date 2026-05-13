@@ -95,7 +95,9 @@ function refreshHealthBarIfNeeded() {
 
     abj404UpdateAjaxDebugLog('Starting Health Bar AJAX: ' + action);
 
-    jQuery.ajax({
+    var healthBarAjaxRunner = (typeof abj404AjaxWithNonceRetry === 'function')
+        ? abj404AjaxWithNonceRetry : jQuery.ajax;
+    healthBarAjaxRunner({
         url: url,
         type: 'POST',
         dataType: 'json',

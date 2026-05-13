@@ -259,7 +259,9 @@ function warmTableCacheStage(triggerItem, options) {
         message: options.stageProgressMessage || 'Currently refreshing data'
     });
 
-    jQuery.ajax({
+    var warmAjaxRunner = (typeof abj404AjaxWithNonceRetry === 'function')
+        ? abj404AjaxWithNonceRetry : jQuery.ajax;
+    warmAjaxRunner({
         url: baseUrl,
         type: 'POST',
         dataType: 'json',
