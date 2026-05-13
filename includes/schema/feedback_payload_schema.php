@@ -54,7 +54,7 @@ return (function (): array {
     $base = [
         // Plugin and request metadata
         'plugin_version'  => ['type' => 'string', 'description' => 'ABJ404_VERSION at send time. Empty string is allowed only in early-boot test contexts.'],
-        'report_type'     => ['type' => 'string', 'enum' => ['error', 'heartbeat', 'uninstall']],
+        'report_type'     => ['type' => 'string', 'enum' => ['error', 'heartbeat', 'uninstall', 'support_request']],
         'is_uninstall'    => ['type' => 'bool', 'description' => 'Back-compat alias for report_type=uninstall. True iff report_type=uninstall.'],
         'site_url'        => ['type' => 'string', 'description' => 'home_url(). Server GROUP BY key.'],
         'locale'          => ['type' => 'string'],
@@ -180,9 +180,38 @@ return (function (): array {
         'debug_log'           => ['type' => 'string'],
     ];
 
+    // type='support_request' carries 4 user-facing extras on top of the
+    // standard diagnostic base. Sent by Ajax_SupportRequest, which is the
+    // only producer of this type today; the JS form is bound to a fixed
+    // set of trigger surfaces (the "Send support request" button on the
+    // redirects page, the captured-404s page, the plugins-row action, the
+    // settings debug screen, and the corrupt-install fallback screen).
+    // The triggered_from enum is pinned to the producer's allow-list so
+    // a drift in either direction (PHP adds a surface the schema doesn't
+    // list, or JS posts a value PHP did not accept) fails the wire-schema
+    // validator before the server endpoint sees it. Keep this list in
+    // sync with ABJ_404_Solution_Ajax_SupportRequest::ALLOWED_TRIGGER_SOURCES.
+    $supportRequestExtras = [
+        'user_message'      => ['type' => 'string', 'description' => 'Free-text message from the requester (sanitize_textarea_field, capped at MAX_USER_MESSAGE_LENGTH source-side). Empty string allowed.'],
+        'reply_email'       => ['type' => 'string', 'description' => 'Optional reply address (sanitize_email). Empty string = anonymous request.'],
+        'triggered_from'    => [
+            'type' => 'string',
+            'enum' => [
+                'redirects_page',
+                'captured_404s_page',
+                'plugins_row_action',
+                'settings_debug',
+                'system_corrupt_install',
+            ],
+            'description' => 'Which admin surface launched the request. Pinned enum; mirror of Ajax_SupportRequest::ALLOWED_TRIGGER_SOURCES.',
+        ],
+        'debug_log_excerpt' => ['type' => 'string', 'description' => 'Best-effort log tail via Ajax_SupportRequest::resolveDebugLogExcerpt(). Empty string when the log file is missing or the Logging service is unavailable.'],
+    ];
+
     return [
-        'error'     => array_merge($base, $errorExtras),
-        'heartbeat' => array_merge($base, $heartbeatExtras),
-        'uninstall' => array_merge($base, $uninstallExtras),
+        'error'           => array_merge($base, $errorExtras),
+        'heartbeat'       => array_merge($base, $heartbeatExtras),
+        'uninstall'       => array_merge($base, $uninstallExtras),
+        'support_request' => array_merge($base, $supportRequestExtras),
     ];
 })();
