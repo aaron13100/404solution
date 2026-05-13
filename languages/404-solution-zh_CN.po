@@ -3841,3 +3841,11 @@ msgstr "未尝试电子邮件后备。"
 #: includes/ajax/Ajax_SupportRequest.php
 msgid "Could not send support request: %1$s. %2$s"
 msgstr "无法发送支持请求：%1$s. %2$s"
+
+#: includes/UninstallModal.php
+msgid "Privacy details (retention, erasure path, processing region): %s"
+msgstr "隐私详情（留存期限、删除路径、处理区域）：%s"
+
+#: includes/UninstallModal.php
+msgid "Include technical details (site URL, system info, plugin counts, and a sanitized log excerpt) to help diagnose the issue"
+msgstr "附上技术详情（站点地址、系统信息、扩展数量以及经过脱敏处理的日志片段），以协助诊断该问题"

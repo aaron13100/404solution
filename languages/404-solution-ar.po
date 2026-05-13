@@ -3864,3 +3864,11 @@ msgstr "لم تُجرَ أي محاولة احتياطية عبر البريد �
 #: includes/ajax/Ajax_SupportRequest.php
 msgid "Could not send support request: %1$s. %2$s"
 msgstr "تعذّر إرسال طلب الدعم: %1$s. %2$s"
+
+#: includes/UninstallModal.php
+msgid "Privacy details (retention, erasure path, processing region): %s"
+msgstr "تفاصيل الخصوصية (مدة الاحتفاظ، مسار المحو، منطقة المعالجة): %s"
+
+#: includes/UninstallModal.php
+msgid "Include technical details (site URL, system info, plugin counts, and a sanitized log excerpt) to help diagnose the issue"
+msgstr "أرفق التفاصيل التقنية (عنوان الموقع، معلومات النظام، عدد الإضافات، ومقتطف سجل منقّى) للمساعدة في تشخيص المشكلة"

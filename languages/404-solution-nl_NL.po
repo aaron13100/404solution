@@ -3835,3 +3835,11 @@ msgstr "Er is geen e-mailterugval geprobeerd."
 #: includes/ajax/Ajax_SupportRequest.php
 msgid "Could not send support request: %1$s. %2$s"
 msgstr "Kon ondersteuningsverzoek niet verzenden: %1$s. %2$s"
+
+#: includes/UninstallModal.php
+msgid "Privacy details (retention, erasure path, processing region): %s"
+msgstr "Privacygegevens (bewaartermijn, wisroute, verwerkingsregio): %s"
+
+#: includes/UninstallModal.php
+msgid "Include technical details (site URL, system info, plugin counts, and a sanitized log excerpt) to help diagnose the issue"
+msgstr "Technische gegevens meesturen (siteadres, systeeminformatie, aantal uitbreidingen en een opgeschoond loguittreksel) om het probleem makkelijker te kunnen onderzoeken"

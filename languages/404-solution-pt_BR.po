@@ -3835,3 +3835,11 @@ msgstr "Nenhum fallback de e-mail foi tentado."
 #: includes/ajax/Ajax_SupportRequest.php
 msgid "Could not send support request: %1$s. %2$s"
 msgstr "Não foi possível enviar a solicitação de suporte: %1$s. %2$s"
+
+#: includes/UninstallModal.php
+msgid "Privacy details (retention, erasure path, processing region): %s"
+msgstr "Detalhes de privacidade (retenção, fluxo de apagamento, região de processamento): %s"
+
+#: includes/UninstallModal.php
+msgid "Include technical details (site URL, system info, plugin counts, and a sanitized log excerpt) to help diagnose the issue"
+msgstr "Incluir detalhes técnicos (endereço do site, informações do sistema, quantidade de extensões e um trecho do registro depurado) para ajudar a diagnosticar o problema"

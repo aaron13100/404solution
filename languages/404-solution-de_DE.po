@@ -3833,3 +3833,11 @@ msgstr "Es wurde kein E-Mail-Fallback versucht."
 #: includes/ajax/Ajax_SupportRequest.php
 msgid "Could not send support request: %1$s. %2$s"
 msgstr "Supportanfrage konnte nicht gesendet werden: %1$s. %2$s"
+
+#: includes/UninstallModal.php
+msgid "Privacy details (retention, erasure path, processing region): %s"
+msgstr "Datenschutzangaben (Aufbewahrungsdauer, Löschweg, Verarbeitungsregion): %s"
+
+#: includes/UninstallModal.php
+msgid "Include technical details (site URL, system info, plugin counts, and a sanitized log excerpt) to help diagnose the issue"
+msgstr "Technische Angaben einschließen (Adresse der Website, Systemdaten, Anzahl der Erweiterungen sowie ein bereinigter Protokollauszug), um die Fehlersuche zu erleichtern"

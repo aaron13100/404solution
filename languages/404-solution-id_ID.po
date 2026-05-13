@@ -3828,3 +3828,11 @@ msgstr "Tidak ada cadangan e-mail yang dicoba."
 #: includes/ajax/Ajax_SupportRequest.php
 msgid "Could not send support request: %1$s. %2$s"
 msgstr "Tidak dapat mengirim permintaan dukungan: %1$s. %2$s"
+
+#: includes/UninstallModal.php
+msgid "Privacy details (retention, erasure path, processing region): %s"
+msgstr "Rincian privasi (penyimpanan, jalur penghapusan, wilayah pemrosesan): %s"
+
+#: includes/UninstallModal.php
+msgid "Include technical details (site URL, system info, plugin counts, and a sanitized log excerpt) to help diagnose the issue"
+msgstr "Sertakan rincian teknis (alamat situs, informasi sistem, jumlah pengaya, dan cuplikan log yang telah dibersihkan) guna membantu mendiagnosis masalah"

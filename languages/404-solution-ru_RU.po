@@ -3842,3 +3842,11 @@ msgstr "Резервная отправка по почте не выполня�
 #: includes/ajax/Ajax_SupportRequest.php
 msgid "Could not send support request: %1$s. %2$s"
 msgstr "Не удалось отправить запрос в поддержку: %1$s. %2$s"
+
+#: includes/UninstallModal.php
+msgid "Privacy details (retention, erasure path, processing region): %s"
+msgstr "Сведения о конфиденциальности (срок хранения, порядок удаления, регион обработки): %s"
+
+#: includes/UninstallModal.php
+msgid "Include technical details (site URL, system info, plugin counts, and a sanitized log excerpt) to help diagnose the issue"
+msgstr "Включить технические сведения (адрес сайта, данные системы, количество расширений и очищенный фрагмент журнала), чтобы помочь в диагностике проблемы"

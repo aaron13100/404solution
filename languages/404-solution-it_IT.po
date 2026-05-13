@@ -3832,3 +3832,11 @@ msgstr "Nessun ripiego e-mail è stato tentato."
 #: includes/ajax/Ajax_SupportRequest.php
 msgid "Could not send support request: %1$s. %2$s"
 msgstr "Impossibile inviare la richiesta di supporto: %1$s. %2$s"
+
+#: includes/UninstallModal.php
+msgid "Privacy details (retention, erasure path, processing region): %s"
+msgstr "Dettagli sulla riservatezza (conservazione, modalità di cancellazione, area di trattamento): %s"
+
+#: includes/UninstallModal.php
+msgid "Include technical details (site URL, system info, plugin counts, and a sanitized log excerpt) to help diagnose the issue"
+msgstr "Includi i dettagli tecnici (indirizzo del sito, informazioni di sistema, numero di estensioni e un estratto del registro depurato) per agevolare la diagnosi del problema"

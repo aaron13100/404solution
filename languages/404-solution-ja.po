@@ -3848,3 +3848,11 @@ msgstr "電子メールフォールバックは試行されませんでした。
 #: includes/ajax/Ajax_SupportRequest.php
 msgid "Could not send support request: %1$s. %2$s"
 msgstr "サポートリクエストを送信できませんでした: %1$s. %2$s"
+
+#: includes/UninstallModal.php
+msgid "Privacy details (retention, erasure path, processing region): %s"
+msgstr "プライバシーに関する詳細（保持期間、削除手順、処理地域）：%s"
+
+#: includes/UninstallModal.php
+msgid "Include technical details (site URL, system info, plugin counts, and a sanitized log excerpt) to help diagnose the issue"
+msgstr "問題の診断に役立てるため、技術的な詳細（サイトのアドレス、システム情報、プラグイン数、サニタイズ済みのログ抜粋）を含めます"
