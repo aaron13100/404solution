@@ -754,6 +754,19 @@ class ABJ_404_Solution_Logging {
         // This removes tokens, emails, session IDs, search terms, etc. from URLs
         $line = preg_replace('/(https?:\/\/[^\s?]+)\?[^\s]*/', '$1', $line) ?? $line;
 
+        // F6: strip query strings from path-only URIs too (e.g. REQUEST_URI
+        // appended by errorMessage(): "Requested URL: /admin.php?page=foo&secret=xyz").
+        // The scheme'd-URL rule above does not catch these because REQUEST_URI
+        // carries no scheme. Without this strip, short fragments (under the
+        // transport-side `\d{4,}` normalization floor) survive truncation
+        // into recent_error_signatures.
+        //
+        // Lookbehind blocks matches inside email addresses, scheme tails
+        // (`http:/`), and other contexts where a slash is already part of a
+        // token. The path body is `[^\s?#]*`, which stops at whitespace,
+        // fragment start, or query start, so adjacent log fields stay intact.
+        $line = preg_replace('/(?<![A-Za-z0-9:@])(\/[^\s?#]*)\?\S*/', '$1', $line) ?? $line;
+
         // Mask email addresses with adaptive length-based masking
         // Example: john@example.com -> j***@exa***-a1b2
         $line = preg_replace_callback(
