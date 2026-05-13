@@ -5,7 +5,7 @@ Tags: 404, redirect, 404 redirect, broken links, spell check
 Requires at least: 5.0
 Requires PHP: 7.4
 Tested up to: 6.9
-Stable tag: 4.1.17
+Stable tag: 4.1.18
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -200,6 +200,30 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 6. **Email Digest** — Weekly HTML email summarizing captured 404s, resolution rate, and a ranked table of top 404 URLs with color-coded hit badges.
 
 == Changelog ==
+
+= Version 4.1.18 (May 13, 2026) =
+
+**Privacy**
+
+* Diagnostic data sent on uninstall (site URL, plugin lifecycle counts, recent error signatures, environment info) is now suppressed unless you explicitly check "Include technical details" in the uninstall feedback modal. Previously, some of these fields shipped regardless of the checkbox.
+* Added a plugin-side privacy policy describing exactly what diagnostic data the plugin can send, when, and how to opt out, with cross-links from the uninstall modal and the readme.
+* Apache mod_status hostnames are now stripped from server identification strings before they leave the site.
+* URI query strings on path-only log lines are now scrubbed before logging, so query parameters that could carry tokens or session ids do not leak into the debug log.
+
+**Bug Fixes**
+
+* Fixed the admin table cache rebuild getting stuck on the same step after a dropped database connection. The rebuild now auto-resumes from where it stopped on the next request, instead of retrying the same failing query forever.
+* Fixed admin actions that hit an expired session nonce showing a generic "security check failed" error. The session is now silently refreshed and the action retried, so the expiry is invisible to the administrator.
+* Fixed transient invalid AJAX responses on admin tables producing "undefined" errors. The admin pages now validate the response shape before reading it and surface a clear error instead.
+
+**Improvements**
+
+* Captured 404s and Page Redirects admin tables load noticeably faster on large sites. The total log-count query is now cached on the maximum log id (avoiding a full log-table scan on every page load), log queries no longer sort by non-indexed columns, the Most Unused Redirects report reads from the pre-aggregated hits rollup instead of scanning raw logs, and the dashboard activity trend is cached between admin page loads.
+* When WordPress cron is broken and the log hits rollup falls behind, the plugin now surfaces an admin notice on its own pages explaining how to fix it, instead of silently letting the admin tables show stale numbers.
+
+**Internationalization**
+
+* Added translations for 13 admin strings that were previously displayed in English even on non-English sites.
 
 = Version 4.1.17 (May 10, 2026) =
 
@@ -524,35 +548,4 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 **Improvements**
 
 * Added pipeline trace for per-request detail logging in the Logs tab — click the arrow on any log row to see every step of the redirect decision process.
-
-= Version 4.0.0 (Mar 24, 2026) =
-
-**New Features**
-
-* Conditional engine groups (engine profiles) — override the matching strategy for specific URL patterns.
-* Google Search Console integration with guided setup wizard — import crawl errors and push fixes.
-* Email digest reports — weekly summary of top 404s and redirect activity.
-* REST API for redirect management.
-* WP-CLI overhaul — list, create, delete, import, export, and test subcommands.
-* Cross-plugin importer — import redirects from Rank Math, Yoast SEO, AIOSEO, and Safe Redirect Manager with a preview step.
-* HTTP 410 Gone, 451 Unavailable For Legal Reasons, 307/308, and Meta Refresh redirect types.
-* Match confidence column, filter, and stats card — see how confident the engine was for each redirect.
-* Auto-redirect when published posts are trashed or permanently deleted.
-* Trend analytics dashboard — traffic trend charts plotting 404s, redirects, and captures over time.
-* Server config export for nginx, Cloudflare Worker, Netlify, and Vercel.
-* Stale cache detection and dead destination suspension.
-* Send Feedback link on the plugins page.
-
-**Bug Fixes**
-
-* Fixed mass redirect deletion deleting ALL redirects when threshold was empty.
-* Fixed category/tag type constants being swapped — category redirects pointed to tags and vice versa.
-* Fixed CSV export/import round-trip losing redirect codes (always stored as 301).
-* Fixed Redirection-format export hardcoding 301, losing actual redirect codes.
-* Fixed regex redirects ignoring per-redirect code and always using the global default.
-* Fixed AMP stripping corrupting multibyte URLs.
-* Fixed spell checker byte/character mismatch on multibyte strings.
-* Fixed log hits stripping valid multibyte Unicode from URLs.
-* Fixed spelling cache returning wrong data type, breaking suggestions.
-* Fixed database error storms flooding site admin emails.
 

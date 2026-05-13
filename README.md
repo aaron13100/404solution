@@ -203,6 +203,30 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 
 ## Changelog ##
 
+## Version 4.1.18 (May 13, 2026) ##
+
+**Privacy**
+
+* Diagnostic data sent on uninstall (site URL, plugin lifecycle counts, recent error signatures, environment info) is now suppressed unless you explicitly check "Include technical details" in the uninstall feedback modal. Previously, some of these fields shipped regardless of the checkbox.
+* Added a plugin-side privacy policy describing exactly what diagnostic data the plugin can send, when, and how to opt out, with cross-links from the uninstall modal and the readme.
+* Apache mod_status hostnames are now stripped from server identification strings before they leave the site.
+* URI query strings on path-only log lines are now scrubbed before logging, so query parameters that could carry tokens or session ids do not leak into the debug log.
+
+**Bug Fixes**
+
+* Fixed the admin table cache rebuild getting stuck on the same step after a dropped database connection. The rebuild now auto-resumes from where it stopped on the next request, instead of retrying the same failing query forever.
+* Fixed admin actions that hit an expired session nonce showing a generic "security check failed" error. The session is now silently refreshed and the action retried, so the expiry is invisible to the administrator.
+* Fixed transient invalid AJAX responses on admin tables producing "undefined" errors. The admin pages now validate the response shape before reading it and surface a clear error instead.
+
+**Improvements**
+
+* Captured 404s and Page Redirects admin tables load noticeably faster on large sites. The total log-count query is now cached on the maximum log id (avoiding a full log-table scan on every page load), log queries no longer sort by non-indexed columns, the Most Unused Redirects report reads from the pre-aggregated hits rollup instead of scanning raw logs, and the dashboard activity trend is cached between admin page loads.
+* When WordPress cron is broken and the log hits rollup falls behind, the plugin now surfaces an admin notice on its own pages explaining how to fix it, instead of silently letting the admin tables show stale numbers.
+
+**Internationalization**
+
+* Added translations for 13 admin strings that were previously displayed in English even on non-English sites.
+
 ## Version 4.1.17 (May 10, 2026) ##
 
 **Bug Fixes**
