@@ -152,7 +152,7 @@ Yes. 404 Solution imports CSV and JSON in the Redirection plugin's export format
 
 = Is it GDPR compliant? =
 
-Yes. IP addresses are hashed using a one-way algorithm before storage — the original IP is never written to disk. Log retention limits are configurable. No data is transmitted to external servers.
+Yes. IP addresses are hashed using a one-way algorithm before storage; the original IP is never written to disk. Log retention limits are configurable. By default no data is transmitted to external servers. The "Help the developer by sending error logs" admin checkbox (default off) and the uninstall feedback modal are the only opt-in paths that send data to the plugin author's reports server. See the plugin's privacy policy stub at `docs/privacy.md` for the retention period for rows keyed by site_url, the data-subject erasure path, and the processing region for the reports endpoint.
 
 = Does it support regex? =
 

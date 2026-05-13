@@ -344,10 +344,19 @@ class ABJ_404_Solution_UninstallModal {
                 </div>
 
                 <!-- Technical Details Opt-in -->
-                <label style="margin: 10px 0 15px 0; display: block;">
+                <label style="margin: 10px 0 5px 0; display: block;">
                     <input type="checkbox" id="abj404-include-diagnostics" checked>
                     <?php _e('Include technical details (site URL, system info, plugin counts, and a sanitized log excerpt) to help diagnose the issue', '404-solution'); ?>
                 </label>
+                <p class="abj404-privacy-note" style="margin: 0 0 15px 24px; font-size: 11px; color: #555;">
+                    <?php
+                    /* translators: %s is a literal relative file path to the plugin's privacy policy stub, rendered as <code>. */
+                    printf(
+                        esc_html__('Privacy details (retention, erasure path, processing region): %s', '404-solution'),
+                        '<code>docs/privacy.md</code>'
+                    );
+                    ?>
+                </p>
             </div>
         </div>
         <?php
