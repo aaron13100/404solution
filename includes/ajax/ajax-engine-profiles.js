@@ -18,14 +18,29 @@
     // ── Load profiles ───────────────────────────────────────────────────────
 
     function loadProfiles() {
-        $.post(ajaxUrl, {
-            action: 'abj404_engine_profiles_list',
-            nonce:  nonce
-        }, function (resp) {
-            if (!resp.success) {
-                return;
+        $.ajax({
+            url: ajaxUrl,
+            type: 'POST',
+            dataType: 'json',
+            data: {
+                action: 'abj404_engine_profiles_list',
+                nonce:  nonce
+            },
+            success: function (resp) {
+                // Validate shape before reading fields; a malformed
+                // body (non-JSON, plugin-conflict mangled output) must
+                // not throw and leave the table on its empty-row state.
+                if (!resp || typeof resp !== 'object' || resp.success !== true || !resp.data) {
+                    renderProfiles([]);
+                    return;
+                }
+                renderProfiles(resp.data.profiles || []);
+            },
+            error: function () {
+                // Transport failure: render the empty state so the
+                // page does not appear stuck loading.
+                renderProfiles([]);
             }
-            renderProfiles(resp.data.profiles || []);
         });
     }
 
@@ -79,15 +94,31 @@
         // Load from current row data
         var $row = $('tr[data-profile-id="' + id + '"]');
         // Re-fetch profile list to get full data
-        $.post(ajaxUrl, {
-            action: 'abj404_engine_profiles_list',
-            nonce:  nonce
-        }, function (resp) {
-            if (!resp.success) { return; }
-            var profiles = resp.data.profiles || [];
-            var profile = null;
-            profiles.forEach(function (p) { if (parseInt(p.id, 10) === parseInt(id, 10)) { profile = p; } });
-            if (profile) { openForm(profile); }
+        $.ajax({
+            url: ajaxUrl,
+            type: 'POST',
+            dataType: 'json',
+            data: {
+                action: 'abj404_engine_profiles_list',
+                nonce:  nonce
+            },
+            success: function (resp) {
+                if (!resp || typeof resp !== 'object' || resp.success !== true || !resp.data) {
+                    return;
+                }
+                var profiles = resp.data.profiles || [];
+                var profile = null;
+                profiles.forEach(function (p) { if (parseInt(p.id, 10) === parseInt(id, 10)) { profile = p; } });
+                if (profile) { openForm(profile); }
+            },
+            error: function (jqXHR, textStatus) {
+                // Log transport failure to console; the edit click is
+                // recoverable (the user can retry from the still-visible
+                // row) so we do not need a blocking notice here.
+                if (window.console && window.console.warn) {
+                    window.console.warn('404 Solution: engine-profile reload failed', textStatus);
+                }
+            }
         });
     });
 
@@ -160,28 +191,47 @@
             return;
         }
 
-        $.post(ajaxUrl, {
-            action:          'abj404_engine_profiles_save',
-            nonce:           nonce,
-            id:              id,
-            name:            name,
-            url_pattern:     pattern,
-            is_regex:        isRegex,
-            enabled_engines: JSON.stringify(engines),
-            priority:        priority,
-            status:          status
-        }, function (resp) {
-            if (!resp.success) {
-                $msg.text(resp.data && resp.data.message ? resp.data.message : abj404EngineProfiles.i18n.saveFailed)
-                    .css('color', 'red').show();
-                return;
+        $.ajax({
+            url: ajaxUrl,
+            type: 'POST',
+            dataType: 'json',
+            data: {
+                action:          'abj404_engine_profiles_save',
+                nonce:           nonce,
+                id:              id,
+                name:            name,
+                url_pattern:     pattern,
+                is_regex:        isRegex,
+                enabled_engines: JSON.stringify(engines),
+                priority:        priority,
+                status:          status
+            },
+            success: function (resp) {
+                // Validate shape before reading fields. A malformed body
+                // (HTML error page from a WAF, plugin-conflict mangled
+                // output) previously threw on resp.success and left the
+                // form with no feedback at all.
+                if (!resp || typeof resp !== 'object' || resp.success !== true) {
+                    var message = abj404EngineProfiles.i18n.saveFailed;
+                    if (resp && typeof resp === 'object' && resp.data && resp.data.message) {
+                        message = resp.data.message;
+                    }
+                    $msg.text(message).css('color', 'red').show();
+                    return;
+                }
+                $msg.text(abj404EngineProfiles.i18n.saved).css('color', 'green').show();
+                setTimeout(function () {
+                    $('#abj404-engine-profile-form-wrap').hide();
+                    editingId = 0;
+                    loadProfiles();
+                }, 800);
+            },
+            error: function () {
+                // Transport failure: surface the same save-failed message
+                // so the form is recoverable (admin can retry) instead of
+                // appearing to silently succeed.
+                $msg.text(abj404EngineProfiles.i18n.saveFailed).css('color', 'red').show();
             }
-            $msg.text(abj404EngineProfiles.i18n.saved).css('color', 'green').show();
-            setTimeout(function () {
-                $('#abj404-engine-profile-form-wrap').hide();
-                editingId = 0;
-                loadProfiles();
-            }, 800);
         });
     });
 
@@ -195,13 +245,26 @@
             return;
         }
 
-        $.post(ajaxUrl, {
-            action: 'abj404_engine_profiles_delete',
-            nonce:  nonce,
-            id:     id
-        }, function (resp) {
-            if (resp.success) {
-                loadProfiles();
+        $.ajax({
+            url: ajaxUrl,
+            type: 'POST',
+            dataType: 'json',
+            data: {
+                action: 'abj404_engine_profiles_delete',
+                nonce:  nonce,
+                id:     id
+            },
+            success: function (resp) {
+                // Validate shape before reading resp.success: a malformed
+                // body previously threw on null/non-object responses.
+                if (resp && typeof resp === 'object' && resp.success === true) {
+                    loadProfiles();
+                    return;
+                }
+                window.alert(abj404EngineProfiles.i18n.saveFailed);
+            },
+            error: function () {
+                window.alert(abj404EngineProfiles.i18n.saveFailed);
             }
         });
     });

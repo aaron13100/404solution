@@ -197,26 +197,37 @@
                 .done(function(response) {
                     console.log('404 Solution: AJAX Response received:', response);
 
-                    if (response.success) {
-                        // Preferences saved successfully
-                        console.log('404 Solution: ✓ SUCCESS - ' + response.data.message);
+                    // Validate shape before reading fields: a non-JSON
+                    // body (gateway HTML page, plugin-conflict mangled
+                    // output) previously threw on response.success and
+                    // then bypassed .always() in some jQuery versions.
+                    var isObject = (response && typeof response === 'object');
+                    var serverMessage = '';
+                    if (isObject && response.data) {
+                        if (typeof response.data === 'string') {
+                            serverMessage = response.data;
+                        } else if (response.data.message) {
+                            serverMessage = response.data.message;
+                        }
+                    }
 
-                        // Only show success notice if there's a message (when feedback was sent)
-                        if (response.data.message) {
+                    if (isObject && response.success === true) {
+                        // Preferences saved successfully
+                        if (serverMessage) {
+                            console.log('404 Solution: SUCCESS - ' + serverMessage);
                             $modal.find('.abj404-uninstall-content').prepend(
                                 '<div class="notice notice-success" style="margin-bottom:15px;"><p><strong>' +
-                                escapeHtml(response.data.message) +
+                                escapeHtml(serverMessage) +
                                 '</strong></p></div>'
                             );
                         }
                     } else {
-                        // Save failed but continue anyway
-                        console.warn('404 Solution: ✗ FAILED - ' + (response.data.message || 'Unknown error'));
-
-                        // Update modal text with error
+                        // Save failed (or malformed body) but continue anyway
+                        var failMessage = serverMessage || 'Failed to save preferences';
+                        console.warn('404 Solution: FAILED - ' + failMessage);
                         $modal.find('.abj404-uninstall-content').prepend(
                             '<div class="notice notice-warning" style="margin-bottom:15px;"><p><strong>' +
-                            escapeHtml(response.data.message || 'Failed to save preferences') +
+                            escapeHtml(failMessage) +
                             '</strong></p></div>'
                         );
                     }

@@ -35,8 +35,21 @@ jQuery(document).ready(function($) {
 					return;
 				}
 				$.getJSON(url, request, function(data, status, xhr) {
+					// Validate shape before caching: a non-JSON / null
+					// body must not poison the cache and must not throw
+					// when handed to the autocomplete widget.
+					if (!Array.isArray(data)) {
+						response([]);
+						return;
+					}
 					cache[term] = data;
 					response(data);
+				})
+				.fail(function() {
+					// Transport / parseerror failure: dismiss the
+					// autocomplete loading indicator by handing the
+					// widget an empty result list.
+					response([]);
 				});
             },
         delay: 500,

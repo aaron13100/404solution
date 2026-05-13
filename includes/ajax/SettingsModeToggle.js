@@ -56,14 +56,26 @@
                     nonce: nonce
                 },
                 success: function(response) {
-                    if (response.success) {
+                    // Validate shape before reading fields: an upstream
+                    // gateway / WAF / plugin conflict can return HTML or
+                    // a non-object body even when the request asked for
+                    // JSON. Treat any malformed body as a failed save.
+                    if (response && typeof response === 'object' && response.success === true) {
                         // Reload the page to show the new mode
                         window.location.reload();
-                    } else {
-                        alert(response.data.message || 'Failed to update settings mode');
-                        $buttons.prop('disabled', false);
-                        $btn.removeClass('loading');
+                        return;
                     }
+                    var serverMsg = '';
+                    if (response && typeof response === 'object' && response.data) {
+                        if (typeof response.data === 'string') {
+                            serverMsg = response.data;
+                        } else if (response.data.message) {
+                            serverMsg = response.data.message;
+                        }
+                    }
+                    alert(serverMsg || 'Failed to update settings mode');
+                    $buttons.prop('disabled', false);
+                    $btn.removeClass('loading');
                 },
                 error: function(jqXHR) {
                     var errMsg = 'An error occurred while updating settings mode';

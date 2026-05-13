@@ -13,8 +13,20 @@ jQuery(document).ready(function($) {
                     return;
                 }
                 $.getJSON( url, request, function( data, status, xhr ) {
+                    // Validate shape: a non-JSON / null body must not
+                    // poison the cache or throw inside the widget.
+                    if (!Array.isArray(data)) {
+                        response([]);
+                        return;
+                    }
                     cache[ term ] = data;
                     response( data );
+                })
+                .fail(function() {
+                    // Transport / parseerror failure: dismiss the
+                    // autocomplete loading indicator by handing the
+                    // widget an empty result list.
+                    response([]);
                 });
             },
         delay: 500,

@@ -264,20 +264,35 @@
             $.ajax({
                 url: url,
                 type: 'POST',
+                dataType: 'json',
                 success: function(response) {
-                    if (response.success) {
+                    // Validate shape before reading fields: a malformed
+                    // body (gateway HTML, plugin-conflict mangled output)
+                    // previously threw on response.success or response
+                    // .data.message and left the button stuck in the
+                    // disabled+loading state.
+                    if (response && typeof response === 'object' && response.success === true) {
                         // Remove the row with animation
                         $btn.closest('tr').fadeOut(300, function() {
                             $(this).remove();
                             updateSelectionCount();
                         });
 
-                        // Show success toast
-                        abj404ShowToast(response.data.message || 'Action completed', 'success');
-                    } else {
-                        abj404ShowToast(response.data.message || 'Action failed', 'error');
-                        $btn.removeClass('loading').prop('disabled', false);
+                        var successMsg = (response.data && response.data.message)
+                            ? response.data.message : 'Action completed';
+                        abj404ShowToast(successMsg, 'success');
+                        return;
                     }
+                    var errMsg = 'Action failed';
+                    if (response && typeof response === 'object' && response.data) {
+                        if (typeof response.data === 'string') {
+                            errMsg = response.data;
+                        } else if (response.data.message) {
+                            errMsg = response.data.message;
+                        }
+                    }
+                    abj404ShowToast(errMsg, 'error');
+                    $btn.removeClass('loading').prop('disabled', false);
                 },
                 error: function() {
                     abj404ShowToast('An error occurred', 'error');

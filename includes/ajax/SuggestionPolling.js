@@ -38,13 +38,19 @@
                 _ajax_nonce: abj404_suggestions.nonce
             },
             success: function(response) {
-                if (response.status === 'complete') {
+                // Validate response shape: a malformed body (null,
+                // HTML error page from a gateway, plugin-conflict
+                // mangled output) must fall through to the fallback
+                // message instead of throwing on response.status and
+                // leaving the loading skeleton up forever.
+                var status = (response && typeof response === 'object') ? response.status : null;
+                if (status === 'complete' && typeof response.html === 'string') {
                     // Replace placeholder with actual suggestions
                     $placeholder.replaceWith(response.html);
-                } else if (response.status === 'pending' && attempts < maxAttempts) {
+                } else if (status === 'pending' && attempts < maxAttempts) {
                     // Still computing - poll again
                     setTimeout(pollForSuggestions, pollInterval);
-                } else if (response.status === 'not_found') {
+                } else if (status === 'not_found') {
                     // Transient not found - computation may not have started
                     // Keep polling for a few more attempts in case of race condition
                     if (attempts < 5) {
@@ -53,7 +59,7 @@
                         showFallbackMessage();
                     }
                 } else {
-                    // Timeout or error - show fallback message
+                    // Timeout, error, or malformed body - show fallback message
                     showFallbackMessage();
                 }
             },
