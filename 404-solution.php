@@ -213,6 +213,9 @@ function abj404_autoloader($class) {
 			'ABJ_404_Solution_ViewUpdater' => array(
 				$inc . 'ajax/AjaxFailureLoggingTrait.php',
 			),
+			'ABJ_404_Solution_FeedbackTransport' => array(
+				$inc . 'FeedbackTransportTrait_EnvironmentExtras.php',
+			),
 		);
 	}
 
