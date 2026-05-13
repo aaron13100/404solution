@@ -71,7 +71,10 @@ return (function (): array {
 
         // PHP runtime identity
         'php_version'     => ['type' => 'string'],
-        'server_software' => ['type' => 'string'],
+        'server_software' => [
+            'type' => 'string',
+            'description' => 'Server software banner, with the Apache mod_status "Server at <host> Port <n>" footer stripped before transmit and capped to 100 chars. See FeedbackTransport::sanitizeServerSoftware().',
+        ],
 
         // Resource limits. Every value is bytes (for size fields) or
         // seconds (for time fields). Strings like "256M" are a schema

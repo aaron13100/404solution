@@ -286,7 +286,9 @@ class ABJ_404_Solution_FeedbackTransport {
             'object_cache' => (function_exists('wp_using_ext_object_cache') && wp_using_ext_object_cache()) ? 'external' : 'default',
             'table_prefix' => $tablePrefix,
             'wp_debug' => defined('WP_DEBUG') && WP_DEBUG,
-            'server_software' => isset($_SERVER['SERVER_SOFTWARE']) && is_scalar($_SERVER['SERVER_SOFTWARE']) ? (string)$_SERVER['SERVER_SOFTWARE'] : '',
+            'server_software' => self::sanitizeServerSoftware(
+                isset($_SERVER['SERVER_SOFTWARE']) && is_scalar($_SERVER['SERVER_SOFTWARE']) ? (string)$_SERVER['SERVER_SOFTWARE'] : ''
+            ),
         );
 
         // Null (not 0) on lookup failure so the server can distinguish
@@ -676,6 +678,32 @@ class ABJ_404_Solution_FeedbackTransport {
             return 0;
         }
         return self::iniSizeToBytes((string)WP_MEMORY_LIMIT);
+    }
+
+    /**
+     * Strip site-identifying noise from the SERVER_SOFTWARE banner before
+     * shipping it. Apache's mod_status footer (ServerSignature) writes
+     * "Server at <hostname> Port <n>" onto SERVER_SOFTWARE on hosts that
+     * never disabled the banner, leaking the site's internal hostname into
+     * telemetry. Cut at that literal marker (case-insensitive) and cap the
+     * result so a multi-line or otherwise verbose banner cannot smuggle
+     * additional context through. Useful prefix (software + version, e.g.
+     * "Apache/2.4.41 (Ubuntu)") is preserved.
+     *
+     * @param string $raw
+     * @return string
+     */
+    private static function sanitizeServerSoftware(string $raw): string {
+        if ($raw === '') {
+            return '';
+        }
+        $marker = stripos($raw, ' Server at ');
+        $clean = $marker === false ? $raw : substr($raw, 0, $marker);
+        $clean = trim($clean);
+        if (strlen($clean) > 100) {
+            $clean = substr($clean, 0, 100);
+        }
+        return $clean;
     }
 
     /**
