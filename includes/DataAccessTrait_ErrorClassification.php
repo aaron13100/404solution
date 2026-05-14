@@ -585,6 +585,19 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
         if ($this->f->strpos($lower, '_abj404_logs_hits') !== false) {
             return false;
         }
+        // Transient staged-build tables (view_build, view_done, view_deleteme)
+        // are owned by the staged-view-build pipeline. They are created and
+        // dropped between build cycles by design. discoverPermanentDDLFiles()
+        // already excludes them from createDatabaseTables(), so the auto-repair
+        // path cannot recreate them. A SELECT that hits a swap-window race
+        // would otherwise trigger a failed-repair admin notice on every plugin
+        // page, surfacing a benign internal transition as if it were a
+        // permanent corruption. Their absence between builds is normal.
+        if ($this->f->strpos($lower, '_abj404_view_build') !== false ||
+            $this->f->strpos($lower, '_abj404_view_done') !== false ||
+            $this->f->strpos($lower, '_abj404_view_deleteme') !== false) {
+            return false;
+        }
         return ($this->f->strpos($lower, "doesn't exist") !== false &&
             $this->f->strpos($lower, '_abj404_') !== false);
     }
@@ -713,10 +726,23 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
                 // the plugin screen so the admin knows to investigate.
                 // Never email; never show on all wp-admin pages.
                 $this->setRuntimeFlag($repairCooldownKey, $this->clock()->now() + $cooldownTtlSeconds, $cooldownTtlSeconds);
-                $tableLabel = ($missingTable !== '') ? "'" . $missingTable . "' " : '';
-                $adminMsg = 'A plugin database table ' . $tableLabel
-                    . 'is missing and could not be repaired automatically. '
-                    . 'Try deactivating and reactivating 404 Solution, or verify that your database user has CREATE TABLE privileges.';
+                $tableLabel = ($missingTable !== '') ? "'" . $missingTable . "'" : 'a plugin database table';
+                $rawError = is_string($result['last_error']) ? $result['last_error'] : '';
+                $adminMsg =
+                      '404 Solution cannot function correctly: the database table '
+                    . $tableLabel . ' is missing, and the plugin tried to recreate it '
+                    . 'but the CREATE TABLE statement could not be executed. '
+                    . 'This almost always means the WordPress database user does not '
+                    . 'have permission to run CREATE TABLE (and likely ALTER TABLE / '
+                    . 'CREATE INDEX) on this database. Until this is fixed, the plugin '
+                    . 'cannot record 404s, serve redirects, or generate suggestions. '
+                    . 'To fix it: ask your hosting provider or database administrator '
+                    . 'to grant CREATE, ALTER, and INDEX privileges to the WordPress '
+                    . 'database user for this site, then reload this page. '
+                    . 'Alternatively, restore the missing table from a recent database backup.';
+                if ($rawError !== '') {
+                    $adminMsg .= ' Original database error: ' . $rawError;
+                }
                 if ($prefixDiag !== '') {
                     $adminMsg .= ' ' . $prefixDiag;
                 }
@@ -724,7 +750,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
                     'type'         => 'missing_table',
                     'message'      => $this->localizeOrDefault($adminMsg),
                     'timestamp'    => $this->clock()->now(),
-                    'error_string' => $result['last_error'],
+                    'error_string' => $rawError,
                 );
                 $this->setRuntimeFlag('abj404_plugin_db_notice', $noticePayload, 86400);
             }
