@@ -780,6 +780,23 @@ class ABJ_404_Solution_ImportExportService {
         $final_dest = isset($dataArray['to_url']) && is_string($dataArray['to_url']) ? $dataArray['to_url'] : '';
         $anyIssuesToNote = array();
 
+        // Server-side regex auto-promote sniff. When the CSV row does not
+        // carry an explicit regex signal but the from_url contains
+        // unambiguous regex metachars (`* [ ] | ^ \ { }`), flip the
+        // status to REGEX and apply the bare-`*` to `.*` glob fixup so the
+        // stored pattern compiles at runtime. Applied regardless of
+        // destination type because the canonical case (Troy's 55-row
+        // import) imports `/sales/*` to internal pages, not just external
+        // destinations as the legacy narrow sniff assumed. Done BEFORE
+        // the existing-URL check so re-imports of the same CSV idempotently
+        // resolve to the same canonical rewritten pattern.
+        if (!$explicitRegex
+                && ABJ_404_Solution_RegexAutoPromote::looksLikeUnambiguousRegex($fromURL)) {
+            $status = ABJ404_STATUS_REGEX;
+            $glob = ABJ_404_Solution_RegexAutoPromote::applyGlobFixup($fromURL);
+            $fromURL = $glob['url'];
+        }
+
         // Validate at the boundary: if the row is explicitly flagged as a regex
         // redirect, refuse to persist a from_url that is not a syntactically
         // valid PHP pattern. Without this guard, the bad pattern reaches
@@ -820,15 +837,6 @@ class ABJ_404_Solution_ImportExportService {
             $type = ABJ404_TYPE_HOME;
         } else if (strpos($final_dest, 'http') !== false) {
             $type = ABJ404_TYPE_EXTERNAL;
-            if (!$explicitRegex) {
-                // Legacy narrow sniff: only fires when no explicit regex signal
-                // was present in the CSV. Catches old exports that lack a
-                // status/regex column but encode a regex via URL metachars.
-                $urlPattern = '/[!#$&\'()*+,;=]/';
-                if (preg_match($urlPattern, $fromURL)) {
-                    $status = ABJ404_STATUS_REGEX;
-                }
-            }
         } else if (strpos($final_dest, '/') === 0) {
             $type = $typePost;
         } else {

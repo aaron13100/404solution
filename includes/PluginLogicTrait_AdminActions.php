@@ -149,6 +149,13 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
                 $this->logger->debugMessage("Unexpected result. How did we get here? is_admin: " .
                         is_admin() . ", Action: " . $action . ", Sub: " . $sub);
             }
+        } else if ($action == "undoRegexAutoPromote") {
+            if (check_admin_referer('abj404undoRegexAutoPromote') && is_admin()) {
+                $message = $this->handleActionUndoRegexAutoPromote();
+            } else {
+                $this->logger->debugMessage("Unexpected result. How did we get here? is_admin: " .
+                        is_admin() . ", Action: " . $action . ", Sub: " . $sub);
+            }
         } else if ($this->f->substr($action . '', 0, 4) == "bulk") {
             if (check_admin_referer('abj404_bulkProcess') && is_admin()) {
                 if (!isset($_POST['idnum'])) {
@@ -668,8 +675,21 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
             if ($fromURL != "") {
                 $id = isset($_POST['id']) && is_scalar($_POST['id']) ? (int)$_POST['id'] : 0;
                 $code = isset($_POST['code']) && is_string($_POST['code']) ? $_POST['code'] : '';
+                // Server-side regex auto-promotion. Mirrors the JS detector
+                // at includes/ajax/redirect_to_ajax.js so a paste-and-submit
+                // with JS disabled (or any path the browser does not reach)
+                // still flips MANUAL to REGEX when the from_url contains
+                // unambiguous regex metachars. Also applies the bare-`*`
+                // to `.*` glob fixup so the stored pattern compiles.
+                $originalFromURL = $fromURL;
+                $autoPromote = $this->maybeAutoPromoteRegex($statusType, $fromURL);
+                $statusType = $autoPromote['statusType'];
+                $fromURL = $autoPromote['url'];
                 $this->dao->updateRedirect($tdType, $tdDest,
                         $fromURL, $id, $code, (string)$statusType, $startTs, $endTs);
+                if ($autoPromote['autoPromoted']) {
+                    $this->saveRegexAutoPromoteNotice($id, $originalFromURL, $fromURL, $autoPromote['urlRewritten']);
+                }
 
                 // Save conditions only for single-redirect edits (bulk edit has no conditions UI).
                 if ($id > 0) {
@@ -825,9 +845,19 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
             // which would incorrectly discard code=0 (Meta Refresh).
             $code = isset($_POST['code']) && is_scalar($_POST['code']) && (string)$_POST['code'] !== '' ? (string)$_POST['code'] : '301';
 
-            $this->dao->setupRedirect($manualURL, (string)$statusType,
+            // Server-side regex auto-promotion. Same rationale as in
+            // updateRedirectData(): cover paths the JS detector cannot reach.
+            $originalManualURL = $manualURL;
+            $autoPromoteAdd = $this->maybeAutoPromoteRegex($statusType, $manualURL);
+            $statusType = $autoPromoteAdd['statusType'];
+            $manualURL = $autoPromoteAdd['url'];
+
+            $newRedirectId = $this->dao->setupRedirect($manualURL, (string)$statusType,
                     $tdType2, $tdDest2,
                     sanitize_text_field($code), 0);
+            if ($autoPromoteAdd['autoPromoted']) {
+                $this->saveRegexAutoPromoteNotice((int)$newRedirectId, $originalManualURL, $manualURL, $autoPromoteAdd['urlRewritten']);
+            }
             // Admin-initiated mutation: force a fresh view_done rebuild
             // before the next AJAX fetch so the new row appears
             // immediately on the redirects table. invalidateViewDone()
@@ -843,6 +873,99 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
         }
 
         return $message;
+    }
+
+    /**
+     * Server-side regex auto-promotion. When the admin posts a from_url
+     * that contains unambiguous regex metachars but does not check
+     * "Treat as regex", flip the status to REGEX automatically and apply
+     * the glob-to-regex fixup (bare `*` becomes `.*`) so the stored
+     * pattern compiles at runtime.
+     *
+     * This is the server-side counterpart to the JS auto-check in
+     * includes/ajax/redirect_to_ajax.js: same intent, different reach.
+     * The JS handler covers anyone who types into the admin form with
+     * JS enabled. This handler covers the paste-and-submit, JS-disabled,
+     * and programmatic-POST paths the JS detector never sees.
+     *
+     * When the admin explicitly checked the "Treat as regex" box, we
+     * leave the pattern untouched (no glob fixup): they meant exactly
+     * what they wrote, even if it is weird like `(foo)*`.
+     *
+     * @param int $statusTypeIn The status already decided from the POST
+     *   checkbox (ABJ404_STATUS_MANUAL or ABJ404_STATUS_REGEX).
+     * @param string $fromURL The raw from_url posted by the admin.
+     * @return array{statusType: int, url: string, autoPromoted: bool, urlRewritten: bool}
+     */
+    private function maybeAutoPromoteRegex($statusTypeIn, $fromURL) {
+        $result = array(
+            'statusType' => (int)$statusTypeIn,
+            'url' => is_string($fromURL) ? $fromURL : '',
+            'autoPromoted' => false,
+            'urlRewritten' => false,
+        );
+
+        if ((int)$statusTypeIn === ABJ404_STATUS_REGEX) {
+            return $result;
+        }
+        if (!ABJ_404_Solution_RegexAutoPromote::looksLikeUnambiguousRegex($result['url'])) {
+            return $result;
+        }
+
+        $result['statusType'] = ABJ404_STATUS_REGEX;
+        $result['autoPromoted'] = true;
+        $glob = ABJ_404_Solution_RegexAutoPromote::applyGlobFixup($result['url']);
+        $result['url'] = $glob['url'];
+        $result['urlRewritten'] = $glob['changed'];
+
+        return $result;
+    }
+
+    /**
+     * Persist a regex auto-promote event for the current user so the
+     * next admin page render can show a notice with [Edit] and [Undo]
+     * links. Thin wrapper around the static helper; kept here so the
+     * call site in updateRedirectData()/addAdminRedirect() reads at the
+     * level of the surrounding code.
+     *
+     * @param int $redirectId The id of the row that was just saved.
+     * @param string $originalURL The from_url the admin posted (pre-rewrite).
+     * @param string $newURL The from_url that was actually stored.
+     * @param bool $urlRewritten True when the glob fixup mutated the URL.
+     * @return void
+     */
+    private function saveRegexAutoPromoteNotice($redirectId, $originalURL, $newURL, $urlRewritten) {
+        ABJ_404_Solution_RegexAutoPromote::saveNotice($redirectId, $originalURL, $newURL, $urlRewritten);
+    }
+
+    /**
+     * Handle the "Undo regex auto-promotion" admin action. Restores the
+     * row's status to MANUAL and its from_url to the original value the
+     * admin posted (before the glob-fixup rewrite).
+     *
+     * Nonce: abj404undoRegexAutoPromote. The nonce ensures the link in
+     * the auto-promote notice is the only way to invoke this action.
+     *
+     * @return string Human-readable result message.
+     */
+    function handleActionUndoRegexAutoPromote() {
+        $notice = ABJ_404_Solution_RegexAutoPromote::readNotice();
+        if ($notice === null || $notice['redirect_id'] <= 0) {
+            return __('Error: No regex auto-promotion to undo.', '404-solution');
+        }
+        $redirectsTable = $this->dao->doTableNameReplacements('{wp_abj404_redirects}');
+        $sql = "UPDATE `" . $redirectsTable . "` SET `url` = %s, `status` = %d WHERE `id` = %d";
+        $this->dao->queryAndGetResults($sql, array('query_params' => array(
+            $notice['original_url'],
+            (int)ABJ404_STATUS_MANUAL,
+            (int)$notice['redirect_id'],
+        )));
+        $this->dao->markViewDoneInvalidatedByAdminMutation();
+        ABJ_404_Solution_RegexAutoPromote::clearNotice();
+        return sprintf(
+            __('Regex auto-promotion undone. Restored "%s" with status Manual.', '404-solution'),
+            $notice['original_url']
+        );
     }
 
     /**

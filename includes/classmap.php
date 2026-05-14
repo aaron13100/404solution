@@ -118,6 +118,7 @@ return array(
     'ABJ_404_Solution_PermalinkCache' => $base . 'includes/PermalinkCache.php',
     'ABJ_404_Solution_PluginLogic' => $base . 'includes/PluginLogic.php',
     'ABJ_404_Solution_RedirectConditionEvaluator' => $base . 'includes/RedirectConditionEvaluator.php',
+    'ABJ_404_Solution_RegexAutoPromote' => $base . 'includes/RegexAutoPromote.php',
     'ABJ_404_Solution_RequestContext' => $base . 'includes/RequestContext.php',
     'ABJ_404_Solution_RestApiController' => $base . 'includes/RestApiController.php',
     'ABJ_404_Solution_WPCLICommands' => $base . 'includes/WPCLICommands.php',

@@ -537,6 +537,53 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
         return $rows;
     }
 
+    /**
+     * Find MANUAL redirects whose `url` column contains an unambiguous
+     * regex metacharacter (`* [ ] | ^ \ { }`). These are rows the admin
+     * created via a pre-auto-promote path (older plugin version, direct
+     * DB write, CSV import before the 4.1.x sniff was widened) that
+     * really should be treated as regex. The runtime fallback in
+     * SpellCheckerTrait_URLMatching tries them as regex without
+     * mutating the stored status; the auto-promote on next save sweeps
+     * them into the regular regex query.
+     *
+     * The LIKE filter is deliberately broad to keep the query simple;
+     * the runtime caller re-checks with the precise PHP-side helper
+     * (looksLikeUnambiguousRegex) before treating any row as regex.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    function getManualRedirectsWithRegexMetachars() {
+        $query = "select \n  {wp_abj404_redirects}.id,\n  {wp_abj404_redirects}.url,\n  {wp_abj404_redirects}.status,\n"
+                . "  {wp_abj404_redirects}.type,\n  {wp_abj404_redirects}.final_dest,\n  {wp_abj404_redirects}.code,\n"
+                . "  {wp_abj404_redirects}.timestamp,\n {wp_posts}.id as wp_post_id\n ";
+        $query .= "from {wp_abj404_redirects}\n " .
+                "  LEFT OUTER JOIN {wp_posts} \n " .
+                "    on {wp_abj404_redirects}.final_dest = {wp_posts}.id \n ";
+
+        // SQL-side prefilter using INSTR per metachar. INSTR avoids LIKE's
+        // wildcard/escape semantics so we do not have to special-case
+        // the backslash byte. The PHP-side caller re-checks each row with
+        // looksLikeUnambiguousRegex(), so a few false positives here
+        // are harmless; the goal is to never miss a row that should be
+        // considered. Set matches the helper class.
+        $query .= "where status = " . ABJ404_STATUS_MANUAL . " \n " .
+                "     and disabled = 0 \n " .
+                "     and (INSTR(`url`, '*') > 0 " .
+                "       OR INSTR(`url`, '[') > 0 " .
+                "       OR INSTR(`url`, ']') > 0 " .
+                "       OR INSTR(`url`, '|') > 0 " .
+                "       OR INSTR(`url`, '^') > 0 " .
+                "       OR INSTR(`url`, '\\\\') > 0 " .
+                "       OR INSTR(`url`, '{') > 0 " .
+                "       OR INSTR(`url`, '}') > 0)";
+        $results = $this->queryAndGetResults($query);
+
+        /** @var array<int, array<string, mixed>> $rows */
+        $rows = is_array($results['rows']) ? $results['rows'] : array();
+        return $rows;
+    }
+
     /** Returns the redirects that are in place.
      * @global type $wpdb
      * @param string $sub either "redirects" or "captured".

@@ -316,6 +316,19 @@ trait ViewTrait_UI {
             echo '<div class="' . $cssClasses . '"><p>' . wp_kses($message, $allowed_tags) . "</p></div>\n";
         }
 
+        // Regex auto-promote notice. Rendered as a separate info-level
+        // banner because it carries an action (Undo) the user can choose
+        // not to take. Kept distinct from the success message so the
+        // visual hierarchy reads "save succeeded; by the way, we
+        // promoted to regex and you can undo it" rather than mixing the
+        // two.
+        if (class_exists('ABJ_404_Solution_RegexAutoPromote')) {
+            $regexNotice = ABJ_404_Solution_RegexAutoPromote::readNotice();
+            if (is_array($regexNotice) && $regexNotice['redirect_id'] > 0) {
+                $this->renderRegexAutoPromoteNotice($regexNotice);
+            }
+        }
+
         $isSimpleMode = $this->logic->getSettingsMode() === 'simple';
 
         echo '<nav class="abj404-tab-navigation" role="tablist">';
@@ -369,7 +382,52 @@ trait ViewTrait_UI {
 
         echo '</nav>';
     }
-    
+
+    /**
+     * Render the "Detected as a regex pattern" notice with [Edit] and
+     * [Undo] links. The notice is shown once per save that triggered
+     * server-side regex auto-promotion (admin posted a URL with
+     * unambiguous regex metachars but did not check the "Treat as regex"
+     * box). The [Undo] link restores the row to status=MANUAL with the
+     * original from_url; [Edit] jumps straight to the redirect edit
+     * page for further adjustments.
+     *
+     * @param array{redirect_id: int, original_url: string, new_url: string, url_rewritten: bool, created_at: int} $notice
+     * @return void
+     */
+    private function renderRegexAutoPromoteNotice(array $notice) {
+        $redirectId = (int)$notice['redirect_id'];
+        $originalUrl = (string)$notice['original_url'];
+        $newUrl = (string)$notice['new_url'];
+        $urlRewritten = !empty($notice['url_rewritten']);
+
+        $editUrl = admin_url('admin.php?page=' . ABJ404_PP . '&subpage=abj404_edit&id=' . $redirectId);
+        $undoBase = admin_url('admin.php?page=' . ABJ404_PP . '&subpage=abj404_redirects&action=undoRegexAutoPromote');
+        $undoUrl = wp_nonce_url($undoBase, 'abj404undoRegexAutoPromote');
+
+        if ($urlRewritten) {
+            $message = sprintf(
+                __('Detected as a regex pattern. Stored "%1$s" as "%2$s".', '404-solution'),
+                $originalUrl,
+                $newUrl
+            );
+        } else {
+            $message = sprintf(
+                __('Detected as a regex pattern. Stored "%s" with Regex status.', '404-solution'),
+                $originalUrl
+            );
+        }
+
+        echo '<div class="notice notice-info abj404-regex-autopromote-notice"><p>';
+        echo '<strong>' . esc_html__('404 Solution:', '404-solution') . '</strong> ';
+        echo esc_html($message);
+        echo ' <a href="' . esc_url($editUrl) . '">' . esc_html__('Edit', '404-solution') . '</a>';
+        echo ' | ';
+        echo '<a href="' . esc_url($undoUrl) . '" onclick="return confirm(\'' . esc_js(__('Undo regex auto-promotion and restore Manual status?', '404-solution')) . '\');">';
+        echo esc_html__('Undo', '404-solution') . '</a>';
+        echo '</p></div>' . "\n";
+    }
+
     /** This outputs a box with a title and some content in it.
      * It's used on the Stats, Options and Tools page (for example).
      * @param int|string $id
