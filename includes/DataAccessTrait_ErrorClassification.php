@@ -585,21 +585,30 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
         if ($this->f->strpos($lower, '_abj404_logs_hits') !== false) {
             return false;
         }
-        // Transient staged-build tables (view_build, view_done, view_deleteme)
-        // are owned by the staged-view-build pipeline. They are created and
-        // dropped between build cycles by design. discoverPermanentDDLFiles()
-        // already excludes them from createDatabaseTables(), so the auto-repair
-        // path cannot recreate them. A SELECT that hits a swap-window race
-        // would otherwise trigger a failed-repair admin notice on every plugin
-        // page, surfacing a benign internal transition as if it were a
-        // permanent corruption. Their absence between builds is normal.
-        if ($this->f->strpos($lower, '_abj404_view_build') !== false ||
-            $this->f->strpos($lower, '_abj404_view_done') !== false ||
-            $this->f->strpos($lower, '_abj404_view_deleteme') !== false) {
-            return false;
-        }
         return ($this->f->strpos($lower, "doesn't exist") !== false &&
             $this->f->strpos($lower, '_abj404_') !== false);
+    }
+
+    /**
+     * The staged-view-build pipeline owns three transient tables
+     * (view_build, view_done, view_deleteme). They are created and dropped
+     * between build cycles by design; discoverPermanentDDLFiles() already
+     * excludes them from createDatabaseTables(). A SELECT that hits a
+     * swap-window race against any of them is not a corruption signal and
+     * must not surface the missing_table admin notice or engage the 1h
+     * repair cooldown.
+     *
+     * @param string $errorText
+     * @return bool
+     */
+    private function isTransientViewBuildTableError(string $errorText): bool {
+        if ($errorText === '') {
+            return false;
+        }
+        $lower = strtolower($errorText);
+        return ($this->f->strpos($lower, '_abj404_view_build') !== false ||
+            $this->f->strpos($lower, '_abj404_view_done') !== false ||
+            $this->f->strpos($lower, '_abj404_view_deleteme') !== false);
     }
 
     /**
@@ -611,6 +620,26 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
      */
     private function attemptMissingTableRepairAndRetry($query, &$result) {
         if (self::$tableRepairInProgress) {
+            return;
+        }
+
+        // Transient staged-view-build tables (view_build, view_done, view_deleteme)
+        // are owned by the staged-build pipeline and are created and dropped
+        // between cycles. discoverPermanentDDLFiles() excludes them from
+        // createDatabaseTables(), so the repair path cannot recreate them and
+        // would fall straight into the failed-repair branch, setting the
+        // missing_table admin notice on every plugin page and engaging a 1h
+        // cooldown that blocks legit missing-table repair for the redirects /
+        // logsv2 / etc. core tables. Silently degrade: clear last_error so the
+        // caller treats the swap-window race as an empty result, and skip the
+        // notice / cooldown side effects entirely.
+        $observedError = is_string($result['last_error']) ? $result['last_error'] : '';
+        if ($this->isTransientViewBuildTableError($observedError)) {
+            $this->logger->debugMessage(
+                "Transient staged-view-build table missing (swap-window race, expected): "
+                . $observedError
+            );
+            $result['last_error'] = '';
             return;
         }
 
