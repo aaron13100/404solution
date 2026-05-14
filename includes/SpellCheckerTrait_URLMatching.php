@@ -33,7 +33,12 @@ trait SpellCheckerTrait_URLMatching {
 			}
 			$regexURLStr = is_string($regexURL) ? $regexURL : '';
 			$preparedURL = $this->getPreparedRegexPattern($regexURLStr);
-			if ($this->f->regexMatch($preparedURL, $requestedURL)) {
+			// Suppress PHP warnings from invalid stored patterns. Bad rows can
+			// reach here from older imports, manual admin edits, or direct DB
+			// writes; treating them as non-match keeps a single bad row from
+			// polluting every 404 request's log. Same idiom as
+			// RedirectConditionEvaluator.php:316 (`@preg_match` in case 'regex').
+			if (@$this->f->regexMatch($preparedURL, $requestedURL)) {
 				if ($isDebug) {
 					abj_service('request_context')->debug_info = 'Cleared after regex.';
 				}
@@ -63,7 +68,10 @@ trait SpellCheckerTrait_URLMatching {
 				$hasReplacementToken = ($this->f->strpos($permLinkStr, '$') !== false);
 				if ($hasCaptureGroup && $hasReplacementToken) {
 					$results = array();
-					$this->f->regexMatch($regexURLStr, $requestedURL, $results);
+					// Pattern already proved itself valid in the gate above;
+					// suppress here too in case e.g. a different prepared-vs-raw
+					// shape compiles inconsistently.
+					@$this->f->regexMatch($regexURLStr, $requestedURL, $results);
 
 					// do a repacement for all of the groups found.
 					$final = $permLinkStr;

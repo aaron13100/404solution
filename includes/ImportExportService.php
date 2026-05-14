@@ -578,6 +578,10 @@ class ABJ_404_Solution_ImportExportService {
                     $existing = $this->dao->getExistingRedirectForURL($dataArray['from_url']);
                     $wasOverwrite = (is_array($existing) && isset($existing['id']) && (int)$existing['id'] !== 0);
                 }
+                // Surface the data-row line number so loadDataArrayFromFile()
+                // can build "Invalid regex pattern at line N: ..." messages
+                // that point the user at the row to fix.
+                $dataArray['__line_number'] = $dataRowsSeen + 1;
                 $issues = $this->loadDataArrayFromFile($dataArray, $dryRun, $overwriteExisting);
                 if (count($issues) > 0) {
                     $invalidRows++;
@@ -776,6 +780,27 @@ class ABJ_404_Solution_ImportExportService {
         $final_dest = isset($dataArray['to_url']) && is_string($dataArray['to_url']) ? $dataArray['to_url'] : '';
         $anyIssuesToNote = array();
 
+        // Validate at the boundary: if the row is explicitly flagged as a regex
+        // redirect, refuse to persist a from_url that is not a syntactically
+        // valid PHP pattern. Without this guard, the bad pattern reaches
+        // SpellCheckerTrait_URLMatching::getPermalinkUsingRegEx() at runtime
+        // and emits a PHP warning per 404 request.
+        if ($explicitRegex) {
+            $patternError = $this->validateRegexPattern($fromURL);
+            if ($patternError !== '') {
+                $lineNumber = isset($dataArray['__line_number']) && is_numeric($dataArray['__line_number'])
+                    ? (int)$dataArray['__line_number'] : 0;
+                $msg = $lineNumber > 0
+                    ? sprintf(__('Invalid regex pattern at line %d: %s (%s)', '404-solution'),
+                        $lineNumber, $fromURL, $patternError)
+                    : sprintf(__('Invalid regex pattern: %s (%s)', '404-solution'),
+                        $fromURL, $patternError);
+                $this->logger->warn($msg);
+                $anyIssuesToNote[] = $msg;
+                return $anyIssuesToNote;
+            }
+        }
+
         $maybeExisting2 = $this->dao->getExistingRedirectForURL($fromURL);
         $existingId = (count($maybeExisting2) > 0 && isset($maybeExisting2['id'])) ? (int)$maybeExisting2['id'] : 0;
         if ($existingId !== 0 && !$overwriteExisting) {
@@ -868,6 +893,54 @@ class ABJ_404_Solution_ImportExportService {
         }
 
         return $anyIssuesToNote;
+    }
+
+    /**
+     * Run the same pattern preparation SpellCheckerTrait_URLMatching uses
+     * (forward-slashes escaped, then wrapped with `{` `}` or an alt delimiter)
+     * and ask preg_match whether the result compiles. Returns the empty string
+     * when the pattern is valid, or a short error message when it is not.
+     *
+     * Note: this validates the pattern shape only. It does not test against a
+     * sample URL because preg_match returning 0 (no match) is still a "valid
+     * pattern" outcome.
+     *
+     * @param string $fromUrl raw from_url from the CSV row
+     * @return string '' when valid; a short error message otherwise
+     */
+    private function validateRegexPattern(string $fromUrl): string {
+        if ($fromUrl === '') {
+            return __('pattern is empty', '404-solution');
+        }
+
+        // Mirror SpellCheckerTrait_URLMatching::getPreparedRegexPattern and
+        // FunctionsPreg::regexMatch so we test exactly what runs at request
+        // time.
+        $prepared = str_replace('/', '\/', $fromUrl);
+        $delimA = '{';
+        $delimB = '}';
+        if (strpos($prepared, '}') !== false) {
+            // Mirror FunctionsPreg::findADelimiter for the alt-delimiter path.
+            $candidates = array('`', '^', '|', '~', '!', ';', ':', ',', '@', "'", '/');
+            $picked = null;
+            foreach ($candidates as $c) {
+                if (strpos($prepared, $c) === false) { $picked = $c; break; }
+            }
+            if ($picked === null) {
+                return __('cannot find a safe delimiter character', '404-solution');
+            }
+            $delimA = $delimB = $picked;
+        }
+
+        $compiled = $delimA . $prepared . $delimB;
+        $result = @preg_match($compiled, '');
+        if ($result === false) {
+            $errMsg = function_exists('preg_last_error_msg')
+                ? preg_last_error_msg()
+                : 'preg_match compilation failed';
+            return $errMsg;
+        }
+        return '';
     }
 
     /**
