@@ -1,2752 +1,3428 @@
-# Copyright (C) 404-solution
-# This file is distributed under the same license as the 404-solution package.
+# Copyright (C) 2026 Aaron J
+# This file is distributed under the GPL-3.0-or-later.
 msgid ""
 msgstr ""
-"Project-Id-Version: 404-solution\n"
-"Report-Msgid-Bugs-To: https://github.com/aaron13100/404solution/issues\n"
+"Project-Id-Version: 404 Solution 4.1.18\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/404-solution\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2026-05-14T20:20:37+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.13.0-alpha-0ed7acb\n"
+"X-Domain: 404-solution\n"
 
-msgid "404 Solution Logs"
-msgstr ""
-
-msgid "Timestamp"
-msgstr ""
-
-msgid "Requested URL"
-msgstr ""
-
-msgid "Destination URL"
-msgstr ""
-
-msgid "Engine"
-msgstr ""
-
-msgid "Status"
-msgstr ""
-
-msgid "Some items could not be anonymized."
-msgstr ""
-
-msgid "Rate limit exceeded. Please try again later."
-msgstr ""
-
-msgid "Invalid nonce. Please reload the page."
-msgstr ""
-"PO-Revision-Date: 2016-MO-DA HO:MI+ZONE\n"
-"X-Poedit-Basepath: ..\n"
-"X-Poedit-SourceCharset: UTF-8\n"
-"X-Poedit-KeywordsList: __;_e;_n:1,2;_x:1,2c;_ex:1,2c;_nx:4c,1,2;esc_attr__;esc_attr_e;esc_attr_x:1,2c;esc_html__;esc_html_e;esc_html_x:1,2c;_n_noop:1,2;_nx_noop:3c,1,2;__ngettext_noop:1,2\n"
-"X-Poedit-SearchPath-0: .\n"
-"X-Poedit-SearchPathExcluded-0: *.js\n"
-"Plural-Forms: nplurals=2; plural=(n != 1);\n\n"
-
+#. Plugin Name of the plugin
+#: 404-solution.php
+#: includes/PostEditorIntegration.php:179
+#: includes/PostEditorIntegration.php:386
 msgid "404 Solution"
 msgstr ""
 
-msgid "Error: Invalid value specified for default redirect type"
+#. Plugin URI of the plugin
+#. Author URI of the plugin
+#: 404-solution.php
+msgid "https://www.ajexperience.com/404-solution/"
 msgstr ""
 
-msgid "Error: Unrecognized bulk action. (%s)"
+#. Description of the plugin
+#: 404-solution.php
+msgid "The smartest 404 plugin - uses intelligent matching and spell-checking to find what visitors were actually looking for, not just redirect to homepage"
 msgstr ""
 
-msgid "Error: No ID found for edit request."
+#. Author of the plugin
+#: 404-solution.php
+msgid "Aaron J"
 msgstr ""
 
-msgid "Error: Bad trash operation specified."
+#: 404-solution.php:1374
+msgid "Some required plugin files are missing. Please reinstall the plugin package."
 msgstr ""
 
-msgid "Error: Bad ignore operation specified."
-msgstr ""
-
-#: includes/admin.php:86
-msgid "Collected URL deletion value must be a number greater or equal to zero"
-msgstr ""
-
-#: includes/admin.php:92
-msgid "Manual redirect deletion value must be a number greater or equal to zero"
-msgstr ""
-
-#: includes/admin.php:122
-msgid "Suggestion minimum score value must be a number between 1 and 99"
-msgstr ""
-
-#: includes/admin.php:128
-msgid "Maximum number of suggest value must be a number greater or equal to 1"
-msgstr ""
-
-#: includes/admin.php:159
-msgid "Auto match score value must be a number between 0 and 99"
-msgstr ""
-
-#: includes/admin.php:166
-msgid "Auto redirect deletion value must be a number greater or equal to zero"
-msgstr ""
-
-#: includes/admin.php:378
-msgid "All"
-msgstr ""
-
-#: includes/admin.php:419, includes/admin.php:1604, includes/admin.php:1864, includes/admin.php:1904
-msgid "Trash"
-msgstr ""
-
-msgid "(Default 404 Page)"
-msgstr ""
-
-#: includes/admin.php:460
-msgid "%s item"
-msgid_plural "%s items"
-msgstr[0] "%s item"
-msgstr[1] "%s items"
-msgstr ""
-
-msgid "%s log entry was purged."
-msgid_plural "%s log entries were purged."
-msgstr[0] "%s log entry was purged."
-msgstr[1] "%s log entries were purged."
-msgstr ""
-
-msgid "%s redirect entry was moved to the trash."
-msgid_plural "%s redirect entries were moved to the trash."
-msgstr[0] "%s redirect entry was moved to the trash."
-msgstr[1] "%s redirect entries were moved to the trash."
-msgstr ""
-
-msgid "There is <a>%s captured 404 URL</a> that needs to be processed."
-msgid_plural "There are <a>%s captured 404 URLs</a> to be processed."
-msgstr[0] "There is <a>%s captured 404 URL</a> to be processed."
-msgstr[1] "There are <a>%s captured 404 URLs</a> to be processed."
-msgstr ""
-
-
-#: includes/admin.php:467
-msgid "Go to first page"
-msgstr ""
-
-#: includes/admin.php:476
-msgid "Go to previous page"
-msgstr ""
-
-#: includes/admin.php:478, includes/admin.php:1741, includes/admin.php:2069
-msgid "Page"
-msgstr ""
-
-#: includes/admin.php:478
-msgid "of"
-msgstr ""
-
-#: includes/admin.php:492
-msgid "Go to next page"
-msgstr ""
-
-#: includes/admin.php:504
-msgid "Go to last page"
-msgstr ""
-
-#: includes/admin.php:601, includes/admin.php:656
-msgid "Error: URL must start with /"
-msgstr ""
-
-#: includes/admin.php:604, includes/admin.php:659
-msgid "Error: URL is a required field."
-msgstr ""
-
-#: includes/admin.php:609, includes/admin.php:664
-msgid "Error: You selected external URL but did not enter a URL."
-msgstr ""
-
-#: includes/admin.php:612, includes/admin.php:667
-msgid "Error: External URLs must start with http://, https://, or ftp://"
-msgstr ""
-
-#: includes/admin.php:643, includes/admin.php:721
-msgid "Error: Data not formatted properly."
-msgstr ""
-
-#: includes/admin.php:742, includes/admin.php:761
-msgid "Error: Unknown Database Error!"
-msgstr ""
-
-#: includes/admin.php:768, includes/admin.php:826
-msgid "Options"
-msgstr ""
-
-#: includes/admin.php:770, includes/admin.php:811
-msgid "Logs"
-msgstr ""
-
-#: includes/admin.php:772, includes/admin.php:816, includes/admin.php:816
-msgid "Stats"
-msgstr ""
-
-#: includes/admin.php:774
-msgid "Edit Redirect"
-msgstr ""
-
-#: includes/admin.php:790
-msgid "by"
-msgstr ""
-
-#: includes/admin.php:791
-msgid "Version"
-msgstr ""
-
-#: includes/admin.php:792, includes/admin.php:792
-msgid "Plugin Home Page"
-msgstr ""
-
-#: includes/admin.php:801, includes/admin.php:801
-msgid "Page Redirects"
-msgstr ""
-
-#: includes/admin.php:806, includes/admin.php:806
-msgid "Captured 404 URLs"
-msgstr ""
-
-#: includes/admin.php:811
-msgid "Redirect & Capture Logs"
-msgstr ""
-
-#: includes/admin.php:821, includes/admin.php:821
-msgid "Tools"
-msgstr ""
-
-#: includes/admin.php:835
-msgid "is maintained by"
-msgstr ""
-
-#: includes/admin.php:838
-msgid "It's released under the GNU GPL version 2 License."
-msgstr ""
-
-#: includes/admin.php:868
-msgid "URLs marked as ignored."
-msgstr ""
-
-#: includes/admin.php:870
-msgid "URLs marked as captured."
-msgstr ""
-
-#: includes/admin.php:880
-msgid "URLs moved to trash"
-msgstr ""
-
-#: includes/admin.php:901
-msgid "Options Saved Successfully!"
-msgstr ""
-
-#: includes/admin.php:903
-msgid "Some options were not saved successfully."
-msgstr ""
-
-#: includes/admin.php:910
-msgid "New Redirect Added Successfully!"
-msgstr ""
-
-#: includes/admin.php:912
-msgid "Error: unable to add new redirect."
-msgstr ""
-
-#: includes/admin.php:918, includes/admin.php:923
-msgid "All trashed URLs have been deleted!"
-msgstr ""
-
-#: includes/admin.php:948
-msgid "Redirect moved to trash successfully!"
-msgstr ""
-
-#: includes/admin.php:950
-msgid "Redirect restored from trash successfully!"
-msgstr ""
-
-#: includes/admin.php:954
-msgid "Error: Unable to move redirect to trash."
-msgstr ""
-
-#: includes/admin.php:956
-msgid "Error: Unable to move redirect from trash."
-msgstr ""
-
-#: includes/admin.php:969
-msgid "Redirect Removed Successfully!"
-msgstr ""
-
-#: includes/admin.php:987
-msgid "Removed 404 URL from ignored list successfully!"
-msgstr ""
-
-#: includes/admin.php:989
-msgid "404 URL marked as ignored successfully!"
-msgstr ""
-
-#: includes/admin.php:993
-msgid "Error: unable to remove URL from ignored list"
-msgstr ""
-
-#: includes/admin.php:995
-msgid "Error: unable to mark URL as ignored"
-msgstr ""
-
-#: includes/admin.php:1009
-msgid "Redirect Information Updated Successfully!"
-msgstr ""
-
-#: includes/admin.php:1012
-msgid "Error: Unable to update redirect data."
-msgstr ""
-
-#: includes/admin.php:1058
-msgid "Invalid Sub Page ID"
-msgstr ""
-
-#: includes/admin.php:1105
-msgid "Automatic 301 Redirects"
-msgstr ""
-
-#: includes/admin.php:1106
-msgid "Automatic 302 Redirects"
-msgstr ""
-
-#: includes/admin.php:1107
-msgid "Manual 301 Redirects"
-msgstr ""
-
-#: includes/admin.php:1108
-msgid "Manual 302 Redirects"
-msgstr ""
-
-#: includes/admin.php:1109
-msgid "Trashed Redirects"
-msgstr ""
-
-#: includes/admin.php:1111
-msgid "Total Redirects"
-msgstr ""
-
-#: includes/admin.php:1113
-msgid "Redirects"
-msgstr ""
-
-#: includes/admin.php:1128, includes/admin.php:1134, includes/admin.php:2160
-msgid "Captured URLs"
-msgstr ""
-
-#: includes/admin.php:1129
-msgid "Ignored 404 URLs"
-msgstr ""
-
-#: includes/admin.php:1130
-msgid "Trashed URLs"
-msgstr ""
-
-#: includes/admin.php:1132
-msgid "Total URLs"
-msgstr ""
-
-#: includes/admin.php:1189
-msgid "Page Not Found Displayed"
-msgstr ""
-
-#: includes/admin.php:1190
-msgid "Unique Page Not Found URLs"
-msgstr ""
-
-#: includes/admin.php:1191
-msgid "Unique Page Not Found Visitors"
-msgstr ""
-
-#: includes/admin.php:1192
-msgid "Unique Page Not Found Referrers"
-msgstr ""
-
-#: includes/admin.php:1193
-msgid "Hits Redirected"
-msgstr ""
-
-#: includes/admin.php:1194
-msgid "Unique URLs Redirected"
-msgstr ""
-
-#: includes/admin.php:1195
-msgid "Unique Redirected Visitors"
-msgstr ""
-
-#: includes/admin.php:1196
-msgid "Unique Redirected Referrers"
-msgstr ""
-
-#: includes/admin.php:1233
-msgid "View Logs For"
-msgstr ""
-
-#: includes/admin.php:1239
-msgid "All Redirects"
-msgstr ""
-
-#: includes/admin.php:1303, includes/admin.php:1313, includes/admin.php:1559
-msgid "Visit"
-msgstr ""
-
-#: includes/admin.php:1310
-msgid "Displayed 404 Page"
-msgstr ""
-
-#: includes/admin.php:1312, includes/admin.php:1697, includes/admin.php:2026
-msgid "Redirect to"
-msgstr ""
-
-#: includes/admin.php:1324
-msgid "No Results To Display"
-msgstr ""
-
-#: includes/admin.php:1353
-msgid "DB Version Number"
-msgstr ""
-
-#: includes/View.php:2060
-msgid "Default"
-msgstr ""
-
-#: includes/admin.php:1354
-msgid "Default redirect type"
-msgstr ""
-
-#: includes/admin.php:1360
-msgid "Permanent 301"
-msgstr ""
-
-#: includes/admin.php:1365
-msgid "Temporary 302"
-msgstr ""
-
-#: includes/admin.php:1372
-msgid "Collect incoming 404 URLs"
-msgstr ""
-
-#: includes/admin.php:1374
-msgid "Admin notification level"
-msgstr ""
-
-#: includes/admin.php:1374
-msgid "Captured URLs (0 Disables Notification)"
-msgstr ""
-
-#: includes/admin.php:1375
-msgid "Display a WordPress admin notification when the number of captured URLs goes above this number"
-msgstr ""
-
-#: includes/admin.php:1377
-msgid "Collected 404 URL deletion"
-msgstr ""
-
-#: includes/admin.php:1377, includes/admin.php:1380, includes/admin.php:1460
-msgid "Days (0 Disables Auto Delete)"
-msgstr ""
-
-#: includes/admin.php:1378
-msgid "Automatically removes 404 URLs that have been captured if they haven't been used for the specified amount of time."
-msgstr ""
-
-#: includes/admin.php:1380
-msgid "Manual redirect deletion"
-msgstr ""
-
-#: includes/admin.php:1381
-msgid "Automatically removes manually created page redirects if they haven't been used for the specified amount of time."
-msgstr ""
-
-#: includes/admin.php:1387
-msgid "Remove redirect upon matching permalink"
-msgstr ""
-
-#: includes/admin.php:1388
-msgid "Checks each redirect for a new matching permalink before user is redirected. If a new page permalink is found matching the redirected URL then the redirect will be deleted."
-msgstr ""
-
-#: includes/admin.php:1390
-msgid "General Settings"
-msgstr ""
-
-#: includes/admin.php:1397
-msgid "Turn on 404 suggestions"
-msgstr ""
-
-#: includes/admin.php:1398
-msgid "Activates the 404 page suggestions function. Only works if the code is in your 404 page template."
-msgstr ""
-
-#: includes/admin.php:1404
-msgid "Allow category suggestions"
-msgstr ""
-
-#: includes/admin.php:1410
-msgid "Allow tag suggestions"
-msgstr ""
-
-#: includes/admin.php:1414
-msgid "Maximum number of suggestions to display"
-msgstr ""
-
-#: includes/admin.php:1416
-msgid "Page suggestions title"
-msgstr ""
-
-#: includes/admin.php:1418
-msgid "Display Before/After page suggestions"
-msgstr ""
-
-#: includes/admin.php:1422
-msgid "Display Before/After each suggested entry"
-msgstr ""
-
-#: includes/admin.php:1426
-msgid "Display if no suggestion results"
-msgstr ""
-
-#: includes/admin.php:1429
-msgid "404 Page Suggestions"
-msgstr ""
-
-#: includes/admin.php:1435
-msgid "Create automatic redirects"
-msgstr ""
-
-#: includes/admin.php:1436
-msgid "Automatically creates redirects based on best possible suggested page."
-msgstr ""
-
-#: includes/admin.php:1438
-msgid "Minimum match score"
-msgstr ""
-
-#: includes/admin.php:1439
-msgid "Only create an automatic redirect if the suggested page has a score above the specified number (default 90)"
-msgstr ""
-
-#: includes/admin.php:1445
-msgid "Create automatic redirects for categories"
-msgstr ""
-
-#: includes/admin.php:1451
-msgid "Create automatic redirects for tags"
-msgstr ""
-
-#: includes/admin.php:1457
-msgid "Force current permalinks"
-msgstr ""
-
-#: includes/admin.php:1458
-msgid "Creates auto redirects for any url resolving to a post/page that doesn't match the current permalinks"
-msgstr ""
-
-#: includes/admin.php:1460
-msgid "Auto redirect deletion"
-msgstr ""
-
-#: includes/admin.php:1461
-msgid "Removes auto created redirects if they haven't been used for the specified amount of time."
-msgstr ""
-
-#: includes/admin.php:1463, includes/admin.php:2158
-msgid "Automatic Redirects"
-msgstr ""
-
-#: includes/admin.php:1530, includes/admin.php:1841
-msgid "Empty Trash"
-msgstr ""
-
-#: includes/admin.php:1551
-msgid "Manual"
-msgstr ""
-
-#: includes/admin.php:1553
-msgid "Automatic"
-msgstr ""
-
-#: includes/admin.php:1561
-msgid "External"
-msgstr ""
-
-#: includes/admin.php:1566
-msgid "Post/Page"
-msgstr ""
-
-#: includes/admin.php:1572, includes/admin.php:1754, includes/admin.php:2082
-msgid "Category"
-msgstr ""
-
-#: includes/admin.php:1576
-msgid "Category:"
-msgstr ""
-
-#: includes/admin.php:1578, includes/admin.php:1767, includes/admin.php:2095
-msgid "Tag"
-msgstr ""
-
-#: includes/admin.php:1582
-msgid "Tag:"
-msgstr ""
-
-#: includes/admin.php:1591, includes/admin.php:1890
-msgid "Never Used"
-msgstr ""
-
-msgid "Confidence"
-msgstr ""
-
-msgid "Confidence:"
-msgstr ""
-
-msgid "Match Confidence"
-msgstr ""
-
-msgid "High (≥80%)"
-msgstr ""
-
-msgid "Medium (50–79%)"
-msgstr ""
-
-msgid "Low (<50%)"
-msgstr ""
-
-msgid "Manual (no score)"
-msgstr ""
-
-msgid "Avg confidence: %s%%"
-msgstr ""
-
-msgid "Manual redirect — no confidence score"
-msgstr ""
-
-#: includes/ViewTrait_RedirectsTable.php
-msgid "No confidence score for this engine"
-msgstr ""
-
-msgid "Rows per page:"
-msgstr ""
-
-#: includes/admin.php:1601, includes/admin.php:1901
-msgid "Restore"
-msgstr ""
-
-#: includes/admin.php:1635, includes/admin.php:1638, includes/admin.php:1952, includes/admin.php:1955
-msgid "Edit Redirect Details"
-msgstr ""
-
-#: includes/admin.php:1641, includes/admin.php:1958
-msgid "Trash Redirected URL"
-msgstr ""
-
-#: includes/admin.php:1643, includes/admin.php:1960
-msgid "View Redirect Logs"
-msgstr ""
-
-#: includes/admin.php:1646, includes/admin.php:1966
-msgid "Delete Redirect Permanently"
-msgstr ""
-
-#: includes/admin.php:1646, includes/admin.php:1966
-msgid "Delete Permanently"
-msgstr ""
-
-#: includes/admin.php:1663, includes/admin.php:1979
-msgid "No Records To Display"
-msgstr ""
-
-#: includes/admin.php:1675
-msgid "Add a Manual Redirect"
-msgstr ""
-
-#: includes/admin.php:1696, includes/admin.php:2025
-msgid "URL"
-msgstr ""
-
-#: includes/admin.php:1696, includes/admin.php:2025
-msgid "Required"
-msgstr ""
-
-#: includes/admin.php:1702, includes/admin.php:2031
-msgid "External Page"
-msgstr ""
-
-#: includes/admin.php:1715, includes/admin.php:2044
-msgid "Post"
-msgstr ""
-
-#: includes/admin.php:1776, includes/admin.php:2103
-msgid "External URL"
-msgstr ""
-
-#: includes/admin.php:1776, includes/admin.php:2103
-msgid "Required if Redirect to is set to External Page"
-msgstr ""
-
-#: includes/admin.php:1777, includes/admin.php:2104
-msgid "Redirect Type"
-msgstr ""
-
-#: includes/admin.php:1797
-msgid "Add Redirect"
-msgstr ""
-
-#: includes/admin.php:1860
-msgid "Mark as ignored"
-msgstr ""
-
-#: includes/admin.php:1862
-msgid "Mark as captured"
-msgstr ""
-
-#: includes/admin.php:1866
-msgid "Apply"
-msgstr ""
-
-#: includes/admin.php:1909
-msgid "Remove Ignore Status"
-msgstr ""
-
-#: includes/admin.php:1912
-msgid "Ignore 404 Error"
-msgstr ""
-
-#: includes/admin.php:1955
-msgid "Edit"
-msgstr ""
-
-#: includes/admin.php:1960
-msgid "View Logs"
-msgstr ""
-
-#: includes/admin.php:2015
-msgid "Redirect Details"
-msgstr ""
-
-#: includes/admin.php:2124
-msgid "Update Redirect"
-msgstr ""
-
-#: includes/admin.php:2151
-msgid "Purge Type"
-msgstr ""
-
-#: includes/admin.php:2152
-msgid "Logs Only"
-msgstr ""
-
-#: includes/admin.php:2153
-msgid "Logs & Redirects"
-msgstr ""
-
-#: includes/admin.php:2156
-msgid "Redirect Types"
-msgstr ""
-
-#: includes/admin.php:2159
-msgid "Manual Redirects"
-msgstr ""
-
-#: includes/admin.php:2161
-msgid "Ignored URLs"
-msgstr ""
-
-#: includes/admin.php:2164
-msgid "Sanity Check"
-msgstr ""
-
-#: includes/admin.php:2165
-msgid "Using the purge options will move all selected redirects to the trash. You must then empty the trash to delete them."
-msgstr ""
-
-#: includes/admin.php:2167
-msgid "I understand the above statement, I know what I am doing... blah blah blah. Just delete the records!"
-msgstr ""
-
-#: includes/admin.php:2169
-msgid "Purge Entries!"
-msgstr ""
-
-#: includes/admin.php:2174
-msgid "Purge Options"
-msgstr ""
-
-#: includes/admin.php:2207
-msgid "Log entries were purged."
-msgstr ""
-
-#: includes/admin.php:2213
-msgid "Redirect entries were moved to the trash."
-msgstr ""
-
-#: includes/admin.php:2216
-msgid "Error: An invalid purge type was selected. Exiting."
-msgstr ""
-
-#: includes/admin.php:2219
-msgid "Error: No valid redirect types were selected. Exiting."
-msgstr ""
-
-#: includes/admin.php:2222
-msgid "An unknown error has occurred."
-msgstr ""
-
-#: includes/admin.php:2225
-msgid "Error: No redirect types were selected. No purges will be done."
-msgstr ""
-
-#: includes/admin.php:2228
-msgid "Error: You didn't check the I understand checkbox. No purging of records for you!"
-msgstr ""
-
-#: includes/PluginLogic.php:2305
-msgid "Error: The time to wait before an automatic update must be a number between 0 and something around %d."
-msgstr ""
-
-#: includes/functions.php:74
-msgid "Suggested Alternatives"
-msgstr ""
-
-#: includes/functions.php:79
-msgid "No Results To Display."
-msgstr ""
-#: includes/DatabaseUpgradesEtc.php:119
-msgid "404 Solution: N-gram spell check cache is being built in the background to optimize performance. This may take a few minutes on large sites."
-msgstr ""
-
-#: includes/DatabaseUpgradesEtc.php:123
-msgid "404 Solution: Built N-gram cache for %d pages to optimize spell checking performance."
-msgstr ""
-
-#: includes/DatabaseUpgradesEtc.php:140
-msgid "404 Solution: Migrated %d redirect to subdirectory-independent format."
-msgid_plural "404 Solution: Migrated %d redirects to subdirectory-independent format."
-msgstr[0] ""
-msgstr[1] ""
-
-
-#: includes/UninstallModal.php
-msgid "Before deactivating:"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "Choose what should happen to your data. These preferences will be saved for later if you decide to delete the plugin."
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "What should happen to your data?"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "Keep my redirects (%d redirects)"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "Check this if you plan to reinstall the plugin later. Your redirect configurations will be preserved."
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "Keep 404 logs"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "Historical 404 data and logs will be preserved if checked."
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "Note: Cache tables will always be deleted as they can be rebuilt."
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "Why are you deactivating? (Optional)"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "Temporary deactivation for debugging"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "The plugin is not working as expected"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "I found a better plugin"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "I no longer need this functionality"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "Too complicated to configure"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "Performance issues"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "Other reason"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "Help us improve (Optional)"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "Send feedback to help improve the plugin"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "Your email (optional):"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "your@email.com (optional)"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "Additional details:"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "Please share any additional feedback..."
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "Your feedback helps us improve. We respect your privacy and will not share your information."
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "Insufficient permissions"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "Could not save preferences. Your choices may not be preserved."
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "Preferences saved successfully"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "Failed to save preferences"
-msgstr ""
-
-#: includes/html/adminOptionsGeneral.html
-msgid "Disable automatic dark mode detection"
-msgstr ""
-
-#: includes/html/adminOptionsGeneral.html
-msgid "When unchecked and theme is set to \"Default\", the plugin will automatically switch to a dark theme if your WordPress admin color scheme is dark (Midnight, Ectoplasm, Coffee), if you have a dark mode plugin enabled, or if your browser/OS prefers dark mode."
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "Your feedback helps us improve. System information (WordPress version, PHP version, installed plugins) will be included. We respect your privacy and will not share your information."
-msgstr ""
-#: includes/PluginLogic.php
-msgid "N-gram cache rebuild is already scheduled or in progress. Please wait for it to complete."
-msgstr ""
-
-#: includes/PluginLogic.php
-msgid "N-gram cache rebuild has been scheduled and will run in the background. This may take several minutes on large sites. You can continue using the plugin normally."
-msgstr ""
-
-#: includes/PluginLogic.php
-msgid "Failed to schedule N-gram cache rebuild. Please try again or check your WordPress cron configuration."
-msgstr ""
-
-#: includes/html/adminOptionsGeneral.html
-msgid "When the plugin detects an error, it transmits a copy of the debug log to the developer for diagnosis. Transmission may be by email or by HTTPS upload to a developer-operated server; the contents are the same. This is not required for the plugin to work, but it helps the developer fix bugs in future versions. The report includes: everything in the debug log, the admin email address, installed PHP extensions, active plugins, PHP version, WordPress version, MySQL version, total published pages and posts, etc. (everything asked for when a support issue is opened). Reports are checked daily when maintenance runs."
-msgstr ""
-
-#: includes/html/viewSuggestions.html
-msgid "Display the closest matching pages by using the shortcode [abj404_solution_page_suggestions]."
-msgstr ""
-
-#: includes/html/viewSuggestions.html
-msgid "This shortcode can be used on the 404 page and will display a list of suggested pages. This is for when a user requests a page that doesn't exist and they are not automatically redirected to a matching page."
-msgstr ""
-
-#: includes/html/viewSuggestions.html
-msgid "Require minimum match quality"
-msgstr ""
-
-#: includes/html/viewSuggestions.html
-msgid "Only show suggestions that closely match the requested URL. This filters out weak matches that may confuse visitors."
-msgstr ""
-
-#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedLogging.html
-msgid "This is best for search engine bots that do need to be redirected when the slug structure changes. Use one line per user agent. If the text is found anywhere in the user agent string then it applies."
-msgstr ""
-
-#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedLogging.html
-msgid "This is best for internal processes that don't need to be redirected when the slug structure changes. Search engine user agents should not go here so that they will be redirected when the slug structure changes."
-msgstr ""
-
-#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedContent.html
-msgid "Pages listed here will not be redirected to (unless a redirect to the page already exists)."
-msgstr ""
-
-#: includes/html/settingsAdvancedContent.html
-msgid "* Use an asterisk (*) to match \"any pattern.\""
-msgstr ""
-
-#: includes/html/settingsAdvancedContent.html
-msgid "* These patterns match the path of a URL, not a title.\""
-msgstr ""
-
-#: includes/html/settingsAdvanced.html
-msgid "The plugin will only redirect the post types specified here. Default WordPress post types are \"post\" and \"page.\" The \"product\" type is for WooCommerce users."
-msgstr ""
-
-#: includes/html/adminOptionsGeneral.html
-msgid "When the number of captured 404s would cause an admin notification, an email will be sent to the addresses specified here. Multiple email addresses can be separated by commas (,). The \"from\" email address is always the default WordPress admin email:"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "404 Solution - Deactivation Options"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "Cancel"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "Deactivate without feedback"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "Email Feedback & Deactivate"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "Processing..."
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "Deactivating"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "Before deactivating, choose what happens to your data:"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "Keep my redirect (%d)"
-msgid_plural "Keep my redirects (%d)"
-msgstr[0] ""
-msgstr[1] ""
-
-#: includes/UninstallModal.php
-msgid "— saves them for later if you reinstall"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "Keep 404 logs"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "— historical data preserved"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "Cache tables are always deleted (can be rebuilt)"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "Help us improve (Optional)"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "Temporary deactivation for debugging"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "The plugin is not working as expected"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "I found a better plugin"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "I no longer need this functionality"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "Too complicated to configure"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "Performance issues"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "Other reason"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "What specifically isn't working?"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "Redirects not triggering/working"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "Settings not saving"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "Admin pages showing errors"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "Suggestions not appearing"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "Conflicts with other plugins"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "Other issue (please specify below)"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "What type of performance issue?"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "Slow admin dashboard"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "Slow frontend page loads"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "High database usage"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "Memory issues"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "Other (please specify below)"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "What was confusing?"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "Settings are confusing"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "Too many options"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "Unclear documentation"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "Other (please specify below)"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "Which plugin are you switching to?"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "Plugin name (optional)"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "Please tell us more (optional):"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "What's your reason for deactivating?"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "Additional details (optional):"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "Any other information about the issue..."
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "Your email (optional):"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "For follow-up if needed"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "Include technical details (system info + sanitized log excerpt) to help diagnose the issue"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "Insufficient permissions"
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "Feedback sent successfully."
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "Feedback could not be sent."
-msgstr ""
-
-#: includes/UninstallModal.php
-msgid "Thanks for the feedback!"
-msgstr ""
-
-#: includes/WordPress_Connector.php
-msgid "second"
-msgstr ""
-
-#: includes/WordPress_Connector.php
-msgid "seconds"
-msgstr ""
-
-#: includes/WordPress_Connector.php
-msgid "minute"
-msgstr ""
-
-#: includes/WordPress_Connector.php
-msgid "minutes"
-msgstr ""
-
-#: includes/WordPress_Connector.php
-msgid "hour"
-msgstr ""
-
-#: includes/WordPress_Connector.php
-msgid "hours"
-msgstr ""
-
-#: includes/WordPress_Connector.php
-msgid "day"
-msgstr ""
-
-#: includes/WordPress_Connector.php
-msgid "days"
-msgstr ""
-
-#: includes/WordPress_Connector.php
-msgid "ago"
-msgstr ""
-
-#: includes/DataAccess.php
-msgid "Just now"
-msgstr ""
-
-#: includes/View.php
-msgid "Data may not be immediately updated. Refresh to see latest changes."
-msgstr ""
-
-#: includes/View.php
-msgid "Last updated: %s"
-msgstr ""
-#: includes/View.php
-msgid "Last checked: %s"
-msgstr ""
-
-#: includes/View.php
-msgid "Refresh scheduled"
-msgstr ""
-
-#: includes/View.php
-msgid "Refresh running"
-msgstr ""
-
-#: includes/View.php
-msgid "Refresh paused"
-msgstr ""
-
-
-#: includes/SetupWizard.php
-msgid "Security check failed. Please try again."
-msgstr ""
-
-#: includes/SetupWizard.php
-msgid "Error"
-msgstr ""
-
-#: includes/SetupWizard.php
-msgid "You do not have permission to access this page."
-msgstr ""
-
-#: includes/SetupWizard.php
-msgid "Welcome to 404 Solution"
-msgstr ""
-
-#: includes/SetupWizard.php
-msgid "Close"
-msgstr ""
-
-#: includes/SetupWizard.php
-msgid "404 Solution helps you automatically handle 404 errors and broken links on your site."
-msgstr ""
-
-#: includes/SetupWizard.php
-msgid "Let's configure how it handles missing pages. You can always change these settings later."
-msgstr ""
-
-#: includes/SetupWizard.php
-msgid "When a page is not found, what should happen?"
-msgstr ""
-
-#: includes/SetupWizard.php
-msgid "Automatically redirect to similar page (recommended)"
-msgstr ""
-
-#: includes/SetupWizard.php
-msgid "When a match is found, redirect visitors automatically"
-msgstr ""
-
-#: includes/SetupWizard.php
-msgid "Just show the default 404 page"
-msgstr ""
-
-#: includes/SetupWizard.php
-msgid "Use WordPress's standard \"Page not found\" screen. Manual redirects still work."
-msgstr ""
-
-#: includes/SetupWizard.php
-msgid "Log 404 errors for review?"
-msgstr ""
-
-#: includes/SetupWizard.php
-msgid "Yes, log 404 errors"
-msgstr ""
-
-#: includes/SetupWizard.php
-msgid "Track missing pages so you can create redirects later"
-msgstr ""
-
-#: includes/SetupWizard.php
-msgid "No, don't log 404s"
-msgstr ""
-
-#: includes/SetupWizard.php
-msgid "Only handle manually created redirects"
-msgstr ""
-
-#: includes/SetupWizard.php
-msgid "Skip Setup"
-msgstr ""
-
-#: includes/SetupWizard.php
-msgid "Save & Get Started"
-msgstr ""
-
-#: includes/SetupWizard.php
-msgid "Saving..."
-msgstr ""
-
-#: includes/SetupWizard.php
-msgid "Could not save settings - missing security token. The wizard may appear again on next visit."
-msgstr ""
-
-#: includes/SetupWizard.php
-msgid "Could not save dismissal. The wizard may appear again on next visit."
-msgstr ""
-
-#: includes/SetupWizard.php
-msgid "Could not save dismissal: "
-msgstr ""
-
-#: includes/SetupWizard.php
-msgid " The wizard may appear again on next visit."
-msgstr ""
-
-#: includes/SetupWizard.php
-msgid "Network error - could not save dismissal. The wizard may appear again on next visit."
-msgstr ""
-
-#: includes/html/tableRowPageRedirects.html
-msgid "url-is-normal"
-msgstr ""
-
-#: includes/html/tableRowPageRedirects.html
-msgid "url-looks-like-regex"
-msgstr ""
-
-#: includes/html/tableRowPageRedirects.html
-msgid "This URL looks like a regular expression but is not marked as one. Edit the redirect and check \"Treat this URL as a regular expression\"."
-msgstr ""
-
-#: includes/View.php
-msgid "Refresh available"
-msgstr ""
-
-msgid "More info"
-msgstr ""
-
-msgid "Destination missing. Edit this redirect and choose a destination."
-msgstr ""
-
-msgid "(Destination missing)"
-msgstr ""
-
-msgid "data-pagination-refresh-available-text"
-msgstr ""
-
-msgid "destination-warning-text"
-msgstr ""
-
-
-
-#: includes/html/paginationLinks.html
-msgid "data-pagination-current-signature"
-msgstr ""
-
-#: includes/html/paginationLinks.html
-msgid "data-pagination-current-orderby"
-msgstr ""
-
-#: includes/html/paginationLinks.html
-msgid "data-pagination-current-order"
-msgstr ""
-
-#: includes/html/paginationLinks.html
-msgid "data-pagination-current-filter"
-msgstr ""
-
-#: includes/html/paginationLinks.html
-msgid "data-pagination-current-paged"
-msgstr ""
-
-#: includes/html/paginationLinks.html
-msgid "data-pagination-current-logsid"
-msgstr ""
-
-#: 404-solution.php:548
+#: 404-solution.php:1401
 msgid "Contact your hosting provider. This is usually caused by a database quota, tablespace limit, or full /tmp partition — not necessarily a full disk."
 msgstr ""
 
-#: 404-solution.php:550
+#: 404-solution.php:1403
 msgid "Your database is currently in read-only mode. Contact your hosting provider."
 msgstr ""
 
-#: 404-solution.php:552
+#: 404-solution.php:1405
 msgid "Your database query quota was exceeded. This usually resets automatically."
 msgstr ""
 
-#: 404-solution.php:554
+#: 404-solution.php:1407
 msgid "A temporary MySQL table was corrupted, usually caused by disk or hardware issues. The plugin cannot repair it. Please contact your hosting provider."
 msgstr ""
 
-#: 404-solution.php:556
+#: 404-solution.php:1409
 msgid "The 404 Solution log table is full. The plugin automatically trimmed the oldest 1,000 log entries to free space, but logging may still be limited. Please contact your hosting provider about disk space."
 msgstr ""
 
-#: 404-solution.php:559
+#: 404-solution.php:1411
+msgid "The permalink cache appears to be empty. Try rebuilding it from the Tools tab, or check that your site has enough disk space."
+msgstr ""
+
+#: 404-solution.php:1413
+msgid "A database lock wait timeout occurred. This is usually caused by another process holding a table lock on your database. It may resolve itself automatically, or contact your hosting provider if it persists."
+msgstr ""
+
+#: 404-solution.php:1420
 msgid "Show database error details"
 msgstr ""
 
-#: includes/DataAccess.php:993
-msgid "Database storage appears full (disk/engine space). Plugin write-heavy tasks are temporarily paused."
+#: 404-solution.php:1461
+#: includes/WordPress_Connector.php:159
+msgid "Show details"
 msgstr ""
 
-#: includes/DataAccess.php:999
-msgid "Database query quota was exceeded (for example max_questions). Non-essential plugin background tasks are temporarily paused."
+#: includes/ajax/AjaxSecurityTrait.php:31
+#: includes/ajax/Ajax_Php.php:131
+#: includes/ajax/Ajax_Php.php:229
+#: includes/ajax/Ajax_Php.php:292
+#: includes/SetupWizard.php:47
+#: includes/UninstallModal.php:373
+msgid "Invalid security token"
 msgstr ""
 
-#: includes/DataAccess.php:1005
-msgid "Database appears to be in read-only mode. Plugin write operations are temporarily paused."
+#: includes/ajax/AjaxSecurityTrait.php:36
+#: includes/ajax/Ajax_Php.php:125
+#: includes/ajax/Ajax_Php.php:238
+#: includes/ajax/Ajax_Php.php:298
+msgid "Unauthorized"
 msgstr ""
 
-#: includes/DataAccess.php:1009
-msgid "Database collation mismatch was detected. A compatibility fallback was used where possible."
+#: includes/ajax/Ajax_CrossPluginImporter.php:33
+msgid "Invalid source plugin."
 msgstr ""
 
-#: includes/DataAccessTrait_Maintenance.php
-msgid "A database temporary table is corrupted — this is usually caused by a full or failing disk. Please contact your host. (MySQL error 1034)"
+#: includes/ajax/Ajax_CrossPluginImporter.php:47
+#: includes/ViewTrait_Stats.php:663
+msgid "Rank Math"
 msgstr ""
 
-#: includes/DataAccessTrait_Logs.php
-msgid "The 404 Solution log table is full and cannot accept new entries. This is usually caused by a full disk. Please contact your host or manually prune the logs table."
+#: includes/ajax/Ajax_CrossPluginImporter.php:48
+#: includes/ViewTrait_Stats.php:664
+msgid "Yoast SEO Premium"
 msgstr ""
 
-#: includes/DataAccess.php includes/View.php
+#: includes/ajax/Ajax_CrossPluginImporter.php:49
+#: includes/ViewTrait_Stats.php:665
+msgid "AIOSEO"
+msgstr ""
+
+#: includes/ajax/Ajax_CrossPluginImporter.php:50
+#: includes/ViewTrait_Stats.php:666
+msgid "Safe Redirect Manager"
+msgstr ""
+
+#: includes/ajax/Ajax_CrossPluginImporter.php:51
+#: includes/ViewTrait_Stats.php:667
+msgid "Redirection Plugin"
+msgstr ""
+
+#: includes/ajax/Ajax_EngineProfiles.php:62
+#: includes/WordPress_Connector.php:389
+msgid "Profile name is required."
+msgstr ""
+
+#: includes/ajax/Ajax_EngineProfiles.php:67
+#: includes/WordPress_Connector.php:390
+msgid "URL pattern is required."
+msgstr ""
+
+#: includes/ajax/Ajax_EngineProfiles.php:86
+msgid "Invalid regular expression pattern."
+msgstr ""
+
+#: includes/ajax/Ajax_EngineProfiles.php:100
+msgid "Failed to save engine profile."
+msgstr ""
+
+#: includes/ajax/Ajax_EngineProfiles.php:118
+msgid "Invalid profile ID."
+msgstr ""
+
+#: includes/ajax/Ajax_EngineProfiles.php:129
+msgid "Failed to delete engine profile."
+msgstr ""
+
+#: includes/ajax/Ajax_Php.php:136
+#: includes/ajax/Ajax_Php.php:244
+#: includes/ajax/Ajax_Php.php:304
+#: includes/ajax/Ajax_TrendData.php:21
+msgid "Rate limit exceeded. Please try again later."
+msgstr ""
+
+#: includes/ajax/Ajax_Php.php:161
+msgid "Unable to load Google Search Console section."
+msgstr ""
+
+#: includes/ajax/Ajax_Php.php:255
+msgid "(Show All Logs)"
+msgstr ""
+
+#: includes/ajax/Ajax_Php.php:375
+msgid "(No matching results found.)"
+msgstr ""
+
+#: includes/ajax/Ajax_Php.php:377
+#, php-format
+msgid "(No matching results found for \"%s.\")"
+msgstr ""
+
+#: includes/ajax/Ajax_Php.php:384
+msgid "(Data truncated. Too many results!)"
+msgstr ""
+
+#: includes/ajax/Ajax_Php.php:386
+#, php-format
+msgid "(Data truncated. Too many results for \"%s!\".)"
+msgstr ""
+
+#: includes/ajax/Ajax_Php.php:391
+msgid "(All results displayed.)"
+msgstr ""
+
+#: includes/ajax/Ajax_Php.php:393
+#, php-format
+msgid "(All results displayed for \"%s.\")"
+msgstr ""
+
+#: includes/ajax/Ajax_Php.php:446
+#: includes/ajax/Ajax_Php.php:456
+#: includes/DataAccessTrait_ViewQueriesStagedRead.php:260
+#: includes/ViewTrait_RedirectsTable.php:1428
+msgid "Special"
+msgstr ""
+
+#: includes/ajax/Ajax_Php.php:447
+#: includes/PluginLogicTrait_PageOrdering.php:421
+#: includes/PluginLogicTrait_SettingsUpdate.php:56
+msgid "(Default 404 Page)"
+msgstr ""
+
+#: includes/ajax/Ajax_Php.php:457
+#: includes/PluginLogicTrait_SettingsUpdate.php:55
+#: includes/ViewTrait_RedirectsTable.php:1443
+msgid "Home Page"
+msgstr ""
+
+#: includes/ajax/Ajax_Php.php:481
+msgid "Categories"
+msgstr ""
+
+#: includes/ajax/Ajax_Php.php:502
+msgid "Tags"
+msgstr ""
+
+#: includes/ajax/Ajax_SettingsModeToggle.php:50
+msgid "Invalid mode"
+msgstr ""
+
+#: includes/ajax/Ajax_SettingsModeToggle.php:60
+msgid "Settings mode updated"
+msgstr ""
+
+#: includes/ajax/Ajax_SettingsModeToggle.php:68
+msgid "Failed to update settings mode"
+msgstr ""
+
+#: includes/ajax/Ajax_SupportRequest.php:93
+msgid "Please wait before sending another support request."
+msgstr ""
+
+#: includes/ajax/Ajax_SupportRequest.php:107
+#: includes/ajax/Ajax_SupportRequestPreview.php:94
+msgid "Invalid support request source."
+msgstr ""
+
+#. translators: %d = numeric HTTP status code returned by the developer endpoint.
+#: includes/ajax/Ajax_SupportRequest.php:195
+#, php-format
+msgid "HTTP %d from the developer endpoint"
+msgstr ""
+
+#: includes/ajax/Ajax_SupportRequest.php:199
+msgid "the request never reached the developer endpoint"
+msgstr ""
+
+#. translators: %s = internal reason slug, e.g. json_encode_failed.
+#: includes/ajax/Ajax_SupportRequest.php:203
+#, php-format
+msgid "the report could not be packaged (%s)"
+msgstr ""
+
+#. translators: %s = internal reason slug from the HTTP transport.
+#: includes/ajax/Ajax_SupportRequest.php:209
+#, php-format
+msgid "transport failure: %s"
+msgstr ""
+
+#: includes/ajax/Ajax_SupportRequest.php:213
+msgid "the HTTP transport failed for an unknown reason"
+msgstr ""
+
+#: includes/ajax/Ajax_SupportRequest.php:224
+msgid "Email fallback via wp_mail() also failed. Check that this site can send mail."
+msgstr ""
+
+#: includes/ajax/Ajax_SupportRequest.php:226
+msgid "No email fallback was attempted."
+msgstr ""
+
+#. translators: 1 = primary cause sentence, 2 = email-fallback status sentence.
+#: includes/ajax/Ajax_SupportRequest.php:231
+#, php-format
+msgid "Could not send support request: %1$s. %2$s"
+msgstr ""
+
+#: includes/ajax/Ajax_TrashLink.php:71
+#: includes/PluginLogicTrait_AdminActions.php:216
+msgid "Error: Unable to move redirect to trash."
+msgstr ""
+
+#: includes/ajax/ViewBuildPendingResponseBuilder.php:98
+#: includes/ajax/ViewUpdater.php:658
+msgid "Preparing the redirects view table. Please wait."
+msgstr ""
+
+#: includes/ajax/ViewUpdater.php:678
+msgid "Preparing table data in the background."
+msgstr ""
+
+#: includes/DataAccessTrait_LogsHitsRebuild.php:249
+#: includes/ViewTrait_Shared.php:388
+msgid "Just now"
+msgstr ""
+
+#: includes/DataAccessTrait_LogsHitsRebuild.php:252
+#: includes/ViewTrait_Shared.php:392
+#, php-format
 msgid "%d minute ago"
 msgid_plural "%d minutes ago"
 msgstr[0] ""
 msgstr[1] ""
 
-#: includes/DataAccess.php includes/View.php
+#: includes/DataAccessTrait_LogsHitsRebuild.php:255
+#: includes/ViewTrait_Shared.php:396
+#, php-format
 msgid "%d hour ago"
 msgid_plural "%d hours ago"
 msgstr[0] ""
 msgstr[1] ""
 
-#: includes/DataAccess.php includes/View.php
+#: includes/DataAccessTrait_LogsHitsRebuild.php:258
+#: includes/ViewTrait_Shared.php:399
+#, php-format
 msgid "%d day ago"
 msgid_plural "%d days ago"
 msgstr[0] ""
 msgstr[1] ""
 
-#: includes/PostEditorIntegration.php
-msgid "Exclude from 404 redirect suggestions"
+#: includes/DataAccessTrait_Redirects.php:951
+msgid "Error: You didn't check the I understand checkbox. No purging of records for you!"
 msgstr ""
 
-#: includes/PostEditorIntegration.php
-msgid "When checked, this post will not be suggested as a redirect target for 404 errors."
+#: includes/DataAccessTrait_Redirects.php:956
+msgid "Error: No redirect types were selected. No purges will be done."
 msgstr ""
 
-#: includes/PostEditorIntegration.php
-msgid "When checked, this term will not be suggested as a redirect target for 404 errors."
+#: includes/DataAccessTrait_Redirects.php:967
+msgid "An unknown error has occurred."
 msgstr ""
 
-#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
-msgid "Title engine score override"
+#: includes/DataAccessTrait_Redirects.php:979
+msgid "Error: No valid redirect types were selected. Exiting."
 msgstr ""
 
-#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
-msgid "Override for the title keyword engine (blank inherits the global score above)"
+#: includes/DataAccessTrait_Redirects.php:987
+msgid "Error: An invalid purge type was selected. Exiting."
 msgstr ""
 
-#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
-msgid "Category/tag engine score override"
-msgstr ""
-
-#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
-msgid "Override for the category/tag keyword engine (blank inherits the global score above)"
-msgstr ""
-
-#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
-msgid "Content engine score override"
-msgstr ""
-
-#: includes/html/settingsAdvanced.html includes/html/settingsAdvancedSystem.html
-msgid "Override for the content keyword engine (blank inherits the global score above)"
-msgstr ""
-
-#: includes/PluginLogic.php
-msgid "Error: Per-engine score override must be empty or a number between 0 and 99"
-msgstr ""
-
-#: includes/engine/SlugMatchingEngine.php
-msgid "exact slug"
-msgstr ""
-
-#: includes/engine/UrlFixEngine.php
-msgid "url fix"
-msgstr ""
-
-#: includes/engine/TitleMatchingEngine.php
-msgid "title keywords"
-msgstr ""
-
-#: includes/engine/CategoryTagMatchingEngine.php
-msgid "category/tag keywords"
-msgstr ""
-
-#: includes/engine/ContentMatchingEngine.php
-msgid "content keywords"
-msgstr ""
-
-#: includes/engine/SpellingMatchingEngine.php
-msgid "spell check"
-msgstr ""
-
-#: includes/engine/ArchiveFallbackEngine.php
-msgid "archive fallback"
-msgstr ""
-
-#: includes/FrontendRequestPipeline.php
-msgid "wp guess"
-msgstr ""
-
-#: includes/ImportExportService.php
-msgid "Error: Native export file does not exist."
-msgstr ""
-
-#: includes/ImportExportService.php
-msgid "Error: Could not read native export file."
-msgstr ""
-
-#: includes/ImportExportService.php
-msgid "Error: Could not create Redirection export file."
-msgstr ""
-
-#: includes/ImportExportService.php
-msgid "File upload error."
-msgstr ""
-
-#: includes/ImportExportService.php
-msgid "Error: Invalid file type. Only CSV/TXT files are allowed."
-msgstr ""
-
-#: includes/ImportExportService.php
-msgid "Error: File too large. Maximum size is 5MB."
-msgstr ""
-
-#: includes/ImportExportService.php
-msgid "Error: Unable to determine file type."
-msgstr ""
-
-#: includes/ImportExportService.php
-msgid "Error: Invalid file type. Only CSV files are allowed."
-msgstr ""
-
-#: includes/ImportExportService.php
-msgid "Error opening the file."
-msgstr ""
-
-#: includes/ImportExportService.php
-msgid "Dry run complete. Valid redirects: %d. Invalid rows: %d. Total rows processed: %d."
-msgstr ""
-
-#: includes/ImportExportService.php
-msgid "Preview issues:"
-msgstr ""
-
-#: includes/ImportExportService.php
-msgid "Error:"
-msgstr ""
-
-#: includes/ImportExportService.php
-msgid "Ignored importing redirect because a redirect with the same from URL already exists. URL:"
-msgstr ""
-
-#: includes/ImportExportService.php
-msgid "Unrecognized destination type while importing file. Destination:"
-msgstr ""
-
-#: includes/ImportExportService.php
-msgid "Couldn't find post from slug. slug:"
-msgstr ""
-
-#: includes/ImportExportService.php
-msgid "Invalid CSV format. %d columns found but 2 or 5 expected."
-msgstr ""
-
-#: includes/ImportExportService.php
-msgid "Invalid CSV format. Could not map source/destination columns."
-msgstr ""
-
-#: includes/ImportExportService.php
-msgid "Invalid CSV format. %d columns found but 2, 5, 6, or 7 expected."
-msgstr ""
-
-#: includes/ShortCode.php
-msgid "Loading page suggestions..."
-msgstr ""
-
-#: includes/PermalinkCache.php
-msgid "Permalink cache appears empty after rebuild — suggestions may be degraded. Try rebuilding again or check available disk space."
-msgstr ""
-
-#: 404-solution.php
-msgid "The permalink cache appears to be empty. Try rebuilding it from the Tools tab, or check that your site has enough disk space."
-msgstr ""
-
-#: includes/ViewTrait_RedirectsTable.php
-msgid "Destination returned 404 recently — redirect suspended until destination is restored."
-msgstr ""
-
-#: includes/html/adminOptionsAutoRedirects.html
-msgid "Expire auto-redirects after"
-msgstr ""
-
-#: includes/html/adminOptionsAutoRedirects.html
-msgid "days (0 to disable)"
-msgstr ""
-
-#: includes/html/adminOptionsAutoRedirects.html
-msgid "Auto-created redirects older than this many days will be automatically moved to trash."
-msgstr ""
-
-#: includes/html/adminOptionsGeneral.html includes/html/adminOptionsSimple.html
-msgid "Temporary 307 (preserve method)"
-msgstr ""
-
-#: includes/html/adminOptionsGeneral.html includes/html/adminOptionsSimple.html
-msgid "Permanent 308 (preserve method)"
-msgstr ""
-
-#: includes/html/adminOptionsGeneral.html includes/html/adminOptionsSimple.html
-msgid "Email notification frequency"
-msgstr ""
-
-#: includes/html/adminOptionsGeneral.html includes/html/adminOptionsSimple.html
-msgid "Instant (when threshold exceeded)"
-msgstr ""
-
-#: includes/html/adminOptionsGeneral.html includes/html/adminOptionsSimple.html
-msgid "Daily digest"
-msgstr ""
-
-#: includes/html/adminOptionsGeneral.html includes/html/adminOptionsSimple.html
-msgid "Weekly digest"
-msgstr ""
-
-#: includes/html/adminOptionsGeneral.html includes/html/adminOptionsSimple.html
-msgid "Choose how often to receive email notifications about captured 404s."
-msgstr ""
-
-#: includes/html/adminOptionsGeneral.html
-
-#: includes/html/adminOptionsGeneral.html
-
-#: includes/html/toolsExportForm.html
-msgid "Export format:"
-msgstr ""
-
-#: includes/html/toolsExportForm.html
-msgid "Native CSV (404 Solution)"
-msgstr ""
-
-#: includes/html/toolsExportForm.html
-msgid "Redirection Plugin CSV"
-msgstr ""
-
-#: includes/DataAccess.php
-msgid "A database lock wait timeout occurred. If this persists, contact your host — another process may be holding a long-running lock."
-msgstr ""
-
-#: includes/DataAccess.php
-msgid "The InnoDB tablespace appears to be exhausted. Deleting plugin data will NOT free this space. Contact your hosting provider to expand the InnoDB tablespace (ibdata1)."
-msgstr ""
-
-# Strings added for new features (3.3.8)
-
-msgid "A database lock wait timeout occurred. If this persists, contact your host — another process may be holding a long-running lock."
-msgstr ""
-
-msgid "The InnoDB tablespace appears to be exhausted. Deleting plugin data will NOT free this space. Contact your hosting provider to expand the InnoDB tablespace (ibdata1)."
-msgstr ""
-
-msgid "Email notification frequency"
-msgstr ""
-
-msgid "Instant (when threshold exceeded)"
-msgstr ""
-
-msgid "Daily digest"
-msgstr ""
-
-msgid "Weekly digest"
-msgstr ""
-
-msgid "Choose how often to receive email notifications about captured 404s."
-msgstr ""
-
-msgid "Temporary 307 (preserve method)"
-msgstr ""
-
-msgid "Permanent 308 (preserve method)"
-msgstr ""
-
-msgid "404"
-msgstr ""
-
-msgid "Loading chart data\u2026"
-msgstr ""
-
-msgid "Could not load chart data."
-msgstr ""
-
-msgid "404 Hits per Day"
-msgstr ""
-
-msgid "Redirects per Day"
-msgstr ""
-
-msgid "New Captures per Day"
-msgstr ""
-
-msgid "Trends (Last 30 Days)"
-msgstr ""
-
-msgid "Trend Analytics"
-msgstr ""
-
-msgid "7 days"
-msgstr ""
-
-msgid "30 days"
-msgstr ""
-
-msgid "90 days"
-msgstr ""
-
-msgid "Period"
-msgstr ""
-
-msgid "No broken internal links found."
-msgstr ""
-
-msgid "Found %1$d broken internal link(s) across %2$d post(s)/page(s)."
-msgstr ""
-
-msgid "Post/Page"
-msgstr ""
-
-msgid "Broken URL"
-msgstr ""
-
-msgid "404 Hits"
-msgstr ""
-
-msgid "Broken Internal Links"
-msgstr ""
-
-msgid "Migrate from Another Plugin"
-msgstr ""
-
-msgid "Rank Math"
-msgstr ""
-
-msgid "Yoast SEO Premium"
-msgstr ""
-
-msgid "AIOSEO"
-msgstr ""
-
-msgid "Safe Redirect Manager"
-msgstr ""
-
-msgid "Redirection Plugin"
-msgstr ""
-
-msgid "No supported redirect plugins detected on this site."
-msgstr ""
-
-msgid "Supported plugins: Rank Math, Yoast SEO Premium, AIOSEO, Safe Redirect Manager, Redirection."
-msgstr ""
-
-msgid "Detected redirect plugins:"
-msgstr ""
-
-msgid "Source plugin:"
-msgstr ""
-
-msgid "Import Redirects"
-msgstr ""
-
-msgid "This will import all active redirects from the selected plugin into 404 Solution. Regex and redirect codes are preserved."
-msgstr ""
-
-msgid "Temporary Redirect (preserve method)"
-msgstr ""
-
-msgid "Permanent Redirect (preserve method)"
-msgstr ""
-
-msgid "Gone (resource permanently removed)"
-msgstr ""
-
-msgid "Conditions (optional)"
-msgstr ""
-
-msgid "This redirect only fires when all conditions are met. Leave empty to always redirect."
-msgstr ""
-
-msgid "+ Add Condition"
-msgstr ""
-
-msgid "Logic"
-msgstr ""
-
-msgid "AND"
-msgstr ""
-
-msgid "OR"
-msgstr ""
-
-msgid "Login Status"
-msgstr ""
-
-msgid "User Role"
-msgstr ""
-
-msgid "Referrer URL"
-msgstr ""
-
-msgid "User Agent"
-msgstr ""
-
-msgid "IP Range (CIDR)"
-msgstr ""
-
-msgid "HTTP Header"
-msgstr ""
-
-msgid "Condition type"
-msgstr ""
-
-msgid "— Select type —"
-msgstr ""
-
-msgid "equals"
-msgstr ""
-
-msgid "not equals"
-msgstr ""
-
-msgid "contains"
-msgstr ""
-
-msgid "does not contain"
-msgstr ""
-
-msgid "matches regex"
-msgstr ""
-
-msgid "Operator"
-msgstr ""
-
-msgid "Value"
-msgstr ""
-
-msgid "Condition value"
-msgstr ""
-
-msgid "Remove condition"
-msgstr ""
-
-msgid "Remove"
-msgstr ""
-
-msgid "Auto-matched by:"
-msgstr ""
-
-msgid "Error: Invalid email notification frequency selected"
-msgstr ""
-
-msgid "Error: Digest limit must be a number greater than or equal to 1"
-msgstr ""
-
-msgid "Google Search Console credentials saved."
-msgstr ""
-
-msgid "Error: No source plugin specified."
-msgstr ""
-
-msgid "Error: Unknown source plugin \"%s\"."
-msgstr ""
-
-msgid "Insufficient permissions."
-msgstr ""
-
-msgid "Security check failed."
-msgstr ""
-
-msgid "OAuth token exchange failed."
-msgstr ""
-
-msgid "Google Search Console"
-msgstr ""
-
-msgid "Google Search Console Integration"
-msgstr ""
-
-msgid "Connect to Google Search Console to see which broken URLs were getting real search traffic."
-msgstr ""
-
-msgid "Setup steps:"
-msgstr ""
-
-msgid "Create a project in %s."
-msgstr ""
-
-msgid "Enable the \"Google Search Console API\"."
-msgstr ""
-
-msgid "Create OAuth 2.0 credentials (Web application type)."
-msgstr ""
-
-msgid "Add this Authorized Redirect URI: %s"
-msgstr ""
-
-msgid "Enter your Client ID and Client Secret below."
-msgstr ""
-
-msgid "Client ID"
-msgstr ""
-
-msgid "Client Secret"
-msgstr ""
-
-msgid "Search Console Site URL"
-msgstr ""
-
-msgid "The site URL as registered in Search Console (e.g. https://example.com/)."
-msgstr ""
-
-msgid "Save Credentials"
-msgstr ""
-
-msgid "Credentials saved."
-msgstr ""
-
-msgid "Click the button below to authorize access to your Search Console data."
-msgstr ""
-
-msgid "Authorize with Google"
-msgstr ""
-
-msgid "Remove Credentials"
-msgstr ""
-
-msgid "Connected to Google Search Console."
-msgstr ""
-
-msgid "Search traffic data for your captured 404 URLs is shown below. Data is refreshed nightly."
-msgstr ""
-
-msgid "Disconnect"
-msgstr ""
-
-msgid "Connected to Google Search Console"
-msgstr ""
-
-msgid "Credentials saved — authorization required"
-msgstr ""
-
-msgid "Authorization failed"
-msgstr ""
-
-msgid "Authorization was denied or cancelled."
-msgstr ""
-
-msgid "Try Again"
-msgstr ""
-
-msgid "Copy"
-msgstr ""
-
-msgid "Copied!"
-msgstr ""
-
-msgid "Add this Authorized Redirect URI to your OAuth client:"
-msgstr ""
-
-msgid "Click 'Try Again' to retry authorization, or 'Remove Credentials' to start over."
-msgstr ""
-
-msgid "404 URLs with Search Traffic (last 90 days)"
-msgstr ""
-
-msgid "Clicks"
-msgstr ""
-
-msgid "Impressions"
-msgstr ""
-
-msgid "No search traffic data found for your captured 404 URLs in the last 90 days."
-msgstr ""
-
-#: includes/GoogleSearchConsole.php
-msgid "GSC data is being fetched in the background. Reload this page in a few minutes."
-msgstr ""
-
-msgid "Avg. Position"
-msgstr ""
-
-msgid "The \"from\" URL is required."
-msgstr ""
-
-msgid "The \"to\" URL is required."
-msgstr ""
-
-msgid "Failed to create redirect."
-msgstr ""
-
-msgid "Invalid redirect ID."
-msgstr ""
-
-msgid "Both \"from\" and \"to\" parameters are required."
-msgstr ""
-
-msgid "Invalid captured 404 ID."
-msgstr ""
-
-msgid "Captured 404 not found."
-msgstr ""
-
-msgid "The captured 404 record has no URL."
-msgstr ""
-
-msgid "The \"url\" parameter is required."
-msgstr ""
-
-msgid "No captured 404s in this period."
-msgstr ""
-
-msgid "404 Solution Digest"
-msgstr ""
-
-msgid "Digest Report"
-msgstr ""
-
-msgid "Summary"
-msgstr ""
-
-msgid "Captured"
-msgstr ""
-
-msgid "404 URLs"
-msgstr ""
+#: includes/DataAccessTrait_Redirects.php:1011
+#, php-format
+msgid "%s redirect entry was moved to the trash."
+msgid_plural "%s redirect entries were moved to the trash."
+msgstr[0] ""
+msgstr[1] ""
 
-msgid "Auto"
+#: includes/DataAccessTrait_Stats.php:570
+msgid "Error: Unknown Database Error!"
 msgstr ""
 
-msgid "Redirected"
+#: includes/DataAccessTrait_Stats.php:626
+msgid "Error: Bad data passed for update redirect request."
 msgstr ""
 
+#: includes/DataAccessTrait_ViewQueriesStagedRead.php:252
+#: includes/EmailDigest.php:131
+#: includes/ViewTrait_RedirectsTable.php:419
 msgid "Manual"
 msgstr ""
 
-msgid "Configured"
+#: includes/DataAccessTrait_ViewQueriesStagedRead.php:253
+#: includes/ViewTrait_RedirectsTable.php:420
+msgid "Automatic"
 msgstr ""
 
-msgid "Resolution Rate"
-msgstr ""
-
-# translators: 1: number of resolved URLs, 2: total number of URLs
-msgid "%1$d of %2$d URLs handled"
-msgstr ""
-
-msgid "Top Captured 404 URLs"
-msgstr ""
-
-msgid "First Seen"
-msgstr ""
-
-msgid "View Captured 404s"
-msgstr ""
-
-msgid "Manage Settings"
-msgstr ""
-
-msgid "To stop these emails, update your notification settings."
-msgstr ""
-
-msgid "To stop receiving these emails, update your notification settings."
-msgstr ""
-
-msgid "Manage settings"
-msgstr ""
-
-msgid "Sent"
-msgstr ""
-
-msgid "Plugin"
-msgstr ""
-
-msgid "404 Solution Digest — %s"
-msgstr ""
-
-msgid "Advanced Options"
-msgstr ""
-
-msgid "Active From (optional)"
-msgstr ""
-
-msgid "Leave blank to activate immediately"
-msgstr ""
-
-msgid "Active Until (optional)"
-msgstr ""
-
-msgid "Leave blank to never expire"
-msgstr ""
-
-msgid "A database lock wait timeout occurred. This is usually caused by another process holding a table lock on your database. It may resolve itself automatically, or contact your hosting provider if it persists."
-msgstr ""
-
-# HTML template strings added for new features (3.3.8)
-
-msgid "Export format:"
-msgstr ""
-
-msgid "Apache .htaccess"
-msgstr ""
-
-msgid "Nginx config"
-msgstr ""
-
-msgid "Cloudflare Workers script"
-msgstr ""
-
-msgid "Netlify _redirects"
-msgstr ""
-
-msgid "Vercel vercel.json"
-msgstr ""
-
-# 410 Gone page strings
-msgid "This content has been permanently removed."
-msgstr ""
-
-msgid "The page you requested no longer exists and has not been moved to a new location."
-msgstr ""
-
-msgid "Back to home page"
-msgstr ""
-
-# 451 Unavailable For Legal Reasons strings
-msgid "451 Unavailable For Legal Reasons"
-msgstr ""
-
-msgid "This content is unavailable due to a legal demand."
-msgstr ""
-
-msgid "Unavailable For Legal Reasons"
-msgstr ""
-
-# Trash/deletion redirect strings
-msgid "Create redirect when a page is trashed or deleted"
-msgstr ""
-
-msgid "When a published page is moved to trash or permanently deleted, create a redirect from its old URL to the homepage."
-msgstr ""
-
-# Meta Refresh redirect strings
-msgid "0 Meta Refresh"
-msgstr ""
-
-msgid "Meta Refresh"
-msgstr ""
-
-msgid "Redirecting…"
-msgstr ""
-
-msgid "You are being redirected. Click the link if not redirected automatically."
-msgstr ""
-
-# Engine Profile admin section strings
-msgid "Engine Profiles"
-msgstr ""
-
-msgid "By default, when a visitor hits a 404 URL, all suggestion methods run: slug matching, spelling correction, title matching, content search, category/tag matching, URL fixing, and archive fallback. Engine Profiles let you override this for specific sections of your site — choose exactly which methods run when a 404 URL falls within a URL pattern you define."
-msgstr ""
-
-msgid "Example 1:"
-msgstr ""
-
-msgid "Your store lives at /products/. Spelling correction works great on blog posts, but on a product section you want only exact slug matching and URL fixing — fuzzy spelling suggestions might point to the wrong product. Create a profile with the URL pattern /products/* and check only \"Slug Matching\" and \"URL Fix\"."
-msgstr ""
-
-msgid "Example 2:"
-msgstr ""
-
-msgid "You have a documentation archive at /docs/ that you recently restructured. The content is too technical for spelling suggestions to be useful, so you enable only the Archive Fallback engine there."
-msgstr ""
-
-msgid "How profiles are applied:"
-msgstr ""
-
-msgid "Each profile has a URL pattern (e.g. /products/*) that is tested against the incoming 404 URL."
-msgstr ""
-
-msgid "Profiles are checked in priority order — lower number means checked first."
-msgstr ""
-
-msgid "The first profile whose URL pattern matches the 404 URL wins. Only the engines you selected in that profile will run."
-msgstr ""
-
-msgid "If none of your profiles match the 404 URL, the default behavior applies: all engines run."
-msgstr ""
-
-msgid "Most sites do not need Engine Profiles. They are for advanced scenarios where one section of your site needs different suggestion logic than the rest."
-msgstr ""
-
-msgid "Name"
-msgstr ""
-
-msgid "URL Pattern"
-msgstr ""
-
+#: includes/DataAccessTrait_ViewQueriesStagedRead.php:254
 msgid "Regex"
 msgstr ""
 
-msgid "Engines"
+#: includes/DataAccessTrait_ViewQueriesStagedRead.php:255
+#: includes/PluginLogicTrait_SettingsUpdate.php:52
+msgid "External"
 msgstr ""
 
-msgid "Priority"
+#: includes/DataAccessTrait_ViewQueriesStagedRead.php:256
+#: includes/PluginLogicTrait_SettingsUpdate.php:53
+#: includes/ViewTrait_Redirects.php:380
+#: includes/ViewTrait_Redirects.php:503
+msgid "Category"
 msgstr ""
 
-msgid "Active"
+#: includes/DataAccessTrait_ViewQueriesStagedRead.php:257
+#: includes/PluginLogicTrait_SettingsUpdate.php:54
+#: includes/ViewTrait_Redirects.php:399
+#: includes/ViewTrait_Redirects.php:505
+msgid "Tag"
 msgstr ""
 
-msgid "Actions"
+#: includes/DataAccessTrait_ViewQueriesStagedRead.php:258
+#: includes/ViewTrait_Redirects.php:507
+msgid "Home"
 msgstr ""
 
-msgid "No engine profiles defined."
-msgstr ""
-
-msgid "Add Engine Profile"
-msgstr ""
-
-msgid "Edit Engine Profile"
-msgstr ""
-
-msgid "e.g. Products section"
-msgstr ""
-
-msgid "e.g. /products/* or ^/products/"
-msgstr ""
-
-msgid "Use * as wildcard for simple patterns. Check &quot;Regex&quot; for full regex patterns."
-msgstr ""
-
-msgid "Pattern is a regular expression"
-msgstr ""
-
-msgid "Enabled Engines"
-msgstr ""
-
-msgid "Select which engines should run for URLs matching this profile. Leave all unchecked to run all engines."
-msgstr ""
-
-msgid "Slug Matching"
-msgstr ""
-
-msgid "Spelling Matching"
-msgstr ""
-
-msgid "Title Matching"
-msgstr ""
-
-msgid "Content Matching"
-msgstr ""
-
-msgid "Category/Tag Matching"
-msgstr ""
-
-msgid "URL Fix"
-msgstr ""
-
-msgid "Archive Fallback"
-msgstr ""
-
-msgid "WordPress URL Guess Fallback"
-msgstr ""
-
-msgid "Lower number = higher priority. First matching profile wins."
-msgstr ""
-
-msgid "Profile is active"
-msgstr ""
-
-msgid "Save Profile"
-msgstr ""
-
-msgid "Profile name is required."
-msgstr ""
-
-msgid "URL pattern is required."
-msgstr ""
-
-msgid "Profile saved."
-msgstr ""
-
-msgid "Failed to save profile."
-msgstr ""
-
-msgid "Delete this engine profile?"
-msgstr ""
-
-msgid "Invalid regular expression pattern."
-msgstr ""
-
-msgid "Failed to save engine profile."
-msgstr ""
-
-msgid "Invalid profile ID."
-msgstr ""
-
-msgid "Failed to delete engine profile."
-msgstr ""
-
-msgid "Send Feedback"
-msgstr ""
-
-msgid "301"
-msgstr ""
-
-msgid "Permanent"
-msgstr ""
-
-msgid "302"
-msgstr ""
-
-msgid "Temporary"
-msgstr ""
-
-msgid "307"
-msgstr ""
-
-msgid "Temp, method-safe"
-msgstr ""
-
-msgid "308"
-msgstr ""
-
-msgid "Perm, method-safe"
-msgstr ""
-
-msgid "410"
-msgstr ""
-
-msgid "Gone"
-msgstr ""
-
-msgid "451"
-msgstr ""
-
-msgid "Legal reasons"
-msgstr ""
-
-msgid "HTTP 200 + meta tag"
-msgstr ""
-
-msgid "Use 301 for permanent page moves. Use 302 for A/B tests or seasonal pages."
-msgstr ""
-
-msgid "Back to Redirects"
-msgstr ""
-
-msgid "Preview Import"
-msgstr ""
-
-msgid "Confirm Import"
-msgstr ""
-
-msgid "Back"
-msgstr ""
-
-msgid "Found %d redirect(s) from %s — proceed with import?"
-msgstr ""
-
-msgid "No redirects found in %s. Nothing to import."
-msgstr ""
-
-msgid "Could not fetch preview. Please try again."
-msgstr ""
-
-msgid "Invalid source plugin."
-msgstr ""
-
-#: includes/ViewTrait_Logs.php:159
-msgid "Show pipeline trace"
-msgstr ""
-
-#: includes/ViewTrait_Logs.php:161
-msgid "No trace available"
-msgstr ""
-
-#: includes/ViewTrait_Logs.php
-msgid "Ignore list"
-msgstr ""
-
-#: includes/ViewTrait_Logs.php
-msgid "Redirect lookup"
-msgstr ""
-
-#: includes/ViewTrait_Logs.php
-msgid "Redirect lookup (without comments)"
-msgstr ""
-
-#: includes/ViewTrait_Logs.php
-msgid "Conditions"
-msgstr ""
-
-#: includes/ViewTrait_Logs.php
-msgid "Conditions (without comments)"
-msgstr ""
-
-#: includes/ViewTrait_Logs.php
-msgid "Health check"
-msgstr ""
-
-#: includes/ViewTrait_Logs.php
-msgid "Health check (without comments)"
-msgstr ""
-
-#: includes/ViewTrait_Logs.php
-msgid "Regex rules"
-msgstr ""
-
-#: includes/ViewTrait_Logs.php
-msgid "Suggestion engines"
-msgstr ""
-
-#: includes/ViewTrait_Logs.php
-msgid "Result"
-msgstr ""
-
-#: includes/ViewTrait_Logs.php
-msgid "Not ignored"
-msgstr ""
-
-#: includes/ViewTrait_Logs.php
-msgid "Matched — request ignored"
-msgstr ""
-
-#: includes/ViewTrait_Logs.php
-msgid "Found existing redirect"
-msgstr ""
-
-#: includes/ViewTrait_Logs.php
-msgid "No matching redirect"
-msgstr ""
-
-#: includes/ViewTrait_Logs.php
-msgid "All conditions met"
-msgstr ""
-
-#: includes/ViewTrait_Logs.php
-msgid "Blocked by conditions"
-msgstr ""
-
-#: includes/ViewTrait_Logs.php
-msgid "Destination unreachable — skipped"
-msgstr ""
-
-#: includes/ViewTrait_Logs.php
-msgid "Matched"
-msgstr ""
-
-#: includes/ViewTrait_Logs.php
-msgid "No match"
-msgstr ""
-
-#: includes/ViewTrait_Logs.php
-msgid "Skipped"
-msgstr ""
-
-#: includes/ViewTrait_Logs.php
-msgid "Excluded"
-msgstr ""
-
-#: includes/ViewTrait_Logs.php
-msgid "No match found"
-msgstr ""
-
-#: includes/ViewTrait_Logs.php
-msgid "Showed 404 page"
-msgstr ""
-
-#: includes/ViewTrait_Logs.php
-msgid "Redirected to external URL"
-msgstr ""
-
-#: includes/ViewTrait_Logs.php
-msgid "No redirect — showed 404 page"
-msgstr ""
-
-#: includes/ViewTrait_Logs.php
-msgid "Engine: %s"
-msgstr ""
-
-#: includes/ViewTrait_Logs.php
-msgid "Redirected (%s)"
-msgstr ""
-
-#: includes/ViewTrait_Logs.php
-msgid "Responded with %s"
-msgstr ""
-
-#: includes/ViewTrait_Logs.php
-msgid "Showed 404 page — %s"
-msgstr ""
-
-#: includes/ViewTrait_Admin.php
-msgid "Attach PDF report to digest email"
-msgstr ""
-
-#: includes/ViewTrait_Admin.php
-msgid "When enabled, a PDF summary is attached to each digest email (daily or weekly digests only)."
-msgstr ""
-
-#: includes/ViewTrait_Admin.php
-msgid "Engine Profiles let you restrict which matching engines run for specific URL patterns. The first profile whose pattern matches a 404 URL wins. If no profile matches, all engines run normally."
-msgstr ""
-
-#: includes/PluginLogicTrait_SettingsUpdate.php
-msgid "Error: Invalid 404 behavior selected"
-msgstr ""
-
-#: includes/PluginLogicTrait_SettingsUpdate.php
-msgid "Error: Could not create the suggestion page"
-msgstr ""
-
-#: includes/SystemPage.php
-msgid "Page Not Found"
-msgstr ""
-
-#: includes/SystemPage.php
-msgid "Your 404 suggestion page was deleted."
-msgstr ""
-
-#: includes/SystemPage.php
-msgid "Recreate it"
-msgstr ""
-
-#: includes/SystemPage.php
-msgid "or choose a different option below."
-msgstr ""
-
-#: includes/SystemPage.php
-msgid "This page is used by 404 Solution to display suggested pages to visitors."
-msgstr ""
-
-#: includes/SystemPage.php
-msgid "Learn more"
-msgstr ""
-
-#: includes/SystemPage.php
-msgid "Your 404 Solution suggestion page was deleted. Visitors are seeing this default 404 page instead."
-msgstr ""
-
-#: includes/SystemPage.php
-msgid "Go to settings"
-msgstr ""
-
-#: includes/ViewTrait_Shared.php
-msgid "Recommended"
-msgstr ""
-
-#: includes/ViewTrait_Shared.php
-msgid "Suggest similar pages"
-msgstr ""
-
-#: includes/ViewTrait_Shared.php
-msgid "Shows visitors a list of pages matching the URL they were looking for"
-msgstr ""
-
-#: includes/ViewTrait_Shared.php
-msgid "Redirect to homepage"
-msgstr ""
-
-#: includes/ViewTrait_Shared.php
-msgid "Sends all 404 visitors to the site front page"
-msgstr ""
-
-#: includes/ViewTrait_Shared.php
-msgid "Custom page"
-msgstr ""
-
-#: includes/ViewTrait_Shared.php
-msgid "Choose a specific page to show for all 404 errors"
-msgstr ""
-
-#: includes/ViewTrait_Shared.php
-msgid "Theme default"
-msgstr ""
-
-#: includes/ViewTrait_Shared.php
-msgid "Uses the theme built-in 404 page, no redirect"
-msgstr ""
-
-#: includes/ViewTrait_Shared.php
-msgid "Select a page"
-msgstr ""
-
-#: includes/ViewTrait_UI.php
-msgid "Permission denied."
-msgstr ""
-
-#: includes/ViewTrait_UI.php
-msgid "Your user account does not have permission to access this page."
-msgstr ""
-
-#: includes/ViewTrait_UI.php
-msgid "Please verify that your WordPress role has the"
-msgstr ""
-
-#: includes/ViewTrait_UI.php
-msgid "capability."
-msgstr ""
-
-#: includes/ViewTrait_UI.php
-msgid "If you have a security plugin installed, it may be restricting access to this page."
-msgstr ""
-
-#: includes/GoogleSearchConsole.php
-msgid "Advanced: use your own Google Cloud credentials"
-msgstr ""
-
-#: includes/GoogleSearchConsole.php
-msgid "Connect to Google Search Console"
-msgstr ""
-
-#: includes/WordPress_Connector.php
-msgid "No access token received from authorization."
-msgstr ""
-
-#: includes/ViewTrait_RedirectsTable.php
-msgid "Loading status…"
-msgstr ""
-
-#: includes/ViewTrait_RedirectsTable.php
-msgid "Loading redirects…"
-msgstr ""
-
-#: includes/ViewTrait_RedirectsTable.php
-msgid "Loading captured URLs…"
-msgstr ""
-
-#: includes/ViewTrait_Logs.php
-msgid "Loading logs…"
-msgstr ""
-
-#: includes/ViewTrait_RedirectsTable.php includes/ajax/view_updater.js
-msgid "Loading…"
-msgstr ""
-
-#: includes/ViewTrait_Settings.php includes/js/settingsDeferred.js
-msgid "Loading Google Search Console section…"
-msgstr ""
-
-#: includes/ajax/Ajax_Php.php includes/js/settingsDeferred.js
-msgid "Unable to load Google Search Console section."
-msgstr ""
-
-#: includes/EmailDigest.php
-msgid "Top URLs unavailable: log rollup is being rebuilt. Will be available in the next digest."
-msgstr ""
-msgid "AJAX Load Times"
-msgstr ""
-
-msgid "Debug Info"
-msgstr ""
-
-msgid "Preparing table data in the background."
-msgstr ""
-
-#: includes/ajax/ViewBuildPendingResponseBuilder.php includes/ajax/ViewUpdater.php
-msgid "Preparing the redirects view table. Please wait."
-msgstr ""
-
-#: includes/DataAccessTrait_ViewQueriesStaged.php
+#: includes/DataAccessTrait_ViewQueriesStagedRead.php:259
 msgid "(404 page)"
 msgstr ""
 
-#: includes/ajax/Ajax_SupportRequest.php
-msgid "Please wait before sending another support request."
+#: includes/DatabaseUpgradesEtc.php:216
+#, php-format
+msgid "404 Solution: N-gram spell check cache is being built in the background%s to optimize performance. This may take a few minutes on large sites."
 msgstr ""
 
-#: includes/ajax/Ajax_SupportRequest.php
-msgid "Invalid support request source."
+#: includes/DatabaseUpgradesEtc.php:236
+#, php-format
+msgid "404 Solution: Migrated %d redirect to subdirectory-independent format."
+msgid_plural "404 Solution: Migrated %d redirects to subdirectory-independent format."
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/EmailDigest.php:79
+msgid "No captured 404s in this period."
 msgstr ""
 
-#: includes/ajax/Ajax_SupportRequest.php
-msgid "Failed to send support request. Please try again later."
+#: includes/EmailDigest.php:80
+msgid "Top URLs unavailable: log rollup is being rebuilt. Will be available in the next digest."
+msgstr ""
+
+#: includes/EmailDigest.php:124
+msgid "404 Solution Digest"
+msgstr ""
+
+#: includes/EmailDigest.php:125
+msgid "Digest Report"
+msgstr ""
+
+#: includes/EmailDigest.php:126
+msgid "Summary"
+msgstr ""
+
+#: includes/EmailDigest.php:127
+#: includes/ViewTrait_RedirectsTable.php:43
+#: includes/ViewTrait_RedirectsTable.php:251
+msgid "Captured"
+msgstr ""
+
+#: includes/EmailDigest.php:128
+msgid "404 URLs"
+msgstr ""
+
+#: includes/EmailDigest.php:129
+#: includes/PluginLogicTrait_SettingsUpdate.php:50
+msgid "Auto"
+msgstr ""
+
+#: includes/EmailDigest.php:130
+msgid "Redirected"
+msgstr ""
+
+#: includes/EmailDigest.php:132
+msgid "Configured"
+msgstr ""
+
+#: includes/EmailDigest.php:133
+msgid "Resolution Rate"
+msgstr ""
+
+#. translators: 1: resolved count, 2: total count
+#: includes/EmailDigest.php:136
+#, php-format
+msgid "%1$d of %2$d URLs handled"
+msgstr ""
+
+#: includes/EmailDigest.php:140
+msgid "Top Captured 404 URLs"
+msgstr ""
+
+#: includes/EmailDigest.php:141
+#: includes/GoogleSearchConsole.php:853
+#: includes/ViewTrait_Logs.php:134
+#: includes/ViewTrait_Redirects.php:122
+#: includes/ViewTrait_RedirectsTable.php:173
+#: includes/ViewTrait_RedirectsTable.php:616
+#: includes/ViewTrait_RedirectsTable.php:911
+msgid "URL"
+msgstr ""
+
+#: includes/EmailDigest.php:142
+#: includes/ViewTrait_RedirectsTable.php:175
+#: includes/ViewTrait_RedirectsTable.php:930
+msgid "Hits"
+msgstr ""
+
+#: includes/EmailDigest.php:143
+msgid "First Seen"
+msgstr ""
+
+#: includes/EmailDigest.php:144
+msgid "View Captured 404s"
+msgstr ""
+
+#: includes/EmailDigest.php:145
+msgid "Manage Settings"
+msgstr ""
+
+#: includes/EmailDigest.php:146
+msgid "To stop these emails, update your notification settings."
+msgstr ""
+
+#: includes/EmailDigest.php:147
+msgid "Manage settings"
+msgstr ""
+
+#. translators: %s: current date
+#: includes/EmailDigest.php:395
+#, php-format
+msgid "404 Solution Digest — %s"
+msgstr ""
+
+#: includes/engine/ArchiveFallbackEngine.php:36
+msgid "archive fallback"
+msgstr ""
+
+#: includes/engine/CategoryTagMatchingEngine.php:75
+msgid "category/tag keywords"
+msgstr ""
+
+#: includes/engine/ContentMatchingEngine.php:75
+msgid "content keywords"
+msgstr ""
+
+#: includes/engine/SlugMatchingEngine.php:27
+msgid "exact slug"
+msgstr ""
+
+#: includes/engine/SpellingMatchingEngine.php:28
+msgid "spell check"
+msgstr ""
+
+#: includes/engine/TitleMatchingEngine.php:74
+msgid "title keywords"
+msgstr ""
+
+#: includes/engine/UrlFixEngine.php:69
+msgid "url fix"
+msgstr ""
+
+#: includes/FrontendRequestPipeline.php:389
+msgid "wp guess"
+msgstr ""
+
+#: includes/GoogleSearchConsole.php:238
+#: includes/GoogleSearchConsole.php:239
+msgid "OAuth token exchange failed."
+msgstr ""
+
+#: includes/GoogleSearchConsole.php:666
+#: includes/GoogleSearchConsole.php:777
+msgid "Copied!"
+msgstr ""
+
+#: includes/GoogleSearchConsole.php:668
+#: includes/GoogleSearchConsole.php:743
+msgid "Connect to Google Search Console to see which broken URLs were getting real search traffic."
+msgstr ""
+
+#: includes/GoogleSearchConsole.php:672
+#: includes/GoogleSearchConsole.php:748
+msgid "Advanced: use your own Google Cloud credentials"
+msgstr ""
+
+#: includes/GoogleSearchConsole.php:675
+#: includes/GoogleSearchConsole.php:779
+msgid "Setup steps:"
+msgstr ""
+
+#: includes/GoogleSearchConsole.php:677
+#: includes/GoogleSearchConsole.php:781
+#, php-format
+msgid "Create a project in %s."
+msgstr ""
+
+#: includes/GoogleSearchConsole.php:678
+#: includes/GoogleSearchConsole.php:782
+msgid "Enable the \"Google Search Console API\"."
+msgstr ""
+
+#: includes/GoogleSearchConsole.php:679
+#: includes/GoogleSearchConsole.php:783
+msgid "Create OAuth 2.0 credentials (Web application type)."
+msgstr ""
+
+#: includes/GoogleSearchConsole.php:680
+#: includes/GoogleSearchConsole.php:784
+msgid "Add this Authorized Redirect URI to your OAuth client:"
+msgstr ""
+
+#: includes/GoogleSearchConsole.php:683
+#: includes/GoogleSearchConsole.php:787
+msgid "Copy"
+msgstr ""
+
+#: includes/GoogleSearchConsole.php:686
+#: includes/GoogleSearchConsole.php:790
+msgid "Enter your Client ID and Client Secret below."
+msgstr ""
+
+#: includes/GoogleSearchConsole.php:708
+#: includes/GoogleSearchConsole.php:812
+msgid "Client ID"
+msgstr ""
+
+#: includes/GoogleSearchConsole.php:712
+#: includes/GoogleSearchConsole.php:816
+msgid "Client Secret"
+msgstr ""
+
+#: includes/GoogleSearchConsole.php:716
+#: includes/GoogleSearchConsole.php:820
+msgid "Search Console Site URL"
+msgstr ""
+
+#: includes/GoogleSearchConsole.php:718
+#: includes/GoogleSearchConsole.php:822
+msgid "The site URL as registered in Search Console (e.g. https://example.com/)."
+msgstr ""
+
+#: includes/GoogleSearchConsole.php:720
+#: includes/GoogleSearchConsole.php:824
+msgid "Save Credentials"
+msgstr ""
+
+#: includes/GoogleSearchConsole.php:744
+msgid "Connect to Google Search Console"
+msgstr ""
+
+#: includes/GoogleSearchConsole.php:758
+msgid "Credentials saved — authorization required"
+msgstr ""
+
+#: includes/GoogleSearchConsole.php:760
+msgid "Click the button below to authorize access to your Search Console data."
+msgstr ""
+
+#: includes/GoogleSearchConsole.php:761
+msgid "Authorize with Google"
+msgstr ""
+
+#: includes/GoogleSearchConsole.php:762
+#: includes/GoogleSearchConsole.php:901
+msgid "Remove Credentials"
+msgstr ""
+
+#: includes/GoogleSearchConsole.php:842
+msgid "Connected to Google Search Console"
+msgstr ""
+
+#: includes/GoogleSearchConsole.php:844
+msgid "Search traffic data for your captured 404 URLs is shown below. Data is refreshed nightly."
+msgstr ""
+
+#: includes/GoogleSearchConsole.php:845
+msgid "Disconnect"
+msgstr ""
+
+#: includes/GoogleSearchConsole.php:850
+msgid "404 URLs with Search Traffic (last 90 days)"
+msgstr ""
+
+#: includes/GoogleSearchConsole.php:854
+msgid "Clicks"
+msgstr ""
+
+#: includes/GoogleSearchConsole.php:855
+msgid "Impressions"
+msgstr ""
+
+#: includes/GoogleSearchConsole.php:856
+msgid "Avg. Position"
+msgstr ""
+
+#: includes/GoogleSearchConsole.php:875
+msgid "GSC data is being fetched in the background. Reload this page in a few minutes."
+msgstr ""
+
+#: includes/GoogleSearchConsole.php:877
+msgid "No search traffic data found for your captured 404 URLs in the last 90 days."
+msgstr ""
+
+#: includes/GoogleSearchConsole.php:894
+msgid "Authorization failed"
+msgstr ""
+
+#: includes/GoogleSearchConsole.php:899
+msgid "Click 'Try Again' to retry authorization, or 'Remove Credentials' to start over."
+msgstr ""
+
+#: includes/GoogleSearchConsole.php:900
+msgid "Try Again"
+msgstr ""
+
+#: includes/ImportExportService.php:421
+msgid "Error: Native export file does not exist."
+msgstr ""
+
+#: includes/ImportExportService.php:426
+msgid "Error: Could not read native export file."
+msgstr ""
+
+#: includes/ImportExportService.php:432
+msgid "Error: Could not create Redirection export file."
+msgstr ""
+
+#: includes/ImportExportService.php:471
+msgid "File upload error."
+msgstr ""
+
+#: includes/ImportExportService.php:484
+msgid "Error: Invalid file type. Only CSV/TXT files are allowed."
+msgstr ""
+
+#: includes/ImportExportService.php:489
+msgid "Error: File too large. Maximum size is 5MB."
+msgstr ""
+
+#: includes/ImportExportService.php:495
+msgid "Error: Unable to determine file type."
+msgstr ""
+
+#: includes/ImportExportService.php:499
+msgid "Error: Invalid file type. Only CSV files are allowed."
+msgstr ""
+
+#: includes/ImportExportService.php:504
+msgid "Error opening the file."
+msgstr ""
+
+#: includes/ImportExportService.php:623
+#, php-format
+msgid "Import paused at row %1$d. %2$d redirect(s) imported so far. Re-upload the same file to resume from row %1$d."
+msgstr ""
+
+#: includes/ImportExportService.php:655
+#, php-format
+msgid "Dry run complete. Valid redirects: %d. Invalid rows: %d. Total rows processed: %d."
+msgstr ""
+
+#: includes/ImportExportService.php:661
+msgid "Preview issues:"
+msgstr ""
+
+#: includes/ImportExportService.php:668
+msgid "Error:"
+msgstr ""
+
+#: includes/ImportExportService.php:673
+#, php-format
+msgid "The file seems to have loaded okay. %d existing redirect(s) were overwritten. Please check the redirects page."
+msgstr ""
+
+#: includes/ImportExportService.php:678
+msgid "The file seems to have loaded okay. Please check the redirects page."
+msgstr ""
+
+#: includes/ImportExportService.php:811
+#, php-format
+msgid "Invalid regex pattern at line %d: %s (%s)"
+msgstr ""
+
+#: includes/ImportExportService.php:813
+#, php-format
+msgid "Invalid regex pattern: %s (%s)"
+msgstr ""
+
+#: includes/ImportExportService.php:824
+msgid "Ignored importing redirect because a redirect with the same from URL already exists. URL:"
+msgstr ""
+
+#: includes/ImportExportService.php:843
+msgid "Unrecognized destination type while importing file. Destination:"
+msgstr ""
+
+#: includes/ImportExportService.php:883
+msgid "Couldn't find post from slug. slug:"
+msgstr ""
+
+#: includes/ImportExportService.php:921
+msgid "pattern is empty"
+msgstr ""
+
+#: includes/ImportExportService.php:938
+msgid "cannot find a safe delimiter character"
+msgstr ""
+
+#: includes/ImportExportService.php:1009
+#, php-format
+msgid "Invalid CSV format. %d columns found but 2 or 5 expected."
+msgstr ""
+
+#: includes/ImportExportService.php:1082
+msgid "Invalid CSV format. Could not map source/destination columns."
+msgstr ""
+
+#: includes/ImportExportService.php:1179
+#, php-format
+msgid "Invalid CSV format. %d columns found but 2, 5, 6, or 7 expected."
+msgstr ""
+
+#: includes/PermalinkCache.php:132
+msgid "Permalink cache appears empty after rebuild — suggestions may be degraded. Try rebuilding again or check available disk space."
+msgstr ""
+
+#: includes/PluginLogic.php:561
+msgid "The user specified 404 page wasn't found. Please update the user-specified 404 page on the Options page."
+msgstr ""
+
+#: includes/PluginLogic.php:1103
+msgid "This content has been permanently removed."
+msgstr ""
+
+#: includes/PluginLogic.php:1104
+msgid "The page you requested no longer exists and has not been moved to a new location."
+msgstr ""
+
+#: includes/PluginLogic.php:1105
+#: includes/PluginLogic.php:1131
+msgid "Back to home page"
+msgstr ""
+
+#: includes/PluginLogic.php:1129
+msgid "451 Unavailable For Legal Reasons"
+msgstr ""
+
+#: includes/PluginLogic.php:1130
+msgid "This content is unavailable due to a legal demand."
+msgstr ""
+
+#: includes/PluginLogic.php:1153
+msgid "Redirecting…"
+msgstr ""
+
+#: includes/PluginLogic.php:1154
+msgid "You are being redirected. Click the link if not redirected automatically."
+msgstr ""
+
+#: includes/PluginLogicTrait_AdminActions.php:32
+#, php-format
+msgid "Debug file not found. (%s)"
+msgstr ""
+
+#: includes/PluginLogicTrait_AdminActions.php:34
+#, php-format
+msgid "Debug file(s) deleted. (%s)"
+msgstr ""
+
+#: includes/PluginLogicTrait_AdminActions.php:36
+#, php-format
+msgid "Issue deleting debug file. (%s)"
+msgstr ""
+
+#: includes/PluginLogicTrait_AdminActions.php:51
+msgid "New Redirect Added Successfully!"
+msgstr ""
+
+#: includes/PluginLogicTrait_AdminActions.php:53
+msgid "Error: unable to add new redirect."
+msgstr ""
+
+#: includes/PluginLogicTrait_AdminActions.php:63
+#: includes/PluginLogicTrait_AdminActions.php:72
+msgid "All trashed URLs have been deleted!"
+msgstr ""
+
+#: includes/PluginLogicTrait_AdminActions.php:101
+#: includes/PluginLogicTrait_AdminActions.php:117
+msgid "N-gram cache rebuild is already scheduled or in progress. Please wait for it to complete."
+msgstr ""
+
+#: includes/PluginLogicTrait_AdminActions.php:112
+msgid "N-gram cache rebuild has been scheduled and will run in the background. This may take several minutes on large sites. You can continue using the plugin normally."
+msgstr ""
+
+#: includes/PluginLogicTrait_AdminActions.php:119
+msgid "Failed to schedule N-gram cache rebuild. Please try again or check your WordPress cron configuration."
+msgstr ""
+
+#: includes/PluginLogicTrait_AdminActions.php:130
+msgid "Spelling cache cleared successfully."
+msgstr ""
+
+#: includes/PluginLogicTrait_AdminActions.php:140
+msgid "Google Search Console credentials saved."
+msgstr ""
+
+#: includes/PluginLogicTrait_AdminActions.php:163
+#, php-format
+msgid "Error: No ID(s) specified for bulk action. (%s)"
+msgstr ""
+
+#: includes/PluginLogicTrait_AdminActions.php:195
+msgid "Error: Bad trash operation specified."
+msgstr ""
+
+#: includes/PluginLogicTrait_AdminActions.php:210
+msgid "Redirect moved to trash successfully!"
+msgstr ""
+
+#: includes/PluginLogicTrait_AdminActions.php:212
+msgid "Redirect restored from trash successfully!"
+msgstr ""
+
+#: includes/PluginLogicTrait_AdminActions.php:218
+msgid "Error: Unable to move redirect from trash."
+msgstr ""
+
+#: includes/PluginLogicTrait_AdminActions.php:284
+msgid "Error: You didn't check the I understand checkbox. No importing for you!"
+msgstr ""
+
+#: includes/PluginLogicTrait_AdminActions.php:294
+#, php-format
+msgid "Error: No records were imported. SQL result: %s"
+msgstr ""
+
+#: includes/PluginLogicTrait_AdminActions.php:298
+#, php-format
+msgid "Records imported: %s"
+msgstr ""
+
+#: includes/PluginLogicTrait_AdminActions.php:327
+msgid "Redirect Removed Successfully!"
+msgstr ""
+
+#: includes/PluginLogicTrait_AdminActions.php:354
+#, php-format
+msgid "Error: Bad %s operation specified."
+msgstr ""
+
+#: includes/PluginLogicTrait_AdminActions.php:370
+#, php-format
+msgid "Removed 404 URL from %s list successfully!"
+msgstr ""
+
+#: includes/PluginLogicTrait_AdminActions.php:372
+#, php-format
+msgid "404 URL marked as %s successfully!"
+msgstr ""
+
+#: includes/PluginLogicTrait_AdminActions.php:376
+#, php-format
+msgid "Error: unable to remove URL from %s list"
+msgstr ""
+
+#: includes/PluginLogicTrait_AdminActions.php:378
+#, php-format
+msgid "Error: unable to mark URL as %s"
+msgstr ""
+
+#: includes/PluginLogicTrait_AdminActions.php:460
+msgid "Error: Unable to update redirect data."
+msgstr ""
+
+#: includes/PluginLogicTrait_AdminActions.php:509
+msgid "URL(s) marked as Ignored."
+msgstr ""
+
+#: includes/PluginLogicTrait_AdminActions.php:511
+msgid "URL(s) marked as Captured."
+msgstr ""
+
+#: includes/PluginLogicTrait_AdminActions.php:513
+msgid "URL(s) marked as Later."
+msgstr ""
+
+#: includes/PluginLogicTrait_AdminActions.php:516
+msgid "URL(s) restored."
+msgstr ""
+
+#: includes/PluginLogicTrait_AdminActions.php:525
+msgid "URL(s) deleted"
+msgstr ""
+
+#: includes/PluginLogicTrait_AdminActions.php:535
+msgid "URL(s) moved to trash"
+msgstr ""
+
+#: includes/PluginLogicTrait_AdminActions.php:539
+#, php-format
+msgid "Error: Unrecognized bulk action. (%s)"
+msgstr ""
+
+#: includes/PluginLogicTrait_AdminActions.php:598
+#: includes/PluginLogicTrait_AdminActions.php:813
+msgid "Error: URL is a required field."
+msgstr ""
+
+#: includes/PluginLogicTrait_AdminActions.php:602
+#: includes/PluginLogicTrait_AdminActions.php:820
+msgid "Error: URL must start with /"
+msgstr ""
+
+#: includes/PluginLogicTrait_AdminActions.php:718
+#: includes/PluginLogicTrait_AdminActions.php:870
+msgid "Error: Data not formatted properly."
+msgstr ""
+
+#: includes/PluginLogicTrait_AdminActions.php:746
+msgid "Error: Redirect destination is required."
+msgstr ""
+
+#: includes/PluginLogicTrait_AdminActions.php:756
+msgid "Error: You selected external URL but did not enter a URL."
+msgstr ""
+
+#: includes/PluginLogicTrait_AdminActions.php:759
+msgid "Error: External URL is too short."
+msgstr ""
+
+#: includes/PluginLogicTrait_AdminActions.php:762
+msgid "Error: External URL doesn't contain ://"
+msgstr ""
+
+#: includes/PluginLogicTrait_AdminActions.php:768
+msgid "Error: External URL must use http:// or https:// protocol only."
+msgstr ""
+
+#: includes/PluginLogicTrait_AdminActions.php:775
+msgid "Error: External redirect URL failed validation."
+msgstr ""
+
+#: includes/PluginLogicTrait_AdminActions.php:954
+msgid "Error: No regex auto-promotion to undo."
+msgstr ""
+
+#. translators: %s = the original from_url string that was restored
+#: includes/PluginLogicTrait_AdminActions.php:967
+#, php-format
+msgid "Regex auto-promotion undone. Restored \"%s\" with status Manual."
+msgstr ""
+
+#: includes/PluginLogicTrait_AdminActions.php:985
+msgid "Error: No source plugin specified."
+msgstr ""
+
+#. translators: %s = unknown source identifier
+#: includes/PluginLogicTrait_AdminActions.php:992
+#, php-format
+msgid "Error: Unknown source plugin \"%s\"."
+msgstr ""
+
+#. translators: %d = number of redirects imported
+#: includes/PluginLogicTrait_AdminActions.php:1002
+#, php-format
+msgid "%d redirect imported successfully."
+msgid_plural "%d redirects imported successfully."
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/PluginLogicTrait_PageOrdering.php:423
+#: includes/PluginLogicTrait_PageOrdering.php:427
+msgid "(Home Page)"
+msgstr ""
+
+#: includes/PluginLogicTrait_SettingsUpdate.php:49
+msgid "Man"
+msgstr ""
+
+#: includes/PluginLogicTrait_SettingsUpdate.php:51
+msgid "RegEx"
+msgstr ""
+
+#: includes/PluginLogicTrait_SettingsUpdate.php:57
+msgid "(Special)"
+msgstr ""
+
+#: includes/PluginLogicTrait_SettingsUpdate.php:316
+msgid "Options Saved Successfully!"
+msgstr ""
+
+#: includes/PluginLogicTrait_SettingsUpdate.php:318
+msgid "Some options were not saved successfully."
+msgstr ""
+
+#: includes/PluginLogicTrait_SettingsUpdate.php:343
+msgid "Error: Invalid value specified for default redirect type"
+msgstr ""
+
+#: includes/PluginLogicTrait_SettingsUpdate.php:355
+msgid "Error: Invalid 404 behavior selected"
+msgstr ""
+
+#: includes/PluginLogicTrait_SettingsUpdate.php:374
+msgid "Error: Template redirect priority value must be a number between 0 and 999"
+msgstr ""
+
+#: includes/PluginLogicTrait_SettingsUpdate.php:398
+msgid "Error: Could not create the suggestion page"
+msgstr ""
+
+#: includes/PluginLogicTrait_SettingsUpdate.php:463
+msgid "Error: Invalid theme selected"
+msgstr ""
+
+#: includes/PluginLogicTrait_SettingsUpdate.php:474
+msgid "Error: Invalid language selected"
+msgstr ""
+
+#: includes/PluginLogicTrait_SettingsUpdate.php:489
+#, php-format
+msgid "Error: The time to wait before an automatic update must be a number between 0 and something around %d."
+msgstr ""
+
+#: includes/PluginLogicTrait_SettingsUpdate.php:523
+msgid "Error: Invalid email notification frequency selected"
+msgstr ""
+
+#: includes/PluginLogicTrait_SettingsUpdate.php:531
+msgid "Error: Digest limit must be a number greater than or equal to 1"
+msgstr ""
+
+#: includes/PluginLogicTrait_SettingsUpdate.php:625
+msgid "Error: Maximum number of suggest value must be a number greater than or equal to 1"
+msgstr ""
+
+#: includes/PluginLogicTrait_SettingsUpdate.php:633
+msgid "Error: Auto match score value must be a number between 0 and 99"
+msgstr ""
+
+#: includes/PluginLogicTrait_SettingsUpdate.php:648
+msgid "Error: Per-engine score override must be empty or a number between 0 and 99"
+msgstr ""
+
+#: includes/PostEditorIntegration.php:135
+#: includes/PostEditorIntegration.php:220
+#: includes/PostEditorIntegration.php:309
+msgid "Create redirect from old URL to new URL"
+msgstr ""
+
+#: includes/PostEditorIntegration.php:205
+msgid "Redirect options are available after the post is published."
+msgstr ""
+
+#: includes/PostEditorIntegration.php:224
+msgid "If you change the permalink/slug, a redirect will be created from the old URL to the new one."
+msgstr ""
+
+#: includes/PostEditorIntegration.php:230
+#: includes/PostEditorIntegration.php:311
+#: includes/PostEditorIntegration.php:391
+msgid "Exclude from 404 redirect suggestions"
+msgstr ""
+
+#: includes/PostEditorIntegration.php:234
+#: includes/PostEditorIntegration.php:312
+msgid "When checked, this post will not be suggested as a redirect target for 404 errors."
+msgstr ""
+
+#: includes/PostEditorIntegration.php:310
+msgid "Slug changed:"
+msgstr ""
+
+#: includes/PostEditorIntegration.php:394
+msgid "When checked, this term will not be suggested as a redirect target for 404 errors."
+msgstr ""
+
+#: includes/Privacy.php:34
+msgid "404 Solution logs 404 hits and redirects to help you diagnose broken links and configure redirects."
+msgstr ""
+
+#: includes/Privacy.php:39
+msgid "Log entries may include requested URLs, referrers, timestamps, and an IP address. By default, IP addresses are anonymized; you can enable raw IP logging in the plugin settings."
+msgstr ""
+
+#: includes/Privacy.php:44
+msgid "You can export or erase personal data via WordPress Tools > Export/Erase Personal Data."
+msgstr ""
+
+#: includes/Privacy.php:58
+#: includes/Privacy.php:70
+#: includes/Privacy.php:141
+msgid "404 Solution Logs"
+msgstr ""
+
+#: includes/Privacy.php:145
+msgid "Timestamp"
+msgstr ""
+
+#: includes/Privacy.php:149
+msgid "Requested URL"
+msgstr ""
+
+#: includes/Privacy.php:153
+msgid "Destination URL"
+msgstr ""
+
+#: includes/Privacy.php:157
+#: includes/ViewTrait_Logs.php:136
+msgid "Referrer"
+msgstr ""
+
+#: includes/Privacy.php:161
+#: includes/ViewTrait_Logs.php:135
+msgid "IP Address"
+msgstr ""
+
+#: includes/Privacy.php:219
+msgid "Some items could not be anonymized."
+msgstr ""
+
+#: includes/RestApiController.php:231
+msgid "The \"from\" URL is required."
+msgstr ""
+
+#: includes/RestApiController.php:234
+#: includes/RestApiController.php:397
+msgid "The \"to\" URL is required."
+msgstr ""
+
+#: includes/RestApiController.php:249
+msgid "Failed to create redirect."
+msgstr ""
+
+#: includes/RestApiController.php:282
+#: includes/RestApiController.php:325
+msgid "Invalid redirect ID."
+msgstr ""
+
+#: includes/RestApiController.php:285
+msgid "Both \"from\" and \"to\" parameters are required."
+msgstr ""
+
+#: includes/RestApiController.php:394
+msgid "Invalid captured 404 ID."
+msgstr ""
+
+#: includes/RestApiController.php:406
+msgid "Captured 404 not found."
+msgstr ""
+
+#: includes/RestApiController.php:412
+msgid "The captured 404 record has no URL."
+msgstr ""
+
+#: includes/RestApiController.php:531
+msgid "The \"url\" parameter is required."
+msgstr ""
+
+#: includes/SetupWizard.php:52
+#: includes/UninstallModal.php:379
+msgid "Insufficient permissions"
+msgstr ""
+
+#: includes/SetupWizard.php:103
+msgid "Security check failed. Please try again."
+msgstr ""
+
+#: includes/SetupWizard.php:104
+#: includes/SetupWizard.php:113
+#: includes/ViewTrait_Logs.php:335
+msgid "Error"
+msgstr ""
+
+#: includes/SetupWizard.php:112
+msgid "You do not have permission to access this page."
+msgstr ""
+
+#: includes/SetupWizard.php:645
+msgid "Welcome to 404 Solution"
+msgstr ""
+
+#: includes/SetupWizard.php:646
+#: includes/SetupWizard.php:818
+msgid "Close"
+msgstr ""
+
+#: includes/SetupWizard.php:651
+msgid "404 Solution helps you automatically handle 404 errors and broken links on your site."
+msgstr ""
+
+#: includes/SetupWizard.php:652
+msgid "Let's configure how it handles missing pages. You can always change these settings later."
+msgstr ""
+
+#: includes/SetupWizard.php:657
+msgid "When a page is not found, what should happen?"
+msgstr ""
+
+#: includes/SetupWizard.php:662
+msgid "Automatically redirect to similar page (recommended)"
+msgstr ""
+
+#: includes/SetupWizard.php:663
+msgid "When a match is found, redirect visitors automatically"
+msgstr ""
+
+#: includes/SetupWizard.php:669
+msgid "Just show the default 404 page"
+msgstr ""
+
+#: includes/SetupWizard.php:670
+msgid "Use WordPress's standard \"Page not found\" screen. Manual redirects still work."
+msgstr ""
+
+#: includes/SetupWizard.php:678
+msgid "Log 404 errors for review?"
+msgstr ""
+
+#: includes/SetupWizard.php:683
+msgid "Yes, log 404 errors"
+msgstr ""
+
+#: includes/SetupWizard.php:684
+msgid "Track missing pages so you can create redirects later"
+msgstr ""
+
+#: includes/SetupWizard.php:690
+msgid "No, don't log 404s"
+msgstr ""
+
+#: includes/SetupWizard.php:691
+msgid "Only handle manually created redirects"
+msgstr ""
+
+#: includes/SetupWizard.php:699
+msgid "Get email alerts about 404 problems?"
+msgstr ""
+
+#: includes/SetupWizard.php:704
+msgid "Yes, email me a weekly summary (recommended)"
+msgstr ""
+
+#: includes/SetupWizard.php:705
+msgid "Get notified when captured 404 URLs exceed 50"
+msgstr ""
+
+#: includes/SetupWizard.php:711
+msgid "No, I'll check manually"
+msgstr ""
+
+#: includes/SetupWizard.php:712
+msgid "You can always enable email alerts later in Options"
+msgstr ""
+
+#: includes/SetupWizard.php:721
+msgid "Skip Setup"
+msgstr ""
+
+#: includes/SetupWizard.php:726
+msgid "Save & Get Started"
+msgstr ""
+
+#: includes/SetupWizard.php:775
+msgid "Could not save settings - missing security token. The wizard may appear again on next visit."
+msgstr ""
+
+#: includes/SetupWizard.php:785
+#: includes/SetupWizard.php:795
+msgid "Could not save dismissal. The wizard may appear again on next visit."
+msgstr ""
+
+#: includes/SetupWizard.php:792
+msgid "Could not save dismissal: "
+msgstr ""
+
+#: includes/SetupWizard.php:792
+msgid " The wizard may appear again on next visit."
+msgstr ""
+
+#: includes/SetupWizard.php:799
+msgid "Network error - could not save dismissal. The wizard may appear again on next visit."
+msgstr ""
+
+#: includes/SetupWizard.php:857
+msgid "Saving..."
+msgstr ""
+
+#: includes/ShortCode.php:401
+#: includes/ShortCode.php:643
+#: includes/ShortCode.php:776
+msgid "Here are some other great pages"
+msgstr ""
+
+#: includes/ShortCode.php:486
+msgid "Click to view debug data for all suggestions"
+msgstr ""
+
+#: includes/ShortCode.php:509
+#: includes/ShortCode.php:736
+#: includes/ShortCode.php:815
+msgid "No suggestions. :/ "
+msgstr ""
+
+#: includes/ShortCode.php:780
+msgid "Loading page suggestions..."
+msgstr ""
+
+#: includes/SystemPage.php:103
+msgid "Page Not Found"
+msgstr ""
+
+#: includes/SystemPage.php:234
+msgid "Your 404 suggestion page was deleted."
+msgstr ""
+
+#: includes/SystemPage.php:235
+msgid "Recreate it"
+msgstr ""
+
+#: includes/SystemPage.php:236
+msgid "or choose a different option below."
+msgstr ""
+
+#: includes/SystemPage.php:295
+#: includes/SystemPage.php:389
+msgid "This page is used by 404 Solution to display suggested pages to visitors."
+msgstr ""
+
+#: includes/SystemPage.php:296
+#: includes/SystemPage.php:390
+msgid "Learn more"
+msgstr ""
+
+#: includes/SystemPage.php:360
+msgid "Your 404 Solution suggestion page was deleted. Visitors are seeing this default 404 page instead."
+msgstr ""
+
+#: includes/SystemPage.php:362
+msgid "Go to settings"
+msgstr ""
+
+#: includes/UninstallModal.php:67
+msgid "404 Solution - Deactivation Options"
+msgstr ""
+
+#: includes/UninstallModal.php:68
+#: includes/ViewTrait_RedirectsTable.php:688
+#: includes/ViewTrait_RedirectsTable.php:1415
+msgid "Cancel"
+msgstr ""
+
+#: includes/UninstallModal.php:69
+msgid "Deactivate without feedback"
+msgstr ""
+
+#: includes/UninstallModal.php:70
+msgid "Email Feedback & Deactivate"
+msgstr ""
+
+#: includes/UninstallModal.php:71
+msgid "Processing..."
+msgstr ""
+
+#: includes/UninstallModal.php:72
+msgid "Deactivating"
+msgstr ""
+
+#: includes/UninstallModal.php:158
+msgid "Before deactivating, choose what happens to your data:"
+msgstr ""
+
+#: includes/UninstallModal.php:163
+#, php-format
+msgid "Keep my redirect (%d)"
+msgid_plural "Keep my redirects (%d)"
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/UninstallModal.php:165
+msgid "— saves them for later if you reinstall"
+msgstr ""
+
+#: includes/UninstallModal.php:171
+msgid "Keep 404 logs"
+msgstr ""
+
+#: includes/UninstallModal.php:173
+msgid "— historical data preserved"
+msgstr ""
+
+#: includes/UninstallModal.php:178
+msgid "Cache tables are always deleted (can be rebuilt)"
+msgstr ""
+
+#: includes/UninstallModal.php:182
+msgid "Help us improve (Optional)"
+msgstr ""
+
+#: includes/UninstallModal.php:187
+msgid "Temporary deactivation for debugging"
+msgstr ""
+
+#: includes/UninstallModal.php:191
+msgid "The plugin is not working as expected"
+msgstr ""
+
+#: includes/UninstallModal.php:195
+msgid "I found a better plugin"
+msgstr ""
+
+#: includes/UninstallModal.php:199
+msgid "I no longer need this functionality"
+msgstr ""
+
+#: includes/UninstallModal.php:203
+msgid "Too complicated to configure"
+msgstr ""
+
+#: includes/UninstallModal.php:207
+msgid "Performance issues"
+msgstr ""
+
+#: includes/UninstallModal.php:211
+msgid "Other reason"
+msgstr ""
+
+#: includes/UninstallModal.php:218
+msgid "What specifically isn't working?"
+msgstr ""
+
+#: includes/UninstallModal.php:222
+msgid "Redirects not triggering/working"
+msgstr ""
+
+#: includes/UninstallModal.php:226
+msgid "Settings not saving"
+msgstr ""
+
+#: includes/UninstallModal.php:230
+msgid "Admin pages showing errors"
+msgstr ""
+
+#: includes/UninstallModal.php:234
+msgid "Suggestions not appearing"
+msgstr ""
+
+#: includes/UninstallModal.php:238
+msgid "Conflicts with other plugins"
+msgstr ""
+
+#: includes/UninstallModal.php:242
+msgid "Other issue (please specify below)"
+msgstr ""
+
+#: includes/UninstallModal.php:248
+msgid "What type of performance issue?"
+msgstr ""
+
+#: includes/UninstallModal.php:252
+msgid "Slow admin dashboard"
+msgstr ""
+
+#: includes/UninstallModal.php:256
+msgid "Slow frontend page loads"
+msgstr ""
+
+#: includes/UninstallModal.php:260
+msgid "High database usage"
+msgstr ""
+
+#: includes/UninstallModal.php:264
+msgid "Memory issues"
+msgstr ""
+
+#: includes/UninstallModal.php:268
+#: includes/UninstallModal.php:290
+msgid "Other (please specify below)"
+msgstr ""
+
+#: includes/UninstallModal.php:274
+msgid "What was confusing?"
+msgstr ""
+
+#: includes/UninstallModal.php:278
+msgid "Settings are confusing"
+msgstr ""
+
+#: includes/UninstallModal.php:282
+msgid "Too many options"
+msgstr ""
+
+#: includes/UninstallModal.php:286
+msgid "Unclear documentation"
+msgstr ""
+
+#: includes/UninstallModal.php:297
+msgid "Which plugin are you switching to?"
+msgstr ""
+
+#: includes/UninstallModal.php:303
+msgid "Plugin name (optional)"
+msgstr ""
+
+#: includes/UninstallModal.php:310
+msgid "Please tell us more (optional):"
+msgstr ""
+
+#: includes/UninstallModal.php:316
+msgid "What's your reason for deactivating?"
+msgstr ""
+
+#: includes/UninstallModal.php:323
+msgid "Additional details (optional):"
+msgstr ""
+
+#: includes/UninstallModal.php:329
+msgid "Any other information about the issue..."
+msgstr ""
+
+#: includes/UninstallModal.php:336
+msgid "Your email (optional):"
+msgstr ""
+
+#: includes/UninstallModal.php:341
+msgid "For follow-up if needed"
+msgstr ""
+
+#: includes/UninstallModal.php:349
+msgid "Include technical details (site URL, system info, plugin counts, and a sanitized log excerpt) to help diagnose the issue"
+msgstr ""
+
+#: includes/UninstallModal.php:355
+#, php-format
+msgid "Privacy details (retention, erasure path, processing region): %s"
+msgstr ""
+
+#: includes/UninstallModal.php:440
+msgid "Could not save preferences. Your choices may not be preserved."
+msgstr ""
+
+#: includes/UninstallModal.php:489
+msgid "Thanks for the feedback!"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:30
+msgid "Redirect Logs"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:55
+#: includes/ViewTrait_Logs.php:654
+#: includes/ViewTrait_RedirectsTable.php:83
+#: includes/ViewTrait_RedirectsTable.php:454
+msgid "Refreshing data in background…"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:56
+#: includes/ViewTrait_Logs.php:655
+#: includes/ViewTrait_RedirectsTable.php:84
+#: includes/ViewTrait_RedirectsTable.php:455
+msgid "Data refreshed"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:57
+#: includes/ViewTrait_Logs.php:656
+#: includes/ViewTrait_RedirectsTable.php:85
+#: includes/ViewTrait_RedirectsTable.php:456
+#: includes/ViewTrait_Stats.php:44
+msgid "Refresh available"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:71
+msgid "View logs for"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:73
+msgid "(Begin typing a URL)"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:75
+#: includes/ViewTrait_Redirects.php:262
+#: includes/ViewTrait_RedirectsTable.php:641
+#: includes/ViewTrait_RedirectsTable.php:1311
+#: includes/ViewTrait_Settings.php:289
+#: includes/ViewTrait_Shared.php:101
+#: includes/WordPress_Connector.php:294
+msgid "(A page has been selected.)"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:77
+#: includes/ViewTrait_Redirects.php:264
+#: includes/ViewTrait_RedirectsTable.php:643
+#: includes/ViewTrait_RedirectsTable.php:1313
+#: includes/ViewTrait_Settings.php:291
+#: includes/ViewTrait_Shared.php:103
+msgid "(A custom string has been entered.)"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:79
+msgid "(Please choose from the dropdown list instead of typing your own URL.)"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:92
+#: includes/ViewTrait_Logs.php:580
+#: includes/ViewTrait_RedirectsTable.php:90
+#: includes/ViewTrait_RedirectsTable.php:461
+msgid "Rows per page:"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:107
+#: includes/ViewTrait_Logs.php:108
+msgid "Loading logs…"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:113
+#: includes/ViewTrait_RedirectsTable.php:155
+#: includes/ViewTrait_RedirectsTable.php:531
+msgid "Loading…"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:137
+msgid "Action"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:138
+msgid "Date"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:187
+msgid "Show pipeline trace"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:189
+msgid "No trace available"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:222
+msgid "404"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:224
+#: includes/ViewTrait_RedirectsTable.php:923
+msgid "Redirect"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:269
+msgid "No Results To Display"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:313
+msgid "Ignore list"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:314
+msgid "Redirect lookup"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:315
+msgid "Redirect lookup (without comments)"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:316
+msgid "Conditions"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:317
+msgid "Conditions (without comments)"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:318
+msgid "Health check"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:319
+msgid "Health check (without comments)"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:320
+msgid "Regex rules"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:321
+msgid "Suggestion engines"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:322
+msgid "Result"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:324
+msgid "Not ignored"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:325
+msgid "Matched — request ignored"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:326
+msgid "Found existing redirect"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:327
+msgid "No matching redirect"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:328
+msgid "All conditions met"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:329
+msgid "Blocked by conditions"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:330
+msgid "Destination unreachable — skipped"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:331
+msgid "Matched"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:332
+msgid "No match"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:333
+msgid "Skipped"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:334
+msgid "Excluded"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:336
+msgid "No match found"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:337
+msgid "Showed 404 page"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:338
+msgid "Redirected to external URL"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:339
+msgid "No redirect — showed 404 page"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:351
+#, php-format
+msgid "Engine: %s"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:354
+#, php-format
+msgid "Redirected (%s)"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:357
+#, php-format
+msgid "Responded with %s"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:360
+#, php-format
+msgid "Showed 404 page — %s"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:414
+#: includes/ViewTrait_RedirectsTable.php:182
+msgid "Select all"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:455
+#: includes/ViewTrait_Logs.php:461
+#: includes/ViewTrait_RedirectsTable.php:202
+msgid "More info"
+msgstr ""
+
+#. Translators: 1: Starting number, 2: Ending number, 3: Total count.
+#: includes/ViewTrait_Logs.php:578
+#, php-format
+msgid "%1$s - %2$s of %3$s"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:579
+#: includes/ViewTrait_Redirects.php:501
+msgid "Page"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:579
+msgid "of"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:620
+#: includes/ViewTrait_Logs.php:623
+msgid "Go to first page"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:621
+#: includes/ViewTrait_Logs.php:624
+msgid "Go to previous page"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:628
+#: includes/ViewTrait_Logs.php:631
+msgid "Go to next page"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:629
+#: includes/ViewTrait_Logs.php:632
+msgid "Go to last page"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:756
+#: includes/ViewTrait_RedirectsTable.php:42
+#: includes/ViewTrait_RedirectsTable.php:418
+#: includes/ViewTrait_RedirectsTable.php:480
+msgid "All"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:770
+#: includes/ViewTrait_RedirectsTable.php:973
+#: includes/ViewTrait_Stats.php:856
+#: includes/ViewTrait_Stats.php:867
+msgid "Unknown"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:772
+msgid "Manual Redirects"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:775
+#: includes/ViewTrait_Settings.php:92
+msgid "Automatic Redirects"
+msgstr ""
+
+#: includes/ViewTrait_Logs.php:810
+#: includes/ViewTrait_RedirectsTable.php:46
+#: includes/ViewTrait_RedirectsTable.php:302
+#: includes/ViewTrait_RedirectsTable.php:421
+#: includes/ViewTrait_Shared.php:507
+msgid "Trash"
+msgstr ""
+
+#: includes/ViewTrait_Redirects.php:36
+#: includes/ViewTrait_RedirectsTable.php:120
+#: includes/ViewTrait_RedirectsTable.php:135
+#: includes/ViewTrait_RedirectsTable.php:277
+#: includes/ViewTrait_RedirectsTable.php:279
+msgid "Create Redirect"
+msgstr ""
+
+#: includes/ViewTrait_Redirects.php:37
+msgid "Back to Captured 404s"
+msgstr ""
+
+#: includes/ViewTrait_Redirects.php:39
+msgid "Edit Redirect"
+msgstr ""
+
+#: includes/ViewTrait_Redirects.php:40
+msgid "Back to Redirects"
+msgstr ""
+
+#: includes/ViewTrait_Redirects.php:90
+msgid "Error: No ID(s) found for edit request."
+msgstr ""
+
+#: includes/ViewTrait_Redirects.php:127
+msgid "Auto-matched by:"
+msgstr ""
+
+#: includes/ViewTrait_Redirects.php:136
+#: includes/ViewTrait_RedirectsTable.php:621
+msgid "Treat this URL as a regular expression"
+msgstr ""
+
+#: includes/ViewTrait_Redirects.php:137
+#: includes/ViewTrait_RedirectsTable.php:622
+msgid "(Explain)"
+msgstr ""
+
+#: includes/ViewTrait_Redirects.php:140
+#: includes/ViewTrait_RedirectsTable.php:625
+msgid "When checked, the text is treated as a regular expression. Note that including a bad regular expression or one that takes too long will break your website. So please use caution and test them elsewhere before trying them here. If you don't know what you're doing please don't use this option (as it's not necessary for the functioning of the plugin)."
+msgstr ""
+
+#: includes/ViewTrait_Redirects.php:141
+#: includes/ViewTrait_RedirectsTable.php:626
+msgid "Example:"
+msgstr ""
+
+#: includes/ViewTrait_Redirects.php:142
+#: includes/ViewTrait_RedirectsTable.php:627
+msgid "/events/(.+) will match any URL that begins with /events/ and redirect to the specified page. Since a capture group is used, you can use a $1 replacement in the destination string of an external URL."
+msgstr ""
+
+#: includes/ViewTrait_Redirects.php:166
+msgid "URLs to redirect"
+msgstr ""
+
+#: includes/ViewTrait_Redirects.php:227
+msgid "Suggested destination"
+msgstr ""
+
+#: includes/ViewTrait_Redirects.php:234
+msgid "match"
+msgstr ""
+
+#: includes/ViewTrait_Redirects.php:240
+msgid "Accept Suggestion"
+msgstr ""
+
+#: includes/ViewTrait_Redirects.php:242
+msgid "Pick a Different Page"
+msgstr ""
+
+#: includes/ViewTrait_Redirects.php:258
+#: includes/ViewTrait_RedirectsTable.php:637
+#: includes/ViewTrait_RedirectsTable.php:1307
+msgid "Redirect to"
+msgstr ""
+
+#: includes/ViewTrait_Redirects.php:260
+#: includes/ViewTrait_RedirectsTable.php:639
+#: includes/ViewTrait_RedirectsTable.php:1309
+#: includes/ViewTrait_Shared.php:99
+#: includes/WordPress_Connector.php:293
+msgid "(Type a page name or an external URL)"
+msgstr ""
+
+#: includes/ViewTrait_Redirects.php:266
+#: includes/ViewTrait_RedirectsTable.php:645
+#: includes/ViewTrait_RedirectsTable.php:1315
+#: includes/ViewTrait_Settings.php:293
+#: includes/ViewTrait_Shared.php:105
+#: includes/WordPress_Connector.php:295
+msgid "(An external URL will be used.)"
+msgstr ""
+
+#: includes/ViewTrait_Redirects.php:280
+msgid "Update Redirect"
+msgstr ""
+
+#: includes/ViewTrait_Redirects.php:417
+msgid "Custom"
+msgstr ""
+
+#: includes/ViewTrait_Redirects.php:501
+msgid "Post"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:25
+#: includes/ViewTrait_UI.php:345
+msgid "Captured 404 URLs"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:28
+msgid "Broken links visitors tried to reach. Create Redirect for important ones, Dismiss the rest."
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:38
+msgid "Needs Review"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:39
+msgid "Handled"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:44
+#: includes/ViewTrait_RedirectsTable.php:256
+msgid "Ignored"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:45
+#: includes/ViewTrait_RedirectsTable.php:260
+#: includes/ViewTrait_RedirectsTable.php:323
+msgid "Later"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:87
+msgid "Type to filter URLs... (press Enter)"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:103
+msgid "Are you sure you want to permanently delete all items in trash?"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:104
+#: includes/ViewTrait_RedirectsTable.php:544
+msgid "Empty Trash"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:113
+msgid "selected"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:119
+#: includes/ViewTrait_RedirectsTable.php:281
+#: includes/ViewTrait_RedirectsTable.php:283
+msgid "Dismiss"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:124
+msgid "Mark Captured"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:127
+msgid "Mark Ignored"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:130
+#: includes/ViewTrait_RedirectsTable.php:261
+#: includes/ViewTrait_Shared.php:534
+msgid "Organize Later"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:133
+#: includes/ViewTrait_RedirectsTable.php:510
+msgid "Move to Trash"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:139
+msgid "Clear"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:149
+#: includes/ViewTrait_RedirectsTable.php:150
+msgid "Loading captured URLs…"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:174
+#: includes/ViewTrait_RedirectsTable.php:914
+msgid "Status"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:176
+#: includes/ViewTrait_RedirectsTable.php:935
+msgid "Created"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:177
+#: includes/ViewTrait_RedirectsTable.php:939
+msgid "Last Used"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:230
+msgid "Never"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:252
+msgid "Captured 404 URL"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:257
+msgid "Ignored URL - will not be suggested"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:288
+#: includes/ViewTrait_RedirectsTable.php:290
+#: includes/ViewTrait_UI.php:426
+#: includes/WordPress_Connector.php:385
+msgid "Edit"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:294
+msgid "View Logs"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:296
+#: includes/ViewTrait_UI.php:355
+msgid "Logs"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:307
+#: includes/ViewTrait_RedirectsTable.php:309
+#: includes/ViewTrait_Shared.php:503
+msgid "Restore"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:310
+#: includes/ViewTrait_RedirectsTable.php:514
+msgid "Delete Permanently"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:310
+msgid "Are you sure you want to permanently delete this item?"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:312
+#: includes/WordPress_Connector.php:386
+msgid "Delete"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:318
+msgid "Ignore"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:361
+msgid "No Captured 404 Records To Display"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:396
+msgid "Loading status…"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:402
+#: includes/ViewTrait_UI.php:338
+#: includes/ViewTrait_UI.php:340
+msgid "Page Redirects"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:405
+msgid "The plugin creates these automatically. You only need to act when the status bar above says so."
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:411
+#: includes/ViewTrait_RedirectsTable.php:689
+msgid "Add Redirect"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:458
+msgid "Type to filter redirects... (press Enter)"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:476
+msgid "Confidence:"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:481
+#: includes/ViewTrait_Stats.php:200
+msgid "High (≥80%)"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:482
+#: includes/ViewTrait_Stats.php:201
+msgid "Medium (50–79%)"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:483
+#: includes/ViewTrait_Stats.php:202
+msgid "Low (<50%)"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:484
+#: includes/ViewTrait_Stats.php:203
+msgid "Manual (no score)"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:503
+msgid "redirects selected"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:505
+msgid "Bulk Actions"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:507
+msgid "Edit Redirects"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:513
+msgid "Restore Redirects"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:517
+msgid "Apply"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:518
+msgid "Clear Selection"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:524
+#: includes/ViewTrait_RedirectsTable.php:525
+msgid "Loading redirects…"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:543
+msgid "Are you sure you want to permanently delete all items in the trash?"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:607
+msgid "Add Manual Redirect"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:618
+msgid "The URL path that should be redirected (without domain)"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:628
+msgid "First, all of the normal \"exact match\" URLs are checked, then all of the regular expression URLs are checked."
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:663
+#: includes/ViewTrait_RedirectsTable.php:1374
+msgid "Advanced Options"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:668
+#: includes/ViewTrait_RedirectsTable.php:1379
+msgid "Active From (optional)"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:670
+#: includes/ViewTrait_RedirectsTable.php:1381
+msgid "Leave blank to activate immediately"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:675
+#: includes/ViewTrait_RedirectsTable.php:1386
+msgid "Active Until (optional)"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:677
+#: includes/ViewTrait_RedirectsTable.php:1388
+msgid "Leave blank to never expire"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:712
+#: includes/ViewTrait_RedirectsTable.php:713
+#: includes/ViewTrait_RedirectsTable.php:734
+#: includes/ViewTrait_RedirectsTable.php:739
+msgid "Permanent"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:714
+#: includes/ViewTrait_RedirectsTable.php:715
+#: includes/ViewTrait_RedirectsTable.php:735
+#: includes/ViewTrait_RedirectsTable.php:740
+msgid "Temporary"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:716
+#: includes/ViewTrait_RedirectsTable.php:743
+msgid "Gone"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:717
+msgid "Blocked"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:718
+#: includes/ViewTrait_RedirectsTable.php:745
+msgid "Meta Refresh"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:727
+msgid "Redirect Type"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:734
+msgid "Best for moved pages"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:735
+msgid "Best for seasonal or test pages"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:739
+msgid "301"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:740
+msgid "302"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:741
+msgid "307"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:741
+msgid "Temp, method-safe"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:742
+msgid "308"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:742
+msgid "Perm, method-safe"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:743
+msgid "410"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:744
+msgid "451"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:744
+msgid "Legal reasons"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:745
+msgid "HTTP 200 + meta tag"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:762
+msgid "Permanent is best for most redirects. Use Temporary if the page may come back."
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:764
+msgid "Use 301 for permanent page moves. Use 302 for A/B tests or seasonal pages."
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:835
+msgid "logs"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:835
+msgid "redirects"
+msgstr ""
+
+#. translators: %1$d is start item, %2$d is end item, %3$d is total count, %4$s is item type (logs/redirects)
+#: includes/ViewTrait_RedirectsTable.php:841
+#, php-format
+msgid "Showing %1$d-%2$d of %3$d %4$s"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:917
+msgid "Type"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:920
+msgid "Destination"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:926
+msgid "Confidence"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:967
+msgid "Manually created"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:969
+msgid "Automatically created"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:971
+msgid "Regular Expression (Manually Created)"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:977
+msgid "Visit"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:987
+msgid "Category:"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:993
+msgid "Tag:"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:998
+msgid "Home Page:"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:1031
+msgid "Never Used"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:1145
+msgid "This page doesn't exist or is not published so the redirect won't work."
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:1149
+msgid "Destination missing. Edit this redirect and choose a destination."
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:1151
+msgid "(Destination missing)"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:1159
+msgid "(Destination unavailable)"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:1169
+msgid "Destination returned 404 recently — redirect suspended until destination is restored."
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:1234
+msgid "No confidence score for this engine"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:1235
+msgid "Manual redirect — no confidence score"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:1258
+msgid "No Redirect Records To Display"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:1259
+msgid "Redirects will appear here once created."
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:1435
+msgid "External Page"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:1469
+msgid "Conditions (optional)"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:1470
+msgid "This redirect only fires when all conditions are met. Leave empty to always redirect."
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:1479
+msgid "+ Add Condition"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:1512
+msgid "Logic"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:1513
+msgid "AND"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:1513
+msgid "OR"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:1521
+msgid "Login Status"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:1522
+msgid "User Role"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:1523
+msgid "Referrer URL"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:1524
+msgid "User Agent"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:1525
+msgid "IP Range (CIDR)"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:1526
+msgid "HTTP Header"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:1528
+msgid "Condition type"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:1529
+msgid "— Select type —"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:1538
+msgid "equals"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:1539
+msgid "not equals"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:1540
+msgid "contains"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:1541
+msgid "does not contain"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:1542
+msgid "matches regex"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:1544
+msgid "Operator"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:1552
+msgid "Value"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:1552
+msgid "Condition value"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:1558
+msgid "Remove condition"
+msgstr ""
+
+#: includes/ViewTrait_RedirectsTable.php:1559
+msgid "Remove"
+msgstr ""
+
+#: includes/ViewTrait_Settings.php:50
+#: includes/ViewTrait_UI.php:375
+#: includes/ViewTrait_UI.php:377
+msgid "Options"
+msgstr ""
+
+#: includes/ViewTrait_Settings.php:55
+#: includes/ViewTrait_Stats.php:33
+#: includes/ViewTrait_Stats.php:588
+#: includes/ViewTrait_UI.php:548
+#: includes/WordPress_Connector.php:372
+msgid "Expand All"
+msgstr ""
+
+#: includes/ViewTrait_Settings.php:77
+#: includes/WordPress_Connector.php:349
+msgid "Saving settings..."
+msgstr ""
+
+#: includes/ViewTrait_Settings.php:102
+msgid "General Settings"
+msgstr ""
+
+#: includes/ViewTrait_Settings.php:112
+msgid "Content & URL Filtering"
+msgstr ""
+
+#: includes/ViewTrait_Settings.php:122
+msgid "Logging & Privacy"
+msgstr ""
+
+#: includes/ViewTrait_Settings.php:140
+msgid "Having trouble? Send your debug log to the developer. This sends a one-time diagnostic report (URLs, PHP/WP/DB versions, a debug log excerpt, active plugins, site URL) so we can diagnose the issue without asking you to copy-paste anything."
+msgstr ""
+
+#: includes/ViewTrait_Settings.php:147
+msgid "Need help? Contact the developer"
+msgstr ""
+
+#: includes/ViewTrait_Settings.php:157
+msgid "Advanced Configuration"
+msgstr ""
+
+#: includes/ViewTrait_Settings.php:170
+msgid "404 Page Suggestions"
+msgstr ""
+
+#: includes/ViewTrait_Settings.php:185
+msgid "Engine Profiles"
+msgstr ""
+
+#: includes/ViewTrait_Settings.php:193
+msgid "Loading Google Search Console section…"
+msgstr ""
+
+#: includes/ViewTrait_Settings.php:198
+msgid "Google Search Console"
+msgstr ""
+
+#: includes/ViewTrait_Settings.php:229
+#: includes/ViewTrait_UI.php:670
+msgid "Default 404 destination"
+msgstr ""
+
+#: includes/ViewTrait_Settings.php:287
+msgid "(Type a page name)"
+msgstr ""
+
+#: includes/ViewTrait_Settings.php:313
+msgid "<a>View</a> the debug file."
+msgstr ""
+
+#. Translators: 1: The file size in KB. 2: The file size in MB.
+#: includes/ViewTrait_Settings.php:322
+#, php-format
+msgid "Debug file size: %1$s KB (%2$s MB)."
+msgstr ""
+
+#: includes/ViewTrait_Settings.php:421
+msgid "Default"
+msgstr ""
+
+#: includes/ViewTrait_Shared.php:91
+msgid "(The specified page doesn't exist. Please update this setting.)"
+msgstr ""
+
+#: includes/ViewTrait_Shared.php:130
+msgid "Recommended"
+msgstr ""
+
+#: includes/ViewTrait_Shared.php:131
+msgid "Suggest similar pages"
+msgstr ""
+
+#: includes/ViewTrait_Shared.php:133
+msgid "Shows visitors a list of pages matching the URL they were looking for"
+msgstr ""
+
+#: includes/ViewTrait_Shared.php:134
+msgid "Redirect to homepage"
+msgstr ""
+
+#: includes/ViewTrait_Shared.php:136
+msgid "Sends all 404 visitors to the site front page"
+msgstr ""
+
+#: includes/ViewTrait_Shared.php:137
+msgid "Custom page"
+msgstr ""
+
+#: includes/ViewTrait_Shared.php:139
+msgid "Choose a specific page to show for all 404 errors"
+msgstr ""
+
+#: includes/ViewTrait_Shared.php:140
+msgid "Theme default"
+msgstr ""
+
+#: includes/ViewTrait_Shared.php:142
+msgid "Uses the theme built-in 404 page, no redirect"
+msgstr ""
+
+#: includes/ViewTrait_Shared.php:143
+msgid "Select a page"
+msgstr ""
+
+#: includes/ViewTrait_Shared.php:356
+#, php-format
+msgid "Last updated: %s"
+msgstr ""
+
+#: includes/ViewTrait_Shared.php:362
+#, php-format
+msgid "Last checked: %s"
+msgstr ""
+
+#: includes/ViewTrait_Shared.php:368
+msgid "Refresh scheduled"
+msgstr ""
+
+#: includes/ViewTrait_Shared.php:370
+msgid "Refresh running"
+msgstr ""
+
+#: includes/ViewTrait_Shared.php:372
+msgid "Refresh paused"
+msgstr ""
+
+#: includes/ViewTrait_Shared.php:521
+msgid "Remove Ignore Status"
+msgstr ""
+
+#: includes/ViewTrait_Shared.php:524
+msgid "Ignore 404 Error"
+msgstr ""
+
+#: includes/ViewTrait_Shared.php:531
+msgid "Remove Later Status"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:30
+msgid "Statistics"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:65
+msgid "Automatic Permanent Redirects"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:66
+msgid "Automatic Temporary Redirects"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:67
+msgid "Manual Permanent Redirects"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:68
+msgid "Manual Temporary Redirects"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:78
+msgid "Redirects"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:96
+msgid "Captured URLs"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:103
+msgid "Today's Stats"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:104
+msgid "This Month"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:105
+msgid "This Year"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:106
+msgid "All Stats"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:207
+#, php-format
+msgid "Avg confidence: %s%%"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:258
+msgid "Match Confidence"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:275
+msgid "7 days"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:276
+msgid "30 days"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:277
+msgid "90 days"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:280
+msgid "Period"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:285
+msgid "Loading chart data…"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:292
+msgid "Could not load chart data."
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:304
+msgid "404 Hits per Day"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:305
+msgid "Redirects per Day"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:306
+msgid "New Captures per Day"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:428
+msgid "Trend Analytics"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:455
+msgid "No broken internal links found."
+msgstr ""
+
+#. translators: 1: number of broken links, 2: number of posts/pages
+#: includes/ViewTrait_Stats.php:460
+#, php-format
+msgid "Found %1$d broken internal link(s) across %2$d post(s)/page(s)."
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:465
+msgid "Post/Page"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:466
+msgid "Broken URL"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:467
+msgid "404 Hits"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:494
+msgid "Broken Internal Links"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:568
+msgid "(The log file does not exist.)"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:585
+#: includes/ViewTrait_UI.php:368
+#: includes/ViewTrait_UI.php:370
+msgid "Tools"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:598
+msgid "Export"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:605
+msgid "Import"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:613
+msgid "Purge Options"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:622
+msgid "Cache Management"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:626
+msgid "Diagnostics"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:634
+msgid "Etcetera"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:638
+msgid "Migrate from Another Plugin"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:684
+msgid "No supported redirect plugins detected on this site."
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:686
+msgid "Supported plugins: Rank Math, Yoast SEO Premium, AIOSEO, Safe Redirect Manager, Redirection."
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:691
+msgid "Detected redirect plugins:"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:701
+msgid "Source plugin:"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:710
+msgid "Preview Import"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:722
+msgid "Confirm Import"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:724
+#: includes/ViewTrait_Stats.php:729
+msgid "Back"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:734
+msgid "This will import all active redirects from the selected plugin into 404 Solution. Regex and redirect codes are preserved."
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:740
+#, php-format
+msgid "Found %d redirect(s) from %s — proceed with import?"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:741
+#, php-format
+msgid "No redirects found in %s. Nothing to import."
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:742
+msgid "Could not fetch preview. Please try again."
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:820
+msgid "Quick environment checks for troubleshooting and support."
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:828
+msgid "OK"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:828
+msgid "Warning"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:828
+msgid "Info"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:868
+msgid "Plugin Version"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:869
+msgid "WordPress Version"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:870
+msgid "PHP Version"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:872
+msgid "Uploads Directory"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:873
+msgid "Not available"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:877
+msgid "Uploads Writable"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:878
+msgid "Yes"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:878
+msgid "No"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:882
+msgid "mbstring Extension"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:883
+msgid "Loaded"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:883
+#: includes/ViewTrait_Stats.php:888
+msgid "Missing"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:887
+msgid "ZipArchive Support"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:888
+msgid "Available"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:892
+msgid "WP_DEBUG"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:893
+msgid "Enabled"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:893
+msgid "Disabled"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:905
+msgid "250ms"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:906
+msgid "500ms"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:907
+msgid "900ms"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:908
+msgid "Disable"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:910
+msgid "Simulated DB Latency"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:912
+#: includes/ViewTrait_Stats.php:915
+#, php-format
+msgid "ON (%d ms per plugin query)"
+msgstr ""
+
+#: includes/ViewTrait_Stats.php:913
+#: includes/ViewTrait_Stats.php:916
+msgid "OFF"
+msgstr ""
+
+#. Translators: %s is the number of captured 404 URLs.
+#: includes/ViewTrait_UI.php:56
+#, php-format
+msgid "There is <a>%s captured 404 URL</a> that needs to be processed."
+msgid_plural "There are <a>%s captured 404 URLs</a> to be processed."
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/ViewTrait_UI.php:84
+msgid "Permission denied."
+msgstr ""
+
+#: includes/ViewTrait_UI.php:85
+msgid "Your user account does not have permission to access this page."
+msgstr ""
+
+#: includes/ViewTrait_UI.php:87
+msgid "Please verify that your WordPress role has the"
+msgstr ""
+
+#: includes/ViewTrait_UI.php:88
+msgid "capability."
+msgstr ""
+
+#: includes/ViewTrait_UI.php:89
+msgid "If you have a security plugin installed, it may be restricting access to this page."
+msgstr ""
+
+#: includes/ViewTrait_UI.php:177
+msgid "Redirect Information Updated Successfully!"
+msgstr ""
+
+#: includes/ViewTrait_UI.php:290
+msgid "You're all set!"
+msgstr ""
+
+#: includes/ViewTrait_UI.php:292
+msgid "404 Solution is now monitoring your site. When visitors hit broken links, they will be automatically redirected. We will email you if something needs attention."
+msgstr ""
+
+#: includes/ViewTrait_UI.php:294
+msgid "404 Solution is now monitoring your site. When visitors hit broken links, they will be automatically redirected."
+msgstr ""
+
+#: includes/ViewTrait_UI.php:296
+msgid "404 Solution is now monitoring your site. We will email you if captured 404 URLs need attention."
+msgstr ""
+
+#: includes/ViewTrait_UI.php:298
+msgid "404 Solution is now monitoring your site. You can create manual redirects anytime from the Page Redirects tab."
+msgstr ""
+
+#: includes/ViewTrait_UI.php:347
+msgid "Captured 404s"
+msgstr ""
+
+#: includes/ViewTrait_UI.php:353
+msgid "Redirect & Capture Logs"
+msgstr ""
+
+#: includes/ViewTrait_UI.php:360
+#: includes/ViewTrait_UI.php:362
+msgid "Stats"
+msgstr ""
+
+#. translators: %1$s = original URL as typed by the admin; %2$s = the URL after glob-to-regex fixup (e.g. /sales/* becomes /sales/.*)
+#: includes/ViewTrait_UI.php:411
+#, php-format
+msgid "Detected as a regex pattern. Stored \"%1$s\" as \"%2$s\"."
+msgstr ""
+
+#. translators: %s = the URL stored unchanged with Regex status
+#: includes/ViewTrait_UI.php:418
+#, php-format
+msgid "Detected as a regex pattern. Stored \"%s\" with Regex status."
+msgstr ""
+
+#: includes/ViewTrait_UI.php:424
+msgid "404 Solution:"
+msgstr ""
+
+#: includes/ViewTrait_UI.php:428
+msgid "Undo regex auto-promotion and restore Manual status?"
+msgstr ""
+
+#: includes/ViewTrait_UI.php:429
+msgid "Undo"
+msgstr ""
+
+#. translators: %s: plugin version number
+#: includes/ViewTrait_UI.php:519
+#, php-format
+msgid "Plugin v%s"
+msgstr ""
+
+#: includes/ViewTrait_UI.php:522
+#: includes/ViewTrait_UI.php:550
+#: includes/ViewTrait_UI.php:693
+msgid "Save Settings"
+msgstr ""
+
+#: includes/ViewTrait_UI.php:534
+msgid "Settings saved successfully!"
+msgstr ""
+
+#: includes/ViewTrait_UI.php:567
+msgid "Simple Mode shows essential options only. Switch to Advanced Mode for full configuration."
+msgstr ""
+
+#: includes/ViewTrait_UI.php:569
+msgid "Advanced Mode shows all options. Switch to Simple Mode for a streamlined view."
+msgstr ""
+
+#: includes/ViewTrait_UI.php:578
+msgid "Simple Mode"
+msgstr ""
+
+#: includes/ViewTrait_UI.php:579
+msgid "Advanced Mode"
+msgstr ""
+
+#: includes/ViewTrait_UI.php:600
+msgid "Simple"
+msgstr ""
+
+#: includes/ViewTrait_UI.php:603
+msgid "Advanced"
+msgstr ""
+
+#: includes/ViewTrait_UI.php:664
+msgid "Default (Follows WordPress)"
+msgstr ""
+
+#: includes/ViewTrait_UI.php:667
+msgid "Core Settings"
+msgstr ""
+
+#: includes/ViewTrait_UI.php:668
+msgid "404 Capture"
+msgstr ""
+
+#: includes/ViewTrait_UI.php:669
+msgid "Maintenance"
+msgstr ""
+
+#: includes/ViewTrait_UI.php:671
+msgid "Where to send visitors when a 404 error occurs"
+msgstr ""
+
+#: includes/ViewTrait_UI.php:672
+msgid "Create automatic redirects"
+msgstr ""
+
+#: includes/ViewTrait_UI.php:673
+msgid "Automatically redirect 404s to similar pages when a good match is found"
+msgstr ""
+
+#: includes/ViewTrait_UI.php:674
+msgid "Redirect type"
+msgstr ""
+
+#: includes/ViewTrait_UI.php:675
+msgid "Permanent 301"
+msgstr ""
+
+#: includes/ViewTrait_UI.php:676
+msgid "Temporary 302"
+msgstr ""
+
+#: includes/ViewTrait_UI.php:677
+msgid "301 for SEO, 302 for temporary changes"
+msgstr ""
+
+#: includes/ViewTrait_UI.php:678
+msgid "Collect incoming 404 URLs"
+msgstr ""
+
+#: includes/ViewTrait_UI.php:679
+msgid "Log 404 errors so you can review and fix them"
+msgstr ""
+
+#: includes/ViewTrait_UI.php:680
+msgid "Delete captured URLs after"
+msgstr ""
+
+#: includes/ViewTrait_UI.php:681
+#: includes/WordPress_Connector.php:329
+msgid "days"
+msgstr ""
+
+#: includes/ViewTrait_UI.php:682
+msgid "Auto-remove old 404 records (0 to keep forever)"
+msgstr ""
+
+#: includes/ViewTrait_UI.php:683
+msgid "Notify me when captured URLs exceed"
+msgstr ""
+
+#: includes/ViewTrait_UI.php:684
+msgid "URLs"
+msgstr ""
+
+#: includes/ViewTrait_UI.php:685
+msgid "Show admin notice when 404 count gets high (0 to disable)"
+msgstr ""
+
+#: includes/ViewTrait_UI.php:686
+msgid "Maximum log storage"
+msgstr ""
+
+#: includes/ViewTrait_UI.php:687
+msgid "Oldest logs are deleted when this limit is reached"
+msgstr ""
+
+#: includes/ViewTrait_UI.php:688
+msgid "Admin theme"
+msgstr ""
+
+#: includes/ViewTrait_UI.php:689
+msgid "Calm Ops (Light)"
+msgstr ""
+
+#: includes/ViewTrait_UI.php:690
+msgid "Monochrome Minimal (Light)"
+msgstr ""
+
+#: includes/ViewTrait_UI.php:691
+msgid "Neon Slate (Dark)"
+msgstr ""
+
+#: includes/ViewTrait_UI.php:692
+msgid "Obsidian Blue (Dark)"
+msgstr ""
+
+#: includes/ViewTrait_UI.php:694
+msgid "Need more control?"
+msgstr ""
+
+#: includes/ViewTrait_UI.php:695
+msgid "Switch to Advanced Mode"
+msgstr ""
+
+#: includes/ViewTrait_UI.php:696
+msgid "for 30+ additional options."
+msgstr ""
+
+#: includes/ViewTrait_UI.php:702
+msgid "Email notification frequency"
+msgstr ""
+
+#: includes/ViewTrait_UI.php:703
+msgid "Instant (when threshold exceeded)"
+msgstr ""
+
+#: includes/ViewTrait_UI.php:704
+msgid "Daily digest"
+msgstr ""
+
+#: includes/ViewTrait_UI.php:705
+msgid "Weekly digest"
+msgstr ""
+
+#: includes/ViewTrait_UI.php:706
+msgid "Choose how often to receive email notifications about captured 404s."
+msgstr ""
+
+#: includes/ViewTrait_UI.php:708
+msgid "Temporary 307 (preserve method)"
+msgstr ""
+
+#: includes/ViewTrait_UI.php:709
+msgid "Permanent 308 (preserve method)"
+msgstr ""
+
+#: includes/WordPress_Connector.php:158
+msgid "An internal error occurred while loading this admin page."
+msgstr ""
+
+#: includes/WordPress_Connector.php:307
+msgid "Choose at least one URL"
+msgstr ""
+
+#: includes/WordPress_Connector.php:322
+msgid "second"
+msgstr ""
+
+#: includes/WordPress_Connector.php:323
+msgid "seconds"
+msgstr ""
+
+#: includes/WordPress_Connector.php:324
+msgid "minute"
+msgstr ""
+
+#: includes/WordPress_Connector.php:325
+msgid "minutes"
+msgstr ""
+
+#: includes/WordPress_Connector.php:326
+msgid "hour"
+msgstr ""
+
+#: includes/WordPress_Connector.php:327
+msgid "hours"
+msgstr ""
+
+#: includes/WordPress_Connector.php:328
+msgid "day"
+msgstr ""
+
+#: includes/WordPress_Connector.php:330
+msgid "ago"
+msgstr ""
+
+#: includes/WordPress_Connector.php:373
+msgid "Collapse All"
+msgstr ""
+
+#: includes/WordPress_Connector.php:387
+msgid "Add Engine Profile"
+msgstr ""
+
+#: includes/WordPress_Connector.php:388
+msgid "Edit Engine Profile"
+msgstr ""
+
+#: includes/WordPress_Connector.php:391
+msgid "Profile saved."
+msgstr ""
+
+#: includes/WordPress_Connector.php:392
+msgid "Failed to save profile."
+msgstr ""
+
+#: includes/WordPress_Connector.php:393
+msgid "Delete this engine profile?"
+msgstr ""
+
+#: includes/WordPress_Connector.php:772
+msgid "Settings"
+msgstr ""
+
+#: includes/WordPress_Connector.php:775
+msgid "Debug Log"
+msgstr ""
+
+#: includes/WordPress_Connector.php:810
+msgid "Send debug log to developer"
+msgstr ""
+
+#: includes/WordPress_Connector.php:1392
+msgid "Insufficient permissions."
+msgstr ""
+
+#: includes/WordPress_Connector.php:1411
+#: includes/WordPress_Connector.php:1442
+#: includes/WordPress_Connector.php:1475
+msgid "Security check failed."
+msgstr ""
+
+#: includes/WordPress_Connector.php:1416
+msgid "Authorization was denied or cancelled."
+msgstr ""
+
+#: includes/WordPress_Connector.php:1458
+msgid "No access token received from authorization."
 msgstr ""

@@ -3843,3 +3843,47 @@ msgstr "Sekretessuppgifter (lagringstid, raderingsväg, behandlingsregion): %s"
 #: includes/UninstallModal.php
 msgid "Include technical details (site URL, system info, plugin counts, and a sanitized log excerpt) to help diagnose the issue"
 msgstr "Inkludera tekniska uppgifter (webbplatsens adress, systeminformation, antal tillägg och ett rensat loggutdrag) för att underlätta felsökningen"
+
+#: includes/ViewTrait_UI.php
+msgid "Detected as a regex pattern. Stored \"%1$s\" as \"%2$s\"."
+msgstr "Identifierades som regex-mönster. \"%1$s\" sparades som \"%2$s\"."
+
+#: includes/ViewTrait_UI.php
+msgid "Detected as a regex pattern. Stored \"%s\" with Regex status."
+msgstr "Identifierades som regex-mönster. \"%s\" sparades med Regex-status."
+
+#: includes/ViewTrait_UI.php
+msgid "404 Solution:"
+msgstr "404 Lösning:"
+
+#: includes/ViewTrait_UI.php
+msgid "Undo regex auto-promotion and restore Manual status?"
+msgstr "Ångra automatisk regex-uppgradering och återställ Manuell status?"
+
+#: includes/ViewTrait_UI.php
+msgid "Undo"
+msgstr "Ångra"
+
+#: includes/PluginLogicTrait_AdminActions.php
+msgid "Error: No regex auto-promotion to undo."
+msgstr "Fel: Ingen automatisk regex-uppgradering att ångra."
+
+#: includes/PluginLogicTrait_AdminActions.php
+msgid "Regex auto-promotion undone. Restored \"%s\" with status Manual."
+msgstr "Automatisk regex-uppgradering ångrad. \"%s\" återställd med Manuell status."
+
+#: includes/ImportExportService.php
+msgid "Invalid regex pattern at line %d: %s (%s)"
+msgstr "Ogiltigt regex-mönster på rad %d: %s (%s)"
+
+#: includes/ImportExportService.php
+msgid "Invalid regex pattern: %s (%s)"
+msgstr "Ogiltigt regex-mönster: %s (%s)"
+
+#: includes/ImportExportService.php
+msgid "pattern is empty"
+msgstr "mönstret är tomt"
+
+#: includes/ImportExportService.php
+msgid "cannot find a safe delimiter character"
+msgstr "kan inte hitta ett säkert avgränsningstecken"

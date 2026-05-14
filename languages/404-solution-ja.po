@@ -3856,3 +3856,47 @@ msgstr "プライバシーに関する詳細（保持期間、削除手順、処
 #: includes/UninstallModal.php
 msgid "Include technical details (site URL, system info, plugin counts, and a sanitized log excerpt) to help diagnose the issue"
 msgstr "問題の診断に役立てるため、技術的な詳細（サイトのアドレス、システム情報、プラグイン数、サニタイズ済みのログ抜粋）を含めます"
+
+#: includes/ViewTrait_UI.php
+msgid "Detected as a regex pattern. Stored \"%1$s\" as \"%2$s\"."
+msgstr "正規表現パターンとして検出されました。「%1$s」を「%2$s」として保存しました。"
+
+#: includes/ViewTrait_UI.php
+msgid "Detected as a regex pattern. Stored \"%s\" with Regex status."
+msgstr "正規表現パターンとして検出されました。「%s」を正規表現ステータスで保存しました。"
+
+#: includes/ViewTrait_UI.php
+msgid "404 Solution:"
+msgstr "404 Solution："
+
+#: includes/ViewTrait_UI.php
+msgid "Undo regex auto-promotion and restore Manual status?"
+msgstr "正規表現への自動昇格を取り消し、手動ステータスに戻しますか？"
+
+#: includes/ViewTrait_UI.php
+msgid "Undo"
+msgstr "元に戻す"
+
+#: includes/PluginLogicTrait_AdminActions.php
+msgid "Error: No regex auto-promotion to undo."
+msgstr "エラー: 取り消す正規表現の自動昇格がありません。"
+
+#: includes/PluginLogicTrait_AdminActions.php
+msgid "Regex auto-promotion undone. Restored \"%s\" with status Manual."
+msgstr "正規表現の自動昇格を取り消しました。「%s」を手動ステータスで復元しました。"
+
+#: includes/ImportExportService.php
+msgid "Invalid regex pattern at line %d: %s (%s)"
+msgstr "%d 行目の正規表現パターンが無効です: %s (%s)"
+
+#: includes/ImportExportService.php
+msgid "Invalid regex pattern: %s (%s)"
+msgstr "正規表現パターンが無効です: %s (%s)"
+
+#: includes/ImportExportService.php
+msgid "pattern is empty"
+msgstr "パターンが空です"
+
+#: includes/ImportExportService.php
+msgid "cannot find a safe delimiter character"
+msgstr "安全な区切り文字が見つかりません"

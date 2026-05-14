@@ -407,12 +407,14 @@ trait ViewTrait_UI {
 
         if ($urlRewritten) {
             $message = sprintf(
+                /* translators: %1$s = original URL as typed by the admin; %2$s = the URL after glob-to-regex fixup (e.g. /sales/* becomes /sales/.*) */
                 __('Detected as a regex pattern. Stored "%1$s" as "%2$s".', '404-solution'),
                 $originalUrl,
                 $newUrl
             );
         } else {
             $message = sprintf(
+                /* translators: %s = the URL stored unchanged with Regex status */
                 __('Detected as a regex pattern. Stored "%s" with Regex status.', '404-solution'),
                 $originalUrl
             );

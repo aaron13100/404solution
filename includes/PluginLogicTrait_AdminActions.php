@@ -963,6 +963,7 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
         $this->dao->markViewDoneInvalidatedByAdminMutation();
         ABJ_404_Solution_RegexAutoPromote::clearNotice();
         return sprintf(
+            /* translators: %s = the original from_url string that was restored */
             __('Regex auto-promotion undone. Restored "%s" with status Manual.', '404-solution'),
             $notice['original_url']
         );

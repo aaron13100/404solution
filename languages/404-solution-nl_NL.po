@@ -3843,3 +3843,47 @@ msgstr "Privacygegevens (bewaartermijn, wisroute, verwerkingsregio): %s"
 #: includes/UninstallModal.php
 msgid "Include technical details (site URL, system info, plugin counts, and a sanitized log excerpt) to help diagnose the issue"
 msgstr "Technische gegevens meesturen (siteadres, systeeminformatie, aantal uitbreidingen en een opgeschoond loguittreksel) om het probleem makkelijker te kunnen onderzoeken"
+
+#: includes/ViewTrait_UI.php
+msgid "Detected as a regex pattern. Stored \"%1$s\" as \"%2$s\"."
+msgstr "Gedetecteerd als regex-patroon. \"%1$s\" opgeslagen als \"%2$s\"."
+
+#: includes/ViewTrait_UI.php
+msgid "Detected as a regex pattern. Stored \"%s\" with Regex status."
+msgstr "Gedetecteerd als regex-patroon. \"%s\" opgeslagen met Regex-status."
+
+#: includes/ViewTrait_UI.php
+msgid "404 Solution:"
+msgstr "404 Oplossing:"
+
+#: includes/ViewTrait_UI.php
+msgid "Undo regex auto-promotion and restore Manual status?"
+msgstr "Auto-promotie van regex ongedaan maken en handmatige status herstellen?"
+
+#: includes/ViewTrait_UI.php
+msgid "Undo"
+msgstr "Ongedaan maken"
+
+#: includes/PluginLogicTrait_AdminActions.php
+msgid "Error: No regex auto-promotion to undo."
+msgstr "Fout: Geen regex auto-promotie om ongedaan te maken."
+
+#: includes/PluginLogicTrait_AdminActions.php
+msgid "Regex auto-promotion undone. Restored \"%s\" with status Manual."
+msgstr "Regex auto-promotie ongedaan gemaakt. \"%s\" hersteld met handmatige status."
+
+#: includes/ImportExportService.php
+msgid "Invalid regex pattern at line %d: %s (%s)"
+msgstr "Ongeldig regex-patroon op regel %d: %s (%s)"
+
+#: includes/ImportExportService.php
+msgid "Invalid regex pattern: %s (%s)"
+msgstr "Ongeldig regex-patroon: %s (%s)"
+
+#: includes/ImportExportService.php
+msgid "pattern is empty"
+msgstr "patroon is leeg"
+
+#: includes/ImportExportService.php
+msgid "cannot find a safe delimiter character"
+msgstr "kan geen veilig scheidingsteken vinden"

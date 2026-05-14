@@ -3888,3 +3888,47 @@ msgstr "Privacy details (retention, erasure path, processing region): %s"
 #: includes/UninstallModal.php
 msgid "Include technical details (site URL, system info, plugin counts, and a sanitized log excerpt) to help diagnose the issue"
 msgstr "Include technical details (site URL, system info, plugin counts, and a sanitized log excerpt) to help diagnose the issue"
+
+#: includes/ViewTrait_UI.php
+msgid "Detected as a regex pattern. Stored \"%1$s\" as \"%2$s\"."
+msgstr "Detected as a regex pattern. Stored \"%1$s\" as \"%2$s\"."
+
+#: includes/ViewTrait_UI.php
+msgid "Detected as a regex pattern. Stored \"%s\" with Regex status."
+msgstr "Detected as a regex pattern. Stored \"%s\" with Regex status."
+
+#: includes/ViewTrait_UI.php
+msgid "404 Solution:"
+msgstr "404 Solution:"
+
+#: includes/ViewTrait_UI.php
+msgid "Undo regex auto-promotion and restore Manual status?"
+msgstr "Undo regex auto-promotion and restore Manual status?"
+
+#: includes/ViewTrait_UI.php
+msgid "Undo"
+msgstr "Undo"
+
+#: includes/PluginLogicTrait_AdminActions.php
+msgid "Error: No regex auto-promotion to undo."
+msgstr "Error: No regex auto-promotion to undo."
+
+#: includes/PluginLogicTrait_AdminActions.php
+msgid "Regex auto-promotion undone. Restored \"%s\" with status Manual."
+msgstr "Regex auto-promotion undone. Restored \"%s\" with status Manual."
+
+#: includes/ImportExportService.php
+msgid "Invalid regex pattern at line %d: %s (%s)"
+msgstr "Invalid regex pattern at line %d: %s (%s)"
+
+#: includes/ImportExportService.php
+msgid "Invalid regex pattern: %s (%s)"
+msgstr "Invalid regex pattern: %s (%s)"
+
+#: includes/ImportExportService.php
+msgid "pattern is empty"
+msgstr "pattern is empty"
+
+#: includes/ImportExportService.php
+msgid "cannot find a safe delimiter character"
+msgstr "cannot find a safe delimiter character"

@@ -3850,3 +3850,47 @@ msgstr "Сведения о конфиденциальности (срок хр�
 #: includes/UninstallModal.php
 msgid "Include technical details (site URL, system info, plugin counts, and a sanitized log excerpt) to help diagnose the issue"
 msgstr "Включить технические сведения (адрес сайта, данные системы, количество расширений и очищенный фрагмент журнала), чтобы помочь в диагностике проблемы"
+
+#: includes/ViewTrait_UI.php
+msgid "Detected as a regex pattern. Stored \"%1$s\" as \"%2$s\"."
+msgstr "Обнаружен шаблон регулярного выражения. Сохранено \"%1$s\" как \"%2$s\"."
+
+#: includes/ViewTrait_UI.php
+msgid "Detected as a regex pattern. Stored \"%s\" with Regex status."
+msgstr "Обнаружен шаблон регулярного выражения. Сохранено \"%s\" со статусом Regex."
+
+#: includes/ViewTrait_UI.php
+msgid "404 Solution:"
+msgstr "Решение 404:"
+
+#: includes/ViewTrait_UI.php
+msgid "Undo regex auto-promotion and restore Manual status?"
+msgstr "Отменить автоматическое преобразование в регулярное выражение и восстановить статус «Вручную»?"
+
+#: includes/ViewTrait_UI.php
+msgid "Undo"
+msgstr "Отменить"
+
+#: includes/PluginLogicTrait_AdminActions.php
+msgid "Error: No regex auto-promotion to undo."
+msgstr "Ошибка: нет автоматического преобразования в регулярное выражение для отмены."
+
+#: includes/PluginLogicTrait_AdminActions.php
+msgid "Regex auto-promotion undone. Restored \"%s\" with status Manual."
+msgstr "Автоматическое преобразование в регулярное выражение отменено. \"%s\" восстановлено со статусом «Вручную»."
+
+#: includes/ImportExportService.php
+msgid "Invalid regex pattern at line %d: %s (%s)"
+msgstr "Недопустимый шаблон регулярного выражения в строке %d: %s (%s)"
+
+#: includes/ImportExportService.php
+msgid "Invalid regex pattern: %s (%s)"
+msgstr "Недопустимый шаблон регулярного выражения: %s (%s)"
+
+#: includes/ImportExportService.php
+msgid "pattern is empty"
+msgstr "пустой шаблон"
+
+#: includes/ImportExportService.php
+msgid "cannot find a safe delimiter character"
+msgstr "не удалось найти безопасный символ-разделитель"

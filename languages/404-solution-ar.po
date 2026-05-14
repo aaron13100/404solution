@@ -3872,3 +3872,47 @@ msgstr "تفاصيل الخصوصية (مدة الاحتفاظ، مسار الم
 #: includes/UninstallModal.php
 msgid "Include technical details (site URL, system info, plugin counts, and a sanitized log excerpt) to help diagnose the issue"
 msgstr "أرفق التفاصيل التقنية (عنوان الموقع، معلومات النظام، عدد الإضافات، ومقتطف سجل منقّى) للمساعدة في تشخيص المشكلة"
+
+#: includes/ViewTrait_UI.php
+msgid "Detected as a regex pattern. Stored \"%1$s\" as \"%2$s\"."
+msgstr "تم اكتشاف نمط تعبير منتظم. تم تخزين \"%1$s\" كـ \"%2$s\"."
+
+#: includes/ViewTrait_UI.php
+msgid "Detected as a regex pattern. Stored \"%s\" with Regex status."
+msgstr "تم اكتشاف نمط تعبير منتظم. تم تخزين \"%s\" بحالة تعبير منتظم."
+
+#: includes/ViewTrait_UI.php
+msgid "404 Solution:"
+msgstr "404 سولوشن:"
+
+#: includes/ViewTrait_UI.php
+msgid "Undo regex auto-promotion and restore Manual status?"
+msgstr "التراجع عن الترقية التلقائية للتعبير المنتظم واستعادة الحالة اليدوية؟"
+
+#: includes/ViewTrait_UI.php
+msgid "Undo"
+msgstr "تراجع"
+
+#: includes/PluginLogicTrait_AdminActions.php
+msgid "Error: No regex auto-promotion to undo."
+msgstr "خطأ: لا توجد ترقية تلقائية للتعبير المنتظم للتراجع عنها."
+
+#: includes/PluginLogicTrait_AdminActions.php
+msgid "Regex auto-promotion undone. Restored \"%s\" with status Manual."
+msgstr "تم التراجع عن الترقية التلقائية للتعبير المنتظم. تم استعادة \"%s\" بالحالة اليدوية."
+
+#: includes/ImportExportService.php
+msgid "Invalid regex pattern at line %d: %s (%s)"
+msgstr "نمط تعبير منتظم غير صالح في السطر %d: %s (%s)"
+
+#: includes/ImportExportService.php
+msgid "Invalid regex pattern: %s (%s)"
+msgstr "نمط تعبير منتظم غير صالح: %s (%s)"
+
+#: includes/ImportExportService.php
+msgid "pattern is empty"
+msgstr "النمط فارغ"
+
+#: includes/ImportExportService.php
+msgid "cannot find a safe delimiter character"
+msgstr "لا يمكن العثور على حرف محدد آمن"

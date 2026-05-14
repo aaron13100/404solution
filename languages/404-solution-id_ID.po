@@ -3836,3 +3836,47 @@ msgstr "Rincian privasi (penyimpanan, jalur penghapusan, wilayah pemrosesan): %s
 #: includes/UninstallModal.php
 msgid "Include technical details (site URL, system info, plugin counts, and a sanitized log excerpt) to help diagnose the issue"
 msgstr "Sertakan rincian teknis (alamat situs, informasi sistem, jumlah pengaya, dan cuplikan log yang telah dibersihkan) guna membantu mendiagnosis masalah"
+
+#: includes/ViewTrait_UI.php
+msgid "Detected as a regex pattern. Stored \"%1$s\" as \"%2$s\"."
+msgstr "Terdeteksi sebagai pola regex. \"%1$s\" disimpan sebagai \"%2$s\"."
+
+#: includes/ViewTrait_UI.php
+msgid "Detected as a regex pattern. Stored \"%s\" with Regex status."
+msgstr "Terdeteksi sebagai pola regex. \"%s\" disimpan dengan status Regex."
+
+#: includes/ViewTrait_UI.php
+msgid "404 Solution:"
+msgstr "Solusi 404:"
+
+#: includes/ViewTrait_UI.php
+msgid "Undo regex auto-promotion and restore Manual status?"
+msgstr "Batalkan promosi otomatis regex dan kembalikan status Manual?"
+
+#: includes/ViewTrait_UI.php
+msgid "Undo"
+msgstr "Batalkan"
+
+#: includes/PluginLogicTrait_AdminActions.php
+msgid "Error: No regex auto-promotion to undo."
+msgstr "Kesalahan: Tidak ada promosi otomatis regex untuk dibatalkan."
+
+#: includes/PluginLogicTrait_AdminActions.php
+msgid "Regex auto-promotion undone. Restored \"%s\" with status Manual."
+msgstr "Promosi otomatis regex dibatalkan. \"%s\" dipulihkan dengan status Manual."
+
+#: includes/ImportExportService.php
+msgid "Invalid regex pattern at line %d: %s (%s)"
+msgstr "Pola regex tidak valid pada baris %d: %s (%s)"
+
+#: includes/ImportExportService.php
+msgid "Invalid regex pattern: %s (%s)"
+msgstr "Pola regex tidak valid: %s (%s)"
+
+#: includes/ImportExportService.php
+msgid "pattern is empty"
+msgstr "pola kosong"
+
+#: includes/ImportExportService.php
+msgid "cannot find a safe delimiter character"
+msgstr "tidak dapat menemukan karakter pembatas yang aman"

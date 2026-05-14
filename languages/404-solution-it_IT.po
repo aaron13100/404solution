@@ -3840,3 +3840,47 @@ msgstr "Dettagli sulla riservatezza (conservazione, modalità di cancellazione, 
 #: includes/UninstallModal.php
 msgid "Include technical details (site URL, system info, plugin counts, and a sanitized log excerpt) to help diagnose the issue"
 msgstr "Includi i dettagli tecnici (indirizzo del sito, informazioni di sistema, numero di estensioni e un estratto del registro depurato) per agevolare la diagnosi del problema"
+
+#: includes/ViewTrait_UI.php
+msgid "Detected as a regex pattern. Stored \"%1$s\" as \"%2$s\"."
+msgstr "Rilevato come pattern regex. \"%1$s\" memorizzato come \"%2$s\"."
+
+#: includes/ViewTrait_UI.php
+msgid "Detected as a regex pattern. Stored \"%s\" with Regex status."
+msgstr "Rilevato come pattern regex. \"%s\" memorizzato con stato Regex."
+
+#: includes/ViewTrait_UI.php
+msgid "404 Solution:"
+msgstr "Soluzione 404:"
+
+#: includes/ViewTrait_UI.php
+msgid "Undo regex auto-promotion and restore Manual status?"
+msgstr "Annullare la promozione automatica a regex e ripristinare lo stato Manuale?"
+
+#: includes/ViewTrait_UI.php
+msgid "Undo"
+msgstr "Annulla"
+
+#: includes/PluginLogicTrait_AdminActions.php
+msgid "Error: No regex auto-promotion to undo."
+msgstr "Errore: nessuna promozione automatica a regex da annullare."
+
+#: includes/PluginLogicTrait_AdminActions.php
+msgid "Regex auto-promotion undone. Restored \"%s\" with status Manual."
+msgstr "Promozione automatica a regex annullata. \"%s\" ripristinato con stato Manuale."
+
+#: includes/ImportExportService.php
+msgid "Invalid regex pattern at line %d: %s (%s)"
+msgstr "Pattern regex non valido alla riga %d: %s (%s)"
+
+#: includes/ImportExportService.php
+msgid "Invalid regex pattern: %s (%s)"
+msgstr "Pattern regex non valido: %s (%s)"
+
+#: includes/ImportExportService.php
+msgid "pattern is empty"
+msgstr "il pattern è vuoto"
+
+#: includes/ImportExportService.php
+msgid "cannot find a safe delimiter character"
+msgstr "impossibile trovare un carattere delimitatore sicuro"

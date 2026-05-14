@@ -3849,3 +3849,47 @@ msgstr "隐私详情（留存期限、删除路径、处理区域）：%s"
 #: includes/UninstallModal.php
 msgid "Include technical details (site URL, system info, plugin counts, and a sanitized log excerpt) to help diagnose the issue"
 msgstr "附上技术详情（站点地址、系统信息、扩展数量以及经过脱敏处理的日志片段），以协助诊断该问题"
+
+#: includes/ViewTrait_UI.php
+msgid "Detected as a regex pattern. Stored \"%1$s\" as \"%2$s\"."
+msgstr "检测为正则表达式模式。已将「%1$s」存储为「%2$s」。"
+
+#: includes/ViewTrait_UI.php
+msgid "Detected as a regex pattern. Stored \"%s\" with Regex status."
+msgstr "检测为正则表达式模式。已将「%s」以正则表达式状态存储。"
+
+#: includes/ViewTrait_UI.php
+msgid "404 Solution:"
+msgstr "404 Solution："
+
+#: includes/ViewTrait_UI.php
+msgid "Undo regex auto-promotion and restore Manual status?"
+msgstr "撤销正则表达式自动提升并恢复手动状态？"
+
+#: includes/ViewTrait_UI.php
+msgid "Undo"
+msgstr "撤销"
+
+#: includes/PluginLogicTrait_AdminActions.php
+msgid "Error: No regex auto-promotion to undo."
+msgstr "错误：没有可撤销的正则表达式自动提升操作。"
+
+#: includes/PluginLogicTrait_AdminActions.php
+msgid "Regex auto-promotion undone. Restored \"%s\" with status Manual."
+msgstr "已撤销正则表达式自动提升。已将「%s」恢复为手动状态。"
+
+#: includes/ImportExportService.php
+msgid "Invalid regex pattern at line %d: %s (%s)"
+msgstr "第 %d 行的正则表达式模式无效：%s（%s）"
+
+#: includes/ImportExportService.php
+msgid "Invalid regex pattern: %s (%s)"
+msgstr "正则表达式模式无效：%s（%s）"
+
+#: includes/ImportExportService.php
+msgid "pattern is empty"
+msgstr "模式为空"
+
+#: includes/ImportExportService.php
+msgid "cannot find a safe delimiter character"
+msgstr "找不到安全的分隔符"
