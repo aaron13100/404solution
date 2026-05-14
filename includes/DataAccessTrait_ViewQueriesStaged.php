@@ -266,15 +266,36 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
                 return false;
             }
         }
-        // Empty view_done is NOT serveable: rendering an empty admin screen
-        // is a worse UX than a brief pending/loading state that drives the
-        // build forward. The has-rows probe also catches the rare "S11
+        // Empty view_done is NOT serveable when there has never been a
+        // successful build: rendering an empty admin screen during a cold
+        // start is a worse UX than a brief pending/loading state that drives
+        // the build forward. The has-rows probe also catches the rare "S11
         // promoted an empty buffer" failure mode where the swap completed
         // but S2 produced no rows (botched build state); without this guard
         // the admin would render blank indefinitely with no rebuild ever
         // scheduled.
-        $this->viewDoneIsServeableCache = $this->viewDoneHasRows();
-        return $this->viewDoneIsServeableCache;
+        //
+        // BUT: when a build has actually completed (data_built_at > 0) and
+        // the table is genuinely empty (e.g. a fresh install with no
+        // redirects yet, or the admin dropped wp_abj404_redirects via WP-CLI
+        // and the recreated table is empty), an empty view_done IS the
+        // correct serveable result. Returning false here would loop the JS
+        // poller forever on a cold install: every build cycle produces an
+        // empty view_done, viewDoneIsServeable() returns false, ViewUpdater
+        // returns viewBuildPending, the poller fires another advance, and
+        // the cycle repeats with no exit. data_built_at distinguishes
+        // "build has never completed" from "build completed and the dataset
+        // is genuinely empty".
+        if ($this->viewDoneHasRows()) {
+            $this->viewDoneIsServeableCache = true;
+            return true;
+        }
+        if ($this->viewDoneDataBuiltAt() > 0) {
+            $this->viewDoneIsServeableCache = true;
+            return true;
+        }
+        $this->viewDoneIsServeableCache = false;
+        return false;
     }
 
     /**
