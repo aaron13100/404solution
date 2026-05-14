@@ -1181,12 +1181,15 @@ class ABJ_404_Solution_DataAccess {
                 if (!$this->serverSideIssueNoted && !$this->serverSideIssueChecked) {
                     $this->serverSideIssueChecked = true;
                     $existing = $this->getRuntimeFlag('abj404_plugin_db_notice');
+                    // Exclude notice types cleared by a dedicated path, not the
+                    // generic write-block/quota cooldown model: stale_permalink_cache
+                    // (cleared by PermalinkCache flush) and missing_table (cleared
+                    // only by attemptMissingTableRepairAndRetry on repair success;
+                    // a separate abj404_missing_table_repair_cooldown gates retries
+                    // but is not consulted here).
+                    $excludedTypes = array('stale_permalink_cache', 'missing_table');
                     if (is_array($existing) && !empty($existing['type'])
-                        && $existing['type'] !== 'stale_permalink_cache') {
-                        // Per owner directive: collation notices must NEVER reach the
-                        // user.  If a stale 'collation' transient exists from an older
-                        // plugin version, opportunistically clear it so it cannot be
-                        // shown by any code path.
+                        && !in_array($existing['type'], $excludedTypes, true)) {
                         $this->serverSideIssueNoted = true;
                     }
                 }

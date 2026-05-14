@@ -210,6 +210,8 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 * Fixed the admin table cache rebuild getting stuck on the same step after a dropped database connection. The rebuild now auto-resumes from where it stopped on the next request, instead of retrying the same failing query forever.
 * Fixed admin actions that hit an expired session nonce showing a generic "security check failed" error. The session is now silently refreshed and the action retried, so the expiry is invisible to the administrator.
 * Fixed transient invalid AJAX responses on admin tables producing "undefined" errors. The admin pages now validate the response shape before reading it and surface a clear error instead.
+* Fixed newly captured 404 URLs not appearing on the Captured 404s tab until the next background refresh. The capture path now invalidates the admin view cache the same way admin actions do, so the new row is visible immediately.
+* Fixed the "missing database table" admin notice being cleared by the next successful query in the same request, so the admin never saw it. The generic auto-clear now skips the missing-table notice; that notice is cleared only by the dedicated repair-success path.
 
 **Improvements**
 

@@ -631,6 +631,17 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
 
             // Invalidate caches
             $this->invalidateStatusCountsCache();
+            // Captured-404 inserts come from anonymous visitor traffic. The
+            // admin's Captured 404s tab must reflect the new row immediately,
+            // so mirror the admin-mutation contract: clear the freshness
+            // signal AND set view_done_mutation_invalidated_at so
+            // viewDoneIsServeable() returns false until a build covers the
+            // new row. Without this, fbc270d8 stale-but-present semantics
+            // serve the pre-insert snapshot and the admin does not see the
+            // capture until the next natural rebuild lands.
+            if ($insertId > 0 && $statusAsInt === ABJ404_STATUS_CAPTURED) {
+                $this->markViewDoneInvalidatedByAdminMutation();
+            }
             // Clear regex cache in case a regex redirect was added
             if ($status == ABJ404_STATUS_REGEX) {
                 $this->clearRegexRedirectsCache();
