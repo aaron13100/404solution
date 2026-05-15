@@ -7,7 +7,41 @@ if (!defined('ABSPATH')) {
 
 /**
  * AJAX handler for polling suggestion computation status.
- * Called by JavaScript on the 404 page to check if suggestions are ready.
+ *
+ * Called by `SuggestionPolling.js` on the public-facing 404 page
+ * (`#abj404-suggestions-placeholder`) so anonymous visitors landing on a
+ * 404 see the async-computed "did you mean" list as soon as it is ready.
+ *
+ * SECURITY CONTRACT: anonymous-by-design.
+ *
+ *   This endpoint is registered for BOTH `wp_ajax_*` and
+ *   `wp_ajax_nopriv_*` actions (see `WordPress_Connector::registerAsyncSuggestionHooks`),
+ *   mirroring `Ajax_SuggestionCompute::computeSuggestions` (the producer
+ *   side of the same contract). There is intentionally no
+ *   `userIsPluginAdmin()` / `current_user_can()` check: the public 404
+ *   page is the entire point of the polling endpoint, and a capability
+ *   gate would break it for every anonymous visitor (i.e. most visitors).
+ *
+ *   Abuse prevention relies on three layered defences instead of a
+ *   capability gate:
+ *
+ *     1. `check_ajax_referer('abj404_poll_suggestions', '_ajax_nonce')`:
+ *        the page emitting the polling JS also emits the nonce, so a
+ *        scripted abuse attempt has to first fetch the 404 page.
+ *     2. The shared per-actor (user-id or IP) rate limiter via
+ *        `Ajax_Php::checkRateLimit('poll_suggestions', 120, 60)`.
+ *     3. The endpoint is strictly read-only and only emits status
+ *        constants plus rendered suggestion HTML for the requested URL:
+ *        the worst-case information leak is "which URLs on this site have
+ *        had a stored suggestion computation", which is bounded.
+ *
+ *   This contract is pinned by `AjaxSuggestionPollingAnonymousByDesignTest`
+ *   (structural assertion on the `_nopriv_` registration + behavioural
+ *   assertion that an anonymous caller reaches the data-read step).
+ *
+ * Security audit history: a V13 audit (commit deb6e7d5) flagged
+ * "nonce but no capability check" against this handler. Triage confirmed
+ * the anonymous-by-design contract above; do not re-file.
  */
 class ABJ_404_Solution_Ajax_SuggestionPolling {
 
