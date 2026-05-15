@@ -249,12 +249,23 @@ class ABJ_404_Solution_Uninstaller {
      * @return void
      */
     public static function cleanupCronJobs(): void {
+        // Full per-site cron tear-down: everything the plugin currently
+        // schedules plus historical hook names that older versions may have
+        // left behind. Must stay aligned with the canonical list pinned by
+        // DeactivationCronCleanupTest. When production starts scheduling a
+        // new hook, add it here AND to doUnregisterCrons() in
+        // PluginLogicTrait_Lifecycle.php.
         $cron_hooks = array(
             'abj404_cleanupCronAction',
             'abj404_updateLogsHitsTableAction',
             'abj404_updatePermalinkCacheAction',
             'abj404_rebuild_ngram_cache_hook',
-            'abj404_rebuildViewDone'
+            'abj404_rebuildViewDone',
+            'abj404_gsc_fetch_cron',
+            'abj404_gsc_background_refresh',
+            'abj404_send_digest',
+            'abj404_logsv2_canonical_backfill',
+            'abj404_send_queued_report',
         );
 
         foreach ($cron_hooks as $hook) {
@@ -263,8 +274,11 @@ class ABJ_404_Solution_Uninstaller {
 
         // Also clean up any old/legacy cron hooks
         $legacy_hooks = array(
+            'abj404_duplicateCronAction',
             'abj404_updatePermalinkCache',
-            'abj404_cleanupCron'
+            'abj404_cleanupCron',
+            'removeDuplicatesCron',
+            'deleteOldRedirectsCron',
         );
 
         foreach ($legacy_hooks as $hook) {

@@ -13,8 +13,27 @@ trait ABJ_404_Solution_PluginLogicTrait_Lifecycle {
 
     /** Remove cron jobs. @return void */
     static function doUnregisterCrons(): void {
-        $crons = array('abj404_cleanupCronAction', 'abj404_duplicateCronAction', 'removeDuplicatesCron', 'deleteOldRedirectsCron',
-            'abj404_gsc_fetch_cron', 'abj404_gsc_background_refresh', 'abj404_rebuildViewDone');
+        $crons = array(
+            // Currently scheduled per-site recurring/one-shot hooks.
+            'abj404_cleanupCronAction',
+            'abj404_gsc_fetch_cron',
+            'abj404_gsc_background_refresh',
+            'abj404_rebuildViewDone',
+            'abj404_updatePermalinkCacheAction',
+            'abj404_updateLogsHitsTableAction',
+            'abj404_send_digest',
+            'abj404_rebuild_ngram_cache_hook',
+            'abj404_logsv2_canonical_backfill',
+            'abj404_send_queued_report',
+            // Legacy hook names retained so an upgrade-then-deactivate cycle
+            // on a site that still carries stale entries from an older plugin
+            // version cleans them out. Production code no longer schedules
+            // these; they cost a wp_next_scheduled() probe per deactivation
+            // and that is cheap insurance against stranded legacy events.
+            'abj404_duplicateCronAction',
+            'removeDuplicatesCron',
+            'deleteOldRedirectsCron',
+        );
         for ($i = 0; $i < count($crons); $i++) {
             $cron_name = $crons[$i];
             $timestamp1 = wp_next_scheduled($cron_name);
@@ -309,9 +328,10 @@ trait ABJ_404_Solution_PluginLogicTrait_Lifecycle {
             $prefix = $dao->getLowercasePrefix();
 
             // Remove ALL custom database tables via dynamic discovery.
-            // SHOW TABLES is the source of truth — new tables are automatically included.
-            // DAO-bypass-approved: deleteBlogData() — multisite blog teardown after switch_to_blog()
+            // SHOW TABLES is the source of truth; new tables are automatically included.
+            // DAO-bypass-approved: deleteBlogData() runs during multisite blog teardown after switch_to_blog()
             $tables = $wpdb->get_results(
+                // DAO-bypass-approved: prepare() argument to the get_results above
                 $wpdb->prepare("SHOW TABLES LIKE %s", $wpdb->esc_like($prefix . 'abj404_') . '%'),
                 ARRAY_N
             );
@@ -342,15 +362,19 @@ trait ABJ_404_Solution_PluginLogicTrait_Lifecycle {
             }
 
             // Delete dynamic sync options (using LIKE pattern)
-            // DAO-bypass-approved: deleteBlogData() — wp_options cleanup during blog teardown
+            // DAO-bypass-approved: deleteBlogData() runs wp_options cleanup during blog teardown
             $wpdb->query(
+                // DAO-bypass-approved: prepare() argument to the query above
                 $wpdb->prepare(
                     "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",
                     $wpdb->esc_like('abj404_sync_') . '%'
                 )
             );
 
-            // Clear ALL scheduled cron jobs for this blog
+            // Clear ALL scheduled cron jobs for this blog. Must stay aligned
+            // with the canonical list pinned by DeactivationCronCleanupTest
+            // and with Uninstaller::cleanupCronJobs(). When production starts
+            // scheduling a new hook, add it to all three sites.
             $cron_hooks = array(
                 'abj404_cleanupCronAction',
                 'abj404_updateLogsHitsTableAction',
@@ -359,6 +383,9 @@ trait ABJ_404_Solution_PluginLogicTrait_Lifecycle {
                 'abj404_rebuildViewDone',
                 'abj404_gsc_fetch_cron',
                 'abj404_gsc_background_refresh',
+                'abj404_send_digest',
+                'abj404_logsv2_canonical_backfill',
+                'abj404_send_queued_report',
             );
 
             foreach ($cron_hooks as $hook) {
@@ -369,7 +396,9 @@ trait ABJ_404_Solution_PluginLogicTrait_Lifecycle {
             $legacy_hooks = array(
                 'abj404_duplicateCronAction',
                 'abj404_updatePermalinkCache',
-                'abj404_cleanupCron'
+                'abj404_cleanupCron',
+                'removeDuplicatesCron',
+                'deleteOldRedirectsCron',
             );
 
             foreach ($legacy_hooks as $hook) {
