@@ -513,15 +513,45 @@ trait ViewTrait_UI {
      */
     function echoStickySaveBar() {
         $version = ABJ404_VERSION;
+        $restoreNonce = wp_create_nonce('abj404_restore_defaults');
         echo '<div class="abj404-sticky-save-bar">';
         echo '<div class="abj404-save-bar-status">';
         /* translators: %s: plugin version number */
         echo esc_html(sprintf(__('Plugin v%s', '404-solution'), $version));
         echo '</div>';
         echo '<div class="abj404-save-bar-actions">';
+        echo '<button type="button" id="abj404-restore-defaults" class="button abj404-btn abj404-btn-secondary" data-nonce="' . esc_attr($restoreNonce) . '">';
+        echo esc_html__('Restore Defaults', '404-solution');
+        echo '</button>';
         echo '<input type="submit" form="admin-options-page" name="abj404-optionssub" id="abj404-optionssub" value="' . esc_attr__('Save Settings', '404-solution') . '" class="button button-primary abj404-btn abj404-btn-primary">';
         echo '</div>';
         echo '</div>';
+        $this->echoRestoreDefaultsModal();
+    }
+
+    /**
+     * Echo the confirmation modal shown before restoring settings to defaults.
+     * Toggled open by adding `.active`; matches the markup of other plugin modals.
+     * @return void
+     */
+    function echoRestoreDefaultsModal() {
+        ?>
+        <div id="abj404-restore-defaults-modal" class="abj404-modal" role="dialog" aria-modal="true" aria-labelledby="abj404-restore-defaults-modal-title">
+            <div class="abj404-modal-content">
+                <div class="abj404-modal-header">
+                    <h2 id="abj404-restore-defaults-modal-title"><?php echo esc_html__('Restore Default Settings?', '404-solution'); ?></h2>
+                    <button type="button" id="abj404-restore-defaults-cancel" class="abj404-modal-close" aria-label="<?php echo esc_attr__('Close', '404-solution'); ?>">&times;</button>
+                </div>
+                <div class="abj404-modal-body">
+                    <p><?php echo esc_html__('This will reset all plugin settings to their default values. This cannot be undone. Your redirect rules and 404 logs will not be affected.', '404-solution'); ?></p>
+                </div>
+                <div class="abj404-modal-footer">
+                    <button type="button" id="abj404-restore-defaults-cancel-2" class="button"><?php echo esc_html__('Cancel', '404-solution'); ?></button>
+                    <button type="button" id="abj404-restore-defaults-confirm" class="button button-primary"><?php echo esc_html__('Restore Defaults', '404-solution'); ?></button>
+                </div>
+            </div>
+        </div>
+        <?php
     }
 
     /**

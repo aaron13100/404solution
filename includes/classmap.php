@@ -75,6 +75,7 @@ return array(
     'ABJ_404_Solution_GoogleSearchConsole' => $base . 'includes/GoogleSearchConsole.php',
     'ABJ_404_Solution_InternalLinkScanner' => $base . 'includes/InternalLinkScanner.php',
     'ABJ_404_Solution_Ajax_SettingsModeToggle' => $base . 'includes/ajax/Ajax_SettingsModeToggle.php',
+    'ABJ_404_Solution_Ajax_RestoreDefaults' => $base . 'includes/ajax/Ajax_RestoreDefaults.php',
     'ABJ_404_Solution_Ajax_SupportRequest' => $base . 'includes/ajax/Ajax_SupportRequest.php',
     'ABJ_404_Solution_Ajax_SupportRequestPreview' => $base . 'includes/ajax/Ajax_SupportRequestPreview.php',
     'ABJ_404_Solution_SupportRequestButton' => $base . 'includes/SupportRequestButton.php',

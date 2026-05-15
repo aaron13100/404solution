@@ -222,6 +222,7 @@ class ABJ_404_Solution_WordPress_Connector {
 
         ABJ_404_Solution_Ajax_EngineProfiles::registerActions();
         ABJ_404_Solution_Ajax_SettingsModeToggle::init();
+        ABJ_404_Solution_Ajax_RestoreDefaults::init();
         ABJ_404_Solution_Ajax_SupportRequest::init();
         ABJ_404_Solution_Ajax_SupportRequestPreview::init();
         ABJ_404_Solution_UninstallModal::init();
@@ -354,6 +355,10 @@ class ABJ_404_Solution_WordPress_Connector {
 
             // Settings mode toggle (Simple/Advanced)
             ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-settings-mode-toggle', plugin_dir_url(__FILE__) . 'ajax/SettingsModeToggle.js',
+                array('jquery'));
+
+            // Restore defaults (sticky save bar)
+            ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-restore-defaults', plugin_dir_url(__FILE__) . 'ajax/RestoreDefaults.js',
                 array('jquery'));
 
             // Behavior tiles (404 destination selector)
