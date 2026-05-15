@@ -442,6 +442,11 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
                 \WP_CLI::warning($issue);
             }
         }
+        // CLI-initiated bulk mutation: force a fresh view_done rebuild before
+        // the next admin tab read so imported rows appear immediately, matching
+        // the admin form path (handleActionImportFile in
+        // PluginLogicTrait_AdminActions.php).
+        $dao->markViewDoneInvalidatedByAdminMutation();
         \WP_CLI::success("Import complete. Valid={$validRows}, invalid={$invalidRows}, total={$processedRows}");
     }
 
