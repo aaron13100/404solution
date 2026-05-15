@@ -238,6 +238,18 @@ trait ABJ_404_Solution_DataAccess_ViewBuildStageCallbacksTrait {
                 throw $e;
             }
             if ($afterMax === $beforeMax) {
+                // Distinguish "no new rows to copy" from "buffer missing".
+                // Without this check, a missing view_build looks identical
+                // to a real shrink-during-build because maxBuildBufferId
+                // returns 0 in both cases. The missing-buffer scenario is a
+                // pipeline corruption that must halt, not silently mark
+                // S2 complete. See Pattern 13.
+                if (!$this->stagedTableExists($this->viewBuildTableName())) {
+                    throw new \Exception(
+                        'Staged view-build buffer missing during S2 INSERT; '
+                        . 'pipeline state diverged from disk. Halting stage.'
+                    );
+                }
                 // No rows above $loBound to copy. Either the redirects table
                 // shrank during the build, or all remaining ids are <= loBound
                 // (impossible given strict id-range semantics, but defensive).
@@ -374,6 +386,24 @@ trait ABJ_404_Solution_DataAccess_ViewBuildStageCallbacksTrait {
         $highWater = $this->readProgressOption($highWaterKey, 0);
         $totalMaxId = $this->maxBuildBufferId();
         if ($totalMaxId <= 0) {
+            // Distinguish "buffer is empty" (legitimate: no redirects on
+            // the site) from "buffer is missing" (pipeline corruption:
+            // concurrent invalidateViewDone dropped view_build between
+            // S1 and here, S1 silently approved without executing, or
+            // switch_to_blog moved us off the schema where S1 created it).
+            // The former is fine to mark complete; the latter must halt
+            // and let the orchestrator restart cleanly on the next tick.
+            // Without this check, maxBuildBufferId's 0 return shadows the
+            // real error after queryAndGetResults swallows the missing-
+            // table error string. See Pattern 13 in
+            // docs/PROACTIVE_BUG_DISCOVERY.md.
+            if (!$this->stagedTableExists($this->viewBuildTableName())) {
+                throw new \Exception(sprintf(
+                    'Staged view-build buffer missing at %s entry; pipeline state '
+                    . 'diverged from disk. Halting stage.',
+                    $stageKey
+                ));
+            }
             // Buffer is empty (no redirects). Nothing to update.
             $this->writeProgressOption($highWaterKey, 0);
             return true;

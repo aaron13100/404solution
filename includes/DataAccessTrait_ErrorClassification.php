@@ -630,16 +630,56 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
         // would fall straight into the failed-repair branch, setting the
         // missing_table admin notice on every plugin page and engaging a 1h
         // cooldown that blocks legit missing-table repair for the redirects /
-        // logsv2 / etc. core tables. Silently degrade: clear last_error so the
-        // caller treats the swap-window race as an empty result, and skip the
-        // notice / cooldown side effects entirely.
+        // logsv2 / etc. core tables.
+        //
+        // The silent-degrade is bounded to its actual use case: a SELECT
+        // against `view_done` during the S11 RENAME swap window. Reader
+        // (admin redirect-list AJAX) races writer (stageRenameSwap); the
+        // error is benign because the very next request will see the new
+        // view_done. Any OTHER query / table combination on these three
+        // tables represents the pipeline operating on its own internal
+        // state. If view_build goes missing during INSERT/UPDATE/ALTER/
+        // RENAME, the build is genuinely broken (concurrent
+        // invalidateViewDone dropping the buffer mid-pipeline, S1's
+        // CREATE TABLE silently approved-but-not-executed by an audit
+        // firewall, switch_to_blog race) and the error must propagate so
+        // the orchestrator can halt and surface a real admin notice
+        // instead of marching through every stage marking it complete.
+        //
+        // Cataloged as Pattern 13 in docs/PROACTIVE_BUG_DISCOVERY.md
+        // ("over-broad error-swallow silences real pipeline failure"),
+        // the inverse of Pattern 7 ("don't escalate infra errors to
+        // email"). Reference: WP.org topic 18908598, wp_siddur_ prefix
+        // site whose entire S2-to-S11 pipeline silently failed on every
+        // cron tick because the prior unbounded swallow wiped last_error
+        // for every write.
         $observedError = is_string($result['last_error']) ? $result['last_error'] : '';
         if ($this->isTransientViewBuildTableError($observedError)) {
-            $this->logger->debugMessage(
-                "Transient staged-view-build table missing (swap-window race, expected): "
+            $lowerErr = strtolower($observedError);
+            $errorMentionsViewDone = ($this->f->strpos($lowerErr, '_abj404_view_done') !== false)
+                && ($this->f->strpos($lowerErr, '_abj404_view_deleteme') === false);
+            $isReadQuery = $this->queryProducesResultRows($query);
+
+            if ($errorMentionsViewDone && $isReadQuery) {
+                $this->logger->debugMessage(
+                    "view_done missing on read (S11 swap-window race, expected): "
+                    . $observedError
+                );
+                $result['last_error'] = '';
+                return;
+            }
+
+            // Pipeline-write or pipeline-internal read against a transient
+            // build table that's missing. createDatabaseTables() cannot
+            // recreate these tables (they're excluded from
+            // discoverPermanentDDLFiles); the build orchestrator owns S1.
+            // Skip the repair attempt and let last_error propagate so the
+            // stage's runStagedSqlFile() throws and the classifier halts.
+            $this->logger->warn(
+                "Transient staged-build table missing during pipeline operation "
+                . "(build state diverged from disk; halting stage): "
                 . $observedError
             );
-            $result['last_error'] = '';
             return;
         }
 
