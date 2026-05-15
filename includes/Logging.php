@@ -751,6 +751,51 @@ class ABJ_404_Solution_Logging {
     }
 
     /**
+     * Look up the live WordPress table prefix for PII redaction.
+     *
+     * Reads $wpdb->prefix when available so a custom prefix like
+     * 'wp_siddur_' can be normalised to 'wp_' in log lines.  Returns ''
+     * when $wpdb is not loaded (very early boot, some test fixtures), in
+     * which case the caller must skip the rewrite rather than guess.
+     *
+     * @return string
+     */
+    private function getActualPrefixForRedaction(): string {
+        if (isset($GLOBALS['wpdb']) && is_object($GLOBALS['wpdb'])) {
+            $wpdb = $GLOBALS['wpdb'];
+            if (isset($wpdb->prefix) && is_string($wpdb->prefix) && $wpdb->prefix !== '') {
+                return $wpdb->prefix;
+            }
+        }
+        return '';
+    }
+
+    /**
+     * Look up the live database name for PII redaction.
+     *
+     * Prefers $wpdb->dbname (set by WP after wp-config) and falls back to
+     * the DB_NAME constant (defined the moment wp-config loads).  Returns
+     * '' when neither is available so the caller can skip the rewrite.
+     *
+     * @return string
+     */
+    private function getActualDatabaseNameForRedaction(): string {
+        if (isset($GLOBALS['wpdb']) && is_object($GLOBALS['wpdb'])) {
+            $wpdb = $GLOBALS['wpdb'];
+            if (isset($wpdb->dbname) && is_string($wpdb->dbname) && $wpdb->dbname !== '') {
+                return $wpdb->dbname;
+            }
+        }
+        if (defined('DB_NAME')) {
+            $name = constant('DB_NAME');
+            if (is_string($name) && $name !== '') {
+                return $name;
+            }
+        }
+        return '';
+    }
+
+    /**
      * Sanitize a single log line for privacy (GDPR compliance)
      * Uses adaptive masking with consistent hashing for debugging
      *
@@ -841,6 +886,12 @@ class ABJ_404_Solution_Logging {
         // Replace everything before the WP marker so the marker itself is kept
         // (aids debugging) while the host-specific prefix is hidden.
         //
+        // Output uses the canonical short form (e.g. " /wp-content/...") that
+        // matches what a default install would log.  WP.org topic 18908598:
+        // the reporter manually rewrote /home/user/site/wp-content/... to
+        // /wp-content/... before sharing logs; the auto-redactor produces the
+        // same shape so logs stay diagnosable without further hand-editing.
+        //
         // Covered markers: wp-content, wp-admin, wp-includes, wp-login.php,
         //                   wp-config.php, wp-cron.php, wp-blog-header.php
         $wpUnixMarkers = 'wp-content|wp-admin|wp-includes|wp-login\\.php|wp-config\\.php|wp-cron\\.php|wp-blog-header\\.php';
@@ -848,17 +899,56 @@ class ABJ_404_Solution_Logging {
         // that appear in stack-trace lines like "#0 /path..." or "(thrown in /path...")
         $line = preg_replace(
             '/(^|[\s\(])(\/[^\s\(]+?)\/(' . $wpUnixMarkers . ')\b/i',
-            '$1/...redacted.../$3',
+            '$1/$3',
             $line
         ) ?? $line;
         // Windows paths: same markers, backslash separators.
-        // e.g. C:\inetpub\wwwroot\wp-content\ -> C:\...redacted...\wp-content\
+        // e.g. C:\inetpub\wwwroot\wp-content\ -> \wp-content\
         // Each \\ in the pattern string matches one literal backslash in the path.
         $line = preg_replace(
             '/\b[a-z]:\\\\[^\s]+\\\\(' . $wpUnixMarkers . ')\b/i',
-            'C:\\\\...redacted...\\\\$1',
+            '\\\\$1',
             $line
         ) ?? $line;
+
+        // Redact the actual database name to a generic 'dbname' placeholder
+        // and the actual table prefix to the default 'wp_' so messages like
+        //   Table 'mydb_xyz.wp_siddur_abj404_view_build' doesn't exist
+        // become
+        //   Table 'dbname.wp_abj404_view_build' doesn't exist
+        // The output mimics a vanilla WordPress install so the maintainer
+        // can still recognise table names at a glance, while the host's
+        // schema name and obfuscation prefix stay private.  Driven by WP.org
+        // topic 18908598 where the reporter redacted both manually before
+        // sharing the log.
+        //
+        // Both helpers fall back to '' when $wpdb is not available (very
+        // early boot, test fixtures with no DB), in which case the rewrite
+        // is skipped instead of guessing.
+        $dbname = $this->getActualDatabaseNameForRedaction();
+        if ($dbname !== '' && strlen($dbname) >= 3 && $dbname !== 'dbname') {
+            // Match the dbname only in qualified-identifier contexts: a
+            // following '.' (Table 'db.table') or '`' (`db`.`table`).  The
+            // negative lookbehind keeps it from matching mid-identifier or
+            // mid-word, so a dbname that happens to be a common substring
+            // does not bleed into unrelated log text.
+            $line = preg_replace(
+                '/(?<![A-Za-z0-9_-])' . preg_quote($dbname, '/') . '(?=[.`])/',
+                'dbname',
+                $line
+            ) ?? $line;
+        }
+        $prefix = $this->getActualPrefixForRedaction();
+        if ($prefix !== '' && $prefix !== 'wp_') {
+            // Match the prefix when it precedes a table-name character
+            // (letter), so 'wp_siddur_abj404_X' becomes 'wp_abj404_X' but
+            // a standalone occurrence (or one mid-token) is left alone.
+            $line = preg_replace(
+                '/(?<![A-Za-z0-9_-])' . preg_quote($prefix, '/') . '(?=[A-Za-z])/',
+                'wp_',
+                $line
+            ) ?? $line;
+        }
 
         // Hash long tokens consistently (40+ chars)
         // Example: "abc123def456..." -> "token-a1b2c3d4"
