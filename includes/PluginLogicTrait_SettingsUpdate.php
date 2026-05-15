@@ -356,14 +356,24 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
             }
         } else {
             // Legacy: handle direct redirect_to_data_field_id (for backward compat)
-            if (isset($postData['redirect_to_data_field_id'])) {
-                $options['dest404page'] = sanitize_text_field(is_string($postData['redirect_to_data_field_id']) ? $postData['redirect_to_data_field_id'] : '');
-            }
+            $candidateUrlLegacy = null;
             if (isset($postData['redirect_to_data_field_title'])) {
-                $options['dest404pageURL'] = sanitize_text_field(is_string($postData['redirect_to_data_field_title']) ? $postData['redirect_to_data_field_title'] : '');
+                $candidateUrlLegacy = sanitize_text_field(is_string($postData['redirect_to_data_field_title']) ? $postData['redirect_to_data_field_title'] : '');
+                if (strlen($candidateUrlLegacy) > ABJ404_MAX_URL_LENGTH) {
+                    $message .= sprintf(__('Error: 404 destination URL exceeds the maximum length of %d characters', '404-solution'), ABJ404_MAX_URL_LENGTH) . ".<BR/>";
+                    $candidateUrlLegacy = null;
+                }
+            }
+            if ($candidateUrlLegacy !== null) {
+                if (isset($postData['redirect_to_data_field_id'])) {
+                    $options['dest404page'] = sanitize_text_field(is_string($postData['redirect_to_data_field_id']) ? $postData['redirect_to_data_field_id'] : '');
+                }
+                $options['dest404pageURL'] = $candidateUrlLegacy;
                 if ($options['dest404page'] == ABJ404_TYPE_EXTERNAL . '|' . ABJ404_TYPE_EXTERNAL) {
                     $options['dest404page'] = $options['dest404pageURL'] . '|' . ABJ404_TYPE_EXTERNAL;
                 }
+            } else if (isset($postData['redirect_to_data_field_id']) && !isset($postData['redirect_to_data_field_title'])) {
+                $options['dest404page'] = sanitize_text_field(is_string($postData['redirect_to_data_field_id']) ? $postData['redirect_to_data_field_id'] : '');
             }
         }
 
@@ -404,19 +414,26 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
                 break;
 
             case 'custom':
-                // Use the page picker value
-                if (isset($postData['redirect_to_data_field_id'])) {
-                    $options['dest404page'] = sanitize_text_field(
-                        is_string($postData['redirect_to_data_field_id']) ? $postData['redirect_to_data_field_id'] : ''
-                    );
-                }
                 if (isset($postData['redirect_to_data_field_title'])) {
-                    $options['dest404pageURL'] = sanitize_text_field(
+                    $candidateUrl = sanitize_text_field(
                         is_string($postData['redirect_to_data_field_title']) ? $postData['redirect_to_data_field_title'] : ''
                     );
+                    if (strlen($candidateUrl) > ABJ404_MAX_URL_LENGTH) {
+                        return sprintf(__('Error: 404 destination URL exceeds the maximum length of %d characters', '404-solution'), ABJ404_MAX_URL_LENGTH) . ".<BR/>";
+                    }
+                    if (isset($postData['redirect_to_data_field_id'])) {
+                        $options['dest404page'] = sanitize_text_field(
+                            is_string($postData['redirect_to_data_field_id']) ? $postData['redirect_to_data_field_id'] : ''
+                        );
+                    }
+                    $options['dest404pageURL'] = $candidateUrl;
                     if ($options['dest404page'] == ABJ404_TYPE_EXTERNAL . '|' . ABJ404_TYPE_EXTERNAL) {
                         $options['dest404page'] = $options['dest404pageURL'] . '|' . ABJ404_TYPE_EXTERNAL;
                     }
+                } else if (isset($postData['redirect_to_data_field_id'])) {
+                    $options['dest404page'] = sanitize_text_field(
+                        is_string($postData['redirect_to_data_field_id']) ? $postData['redirect_to_data_field_id'] : ''
+                    );
                 }
                 break;
 
@@ -483,8 +500,9 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
         }
 
         if (isset($postData['days_wait_before_major_update'])) {
-            if (is_numeric($postData['days_wait_before_major_update'])) {
-                $options['days_wait_before_major_update'] = absint($postData['days_wait_before_major_update']);
+            $rawDaysWait = is_scalar($postData['days_wait_before_major_update']) ? $postData['days_wait_before_major_update'] : '';
+            if (is_numeric($rawDaysWait) && (int)$rawDaysWait >= 0) {
+                $options['days_wait_before_major_update'] = (int)$rawDaysWait;
             } else {
                 $message .= sprintf(__('Error: The time to wait before an automatic update must be a number between 0 and something around %d.', '404-solution'), PHP_INT_MAX) . "<BR/>";
             }
@@ -502,8 +520,11 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
         $message = "";
 
         if (isset($postData['admin_notification'])) {
-            if (is_numeric($postData['admin_notification'])) {
-                $options['admin_notification'] = absint($postData['admin_notification']);
+            $rawAdminNotification = is_scalar($postData['admin_notification']) ? $postData['admin_notification'] : '';
+            if (is_numeric($rawAdminNotification) && (int)$rawAdminNotification >= 0) {
+                $options['admin_notification'] = (int)$rawAdminNotification;
+            } else if (is_numeric($rawAdminNotification)) {
+                $message .= __('Error: Admin notification threshold must be a non-negative number', '404-solution') . ".<BR/>";
             }
         }
 
