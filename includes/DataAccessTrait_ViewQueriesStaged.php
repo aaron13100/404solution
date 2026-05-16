@@ -1231,11 +1231,12 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
                 '[staged] runStagedBuildOnce: fresh start (%s); current_stage=%d',
                 $reason, $currentStage
             ));
-            // Fresh start: scrap any partial state. An abandoned partial
-            // build older than the resume TTL is not safe to continue;
-            // wp_posts/wp_terms/wp_options state may have drifted.
-            $this->clearAllProgressOptions();
-            $this->dropTransientStagedTables();
+            // Scrap any partial state. An abandoned partial build older
+            // than the resume TTL is not safe to continue; wp_posts /
+            // wp_terms / wp_options state may have drifted. Also wipes
+            // the Phase-2 started_watermark stamp (kept outside the
+            // progress registry so it survives the S11 happy-path clear).
+            $this->performFreshStartCleanup();
         } else {
             // INFO (not DEBUG): see fresh-start branch above. The pair
             // (fresh start vs. resuming) is the entry point for any
@@ -1264,6 +1265,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
             // Capture $wpdb->prefix BEFORE the S1 callback so subsequent
             // stage entries can detect a mid-build switch_to_blog().
             $this->capturePrefixAtBuildStart();
+            $this->stampStartedWatermarkAtS1Entry();
             // Probe sql_mode + max_allowed_packet for THIS connection. The
             // probe persists in `view_build_state` and (best-effort) clears
             // STRICT_TRANS_TABLES / ONLY_FULL_GROUP_BY for the build session
@@ -1297,6 +1299,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
 
         if ($stage < 2) {
             if ($this->haltIfPrefixChangedSinceStageOne(2)) { return false; }
+            if ($this->gateAbortIfMutationWatermarkAdvanced(2)) { return false; }
             $r = $this->runTimedViewBuildStage(2, 'staged_build_s2_insert', function () {
                 return $this->stageInsertRedirectsBatched();
             });
@@ -1309,6 +1312,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
 
         if ($stage < 3) {
             if ($this->haltIfPrefixChangedSinceStageOne(3)) { return false; }
+            if ($this->gateAbortIfMutationWatermarkAdvanced(3)) { return false; }
             if ($this->isStageMarkedSkipped(3)) {
                 // Permanent host-side denial recorded on a prior tick.
                 // Advance current_stage past S3 without touching the SQL.
@@ -1334,6 +1338,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
 
         if ($stage < 4) {
             if ($this->haltIfPrefixChangedSinceStageOne(4)) { return false; }
+            if ($this->gateAbortIfMutationWatermarkAdvanced(4)) { return false; }
             $r = $this->runTimedViewBuildStage(4, 'staged_build_s4_update_posts', function () {
                 return $this->stageUpdatePostsBatched();
             });
@@ -1346,6 +1351,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
 
         if ($stage < 5) {
             if ($this->haltIfPrefixChangedSinceStageOne(5)) { return false; }
+            if ($this->gateAbortIfMutationWatermarkAdvanced(5)) { return false; }
             $r = $this->runTimedViewBuildStage(5, 'staged_build_s5_update_terms', function () {
                 return $this->stageUpdateTermsBatched();
             });
@@ -1358,6 +1364,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
 
         if ($stage < 6) {
             if ($this->haltIfPrefixChangedSinceStageOne(6)) { return false; }
+            if ($this->gateAbortIfMutationWatermarkAdvanced(6)) { return false; }
             $this->markBuildStage('staged_build_s6_update_home');
             $r = $this->runTimedViewBuildStage(6, 'staged_build_s6_update_home', function () {
                 $this->stageUpdateHome();
@@ -1371,6 +1378,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
 
         if ($stage < 7) {
             if ($this->haltIfPrefixChangedSinceStageOne(7)) { return false; }
+            if ($this->gateAbortIfMutationWatermarkAdvanced(7)) { return false; }
             $this->markBuildStage('staged_build_s7_update_external');
             $r = $this->runTimedViewBuildStage(7, 'staged_build_s7_update_external', function () {
                 $this->stageUpdateExternal();
@@ -1384,6 +1392,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
 
         if ($stage < 8) {
             if ($this->haltIfPrefixChangedSinceStageOne(8)) { return false; }
+            if ($this->gateAbortIfMutationWatermarkAdvanced(8)) { return false; }
             $this->markBuildStage('staged_build_s8_update_special');
             $r = $this->runTimedViewBuildStage(8, 'staged_build_s8_update_special', function () {
                 $this->stageUpdateSpecial();
@@ -1397,6 +1406,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
 
         if ($stage < 9) {
             if ($this->haltIfPrefixChangedSinceStageOne(9)) { return false; }
+            if ($this->gateAbortIfMutationWatermarkAdvanced(9)) { return false; }
             if ($this->isStageMarkedSkipped(9)) {
                 $this->writeProgressOption('current_stage', 9);
                 $stage = 9;
@@ -1429,6 +1439,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
 
         if ($stage < 10) {
             if ($this->haltIfPrefixChangedSinceStageOne(10)) { return false; }
+            if ($this->gateAbortIfMutationWatermarkAdvanced(10)) { return false; }
             if ($this->isStageMarkedSkipped(10)) {
                 $this->writeProgressOption('current_stage', 10);
                 $stage = 10;
@@ -1451,19 +1462,11 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
 
         if ($stage < 11) {
             if ($this->haltIfPrefixChangedSinceStageOne(11)) { return false; }
+            if ($this->gateAbortIfMutationWatermarkAdvanced(11)) { return false; }
             $this->markBuildStage('staged_build_s11_swap');
-            $r = $this->runTimedViewBuildStage(11, 'staged_build_s11_swap', function () {
-                $this->stageRenameSwap();
-            });
-            if ($r === false || $r === 'halted') {
-                return false;
-            }
-            // Build fully done. markViewDoneBuildCompleted() updates both
-            // freshness and data-built-at signals, clears the hard-stale
-            // admin notice, and resets the serveability cache.
+            if (!$this->runS11SwapWithPreRenameWatermarkRecheck()) { return false; }
+            $this->publishBuiltWatermarkFromStartedWatermark();
             $this->markViewDoneBuildCompleted();
-            // Wipe progress so the next rebuild starts clean.
-            // clearAllProgressOptions() also clears the prefix_at_s1 capture.
             $this->clearAllProgressOptions();
         }
 
