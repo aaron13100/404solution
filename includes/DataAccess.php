@@ -20,6 +20,7 @@ require_once __DIR__ . '/DataAccessTrait_ViewBuildSessionEnvProbe.php';
 require_once __DIR__ . '/DataAccessTrait_ViewBuildHostFailurePolicy.php';
 require_once __DIR__ . '/DataAccessTrait_ViewBuildForceRestart.php';
 require_once __DIR__ . '/DataAccessTrait_MutationWatermarkSeam.php';
+require_once __DIR__ . '/DataAccessTrait_AdminMutationGate.php';
 require_once __DIR__ . '/DataAccessTrait_ViewSnapshotCache.php';
 require_once __DIR__ . '/DataAccessTrait_QueryTimeouts.php';
 require_once __DIR__ . '/DataAccessTrait_Logs.php';
@@ -215,6 +216,7 @@ class ABJ_404_Solution_DataAccess {
     use ABJ_404_Solution_DataAccess_ViewBuildHostFailurePolicyTrait;
     use ABJ_404_Solution_DataAccess_ViewBuildForceRestartTrait;
     use ABJ_404_Solution_DataAccess_MutationWatermarkSeamTrait;
+    use ABJ_404_Solution_DataAccess_AdminMutationGateTrait;
     use ABJ_404_Solution_DataAccess_ViewSnapshotCacheTrait;
     use ABJ_404_Solution_DataAccess_LogsTrait;
     use ABJ_404_Solution_DataAccess_LogsHitsRebuildTrait;
