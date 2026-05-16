@@ -1397,18 +1397,22 @@ class ABJ_404_Solution_ViewUpdater {
             }
 
             // The browser only sends forceViewRebuild=1 on the first advance
-            // call of an ?abj404_force_view_rebuild=1 page-load. Invalidating
-            // here (rather than in the fetch path) keeps the rebuild owned by
-            // a single requestId so every staged sub-stage shows up in the
-            // debug log. Best-effort: any read happening in parallel sees
-            // the rebuild starting; the authoritative invalidate happens
-            // inside advanceViewBuildOnce's locked region (forceRebuild=true).
-            if ($forceViewRebuild) {
-                if (method_exists($abj404dao, 'invalidateViewSnapshotCache')) {
-                    $abj404dao->invalidateViewSnapshotCache();
-                } else if (method_exists($abj404dao, 'invalidateViewDone')) {
-                    $abj404dao->invalidateViewDone();
-                }
+            // call of an ?abj404_force_view_rebuild=1 page-load. Pre-calling
+            // forceRestartViewBuild() here (rather than in the fetch path)
+            // keeps the rebuild owned by a single requestId so every staged
+            // sub-stage shows up in the debug log. Non-blocking acquire (0s):
+            // a sibling cron / tab holding the runner lock must not stall
+            // this request; advanceViewBuildOnce(forceRebuild=true) below
+            // waits up to 10s and runs equivalent drop/clear semantics
+            // inside its own locked region. Migrated in Phase 3a step 4
+            // (queue task t_260516_131200_429) from a direct
+            // invalidateViewSnapshotCache() / invalidateViewDone() pre-call:
+            // the runner-owned primitive (DataAccessTrait_ViewBuildForceRestart,
+            // Phase 3a step 2 / c554) preserves the existing view_done
+            // snapshot for parallel readers until the new S11 RENAME publishes
+            // a fresh one, which is the intended force-rebuild contract.
+            if ($forceViewRebuild && method_exists($abj404dao, 'forceRestartViewBuild')) {
+                $abj404dao->forceRestartViewBuild(0);
             }
 
             self::tryClaimForegroundViewBuildLease($abj404dao);
