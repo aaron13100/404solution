@@ -932,29 +932,31 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
     /**
      * Mark the served view_done table stale so the next request triggers a
      * rebuild. Hooked from invalidateViewSnapshotCache() so redirect
-     * create/update/delete invalidates the precomputed view too. Also clears
-     * any in-flight progress AND drops view_build / view_deleteme in the
-     * same call (gated by SHOW TABLES so steady-state invalidate stays
-     * cheap), making the "progress lost but buffer present" state unreachable
-     * so the next request never classifies a leftover buffer as an orphan
-     * to drop (Troy 2026-05: two "[staged] reconcile: dropped orphan
-     * view_build" INFO lines 6 min apart). Buffer-drop helper lives in
-     * DataAccessTrait_ViewBuildStageCallbacks.
+     * create/update/delete invalidates the precomputed view too.
+     *
+     * Phase 4 of the staged view-build watermark refactor (see
+     * docs/refactor-staged-view-build-watermark.md) deleted the three
+     * runner-owned side effects that previously lived in this method's body:
+     * clearing the progress-options registry, clearing the S1 prefix capture,
+     * and dropping the transient buffer tables. Each of those is now owned
+     * by the build runner -- the orchestrator drives the lifecycle from
+     * inside the build lock, and the source-mutation signal is delivered to
+     * the runner via the watermark primitive (ABJ_404_Solution_MutationWatermark::bump()).
+     * External callers that previously relied on this method to discard a
+     * mid-flight buffer should use the runner-owned forceRestartViewBuild()
+     * primitive (DataAccessTrait_ViewBuildForceRestart) instead.
+     *
+     * What survives: clear the freshness signal (so the read path schedules
+     * a rebuild), reset the request-lifetime serveability cache (so reads
+     * inside the same request see the new state), and schedule a cron tick
+     * (idempotent via wp_next_scheduled).
      *
      * @return void
      */
     public function invalidateViewDone(): void {
         if (function_exists('delete_option')) {
             delete_option($this->viewDoneFreshnessOptionName());
-            foreach (self::$viewBuildProgressOptionNames as $optName) {
-                delete_option($this->getLowercasePrefix() . $optName);
-            }
         }
-        // The S1-prefix capture is part of the same fresh-start lifecycle:
-        // a redirect-edit invalidation forces the next request to S1 from
-        // scratch, so the prior capture is no longer authoritative.
-        $this->clearPrefixAtStageOne();
-        $this->dropTransientBuffersIfPresent();
         $this->invalidateViewDoneServeableCache();
         // Kick off a background rebuild and surface any cron-stuck /
         // schedule-failure conditions to the admin via deduplicated notice.
