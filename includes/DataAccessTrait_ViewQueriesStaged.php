@@ -138,7 +138,16 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
             && is_numeric($tableOptions['_abj404_query_timeout'])
             ? max(0, intval($tableOptions['_abj404_query_timeout'])) : 0;
         if (!empty($tableOptions['_abj404_force_view_rebuild'])) {
-            $this->invalidateViewDone();
+            // Diagnostic ?_abj404_force_view_rebuild=1 path: discard the
+            // runner's in-flight state and start fresh. Non-blocking
+            // acquire: if a sibling cron / AJAX advance holds the lock,
+            // we skip the cleanup and fall through to serve-stale; the
+            // already-running build will publish on its own. This is the
+            // Phase 3a / Phase 4 successor to the direct invalidateViewDone()
+            // pre-call -- the runner-owned primitive preserves the published
+            // view_done snapshot for parallel readers until the new S11
+            // RENAME swap, which is the intended force-rebuild contract.
+            $this->forceRestartViewBuild(0);
         }
         $builtAt = $this->viewDoneBuiltAt();
         $isFresh = $builtAt > 0
@@ -419,10 +428,14 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
                 // Whatever the prior lock holder produced (cron, sibling tab,
                 // a finished S11 swap) we discard inside the locked region
                 // so the rebuild happens fresh under the caller's request
-                // context. invalidateViewDone() also flips the per-request
-                // serveability cache so getViewBuildProgress() at the end
-                // reflects the rebuilt state, not the stale-cached one.
-                $this->invalidateViewDone();
+                // context. The inside-lock cleanup helper drops the buffer,
+                // clears progress + S1 prefix capture, and clears the
+                // active-build started-watermark stamp; it also flips the
+                // per-request serveability cache so getViewBuildProgress()
+                // at the end reflects the rebuilt state. Direct call to
+                // the runner-owned inside-lock helper avoids reacquiring
+                // the lock (we already hold it).
+                $this->runForceRestartCleanupInsideLock();
                 // Force-rebuild also clears any per-stage permanent skip
                 // markers and the build-halted gate from a prior host
                 // failure. The admin pressed "rebuild" explicitly, so

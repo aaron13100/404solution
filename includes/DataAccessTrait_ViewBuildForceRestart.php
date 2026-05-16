@@ -118,36 +118,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildForceRestartTrait {
         }
 
         try {
-            // (2) Drop the runner-owned buffer table (and the deleteme
-            //     leftover from any prior crashed S11 RENAME swap).
-            //     Gated by SHOW TABLES so a steady-state force-rebuild
-            //     after a clean S11 (no buffer present) does not pile
-            //     unconditional DDL on the hot path.
-            $this->dropTransientBuffersIfPresent();
-
-            // (3) Clear runner progress options. The helper owns the
-            //     registry + prefix-at-S1 capture + sql_mode + php-env
-            //     probe-cache clears as one atomic fresh-start step.
-            $this->clearAllProgressOptions();
-
-            // (4) Clear active_build_started_watermark. Lives outside
-            //     the progress registry (so the S11 happy-path
-            //     observability contract holds across the boundary), so
-            //     it needs its own delete call. The sibling
-            //     last_build_started_watermark is left alone --
-            //     diagnostic-only, survives abort and force-restart.
-            $this->clearActiveBuildStartedWatermark();
-
-            // (5) PRESERVE built_watermark. No write, no delete. The
-            //     prior successful build's published coverage stays as
-            //     the cross-build pre-image for freshness checks until
-            //     the new build's S11 swap publishes a fresh value.
-
-            // (6) DO NOT bump the mutation watermark. No call to
-            //     ABJ_404_Solution_MutationWatermark::bump() exists in
-            //     this method. Force-rebuild is a runner command, not a
-            //     data-change signal; a bump would propagate to every
-            //     concurrent reader as a phantom mutation.
+            $this->runForceRestartCleanupInsideLock();
         } finally {
             // Release the lock BEFORE scheduling the next tick so the
             // cron callback can acquire cleanly. A leaked lock would
@@ -164,5 +135,64 @@ trait ABJ_404_Solution_DataAccess_ViewBuildForceRestartTrait {
         $this->scheduleViewDoneRebuild();
 
         return true;
+    }
+
+    /**
+     * Inside-lock cleanup phase of force-restart, callable by code paths
+     * that already hold the view-build lock and intend to drive the
+     * subsequent S0/S1 run inline (e.g. advanceViewBuildOnce() with
+     * forceRebuild=true). Public callers should prefer
+     * {@see forceRestartViewBuild()} -- this helper does NOT acquire the
+     * lock and does NOT schedule the next cron tick.
+     *
+     * Performs steps 2-6 of the seven-bullet force-restart contract
+     * documented on the trait docblock above:
+     *
+     *   - drop the runner-owned buffer table (and the deleteme leftover)
+     *   - clear runner progress options + prefix-at-S1 capture
+     *   - clear active_build_started_watermark
+     *   - preserve built_watermark (no write, no delete)
+     *   - DO NOT bump the mutation watermark
+     *
+     * Also resets the per-request serveability cache so a subsequent
+     * viewDoneIsServeable() inside the same request observes the new
+     * state, not the cached pre-cleanup value.
+     */
+    private function runForceRestartCleanupInsideLock(): void {
+        // (2) Drop the runner-owned buffer table (and the deleteme
+        //     leftover from any prior crashed S11 RENAME swap).
+        //     Gated by SHOW TABLES so a steady-state force-rebuild
+        //     after a clean S11 (no buffer present) does not pile
+        //     unconditional DDL on the hot path.
+        $this->dropTransientBuffersIfPresent();
+
+        // (3) Clear runner progress options. The helper owns the
+        //     registry + prefix-at-S1 capture + sql_mode + php-env
+        //     probe-cache clears as one atomic fresh-start step.
+        $this->clearAllProgressOptions();
+
+        // (4) Clear active_build_started_watermark. Lives outside
+        //     the progress registry (so the S11 happy-path
+        //     observability contract holds across the boundary), so
+        //     it needs its own delete call. The sibling
+        //     last_build_started_watermark is left alone --
+        //     diagnostic-only, survives abort and force-restart.
+        $this->clearActiveBuildStartedWatermark();
+
+        // (5) PRESERVE built_watermark. No write, no delete. The
+        //     prior successful build's published coverage stays as
+        //     the cross-build pre-image for freshness checks until
+        //     the new build's S11 swap publishes a fresh value.
+
+        // (6) DO NOT bump the mutation watermark. No call to
+        //     ABJ_404_Solution_MutationWatermark::bump() exists in
+        //     this method. Force-rebuild is a runner command, not a
+        //     data-change signal; a bump would propagate to every
+        //     concurrent reader as a phantom mutation.
+
+        // Reset per-request serveability cache so a subsequent
+        // viewDoneIsServeable() inside this request reflects the
+        // post-cleanup state rather than a stale-cached value.
+        $this->invalidateViewDoneServeableCache();
     }
 }
