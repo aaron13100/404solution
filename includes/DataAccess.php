@@ -207,6 +207,7 @@ class ABJ_404_Solution_DataAccess {
     use ABJ_404_Solution_DataAccess_ViewQueriesStagedReadTrait;
     use ABJ_404_Solution_DataAccess_ViewBuildAdaptiveTrait;
     use ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait;
+    use ABJ_404_Solution_DataAccess_ViewBuildStartedWatermarkTrait;
     use ABJ_404_Solution_DataAccess_ViewBuildLockAndCronTrait;
     use ABJ_404_Solution_DataAccess_ViewBuildPhpEnvProbeTrait;
     use ABJ_404_Solution_DataAccess_ViewBuildSessionEnvProbeTrait;

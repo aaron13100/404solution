@@ -1234,8 +1234,8 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
             // Scrap any partial state. An abandoned partial build older
             // than the resume TTL is not safe to continue; wp_posts /
             // wp_terms / wp_options state may have drifted. Also wipes
-            // the Phase-2 started_watermark stamp (kept outside the
-            // progress registry so it survives the S11 happy-path clear).
+            // the Phase-2 active stamp (kept outside the progress
+            // registry so it survives the S11 happy-path clear).
             $this->performFreshStartCleanup();
         } else {
             // INFO (not DEBUG): see fresh-start branch above. The pair
@@ -1265,7 +1265,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
             // Capture $wpdb->prefix BEFORE the S1 callback so subsequent
             // stage entries can detect a mid-build switch_to_blog().
             $this->capturePrefixAtBuildStart();
-            $this->stampStartedWatermarkAtS1Entry();
+            $this->stampStartedWatermarksAtS1Entry();
             // Probe sql_mode + max_allowed_packet for THIS connection. The
             // probe persists in `view_build_state` and (best-effort) clears
             // STRICT_TRANS_TABLES / ONLY_FULL_GROUP_BY for the build session
@@ -1465,7 +1465,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
             if ($this->gateAbortIfMutationWatermarkAdvanced(11)) { return false; }
             $this->markBuildStage('staged_build_s11_swap');
             if (!$this->runS11SwapWithPreRenameWatermarkRecheck()) { return false; }
-            $this->publishBuiltWatermarkFromStartedWatermark();
+            $this->publishBuiltWatermarkFromActiveBuildStartedWatermark();
             $this->markViewDoneBuildCompleted();
             $this->clearAllProgressOptions();
         }

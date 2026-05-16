@@ -438,164 +438,29 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
     }
 
     /**
-     * Unprefixed option-name suffix for the S11-completion watermark stamp.
-     * Lives on its own (NOT in $viewBuildProgressOptionNames) so it survives
-     * across builds: this is the published "what watermark did the LAST
-     * SUCCESSFUL view_done snapshot cover?" pre-image. clearAllProgressOptions
-     * (called on abort and on fresh-start) must NOT touch it.
+     * Per-build watermark stamp machinery -- option-name helpers, raw
+     * read/write, the stage-boundary advance gate, and the
+     * stamp/clear/publish methods -- lives on
+     * {@see ABJ_404_Solution_DataAccess_ViewBuildStartedWatermarkTrait}.
+     * The orchestrator and abort/fresh-start methods below call into it
+     * via `$this->` (both traits compose into ABJ_404_Solution_DataAccess).
      */
-    private function builtWatermarkOptionName(): string {
-        return $this->getLowercasePrefix() . 'abj404_view_build_built_watermark';
-    }
-
-    /**
-     * Unprefixed option-name suffix for the S1-entry watermark stamp. Lives
-     * in $viewBuildProgressOptionNames so clearAllProgressOptions wipes it,
-     * but reads/writes route through the raw helpers below so the absent-vs-0
-     * distinction is preserved (readProgressOption clamps to >= 0 and cannot
-     * tell "stamped 0" from "never stamped").
-     */
-    private function startedWatermarkOptionName(): string {
-        return $this->getLowercasePrefix() . 'abj404_view_build_started_watermark';
-    }
-
-    /**
-     * Raw watermark-option reader. Returns -1 when the option is absent
-     * (never stamped), the post-stamp value otherwise. The absent-vs-0
-     * distinction matters for the resume-preserves-stamp contract: a fresh
-     * install with no mutations has current()=0, so a stamp of 0 is a
-     * legitimate stamped value, NOT the "no stamp yet" sentinel.
-     *
-     * @param string $fullyPrefixedName Option name as built by
-     *   startedWatermarkOptionName() / builtWatermarkOptionName().
-     * @return int  -1 when absent; the stored integer otherwise.
-     */
-    private function readWatermarkOption(string $fullyPrefixedName): int {
-        if (!function_exists('get_option')) {
-            return -1;
-        }
-        $value = get_option($fullyPrefixedName, null);
-        if ($value === null || $value === false) {
-            return -1;
-        }
-        if (!is_scalar($value)) {
-            return -1;
-        }
-        return intval($value);
-    }
-
-    /**
-     * Raw watermark-option writer. Autoload=false so the per-build stamps
-     * do not bloat the alloptions cache loaded on every WP page.
-     *
-     * @param string $fullyPrefixedName
-     * @param int    $value
-     * @return void
-     */
-    private function writeWatermarkOption(string $fullyPrefixedName, int $value): void {
-        if (!function_exists('update_option')) {
-            return;
-        }
-        update_option($fullyPrefixedName, max(0, $value), false);
-    }
-
-    /**
-     * True when the live mutation watermark is strictly greater than the
-     * pre-image stamped at S1 entry of the in-flight build. Returns false
-     * when no stamp exists (no in-flight build) or when current() <= stamp.
-     *
-     * Called at every stage boundary by the orchestrator. A true result
-     * means an external caller bumped the watermark while this build was
-     * running, so the buffer it has assembled does not cover that mutation.
-     * The orchestrator must abort and let the next tick rebuild.
-     *
-     * @return bool
-     */
-    private function mutationWatermarkAdvancedSinceBuildStart(): bool {
-        $started = $this->readWatermarkOption($this->startedWatermarkOptionName());
-        if ($started < 0) {
-            return false;
-        }
-        if (!class_exists('ABJ_404_Solution_MutationWatermark')) {
-            return false;
-        }
-        $current = ABJ_404_Solution_MutationWatermark::current();
-        return $current > $started;
-    }
-
-    /**
-     * Stamp started_watermark at S1 entry of a fresh build. Callers route
-     * through this from the orchestrator's `if ($stage < 1)` block, which
-     * only fires on fresh starts -- a resuming tick has `current_stage >= 1`
-     * and never re-enters this branch, so the stamp written here remains
-     * the pre-image for every subsequent stage boundary in the build.
-     *
-     * Always overwrites. The orchestrator's S11-completion path and the
-     * abort cleanup path are the two places started_watermark is cleared
-     * between builds; on the next fresh start we want the live current()
-     * value, never a leftover from a prior completed build.
-     *
-     * @return void
-     */
-    private function stampStartedWatermarkAtS1Entry(): void {
-        if (!class_exists('ABJ_404_Solution_MutationWatermark')) {
-            return;
-        }
-        $watermark = ABJ_404_Solution_MutationWatermark::current();
-        $this->writeWatermarkOption($this->startedWatermarkOptionName(), $watermark);
-    }
-
-    /**
-     * Delete the started_watermark stamp. Called from the abort path so
-     * the next tick's fresh-start branch sees no leftover stamp from the
-     * aborted run, and from the S11 success path so the just-completed
-     * build's pre-image does not become the next build's pre-image. (S11
-     * also publishes built_watermark, which is the cross-build pre-image
-     * that survives the clear.)
-     *
-     * @return void
-     */
-    private function clearStartedWatermark(): void {
-        if (!function_exists('delete_option')) {
-            return;
-        }
-        delete_option($this->startedWatermarkOptionName());
-    }
-
-    /**
-     * Stamp built_watermark = started_watermark at S11 success so future
-     * fresh-checks can compare it against the live mutation watermark to
-     * decide if view_done covers the latest data.
-     *
-     * Must be called BEFORE clearAllProgressOptions because that clears
-     * started_watermark. built_watermark itself lives outside the progress
-     * registry, so it survives the clear.
-     *
-     * @return void
-     */
-    private function publishBuiltWatermarkFromStartedWatermark(): void {
-        $started = $this->readWatermarkOption($this->startedWatermarkOptionName());
-        if ($started < 0) {
-            // No started_watermark: pre-Phase-2 install upgrading mid-build,
-            // or a code path that reached S11 without entering S1. Either
-            // way, do not overwrite a prior good built_watermark with a
-            // bogus zero.
-            return;
-        }
-        $this->writeWatermarkOption($this->builtWatermarkOptionName(), $started);
-    }
 
     /**
      * One-call cleanup for the fresh-start branch of runStagedBuildOnce:
-     * scrap progress options (registry + Phase-2 started_watermark),
-     * drop any leftover buffer tables. Pulled out of the orchestrator
-     * so the body line count stays within the per-function cap.
+     * scrap progress options (registry + Phase-2 active stamp), drop any
+     * leftover buffer tables. Pulled out of the orchestrator so the
+     * body line count stays within the per-function cap.
+     *
+     * last_build_started_watermark is intentionally NOT cleared here: it
+     * is diagnostic-only and survives across fresh-start boundaries (and
+     * gets overwritten on the next S1 entry stamp).
      *
      * @return void
      */
     private function performFreshStartCleanup(): void {
         $this->clearAllProgressOptions();
-        $this->clearStartedWatermark();
+        $this->clearActiveBuildStartedWatermark();
         $this->dropTransientStagedTables();
     }
 
@@ -659,9 +524,13 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
      * Abort the in-flight build cleanly because an external mutation
      * bumped the watermark. Runner owns the buffer and the progress
      * markers, so it owns the cleanup: drop the buffer, wipe progress
-     * (including started_watermark so the next tick re-stamps from
-     * scratch). built_watermark is intentionally left alone -- it
-     * records the LAST SUCCESSFUL build's coverage, not the aborted run.
+     * (including active_build_started_watermark so the next tick
+     * re-stamps from scratch). built_watermark is intentionally left
+     * alone -- it records the LAST SUCCESSFUL build's coverage, not the
+     * aborted run. last_build_started_watermark is also intentionally
+     * left alone -- it is diagnostic-only and its purpose is to survive
+     * abort so an operator can see "the most recent build attempt
+     * stamped against watermark X, then aborted".
      *
      * The build lock is released by the try/finally in advanceViewBuildOnce
      * once runStagedBuildOnce returns false; this method does not touch it.
@@ -672,23 +541,28 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
      * @return void
      */
     private function abortStagedBuildForMutationWatermarkAdvance(int $aboutToRunStage): void {
+        // Read the active stamp BEFORE clearing it so the diagnostic log
+        // line below carries the value we aborted against. Reading post-
+        // clear would always show -1 and erase the most useful field for
+        // debugging "why did this build abort?" tickets.
+        $startedForLog = $this->readActiveBuildStartedWatermark();
         $this->dropTransientBuffersIfPresent();
         $this->clearAllProgressOptions();
-        // started_watermark lives outside the progress registry so the
-        // happy path (S11 completion) leaves it observable to the next
-        // tick's pre-image read. The abort path explicitly clears it so
-        // the abort-then-fresh-restart loop re-stamps from the live
-        // current() rather than reusing the aborted run's pre-image.
-        $this->clearStartedWatermark();
+        // active_build_started_watermark lives outside the progress
+        // registry so the happy path (S11 completion) leaves it observable
+        // to the next tick's pre-image read. The abort path explicitly
+        // clears it so the abort-then-fresh-restart loop re-stamps from
+        // the live current() rather than reusing the aborted run's
+        // pre-image.
+        $this->clearActiveBuildStartedWatermark();
         if (is_object($this->logger) && method_exists($this->logger, 'infoMessage')) {
-            $started = $this->readWatermarkOption($this->startedWatermarkOptionName());
             $current = class_exists('ABJ_404_Solution_MutationWatermark')
                 ? ABJ_404_Solution_MutationWatermark::current() : -1;
             $this->logger->infoMessage(sprintf(
                 '[staged] runStagedBuildOnce: mutation watermark advanced '
                 . '(started=%d, current=%d); aborting before stage %d. '
                 . 'Buffer dropped, progress cleared; next tick rebuilds from S0.',
-                $started, $current, $aboutToRunStage
+                $startedForLog, $current, $aboutToRunStage
             ));
         }
     }

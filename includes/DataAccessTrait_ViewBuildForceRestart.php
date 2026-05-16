@@ -23,9 +23,10 @@ if (!defined('ABSPATH')) {
  *   2. Drop the runner-owned buffer table (`view_build`).
  *   3. Clear runner progress options (registry + prefix-at-S1 capture +
  *      probe caches -- the same set `clearAllProgressOptions()` owns).
- *   4. Clear `started_watermark` (the in-flight build's S1-entry stamp;
- *      Phase 3a step 3 renames this to `active_build_started_watermark`
- *      and the call site here is updated alongside that rename).
+ *   4. Clear `active_build_started_watermark` (the in-flight build's
+ *      S1-entry stamp). The sibling `last_build_started_watermark`
+ *      stays put -- it is diagnostic-only and survives both abort and
+ *      force-rebuild so an operator can see the most recent stamp.
  *   5. PRESERVE `built_watermark` (the prior successful build's published
  *      coverage). The rebuild is in flight, the old view_done snapshot is
  *      still serveable until the new S11 RENAME completes; deleting
@@ -89,10 +90,12 @@ trait ABJ_404_Solution_DataAccess_ViewBuildForceRestartTrait {
      * Runner-owned force-restart primitive. Per Phase 3a step 2 (c554).
      *
      * Returns true when the restart completed cleanly: lock acquired,
-     * buffer dropped, progress cleared, started_watermark cleared,
-     * built_watermark preserved, watermark unchanged, rebuild scheduled.
-     * Returns false when the lock could not be acquired within
-     * `$lockTimeoutSeconds`; the caller may retry on the next request.
+     * buffer dropped, progress cleared, active_build_started_watermark
+     * cleared, last_build_started_watermark preserved (diagnostic),
+     * built_watermark preserved (cross-build pre-image), watermark
+     * counter unchanged, rebuild scheduled. Returns false when the lock
+     * could not be acquired within `$lockTimeoutSeconds`; the caller
+     * may retry on the next request.
      *
      * Default lock wait of 10s matches the existing
      * `?abj404_force_view_rebuild=1` AJAX handler in
@@ -127,13 +130,13 @@ trait ABJ_404_Solution_DataAccess_ViewBuildForceRestartTrait {
             //     probe-cache clears as one atomic fresh-start step.
             $this->clearAllProgressOptions();
 
-            // (4) Clear started_watermark. Lives outside the progress
-            //     registry (so the S11 happy-path observability contract
-            //     holds across the boundary), so it needs its own delete
-            //     call. Phase 3a step 3 renames this to
-            //     active_build_started_watermark; that task updates the
-            //     helper name, this call updates with it automatically.
-            $this->clearStartedWatermark();
+            // (4) Clear active_build_started_watermark. Lives outside
+            //     the progress registry (so the S11 happy-path
+            //     observability contract holds across the boundary), so
+            //     it needs its own delete call. The sibling
+            //     last_build_started_watermark is left alone --
+            //     diagnostic-only, survives abort and force-restart.
+            $this->clearActiveBuildStartedWatermark();
 
             // (5) PRESERVE built_watermark. No write, no delete. The
             //     prior successful build's published coverage stays as
@@ -156,7 +159,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildForceRestartTrait {
         // (7) Schedule S0/S1 immediately. scheduleViewDoneRebuild() is
         //     idempotent (wp_next_scheduled short-circuit) so callers
         //     can chain or replay safely. Cron tick will drive S0 fresh
-        //     cleanup -> S1 prefix capture + started_watermark re-stamp
+        //     cleanup -> S1 prefix capture + started-watermark re-stamp
         //     -> S2..S11.
         $this->scheduleViewDoneRebuild();
 
