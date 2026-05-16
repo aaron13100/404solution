@@ -327,8 +327,22 @@ trait ABJ_404_Solution_DataAccess_ViewBuildLockAndCronTrait {
         }
     }
 
-    /** @return void */
-    private function scheduleViewDoneRebuild(int $delaySeconds = 1): void {
+    /**
+     * Schedule the staged-build cron rebuild hook. Idempotent: the
+     * wp_next_scheduled() check short-circuits when an event is already
+     * queued. Promoted from `private` to `public` in Phase 4 of the staged
+     * view-build watermark refactor: the deleted invalidateViewDone() god
+     * method previously exposed schedule-only semantics through its body;
+     * the post-refactor seam for "schedule a rebuild with no other side
+     * effects" is this method called directly. Production callers reach it
+     * via invalidateViewSnapshotCache() (cron / mutation path) and
+     * forceRestartViewBuild() (runner-owned force-restart); the public
+     * surface lets test code drive the same primitive without resorting to
+     * reflection.
+     *
+     * @return void
+     */
+    public function scheduleViewDoneRebuild(int $delaySeconds = 1): void {
         if (!function_exists('wp_next_scheduled') || !function_exists('wp_schedule_single_event')) {
             return;
         }

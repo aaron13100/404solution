@@ -942,40 +942,27 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
         return $diff <= 1;
     }
 
-    /**
-     * Mark the served view_done table stale so the next request triggers a
-     * rebuild. Hooked from invalidateViewSnapshotCache() so redirect
-     * create/update/delete invalidates the precomputed view too.
-     *
-     * Phase 4 of the staged view-build watermark refactor (see
-     * docs/refactor-staged-view-build-watermark.md) deleted the three
-     * runner-owned side effects that previously lived in this method's body:
-     * clearing the progress-options registry, clearing the S1 prefix capture,
-     * and dropping the transient buffer tables. Each of those is now owned
-     * by the build runner -- the orchestrator drives the lifecycle from
-     * inside the build lock, and the source-mutation signal is delivered to
-     * the runner via the watermark primitive (ABJ_404_Solution_MutationWatermark::bump()).
-     * External callers that previously relied on this method to discard a
-     * mid-flight buffer should use the runner-owned forceRestartViewBuild()
-     * primitive (DataAccessTrait_ViewBuildForceRestart) instead.
-     *
-     * What survives: clear the freshness signal (so the read path schedules
-     * a rebuild), reset the request-lifetime serveability cache (so reads
-     * inside the same request see the new state), and schedule a cron tick
-     * (idempotent via wp_next_scheduled).
-     *
-     * @return void
-     */
-    public function invalidateViewDone(): void {
-        if (function_exists('delete_option')) {
-            delete_option($this->viewDoneFreshnessOptionName());
-        }
-        $this->invalidateViewDoneServeableCache();
-        // Kick off a background rebuild and surface any cron-stuck /
-        // schedule-failure conditions to the admin via deduplicated notice.
-        // scheduleViewDoneRebuild() is idempotent (checks wp_next_scheduled).
-        $this->scheduleViewDoneRebuild();
-    }
+    // invalidateViewDone() was deleted in Phase 4 of the staged view-build
+    // watermark refactor (see docs/refactor-staged-view-build-watermark.md).
+    // The god-method conflated three concepts (logical invalidation, runner
+    // lifecycle, reader policy) and was the seam through which external code
+    // destroyed runner-owned state. Replacements, by intent:
+    //
+    //   - Source data changed (admin/REST/CLI/AJAX/cron mutation): call
+    //     bumpMutationWatermark() (DataAccessTrait_MutationWatermarkSeam).
+    //     For admin form actions that also need the strict admin-visibility
+    //     gate, call markViewDoneInvalidatedByAdminMutation()
+    //     (DataAccessTrait_AdminMutationGate) which composes the watermark
+    //     bump with the observed-watermark gate option.
+    //   - Discard + restart the in-flight build (admin "rebuild now",
+    //     diagnostic ?abj404_force_view_rebuild=1 paths): call
+    //     forceRestartViewBuild() (DataAccessTrait_ViewBuildForceRestart).
+    //   - Schedule a cron rebuild without other side effects: call
+    //     scheduleViewDoneRebuild() (DataAccessTrait_ViewBuildLockAndCron).
+    //
+    // The semantic-forbidden-operation lint in StagedBuildOwnershipLintTest
+    // (lint d) enforces that no future code introduces a new caller of
+    // ->invalidateViewDone( anywhere in includes/.
 
     // progressOptionName / readProgressOption / writeProgressOption /
     // clearAllProgressOptions live on the sibling
