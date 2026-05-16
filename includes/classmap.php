@@ -24,6 +24,7 @@ return array(
     'ABJ_404_Solution_DataAccess_LogsTrait' => $base . 'includes/DataAccessTrait_Logs.php',
     'ABJ_404_Solution_DataAccess_LogsHitsRebuildTrait' => $base . 'includes/DataAccessTrait_LogsHitsRebuild.php',
     'ABJ_404_Solution_DataAccess_MaintenanceTrait' => $base . 'includes/DataAccessTrait_Maintenance.php',
+    'ABJ_404_Solution_DataAccess_MutationWatermarkSeamTrait' => $base . 'includes/DataAccessTrait_MutationWatermarkSeam.php',
     'ABJ_404_Solution_DataAccess_PublishedContentTrait' => $base . 'includes/DataAccessTrait_PublishedContent.php',
     'ABJ_404_Solution_DataAccess_QueryTimeoutsTrait' => $base . 'includes/DataAccessTrait_QueryTimeouts.php',
     'ABJ_404_Solution_DataAccess_SqlErrorReportingTrait' => $base . 'includes/DataAccessTrait_SqlErrorReporting.php',
