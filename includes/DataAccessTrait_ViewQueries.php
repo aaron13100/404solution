@@ -283,9 +283,31 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
      * @return void
      */
     function invalidateViewSnapshotCache(): void {
-        // Mark the precomputed view_done table stale. The next request
-        // triggers a rebuild (subject to the per-request guard).
-        $this->invalidateViewDone();
+        // Source-mutation signal (Phase 4 of the staged view-build watermark
+        // refactor; see docs/refactor-staged-view-build-watermark.md). Every
+        // DAO mutator (deleteRedirect, setupRedirect, updateRedirect,
+        // updateRedirectTypeStatus, moveRedirectsToTrash, removeDuplicatesCron,
+        // purgeRedirectsByStatus) routes through invalidateStatusCountsCache()
+        // -> here. Bump the per-blog mutation watermark so the staged-build
+        // runner observes it at the next stage boundary and either aborts
+        // the in-flight build cleanly (so the next build covers the new row)
+        // or, if the build is already running for an earlier watermark, the
+        // active_build_started_watermark gate keeps the runner from
+        // publishing a snapshot that misses the mutation.
+        $this->bumpMutationWatermark();
+
+        // Clear view_done freshness so the read path's TTL check trips and
+        // a rebuild gets scheduled on the next request. The runner remains
+        // the sole owner of progress markers, the S1 prefix capture, and
+        // the transient buffer tables: external code (this seam included)
+        // must not touch them. scheduleViewDoneRebuild() is idempotent
+        // (wp_next_scheduled short-circuit) so concurrent mutators do not
+        // pile up cron events.
+        if (function_exists('delete_option')) {
+            delete_option($this->viewDoneFreshnessOptionName());
+        }
+        $this->invalidateViewDoneServeableCache();
+        $this->scheduleViewDoneRebuild();
 
         // Clear all rows from the view cache table. The 'log_errors' => false
         // option signals to queryAndGetResults() that this is a best-effort
