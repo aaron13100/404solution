@@ -43,6 +43,7 @@ return array(
     'ABJ_404_Solution_DataAccess_ViewBuildStartedWatermarkTrait' => $base . 'includes/DataAccessTrait_ViewBuildStartedWatermark.php',
     'ABJ_404_Solution_DataAccess_ViewMetadataTrait' => $base . 'includes/DataAccessTrait_ViewMetadata.php',
     'ABJ_404_Solution_DataAccess_ViewQueriesTrait' => $base . 'includes/DataAccessTrait_ViewQueries.php',
+    'ABJ_404_Solution_DataAccess_ViewQueriesHitsLifecycleTrait' => $base . 'includes/DataAccessTrait_ViewQueriesHitsLifecycle.php',
     'ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait' => $base . 'includes/DataAccessTrait_ViewQueriesStaged.php',
     'ABJ_404_Solution_DataAccess_ViewQueriesStagedReadTrait' => $base . 'includes/DataAccessTrait_ViewQueriesStagedRead.php',
     'ABJ_404_Solution_DataAccess_ViewSnapshotCacheTrait' => $base . 'includes/DataAccessTrait_ViewSnapshotCache.php',
