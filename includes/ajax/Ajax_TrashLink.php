@@ -34,6 +34,7 @@ class ABJ_404_Solution_Ajax_TrashLink {
         if (empty($data['resultset'])) {
             // Mark view_done as needing a rebuild so the next admin AJAX
             // fetch lands on fresh data that reflects this trash action.
+            $abj404dao->bumpMutationWatermark();
             $abj404dao->markViewDoneInvalidatedByAdminMutation();
         }
 
