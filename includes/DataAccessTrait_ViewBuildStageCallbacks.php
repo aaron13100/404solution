@@ -280,6 +280,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildStageCallbacksTrait {
         // S3 indexes are added with IF NOT EXISTS semantics emulated by
         // catching "Duplicate key name" on retry. See runStagedSqlFile
         // tolerance below.  ALTER TABLE itself is fast on the buffer.
+        $this->assertBuildBufferExistsOrHalt('S3 stageAddPreJoinIndexes');
         $this->runStagedSqlFileTolerantOfDuplicateKey('03_index_fd.sql', array());
     }
 
@@ -313,21 +314,25 @@ trait ABJ_404_Solution_DataAccess_ViewBuildStageCallbacksTrait {
 
     /** @return void */
     private function stageUpdateHome(): void {
+        $this->assertBuildBufferExistsOrHalt('S6 stageUpdateHome');
         $this->runStagedSqlFile('06_update_home.sql', array());
     }
 
     /** @return void */
     private function stageUpdateExternal(): void {
+        $this->assertBuildBufferExistsOrHalt('S7 stageUpdateExternal');
         $this->runStagedSqlFile('07_update_external.sql', array());
     }
 
     /** @return void */
     private function stageUpdateSpecial(): void {
+        $this->assertBuildBufferExistsOrHalt('S8 stageUpdateSpecial');
         $this->runStagedSqlFile('08_update_special.sql', $this->viewBuildOnlyTranslations());
     }
 
     /** @return void */
     private function stageUpdateHits(): void {
+        $this->assertBuildBufferExistsOrHalt('S9 stageUpdateHits');
         $this->runStagedSqlFile('09a_drop_hits_temp.sql', array());
         $this->runStagedSqlFile('09b_create_hits_temp.sql', array());
         $this->runStagedSqlFile('09c_insert_hits_temp.sql', array());
@@ -337,6 +342,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildStageCallbacksTrait {
 
     /** @return void */
     private function stageAddSortIndexes(): void {
+        $this->assertBuildBufferExistsOrHalt('S10 stageAddSortIndexes');
         $this->runStagedSqlFileTolerantOfDuplicateKey('10_index_sort.sql', array());
     }
 
@@ -530,6 +536,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildStageCallbacksTrait {
      * @return void
      */
     private function stageRenameSwap(): void {
+        $this->assertBuildBufferExistsOrHalt('S11 stageRenameSwap');
         $buildTempTable = $this->viewBuildTableName();
         $done = $this->viewDoneTableName();
         $deletemeTempTable = $this->viewDeletemeTableName();
@@ -555,5 +562,66 @@ trait ABJ_404_Solution_DataAccess_ViewBuildStageCallbacksTrait {
 
         $this->queryAndGetResults('DROP TABLE IF EXISTS `' . $deletemeTempTable . '`',
             array('log_errors' => false));
+    }
+
+    /**
+     * Pre-stage probe that halts the running stage cleanly when the
+     * view_build buffer is missing on disk. A concurrent invalidateViewDone()
+     * (redirect edit, plugin upgrade, correctCollations, daily maintenance)
+     * can call dropTransientBuffersIfPresent() and remove view_build between
+     * the start of a build tick and the next stage callback. Without this
+     * probe, the stage's first DDL/DML against view_build would hit
+     * queryAndGetResults, which logs the "Table doesn't exist" error at
+     * ERROR severity. The dispatcher then uploads it as a real bug report
+     * even though it is an expected concurrent-invalidate race (Pattern 13).
+     *
+     * Three production reports on 2026-05-16 (ids 9/10/11; plugin 4.1.18;
+     * sites greyleafmedia.com, myticas.com, p2p-game.com) traced to this
+     * shape at S3 (stageAddPreJoinIndexes) and S11 (stageRenameSwap). S2,
+     * S4, and S5 had bespoke inline guards already; this helper centralizes
+     * the same shape so every stage that touches view_build can opt in by
+     * adding one line at the top of its callback.
+     *
+     * The exception text MUST begin with "Staged view-build buffer missing"
+     * so the orchestrator's catch (runTimedViewBuildStage -> classifyStage-
+     * Failure in DataAccessTrait_ErrorClassification.php) recognizes the
+     * marker and routes the failure to 'resumable' -> resumable_yield ->
+     * orchestrator returns false. The next tick reads progress options and
+     * either restarts from S0 (if invalidateViewDone cleared them, the
+     * normal case) or fails the same check again until floor_kill_streak
+     * trips a clean halt notice.
+     *
+     * Warn-level severity is the correct choice per CLAUDE.md §8
+     * ("Infrastructure errors are warnings, not bugs -- unless the plugin
+     * can't function"): the build can recover by restarting on the next
+     * tick, so it remains functional. The warn line is still visible in
+     * debug.log for diagnosis; it just does not trigger the ERROR-level
+     * dispatcher upload path.
+     *
+     * @param string $stageLabel  Human-readable stage tag included in the
+     *                            warn line and exception message so the
+     *                            failure can be attributed to the exact
+     *                            stage callback that detected the race.
+     * @throws \Exception Always when the buffer is missing; never throws
+     *                   when the buffer is present (silent no-op happy
+     *                   path).
+     * @return void
+     */
+    private function assertBuildBufferExistsOrHalt(string $stageLabel): void {
+        if ($this->stagedTableExists($this->viewBuildTableName())) {
+            return;
+        }
+        $this->logger->warn(sprintf(
+            '[staged] %s halting: view_build buffer missing on disk. A '
+            . 'concurrent invalidateViewDone() drop is the expected cause '
+            . '(Pattern 13). Yielding stage; the next tick will rebuild '
+            . 'from S0 after progress options are cleared.',
+            $stageLabel
+        ));
+        throw new \Exception(sprintf(
+            'Staged view-build buffer missing at %s entry; pipeline state '
+            . 'diverged from disk. Halting stage for resume.',
+            $stageLabel
+        ));
     }
 }

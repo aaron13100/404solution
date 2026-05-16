@@ -416,6 +416,21 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
         if (!is_string($errorText) || $errorText === '') {
             return 'rethrow';
         }
+        // Buffer-missing marker thrown by our own pre-stage probes
+        // (assertBuildBufferExistsOrHalt in DataAccessTrait_ViewBuildStage-
+        // Callbacks.php, the bespoke S2/S4/S5 inline guards in the same
+        // file). A concurrent invalidateViewDone() dropped view_build out
+        // from under the running build; the next tick rebuilds cleanly
+        // from S0. Classify as resumable so the orchestrator yields
+        // without escalating to the dev mailbox. Match before the
+        // resumable-kill / permanent-host-failure checks so a future
+        // change to those classifiers cannot accidentally shadow this
+        // marker. Substring match because the message includes the
+        // stage label ("at S3 entry", "during S2 INSERT", etc.) but the
+        // "Staged view-build buffer missing" prefix is invariant.
+        if (stripos($errorText, 'Staged view-build buffer missing') !== false) {
+            return 'resumable';
+        }
         if ($this->isResumableStagedKill($errorText)) {
             return 'resumable';
         }
