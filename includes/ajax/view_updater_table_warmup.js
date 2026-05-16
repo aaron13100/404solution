@@ -247,6 +247,13 @@ function warmTableCacheStage(triggerItem, options) {
     var orderby = $ajaxConfigEl.attr('data-pagination-current-orderby') || getURLParameter('orderby');
     var order = $ajaxConfigEl.attr('data-pagination-current-order') || getURLParameter('order');
     var paged = $ajaxConfigEl.attr('data-pagination-current-paged') || getURLParameter('paged');
+    var scoreRange = $ajaxConfigEl.attr('data-pagination-current-score-range');
+    if (typeof scoreRange === 'undefined' || scoreRange === null || scoreRange === '') {
+        scoreRange = getURLParameter('score_range');
+    }
+    if (!scoreRange) {
+        scoreRange = 'all';
+    }
     var nonce = $ajaxConfigEl.attr("data-pagination-ajax-nonce") || '';
     var inflightNonce = $ajaxConfigEl.attr('data-pagination-inflight-nonce') || '';
     var requestId = abj404GenerateRequestId();
@@ -277,6 +284,7 @@ function warmTableCacheStage(triggerItem, options) {
             orderby: orderby,
             order: order,
             paged: paged,
+            score_range: scoreRange,
             requestId: requestId
         },
         success: function(result) {

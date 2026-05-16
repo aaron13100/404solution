@@ -90,6 +90,13 @@ function paginationLinksChange(triggerItem, options) {
     if (!id) {
         id = getURLParameter('id');
     }
+    var scoreRange = $ajaxConfigEl.attr('data-pagination-current-score-range');
+    if (typeof scoreRange === 'undefined' || scoreRange === null || scoreRange === '') {
+        scoreRange = getURLParameter('score_range');
+    }
+    if (!scoreRange) {
+        scoreRange = 'all';
+    }
 
     // Prefer nonce from attribute; fall back to legacy parsing from URL.
     var nonce = $ajaxConfigEl.attr("data-pagination-ajax-nonce") || '';
@@ -198,6 +205,7 @@ function paginationLinksChange(triggerItem, options) {
             order: order,
             paged: paged,
             id: id,
+            score_range: scoreRange,
             detectOnly: detectOnly ? '1' : '0',
             cacheMode: cacheMode,
             currentSignature: (detectOnly && baselineComparison && baselineComparison.serverSignature)

@@ -49,6 +49,7 @@ trait ViewTrait_Logs {
                 . ' data-pagination-current-order="' . esc_attr($order) . '"'
                 . ' data-pagination-current-filter="0"'
                 . ' data-pagination-current-paged="1"'
+                . ' data-pagination-current-score-range="all"'
                 . ' data-pagination-current-logsid="' . esc_attr((string)$this->dao->getPostOrGetSanitize('redirect_to_data_field_id')) . '"'
                 . ' data-pagination-initial-load="1"'
                 . ' data-pagination-auto-refresh="1"'
@@ -648,6 +649,9 @@ trait ViewTrait_Logs {
         $html = $this->f->str_replace('{data-pagination-current-order}', esc_attr((string)$order), $html);
         $html = $this->f->str_replace('{data-pagination-current-filter}', esc_attr((string)$filter), $html);
         $html = $this->f->str_replace('{data-pagination-current-paged}', esc_attr((string)$paged), $html);
+        $rawScoreRange = $tableOptions['score_range'] ?? 'all';
+        $scoreRangeForAttr = is_string($rawScoreRange) ? $rawScoreRange : 'all';
+        $html = $this->f->str_replace('{data-pagination-current-score-range}', esc_attr($scoreRangeForAttr), $html);
         $html = $this->f->str_replace('{data-pagination-current-logsid}', esc_attr((string)$logsid), $html);
         $autoRefresh = (($sub === 'abj404_redirects' || $sub === 'abj404_captured' || $sub === 'abj404_logs') ? '1' : '0');
         $html = $this->f->str_replace('{data-pagination-auto-refresh}', esc_attr($autoRefresh), $html);

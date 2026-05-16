@@ -65,6 +65,8 @@ trait ViewTrait_RedirectsTable {
         if ($currentPaged < 1) {
             $currentPaged = 1;
         }
+        $rawScoreRange = $tableOptions['score_range'] ?? 'all';
+        $currentScoreRange = is_string($rawScoreRange) ? $rawScoreRange : 'all';
 
         echo '<div class="abj404-filter-bar tablenav"'
                 . ' data-pagination-ajax-url="' . esc_attr(admin_url('admin-ajax.php')) . '"'
@@ -77,6 +79,7 @@ trait ViewTrait_RedirectsTable {
                 . ' data-pagination-current-order="' . esc_attr($currentOrder) . '"'
                 . ' data-pagination-current-filter="' . esc_attr((string)$currentFilter) . '"'
                 . ' data-pagination-current-paged="' . esc_attr((string)$currentPaged) . '"'
+                . ' data-pagination-current-score-range="' . esc_attr($currentScoreRange) . '"'
                 . ' data-pagination-current-logsid=""'
                 . ' data-pagination-initial-load="1"'
                 . ' data-pagination-auto-refresh="' . esc_attr($autoRefresh) . '"'
@@ -437,6 +440,8 @@ trait ViewTrait_RedirectsTable {
         if ($currentPaged < 1) {
             $currentPaged = 1;
         }
+        $rawScoreRangeForAttr = $tableOptions['score_range'] ?? 'all';
+        $currentScoreRangeForAttr = is_string($rawScoreRangeForAttr) ? $rawScoreRangeForAttr : 'all';
         echo '<div class="abj404-filter-bar tablenav"'
                 . ' data-pagination-ajax-url="' . esc_attr(admin_url('admin-ajax.php')) . '"'
                 . ' data-pagination-ajax-action="ajaxUpdatePaginationLinks"'
@@ -448,6 +453,7 @@ trait ViewTrait_RedirectsTable {
                 . ' data-pagination-current-order="' . esc_attr($currentOrder) . '"'
                 . ' data-pagination-current-filter="' . esc_attr((string)$currentFilter) . '"'
                 . ' data-pagination-current-paged="' . esc_attr((string)$currentPaged) . '"'
+                . ' data-pagination-current-score-range="' . esc_attr($currentScoreRangeForAttr) . '"'
                 . ' data-pagination-current-logsid=""'
                 . ' data-pagination-initial-load="1"'
                 . ' data-pagination-auto-refresh="' . esc_attr($autoRefresh) . '"'
