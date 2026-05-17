@@ -3494,9 +3494,6 @@ msgstr "Redirected to external URL"
 msgid "No redirect — showed 404 page"
 msgstr "No redirect — showed 404 page"
 
-msgid "Engine"
-msgstr "Engine"
-
 msgid "Engine: %s"
 msgstr "Engine: %s"
 
