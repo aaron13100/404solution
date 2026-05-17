@@ -1140,9 +1140,10 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
 
     /**
      * Unix timestamp when the data currently in the view_done table was
-     * produced. Survives invalidateViewDone() so the read path can compute
-     * an honest "data on disk is N hours old" age regardless of whether the
-     * freshness signal has been cleared.
+     * produced. Survives every freshness-signal clear (admin mutation,
+     * cron-fired rebuild, force-restart) so the read path can compute an
+     * honest "data on disk is N hours old" age regardless of whether the
+     * built_at marker has been reset.
      *
      * @return int
      */

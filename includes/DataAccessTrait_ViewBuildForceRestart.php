@@ -13,9 +13,12 @@ if (!defined('ABSPATH')) {
  * and restart the build from scratch" caller (the diagnostic AJAX
  * `?abj404_force_view_rebuild=1` path, the admin "rebuild now" button if
  * any, the WP-CLI rebuild commands -- migrated by Phase 3a step 4 and the
- * Cluster A-D tasks). Today those callers reach `invalidateViewDone()`
- * directly, which violates the runner-ownership invariant the refactor
- * exists to restore.
+ * Cluster A-D tasks). Before Phase 4, those callers reached
+ * `invalidateViewDone()` directly, which violated the runner-ownership
+ * invariant the refactor exists to restore; Phase 4 (commit 2994e21c)
+ * deleted that symbol and routed every external caller through either
+ * `bumpMutationWatermark()` (source-mutation signal) or this primitive
+ * (explicit restart-from-scratch).
  *
  * The contract is exactly seven bullets (and the absence of an eighth):
  *

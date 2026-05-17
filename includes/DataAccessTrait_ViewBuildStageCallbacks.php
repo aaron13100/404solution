@@ -59,8 +59,9 @@ trait ABJ_404_Solution_DataAccess_ViewBuildStageCallbacksTrait {
      * Drop view_build / view_deleteme only if either exists on disk. Gated by
      * SHOW TABLES so a steady-state invalidate (no buffer present, the common
      * case for redirect-edit invalidations) does not pile DROP IF EXISTS DDL
-     * on the hot path. Called from invalidateViewDone() so the buffer drop
-     * is atomic with the progress-option clear.
+     * on the hot path. Called from the runner-owned force-rebuild primitive
+     * (see DataAccessTrait_ViewBuildForceRestart) so the buffer drop is
+     * atomic with the progress-option clear.
      *
      * @return void
      */

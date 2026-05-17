@@ -11,16 +11,12 @@ if (!defined('ABSPATH')) {
  * docs/refactor-staged-view-build-watermark.md).
  *
  * Why it exists. The staged view-build runner needs a single, atomic signal
- * that source data (`abj404_redirects`) has changed. Today every mutation
- * call site invokes `invalidateViewDone()`, a god method that drops the
- * runner's buffer table mid-build (the "Aharon" bug class). The runner is
- * the rightful owner of buffer state; external callers must only signal
- * "data changed" via this primitive.
- *
- * Phase 1 is dormant: the class is shipped with passing tests but no
- * production code calls `bump()` yet. Phase 2 (q task c445) wires the
- * runner to read the watermark at stage boundaries; Phase 3 (q tasks
- * c437-c440) migrates the 25+ mutation call sites cluster-by-cluster.
+ * that source data (`abj404_redirects`) has changed. Before Phase 4, every
+ * mutation call site invoked `invalidateViewDone()`, a god method that
+ * dropped the runner's buffer table mid-build (the "Aharon" bug class).
+ * Phase 4 (commit 2994e21c) deleted the symbol entirely; the runner is the
+ * sole owner of buffer state and external callers signal "data changed"
+ * exclusively via this primitive.
  *
  * Atomicity contract. `bump()` issues a single SQL statement that both
  * creates the row on first use and increments the counter on every other

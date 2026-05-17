@@ -34,8 +34,8 @@ if (!defined('ABSPATH')) {
  * Skip markers persist across normal invalidations (redirect edits) but
  * are cleared by an explicit force rebuild and on plugin reactivation.
  * Stored as standalone WP options outside the staged-build progress option
- * registry: invalidateViewDone() must NOT clear them or every redirect
- * edit would re-arm the same denied DDL on the next cron tick.
+ * registry: a redirect-edit watermark bump must NOT clear them or every
+ * redirect edit would re-arm the same denied DDL on the next cron tick.
  */
 trait ABJ_404_Solution_DataAccess_ViewBuildHostFailurePolicyTrait {
 
@@ -245,10 +245,11 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHostFailurePolicyTrait {
     /**
      * Clear all skip markers + halt gate. Called from the explicit force
      * rebuild path so an admin who has fixed their host configuration
-     * can retry the previously denied stages. NOT called from
-     * invalidateViewDone() (regular redirect-edit invalidation): every
-     * redirect change would otherwise re-arm a denied DDL on the next
-     * cron tick, undoing the entire skip-persistence contract.
+     * can retry the previously denied stages. NOT called from the
+     * source-mutation watermark bump path (regular redirect-edit
+     * invalidation): every redirect change would otherwise re-arm a
+     * denied DDL on the next cron tick, undoing the entire
+     * skip-persistence contract.
      *
      * @return void
      */

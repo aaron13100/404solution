@@ -822,9 +822,9 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
         // buffer in place rather than re-running S1-S11 from scratch
         // -- but only when an integrity probe says the buffer is
         // plausibly complete. Without the integrity check we could
-        // publish a partially-built buffer (S2 stopped halfway, or
-        // invalidateViewDone() cleared progress while a redirect edit
-        // had also added rows we never picked up).
+        // publish a partially-built buffer (S2 stopped halfway, or a
+        // force-rebuild cleared progress while a redirect edit had
+        // also added rows we never picked up).
         if ($haveBuild && !$haveDone) {
             if (!$this->bufferIntegrityPassesForPromote($tempBuildTable)) {
                 $this->logger->infoMessage(sprintf(

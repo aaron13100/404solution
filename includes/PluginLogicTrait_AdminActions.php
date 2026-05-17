@@ -870,12 +870,13 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
             if ($autoPromoteAdd['autoPromoted']) {
                 $this->saveRegexAutoPromoteNotice((int)$newRedirectId, $originalManualURL, $manualURL, $autoPromoteAdd['urlRewritten']);
             }
-            // Admin-initiated mutation: force a fresh view_done rebuild
-            // before the next AJAX fetch so the new row appears
-            // immediately on the redirects table. invalidateViewDone()
-            // alone serves stale-but-present (fbc270d8) which is correct
-            // for cron/maintenance but hides the admin's own change
-            // until the next background rebuild.
+            // Admin-initiated mutation: bump the watermark so the build
+            // runner notices the new source data at the next stage
+            // boundary, and record the post-increment value against the
+            // admin-visibility gate so the next AJAX fetch waits for a
+            // build whose built_watermark covers it (the stale-serving
+            // contract from fbc270d8 is preserved for cron/maintenance
+            // paths but the admin sees their own change immediately).
             $this->dao->bumpMutationWatermark();
             $this->dao->markViewDoneInvalidatedByAdminMutation();
 
