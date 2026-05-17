@@ -1012,6 +1012,17 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
         $importer = new ABJ_404_Solution_CrossPluginImporter($this->dao, $this->logger);
         $count    = $importer->importFrom($source);
 
+        // Admin-initiated mutation: force a fresh view_done rebuild before the
+        // next AJAX fetch so the newly-imported rows appear on the redirects
+        // table immediately, not on the next cron rebuild. Mirrors the CSV
+        // import path above; without this the rows land in wp_abj404_redirects
+        // but the admin-visibility gate stays open and the cached view_done
+        // snapshot keeps serving pre-import rows.
+        if ($count > 0) {
+            $this->dao->bumpMutationWatermark();
+            $this->dao->markViewDoneInvalidatedByAdminMutation();
+        }
+
         return sprintf(
             /* translators: %d = number of redirects imported */
             _n(
