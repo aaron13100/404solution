@@ -352,18 +352,23 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
         // Non-indexed columns previously accepted here (remote_host/user_ip,
         // referrer, dest_url/action, engine) and the bogus `logshits` (not
         // a column of logsv2) silently fall back to `timestamp`.
-        $allowedOrderbyColumns = array(
-            'timestamp',
-            'requested_url',
-            'url',
-            'id',
-            'min_log_id',
+        //
+        // Each entry maps the user-facing orderby name to the SQL expression
+        // safe for ORDER BY in the assembled query. Qualify ambiguous columns
+        // with the table placeholder so the LEFT JOIN on
+        // {wp_abj404_lookup} (which also has `id`) cannot collide. `url`
+        // resolves through the SELECT alias and stays unqualified.
+        $orderbyExpressionByName = array(
+            'timestamp'     => '{wp_abj404_logsv2}.timestamp',
+            'requested_url' => '{wp_abj404_logsv2}.requested_url',
+            'url'           => 'url',
+            'id'            => '{wp_abj404_logsv2}.id',
+            'min_log_id'    => '{wp_abj404_logsv2}.min_log_id',
         );
         $rawOrderByVal = $tableOptions['orderby'];
         $orderby = sanitize_text_field($abj404logic->sanitizeForSQL(is_string($rawOrderByVal) ? $rawOrderByVal : ''));
-        if (!in_array($orderby, $allowedOrderbyColumns, true)) {
-            $orderby = 'timestamp'; // Safe default; indexed.
-        }
+        $orderby = array_key_exists($orderby, $orderbyExpressionByName) ? $orderby : 'timestamp';
+        $orderbyExpression = $orderbyExpressionByName[$orderby];
 
         // Whitelist allowed order directions
         $rawOrderVal2 = $tableOptions['order'];
@@ -385,7 +390,7 @@ trait ABJ_404_Solution_DataAccess_LogsTrait {
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getLogRecords.sql");
         $query = $this->f->str_replace('{logsid_included}', $logsid_included, $query);
         $query = $this->f->str_replace('{logsid}', $logsid, $query);
-        $query = $this->f->str_replace('{orderby}', $orderby, $query);
+        $query = $this->f->str_replace('{orderby}', $orderbyExpression, $query);
         $query = $this->f->str_replace('{order}', $order, $query);
         $query = $this->f->str_replace('{start}', (string)$start, $query);
         $query = $this->f->str_replace('{perpage}', (string)$perpage, $query);
