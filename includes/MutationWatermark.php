@@ -82,7 +82,7 @@ final class ABJ_404_Solution_MutationWatermark {
      */
     public static function tableName(): string {
         global $wpdb;
-        $prefix = isset($wpdb) && isset($wpdb->prefix) ? (string)$wpdb->prefix : 'wp_';
+        $prefix = isset($wpdb) && isset($wpdb->prefix) ? strtolower((string)$wpdb->prefix) : 'wp_';
         return $prefix . 'abj404_mutation_watermark';
     }
 

@@ -226,7 +226,7 @@ trait ViewTrait_Logs {
 	                $html .= '<br><a href="' . esc_url($action) . '" title="' . esc_attr($action) . '" target="_blank" class="abj404-action-url">' . esc_html($action) . '</a>';
 	            }
 	            if ($engineVal !== '') {
-	                $html .= '<br><span class="abj404-engine-label">' . esc_html($engineVal) . '</span>';
+	                $html .= '<br><span class="abj404-engine-label" title="' . esc_attr__('Engine', '404-solution') . '">' . esc_html($engineVal) . '</span>';
 	            }
 	            $html .= '</td>';
 

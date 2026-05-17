@@ -3494,6 +3494,9 @@ msgstr "Redirected to external URL"
 msgid "No redirect — showed 404 page"
 msgstr "No redirect — showed 404 page"
 
+msgid "Engine"
+msgstr "Engine"
+
 msgid "Engine: %s"
 msgstr "Engine: %s"
 
@@ -3932,3 +3935,27 @@ msgstr "pattern is empty"
 #: includes/ImportExportService.php
 msgid "cannot find a safe delimiter character"
 msgstr "cannot find a safe delimiter character"
+
+#: includes/ViewTrait_UI.php
+msgid "Restore Defaults"
+msgstr "Restore Defaults"
+
+#: includes/ViewTrait_UI.php
+msgid "Restore Default Settings?"
+msgstr "Restore Default Settings?"
+
+#: includes/ViewTrait_UI.php
+msgid "This will reset all plugin settings to their default values. This cannot be undone. Your redirect rules and 404 logs will not be affected."
+msgstr "This will reset all plugin settings to their default values. This cannot be undone. Your redirect rules and 404 logs will not be affected."
+
+#: includes/PluginLogicTrait_SettingsUpdate.php
+msgid "Error: 404 destination URL exceeds the maximum length of %d characters"
+msgstr "Error: 404 destination URL exceeds the maximum length of %d characters"
+
+#: includes/PluginLogicTrait_SettingsUpdate.php
+msgid "Error: Admin notification threshold must be a non-negative number"
+msgstr "Error: Admin notification threshold must be a non-negative number"
+
+#: includes/ajax/Ajax_RestoreDefaults.php
+msgid "Settings restored to defaults."
+msgstr "Settings restored to defaults."

@@ -318,14 +318,15 @@ class ABJ_404_Solution_ImportExportService {
 
         $entries = array();
         foreach ($redirects as $r) {
-            $sourceJson = json_encode($r['source'], JSON_UNESCAPED_SLASHES);
-            $destJson   = json_encode($r['dest'], JSON_UNESCAPED_SLASHES);
+            $jsonFlags  = JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE;
+            $sourceJson = json_encode($r['source'], $jsonFlags);
+            $destJson   = json_encode($r['dest'], $jsonFlags);
             // Fall back to UTF-8 sanitization if json_encode fails on invalid bytes
             if ($sourceJson === false) {
-                $sourceJson = json_encode(mb_convert_encoding($r['source'], 'UTF-8', 'UTF-8'), JSON_UNESCAPED_SLASHES);
+                $sourceJson = json_encode(mb_convert_encoding($r['source'], 'UTF-8', 'UTF-8'), $jsonFlags);
             }
             if ($destJson === false) {
-                $destJson = json_encode(mb_convert_encoding($r['dest'], 'UTF-8', 'UTF-8'), JSON_UNESCAPED_SLASHES);
+                $destJson = json_encode(mb_convert_encoding($r['dest'], 'UTF-8', 'UTF-8'), $jsonFlags);
             }
             if ($sourceJson === false || $destJson === false) {
                 continue;
