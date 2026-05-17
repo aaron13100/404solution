@@ -223,6 +223,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesHitsLifecycleTrait {
         }
         $tableName = $this->doTableNameReplacements('{wp_abj404_logs_hits}');
         /** @var wpdb $wpdb */
+        // DAO-bypass-approved: $wpdb->prepare is read-only string formatting; the resulting SQL is executed below via queryAndGetResults
         $showTablesQuery = $wpdb->prepare("SHOW TABLES LIKE %s", $tableName);
         if ($showTablesQuery === null) {
             return false;

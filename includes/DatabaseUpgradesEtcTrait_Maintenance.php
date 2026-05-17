@@ -586,6 +586,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
         $currentTime = time();
 
         // Find all expired rate limit timeout keys
+        // DAO-bypass-approved: WP-core wp_options probe; $wpdb->prepare is read-only string formatting, executed via $wpdb->get_col below
         $query = $wpdb->prepare(
             "SELECT option_name FROM {$wpdb->options}
              WHERE option_name LIKE %s

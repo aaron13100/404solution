@@ -677,6 +677,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
         if ($canUseSnapshotCache && $snapshotCacheKey !== '') {
             $this->setViewRowsSnapshotToTable($snapshotCacheKey, $sub, $rows, self::VIEW_SNAPSHOT_CACHE_TTL_SECONDS);
             if (function_exists('set_transient')) {
+                // allow-cache-empty: empty $rows is a legitimate result on a fresh install (no redirects yet); error paths early-return above without reaching this line
                 set_transient($snapshotCacheKey, $rows, self::VIEW_SNAPSHOT_CACHE_TTL_SECONDS);
             }
         }
@@ -795,6 +796,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
                     $countCacheKey = $this->getViewSnapshotCacheKey('abj404_view_count', $sub, $tableOptions);
                 }
                 if ($canUseSnapshotCache && $countCacheKey !== '') {
+                    // allow-cache-empty: $countValue=0 is a legitimate result when no rows match the search filter; the staged pending/error paths throw above without reaching this line
                     set_transient($countCacheKey, $countValue, self::VIEW_SNAPSHOT_CACHE_TTL_SECONDS);
                 }
                 return $countValue;
@@ -889,15 +891,19 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
 
         $scoreRangeClause = '';
         $rawScoreRange = is_string($tableOptions['score_range'] ?? '') ? ($tableOptions['score_range'] ?? 'all') : 'all';
+        // Each `wp_abj404_redirects.*` reference below is the SQL alias bound by the
+        // `FROM {wp_abj404_redirects} wp_abj404_redirects` clause in the assembled
+        // query, not a hardcoded table-name literal. Per-line markers keep the
+        // lint window (+/- 1 line) honest.
         switch ($rawScoreRange) {
-            case 'high': $scoreRangeClause = 'AND wp_abj404_redirects.score >= 80'; break;
-            case 'medium': $scoreRangeClause = 'AND wp_abj404_redirects.score >= 50 AND wp_abj404_redirects.score < 80'; break;
-            case 'low': $scoreRangeClause = 'AND wp_abj404_redirects.score IS NOT NULL AND wp_abj404_redirects.score < 50'; break;
-            case 'manual': $scoreRangeClause = 'AND wp_abj404_redirects.score IS NULL'; break;
+            case 'high': $scoreRangeClause = 'AND wp_abj404_redirects.score >= 80'; break; // allow-prefix-literal: SQL alias, see comment above
+            case 'medium': $scoreRangeClause = 'AND wp_abj404_redirects.score >= 50 AND wp_abj404_redirects.score < 80'; break; // allow-prefix-literal: SQL alias
+            case 'low': $scoreRangeClause = 'AND wp_abj404_redirects.score IS NOT NULL AND wp_abj404_redirects.score < 50'; break; // allow-prefix-literal: SQL alias
+            case 'manual': $scoreRangeClause = 'AND wp_abj404_redirects.score IS NULL'; break; // allow-prefix-literal: SQL alias
         }
 
         $query = "SELECT COUNT(*) AS count\n" .
-                 "FROM {wp_abj404_redirects} wp_abj404_redirects\n" .
+                 "FROM {wp_abj404_redirects} wp_abj404_redirects\n" . // allow-prefix-literal: second token is the SQL alias name, not a table reference
                  "WHERE 1 and status IN (" . $statusTypes . ") AND disabled = " . intval($trashValue) . "\n" .
                  $scoreRangeClause;
 
@@ -952,10 +958,11 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
                 // covers rows from upgraded sites where the chunked backfill
                 // hasn't reached yet — those rows merge in via the original
                 // expression so behavior matches pre-upgrade exactly.
+                // wp_abj404_redirects below is the SQL alias from the assembled FROM clause, not a hardcoded table name.
                 $logsTableJoin = "  LEFT OUTER JOIN {wp_abj404_logs_hits} logstable \n " .
                         "  on binary logstable.requested_url = " .
-                        "binary COALESCE(wp_abj404_redirects.canonical_url, " .
-                        "concat('/', trim(both '/' from wp_abj404_redirects.url))) \n ";
+                        "binary COALESCE(wp_abj404_redirects.canonical_url, " . // allow-prefix-literal: SQL alias
+                        "concat('/', trim(both '/' from wp_abj404_redirects.url))) \n "; // allow-prefix-literal: SQL alias
             } else {
                 // Fall back to null columns if table creation failed
                 $this->logger->debugMessage("logs_hits table not available, falling back to null columns");
@@ -1014,23 +1021,23 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
                 $order = 'ASC';
             }
             $orderByString = "order by published_status asc, " . $orderBy . " " . $order .
-                ", wp_abj404_redirects.url ASC, wp_abj404_redirects.id " . $order;
+                ", wp_abj404_redirects.url ASC, wp_abj404_redirects.id " . $order; // allow-prefix-literal: SQL alias bound by `FROM {wp_abj404_redirects} wp_abj404_redirects`
         }
 
-        // Score range filter clause.
+        // Score range filter clause. wp_abj404_redirects below is the SQL alias from the assembled FROM clause, not a hardcoded table name.
         $rawScoreRange = is_string($tableOptions['score_range'] ?? '') ? ($tableOptions['score_range'] ?? 'all') : 'all';
         switch ($rawScoreRange) {
             case 'high':
-                $scoreRangeClause = 'AND wp_abj404_redirects.score >= 80';
+                $scoreRangeClause = 'AND wp_abj404_redirects.score >= 80'; // allow-prefix-literal: SQL alias
                 break;
             case 'medium':
-                $scoreRangeClause = 'AND wp_abj404_redirects.score >= 50 AND wp_abj404_redirects.score < 80';
+                $scoreRangeClause = 'AND wp_abj404_redirects.score >= 50 AND wp_abj404_redirects.score < 80'; // allow-prefix-literal: SQL alias
                 break;
             case 'low':
-                $scoreRangeClause = 'AND wp_abj404_redirects.score IS NOT NULL AND wp_abj404_redirects.score < 50';
+                $scoreRangeClause = 'AND wp_abj404_redirects.score IS NOT NULL AND wp_abj404_redirects.score < 50'; // allow-prefix-literal: SQL alias
                 break;
             case 'manual':
-                $scoreRangeClause = 'AND wp_abj404_redirects.score IS NULL';
+                $scoreRangeClause = 'AND wp_abj404_redirects.score IS NULL'; // allow-prefix-literal: SQL alias
                 break;
             default:
                 $scoreRangeClause = '';
@@ -1169,6 +1176,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
     function prepare_query_wp($query, $data) {
         global $wpdb;
         list($prepared_query, $ordered_values) = $this->prepare_query($query, $data);
+        // DAO-bypass-approved: $wpdb->prepare is read-only string formatting; callers execute the result through queryAndGetResults
         return $wpdb->prepare($prepared_query, $ordered_values);
     }
     

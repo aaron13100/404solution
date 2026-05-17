@@ -433,6 +433,7 @@ class ABJ_404_Solution_DataAccess {
         $result = array('version' => $apiVersion, 'last_updated' => $apiLastUpdated);
         if (function_exists('set_transient')) {
             $ttl = defined('DAY_IN_SECONDS') ? DAY_IN_SECONDS : 86400;
+            // allow-cache-empty: $result always carries a version string (fallback to ABJ404_VERSION when plugins_api omits it); is_wp_error early-returns above
             set_transient($cacheKey, $result, $ttl);
         }
         return $result;
