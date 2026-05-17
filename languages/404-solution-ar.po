@@ -3916,3 +3916,27 @@ msgstr "النمط فارغ"
 #: includes/ImportExportService.php
 msgid "cannot find a safe delimiter character"
 msgstr "لا يمكن العثور على حرف محدد آمن"
+
+#: includes/ViewTrait_UI.php
+msgid "Restore Defaults"
+msgstr ""
+
+#: includes/ViewTrait_UI.php
+msgid "Restore Default Settings?"
+msgstr ""
+
+#: includes/ViewTrait_UI.php
+msgid "This will reset all plugin settings to their default values. This cannot be undone. Your redirect rules and 404 logs will not be affected."
+msgstr ""
+
+#: includes/PluginLogicTrait_SettingsUpdate.php
+msgid "Error: 404 destination URL exceeds the maximum length of %d characters"
+msgstr ""
+
+#: includes/PluginLogicTrait_SettingsUpdate.php
+msgid "Error: Admin notification threshold must be a non-negative number"
+msgstr ""
+
+#: includes/ajax/Ajax_RestoreDefaults.php
+msgid "Settings restored to defaults."
+msgstr ""
