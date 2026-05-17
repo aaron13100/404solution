@@ -287,6 +287,18 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
      * loop with this. The callable is invoked while the flag is set;
      * exceptions are rethrown but the flag is always restored.
      *
+     * On window close, issues exactly one bumpMutationWatermark() to
+     * represent the entire batch as a single mutation tick. Without this
+     * the per-row chain bumps are all suppressed and a later
+     * markViewDoneInvalidatedByAdminMutation() call would observe the
+     * pre-batch counter, leaving the admin-visibility gate un-raised
+     * and the next read returning the stale snapshot (the failure mode
+     * WpCliMutationEndToEndCharacterizationTest::testCliBulkAddFromCsv
+     * pins). The bump fires even when the callable returned early or
+     * threw, because the side effect of "we entered a mutation window"
+     * is what the watermark documents -- whether downstream rows landed
+     * is the caller's concern.
+     *
      * @template T
      * @param callable():T $work
      * @return T
@@ -298,6 +310,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
             return $work();
         } finally {
             self::$bulkMutationInProgress = $prior;
+            $this->bumpMutationWatermark();
         }
     }
 
