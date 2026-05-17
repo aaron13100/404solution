@@ -309,12 +309,17 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
         $this->invalidateViewDoneServeableCache();
         $this->scheduleViewDoneRebuild();
 
-        // Clear all rows from the view cache table. The 'log_errors' => false
-        // option signals to queryAndGetResults() that this is a best-effort
-        // operation: the cache expires naturally via TTL if the DELETE fails,
-        // so the DAO layer handles the failure quietly without re-throwing.
+        // Clear all rows from the view cache table. log_errors=false marks
+        // this as a best-effort operation (the cache expires naturally via
+        // TTL if the DELETE fails). skip_repair=true blocks the missing-
+        // table auto-create + retry path: a missing view_cache means
+        // "nothing to invalidate"; spinning up the full createDatabaseTables
+        // flow to make the DELETE succeed is wasteful in production and in
+        // tests it cascades correctCollations -> bumpMutationWatermark, which
+        // breaks the "exactly one bump per source-data mutation" contract
+        // pinned by MixedSourceConcurrentMutationIntegrationTest.
         $query = "DELETE FROM {wp_abj404_view_cache} WHERE 1=1";
-        $this->queryAndGetResults($query, array('log_errors' => false));
+        $this->queryAndGetResults($query, array('log_errors' => false, 'skip_repair' => true));
 
         // Clear WordPress transients for view row and count snapshots.
         // The transient keys are hashed (e.g. abj404_view_rows_<md5>), so
