@@ -18,6 +18,24 @@ trait ABJ_404_Solution_DataAccess_ViewSnapshotCacheTrait {
     /**
      * Build a stable cache key for admin list data/count snapshots.
      *
+     * The key embeds the current per-blog mutation watermark, so any source-
+     * data mutation (which already bumps the watermark via the centralized
+     * invalidateViewSnapshotCache / bumpMutationWatermark seam) implicitly
+     * invalidates every prior cache entry. Readers post-mutation generate a
+     * new key, miss the cache, and rebuild from the fresh view_done snapshot.
+     * Old entries become orphans and are reaped by the expires_at cleanup.
+     *
+     * Why this matters. The pre-watermark invalidation path manually issued
+     * `DELETE FROM wp_options WHERE option_name LIKE '_transient_abj404_view_%'`
+     * to drop the WP-transient mirror written alongside the table-backed
+     * cache. That DELETE assumes transients live in wp_options; integration
+     * tests that stub `set_transient` to a `$GLOBALS['test_transients']`
+     * registry diverge silently, the transient survives the invalidate, and
+     * the next read returns the pre-mutation snapshot. Version-keying makes
+     * the manual delete optional (it now only matters for disk-space
+     * reclamation, not correctness) and closes the test/production gap by
+     * construction.
+     *
      * @param string $prefix
      * @param string $sub
      * @param array<string, mixed> $tableOptions
@@ -34,9 +52,46 @@ trait ABJ_404_Solution_DataAccess_ViewSnapshotCacheTrait {
             'filterText' => is_scalar($tableOptions['filterText'] ?? '') ? (string)($tableOptions['filterText'] ?? '') : '',
             'score_range' => (function ($v) { return is_string($v) ? $v : 'all'; })($tableOptions['score_range'] ?? 'all'),
             'blog' => function_exists('get_current_blog_id') ? (int)get_current_blog_id() : 1,
+            'mw' => $this->readMutationWatermarkForCacheKey(),
         );
         $encoded = function_exists('wp_json_encode') ? wp_json_encode($cacheShape) : json_encode($cacheShape);
         return $prefix . '_' . md5((string)$encoded);
+    }
+
+    /**
+     * Read the current mutation watermark for the per-blog cache key, with
+     * a defensive fallback of 0 when the watermark primitive is unavailable
+     * for any reason: the class is not yet loaded (cold-bootstrap path
+     * before the autoloader resolved it), the global `$wpdb` does not yet
+     * expose the query / prepare / get_var triple the primitive needs
+     * (legacy unit-test mocks that only expose `query`), or the underlying
+     * MariaDB connection is mid-failure. The fallback collapses to a
+     * single shared "version 0" bucket; correctness still holds because:
+     *
+     *   - In a healthy install, the first real mutation produces a
+     *     non-zero watermark for every subsequent read, so cache keys
+     *     diverge by version as designed.
+     *   - In a degraded environment where the watermark can't be read, no
+     *     watermark-bumping mutation can succeed either (the same wpdb is
+     *     in use), so the cache is implicitly version-stable.
+     *
+     * Throwable catch is intentional: this primitive sits on the read hot
+     * path and must never propagate a watermark read failure as a hard
+     * fault into `getViewSnapshotCacheKey()`. A swallowed read produces
+     * a less-precise cache key, not a broken read.
+     *
+     * @return int
+     */
+    private function readMutationWatermarkForCacheKey(): int {
+        if (!class_exists('ABJ_404_Solution_MutationWatermark')) {
+            return 0;
+        }
+        try {
+            return ABJ_404_Solution_MutationWatermark::current();
+            // allow-silent-catch: degraded wpdb (e.g. unit-test mocks lacking prepare()) falls back to "version 0" cache bucket; never propagate a watermark-read fault into the read hot path
+        } catch (\Throwable $e) {
+            return 0;
+        }
     }
 
     /** @return void */
