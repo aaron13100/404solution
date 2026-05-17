@@ -958,6 +958,14 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
             (int)ABJ404_STATUS_MANUAL,
             (int)$notice['redirect_id'],
         )));
+        // The raw UPDATE above bypasses the setupRedirect/updateRedirect
+        // chain that normally bumps the mutation watermark via
+        // invalidateStatusCountsCache. Bump explicitly so markView below
+        // observes a fresh watermark and the next admin read sees the
+        // reverted URL/status (without this, observed == built_watermark
+        // and the gate never fires; view_done keeps serving the
+        // pre-undo /oops/.* row).
+        $this->dao->bumpMutationWatermark();
         $this->dao->markViewDoneInvalidatedByAdminMutation();
         ABJ_404_Solution_RegexAutoPromote::clearNotice();
         return sprintf(
