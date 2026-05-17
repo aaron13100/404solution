@@ -196,26 +196,66 @@ trait ABJ_404_Solution_DataAccess_AdminMutationGateTrait {
      * need to block reads in the meantime (fbc270d8 stale-serving).
      */
     public function markViewDoneInvalidatedByAdminMutation(): void {
-        $observed = $this->bumpMutationWatermark();
+        // Read CURRENT watermark first. The caller's prior setupRedirect /
+        // updateRedirect / etc. has typically already bumped via
+        // invalidateStatusCountsCache -> invalidateViewSnapshotCache ->
+        // bumpMutationWatermark, so we just record that post-mutation
+        // value. Skipping the bump here avoids double-counting (one
+        // mutation -> two ticks of the counter), which
+        // MixedSourceConcurrentMutationIntegrationTest pins as a contract
+        // violation: each entry-point handler must advance the counter by
+        // exactly one tick regardless of how many internal seams it routes
+        // through.
+        //
+        // Fallback bump: when current() returns 0 we self-bump to record a
+        // non-zero observed value. This covers two cases. (1) Callers that
+        // invoke markView without a preceding source-data mutation (no
+        // chain bump fired) still get a functioning gate. (2) The
+        // primitive class is unavailable (cold bootstrap before autoload):
+        // the bump() seam returns 0 too, and we fall through to the
+        // legacy timestamp option below.
+        $observed = $this->safeCurrentMutationWatermark();
+        if ($observed <= 0) {
+            $observed = $this->bumpMutationWatermark();
+        }
         if (!function_exists('update_option')) {
             return;
         }
         if ($observed <= 0) {
-            // Watermark primitive unavailable (cold-bootstrap path before
-            // the autoloader resolves MutationWatermark.php). Defensive
-            // fall-back: stamp the legacy timestamp option so a legacy
-            // installation of viewDoneIsServeable() can still gate reads
-            // if it ever sees this state. Production code paths reach
-            // bumpMutationWatermark() with the class already loaded.
+            // Watermark primitive still unavailable after the fallback
+            // bump attempt (cold-bootstrap path before the autoloader
+            // resolves MutationWatermark.php). Stamp the legacy timestamp
+            // option so a legacy installation of viewDoneIsServeable() can
+            // still gate reads if it ever sees this state.
             update_option($this->viewDoneMutationInvalidatedAtOptionName(), time(), false);
             return;
         }
-        // Record the post-increment watermark and a wall-clock timestamp
-        // so viewDoneIsServeable() can apply the sanity timeout to the
-        // gate the same way the legacy timestamp gate did.
+        // Record the watermark and a wall-clock timestamp so
+        // viewDoneIsServeable() can apply the sanity timeout to the gate
+        // the same way the legacy timestamp gate did.
         update_option($this->mutationWatermarkObservedByAdminActionOptionName(), $observed, false);
         update_option($this->mutationWatermarkObservedByAdminActionAtOptionName(), time(), false);
         $this->invalidateViewDoneServeableCache();
+    }
+
+    /**
+     * Read the current per-blog mutation watermark, returning 0 when the
+     * primitive is unavailable for any reason (class not autoloaded,
+     * degraded wpdb that lacks get_var / prepare, transient DB error).
+     * Same fallback contract as readMutationWatermarkForCacheKey in
+     * DataAccessTrait_ViewSnapshotCache: 0 means "treat as unversioned"
+     * and the caller falls through to its degraded path.
+     */
+    private function safeCurrentMutationWatermark(): int {
+        if (!class_exists('ABJ_404_Solution_MutationWatermark')) {
+            return 0;
+        }
+        try {
+            return ABJ_404_Solution_MutationWatermark::current();
+            // allow-silent-catch: degraded wpdb (test mocks lacking get_var, transient connection errors) collapses to fallback bump in markView; we never want the gate setter to throw and abort the admin response
+        } catch (\Throwable $e) {
+            return 0;
+        }
     }
 
     /**

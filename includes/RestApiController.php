@@ -249,7 +249,6 @@ class ABJ_404_Solution_RestApiController {
             return new \WP_Error('create_failed', __('Failed to create redirect.', '404-solution'), array('status' => 500));
         }
 
-        $this->dao->bumpMutationWatermark();
         $this->dao->markViewDoneInvalidatedByAdminMutation();
 
         return new \WP_REST_Response(array(
@@ -301,7 +300,6 @@ class ABJ_404_Solution_RestApiController {
             return new \WP_Error('update_failed', $error, array('status' => 500));
         }
 
-        $this->dao->bumpMutationWatermark();
         $this->dao->markViewDoneInvalidatedByAdminMutation();
 
         return new \WP_REST_Response(array(
@@ -333,7 +331,6 @@ class ABJ_404_Solution_RestApiController {
             return new \WP_Error('trash_failed', $error, array('status' => 500));
         }
 
-        $this->dao->bumpMutationWatermark();
         $this->dao->markViewDoneInvalidatedByAdminMutation();
 
         return new \WP_REST_Response(array('trashed' => true, 'id' => $id), 200);
@@ -424,7 +421,6 @@ class ABJ_404_Solution_RestApiController {
             return new \WP_Error('update_failed', $error, array('status' => 500));
         }
 
-        $this->dao->bumpMutationWatermark();
         $this->dao->markViewDoneInvalidatedByAdminMutation();
 
         return new \WP_REST_Response(array(

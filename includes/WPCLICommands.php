@@ -156,7 +156,6 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
         $status     = $regex ? (string)ABJ404_STATUS_REGEX : (string)ABJ404_STATUS_MANUAL;
         $insertedId = $dao->setupRedirect($from, $status, $type, $dest, (string)$code, 0, 'wp-cli');
         if ($insertedId) {
-            $dao->bumpMutationWatermark();
             $dao->markViewDoneInvalidatedByAdminMutation();
             $displayDest = $isTerminalCode ? "(none — {$code})" : "{$to}";
             \WP_CLI::success("Redirect created (ID: {$insertedId}): {$from} → {$displayDest} [{$code}]");
@@ -218,7 +217,6 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
         $error = $dao->moveRedirectsToTrash($id, 1);
 
         if ($error === '') {
-            $dao->bumpMutationWatermark();
             $dao->markViewDoneInvalidatedByAdminMutation();
             \WP_CLI::success("Redirect ID {$id} moved to trash.");
         } else {
@@ -448,7 +446,6 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
         // the next admin tab read so imported rows appear immediately, matching
         // the admin form path (handleActionImportFile in
         // PluginLogicTrait_AdminActions.php).
-        $dao->bumpMutationWatermark();
         $dao->markViewDoneInvalidatedByAdminMutation();
         \WP_CLI::success("Import complete. Valid={$validRows}, invalid={$invalidRows}, total={$processedRows}");
     }
