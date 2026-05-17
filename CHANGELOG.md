@@ -14,6 +14,7 @@
 * Fixed the repair-and-retry path continuing to report an error after the repair succeeded. The error is now cleared immediately after a successful repair.
 * Fixed a potential SQL ambiguity error in log queries on sites with certain JOIN configurations.
 * Fixed all 6 scheduled tasks not being removed when the plugin is deactivated. Previously some cron hooks were left behind and would trigger errors until manually cleared.
+* Fixed the "Undo" link on regex auto-promotion notices not reverting the URL on the next page load. The original URL is now correctly restored along with the Manual status.
 
 **Improvements**
 
