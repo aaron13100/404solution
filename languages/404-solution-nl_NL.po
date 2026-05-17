@@ -3890,24 +3890,24 @@ msgstr "kan geen veilig scheidingsteken vinden"
 
 #: includes/ViewTrait_UI.php
 msgid "Restore Defaults"
-msgstr ""
+msgstr "Standaardinstellingen herstellen"
 
 #: includes/ViewTrait_UI.php
 msgid "Restore Default Settings?"
-msgstr ""
+msgstr "Standaardinstellingen herstellen?"
 
 #: includes/ViewTrait_UI.php
 msgid "This will reset all plugin settings to their default values. This cannot be undone. Your redirect rules and 404 logs will not be affected."
-msgstr ""
+msgstr "Dit zet alle plugin-instellingen terug naar de standaardwaarden. Deze actie kan niet ongedaan worden gemaakt. Uw omleidingsregels en 404-logboeken worden niet beïnvloed."
 
 #: includes/PluginLogicTrait_SettingsUpdate.php
 msgid "Error: 404 destination URL exceeds the maximum length of %d characters"
-msgstr ""
+msgstr "Fout: de 404-bestemmings-URL overschrijdt de maximale lengte van %d tekens"
 
 #: includes/PluginLogicTrait_SettingsUpdate.php
 msgid "Error: Admin notification threshold must be a non-negative number"
-msgstr ""
+msgstr "Fout: de drempel voor beheerdersmelding moet een niet-negatief getal zijn"
 
 #: includes/ajax/Ajax_RestoreDefaults.php
 msgid "Settings restored to defaults."
-msgstr ""
+msgstr "Instellingen hersteld naar standaardwaarden."

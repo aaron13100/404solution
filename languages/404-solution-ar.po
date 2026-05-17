@@ -3919,24 +3919,24 @@ msgstr "لا يمكن العثور على حرف محدد آمن"
 
 #: includes/ViewTrait_UI.php
 msgid "Restore Defaults"
-msgstr ""
+msgstr "استعادة الإعدادات الافتراضية"
 
 #: includes/ViewTrait_UI.php
 msgid "Restore Default Settings?"
-msgstr ""
+msgstr "هل تريد استعادة الإعدادات الافتراضية؟"
 
 #: includes/ViewTrait_UI.php
 msgid "This will reset all plugin settings to their default values. This cannot be undone. Your redirect rules and 404 logs will not be affected."
-msgstr ""
+msgstr "سيؤدي هذا إلى إعادة تعيين جميع إعدادات الإضافة إلى قيمها الافتراضية. لا يمكن التراجع عن هذا الإجراء. لن تتأثر قواعد إعادة التوجيه وسجلات 404."
 
 #: includes/PluginLogicTrait_SettingsUpdate.php
 msgid "Error: 404 destination URL exceeds the maximum length of %d characters"
-msgstr ""
+msgstr "خطأ: عنوان URL الوجهة 404 يتجاوز الحد الأقصى للطول %d حرف"
 
 #: includes/PluginLogicTrait_SettingsUpdate.php
 msgid "Error: Admin notification threshold must be a non-negative number"
-msgstr ""
+msgstr "خطأ: يجب أن يكون حد إشعار المسؤول رقمًا غير سالب"
 
 #: includes/ajax/Ajax_RestoreDefaults.php
 msgid "Settings restored to defaults."
-msgstr ""
+msgstr "تم استعادة الإعدادات إلى القيم الافتراضية."

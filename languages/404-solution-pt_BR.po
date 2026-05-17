@@ -3890,24 +3890,24 @@ msgstr "não é possível encontrar um caractere delimitador seguro"
 
 #: includes/ViewTrait_UI.php
 msgid "Restore Defaults"
-msgstr ""
+msgstr "Restaurar padrões"
 
 #: includes/ViewTrait_UI.php
 msgid "Restore Default Settings?"
-msgstr ""
+msgstr "Restaurar configurações padrão?"
 
 #: includes/ViewTrait_UI.php
 msgid "This will reset all plugin settings to their default values. This cannot be undone. Your redirect rules and 404 logs will not be affected."
-msgstr ""
+msgstr "Isso redefinirá todas as configurações do plugin para os valores padrão. Esta ação não pode ser desfeita. Suas regras de redirecionamento e logs 404 não serão afetados."
 
 #: includes/PluginLogicTrait_SettingsUpdate.php
 msgid "Error: 404 destination URL exceeds the maximum length of %d characters"
-msgstr ""
+msgstr "Erro: a URL de destino 404 excede o comprimento máximo de %d caracteres"
 
 #: includes/PluginLogicTrait_SettingsUpdate.php
 msgid "Error: Admin notification threshold must be a non-negative number"
-msgstr ""
+msgstr "Erro: o limiar de notificação do administrador deve ser um número não negativo"
 
 #: includes/ajax/Ajax_RestoreDefaults.php
 msgid "Settings restored to defaults."
-msgstr ""
+msgstr "Configurações restauradas para os padrões."

@@ -3903,24 +3903,24 @@ msgstr "安全な区切り文字が見つかりません"
 
 #: includes/ViewTrait_UI.php
 msgid "Restore Defaults"
-msgstr ""
+msgstr "デフォルトに戻す"
 
 #: includes/ViewTrait_UI.php
 msgid "Restore Default Settings?"
-msgstr ""
+msgstr "デフォルト設定に戻しますか？"
 
 #: includes/ViewTrait_UI.php
 msgid "This will reset all plugin settings to their default values. This cannot be undone. Your redirect rules and 404 logs will not be affected."
-msgstr ""
+msgstr "プラグインの全設定をデフォルト値にリセットします。この操作は元に戻せません。リダイレクトルールや404ログには影響しません。"
 
 #: includes/PluginLogicTrait_SettingsUpdate.php
 msgid "Error: 404 destination URL exceeds the maximum length of %d characters"
-msgstr ""
+msgstr "エラー：404転送先URLが最大長%d文字を超えています"
 
 #: includes/PluginLogicTrait_SettingsUpdate.php
 msgid "Error: Admin notification threshold must be a non-negative number"
-msgstr ""
+msgstr "エラー：管理者通知のしきい値は非負の数である必要があります"
 
 #: includes/ajax/Ajax_RestoreDefaults.php
 msgid "Settings restored to defaults."
-msgstr ""
+msgstr "設定をデフォルトに戻しました。"

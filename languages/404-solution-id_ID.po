@@ -3883,24 +3883,24 @@ msgstr "tidak dapat menemukan karakter pembatas yang aman"
 
 #: includes/ViewTrait_UI.php
 msgid "Restore Defaults"
-msgstr ""
+msgstr "Pulihkan Default"
 
 #: includes/ViewTrait_UI.php
 msgid "Restore Default Settings?"
-msgstr ""
+msgstr "Pulihkan Pengaturan Default?"
 
 #: includes/ViewTrait_UI.php
 msgid "This will reset all plugin settings to their default values. This cannot be undone. Your redirect rules and 404 logs will not be affected."
-msgstr ""
+msgstr "Ini akan mengatur ulang semua pengaturan plugin ke nilai defaultnya. Tindakan ini tidak dapat dibatalkan. Aturan pengalihan dan log 404 Anda tidak akan terpengaruh."
 
 #: includes/PluginLogicTrait_SettingsUpdate.php
 msgid "Error: 404 destination URL exceeds the maximum length of %d characters"
-msgstr ""
+msgstr "Kesalahan: URL tujuan 404 melebihi panjang maksimum %d karakter"
 
 #: includes/PluginLogicTrait_SettingsUpdate.php
 msgid "Error: Admin notification threshold must be a non-negative number"
-msgstr ""
+msgstr "Kesalahan: ambang batas notifikasi admin harus berupa angka non-negatif"
 
 #: includes/ajax/Ajax_RestoreDefaults.php
 msgid "Settings restored to defaults."
-msgstr ""
+msgstr "Pengaturan dikembalikan ke default."

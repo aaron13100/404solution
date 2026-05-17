@@ -3890,24 +3890,24 @@ msgstr "kan inte hitta ett säkert avgränsningstecken"
 
 #: includes/ViewTrait_UI.php
 msgid "Restore Defaults"
-msgstr ""
+msgstr "Återställ standardvärden"
 
 #: includes/ViewTrait_UI.php
 msgid "Restore Default Settings?"
-msgstr ""
+msgstr "Återställa standardinställningar?"
 
 #: includes/ViewTrait_UI.php
 msgid "This will reset all plugin settings to their default values. This cannot be undone. Your redirect rules and 404 logs will not be affected."
-msgstr ""
+msgstr "Detta återställer alla plugininställningar till sina standardvärden. Åtgärden kan inte ångras. Dina omdirigeringsregler och 404-loggar påverkas inte."
 
 #: includes/PluginLogicTrait_SettingsUpdate.php
 msgid "Error: 404 destination URL exceeds the maximum length of %d characters"
-msgstr ""
+msgstr "Fel: 404-destinations-URL överstiger maximal längd på %d tecken"
 
 #: includes/PluginLogicTrait_SettingsUpdate.php
 msgid "Error: Admin notification threshold must be a non-negative number"
-msgstr ""
+msgstr "Fel: adminmeddelandetröskeln måste vara ett icke-negativt tal"
 
 #: includes/ajax/Ajax_RestoreDefaults.php
 msgid "Settings restored to defaults."
-msgstr ""
+msgstr "Inställningar återställda till standardvärden."

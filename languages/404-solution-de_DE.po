@@ -3888,24 +3888,24 @@ msgstr "kein sicheres Trennzeichen gefunden"
 
 #: includes/ViewTrait_UI.php
 msgid "Restore Defaults"
-msgstr ""
+msgstr "Standardwerte wiederherstellen"
 
 #: includes/ViewTrait_UI.php
 msgid "Restore Default Settings?"
-msgstr ""
+msgstr "Standardeinstellungen wiederherstellen?"
 
 #: includes/ViewTrait_UI.php
 msgid "This will reset all plugin settings to their default values. This cannot be undone. Your redirect rules and 404 logs will not be affected."
-msgstr ""
+msgstr "Dies setzt alle Plugin-Einstellungen auf die Standardwerte zurück. Diese Aktion kann nicht rückgängig gemacht werden. Ihre Weiterleitungsregeln und 404-Protokolle sind nicht betroffen."
 
 #: includes/PluginLogicTrait_SettingsUpdate.php
 msgid "Error: 404 destination URL exceeds the maximum length of %d characters"
-msgstr ""
+msgstr "Fehler: Die 404-Ziel-URL überschreitet die maximale Länge von %d Zeichen"
 
 #: includes/PluginLogicTrait_SettingsUpdate.php
 msgid "Error: Admin notification threshold must be a non-negative number"
-msgstr ""
+msgstr "Fehler: Der Schwellenwert für Admin-Benachrichtigungen muss eine nicht-negative Zahl sein"
 
 #: includes/ajax/Ajax_RestoreDefaults.php
 msgid "Settings restored to defaults."
-msgstr ""
+msgstr "Einstellungen auf Standardwerte zurückgesetzt."
