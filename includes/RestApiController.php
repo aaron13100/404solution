@@ -524,14 +524,29 @@ class ABJ_404_Solution_RestApiController {
      * @return \WP_REST_Response|\WP_Error
      */
     public function testRedirect($request) {
+        // Distinguish "parameter omitted" (legitimate 400; the caller broke
+        // the API contract) from "parameter present but whitespace-only"
+        // (treat as malformed input and return matched=false). The latter
+        // is the documented robust-input contract: malformed URLs (control
+        // chars, invalid schemes, extreme length, etc.) must produce a
+        // 200 / matched=false response, not a 5xx. Whitespace-only is one
+        // shape of malformed input.
+        //
+        // Inference: WP_REST_Request->get_param('url') returns null when
+        // the parameter was not present in body/query/json/url params and
+        // returns the raw value (including empty string) when it was. The
+        // null vs scalar split is the safe portable signal across WP
+        // versions and across the minimal test stub that doesn't expose
+        // has_param().
         $rawUrl = $request->get_param('url');
-        $url    = trim(is_scalar($rawUrl) ? (string)$rawUrl : '');
-
-        if ($url === '') {
+        if ($rawUrl === null) {
             return new \WP_Error('missing_url', __('The "url" parameter is required.', '404-solution'), array('status' => 400));
         }
+        $url = trim(is_scalar($rawUrl) ? (string)$rawUrl : '');
 
-        // Normalize to relative path for lookup.
+        // Normalize to relative path for lookup. Empty $url falls through to
+        // the lookup as-is; the DAO returns no match and the endpoint emits
+        // matched=false at 200, which is the malformed-input contract.
         $normalizedUrl = $this->logic->normalizeToRelativePath($url);
         if (!is_string($normalizedUrl) || $normalizedUrl === '') {
             $normalizedUrl = $url;
