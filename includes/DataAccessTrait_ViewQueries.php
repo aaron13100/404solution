@@ -262,11 +262,57 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
     }
 
     /**
+     * Per-request "bulk mutation in progress" flag. When set, per-row
+     * invalidateStatusCountsCache() calls short-circuit to a no-op so a
+     * 10K-row CSV import does not fire 60K invalidation queries (each row
+     * cascades to bumpMutationWatermark + delete_option +
+     * delete_transient × N + DELETE FROM view_cache; for a 10K import
+     * this took ~63s before this guard). The bulk caller is responsible
+     * for issuing ONE final invalidation (typically via
+     * markViewDoneInvalidatedByAdminMutation()) after the bulk write
+     * completes, so admin reads see the imported rows immediately.
+     *
+     * Implemented as a static on the DAO instance ($this only because
+     * trait scoping requires it) so the flag survives across multiple
+     * setupRedirect() calls within one request without needing every
+     * caller to thread a parameter through.
+     *
+     * @var bool
+     */
+    public static $bulkMutationInProgress = false;
+
+    /**
+     * Open/close the bulk-mutation window. Bulk importers (CSV import,
+     * sitemap regeneration, future bulk admin actions) wrap their per-row
+     * loop with this. The callable is invoked while the flag is set;
+     * exceptions are rethrown but the flag is always restored.
+     *
+     * @template T
+     * @param callable():T $work
+     * @return T
+     */
+    public function runWithDeferredInvalidation(callable $work) {
+        $prior = self::$bulkMutationInProgress;
+        self::$bulkMutationInProgress = true;
+        try {
+            return $work();
+        } finally {
+            self::$bulkMutationInProgress = $prior;
+        }
+    }
+
+    /**
      * Invalidate cached status counts.
      * Call this when redirects are created, updated, or deleted.
+     *
+     * No-op when {@see self::$bulkMutationInProgress} is set; the bulk
+     * caller must issue one final invalidation after the loop completes.
      */
     /** @return void */
     function invalidateStatusCountsCache(): void {
+        if (self::$bulkMutationInProgress) {
+            return;
+        }
         delete_transient(self::CACHE_KEY_REDIRECT_STATUS);
         delete_transient(self::CACHE_KEY_CAPTURED_STATUS);
         delete_transient(self::CACHE_KEY_HIGH_IMPACT_CAPTURED);

@@ -386,48 +386,73 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
         $invalidRows    = 0;
         $anyIssuesToNote = array();
 
-        while (($row = fgetcsv($fileHandle, 0, $delimiter, '"', '\\')) !== false) {
-            $data = array_map(function($v) {
-                return trim((string)$v);
-            }, $row);
+        // Wrap the per-row loop in the deferred-invalidation window so
+        // each setupRedirect call's invalidateStatusCountsCache short-
+        // circuits. Without this, a 10K-row import fires ~60K transient
+        // / option / watermark queries; the one end-of-loop markView
+        // bump below covers the entire batch.
+        $rowResult = $dao->runWithDeferredInvalidation(function () use (
+                $svc, $fileHandle, $delimiter, $dryRun) {
+            $local = array(
+                'headerColumns' => null,
+                'processedRows' => 0,
+                'validRows' => 0,
+                'invalidRows' => 0,
+                'anyIssuesToNote' => array(),
+                'error' => null,
+            );
+            while (($row = fgetcsv($fileHandle, 0, $delimiter, '"', '\\')) !== false) {
+                $data = array_map(function($v) {
+                    return trim((string)$v);
+                }, $row);
 
-            // Skip blank lines.
-            if (count($data) === 1 && $data[0] === '') {
-                continue;
+                // Skip blank lines.
+                if (count($data) === 1 && $data[0] === '') {
+                    continue;
+                }
+
+                // Detect and consume the header row.
+                if ($local['headerColumns'] === null && $svc->isCompatibleImportHeaderRow($data)) {
+                    $local['headerColumns'] = $svc->normalizeImportHeaders($data);
+                    continue;
+                }
+
+                $dataArray = ($local['headerColumns'] !== null)
+                    ? $svc->mapImportRowByHeaders($data, $local['headerColumns'])
+                    : $svc->mapImportRowWithoutHeaders($data);
+
+                if (isset($dataArray['error'])) {
+                    $local['error'] = $dataArray['error'];
+                    return $local;
+                }
+
+                // Skip header-literal rows that slipped through.
+                if (isset($dataArray['from_url']) &&
+                        ($dataArray['from_url'] === 'from_url' || $dataArray['from_url'] === 'request')) {
+                    continue;
+                }
+
+                $local['processedRows']++;
+                $issues = $svc->loadDataArrayFromFile($dataArray, $dryRun);
+                if (count($issues) > 0) {
+                    $local['invalidRows']++;
+                } else {
+                    $local['validRows']++;
+                }
+                $local['anyIssuesToNote'] = array_merge($local['anyIssuesToNote'], $issues);
             }
-
-            // Detect and consume the header row.
-            if ($headerColumns === null && $svc->isCompatibleImportHeaderRow($data)) {
-                $headerColumns = $svc->normalizeImportHeaders($data);
-                continue;
-            }
-
-            $dataArray = ($headerColumns !== null)
-                ? $svc->mapImportRowByHeaders($data, $headerColumns)
-                : $svc->mapImportRowWithoutHeaders($data);
-
-            if (isset($dataArray['error'])) {
-                fclose($fileHandle);
-                \WP_CLI::error($dataArray['error']);
-                return;
-            }
-
-            // Skip header-literal rows that slipped through.
-            if (isset($dataArray['from_url']) &&
-                    ($dataArray['from_url'] === 'from_url' || $dataArray['from_url'] === 'request')) {
-                continue;
-            }
-
-            $processedRows++;
-            $issues = $svc->loadDataArrayFromFile($dataArray, $dryRun);
-            if (count($issues) > 0) {
-                $invalidRows++;
-            } else {
-                $validRows++;
-            }
-            $anyIssuesToNote = array_merge($anyIssuesToNote, $issues);
-        }
+            return $local;
+        });
         fclose($fileHandle);
+        if (!empty($rowResult['error'])) {
+            \WP_CLI::error($rowResult['error']);
+            return;
+        }
+        $headerColumns  = $rowResult['headerColumns'];
+        $processedRows  = $rowResult['processedRows'];
+        $validRows      = $rowResult['validRows'];
+        $invalidRows    = $rowResult['invalidRows'];
+        $anyIssuesToNote = $rowResult['anyIssuesToNote'];
 
         if ($dryRun) {
             \WP_CLI::line("Dry run: valid={$validRows}, invalid={$invalidRows}, total={$processedRows}");
