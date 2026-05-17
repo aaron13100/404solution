@@ -275,7 +275,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
 		 */
 			function correctCollations() {
 				global $wpdb;
-			
+
 			// Discover all plugin tables dynamically so new tables are automatically included.
 			// Use queryAndGetResults() so the SHOW TABLES call goes through the same DAO
 			// layer as all other queries (enables testability via mock injection).
@@ -295,17 +295,27 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
 
 				$targetCharset = 'utf8mb4';
 				$targetCollation = $this->resolveTargetUtf8mb4Collation($abjTableNames, $tableCollations);
-				
+
+				// Track whether any ALTER actually fired. Drift correction can change
+				// the byte-level representation of redirect URLs (latin1 -> utf8mb4),
+				// which means a snapshot built against the pre-correction encoding
+				// could mis-compare against post-correction lookups. The watermark
+				// bump signals "source data changed; reconsider at the next stage
+				// boundary" without dropping in-flight runner state. BATCHED policy
+				// per refactor-staged-view-build-watermark.md: one bump per handler
+				// regardless of how many tables ALTERed.
+				$anyAlterFired = false;
+
 				foreach ($abjTableNames as $tableName) {
 					$abjTableData = $tableCollations[$tableName] ?? null;
-			
+
 					if ($abjTableData === null) {
 						$this->logger->warn("Failed to retrieve collation for $tableName.");
 					continue;  // Skip this table if collation can't be determined
 				}
-		
+
 				[$abjTableCollation, $abjTableCharset] = $abjTableData;
-		
+
 				$needsUpdate = !($abjTableCharset === $targetCharset && $abjTableCollation === $targetCollation);
 				if (!$needsUpdate) {
 					// Table default matches, but individual columns can still drift (e.g., some columns left as *_bin).
@@ -321,7 +331,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
 				if (!$needsUpdate) {
 					continue;
 				}
-				
+
 				$this->logger->infoMessage("Updating charset/collation on {$tableName} from {$abjTableCharset}/{$abjTableCollation} to {$targetCharset}/{$targetCollation}");
 
 				$query = "ALTER TABLE {table_name} CONVERT TO CHARSET " . $targetCharset .
@@ -344,14 +354,26 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
 						$this->logger->warn("Charset/collation retry for $tableName failed: " . $retryResults['last_error']);
 					} else {
 						$this->logger->infoMessage("Successfully changed charset/collation of $tableName after retry.");
+						$anyAlterFired = true;
 					}
 
 				} else if (empty($results['last_error'])) {
 					$this->logger->infoMessage("Successfully changed charset/collation of $tableName to {$targetCharset}/{$targetCollation}");
+					$anyAlterFired = true;
 				} else {
 					$this->logger->warn("Charset/collation change for $tableName failed: " . $results['last_error']);
 				}
 			}
+
+				if ($anyAlterFired) {
+					// Post-correction state may render or compare differently from the
+					// pre-correction view_done snapshot. The bump is non-destructive
+					// (no DROP, no progress clear) so it cannot race an in-flight
+					// staged build: the runner reads the watermark at the next stage
+					// boundary and either aborts cleanly or completes a build whose
+					// built_watermark covers the post-correction data.
+					$this->dao->bumpMutationWatermark();
+				}
 		}
 
 		/**
