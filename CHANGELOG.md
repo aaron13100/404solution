@@ -1,5 +1,30 @@
 # Changelog #
 
+## Version 4.1.19 (May 17, 2026) ##
+
+**New Features**
+
+* Regex redirects are now auto-detected. When you save or import a redirect that contains regex characters (wildcards, brackets, pipes), the plugin automatically marks it as a regex redirect and applies the correct syntax. No need to manually check the "Treat as regex" box. An admin notice confirms the auto-promotion with Edit and Undo links.
+* Debug logs now automatically redact sensitive server details (database name, table prefix, filesystem paths) so logs can be shared safely without manual editing.
+
+**Bug Fixes**
+
+* Fixed the Confidence dropdown filter on admin tables only working on the initial page load. Changing the filter and then navigating pages or waiting for the background refresh would reset it to "All", showing every row.
+* Fixed invalid regex patterns in CSV imports crashing the import. Invalid patterns are now validated during import and suppressed at runtime instead of causing errors.
+* Fixed the repair-and-retry path continuing to report an error after the repair succeeded. The error is now cleared immediately after a successful repair.
+* Fixed a potential SQL ambiguity error in log queries on sites with certain JOIN configurations.
+* Fixed all 6 scheduled tasks not being removed when the plugin is deactivated. Previously some cron hooks were left behind and would trigger errors until manually cleared.
+
+**Improvements**
+
+* Bulk CSV and WP-CLI imports are significantly faster. A 10,000-row import that previously issued ~60,000 extra cache-invalidation queries now batches them into a single invalidation at the end.
+* Admin tables now update immediately after any change, including changes made via WP-CLI, the REST API, or cross-plugin imports, instead of showing stale data until the next cache rebuild.
+* The admin settings page now validates URL length and rejects negative numeric values, preventing misconfigured redirects.
+
+**Internationalization**
+
+* Added translations for 6 new strings in all 12 language files.
+
 ## Version 4.1.18 (May 13, 2026) ##
 
 **Bug Fixes**

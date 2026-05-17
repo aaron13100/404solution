@@ -5,7 +5,7 @@ Tags: 404, redirect, 404 redirect, broken links, spell check
 Requires at least: 5.0
 Requires PHP: 7.4
 Tested up to: 7.0
-Stable tag: 4.1.18
+Stable tag: 4.1.19
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -200,6 +200,31 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 6. **Email Digest** — Weekly HTML email summarizing captured 404s, resolution rate, and a ranked table of top 404 URLs with color-coded hit badges.
 
 == Changelog ==
+
+= Version 4.1.19 (May 17, 2026) =
+
+**New Features**
+
+* Regex redirects are now auto-detected. When you save or import a redirect that contains regex characters (wildcards, brackets, pipes), the plugin automatically marks it as a regex redirect and applies the correct syntax. No need to manually check the "Treat as regex" box. An admin notice confirms the auto-promotion with Edit and Undo links.
+* Debug logs now automatically redact sensitive server details (database name, table prefix, filesystem paths) so logs can be shared safely without manual editing.
+
+**Bug Fixes**
+
+* Fixed the Confidence dropdown filter on admin tables only working on the initial page load. Changing the filter and then navigating pages or waiting for the background refresh would reset it to "All", showing every row.
+* Fixed invalid regex patterns in CSV imports crashing the import. Invalid patterns are now validated during import and suppressed at runtime instead of causing errors.
+* Fixed the repair-and-retry path continuing to report an error after the repair succeeded. The error is now cleared immediately after a successful repair.
+* Fixed a potential SQL ambiguity error in log queries on sites with certain JOIN configurations.
+* Fixed all 6 scheduled tasks not being removed when the plugin is deactivated. Previously some cron hooks were left behind and would trigger errors until manually cleared.
+
+**Improvements**
+
+* Bulk CSV and WP-CLI imports are significantly faster. A 10,000-row import that previously issued ~60,000 extra cache-invalidation queries now batches them into a single invalidation at the end.
+* Admin tables now update immediately after any change, including changes made via WP-CLI, the REST API, or cross-plugin imports, instead of showing stale data until the next cache rebuild.
+* The admin settings page now validates URL length and rejects negative numeric values, preventing misconfigured redirects.
+
+**Internationalization**
+
+* Added translations for 6 new strings in all 12 language files.
 
 = Version 4.1.18 (May 13, 2026) =
 
@@ -494,52 +519,4 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 * Fixed filter bar inputs and selects overflowing below their container's bottom border due to WordPress admin styles setting an inflated line-height on form controls.
 * Fixed Logs tab URL search input being too narrow — it now dynamically grows to fill available space.
 * Fixed database error notices not appearing on the plugin admin page when a table is missing or cannot be created.
-
-= Version 4.0.2 (Mar 28, 2026) =
-
-**New Features**
-
-* Orphaned table adoption — automatically detects and recovers plugin data left behind by site migrations or table prefix changes. Uses slug-matching verification to confirm data ownership before adopting.
-* Graceful admin screen when plugin files are missing or corrupt — instead of a white screen, shows a diagnostic page listing missing files with reinstall instructions (Error 18).
-* Improved pipeline trace display with color-coded status badges for easier log reading.
-
-**Bug Fixes**
-
-* Fixed table prefix normalization — centralized 15+ direct `$wpdb->prefix` usages to go through the lowercased prefix helper, preventing "Table doesn't exist" errors on case-sensitive MySQL servers after table rename.
-* Fixed `renameAbj404TablesToLowerCase()` running unnecessarily on MySQL servers with `lower_case_table_names >= 1` (where MySQL already handles table name casing).
-* Fixed orphaned redirect cleanup failing on sites with non-default database table prefixes.
-* Fixed N-gram cache race condition where concurrent TRUNCATE and INSERT operations could corrupt the spelling cache.
-* Fixed timezone handling — replaced `date_default_timezone_set()` with WordPress `wp_date()` for timezone-safe date formatting.
-* Fixed ErrorHandler switch statement bug that could route errors to the wrong handler.
-* Fixed `deleteSpecifiedRedirects` type filter not correctly constraining purge operations.
-* Fixed DDL schema comparison incorrectly flagging non-zero quoted integer defaults (e.g. `DEFAULT '1'` vs `DEFAULT 1`) as schema differences.
-
-**Security**
-
-* Added defense-in-depth guard that prevents schema migrations from accidentally dropping all columns from a table.
-
-**Internal**
-
-* Column-matched INSERT for table adoption — uses `SHOW COLUMNS` and `array_intersect` to handle schema drift between plugin versions when adopting data from old-prefix tables.
-* Major codebase refactoring: consolidated duplicated DataAccess patterns, unified AJAX security boilerplate into a shared trait, extracted shared helpers for multisite batch processing and DDL normalization.
-* Replaced `$_REQUEST[ABJ404_PP]` message bus with a typed `RequestContext` object.
-* Removed dead code: unused settings method, stale DDL builders, and redundant index verification logic.
-
-= Version 4.0.1 (Mar 25, 2026) =
-
-**Bug Fixes**
-
-* Fixed perpetual "still differences" schema errors on the engine_profiles table caused by MySQL quoting numeric defaults differently than the goal DDL (e.g. `default '1'` vs `default 1`).
-* Fixed missing-table auto-repair flooding admins with error emails even when repair succeeded. Now only sends an email if repair actually fails.
-* Fixed blank screen after dismissing the review notice.
-* Fixed GSC integration sending unbounded API requests — added URL cap, corrected chunk size, and added a circuit-breaker.
-* Fixed full-table scan in log ID/URL query by adding LIMIT 500.
-* Fixed PHP 8.4 deprecation warning in CSV export (`fputcsv()` missing `$escape` parameter).
-* Removed dead PDF email attachment feature.
-* Fixed Logs table layout — long URLs no longer overflow into adjacent columns, and the Date column is no longer truncated.
-* Fixed redirect not firing on WordPress 6.9+ when `class-wp-font-face.php` sends output before headers.
-
-**Improvements**
-
-* Added pipeline trace for per-request detail logging in the Logs tab — click the arrow on any log row to see every step of the redirect decision process.
 
