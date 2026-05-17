@@ -1102,7 +1102,7 @@ class ABJ_404_Solution_DataAccess {
         }
 
         if ($options['log_errors'] && $result['last_error'] != '') {
-            if ($this->f->strpos($result['last_error'], 
+            if ($this->f->strpos($result['last_error'],
                     " is marked as crashed ") !== false) {
                 $this->repairTable($result['last_error']);
             }
@@ -1114,6 +1114,9 @@ class ABJ_404_Solution_DataAccess {
             if ($this->isIncorrectKeyFileError($result['last_error'])) {
                 $this->repairCorruptedTableAndRetry($query, $result);
             }
+
+            // Self-heal short-circuit: repair-and-retry above clears last_error by reference; without this return the downstream classifier sees '' and emits a spurious ERROR-level "Ugh. SQL query error: ," entry that triggers the dev email digest.
+            if ($result['last_error'] === '') { return $result; }
 
             // ignore any specific errors.
             $reportError = true;
