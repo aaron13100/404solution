@@ -15,6 +15,7 @@
 * Fixed a potential SQL ambiguity error in log queries on sites with certain JOIN configurations.
 * Fixed all 6 scheduled tasks not being removed when the plugin is deactivated. Previously some cron hooks were left behind and would trigger errors until manually cleared.
 * Fixed the "Undo" link on regex auto-promotion notices not reverting the URL on the next page load. The original URL is now correctly restored along with the Manual status.
+* Fixed a rare race on shared hosting where a dropped database connection during the admin table rebuild could let a second worker drop the rebuild's working table out from under the first, producing "Table doesn't exist" or "Can't find .frm file" errors. The rebuild now releases its database lock between each step so a dropped connection loses at most one step of progress instead of the entire 11-step run.
 
 **Improvements**
 

@@ -1049,6 +1049,48 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
     }
 
     /**
+     * Release the build lock and immediately reacquire it (non-blocking).
+     * Called between every stage of the staged view build so the lock hold
+     * is bounded by the duration of a single stage rather than the cumulative
+     * 11-stage wall time.
+     *
+     * Why this exists: production error reports #14 (ajasha.de, S4), #15
+     * (greyleafmedia.com, S11), #16 (p2p-game.com, S5), and #17 (remiancelin.fr,
+     * S11), all plugin 4.1.18 via wp-cron, traced to a connection-drop race.
+     * GET_LOCK was acquired once and held across the full S1-S11 run. On
+     * shared hosting the MySQL connection dropped mid-hold (wait_timeout or
+     * pool eviction); wpdb auto-reconnected with no lock; a second cron tick
+     * acquired the (now freed) lock, ran reconcile Case 3, and dropped
+     * view_build out from under the first worker. The first worker then
+     * queried a missing table: "Table doesn't exist" (MariaDB) or "Can't find
+     * .frm file" (MySQL 5.7).
+     *
+     * Per-stage release bounds the connection-drop exposure window to a
+     * single stage, and a sibling worker that takes the lock between our
+     * stages sees the persisted current_stage / started_at and resumes from
+     * where we left off rather than running reconcile against a partial build.
+     *
+     * @return bool  true when the lock was reacquired and the caller should
+     *               continue with the next stage; false when a sibling worker
+     *               took the lock in the gap -- the caller must yield this
+     *               tick. RELEASE_LOCK / delete_option of a lock we no longer
+     *               hold is a no-op, so the caller's outer try/finally release
+     *               is harmless even on the yield path.
+     */
+    private function releaseAndReacquireBetweenStages(): bool {
+        $this->releaseViewBuildLock();
+        if (!$this->acquireViewBuildLock(0)) {
+            $this->logger->infoMessage(
+                '[staged] runStagedBuildOnce: released build lock between stages; '
+                . 'another worker took it during the gap. Yielding this tick; '
+                . 'the next cron / AJAX advance will resume from the persisted current_stage.'
+            );
+            return false;
+        }
+        return true;
+    }
+
+    /**
      * Verify `$wpdb->prefix` has not changed since S1 captured it. When the
      * snapshot and the live prefix disagree, surface a deduplicated admin
      * notice, log the mismatch with both prefixes for post-mortem, and
@@ -1228,6 +1270,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
         }
 
         if ($stage < 2) {
+            if (!$this->releaseAndReacquireBetweenStages()) { return false; }
             if ($this->haltIfPrefixChangedSinceStageOne(2)) { return false; }
             if ($this->gateAbortIfMutationWatermarkAdvanced(2)) { return false; }
             $r = $this->runTimedViewBuildStage(2, 'staged_build_s2_insert', function () {
@@ -1241,6 +1284,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
         }
 
         if ($stage < 3) {
+            if (!$this->releaseAndReacquireBetweenStages()) { return false; }
             if ($this->haltIfPrefixChangedSinceStageOne(3)) { return false; }
             if ($this->gateAbortIfMutationWatermarkAdvanced(3)) { return false; }
             if ($this->isStageMarkedSkipped(3)) {
@@ -1267,6 +1311,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
         }
 
         if ($stage < 4) {
+            if (!$this->releaseAndReacquireBetweenStages()) { return false; }
             if ($this->haltIfPrefixChangedSinceStageOne(4)) { return false; }
             if ($this->gateAbortIfMutationWatermarkAdvanced(4)) { return false; }
             $r = $this->runTimedViewBuildStage(4, 'staged_build_s4_update_posts', function () {
@@ -1280,6 +1325,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
         }
 
         if ($stage < 5) {
+            if (!$this->releaseAndReacquireBetweenStages()) { return false; }
             if ($this->haltIfPrefixChangedSinceStageOne(5)) { return false; }
             if ($this->gateAbortIfMutationWatermarkAdvanced(5)) { return false; }
             $r = $this->runTimedViewBuildStage(5, 'staged_build_s5_update_terms', function () {
@@ -1293,6 +1339,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
         }
 
         if ($stage < 6) {
+            if (!$this->releaseAndReacquireBetweenStages()) { return false; }
             if ($this->haltIfPrefixChangedSinceStageOne(6)) { return false; }
             if ($this->gateAbortIfMutationWatermarkAdvanced(6)) { return false; }
             $this->markBuildStage('staged_build_s6_update_home');
@@ -1307,6 +1354,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
         }
 
         if ($stage < 7) {
+            if (!$this->releaseAndReacquireBetweenStages()) { return false; }
             if ($this->haltIfPrefixChangedSinceStageOne(7)) { return false; }
             if ($this->gateAbortIfMutationWatermarkAdvanced(7)) { return false; }
             $this->markBuildStage('staged_build_s7_update_external');
@@ -1321,6 +1369,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
         }
 
         if ($stage < 8) {
+            if (!$this->releaseAndReacquireBetweenStages()) { return false; }
             if ($this->haltIfPrefixChangedSinceStageOne(8)) { return false; }
             if ($this->gateAbortIfMutationWatermarkAdvanced(8)) { return false; }
             $this->markBuildStage('staged_build_s8_update_special');
@@ -1335,6 +1384,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
         }
 
         if ($stage < 9) {
+            if (!$this->releaseAndReacquireBetweenStages()) { return false; }
             if ($this->haltIfPrefixChangedSinceStageOne(9)) { return false; }
             if ($this->gateAbortIfMutationWatermarkAdvanced(9)) { return false; }
             if ($this->isStageMarkedSkipped(9)) {
@@ -1368,6 +1418,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
         }
 
         if ($stage < 10) {
+            if (!$this->releaseAndReacquireBetweenStages()) { return false; }
             if ($this->haltIfPrefixChangedSinceStageOne(10)) { return false; }
             if ($this->gateAbortIfMutationWatermarkAdvanced(10)) { return false; }
             if ($this->isStageMarkedSkipped(10)) {
@@ -1391,6 +1442,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
         }
 
         if ($stage < 11) {
+            if (!$this->releaseAndReacquireBetweenStages()) { return false; }
             if ($this->haltIfPrefixChangedSinceStageOne(11)) { return false; }
             if ($this->gateAbortIfMutationWatermarkAdvanced(11)) { return false; }
             $this->markBuildStage('staged_build_s11_swap');
