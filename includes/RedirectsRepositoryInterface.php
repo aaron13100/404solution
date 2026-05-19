@@ -131,6 +131,24 @@ interface ABJ_404_Solution_RedirectsRepositoryInterface {
     public function autoTrashJunkCapturedUrls(array $options): int;
 
     // =========================================================================
+    // Redirect maintenance (from DataAccessTrait_Maintenance, Phase 5)
+    // =========================================================================
+
+    /**
+     * Flag redirects whose destination URL appears in the 404 log as a recent 404.
+     *
+     * @return void
+     */
+    public function flagDeadDestinationRedirects(): void;
+
+    /**
+     * Move auto-created redirects to trash if they are older than the configured expiration.
+     *
+     * @return int Number of redirects moved to trash
+     */
+    public function expireOldAutoRedirects(): int;
+
+    // =========================================================================
     // Regex cache (from DataAccess static state)
     // =========================================================================
 

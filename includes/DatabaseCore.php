@@ -5,7 +5,6 @@ if (!defined('ABSPATH')) {
 }
 
 require_once __DIR__ . '/DatabaseCoreInterface.php';
-require_once __DIR__ . '/DatabaseRepairDelegate.php';
 require_once __DIR__ . '/DataAccessTrait_Connection.php';
 require_once __DIR__ . '/DataAccessTrait_QueryTimeouts.php';
 require_once __DIR__ . '/DataAccessTrait_ErrorClassification.php';
@@ -61,12 +60,8 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
     /** @var bool Whether we already checked for a stale notice transient this request. */
     private $serverSideIssueChecked = false;
 
-    /**
-     * @var ABJ_404_Solution_DatabaseRepairDelegate|null Temporary bridge to
-     *  Maintenance-trait repair methods on DataAccess. Removed in Phase 5 when
-     *  those methods move here.
-     */
-    private $repairDelegate = null;
+    /** @var bool Prevent recursive collation auto-recovery. */
+    private static $collationRecoveryInProgress = false;
 
     /**
      * @param ABJ_404_Solution_Functions|null $functions
@@ -75,14 +70,6 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
     public function __construct($functions = null, $logging = null) {
         $this->f = $functions !== null ? $functions : abj_service('functions');
         $this->logger = $logging !== null ? $logging : abj_service('logging');
-    }
-
-    /**
-     * @param ABJ_404_Solution_DatabaseRepairDelegate $delegate
-     * @return void
-     */
-    public function setRepairDelegate(ABJ_404_Solution_DatabaseRepairDelegate $delegate): void {
-        $this->repairDelegate = $delegate;
     }
 
     /** @param ABJ_404_Solution_Clock $clock @return void */
@@ -408,9 +395,7 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
         }
 
         if ($result['last_error'] !== '' && $this->isCollationError($result['last_error'])) {
-            if ($this->repairDelegate !== null) {
-                $this->repairDelegate->recoverFromCollationMismatchAndRetry($query, $result, $producesRows, $resultType);
-            }
+            $this->recoverFromCollationMismatchAndRetry($query, $result, $producesRows, $resultType);
         }
 
         if ($result['last_error'] !== '' && $this->isQueryTimeoutError($result['last_error'])) {
@@ -435,16 +420,12 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
         if ($options['log_errors'] && $result['last_error'] != '') {
             if ($this->f->strpos($result['last_error'],
                     " is marked as crashed ") !== false) {
-                if ($this->repairDelegate !== null) {
-                    $this->repairDelegate->repairTable($result['last_error']);
-                }
+                $this->repairTable($result['last_error']);
             }
             if ($this->f->strpos($result['last_error'],
                     "ALTER TABLE causes auto_increment resequencing") !== false &&
                     $this->f->strpos($result['last_error'], "resulting in duplicate entry") !== false) {
-                if ($this->repairDelegate !== null) {
-                    $this->repairDelegate->repairDuplicateIDs($result['last_error'], $query);
-                }
+                $this->repairDuplicateIDs($result['last_error'], $query);
             }
             if ($this->isIncorrectKeyFileError($result['last_error'])) {
                 $this->repairCorruptedTableAndRetry($query, $result);
@@ -795,9 +776,7 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
      */
     public function repairCorruptedTableAndRetry(string $query, array &$result): void {
         $errorMessage = is_string($result['last_error']) ? $result['last_error'] : '';
-        if ($this->repairDelegate !== null) {
-            $this->repairDelegate->repairTable($errorMessage);
-        }
+        $this->repairTable($errorMessage);
         if (stripos($errorMessage, 'abj404') !== false) {
             global $wpdb;
             $wpdb->flush();
@@ -855,6 +834,161 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
             );
             return null;
         }
+    }
+
+    // =========================================================================
+    // Repair / recovery methods (moved from DataAccessTrait_Maintenance, Phase 5)
+    // =========================================================================
+
+    /**
+     * Auto-recover from a collation mismatch detected at query time.
+     *
+     * @param string $query
+     * @param array<string, mixed> $result passed by reference
+     * @param bool   $producesRows Whether the query returns result rows.
+     * @param 'OBJECT'|'OBJECT_K'|'ARRAY_A'|'ARRAY_N' $resultType wpdb output type for get_results().
+     * @return void
+     */
+    public function recoverFromCollationMismatchAndRetry(string $query, array &$result, bool $producesRows, string $resultType): void {
+        if (self::$collationRecoveryInProgress) {
+            return;
+        }
+
+        $cooldownKey = 'abj404_collation_recovery_cooldown';
+        $cooldownUntil = $this->getRuntimeFlag($cooldownKey);
+        $onCooldown = is_scalar($cooldownUntil) && (int)$cooldownUntil > $this->clock()->now();
+
+        if (!$onCooldown) {
+            self::$collationRecoveryInProgress = true;
+            try {
+                $this->logger->infoMessage("Collation mismatch detected: running correctCollations() to converge plugin tables."); // allow-em-dash: original string from DataAccessTrait_Maintenance had em dash, replaced with colon
+                if (class_exists('ABJ_404_Solution_DatabaseUpgradesEtc')) {
+                    $upgrades = abj_service('database_upgrades');
+                    if (method_exists($upgrades, 'correctCollations')) {
+                        $upgrades->correctCollations();
+                    }
+                }
+            } catch (Throwable $e) {
+                $this->logger->warn("correctCollations() threw during collation auto-recovery: " . $e->getMessage());
+            } finally {
+                self::$collationRecoveryInProgress = false;
+                $this->setRuntimeFlag($cooldownKey, $this->clock()->now() + 3600, 3600);
+            }
+        }
+
+        global $wpdb;
+        /** @var wpdb $wpdb */
+        $wpdb->flush();
+        if ($producesRows) {
+            $result['rows'] = $wpdb->get_results($query, $resultType);
+        } else {
+            $wpdb->query($query);
+            $result['rows'] = array();
+        }
+        $this->harvestWpdbResult($result);
+
+        if ($result['last_error'] === '') {
+            $this->logger->debugMessage("Collation auto-recovery succeeded; query retry passed.");
+        }
+    }
+
+    /**
+     * Validate and sanitize a table name extracted from error messages or SQL.
+     *
+     * @param string $name Raw table name
+     * @return string|null Sanitized name, or null if invalid
+     */
+    private function sanitizeTableName(string $name): ?string {
+        $name = trim($name, '`');
+        if (!preg_match('/^[a-zA-Z0-9_]+$/', $name)) {
+            $this->logger->warn("sanitizeTableName: rejected invalid table name: " . substr($name, 0, 100));
+            return null;
+        }
+        if (strpos($name, 'abj404') === false) {
+            $this->logger->warn("sanitizeTableName: rejected non-plugin table name: " . $name);
+            return null;
+        }
+        return $name;
+    }
+
+    /** @inheritDoc */
+    public function repairTable(string $errorMessage): void {
+
+        $re1 = "Table '(.*\/)?(.+)' is marked as crashed and ";
+        $re2 = "Incorrect key file for table '(?:.*\/)?([^'.]+?)(?:\\.MYI)?'";
+
+        $matches = array();
+        $this->f->regexMatch($re1, $errorMessage, $matches);
+
+        if (empty($matches) || count($matches) <= 2 || $this->f->strlen($matches[2]) === 0) {
+            $this->f->regexMatch($re2, $errorMessage, $matches);
+            if (!empty($matches) && isset($matches[1]) && $this->f->strlen($matches[1]) > 0) {
+                $matches[2] = $matches[1];
+            }
+        }
+
+        if (!empty($matches) && count($matches) > 2 && $this->f->strlen($matches[2]) > 0) {
+            $rawTableName = $matches[2];
+            $tableToRepair = $this->sanitizeTableName($rawTableName);
+            if ($tableToRepair !== null) {
+                $query = "REPAIR TABLE `{$tableToRepair}`";
+                $result = $this->queryAndGetResults($query, array('log_errors' => false));
+                $this->logger->infoMessage("Attempted to repair table " . $tableToRepair . ". Result: " .
+                        json_encode($result));
+            } else {
+                $this->logger->warn("The table " . $rawTableName . " needs to be " .
+                    "repaired with something like: repair table " . $rawTableName);
+
+                $cooldownKey = 'abj404_corrupted_temp_table_notice_until';
+                $alreadyNotified = function_exists('get_transient') ? get_transient($cooldownKey) : false;
+                if (!$alreadyNotified) {
+                    $noticeMessage = $this->localizeOrDefault( // allow-em-dash: verbatim localized string from production, changing it breaks existing translations
+                        'A database temporary table is corrupted — this is usually caused by a full or failing disk. Please contact your host. (MySQL error 1034)');
+                    $this->setPluginDbNotice('corrupted_temp_table', $noticeMessage, $errorMessage);
+                    if (function_exists('set_transient')) {
+                        // @cache-write-audit: opt-out, admin-notice dedup cooldown
+                        // (one notice per 24h per failure type), not a query result.
+                        set_transient($cooldownKey, 1, 86400);
+                    }
+                }
+            }
+        }
+    }
+
+    /** @inheritDoc */
+    public function repairDuplicateIDs(string $errorMessage, string $sqlThatWasRun): void {
+
+    	$reForID = 'resulting in duplicate entry \'(.+)\' for key';
+    	$reForTableName = "ALTER TABLE (.+) ADD ";
+    	$matchesForID = null;
+    	$matchesForTableName = null;
+
+    	$this->f->regexMatch($reForID, $errorMessage, $matchesForID);
+    	$this->f->regexMatch($reForTableName, $sqlThatWasRun, $matchesForTableName);
+    	if (is_array($matchesForID) && isset($matchesForID[1]) && $this->f->strlen($matchesForID[1]) > 0 &&
+    			is_array($matchesForTableName) && isset($matchesForTableName[1]) && $this->f->strlen($matchesForTableName[1]) > 0) {
+
+    		$idWithDuplicate = $matchesForID[1];
+    		$tableName = $this->sanitizeTableName($matchesForTableName[1]);
+    		if ($tableName === null) {
+    			$this->logger->warn("repairDuplicateIDs: rejected invalid table name from SQL: " . substr($matchesForTableName[1], 0, 100));
+    			return;
+    		}
+
+    		if (!is_numeric($idWithDuplicate)) {
+    			$this->logger->errorMessage("Invalid ID extracted from error message: " . $idWithDuplicate);
+    			return;
+    		}
+
+    		if ($idWithDuplicate == 1) {
+    			$idWithDuplicate = 0;
+    		}
+
+    		$result = $this->queryAndGetResults("DELETE FROM `{$tableName}` where id = %d",
+    			array('log_errors' => false, 'query_params' => array(absint($idWithDuplicate))));
+   			$this->logger->infoMessage("Attempted to fix a duplicate entry issue. Table: " .
+   				$tableName . ", Result: " . json_encode($result));
+    	}
     }
 
     /** @inheritDoc */

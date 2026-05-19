@@ -5,7 +5,6 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-require_once __DIR__ . '/DataAccessTrait_Maintenance.php';
 require_once __DIR__ . '/DataAccessTrait_Connection.php';
 require_once __DIR__ . '/DataAccessTrait_ViewMetadata.php';
 require_once __DIR__ . '/DataAccessTrait_ViewQueries.php';
@@ -41,7 +40,6 @@ require_once __DIR__ . '/DataAccessTrait_ErrorClassification.php';
 require_once __DIR__ . '/DataAccessTrait_SqlErrorReporting.php';
 require_once __DIR__ . '/ViewQueryFailureException.php';
 require_once __DIR__ . '/ViewBuildPendingException.php';
-require_once __DIR__ . '/DatabaseRepairDelegate.php';
 require_once __DIR__ . '/DatabaseCoreInterface.php';
 require_once __DIR__ . '/DatabaseCore.php';
 
@@ -52,7 +50,7 @@ require_once __DIR__ . '/DatabaseCore.php';
  * Read the database, Store to the database,
  */
 
-class ABJ_404_Solution_DataAccess implements ABJ_404_Solution_DatabaseRepairDelegate {
+class ABJ_404_Solution_DataAccess {
 
     const UPDATE_LOGS_HITS_TABLE_HOOK = 'abj404_updateLogsHitsTableAction';
 
@@ -191,7 +189,6 @@ class ABJ_404_Solution_DataAccess implements ABJ_404_Solution_DatabaseRepairDele
     /** @var array<string,int> Request-local cached counts for redirects list views. */
     private $redirectsForViewCountRequestCache = array();
 
-    use ABJ_404_Solution_DataAccess_MaintenanceTrait;
     use ABJ_404_Solution_DataAccess_ViewMetadataTrait;
     use ABJ_404_Solution_DataAccess_ViewQueriesTrait;
     use ABJ_404_Solution_DataAccess_ViewQueriesHitsLifecycleTrait;
@@ -263,8 +260,6 @@ class ABJ_404_Solution_DataAccess implements ABJ_404_Solution_DatabaseRepairDele
         } else {
             $this->dbCore = new ABJ_404_Solution_DatabaseCore($this->f, $this->logger);
         }
-        $this->dbCore->setRepairDelegate($this);
-
         if ($contentRepo !== null) {
             $this->contentRepo = $contentRepo;
         } else {
@@ -526,6 +521,125 @@ class ABJ_404_Solution_DataAccess implements ABJ_404_Solution_DatabaseRepairDele
      */
     public static function hitsCanonicalUrlSqlExpression(string $columnExpr): string {
         return ABJ_404_Solution_RedirectsRepository::hitsCanonicalUrlSqlExpression($columnExpr);
+    }
+
+    // Facade delegations: repair/transaction methods (dissolved Maintenance trait, Phase 5).
+
+    /** @param string $errorMessage @return void */
+    function repairTable(string $errorMessage): void {
+        $this->dbCore->repairTable($errorMessage);
+    }
+
+    /** @param string $errorMessage @param string $sqlThatWasRun @return void */
+    function repairDuplicateIDs(string $errorMessage, string $sqlThatWasRun): void {
+        $this->dbCore->repairDuplicateIDs($errorMessage, $sqlThatWasRun);
+    }
+
+    /**
+     * @param string $query
+     * @param array<string, mixed> $result
+     * @param bool $producesRows
+     * @param 'OBJECT'|'OBJECT_K'|'ARRAY_A'|'ARRAY_N' $resultType
+     * @return void
+     */
+    public function recoverFromCollationMismatchAndRetry(string $query, array &$result, bool $producesRows, string $resultType): void {
+        $this->dbCore->recoverFromCollationMismatchAndRetry($query, $result, $producesRows, $resultType);
+    }
+
+    /**
+     * @param array<int, string> $statementArray
+     * @return void
+     */
+    function executeAsTransaction(array $statementArray): void {
+        $this->dbCore->executeAsTransaction($statementArray);
+    }
+
+    // Facade delegations: redirect maintenance (dissolved Maintenance trait, Phase 5).
+
+    /** @return void */
+    function flagDeadDestinationRedirects(): void {
+        $this->redirectsRepo->flagDeadDestinationRedirects();
+    }
+
+    /** @return int */
+    public function expireOldAutoRedirects(): int {
+        return $this->redirectsRepo->expireOldAutoRedirects();
+    }
+
+    // Facade delegations: content/cache (dissolved Maintenance trait, Phase 5).
+
+    /**
+     * @param int|string $post_id
+     * @return string|null
+     */
+    function getOldSlug($post_id) {
+        return $this->contentRepo->getOldSlug($post_id);
+    }
+
+    /** @return void */
+    function truncatePermalinkCacheTable(): void {
+        $this->contentRepo->truncatePermalinkCacheTable();
+    }
+
+    /** @param int $post_id @return void */
+    function removeFromPermalinkCache(int $post_id): void {
+        $this->contentRepo->removeFromPermalinkCache($post_id);
+    }
+
+    /** @return array<int, array<string, mixed>>|null */
+    function getIDsNeededForPermalinkCache() {
+        return $this->contentRepo->getIDsNeededForPermalinkCache();
+    }
+
+    /**
+     * @param int|string $id
+     * @return string|null
+     */
+    function getPermalinkFromCache($id) {
+        return $this->contentRepo->getPermalinkFromCache($id);
+    }
+
+    /**
+     * @param array<int, int> $ids
+     * @return array<int, object>
+     */
+    function getPermalinksByIds(array $ids) {
+        return $this->contentRepo->getPermalinksByIds($ids);
+    }
+
+    /**
+     * @param int|string $id
+     * @return array<string, mixed>|null
+     */
+    function getPermalinkEtcFromCache($id) {
+        return $this->contentRepo->getPermalinkEtcFromCache($id);
+    }
+
+    /** @return void */
+    function correctDuplicateLookupValues(): void {
+        $this->logsRepo->correctDuplicateLookupValues();
+    }
+
+    /**
+     * @param string $requestedURLRaw
+     * @param mixed $returnValue
+     * @return void
+     */
+    function storeSpellingPermalinksToCache(string $requestedURLRaw, $returnValue): void {
+        $this->contentRepo->storeSpellingPermalinksToCache($requestedURLRaw, $returnValue);
+    }
+
+    /** @return void */
+    function deleteSpellingCache(): void {
+        $this->contentRepo->deleteSpellingCache();
+    }
+
+    /**
+     * @param string $requestedURLRaw
+     * @return mixed
+     */
+    function getSpellingPermalinksFromCache(string $requestedURLRaw) {
+        return $this->contentRepo->getSpellingPermalinksFromCache($requestedURLRaw);
     }
 
     // Facade delegations to ContentRepository (Phase 1 refactor).

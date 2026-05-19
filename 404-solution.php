@@ -380,7 +380,6 @@ if (!function_exists('abj404_shortCodeListener')) {
 				$inc . 'DataAccess.php',
 				$inc . 'ContentRepositoryInterface.php',
 				$inc . 'ContentRepository.php',
-				$inc . 'DataAccessTrait_Maintenance.php',
 				$inc . 'DataAccessTrait_ViewQueries.php',
 				$inc . 'DataAccessTrait_Logs.php',
 				$inc . 'DataAccessTrait_Redirects.php',

@@ -1052,7 +1052,7 @@ class ABJ_404_Solution_RedirectsRepository implements ABJ_404_Solution_Redirects
             }
         }
 
-        $abj404dao->flagDeadDestinationRedirects();
+        $this->flagDeadDestinationRedirects();
 
         $abj404permalinkCache = abj_service('permalink_cache');
         $rowsUpdated = $abj404permalinkCache->updatePermalinkCache(15);
@@ -1197,5 +1197,161 @@ class ABJ_404_Solution_RedirectsRepository implements ABJ_404_Solution_Redirects
         }
 
         return $totalTrashed;
+    }
+
+    // =========================================================================
+    // Redirect maintenance (moved from DataAccessTrait_Maintenance, Phase 5)
+    // =========================================================================
+
+    /** @inheritDoc */
+    public function flagDeadDestinationRedirects(): void {
+        $cutoff = time() - 7 * 86400;
+        $flaggedIds = array();
+
+        $hitsTable = $this->dbCore->doTableNameReplacements('{wp_abj404_logs_hits}');
+        $hitsTableExists = $this->dbCore->tableExists($hitsTable);
+
+        if (!$hitsTableExists || !$this->logsHitsHasFailedHitsColumn()) {
+            /** @var ABJ_404_Solution_LogsRepository|null $logsRepo */
+            $logsRepo = abj_service('logs');
+            if ($logsRepo !== null) {
+                $logsRepo->scheduleHitsTableRebuild();
+            }
+            $this->storeDeadDestIdsTransient($flaggedIds);
+            return;
+        }
+
+        $sql = "SELECT DISTINCT r.id
+             FROM {wp_abj404_redirects} r
+             INNER JOIN {wp_abj404_logs_hits} h
+                 ON BINARY h.requested_url = BINARY CONCAT('/', TRIM(BOTH '/' FROM r.final_dest))
+             WHERE h.last_used > %d
+               AND h.failed_hits > 0
+               AND r.disabled = 0
+               AND r.final_dest != ''
+               AND r.final_dest != '0'";
+        $sql = $this->dbCore->doTableNameReplacements($sql);
+
+        $result = $this->dbCore->queryAndGetResults($sql, array(
+            'query_params' => array($cutoff),
+            'timeout' => 30,
+        ));
+
+        if (empty($result['timed_out']) && (!isset($result['last_error']) || $result['last_error'] == '')) {
+            $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
+            foreach ($rows as $row) {
+                if (is_array($row)) {
+                    $value = $row['id'] ?? reset($row);
+                } elseif (is_object($row)) {
+                    $value = $row->id ?? null;
+                } else {
+                    $value = $row;
+                }
+                if ($value !== null && $value !== '') {
+                    $flaggedIds[] = (string)$value;
+                }
+            }
+        }
+
+        $this->storeDeadDestIdsTransient($flaggedIds);
+
+        if (!empty($flaggedIds)) {
+            $this->logger->infoMessage(
+                __CLASS__ . '/' . __FUNCTION__ . ': Flagged ' . count($flaggedIds) .
+                ' redirect(s) with dead destinations: ' . implode(', ', $flaggedIds)
+            );
+        }
+    }
+
+    /**
+     * @param array<int, string> $flaggedIds
+     * @return void
+     */
+    private function storeDeadDestIdsTransient(array $flaggedIds): void {
+        if (function_exists('set_transient')) {
+            $ttl = defined('HOUR_IN_SECONDS') ? 25 * (int) HOUR_IN_SECONDS : 90000;
+            // allow-cache-empty: flaggedIds is a diagnostic list (dead-destination redirect IDs); an empty array is a valid "no dead destinations" result.
+            set_transient('abj404_dead_dest_ids', $flaggedIds, $ttl);
+        }
+    }
+
+    /**
+     * @return bool
+     */
+    private function logsHitsHasFailedHitsColumn(): bool {
+        $tableName = $this->dbCore->doTableNameReplacements('{wp_abj404_logs_hits}');
+        $sql = "SELECT 1 FROM information_schema.columns "
+            . "WHERE table_schema = DATABASE() "
+            . "AND table_name = %s "
+            . "AND column_name = 'failed_hits' LIMIT 1";
+        $result = $this->dbCore->queryAndGetResults($sql, array(
+            'query_params' => array($tableName),
+            'log_errors' => false,
+        ));
+        if (!empty($result['last_error'])) {
+            return false;
+        }
+        $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
+        return !empty($rows);
+    }
+
+    /** @inheritDoc */
+    public function expireOldAutoRedirects(): int {
+        $options = abj_service('plugin_logic')->getOptions();
+        $daysRaw = isset($options['auto_302_expiration_days']) ? $options['auto_302_expiration_days'] : 0;
+        $days = is_numeric($daysRaw) ? (int)$daysRaw : 0;
+        if ($days <= 0) {
+            return 0;
+        }
+
+        $redirectsTable = $this->dbCore->doTableNameReplacements('{wp_abj404_redirects}');
+        if (!$this->dbCore->tableExists($redirectsTable)) {
+            $this->logger->warn("expireOldAutoRedirects: redirects table missing, skipping.");
+            return 0;
+        }
+
+        $cutoff = time() - ($days * 86400);
+
+        $sql = "SELECT id FROM `{$redirectsTable}`
+             WHERE status = %d
+               AND disabled = 0
+               AND `timestamp` > 0
+               AND `timestamp` < %d";
+
+        $result = $this->dbCore->queryAndGetResults($sql, array(
+            'query_params' => array(ABJ404_STATUS_AUTO, $cutoff),
+        ));
+
+        if (!empty($result['timed_out']) || (isset($result['last_error']) && $result['last_error'] != '')) {
+            return 0;
+        }
+
+        $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
+        $ids = array();
+        foreach ($rows as $row) {
+            if (is_array($row)) {
+                $value = $row['id'] ?? reset($row);
+            } elseif (is_object($row)) {
+                $value = $row->id ?? null;
+            } else {
+                $value = $row;
+            }
+            if ($value !== null && $value !== '') {
+                $ids[] = absint($value);
+            }
+        }
+
+        if (empty($ids)) {
+            return 0;
+        }
+
+        $moved = 0;
+        foreach ($ids as $id) {
+            $this->moveRedirectsToTrash($id, 1);
+            $moved++;
+        }
+
+        $this->logger->infoMessage("expireOldAutoRedirects: moved {$moved} expired auto-redirect(s) to trash (threshold: {$days} days).");
+        return $moved;
     }
 }
