@@ -39,6 +39,14 @@ function abj_404_solution_init_services() {
     });
 
     /**
+     * PII redactor - centralized redaction layer for all outgoing logs/reports.
+     * Dependencies: functions
+     */
+    $container->set('pii_redactor', function($c) {
+        return new ABJ_404_Solution_PiiRedactor($c->get('functions'));
+    });
+
+    /**
      * Logging service - handles debug logging and error reporting.
      */
     $container->set('logging', function($c) {

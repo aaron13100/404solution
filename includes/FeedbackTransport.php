@@ -124,6 +124,7 @@ class ABJ_404_Solution_FeedbackTransport {
      */
     public static function sendNow(array $payload, string $type): bool {
         self::$lastSendUsedFallback = false;
+        $payload = self::redactPayloadStrings($payload);
         $started = microtime(true);
         $result = self::httpSend($payload);
         $elapsedMs = (int) round((microtime(true) - $started) * 1000);
@@ -1162,6 +1163,32 @@ class ABJ_404_Solution_FeedbackTransport {
      * @param string $message
      * @return void
      */
+    /**
+     * Run PII redaction over every string value in a payload before it
+     * leaves the plugin (defense-in-depth for the transport layer).
+     *
+     * @param array<string, mixed> $payload
+     * @return array<string, mixed>
+     */
+    private static function redactPayloadStrings(array $payload): array {
+        if (!function_exists('abj_service')) {
+            return $payload;
+        }
+        try {
+            /** @var ABJ_404_Solution_PiiRedactor $redactor */
+            $redactor = abj_service('pii_redactor');
+        } catch (\Throwable $e) {
+            // allow-silent-catch: container not initialized yet (early boot); skip redaction
+            return $payload;
+        }
+        foreach ($payload as $key => $value) {
+            if (is_string($value)) {
+                $payload[$key] = $redactor->redact($value);
+            }
+        }
+        return $payload;
+    }
+
     private static function log(string $level, string $message): void {
         if (function_exists('abj_service')) {
             try {
