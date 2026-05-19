@@ -196,28 +196,12 @@ trait ABJ_404_Solution_DataAccess_AdminMutationGateTrait {
      * need to block reads in the meantime (fbc270d8 stale-serving).
      */
     public function markViewDoneInvalidatedByAdminMutation(): void {
-        // Read CURRENT watermark first. The caller's prior setupRedirect /
-        // updateRedirect / etc. has typically already bumped via
-        // invalidateStatusCountsCache -> invalidateViewSnapshotCache ->
-        // bumpMutationWatermark, so we just record that post-mutation
-        // value. Skipping the bump here avoids double-counting (one
-        // mutation -> two ticks of the counter), which
-        // MixedSourceConcurrentMutationIntegrationTest pins as a contract
-        // violation: each entry-point handler must advance the counter by
-        // exactly one tick regardless of how many internal seams it routes
-        // through.
-        //
-        // Fallback bump: when current() returns 0 we self-bump to record a
-        // non-zero observed value. This covers two cases. (1) Callers that
-        // invoke markView without a preceding source-data mutation (no
-        // chain bump fired) still get a functioning gate. (2) The
-        // primitive class is unavailable (cold bootstrap before autoload):
-        // the bump() seam returns 0 too, and we fall through to the
-        // legacy timestamp option below.
-        $observed = $this->safeCurrentMutationWatermark();
-        if ($observed <= 0) {
-            $observed = $this->bumpMutationWatermark();
-        }
+        // Bump the watermark so the build runner sees the admin mutation at
+        // the next stage boundary. This is the sole watermark bump for admin
+        // actions; invalidateViewSnapshotCache() no longer bumps (that
+        // caused an infinite abort cycle on high-traffic sites where every
+        // captured 404 was resetting the build).
+        $observed = $this->bumpMutationWatermark();
         if (!function_exists('update_option')) {
             return;
         }

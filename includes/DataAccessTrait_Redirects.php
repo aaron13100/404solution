@@ -17,6 +17,7 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
         // no nonce here because this action is not always user generated.
 
         if (is_numeric($id)) {
+            // allow-no-watermark-bump: DAO layer; admin callers bump via markViewDoneInvalidatedByAdminMutation()
             $query = "delete from {wp_abj404_redirects} where id = %d";
             $this->queryAndGetResults($query, array('query_params' => array($cleanedID)));
 
@@ -388,8 +389,8 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
                 $row = is_array($innerRows[0]) ? $innerRows[0] : array();
                 $original = isset($row['id']) ? $row['id'] : 0;
 
-                // Fix HIGH #2 (5th review): Use prepared statements instead of manual escaping
                 $queryl = $this->prepare_query_wp(
+                    // allow-no-watermark-bump: DAO layer; admin callers bump via markViewDoneInvalidatedByAdminMutation()
                     "delete from {wp_abj404_redirects} where url = {url} and id != {original}",
                     array("url" => $url, "original" => $original)
                 );
@@ -999,6 +1000,7 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
         $typesForSQL = implode(',', $redirectTypes);
 
         if ($purge == 'abj404_redirects') {
+            // allow-no-watermark-bump: DAO layer; admin callers bump via markViewDoneInvalidatedByAdminMutation()
             $query = "update {wp_abj404_redirects} set disabled = 1 where status in (" . $typesForSQL . ")";
             $purgeResult = $this->queryAndGetResults($query);
             $rowsAffectedRaw = $purgeResult['rows_affected'] ?? 0;
@@ -1189,8 +1191,8 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
             $likeClauses[] = $wpdb->prepare("url LIKE %s", '%' . $escaped . '%');
         }
 
-        // Trash captured URLs matching junk patterns (case-insensitive via LIKE)
         $wherePatterns = implode(' OR ', $likeClauses);
+        // allow-no-watermark-bump: cron maintenance; next scheduled build picks up changes
         $query = "UPDATE {wp_abj404_redirects}
             SET disabled = 1
             WHERE status = " . ABJ404_STATUS_CAPTURED . "
@@ -1205,8 +1207,8 @@ trait ABJ_404_Solution_DataAccess_RedirectsTrait {
         // Trash captured URLs with 0 log hits older than 14 days.
         // logshits is not a column — it's computed from the logs table.
         $cutoff = time() - (14 * DAY_IN_SECONDS);
-        $query = $wpdb->prepare(
-            "UPDATE {wp_abj404_redirects} r
+        // allow-no-watermark-bump: cron maintenance; next scheduled build picks up changes
+        $query = $wpdb->prepare("UPDATE {wp_abj404_redirects} r
             SET r.disabled = 1
             WHERE r.status = " . ABJ404_STATUS_CAPTURED . "
             AND r.disabled = 0

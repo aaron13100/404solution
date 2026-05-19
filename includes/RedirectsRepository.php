@@ -156,6 +156,7 @@ class ABJ_404_Solution_RedirectsRepository implements ABJ_404_Solution_Redirects
         $cleanedID = absint(sanitize_text_field((string)$id));
 
         if (is_numeric($id)) {
+            // allow-no-watermark-bump: DAO layer; admin callers bump via markViewDoneInvalidatedByAdminMutation()
             $query = "delete from {wp_abj404_redirects} where id = %d";
             $this->dbCore->queryAndGetResults($query, array('query_params' => array($cleanedID)));
 
@@ -559,6 +560,7 @@ class ABJ_404_Solution_RedirectsRepository implements ABJ_404_Solution_Redirects
         $typesForSQL = implode(',', $redirectTypes);
 
         if ($purge == 'abj404_redirects') {
+            // allow-no-watermark-bump: DAO layer; admin callers bump via markViewDoneInvalidatedByAdminMutation()
             $query = "update {wp_abj404_redirects} set disabled = 1 where status in (" . $typesForSQL . ")";
             $purgeResult = $this->dbCore->queryAndGetResults($query);
             $rowsAffectedRaw = $purgeResult['rows_affected'] ?? 0;
@@ -771,6 +773,7 @@ class ABJ_404_Solution_RedirectsRepository implements ABJ_404_Solution_Redirects
 
     /** @inheritDoc */
     function updateRedirectTypeStatus($id, $newstatus) {
+        // allow-no-watermark-bump: DAO layer; admin callers bump via markViewDoneInvalidatedByAdminMutation()
         $query = "update {wp_abj404_redirects} set status = %s where id = %d";
         $result = $this->dbCore->queryAndGetResults($query, array(
             'query_params' => array($newstatus, absint($id))
@@ -1110,7 +1113,7 @@ class ABJ_404_Solution_RedirectsRepository implements ABJ_404_Solution_Redirects
                 $original = isset($row['id']) ? $row['id'] : 0;
 
                 $queryl = $this->prepare_query_wp(
-                    "delete from {wp_abj404_redirects} where url = {url} and id != {original}",
+                    "delete from {wp_abj404_redirects} where url = {url} and id != {original}", // allow-no-watermark-bump: DAO layer; admin callers bump via markViewDoneInvalidatedByAdminMutation()
                     array("url" => $url, "original" => $original)
                 );
                 $deleteResult = $this->dbCore->queryAndGetResults($queryl);
@@ -1159,6 +1162,7 @@ class ABJ_404_Solution_RedirectsRepository implements ABJ_404_Solution_Redirects
         }
 
         $wherePatterns = implode(' OR ', $likeClauses);
+        // allow-no-watermark-bump: DAO layer; admin callers bump via markViewDoneInvalidatedByAdminMutation()
         $query = "UPDATE {wp_abj404_redirects}
             SET disabled = 1
             WHERE status = " . ABJ404_STATUS_CAPTURED . "
@@ -1172,8 +1176,8 @@ class ABJ_404_Solution_RedirectsRepository implements ABJ_404_Solution_Redirects
 
         $cutoff = time() - (14 * DAY_IN_SECONDS);
         // DAO-bypass-approved: $wpdb->prepare is read-only string formatting; result goes through queryAndGetResults
-        $query = $wpdb->prepare(
-            "UPDATE {wp_abj404_redirects} r
+        // allow-no-watermark-bump: DAO layer; admin callers bump via markViewDoneInvalidatedByAdminMutation()
+        $query = $wpdb->prepare("UPDATE {wp_abj404_redirects} r
             SET r.disabled = 1
             WHERE r.status = " . ABJ404_STATUS_CAPTURED . "
             AND r.disabled = 0
