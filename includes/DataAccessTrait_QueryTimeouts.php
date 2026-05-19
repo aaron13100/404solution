@@ -28,7 +28,7 @@ trait ABJ_404_Solution_DataAccess_QueryTimeoutsTrait {
      * @param string $query
      * @return bool
      */
-    private function queryStartsWithSelect(string $query): bool {
+    public function queryStartsWithSelect(string $query): bool {
         // SQL loaded from .sql files is wrapped in leading comments.
         // Treat "/* ... */ SELECT ..." as a SELECT query for timeout purposes.
         return preg_match('/^\s*(?:\/\*[\s\S]*?\*\/\s*)*SELECT\s/i', $query) === 1;
@@ -49,7 +49,7 @@ trait ABJ_404_Solution_DataAccess_QueryTimeoutsTrait {
      * @param string $query
      * @return bool
      */
-    private function queryProducesResultRows(string $query): bool {
+    public function queryProducesResultRows(string $query): bool {
         $stripped = (string)preg_replace('/^\s*(?:\/\*[\s\S]*?\*\/\s*)+/', '', $query);
         $stripped = (string)preg_replace(
             '/^\s*SET\s+STATEMENT\s+\w+\s*=\s*\d+\s+FOR\s+/i',
@@ -79,7 +79,7 @@ trait ABJ_404_Solution_DataAccess_QueryTimeoutsTrait {
      * @param int $timeoutSeconds Maximum execution time in seconds
      * @return string The query with timeout applied (or unchanged if no mechanism)
      */
-    private function applyQueryTimeout(string $query, int $timeoutSeconds): string {
+    public function applyQueryTimeout(string $query, int $timeoutSeconds): string {
         // Skip if a timeout hint is already present (prevents double-wrapping).
         if (preg_match('/MAX_EXECUTION_TIME|max_statement_time/i', $query)) {
             return $query;
@@ -100,7 +100,7 @@ trait ABJ_404_Solution_DataAccess_QueryTimeoutsTrait {
      * Detect the DB engine. Returns true for MariaDB, false for MySQL/unknown.
      * @return bool
      */
-    private function isMariaDB(): bool {
+    public function isMariaDB(): bool {
         global $wpdb;
         if (!isset($wpdb) || !is_object($wpdb)) {
             return false;
@@ -128,7 +128,7 @@ trait ABJ_404_Solution_DataAccess_QueryTimeoutsTrait {
      * @param int $timeoutSeconds Maximum execution time in seconds
      * @return string The query with timeout hint applied
      */
-    private function applySelectTimeout(string $query, int $timeoutSeconds): string {
+    public function applySelectTimeout(string $query, int $timeoutSeconds): string {
         if ($this->isMariaDB() && !ABJ_404_Solution_DataAccess::isSetStatementWrapperUnsupported()) {
             return "SET STATEMENT max_statement_time=" . $timeoutSeconds . " FOR " . $query;
         }
@@ -154,7 +154,7 @@ trait ABJ_404_Solution_DataAccess_QueryTimeoutsTrait {
      * @param int $timeoutSeconds Maximum execution time in seconds
      * @return string The query with timeout applied
      */
-    private function applyNonLeadingSelectTimeout(string $query, int $timeoutSeconds): string {
+    public function applyNonLeadingSelectTimeout(string $query, int $timeoutSeconds): string {
         if ($this->isMariaDB() && !ABJ_404_Solution_DataAccess::isSetStatementWrapperUnsupported()) {
             return "SET STATEMENT max_statement_time=" . $timeoutSeconds . " FOR " . $query;
         }
@@ -178,7 +178,7 @@ trait ABJ_404_Solution_DataAccess_QueryTimeoutsTrait {
      * @param int $timeoutSeconds Maximum execution time in seconds
      * @return string The query with timeout applied (unchanged on MySQL)
      */
-    private function applyStatementTimeout(string $query, int $timeoutSeconds): string {
+    public function applyStatementTimeout(string $query, int $timeoutSeconds): string {
         if ($this->isMariaDB() && !ABJ_404_Solution_DataAccess::isSetStatementWrapperUnsupported()) {
             return "SET STATEMENT max_statement_time=" . $timeoutSeconds . " FOR " . $query;
         }
@@ -210,7 +210,7 @@ trait ABJ_404_Solution_DataAccess_QueryTimeoutsTrait {
      * @param string $query
      * @return bool
      */
-    private function queryHasSetStatementWrapper(string $query): bool {
+    public function queryHasSetStatementWrapper(string $query): bool {
         return preg_match(
             '/^\s*SET\s+STATEMENT\s+max_statement_time\s*=\s*\d+\s+FOR\s+/i',
             $query
@@ -225,7 +225,7 @@ trait ABJ_404_Solution_DataAccess_QueryTimeoutsTrait {
      * @param string $query
      * @return string
      */
-    private function stripSetStatementWrapper(string $query): string {
+    public function stripSetStatementWrapper(string $query): string {
         $stripped = preg_replace(
             '/^\s*SET\s+STATEMENT\s+max_statement_time\s*=\s*\d+\s+FOR\s+/i',
             '',
@@ -257,7 +257,7 @@ trait ABJ_404_Solution_DataAccess_QueryTimeoutsTrait {
      * @param 'OBJECT'|'OBJECT_K'|'ARRAY_A'|'ARRAY_N' $resultType wpdb output type for get_results().
      * @return void
      */
-    private function retryWithoutSetStatementWrapper(
+    public function retryWithoutSetStatementWrapper(
         string &$query,
         array &$result,
         string $resultType

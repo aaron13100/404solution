@@ -21,7 +21,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
      * @param string $errorText
      * @return bool
      */
-    private function isInvalidDataError($errorText) {
+    public function isInvalidDataError($errorText) {
         if (!is_string($errorText) || $errorText === '') {
             return false;
         }
@@ -73,7 +73,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
     }
 
     /** @param string|null $errorText @return bool */
-    private function isTransientConnectionError(?string $errorText): bool {
+    public function isTransientConnectionError(?string $errorText): bool {
         $errorText = $errorText ?? '';
         if ($errorText === '') {
             return false;
@@ -113,7 +113,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
     }
 
     /** @param string $errorText @return bool */
-    private function isQuotaLimitError(string $errorText): bool {
+    public function isQuotaLimitError(string $errorText): bool {
         if (!is_string($errorText) || $errorText === '') {
             return false;
         }
@@ -123,7 +123,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
     }
 
     /** @param string $errorText @return bool */
-    private function isDiskFullError(string $errorText): bool {
+    public function isDiskFullError(string $errorText): bool {
         if (!is_string($errorText) || $errorText === '') {
             return false;
         }
@@ -147,7 +147,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
     }
 
     /** @param string $errorText @return bool */
-    private function isReadOnlyError(string $errorText): bool {
+    public function isReadOnlyError(string $errorText): bool {
         if (!is_string($errorText) || $errorText === '') {
             return false;
         }
@@ -168,7 +168,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
      * @param string $errorText
      * @return bool
      */
-    private function isAccessDeniedError(string $errorText): bool {
+    public function isAccessDeniedError(string $errorText): bool {
         if (!is_string($errorText) || $errorText === '') {
             return false;
         }
@@ -197,7 +197,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
      * @param string $errorText
      * @return bool
      */
-    private function classifySetStatementFailure(string $errorText): bool {
+    public function classifySetStatementFailure(string $errorText): bool {
         if ($errorText === '') {
             return false;
         }
@@ -225,7 +225,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
     }
 
     /** @param string $errorText @return bool */
-    private function isCollationError(string $errorText): bool {
+    public function isCollationError(string $errorText): bool {
         if (!is_string($errorText) || $errorText === '') {
             return false;
         }
@@ -236,7 +236,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
     }
 
     /** @param string $errorText @return bool */
-    private function isCrashedTableError(string $errorText): bool {
+    public function isCrashedTableError(string $errorText): bool {
         if (!is_string($errorText) || $errorText === '') {
             return false;
         }
@@ -244,7 +244,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
     }
 
     /** @param string $errorText @return bool */
-    private function isIncorrectKeyFileError(string $errorText): bool {
+    public function isIncorrectKeyFileError(string $errorText): bool {
         if (!is_string($errorText) || $errorText === '') {
             return false;
         }
@@ -253,7 +253,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
 
     /** Detect MySQL MAX_EXECUTION_TIME (errno 3024) and MariaDB max_statement_time (errno 1969) timeouts.
      * @param string $errorText @return bool */
-    private function isQueryTimeoutError(string $errorText): bool {
+    public function isQueryTimeoutError(string $errorText): bool {
         if (!is_string($errorText) || $errorText === '') {
             return false;
         }
@@ -273,7 +273,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
      * @param string $errorText
      * @return bool
      */
-    private function isPacketTooLarge(string $errorText): bool {
+    public function isPacketTooLarge(string $errorText): bool {
         if (!is_string($errorText) || $errorText === '') {
             return false;
         }
@@ -284,7 +284,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
     }
 
     /** @param string $errorText @return bool */
-    private function isDeadlockOrLockTimeoutError(string $errorText): bool {
+    public function isDeadlockOrLockTimeoutError(string $errorText): bool {
         if (!is_string($errorText) || $errorText === '') {
             return false;
         }
@@ -319,7 +319,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
      * @param string $errorText
      * @return bool
      */
-    private function isGaleraConflictError(string $errorText): bool {
+    public function isGaleraConflictError(string $errorText): bool {
         if (!is_string($errorText) || $errorText === '') {
             return false;
         }
@@ -373,7 +373,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
      * @param string $errorText
      * @return bool
      */
-    private function isPermanentHostSideStagedFailure(string $errorText): bool {
+    public function isPermanentHostSideStagedFailure(string $errorText): bool {
         if (!is_string($errorText) || $errorText === '') {
             return false;
         }
@@ -460,7 +460,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
      * @param string $errorText
      * @return bool
      */
-    private function isResumableStagedKill(string $errorText): bool {
+    public function isResumableStagedKill(string $errorText): bool {
         if ($errorText === '') {
             return false;
         }
@@ -497,7 +497,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
      * @param string $errorText
      * @return string|null The table name, or null if not parseable.
      */
-    private function extractTableNameFromFullError(string $errorText): ?string {
+    public function extractTableNameFromFullError(string $errorText): ?string {
         if (preg_match("/table '([^']+)' is full/i", $errorText, $m)) {
             return $m[1];
         }
@@ -510,7 +510,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
      * @param string $tableName
      * @return bool
      */
-    private function isInnoDBTable(string $tableName): bool {
+    public function isInnoDBTable(string $tableName): bool {
         global $wpdb;
         /** @var wpdb $wpdb */
         if (!method_exists($wpdb, 'get_var') || !method_exists($wpdb, 'prepare')) {
@@ -539,7 +539,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
         return is_string($engine) && strtolower($engine) === 'innodb';
     }
 
-    private function noteDatabaseIssueFromError(string $errorText): void {
+    public function noteDatabaseIssueFromError(string $errorText): void {
         if (trim($errorText) === '') {
             return;
         }
@@ -585,14 +585,14 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
     }
 
     /** @return bool */
-    private function isQuotaCooldownActive(): bool {
+    public function isQuotaCooldownActive(): bool {
         $rawQuotaFlag = $this->getRuntimeFlag('abj404_db_quota_cooldown_until');
         $until = is_scalar($rawQuotaFlag) ? (int)$rawQuotaFlag : 0;
         return ($until > $this->clock()->now());
     }
 
     /** @param string $errorText @return bool */
-    private function isMissingPluginTableError(string $errorText): bool {
+    public function isMissingPluginTableError(string $errorText): bool {
         if ($errorText === '') {
             return false;
         }
@@ -616,7 +616,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
      * @param string $errorText
      * @return bool
      */
-    private function isTransientViewBuildTableError(string $errorText): bool {
+    public function isTransientViewBuildTableError(string $errorText): bool {
         if ($errorText === '') {
             return false;
         }
@@ -633,7 +633,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
      * @param array<string, mixed> $result
      * @return void
      */
-    private function attemptMissingTableRepairAndRetry($query, &$result) {
+    public function attemptMissingTableRepairAndRetry($query, &$result) {
         if (self::$tableRepairInProgress) {
             return;
         }
@@ -713,7 +713,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
      * @param array<string, mixed> $result
      * @return bool true if the case was handled (caller should return).
      */
-    private function handleTransientViewBuildTableMissing($query, array &$result): bool {
+    public function handleTransientViewBuildTableMissing($query, array &$result): bool {
         $observedError = is_string($result['last_error']) ? $result['last_error'] : '';
         if (!$this->isTransientViewBuildTableError($observedError)) {
             return false;
@@ -756,7 +756,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
      * @param string $repairCooldownKey
      * @return bool
      */
-    private function isMissingTableRepairOnCooldown(array &$result, string $repairCooldownKey): bool {
+    public function isMissingTableRepairOnCooldown(array &$result, string $repairCooldownKey): bool {
         $cooldownUntil = $this->getRuntimeFlag($repairCooldownKey);
         if (!is_scalar($cooldownUntil) || (int)$cooldownUntil <= $this->clock()->now()) {
             return false;
@@ -780,7 +780,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
      * @param string $missingTable
      * @return void
      */
-    private function runRepairCreateRetryAndReport(
+    public function runRepairCreateRetryAndReport(
         $query,
         array &$result,
         string $repairCooldownKey,
@@ -839,7 +839,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
      * @param string $missingTable
      * @return void
      */
-    private function reportRepairRetryFailure(
+    public function reportRepairRetryFailure(
         array &$result,
         string $repairCooldownKey,
         int $cooldownTtlSeconds,
@@ -909,7 +909,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
      * @param string $prefixDiag
      * @return void
      */
-    private function setMissingTablePluginDbNotice(array $result, string $missingTable, string $prefixDiag): void {
+    public function setMissingTablePluginDbNotice(array $result, string $missingTable, string $prefixDiag): void {
         $tableLabel = ($missingTable !== '') ? "'" . $missingTable . "'" : 'a plugin database table';
         $rawError = is_string($result['last_error']) ? $result['last_error'] : '';
         $adminMsg =
@@ -953,7 +953,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
      * @param string $errorText
      * @return string
      */
-    private function extractMissingTableNameFromError(string $errorText): string {
+    public function extractMissingTableNameFromError(string $errorText): string {
         if ($errorText === '') {
             return '';
         }
@@ -974,7 +974,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
      *
      * @return string Diagnostic message or empty string.
      */
-    private function diagnosePrefixMismatch(): string {
+    public function diagnosePrefixMismatch(): string {
         global $wpdb;
         try {
             $dbName = $wpdb->dbname ?? '';
@@ -1042,7 +1042,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
      * @param string $errorText The MySQL error string.
      * @return bool True if the error references a different multisite subsite's prefix.
      */
-    private function isMultisiteCrossPrefixError(string $errorText): bool {
+    public function isMultisiteCrossPrefixError(string $errorText): bool {
         if ($errorText === '' || !function_exists('is_multisite') || !is_multisite()) {
             return false;
         }

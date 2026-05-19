@@ -76,13 +76,25 @@ function abj_404_solution_init_services() {
     // =========================================================================
 
     /**
-     * Data access service - handles all database operations.
+     * Database core infrastructure: query execution, error recovery, timeouts.
      * Dependencies: functions, logging
+     */
+    $container->set('db_core', function($c) {
+        return new ABJ_404_Solution_DatabaseCore(
+            $c->get('functions'),
+            $c->get('logging')
+        );
+    });
+
+    /**
+     * Data access service - handles all database operations.
+     * Dependencies: functions, logging, db_core
      */
     $container->set('data_access', function($c) {
         return new ABJ_404_Solution_DataAccess(
             $c->get('functions'),
-            $c->get('logging')
+            $c->get('logging'),
+            $c->get('db_core')
         );
     });
 

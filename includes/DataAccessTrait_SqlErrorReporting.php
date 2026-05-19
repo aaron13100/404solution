@@ -26,7 +26,7 @@ trait ABJ_404_Solution_DataAccess_SqlErrorReportingTrait {
      * @param bool $producesRows
      * @return void
      */
-    private function logObservedSqlError(string $query, array $result, array $options, bool $producesRows): void {
+    public function logObservedSqlError(string $query, array $result, array $options, bool $producesRows): void {
         $lastError = isset($result['last_error']) && is_string($result['last_error'])
             ? trim($result['last_error']) : '';
         if ($lastError === '') {
@@ -98,7 +98,7 @@ trait ABJ_404_Solution_DataAccess_SqlErrorReportingTrait {
      * @param string $errorText
      * @return bool
      */
-    private function isInfrastructureSqlError(string $errorText): bool {
+    public function isInfrastructureSqlError(string $errorText): bool {
         if ($errorText === '') {
             return false;
         }
@@ -124,7 +124,7 @@ trait ABJ_404_Solution_DataAccess_SqlErrorReportingTrait {
      * @param bool $producesRows
      * @return void
      */
-    private function logSqlThrowable(string $query, Throwable $e, array $options, bool $producesRows): void {
+    public function logSqlThrowable(string $query, Throwable $e, array $options, bool $producesRows): void {
         $sqlInfo = (defined('WP_DEBUG') && WP_DEBUG) ? $query : $this->extractSqlFilename($query);
         $logErrors = !array_key_exists('log_errors', $options) || (bool)$options['log_errors'];
         $message = 'SQL query threw exception: ' . $e->getMessage()

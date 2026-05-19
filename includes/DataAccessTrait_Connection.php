@@ -22,7 +22,7 @@ trait ABJ_404_Solution_DataAccess_ConnectionTrait {
      * @param bool   $allowReconnect Passed through to check_connection().
      * @return bool True if connected (or unable to probe); false if probed and disconnected.
      */
-    private function safeCheckConnection($wpdb, $allowReconnect = false) {
+    public function safeCheckConnection($wpdb, $allowReconnect = false) {
         if (!is_object($wpdb)) {
             return true;
         }
@@ -37,7 +37,7 @@ trait ABJ_404_Solution_DataAccess_ConnectionTrait {
      *
      * @return bool True if connection is active, false otherwise
      */
-    private function ensureConnection() {
+    public function ensureConnection() {
         global $wpdb;
 
         if (!isset($wpdb)) {

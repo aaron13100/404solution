@@ -6,6 +6,9 @@ if (!defined('ABSPATH')) {
 
 trait ABJ_404_Solution_DataAccess_MaintenanceTrait {
 
+    /** @var bool Prevent recursive collation auto-recovery. */
+    private static $collationRecoveryInProgress = false;
+
     /**
      * Auto-recover from a collation mismatch detected at query time.
      *
@@ -34,7 +37,7 @@ trait ABJ_404_Solution_DataAccess_MaintenanceTrait {
      * @param 'OBJECT'|'OBJECT_K'|'ARRAY_A'|'ARRAY_N' $resultType wpdb output type for get_results().
      * @return void
      */
-    private function recoverFromCollationMismatchAndRetry(string $query, array &$result, bool $producesRows, string $resultType): void {
+    public function recoverFromCollationMismatchAndRetry(string $query, array &$result, bool $producesRows, string $resultType): void {
         // Re-entry guard: if correctCollations()'s own ALTER TABLE hits a collation
         // error, do NOT recurse — return and let the original error propagate.
         if (self::$collationRecoveryInProgress) {
@@ -534,6 +537,7 @@ trait ABJ_404_Solution_DataAccess_MaintenanceTrait {
     private function storeDeadDestIdsTransient(array $flaggedIds): void {
         if (function_exists('set_transient')) {
             $ttl = defined('HOUR_IN_SECONDS') ? 25 * (int) HOUR_IN_SECONDS : 90000;
+            // allow-cache-empty: flaggedIds is a diagnostic list (dead-destination redirect IDs); an empty array is a valid "no dead destinations" result.
             set_transient('abj404_dead_dest_ids', $flaggedIds, $ttl);
         }
     }
