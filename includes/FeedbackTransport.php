@@ -40,6 +40,7 @@ class ABJ_404_Solution_FeedbackTransport {
     const TRANSIENT_TTL = 86400; // 24 hours
     const CRON_HOOK = 'abj404_send_queued_report';
     const HTTP_TIMEOUT = 10;
+    const DEBUG_LOG_MAX_BYTES = 262144;
 
     /**
      * Records whether the most recent sendNow() call fell back to wp_mail()
@@ -323,6 +324,7 @@ class ABJ_404_Solution_FeedbackTransport {
         $payload['log_table_size_bytes']  = self::tryInt(function () { return self::logTableSizeBytes(); });
         $payload['error_count_in_log']    = self::tryInt(function () { return self::errorCountInLog(); });
         $payload['debug_file_size_bytes'] = self::tryInt(function () { return self::debugFileSizeBytes(); });
+        $payload += self::debugLogPayload($type);
         $payload['environment_extras']    = self::environmentExtras();
 
         if (self::isDevelopmentEnvironment()) {
@@ -815,6 +817,22 @@ class ABJ_404_Solution_FeedbackTransport {
     }
 
     /**
+     * Call a string-returning helper, returning an empty string if it throws.
+     *
+     * @param callable $fn
+     * @return string
+     */
+    private static function tryString(callable $fn): string {
+        try {
+            $v = $fn();
+            return is_string($v) ? $v : '';
+        } catch (\Throwable $e) {
+            @error_log('404 Solution: FeedbackTransport string lookup failed: ' . $e->getMessage());
+            return '';
+        }
+    }
+
+    /**
      * Call an array-returning helper, returning [] if it throws.
      *
      * @param callable $fn
@@ -1035,6 +1053,68 @@ class ABJ_404_Solution_FeedbackTransport {
             return $fs;
         }
         throw new \RuntimeException('filesize() failed');
+    }
+
+    /**
+     * @param string $type
+     * @return array{debug_log?: string}
+     */
+    private static function debugLogPayload(string $type): array {
+        if ($type !== 'error' && $type !== 'heartbeat') {
+            return array();
+        }
+        return array('debug_log' => self::tryString(function () { return self::debugLogTail(); }));
+    }
+
+    /**
+     * @return string Tail of the plugin debug log capped to the server schema.
+     */
+    private static function debugLogTail(): string {
+        if (!function_exists('abj_service')) {
+            throw new \RuntimeException('abj_service unavailable');
+        }
+        $logger = abj_service('logging');
+        if (!is_object($logger) || !method_exists($logger, 'getDebugFilePath')) {
+            throw new \RuntimeException('Logging::getDebugFilePath unavailable');
+        }
+        $path = $logger->getDebugFilePath();
+        if (!is_string($path) || $path === '' || !is_readable($path)) {
+            return '';
+        }
+
+        $size = @filesize($path);
+        if (!is_int($size) || $size <= 0) {
+            return '';
+        }
+
+        $handle = @fopen($path, 'rb');
+        if (!is_resource($handle)) {
+            throw new \RuntimeException('fopen() failed');
+        }
+
+        try {
+            $offset = max(0, $size - self::DEBUG_LOG_MAX_BYTES);
+            if ($offset > 0 && @fseek($handle, $offset) !== 0) {
+                throw new \RuntimeException('fseek() failed');
+            }
+
+            $remaining = min($size, self::DEBUG_LOG_MAX_BYTES);
+            $contents = '';
+            while ($remaining > 0 && !feof($handle)) {
+                $chunk = @fread($handle, min(8192, $remaining));
+                if ($chunk === false) {
+                    throw new \RuntimeException('fread() failed');
+                }
+                if ($chunk === '') {
+                    break;
+                }
+                $contents .= $chunk;
+                $remaining -= strlen($chunk);
+            }
+            return $contents;
+        } finally {
+            fclose($handle);
+        }
     }
 
     /**
