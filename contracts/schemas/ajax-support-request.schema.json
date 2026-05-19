@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "abj404_support_request",
+  "description": "Support request FormData AJAX from SupportRequest.js to Ajax_SupportRequest.php",
+  "type": "object",
+  "required": ["nonce", "triggered_from"],
+  "additionalProperties": false,
+  "properties": {
+    "nonce": { "type": "string", "minLength": 1 },
+    "triggered_from": {
+      "type": "string",
+      "enum": ["redirects_page", "captured_404s_page", "plugins_row_action", "settings_debug", "system_corrupt_install"]
+    },
+    "user_message": { "type": "string", "maxLength": 2000 },
+    "reply_email": { "type": "string", "maxLength": 254 }
+  }
+}

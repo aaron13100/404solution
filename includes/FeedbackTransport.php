@@ -5,6 +5,7 @@ if (!defined('ABSPATH')) {
 }
 
 require_once dirname(__FILE__) . '/FeedbackTransportTrait_EnvironmentExtras.php';
+require_once dirname(__FILE__) . '/PayloadSchema.php';
 
 /**
  * HTTP-first transport for plugin feedback reports.
@@ -98,6 +99,7 @@ class ABJ_404_Solution_FeedbackTransport {
      * @return void
      */
     public static function queue(array $payload, string $type): void {
+        self::validatePayloadContract($payload, $type);
         $uuid = self::generateUuid();
         $envelope = array(
             'payload' => $payload,
@@ -124,6 +126,7 @@ class ABJ_404_Solution_FeedbackTransport {
      */
     public static function sendNow(array $payload, string $type): bool {
         self::$lastSendUsedFallback = false;
+        self::validatePayloadContract($payload, $type);
         $payload = self::redactPayloadStrings($payload);
         $started = microtime(true);
         $result = self::httpSend($payload);
@@ -1187,6 +1190,33 @@ class ABJ_404_Solution_FeedbackTransport {
             }
         }
         return $payload;
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     * @param string $type One of: error, heartbeat, uninstall, support_request
+     */
+    private static function validatePayloadContract(array $payload, string $type): void {
+        static $schemas = null;
+        if ($schemas === null) {
+            $schemaFile = dirname(__FILE__) . '/schema/feedback_payload_schema.php';
+            if (!file_exists($schemaFile)) {
+                return;
+            }
+            $schemas = require $schemaFile;
+        }
+        if (!isset($schemas[$type])) {
+            return;
+        }
+        $violations = ABJ_404_Solution_PayloadSchema::validate($schemas[$type], $payload);
+        if (empty($violations)) {
+            return;
+        }
+        self::log('warn', sprintf(
+            'abj404_transport: payload contract violation for type=%s: %s',
+            $type,
+            implode('; ', $violations)
+        ));
     }
 
     private static function log(string $level, string $message): void {

@@ -1,0 +1,6 @@
+{
+  "nonce": "abc123def456",
+  "triggered_from": "plugins_row_action",
+  "user_message": "The redirect for /foo is going to the wrong place.",
+  "reply_email": "user@example.com"
+}

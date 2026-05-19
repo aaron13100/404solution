@@ -1,0 +1,36 @@
+{
+  "plugin_version": "4.1.7",
+  "db_type": "mariadb",
+  "db_version": "10.11.6-MariaDB",
+  "wp_version": "6.4.3",
+  "php_version": "8.1.27",
+  "is_multisite": false,
+  "is_uninstall": false,
+  "report_type": "heartbeat",
+  "site_url": "https://example.com",
+  "locale": "en_US",
+  "resource_limits": {
+    "php_memory": 268435456,
+    "wp_memory": 67108864,
+    "php_max_execution_seconds": 60,
+    "php_post_max_size": 8388608,
+    "php_upload_max_size": 8388608
+  },
+  "wp_memory_limit_bytes": 67108864,
+  "extensions": {
+    "curl": true,
+    "mbstring": true,
+    "opcache": true,
+    "gd": true,
+    "intl": true,
+    "zip": true,
+    "json": true
+  },
+  "active_plugins": ["404-solution/404-solution.php", "akismet/akismet.php"],
+  "active_theme": "Twenty Twenty-Four 1.2",
+  "object_cache": "external",
+  "table_prefix": "wp_",
+  "wp_debug": false,
+  "server_software": "Apache/2.4.58",
+  "error_count_in_log": 0
+}

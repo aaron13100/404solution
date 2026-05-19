@@ -1,0 +1,227 @@
+{
+  "$schema": "~/.claude/templates/quality-gates/shared/contracts.schema.json",
+  "contracts": [
+    {
+      "id": "error-report",
+      "description": "Plugin error report with diagnostic context including debug log",
+      "schema": "schemas/report.schema.json",
+      "direction": "client-to-server",
+      "producer": {
+        "file": "includes/FeedbackTransport.php",
+        "test": [
+          "tests/FeedbackTransportPayloadTest.php",
+          "tests/FeedbackPayloadSchemaContractTest.php"
+        ]
+      },
+      "consumer": {
+        "file": "src/routes/reports.js",
+        "test": "tests/FeedbackPayloadSchemaContractTest.php"
+      },
+      "fixtures": {
+        "valid": ["fixtures/error-report.valid.json"],
+        "invalid": ["fixtures/error-report.invalid-missing-debug-log.json"]
+      }
+    },
+    {
+      "id": "heartbeat",
+      "description": "Periodic health check from plugin to server",
+      "schema": "schemas/report.schema.json",
+      "direction": "client-to-server",
+      "producer": {
+        "file": "includes/FeedbackTransport.php",
+        "test": "tests/FeedbackPayloadSchemaContractTest.php"
+      },
+      "consumer": {
+        "file": "src/routes/reports.js",
+        "test": "tests/FeedbackPayloadSchemaContractTest.php"
+      },
+      "fixtures": {
+        "valid": ["fixtures/heartbeat.valid.json"],
+        "invalid": ["fixtures/heartbeat.invalid-missing-version.json"]
+      }
+    },
+    {
+      "id": "uninstall-report",
+      "description": "Plugin uninstall feedback with reason and optional contact email",
+      "schema": "schemas/report.schema.json",
+      "direction": "client-to-server",
+      "producer": {
+        "file": "includes/FeedbackTransport.php",
+        "test": "tests/FeedbackPayloadSchemaContractTest.php"
+      },
+      "consumer": {
+        "file": "src/routes/reports.js",
+        "test": "tests/FeedbackPayloadSchemaContractTest.php"
+      },
+      "fixtures": {
+        "valid": ["fixtures/uninstall-report.valid.json"],
+        "invalid": ["fixtures/uninstall-report.invalid-missing-version.json"]
+      }
+    },
+    {
+      "id": "support-request",
+      "description": "User support request with message, reply email, and debug log excerpt",
+      "schema": "schemas/report.schema.json",
+      "direction": "client-to-server",
+      "producer": {
+        "file": "includes/ajax/Ajax_SupportRequest.php",
+        "test": [
+          "tests/FeedbackTransportSupportRequestPayloadTest.php",
+          "tests/FeedbackPayloadSchemaContractTest.php"
+        ]
+      },
+      "consumer": {
+        "file": "src/routes/reports.js",
+        "test": "tests/FeedbackPayloadSchemaContractTest.php"
+      },
+      "fixtures": {
+        "valid": ["fixtures/support-request.valid.json"],
+        "invalid": ["fixtures/support-request.invalid-missing-user-message.json"]
+      }
+    },
+    {
+      "id": "ajax-update-pagination",
+      "description": "Admin table pagination AJAX request",
+      "schema": "schemas/ajax-update-pagination.schema.json",
+      "direction": "client-to-server",
+      "producer": {
+        "file": "includes/ajax/view_updater_pagination.js",
+        "test": "tests-js/ajax-response-validation.test.js"
+      },
+      "consumer": {
+        "file": "includes/ajax/ViewUpdater.php",
+        "test": "tests-js/ajax-response-validation.test.js"
+      },
+      "fixtures": {
+        "valid": ["fixtures/ajax-update-pagination.valid.json"],
+        "invalid": ["fixtures/ajax-update-pagination.invalid-missing-subpage.json"]
+      }
+    },
+    {
+      "id": "ajax-warm-table-cache",
+      "description": "Background snapshot warming AJAX request",
+      "schema": "schemas/ajax-warm-table-cache.schema.json",
+      "direction": "client-to-server",
+      "producer": {
+        "file": "includes/ajax/view_updater_table_warmup.js",
+        "test": "tests-js/ajax-response-validation.test.js"
+      },
+      "consumer": {
+        "file": "includes/ajax/ViewUpdater.php",
+        "test": "tests-js/ajax-response-validation.test.js"
+      },
+      "fixtures": {
+        "valid": ["fixtures/ajax-warm-table-cache.valid.json"],
+        "invalid": ["fixtures/ajax-warm-table-cache.invalid-bad-subpage.json"]
+      }
+    },
+    {
+      "id": "ajax-refresh-stats-dashboard",
+      "description": "Dashboard stats refresh AJAX request",
+      "schema": "schemas/ajax-refresh-stats-dashboard.schema.json",
+      "direction": "client-to-server",
+      "producer": {
+        "file": "includes/ajax/view_updater_stats.js",
+        "test": "tests-js/ajax-response-validation.test.js"
+      },
+      "consumer": {
+        "file": "includes/ajax/ViewUpdater.php",
+        "test": "tests-js/ajax-response-validation.test.js"
+      },
+      "fixtures": {
+        "valid": ["fixtures/ajax-refresh-stats.valid.json"],
+        "invalid": ["fixtures/ajax-refresh-stats.invalid-missing-nonce.json"]
+      }
+    },
+    {
+      "id": "ajax-refresh-health-bar",
+      "description": "Health bar refresh AJAX request",
+      "schema": "schemas/ajax-refresh-health-bar.schema.json",
+      "direction": "client-to-server",
+      "producer": {
+        "file": "includes/ajax/view_updater_stats.js",
+        "test": "tests-js/ajax-response-validation.test.js"
+      },
+      "consumer": {
+        "file": "includes/ajax/ViewUpdater.php",
+        "test": "tests-js/ajax-response-validation.test.js"
+      },
+      "fixtures": {
+        "valid": ["fixtures/ajax-refresh-health-bar.valid.json"],
+        "invalid": ["fixtures/ajax-refresh-health-bar.invalid-missing-nonce.json"]
+      }
+    },
+    {
+      "id": "ajax-fetch-inflight-stage",
+      "description": "Diagnostic stage tracking AJAX request",
+      "schema": "schemas/ajax-fetch-inflight-stage.schema.json",
+      "direction": "client-to-server",
+      "producer": {
+        "file": "includes/ajax/view_updater_build_advance.js",
+        "test": "tests-js/ajax-response-validation.test.js"
+      },
+      "consumer": {
+        "file": "includes/ajax/ViewUpdater.php",
+        "test": "tests-js/ajax-response-validation.test.js"
+      },
+      "fixtures": {
+        "valid": ["fixtures/ajax-fetch-inflight-stage.valid.json"],
+        "invalid": ["fixtures/ajax-fetch-inflight-stage.invalid-bad-request-id.json"]
+      }
+    },
+    {
+      "id": "ajax-advance-view-build",
+      "description": "Staged view-build progression AJAX request",
+      "schema": "schemas/ajax-advance-view-build.schema.json",
+      "direction": "client-to-server",
+      "producer": {
+        "file": "includes/ajax/view_updater_build_advance.js",
+        "test": "tests-js/ajax-response-validation.test.js"
+      },
+      "consumer": {
+        "file": "includes/ajax/ViewUpdater.php",
+        "test": "tests-js/ajax-response-validation.test.js"
+      },
+      "fixtures": {
+        "valid": ["fixtures/ajax-advance-view-build.valid.json"],
+        "invalid": ["fixtures/ajax-advance-view-build.invalid-missing-nonce.json"]
+      }
+    },
+    {
+      "id": "ajax-support-request",
+      "description": "Support request FormData AJAX from admin modal",
+      "schema": "schemas/ajax-support-request.schema.json",
+      "direction": "client-to-server",
+      "producer": {
+        "file": "includes/ajax/SupportRequest.js",
+        "test": "tests-js/support-request-button.test.js"
+      },
+      "consumer": {
+        "file": "includes/ajax/Ajax_SupportRequest.php",
+        "test": "tests-js/support-request-button.test.js"
+      },
+      "fixtures": {
+        "valid": ["fixtures/ajax-support-request.valid.json"],
+        "invalid": ["fixtures/ajax-support-request.invalid-bad-trigger.json"]
+      }
+    },
+    {
+      "id": "ajax-support-request-preview",
+      "description": "Support request preview read-only AJAX",
+      "schema": "schemas/ajax-support-request-preview.schema.json",
+      "direction": "client-to-server",
+      "producer": {
+        "file": "includes/ajax/SupportRequest.js",
+        "test": "tests-js/support-request-button.test.js"
+      },
+      "consumer": {
+        "file": "includes/ajax/Ajax_SupportRequestPreview.php",
+        "test": "tests-js/support-request-button.test.js"
+      },
+      "fixtures": {
+        "valid": ["fixtures/ajax-support-request-preview.valid.json"],
+        "invalid": ["fixtures/ajax-support-request-preview.invalid-missing-trigger.json"]
+      }
+    }
+  ]
+}

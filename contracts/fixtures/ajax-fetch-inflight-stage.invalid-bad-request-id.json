@@ -1,0 +1,5 @@
+{
+  "_comment": "This fixture MUST fail validation. The requestId contains invalid characters.",
+  "nonce": "abc123def456",
+  "requestId": "too-short!"
+}

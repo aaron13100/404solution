@@ -1,0 +1,8 @@
+{
+  "_comment": "This fixture MUST fail validation. The plugin_version field is missing, which is required for all report types.",
+  "db_type": "mariadb",
+  "is_uninstall": true,
+  "report_type": "uninstall",
+  "contact_email": "user@example.com",
+  "uninstall_reason": "too_complex"
+}

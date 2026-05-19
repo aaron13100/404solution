@@ -1,0 +1,6 @@
+{
+  "_comment": "This fixture MUST fail validation. The triggered_from value is not in the allowed enum.",
+  "nonce": "abc123def456",
+  "triggered_from": "unknown_source",
+  "user_message": "Test message"
+}

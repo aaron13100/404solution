@@ -1,0 +1,9 @@
+{
+  "_comment": "This fixture MUST fail validation. The user_message field is missing, which is required for support_request reports.",
+  "plugin_version": "4.1.7",
+  "db_type": "mariadb",
+  "report_type": "support_request",
+  "site_url": "https://example.com",
+  "reply_email": "user@example.com",
+  "triggered_from": "plugins_row_action"
+}

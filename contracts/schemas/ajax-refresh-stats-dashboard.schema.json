@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ajaxRefreshStatsDashboard",
+  "description": "Dashboard stats refresh AJAX request from view_updater_stats.js to ViewUpdater.php",
+  "type": "object",
+  "required": ["nonce"],
+  "additionalProperties": false,
+  "properties": {
+    "nonce": { "type": "string", "minLength": 1 },
+    "page": { "type": "string" },
+    "subpage": { "type": "string" },
+    "currentHash": { "type": "string" }
+  }
+}

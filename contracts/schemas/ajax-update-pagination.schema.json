@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ajaxUpdatePaginationLinks",
+  "description": "Admin table pagination/filter AJAX request from view_updater_pagination.js to ViewUpdater.php",
+  "type": "object",
+  "required": ["nonce", "subpage"],
+  "additionalProperties": false,
+  "properties": {
+    "nonce": { "type": "string", "minLength": 1 },
+    "subpage": {
+      "type": "string",
+      "enum": ["abj404_redirects", "abj404_captured", "abj404_logs"]
+    },
+    "page": { "type": "string" },
+    "rowsPerPage": { "type": ["string", "integer"], "description": "Sent as string from JS, parsed via absint()" },
+    "filterText": { "type": "string" },
+    "filter": { "type": "string" },
+    "orderby": { "type": "string" },
+    "order": { "type": "string" },
+    "paged": { "type": ["string", "integer"] },
+    "id": { "type": ["string", "integer"] },
+    "score_range": { "type": "string" },
+    "detectOnly": { "type": "string", "enum": ["0", "1"] },
+    "cacheMode": { "type": "string", "enum": ["normal", "cache_or_pending", "refresh_cache"] },
+    "currentSignature": { "type": "string", "maxLength": 128 },
+    "requestId": { "type": "string", "pattern": "^[a-zA-Z0-9]{8,64}$" }
+  }
+}

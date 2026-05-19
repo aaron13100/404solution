@@ -1,0 +1,26 @@
+{
+  "plugin_version": "4.1.7",
+  "db_type": "mariadb",
+  "db_version": "10.11.6-MariaDB",
+  "wp_version": "6.4.3",
+  "php_version": "8.1.27",
+  "is_multisite": false,
+  "is_uninstall": true,
+  "report_type": "uninstall",
+  "site_url": "https://example.com",
+  "locale": "en_US",
+  "resource_limits": {
+    "php_memory": 268435456,
+    "wp_memory": 67108864
+  },
+  "extensions": {
+    "curl": true,
+    "mbstring": true
+  },
+  "active_plugins": ["404-solution/404-solution.php"],
+  "active_theme": "Twenty Twenty-Four 1.2",
+  "contact_email": "user@example.com",
+  "uninstall_reason": "too_complex",
+  "uninstall_details": "The admin UI confused our marketing team.",
+  "debug_log": "[2026-05-10 14:00:00] DEBUG starting nightly maintenance\n"
+}

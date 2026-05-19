@@ -1,0 +1,26 @@
+{
+  "plugin_version": "4.1.7",
+  "db_type": "mariadb",
+  "db_version": "10.11.6-MariaDB",
+  "wp_version": "6.4.3",
+  "php_version": "8.1.27",
+  "is_multisite": false,
+  "is_uninstall": false,
+  "report_type": "support_request",
+  "site_url": "https://example.com",
+  "locale": "en_US",
+  "resource_limits": {
+    "php_memory": 268435456,
+    "wp_memory": 67108864
+  },
+  "extensions": {
+    "curl": true,
+    "mbstring": true
+  },
+  "active_plugins": ["404-solution/404-solution.php"],
+  "active_theme": "Twenty Twenty-Four 1.2",
+  "user_message": "The redirect for /foo is going to the wrong place.",
+  "reply_email": "user@example.com",
+  "triggered_from": "plugins_row_action",
+  "debug_log_excerpt": "Last 15 ERROR/WARN entries:\n2026-05-12 14:00:00 (ERROR): something broke\n"
+}

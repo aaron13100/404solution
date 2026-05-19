@@ -1,0 +1,109 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ReportBody",
+  "description": "Telemetry report posted by the 404 Solution WP plugin. Covers all report_type values: error, heartbeat, uninstall, support_request.",
+  "type": "object",
+  "required": ["plugin_version", "db_type"],
+  "additionalProperties": true,
+  "properties": {
+    "plugin_version": { "type": "string", "minLength": 1, "maxLength": 32 },
+    "wp_version": { "type": "string", "maxLength": 32 },
+    "php_version": { "type": "string", "maxLength": 32 },
+    "db_type": { "type": "string", "enum": ["mysql", "mariadb", "sqlite", "other"] },
+    "db_version": { "type": "string", "maxLength": 64 },
+    "is_multisite": { "type": "boolean" },
+    "is_uninstall": { "type": "boolean" },
+    "report_type": {
+      "type": "string",
+      "enum": ["error", "heartbeat", "uninstall", "support_request"]
+    },
+    "locale": { "type": "string", "maxLength": 16 },
+
+    "resource_limits": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "php_memory": { "type": "integer", "minimum": 0 },
+        "wp_memory": { "type": "integer", "minimum": 0 },
+        "php_max_execution_seconds": { "type": "integer", "minimum": 0 },
+        "php_post_max_size": { "type": "integer", "minimum": 0 },
+        "php_upload_max_size": { "type": "integer", "minimum": 0 },
+        "mysql_max_packet": { "type": "integer", "minimum": 0 },
+        "mysql_wait_timeout_seconds": { "type": "integer", "minimum": 0 }
+      }
+    },
+
+    "extensions": { "type": "object", "additionalProperties": true },
+    "active_plugins": {
+      "type": "array",
+      "maxItems": 500,
+      "items": { "type": "string", "maxLength": 256 }
+    },
+    "active_theme": { "type": "string", "maxLength": 255 },
+    "object_cache": { "type": "string", "maxLength": 64 },
+    "table_prefix": { "type": "string", "maxLength": 255 },
+    "wp_debug": { "type": "boolean" },
+    "server_software": { "type": "string", "maxLength": 255 },
+
+    "site_url": { "type": ["string", "null"], "maxLength": 2048 },
+
+    "wp_memory_limit_bytes": { "type": ["integer", "null"], "minimum": 0 },
+    "published_posts_count": { "type": ["integer", "null"], "minimum": 0 },
+    "published_pages_count": { "type": ["integer", "null"], "minimum": 0 },
+    "categories_count": { "type": ["integer", "null"], "minimum": 0 },
+    "tags_count": { "type": ["integer", "null"], "minimum": 0 },
+
+    "redirects_active_total": { "type": ["integer", "null"], "minimum": 0 },
+    "redirects_manual_count": { "type": ["integer", "null"], "minimum": 0 },
+    "redirects_automatic_count": { "type": ["integer", "null"], "minimum": 0 },
+    "redirects_regex_count": { "type": ["integer", "null"], "minimum": 0 },
+    "redirects_trashed_count": { "type": ["integer", "null"], "minimum": 0 },
+
+    "captured_404s_active_total": { "type": ["integer", "null"], "minimum": 0 },
+    "captured_404s_new_count": { "type": ["integer", "null"], "minimum": 0 },
+    "captured_404s_ignored_count": { "type": ["integer", "null"], "minimum": 0 },
+    "captured_404s_later_count": { "type": ["integer", "null"], "minimum": 0 },
+    "captured_404s_trashed_count": { "type": ["integer", "null"], "minimum": 0 },
+
+    "log_entries_count": { "type": ["integer", "null"], "minimum": 0 },
+    "log_table_size_bytes": { "type": ["integer", "null"], "minimum": 0 },
+    "error_count_in_log": { "type": ["integer", "null"], "minimum": 0 },
+    "debug_file_size_bytes": { "type": ["integer", "null"], "minimum": 0 },
+
+    "debug_log": { "type": "string", "maxLength": 262144 },
+
+    "uninstall_reason": { "type": ["string", "null"], "maxLength": 255 },
+    "uninstall_details": { "type": ["string", "null"], "maxLength": 8192 },
+
+    "contact_email": {
+      "type": ["string", "null"],
+      "format": "email",
+      "maxLength": 254
+    },
+
+    "user_message": { "type": "string", "maxLength": 2000 },
+    "reply_email": { "type": "string", "maxLength": 254 },
+    "triggered_from": { "type": "string", "maxLength": 64 },
+    "debug_log_excerpt": { "type": "string", "maxLength": 262144 }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "report_type": { "const": "error" } },
+        "required": ["report_type"]
+      },
+      "then": {
+        "required": ["debug_log"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "report_type": { "const": "support_request" } },
+        "required": ["report_type"]
+      },
+      "then": {
+        "required": ["user_message", "triggered_from"]
+      }
+    }
+  ]
+}

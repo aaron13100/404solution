@@ -1,0 +1,4 @@
+{
+  "_comment": "This fixture MUST fail validation. The triggered_from field is missing.",
+  "nonce": "abc123def456"
+}

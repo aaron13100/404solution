@@ -1,0 +1,7 @@
+{
+  "_comment": "This fixture MUST fail validation. The plugin_version field is missing, which is required for all report types.",
+  "db_type": "mariadb",
+  "report_type": "heartbeat",
+  "site_url": "https://example.com",
+  "error_count_in_log": 0
+}
