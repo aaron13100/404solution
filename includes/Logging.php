@@ -524,9 +524,10 @@ class ABJ_404_Solution_Logging {
     }
     
     /**
-     * Get sanitized log excerpt for support emails
+     * Get sanitized log excerpt for support emails.
      * Collects last 15 ERROR/WARN entries (already sanitized at write-time)
-     * If no errors/warnings found, includes last 20 lines of log for context
+     * plus the last 20 lines for recent context (admin actions, AJAX calls).
+     * If no errors/warnings found, includes only the last 20 lines.
      *
      * @return string Sanitized log excerpt or message if no errors found
      */
@@ -630,6 +631,11 @@ class ABJ_404_Solution_Logging {
         $output = "Last " . count($errorEntries) . " ERROR/WARN entries:\n\n";
         foreach ($errorEntries as $entry) {
             $output .= implode("\n", $entry) . "\n\n";
+        }
+
+        if (!empty($recentLines)) {
+            $output .= "Recent context (last " . count($recentLines) . " lines):\n\n";
+            $output .= implode("", $recentLines);
         }
 
         return trim($output);

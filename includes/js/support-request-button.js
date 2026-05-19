@@ -245,6 +245,7 @@
         successPrefix: 'Sent. Reference: ',
         successSuffix: '. Thank you.',
         cooldownTemplate: 'You already sent a report recently. Try again in {minutes} minute(s).',
+        networkError: 'Network error: could not reach the server. Check your internet connection and try again.',
         genericError: 'Could not send report. Please try again later.'
     };
 
@@ -593,6 +594,11 @@
                     setState('cooldown');
                     return;
                 }
+                if (err instanceof TypeError) {
+                    modal.errorBlock.textContent = t('networkError');
+                    setState('failure');
+                    return;
+                }
                 modal.errorBlock.textContent = (err.message ? String(err.message) : t('genericError'));
                 setState('failure');
             });
@@ -686,6 +692,7 @@
         formData.append('nonce', nonce);
         formData.append('triggered_from', triggeredFrom);
         formData.append('user_message', userMessage || '');
+        // ajax-direct-approved: no jQuery dependency (component runs on fatal-fallback pages where jQuery may not load)
         return fetch(ajaxurl, {
             method: 'POST',
             credentials: 'same-origin',
