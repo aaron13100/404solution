@@ -78,10 +78,10 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
     /** @var ABJ_404_Solution_Logging */
     private $logger;
 
-    // --- Temporary DataAccess bridge (setter injection) ---
+    // --- ViewBuildOrchestrator bridge (setter injection, replaces temporary DataAccess coupling) ---
 
-    /** @var ABJ_404_Solution_DataAccess|null */
-    private $dataAccess;
+    /** @var ABJ_404_Solution_ViewBuildOrchestratorInterface|null */
+    private $viewBuildOrchestrator;
 
     // --- Instance property (moved from DataAccess) ---
 
@@ -110,19 +110,19 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
     }
 
     /**
-     * @param ABJ_404_Solution_DataAccess $dataAccess
+     * @param ABJ_404_Solution_ViewBuildOrchestratorInterface $viewBuildOrchestrator
      * @return void
      */
-    public function setDataAccess(ABJ_404_Solution_DataAccess $dataAccess): void {
-        $this->dataAccess = $dataAccess;
+    public function setViewBuildOrchestrator(ABJ_404_Solution_ViewBuildOrchestratorInterface $viewBuildOrchestrator): void {
+        $this->viewBuildOrchestrator = $viewBuildOrchestrator;
     }
 
-    /** @return ABJ_404_Solution_DataAccess */
-    private function requireDataAccess(): ABJ_404_Solution_DataAccess {
-        if ($this->dataAccess === null) {
-            throw new \RuntimeException('ViewReadService requires DataAccess bridge (call setDataAccess first)');
+    /** @return ABJ_404_Solution_ViewBuildOrchestratorInterface */
+    private function requireViewBuildOrchestrator(): ABJ_404_Solution_ViewBuildOrchestratorInterface {
+        if ($this->viewBuildOrchestrator === null) {
+            throw new \RuntimeException('ViewReadService requires ViewBuildOrchestrator (call setViewBuildOrchestrator first)');
         }
-        return $this->dataAccess;
+        return $this->viewBuildOrchestrator;
     }
 
     // --- Locally replicated helper methods ---
@@ -496,8 +496,8 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
         if (function_exists('delete_option')) {
             delete_option($this->viewDoneFreshnessOptionName());
         }
-        $this->requireDataAccess()->invalidateViewDoneServeableCacheBridge();
-        $this->requireDataAccess()->scheduleViewDoneRebuild();
+        $this->requireViewBuildOrchestrator()->invalidateViewDoneServeableCacheBridge();
+        $this->requireViewBuildOrchestrator()->scheduleViewDoneRebuild();
 
         // Clear all rows from the view cache table. log_errors=false marks
         // this as a best-effort operation (the cache expires naturally via
@@ -825,7 +825,7 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
         }
 
         try {
-            $rows = $this->requireDataAccess()->runRedirectsForViewStaged((string)$sub, is_array($tableOptions) ? $tableOptions : array());
+            $rows = $this->requireViewBuildOrchestrator()->runRedirectsForViewStaged((string)$sub, is_array($tableOptions) ? $tableOptions : array());
         } catch (ABJ_404_Solution_ViewBuildPendingException $pending) {
             // Cold-start state, not an error. The fetch AJAX gate normally
             // intercepts this before the read; non-AJAX callers (REST, warmup)
@@ -982,7 +982,7 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
             // the precomputed dest_for_view/status_for_view/type_for_view
             // columns, so route through the staged path.
             try {
-                $countValue = $this->requireDataAccess()->runRedirectsForViewCountStaged((string)$sub, $tableOptions);
+                $countValue = $this->requireViewBuildOrchestrator()->runRedirectsForViewCountStaged((string)$sub, $tableOptions);
                 $this->redirectsForViewCountRequestCache[$requestCountCacheKey] = $countValue;
                 if ($canUseSnapshotCache && $countCacheKey === '') {
                     $countCacheKey = $this->getViewSnapshotCacheKey('abj404_view_count', $sub, $tableOptions);
@@ -1654,13 +1654,13 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
     /** @return array<string, int> */
     public function getViewBuildProgressFingerprint(): array {
         return array(
-            'started_at' => $this->requireDataAccess()->readBuildProgressOption('started_at', 0),
-            'current_stage' => $this->requireDataAccess()->readBuildProgressOption('current_stage', 0),
-            'last_started_stage' => $this->requireDataAccess()->readBuildProgressOption('last_started_stage', 0),
-            'last_completed_stage' => $this->requireDataAccess()->readBuildProgressOption('last_completed_stage', 0),
-            's2_high_water' => $this->requireDataAccess()->readBuildProgressOption('s2_high_water', 0),
-            's4_high_water' => $this->requireDataAccess()->readBuildProgressOption('s4_high_water', 0),
-            's5_high_water' => $this->requireDataAccess()->readBuildProgressOption('s5_high_water', 0),
+            'started_at' => $this->requireViewBuildOrchestrator()->readBuildProgressOption('started_at', 0),
+            'current_stage' => $this->requireViewBuildOrchestrator()->readBuildProgressOption('current_stage', 0),
+            'last_started_stage' => $this->requireViewBuildOrchestrator()->readBuildProgressOption('last_started_stage', 0),
+            'last_completed_stage' => $this->requireViewBuildOrchestrator()->readBuildProgressOption('last_completed_stage', 0),
+            's2_high_water' => $this->requireViewBuildOrchestrator()->readBuildProgressOption('s2_high_water', 0),
+            's4_high_water' => $this->requireViewBuildOrchestrator()->readBuildProgressOption('s4_high_water', 0),
+            's5_high_water' => $this->requireViewBuildOrchestrator()->readBuildProgressOption('s5_high_water', 0),
         );
     }
 
@@ -2841,7 +2841,7 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
      */
     public function readFromViewDone(string $sub, array $tableOptions): array {
         $query = $this->buildViewDoneReadQuery($sub, $tableOptions);
-        $result = $this->dbCore->queryAndGetResults($query, $this->requireDataAccess()->getStagedQueryOptionsForRead());
+        $result = $this->dbCore->queryAndGetResults($query, $this->requireViewBuildOrchestrator()->getStagedQueryOptionsForRead());
         $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
         /** @var array<int, array<string, mixed>> $rows */
         return $rows;

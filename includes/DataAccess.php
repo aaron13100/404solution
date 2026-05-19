@@ -20,6 +20,8 @@ require_once __DIR__ . '/DataAccessTrait_ViewBuildForceRestart.php';
 require_once __DIR__ . '/DataAccessTrait_MutationWatermarkSeam.php';
 require_once __DIR__ . '/DataAccessTrait_AdminMutationGate.php';
 require_once __DIR__ . '/DataAccessTrait_QueryTimeouts.php';
+require_once __DIR__ . '/ViewBuildOrchestratorInterface.php';
+require_once __DIR__ . '/ViewBuildOrchestrator.php';
 require_once __DIR__ . '/ViewReadServiceInterface.php';
 require_once __DIR__ . '/ViewReadService.php';
 require_once __DIR__ . '/LogsRepositoryInterface.php';
@@ -157,6 +159,9 @@ class ABJ_404_Solution_DataAccess {
     /** @var ABJ_404_Solution_ViewReadService The extracted view read service (Phase 6). */
     private $viewReadService;
 
+    /** @var ABJ_404_Solution_ViewBuildOrchestrator The extracted view build orchestrator (Phase 7). */
+    private $viewBuildOrchestrator;
+
     /** @param bool $value @return void */
     public static function setViewSnapshotTableEnsured(bool $value): void {
         ABJ_404_Solution_ViewReadService::setViewSnapshotTableEnsured($value);
@@ -182,20 +187,6 @@ class ABJ_404_Solution_DataAccess {
 
     /** @var ABJ_404_Solution_Logging */
     private $logger;
-
-    use ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait;
-    use ABJ_404_Solution_DataAccess_ViewBuildStageRunnerTrait;
-    use ABJ_404_Solution_DataAccess_ViewBuildStageCallbacksTrait;
-    use ABJ_404_Solution_DataAccess_ViewBuildAdaptiveTrait;
-    use ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait;
-    use ABJ_404_Solution_DataAccess_ViewBuildStartedWatermarkTrait;
-    use ABJ_404_Solution_DataAccess_ViewBuildLockAndCronTrait;
-    use ABJ_404_Solution_DataAccess_ViewBuildPhpEnvProbeTrait;
-    use ABJ_404_Solution_DataAccess_ViewBuildSessionEnvProbeTrait;
-    use ABJ_404_Solution_DataAccess_ViewBuildHostFailurePolicyTrait;
-    use ABJ_404_Solution_DataAccess_ViewBuildForceRestartTrait;
-    use ABJ_404_Solution_DataAccess_MutationWatermarkSeamTrait;
-    use ABJ_404_Solution_DataAccess_AdminMutationGateTrait;
 
     /** Cache key for redirect status counts */
     const CACHE_KEY_REDIRECT_STATUS = 'abj404_redirect_status_counts';
@@ -225,13 +216,6 @@ class ABJ_404_Solution_DataAccess {
     // $regexRedirectsCache and $regexCacheDisabled moved to RedirectsRepository (Phase 2).
 
     /**
-     * Constructor with dependency injection.
-     * Dependencies are now explicit and visible.
-     *
-     * @param ABJ_404_Solution_Functions|null $functions String manipulation utilities
-     * @param ABJ_404_Solution_Logging|null $logging Logging service
-     */
-    /**
      * @param ABJ_404_Solution_Functions|null $functions
      * @param ABJ_404_Solution_Logging|null $logging
      * @param ABJ_404_Solution_DatabaseCore|null $dbCore
@@ -240,8 +224,9 @@ class ABJ_404_Solution_DataAccess {
      * @param ABJ_404_Solution_LogsRepository|null $logsRepo
      * @param ABJ_404_Solution_StatsRepository|null $statsRepo
      * @param ABJ_404_Solution_ViewReadService|null $viewReadService
+     * @param ABJ_404_Solution_ViewBuildOrchestrator|null $viewBuildOrchestrator
      */
-    public function __construct($functions = null, $logging = null, $dbCore = null, $contentRepo = null, $redirectsRepo = null, $logsRepo = null, $statsRepo = null, $viewReadService = null) {
+    public function __construct($functions = null, $logging = null, $dbCore = null, $contentRepo = null, $redirectsRepo = null, $logsRepo = null, $statsRepo = null, $viewReadService = null, $viewBuildOrchestrator = null) {
         $this->f = $functions !== null ? $functions : abj_service('functions');
         $this->logger = $logging !== null ? $logging : abj_service('logging');
 
@@ -281,7 +266,17 @@ class ABJ_404_Solution_DataAccess {
                 $this->dbCore, $this->logsRepo, $this->redirectsRepo, $this->f, $this->logger
             );
         }
-        $this->viewReadService->setDataAccess($this);
+
+        if ($viewBuildOrchestrator !== null) {
+            $this->viewBuildOrchestrator = $viewBuildOrchestrator;
+        } else {
+            $this->viewBuildOrchestrator = new ABJ_404_Solution_ViewBuildOrchestrator(
+                $this->dbCore, $this->f, $this->logger
+            );
+        }
+        $this->viewBuildOrchestrator->setViewReadService($this->viewReadService);
+        $this->viewBuildOrchestrator->setLogsRepository($this->logsRepo);
+        $this->viewReadService->setViewBuildOrchestrator($this->viewBuildOrchestrator);
     }
 
     /** @return ABJ_404_Solution_DatabaseCore */
@@ -314,26 +309,119 @@ class ABJ_404_Solution_DataAccess {
         return $this->viewReadService;
     }
 
-    // Phase 7 bridge: ViewReadService needs these build-side methods until ViewBuildOrchestrator is extracted.
+    /** @return ABJ_404_Solution_ViewBuildOrchestrator */
+    public function getViewBuildOrchestrator(): ABJ_404_Solution_ViewBuildOrchestrator {
+        return $this->viewBuildOrchestrator;
+    }
+
+    // Facade delegations to ViewBuildOrchestrator (Phase 7 refactor).
 
     /** @return void */
-    public function invalidateViewDoneServeableCacheBridge(): void {
-        $this->invalidateViewDoneServeableCache();
-    }
-
-    /** @return array<string, mixed> */
-    public function getStagedQueryOptionsForRead(): array {
-        return $this->stagedQueryOptions();
-    }
+    function claimForegroundViewBuildLease(): void { $this->viewBuildOrchestrator->claimForegroundViewBuildLease(); }
 
     /**
-     * @param string $shortName
-     * @param int $default
+     * @param string $sub
+     * @param array<string, mixed> $tableOptions
+     * @return array<int, array<string, mixed>>
+     */
+    function runRedirectsForViewStaged(string $sub, array $tableOptions): array { return $this->viewBuildOrchestrator->runRedirectsForViewStaged($sub, $tableOptions); }
+
+    /** @return bool */
+    function viewDoneIsServeable(): bool { return $this->viewBuildOrchestrator->viewDoneIsServeable(); }
+
+    /** @return int */
+    function getViewDoneBuiltAtTimestamp(): int { return $this->viewBuildOrchestrator->getViewDoneBuiltAtTimestamp(); }
+
+    /** @return void */
+    function markViewDoneBuildCompleted(): void { $this->viewBuildOrchestrator->markViewDoneBuildCompleted(); }
+
+    /** @return array<string, mixed> */
+    function getViewBuildProgress(): array { return $this->viewBuildOrchestrator->getViewBuildProgress(); }
+
+    /** @param bool $forceRebuild @return array<string, mixed> */
+    function advanceViewBuildOnce(bool $forceRebuild = false): array { return $this->viewBuildOrchestrator->advanceViewBuildOnce($forceRebuild); }
+
+    /** @return array{ran:bool, reason:string, progress:array<string,mixed>} */
+    function runPageLoadFallbackAdvance(): array { return $this->viewBuildOrchestrator->runPageLoadFallbackAdvance(); }
+
+    /**
+     * @param string $sub
+     * @param array<string, mixed> $tableOptions
      * @return int
      */
-    public function readBuildProgressOption(string $shortName, int $default = 0): int {
-        return $this->readProgressOption($shortName, $default);
-    }
+    function runRedirectsForViewCountStaged(string $sub, array $tableOptions): int { return $this->viewBuildOrchestrator->runRedirectsForViewCountStaged($sub, $tableOptions); }
+
+    /** @return void */
+    function rebuildViewDoneInBackground(): void { $this->viewBuildOrchestrator->rebuildViewDoneInBackground(); }
+
+    /** @return string */
+    function reconcileStagedTablesAtRunnerStartup(): string { return $this->viewBuildOrchestrator->reconcileStagedTablesAtRunnerStartup(); }
+
+    /** @param string $optionName @param mixed $expected @return bool */
+    function verifyOptionWriteCoherent(string $optionName, $expected): bool { return $this->viewBuildOrchestrator->verifyOptionWriteCoherent($optionName, $expected); }
+
+    /** @return void */
+    function capturePrefixAtBuildStart(): void { $this->viewBuildOrchestrator->capturePrefixAtBuildStart(); }
+
+    /** @return bool */
+    function verifyPrefixUnchangedSinceStageOne(): bool { return $this->viewBuildOrchestrator->verifyPrefixUnchangedSinceStageOne(); }
+
+    /** @return void */
+    function clearPrefixAtStageOne(): void { $this->viewBuildOrchestrator->clearPrefixAtStageOne(); }
+
+    /** @return array<string, mixed> */
+    function probeSqlModeForBuild(): array { return $this->viewBuildOrchestrator->probeSqlModeForBuild(); }
+
+    /** @return array<string, mixed> */
+    function detectAndAdjustSqlMode(): array { return $this->viewBuildOrchestrator->detectAndAdjustSqlMode(); }
+
+    /** @param string $url @param int $maxLength @return string */
+    function sanitizeUrlBeforeInsert(string $url, int $maxLength = 0): string { return $this->viewBuildOrchestrator->sanitizeUrlBeforeInsert($url, $maxLength); }
+
+    /** @return bool */
+    function verifyBuildLockSerializesWriter(): bool { return $this->viewBuildOrchestrator->verifyBuildLockSerializesWriter(); }
+
+    /** @param int $delaySeconds @return void */
+    function scheduleViewDoneRebuild(int $delaySeconds = 1): void { $this->viewBuildOrchestrator->scheduleViewDoneRebuild($delaySeconds); }
+
+    /** @return array<string, mixed> */
+    function probePhpEnvironmentForBuild(): array { return $this->viewBuildOrchestrator->probePhpEnvironmentForBuild(); }
+
+    /** @return bool */
+    function probeSetTimeLimitAvailability(): bool { return $this->viewBuildOrchestrator->probeSetTimeLimitAvailability(); }
+
+    /** @return int */
+    function probeMemoryLimitForS9(): int { return $this->viewBuildOrchestrator->probeMemoryLimitForS9(); }
+
+    /** @return array<string, mixed> */
+    function probeFilesystemEnvironmentForBuild(): array { return $this->viewBuildOrchestrator->probeFilesystemEnvironmentForBuild(); }
+
+    /** @return void */
+    function clearStagedBuildDegradedState(): void { $this->viewBuildOrchestrator->clearStagedBuildDegradedState(); }
+
+    /** @return bool */
+    function reconcilePostStageElevenState(): bool { return $this->viewBuildOrchestrator->reconcilePostStageElevenState(); }
+
+    /** @return array<string, mixed> */
+    function probeSessionVariablesAtS1Entry(): array { return $this->viewBuildOrchestrator->probeSessionVariablesAtS1Entry(); }
+
+    /** @return void */
+    function markViewDoneInvalidatedByAdminMutation(): void { $this->viewBuildOrchestrator->markViewDoneInvalidatedByAdminMutation(); }
+
+    /** @param int $lockTimeoutSeconds @return bool */
+    function forceRestartViewBuild(int $lockTimeoutSeconds = 10): bool { return $this->viewBuildOrchestrator->forceRestartViewBuild($lockTimeoutSeconds); }
+
+    /** @return int */
+    function bumpMutationWatermark(): int { return $this->viewBuildOrchestrator->bumpMutationWatermark(); }
+
+    /** @return void */
+    public function invalidateViewDoneServeableCacheBridge(): void { $this->viewBuildOrchestrator->invalidateViewDoneServeableCacheBridge(); }
+
+    /** @return array<string, mixed> */
+    public function getStagedQueryOptionsForRead(): array { return $this->viewBuildOrchestrator->getStagedQueryOptionsForRead(); }
+
+    /** @param string $shortName @param int $default @return int */
+    public function readBuildProgressOption(string $shortName, int $default = 0): int { return $this->viewBuildOrchestrator->readBuildProgressOption($shortName, $default); }
 
     // Facade delegations to ViewReadService (Phase 6 refactor).
 
@@ -479,28 +567,6 @@ class ABJ_404_Solution_DataAccess {
 
     /** @return void */
     function maybeUpdateRedirectsForViewHitsTable(): void { $this->viewReadService->maybeUpdateRedirectsForViewHitsTable(); }
-
-    // Reverse bridge: build traits on DataAccess call read methods now on ViewReadService (Phase 6).
-
-    /** @return array<string, string> */
-    private function viewBuildOnlyTranslations(): array { return $this->viewReadService->viewBuildOnlyTranslations(); }
-
-    /**
-     * @param string $sub
-     * @param array<string, mixed> $tableOptions
-     * @return array<int, array<string, mixed>>
-     */
-    private function readFromViewDone(string $sub, array $tableOptions): array { return $this->viewReadService->readFromViewDone($sub, $tableOptions); }
-
-    /** @return array<string, int> */
-    private function getViewBuildProgressFingerprint(): array { return $this->viewReadService->getViewBuildProgressFingerprint(); }
-
-    /**
-     * @param string $sub
-     * @param array<string, mixed> $tableOptions
-     * @return string
-     */
-    private function buildViewDoneCountQuery(string $sub, array $tableOptions): string { return $this->viewReadService->buildViewDoneCountQuery($sub, $tableOptions); }
 
     // Facade delegations to StatsRepository (Phase 4 refactor).
 
