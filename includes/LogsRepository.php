@@ -1064,7 +1064,7 @@ class ABJ_404_Solution_LogsRepository implements ABJ_404_Solution_LogsRepository
     /** @return bool */
     private function isLogsv2CanonicalUrlBackfillComplete(): bool {
         if (!function_exists('get_option')) { return false; }
-        return (bool)get_option(ABJ_404_Solution_DatabaseUpgradesEtc::LOGSV2_CANONICAL_URL_BACKFILL_COMPLETE_OPTION);
+        return (bool)get_option('abj404_logsv2_canonical_url_backfill_complete');
     }
 
     /** @param string $sql @return string */

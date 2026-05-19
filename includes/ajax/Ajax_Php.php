@@ -215,9 +215,9 @@ class ABJ_404_Solution_Ajax_Php {
      */
     static function echoViewLogsFor() {
     	$abj404AjaxPhp = ABJ_404_Solution_Ajax_Php::getInstance();;
-        $dao = self::getServiceIfAvailable('data_access');
-        /** @var ABJ_404_Solution_DataAccess $abj404dao */
-        $abj404dao = ($dao !== null) ? $dao : abj_service('data_access');
+        $logsRepo = self::getServiceIfAvailable('logs_repository');
+        /** @var ABJ_404_Solution_LogsRepository $logsRepository */
+        $logsRepository = ($logsRepo !== null) ? $logsRepo : abj_service('logs_repository');
         $funcs = self::getServiceIfAvailable('functions');
         /** @var ABJ_404_Solution_Functions $f */
         $f = ($funcs !== null) ? $funcs : abj_service('functions');
@@ -259,7 +259,7 @@ class ABJ_404_Solution_Ajax_Php {
         $specialSuggestion[] = $suggestion;
         
         // Pass the raw term; getLogsIDandURLLike() builds the LIKE pattern safely.
-        $rows = $abj404dao->getLogsIDandURLLike($term, ABJ404_MAX_AJAX_DROPDOWN_SIZE);
+        $rows = $logsRepository->getLogsIDandURLLike($term, ABJ404_MAX_AJAX_DROPDOWN_SIZE);
         $results = $abj404AjaxPhp->formatLogResults($rows);
         
         // limit search results
@@ -279,9 +279,9 @@ class ABJ_404_Solution_Ajax_Php {
         /** @var ABJ_404_Solution_PluginLogic $abj404logic */
         $abj404logic = ($logic !== null) ? $logic : abj_service('plugin_logic');
         $abj404AjaxPhp = ABJ_404_Solution_Ajax_Php::getInstance();
-        $dao = self::getServiceIfAvailable('data_access');
-        /** @var ABJ_404_Solution_DataAccess $abj404dao */
-        $abj404dao = ($dao !== null) ? $dao : abj_service('data_access');
+        $contentRepo = self::getServiceIfAvailable('content_repository');
+        /** @var ABJ_404_Solution_ContentRepository $contentRepository */
+        $contentRepository = ($contentRepo !== null) ? $contentRepo : abj_service('content_repository');
         $funcs = self::getServiceIfAvailable('functions');
         /** @var ABJ_404_Solution_Functions $f */
         $f = ($funcs !== null) ? $funcs : abj_service('functions');
@@ -320,7 +320,7 @@ class ABJ_404_Solution_Ajax_Php {
         	$includeSpecial);
 
         // Query to get the posts and pages matching the search term
-        $rowsOtherTypes = $abj404dao->getPublishedPagesAndPostsIDs('', $term, (string)ABJ404_MAX_AJAX_DROPDOWN_SIZE);
+        $rowsOtherTypes = $contentRepository->getPublishedPagesAndPostsIDs('', $term, (string)ABJ404_MAX_AJAX_DROPDOWN_SIZE);
         // order the results. this also sets the page depth (for child pages).
         $rowsOtherTypes = $abj404logic->orderPageResults($rowsOtherTypes, true);
         /** @var array<int, object{post_title: string, post_type: string, id: int|string, depth: int|string}> $rowsOtherTypesTyped */
@@ -328,11 +328,11 @@ class ABJ_404_Solution_Ajax_Php {
         $publishedPosts = $abj404AjaxPhp->formatRedirectDestinations($rowsOtherTypesTyped);
 
         /** @var array<int, object{taxonomy: string, name: string, term_id: int|string}> $cats */
-        $cats = $abj404dao->getPublishedCategories(null, null, ABJ404_MAX_AJAX_DROPDOWN_SIZE);
+        $cats = $contentRepository->getPublishedCategories(null, null, ABJ404_MAX_AJAX_DROPDOWN_SIZE);
         $categoryOptions = $abj404AjaxPhp->formatCategoryDestinations($cats);
 
         /** @var array<int, object{name: string, term_id: int|string}> $tags */
-        $tags = $abj404dao->getPublishedTags(null, ABJ404_MAX_AJAX_DROPDOWN_SIZE);
+        $tags = $contentRepository->getPublishedTags(null, ABJ404_MAX_AJAX_DROPDOWN_SIZE);
         $tagOptions = $abj404AjaxPhp->formatTagDestinations($tags);
 
         /** @var array<int, object{taxonomy: string, name: string, term_id: int|string}> $catsForCustom */

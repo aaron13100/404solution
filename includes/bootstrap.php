@@ -13,6 +13,51 @@ if (!defined('ABSPATH')) {
  */
 
 /**
+ * Build the view-read service from the common DAO module dependencies.
+ *
+ * @param ABJ_404_Solution_ServiceContainer $container
+ * @param callable $daoModuleDeps
+ * @return ABJ_404_Solution_ViewReadService
+ */
+function abj_404_solution_create_view_read_service($container, $daoModuleDeps) {
+    /** @var array{0: ABJ_404_Solution_DatabaseCore, 1: ABJ_404_Solution_Functions, 2: ABJ_404_Solution_Logging} $d */
+    $d = $daoModuleDeps($container);
+    /** @var ABJ_404_Solution_LogsRepository $logsRepository */
+    $logsRepository = $container->get('logs_repository');
+    /** @var ABJ_404_Solution_RedirectsRepository $redirectsRepository */
+    $redirectsRepository = $container->get('redirects_repository');
+    return new ABJ_404_Solution_ViewReadService(
+        $d[0], $logsRepository, $redirectsRepository, $d[1], $d[2]
+    );
+}
+
+/**
+ * Build and wire the view-build orchestrator service.
+ *
+ * @param ABJ_404_Solution_ServiceContainer $container
+ * @return ABJ_404_Solution_ViewBuildOrchestrator
+ */
+function abj_404_solution_create_view_build_orchestrator($container) {
+    /** @var ABJ_404_Solution_DatabaseCore $dbCore */
+    $dbCore = $container->get('db_core');
+    /** @var ABJ_404_Solution_Functions $functions */
+    $functions = $container->get('functions');
+    /** @var ABJ_404_Solution_Logging $logging */
+    $logging = $container->get('logging');
+    /** @var ABJ_404_Solution_ViewReadService $viewReadService */
+    $viewReadService = $container->get('view_read_service');
+    /** @var ABJ_404_Solution_LogsRepository $logsRepository */
+    $logsRepository = $container->get('logs_repository');
+    $svc = new ABJ_404_Solution_ViewBuildOrchestrator(
+        $dbCore, $functions, $logging
+    );
+    $svc->setViewReadService($viewReadService);
+    $svc->setLogsRepository($logsRepository);
+    $viewReadService->setViewBuildOrchestrator($svc);
+    return $svc;
+}
+
+/**
  * Initialize all services in the dependency injection container.
  *
  * Services are registered with factory functions that define their dependencies.
@@ -103,14 +148,12 @@ function abj_404_solution_init_services() {
             $c->get('functions'), $c->get('logging')
         );
     });
-    $container->set('view_read_service', function($c) use ($daoModuleDeps) {
-        $d = $daoModuleDeps($c);
-        return new ABJ_404_Solution_ViewReadService($d[0], $c->get('logs_repository'), $c->get('redirects_repository'), $d[1], $d[2]);
-    });
+    $container->set('view_read_service', function($c) use ($daoModuleDeps) { return abj_404_solution_create_view_read_service($c, $daoModuleDeps); });
+    $container->set('view_build_orchestrator', function($c) { return abj_404_solution_create_view_build_orchestrator($c); });
     $container->set('data_access', function($c) {
         return new ABJ_404_Solution_DataAccess($c->get('functions'), $c->get('logging'), $c->get('db_core'),
             $c->get('content_repository'), $c->get('redirects_repository'),
-            $c->get('logs_repository'), $c->get('stats_repository'), $c->get('view_read_service'));
+            $c->get('logs_repository'), $c->get('stats_repository'), $c->get('view_read_service'), $c->get('view_build_orchestrator'));
     });
 
     /**

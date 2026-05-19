@@ -545,24 +545,54 @@ class ABJ_404_Solution_ViewUpdater {
 
         return $out;
     }
+
+    /** @return ABJ_404_Solution_Functions|ABJ_404_Solution_DataAccess */
+    private static function getRequestReader() {
+        $container = ABJ_404_Solution_ServiceContainer::getInstance();
+        if ($container->has('functions')) {
+            /** @var ABJ_404_Solution_Functions $functions */
+            $functions = $container->get('functions');
+            return $functions;
+        }
+        if ($container->has('data_access')) {
+            /** @var ABJ_404_Solution_DataAccess $dao */
+            $dao = $container->get('data_access');
+            return $dao;
+        }
+        if (class_exists('ABJ_404_Solution_DataAccess')) {
+            $ref = new ReflectionProperty('ABJ_404_Solution_DataAccess', 'instance');
+            $instance = $ref->getValue();
+            if (is_object($instance) && get_class($instance) !== 'ABJ_404_Solution_DataAccess') {
+                /** @var ABJ_404_Solution_DataAccess $instance */
+                return $instance;
+            }
+        }
+        /** @var ABJ_404_Solution_Functions $functions */
+        $functions = abj_service('functions');
+        return $functions;
+    }
     
     /** @return void */
     function getPaginationLinks() {
-        $abj404dao = abj_service('data_access');
+        $functions = self::getRequestReader();
+        /** @var ABJ_404_Solution_ViewBuildOrchestratorInterface $viewBuildOrchestrator */
+        $viewBuildOrchestrator = abj_service('view_build_orchestrator');
+        /** @var ABJ_404_Solution_ViewReadServiceInterface $viewReadService */
+        $viewReadService = abj_service('view_read_service');
         $abj404logic = abj_service('plugin_logic');
         global $abj404view;
         
-        $rowsPerPage = absint($abj404dao->getPostOrGetSanitize('rowsPerPage'));
-        $subpage = $abj404dao->getPostOrGetSanitize('subpage');
-        $nonce = $abj404dao->getPostOrGetSanitize('nonce');
-        $page = $abj404dao->getPostOrGetSanitize('page', '');
-        $filterText = $abj404dao->getPostOrGetSanitize('filterText', '');
-        $filter = $abj404dao->getPostOrGetSanitize('filter', '');
-        $detectOnly = ((string)$abj404dao->getPostOrGetSanitize('detectOnly', '0') === '1');
-        $cacheModeRaw = (string)$abj404dao->getPostOrGetSanitize('cacheMode', 'normal');
+        $rowsPerPage = absint($functions->getPostOrGetSanitize('rowsPerPage'));
+        $subpage = $functions->getPostOrGetSanitize('subpage');
+        $nonce = $functions->getPostOrGetSanitize('nonce');
+        $page = $functions->getPostOrGetSanitize('page', '');
+        $filterText = $functions->getPostOrGetSanitize('filterText', '');
+        $filter = $functions->getPostOrGetSanitize('filter', '');
+        $detectOnly = ((string)$functions->getPostOrGetSanitize('detectOnly', '0') === '1');
+        $cacheModeRaw = (string)$functions->getPostOrGetSanitize('cacheMode', 'normal');
         $cacheMode = in_array($cacheModeRaw, array('normal', 'cache_or_pending', 'refresh_cache'), true)
             ? $cacheModeRaw : 'normal';
-        $currentSignature = strtolower(trim((string)$abj404dao->getPostOrGetSanitize('currentSignature', '')));
+        $currentSignature = strtolower(trim((string)$functions->getPostOrGetSanitize('currentSignature', '')));
         if (strlen($currentSignature) > 128) {
             $currentSignature = substr($currentSignature, 0, 128);
         }
@@ -639,15 +669,10 @@ class ABJ_404_Solution_ViewUpdater {
             // per call.  No HTTP 500 path from build pressure can happen here.
             if (($subpage === 'abj404_redirects' || $subpage === 'abj404_captured')
                     && !$detectOnly
-                    && is_object($abj404dao)
-                    && method_exists($abj404dao, 'viewDoneIsServeable')
-                    && !$abj404dao->viewDoneIsServeable()) {
+                    && !$viewBuildOrchestrator->viewDoneIsServeable()) {
                 $stage = ($subpage === 'abj404_captured') ? 'table_captured' : 'table_redirects';
                 self::setStage($context, $stage);
-                $progress = method_exists($abj404dao, 'getViewBuildProgress')
-                    ? $abj404dao->getViewBuildProgress()
-                    : array('status' => 'pending', 'stage' => 0, 'of' => 11,
-                        'build_started' => 0, 'progress_text' => 'not yet started');
+                $progress = $viewBuildOrchestrator->getViewBuildProgress();
                 self::markAjaxResponseSent();
                 self::getAndClearAjaxBufferedOutput();
                 self::sendJsonResponseAndExit(array(
@@ -663,12 +688,11 @@ class ABJ_404_Solution_ViewUpdater {
             if ($cacheMode === 'cache_or_pending'
                     && !$detectOnly
                     && ($subpage === 'abj404_redirects' || $subpage === 'abj404_captured')
-                    && is_object($abj404dao)
-                    && method_exists($abj404dao, 'viewTableSnapshotAvailable')) {
+                    && is_object($viewReadService)) {
                 $stage = ($subpage === 'abj404_captured') ? 'table_captured' : 'table_redirects';
                 self::setStage($context, $stage);
                 $tableOptions = $abj404logic->getTableOptions($subpage);
-                if (!$abj404dao->viewTableSnapshotAvailable($subpage, $tableOptions)) {
+                if (!$viewReadService->viewTableSnapshotAvailable($subpage, $tableOptions)) {
                     self::markAjaxResponseSent();
                     self::getAndClearAjaxBufferedOutput();
                     self::sendJsonResponseAndExit(array(
@@ -691,7 +715,7 @@ class ABJ_404_Solution_ViewUpdater {
                 // (getHighImpactCapturedCount, see refreshHealthBar()) is fetched
                 // in a separate AJAX call so it never blocks first paint of the table.
                 self::setStage($context, 'redirect_status_counts');
-                $statusCounts = $abj404dao->getRedirectStatusCounts();
+                $statusCounts = $viewReadService->getRedirectStatusCounts();
                 // Tab counts keyed by filter value for JS tab updates.
                 $data['tabCounts'] = array(
                     '0' => $statusCounts['all'] ?? 0,
@@ -706,7 +730,7 @@ class ABJ_404_Solution_ViewUpdater {
 
                 // Include tab counts so the page shell can render instantly.
                 self::setStage($context, 'captured_status_counts');
-                $statusCounts = $abj404dao->getCapturedStatusCounts();
+                $statusCounts = $viewReadService->getCapturedStatusCounts();
                 $data['statusCounts'] = $statusCounts;
                 // Tab counts keyed by filter value for JS tab updates.
                 // Includes the "handled" composite count for simple mode.
@@ -766,7 +790,7 @@ class ABJ_404_Solution_ViewUpdater {
                 self::markAjaxResponseSent();
                 self::getAndClearAjaxBufferedOutput();
                 self::sendJsonResponseAndExit(
-                    ABJ_404_Solution_ViewBuildPendingResponseBuilder::fetchResponse($abj404dao, $subpage, $cacheMode, $pending),
+                    ABJ_404_Solution_ViewBuildPendingResponseBuilder::fetchResponse($viewBuildOrchestrator, $subpage, $cacheMode, $pending),
                     200
                 );
                 return;
@@ -843,15 +867,19 @@ class ABJ_404_Solution_ViewUpdater {
 
     /** @return void */
     function warmTableCache() {
-        $abj404dao = abj_service('data_access');
+        $functions = self::getRequestReader();
+        /** @var ABJ_404_Solution_ViewBuildOrchestratorInterface $viewBuildOrchestrator */
+        $viewBuildOrchestrator = abj_service('view_build_orchestrator');
+        /** @var ABJ_404_Solution_ViewReadServiceInterface $viewReadService */
+        $viewReadService = abj_service('view_read_service');
         $abj404logic = abj_service('plugin_logic');
 
-        $rowsPerPage = absint($abj404dao->getPostOrGetSanitize('rowsPerPage'));
-        $subpage = $abj404dao->getPostOrGetSanitize('subpage');
-        $nonce = $abj404dao->getPostOrGetSanitize('nonce');
-        $page = $abj404dao->getPostOrGetSanitize('page', '');
-        $filterText = $abj404dao->getPostOrGetSanitize('filterText', '');
-        $filter = $abj404dao->getPostOrGetSanitize('filter', '');
+        $rowsPerPage = absint($functions->getPostOrGetSanitize('rowsPerPage'));
+        $subpage = $functions->getPostOrGetSanitize('subpage');
+        $nonce = $functions->getPostOrGetSanitize('nonce');
+        $page = $functions->getPostOrGetSanitize('page', '');
+        $filterText = $functions->getPostOrGetSanitize('filterText', '');
+        $filter = $functions->getPostOrGetSanitize('filter', '');
 
         $isPluginAdmin = false;
         $context = array(
@@ -913,12 +941,8 @@ class ABJ_404_Solution_ViewUpdater {
             // the JS poller must advance the build via ajaxAdvanceViewBuild
             // before the snapshot warm can start.  Returning ready=false here
             // keeps the placeholder hydration loop running until then.
-            if (is_object($abj404dao) && method_exists($abj404dao, 'viewDoneIsServeable')
-                    && !$abj404dao->viewDoneIsServeable()) {
-                $progress = method_exists($abj404dao, 'getViewBuildProgress')
-                    ? $abj404dao->getViewBuildProgress()
-                    : array('status' => 'pending', 'stage' => 0, 'of' => 11,
-                        'build_started' => 0, 'progress_text' => 'not yet started');
+            if (!$viewBuildOrchestrator->viewDoneIsServeable()) {
+                $progress = $viewBuildOrchestrator->getViewBuildProgress();
                 self::markAjaxResponseSent();
                 self::getAndClearAjaxBufferedOutput();
                 self::sendJsonResponseAndExit(array(
@@ -935,12 +959,11 @@ class ABJ_404_Solution_ViewUpdater {
 
             $tableOptions = $abj404logic->getTableOptions($subpage);
             $stage = 'table_cache_rows';
-            if (is_object($abj404dao) && method_exists($abj404dao, 'viewRowsSnapshotAvailable')
-                    && $abj404dao->viewRowsSnapshotAvailable($subpage, $tableOptions)) {
+            if ($viewReadService->viewRowsSnapshotAvailable($subpage, $tableOptions)) {
                 $stage = 'table_cache_count';
             }
             self::setStage($context, $stage);
-            $warmup = $abj404dao->warmViewTableSnapshotStage($subpage, $tableOptions);
+            $warmup = $viewReadService->warmViewTableSnapshotStage($subpage, $tableOptions);
 
             self::markAjaxResponseSent();
             self::getAndClearAjaxBufferedOutput();
@@ -955,7 +978,7 @@ class ABJ_404_Solution_ViewUpdater {
                 self::markAjaxResponseSent();
                 self::getAndClearAjaxBufferedOutput();
                 self::sendJsonResponseAndExit(
-                    ABJ_404_Solution_ViewBuildPendingResponseBuilder::warmResponse($abj404dao, $pending),
+                    ABJ_404_Solution_ViewBuildPendingResponseBuilder::warmResponse($viewBuildOrchestrator, $pending),
                     200
                 );
                 return;
@@ -1001,13 +1024,15 @@ class ABJ_404_Solution_ViewUpdater {
 
     /** @return void */
     function refreshStatsDashboard() {
-        $abj404dao = abj_service('data_access');
+        $functions = self::getRequestReader();
+        /** @var ABJ_404_Solution_StatsRepositoryInterface $statsRepository */
+        $statsRepository = abj_service('stats_repository');
         $abj404logic = abj_service('plugin_logic');
 
-        $nonce = $abj404dao->getPostOrGetSanitize('nonce');
-        $page = $abj404dao->getPostOrGetSanitize('page', '');
-        $subpage = $abj404dao->getPostOrGetSanitize('subpage', '');
-        $currentHash = $abj404dao->getPostOrGetSanitize('currentHash', '');
+        $nonce = $functions->getPostOrGetSanitize('nonce');
+        $page = $functions->getPostOrGetSanitize('page', '');
+        $subpage = $functions->getPostOrGetSanitize('subpage', '');
+        $currentHash = $functions->getPostOrGetSanitize('currentHash', '');
 
         $isPluginAdmin = false;
         $context = array(
@@ -1045,7 +1070,7 @@ class ABJ_404_Solution_ViewUpdater {
                 return;
             }
 
-            $snapshot = $abj404dao->refreshStatsDashboardSnapshot(false);
+            $snapshot = $statsRepository->refreshStatsDashboardSnapshot(false);
             $newHash = $snapshot['hash'];
             $hasUpdate = ($newHash !== '' && ($currentHash === '' || $newHash !== $currentHash));
 
@@ -1110,12 +1135,16 @@ class ABJ_404_Solution_ViewUpdater {
      * @return void
      */
     function refreshHealthBar() {
-        $abj404dao = abj_service('data_access');
+        $functions = self::getRequestReader();
+        /** @var ABJ_404_Solution_ViewReadServiceInterface $viewReadService */
+        $viewReadService = abj_service('view_read_service');
+        /** @var ABJ_404_Solution_LogsRepositoryInterface $logsRepository */
+        $logsRepository = abj_service('logs_repository');
         $abj404logic = abj_service('plugin_logic');
 
-        $nonce = $abj404dao->getPostOrGetSanitize('nonce');
-        $page = $abj404dao->getPostOrGetSanitize('page', '');
-        $subpage = $abj404dao->getPostOrGetSanitize('subpage', '');
+        $nonce = $functions->getPostOrGetSanitize('nonce');
+        $page = $functions->getPostOrGetSanitize('page', '');
+        $subpage = $functions->getPostOrGetSanitize('subpage', '');
 
         $isPluginAdmin = false;
         $context = array(
@@ -1156,16 +1185,16 @@ class ABJ_404_Solution_ViewUpdater {
             }
 
             self::setStage($context, 'redirect_status_counts');
-            $statusCounts = $abj404dao->getRedirectStatusCounts();
+            $statusCounts = $viewReadService->getRedirectStatusCounts();
             // Provide the captured filter constant so JS can build the "View" link.
             $statusCounts['_capturedFilter'] = ABJ404_STATUS_CAPTURED;
 
             self::setStage($context, 'high_impact_count');
-            $rollupAvailable = $abj404dao->logsHitsTableExists();
+            $rollupAvailable = $logsRepository->logsHitsTableExists();
             if ($rollupAvailable) {
-                $highImpactCapturedCount = (int)$abj404dao->getHighImpactCapturedCount();
+                $highImpactCapturedCount = (int)$viewReadService->getHighImpactCapturedCount();
             } else {
-                $abj404dao->scheduleHitsTableRebuild();
+                $logsRepository->scheduleHitsTableRebuild();
                 $highImpactCapturedCount = null;
             }
 
@@ -1233,10 +1262,10 @@ class ABJ_404_Solution_ViewUpdater {
      * @return void
      */
     function fetchInflightStage() {
-        $abj404dao = abj_service('data_access');
+        $functions = self::getRequestReader();
         $abj404logic = abj_service('plugin_logic');
 
-        $nonce = $abj404dao->getPostOrGetSanitize('nonce');
+        $nonce = $functions->getPostOrGetSanitize('nonce');
         $requestId = self::readClientRequestId();
 
         try {
@@ -1335,14 +1364,16 @@ class ABJ_404_Solution_ViewUpdater {
      * @return void
      */
     function advanceViewBuild() {
-        $abj404dao = abj_service('data_access');
+        $functions = self::getRequestReader();
+        /** @var ABJ_404_Solution_ViewBuildOrchestratorInterface $viewBuildOrchestrator */
+        $viewBuildOrchestrator = abj_service('view_build_orchestrator');
         $abj404logic = abj_service('plugin_logic');
 
-        $nonce = $abj404dao->getPostOrGetSanitize('nonce');
-        $page = $abj404dao->getPostOrGetSanitize('page', '');
-        $subpage = $abj404dao->getPostOrGetSanitize('subpage', '');
+        $nonce = $functions->getPostOrGetSanitize('nonce');
+        $page = $functions->getPostOrGetSanitize('page', '');
+        $subpage = $functions->getPostOrGetSanitize('subpage', '');
         $requestId = self::readClientRequestId();
-        $forceViewRebuild = ((string)$abj404dao->getPostOrGetSanitize('forceViewRebuild', '0') === '1');
+        $forceViewRebuild = ((string)$functions->getPostOrGetSanitize('forceViewRebuild', '0') === '1');
 
         $isPluginAdmin = false;
         $context = array(
@@ -1382,7 +1413,7 @@ class ABJ_404_Solution_ViewUpdater {
                 return;
             }
 
-            if (!is_object($abj404dao) || !method_exists($abj404dao, 'advanceViewBuildOnce')) {
+            if (!is_object($viewBuildOrchestrator) || !method_exists($viewBuildOrchestrator, 'advanceViewBuildOnce')) {
                 self::markAjaxResponseSent();
                 self::getAndClearAjaxBufferedOutput();
                 self::sendJsonResponseAndExit(array(
@@ -1408,18 +1439,18 @@ class ABJ_404_Solution_ViewUpdater {
             // Phase 3a step 2 / c554) preserves the existing view_done
             // snapshot for parallel readers until the new S11 RENAME publishes
             // a fresh one, which is the intended force-rebuild contract.
-            if ($forceViewRebuild && method_exists($abj404dao, 'forceRestartViewBuild')) {
-                $abj404dao->forceRestartViewBuild(0);
+            if ($forceViewRebuild && method_exists($viewBuildOrchestrator, 'forceRestartViewBuild')) {
+                $viewBuildOrchestrator->forceRestartViewBuild(0);
             }
 
-            self::tryClaimForegroundViewBuildLease($abj404dao);
+            self::tryClaimForegroundViewBuildLease($viewBuildOrchestrator);
             // Pass forceRebuild down so advanceViewBuildOnce takes the lock
             // with a 30s timeout (waiting for any in-flight cron/sibling
             // build to finish), re-invalidates inside the locked region,
             // and runs the build under THIS request's AJAX context. That is
             // what makes every staged_build_s* sub-stage event reach the
             // browser's "AJAX Load Times / Debug Info" panel.
-            $progress = $abj404dao->advanceViewBuildOnce($forceViewRebuild);
+            $progress = $viewBuildOrchestrator->advanceViewBuildOnce($forceViewRebuild);
             $statusValue = is_array($progress) && isset($progress['status']) && is_string($progress['status'])
                 ? $progress['status'] : 'pending';
 

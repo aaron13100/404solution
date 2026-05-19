@@ -220,6 +220,7 @@ class ABJ_404_Solution_ServiceContainer {
  *     $name is 'redirects_repository' ? ABJ_404_Solution_RedirectsRepository : (
  *     $name is 'stats_repository' ? ABJ_404_Solution_StatsRepository : (
  *     $name is 'view_read_service' ? ABJ_404_Solution_ViewReadService : (
+ *     $name is 'view_build_orchestrator' ? ABJ_404_Solution_ViewBuildOrchestrator : (
  *     $name is 'data_access' ? ABJ_404_Solution_DataAccess : (
  *     $name is 'database_upgrades' ? ABJ_404_Solution_DatabaseUpgradesEtc : (
  *     $name is 'permalink_cache' ? ABJ_404_Solution_PermalinkCache : (
@@ -243,12 +244,16 @@ class ABJ_404_Solution_ServiceContainer {
  *     $name is 'view_suggestions' ? ABJ_404_Solution_View_Suggestions : (
  *     $name is 'shortcode' ? ABJ_404_Solution_ShortCode :
  *     mixed
- * )))))))))))))))))))))))))))))))
+ * ))))))))))))))))))))))))))))))))
  */
 function abj_service($name) {
     $container = ABJ_404_Solution_ServiceContainer::getInstance();
     if ($container->has($name)) {
         return $container->get($name);
+    }
+
+    if ($name === 'pii_redactor' && class_exists('ABJ_404_Solution_PiiRedactor')) {
+        return new ABJ_404_Solution_PiiRedactor(abj_service('functions'));
     }
 
     // Inverse of the registration map in bootstrap.php. Lets a caller resolve

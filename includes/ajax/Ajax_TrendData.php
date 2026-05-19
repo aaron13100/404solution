@@ -26,8 +26,9 @@ class ABJ_404_Solution_Ajax_TrendData {
         // Clamp to 1–90.
         $days = max(1, min(90, $daysRaw));
 
-        $abj404dao = abj_service('data_access');
-        $data = $abj404dao->getDailyActivityTrend($days);
+        /** @var ABJ_404_Solution_LogsRepositoryInterface $logsRepository */
+        $logsRepository = abj_service('logs_repository');
+        $data = $logsRepository->getDailyActivityTrend($days);
 
         wp_send_json_success($data, 200);
     }

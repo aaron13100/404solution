@@ -20,18 +20,18 @@ if (!defined('ABSPATH')) {
  */
 class ABJ_404_Solution_CrossPluginImporter {
 
-    /** @var ABJ_404_Solution_DataAccess */
-    private $dao;
+    /** @var ABJ_404_Solution_RedirectsRepositoryInterface|ABJ_404_Solution_DataAccess */
+    private $redirectsRepository;
 
     /** @var ABJ_404_Solution_Logging */
     private $logger;
 
     /**
-     * @param ABJ_404_Solution_DataAccess $dao
+     * @param ABJ_404_Solution_RedirectsRepositoryInterface|ABJ_404_Solution_DataAccess $redirectsRepository
      * @param ABJ_404_Solution_Logging $logger
      */
-    public function __construct($dao, $logger) {
-        $this->dao    = $dao;
+    public function __construct($redirectsRepository, $logger) {
+        $this->redirectsRepository = $redirectsRepository;
         $this->logger = $logger;
     }
 
@@ -112,7 +112,7 @@ class ABJ_404_Solution_CrossPluginImporter {
             $type = $resolved['type'];
             $destUrl = $resolved['dest'];
 
-            $result = $this->dao->setupRedirect(
+            $result = $this->redirectsRepository->setupRedirect(
                 $sourceUrl,
                 (string)$status,
                 (string)$type,
