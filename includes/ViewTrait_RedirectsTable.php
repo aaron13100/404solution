@@ -214,7 +214,7 @@ trait ViewTrait_RedirectsTable {
         $html .= '</tr></thead>';
         $html .= '<tbody id="the-list">';
 
-        $rows = $this->dao->getRedirectsForView($sub, $tableOptions);
+        $rows = $this->viewReadService->getRedirectsForView($sub, $tableOptions);
         /** @var array<int, array<string, mixed>> $typedRows */
         $typedRows = array_values(array_filter($rows, 'is_array'));
         $this->rememberTableDataSignature($sub, $typedRows);
@@ -805,9 +805,9 @@ trait ViewTrait_RedirectsTable {
 	        // Use appropriate count method based on sub type
 	        $logsidInt = (int)$logsid;
 	        if ($sub == 'abj404_logs') {
-	            $totalRows = $this->dao->getLogsCount($logsidInt);
+	            $totalRows = $this->viewReadService->getLogsCount($logsidInt);
 	        } else {
-	            $totalRows = $this->dao->getRedirectsForViewCount($sub, $tableOptions);
+	            $totalRows = $this->viewReadService->getRedirectsForViewCount($sub, $tableOptions);
 	        }
         $rawPerpage = array_key_exists('perpage', $tableOptions) && is_scalar($tableOptions['perpage']) ? $tableOptions['perpage'] : 25;
         $perPage = intval($rawPerpage);
@@ -956,7 +956,7 @@ trait ViewTrait_RedirectsTable {
             $deadDestIds = array();
         }
 
-        $rows = $this->dao->getRedirectsForView($sub, $tableOptions);
+        $rows = $this->viewReadService->getRedirectsForView($sub, $tableOptions);
         /** @var array<int, array<string, mixed>> $typedRedirectRows */
         $typedRedirectRows = array_values(array_filter($rows, 'is_array'));
         $this->rememberTableDataSignature($sub, $typedRedirectRows);
@@ -1373,7 +1373,7 @@ trait ViewTrait_RedirectsTable {
             } elseif (isset($_POST['id']) && $this->f->regexMatch('[0-9]+', (string)$_POST['id'])) {
                 $redirectId = absint($_POST['id']);
             }
-            $hasExistingConditions = ($redirectId > 0) && !empty($this->dao->getRedirectConditions($redirectId));
+            $hasExistingConditions = ($redirectId > 0) && !empty($this->redirectsRepository->getRedirectConditions($redirectId));
             $hasAdvancedValues = ($startDate !== '' || $endDate !== '' || $hasExistingConditions);
             $openAttr = $hasAdvancedValues ? ' open' : '';
             echo '<details class="abj404-advanced-options"' . $openAttr . '>';
@@ -1469,7 +1469,7 @@ trait ViewTrait_RedirectsTable {
             $redirectId = absint($_POST['id']);
         }
 
-        $existingConditions = ($redirectId > 0) ? $this->dao->getRedirectConditions($redirectId) : [];
+        $existingConditions = ($redirectId > 0) ? $this->redirectsRepository->getRedirectConditions($redirectId) : [];
 
         echo '<div class="abj404-form-group abj404-conditions-section">';
         echo '<h4>' . esc_html__('Conditions (optional)', '404-solution') . '</h4>';
@@ -1580,7 +1580,7 @@ trait ViewTrait_RedirectsTable {
         } elseif (isset($_POST['id']) && is_scalar($_POST['id']) && ctype_digit((string)$_POST['id'])) {
             $redirectId = (int)$_POST['id'];
         }
-        $initialIndex = ($redirectId > 0) ? max(1, count($this->dao->getRedirectConditions($redirectId))) : 1;
+        $initialIndex = ($redirectId > 0) ? max(1, count($this->redirectsRepository->getRedirectConditions($redirectId))) : 1;
 
         echo '<script type="text/javascript">' . "\n";
         echo '(function() {' . "\n";

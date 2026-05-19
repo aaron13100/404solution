@@ -15,9 +15,9 @@ trait ViewTrait_Redirects {
         $options = $this->getOptionsWithDefaults();
 
         // Compute source page early so we can use it in the back link
-        $source_page = $this->dao->getPostOrGetSanitize('source_page');
+        $source_page = $this->viewGetPostOrGetSanitize('source_page');
         if ($source_page === '') {
-            $source_page = $this->dao->getPostOrGetSanitize('subpage');
+            $source_page = $this->viewGetPostOrGetSanitize('subpage');
         }
         if ($source_page === '' || $source_page == 'abj404_edit') {
             $source_page = 'abj404_redirects';
@@ -50,19 +50,19 @@ trait ViewTrait_Redirects {
         echo "<input type=\"hidden\" name=\"source_page\" value=\"" . esc_attr($source_page) . "\">";
 
         // Preserve table options so we can return to the exact same view
-        $filter = $this->dao->getPostOrGetSanitize('filter');
+        $filter = $this->viewGetPostOrGetSanitize('filter');
         if ($filter !== '') {
             echo "<input type=\"hidden\" name=\"source_filter\" value=\"" . esc_attr($filter) . "\">";
         }
-        $orderby = $this->dao->getPostOrGetSanitize('orderby');
+        $orderby = $this->viewGetPostOrGetSanitize('orderby');
         if ($orderby !== '') {
             echo "<input type=\"hidden\" name=\"source_orderby\" value=\"" . esc_attr($orderby) . "\">";
         }
-        $order = $this->dao->getPostOrGetSanitize('order');
+        $order = $this->viewGetPostOrGetSanitize('order');
         if ($order !== '') {
             echo "<input type=\"hidden\" name=\"source_order\" value=\"" . esc_attr($order) . "\">";
         }
-        $paged = $this->dao->getPostOrGetSanitize('paged');
+        $paged = $this->viewGetPostOrGetSanitize('paged');
         if ($paged !== '') {
             echo "<input type=\"hidden\" name=\"source_paged\" value=\"" . esc_attr($paged) . "\">";
         }
@@ -81,8 +81,9 @@ trait ViewTrait_Redirects {
                     wp_kses_post((string)json_encode($_POST['id'])));
             $recnum = absint($_POST['id']);
             
-        } else if ($this->dao->getPostOrGetSanitize('idnum') !== '') {
-            $recnums_multiple = array_map('absint', (array)$this->dao->getPostOrGetSanitize('idnum'));
+        } else if ($this->viewGetPostOrGetSanitize('idnum') !== '' || isset($_GET['idnum']) || isset($_POST['idnum'])) {
+            $rawIdnum = isset($_GET['idnum']) ? $_GET['idnum'] : (isset($_POST['idnum']) ? $_POST['idnum'] : $this->viewGetPostOrGetSanitize('idnum'));
+            $recnums_multiple = array_map(function($v) { return absint($v); }, (array)$rawIdnum);
             $this->logger->debugMessage("Edit redirect page. ids_multiple: " . 
                     wp_kses_post((string)json_encode($recnums_multiple)));
 
@@ -97,7 +98,7 @@ trait ViewTrait_Redirects {
         if ($recnum != null) {
             $recnumAsArray = array();
             $recnumAsArray[] = $recnum;
-            $redirects_multiple = $this->dao->getRedirectsByIDs($recnumAsArray);
+            $redirects_multiple = $this->redirectsRepository->getRedirectsByIDs($recnumAsArray);
             
             if (empty($redirects_multiple)) {
                 echo "Error: Invalid ID Number! (id: " . esc_html((string)$recnum) . ")";
@@ -151,7 +152,7 @@ trait ViewTrait_Redirects {
             $endDate = $endTs > 0 ? date('Y-m-d', $endTs) : '';
 
         } else if ($recnums_multiple != null) {
-            $redirects_multiple = $this->dao->getRedirectsByIDs($recnums_multiple);
+            $redirects_multiple = $this->redirectsRepository->getRedirectsByIDs($recnums_multiple);
             if ($redirects_multiple == null) {
                 echo "Error: Invalid ID Numbers! (ids: " . esc_html(implode(',', $recnums_multiple)) . ")";
                 $this->logger->debugMessage("Error: Invalid ID Numbers! (ids: " . 
@@ -361,7 +362,7 @@ trait ViewTrait_Redirects {
         $customTagsEtc = array();
 
         // categories ---------------------------------------------
-        $cats = $this->dao->getPublishedCategories();
+        $cats = $this->contentRepository->getPublishedCategories();
         foreach ($cats as $cat) {
             /** @var \WP_Term $cat */
             $taxonomy = $cat->taxonomy;
@@ -385,7 +386,7 @@ trait ViewTrait_Redirects {
 
         // tags ---------------------------------------------
         $content .= "\n" . '<optgroup label="Tags">' . "\n";
-        $tags = $this->dao->getPublishedTags();
+        $tags = $this->contentRepository->getPublishedTags();
         foreach ($tags as $tag) {
             /** @var \WP_Term $tag */
             $id = $tag->term_id;

@@ -50,7 +50,7 @@ trait ViewTrait_Logs {
                 . ' data-pagination-current-filter="0"'
                 . ' data-pagination-current-paged="1"'
                 . ' data-pagination-current-score-range="all"'
-                . ' data-pagination-current-logsid="' . esc_attr((string)$this->dao->getPostOrGetSanitize('redirect_to_data_field_id')) . '"'
+                . ' data-pagination-current-logsid="' . esc_attr((string)$this->viewGetPostOrGetSanitize('redirect_to_data_field_id')) . '"'
                 . ' data-pagination-initial-load="1"'
                 . ' data-pagination-auto-refresh="1"'
                 . ' data-pagination-refresh-started-text="' . esc_attr(__('Refreshing data in background…', '404-solution')) . '"'
@@ -66,8 +66,8 @@ trait ViewTrait_Logs {
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ .
                 "/html/viewLogsForSearchBox.html");
 
-        $redirectPageTitle = $this->dao->getPostOrGetSanitize('redirect_to_data_field_title');
-        $pageIDAndType = $this->dao->getPostOrGetSanitize('redirect_to_data_field_id');
+        $redirectPageTitle = $this->viewGetPostOrGetSanitize('redirect_to_data_field_title');
+        $pageIDAndType = $this->viewGetPostOrGetSanitize('redirect_to_data_field_id');
 
         $html = $this->f->str_replace('{redirect_to_label}', __('View logs for', '404-solution'), $html);
         $html = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_EMPTY}',
@@ -168,7 +168,7 @@ trait ViewTrait_Logs {
         $html .= '</tr></thead>';
         $html .= '<tbody id="the-list">';
 
-        $rows = $this->dao->getLogRecords($tableOptions);
+        $rows = $this->logsRepository->getLogRecords($tableOptions);
         /** @var array<int, array<string, mixed>> $typedLogRows */
         $typedLogRows = array_values(array_filter($rows, 'is_array'));
         $this->rememberTableDataSignature($sub, $typedLogRows);
@@ -177,7 +177,7 @@ trait ViewTrait_Logs {
         foreach ($typedLogRows as $row) {
             $logId = is_scalar($row['log_id'] ?? '') ? (string)($row['log_id'] ?? '') : '';
             $rawTrace = isset($row['pipeline_trace']) && is_string($row['pipeline_trace']) ? $row['pipeline_trace'] : null;
-            $traceSteps = ABJ_404_Solution_DataAccess::decompressPipelineTrace($rawTrace);
+            $traceSteps = ABJ_404_Solution_LogsRepository::decompressPipelineTrace($rawTrace);
             $hasTrace = is_array($traceSteps) && !empty($traceSteps);
 
             $html .= '<tr>';
@@ -520,9 +520,9 @@ trait ViewTrait_Logs {
 	        $url .= "&filter=" . absint((int)$filter);
 
 	        if ($sub == 'abj404_logs') {
-	            $num_records = $this->dao->getLogsCount((int)$logsid);
+	            $num_records = $this->viewReadService->getLogsCount((int)$logsid);
 	        } else {
-	            $num_records = $this->dao->getRedirectsForViewCount($sub, $tableOptions);
+	            $num_records = $this->viewReadService->getRedirectsForViewCount($sub, $tableOptions);
 	        }
 
         // Ensure perpage is never 0 to prevent division by zero
@@ -726,7 +726,7 @@ trait ViewTrait_Logs {
 	                    $types = array_map('intval', $candidate);
 	                }
 	            }
-	            $counts = $this->dao->getRedirectStatusCounts();
+	            $counts = $this->viewReadService->getRedirectStatusCounts();
 	        } else if ($sub == 'abj404_captured') {
 	            $types = array(ABJ404_STATUS_CAPTURED, ABJ404_STATUS_IGNORED, ABJ404_STATUS_LATER);
 	            if (isset($abj404_captured_types) && is_array($abj404_captured_types)) {
@@ -742,7 +742,7 @@ trait ViewTrait_Logs {
 	                    $types = array_map('intval', $candidate);
 	                }
 	            }
-	            $counts = $this->dao->getCapturedStatusCounts();
+	            $counts = $this->viewReadService->getCapturedStatusCounts();
 	        } else {
 	            $this->logger->debugMessage("Unexpected sub type for tab filter: " . $sub);
 	            $types = array(ABJ404_STATUS_CAPTURED, ABJ404_STATUS_IGNORED, ABJ404_STATUS_LATER);

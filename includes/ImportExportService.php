@@ -29,19 +29,50 @@ class ABJ_404_Solution_ImportExportService {
      */
     const IMPORT_PROGRESS_CHECKPOINT_INTERVAL = 50;
 
-    /** @var ABJ_404_Solution_DataAccess */
-    private $dao;
+    /** @var ABJ_404_Solution_ViewReadServiceInterface */
+    private $viewReadService;
+
+    /** @var ABJ_404_Solution_RedirectsRepositoryInterface */
+    private $redirectsRepository;
+
+    /** @var ABJ_404_Solution_ContentRepositoryInterface */
+    private $contentRepository;
 
     /** @var ABJ_404_Solution_Logging */
     private $logger;
 
     /**
-     * @param ABJ_404_Solution_DataAccess $dataAccess
-     * @param ABJ_404_Solution_Logging $logging
+     * Constructor supports two signatures for backward compatibility:
+     *   (1) New: (ViewReadService, RedirectsRepository, ContentRepository, Logging)
+     *   (2) Legacy: (DataAccess, Logging) -- DataAccess delegates to modules
+     *
+     * @param mixed $viewReadServiceOrDataAccess ViewReadService or legacy DataAccess facade
+     * @param mixed $redirectsRepoOrLogging RedirectsRepository or legacy Logging
+     * @param ABJ_404_Solution_ContentRepositoryInterface|null $contentRepository
+     * @param ABJ_404_Solution_Logging|null $logging
      */
-    function __construct($dataAccess, $logging) {
-        $this->dao = $dataAccess;
-        $this->logger = $logging;
+    function __construct($viewReadServiceOrDataAccess, $redirectsRepoOrLogging, $contentRepository = null, $logging = null) {
+        if ($contentRepository === null && $logging === null) {
+            // Legacy 2-arg signature: (DataAccess, Logging)
+            // DataAccess is a facade that delegates to the modules, so
+            // reuse the same object for all three module interfaces.
+            /** @var ABJ_404_Solution_ViewReadServiceInterface&ABJ_404_Solution_RedirectsRepositoryInterface&ABJ_404_Solution_ContentRepositoryInterface $viewReadServiceOrDataAccess */
+            $this->viewReadService = $viewReadServiceOrDataAccess;
+            $this->redirectsRepository = $viewReadServiceOrDataAccess;
+            $this->contentRepository = $viewReadServiceOrDataAccess;
+            /** @var ABJ_404_Solution_Logging $redirectsRepoOrLogging */
+            $this->logger = $redirectsRepoOrLogging;
+        } else {
+            // New 4-arg signature
+            /** @var ABJ_404_Solution_ViewReadServiceInterface $viewReadServiceOrDataAccess */
+            $this->viewReadService = $viewReadServiceOrDataAccess;
+            /** @var ABJ_404_Solution_RedirectsRepositoryInterface $redirectsRepoOrLogging */
+            $this->redirectsRepository = $redirectsRepoOrLogging;
+            /** @var ABJ_404_Solution_ContentRepositoryInterface $contentRepository */
+            $this->contentRepository = $contentRepository;
+            /** @var ABJ_404_Solution_Logging $logging */
+            $this->logger = $logging;
+        }
     }
 
     /**
@@ -69,14 +100,14 @@ class ABJ_404_Solution_ImportExportService {
 
         if ($format === 'redirection') {
             $nativeExportFile = $this->getExportFilename('native');
-            $this->dao->doRedirectsExport($nativeExportFile);
+            $this->viewReadService->doRedirectsExport($nativeExportFile);
             $error = $this->convertExportCsvToRedirectionFormat($nativeExportFile, $tempFile);
             if ($error !== '') {
                 $this->logger->warn($error);
                 return;
             }
         } else {
-            $this->dao->doRedirectsExport($tempFile);
+            $this->viewReadService->doRedirectsExport($tempFile);
         }
 
         if (file_exists($tempFile)) {
@@ -576,7 +607,7 @@ class ABJ_404_Solution_ImportExportService {
                 $processedRows++;
                 $wasOverwrite = false;
                 if ($overwriteExisting && isset($dataArray['from_url']) && is_string($dataArray['from_url'])) {
-                    $existing = $this->dao->getExistingRedirectForURL($dataArray['from_url']);
+                    $existing = $this->redirectsRepository->getExistingRedirectForURL($dataArray['from_url']);
                     $wasOverwrite = (is_array($existing) && isset($existing['id']) && (int)$existing['id'] !== 0);
                 }
                 // Surface the data-row line number so loadDataArrayFromFile()
@@ -819,7 +850,7 @@ class ABJ_404_Solution_ImportExportService {
             }
         }
 
-        $maybeExisting2 = $this->dao->getExistingRedirectForURL($fromURL);
+        $maybeExisting2 = $this->redirectsRepository->getExistingRedirectForURL($fromURL);
         $existingId = (count($maybeExisting2) > 0 && isset($maybeExisting2['id'])) ? (int)$maybeExisting2['id'] : 0;
         if ($existingId !== 0 && !$overwriteExisting) {
             $msg = __('Ignored importing redirect because a redirect with the same from URL already exists. URL:', '404-solution') . ' ' . $fromURL;
@@ -855,9 +886,9 @@ class ABJ_404_Solution_ImportExportService {
             $final_dest = ABJ404_TYPE_HOME;
         } else {
             $slug = trim($final_dest, '/');
-            $postsFromSlugRows = $this->dao->getPublishedPagesAndPostsIDs($slug);
-            $postsFromCategoryRows = $this->dao->getPublishedCategories(null, $slug);
-            $postsFromTagRows = $this->dao->getPublishedTags($slug);
+            $postsFromSlugRows = $this->contentRepository->getPublishedPagesAndPostsIDs($slug);
+            $postsFromCategoryRows = $this->contentRepository->getPublishedCategories(null, $slug);
+            $postsFromTagRows = $this->contentRepository->getPublishedTags($slug);
 
             /** @var object{id?: int|string, term_id?: int|string}|null $postFromSlug */
             $postFromSlug = isset($postsFromSlugRows[0]) ? $postsFromSlugRows[0] : null;
@@ -895,9 +926,9 @@ class ABJ_404_Solution_ImportExportService {
                 // Overwrite path: mutate the existing row so the user's bulk
                 // CSV edit (e.g. Manual to Regex on 55 city patterns) lands
                 // without per-row admin clicks.
-                $this->dao->updateRedirect((int)$type, (string)$final_dest, $fromURL, $existingId, $code, (int)$status);
+                $this->redirectsRepository->updateRedirect((int)$type, (string)$final_dest, $fromURL, $existingId, $code, (int)$status);
             } else {
-                $this->dao->setupRedirect($fromURL, (string)$status, (string)$type, (string)$final_dest, $code, 0, $engine);
+                $this->redirectsRepository->setupRedirect($fromURL, (string)$status, (string)$type, (string)$final_dest, $code, 0, $engine);
             }
         }
 

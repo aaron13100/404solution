@@ -17,7 +17,7 @@ trait ViewTrait_Stats {
     function outputAdminStatsPage() {
         global $abj404view;
 
-        $statsSnapshot = $this->dao->getStatsDashboardSnapshot(true);
+        $statsSnapshot = $this->statsRepository->getStatsDashboardSnapshot(true);
         $statsData = $statsSnapshot['data'];
         $statsHash = $statsSnapshot['hash'];
 

@@ -362,7 +362,7 @@ function abj_404_solution_init_services() {
         return new ABJ_404_Solution_View(
             $c->get('functions'),
             $c->get('plugin_logic'),
-            $c->get('data_access'),
+            $c->get('view_read_service'),
             $c->get('logging')
         );
     });

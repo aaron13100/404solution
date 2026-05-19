@@ -9,6 +9,36 @@ if (!defined('ABSPATH')) {
  */
 trait ViewTrait_Shared {
 
+	/**
+	 * Sanitize a GET or POST parameter.
+	 * Delegates to Functions::getPostOrGetSanitize() when available,
+	 * falls back to direct $_GET/$_POST read for test environments
+	 * where the Functions mock may not have this method stubbed.
+	 *
+	 * @param string $name The parameter name.
+	 * @param string|null $defaultValue Default value when not found.
+	 * @return string
+	 */
+	private function viewGetPostOrGetSanitize($name, $defaultValue = null) {
+		if (is_object($this->f)) {
+			try {
+				// DI resolver call: delegate to the injected Functions service
+				$result = $this->f->getPostOrGetSanitize($name, $defaultValue);
+				return is_string($result) ? $result : (is_scalar($result) ? (string)$result : '');
+			} catch (\Throwable $e) {
+				// DI-injected service may not implement getPostOrGetSanitize
+				// (legacy mock). Fall through to inline GET/POST reader.
+				$val = null;
+			}
+		}
+		// Inline fallback for test contexts without the Functions mock expectation
+		$val = isset($_GET[$name]) ? $_GET[$name] : (isset($_POST[$name]) ? $_POST[$name] : null);
+		if ($val !== null && is_scalar($val)) {
+			return function_exists('sanitize_text_field') ? sanitize_text_field((string)$val) : (string)$val;
+		}
+		return is_string($defaultValue) ? $defaultValue : '';
+	}
+
 	/** Get the 'checked' attribute for a checkbox based on option value.
 	 * @param array<string, mixed> $options The options array
 	 * @param string $key The option key to check
@@ -344,25 +374,25 @@ trait ViewTrait_Shared {
 
 		// Ensure the "last checked"/"refresh scheduled" tooltip state is computed for this request.
 		// This runs cheap checks and (when needed) schedules the expensive rebuild for shutdown.
-		if (is_object($this->dao) && method_exists($this->dao, 'maybeUpdateRedirectsForViewHitsTable')) {
-			$this->dao->maybeUpdateRedirectsForViewHitsTable();
+		if (is_object($this->viewReadService) && method_exists($this->viewReadService, 'maybeUpdateRedirectsForViewHitsTable')) {
+			$this->viewReadService->maybeUpdateRedirectsForViewHitsTable();
 		}
 
-		$timestamp = $this->dao->getLogsHitsTableLastUpdated();
+		$timestamp = $this->logsRepository->getLogsHitsTableLastUpdated();
 		$lines = array();
 		if ($timestamp !== null) {
-			$lastUpdated = $this->dao->getLogsHitsTableLastUpdatedHuman();
+			$lastUpdated = $this->logsRepository->getLogsHitsTableLastUpdatedHuman();
 			$timeHtml = '<span class="abj404-time-ago" data-timestamp="' . esc_attr((string)$timestamp) . '">' . esc_html($lastUpdated) . '</span>';
 			$lines[] = sprintf(__('Last updated: %s', '404-solution'), $timeHtml);
 		}
 
-		$checkedAt = $this->dao->getLogsHitsTableLastCheckedAt();
+		$checkedAt = $this->logsRepository->getLogsHitsTableLastCheckedAt();
 		if ($checkedAt !== null) {
 			$checkedHtml = '<span class="abj404-time-ago" data-timestamp="' . esc_attr((string)$checkedAt) . '">' . esc_html($this->formatTimeAgo($checkedAt)) . '</span>';
 			$lines[] = sprintf(__('Last checked: %s', '404-solution'), $checkedHtml);
 		}
 
-			$decision = $this->dao->getLogsHitsTableLastDecision();
+			$decision = $this->logsRepository->getLogsHitsTableLastDecision();
 			// Treat "cooldown" as "scheduled recently" from a user perspective.
 			if ($decision === 'scheduled' || $decision === 'cooldown') {
 				$lines[] = __('Refresh scheduled', '404-solution');

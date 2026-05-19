@@ -155,7 +155,12 @@ class ABJ_404_Solution_PluginLogic {
             require_once dirname(__FILE__) . '/ImportExportService.php';
         }
 
-        $this->importExportService = new ABJ_404_Solution_ImportExportService($this->dao, $this->logger);
+        $this->importExportService = new ABJ_404_Solution_ImportExportService(
+            abj_service('view_read_service'),
+            abj_service('redirects_repository'),
+            abj_service('content_repository'),
+            $this->logger
+        );
         return $this->importExportService;
     }
 

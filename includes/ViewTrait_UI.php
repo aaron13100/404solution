@@ -73,7 +73,7 @@ trait ViewTrait_UI {
         $instance = self::getInstance();
 
         try {
-            $action = $instance->dao->getPostOrGetSanitize('action');
+            $action = $instance->viewGetPostOrGetSanitize('action');
 
             if (!is_admin() || !$instance->logic->userIsPluginAdmin()) {
                 $instance->logger->logUserCapabilities("handleMainAdminPageActionAndDisplay (" .
@@ -87,8 +87,7 @@ trait ViewTrait_UI {
                     . esc_html__('Please verify that your WordPress role has the', '404-solution') . ' '
                     . '<code>manage_options</code> ' . esc_html__('capability.', '404-solution') . ' '
                     . esc_html__('If you have a security plugin installed, it may be restricting access to this page.', '404-solution');
-                $subpageForContext = is_object($instance->dao) && method_exists($instance->dao, 'getPostOrGetSanitize')
-                    ? (string)$instance->dao->getPostOrGetSanitize('subpage') : '';
+                $subpageForContext = (string)$instance->viewGetPostOrGetSanitize('subpage');
                 $triggerForPerm = ($subpageForContext === 'abj404_captured')
                     ? 'captured_404s_page' : 'redirects_page';
                 echo self::renderErrorNoticeWithSupportButton(
@@ -132,8 +131,7 @@ trait ViewTrait_UI {
         } catch (\Throwable $e) {
             $encodedEx = json_encode($e);
             $instance->logger->errorMessage("Caught exception: " . stripcslashes(wp_kses_post(is_string($encodedEx) ? $encodedEx : '')));
-            $subpageForContext = is_object($instance->dao) && method_exists($instance->dao, 'getPostOrGetSanitize')
-                ? (string)$instance->dao->getPostOrGetSanitize('subpage') : '';
+            $subpageForContext = (string)$instance->viewGetPostOrGetSanitize('subpage');
             $triggerForRenderError = ($subpageForContext === 'abj404_captured')
                 ? 'captured_404s_page' : 'redirects_page';
             $renderErrorMessage = '<strong>404 Solution:</strong> An error occurred while rendering this page.</p>'
@@ -169,7 +167,7 @@ trait ViewTrait_UI {
 
         // Deal With Page Tabs
         if ($sub == "") {
-            $sub = $this->f->strtolower($this->dao->getPostOrGetSanitize('subpage'));
+            $sub = $this->f->strtolower($this->viewGetPostOrGetSanitize('subpage'));
         }
         if ($sub == "") {
             $sub = 'abj404_redirects';
@@ -177,7 +175,7 @@ trait ViewTrait_UI {
         }
 
         // Check if we're returning from a successful redirect update
-        $updated = $this->dao->getPostOrGetSanitize('updated');
+        $updated = $this->viewGetPostOrGetSanitize('updated');
         if ($updated == '1') {
             $message .= __('Redirect Information Updated Successfully!', '404-solution');
         }
@@ -186,7 +184,7 @@ trait ViewTrait_UI {
 
         $abj404view->outputAdminHeaderTabs($sub, $message);
 
-        $abj404action = $this->dao->getPostOrGetSanitize('abj404action');
+        $abj404action = $this->viewGetPostOrGetSanitize('abj404action');
         if (($action == 'editRedirect') || ($abj404action == 'editRedirect') || ($sub == 'abj404_edit')) {
             $abj404view->echoAdminEditRedirectPage();
         } else if ($sub == 'abj404_redirects') {
@@ -246,19 +244,16 @@ trait ViewTrait_UI {
      * @return string
      */
     private function renderViewFreshnessLabel(): string {
-        if (!is_object($this->dao) || !method_exists($this->dao, 'getViewDoneBuiltAtTimestamp')) {
+        if (!is_object($this->viewBuildOrchestrator) || !method_exists($this->viewBuildOrchestrator, 'getViewDoneBuiltAtTimestamp')) {
             return 'n/a';
         }
-        // Defensive: a unit-test DAO may be a Mockery mock that throws
-        // BadMethodCallException when called without an expectation; any
-        // future DAO implementation could also throw on a transient read
-        // failure. The freshness label is a footer cosmetic. Treat any
-        // failure as n/a so it never blocks the page render. Without this
-        // try/catch, dozens of pre-existing unit tests that mock the DAO
-        // without explicitly stubbing this method threw on every footer
-        // render.
+        // Defensive: a unit-test mock may throw BadMethodCallException
+        // when called without an expectation; any future implementation
+        // could also throw on a transient read failure. The freshness
+        // label is a footer cosmetic. Treat any failure as n/a so it
+        // never blocks the page render.
         try {
-            $builtAt = (int)$this->dao->getViewDoneBuiltAtTimestamp();
+            $builtAt = (int)$this->viewBuildOrchestrator->getViewDoneBuiltAtTimestamp();
         } catch (\Throwable $e) { // allow-silent-catch: freshness label is a footer cosmetic; DAO stub failures must never block page render
             return 'n/a';
         }

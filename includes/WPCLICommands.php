@@ -370,7 +370,12 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
 
         $dao     = abj_service('data_access');
         $logging = abj_service('logging');
-        $svc     = new ABJ_404_Solution_ImportExportService($dao, $logging);
+        $svc     = new ABJ_404_Solution_ImportExportService(
+            abj_service('view_read_service'),
+            abj_service('redirects_repository'),
+            abj_service('content_repository'),
+            $logging
+        );
 
         $fileHandle = fopen($filePath, 'r');
         if ($fileHandle === false) {
@@ -508,9 +513,15 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
         $format = isset($assocArgs['format']) ? strtolower(trim($assocArgs['format'])) : 'native';
         $output = isset($assocArgs['output']) ? trim($assocArgs['output']) : '';
 
-        $dao     = abj_service('data_access');
         $logging = abj_service('logging');
-        $svc     = new ABJ_404_Solution_ImportExportService($dao, $logging);
+        /** @var ABJ_404_Solution_ViewReadServiceInterface $viewReadService */
+        $viewReadService = abj_service('view_read_service');
+        $svc     = new ABJ_404_Solution_ImportExportService(
+            $viewReadService,
+            abj_service('redirects_repository'),
+            abj_service('content_repository'),
+            $logging
+        );
 
         $serverFormats = array('htaccess', 'nginx', 'cloudflare', 'netlify', 'vercel');
         if (in_array($format, $serverFormats, true)) {
@@ -549,7 +560,7 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
 
         if ($format === 'redirection') {
             $nativeTemp = sys_get_temp_dir() . '/abj404_export_native_' . time() . '.csv';
-            $dao->doRedirectsExport($nativeTemp);
+            $viewReadService->doRedirectsExport($nativeTemp);
             $error = $svc->convertExportCsvToRedirectionFormat($nativeTemp, $tempFile);
             @unlink($nativeTemp);
             if ($error !== '') {
@@ -557,7 +568,7 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
                 return;
             }
         } else {
-            $dao->doRedirectsExport($tempFile);
+            $viewReadService->doRedirectsExport($tempFile);
         }
 
         if (!file_exists($tempFile)) {

@@ -264,7 +264,7 @@ trait ViewTrait_Settings {
      */
     function getAdminOptionsPageAdvancedContent($options) {
         $options = $this->normalizeOptionsForView($options);
-        $allPostTypesTemp = $this->dao->getAllPostTypes();
+        $allPostTypesTemp = $this->viewReadService->getAllPostTypes();
         $allPostTypes = esc_html(implode(', ', $allPostTypesTemp));
 
         // Read the html content
@@ -440,11 +440,11 @@ trait ViewTrait_Settings {
         $disableAutoDarkMode = isset($options['disable_auto_dark_mode']) && $options['disable_auto_dark_mode'] == '1';
         $disableAutoDarkModeChecked = $disableAutoDarkMode ? " checked" : "";
 
-        $logSizeBytes = $this->dao->getLogDiskUsage();
+        $logSizeBytes = $this->viewReadService->getLogDiskUsage();
         $logSizeMB = round($logSizeBytes / (1024 * 1000), 2);
-        $totalLogLines = $this->dao->getLogsCount(0);
+        $totalLogLines = $this->viewReadService->getLogsCount(0);
 
-        $timeToDisplay = $this->dao->getEarliestLogTimestamp();
+        $timeToDisplay = $this->statsRepository->getEarliestLogTimestamp();
         $earliestLogDate = 'N/A';
         if ($timeToDisplay >= 0) {
             $earliestLogDate = date('Y/m/d', $timeToDisplay) . ' ' . date('h:i:s', $timeToDisplay) . '&nbsp;' . 
