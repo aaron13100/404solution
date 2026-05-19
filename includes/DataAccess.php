@@ -6,14 +6,10 @@ if (!defined('ABSPATH')) {
 }
 
 require_once __DIR__ . '/DataAccessTrait_Connection.php';
-require_once __DIR__ . '/DataAccessTrait_ViewMetadata.php';
-require_once __DIR__ . '/DataAccessTrait_ViewQueries.php';
-require_once __DIR__ . '/DataAccessTrait_ViewQueriesHitsLifecycle.php';
 require_once __DIR__ . '/DataAccessTrait_ViewQueriesStaged.php';
 require_once __DIR__ . '/DataAccessTrait_ViewBuildStageCallbacks.php';
 require_once __DIR__ . '/DataAccessTrait_ViewBuildStageRunner.php';
 require_once __DIR__ . '/DataAccessTrait_ViewBuildStartedWatermark.php';
-require_once __DIR__ . '/DataAccessTrait_ViewQueriesStagedRead.php';
 require_once __DIR__ . '/DataAccessTrait_ViewBuildAdaptive.php';
 require_once __DIR__ . '/DataAccessTrait_ViewBuildHelpers.php';
 require_once __DIR__ . '/DataAccessTrait_ViewBuildLockAndCron.php';
@@ -23,8 +19,9 @@ require_once __DIR__ . '/DataAccessTrait_ViewBuildHostFailurePolicy.php';
 require_once __DIR__ . '/DataAccessTrait_ViewBuildForceRestart.php';
 require_once __DIR__ . '/DataAccessTrait_MutationWatermarkSeam.php';
 require_once __DIR__ . '/DataAccessTrait_AdminMutationGate.php';
-require_once __DIR__ . '/DataAccessTrait_ViewSnapshotCache.php';
 require_once __DIR__ . '/DataAccessTrait_QueryTimeouts.php';
+require_once __DIR__ . '/ViewReadServiceInterface.php';
+require_once __DIR__ . '/ViewReadService.php';
 require_once __DIR__ . '/LogsRepositoryInterface.php';
 require_once __DIR__ . '/LogsRepository.php';
 require_once __DIR__ . '/DataAccessTrait_Redirects.php';
@@ -142,9 +139,6 @@ class ABJ_404_Solution_DataAccess {
     /** @var self|null */
     private static $instance = null;
 
-    /** @var bool Ensure view cache table DDL runs at most once per request. */
-    private static $viewSnapshotTableEnsured = false;
-
     /** @var ABJ_404_Solution_DatabaseCore The extracted database infrastructure layer. */
     private $dbCore;
 
@@ -160,9 +154,12 @@ class ABJ_404_Solution_DataAccess {
     /** @var ABJ_404_Solution_StatsRepository The extracted stats repository. */
     private $statsRepo;
 
+    /** @var ABJ_404_Solution_ViewReadService The extracted view read service (Phase 6). */
+    private $viewReadService;
+
     /** @param bool $value @return void */
     public static function setViewSnapshotTableEnsured(bool $value): void {
-        self::$viewSnapshotTableEnsured = $value;
+        ABJ_404_Solution_ViewReadService::setViewSnapshotTableEnsured($value);
     }
 
     /**
@@ -186,16 +183,9 @@ class ABJ_404_Solution_DataAccess {
     /** @var ABJ_404_Solution_Logging */
     private $logger;
 
-    /** @var array<string,int> Request-local cached counts for redirects list views. */
-    private $redirectsForViewCountRequestCache = array();
-
-    use ABJ_404_Solution_DataAccess_ViewMetadataTrait;
-    use ABJ_404_Solution_DataAccess_ViewQueriesTrait;
-    use ABJ_404_Solution_DataAccess_ViewQueriesHitsLifecycleTrait;
     use ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait;
     use ABJ_404_Solution_DataAccess_ViewBuildStageRunnerTrait;
     use ABJ_404_Solution_DataAccess_ViewBuildStageCallbacksTrait;
-    use ABJ_404_Solution_DataAccess_ViewQueriesStagedReadTrait;
     use ABJ_404_Solution_DataAccess_ViewBuildAdaptiveTrait;
     use ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait;
     use ABJ_404_Solution_DataAccess_ViewBuildStartedWatermarkTrait;
@@ -206,7 +196,6 @@ class ABJ_404_Solution_DataAccess {
     use ABJ_404_Solution_DataAccess_ViewBuildForceRestartTrait;
     use ABJ_404_Solution_DataAccess_MutationWatermarkSeamTrait;
     use ABJ_404_Solution_DataAccess_AdminMutationGateTrait;
-    use ABJ_404_Solution_DataAccess_ViewSnapshotCacheTrait;
 
     /** Cache key for redirect status counts */
     const CACHE_KEY_REDIRECT_STATUS = 'abj404_redirect_status_counts';
@@ -250,8 +239,9 @@ class ABJ_404_Solution_DataAccess {
      * @param ABJ_404_Solution_RedirectsRepository|null $redirectsRepo
      * @param ABJ_404_Solution_LogsRepository|null $logsRepo
      * @param ABJ_404_Solution_StatsRepository|null $statsRepo
+     * @param ABJ_404_Solution_ViewReadService|null $viewReadService
      */
-    public function __construct($functions = null, $logging = null, $dbCore = null, $contentRepo = null, $redirectsRepo = null, $logsRepo = null, $statsRepo = null) {
+    public function __construct($functions = null, $logging = null, $dbCore = null, $contentRepo = null, $redirectsRepo = null, $logsRepo = null, $statsRepo = null, $viewReadService = null) {
         $this->f = $functions !== null ? $functions : abj_service('functions');
         $this->logger = $logging !== null ? $logging : abj_service('logging');
 
@@ -283,6 +273,15 @@ class ABJ_404_Solution_DataAccess {
         } else {
             $this->statsRepo = new ABJ_404_Solution_StatsRepository($this->dbCore, $this->logsRepo, $this->f, $this->logger);
         }
+
+        if ($viewReadService !== null) {
+            $this->viewReadService = $viewReadService;
+        } else {
+            $this->viewReadService = new ABJ_404_Solution_ViewReadService(
+                $this->dbCore, $this->logsRepo, $this->redirectsRepo, $this->f, $this->logger
+            );
+        }
+        $this->viewReadService->setDataAccess($this);
     }
 
     /** @return ABJ_404_Solution_DatabaseCore */
@@ -309,6 +308,199 @@ class ABJ_404_Solution_DataAccess {
     public function getStatsRepo(): ABJ_404_Solution_StatsRepository {
         return $this->statsRepo;
     }
+
+    /** @return ABJ_404_Solution_ViewReadService */
+    public function getViewReadService(): ABJ_404_Solution_ViewReadService {
+        return $this->viewReadService;
+    }
+
+    // Phase 7 bridge: ViewReadService needs these build-side methods until ViewBuildOrchestrator is extracted.
+
+    /** @return void */
+    public function invalidateViewDoneServeableCacheBridge(): void {
+        $this->invalidateViewDoneServeableCache();
+    }
+
+    /** @return array<string, mixed> */
+    public function getStagedQueryOptionsForRead(): array {
+        return $this->stagedQueryOptions();
+    }
+
+    /**
+     * @param string $shortName
+     * @param int $default
+     * @return int
+     */
+    public function readBuildProgressOption(string $shortName, int $default = 0): int {
+        return $this->readProgressOption($shortName, $default);
+    }
+
+    // Facade delegations to ViewReadService (Phase 6 refactor).
+
+    /** @param bool $bypassCache @return array<string, int> */
+    function getRedirectStatusCounts($bypassCache = false): array { return $this->viewReadService->getRedirectStatusCounts($bypassCache); }
+
+    /** @param bool $bypassCache @return array<string, int> */
+    function getCapturedStatusCounts($bypassCache = false): array { return $this->viewReadService->getCapturedStatusCounts($bypassCache); }
+
+    /** @return int */
+    function getHighImpactCapturedCount(): int { return $this->viewReadService->getHighImpactCapturedCount(); }
+
+    /** @return string */
+    function buildHighImpactCapturedCountQuery(): string { return $this->viewReadService->buildHighImpactCapturedCountQuery(); }
+
+    /**
+     * @template T
+     * @param callable():T $work
+     * @return T
+     */
+    function runWithDeferredInvalidation(callable $work) { return $this->viewReadService->runWithDeferredInvalidation($work); }
+
+    /** @return void */
+    function invalidateStatusCountsCache(): void { $this->viewReadService->invalidateStatusCountsCache(); }
+
+    /** @return void */
+    function invalidateViewSnapshotCache(): void { $this->viewReadService->invalidateViewSnapshotCache(); }
+
+    /** @return void */
+    function clearRegexRedirectsCache(): void { $this->viewReadService->clearRegexRedirectsCache(); }
+
+    /** @param int $logID @return int */
+    function getLogsCount($logID) { return $this->viewReadService->getLogsCount($logID); }
+
+    /** @return array<int, array<string, mixed>> */
+    function getRedirectsAll() { return $this->viewReadService->getRedirectsAll(); }
+
+    /** @param string $tempFile @return void */
+    function doRedirectsExport(string $tempFile): void { $this->viewReadService->doRedirectsExport($tempFile); }
+
+    /** @return array<int, array<string, mixed>> */
+    function getRedirectsWithLogs() { return $this->viewReadService->getRedirectsWithLogs(); }
+
+    /** @return array<int, array<string, mixed>> */
+    function getRedirectsWithRegEx() { return $this->viewReadService->getRedirectsWithRegEx(); }
+
+    /** @return array<int, array<string, mixed>> */
+    function getManualRedirectsWithRegexMetachars() { return $this->viewReadService->getManualRedirectsWithRegexMetachars(); }
+
+    /**
+     * @param string $sub
+     * @param array<string, mixed> $tableOptions
+     * @return array<int|string, mixed>
+     */
+    function getRedirectsForView($sub, $tableOptions) { return $this->viewReadService->getRedirectsForView($sub, $tableOptions); }
+
+    /**
+     * @param string $sub
+     * @param array<string, mixed> $tableOptions
+     * @return bool
+     */
+    function viewRowsSnapshotAvailable($sub, array $tableOptions): bool { return $this->viewReadService->viewRowsSnapshotAvailable($sub, $tableOptions); }
+
+    /**
+     * @param string $sub
+     * @param array<string, mixed> $tableOptions
+     * @return bool
+     */
+    function viewTableSnapshotAvailable($sub, array $tableOptions): bool { return $this->viewReadService->viewTableSnapshotAvailable($sub, $tableOptions); }
+
+    /**
+     * @param string $sub
+     * @param array<string, mixed> $tableOptions
+     * @return int
+     */
+    function getRedirectsForViewCount(string $sub, array $tableOptions): int { return $this->viewReadService->getRedirectsForViewCount($sub, $tableOptions); }
+
+    /**
+     * @param string $sub
+     * @param array<string, mixed> $tableOptions
+     * @param bool $queryAllRowsAtOnce
+     * @param int $limitStart
+     * @param int $limitEnd
+     * @param bool $selectCountOnly
+     * @return string
+     */
+    function getRedirectsForViewQuery($sub, $tableOptions, $queryAllRowsAtOnce, $limitStart, $limitEnd, $selectCountOnly) { return $this->viewReadService->getRedirectsForViewQuery($sub, $tableOptions, $queryAllRowsAtOnce, $limitStart, $limitEnd, $selectCountOnly); }
+
+    /**
+     * @param array<int, string> $postIDs
+     * @return array<int, mixed>
+     */
+    function getExtraDataToPermalinkSuggestions(array $postIDs): array { return $this->viewReadService->getExtraDataToPermalinkSuggestions($postIDs); }
+
+    /** @param string $query @param array<string, mixed> $data @return string */
+    function prepare_query_wp($query, $data) { return $this->viewReadService->prepare_query_wp($query, $data); }
+
+    /** @param string $query @param array<string, mixed> $data @return array{0: string, 1: array<int, mixed>} */
+    function prepare_query($query, $data) { return $this->viewReadService->prepare_query($query, $data); }
+
+    /** @param string $sub @param array<string, mixed> $tableOptions @return array<string, mixed> */
+    function warmViewTableSnapshotStage(string $sub, array $tableOptions): array { return $this->viewReadService->warmViewTableSnapshotStage($sub, $tableOptions); }
+
+    /** @return array<string, mixed> */
+    function getTableEngines() { return $this->viewReadService->getTableEngines(); }
+
+    /** @return bool */
+    function isMyISAMSupported(): bool { return $this->viewReadService->isMyISAMSupported(); }
+
+    /**
+     * @param string $tableName
+     * @param array<string, mixed> $dataToInsert
+     * @return array<string, mixed>
+     */
+    function insertAndGetResults($tableName, $dataToInsert) { return $this->viewReadService->insertAndGetResults($tableName, $dataToInsert); }
+
+    /** @return int */
+    function getCapturedCount() { return $this->viewReadService->getCapturedCount(); }
+
+    /** @return array<int, string> */
+    function getAllPostTypes() { return $this->viewReadService->getAllPostTypes(); }
+
+    /** @return int */
+    function getLogDiskUsage() { return $this->viewReadService->getLogDiskUsage(); }
+
+    /**
+     * @param array<int, int> $types
+     * @param int $trashed
+     * @return int
+     */
+    function getRecordCount($types = array(), $trashed = 0) { return $this->viewReadService->getRecordCount($types, $trashed); }
+
+    /**
+     * @param string $sub
+     * @param string $failedQuery
+     * @param array<string, mixed> $tableOptions
+     * @param array<string, mixed> $queryResult
+     * @return array<string, mixed>
+     */
+    public function captureViewQueryFailureDiagnostics(string $sub, string $failedQuery, array $tableOptions, array $queryResult): array {
+        return $this->viewReadService->captureViewQueryFailureDiagnostics($sub, $failedQuery, $tableOptions, $queryResult);
+    }
+
+    /** @return void */
+    function maybeUpdateRedirectsForViewHitsTable(): void { $this->viewReadService->maybeUpdateRedirectsForViewHitsTable(); }
+
+    // Reverse bridge: build traits on DataAccess call read methods now on ViewReadService (Phase 6).
+
+    /** @return array<string, string> */
+    private function viewBuildOnlyTranslations(): array { return $this->viewReadService->viewBuildOnlyTranslations(); }
+
+    /**
+     * @param string $sub
+     * @param array<string, mixed> $tableOptions
+     * @return array<int, array<string, mixed>>
+     */
+    private function readFromViewDone(string $sub, array $tableOptions): array { return $this->viewReadService->readFromViewDone($sub, $tableOptions); }
+
+    /** @return array<string, int> */
+    private function getViewBuildProgressFingerprint(): array { return $this->viewReadService->getViewBuildProgressFingerprint(); }
+
+    /**
+     * @param string $sub
+     * @param array<string, mixed> $tableOptions
+     * @return string
+     */
+    private function buildViewDoneCountQuery(string $sub, array $tableOptions): string { return $this->viewReadService->buildViewDoneCountQuery($sub, $tableOptions); }
 
     // Facade delegations to StatsRepository (Phase 4 refactor).
 

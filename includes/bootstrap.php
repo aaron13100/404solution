@@ -103,14 +103,14 @@ function abj_404_solution_init_services() {
             $c->get('functions'), $c->get('logging')
         );
     });
-
-    /** Data access service. Dependencies: functions, logging, db_core, content_repository, redirects_repository, logs_repository, stats_repository */
+    $container->set('view_read_service', function($c) use ($daoModuleDeps) {
+        $d = $daoModuleDeps($c);
+        return new ABJ_404_Solution_ViewReadService($d[0], $c->get('logs_repository'), $c->get('redirects_repository'), $d[1], $d[2]);
+    });
     $container->set('data_access', function($c) {
-        return new ABJ_404_Solution_DataAccess(
-            $c->get('functions'), $c->get('logging'), $c->get('db_core'),
+        return new ABJ_404_Solution_DataAccess($c->get('functions'), $c->get('logging'), $c->get('db_core'),
             $c->get('content_repository'), $c->get('redirects_repository'),
-            $c->get('logs_repository'), $c->get('stats_repository')
-        );
+            $c->get('logs_repository'), $c->get('stats_repository'), $c->get('view_read_service'));
     });
 
     /**
