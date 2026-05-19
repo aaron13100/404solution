@@ -120,6 +120,11 @@ trait ViewTrait_UI {
             $instance->logic->handleActionChangeItemsPerRow();
             $message .= $instance->logic->handleActionImportFile();
 
+            if ($action !== '' && $message !== '') {
+                $instance->logger->debugMessage("Admin action completed: " .
+                    esc_html($action) . " => " . esc_html(substr($message, 0, 200)));
+            }
+
             // --------------------------------------------------------------------
             // Output the correct page.
             $abj404view->echoChosenAdminTab($action, $sub, $message);

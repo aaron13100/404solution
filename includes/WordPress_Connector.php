@@ -285,7 +285,10 @@ class ABJ_404_Solution_WordPress_Connector {
 		ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('jquery-effects-highlight');
 		ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('jquery-color');
         
-        wp_register_script('abj404-redirect_to_ajax', plugin_dir_url(__FILE__) . 'ajax/redirect_to_ajax.js', 
+        ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-admin-ajax',
+            ABJ404_URL . 'includes/js/abj404-admin-ajax.js', array('jquery'));
+
+        wp_register_script('abj404-redirect_to_ajax', plugin_dir_url(__FILE__) . 'ajax/redirect_to_ajax.js',
                 array('jquery', 'jquery-ui-autocomplete'));
         wp_register_script('abj404-exclude_pages_ajax', plugin_dir_url(__FILE__) . 'ajax/exclude_pages_ajax.js',
         	array('jquery', 'jquery-ui-autocomplete', 'abj404-redirect_to_ajax'));

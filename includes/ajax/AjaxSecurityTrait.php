@@ -36,5 +36,12 @@ trait ABJ_404_Solution_AjaxSecurityTrait {
             wp_send_json_error(array('message' => __('Unauthorized', '404-solution')), 403);
             return; // @phpstan-ignore deadCode.unreachable
         }
+
+        $ajaxAction = isset($_REQUEST['action']) && is_string($_REQUEST['action'])
+            ? sanitize_text_field($_REQUEST['action']) : '(unknown)';
+        $logger = abj_service('logging');
+        if (is_object($logger) && method_exists($logger, 'debugMessage')) {
+            $logger->debugMessage("AJAX authorized: " . $ajaxAction);
+        }
     }
 }
