@@ -196,4 +196,13 @@ interface ABJ_404_Solution_DatabaseCoreInterface {
      * @return bool True when non-essential DB writes should be skipped.
      */
     public function shouldSkipNonEssentialDbWrites(): bool;
+
+    /**
+     * Execute an array of SQL statements as a single transaction with deadlock retry.
+     *
+     * @param array<int, string> $statementArray
+     * @return void
+     * @throws \Exception on non-retryable failure.
+     */
+    public function executeAsTransaction(array $statementArray): void;
 }

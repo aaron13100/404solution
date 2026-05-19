@@ -856,4 +856,57 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
             return null;
         }
     }
+
+    /** @inheritDoc */
+    public function executeAsTransaction(array $statementArray): void {
+        global $wpdb;
+        $maxAttempts = 3;
+        $lastException = null;
+        $lastError = '';
+
+        for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
+            $allIsWell = true;
+            $lastError = '';
+            $lastException = null;
+            try {
+                $wpdb->query('START TRANSACTION');
+                foreach ($statementArray as $statement) {
+                    $wpdb->query($statement);
+                    if ($wpdb->last_error != null && trim((string)$wpdb->last_error) !== '') {
+                        $allIsWell = false;
+                        $lastError = (string)$wpdb->last_error;
+                        if (!$this->classifyAndHandleInfrastructureError($lastError)) {
+                            $this->logger->errorMessage("Error executing SQL transaction: " . $lastError);
+                            $this->logger->errorMessage("SQL causing the transaction error: " . $statement);
+                        }
+                        break;
+                    }
+                }
+            } catch (Throwable $ex) {
+                $allIsWell = false;
+                $lastException = $ex;
+                $lastError = $ex->getMessage();
+            }
+
+            if ($allIsWell && $lastException == null) {
+                $wpdb->query('commit');
+                return;
+            }
+
+            $wpdb->query('rollback');
+            $retryable = $this->isDeadlockOrLockTimeoutError($lastError);
+            if (!$retryable || $attempt >= $maxAttempts) {
+                break;
+            }
+            $sleepMicros = 100000 + random_int(0, 200000);
+            usleep($sleepMicros);
+        }
+
+        if ($lastException != null) {
+            throw $lastException;
+        }
+        if ($lastError !== '') {
+            throw new Exception($lastError);
+        }
+    }
 }

@@ -12,6 +12,8 @@ require_once __DIR__ . '/DataAccessTrait_ViewQueries.php';
 require_once __DIR__ . '/DataAccessTrait_ViewQueriesHitsLifecycle.php';
 require_once __DIR__ . '/DataAccessTrait_ViewQueriesStaged.php';
 require_once __DIR__ . '/DataAccessTrait_ViewBuildStageCallbacks.php';
+require_once __DIR__ . '/DataAccessTrait_ViewBuildStageRunner.php';
+require_once __DIR__ . '/DataAccessTrait_ViewBuildStartedWatermark.php';
 require_once __DIR__ . '/DataAccessTrait_ViewQueriesStagedRead.php';
 require_once __DIR__ . '/DataAccessTrait_ViewBuildAdaptive.php';
 require_once __DIR__ . '/DataAccessTrait_ViewBuildHelpers.php';
@@ -24,8 +26,8 @@ require_once __DIR__ . '/DataAccessTrait_MutationWatermarkSeam.php';
 require_once __DIR__ . '/DataAccessTrait_AdminMutationGate.php';
 require_once __DIR__ . '/DataAccessTrait_ViewSnapshotCache.php';
 require_once __DIR__ . '/DataAccessTrait_QueryTimeouts.php';
-require_once __DIR__ . '/DataAccessTrait_Logs.php';
-require_once __DIR__ . '/DataAccessTrait_LogsHitsRebuild.php';
+require_once __DIR__ . '/LogsRepositoryInterface.php';
+require_once __DIR__ . '/LogsRepository.php';
 require_once __DIR__ . '/DataAccessTrait_Redirects.php';
 require_once __DIR__ . '/DataAccessTrait_PublishedContent.php';
 require_once __DIR__ . '/DataAccessTrait_Stats.php';
@@ -140,9 +142,6 @@ class ABJ_404_Solution_DataAccess implements ABJ_404_Solution_DatabaseRepairDele
     /** @var self|null */
     private static $instance = null;
 
-    /** @var bool Whether the hits table rebuild has been scheduled for this request */
-    private static $hitsTableRebuildScheduled = false;
-
     /** @var bool Ensure view cache table DDL runs at most once per request. */
     private static $viewSnapshotTableEnsured = false;
 
@@ -154,6 +153,9 @@ class ABJ_404_Solution_DataAccess implements ABJ_404_Solution_DatabaseRepairDele
 
     /** @var ABJ_404_Solution_RedirectsRepository The extracted redirects repository. */
     private $redirectsRepo;
+
+    /** @var ABJ_404_Solution_LogsRepository The extracted logs repository. */
+    private $logsRepo;
 
     /** @param bool $value @return void */
     public static function setViewSnapshotTableEnsured(bool $value): void {
@@ -203,8 +205,6 @@ class ABJ_404_Solution_DataAccess implements ABJ_404_Solution_DatabaseRepairDele
     use ABJ_404_Solution_DataAccess_MutationWatermarkSeamTrait;
     use ABJ_404_Solution_DataAccess_AdminMutationGateTrait;
     use ABJ_404_Solution_DataAccess_ViewSnapshotCacheTrait;
-    use ABJ_404_Solution_DataAccess_LogsTrait;
-    use ABJ_404_Solution_DataAccess_LogsHitsRebuildTrait;
     use ABJ_404_Solution_DataAccess_StatsTrait;
 
     /** Cache key for redirect status counts */
@@ -234,17 +234,6 @@ class ABJ_404_Solution_DataAccess implements ABJ_404_Solution_DatabaseRepairDele
 
     // $regexRedirectsCache and $regexCacheDisabled moved to RedirectsRepository (Phase 2).
 
-    /** @var array<int, array<string, mixed>> Queue of log entries to be flushed at shutdown */
-    private static $logQueue = [];
-
-    /** @var bool Whether shutdown hook has been registered */
-    private static $shutdownHookRegistered = false;
-
-    /** @var bool Prevent re-entrancy during flush */
-    private static $isFlushingLogQueue = false;
-
-
-
     /**
      * Constructor with dependency injection.
      * Dependencies are now explicit and visible.
@@ -258,8 +247,9 @@ class ABJ_404_Solution_DataAccess implements ABJ_404_Solution_DatabaseRepairDele
      * @param ABJ_404_Solution_DatabaseCore|null $dbCore
      * @param ABJ_404_Solution_ContentRepository|null $contentRepo
      * @param ABJ_404_Solution_RedirectsRepository|null $redirectsRepo
+     * @param ABJ_404_Solution_LogsRepository|null $logsRepo
      */
-    public function __construct($functions = null, $logging = null, $dbCore = null, $contentRepo = null, $redirectsRepo = null) {
+    public function __construct($functions = null, $logging = null, $dbCore = null, $contentRepo = null, $redirectsRepo = null, $logsRepo = null) {
         $this->f = $functions !== null ? $functions : abj_service('functions');
         $this->logger = $logging !== null ? $logging : abj_service('logging');
 
@@ -281,6 +271,12 @@ class ABJ_404_Solution_DataAccess implements ABJ_404_Solution_DatabaseRepairDele
         } else {
             $this->redirectsRepo = new ABJ_404_Solution_RedirectsRepository($this->dbCore, $this->f, $this->logger);
         }
+
+        if ($logsRepo !== null) {
+            $this->logsRepo = $logsRepo;
+        } else {
+            $this->logsRepo = new ABJ_404_Solution_LogsRepository($this->dbCore, $this->f, $this->logger);
+        }
     }
 
     /** @return ABJ_404_Solution_DatabaseCore */
@@ -296,6 +292,11 @@ class ABJ_404_Solution_DataAccess implements ABJ_404_Solution_DatabaseRepairDele
     /** @return ABJ_404_Solution_RedirectsRepository */
     public function getRedirectsRepo(): ABJ_404_Solution_RedirectsRepository {
         return $this->redirectsRepo;
+    }
+
+    /** @return ABJ_404_Solution_LogsRepository */
+    public function getLogsRepo(): ABJ_404_Solution_LogsRepository {
+        return $this->logsRepo;
     }
 
     // Facade delegations to RedirectsRepository (Phase 2 refactor).
@@ -491,6 +492,79 @@ class ABJ_404_Solution_DataAccess implements ABJ_404_Solution_DatabaseRepairDele
     function getPublishedCategories($term_id = null, $slug = null, $limit = null) {
         return $this->contentRepo->getPublishedCategories($term_id, $slug, $limit);
     }
+
+    // Facade delegations to LogsRepository (Phase 3 refactor).
+
+    /** @param array<int, array<string, mixed>> $rows @return array<int, array<string, mixed>> */
+    function populateLogsData($rows) { return $this->logsRepo->populateLogsData($rows); }
+
+    /** @return array<int, string> */
+    function getDistinctLoggedUrls(): array { return $this->logsRepo->getDistinctLoggedUrls(); }
+
+    /** @param string $specificURL @return array<int, array<string, mixed>> */
+    function getLogsIDandURL($specificURL = '') { return $this->logsRepo->getLogsIDandURL($specificURL); }
+
+    /** @param string $specificURL @param string|int $limitResults @return array<int, array<string, mixed>> */
+    function getLogsIDandURLLike($specificURL, $limitResults) { return $this->logsRepo->getLogsIDandURLLike($specificURL, $limitResults); }
+
+    /** @param array<string, mixed> $tableOptions @return array<int, array<string, mixed>> */
+    function getLogRecords($tableOptions) { return $this->logsRepo->getLogRecords($tableOptions); }
+
+    /** @param string $lkupValue @param int $page @param int $perPage @return int[] */
+    public function getLogsv2IdsForLookupValue($lkupValue, $page = 1, $perPage = 100) { return $this->logsRepo->getLogsv2IdsForLookupValue($lkupValue, $page, $perPage); }
+
+    /** @param string $lkupValue @param int $page @param int $perPage @return array<int, array<string, mixed>> */
+    public function getLogsv2RowsForLookupValue($lkupValue, $page = 1, $perPage = 50) { return $this->logsRepo->getLogsv2RowsForLookupValue($lkupValue, $page, $perPage); }
+
+    /** @param int[] $ids @return bool */
+    public function anonymizeLogsv2RowsByIds($ids) { return $this->logsRepo->anonymizeLogsv2RowsByIds($ids); }
+
+    function logRedirectHit(string $requested_url, string $action, string $matchReason, ?string $requestedURLDetail = null, ?array $pipelineTrace = null): void { $this->logsRepo->logRedirectHit($requested_url, $action, $matchReason, $requestedURLDetail, $pipelineTrace); }
+
+    function queueLogEntry(array $entry): void { $this->logsRepo->queueLogEntry($entry); }
+
+    function flushLogQueue(): void { $this->logsRepo->flushLogQueue(); }
+
+    /** @param string $valueToInsert @return int */
+    function insertLookupValueAndGetID($valueToInsert) { return $this->logsRepo->insertLookupValueAndGetID($valueToInsert); }
+
+    /** @param string $userName @return int */
+    function getLookupIDForUser($userName) { return $this->logsRepo->getLookupIDForUser($userName); }
+
+    /** @param int $days @return array<int, array<string, mixed>> */
+    public function getDailyActivityTrend(int $days = 30): array { return $this->logsRepo->getDailyActivityTrend($days); }
+
+    /** @param string|null $raw @return array<int, array{step: string, outcome: string, detail: string}>|null */
+    public static function decompressPipelineTrace(?string $raw): ?array { return ABJ_404_Solution_LogsRepository::decompressPipelineTrace($raw); }
+
+    function recordLogsHitsRollupStalenessSignal(): void { $this->logsRepo->recordLogsHitsRollupStalenessSignal(); }
+
+    function hitsTableNeedsRebuild() { return $this->logsRepo->hitsTableNeedsRebuild(); }
+
+    function getLogsHitsTableLastUpdated() { return $this->logsRepo->getLogsHitsTableLastUpdated(); }
+
+    function getLogsHitsTableLastUpdatedHuman() { return $this->logsRepo->getLogsHitsTableLastUpdatedHuman(); }
+
+    function createRedirectsForViewHitsTable(): bool { return $this->logsRepo->createRedirectsForViewHitsTable(); }
+
+    function logsHitsTableExists() { return $this->logsRepo->logsHitsTableExists(); }
+
+    function scheduleHitsTableRebuild(): void { $this->logsRepo->scheduleHitsTableRebuild(); }
+
+    function getMaxLogId() { return $this->logsRepo->getMaxLogId(); }
+
+    function getMinLogId() { return $this->logsRepo->getMinLogId(); }
+
+    function getStoredMaxLogId() { return $this->logsRepo->getStoredMaxLogId(); }
+
+    /** @return int|null */
+    function getLogsHitsTableLastCheckedAt() { return $this->logsRepo->getLogsHitsTableLastCheckedAt(); }
+
+    /** @return int|null */
+    function getLogsHitsTableLastScheduledAt() { return $this->logsRepo->getLogsHitsTableLastScheduledAt(); }
+
+    /** @return string */
+    function getLogsHitsTableLastDecision(): string { return $this->logsRepo->getLogsHitsTableLastDecision(); }
 
     /**
      * @param ABJ_404_Solution_Clock $clock

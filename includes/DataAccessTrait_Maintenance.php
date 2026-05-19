@@ -205,56 +205,7 @@ trait ABJ_404_Solution_DataAccess_MaintenanceTrait {
      * @return void
      */
     function executeAsTransaction(array $statementArray): void {
-        global $wpdb;
-        $maxAttempts = 3;
-        $lastException = null;
-        $lastError = '';
-
-        for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
-            $allIsWell = true;
-            $lastError = '';
-            $lastException = null;
-            try {
-                $wpdb->query('START TRANSACTION');
-                foreach ($statementArray as $statement) {
-                    $wpdb->query($statement);
-                    if ($wpdb->last_error != null && trim((string)$wpdb->last_error) !== '') {
-                        $allIsWell = false;
-                        $lastError = (string)$wpdb->last_error;
-                        if (!$this->classifyAndHandleInfrastructureError($lastError)) {
-                            $this->logger->errorMessage("Error executing SQL transaction: " . $lastError);
-                            $this->logger->errorMessage("SQL causing the transaction error: " . $statement);
-                        }
-                        break;
-                    }
-                }
-            } catch (Throwable $ex) {  // Fixed: Catch Throwable (Exception + Error) for PHP 7+ compatibility
-                $allIsWell = false;
-                $lastException = $ex;
-                $lastError = $ex->getMessage();
-            }
-
-            if ($allIsWell && $lastException == null) {
-                $wpdb->query('commit');
-                return;
-            }
-
-            $wpdb->query('rollback');
-            $retryable = $this->isDeadlockOrLockTimeoutError($lastError);
-            if (!$retryable || $attempt >= $maxAttempts) {
-                break;
-            }
-            // Small jitter prevents immediate lock re-collision.
-            $sleepMicros = 100000 + random_int(0, 200000);
-            usleep($sleepMicros);
-        }
-
-        if ($lastException != null) {
-            throw $lastException;
-        }
-        if ($lastError !== '') {
-            throw new Exception($lastError);
-        }
+        $this->dbCore->executeAsTransaction($statementArray);
     }
 
     // Delegations to ContentRepository (Phase 1 refactor).
@@ -319,11 +270,7 @@ trait ABJ_404_Solution_DataAccess_MaintenanceTrait {
      * @return void
      */
     function correctDuplicateLookupValues(): void {
-    	$query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/correctLookupTableIssue.sql");
-    	$this->queryAndGetResults($query, array(
-    		'log_errors' => false,
-    		'skip_repair' => true,
-    	));
+        $this->logsRepo->correctDuplicateLookupValues();
     }
 
     /**
