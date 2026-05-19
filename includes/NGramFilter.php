@@ -42,8 +42,8 @@ class ABJ_404_Solution_NGramFilter {
     /** @var self|null */
     private static $instance = null;
 
-    /** @var ABJ_404_Solution_DataAccess */
-    private $dao;
+    /** @var ABJ_404_Solution_DatabaseCore */
+    private $dbCore;
 
     /** @var ABJ_404_Solution_Logging */
     private $logger;
@@ -110,13 +110,13 @@ class ABJ_404_Solution_NGramFilter {
     /**
      * Constructor with dependency injection.
      *
-     * @param ABJ_404_Solution_DataAccess|null $dataAccess Data access layer
+     * @param ABJ_404_Solution_DatabaseCore|null $dbCore Database core
      * @param ABJ_404_Solution_Logging|null $logging Logging service
      * @param ABJ_404_Solution_Functions|null $functions String utilities
      */
-    public function __construct($dataAccess = null, $logging = null, $functions = null) {
+    public function __construct($dbCore = null, $logging = null, $functions = null) {
         // Use injected dependencies or fall back to getInstance() for backward compatibility
-        $this->dao = $dataAccess !== null ? $dataAccess : abj_service('data_access');
+        $this->dbCore = $dbCore !== null ? $dbCore : abj_service('db_core');
         $this->logger = $logging !== null ? $logging : abj_service('logging');
         $this->f = $functions !== null ? $functions : abj_service('functions');
     }
@@ -272,11 +272,11 @@ class ABJ_404_Solution_NGramFilter {
 
         $ngramCount = count($ngrams['bi']) + count($ngrams['tri']);
 
-        $table = $this->dao->getPrefixedTableName('abj404_ngram_cache');
+        $table = $this->dbCore->getPrefixedTableName('abj404_ngram_cache');
 
         // Use REPLACE to handle updates (REPLACE = DELETE + INSERT).
         // Routed through DAO for centralized timeout/retry/recovery.
-        $queryResult = $this->dao->queryAndGetResults(
+        $queryResult = $this->dbCore->queryAndGetResults(
             "REPLACE INTO {$table} (id, type, url, url_normalized, ngrams, ngram_count, last_updated)
              VALUES (%d, %s, %s, %s, %s, %d, %s)",
             ['query_params' => [
@@ -300,7 +300,7 @@ class ABJ_404_Solution_NGramFilter {
                 $pageId,
                 $lastError,
                 $table,
-                $this->dao->getLowercasePrefix(),
+                $this->dbCore->getLowercasePrefix(),
                 $dbName
             );
 
@@ -309,7 +309,7 @@ class ABJ_404_Solution_NGramFilter {
                 $errorContext .= sprintf(", Blog ID: %d", get_current_blog_id());
             }
 
-            if (!$this->dao->classifyAndHandleInfrastructureError($lastError)) {
+            if (!$this->dbCore->classifyAndHandleInfrastructureError($lastError)) {
                 $this->logger->errorMessage($errorContext);
             }
             return false;
@@ -332,9 +332,9 @@ class ABJ_404_Solution_NGramFilter {
      * @return array{bi: array<int, string>, tri: array<int, string>}|null N-gram data or null if not found
      */
     public function getNGramsForPage($pageId, $type = 'post') {
-        $table = $this->dao->getPrefixedTableName('abj404_ngram_cache');
+        $table = $this->dbCore->getPrefixedTableName('abj404_ngram_cache');
 
-        $queryResult = $this->dao->queryAndGetResults(
+        $queryResult = $this->dbCore->queryAndGetResults(
             "SELECT ngrams FROM {$table} WHERE id = %d AND type = %s",
             ['query_params' => [$pageId, $type]]
         );
@@ -363,10 +363,10 @@ class ABJ_404_Solution_NGramFilter {
      * @return array<int, array<string, mixed>> Array of cached entries with id, url, url_normalized, and ngrams
      */
     public function getAllCachedNGrams() {
-        $table = $this->dao->getPrefixedTableName('abj404_ngram_cache');
+        $table = $this->dbCore->getPrefixedTableName('abj404_ngram_cache');
 
         // Check cache size first - abort if too large
-        $count = $this->dao->queryScalarInt("SELECT COUNT(*) AS c FROM {$table}");
+        $count = $this->dbCore->queryScalarInt("SELECT COUNT(*) AS c FROM {$table}");
         if ($count > 10000) {
             $this->logger->errorMessage("CRITICAL: N-gram cache has {$count} entries. Cannot load into memory. Feature disabled for this request.");
             return [];
@@ -376,7 +376,7 @@ class ABJ_404_Solution_NGramFilter {
             $this->logger->infoMessage("WARNING: N-gram cache has {$count} entries. This may cause memory issues.");
         }
 
-        $listResult = $this->dao->queryAndGetResults(
+        $listResult = $this->dbCore->queryAndGetResults(
             "SELECT id, url, url_normalized, ngrams, ngram_count FROM {$table}"
         );
         $results = isset($listResult['rows']) && is_array($listResult['rows']) ? $listResult['rows'] : [];
@@ -416,7 +416,7 @@ class ABJ_404_Solution_NGramFilter {
      * @return array<int, array<string, mixed>> Array of cached entries
      */
     public function getCachedNGramsFiltered($minNgramCount, $maxNgramCount, $limit = 1000, $targetNgramCount = null) {
-        $table = $this->dao->getPrefixedTableName('abj404_ngram_cache');
+        $table = $this->dbCore->getPrefixedTableName('abj404_ngram_cache');
 
         // Clamp target to valid range; fall back to midpoint if not provided
         $orderTarget = ($targetNgramCount !== null)
@@ -427,7 +427,7 @@ class ABJ_404_Solution_NGramFilter {
 
         // Query 1: ngram_count <= target, ORDER BY ngram_count DESC
         // Uses idx_ngram_count for both range scan and sort (no filesort)
-        $belowResult = $this->dao->queryAndGetResults(
+        $belowResult = $this->dbCore->queryAndGetResults(
             "SELECT id, url, url_normalized, ngrams, ngram_count
              FROM {$table}
              WHERE ngram_count >= %d AND ngram_count <= %d
@@ -442,7 +442,7 @@ class ABJ_404_Solution_NGramFilter {
         $belowCount = count($resultsBelow);
         $aboveLimit = $limit - $belowCount;
 
-        $aboveResult = $this->dao->queryAndGetResults(
+        $aboveResult = $this->dbCore->queryAndGetResults(
             "SELECT id, url, url_normalized, ngrams, ngram_count
              FROM {$table}
              WHERE ngram_count > %d AND ngram_count <= %d
@@ -459,7 +459,7 @@ class ABJ_404_Solution_NGramFilter {
         if ($totalFetched < $limit && $belowCount === $halfLimit) {
             // Below hit its limit, might have more rows - fetch additional
             $additionalNeeded = $limit - $totalFetched;
-            $extraBelowResult = $this->dao->queryAndGetResults(
+            $extraBelowResult = $this->dbCore->queryAndGetResults(
                 "SELECT id, url, url_normalized, ngrams, ngram_count
                  FROM {$table}
                  WHERE ngram_count >= %d AND ngram_count <= %d
@@ -475,7 +475,7 @@ class ABJ_404_Solution_NGramFilter {
         if ($totalFetched < $limit && $aboveCount === $aboveLimit) {
             // Above hit its limit, might have more rows - fetch additional
             $additionalNeeded = $limit - $totalFetched;
-            $extraAboveResult = $this->dao->queryAndGetResults(
+            $extraAboveResult = $this->dbCore->queryAndGetResults(
                 "SELECT id, url, url_normalized, ngrams, ngram_count
                  FROM {$table}
                  WHERE ngram_count > %d AND ngram_count <= %d
@@ -571,8 +571,8 @@ class ABJ_404_Solution_NGramFilter {
      * @return bool Success status
      */
     public function invalidatePage($pageId, $type = 'post') {
-        $table = $this->dao->getPrefixedTableName('abj404_ngram_cache');
-        $queryResult = $this->dao->queryAndGetResults(
+        $table = $this->dbCore->getPrefixedTableName('abj404_ngram_cache');
+        $queryResult = $this->dbCore->queryAndGetResults(
             "DELETE FROM {$table} WHERE id = %d AND type = %s",
             ['query_params' => [(int)$pageId, $type]]
         );
@@ -601,11 +601,11 @@ class ABJ_404_Solution_NGramFilter {
             return ['processed' => 0, 'success' => 0, 'failed' => 0];
         }
 
-        $permalinkCacheTable = $this->dao->getPrefixedTableName('abj404_permalink_cache');
+        $permalinkCacheTable = $this->dbCore->getPrefixedTableName('abj404_permalink_cache');
 
         // Prepare IN clause for page IDs
         $placeholders = implode(',', array_fill(0, count($pageIds), '%d'));
-        $pageResult = $this->dao->queryAndGetResults(
+        $pageResult = $this->dbCore->queryAndGetResults(
             "SELECT id, url FROM {$permalinkCacheTable} WHERE id IN ({$placeholders})",
             ['query_params' => array_values($pageIds)]
         );
@@ -663,10 +663,10 @@ class ABJ_404_Solution_NGramFilter {
      * @return array{processed: int, success: int, failed: int}
      */
     public function rebuildCache($batchSize = 100, $offset = 0) {
-        $permalinkCacheTable = $this->dao->getPrefixedTableName('abj404_permalink_cache');
+        $permalinkCacheTable = $this->dbCore->getPrefixedTableName('abj404_permalink_cache');
 
         // Get a batch of pages from permalink cache
-        $batchResult = $this->dao->queryAndGetResults(
+        $batchResult = $this->dbCore->queryAndGetResults(
             "SELECT id, url FROM {$permalinkCacheTable} LIMIT %d OFFSET %d",
             ['query_params' => [$batchSize, $offset]]
         );
@@ -891,7 +891,7 @@ class ABJ_404_Solution_NGramFilter {
         }
 
         global $wpdb;
-        $table = $this->dao->getPrefixedTableName('abj404_ngram_cache');
+        $table = $this->dbCore->getPrefixedTableName('abj404_ngram_cache');
         if (!isset($wpdb) || !is_object($wpdb) || !is_callable([$wpdb, 'get_var'])) {
             // In test environments or very early bootstrap, wpdb may not exist.
             // Treat as "no cache" rather than fatal.
@@ -899,7 +899,7 @@ class ABJ_404_Solution_NGramFilter {
             return $this->ngramCountMemo;
         }
 
-        $this->ngramCountMemo = $this->dao->queryScalarInt("SELECT COUNT(*) AS c FROM {$table}");
+        $this->ngramCountMemo = $this->dbCore->queryScalarInt("SELECT COUNT(*) AS c FROM {$table}");
         return $this->ngramCountMemo;
     }
 
@@ -940,12 +940,12 @@ class ABJ_404_Solution_NGramFilter {
         }
 
         // Transient miss or version mismatch - compute fresh ratio
-        $ngramTable = $this->dao->getPrefixedTableName('abj404_ngram_cache');
-        $permalinkTable = $this->dao->getPrefixedTableName('abj404_permalink_cache');
+        $ngramTable = $this->dbCore->getPrefixedTableName('abj404_ngram_cache');
+        $permalinkTable = $this->dbCore->getPrefixedTableName('abj404_permalink_cache');
 
         // Get both counts (required for ratio computation)
-        $ngramCount = $this->dao->queryScalarInt("SELECT COUNT(*) AS c FROM {$ngramTable}");
-        $permalinkCount = $this->dao->queryScalarInt("SELECT COUNT(*) AS c FROM {$permalinkTable}");
+        $ngramCount = $this->dbCore->queryScalarInt("SELECT COUNT(*) AS c FROM {$ngramTable}");
+        $permalinkCount = $this->dbCore->queryScalarInt("SELECT COUNT(*) AS c FROM {$permalinkTable}");
 
         // Memoize ngram count to avoid redundant queries elsewhere
         $this->ngramCountMemo = $ngramCount;
@@ -984,22 +984,22 @@ class ABJ_404_Solution_NGramFilter {
      * @return array<string, mixed> Statistics including total_entries, posts_entries, etc.
      */
     public function getCacheStats() {
-        $table = $this->dao->getPrefixedTableName('abj404_ngram_cache');
+        $table = $this->dbCore->getPrefixedTableName('abj404_ngram_cache');
 
-        $totalEntries = $this->dao->queryScalarInt("SELECT COUNT(*) AS c FROM {$table}");
-        $postsEntries = $this->dao->queryScalarInt(
+        $totalEntries = $this->dbCore->queryScalarInt("SELECT COUNT(*) AS c FROM {$table}");
+        $postsEntries = $this->dbCore->queryScalarInt(
             "SELECT COUNT(*) AS c FROM {$table} WHERE type = %s",
             ['query_params' => ['post']]
         );
-        $categoryEntries = $this->dao->queryScalarInt(
+        $categoryEntries = $this->dbCore->queryScalarInt(
             "SELECT COUNT(*) AS c FROM {$table} WHERE type = %s",
             ['query_params' => ['category']]
         );
-        $tagEntries = $this->dao->queryScalarInt(
+        $tagEntries = $this->dbCore->queryScalarInt(
             "SELECT COUNT(*) AS c FROM {$table} WHERE type = %s",
             ['query_params' => ['tag']]
         );
-        $lastUpdatedResult = $this->dao->queryAndGetResults(
+        $lastUpdatedResult = $this->dbCore->queryAndGetResults(
             "SELECT MAX(last_updated) AS m FROM {$table}"
         );
         $lastUpdatedRows = isset($lastUpdatedResult['rows']) && is_array($lastUpdatedResult['rows']) ? $lastUpdatedResult['rows'] : [];

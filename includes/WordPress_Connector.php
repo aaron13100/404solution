@@ -26,8 +26,11 @@ class ABJ_404_Solution_WordPress_Connector {
 	/** @var ABJ_404_Solution_PluginLogic */
 	private $logic;
 
-	/** @var ABJ_404_Solution_DataAccess */
-	private $dao;
+		/** @var ABJ_404_Solution_RedirectsRepository */ private $redirectsRepository;
+
+		/** @var mixed */ private $logsRepository;
+
+		/** @var mixed */ private $statsRepository;
 
 	/** @var ABJ_404_Solution_Logging */
 	private $logger;
@@ -45,18 +48,23 @@ class ABJ_404_Solution_WordPress_Connector {
 	 * Constructor with dependency injection.
 	 *
 	 * @param ABJ_404_Solution_PluginLogic|null $pluginLogic Business logic service
-	 * @param ABJ_404_Solution_DataAccess|null $dataAccess Data access layer
+	 * @param ABJ_404_Solution_RedirectsRepository|null $redirectsRepository Redirects repository
 	 * @param ABJ_404_Solution_Logging|null $logging Logging service
 	 * @param ABJ_404_Solution_Functions|null $functions String utilities
 	 * @param ABJ_404_Solution_SpellChecker|null $spellChecker Spell checker service
+	 * @param mixed|null $logsRepository Log writer
+	 * @param mixed|null $statsRepository Stats reader
 	 */
-	public function __construct($pluginLogic = null, $dataAccess = null, $logging = null, $functions = null, $spellChecker = null) {
-		// Use injected dependencies or fall back to getInstance() for backward compatibility
+	public function __construct($pluginLogic = null, $redirectsRepository = null, $logging = null, $functions = null, $spellChecker = null, $logsRepository = null, $statsRepository = null) {
 		$this->logic = $pluginLogic !== null ? $pluginLogic : abj_service('plugin_logic');
-		$this->dao = $dataAccess !== null ? $dataAccess : abj_service('data_access');
+		$this->redirectsRepository = $redirectsRepository !== null ? $redirectsRepository : abj_service('redirects_repository');
 		$this->logger = $logging !== null ? $logging : abj_service('logging');
 		$this->f = $functions !== null ? $functions : abj_service('functions');
 		$this->spellChecker = $spellChecker !== null ? $spellChecker : abj_service('spell_checker');
+		$this->logsRepository = $logsRepository !== null ? $logsRepository :
+			(is_object($redirectsRepository) && method_exists($redirectsRepository, 'logRedirectHit') ? $redirectsRepository : abj_service('logs_repository'));
+		$this->statsRepository = $statsRepository !== null ? $statsRepository :
+			(is_object($redirectsRepository) && method_exists($redirectsRepository, 'getCapturedCountForNotification') ? $redirectsRepository : abj_service('stats_repository'));
 	}
 
 	/** @return ABJ_404_Solution_FrontendRequestPipeline */
@@ -79,13 +87,19 @@ class ABJ_404_Solution_WordPress_Connector {
 
 		$this->frontendPipeline = new ABJ_404_Solution_FrontendRequestPipeline(
 			$this->logic,
-			$this->dao,
+			$this->redirectsRepository,
 			$this->logger,
 			$this->f,
 			$this->spellChecker,
-			$matchingEngines
+			$matchingEngines,
+			$this->logsRepository
 		);
 		return $this->frontendPipeline;
+	}
+
+	private function getCapturedCountForNotification(): int {
+		return (is_object($this->statsRepository) && method_exists($this->statsRepository, 'getCapturedCountForNotification'))
+			? (int)call_user_func(array($this->statsRepository, 'getCapturedCountForNotification')) : 0;
 	}
 
 	/** @return self */
@@ -128,6 +142,7 @@ class ABJ_404_Solution_WordPress_Connector {
         }
 
         if (function_exists('set_transient')) {
+            // allow-cache-empty: runtime-error notice summary is generated locally and intentionally persisted as-is.
             set_transient('abj404_admin_runtime_error', $summary, 300);
         }
     }
@@ -937,7 +952,7 @@ class ABJ_404_Solution_WordPress_Connector {
         }
 
         if ($isPluginPage || $isDashboard) {
-            $captured404Count = $instance->dao->getCapturedCountForNotification();
+            $captured404Count = $instance->getCapturedCountForNotification();
             if ($instance->logic->shouldNotifyAboutCaptured404s($captured404Count)) {
                 $msg = $abj404view->getDashboardNotificationCaptured($captured404Count);
                 echo $msg;
@@ -1354,7 +1369,7 @@ class ABJ_404_Solution_WordPress_Connector {
 
             // Admin notice badge
             if (isset($options['admin_notification']) && $options['admin_notification'] != '0') {
-                $captured = $instance->dao->getCapturedCountForNotification();
+                $captured = $instance->getCapturedCountForNotification();
                 if ($captured >= $options['admin_notification']) {
                     $pageName .= " <span class='update-plugins count-1'><span class='update-count'>" . esc_html((string)$captured) . "</span></span>";
                     if (isset($menu[80][0])) {

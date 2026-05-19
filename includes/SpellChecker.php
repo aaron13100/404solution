@@ -84,8 +84,11 @@ class ABJ_404_Solution_SpellChecker {
 	/** @var ABJ_404_Solution_PluginLogic */
 	private $logic;
 
-	/** @var ABJ_404_Solution_DataAccess */
-	private $dao;
+	/** @var ABJ_404_Solution_ContentRepository */
+	private $contentRepository;
+
+	/** @var mixed */
+	private $viewReadService;
 
 	/** @var ABJ_404_Solution_Logging */
 	private $logger;
@@ -102,19 +105,22 @@ class ABJ_404_Solution_SpellChecker {
 	 *
 	 * @param ABJ_404_Solution_Functions|null $functions String manipulation utilities
 	 * @param ABJ_404_Solution_PluginLogic|null $pluginLogic Business logic service
-	 * @param ABJ_404_Solution_DataAccess|null $dataAccess Data access layer
+	 * @param ABJ_404_Solution_ContentRepository|null $contentRepository Content repository
 	 * @param ABJ_404_Solution_Logging|null $logging Logging service
 	 * @param ABJ_404_Solution_PermalinkCache|null $permalinkCache Permalink caching service
 	 * @param ABJ_404_Solution_NGramFilter|null $ngramFilter N-gram filter for optimization
+	 * @param ABJ_404_Solution_ViewReadService|null $viewReadService View read service
 	 */
-	public function __construct($functions = null, $pluginLogic = null, $dataAccess = null, $logging = null, $permalinkCache = null, $ngramFilter = null) {
+	public function __construct($functions = null, $pluginLogic = null, $contentRepository = null, $logging = null, $permalinkCache = null, $ngramFilter = null, $viewReadService = null) {
 		// Use injected dependencies or fall back to getInstance() for backward compatibility
 		$this->f = $functions !== null ? $functions : abj_service('functions');
 		$this->logic = $pluginLogic !== null ? $pluginLogic : abj_service('plugin_logic');
-		$this->dao = $dataAccess !== null ? $dataAccess : abj_service('data_access');
+		$this->contentRepository = $contentRepository !== null ? $contentRepository : abj_service('content_repository');
 		$this->logger = $logging !== null ? $logging : abj_service('logging');
 		$this->permalinkCache = $permalinkCache !== null ? $permalinkCache : abj_service('permalink_cache');
 		$this->ngramFilter = $ngramFilter !== null ? $ngramFilter : abj_service('ngram_filter');
+		$this->viewReadService = $viewReadService !== null ? $viewReadService :
+			(is_object($contentRepository) && method_exists($contentRepository, 'getRedirectsWithRegEx') ? $contentRepository : abj_service('view_read_service'));
 
 		// Set the custom 404 page id if there is one
 		$options = $this->logic->getOptions();
@@ -125,6 +131,41 @@ class ABJ_404_Solution_SpellChecker {
 		if ($this->logic->thereIsAUserSpecified404Page($custom404PageID)) {
 			$this->custom404PageID = $custom404PageID;
 		}
+	}
+
+	/** @return array<int, array<string, mixed>> */
+	private function getRedirectsWithRegEx(): array {
+		if (!is_object($this->viewReadService) || !method_exists($this->viewReadService, 'getRedirectsWithRegEx')) {
+			return array();
+		}
+		$rows = call_user_func(array($this->viewReadService, 'getRedirectsWithRegEx'));
+		return $this->normalizeRows($rows);
+	}
+
+	/** @return array<int, array<string, mixed>> */
+	private function getManualRedirectsWithRegexMetachars(): array {
+		if (!is_object($this->viewReadService) || !method_exists($this->viewReadService, 'getManualRedirectsWithRegexMetachars')) {
+			return array();
+		}
+		$rows = call_user_func(array($this->viewReadService, 'getManualRedirectsWithRegexMetachars'));
+		return $this->normalizeRows($rows);
+	}
+
+	/**
+	 * @param mixed $rows
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function normalizeRows($rows): array {
+		if (!is_array($rows)) {
+			return array();
+		}
+		$normalized = array();
+		foreach ($rows as $row) {
+			if (is_array($row)) {
+				$normalized[] = $row;
+			}
+		}
+		return $normalized;
 	}
 
 	public static function getInstance(): self {

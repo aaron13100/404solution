@@ -10,12 +10,77 @@ class ABJ_404_Solution_SlugChangeHandler {
     /** @var self|null */
     private static $instance = null;
 
+    /** @var mixed */
+    private $contentRepository;
+
+    /** @var mixed */
+    private $redirectsRepository;
+
+    /** @var ABJ_404_Solution_Logging */
+    private $logger;
+
+    /** @var ABJ_404_Solution_PluginLogic */
+    private $logic;
+
     /**
      * Track post IDs already processed within the current request.
      * WordPress fires save_post multiple times per save; this prevents duplicate redirects.
      * @var array<int, bool>
      */
     private static $processedPosts = [];
+
+    /**
+     * @param ABJ_404_Solution_ContentRepository|null $contentRepository Content repository
+     * @param ABJ_404_Solution_RedirectsRepository|null $redirectsRepository Redirects repository
+     * @param ABJ_404_Solution_Logging|null $logging Logging service
+     * @param ABJ_404_Solution_PluginLogic|null $pluginLogic Business logic service
+     */
+    public function __construct($contentRepository = null, $redirectsRepository = null, $logging = null, $pluginLogic = null) {
+        $this->contentRepository = $contentRepository;
+        $this->redirectsRepository = $redirectsRepository;
+        $this->logger = $logging !== null ? $logging : abj_service('logging');
+        $this->logic = $pluginLogic !== null ? $pluginLogic : abj_service('plugin_logic');
+    }
+
+    /** @return mixed */
+    private function getContentRepository() {
+        return $this->contentRepository !== null ? $this->contentRepository : abj_service('content_repository');
+    }
+
+    /** @return mixed */
+    private function getRedirectsRepository() {
+        return $this->redirectsRepository !== null ? $this->redirectsRepository : abj_service('redirects_repository');
+    }
+
+    /**
+     * @param int $postId
+     * @return string|null
+     */
+    private function getPermalinkFromCache(int $postId): ?string {
+        $repository = $this->getContentRepository();
+        if (!is_object($repository) || !method_exists($repository, 'getPermalinkFromCache')) {
+            return null;
+        }
+        $permalink = call_user_func(array($repository, 'getPermalinkFromCache'), $postId);
+        return is_scalar($permalink) ? (string)$permalink : null;
+    }
+
+    /**
+     * @param string $oldSlug
+     * @param string $status
+     * @param string $type
+     * @param string $finalDest
+     * @param string $redirectCode
+     * @param string $engine
+     * @return void
+     */
+    private function setupRedirect(string $oldSlug, string $status, string $type, string $finalDest, string $redirectCode, string $engine): void {
+        $repository = $this->getRedirectsRepository();
+        if (!is_object($repository) || !method_exists($repository, 'setupRedirect')) {
+            return;
+        }
+        call_user_func(array($repository, 'setupRedirect'), $oldSlug, $status, $type, $finalDest, $redirectCode, 0, $engine);
+    }
 
     /**
      * Get singleton instance
@@ -46,7 +111,7 @@ class ABJ_404_Solution_SlugChangeHandler {
      * @return void
      */
     function save_postHandler($post_id, $post, $update) {
-        $abj404logging = abj_service('logging');
+        $abj404logging = $this->logger;
 
         // Prevent duplicate processing within same request
         // WordPress fires save_post multiple times per save operation
@@ -70,8 +135,7 @@ class ABJ_404_Solution_SlugChangeHandler {
         }
 
         // Check if we should create a redirect (respects per-post override from editor)
-        $abj404logic = abj_service('plugin_logic');
-        $options = $abj404logic->getOptions();
+        $options = $this->logic->getOptions();
 
         // Check for per-post override from Quick Edit, Classic Editor, or Gutenberg
         if (class_exists('ABJ_404_Solution_PostEditorIntegration')) {
@@ -97,11 +161,9 @@ class ABJ_404_Solution_SlugChangeHandler {
         }
 
         // get the old slug
-        $abj404dao = abj_service('data_access');
+        $oldURL = $this->getPermalinkFromCache($post_id);
 
-        $oldURL = $abj404dao->getPermalinkFromCache($post_id);
-
-        if ($oldURL == null || $oldURL == "") {
+        if ($oldURL === null || $oldURL === "") {
             $abj404logging->debugMessage("Couldn't find old slug for updated page. ID " .
                 $post_id . ", old URL: " . $oldURL . ", post name: " . $post->post_name .
                 ", update: " . $update);
@@ -151,8 +213,8 @@ class ABJ_404_Solution_SlugChangeHandler {
         self::$processedPosts[$post_id] = true;
 
         // create a redirect from the old to the new.
-        $abj404dao->setupRedirect($oldSlug, (string)ABJ404_STATUS_AUTO, (string)ABJ404_TYPE_POST,
-                (string)$post_id, (isset($options['default_redirect']) && is_scalar($options['default_redirect'])) ? (string)$options['default_redirect'] : '301', 0, 'slug change');
+        $this->setupRedirect($oldSlug, (string)ABJ404_STATUS_AUTO, (string)ABJ404_TYPE_POST,
+                (string)$post_id, (isset($options['default_redirect']) && is_scalar($options['default_redirect'])) ? (string)$options['default_redirect'] : '301', 'slug change');
         $abj404logging->infoMessage("Added automatic redirect after slug change from " .
             $oldURL . ' to ' . $newURL . " for post ID " . $post_id);
     }
@@ -179,8 +241,7 @@ class ABJ_404_Solution_SlugChangeHandler {
         $post_id = (int)$post->ID;
 
         // Check option
-        $abj404logic = abj_service('plugin_logic');
-        $options = $abj404logic->getOptions();
+        $options = $this->logic->getOptions();
         if (!isset($options['auto_trash_redirect']) || $options['auto_trash_redirect'] != '1') {
             return;
         }
@@ -190,10 +251,9 @@ class ABJ_404_Solution_SlugChangeHandler {
             return;
         }
 
-        $abj404dao = abj_service('data_access');
-        $oldURL = $abj404dao->getPermalinkFromCache($post_id);
+        $oldURL = $this->getPermalinkFromCache($post_id);
 
-        if ($oldURL == null || $oldURL == '') {
+        if ($oldURL === null || $oldURL === '') {
             return;
         }
 
@@ -207,10 +267,10 @@ class ABJ_404_Solution_SlugChangeHandler {
 
         self::$processedPosts[$post_id] = true;
 
-        $abj404dao->setupRedirect($oldSlug, (string)ABJ404_STATUS_AUTO, (string)ABJ404_TYPE_HOME,
-            '0', $redirectCode, 0, 'post trashed');
+        $this->setupRedirect($oldSlug, (string)ABJ404_STATUS_AUTO, (string)ABJ404_TYPE_HOME,
+            '0', $redirectCode, 'post trashed');
 
-        abj_service('logging')->infoMessage(
+        $this->logger->infoMessage(
             "Added automatic redirect to homepage after post trashed. ID: " . $post_id . ", old URL: " . $oldURL);
     }
 
@@ -234,8 +294,7 @@ class ABJ_404_Solution_SlugChangeHandler {
         }
 
         // Check option
-        $abj404logic = abj_service('plugin_logic');
-        $options = $abj404logic->getOptions();
+        $options = $this->logic->getOptions();
         if (!isset($options['auto_trash_redirect']) || $options['auto_trash_redirect'] != '1') {
             return;
         }
@@ -247,10 +306,9 @@ class ABJ_404_Solution_SlugChangeHandler {
             return;
         }
 
-        $abj404dao = abj_service('data_access');
-        $oldURL = $abj404dao->getPermalinkFromCache($post_id);
+        $oldURL = $this->getPermalinkFromCache($post_id);
 
-        if ($oldURL == null || $oldURL == '') {
+        if ($oldURL === null || $oldURL === '') {
             return;
         }
 
@@ -264,10 +322,10 @@ class ABJ_404_Solution_SlugChangeHandler {
 
         self::$processedPosts[$post_id] = true;
 
-        $abj404dao->setupRedirect($oldSlug, (string)ABJ404_STATUS_AUTO, (string)ABJ404_TYPE_HOME,
-            '0', $redirectCode, 0, 'post deleted');
+        $this->setupRedirect($oldSlug, (string)ABJ404_STATUS_AUTO, (string)ABJ404_TYPE_HOME,
+            '0', $redirectCode, 'post deleted');
 
-        abj_service('logging')->infoMessage(
+        $this->logger->infoMessage(
             "Added automatic redirect to homepage after post deleted. ID: " . $post_id . ", old URL: " . $oldURL);
     }
 }

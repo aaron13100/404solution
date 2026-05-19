@@ -106,6 +106,7 @@ class ABJ_404_Solution_FeedbackTransport {
             'payload' => $payload,
             'type' => $type,
         );
+        // allow-cache-empty: feedback envelope is generated locally and may contain an intentionally empty payload.
         set_transient(self::TRANSIENT_PREFIX . $uuid, $envelope, self::TRANSIENT_TTL);
         wp_schedule_single_event(time(), self::CRON_HOOK, array($uuid));
 

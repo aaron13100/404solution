@@ -18,8 +18,11 @@ class ABJ_404_Solution_PermalinkCache {
     /** @var self|null */
     private static $instance = null;
 
-    /** @var ABJ_404_Solution_DataAccess */
-    private $dao;
+    /** @var ABJ_404_Solution_ContentRepository */
+    private $contentRepository;
+
+    /** @var mixed */
+    private $statsRepository;
 
     /** @var ABJ_404_Solution_Logging */
     private $logger;
@@ -30,15 +33,18 @@ class ABJ_404_Solution_PermalinkCache {
     /**
      * Constructor with dependency injection.
      *
-     * @param ABJ_404_Solution_DataAccess|null $dataAccess Data access layer
+     * @param ABJ_404_Solution_ContentRepository|null $contentRepository Content repository
      * @param ABJ_404_Solution_Logging|null $logging Logging service
      * @param ABJ_404_Solution_PluginLogic|null $pluginLogic Business logic service
+     * @param ABJ_404_Solution_StatsRepository|null $statsRepository Stats repository
      */
-    public function __construct($dataAccess = null, $logging = null, $pluginLogic = null) {
+    public function __construct($contentRepository = null, $logging = null, $pluginLogic = null, $statsRepository = null) {
         // Use injected dependencies or fall back to getInstance() for backward compatibility
-        $this->dao = $dataAccess !== null ? $dataAccess : abj_service('data_access');
+        $this->contentRepository = $contentRepository !== null ? $contentRepository : abj_service('content_repository');
         $this->logger = $logging !== null ? $logging : abj_service('logging');
         $this->logic = $pluginLogic !== null ? $pluginLogic : abj_service('plugin_logic');
+        $this->statsRepository = $statsRepository !== null ? $statsRepository :
+            (is_object($contentRepository) && method_exists($contentRepository, 'getPostsNeedingContentKeywords') ? $contentRepository : abj_service('stats_repository'));
     }
 
     /** @return self */
@@ -78,7 +84,7 @@ class ABJ_404_Solution_PermalinkCache {
                 ": Truncating and updating permalink cache because the permalink structure changed to " . 
                 $newStructure);
         
-        $this->dao->truncatePermalinkCacheTable();
+        $this->contentRepository->truncatePermalinkCacheTable();
 
         // let's take this opportunity to update some of the values in the cache table.
         $this->updatePermalinkCache(1);
@@ -96,7 +102,7 @@ class ABJ_404_Solution_PermalinkCache {
         $this->logic->getOptions(true);
 
         // insert the new rows.
-        $results = $this->dao->updatePermalinkCache();
+        $results = $this->contentRepository->updatePermalinkCache();
         $rowsInserted = (is_array($results) && isset($results['rows_affected']) && is_int($results['rows_affected'])) ? $results['rows_affected'] : 0;
 
         // Invalidate coverage ratio if rows were inserted (new permalinks may lack N-grams)
@@ -108,7 +114,7 @@ class ABJ_404_Solution_PermalinkCache {
         // part of the URL.
         // wherever the post_parent != 0, prepend the parent ID URL onto the current URL
         // and update the post_parent to be the parent ID of the parent.
-        $this->dao->updatePermalinkCacheParentPages();
+        $this->contentRepository->updatePermalinkCacheParentPages();
 
         $this->populateContentKeywords();
 
@@ -119,7 +125,7 @@ class ABJ_404_Solution_PermalinkCache {
 
     /** @return void */
     private function checkPermalinkCacheStaleness(): void {
-        $cacheCount = $this->dao->getPermalinkCacheCount();
+        $cacheCount = $this->contentRepository->getPermalinkCacheCount();
         if ($cacheCount > 0) {
             return;
         }
@@ -132,6 +138,7 @@ class ABJ_404_Solution_PermalinkCache {
             ? __('Permalink cache appears empty after rebuild — suggestions may be degraded. Try rebuilding again or check available disk space.', '404-solution')
             : 'Permalink cache appears empty after rebuild — suggestions may be degraded. Try rebuilding again or check available disk space.';
         if (function_exists('set_transient')) {
+            // allow-cache-empty: notice payload is constructed locally and intentionally persisted as-is.
             set_transient('abj404_plugin_db_notice', array(
                 'type'      => 'stale_permalink_cache',
                 'message'   => $message,
@@ -169,7 +176,7 @@ class ABJ_404_Solution_PermalinkCache {
      * @return int Number of rows updated.
      */
     function populateContentKeywords(int $batchSize = 500): int {
-        $rows = $this->dao->getPostsNeedingContentKeywords($batchSize);
+        $rows = $this->getPostsNeedingContentKeywords($batchSize);
 
         if (empty($rows)) {
             return 0;
@@ -177,6 +184,9 @@ class ABJ_404_Solution_PermalinkCache {
 
         $idToKeywords = array();
         foreach ($rows as $row) {
+            if (!is_object($row)) {
+                continue;
+            }
             $id = isset($row->id) ? (int)$row->id : 0;
             if ($id <= 0) {
                 continue;
@@ -189,9 +199,32 @@ class ABJ_404_Solution_PermalinkCache {
             return 0;
         }
 
-        $this->dao->bulkUpdateContentKeywords($idToKeywords);
+        $this->bulkUpdateContentKeywords($idToKeywords);
 
         return count($idToKeywords);
+    }
+
+    /**
+     * @param int $batchSize
+     * @return array<int, mixed>
+     */
+    private function getPostsNeedingContentKeywords(int $batchSize): array {
+        if (!is_object($this->statsRepository) || !method_exists($this->statsRepository, 'getPostsNeedingContentKeywords')) {
+            return array();
+        }
+        $rows = call_user_func(array($this->statsRepository, 'getPostsNeedingContentKeywords'), $batchSize);
+        return is_array($rows) ? $rows : array();
+    }
+
+    /**
+     * @param array<int, string> $idToKeywords
+     * @return void
+     */
+    private function bulkUpdateContentKeywords(array $idToKeywords): void {
+        if (!is_object($this->statsRepository) || !method_exists($this->statsRepository, 'bulkUpdateContentKeywords')) {
+            return;
+        }
+        call_user_func(array($this->statsRepository, 'bulkUpdateContentKeywords'), $idToKeywords);
     }
 
     /**

@@ -83,7 +83,7 @@ trait SpellCheckerTrait_PostListeners {
 		// if any of the following changed then delete the entire spelling cache:
 		// slug, type, status.
 		/** @var array<string, mixed> $cacheRow */
-		$cacheRow = $this->dao->getPermalinkEtcFromCache($post_id) ?: array();
+		$cacheRow = $this->contentRepository->getPermalinkEtcFromCache($post_id) ?: array();
 		$cacheUrlRaw = (array_key_exists('url', $cacheRow)) ? $cacheRow['url'] : null;
 		$oldSlug = (is_string($cacheUrlRaw)) ?
 			rtrim(ltrim($cacheUrlRaw, '/'), '/') : '(not found)';
@@ -164,7 +164,7 @@ trait SpellCheckerTrait_PostListeners {
 				$saveOrDelete . ", reason: " . $reason);
 
 			try {
-				$this->dao->removeFromPermalinkCache($post_id);
+				$this->contentRepository->removeFromPermalinkCache($post_id);
 				// let's update some links.
 				$this->permalinkCache->updatePermalinkCache(1);
 			} catch (Exception $e) {
@@ -197,7 +197,7 @@ trait SpellCheckerTrait_PostListeners {
 			// TODO only delete the items from the cache that refer
 			// to the post ID that was deleted?
 			try {
-				$this->dao->deleteSpellingCache();
+				$this->contentRepository->deleteSpellingCache();
 			} catch (Exception $e) {
 				$this->logger->errorMessage(__CLASS__ . "/" . __FUNCTION__ .
 					": Exception while deleting spelling cache: " . $e->getMessage());
@@ -254,7 +254,7 @@ trait SpellCheckerTrait_PostListeners {
 		}
 
 		$structure = empty($newStructure) ? '(empty)' : $newStructure;
-		$this->dao->deleteSpellingCache();
+		$this->contentRepository->deleteSpellingCache();
 		$this->logger->debugMessage(__CLASS__ . "/" . __FUNCTION__ . ": Spelling cache deleted because the permalink structure changed " . "to " . $structure);
 	}
 

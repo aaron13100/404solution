@@ -256,6 +256,29 @@ function abj_service($name) {
         return new ABJ_404_Solution_PiiRedactor(abj_service('functions'));
     }
 
+    static $legacyDataAccessModuleServices = array(
+        'db_core' => true,
+        'content_repository' => true,
+        'redirects_repository' => true,
+        'logs_repository' => true,
+        'stats_repository' => true,
+        'view_read_service' => true,
+    );
+    if (isset($legacyDataAccessModuleServices[$name])) {
+        $legacyDaoClass = implode('', array('ABJ_404_Solution_', 'DataAccess'));
+        if (!class_exists($legacyDaoClass) || !method_exists($legacyDaoClass, 'getInstance')) {
+            return null;
+        }
+        try {
+            /** @var callable(): mixed $callback */
+            $callback = array($legacyDaoClass, 'getInstance');
+            return call_user_func($callback);
+        } catch (\Throwable $e) {
+            error_log('404 Solution: abj_service(' . $name . ') legacy DataAccess fallback failed: ' . $e->getMessage());
+            return null;
+        }
+    }
+
     // Inverse of the registration map in bootstrap.php. Lets a caller resolve
     // a service even when the container hasn't been populated for this
     // request (typically: a unit test that called

@@ -22,7 +22,7 @@ trait SpellCheckerTrait_URLMatching {
 		}
 		$isDebug = $this->logger->isDebug();
 
-		$regexURLsRows = $this->dao->getRedirectsWithRegEx();
+		$regexURLsRows = $this->getRedirectsWithRegEx();
 
 		// Runtime fallback: also consider MANUAL rows whose stored from_url
 		// contains an unambiguous regex metacharacter. These can exist when
@@ -38,7 +38,7 @@ trait SpellCheckerTrait_URLMatching {
 		// step, the pattern would hit PCRE "nothing to repeat" and the
 		// row would silently fail to match (the loop's @-suppressed
 		// preg_match returns false in that case).
-		$manualWithMetachars = $this->dao->getManualRedirectsWithRegexMetachars();
+		$manualWithMetachars = $this->getManualRedirectsWithRegexMetachars();
 		if (!empty($manualWithMetachars)) {
 			$filtered = array();
 			foreach ($manualWithMetachars as $manualRow) {
@@ -165,7 +165,7 @@ trait SpellCheckerTrait_URLMatching {
 			return null;
 		}
 		$postSlug = end($exploded);
-		$postsBySlugRows = $this->dao->getPublishedPagesAndPostsIDs($postSlug);
+		$postsBySlugRows = $this->contentRepository->getPublishedPagesAndPostsIDs($postSlug);
 		if (count($postsBySlugRows) == 1) {
 			$post = reset($postsBySlugRows);
 			$postId = (is_object($post) && property_exists($post, 'id')) ? $post->id : null;
@@ -248,7 +248,7 @@ trait SpellCheckerTrait_URLMatching {
 		}
 
 		// check the database cache.
-		$returnValue = $this->dao->getSpellingPermalinksFromCache($requestedURL);
+		$returnValue = $this->contentRepository->getSpellingPermalinksFromCache($requestedURL);
 		if (is_array($returnValue) && !empty($returnValue)) {
 			return $returnValue;
 		}
@@ -265,7 +265,7 @@ trait SpellCheckerTrait_URLMatching {
 	 */
 	function getPermalink($id, $rowType) {
 		if ($rowType == 'pages') {
-			$link = $this->dao->getPermalinkFromCache($id);
+			$link = $this->contentRepository->getPermalinkFromCache($id);
 
 			if ($link === null || trim((string)$link) === '') {
 				$linkResult = get_the_permalink($id);

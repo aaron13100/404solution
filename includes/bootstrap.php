@@ -174,26 +174,19 @@ function abj_404_solution_init_services() {
 
     /**
      * Permalink cache - caches permalink lookups for performance.
-     * Dependencies: data_access, logging, plugin_logic
+     * Dependencies: content_repository, logging, plugin_logic, stats_repository
      */
     $container->set('permalink_cache', function($c) {
-        return new ABJ_404_Solution_PermalinkCache(
-            $c->get('data_access'),
-            $c->get('logging'),
-            $c->get('plugin_logic')
-        );
+        return new ABJ_404_Solution_PermalinkCache($c->get('content_repository'),
+            $c->get('logging'), $c->get('plugin_logic'), $c->get('stats_repository'));
     });
 
     /**
      * N-gram filter - provides N-gram based spell checker optimization.
-     * Dependencies: data_access, logging, functions
+     * Dependencies: db_core, logging, functions
      */
     $container->set('ngram_filter', function($c) {
-        return new ABJ_404_Solution_NGramFilter(
-            $c->get('data_access'),
-            $c->get('logging'),
-            $c->get('functions')
-        );
+        return new ABJ_404_Solution_NGramFilter($c->get('db_core'), $c->get('logging'), $c->get('functions'));
     });
 
     // =========================================================================
@@ -214,17 +207,12 @@ function abj_404_solution_init_services() {
 
     /**
      * Spell checker service - handles URL matching and suggestions.
-     * Dependencies: functions, plugin_logic, data_access, logging, permalink_cache, ngram_filter
+     * Dependencies: functions, plugin_logic, content_repository, logging, permalink_cache, ngram_filter, view_read_service
      */
     $container->set('spell_checker', function($c) {
-        return new ABJ_404_Solution_SpellChecker(
-            $c->get('functions'),
-            $c->get('plugin_logic'),
-            $c->get('data_access'),
-            $c->get('logging'),
-            $c->get('permalink_cache'),
-            $c->get('ngram_filter')
-        );
+        return new ABJ_404_Solution_SpellChecker($c->get('functions'), $c->get('plugin_logic'),
+            $c->get('content_repository'), $c->get('logging'), $c->get('permalink_cache'),
+            $c->get('ngram_filter'), $c->get('view_read_service'));
     });
 
     // =========================================================================
@@ -322,30 +310,27 @@ function abj_404_solution_init_services() {
 
     /**
      * WordPress connector - interfaces with WordPress core APIs.
-     * Dependencies: plugin_logic, data_access, logging, functions, spell_checker
+     * Dependencies: plugin_logic, redirects_repository, logging, functions, spell_checker, logs_repository
      */
     $container->set('wordpress_connector', function($c) {
-        return new ABJ_404_Solution_WordPress_Connector(
-            $c->get('plugin_logic'),
-            $c->get('data_access'),
-            $c->get('logging'),
-            $c->get('functions'),
-            $c->get('spell_checker')
-        );
+        return new ABJ_404_Solution_WordPress_Connector($c->get('plugin_logic'),
+            $c->get('redirects_repository'), $c->get('logging'), $c->get('functions'),
+            $c->get('spell_checker'), $c->get('logs_repository'), $c->get('stats_repository'));
     });
 
     /**
      * Slug change handler - detects and handles post slug changes.
      */
     $container->set('slug_change_handler', function($c) {
-        return new ABJ_404_Solution_SlugChangeHandler();
+        return new ABJ_404_Solution_SlugChangeHandler($c->get('content_repository'),
+            $c->get('redirects_repository'), $c->get('logging'), $c->get('plugin_logic'));
     });
 
     /**
      * Published posts provider - manages published post lookups.
      */
     $container->set('published_posts_provider', function($c) {
-        return new ABJ_404_Solution_PublishedPostsProvider();
+        return new ABJ_404_Solution_PublishedPostsProvider($c->get('content_repository'));
     });
 
     /**

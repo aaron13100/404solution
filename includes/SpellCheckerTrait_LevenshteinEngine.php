@@ -179,7 +179,7 @@ trait SpellCheckerTrait_LevenshteinEngine {
 			    $urlParts = parse_url($the_permalink);
 
 			    if (is_bool($urlParts)) {
-			        $this->dao->removeFromPermalinkCache($idInt);
+			        $this->contentRepository->removeFromPermalinkCache($idInt);
 			    }
 			}
 			if (!array_key_exists('url', $row) || (isset($urlParts) && is_bool($urlParts))) {
@@ -380,7 +380,7 @@ trait SpellCheckerTrait_LevenshteinEngine {
 			// Batch-fetch from permalink cache table in a single query.
 			// IDs not found in the cache are excluded — they cannot be suggestions.
 			$intIds = array_map(function($v) { return is_scalar($v) ? (int)$v : 0; }, $ids);
-			$rows = $this->dao->getPermalinksByIds($intIds);
+			$rows = $this->contentRepository->getPermalinksByIds($intIds);
 			foreach ($rows as $row) {
 				$row = (array)$row;
 				if (isset($row['id'], $row['url']) && is_string($row['url'])) {

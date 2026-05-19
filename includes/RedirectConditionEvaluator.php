@@ -20,14 +20,14 @@ if (!defined('ABSPATH')) {
  */
 class ABJ_404_Solution_RedirectConditionEvaluator {
 
-    /** @var ABJ_404_Solution_DataAccess */
+    /** @var ABJ_404_Solution_RedirectsRepositoryInterface */
     private $dao;
 
     /** @var array<int, array{type: string, result: bool}> */
     private $lastTrace = [];
 
     /**
-     * @param ABJ_404_Solution_DataAccess $dao
+     * @param ABJ_404_Solution_RedirectsRepositoryInterface $dao
      */
     public function __construct($dao) {
         $this->dao = $dao;

@@ -74,7 +74,7 @@ trait SpellCheckerTrait_CandidateFiltering {
 		$permalinks = array_splice($permalinks, 0, $maxCacheCount);
 
 		$returnValue = array($permalinks,$rowType);
-		$this->dao->storeSpellingPermalinksToCache($requestedURLRaw, $returnValue);
+		$this->contentRepository->storeSpellingPermalinksToCache($requestedURLRaw, $returnValue);
 		$ctx = abj_service('request_context');
 		$ctx->permalinks_found = (string)json_encode($returnValue);
 		$ctx->permalinks_kept = (string)json_encode($permalinks);
@@ -261,7 +261,7 @@ trait SpellCheckerTrait_CandidateFiltering {
 	 */
 	function matchOnCats(array $permalinks, string $requestedURLCleaned, string $fullURLspacesCleaned, string $rowType): array {
 
-		$rows = $this->dao->getPublishedCategories();
+		$rows = $this->contentRepository->getPublishedCategories();
 		$rows = $this->getOnlyIDandTermID($rows);
 
 		// pre-filter some pages based on the min and max possible levenshtein distances.
@@ -343,7 +343,7 @@ trait SpellCheckerTrait_CandidateFiltering {
 	 */
 	function matchOnTags(array $permalinks, string $requestedURLCleaned, string $fullURLspacesCleaned, string $rowType): array {
 
-		$rows = $this->dao->getPublishedTags();
+		$rows = $this->contentRepository->getPublishedTags();
 		$rows = $this->getOnlyIDandTermID($rows);
 
 		// pre-filter some pages based on the min and max possible levenshtein distances.

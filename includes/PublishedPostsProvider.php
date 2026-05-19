@@ -28,6 +28,16 @@ class ABJ_404_Solution_PublishedPostsProvider {
 	/** @var self|null */
 	private static $instance = null;
 
+	/** @var ABJ_404_Solution_ContentRepository */
+	private $contentRepository;
+
+	/**
+	 * @param ABJ_404_Solution_ContentRepository|null $contentRepository Content repository
+	 */
+	public function __construct($contentRepository = null) {
+		$this->contentRepository = $contentRepository !== null ? $contentRepository : abj_service('content_repository');
+	}
+
 	/** @return self */
 	public static function getInstance() {
 		if (self::$instance == null) {
@@ -106,8 +116,6 @@ class ABJ_404_Solution_PublishedPostsProvider {
      * @return array<int, mixed>
      */
     private function getNextBatchFromTheDatabase(int $permalinkLength, int $batchSize, $maxAcceptableDistance): array {
-    	$abj404dao = abj_service('data_access');
-
     	$orderBy = "abs(plc.url_length - " . $permalinkLength . "), wp_posts.id";
     	$limit = $this->currentLowRowNumber . ", " . $batchSize;
     	$extraWhereClause = '';
@@ -123,7 +131,7 @@ class ABJ_404_Solution_PublishedPostsProvider {
     		$extraWhereClause .= " and wp_posts.id IN (" . $idList . ")";
     	}
 
-    	$rows = $abj404dao->getPublishedPagesAndPostsIDs('', '', $limit, $orderBy, $extraWhereClause);
+    	$rows = $this->contentRepository->getPublishedPagesAndPostsIDs('', '', $limit, $orderBy, $extraWhereClause);
 
     	$this->currentLowRowNumber += $batchSize;
 
