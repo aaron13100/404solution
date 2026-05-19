@@ -496,80 +496,32 @@ trait ABJ_404_Solution_DataAccess_StatsTrait {
         return $f->normalizeUrlString($returnValue);
     }
 
+    // Delegations to RedirectsRepository (Phase 2 refactor).
+
     /**
      * @param array<int, int|string> $ids
      * @return array<int, array<string, mixed>>
      */
     function getRedirectsByIDs($ids) {
-        if (!is_array($ids) || empty($ids)) {
-            return array();
-        }
-        $validids = array_map('absint', $ids);
-        $multipleIds = implode(',', $validids);
-
-        $query = "select id, url, type, status, final_dest, code, COALESCE(engine, '') as engine, start_ts, end_ts from {wp_abj404_redirects} " .
-                "where id in (" . $multipleIds . ")";
-        $result = $this->queryAndGetResults($query);
-        $rawRows = isset($result['rows']) && is_array($result['rows']) ? $result['rows'] : array();
-
-        $rows = array();
-        foreach ($rawRows as $row) {
-            if (is_array($row)) {
-                $rows[] = $row;
-            }
-        }
-        return $rows;
+        return $this->redirectsRepo->getRedirectsByIDs($ids);
     }
-    
-    /** Change the status to "trash" or "ignored," for example.
-     * @global type $wpdb
+
+    /**
      * @param int $id
      * @param string $newstatus
      * @return string
      */
     function updateRedirectTypeStatus($id, $newstatus) {
-        // Use prepared statement to prevent SQL injection
-        $query = "update {wp_abj404_redirects} set status = %s where id = %d";
-        $result = $this->queryAndGetResults($query, array(
-            'query_params' => array($newstatus, absint($id))
-        ));
-
-        // Invalidate caches - status change might affect regex redirects
-        $this->invalidateStatusCountsCache();
-        $this->clearRegexRedirectsCache();
-
-        return is_string($result['last_error']) ? $result['last_error'] : '';
+        return $this->redirectsRepo->updateRedirectTypeStatus($id, $newstatus);
     }
 
-    /** Move a redirect to the "trash" folder.
-     * @global type $wpdb
+    /**
      * @param int $id
-     * @param int $trash 1 for trash, 0 for not trash.
+     * @param int $trash
      * @return string
      */
     function moveRedirectsToTrash($id, $trash) {
-        $message = "";
-        $hadError = false;
-        if ($this->f->regexMatch('[0-9]+', '' . $id)) {
-
-            $redirectsTable = $this->doTableNameReplacements("{wp_abj404_redirects}");
-            $updateResult = $this->queryAndGetResults(
-                "UPDATE `" . $redirectsTable . "` SET disabled = %d WHERE id = %d",
-                array('query_params' => array(absint(esc_html((string)$trash)), absint($id)))
-            );
-            $updateError = isset($updateResult['last_error']) && is_string($updateResult['last_error']) ? $updateResult['last_error'] : '';
-            $hadError = $updateError !== '';
-
-            // Invalidate caches - disabled change affects regex redirects
-            $this->invalidateStatusCountsCache();
-            $this->clearRegexRedirectsCache();
-        } else {
-            $hadError = true;
-        }
-        if ($hadError) {
-            $message = __('Error: Unknown Database Error!', '404-solution');
-        }
-        return $message;
+        return $this->redirectsRepo->moveRedirectsToTrash($id, $trash);
     }
 
     // Delegations to ContentRepository (Phase 1 refactor).
@@ -590,85 +542,18 @@ trait ABJ_404_Solution_DataAccess_StatsTrait {
     }
 
     /**
-     * @global type $wpdb
-     * @global type $abj404logging
-     * @param int $type ABJ404_EXTERNAL, ABJ404_POST, ABJ404_CAT, or ABJ404_TAG.
+     * @param string $type
      * @param string $dest
      * @param string $fromURL
      * @param int $idForUpdate
      * @param string $redirectCode
-     * @param string $statusType ABJ404_STATUS_MANUAL or ABJ404_STATUS_REGEX
-     * @param int|null $startTs Unix timestamp when redirect becomes active (null = always)
-     * @param int|null $endTs   Unix timestamp when redirect expires (null = never)
+     * @param string $statusType
+     * @param int|null $startTs
+     * @param int|null $endTs
      * @return string
      */
     function updateRedirect($type, $dest, $fromURL, $idForUpdate, $redirectCode, $statusType, $startTs = null, $endTs = null) {
-        if (($type < 0) || ($idForUpdate <= 0)) {
-            $this->logger->errorMessage("Bad data passed for update redirect request. Type: " .
-                esc_html((string)$type) . ", Dest: " . esc_html($dest) . ", ID(s): " . esc_html((string)$idForUpdate));
-            echo __('Error: Bad data passed for update redirect request.', '404-solution');
-            return '';
-        }
-
-        $redirectsTable = $this->doTableNameReplacements("{wp_abj404_redirects}");
-
-        $updateData = array(
-            'url' => $fromURL,
-            'status' => $statusType,
-            'type' => absint($type),
-            'final_dest' => $dest,
-            'code' => esc_attr($redirectCode),
-        );
-        $updateFormats = array('%s', '%d', '%d', '%s', '%d');
-
-        // Include non-null timestamps in the main update.
-        if ($startTs !== null) {
-            $updateData['start_ts'] = (int)$startTs;
-            $updateFormats[] = '%d';
-        }
-        if ($endTs !== null) {
-            $updateData['end_ts'] = (int)$endTs;
-            $updateFormats[] = '%d';
-        }
-
-        $setFragments = array();
-        $idx = 0;
-        foreach ($updateData as $col => $unusedValue) {
-            $format = isset($updateFormats[$idx]) ? $updateFormats[$idx] : '%s';
-            $setFragments[] = '`' . $col . '` = ' . $format;
-            $idx++;
-        }
-        $updateSql = "UPDATE `" . $redirectsTable . "` SET " . implode(', ', $setFragments) .
-            " WHERE `id` = %d";
-        $updateParams = array_values($updateData);
-        $updateParams[] = absint($idForUpdate);
-        $this->queryAndGetResults($updateSql, array('query_params' => $updateParams));
-
-        // Explicitly set timestamp columns to NULL when no schedule is set.
-        // queryAndGetResults' %d placeholder for null converts to 0 via (int)null,
-        // which breaks the SQL filter "end_ts IS NULL OR end_ts > UNIX_TIMESTAMP()"
-        // — end_ts=0 means "expired in 1970" and silently stops the redirect from matching.
-        $nullParts = [];
-        if ($startTs === null) {
-            $nullParts[] = '`start_ts` = NULL';
-        }
-        if ($endTs === null) {
-            $nullParts[] = '`end_ts` = NULL';
-        }
-        if (!empty($nullParts)) {
-            $nullSql = "UPDATE `" . $redirectsTable . "` SET " . implode(', ', $nullParts) .
-                " WHERE id = %d";
-            $this->queryAndGetResults($nullSql, array('query_params' => array(absint($idForUpdate))));
-        }
-
-        // Invalidate caches - status/url change affects regex redirects
-        $this->invalidateStatusCountsCache();
-        $this->clearRegexRedirectsCache();
-
-        // move this redirect out of the trash.
-        $this->moveRedirectsToTrash(absint($idForUpdate), 0);
-
-        return '';
+        return $this->redirectsRepo->updateRedirect($type, $dest, $fromURL, $idForUpdate, $redirectCode, $statusType, $startTs, $endTs);
     }
 
     /**

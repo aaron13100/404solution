@@ -31,6 +31,8 @@ require_once __DIR__ . '/DataAccessTrait_PublishedContent.php';
 require_once __DIR__ . '/DataAccessTrait_Stats.php';
 require_once __DIR__ . '/ContentRepositoryInterface.php';
 require_once __DIR__ . '/ContentRepository.php';
+require_once __DIR__ . '/RedirectsRepositoryInterface.php';
+require_once __DIR__ . '/RedirectsRepository.php';
 require_once __DIR__ . '/DataAccessTrait_ErrorClassification.php';
 require_once __DIR__ . '/DataAccessTrait_SqlErrorReporting.php';
 require_once __DIR__ . '/ViewQueryFailureException.php';
@@ -150,6 +152,9 @@ class ABJ_404_Solution_DataAccess implements ABJ_404_Solution_DatabaseRepairDele
     /** @var ABJ_404_Solution_ContentRepository The extracted content/cache repository. */
     private $contentRepo;
 
+    /** @var ABJ_404_Solution_RedirectsRepository The extracted redirects repository. */
+    private $redirectsRepo;
+
     /** @param bool $value @return void */
     public static function setViewSnapshotTableEnsured(bool $value): void {
         self::$viewSnapshotTableEnsured = $value;
@@ -200,7 +205,6 @@ class ABJ_404_Solution_DataAccess implements ABJ_404_Solution_DatabaseRepairDele
     use ABJ_404_Solution_DataAccess_ViewSnapshotCacheTrait;
     use ABJ_404_Solution_DataAccess_LogsTrait;
     use ABJ_404_Solution_DataAccess_LogsHitsRebuildTrait;
-    use ABJ_404_Solution_DataAccess_RedirectsTrait;
     use ABJ_404_Solution_DataAccess_StatsTrait;
 
     /** Cache key for redirect status counts */
@@ -228,11 +232,7 @@ class ABJ_404_Solution_DataAccess implements ABJ_404_Solution_DatabaseRepairDele
     /** Maximum number of regex redirects to cache per-request (memory guard) */
     const REGEX_CACHE_MAX_COUNT = 50;
 
-    /** @var array<int, array<string, mixed>>|null Per-request cache for regex redirects (static to persist across getInstance calls) */
-    private static $regexRedirectsCache = null;
-
-    /** @var bool Flag indicating if regex cache should be skipped (too many redirects) */
-    private static $regexCacheDisabled = false;
+    // $regexRedirectsCache and $regexCacheDisabled moved to RedirectsRepository (Phase 2).
 
     /** @var array<int, array<string, mixed>> Queue of log entries to be flushed at shutdown */
     private static $logQueue = [];
@@ -257,8 +257,9 @@ class ABJ_404_Solution_DataAccess implements ABJ_404_Solution_DatabaseRepairDele
      * @param ABJ_404_Solution_Logging|null $logging
      * @param ABJ_404_Solution_DatabaseCore|null $dbCore
      * @param ABJ_404_Solution_ContentRepository|null $contentRepo
+     * @param ABJ_404_Solution_RedirectsRepository|null $redirectsRepo
      */
-    public function __construct($functions = null, $logging = null, $dbCore = null, $contentRepo = null) {
+    public function __construct($functions = null, $logging = null, $dbCore = null, $contentRepo = null, $redirectsRepo = null) {
         $this->f = $functions !== null ? $functions : abj_service('functions');
         $this->logger = $logging !== null ? $logging : abj_service('logging');
 
@@ -274,6 +275,12 @@ class ABJ_404_Solution_DataAccess implements ABJ_404_Solution_DatabaseRepairDele
         } else {
             $this->contentRepo = new ABJ_404_Solution_ContentRepository($this->dbCore, $this->f, $this->logger);
         }
+
+        if ($redirectsRepo !== null) {
+            $this->redirectsRepo = $redirectsRepo;
+        } else {
+            $this->redirectsRepo = new ABJ_404_Solution_RedirectsRepository($this->dbCore, $this->f, $this->logger);
+        }
     }
 
     /** @return ABJ_404_Solution_DatabaseCore */
@@ -284,6 +291,157 @@ class ABJ_404_Solution_DataAccess implements ABJ_404_Solution_DatabaseRepairDele
     /** @return ABJ_404_Solution_ContentRepository */
     public function getContentRepo(): ABJ_404_Solution_ContentRepository {
         return $this->contentRepo;
+    }
+
+    /** @return ABJ_404_Solution_RedirectsRepository */
+    public function getRedirectsRepo(): ABJ_404_Solution_RedirectsRepository {
+        return $this->redirectsRepo;
+    }
+
+    // Facade delegations to RedirectsRepository (Phase 2 refactor).
+
+    /** @param int|string $id @return void */
+    function deleteRedirect($id) {
+        $this->redirectsRepo->deleteRedirect($id);
+    }
+
+    /**
+     * @param string $fromURL
+     * @param string $status
+     * @param string $type
+     * @param string $final_dest
+     * @param string $code
+     * @param int $disabled
+     * @param string|null $engine
+     * @param float|null $score
+     * @return int
+     */
+    function setupRedirect($fromURL, $status, $type, $final_dest, $code, $disabled = 0, $engine = null, $score = null) {
+        return $this->redirectsRepo->setupRedirect($fromURL, $status, $type, $final_dest, $code, $disabled, $engine, $score);
+    }
+
+    /**
+     * @param string $url
+     * @param bool $degradedMode
+     * @return array<string, mixed>
+     */
+    function getActiveRedirectForURL($url, $degradedMode = false) {
+        return $this->redirectsRepo->getActiveRedirectForURL($url, $degradedMode);
+    }
+
+    /**
+     * @param string $url
+     * @return array<string, mixed>
+     */
+    function getExistingRedirectForURL($url) {
+        return $this->redirectsRepo->getExistingRedirectForURL($url);
+    }
+
+    /** @return string */
+    function deleteSpecifiedRedirects() {
+        return $this->redirectsRepo->deleteSpecifiedRedirects();
+    }
+
+    /**
+     * @param int $redirectId
+     * @return array<int, array<string, mixed>>
+     */
+    public function getRedirectConditions(int $redirectId): array {
+        return $this->redirectsRepo->getRedirectConditions($redirectId);
+    }
+
+    /**
+     * @param int $redirectId
+     * @param array<int, array<string, mixed>> $conditions
+     * @return void
+     */
+    public function saveRedirectConditions(int $redirectId, array $conditions): void {
+        $this->redirectsRepo->saveRedirectConditions($redirectId, $conditions);
+    }
+
+    /**
+     * @param string $type
+     * @param string $dest
+     * @param string $fromURL
+     * @param int $idForUpdate
+     * @param string $redirectCode
+     * @param string $statusType
+     * @param int|null $startTs
+     * @param int|null $endTs
+     * @return string
+     */
+    function updateRedirect($type, $dest, $fromURL, $idForUpdate, $redirectCode, $statusType, $startTs = null, $endTs = null) {
+        return $this->redirectsRepo->updateRedirect($type, $dest, $fromURL, $idForUpdate, $redirectCode, $statusType, $startTs, $endTs);
+    }
+
+    /**
+     * @param array<int, int|string> $ids
+     * @return array<int, array<string, mixed>>
+     */
+    function getRedirectsByIDs($ids) {
+        return $this->redirectsRepo->getRedirectsByIDs($ids);
+    }
+
+    /**
+     * @param int $id
+     * @param string $newstatus
+     * @return string
+     */
+    function updateRedirectTypeStatus($id, $newstatus) {
+        return $this->redirectsRepo->updateRedirectTypeStatus($id, $newstatus);
+    }
+
+    /**
+     * @param int $id
+     * @param int $trash
+     * @return string
+     */
+    function moveRedirectsToTrash($id, $trash) {
+        return $this->redirectsRepo->moveRedirectsToTrash($id, $trash);
+    }
+
+    /** @return int */
+    public function cleanupOrphanedAutoRedirects(): int {
+        return $this->redirectsRepo->cleanupOrphanedAutoRedirects();
+    }
+
+    /** @return string */
+    function deleteOldRedirectsCron() {
+        return $this->redirectsRepo->deleteOldRedirectsCron();
+    }
+
+    /** @return int */
+    function removeDuplicatesCron(): int {
+        return $this->redirectsRepo->removeDuplicatesCron();
+    }
+
+    /** @return bool */
+    function limitDebugFileSize(): bool {
+        return $this->redirectsRepo->limitDebugFileSize();
+    }
+
+    /**
+     * @param array<string, mixed> $options
+     * @return int
+     */
+    function autoTrashJunkCapturedUrls(array $options): int {
+        return $this->redirectsRepo->autoTrashJunkCapturedUrls($options);
+    }
+
+    /**
+     * @param mixed $url
+     * @return string
+     */
+    public static function computeRedirectsCanonicalUrl($url): string {
+        return ABJ_404_Solution_RedirectsRepository::computeRedirectsCanonicalUrl($url);
+    }
+
+    /**
+     * @param string $columnExpr
+     * @return string
+     */
+    public static function hitsCanonicalUrlSqlExpression(string $columnExpr): string {
+        return ABJ_404_Solution_RedirectsRepository::hitsCanonicalUrlSqlExpression($columnExpr);
     }
 
     // Facade delegations to ContentRepository (Phase 1 refactor).

@@ -404,8 +404,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
      */
     /** @return void */
     function clearRegexRedirectsCache(): void {
-        self::$regexRedirectsCache = null;
-        self::$regexCacheDisabled = false;
+        $this->redirectsRepo->clearRegexRedirectsCache();
     }
 
     /**
@@ -576,25 +575,23 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesTrait {
      * @return array<int, array<string, mixed>>
      */
     function getRedirectsWithRegEx() {
-        // Return cached results if available (and caching wasn't disabled due to count)
-        if (self::$regexRedirectsCache !== null && !self::$regexCacheDisabled) {
-            return self::$regexRedirectsCache;
+        $cached = ABJ_404_Solution_RedirectsRepository::getRegexRedirectsCache();
+        $disabled = ABJ_404_Solution_RedirectsRepository::isRegexCacheDisabled();
+
+        if ($cached !== null && !$disabled) {
+            return $cached;
         }
 
-        // If caching was disabled due to too many redirects, just query without caching
-        if (self::$regexCacheDisabled) {
+        if ($disabled) {
             return $this->queryRegexRedirects();
         }
 
-        // First query - check count and decide whether to cache
         $results = $this->queryRegexRedirects();
 
-        // Only cache if count is within safe memory limits
-        if (count($results) <= self::REGEX_CACHE_MAX_COUNT) {
-            self::$regexRedirectsCache = $results;
+        if (count($results) <= ABJ_404_Solution_RedirectsRepository::REGEX_CACHE_MAX_COUNT) {
+            ABJ_404_Solution_RedirectsRepository::setRegexRedirectsCache($results);
         } else {
-            // Too many regex redirects - disable caching for this request
-            self::$regexCacheDisabled = true;
+            ABJ_404_Solution_RedirectsRepository::setRegexCacheDisabled(true);
         }
 
         return $results;

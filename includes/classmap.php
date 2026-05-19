@@ -92,6 +92,8 @@ return array(
     'ABJ_404_Solution_DatabaseCore' => $base . 'includes/DatabaseCore.php',
     'ABJ_404_Solution_ContentRepositoryInterface' => $base . 'includes/ContentRepositoryInterface.php',
     'ABJ_404_Solution_ContentRepository' => $base . 'includes/ContentRepository.php',
+    'ABJ_404_Solution_RedirectsRepositoryInterface' => $base . 'includes/RedirectsRepositoryInterface.php',
+    'ABJ_404_Solution_RedirectsRepository' => $base . 'includes/RedirectsRepository.php',
     'ABJ_404_Solution_DataAccess' => $base . 'includes/DataAccess.php',
     'ABJ_404_Solution_ViewBuildConfig' => $base . 'includes/ViewBuildConfig.php',
     'ABJ_404_Solution_MutationWatermark' => $base . 'includes/MutationWatermark.php',
