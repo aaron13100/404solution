@@ -964,4 +964,56 @@ abstract class ABJ_404_Solution_Functions {
         return false;
     }
 
+    // =========================================================================
+    // Request parameter sanitization (relocated from DataAccessTrait_Stats, Phase 4)
+    // =========================================================================
+
+    /**
+     * @param string $name The key to retrieve the value for.
+     * @param string|null $defaultValue The value to return if the value is not set.
+     * @return string The sanitized value.
+     */
+    function getPostOrGetSanitize($name, $defaultValue = null) {
+        $returnValue = isset($_GET[$name]) ? $_GET[$name] : (isset($_POST[$name]) ? $_POST[$name] : null);
+        if ($returnValue === null && $name === 'action') {
+            $returnValue = isset($_GET['abj404action']) ? $_GET['abj404action'] : (isset($_POST['abj404action']) ? $_POST['abj404action'] : null);
+        }
+        if ($returnValue !== null) {
+            if (is_array($returnValue)) {
+                $returnValue = array_map('sanitize_text_field', $returnValue);
+            } else {
+                $returnValue = sanitize_text_field($returnValue);
+            }
+        }
+        $finalValue = $returnValue ?? $defaultValue;
+        return is_string($finalValue) ? $finalValue : (is_string($defaultValue) ? $defaultValue : '');
+    }
+
+    /**
+     * @param string $name The key to retrieve the value for.
+     * @param string|null $defaultValue The value to return if the value is not set.
+     * @return string|array<string>|null The normalized URL value.
+     */
+    function getPostOrGetSanitizeUrl($name, $defaultValue = null) {
+        $returnValue = isset($_GET[$name]) ? $_GET[$name] : (isset($_POST[$name]) ? $_POST[$name] : null);
+        if ($returnValue === null) {
+            return $defaultValue;
+        }
+
+        $f = abj_service('functions');
+        $unslash = function($value) {
+            return function_exists('wp_unslash') ? wp_unslash($value) : $value;
+        };
+
+        if (is_array($returnValue)) {
+            return array_map(function($value) use ($f, $unslash) {
+                $value = $unslash($value);
+                return $f->normalizeUrlString($value);
+            }, $returnValue);
+        }
+
+        $returnValue = $unslash($returnValue);
+        return $f->normalizeUrlString($returnValue);
+    }
+
 }

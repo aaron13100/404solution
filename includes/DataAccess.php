@@ -31,6 +31,8 @@ require_once __DIR__ . '/LogsRepository.php';
 require_once __DIR__ . '/DataAccessTrait_Redirects.php';
 require_once __DIR__ . '/DataAccessTrait_PublishedContent.php';
 require_once __DIR__ . '/DataAccessTrait_Stats.php';
+require_once __DIR__ . '/StatsRepositoryInterface.php';
+require_once __DIR__ . '/StatsRepository.php';
 require_once __DIR__ . '/ContentRepositoryInterface.php';
 require_once __DIR__ . '/ContentRepository.php';
 require_once __DIR__ . '/RedirectsRepositoryInterface.php';
@@ -157,6 +159,9 @@ class ABJ_404_Solution_DataAccess implements ABJ_404_Solution_DatabaseRepairDele
     /** @var ABJ_404_Solution_LogsRepository The extracted logs repository. */
     private $logsRepo;
 
+    /** @var ABJ_404_Solution_StatsRepository The extracted stats repository. */
+    private $statsRepo;
+
     /** @param bool $value @return void */
     public static function setViewSnapshotTableEnsured(bool $value): void {
         self::$viewSnapshotTableEnsured = $value;
@@ -205,7 +210,6 @@ class ABJ_404_Solution_DataAccess implements ABJ_404_Solution_DatabaseRepairDele
     use ABJ_404_Solution_DataAccess_MutationWatermarkSeamTrait;
     use ABJ_404_Solution_DataAccess_AdminMutationGateTrait;
     use ABJ_404_Solution_DataAccess_ViewSnapshotCacheTrait;
-    use ABJ_404_Solution_DataAccess_StatsTrait;
 
     /** Cache key for redirect status counts */
     const CACHE_KEY_REDIRECT_STATUS = 'abj404_redirect_status_counts';
@@ -248,8 +252,9 @@ class ABJ_404_Solution_DataAccess implements ABJ_404_Solution_DatabaseRepairDele
      * @param ABJ_404_Solution_ContentRepository|null $contentRepo
      * @param ABJ_404_Solution_RedirectsRepository|null $redirectsRepo
      * @param ABJ_404_Solution_LogsRepository|null $logsRepo
+     * @param ABJ_404_Solution_StatsRepository|null $statsRepo
      */
-    public function __construct($functions = null, $logging = null, $dbCore = null, $contentRepo = null, $redirectsRepo = null, $logsRepo = null) {
+    public function __construct($functions = null, $logging = null, $dbCore = null, $contentRepo = null, $redirectsRepo = null, $logsRepo = null, $statsRepo = null) {
         $this->f = $functions !== null ? $functions : abj_service('functions');
         $this->logger = $logging !== null ? $logging : abj_service('logging');
 
@@ -277,6 +282,12 @@ class ABJ_404_Solution_DataAccess implements ABJ_404_Solution_DatabaseRepairDele
         } else {
             $this->logsRepo = new ABJ_404_Solution_LogsRepository($this->dbCore, $this->f, $this->logger);
         }
+
+        if ($statsRepo !== null) {
+            $this->statsRepo = $statsRepo;
+        } else {
+            $this->statsRepo = new ABJ_404_Solution_StatsRepository($this->dbCore, $this->logsRepo, $this->f, $this->logger);
+        }
     }
 
     /** @return ABJ_404_Solution_DatabaseCore */
@@ -297,6 +308,78 @@ class ABJ_404_Solution_DataAccess implements ABJ_404_Solution_DatabaseRepairDele
     /** @return ABJ_404_Solution_LogsRepository */
     public function getLogsRepo(): ABJ_404_Solution_LogsRepository {
         return $this->logsRepo;
+    }
+
+    /** @return ABJ_404_Solution_StatsRepository */
+    public function getStatsRepo(): ABJ_404_Solution_StatsRepository {
+        return $this->statsRepo;
+    }
+
+    // Facade delegations to StatsRepository (Phase 4 refactor).
+
+    /** @param string $query @param array<int|string, mixed> $valueParams @return int */
+    function getStatsCount($query, array $valueParams) { return $this->statsRepo->getStatsCount($query, $valueParams); }
+
+    /**
+     * @param int $sinceTimestamp
+     * @param string $notFoundDest
+     * @return array{disp404:int, distinct404:int, visitors404:int, refer404:int, redirected:int, distinctredirected:int, distinctvisitors:int, distinctrefer:int}
+     */
+    function getPeriodicStatsSummary($sinceTimestamp, $notFoundDest = '404') { return $this->statsRepo->getPeriodicStatsSummary($sinceTimestamp, $notFoundDest); }
+
+    /**
+     * @param string $notFoundDest
+     * @return array{today:array<string,int>, month:array<string,int>, year:array<string,int>, all:array<string,int>}
+     */
+    function getPeriodicStatsSummariesCached($notFoundDest = '404') { return $this->statsRepo->getPeriodicStatsSummariesCached($notFoundDest); }
+
+    /** @param bool $allowStale @return array{refreshed_at:int, hash:string, data:array<string, mixed>} */
+    function getStatsDashboardSnapshot($allowStale = true) { return $this->statsRepo->getStatsDashboardSnapshot($allowStale); }
+
+    /** @param bool $force @return array{refreshed_at:int, hash:string, data:array<string, mixed>} */
+    function refreshStatsDashboardSnapshot($force = false) { return $this->statsRepo->refreshStatsDashboardSnapshot($force); }
+
+    /** @return int */
+    function getEarliestLogTimestamp() { return $this->statsRepo->getEarliestLogTimestamp(); }
+
+    /** @param int $limit @return array<int, array<string, mixed>> */
+    function getTopCapturedForDigest(int $limit): array { return $this->statsRepo->getTopCapturedForDigest($limit); }
+
+    /** @param int $limit @return string */
+    function buildTopCapturedForDigestQuery(int $limit): string { return $this->statsRepo->buildTopCapturedForDigestQuery($limit); }
+
+    /** @return array{total_captured: int, total_manual: int, total_auto: int} */
+    function getDigestSummaryStats(): array { return $this->statsRepo->getDigestSummaryStats(); }
+
+    /** @return int */
+    function getCapturedCountForNotification(): int { return $this->statsRepo->getCapturedCountForNotification(); }
+
+    /** @param int $limit @return array<int, object> */
+    function getPostsNeedingContentKeywords(int $limit = 500): array { return $this->statsRepo->getPostsNeedingContentKeywords($limit); }
+
+    /** @param array<int, string> $idToKeywords @return void */
+    function bulkUpdateContentKeywords(array $idToKeywords): void { $this->statsRepo->bulkUpdateContentKeywords($idToKeywords); }
+
+    // Facade delegations for request parameter sanitization (Phase 4: relocated to Functions).
+
+    /**
+     * @param string $name
+     * @param string|null $defaultValue
+     * @return string
+     */
+    function getPostOrGetSanitize($name, $defaultValue = null) {
+        $f = abj_service('functions');
+        return $f->getPostOrGetSanitize($name, $defaultValue);
+    }
+
+    /**
+     * @param string $name
+     * @param string|null $defaultValue
+     * @return string|array<string>|null
+     */
+    function getPostOrGetSanitizeUrl($name, $defaultValue = null) {
+        $f = abj_service('functions');
+        return $f->getPostOrGetSanitizeUrl($name, $defaultValue);
     }
 
     // Facade delegations to RedirectsRepository (Phase 2 refactor).
@@ -492,6 +575,17 @@ class ABJ_404_Solution_DataAccess implements ABJ_404_Solution_DatabaseRepairDele
     function getPublishedCategories($term_id = null, $slug = null, $limit = null) {
         return $this->contentRepo->getPublishedCategories($term_id, $slug, $limit);
     }
+
+    // Facade delegations to ContentRepository: permalink cache (relocated from Stats trait, Phase 4).
+
+    /** @return array<string, mixed> */
+    function updatePermalinkCache() { return $this->contentRepo->updatePermalinkCache(); }
+
+    /** @return array<string, mixed> */
+    function updatePermalinkCacheParentPages() { return $this->contentRepo->updatePermalinkCacheParentPages(); }
+
+    /** @return int */
+    function getPermalinkCacheCount(): int { return $this->contentRepo->getPermalinkCacheCount(); }
 
     // Facade delegations to LogsRepository (Phase 3 refactor).
 
