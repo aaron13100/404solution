@@ -1026,7 +1026,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
                 $msg .= ' Check $table_prefix in wp-config.php.';
             }
             return $msg;
-        } catch (Throwable $e) {
+        } catch (Throwable $e) { // allow-silent-catch: helper that builds a multisite-aware error message; if it itself fails the caller still gets the original error string
             return '';
         }
     }

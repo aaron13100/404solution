@@ -752,7 +752,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
                 "SELECT @@SESSION.sql_mode AS sql_mode, @@SESSION.max_allowed_packet AS max_allowed_packet",
                 ARRAY_A
             );
-        } catch (\Throwable $e) {
+        } catch (\Throwable $e) { // allow-silent-catch: best-effort session-variable probe; null falls through to default struct below
             $row = null;
         }
         if (method_exists($wpdb, 'suppress_errors')) {
@@ -883,7 +883,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
         try {
             // DAO-bypass-approved: SET SESSION must run on the live wpdb connection.
             $ok = $wpdb->query("SET SESSION sql_mode = '" . $escapedStr . "'");
-        } catch (\Throwable $e) {
+        } catch (\Throwable $e) { // allow-silent-catch: SET SESSION sql_mode is best-effort; $ok=false falls through to the last_error check and returns false to caller
             $ok = false;
         }
         if (method_exists($wpdb, 'suppress_errors')) {

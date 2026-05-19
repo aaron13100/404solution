@@ -1274,7 +1274,7 @@ class ABJ_404_Solution_WordPress_Connector {
 
         try {
             return wp_unslash($value);
-        } catch (Throwable $e) {
+        } catch (Throwable $e) { // allow-silent-catch: wp_unslash() failure; pass-through preserves the original value which is always usable
             return $value;
         }
     }

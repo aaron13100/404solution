@@ -778,7 +778,7 @@ class ABJ_404_Solution_ViewUpdater {
                 if (is_object($abj404logic) && method_exists($abj404logic, 'userIsPluginAdmin')) {
                     try {
                         $isPluginAdmin = (bool)$abj404logic->userIsPluginAdmin();
-                    } catch (Throwable $ignored) {
+                    } catch (Throwable $ignored) { // allow-silent-catch: admin-status detection; PluginLogic may be the broken component, default to non-admin (hide details)
                         $isPluginAdmin = false;
                     }
                 }
@@ -965,7 +965,7 @@ class ABJ_404_Solution_ViewUpdater {
                 if (is_object($abj404logic) && method_exists($abj404logic, 'userIsPluginAdmin')) {
                     try {
                         $isPluginAdmin = (bool)$abj404logic->userIsPluginAdmin();
-                    } catch (Throwable $ignored) {
+                    } catch (Throwable $ignored) { // allow-silent-catch: admin-status detection; PluginLogic may be the broken component, default to non-admin (hide details)
                         $isPluginAdmin = false;
                     }
                 }
@@ -1066,7 +1066,7 @@ class ABJ_404_Solution_ViewUpdater {
                 if (is_object($abj404logic) && method_exists($abj404logic, 'userIsPluginAdmin')) {
                     try {
                         $isPluginAdmin = (bool)$abj404logic->userIsPluginAdmin();
-                    } catch (Throwable $ignored) {
+                    } catch (Throwable $ignored) { // allow-silent-catch: admin-status detection; PluginLogic may be the broken component, default to non-admin (hide details)
                         $isPluginAdmin = false;
                     }
                 }
@@ -1186,7 +1186,7 @@ class ABJ_404_Solution_ViewUpdater {
                 if (is_object($abj404logic) && method_exists($abj404logic, 'userIsPluginAdmin')) {
                     try {
                         $isPluginAdmin = (bool)$abj404logic->userIsPluginAdmin();
-                    } catch (Throwable $ignored) {
+                    } catch (Throwable $ignored) { // allow-silent-catch: admin-status detection; PluginLogic may be the broken component, default to non-admin (hide details)
                         $isPluginAdmin = false;
                     }
                 }
@@ -1310,10 +1310,7 @@ class ABJ_404_Solution_ViewUpdater {
             ), 200);
             return;
 
-        } catch (Throwable $e) {
-            // Diagnostics endpoint, never fail loudly.  An admin-side notice
-            // that says "stage: (lookup failed)" is a worse outcome than
-            // "stage: (unknown)".
+        } catch (Throwable $e) { // allow-silent-catch: diagnostics endpoint is best-effort; surfacing a lookup failure is worse than returning empty stage
             self::sendJsonResponseAndExit(array('stage' => ''), 200);
             return;
         }
@@ -1440,7 +1437,7 @@ class ABJ_404_Solution_ViewUpdater {
                 if (is_object($abj404logic) && method_exists($abj404logic, 'userIsPluginAdmin')) {
                     try {
                         $isPluginAdmin = (bool)$abj404logic->userIsPluginAdmin();
-                    } catch (Throwable $ignored) {
+                    } catch (Throwable $ignored) { // allow-silent-catch: admin-status detection; PluginLogic may be the broken component, default to non-admin (hide details)
                         $isPluginAdmin = false;
                     }
                 }

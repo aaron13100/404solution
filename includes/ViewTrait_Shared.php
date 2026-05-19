@@ -310,7 +310,7 @@ trait ViewTrait_Shared {
 		if (is_object($this->logic) && method_exists($this->logic, 'getDefaultOptions')) {
 			try {
 				$defaults = $this->logic->getDefaultOptions();
-			} catch (Throwable $e) {
+			} catch (Throwable $e) { // allow-silent-catch: getDefaultOptions() is best-effort; empty array merges with getFallbackOptionDefaults() below
 				$defaults = array();
 			}
 		}

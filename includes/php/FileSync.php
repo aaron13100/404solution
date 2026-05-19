@@ -40,8 +40,7 @@ class ABJ_404_Solution_FileSync {
 		try {
 			$contents = $fileUtils->readFileContents($filePath, false);
 			return $contents;
-		} catch (Exception $e) {
-			// File doesn't exist or can't be read - return empty string
+		} catch (Exception $e) { // allow-silent-catch: TOCTOU-safe file read; missing or unreadable file returns empty, caller treats as "no lock owner"
 			return "";
 		}
 	}

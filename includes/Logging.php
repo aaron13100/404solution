@@ -612,7 +612,7 @@ class ABJ_404_Solution_Logging {
                 return "Log file not readable";
             }
 
-        } catch (Exception $e) {
+        } catch (Exception $e) { // allow-silent-catch: log excerpt for support bundle; "Error reading log file" is itself diagnostic and gets embedded in the bundle output
             return "Error reading log file";
         }
 
@@ -1026,7 +1026,7 @@ class ABJ_404_Solution_Logging {
             }
 
             return 'abj404_debug_' . $debugFileKey . '.txt';
-        } catch (\Throwable $e) {
+        } catch (\Throwable $e) { // allow-silent-catch: debug filename derivation; fallback to default name still produces a valid path for log writes
             return 'abj404_debug.txt';
         }
     }

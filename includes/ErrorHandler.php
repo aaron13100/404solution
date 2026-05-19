@@ -310,7 +310,7 @@ class ABJ_404_Solution_ErrorHandler {
 			} elseif (function_exists('is_super_admin') && is_super_admin()) {
 				$canShowDetails = true;
 			}
-		} catch (Throwable $e) {
+		} catch (Throwable $e) { // allow-silent-catch: admin-status detection in fatal handler; WP capability API may itself be broken, default to hiding details
 			$canShowDetails = false;
 		}
 
@@ -493,7 +493,7 @@ class ABJ_404_Solution_ErrorHandler {
                     if (is_object($logic) && method_exists($logic, 'userIsPluginAdmin')) {
                         $isPluginAdmin = $logic->userIsPluginAdmin();
                     }
-                } catch (Throwable $e) {
+                } catch (Throwable $e) { // allow-silent-catch: admin-status detection; PluginLogic may be the broken component, fall through to WP capability check
                     $isPluginAdmin = null;
                 }
             }

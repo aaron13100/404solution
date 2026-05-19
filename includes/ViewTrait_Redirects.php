@@ -513,8 +513,7 @@ trait ViewTrait_Redirects {
                 'id_and_type' => is_string($topIdAndType) ? $topIdAndType : '',
                 'type_label' => $typeLabel,
             );
-        } catch (\Throwable $e) {
-            // Spell-checker may fail on some URLs — degrade gracefully
+        } catch (\Throwable $e) { // allow-silent-catch: spell-checker may fail on some URLs (encoding, length); null signals "no suggestion" which the caller already handles
             return null;
         }
     }

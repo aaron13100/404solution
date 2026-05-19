@@ -60,7 +60,7 @@ class ABJ_404_Solution_ViewBuildPendingResponseBuilder {
         if (is_object($abj404dao) && method_exists($abj404dao, 'getViewBuildProgress')) {
             try {
                 $progress = $abj404dao->getViewBuildProgress();
-            } catch (Throwable $ignored) {
+            } catch (Throwable $ignored) { // allow-silent-catch: progress lookup is best-effort for the pending-build response; null falls through to the exception's own progress text
                 $progress = null;
             }
         }

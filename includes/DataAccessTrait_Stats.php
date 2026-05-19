@@ -181,7 +181,7 @@ trait ABJ_404_Solution_DataAccess_StatsTrait {
         $currentMaxLogId = -1;
         try {
             $currentMaxLogId = intval($this->getMaxLogId());
-        } catch (Throwable $unused) {
+        } catch (Throwable $unused) { // allow-silent-catch: cache-key derivation; -1 means "no cached entry, recompute" which is the correct degraded behavior
             $currentMaxLogId = -1;
         }
 

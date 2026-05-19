@@ -313,7 +313,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildLockAndCronTrait {
             $optionName = $this->getLowercasePrefix() . 'abj404_view_build_lock_writer_probe';
             try {
                 $nonce = bin2hex(random_bytes(8));
-            } catch (\Throwable $t) {
+            } catch (\Throwable $t) { // allow-silent-catch: random_bytes unavailable on some hosts; mt_rand fallback is sufficient for a disposable write-probe nonce
                 $nonce = (string)mt_rand() . '_' . (string)microtime(true);
             }
             update_option($optionName, $nonce, false);

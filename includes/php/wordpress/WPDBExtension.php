@@ -15,9 +15,9 @@ if (version_compare(PHP_VERSION, '7.0.0', '>=')) {
             try {
                 $result = $this->strip_invalid_text_from_query($query);
                 return is_string($result) ? $result : null;
-            } catch (Exception $e) {
+            } catch (Exception $e) { // allow-silent-catch: strip_invalid_text_from_query wrapper; null signals "no usable result" and caller falls back to original query
                 return null;
-            } catch (Error $e) {
+            } catch (Error $e) { // allow-silent-catch: PHP 7+ Error from protected method access; same null fallback as Exception path
                 return null;
             }
         }
@@ -37,7 +37,7 @@ if (version_compare(PHP_VERSION, '7.0.0', '>=')) {
                     return 'WP_Error: ' . $resultMixed->get_error_message();
                 }
                 return is_string($result) ? $result : null;
-            } catch (Exception $e) {
+            } catch (Exception $e) { // allow-silent-catch: strip_invalid_text_from_query wrapper; null signals "no usable result" and caller falls back to original query
                 return null;
             }
         }

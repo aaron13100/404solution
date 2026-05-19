@@ -112,9 +112,7 @@ trait ABJ_404_Solution_DataAccess_QueryTimeoutsTrait {
                 /** @var wpdb $wpdb */
                 $dbVersion = $wpdb->db_version() ?? '';
             }
-        } catch (\Throwable $e) {
-            // Mockery mocks, plain stdClass, or other test doubles may not
-            // have db_version(). Default to MySQL (not MariaDB).
+        } catch (\Throwable $e) { // allow-silent-catch: test doubles / early-boot wpdb may lack db_version(); defaulting to MySQL (no MariaDB timeout syntax) is safe
             $dbVersion = '';
         }
         return stripos($dbVersion, 'mariadb') !== false;

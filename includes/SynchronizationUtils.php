@@ -385,15 +385,15 @@ class ABJ_404_Solution_SynchronizationUtils {
     	if (function_exists("random_bytes")) {
     	    try {
     		  $bytes = random_bytes(max(1, (int)ceil(13 / 2)));
-    	    } catch (Exception $e) {
-    	        $bytes = null; // don't care.
+    	    } catch (Exception $e) { // allow-silent-catch: random_bytes unavailable; fall through to openssl then uniqid
+    	        $bytes = null;
     	    }
     	}
-    	
+
     	if ($bytes == null && function_exists("openssl_random_pseudo_bytes")) {
     	    try {
     		  $bytes = openssl_random_pseudo_bytes((int)ceil(13 / 2));
-    	    } catch (Exception $e) {
+    	    } catch (Exception $e) { // allow-silent-catch: openssl fallback unavailable; fall through to uniqid
     	      $bytes = null;
     	    }
     	}

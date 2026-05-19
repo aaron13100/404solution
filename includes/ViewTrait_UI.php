@@ -254,7 +254,7 @@ trait ViewTrait_UI {
         // render.
         try {
             $builtAt = (int)$this->dao->getViewDoneBuiltAtTimestamp();
-        } catch (\Throwable $e) {
+        } catch (\Throwable $e) { // allow-silent-catch: freshness label is a footer cosmetic; DAO stub failures must never block page render
             return 'n/a';
         }
         if ($builtAt <= 0) {
