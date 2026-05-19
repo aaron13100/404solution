@@ -90,6 +90,8 @@ return array(
     'ABJ_404_Solution_DatabaseRepairDelegate' => $base . 'includes/DatabaseRepairDelegate.php',
     'ABJ_404_Solution_DatabaseCoreInterface' => $base . 'includes/DatabaseCoreInterface.php',
     'ABJ_404_Solution_DatabaseCore' => $base . 'includes/DatabaseCore.php',
+    'ABJ_404_Solution_ContentRepositoryInterface' => $base . 'includes/ContentRepositoryInterface.php',
+    'ABJ_404_Solution_ContentRepository' => $base . 'includes/ContentRepository.php',
     'ABJ_404_Solution_DataAccess' => $base . 'includes/DataAccess.php',
     'ABJ_404_Solution_ViewBuildConfig' => $base . 'includes/ViewBuildConfig.php',
     'ABJ_404_Solution_MutationWatermark' => $base . 'includes/MutationWatermark.php',

@@ -164,7 +164,6 @@ function abj404_autoloader($class) {
 				$inc . 'DataAccessTrait_Logs.php',
 				$inc . 'DataAccessTrait_LogsHitsRebuild.php',
 				$inc . 'DataAccessTrait_Redirects.php',
-				$inc . 'DataAccessTrait_PublishedContent.php',
 				$inc . 'DataAccessTrait_Stats.php',
 				$inc . 'DataAccessTrait_ErrorClassification.php',
 				$inc . 'DataAccessTrait_SqlErrorReporting.php',
@@ -223,6 +222,12 @@ function abj404_autoloader($class) {
 			),
 			'ABJ_404_Solution_FeedbackTransport' => array(
 				$inc . 'FeedbackTransportTrait_EnvironmentExtras.php',
+			),
+			'ABJ_404_Solution_DatabaseCore' => array(
+				$inc . 'DataAccessTrait_Connection.php',
+				$inc . 'DataAccessTrait_QueryTimeouts.php',
+				$inc . 'DataAccessTrait_ErrorClassification.php',
+				$inc . 'DataAccessTrait_SqlErrorReporting.php',
 			),
 		);
 	}
@@ -371,8 +376,10 @@ if (!function_exists('abj404_shortCodeListener')) {
 				$inc . 'ViewTrait_Redirects.php',
 				$inc . 'ViewTrait_RedirectsTable.php',
 				$inc . 'ViewTrait_Logs.php',
-				// DataAccess + traits
+				// DataAccess + traits + extracted modules
 				$inc . 'DataAccess.php',
+				$inc . 'ContentRepositoryInterface.php',
+				$inc . 'ContentRepository.php',
 				$inc . 'DataAccessTrait_Maintenance.php',
 				$inc . 'DataAccessTrait_ViewQueries.php',
 				$inc . 'DataAccessTrait_Logs.php',

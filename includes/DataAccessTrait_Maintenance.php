@@ -257,73 +257,29 @@ trait ABJ_404_Solution_DataAccess_MaintenanceTrait {
         }
     }
 
+    // Delegations to ContentRepository (Phase 1 refactor).
+
     /**
      * @param int|string $post_id
      * @return string|null
      */
     function getOldSlug($post_id) {
-    	// Sanitize post_id to prevent SQL injection
-    	$post_id = absint($post_id);
-
-    	// we order by meta_id desc so that the first row will have the most recent value.
-    	$query = "select meta_value from {wp_postmeta} \nwhere post_id = {post_id} " .
-    		" and meta_key = '_wp_old_slug' \n" .
-    		" order by meta_id desc";
-    	$query = $this->f->str_replace('{post_id}', (string)$post_id, $query);
-
-    	$results = $this->queryAndGetResults($query);
-
-    	$rows = $results['rows'];
-    	if ($rows == null || empty($rows)) {
-    		return null;
-    	}
-
-    	$rows = is_array($rows) ? $rows : array();
-    	$row = is_array($rows[0] ?? null) ? $rows[0] : array();
-    	return isset($row['meta_value']) && is_string($row['meta_value']) ? $row['meta_value'] : null;
+        return $this->contentRepo->getOldSlug($post_id);
     }
 
     /** @return void */
     function truncatePermalinkCacheTable(): void {
-        global $wpdb;
-
-        $query = "truncate table {wp_abj404_permalink_cache}";
-        $this->queryAndGetResults($query);
-
-        // Invalidate coverage ratio since permalink count changed
-        abj_service('ngram_filter')->invalidateCoverageCaches();
+        $this->contentRepo->truncatePermalinkCacheTable();
     }
 
     /** @param int $post_id @return void */
     function removeFromPermalinkCache(int $post_id): void {
-        global $wpdb;
-
-        $query = "delete from {wp_abj404_permalink_cache} where id = %d";
-        $this->queryAndGetResults($query, array('query_params' => array($post_id)));
-
-        // Invalidate coverage ratio since permalink count changed
-        abj_service('ngram_filter')->invalidateCoverageCaches();
+        $this->contentRepo->removeFromPermalinkCache($post_id);
     }
 
     /** @return array<int, array<string, mixed>>|null */
     function getIDsNeededForPermalinkCache() {
-        $abj404logic = abj_service('plugin_logic');
-
-        // get the valid post types
-        $options = $abj404logic->getOptions();
-        $recognizedPostTypes = $this->buildPostTypeSqlList($options);
-        if ($recognizedPostTypes === '') {
-            return null;
-        }
-
-        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getIDsNeededForPermalinkCache.sql");
-        $query = $this->f->str_replace('{recognizedPostTypes}', $recognizedPostTypes, $query);
-
-        $results = $this->queryAndGetResults($query);
-
-        /** @var array<int, array<string, mixed>>|null $rows */
-        $rows = $results['rows'];
-        return $rows;
+        return $this->contentRepo->getIDsNeededForPermalinkCache();
     }
 
     /**
@@ -331,36 +287,15 @@ trait ABJ_404_Solution_DataAccess_MaintenanceTrait {
      * @return string|null
      */
     function getPermalinkFromCache($id) {
-        // Sanitize id to prevent SQL injection
-        $id = absint($id);
-        $query = "select url from {wp_abj404_permalink_cache} where id = " . $id;
-        $results = $this->queryAndGetResults($query);
-
-        $rows = is_array($results['rows']) ? $results['rows'] : array();
-        if (empty($rows)) {
-            return null;
-        }
-
-        $row1 = is_array($rows[0] ?? null) ? $rows[0] : array();
-        return isset($row1['url']) && is_string($row1['url']) ? $row1['url'] : null;
+        return $this->contentRepo->getPermalinkFromCache($id);
     }
 
     /**
-     * Batch-fetch permalinks for multiple IDs from the permalink cache.
-     *
      * @param array<int, int> $ids
-     * @return array<int, object> Rows with id and url columns
+     * @return array<int, object>
      */
     function getPermalinksByIds(array $ids) {
-        if (empty($ids)) {
-            return array();
-        }
-        $sanitized = array_map('absint', $ids);
-        $placeholders = implode(',', $sanitized);
-        $query = "select id, url from {wp_abj404_permalink_cache} where id in (" . $placeholders . ")";
-        $query = $this->doTableNameReplacements($query);
-        $results = $this->queryAndGetResults($query);
-        return is_array($results['rows']) ? $results['rows'] : array();
+        return $this->contentRepo->getPermalinksByIds($ids);
     }
 
     /**
@@ -368,17 +303,7 @@ trait ABJ_404_Solution_DataAccess_MaintenanceTrait {
      * @return array<string, mixed>|null
      */
     function getPermalinkEtcFromCache($id) {
-        // Sanitize id to prevent SQL injection
-        $id = absint($id);
-        $query = "select id, url, meta, url_length, post_parent from {wp_abj404_permalink_cache} where id = " . $id;
-        $results = $this->queryAndGetResults($query);
-
-        $rows = is_array($results['rows']) ? $results['rows'] : array();
-        if (empty($rows)) {
-            return null;
-        }
-
-        return is_array($rows[0] ?? null) ? $rows[0] : null;
+        return $this->contentRepo->getPermalinkEtcFromCache($id);
     }
 
     /**
@@ -407,34 +332,12 @@ trait ABJ_404_Solution_DataAccess_MaintenanceTrait {
      * @return void
      */
     function storeSpellingPermalinksToCache(string $requestedURLRaw, $returnValue): void {
-    	$query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/insertSpellingCache.sql");
-
-        // Sanitize invalid UTF-8 sequences before storing to database
-        // This prevents "Could not perform query because it contains invalid data" errors
-        // when URLs contain invalid UTF-8 byte sequences (e.g., %c1%1c from scanner probes)
-        $cleanURL = $this->f->sanitizeInvalidUTF8($requestedURLRaw);
-
-        $query = $this->f->str_replace('{url}', esc_sql($cleanURL), $query);
-        $jsonEncoded = json_encode($returnValue);
-        $query = $this->f->str_replace('{matchdata}', esc_sql(is_string($jsonEncoded) ? $jsonEncoded : ''), $query);
-
-        $this->queryAndGetResults($query);
+        $this->contentRepo->storeSpellingPermalinksToCache($requestedURLRaw, $returnValue);
     }
 
-    /**
-     * @cache-write-audit: opt-out — spelling_cache is itself the cache;
-     * SpellChecker recomputes lookups on demand from {wp_abj404_redirects}
-     * and {wp_abj404_permalink_cache}, neither of which derives a transient
-     * from spelling_cache rows. A grep for `spelling_cache` against
-     * includes/ confirms no transient/option keys depend on it. No
-     * dependent caches to invalidate.
-     *
-     * @return void
-     */
+    /** @return void */
     function deleteSpellingCache(): void {
-        $query = "truncate table {wp_abj404_spelling_cache}";
-
-        $this->queryAndGetResults($query);
+        $this->contentRepo->deleteSpellingCache();
     }
 
     /**
@@ -651,22 +554,7 @@ trait ABJ_404_Solution_DataAccess_MaintenanceTrait {
      * @return mixed
      */
     function getSpellingPermalinksFromCache(string $requestedURLRaw) {
-        // Sanitize invalid UTF-8 before SQL to prevent database errors
-        $requestedURLRaw = $this->f->sanitizeInvalidUTF8($requestedURLRaw);
-        $query = "select id, url, matchdata from {wp_abj404_spelling_cache} where url = '" . esc_sql($requestedURLRaw) . "'";
-        $results = $this->queryAndGetResults($query);
-
-        $rows = is_array($results['rows']) ? $results['rows'] : array();
-
-        if (empty($rows)) {
-            return array();
-        }
-
-        $row = is_array($rows[0] ?? null) ? $rows[0] : array();
-        $json = isset($row['matchdata']) && is_string($row['matchdata']) ? $row['matchdata'] : '';
-        $returnValue = json_decode($json, true);
-
-        return $returnValue;
+        return $this->contentRepo->getSpellingPermalinksFromCache($requestedURLRaw);
     }
 
 }

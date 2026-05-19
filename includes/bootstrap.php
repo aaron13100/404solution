@@ -87,14 +87,27 @@ function abj_404_solution_init_services() {
     });
 
     /**
+     * Content repository - published-content lookups, permalink/spelling cache.
+     * Dependencies: db_core, functions, logging
+     */
+    $container->set('content_repository', function($c) {
+        return new ABJ_404_Solution_ContentRepository(
+            $c->get('db_core'),
+            $c->get('functions'),
+            $c->get('logging')
+        );
+    });
+
+    /**
      * Data access service - handles all database operations.
-     * Dependencies: functions, logging, db_core
+     * Dependencies: functions, logging, db_core, content_repository
      */
     $container->set('data_access', function($c) {
         return new ABJ_404_Solution_DataAccess(
             $c->get('functions'),
             $c->get('logging'),
-            $c->get('db_core')
+            $c->get('db_core'),
+            $c->get('content_repository')
         );
     });
 

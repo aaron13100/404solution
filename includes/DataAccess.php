@@ -29,6 +29,8 @@ require_once __DIR__ . '/DataAccessTrait_LogsHitsRebuild.php';
 require_once __DIR__ . '/DataAccessTrait_Redirects.php';
 require_once __DIR__ . '/DataAccessTrait_PublishedContent.php';
 require_once __DIR__ . '/DataAccessTrait_Stats.php';
+require_once __DIR__ . '/ContentRepositoryInterface.php';
+require_once __DIR__ . '/ContentRepository.php';
 require_once __DIR__ . '/DataAccessTrait_ErrorClassification.php';
 require_once __DIR__ . '/DataAccessTrait_SqlErrorReporting.php';
 require_once __DIR__ . '/ViewQueryFailureException.php';
@@ -145,6 +147,9 @@ class ABJ_404_Solution_DataAccess implements ABJ_404_Solution_DatabaseRepairDele
     /** @var ABJ_404_Solution_DatabaseCore The extracted database infrastructure layer. */
     private $dbCore;
 
+    /** @var ABJ_404_Solution_ContentRepository The extracted content/cache repository. */
+    private $contentRepo;
+
     /** @param bool $value @return void */
     public static function setViewSnapshotTableEnsured(bool $value): void {
         self::$viewSnapshotTableEnsured = $value;
@@ -196,7 +201,6 @@ class ABJ_404_Solution_DataAccess implements ABJ_404_Solution_DatabaseRepairDele
     use ABJ_404_Solution_DataAccess_LogsTrait;
     use ABJ_404_Solution_DataAccess_LogsHitsRebuildTrait;
     use ABJ_404_Solution_DataAccess_RedirectsTrait;
-    use ABJ_404_Solution_DataAccess_PublishedContentTrait;
     use ABJ_404_Solution_DataAccess_StatsTrait;
 
     /** Cache key for redirect status counts */
@@ -252,8 +256,9 @@ class ABJ_404_Solution_DataAccess implements ABJ_404_Solution_DatabaseRepairDele
      * @param ABJ_404_Solution_Functions|null $functions
      * @param ABJ_404_Solution_Logging|null $logging
      * @param ABJ_404_Solution_DatabaseCore|null $dbCore
+     * @param ABJ_404_Solution_ContentRepository|null $contentRepo
      */
-    public function __construct($functions = null, $logging = null, $dbCore = null) {
+    public function __construct($functions = null, $logging = null, $dbCore = null, $contentRepo = null) {
         $this->f = $functions !== null ? $functions : abj_service('functions');
         $this->logger = $logging !== null ? $logging : abj_service('logging');
 
@@ -263,11 +268,70 @@ class ABJ_404_Solution_DataAccess implements ABJ_404_Solution_DatabaseRepairDele
             $this->dbCore = new ABJ_404_Solution_DatabaseCore($this->f, $this->logger);
         }
         $this->dbCore->setRepairDelegate($this);
+
+        if ($contentRepo !== null) {
+            $this->contentRepo = $contentRepo;
+        } else {
+            $this->contentRepo = new ABJ_404_Solution_ContentRepository($this->dbCore, $this->f, $this->logger);
+        }
     }
 
     /** @return ABJ_404_Solution_DatabaseCore */
     public function getDbCore(): ABJ_404_Solution_DatabaseCore {
         return $this->dbCore;
+    }
+
+    /** @return ABJ_404_Solution_ContentRepository */
+    public function getContentRepo(): ABJ_404_Solution_ContentRepository {
+        return $this->contentRepo;
+    }
+
+    // Facade delegations to ContentRepository (Phase 1 refactor).
+
+    /**
+     * @param string $slug
+     * @param string $searchTerm
+     * @param string $limitResults
+     * @param string $orderResults
+     * @param string $extraWhereClause
+     * @return array<int, object>
+     */
+    function getPublishedPagesAndPostsIDs($slug = '', $searchTerm = '',
+        $limitResults = '', $orderResults = '', $extraWhereClause = '') {
+        return $this->contentRepo->getPublishedPagesAndPostsIDs($slug, $searchTerm,
+            $limitResults, $orderResults, $extraWhereClause);
+    }
+
+    /** @return array<int, object> */
+    function getPublishedImagesIDs() {
+        return $this->contentRepo->getPublishedImagesIDs();
+    }
+
+    /**
+     * @param string|null $slug
+     * @param int|null $limit
+     * @return array<int, object>
+     */
+    function getPublishedTags($slug = null, $limit = null) {
+        return $this->contentRepo->getPublishedTags($slug, $limit);
+    }
+
+    /**
+     * @param array<int, object> $rows
+     * @return array<int, object>
+     */
+    function addURLToTermsRows($rows) {
+        return $this->contentRepo->addURLToTermsRows($rows);
+    }
+
+    /**
+     * @param int|null $term_id
+     * @param string|null $slug
+     * @param int|null $limit
+     * @return array<int, object>
+     */
+    function getPublishedCategories($term_id = null, $slug = null, $limit = null) {
+        return $this->contentRepo->getPublishedCategories($term_id, $slug, $limit);
     }
 
     /**
@@ -567,11 +631,6 @@ class ABJ_404_Solution_DataAccess implements ABJ_404_Solution_DatabaseRepairDele
     /** @return void */
     private function ensureConnection(): void {
         $this->dbCore->ensureConnection();
-    }
-
-    /** @param string $errorText @return bool */
-    private function isCollationError(string $errorText): bool {
-        return $this->dbCore->isCollationError($errorText);
     }
 
     /** @param string $errorText @return bool */

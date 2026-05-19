@@ -572,38 +572,21 @@ trait ABJ_404_Solution_DataAccess_StatsTrait {
         return $message;
     }
 
+    // Delegations to ContentRepository (Phase 1 refactor).
+
     /** @return array<string, mixed> */
     function updatePermalinkCache() {
-    	$query = ABJ_404_Solution_Functions::readFileContents(__DIR__ .
-    		"/sql/updatePermalinkCache.sql");
-
-    	$this->setSqlBigSelects();
-
-    	$results = $this->queryAndGetResults($query);
-
-    	return $results;
+        return $this->contentRepo->updatePermalinkCache();
     }
-    
+
     /** @return array<string, mixed> */
     function updatePermalinkCacheParentPages() {
-    	$query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . 
-    		"/sql/updatePermalinkCacheParentPages.sql");
-    	
-    	// depthSoFar makes sure we don't have an infinite loop somehow.
-    	$depthSoFar = 0;
-    	$results = array();
-    	do {
-    		$results = $this->queryAndGetResults($query);
-    		$depthSoFar++;
-    	} while ($results['rows_affected'] != 0 && $depthSoFar < 15);
-    	
-    	return $results;
+        return $this->contentRepo->updatePermalinkCacheParentPages();
     }
 
     /** @return int */
     function getPermalinkCacheCount(): int {
-        $table = $this->doTableNameReplacements('{wp_abj404_permalink_cache}');
-        return $this->queryScalarInt("SELECT COUNT(*) FROM `{$table}`");
+        return $this->contentRepo->getPermalinkCacheCount();
     }
 
     /**
