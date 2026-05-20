@@ -11,14 +11,6 @@ class ABJ_404_Solution_WordPress_Connector {
 
 	/** @var self|null */
 	private static $instance = null;
-    private const REVIEW_INITIAL_DELAY_DAYS = 30;
-    private const REVIEW_ASK_LATER_DELAY_DAYS = 7;
-    private const REVIEW_CLOSE_X_SNOOZE_DAYS = 14;
-
-    /** Set to true by handleReviewResponseRedirects() when feedback POST is processed,
-     * so maybeShowReviewRequest() can display the thank-you notice instead of the form.
-     * @var bool */
-    private static $feedbackSubmitted = false;
 
     /** @var array<int, string> */
     private static $adminRuntimeErrors = array();
@@ -97,9 +89,19 @@ class ABJ_404_Solution_WordPress_Connector {
 		return $this->frontendPipeline;
 	}
 
-	private function getCapturedCountForNotification(): int {
+	public function getCapturedCountForNotification(): int {
 		return (is_object($this->statsRepository) && method_exists($this->statsRepository, 'getCapturedCountForNotification'))
 			? (int)call_user_func(array($this->statsRepository, 'getCapturedCountForNotification')) : 0;
+	}
+
+	/** @return ABJ_404_Solution_PluginLogic */
+	public function getPluginLogic() {
+		return $this->logic;
+	}
+
+	/** @return ABJ_404_Solution_Logging */
+	public function getLogger() {
+		return $this->logger;
 	}
 
 	/** @return self */
@@ -129,7 +131,7 @@ class ABJ_404_Solution_WordPress_Connector {
      * @param Throwable $e
      * @return void
      */
-    private static function reportAdminRuntimeError(string $hookName, Throwable $e): void {
+    public static function reportAdminRuntimeError(string $hookName, Throwable $e): void {
         $summary = sprintf('[%s] %s', $hookName, $e->getMessage());
         self::$adminRuntimeErrors[] = $summary;
 
@@ -152,7 +154,7 @@ class ABJ_404_Solution_WordPress_Connector {
      *
      * @return void
      */
-    private static function echoAdminRuntimeErrorNotice(): void {
+    public static function echoAdminRuntimeErrorNotice(): void {
         $errors = self::$adminRuntimeErrors;
         self::$adminRuntimeErrors = array();
 
@@ -213,9 +215,9 @@ class ABJ_404_Solution_WordPress_Connector {
         add_filter('plugin_row_meta',
             'ABJ_404_Solution_WordPress_Connector::addPluginRowMeta', 10, 2);
         add_action('admin_notices',
-            'ABJ_404_Solution_WordPress_Connector::echoDashboardNotification');
+            'ABJ_404_Solution_ReviewFeedback::echoDashboardNotification');
         add_action('admin_init',
-            'ABJ_404_Solution_WordPress_Connector::handleReviewResponseRedirects');
+            'ABJ_404_Solution_ReviewFeedback::handleResponseRedirects');
         add_action('admin_menu',
             'ABJ_404_Solution_WordPress_Connector::addMainSettingsPageLink');
         add_action('admin_enqueue_scripts',
@@ -223,7 +225,7 @@ class ABJ_404_Solution_WordPress_Connector {
         add_action('admin_enqueue_scripts',
             'ABJ_404_Solution_WordPress_Connector::enqueueSupportRequestAssetsOnPluginsPage', 11);
         add_action('admin_head',
-            'ABJ_404_Solution_WordPress_Connector::outputCriticalThemeCSS', 1);
+            'ABJ_404_Solution_AdminThemeManager::outputCriticalThemeCSS', 1);
 
         ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_echoViewLogsFor', 'ABJ_404_Solution_Ajax_Php::echoViewLogsFor');
         ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_trashLink', 'ABJ_404_Solution_Ajax_TrashLink::trashAction');
@@ -232,8 +234,8 @@ class ABJ_404_Solution_WordPress_Connector {
         ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_abj404_load_gsc_section', 'ABJ_404_Solution_Ajax_Php::loadGscSection');
         ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_abj404getTrendData', 'ABJ_404_Solution_Ajax_TrendData::echoTrendData');
         ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_abj404_crossPluginPreview', 'ABJ_404_Solution_Ajax_CrossPluginImporter::handlePreview');
-        ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_abj404_gsc_oauth_callback', 'ABJ_404_Solution_WordPress_Connector::handleGscOauthCallback');
-        ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_abj404_gsc_revoke', 'ABJ_404_Solution_WordPress_Connector::handleGscRevoke');
+        ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_abj404_gsc_oauth_callback', 'ABJ_404_Solution_GscOAuthHandler::handleCallback');
+        ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_abj404_gsc_revoke', 'ABJ_404_Solution_GscOAuthHandler::handleRevoke');
 
         ABJ_404_Solution_Ajax_EngineProfiles::registerActions();
         ABJ_404_Solution_Ajax_SettingsModeToggle::init();
@@ -552,216 +554,14 @@ class ABJ_404_Solution_WordPress_Connector {
         wp_add_inline_script('abj404-support-request-client', $bootstrap, 'before');
     }
 
-    /** Detect if dark mode is enabled from various sources.
-     * Checks WordPress admin color scheme, dark mode plugins, and browser preference.
-     *
-     * @return bool True if dark mode is detected, false otherwise
-     */
-    static function isDarkModeDetected() {
-        // Check WordPress admin color scheme
-        $current_user_id = get_current_user_id();
-        if ($current_user_id) {
-            $admin_color = get_user_meta($current_user_id, 'admin_color', true);
-            // WordPress dark color schemes: midnight, ectoplasm, coffee
-            $dark_schemes = array('midnight', 'ectoplasm', 'coffee');
-            if (in_array($admin_color, $dark_schemes)) {
-                return true;
-            }
-        }
-
-        // Check for popular dark mode plugins
-        // WP Dark Mode plugin
-        if (get_option('wp_dark_mode_enabled')) {
-            return true;
-        }
-
-        // Dark Mode for WP Dashboard plugin
-        if (get_option('dark_mode_for_wp_dashboard_enabled')) {
-            return true;
-        }
-
-        // Check if any dark mode plugin class exists
-        if (class_exists('WP_Dark_Mode') || class_exists('Dark_Mode_For_WP_Dashboard')) {
-            return true;
-        }
-
-        // Browser/OS preference will be checked via JavaScript
-        return false;
+    /** @deprecated Use ABJ_404_Solution_AdminThemeManager::isDarkModeDetected() */
+    static function isDarkModeDetected(): bool {
+        return ABJ_404_Solution_AdminThemeManager::isDarkModeDetected();
     }
 
-    /** Get the auto-selected theme based on dark mode detection.
-     *
-     * @return string The theme to use ('obsidian' for dark mode, 'default' otherwise)
-     */
-    static function getAutoSelectedTheme() {
-        if (self::isDarkModeDetected()) {
-            // Default to obsidian for dark mode (can be changed to 'neon' if preferred)
-            return 'obsidian';
-        }
-        return 'default';
-    }
-
-    /** Output critical theme CSS inline to prevent FOUC (Flash of Unstyled Content).
-     * This outputs the CSS variables for the selected theme directly in the <head>
-     * before any external CSS files load, eliminating the flash when a custom theme is selected.
-     *
-     * Additionally, this sets the data-theme attribute on both HTML and body elements
-     * via a synchronous script, ensuring the attribute exists before CSS is parsed.
-     */
-    /** @return void */
-    static function outputCriticalThemeCSS() {
-        try {
-            // Only run on our plugin pages
-            if (!array_key_exists('abj404_settingsPageName', $GLOBALS) ||
-                !array_key_exists('page', $_GET) ||
-                $_GET['page'] != ABJ404_PP) {
-                return;
-            }
-
-            $logic = abj_service('plugin_logic');
-            $options = $logic->getOptions();
-            $theme = (isset($options['admin_theme']) && is_string($options['admin_theme'])) ? $options['admin_theme'] : 'default';
-
-            // Check if auto dark mode detection is enabled (default: enabled)
-            $auto_dark_mode = !isset($options['disable_auto_dark_mode']) || $options['disable_auto_dark_mode'] != '1';
-
-            // If theme is 'default' and auto dark mode is enabled, check for dark mode
-            if ($theme === 'default' && $auto_dark_mode) {
-                $theme = self::getAutoSelectedTheme();
-            }
-
-            // Sanitize theme value - only allow specific values
-            $allowed_themes = array('default', 'calm', 'mono', 'neon', 'obsidian');
-            if (!in_array($theme, $allowed_themes)) {
-                $theme = 'default';
-            }
-
-            // For 'default' theme, don't set data-theme attribute
-            // This respects WordPress admin color scheme (default/Fresh is light)
-            // and avoids overriding it with browser dark mode preference
-            if ($theme === 'default') {
-                // No theme CSS needed for default - use WordPress default styling
-                // Ensure no data-theme attribute is set
-                $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/themeRemoverScript.html");
-                echo $html;
-                return;
-            }
-
-            // Output synchronous script to set data-theme attributes immediately
-            // This MUST run before CSS is parsed to prevent flash
-            // Setting on html immediately, and body as soon as it's available
-            $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/themeSetterScript.html");
-            $f = abj_service('functions');
-            $html = $f->str_replace('{theme}', esc_js($theme), $html);
-            echo $html;
-
-            // Define CSS variables for each theme
-            $themeVariables = array(
-            'mono' => array(
-                '--abj404-bg' => '#F8FAFC',
-                '--abj404-bg-muted' => '#F5F7FA',
-                '--abj404-surface' => '#ffffff',
-                '--abj404-surface-muted' => '#F1F5F9',
-                '--abj404-text' => '#111827',
-                '--abj404-text-muted' => '#6B7280',
-                '--abj404-border' => '#E5E7EB',
-                '--abj404-primary' => '#374151',
-                '--abj404-accent' => '#2563EB',
-                '--abj404-info' => '#3B82F6',
-                '--abj404-success' => '#10B981',
-                '--abj404-warning' => '#F59E0B',
-                '--abj404-danger' => '#EF4444',
-                '--abj404-focus' => '#93C5FD',
-                '--abj404-table-header' => '#F1F5F9',
-                '--abj404-row-hover' => '#F5F7FA',
-                '--abj404-row-selected' => '#DBEAFE',
-                '--abj404-badge-bg' => '#EFF1F5',
-                '--abj404-badge-text' => '#374151',
-            ),
-            'calm' => array(
-                '--abj404-bg' => '#F7FAFD',
-                '--abj404-bg-muted' => '#F1F6FE',
-                '--abj404-surface' => '#ffffff',
-                '--abj404-surface-muted' => '#E9F0FB',
-                '--abj404-text' => '#17223B',
-                '--abj404-text-muted' => '#5A6B86',
-                '--abj404-border' => '#E1E8F5',
-                '--abj404-primary' => '#1E6BD6',
-                '--abj404-accent' => '#00A27A',
-                '--abj404-info' => '#2B8AE2',
-                '--abj404-success' => '#20B67A',
-                '--abj404-warning' => '#F6A700',
-                '--abj404-danger' => '#D53F3F',
-                '--abj404-focus' => '#5AA2FF',
-                '--abj404-table-header' => '#E9F0FB',
-                '--abj404-row-hover' => '#F1F6FE',
-                '--abj404-row-selected' => '#D7E8FF',
-                '--abj404-badge-bg' => '#EEF2F8',
-                '--abj404-badge-text' => '#3E546E',
-            ),
-            'neon' => array(
-                '--abj404-bg' => '#0C0F13',
-                '--abj404-bg-muted' => '#11151A',
-                '--abj404-surface' => '#151A21',
-                '--abj404-surface-muted' => '#1B222B',
-                '--abj404-text' => '#E5EAF2',
-                '--abj404-text-muted' => '#A6B0C3',
-                '--abj404-border' => '#273141',
-                '--abj404-primary' => '#7C3AED',
-                '--abj404-accent' => '#22D3EE',
-                '--abj404-info' => '#60A5FA',
-                '--abj404-success' => '#34D399',
-                '--abj404-warning' => '#F59E0B',
-                '--abj404-danger' => '#F87171',
-                '--abj404-focus' => '#38BDF8',
-                '--abj404-table-header' => '#1F2732',
-                '--abj404-row-hover' => '#192028',
-                '--abj404-row-selected' => '#0E2936',
-                '--abj404-badge-bg' => '#202734',
-                '--abj404-badge-text' => '#CFD8E6',
-            ),
-            'obsidian' => array(
-                '--abj404-bg' => '#0A0F1A',
-                '--abj404-bg-muted' => '#0E1522',
-                '--abj404-surface' => '#121826',
-                '--abj404-surface-muted' => '#172032',
-                '--abj404-text' => '#E6ECF7',
-                '--abj404-text-muted' => '#A9B7CC',
-                '--abj404-border' => '#223149',
-                '--abj404-primary' => '#1D4ED8',
-                '--abj404-accent' => '#A78BFA',
-                '--abj404-info' => '#60A5FA',
-                '--abj404-success' => '#22C55E',
-                '--abj404-warning' => '#F59E0B',
-                '--abj404-danger' => '#EF4444',
-                '--abj404-focus' => '#93C5FD',
-                '--abj404-table-header' => '#1B253A',
-                '--abj404-row-hover' => '#141C2C',
-                '--abj404-row-selected' => '#1A2A46',
-                '--abj404-badge-bg' => '#1A2438',
-                '--abj404-badge-text' => '#DCE6F7',
-            ),
-        );
-
-            // Output inline critical CSS if theme is selected
-            /** @var string $themeKey */
-            $themeKey = $theme;
-            if (isset($themeVariables[$themeKey])) {
-                // Build CSS variables string
-                $cssVars = '';
-                foreach ($themeVariables[$themeKey] as $var => $value) {
-                    $cssVars .= esc_html($var) . ':' . esc_html($value) . ';';
-                }
-
-                // Load template and replace placeholder
-                $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/criticalThemeCSS.html");
-                $f = abj_service('functions');
-                $html = $f->str_replace('{css_variables}', $cssVars, $html);
-                echo $html;
-            }
-        } catch (Throwable $e) {
-            self::reportAdminRuntimeError('admin_head', $e);
-        }
+    /** @deprecated Use ABJ_404_Solution_AdminThemeManager::getAutoSelectedTheme() */
+    static function getAutoSelectedTheme(): string {
+        return ABJ_404_Solution_AdminThemeManager::getAutoSelectedTheme();
     }
 
     /**
@@ -890,392 +690,14 @@ class ABJ_404_Solution_WordPress_Connector {
         return $this->getFrontendPipeline()->processRedirect($requestedURL, $redirect, $matchReason);
     }
 
-    /** Display an admin dashboard notification.
-     * e.g. There are 29 captured 404 URLs to be processed.
-     * @global type $pagenow
-     * @global type $abj404dao
-     * @global type $abj404logic
-     * @global type $abj404view
-     */
-    /** @return void */
-    static function echoDashboardNotification() {
-        $instance = self::getInstance();
-
-        if (!is_admin() || !$instance->logic->userIsPluginAdmin()) {
-            $instance->logger->logUserCapabilities("echoDashboardNotification");
-            return;
-        }
-
-        self::echoAdminRuntimeErrorNotice();
-
-        global $pagenow;
-        global $abj404view;
-
-        $isPluginPage = array_key_exists('page', $_GET) && $_GET['page'] == ABJ404_PP;
-        $isDashboard  = $pagenow == 'index.php' && !isset($_GET['page']);
-
-        // Display infrastructure notices (DB errors, stale cache, etc.) only on
-        // the plugin's own admin pages — not on the dashboard or other screens.
-        // This hook runs early in the request; rendering here ensures a notice
-        // set by a failed repair attempt is visible before later queries might
-        // auto-clear stale transients.
-        if ($isPluginPage) {
-            $dbNotice = get_transient('abj404_plugin_db_notice');
-            if (is_array($dbNotice) && isset($dbNotice['message']) && is_string($dbNotice['message'])) {
-                $type = isset($dbNotice['type']) && is_string($dbNotice['type']) ? $dbNotice['type'] : 'warning';
-                // Per owner directive: collation issues must NEVER surface as user notices.
-                // The plugin auto-recovers by running correctCollations() at query time.
-                // Skip rendering even if a stale 'collation' transient exists from a
-                // previous plugin version.
-                if ($type === 'collation') {
-                    // intentionally do not render
-                } else {
-                    // Map internal type names to WP notice CSS classes. Per the
-                    // defensive-coding philosophy, infrastructure issues the plugin
-                    // can degrade past (read-only DB, disk full, quota exceeded,
-                    // stale cache, generic warning) render as notice-warning. Only
-                    // failures that leave the plugin unable to function (e.g.
-                    // missing tables that can't be repaired) escalate to
-                    // notice-error.
-                    $warningTypes = array(
-                        'stale_permalink_cache',
-                        'warning',
-                        'read_only',
-                        'disk_full',
-                        'query_quota',
-                    );
-                    $cssClass = in_array($type, $warningTypes, true) ? 'notice-warning' : 'notice-error';
-                    echo '<div class="notice ' . esc_attr($cssClass) . '"><p>' .
-                        esc_html($dbNotice['message']) . '</p></div>';
-                }
-            }
-        }
-
-        if ($isPluginPage || $isDashboard) {
-            $captured404Count = $instance->getCapturedCountForNotification();
-            if ($instance->logic->shouldNotifyAboutCaptured404s($captured404Count)) {
-                $msg = $abj404view->getDashboardNotificationCaptured($captured404Count);
-                echo $msg;
-            }
-
-            // Show review request after 7 days of use
-            self::maybeShowReviewRequest();
-        }
+    /** @deprecated Use ABJ_404_Solution_ReviewFeedback::echoDashboardNotification() */
+    static function echoDashboardNotification(): void {
+        ABJ_404_Solution_ReviewFeedback::echoDashboardNotification();
     }
 
-    /** Handle review GET redirects and feedback POST submission on admin_init (before output).
-     *
-     * Called via the admin_init hook so wp_safe_redirect() + exit can be used safely.
-     * For feedback POST (no redirect), sets the static $feedbackSubmitted flag so
-     * maybeShowReviewRequest() can render the thank-you notice in the admin_notices hook.
-     *
-     * @return void
-     */
-    static function handleReviewResponseRedirects() {
-        if (!is_admin()) {
-            return;
-        }
-        if (!isset($_GET['page']) || $_GET['page'] !== ABJ404_PP) {
-            return;
-        }
-
-        // Handle user responses to qualification question
-        if (isset($_GET['abj404_review_response'])) {
-            $rawResponseNonce = isset($_GET['_wpnonce']) ? $_GET['_wpnonce'] : '';
-            $responseNonce = sanitize_text_field(self::normalizeRequestScalar($rawResponseNonce));
-            if ($responseNonce === '' || !wp_verify_nonce($responseNonce, 'abj404_review_response')) {
-                return;
-            }
-
-            $response = sanitize_text_field(self::normalizeRequestScalar($_GET['abj404_review_response']));
-            $allowedResponses = array('yes', 'not_yet', 'ask_later', 'close_x', 'never');
-            if (!in_array($response, $allowedResponses, true)) {
-                return;
-            }
-
-            if ($response === 'yes') {
-                // User thinks it deserves 5 stars - show review link
-                update_user_meta(get_current_user_id(), 'abj404_review_step', 'show_review_link');
-                delete_user_meta(get_current_user_id(), 'abj404_review_remind_later');
-            } elseif ($response === 'not_yet') {
-                // User doesn't think it deserves 5 stars - show feedback form
-                update_user_meta(get_current_user_id(), 'abj404_review_step', 'show_feedback');
-                delete_user_meta(get_current_user_id(), 'abj404_review_remind_later');
-            } elseif ($response === 'ask_later') {
-                // User wants to be reminded in 7 days
-                update_user_meta(get_current_user_id(), 'abj404_review_remind_later', time() + (self::REVIEW_ASK_LATER_DELAY_DAYS * 86400));
-                delete_user_meta(get_current_user_id(), 'abj404_review_step');
-            } elseif ($response === 'close_x') {
-                // Close button snoozes this prompt for at least two weeks.
-                update_user_meta(get_current_user_id(), 'abj404_review_remind_later', time() + (self::REVIEW_CLOSE_X_SNOOZE_DAYS * 86400));
-                delete_user_meta(get_current_user_id(), 'abj404_review_step');
-            } elseif ($response === 'never') {
-                // User never wants to see this - PERMANENT dismissal
-                update_user_meta(get_current_user_id(), 'abj404_review_dismissed', 'permanent');
-                delete_user_meta(get_current_user_id(), 'abj404_review_step');
-                delete_user_meta(get_current_user_id(), 'abj404_review_remind_later');
-            }
-
-            // Redirect to remove query parameter and show the appropriate notice
-            wp_safe_redirect(remove_query_arg(array('abj404_review_response', '_wpnonce')));
-            exit;
-        }
-
-        // Handle "Going to review now" button click - PERMANENT dismissal
-        if (isset($_GET['abj404_leaving_review'])) {
-            $rawLeavingReviewNonce = isset($_GET['_wpnonce']) ? $_GET['_wpnonce'] : '';
-            $leavingReviewNonce = sanitize_text_field(self::normalizeRequestScalar($rawLeavingReviewNonce));
-            if ($leavingReviewNonce !== '' && wp_verify_nonce($leavingReviewNonce, 'abj404_leaving_review')) {
-                update_user_meta(get_current_user_id(), 'abj404_review_dismissed', 'permanent');
-                delete_user_meta(get_current_user_id(), 'abj404_review_step');
-                delete_user_meta(get_current_user_id(), 'abj404_review_remind_later');
-
-                // Open review page in new tab and redirect current page to clean URL
-                $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/reviewRedirectScript.html");
-                $f = abj_service('functions');
-                $html = $f->str_replace('{review_url}', esc_js('https://wordpress.org/support/plugin/404-solution/reviews/#new-post'), $html);
-                echo $html;
-                wp_safe_redirect(remove_query_arg(array('abj404_leaving_review', '_wpnonce')));
-                exit;
-            }
-        }
-
-        // Handle feedback POST submission - PERMANENT dismissal
-        $rawFeedbackNonce = isset($_POST['abj404_feedback_nonce']) ? $_POST['abj404_feedback_nonce'] : '';
-        $feedbackNonce = sanitize_text_field(self::normalizeRequestScalar($rawFeedbackNonce));
-        if (isset($_POST['abj404_submit_feedback']) &&
-            $feedbackNonce !== '' &&
-            wp_verify_nonce($feedbackNonce, 'abj404_submit_feedback')) {
-
-            // Get selected issues (checkboxes) and normalize malformed inputs safely.
-            $issuesRaw = isset($_POST['feedback_issues']) ? $_POST['feedback_issues'] : array();
-            $issues = self::sanitizeFeedbackIssues($issuesRaw);
-
-            $feedbackDetailsRaw = isset($_POST['feedback_details']) ? $_POST['feedback_details'] : '';
-            $feedback_details = sanitize_textarea_field(self::normalizeRequestScalar($feedbackDetailsRaw));
-
-            // Prepare feedback data
-            $feedback_data = array(
-                'timestamp' => current_time('mysql'),
-                'user_id' => get_current_user_id(),
-                'site_url' => get_site_url(),
-                'issues' => $issues,
-                'details' => $feedback_details,
-                'wp_version' => get_bloginfo('version'),
-                'plugin_version' => ABJ404_VERSION,
-                'php_version' => PHP_VERSION
-            );
-
-            // Store feedback in database
-            $all_feedback_raw = get_option('abj404_user_feedback', array());
-            $all_feedback = is_array($all_feedback_raw) ? $all_feedback_raw : array();
-            $all_feedback[] = $feedback_data;
-            update_option('abj404_user_feedback', $all_feedback);
-
-            // Email feedback to plugin author
-            self::emailFeedback($feedback_data);
-
-            // PERMANENT dismissal - never show again
-            update_user_meta(get_current_user_id(), 'abj404_review_dismissed', 'permanent');
-            delete_user_meta(get_current_user_id(), 'abj404_review_step');
-            delete_user_meta(get_current_user_id(), 'abj404_review_remind_later');
-
-            // Signal to maybeShowReviewRequest() to render the thank-you notice
-            self::$feedbackSubmitted = true;
-        }
-    }
-
-    /** Display a review request notification after a sustained period of plugin use.
-     * Uses a qualification question to ensure only satisfied users are directed to leave reviews.
-     * Unhappy users are directed to provide feedback instead.
-     *
-     * Guarantees:
-     * - Never shows again after user clicks "Never ask again"
-     * - Never shows again after user clicks review link button
-     * - Never shows again after user submits feedback
-     * - Shows again in 7 days after "Ask again later"
-     * - Shows again in 14 days after close "X"
-     */
-    /** @return void */
-    static function maybeShowReviewRequest() {
-        // Only show on 404 Solution plugin pages
-        if (!isset($_GET['page']) || $_GET['page'] !== ABJ404_PP) {
-            return;
-        }
-
-        // If feedback was submitted this request (processed early by handleReviewResponseRedirects),
-        // show the thank-you notice immediately — before any other checks, since those checks
-        // would bail because handleReviewResponseRedirects already set dismissed=permanent.
-        if (self::$feedbackSubmitted) {
-            $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/feedbackSuccessNotice.html");
-            echo $html;
-            return;
-        }
-
-        // Check if user permanently dismissed this
-        $dismissed = get_user_meta(get_current_user_id(), 'abj404_review_dismissed', true);
-        if ($dismissed === 'permanent') {
-            return;
-        }
-
-        // Check if user asked to be reminded later
-        $remind_later = get_user_meta(get_current_user_id(), 'abj404_review_remind_later', true);
-        if ($remind_later && time() < $remind_later) {
-            // Not time yet to remind
-            return;
-        }
-
-        // Get plugin installation/activation time
-        $installed_time = get_option('abj404_installed_time');
-        if (!$installed_time) {
-            // First time - record installation time
-            $installed_time = time();
-            update_option('abj404_installed_time', $installed_time);
-            return;
-        }
-
-        // Show review request after enough real usage time has passed.
-        $days_installed = (time() - $installed_time) / 86400;
-        if ($days_installed < self::REVIEW_INITIAL_DELAY_DAYS) {
-            return;
-        }
-
-        // Check what step we're on
-        $review_step = get_user_meta(get_current_user_id(), 'abj404_review_step', true);
-
-        if ($review_step === 'show_review_link') {
-            // Step 2a: User said YES - show review link
-            self::showReviewLinkNotice();
-        } elseif ($review_step === 'show_feedback') {
-            // Step 2b: User said NOT YET - show feedback form
-            self::showFeedbackFormNotice();
-        } else {
-            // Step 1: Initial qualification question
-            self::showQualificationQuestion();
-        }
-    }
-
-    /** Email feedback to plugin author.
-     * @param array<string, mixed> $feedback_data
-     * @return void
-     */
-    private static function emailFeedback($feedback_data) {
-        $to = '404solution@ajexperience.com';
-        $subject = '404 Solution Feedback from ' . get_bloginfo('name');
-
-        $message = "New feedback received from 404 Solution plugin\n\n";
-        $message .= "Site: " . $feedback_data['site_url'] . "\n";
-        $message .= "Date: " . $feedback_data['timestamp'] . "\n";
-        $message .= "WordPress Version: " . $feedback_data['wp_version'] . "\n";
-        $message .= "Plugin Version: " . $feedback_data['plugin_version'] . "\n";
-        $message .= "PHP Version: " . $feedback_data['php_version'] . "\n\n";
-
-        $message .= "Issues Selected:\n";
-        $feedbackIssues = isset($feedback_data['issues']) && is_array($feedback_data['issues']) ? $feedback_data['issues'] : array();
-        if (!empty($feedbackIssues)) {
-            foreach ($feedbackIssues as $issue) {
-                $issueStr = is_string($issue) ? $issue : (string)$issue;
-                $message .= "  - " . ucfirst(str_replace('_', ' ', $issueStr)) . "\n";
-            }
-        } else {
-            $message .= "  None selected\n";
-        }
-
-        $message .= "\nAdditional Details:\n";
-        $message .= $feedback_data['details'] ? $feedback_data['details'] : "(No additional details provided)\n";
-
-        $headers = array('Content-Type: text/plain; charset=UTF-8');
-
-        wp_mail($to, $subject, $message, $headers);
-    }
-
-    /** Step 1: Show the initial qualification question.
-     * @return void
-     */
-    private static function showQualificationQuestion() {
-        $yes_url = wp_nonce_url(
-            add_query_arg('abj404_review_response', 'yes'),
-            'abj404_review_response'
-        );
-        $not_yet_url = wp_nonce_url(
-            add_query_arg('abj404_review_response', 'not_yet'),
-            'abj404_review_response'
-        );
-        $ask_later_url = wp_nonce_url(
-            add_query_arg('abj404_review_response', 'ask_later'),
-            'abj404_review_response'
-        );
-        $never_url = wp_nonce_url(
-            add_query_arg('abj404_review_response', 'never'),
-            'abj404_review_response'
-        );
-        $close_url = wp_nonce_url(
-            add_query_arg('abj404_review_response', 'close_x'),
-            'abj404_review_response'
-        );
-
-        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/reviewQualificationQuestion.html");
-        $f = abj_service('functions');
-        $html = $f->str_replace('{yes_url}', esc_attr($yes_url), $html);
-        $html = $f->str_replace('{not_yet_url}', esc_attr($not_yet_url), $html);
-        $html = $f->str_replace('{ask_later_url}', esc_attr($ask_later_url), $html);
-        $html = $f->str_replace('{never_url}', esc_attr($never_url), $html);
-        $html = $f->str_replace('{close_url}', esc_attr($close_url), $html);
-        echo $html;
-    }
-
-    /** Step 2a: User said YES - show review link and thank you.
-     * @return void
-     */
-    private static function showReviewLinkNotice() {
-        // URL that marks as done when they click to go leave review
-        $review_link_url = wp_nonce_url(
-            add_query_arg('abj404_leaving_review', '1'),
-            'abj404_leaving_review'
-        );
-
-        $never_url = wp_nonce_url(
-            add_query_arg('abj404_review_response', 'never'),
-            'abj404_review_response'
-        );
-        $close_url = wp_nonce_url(
-            add_query_arg('abj404_review_response', 'close_x'),
-            'abj404_review_response'
-        );
-
-        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/reviewLinkNotice.html");
-        $f = abj_service('functions');
-        $html = $f->str_replace('{review_link_url}', esc_attr($review_link_url), $html);
-        $html = $f->str_replace('{never_url}', esc_attr($never_url), $html);
-        $html = $f->str_replace('{close_url}', esc_attr($close_url), $html);
-        echo $html;
-    }
-
-    /** Step 2b: User said NOT YET - show feedback form.
-     * @return void
-     */
-    private static function showFeedbackFormNotice() {
-        $never_url = wp_nonce_url(
-            add_query_arg('abj404_review_response', 'never'),
-            'abj404_review_response'
-        );
-        $close_url = wp_nonce_url(
-            add_query_arg('abj404_review_response', 'close_x'),
-            'abj404_review_response'
-        );
-
-        // Get nonce field HTML
-        ob_start();
-        wp_nonce_field('abj404_submit_feedback', 'abj404_feedback_nonce');
-        $nonce_field = ob_get_clean();
-        if ($nonce_field === false) { $nonce_field = ''; }
-
-        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/feedbackFormNotice.html");
-        $f = abj_service('functions');
-        $html = $f->str_replace('{nonce_field}', $nonce_field, $html);
-        $html = $f->str_replace('{never_url}', esc_attr($never_url), $html);
-        $html = $f->str_replace('{close_url}', esc_attr($close_url), $html);
-        echo $html;
+    /** @deprecated Use ABJ_404_Solution_ReviewFeedback::handleResponseRedirects() */
+    static function handleReviewResponseRedirects(): void {
+        ABJ_404_Solution_ReviewFeedback::handleResponseRedirects();
     }
 
     /**
@@ -1285,7 +707,7 @@ class ABJ_404_Solution_WordPress_Connector {
      * @param mixed $value
      * @return mixed
      */
-    private static function safeWpUnslash($value) {
+    public static function safeWpUnslash($value) {
         if (!function_exists('wp_unslash')) {
             return $value;
         }
@@ -1303,7 +725,7 @@ class ABJ_404_Solution_WordPress_Connector {
      * @param mixed $value
      * @return string
      */
-    private static function normalizeRequestScalar($value) {
+    public static function normalizeRequestScalar($value) {
         $value = self::safeWpUnslash($value);
         if (!is_scalar($value)) {
             return '';
@@ -1317,7 +739,7 @@ class ABJ_404_Solution_WordPress_Connector {
      * @param mixed $issuesRaw
      * @return array<int, string>
      */
-    private static function sanitizeFeedbackIssues($issuesRaw) {
+    public static function sanitizeFeedbackIssues($issuesRaw) {
         $issuesRaw = self::safeWpUnslash($issuesRaw);
         if (!is_array($issuesRaw)) {
             $issuesRaw = array($issuesRaw);
@@ -1399,111 +821,14 @@ class ABJ_404_Solution_WordPress_Connector {
         }
     }
 
-    /**
-     * AJAX handler: OAuth callback from Google (custom mode) or from the
-     * centralized Worker (centralized mode).
-     *
-     * In centralized mode the Worker has already exchanged the authorization
-     * code for tokens, so the callback URL contains access_token, refresh_token,
-     * and expires_in as query parameters. The `abj404_gsc_centralized` flag
-     * distinguishes the two flows.
-     *
-     * @return void
-     */
-    public static function handleGscOauthCallback() {
-        if (!current_user_can('manage_options')) {
-            wp_die(__('Insufficient permissions.', '404-solution'), 403);
-        }
-
-        $logger = abj_service('logging');
-        $gsc    = new ABJ_404_Solution_GoogleSearchConsole($logger);
-
-        $isCentralized = isset($_GET['abj404_gsc_centralized']) && $_GET['abj404_gsc_centralized'] === '1';
-
-        if ($isCentralized) {
-            self::handleCentralizedGscCallback($gsc);
-            return;
-        }
-
-        // --- Custom-credentials flow (original behavior) ---
-        $code  = isset($_GET['code'])  ? sanitize_text_field((string)$_GET['code'])  : '';
-        $state = isset($_GET['state']) ? sanitize_text_field((string)$_GET['state']) : '';
-
-        // Verify state nonce to prevent CSRF.
-        if (!wp_verify_nonce($state, 'abj404_gsc_oauth')) {
-            wp_die(__('Security check failed.', '404-solution'), 403);
-        }
-
-        if ($code === '') {
-            // User denied access or error occurred.
-            $gsc->setLastOAuthError(__('Authorization was denied or cancelled.', '404-solution'));
-            wp_safe_redirect(admin_url('options-general.php?page=' . ABJ404_PP . '&subpage=abj404_options'));
-            exit;
-        }
-
-        $error = $gsc->exchangeCodeForToken($code);
-
-        if ($error !== '') {
-            $gsc->setLastOAuthError($error);
-        }
-        wp_safe_redirect(admin_url('options-general.php?page=' . ABJ404_PP . '&subpage=abj404_options'));
-        exit;
+    /** @deprecated Use ABJ_404_Solution_GscOAuthHandler::handleCallback() */
+    public static function handleGscOauthCallback(): void {
+        ABJ_404_Solution_GscOAuthHandler::handleCallback();
     }
 
-    /**
-     * Handle the centralized OAuth callback. Tokens arrive as URL parameters
-     * from the Worker, so no code exchange is needed.
-     *
-     * @param ABJ_404_Solution_GoogleSearchConsole $gsc
-     * @return void
-     */
-    private static function handleCentralizedGscCallback(ABJ_404_Solution_GoogleSearchConsole $gsc): void {
-        $nonce = isset($_GET['nonce']) ? sanitize_text_field((string)$_GET['nonce']) : '';
-
-        // Verify round-tripped nonce for CSRF protection.
-        if (!wp_verify_nonce($nonce, 'abj404_gsc_oauth')) {
-            wp_die(__('Security check failed.', '404-solution'), 403);
-        }
-
-        // Check for error from the Worker.
-        $error = isset($_GET['abj404_gsc_error']) ? sanitize_text_field((string)$_GET['abj404_gsc_error']) : '';
-        if ($error !== '') {
-            $gsc->setLastOAuthError($error);
-            wp_safe_redirect(admin_url('options-general.php?page=' . ABJ404_PP . '&subpage=abj404_options'));
-            exit;
-        }
-
-        $accessToken  = isset($_GET['access_token'])  ? sanitize_text_field((string)$_GET['access_token'])  : '';
-        $refreshToken = isset($_GET['refresh_token']) ? sanitize_text_field((string)$_GET['refresh_token']) : '';
-        $expiresIn    = isset($_GET['expires_in'])    ? (int)$_GET['expires_in']                             : 3600;
-
-        if ($accessToken === '') {
-            $gsc->setLastOAuthError(__('No access token received from authorization.', '404-solution'));
-            wp_safe_redirect(admin_url('options-general.php?page=' . ABJ404_PP . '&subpage=abj404_options'));
-            exit;
-        }
-
-        $gsc->storeCentralizedTokens($accessToken, $refreshToken, $expiresIn);
-
-        wp_safe_redirect(admin_url('options-general.php?page=' . ABJ404_PP . '&subpage=abj404_options'));
-        exit;
-    }
-
-    /**
-     * AJAX handler: revoke GSC authorization.
-     * @return void
-     */
-    public static function handleGscRevoke() {
-        if (!current_user_can('manage_options') || !check_admin_referer('abj404_gsc_revoke')) {
-            wp_die(__('Security check failed.', '404-solution'), 403);
-        }
-
-        $logger = abj_service('logging');
-        $gsc    = new ABJ_404_Solution_GoogleSearchConsole($logger);
-        $gsc->revokeAuthorization();
-
-        wp_safe_redirect(admin_url('options-general.php?page=' . ABJ404_PP . '&subpage=abj404_options'));
-        exit;
+    /** @deprecated Use ABJ_404_Solution_GscOAuthHandler::handleRevoke() */
+    public static function handleGscRevoke(): void {
+        ABJ_404_Solution_GscOAuthHandler::handleRevoke();
     }
 
 }
