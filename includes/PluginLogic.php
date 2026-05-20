@@ -35,6 +35,27 @@ class ABJ_404_Solution_PluginLogic {
 	/** @var ABJ_404_Solution_Logging */
 	private $logger = null;
 
+	/** @var ABJ_404_Solution_RedirectsRepositoryInterface */
+	private $redirectsRepo;
+
+	/** @var ABJ_404_Solution_LogsRepositoryInterface */
+	private $logsRepo;
+
+	/** @var ABJ_404_Solution_ViewBuildOrchestratorInterface */
+	private $viewBuild;
+
+	/** @var ABJ_404_Solution_ViewReadServiceInterface */
+	private $viewRead;
+
+	/** @var ABJ_404_Solution_ContentRepositoryInterface */
+	private $contentRepo;
+
+	/** @var ABJ_404_Solution_StatsRepositoryInterface */
+	private $statsRepo;
+
+	/** @var ABJ_404_Solution_DatabaseCoreInterface */
+	private $dbCore;
+
 	/** @var ABJ_404_Solution_ImportExportService|null */
 	private $importExportService = null;
 
@@ -116,7 +137,7 @@ class ABJ_404_Solution_PluginLogic {
      * Dependencies are now explicit and visible.
      *
      * @param ABJ_404_Solution_Functions|null $functions String manipulation utilities
-     * @param ABJ_404_Solution_DataAccess|null $dataAccess Data access layer
+     * @param ABJ_404_Solution_DataAccess|null $dataAccess Data access layer (legacy, only for importDataFromPluginRedirectioner)
      * @param ABJ_404_Solution_Logging|null $logging Logging service
      */
     function __construct($functions = null, $dataAccess = null, $logging = null) {
@@ -124,6 +145,16 @@ class ABJ_404_Solution_PluginLogic {
     	$this->f = $functions !== null ? $functions : abj_service('functions');
     	$this->dao = $dataAccess !== null ? $dataAccess : abj_service('data_access');
     	$this->logger = $logging !== null ? $logging : abj_service('logging');
+
+    	/** @var ABJ_404_Solution_RedirectsRepositoryInterface&ABJ_404_Solution_LogsRepositoryInterface&ABJ_404_Solution_ViewBuildOrchestratorInterface&ABJ_404_Solution_ViewReadServiceInterface&ABJ_404_Solution_ContentRepositoryInterface&ABJ_404_Solution_StatsRepositoryInterface&ABJ_404_Solution_DatabaseCoreInterface $dao */
+    	$dao = $this->dao;
+    	$this->redirectsRepo = $dao;
+    	$this->logsRepo = $dao;
+    	$this->viewBuild = $dao;
+    	$this->viewRead = $dao;
+    	$this->contentRepo = $dao;
+    	$this->statsRepo = $dao;
+    	$this->dbCore = $dao;
 
         $urlPath = parse_url(get_home_url(), PHP_URL_PATH);
         // Fix MEDIUM #1 (5th review): Distinguish between parse failure (false) and no path (null)
@@ -380,13 +411,13 @@ class ABJ_404_Solution_PluginLogic {
             	}
             	$urlHomeDirectory = rtrim($urlHomeDirectory, '/');
                 $fromURL = $urlHomeDirectory . '/?p=' . $pageid;
-                $redirect = $this->dao->getExistingRedirectForURL($fromURL);
+                $redirect = $this->redirectsRepo->getExistingRedirectForURL($fromURL);
                 $defaultRedirect = is_scalar($options['default_redirect']) ? (string)$options['default_redirect'] : '301';
                 if (!isset($redirect['id']) || $redirect['id'] == 0) {
-                    $this->dao->setupRedirect($fromURL, (string)ABJ404_STATUS_AUTO, (string)ABJ404_TYPE_POST,
+                    $this->redirectsRepo->setupRedirect($fromURL, (string)ABJ404_STATUS_AUTO, (string)ABJ404_TYPE_POST,
                             (string)$pageid, $defaultRedirect, 0, 'page ID');
                 }
-                $this->dao->logRedirectHit($fromURL, $permalink, 'page ID');
+                $this->logsRepo->logRedirectHit($fromURL, $permalink, 'page ID');
                 $this->forceRedirect($permalink, (int)$defaultRedirect);
                 exit;
             }
@@ -572,16 +603,16 @@ class ABJ_404_Solution_PluginLogic {
             	// dipslay the user specified 404 page.
 
 	            // get the existing redirect before adding a new one.
-	            $redirect = $this->dao->getExistingRedirectForURL($requestedURL);
+	            $redirect = $this->redirectsRepo->getExistingRedirectForURL($requestedURL);
 	            $pType = is_scalar($permalink['type']) ? (string)$permalink['type'] : '';
 	            $pId = is_scalar($permalink['id']) ? (string)$permalink['id'] : '';
 	            $pLink = is_scalar($permalink['link']) ? (string)$permalink['link'] : '';
 	            $defRedir = is_scalar($options['default_redirect']) ? (string)$options['default_redirect'] : '301';
 	            if (!isset($redirect['id']) || $redirect['id'] == 0) {
-	                $this->dao->setupRedirect($requestedURL, (string)ABJ404_STATUS_CAPTURED, $pType, $pId, $defRedir, 0);
+	                $this->redirectsRepo->setupRedirect($requestedURL, (string)ABJ404_STATUS_CAPTURED, $pType, $pId, $defRedir, 0);
 	            }
 
-	            $this->dao->logRedirectHit($requestedURL, $pLink, 'user specified 404 page. ' . $reason);
+	            $this->logsRepo->logRedirectHit($requestedURL, $pLink, 'user specified 404 page. ' . $reason);
 
 	            // set cookie here to remmeber to use a 404 status when displaying the 404 page
 	            setcookie(ABJ404_PP . '_STATUS_404', 'true', time() + 20, "/");
@@ -597,10 +628,10 @@ class ABJ_404_Solution_PluginLogic {
         // give up. log the 404.
         if (@$options['capture_404'] == '1') {
             // get the existing redirect before adding a new one.
-            $redirect = $this->dao->getExistingRedirectForURL($requestedURL);
+            $redirect = $this->redirectsRepo->getExistingRedirectForURL($requestedURL);
             $defRedir2 = is_scalar($options['default_redirect']) ? (string)$options['default_redirect'] : '301';
             if (!isset($redirect['id']) || $redirect['id'] == 0) {
-                $this->dao->setupRedirect($requestedURL, (string)ABJ404_STATUS_CAPTURED, (string)ABJ404_TYPE_404_DISPLAYED, (string)ABJ404_TYPE_404_DISPLAYED, $defRedir2, 0);
+                $this->redirectsRepo->setupRedirect($requestedURL, (string)ABJ404_STATUS_CAPTURED, (string)ABJ404_TYPE_404_DISPLAYED, (string)ABJ404_TYPE_404_DISPLAYED, $defRedir2, 0);
             }
         } else {
             $optionsJson = json_encode($options);
@@ -818,7 +849,7 @@ class ABJ_404_Solution_PluginLogic {
         // move to the new log table
         if (version_compare($currentDBVersion, '1.8.0') < 0) {
             $query = "SHOW TABLES LIKE '{wp_abj404_logs}'";
-            $result = $this->dao->queryAndGetResults($query);
+            $result = $this->dbCore->queryAndGetResults($query);
             $rows = $result['rows'];
 
             // make sure empty() only sees a variable and not a function for older PHP versions, due to
@@ -827,15 +858,15 @@ class ABJ_404_Solution_PluginLogic {
             $filteredRows = is_array($rows) ? array_filter($rows) : array();
             if (!empty($filteredRows)) {
                 $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/migrateToNewLogsTable.sql");
-                $query = $this->dao->doTableNameReplacements($query);
-                $result = $this->dao->queryAndGetResults($query);
+                $query = $this->dbCore->doTableNameReplacements($query);
+                $result = $this->dbCore->queryAndGetResults($query);
 
                 // if anything was successfully imported then delete the old table.
                 if ($result['rows_affected'] > 0) {
                     $this->logger->infoMessage($result['rows_affected'] .
                             ' log rows were migrated to the new table structre.');
                     // log the rows inserted/migrated.
-                    $this->dao->queryAndGetResults('drop table ' . $this->dao->getLowercasePrefix() . 'abj404_logs');
+                    $this->dbCore->queryAndGetResults('drop table ' . $this->dbCore->getLowercasePrefix() . 'abj404_logs');
                 }
             }
         }

@@ -26,7 +26,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_TableRepairTrait {
      * @return void
      */
     function correctIssuesBefore() {
-    	$this->dao->correctDuplicateLookupValues();
+    	$this->logsRepo->correctDuplicateLookupValues();
 
     	// 3.3.4+: Repair any plugin table that was stripped of all columns by a
     	// DDL parsing bug.  The 3.3.3 bug only affected view_cache, but any future
@@ -91,7 +91,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_TableRepairTrait {
      */
     function repairStrippedViewCacheTable() {
     	foreach ($this->discoverPermanentDDLFiles() as $ddlEntry) {
-    		$tableName = $this->dao->doTableNameReplacements($ddlEntry['placeholder']);
+    		$tableName = $this->dbCore->doTableNameReplacements($ddlEntry['placeholder']);
 
     		// Positive evidence required: the file's intended DDL must declare `id`.
     		// If the file never had an `id` column, absence in the live table is
@@ -101,7 +101,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_TableRepairTrait {
     			continue;
     		}
 
-    		$liveDdl = $this->dao->getCreateTableDDL($tableName);
+    		$liveDdl = $this->dbCore->getCreateTableDDL($tableName);
 
     		// Table doesn't exist at all — nothing to repair (recovery handled elsewhere).
     		if (empty($liveDdl)) {
@@ -121,7 +121,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_TableRepairTrait {
     		// otherwise (rationale for the original DROP) was incorrect.
     		$this->logger->infoMessage("Repairing stripped plugin table " . $tableName .
     			" (missing id column — caused by DDL parsing bug). Adding id column via ALTER.");
-    		$this->dao->queryAndGetResults(
+    		$this->dbCore->queryAndGetResults(
     			"ALTER TABLE `" . $tableName . "` " .
     			"ADD COLUMN `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY FIRST"
     		);
@@ -159,8 +159,8 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_TableRepairTrait {
      * @return void
      */
     private function recoverMissingLogsHitsTable(): void {
-    	$tableName = $this->dao->doTableNameReplacements('{wp_abj404_logs_hits}');
-    	if ($this->dao->getCreateTableDDL($tableName) !== '') {
+    	$tableName = $this->dbCore->doTableNameReplacements('{wp_abj404_logs_hits}');
+    	if ($this->dbCore->getCreateTableDDL($tableName) !== '') {
     		return;
     	}
 
@@ -177,11 +177,11 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_TableRepairTrait {
     		'{wp_abj404_logs_hits}',
     		$tempDdl);
     	$finalDdl = $this->applyPluginTableCharsetCollate($finalDdl);
-    	$finalDdl = $this->dao->doTableNameReplacements($finalDdl);
+    	$finalDdl = $this->dbCore->doTableNameReplacements($finalDdl);
 
     	$this->logger->infoMessage("Recreating missing " . $tableName .
     		" (lost during the 4.1.6→4.1.7 upgrade). The scheduled rebuild will repopulate it.");
-    	$this->dao->queryAndGetResults($finalDdl);
+    	$this->dbCore->queryAndGetResults($finalDdl);
 
     	// The missing-table notice (set when ALTER TABLE failed during the 4.1.7
     	// activation) is now stale — the table has been recovered.  Clear it so
@@ -206,7 +206,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_TableRepairTrait {
      * @return void
      */
     function correctMatchData() {
-    	$this->dao->queryAndGetResults(
+    	$this->dbCore->queryAndGetResults(
     		"delete from {wp_abj404_spelling_cache} where matchdata is null or matchdata = ''",
     		array('log_errors' => false, 'skip_repair' => true)
     	);

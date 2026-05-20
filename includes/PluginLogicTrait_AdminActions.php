@@ -56,7 +56,7 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
         } else if ($action == "emptyRedirectTrash") {
             if (check_admin_referer('abj404_bulkProcess') && is_admin()) {
                 $this->doEmptyTrash('abj404_redirects');
-                $this->dao->markViewDoneInvalidatedByAdminMutation();
+                $this->viewBuild->markViewDoneInvalidatedByAdminMutation();
                 $message = __('All trashed URLs have been deleted!', '404-solution');
             } else {
                 $this->logger->debugMessage("Unexpected result. How did we get here? is_admin: " .
@@ -65,7 +65,7 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
         } else if ($action == "emptyCapturedTrash") {
             if (check_admin_referer('abj404_bulkProcess') && is_admin()) {
                 $this->doEmptyTrash('abj404_captured');
-                $this->dao->markViewDoneInvalidatedByAdminMutation();
+                $this->viewBuild->markViewDoneInvalidatedByAdminMutation();
                 $message = __('All trashed URLs have been deleted!', '404-solution');
             } else {
                 $this->logger->debugMessage("Unexpected result. How did we get here? is_admin: " .
@@ -73,15 +73,15 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
             }
         } else if ($action == "purgeRedirects") {
             if (check_admin_referer('abj404_purgeRedirects') && is_admin()) {
-                $message = $this->dao->deleteSpecifiedRedirects();
-                $this->dao->markViewDoneInvalidatedByAdminMutation();
+                $message = $this->redirectsRepo->deleteSpecifiedRedirects();
+                $this->viewBuild->markViewDoneInvalidatedByAdminMutation();
             } else {
                 $this->logger->debugMessage("Unexpected result. How did we get here? is_admin: " .
                         is_admin() . ", Action: " . $action . ", Sub: " . $sub);
             }
         } else if ($action == "runMaintenance") {
             if (check_admin_referer('abj404_runMaintenance') && is_admin()) {
-                $message = $this->dao->deleteOldRedirectsCron();
+                $message = $this->redirectsRepo->deleteOldRedirectsCron();
             } else {
                 $this->logger->debugMessage("Unexpected result. How did we get here? is_admin: " .
                         is_admin() . ", Action: " . $action . ", Sub: " . $sub);
@@ -123,7 +123,7 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
             }
         } else if ($action == "clearSpellingCache") {
             if (check_admin_referer('abj404_clearSpellingCache') && is_admin()) {
-                $this->dao->deleteSpellingCache();
+                $this->contentRepo->deleteSpellingCache();
                 $message = __('Spelling cache cleared successfully.', '404-solution');
             } else {
                 $this->logger->debugMessage("Unexpected result. How did we get here? is_admin: " .
@@ -141,7 +141,7 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
         } else if ($action == "importFromPlugin") {
             if (check_admin_referer('abj404_importFromPlugin') && is_admin()) {
                 $message = $this->handleActionImportFromPlugin();
-                $this->dao->markViewDoneInvalidatedByAdminMutation();
+                $this->viewBuild->markViewDoneInvalidatedByAdminMutation();
             } else {
                 $this->logger->debugMessage("Unexpected result. How did we get here? is_admin: " .
                         is_admin() . ", Action: " . $action . ", Sub: " . $sub);
@@ -162,7 +162,7 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
                     return '';
                 }
                 $message = $this->doBulkAction($action, array_map('absint', $_POST['idnum']));
-                $this->dao->markViewDoneInvalidatedByAdminMutation();
+                $this->viewBuild->markViewDoneInvalidatedByAdminMutation();
             } else {
                 $this->logger->debugMessage("Unexpected result. How did we get here? is_admin: " .
                         is_admin() . ", Action: " . $action . ", Sub: " . $sub);
@@ -194,15 +194,15 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
                 }
 
                 $id = absint($_GET['id']);
-                $message = $this->dao->moveRedirectsToTrash($id, $trash);
+                $message = $this->redirectsRepo->moveRedirectsToTrash($id, $trash);
                 if ($message == "") {
                     // Captured URLs: restoring from the Captured->Trash view should return to Captured (not Ignored/Later).
                     $subpage = isset($_GET['subpage']) ? sanitize_text_field(wp_unslash($_GET['subpage'])) : '';
                     $filter = isset($_GET['filter']) ? intval($_GET['filter']) : 0;
                     if ($trash == 0 && $subpage === 'abj404_captured' && $filter === ABJ404_TRASH_FILTER) {
-                        $this->dao->updateRedirectTypeStatus($id, (string)ABJ404_STATUS_CAPTURED);
+                        $this->redirectsRepo->updateRedirectTypeStatus($id, (string)ABJ404_STATUS_CAPTURED);
                     }
-                    $this->dao->markViewDoneInvalidatedByAdminMutation();
+                    $this->viewBuild->markViewDoneInvalidatedByAdminMutation();
                     if ($trash == 1) {
                         $message = __('Redirect moved to trash successfully!', '404-solution');
                     } else {
@@ -225,16 +225,16 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
     /** @return void */
     function handleActionChangeItemsPerRow(): void {
 
-        if ($this->dao->getPostOrGetSanitize('action') == 'changeItemsPerRow' && $this->userIsPluginAdmin()) {
+        if ($this->f->getPostOrGetSanitize('action') == 'changeItemsPerRow' && $this->userIsPluginAdmin()) {
             check_admin_referer('abj404_changeItemsPerRow'); // verify nonce for CSRF protection
-            $this->updatePerPageOption(absint($this->dao->getPostOrGetSanitize('perpage')));
+            $this->updatePerPageOption(absint($this->f->getPostOrGetSanitize('perpage')));
         }
     }
 
     /** @return void */
     function handleActionExport(): void {
 
-        if (($this->dao->getPostOrGetSanitize('action') == 'exportRedirects') && $this->userIsPluginAdmin()) {
+        if (($this->f->getPostOrGetSanitize('action') == 'exportRedirects') && $this->userIsPluginAdmin()) {
             check_admin_referer('abj404_exportRedirects'); // this verifies the nonce
             $this->doExport();
         }
@@ -243,13 +243,13 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
     /** @return string|null */
     function handleActionImportFile() {
 
-        if (($this->dao->getPostOrGetSanitize('action') == 'importRedirectsFile') && $this->userIsPluginAdmin()) {
+        if (($this->f->getPostOrGetSanitize('action') == 'importRedirectsFile') && $this->userIsPluginAdmin()) {
             check_admin_referer('abj404_importRedirectsFile'); // this verifies the nonce (must match View.php form nonce)
             $result = $this->doImportFile();
             // Admin-initiated mutation: force a fresh view_done rebuild before
             // the next AJAX fetch so the newly-imported rows appear on the
             // redirects table immediately, not on the next cron rebuild.
-            $this->dao->markViewDoneInvalidatedByAdminMutation();
+            $this->viewBuild->markViewDoneInvalidatedByAdminMutation();
             return $result;
         }
 
@@ -276,8 +276,8 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
         $message = "";
 
 
-        if ($this->dao->getPostOrGetSanitize('action') == 'importRedirects') {
-            if ($this->dao->getPostOrGetSanitize('sanity_404redirected') != '1') {
+        if ($this->f->getPostOrGetSanitize('action') == 'importRedirects') {
+            if ($this->f->getPostOrGetSanitize('sanity_404redirected') != '1') {
                 $message = __("Error: You didn't check the I understand checkbox. No importing for you!", '404-solution');
                 return $message;
             }
@@ -296,7 +296,7 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
                     // Admin-initiated mutation: force a fresh view_done rebuild
                     // before the next AJAX fetch so the newly-imported rows
                     // appear on the redirects table immediately.
-                    $this->dao->markViewDoneInvalidatedByAdminMutation();
+                    $this->viewBuild->markViewDoneInvalidatedByAdminMutation();
                 }
 
             } catch (Exception $e) {
@@ -319,8 +319,8 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
         if (array_key_exists('remove', $_GET) && @$_GET['remove'] == 1) {
             if (is_admin() && $this->verifyLinkNonce('abj404_removeRedirect')) {
                 if ($this->f->regexMatch('[0-9]+', $_GET['id'])) {
-                    $this->dao->deleteRedirect(absint($_GET['id']));
-                    $this->dao->markViewDoneInvalidatedByAdminMutation();
+                    $this->redirectsRepo->deleteRedirect(absint($_GET['id']));
+                    $this->viewBuild->markViewDoneInvalidatedByAdminMutation();
                     $message = __('Redirect Removed Successfully!', '404-solution');
                 }
             }
@@ -360,9 +360,9 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
                         $newstatus = ABJ404_STATUS_CAPTURED;
                     }
 
-                    $message = $this->dao->updateRedirectTypeStatus(absint($id), (string)$newstatus);
+                    $message = $this->redirectsRepo->updateRedirectTypeStatus(absint($id), (string)$newstatus);
                     if ($message == "") {
-                        $this->dao->markViewDoneInvalidatedByAdminMutation();
+                        $this->viewBuild->markViewDoneInvalidatedByAdminMutation();
                         if ($newstatus == ABJ404_STATUS_CAPTURED) {
                             $message = sprintf(__('Removed 404 URL from %s list successfully!', '404-solution'), $successActionName);
                         } else {
@@ -407,14 +407,14 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
 
         //Handle edit posts
         if (array_key_exists('action', $_POST) && $_POST['action'] == "editRedirect") {
-            $id = $this->dao->getPostOrGetSanitize('id');
-            $ids = $this->dao->getPostOrGetSanitize('ids_multiple');
+            $id = $this->f->getPostOrGetSanitize('id');
+            $ids = $this->f->getPostOrGetSanitize('ids_multiple');
             if (!($id === '' && $ids === '') && ($this->f->regexMatch('[0-9]+', '' . $id) || $this->f->regexMatch('[0-9]+', '' . $ids))) {
                 if (is_admin() && $this->verifyLinkNonce('abj404editRedirect')) {
                     $message = $this->updateRedirectData();
                     if ($message == "") {
                         // Return user to the page they came from instead of always going to redirects page
-                        $source_page = $this->dao->getPostOrGetSanitize('source_page');
+                        $source_page = $this->f->getPostOrGetSanitize('source_page');
 
                         // Validate source_page is a known tab
                         $valid_tabs = array('abj404_redirects', 'abj404_captured', 'abj404_logs',
@@ -429,13 +429,13 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
                         $redirect_url .= "&updated=1"; // Add flag to show success message
 
                         // Preserve table options
-                        $source_filter = $this->dao->getPostOrGetSanitize('source_filter', '');
+                        $source_filter = $this->f->getPostOrGetSanitize('source_filter', '');
                         if ($source_filter !== '' && $source_filter !== '0') {
                             $redirect_url .= "&filter=" . urlencode($source_filter);
                         }
 
-                        $source_orderby = $this->dao->getPostOrGetSanitize('source_orderby', '');
-                        $source_order = $this->dao->getPostOrGetSanitize('source_order', '');
+                        $source_orderby = $this->f->getPostOrGetSanitize('source_orderby', '');
+                        $source_order = $this->f->getPostOrGetSanitize('source_order', '');
                         if ($source_orderby !== '' && $source_order !== '') {
                             if (!($source_orderby === "url" && $source_order === "ASC")) {
                                 $redirect_url .= "&orderby=" . urlencode($source_orderby);
@@ -443,7 +443,7 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
                             }
                         }
 
-                        $source_paged = $this->dao->getPostOrGetSanitize('source_paged', '');
+                        $source_paged = $this->f->getPostOrGetSanitize('source_paged', '');
                         if ($source_paged !== '' && (int)$source_paged > 1) {
                             $redirect_url .= "&paged=" . urlencode($source_paged);
                         }
@@ -494,9 +494,9 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
 
             $count = 0;
             foreach ($ids as $id) {
-                $s = $this->dao->moveRedirectsToTrash($id, 0);
+                $s = $this->redirectsRepo->moveRedirectsToTrash($id, 0);
                 if ($action != "bulk_trash_restore") {
-                    $s = $this->dao->updateRedirectTypeStatus($id, (string)$status);
+                    $s = $this->redirectsRepo->updateRedirectTypeStatus($id, (string)$status);
                 }
                 if ($s == "") {
                     $count++;
@@ -516,7 +516,7 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
         } else if ($action == "bulk_trash_delete_permanently") {
             $count = 0;
             foreach ($ids as $id) {
-                $this->dao->deleteRedirect(absint($id));
+                $this->redirectsRepo->deleteRedirect(absint($id));
                 $count ++;
             }
             $message = $count . " " . __('URL(s) deleted', '404-solution');
@@ -524,7 +524,7 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
         } else if ($action == "bulktrash") {
             $count = 0;
             foreach ($ids as $id) {
-                $s = $this->dao->moveRedirectsToTrash($id, 1);
+                $s = $this->redirectsRepo->moveRedirectsToTrash($id, 1);
                 if ($s == "") {
                     $count ++;
                 }
@@ -564,13 +564,13 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
             return;
         }
 
-        $result = $this->dao->queryAndGetResults($query);
+        $result = $this->dbCore->queryAndGetResults($query);
         $this->logger->debugMessage("doEmptyTrash deleted " . $result['rows_affected'] . " rows total. (" . $sub . ")");
 
         // Invalidate status counts cache after bulk delete
-        $this->dao->invalidateStatusCountsCache();
+        $this->viewRead->invalidateStatusCountsCache();
 
-        $this->dao->queryAndGetResults("optimize table {wp_abj404_redirects}");
+        $this->dbCore->queryAndGetResults("optimize table {wp_abj404_redirects}");
     }
 
     /**
@@ -682,7 +682,7 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
                 $autoPromote = $this->maybeAutoPromoteRegex($statusType, $fromURL);
                 $statusType = $autoPromote['statusType'];
                 $fromURL = $autoPromote['url'];
-                $this->dao->updateRedirect($tdType, $tdDest,
+                $this->redirectsRepo->updateRedirect($tdType, $tdDest,
                         $fromURL, $id, $code, (string)$statusType, $startTs, $endTs);
                 if ($autoPromote['autoPromoted']) {
                     $this->saveRegexAutoPromoteNotice($id, $originalFromURL, $fromURL, $autoPromote['urlRewritten']);
@@ -690,21 +690,21 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
 
                 // Save conditions only for single-redirect edits (bulk edit has no conditions UI).
                 if ($id > 0) {
-                    $this->dao->saveRedirectConditions($id, $sanitizedConditions);
+                    $this->redirectsRepo->saveRedirectConditions($id, $sanitizedConditions);
                 }
-                $this->dao->markViewDoneInvalidatedByAdminMutation();
+                $this->viewBuild->markViewDoneInvalidatedByAdminMutation();
 
             } else if ($ids_multiple != "") {
                 // get the redirect data for each ID.
-                $redirects_multiple = $this->dao->getRedirectsByIDs($ids_multiple);
+                $redirects_multiple = $this->redirectsRepo->getRedirectsByIDs($ids_multiple);
                 $code = isset($_POST['code']) && is_string($_POST['code']) ? $_POST['code'] : '';
                 foreach ($redirects_multiple as $redirect) {
                     $redirectUrl = is_string($redirect['url']) ? $redirect['url'] : '';
                     $redirectId = is_scalar($redirect['id']) ? (int)$redirect['id'] : 0;
-                    $this->dao->updateRedirect($tdType, $tdDest,
+                    $this->redirectsRepo->updateRedirect($tdType, $tdDest,
                             $redirectUrl, $redirectId, $code, (string)$statusType);
                 }
-                $this->dao->markViewDoneInvalidatedByAdminMutation();
+                $this->viewBuild->markViewDoneInvalidatedByAdminMutation();
 
             } else {
                 $this->logger->errorMessage("Issue determining which redirect(s) to update. " .
@@ -745,7 +745,7 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
         }
 
         if ($_POST['redirect_to_data_field_id'] == ABJ404_TYPE_EXTERNAL . '|' . ABJ404_TYPE_EXTERNAL) {
-            $rawEnteredURLResult = $this->dao->getPostOrGetSanitizeUrl('redirect_to_user_field');
+            $rawEnteredURLResult = $this->f->getPostOrGetSanitizeUrl('redirect_to_user_field');
             $rawEnteredURL = is_string($rawEnteredURLResult) ? $rawEnteredURLResult : null;
             $userEnteredURL = $this->normalizeExternalDestinationUrl($rawEnteredURL);
             $userEnteredURL = esc_url($userEnteredURL, array('http', 'https'));
@@ -849,7 +849,7 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
             $statusType = $autoPromoteAdd['statusType'];
             $manualURL = $autoPromoteAdd['url'];
 
-            $newRedirectId = $this->dao->setupRedirect($manualURL, (string)$statusType,
+            $newRedirectId = $this->redirectsRepo->setupRedirect($manualURL, (string)$statusType,
                     $tdType2, $tdDest2,
                     sanitize_text_field($code), 0);
             if ($autoPromoteAdd['autoPromoted']) {
@@ -862,7 +862,7 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
             // build whose built_watermark covers it (the stale-serving
             // contract from fbc270d8 is preserved for cron/maintenance
             // paths but the admin sees their own change immediately).
-            $this->dao->markViewDoneInvalidatedByAdminMutation();
+            $this->viewBuild->markViewDoneInvalidatedByAdminMutation();
 
         } else {
             $message .= __('Error: Data not formatted properly.', '404-solution') . "<BR/>";
@@ -951,16 +951,16 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
         if ($notice === null || $notice['redirect_id'] <= 0) {
             return __('Error: No regex auto-promotion to undo.', '404-solution');
         }
-        $redirectsTable = $this->dao->doTableNameReplacements('{wp_abj404_redirects}');
+        $redirectsTable = $this->dbCore->doTableNameReplacements('{wp_abj404_redirects}');
         $sql = "UPDATE `" . $redirectsTable . "` SET `url` = %s, `status` = %d WHERE `id` = %d";
-        $this->dao->queryAndGetResults($sql, array('query_params' => array(
+        $this->dbCore->queryAndGetResults($sql, array('query_params' => array(
             $notice['original_url'],
             (int)ABJ404_STATUS_MANUAL,
             (int)$notice['redirect_id'],
         )));
         // markViewDoneInvalidatedByAdminMutation() bumps the watermark
         // and records the admin-visibility gate option.
-        $this->dao->markViewDoneInvalidatedByAdminMutation();
+        $this->viewBuild->markViewDoneInvalidatedByAdminMutation();
         ABJ_404_Solution_RegexAutoPromote::clearNotice();
         return sprintf(
             /* translators: %s = the original from_url string that was restored */
@@ -1004,7 +1004,7 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
         // but the admin-visibility gate stays open and the cached view_done
         // snapshot keeps serving pre-import rows.
         if ($count > 0) {
-            $this->dao->markViewDoneInvalidatedByAdminMutation();
+            $this->viewBuild->markViewDoneInvalidatedByAdminMutation();
         }
 
         return sprintf(

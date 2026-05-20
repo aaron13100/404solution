@@ -41,6 +41,21 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 	/** @var ABJ_404_Solution_DataAccess */
 	private $dao;
 
+	/** @var ABJ_404_Solution_DatabaseCoreInterface */
+	private $dbCore;
+
+	/** @var ABJ_404_Solution_ContentRepositoryInterface */
+	private $contentRepo;
+
+	/** @var ABJ_404_Solution_ViewBuildOrchestratorInterface */
+	private $viewBuild;
+
+	/** @var ABJ_404_Solution_ViewReadServiceInterface */
+	private $viewRead;
+
+	/** @var ABJ_404_Solution_LogsRepositoryInterface */
+	private $logsRepo;
+
 	/** @var ABJ_404_Solution_Logging */
 	private $logger;
 
@@ -68,7 +83,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 	/**
 	 * Constructor with dependency injection.
 	 *
-	 * @param ABJ_404_Solution_DataAccess|null $dataAccess Data access layer
+	 * @param ABJ_404_Solution_DataAccess|null $dataAccess Data access layer (legacy, only for getLatestPluginVersion)
 	 * @param ABJ_404_Solution_Logging|null $logging Logging service
 	 * @param ABJ_404_Solution_Functions|null $functions String utilities
 	 * @param ABJ_404_Solution_PermalinkCache|null $permalinkCache Permalink cache service
@@ -85,6 +100,15 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 		$this->syncUtils = $syncUtils !== null ? $syncUtils : abj_service('sync_utils');
 		$this->logic = $pluginLogic !== null ? $pluginLogic : abj_service('plugin_logic');
 		$this->ngramFilter = $ngramFilter !== null ? $ngramFilter : abj_service('ngram_filter');
+
+		/** @var ABJ_404_Solution_DatabaseCoreInterface&ABJ_404_Solution_ContentRepositoryInterface&ABJ_404_Solution_ViewBuildOrchestratorInterface&ABJ_404_Solution_ViewReadServiceInterface&ABJ_404_Solution_LogsRepositoryInterface&ABJ_404_Solution_RedirectsRepositoryInterface $dao */
+		/** @var ABJ_404_Solution_DatabaseCoreInterface&ABJ_404_Solution_ContentRepositoryInterface&ABJ_404_Solution_ViewBuildOrchestratorInterface&ABJ_404_Solution_ViewReadServiceInterface&ABJ_404_Solution_LogsRepositoryInterface $dao */
+		$dao = $this->dao;
+		$this->dbCore = $dao;
+		$this->contentRepo = $dao;
+		$this->viewBuild = $dao;
+		$this->viewRead = $dao;
+		$this->logsRepo = $dao;
 	}
 
 	/** @return self */
@@ -294,7 +318,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 			FROM information_schema.tables
 			WHERE table_schema = '{$dbName}'
 			AND LOWER(table_name) LIKE '%abj404%'";
-		$results = $this->dao->queryAndGetResults($query);
+		$results = $this->dbCore->queryAndGetResults($query);
 
 		if (!is_array($results['rows'])) {
 			$this->logger->warn("Could not query information_schema tables for lowercase rename.");
@@ -319,7 +343,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 				if ($tableName !== $lowercaseName) {
 					// Rename the table to lowercase
 					$renameQuery = "RENAME TABLE `{$tableName}` TO `{$lowercaseName}`";
-					$this->dao->queryAndGetResults($renameQuery,
+					$this->dbCore->queryAndGetResults($renameQuery,
 						['ignore_errors' => ["already exists"]]);
 					$this->logger->infoMessage("Renamed table {$tableName} to {$lowercaseName}\n");
 				}
@@ -420,13 +444,13 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 			FROM information_schema.tables
 			WHERE table_schema = '{$dbName}'
 			AND LOWER(table_name) LIKE '%abj404\\_%'";
-		$results = $this->dao->queryAndGetResults($query);
+		$results = $this->dbCore->queryAndGetResults($query);
 
 		if (!is_array($results['rows']) || empty($results['rows'])) {
 			return;
 		}
 
-		$currentPrefix = $this->dao->getLowercasePrefix();
+		$currentPrefix = $this->dbCore->getLowercasePrefix();
 
 		// Group tables by their prefix (everything before 'abj404_').
 		/** @var array<string, array<string>> prefix => [table_name, ...] */
@@ -520,7 +544,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 			if (!in_array($tableName, $knownTables, true)) {
 				continue;
 			}
-			$result = $this->dao->queryAndGetResults(
+			$result = $this->dbCore->queryAndGetResults(
 				"SELECT COUNT(*) AS cnt FROM `{$tableName}`",
 				['ignore_errors' => ["doesn't exist", "not found"]]
 			);
@@ -565,7 +589,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 				LIMIT 500
 			) sub";
 
-		$result = $this->dao->queryAndGetResults($query,
+		$result = $this->dbCore->queryAndGetResults($query,
 			['ignore_errors' => ["doesn't exist", "not found"]]);
 
 		if (!is_array($result['rows']) || empty($result['rows'])) {
@@ -615,7 +639,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 				AND p.post_status IN ('publish', 'draft', 'private')
 			WHERE r.type IN (1, 2, 3)";
 
-		$result = $this->dao->queryAndGetResults($query,
+		$result = $this->dbCore->queryAndGetResults($query,
 			['ignore_errors' => ["doesn't exist", "not found"]]);
 
 		if (!is_array($result['rows']) || empty($result['rows'])) {
@@ -668,7 +692,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 			$newTable = $currentPrefix . $suffix;
 
 			// Check if old table exists and has rows.
-			$countResult = $this->dao->queryAndGetResults(
+			$countResult = $this->dbCore->queryAndGetResults(
 				"SELECT COUNT(*) AS cnt FROM `{$oldTable}`",
 				['ignore_errors' => ["doesn't exist", "not found"]]
 			);
@@ -682,7 +706,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 			}
 
 			// Check if new table exists (it should — auto-repair creates them).
-			$newExists = $this->dao->queryAndGetResults(
+			$newExists = $this->dbCore->queryAndGetResults(
 				"SELECT 1 FROM `{$newTable}` LIMIT 1",
 				['ignore_errors' => ["doesn't exist", "not found"]]
 			);
@@ -706,7 +730,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 			$columnList = implode('`, `', $commonColumns);
 			$insertQuery = "INSERT IGNORE INTO `{$newTable}` (`{$columnList}`) "
 				. "SELECT `{$columnList}` FROM `{$oldTable}`";
-			$insertResult = $this->dao->queryAndGetResults($insertQuery,
+			$insertResult = $this->dbCore->queryAndGetResults($insertQuery,
 				['ignore_errors' => ["doesn't exist", "not found", "Duplicate"]]);
 
 			$affectedRows = 0;
@@ -765,7 +789,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 	 * @return array<int, string>  Column names (lowercase).
 	 */
 	private function getTableColumns(string $tableName): array {
-		$result = $this->dao->queryAndGetResults(
+		$result = $this->dbCore->queryAndGetResults(
 			"SHOW COLUMNS FROM `{$tableName}`",
 			['ignore_errors' => ["doesn't exist", "not found"]]
 		);
@@ -805,14 +829,14 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 	    	if (strpos($tableName, 'abj404_logsv2') !== false && $colName == 'min_log_id') {
 	    		global $wpdb;
 	    		$query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/logsSetMinLogID.sql");
-	    		$this->dao->queryAndGetResults($query);
+	    		$this->dbCore->queryAndGetResults($query);
             // Ensure composite index exists after backfilling min_log_id.
             $this->ensureLogsCompositeIndex($tableName);
     	}
     	if (strpos($tableName, 'abj404_permalink_cache') !== false && $colName == 'url_length') {
     		// clear the permalink cache so that the url length column will be populated.
     		// this could be more efficient but I'll assume that's not necessary.
-    		$this->dao->truncatePermalinkCacheTable();
+    		$this->contentRepo->truncatePermalinkCacheTable();
     	}
     }
     
@@ -875,9 +899,9 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 
 	    	foreach ($this->discoverPermanentDDLFiles() as $ddlEntry) {
 	    		$query = $this->applyPluginTableCharsetCollate($ddlEntry['ddlContent']);
-	    		$this->dao->queryAndGetResults($query);
+	    		$this->dbCore->queryAndGetResults($query);
 
-	    		$tableName = $this->dao->doTableNameReplacements($ddlEntry['placeholder']);
+	    		$tableName = $this->dbCore->doTableNameReplacements($ddlEntry['placeholder']);
 
 	    		// Per-table post-CREATE verification: confirm the table actually
 	    		// exists on disk. queryAndGetResults logs SQL errors generically,
@@ -915,11 +939,11 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 	    	}
 
 	    	// Table-specific post-creation steps.
-	    	$logsTable = $this->dao->doTableNameReplacements("{wp_abj404_logsv2}");
+	    	$logsTable = $this->dbCore->doTableNameReplacements("{wp_abj404_logsv2}");
 	    	$this->ensureLogsCompositeIndex($logsTable);
 
 	    	// Mark view cache table as ensured so ensureViewSnapshotTableExists() skips redundant DDL.
-	    	ABJ_404_Solution_DataAccess::setViewSnapshotTableEnsured(true);
+	    	ABJ_404_Solution_ViewReadService::setViewSnapshotTableEnsured(true);
 	    }
 
 	    /**
@@ -1317,7 +1341,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     function getTableDifferences($tableName, $createTableStatementGoal) {
 
     	// get the current create table statement
-    	$existingTableSQL = $this->dao->getCreateTableDDL($tableName);
+    	$existingTableSQL = $this->dbCore->getCreateTableDDL($tableName);
     	
     	$existingTableSQL = strtolower($this->removeCommentsFromColumns($existingTableSQL));
     	$createTableStatementGoal = strtolower(
@@ -1444,7 +1468,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     	} else {
     		foreach ($dropTheseColumns as $colName) {
     			$query = "alter table " . $tableName . " drop " . $colName;
-    			$this->dao->queryAndGetResults($query);
+    			$this->dbCore->queryAndGetResults($query);
     			$this->logger->infoMessage("I dropped a column (1): " . $query);
     		}
     	}
@@ -1477,13 +1501,13 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     			// ALTER TABLE `mywp_abj404_redirects` CHANGE `status` `status` BIGINT(19) NOT NULL;
     			$updateColStatement = "alter table " . $tableName . " change " . $colName .
     			" " . $colDDL;
-    			$this->dao->queryAndGetResults($updateColStatement);
+    			$this->dbCore->queryAndGetResults($updateColStatement);
     			$this->logger->infoMessage("I updated a column: " . $updateColStatement);
     			
     		} else {
     			// create the column.
     			$createColStatement = "alter table " . $tableName . " add " . $colDDL;
-    			$this->dao->queryAndGetResults($createColStatement);
+    			$this->dbCore->queryAndGetResults($createColStatement);
     			$this->logger->infoMessage("I added a column: " . $createColStatement);
     		}
     		
@@ -1539,7 +1563,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     function deleteIndexes($tableName) {
 
     	// get the indexes list.
-    	$results = $this->dao->queryAndGetResults("show index from " . $tableName .
+    	$results = $this->dbCore->queryAndGetResults("show index from " . $tableName .
     		" where key_name != 'PRIMARY'");
     	/** @var array<int, array<string, mixed>> $rows */
     	$rows = isset($results['rows']) && is_array($results['rows']) ? $results['rows'] : [];
@@ -1565,7 +1589,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     			continue;
     		}
     		$query = "alter table " . $tableName . " drop index " . $indexName;
-    		$this->dao->queryAndGetResults($query);
+    		$this->dbCore->queryAndGetResults($query);
     	}
     }
 }

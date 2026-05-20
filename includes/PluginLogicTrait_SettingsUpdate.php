@@ -59,9 +59,9 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
 
         $tableOptions['translations'] = $translationArray;
 
-        $rawFilter = $this->dao->getPostOrGetSanitize("filter", "");
+        $rawFilter = $this->f->getPostOrGetSanitize("filter", "");
         if ($rawFilter === "") {
-            if ($this->dao->getPostOrGetSanitize('subpage') == 'abj404_captured') {
+            if ($this->f->getPostOrGetSanitize('subpage') == 'abj404_captured') {
                 $tableOptions['filter'] = ABJ404_STATUS_CAPTURED;
             } else {
                 $tableOptions['filter'] = 0;
@@ -70,11 +70,11 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
             $tableOptions['filter'] = intval($rawFilter);
         }
 
-        $tableOptions['filterText'] = trim($this->dao->getPostOrGetSanitize("filterText", ""));
+        $tableOptions['filterText'] = trim($this->f->getPostOrGetSanitize("filterText", ""));
         // Remove comment markers early to prevent filterText from breaking SQL comments.
         $tableOptions['filterText'] = $this->f->str_replace(array('*', '/', '$'), '', $tableOptions['filterText']);
 
-        $orderbyInput = $this->dao->getPostOrGetSanitize('orderby', "");
+        $orderbyInput = $this->f->getPostOrGetSanitize('orderby', "");
         if ($orderbyInput != "" && in_array($orderbyInput, self::$allowedOrderbyColumns, true)) {
             $tableOptions['orderby'] = $orderbyInput;
 
@@ -103,7 +103,7 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
             $tableOptions['orderby'] = 'url';
         }
 
-        $orderInput = strtoupper($this->dao->getPostOrGetSanitize('order', ''));
+        $orderInput = strtoupper($this->f->getPostOrGetSanitize('order', ''));
         if ($orderInput != '' && in_array($orderInput, self::$allowedOrderValues, true)) {
             $tableOptions['order'] = $orderInput;
 
@@ -137,7 +137,7 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
 
         // Prefer DAO helper (GET/POST), but fall back to REQUEST_URI query parsing for
         // environments where 'paged' may not survive as a scalar in superglobals.
-        $paged = $this->dao->getPostOrGetSanitize("paged", '');
+        $paged = $this->f->getPostOrGetSanitize("paged", '');
         if ($paged === '') {
             $paged = $this->getQueryParamFromRequestUri('paged');
         }
@@ -147,16 +147,16 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
         if (isset($options['perpage'])) {
             $perPageOption = max(absint(is_scalar($options['perpage']) ? $options['perpage'] : 0), ABJ404_OPTION_MIN_PERPAGE);
         }
-        $tableOptions['perpage'] = $this->dao->getPostOrGetSanitize("perpage", (string)$perPageOption);
+        $tableOptions['perpage'] = $this->f->getPostOrGetSanitize("perpage", (string)$perPageOption);
 
         $tableOptions['logsid'] = 0;
-        if ($this->dao->getPostOrGetSanitize('subpage') == "abj404_logs") {
-            $logId = (string)$this->dao->getPostOrGetSanitize('id', '');
+        if ($this->f->getPostOrGetSanitize('subpage') == "abj404_logs") {
+            $logId = (string)$this->f->getPostOrGetSanitize('id', '');
             if ($this->f->regexMatch('[0-9]+', $logId)) {
                 $tableOptions['logsid'] = absint($logId);
 
             } else {
-                $redirectToDataFieldId = (string)$this->dao->getPostOrGetSanitize('redirect_to_data_field_id', '');
+                $redirectToDataFieldId = (string)$this->f->getPostOrGetSanitize('redirect_to_data_field_id', '');
                 if ($this->f->regexMatch('[0-9]+', $redirectToDataFieldId)) {
                     $tableOptions['logsid'] = absint($redirectToDataFieldId);
                 }
@@ -164,16 +164,16 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
         }
 
         // Score range filter (high / medium / low / manual / all).
-        $rawScoreRange = (string)$this->dao->getPostOrGetSanitize('score_range', 'all');
+        $rawScoreRange = (string)$this->f->getPostOrGetSanitize('score_range', 'all');
         $allowedScoreRanges = array('all', 'high', 'medium', 'low', 'manual');
         $tableOptions['score_range'] = in_array($rawScoreRange, $allowedScoreRanges, true) ? $rawScoreRange : 'all';
 
         // Developer/admin diagnostic: force a fresh staged view_done rebuild
         // for the current AJAX table load. This is intentionally hidden behind
         // an explicit request flag rather than a normal option.
-        $forceViewRebuild = (string)$this->dao->getPostOrGetSanitize('forceViewRebuild', '');
+        $forceViewRebuild = (string)$this->f->getPostOrGetSanitize('forceViewRebuild', '');
         if ($forceViewRebuild === '') {
-            $forceViewRebuild = (string)$this->dao->getPostOrGetSanitize('abj404_force_view_rebuild', '');
+            $forceViewRebuild = (string)$this->f->getPostOrGetSanitize('abj404_force_view_rebuild', '');
         }
         if ($forceViewRebuild === '1') {
             $tableOptions['_abj404_force_view_rebuild'] = '1';
@@ -638,7 +638,7 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
 
                     // the spelling cache only stores up to X entries. X is based on suggest_max
                     // so the spelling cache has to be reset when this number changes.
-                    $this->dao->deleteSpellingCache();
+                    $this->contentRepo->deleteSpellingCache();
                 }
 
                 $options['suggest_max'] = absint($postData['suggest_max']);
@@ -712,7 +712,7 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
         	if (!array_key_exists($optionName, $options) ||
         		$options[$optionName] != $newVal) {
 
-        		$this->dao->deleteSpellingCache();
+        		$this->contentRepo->deleteSpellingCache();
         	}
             $options[$optionName] = $newVal;
         }
@@ -896,7 +896,7 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
         	if ($newExcludePages !== $oldExcludePages) {
         		// if any excluded pages changed or if the number of excluded pages changed
         		// then the spelling cache has to be reset.
-        		$this->dao->deleteSpellingCache();
+        		$this->contentRepo->deleteSpellingCache();
         	}
         } else {
         	$excludePagesStr2 = is_string($options['excludePages[]']) ? $options['excludePages[]'] : '';
@@ -904,7 +904,7 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
         	if (null !== $oldExcludePages) {
         		// if any excluded pages changed or if the number of excluded pages changed
         		// then the spelling cache has to be reset.
-        		$this->dao->deleteSpellingCache();
+        		$this->contentRepo->deleteSpellingCache();
         	}
         	$options['excludePages[]'] = null;
         }

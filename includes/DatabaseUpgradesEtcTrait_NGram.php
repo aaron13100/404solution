@@ -92,7 +92,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_NGramTrait {
                 // ERROR level — the user must act on a broken cron — but
                 // the underlying hosting issue is the actionable cause.
                 if (!empty($wpdb->last_error)) {
-                    $this->dao->classifyAndHandleInfrastructureError($wpdb->last_error);
+                    $this->dbCore->classifyAndHandleInfrastructureError($wpdb->last_error);
                 }
 
                 $this->logger->errorMessage($errorMsg);
@@ -186,8 +186,8 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_NGramTrait {
                 switch_to_blog($currentSiteId);
 
                 // Count pages for THIS site only
-                $permalinkCacheTable = $this->dao->getPrefixedTableName('abj404_permalink_cache');
-                $sitePages = $this->dao->queryScalarInt("SELECT COUNT(*) AS c FROM {$permalinkCacheTable}");
+                $permalinkCacheTable = $this->dbCore->getPrefixedTableName('abj404_permalink_cache');
+                $sitePages = $this->dbCore->queryScalarInt("SELECT COUNT(*) AS c FROM {$permalinkCacheTable}");
 
                 if ($sitePages == 0) {
                     // This site has no pages, move to next site
@@ -286,8 +286,8 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_NGramTrait {
                 // SINGLE SITE: Use original simple logic
                 $rawSingleOffset = $this->getNetworkAwareOption('abj404_ngram_rebuild_offset', 0);
                 $offset = is_scalar($rawSingleOffset) ? (int)$rawSingleOffset : 0;
-                $permalinkCacheTable = $this->dao->getPrefixedTableName('abj404_permalink_cache');
-                $totalPages = $this->dao->queryScalarInt("SELECT COUNT(*) AS c FROM {$permalinkCacheTable}");
+                $permalinkCacheTable = $this->dbCore->getPrefixedTableName('abj404_permalink_cache');
+                $totalPages = $this->dbCore->queryScalarInt("SELECT COUNT(*) AS c FROM {$permalinkCacheTable}");
 
                 if ($totalPages == 0) {
                     $this->logger->debugMessage("No pages to process. Setting initialized flag.");
@@ -388,7 +388,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_NGramTrait {
                             // failure, surface the hosting cause as a
                             // plugin-page admin notice.
                             if (!empty($wpdb->last_error)) {
-                                $this->dao->classifyAndHandleInfrastructureError($wpdb->last_error);
+                                $this->dbCore->classifyAndHandleInfrastructureError($wpdb->last_error);
                             }
 
                             $this->logger->errorMessage($errorMsg);
@@ -439,12 +439,12 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_NGramTrait {
         }
 
         try {
-            $ngramTable = $this->dao->getPrefixedTableName('abj404_ngram_cache');
-            $permalinkCacheTable = $this->dao->getPrefixedTableName('abj404_permalink_cache');
+            $ngramTable = $this->dbCore->getPrefixedTableName('abj404_ngram_cache');
+            $permalinkCacheTable = $this->dbCore->getPrefixedTableName('abj404_permalink_cache');
 
             // Check if cache is already populated (unless force rebuild)
             if (!$forceRebuild) {
-                $existingCount = $this->dao->queryScalarInt("SELECT COUNT(*) AS c FROM {$ngramTable}");
+                $existingCount = $this->dbCore->queryScalarInt("SELECT COUNT(*) AS c FROM {$ngramTable}");
                 if ($existingCount > 0) {
                     $this->logger->debugMessage("N-gram cache already contains {$existingCount} entries. Skipping rebuild (use forceRebuild=true to override).");
                     return [
@@ -462,13 +462,13 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_NGramTrait {
             // Clear existing N-gram cache (only if force rebuild or empty).
             // skip_repair: TRUNCATE itself is the recovery path during rebuild;
             // we must not recurse into the missing-table repairer here.
-            $truncateResult = $this->dao->queryAndGetResults(
+            $truncateResult = $this->dbCore->queryAndGetResults(
                 "TRUNCATE TABLE {$ngramTable}",
                 ['skip_repair' => true]
             );
             $truncateError = isset($truncateResult['last_error']) && is_string($truncateResult['last_error']) ? $truncateResult['last_error'] : '';
             if ($truncateError !== '') {
-                if (!$this->dao->classifyAndHandleInfrastructureError($truncateError)) {
+                if (!$this->dbCore->classifyAndHandleInfrastructureError($truncateError)) {
                     $this->logger->errorMessage("Failed to truncate N-gram cache table: " . $truncateError);
                 }
                 return ['total_pages' => 0, 'processed' => 0, 'success' => 0, 'failed' => 1, 'error' => $truncateError];
@@ -480,13 +480,13 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_NGramTrait {
             $this->ngramFilter->invalidateCoverageCaches();
 
             // Get total page count from permalink cache
-            $totalPagesResult = $this->dao->queryAndGetResults("SELECT COUNT(*) AS c FROM {$permalinkCacheTable}");
+            $totalPagesResult = $this->dbCore->queryAndGetResults("SELECT COUNT(*) AS c FROM {$permalinkCacheTable}");
             $totalPagesRows = isset($totalPagesResult['rows']) && is_array($totalPagesResult['rows']) ? $totalPagesResult['rows'] : [];
             $totalPagesRow = $totalPagesRows[0] ?? null;
 
             if (!is_array($totalPagesRow) || !isset($totalPagesRow['c'])) {
                 $countError = isset($totalPagesResult['last_error']) && is_string($totalPagesResult['last_error']) ? $totalPagesResult['last_error'] : '';
-                if (!$this->dao->classifyAndHandleInfrastructureError($countError)) {
+                if (!$this->dbCore->classifyAndHandleInfrastructureError($countError)) {
                     $this->logger->errorMessage("Failed to query permalink cache table: " . $countError);
                 }
                 return ['total_pages' => 0, 'processed' => 0, 'success' => 0, 'failed' => 1, 'error' => $countError];
@@ -569,15 +569,15 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_NGramTrait {
         }
 
         try {
-            $ngramTable = $this->dao->getPrefixedTableName('abj404_ngram_cache');
-            $permalinkCacheTable = $this->dao->getPrefixedTableName('abj404_permalink_cache');
+            $ngramTable = $this->dbCore->getPrefixedTableName('abj404_ngram_cache');
+            $permalinkCacheTable = $this->dbCore->getPrefixedTableName('abj404_permalink_cache');
 
             $stats = ['posts_added' => 0, 'posts_failed' => 0, 'categories_added' => 0, 'categories_failed' => 0];
 
             // ===== SYNC POSTS =====
             // Find posts in permalink cache that don't have ngram entries
             // Using LEFT JOIN to find missing entries
-            $missingResult = $this->dao->queryAndGetResults(
+            $missingResult = $this->dbCore->queryAndGetResults(
                 "SELECT pc.id
                  FROM {$permalinkCacheTable} pc
                  LEFT JOIN {$ngramTable} ng ON pc.id = ng.id AND ng.type = 'post'
@@ -588,7 +588,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_NGramTrait {
 
             $missingError = isset($missingResult['last_error']) && is_string($missingResult['last_error']) ? $missingResult['last_error'] : '';
             if ($missingError !== '') {
-                if (!$this->dao->classifyAndHandleInfrastructureError($missingError)) {
+                if (!$this->dbCore->classifyAndHandleInfrastructureError($missingError)) {
                     $this->logger->errorMessage("Failed to query for missing post ngram entries: " . $missingError);
                 }
                 return array_merge($stats, ['error' => $missingError]);
@@ -615,7 +615,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_NGramTrait {
 
             // ===== SYNC CATEGORIES =====
             // Get all published categories
-            $categories = $this->dao->getPublishedCategories();
+            $categories = $this->contentRepo->getPublishedCategories();
 
             if (!empty($categories)) {
                 $missingCategories = [];
@@ -626,7 +626,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_NGramTrait {
                     $termId = (int)$category->term_id;
 
                     // Check if this category already has an ngram entry
-                    $exists = $this->dao->queryScalarInt(
+                    $exists = $this->dbCore->queryScalarInt(
                         "SELECT COUNT(*) AS c FROM {$ngramTable} WHERE id = %d AND type = 'category'",
                         ['query_params' => [$termId]]
                     );
@@ -692,8 +692,8 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_NGramTrait {
      * @return array<string, mixed> Statistics: ['posts_deleted' => int, 'categories_deleted' => int, 'errors' => int]
      */
     function cleanupOrphanedNGrams() {
-        $ngramTable = $this->dao->getPrefixedTableName('abj404_ngram_cache');
-        $permalinkCacheTable = $this->dao->getPrefixedTableName('abj404_permalink_cache');
+        $ngramTable = $this->dbCore->getPrefixedTableName('abj404_ngram_cache');
+        $permalinkCacheTable = $this->dbCore->getPrefixedTableName('abj404_permalink_cache');
 
         $this->logger->debugMessage("Checking for orphaned ngram entries...");
 
@@ -702,7 +702,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_NGramTrait {
         // ===== CLEANUP ORPHANED POSTS =====
         // Find ngram entries for posts that don't exist in permalink cache
         // Using LEFT JOIN to find orphaned entries
-        $orphanedResult = $this->dao->queryAndGetResults(
+        $orphanedResult = $this->dbCore->queryAndGetResults(
             "SELECT ng.id, ng.type
                   FROM {$ngramTable} ng
                   LEFT JOIN {$permalinkCacheTable} pc ON ng.id = pc.id AND ng.type = 'post'
@@ -712,7 +712,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_NGramTrait {
 
         $orphanedError = isset($orphanedResult['last_error']) && is_string($orphanedResult['last_error']) ? $orphanedResult['last_error'] : '';
         if ($orphanedError !== '') {
-            if (!$this->dao->classifyAndHandleInfrastructureError($orphanedError)) {
+            if (!$this->dbCore->classifyAndHandleInfrastructureError($orphanedError)) {
                 $this->logger->errorMessage("Failed to query for orphaned post ngram entries: " . $orphanedError);
             }
             return array_merge($stats, ['error' => $orphanedError]);
@@ -730,14 +730,14 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_NGramTrait {
                 /** @var object{id: int, type: string} $entry */
                 $entryId = (int)$entry->id;
                 $entryType = (string)$entry->type;
-                $deleteResult = $this->dao->queryAndGetResults(
+                $deleteResult = $this->dbCore->queryAndGetResults(
                     "DELETE FROM {$ngramTable} WHERE id = %d AND type = %s",
                     ['query_params' => [$entryId, $entryType]]
                 );
 
                 $deleteError = isset($deleteResult['last_error']) && is_string($deleteResult['last_error']) ? $deleteResult['last_error'] : '';
                 if ($deleteError !== '') {
-                    if (!$this->dao->classifyAndHandleInfrastructureError($deleteError)) {
+                    if (!$this->dbCore->classifyAndHandleInfrastructureError($deleteError)) {
                         $this->logger->errorMessage("Failed to delete orphaned post ngram entry ID {$entryId}: " . $deleteError);
                     }
                     $stats['errors']++;
@@ -751,7 +751,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_NGramTrait {
 
         // ===== CLEANUP ORPHANED CATEGORIES =====
         // Get all published categories
-        $publishedCategories = $this->dao->getPublishedCategories();
+        $publishedCategories = $this->contentRepo->getPublishedCategories();
         $publishedCategoryIds = [];
 
         if (!empty($publishedCategories)) {
@@ -762,7 +762,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_NGramTrait {
         }
 
         // Get all category ngram entries
-        $catEntriesResult = $this->dao->queryAndGetResults(
+        $catEntriesResult = $this->dbCore->queryAndGetResults(
             "SELECT DISTINCT id FROM {$ngramTable} WHERE type = 'category'",
             ['result_type' => OBJECT]
         );
@@ -788,14 +788,14 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_NGramTrait {
 
                 // Delete orphaned category entries
                 foreach ($orphanedCategories as $categoryId) {
-                    $catDeleteResult = $this->dao->queryAndGetResults(
+                    $catDeleteResult = $this->dbCore->queryAndGetResults(
                         "DELETE FROM {$ngramTable} WHERE id = %d AND type = %s",
                         ['query_params' => [$categoryId, 'category']]
                     );
 
                     $catDeleteError = isset($catDeleteResult['last_error']) && is_string($catDeleteResult['last_error']) ? $catDeleteResult['last_error'] : '';
                     if ($catDeleteError !== '') {
-                        if (!$this->dao->classifyAndHandleInfrastructureError($catDeleteError)) {
+                        if (!$this->dbCore->classifyAndHandleInfrastructureError($catDeleteError)) {
                             $this->logger->errorMessage("Failed to delete orphaned category ngram entry ID {$categoryId}: " . $catDeleteError);
                         }
                         $stats['errors']++;
@@ -823,7 +823,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_NGramTrait {
     function buildNGramsForCategories($batchSize = 50) {
         $this->logger->debugMessage("Building N-grams for categories...");
 
-        $categories = $this->dao->getPublishedCategories();
+        $categories = $this->contentRepo->getPublishedCategories();
 
         if (empty($categories)) {
             $this->logger->debugMessage("No published categories found.");
@@ -880,7 +880,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_NGramTrait {
     function buildNGramsForTags($batchSize = 50) {
         $this->logger->debugMessage("Building N-grams for tags...");
 
-        $tags = $this->dao->getPublishedTags();
+        $tags = $this->contentRepo->getPublishedTags();
 
         if (empty($tags)) {
             $this->logger->debugMessage("No published tags found.");
@@ -1034,8 +1034,8 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_NGramTrait {
     private function countTotalPagesForNGramRebuild() {
         if (!$this->isNetworkActivated()) {
             // Single site: count only current site's pages
-            $permalinkCacheTable = $this->dao->getPrefixedTableName('abj404_permalink_cache');
-            return $this->dao->queryScalarInt("SELECT COUNT(*) AS c FROM {$permalinkCacheTable}");
+            $permalinkCacheTable = $this->dbCore->getPrefixedTableName('abj404_permalink_cache');
+            return $this->dbCore->queryScalarInt("SELECT COUNT(*) AS c FROM {$permalinkCacheTable}");
         }
 
         // Multisite network-activated: count pages across all sites
@@ -1044,8 +1044,8 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_NGramTrait {
 
         foreach ($sites as $blog_id) {
             switch_to_blog($blog_id);
-            $permalinkCacheTable = $this->dao->getPrefixedTableName('abj404_permalink_cache');
-            $totalPages += $this->dao->queryScalarInt("SELECT COUNT(*) AS c FROM {$permalinkCacheTable}");
+            $permalinkCacheTable = $this->dbCore->getPrefixedTableName('abj404_permalink_cache');
+            $totalPages += $this->dbCore->queryScalarInt("SELECT COUNT(*) AS c FROM {$permalinkCacheTable}");
             restore_current_blog();
         }
 

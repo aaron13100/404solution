@@ -17,8 +17,8 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_IndexesTrait {
     /** @return void */
     function createIndexes() {
     	foreach ($this->discoverPermanentDDLFiles() as $ddlEntry) {
-    		$tableName = $this->dao->doTableNameReplacements($ddlEntry['placeholder']);
-    		$query = $this->dao->doTableNameReplacements($ddlEntry['ddlContent']);
+    		$tableName = $this->dbCore->doTableNameReplacements($ddlEntry['placeholder']);
+    		$query = $this->dbCore->doTableNameReplacements($ddlEntry['ddlContent']);
     		$this->verifyIndexes($tableName, $query);
     	}
     }
@@ -49,7 +49,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_IndexesTrait {
 
 	    	// Get actual columns in the table so we can skip indexes that reference missing columns.
 	    	$existingColumns = [];
-	    	$showColResult = $this->dao->queryAndGetResults("SHOW COLUMNS FROM " . $tableName);
+	    	$showColResult = $this->dbCore->queryAndGetResults("SHOW COLUMNS FROM " . $tableName);
 	    	$showColRows = is_array($showColResult['rows'] ?? null) ? $showColResult['rows'] : [];
 	    	foreach ($showColRows as $colRow) {
 	    		if (!is_array($colRow)) { continue; }
@@ -82,14 +82,14 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_IndexesTrait {
 	    			}
 	    		}
 
-		    		$spellingCacheTableName = $this->dao->doTableNameReplacements('{wp_abj404_spelling_cache}');
+		    		$spellingCacheTableName = $this->dbCore->doTableNameReplacements('{wp_abj404_spelling_cache}');
 		    		$tableNameLower = strtolower($tableName);
 		    		if ($tableNameLower == $spellingCacheTableName && !empty($spec['unique'])) {
-		    			$this->dao->deleteSpellingCache();
+		    			$this->contentRepo->deleteSpellingCache();
 		    		}
 
 	    		$addStatement = $this->buildAddIndexStatementFromParts($tableName, $spec['name'], $spec['columns'], $spec['unique']);
-	    		$this->dao->queryAndGetResults($addStatement);
+	    		$this->dbCore->queryAndGetResults($addStatement);
 	    		$this->logger->infoMessage("I added an index: " . $addStatement);
 	    	}
 	    }
@@ -210,7 +210,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_IndexesTrait {
 	            return;
 	        }
 	        $query = $this->buildAddIndexStatementFromParts($logsTable, $spec['name'], $spec['columns'], $spec['unique']);
-	        $results = $this->dao->queryAndGetResults($query);
+	        $results = $this->dbCore->queryAndGetResults($query);
         if (!empty($results['last_error'])) {
             $this->logger->errorMessage("Failed to add {$indexName} to {$logsTable}: " . $results['last_error'] . " (query: {$query})");
         } else {
@@ -243,7 +243,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_IndexesTrait {
 	        $inplaceQuery = "ALTER TABLE " . $logsTable .
 	            " ADD COLUMN `canonical_url` VARCHAR(2048) DEFAULT NULL," .
 	            " ALGORITHM=INPLACE, LOCK=NONE";
-	        $result = $this->dao->queryAndGetResults($inplaceQuery,
+	        $result = $this->dbCore->queryAndGetResults($inplaceQuery,
 	            array('log_too_slow' => false, 'log_errors' => false));
 	        if (empty($result['last_error'])) {
 	            $this->logger->infoMessage("Added canonical_url to {$logsTable} (ALGORITHM=INPLACE, LOCK=NONE).");
@@ -256,7 +256,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_IndexesTrait {
 	        // on legacy engines where some lock is unavoidable.
 	        $bareQuery = "ALTER TABLE " . $logsTable .
 	            " ADD COLUMN `canonical_url` VARCHAR(2048) DEFAULT NULL";
-	        $bare = $this->dao->queryAndGetResults($bareQuery,
+	        $bare = $this->dbCore->queryAndGetResults($bareQuery,
 	            array('log_too_slow' => false));
 	        if (empty($bare['last_error'])) {
 	            $this->logger->infoMessage("Added canonical_url to {$logsTable} (bare ALTER fallback).");
@@ -288,7 +288,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_IndexesTrait {
 	        $inplaceQuery = "ALTER TABLE " . $redirectsTable .
 	            " ADD COLUMN `canonical_url` VARCHAR(2048) DEFAULT NULL," .
 	            " ALGORITHM=INPLACE, LOCK=NONE";
-	        $result = $this->dao->queryAndGetResults($inplaceQuery,
+	        $result = $this->dbCore->queryAndGetResults($inplaceQuery,
 	            array('log_too_slow' => false, 'log_errors' => false));
 	        if (empty($result['last_error'])) {
 	            $this->logger->infoMessage("Added canonical_url to {$redirectsTable} (ALGORITHM=INPLACE, LOCK=NONE).");
@@ -296,7 +296,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_IndexesTrait {
 	        }
 	        $bareQuery = "ALTER TABLE " . $redirectsTable .
 	            " ADD COLUMN `canonical_url` VARCHAR(2048) DEFAULT NULL";
-	        $bare = $this->dao->queryAndGetResults($bareQuery,
+	        $bare = $this->dbCore->queryAndGetResults($bareQuery,
 	            array('log_too_slow' => false));
 	        if (empty($bare['last_error'])) {
 	            $this->logger->infoMessage("Added canonical_url to {$redirectsTable} (bare ALTER fallback).");

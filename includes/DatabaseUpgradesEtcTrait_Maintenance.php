@@ -10,7 +10,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
     function updateTableEngineToInnoDB() {
     	// get a list of all tables.
         global $wpdb;
-    	$result = $this->dao->getTableEngines();
+    	$result = $this->viewRead->getTableEngines();
     	// if any rows are found then update the tables.
     	$resultRows = isset($result['rows']) && is_array($result['rows']) ? $result['rows'] : [];
     	if (!empty($resultRows)) {
@@ -40,7 +40,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
                     continue;
                 }
 
-                $result = $this->dao->queryAndGetResults($query, array("log_errors" => false));
+                $result = $this->dbCore->queryAndGetResults($query, array("log_errors" => false));
                 $this->logger->infoMessage("I changed an engine: " . $query);
                 $lastError = isset($result['last_error']) && is_string($result['last_error']) ? $result['last_error'] : '';
 
@@ -50,7 +50,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
                     // delete the indexes, try again, and create the indexes later.
                     $this->deleteIndexes($tableName);
                   
-                    $this->dao->queryAndGetResults($query,
+                    $this->dbCore->queryAndGetResults($query,
                       array("ignore_errors" => array("Unknown storage engine")));
                     $this->logger->infoMessage("I tried to change an engine again: " . $query);
                 }
@@ -87,7 +87,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
 	 */
 	function getTableCollationFromShowCreate($tableName) {
 		$query = "SHOW CREATE TABLE `$tableName`";
-		$results = $this->dao->queryAndGetResults($query);
+		$results = $this->dbCore->queryAndGetResults($query);
 
 		// Check for query errors or empty results
 		if (!empty($results['last_error'])) {
@@ -147,7 +147,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
 	function getTableCollationFromInformationSchema($tableName) {
 		global $wpdb;
 
-		$queryResult = $this->dao->queryAndGetResults(
+		$queryResult = $this->dbCore->queryAndGetResults(
 			"SELECT TABLE_COLLATION, " .
 			"SUBSTRING_INDEX(TABLE_COLLATION, '_', 1) as TABLE_CHARSET " .
 			"FROM information_schema.tables " .
@@ -255,7 +255,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
 				return array_key_first($counts);
 			}
 
-			$vars = $this->dao->queryAndGetResults("SHOW VARIABLES LIKE 'collation_database'");
+			$vars = $this->dbCore->queryAndGetResults("SHOW VARIABLES LIKE 'collation_database'");
 			$varRows = isset($vars['rows']) && is_array($vars['rows']) ? $vars['rows'] : [];
 			if (!empty($varRows)) {
 				$row = is_array($varRows[0]) ? $varRows[0] : [];
@@ -280,7 +280,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
 			// Use queryAndGetResults() so the SHOW TABLES call goes through the same DAO
 			// layer as all other queries (enables testability via mock injection).
 			// {wp_prefix} is resolved by doTableNameReplacements inside queryAndGetResults.
-			$rawResult = $this->dao->queryAndGetResults("SHOW TABLES LIKE '{wp_prefix}abj404_%'");
+			$rawResult = $this->dbCore->queryAndGetResults("SHOW TABLES LIKE '{wp_prefix}abj404_%'");
 			$abjTableNames = [];
 			if (isset($rawResult['rows']) && is_array($rawResult['rows'])) {
 				foreach ($rawResult['rows'] as $row) {
@@ -337,7 +337,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
 				$query = "ALTER TABLE {table_name} CONVERT TO CHARSET " . $targetCharset .
 						 " COLLATE " . $targetCollation;
 				$query = str_replace('{table_name}', $tableName, $query);
-				$results = $this->dao->queryAndGetResults($query,
+				$results = $this->dbCore->queryAndGetResults($query,
 					array('ignore_errors' => array("Index column size too large")));
 
 				$lastErr = isset($results['last_error']) && is_string($results['last_error']) ? $results['last_error'] : '';
@@ -349,7 +349,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
 					// delete indexes and try again.
 					$this->deleteIndexes($tableName);
 
-					$retryResults = $this->dao->queryAndGetResults($query);
+					$retryResults = $this->dbCore->queryAndGetResults($query);
 					if (!empty($retryResults['last_error'])) {
 						$this->logger->warn("Charset/collation retry for $tableName failed: " . $retryResults['last_error']);
 					} else {
@@ -372,7 +372,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
 					// staged build: the runner reads the watermark at the next stage
 					// boundary and either aborts cleanly or completes a build whose
 					// built_watermark covers the post-correction data.
-					$this->dao->bumpMutationWatermark();
+					$this->viewBuild->bumpMutationWatermark();
 				}
 		}
 
@@ -389,7 +389,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
 		 * @return bool|null True if mismatch found, false if all match, null if query failed
 		 */
 		private function tableHasMismatchedCharacterColumnCollation($tableName, $targetCharset, $targetCollation) {
-			$results = $this->dao->queryAndGetResults("SHOW FULL COLUMNS FROM " . $tableName);
+			$results = $this->dbCore->queryAndGetResults("SHOW FULL COLUMNS FROM " . $tableName);
 			if (!empty($results['last_error'])) {
 				$this->logger->warn("Failed to read columns for {$tableName}: " . $results['last_error']);
 				return null;
@@ -512,11 +512,11 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
         }
 
         $missingTables = [];
-        $normalizedPrefix = $this->dao->getLowercasePrefix();
+        $normalizedPrefix = $this->dbCore->getLowercasePrefix();
 
         // Check each required table
         foreach ($requiredTables as $tableName) {
-            $fullTableName = $this->dao->getPrefixedTableName($tableName);
+            $fullTableName = $this->dbCore->getPrefixedTableName($tableName);
             // DAO-bypass-approved: Schema-bootstrap inside repairMissingTables() — runs before CREATE TABLE; routing through DAO would trigger the same missing-table auto-repair we are about to invoke ourselves (recursion)
             $tableExists = $wpdb->get_var("SHOW TABLES LIKE '{$fullTableName}'");
 
@@ -600,7 +600,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
 
         $lastError = (string)($wpdb->last_error ?? '');
         if ($lastError !== '') {
-            if (!$this->dao->classifyAndHandleInfrastructureError($lastError)) {
+            if (!$this->dbCore->classifyAndHandleInfrastructureError($lastError)) {
                 $this->logger->errorMessage("Failed to query for expired rate limit transients: " . $lastError);
             }
             return ['deleted' => 0, 'errors' => 1, 'error' => $lastError];
@@ -750,7 +750,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
         if (!isset($wpdb)) {
             return 0;
         }
-        $redirectsTable = $this->dao->doTableNameReplacements('{wp_abj404_redirects}');
+        $redirectsTable = $this->dbCore->doTableNameReplacements('{wp_abj404_redirects}');
 
         // SHOW TABLES existence probe — same shape as verifyTableMaterialized()
         // in DatabaseUpgradesEtc.php:854. The DAO's tableExists() helper is
@@ -777,7 +777,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
                 " WHERE canonical_url IS NULL" .
                 " LIMIT " . $chunkSize;
 
-            $result = $this->dao->queryAndGetResults($query);
+            $result = $this->dbCore->queryAndGetResults($query);
             $lastError = isset($result['last_error']) && is_string($result['last_error']) ? $result['last_error'] : '';
             if ($lastError !== '') {
                 $this->logger->warn("backfillRedirectsCanonicalUrl: stopping after error: " . $lastError);
@@ -836,7 +836,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
         if (!isset($wpdb)) {
             return 0;
         }
-        $logsTable = $this->dao->doTableNameReplacements('{wp_abj404_logsv2}');
+        $logsTable = $this->dbCore->doTableNameReplacements('{wp_abj404_logsv2}');
 
         // SHOW TABLES existence probe — same shape as in
         // backfillRedirectsCanonicalUrl(). Routing through queryAndGetResults
@@ -862,7 +862,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
                 " WHERE canonical_url IS NULL" .
                 " LIMIT " . $chunkSize;
 
-            $result = $this->dao->queryAndGetResults($query);
+            $result = $this->dbCore->queryAndGetResults($query);
             $lastError = isset($result['last_error']) && is_string($result['last_error']) ? $result['last_error'] : '';
             if ($lastError !== '') {
                 $this->logger->warn("backfillLogsv2CanonicalUrl: stopping after error: " . $lastError);
@@ -891,7 +891,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
         // idx_canonical_url because IS NULL is sargable on a B-tree on a
         // nullable column).
         if (!get_option(self::LOGSV2_CANONICAL_URL_BACKFILL_COMPLETE_OPTION)) {
-            $remainingProbe = $this->dao->queryAndGetResults(
+            $remainingProbe = $this->dbCore->queryAndGetResults(
                 "SELECT 1 FROM " . $logsTable . " WHERE canonical_url IS NULL LIMIT 1"
             );
             $remainingRows = is_array($remainingProbe['rows'] ?? null) ? $remainingProbe['rows'] : [];
@@ -948,12 +948,12 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
             return;
         }
 
-        $logsTable = $this->dao->doTableNameReplacements('{wp_abj404_logsv2}');
+        $logsTable = $this->dbCore->doTableNameReplacements('{wp_abj404_logsv2}');
         if (!$this->columnExists($logsTable, 'canonical_url')) {
             return;
         }
 
-        $probe = $this->dao->queryAndGetResults(
+        $probe = $this->dbCore->queryAndGetResults(
             "SELECT 1 FROM " . $logsTable . " WHERE canonical_url IS NULL LIMIT 1",
             array('log_too_slow' => false)
         );
@@ -1029,7 +1029,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
      * @return bool
      */
     private function columnExists(string $tableName, string $columnName): bool {
-        $result = $this->dao->queryAndGetResults("SHOW COLUMNS FROM " . $tableName,
+        $result = $this->dbCore->queryAndGetResults("SHOW COLUMNS FROM " . $tableName,
             array('log_errors' => false));
         $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
         $needle = strtolower($columnName);

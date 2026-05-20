@@ -95,7 +95,7 @@ trait ABJ_404_Solution_PluginLogicTrait_PageOrdering {
                         continue;
                     }
                     $parentPageSlug = $postParent->post_name;
-                    $parentPage = $this->dao->getPublishedPagesAndPostsIDs($parentPageSlug);
+                    $parentPage = $this->contentRepo->getPublishedPagesAndPostsIDs($parentPageSlug);
                     if (count($parentPage) != 0) {
                         $pages[] = $parentPage[0];
                     }
@@ -350,7 +350,7 @@ trait ABJ_404_Solution_PluginLogicTrait_PageOrdering {
             return $emailDigest->sendDigest();
         }
 
-        $captured404Count = $this->dao->getCapturedCountForNotification();
+        $captured404Count = $this->statsRepo->getCapturedCountForNotification();
         if (!$this->shouldNotifyAboutCaptured404s($captured404Count)) {
             return "Not enough 404s found to send an admin notification email (" . $captured404Count . ").";
         }
@@ -432,7 +432,7 @@ trait ABJ_404_Solution_PluginLogicTrait_PageOrdering {
             return get_the_title($idInt);
 
         } else if ($typeInt === ABJ404_TYPE_CAT) {
-            $rows = $this->dao->getPublishedCategories($idInt);
+            $rows = $this->contentRepo->getPublishedCategories($idInt);
             if (empty($rows)) {
                 $this->logger->debugMessage('No TERM (category) found with ID: ' . $id);
                 return '';

@@ -263,6 +263,7 @@ function abj_service($name) {
         'logs_repository' => true,
         'stats_repository' => true,
         'view_read_service' => true,
+        'view_build_orchestrator' => true,
     );
     if (isset($legacyDataAccessModuleServices[$name])) {
         $legacyDaoClass = implode('', array('ABJ_404_Solution_', 'DataAccess'));
