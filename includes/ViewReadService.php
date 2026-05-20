@@ -605,7 +605,9 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
             set_transient($cacheKey, $count, self::LOGS_COUNT_CACHE_TTL_SECONDS);
         }
 
-        return $count;
+        return function_exists('apply_filters')
+            ? (int) apply_filters('abj404_logs_count', $count, $logID)
+            : $count;
     }
 
     /**
@@ -2308,7 +2310,10 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
        if ($size === null || !is_scalar($size)) {
            return 0;
        }
-       return intval($size);
+       $bytes = intval($size);
+       return function_exists('apply_filters')
+           ? (int) apply_filters('abj404_log_disk_usage', $bytes)
+           : $bytes;
    }
 
     /**

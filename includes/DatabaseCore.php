@@ -632,6 +632,9 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
         self::$invalidDataRetryInProgress = true;
         try {
             $retryQuery = $this->get_stripped_query_result($query);
+            $retryQuery = function_exists('apply_filters')
+                ? apply_filters('abj404_invalid_data_retry_query', $retryQuery, $query)
+                : $retryQuery;
             if (!is_string($retryQuery) || trim($retryQuery) === '' || $retryQuery === $query) {
                 return;
             }
