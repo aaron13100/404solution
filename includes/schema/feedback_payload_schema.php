@@ -15,8 +15,9 @@ if (!defined('ABSPATH')) {
  *   - the reports server endpoint, which accepts these fields and stores
  *     them in typed columns or the environment JSON passthrough.
  *
- * Each report type (`error`, `heartbeat`, `uninstall`) shares a base set
- * of fields and adds a small per-type extras section. The schema is
+ * Each report type (`error`, `heartbeat`, `uninstall`, `support_request`)
+ * shares a base set of fields and adds a small per-type extras section.
+ * The schema is
  * declared once and merged per-type so a new field added in one place
  * (say a new server column) requires updates only here, not in three
  * test files.
@@ -165,6 +166,10 @@ return (function (): array {
     $errorExtras = [
         'error_signature'      => ['type' => 'string'],
         'previously_sent_line' => ['type' => 'int'],
+        'debug_log'            => [
+            'type' => 'string',
+            'description' => 'Sanitized plugin debug-log tail emitted by FeedbackTransport::debugLogPayload() for opted-in error/heartbeat diagnostics. Server contract accepts this field as debug_log.',
+        ],
     ];
 
     $heartbeatExtras = $errorExtras;
