@@ -160,7 +160,7 @@ class ABJ_404_Solution_RedirectsRepository implements ABJ_404_Solution_Redirects
             $query = "delete from {wp_abj404_redirects} where id = %d";
             $this->dbCore->queryAndGetResults($query, array('query_params' => array($cleanedID)));
 
-            abj_service('data_access')->invalidateStatusCountsCache();
+            abj_service('view_read_service')->invalidateStatusCountsCache();
             $this->clearRegexRedirectsCache();
         }
     }
@@ -228,7 +228,7 @@ class ABJ_404_Solution_RedirectsRepository implements ABJ_404_Solution_Redirects
             $insertIdRaw = $insertResult['insert_id'] ?? 0;
             $insertId = is_scalar($insertIdRaw) ? (int)$insertIdRaw : 0;
 
-            abj_service('data_access')->invalidateStatusCountsCache();
+            abj_service('view_read_service')->invalidateStatusCountsCache();
             if ($status == ABJ404_STATUS_REGEX) {
                 $this->clearRegexRedirectsCache();
             }
@@ -566,7 +566,7 @@ class ABJ_404_Solution_RedirectsRepository implements ABJ_404_Solution_Redirects
             $rowsAffectedRaw = $purgeResult['rows_affected'] ?? 0;
             $redirectCount = is_scalar($rowsAffectedRaw) ? (int)$rowsAffectedRaw : 0;
 
-            abj_service('data_access')->invalidateStatusCountsCache();
+            abj_service('view_read_service')->invalidateStatusCountsCache();
             $this->clearRegexRedirectsCache();
 
             $message .= sprintf( _n( '%s redirect entry was moved to the trash.',
@@ -741,7 +741,7 @@ class ABJ_404_Solution_RedirectsRepository implements ABJ_404_Solution_Redirects
             $this->dbCore->queryAndGetResults($nullSql, array('query_params' => array(absint($idForUpdate))));
         }
 
-        abj_service('data_access')->invalidateStatusCountsCache();
+        abj_service('view_read_service')->invalidateStatusCountsCache();
         $this->clearRegexRedirectsCache();
 
         $this->moveRedirectsToTrash(absint($idForUpdate), 0);
@@ -779,7 +779,7 @@ class ABJ_404_Solution_RedirectsRepository implements ABJ_404_Solution_Redirects
             'query_params' => array($newstatus, absint($id))
         ));
 
-        abj_service('data_access')->invalidateStatusCountsCache();
+        abj_service('view_read_service')->invalidateStatusCountsCache();
         $this->clearRegexRedirectsCache();
 
         return is_string($result['last_error']) ? $result['last_error'] : '';
@@ -799,7 +799,7 @@ class ABJ_404_Solution_RedirectsRepository implements ABJ_404_Solution_Redirects
             $updateError = isset($updateResult['last_error']) && is_string($updateResult['last_error']) ? $updateResult['last_error'] : '';
             $hadError = $updateError !== '';
 
-            abj_service('data_access')->invalidateStatusCountsCache();
+            abj_service('view_read_service')->invalidateStatusCountsCache();
             $this->clearRegexRedirectsCache();
         } else {
             $hadError = true;
@@ -854,7 +854,7 @@ class ABJ_404_Solution_RedirectsRepository implements ABJ_404_Solution_Redirects
      * @return int
      */
     private function deleteOldRedirectsByType($options, $now, $optionKey, $statusList, $debugMessageType) {
-        $abj404dao = abj_service('data_access');
+        $logsRepo = abj_service('logs_repository');
         $deletedCount = 0;
 
         $rawDays = $options[$optionKey] ?? 0;
@@ -865,11 +865,11 @@ class ABJ_404_Solution_RedirectsRepository implements ABJ_404_Solution_Redirects
         $deletionTime = $deletionDays * 86400;
         $then = $now - $deletionTime;
 
-        $abj404dao->setSqlBigSelects();
+        $this->dbCore->setSqlBigSelects();
 
-        if (!$abj404dao->logsHitsTableExists()) {
+        if (!$logsRepo->logsHitsTableExists()) {
             $this->logger->debugMessage(__FUNCTION__ . " skipping: logs_hits table missing; scheduling rebuild.");
-            $abj404dao->scheduleHitsTableRebuild();
+            $logsRepo->scheduleHitsTableRebuild();
             return 0;
         }
 
@@ -893,7 +893,7 @@ class ABJ_404_Solution_RedirectsRepository implements ABJ_404_Solution_Redirects
                     (is_string($row['best_guess_dest'] ?? '') ? $row['best_guess_dest'] : '') . ' deleted (last used: ' . (is_string($row['last_used_formatted'] ?? '') ? $row['last_used_formatted'] : '') . ').');
             }
 
-            $abj404dao->deleteRedirect(isset($row['id']) && is_scalar($row['id']) ? (string)$row['id'] : '0');
+            $this->deleteRedirect(isset($row['id']) && is_scalar($row['id']) ? (string)$row['id'] : '0');
             $deletedCount++;
         }
 
@@ -941,7 +941,7 @@ class ABJ_404_Solution_RedirectsRepository implements ABJ_404_Solution_Redirects
 
     /** @inheritDoc */
     function deleteOldRedirectsCron() {
-        $abj404dao = abj_service('data_access');
+        $viewRead = abj_service('view_read_service');
         $abj404logic = abj_service('plugin_logic');
 
         $options = $abj404logic->getOptions();
@@ -952,7 +952,7 @@ class ABJ_404_Solution_RedirectsRepository implements ABJ_404_Solution_Redirects
         $oldLogRowsDeletedBySize = 0;
         $oldLogRowsDeletedByAge = 0;
 
-        $manually_fired = $abj404dao->getPostOrGetSanitize('manually_fired', 'false');
+        $manually_fired = abj_service('functions')->getPostOrGetSanitize('manually_fired', 'false');
         if ($this->f->strtolower($manually_fired) == 'true') {
             $manually_fired = true;
         } else {
@@ -992,11 +992,11 @@ class ABJ_404_Solution_RedirectsRepository implements ABJ_404_Solution_Redirects
 
         $junkTrashedCount = $this->autoTrashJunkCapturedUrls($options);
 
-        $logsSizeBytes = $abj404dao->getLogDiskUsage();
+        $logsSizeBytes = $viewRead->getLogDiskUsage();
         $maxLogSizeBytes = (array_key_exists('maximum_log_disk_usage', $options) ? $options['maximum_log_disk_usage'] : 100) * 1024 * 1000;
 
         if ($logsSizeBytes > $maxLogSizeBytes) {
-            $totalLogLines = $abj404dao->getLogsCount(0);
+            $totalLogLines = $viewRead->getLogsCount(0);
             $averageSizePerLine = max($logsSizeBytes, 1) / max($totalLogLines, 1);
             $logLinesToKeep = ceil($maxLogSizeBytes / $averageSizePerLine);
             $logLinesToDelete = max($totalLogLines - $logLinesToKeep, 0);
@@ -1011,7 +1011,7 @@ class ABJ_404_Solution_RedirectsRepository implements ABJ_404_Solution_Redirects
             }
         }
 
-        $logsSizeBytes = $abj404dao->getLogDiskUsage();
+        $logsSizeBytes = $viewRead->getLogDiskUsage();
         $logSizeMB = round($logsSizeBytes / (1024 * 1000), 2);
 
         $renamed = $this->limitDebugFileSize();
@@ -1124,7 +1124,7 @@ class ABJ_404_Solution_RedirectsRepository implements ABJ_404_Solution_Redirects
         }
 
         if ($rowsDeleted > 0) {
-            abj_service('data_access')->invalidateStatusCountsCache();
+            abj_service('view_read_service')->invalidateStatusCountsCache();
         }
 
         return $rowsDeleted;
@@ -1175,8 +1175,8 @@ class ABJ_404_Solution_RedirectsRepository implements ABJ_404_Solution_Redirects
         $totalTrashed += is_numeric($affected) ? (int)$affected : 0;
 
         $cutoff = time() - (14 * DAY_IN_SECONDS);
-        // DAO-bypass-approved: $wpdb->prepare is read-only string formatting; result goes through queryAndGetResults
         // allow-no-watermark-bump: DAO layer; admin callers bump via markViewDoneInvalidatedByAdminMutation()
+        // DAO-bypass-approved: $wpdb->prepare is read-only string formatting; result goes through queryAndGetResults
         $query = $wpdb->prepare("UPDATE {wp_abj404_redirects} r
             SET r.disabled = 1
             WHERE r.status = " . ABJ404_STATUS_CAPTURED . "

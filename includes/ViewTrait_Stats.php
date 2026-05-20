@@ -161,8 +161,8 @@ trait ViewTrait_Stats {
             return;
         }
 
-        $dao = abj_service('data_access');
-        $redirectsTable = $dao->doTableNameReplacements('{wp_abj404_redirects}');
+        $dbCore = abj_service('db_core');
+        $redirectsTable = $dbCore->doTableNameReplacements('{wp_abj404_redirects}');
 
         // Query score distribution bands. Route through the DAO so the
         // 5x SUM(CASE...) aggregate inherits the centralized 60s SELECT
@@ -176,7 +176,7 @@ trait ViewTrait_Stats {
              FROM `{$redirectsTable}`
              WHERE disabled = %d AND status != %d";
 
-        $result = $dao->queryAndGetResults($sql, array('query_params' => array(0, 0)));
+        $result = $dbCore->queryAndGetResults($sql, array('query_params' => array(0, 0)));
         if (!empty($result['timed_out']) || (isset($result['last_error']) && $result['last_error'] != '')) {
             return;
         }
@@ -653,9 +653,9 @@ trait ViewTrait_Stats {
      * @return string
      */
     private function getMigrateFromPluginMarkup(): string {
-        $dao    = abj_service('data_access');
-        $logger = abj_service('logging');
-        $importer = new ABJ_404_Solution_CrossPluginImporter($dao, $logger);
+        $redirectsRepo = abj_service('redirects_repository');
+        $logger        = abj_service('logging');
+        $importer = new ABJ_404_Solution_CrossPluginImporter($redirectsRepo, $logger);
 
         $detected = $importer->detectInstalledPlugins();
 

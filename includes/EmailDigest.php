@@ -14,19 +14,30 @@ if (!defined('ABSPATH')) {
  */
 class ABJ_404_Solution_EmailDigest {
 
-    /** @var ABJ_404_Solution_DataAccess */
-    private $dao;
+    /** @var ABJ_404_Solution_LogsRepository */
+    private $logsRepo;
+
+    /** @var ABJ_404_Solution_StatsRepository */
+    private $statsRepo;
 
     /** @var ABJ_404_Solution_Logging */
     private $logger;
 
     /**
-     * @param ABJ_404_Solution_DataAccess $dao
-     * @param ABJ_404_Solution_Logging $logger
+     * @param ABJ_404_Solution_LogsRepository|object $logsRepoOrLegacyDao
+     * @param ABJ_404_Solution_Logging|ABJ_404_Solution_StatsRepository $loggerOrStatsRepo
+     * @param ABJ_404_Solution_Logging|null $logger
      */
-    public function __construct($dao, $logger) {
-        $this->dao = $dao;
-        $this->logger = $logger;
+    public function __construct($logsRepoOrLegacyDao, $loggerOrStatsRepo = null, $logger = null) {
+        if ($logsRepoOrLegacyDao instanceof ABJ_404_Solution_LogsRepository) {
+            $this->logsRepo = $logsRepoOrLegacyDao;
+            $this->statsRepo = $loggerOrStatsRepo;
+            $this->logger = $logger !== null ? $logger : abj_service('logging');
+        } else {
+            $this->logsRepo = abj_service('logs_repository');
+            $this->statsRepo = abj_service('stats_repository');
+            $this->logger = $loggerOrStatsRepo !== null ? $loggerOrStatsRepo : abj_service('logging');
+        }
     }
 
     /**
@@ -369,15 +380,15 @@ class ABJ_404_Solution_EmailDigest {
         // being rebuilt" from "no captured 404s." Without this, a missing
         // rollup silently produces an "No captured 404s in this period" cell
         // even when captured rows exist — misleading to the admin.
-        $rollupAvailable = $this->dao->logsHitsTableExists();
+        $rollupAvailable = $this->logsRepo->logsHitsTableExists();
         if (!$rollupAvailable) {
             // Schedule a rebuild now so the next digest run has data.
-            $this->dao->scheduleHitsTableRebuild();
+            $this->logsRepo->scheduleHitsTableRebuild();
             $topCaptured = array();
         } else {
-            $topCaptured = $this->dao->getTopCapturedForDigest($limit);
+            $topCaptured = $this->statsRepo->getTopCapturedForDigest($limit);
         }
-        $stats = $this->dao->getDigestSummaryStats();
+        $stats = $this->statsRepo->getDigestSummaryStats();
 
         // Skip the email entirely only when there is genuinely nothing to report
         // AND the rollup is healthy. If the rollup is unavailable but stats show

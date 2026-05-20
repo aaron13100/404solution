@@ -23,7 +23,8 @@ class ABJ_404_Solution_EngineProfileResolver {
     private $cachedProfiles = null;
 
     /** @var ABJ_404_Solution_DataAccess|null Lazy DAO accessor for centralized query handling. */
-    private $dao = null;
+    /** @var ABJ_404_Solution_DatabaseCore|null */
+    private $dbCore = null;
 
     /** @return self */
     public static function getInstance() {
@@ -34,17 +35,17 @@ class ABJ_404_Solution_EngineProfileResolver {
     }
 
     /**
-     * Lazy DAO accessor — defers getInstance() until first use so unit tests
+     * Lazy dbCore accessor, defers resolution until first use so unit tests
      * that exercise pure-logic methods (URL matching, JSON decoding) don't
-     * boot the data-access singleton.
+     * boot the database layer.
      *
-     * @return ABJ_404_Solution_DataAccess
+     * @return ABJ_404_Solution_DatabaseCore
      */
-    private function dao() {
-        if ($this->dao === null) {
-            $this->dao = abj_service('data_access');
+    private function dbCore() {
+        if ($this->dbCore === null) {
+            $this->dbCore = abj_service('db_core');
         }
-        return $this->dao;
+        return $this->dbCore;
     }
 
     /**
@@ -143,7 +144,7 @@ class ABJ_404_Solution_EngineProfileResolver {
             return $this->cachedProfiles;
         }
 
-        $queryResult = $this->dao()->queryAndGetResults(
+        $queryResult = $this->dbCore()->queryAndGetResults(
             "SELECT `id`, `name`, `url_pattern`, `is_regex`, `enabled_engines`, `priority`
              FROM `{$table}`
              WHERE `status` = 1
@@ -288,7 +289,7 @@ class ABJ_404_Solution_EngineProfileResolver {
      * @return bool
      */
     private function tableExists(string $table): bool {
-        $queryResult = $this->dao()->queryAndGetResults(
+        $queryResult = $this->dbCore()->queryAndGetResults(
             'SHOW TABLES LIKE %s',
             ['query_params' => [$table]]
         );
@@ -326,7 +327,7 @@ class ABJ_404_Solution_EngineProfileResolver {
         }
 
         if ($id > 0) {
-            $queryResult = $this->dao()->queryAndGetResults(
+            $queryResult = $this->dbCore()->queryAndGetResults(
                 "UPDATE `{$table}`
                     SET `name` = %s, `url_pattern` = %s, `is_regex` = %d,
                         `enabled_engines` = %s, `priority` = %d, `status` = %d
@@ -338,7 +339,7 @@ class ABJ_404_Solution_EngineProfileResolver {
             return $updateError === '' ? $id : false;
         }
 
-        $queryResult = $this->dao()->queryAndGetResults(
+        $queryResult = $this->dbCore()->queryAndGetResults(
             "INSERT INTO `{$table}` (`name`, `url_pattern`, `is_regex`, `enabled_engines`, `priority`, `status`)
                   VALUES (%s, %s, %d, %s, %d, %d)",
             ['query_params' => [$name, $urlPattern, $isRegex, $enabledEngines, $priority, $status]]
@@ -360,7 +361,7 @@ class ABJ_404_Solution_EngineProfileResolver {
      */
     public function deleteProfile(int $id): bool {
         $table = $this->getTableName();
-        $queryResult = $this->dao()->queryAndGetResults(
+        $queryResult = $this->dbCore()->queryAndGetResults(
             "DELETE FROM `{$table}` WHERE `id` = %d",
             ['query_params' => [$id]]
         );
@@ -381,7 +382,7 @@ class ABJ_404_Solution_EngineProfileResolver {
             return [];
         }
 
-        $queryResult = $this->dao()->queryAndGetResults(
+        $queryResult = $this->dbCore()->queryAndGetResults(
             "SELECT `id`, `name`, `url_pattern`, `is_regex`, `enabled_engines`, `priority`, `status`
              FROM `{$table}`
              ORDER BY `priority` ASC, `id` ASC"

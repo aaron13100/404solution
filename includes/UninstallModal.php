@@ -534,12 +534,12 @@ class ABJ_404_Solution_UninstallModal {
         global $wpdb;
 
         // Guard for test environment where DataAccess class may not be loaded
-        if (!class_exists('ABJ_404_Solution_DataAccess')) {
+        if (!class_exists('ABJ_404_Solution_DatabaseCore')) {
             return 0;
         }
 
-        $dao = abj_service('data_access');
-        $table_name = $dao->getPrefixedTableName('abj404_redirects');
+        $dbCore = abj_service('db_core');
+        $table_name = $dbCore->getPrefixedTableName('abj404_redirects');
 
         // Check if table exists
         // DAO-bypass-approved: Diagnostic table-existence probe for redirect-count display
@@ -582,25 +582,25 @@ class ABJ_404_Solution_UninstallModal {
         }
 
         try {
-            $dao = abj_service('data_access');
+            $viewRead = abj_service('view_read_service');
 
             // Get redirect counts by status
-            $redirectCounts = $dao->getRedirectStatusCounts(true);
+            $redirectCounts = $viewRead->getRedirectStatusCounts(true);
             if (is_array($redirectCounts)) {
                 $stats['redirects'] = $redirectCounts;
             }
 
             // Get captured 404s counts by status
-            $capturedCounts = $dao->getCapturedStatusCounts(true);
+            $capturedCounts = $viewRead->getCapturedStatusCounts(true);
             if (is_array($capturedCounts)) {
                 $stats['captured'] = $capturedCounts;
             }
 
             // Get log entry count
-            $stats['log_count'] = $dao->getLogsCount(0);
+            $stats['log_count'] = $viewRead->getLogsCount(0);
 
             // Get log table size
-            $logTableSizeBytes = $dao->getLogDiskUsage();
+            $logTableSizeBytes = $viewRead->getLogDiskUsage();
             if ($logTableSizeBytes > 0) {
                 $stats['log_table_size_mb'] = round($logTableSizeBytes / (1024 * 1024), 2);
             }
@@ -950,7 +950,7 @@ class ABJ_404_Solution_UninstallModal {
         }
 
         $dbUtils = abj_service('database_upgrades');
-        $dao = abj_service('data_access');
+        $dbCore = abj_service('db_core');
 
         // Get baseline from wp_posts
         $targetTable = $wpdb->prefix . 'posts';
@@ -974,7 +974,7 @@ class ABJ_404_Solution_UninstallModal {
         );
 
         // Discover all plugin tables dynamically so new tables are automatically included.
-        $prefix = $dao->getLowercasePrefix();
+        $prefix = $dbCore->getLowercasePrefix();
         // DAO-bypass-approved: Diagnostic table enumeration for collation snapshot
         $rawTables = $wpdb->get_results(
             $wpdb->prepare("SHOW TABLES LIKE %s", $wpdb->esc_like($prefix . 'abj404_') . '%'),

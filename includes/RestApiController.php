@@ -17,19 +17,43 @@ class ABJ_404_Solution_RestApiController {
 
     const NAMESPACE = 'abj404/v1';
 
-    /** @var ABJ_404_Solution_DataAccess */
-    private $dao;
+    /** @var ABJ_404_Solution_ViewReadService */
+    private $viewRead;
+
+    /** @var ABJ_404_Solution_ViewBuildOrchestrator */
+    private $viewBuild;
+
+    /** @var ABJ_404_Solution_RedirectsRepository */
+    private $redirectsRepo;
+
+    /** @var ABJ_404_Solution_LogsRepository */
+    private $logsRepo;
+
+    /** @var ABJ_404_Solution_StatsRepository */
+    private $statsRepo;
+
+    /** @var ABJ_404_Solution_DatabaseCore */
+    private $dbCore;
 
     /** @var ABJ_404_Solution_PluginLogic */
     private $logic;
 
     /**
-     * @param ABJ_404_Solution_DataAccess  $dao
-     * @param ABJ_404_Solution_PluginLogic $logic
+     * @param object $daoOrLogic Legacy: DataAccess + PluginLogic. New: just PluginLogic.
+     * @param ABJ_404_Solution_PluginLogic|null $logic
      */
-    public function __construct($dao, $logic) {
-        $this->dao   = $dao;
-        $this->logic = $logic;
+    public function __construct($daoOrLogic, $logic = null) {
+        if ($logic !== null) {
+            $this->logic = $logic;
+        } else {
+            $this->logic = $daoOrLogic;
+        }
+        $this->viewRead = abj_service('view_read_service');
+        $this->viewBuild = abj_service('view_build_orchestrator');
+        $this->redirectsRepo = abj_service('redirects_repository');
+        $this->logsRepo = abj_service('logs_repository');
+        $this->statsRepo = abj_service('stats_repository');
+        $this->dbCore = abj_service('db_core');
     }
 
     /** @return void */
@@ -196,8 +220,8 @@ class ABJ_404_Solution_RestApiController {
             'sub'     => $sub,
         );
 
-        $rows  = $this->dao->getRedirectsForView($sub, $tableOptions);
-        $total = $this->dao->getRedirectsForViewCount($sub, $tableOptions);
+        $rows  = $this->viewRead->getRedirectsForView($sub, $tableOptions);
+        $total = $this->viewRead->getRedirectsForViewCount($sub, $tableOptions);
 
         $rows = is_array($rows) ? $rows : array();
 
@@ -243,13 +267,13 @@ class ABJ_404_Solution_RestApiController {
         $type     = $resolved['type'];
         $dest     = $resolved['dest'];
 
-        $insertedId = $this->dao->setupRedirect($from, $status, (string)$type, $dest, (string)$code, 0, 'rest-api');
+        $insertedId = $this->redirectsRepo->setupRedirect($from, $status, (string)$type, $dest, (string)$code, 0, 'rest-api');
 
         if (!$insertedId) {
             return new \WP_Error('create_failed', __('Failed to create redirect.', '404-solution'), array('status' => 500));
         }
 
-        $this->dao->markViewDoneInvalidatedByAdminMutation();
+        $this->viewBuild->markViewDoneInvalidatedByAdminMutation();
 
         return new \WP_REST_Response(array(
             'id'     => intval($insertedId),
@@ -294,13 +318,13 @@ class ABJ_404_Solution_RestApiController {
         $type       = $resolved['type'];
         $dest       = $resolved['dest'];
 
-        $error = $this->dao->updateRedirect((int)$type, $dest, $from, $id, (string)$code, $statusType);
+        $error = $this->redirectsRepo->updateRedirect((int)$type, $dest, $from, $id, (string)$code, $statusType);
 
         if ($error !== '') {
             return new \WP_Error('update_failed', $error, array('status' => 500));
         }
 
-        $this->dao->markViewDoneInvalidatedByAdminMutation();
+        $this->viewBuild->markViewDoneInvalidatedByAdminMutation();
 
         return new \WP_REST_Response(array(
             'id'     => $id,
@@ -325,13 +349,13 @@ class ABJ_404_Solution_RestApiController {
             return new \WP_Error('invalid_id', __('Invalid redirect ID.', '404-solution'), array('status' => 400));
         }
 
-        $error = $this->dao->moveRedirectsToTrash($id, 1);
+        $error = $this->redirectsRepo->moveRedirectsToTrash($id, 1);
 
         if ($error !== '') {
             return new \WP_Error('trash_failed', $error, array('status' => 500));
         }
 
-        $this->dao->markViewDoneInvalidatedByAdminMutation();
+        $this->viewBuild->markViewDoneInvalidatedByAdminMutation();
 
         return new \WP_REST_Response(array('trashed' => true, 'id' => $id), 200);
     }
@@ -350,13 +374,13 @@ class ABJ_404_Solution_RestApiController {
         $perPage = min(100, max(1, absint(is_scalar($rawPerPage) ? $rawPerPage : 20)));
 
         $types = array(ABJ404_STATUS_CAPTURED, ABJ404_STATUS_IGNORED, ABJ404_STATUS_LATER);
-        $total = $this->dao->getRecordCount($types, 0);
+        $total = $this->viewRead->getRecordCount($types, 0);
 
-        $redirectsTable = $this->dao->doTableNameReplacements('{wp_abj404_redirects}');
+        $redirectsTable = $this->dbCore->doTableNameReplacements('{wp_abj404_redirects}');
         $statusIn       = implode(', ', array_map('absint', $types));
         $limitStart     = ($page - 1) * $perPage;
 
-        $queryResult = $this->dao->queryAndGetResults(
+        $queryResult = $this->dbCore->queryAndGetResults(
             "SELECT id, url, status, type, final_dest, code, timestamp, disabled
              FROM `{$redirectsTable}`
              WHERE status IN ({$statusIn}) AND disabled = 0
@@ -401,7 +425,7 @@ class ABJ_404_Solution_RestApiController {
         }
 
         // Load the captured row to get the "from" URL.
-        $rows = $this->dao->getRedirectsByIDs(array($id));
+        $rows = $this->redirectsRepo->getRedirectsByIDs(array($id));
         if (empty($rows)) {
             return new \WP_Error('not_found', __('Captured 404 not found.', '404-solution'), array('status' => 404));
         }
@@ -415,13 +439,13 @@ class ABJ_404_Solution_RestApiController {
         $resolved = $this->resolveDestinationType($to);
         $type     = $resolved['type'];
         $dest     = $resolved['dest'];
-        $error    = $this->dao->updateRedirect((int)$type, $dest, $from, $id, (string)$code, (string)ABJ404_STATUS_MANUAL);
+        $error    = $this->redirectsRepo->updateRedirect((int)$type, $dest, $from, $id, (string)$code, (string)ABJ404_STATUS_MANUAL);
 
         if ($error !== '') {
             return new \WP_Error('update_failed', $error, array('status' => 500));
         }
 
-        $this->dao->markViewDoneInvalidatedByAdminMutation();
+        $this->viewBuild->markViewDoneInvalidatedByAdminMutation();
 
         return new \WP_REST_Response(array(
             'id'   => $id,
@@ -439,7 +463,7 @@ class ABJ_404_Solution_RestApiController {
      */
     public function getStats($request) {
         try {
-            $snapshot = $this->dao->getStatsDashboardSnapshot(true);
+            $snapshot = $this->statsRepo->getStatsDashboardSnapshot(true);
             // getStatsDashboardSnapshot always returns array{refreshed_at, hash, data}.
             $data = is_array($snapshot['data']) ? $snapshot['data'] : array();
 
@@ -503,8 +527,8 @@ class ABJ_404_Solution_RestApiController {
             'filter'  => '',
         );
 
-        $rows  = $this->dao->getLogRecords($tableOptions);
-        $total = $this->dao->getLogsCount(0);
+        $rows  = $this->logsRepo->getLogRecords($tableOptions);
+        $total = $this->viewRead->getLogsCount(0);
 
         $rows = is_array($rows) ? $rows : array();
 
@@ -553,11 +577,11 @@ class ABJ_404_Solution_RestApiController {
         }
 
         // Check for an existing redirect stored in the database.
-        $redirect = $this->dao->getExistingRedirectForURL($normalizedUrl);
+        $redirect = $this->redirectsRepo->getExistingRedirectForURL($normalizedUrl);
 
         if (!is_array($redirect) || empty($redirect) || !isset($redirect['id']) || !is_scalar($redirect['id']) || intval($redirect['id']) === 0) {
             // Also check regex redirects.
-            $regexRedirects = $this->dao->getRedirectsWithRegEx();
+            $regexRedirects = $this->redirectsRepo->getRedirectsWithRegEx();
             $matchedRegex   = null;
             if (is_array($regexRedirects)) {
                 foreach ($regexRedirects as $rr) {

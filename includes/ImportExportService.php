@@ -187,16 +187,16 @@ class ABJ_404_Solution_ImportExportService {
      * @return array<int, array{source: string, dest: string, code: int, is_regex: bool}>
      */
     function getExportableRedirects() {
-        $dao = abj_service('data_access');
-        $redirectsTable = $dao->doTableNameReplacements('{wp_abj404_redirects}');
-        $cacheTable     = $dao->doTableNameReplacements('{wp_abj404_permalink_cache}');
+        $dbCore = abj_service('db_core');
+        $redirectsTable = $dbCore->doTableNameReplacements('{wp_abj404_redirects}');
+        $cacheTable     = $dbCore->doTableNameReplacements('{wp_abj404_permalink_cache}');
 
         $manualStatus = defined('ABJ404_STATUS_MANUAL') ? (int)ABJ404_STATUS_MANUAL : 1;
         $regexStatus  = defined('ABJ404_STATUS_REGEX')  ? (int)ABJ404_STATUS_REGEX  : 6;
         $typeExternal = defined('ABJ404_TYPE_EXTERNAL') ? (int)ABJ404_TYPE_EXTERNAL : 4;
         $typeHome     = defined('ABJ404_TYPE_HOME')     ? (int)ABJ404_TYPE_HOME     : 5;
 
-        $queryResult = $dao->queryAndGetResults(
+        $queryResult = $dbCore->queryAndGetResults(
             "SELECT r.url, r.status, r.type, r.final_dest, r.code, r.disabled,
                     pc.url AS cached_url
              FROM {$redirectsTable} r

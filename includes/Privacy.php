@@ -73,15 +73,15 @@ class ABJ_404_Solution_Privacy {
         return $erasers;
     }
 
-    /** @return ABJ_404_Solution_DataAccess */
-    private static function resolveDao() {
+    /** @return ABJ_404_Solution_LogsRepository */
+    private static function resolveLogsRepo() {
         if (class_exists('ABJ_404_Solution_ServiceContainer')) {
-            $svc = ABJ_404_Solution_ServiceContainer::safeGet('data_access');
-            if ($svc instanceof ABJ_404_Solution_DataAccess) {
+            $svc = ABJ_404_Solution_ServiceContainer::safeGet('logs_repository');
+            if ($svc instanceof ABJ_404_Solution_LogsRepository) {
                 return $svc;
             }
         }
-        return abj_service('data_access');
+        return abj_service('logs_repository');
     }
 
     /**
@@ -119,7 +119,7 @@ class ABJ_404_Solution_Privacy {
             );
         }
 
-        $dao = self::resolveDao();
+        $dao = self::resolveLogsRepo();
         $perPage = 50;
         $page = max(1, absint($page));
 
@@ -189,7 +189,7 @@ class ABJ_404_Solution_Privacy {
             );
         }
 
-        $dao = self::resolveDao();
+        $dao = self::resolveLogsRepo();
         $perPage = 100;
         $page = max(1, absint($page));
 

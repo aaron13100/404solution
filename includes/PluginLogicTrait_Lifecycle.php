@@ -324,8 +324,8 @@ trait ABJ_404_Solution_PluginLogicTrait_Lifecycle {
             switch_to_blog($blog_id);
 
             global $wpdb;
-            $dao = abj_service('data_access');
-            $prefix = $dao->getLowercasePrefix();
+            $dbCore = abj_service('db_core');
+            $prefix = $dbCore->getLowercasePrefix();
 
             // Remove ALL custom database tables via dynamic discovery.
             // SHOW TABLES is the source of truth; new tables are automatically included.

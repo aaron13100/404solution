@@ -248,7 +248,7 @@ class ABJ_404_Solution_ShortCode {
         $abj404logic = abj_service('plugin_logic');
         $abj404spellChecker = abj_service('spell_checker');
         $f = abj_service('functions');
-        $abj404dao = abj_service('data_access');
+        $viewReadService = abj_service('view_read_service');
         
         // Attributes
         $atts = shortcode_atts(
@@ -380,7 +380,7 @@ class ABJ_404_Solution_ShortCode {
                     $postIDs[$index] = $f->substr($idStr, 0, $pipePos !== false ? $pipePos : null);
                 }
 
-                $rawExtraData = $abj404dao->getExtraDataToPermalinkSuggestions($postIDs);
+                $rawExtraData = $viewReadService->getExtraDataToPermalinkSuggestions($postIDs);
                 foreach ($rawExtraData as $dataItem) {
                     if (!is_array($dataItem)) {
                         continue;

@@ -41,9 +41,8 @@ class ABJ_404_Solution_Ajax_SettingsModeToggle {
         self::requireAdminWithNonce('abj404_mode_toggle');
 
         $container = ABJ_404_Solution_ServiceContainer::getInstance();
-        /** @var ABJ_404_Solution_Functions|ABJ_404_Solution_DataAccess $functions */
-        $functions = $container->has('functions') ? $container->get('functions')
-            : ($container->has('data_access') ? $container->get('data_access') : abj_service('functions'));
+        /** @var ABJ_404_Solution_Functions $functions */
+        $functions = $container->has('functions') ? $container->get('functions') : abj_service('functions');
         $abj404logic = abj_service('plugin_logic');
 
         $mode = $functions->getPostOrGetSanitize('mode');

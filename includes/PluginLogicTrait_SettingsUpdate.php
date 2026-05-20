@@ -538,7 +538,7 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
             if (in_array($freq, $allowed_frequencies, true)) {
                 $options['admin_notification_frequency'] = $freq;
                 // Reschedule digest cron whenever frequency changes.
-                $emailDigest = new ABJ_404_Solution_EmailDigest($this->dao, $this->logger);
+                $emailDigest = new ABJ_404_Solution_EmailDigest(abj_service('logs_repository'), abj_service('stats_repository'), $this->logger);
                 $emailDigest->scheduleNextDigest();
             } else {
                 $message .= __('Error: Invalid email notification frequency selected', '404-solution') . ".<BR/>";

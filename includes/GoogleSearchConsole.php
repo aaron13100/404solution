@@ -501,8 +501,8 @@ class ABJ_404_Solution_GoogleSearchConsole {
      * @return string[]
      */
     protected function getUrlsToQuery(): array {
-        $dao = abj_service('data_access');
-        return $dao->getDistinctLoggedUrls();
+        $logsRepo = abj_service('logs_repository');
+        return $logsRepo->getDistinctLoggedUrls();
     }
 
     /**

@@ -532,8 +532,8 @@ class ABJ_404_Solution_StatsRepository implements ABJ_404_Solution_StatsReposito
 
     /** @inheritDoc */
     function getCapturedCountForNotification(): int {
-        $abj404dao = abj_service('data_access');
-        return $abj404dao->getRecordCount(array(ABJ404_STATUS_CAPTURED));
+        $viewRead = abj_service('view_read_service');
+        return $viewRead->getRecordCount(array(ABJ404_STATUS_CAPTURED));
     }
 
     // =========================================================================

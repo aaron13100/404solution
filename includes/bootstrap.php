@@ -246,7 +246,7 @@ function abj_404_solution_init_services() {
      */
     $container->set('engine_title', function($c) {
         return new ABJ_404_Solution_TitleMatchingEngine(
-            $c->get('data_access'),
+            $c->get('content_repository'),
             $c->get('functions'),
             $c->get('logging')
         );
@@ -258,7 +258,7 @@ function abj_404_solution_init_services() {
      */
     $container->set('engine_category_tag', function($c) {
         return new ABJ_404_Solution_CategoryTagMatchingEngine(
-            $c->get('data_access'),
+            $c->get('content_repository'),
             $c->get('functions'),
             $c->get('logging')
         );
@@ -270,7 +270,7 @@ function abj_404_solution_init_services() {
      */
     $container->set('engine_content', function($c) {
         return new ABJ_404_Solution_ContentMatchingEngine(
-            $c->get('data_access'),
+            $c->get('content_repository'),
             $c->get('functions'),
             $c->get('logging')
         );

@@ -46,8 +46,8 @@ class ABJ_404_Solution_CategoryTagMatchingEngine implements ABJ_404_Solution_Mat
         'our', 'own', 'who', 'you',
     ];
 
-    /** @var ABJ_404_Solution_DataAccess */
-    private $dao;
+    /** @var ABJ_404_Solution_ContentRepository */
+    private $contentRepo;
 
     /** @var ABJ_404_Solution_Functions */
     private $f;
@@ -56,16 +56,16 @@ class ABJ_404_Solution_CategoryTagMatchingEngine implements ABJ_404_Solution_Mat
     private $logger;
 
     /**
-     * @param ABJ_404_Solution_DataAccess $dao
+     * @param ABJ_404_Solution_ContentRepository $contentRepo
      * @param ABJ_404_Solution_Functions $f
      * @param ABJ_404_Solution_Logging $logger
      */
     public function __construct(
-        ABJ_404_Solution_DataAccess $dao,
+        ABJ_404_Solution_ContentRepository $contentRepo,
         ABJ_404_Solution_Functions $f,
         ABJ_404_Solution_Logging $logger
     ) {
-        $this->dao = $dao;
+        $this->contentRepo = $contentRepo;
         $this->f = $f;
         $this->logger = $logger;
     }
@@ -158,7 +158,7 @@ class ABJ_404_Solution_CategoryTagMatchingEngine implements ABJ_404_Solution_Mat
         // Try each non-last segment as a category slug
         for ($i = 0; $i < count($segments) - 1; $i++) {
             $categorySlug = $this->f->strtolower($segments[$i]);
-            $categories = $this->dao->getPublishedCategories(null, $categorySlug, 1);
+            $categories = $this->contentRepo->getPublishedCategories(null, $categorySlug, 1);
 
             if (empty($categories)) {
                 continue;
@@ -172,7 +172,7 @@ class ABJ_404_Solution_CategoryTagMatchingEngine implements ABJ_404_Solution_Mat
             }
 
             $extraWhere = $this->buildCategoryPostWhereClause($termId, $keywords);
-            $rows = $this->dao->getPublishedPagesAndPostsIDs('', '', '0,' . self::QUERY_LIMIT, '', $extraWhere);
+            $rows = $this->contentRepo->getPublishedPagesAndPostsIDs('', '', '0,' . self::QUERY_LIMIT, '', $extraWhere);
 
             if (empty($rows)) {
                 continue;
@@ -241,7 +241,7 @@ class ABJ_404_Solution_CategoryTagMatchingEngine implements ABJ_404_Solution_Mat
         $bestType = null;
 
         if ($autoCats === '1') {
-            $categories = $this->dao->getPublishedCategories();
+            $categories = $this->contentRepo->getPublishedCategories();
             foreach ($categories as $cat) {
                 $name = isset($cat->name) && is_string($cat->name) ? $cat->name : '';
                 if ($name === '') {
@@ -257,7 +257,7 @@ class ABJ_404_Solution_CategoryTagMatchingEngine implements ABJ_404_Solution_Mat
         }
 
         if ($autoTags === '1') {
-            $tags = $this->dao->getPublishedTags();
+            $tags = $this->contentRepo->getPublishedTags();
             foreach ($tags as $tag) {
                 $name = isset($tag->name) && is_string($tag->name) ? $tag->name : '';
                 if ($name === '') {

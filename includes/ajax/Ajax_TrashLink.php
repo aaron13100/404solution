@@ -14,9 +14,8 @@ class ABJ_404_Solution_Ajax_TrashLink {
      */
     static function trashAction(): void {
         $container = ABJ_404_Solution_ServiceContainer::getInstance();
-        /** @var ABJ_404_Solution_Functions|ABJ_404_Solution_DataAccess $functions */
-        $functions = $container->has('functions') ? $container->get('functions')
-            : ($container->has('data_access') ? $container->get('data_access') : abj_service('functions'));
+        /** @var ABJ_404_Solution_Functions $functions */
+        $functions = $container->has('functions') ? $container->get('functions') : abj_service('functions');
         /** @var ABJ_404_Solution_RedirectsRepositoryInterface $redirectsRepository */
         $redirectsRepository = abj_service('redirects_repository');
         /** @var ABJ_404_Solution_ViewBuildOrchestratorInterface $viewBuildOrchestrator */

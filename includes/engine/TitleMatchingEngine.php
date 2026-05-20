@@ -45,8 +45,8 @@ class ABJ_404_Solution_TitleMatchingEngine implements ABJ_404_Solution_MatchingE
         'our', 'own', 'who', 'you',
     ];
 
-    /** @var ABJ_404_Solution_DataAccess */
-    private $dao;
+    /** @var ABJ_404_Solution_ContentRepository */
+    private $contentRepo;
 
     /** @var ABJ_404_Solution_Functions */
     private $f;
@@ -55,16 +55,16 @@ class ABJ_404_Solution_TitleMatchingEngine implements ABJ_404_Solution_MatchingE
     private $logger;
 
     /**
-     * @param ABJ_404_Solution_DataAccess $dao
+     * @param ABJ_404_Solution_ContentRepository $contentRepo
      * @param ABJ_404_Solution_Functions $f
      * @param ABJ_404_Solution_Logging $logger
      */
     public function __construct(
-        ABJ_404_Solution_DataAccess $dao,
+        ABJ_404_Solution_ContentRepository $contentRepo,
         ABJ_404_Solution_Functions $f,
         ABJ_404_Solution_Logging $logger
     ) {
-        $this->dao = $dao;
+        $this->contentRepo = $contentRepo;
         $this->f = $f;
         $this->logger = $logger;
     }
@@ -101,7 +101,7 @@ class ABJ_404_Solution_TitleMatchingEngine implements ABJ_404_Solution_MatchingE
         }
 
         $extraWhere = $this->buildWhereClause($keywords);
-        $rows = $this->dao->getPublishedPagesAndPostsIDs('', '', '0,' . self::QUERY_LIMIT, '', $extraWhere);
+        $rows = $this->contentRepo->getPublishedPagesAndPostsIDs('', '', '0,' . self::QUERY_LIMIT, '', $extraWhere);
 
         if (empty($rows)) {
             $this->logger->debugMessage("Title engine: no candidates for keywords [" .

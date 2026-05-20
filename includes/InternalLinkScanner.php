@@ -132,11 +132,11 @@ class ABJ_404_Solution_InternalLinkScanner {
 
         $capturedStatus = defined('ABJ404_STATUS_CAPTURED') ? intval(ABJ404_STATUS_CAPTURED) : 3;
 
-        // Use the plugin's DAO if available, otherwise fall back to strtolower prefix.
-        $dao = null;
-        if (class_exists('ABJ_404_Solution_DataAccess')) {
-            $dao = abj_service('data_access');
-            $redirectsTable = $dao->doTableNameReplacements('{wp_abj404_redirects}');
+        // Use the plugin's DatabaseCore if available, otherwise fall back to strtolower prefix.
+        $dbCore = null;
+        if (class_exists('ABJ_404_Solution_DatabaseCore')) {
+            $dbCore = abj_service('db_core');
+            $redirectsTable = $dbCore->doTableNameReplacements('{wp_abj404_redirects}');
         } else {
             $redirectsTable = strtolower($wpdb->prefix) . 'abj404_redirects';
         }
@@ -146,9 +146,9 @@ class ABJ_404_Solution_InternalLinkScanner {
         // Route through queryAndGetResults() so this nightly-cron scan inherits
         // the centralized timeout, retry, and corrupted-table recovery instead
         // of failing silently or hanging. Only fall back to the raw $wpdb path
-        // when the DAO class is unavailable (e.g. integration test bootstraps).
-        if ($dao !== null) {
-            $result = $dao->queryAndGetResults($sql, array(
+        // when the DatabaseCore class is unavailable (e.g. integration test bootstraps).
+        if ($dbCore !== null) {
+            $result = $dbCore->queryAndGetResults($sql, array(
                 'query_params' => array($capturedStatus),
             ));
             if (!empty($result['timed_out']) ||

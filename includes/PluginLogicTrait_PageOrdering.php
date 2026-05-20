@@ -346,7 +346,7 @@ trait ABJ_404_Solution_PluginLogicTrait_PageOrdering {
 
         // For non-instant frequencies, the digest handles sending — skip the count-only email.
         if ($frequency !== 'instant') {
-            $emailDigest = new ABJ_404_Solution_EmailDigest($this->dao, $this->logger);
+            $emailDigest = new ABJ_404_Solution_EmailDigest(abj_service('logs_repository'), abj_service('stats_repository'), $this->logger);
             return $emailDigest->sendDigest();
         }
 

@@ -657,10 +657,10 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
         $this->cleanupExpiredRateLimitTransients();
 
         // Flag redirects whose destination URL is generating 404s (drives redirect suspension)
-        abj_service('data_access')->flagDeadDestinationRedirects();
+        abj_service('redirects_repository')->flagDeadDestinationRedirects();
 
         // Expire auto-created redirects that exceed the configured age threshold
-        abj_service('data_access')->expireOldAutoRedirects();
+        abj_service('redirects_repository')->expireOldAutoRedirects();
 
         // Backfill canonical_url on legacy redirect rows so the captured-page
         // JOIN to logs_hits.requested_url stays index-friendly. Chunked + rate-
@@ -700,17 +700,19 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
      * @return void
      */
     private function refreshViewDoneSnapshotInline(): void {
-        $dao = abj_service('data_access');
-        if (!is_object($dao)
-                || !method_exists($dao, 'invalidateViewSnapshotCache')
-                || !method_exists($dao, 'advanceViewBuildOnce')) {
+        $viewRead = abj_service('view_read_service');
+        $viewBuild = abj_service('view_build_orchestrator');
+        if (!is_object($viewRead)
+                || !method_exists($viewRead, 'invalidateViewSnapshotCache')
+                || !is_object($viewBuild)
+                || !method_exists($viewBuild, 'advanceViewBuildOnce')) {
             return;
         }
-        $dao->invalidateViewSnapshotCache();
+        $viewRead->invalidateViewSnapshotCache();
         // 11 staged sub-stages with up to a few yields each on resumable
         // stages (S2/S4/S5); 30 ticks comfortably covers a full rebuild.
         for ($i = 0; $i < 30; $i++) {
-            $progress = $dao->advanceViewBuildOnce();
+            $progress = $viewBuild->advanceViewBuildOnce();
             if (!is_array($progress)) { break; }
             if (($progress['status'] ?? '') === 'ready') { break; }
             if (!empty($progress['locked'])) { break; }

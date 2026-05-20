@@ -368,8 +368,9 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
         require_once __DIR__ . '/DataAccess.php';
         require_once __DIR__ . '/ImportExportService.php';
 
-        $dao     = abj_service('data_access');
-        $logging = abj_service('logging');
+        $viewReadService = abj_service('view_read_service');
+        $viewBuild       = abj_service('view_build_orchestrator');
+        $logging         = abj_service('logging');
         $svc     = new ABJ_404_Solution_ImportExportService(
             abj_service('view_read_service'),
             abj_service('redirects_repository'),
@@ -398,7 +399,7 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
         // circuits. Without this, a 10K-row import fires ~60K transient
         // / option / watermark queries; the one end-of-loop markView
         // bump below covers the entire batch.
-        $rowResult = $dao->runWithDeferredInvalidation(function () use (
+        $rowResult = $viewReadService->runWithDeferredInvalidation(function () use (
                 $svc, $fileHandle, $delimiter, $dryRun) {
             $local = array(
                 'headerColumns' => null,
@@ -478,7 +479,7 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
         // the next admin tab read so imported rows appear immediately, matching
         // the admin form path (handleActionImportFile in
         // PluginLogicTrait_AdminActions.php).
-        $dao->markViewDoneInvalidatedByAdminMutation();
+        $viewBuild->markViewDoneInvalidatedByAdminMutation();
         \WP_CLI::success("Import complete. Valid={$validRows}, invalid={$invalidRows}, total={$processedRows}");
     }
 

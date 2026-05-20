@@ -945,7 +945,7 @@ class ABJ_404_Solution_FeedbackTransport {
      * @return array<string, int>
      */
     private static function redirectCountsRaw(): array {
-        $dao = self::dao();
+        $dao = self::viewReadService();
         if ($dao === null || !method_exists($dao, 'getRedirectStatusCounts')) {
             throw new \RuntimeException('DataAccess::getRedirectStatusCounts unavailable');
         }
@@ -968,7 +968,7 @@ class ABJ_404_Solution_FeedbackTransport {
      * @return array<string, int>
      */
     private static function capturedCountsRaw(): array {
-        $dao = self::dao();
+        $dao = self::viewReadService();
         if ($dao === null || !method_exists($dao, 'getCapturedStatusCounts')) {
             throw new \RuntimeException('DataAccess::getCapturedStatusCounts unavailable');
         }
@@ -989,7 +989,7 @@ class ABJ_404_Solution_FeedbackTransport {
      * @return int Row count of {prefix}abj404_logsv2.
      */
     private static function logEntriesCount(): int {
-        $dao = self::dao();
+        $dao = self::viewReadService();
         if ($dao === null || !method_exists($dao, 'getLogsCount')) {
             throw new \RuntimeException('DataAccess::getLogsCount unavailable');
         }
@@ -1004,7 +1004,7 @@ class ABJ_404_Solution_FeedbackTransport {
      * @return int data_length + index_length for the log table.
      */
     private static function logTableSizeBytes(): int {
-        $dao = self::dao();
+        $dao = self::viewReadService();
         if ($dao === null || !method_exists($dao, 'getLogDiskUsage')) {
             throw new \RuntimeException('DataAccess::getLogDiskUsage unavailable');
         }
@@ -1125,13 +1125,13 @@ class ABJ_404_Solution_FeedbackTransport {
      *
      * @return object|null
      */
-    private static function dao(): ?object {
+    private static function viewReadService(): ?object {
         if (!function_exists('abj_service')) {
             return null;
         }
         // allow-silent-catch: container may not be initialized in early-boot or test contexts; null return signals callers to use zero defaults, no diagnostic info exists yet to log
         try {
-            $svc = abj_service('data_access');
+            $svc = abj_service('view_read_service');
             return is_object($svc) ? $svc : null;
         } catch (\Throwable $e) {
             return null;

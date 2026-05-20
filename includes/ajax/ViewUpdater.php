@@ -554,19 +554,6 @@ class ABJ_404_Solution_ViewUpdater {
             $functions = $container->get('functions');
             return $functions;
         }
-        if ($container->has('data_access')) {
-            /** @var ABJ_404_Solution_DataAccess $dao */
-            $dao = $container->get('data_access');
-            return $dao;
-        }
-        if (class_exists('ABJ_404_Solution_DataAccess')) {
-            $ref = new ReflectionProperty('ABJ_404_Solution_DataAccess', 'instance');
-            $instance = $ref->getValue();
-            if (is_object($instance) && get_class($instance) !== 'ABJ_404_Solution_DataAccess') {
-                /** @var ABJ_404_Solution_DataAccess $instance */
-                return $instance;
-            }
-        }
         /** @var ABJ_404_Solution_Functions $functions */
         $functions = abj_service('functions');
         return $functions;
