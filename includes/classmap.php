@@ -141,6 +141,8 @@ return array(
     'ABJ_404_Solution_SystemPage' => $base . 'includes/SystemPage.php',
     'ABJ_404_Solution_SynchronizationUtils' => $base . 'includes/SynchronizationUtils.php',
     'ABJ_404_Solution_Timer' => $base . 'includes/Timer.php',
+    'ABJ_404_Solution_TrackingDatabaseCore' => $base . 'includes/TrackingDatabaseCore.php',
+    'ABJ_404_Solution_TrackingLogsRepository' => $base . 'includes/TrackingLogsRepository.php',
     'ABJ_404_Solution_UninstallModal' => $base . 'includes/UninstallModal.php',
     'ABJ_404_Solution_Uninstaller' => $base . 'includes/Uninstaller.php',
     'ABJ_404_Solution_UserRequest' => $base . 'includes/php/objs/UserRequest.php',

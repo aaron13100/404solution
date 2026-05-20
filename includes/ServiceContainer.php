@@ -257,24 +257,27 @@ function abj_service($name) {
         return new ABJ_404_Solution_PiiRedactor(abj_service('functions'));
     }
 
-    static $legacyDataAccessModuleServices = array(
-        'db_core' => true,
-        'content_repository' => true,
-        'redirects_repository' => true,
-        'logs_repository' => true,
-        'stats_repository' => true,
-        'view_read_service' => true,
-        'view_build_orchestrator' => true,
+    static $legacyDataAccessModuleGetters = array(
+        'db_core' => 'getDbCore',
+        'content_repository' => 'getContentRepo',
+        'redirects_repository' => 'getRedirectsRepo',
+        'logs_repository' => 'getLogsRepo',
+        'stats_repository' => 'getStatsRepo',
+        'view_read_service' => 'getViewReadService',
+        'view_build_orchestrator' => 'getViewBuildOrchestrator',
     );
-    if (isset($legacyDataAccessModuleServices[$name])) {
+    if (isset($legacyDataAccessModuleGetters[$name])) {
         $legacyDaoClass = implode('', array('ABJ_404_Solution_', 'DataAccess'));
         if (!class_exists($legacyDaoClass) || !method_exists($legacyDaoClass, 'getInstance')) {
             return null;
         }
         try {
-            /** @var callable(): mixed $callback */
-            $callback = array($legacyDaoClass, 'getInstance');
-            return call_user_func($callback);
+            $dao = call_user_func(array($legacyDaoClass, 'getInstance'));
+            $getter = $legacyDataAccessModuleGetters[$name];
+            if (method_exists($dao, $getter)) {
+                return $dao->$getter();
+            }
+            return $dao;
         } catch (\Throwable $e) {
             error_log('404 Solution: abj_service(' . $name . ') legacy DataAccess fallback failed: ' . $e->getMessage());
             return null;
