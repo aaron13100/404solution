@@ -146,15 +146,13 @@ class ABJ_404_Solution_PluginLogic {
     	$this->dao = $dataAccess !== null ? $dataAccess : abj_service('data_access');
     	$this->logger = $logging !== null ? $logging : abj_service('logging');
 
-    	/** @var ABJ_404_Solution_RedirectsRepositoryInterface&ABJ_404_Solution_LogsRepositoryInterface&ABJ_404_Solution_ViewBuildOrchestratorInterface&ABJ_404_Solution_ViewReadServiceInterface&ABJ_404_Solution_ContentRepositoryInterface&ABJ_404_Solution_StatsRepositoryInterface&ABJ_404_Solution_DatabaseCoreInterface $dao */
-    	$dao = $this->dao;
-    	$this->redirectsRepo = $dao;
-    	$this->logsRepo = $dao;
-    	$this->viewBuild = $dao;
-    	$this->viewRead = $dao;
-    	$this->contentRepo = $dao;
-    	$this->statsRepo = $dao;
-    	$this->dbCore = $dao;
+    	$this->redirectsRepo = $this->dao->getRedirectsRepo();
+    	$this->logsRepo = $this->dao->getLogsRepo();
+    	$this->viewBuild = $this->dao->getViewBuildOrchestrator();
+    	$this->viewRead = $this->dao->getViewReadService();
+    	$this->contentRepo = $this->dao->getContentRepo();
+    	$this->statsRepo = $this->dao->getStatsRepo();
+    	$this->dbCore = $this->dao->getDbCore();
 
         $urlPath = parse_url(get_home_url(), PHP_URL_PATH);
         // Fix MEDIUM #1 (5th review): Distinguish between parse failure (false) and no path (null)

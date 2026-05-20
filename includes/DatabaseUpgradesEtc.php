@@ -9,6 +9,7 @@ require_once __DIR__ . '/DatabaseUpgradesEtcTrait_NGram.php';
 require_once __DIR__ . '/DatabaseUpgradesEtcTrait_Maintenance.php';
 require_once __DIR__ . '/DatabaseUpgradesEtcTrait_PluginUpdate.php';
 require_once __DIR__ . '/DatabaseUpgradesEtcTrait_TableRepair.php';
+require_once __DIR__ . '/DatabaseUpgradesEtcTrait_Indexes.php';
 
 /* Functions in this class should all reference one of the following variables or support functions that do.
  *      $wpdb, $_GET, $_POST, $_SERVER, $_.*
@@ -101,14 +102,11 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 		$this->logic = $pluginLogic !== null ? $pluginLogic : abj_service('plugin_logic');
 		$this->ngramFilter = $ngramFilter !== null ? $ngramFilter : abj_service('ngram_filter');
 
-		/** @var ABJ_404_Solution_DatabaseCoreInterface&ABJ_404_Solution_ContentRepositoryInterface&ABJ_404_Solution_ViewBuildOrchestratorInterface&ABJ_404_Solution_ViewReadServiceInterface&ABJ_404_Solution_LogsRepositoryInterface&ABJ_404_Solution_RedirectsRepositoryInterface $dao */
-		/** @var ABJ_404_Solution_DatabaseCoreInterface&ABJ_404_Solution_ContentRepositoryInterface&ABJ_404_Solution_ViewBuildOrchestratorInterface&ABJ_404_Solution_ViewReadServiceInterface&ABJ_404_Solution_LogsRepositoryInterface $dao */
-		$dao = $this->dao;
-		$this->dbCore = $dao;
-		$this->contentRepo = $dao;
-		$this->viewBuild = $dao;
-		$this->viewRead = $dao;
-		$this->logsRepo = $dao;
+		$this->dbCore = $this->dao->getDbCore();
+		$this->contentRepo = $this->dao->getContentRepo();
+		$this->viewBuild = $this->dao->getViewBuildOrchestrator();
+		$this->viewRead = $this->dao->getViewReadService();
+		$this->logsRepo = $this->dao->getLogsRepo();
 	}
 
 	/** @return self */

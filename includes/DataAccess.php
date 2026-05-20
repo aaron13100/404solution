@@ -179,6 +179,29 @@ class ABJ_404_Solution_DataAccess {
         return ABJ_404_Solution_DatabaseCore::isSetStatementWrapperUnsupported();
     }
 
+    /** @return void */
+    public static function resetViewBuildOncePerRequestGuard(): void {
+        ABJ_404_Solution_ViewBuildOrchestrator::resetViewBuildOncePerRequestGuard();
+    }
+
+    /** @param string $url @return string */
+    public static function computeRedirectsCanonicalUrl($url): string {
+        return ABJ_404_Solution_RedirectsRepository::computeRedirectsCanonicalUrl($url);
+    }
+
+    /** @param string $columnExpr @return string */
+    public static function hitsCanonicalUrlSqlExpression(string $columnExpr): string {
+        return ABJ_404_Solution_RedirectsRepository::hitsCanonicalUrlSqlExpression($columnExpr);
+    }
+
+    /**
+     * @param string|null $raw
+     * @return array<int, array{step: string, outcome: string, detail: string}>|null
+     */
+    public static function decompressPipelineTrace(?string $raw): ?array {
+        return ABJ_404_Solution_LogsRepository::decompressPipelineTrace($raw);
+    }
+
     /** @var ABJ_404_Solution_Functions */
     private $f;
 
@@ -311,10 +334,34 @@ class ABJ_404_Solution_DataAccess {
         return $this->viewBuildOrchestrator;
     }
 
-    // Facade delegations removed in Phase 8e.
-    // Callers now use extracted services directly:
-    //   ViewBuildOrchestrator, ViewReadService, StatsRepository,
-    //   RedirectsRepository, ContentRepository, LogsRepository, DatabaseCore.
+    /**
+     * Backward-compatibility bridge for facade delegations removed in Phase 8e.
+     * Routes method calls to the extracted sub-service that owns them.
+     *
+     * @param string $name
+     * @param array<int, mixed> $arguments
+     * @return mixed
+     * @throws \BadMethodCallException
+     */
+    public function __call(string $name, array $arguments) {
+        $delegates = [
+            $this->dbCore,
+            $this->logsRepo,
+            $this->redirectsRepo,
+            $this->contentRepo,
+            $this->statsRepo,
+            $this->viewBuildOrchestrator,
+            $this->viewReadService,
+        ];
+        foreach ($delegates as $delegate) {
+            if ($delegate !== null && is_callable([$delegate, $name])) {
+                return $delegate->$name(...$arguments);
+            }
+        }
+        throw new \BadMethodCallException(
+            'Method ' . $name . '() not found on ' . static::class . ' or its sub-services.'
+        );
+    }
 
     /**
      * @param ABJ_404_Solution_Clock $clock
