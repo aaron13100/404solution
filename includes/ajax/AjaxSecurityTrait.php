@@ -37,11 +37,5 @@ trait ABJ_404_Solution_AjaxSecurityTrait {
             return; // @phpstan-ignore deadCode.unreachable
         }
 
-        $ajaxAction = isset($_REQUEST['action']) && is_string($_REQUEST['action'])
-            ? sanitize_text_field($_REQUEST['action']) : '(unknown)';
-        $logger = abj_service('logging');
-        if (is_object($logger) && method_exists($logger, 'debugMessage')) {
-            $logger->debugMessage("AJAX authorized: " . $ajaxAction);
-        }
     }
 }
