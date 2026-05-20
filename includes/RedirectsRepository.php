@@ -1217,7 +1217,7 @@ class ABJ_404_Solution_RedirectsRepository implements ABJ_404_Solution_Redirects
 
         if (!$hitsTableExists || !$this->logsHitsHasFailedHitsColumn()) {
             /** @var ABJ_404_Solution_LogsRepository|null $logsRepo */
-            $logsRepo = abj_service('logs');
+            $logsRepo = abj_service('logs_repository');
             if ($logsRepo !== null) {
                 $logsRepo->scheduleHitsTableRebuild();
             }
