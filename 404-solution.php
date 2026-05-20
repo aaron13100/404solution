@@ -1155,8 +1155,8 @@ if (!function_exists('abj404_dailyMaintenanceCronJobListener')) {
 function abj404_dailyMaintenanceCronJobListener() {
     try {
         require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
-        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-        $abj404dao->deleteOldRedirectsCron();
+        $redirectsRepo = abj_service('redirects_repository');
+        $redirectsRepo->deleteOldRedirectsCron();
 
         $dbUpgrades = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
         $dbUpgrades->runDatabaseMaintenanceTasks();
@@ -1171,8 +1171,8 @@ if (!function_exists('abj404_updateLogsHitsTableListener')) {
 function abj404_updateLogsHitsTableListener() {
     try {
         require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
-        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-        $abj404dao->createRedirectsForViewHitsTable();
+        $logsRepo = abj_service('logs_repository');
+        $logsRepo->createRedirectsForViewHitsTable();
     } catch (\Throwable $e) {
         error_log('404 Solution cron (logs/hits): ' . $e->getMessage());
     }
@@ -1261,8 +1261,8 @@ if (!function_exists('abj404_rebuildViewDoneListener')) {
 function abj404_rebuildViewDoneListener() {
     try {
         require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
-        $abj404dao = ABJ_404_Solution_DataAccess::getInstance();
-        $abj404dao->rebuildViewDoneInBackground();
+        $viewBuild = abj_service('view_build_orchestrator');
+        $viewBuild->rebuildViewDoneInBackground();
     } catch (\Throwable $e) {
         error_log('404 Solution cron (view table rebuild): ' . $e->getMessage());
     }

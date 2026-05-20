@@ -218,6 +218,7 @@ class ABJ_404_Solution_ServiceContainer {
  *     $name is 'db_core' ? ABJ_404_Solution_DatabaseCore : (
  *     $name is 'content_repository' ? ABJ_404_Solution_ContentRepository : (
  *     $name is 'redirects_repository' ? ABJ_404_Solution_RedirectsRepository : (
+ *     $name is 'logs_repository' ? ABJ_404_Solution_LogsRepository : (
  *     $name is 'stats_repository' ? ABJ_404_Solution_StatsRepository : (
  *     $name is 'view_read_service' ? ABJ_404_Solution_ViewReadService : (
  *     $name is 'view_build_orchestrator' ? ABJ_404_Solution_ViewBuildOrchestrator : (
@@ -244,7 +245,7 @@ class ABJ_404_Solution_ServiceContainer {
  *     $name is 'view_suggestions' ? ABJ_404_Solution_View_Suggestions : (
  *     $name is 'shortcode' ? ABJ_404_Solution_ShortCode :
  *     mixed
- * ))))))))))))))))))))))))))))))))
+ * )))))))))))))))))))))))))))))))))
  */
 function abj_service($name) {
     $container = ABJ_404_Solution_ServiceContainer::getInstance();
