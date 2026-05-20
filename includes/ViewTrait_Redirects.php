@@ -9,6 +9,213 @@ if (!defined('ABSPATH')) {
  */
 trait ViewTrait_Redirects {
 
+
+    /**
+     * Resolve final destination, pageIDAndType, and redirect code from a redirect row.
+     *
+     * @param array<string, mixed> $redirect
+     * @param array<string, mixed> $options
+     * @return array{final: string, pageIDAndType: string, codeSelected: string}
+     */
+    private function resolveRedirectDestinationInfo(array $redirect, array $options): array {
+        $final = "";
+        $pageIDAndType = "";
+        $redirectType = $redirect['type'] ?? null;
+        $redirectFinalDestRaw = $redirect['final_dest'] ?? 0;
+        $redirectFinalDest = is_scalar($redirectFinalDestRaw) ? (string)$redirectFinalDestRaw : '0';
+        if ($redirectType == ABJ404_TYPE_EXTERNAL) {
+            $final = $redirectFinalDest;
+            $pageIDAndType = ABJ404_TYPE_EXTERNAL . "|" . ABJ404_TYPE_EXTERNAL;
+            
+        } else if ($redirectFinalDest != 0) {
+            // if a destination has been specified then let's fill it in.
+            $pageIDAndType = $redirectFinalDest . "|" . $redirectType;
+            
+        } else if ($redirectType == ABJ404_TYPE_404_DISPLAYED) {
+        	$pageIDAndType = ABJ404_TYPE_404_DISPLAYED . "|" . ABJ404_TYPE_404_DISPLAYED;
+        }
+        
+        $rawCode = $redirect['code'] ?? '';
+        if ($rawCode == "") {
+            $rawDefault = $options['default_redirect'] ?? '301';
+            $codeSelected = is_string($rawDefault) ? $rawDefault : '301';
+        } else {
+            $codeSelected = is_string($rawCode) ? $rawCode : '301';
+        }
+
+        return array('final' => $final, 'pageIDAndType' => $pageIDAndType, 'codeSelected' => $codeSelected);
+    }
+
+    /**
+     * Build the redirect-to autocomplete dropdown HTML from the template.
+     *
+     * @param string $pageTitle
+     * @param string $pageIDAndType
+     * @return string
+     */
+    private function buildRedirectToDropdownHtml(string $pageTitle, string $pageIDAndType): string {
+        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ .
+                "/html/addManualRedirectPageSearchDropdown.html");
+        $html = $this->f->str_replace('{redirect_to_label}', __('Redirect to', '404-solution'), $html);
+        $html = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_EMPTY}',
+                __('(Type a page name or an external URL)', '404-solution'), $html);
+        $html = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_PAGE}',
+                __('(A page has been selected.)', '404-solution'), $html);
+        $html = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_CUSTOM_STRING}',
+        	__('(A custom string has been entered.)', '404-solution'), $html);
+        $html = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_URL}',
+                __('(An external URL will be used.)', '404-solution'), $html);
+        $html = $this->f->str_replace('{REDIRECT_TO_USER_FIELD_WARNING}', '', $html);
+        $html = $this->f->str_replace('{redirectPageTitle}', esc_attr($pageTitle), $html);
+        $html = $this->f->str_replace('{pageIDAndType}', esc_attr($pageIDAndType), $html);
+        $html = $this->f->str_replace('{data-url}',
+                "admin-ajax.php?action=echoRedirectToPages&includeDefault404Page=true&includeSpecial=true&nonce=" . wp_create_nonce('abj404_ajax'), $html);
+        $html = $this->f->doNormalReplacements($html);
+        return $html;
+    }
+
+
+    /**
+     * Render hidden inputs and URL list for bulk redirect editing.
+     *
+     * @param array<int, int> $recnums_multiple
+     * @return array{redirect: array<string, mixed>, redirects_multiple: array<int, array<string, mixed>>}|null Null on error (already echoed).
+     */
+    private function renderBulkRedirectFormFields(array $recnums_multiple): ?array {
+        $redirects_multiple = $this->redirectsRepository->getRedirectsByIDs($recnums_multiple);
+        if ($redirects_multiple == null) {
+            echo "Error: Invalid ID Numbers! (ids: " . esc_html(implode(',', $recnums_multiple)) . ")";
+            $this->logger->debugMessage("Error: Invalid ID Numbers! (ids: " . 
+                    esc_html(implode(',', $recnums_multiple)) . ")");
+            return null;
+        }
+
+        echo '<input type="hidden" name="ids_multiple" value="' . esc_attr(implode(',', $recnums_multiple)) . '">';
+
+        // Bulk URL list
+        echo '<div class="abj404-form-group">';
+        echo '<label class="abj404-form-label">' . esc_html__('URLs to redirect', '404-solution') . ' (' . count($redirects_multiple) . ')</label>';
+        echo '<div class="abj404-url-list">';
+        echo '<ul>';
+        foreach ($redirects_multiple as $bulkRedirect) {
+            /** @var array<string, mixed> $bulkRedirect */
+            $bulkUrl = is_string($bulkRedirect['url'] ?? '') ? (string)($bulkRedirect['url'] ?? '') : '';
+            echo '<li><code>' . esc_html($bulkUrl) . '</code></li>';
+        }
+        echo '</ul>';
+        echo '</div>';
+        echo '</div>';
+
+        // here we set the variable to the first value returned because it's used to set default values
+        // in the form data.
+        $redirect = reset($redirects_multiple);
+
+        return array(
+            'redirect' => $redirect,
+            'redirects_multiple' => $redirects_multiple,
+        );
+    }
+
+    /**
+     * Render the suggestion block for a captured URL's best match.
+     *
+     * @param array{title: string, score: int, id_and_type: string, type_label: string} $suggestion
+     * @return void
+     */
+    private function renderSuggestionBlock(array $suggestion): void {
+        echo '<div class="abj404-suggestion-block" id="abj404-suggestion-block">';
+        echo '<div class="abj404-suggestion-label">' . esc_html__('Suggested destination', '404-solution') . '</div>';
+        echo '<div class="abj404-suggestion-content">';
+        echo '<strong>' . esc_html($suggestion['title']) . '</strong>';
+        if (!empty($suggestion['type_label'])) {
+            echo '<span class="abj404-suggestion-type">' . esc_html($suggestion['type_label']) . '</span>';
+        }
+        echo '<span class="abj404-score-badge abj404-score-' . ($suggestion['score'] >= 75 ? 'high' : ($suggestion['score'] >= 50 ? 'medium' : 'low')) . '">'
+            . esc_html($suggestion['score'] . '%') . ' ' . esc_html__('match', '404-solution') . '</span>';
+        echo '</div>';
+        echo '<div class="abj404-suggestion-actions">';
+        echo '<button type="button" class="button button-primary" onclick="abj404AcceptSuggestion(this)"'
+            . ' data-page-title="' . esc_attr($suggestion['title']) . '"'
+            . ' data-page-id-type="' . esc_attr($suggestion['id_and_type']) . '">'
+            . esc_html__('Accept Suggestion', '404-solution') . '</button>';
+        echo '<button type="button" class="button" onclick="abj404ShowManualPicker()">'
+            . esc_html__('Pick a Different Page', '404-solution') . '</button>';
+        echo '</div>';
+        echo '</div>';
+    }
+
+    /**
+     * Render hidden inputs, URL field, regex checkbox and date fields for a single redirect.
+     *
+     * @param int $recnum
+     * @param bool $isSimpleMode
+     * @return array{redirect: array<string, mixed>, redirects_multiple: array<int, array<string, mixed>>, redirectUrl: string, startDate: string, endDate: string}|null Null on error (already echoed).
+     */
+    private function renderSingleRedirectFormFields(int $recnum, bool $isSimpleMode): ?array {
+        $recnumAsArray = array();
+        $recnumAsArray[] = $recnum;
+        $redirects_multiple = $this->redirectsRepository->getRedirectsByIDs($recnumAsArray);
+
+        if (empty($redirects_multiple)) {
+            echo "Error: Invalid ID Number! (id: " . esc_html((string)$recnum) . ")";
+            $this->logger->errorMessage("Error: Invalid ID Number! (id: " . esc_html((string)$recnum) . ")");
+            return null;
+        }
+
+        /** @var array<string, mixed> $redirect */
+        $redirect = reset($redirects_multiple);
+        $row = ABJ_404_Solution_RedirectRow::fromRaw($redirect);
+        $isRegexChecked = '';
+        if ($row !== null && $row->isRegex()) {
+            $isRegexChecked = ' checked ';
+        }
+
+        $redirectId = $row !== null ? (string)$row->getId() : '';
+        $redirectUrl = $row !== null ? $row->getUrl() : '';
+        echo '<input type="hidden" name="id" value="' . esc_attr($redirectId) . '">';
+
+        // URL field (with optional "Matched by" note for auto-created redirects)
+        echo '<div class="abj404-form-group">';
+        echo '<label class="abj404-form-label" for="url">' . esc_html__('URL', '404-solution') . ' *</label>';
+        echo '<input type="text" id="url" name="url" class="abj404-form-input" value="' . esc_attr($redirectUrl) . '" required>';
+        $redirectEngine = $row !== null ? $row->getEngine() : '';
+        if ($redirectEngine !== '') {
+            $humanEngine = $this->humanizeEngineName($redirectEngine);
+            echo '<p class="abj404-form-help abj404-matched-by">' . esc_html__('Auto-matched by:', '404-solution') . ' ' . esc_html($humanEngine) . '</p>';
+        }
+        echo '</div>';
+
+        // Regex checkbox (hidden in Simple mode)
+        if (!$isSimpleMode) {
+            echo '<div class="abj404-form-group">';
+            echo '<div class="abj404-checkbox-group">';
+            echo '<input type="checkbox" name="is_regex_url" id="is_regex_url" class="abj404-checkbox-input" value="1" ' . $isRegexChecked . '>';
+            echo '<label for="is_regex_url" class="abj404-checkbox-label">' . esc_html__('Treat this URL as a regular expression', '404-solution') . '</label>';
+            echo ' <a href="#" class="abj404-regex-toggle" onclick="abj404ToggleRegexInfo(event)">' . esc_html__('(Explain)', '404-solution') . '</a>';
+            echo '</div>';
+            echo '<div class="abj404-regex-info" style="display: none;">';
+            echo '<p>' . esc_html__('When checked, the text is treated as a regular expression. Note that including a bad regular expression or one that takes too long will break your website. So please use caution and test them elsewhere before trying them here. If you don\'t know what you\'re doing please don\'t use this option (as it\'s not necessary for the functioning of the plugin).', '404-solution') . '</p>';
+            echo '<p><strong>' . esc_html__('Example:', '404-solution') . '</strong> <code>/events/(.+)</code></p>';
+            echo '<p>' . esc_html__('/events/(.+) will match any URL that begins with /events/ and redirect to the specified page. Since a capture group is used, you can use a $1 replacement in the destination string of an external URL.', '404-solution') . '</p>';
+            echo '</div>';
+            echo '</div>';
+        }
+
+        // Scheduled redirect dates (rendered inside Advanced Options in echoEditRedirect)
+        $startTs = $row !== null ? $row->getStartTs() : 0;
+        $endTs = $row !== null ? $row->getEndTs() : 0;
+        $startDate = $startTs > 0 ? date('Y-m-d', $startTs) : '';
+        $endDate = $endTs > 0 ? date('Y-m-d', $endTs) : '';
+
+        return array(
+            'redirect' => $redirect,
+            'redirects_multiple' => $redirects_multiple,
+            'redirectUrl' => $redirectUrl,
+            'startDate' => $startDate,
+            'endDate' => $endDate,
+        );
+    }
+
     /** @return void */
     function echoAdminEditRedirectPage() {
 
@@ -152,34 +359,14 @@ trait ViewTrait_Redirects {
             $endDate = $endTs > 0 ? date('Y-m-d', $endTs) : '';
 
         } else if ($recnums_multiple != null) {
-            $redirects_multiple = $this->redirectsRepository->getRedirectsByIDs($recnums_multiple);
-            if ($redirects_multiple == null) {
-                echo "Error: Invalid ID Numbers! (ids: " . esc_html(implode(',', $recnums_multiple)) . ")";
-                $this->logger->debugMessage("Error: Invalid ID Numbers! (ids: " . 
-                        esc_html(implode(',', $recnums_multiple)) . ")");
+            $bulkResult = $this->renderBulkRedirectFormFields($recnums_multiple);
+            if ($bulkResult === null) {
                 return;
             }
+            $redirect = $bulkResult['redirect'];
+            $redirects_multiple = $bulkResult['redirects_multiple'];
+            $redirectUrl = '';
 
-            echo '<input type="hidden" name="ids_multiple" value="' . esc_attr(implode(',', $recnums_multiple)) . '">';
-
-            // Bulk URL list
-            echo '<div class="abj404-form-group">';
-            echo '<label class="abj404-form-label">' . esc_html__('URLs to redirect', '404-solution') . ' (' . count($redirects_multiple) . ')</label>';
-            echo '<div class="abj404-url-list">';
-            echo '<ul>';
-            foreach ($redirects_multiple as $bulkRedirect) {
-                /** @var array<string, mixed> $bulkRedirect */
-                $bulkUrl = is_string($bulkRedirect['url'] ?? '') ? (string)($bulkRedirect['url'] ?? '') : '';
-                echo '<li><code>' . esc_html($bulkUrl) . '</code></li>';
-            }
-            echo '</ul>';
-            echo '</div>';
-            echo '</div>';
-            
-            // here we set the variable to the first value returned because it's used to set default values
-            // in the form data.
-            $redirect = reset($redirects_multiple);
-            
         } else {
             $idsText = '';
             echo "Error: Invalid ID Number(s) specified! (id: " . esc_html((string)$recnum) . ", ids: " . esc_html($idsText) . ")";
@@ -188,30 +375,10 @@ trait ViewTrait_Redirects {
             return;
         }
         
-        $final = "";
-        $pageIDAndType = "";
-        $redirectType = $redirect['type'] ?? null;
-        $redirectFinalDestRaw = $redirect['final_dest'] ?? 0;
-        $redirectFinalDest = is_scalar($redirectFinalDestRaw) ? (string)$redirectFinalDestRaw : '0';
-        if ($redirectType == ABJ404_TYPE_EXTERNAL) {
-            $final = $redirectFinalDest;
-            $pageIDAndType = ABJ404_TYPE_EXTERNAL . "|" . ABJ404_TYPE_EXTERNAL;
-            
-        } else if ($redirectFinalDest != 0) {
-            // if a destination has been specified then let's fill it in.
-            $pageIDAndType = $redirectFinalDest . "|" . $redirectType;
-            
-        } else if ($redirectType == ABJ404_TYPE_404_DISPLAYED) {
-        	$pageIDAndType = ABJ404_TYPE_404_DISPLAYED . "|" . ABJ404_TYPE_404_DISPLAYED;
-        }
-        
-        $rawCode = $redirect['code'] ?? '';
-        if ($rawCode == "") {
-            $rawDefault = $options['default_redirect'] ?? '301';
-            $codeSelected = is_string($rawDefault) ? $rawDefault : '301';
-        } else {
-            $codeSelected = is_string($rawCode) ? $rawCode : '301';
-        }
+        $destInfo = $this->resolveRedirectDestinationInfo($redirect, $options);
+        $final = $destInfo['final'];
+        $pageIDAndType = $destInfo['pageIDAndType'];
+        $codeSelected = $destInfo['codeSelected'];
         
         // Try to find a suggested destination for captured URLs.
         // Any captured URL should get a suggestion lookup — the plugin may have auto-assigned
@@ -224,53 +391,20 @@ trait ViewTrait_Redirects {
 
         // Render suggested destination block (if available)
         if ($suggestion !== null) {
-            echo '<div class="abj404-suggestion-block" id="abj404-suggestion-block">';
-            echo '<div class="abj404-suggestion-label">' . esc_html__('Suggested destination', '404-solution') . '</div>';
-            echo '<div class="abj404-suggestion-content">';
-            echo '<strong>' . esc_html($suggestion['title']) . '</strong>';
-            if (!empty($suggestion['type_label'])) {
-                echo '<span class="abj404-suggestion-type">' . esc_html($suggestion['type_label']) . '</span>';
-            }
-            echo '<span class="abj404-score-badge abj404-score-' . ($suggestion['score'] >= 75 ? 'high' : ($suggestion['score'] >= 50 ? 'medium' : 'low')) . '">'
-                . esc_html($suggestion['score'] . '%') . ' ' . esc_html__('match', '404-solution') . '</span>';
-            echo '</div>';
-            echo '<div class="abj404-suggestion-actions">';
-            echo '<button type="button" class="button button-primary" onclick="abj404AcceptSuggestion(this)"'
-                . ' data-page-title="' . esc_attr($suggestion['title']) . '"'
-                . ' data-page-id-type="' . esc_attr($suggestion['id_and_type']) . '">'
-                . esc_html__('Accept Suggestion', '404-solution') . '</button>';
-            echo '<button type="button" class="button" onclick="abj404ShowManualPicker()">'
-                . esc_html__('Pick a Different Page', '404-solution') . '</button>';
-            echo '</div>';
-            echo '</div>';
+            $this->renderSuggestionBlock($suggestion);
         }
 
         // When creating from captured URLs, clear the redirect_to field so the
         // placeholder text is visible. The suggestion block (if shown) handles
         // presenting the best match separately.
+        $redirectFinalDest = is_scalar($redirect['final_dest'] ?? 0) ? (string)($redirect['final_dest'] ?? '0') : '0';
         if ($isFromCaptured) {
             $pageTitle = '';
             $pageIDAndType = '';
         } else {
             $pageTitle = $this->logic->getPageTitleFromIDAndType($pageIDAndType, $redirectFinalDest);
         }
-        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ .
-                "/html/addManualRedirectPageSearchDropdown.html");
-        $html = $this->f->str_replace('{redirect_to_label}', __('Redirect to', '404-solution'), $html);
-        $html = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_EMPTY}',
-                __('(Type a page name or an external URL)', '404-solution'), $html);
-        $html = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_PAGE}',
-                __('(A page has been selected.)', '404-solution'), $html);
-        $html = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_CUSTOM_STRING}',
-        	__('(A custom string has been entered.)', '404-solution'), $html);
-        $html = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_URL}',
-                __('(An external URL will be used.)', '404-solution'), $html);
-        $html = $this->f->str_replace('{REDIRECT_TO_USER_FIELD_WARNING}', '', $html);
-        $html = $this->f->str_replace('{redirectPageTitle}', esc_attr($pageTitle), $html);
-        $html = $this->f->str_replace('{pageIDAndType}', esc_attr($pageIDAndType), $html);
-        $html = $this->f->str_replace('{data-url}',
-                "admin-ajax.php?action=echoRedirectToPages&includeDefault404Page=true&includeSpecial=true&nonce=" . wp_create_nonce('abj404_ajax'), $html);
-        $html = $this->f->doNormalReplacements($html);
+        $html = $this->buildRedirectToDropdownHtml($pageTitle, $pageIDAndType);
 
         // In Simple mode with a suggestion, hide the manual picker initially
         $manualPickerHiddenClass = ($suggestion !== null && $isSimpleMode) ? ' abj404-hidden' : '';

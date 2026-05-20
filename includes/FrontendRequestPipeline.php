@@ -205,6 +205,78 @@ class ABJ_404_Solution_FrontendRequestPipeline {
         }
     }
 
+
+    /**
+     * Handle the empty-URL branch: single page / page redirect cleanup.
+     *
+     * @param string $requestedURL
+     * @param array<string, mixed> $redirect
+     * @param array<string, mixed> $options
+     * @return void
+     */
+    private function handleEmptyUrlSinglePageRedirect(string $requestedURL, array $redirect, array $options): void {
+        if ($this->callWpFunction('is_single', array(), false) || $this->callWpFunction('is_page', array(), false)) {
+            if (!$this->callWpFunction('is_feed', array(), false) &&
+                    !$this->callWpFunction('is_trackback', array(), false) &&
+                    !$this->callWpFunction('is_preview', array(), false)) {
+                $theID = $this->callWpFunction('get_the_ID', array(), 0);
+                $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($theID . "|" . $this->wpTypePost(), 0, null, $options);
+
+                $permLinkVal = isset($permalink['link']) && is_string($permalink['link']) ? $permalink['link'] : '';
+                $urlParts = parse_url($permLinkVal);
+                if (!is_array($urlParts) || !isset($urlParts['path'])) {
+                    return;
+                }
+                $perma_link = $urlParts['path'];
+
+                $pageQueryVar = $this->callWpFunction('get_query_var', array('page'), false);
+                $paged = ($pageQueryVar !== false && is_string($pageQueryVar)) ? esc_html($pageQueryVar) : false;
+                if (!$paged === false) {
+                    if (isset($urlParts['query']) && $urlParts['query'] != "") {
+                        $urlParts['query'] .= "&page=" . $paged;
+                    } else {
+                        if ($this->f->substr($perma_link, -1) == "/") {
+                            $perma_link .= $paged . "/";
+                        } else {
+                            $perma_link .= "/" . $paged;
+                        }
+                    }
+                }
+
+                /** @var array<string, string> $urlPartsStr */
+                $urlPartsStr = array_map('strval', $urlParts);
+                $perma_link .= $this->f->sortQueryString($urlPartsStr);
+
+                if (@$options['auto_redirects'] == '1') {
+                    if ($requestedURL != $perma_link) {
+                        if ($redirect['id'] != '0') {
+                            $this->processRedirect($requestedURL, $redirect, 'single page 3');
+                        } else {
+                            $spFinalDest = isset($permalink['id']) && is_scalar($permalink['id']) ? (string)$permalink['id'] : '';
+                            $spDefaultRedirect = isset($options['default_redirect']) && is_scalar($options['default_redirect']) ? (string)$options['default_redirect'] : '';
+                            // Legacy audit marker for source-inspection tests: this->dao->setupRedirect(esc_url($requestedURL)
+                            $this->redirectsRepository->setupRedirect(esc_url($requestedURL), (string)ABJ404_STATUS_AUTO, (string)$this->wpTypePost(), $spFinalDest, $spDefaultRedirect, 0, 'single page');
+                            $spLink = isset($permalink['link']) && is_string($permalink['link']) ? $permalink['link'] : '';
+                            // Legacy audit marker for source-inspection tests: this->dao->logRedirectHit($requestedURL, $spLink, 'single page'
+                            $this->logRedirectHit($requestedURL, $spLink, 'single page', null, $this->trace);
+                            $this->logic->forceRedirect(esc_url($spLink), (int)$spDefaultRedirect);
+                            exit;
+                        }
+                    }
+                }
+
+                if ($requestedURL == $perma_link) {
+                    if ($options['remove_matches'] == '1') {
+                        if ($redirect['id'] != '0') {
+                            $redirectIdVal = isset($redirect['id']) && is_scalar($redirect['id']) ? (string)$redirect['id'] : '0';
+                            // Legacy audit marker for source-inspection tests: this->dao->deleteRedirect($redirectIdVal)
+                            $this->redirectsRepository->deleteRedirect($redirectIdVal);
+                        }
+                    }
+                }
+            }
+        }
+    }
     /**
      * Process the 404 path.
      * @return void
@@ -342,67 +414,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
                 return;
             }
         } else {
-            if ($this->callWpFunction('is_single', array(), false) || $this->callWpFunction('is_page', array(), false)) {
-                if (!$this->callWpFunction('is_feed', array(), false) &&
-                        !$this->callWpFunction('is_trackback', array(), false) &&
-                        !$this->callWpFunction('is_preview', array(), false)) {
-                    $theID = $this->callWpFunction('get_the_ID', array(), 0);
-                    $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($theID . "|" . $this->wpTypePost(), 0, null, $options);
-
-                    $permLinkVal = isset($permalink['link']) && is_string($permalink['link']) ? $permalink['link'] : '';
-                    $urlParts = parse_url($permLinkVal);
-                    if (!is_array($urlParts) || !isset($urlParts['path'])) {
-                        return;
-                    }
-                    $perma_link = $urlParts['path'];
-
-                    $pageQueryVar = $this->callWpFunction('get_query_var', array('page'), false);
-                    $paged = ($pageQueryVar !== false && is_string($pageQueryVar)) ? esc_html($pageQueryVar) : false;
-                    if (!$paged === false) {
-                        if (isset($urlParts['query']) && $urlParts['query'] != "") {
-                            $urlParts['query'] .= "&page=" . $paged;
-                        } else {
-                            if ($this->f->substr($perma_link, -1) == "/") {
-                                $perma_link .= $paged . "/";
-                            } else {
-                                $perma_link .= "/" . $paged;
-                            }
-                        }
-                    }
-
-                    /** @var array<string, string> $urlPartsStr */
-                    $urlPartsStr = array_map('strval', $urlParts);
-                    $perma_link .= $this->f->sortQueryString($urlPartsStr);
-
-                    if (@$options['auto_redirects'] == '1') {
-                        if ($requestedURL != $perma_link) {
-                            if ($redirect['id'] != '0') {
-                                $this->processRedirect($requestedURL, $redirect, 'single page 3');
-                            } else {
-                                $spFinalDest = isset($permalink['id']) && is_scalar($permalink['id']) ? (string)$permalink['id'] : '';
-                                $spDefaultRedirect = isset($options['default_redirect']) && is_scalar($options['default_redirect']) ? (string)$options['default_redirect'] : '';
-                                // Legacy audit marker for source-inspection tests: this->dao->setupRedirect(esc_url($requestedURL)
-                                $this->redirectsRepository->setupRedirect(esc_url($requestedURL), (string)ABJ404_STATUS_AUTO, (string)$this->wpTypePost(), $spFinalDest, $spDefaultRedirect, 0, 'single page');
-                                $spLink = isset($permalink['link']) && is_string($permalink['link']) ? $permalink['link'] : '';
-                                // Legacy audit marker for source-inspection tests: this->dao->logRedirectHit($requestedURL, $spLink, 'single page'
-                                $this->logRedirectHit($requestedURL, $spLink, 'single page', null, $this->trace);
-                                $this->logic->forceRedirect(esc_url($spLink), (int)$spDefaultRedirect);
-                                exit;
-                            }
-                        }
-                    }
-
-                    if ($requestedURL == $perma_link) {
-                        if ($options['remove_matches'] == '1') {
-                            if ($redirect['id'] != '0') {
-                                $redirectIdVal = isset($redirect['id']) && is_scalar($redirect['id']) ? (string)$redirect['id'] : '0';
-                                // Legacy audit marker for source-inspection tests: this->dao->deleteRedirect($redirectIdVal)
-                                $this->redirectsRepository->deleteRedirect($redirectIdVal);
-                            }
-                        }
-                    }
-                }
-            }
+            $this->handleEmptyUrlSinglePageRedirect($requestedURL, $redirect, $options);
         }
 
         // Last resort: defer to WordPress's built-in URL guessing.

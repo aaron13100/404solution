@@ -490,6 +490,36 @@ class ABJ_404_Solution_ImportExportService {
         return '';
     }
 
+
+    /**
+     * Validate the uploaded import file (extension, size, MIME type).
+     *
+     * @return string Empty on success, error message on failure.
+     */
+    private function validateImportFile(): string {
+        $allowed_extensions = array('csv', 'txt');
+        $file_ext = strtolower(pathinfo($_FILES['import_file']['name'], PATHINFO_EXTENSION));
+        if (!in_array($file_ext, $allowed_extensions)) {
+            return __('Error: Invalid file type. Only CSV/TXT files are allowed.', '404-solution');
+        }
+
+        $max_file_size = 5 * 1024 * 1024;
+        if ($_FILES['import_file']['size'] > $max_file_size) {
+            return __('Error: File too large. Maximum size is 5MB.', '404-solution');
+        }
+
+        $allowed_mime_types = array('text/csv', 'text/plain', 'application/csv', 'text/comma-separated-values', 'application/vnd.ms-excel');
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        if ($finfo === false) {
+            return __('Error: Unable to determine file type.', '404-solution');
+        }
+        $mime_type = finfo_file($finfo, $_FILES['import_file']['tmp_name']);
+        if (!in_array($mime_type, $allowed_mime_types)) {
+            return __('Error: Invalid file type. Only CSV files are allowed.', '404-solution');
+        }
+
+        return '';
+    }
     /**
      * Expected formats:
      * - from_url,status,type,to_url,wp_type
@@ -510,25 +540,9 @@ class ABJ_404_Solution_ImportExportService {
         $invalidRows = 0;
         $overwrittenRows = 0;
 
-        $allowed_extensions = array('csv', 'txt');
-        $file_ext = strtolower(pathinfo($_FILES['import_file']['name'], PATHINFO_EXTENSION));
-        if (!in_array($file_ext, $allowed_extensions)) {
-            return __('Error: Invalid file type. Only CSV/TXT files are allowed.', '404-solution');
-        }
-
-        $max_file_size = 5 * 1024 * 1024;
-        if ($_FILES['import_file']['size'] > $max_file_size) {
-            return __('Error: File too large. Maximum size is 5MB.', '404-solution');
-        }
-
-        $allowed_mime_types = array('text/csv', 'text/plain', 'application/csv', 'text/comma-separated-values', 'application/vnd.ms-excel');
-        $finfo = finfo_open(FILEINFO_MIME_TYPE);
-        if ($finfo === false) {
-            return __('Error: Unable to determine file type.', '404-solution');
-        }
-        $mime_type = finfo_file($finfo, $_FILES['import_file']['tmp_name']);
-        if (!in_array($mime_type, $allowed_mime_types)) {
-            return __('Error: Invalid file type. Only CSV files are allowed.', '404-solution');
+        $validationError = $this->validateImportFile();
+        if ($validationError !== '') {
+            return $validationError;
         }
 
         $file_handle = fopen($_FILES['import_file']['tmp_name'], 'r');

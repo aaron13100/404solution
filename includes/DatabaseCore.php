@@ -255,6 +255,115 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
         return is_scalar($first) ? (int)$first : 0;
     }
 
+
+    /**
+     * Handle error logging, repair attempts, and slow-query logging after query execution.
+     *
+     * @param string $query
+     * @param array<string, mixed> $result
+     * @param array<string, mixed> $options
+     * @param array<int|string, string> $ignoreErrorStrings
+     * @param ABJ_404_Solution_Timer $timer
+     * @return void
+     */
+    private function handleQueryErrorsAndLogging(
+        string $query, array &$result, array $options,
+        array $ignoreErrorStrings, ABJ_404_Solution_Timer $timer
+    ): void {
+        global $wpdb;
+
+        if ($options['log_errors'] && $result['last_error'] != '') {
+            if ($this->f->strpos($result['last_error'],
+                    " is marked as crashed ") !== false) {
+                $this->repairTable($result['last_error']);
+            }
+            if ($this->f->strpos($result['last_error'],
+                    "ALTER TABLE causes auto_increment resequencing") !== false &&
+                    $this->f->strpos($result['last_error'], "resulting in duplicate entry") !== false) {
+                $this->repairDuplicateIDs($result['last_error'], $query);
+            }
+            if ($this->isIncorrectKeyFileError($result['last_error'])) {
+                $this->repairCorruptedTableAndRetry($query, $result);
+            }
+
+            if ($result['last_error'] === '') { return; }
+
+            $reportError = true;
+            foreach ($ignoreErrorStrings as $ignoreThis) {
+                if (is_string($ignoreThis) && strpos($result['last_error'], $ignoreThis) !== false) {
+                    $reportError = false;
+                    break;
+                }
+            }
+
+            $lastErrorForClassification = is_string($result['last_error']) ? $result['last_error'] : '';
+            if ($reportError && (
+                $this->isDiskFullError($lastErrorForClassification) ||
+                $this->isReadOnlyError($lastErrorForClassification) ||
+                $this->isQuotaLimitError($lastErrorForClassification) ||
+                $this->isInvalidDataError($lastErrorForClassification) ||
+                $this->isCollationError($lastErrorForClassification) ||
+                $this->isMissingPluginTableError($lastErrorForClassification) ||
+                $this->isIncorrectKeyFileError($lastErrorForClassification) ||
+                $this->isCrashedTableError($lastErrorForClassification) ||
+                $this->isDeadlockOrLockTimeoutError($lastErrorForClassification) ||
+                $this->isGaleraConflictError($lastErrorForClassification) ||
+                $this->isTransientConnectionError($lastErrorForClassification) ||
+                $this->isQueryTimeoutError($lastErrorForClassification) ||
+                $this->isAccessDeniedError($lastErrorForClassification)
+            )) {
+                $this->logger->warn("Server-side DB issue (handled): " . $lastErrorForClassification);
+                $reportError = false;
+            }
+
+            if ($reportError) {
+                $stripped_query = 'n/a';
+                if ($this->isInvalidDataError($result['last_error'])) {
+                    $strippedResult = $this->get_stripped_query_result($query);
+                    $stripped_query = is_string($strippedResult) ? $strippedResult : 'n/a';
+                }
+
+                $extraDataQuery = "select @@max_join_size as max_join_size, " .
+                    "@@sql_big_selects as sql_big_selects, " .
+                    "@@character_set_database as character_set_database";
+                $someMySQLVariables = $wpdb->get_results($extraDataQuery, ARRAY_A);
+                $variables = print_r($someMySQLVariables, true);
+
+                $sqlInfo = (defined('WP_DEBUG') && WP_DEBUG) ? $query : $this->extractSqlFilename($query);
+
+                $dbVer = $wpdb->db_version();
+                $this->logger->errorMessage("Ugh. SQL query error: " . (is_string($result['last_error']) ? $result['last_error'] : '') .
+                        ", SQL: " . $sqlInfo .
+                        ", Execution time: " . round($timer->getElapsedTime(), 2) .
+                        ", DB ver: " . (is_string($dbVer) ? $dbVer : 'unknown') .
+                        ", Variables: " . $variables .
+                        ", stripped_query: " . $stripped_query);
+            }
+
+        } else {
+            if ($options['log_too_slow'] && $timer->getElapsedTime() > 5) {
+                $sqlInfo = (defined('WP_DEBUG') && WP_DEBUG) ? $query : $this->extractSqlFilename($query);
+                $this->logger->debugMessage("Slow query (" . round($timer->getElapsedTime(), 2) . " seconds): " .
+                        $sqlInfo);
+            }
+
+            if ($result['last_error'] === '') {
+                if (!$this->serverSideIssueNoted && !$this->serverSideIssueChecked) {
+                    $this->serverSideIssueChecked = true;
+                    $existing = $this->getRuntimeFlag('abj404_plugin_db_notice');
+                    $excludedTypes = array('stale_permalink_cache', 'missing_table');
+                    if (is_array($existing) && !empty($existing['type'])
+                        && !in_array($existing['type'], $excludedTypes, true)) {
+                        $this->serverSideIssueNoted = true;
+                    }
+                }
+                if ($this->serverSideIssueNoted && !$this->isWriteBlockActive() && !$this->isQuotaCooldownActive()) {
+                    $this->clearServerSideDbNotice();
+                }
+            }
+        }
+    }
+
     /**
      * @param string $query
      * @param array<string, mixed> $options
@@ -417,96 +526,9 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
             $wpdb->suppress_errors($previousSuppressState);
         }
 
-        if ($options['log_errors'] && $result['last_error'] != '') {
-            if ($this->f->strpos($result['last_error'],
-                    " is marked as crashed ") !== false) {
-                $this->repairTable($result['last_error']);
-            }
-            if ($this->f->strpos($result['last_error'],
-                    "ALTER TABLE causes auto_increment resequencing") !== false &&
-                    $this->f->strpos($result['last_error'], "resulting in duplicate entry") !== false) {
-                $this->repairDuplicateIDs($result['last_error'], $query);
-            }
-            if ($this->isIncorrectKeyFileError($result['last_error'])) {
-                $this->repairCorruptedTableAndRetry($query, $result);
-            }
-
-            if ($result['last_error'] === '') { return $result; }
-
-            $reportError = true;
-            foreach ($ignoreErrorStrings as $ignoreThis) {
-                if (is_string($ignoreThis) && strpos($result['last_error'], $ignoreThis) !== false) {
-                    $reportError = false;
-                    break;
-                }
-            }
-
-            $lastErrorForClassification = is_string($result['last_error']) ? $result['last_error'] : '';
-            if ($reportError && (
-                $this->isDiskFullError($lastErrorForClassification) ||
-                $this->isReadOnlyError($lastErrorForClassification) ||
-                $this->isQuotaLimitError($lastErrorForClassification) ||
-                $this->isInvalidDataError($lastErrorForClassification) ||
-                $this->isCollationError($lastErrorForClassification) ||
-                $this->isMissingPluginTableError($lastErrorForClassification) ||
-                $this->isIncorrectKeyFileError($lastErrorForClassification) ||
-                $this->isCrashedTableError($lastErrorForClassification) ||
-                $this->isDeadlockOrLockTimeoutError($lastErrorForClassification) ||
-                $this->isGaleraConflictError($lastErrorForClassification) ||
-                $this->isTransientConnectionError($lastErrorForClassification) ||
-                $this->isQueryTimeoutError($lastErrorForClassification) ||
-                $this->isAccessDeniedError($lastErrorForClassification)
-            )) {
-                $this->logger->warn("Server-side DB issue (handled): " . $lastErrorForClassification);
-                $reportError = false;
-            }
-
-            if ($reportError) {
-                $stripped_query = 'n/a';
-                if ($this->isInvalidDataError($result['last_error'])) {
-                    $strippedResult = $this->get_stripped_query_result($query);
-                    $stripped_query = is_string($strippedResult) ? $strippedResult : 'n/a';
-                }
-
-                $extraDataQuery = "select @@max_join_size as max_join_size, " .
-                    "@@sql_big_selects as sql_big_selects, " .
-                    "@@character_set_database as character_set_database";
-                $someMySQLVariables = $wpdb->get_results($extraDataQuery, ARRAY_A);
-                $variables = print_r($someMySQLVariables, true);
-
-                $sqlInfo = (defined('WP_DEBUG') && WP_DEBUG) ? $query : $this->extractSqlFilename($query);
-
-                $dbVer = $wpdb->db_version();
-                $this->logger->errorMessage("Ugh. SQL query error: " . (is_string($result['last_error']) ? $result['last_error'] : '') .
-                        ", SQL: " . $sqlInfo .
-                        ", Execution time: " . round($timer->getElapsedTime(), 2) .
-                        ", DB ver: " . (is_string($dbVer) ? $dbVer : 'unknown') .
-                        ", Variables: " . $variables .
-                        ", stripped_query: " . $stripped_query);
-            }
-
-        } else {
-            if ($options['log_too_slow'] && $timer->getElapsedTime() > 5) {
-                $sqlInfo = (defined('WP_DEBUG') && WP_DEBUG) ? $query : $this->extractSqlFilename($query);
-                $this->logger->debugMessage("Slow query (" . round($timer->getElapsedTime(), 2) . " seconds): " .
-                        $sqlInfo);
-            }
-
-            if ($result['last_error'] === '') {
-                if (!$this->serverSideIssueNoted && !$this->serverSideIssueChecked) {
-                    $this->serverSideIssueChecked = true;
-                    $existing = $this->getRuntimeFlag('abj404_plugin_db_notice');
-                    $excludedTypes = array('stale_permalink_cache', 'missing_table');
-                    if (is_array($existing) && !empty($existing['type'])
-                        && !in_array($existing['type'], $excludedTypes, true)) {
-                        $this->serverSideIssueNoted = true;
-                    }
-                }
-                if ($this->serverSideIssueNoted && !$this->isWriteBlockActive() && !$this->isQuotaCooldownActive()) {
-                    $this->clearServerSideDbNotice();
-                }
-            }
-        }
+        $this->handleQueryErrorsAndLogging(
+            $query, $result, $options, $ignoreErrorStrings, $timer
+        );
 
         return $result;
     }

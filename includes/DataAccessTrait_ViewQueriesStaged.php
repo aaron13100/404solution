@@ -1131,6 +1131,132 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
         return true;
     }
 
+
+    /**
+     * Run staged build stages 6 through 11: update home/external/special columns,
+     * update hit counts, add sort indexes, and perform the atomic table swap.
+     *
+     * @param int $stage Current stage number (must be >= 5 on entry).
+     * @return bool true when the build fully completed; false when yielded.
+     */
+    private function runStagedBuildStages6Through11(int $stage): bool {
+        if ($stage < 6) {
+            if (!$this->releaseAndReacquireBetweenStages()) { return false; }
+            if ($this->haltIfPrefixChangedSinceStageOne(6)) { return false; }
+            if ($this->gateAbortIfMutationWatermarkAdvanced(6)) { return false; }
+            $this->markBuildStage('staged_build_s6_update_home');
+            $r = $this->runTimedViewBuildStage(6, 'staged_build_s6_update_home', function () {
+                $this->stageUpdateHome();
+            });
+            if ($r === false || $r === 'halted') {
+                return false;
+            }
+            $this->writeProgressOption('current_stage', 6);
+            $stage = 6;
+        }
+
+        if ($stage < 7) {
+            if (!$this->releaseAndReacquireBetweenStages()) { return false; }
+            if ($this->haltIfPrefixChangedSinceStageOne(7)) { return false; }
+            if ($this->gateAbortIfMutationWatermarkAdvanced(7)) { return false; }
+            $this->markBuildStage('staged_build_s7_update_external');
+            $r = $this->runTimedViewBuildStage(7, 'staged_build_s7_update_external', function () {
+                $this->stageUpdateExternal();
+            });
+            if ($r === false || $r === 'halted') {
+                return false;
+            }
+            $this->writeProgressOption('current_stage', 7);
+            $stage = 7;
+        }
+
+        if ($stage < 8) {
+            if (!$this->releaseAndReacquireBetweenStages()) { return false; }
+            if ($this->haltIfPrefixChangedSinceStageOne(8)) { return false; }
+            if ($this->gateAbortIfMutationWatermarkAdvanced(8)) { return false; }
+            $this->markBuildStage('staged_build_s8_update_special');
+            $r = $this->runTimedViewBuildStage(8, 'staged_build_s8_update_special', function () {
+                $this->stageUpdateSpecial();
+            });
+            if ($r === false || $r === 'halted') {
+                return false;
+            }
+            $this->writeProgressOption('current_stage', 8);
+            $stage = 8;
+        }
+
+        if ($stage < 9) {
+            if (!$this->releaseAndReacquireBetweenStages()) { return false; }
+            if ($this->haltIfPrefixChangedSinceStageOne(9)) { return false; }
+            if ($this->gateAbortIfMutationWatermarkAdvanced(9)) { return false; }
+            if ($this->isStageMarkedSkipped(9)) {
+                $this->writeProgressOption('current_stage', 9);
+                $stage = 9;
+            } else {
+                // Non-batched: temp-table aggregate over wp_abj404_logs_hits +
+                // UPDATE JOIN against the buffer. Kill-streak escape valve
+                // extends the per-query timeout on retry so a logs_hits scan
+                // that doesn't fit in the host's max_statement_time can
+                // eventually finish.
+                $s9Result = $this->runNonBatchedStageWithKillStreakEscape(
+                    9, 'staged_build_s9_update_hits', 's9_kill_streak',
+                    function () {
+                        if ($this->logsHitsTableExists()) {
+                            $this->markBuildStage('staged_build_s9_update_hits');
+                            $this->stageUpdateHits();
+                            return null;
+                        }
+                        $this->markBuildStage('staged_build_s9_update_hits', 'skipped; logs hits table unavailable');
+                        return 'skipped';
+                    }
+                );
+                if ($s9Result === false || $s9Result === 'halted') {
+                    return false;
+                }
+                // Skipped or not, advance past S9.
+                $this->writeProgressOption('current_stage', 9);
+                $stage = 9;
+            }
+        }
+
+        if ($stage < 10) {
+            if (!$this->releaseAndReacquireBetweenStages()) { return false; }
+            if ($this->haltIfPrefixChangedSinceStageOne(10)) { return false; }
+            if ($this->gateAbortIfMutationWatermarkAdvanced(10)) { return false; }
+            if ($this->isStageMarkedSkipped(10)) {
+                $this->writeProgressOption('current_stage', 10);
+                $stage = 10;
+            } else {
+                $this->markBuildStage('staged_build_s10_index_sort');
+                // Non-batched: same kill-streak escape valve as S3. A
+                // CREATE INDEX that exceeds the host's max_statement_time on
+                // big buffers needs an extended retry timeout to complete.
+                $r = $this->runNonBatchedStageWithKillStreakEscape(
+                    10, 'staged_build_s10_index_sort', 's10_kill_streak',
+                    function () { $this->stageAddSortIndexes(); }
+                );
+                if ($r === false || $r === 'halted') {
+                    return false;
+                }
+                $this->writeProgressOption('current_stage', 10);
+                $stage = 10;
+            }
+        }
+
+        if ($stage < 11) {
+            if (!$this->releaseAndReacquireBetweenStages()) { return false; }
+            if ($this->haltIfPrefixChangedSinceStageOne(11)) { return false; }
+            if ($this->gateAbortIfMutationWatermarkAdvanced(11)) { return false; }
+            $this->markBuildStage('staged_build_s11_swap');
+            if (!$this->runS11SwapWithPreRenameWatermarkRecheck()) { return false; }
+            $this->publishBuiltWatermarkFromActiveBuildStartedWatermark();
+            $this->markViewDoneBuildCompleted();
+            $this->clearAllProgressOptions();
+        }
+
+        return true;
+    }
+
     /**
      * Run the staged build from wherever we left off, atomically swap into
      * view_done when all stages have completed.
@@ -1338,121 +1464,8 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
             $stage = 5;
         }
 
-        if ($stage < 6) {
-            if (!$this->releaseAndReacquireBetweenStages()) { return false; }
-            if ($this->haltIfPrefixChangedSinceStageOne(6)) { return false; }
-            if ($this->gateAbortIfMutationWatermarkAdvanced(6)) { return false; }
-            $this->markBuildStage('staged_build_s6_update_home');
-            $r = $this->runTimedViewBuildStage(6, 'staged_build_s6_update_home', function () {
-                $this->stageUpdateHome();
-            });
-            if ($r === false || $r === 'halted') {
-                return false;
-            }
-            $this->writeProgressOption('current_stage', 6);
-            $stage = 6;
-        }
-
-        if ($stage < 7) {
-            if (!$this->releaseAndReacquireBetweenStages()) { return false; }
-            if ($this->haltIfPrefixChangedSinceStageOne(7)) { return false; }
-            if ($this->gateAbortIfMutationWatermarkAdvanced(7)) { return false; }
-            $this->markBuildStage('staged_build_s7_update_external');
-            $r = $this->runTimedViewBuildStage(7, 'staged_build_s7_update_external', function () {
-                $this->stageUpdateExternal();
-            });
-            if ($r === false || $r === 'halted') {
-                return false;
-            }
-            $this->writeProgressOption('current_stage', 7);
-            $stage = 7;
-        }
-
-        if ($stage < 8) {
-            if (!$this->releaseAndReacquireBetweenStages()) { return false; }
-            if ($this->haltIfPrefixChangedSinceStageOne(8)) { return false; }
-            if ($this->gateAbortIfMutationWatermarkAdvanced(8)) { return false; }
-            $this->markBuildStage('staged_build_s8_update_special');
-            $r = $this->runTimedViewBuildStage(8, 'staged_build_s8_update_special', function () {
-                $this->stageUpdateSpecial();
-            });
-            if ($r === false || $r === 'halted') {
-                return false;
-            }
-            $this->writeProgressOption('current_stage', 8);
-            $stage = 8;
-        }
-
-        if ($stage < 9) {
-            if (!$this->releaseAndReacquireBetweenStages()) { return false; }
-            if ($this->haltIfPrefixChangedSinceStageOne(9)) { return false; }
-            if ($this->gateAbortIfMutationWatermarkAdvanced(9)) { return false; }
-            if ($this->isStageMarkedSkipped(9)) {
-                $this->writeProgressOption('current_stage', 9);
-                $stage = 9;
-            } else {
-                // Non-batched: temp-table aggregate over wp_abj404_logs_hits +
-                // UPDATE JOIN against the buffer. Kill-streak escape valve
-                // extends the per-query timeout on retry so a logs_hits scan
-                // that doesn't fit in the host's max_statement_time can
-                // eventually finish.
-                $s9Result = $this->runNonBatchedStageWithKillStreakEscape(
-                    9, 'staged_build_s9_update_hits', 's9_kill_streak',
-                    function () {
-                        if ($this->logsHitsTableExists()) {
-                            $this->markBuildStage('staged_build_s9_update_hits');
-                            $this->stageUpdateHits();
-                            return null;
-                        }
-                        $this->markBuildStage('staged_build_s9_update_hits', 'skipped; logs hits table unavailable');
-                        return 'skipped';
-                    }
-                );
-                if ($s9Result === false || $s9Result === 'halted') {
-                    return false;
-                }
-                // Skipped or not, advance past S9.
-                $this->writeProgressOption('current_stage', 9);
-                $stage = 9;
-            }
-        }
-
-        if ($stage < 10) {
-            if (!$this->releaseAndReacquireBetweenStages()) { return false; }
-            if ($this->haltIfPrefixChangedSinceStageOne(10)) { return false; }
-            if ($this->gateAbortIfMutationWatermarkAdvanced(10)) { return false; }
-            if ($this->isStageMarkedSkipped(10)) {
-                $this->writeProgressOption('current_stage', 10);
-                $stage = 10;
-            } else {
-                $this->markBuildStage('staged_build_s10_index_sort');
-                // Non-batched: same kill-streak escape valve as S3. A
-                // CREATE INDEX that exceeds the host's max_statement_time on
-                // big buffers needs an extended retry timeout to complete.
-                $r = $this->runNonBatchedStageWithKillStreakEscape(
-                    10, 'staged_build_s10_index_sort', 's10_kill_streak',
-                    function () { $this->stageAddSortIndexes(); }
-                );
-                if ($r === false || $r === 'halted') {
-                    return false;
-                }
-                $this->writeProgressOption('current_stage', 10);
-                $stage = 10;
-            }
-        }
-
-        if ($stage < 11) {
-            if (!$this->releaseAndReacquireBetweenStages()) { return false; }
-            if ($this->haltIfPrefixChangedSinceStageOne(11)) { return false; }
-            if ($this->gateAbortIfMutationWatermarkAdvanced(11)) { return false; }
-            $this->markBuildStage('staged_build_s11_swap');
-            if (!$this->runS11SwapWithPreRenameWatermarkRecheck()) { return false; }
-            $this->publishBuiltWatermarkFromActiveBuildStartedWatermark();
-            $this->markViewDoneBuildCompleted();
-            $this->clearAllProgressOptions();
-        }
-
-        return true;
+        // Stages 6-11: update metadata columns, add sort indexes, and swap.
+        return $this->runStagedBuildStages6Through11($stage);
     }
 
 

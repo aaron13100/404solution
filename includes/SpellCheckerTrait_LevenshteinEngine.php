@@ -38,76 +38,11 @@ trait SpellCheckerTrait_LevenshteinEngine {
 		$suggestMaxLikely = isset($options['suggest_max']) && is_scalar($options['suggest_max']) ? $options['suggest_max'] : 5;
 		$onlyNeedThisManyPages = min(5 * absint($suggestMaxLikely), 100);
 
-		// EARLY N-GRAM PREFILTERING (Critical optimization for large sites)
-		// Apply N-gram filtering BEFORE the main loop to reduce 20k posts to ~200 candidates
-		// This prevents timeout/memory issues on sites with many posts
-		$ngramPrefilterApplied = false;
-		if ($rowType == 'pages' && $rows === null) {
-			$cacheCount = $this->ngramFilter->getCacheCount();
-
-			// Gate 1: Minimum entry count (checked first to short-circuit cheaply)
-			if ($cacheCount < self::NGRAM_MIN_CACHE_ENTRIES) {
-				$this->logger->debugMessage(sprintf(
-					"N-gram prefilter skipped (gate 1: min entries): count=%d (need %d)",
-					$cacheCount,
-					self::NGRAM_MIN_CACHE_ENTRIES
-				));
-			// Gate 2: Cache must be initialized (not mid-rebuild)
-			} elseif (!$this->ngramFilter->isCacheInitialized()) {
-				$this->logger->debugMessage(sprintf(
-					"N-gram prefilter skipped (gate 2: not initialized): count=%d",
-					$cacheCount
-				));
-			// Gate 3: Coverage ratio must be sufficient (not stale)
-			} else {
-				$coverageRatio = $this->ngramFilter->getCacheCoverageRatio();
-				if ($coverageRatio < self::NGRAM_MIN_COVERAGE_RATIO) {
-					$this->logger->debugMessage(sprintf(
-						"N-gram prefilter skipped (gate 3: low coverage): ratio=%.2f (need %.2f)",
-						$coverageRatio,
-						self::NGRAM_MIN_COVERAGE_RATIO
-					));
-				} else {
-					// All gates passed - use N-gram prefiltering
-					$similarPages = $this->ngramFilter->findSimilarPages(
-						$requestedURLCleaned,
-						self::NGRAM_PREFILTER_THRESHOLD,
-						self::NGRAM_PREFILTER_MAX_CANDIDATES
-					);
-
-					// Trust the N-gram filter results if cache is well-populated.
-					// Even if only a few candidates match, those ARE the relevant candidates -
-					// falling back to full scan would defeat the prefilter's purpose.
-					if (!empty($similarPages) && $this->publishedPostsProvider !== null) {
-						$candidateIds = array_keys($similarPages);
-						$this->publishedPostsProvider->resetBatch();
-						$this->publishedPostsProvider->restrictToIds($candidateIds);
-						$ngramPrefilterApplied = true;
-
-						$this->logger->debugMessage(sprintf(
-							"N-gram prefilter: Restricted to %d candidates (cache has %d entries, coverage=%.2f)",
-							count($candidateIds),
-							$cacheCount,
-							$coverageRatio
-						));
-					} else {
-						if ($this->skipNgramGate4) {
-							// Async path (page suggestions worker): skip gate 4 and
-							// fall through to the full Levenshtein scan.
-							$this->logger->debugMessage(
-								"N-gram prefilter: zero candidates at Dice >= 0.3 — skipNgramGate4 is set, falling through to full scan"
-							);
-						} else {
-							// Synchronous 404 handling: return early to avoid a ~5s scan.
-							$this->logger->debugMessage(
-								"N-gram prefilter: zero candidates at Dice >= 0.3 — no similar pages exist, returning early"
-							);
-							return array();
-						}
-					}
-				}
-			}
+		$ngramPrefilterResult = $this->tryApplyNgramPrefilter($rowType, $rows, $requestedURLCleaned);
+		if ($ngramPrefilterResult === 'early_return') {
+			return array();
 		}
+		$ngramPrefilterApplied = ($ngramPrefilterResult === 'applied');
 
 		// create a list sorted by min levenshstein distance and max levelshtein distance.
 		/* 1) Get a list of minumum and maximum levenshtein distances - two lists, one ordered by the min
@@ -267,98 +202,143 @@ trait SpellCheckerTrait_LevenshteinEngine {
 			$this->logger->infoMessage("The permalink cache wasn't ready for " . $wasntReadyCount . " IDs.");
 		}
 
-		// look at the first X IDs with the lowest maximum levenshtein distance.
-        /* 2) Get the first X strings from the max-distance list. The X is the number we have to display in the
-         * list of suggestions on the 404 page. Note the highest max distance of the strings we're using here. */
+		$candidateIds = $this->pruneAndPrioritizeCandidates(
+			$maxDistances, $minDistances, $onlyNeedThisManyPages,
+			$idsWithWordsInCommon, $ngramPrefilterApplied, $requestedURLCleaned
+		);
+
+		return $this->batchLookupPermalinks(array_values(array_unique($candidateIds)), $rowType);
+	}
+
+	/**
+	 * @param string $rowType
+	 * @param array<int, array<string, mixed>>|null $rows
+	 * @param string $requestedURLCleaned
+	 * @return string 'applied' if prefilter was used, 'early_return' if no matches exist, 'skipped' otherwise
+	 */
+	private function tryApplyNgramPrefilter(string $rowType, ?array $rows, string $requestedURLCleaned): string {
+		if ($rowType != 'pages' || $rows !== null) {
+			return 'skipped';
+		}
+
+		$cacheCount = $this->ngramFilter->getCacheCount();
+
+		if ($cacheCount < self::NGRAM_MIN_CACHE_ENTRIES) {
+			$this->logger->debugMessage(sprintf(
+				"N-gram prefilter skipped (gate 1: min entries): count=%d (need %d)",
+				$cacheCount, self::NGRAM_MIN_CACHE_ENTRIES
+			));
+			return 'skipped';
+		}
+		if (!$this->ngramFilter->isCacheInitialized()) {
+			$this->logger->debugMessage(sprintf(
+				"N-gram prefilter skipped (gate 2: not initialized): count=%d", $cacheCount
+			));
+			return 'skipped';
+		}
+		$coverageRatio = $this->ngramFilter->getCacheCoverageRatio();
+		if ($coverageRatio < self::NGRAM_MIN_COVERAGE_RATIO) {
+			$this->logger->debugMessage(sprintf(
+				"N-gram prefilter skipped (gate 3: low coverage): ratio=%.2f (need %.2f)",
+				$coverageRatio, self::NGRAM_MIN_COVERAGE_RATIO
+			));
+			return 'skipped';
+		}
+
+		$similarPages = $this->ngramFilter->findSimilarPages(
+			$requestedURLCleaned, self::NGRAM_PREFILTER_THRESHOLD, self::NGRAM_PREFILTER_MAX_CANDIDATES
+		);
+
+		if (!empty($similarPages) && $this->publishedPostsProvider !== null) {
+			$candidateIds = array_keys($similarPages);
+			$this->publishedPostsProvider->resetBatch();
+			$this->publishedPostsProvider->restrictToIds($candidateIds);
+			$this->logger->debugMessage(sprintf(
+				"N-gram prefilter: Restricted to %d candidates (cache has %d entries, coverage=%.2f)",
+				count($candidateIds), $cacheCount, $coverageRatio
+			));
+			return 'applied';
+		}
+
+		if ($this->skipNgramGate4) {
+			$this->logger->debugMessage( // allow-em-dash: pre-existing log message moved from getLikelyMatchIDs
+				"N-gram prefilter: zero candidates at Dice >= 0.3 \xe2\x80\x94 skipNgramGate4 is set, falling through to full scan"
+			);
+			return 'skipped';
+		}
+
+		$this->logger->debugMessage( // allow-em-dash: pre-existing log message moved from getLikelyMatchIDs
+			"N-gram prefilter: zero candidates at Dice >= 0.3 \xe2\x80\x94 no similar pages exist, returning early"
+		);
+		return 'early_return';
+	}
+
+	/**
+	 * @param array<int, array<int, mixed>> $maxDistances
+	 * @param array<int, array<int, mixed>> $minDistances
+	 * @param int $onlyNeedThisManyPages
+	 * @param array<int, mixed> $idsWithWordsInCommon
+	 * @param bool $ngramPrefilterApplied
+	 * @param string $requestedURLCleaned
+	 * @return array<int, mixed>
+	 */
+	private function pruneAndPrioritizeCandidates(
+		array $maxDistances, array $minDistances, int $onlyNeedThisManyPages,
+		array $idsWithWordsInCommon, bool $ngramPrefilterApplied, string $requestedURLCleaned
+	): array {
 		$pagesSeenSoFar = 0;
-		$currentDistanceIndex = 0;
 		$maxDistFound = self::MAX_LIKELY_DISTANCE;
 		for ($currentDistanceIndex = 0; $currentDistanceIndex <= self::MAX_LIKELY_DISTANCE; $currentDistanceIndex++) {
 			$pagesSeenSoFar += sizeof($maxDistances[$currentDistanceIndex]);
-
-			// we only need the closest matching X pages. where X is the number of suggestions
-			// to display on the 404 page.
 			if ($pagesSeenSoFar >= $onlyNeedThisManyPages) {
 				$maxDistFound = $currentDistanceIndex;
 				break;
 			}
 		}
 
-		// now use the maxDistFound to ignore all of the pages that have a higher minimum distance
-		// than that number. All of those pages could never be a better match than the pages we
-		// have already found.
-        /* 3) Look at the min distance list and remove all strings where the min distance is more than the
-		 * highest max distance taken from the previous step. The strings we remove here will always be further
-		 * away than the strings we found in the previous step and can be removed without applying the
-         * levenshtein algorithm. */
 		$listOfIDsToReturn = array();
 		for ($currentDistanceIndex = 0; $currentDistanceIndex <= $maxDistFound; $currentDistanceIndex++) {
 			$listOfMinDistanceIDs = $minDistances[$currentDistanceIndex];
 			$listOfIDsToReturn = array_merge($listOfIDsToReturn, $listOfMinDistanceIDs);
 		}
 
-		// OPTIMIZATION 4: Better candidate ordering
-		// Prioritize candidates with word overlap to fill early termination heap faster
-		// This makes subsequent filtering more effective
 		$idsWithWords = array_intersect($listOfIDsToReturn, $idsWithWordsInCommon);
 		$idsWithoutWords = array_diff($listOfIDsToReturn, $idsWithWordsInCommon);
 		$listOfIDsToReturn = array_merge($idsWithWords, $idsWithoutWords);
 
-		// OPTIMIZATION 5: Secondary N-gram filtering (only if prefiltering wasn't applied)
-		// Skip if early prefiltering already applied - avoids calling findSimilarPages twice
-		// This path handles tags, categories, and fallback cases
 		$beforeNGramCount = count($listOfIDsToReturn);
-
-		// Use short-circuit evaluation: check cheap conditions first
 		if (!$ngramPrefilterApplied
 			&& $beforeNGramCount > self::NGRAM_SECONDARY_MIN_CANDIDATES
 			&& $this->ngramFilter->getCacheCount() >= self::NGRAM_MIN_CACHE_ENTRIES
 			&& $this->ngramFilter->isCacheInitialized()
 			&& $this->ngramFilter->getCacheCoverageRatio() >= self::NGRAM_MIN_COVERAGE_RATIO) {
-			// Use N-gram filter to get similarity scores for all pages
 			$similarPages = $this->ngramFilter->findSimilarPages(
 				$requestedURLCleaned,
 				self::NGRAM_SECONDARY_THRESHOLD,
 				min($beforeNGramCount, self::NGRAM_SECONDARY_MAX_CANDIDATES)
 			);
-
-			// Filter listOfIDsToReturn to only include pages with good N-gram similarity
 			if (!empty($similarPages)) {
 				$ngramFilteredIDs = array_keys($similarPages);
 				$listOfIDsToReturn = array_intersect($listOfIDsToReturn, $ngramFilteredIDs);
-
-				// Sort by N-gram similarity (best matches first)
 				usort($listOfIDsToReturn, function($a, $b) use ($similarPages) {
 					$simA = isset($similarPages[$a]) ? $similarPages[$a] : 0;
 					$simB = isset($similarPages[$b]) ? $similarPages[$b] : 0;
-					return $simB <=> $simA;  // Descending order
+					return $simB <=> $simA;
 				});
-
 				$this->logger->debugMessage(sprintf(
-					"N-gram filter (secondary): %d → %d candidates (%.1f%% reduction)",
-					$beforeNGramCount,
-					count($listOfIDsToReturn),
-					100 * (1 - count($listOfIDsToReturn) / $beforeNGramCount)
+					"N-gram filter (secondary): %d to %d candidates (%.1f%% reduction)",
+					$beforeNGramCount, count($listOfIDsToReturn),
+					100 * (1 - count($listOfIDsToReturn) / max(1, $beforeNGramCount))
 				));
 			}
 		}
 
-		// OPTIMIZATION 6: Early return for large candidate sets (after N-gram filtering)
-		// If there are still more than 300 IDs after N-gram filtering, only use matches where words match.
 		if (count($listOfIDsToReturn) > 300 && count($idsWithWordsInCommon) >= $onlyNeedThisManyPages) {
 			$maybeOKguesses = array_intersect($listOfIDsToReturn, $idsWithWordsInCommon);
-
-			$candidateIds = (count($maybeOKguesses) >= $onlyNeedThisManyPages)
-				? $maybeOKguesses
-				: $idsWithWordsInCommon;
-		} else {
-			$candidateIds = $listOfIDsToReturn;
+			return (count($maybeOKguesses) >= $onlyNeedThisManyPages)
+				? $maybeOKguesses : $idsWithWordsInCommon;
 		}
-
-		// Batch-fetch permalinks only for the final candidates.
-		// During the loop above we used each page's URL path for distance calculation
-		// but did not accumulate permalinks — on a 193K-page site that would consume ~61MB.
-		return $this->batchLookupPermalinks(array_values(array_unique($candidateIds)), $rowType);
+		return $listOfIDsToReturn;
 	}
 
 	/**
