@@ -38,21 +38,8 @@ class ABJ_404_Solution_Ajax_SupportRequestPreview {
     /** Hard cap on user_message length echoed back into the preview. */
     const MAX_USER_MESSAGE_LENGTH = 2000;
 
-    /**
-     * Allowlist of UI screens that may request a preview. Kept in lockstep
-     * with Ajax_SupportRequest::ALLOWED_TRIGGER_SOURCES (verified by the
-     * preview test). Drift between the two would let a caller preview from
-     * a screen the actual send would later 400 on.
-     *
-     * @var array<int, string>
-     */
-    const ALLOWED_TRIGGER_SOURCES = [
-        'redirects_page',
-        'captured_404s_page',
-        'plugins_row_action',
-        'settings_debug',
-        'system_corrupt_install',
-    ];
+    /** @var array<int, string> */
+    const ALLOWED_TRIGGER_SOURCES = ABJ_404_Solution_Ajax_SupportRequest::ALLOWED_TRIGGER_SOURCES;
 
     /** @var self|null */
     private static $instance = null;
