@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "abj404_crossPluginPreview",
+  "description": "Cross-Plugin Importer preview AJAX from ViewTrait_Stats.php to Ajax_CrossPluginImporter.php",
+  "type": "object",
+  "required": ["nonce", "import_source"],
+  "additionalProperties": false,
+  "properties": {
+    "nonce": { "type": "string", "minLength": 1 },
+    "import_source": {
+      "type": "string",
+      "enum": ["rankmath", "yoast", "aioseo", "safe-redirect-manager", "redirection"]
+    }
+  }
+}

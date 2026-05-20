@@ -1,0 +1,12 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "abj404_pollSuggestions",
+  "description": "Suggestion polling AJAX from SuggestionPolling.js to Ajax_SuggestionPolling.php",
+  "type": "object",
+  "required": ["_ajax_nonce", "url"],
+  "additionalProperties": false,
+  "properties": {
+    "_ajax_nonce": { "type": "string", "minLength": 1 },
+    "url": { "type": "string", "minLength": 1 }
+  }
+}

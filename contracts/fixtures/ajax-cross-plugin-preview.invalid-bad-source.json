@@ -1,0 +1,5 @@
+{
+  "_comment": "This fixture MUST fail validation. The import_source value is not in the allowed enum.",
+  "nonce": "abc123def456",
+  "import_source": "unknown_plugin"
+}

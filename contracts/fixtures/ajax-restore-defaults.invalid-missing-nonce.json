@@ -1,0 +1,3 @@
+{
+  "_comment": "This fixture MUST fail validation. The required nonce field is missing."
+}

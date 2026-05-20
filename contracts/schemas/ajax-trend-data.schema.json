@@ -1,0 +1,11 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "abj404_trendData",
+  "description": "Trend analytics data AJAX from ViewTrait_Stats.php to Ajax_TrendData.php",
+  "type": "object",
+  "required": ["nonce"],
+  "properties": {
+    "nonce": { "type": "string", "minLength": 1 },
+    "days": { "type": "integer", "minimum": 1, "maximum": 90 }
+  }
+}

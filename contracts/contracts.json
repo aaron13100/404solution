@@ -222,6 +222,168 @@
         "valid": ["fixtures/ajax-support-request-preview.valid.json"],
         "invalid": ["fixtures/ajax-support-request-preview.invalid-missing-trigger.json"]
       }
+    },
+    {
+      "id": "ajax-cross-plugin-preview",
+      "description": "Cross-Plugin Importer preview AJAX from admin stats page",
+      "schema": "schemas/ajax-cross-plugin-preview.schema.json",
+      "direction": "client-to-server",
+      "producer": {
+        "file": "includes/ViewTrait_Stats.php",
+        "test": "tests/AjaxCrossPluginImporterContractTest.php"
+      },
+      "consumer": {
+        "file": "includes/ajax/Ajax_CrossPluginImporter.php",
+        "test": "tests/AjaxCrossPluginImporterContractTest.php"
+      },
+      "fixtures": {
+        "valid": ["fixtures/ajax-cross-plugin-preview.valid.json"],
+        "invalid": ["fixtures/ajax-cross-plugin-preview.invalid-bad-source.json"]
+      }
+    },
+    {
+      "id": "ajax-engine-profiles",
+      "description": "Engine Profile CRUD AJAX from admin engine profiles page",
+      "schema": "schemas/ajax-engine-profiles.schema.json",
+      "direction": "client-to-server",
+      "producer": {
+        "file": "includes/ajax/ajax-engine-profiles.js",
+        "test": "tests/AjaxEngineProfilesContractTest.php"
+      },
+      "consumer": {
+        "file": "includes/ajax/Ajax_EngineProfiles.php",
+        "test": "tests/AjaxEngineProfilesContractTest.php"
+      },
+      "fixtures": {
+        "valid": ["fixtures/ajax-engine-profiles.valid.json"],
+        "invalid": ["fixtures/ajax-engine-profiles.invalid-missing-nonce.json"]
+      }
+    },
+    {
+      "id": "ajax-update-options",
+      "description": "Plugin options update AJAX from admin settings page",
+      "schema": "schemas/ajax-update-options.schema.json",
+      "direction": "client-to-server",
+      "producer": {
+        "file": "includes/js/general.js",
+        "test": "tests/AjaxUpdateOptionsContractTest.php"
+      },
+      "consumer": {
+        "file": "includes/ajax/Ajax_Php.php",
+        "test": "tests/AjaxUpdateOptionsContractTest.php"
+      },
+      "fixtures": {
+        "valid": ["fixtures/ajax-update-options.valid.json"],
+        "invalid": ["fixtures/ajax-update-options.invalid-missing-nonce.json"]
+      }
+    },
+    {
+      "id": "ajax-restore-defaults",
+      "description": "Restore plugin settings to defaults AJAX from admin settings page",
+      "schema": "schemas/ajax-restore-defaults.schema.json",
+      "direction": "client-to-server",
+      "producer": {
+        "file": "includes/ajax/RestoreDefaults.js",
+        "test": "tests/SettingsRestoreDefaultsActionTest.php"
+      },
+      "consumer": {
+        "file": "includes/ajax/Ajax_RestoreDefaults.php",
+        "test": "tests/SettingsRestoreDefaultsActionTest.php"
+      },
+      "fixtures": {
+        "valid": ["fixtures/ajax-restore-defaults.valid.json"],
+        "invalid": ["fixtures/ajax-restore-defaults.invalid-missing-nonce.json"]
+      }
+    },
+    {
+      "id": "ajax-settings-mode-toggle",
+      "description": "Simple/Advanced settings mode toggle AJAX",
+      "schema": "schemas/ajax-settings-mode-toggle.schema.json",
+      "direction": "client-to-server",
+      "producer": {
+        "file": "includes/ajax/SettingsModeToggle.js",
+        "test": "tests/AjaxSettingsModeToggleTest.php"
+      },
+      "consumer": {
+        "file": "includes/ajax/Ajax_SettingsModeToggle.php",
+        "test": "tests/AjaxSettingsModeToggleTest.php"
+      },
+      "fixtures": {
+        "valid": ["fixtures/ajax-settings-mode-toggle.valid.json"],
+        "invalid": ["fixtures/ajax-settings-mode-toggle.invalid-bad-mode.json"]
+      }
+    },
+    {
+      "id": "ajax-suggestion-compute",
+      "description": "Background suggestion computation triggered server-side via wp_remote_post",
+      "schema": "schemas/ajax-suggestion-compute.schema.json",
+      "direction": "client-to-server",
+      "producer": {
+        "file": "includes/SpellChecker.php",
+        "test": "tests/AjaxSuggestionComputeContractTest.php"
+      },
+      "consumer": {
+        "file": "includes/ajax/Ajax_SuggestionCompute.php",
+        "test": "tests/AjaxSuggestionComputeContractTest.php"
+      },
+      "fixtures": {
+        "valid": ["fixtures/ajax-suggestion-compute.valid.json"],
+        "invalid": ["fixtures/ajax-suggestion-compute.invalid-missing-token.json"]
+      }
+    },
+    {
+      "id": "ajax-suggestion-polling",
+      "description": "Public-facing 404 page suggestion polling AJAX",
+      "schema": "schemas/ajax-suggestion-polling.schema.json",
+      "direction": "client-to-server",
+      "producer": {
+        "file": "includes/ajax/SuggestionPolling.js",
+        "test": "tests/AjaxSuggestionPollingJsonContractTest.php"
+      },
+      "consumer": {
+        "file": "includes/ajax/Ajax_SuggestionPolling.php",
+        "test": "tests/AjaxSuggestionPollingJsonContractTest.php"
+      },
+      "fixtures": {
+        "valid": ["fixtures/ajax-suggestion-polling.valid.json"],
+        "invalid": ["fixtures/ajax-suggestion-polling.invalid-missing-url.json"]
+      }
+    },
+    {
+      "id": "ajax-trash-link",
+      "description": "Trash/restore redirect AJAX from admin redirects table",
+      "schema": "schemas/ajax-trash-link.schema.json",
+      "direction": "client-to-server",
+      "producer": {
+        "file": "includes/ajax/trash_link_ajax.js",
+        "test": "tests/AjaxTrashLinkContractTest.php"
+      },
+      "consumer": {
+        "file": "includes/ajax/Ajax_TrashLink.php",
+        "test": "tests/AjaxTrashLinkContractTest.php"
+      },
+      "fixtures": {
+        "valid": ["fixtures/ajax-trash-link.valid.json"],
+        "invalid": ["fixtures/ajax-trash-link.invalid-missing-id.json"]
+      }
+    },
+    {
+      "id": "ajax-trend-data",
+      "description": "Trend analytics chart data AJAX from admin stats page",
+      "schema": "schemas/ajax-trend-data.schema.json",
+      "direction": "client-to-server",
+      "producer": {
+        "file": "includes/ViewTrait_Stats.php",
+        "test": "tests/AjaxTrendDataContractTest.php"
+      },
+      "consumer": {
+        "file": "includes/ajax/Ajax_TrendData.php",
+        "test": "tests/AjaxTrendDataContractTest.php"
+      },
+      "fixtures": {
+        "valid": ["fixtures/ajax-trend-data.valid.json"],
+        "invalid": ["fixtures/ajax-trend-data.invalid-missing-nonce.json"]
+      }
     }
   ]
 }

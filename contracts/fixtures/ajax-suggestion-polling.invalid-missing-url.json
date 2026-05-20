@@ -1,0 +1,4 @@
+{
+  "_comment": "This fixture MUST fail validation. The required url field is missing.",
+  "_ajax_nonce": "abc123def456"
+}

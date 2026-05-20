@@ -1,0 +1,11 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "abj404_restore_defaults",
+  "description": "Restore plugin settings to defaults AJAX from RestoreDefaults.js to Ajax_RestoreDefaults.php",
+  "type": "object",
+  "required": ["nonce"],
+  "additionalProperties": false,
+  "properties": {
+    "nonce": { "type": "string", "minLength": 1 }
+  }
+}

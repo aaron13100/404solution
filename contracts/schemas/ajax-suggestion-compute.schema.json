@@ -1,0 +1,12 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "abj404_computeSuggestions",
+  "description": "Background suggestion computation AJAX from SpellChecker.php to Ajax_SuggestionCompute.php",
+  "type": "object",
+  "required": ["url", "token"],
+  "additionalProperties": false,
+  "properties": {
+    "url": { "type": "string", "minLength": 1 },
+    "token": { "type": "string", "minLength": 1 }
+  }
+}

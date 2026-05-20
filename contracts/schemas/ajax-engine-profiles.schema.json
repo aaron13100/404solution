@@ -1,0 +1,11 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "abj404_engine_profiles_list",
+  "description": "Engine Profile list AJAX from ajax-engine-profiles.js to Ajax_EngineProfiles.php",
+  "type": "object",
+  "required": ["nonce"],
+  "additionalProperties": false,
+  "properties": {
+    "nonce": { "type": "string", "minLength": 1 }
+  }
+}

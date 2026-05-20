@@ -1,0 +1,12 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "abj404_toggle_settings_mode",
+  "description": "Settings mode toggle AJAX from SettingsModeToggle.js to Ajax_SettingsModeToggle.php",
+  "type": "object",
+  "required": ["nonce", "mode"],
+  "additionalProperties": false,
+  "properties": {
+    "nonce": { "type": "string", "minLength": 1 },
+    "mode": { "type": "string", "enum": ["simple", "advanced"] }
+  }
+}

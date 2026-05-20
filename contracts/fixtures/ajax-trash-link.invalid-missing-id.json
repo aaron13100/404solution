@@ -1,0 +1,5 @@
+{
+  "_comment": "This fixture MUST fail validation. The required id field is missing.",
+  "_wpnonce": "abc123def456",
+  "trash": "1"
+}
