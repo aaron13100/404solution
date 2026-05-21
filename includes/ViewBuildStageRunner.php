@@ -36,11 +36,222 @@ if (!defined('ABSPATH')) {
  * $this->classifyAndHandleStageFailure, $this->resetStageNoProgressStreak,
  * $this->extendedTimeoutForKilledNonBatchedStage, $this->stagedQueryTimeoutSeconds)
  * resolve through the shared composing class.
+ *
+ * @property ABJ_404_Solution_DatabaseCore $dbCore
+ * @property ABJ_404_Solution_Functions $f
+ * @property ABJ_404_Solution_Logging $logger
+ * @property ABJ_404_Solution_ViewReadService|null $viewReadService
+ * @property ABJ_404_Solution_LogsRepository|null $logsRepo
+ * @property int $stagedQueryTimeoutSeconds
+ * @property string $lastBatchProgressDetail
+ * @property bool $viewBuildStageOpenForShutdown
+ * @property int $viewBuildShutdownStageNumber
+ * @property string $viewBuildShutdownStageKey
+ * @property bool|null $namedLockSupportedThisRequest
+ * @property bool $fallbackLockLoggedThisRequest
+ * @property bool $usingTransientFallbackLock
+ * @property string $lastNamedLockUnsupportedReason
+ * @property string $lastNamedLockUnsupportedError
+ * @method void abortStagedBuildForMutationWatermarkAdvance(...$arguments)
+ * @method bool acquireTransientFallbackLock(...$arguments)
+ * @method bool acquireViewBuildLock(...$arguments)
+ * @method string activeBuildStartedWatermarkOptionName(...$arguments)
+ * @method bool adminMutationGateBlocks(...$arguments)
+ * @method array<mixed> advanceViewBuildOnce(...$arguments)
+ * @method void assertBuildBufferExistsOrHalt(...$arguments)
+ * @method ?bool attemptRelaxSqlModeForBuildConnection(...$arguments)
+ * @method bool bufferIntegrityPassesForPromote(...$arguments)
+ * @method string buildHaltTransientKey(...$arguments)
+ * @method string buildViewDoneCountQuery(...$arguments)
+ * @method string builtWatermarkOptionName(...$arguments)
+ * @method int bumpMutationWatermark(...$arguments)
+ * @method int bumpStageNoProgressStreak(...$arguments)
+ * @method string capturedPrefixForLog(...$arguments)
+ * @method void capturePrefixAtBuildStart(...$arguments)
+ * @method void claimForegroundViewBuildLease(...$arguments)
+ * @method string classifyAndHandleStageFailure(...$arguments)
+ * @method array<mixed> classifySessionVariableWarnings(...$arguments)
+ * @method string classifyStageFailure(...$arguments)
+ * @method void clearActiveBuildStartedWatermark(...$arguments)
+ * @method void clearAdminMutationGateOptions(...$arguments)
+ * @method void clearAllProgressOptions(...$arguments)
+ * @method void clearPhpEnvironmentProbeCache(...$arguments)
+ * @method void clearPrefixAtStageOne(...$arguments)
+ * @method void clearSessionVariablesProbeCache(...$arguments)
+ * @method void clearSqlModeProbeCache(...$arguments)
+ * @method void clearStagedBuildDegradedState(...$arguments)
+ * @method void clearViewBuildOpenStageForShutdown(...$arguments)
+ * @method void clearViewDoneHardStaleNotice(...$arguments)
+ * @method ABJ_404_Solution_Clock clock(...$arguments)
+ * @method int countLiveRedirects(...$arguments)
+ * @method int countViewBuildRows(...$arguments)
+ * @method string describeBuildProgressForNotice(...$arguments)
+ * @method string describeDegradedNotice(...$arguments)
+ * @method string describeStagedSqlFailure(...$arguments)
+ * @method array<mixed> detectAndAdjustSqlMode(...$arguments)
+ * @method float detectHostStagedQueryLimitSeconds(...$arguments)
+ * @method string doTableNameReplacements(...$arguments)
+ * @method void dropDeletemeTable(...$arguments)
+ * @method void dropTransientBuffersIfPresent(...$arguments)
+ * @method void dropTransientStagedTables(...$arguments)
+ * @method void ensureConnection(...$arguments)
+ * @method void ensureFallbackLockNoticeAndLog(...$arguments)
+ * @method int extendedTimeoutForKilledNonBatchedStage(...$arguments)
+ * @method array<mixed> fetchSessionVariablesRowOrEmpty(...$arguments)
+ * @method string filesystemEnvironmentProbeOptionName(...$arguments)
+ * @method bool forceRestartViewBuild(...$arguments)
+ * @method bool foregroundViewBuildLeaseActive(...$arguments)
+ * @method string formatPhpMemoryBytesHuman(...$arguments)
+ * @method bool gateAbortIfMutationWatermarkAdvanced(...$arguments)
+ * @method string getColumnCollationString(...$arguments)
+ * @method int getCronStuckHours(...$arguments)
+ * @method string getLowercasePrefix(...$arguments)
+ * @method array<string, mixed> getViewBuildProgress(...$arguments)
+ * @method array<mixed> getViewBuildProgressFingerprint(...$arguments)
+ * @method int getViewDoneBuiltAtTimestamp(...$arguments)
+ * @method bool haltIfPrefixChangedSinceStageOne(...$arguments)
+ * @method string humanBatchProgress(...$arguments)
+ * @method float intelligentStagedQueryTimeoutSeconds(...$arguments)
+ * @method void invalidateViewDoneServeableCache(...$arguments)
+ * @method bool isBuildHaltedForHostFailure(...$arguments)
+ * @method bool isCurrentStageOptionName(...$arguments)
+ * @method bool isNamedLockUnsupportedError(...$arguments)
+ * @method bool isResumableStagedKill(...$arguments)
+ * @method bool isStageMarkedSkipped(...$arguments)
+ * @method bool isTransientConnectionError(...$arguments)
+ * @method string lastBuildStartedWatermarkOptionName(...$arguments)
+ * @method string legacyStartedWatermarkOptionName(...$arguments)
+ * @method string localizeOrDefaultViewBuildNotice(...$arguments)
+ * @method bool logsHitsTableExists(...$arguments)
+ * @method void logTimedViewBuildStage(...$arguments)
+ * @method void logViewBuildProgressOptionWrite(...$arguments)
+ * @method void logViewBuildShutdownDiagnostics(...$arguments)
+ * @method void markBuildHaltedForHostFailure(...$arguments)
+ * @method void markBuildStage(...$arguments)
+ * @method void markStageSkippedForHostFailure(...$arguments)
+ * @method void markViewBuildStageCompleted(...$arguments)
+ * @method void markViewBuildStageStarted(...$arguments)
+ * @method void markViewDoneBuildCompleted(...$arguments)
+ * @method void markViewDoneInvalidatedByAdminMutation(...$arguments)
+ * @method int maxBuildBufferId(...$arguments)
+ * @method void maybeRaiseViewDoneHardStaleNotice(...$arguments)
+ * @method bool mutationWatermarkAdvancedSinceBuildStart(...$arguments)
+ * @method int mutationWatermarkObservedByAdminAction(...$arguments)
+ * @method int mutationWatermarkObservedByAdminActionAt(...$arguments)
+ * @method string mutationWatermarkObservedByAdminActionAtOptionName(...$arguments)
+ * @method string mutationWatermarkObservedByAdminActionOptionName(...$arguments)
+ * @method string normalizePathPrefix(...$arguments)
+ * @method bool optionReadBackMatches(...$arguments)
+ * @method int parsePhpMemoryLimitToBytes(...$arguments)
+ * @method bool pathFallsWithinAny(...$arguments)
+ * @method void performFreshStartCleanup(...$arguments)
+ * @method array<mixed> phpDisabledFunctionsList(...$arguments)
+ * @method string phpEnvironmentProbeOptionName(...$arguments)
+ * @method float phpTimeRemainingSeconds(...$arguments)
+ * @method string prefixAtStageOneOptionName(...$arguments)
+ * @method array<mixed> probeFilesystemEnvironmentForBuild(...$arguments)
+ * @method float probeFloatFromValues(...$arguments)
+ * @method int probeIntFromValues(...$arguments)
+ * @method int probeMemoryLimitForS9(...$arguments)
+ * @method array<mixed> probePhpEnvironmentForBuild(...$arguments)
+ * @method array<mixed> probeSessionVariablesAtS1Entry(...$arguments)
+ * @method bool probeSetTimeLimitAvailability(...$arguments)
+ * @method array<mixed> probeSqlModeForBuild(...$arguments)
+ * @method string probeStringFromValues(...$arguments)
+ * @method string progressOptionName(...$arguments)
+ * @method void publishBuiltWatermarkFromActiveBuildStartedWatermark(...$arguments)
+ * @method array<mixed> queryAndGetResults(...$arguments)
+ * @method int readActiveBuildStartedWatermark(...$arguments)
+ * @method array<int, array<string, mixed>> readFromViewDone(...$arguments)
+ * @method int readProgressOption(...$arguments)
+ * @method int readWatermarkOption(...$arguments)
+ * @method void rebuildViewDoneInBackground(...$arguments)
+ * @method bool reconcilePostStageElevenState(...$arguments)
+ * @method string reconcileStagedTablesAtRunnerStartup(...$arguments)
+ * @method int recordStageBatchKilled(...$arguments)
+ * @method void registerViewBuildShutdownDiagnostics(...$arguments)
+ * @method bool releaseAndReacquireBetweenStages(...$arguments)
+ * @method void releaseViewBuildLock(...$arguments)
+ * @method void resetStageNoProgressStreak(...$arguments)
+ * @method string resolveColumnCollationForStagedBuild(...$arguments)
+ * @method void runForceRestartCleanupInsideLock(...$arguments)
+ * @method bool runIdRangeBatchedUpdate(...$arguments)
+ * @method int runInsertBatch(...$arguments)
+ * @method mixed runNonBatchedStageWithKillStreakEscape(...$arguments)
+ * @method array{ran: bool, reason: string, progress: array<string, mixed>} runPageLoadFallbackAdvance(...$arguments)
+ * @method int runRedirectsForViewCountStaged(...$arguments)
+ * @method array<int, array<string, mixed>> runRedirectsForViewStaged(...$arguments)
+ * @method bool runS11SwapWithPreRenameWatermarkRecheck(...$arguments)
+ * @method bool runStagedBuildOnce(...$arguments)
+ * @method bool runStagedBuildStages6Through11(...$arguments)
+ * @method void runStagedSqlFile(...$arguments)
+ * @method void runStagedSqlFileTolerantOfDuplicateKey(...$arguments)
+ * @method mixed runTimedViewBuildStage(...$arguments)
+ * @method int safeCurrentMutationWatermark(...$arguments)
+ * @method string sanitizeUrlBeforeInsert(...$arguments)
+ * @method void scheduleViewDoneRebuild(...$arguments)
+ * @method string sessionVariablesProbeOptionName(...$arguments)
+ * @method void setFilesystemEnvAdminNotice(...$arguments)
+ * @method void setLowMemoryLimitAdminNotice(...$arguments)
+ * @method void setSessionEnvAdminNotice(...$arguments)
+ * @method void setStagedBuildDegradedNotice(...$arguments)
+ * @method void setStagedBuildHaltNotice(...$arguments)
+ * @method void setViewBuildCronStuckNotice(...$arguments)
+ * @method void setViewBuildScheduleFailedNotice(...$arguments)
+ * @method void setViewDoneHardStaleNotice(...$arguments)
+ * @method array<mixed> splitOpenBasedirPaths(...$arguments)
+ * @method string sqlModeProbeOptionName(...$arguments)
+ * @method void stageAddPreJoinIndexes(...$arguments)
+ * @method void stageAddSortIndexes(...$arguments)
+ * @method void stageCreateBuildTable(...$arguments)
+ * @method array<string, mixed> stagedQueryOptions(...$arguments)
+ * @method bool stagedTableExists(...$arguments)
+ * @method bool stageInsertRedirectsBatched(...$arguments)
+ * @method string stageNoProgressStreakOptionName(...$arguments)
+ * @method void stageRenameSwap(...$arguments)
+ * @method string stageSkipOptionName(...$arguments)
+ * @method void stageUpdateExternal(...$arguments)
+ * @method void stageUpdateHits(...$arguments)
+ * @method void stageUpdateHome(...$arguments)
+ * @method bool stageUpdatePostsBatched(...$arguments)
+ * @method void stageUpdateSpecial(...$arguments)
+ * @method bool stageUpdateTermsBatched(...$arguments)
+ * @method void stampStartedWatermarksAtS1Entry(...$arguments)
+ * @method void sweepStaleRebuildTransients(...$arguments)
+ * @method string transientFallbackLockOptionName(...$arguments)
+ * @method bool verifyBuildLockSerializesWriter(...$arguments)
+ * @method bool verifyOptionWriteCoherent(...$arguments)
+ * @method bool verifyPrefixUnchangedSinceStageOne(...$arguments)
+ * @method int viewBuildBatchSize(...$arguments)
+ * @method int viewBuildBatchSizeForStage(...$arguments)
+ * @method array<mixed> viewBuildOnlyTranslations(...$arguments)
+ * @method float viewBuildPerStageBudgetSeconds(...$arguments)
+ * @method string viewBuildTableName(...$arguments)
+ * @method string viewDeletemeTableName(...$arguments)
+ * @method int viewDoneBuiltAt(...$arguments)
+ * @method int viewDoneBuiltWatermark(...$arguments)
+ * @method int viewDoneDataBuiltAt(...$arguments)
+ * @method string viewDoneDataBuiltAtOptionName(...$arguments)
+ * @method string viewDoneFreshnessOptionName(...$arguments)
+ * @method bool viewDoneHasRows(...$arguments)
+ * @method bool viewDoneIsFresh(...$arguments)
+ * @method bool viewDoneIsServeable(...$arguments)
+ * @method int viewDoneMutationInvalidatedAt(...$arguments)
+ * @method string viewDoneMutationInvalidatedAtOptionName(...$arguments)
+ * @method bool viewDoneTableExists(...$arguments)
+ * @method string viewDoneTableName(...$arguments)
+ * @method void writeProgressOption(...$arguments)
+ * @method void writeWatermarkOption(...$arguments)
  */
-trait ABJ_404_Solution_DataAccess_ViewBuildStageRunnerTrait {
+class ABJ_404_Solution_ViewBuildStageRunner extends ABJ_404_Solution_ViewBuildCollaborator {
 
     /** @var bool Process-local guard so shutdown diagnostics register once. */
     private static $viewBuildShutdownLoggerRegistered = false;
+
+    /** @return void */
+    public static function resetViewBuildShutdownLoggerRegistration(): void {
+        self::$viewBuildShutdownLoggerRegistered = false;
+    }
 
     /** @var bool True while a stage has started but has not reached normal logging. */
     private $viewBuildStageOpenForShutdown = false;
@@ -76,7 +287,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildStageRunnerTrait {
      * @param string $detail    Optional mid-stage progress detail, e.g. 'batch 4/12'.
      * @return void
      */
-    private function markBuildStage(string $stageKey, string $detail = ''): void {
+    public function markBuildStage(string $stageKey, string $detail = ''): void {
         if (!class_exists('ABJ_404_Solution_ViewUpdater')) {
             return;
         }
@@ -109,7 +320,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildStageRunnerTrait {
      * @param callable $callback Stage work to execute.
      * @return mixed
      */
-    private function runTimedViewBuildStage(int $stageNumber, string $stageKey, callable $callback) {
+    public function runTimedViewBuildStage(int $stageNumber, string $stageKey, callable $callback) {
         $started = microtime(true);
         // Reset per-stage so a yield marker for this stage cannot accidentally
         // pick up a prior stage's batch detail. Inner loops (S2/S4/S5)
@@ -194,7 +405,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildStageRunnerTrait {
      * @param string $stageKey
      * @return void
      */
-    private function markViewBuildStageStarted(int $stageNumber, string $stageKey): void {
+    public function markViewBuildStageStarted(int $stageNumber, string $stageKey): void {
         $now = time();
         if ($this->readProgressOption('started_at', 0) === 0) {
             $this->writeProgressOption('started_at', $now);
@@ -215,20 +426,20 @@ trait ABJ_404_Solution_DataAccess_ViewBuildStageRunnerTrait {
      * @param int $stageNumber
      * @return void
      */
-    private function markViewBuildStageCompleted(int $stageNumber): void {
+    public function markViewBuildStageCompleted(int $stageNumber): void {
         $this->writeProgressOption('last_completed_stage', $stageNumber);
         $this->writeProgressOption('last_completed_at', time());
     }
 
     /** @return void */
-    private function clearViewBuildOpenStageForShutdown(): void {
+    public function clearViewBuildOpenStageForShutdown(): void {
         $this->viewBuildStageOpenForShutdown = false;
         $this->viewBuildShutdownStageNumber = 0;
         $this->viewBuildShutdownStageKey = '';
     }
 
     /** @return void */
-    private function registerViewBuildShutdownDiagnostics(): void {
+    public function registerViewBuildShutdownDiagnostics(): void {
         if (self::$viewBuildShutdownLoggerRegistered || !function_exists('register_shutdown_function')) {
             return;
         }
@@ -239,7 +450,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildStageRunnerTrait {
     }
 
     /** @return void */
-    private function logViewBuildShutdownDiagnostics(): void {
+    public function logViewBuildShutdownDiagnostics(): void {
         if (!$this->viewBuildStageOpenForShutdown) {
             return;
         }
@@ -311,7 +522,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildStageRunnerTrait {
      *                 self-skips (S9 with no logs_hits table). Callers
      *                 only check `=== false` so the broader type is fine.
      */
-    private function runNonBatchedStageWithKillStreakEscape(
+    public function runNonBatchedStageWithKillStreakEscape(
         int $stageNumber,
         string $stageKey,
         string $streakOptKey,
@@ -342,7 +553,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildStageRunnerTrait {
      * @param float $started
      * @return void
      */
-    private function logTimedViewBuildStage(int $stageNumber, string $stageKey, string $status, float $started): void {
+    public function logTimedViewBuildStage(int $stageNumber, string $stageKey, string $status, float $started): void {
         $elapsedMs = (int)round((microtime(true) - $started) * 1000);
         $markerDetail = $status . ' in ' . $elapsedMs . ' ms';
         // Preserve mid-stage batch progress in the user-visible yield marker

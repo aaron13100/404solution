@@ -30,8 +30,214 @@ if (!defined('ABSPATH')) {
  * ABJ_404_Solution_DataAccess_ViewBuildLockAndCronTrait. All three traits
  * are mixed into ABJ_404_Solution_DataAccess; properties declared here are
  * visible to the staged-build trait inside the composing class.
+ *
+ * @property ABJ_404_Solution_DatabaseCore $dbCore
+ * @property ABJ_404_Solution_Functions $f
+ * @property ABJ_404_Solution_Logging $logger
+ * @property ABJ_404_Solution_ViewReadService|null $viewReadService
+ * @property ABJ_404_Solution_LogsRepository|null $logsRepo
+ * @property int $stagedQueryTimeoutSeconds
+ * @property string $lastBatchProgressDetail
+ * @property bool $viewBuildStageOpenForShutdown
+ * @property int $viewBuildShutdownStageNumber
+ * @property string $viewBuildShutdownStageKey
+ * @property bool|null $namedLockSupportedThisRequest
+ * @property bool $fallbackLockLoggedThisRequest
+ * @property bool $usingTransientFallbackLock
+ * @property string $lastNamedLockUnsupportedReason
+ * @property string $lastNamedLockUnsupportedError
+ * @method void abortStagedBuildForMutationWatermarkAdvance(...$arguments)
+ * @method bool acquireTransientFallbackLock(...$arguments)
+ * @method bool acquireViewBuildLock(...$arguments)
+ * @method string activeBuildStartedWatermarkOptionName(...$arguments)
+ * @method bool adminMutationGateBlocks(...$arguments)
+ * @method array<mixed> advanceViewBuildOnce(...$arguments)
+ * @method void assertBuildBufferExistsOrHalt(...$arguments)
+ * @method ?bool attemptRelaxSqlModeForBuildConnection(...$arguments)
+ * @method bool bufferIntegrityPassesForPromote(...$arguments)
+ * @method string buildHaltTransientKey(...$arguments)
+ * @method string buildViewDoneCountQuery(...$arguments)
+ * @method string builtWatermarkOptionName(...$arguments)
+ * @method int bumpMutationWatermark(...$arguments)
+ * @method int bumpStageNoProgressStreak(...$arguments)
+ * @method string capturedPrefixForLog(...$arguments)
+ * @method void capturePrefixAtBuildStart(...$arguments)
+ * @method void claimForegroundViewBuildLease(...$arguments)
+ * @method string classifyAndHandleStageFailure(...$arguments)
+ * @method array<mixed> classifySessionVariableWarnings(...$arguments)
+ * @method string classifyStageFailure(...$arguments)
+ * @method void clearActiveBuildStartedWatermark(...$arguments)
+ * @method void clearAdminMutationGateOptions(...$arguments)
+ * @method void clearAllProgressOptions(...$arguments)
+ * @method void clearPhpEnvironmentProbeCache(...$arguments)
+ * @method void clearPrefixAtStageOne(...$arguments)
+ * @method void clearSessionVariablesProbeCache(...$arguments)
+ * @method void clearSqlModeProbeCache(...$arguments)
+ * @method void clearStagedBuildDegradedState(...$arguments)
+ * @method void clearViewBuildOpenStageForShutdown(...$arguments)
+ * @method void clearViewDoneHardStaleNotice(...$arguments)
+ * @method ABJ_404_Solution_Clock clock(...$arguments)
+ * @method int countLiveRedirects(...$arguments)
+ * @method int countViewBuildRows(...$arguments)
+ * @method string describeBuildProgressForNotice(...$arguments)
+ * @method string describeDegradedNotice(...$arguments)
+ * @method string describeStagedSqlFailure(...$arguments)
+ * @method array<mixed> detectAndAdjustSqlMode(...$arguments)
+ * @method float detectHostStagedQueryLimitSeconds(...$arguments)
+ * @method string doTableNameReplacements(...$arguments)
+ * @method void dropDeletemeTable(...$arguments)
+ * @method void dropTransientBuffersIfPresent(...$arguments)
+ * @method void dropTransientStagedTables(...$arguments)
+ * @method void ensureConnection(...$arguments)
+ * @method void ensureFallbackLockNoticeAndLog(...$arguments)
+ * @method int extendedTimeoutForKilledNonBatchedStage(...$arguments)
+ * @method array<mixed> fetchSessionVariablesRowOrEmpty(...$arguments)
+ * @method string filesystemEnvironmentProbeOptionName(...$arguments)
+ * @method bool forceRestartViewBuild(...$arguments)
+ * @method bool foregroundViewBuildLeaseActive(...$arguments)
+ * @method string formatPhpMemoryBytesHuman(...$arguments)
+ * @method bool gateAbortIfMutationWatermarkAdvanced(...$arguments)
+ * @method string getColumnCollationString(...$arguments)
+ * @method int getCronStuckHours(...$arguments)
+ * @method string getLowercasePrefix(...$arguments)
+ * @method array<string, mixed> getViewBuildProgress(...$arguments)
+ * @method array<mixed> getViewBuildProgressFingerprint(...$arguments)
+ * @method int getViewDoneBuiltAtTimestamp(...$arguments)
+ * @method bool haltIfPrefixChangedSinceStageOne(...$arguments)
+ * @method string humanBatchProgress(...$arguments)
+ * @method float intelligentStagedQueryTimeoutSeconds(...$arguments)
+ * @method void invalidateViewDoneServeableCache(...$arguments)
+ * @method bool isBuildHaltedForHostFailure(...$arguments)
+ * @method bool isCurrentStageOptionName(...$arguments)
+ * @method bool isNamedLockUnsupportedError(...$arguments)
+ * @method bool isResumableStagedKill(...$arguments)
+ * @method bool isStageMarkedSkipped(...$arguments)
+ * @method bool isTransientConnectionError(...$arguments)
+ * @method string lastBuildStartedWatermarkOptionName(...$arguments)
+ * @method string legacyStartedWatermarkOptionName(...$arguments)
+ * @method string localizeOrDefaultViewBuildNotice(...$arguments)
+ * @method bool logsHitsTableExists(...$arguments)
+ * @method void logTimedViewBuildStage(...$arguments)
+ * @method void logViewBuildProgressOptionWrite(...$arguments)
+ * @method void logViewBuildShutdownDiagnostics(...$arguments)
+ * @method void markBuildHaltedForHostFailure(...$arguments)
+ * @method void markBuildStage(...$arguments)
+ * @method void markStageSkippedForHostFailure(...$arguments)
+ * @method void markViewBuildStageCompleted(...$arguments)
+ * @method void markViewBuildStageStarted(...$arguments)
+ * @method void markViewDoneBuildCompleted(...$arguments)
+ * @method void markViewDoneInvalidatedByAdminMutation(...$arguments)
+ * @method int maxBuildBufferId(...$arguments)
+ * @method void maybeRaiseViewDoneHardStaleNotice(...$arguments)
+ * @method bool mutationWatermarkAdvancedSinceBuildStart(...$arguments)
+ * @method int mutationWatermarkObservedByAdminAction(...$arguments)
+ * @method int mutationWatermarkObservedByAdminActionAt(...$arguments)
+ * @method string mutationWatermarkObservedByAdminActionAtOptionName(...$arguments)
+ * @method string mutationWatermarkObservedByAdminActionOptionName(...$arguments)
+ * @method string normalizePathPrefix(...$arguments)
+ * @method bool optionReadBackMatches(...$arguments)
+ * @method int parsePhpMemoryLimitToBytes(...$arguments)
+ * @method bool pathFallsWithinAny(...$arguments)
+ * @method void performFreshStartCleanup(...$arguments)
+ * @method array<mixed> phpDisabledFunctionsList(...$arguments)
+ * @method string phpEnvironmentProbeOptionName(...$arguments)
+ * @method float phpTimeRemainingSeconds(...$arguments)
+ * @method string prefixAtStageOneOptionName(...$arguments)
+ * @method array<mixed> probeFilesystemEnvironmentForBuild(...$arguments)
+ * @method float probeFloatFromValues(...$arguments)
+ * @method int probeIntFromValues(...$arguments)
+ * @method int probeMemoryLimitForS9(...$arguments)
+ * @method array<mixed> probePhpEnvironmentForBuild(...$arguments)
+ * @method array<mixed> probeSessionVariablesAtS1Entry(...$arguments)
+ * @method bool probeSetTimeLimitAvailability(...$arguments)
+ * @method array<mixed> probeSqlModeForBuild(...$arguments)
+ * @method string probeStringFromValues(...$arguments)
+ * @method string progressOptionName(...$arguments)
+ * @method void publishBuiltWatermarkFromActiveBuildStartedWatermark(...$arguments)
+ * @method array<mixed> queryAndGetResults(...$arguments)
+ * @method int readActiveBuildStartedWatermark(...$arguments)
+ * @method array<int, array<string, mixed>> readFromViewDone(...$arguments)
+ * @method int readProgressOption(...$arguments)
+ * @method int readWatermarkOption(...$arguments)
+ * @method void rebuildViewDoneInBackground(...$arguments)
+ * @method bool reconcilePostStageElevenState(...$arguments)
+ * @method string reconcileStagedTablesAtRunnerStartup(...$arguments)
+ * @method int recordStageBatchKilled(...$arguments)
+ * @method void registerViewBuildShutdownDiagnostics(...$arguments)
+ * @method bool releaseAndReacquireBetweenStages(...$arguments)
+ * @method void releaseViewBuildLock(...$arguments)
+ * @method void resetStageNoProgressStreak(...$arguments)
+ * @method string resolveColumnCollationForStagedBuild(...$arguments)
+ * @method void runForceRestartCleanupInsideLock(...$arguments)
+ * @method bool runIdRangeBatchedUpdate(...$arguments)
+ * @method int runInsertBatch(...$arguments)
+ * @method mixed runNonBatchedStageWithKillStreakEscape(...$arguments)
+ * @method array{ran: bool, reason: string, progress: array<string, mixed>} runPageLoadFallbackAdvance(...$arguments)
+ * @method int runRedirectsForViewCountStaged(...$arguments)
+ * @method array<int, array<string, mixed>> runRedirectsForViewStaged(...$arguments)
+ * @method bool runS11SwapWithPreRenameWatermarkRecheck(...$arguments)
+ * @method bool runStagedBuildOnce(...$arguments)
+ * @method bool runStagedBuildStages6Through11(...$arguments)
+ * @method void runStagedSqlFile(...$arguments)
+ * @method void runStagedSqlFileTolerantOfDuplicateKey(...$arguments)
+ * @method mixed runTimedViewBuildStage(...$arguments)
+ * @method int safeCurrentMutationWatermark(...$arguments)
+ * @method string sanitizeUrlBeforeInsert(...$arguments)
+ * @method void scheduleViewDoneRebuild(...$arguments)
+ * @method string sessionVariablesProbeOptionName(...$arguments)
+ * @method void setFilesystemEnvAdminNotice(...$arguments)
+ * @method void setLowMemoryLimitAdminNotice(...$arguments)
+ * @method void setSessionEnvAdminNotice(...$arguments)
+ * @method void setStagedBuildDegradedNotice(...$arguments)
+ * @method void setStagedBuildHaltNotice(...$arguments)
+ * @method void setViewBuildCronStuckNotice(...$arguments)
+ * @method void setViewBuildScheduleFailedNotice(...$arguments)
+ * @method void setViewDoneHardStaleNotice(...$arguments)
+ * @method array<mixed> splitOpenBasedirPaths(...$arguments)
+ * @method string sqlModeProbeOptionName(...$arguments)
+ * @method void stageAddPreJoinIndexes(...$arguments)
+ * @method void stageAddSortIndexes(...$arguments)
+ * @method void stageCreateBuildTable(...$arguments)
+ * @method array<string, mixed> stagedQueryOptions(...$arguments)
+ * @method bool stagedTableExists(...$arguments)
+ * @method bool stageInsertRedirectsBatched(...$arguments)
+ * @method string stageNoProgressStreakOptionName(...$arguments)
+ * @method void stageRenameSwap(...$arguments)
+ * @method string stageSkipOptionName(...$arguments)
+ * @method void stageUpdateExternal(...$arguments)
+ * @method void stageUpdateHits(...$arguments)
+ * @method void stageUpdateHome(...$arguments)
+ * @method bool stageUpdatePostsBatched(...$arguments)
+ * @method void stageUpdateSpecial(...$arguments)
+ * @method bool stageUpdateTermsBatched(...$arguments)
+ * @method void stampStartedWatermarksAtS1Entry(...$arguments)
+ * @method void sweepStaleRebuildTransients(...$arguments)
+ * @method string transientFallbackLockOptionName(...$arguments)
+ * @method bool verifyBuildLockSerializesWriter(...$arguments)
+ * @method bool verifyOptionWriteCoherent(...$arguments)
+ * @method bool verifyPrefixUnchangedSinceStageOne(...$arguments)
+ * @method int viewBuildBatchSize(...$arguments)
+ * @method int viewBuildBatchSizeForStage(...$arguments)
+ * @method array<mixed> viewBuildOnlyTranslations(...$arguments)
+ * @method float viewBuildPerStageBudgetSeconds(...$arguments)
+ * @method string viewBuildTableName(...$arguments)
+ * @method string viewDeletemeTableName(...$arguments)
+ * @method int viewDoneBuiltAt(...$arguments)
+ * @method int viewDoneBuiltWatermark(...$arguments)
+ * @method int viewDoneDataBuiltAt(...$arguments)
+ * @method string viewDoneDataBuiltAtOptionName(...$arguments)
+ * @method string viewDoneFreshnessOptionName(...$arguments)
+ * @method bool viewDoneHasRows(...$arguments)
+ * @method bool viewDoneIsFresh(...$arguments)
+ * @method bool viewDoneIsServeable(...$arguments)
+ * @method int viewDoneMutationInvalidatedAt(...$arguments)
+ * @method string viewDoneMutationInvalidatedAtOptionName(...$arguments)
+ * @method bool viewDoneTableExists(...$arguments)
+ * @method string viewDoneTableName(...$arguments)
+ * @method void writeProgressOption(...$arguments)
+ * @method void writeWatermarkOption(...$arguments)
  */
-trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
+class ABJ_404_Solution_ViewBuildHelpers extends ABJ_404_Solution_ViewBuildCollaborator {
 
     /** @var int Per-stage timeout in seconds for staged queries; 0 means use queryAndGetResults default. */
     private $stagedQueryTimeoutSeconds = 0;
@@ -122,7 +328,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
      * @param string $shortName  One of self::$viewBuildProgressOptionNames keys.
      * @return string  Site-prefixed option name.
      */
-    private function progressOptionName(string $shortName): string {
+    public function progressOptionName(string $shortName): string {
         if (!isset(self::$viewBuildProgressOptionNames[$shortName])) {
             return '';
         }
@@ -134,7 +340,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
      * @param int    $default
      * @return int
      */
-    private function readProgressOption(string $shortName, int $default = 0): int {
+    public function readProgressOption(string $shortName, int $default = 0): int {
         if (!function_exists('get_option')) {
             return $default;
         }
@@ -184,7 +390,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
      * @param int    $value
      * @return void
      */
-    private function writeProgressOption(string $shortName, int $value): void {
+    public function writeProgressOption(string $shortName, int $value): void {
         if (!function_exists('update_option')) {
             return;
         }
@@ -226,7 +432,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
      * @param string $path
      * @return void
      */
-    private function logViewBuildProgressOptionWrite(
+    public function logViewBuildProgressOptionWrite(
         string $shortName,
         string $optionName,
         int $expected,
@@ -378,7 +584,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
      * @param string $optionName
      * @return bool
      */
-    private function isCurrentStageOptionName(string $optionName): bool {
+    public function isCurrentStageOptionName(string $optionName): bool {
         $suffix = self::$viewBuildProgressOptionNames['current_stage'] ?? '';
         if ($suffix === '') {
             return false;
@@ -405,7 +611,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
      * @param mixed $expected
      * @return bool
      */
-    private function optionReadBackMatches($actual, $expected): bool {
+    public function optionReadBackMatches($actual, $expected): bool {
         if (($actual === null) !== ($expected === null)) {
             return false;
         }
@@ -416,7 +622,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
     }
 
     /** @return void */
-    private function clearAllProgressOptions(): void {
+    public function clearAllProgressOptions(): void {
         if (!function_exists('delete_option')) {
             return;
         }
@@ -458,7 +664,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
      *
      * @return void
      */
-    private function performFreshStartCleanup(): void {
+    public function performFreshStartCleanup(): void {
         $this->clearAllProgressOptions();
         $this->clearActiveBuildStartedWatermark();
         $this->dropTransientStagedTables();
@@ -475,7 +681,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
      * @param int $aboutToRunStage  Stage about to fire (2..11).
      * @return bool  True when an abort was triggered.
      */
-    private function gateAbortIfMutationWatermarkAdvanced(int $aboutToRunStage): bool {
+    public function gateAbortIfMutationWatermarkAdvanced(int $aboutToRunStage): bool {
         if (!$this->mutationWatermarkAdvancedSinceBuildStart()) {
             return false;
         }
@@ -501,7 +707,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
      *               should return false from runStagedBuildOnce). On
      *               abort, this method runs the abort cleanup itself.
      */
-    private function runS11SwapWithPreRenameWatermarkRecheck(): bool {
+    public function runS11SwapWithPreRenameWatermarkRecheck(): bool {
         $aborted = false;
         $result = $this->runTimedViewBuildStage(11, 'staged_build_s11_swap', function () use (&$aborted) {
             if (function_exists('do_action')) {
@@ -540,7 +746,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
      * @param int $aboutToRunStage  Stage the gate fired before (2..11).
      * @return void
      */
-    private function abortStagedBuildForMutationWatermarkAdvance(int $aboutToRunStage): void {
+    public function abortStagedBuildForMutationWatermarkAdvance(int $aboutToRunStage): void {
         // Read the active stamp BEFORE clearing it so the diagnostic log
         // line below carries the value we aborted against. Reading post-
         // clear would always show -1 and erase the most useful field for
@@ -578,7 +784,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
      *
      * @return string
      */
-    private function prefixAtStageOneOptionName(): string {
+    public function prefixAtStageOneOptionName(): string {
         return 'abj404_view_build_prefix_at_s1';
     }
 
@@ -656,7 +862,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
      *
      * @return string
      */
-    private function capturedPrefixForLog(): string {
+    public function capturedPrefixForLog(): string {
         if ($this->prefixAtStageOne !== '') {
             return $this->prefixAtStageOne;
         }
@@ -694,7 +900,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
      *
      * @return string
      */
-    private function sqlModeProbeOptionName(): string {
+    public function sqlModeProbeOptionName(): string {
         return 'abj404_view_build_session_probe';
     }
 
@@ -849,7 +1055,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
      * @param string $currentSqlMode
      * @return bool|null
      */
-    private function attemptRelaxSqlModeForBuildConnection(string $currentSqlMode): ?bool {
+    public function attemptRelaxSqlModeForBuildConnection(string $currentSqlMode): ?bool {
         global $wpdb;
         if (!isset($wpdb) || !is_object($wpdb) || !method_exists($wpdb, 'query')) {
             return null;
@@ -897,7 +1103,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
     }
 
     /** @return void */
-    private function clearSqlModeProbeCache(): void {
+    public function clearSqlModeProbeCache(): void {
         $this->sqlModeProbeCache = null;
         if (function_exists('delete_option')) {
             delete_option($this->sqlModeProbeOptionName());
@@ -979,7 +1185,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
      *
      * @return string Sanitized collation identifier (e.g. 'utf8mb4_unicode_520_ci').
      */
-    private function resolveColumnCollationForStagedBuild(): string {
+    public function resolveColumnCollationForStagedBuild(): string {
         $logsHitsTable = $this->doTableNameReplacements('{wp_abj404_logs_hits}');
         $collation = $this->getColumnCollationString($logsHitsTable, 'requested_url');
         return $collation;
@@ -999,7 +1205,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
      * @param array<string, string> $extraTranslations
      * @return void
      */
-    private function runStagedSqlFile(string $relativePath, array $extraTranslations): void {
+    public function runStagedSqlFile(string $relativePath, array $extraTranslations): void {
         $path = __DIR__ . '/sql/getRedirectsForViewStaged/' . $relativePath;
         $template = ABJ_404_Solution_Functions::readFileContents($path);
         if (!is_string($template) || trim($template) === '') {
@@ -1032,7 +1238,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
      * @param array<string, string> $extraTranslations
      * @return void
      */
-    private function runStagedSqlFileTolerantOfDuplicateKey(string $relativePath, array $extraTranslations): void {
+    public function runStagedSqlFileTolerantOfDuplicateKey(string $relativePath, array $extraTranslations): void {
         try {
             $this->runStagedSqlFile($relativePath, $extraTranslations);
         } catch (\Throwable $e) {
@@ -1061,7 +1267,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
      * @param array<string, string> $extraTranslations
      * @return string
      */
-    private function describeStagedSqlFailure(string $relativePath, array $extraTranslations): string {
+    public function describeStagedSqlFailure(string $relativePath, array $extraTranslations): string {
         $parts = array($relativePath);
         if (isset($extraTranslations['{LO_BOUND}'])) {
             $parts[] = 'lo=' . $extraTranslations['{LO_BOUND}'];
@@ -1083,7 +1289,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
      *
      * @return string  e.g. "stage 2/11, 3000/12000 rows" or "not yet started".
      */
-    private function describeBuildProgressForNotice(): string {
+    public function describeBuildProgressForNotice(): string {
         $stage = $this->readProgressOption('current_stage', 0);
         if ($stage <= 0) {
             return 'not yet started';
@@ -1104,7 +1310,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
      * @return array<string, mixed> Options for queryAndGetResults that
      * inherit the warmup pipeline's per-stage timeout when set.
      */
-    private function stagedQueryOptions(): array {
+    public function stagedQueryOptions(): array {
         if ($this->stagedQueryTimeoutSeconds > 0) {
             return array('timeout' => $this->stagedQueryTimeoutSeconds);
         }
@@ -1112,7 +1318,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
     }
 
     /** @return bool */
-    private function viewDoneTableExists(): bool {
+    public function viewDoneTableExists(): bool {
         return $this->stagedTableExists($this->viewDoneTableName());
     }
 
@@ -1129,7 +1335,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
      *
      * @return bool
      */
-    private function viewDoneHasRows(): bool {
+    public function viewDoneHasRows(): bool {
         if (!$this->viewDoneTableExists()) {
             return false;
         }
@@ -1154,7 +1360,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
      *
      * @return string
      */
-    private function viewDoneDataBuiltAtOptionName(): string {
+    public function viewDoneDataBuiltAtOptionName(): string {
         return $this->getLowercasePrefix() . 'abj404_view_done_data_built_at';
     }
 
@@ -1167,7 +1373,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
      *
      * @return int
      */
-    private function viewDoneDataBuiltAt(): int {
+    public function viewDoneDataBuiltAt(): int {
         if (!function_exists('get_option')) {
             return 0;
         }
@@ -1187,7 +1393,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
      * @param int $ageSeconds Current age of data on disk.
      * @return void
      */
-    private function setViewDoneHardStaleNotice(int $ageSeconds): void {
+    public function setViewDoneHardStaleNotice(int $ageSeconds): void {
         if (!function_exists('set_transient')) {
             return;
         }
@@ -1221,7 +1427,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
      *
      * @return void
      */
-    private function clearViewDoneHardStaleNotice(): void {
+    public function clearViewDoneHardStaleNotice(): void {
         if (function_exists('delete_transient')) {
             delete_transient('abj404_view_done_hard_stale');
         }
@@ -1239,7 +1445,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
      *
      * @return void
      */
-    private function maybeRaiseViewDoneHardStaleNotice(): void {
+    public function maybeRaiseViewDoneHardStaleNotice(): void {
         $built = $this->viewDoneDataBuiltAt();
         if ($built <= 0) {
             return;
@@ -1251,7 +1457,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
     }
 
     /** @param string $tableName @return bool */
-    private function stagedTableExists(string $tableName): bool {
+    public function stagedTableExists(string $tableName): bool {
         global $wpdb;
         if (!isset($wpdb) || !method_exists($wpdb, 'prepare')) {
             return false;
@@ -1275,7 +1481,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
     }
 
     /** @return bool */
-    private function viewDoneIsFresh(): bool {
+    public function viewDoneIsFresh(): bool {
         if (!function_exists('get_option')) {
             return false;
         }
@@ -1298,7 +1504,7 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
      * @param string $text
      * @return string
      */
-    private function localizeOrDefaultViewBuildNotice(string $text): string {
+    public function localizeOrDefaultViewBuildNotice(string $text): string {
         if (function_exists('__')) {
             return __($text, '404-solution');
         }

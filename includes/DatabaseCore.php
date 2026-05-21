@@ -830,11 +830,15 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
             $this->attemptMissingTableRepairAndRetry($query, $result);
         }
 
-        if ($result['last_error'] !== '' && $this->isInvalidDataError($result['last_error'])) {
+        $lastError = isset($result['last_error']) && is_scalar($result['last_error']) ? (string)$result['last_error'] : '';
+
+        if ($lastError !== '' && $this->isInvalidDataError($lastError)) {
             $this->attemptInvalidDataRetry($query, $result);
         }
 
-        if ($result['last_error'] !== '' && $this->isDeadlockOrLockTimeoutError($result['last_error'])) {
+        $lastError = isset($result['last_error']) && is_scalar($result['last_error']) ? (string)$result['last_error'] : '';
+
+        if ($lastError !== '' && $this->isDeadlockOrLockTimeoutError($lastError)) {
             /** @var wpdb $wpdb */
             usleep(50000);
             if ($producesRows) {
@@ -844,17 +848,20 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
                 $result['rows'] = array();
             }
             $this->harvestWpdbResult($result);
-            if ($result['last_error'] !== '' && $this->isDeadlockOrLockTimeoutError($result['last_error'])) {
+            $lastError = isset($result['last_error']) && is_scalar($result['last_error']) ? (string)$result['last_error'] : '';
+            if ($lastError !== '' && $this->isDeadlockOrLockTimeoutError($lastError)) {
                 // allow-em-dash: copied verbatim from existing user-facing localized string in DataAccess.php
-                $this->setPluginDbNotice('lock_timeout', $this->localizeOrDefault('A database lock wait timeout occurred. If this persists, contact your host — another process may be holding a long-running lock.'), $result['last_error']);
+                $this->setPluginDbNotice('lock_timeout', $this->localizeOrDefault('A database lock wait timeout occurred. If this persists, contact your host — another process may be holding a long-running lock.'), $lastError);
             }
         }
 
-        if ($result['last_error'] !== '' && $this->isCollationError($result['last_error'])) {
+        $lastError = isset($result['last_error']) && is_scalar($result['last_error']) ? (string)$result['last_error'] : '';
+        if ($lastError !== '' && $this->isCollationError($lastError)) {
             $this->recoverFromCollationMismatchAndRetry($query, $result, $producesRows, $resultType);
         }
 
-        if ($result['last_error'] !== '' && $this->isQueryTimeoutError($result['last_error'])) {
+        $lastError = isset($result['last_error']) && is_scalar($result['last_error']) ? (string)$result['last_error'] : '';
+        if ($lastError !== '' && $this->isQueryTimeoutError($lastError)) {
             $sqlInfo = (defined('WP_DEBUG') && WP_DEBUG) ? $query : $this->extractSqlFilename($query);
             $this->logger->warn(
                 'Query timed out after ' . $timeoutSeconds . 's. ' .
@@ -864,8 +871,9 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
             $result['timed_out'] = true;
         }
 
-        if ($result['last_error'] !== '') {
-            $this->noteDatabaseIssueFromError($result['last_error']);
+        $lastError = isset($result['last_error']) && is_scalar($result['last_error']) ? (string)$result['last_error'] : '';
+        if ($lastError !== '') {
+            $this->noteDatabaseIssueFromError($lastError);
         }
 
         if ($suppressWpdbErrors) {

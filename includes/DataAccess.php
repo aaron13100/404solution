@@ -5,19 +5,20 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-require_once __DIR__ . '/DataAccessTrait_ViewQueriesStaged.php';
-require_once __DIR__ . '/DataAccessTrait_ViewBuildStageCallbacks.php';
-require_once __DIR__ . '/DataAccessTrait_ViewBuildStageRunner.php';
-require_once __DIR__ . '/DataAccessTrait_ViewBuildStartedWatermark.php';
-require_once __DIR__ . '/DataAccessTrait_ViewBuildAdaptive.php';
-require_once __DIR__ . '/DataAccessTrait_ViewBuildHelpers.php';
-require_once __DIR__ . '/DataAccessTrait_ViewBuildLockAndCron.php';
-require_once __DIR__ . '/DataAccessTrait_ViewBuildPhpEnvProbe.php';
-require_once __DIR__ . '/DataAccessTrait_ViewBuildSessionEnvProbe.php';
-require_once __DIR__ . '/DataAccessTrait_ViewBuildHostFailurePolicy.php';
-require_once __DIR__ . '/DataAccessTrait_ViewBuildForceRestart.php';
-require_once __DIR__ . '/DataAccessTrait_MutationWatermarkSeam.php';
-require_once __DIR__ . '/DataAccessTrait_AdminMutationGate.php';
+require_once __DIR__ . '/ViewBuildCollaborator.php';
+require_once __DIR__ . '/ViewQueriesStaged.php';
+require_once __DIR__ . '/ViewBuildStageCallbacks.php';
+require_once __DIR__ . '/ViewBuildStageRunner.php';
+require_once __DIR__ . '/ViewBuildStartedWatermark.php';
+require_once __DIR__ . '/ViewBuildAdaptive.php';
+require_once __DIR__ . '/ViewBuildHelpers.php';
+require_once __DIR__ . '/ViewBuildLockAndCron.php';
+require_once __DIR__ . '/ViewBuildPhpEnvProbe.php';
+require_once __DIR__ . '/ViewBuildSessionEnvProbe.php';
+require_once __DIR__ . '/ViewBuildHostFailurePolicy.php';
+require_once __DIR__ . '/ViewBuildForceRestart.php';
+require_once __DIR__ . '/MutationWatermarkSeam.php';
+require_once __DIR__ . '/AdminMutationGate.php';
 require_once __DIR__ . '/DatabaseConnectionManager.php';
 require_once __DIR__ . '/DatabaseQueryTimeoutManager.php';
 require_once __DIR__ . '/ViewBuildOrchestratorInterface.php';
@@ -334,6 +335,120 @@ class ABJ_404_Solution_DataAccess {
         return $this->viewBuildOrchestrator;
     }
 
+    /** @return void */
+    public function claimForegroundViewBuildLease(): void { $this->viewBuildOrchestrator->claimForegroundViewBuildLease(); }
+
+    /**
+     * @param string $sub
+     * @param array<string, mixed> $tableOptions
+     * @return array<int, array<string, mixed>>
+     */
+    public function runRedirectsForViewStaged(string $sub, array $tableOptions): array { return $this->viewBuildOrchestrator->runRedirectsForViewStaged($sub, $tableOptions); }
+
+    /** @return bool */
+    public function viewDoneIsServeable(): bool { return $this->viewBuildOrchestrator->viewDoneIsServeable(); }
+
+    /** @return int */
+    public function getViewDoneBuiltAtTimestamp(): int { return $this->viewBuildOrchestrator->getViewDoneBuiltAtTimestamp(); }
+
+    /** @return void */
+    public function markViewDoneBuildCompleted(): void { $this->viewBuildOrchestrator->markViewDoneBuildCompleted(); }
+
+    /** @return array<string, mixed> */
+    public function getViewBuildProgress(): array { return $this->viewBuildOrchestrator->getViewBuildProgress(); }
+
+    /**
+     * @param bool $forceRebuild
+     * @return array<string, mixed>
+     */
+    public function advanceViewBuildOnce(bool $forceRebuild = false): array { return $this->viewBuildOrchestrator->advanceViewBuildOnce($forceRebuild); }
+
+    /** @return array{ran:bool, reason:string, progress:array<string,mixed>} */
+    public function runPageLoadFallbackAdvance(): array { return $this->viewBuildOrchestrator->runPageLoadFallbackAdvance(); }
+
+    /**
+     * @param string $sub
+     * @param array<string, mixed> $tableOptions
+     * @return int
+     */
+    public function runRedirectsForViewCountStaged(string $sub, array $tableOptions): int { return $this->viewBuildOrchestrator->runRedirectsForViewCountStaged($sub, $tableOptions); }
+
+    /** @return void */
+    public function rebuildViewDoneInBackground(): void { $this->viewBuildOrchestrator->rebuildViewDoneInBackground(); }
+
+    /** @return string */
+    public function reconcileStagedTablesAtRunnerStartup(): string { return $this->viewBuildOrchestrator->reconcileStagedTablesAtRunnerStartup(); }
+
+    /**
+     * @param string $optionName
+     * @param mixed $expected
+     * @return bool
+     */
+    public function verifyOptionWriteCoherent(string $optionName, $expected): bool { return $this->viewBuildOrchestrator->verifyOptionWriteCoherent($optionName, $expected); }
+
+    /** @return void */
+    public function capturePrefixAtBuildStart(): void { $this->viewBuildOrchestrator->capturePrefixAtBuildStart(); }
+
+    /** @return bool */
+    public function verifyPrefixUnchangedSinceStageOne(): bool { return $this->viewBuildOrchestrator->verifyPrefixUnchangedSinceStageOne(); }
+
+    /** @return void */
+    public function clearPrefixAtStageOne(): void { $this->viewBuildOrchestrator->clearPrefixAtStageOne(); }
+
+    /** @return array<string, mixed> */
+    public function probeSqlModeForBuild(): array { return $this->viewBuildOrchestrator->probeSqlModeForBuild(); }
+
+    /** @return array<string, mixed> */
+    public function detectAndAdjustSqlMode(): array { return $this->viewBuildOrchestrator->detectAndAdjustSqlMode(); }
+
+    /** @param string $url @param int $maxLength @return string */
+    public function sanitizeUrlBeforeInsert(string $url, int $maxLength = 0): string { return $this->viewBuildOrchestrator->sanitizeUrlBeforeInsert($url, $maxLength); }
+
+    /** @return bool */
+    public function verifyBuildLockSerializesWriter(): bool { return $this->viewBuildOrchestrator->verifyBuildLockSerializesWriter(); }
+
+    /** @param int $delaySeconds @return void */
+    public function scheduleViewDoneRebuild(int $delaySeconds = 1): void { $this->viewBuildOrchestrator->scheduleViewDoneRebuild($delaySeconds); }
+
+    /** @return array<string, mixed> */
+    public function probePhpEnvironmentForBuild(): array { return $this->viewBuildOrchestrator->probePhpEnvironmentForBuild(); }
+
+    /** @return bool */
+    public function probeSetTimeLimitAvailability(): bool { return $this->viewBuildOrchestrator->probeSetTimeLimitAvailability(); }
+
+    /** @return int */
+    public function probeMemoryLimitForS9(): int { return $this->viewBuildOrchestrator->probeMemoryLimitForS9(); }
+
+    /** @return array<string, mixed> */
+    public function probeFilesystemEnvironmentForBuild(): array { return $this->viewBuildOrchestrator->probeFilesystemEnvironmentForBuild(); }
+
+    /** @return void */
+    public function clearStagedBuildDegradedState(): void { $this->viewBuildOrchestrator->clearStagedBuildDegradedState(); }
+
+    /** @return bool */
+    public function reconcilePostStageElevenState(): bool { return $this->viewBuildOrchestrator->reconcilePostStageElevenState(); }
+
+    /** @return array<string, mixed> */
+    public function probeSessionVariablesAtS1Entry(): array { return $this->viewBuildOrchestrator->probeSessionVariablesAtS1Entry(); }
+
+    /** @return void */
+    public function markViewDoneInvalidatedByAdminMutation(): void { $this->viewBuildOrchestrator->markViewDoneInvalidatedByAdminMutation(); }
+
+    /** @param int $lockTimeoutSeconds @return bool */
+    public function forceRestartViewBuild(int $lockTimeoutSeconds = 10): bool { return $this->viewBuildOrchestrator->forceRestartViewBuild($lockTimeoutSeconds); }
+
+    /** @return int */
+    public function bumpMutationWatermark(): int { return $this->viewBuildOrchestrator->bumpMutationWatermark(); }
+
+    /** @return void */
+    public function invalidateViewDoneServeableCacheBridge(): void { $this->viewBuildOrchestrator->invalidateViewDoneServeableCacheBridge(); }
+
+    /** @return array<string, mixed> */
+    public function getStagedQueryOptionsForRead(): array { return $this->viewBuildOrchestrator->getStagedQueryOptionsForRead(); }
+
+    /** @param string $shortName @param int $default @return int */
+    public function readBuildProgressOption(string $shortName, int $default = 0): int { return $this->viewBuildOrchestrator->readBuildProgressOption($shortName, $default); }
+
     /**
      * Backward-compatibility bridge for facade delegations removed in Phase 8e.
      * Routes method calls to the extracted sub-service that owns them.
@@ -376,6 +491,11 @@ class ABJ_404_Solution_DataAccess {
     /** @param string $query @return bool */
     public function queryStartsWithSelect(string $query): bool {
         return $this->dbCore->queryStartsWithSelect($query);
+    }
+
+    /** @return string */
+    public function stageFailurePolicy(): string {
+        return 'database-core-classifier';
     }
 
     /** @param string $query @return bool */
