@@ -131,8 +131,13 @@ function abj_404_solution_register_data_layer($container) {
     $container->set('redirects_repository', function($c) use ($daoModuleDeps) {
         return new ABJ_404_Solution_RedirectsRepository(...$daoModuleDeps($c));
     });
-    $container->set('logs_repository', function($c) use ($daoModuleDeps) {
-        return new ABJ_404_Solution_LogsRepository(...$daoModuleDeps($c));
+    $container->set('logs_repository', function($c) {
+        return new ABJ_404_Solution_LogsRepository(
+            $c->get('db_core'),
+            $c->get('functions'),
+            $c->get('logging'),
+            $c->get('rebuild_health')
+        );
     });
     $container->set('stats_repository', function($c) {
         return new ABJ_404_Solution_StatsRepository(

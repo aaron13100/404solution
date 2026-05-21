@@ -84,6 +84,23 @@ interface ABJ_404_Solution_DatabaseCoreInterface {
     public function getCreateTableDDL($tableName): string;
 
     /**
+     * Get the table-level default collation for an existing table.
+     *
+     * @param string $tableName
+     * @return string
+     */
+    public function getTableCollationString(string $tableName): string;
+
+    /**
+     * Get the column-level collation for an existing character column.
+     *
+     * @param string $tableName
+     * @param string $columnName
+     * @return string
+     */
+    public function getColumnCollationString(string $tableName, string $columnName): string;
+
+    /**
      * Check whether a database table exists.
      *
      * @param string $tableName

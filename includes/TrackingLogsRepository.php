@@ -33,15 +33,17 @@ class ABJ_404_Solution_TrackingLogsRepository extends ABJ_404_Solution_LogsRepos
      * @param ABJ_404_Solution_DatabaseCore $dbCore
      * @param ABJ_404_Solution_Functions|null $functions
      * @param ABJ_404_Solution_Logging|null $logger
+     * @param ABJ_404_Solution_RebuildHealthState|null $rebuildHealth
      */
     public function __construct(
         ABJ_404_Solution_DatabaseCore $dbCore,
         $functions = null,
         $logger = null,
         int $minId = 0,
-        int $maxId = 0
+        int $maxId = 0,
+        $rebuildHealth = null
     ) {
-        parent::__construct($dbCore, $functions, $logger);
+        parent::__construct($dbCore, $functions, $logger, $rebuildHealth);
         $this->minId = $minId;
         $this->maxId = $maxId;
     }

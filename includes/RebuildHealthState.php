@@ -73,7 +73,7 @@ class ABJ_404_Solution_RebuildHealthState {
         $added = add_option(self::TRIAL_LOCK_OPTION, (string)($now + self::TRIAL_TTL_SECONDS), '', false);
         if (!$added) { return null; }
         try { $token = bin2hex(random_bytes(8)); } catch (\Throwable $t) { $token = (string)mt_rand() . '_' . (string)$now; } // allow-silent-catch: random_bytes unavailable on some hosts
-        $this->mutateState(function (array &$state) use ($token, $now): void { $state['trial'] = array('token' => $token, 'started_at' => $now, 'ttl' => self::TRIAL_TTL_SECONDS); });
+        $this->mutateState(function (array $state) use ($token, $now): array { $state['trial'] = array('token' => $token, 'started_at' => $now, 'ttl' => self::TRIAL_TTL_SECONDS); return $state; });
         return $token;
     }
 
@@ -84,8 +84,8 @@ class ABJ_404_Solution_RebuildHealthState {
      */
     public function recordFailure(string $msg, string $class = 'unknown'): void {
         $now = $this->clock->now();
-        $this->mutateState(function (array &$state) use ($msg, $class, $now): void {
-            $gate = &$state['gate'];
+        $this->mutateState(function (array $state) use ($msg, $class, $now): array {
+            $gate = $state['gate'];
             $fc = is_numeric($gate['failure_count'] ?? 0) ? intval($gate['failure_count']) : 0;
             $gate['failure_count'] = $fc + 1;
             $gate['last_failure_ts'] = $now;
@@ -99,7 +99,9 @@ class ABJ_404_Solution_RebuildHealthState {
                 $gate['next_allowed_at'] = $now + $cd;
                 $gate['cooldown_seconds'] = min(self::MAX_COOLDOWN_SECONDS, $cd * 2);
             }
+            $state['gate'] = $gate;
             $state['trial'] = array('token' => '', 'started_at' => 0, 'ttl' => self::TRIAL_TTL_SECONDS);
+            return $state;
         });
         if (function_exists('delete_option')) { delete_option(self::TRIAL_LOCK_OPTION); }
         $this->log('warn', sprintf('Rebuild health: failure (class=%s). Message: %s', $class, substr($msg, 0, 200)));
@@ -108,9 +110,10 @@ class ABJ_404_Solution_RebuildHealthState {
     /** @return void */
     public function recordSuccess(): void {
         $now = $this->clock->now();
-        $this->mutateState(function (array &$state) use ($now): void {
+        $this->mutateState(function (array $state) use ($now): array {
             $state['gate'] = array('failure_count' => 0, 'next_allowed_at' => 0, 'last_failure_ts' => 0, 'last_failure_msg' => '', 'last_failure_class' => '', 'cooldown_seconds' => self::INITIAL_COOLDOWN_SECONDS, 'last_success_ts' => $now);
             $state['trial'] = array('token' => '', 'started_at' => 0, 'ttl' => self::TRIAL_TTL_SECONDS);
+            return $state;
         });
         if (function_exists('delete_option')) { delete_option(self::TRIAL_LOCK_OPTION); }
     }
@@ -150,23 +153,24 @@ class ABJ_404_Solution_RebuildHealthState {
         $state = $this->readState();
         $current = $state !== null ? ($state['hits_chunk_size']['current'] ?? null) : null;
         if ($current !== null && is_numeric($current)) { return max(self::MIN_CHUNK_SIZE, min(self::MAX_CHUNK_SIZE, intval($current))); }
-        if ($idRange <= 0) { return self::MAX_CHUNK_SIZE; }
-        return max(self::MIN_CHUNK_SIZE, min(self::MAX_CHUNK_SIZE, intval($idRange / 10)));
+        $estimated = $idRange <= 0 ? self::MAX_CHUNK_SIZE : max(self::MIN_CHUNK_SIZE, min(self::MAX_CHUNK_SIZE, intval($idRange / 10)));
+        $this->mutateState(function (array $state) use ($estimated): array { $state['hits_chunk_size']['current'] = $estimated; return $state; });
+        return $estimated;
     }
 
     /** @param int $size @return void */
     public function recordHitsChunkSuccess(int $size): void {
-        $this->mutateState(function (array &$state) use ($size): void { $state['hits_chunk_size']['last_successful'] = $size; if ($state['hits_chunk_size']['current'] === null) { $state['hits_chunk_size']['current'] = $size; } });
+        $this->mutateState(function (array $state) use ($size): array { $state['hits_chunk_size']['last_successful'] = $size; if ($state['hits_chunk_size']['current'] === null) { $state['hits_chunk_size']['current'] = $size; } return $state; });
     }
 
     /** @return void */
     public function recordHitsChunkFailure(): void {
-        $this->mutateState(function (array &$state): void { $c = $state['hits_chunk_size']['current'] ?? self::MAX_CHUNK_SIZE; $state['hits_chunk_size']['current'] = max(self::MIN_CHUNK_SIZE, intval(is_numeric($c) ? intval($c) : self::MAX_CHUNK_SIZE) / 2); });
+        $this->mutateState(function (array $state): array { $c = $state['hits_chunk_size']['current'] ?? self::MAX_CHUNK_SIZE; $state['hits_chunk_size']['current'] = intval(max(self::MIN_CHUNK_SIZE, intval(is_numeric($c) ? intval($c) : self::MAX_CHUNK_SIZE) / 2)); return $state; });
     }
 
     /** @param int $lastChunkSize @return void */
     public function recordFullRebuildSuccess(int $lastChunkSize): void {
-        $this->mutateState(function (array &$state) use ($lastChunkSize): void { $state['hits_chunk_size']['current'] = min(self::MAX_CHUNK_SIZE, intval($lastChunkSize * self::CHUNK_GROWTH_FACTOR)); $state['hits_chunk_size']['last_successful'] = $lastChunkSize; });
+        $this->mutateState(function (array $state) use ($lastChunkSize): array { $state['hits_chunk_size']['current'] = min(self::MAX_CHUNK_SIZE, intval($lastChunkSize * self::CHUNK_GROWTH_FACTOR)); $state['hits_chunk_size']['last_successful'] = $lastChunkSize; return $state; });
     }
 
     /**
@@ -187,7 +191,10 @@ class ABJ_404_Solution_RebuildHealthState {
     private function mutateState(callable $mutator): void {
         $state = $this->readState();
         if ($state === null) { $state = $this->defaultState(); }
-        $mutator($state);
+        $mutated = $mutator($state);
+        if (is_array($mutated)) {
+            $state = $mutated;
+        }
         if (function_exists('update_option')) { update_option(self::OPTION_NAME, $state, false); }
     }
 

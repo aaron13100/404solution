@@ -59,6 +59,9 @@ class ABJ_404_Solution_LogsRepository implements ABJ_404_Solution_LogsRepository
     /** @var ABJ_404_Solution_Logging */
     private $logger;
 
+    /** @var ABJ_404_Solution_RebuildHealthState|null */
+    private $rebuildHealth;
+
     /** @var array<int, array<string, mixed>> Queue of log entries to be flushed at shutdown */
     private static $logQueue = [];
 
@@ -75,15 +78,37 @@ class ABJ_404_Solution_LogsRepository implements ABJ_404_Solution_LogsRepository
      * @param ABJ_404_Solution_DatabaseCore $dbCore
      * @param ABJ_404_Solution_Functions|null $functions
      * @param ABJ_404_Solution_Logging|null $logging
+     * @param ABJ_404_Solution_RebuildHealthState|null $rebuildHealth
      */
     public function __construct(
         ABJ_404_Solution_DatabaseCore $dbCore,
         $functions = null,
-        $logging = null
+        $logging = null,
+        $rebuildHealth = null
     ) {
         $this->dbCore = $dbCore;
         $this->f = $functions !== null ? $functions : abj_service('functions');
         $this->logger = $logging !== null ? $logging : abj_service('logging');
+        $this->rebuildHealth = $rebuildHealth instanceof ABJ_404_Solution_RebuildHealthState
+            ? $rebuildHealth
+            : $this->resolveRebuildHealthState();
+    }
+
+    /** @return ABJ_404_Solution_RebuildHealthState|null */
+    private function resolveRebuildHealthState(): ?ABJ_404_Solution_RebuildHealthState {
+        if (function_exists('abj_service')
+            && class_exists('ABJ_404_Solution_ServiceContainer')
+            && ABJ_404_Solution_ServiceContainer::safeHas('rebuild_health')) {
+            try {
+                $service = abj_service('rebuild_health');
+                if ($service instanceof ABJ_404_Solution_RebuildHealthState) {
+                    return $service;
+                }
+            } catch (Throwable $t) {
+                // allow-silent-catch: test and partial-bootstrap contexts may not register the service.
+            }
+        }
+        return null;
     }
 
     // =========================================================================
@@ -1032,6 +1057,11 @@ class ABJ_404_Solution_LogsRepository implements ABJ_404_Solution_LogsRepository
     /** @inheritDoc */
     function createRedirectsForViewHitsTable(): bool {
         $wasRefreshed = false;
+        if ($this->rebuildHealth !== null && !$this->rebuildHealth->mayStartExpensiveRebuild()) {
+            $this->logger->debugMessage(__FUNCTION__ . " skipped because rebuild health gate is closed.");
+            $this->dbCore->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'paused', 86400);
+            return false;
+        }
         if ($this->dbCore->shouldSkipNonEssentialDbWrites()) { $this->logger->debugMessage(__FUNCTION__ . " skipped due to temporary DB write cooldown."); $this->dbCore->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'paused', 86400); return false; }
         if (!$this->acquireHitsTableRebuildLock()) { $this->logger->debugMessage(__FUNCTION__ . " skipped because rebuild lock is already held."); $this->dbCore->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'running', 86400); return false; }
         $preAggTable = $this->dbCore->doTableNameReplacements("{wp_abj404_logs_hits}_preagg");
@@ -1047,10 +1077,17 @@ class ABJ_404_Solution_LogsRepository implements ABJ_404_Solution_LogsRepository
             $this->dbCore->queryAndGetResults("truncate table " . $tempDestTable);
             $maxLogIdSnapshot = $this->getMaxLogId();
             $minLogId = $this->getMinLogId();
-            $chunkSize = self::HITS_TABLE_PREAGG_CHUNK_SIZE;
             $idRange = $maxLogIdSnapshot - $minLogId;
+            $chunkSize = $this->getHitsRebuildChunkSize($idRange);
             if ($idRange <= self::HITS_TABLE_DIRECT_PATH_THRESHOLD) { $results = $this->hitsTableInsertDirect($tempDestTable); } else { $results = $this->hitsTableInsertChunked($tempDestTable, $preAggTable, $minLogId, $maxLogIdSnapshot, $chunkSize); }
-            if ($results === false || !empty($results['timed_out']) || !empty($results['last_error'])) { $this->dbCore->queryAndGetResults("drop table if exists " . $tempDestTable); $this->logger->debugMessage(__FUNCTION__ . " INSERT timed out or errored; aborting rebuild."); $this->dbCore->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'paused', 86400); return false; }
+            if ($results === false || !empty($results['timed_out']) || !empty($results['last_error'])) {
+                $errorMessage = $results === false ? 'Hits rebuild phase 1 chunk failed.' : (string)($results['last_error'] ?? 'Hits rebuild timed out.');
+                $this->recordHitsRebuildFailure($errorMessage);
+                if ($idRange > self::HITS_TABLE_DIRECT_PATH_THRESHOLD && $results !== false && (!empty($results['timed_out']) || !empty($results['last_error']))) {
+                    $this->recordHitsChunkFailure();
+                }
+                $this->dbCore->queryAndGetResults("drop table if exists " . $tempDestTable); $this->logger->debugMessage(__FUNCTION__ . " INSERT timed out or errored; aborting rebuild."); $this->dbCore->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'paused', 86400); return false;
+            }
             $elapsedTime = $results['elapsed_time'];
             $comment = $elapsedTime . '|' . $maxLogIdSnapshot;
             $comment = substr(esc_sql($comment), 0, 2048);
@@ -1058,10 +1095,12 @@ class ABJ_404_Solution_LogsRepository implements ABJ_404_Solution_LogsRepository
             $statements = array("drop table if exists " . $finalDestTable, "rename table " . $tempDestTable . ' to ' . $finalDestTable);
             $this->dbCore->executeAsTransaction($statements);
             $this->dbCore->setRuntimeFlag(self::HITS_TABLE_LAST_REFRESHED_FLAG, time(), 86400);
+            $this->recordHitsRebuildSuccess($chunkSize);
             $this->clearLogsHitsRollupStaleSignal();
             $wasRefreshed = true;
             $this->logger->debugMessage(__FUNCTION__ . " refreshed " . $finalDestTable . " in " . $elapsedTime . " seconds.");
         } catch (Throwable $e) {
+            $this->recordHitsRebuildFailure($e->getMessage());
             $this->logger->errorMessage(__FUNCTION__ . " failed: " . $e->getMessage(), $e instanceof \Exception ? $e : null);
             $this->dbCore->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'paused', 86400);
         } finally {
@@ -1109,13 +1148,45 @@ class ABJ_404_Solution_LogsRepository implements ABJ_404_Solution_LogsRepository
             $end = $start + $chunkSize;
             $chunkQuery = "/* abj404:src=LogsRepository::hitsTableInsertChunked#phase1Chunk */ INSERT INTO " . $preAggTable . " (requested_url, logsid, last_used, logshits, failed_hits) SELECT " . $logsv2CanonicalExpr . ", MIN(id), MAX(timestamp), COUNT(*), SUM(CASE WHEN dest_url = '' OR dest_url IS NULL THEN 1 ELSE 0 END) FROM " . $logsv2Table . " WHERE id >= %d AND id < %d GROUP BY " . $logsv2CanonicalExpr;
             $chunkResult = $this->dbCore->queryAndGetResults($chunkQuery, array('log_too_slow' => false, 'timeout' => 10, 'query_params' => array($start, $end)));
-            if (!empty($chunkResult['timed_out']) || !empty($chunkResult['last_error'])) { $this->logger->debugMessage(__FUNCTION__ . " Phase 1 chunk failed at id range [{$start}, {$end}); aborting."); return false; }
+            if (!empty($chunkResult['timed_out']) || !empty($chunkResult['last_error'])) { $this->recordHitsChunkFailure(); $this->logger->debugMessage(__FUNCTION__ . " Phase 1 chunk failed at id range [{$start}, {$end}); aborting."); return false; }
         }
         $phase2Query = "/* abj404:src=LogsRepository::hitsTableInsertChunked#phase2Aggregate */ INSERT INTO " . $tempDestTable . " (requested_url, logsid, last_used, logshits, failed_hits) SELECT a.requested_url, MIN(a.logsid), MAX(a.last_used), SUM(a.logshits), SUM(a.failed_hits) FROM " . $preAggTable . " a INNER JOIN " . $redirectsTable . " r ON a.requested_url = (COALESCE(r.canonical_url, CONCAT('/', TRIM(BOTH '/' FROM r.url))) COLLATE " . $resolvedCollation . ") GROUP BY a.requested_url";
         $results = $this->dbCore->queryAndGetResults($phase2Query, array('log_too_slow' => false, 'timeout' => 60));
         $results['elapsed_time'] = round(microtime(true) - $startTime, 3);
         $this->dbCore->queryAndGetResults("drop table if exists " . $preAggTable);
         return $results;
+    }
+
+    /** @param int $idRange @return int */
+    private function getHitsRebuildChunkSize(int $idRange): int {
+        if ($this->rebuildHealth === null) {
+            return self::HITS_TABLE_PREAGG_CHUNK_SIZE;
+        }
+        return $this->rebuildHealth->getHitsChunkSize($idRange);
+    }
+
+    /** @return void */
+    private function recordHitsChunkFailure(): void {
+        if ($this->rebuildHealth !== null) {
+            $this->rebuildHealth->recordHitsChunkFailure();
+        }
+    }
+
+    /** @param int $chunkSize @return void */
+    private function recordHitsRebuildSuccess(int $chunkSize): void {
+        if ($this->rebuildHealth === null) {
+            return;
+        }
+        $this->rebuildHealth->recordFullRebuildSuccess($chunkSize);
+        $this->rebuildHealth->recordSuccess();
+    }
+
+    /** @param string $message @return void */
+    private function recordHitsRebuildFailure(string $message): void {
+        if ($this->rebuildHealth === null) {
+            return;
+        }
+        $this->rebuildHealth->recordFailure($message, $this->rebuildHealth->classifyError($message));
     }
 
     // =========================================================================
@@ -1150,6 +1221,7 @@ class ABJ_404_Solution_LogsRepository implements ABJ_404_Solution_LogsRepository
 
     /** @inheritDoc */
     function scheduleHitsTableRebuild(): void {
+        if ($this->rebuildHealth !== null && !$this->rebuildHealth->mayStartExpensiveRebuild()) { $this->logger->debugMessage(__FUNCTION__ . " skipped because rebuild health gate is closed."); $this->dbCore->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'paused', 86400); return; }
         if ($this->dbCore->shouldSkipNonEssentialDbWrites()) { $this->logger->debugMessage(__FUNCTION__ . " skipped due to temporary DB write cooldown."); $this->dbCore->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'paused', 86400); return; }
         if (!self::$hitsTableRebuildScheduled) {
             if ($this->isHitsTableRebuildLocked()) { $this->logger->debugMessage(__FUNCTION__ . " skipping scheduling because another rebuild is already running."); $this->dbCore->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'running', 86400); return; }

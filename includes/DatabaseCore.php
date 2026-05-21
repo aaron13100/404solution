@@ -643,12 +643,32 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
     public function getTableCollationString(string $tableName): string {
         $fallback = 'utf8mb4_unicode_ci';
         $ddl = $this->getCreateTableDDL($tableName);
-        if ($ddl === '') {
-            return $fallback;
-        }
         if (preg_match('/COLLATE[= ]([A-Za-z0-9_]+)/i', $ddl, $m)) {
             $sanitized = $this->sanitizeCollationIdentifier($m[1]);
             return $sanitized !== '' ? $sanitized : $fallback;
+        }
+        global $wpdb;
+        if (isset($wpdb) && method_exists($wpdb, 'prepare')) {
+            /** @var wpdb $wpdb */
+            $sql = $wpdb->prepare(
+                "SELECT TABLE_COLLATION FROM information_schema.TABLES "
+                . "WHERE TABLE_SCHEMA = DATABASE() "
+                . "AND TABLE_NAME = %s "
+                . "LIMIT 1",
+                $tableName
+            );
+            if (is_string($sql) && $sql !== '') {
+                $result = $this->queryAndGetResults($sql, array('log_errors' => false));
+                $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
+                if (!empty($rows) && is_array($rows[0])) {
+                    $row = array_change_key_case($rows[0]);
+                    $collation = $row['table_collation'] ?? '';
+                    if (is_string($collation) && $collation !== '') {
+                        $sanitized = $this->sanitizeCollationIdentifier($collation);
+                        return $sanitized !== '' ? $sanitized : $fallback;
+                    }
+                }
+            }
         }
         return $fallback;
     }
