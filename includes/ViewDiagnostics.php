@@ -5,23 +5,29 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Failure message formatting and diagnostic probing for ViewReadService.
+ * Failure message formatting and diagnostic probing for view queries.
  *
- * Extracted from ViewReadService to keep the host class under the 1500-line
- * modularity limit. Contains the view query failure diagnostics capture,
- * EXPLAIN probing, and table/index/canonical_url state introspection.
+ * Captures structured diagnostic snapshots when admin view queries fail
+ * or time out, giving support enough evidence in a single debug zip to
+ * identify the root cause without a follow-up round trip to the user.
  */
-trait ABJ_404_Solution_ViewReadServiceTrait_Diagnostics {
+class ABJ_404_Solution_ViewDiagnostics {
+
+    /** @var ABJ_404_Solution_DatabaseCore */
+    private $dbCore;
+
+    /** @param ABJ_404_Solution_DatabaseCore $dbCore */
+    public function __construct(ABJ_404_Solution_DatabaseCore $dbCore) {
+        $this->dbCore = $dbCore;
+    }
 
     /**
-     * Build an actionable query failure message for table warmup errors.
-     *
      * @param string $queryLabel
      * @param string $query
      * @param array<string, mixed> $result
      * @return string
      */
-    private function formatViewQueryFailureMessage(string $queryLabel, string $query, array $result): string {
+    public function formatViewQueryFailureMessage(string $queryLabel, string $query, array $result): string {
         $lastErrorRaw = $result['last_error'] ?? '';
         $lastError = is_string($lastErrorRaw) ? trim($lastErrorRaw) : '';
         $timedOut = !empty($result['timed_out']);
@@ -41,20 +47,12 @@ trait ABJ_404_Solution_ViewReadServiceTrait_Diagnostics {
 
     /**
      * Capture a structured diagnostics snapshot when getRedirectsForView() or
-     * getRedirectsForViewCount() fails or times out. The snapshot is intended
-     * to give support enough evidence in a single debug zip / AJAX response to
-     * identify the root cause of slow view queries (missing index, MyISAM
-     * corruption, multi-million-row logsv2, canonical_url not backfilled,
-     * collation mismatch, etc.) without a follow-up round trip to the user.
+     * getRedirectsForViewCount() fails or times out.
      *
-     * Every sub-probe is wrapped in try/catch with a tight per-query timeout:
-     * one failed probe never blocks the others, and the original failure is
-     * never masked by a diagnostic capture exception.
-     *
-     * @param string $sub Subpage that triggered the query (abj404_redirects / abj404_captured / abj404_logs).
-     * @param string $failedQuery The SQL that failed (used for EXPLAIN + redacted shape).
-     * @param array<string, mixed> $tableOptions The original tableOptions (kept for context echo).
-     * @param array<string, mixed> $queryResult The wpdb-shaped result of the failed call (last_error / timed_out / elapsed_time).
+     * @param string $sub
+     * @param string $failedQuery
+     * @param array<string, mixed> $tableOptions
+     * @param array<string, mixed> $queryResult
      * @return array<string, mixed>
      */
     public function captureViewQueryFailureDiagnostics(string $sub, string $failedQuery, array $tableOptions, array $queryResult): array {
@@ -130,10 +128,6 @@ trait ABJ_404_Solution_ViewReadServiceTrait_Diagnostics {
     }
 
     /**
-     * Resolve a human-readable label for the failing query. Mirrors the
-     * sql_source extraction from formatViewQueryFailureMessage() so the
-     * diagnostic snapshot stays self-explanatory in the debug log.
-     *
      * @param string $failedQuery
      * @param string $sub
      * @return string
@@ -149,11 +143,6 @@ trait ABJ_404_Solution_ViewReadServiceTrait_Diagnostics {
     }
 
     /**
-     * Redact literals from a SQL string for safe inclusion in error responses
-     * and the debug log. Keeps table / column / keyword shape so support can
-     * pattern-match against the failing query, but strips quoted strings,
-     * numbers, and IN(...) value lists.
-     *
      * @param string $sql
      * @return string
      */
@@ -187,10 +176,6 @@ trait ABJ_404_Solution_ViewReadServiceTrait_Diagnostics {
     }
 
     /**
-     * Run a `SELECT COUNT(*)` style query with a tight diagnostic timeout
-     * and silent error handling. Returns the integer count, or a string error
-     * marker if the probe itself failed.
-     *
      * @param string $countQuery
      * @return int|string
      */
@@ -219,10 +204,6 @@ trait ABJ_404_Solution_ViewReadServiceTrait_Diagnostics {
     }
 
     /**
-     * Run EXPLAIN against the failing query and return the plan rows. Falls
-     * back to a string error marker if EXPLAIN itself errors (e.g., the query
-     * was a SET STATEMENT wrapper or a stored procedure call).
-     *
      * @param string $failedQuery
      * @return array<int, array<string,mixed>>|string
      */
@@ -258,10 +239,6 @@ trait ABJ_404_Solution_ViewReadServiceTrait_Diagnostics {
     }
 
     /**
-     * Strip the `SET STATEMENT max_statement_time=N FOR ` / `/*+ MAX_EXECUTION_TIME(...) *\/`
-     * wrappers that applyQueryTimeout() prepends so EXPLAIN sees the original
-     * SELECT shape. Best effort: if the input does not match, return as-is.
-     *
      * @param string $query
      * @return string
      */
@@ -293,10 +270,6 @@ trait ABJ_404_Solution_ViewReadServiceTrait_Diagnostics {
     }
 
     /**
-     * Probe engine + collation for the requested plugin tables via
-     * information_schema.TABLES. Driver-case insensitive (MySQL drivers vary
-     * between TABLE_NAME / table_name).
-     *
      * @param array<int, string> $tableNames
      * @return array<string, array{engine:string, collation:string}>
      */
@@ -353,10 +326,6 @@ trait ABJ_404_Solution_ViewReadServiceTrait_Diagnostics {
     }
 
     /**
-     * Compare an expected index list against what SHOW INDEX reports for the
-     * named table. Returns three lists (expected, present, missing) so the
-     * support workflow can spot dropped indexes at a glance.
-     *
      * @param string $tableName
      * @param array<int, string> $expectedKeys
      * @return array{expected: array<int,string>, present: array<int,string>, missing: array<int,string>, error?: string}
@@ -409,10 +378,6 @@ trait ABJ_404_Solution_ViewReadServiceTrait_Diagnostics {
     }
 
     /**
-     * Probe canonical_url backfill state for one of the plugin's tables.
-     * Returns column existence, NULL count, total row count, and an error
-     * marker when the probe itself failed.
-     *
      * @param string $tableName
      * @return array{column_exists: bool, null_count: int|string|null, total_count: int|string|null, error?: string}
      */

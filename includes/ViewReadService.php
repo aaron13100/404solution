@@ -4,28 +4,19 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-require_once __DIR__ . '/ViewReadServiceTrait_QueryBuilding.php';
-require_once __DIR__ . '/ViewReadServiceTrait_CacheManagement.php';
-require_once __DIR__ . '/ViewReadServiceTrait_Diagnostics.php';
-require_once __DIR__ . '/ViewReadServiceTrait_Invalidation.php';
-
 /**
  * Admin list view read path, snapshot caching, and status counts.
  *
  * Extracted from DataAccess in Phase 6 of the DataAccess refactor.
- * Absorbs 5 traits: ViewQueries, ViewSnapshotCache, ViewMetadata,
- * ViewQueriesHitsLifecycle, ViewQueriesStagedRead.
+ * Delegates to four collaborators: ViewQueryBuilder (SQL construction),
+ * ViewDiagnostics (failure diagnostics), ViewCacheInvalidator (cache
+ * clearing), and ViewSnapshotCache (cache CRUD and warmup).
  *
  * @see docs/dataaccess-refactor-plan.md Phase 6.
  */
 class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServiceInterface {
 
-    use ABJ_404_Solution_ViewReadServiceTrait_QueryBuilding,
-        ABJ_404_Solution_ViewReadServiceTrait_CacheManagement,
-        ABJ_404_Solution_ViewReadServiceTrait_Diagnostics,
-        ABJ_404_Solution_ViewReadServiceTrait_Invalidation;
-
-    // --- Constants (duplicated from DataAccess for self:: usage) ---
+    // --- Constants ---
 
     const CACHE_KEY_REDIRECT_STATUS = 'abj404_redirect_status_counts';
     const CACHE_KEY_CAPTURED_STATUS = 'abj404_captured_status_counts';
@@ -42,34 +33,14 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
     const HITS_TABLE_LAST_DECISION_FLAG = 'abj404_logs_hits_last_decision';
     const LOGS_COUNT_CACHE_TTL_SECONDS = 60;
 
-    // --- Static properties (moved from DataAccess) ---
+    // --- Static properties ---
 
     /**
-     * Per-request "bulk mutation in progress" flag. When set, per-row
-     * invalidateStatusCountsCache() calls short-circuit to a no-op so a
-     * 10K-row CSV import does not fire 60K invalidation queries (each row
-     * cascades to bumpMutationWatermark + delete_option +
-     * delete_transient x N + DELETE FROM view_cache; for a 10K import
-     * this took ~63s before this guard). The bulk caller is responsible
-     * for issuing ONE final invalidation (typically via
-     * markViewDoneInvalidatedByAdminMutation()) after the bulk write
-     * completes, so admin reads see the imported rows immediately.
-     *
-     * Implemented as a static so the flag survives across multiple
-     * setupRedirect() calls within one request without needing every
-     * caller to thread a parameter through.
+     * Per-request "bulk mutation in progress" flag.
      *
      * @var bool
      */
     public static $bulkMutationInProgress = false;
-
-    /** @var bool */
-    private static $viewSnapshotTableEnsured = false;
-
-    /** @param bool $value @return void */
-    public static function setViewSnapshotTableEnsured(bool $value): void {
-        self::$viewSnapshotTableEnsured = $value;
-    }
 
     // --- Dependencies (constructor injection) ---
 
@@ -79,21 +50,32 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
     /** @var ABJ_404_Solution_LogsRepository */
     private $logsRepo;
 
-    /** @var ABJ_404_Solution_RedirectsRepository */
-    private $redirectsRepo;
-
     /** @var ABJ_404_Solution_Functions */
     private $f;
 
     /** @var ABJ_404_Solution_Logging */
     private $logger;
 
-    // --- ViewBuildOrchestrator bridge (setter injection, replaces temporary DataAccess coupling) ---
+    // --- Collaborators ---
+
+    /** @var ABJ_404_Solution_ViewQueryBuilder */
+    private $queryBuilder;
+
+    /** @var ABJ_404_Solution_ViewDiagnostics */
+    private $diagnostics;
+
+    /** @var ABJ_404_Solution_ViewCacheInvalidator */
+    private $cacheInvalidator;
+
+    /** @var ABJ_404_Solution_ViewSnapshotCache */
+    private $snapshotCache;
+
+    // --- ViewBuildOrchestrator bridge ---
 
     /** @var ABJ_404_Solution_ViewBuildOrchestratorInterface|null */
     private $viewBuildOrchestrator;
 
-    // --- Instance property (moved from DataAccess) ---
+    // --- Instance property ---
 
     /** @var array<string, int> */
     private $redirectsForViewCountRequestCache = array();
@@ -114,9 +96,19 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
     ) {
         $this->dbCore = $dbCore;
         $this->logsRepo = $logsRepo;
-        $this->redirectsRepo = $redirectsRepo;
         $this->f = $f !== null ? $f : abj_service('functions');
         $this->logger = $logger !== null ? $logger : abj_service('logging');
+
+        $this->diagnostics = new ABJ_404_Solution_ViewDiagnostics($dbCore);
+        $this->cacheInvalidator = new ABJ_404_Solution_ViewCacheInvalidator(
+            $dbCore, $redirectsRepo, $this->viewDoneFreshnessOptionName()
+        );
+        $this->queryBuilder = new ABJ_404_Solution_ViewQueryBuilder(
+            $dbCore, $this->f, $logsRepo, $this->logger
+        );
+        $this->queryBuilder->setHost($this);
+        $this->snapshotCache = new ABJ_404_Solution_ViewSnapshotCache($dbCore, $this->logger);
+        $this->snapshotCache->setHost($this);
     }
 
     /**
@@ -125,6 +117,9 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
      */
     public function setViewBuildOrchestrator(ABJ_404_Solution_ViewBuildOrchestratorInterface $viewBuildOrchestrator): void {
         $this->viewBuildOrchestrator = $viewBuildOrchestrator;
+        $this->cacheInvalidator->setViewBuildOrchestrator($viewBuildOrchestrator);
+        $this->queryBuilder->setViewBuildOrchestrator($viewBuildOrchestrator);
+        $this->snapshotCache->setViewBuildOrchestrator($viewBuildOrchestrator);
     }
 
     /** @return ABJ_404_Solution_ViewBuildOrchestratorInterface */
@@ -135,11 +130,9 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
         return $this->viewBuildOrchestrator;
     }
 
-    // --- Locally replicated helper methods ---
-
-    /** @return string */
-    private function viewDoneTableName(): string {
-        return $this->dbCore->doTableNameReplacements('{wp_abj404_view_done}');
+    /** @param bool $value @return void */
+    public static function setViewSnapshotTableEnsured(bool $value): void {
+        ABJ_404_Solution_ViewSnapshotCache::setViewSnapshotTableEnsured($value);
     }
 
     /** @return string */
@@ -152,13 +145,10 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
     // =========================================================================
 
     /**
-     * Get counts for each redirect status type for display in tabs.
-     * Uses transient caching for performance.
-     * @param bool $bypassCache If true, skip cache and query database directly
-     * @return array<string, int> An array with keys: all, manual, auto, regex, trash
+     * @param bool $bypassCache
+     * @return array<string, int>
      */
     function getRedirectStatusCounts($bypassCache = false): array {
-        // Try to get cached value first
         if (!$bypassCache) {
             $cached = get_transient(self::CACHE_KEY_REDIRECT_STATUS);
             if ($cached !== false && is_array($cached)) {
@@ -167,9 +157,6 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
             }
         }
 
-        // IMPORTANT: The redirects table also stores captured/ignored/later rows.
-        // The Redirects page "All/Manual/Auto/Trash" tabs should only count actual redirects
-        // (manual/auto/regex), not captured URLs.
         $query = "SELECT
             SUM(CASE WHEN disabled = 0 THEN 1 ELSE 0 END) as active_count,
             SUM(CASE WHEN disabled = 0 AND status = " . ABJ404_STATUS_MANUAL . " THEN 1 ELSE 0 END) as manual_count,
@@ -196,11 +183,6 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
             );
         }
 
-        // Skip the cache write when the SUM(...) query returned an error or
-        // timed out: $rows is empty in that case so $counts is the all-zero
-        // default, and pinning that for STATUS_CACHE_TTL (24h) would make the
-        // Redirects admin page show "0 of every status" until the transient
-        // expires. Same policy as 6454a7dd / b857be36.
         if (!$hadError) {
             set_transient(self::CACHE_KEY_REDIRECT_STATUS, $counts, self::STATUS_CACHE_TTL);
         }
@@ -209,13 +191,10 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
     }
 
     /**
-     * Get counts for each captured URL status type.
-     * Uses transient caching for performance.
-     * @param bool $bypassCache If true, skip cache and query database directly
-     * @return array<string, int> Array with keys: all, captured, ignored, later, trash
+     * @param bool $bypassCache
+     * @return array<string, int>
      */
     function getCapturedStatusCounts($bypassCache = false): array {
-        // Try to get cached value first
         if (!$bypassCache) {
             $cached = get_transient(self::CACHE_KEY_CAPTURED_STATUS);
             if ($cached !== false && is_array($cached)) {
@@ -251,11 +230,6 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
             );
         }
 
-        // Skip the cache write when the SUM(...) query returned an error or
-        // timed out: $rows is empty in that case so $counts is the all-zero
-        // default, and pinning that for STATUS_CACHE_TTL (24h) would make the
-        // Captured-URLs admin page show "0 captured / 0 ignored / 0 later"
-        // until the transient expires. Same policy as 6454a7dd / b857be36.
         if (!$hadError) {
             set_transient(self::CACHE_KEY_CAPTURED_STATUS, $counts, self::STATUS_CACHE_TTL);
         }
@@ -264,10 +238,7 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
     }
 
     /**
-     * Count captured URLs that have been hit 3 or more times (signal of real user impact).
-     * Uses transient caching for performance.
-     *
-     * @return int Number of captured URLs with 3+ log hits
+     * @return int
      */
     function getHighImpactCapturedCount(): int {
         $cached = get_transient(self::CACHE_KEY_HIGH_IMPACT_CAPTURED);
@@ -275,14 +246,12 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
             return intval(is_scalar($cached) ? $cached : 0);
         }
 
-        // If the rollup is not available, defer rather than scan logsv2.
-        // Do not cache: the rebuild is in flight and the next request should retry.
         if (!$this->logsRepo->logsHitsTableExists()) {
             $this->logsRepo->scheduleHitsTableRebuild();
             return 0;
         }
 
-        $query = $this->buildHighImpactCapturedCountQuery();
+        $query = $this->queryBuilder->buildHighImpactCapturedCountQuery();
 
         $result = $this->queryWithTimeout($query, 60);
         $timedOut = !empty($result['timed_out']);
@@ -290,13 +259,6 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
         $rows = is_array($result['rows']) ? $result['rows'] : array();
         $count = (!empty($rows) && isset($rows[0]['cnt'])) ? intval($rows[0]['cnt']) : 0;
 
-        // Timeout self-heal (Bruno regression). Without this branch every
-        // admin pageview re-pays the 60s timeout cost. We schedule a hits
-        // table rebuild so the next post-cache request can return real
-        // data, and cache 0 for the short STATUS_CACHE_TIMEOUT_SELFHEAL_TTL
-        // window (5 min) so subsequent pageviews are instant. The short
-        // TTL is far less than STATUS_CACHE_TTL (24h), so a transient
-        // timeout cannot hide repeat-visitor URLs for a full day.
         if ($timedOut) {
             $this->logsRepo->scheduleHitsTableRebuild();
             // allow-cache-empty: timeout self-heal sentinel, 5-minute window. Real value returns once the rebuild completes and the short cache expires.
@@ -304,15 +266,10 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
             return 0;
         }
 
-        // Non-timeout errors (network blip, replication lag, etc.) return
-        // 0 without caching so the next request retries promptly.
         if ($hadError) {
             return 0;
         }
 
-        // If the rollup exists but has no rows yet (first run, or rebuild in
-        // progress), schedule a rebuild AND skip caching so the next request
-        // can serve real data once the rebuild completes (typically seconds).
         if ($count === 0) {
             if ($this->isHitsTableEmpty()) {
                 $this->logsRepo->scheduleHitsTableRebuild();
@@ -326,13 +283,7 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
     }
 
     /**
-     * Cheap probe: does the logs_hits rollup contain at least one row?
-     * SELECT 1 ... LIMIT 1 against a small table.
-     *
-     * @return bool true when the rollup has zero rows (rebuild in progress,
-     *              cold start, or post-truncate). false when at least one
-     *              row exists OR when the probe itself errors (treat
-     *              ambiguous probes as "not empty" so we don't spam reschedules).
+     * @return bool
      */
     private function isHitsTableEmpty(): bool {
         $check = "SELECT 1 FROM {wp_abj404_logs_hits} LIMIT 1";
@@ -346,11 +297,9 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
     }
 
     /**
-     * Execute a query with a timeout to prevent it from blocking the page indefinitely.
-     *
-     * @param string $query The SQL query to execute
-     * @param int $timeoutSeconds Maximum execution time in seconds
-     * @return array<string, mixed> Same format as queryAndGetResults()
+     * @param string $query
+     * @param int $timeoutSeconds
+     * @return array<string, mixed>
      */
     private function queryWithTimeout(string $query, int $timeoutSeconds = 60): array {
         return $this->dbCore->queryAndGetResults($query, array(
@@ -359,22 +308,12 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
     }
 
     /**
-     * @global type $wpdb
-     * @param int $logID only return results that correspond to the URL of this $logID. Use 0 to get all records.
-     * @return int the number of records found.
+     * @param int $logID
+     * @return int
      */
     function getLogsCount($logID) {
-        // Sanitize logID to prevent SQL injection
         $logID = absint($logID);
 
-        // Audit F4: cache the unfiltered total. InnoDB has no maintained row
-        // counter so `SELECT COUNT(id) FROM logsv2` is a full index scan that
-        // dominates the Logs admin tab on multi-million-row logsv2. The cache
-        // is keyed on (blog_id, max_log_id) so new inserts move the key
-        // (fresh value picked up immediately); deletions are bounded by the
-        // LOGS_COUNT_CACHE_TTL_SECONDS staleness window. The filtered path
-        // (logID != 0) is per-URL and has unbounded key cardinality, so it
-        // stays uncached.
         $cacheKey = null;
         if ($logID === 0 && function_exists('get_transient')) {
             $blogId = 1;
@@ -393,9 +332,6 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
                     $maxLogId = 0;
                 }
             } catch (Throwable $e) {
-                // getMaxLogId() failed (table missing, query timeout). Fall back
-                // to maxLogId=0 so the cache key still varies; the count will
-                // recompute on every request until the underlying query recovers.
                 $this->logger->debugMessage(__FUNCTION__ . ' getMaxLogId() failed: '
                     . $e->getMessage() . '. Falling back to maxLogId=0.');
                 $maxLogId = 0;
@@ -435,9 +371,7 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
             : $count;
     }
 
-    /**
-     * @return array<int, array<string, mixed>>
-     */
+    /** @return array<int, array<string, mixed>> */
     function getRedirectsAll() {
         $query = "select id, url from {wp_abj404_redirects} order by url";
 
@@ -461,9 +395,6 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
     		"/sql/getRedirectsExport.sql");
     	$query = $this->dbCore->doTableNameReplacements($query);
 
-    	// we use mysqli here instead of the normal wordpress get_results in order
-    	// to get one row at a time, so we don't run out of memory by trying to store
-    	// everything in memory all at once.
     	$result = mysqli_query($wpdb->dbh, $query);
     	if ($result instanceof \mysqli_result) {
     		$fh = fopen($tempFile, 'w');
@@ -488,9 +419,7 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
     	}
     }
 
-    /** Only return redirects that have a log entry.
-     * @return array<int, array<string, mixed>>
-     */
+    /** @return array<int, array<string, mixed>> */
     function getRedirectsWithLogs() {
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getRedirectsWithLogs.sql");
 
@@ -502,11 +431,7 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
         return $rows;
     }
 
-    /**
-     * Get all regex redirects for pattern matching.
-     *
-     * @return array<int, array<string, mixed>>
-     */
+    /** @return array<int, array<string, mixed>> */
     function getRedirectsWithRegEx() {
         $cached = ABJ_404_Solution_RedirectsRepository::getRegexRedirectsCache();
         $disabled = ABJ_404_Solution_RedirectsRepository::isRegexCacheDisabled();
@@ -516,10 +441,10 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
         }
 
         if ($disabled) {
-            return $this->queryRegexRedirects();
+            return $this->queryBuilder->queryRegexRedirects();
         }
 
-        $results = $this->queryRegexRedirects();
+        $results = $this->queryBuilder->queryRegexRedirects();
 
         if (count($results) <= ABJ_404_Solution_RedirectsRepository::REGEX_CACHE_MAX_COUNT) {
             ABJ_404_Solution_RedirectsRepository::setRegexRedirectsCache($results);
@@ -530,12 +455,7 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
         return $results;
     }
 
-    /**
-     * Find MANUAL redirects whose `url` column contains an unambiguous
-     * regex metacharacter.
-     *
-     * @return array<int, array<string, mixed>>
-     */
+    /** @return array<int, array<string, mixed>> */
     function getManualRedirectsWithRegexMetachars() {
         $query = "select \n  {wp_abj404_redirects}.id,\n  {wp_abj404_redirects}.url,\n  {wp_abj404_redirects}.status,\n"
                 . "  {wp_abj404_redirects}.type,\n  {wp_abj404_redirects}.final_dest,\n  {wp_abj404_redirects}.code,\n"
@@ -561,20 +481,20 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
         return $rows;
     }
 
-    /** Returns the redirects that are in place.
-     * @param string $sub either "redirects" or "captured".
-     * @param array<string, mixed> $tableOptions filter, order by, paged, perpage etc.
-     * @return array<int|string, mixed> rows from the redirects table.
+    /**
+     * @param string $sub
+     * @param array<string, mixed> $tableOptions
+     * @return array<int|string, mixed>
      */
     function getRedirectsForView($sub, $tableOptions) {
-        $canUseSnapshotCache = $this->canUseViewTableSnapshotCache($tableOptions);
+        $canUseSnapshotCache = $this->snapshotCache->canUseViewTableSnapshotCache($tableOptions);
         $queryTimeout = isset($tableOptions['_abj404_query_timeout']) && is_numeric($tableOptions['_abj404_query_timeout'])
             ? max(1, intval($tableOptions['_abj404_query_timeout'])) : 0;
         $throwOnQueryError = !empty($tableOptions['_abj404_throw_on_view_query_error']);
         $snapshotCacheKey = '';
         if ($canUseSnapshotCache && $queryTimeout <= 0) {
-            $snapshotCacheKey = $this->getViewSnapshotCacheKey('abj404_view_rows', $sub, $tableOptions);
-            $cachedRowsFromTable = $this->getViewRowsSnapshotFromTable($snapshotCacheKey, false, false);
+            $snapshotCacheKey = $this->snapshotCache->getViewSnapshotCacheKey('abj404_view_rows', $sub, $tableOptions);
+            $cachedRowsFromTable = $this->snapshotCache->getViewRowsSnapshotFromTable($snapshotCacheKey, false, false);
             if (is_array($cachedRowsFromTable)) {
                 return $cachedRowsFromTable;
             }
@@ -597,7 +517,7 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
         } catch (Throwable $e) {
             if ($throwOnQueryError) {
                 $stagedFailureMarker = '/* staged: ' . $e->getMessage() . ' */';
-                $diagnostics = $this->captureViewQueryFailureDiagnostics(
+                $diagnostics = $this->diagnostics->captureViewQueryFailureDiagnostics(
                     (string)$sub,
                     $stagedFailureMarker,
                     is_array($tableOptions) ? $tableOptions : array(),
@@ -621,10 +541,10 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
         ));
 
         if ($canUseSnapshotCache && $snapshotCacheKey === '') {
-            $snapshotCacheKey = $this->getViewSnapshotCacheKey('abj404_view_rows', $sub, $tableOptions);
+            $snapshotCacheKey = $this->snapshotCache->getViewSnapshotCacheKey('abj404_view_rows', $sub, $tableOptions);
         }
         if ($canUseSnapshotCache && $snapshotCacheKey !== '') {
-            $this->setViewRowsSnapshotToTable($snapshotCacheKey, $sub, $rows, self::VIEW_SNAPSHOT_CACHE_TTL_SECONDS);
+            $this->snapshotCache->setViewRowsSnapshotToTable($snapshotCacheKey, $sub, $rows, self::VIEW_SNAPSHOT_CACHE_TTL_SECONDS);
             if (function_exists('set_transient')) {
                 // allow-cache-empty: empty $rows is a legitimate result on a fresh install (no redirects yet); error paths early-return above without reaching this line
                 set_transient($snapshotCacheKey, $rows, self::VIEW_SNAPSHOT_CACHE_TTL_SECONDS);
@@ -635,24 +555,22 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
     }
 
     /**
-     * Return whether the admin rows view already has a usable snapshot.
-     *
      * @param string $sub
      * @param array<string, mixed> $tableOptions
      * @return bool
      */
     function viewRowsSnapshotAvailable($sub, array $tableOptions): bool {
-        $canUseSnapshotCache = $this->canUseViewTableSnapshotCache($tableOptions);
+        $canUseSnapshotCache = $this->snapshotCache->canUseViewTableSnapshotCache($tableOptions);
         if (!$canUseSnapshotCache) {
             return false;
         }
 
-        $snapshotCacheKey = $this->getViewSnapshotCacheKey('abj404_view_rows', $sub, $tableOptions);
-        $freshRows = $this->getViewRowsSnapshotFromTable($snapshotCacheKey, false, false);
+        $snapshotCacheKey = $this->snapshotCache->getViewSnapshotCacheKey('abj404_view_rows', $sub, $tableOptions);
+        $freshRows = $this->snapshotCache->getViewRowsSnapshotFromTable($snapshotCacheKey, false, false);
         if (is_array($freshRows)) {
             return true;
         }
-        $recentRows = $this->getViewRowsSnapshotFromTable($snapshotCacheKey, true, true);
+        $recentRows = $this->snapshotCache->getViewRowsSnapshotFromTable($snapshotCacheKey, true, true);
         if (is_array($recentRows)) {
             return true;
         }
@@ -667,8 +585,6 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
     }
 
     /**
-     * Return whether the full AJAX table response can be rendered from cache.
-     *
      * @param string $sub
      * @param array<string, mixed> $tableOptions
      * @return bool
@@ -679,12 +595,12 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
         }
 
         $canUseSnapshotCache = function_exists('get_transient')
-            && $this->canUseViewTableSnapshotCache($tableOptions);
+            && $this->snapshotCache->canUseViewTableSnapshotCache($tableOptions);
         if (!$canUseSnapshotCache) {
             return false;
         }
 
-        $countCacheKey = $this->getViewSnapshotCacheKey('abj404_view_count', $sub, $tableOptions);
+        $countCacheKey = $this->snapshotCache->getViewSnapshotCacheKey('abj404_view_count', $sub, $tableOptions);
         return get_transient($countCacheKey) !== false;
     }
 
@@ -698,11 +614,11 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
             ? max(1, intval($tableOptions['_abj404_query_timeout'])) : 0;
         $throwOnQueryError = !empty($tableOptions['_abj404_throw_on_view_query_error']);
         $canUseSnapshotCache = function_exists('get_transient')
-            && $this->canUseViewTableSnapshotCache($tableOptions);
+            && $this->snapshotCache->canUseViewTableSnapshotCache($tableOptions);
         $requestCountCacheKey = (string)$sub . '|' . md5(serialize($tableOptions));
         $countCacheKey = '';
         if ($canUseSnapshotCache && $queryTimeout <= 0) {
-            $countCacheKey = $this->getViewSnapshotCacheKey('abj404_view_count', $sub, $tableOptions);
+            $countCacheKey = $this->snapshotCache->getViewSnapshotCacheKey('abj404_view_count', $sub, $tableOptions);
             $cachedCount = get_transient($countCacheKey);
             if ($cachedCount !== false) {
                 return intval(is_scalar($cachedCount) ? $cachedCount : 0);
@@ -714,8 +630,8 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
 
         $rawFilterText = is_string($tableOptions['filterText'] ?? null) ? $tableOptions['filterText'] : '';
         if ($rawFilterText === '') {
-            $query = $this->getOptimizedRedirectsForViewCountQuery($sub, $tableOptions);
-            $this->setSqlBigSelects();
+            $query = $this->queryBuilder->getOptimizedRedirectsForViewCountQuery($sub, $tableOptions);
+            $this->cacheInvalidator->setSqlBigSelects();
             $queryOptions = $queryTimeout > 0 ? array('timeout' => $queryTimeout) : array();
             $results = $this->dbCore->queryAndGetResults($query, $queryOptions);
             $lastErrorRaw = $results['last_error'] ?? '';
@@ -725,7 +641,7 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
                 $countValue = $this->requireViewBuildOrchestrator()->runRedirectsForViewCountStaged((string)$sub, $tableOptions);
                 $this->redirectsForViewCountRequestCache[$requestCountCacheKey] = $countValue;
                 if ($canUseSnapshotCache && $countCacheKey === '') {
-                    $countCacheKey = $this->getViewSnapshotCacheKey('abj404_view_count', $sub, $tableOptions);
+                    $countCacheKey = $this->snapshotCache->getViewSnapshotCacheKey('abj404_view_count', $sub, $tableOptions);
                 }
                 if ($canUseSnapshotCache && $countCacheKey !== '') {
                     // allow-cache-empty: $countValue=0 is a legitimate result when no rows match the search filter; the staged pending/error paths throw above without reaching this line
@@ -742,7 +658,7 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
             } catch (Throwable $e) {
                 if ($throwOnQueryError) {
                     $stagedFailureMarker = '/* staged-count: ' . $e->getMessage() . ' */';
-                    $diagnostics = $this->captureViewQueryFailureDiagnostics(
+                    $diagnostics = $this->diagnostics->captureViewQueryFailureDiagnostics(
                         (string)$sub,
                         $stagedFailureMarker,
                         $tableOptions,
@@ -760,14 +676,14 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
         }
 
         if ($throwOnQueryError && (!empty($results['timed_out']) || $lastError !== '')) {
-            $message = $this->formatViewQueryFailureMessage('getRedirectsForViewCount', $query, $results);
-            $diagnostics = $this->captureViewQueryFailureDiagnostics($sub, $query, $tableOptions, $results);
+            $message = $this->diagnostics->formatViewQueryFailureMessage('getRedirectsForViewCount', $query, $results);
+            $diagnostics = $this->diagnostics->captureViewQueryFailureDiagnostics($sub, $query, $tableOptions, $results);
             $diagnostics['failed_query_label'] = 'getRedirectsForViewCount';
             throw new ABJ_404_Solution_ViewQueryFailureException($message, $diagnostics);
         }
 
         if ($lastError != '' && trim($lastError) != '') {
-            $diagnostics = $this->captureViewQueryFailureDiagnostics($sub, $query, $tableOptions, $results);
+            $diagnostics = $this->diagnostics->captureViewQueryFailureDiagnostics($sub, $query, $tableOptions, $results);
             $diagnostics['failed_query_label'] = 'getRedirectsForViewCount';
             throw new ABJ_404_Solution_ViewQueryFailureException(
                 "Error getting redirect count: " . esc_html($lastError),
@@ -784,7 +700,7 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
         $countValue = intval(is_scalar($rawCount) ? $rawCount : 0);
         $this->redirectsForViewCountRequestCache[$requestCountCacheKey] = $countValue;
         if ($canUseSnapshotCache && $countCacheKey === '') {
-            $countCacheKey = $this->getViewSnapshotCacheKey('abj404_view_count', $sub, $tableOptions);
+            $countCacheKey = $this->snapshotCache->getViewSnapshotCacheKey('abj404_view_count', $sub, $tableOptions);
         }
         if ($canUseSnapshotCache && $countCacheKey !== '') {
             set_transient($countCacheKey, $countValue, self::VIEW_SNAPSHOT_CACHE_TTL_SECONDS);
@@ -792,10 +708,7 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
         return $countValue;
     }
 
-    /**
-     * @param array<int, string> $postIDs
-     * @return array<int, mixed>
-     */
+    /** @param array<int, string> $postIDs @return array<int, mixed> */
     function getExtraDataToPermalinkSuggestions(array $postIDs): array {
         $postIDs = array_map('absint', $postIDs);
         $postIDJoined = implode(", ", $postIDs);
@@ -813,8 +726,6 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
     }
 
     /**
-     * Prepare a WordPress SQL query with placeholders and an associative data array.
-     *
      * @param string $query
      * @param array<string, mixed> $data
      * @return string
@@ -827,8 +738,6 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
     }
 
     /**
-     * Prepare a SQL query with placeholders and an associative data array.
-     *
      * @param string $query
      * @param array<string, mixed> $data
      * @return array{0: string, 1: array<int, mixed>}
@@ -853,7 +762,115 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
     }
 
     // =========================================================================
-    // FROM: DataAccessTrait_ViewMetadata.php
+    // Delegated: ViewQueryBuilder
+    // =========================================================================
+
+    /** @return string */
+    function buildHighImpactCapturedCountQuery(): string {
+        return $this->queryBuilder->buildHighImpactCapturedCountQuery();
+    }
+
+    /**
+     * @param string $sub
+     * @param array<string, mixed> $tableOptions
+     * @param bool $queryAllRowsAtOnce
+     * @param int $limitStart
+     * @param int $limitEnd
+     * @param bool $selectCountOnly
+     * @return string
+     */
+    function getRedirectsForViewQuery($sub, $tableOptions, $queryAllRowsAtOnce,
+    	$limitStart, $limitEnd, $selectCountOnly) {
+        return $this->queryBuilder->getRedirectsForViewQuery($sub, $tableOptions, $queryAllRowsAtOnce,
+            $limitStart, $limitEnd, $selectCountOnly);
+    }
+
+    /**
+     * @param string $sub
+     * @param array<string, mixed> $tableOptions
+     * @return array<int, array<string, mixed>>
+     */
+    public function readFromViewDone(string $sub, array $tableOptions): array {
+        return $this->queryBuilder->readFromViewDone($sub, $tableOptions);
+    }
+
+    /**
+     * @param string $sub
+     * @param array<string, mixed> $tableOptions
+     * @return string
+     */
+    public function buildViewDoneCountQuery(string $sub, array $tableOptions): string {
+        return $this->queryBuilder->buildViewDoneCountQuery($sub, $tableOptions);
+    }
+
+    /** @return array<string, string> */
+    public function viewBuildOnlyTranslations(): array {
+        return $this->queryBuilder->viewBuildOnlyTranslations();
+    }
+
+    // =========================================================================
+    // Delegated: ViewCacheInvalidator
+    // =========================================================================
+
+    /**
+     * @template T
+     * @param callable():T $work
+     * @return T
+     */
+    public function runWithDeferredInvalidation(callable $work) {
+        return $this->cacheInvalidator->runWithDeferredInvalidation($work);
+    }
+
+    /** @return void */
+    function invalidateStatusCountsCache(): void {
+        $this->cacheInvalidator->invalidateStatusCountsCache();
+    }
+
+    /** @return void */
+    function invalidateViewSnapshotCache(): void {
+        $this->cacheInvalidator->invalidateViewSnapshotCache();
+    }
+
+    /** @return void */
+    function clearRegexRedirectsCache(): void {
+        $this->cacheInvalidator->clearRegexRedirectsCache();
+    }
+
+    // =========================================================================
+    // Delegated: ViewDiagnostics
+    // =========================================================================
+
+    /**
+     * @param string $sub
+     * @param string $failedQuery
+     * @param array<string, mixed> $tableOptions
+     * @param array<string, mixed> $queryResult
+     * @return array<string, mixed>
+     */
+    public function captureViewQueryFailureDiagnostics(string $sub, string $failedQuery, array $tableOptions, array $queryResult): array {
+        return $this->diagnostics->captureViewQueryFailureDiagnostics($sub, $failedQuery, $tableOptions, $queryResult);
+    }
+
+    // =========================================================================
+    // Delegated: ViewSnapshotCache
+    // =========================================================================
+
+    /**
+     * @param string $sub
+     * @param array<string, mixed> $tableOptions
+     * @return array<string, mixed>
+     */
+    function warmViewTableSnapshotStage(string $sub, array $tableOptions): array {
+        return $this->snapshotCache->warmViewTableSnapshotStage($sub, $tableOptions);
+    }
+
+    /** @return array<string, int> */
+    public function getViewBuildProgressFingerprint(): array {
+        return $this->snapshotCache->getViewBuildProgressFingerprint();
+    }
+
+    // =========================================================================
+    // ViewMetadata (originally in host, not from traits)
     // =========================================================================
 
     /** @return array<string, mixed> */
@@ -880,7 +897,7 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
         return false;
     }
 
-    /** Insert data into the database.
+    /**
      * @param string $tableName
      * @param array<string, mixed> $dataToInsert
      * @return array<string, mixed>
@@ -917,9 +934,7 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
         return $this->dbCore->queryAndGetResults($sql, ['query_params' => $values]);
     }
 
-   /**
-    * @return int the total number of redirects that have been captured.
-    */
+   /** @return int */
    function getCapturedCount() {
        $query = "select count(id) from {wp_abj404_redirects} where status = " . absint(ABJ404_STATUS_CAPTURED);
 
@@ -937,8 +952,7 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
        return intval($value);
    }
 
-   /** Get all of the post types from the wp_posts table.
-    * @return array<int, string> An array of post type names. */
+   /** @return array<int, string> */
    function getAllPostTypes() {
        $query = "SELECT DISTINCT post_type FROM {wp_posts} order by post_type";
        $results = $this->dbCore->queryAndGetResults($query);
@@ -955,11 +969,7 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
        return $postType;
    }
 
-   /** Get the approximate number of bytes used by the logs table.
-    *
-    * @return int Bytes used by the logs table, 0 on missing/empty stats,
-    *             or -1 if the lookup itself failed/timed out.
-    */
+   /** @return int */
    function getLogDiskUsage() {
        $query = 'SELECT (data_length+index_length) tablesize FROM information_schema.tables '
                . 'WHERE table_name=\'{wp_abj404_logsv2}\'';
@@ -1018,17 +1028,13 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
     }
 
     // =========================================================================
-    // FROM: DataAccessTrait_ViewQueriesHitsLifecycle.php
+    // ViewQueriesHitsLifecycle
     // =========================================================================
 
     /** @return void */
     function maybeUpdateRedirectsForViewHitsTable(): void {
-        // Record that we checked during this request (used for admin tooltip UX).
         $this->dbCore->setRuntimeFlag(self::HITS_TABLE_LAST_CHECKED_FLAG, time(), 86400);
 
-        // Piggyback on the captured-404s tab render: also schedule a
-        // 15-second logsv2.canonical_url backfill at shutdown if there's
-        // legacy NULL-row backlog.
         if (function_exists('abj_service')) {
             $upgradesEtc = abj_service('database_upgrades');
             if (is_object($upgradesEtc) && method_exists($upgradesEtc, 'scheduleLogsv2CanonicalUrlBackfill')) {
@@ -1042,7 +1048,6 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
             return;
         }
 
-        // Check if the table exists
         if (!$this->logsRepo->logsHitsTableExists()) {
             $this->logger->debugMessage(__FUNCTION__ . " table doesn't exist, deferring creation to shutdown hook.");
             $this->logsRepo->scheduleHitsTableRebuild();
@@ -1051,13 +1056,11 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
 
         $this->logsRepo->recordLogsHitsRollupStalenessSignal();
 
-        // Check if rebuild is needed (logs have changed since last build)
         if (!$this->logsRepo->hitsTableNeedsRebuild()) {
             $this->dbCore->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'not_needed', 86400);
             return;
         }
 
-        // Table exists and logs have changed - defer to shutdown hook
         $this->logsRepo->scheduleHitsTableRebuild();
     }
 }

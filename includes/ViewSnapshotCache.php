@@ -5,41 +5,76 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Cache state, warmup, and snapshot methods for ViewReadService.
+ * Snapshot cache for admin list view data.
  *
- * Extracted from ViewReadService to keep the host class under the 1500-line
- * modularity limit. Contains snapshot cache key generation, lock management,
- * warmup orchestration, and view snapshot table CRUD.
+ * Manages cache key generation, lock management, warmup orchestration,
+ * and view snapshot table CRUD for the admin redirect/captured tables.
  */
-trait ABJ_404_Solution_ViewReadServiceTrait_CacheManagement {
+class ABJ_404_Solution_ViewSnapshotCache {
+
+    /** @var ABJ_404_Solution_DatabaseCore */
+    private $dbCore;
+
+    /** @var ABJ_404_Solution_Logging */
+    private $logger;
+
+    /** @var ABJ_404_Solution_ViewReadServiceInterface|null */
+    private $host;
+
+    /** @var ABJ_404_Solution_ViewBuildOrchestratorInterface|null */
+    private $viewBuildOrchestrator;
+
+    /** @var bool */
+    private static $viewSnapshotTableEnsured = false;
 
     /**
-     * Build a stable cache key for admin list data/count snapshots.
-     *
-     * The key embeds the current per-blog mutation watermark, so any source-
-     * data mutation (which already bumps the watermark via the centralized
-     * invalidateViewSnapshotCache / bumpMutationWatermark seam) implicitly
-     * invalidates every prior cache entry. Readers post-mutation generate a
-     * new key, miss the cache, and rebuild from the fresh view_done snapshot.
-     * Old entries become orphans and are reaped by the expires_at cleanup.
-     *
-     * Why this matters. The pre-watermark invalidation path manually issued
-     * `DELETE FROM wp_options WHERE option_name LIKE '_transient_abj404_view_%'`
-     * to drop the WP-transient mirror written alongside the table-backed
-     * cache. That DELETE assumes transients live in wp_options; integration
-     * tests that stub `set_transient` to a `$GLOBALS['test_transients']`
-     * registry diverge silently, the transient survives the invalidate, and
-     * the next read returns the pre-mutation snapshot. Version-keying makes
-     * the manual delete optional (it now only matters for disk-space
-     * reclamation, not correctness) and closes the test/production gap by
-     * construction.
-     *
+     * @param ABJ_404_Solution_DatabaseCore $dbCore
+     * @param ABJ_404_Solution_Logging $logger
+     */
+    public function __construct(
+        ABJ_404_Solution_DatabaseCore $dbCore,
+        $logger
+    ) {
+        $this->dbCore = $dbCore;
+        $this->logger = $logger;
+    }
+
+    /**
+     * @param ABJ_404_Solution_ViewReadServiceInterface $host
+     * @return void
+     */
+    public function setHost(ABJ_404_Solution_ViewReadServiceInterface $host): void {
+        $this->host = $host;
+    }
+
+    /**
+     * @param ABJ_404_Solution_ViewBuildOrchestratorInterface $viewBuildOrchestrator
+     * @return void
+     */
+    public function setViewBuildOrchestrator(ABJ_404_Solution_ViewBuildOrchestratorInterface $viewBuildOrchestrator): void {
+        $this->viewBuildOrchestrator = $viewBuildOrchestrator;
+    }
+
+    /** @return ABJ_404_Solution_ViewBuildOrchestratorInterface */
+    private function requireViewBuildOrchestrator(): ABJ_404_Solution_ViewBuildOrchestratorInterface {
+        if ($this->viewBuildOrchestrator === null) {
+            throw new \RuntimeException('ViewSnapshotCache requires ViewBuildOrchestrator (call setViewBuildOrchestrator first)'); // allow-raw-error: assertion, should never reach user
+        }
+        return $this->viewBuildOrchestrator;
+    }
+
+    /** @param bool $value @return void */
+    public static function setViewSnapshotTableEnsured(bool $value): void {
+        self::$viewSnapshotTableEnsured = $value;
+    }
+
+    /**
      * @param string $prefix
      * @param string $sub
      * @param array<string, mixed> $tableOptions
      * @return string
      */
-    private function getViewSnapshotCacheKey($prefix, $sub, $tableOptions) {
+    public function getViewSnapshotCacheKey($prefix, $sub, $tableOptions) {
         $cacheShape = array(
             'sub' => (string)$sub,
             'filter' => is_scalar($tableOptions['filter'] ?? 0) ? (int)($tableOptions['filter'] ?? 0) : 0,
@@ -80,12 +115,12 @@ trait ABJ_404_Solution_ViewReadServiceTrait_CacheManagement {
     }
 
     /** @return bool */
-    protected function acquireViewSnapshotWarmupGlobalLock(): bool {
+    public function acquireViewSnapshotWarmupGlobalLock(): bool {
         return $this->acquireViewSnapshotRefreshLock($this->getViewSnapshotWarmupGlobalLockKey());
     }
 
     /** @return void */
-    protected function releaseViewSnapshotWarmupGlobalLock(): void {
+    public function releaseViewSnapshotWarmupGlobalLock(): void {
         $this->releaseViewSnapshotRefreshLock($this->getViewSnapshotWarmupGlobalLockKey());
     }
 
@@ -98,7 +133,7 @@ trait ABJ_404_Solution_ViewReadServiceTrait_CacheManagement {
      * @param array<string, mixed> $tableOptions
      * @return bool
      */
-    private function canUseViewTableSnapshotCache(array $tableOptions): bool {
+    public function canUseViewTableSnapshotCache(array $tableOptions): bool {
         if (!empty($tableOptions['_abj404_force_view_rebuild'])) {
             return false;
         }
@@ -290,13 +325,11 @@ trait ABJ_404_Solution_ViewReadServiceTrait_CacheManagement {
     }
 
     /**
-     * Warm exactly one admin table snapshot stage, then return progress.
-     *
      * @param string $sub
      * @param array<string, mixed> $tableOptions
      * @return array<string, mixed>
      */
-    function warmViewTableSnapshotStage(string $sub, array $tableOptions): array {
+    public function warmViewTableSnapshotStage(string $sub, array $tableOptions): array {
         if (!$this->canUseViewTableSnapshotCache($tableOptions)) {
             return array(
                 'status' => 'ready',
@@ -309,12 +342,17 @@ trait ABJ_404_Solution_ViewReadServiceTrait_CacheManagement {
             );
         }
 
+        $host = $this->host;
+        if ($host === null) {
+            throw new \RuntimeException('ViewSnapshotCache requires host (call setHost first)'); // allow-raw-error: assertion, should never reach user
+        }
+
         $shapeKey = $this->getViewTableWarmupShapeKey($sub, $tableOptions);
         $optionName = $this->getViewWarmupStateOptionName($shapeKey);
         $state = $this->getViewWarmupState($optionName);
         $now = time();
 
-        if ($this->viewTableSnapshotAvailable($sub, $tableOptions)) {
+        if ($host->viewTableSnapshotAvailable($sub, $tableOptions)) {
             $state['status'] = 'ready';
             $state['stage'] = 'count';
             $state['query_label'] = 'getRedirectsForViewCount';
@@ -324,7 +362,7 @@ trait ABJ_404_Solution_ViewReadServiceTrait_CacheManagement {
             return $this->formatViewWarmupResponse($state, true);
         }
 
-        if ($this->viewRowsSnapshotAvailable($sub, $tableOptions)) {
+        if ($host->viewRowsSnapshotAvailable($sub, $tableOptions)) {
             $state['stage'] = 'count';
             $state['query_label'] = 'getRedirectsForViewCount';
         } else {
@@ -340,7 +378,7 @@ trait ABJ_404_Solution_ViewReadServiceTrait_CacheManagement {
         if ($state['status'] === 'running') {
             $stageStartedAt = $state['stage_started_at'] ?? 0;
             $elapsed = $now - (is_scalar($stageStartedAt) ? intval($stageStartedAt) : 0);
-            if ($elapsed <= self::VIEW_SNAPSHOT_WARMUP_STALE_SECONDS) {
+            if ($elapsed <= ABJ_404_Solution_ViewReadService::VIEW_SNAPSHOT_WARMUP_STALE_SECONDS) {
                 return $this->formatViewWarmupResponse($state, false);
             }
             $currentBuildProgress = $this->getViewBuildProgressFingerprint();
@@ -349,7 +387,7 @@ trait ABJ_404_Solution_ViewReadServiceTrait_CacheManagement {
                 $attemptCountRaw = $attempts[$stage] ?? 0;
                 $attemptCount = is_scalar($attemptCountRaw) ? intval($attemptCountRaw) : 0;
             }
-            if ($attemptCount >= self::VIEW_SNAPSHOT_WARMUP_MAX_ATTEMPTS) {
+            if ($attemptCount >= ABJ_404_Solution_ViewReadService::VIEW_SNAPSHOT_WARMUP_MAX_ATTEMPTS) {
                 $state['status'] = 'blocked';
                 $previousLastError = $state['last_error'] ?? '';
                 $previousError = is_string($previousLastError) ? trim($previousLastError) : '';
@@ -368,17 +406,17 @@ trait ABJ_404_Solution_ViewReadServiceTrait_CacheManagement {
             }
         }
 
-        if ($attemptCount >= self::VIEW_SNAPSHOT_WARMUP_MAX_ATTEMPTS) {
+        if ($attemptCount >= ABJ_404_Solution_ViewReadService::VIEW_SNAPSHOT_WARMUP_MAX_ATTEMPTS) {
             $previousLastError = $state['last_error'] ?? '';
             $previousError = is_string($previousLastError) ? trim($previousLastError) : '';
             if (!$this->isViewWarmupErrorDiagnostic($previousError)) {
-                $attempts[$stage] = self::VIEW_SNAPSHOT_WARMUP_MAX_ATTEMPTS - 1;
+                $attempts[$stage] = ABJ_404_Solution_ViewReadService::VIEW_SNAPSHOT_WARMUP_MAX_ATTEMPTS - 1;
                 $state['attempts_by_stage'] = $attempts;
                 $attemptCount = is_scalar($attempts[$stage] ?? 0) ? intval($attempts[$stage]) : 0;
             }
         }
 
-        if ($attemptCount >= self::VIEW_SNAPSHOT_WARMUP_MAX_ATTEMPTS) {
+        if ($attemptCount >= ABJ_404_Solution_ViewReadService::VIEW_SNAPSHOT_WARMUP_MAX_ATTEMPTS) {
             $state['status'] = 'blocked';
             $state['last_error'] = 'Warmup stage reached the retry limit.'
                 . ($this->isViewWarmupErrorDiagnostic($previousError) ? ' Previous error: ' . $previousError : '');
@@ -408,22 +446,22 @@ trait ABJ_404_Solution_ViewReadServiceTrait_CacheManagement {
         $this->setViewWarmupState($optionName, $state);
 
         $stageOptions = $tableOptions;
-        $stageOptions['_abj404_query_timeout'] = self::VIEW_SNAPSHOT_WARMUP_STAGE_TIMEOUT_SECONDS;
+        $stageOptions['_abj404_query_timeout'] = ABJ_404_Solution_ViewReadService::VIEW_SNAPSHOT_WARMUP_STAGE_TIMEOUT_SECONDS;
         $stageOptions['_abj404_throw_on_view_query_error'] = true;
 
         $startMs = microtime(true);
         try {
             if ($stage === 'rows') {
-                $this->getRedirectsForView($sub, $stageOptions);
-                if (!$this->viewRowsSnapshotAvailable($sub, $tableOptions)) {
+                $host->getRedirectsForView($sub, $stageOptions);
+                if (!$host->viewRowsSnapshotAvailable($sub, $tableOptions)) {
                     throw new \Exception('Warmup rows stage completed but the row snapshot was not available afterward.'); // allow-raw-error: pre-existing warmup assertion moved from ViewReadService.php
                 }
                 $state['status'] = 'idle';
                 $state['stage'] = 'count';
                 $state['query_label'] = 'getRedirectsForViewCount';
             } else {
-                $this->getRedirectsForViewCount($sub, $stageOptions);
-                if (!$this->viewTableSnapshotAvailable($sub, $tableOptions)) {
+                $host->getRedirectsForViewCount($sub, $stageOptions);
+                if (!$host->viewTableSnapshotAvailable($sub, $tableOptions)) {
                     throw new \Exception('Warmup count stage completed but the full table snapshot was not available afterward.'); // allow-raw-error: pre-existing warmup assertion moved from ViewReadService.php
                 }
                 $state['status'] = 'ready';
@@ -464,7 +502,7 @@ trait ABJ_404_Solution_ViewReadServiceTrait_CacheManagement {
                 $rawAttemptCount = $attempts[$stage] ?? 0;
                 $currentAttempts = is_scalar($rawAttemptCount) ? intval($rawAttemptCount) : 0;
             }
-            $state['status'] = ($currentAttempts >= self::VIEW_SNAPSHOT_WARMUP_MAX_ATTEMPTS) ? 'blocked' : 'idle';
+            $state['status'] = ($currentAttempts >= ABJ_404_Solution_ViewReadService::VIEW_SNAPSHOT_WARMUP_MAX_ATTEMPTS) ? 'blocked' : 'idle';
 
             $timingsByStage = is_array($state['timings_by_stage'] ?? null) ? $state['timings_by_stage'] : array();
             $timings = $this->normalizeStageTiming($timingsByStage[$stage] ?? null);
@@ -601,7 +639,7 @@ trait ABJ_404_Solution_ViewReadServiceTrait_CacheManagement {
             return false;
         }
         $lockTs = is_numeric($lockValue) ? (int)$lockValue : 0;
-        if ($lockTs > 0 && (time() - $lockTs) > self::VIEW_SNAPSHOT_REFRESH_COOLDOWN_SECONDS) {
+        if ($lockTs > 0 && (time() - $lockTs) > ABJ_404_Solution_ViewReadService::VIEW_SNAPSHOT_REFRESH_COOLDOWN_SECONDS) {
             if (function_exists('delete_option')) {
                 delete_option($lockKey);
             }
@@ -647,7 +685,7 @@ trait ABJ_404_Solution_ViewReadServiceTrait_CacheManagement {
      * @param bool $respectCooldown
      * @return array<string, mixed>|null
      */
-    private function getViewRowsSnapshotFromTable(string $cacheKey, bool $allowExpired = false, bool $respectCooldown = false) {
+    public function getViewRowsSnapshotFromTable(string $cacheKey, bool $allowExpired = false, bool $respectCooldown = false) {
         $this->ensureViewSnapshotTableExists();
         $query = "SELECT payload, refreshed_at, expires_at
             FROM {wp_abj404_view_cache}
@@ -664,7 +702,7 @@ trait ABJ_404_Solution_ViewReadServiceTrait_CacheManagement {
         $refreshedAt = is_scalar($refreshedAtRaw) ? intval($refreshedAtRaw) : 0;
         $now = time();
         $isFresh = ($expiresAt > $now);
-        $recentEnough = ($refreshedAt > 0 && ($now - $refreshedAt) <= self::VIEW_SNAPSHOT_REFRESH_COOLDOWN_SECONDS);
+        $recentEnough = ($refreshedAt > 0 && ($now - $refreshedAt) <= ABJ_404_Solution_ViewReadService::VIEW_SNAPSHOT_REFRESH_COOLDOWN_SECONDS);
         if (!$allowExpired && !$isFresh) {
             return null;
         }
@@ -682,7 +720,7 @@ trait ABJ_404_Solution_ViewReadServiceTrait_CacheManagement {
      * @param int $ttlSeconds
      * @return void
      */
-    private function setViewRowsSnapshotToTable(string $cacheKey, string $sub, $rows, int $ttlSeconds): void {
+    public function setViewRowsSnapshotToTable(string $cacheKey, string $sub, $rows, int $ttlSeconds): void {
         if (!is_array($rows)) {
             return;
         }
@@ -692,7 +730,7 @@ trait ABJ_404_Solution_ViewReadServiceTrait_CacheManagement {
             return;
         }
         $bytes = strlen($encoded);
-        if ($bytes > self::VIEW_SNAPSHOT_MAX_PAYLOAD_BYTES) {
+        if ($bytes > ABJ_404_Solution_ViewReadService::VIEW_SNAPSHOT_MAX_PAYLOAD_BYTES) {
             return;
         }
         $now = time();
@@ -719,7 +757,7 @@ trait ABJ_404_Solution_ViewReadServiceTrait_CacheManagement {
      * @param int $timeoutMs
      * @return array<string, mixed>|null
      */
-    private function waitForViewRowsSnapshotFromTable(string $cacheKey, int $timeoutMs = 4000) {
+    public function waitForViewRowsSnapshotFromTable(string $cacheKey, int $timeoutMs = 4000) {
         $deadline = microtime(true) + (max(100, intval($timeoutMs)) / 1000);
         while (microtime(true) < $deadline) {
             $rows = $this->getViewRowsSnapshotFromTable($cacheKey, false, false);
@@ -743,8 +781,23 @@ trait ABJ_404_Solution_ViewReadServiceTrait_CacheManagement {
         set_transient('abj404_view_cache_cleanup_marker', time(), 1800);
         $query = "DELETE FROM {wp_abj404_view_cache} WHERE expires_at < %d";
         $this->dbCore->queryAndGetResults($query, array(
-            'query_params' => array(time() - self::VIEW_SNAPSHOT_REFRESH_COOLDOWN_SECONDS),
+            'query_params' => array(time() - ABJ_404_Solution_ViewReadService::VIEW_SNAPSHOT_REFRESH_COOLDOWN_SECONDS),
             'log_errors' => false,
         ));
+    }
+
+    /**
+     * @return int
+     */
+    private function readMutationWatermarkForCacheKey(): int {
+        if (!class_exists('ABJ_404_Solution_MutationWatermark')) {
+            return 0;
+        }
+        try {
+            return ABJ_404_Solution_MutationWatermark::current();
+            // allow-silent-catch: degraded wpdb falls back to "version 0" cache bucket
+        } catch (\Throwable $e) {
+            return 0;
+        }
     }
 }

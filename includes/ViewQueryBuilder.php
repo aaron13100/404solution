@@ -5,27 +5,82 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * SQL query construction methods for ViewReadService.
+ * SQL query construction and execution for admin list views.
  *
- * Extracted from ViewReadService to keep the host class under the 1500-line
- * modularity limit. Contains the query builders for admin list views,
- * status type resolution, and order-by mapping.
+ * Builds the SQL for redirect/captured list queries, view_done reads,
+ * status type resolution, order-by mapping, and translation maps.
  */
-trait ABJ_404_Solution_ViewReadServiceTrait_QueryBuilding {
+class ABJ_404_Solution_ViewQueryBuilder {
+
+    /** @var ABJ_404_Solution_DatabaseCore */
+    private $dbCore;
+
+    /** @var ABJ_404_Solution_Functions */
+    private $f;
+
+    /** @var ABJ_404_Solution_LogsRepository */
+    private $logsRepo;
+
+    /** @var ABJ_404_Solution_Logging */
+    private $logger;
+
+    /** @var ABJ_404_Solution_ViewReadServiceInterface|null */
+    private $host;
+
+    /** @var ABJ_404_Solution_ViewBuildOrchestratorInterface|null */
+    private $viewBuildOrchestrator;
 
     /**
-     * Build the SQL for getHighImpactCapturedCount(). Exposed so structural
-     * regression tests can assert no logsv2 access and verify the EXPLAIN plan.
-     *
+     * @param ABJ_404_Solution_DatabaseCore $dbCore
+     * @param ABJ_404_Solution_Functions $f
+     * @param ABJ_404_Solution_LogsRepository $logsRepo
+     * @param ABJ_404_Solution_Logging $logger
+     */
+    public function __construct(
+        ABJ_404_Solution_DatabaseCore $dbCore,
+        ABJ_404_Solution_Functions $f,
+        ABJ_404_Solution_LogsRepository $logsRepo,
+        $logger
+    ) {
+        $this->dbCore = $dbCore;
+        $this->f = $f;
+        $this->logsRepo = $logsRepo;
+        $this->logger = $logger;
+    }
+
+    /**
+     * @param ABJ_404_Solution_ViewReadServiceInterface $host
+     * @return void
+     */
+    public function setHost(ABJ_404_Solution_ViewReadServiceInterface $host): void {
+        $this->host = $host;
+    }
+
+    /**
+     * @param ABJ_404_Solution_ViewBuildOrchestratorInterface $viewBuildOrchestrator
+     * @return void
+     */
+    public function setViewBuildOrchestrator(ABJ_404_Solution_ViewBuildOrchestratorInterface $viewBuildOrchestrator): void {
+        $this->viewBuildOrchestrator = $viewBuildOrchestrator;
+    }
+
+    /** @return ABJ_404_Solution_ViewBuildOrchestratorInterface */
+    private function requireViewBuildOrchestrator(): ABJ_404_Solution_ViewBuildOrchestratorInterface {
+        if ($this->viewBuildOrchestrator === null) {
+            throw new \RuntimeException('ViewQueryBuilder requires ViewBuildOrchestrator (call setViewBuildOrchestrator first)'); // allow-raw-error: assertion, should never reach user
+        }
+        return $this->viewBuildOrchestrator;
+    }
+
+    /** @return string */
+    private function viewDoneTableName(): string {
+        return $this->dbCore->doTableNameReplacements('{wp_abj404_view_done}');
+    }
+
+    /**
      * @return string Fully-replaced SQL (table-name placeholders resolved).
      */
-    function buildHighImpactCapturedCountQuery(): string {
-        // logs_hits.requested_url is stored in canonical form (leading '/',
-        // no trailing '/') by createRedirectsForViewHitsTable(). Match against
-        // the persisted r.canonical_url column (added 4.1.10) so the JOIN is
-        // an indexed equality lookup instead of CONCAT/TRIM per row. The
-        // COALESCE fallback covers rows from upgraded sites where the chunked
-        // backfill hasn't reached yet.
+    public function buildHighImpactCapturedCountQuery(): string {
         $query = "SELECT COUNT(*) AS cnt
             FROM {wp_abj404_redirects} r
             INNER JOIN {wp_abj404_logs_hits} h
@@ -37,12 +92,9 @@ trait ABJ_404_Solution_ViewReadServiceTrait_QueryBuilding {
     }
 
     /**
-     * Execute the regex redirects query.
-     * Separated from getRedirectsWithRegEx() for cache logic clarity.
-     *
      * @return array<int, array<string, mixed>>
      */
-    private function queryRegexRedirects() {
+    public function queryRegexRedirects() {
         $query = "select \n  {wp_abj404_redirects}.id,\n  {wp_abj404_redirects}.url,\n  {wp_abj404_redirects}.status,\n"
                 . "  {wp_abj404_redirects}.type,\n  {wp_abj404_redirects}.final_dest,\n  {wp_abj404_redirects}.code,\n"
                 . "  {wp_abj404_redirects}.timestamp,\n {wp_posts}.id as wp_post_id\n ";
@@ -64,7 +116,7 @@ trait ABJ_404_Solution_ViewReadServiceTrait_QueryBuilding {
      * @param array<string, mixed> $tableOptions
      * @return string
      */
-    private function getOptimizedRedirectsForViewCountQuery(string $sub, array $tableOptions): string {
+    public function getOptimizedRedirectsForViewCountQuery(string $sub, array $tableOptions): string {
         global $abj404_redirect_types, $abj404_captured_types;
 
         $statusTypes = '';
@@ -87,10 +139,6 @@ trait ABJ_404_Solution_ViewReadServiceTrait_QueryBuilding {
 
         $scoreRangeClause = '';
         $rawScoreRange = is_string($tableOptions['score_range'] ?? '') ? ($tableOptions['score_range'] ?? 'all') : 'all';
-        // Each `wp_abj404_redirects.*` reference below is the SQL alias bound by the
-        // `FROM {wp_abj404_redirects} wp_abj404_redirects` clause in the assembled
-        // query, not a hardcoded table-name literal. Per-line markers keep the
-        // lint window (+/- 1 line) honest.
         switch ($rawScoreRange) {
             case 'high': $scoreRangeClause = 'AND wp_abj404_redirects.score >= 80'; break; // allow-prefix-literal: SQL alias, see comment above
             case 'medium': $scoreRangeClause = 'AND wp_abj404_redirects.score >= 50 AND wp_abj404_redirects.score < 80'; break; // allow-prefix-literal: SQL alias
@@ -115,7 +163,7 @@ trait ABJ_404_Solution_ViewReadServiceTrait_QueryBuilding {
      * @param bool $selectCountOnly
      * @return string
      */
-    function getRedirectsForViewQuery($sub, $tableOptions, $queryAllRowsAtOnce,
+    public function getRedirectsForViewQuery($sub, $tableOptions, $queryAllRowsAtOnce,
     	$limitStart, $limitEnd, $selectCountOnly) {
         global $abj404_redirect_types;
         global $abj404_captured_types;
@@ -128,39 +176,26 @@ trait ABJ_404_Solution_ViewReadServiceTrait_QueryBuilding {
         $trashValue = '';
         $selectCountReplacement = '/* selecting data as usual */';
 
-        /* if we only want the count(*) then comment out everything else. */
         if ($selectCountOnly) {
         	$selectCountReplacement = "\n /*+ SET_VAR(max_join_size=18446744073709551615) */\n" .
         		"count(*) as count\n /* only selecting for count";
         }
 
         if ($queryAllRowsAtOnce && !$selectCountOnly) {
-            // create a temp table and use that instead of a subselect to avoid the sql error
-            // "The SELECT would examine more than MAX_JOIN_SIZE rows"
-            $this->maybeUpdateRedirectsForViewHitsTable();
+            if ($this->host !== null) {
+                $this->host->maybeUpdateRedirectsForViewHitsTable();
+            }
 
-            // Verify table was actually created before using it (handles silent creation failures)
             if ($this->logsRepo->logsHitsTableExists()) {
-                // if we're showing all rows include all of the log data in the query already. this makes the query very slow.
-                // this should be replaced by the dynamic loading of log data using ajax queries as the page is viewed.
                 $logsTableColumns = "logstable.logshits as logshits, \n" .
                     "logstable.logsid, \n" .
                     "logstable.last_used, \n";
 
-                // canonical_url is the persisted CONCAT('/', TRIM(BOTH '/' FROM url))
-                // form (added 4.1.10) so this JOIN is a single indexed equality
-                // lookup against logs_hits.requested_url instead of evaluating
-                // the function on every redirects row. The COALESCE fallback
-                // covers rows from upgraded sites where the chunked backfill
-                // hasn't reached yet -- those rows merge in via the original
-                // expression so behavior matches pre-upgrade exactly.
-                // wp_abj404_redirects below is the SQL alias from the assembled FROM clause, not a hardcoded table name.
                 $logsTableJoin = "  LEFT OUTER JOIN {wp_abj404_logs_hits} logstable \n " .
                         "  on binary logstable.requested_url = " .
                         "binary COALESCE(wp_abj404_redirects.canonical_url, " . // allow-prefix-literal: SQL alias
                         "concat('/', trim(both '/' from wp_abj404_redirects.url))) \n "; // allow-prefix-literal: SQL alias
             } else {
-                // Fall back to null columns if table creation failed
                 $this->logger->debugMessage("logs_hits table not available, falling back to null columns");
             }
         }
@@ -180,7 +215,6 @@ trait ABJ_404_Solution_ViewReadServiceTrait_QueryBuilding {
             $statusTypes = implode(", ", array(ABJ404_STATUS_MANUAL, ABJ404_STATUS_REGEX));
 
         } else if ($tableOptions['filter'] == ABJ404_HANDLED_FILTER) {
-            // Composite filter: Ignored + Later (Simple mode "Handled" tab)
             $statusTypes = implode(", ", array(ABJ404_STATUS_IGNORED, ABJ404_STATUS_LATER));
 
         } else {
@@ -191,14 +225,11 @@ trait ABJ_404_Solution_ViewReadServiceTrait_QueryBuilding {
         if ($tableOptions['filter'] == ABJ404_TRASH_FILTER) {
             $trashValue = 1;
         } else if ($tableOptions['filter'] == ABJ404_HANDLED_FILTER) {
-            // Show both active (disabled=0) and trashed (disabled=1) in Handled view
             $trashValue = 0;
         } else {
             $trashValue = 0;
         }
 
-        /* only try to order by if we're actually selecting data and not only
-         * counting the number of rows. */
         $orderByString = '';
         if (!$selectCountOnly) {
             $rawOrderBy = $tableOptions['orderby'] ?? '';
@@ -207,7 +238,6 @@ trait ABJ_404_Solution_ViewReadServiceTrait_QueryBuilding {
                 // TODO change the final dest type to an integer and store external URLs somewhere else.
                 $orderBy = "case when post_title is null then 1 else 0 end asc, post_title";
             } else {
-                // only allow letters and the underscore in the orderby string.
                 $orderBy = preg_replace('/[^a-zA-Z_]/', '', trim($orderBy));
             }
             $rawOrderVal = $tableOptions['order'] ?? '';
@@ -220,7 +250,6 @@ trait ABJ_404_Solution_ViewReadServiceTrait_QueryBuilding {
                 ", wp_abj404_redirects.url ASC, wp_abj404_redirects.id " . $order; // allow-prefix-literal: SQL alias bound by `FROM {wp_abj404_redirects} wp_abj404_redirects`
         }
 
-        // Score range filter clause. wp_abj404_redirects below is the SQL alias from the assembled FROM clause, not a hardcoded table name.
         $rawScoreRange = is_string($tableOptions['score_range'] ?? '') ? ($tableOptions['score_range'] ?? 'all') : 'all';
         switch ($rawScoreRange) {
             case 'high':
@@ -246,11 +275,9 @@ trait ABJ_404_Solution_ViewReadServiceTrait_QueryBuilding {
         $rawFilterText = is_string($tableOptions['filterText'] ?? null) ? $tableOptions['filterText'] : '';
         if ($rawFilterText != '') {
             if ($sub == 'abj404_redirects') {
-                // Close the comment without including user input to avoid comment breakout.
                 $searchFilterForRedirectsExists = ' filter text enabled */';
 
             } else if ($sub == 'abj404_captured') {
-                // Close the comment without including user input to avoid comment breakout.
                 $searchFilterForCapturedExists = ' filter text enabled */';
 
             } else {
@@ -258,7 +285,6 @@ trait ABJ_404_Solution_ViewReadServiceTrait_QueryBuilding {
             }
         }
 
-        // Sanitize filter text for use inside LIKE; strip comment markers and escape for SQL LIKE.
         $filterTextRaw = str_replace(array('*', '/', '$'), '', $rawFilterText);
         if (isset($wpdb) && is_object($wpdb) && method_exists($wpdb, 'esc_like')) {
             /** @var wpdb $wpdb */
@@ -269,8 +295,6 @@ trait ABJ_404_Solution_ViewReadServiceTrait_QueryBuilding {
         $filterText = esc_sql($filterTextRaw);
 
         $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getRedirectsForView.sql");
-        // Ensure consistent collation for string operations (e.g., REPLACE/LOWER) to avoid
-        // "Illegal mix of collations" errors when plugin tables use *_bin collations.
         $wpdbCollate = 'utf8mb4_unicode_ci';
         $hasForcedCollate = false;
         if (array_key_exists('forceCollate', $tableOptions) && !empty($tableOptions['forceCollate'])) {
@@ -316,8 +340,6 @@ trait ABJ_404_Solution_ViewReadServiceTrait_QueryBuilding {
     }
 
     /**
-     * Read page from the served view_done table.
-     *
      * @param string $sub
      * @param array<string, mixed> $tableOptions
      * @return array<int, array<string, mixed>>
@@ -331,11 +353,6 @@ trait ABJ_404_Solution_ViewReadServiceTrait_QueryBuilding {
     }
 
     /**
-     * Build the WHERE/ORDER/LIMIT SELECT against view_done. Mirrors the
-     * legacy filter-text composite LIKE so search semantics are preserved,
-     * but reads against precomputed columns (no JOINs, no CASE
-     * recomputation).
-     *
      * @param string $sub
      * @param array<string, mixed> $tableOptions
      * @return string
@@ -345,8 +362,6 @@ trait ABJ_404_Solution_ViewReadServiceTrait_QueryBuilding {
 
         $statusTypes = $this->resolveStatusTypeList($sub, $tableOptions);
         $trashValue = ($tableOptions['filter'] ?? 0) == ABJ404_TRASH_FILTER ? 1 : 0;
-        // Match legacy semantics: every tab including HANDLED filters by
-        // disabled = 0 (active rows) except the dedicated TRASH tab.
         $trashClause = 'AND disabled = ' . intval($trashValue);
 
         $rawScoreRange = $tableOptions['score_range'] ?? 'all';
@@ -409,9 +424,6 @@ trait ABJ_404_Solution_ViewReadServiceTrait_QueryBuilding {
     }
 
     /**
-     * COUNT(*) variant of buildViewDoneReadQuery. Same WHERE clauses, no
-     * ORDER BY, no LIMIT.
-     *
      * @param string $sub
      * @param array<string, mixed> $tableOptions
      * @return string
@@ -421,8 +433,6 @@ trait ABJ_404_Solution_ViewReadServiceTrait_QueryBuilding {
 
         $statusTypes = $this->resolveStatusTypeList($sub, $tableOptions);
         $trashValue = ($tableOptions['filter'] ?? 0) == ABJ404_TRASH_FILTER ? 1 : 0;
-        // Match legacy semantics: HANDLED filter shows active rows only
-        // (disabled = 0), same as every non-TRASH tab.
         $trashClause = 'AND disabled = ' . intval($trashValue);
 
         $rawScoreRange = $tableOptions['score_range'] ?? 'all';
@@ -472,7 +482,7 @@ trait ABJ_404_Solution_ViewReadServiceTrait_QueryBuilding {
      * @param array<string, mixed> $tableOptions
      * @return string
      */
-    private function resolveStatusTypeList(string $sub, array $tableOptions): string {
+    public function resolveStatusTypeList(string $sub, array $tableOptions): string {
         global $abj404_redirect_types, $abj404_captured_types;
         $filter = $tableOptions['filter'] ?? 0;
         $statusTypes = '';
@@ -509,13 +519,12 @@ trait ABJ_404_Solution_ViewReadServiceTrait_QueryBuilding {
      * @param array<string, mixed> $tableOptions
      * @return string
      */
-    private function resolveOrderByColumn(array $tableOptions): string {
+    public function resolveOrderByColumn(array $tableOptions): string {
         $rawOrderBy = $tableOptions['orderby'] ?? '';
         $orderBy = strtolower(is_string($rawOrderBy) ? $rawOrderBy : '');
         $allowed = array('url', 'status', 'type', 'code', 'score', 'timestamp',
             'logshits', 'last_used', 'final_dest', 'dest', 'id');
         if ($orderBy === 'dest' || $orderBy === 'final_dest') {
-            // Same as legacy: treat empty dest as last.
             return "CASE WHEN dest_for_view IS NULL OR dest_for_view = '' THEN 1 ELSE 0 END ASC, dest_for_view";
         }
         if (!in_array($orderBy, $allowed, true)) {
@@ -525,10 +534,6 @@ trait ABJ_404_Solution_ViewReadServiceTrait_QueryBuilding {
     }
 
     /**
-     * Translations for status_for_view, type_for_view, and the special
-     * 404-displayed label. Everything else (`{wp_*}`, `{ABJ404_TYPE_X}`)
-     * is handled by doTableNameReplacements + doNormalReplacements.
-     *
      * @return array<string, string>
      */
     public function viewBuildOnlyTranslations(): array {
