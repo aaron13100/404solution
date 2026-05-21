@@ -11,7 +11,6 @@ class ABJ_404_Solution_ViewUpdater {
 
     use ABJ_404_Solution_AjaxFailureLoggingTrait;
 
-    private const INFLIGHT_STAGE_EVENT_LIMIT = 5000;
 
 	/** @var self|null */
 	private static $instance = null;
@@ -146,222 +145,11 @@ class ABJ_404_Solution_ViewUpdater {
     }
 
     /**
-     * Update the in-flight stage marker for the current AJAX request.  Sets
-     * `$context['stage']` and — when a client requestId is present — also
-     * writes a short-lived transient so a follow-up `ajaxFetchInflightStage`
-     * call can read which phase the server was in when a client-side timeout
-     * fired (no response, no body, no headers reach the browser).
-     *
-     * Transient TTL is intentionally short (60s) — diagnostics that arrive
-     * after a minute aren't useful for the user-visible error notice anyway.
-     *
-     * @param array<string, mixed> $context  Passed by reference; mutated in place.
-     * @param string $stage  Stage label (e.g. 'table_captured', 'paginationLinksTop').
-     * @return void
-     */
-    private static function setStage(&$context, $stage) {
-        if (!is_array($context)) {
-            $context = array();
-        }
-        $diagnostics = self::getStageDiagnostics($stage);
-        $context['stage'] = $stage;
-        $context['query_label'] = $diagnostics['query_label'];
-        $context['what_happening'] = $diagnostics['what_happening'];
-        if (isset($GLOBALS['abj404_ajax_context']) && is_array($GLOBALS['abj404_ajax_context'])) {
-            $GLOBALS['abj404_ajax_context']['stage'] = $stage;
-            $GLOBALS['abj404_ajax_context']['query_label'] = $diagnostics['query_label'];
-            $GLOBALS['abj404_ajax_context']['what_happening'] = $diagnostics['what_happening'];
-        }
-
-        $requestId = isset($context['requestId']) && is_string($context['requestId']) ? $context['requestId'] : '';
-        if ($requestId === '') {
-            return;
-        }
-        if (!function_exists('set_transient')) {
-            return;
-        }
-        $event = array(
-            'stage' => (string)$stage,
-            'query_label' => $diagnostics['query_label'],
-            'what_happening' => $diagnostics['what_happening'],
-            'time_ms' => (int)round(microtime(true) * 1000),
-        );
-        $events = array();
-        if (function_exists('get_transient')) {
-            $existing = @get_transient('abj404_inflight_' . $requestId);
-            if (is_array($existing) && is_array($existing['events'] ?? null)) {
-                $events = $existing['events'];
-            }
-        }
-        $lastEvent = !empty($events) ? $events[count($events) - 1] : null;
-        $lastStage = is_array($lastEvent) && isset($lastEvent['stage']) && is_string($lastEvent['stage'])
-            ? $lastEvent['stage'] : '';
-        if ($lastStage !== (string)$stage) {
-            $events[] = $event;
-            if (count($events) > self::INFLIGHT_STAGE_EVENT_LIMIT) {
-                $events = array_slice($events, -self::INFLIGHT_STAGE_EVENT_LIMIT);
-            }
-        }
-        // Diagnostics — best effort. Never let a transient write failure
-        // mask the real query error we're trying to diagnose. The
-        // @-suppression converts any wpdb/network warning into a no-op.
-        @set_transient('abj404_inflight_' . $requestId, array(
-            'stage' => (string)$stage,
-            'query_label' => $diagnostics['query_label'],
-            'what_happening' => $diagnostics['what_happening'],
-            'events' => $events,
-        ), 60);
-    }
-
-    /**
      * @param string $stage
-     * @return array{query_label: string, what_happening: string}
-     */
-    private static function getStageDiagnostics($stage) {
-        $map = array(
-            'table_redirects' => array(
-                'query_label' => 'getAdminRedirectsPageTable() -> read redirects rows from staged view snapshot',
-                'what_happening' => 'Loading Redirects table rows',
-            ),
-            'redirect_status_counts' => array(
-                'query_label' => 'getRedirectStatusCounts()',
-                'what_happening' => 'Counting Redirects status tabs',
-            ),
-            'table_captured' => array(
-                'query_label' => 'getCapturedURLSPageTable() -> read captured rows from staged view snapshot',
-                'what_happening' => 'Loading Captured 404 URLs table rows',
-            ),
-            'captured_status_counts' => array(
-                'query_label' => 'getCapturedStatusCounts()',
-                'what_happening' => 'Counting Captured 404 URLs status tabs',
-            ),
-            'table_logs' => array(
-                'query_label' => 'getAdminLogsPageTable() -> getLogRecords()',
-                'what_happening' => 'Loading Logs table rows',
-            ),
-            'paginationLinksTop' => array(
-                'query_label' => 'getPaginationLinks(top) -> read top pagination count from staged view snapshot',
-                'what_happening' => 'Rendering top pagination links',
-            ),
-            'paginationLinksBottom' => array(
-                'query_label' => 'getPaginationLinks(bottom) -> read bottom pagination count from staged view snapshot',
-                'what_happening' => 'Rendering bottom pagination links',
-            ),
-            'table_cache_rows' => array(
-                'query_label' => 'getRedirectsForView',
-                'what_happening' => 'Warming table row snapshot',
-            ),
-            'table_cache_count' => array(
-                'query_label' => 'getRedirectsForViewCount',
-                'what_happening' => 'Warming table count snapshot',
-            ),
-            'high_impact_count' => array(
-                'query_label' => 'getHighImpactCapturedCount()',
-                'what_happening' => 'Counting high-impact captured URLs',
-            ),
-            // Sub-stages of the staged view-build pipeline (see
-            // DataAccessTrait_ViewQueriesStaged::runStagedBuildOnce). These
-            // are emitted by markBuildStage() during cold-cache builds so the
-            // .abj404-refresh-status element can show step-by-step progress
-            // instead of a single frozen "stage 1" label for the whole build.
-            'staged_build_s1_create' => array(
-                'query_label' => 'CREATE TABLE wp_abj404_view_build',
-                'what_happening' => 'Creating build buffer (1/11)',
-            ),
-            'staged_build_s2_insert' => array(
-                'query_label' => 'INSERT INTO wp_abj404_view_build SELECT FROM wp_abj404_redirects',
-                'what_happening' => 'Bulk-loading redirects into build buffer (2/11)',
-            ),
-            'staged_build_s3_index_fd' => array(
-                'query_label' => 'ALTER TABLE wp_abj404_view_build ADD INDEX idx_fd_int',
-                'what_happening' => 'Adding pre-join indexes (3/11)',
-            ),
-            'staged_build_s4_update_posts' => array(
-                'query_label' => 'UPDATE wp_abj404_view_build LEFT JOIN wp_posts',
-                'what_happening' => 'Filling published-status from wp_posts (4/11)',
-            ),
-            'staged_build_s5_update_terms' => array(
-                'query_label' => 'UPDATE wp_abj404_view_build LEFT JOIN wp_terms',
-                'what_happening' => 'Filling published-status from wp_terms (5/11)',
-            ),
-            'staged_build_s6_update_home' => array(
-                'query_label' => 'UPDATE wp_abj404_view_build (HOME)',
-                'what_happening' => 'Filling HOME-typed redirects (6/11)',
-            ),
-            'staged_build_s7_update_external' => array(
-                'query_label' => 'UPDATE wp_abj404_view_build (EXTERNAL)',
-                'what_happening' => 'Filling EXTERNAL-typed redirects (7/11)',
-            ),
-            'staged_build_s8_update_special' => array(
-                'query_label' => 'UPDATE wp_abj404_view_build (404-displayed)',
-                'what_happening' => 'Filling 404-displayed redirects (8/11)',
-            ),
-            'staged_build_s9_update_hits' => array(
-                'query_label' => 'UPDATE wp_abj404_view_build LEFT JOIN wp_abj404_logs_hits',
-                'what_happening' => 'Filling hit counts (9/11)',
-            ),
-            'staged_build_s10_index_sort' => array(
-                'query_label' => 'ALTER TABLE wp_abj404_view_build ADD INDEX (sort indexes)',
-                'what_happening' => 'Adding read-side sort indexes (10/11)',
-            ),
-            'staged_build_s11_swap' => array(
-                'query_label' => 'RENAME TABLE wp_abj404_view_build TO wp_abj404_view_done',
-                'what_happening' => 'Atomic table swap (11/11)',
-            ),
-        );
-        if (array_key_exists($stage, $map)) {
-            return $map[$stage];
-        }
-        // Sub-stage with a free-form ":detail" suffix (e.g. the batched insert
-        // emits 'staged_build_s2_insert:batch 4/12'). Strip the detail to find
-        // the base label, then append the detail to what_happening so the GUI
-        // shows "Bulk-loading redirects into build buffer (2/11) — batch 4/12".
-        $colonPos = is_string($stage) ? strpos((string)$stage, ':') : false;
-        if ($colonPos !== false) {
-            $base = substr((string)$stage, 0, $colonPos);
-            $detail = trim(substr((string)$stage, $colonPos + 1));
-            if (array_key_exists($base, $map)) {
-                $entry = $map[$base];
-                if ($detail !== '') {
-                    $entry['what_happening'] = $entry['what_happening'] . ' — ' . $detail;
-                }
-                return $entry;
-            }
-        }
-        return array(
-            'query_label' => (string)$stage,
-            'what_happening' => 'Running AJAX stage ' . (string)$stage,
-        );
-    }
-
-    /**
-     * Public version of setStage() that reads the AJAX requestId from the
-     * global context rather than requiring a `&$context` reference.  Used by
-     * code paths (e.g. the staged view-build pipeline) that run beneath
-     * DataAccess and don't have $context threaded through.
-     *
-     * Best-effort: if no AJAX context exists (background cron, CLI), this is
-     * a no-op — no transient is written and no global is mutated.
-     *
-     * @param string $stage  Stage label.  May be a known key in
-     *                       getStageDiagnostics(), or `<key>:<detail>` where
-     *                       detail is appended to what_happening for mid-stage
-     *                       progress messages (e.g. 'staged_build_s2_insert:batch 4/12').
      * @return void
      */
     public static function markInflightStage($stage) {
-        if (!isset($GLOBALS['abj404_ajax_context']) || !is_array($GLOBALS['abj404_ajax_context'])) {
-            return;
-        }
-        $rawContext = $GLOBALS['abj404_ajax_context'];
-        $context = array();
-        foreach ($rawContext as $key => $value) {
-            if (is_string($key)) {
-                $context[$key] = $value;
-            }
-        }
-        self::setStage($context, (string)$stage);
-        $GLOBALS['abj404_ajax_context'] = $context;
+        ABJ_404_Solution_AjaxStageDiagnostics::markInflightStage($stage);
     }
 
     /**
@@ -572,14 +360,14 @@ class ABJ_404_Solution_ViewUpdater {
     private static function fetchTableDataForSubpage(string $subpage, $view, $viewReadService, array &$context): array {
         $data = array();
         if ($subpage == 'abj404_redirects') {
-            self::setStage($context, 'table_redirects');
+            ABJ_404_Solution_AjaxStageDiagnostics::setStage($context, 'table_redirects');
             $data['table'] = $view->getAdminRedirectsPageTable($subpage);
 
             // Include tab counts so the page shell can render instantly with
             // placeholders and fill them in. The slower health-bar query
             // (getHighImpactCapturedCount, see refreshHealthBar()) is fetched
             // in a separate AJAX call so it never blocks first paint of the table.
-            self::setStage($context, 'redirect_status_counts');
+            ABJ_404_Solution_AjaxStageDiagnostics::setStage($context, 'redirect_status_counts');
             $statusCounts = $viewReadService->getRedirectStatusCounts();
             // Tab counts keyed by filter value for JS tab updates.
             $data['tabCounts'] = array(
@@ -590,11 +378,11 @@ class ABJ_404_Solution_ViewUpdater {
             );
 
         } else if ($subpage == 'abj404_captured') {
-            self::setStage($context, 'table_captured');
+            ABJ_404_Solution_AjaxStageDiagnostics::setStage($context, 'table_captured');
             $data['table'] = $view->getCapturedURLSPageTable($subpage);
 
             // Include tab counts so the page shell can render instantly.
-            self::setStage($context, 'captured_status_counts');
+            ABJ_404_Solution_AjaxStageDiagnostics::setStage($context, 'captured_status_counts');
             $statusCounts = $viewReadService->getCapturedStatusCounts();
             $data['statusCounts'] = $statusCounts;
             // Tab counts keyed by filter value for JS tab updates.
@@ -609,7 +397,7 @@ class ABJ_404_Solution_ViewUpdater {
             );
 
         } else if ($subpage == 'abj404_logs') {
-            self::setStage($context, 'table_logs');
+            ABJ_404_Solution_AjaxStageDiagnostics::setStage($context, 'table_logs');
             $data['table'] = $view->getAdminLogsPageTable($subpage);
 
         } else {
@@ -812,7 +600,7 @@ class ABJ_404_Solution_ViewUpdater {
                     && !$detectOnly
                     && !$viewBuildOrchestrator->viewDoneIsServeable()) {
                 $stage = ($subpage === 'abj404_captured') ? 'table_captured' : 'table_redirects';
-                self::setStage($context, $stage);
+                ABJ_404_Solution_AjaxStageDiagnostics::setStage($context, $stage);
                 $progress = $viewBuildOrchestrator->getViewBuildProgress();
                 self::markAjaxResponseSent();
                 self::getAndClearAjaxBufferedOutput();
@@ -831,7 +619,7 @@ class ABJ_404_Solution_ViewUpdater {
                     && ($subpage === 'abj404_redirects' || $subpage === 'abj404_captured')
                     && is_object($viewReadService)) {
                 $stage = ($subpage === 'abj404_captured') ? 'table_captured' : 'table_redirects';
-                self::setStage($context, $stage);
+                ABJ_404_Solution_AjaxStageDiagnostics::setStage($context, $stage);
                 $tableOptions = $abj404logic->getTableOptions($subpage);
                 if (!$viewReadService->viewTableSnapshotAvailable($subpage, $tableOptions)) {
                     self::markAjaxResponseSent();
@@ -869,9 +657,9 @@ class ABJ_404_Solution_ViewUpdater {
                 );
             }
 
-            self::setStage($context, 'paginationLinksTop');
+            ABJ_404_Solution_AjaxStageDiagnostics::setStage($context, 'paginationLinksTop');
             $data['paginationLinksTop'] = $view->getPaginationLinks($subpage);
-            self::setStage($context, 'paginationLinksBottom');
+            ABJ_404_Solution_AjaxStageDiagnostics::setStage($context, 'paginationLinksBottom');
             $data['paginationLinksBottom'] = $view->getPaginationLinks($subpage, false);
 
             self::markAjaxResponseSent();
@@ -984,7 +772,7 @@ class ABJ_404_Solution_ViewUpdater {
             if ($viewReadService->viewRowsSnapshotAvailable($subpage, $tableOptions)) {
                 $stage = 'table_cache_count';
             }
-            self::setStage($context, $stage);
+            ABJ_404_Solution_AjaxStageDiagnostics::setStage($context, $stage);
             $warmup = $viewReadService->warmViewTableSnapshotStage($subpage, $tableOptions);
 
             self::markAjaxResponseSent();
@@ -1206,12 +994,12 @@ class ABJ_404_Solution_ViewUpdater {
                 return;
             }
 
-            self::setStage($context, 'redirect_status_counts');
+            ABJ_404_Solution_AjaxStageDiagnostics::setStage($context, 'redirect_status_counts');
             $statusCounts = $viewReadService->getRedirectStatusCounts();
             // Provide the captured filter constant so JS can build the "View" link.
             $statusCounts['_capturedFilter'] = ABJ404_STATUS_CAPTURED;
 
-            self::setStage($context, 'high_impact_count');
+            ABJ_404_Solution_AjaxStageDiagnostics::setStage($context, 'high_impact_count');
             $rollupAvailable = $logsRepository->logsHitsTableExists();
             if ($rollupAvailable) {
                 $highImpactCapturedCount = (int)$viewReadService->getHighImpactCapturedCount();
@@ -1347,7 +1135,7 @@ class ABJ_404_Solution_ViewUpdater {
                     }
                 } else if (is_string($value)) {
                     $stage = $value;
-                    $diagnostics = self::getStageDiagnostics($stage);
+                    $diagnostics = ABJ_404_Solution_AjaxStageDiagnostics::getStageDiagnostics($stage);
                     $queryLabel = $diagnostics['query_label'];
                     $whatsHappening = $diagnostics['what_happening'];
                 }

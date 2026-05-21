@@ -18,6 +18,7 @@ return array(
     // found", and the test fails with no useful error.
     'ABJ_404_Solution_AjaxSecurityTrait' => $base . 'includes/ajax/AjaxSecurityTrait.php',
     'ABJ_404_Solution_AjaxFailureLoggingTrait' => $base . 'includes/ajax/AjaxFailureLoggingTrait.php',
+    'ABJ_404_Solution_AjaxStageDiagnostics' => $base . 'includes/ajax/AjaxStageDiagnostics.php',
     'ABJ_404_Solution_FeedbackTransport_EnvironmentExtrasTrait' => $base . 'includes/FeedbackTransportTrait_EnvironmentExtras.php',
     'ABJ_404_Solution_DataAccess_ConnectionTrait' => $base . 'includes/DataAccessTrait_Connection.php',
     'ABJ_404_Solution_DataAccess_ErrorClassificationTrait' => $base . 'includes/DataAccessTrait_ErrorClassification.php',

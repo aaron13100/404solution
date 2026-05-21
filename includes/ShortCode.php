@@ -261,58 +261,9 @@ class ABJ_404_Solution_ShortCode {
         
         $content = "\n<!-- " . ABJ404_PP . " - Begin 404 suggestions. -->\n";
 
-        // get the slug that caused the 404 from the session.
-        $urlRequest = '';
-        $cookieName = ABJ404_PP . '_REQUEST_URI';
-        $cookieVal = isset($_COOKIE[$cookieName]) && is_string($_COOKIE[$cookieName]) ? $_COOKIE[$cookieName] : '';
-        if ($cookieVal !== '') {
-            // Normalize URL using centralized function for consistency
-            $urlRequest = $f->normalizeURLForCacheKey($f->normalizeUrlString($cookieVal));
-            // delete the cookie because the request was a one-time thing.
-            // we use javascript to delete the cookie because the headers have already been sent.
-            $content .= "<script> \n" .
-                    "   var d = new Date(); \n" . 
-                    "   d.setTime(d.getTime() - (60 * 5)); \n" .
-                    '   var expires = "expires="+ d.toUTCString(); ' . "\n" . 
-                    '   document.cookie = "' . $cookieName . '=;" + expires + ";path=/"; ' . "\n" .
-                    "</script> \n";
-        }
-        
-        // we delete the UPDATE_URL cookie here, where the shortcode is used so that it won't
-        // get deleted too early if multiple redirects happen.
-        $updateURLCookieName = ABJ404_PP . '_REQUEST_URI';
-        $updateURLCookieName .= '_UPDATE_URL';
-        $updateCookieVal = isset($_COOKIE[$updateURLCookieName]) && is_string($_COOKIE[$updateURLCookieName]) ? $_COOKIE[$updateURLCookieName] : '';
-        if ($updateCookieVal !== '') {
-        	// Use UPDATE_URL cookie as fallback if primary cookie wasn't set
-        	// (fixes: manual redirects to custom 404 pages not showing suggestions)
-        	if ($urlRequest == '') {
-        		// Normalize URL using centralized function for consistency
-        		$urlRequest = $f->normalizeURLForCacheKey($f->normalizeUrlString($updateCookieVal));
-        	}
-        	// delete the cookie since we're done with it. it's a one-time use thing.
-        	$content .= "<script> \n" .
-         	"   var d = new Date(); /* delete the cookie */\n" .
-         	"   d.setTime(d.getTime() - (60 * 5)); \n" .
-         	'   var expires = "expires="+ d.toUTCString(); ' . "\n" .
-         	'   document.cookie = "' . $updateURLCookieName . '=;" + expires + ";path=/"; ' .
-         	"</script> \n";
-        }
-
-        $ctxUrl = abj_service('request_context')->requested_url;
-        if ($ctxUrl !== '') {
-            // Normalize URL using centralized function for consistency
-            $urlRequest = $f->normalizeURLForCacheKey($f->normalizeUrlString($ctxUrl));
-        }
-
-        // Fallback: check for URL passed via query parameter
-        // (fixes: cookies from 301 redirects aren't stored by browsers)
-        $queryParamName = ABJ404_PP . '_ref';
-        $getParamVal = isset($_GET[$queryParamName]) && is_string($_GET[$queryParamName]) ? $_GET[$queryParamName] : '';
-        if ($urlRequest == '' && $getParamVal !== '') {
-            // Normalize URL using centralized function for consistency
-            $urlRequest = $f->normalizeURLForCacheKey($f->normalizeUrlString($getParamVal));
-        }
+        $urlResult = self::resolveRequestedUrl($f);
+        $content .= $urlResult['cookieScripts'];
+        $urlRequest = $urlResult['url'];
 
         if ($urlRequest == '') {
             // if no 404 was detected then we don't offer any suggestions
@@ -363,35 +314,10 @@ class ABJ_404_Solution_ShortCode {
         $rowType = isset($permalinkSuggestionsPacket[1]) ? $permalinkSuggestionsPacket[1] : 'pages';
 
         $showExtraAdminData = (is_user_logged_in() && $abj404logic->userIsPluginAdmin());
-        $extraData = null;
-        $extraDataById = []; // <--- New: Array to hold extra data indexed by ID
-        $adminDebugData = []; // <--- New: Array to collect data for JS
-        
-        if ($showExtraAdminData) {
-            // add extra information to the permalinkSuggestionsPacket. for each permalink,
-            // retrieve the post_type, taxonomy, post_author (this is an id not a name), 
-            // post_date, post_name (this is the slug), 
-            $postIDs = array_keys($permalinkSuggestions);
-            if (!empty($postIDs)) {
-                // for each id remove the part after '|' using substring
-                foreach ($postIDs as $index => $id) {
-                    $idStr = is_string($id) ? $id : (string)$id;
-                    $pipePos = $f->strpos($idStr, '|');
-                    $postIDs[$index] = $f->substr($idStr, 0, $pipePos !== false ? $pipePos : null);
-                }
-
-                $rawExtraData = $viewReadService->getExtraDataToPermalinkSuggestions($postIDs);
-                foreach ($rawExtraData as $dataItem) {
-                    if (!is_array($dataItem)) {
-                        continue;
-                    }
-                    $postIdVal = isset($dataItem['post_id']) ? (string)$dataItem['post_id'] : '';
-                    $termIdVal = isset($dataItem['term_id']) ? (string)$dataItem['term_id'] : '';
-                    $extraDataById['post_id_' . $postIdVal] = $dataItem;
-                    $extraDataById['term_id_' . $termIdVal] = $dataItem;
-                }
-            }
-        }
+        $extraDataById = $showExtraAdminData
+            ? self::collectAdminDebugExtraData($permalinkSuggestions, $viewReadService, $f)
+            : [];
+        $adminDebugData = [];
 
         // allow some HTML.
         $content .= '<div class="suggest-404s">' . "\n";
@@ -450,41 +376,12 @@ class ABJ_404_Solution_ShortCode {
             // display the score after the page link
 
             if ($showExtraAdminData) {
-                $idParts = explode('|', $idAndTypeStr);
-                $currentId = isset($idParts[0]) ? (int)$idParts[0] : null;
-                $typeCode  = isset($idParts[1]) ? $idParts[1] : null;
-
-                $currentSuggestionData = [
-                    'Title' => $permTitle,
-                    'Link' => $permLink,
-                    'Score' => number_format($permScore, 2),
-                    'ID_Type_Code' => $idAndTypeStr, // e.g., "123|1" or "94|2"
-                ];
-
-                // Extract ID for lookup
-                $idParts = explode('|', $idAndTypeStr);
-                $currentId = isset($idParts[0]) ? $idParts[0] : null;
-
-                // Merge extra data if available (post may have been deleted since suggestions were cached)
-                if ($typeCode == '1') { // It's a Post
-                    $extraKey = 'post_id_' . $currentId;
-                    if (isset($extraDataById[$extraKey])) {
-                        $currentSuggestionData = $currentSuggestionData + $extraDataById[$extraKey];
-                    }
-                } else { // It's a Term
-                    $extraKey = 'term_id_' . $currentId;
-                    if (isset($extraDataById[$extraKey])) {
-                        $currentSuggestionData = $currentSuggestionData + $extraDataById[$extraKey];
-                    }
-                }
-
-                // Add this suggestion's data to the array for JS
-                $adminDebugData[] = $currentSuggestionData;
-
-                // Make the score clickable
+                $adminDebugData[] = self::buildAdminDebugItemData(
+                    $idAndTypeStr, $permTitle, $permScore, $permLink, $extraDataById
+                );
                 $content .= ' (<a href="#" onclick="show404AdminDebugData(); return false;" title="' .
                             esc_attr__('Click to view debug data for all suggestions', '404-solution') .
-                            '">' . number_format($permScore, 2) . // Format score
+                            '">' . number_format($permScore, 2) .
                             '</a>)';
             }
 
@@ -513,88 +410,14 @@ class ABJ_404_Solution_ShortCode {
         $content .= "\n</div>";
 
         if ($showExtraAdminData && !empty($adminDebugData)) {
-            // Ensure the JSON is properly encoded and escaped for JavaScript
             $allSuggestionsJson = wp_json_encode($adminDebugData);
             if ($allSuggestionsJson === false) {
-                // Handle encoding error
                 $allSuggestionsJson = '[]';
             }
-
+            $jsContent = ABJ_404_Solution_Functions::readFileContents(__DIR__ . '/js/suggestion-debug-modal.js');
             $content .= "<script type=\"text/javascript\">\n";
             $content .= "var abj404_suggestionData = " . $allSuggestionsJson . ";\n";
-            $content .= "function show404AdminDebugData() {\n";
-            $content .= "    var debugText = 'Suggestion Debug Data:\\n====================\\n\\n';\n";
-            $content .= "    if (typeof abj404_suggestionData !== 'undefined' && abj404_suggestionData.length > 0) {\n";
-            $content .= "        for (var i = 0; i < abj404_suggestionData.length; i++) {\n";
-            $content .= "            var item = abj404_suggestionData[i];\n";
-            $content .= "            debugText += 'Suggestion #' + (i + 1) + ':\\n';\n";
-            $content .= "            for (var key in item) {\n";
-            $content .= "                if (item.hasOwnProperty(key) && item[key]) {\n";
-            $content .= "                    // Only include properties that have values\n";
-            $content .= "                    // Format the key for display (capitalize first letter)\n";
-            $content .= "                    var displayKey = key;\n";
-            $content .= "                    // Escape any potentially harmful content using text nodes\n";
-            $content .= "                    debugText += '  ' + displayKey + ': ' + String(item[key]).replace(/</g, '&lt;').replace(/>/g, '&gt;') + '\\n';\n";
-            $content .= "                }\n";
-            $content .= "            }\n";
-            $content .= "            debugText += '--------------------\\n';\n";
-            $content .= "        }\n";
-            $content .= "    } else {\n";
-            $content .= "        debugText += 'No suggestion data collected.';\n";
-            $content .= "    }\n";
-            $content .= "    \n";
-            $content .= "    // Create a modal dialog with copyable text\n";
-            $content .= "    var modalOverlay = document.createElement('div');\n";
-            $content .= "    modalOverlay.style.position = 'fixed';\n";
-            $content .= "    modalOverlay.style.top = '0';\n";
-            $content .= "    modalOverlay.style.left = '0';\n";
-            $content .= "    modalOverlay.style.width = '100%';\n";
-            $content .= "    modalOverlay.style.height = '100%';\n";
-            $content .= "    modalOverlay.style.backgroundColor = 'rgba(0,0,0,0.5)';\n";
-            $content .= "    modalOverlay.style.zIndex = '9999';\n";
-            $content .= "    \n";
-            $content .= "    var modalContent = document.createElement('div');\n";
-            $content .= "    modalContent.style.position = 'absolute';\n";
-            $content .= "    modalContent.style.top = '50%';\n";
-            $content .= "    modalContent.style.left = '50%';\n";
-            $content .= "    modalContent.style.transform = 'translate(-50%, -50%)';\n";
-            $content .= "    modalContent.style.backgroundColor = 'white';\n";
-            $content .= "    modalContent.style.padding = '20px';\n";
-            $content .= "    modalContent.style.borderRadius = '5px';\n";
-            $content .= "    modalContent.style.maxWidth = '80%';\n";
-            $content .= "    modalContent.style.maxHeight = '80%';\n";
-            $content .= "    modalContent.style.overflow = 'auto';\n";
-            $content .= "    \n";
-            $content .= "    var textArea = document.createElement('textarea');\n";
-            $content .= "    textArea.style.width = '100%';\n";
-            $content .= "    textArea.style.height = '300px';\n";
-            $content .= "    textArea.style.marginBottom = '10px';\n";
-            $content .= "    // Set value safely using textContent\n";
-            $content .= "    textArea.value = debugText;\n";
-            $content .= "    textArea.readOnly = true;\n";
-            $content .= "    \n";
-            $content .= "    var copyButton = document.createElement('button');\n";
-            $content .= "    // Using textContent instead of innerHTML\n";
-            $content .= "    copyButton.textContent = 'Copy to Clipboard';\n";
-            $content .= "    copyButton.style.marginRight = '10px';\n";
-            $content .= "    copyButton.onclick = function() {\n";
-            $content .= "        textArea.select();\n";
-            $content .= "        document.execCommand('copy');\n";
-            $content .= "    };\n";
-            $content .= "    \n";
-            $content .= "    var closeButton = document.createElement('button');\n";
-            $content .= "    // Using textContent instead of innerHTML\n";
-            $content .= "    closeButton.textContent = 'Close';\n";
-            $content .= "    closeButton.onclick = function() {\n";
-            $content .= "        document.body.removeChild(modalOverlay);\n";
-            $content .= "    };\n";
-            $content .= "    \n";
-            $content .= "    modalContent.appendChild(textArea);\n";
-            $content .= "    modalContent.appendChild(copyButton);\n";
-            $content .= "    modalContent.appendChild(closeButton);\n";
-            $content .= "    modalOverlay.appendChild(modalContent);\n";
-            $content .= "    document.body.appendChild(modalOverlay);\n";
-            $content .= "}\n";
+            $content .= $jsContent . "\n";
             $content .= "</script>\n";
         }
 
@@ -604,6 +427,121 @@ class ABJ_404_Solution_ShortCode {
         } finally {
             self::maybeRestoreFrontendLocale($didSwitchLocale);
         }
+    }
+
+    /**
+     * @param ABJ_404_Solution_Functions $f
+     * @return array{url: string, cookieScripts: string}
+     */
+    private static function resolveRequestedUrl($f): array {
+        $urlRequest = '';
+        $cookieScripts = '';
+
+        $cookieName = ABJ404_PP . '_REQUEST_URI';
+        $cookieVal = isset($_COOKIE[$cookieName]) && is_string($_COOKIE[$cookieName]) ? $_COOKIE[$cookieName] : '';
+        if ($cookieVal !== '') {
+            $urlRequest = $f->normalizeURLForCacheKey($f->normalizeUrlString($cookieVal));
+            $cookieScripts .= "<script> \n" .
+                    "   var d = new Date(); \n" .
+                    "   d.setTime(d.getTime() - (60 * 5)); \n" .
+                    '   var expires = "expires="+ d.toUTCString(); ' . "\n" .
+                    '   document.cookie = "' . $cookieName . '=;" + expires + ";path=/"; ' . "\n" .
+                    "</script> \n";
+        }
+
+        $updateURLCookieName = ABJ404_PP . '_REQUEST_URI';
+        $updateURLCookieName .= '_UPDATE_URL';
+        $updateCookieVal = isset($_COOKIE[$updateURLCookieName]) && is_string($_COOKIE[$updateURLCookieName]) ? $_COOKIE[$updateURLCookieName] : '';
+        if ($updateCookieVal !== '') {
+            if ($urlRequest == '') {
+                $urlRequest = $f->normalizeURLForCacheKey($f->normalizeUrlString($updateCookieVal));
+            }
+            $cookieScripts .= "<script> \n" .
+                "   var d = new Date(); /* delete the cookie */\n" .
+                "   d.setTime(d.getTime() - (60 * 5)); \n" .
+                '   var expires = "expires="+ d.toUTCString(); ' . "\n" .
+                '   document.cookie = "' . $updateURLCookieName . '=;" + expires + ";path=/"; ' .
+                "</script> \n";
+        }
+
+        $ctxUrl = abj_service('request_context')->requested_url;
+        if ($ctxUrl !== '') {
+            $urlRequest = $f->normalizeURLForCacheKey($f->normalizeUrlString($ctxUrl));
+        }
+
+        $queryParamName = ABJ404_PP . '_ref';
+        $getParamVal = isset($_GET[$queryParamName]) && is_string($_GET[$queryParamName]) ? $_GET[$queryParamName] : '';
+        if ($urlRequest == '' && $getParamVal !== '') {
+            $urlRequest = $f->normalizeURLForCacheKey($f->normalizeUrlString($getParamVal));
+        }
+
+        return array('url' => $urlRequest, 'cookieScripts' => $cookieScripts);
+    }
+
+    /**
+     * @param array<int|string, mixed> $permalinkSuggestions
+     * @param ABJ_404_Solution_ViewReadServiceInterface $viewReadService
+     * @param ABJ_404_Solution_Functions $f
+     * @return array<string, array<string, mixed>>
+     */
+    private static function collectAdminDebugExtraData(array $permalinkSuggestions, $viewReadService, $f): array {
+        $extraDataById = [];
+        $postIDs = array_keys($permalinkSuggestions);
+        if (empty($postIDs)) {
+            return $extraDataById;
+        }
+        foreach ($postIDs as $index => $id) {
+            $idStr = is_string($id) ? $id : (string)$id;
+            $pipePos = $f->strpos($idStr, '|');
+            $postIDs[$index] = $f->substr($idStr, 0, $pipePos !== false ? $pipePos : null);
+        }
+
+        $rawExtraData = $viewReadService->getExtraDataToPermalinkSuggestions($postIDs);
+        foreach ($rawExtraData as $dataItem) {
+            if (!is_array($dataItem)) {
+                continue;
+            }
+            $postIdVal = isset($dataItem['post_id']) ? (string)$dataItem['post_id'] : '';
+            $termIdVal = isset($dataItem['term_id']) ? (string)$dataItem['term_id'] : '';
+            $extraDataById['post_id_' . $postIdVal] = $dataItem;
+            $extraDataById['term_id_' . $termIdVal] = $dataItem;
+        }
+        return $extraDataById;
+    }
+
+    /**
+     * @param string $idAndTypeStr
+     * @param string $permTitle
+     * @param float $permScore
+     * @param string $permLink
+     * @param array<string, array<string, mixed>> $extraDataById
+     * @return array<string, mixed>
+     */
+    private static function buildAdminDebugItemData(string $idAndTypeStr, string $permTitle, float $permScore, string $permLink, array $extraDataById): array {
+        $currentSuggestionData = [
+            'Title' => $permTitle,
+            'Link' => $permLink,
+            'Score' => number_format($permScore, 2),
+            'ID_Type_Code' => $idAndTypeStr,
+        ];
+
+        $idParts = explode('|', $idAndTypeStr);
+        $currentId = isset($idParts[0]) ? $idParts[0] : null;
+        $typeCode  = isset($idParts[1]) ? $idParts[1] : null;
+
+        if ($typeCode == '1') {
+            $extraKey = 'post_id_' . $currentId;
+            if (isset($extraDataById[$extraKey])) {
+                $currentSuggestionData = $currentSuggestionData + $extraDataById[$extraKey];
+            }
+        } else {
+            $extraKey = 'term_id_' . $currentId;
+            if (isset($extraDataById[$extraKey])) {
+                $currentSuggestionData = $currentSuggestionData + $extraDataById[$extraKey];
+            }
+        }
+
+        return $currentSuggestionData;
     }
 
     /**
