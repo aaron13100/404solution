@@ -1,21 +1,55 @@
 <?php
 
+
 if (!defined('ABSPATH')) {
     exit;
 }
 
 /**
  * Page ordering, hierarchy helpers, redirect destination building, and notification helpers.
- * Used by ABJ_404_Solution_PluginLogic via `use`.
+ * Standalone class extracted from PluginLogicTrait_PageOrdering.
  *
  * @phpstan-type PageObject object{id: int, post_parent: int, depth: int, post_type: string, post_title: string}
  */
-trait ABJ_404_Solution_PluginLogicTrait_PageOrdering {
+class ABJ_404_Solution_PluginLogicPageOrdering {
+
+    /** @var ABJ_404_Solution_Functions */
+    private $f;
+
+    /** @var ABJ_404_Solution_Logging */
+    private $logger;
+
+    /** @var ABJ_404_Solution_ContentRepositoryInterface */
+    private $contentRepo;
+
+    /** @var ABJ_404_Solution_StatsRepositoryInterface */
+    private $statsRepo;
+
+    /** @var ABJ_404_Solution_PluginLogicUrlNormalization */
+    private $urlNormalization;
+
+    /** @var ABJ_404_Solution_PluginLogic */
+    private $pluginLogic;
+
+    /**
+     * @param ABJ_404_Solution_Functions $f
+     * @param ABJ_404_Solution_Logging $logger
+     * @param ABJ_404_Solution_ContentRepositoryInterface $contentRepo
+     * @param ABJ_404_Solution_StatsRepositoryInterface $statsRepo
+     * @param ABJ_404_Solution_PluginLogicUrlNormalization $urlNormalization
+     * @param ABJ_404_Solution_PluginLogic $pluginLogic
+     */
+    function __construct($f, $logger, $contentRepo, $statsRepo, $urlNormalization, $pluginLogic) {
+        $this->f = $f;
+        $this->logger = $logger;
+        $this->contentRepo = $contentRepo;
+        $this->statsRepo = $statsRepo;
+        $this->urlNormalization = $urlNormalization;
+        $this->pluginLogic = $pluginLogic;
+    }
 
     /**
      * Build the final redirect destination URL.
-     *
-     * This is separated for testability and to avoid mixing HTML escaping with redirect URL construction.
      *
      * @param string $location Base redirect destination.
      * @param string $requestedURL Original requested URL (used for custom 404 ref tracking).
@@ -23,17 +57,13 @@ trait ABJ_404_Solution_PluginLogicTrait_PageOrdering {
      * @return string Redirect destination suitable for wp_redirect().
      */
     public function buildFinalRedirectDestination($location, $requestedURL = '', $isCustom404 = false) {
-        // Translate redirect destination for multilingual sites (TranslatePress, etc.)
-        $location = $this->maybeTranslateRedirectUrl($location, $requestedURL);
+        $location = $this->urlNormalization->maybeTranslateRedirectUrl($location, $requestedURL);
 
-        // Preserve comment pagination and query string from the original request.
-        $commentPartAndQueryPart = (string)$this->getCommentPartAndQueryPartOfRequest();
+        $commentPartAndQueryPart = (string)$this->pluginLogic->getCommentPartAndQueryPartOfRequest();
         $finalDestination = (string)$location . $commentPartAndQueryPart;
 
-        // Append _ref LAST for custom 404 redirects (prevents user override via query string).
-        // This is a fallback for when cookies don't survive 301 redirects.
         if ($isCustom404 && is_string($requestedURL) && $requestedURL !== '') {
-            $refUrlResult = preg_replace('/\?.*/', '', $requestedURL); // Strip query string from ref
+            $refUrlResult = preg_replace('/\?.*/', '', $requestedURL);
             $refUrl = is_string($refUrlResult) ? $refUrlResult : $requestedURL;
             $refParam = ABJ404_PP . '_ref';
             if (function_exists('remove_query_arg')) {
@@ -47,8 +77,6 @@ trait ABJ_404_Solution_PluginLogicTrait_PageOrdering {
             }
         }
 
-        // Sanitize for redirect header context (NOT HTML context).
-        // Harden against CRLF header injection even when WP helpers are not available.
         $finalDestCleaned = preg_replace("/[\\r\\n]+/", '', (string)$finalDestination);
         $finalDestination = is_string($finalDestCleaned) ? $finalDestCleaned : (string)$finalDestination;
 
@@ -62,24 +90,17 @@ trait ABJ_404_Solution_PluginLogicTrait_PageOrdering {
     }
 
     /** Order pages and set the page depth for child pages.
-     * Move the children to be underneath the parents.
      * @param array<int, object> $pages
      * @param bool $includeMissingParentPages
      * @return array<int, object>
      */
     function orderPageResults(array $pages, bool $includeMissingParentPages = false): array {
 
-        // sort by type then title.
         usort($pages, function (object $a, object $b): int {
             return $this->sortByTypeThenTitle($a, $b);
         });
-        // run this to see if there are any child pages left.
         $orderedPages = $this->setDepthAndAddChildren($pages);
 
-        // The pages are now sorted. We now apply the depth AND we make sure the child pages
-        // always immediately follow the parent pages.
-
-        // -------------
         if ($includeMissingParentPages && (count($orderedPages) != count($pages))) {
             $iterations = 0;
 
@@ -88,7 +109,6 @@ trait ABJ_404_Solution_PluginLogicTrait_PageOrdering {
                 $pageCountBefore = count($pages);
                 $iterations = $iterations + 1;
 
-                // get the parents of the unused pages.
                 foreach ($idsOfMissingParentPages as $pageID) {
                     $postParent = get_post(is_scalar($pageID) ? (int)$pageID : 0);
                     if ($postParent == null) {
@@ -107,20 +127,14 @@ trait ABJ_404_Solution_PluginLogicTrait_PageOrdering {
 
                 $idsOfMissingParentPages = $this->getMissingParentPageIDs($pages);
 
-                // loop until we can't find any more parents. This may happen if a sub-page is published
-                // and the parent page is not published.
             } while ($pageCountBefore != count($pages));
 
-            // sort everything again
             usort($pages, function (object $a, object $b): int {
                 return $this->sortByTypeThenTitle($a, $b);
             });
             $orderedPages = $this->setDepthAndAddChildren($pages);
         }
 
-        // if there are child pages left over then there's an issue. it means there's a child page that was
-        // returned but the parent for that child was not returned. so we don't have any place to display
-        // the child page. this could be because the parent page is not "published"
         if (count($orderedPages) != count($pages)) {
             $unusedPages = array_udiff($pages, $orderedPages, function (object $a, object $b): int {
                 return $this->compareByID($a, $b);
@@ -146,8 +160,6 @@ trait ABJ_404_Solution_PluginLogicTrait_PageOrdering {
             if ($taxonomy == 'category') {
                 continue;
             }
-            // for custom categories we create a Map<String, List> where the key is the name
-            // of the taxonomy and the list holds the rows that have the category info.
             if (!array_key_exists($taxonomy, $customTagsEtc) || $customTagsEtc[$taxonomy] == null) {
                 $customTagsEtc[$taxonomy] = array($cat);
             } else {
@@ -189,7 +201,6 @@ trait ABJ_404_Solution_PluginLogicTrait_PageOrdering {
     }
 
     /**
-     * Compare pages based on their ID.
      * @param object $a
      * @param object $b
      * @return int
@@ -206,36 +217,26 @@ trait ABJ_404_Solution_PluginLogicTrait_PageOrdering {
         return 0;
     }
 
-    /** Set the depth of each page and add pages under their parents by rebuilding the list
-     * every time we iterate through it and adding the child pages at the right moment every time
-     * the list is built.
+    /** Set the depth of each page and add pages under their parents.
      * @param array<int, object> $pages
      * @return array<int, object>
      */
     function setDepthAndAddChildren(array $pages): array {
-        // find all child pages (pages that have parents).
         $childPages = $this->findChildPages($pages);
-
-        // find all pages with no parents.
         $mainPages = $this->findAllMainPages($pages);
 
         $oldChildPageCount = -1;
 
-        // this do{} loop is here because some child pages have children.
         do {
-            // add every page to a new list, while looking for parents.
             $orderedPages = array();
             foreach ($mainPages as $page) {
                 /** @var PageObject $page */
-                // always add the main page.
                 $orderedPages[] = $page;
 
-                // if this page is the parent of any children then add the children.
                 $removeThese = array();
                 foreach ($childPages as $child) {
                     /** @var PageObject $child */
                     if ($child->post_parent == $page->id) {
-                        // set the page depth based on the parent's page depth.
                         $parentDepth = $page->depth;
                         /** @var \stdClass $childMut */
                         $childMut = $child;
@@ -246,21 +247,15 @@ trait ABJ_404_Solution_PluginLogicTrait_PageOrdering {
                     }
                 }
 
-                // remove any child pages that have been placed already
                 $childPages = $this->removeUsedChildPages($childPages, $removeThese);
             }
 
-            // the new list becomes the list that we will iterate over next time.
-            // this prepares us for the next iteration and for child pages with a depth greater than 1.
-            // (for child pages that have children).
             $mainPages = $orderedPages;
 
-            // if the count has not changed then there's no point in looping again.
             if (count($childPages) == $oldChildPageCount) {
                 break;
             }
             $oldChildPageCount = count($childPages);
-            // stop the loop once there are no more children to add.
         } while (count($childPages) > 0);
 
         return $orderedPages;
@@ -274,7 +269,6 @@ trait ABJ_404_Solution_PluginLogicTrait_PageOrdering {
         $mainPages = array();
         foreach ($pages as $page) {
             /** @var PageObject $page */
-            // if there's no parent then just add the page.
             if ($page->post_parent == 0) {
                 $mainPages[] = $page;
             }
@@ -289,7 +283,6 @@ trait ABJ_404_Solution_PluginLogicTrait_PageOrdering {
      * @return array<int, object>
      */
     function removeUsedChildPages(array $childPages, array $removeThese): array {
-        // if any children were added then remove them from the list.
         foreach ($removeThese as $removeThis) {
             $key = array_search($removeThis, $childPages);
             if ($key !== false) {
@@ -323,28 +316,25 @@ trait ABJ_404_Solution_PluginLogicTrait_PageOrdering {
     function sortByTypeThenTitle(object $a, object $b): int {
         /** @var PageObject $a */
         /** @var PageObject $b */
-        // first sort by type
         $result = strcmp($a->post_type, $b->post_type);
         if ($result != 0) {
             return $result;
         }
 
-        // then by title.
         return strcmp($a->post_title, $b->post_title);
     }
 
-    /** Send an email if a notification should be displayed. Return true if an email is sent, or false otherwise.
+    /** Send an email if a notification should be displayed.
      * @return string
      */
     function emailCaptured404Notification() {
 
-        $options = $this->getOptions(true);
+        $options = $this->pluginLogic->getOptions(true);
 
         $frequency = isset($options['admin_notification_frequency']) && is_string($options['admin_notification_frequency'])
             ? $options['admin_notification_frequency']
             : 'instant';
 
-        // For non-instant frequencies, the digest handles sending — skip the count-only email.
         if ($frequency !== 'instant') {
             $emailDigest = new ABJ_404_Solution_EmailDigest(abj_service('logs_repository'), abj_service('stats_repository'), $this->logger);
             return $emailDigest->sendDigest();
@@ -371,20 +361,18 @@ trait ABJ_404_Solution_PluginLogicTrait_PageOrdering {
         $adminEmailStr = is_string($adminEmail) ? $adminEmail : '';
         $headers[] = 'From: ' . $adminEmailStr . '<' . $adminEmailStr . '>';
 
-        // send the email
         $this->logger->debugMessage("Sending captured 404 notification email to: " . $to);
         wp_mail($to, $subject, $body, $headers);
         $this->logger->debugMessage("Captured 404 notification email sent.");
         return "Captured 404 notification email sent to: " . trim($to);
     }
 
-    /** Return true if a notification should be displayed, or false otherwise.
-     * @global type $abj404dao
+    /** Return true if a notification should be displayed.
      * @param number $captured404Count the number of captured 404s
      * @return boolean
      */
     function shouldNotifyAboutCaptured404s($captured404Count) {
-        $options = $this->getOptions(true);
+        $options = $this->pluginLogic->getOptions(true);
 
         if (isset($options['admin_notification']) && $options['admin_notification'] != '0') {
             if ($captured404Count >= $options['admin_notification']) {
@@ -396,8 +384,6 @@ trait ABJ_404_Solution_PluginLogicTrait_PageOrdering {
     }
 
     /** 0|0 => "(Default 404 Page)"
-     * 5|5 => "(Home Page)"
-     * 10|1 => "About"
      * @param string $idAndType
      * @param string $externalLinkURL
      * @return string
@@ -410,11 +396,8 @@ trait ABJ_404_Solution_PluginLogicTrait_PageOrdering {
 
         $meta = explode("|", $idAndType);
         $id = $meta[0];
-        // Handle malformed data that doesn't contain a pipe separator
         $type = isset($meta[1]) ? $meta[1] : '';
 
-        // Use strict comparison to avoid null/false == 0 issues with type coercion
-        // Cast to int for comparison since ABJ404_TYPE_* constants are integers
         $typeInt = is_numeric($type) ? (int)$type : -1;
 
         if ($idAndType == ABJ404_TYPE_404_DISPLAYED . '|' . ABJ404_TYPE_404_DISPLAYED) {

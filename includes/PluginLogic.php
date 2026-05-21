@@ -7,24 +7,17 @@ if (!defined('ABSPATH')) {
 
 /* the glue that holds it together / everything else. */
 
-require_once dirname(__FILE__) . '/PluginLogicTrait_UrlNormalization.php';
-require_once dirname(__FILE__) . '/PluginLogicTrait_AdminActions.php';
-require_once dirname(__FILE__) . '/PluginLogicTrait_ImportExport.php';
-require_once dirname(__FILE__) . '/PluginLogicTrait_SettingsUpdate.php';
-require_once dirname(__FILE__) . '/PluginLogicTrait_PageOrdering.php';
-require_once dirname(__FILE__) . '/PluginLogicTrait_Lifecycle.php';
+require_once dirname(__FILE__) . '/PluginLogicUrlNormalization.php';
+require_once dirname(__FILE__) . '/PluginLogicAdminActions.php';
+require_once dirname(__FILE__) . '/PluginLogicImportExport.php';
+require_once dirname(__FILE__) . '/PluginLogicSettingsUpdate.php';
+require_once dirname(__FILE__) . '/PluginLogicPageOrdering.php';
+require_once dirname(__FILE__) . '/PluginLogicLifecycle.php';
 
 /**
  * @phpstan-type PageObject object{id: int, post_parent: int, depth: int, post_type: string, post_title: string}
  */
 class ABJ_404_Solution_PluginLogic {
-
-	use ABJ_404_Solution_PluginLogicTrait_UrlNormalization;
-	use ABJ_404_Solution_PluginLogicTrait_AdminActions;
-	use ABJ_404_Solution_PluginLogicTrait_ImportExport;
-	use ABJ_404_Solution_PluginLogicTrait_SettingsUpdate;
-	use ABJ_404_Solution_PluginLogicTrait_PageOrdering;
-	use ABJ_404_Solution_PluginLogicTrait_Lifecycle;
 
 	/** @var ABJ_404_Solution_Functions */
 	private $f = null;
@@ -82,30 +75,20 @@ class ABJ_404_Solution_PluginLogic {
      * @var bool */
     private static $checkingIsAdmin = false;
 
-    /** Allowed column names for orderby parameter.
-     * @var array<int, string> */
-    private static $allowedOrderbyColumns = [
-        'url',
-        'status',
-        'type',
-        'dest',
-        'final_dest',
-        'code',
-        'score',
-        'timestamp',
-        'created',
-        'lastused',
-        'last_used',
-        'logshits',
-        'remote_host',
-        'referrer',
-        'action',
-        'username'
-    ];
+    /** @var ABJ_404_Solution_PluginLogicUrlNormalization */
+    private $urlNormalization;
 
-    /** Allowed values for order parameter.
-     * @var array<int, string> */
-    private static $allowedOrderValues = ['ASC', 'DESC'];
+    /** @var ABJ_404_Solution_PluginLogicAdminActions */
+    private $adminActions;
+
+    /** @var ABJ_404_Solution_PluginLogicImportExport */
+    private $importExport;
+
+    /** @var ABJ_404_Solution_PluginLogicSettingsUpdate */
+    private $settingsUpdate;
+
+    /** @var ABJ_404_Solution_PluginLogicPageOrdering */
+    private $pageOrdering;
 
     /** @return ABJ_404_Solution_PluginLogic The singleton instance of the class. */
     public static function getInstance() {
@@ -134,14 +117,12 @@ class ABJ_404_Solution_PluginLogic {
 
     /**
      * Constructor with dependency injection.
-     * Dependencies are now explicit and visible.
      *
      * @param ABJ_404_Solution_Functions|null $functions String manipulation utilities
-     * @param ABJ_404_Solution_DataAccess|null $dataAccess Data access layer (legacy, only for importDataFromPluginRedirectioner)
+     * @param ABJ_404_Solution_DataAccess|null $dataAccess Data access layer
      * @param ABJ_404_Solution_Logging|null $logging Logging service
      */
     function __construct($functions = null, $dataAccess = null, $logging = null) {
-    	// Use injected dependencies or fall back to getInstance() for backward compatibility
     	$this->f = $functions !== null ? $functions : abj_service('functions');
     	$this->dao = $dataAccess !== null ? $dataAccess : abj_service('data_access');
     	$this->logger = $logging !== null ? $logging : abj_service('logging');
@@ -172,6 +153,29 @@ class ABJ_404_Solution_PluginLogic {
 	    	$cleaned = preg_replace('/[\x00-\x1F\x7F]/', '', $decodedPath);
     	$this->urlHomeDirectory = is_string($cleaned) ? $cleaned : $decodedPath;
     	$this->urlHomeDirectoryLength = $this->f->strlen($this->urlHomeDirectory);
+
+    	// Initialize standalone composition classes
+    	$this->urlNormalization = new ABJ_404_Solution_PluginLogicUrlNormalization(
+    	    $this->f, $this->urlHomeDirectory, $this->urlHomeDirectoryLength
+    	);
+
+    	$self = $this;
+    	$this->importExport = new ABJ_404_Solution_PluginLogicImportExport(function() use ($self) {
+    	    return $self->getImportExportService();
+    	});
+
+    	$this->settingsUpdate = new ABJ_404_Solution_PluginLogicSettingsUpdate(
+    	    $this->f, $this->logger, $this->contentRepo, $this
+    	);
+
+    	$this->pageOrdering = new ABJ_404_Solution_PluginLogicPageOrdering(
+    	    $this->f, $this->logger, $this->contentRepo, $this->statsRepo, $this->urlNormalization, $this
+    	);
+
+    	$this->adminActions = new ABJ_404_Solution_PluginLogicAdminActions(
+    	    $this->f, $this->logger, $this->redirectsRepo, $this->viewBuild, $this->viewRead,
+    	    $this->contentRepo, $this->dbCore, $this->dao, $this->urlNormalization, $this
+    	);
     }
 
     /** @return ABJ_404_Solution_ImportExportService */
@@ -193,39 +197,346 @@ class ABJ_404_Solution_PluginLogic {
         return $this->importExportService;
     }
 
+    // =========================================================================
+    // Delegation: UrlNormalization
+    // =========================================================================
+
+    /** @param string|null $urlRequest @return string */
+    function removeHomeDirectory($urlRequest): string {
+        return $this->urlNormalization->removeHomeDirectory($urlRequest);
+    }
+
+    /** @param string|null $url @return string */
+    function normalizeToRelativePath($url): string {
+        return $this->urlNormalization->normalizeToRelativePath($url);
+    }
+
+    /** @param string|null $url @return array<int, string> */
+    function getNormalizedUrlCandidates($url) {
+        return $this->urlNormalization->getNormalizedUrlCandidates($url);
+    }
+
+    /** @param string $location @param string $requestedURL @return string */
+    function maybeTranslateRedirectUrl($location, $requestedURL = '') {
+        return $this->urlNormalization->maybeTranslateRedirectUrl($location, $requestedURL);
+    }
+
+    // =========================================================================
+    // Delegation: Lifecycle (static forwarding)
+    // =========================================================================
+
+    /** @return void */
+    static function doUnregisterCrons(): void {
+        ABJ_404_Solution_PluginLogicLifecycle::doUnregisterCrons();
+    }
+
+    /** @param bool $network_wide @return void */
+    static function runOnPluginActivation(bool $network_wide = false): void {
+        ABJ_404_Solution_PluginLogicLifecycle::runOnPluginActivation($network_wide);
+    }
+
+    /** @return void */
+    static function networkActivationCronHandler(): void {
+        ABJ_404_Solution_PluginLogicLifecycle::networkActivationCronHandler();
+    }
+
+    /**
+     * @param int $blog_id
+     * @param int $user_id
+     * @param string $domain
+     * @param string $path
+     * @param int $site_id
+     * @param array<string, mixed> $meta
+     * @return void
+     */
+    static function activateNewSite($blog_id, $user_id, $domain, $path, $site_id, $meta): void {
+        ABJ_404_Solution_PluginLogicLifecycle::activateNewSite($blog_id, $user_id, $domain, $path, $site_id, $meta);
+    }
+
+    /** @param mixed $site @param array<string, mixed> $args @return void */
+    static function activateNewSiteModern($site, $args): void {
+        ABJ_404_Solution_PluginLogicLifecycle::activateNewSiteModern($site, $args);
+    }
+
+    /** @param bool $network_wide @return void */
+    static function runOnPluginDeactivation(bool $network_wide = false): void {
+        ABJ_404_Solution_PluginLogicLifecycle::runOnPluginDeactivation($network_wide);
+    }
+
+    /** @param int $blog_id @param bool $drop @return void */
+    static function deleteBlogData($blog_id, $drop = false): void {
+        ABJ_404_Solution_PluginLogicLifecycle::deleteBlogData($blog_id, $drop);
+    }
+
+    /** @return void */
+    static function doRegisterCrons(): void {
+        ABJ_404_Solution_PluginLogicLifecycle::doRegisterCrons();
+    }
+
+    // =========================================================================
+    // Delegation: ImportExport
+    // =========================================================================
+
+    /** @return string */
+    function getExportFilename(string $format = 'native'): string {
+        return $this->importExport->getExportFilename($format);
+    }
+
+    /** @return void */
+    function doExport(): void {
+        $this->importExport->doExport();
+    }
+
+    /** @param string $sourceFile @param string $destinationFile @return string */
+    function convertExportCsvToRedirectionFormat($sourceFile, $destinationFile) {
+        return $this->importExport->convertExportCsvToRedirectionFormat($sourceFile, $destinationFile);
+    }
+
+    /** @return string */
+    function doImportFile(): string {
+        return $this->importExport->doImportFile();
+    }
+
+    /** @param array<string, mixed> $dataArray @param bool $dryRun @return array<int, string> */
+    function loadDataArrayFromFile(array $dataArray, bool $dryRun = false): array {
+        return $this->importExport->loadDataArrayFromFile($dataArray, $dryRun);
+    }
+
+    /** @return array<string, string> */
+    function splitCsvLine(string $line): array {
+        return $this->importExport->splitCsvLine($line);
+    }
+
+    /** @param array<int, string> $columns @return bool */
+    function isCompatibleImportHeaderRow(array $columns): bool {
+        return $this->importExport->isCompatibleImportHeaderRow($columns);
+    }
+
+    /** @param array<int, string> $columns @return array<int, string> */
+    function normalizeImportHeaders(array $columns): array {
+        return $this->importExport->normalizeImportHeaders($columns);
+    }
+
+    /** @param array<int, string> $row @param array<int, string> $normalizedHeaders @return array<string, string> */
+    function mapImportRowByHeaders(array $row, array $normalizedHeaders): array {
+        return $this->importExport->mapImportRowByHeaders($row, $normalizedHeaders);
+    }
+
+    /** @param array<int, string> $columns @return string */
+    function detectImportFormatFromHeaders(array $columns): string {
+        return $this->importExport->detectImportFormatFromHeaders($columns);
+    }
+
+    // =========================================================================
+    // Delegation: AdminActions
+    // =========================================================================
+
+    /** @param string $action @param string $sub @return string */
+    function handlePluginAction($action, &$sub) {
+        return $this->adminActions->handlePluginAction($action, $sub);
+    }
+
+    /** @return string */
+    function hanldeTrashAction() {
+        return $this->adminActions->hanldeTrashAction();
+    }
+
+    /** @return void */
+    function handleActionChangeItemsPerRow(): void {
+        $this->adminActions->handleActionChangeItemsPerRow();
+    }
+
+    /** @return void */
+    function handleActionExport(): void {
+        $this->adminActions->handleActionExport();
+    }
+
+    /** @return string|null */
+    function handleActionImportFile() {
+        return $this->adminActions->handleActionImportFile();
+    }
+
+    /** @return void */
+    function updatePerPageOption(int $rows): void {
+        $this->adminActions->updatePerPageOption($rows);
+    }
+
+    /** @return string */
+    function handleActionImportRedirects() {
+        return $this->adminActions->handleActionImportRedirects();
+    }
+
+    /** @return string */
+    function handleDeleteAction() {
+        return $this->adminActions->handleDeleteAction();
+    }
+
+    /** @return string */
+    function handleIgnoreAction() {
+        return $this->adminActions->handleIgnoreAction();
+    }
+
+    /** @return string */
+    function handleLaterAction() {
+        return $this->adminActions->handleLaterAction();
+    }
+
+    /** @param string $sub @param string $action @return string */
+    function handleActionEdit(&$sub, &$action) {
+        return $this->adminActions->handleActionEdit($sub, $action);
+    }
+
+    /** @param string $action @param array<int, int> $ids @return string */
+    function doBulkAction(string $action, array $ids): string {
+        return $this->adminActions->doBulkAction($action, $ids);
+    }
+
+    /** @param string $sub @return void */
+    function doEmptyTrash(string $sub): void {
+        $this->adminActions->doEmptyTrash($sub);
+    }
+
+    /** @return string */
+    function updateRedirectData() {
+        return $this->adminActions->updateRedirectData();
+    }
+
+    /** @return array<string, mixed> */
+    function getRedirectTypeAndDest(): array {
+        return $this->adminActions->getRedirectTypeAndDest();
+    }
+
+    /** @return string */
+    function addAdminRedirect() {
+        return $this->adminActions->addAdminRedirect();
+    }
+
+    /** @return string */
+    function handleActionUndoRegexAutoPromote() {
+        return $this->adminActions->handleActionUndoRegexAutoPromote();
+    }
+
+    // =========================================================================
+    // Delegation: SettingsUpdate
+    // =========================================================================
+
+    /** @param string $pageBeingViewed @return array<string, mixed> */
+    function getTableOptions(string $pageBeingViewed): array {
+        return $this->settingsUpdate->getTableOptions($pageBeingViewed);
+    }
+
+    /** @param array<string, mixed> $postData @param bool $restoreNewlines @return array<string, mixed> */
+    function sanitizePostData(array $postData, bool $restoreNewlines = false): array {
+        return $this->settingsUpdate->sanitizePostData($postData, $restoreNewlines);
+    }
+
+    /** @param string $str @return string */
+    function sanitizeForSQL($str) {
+        return $this->settingsUpdate->sanitizeForSQL($str);
+    }
+
+    /** @return array<string, mixed> */
+    function updateOptionsFromPOST() {
+        return $this->settingsUpdate->updateOptionsFromPOST();
+    }
+
+    /** @param array<string, mixed> $options @return bool */
+    function normalizeSuggestionTemplateOptions(array &$options): bool {
+        return $this->settingsUpdate->normalizeSuggestionTemplateOptions($options);
+    }
+
+    // =========================================================================
+    // Delegation: PageOrdering
+    // =========================================================================
+
+    /** @param string $location @param string $requestedURL @param bool $isCustom404 @return string */
+    public function buildFinalRedirectDestination($location, $requestedURL = '', $isCustom404 = false) {
+        return $this->pageOrdering->buildFinalRedirectDestination($location, $requestedURL, $isCustom404);
+    }
+
+    /** @param array<int, object> $pages @param bool $includeMissingParentPages @return array<int, object> */
+    function orderPageResults(array $pages, bool $includeMissingParentPages = false): array {
+        return $this->pageOrdering->orderPageResults($pages, $includeMissingParentPages);
+    }
+
+    /** @param array<int, object{taxonomy: string, name?: string}> $categoryRows @return array<string, array<int, object{taxonomy: string, name?: string}>> */
+    function getMapOfCustomCategories(array $categoryRows): array {
+        return $this->pageOrdering->getMapOfCustomCategories($categoryRows);
+    }
+
+    /** @param array<int, object> $pages @return array<int, mixed> */
+    function getMissingParentPageIDs(array $pages): array {
+        return $this->pageOrdering->getMissingParentPageIDs($pages);
+    }
+
+    /** @param object $a @param object $b @return int */
+    function compareByID(object $a, object $b): int {
+        return $this->pageOrdering->compareByID($a, $b);
+    }
+
+    /** @param array<int, object> $pages @return array<int, object> */
+    function setDepthAndAddChildren(array $pages): array {
+        return $this->pageOrdering->setDepthAndAddChildren($pages);
+    }
+
+    /** @param array<int, object> $pages @return array<int, object> */
+    function findAllMainPages(array $pages): array {
+        return $this->pageOrdering->findAllMainPages($pages);
+    }
+
+    /** @param array<int, object> $childPages @param array<int, object> $removeThese @return array<int, object> */
+    function removeUsedChildPages(array $childPages, array $removeThese): array {
+        return $this->pageOrdering->removeUsedChildPages($childPages, $removeThese);
+    }
+
+    /** @param array<int, object> $pages @return array<int, object> */
+    function findChildPages(array $pages): array {
+        return $this->pageOrdering->findChildPages($pages);
+    }
+
+    /** @param object $a @param object $b @return int */
+    function sortByTypeThenTitle(object $a, object $b): int {
+        return $this->pageOrdering->sortByTypeThenTitle($a, $b);
+    }
+
+    /** @return string */
+    function emailCaptured404Notification() {
+        return $this->pageOrdering->emailCaptured404Notification();
+    }
+
+    /** @param number $captured404Count @return boolean */
+    function shouldNotifyAboutCaptured404s($captured404Count) {
+        return $this->pageOrdering->shouldNotifyAboutCaptured404s($captured404Count);
+    }
+
+    /** @param string $idAndType @param string $externalLinkURL @return string */
+    function getPageTitleFromIDAndType($idAndType, $externalLinkURL) {
+        return $this->pageOrdering->getPageTitleFromIDAndType($idAndType, $externalLinkURL);
+    }
+
+    // =========================================================================
+    // Methods that remain on PluginLogic (not from traits)
+    // =========================================================================
+
     /** This replaces the current_user_can('administrator') function.
-     *
-     * Use the following to add a filter.
-     * // -------
-     * add_filter( 'abj404_userIsPluginAdmin', 'my_custom_function' );
-     * function my_custom_function( $value ) {
-     * 	  // validate user can access the plugin here.
-     * 	  return $value;
-     * }
-     * // -------
-     *
      * @return bool true if $abj404logic->userIsPluginAdmin()
      */
     function userIsPluginAdmin() {
-    	// avoid an infinite loop.
     	if (ABJ_404_Solution_PluginLogic::$checkingIsAdmin) {
     		return false;
     	}
 
     	ABJ_404_Solution_PluginLogic::$checkingIsAdmin = true;
     	try {
-    		// Capability checks should not trigger DB upgrade checks (which can throw and lock users out).
     		$options = $this->getOptions(true);
     		$f = $this->f;
     		global $current_user;
 
-    		// Baseline: admins have access. Prefer capability checks over role-name checks.
     		$isPluginAdmin = current_user_can('manage_options') || current_user_can('administrator');
     		if (function_exists('is_multisite') && is_multisite() && function_exists('is_super_admin') && is_super_admin()) {
     			$isPluginAdmin = true;
     		}
 
-    		// check extra admins.
     		$extraAdmins = $options['plugin_admin_users'] ?? array();
     		$current_user_name = null;
     		if (isset($current_user)) {
@@ -247,10 +558,8 @@ class ABJ_404_Solution_PluginLogic {
     			}
     		}
 
-    		// do the filter in case someone wants to add one
     		$filtered = apply_filters('abj404_userIsPluginAdmin', $isPluginAdmin);
 
-    		// Log diagnostic details when access is denied, or when the filter changed the result.
     		if (!$filtered || ($filtered !== $isPluginAdmin)) {
     			$extraAdminsSummary = '';
     			$rawExtra = $options['plugin_admin_users'] ?? array();
@@ -274,41 +583,6 @@ class ABJ_404_Solution_PluginLogic {
     	} finally {
     		ABJ_404_Solution_PluginLogic::$checkingIsAdmin = false;
     	}
-    }
-
-    /**
-     * Verify a nonce for admin-link actions, without depending on the browser's Referer header.
-     *
-     * WordPress core's check_admin_referer() can fail in environments that strip referrers; in that
-     * case we fall back to wp_verify_nonce() using the same nonce value.
-     *
-     * @param string $action Nonce action string used in wp_nonce_url()
-     * @param string $queryArg Nonce query arg name (default '_wpnonce')
-     * @return bool
-     */
-    private function verifyLinkNonce($action, $queryArg = '_wpnonce') {
-        // Prefer check_admin_referer when available, but don't die on failure.
-        if (function_exists('check_admin_referer')) {
-            $ok = check_admin_referer($action, $queryArg);
-            if ($ok) {
-                return true;
-            }
-        }
-
-        if (!function_exists('wp_verify_nonce')) {
-            return false;
-        }
-
-        if (!isset($_REQUEST[$queryArg])) {
-            return false;
-        }
-
-        $nonce = sanitize_text_field(wp_unslash($_REQUEST[$queryArg]));
-        if ($nonce === '') {
-            return false;
-        }
-
-        return wp_verify_nonce($nonce, $action) !== false;
     }
 
     /**
@@ -346,7 +620,6 @@ class ABJ_404_Solution_PluginLogic {
      * @return array<string, bool> an array of the capabilities
      */
     static function override_user_can_access_admin_page( $allcaps, $caps, $args, $user ) {
-    	// if it's not an admin page then we don't change anything.
     	if (!is_admin()) {
     		return $allcaps;
     	}
@@ -356,7 +629,6 @@ class ABJ_404_Solution_PluginLogic {
     	$isPluginAdmin = false;
     	$isViewing404AdminPage = false;
 
-    	// is the user supposed to have access?
     	if ($abj404logic->userIsPluginAdmin()) {
     		$isPluginAdmin = true;
     	}
@@ -365,7 +637,6 @@ class ABJ_404_Solution_PluginLogic {
     		$userRequest = ABJ_404_Solution_UserRequest::getInstance();
     		$queryParts = $userRequest !== null ? $userRequest->getQueryString() : null;
 
-    		// are we viewing a 404 plugin page?
     		if (is_string($queryParts) && strpos($queryParts, ABJ404_PP) !== false) {
     			$isViewing404AdminPage = true;
     		}
@@ -379,16 +650,13 @@ class ABJ_404_Solution_PluginLogic {
     }
 
     /** Forward to a real page for queries like ?p=10
-     * @global type $wp_query
      * @param array<string, mixed> $options
      * @return void
      */
     function tryNormalPostQuery(array $options): void {
         global $wp_query;
 
-        // this is for requests like website.com/?p=123
         $query = $wp_query->query;
-        // if it's not set then don't use it.
         if (!isset($query['p'])) {
             return;
         }
@@ -423,10 +691,8 @@ class ABJ_404_Solution_PluginLogic {
     }
 
     /**
-     * @global type $abj404logging
-     * @global type $abj404logic
-     * @param string $urlRequest the requested URL. e.g. /404killer/aboutt
-     * @param string $urlSlugOnly only the slug. e.g. /aboutt
+     * @param string $urlRequest the requested URL
+     * @param string $urlSlugOnly only the slug
      * @return void
      */
     function initializeIgnoreValues(string $urlRequest, string $urlSlugOnly): void {
@@ -438,8 +704,6 @@ class ABJ_404_Solution_PluginLogic {
         $httpUserAgent = array_key_exists('HTTP_USER_AGENT', $_SERVER) ?
                 $this->f->strtolower($_SERVER['HTTP_USER_AGENT']) : '';
 
-        // Note: is_admin() does not mean the user is an admin - it returns true when the user is on an admin screen.
-        // ignore requests that are supposed to be for an admin.
         $adminURLRaw = parse_url(admin_url(), PHP_URL_PATH);
         $adminURL = is_string($adminURLRaw) ? $adminURLRaw : '/wp-admin/';
         if (is_admin() || $this->f->substr($urlRequest, 0, $this->f->strlen($adminURL)) == $adminURL) {
@@ -447,9 +711,6 @@ class ABJ_404_Solution_PluginLogic {
             $ignoreReasonDoNotProcess = 'Admin URL';
         }
 
-        // The user agent Zemanta Aggregator http://www.zemanta.com causes a lot of false positives on
-        // posts that are still drafts and not actually published yet. It's from the plugin "WordPress Related Posts"
-        // by https://www.sovrn.com/.
         $ignoreDontProcess = is_string($options['ignore_dontprocess']) ? $options['ignore_dontprocess'] : '';
         $userAgents = $this->f->explodeNewline($ignoreDontProcess);
 
@@ -461,7 +722,6 @@ class ABJ_404_Solution_PluginLogic {
             }
         }
 
-        // ----- ignore based on regex file path
         $patternsToIgnore = is_array($options['folders_files_ignore_usable']) ? $options['folders_files_ignore_usable'] : array();
         if (!empty($patternsToIgnore)) {
             foreach ($patternsToIgnore as $patternToIgnore) {
@@ -481,8 +741,6 @@ class ABJ_404_Solution_PluginLogic {
         }
         abj_service('request_context')->ignore_donotprocess = is_string($ignoreReasonDoNotProcess) ? $ignoreReasonDoNotProcess : false;
 
-        // -----
-        // ignore and process
         $ignoreDoProcess = is_string($options['ignore_doprocess']) ? $options['ignore_doprocess'] : '';
         $userAgents = $this->f->explodeNewline($ignoreDoProcess);
 
@@ -509,32 +767,22 @@ class ABJ_404_Solution_PluginLogic {
     	return '';
     }
 
-    /** Set a cookie with the requested URL (path only, no query string).
-     * Security: Query strings may contain sensitive data (tokens, auth codes, etc.)
-     * so we only store the path portion of the URL.
-     * @return void
-     */
+    /** @return void */
     function setCookieWithPreviousRequest(): void {
 
         $requested_url_raw = $this->f->normalizeUrlString($_SERVER['REQUEST_URI']);
 
-        // Security: Strip query string to avoid storing sensitive params (tokens, auth codes, etc.)
         $requested_url_cleaned = preg_replace('/\?.*$/', '', $requested_url_raw);
         $requested_url = is_string($requested_url_cleaned) ? $requested_url_cleaned : $requested_url_raw;
 
-    	// this may be used later when displaying suggestions.
     	$cookieName = ABJ404_PP . '_REQUEST_URI';
     	$cookieNameShort = $cookieName . '_SHORT';
     	try {
     		setcookie($cookieName, $requested_url, time() + (60 * 4), "/");
     		setcookie($cookieNameShort, $requested_url, time() + (5), "/");
 
-    		// only set the update_URL if it's not already set.
-    		// this is because multiple redirects might happen and we want to store
-    		// only the user's original requested page.
     		if (!isset($_COOKIE[$cookieName . '_UPDATE_URL']) ||
     				empty($_COOKIE[$cookieName . '_UPDATE_URL'])) {
-    			// Also strip query string from UPDATE_URL for consistency
     			$update_url_raw = $this->f->normalizeUrlString($_SERVER['REQUEST_URI']);
     			$update_url_cleaned = preg_replace('/\?.*$/', '', $update_url_raw);
     			$update_url = is_string($update_url_cleaned) ? $update_url_cleaned : $update_url_raw;
@@ -544,8 +792,6 @@ class ABJ_404_Solution_PluginLogic {
 
     	} catch (Exception $e) {
     		$this->logger->debugMessage("There was an issue setting a cookie: " . $e->getMessage());
-    		// This javascript redirect will only appear if the header redirect did not work for some reason.
-    		// document.cookie = "username=John Doe; expires=Thu, 18 Dec 2013 12:00:00 UTC";
     		$expireTime = date("D, d M Y H:i:s T", time() + (60 * 4));
     		$c = "\n" . '<script>document.cookie = "' . $cookieName . '=' .
      		esc_js($requested_url) .
@@ -556,7 +802,7 @@ class ABJ_404_Solution_PluginLogic {
     	abj_service('request_context')->requested_url = $requested_url;
     }
 
-    /** The passed in reason will be appended to the automatically generated reason.
+    /**
      * @param string $requestedURL
      * @param string $reason
      * @param bool $useUserSpecified404
@@ -568,29 +814,22 @@ class ABJ_404_Solution_PluginLogic {
 
         $options = (is_array($optionsOverride) ? $optionsOverride : $abj404logic->getOptions());
 
-        // ---------------------------------------
-        // Fallback detection: if behavior is 'suggest' but system page was deleted,
-        // flip to theme_default before attempting to redirect.
         $behavior = isset($options['dest404_behavior']) ? $options['dest404_behavior'] : '';
         if ($behavior === 'suggest') {
             $systemPage = ABJ_404_Solution_SystemPage::getInstance();
             if (!$systemPage->systemPageExists()) {
                 $systemPage->handleSystemPageDeleted();
-                // Reload options after flip
                 $options = $this->getOptions(true);
             }
         }
 
-        // if there's a default 404 page specified then use that.
         $dest404pageRaw = isset($options['dest404page']) ? $options['dest404page'] : null;
         $dest404page = is_string($dest404pageRaw) ? $dest404pageRaw : (ABJ404_TYPE_404_DISPLAYED . '|' . ABJ404_TYPE_404_DISPLAYED);
 
         if ($useUserSpecified404 && $this->thereIsAUserSpecified404Page($dest404page)) {
-           	// $idAndType OK on regular 404
            	$permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($dest404page, 0,
            		null, $options);
 
-            // make sure the page exists
             if (!in_array($permalink['status'], array('publish', 'published'))) {
             	$msg = __("The user specified 404 page wasn't found. " .
             			"Please update the user-specified 404 page on the Options page.",
@@ -598,9 +837,6 @@ class ABJ_404_Solution_PluginLogic {
             	$this->logger->infoMessage($msg);
 
             } else {
-            	// dipslay the user specified 404 page.
-
-	            // get the existing redirect before adding a new one.
 	            $redirect = $this->redirectsRepo->getExistingRedirectForURL($requestedURL);
 	            $pType = is_scalar($permalink['type']) ? (string)$permalink['type'] : '';
 	            $pId = is_scalar($permalink['id']) ? (string)$permalink['id'] : '';
@@ -612,20 +848,15 @@ class ABJ_404_Solution_PluginLogic {
 
 	            $this->logsRepo->logRedirectHit($requestedURL, $pLink, 'user specified 404 page. ' . $reason);
 
-	            // set cookie here to remmeber to use a 404 status when displaying the 404 page
 	            setcookie(ABJ404_PP . '_STATUS_404', 'true', time() + 20, "/");
 
-	            // the 404 page...
 	            $abj404logic->forceRedirect(esc_url($pLink),
 	            	(int)$defRedir);
 	            exit;
             }
         }
 
-        // ---------------------------------------
-        // give up. log the 404.
         if (@$options['capture_404'] == '1') {
-            // get the existing redirect before adding a new one.
             $redirect = $this->redirectsRepo->getExistingRedirectForURL($requestedURL);
             $defRedir2 = is_scalar($options['default_redirect']) ? (string)$options['default_redirect'] : '301';
             if (!isset($redirect['id']) || $redirect['id'] == 0) {
@@ -640,10 +871,7 @@ class ABJ_404_Solution_PluginLogic {
         }
     }
 
-    /** Returns true if there is a custom 404 page.
-     * @param string|null $dest404page
-     * @return bool
-     */
+    /** @param string|null $dest404page @return bool */
     function thereIsAUserSpecified404Page($dest404page): bool {
     	if ($dest404page == null) {
     		return false;
@@ -665,7 +893,6 @@ class ABJ_404_Solution_PluginLogic {
             if (is_array($this->resolvedOptionsSkipDbCheck)) {
                 return $this->resolvedOptionsSkipDbCheck;
             }
-            // A full checked set is safe to reuse for skip-db-check callers.
             if (is_array($this->resolvedOptionsWithDbCheck)) {
                 return $this->resolvedOptionsWithDbCheck;
             }
@@ -682,7 +909,6 @@ class ABJ_404_Solution_PluginLogic {
             $options = array();
         }
 
-        // Check to make sure we aren't missing any new options.
         $defaults = $this->getDefaultOptions();
         $missing = false;
         foreach ($defaults as $key => $value) {
@@ -702,8 +928,7 @@ class ABJ_404_Solution_PluginLogic {
             }
         }
 
-        // Normalize suggestion templates so malformed placeholder values never leak to frontend.
-        if ($this->normalizeSuggestionTemplateOptions($options)) {
+        if ($this->settingsUpdate->normalizeSuggestionTemplateOptions($options)) {
             $this->updateOptions($options);
         }
 
@@ -721,21 +946,12 @@ class ABJ_404_Solution_PluginLogic {
     	$old_options = $this->options;
     	update_option('abj404_settings', $options);
     	$this->options = $options;
-        // The persistent options changed, so invalidate per-request resolved caches.
         $this->resolvedOptionsSkipDbCheck = null;
         $this->resolvedOptionsWithDbCheck = null;
     }
 
-    /** Do any maintenance when upgrading to a new version.
-     * @global type $abj404logging
-     * @param array<string, mixed> $options
-     * @return array<string, mixed>
-     */
+    /** @param array<string, mixed> $options @return array<string, mixed> */
     function updateToNewVersion(array $options) {
-        // Flush opcache for critical class files before any upgrade logic runs.
-        // On hosts with aggressive opcache (WP Engine, Flywheel, etc.) stale bytecode
-        // can persist after the plugin's PHP files are replaced on disk, causing
-        // transient fatals from class/method signature mismatches.
         self::invalidateOpcacheForCriticalFiles();
 
         $syncUtils = abj_service('sync_utils');
@@ -750,39 +966,29 @@ class ABJ_404_Solution_PluginLogic {
 
         $returnValue = $options;
 
-        // Fixed: Use finally block to ensure lock is ALWAYS released, even on fatal errors
         try {
             $returnValue = $this->updateToNewVersionAction($options);
 
-        } catch (Throwable $e) {  // Fixed: Catch Throwable (Exception + Error) instead of just Exception
+        } catch (Throwable $e) {
             $this->logger->errorMessage("Error updating to new version. ", $e instanceof \Exception ? $e : null);
-            throw $e;  // Re-throw to propagate the error
+            throw $e;
         } finally {
-            // This ALWAYS executes, even on fatal errors or exceptions
             $syncUtils->synchronizerReleaseLock($uniqueID, $synchronizedKeyFromUser);
         }
 
-        // update the permalink cache because updating the plugin version may affect it.
         $permalinkCache = abj_service('permalink_cache');
         $permalinkCache->updatePermalinkCache(1);
 
         return $returnValue;
     }
 
-    /** Do any maintenance when upgrading to a new version.
-     * @global type $abj404logic
-     * @global type $abj404logging
-     * @global type $wpdb
-     * @param array<string, mixed> $options
-     * @return array<string, mixed>
-     */
+    /** @param array<string, mixed> $options @return array<string, mixed> */
     function updateToNewVersionAction(array $options) {
     	global $wpdb;
 
         if (!is_array($options)) {
             $options = array();
         }
-        // Ensure all expected keys exist even when called with partial settings (tests/migrations).
         $options = array_merge($this->getDefaultOptions(), $options);
 
         $currentDBVersion = "(unknown)";
@@ -792,28 +998,18 @@ class ABJ_404_Solution_PluginLogic {
         $this->logger->infoMessage(self::$uniqID . ": Updating database version from " .
         	$currentDBVersion . " to " . ABJ404_VERSION . " (begin).");
 
-        // remove old log files. added in 2.28.0
         $fileUtils = abj_service('functions');
         $fileUtils->deleteDirectoryRecursively(ABJ404_PATH . 'temp/');
 
-        // wp_abj404_logsv2 exists since 1.7.
         $upgradesEtc = abj_service('database_upgrades');
-        // Route the upgrade path through the canonical self-heal prologue so
-        // SelfHealingPrologueReachabilityTest can statically prove that
-        // upgrades reach the same recovery primitives as the daily cron.
-        // The prologue is idempotent and cheap when tables already exist;
-        // on installs missing a table it acts as a pre-upgrade repair pass.
         $upgradesEtc->runSelfHealPrologue();
         $upgradesEtc->createDatabaseTables(true);
 
-        // abj404_duplicateCronAction is no longer needed as of 1.7.
         wp_clear_scheduled_hook('abj404_duplicateCronAction');
 
         ABJ_404_Solution_PluginLogic::doUnregisterCrons();
-        // added in 1.8.2
         ABJ_404_Solution_PluginLogic::doRegisterCrons();
 
-        // since 1.9.0. ignore_doprocess add SeznamBot, Pinterestbot, UptimeRobot and "Slurp" -> "Yahoo! Slurp"
         if (version_compare($currentDBVersion, '1.9.0') < 0) {
             $ignoreDoProcessStr = is_string($options['ignore_doprocess']) ? $options['ignore_doprocess'] : '';
             $userAgents = $this->f->explodeNewline($ignoreDoProcessStr);
@@ -844,33 +1040,26 @@ class ABJ_404_Solution_PluginLogic {
             $this->updateOptions($options);
         }
 
-        // move to the new log table
         if (version_compare($currentDBVersion, '1.8.0') < 0) {
             $query = "SHOW TABLES LIKE '{wp_abj404_logs}'";
             $result = $this->dbCore->queryAndGetResults($query);
             $rows = $result['rows'];
 
-            // make sure empty() only sees a variable and not a function for older PHP versions, due to
-            // https://stackoverflow.com/a/2173318 and
-            // https://wordpress.org/support/topic/fatal-error-will-latest-release/
             $filteredRows = is_array($rows) ? array_filter($rows) : array();
             if (!empty($filteredRows)) {
                 $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/migrateToNewLogsTable.sql");
                 $query = $this->dbCore->doTableNameReplacements($query);
                 $result = $this->dbCore->queryAndGetResults($query);
 
-                // if anything was successfully imported then delete the old table.
                 if ($result['rows_affected'] > 0) {
                     $this->logger->infoMessage($result['rows_affected'] .
                             ' log rows were migrated to the new table structre.');
-                    // log the rows inserted/migrated.
                     $this->dbCore->queryAndGetResults('drop table ' . $this->dbCore->getLowercasePrefix() . 'abj404_logs');
                 }
             }
         }
 
         if (version_compare($currentDBVersion, '2.18.0') < 0) {
-            // add .well-known/acme-challenge/*, wp-content/themes/*, wp-content/plugins/* to folders_files_ignore
             $foldersIgnoreStr = is_string($options['folders_files_ignore']) ? $options['folders_files_ignore'] : '';
             $originalItems = $this->f->explodeNewline($foldersIgnoreStr);
 
@@ -886,10 +1075,8 @@ class ABJ_404_Solution_PluginLogic {
             $this->updateOptions($options);
         }
 
-        // add the second part of the default destination page.
         $dest404page = is_string($options['dest404page']) ? $options['dest404page'] : '';
         if ($this->f->strpos($dest404page, '|') === false) {
-            // not found
             if ($dest404page == '0') {
                 $dest404page .= "|" . ABJ404_TYPE_404_DISPLAYED;
             } else {
@@ -899,17 +1086,12 @@ class ABJ_404_Solution_PluginLogic {
             $this->updateOptions($options);
         }
 
-        // Since 3.0.7: Mark existing users as having completed setup wizard
-        // This prevents the wizard from showing to users upgrading from earlier versions
-        // Important: Skip this for NEW installs (where DB_VERSION is 0.0.0) so they see the wizard
         // @cache-write-audit: opt-out — stores a setup-completion date marker, not a query result
         if ($currentDBVersion !== '0.0.0' && version_compare($currentDBVersion, '3.0.7') < 0) {
             update_option('abj404_setup_completed', gmdate('Y-m-d'));
             $this->logger->infoMessage('Marked setup wizard as completed for existing user.');
         }
 
-        // Since 3.0.9: Migrate suggest_minscore to suggest_minscore_enabled checkbox
-        // If user had suggest_minscore set from an older version, enable the checkbox to preserve their behavior
         if (!isset($options['suggest_minscore_enabled'])) {
             if (isset($options['suggest_minscore']) && is_scalar($options['suggest_minscore']) && intval($options['suggest_minscore']) >= 25) {
                 $options['suggest_minscore_enabled'] = '1';
@@ -920,8 +1102,6 @@ class ABJ_404_Solution_PluginLogic {
             $this->updateOptions($options);
         }
 
-        // Since 4.1.0: Migrate dest404page to dest404_behavior tile setting.
-        // Existing installs may have a custom page set. Map it to the new behavior.
         if (!isset($options['dest404_behavior']) || $options['dest404_behavior'] === 'theme_default') {
             $dest = is_string($options['dest404page']) ? $options['dest404page'] : '';
             if ($dest === '0|' . ABJ404_TYPE_404_DISPLAYED || $dest === (string)ABJ404_TYPE_404_DISPLAYED || $dest === '') {
@@ -929,7 +1109,6 @@ class ABJ_404_Solution_PluginLogic {
             } else if ($dest === '0|' . ABJ404_TYPE_HOME) {
                 $options['dest404_behavior'] = 'homepage';
             } else if ($dest !== '') {
-                // Check if it's a system page (from a previous install of this feature)
                 $parts = explode('|', $dest);
                 $pageId = isset($parts[0]) ? (int)$parts[0] : 0;
                 if ($pageId > 0 && ABJ_404_Solution_SystemPage::isSystemPage($pageId)) {
@@ -948,9 +1127,7 @@ class ABJ_404_Solution_PluginLogic {
         return $options;
     }
 
-    /**
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     function getDefaultOptions() {
         $options = array(
             'default_redirect' => '301',
@@ -1037,10 +1214,7 @@ class ABJ_404_Solution_PluginLogic {
         return $options;
     }
 
-    /**
-     * @param array<string, mixed>|null $options
-     * @return array<string, mixed>
-     */
+    /** @param array<string, mixed>|null $options @return array<string, mixed> */
     function doUpdateDBVersionOption($options = null): array {
         if ($options == null) {
         	$options = $this->getOptions(true);
@@ -1053,13 +1227,7 @@ class ABJ_404_Solution_PluginLogic {
         return $options;
     }
 
-    /**
-     * Invalidate opcache entries for critical class files so that PHP loads
-     * fresh bytecode after a plugin upgrade.  Prevents transient fatals on
-     * hosts with aggressive opcache settings (WP Engine, Flywheel, etc.).
-     *
-     * @return string[] File paths that were successfully invalidated.
-     */
+    /** @return string[] File paths that were successfully invalidated. */
     static function invalidateOpcacheForCriticalFiles(): array {
         if (!function_exists('opcache_invalidate')) {
             return [];
@@ -1087,11 +1255,8 @@ class ABJ_404_Solution_PluginLogic {
         return "?page=" . ABJ404_PP . "&subpage=abj404_debugfile";
     }
 
-    /** Get the "/commentpage" and the "?query=part" of the URL.
-     * @return string */
+    /** @return string */
     function getCommentPartAndQueryPartOfRequest() {
-        // Fast path for common redirects: no query string and no comment-page segment.
-        // This avoids UserRequest initialization/parsing for simple URLs.
         $requestUri = isset($_SERVER['REQUEST_URI']) ? (string)$_SERVER['REQUEST_URI'] : '';
         if ($requestUri !== '' &&
                 strpos($requestUri, '?') === false &&
@@ -1110,8 +1275,7 @@ class ABJ_404_Solution_PluginLogic {
     	return (is_string($commentPart) ? $commentPart : '') . $queryParts;
     }
 
-    /** First try a wp_redirect. Then try a redirect with JavaScript. The wp_redirect usually works, but doesn't
-     * if some other plugin has already output any kind of data.
+    /**
      * @param string $location
      * @param int $status
      * @param int|string $type only 0 for sending to a 404 page
@@ -1120,7 +1284,7 @@ class ABJ_404_Solution_PluginLogic {
      * @return bool true if the user is sent to the default 404 page.
      */
     function forceRedirect(string $location, int $status = 302, $type = -1, string $requestedURL = '', bool $isCustom404 = false): bool {
-        // 410 Gone: send status header then render the gone410.html template and exit.
+        // 410 Gone
         if ($status === 410) {
             status_header(410);
             $templatePath = __DIR__ . '/html/gone410.html';
@@ -1146,7 +1310,7 @@ class ABJ_404_Solution_PluginLogic {
             exit;
         }
 
-        // 451 Unavailable For Legal Reasons: send status header then render the gone451.html template and exit.
+        // 451 Unavailable For Legal Reasons
         if ($status === 451) {
             status_header(451);
             $templatePath = __DIR__ . '/html/gone451.html';
@@ -1172,7 +1336,7 @@ class ABJ_404_Solution_PluginLogic {
             exit;
         }
 
-        // Meta Refresh: emit an HTML page with <meta http-equiv="refresh"> and exit.
+        // Meta Refresh
         if ($status === 0 && $location !== '') {
             status_header(200);
             $templatePath = __DIR__ . '/html/metaRefresh.html';
@@ -1184,7 +1348,7 @@ class ABJ_404_Solution_PluginLogic {
                         array(
                             esc_url($location),
                             '0',
-                            esc_html__('Redirecting…', '404-solution'),
+                            esc_html__('Redirecting...', '404-solution'),
                             esc_html__('You are being redirected. Click the link if not redirected automatically.', '404-solution'),
                         ),
                         $templateContent
@@ -1211,7 +1375,6 @@ class ABJ_404_Solution_PluginLogic {
     	$slashPos2 = $this->f->strpos($locationNoHome, '/');
     	$locationNoHome = ($slashPos2 !== false)
     		? $this->f->substr($locationNoHome, $slashPos2) : '/';
-    	// maybe avoid infinite redirects.
     	if (!empty($previousRequest)) {
     		if ($previousRequest == $finalDestNoHome && $previousRequest != $locationNoHome) {
     			$this->logger->infoMessage("Maybe avoided infite redirects to/from: " .
@@ -1225,7 +1388,6 @@ class ABJ_404_Solution_PluginLogic {
     		}
     	}
 
-    	// if the destination is the default 404 page then send the user there.
     	if ($type == ABJ404_TYPE_404_DISPLAYED) {
     		$abj404logic = abj_service('plugin_logic');
     		$abj404logic->sendTo404Page($requestedURL, '', false);
@@ -1233,21 +1395,16 @@ class ABJ_404_Solution_PluginLogic {
     		return true;
     	}
 
-    	// try a normal redirect using a header.
     	$this->setCookieWithPreviousRequest();
-        // If headers can be sent, do a normal header redirect and exit immediately.
-        // Only fall back to JS redirect when headers are already sent.
         if (!headers_sent()) {
             if (function_exists('abj404_benchmark_emit_headers')) {
                 abj404_benchmark_emit_headers();
             }
-            // Prefer wp_safe_redirect for same-host redirects to avoid header-injection edge cases,
-            // but allow external redirects (plugin supports external redirect destinations).
             $useSafe = false;
             if (function_exists('wp_safe_redirect')) {
                 $destHost = parse_url($finalDestination, PHP_URL_HOST);
                 if ($destHost === null || $destHost === false || $destHost === '') {
-                    $useSafe = true; // relative URL
+                    $useSafe = true;
                 } else {
                     $homeHost = parse_url(home_url(), PHP_URL_HOST);
                     if (is_string($homeHost) && $homeHost !== '' && strtolower($homeHost) === strtolower($destHost)) {
@@ -1267,8 +1424,6 @@ class ABJ_404_Solution_PluginLogic {
             exit;
         }
 
-        // JS fallback redirect for the rare case some other plugin/theme already output content.
-        // Use wp_json_encode to safely encode URL for JavaScript to prevent XSS.
         if (function_exists('abj404_benchmark_emit_headers')) {
             abj404_benchmark_emit_headers();
         }

@@ -1,14 +1,101 @@
 <?php
 
+
 if (!defined('ABSPATH')) {
     exit;
 }
 
 /**
  * Admin action handlers: trash, delete, ignore, later, edit, bulk actions, empty trash.
- * Used by ABJ_404_Solution_PluginLogic via `use`.
+ * Standalone class extracted from PluginLogicTrait_AdminActions.
  */
-trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
+class ABJ_404_Solution_PluginLogicAdminActions {
+
+    /** @var ABJ_404_Solution_Functions */
+    private $f;
+
+    /** @var ABJ_404_Solution_Logging */
+    private $logger;
+
+    /** @var ABJ_404_Solution_RedirectsRepositoryInterface */
+    private $redirectsRepo;
+
+    /** @var ABJ_404_Solution_ViewBuildOrchestratorInterface */
+    private $viewBuild;
+
+    /** @var ABJ_404_Solution_ViewReadServiceInterface */
+    private $viewRead;
+
+    /** @var ABJ_404_Solution_ContentRepositoryInterface */
+    private $contentRepo;
+
+    /** @var ABJ_404_Solution_DatabaseCoreInterface */
+    private $dbCore;
+
+    /** @var ABJ_404_Solution_DataAccess */
+    private $dao;
+
+    /** @var ABJ_404_Solution_PluginLogicUrlNormalization */
+    private $urlNormalization;
+
+    /** @var ABJ_404_Solution_PluginLogic */
+    private $pluginLogic;
+
+    /**
+     * @param ABJ_404_Solution_Functions $f
+     * @param ABJ_404_Solution_Logging $logger
+     * @param ABJ_404_Solution_RedirectsRepositoryInterface $redirectsRepo
+     * @param ABJ_404_Solution_ViewBuildOrchestratorInterface $viewBuild
+     * @param ABJ_404_Solution_ViewReadServiceInterface $viewRead
+     * @param ABJ_404_Solution_ContentRepositoryInterface $contentRepo
+     * @param ABJ_404_Solution_DatabaseCoreInterface $dbCore
+     * @param ABJ_404_Solution_DataAccess $dao
+     * @param ABJ_404_Solution_PluginLogicUrlNormalization $urlNormalization
+     * @param ABJ_404_Solution_PluginLogic $pluginLogic
+     */
+    function __construct($f, $logger, $redirectsRepo, $viewBuild, $viewRead, $contentRepo, $dbCore, $dao, $urlNormalization, $pluginLogic) {
+        $this->f = $f;
+        $this->logger = $logger;
+        $this->redirectsRepo = $redirectsRepo;
+        $this->viewBuild = $viewBuild;
+        $this->viewRead = $viewRead;
+        $this->contentRepo = $contentRepo;
+        $this->dbCore = $dbCore;
+        $this->dao = $dao;
+        $this->urlNormalization = $urlNormalization;
+        $this->pluginLogic = $pluginLogic;
+    }
+
+    /**
+     * Verify a nonce for admin-link actions, without depending on the browser's Referer header.
+     *
+     * @param string $action Nonce action string used in wp_nonce_url()
+     * @param string $queryArg Nonce query arg name (default '_wpnonce')
+     * @return bool
+     */
+    private function verifyLinkNonce($action, $queryArg = '_wpnonce') {
+        if (function_exists('check_admin_referer')) {
+            $ok = check_admin_referer($action, $queryArg);
+            if ($ok) {
+                return true;
+            }
+        }
+
+        if (!function_exists('wp_verify_nonce')) {
+            return false;
+        }
+
+        if (!isset($_REQUEST[$queryArg])) {
+            return false;
+        }
+
+        $nonce = sanitize_text_field(wp_unslash($_REQUEST[$queryArg]));
+        if ($nonce === '') {
+            return false;
+        }
+
+        return wp_verify_nonce($nonce, $action) !== false;
+    }
 
     /** Do the passed in action and return the associated message.
      * @param string $action
@@ -22,7 +109,6 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
 
         if ($action == "updateOptions") {
         	if (wp_verify_nonce($_POST['nonce'], 'abj404UpdateOptions') && is_admin()) {
-                // delete the debug file and lose all changes, or
                 if (array_key_exists('deleteDebugFile', $_POST) && $_POST['deleteDebugFile']) {
                     $filepath = $this->logger->getDebugFilePath();
                     if (!file_exists($filepath)) {
@@ -35,7 +121,6 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
                     return $message;
                 }
 
-                // save all changes. saveOptions, saveSettings
                 $sub = "abj404_options";
             } else {
                 $this->logger->debugMessage("Unexpected result. How did we get here? is_admin: " .
@@ -88,27 +173,22 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
             }
         } else if ($action == "rebuildNgramCache") {
             if (check_admin_referer('abj404_rebuildNgramCache') && is_admin()) {
-                // Server-side request deduplication to prevent race conditions
                 $userId = get_current_user_id();
                 $transientKey = 'abj404_ngram_rebuild_request_' . $userId;
                 $recentRequest = get_transient($transientKey);
 
                 if ($recentRequest) {
-                    // Duplicate request within 10 seconds - likely from rapid button clicks
                     $message = __('N-gram cache rebuild is already scheduled or in progress. Please wait for it to complete.', '404-solution');
                 } else {
-                    // Set transient to prevent duplicate requests for 10 seconds
                     set_transient($transientKey, time(), 10);
 
                     $dbUpgrades = abj_service('database_upgrades');
 
-                    // Use async rebuild to avoid timeouts on large sites
                     $scheduled = $dbUpgrades->scheduleNGramCacheRebuild();
 
                     if ($scheduled) {
                         $message = __('N-gram cache rebuild has been scheduled and will run in the background. This may take several minutes on large sites. You can continue using the plugin normally.', '404-solution');
                     } else {
-                        // Check if already running
                         $nextScheduled = wp_next_scheduled('abj404_rebuild_ngram_cache_hook');
                         if ($nextScheduled) {
                             $message = __('N-gram cache rebuild is already scheduled or in progress. Please wait for it to complete.', '404-solution');
@@ -178,7 +258,6 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
     function hanldeTrashAction() {
 
         $message = "";
-        // Handle Trash Functionality
         if (isset($_GET['trash'])) {
             if (is_admin() && $this->verifyLinkNonce('abj404_trashRedirect')) {
                 $trash = "";
@@ -196,7 +275,6 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
                 $id = absint($_GET['id']);
                 $message = $this->redirectsRepo->moveRedirectsToTrash($id, $trash);
                 if ($message == "") {
-                    // Captured URLs: restoring from the Captured->Trash view should return to Captured (not Ignored/Later).
                     $subpage = isset($_GET['subpage']) ? sanitize_text_field(wp_unslash($_GET['subpage'])) : '';
                     $filter = isset($_GET['filter']) ? intval($_GET['filter']) : 0;
                     if ($trash == 0 && $subpage === 'abj404_captured' && $filter === ABJ404_TRASH_FILTER) {
@@ -225,8 +303,8 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
     /** @return void */
     function handleActionChangeItemsPerRow(): void {
 
-        if ($this->f->getPostOrGetSanitize('action') == 'changeItemsPerRow' && $this->userIsPluginAdmin()) {
-            check_admin_referer('abj404_changeItemsPerRow'); // verify nonce for CSRF protection
+        if ($this->f->getPostOrGetSanitize('action') == 'changeItemsPerRow' && $this->pluginLogic->userIsPluginAdmin()) {
+            check_admin_referer('abj404_changeItemsPerRow');
             $this->updatePerPageOption(absint($this->f->getPostOrGetSanitize('perpage')));
         }
     }
@@ -234,21 +312,18 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
     /** @return void */
     function handleActionExport(): void {
 
-        if (($this->f->getPostOrGetSanitize('action') == 'exportRedirects') && $this->userIsPluginAdmin()) {
-            check_admin_referer('abj404_exportRedirects'); // this verifies the nonce
-            $this->doExport();
+        if (($this->f->getPostOrGetSanitize('action') == 'exportRedirects') && $this->pluginLogic->userIsPluginAdmin()) {
+            check_admin_referer('abj404_exportRedirects');
+            $this->pluginLogic->doExport();
         }
     }
 
     /** @return string|null */
     function handleActionImportFile() {
 
-        if (($this->f->getPostOrGetSanitize('action') == 'importRedirectsFile') && $this->userIsPluginAdmin()) {
-            check_admin_referer('abj404_importRedirectsFile'); // this verifies the nonce (must match View.php form nonce)
-            $result = $this->doImportFile();
-            // Admin-initiated mutation: force a fresh view_done rebuild before
-            // the next AJAX fetch so the newly-imported rows appear on the
-            // redirects table immediately, not on the next cron rebuild.
+        if (($this->f->getPostOrGetSanitize('action') == 'importRedirectsFile') && $this->pluginLogic->userIsPluginAdmin()) {
+            check_admin_referer('abj404_importRedirectsFile');
+            $result = $this->pluginLogic->doImportFile();
             $this->viewBuild->markViewDoneInvalidatedByAdminMutation();
             return $result;
         }
@@ -261,15 +336,12 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
         $showRows = max($rows, ABJ404_OPTION_MIN_PERPAGE);
         $showRows = min($showRows, ABJ404_OPTION_MAX_PERPAGE);
 
-        $options = $this->getOptions();
+        $options = $this->pluginLogic->getOptions();
         $options['perpage'] = $showRows;
-        $this->updateOptions($options);
+        $this->pluginLogic->updateOptions($options);
     }
 
     /**
-     *
-     * @global type $abj404dao
-     * @global type $abj404logging
      * @return string
      */
     function handleActionImportRedirects() {
@@ -293,9 +365,6 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
                 } else {
                     $rowsAffected = is_scalar($result['rows_affected']) ? (string)$result['rows_affected'] : '0';
                     $message = sprintf(__("Records imported: %s", '404-solution'), esc_html($rowsAffected));
-                    // Admin-initiated mutation: force a fresh view_done rebuild
-                    // before the next AJAX fetch so the newly-imported rows
-                    // appear on the redirects table immediately.
                     $this->viewBuild->markViewDoneInvalidatedByAdminMutation();
                 }
 
@@ -309,13 +378,11 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
     }
 
     /** Delete redirects.
-     * @global type $abj404dao
      * @return string
      */
     function handleDeleteAction() {
         $message = "";
 
-        //Handle Delete Functionality
         if (array_key_exists('remove', $_GET) && @$_GET['remove'] == 1) {
             if (is_admin() && $this->verifyLinkNonce('abj404_removeRedirect')) {
                 if ($this->f->regexMatch('[0-9]+', $_GET['id'])) {
@@ -330,15 +397,12 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
     }
 
     /**
-     * Generic handler for updating redirect status based on URL parameters.
-     * Eliminates duplication between handleIgnoreAction and handleLaterAction.
-     *
-     * @param string $paramName The $_GET parameter name ('ignore' or 'later')
-     * @param string $nonceAction The nonce action name for security verification
+     * @param string $paramName The $_GET parameter name
+     * @param string $nonceAction The nonce action name
      * @param int $activeStatus The status constant to use when action=1
-     * @param string $errorActionName Action name for error messages ('ignore' or 'organize later')
-     * @param string $successActionName Action name for success messages ('ignored' or 'organize later')
-     * @return string Success/error message or empty string
+     * @param string $errorActionName Action name for error messages
+     * @param string $successActionName Action name for success messages
+     * @return string
      */
     private function handleStatusUpdate($paramName, $nonceAction, $activeStatus, $errorActionName, $successActionName) {
         $message = "";
@@ -382,22 +446,17 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
         return $message;
     }
 
-    /** Set a redirect as ignored.
-     * @return string
-     */
+    /** @return string */
     function handleIgnoreAction() {
         return $this->handleStatusUpdate('ignore', 'abj404_ignore404', ABJ404_STATUS_IGNORED, 'ignore', 'ignored');
     }
 
-    /** Set a redirect as "organize later".
-     * @return string
-     */
+    /** @return string */
     function handleLaterAction() {
         return $this->handleStatusUpdate('later', 'abj404_organizeLater', ABJ404_STATUS_LATER, 'organize later', 'organize later');
     }
 
     /** Edit redirect data.
-     * @global type $abj404dao
      * @param string $sub
      * @param string $action
      * @return string
@@ -405,7 +464,6 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
     function handleActionEdit(&$sub, &$action) {
         $message = "";
 
-        //Handle edit posts
         if (array_key_exists('action', $_POST) && $_POST['action'] == "editRedirect") {
             $id = $this->f->getPostOrGetSanitize('id');
             $ids = $this->f->getPostOrGetSanitize('ids_multiple');
@@ -413,22 +471,17 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
                 if (is_admin() && $this->verifyLinkNonce('abj404editRedirect')) {
                     $message = $this->updateRedirectData();
                     if ($message == "") {
-                        // Return user to the page they came from instead of always going to redirects page
                         $source_page = $this->f->getPostOrGetSanitize('source_page');
 
-                        // Validate source_page is a known tab
                         $valid_tabs = array('abj404_redirects', 'abj404_captured', 'abj404_logs',
                                           'abj404_stats', 'abj404_tools', 'abj404_options');
                         if ($source_page === '' || !in_array($source_page, $valid_tabs)) {
-                            // Default to redirects page if source_page is missing or invalid
                             $source_page = 'abj404_redirects';
                         }
 
-                        // Build redirect URL with source page and preserved table options
                         $redirect_url = "?page=" . ABJ404_PP . "&subpage=" . $source_page;
-                        $redirect_url .= "&updated=1"; // Add flag to show success message
+                        $redirect_url .= "&updated=1";
 
-                        // Preserve table options
                         $source_filter = $this->f->getPostOrGetSanitize('source_filter', '');
                         if ($source_filter !== '' && $source_filter !== '0') {
                             $redirect_url .= "&filter=" . urlencode($source_filter);
@@ -448,10 +501,7 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
                             $redirect_url .= "&paged=" . urlencode($source_paged);
                         }
 
-                        // Perform redirect using Post/Redirect/Get pattern
                         wp_safe_redirect(admin_url('admin.php' . $redirect_url));
-                        // Note: Intentionally not calling exit() to allow for testability
-                        // WordPress will handle the redirect on next page load
                         return "";
                     } else {
                         $message .= __('Error: Unable to update redirect data.', '404-solution');
@@ -464,15 +514,12 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
     }
 
     /**
-     * @global type $abj404dao
      * @param string $action
      * @param array<int, int> $ids
      * @return string
      */
     function doBulkAction(string $action, array $ids): string {
         $message = "";
-
-        // nonce already verified.
 
         $this->logger->debugMessage("In doBulkAction. Action: " .
                 esc_html($action == '' ? '(none)' : $action) . ", ids: " . wp_kses_post((string)json_encode($ids)));
@@ -483,14 +530,11 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
             $status = 0;
             if ($action == "bulkignore") {
                 $status = ABJ404_STATUS_IGNORED;
-
             } else if ($action == "bulkcaptured") {
                 $status = ABJ404_STATUS_CAPTURED;
-
             } else if ($action == "bulklater") {
                 $status = ABJ404_STATUS_LATER;
             }
-            // else: bulk_trash_restore - don't change the status.
 
             $count = 0;
             foreach ($ids as $id) {
@@ -509,7 +553,6 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
             } else if ($action == "bulklater") {
                 $message = $count . " " . __('URL(s) marked as Later.', '404-solution');
             } else {
-                // bulk_trash_restore
                 $message = $count . " " . __('URL(s) restored.', '404-solution');
             }
 
@@ -539,7 +582,6 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
     }
 
     /**
-     * This is for both empty trash buttons (page redirects and captured 404 URLs).
      * @param string $sub
      * @return void
      */
@@ -567,14 +609,12 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
         $result = $this->dbCore->queryAndGetResults($query);
         $this->logger->debugMessage("doEmptyTrash deleted " . $result['rows_affected'] . " rows total. (" . $sub . ")");
 
-        // Invalidate status counts cache after bulk delete
         $this->viewRead->invalidateStatusCountsCache();
 
         $this->dbCore->queryAndGetResults("optimize table {wp_abj404_redirects}");
     }
 
     /**
-     * @global type $abj404dao
      * @return string
      */
     function updateRedirectData() {
@@ -619,16 +659,13 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
                 $statusType = ABJ404_STATUS_REGEX;
             }
 
-            // Parse scheduled redirect dates from POST data
             $startDateRaw = isset($_POST['redirect_start_date']) && is_string($_POST['redirect_start_date']) ? trim($_POST['redirect_start_date']) : '';
             $endDateRaw = isset($_POST['redirect_end_date']) && is_string($_POST['redirect_end_date']) ? trim($_POST['redirect_end_date']) : '';
             $startTs = ($startDateRaw !== '') ? strtotime($startDateRaw . ' 00:00:00') : null;
             $endTs = ($endDateRaw !== '') ? strtotime($endDateRaw . ' 23:59:59') : null;
-            // Treat strtotime failures as null
             if ($startTs === false) { $startTs = null; }
             if ($endTs === false) { $endTs = null; }
 
-            // Sanitize and collect conditions from POST data.
             $rawConditions = (isset($_POST['conditions']) && is_array($_POST['conditions']))
                 ? $_POST['conditions'] : [];
             $sanitizedConditions = [];
@@ -668,16 +705,9 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
                 ];
             }
 
-            // decide whether we're updating one or multiple redirects.
             if ($fromURL != "") {
                 $id = isset($_POST['id']) && is_scalar($_POST['id']) ? (int)$_POST['id'] : 0;
                 $code = isset($_POST['code']) && is_string($_POST['code']) ? $_POST['code'] : '';
-                // Server-side regex auto-promotion. Mirrors the JS detector
-                // at includes/ajax/redirect_to_ajax.js so a paste-and-submit
-                // with JS disabled (or any path the browser does not reach)
-                // still flips MANUAL to REGEX when the from_url contains
-                // unambiguous regex metachars. Also applies the bare-`*`
-                // to `.*` glob fixup so the stored pattern compiles.
                 $originalFromURL = $fromURL;
                 $autoPromote = $this->maybeAutoPromoteRegex($statusType, $fromURL);
                 $statusType = $autoPromote['statusType'];
@@ -688,14 +718,12 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
                     $this->saveRegexAutoPromoteNotice($id, $originalFromURL, $fromURL, $autoPromote['urlRewritten']);
                 }
 
-                // Save conditions only for single-redirect edits (bulk edit has no conditions UI).
                 if ($id > 0) {
                     $this->redirectsRepo->saveRedirectConditions($id, $sanitizedConditions);
                 }
                 $this->viewBuild->markViewDoneInvalidatedByAdminMutation();
 
             } else if ($ids_multiple != "") {
-                // get the redirect data for each ID.
                 $redirects_multiple = $this->redirectsRepo->getRedirectsByIDs($ids_multiple);
                 $code = isset($_POST['code']) && is_string($_POST['code']) ? $_POST['code'] : '';
                 foreach ($redirects_multiple as $redirect) {
@@ -731,7 +759,6 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
         $response['message'] = "";
         $userEnteredURL = '';
 
-        // 410 Gone and 451 Unavailable For Legal Reasons have no destination URL — bypass destination validation.
         $postedCode = isset($_POST['code']) && is_scalar($_POST['code']) ? (string)$_POST['code'] : '';
         if ($postedCode === '410' || $postedCode === '451') {
             $response['type'] = (string)ABJ404_TYPE_HOME;
@@ -747,7 +774,7 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
         if ($_POST['redirect_to_data_field_id'] == ABJ404_TYPE_EXTERNAL . '|' . ABJ404_TYPE_EXTERNAL) {
             $rawEnteredURLResult = $this->f->getPostOrGetSanitizeUrl('redirect_to_user_field');
             $rawEnteredURL = is_string($rawEnteredURLResult) ? $rawEnteredURLResult : null;
-            $userEnteredURL = $this->normalizeExternalDestinationUrl($rawEnteredURL);
+            $userEnteredURL = $this->urlNormalization->normalizeExternalDestinationUrl($rawEnteredURL);
             $userEnteredURL = esc_url($userEnteredURL, array('http', 'https'));
             if ($userEnteredURL == "") {
                 $response['message'] = __('Error: You selected external URL but did not enter a URL.', '404-solution') . "<BR/>";
@@ -759,14 +786,11 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
                 $response['message'] = __("Error: External URL doesn't contain ://", '404-solution') . "<BR/>";
 
             } else {
-                // Validate that URL uses safe protocol (http/https only)
                 $parsed_url = parse_url($userEnteredURL);
                 if (!is_array($parsed_url) || !isset($parsed_url['scheme']) || !in_array(strtolower($parsed_url['scheme']), array('http', 'https'))) {
                     $response['message'] = __('Error: External URL must use http:// or https:// protocol only.', '404-solution') . "<BR/>";
                 }
 
-                // Allow filtering of external redirect URLs for additional validation
-                // Usage: add_filter('abj404_validate_external_redirect', function($url) { /* validation */ return $url; });
                 $validated_url = apply_filters('abj404_validate_external_redirect', $userEnteredURL);
                 if ($validated_url === false) {
                     $response['message'] = __('Error: External redirect URL failed validation.', '404-solution') . "<BR/>";
@@ -783,7 +807,6 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
 
         if ($_POST['redirect_to_data_field_id'] == ABJ404_TYPE_EXTERNAL . '|' . ABJ404_TYPE_EXTERNAL) {
             $response['type'] = ABJ404_TYPE_EXTERNAL;
-            // Use the sanitized $userEnteredURL instead of raw POST
             $response['dest'] = $userEnteredURL;
         } else {
             if (count($info) == 2) {
@@ -800,7 +823,6 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
     }
 
     /**
-     * @global type $abj404dao
      * @return string
      */
     function addAdminRedirect() {
@@ -812,7 +834,7 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
         }
 
         $manualURL = isset($_POST['manual_redirect_url']) ? wp_unslash($_POST['manual_redirect_url']) : '';
-        $manualURL = $this->normalizeUserProvidedPath($manualURL);
+        $manualURL = $this->urlNormalization->normalizeUserProvidedPath($manualURL);
         if ($this->f->substr($manualURL, 0, 1) != "/") {
             $message .= __('Error: URL must start with /', '404-solution') . "<BR/>";
             return $message;
@@ -830,7 +852,6 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
         $postedCodeForCheck2 = isset($_POST['code']) && is_scalar($_POST['code']) ? (string)$_POST['code'] : '';
         $code410 = $postedCodeForCheck2 === '410' || $postedCodeForCheck2 === '451';
         if ($tdType2 != "" && ($tdDest2 !== "" || $code410)) {
-            // url match type. regex or normal exact match.
             $statusType = ABJ404_STATUS_MANUAL;
             if (isset($_POST['is_regex_url']) &&
                 $_POST['is_regex_url'] != '0') {
@@ -838,12 +859,8 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
                 $statusType = ABJ404_STATUS_REGEX;
             }
 
-            // Note: use !== '' instead of !empty() because empty('0') is true in PHP,
-            // which would incorrectly discard code=0 (Meta Refresh).
             $code = isset($_POST['code']) && is_scalar($_POST['code']) && (string)$_POST['code'] !== '' ? (string)$_POST['code'] : '301';
 
-            // Server-side regex auto-promotion. Same rationale as in
-            // updateRedirectData(): cover paths the JS detector cannot reach.
             $originalManualURL = $manualURL;
             $autoPromoteAdd = $this->maybeAutoPromoteRegex($statusType, $manualURL);
             $statusType = $autoPromoteAdd['statusType'];
@@ -855,13 +872,6 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
             if ($autoPromoteAdd['autoPromoted']) {
                 $this->saveRegexAutoPromoteNotice((int)$newRedirectId, $originalManualURL, $manualURL, $autoPromoteAdd['urlRewritten']);
             }
-            // Admin-initiated mutation: bump the watermark so the build
-            // runner notices the new source data at the next stage
-            // boundary, and record the post-increment value against the
-            // admin-visibility gate so the next AJAX fetch waits for a
-            // build whose built_watermark covers it (the stale-serving
-            // contract from fbc270d8 is preserved for cron/maintenance
-            // paths but the admin sees their own change immediately).
             $this->viewBuild->markViewDoneInvalidatedByAdminMutation();
 
         } else {
@@ -874,25 +884,8 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
     }
 
     /**
-     * Server-side regex auto-promotion. When the admin posts a from_url
-     * that contains unambiguous regex metachars but does not check
-     * "Treat as regex", flip the status to REGEX automatically and apply
-     * the glob-to-regex fixup (bare `*` becomes `.*`) so the stored
-     * pattern compiles at runtime.
-     *
-     * This is the server-side counterpart to the JS auto-check in
-     * includes/ajax/redirect_to_ajax.js: same intent, different reach.
-     * The JS handler covers anyone who types into the admin form with
-     * JS enabled. This handler covers the paste-and-submit, JS-disabled,
-     * and programmatic-POST paths the JS detector never sees.
-     *
-     * When the admin explicitly checked the "Treat as regex" box, we
-     * leave the pattern untouched (no glob fixup): they meant exactly
-     * what they wrote, even if it is weird like `(foo)*`.
-     *
-     * @param int $statusTypeIn The status already decided from the POST
-     *   checkbox (ABJ404_STATUS_MANUAL or ABJ404_STATUS_REGEX).
-     * @param string $fromURL The raw from_url posted by the admin.
+     * @param int $statusTypeIn
+     * @param string $fromURL
      * @return array{statusType: int, url: string, autoPromoted: bool, urlRewritten: bool}
      */
     private function maybeAutoPromoteRegex($statusTypeIn, $fromURL) {
@@ -920,16 +913,10 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
     }
 
     /**
-     * Persist a regex auto-promote event for the current user so the
-     * next admin page render can show a notice with [Edit] and [Undo]
-     * links. Thin wrapper around the static helper; kept here so the
-     * call site in updateRedirectData()/addAdminRedirect() reads at the
-     * level of the surrounding code.
-     *
-     * @param int $redirectId The id of the row that was just saved.
-     * @param string $originalURL The from_url the admin posted (pre-rewrite).
-     * @param string $newURL The from_url that was actually stored.
-     * @param bool $urlRewritten True when the glob fixup mutated the URL.
+     * @param int $redirectId
+     * @param string $originalURL
+     * @param string $newURL
+     * @param bool $urlRewritten
      * @return void
      */
     private function saveRegexAutoPromoteNotice($redirectId, $originalURL, $newURL, $urlRewritten) {
@@ -937,13 +924,6 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
     }
 
     /**
-     * Handle the "Undo regex auto-promotion" admin action. Restores the
-     * row's status to MANUAL and its from_url to the original value the
-     * admin posted (before the glob-fixup rewrite).
-     *
-     * Nonce: abj404undoRegexAutoPromote. The nonce ensures the link in
-     * the auto-promote notice is the only way to invoke this action.
-     *
      * @return string Human-readable result message.
      */
     function handleActionUndoRegexAutoPromote() {
@@ -958,8 +938,6 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
             (int)ABJ404_STATUS_MANUAL,
             (int)$notice['redirect_id'],
         )));
-        // markViewDoneInvalidatedByAdminMutation() bumps the watermark
-        // and records the admin-visibility gate option.
         $this->viewBuild->markViewDoneInvalidatedByAdminMutation();
         ABJ_404_Solution_RegexAutoPromote::clearNotice();
         return sprintf(
@@ -970,10 +948,6 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
     }
 
     /**
-     * Handle the importFromPlugin POST action.
-     * Reads the selected source plugin from $_POST['import_source'] and delegates
-     * to CrossPluginImporter::importFrom().
-     *
      * @return string Human-readable result message.
      */
     private function handleActionImportFromPlugin(): string {
@@ -997,12 +971,6 @@ trait ABJ_404_Solution_PluginLogicTrait_AdminActions {
         $importer = new ABJ_404_Solution_CrossPluginImporter($this->dao, $this->logger);
         $count    = $importer->importFrom($source);
 
-        // Admin-initiated mutation: force a fresh view_done rebuild before the
-        // next AJAX fetch so the newly-imported rows appear on the redirects
-        // table immediately, not on the next cron rebuild. Mirrors the CSV
-        // import path above; without this the rows land in wp_abj404_redirects
-        // but the admin-visibility gate stays open and the cached view_done
-        // snapshot keeps serving pre-import rows.
         if ($count > 0) {
             $this->viewBuild->markViewDoneInvalidatedByAdminMutation();
         }

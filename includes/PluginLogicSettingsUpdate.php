@@ -1,18 +1,68 @@
 <?php
 
+
 if (!defined('ABSPATH')) {
     exit;
 }
 
 /**
  * Settings update helpers: table options, POST sanitization, options-from-POST pipeline.
- * Used by ABJ_404_Solution_PluginLogic via `use`.
+ * Standalone class extracted from PluginLogicTrait_SettingsUpdate.
  */
-trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
+class ABJ_404_Solution_PluginLogicSettingsUpdate {
+
+    /** @var ABJ_404_Solution_Functions */
+    private $f;
+
+    /** @var ABJ_404_Solution_Logging */
+    private $logger;
+
+    /** @var ABJ_404_Solution_ContentRepositoryInterface */
+    private $contentRepo;
+
+    /** @var ABJ_404_Solution_PluginLogic */
+    private $pluginLogic;
+
+    /** Allowed column names for orderby parameter.
+     * @var array<int, string> */
+    private static $allowedOrderbyColumns = [
+        'url',
+        'status',
+        'type',
+        'dest',
+        'final_dest',
+        'code',
+        'score',
+        'timestamp',
+        'created',
+        'lastused',
+        'last_used',
+        'logshits',
+        'remote_host',
+        'referrer',
+        'action',
+        'username'
+    ];
+
+    /** Allowed values for order parameter.
+     * @var array<int, string> */
+    private static $allowedOrderValues = ['ASC', 'DESC'];
+
+    /**
+     * @param ABJ_404_Solution_Functions $f
+     * @param ABJ_404_Solution_Logging $logger
+     * @param ABJ_404_Solution_ContentRepositoryInterface $contentRepo
+     * @param ABJ_404_Solution_PluginLogic $pluginLogic
+     */
+    function __construct($f, $logger, $contentRepo, $pluginLogic) {
+        $this->f = $f;
+        $this->logger = $logger;
+        $this->contentRepo = $contentRepo;
+        $this->pluginLogic = $pluginLogic;
+    }
+
     /**
      * Read a scalar query parameter directly from REQUEST_URI.
-     * This is a defensive fallback for environments where superglobals can
-     * miss or mangle specific keys (for example repeated keys becoming arrays).
      *
      * @param string $name
      * @return string
@@ -43,7 +93,7 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
      */
     function getTableOptions(string $pageBeingViewed): array {
         $tableOptions = array();
-        $options = $this->getOptions(true);
+        $options = $this->pluginLogic->getOptions(true);
 
         $translationArray = array(
             '{ABJ404_STATUS_MANUAL_text}' => __('Man', '404-solution'),
@@ -71,7 +121,6 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
         }
 
         $tableOptions['filterText'] = trim($this->f->getPostOrGetSanitize("filterText", ""));
-        // Remove comment markers early to prevent filterText from breaking SQL comments.
         $tableOptions['filterText'] = $this->f->str_replace(array('*', '/', '$'), '', $tableOptions['filterText']);
 
         $orderbyInput = $this->f->getPostOrGetSanitize('orderby', "");
@@ -80,11 +129,11 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
 
             if ($pageBeingViewed == 'abj404_redirects') {
                 $options['page_redirects_order_by'] = $tableOptions['orderby'];
-                $this->updateOptions($options);
+                $this->pluginLogic->updateOptions($options);
 
             } else if ($pageBeingViewed == 'abj404_captured') {
                 $options['captured_order_by'] = $tableOptions['orderby'];
-                $this->updateOptions($options);
+                $this->pluginLogic->updateOptions($options);
             }
 
         } else if ($pageBeingViewed == "abj404_logs") {
@@ -109,11 +158,11 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
 
             if ($pageBeingViewed == 'abj404_redirects') {
                 $options['page_redirects_order'] = $tableOptions['order'];
-                $this->updateOptions($options);
+                $this->pluginLogic->updateOptions($options);
 
             } else if ($pageBeingViewed == 'abj404_captured') {
                 $options['captured_order'] = $tableOptions['order'];
-                $this->updateOptions($options);
+                $this->pluginLogic->updateOptions($options);
             }
 
         } else if ($tableOptions['orderby'] == "created" || $tableOptions['orderby'] == "lastused" || $tableOptions['orderby'] == "timestamp") {
@@ -135,8 +184,6 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
             $tableOptions['order'] = "ASC";
         }
 
-        // Prefer DAO helper (GET/POST), but fall back to REQUEST_URI query parsing for
-        // environments where 'paged' may not survive as a scalar in superglobals.
         $paged = $this->f->getPostOrGetSanitize("paged", '');
         if ($paged === '') {
             $paged = $this->getQueryParamFromRequestUri('paged');
@@ -163,14 +210,10 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
             }
         }
 
-        // Score range filter (high / medium / low / manual / all).
         $rawScoreRange = (string)$this->f->getPostOrGetSanitize('score_range', 'all');
         $allowedScoreRanges = array('all', 'high', 'medium', 'low', 'manual');
         $tableOptions['score_range'] = in_array($rawScoreRange, $allowedScoreRanges, true) ? $rawScoreRange : 'all';
 
-        // Developer/admin diagnostic: force a fresh staged view_done rebuild
-        // for the current AJAX table load. This is intentionally hidden behind
-        // an explicit request flag rather than a normal option.
         $forceViewRebuild = (string)$this->f->getPostOrGetSanitize('forceViewRebuild', '');
         if ($forceViewRebuild === '') {
             $forceViewRebuild = (string)$this->f->getPostOrGetSanitize('abj404_force_view_rebuild', '');
@@ -179,7 +222,6 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
             $tableOptions['_abj404_force_view_rebuild'] = '1';
         }
 
-        // sanitize all values.
         $sanitizedTableOptions = $this->sanitizePostData($tableOptions);
 
         return $sanitizedTableOptions;
@@ -197,7 +239,6 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
             if (is_array($value)) {
                 $newData[$key] = $this->sanitizePostData($value, $restoreNewlines);
             } else {
-                // Handle null values (PHP 8.1+ deprecation fix)
                 if ($value === null) {
                     $newData[$key] = '';
                 } else {
@@ -232,13 +273,11 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
      */
     function updateOptionsFromPOST() {
         $message = "";
-        $options = $this->getOptions();
+        $options = $this->pluginLogic->getOptions();
 
-        // to return after handling the ajax call.
         $returnData = array();
         $returnData['newURL'] = admin_url() . "options-general.php?page=" . ABJ404_PP . '&subpage=abj404_options';
 
-        // get the submitted settings
         if (!isset($_POST['encodedData'])) {
             $this->logger->errorMessage('Missing encodedData in POST');
             return array(
@@ -259,7 +298,6 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
             );
         }
 
-        // verify nonce (defense-in-depth; Ajax_Php already verifies for admin-ajax calls)
         $nonce = isset($postData['nonce']) ? $postData['nonce'] : '';
         if (!wp_verify_nonce($nonce, 'abj404UpdateOptions') || !is_admin()) {
             return array(
@@ -271,14 +309,12 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
 
         $_POST = $postData;
 
-        // delete the debug file if requested.
         if (array_key_exists('deleteDebugFile', $_POST) && $_POST['deleteDebugFile'] == true) {
             $sub = '';
             $returnData['error'] = '';
-            $returnData['message'] = $this->handlePluginAction('updateOptions', $sub);
+            $returnData['message'] = $this->pluginLogic->handlePluginAction('updateOptions', $sub);
 
         } else {
-            // save all options - grouped by related functionality
             $message .= $this->updateRedirectSettings($options, $_POST);
             $message .= $this->updateWordPressSettings($options, $_POST);
             $message .= $this->updateNotificationSettings($options, $_POST);
@@ -290,24 +326,18 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
             $message .= $this->updateAdminUsers($options, $_POST);
             $message .= $this->updateExcludedPages($options, $_POST);
 
-            // save this for later to sanitize it ourselves.
             $excludedPages = $options['excludePages[]'];
 
             /** Sanitize all data. */
             $new_options = array();
-            // when sanitizing data we keep the newlines (\n) because some data
-            // is entered that way and it shouldn't allow any kind of sql
-            // injection or any other security issues that I foresee at this point.
             $new_options = $this->sanitizePostData($options, true);
 
-            // only some characters in the string.
             $excludedPages = $excludedPages == null ? '' : trim($excludedPages);
             $excludedPages = preg_replace('/[^\[\",\]a-zA-Z\d\|\\\\ ]/', '', $excludedPages);
             $new_options['excludePages[]'] = $excludedPages;
 
-            $this->updateOptions($new_options);
+            $this->pluginLogic->updateOptions($new_options);
 
-            // update the permalink cache because the post types included may have changed.
             $permalinkCache = abj_service('permalink_cache');
             $permalinkCache->updatePermalinkCache(2);
 
@@ -344,7 +374,6 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
             }
         }
 
-        // Handle behavior tile selection
         if (isset($postData['dest404_behavior'])) {
             $validBehaviors = array('suggest', 'homepage', 'custom', 'theme_default');
             $behavior = sanitize_text_field(is_string($postData['dest404_behavior']) ? $postData['dest404_behavior'] : '');
@@ -355,7 +384,6 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
                 $message .= __('Error: Invalid 404 behavior selected', '404-solution') . ".<BR/>";
             }
         } else {
-            // Legacy: handle direct redirect_to_data_field_id (for backward compat)
             $candidateUrlLegacy = null;
             if (isset($postData['redirect_to_data_field_title'])) {
                 $candidateUrlLegacy = sanitize_text_field(is_string($postData['redirect_to_data_field_title']) ? $postData['redirect_to_data_field_title'] : '');
@@ -389,17 +417,14 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
     }
 
     /**
-     * Apply the selected behavior tile to the dest404page option.
-     *
-     * @param array<string, mixed> $options The options array to update (by reference)
-     * @param string $behavior The selected behavior: suggest, homepage, custom, theme_default
-     * @param array<string, mixed> $postData The POST data
+     * @param array<string, mixed> $options
+     * @param string $behavior
+     * @param array<string, mixed> $postData
      * @return string Any error messages
      */
     private function applyBehaviorToDest404Page(array &$options, string $behavior, array $postData): string {
         switch ($behavior) {
             case 'suggest':
-                // Create or find the system page
                 $systemPage = ABJ_404_Solution_SystemPage::getInstance();
                 $pageId = $systemPage->getOrCreateSystemPage();
                 if ($pageId > 0) {
@@ -446,11 +471,7 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
         return "";
     }
 
-    /** Update WordPress-specific settings.
-     * @param array<string, mixed> $options The options array to update
-     * @param array<string, mixed> $postData The POST data
-     * @return string Any error messages
-     */
+    /** @param array<string, mixed> $options @param array<string, mixed> $postData @return string */
     private function updateWordPressSettings(array &$options, array $postData): string {
         $message = "";
 
@@ -471,7 +492,6 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
         }
 
         if (isset($postData['admin_theme'])) {
-            // Only allow specific theme values
             $allowed_themes = array('default', 'calm', 'mono', 'neon', 'obsidian');
             $theme = sanitize_text_field(is_string($postData['admin_theme']) ? $postData['admin_theme'] : '');
             if (in_array($theme, $allowed_themes)) {
@@ -482,7 +502,6 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
         }
 
         if (isset($postData['plugin_language_override'])) {
-            // Only allow specific locale values
             $allowed_locales = array('', 'en_US', 'de_DE', 'es_ES', 'fr_FR', 'it_IT', 'pt_BR', 'nl_NL', 'ru_RU', 'ja', 'zh_CN', 'id_ID', 'sv_SE');
             $locale = sanitize_text_field(is_string($postData['plugin_language_override']) ? $postData['plugin_language_override'] : '');
             if (in_array($locale, $allowed_locales)) {
@@ -492,7 +511,6 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
             }
         }
 
-        // Handle disable_auto_dark_mode checkbox (unchecked = not in postData)
         if (isset($postData['disable_auto_dark_mode']) && $postData['disable_auto_dark_mode'] == '1') {
             $options['disable_auto_dark_mode'] = '1';
         } else {
@@ -511,11 +529,7 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
         return $message;
     }
 
-    /** Update notification settings.
-     * @param array<string, mixed> $options The options array to update
-     * @param array<string, mixed> $postData The POST data
-     * @return string Any error messages
-     */
+    /** @param array<string, mixed> $options @param array<string, mixed> $postData @return string */
     private function updateNotificationSettings(&$options, $postData) {
         $message = "";
 
@@ -537,7 +551,6 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
             $freq = sanitize_text_field(is_string($postData['admin_notification_frequency']) ? $postData['admin_notification_frequency'] : '');
             if (in_array($freq, $allowed_frequencies, true)) {
                 $options['admin_notification_frequency'] = $freq;
-                // Reschedule digest cron whenever frequency changes.
                 $emailDigest = new ABJ_404_Solution_EmailDigest(abj_service('logs_repository'), abj_service('stats_repository'), $this->logger);
                 $emailDigest->scheduleNextDigest();
             } else {
@@ -557,16 +570,13 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
     }
 
     /**
-     * Validate and set a numeric field value from POST data.
-     * Eliminates duplication in settings update methods.
-     *
-     * @param array<string, mixed> $options Reference to options array to update
-     * @param array<string, mixed> $postData POST data containing field value
-     * @param string $fieldName Name of the field to validate
-     * @param string $errorMessage Error message to display on validation failure
-     * @param int $minValue Minimum allowed value (default: 0)
-     * @param bool $useAbsintForCheck Whether to use absint() before comparison (default: false)
-     * @return string Error message if validation fails, empty string otherwise
+     * @param array<string, mixed> $options
+     * @param array<string, mixed> $postData
+     * @param string $fieldName
+     * @param string $errorMessage
+     * @param int $minValue
+     * @param bool $useAbsintForCheck
+     * @return string
      */
     private function validateAndSetNumericField(array &$options, array $postData, string $fieldName, string $errorMessage, int $minValue = 0, bool $useAbsintForCheck = false): string {
         if (isset($postData[$fieldName])) {
@@ -575,10 +585,8 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
             $passesValidation = false;
 
             if ($useAbsintForCheck) {
-                // For maximum_log_disk_usage: check absint(value) > minValue
                 $passesValidation = is_numeric($value) && absint($scalarValue) > $minValue;
             } else {
-                // For other fields: check value >= minValue
                 $passesValidation = is_numeric($value) && $value >= $minValue;
             }
 
@@ -592,11 +600,7 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
         return "";
     }
 
-    /** Update deletion-related settings.
-     * @param array<string, mixed> $options The options array to update
-     * @param array<string, mixed> $postData The POST data
-     * @return string Any error messages
-     */
+    /** @param array<string, mixed> $options @param array<string, mixed> $postData @return string */
     private function updateDeletionSettings(array &$options, array $postData): string {
         $message = "";
 
@@ -621,11 +625,7 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
         return $message;
     }
 
-    /** Update suggestion/spelling settings.
-     * @param array<string, mixed> $options The options array to update
-     * @param array<string, mixed> $postData The POST data
-     * @return string Any error messages
-     */
+    /** @param array<string, mixed> $options @param array<string, mixed> $postData @return string */
     private function updateSuggestionSettings(array &$options, array $postData): string {
         $message = "";
 
@@ -636,8 +636,6 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
                             ": Truncating spelling cache because the max suggestions # changed from " .
                             $options['suggest_max'] . ' to ' . absint($postData['suggest_max']));
 
-                    // the spelling cache only stores up to X entries. X is based on suggest_max
-                    // so the spelling cache has to be reset when this number changes.
                     $this->contentRepo->deleteSpellingCache();
                 }
 
@@ -655,7 +653,6 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
             }
         }
 
-        // Per-engine score overrides: accept empty string (use global) or numeric 0–99
         $engineScoreKeys = ['auto_score_title', 'auto_score_category_tag', 'auto_score_content'];
         foreach ($engineScoreKeys as $key) {
             if (isset($postData[$key])) {
@@ -674,18 +671,12 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
         return $message;
     }
 
-    /** Update boolean toggle options (checkboxes).
-     * @param array<string, mixed> $options The options array to update
-     * @param array<string, mixed> $postData The POST data
-     * @return string Any error messages
-     */
+    /** @param array<string, mixed> $options @param array<string, mixed> $postData @return string */
     private function updateBooleanToggles(array &$options, array $postData): string {
         $message = "";
 
-        // Check if we're in simple or advanced settings mode
-        $settingsMode = $this->getSettingsMode();
+        $settingsMode = $this->pluginLogic->getSettingsMode();
 
-        // All boolean options that could be in forms
         $allBooleanOptions = array('remove_matches', 'debug_mode', 'suggest_cats', 'suggest_tags',
             'auto_redirects', 'auto_slugs', 'auto_cats', 'auto_tags', 'auto_trash_redirect',
             'capture_404', 'send_error_logs', 'log_raw_ips',
@@ -693,22 +684,17 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
             'auto_trash_junk_urls',
         );
 
-        // Options that appear in Simple Mode form
         $simpleModeOptions = array('auto_redirects', 'capture_404', 'auto_trash_junk_urls');
 
-        // Determine which options to process from POST data
         if ($settingsMode === 'simple') {
-            // Simple mode: only process options that are actually in the form
             $optionsToProcess = $simpleModeOptions;
         } else {
-            // Advanced mode: process all options (existing behavior)
             $optionsToProcess = $allBooleanOptions;
         }
 
         foreach ($optionsToProcess as $optionName) {
         	$newVal = (array_key_exists($optionName, $postData) && $postData[$optionName] == "1") ? 1 : 0;
 
-        	// in case the suggest_cats or suggest_tags is changed.
         	if (!array_key_exists($optionName, $options) ||
         		$options[$optionName] != $newVal) {
 
@@ -717,7 +703,6 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
             $options[$optionName] = $newVal;
         }
 
-        // In Simple Mode, sync auto_cats and auto_tags with auto_redirects
         if ($settingsMode === 'simple') {
             $autoRedirectsValue = isset($options['auto_redirects']) ? $options['auto_redirects'] : 0;
             $options['auto_cats'] = $autoRedirectsValue;
@@ -727,19 +712,13 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
         return $message;
     }
 
-    /** Update suggestion HTML display options.
-     * @param array<string, mixed> $options The options array to update
-     * @param array<string, mixed> $postData The POST data
-     * @return string Any error messages
-     */
+    /** @param array<string, mixed> $options @param array<string, mixed> $postData @return string */
     private function updateSuggestionHTMLOptions(array &$options, array $postData): string {
         $message = "";
 
-        // the suggest_.* options have html in them.
         $optionsListSuggest = array('suggest_title', 'suggest_before', 'suggest_after', 'suggest_entrybefore',
             'suggest_entryafter', 'suggest_noresults');
         foreach ($optionsListSuggest as $optionName) {
-            // Only update if the option was posted (Simple Mode doesn't include these)
             if (isset($postData[$optionName])) {
                 $options[$optionName] = wp_kses_post(is_string($postData[$optionName]) ? $postData[$optionName] : '');
             }
@@ -753,14 +732,12 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
     /**
      * Repair malformed suggestion template options.
      *
-     * Keep valid custom text intact; only heal known-broken literal token forms.
-     *
      * @param array<string, mixed> $options
      * @return bool True when any option was changed.
      */
-    private function normalizeSuggestionTemplateOptions(array &$options): bool {
+    function normalizeSuggestionTemplateOptions(array &$options): bool {
         $changed = false;
-        $defaults = $this->getDefaultOptions();
+        $defaults = $this->pluginLogic->getDefaultOptions();
 
         $titleDefault = isset($defaults['suggest_title']) && is_string($defaults['suggest_title']) ?
             $defaults['suggest_title'] : '<h3>{suggest_title_text}</h3>';
@@ -802,11 +779,7 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
         return $changed;
     }
 
-    /** Update regex pattern settings for ignoring files/folders and suggestion exclusions.
-     * @param array<string, mixed> $options The options array to update
-     * @param array<string, mixed> $postData The POST data
-     * @return string Any error messages
-     */
+    /** @param array<string, mixed> $options @param array<string, mixed> $postData @return string */
     private function updateRegexPatternSettings(array &$options, array $postData): string {
         $message = "";
 
@@ -814,7 +787,6 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
             $foldersFilesVal = is_string($postData['folders_files_ignore']) ? $postData['folders_files_ignore'] : '';
             $options['folders_files_ignore'] = wp_unslash(wp_kses_post($foldersFilesVal));
 
-            // make the regular expressions usable.
             $patternsToIgnore = $this->f->explodeNewline($options['folders_files_ignore']);
             $usableFilePatterns = array();
             foreach ($patternsToIgnore as $patternToIgnore) {
@@ -826,21 +798,16 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
         }
 
         if ( isset( $postData['suggest_regex_exclusions'] ) ) {
-            // 1. Sanitize the raw input using the appropriate function for multi-line text without HTML.
             $suggestRegexRaw = is_string($postData['suggest_regex_exclusions']) ? $postData['suggest_regex_exclusions'] : '';
             $sanitized_exclusions = sanitize_textarea_field( wp_unslash( $suggestRegexRaw ) );
             $options['suggest_regex_exclusions'] = $sanitized_exclusions;
 
-            // 2. Generate the usable regex patterns *from the sanitized input*.
             $patternsToIgnore = $this->f->explodeNewline( $sanitized_exclusions );
             $usableFilePatterns = array();
             foreach ( $patternsToIgnore as $patternToIgnore ) {
                 $trimmedPattern = trim( $patternToIgnore );
-                // Only process non-empty lines
                 if ( ! empty( $trimmedPattern ) ) {
-                    // Escape regex special characters, then convert literal '*' into '.*' for wildcard matching.
                     $newPattern = '^' . preg_quote( $trimmedPattern, '/' ) . '$';
-                    // Use standard str_replace; $this->f->str_replace is likely unnecessary here unless it provides specific multibyte handling not needed for '\*'.
                     $newPattern = str_replace( '\*', '.*', $newPattern );
                     $usableFilePatterns[] = $newPattern;
                 }
@@ -851,11 +818,7 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
         return $message;
     }
 
-    /** Update plugin admin users list.
-     * @param array<string, mixed> $options The options array to update
-     * @param array<string, mixed> $postData The POST data
-     * @return string Any error messages
-     */
+    /** @param array<string, mixed> $options @param array<string, mixed> $postData @return string */
     private function updateAdminUsers(array &$options, array $postData): string {
         $message = "";
 
@@ -872,11 +835,7 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
         return $message;
     }
 
-    /** Update excluded pages list.
-     * @param array<string, mixed> $options The options array to update
-     * @param array<string, mixed> $postData The POST data
-     * @return string Any error messages
-     */
+    /** @param array<string, mixed> $options @param array<string, mixed> $postData @return string */
     private function updateExcludedPages(array &$options, array $postData): string {
         $message = "";
 
@@ -894,16 +853,12 @@ trait ABJ_404_Solution_PluginLogicTrait_SettingsUpdate {
         	$options['excludePages[]'] = is_string($encodedPages) ? $encodedPages : '';
         	$newExcludePages = json_decode($options['excludePages[]']);
         	if ($newExcludePages !== $oldExcludePages) {
-        		// if any excluded pages changed or if the number of excluded pages changed
-        		// then the spelling cache has to be reset.
         		$this->contentRepo->deleteSpellingCache();
         	}
         } else {
         	$excludePagesStr2 = is_string($options['excludePages[]']) ? $options['excludePages[]'] : '';
         	$oldExcludePages = json_decode($excludePagesStr2);
         	if (null !== $oldExcludePages) {
-        		// if any excluded pages changed or if the number of excluded pages changed
-        		// then the spelling cache has to be reset.
         		$this->contentRepo->deleteSpellingCache();
         	}
         	$options['excludePages[]'] = null;

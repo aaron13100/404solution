@@ -1,20 +1,19 @@
 <?php
 
+
 if (!defined('ABSPATH')) {
     exit;
 }
 
 /**
  * Plugin activation, deactivation, multisite lifecycle, and cron registration.
- *
- * Extracted from PluginLogic.php to keep the main class under the size limit.
+ * Standalone class extracted from PluginLogicTrait_Lifecycle.
  */
-trait ABJ_404_Solution_PluginLogicTrait_Lifecycle {
+class ABJ_404_Solution_PluginLogicLifecycle {
 
     /** Remove cron jobs. @return void */
     static function doUnregisterCrons(): void {
         $crons = array(
-            // Currently scheduled per-site recurring/one-shot hooks.
             'abj404_cleanupCronAction',
             'abj404_gsc_fetch_cron',
             'abj404_gsc_background_refresh',
@@ -25,11 +24,6 @@ trait ABJ_404_Solution_PluginLogicTrait_Lifecycle {
             'abj404_rebuild_ngram_cache_hook',
             'abj404_logsv2_canonical_backfill',
             'abj404_send_queued_report',
-            // Legacy hook names retained so an upgrade-then-deactivate cycle
-            // on a site that still carries stale entries from an older plugin
-            // version cleans them out. Production code no longer schedules
-            // these; they cost a wp_next_scheduled() probe per deactivation
-            // and that is cheap insurance against stranded legacy events.
             'abj404_duplicateCronAction',
             'removeDuplicatesCron',
             'deleteOldRedirectsCron',
@@ -52,30 +46,21 @@ trait ABJ_404_Solution_PluginLogicTrait_Lifecycle {
         }
     }
 
-    /** Create database tables. Register crons. etc.
-     * Handles both single-site and multisite activations.
-     *
-     * For network activations, sites are activated asynchronously in the background
-     * to prevent timeouts on large networks.
+    /**
+     * Create database tables. Register crons. etc.
      *
      * @param bool $network_wide Whether this is a network-wide activation
-     * @global type $abj404logic
-     * @global type $abj404dao
      * @return void
      */
     static function runOnPluginActivation(bool $network_wide = false): void {
         if (is_multisite() && $network_wide) {
-            // Network activation: Schedule background activation to prevent timeouts
             $sites = get_sites(array('fields' => 'ids', 'number' => 0));
 
-            // Store list of pending site IDs in network option
             update_site_option('abj404_pending_network_activation', $sites);
             update_site_option('abj404_network_activation_total', count($sites));
 
-            // Schedule first batch immediately
             wp_schedule_single_event(time(), 'abj404_network_activation_hook');
 
-            // Show admin notice that activation is happening in background
             add_action('network_admin_notices', function() {
                 $pendingRaw = get_site_option('abj404_pending_network_activation', array());
                 $pending = is_array($pendingRaw) ? $pendingRaw : array();
@@ -90,18 +75,12 @@ trait ABJ_404_Solution_PluginLogicTrait_Lifecycle {
                 }
             });
         } else {
-            // Single site activation (or individual subsite activation)
             self::activateSingleSite();
         }
     }
 
     /**
      * Activate plugin for a single site.
-     * This contains the actual activation logic that was previously in runOnPluginActivation.
-     *
-     * @global type $abj404logic
-     * @global type $abj404dao
-     * @global type $abj404logging
      * @return void
      */
     private static function activateSingleSite(): void {
@@ -111,38 +90,27 @@ trait ABJ_404_Solution_PluginLogicTrait_Lifecycle {
         $upgradesEtc = abj_service('database_upgrades');
         $upgradesEtc->createDatabaseTables();
 
-        // Route through the canonical self-heal prologue so activation
-        // reaches every recovery primitive in the same order as the daily
-        // cron. createDatabaseTables() above is the full schema-creation
-        // path for a fresh install; the prologue is a cheap idempotent
-        // drift-correction pass that the SelfHealingPrologueReachabilityTest
-        // can statically observe.
         $upgradesEtc->runSelfHealPrologue();
 
-        ABJ_404_Solution_PluginLogic::doRegisterCrons();
+        self::doRegisterCrons();
 
         $abj404logic->doUpdateDBVersionOption();
     }
 
     /**
      * Background cron handler for network activation.
-     * Processes one site at a time to prevent timeouts.
-     * Reschedules itself if more sites remain.
      * @return void
      */
     static function networkActivationCronHandler(): void {
-        // Get list of pending sites
         $pendingRaw = get_site_option('abj404_pending_network_activation', array());
         $pending = is_array($pendingRaw) ? $pendingRaw : array();
 
         if (empty($pending)) {
-            // All done! Clean up network options
             delete_site_option('abj404_pending_network_activation');
             delete_site_option('abj404_network_activation_total');
             return;
         }
 
-        // Process one site
         $blog_id = array_shift($pending);
         $blog_id_int = is_scalar($blog_id) ? (int)$blog_id : 0;
 
@@ -151,10 +119,6 @@ trait ABJ_404_Solution_PluginLogicTrait_Lifecycle {
             self::activateSingleSite();
             restore_current_blog();
         } catch (Exception $e) {
-            // Log to BOTH the PHP error log (so a host opened ticket can find
-            // it without a debug bundle) and the plugin debug log (so it lands
-            // in the support-bundle excerpt). Continue with other sites: a
-            // single-site failure must not block network activation overall.
             $remaining = max(0, count($pending));
             $errorLine = '404 Solution: Network activation failed for site ' . $blog_id_int .
                 ': ' . $e->getMessage() . '. Remaining sites=' . $remaining .
@@ -167,14 +131,11 @@ trait ABJ_404_Solution_PluginLogicTrait_Lifecycle {
             restore_current_blog();
         }
 
-        // Update pending list
         update_site_option('abj404_pending_network_activation', $pending);
 
-        // Schedule next site (10 seconds delay to spread load)
         if (!empty($pending)) {
             wp_schedule_single_event(time() + 10, 'abj404_network_activation_hook');
         } else {
-            // All done! Clean up network options
             delete_site_option('abj404_pending_network_activation');
             delete_site_option('abj404_network_activation_total');
         }
@@ -182,7 +143,6 @@ trait ABJ_404_Solution_PluginLogicTrait_Lifecycle {
 
     /**
      * Handle new blog creation in multisite (WordPress < 5.1).
-     * This is triggered by the wpmu_new_blog action.
      *
      * @param int $blog_id Blog ID of the new blog
      * @param int $user_id User ID of the user creating the blog
@@ -193,9 +153,6 @@ trait ABJ_404_Solution_PluginLogicTrait_Lifecycle {
      * @return void
      */
     static function activateNewSite($blog_id, $user_id, $domain, $path, $site_id, $meta): void {
-        // Only activate if the plugin is network-activated.
-        // is_plugin_active_for_network() lives in wp-admin/includes/plugin.php; guard
-        // adjacent in case this hook fires before wp-admin includes are loaded.
         if (!function_exists('is_plugin_active_for_network')) {
             return;
         }
@@ -204,12 +161,6 @@ trait ABJ_404_Solution_PluginLogicTrait_Lifecycle {
             try {
                 self::activateSingleSite();
             } catch (\Throwable $e) {
-                // Per-subsite infrastructure failure (disk-full, read-only-replica
-                // during CREATE TABLE on the brand-new subsite). Log at WARN so
-                // dev email reports are not triggered, but always restore the
-                // blog context so the request that created the subsite is not
-                // left in a corrupted switch_to_blog state. The plugin remains
-                // functional on every other site in the network.
                 $logger = abj_service('logging');
                 if ($logger !== null && method_exists($logger, 'warn')) {
                     $logger->warn(sprintf(
@@ -226,19 +177,12 @@ trait ABJ_404_Solution_PluginLogicTrait_Lifecycle {
 
     /**
      * Handle new blog creation in multisite (WordPress >= 5.1).
-     * This is triggered by the wp_initialize_site action.
      *
-     * @param mixed $site The WP_Site object for the new site. Normalized via
-     *     ABJ_404_Solution_SiteRef so a malformed payload (third-party filter
-     *     mutating the action argument, or a missing blog_id) early-returns
-     *     instead of calling switch_to_blog(0).
+     * @param mixed $site The WP_Site object for the new site.
      * @param array<string, mixed> $args Additional arguments passed to the hook
      * @return void
      */
     static function activateNewSiteModern($site, $args): void {
-        // Only activate if the plugin is network-activated.
-        // is_plugin_active_for_network() lives in wp-admin/includes/plugin.php; guard
-        // adjacent in case this hook fires before wp-admin includes are loaded.
         if (!function_exists('is_plugin_active_for_network')) {
             return;
         }
@@ -252,10 +196,6 @@ trait ABJ_404_Solution_PluginLogicTrait_Lifecycle {
             try {
                 self::activateSingleSite();
             } catch (\Throwable $e) {
-                // Same per-subsite degradation contract as activateNewSite()
-                // above (legacy hook). See that method's comment for the
-                // rationale; this path is the WordPress 5.1+ replacement
-                // (wp_initialize_site).
                 $logger = abj_service('logging');
                 if ($logger !== null && method_exists($logger, 'warn')) {
                     $logger->warn(sprintf(
@@ -278,7 +218,6 @@ trait ABJ_404_Solution_PluginLogicTrait_Lifecycle {
      */
     static function runOnPluginDeactivation(bool $network_wide = false): void {
         if (is_multisite() && $network_wide) {
-            // Network deactivation: deactivate for all sites
             $sites = get_sites(array('fields' => 'ids', 'number' => 0));
 
             foreach ($sites as $blog_id) {
@@ -287,14 +226,12 @@ trait ABJ_404_Solution_PluginLogicTrait_Lifecycle {
                 restore_current_blog();
             }
         } else {
-            // Single site deactivation
             self::deactivateSingleSite();
         }
     }
 
     /**
      * Deactivate plugin for a single site.
-     * Unregisters cron jobs.
      * @return void
      */
     private static function deactivateSingleSite(): void {
@@ -303,17 +240,14 @@ trait ABJ_404_Solution_PluginLogicTrait_Lifecycle {
 
     /**
      * Clean up when a blog is deleted in multisite.
-     * This is triggered by the delete_blog action.
      *
      * @global wpdb $wpdb WordPress database object
      * @param int $blog_id Blog ID being deleted
-     * @param bool $drop Whether to drop the tables (true) or just deactivate (false)
+     * @param bool $drop Whether to drop the tables
      * @return void
      */
     static function deleteBlogData($blog_id, $drop = false): void {
-        // CRON GUARD: hooked only via add_action('delete_blog') from
-        // registerLifecycleHooks(), which itself runs only under is_admin().
-        // Refuse cron context as a structural backstop so
+        // CRON GUARD: refuse cron context as a structural backstop so
         // CronReachableDestructiveSqlLintTest can prove the DROP TABLE below
         // is never reachable from a daily cron tick.
         if (function_exists('wp_doing_cron') && wp_doing_cron()) {
@@ -327,8 +261,6 @@ trait ABJ_404_Solution_PluginLogicTrait_Lifecycle {
             $dbCore = abj_service('db_core');
             $prefix = $dbCore->getLowercasePrefix();
 
-            // Remove ALL custom database tables via dynamic discovery.
-            // SHOW TABLES is the source of truth; new tables are automatically included.
             // DAO-bypass-approved: deleteBlogData() runs during multisite blog teardown after switch_to_blog()
             $tables = $wpdb->get_results(
                 // DAO-bypass-approved: prepare() argument to the get_results above
@@ -338,12 +270,11 @@ trait ABJ_404_Solution_PluginLogicTrait_Lifecycle {
             foreach ($tables as $tableRow) {
                 $tblName = is_array($tableRow) && isset($tableRow[0]) ? $tableRow[0] : '';
                 if (preg_match('/^[a-zA-Z0-9_]+$/', $tblName) && strpos($tblName, 'abj404') !== false) {
-                    // DAO-bypass-approved: deleteBlogData() — DDL drop during blog teardown
+                    // DAO-bypass-approved: deleteBlogData(), DDL drop during blog teardown
                     $wpdb->query("DROP TABLE IF EXISTS `{$tblName}`");
                 }
             }
 
-            // Remove ALL plugin options
             $plugin_options = array(
                 'abj404_settings',
                 'abj404_db_version',
@@ -361,7 +292,6 @@ trait ABJ_404_Solution_PluginLogicTrait_Lifecycle {
                 delete_option($option);
             }
 
-            // Delete dynamic sync options (using LIKE pattern)
             // DAO-bypass-approved: deleteBlogData() runs wp_options cleanup during blog teardown
             $wpdb->query(
                 // DAO-bypass-approved: prepare() argument to the query above
@@ -371,10 +301,6 @@ trait ABJ_404_Solution_PluginLogicTrait_Lifecycle {
                 )
             );
 
-            // Clear ALL scheduled cron jobs for this blog. Must stay aligned
-            // with the canonical list pinned by DeactivationCronCleanupTest
-            // and with Uninstaller::cleanupCronJobs(). When production starts
-            // scheduling a new hook, add it to all three sites.
             $cron_hooks = array(
                 'abj404_cleanupCronAction',
                 'abj404_updateLogsHitsTableAction',
@@ -392,7 +318,6 @@ trait ABJ_404_Solution_PluginLogicTrait_Lifecycle {
                 wp_clear_scheduled_hook($hook);
             }
 
-            // Also clear legacy cron hooks
             $legacy_hooks = array(
                 'abj404_duplicateCronAction',
                 'abj404_updatePermalinkCache',
@@ -412,8 +337,6 @@ trait ABJ_404_Solution_PluginLogicTrait_Lifecycle {
     /** @return void */
     static function doRegisterCrons(): void {
         if (!wp_next_scheduled('abj404_cleanupCronAction')) {
-            // we randomize this so that when the geo2ip file is downloaded, there aren't a whole
-            // lot of users that request the file at the same time.
             $timeForEvent = '0' . random_int(0, 5) . ':' . random_int(10, 59) . ':' . random_int(10, 59);
             $eventTimestamp = strtotime($timeForEvent);
             if ($eventTimestamp !== false) {

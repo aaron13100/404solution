@@ -1,14 +1,35 @@
 <?php
 
+
 if (!defined('ABSPATH')) {
     exit;
 }
 
 /**
  * URL normalization and multilingual redirect translation helpers.
- * Used by ABJ_404_Solution_PluginLogic via `use`.
+ * Standalone class extracted from PluginLogicTrait_UrlNormalization.
  */
-trait ABJ_404_Solution_PluginLogicTrait_UrlNormalization {
+class ABJ_404_Solution_PluginLogicUrlNormalization {
+
+    /** @var ABJ_404_Solution_Functions */
+    private $f;
+
+    /** @var string */
+    private $urlHomeDirectory;
+
+    /** @var int */
+    private $urlHomeDirectoryLength;
+
+    /**
+     * @param ABJ_404_Solution_Functions $f
+     * @param string $urlHomeDirectory
+     * @param int $urlHomeDirectoryLength
+     */
+    function __construct($f, $urlHomeDirectory, $urlHomeDirectoryLength) {
+        $this->f = $f;
+        $this->urlHomeDirectory = $urlHomeDirectory;
+        $this->urlHomeDirectoryLength = $urlHomeDirectoryLength;
+    }
 
     /** If a page's URL is /blogName/pageName then this returns /pageName.
      * @param string|null $urlRequest
@@ -20,32 +41,21 @@ trait ABJ_404_Solution_PluginLogicTrait_UrlNormalization {
     	}
     	$f = $this->f;
     	$urlHomeDirectory = $this->urlHomeDirectory;
-    	$homeLen = $this->urlHomeDirectoryLength !== null ? $this->urlHomeDirectoryLength : 0;
+    	$homeLen = $this->urlHomeDirectoryLength;
 
-    	// Fix CRITICAL #1 (5th review): Skip processing for root installations
-    	// When WordPress is at domain root, urlHomeDirectoryLength is 0
-    	// Without this check, substr($url, 0, 0) == '' is always TRUE, incorrectly stripping leading slash
     	if ($homeLen === 0) {
     		return $urlRequest;
     	}
 
-    	// Fix CRITICAL #1 (2nd review): Check path boundary to prevent false positives
-    	// e.g., /blog should match /blog/page but NOT /blogpost or /blog-archive
     	if ($this->f->substr($urlRequest, 0, $homeLen) == $urlHomeDirectory) {
-    		// Verify path boundary: next character must be '/', '?', '#', or end of string
     		$nextChar = $this->f->substr($urlRequest, $homeLen, 1);
     		if ($nextChar === '/' || $nextChar === '?' || $nextChar === '#' || $nextChar === '') {
-    			// Fix CRITICAL #2 (3rd review): Don't strip query/fragment markers
     			if ($nextChar === '/' || $nextChar === '') {
-    				// Strip subdirectory + slash for paths: /blog/page → /page
     				$urlRequest = $this->f->substr($urlRequest, ($homeLen + 1));
     			} else {
-    				// Fix HIGH #1 (4th review): Add leading slash for query/fragment
-    				// Strip subdirectory, add leading slash: /blog?q=1 → /?q=1
     				$urlRequest = '/' . $this->f->substr($urlRequest, $homeLen);
     			}
     		}
-    		// else: false positive (e.g., /blogpost when subdirectory is /blog) - don't strip
     	}
 
         return $urlRequest;
@@ -53,35 +63,26 @@ trait ABJ_404_Solution_PluginLogicTrait_UrlNormalization {
 
     /**
      * Normalize URL to relative path by removing WordPress subdirectory.
-     * This ensures URLs are stored/matched independently of subdirectory changes.
-     * Fixes Issue #24: Redirects now survive WordPress subdirectory changes.
      *
      * @param string|null $url Full URL or path
      * @return string Relative path without subdirectory
      */
     function normalizeToRelativePath($url): string {
-        // Fix Issue #5: Handle empty URLs explicitly
         if ($url === '') {
             return '/';
         }
 
-        // Fix HIGH #2: Trim whitespace
         if ($url === null) {
             return '/';
         }
         $url = trim($url);
 
-        // Fix CRITICAL #2 (4th review): REMOVED rawurldecode() - URLs already decoded by UserRequest
-        // Subdirectory decoding is now handled in constructor for consistency
-
-        // Fix HIGH #2: If full URL, extract path only
         if (preg_match('#^https?://#i', $url)) {
             $parsed = parse_url($url);
             if ($parsed === false || !isset($parsed['path'])) {
                 return '/';
             }
             $url = $parsed['path'];
-            // Preserve query and fragment
             if (!empty($parsed['query'])) {
                 $url .= '?' . $parsed['query'];
             }
@@ -90,7 +91,6 @@ trait ABJ_404_Solution_PluginLogicTrait_UrlNormalization {
             }
         }
 
-        // Fix HIGH #2: Handle protocol-relative URLs (//example.com/path)
         if (strpos($url, '//') === 0) {
             $parsed = parse_url('http:' . $url);
             if ($parsed !== false && isset($parsed['path'])) {
@@ -106,20 +106,15 @@ trait ABJ_404_Solution_PluginLogicTrait_UrlNormalization {
             }
         }
 
-        // Remove home directory if present
         $relativePath = $this->removeHomeDirectory($url);
 
-        // Fix Issue #5: Check if removeHomeDirectory() returned empty unexpectedly
         if ($relativePath === '') {
-            // Return root path for empty results
             return '/';
         }
 
-        // Fix HIGH #2: Normalize multiple slashes to single slash
         $relativePathCleaned = preg_replace('#/+#', '/', $relativePath);
         $relativePath = is_string($relativePathCleaned) ? $relativePathCleaned : $relativePath;
 
-        // Ensure consistent leading slash (but not multiple)
         $relativePath = '/' . ltrim($relativePath, '/');
 
         return $relativePath;
@@ -127,12 +122,11 @@ trait ABJ_404_Solution_PluginLogicTrait_UrlNormalization {
 
     /**
      * Normalize a user-provided path for storage/matching.
-     * Decodes percent-encoded octets and strips invalid UTF-8/control bytes.
      *
      * @param string|null $url
      * @return string
      */
-    private function normalizeUserProvidedPath($url) {
+    function normalizeUserProvidedPath($url) {
         $url = $this->f->normalizeUrlString($url);
         if ($url === '') {
             return '';
@@ -143,18 +137,16 @@ trait ABJ_404_Solution_PluginLogicTrait_UrlNormalization {
 
     /**
      * Normalize an external destination URL for storage.
-     * Decodes percent-encoded octets and strips invalid UTF-8/control bytes.
      *
      * @param string|null $url
      * @return string
      */
-    private function normalizeExternalDestinationUrl($url) {
+    function normalizeExternalDestinationUrl($url) {
         return $this->f->normalizeUrlString($url);
     }
 
     /**
      * Generate normalized lookup variants for URL matching.
-     * Includes decoded form and a legacy encoded fallback.
      *
      * @param string|null $url
      * @return array<int, string>
@@ -167,15 +159,11 @@ trait ABJ_404_Solution_PluginLogicTrait_UrlNormalization {
 
         $candidates = array($decoded);
 
-        // Case-insensitive fallback: URLs are case-insensitive in practice,
-        // but the DB uses BINARY comparison for performance. Try the lowercase
-        // variant so /E2E-Case matches a redirect stored as /e2e-case.
         $lower = function_exists('mb_strtolower') ? mb_strtolower($decoded, 'UTF-8') : strtolower($decoded);
         if ($lower !== $decoded) {
             $candidates[] = $lower;
         }
 
-        // Legacy fallback for stored percent-encoded slugs.
         $encoded = $this->normalizeToRelativePath($this->f->encodeUrlForLegacyMatch($decoded));
         if ($encoded !== $decoded) {
             $candidates[] = $encoded;
@@ -215,7 +203,6 @@ trait ABJ_404_Solution_PluginLogicTrait_UrlNormalization {
             }
         }
 
-        // Allow other multilingual plugins/themes to override redirect destinations.
         return apply_filters('abj404_translate_redirect_url', $location, $requestedURL);
     }
 
@@ -437,7 +424,6 @@ trait ABJ_404_Solution_PluginLogicTrait_UrlNormalization {
 
         $parsedUrl = function_exists('wp_parse_url') ? wp_parse_url($url) : parse_url($url);
         if (!is_array($parsedUrl) || !isset($parsedUrl['host'])) {
-            // Relative URLs are treated as local.
             return true;
         }
 
