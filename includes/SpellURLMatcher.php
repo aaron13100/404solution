@@ -5,11 +5,86 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * URL-level matching helpers for ABJ_404_Solution_SpellChecker:
- * regex-based matching, slug matching, image detection, permalink lookup,
- * cache retrieval, and URL utility helpers.
+ * URL-level matching: regex-based matching, slug matching, image detection,
+ * permalink lookup, cache retrieval, and URL utility helpers.
+ *
+ * Extracted from SpellCheckerTrait_URLMatching as a standalone class with
+ * explicit dependency injection.
  */
-trait SpellCheckerTrait_URLMatching {
+class ABJ_404_Solution_SpellURLMatcher {
+
+	/** @var ABJ_404_Solution_Functions */
+	private $f;
+
+	/** @var ABJ_404_Solution_PluginLogic */
+	private $logic;
+
+	/** @var ABJ_404_Solution_Logging */
+	private $logger;
+
+	/** @var ABJ_404_Solution_ContentRepository */
+	private $contentRepository;
+
+	/** @var mixed */
+	private $viewReadService;
+
+	/** @var string|int|null */
+	private $custom404PageID;
+
+	/** @var array<string, string> */
+	private array $preparedRegexPatternCache = array();
+
+	/**
+	 * @param ABJ_404_Solution_Functions $functions
+	 * @param ABJ_404_Solution_PluginLogic $logic
+	 * @param ABJ_404_Solution_Logging $logger
+	 * @param ABJ_404_Solution_ContentRepository $contentRepository
+	 * @param mixed $viewReadService
+	 * @param string|int|null $custom404PageID
+	 */
+	public function __construct($functions, $logic, $logger, $contentRepository, $viewReadService, $custom404PageID) {
+		$this->f = $functions;
+		$this->logic = $logic;
+		$this->logger = $logger;
+		$this->contentRepository = $contentRepository;
+		$this->viewReadService = $viewReadService;
+		$this->custom404PageID = $custom404PageID;
+	}
+
+    /** @return array<int, array<string, mixed>> */
+	private function getRedirectsWithRegEx(): array {
+		if (!is_object($this->viewReadService) || !is_callable(array($this->viewReadService, 'getRedirectsWithRegEx'))) {
+			return array();
+		}
+		$rows = call_user_func(array($this->viewReadService, 'getRedirectsWithRegEx'));
+		return $this->normalizeRows($rows);
+	}
+
+	/** @return array<int, array<string, mixed>> */
+	private function getManualRedirectsWithRegexMetachars(): array {
+		if (!is_object($this->viewReadService) || !is_callable(array($this->viewReadService, 'getManualRedirectsWithRegexMetachars'))) {
+			return array();
+		}
+		$rows = call_user_func(array($this->viewReadService, 'getManualRedirectsWithRegexMetachars'));
+		return $this->normalizeRows($rows);
+	}
+
+	/**
+	 * @param mixed $rows
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function normalizeRows($rows): array {
+		if (!is_array($rows)) {
+			return array();
+		}
+		$normalized = array();
+		foreach ($rows as $row) {
+			if (is_array($row)) {
+				$normalized[] = $row;
+			}
+		}
+		return $normalized;
+	}
 
     /** Find a match using the user-defined regex patterns.
 	 * @param string $requestedURL
@@ -24,20 +99,6 @@ trait SpellCheckerTrait_URLMatching {
 
 		$regexURLsRows = $this->getRedirectsWithRegEx();
 
-		// Runtime fallback: also consider MANUAL rows whose stored from_url
-		// contains an unambiguous regex metacharacter. These can exist when
-		// the row was created before the server-side auto-promote landed
-		// (older plugin versions), through a direct DB write, or via a
-		// CSV import path that pre-dated the widened sniff. The stored
-		// status is NOT mutated here; the next save/import on the row
-		// will sweep it into REGEX through the normal path.
-		//
-		// The glob fixup is applied to the in-memory copy of the URL only
-		// so a literal `/sales/*` stored by an older version compiles to
-		// `/sales/.*` and actually matches `/sales/foo`. Without this
-		// step, the pattern would hit PCRE "nothing to repeat" and the
-		// row would silently fail to match (the loop's @-suppressed
-		// preg_match returns false in that case).
 		$manualWithMetachars = $this->getManualRedirectsWithRegexMetachars();
 		if (!empty($manualWithMetachars)) {
 			$filtered = array();
@@ -70,11 +131,6 @@ trait SpellCheckerTrait_URLMatching {
 			}
 			$regexURLStr = is_string($regexURL) ? $regexURL : '';
 			$preparedURL = $this->getPreparedRegexPattern($regexURLStr);
-			// Suppress PHP warnings from invalid stored patterns. Bad rows can
-			// reach here from older imports, manual admin edits, or direct DB
-			// writes; treating them as non-match keeps a single bad row from
-			// polluting every 404 request's log. Same idiom as
-			// RedirectConditionEvaluator.php:316 (`@preg_match` in case 'regex').
 			if (@$this->f->regexMatch($preparedURL, $requestedURL)) {
 				if ($isDebug) {
 					abj_service('request_context')->debug_info = 'Cleared after regex.';
@@ -82,7 +138,6 @@ trait SpellCheckerTrait_URLMatching {
 				$rowType = isset($row['type']) && is_scalar($row['type']) ? (int)$row['type'] : 0;
 				$rowDest = isset($row['final_dest']) && is_scalar($row['final_dest']) ? (string)$row['final_dest'] : '';
 				if ($rowType === (int)ABJ404_TYPE_EXTERNAL) {
-					// Fast path: external redirects already have a concrete target URL.
 					$permalink = array(
 						'id' => 0,
 						'type' => ABJ404_TYPE_EXTERNAL,
@@ -99,18 +154,13 @@ trait SpellCheckerTrait_URLMatching {
 				$permalink['code'] = isset($row['code']) && is_scalar($row['code']) ? (int)$row['code'] : 0;
 				$originalPermalink = $isDebug ? $permalink : null;
 
-				// If regex has capture groups and destination has replacement markers, resolve them.
 				$permLinkStr = isset($permalink['link']) && is_string($permalink['link']) ? $permalink['link'] : '';
 				$hasCaptureGroup = ($this->f->strpos($regexURLStr, '(') !== false);
 				$hasReplacementToken = ($this->f->strpos($permLinkStr, '$') !== false);
 				if ($hasCaptureGroup && $hasReplacementToken) {
 					$results = array();
-					// Pattern already proved itself valid in the gate above;
-					// suppress here too in case e.g. a different prepared-vs-raw
-					// shape compiles inconsistently.
 					@$this->f->regexMatch($regexURLStr, $requestedURL, $results);
 
-					// do a repacement for all of the groups found.
 					$final = $permLinkStr;
 					for ($x = 1; $x < count($results); $x++) {
 						$final = $this->f->str_replace('$' . $x, $results[$x], $final);
@@ -137,8 +187,6 @@ trait SpellCheckerTrait_URLMatching {
 	}
 
 	/**
-	 * Normalize and cache regex patterns for reuse within this request.
-	 *
 	 * @param string $regexURL
 	 * @return string
 	 */
@@ -153,8 +201,6 @@ trait SpellCheckerTrait_URLMatching {
 	}
 
     /** Find a match using an exact slug match.
-	 * If there is a post that has a slug that matches the user requested slug exactly,
-	 * then return the permalink for that post. Otherwise return null.
 	 * @param string $requestedURL
 	 * @return array<string, mixed>|null
 	 */
@@ -175,7 +221,6 @@ trait SpellCheckerTrait_URLMatching {
 			$permalink = array();
 			$permalink['id'] = $postId;
 			$permalink['type'] = ABJ404_TYPE_POST;
-			// the score doesn't matter.
 			$permalink['score'] = 100;
 			$permalink['title'] = get_the_title($postId);
 			$permalink['link'] = get_permalink($postId);
@@ -183,7 +228,6 @@ trait SpellCheckerTrait_URLMatching {
 			return $permalink;
 
 		} else if (count($postsBySlugRows) > 1) {
-			// more than one post has the same slug. I don't know what to do.
             $this->logger->debugMessage("More than one post found with the slug, so no redirect was " .
                     "created. Slug: " . $postSlug);
 		} else {
@@ -194,7 +238,6 @@ trait SpellCheckerTrait_URLMatching {
 	}
 
 	/**
-	 * Return true if the last characters of the URL represent an image extension (like jpg, gif, etc).
 	 * @param string $requestedURL
 	 * @return bool
 	 */
@@ -238,7 +281,6 @@ trait SpellCheckerTrait_URLMatching {
 	 * @return array<int|string, mixed>
 	 */
 	function getFromPermalinkCache(string $requestedURL): array {
-		// The request cache is used when the suggested pages shortcode is used.
         $ctx = abj_service('request_context');
         if (!empty($ctx->permalinks_found)) {
 			$permalinks = json_decode($ctx->permalinks_found, true);
@@ -247,7 +289,6 @@ trait SpellCheckerTrait_URLMatching {
 			}
 		}
 
-		// check the database cache.
 		$returnValue = $this->contentRepository->getSpellingPermalinksFromCache($requestedURL);
 		if (is_array($returnValue) && !empty($returnValue)) {
 			return $returnValue;
@@ -257,7 +298,6 @@ trait SpellCheckerTrait_URLMatching {
 	}
 
 	/**
-	 * Get the permalink for the passed in type (pages, tags, categories, image, etc.
 	 * @param int $id
 	 * @param string $rowType
 	 * @return string|null
@@ -287,7 +327,7 @@ trait SpellCheckerTrait_URLMatching {
 			return $this->f->normalizeUrlString($src[0]);
 
 		} else {
-			throw new \Exception("Unknown row type ...");
+			throw new \Exception("Unknown row type ..."); // allow-raw-error: assertion, should never reach user
 		}
 	}
 

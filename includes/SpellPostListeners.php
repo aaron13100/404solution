@@ -5,19 +5,61 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Handles WordPress post save/delete listeners and permalink/N-gram cache
- * invalidation for ABJ_404_Solution_SpellChecker.
+ * WordPress post save/delete listeners and permalink/N-gram cache
+ * invalidation for the spell-checking subsystem.
+ *
+ * Extracted from SpellCheckerTrait_PostListeners as a standalone class
+ * with explicit dependency injection.
  */
-trait SpellCheckerTrait_PostListeners {
+class ABJ_404_Solution_SpellPostListeners {
+
+	/** @var ABJ_404_Solution_Functions */
+	private $f;
+
+	/** @var ABJ_404_Solution_PluginLogic */
+	private $logic;
+
+	/** @var ABJ_404_Solution_Logging */
+	private $logger;
+
+	/** @var ABJ_404_Solution_ContentRepository */
+	private $contentRepository;
+
+	/** @var ABJ_404_Solution_PermalinkCache */
+	private $permalinkCache;
+
+	/** @var ABJ_404_Solution_NGramFilter */
+	private $ngramFilter;
+
+	/** @var ABJ_404_Solution_PublishedPostsProvider|null */
+	private ?ABJ_404_Solution_PublishedPostsProvider $publishedPostsProvider = null;
 
 	/**
-	 * Track post IDs already processed by save_postListener within the current request.
-	 * WordPress fires save_post 2-4 times per save; without dedup the SpellChecker
-	 * runs cache invalidation, permalink-cache update, and incremental N-gram update
-	 * once per fire (Pattern 11).
 	 * @var array<int, bool>
 	 */
 	private static $processedSavePostIds = [];
+
+	/**
+	 * @param ABJ_404_Solution_Functions $functions
+	 * @param ABJ_404_Solution_PluginLogic $logic
+	 * @param ABJ_404_Solution_Logging $logger
+	 * @param ABJ_404_Solution_ContentRepository $contentRepository
+	 * @param ABJ_404_Solution_PermalinkCache $permalinkCache
+	 * @param ABJ_404_Solution_NGramFilter $ngramFilter
+	 */
+	public function __construct($functions, $logic, $logger, $contentRepository, $permalinkCache, $ngramFilter) {
+		$this->f = $functions;
+		$this->logic = $logic;
+		$this->logger = $logger;
+		$this->contentRepository = $contentRepository;
+		$this->permalinkCache = $permalinkCache;
+		$this->ngramFilter = $ngramFilter;
+	}
+
+	/** @return ABJ_404_Solution_PublishedPostsProvider|null */
+	public function getPublishedPostsProvider(): ?ABJ_404_Solution_PublishedPostsProvider {
+		return $this->publishedPostsProvider;
+	}
 
 	/**
 	 * @param int $post_id
@@ -25,7 +67,6 @@ trait SpellCheckerTrait_PostListeners {
 	 * @param bool|null $update
 	 */
 	function save_postListener($post_id, $post = null, $update = null): void {
-		// Prevent duplicate processing within same request (WordPress fires save_post 2-4 times per save).
 		if (isset(self::$processedSavePostIds[$post_id])) {
 			return;
 		}
@@ -61,7 +102,6 @@ trait SpellCheckerTrait_PostListeners {
 	 */
 	function savePostHandler($post_id, $post, $update, $saveOrDelete): void {
 		$options = $this->logic->getOptions();
-		// Defensive: some callers/tests may pass null; WordPress normally provides a WP_Post.
 		if (!is_object($post) || !isset($post->post_type) || !isset($post->post_status) || !isset($post->post_name)) {
 			$this->logger->debugMessage(__CLASS__ . "/" . __FUNCTION__ .
 				": Invalid post object for ID: " . $post_id . " (skipped).");
@@ -72,16 +112,11 @@ trait SpellCheckerTrait_PostListeners {
 		$recognizedPostTypesRaw = isset($options['recognized_post_types']) ? $options['recognized_post_types'] : '';
 		$acceptedPostTypes = $this->f->explodeNewline(is_string($recognizedPostTypesRaw) ? $recognizedPostTypesRaw : '');
 
-		// 3 options: save a new page, save an existing page (update), delete a page.
 		$deleteSpellingCache = false;
 		$deleteFromPermalinkCache = false;
 		$invalidateNGramCache = false;
 		$reason = '';
 
-		// 2: save an existing page. if any of the following changed then delete
-		// from the permalink cache: slug, type, status.
-		// if any of the following changed then delete the entire spelling cache:
-		// slug, type, status.
 		/** @var array<string, mixed> $cacheRow */
 		$cacheRow = $this->contentRepository->getPermalinkEtcFromCache($post_id) ?: array();
 		$cacheUrlRaw = (array_key_exists('url', $cacheRow)) ? $cacheRow['url'] : null;
@@ -108,7 +143,6 @@ trait SpellCheckerTrait_PostListeners {
 				'(to)' . $post->post_type . ')';
 		}
 
-		// if the post type is uninteresting then ignore it.
 		if (!in_array($oldPostType, $acceptedPostTypes) &&
 			!in_array($post->post_type, $acceptedPostTypes)) {
 
@@ -124,7 +158,6 @@ trait SpellCheckerTrait_PostListeners {
 			return;
 		}
 
-		// if the status is uninteresting then ignore it.
 		$interestingStatuses = array('publish', 'published');
 		if (!in_array($oldStatus, $interestingStatuses) &&
 			!in_array($post->post_status, $interestingStatuses)) {
@@ -141,16 +174,13 @@ trait SpellCheckerTrait_PostListeners {
 			return;
 		}
 
-		// save a new page. the cache is null. delete the spelling cache because
-		// the new page may match searches better than the other previous matches.
 		if (!$update && $saveOrDelete == 'save') {
-			$deleteSpellingCache = true; // delete all.
-			$deleteFromPermalinkCache = false; // it's not there anyway.
-			$invalidateNGramCache = false; // it's not there anyway.
+			$deleteSpellingCache = true;
+			$deleteFromPermalinkCache = false;
+			$invalidateNGramCache = false;
 			$reason = 'new page';
 		}
 
-		// delete a page.
 		if ($saveOrDelete == 'delete') {
 			$deleteSpellingCache = true; // TODO only delete where the page is referenced.
 			$deleteFromPermalinkCache = true;
@@ -165,7 +195,6 @@ trait SpellCheckerTrait_PostListeners {
 
 			try {
 				$this->contentRepository->removeFromPermalinkCache($post_id);
-				// let's update some links.
 				$this->permalinkCache->updatePermalinkCache(1);
 			} catch (Exception $e) {
 				$this->logger->errorMessage(__CLASS__ . "/" . __FUNCTION__ .
@@ -216,15 +245,10 @@ trait SpellCheckerTrait_PostListeners {
 			}
 		}
 
-		// Update N-gram cache for single post (incremental update for performance)
-		// Use incremental update API to avoid rebuilding entire cache on every post save
 		if ($saveOrDelete == 'save' && in_array($post->post_status, array('publish', 'published'))) {
 			try {
-				// Ensure permalink cache is updated first (for new posts)
-				// This is lightweight and idempotent, so safe to call even if already updated
 				$this->permalinkCache->updatePermalinkCache(1);
 
-				// Only update N-grams for this specific post (incremental)
 				$stats = $this->ngramFilter->updateNGramsForPages(array($post_id));
 
 				if ($stats['success'] > 0) {

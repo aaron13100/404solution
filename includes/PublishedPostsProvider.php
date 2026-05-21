@@ -38,12 +38,16 @@ class ABJ_404_Solution_PublishedPostsProvider {
 		$this->contentRepository = $contentRepository !== null ? $contentRepository : abj_service('content_repository');
 	}
 
+	public static function resetForTests(?self $replacement = null): void {
+		self::$instance = $replacement;
+	}
+
 	/** @return self */
 	public static function getInstance() {
 		if (self::$instance == null) {
 			self::$instance = new ABJ_404_Solution_PublishedPostsProvider();
 		}
-		
+
 		return self::$instance;
 	}
 	

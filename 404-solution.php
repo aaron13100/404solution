@@ -177,12 +177,6 @@ function abj404_autoloader($class) {
 				$inc . 'PluginLogicTrait_PageOrdering.php',
 				$inc . 'PluginLogicTrait_Lifecycle.php',
 			),
-			'ABJ_404_Solution_SpellChecker' => array(
-				$inc . 'SpellCheckerTrait_PostListeners.php',
-				$inc . 'SpellCheckerTrait_URLMatching.php',
-				$inc . 'SpellCheckerTrait_CandidateFiltering.php',
-				$inc . 'SpellCheckerTrait_LevenshteinEngine.php',
-			),
 			'ABJ_404_Solution_DatabaseUpgradesEtc' => array(
 				$inc . 'DatabaseUpgradesEtcTrait_NGram.php',
 				$inc . 'DatabaseUpgradesEtcTrait_Maintenance.php',
@@ -393,12 +387,12 @@ if (!function_exists('abj404_shortCodeListener')) {
 				$inc . 'PluginLogicTrait_SettingsUpdate.php',
 				$inc . 'PluginLogicTrait_PageOrdering.php',
 				$inc . 'PluginLogicTrait_Lifecycle.php',
-				// SpellChecker + traits
+				// SpellChecker + delegate classes
 				$inc . 'SpellChecker.php',
-				$inc . 'SpellCheckerTrait_PostListeners.php',
-				$inc . 'SpellCheckerTrait_URLMatching.php',
-				$inc . 'SpellCheckerTrait_CandidateFiltering.php',
-				$inc . 'SpellCheckerTrait_LevenshteinEngine.php',
+				$inc . 'SpellURLMatcher.php',
+				$inc . 'SpellPostListeners.php',
+				$inc . 'SpellLevenshteinEngine.php',
+				$inc . 'SpellCandidateFilter.php',
 				// DatabaseUpgradesEtc + traits
 				$inc . 'DatabaseUpgradesEtc.php',
 				$inc . 'DatabaseUpgradesEtcTrait_NGram.php',

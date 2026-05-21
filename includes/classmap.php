@@ -51,14 +51,12 @@ return array(
     'ABJ_404_Solution_PluginLogicTrait_PageOrdering' => $base . 'includes/PluginLogicTrait_PageOrdering.php',
     'ABJ_404_Solution_PluginLogicTrait_SettingsUpdate' => $base . 'includes/PluginLogicTrait_SettingsUpdate.php',
     'ABJ_404_Solution_PluginLogicTrait_UrlNormalization' => $base . 'includes/PluginLogicTrait_UrlNormalization.php',
-    // SpellChecker and View traits use unprefixed names (legacy from earlier
-    // refactor).  The test bootstrap autoloader is classmap-driven (no prefix
-    // gate) so these resolve correctly when the host class's require_once
-    // silently fails under fd pressure.
-    'SpellCheckerTrait_CandidateFiltering' => $base . 'includes/SpellCheckerTrait_CandidateFiltering.php',
-    'SpellCheckerTrait_LevenshteinEngine' => $base . 'includes/SpellCheckerTrait_LevenshteinEngine.php',
-    'SpellCheckerTrait_PostListeners' => $base . 'includes/SpellCheckerTrait_PostListeners.php',
-    'SpellCheckerTrait_URLMatching' => $base . 'includes/SpellCheckerTrait_URLMatching.php',
+    // SpellChecker delegates to standalone classes (converted from traits).
+    'ABJ_404_Solution_SpellURLMatcher' => $base . 'includes/SpellURLMatcher.php',
+    'ABJ_404_Solution_SpellPostListeners' => $base . 'includes/SpellPostListeners.php',
+    'ABJ_404_Solution_SpellLevenshteinEngine' => $base . 'includes/SpellLevenshteinEngine.php',
+    'ABJ_404_Solution_SpellCandidateFilter' => $base . 'includes/SpellCandidateFilter.php',
+    // View traits use unprefixed names (legacy from earlier refactor).
     'ViewTrait_Logs' => $base . 'includes/ViewTrait_Logs.php',
     'ViewTrait_Redirects' => $base . 'includes/ViewTrait_Redirects.php',
     'ViewTrait_RedirectsTable' => $base . 'includes/ViewTrait_RedirectsTable.php',

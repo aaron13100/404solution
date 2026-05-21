@@ -5,25 +5,121 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Levenshtein distance engine and candidate pre-filtering for
- * ABJ_404_Solution_SpellChecker.
+ * Levenshtein distance engine and candidate pre-filtering for the
+ * spell-checking subsystem.
  *
- * Contains: getLikelyMatchIDs, getMaxAcceptableDistance, customLevenshtein.
+ * Extracted from SpellCheckerTrait_LevenshteinEngine as a standalone class
+ * with explicit dependency injection.
  */
-trait SpellCheckerTrait_LevenshteinEngine {
+class ABJ_404_Solution_SpellLevenshteinEngine {
 
-    /** This algorithm uses the lengths of the strings to weed out some strings before using the levenshtein
-     * distance formula. It uses the minimum and maximum possible levenshtein distance based on the difference in
-	 * string length. The min distance based on length between "abc" and "def" is 0 and the max distance is 3.
-	 * The min distance based on length between "abc" and "123456" is 3 and the max distance is 6.
-	 * 1) Get a list of minimum and maximum levenshtein distances - two lists, one ordered by the min distance
-	 * and one ordered by the max distance.
-	 * 2) Get the first X strings from the max-distance list. The X is the number we have to display in the list
-	 * of suggestions on the 404 page. Note the highest max distance of the strings we're using here.
-	 * 3) Look at the min distance list and remove all strings where the min distance is more than the highest
-	 * max distance taken from the previous step. The strings we remove here will always be further away than the
-	 * strings we found in the previous step and can be removed without applying the levenshtein algorithm.
-	 * *
+	const MAX_DIST = 2083;
+
+	const MAX_LIKELY_DISTANCE = 300;
+
+	const NGRAM_PREFILTER_THRESHOLD = 0.3;
+
+	const NGRAM_PREFILTER_MAX_CANDIDATES = 500;
+
+	const NGRAM_MIN_CACHE_ENTRIES = 50;
+
+	const NGRAM_SECONDARY_THRESHOLD = 0.4;
+
+	const NGRAM_SECONDARY_MAX_CANDIDATES = 100;
+
+	const NGRAM_MIN_COVERAGE_RATIO = 0.8;
+
+	const NGRAM_SECONDARY_MIN_CANDIDATES = 50;
+
+	/** @var ABJ_404_Solution_Functions */
+	private $f;
+
+	/** @var ABJ_404_Solution_PluginLogic */
+	private $logic;
+
+	/** @var ABJ_404_Solution_Logging */
+	private $logger;
+
+	/** @var ABJ_404_Solution_ContentRepository */
+	private $contentRepository;
+
+	/** @var ABJ_404_Solution_NGramFilter */
+	private $ngramFilter;
+
+	/** @var ABJ_404_Solution_SpellURLMatcher */
+	private $urlMatcher;
+
+	/** @var array<int, string> */
+	private array $separatingCharacters;
+
+	private bool $enablePerformanceCounters = false;
+
+	private bool $skipNgramGate4 = false;
+
+	private int $levenshteinCallCount = 0;
+
+	private int $totalPagesConsidered = 0;
+
+	/** @var ABJ_404_Solution_PublishedPostsProvider|null */
+	private ?ABJ_404_Solution_PublishedPostsProvider $publishedPostsProvider = null;
+
+	/**
+	 * @param ABJ_404_Solution_Functions $functions
+	 * @param ABJ_404_Solution_PluginLogic $logic
+	 * @param ABJ_404_Solution_Logging $logger
+	 * @param ABJ_404_Solution_ContentRepository $contentRepository
+	 * @param ABJ_404_Solution_NGramFilter $ngramFilter
+	 * @param ABJ_404_Solution_SpellURLMatcher $urlMatcher
+	 * @param array<int, string> $separatingCharacters
+	 */
+	public function __construct($functions, $logic, $logger, $contentRepository, $ngramFilter, $urlMatcher, array $separatingCharacters) {
+		$this->f = $functions;
+		$this->logic = $logic;
+		$this->logger = $logger;
+		$this->contentRepository = $contentRepository;
+		$this->ngramFilter = $ngramFilter;
+		$this->urlMatcher = $urlMatcher;
+		$this->separatingCharacters = $separatingCharacters;
+	}
+
+	/** @param ABJ_404_Solution_PublishedPostsProvider|null $provider */
+	public function setPublishedPostsProvider(?ABJ_404_Solution_PublishedPostsProvider $provider): void {
+		$this->publishedPostsProvider = $provider;
+	}
+
+	public function enablePerformanceCounters(bool $enable = true): void {
+		$this->enablePerformanceCounters = $enable;
+		if ($enable) {
+			$this->resetPerformanceCounters();
+		}
+	}
+
+	public function setSkipNgramGate4(bool $skip = true): void {
+		$this->skipNgramGate4 = $skip;
+	}
+
+	public function resetPerformanceCounters(): void {
+		$this->levenshteinCallCount = 0;
+		$this->totalPagesConsidered = 0;
+	}
+
+	/**
+	 * @return array{levenshtein_calls: int, pages_considered: int, efficiency_percent: float}
+	 */
+	public function getPerformanceCounters(): array {
+		$efficiency = 0;
+		if ($this->totalPagesConsidered > 0) {
+			$efficiency = ($this->levenshteinCallCount / $this->totalPagesConsidered) * 100;
+		}
+
+		return [
+			'levenshtein_calls' => $this->levenshteinCallCount,
+			'pages_considered' => $this->totalPagesConsidered,
+			'efficiency_percent' => round($efficiency, 2)
+		];
+	}
+
+    /**
 	 * @param string $requestedURLCleaned
 	 * @param string $fullURLspaces
 	 * @param string $rowType
@@ -33,8 +129,6 @@ trait SpellCheckerTrait_LevenshteinEngine {
 	function getLikelyMatchIDs(string $requestedURLCleaned, string $fullURLspaces, string $rowType, ?array $rows = null) {
 
 		$options = $this->logic->getOptions();
-		// we get more than we need because the algorithm we actually use
-		// is not based solely on the Levenshtein distance.
 		$suggestMaxLikely = isset($options['suggest_max']) && is_scalar($options['suggest_max']) ? $options['suggest_max'] : 5;
 		$onlyNeedThisManyPages = min(5 * absint($suggestMaxLikely), 100);
 
@@ -44,9 +138,6 @@ trait SpellCheckerTrait_LevenshteinEngine {
 		}
 		$ngramPrefilterApplied = ($ngramPrefilterResult === 'applied');
 
-		// create a list sorted by min levenshstein distance and max levelshtein distance.
-		/* 1) Get a list of minumum and maximum levenshtein distances - two lists, one ordered by the min
-		 * distance and one ordered by the max distance. */
 		$minDistances = array();
 		$maxDistances = array();
 		for ($currentDistanceIndex = 0; $currentDistanceIndex <= self::MAX_DIST; $currentDistanceIndex++) {
@@ -61,8 +152,6 @@ trait SpellCheckerTrait_LevenshteinEngine {
 		$idsWithWordsInCommon = array();
 		$wasntReadyCount = 0;
 
-		// get the next X pages in batches until enough matches are found.
-		// Note: resetBatch is only called here if N-gram prefiltering wasn't applied
 		if ($this->publishedPostsProvider === null) {
 			return array();
 		}
@@ -78,7 +167,6 @@ trait SpellCheckerTrait_LevenshteinEngine {
 		while ($row != null) {
 			$row = (array)$row;
 
-			// Count pages considered for performance metrics
 			if ($this->enablePerformanceCounters) {
 				$this->totalPagesConsidered++;
 			}
@@ -99,7 +187,7 @@ trait SpellCheckerTrait_LevenshteinEngine {
 				$id = $row['id'];
 
 			} else {
-				throw new \Exception("Unknown row type ... " . esc_html($rowType));
+				throw new \Exception("Unknown row type ... " . esc_html($rowType)); // allow-raw-error: assertion, should never reach user
 			}
 
 			if ($id === null) {
@@ -119,7 +207,7 @@ trait SpellCheckerTrait_LevenshteinEngine {
 			}
 			if (!array_key_exists('url', $row) || (isset($urlParts) && is_bool($urlParts))) {
 			    $wasntReadyCount++;
-			    $the_permalink = $this->getPermalink($idInt, $rowType);
+			    $the_permalink = $this->urlMatcher->getPermalink($idInt, $rowType);
 			    $the_permalink = $this->f->normalizeUrlString($the_permalink);
 			    $urlParts = parse_url($the_permalink);
 			}
@@ -133,14 +221,11 @@ trait SpellCheckerTrait_LevenshteinEngine {
 			$existingPageURL = $this->logic->removeHomeDirectory($urlParts['path']);
 			$urlParts = null;
 
-			// this line used to take too long to execute.
 			$existingPageURLSpaces = $this->f->str_replace($this->separatingCharacters, " ", $existingPageURL);
 
-			$existingPageURLCleaned = $this->getLastURLPart($existingPageURLSpaces);
+			$existingPageURLCleaned = $this->urlMatcher->getLastURLPart($existingPageURLSpaces);
 			$existingPageURLSpaces = null;
 
-			// the minimum distance is the minimum of the two possibilities. one is longer anyway, so
-			// it shouldn't matter.
 			$minDist = abs($this->f->strlen($existingPageURLCleaned) - $requestedURLCleanedLength);
 			if ($fullURLspaces != '') {
 				$minDist = min($minDist, abs($fullURLspacesLength - $requestedURLCleanedLength));
@@ -150,21 +235,15 @@ trait SpellCheckerTrait_LevenshteinEngine {
 				$maxDist = min($maxDist, $fullURLspacesLength);
 			}
 
-			// -----------------
-			// split the links into words.
 			$existingPageURLCleanedWords = explode(" ", $existingPageURLCleaned);
 			$wordsInCommon = array_intersect($userRequestedURLWords, $existingPageURLCleanedWords);
 			$wordsInCommon = array_merge(array_unique($wordsInCommon, SORT_REGULAR), array());
 			if (count($wordsInCommon) > 0) {
-				// if any words match then save the link to the $idsWithWordsInCommon list.
 				array_push($idsWithWordsInCommon, $id);
-				// also lower the $maxDist accordingly.
 				$lengthOfTheLongestWordInCommon = max(array_map(array($this->f,'strlen'), $wordsInCommon));
 				$maxDist = $maxDist - $lengthOfTheLongestWordInCommon;
 			}
-			// -----------------
 
-			// add the ID to the list.
 			if (isset($minDistances[$minDist])) {
 			    array_push($minDistances[$minDist], $id);
 			} else {
@@ -184,13 +263,10 @@ trait SpellCheckerTrait_LevenshteinEngine {
 				array_push($maxDistances[$maxDist], $id);
 			}
 
-			// get the next row in the current batch.
 			$row = array_pop($currentBatch);
 			if ($row == null) {
-				// get the best maxDistance pages and then trim the next batch using that info.
 				$maxAcceptableDistance = $this->getMaxAcceptableDistance($maxDistances, $onlyNeedThisManyPages);
 
-				// get the next batch if there are no more rows in the current batch.
             	$currentBatch = $this->publishedPostsProvider->getNextBatch(
             		$requestedURLCleanedLength, 1000, $maxAcceptableDistance);
 				$row = array_pop($currentBatch);
@@ -261,13 +337,13 @@ trait SpellCheckerTrait_LevenshteinEngine {
 		}
 
 		if ($this->skipNgramGate4) {
-			$this->logger->debugMessage( // allow-em-dash: pre-existing log message moved from getLikelyMatchIDs
+			$this->logger->debugMessage(
 				"N-gram prefilter: zero candidates at Dice >= 0.3 \xe2\x80\x94 skipNgramGate4 is set, falling through to full scan"
 			);
 			return 'skipped';
 		}
 
-		$this->logger->debugMessage( // allow-em-dash: pre-existing log message moved from getLikelyMatchIDs
+		$this->logger->debugMessage(
 			"N-gram prefilter: zero candidates at Dice >= 0.3 \xe2\x80\x94 no similar pages exist, returning early"
 		);
 		return 'early_return';
@@ -342,14 +418,9 @@ trait SpellCheckerTrait_LevenshteinEngine {
 	}
 
 	/**
-	 * Batch-fetch permalinks for a set of candidate IDs.
-	 *
-	 * Instead of accumulating a permalink for every page processed (which consumes
-	 * ~61MB on a 193K-page site), we only look up permalinks for the final candidates.
-	 *
-	 * @param array<int, mixed> $ids The candidate page/tag/category IDs
-	 * @param string $rowType 'pages', 'tags', 'categories', or 'image'
-	 * @return array<int|string, string> Map of id => permalink URL
+	 * @param array<int, mixed> $ids
+	 * @param string $rowType
+	 * @return array<int|string, string>
 	 */
 	private function batchLookupPermalinks(array $ids, string $rowType): array {
 		if (empty($ids)) {
@@ -357,8 +428,6 @@ trait SpellCheckerTrait_LevenshteinEngine {
 		}
 		$result = [];
 		if ($rowType === 'pages' || $rowType === 'image') {
-			// Batch-fetch from permalink cache table in a single query.
-			// IDs not found in the cache are excluded — they cannot be suggestions.
 			$intIds = array_map(function($v) { return is_scalar($v) ? (int)$v : 0; }, $ids);
 			$rows = $this->contentRepository->getPermalinksByIds($intIds);
 			foreach ($rows as $row) {
@@ -368,10 +437,9 @@ trait SpellCheckerTrait_LevenshteinEngine {
 				}
 			}
 		} else {
-			// Tags/categories: use WordPress API (typically small sets)
 			foreach ($ids as $id) {
 				$idInt = is_scalar($id) ? (int)$id : 0;
-				$permalink = $this->getPermalink($idInt, $rowType);
+				$permalink = $this->urlMatcher->getPermalink($idInt, $rowType);
 				if (is_string($permalink) && $permalink !== '') {
 					$result[$id] = $permalink;
 				}
@@ -383,7 +451,7 @@ trait SpellCheckerTrait_LevenshteinEngine {
 	/**
 	 * @param array<int, array<int, mixed>> $maxDistances
 	 * @param int $onlyNeedThisManyPages
-	 * @return int the maximum acceptable distance to use when searching for similar permalinks.
+	 * @return int
 	 */
 	function getMaxAcceptableDistance(array $maxDistances, int $onlyNeedThisManyPages): int {
 		$pagesSeenSoFar = 0;
@@ -392,28 +460,23 @@ trait SpellCheckerTrait_LevenshteinEngine {
 		for ($currentDistanceIndex = 0; $currentDistanceIndex <= self::MAX_LIKELY_DISTANCE; $currentDistanceIndex++) {
 			$pagesSeenSoFar += sizeof($maxDistances[$currentDistanceIndex]);
 
-			// we only need the closest matching X pages. where X is the number of suggestions
-			// to display on the 404 page.
 			if ($pagesSeenSoFar >= $onlyNeedThisManyPages) {
 				$maxDistFound = $currentDistanceIndex;
 				break;
 			}
 		}
 
-		// we multiply by X because the distance algorithm doesn't only use the levenshtein.
 		$acceptableDistance = (int)($maxDistFound * 1.1);
 		return $acceptableDistance;
 	}
 
-    /** This custom levenshtein function has no 255 character limit.
-	 * From https://www.codeproject.com/Articles/13525/Fast-memory-efficient-Levenshtein-algorithm
+    /**
 	 * @param string $str1
 	 * @param string $str2
 	 * @return int
 	 * @throws Exception
 	 */
 	function customLevenshtein($str1, $str2) {
-		// Increment performance counter if enabled
 		if ($this->enablePerformanceCounters) {
 			$this->levenshteinCallCount++;
 		}
@@ -423,56 +486,39 @@ trait SpellCheckerTrait_LevenshteinEngine {
 	    $ColLen = $this->f->strlen($str2);
 		$cost = 0;
 
-		// / Test string length. URLs should not be more than 2,083 characters
 		if (max($RowLen, $ColLen) > ABJ404_MAX_URL_LENGTH) {
-            throw new Exception("Maximum string length in customLevenshtein is " .
+            throw new \Exception("Maximum string length in customLevenshtein is " . // allow-raw-error: assertion, should never reach user
             	ABJ404_MAX_URL_LENGTH . ". Yours is " . max($RowLen, $ColLen) . ".");
 		}
 
-		// OPTIMIZATION 1: Use PHP's built-in levenshtein() for short strings (30-50% faster)
-		// Built-in is written in C and much faster, but limited to 255 characters
-		// For multibyte strings, we need to verify byte length, not character count
 		if (strlen($str1) <= 255 && strlen($str2) <= 255) {
 			return levenshtein($str1, $str2);
 		}
 
-		// Step 1
 		if ($RowLen == 0) {
 			return $ColLen;
 		} else if ($ColLen == 0) {
 			return $RowLen;
 		}
 
-		// Pre-split into character arrays so multibyte characters are indexed correctly.
-		// Direct $str[$i] indexing accesses bytes, not characters, which corrupts the
-		// distance for multibyte strings (CJK, Cyrillic, Arabic, etc.).
 		$chars1 = mb_str_split($str1, 1, 'UTF-8');
 		$chars2 = mb_str_split($str2, 1, 'UTF-8');
 
-		// / Create the two vectors
 		$v0 = array_fill(0, $RowLen + 1, 0);
 		$v1 = array_fill(0, $RowLen + 1, 0);
 
-		// / Step 2
-		// / Initialize the first vector
 		for ($RowIdx = 1; $RowIdx <= $RowLen; $RowIdx++) {
 			$v0[$RowIdx] = $RowIdx;
 		}
 
-		// Step 3
-		// / For each column
 		for ($ColIdx = 1; $ColIdx <= $ColLen; $ColIdx++) {
-			// / Set the 0'th element to the column number
 			$v1[0] = $ColIdx;
 
-			// Step 4
-			// / For each row
 			for ($RowIdx = 1; $RowIdx <= $RowLen; $RowIdx++) {
 			    $cost = ($chars1[$RowIdx - 1] === $chars2[$ColIdx - 1]) ? 0 : 1;
 			    $v1[$RowIdx] = min($v0[$RowIdx] + 1, $v1[$RowIdx - 1] + 1, $v0[$RowIdx - 1] + $cost);
 			}
 
-			// / Swap the vectors
 			$vTmp = $v0;
 			$v0 = $v1;
 			$v1 = $vTmp;

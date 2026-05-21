@@ -5,20 +5,10 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-require_once __DIR__ . '/SpellCheckerTrait_PostListeners.php';
-require_once __DIR__ . '/SpellCheckerTrait_URLMatching.php';
-require_once __DIR__ . '/SpellCheckerTrait_CandidateFiltering.php';
-require_once __DIR__ . '/SpellCheckerTrait_LevenshteinEngine.php';
-
 /* Finds similar pages.
  * Finds search suggestions. */
 
 class ABJ_404_Solution_SpellChecker {
-
-	use SpellCheckerTrait_PostListeners,
-		SpellCheckerTrait_URLMatching,
-		SpellCheckerTrait_CandidateFiltering,
-		SpellCheckerTrait_LevenshteinEngine;
 
 	/** @var array<int, string> */
 	private array $separatingCharacters = array("-","_",".","~",'%20');
@@ -27,56 +17,25 @@ class ABJ_404_Solution_SpellChecker {
 	 * @var array<int, string> */
 	private array $separatingCharactersForImages = array("-","_","~",'%20');
 
-	private ?ABJ_404_Solution_PublishedPostsProvider $publishedPostsProvider = null;
-
 	const MAX_DIST = 2083;
 
-	/** Upper bound for the length-based distance buckets used to pre-filter candidates. */
 	const MAX_LIKELY_DISTANCE = 300;
 
-	/** Similarity threshold for N-gram prefiltering (lower = more candidates, slower but safer). */
 	const NGRAM_PREFILTER_THRESHOLD = 0.3;
 
-	/** Maximum candidates to retrieve during N-gram prefiltering. */
 	const NGRAM_PREFILTER_MAX_CANDIDATES = 500;
 
-	/** Minimum N-gram cache entries required to enable prefiltering.
-	 * Small sites don't need prefiltering; this also prevents use during partial cache builds. */
 	const NGRAM_MIN_CACHE_ENTRIES = 50;
 
-	/** Similarity threshold for secondary N-gram filtering (higher = stricter, fewer candidates).
-	 * More conservative than prefilter since we're refining an already-filtered list. */
 	const NGRAM_SECONDARY_THRESHOLD = 0.4;
 
-	/** Maximum candidates for secondary N-gram filtering. */
 	const NGRAM_SECONDARY_MAX_CANDIDATES = 100;
 
-	/** Minimum cache coverage ratio (ngram entries / permalink entries) to trust prefiltering.
-	 * 0.8 = require at least 80% of permalink cache entries to be in N-gram cache. */
 	const NGRAM_MIN_COVERAGE_RATIO = 0.8;
 
-	/** Minimum candidate count to trigger secondary N-gram filtering.
-	 * Below this threshold, Levenshtein on all candidates is fast enough. */
 	const NGRAM_SECONDARY_MIN_CANDIDATES = 50;
 
 	private static ?self $instance = null;
-
-	// Performance counters (for testing efficiency - disabled by default)
-	private bool $enablePerformanceCounters = false;
-
-	// When true, skip the N-gram gate 4 early return so the full Levenshtein
-	// scan runs.  The async page-suggestions worker sets this because the
-	// 5-second scan is acceptable in a background process.
-	private bool $skipNgramGate4 = false;
-	private int $levenshteinCallCount = 0;
-	private int $totalPagesConsidered = 0;
-
-	/** @var string|int|null */
-	private $custom404PageID = null;
-
-	/** Prepared regex pattern cache for the current request lifecycle.
-	 * @var array<string, string> */
-	private array $preparedRegexPatternCache = array();
 
 	/** @var ABJ_404_Solution_Functions */
 	private $f;
@@ -87,85 +46,74 @@ class ABJ_404_Solution_SpellChecker {
 	/** @var ABJ_404_Solution_ContentRepository */
 	private $contentRepository;
 
-	/** @var mixed */
-	private $viewReadService;
-
 	/** @var ABJ_404_Solution_Logging */
 	private $logger;
 
-	/** @var ABJ_404_Solution_PermalinkCache */
-	private $permalinkCache;
+	/** @var ABJ_404_Solution_SpellURLMatcher */
+	private $urlMatcher;
 
-	/** @var ABJ_404_Solution_NGramFilter */
-	private $ngramFilter;
+	/** @var ABJ_404_Solution_SpellLevenshteinEngine */
+	private $levenshteinEngine;
+
+	/** @var ABJ_404_Solution_SpellCandidateFilter */
+	private $candidateFilter;
+
+	/** @var ABJ_404_Solution_SpellPostListeners */
+	private $postListeners;
 
 	/**
-	 * Constructor with dependency injection.
-	 * Dependencies are now explicit and visible.
-	 *
-	 * @param ABJ_404_Solution_Functions|null $functions String manipulation utilities
-	 * @param ABJ_404_Solution_PluginLogic|null $pluginLogic Business logic service
-	 * @param ABJ_404_Solution_ContentRepository|null $contentRepository Content repository
-	 * @param ABJ_404_Solution_Logging|null $logging Logging service
-	 * @param ABJ_404_Solution_PermalinkCache|null $permalinkCache Permalink caching service
-	 * @param ABJ_404_Solution_NGramFilter|null $ngramFilter N-gram filter for optimization
-	 * @param ABJ_404_Solution_ViewReadService|null $viewReadService View read service
+	 * @param ABJ_404_Solution_Functions|null $functions
+	 * @param ABJ_404_Solution_PluginLogic|null $pluginLogic
+	 * @param ABJ_404_Solution_ContentRepository|null $contentRepository
+	 * @param ABJ_404_Solution_Logging|null $logging
+	 * @param ABJ_404_Solution_PermalinkCache|null $permalinkCache
+	 * @param ABJ_404_Solution_NGramFilter|null $ngramFilter
+	 * @param ABJ_404_Solution_ViewReadService|null $viewReadService
 	 */
 	public function __construct($functions = null, $pluginLogic = null, $contentRepository = null, $logging = null, $permalinkCache = null, $ngramFilter = null, $viewReadService = null) {
-		// Use injected dependencies or fall back to getInstance() for backward compatibility
 		$this->f = $functions !== null ? $functions : abj_service('functions');
 		$this->logic = $pluginLogic !== null ? $pluginLogic : abj_service('plugin_logic');
 		$this->contentRepository = $contentRepository !== null ? $contentRepository : abj_service('content_repository');
 		$this->logger = $logging !== null ? $logging : abj_service('logging');
-		$this->permalinkCache = $permalinkCache !== null ? $permalinkCache : abj_service('permalink_cache');
-		$this->ngramFilter = $ngramFilter !== null ? $ngramFilter : abj_service('ngram_filter');
-		$this->viewReadService = $viewReadService !== null ? $viewReadService :
+		$permalinkCacheResolved = $permalinkCache !== null ? $permalinkCache : abj_service('permalink_cache');
+		$ngramFilterResolved = $ngramFilter !== null ? $ngramFilter : abj_service('ngram_filter');
+		$viewReadServiceResolved = $viewReadService !== null ? $viewReadService :
 			(is_object($contentRepository) && method_exists($contentRepository, 'getRedirectsWithRegEx') ? $contentRepository : abj_service('view_read_service'));
 
-		// Set the custom 404 page id if there is one
 		$options = $this->logic->getOptions();
 		$custom404PageIDRaw =
 			(is_array($options) && isset($options['dest404page']) ?
 			$options['dest404page'] : null);
 		$custom404PageID = is_string($custom404PageIDRaw) ? $custom404PageIDRaw : (is_int($custom404PageIDRaw) ? (string)$custom404PageIDRaw : null);
+		$custom404PageIDResolved = null;
 		if ($this->logic->thereIsAUserSpecified404Page($custom404PageID)) {
-			$this->custom404PageID = $custom404PageID;
+			$custom404PageIDResolved = $custom404PageID;
 		}
+
+		$this->urlMatcher = new ABJ_404_Solution_SpellURLMatcher(
+			$this->f, $this->logic, $this->logger, $this->contentRepository,
+			$viewReadServiceResolved, $custom404PageIDResolved
+		);
+
+		$this->postListeners = new ABJ_404_Solution_SpellPostListeners(
+			$this->f, $this->logic, $this->logger, $this->contentRepository,
+			$permalinkCacheResolved, $ngramFilterResolved
+		);
+
+		$this->levenshteinEngine = new ABJ_404_Solution_SpellLevenshteinEngine(
+			$this->f, $this->logic, $this->logger, $this->contentRepository,
+			$ngramFilterResolved, $this->urlMatcher, $this->separatingCharacters
+		);
+
+		$this->candidateFilter = new ABJ_404_Solution_SpellCandidateFilter(
+			$this->f, $this->logic, $this->logger, $this->contentRepository,
+			$this->urlMatcher, $this->levenshteinEngine, $this->postListeners,
+			$custom404PageIDResolved, $this->separatingCharacters, $this->separatingCharactersForImages
+		);
 	}
 
-	/** @return array<int, array<string, mixed>> */
-	private function getRedirectsWithRegEx(): array {
-		if (!is_object($this->viewReadService) || !method_exists($this->viewReadService, 'getRedirectsWithRegEx')) {
-			return array();
-		}
-		$rows = call_user_func(array($this->viewReadService, 'getRedirectsWithRegEx'));
-		return $this->normalizeRows($rows);
-	}
-
-	/** @return array<int, array<string, mixed>> */
-	private function getManualRedirectsWithRegexMetachars(): array {
-		if (!is_object($this->viewReadService) || !method_exists($this->viewReadService, 'getManualRedirectsWithRegexMetachars')) {
-			return array();
-		}
-		$rows = call_user_func(array($this->viewReadService, 'getManualRedirectsWithRegexMetachars'));
-		return $this->normalizeRows($rows);
-	}
-
-	/**
-	 * @param mixed $rows
-	 * @return array<int, array<string, mixed>>
-	 */
-	private function normalizeRows($rows): array {
-		if (!is_array($rows)) {
-			return array();
-		}
-		$normalized = array();
-		foreach ($rows as $row) {
-			if (is_array($row)) {
-				$normalized[] = $row;
-			}
-		}
-		return $normalized;
+	public static function resetForTests(): void {
+		self::$instance = null;
 	}
 
 	public static function getInstance(): self {
@@ -173,7 +121,6 @@ class ABJ_404_Solution_SpellChecker {
 			return self::$instance;
 		}
 
-		// If the DI container is initialized, prefer it.
 		if (class_exists('ABJ_404_Solution_ServiceContainer')) {
 			$resolved = ABJ_404_Solution_ServiceContainer::safeGet('spell_checker');
 			if ($resolved instanceof self) {
@@ -187,67 +134,133 @@ class ABJ_404_Solution_SpellChecker {
 		return self::$instance;
 	}
 
-	/**
-	 * Enable performance counters for testing efficiency (disabled by default for production)
-	 */
 	public function enablePerformanceCounters(bool $enable = true): void {
-		$this->enablePerformanceCounters = $enable;
-		if ($enable) {
-			$this->resetPerformanceCounters();
-		}
+		$this->levenshteinEngine->enablePerformanceCounters($enable);
 	}
 
-	/**
-	 * Skip the N-gram gate 4 early return so the full Levenshtein scan runs.
-	 * Used by the async page-suggestions worker where the scan time is acceptable.
-	 */
 	public function setSkipNgramGate4(bool $skip = true): void {
-		$this->skipNgramGate4 = $skip;
+		$this->levenshteinEngine->setSkipNgramGate4($skip);
 	}
 
-	/**
-	 * Reset performance counters to zero
-	 */
 	public function resetPerformanceCounters(): void {
-		$this->levenshteinCallCount = 0;
-		$this->totalPagesConsidered = 0;
+		$this->levenshteinEngine->resetPerformanceCounters();
 	}
 
 	/**
-	 * Get current performance counter values
 	 * @return array{levenshtein_calls: int, pages_considered: int, efficiency_percent: float}
 	 */
 	public function getPerformanceCounters(): array {
-		$efficiency = 0;
-		if ($this->totalPagesConsidered > 0) {
-			$efficiency = ($this->levenshteinCallCount / $this->totalPagesConsidered) * 100;
-		}
+		return $this->levenshteinEngine->getPerformanceCounters();
+	}
 
-		return [
-			'levenshtein_calls' => $this->levenshteinCallCount,
-			'pages_considered' => $this->totalPagesConsidered,
-			'efficiency_percent' => round($efficiency, 2)
-		];
+	/** @return array<string, mixed>|null */
+	function getPermalinkUsingRegEx(string $requestedURL, $options = null) {
+		return $this->urlMatcher->getPermalinkUsingRegEx($requestedURL, $options);
+	}
+
+	/** @return array<string, mixed>|null */
+	function getPermalinkUsingSlug(string $requestedURL) {
+		return $this->urlMatcher->getPermalinkUsingSlug($requestedURL);
+	}
+
+	function requestIsForAnImage(string $requestedURL): bool {
+		return $this->urlMatcher->requestIsForAnImage($requestedURL);
+	}
+
+	/** @return array<int, array<string, mixed>> */
+	function getOnlyIDandTermID(array $rowsAsObject): array {
+		return $this->urlMatcher->getOnlyIDandTermID($rowsAsObject);
+	}
+
+	/** @return array<int|string, mixed> */
+	function getFromPermalinkCache(string $requestedURL): array {
+		return $this->urlMatcher->getFromPermalinkCache($requestedURL);
 	}
 
 	/**
-	 * Find URL suggestions using smart caching (N-gram filtering).
-	 * This is a wrapper around findMatchingPosts() primarily for testing.
-	 *
-	 * @param string $requestedURL The 404 URL to find matches for
-	 * @param string $includeCats Whether to include categories (default '1')
-	 * @param bool $includeTags Whether to include tags (default true, converted to '1')
-	 * @return array<int, mixed> Array of matching posts/pages
+	 * @return string|null
+	 * @throws Exception
+	 */
+	function getPermalink($id, $rowType) {
+		return $this->urlMatcher->getPermalink($id, $rowType);
+	}
+
+	function getLastURLPart($url) {
+		return $this->urlMatcher->getLastURLPart($url);
+	}
+
+	/** @return array<int, mixed> */
+	function findMatchingPosts(string $requestedURLRaw, string $includeCats = '1', string $includeTags = '1') {
+		return $this->candidateFilter->findMatchingPosts($requestedURLRaw, $includeCats, $includeTags);
+	}
+
+	/** @return array<string, string> */
+	function removeExcludedPages(array $options, array $permalinks): array {
+		return $this->candidateFilter->removeExcludedPages($options, $permalinks);
+	}
+
+	/** @return array<string, string> */
+	function removeExcludedPagesWithRegex(array $options, array $permalinks, int $maxCacheCount): array {
+		return $this->candidateFilter->removeExcludedPagesWithRegex($options, $permalinks, $maxCacheCount);
+	}
+
+	/** @return array<string, string> */
+	function matchOnCats(array $permalinks, string $requestedURLCleaned, string $fullURLspacesCleaned, string $rowType): array {
+		return $this->candidateFilter->matchOnCats($permalinks, $requestedURLCleaned, $fullURLspacesCleaned, $rowType);
+	}
+
+	/** @return array<string, string> */
+	function matchOnTags(array $permalinks, string $requestedURLCleaned, string $fullURLspacesCleaned, string $rowType): array {
+		return $this->candidateFilter->matchOnTags($permalinks, $requestedURLCleaned, $fullURLspacesCleaned, $rowType);
+	}
+
+	/** @return array<string, string> */
+	function matchOnPosts(array $permalinks, string $requestedURLRaw, string $requestedURLCleaned, string $fullURLspacesCleaned, string $rowType): array {
+		return $this->candidateFilter->matchOnPosts($permalinks, $requestedURLRaw, $requestedURLCleaned, $fullURLspacesCleaned, $rowType);
+	}
+
+	/** @return array<int|string, mixed> */
+	function getLikelyMatchIDs(string $requestedURLCleaned, string $fullURLspaces, string $rowType, ?array $rows = null) {
+		return $this->levenshteinEngine->getLikelyMatchIDs($requestedURLCleaned, $fullURLspaces, $rowType, $rows);
+	}
+
+	function getMaxAcceptableDistance(array $maxDistances, int $onlyNeedThisManyPages): int {
+		return $this->levenshteinEngine->getMaxAcceptableDistance($maxDistances, $onlyNeedThisManyPages);
+	}
+
+	function customLevenshtein($str1, $str2) {
+		return $this->levenshteinEngine->customLevenshtein($str1, $str2);
+	}
+
+	function save_postListener($post_id, $post = null, $update = null): void {
+		$this->postListeners->save_postListener($post_id, $post, $update);
+	}
+
+	function delete_postListener($post_id, $post = null): void {
+		$this->postListeners->delete_postListener($post_id, $post);
+	}
+
+	function savePostHandler($post_id, $post, $update, $saveOrDelete): void {
+		$this->postListeners->savePostHandler($post_id, $post, $update, $saveOrDelete);
+	}
+
+	function permalinkStructureChanged($var1, $newStructure): void {
+		$this->postListeners->permalinkStructureChanged($var1, $newStructure);
+	}
+
+	function initializePublishedPostsProvider(): void {
+		$this->postListeners->initializePublishedPostsProvider();
+	}
+
+	/**
+	 * @return array<int, mixed>
 	 */
 	public function findSuggestionsForURLUsingSmartCache($requestedURL, $includeCats = '1', $includeTags = true) {
-		// Convert boolean to string for backward compatibility
 		$includeTagsStr = $includeTags ? '1' : '0';
 		return $this->findMatchingPosts($requestedURL, $includeCats, $includeTagsStr);
 	}
 
 	static function init(): void {
-		// any time a page is saved or updated, or the permalink structure changes, then we have to clear
-		// the spelling cache because the results may have changed.
 		$me = abj_service('spell_checker');
 
 		add_action('updated_option', array($me,'permalinkStructureChanged'), 10, 2);
@@ -255,11 +268,7 @@ class ABJ_404_Solution_SpellChecker {
 		add_action('delete_post', array($me,'delete_postListener'), 10, 2);
 	}
 
-    /** Find a match using spell checking.
-	 * Use spell checking to find the correct link. Return the permalink (map) if there is one, otherwise return null.
-	 * @param string $requestedURL The URL slug to check for spelling matches
-	 * @param string|null $fullRequestedURL Optional full URL path for caching results (e.g., '/site/bad-url')
-	 * @param array<string, mixed>|null $optionsOverride
+	/**
 	 * @return array<string, mixed>|null
 	 */
 	function getPermalinkUsingSpelling(string $requestedURL, ?string $fullRequestedURL = null, $optionsOverride = null) {
@@ -268,7 +277,6 @@ class ABJ_404_Solution_SpellChecker {
 		$options = is_array($optionsOverride) ? $optionsOverride : $this->logic->getOptions();
 
 		if (@$options['auto_redirects'] == '1') {
-			// Site owner wants automatic redirects.
             $autoCats = isset($options['auto_cats']) && is_string($options['auto_cats']) ? $options['auto_cats'] : '1';
             $autoTags = isset($options['auto_tags']) && is_string($options['auto_tags']) ? $options['auto_tags'] : '1';
             $permalinksPacket = $abj404spellChecker->findMatchingPosts($requestedURL,
@@ -279,8 +287,6 @@ class ABJ_404_Solution_SpellChecker {
 
 			$minScore = $options['auto_score'];
 
-			// since the links were previously sorted so that the highest score would be first,
-			// we only use the first element of the array;
 			if (!is_array($permalinks) || empty($permalinks)) {
 				return null;
 			}
@@ -292,7 +298,6 @@ class ABJ_404_Solution_SpellChecker {
             	is_string($rowType) ? $rowType : null, $options);
 
 			if ($permalink['score'] >= $minScore) {
-				// We found a permalink that will work!
 				$redirectType = $permalink['type'];
 				if (('' . $redirectType != ABJ404_TYPE_404_DISPLAYED) && ('' . $redirectType != ABJ404_TYPE_HOME)) {
 					return $permalink;
@@ -305,8 +310,6 @@ class ABJ_404_Solution_SpellChecker {
 				}
 			}
 
-			// No match met the auto-redirect threshold - cache results for shortcode
-			// This avoids recomputing suggestions when the 404 page renders
 			if ($fullRequestedURL !== null) {
 				$this->cacheComputedSuggestionsForShortcode($fullRequestedURL, $permalinksPacket);
 			}
@@ -315,30 +318,17 @@ class ABJ_404_Solution_SpellChecker {
 		return null;
 	}
 
-	/**
-	 * Cache computed suggestions in a transient for the shortcode to use.
-	 * This avoids duplicate computation when getPermalinkUsingSpelling() runs
-	 * but doesn't find a match above the auto-redirect threshold.
-	 *
-	 * @param string $fullRequestedURL The full URL path (e.g., '/site/bad-url')
-	 * @param array<int, mixed> $permalinksPacket The computed suggestions [permalinks, rowType]
-	 */
 	private function cacheComputedSuggestionsForShortcode(string $fullRequestedURL, array $permalinksPacket): void {
-		// Normalize URL using centralized function for consistency
 		$normalizedURL = $this->f->normalizeURLForCacheKey($fullRequestedURL);
 
 		$urlKey = md5($normalizedURL);
 		$transientKey = 'abj404_suggest_' . $urlKey;
 
-		// Don't overwrite if already set (e.g., by async trigger)
 		$existing = get_transient($transientKey);
 		if ($existing !== false) {
 			return;
 		}
 
-		// Store as 'complete' so shortcode renders immediately.
-		// No token here: this writer is the synchronous fallback path
-		// and the consumer never re-enters the worker token gate.
 		// allow-cache-empty: factory-built typed array; SuggestionTransient::completeArray
 		// always returns a non-empty associative array with at minimum a 'status' key.
 		set_transient(
@@ -356,23 +346,14 @@ class ABJ_404_Solution_SpellChecker {
 			esc_html($normalizedURL));
 	}
 
-	/**
-	 * Trigger asynchronous suggestion computation via non-blocking HTTP request.
-	 * Uses the requested URL (MD5 hashed) as the transient key.
-	 *
-	 * @param string $requestedURL The full requested URL that caused the 404
-	 * @return bool True if computation was triggered, false if already pending/complete
-	 */
 	public function triggerAsyncSuggestionComputation($requestedURL) {
 		$f = abj_service('functions');
 
-		// Normalize URL using centralized function for consistency
 		$normalizedURL = $f->normalizeURLForCacheKey($requestedURL);
 
 		$urlKey = md5($normalizedURL);
 		$transientKey = 'abj404_suggest_' . $urlKey;
 
-		// Check if already computing or complete, prevent duplicate work
 		$existing = ABJ_404_Solution_SuggestionTransient::fromRaw(get_transient($transientKey));
 		if ($existing !== null) {
 			$this->logger->debugMessage("Async suggestions: skipping, transient already exists for " .
@@ -380,15 +361,8 @@ class ABJ_404_Solution_SpellChecker {
 			return false;
 		}
 
-		// Generate a unique token for this computation request.
-		// This prevents unauthorized direct calls to the AJAX endpoint (DoS protection).
 		$token = wp_generate_password(32, false);
 
-		// Mark as pending BEFORE firing request (race condition protection).
-		// TTL of 120 seconds gives slow hosts enough time to start the worker.
-		// Note: started=0 means no worker has claimed the work yet. The first worker
-		// will set started=time() when it claims the work. This prevents the bug where
-		// the first worker skips itself thinking another worker is already computing.
 		// allow-cache-empty: factory-built typed array; pendingArray always returns a
 		// non-empty associative array with at minimum a 'status' key.
 		set_transient(
@@ -396,21 +370,18 @@ class ABJ_404_Solution_SpellChecker {
 			ABJ_404_Solution_SuggestionTransient::pendingArray(
 				$normalizedURL,
 				$token,
-				0,       // no worker has claimed yet
-				time()   // track creation time to detect worker no-show
+				0,
+				time()
 			),
 			120
-		); // 2 minute TTL (allows slow wp_remote_post)
+		); // 2 minute TTL
 
 		$this->logger->debugMessage("Async suggestions: triggering background computation for " .
 			esc_html($normalizedURL));
 
-		// Fire non-blocking request to compute suggestions
-		// Note: timeout of 5s is needed for connection establishment (TLS handshake, etc.)
-		// even with blocking=false, a too-short timeout can prevent the request from being sent
 		$response = wp_remote_post(admin_url('admin-ajax.php'), array(
 			'blocking'  => false,
-			'timeout'   => 5,  // 5 seconds for connection establishment
+			'timeout'   => 5,
 			'sslverify' => apply_filters('https_local_ssl_verify', false),
 			'body'      => array(
 				'action'   => 'abj404_compute_suggestions',
@@ -419,7 +390,6 @@ class ABJ_404_Solution_SpellChecker {
 			)
 		));
 
-		// If dispatch failed, delete the pending transient so caller can compute synchronously
 		if (is_wp_error($response)) {
 			$this->logger->debugMessage("Async suggestions: dispatch failed for " .
 				esc_html($normalizedURL) . " - " . $response->get_error_message());
@@ -430,11 +400,6 @@ class ABJ_404_Solution_SpellChecker {
 		return true;
 	}
 
-	/**
-	 * Check if the configured 404 page contains the suggestions shortcode.
-	 *
-	 * @return bool True if 404 page has the shortcode
-	 */
 	public function does404PageHaveSuggestionsShortcode() {
 		$options = $this->logic->getOptions();
 		$dest404pageRaw = isset($options['dest404page']) ? $options['dest404page'] : null;
@@ -444,7 +409,6 @@ class ABJ_404_Solution_SpellChecker {
 			return false;
 		}
 
-		// Extract page ID from dest404page (format: "123|1")
 		$parts = explode('|', $dest404page ?? '');
 		$page404Id = isset($parts[0]) ? intval($parts[0]) : 0;
 
