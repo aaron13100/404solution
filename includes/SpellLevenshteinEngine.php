@@ -150,6 +150,7 @@ class ABJ_404_Solution_SpellLevenshteinEngine {
 
 		$userRequestedURLWords = explode(" ", (empty($fullURLspaces) ? $requestedURLCleaned : $fullURLspaces));
 		$idsWithWordsInCommon = array();
+		$observedPermalinksById = array();
 		$wasntReadyCount = 0;
 
 		if ($this->publishedPostsProvider === null) {
@@ -218,6 +219,9 @@ class ABJ_404_Solution_SpellLevenshteinEngine {
 			if (!is_array($urlParts) || !array_key_exists('path', $urlParts)) {
 				continue;
 			}
+			if (is_string($the_permalink)) {
+				$observedPermalinksById[$idInt] = $the_permalink;
+			}
 			$existingPageURL = $this->logic->removeHomeDirectory($urlParts['path']);
 			$urlParts = null;
 
@@ -283,7 +287,9 @@ class ABJ_404_Solution_SpellLevenshteinEngine {
 			$idsWithWordsInCommon, $ngramPrefilterApplied, $requestedURLCleaned
 		);
 
-		return $this->batchLookupPermalinks(array_values(array_unique($candidateIds)), $rowType);
+		return $this->batchLookupPermalinks(
+			array_values(array_unique($candidateIds)), $rowType, $observedPermalinksById
+		);
 	}
 
 	/**
@@ -420,9 +426,10 @@ class ABJ_404_Solution_SpellLevenshteinEngine {
 	/**
 	 * @param array<int, mixed> $ids
 	 * @param string $rowType
+	 * @param array<int, string> $observedPermalinksById
 	 * @return array<int|string, string>
 	 */
-	private function batchLookupPermalinks(array $ids, string $rowType): array {
+	private function batchLookupPermalinks(array $ids, string $rowType, array $observedPermalinksById = array()): array {
 		if (empty($ids)) {
 			return [];
 		}
@@ -433,7 +440,12 @@ class ABJ_404_Solution_SpellLevenshteinEngine {
 			foreach ($rows as $row) {
 				$row = (array)$row;
 				if (isset($row['id'], $row['url']) && is_string($row['url'])) {
-					$result[$row['id']] = $this->f->normalizeUrlString($row['url']);
+					$result[(int)$row['id']] = $this->f->normalizeUrlString($row['url']);
+				}
+			}
+			foreach ($intIds as $id) {
+				if (!isset($result[$id]) && isset($observedPermalinksById[$id])) {
+					$result[$id] = $this->f->normalizeUrlString($observedPermalinksById[$id]);
 				}
 			}
 		} else {
