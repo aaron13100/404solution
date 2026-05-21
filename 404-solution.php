@@ -221,7 +221,7 @@ function abj404_autoloader($class) {
 				$inc . 'ajax/AjaxFailureLoggingTrait.php',
 			),
 			'ABJ_404_Solution_FeedbackTransport' => array(
-				$inc . 'FeedbackTransportTrait_EnvironmentExtras.php',
+				$inc . 'FeedbackEnvironmentExtras.php',
 			),
 			'ABJ_404_Solution_DatabaseCore' => array(
 				$inc . 'DataAccessTrait_Connection.php',

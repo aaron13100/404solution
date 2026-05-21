@@ -4,7 +4,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-require_once dirname(__FILE__) . '/FeedbackTransportTrait_EnvironmentExtras.php';
+require_once dirname(__FILE__) . '/FeedbackEnvironmentExtras.php';
 require_once dirname(__FILE__) . '/PayloadSchema.php';
 
 /**
@@ -33,8 +33,6 @@ require_once dirname(__FILE__) . '/PayloadSchema.php';
  * until then.
  */
 class ABJ_404_Solution_FeedbackTransport {
-
-    use ABJ_404_Solution_FeedbackTransport_EnvironmentExtrasTrait;
 
     const TRANSIENT_PREFIX = 'abj404_pending_report_';
     const TRANSIENT_TTL = 86400; // 24 hours
@@ -326,7 +324,7 @@ class ABJ_404_Solution_FeedbackTransport {
         $payload['error_count_in_log']    = self::tryInt(function () { return self::errorCountInLog(); });
         $payload['debug_file_size_bytes'] = self::tryInt(function () { return self::debugFileSizeBytes(); });
         $payload += self::debugLogPayload($type);
-        $payload['environment_extras']    = self::environmentExtras();
+        $payload['environment_extras']    = (new ABJ_404_Solution_FeedbackEnvironmentExtras())->collect();
 
         if (self::isDevelopmentEnvironment()) {
             $payload['environment_type'] = 'development';

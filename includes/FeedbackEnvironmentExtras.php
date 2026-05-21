@@ -5,29 +5,26 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * environment_extras passthrough probes for the server's JSON column.
+ * Environment-extras passthrough probes for the feedback payload's JSON column.
  *
- * Extracted from ABJ_404_Solution_FeedbackTransport so the host class
- * stays under the modularity / line-size limits. The trait owns:
+ * Collects best-effort diagnostic probes about the server environment
+ * (MySQL globals, disk headroom, PHP SAPI, hosting class, etc.) and
+ * packages them into a keyed array for the `environment_extras` field
+ * of the feedback payload.
  *
- *   environmentExtras(): composer for the JSON passthrough map.
- *   probe*() / collect*(): best-effort diagnostic probes, each wrapped
- *     by recordProbe() so a single probe failure cannot blank the
- *     others or block the support send. Failures emit a marker key
- *     `<probe>_error` with a short slug so the server side can tell
- *     "no data" from "probe failed."
- *   recordProbe() / classifyProbeError(): the wrapper layer that
- *     captures throws and writes the marker key.
+ * Each probe is wrapped by recordProbe() so a single probe failure
+ * cannot blank the others or block the support send. Failures emit a
+ * marker key `<probe>_error` with a short slug so the server side can
+ * tell "no data" from "probe failed."
  *
- * Every method here is `private static` and uses `self::` to call into
- * the host class's helpers (tryInt / tryArray). The trait is composed
- * into ABJ_404_Solution_FeedbackTransport via a single `use` statement.
+ * Used by ABJ_404_Solution_FeedbackTransport via composition:
+ *   $extras = (new ABJ_404_Solution_FeedbackEnvironmentExtras())->collect();
  *
  * The probe set is documented in detail in
  * docs/bruno-failure-modes-2026-05-13.md (server-side correlation
  * targets) and pinned by tests/FeedbackTransportEnvironmentExtrasTest.
  */
-trait ABJ_404_Solution_FeedbackTransport_EnvironmentExtrasTrait {
+class ABJ_404_Solution_FeedbackEnvironmentExtras {
 
     /**
      * Best-effort diagnostic passthrough for the server's JSON column. The
@@ -46,13 +43,13 @@ trait ABJ_404_Solution_FeedbackTransport_EnvironmentExtrasTrait {
      *
      * @return array<string, mixed>
      */
-    private static function environmentExtras(): array {
+    public function collect(): array {
         $extras = array();
 
         // MySQL global variables: the binding constraints for slow
         // JOIN / GROUP BY on Bruno-class sites. SHOW GLOBAL VARIABLES
         // is read-only, no plugin tables involved.
-        self::recordProbe($extras, 'mysql_globals', static function () { return self::collectMysqlGlobals(); }, array());
+        $this->recordProbe($extras, 'mysql_globals', function () { return $this->collectMysqlGlobals(); }, array());
 
         // MySQL session-variable probe persisted by the staged view-build
         // (DataAccessTrait_ViewBuildSessionEnvProbe). Already covers
@@ -60,14 +57,14 @@ trait ABJ_404_Solution_FeedbackTransport_EnvironmentExtrasTrait {
         // wait_timeout, innodb_flush_method, character_set_server.
         // Reading the option instead of re-querying keeps the support
         // request cheap and reflects the state of the most recent build.
-        self::recordProbe($extras, 'mysql_session_probe', static function () { return self::loadViewBuildSessionEnvProbe(); }, array());
+        $this->recordProbe($extras, 'mysql_session_probe', function () { return $this->loadViewBuildSessionEnvProbe(); }, array());
 
         // Disk headroom on the WP uploads directory (where the plugin's
         // debug log and any cron-scratch files land). "Table is full"
         // errors are nearly always disk-quota, not the logical
         // table-full condition.
-        self::recordProbe($extras, 'disk_free_bytes', static function () { return self::diskFreeBytesOrThrow(); }, null);
-        self::recordProbe($extras, 'disk_total_bytes', static function () { return self::diskTotalBytesOrThrow(); }, null);
+        $this->recordProbe($extras, 'disk_free_bytes', function () { return $this->diskFreeBytesOrThrow(); }, null);
+        $this->recordProbe($extras, 'disk_total_bytes', function () { return $this->diskTotalBytesOrThrow(); }, null);
 
         // PHP runtime identity beyond version. SAPI distinguishes
         // mod_php (per-request fork, fresh memory) from php-fpm
@@ -76,7 +73,7 @@ trait ABJ_404_Solution_FeedbackTransport_EnvironmentExtrasTrait {
         // size matters for sites with many include paths.
         $extras['php_sapi'] = function_exists('php_sapi_name') ? (string)php_sapi_name() : '';
         $extras['php_memory_peak_bytes'] = function_exists('memory_get_peak_usage') ? (int)memory_get_peak_usage(true) : 0;
-        $extras['php_opcache_enabled'] = self::opcacheEnabled();
+        $extras['php_opcache_enabled'] = $this->opcacheEnabled();
         $extras['php_max_input_vars'] = function_exists('ini_get') ? (int)ini_get('max_input_vars') : 0;
         $extras['php_realpath_cache_size_bytes'] = function_exists('realpath_cache_size') ? (int)realpath_cache_size() : 0;
 
@@ -84,106 +81,106 @@ trait ABJ_404_Solution_FeedbackTransport_EnvironmentExtrasTrait {
         // column). redirects volume and logs_hits rollup size are
         // direct signals for the getRedirectsForViewTempTable.sql
         // perf class.
-        self::recordProbe($extras, 'plugin_tables_bytes', static function () { return self::collectPluginTableSizes(); }, array());
+        $this->recordProbe($extras, 'plugin_tables_bytes', function () { return $this->collectPluginTableSizes(); }, array());
 
         // View-build freshness signals: when did the rollup last
         // complete, what stage did the most recent build reach, is
         // the rollup stale relative to logsv2? Hand-assembled from
         // plugin options the staged build already writes; no new SQL.
-        self::recordProbe($extras, 'view_build_state', static function () { return self::collectViewBuildState(); }, array());
+        $this->recordProbe($extras, 'view_build_state', function () { return $this->collectViewBuildState(); }, array());
 
         // SHOW PROCESSLIST row count. Indicator of shared-host MySQL
         // saturation: a queue of 200+ idle connections explains why
         // the staged build's BEGIN/COMMIT slots wait. Just the count;
         // no connection details (user/host) are emitted.
-        self::recordProbe($extras, 'active_connection_count', static function () { return self::probeActiveConnectionCount(); }, null);
+        $this->recordProbe($extras, 'active_connection_count', function () { return $this->probeActiveConnectionCount(); }, null);
 
         // SHOW INDEX cardinality for the canonical indexes on
         // redirects + logs_hits + logs_hits_preagg. A degraded
         // cardinality (1 row, or NULL after a crash recovery) is a
         // sufficient explanation for a previously-fast JOIN suddenly
         // doing a full table scan. Shape: {table: {index: int}}.
-        self::recordProbe($extras, 'index_cardinality', static function () { return self::probeIndexCardinality(); }, array());
+        $this->recordProbe($extras, 'index_cardinality', function () { return $this->probeIndexCardinality(); }, array());
 
         // Best-effort hosting-class hint parsed from server_software
         // and host-specific environment markers (cPanel, hPanel,
         // Plesk, WP Engine, Kinsta, Pantheon, Flywheel, RunCloud,
         // CloudPanel). Lets server-side group heartbeats by host
         // class retroactively without paying for a deep fingerprint.
-        self::recordProbe($extras, 'hosting_class', static function () { return self::probeHostingClass(); }, array());
+        $this->recordProbe($extras, 'hosting_class', function () { return $this->probeHostingClass(); }, array());
 
         // Object-cache backend NAME, not just the on/off enum already
         // shipped in `object_cache`. Detect Redis / Memcached / APCu
         // / W3TC / LiteSpeed / WP Engine native via known constants
         // + wp_using_ext_object_cache(). Stale-cache reports cluster
         // by backend class.
-        self::recordProbe($extras, 'object_cache_backend', static function () { return self::probeObjectCacheBackend(); }, array());
+        $this->recordProbe($extras, 'object_cache_backend', function () { return $this->probeObjectCacheBackend(); }, array());
 
         // SHOW GLOBAL STATUS counterpart to mysql_globals. Captures
         // runtime symptoms (lock waits, tmp-disk spills, aborted
         // connects, slow queries) that the variables can only
         // bound, never observe.
-        self::recordProbe($extras, 'mysql_status', static function () { return self::probeMysqlStatus(); }, array());
+        $this->recordProbe($extras, 'mysql_status', function () { return $this->probeMysqlStatus(); }, array());
 
         // DB charset + collation, plus per-column collation on the
         // canonical JOIN keys for redirects (url, canonical_url) and
         // logs_hits (requested_url). Collation drift silently
         // disables index seeks on JOIN: symptom is "fast on staging,
         // slow on prod with identical data."
-        self::recordProbe($extras, 'db_collation', static function () { return self::probeDbCollation(); }, array());
+        $this->recordProbe($extras, 'db_collation', function () { return $this->probeDbCollation(); }, array());
 
         // WP + PHP timezone identity. Bruno-class sites in non-UTC
         // zones (pt_BR, ja_JP) sometimes show off-by-N-hours bugs
         // in cooldown arithmetic; capturing both lets us diff
         // server time vs WP time vs PHP time after the fact.
-        self::recordProbe($extras, 'timezone', static function () { return self::probeTimezone(); }, array());
+        $this->recordProbe($extras, 'timezone', function () { return $this->probeTimezone(); }, array());
 
         // Install + upgrade history. The single most useful
         // bifurcator for "started after upgrade Tuesday" vs
         // "always broken since install." Read-only from plugin
         // options the upgrade path already writes.
-        self::recordProbe($extras, 'plugin_lifecycle', static function () { return self::probePluginLifecycle(); }, array());
+        $this->recordProbe($extras, 'plugin_lifecycle', function () { return $this->probePluginLifecycle(); }, array());
 
         // Top distinct recurring error signatures from the debug
         // log file over the last 7 days, capped at 5 entries. The
         // triggering error is captured by the report itself; this
         // captures the recurring error which is often different
         // and which the email-on-first-error path would never send.
-        self::recordProbe($extras, 'recent_error_signatures', static function () { return self::probeRecentErrorSignatures(); }, array());
+        $this->recordProbe($extras, 'recent_error_signatures', function () { return $this->probeRecentErrorSignatures(); }, array());
 
         // opcache detail beyond the on/off enum already shipped
         // in `php_opcache_enabled`. validate_timestamps=0 +
         // revalidate_freq high explains "fresh install still
         // buggy after upgrade" reports where the host serves
         // cached bytecode from the prior version.
-        self::recordProbe($extras, 'opcache_settings', static function () { return self::probeOpcacheSettings(); }, array());
+        $this->recordProbe($extras, 'opcache_settings', function () { return $this->probeOpcacheSettings(); }, array());
 
         // open_basedir restriction string (or null when not set).
         // Hardened shared hosts use this to box file access;
         // explains "permission denied" failures on paths the
         // plugin can otherwise write.
-        $extras['open_basedir'] = self::probeOpenBasedir();
+        $extras['open_basedir'] = $this->probeOpenBasedir();
 
         // Multisite identity: is this the main site, what blog
         // and network are we on, is the plugin network-activated?
         // Behavior differs significantly across these axes
         // (network-active vs single-site-active changes hook
         // registration and upgrade scheduling).
-        self::recordProbe($extras, 'multisite_role', static function () { return self::probeMultisiteRole(); }, array());
+        $this->recordProbe($extras, 'multisite_role', function () { return $this->probeMultisiteRole(); }, array());
 
         // .htaccess writability at the WP home path. When false
         // the plugin's Apache-rule install path cannot succeed
         // and we fall back to the DB-only redirect handler.
         // Differentiates "redirects not firing" reports between
         // "Apache rule never wrote" and "DB handler bug".
-        $extras['htaccess_writable'] = self::probeHtaccessWritable();
+        $extras['htaccess_writable'] = $this->probeHtaccessWritable();
 
         // /tmp filesystem free bytes. Some shared hosts have
         // separate /tmp quotas from the WP install path; tmp
         // exhaustion breaks MySQL tmp tables (Created_tmp_disk_*
         // counter) and PHP file uploads. disk_free_bytes on the
         // uploads dir cannot see this.
-        self::recordProbe($extras, 'tmp_free_bytes', static function () { return self::probeTmpFreeBytesOrThrow(); }, null);
+        $this->recordProbe($extras, 'tmp_free_bytes', function () { return $this->probeTmpFreeBytesOrThrow(); }, null);
 
         if (function_exists('apply_filters')) {
             $filtered = apply_filters('abj404_environment_extras', $extras);
@@ -219,13 +216,13 @@ trait ABJ_404_Solution_FeedbackTransport_EnvironmentExtrasTrait {
      *   checks.
      * @return void
      */
-    private static function recordProbe(array &$extras, string $key, callable $fn, $default): void {
+    private function recordProbe(array &$extras, string $key, callable $fn, $default): void {
         try {
             $value = $fn();
         } catch (\Throwable $e) {
             $extras[$key] = $default;
-            $extras[$key . '_error'] = self::classifyProbeError($e);
-            @error_log('404 Solution: FeedbackTransport probe "' . $key . '" failed: ' . $e->getMessage());
+            $extras[$key . '_error'] = $this->classifyProbeError($e);
+            @error_log('404 Solution: FeedbackEnvironmentExtras probe "' . $key . '" failed: ' . $e->getMessage());
             return;
         }
         $extras[$key] = $value;
@@ -241,7 +238,7 @@ trait ABJ_404_Solution_FeedbackTransport_EnvironmentExtrasTrait {
      * @param \Throwable $e
      * @return string
      */
-    private static function classifyProbeError(\Throwable $e): string {
+    private function classifyProbeError(\Throwable $e): string {
         $msg = strtolower((string)$e->getMessage());
         if (strpos($msg, 'wpdb unavailable') !== false || strpos($msg, 'wpdb missing') !== false) {
             return 'wpdb_unavailable';
@@ -283,7 +280,7 @@ trait ABJ_404_Solution_FeedbackTransport_EnvironmentExtrasTrait {
      *
      * @return array<string, mixed>
      */
-    private static function collectMysqlGlobals(): array {
+    private function collectMysqlGlobals(): array {
         global $wpdb;
         if (!isset($wpdb) || !is_object($wpdb) || !method_exists($wpdb, 'get_results')) {
             throw new \RuntimeException('wpdb unavailable for SHOW GLOBAL VARIABLES probe');
@@ -364,7 +361,7 @@ trait ABJ_404_Solution_FeedbackTransport_EnvironmentExtrasTrait {
      *
      * @return array<string, mixed>
      */
-    private static function loadViewBuildSessionEnvProbe(): array {
+    private function loadViewBuildSessionEnvProbe(): array {
         if (!function_exists('get_option')) {
             return array();
         }
@@ -390,11 +387,11 @@ trait ABJ_404_Solution_FeedbackTransport_EnvironmentExtrasTrait {
      *
      * @return int
      */
-    private static function diskFreeBytesOrThrow(): int {
+    private function diskFreeBytesOrThrow(): int {
         if (!function_exists('disk_free_space')) {
             throw new \RuntimeException('disk_free_space unavailable');
         }
-        $dir = self::supportDiagnosticsDirectory();
+        $dir = $this->supportDiagnosticsDirectory();
         $v = @disk_free_space($dir);
         if ($v === false) {
             throw new \RuntimeException('disk_free_space returned false for ' . $dir);
@@ -409,11 +406,11 @@ trait ABJ_404_Solution_FeedbackTransport_EnvironmentExtrasTrait {
      *
      * @return int
      */
-    private static function diskTotalBytesOrThrow(): int {
+    private function diskTotalBytesOrThrow(): int {
         if (!function_exists('disk_total_space')) {
             throw new \RuntimeException('disk_total_space unavailable');
         }
-        $dir = self::supportDiagnosticsDirectory();
+        $dir = $this->supportDiagnosticsDirectory();
         $v = @disk_total_space($dir);
         if ($v === false) {
             throw new \RuntimeException('disk_total_space returned false for ' . $dir);
@@ -429,7 +426,7 @@ trait ABJ_404_Solution_FeedbackTransport_EnvironmentExtrasTrait {
      *
      * @return string
      */
-    private static function supportDiagnosticsDirectory(): string {
+    private function supportDiagnosticsDirectory(): string {
         if (function_exists('wp_upload_dir')) {
             $info = wp_upload_dir(null, false);
             if (is_array($info) && isset($info['basedir']) && is_string($info['basedir']) && $info['basedir'] !== '') {
@@ -443,7 +440,7 @@ trait ABJ_404_Solution_FeedbackTransport_EnvironmentExtrasTrait {
     }
 
     /** @return bool */
-    private static function opcacheEnabled(): bool {
+    private function opcacheEnabled(): bool {
         if (function_exists('opcache_get_status')) {
             $st = @opcache_get_status(false);
             if (is_array($st) && isset($st['opcache_enabled'])) {
@@ -476,7 +473,7 @@ trait ABJ_404_Solution_FeedbackTransport_EnvironmentExtrasTrait {
      *
      * @return array<string, array<string, int>>
      */
-    private static function collectPluginTableSizes(): array {
+    private function collectPluginTableSizes(): array {
         global $wpdb;
         if (!isset($wpdb) || !is_object($wpdb) || !method_exists($wpdb, 'get_results') || !method_exists($wpdb, 'get_row')) {
             throw new \RuntimeException('wpdb unavailable for plugin_tables_bytes probe');
@@ -546,7 +543,7 @@ trait ABJ_404_Solution_FeedbackTransport_EnvironmentExtrasTrait {
      *
      * @return array<string, int>
      */
-    private static function collectViewBuildState(): array {
+    private function collectViewBuildState(): array {
         if (!function_exists('get_option')) {
             return array();
         }
@@ -581,7 +578,7 @@ trait ABJ_404_Solution_FeedbackTransport_EnvironmentExtrasTrait {
      *
      * @return int
      */
-    private static function probeActiveConnectionCount(): int {
+    private function probeActiveConnectionCount(): int {
         global $wpdb;
         if (!isset($wpdb) || !is_object($wpdb) || !method_exists($wpdb, 'get_results')) {
             throw new \RuntimeException('wpdb unavailable');
@@ -619,7 +616,7 @@ trait ABJ_404_Solution_FeedbackTransport_EnvironmentExtrasTrait {
      *
      * @return array<string, array<string, int>>
      */
-    private static function probeIndexCardinality(): array {
+    private function probeIndexCardinality(): array {
         global $wpdb;
         if (!isset($wpdb) || !is_object($wpdb) || !method_exists($wpdb, 'get_results')) {
             throw new \RuntimeException('wpdb unavailable for index_cardinality probe');
@@ -695,7 +692,7 @@ trait ABJ_404_Solution_FeedbackTransport_EnvironmentExtrasTrait {
      *
      * @return array<string, mixed>
      */
-    private static function probeHostingClass(): array {
+    private function probeHostingClass(): array {
         $out = array(
             'host'           => 'unknown',
             'panel'          => 'unknown',
@@ -784,7 +781,7 @@ trait ABJ_404_Solution_FeedbackTransport_EnvironmentExtrasTrait {
      *
      * @return array<string, mixed>
      */
-    private static function probeObjectCacheBackend(): array {
+    private function probeObjectCacheBackend(): array {
         $out = array(
             'using_ext_cache' => false,
             'backend'         => 'unknown',
@@ -847,7 +844,7 @@ trait ABJ_404_Solution_FeedbackTransport_EnvironmentExtrasTrait {
      *
      * @return array<string, int>
      */
-    private static function probeMysqlStatus(): array {
+    private function probeMysqlStatus(): array {
         global $wpdb;
         if (!isset($wpdb) || !is_object($wpdb) || !method_exists($wpdb, 'get_results')) {
             throw new \RuntimeException('wpdb unavailable for SHOW GLOBAL STATUS probe');
@@ -922,7 +919,7 @@ trait ABJ_404_Solution_FeedbackTransport_EnvironmentExtrasTrait {
      *
      * @return array<string, mixed>
      */
-    private static function probeDbCollation(): array {
+    private function probeDbCollation(): array {
         $out = array(
             'db_charset' => defined('DB_CHARSET') && is_string(DB_CHARSET) ? DB_CHARSET : '',
             'db_collate' => defined('DB_COLLATE') && is_string(DB_COLLATE) ? DB_COLLATE : '',
@@ -984,7 +981,7 @@ trait ABJ_404_Solution_FeedbackTransport_EnvironmentExtrasTrait {
      *
      * @return array<string, mixed>
      */
-    private static function probeTimezone(): array {
+    private function probeTimezone(): array {
         $out = array(
             'wp_timezone'              => '',
             'wp_gmt_offset'            => 0,
@@ -1028,7 +1025,7 @@ trait ABJ_404_Solution_FeedbackTransport_EnvironmentExtrasTrait {
      *
      * @return array<string, mixed>
      */
-    private static function probePluginLifecycle(): array {
+    private function probePluginLifecycle(): array {
         $out = array(
             'installed_at'      => null,
             'current_version'   => defined('ABJ404_VERSION') ? (string)ABJ404_VERSION : '',
@@ -1066,7 +1063,7 @@ trait ABJ_404_Solution_FeedbackTransport_EnvironmentExtrasTrait {
      *
      * @return array<int, array<string, mixed>>
      */
-    private static function probeRecentErrorSignatures(): array {
+    private function probeRecentErrorSignatures(): array {
         $out = array();
         try {
             $log = abj_service('logging');
@@ -1125,7 +1122,7 @@ trait ABJ_404_Solution_FeedbackTransport_EnvironmentExtrasTrait {
             $level = $m[2];
             $msg = trim($m[3]);
             if ($msg === '') { continue; }
-            $sig = $level . ':' . substr(self::normalizeErrorSignature($msg), 0, 200);
+            $sig = $level . ':' . substr($this->normalizeErrorSignature($msg), 0, 200);
             if (!isset($byKey[$sig])) {
                 $byKey[$sig] = array('signature' => $sig, 'count' => 0, 'last_seen_at' => 0);
             }
@@ -1155,7 +1152,7 @@ trait ABJ_404_Solution_FeedbackTransport_EnvironmentExtrasTrait {
      * @param string $msg
      * @return string
      */
-    private static function normalizeErrorSignature(string $msg): string {
+    private function normalizeErrorSignature(string $msg): string {
         $s = $msg;
         // Strip absolute paths to just the basename.
         $s = preg_replace('#/[A-Za-z0-9_\-\./]+/([A-Za-z0-9_\-]+\.php)#', '$1', $s) ?? $s;
@@ -1180,7 +1177,7 @@ trait ABJ_404_Solution_FeedbackTransport_EnvironmentExtrasTrait {
      *
      * @return array<string, mixed>
      */
-    private static function probeOpcacheSettings(): array {
+    private function probeOpcacheSettings(): array {
         $out = array(
             'revalidate_freq'     => null,
             'validate_timestamps' => null,
@@ -1213,7 +1210,7 @@ trait ABJ_404_Solution_FeedbackTransport_EnvironmentExtrasTrait {
      *
      * @return string|null
      */
-    private static function probeOpenBasedir(): ?string {
+    private function probeOpenBasedir(): ?string {
         if (!function_exists('ini_get')) {
             return null;
         }
@@ -1242,7 +1239,7 @@ trait ABJ_404_Solution_FeedbackTransport_EnvironmentExtrasTrait {
      *
      * @return array<string, mixed>
      */
-    private static function probeMultisiteRole(): array {
+    private function probeMultisiteRole(): array {
         $isMultisite = function_exists('is_multisite') && (bool)is_multisite();
         $out = array('is_multisite' => $isMultisite);
         if (!$isMultisite) {
@@ -1275,8 +1272,8 @@ trait ABJ_404_Solution_FeedbackTransport_EnvironmentExtrasTrait {
      *
      * @return bool
      */
-    private static function probeHtaccessWritable(): bool {
-        $path = self::resolveHtaccessPath();
+    private function probeHtaccessWritable(): bool {
+        $path = $this->resolveHtaccessPath();
         if ($path === '') {
             return false;
         }
@@ -1295,7 +1292,7 @@ trait ABJ_404_Solution_FeedbackTransport_EnvironmentExtrasTrait {
      *
      * @return string
      */
-    private static function resolveHtaccessPath(): string {
+    private function resolveHtaccessPath(): string {
         if (function_exists('get_home_path')) {
             $home = (string) get_home_path();
             if ($home !== '') {
@@ -1318,7 +1315,7 @@ trait ABJ_404_Solution_FeedbackTransport_EnvironmentExtrasTrait {
      *
      * @return int
      */
-    private static function probeTmpFreeBytesOrThrow(): int {
+    private function probeTmpFreeBytesOrThrow(): int {
         if (!function_exists('disk_free_space')) {
             throw new \RuntimeException('disk_free_space unavailable');
         }
