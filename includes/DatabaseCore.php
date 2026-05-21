@@ -630,6 +630,74 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
         return $sanitized !== null ? $sanitized : '';
     }
 
+    /**
+     * Get the table-level default collation for a given table.
+     *
+     * Queries SHOW CREATE TABLE for the COLLATE clause. Falls back to
+     * utf8mb4_unicode_ci on any failure. Result is validated through
+     * sanitizeCollationIdentifier().
+     *
+     * @param string $tableName Fully-qualified table name (including prefix).
+     * @return string
+     */
+    public function getTableCollationString(string $tableName): string {
+        $fallback = 'utf8mb4_unicode_ci';
+        $ddl = $this->getCreateTableDDL($tableName);
+        if ($ddl === '') {
+            return $fallback;
+        }
+        if (preg_match('/COLLATE[= ]([A-Za-z0-9_]+)/i', $ddl, $m)) {
+            $sanitized = $this->sanitizeCollationIdentifier($m[1]);
+            return $sanitized !== '' ? $sanitized : $fallback;
+        }
+        return $fallback;
+    }
+
+    /**
+     * Get the column-level collation for a specific column in a table.
+     *
+     * Queries information_schema.COLUMNS for the COLLATION_NAME of the
+     * given column. Falls back to getTableCollationString() if the column
+     * query fails, and ultimately to utf8mb4_unicode_ci. Result is
+     * validated through sanitizeCollationIdentifier().
+     *
+     * @param string $tableName  Fully-qualified table name (including prefix).
+     * @param string $columnName Column name to look up.
+     * @return string
+     */
+    public function getColumnCollationString(string $tableName, string $columnName): string {
+        $fallback = 'utf8mb4_unicode_ci';
+        global $wpdb;
+        if (!isset($wpdb) || !method_exists($wpdb, 'prepare')) {
+            return $this->getTableCollationString($tableName);
+        }
+        /** @var wpdb $wpdb */
+        $sql = $wpdb->prepare(
+            "SELECT COLLATION_NAME FROM information_schema.COLUMNS "
+            . "WHERE TABLE_SCHEMA = DATABASE() "
+            . "AND TABLE_NAME = %s "
+            . "AND COLUMN_NAME = %s "
+            . "LIMIT 1",
+            $tableName,
+            $columnName
+        );
+        if (!is_string($sql) || $sql === '') {
+            return $this->getTableCollationString($tableName);
+        }
+        $result = $this->queryAndGetResults($sql, array('log_errors' => false));
+        $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
+        if (empty($rows) || !is_array($rows[0])) {
+            return $this->getTableCollationString($tableName);
+        }
+        $row = array_change_key_case($rows[0]);
+        $collation = $row['collation_name'] ?? '';
+        if (!is_string($collation) || $collation === '') {
+            return $this->getTableCollationString($tableName);
+        }
+        $sanitized = $this->sanitizeCollationIdentifier($collation);
+        return $sanitized !== '' ? $sanitized : $fallback;
+    }
+
     /** @return string */
     public function getPreferredUtf8mb4Collation() {
         global $wpdb;

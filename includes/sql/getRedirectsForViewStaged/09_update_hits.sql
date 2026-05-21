@@ -12,7 +12,7 @@
 UPDATE {wp_abj404_view_build} t
 LEFT JOIN {wp_abj404_view_build}_hits h
     ON h.requested_url =
-       (CONVERT(CONCAT('/', TRIM(BOTH '/' FROM t.url)) USING utf8mb4) COLLATE utf8mb4_bin)
+       (CONVERT(CONCAT('/', TRIM(BOTH '/' FROM t.url)) USING utf8mb4) COLLATE {S9_COLLATION})
 SET
     t.logshits  = h.logshits,
     t.logsid    = h.logsid,

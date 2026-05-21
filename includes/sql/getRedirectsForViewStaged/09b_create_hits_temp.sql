@@ -5,9 +5,9 @@
    own temporary table with an index keeps the defensive duplicate collapse
    while preserving indexed equality lookups for the UPDATE that follows. */
 CREATE TEMPORARY TABLE {wp_abj404_view_build}_hits (
-    `requested_url` varchar(2048) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
+    `requested_url` varchar(2048) CHARACTER SET utf8mb4 COLLATE {S9_COLLATION} NOT NULL,
     `logshits` bigint(21) DEFAULT NULL,
     `logsid` bigint(40) DEFAULT NULL,
     `last_used` bigint(40) DEFAULT NULL,
     KEY `requested_url` (`requested_url`(128))
-) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+) DEFAULT CHARSET=utf8mb4 COLLATE={S9_COLLATION}

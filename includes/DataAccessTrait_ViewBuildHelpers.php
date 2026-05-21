@@ -966,6 +966,26 @@ trait ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait {
     }
 
     /**
+     * Resolve the column-level collation for the S9 staged build step.
+     *
+     * S9 creates a temporary hits aggregate table and JOINs it against
+     * the view_build buffer via requested_url. The collation is resolved
+     * from the logs_hits.requested_url column (the actual join partner)
+     * to prevent "Illegal mix of collations" errors when correctCollations()
+     * has changed the main tables to a non-default collation.
+     *
+     * Bridge method: delegates to DatabaseCore::getColumnCollationString()
+     * for the actual resolution.
+     *
+     * @return string Sanitized collation identifier (e.g. 'utf8mb4_unicode_520_ci').
+     */
+    private function resolveColumnCollationForStagedBuild(): string {
+        $logsHitsTable = $this->doTableNameReplacements('{wp_abj404_logs_hits}');
+        $collation = $this->getColumnCollationString($logsHitsTable, 'requested_url');
+        return $collation;
+    }
+
+    /**
      * Execute a staged SQL file with placeholder substitution and the
      * standard error-handling pipeline.
      *

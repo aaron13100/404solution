@@ -165,6 +165,15 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
         return $this->dbCore->isTransientConnectionError($errorText);
     }
 
+    /**
+     * @param string $tableName
+     * @param string $columnName
+     * @return string
+     */
+    private function getColumnCollationString(string $tableName, string $columnName): string {
+        return $this->dbCore->getColumnCollationString($tableName, $columnName);
+    }
+
     // --- Delegation methods for ViewReadService methods the traits call ---
 
     /** @return array<string, string> */

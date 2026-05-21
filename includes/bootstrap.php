@@ -100,6 +100,13 @@ function abj_404_solution_register_core_utilities($container) {
         return new ABJ_404_Solution_SystemClock();
     });
 
+    $container->set('rebuild_health', function($c) {
+        return new ABJ_404_Solution_RebuildHealthState(
+            $c->get('clock'),
+            $c->get('logging')
+        );
+    });
+
     $container->set('error_handler', function($c) {
         return 'ABJ_404_Solution_ErrorHandler';
     });

@@ -664,6 +664,77 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
     }
 
     /**
+     * Sweep stale rebuild-related transients and orphaned temp tables.
+     *
+     * Called at the top of rebuildViewDoneInBackground() and
+     * createRedirectsForViewHitsTable() to reclaim disk space and
+     * prevent stale markers from interfering with the next rebuild
+     * attempt. Targets only plugin-owned transient keys with known
+     * prefixes.
+     *
+     * @return void
+     */
+    public function sweepStaleRebuildTransients(): void {
+        global $wpdb;
+        if (!isset($wpdb) || !function_exists('get_option')) {
+            return;
+        }
+
+        // Sweep expired abj404_inflight_* transients (older than 5 minutes).
+        $now = time();
+        $prefix = $this->getLowercasePrefix();
+        $inflightLike = '_transient_timeout_abj404_inflight_%';
+        $timeoutRows = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT option_name, option_value FROM {$wpdb->options} "
+                . "WHERE option_name LIKE %s",
+                $inflightLike
+            ),
+            ARRAY_A
+        );
+        if (is_array($timeoutRows)) {
+            foreach ($timeoutRows as $row) {
+                $optName = is_array($row) ? ($row['option_name'] ?? '') : '';
+                $optVal = is_array($row) ? ($row['option_value'] ?? '') : '';
+                if (!is_string($optName) || $optName === '') {
+                    continue;
+                }
+                $timeout = is_numeric($optVal) ? (int)$optVal : 0;
+                if ($timeout > 0 && $timeout < $now) {
+                    // Expired inflight transient. Delete both the timeout and the value.
+                    $transientName = str_replace('_transient_timeout_', '', $optName);
+                    if (function_exists('delete_transient')) {
+                        delete_transient($transientName);
+                    }
+                }
+            }
+        }
+
+        // Clear expired view_cache_cleanup_marker if present.
+        if (function_exists('get_transient') && function_exists('delete_transient')) {
+            $marker = get_transient('abj404_view_cache_cleanup_marker');
+            // get_transient returns false when expired; the marker is only
+            // useful while live, so no further action needed. But if the
+            // underlying option row lingers (some object caches), explicitly
+            // delete to reclaim the row.
+            if ($marker === false && function_exists('delete_option')) {
+                delete_option('_transient_abj404_view_cache_cleanup_marker');
+                delete_option('_transient_timeout_abj404_view_cache_cleanup_marker');
+            }
+        }
+
+        // Drop orphaned temp/preagg tables to reclaim disk before the
+        // next rebuild attempt.
+        $logsHitsTable = $this->doTableNameReplacements('{wp_abj404_logs_hits}');
+        $preaggTable = $logsHitsTable . '_preagg';
+        $tempTable = $logsHitsTable . '_temp';
+        $this->queryAndGetResults("DROP TABLE IF EXISTS `" . esc_sql($preaggTable) . "`",
+            array('log_errors' => false));
+        $this->queryAndGetResults("DROP TABLE IF EXISTS `" . esc_sql($tempTable) . "`",
+            array('log_errors' => false));
+    }
+
+    /**
      * Hook target for `wp_schedule_single_event('abj404_rebuildViewDone')`.
      * Rebuilds inline (under the build lock) so the next admin request
      * sees fresh data. Called from PluginLogic during cron registration.
@@ -671,6 +742,7 @@ trait ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait {
      * @return void
      */
     public function rebuildViewDoneInBackground(): void {
+        $this->sweepStaleRebuildTransients();
         if ($this->foregroundViewBuildLeaseActive()) {
             $this->logger->debugMessage(
                 '[staged] rebuildViewDoneInBackground: deferring; '

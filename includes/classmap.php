@@ -169,4 +169,5 @@ return array(
     'ABJ_404_Solution_AdminThemeManager' => $base . 'includes/AdminThemeManager.php',
     'ABJ_404_Solution_GscOAuthHandler' => $base . 'includes/GscOAuthHandler.php',
     'ABJ_404_Solution_ReviewFeedback' => $base . 'includes/ReviewFeedback.php',
+    'ABJ_404_Solution_RebuildHealthState' => $base . 'includes/RebuildHealthState.php',
 );

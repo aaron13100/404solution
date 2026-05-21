@@ -919,6 +919,23 @@ class ABJ_404_Solution_LogsRepository implements ABJ_404_Solution_LogsRepository
     }
 
     // =========================================================================
+    // Collation resolution for hits rebuild (Phase 1, c632)
+    // =========================================================================
+
+    /**
+     * Resolve the collation from the abj404_redirects.canonical_url column,
+     * the actual join partner for the hits rebuild phase2 JOIN.
+     *
+     * Falls back to utf8mb4_unicode_ci if the column query fails.
+     *
+     * @return string Sanitized collation identifier.
+     */
+    public function resolveHitsJoinCollation(): string {
+        $redirectsTable = $this->dbCore->doTableNameReplacements('{wp_abj404_redirects}');
+        return $this->dbCore->getColumnCollationString($redirectsTable, 'canonical_url');
+    }
+
+    // =========================================================================
     // Hits table rebuild (from DataAccessTrait_LogsHitsRebuild)
     // =========================================================================
 
@@ -1022,8 +1039,10 @@ class ABJ_404_Solution_LogsRepository implements ABJ_404_Solution_LogsRepository
             $finalDestTable = $this->dbCore->doTableNameReplacements("{wp_abj404_logs_hits}");
             $tempDestTable = $this->dbCore->doTableNameReplacements("{wp_abj404_logs_hits}_temp");
             $this->dbCore->queryAndGetResults("drop table if exists " . $tempDestTable);
+            $resolvedCollation = $this->resolveHitsJoinCollation();
             $createTempTableQuery = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createLogsHitsTempTable.sql");
             $createTempTableQuery = $this->dbCore->doTableNameReplacements($createTempTableQuery);
+            $createTempTableQuery = str_replace('{COLLATION}', $resolvedCollation, $createTempTableQuery);
             $this->dbCore->queryAndGetResults($createTempTableQuery);
             $this->dbCore->queryAndGetResults("truncate table " . $tempDestTable);
             $maxLogIdSnapshot = $this->getMaxLogId();
@@ -1078,10 +1097,12 @@ class ABJ_404_Solution_LogsRepository implements ABJ_404_Solution_LogsRepository
     private function hitsTableInsertChunked(string $tempDestTable, string $preAggTable, int $minId, int $maxId, int $chunkSize) {
         $logsv2Table = $this->dbCore->doTableNameReplacements("{wp_abj404_logsv2}");
         $redirectsTable = $this->dbCore->doTableNameReplacements("{wp_abj404_redirects}");
+        $resolvedCollation = $this->resolveHitsJoinCollation();
         $startTime = microtime(true);
         $this->dbCore->queryAndGetResults("drop table if exists " . $preAggTable);
         $createPreAggQuery = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createLogsHitsPreAggTempTable.sql");
         $createPreAggQuery = $this->dbCore->doTableNameReplacements($createPreAggQuery);
+        $createPreAggQuery = str_replace('{COLLATION}', $resolvedCollation, $createPreAggQuery);
         $this->dbCore->queryAndGetResults($createPreAggQuery);
         $logsv2CanonicalExpr = $this->isLogsv2CanonicalUrlBackfillComplete() ? "canonical_url" : "COALESCE(canonical_url, CONCAT('/', TRIM(BOTH '/' FROM requested_url)))";
         for ($start = $minId; $start <= $maxId; $start += $chunkSize) {
@@ -1090,7 +1111,7 @@ class ABJ_404_Solution_LogsRepository implements ABJ_404_Solution_LogsRepository
             $chunkResult = $this->dbCore->queryAndGetResults($chunkQuery, array('log_too_slow' => false, 'timeout' => 10, 'query_params' => array($start, $end)));
             if (!empty($chunkResult['timed_out']) || !empty($chunkResult['last_error'])) { $this->logger->debugMessage(__FUNCTION__ . " Phase 1 chunk failed at id range [{$start}, {$end}); aborting."); return false; }
         }
-        $phase2Query = "/* abj404:src=LogsRepository::hitsTableInsertChunked#phase2Aggregate */ INSERT INTO " . $tempDestTable . " (requested_url, logsid, last_used, logshits, failed_hits) SELECT a.requested_url, MIN(a.logsid), MAX(a.last_used), SUM(a.logshits), SUM(a.failed_hits) FROM " . $preAggTable . " a INNER JOIN " . $redirectsTable . " r ON a.requested_url = COALESCE(r.canonical_url, CONCAT('/', TRIM(BOTH '/' FROM r.url))) GROUP BY a.requested_url";
+        $phase2Query = "/* abj404:src=LogsRepository::hitsTableInsertChunked#phase2Aggregate */ INSERT INTO " . $tempDestTable . " (requested_url, logsid, last_used, logshits, failed_hits) SELECT a.requested_url, MIN(a.logsid), MAX(a.last_used), SUM(a.logshits), SUM(a.failed_hits) FROM " . $preAggTable . " a INNER JOIN " . $redirectsTable . " r ON a.requested_url = (COALESCE(r.canonical_url, CONCAT('/', TRIM(BOTH '/' FROM r.url))) COLLATE " . $resolvedCollation . ") GROUP BY a.requested_url";
         $results = $this->dbCore->queryAndGetResults($phase2Query, array('log_too_slow' => false, 'timeout' => 60));
         $results['elapsed_time'] = round(microtime(true) - $startTime, 3);
         $this->dbCore->queryAndGetResults("drop table if exists " . $preAggTable);
