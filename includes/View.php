@@ -14,6 +14,8 @@ require_once __DIR__ . '/ViewTrait_Stats.php';
 require_once __DIR__ . '/ViewTrait_Settings.php';
 require_once __DIR__ . '/ViewTrait_Redirects.php';
 require_once __DIR__ . '/ViewTrait_RedirectsTable.php';
+require_once __DIR__ . '/ViewTrait_RedirectTypeUI.php';
+require_once __DIR__ . '/ViewTrait_RedirectConditions.php';
 require_once __DIR__ . '/ViewTrait_Logs.php';
 
 class ABJ_404_Solution_View {
@@ -24,6 +26,8 @@ class ABJ_404_Solution_View {
 	    ViewTrait_Settings,
 	    ViewTrait_Redirects,
 	    ViewTrait_RedirectsTable,
+	    ViewTrait_RedirectTypeUI,
+	    ViewTrait_RedirectConditions,
 	    ViewTrait_Logs;
 
 	/** @var self|null */
