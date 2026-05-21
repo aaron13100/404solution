@@ -14,7 +14,33 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-trait ABJ_404_Solution_DataAccess_SqlErrorReportingTrait {
+class ABJ_404_Solution_DatabaseSqlErrorReporter {
+
+    /** @var ABJ_404_Solution_DatabaseCore */
+    private $core;
+
+    /** @var ABJ_404_Solution_Logging */
+    private $logger;
+
+    /**
+     * @param ABJ_404_Solution_DatabaseCore $core
+     * @param ABJ_404_Solution_Logging $logger
+     */
+    public function __construct(ABJ_404_Solution_DatabaseCore $core, $logger) {
+        $this->core = $core;
+        $this->logger = $logger;
+    }
+
+    /**
+     * Forward DatabaseCore infrastructure calls that remain owned by the core.
+     *
+     * @param string $name
+     * @param array<int, mixed> $arguments
+     * @return mixed
+     */
+    public function __call(string $name, array $arguments) {
+        return $this->core->$name(...$arguments);
+    }
 
     /**
      * Log the first observed database error for every query, before retry and
@@ -61,12 +87,12 @@ trait ABJ_404_Solution_DataAccess_SqlErrorReportingTrait {
             }
         }
 
-        $sqlInfo = (defined('WP_DEBUG') && WP_DEBUG) ? $query : $this->extractSqlFilename($query);
+        $sqlInfo = (defined('WP_DEBUG') && WP_DEBUG) ? $query : $this->core->extractSqlFilename($query);
         $elapsed = isset($result['elapsed_time']) && is_numeric($result['elapsed_time'])
             ? round((float)$result['elapsed_time'], 4) : 0;
         $message = 'SQL query error observed: ' . $lastError
             . ', SQL: ' . $sqlInfo
-            . ', source: ' . $this->extractSqlFilename($query)
+            . ', source: ' . $this->core->extractSqlFilename($query)
             . ', route: ' . ($producesRows ? 'get_results' : 'query')
             . ', log_errors_option: ' . ($logErrors ? 'true' : 'false') /** @phpstan-ignore ternary.alwaysTrue */
             . ', execution_time: ' . $elapsed;
@@ -102,19 +128,19 @@ trait ABJ_404_Solution_DataAccess_SqlErrorReportingTrait {
         if ($errorText === '') {
             return false;
         }
-        return $this->isDiskFullError($errorText)
-            || $this->isReadOnlyError($errorText)
-            || $this->isQuotaLimitError($errorText)
-            || $this->isInvalidDataError($errorText)
-            || $this->isCollationError($errorText)
-            || $this->isMissingPluginTableError($errorText)
-            || $this->isIncorrectKeyFileError($errorText)
-            || $this->isCrashedTableError($errorText)
-            || $this->isDeadlockOrLockTimeoutError($errorText)
-            || $this->isGaleraConflictError($errorText)
-            || $this->isTransientConnectionError($errorText)
-            || $this->isQueryTimeoutError($errorText)
-            || $this->isAccessDeniedError($errorText);
+        return $this->core->isDiskFullError($errorText)
+            || $this->core->isReadOnlyError($errorText)
+            || $this->core->isQuotaLimitError($errorText)
+            || $this->core->isInvalidDataError($errorText)
+            || $this->core->isCollationError($errorText)
+            || $this->core->isMissingPluginTableError($errorText)
+            || $this->core->isIncorrectKeyFileError($errorText)
+            || $this->core->isCrashedTableError($errorText)
+            || $this->core->isDeadlockOrLockTimeoutError($errorText)
+            || $this->core->isGaleraConflictError($errorText)
+            || $this->core->isTransientConnectionError($errorText)
+            || $this->core->isQueryTimeoutError($errorText)
+            || $this->core->isAccessDeniedError($errorText);
     }
 
     /**
@@ -125,11 +151,11 @@ trait ABJ_404_Solution_DataAccess_SqlErrorReportingTrait {
      * @return void
      */
     public function logSqlThrowable(string $query, Throwable $e, array $options, bool $producesRows): void {
-        $sqlInfo = (defined('WP_DEBUG') && WP_DEBUG) ? $query : $this->extractSqlFilename($query);
+        $sqlInfo = (defined('WP_DEBUG') && WP_DEBUG) ? $query : $this->core->extractSqlFilename($query);
         $logErrors = !array_key_exists('log_errors', $options) || (bool)$options['log_errors'];
         $message = 'SQL query threw exception: ' . $e->getMessage()
             . ', SQL: ' . $sqlInfo
-            . ', source: ' . $this->extractSqlFilename($query)
+            . ', source: ' . $this->core->extractSqlFilename($query)
             . ', route: ' . ($producesRows ? 'get_results' : 'query')
             . ', log_errors_option: ' . ($logErrors ? 'true' : 'false');
 

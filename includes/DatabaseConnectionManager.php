@@ -4,7 +4,33 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-trait ABJ_404_Solution_DataAccess_ConnectionTrait {
+class ABJ_404_Solution_DatabaseConnectionManager {
+
+    /** @var ABJ_404_Solution_DatabaseCore */
+    private $core;
+
+    /** @var ABJ_404_Solution_Logging */
+    private $logger;
+
+    /**
+     * @param ABJ_404_Solution_DatabaseCore $core
+     * @param ABJ_404_Solution_Logging $logger
+     */
+    public function __construct(ABJ_404_Solution_DatabaseCore $core, $logger) {
+        $this->core = $core;
+        $this->logger = $logger;
+    }
+
+    /**
+     * Forward DatabaseCore infrastructure calls that remain owned by the core.
+     *
+     * @param string $name
+     * @param array<int, mixed> $arguments
+     * @return mixed
+     */
+    public function __call(string $name, array $arguments) {
+        return $this->core->$name(...$arguments);
+    }
 
     /**
      * Probe wpdb's check_connection method defensively for custom wpdb
@@ -22,7 +48,7 @@ trait ABJ_404_Solution_DataAccess_ConnectionTrait {
      * @param bool   $allowReconnect Passed through to check_connection().
      * @return bool True if connected (or unable to probe); false if probed and disconnected.
      */
-    public function safeCheckConnection($wpdb, $allowReconnect = false) {
+    public function safeCheckConnection($wpdb, bool $allowReconnect = false): bool {
         if (!is_object($wpdb)) {
             return true;
         }

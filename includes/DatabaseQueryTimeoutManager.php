@@ -22,7 +22,33 @@ if (!defined('ABSPATH')) {
  * Composed into ABJ_404_Solution_DataAccess. No state of its own; uses the
  * global $wpdb to detect engine version. Pure functions otherwise.
  */
-trait ABJ_404_Solution_DataAccess_QueryTimeoutsTrait {
+class ABJ_404_Solution_DatabaseQueryTimeoutManager {
+
+    /** @var ABJ_404_Solution_DatabaseCore */
+    private $core;
+
+    /** @var ABJ_404_Solution_Logging */
+    private $logger;
+
+    /**
+     * @param ABJ_404_Solution_DatabaseCore $core
+     * @param ABJ_404_Solution_Logging $logger
+     */
+    public function __construct(ABJ_404_Solution_DatabaseCore $core, $logger) {
+        $this->core = $core;
+        $this->logger = $logger;
+    }
+
+    /**
+     * Forward DatabaseCore infrastructure calls that remain owned by the core.
+     *
+     * @param string $name
+     * @param array<int, mixed> $arguments
+     * @return mixed
+     */
+    public function __call(string $name, array $arguments) {
+        return $this->core->$name(...$arguments);
+    }
 
     /**
      * @param string $query
@@ -129,7 +155,7 @@ trait ABJ_404_Solution_DataAccess_QueryTimeoutsTrait {
      * @return string The query with timeout hint applied
      */
     public function applySelectTimeout(string $query, int $timeoutSeconds): string {
-        if ($this->isMariaDB() && !ABJ_404_Solution_DataAccess::isSetStatementWrapperUnsupported()) {
+        if ($this->isMariaDB() && !ABJ_404_Solution_DatabaseCore::isSetStatementWrapperUnsupported()) {
             return "SET STATEMENT max_statement_time=" . $timeoutSeconds . " FOR " . $query;
         }
         // MySQL hint also works for the MariaDB-with-disabled-wrapper case:
@@ -155,7 +181,7 @@ trait ABJ_404_Solution_DataAccess_QueryTimeoutsTrait {
      * @return string The query with timeout applied
      */
     public function applyNonLeadingSelectTimeout(string $query, int $timeoutSeconds): string {
-        if ($this->isMariaDB() && !ABJ_404_Solution_DataAccess::isSetStatementWrapperUnsupported()) {
+        if ($this->isMariaDB() && !ABJ_404_Solution_DatabaseCore::isSetStatementWrapperUnsupported()) {
             return "SET STATEMENT max_statement_time=" . $timeoutSeconds . " FOR " . $query;
         }
         $timeoutMs = $timeoutSeconds * 1000;
@@ -179,7 +205,7 @@ trait ABJ_404_Solution_DataAccess_QueryTimeoutsTrait {
      * @return string The query with timeout applied (unchanged on MySQL)
      */
     public function applyStatementTimeout(string $query, int $timeoutSeconds): string {
-        if ($this->isMariaDB() && !ABJ_404_Solution_DataAccess::isSetStatementWrapperUnsupported()) {
+        if ($this->isMariaDB() && !ABJ_404_Solution_DatabaseCore::isSetStatementWrapperUnsupported()) {
             return "SET STATEMENT max_statement_time=" . $timeoutSeconds . " FOR " . $query;
         }
         // MySQL has no timeout mechanism for non-SELECT queries. MariaDB hosts
@@ -239,7 +265,7 @@ trait ABJ_404_Solution_DataAccess_QueryTimeoutsTrait {
      * Re-execute a query without the `SET STATEMENT max_statement_time=N FOR `
      * wrapper after the server rejected the wrapper itself (privilege denied
      * or syntax not understood). Caches the result in
-     * ABJ_404_Solution_DataAccess::$setStatementWrapperUnsupported so every
+     * ABJ_404_Solution_DatabaseCore::$setStatementWrapperUnsupported so every
      * subsequent timeout-wrapped query in this request skips the wrapper too.
      *
      * Result harvest mirrors the other recovery paths
@@ -269,7 +295,7 @@ trait ABJ_404_Solution_DataAccess_QueryTimeoutsTrait {
         $unwrapped = $this->stripSetStatementWrapper($query);
         // Cache the negative result for the rest of the request so we don't
         // wrap-then-fail on every subsequent query. Reset between requests.
-        ABJ_404_Solution_DataAccess::setSetStatementWrapperUnsupported(true);
+        ABJ_404_Solution_DatabaseCore::setSetStatementWrapperUnsupported(true);
         $this->logger->infoMessage(
             'SET STATEMENT timeout wrapper rejected by server; '
             . 'retrying query without wrapper and caching unsupported flag '
@@ -298,6 +324,6 @@ trait ABJ_404_Solution_DataAccess_QueryTimeoutsTrait {
             $wpdb->query($unwrapped);
             $result['rows'] = array();
         }
-        $this->harvestWpdbResult($result);
+        $this->core->harvestWpdbResult($result);
     }
 }

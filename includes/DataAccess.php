@@ -5,7 +5,6 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-require_once __DIR__ . '/DataAccessTrait_Connection.php';
 require_once __DIR__ . '/DataAccessTrait_ViewQueriesStaged.php';
 require_once __DIR__ . '/DataAccessTrait_ViewBuildStageCallbacks.php';
 require_once __DIR__ . '/DataAccessTrait_ViewBuildStageRunner.php';
@@ -19,7 +18,8 @@ require_once __DIR__ . '/DataAccessTrait_ViewBuildHostFailurePolicy.php';
 require_once __DIR__ . '/DataAccessTrait_ViewBuildForceRestart.php';
 require_once __DIR__ . '/DataAccessTrait_MutationWatermarkSeam.php';
 require_once __DIR__ . '/DataAccessTrait_AdminMutationGate.php';
-require_once __DIR__ . '/DataAccessTrait_QueryTimeouts.php';
+require_once __DIR__ . '/DatabaseConnectionManager.php';
+require_once __DIR__ . '/DatabaseQueryTimeoutManager.php';
 require_once __DIR__ . '/ViewBuildOrchestratorInterface.php';
 require_once __DIR__ . '/ViewBuildOrchestrator.php';
 require_once __DIR__ . '/ViewReadServiceInterface.php';
@@ -32,8 +32,8 @@ require_once __DIR__ . '/ContentRepositoryInterface.php';
 require_once __DIR__ . '/ContentRepository.php';
 require_once __DIR__ . '/RedirectsRepositoryInterface.php';
 require_once __DIR__ . '/RedirectsRepository.php';
-require_once __DIR__ . '/DataAccessTrait_ErrorClassification.php';
-require_once __DIR__ . '/DataAccessTrait_SqlErrorReporting.php';
+require_once __DIR__ . '/DatabaseErrorClassifier.php';
+require_once __DIR__ . '/DatabaseSqlErrorReporter.php';
 require_once __DIR__ . '/ViewQueryFailureException.php';
 require_once __DIR__ . '/ViewBuildPendingException.php';
 require_once __DIR__ . '/DatabaseCoreInterface.php';
@@ -354,13 +354,83 @@ class ABJ_404_Solution_DataAccess {
             $this->viewReadService,
         ];
         foreach ($delegates as $delegate) {
-            if ($delegate !== null && is_callable([$delegate, $name])) {
+            if ($delegate !== null && method_exists($delegate, $name)) {
                 return $delegate->$name(...$arguments);
             }
         }
         throw new \BadMethodCallException(
             'Method ' . $name . '() not found on ' . static::class . ' or its sub-services.'
         );
+    }
+
+    /** @param object $wpdb @param bool $allowReconnect @return bool */
+    public function safeCheckConnection($wpdb, bool $allowReconnect = false): bool {
+        return $this->dbCore->safeCheckConnection($wpdb, $allowReconnect);
+    }
+
+    /** @return bool */
+    public function ensureConnection() {
+        return $this->dbCore->ensureConnection();
+    }
+
+    /** @param string $query @return bool */
+    public function queryStartsWithSelect(string $query): bool {
+        return $this->dbCore->queryStartsWithSelect($query);
+    }
+
+    /** @param string $query @return bool */
+    public function queryProducesResultRows(string $query): bool {
+        return $this->dbCore->queryProducesResultRows($query);
+    }
+
+    /** @param string $query @param int $timeoutSeconds @return string */
+    public function applyQueryTimeout(string $query, int $timeoutSeconds): string {
+        return $this->dbCore->applyQueryTimeout($query, $timeoutSeconds);
+    }
+
+    /** @return bool */
+    public function isMariaDB(): bool {
+        return $this->dbCore->isMariaDB();
+    }
+
+    /** @param string $query @param int $timeoutSeconds @return string */
+    public function applySelectTimeout(string $query, int $timeoutSeconds): string {
+        return $this->dbCore->applySelectTimeout($query, $timeoutSeconds);
+    }
+
+    /** @param string $query @param int $timeoutSeconds @return string */
+    public function applyNonLeadingSelectTimeout(string $query, int $timeoutSeconds): string {
+        return $this->dbCore->applyNonLeadingSelectTimeout($query, $timeoutSeconds);
+    }
+
+    /** @param string $query @param int $timeoutSeconds @return string */
+    public function applyStatementTimeout(string $query, int $timeoutSeconds): string {
+        return $this->dbCore->applyStatementTimeout($query, $timeoutSeconds);
+    }
+
+    /** @param string $insertSelectQuery @param int $timeoutSeconds @return string */
+    public function applyTimeoutToInsertSelect(string $insertSelectQuery, int $timeoutSeconds): string {
+        return $this->dbCore->applyTimeoutToInsertSelect($insertSelectQuery, $timeoutSeconds);
+    }
+
+    /** @param string $query @return bool */
+    public function queryHasSetStatementWrapper(string $query): bool {
+        return $this->dbCore->queryHasSetStatementWrapper($query);
+    }
+
+    /** @param string $query @return string */
+    public function stripSetStatementWrapper(string $query): string {
+        return $this->dbCore->stripSetStatementWrapper($query);
+    }
+
+    /**
+     * @param string $query
+     * @param array<string, mixed> $result
+     * @param 'OBJECT'|'OBJECT_K'|'ARRAY_A'|'ARRAY_N' $resultType
+     * @return void
+     */
+    public function retryWithoutSetStatementWrapper(string &$query, array &$result, string $resultType): void {
+        $this->dbCore->retryWithoutSetStatementWrapper($query, $result, $resultType);
     }
 
     /**

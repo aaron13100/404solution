@@ -13,12 +13,49 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
+class ABJ_404_Solution_DatabaseErrorClassifier {
+
+    /** @var int Cooldown when DB query quota is exceeded. */
+    const DB_QUOTA_COOLDOWN_SECONDS = ABJ_404_Solution_DatabaseCore::DB_QUOTA_COOLDOWN_SECONDS;
+    /** @var int Cooldown when DB is read-only or storage is full. */
+    const DB_WRITE_BLOCK_COOLDOWN_SECONDS = ABJ_404_Solution_DatabaseCore::DB_WRITE_BLOCK_COOLDOWN_SECONDS;
+
+
+    /** @var ABJ_404_Solution_DatabaseCore */
+    private $core;
+
+    /** @var ABJ_404_Solution_Functions */
+    private $f;
+
+    /** @var ABJ_404_Solution_Logging */
+    private $logger;
+
+    /**
+     * @param ABJ_404_Solution_DatabaseCore $core
+     * @param ABJ_404_Solution_Functions $functions
+     * @param ABJ_404_Solution_Logging $logger
+     */
+    public function __construct(ABJ_404_Solution_DatabaseCore $core, $functions, $logger) {
+        $this->core = $core;
+        $this->f = $functions;
+        $this->logger = $logger;
+    }
+
+    /**
+     * Forward DatabaseCore infrastructure calls that remain owned by the core.
+     *
+     * @param string $name
+     * @param array<int, mixed> $arguments
+     * @return mixed
+     */
+    public function __call(string $name, array $arguments) {
+        return $this->core->$name(...$arguments);
+    }
 
     /**
      * Determine whether an error indicates invalid text/charset payload.
      *
-     * @param string $errorText
+     * @param mixed $errorText
      * @return bool
      */
     public function isInvalidDataError($errorText) {
@@ -114,7 +151,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
 
     /** @param string $errorText @return bool */
     public function isQuotaLimitError(string $errorText): bool {
-        if (!is_string($errorText) || $errorText === '') {
+        if ($errorText === '') {
             return false;
         }
         $lower = strtolower($errorText);
@@ -124,7 +161,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
 
     /** @param string $errorText @return bool */
     public function isDiskFullError(string $errorText): bool {
-        if (!is_string($errorText) || $errorText === '') {
+        if ($errorText === '') {
             return false;
         }
         $lower = strtolower($errorText);
@@ -148,7 +185,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
 
     /** @param string $errorText @return bool */
     public function isReadOnlyError(string $errorText): bool {
-        if (!is_string($errorText) || $errorText === '') {
+        if ($errorText === '') {
             return false;
         }
         $lower = strtolower($errorText);
@@ -169,7 +206,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
      * @return bool
      */
     public function isAccessDeniedError(string $errorText): bool {
-        if (!is_string($errorText) || $errorText === '') {
+        if ($errorText === '') {
             return false;
         }
         $lower = strtolower($errorText);
@@ -226,7 +263,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
 
     /** @param string $errorText @return bool */
     public function isCollationError(string $errorText): bool {
-        if (!is_string($errorText) || $errorText === '') {
+        if ($errorText === '') {
             return false;
         }
         $lower = strtolower($errorText);
@@ -237,7 +274,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
 
     /** @param string $errorText @return bool */
     public function isCrashedTableError(string $errorText): bool {
-        if (!is_string($errorText) || $errorText === '') {
+        if ($errorText === '') {
             return false;
         }
         return stripos($errorText, 'is marked as crashed') !== false;
@@ -245,7 +282,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
 
     /** @param string $errorText @return bool */
     public function isIncorrectKeyFileError(string $errorText): bool {
-        if (!is_string($errorText) || $errorText === '') {
+        if ($errorText === '') {
             return false;
         }
         return stripos($errorText, 'Incorrect key file') !== false;
@@ -254,7 +291,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
     /** Detect MySQL MAX_EXECUTION_TIME (errno 3024) and MariaDB max_statement_time (errno 1969) timeouts.
      * @param string $errorText @return bool */
     public function isQueryTimeoutError(string $errorText): bool {
-        if (!is_string($errorText) || $errorText === '') {
+        if ($errorText === '') {
             return false;
         }
         return (strpos($errorText, '3024') !== false ||
@@ -274,7 +311,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
      * @return bool
      */
     public function isPacketTooLarge(string $errorText): bool {
-        if (!is_string($errorText) || $errorText === '') {
+        if ($errorText === '') {
             return false;
         }
         $lower = strtolower($errorText);
@@ -285,7 +322,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
 
     /** @param string $errorText @return bool */
     public function isDeadlockOrLockTimeoutError(string $errorText): bool {
-        if (!is_string($errorText) || $errorText === '') {
+        if ($errorText === '') {
             return false;
         }
         $lower = strtolower($errorText);
@@ -320,7 +357,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
      * @return bool
      */
     public function isGaleraConflictError(string $errorText): bool {
-        if (!is_string($errorText) || $errorText === '') {
+        if ($errorText === '') {
             return false;
         }
         $lower = strtolower($errorText);
@@ -374,7 +411,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
      * @return bool
      */
     public function isPermanentHostSideStagedFailure(string $errorText): bool {
-        if (!is_string($errorText) || $errorText === '') {
+        if ($errorText === '') {
             return false;
         }
         if ($this->isResumableStagedKill($errorText)) {
@@ -413,7 +450,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
      * @return string
      */
     public function classifyStageFailure(int $stageNumber, string $errorText): string {
-        if (!is_string($errorText) || $errorText === '') {
+        if ($errorText === '') {
             return 'rethrow';
         }
         // Buffer-missing marker thrown by our own pre-stage probes
@@ -544,8 +581,8 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
             return;
         }
         if ($this->isDiskFullError($errorText)) {
-            $this->serverSideIssueNoted = true;
-            $this->setRuntimeFlag('abj404_db_disk_full_until', $this->clock()->now() + self::DB_WRITE_BLOCK_COOLDOWN_SECONDS, self::DB_WRITE_BLOCK_COOLDOWN_SECONDS);
+            $this->core->markServerSideIssueNoted();
+            $this->core->setRuntimeFlag('abj404_db_disk_full_until', $this->core->clock()->now() + self::DB_WRITE_BLOCK_COOLDOWN_SECONDS, self::DB_WRITE_BLOCK_COOLDOWN_SECONDS);
 
             // Disambiguate InnoDB tablespace exhaustion from actual disk full or MyISAM limit.
             // "table is full" for InnoDB means the shared tablespace (ibdata1) is at capacity —
@@ -554,24 +591,24 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
             if ($tableFull) {
                 $tableName = $this->extractTableNameFromFullError($errorText);
                 if ($tableName !== null && $this->isInnoDBTable($tableName)) {
-                    $this->setPluginDbNotice('disk_full', $this->localizeOrDefault('The InnoDB tablespace appears to be exhausted. Deleting plugin data will NOT free this space. Contact your hosting provider to expand the InnoDB tablespace (ibdata1).'), $errorText);
+                    $this->core->setPluginDbNotice('disk_full', $this->core->localizeOrDefault('The InnoDB tablespace appears to be exhausted. Deleting plugin data will NOT free this space. Contact your hosting provider to expand the InnoDB tablespace (ibdata1).'), $errorText);
                     return;
                 }
             }
 
-            $this->setPluginDbNotice('disk_full', $this->localizeOrDefault('Database storage appears full (disk/engine space). Plugin write-heavy tasks are temporarily paused.'), $errorText);
+            $this->core->setPluginDbNotice('disk_full', $this->core->localizeOrDefault('Database storage appears full (disk/engine space). Plugin write-heavy tasks are temporarily paused.'), $errorText);
             return;
         }
         if ($this->isQuotaLimitError($errorText)) {
-            $this->serverSideIssueNoted = true;
-            $this->setRuntimeFlag('abj404_db_quota_cooldown_until', $this->clock()->now() + self::DB_QUOTA_COOLDOWN_SECONDS, self::DB_QUOTA_COOLDOWN_SECONDS);
-            $this->setPluginDbNotice('query_quota', $this->localizeOrDefault('Database query quota was exceeded (for example max_questions). Non-essential plugin background tasks are temporarily paused.'), $errorText);
+            $this->core->markServerSideIssueNoted();
+            $this->core->setRuntimeFlag('abj404_db_quota_cooldown_until', $this->core->clock()->now() + self::DB_QUOTA_COOLDOWN_SECONDS, self::DB_QUOTA_COOLDOWN_SECONDS);
+            $this->core->setPluginDbNotice('query_quota', $this->core->localizeOrDefault('Database query quota was exceeded (for example max_questions). Non-essential plugin background tasks are temporarily paused.'), $errorText);
             return;
         }
         if ($this->isReadOnlyError($errorText)) {
-            $this->serverSideIssueNoted = true;
-            $this->setRuntimeFlag('abj404_db_read_only_until', $this->clock()->now() + self::DB_WRITE_BLOCK_COOLDOWN_SECONDS, self::DB_WRITE_BLOCK_COOLDOWN_SECONDS);
-            $this->setPluginDbNotice('read_only', $this->localizeOrDefault('Database appears to be in read-only mode. Plugin write operations are temporarily paused.'), $errorText);
+            $this->core->markServerSideIssueNoted();
+            $this->core->setRuntimeFlag('abj404_db_read_only_until', $this->core->clock()->now() + self::DB_WRITE_BLOCK_COOLDOWN_SECONDS, self::DB_WRITE_BLOCK_COOLDOWN_SECONDS);
+            $this->core->setPluginDbNotice('read_only', $this->core->localizeOrDefault('Database appears to be in read-only mode. Plugin write operations are temporarily paused.'), $errorText);
             return;
         }
         if ($this->isCollationError($errorText)) {
@@ -586,9 +623,9 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
 
     /** @return bool */
     public function isQuotaCooldownActive(): bool {
-        $rawQuotaFlag = $this->getRuntimeFlag('abj404_db_quota_cooldown_until');
+        $rawQuotaFlag = $this->core->getRuntimeFlag('abj404_db_quota_cooldown_until');
         $until = is_scalar($rawQuotaFlag) ? (int)$rawQuotaFlag : 0;
-        return ($until > $this->clock()->now());
+        return ($until > $this->core->clock()->now());
     }
 
     /** @param string $errorText @return bool */
@@ -634,7 +671,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
      * @return void
      */
     public function attemptMissingTableRepairAndRetry($query, &$result) {
-        if (self::$tableRepairInProgress) {
+        if ($this->core->isTableRepairInProgress()) {
             return;
         }
         if ($this->handleTransientViewBuildTableMissing($query, $result)) {
@@ -662,7 +699,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
         $this->logger->infoMessage("Missing plugin table detected during query. "
             . "Attempting auto-repair. SQL error: " . $originalSqlError);
 
-        self::$tableRepairInProgress = true;
+        $this->core->setTableRepairInProgress(true);
         try {
             $this->runRepairCreateRetryAndReport(
                 $query, $result, $repairCooldownKey, $cooldownTtlSeconds,
@@ -670,9 +707,9 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
             );
         } catch (Throwable $e) {
             $this->logger->warn("Missing-table auto-repair failed: " . $e->getMessage());
-            $this->setRuntimeFlag($repairCooldownKey, $this->clock()->now() + $cooldownTtlSeconds, $cooldownTtlSeconds);
+            $this->core->setRuntimeFlag($repairCooldownKey, $this->core->clock()->now() + $cooldownTtlSeconds, $cooldownTtlSeconds);
         } finally {
-            self::$tableRepairInProgress = false;
+            $this->core->setTableRepairInProgress(false);
         }
     }
 
@@ -721,7 +758,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
         $lowerErr = strtolower($observedError);
         $errorMentionsViewDone = ($this->f->strpos($lowerErr, '_abj404_view_done') !== false)
             && ($this->f->strpos($lowerErr, '_abj404_view_deleteme') === false);
-        $isReadQuery = $this->queryProducesResultRows($query);
+        $isReadQuery = $this->core->queryProducesResultRows($query);
 
         if ($errorMentionsViewDone && $isReadQuery) {
             $this->logger->debugMessage(
@@ -757,12 +794,13 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
      * @return bool
      */
     public function isMissingTableRepairOnCooldown(array &$result, string $repairCooldownKey): bool {
-        $cooldownUntil = $this->getRuntimeFlag($repairCooldownKey);
-        if (!is_scalar($cooldownUntil) || (int)$cooldownUntil <= $this->clock()->now()) {
+        $cooldownUntil = $this->core->getRuntimeFlag($repairCooldownKey);
+        if (!is_scalar($cooldownUntil) || (int)$cooldownUntil <= $this->core->clock()->now()) {
             return false;
         }
-        $this->logger->warn("Missing plugin table (repair previously failed, cooldown active): "
-            . $result['last_error']);
+        $lastError = isset($result['last_error']) && is_scalar($result['last_error'])
+            ? (string)$result['last_error'] : '';
+        $this->logger->warn("Missing plugin table (repair previously failed, cooldown active): " . $lastError);
         $result['last_error'] = '';
         return true;
     }
@@ -804,9 +842,9 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
         // "WordPress database error" entry on top of the first, producing
         // duplicate noise in debug.log for every failed cron run.
         $prevSuppressState = $wpdb->suppress_errors(true);
-        $result['rows'] = $wpdb->get_results($query, $this->currentResultType);
+        $result['rows'] = $wpdb->get_results($query, $this->core->getCurrentResultType());
         $wpdb->suppress_errors($prevSuppressState);
-        $this->harvestWpdbResult($result);
+        $this->core->harvestWpdbResult($result);
 
         if ($result['last_error'] === '') {
             $this->logger->infoMessage("Missing-table auto-repair succeeded.");
@@ -818,7 +856,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
             }
             // If a stale missing_table notice exists from an earlier failed
             // repair attempt, clear it immediately now that repair succeeded.
-            $this->clearPluginDbNoticeIfType('missing_table');
+            $this->core->clearPluginDbNoticeIfType('missing_table');
             return;
         }
 
@@ -877,7 +915,7 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
         // existence check so the debug log distinguishes "CREATE didn't materialize
         // the table" (concurrency race, swallowed SQL error in queryAndGetResults,
         // insufficient privileges) from other retry-failure modes.
-        $tableStillMissing = ($missingTable !== '' && !$this->tableExists($missingTable));
+        $tableStillMissing = ($missingTable !== '' && !$this->core->tableExists($missingTable));
         $tableContext = ($missingTable !== '')
             ? " Table: " . $missingTable . "."
             : '';
@@ -891,12 +929,13 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
             . $tableContext
             . $existenceContext
             . " Original error: " . $originalSqlError
-            . ", Retry error: " . $result['last_error']
+            . ", Retry error: " . (isset($result['last_error']) && is_scalar($result['last_error'])
+                ? (string)$result['last_error'] : '')
             . $prefixDiag);
         // Engage 1h cooldown and surface a single admin notice on
         // the plugin screen so the admin knows to investigate.
         // Never email; never show on all wp-admin pages.
-        $this->setRuntimeFlag($repairCooldownKey, $this->clock()->now() + $cooldownTtlSeconds, $cooldownTtlSeconds);
+        $this->core->setRuntimeFlag($repairCooldownKey, $this->core->clock()->now() + $cooldownTtlSeconds, $cooldownTtlSeconds);
         $this->setMissingTablePluginDbNotice($result, $missingTable, $prefixDiag);
     }
 
@@ -932,11 +971,11 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
         }
         $noticePayload = array(
             'type'         => 'missing_table',
-            'message'      => $this->localizeOrDefault($adminMsg),
-            'timestamp'    => $this->clock()->now(),
+            'message'      => $this->core->localizeOrDefault($adminMsg),
+            'timestamp'    => $this->core->clock()->now(),
             'error_string' => $rawError,
         );
-        $this->setRuntimeFlag('abj404_plugin_db_notice', $noticePayload, 86400);
+        $this->core->setRuntimeFlag('abj404_plugin_db_notice', $noticePayload, 86400);
     }
 
     /**
@@ -995,9 +1034,12 @@ trait ABJ_404_Solution_DataAccess_ErrorClassificationTrait {
             if (!is_array($rows) || empty($rows)) {
                 return '';
             }
-            $expectedTable = $this->getLowercasePrefix() . 'abj404_redirects';
+            $expectedTable = $this->core->getLowercasePrefix() . 'abj404_redirects';
             $foundTables = [];
             foreach ($rows as $row) {
+                if (!is_iterable($row)) {
+                    continue;
+                }
                 // Case-insensitive key lookup (MySQL driver inconsistency).
                 $name = null;
                 foreach ($row as $key => $value) {
