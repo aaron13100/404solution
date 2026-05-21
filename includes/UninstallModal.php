@@ -180,37 +180,7 @@ class ABJ_404_Solution_UninstallModal {
 
                 <!-- Deactivation Reason -->
                 <h3 style="margin-top: 20px;"><?php _e('Help us improve (Optional)', '404-solution'); ?></h3>
-
-                <div class="abj404-uninstall-reasons">
-                    <label>
-                        <input type="radio" name="abj404-reason" value="temporary">
-                        <?php _e('Temporary deactivation for debugging', '404-solution'); ?>
-                    </label>
-                    <label>
-                        <input type="radio" name="abj404-reason" value="not-working">
-                        <?php _e('The plugin is not working as expected', '404-solution'); ?>
-                    </label>
-                    <label>
-                        <input type="radio" name="abj404-reason" value="found-better">
-                        <?php _e('I found a better plugin', '404-solution'); ?>
-                    </label>
-                    <label>
-                        <input type="radio" name="abj404-reason" value="no-longer-needed">
-                        <?php _e('I no longer need this functionality', '404-solution'); ?>
-                    </label>
-                    <label>
-                        <input type="radio" name="abj404-reason" value="too-complicated">
-                        <?php _e('Too complicated to configure', '404-solution'); ?>
-                    </label>
-                    <label>
-                        <input type="radio" name="abj404-reason" value="performance">
-                        <?php _e('Performance issues', '404-solution'); ?>
-                    </label>
-                    <label>
-                        <input type="radio" name="abj404-reason" value="other">
-                        <?php _e('Other reason', '404-solution'); ?>
-                    </label>
-                </div>
+                <?php self::echoDeactivationReasons(); ?>
 
                 <!-- Conditional follow-up sections (shown based on selected reason) -->
                 <div id="abj404-followup-not-working" class="abj404-followup-section" style="display:none; background: #f6f7f7; border-radius: 4px; border-left: 3px solid #d63638;">
@@ -358,6 +328,41 @@ class ABJ_404_Solution_UninstallModal {
                     ?>
                 </p>
             </div>
+        </div>
+        <?php
+    }
+
+    private static function echoDeactivationReasons(): void {
+        ?>
+        <div class="abj404-uninstall-reasons">
+            <label>
+                <input type="radio" name="abj404-reason" value="temporary">
+                <?php _e('Temporary deactivation for debugging', '404-solution'); ?>
+            </label>
+            <label>
+                <input type="radio" name="abj404-reason" value="not-working">
+                <?php _e('The plugin is not working as expected', '404-solution'); ?>
+            </label>
+            <label>
+                <input type="radio" name="abj404-reason" value="found-better">
+                <?php _e('I found a better plugin', '404-solution'); ?>
+            </label>
+            <label>
+                <input type="radio" name="abj404-reason" value="no-longer-needed">
+                <?php _e('I no longer need this functionality', '404-solution'); ?>
+            </label>
+            <label>
+                <input type="radio" name="abj404-reason" value="too-complicated">
+                <?php _e('Too complicated to configure', '404-solution'); ?>
+            </label>
+            <label>
+                <input type="radio" name="abj404-reason" value="performance">
+                <?php _e('Performance issues', '404-solution'); ?>
+            </label>
+            <label>
+                <input type="radio" name="abj404-reason" value="other">
+                <?php _e('Other reason', '404-solution'); ?>
+            </label>
         </div>
         <?php
     }

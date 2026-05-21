@@ -827,10 +827,47 @@ trait ViewTrait_RedirectsTable {
      * @return string
      */
     function getAdminRedirectsPageTable($sub) {
-        
         $tableOptions = $this->logic->getTableOptions($sub);
-        
-        // these are used for a GET request so they're not translated.
+        $columns = $this->buildRedirectsColumnDefs($tableOptions);
+
+        $html = "<table class=\"abj404-table\"><thead>";
+        $html .= $this->getTableColumns($sub, $columns);
+        $html .= "</thead><tbody id=\"the-list\">";
+
+        $deadDestIds = function_exists('get_transient') ? get_transient('abj404_dead_dest_ids') : false;
+        if (!is_array($deadDestIds)) {
+            $deadDestIds = array();
+        }
+
+        $rows = $this->viewReadService->getRedirectsForView($sub, $tableOptions);
+        /** @var array<int, array<string, mixed>> $typedRedirectRows */
+        $typedRedirectRows = array_values(array_filter($rows, 'is_array'));
+        $this->rememberTableDataSignature($sub, $typedRedirectRows);
+        $displayed = 0;
+        $y = 1;
+        foreach ($typedRedirectRows as $row) {
+            $html .= $this->buildRedirectRowHTML($row, $sub, $tableOptions, $deadDestIds, $y);
+            $y = ($y === 0) ? 1 : 0;
+            $displayed++;
+        }
+        if ($displayed == 0) {
+            $html .= "<tr>\n" .
+                "<td colspan=\"10\" class=\"abj404-empty-state\">" .
+                "<div class=\"abj404-empty-state-icon\">📋</div>" .
+                "<h3>" . __('No Redirect Records To Display', '404-solution') . "</h3>" .
+                "<p>" . __('Redirects will appear here once created.', '404-solution') . "</p>" .
+                "</td></tr>";
+        }
+        $html .= "</tbody></table>";
+
+        return $html;
+    }
+
+    /**
+     * @param array<string, mixed> $tableOptions
+     * @return array<string, array<string, string>>
+     */
+    private function buildRedirectsColumnDefs(array $tableOptions): array {
         $columns = array();
         $columns['url']['title'] = __('URL', '404-solution');
         $columns['url']['orderby'] = "url";
@@ -864,24 +901,18 @@ trait ViewTrait_RedirectsTable {
         $columns['last_used']['orderby'] = "last_used";
         $columns['last_used']['width'] = "10%";
         $columns['last_used']['title_attr_html'] = $hitsTooltip;
+        return $columns;
+    }
 
-        $html = "<table class=\"abj404-table\"><thead>";
-        $html .= $this->getTableColumns($sub, $columns);
-        $html .= "</thead><tbody id=\"the-list\">";
-        
-        $deadDestIds = function_exists('get_transient') ? get_transient('abj404_dead_dest_ids') : false;
-        if (!is_array($deadDestIds)) {
-            $deadDestIds = array();
-        }
-
-        $rows = $this->viewReadService->getRedirectsForView($sub, $tableOptions);
-        /** @var array<int, array<string, mixed>> $typedRedirectRows */
-        $typedRedirectRows = array_values(array_filter($rows, 'is_array'));
-        $this->rememberTableDataSignature($sub, $typedRedirectRows);
-        $displayed = 0;
-        $y = 1;
-        foreach ($typedRedirectRows as $row) {
-            $displayed++;
+    /**
+     * @param array<string, mixed> $row
+     * @param string $sub
+     * @param array<string, mixed> $tableOptions
+     * @param array<mixed> $deadDestIds
+     * @param int $y
+     * @return string
+     */
+    private function buildRedirectRowHTML(array $row, string $sub, array $tableOptions, array $deadDestIds, int $y): string {
             $rowType = $row['type'] ?? 0;
             $rowStatus = $row['status'] ?? 0;
             $rowFinalDest = is_string($row['final_dest'] ?? '') ? (string)($row['final_dest'] ?? '') : '';
@@ -897,51 +928,9 @@ trait ViewTrait_RedirectsTable {
                 $statusTitle = __('Unknown', '404-solution');
             }
 
-            $link = "";
-            $title = __('Visit', '404-solution') . " ";
-            if ($rowType == ABJ404_TYPE_EXTERNAL) {
-                if ($rowFinalDest !== '') {
-                    $link = $rowFinalDest;
-                    $title .= $rowFinalDest;
-                }
-            } else if ($rowType == ABJ404_TYPE_CAT) {
-                if ($rowFinalDest !== '') {
-                    $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($rowFinalDest . "|" . ABJ404_TYPE_CAT, 0);
-                    $link = is_string($permalink['link']) ? $permalink['link'] : '';
-                    $title .= __('Category:', '404-solution') . " " . (is_string($permalink['title']) ? $permalink['title'] : '');
-                }
-            } else if ($rowType == ABJ404_TYPE_TAG) {
-                if ($rowFinalDest !== '') {
-                    $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($rowFinalDest . "|" . ABJ404_TYPE_TAG, 0);
-                    $link = is_string($permalink['link']) ? $permalink['link'] : '';
-                    $title .= __('Tag:', '404-solution') . " " . (is_string($permalink['title']) ? $permalink['title'] : '');
-                }
-            } else if ($rowType == ABJ404_TYPE_HOME) {
-                $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($rowFinalDest . "|" . ABJ404_TYPE_HOME, 0);
-                $link = is_string($permalink['link']) ? $permalink['link'] : '';
-                $title .= __('Home Page:', '404-solution') . " " . (is_string($permalink['title']) ? $permalink['title'] : '');
-            } else if ($rowType == ABJ404_TYPE_POST) {
-                if ($rowFinalDest !== '') {
-                    $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($rowFinalDest . "|" . ABJ404_TYPE_POST, 0);
-                    $link = is_string($permalink['link']) ? $permalink['link'] : '';
-                    $title .= is_string($permalink['title']) ? $permalink['title'] : '';
-                }
-                
-            } else if ($rowType == ABJ404_TYPE_404_DISPLAYED) {
-            	$permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($rowFinalDest . "|" . ABJ404_TYPE_404_DISPLAYED, 0);
-            	// for custom 404 page use the link
-            	$link = is_string($permalink['link']) ? $permalink['link'] : '';
-            	$title .= is_string($permalink['title']) ? $permalink['title'] : '';
-            	
-            	// for the normal 404 page just use #
-            	if ($rowFinalDest == '0') {
-            	    $link = '';
-            	}
-            	
-            } else {
-                $this->logger->errorMessage("Unexpected row type while displaying table: " . $rowType);
-            }
-            
+            $destLink = $this->resolveRedirectDestLink($rowType, $rowFinalDest);
+            $link = $destLink['link'];
+            $title = $destLink['title'];
             if ($link != '') {
                 $link = "href='" . esc_url($link) . "'";
             }
@@ -1059,39 +1048,11 @@ trait ViewTrait_RedirectsTable {
                 $lastUsedClass = 'abj404-never-used';
             }
 
-            // Legacy variables for backwards compatibility
-            $editlinkHTML = '';
-            $logslinkHTML = '';
-            $deletePermanentlyHTML = '';
-            
-            $destinationExists = '';
-            $destinationDoesNotExist = 'display: none;';
-            $destinationWarningText = __("This page doesn't exist or is not published so the redirect won't work.", '404-solution');
-            if ($destinationIsMissing) {
-                $destinationExists = 'display: none;';
-                $destinationDoesNotExist = '';
-                $destinationWarningText = __('Destination missing. Edit this redirect and choose a destination.', '404-solution');
-                if (trim((string)$destForView) === '') {
-                    $destForView = __('(Destination missing)', '404-solution');
-                }
-            }
-            if (array_key_exists('published_status', $row)) {
-                if ($row['published_status'] == '0') {
-                    $destinationExists = 'display: none;';
-                    $destinationDoesNotExist = '';
-                    if (trim((string)$destForView) === '') {
-                        $destForView = __('(Destination unavailable)', '404-solution');
-                    }
-                }
-            }
-
-            // Dead destination: destination exists in DB but is generating 404s
-            $rowIdStr = is_scalar($row['id'] ?? '') ? (string) ($row['id'] ?? '') : '';
-            if (in_array($rowIdStr, $deadDestIds, true)) {
-                $destinationExists    = 'display: none;';
-                $destinationDoesNotExist = '';
-                $destinationWarningText = __('Destination returned 404 recently — redirect suspended until destination is restored.', '404-solution');
-            }
+            $destWarning = $this->resolveDestinationWarnings($row, $rowType, $rowFinalDest, $destForView, $destinationIsMissing, $deadDestIds);
+            $destinationExists = $destWarning['exists'];
+            $destinationDoesNotExist = $destWarning['notExists'];
+            $destinationWarningText = $destWarning['text'];
+            $destForView = $destWarning['destForView'];
 
             // URL regex warning visibility
             $urlIsNormal = '';
@@ -1105,87 +1066,156 @@ trait ViewTrait_RedirectsTable {
             $rowId = is_scalar($row['id'] ?? '') ? (string)($row['id'] ?? '') : '';
             $fullVisitorURL = esc_url(home_url($rowUrl));
 
-            $htmlTemp = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/tableRowPageRedirects.html");
-            $htmlTemp = $this->f->str_replace('{rowid}', $rowId, $htmlTemp);
-            $htmlTemp = $this->f->str_replace('{rowClass}', $class, $htmlTemp);
-            $htmlTemp = $this->f->str_replace('{visitorURL}', $fullVisitorURL, $htmlTemp);
-            $htmlTemp = $this->f->str_replace('{rowURL}', esc_html($rowUrl), $htmlTemp);
-
-            // URL regex warning
-            $htmlTemp = $this->f->str_replace('{url-is-normal}', $urlIsNormal, $htmlTemp);
-            $htmlTemp = $this->f->str_replace('{url-looks-like-regex}', $urlLooksLikeRegexWarning, $htmlTemp);
-
-            // Modern row action buttons
-            $htmlTemp = $this->f->str_replace('{editBtnHTML}', $editBtnHTML, $htmlTemp);
-            $htmlTemp = $this->f->str_replace('{logsBtnHTML}', $logsBtnHTML, $htmlTemp);
-            $htmlTemp = $this->f->str_replace('{trashBtnHTML}', $trashBtnHTML, $htmlTemp);
-            $htmlTemp = $this->f->str_replace('{deleteBtnHTML}', $deleteBtnHTML, $htmlTemp);
-
-            // Badge classes
-            $htmlTemp = $this->f->str_replace('{statusBadgeClass}', $statusBadgeClass, $htmlTemp);
-            $htmlTemp = $this->f->str_replace('{codeBadgeClass}', $codeBadgeClass, $htmlTemp);
-            $htmlTemp = $this->f->str_replace('{lastUsedClass}', $lastUsedClass, $htmlTemp);
-
-	            $htmlTemp = $this->f->str_replace('{link}', $link, $htmlTemp);
-	            $htmlTemp = $this->f->str_replace('{title}', esc_attr($title), $htmlTemp);
-	            $htmlTemp = $this->f->str_replace('{dest}', esc_attr($destForView), $htmlTemp);
-	            $htmlTemp = $this->f->str_replace('{destination-exists}', $destinationExists, $htmlTemp);
-	            $htmlTemp = $this->f->str_replace('{destination-does-not-exist}', $destinationDoesNotExist, $htmlTemp);
-                $htmlTemp = $this->f->str_replace('{destination-warning-text}', $destinationWarningText, $htmlTemp);
-            $statusForView = is_string($row['status_for_view'] ?? '') ? (string)($row['status_for_view'] ?? '') : '';
-            $typeForView = is_string($row['type_for_view'] ?? '') ? (string)($row['type_for_view'] ?? '') : '';
-            $htmlTemp = $this->f->str_replace('{status}', $statusForView, $htmlTemp);
-            $htmlTemp = $this->f->str_replace('{statusTitle}', $statusTitle, $htmlTemp);
             $rowEngine = is_string($row['engine'] ?? '') ? trim((string)($row['engine'] ?? '')) : '';
             $engineHTML = ($rowEngine !== '') ? '<br><span class="abj404-engine-label">' . esc_html($rowEngine) . '</span>' : '';
-            $htmlTemp = $this->f->str_replace('{engineHTML}', $engineHTML, $htmlTemp);
-            $rawScore = $row['score'] ?? null;
-            // Keep {rowScore} empty — score now lives in its own Confidence column.
-            $htmlTemp = $this->f->str_replace('{rowScore}', '', $htmlTemp);
-            if ($rawScore !== null && $rawScore !== '') {
-                $scoreNum = (float)(is_numeric($rawScore) ? $rawScore : 0);
-                $scorePct = number_format($scoreNum, 0);
-                if ($scoreNum >= 80) {
-                    $scoreBadgeClass = 'abj404-score-high';
-                } elseif ($scoreNum >= 50) {
-                    $scoreBadgeClass = 'abj404-score-medium';
-                } else {
-                    $scoreBadgeClass = 'abj404-score-low';
-                }
-                $scoreCell = '<span class="abj404-score-badge ' . $scoreBadgeClass . '">' . esc_html($scorePct) . '%</span>';
-            } else {
-                $noScoreTitle = ($rowEngine !== '')
-                    ? __('No confidence score for this engine', '404-solution')
-                    : __('Manual redirect — no confidence score', '404-solution');
-                $scoreCell = '<span class="abj404-score-manual" title="' . esc_attr($noScoreTitle) . '">—</span>';
-            }
-            $htmlTemp = $this->f->str_replace('{scoreCell}', $scoreCell, $htmlTemp);
-            $htmlTemp = $this->f->str_replace('{type}', $typeForView, $htmlTemp);
-            $htmlTemp = $this->f->str_replace('{rowCode}', esc_html($codeDisplay), $htmlTemp);
-            $htmlTemp = $this->f->str_replace('{hits}', esc_html((string)$hits), $htmlTemp);
-            $htmlTemp = $this->f->str_replace('{logsLink}', $logslink, $htmlTemp);
-            $htmlTemp = $this->f->str_replace('{trashLink}', $trashlink, $htmlTemp);
-            $htmlTemp = $this->f->str_replace('{ajaxTrashLink}', $ajaxTrashLink, $htmlTemp);
-            $htmlTemp = $this->f->str_replace('{trashtitle}', $trashtitle, $htmlTemp);
-            $htmlTemp = $this->f->str_replace('{deletelink}', $deletelink, $htmlTemp);
-            $htmlTemp = $this->f->str_replace('{created_date}',
-                    esc_html((string)wp_date("Y/m/d h:i:s A", abs(is_scalar($row['timestamp'] ?? 0) ? intval($row['timestamp'] ?? 0) : 0))), $htmlTemp);
-            $htmlTemp = $this->f->str_replace('{last_used_date}', esc_html($last), $htmlTemp);
+            $scoreCell = $this->buildScoreCell($row['score'] ?? null, $rowEngine);
+            $statusForView = is_string($row['status_for_view'] ?? '') ? (string)($row['status_for_view'] ?? '') : '';
+            $typeForView = is_string($row['type_for_view'] ?? '') ? (string)($row['type_for_view'] ?? '') : '';
 
-            $htmlTemp = $this->f->doNormalReplacements($htmlTemp);
-            $html .= $htmlTemp;
+            return $this->fillRedirectRowTemplate([
+                '{rowid}' => $rowId, '{rowClass}' => $class,
+                '{visitorURL}' => $fullVisitorURL, '{rowURL}' => esc_html($rowUrl),
+                '{url-is-normal}' => $urlIsNormal, '{url-looks-like-regex}' => $urlLooksLikeRegexWarning,
+                '{editBtnHTML}' => $editBtnHTML, '{logsBtnHTML}' => $logsBtnHTML,
+                '{trashBtnHTML}' => $trashBtnHTML, '{deleteBtnHTML}' => $deleteBtnHTML,
+                '{statusBadgeClass}' => $statusBadgeClass, '{codeBadgeClass}' => $codeBadgeClass,
+                '{lastUsedClass}' => $lastUsedClass,
+                '{link}' => $link, '{title}' => esc_attr($title),
+                '{dest}' => esc_attr($destForView),
+                '{destination-exists}' => $destinationExists,
+                '{destination-does-not-exist}' => $destinationDoesNotExist,
+                '{destination-warning-text}' => $destinationWarningText,
+                '{status}' => $statusForView, '{statusTitle}' => $statusTitle,
+                '{engineHTML}' => $engineHTML, '{rowScore}' => '', '{scoreCell}' => $scoreCell,
+                '{type}' => $typeForView, '{rowCode}' => esc_html($codeDisplay),
+                '{hits}' => esc_html((string)$hits),
+                '{logsLink}' => $logslink, '{trashLink}' => $trashlink,
+                '{ajaxTrashLink}' => $ajaxTrashLink, '{trashtitle}' => $trashtitle,
+                '{deletelink}' => $deletelink,
+                '{created_date}' => esc_html((string)wp_date("Y/m/d h:i:s A", abs(is_scalar($row['timestamp'] ?? 0) ? intval($row['timestamp'] ?? 0) : 0))),
+                '{last_used_date}' => esc_html($last),
+            ]);
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     * @param mixed $rowType
+     * @param string $rowFinalDest
+     * @param string $destForView
+     * @param bool $destinationIsMissing
+     * @param array<mixed> $deadDestIds
+     * @return array{exists: string, notExists: string, text: string, destForView: string}
+     */
+    private function resolveDestinationWarnings(array $row, $rowType, string $rowFinalDest, string $destForView, bool $destinationIsMissing, array $deadDestIds): array {
+        $exists = '';
+        $notExists = 'display: none;';
+        $text = __("This page doesn't exist or is not published so the redirect won't work.", '404-solution');
+        if ($destinationIsMissing) {
+            $exists = 'display: none;';
+            $notExists = '';
+            $text = __('Destination missing. Edit this redirect and choose a destination.', '404-solution');
+            if (trim((string)$destForView) === '') {
+                $destForView = __('(Destination missing)', '404-solution');
+            }
         }
-        if ($displayed == 0) {
-            $html .= "<tr>\n" .
-                "<td colspan=\"10\" class=\"abj404-empty-state\">" .
-                "<div class=\"abj404-empty-state-icon\">📋</div>" .
-                "<h3>" . __('No Redirect Records To Display', '404-solution') . "</h3>" .
-                "<p>" . __('Redirects will appear here once created.', '404-solution') . "</p>" .
-                "</td></tr>";
+        if (array_key_exists('published_status', $row) && $row['published_status'] == '0') {
+            $exists = 'display: none;';
+            $notExists = '';
+            if (trim((string)$destForView) === '') {
+                $destForView = __('(Destination unavailable)', '404-solution');
+            }
         }
-        $html .= "</tbody></table>";
-        
-        return $html;
+        $rowIdStr = is_scalar($row['id'] ?? '') ? (string) ($row['id'] ?? '') : '';
+        if (in_array($rowIdStr, $deadDestIds, true)) {
+            $exists = 'display: none;';
+            $notExists = '';
+            $text = __('Destination returned 404 recently, redirect suspended until destination is restored.', '404-solution');
+        }
+        return ['exists' => $exists, 'notExists' => $notExists, 'text' => $text, 'destForView' => $destForView];
+    }
+
+    /**
+     * @param array<string, string> $replacements
+     * @return string
+     */
+    private function fillRedirectRowTemplate(array $replacements): string {
+        $htmlTemp = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/tableRowPageRedirects.html");
+        foreach ($replacements as $placeholder => $value) {
+            $htmlTemp = $this->f->str_replace($placeholder, $value, $htmlTemp);
+        }
+        return $this->f->doNormalReplacements($htmlTemp);
+    }
+
+    /**
+     * @param mixed $rawScore
+     * @param string $rowEngine
+     * @return string
+     */
+    private function buildScoreCell($rawScore, string $rowEngine): string {
+        if ($rawScore !== null && $rawScore !== '') {
+            $scoreNum = (float)(is_numeric($rawScore) ? $rawScore : 0);
+            $scorePct = number_format($scoreNum, 0);
+            if ($scoreNum >= 80) {
+                $scoreBadgeClass = 'abj404-score-high';
+            } elseif ($scoreNum >= 50) {
+                $scoreBadgeClass = 'abj404-score-medium';
+            } else {
+                $scoreBadgeClass = 'abj404-score-low';
+            }
+            return '<span class="abj404-score-badge ' . $scoreBadgeClass . '">' . esc_html($scorePct) . '%</span>';
+        }
+        $noScoreTitle = ($rowEngine !== '')
+            ? __('No confidence score for this engine', '404-solution')
+            : __('Manual redirect, no confidence score', '404-solution');
+        return '<span class="abj404-score-manual" title="' . esc_attr($noScoreTitle) . '">&#x2014;</span>'; // allow-em-dash: em-dash used as visual placeholder in HTML table cell
+    }
+
+    /**
+     * @param mixed $rowType
+     * @param string $rowFinalDest
+     * @return array{link: string, title: string}
+     */
+    private function resolveRedirectDestLink($rowType, string $rowFinalDest): array {
+        $link = '';
+        $title = __('Visit', '404-solution') . ' ';
+        if ($rowType == ABJ404_TYPE_EXTERNAL) {
+            if ($rowFinalDest !== '') {
+                $link = $rowFinalDest;
+                $title .= $rowFinalDest;
+            }
+        } else if ($rowType == ABJ404_TYPE_CAT) {
+            if ($rowFinalDest !== '') {
+                $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($rowFinalDest . '|' . ABJ404_TYPE_CAT, 0);
+                $link = is_string($permalink['link']) ? $permalink['link'] : '';
+                $title .= __('Category:', '404-solution') . ' ' . (is_string($permalink['title']) ? $permalink['title'] : '');
+            }
+        } else if ($rowType == ABJ404_TYPE_TAG) {
+            if ($rowFinalDest !== '') {
+                $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($rowFinalDest . '|' . ABJ404_TYPE_TAG, 0);
+                $link = is_string($permalink['link']) ? $permalink['link'] : '';
+                $title .= __('Tag:', '404-solution') . ' ' . (is_string($permalink['title']) ? $permalink['title'] : '');
+            }
+        } else if ($rowType == ABJ404_TYPE_HOME) {
+            $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($rowFinalDest . '|' . ABJ404_TYPE_HOME, 0);
+            $link = is_string($permalink['link']) ? $permalink['link'] : '';
+            $title .= __('Home Page:', '404-solution') . ' ' . (is_string($permalink['title']) ? $permalink['title'] : '');
+        } else if ($rowType == ABJ404_TYPE_POST) {
+            if ($rowFinalDest !== '') {
+                $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($rowFinalDest . '|' . ABJ404_TYPE_POST, 0);
+                $link = is_string($permalink['link']) ? $permalink['link'] : '';
+                $title .= is_string($permalink['title']) ? $permalink['title'] : '';
+            }
+        } else if ($rowType == ABJ404_TYPE_404_DISPLAYED) {
+            $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($rowFinalDest . '|' . ABJ404_TYPE_404_DISPLAYED, 0);
+            $link = is_string($permalink['link']) ? $permalink['link'] : '';
+            $title .= is_string($permalink['title']) ? $permalink['title'] : '';
+            if ($rowFinalDest == '0') {
+                $link = '';
+            }
+        } else {
+            $this->logger->errorMessage('Unexpected row type while displaying table: ' . $rowType);
+        }
+        return ['link' => $link, 'title' => $title];
     }
     
     /**
