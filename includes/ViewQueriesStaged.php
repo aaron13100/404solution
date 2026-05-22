@@ -647,6 +647,14 @@ class ABJ_404_Solution_ViewQueriesStaged extends ABJ_404_Solution_ViewBuildColla
                 // re-attempting denied DDL is the intended action.
                 $this->clearStagedBuildDegradedState();
             } else {
+                // Re-check after acquiring the lock. Another worker may have
+                // published view_done between our pre-lock serveability check
+                // and this request winning the lock; in that case this tick is
+                // done and must not start a second S1.
+                $this->invalidateViewDoneServeableCache();
+                if ($this->viewDoneIsServeable()) {
+                    return $this->getViewBuildProgress();
+                }
                 // Same runner-startup reconciliation as the cron entry: an
                 // AJAX advance picking up after a previous crash must
                 // preserve the buffer S2-S10 already built rather than
@@ -890,6 +898,7 @@ class ABJ_404_Solution_ViewQueriesStaged extends ABJ_404_Solution_ViewBuildColla
         $prefix = $this->getLowercasePrefix();
         $inflightLike = '_transient_timeout_abj404_inflight_%';
         $timeoutRows = $wpdb->get_results(
+            // DAO-bypass-approved: Rebuild cleanup must scan WordPress transient timeout rows directly.
             $wpdb->prepare(
                 "SELECT option_name, option_value FROM {$wpdb->options} "
                 . "WHERE option_name LIKE %s",
@@ -1087,7 +1096,7 @@ class ABJ_404_Solution_ViewQueriesStaged extends ABJ_404_Solution_ViewBuildColla
         $currentStage = $this->readProgressOption('current_stage', 0);
         $lastStartedStage = $this->readProgressOption('last_started_stage', 0);
         $resumeWindowOk = $startedAt > 0
-            && (time() - $startedAt) < ABJ_404_Solution_ViewBuildConfig::VIEW_BUILD_RESUME_TTL_SECONDS;
+            && (time() - $startedAt) <= ABJ_404_Solution_ViewBuildConfig::VIEW_BUILD_RESUME_TTL_SECONDS;
         if ($resumeWindowOk && ($currentStage > 0 || $lastStartedStage > 0)) {
             return $action;
         }
@@ -1581,7 +1590,7 @@ class ABJ_404_Solution_ViewQueriesStaged extends ABJ_404_Solution_ViewBuildColla
         $startedAt = $this->readProgressOption('started_at', 0);
         $bufferExists = $this->stagedTableExists($this->viewBuildTableName());
         $isResuming = $startedAt > 0
-            && (time() - $startedAt) < ABJ_404_Solution_ViewBuildConfig::VIEW_BUILD_RESUME_TTL_SECONDS
+            && (time() - $startedAt) <= ABJ_404_Solution_ViewBuildConfig::VIEW_BUILD_RESUME_TTL_SECONDS
             && $bufferExists;
 
         // Single line per advance request that pins down WHICH path was

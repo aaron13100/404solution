@@ -108,7 +108,11 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 		$this->logic = $pluginLogic !== null ? $pluginLogic : abj_service('plugin_logic');
 		$this->ngramFilter = $ngramFilter !== null ? $ngramFilter : abj_service('ngram_filter');
 
-		$this->dbCore = $this->dao->getDbCore();
+		$daoClass = is_object($this->dao) ? get_class($this->dao) : '';
+		$this->dbCore = ($dataAccess !== null && $daoClass !== 'ABJ_404_Solution_DataAccess'
+			&& method_exists($this->dao, 'queryAndGetResults') && method_exists($this->dao, 'doTableNameReplacements'))
+			? $this->dao
+			: $this->dao->getDbCore();
 		$this->contentRepo = $this->dao->getContentRepo();
 		$this->viewBuild = $this->dao->getViewBuildOrchestrator();
 		$this->viewRead = $this->dao->getViewReadService();
@@ -601,15 +605,17 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 	    	if (!is_string($createTableSql) || $createTableSql === '') {
 	    		return $createTableSql;
 	    	}
-	    	// If the statement already specifies charset/collation, don't override.
-	    	if (preg_match('/\b(?:default\s+)?(?:character\s+set|charset|collate)\b/i', $createTableSql)) {
-	    		return $createTableSql;
-	    	}
-	    	
+
 	    	// Always prefer utf8mb4 for plugin tables, regardless of site defaults.
 	    	$collate = 'utf8mb4_unicode_ci';
 	    	if (!empty($wpdb->collate) && stripos($wpdb->collate, 'utf8mb4') !== false) {
 	    		$collate = $wpdb->collate;
+	    	}
+
+	    	$createTableSql = str_replace('{COLLATION}', $collate, $createTableSql);
+	    	// If the statement already specifies charset/collation, don't override.
+	    	if (preg_match('/\b(?:default\s+)?(?:character\s+set|charset|collate)\b/i', $createTableSql)) {
+	    		return $createTableSql;
 	    	}
 	    	
 	    	return rtrim($createTableSql) . " DEFAULT CHARACTER SET utf8mb4 COLLATE {$collate}";

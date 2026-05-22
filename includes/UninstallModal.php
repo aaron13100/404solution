@@ -838,7 +838,11 @@ class ABJ_404_Solution_UninstallModal {
      */
     private static function getActivePluginsList() {
         if (!function_exists('get_plugins')) {
-            require_once ABSPATH . 'wp-admin/includes/plugin.php';
+            $pluginFile = ABSPATH . 'wp-admin/includes/plugin.php';
+            if (!is_readable($pluginFile)) {
+                return 'Unavailable: wp-admin/includes/plugin.php not readable';
+            }
+            require_once $pluginFile;
         }
 
         $all_plugins = get_plugins();
@@ -893,6 +897,7 @@ class ABJ_404_Solution_UninstallModal {
 
         // Try information_schema.SCHEMATA first
         $db_name = DB_NAME;
+        // DAO-bypass-approved: Diagnostic database-default charset/collation probe.
         $charset_query = $wpdb->prepare(
             "SELECT DEFAULT_CHARACTER_SET_NAME, DEFAULT_COLLATION_NAME " .
             "FROM information_schema.SCHEMATA WHERE SCHEMA_NAME = %s",
@@ -981,8 +986,14 @@ class ABJ_404_Solution_UninstallModal {
         // Discover all plugin tables dynamically so new tables are automatically included.
         $prefix = $dbCore->getLowercasePrefix();
         // DAO-bypass-approved: Diagnostic table enumeration for collation snapshot
+        if (is_object($wpdb) && method_exists($wpdb, 'esc_like')) {
+            $escapedPrefix = $wpdb->esc_like($prefix . 'abj404_');
+        } else {
+            $escapedPrefix = addcslashes($prefix . 'abj404_', '_%\\');
+        }
         $rawTables = $wpdb->get_results(
-            $wpdb->prepare("SHOW TABLES LIKE %s", $wpdb->esc_like($prefix . 'abj404_') . '%'),
+            // DAO-bypass-approved: Diagnostic table enumeration needs SHOW TABLES metadata directly.
+            $wpdb->prepare("SHOW TABLES LIKE %s", $escapedPrefix . '%'),
             ARRAY_N
         );
         $pluginTables = array();
@@ -1077,6 +1088,7 @@ class ABJ_404_Solution_UninstallModal {
             return array('error' => 'wpdb methods unavailable');
         }
 
+        // DAO-bypass-approved: Diagnostic table charset/collation metadata probe.
         $query = $wpdb->prepare(
             "SELECT TABLE_COLLATION, ENGINE, " .
             "SUBSTRING_INDEX(TABLE_COLLATION, '_', 1) as TABLE_CHARSET " .
@@ -1143,6 +1155,7 @@ class ABJ_404_Solution_UninstallModal {
         // SHOW TABLE STATUS LIKE requires the table name without database prefix matching
         // DAO-bypass-approved: Diagnostic — fallback metadata probe (SHOW TABLE STATUS)
         $result = $wpdb->get_row(
+            // DAO-bypass-approved: Diagnostic fallback metadata probe needs SHOW TABLE STATUS directly.
             $wpdb->prepare("SHOW TABLE STATUS LIKE %s", $tableName),
             ARRAY_A
         );

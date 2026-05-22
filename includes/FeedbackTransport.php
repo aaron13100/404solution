@@ -1265,6 +1265,9 @@ class ABJ_404_Solution_FeedbackTransport {
         }
         foreach ($payload as $key => $value) {
             if (is_string($value)) {
+                if (in_array($key, array('user_message', 'reply_email', 'contact_email', 'debug_log_excerpt'), true)) {
+                    continue;
+                }
                 $payload[$key] = $redactor->redact($value);
             }
         }

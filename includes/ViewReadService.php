@@ -140,9 +140,22 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
         ABJ_404_Solution_ViewSnapshotCache::setViewSnapshotTableEnsured($value);
     }
 
+    /** @return bool */
+    public static function isViewSnapshotTableEnsured(): bool {
+        return self::$viewSnapshotTableEnsured;
+    }
+
     /** @return string */
     private function viewDoneFreshnessOptionName(): string {
         return $this->dbCore->getLowercasePrefix() . 'abj404_view_done_built_at';
+    }
+
+    /**
+     * @param mixed $value
+     * @return int
+     */
+    private static function scalarToInt($value): int {
+        return is_scalar($value) ? intval($value) : 0;
     }
 
     // =========================================================================
@@ -179,12 +192,17 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
         $counts = array('all' => 0, 'manual' => 0, 'auto' => 0, 'regex' => 0, 'trash' => 0);
         if (!empty($rows)) {
             $row = is_array($rows[0] ?? null) ? $rows[0] : array();
+            $activeCount = $row['active_count'] ?? 0;
+            $manualCount = $row['manual_count'] ?? 0;
+            $autoCount = $row['auto_count'] ?? 0;
+            $regexCount = $row['regex_count'] ?? 0;
+            $trashCount = $row['trash_count'] ?? 0;
             $counts = array(
-                'all' => intval(is_scalar($row['active_count'] ?? 0) ? $row['active_count'] : 0),
-                'manual' => intval(is_scalar($row['manual_count'] ?? 0) ? $row['manual_count'] : 0),
-                'auto' => intval(is_scalar($row['auto_count'] ?? 0) ? $row['auto_count'] : 0),
-                'regex' => intval(is_scalar($row['regex_count'] ?? 0) ? $row['regex_count'] : 0),
-                'trash' => intval(is_scalar($row['trash_count'] ?? 0) ? $row['trash_count'] : 0)
+                'all' => self::scalarToInt($activeCount),
+                'manual' => self::scalarToInt($manualCount),
+                'auto' => self::scalarToInt($autoCount),
+                'regex' => self::scalarToInt($regexCount),
+                'trash' => self::scalarToInt($trashCount)
             );
         }
 
@@ -226,12 +244,17 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
         $counts = array('all' => 0, 'captured' => 0, 'ignored' => 0, 'later' => 0, 'trash' => 0);
         if (!empty($rows)) {
             $row = is_array($rows[0] ?? null) ? $rows[0] : array();
+            $activeCount = $row['active'] ?? 0;
+            $capturedCount = $row['captured'] ?? 0;
+            $ignoredCount = $row['ignored'] ?? 0;
+            $laterCount = $row['later'] ?? 0;
+            $trashCount = $row['trash'] ?? 0;
             $counts = array(
-                'all' => intval(is_scalar($row['active'] ?? 0) ? $row['active'] : 0),
-                'captured' => intval(is_scalar($row['captured'] ?? 0) ? $row['captured'] : 0),
-                'ignored' => intval(is_scalar($row['ignored'] ?? 0) ? $row['ignored'] : 0),
-                'later' => intval(is_scalar($row['later'] ?? 0) ? $row['later'] : 0),
-                'trash' => intval(is_scalar($row['trash'] ?? 0) ? $row['trash'] : 0)
+                'all' => self::scalarToInt($activeCount),
+                'captured' => self::scalarToInt($capturedCount),
+                'ignored' => self::scalarToInt($ignoredCount),
+                'later' => self::scalarToInt($laterCount),
+                'trash' => self::scalarToInt($trashCount)
             );
         }
 
@@ -262,7 +285,8 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
         $timedOut = !empty($result['timed_out']);
         $hadError = !empty($result['last_error']) || $timedOut;
         $rows = is_array($result['rows']) ? $result['rows'] : array();
-        $count = (!empty($rows) && isset($rows[0]['cnt'])) ? intval($rows[0]['cnt']) : 0;
+        $firstRow = (!empty($rows) && is_array($rows[0] ?? null)) ? $rows[0] : array();
+        $count = self::scalarToInt($firstRow['cnt'] ?? 0);
 
         if ($timedOut) {
             $this->logsRepo->scheduleHitsTableRebuild();
@@ -312,6 +336,39 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
         ));
     }
 
+    /** @return string|null */
+    private function logsCountCacheKey(int $logID): ?string {
+        if ($logID !== 0 || !function_exists('get_transient')) {
+            return null;
+        }
+
+        return 'abj404_logs_count_v1_' . $this->currentBlogIdForCache() . '_' . $this->maxLogIdForCache();
+    }
+
+    /** @return int */
+    private function currentBlogIdForCache(): int {
+        if (!function_exists('get_current_blog_id')) {
+            return 1;
+        }
+
+        $rawBlogId = function_exists('absint')
+            ? absint(get_current_blog_id())
+            : abs(intval(get_current_blog_id()));
+
+        return $rawBlogId > 0 ? $rawBlogId : 1;
+    }
+
+    /** @return int */
+    private function maxLogIdForCache(): int {
+        try {
+            return max(0, intval($this->logsRepo->getMaxLogId()));
+        } catch (Throwable $e) {
+            $this->logger->debugMessage(__FUNCTION__ . ' getMaxLogId() failed: '
+                . $e->getMessage() . '. Falling back to maxLogId=0.');
+            return 0;
+        }
+    }
+
     /**
      * @param int $logID
      * @return int
@@ -319,29 +376,8 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
     function getLogsCount($logID) {
         $logID = absint($logID);
 
-        $cacheKey = null;
-        if ($logID === 0 && function_exists('get_transient')) {
-            $blogId = 1;
-            if (function_exists('get_current_blog_id')) {
-                $rawBlogId = function_exists('absint')
-                    ? absint(get_current_blog_id())
-                    : abs(intval(get_current_blog_id()));
-                if ($rawBlogId > 0) {
-                    $blogId = $rawBlogId;
-                }
-            }
-            $maxLogId = 0;
-            try {
-                $maxLogId = intval($this->logsRepo->getMaxLogId());
-                if ($maxLogId < 0) {
-                    $maxLogId = 0;
-                }
-            } catch (Throwable $e) {
-                $this->logger->debugMessage(__FUNCTION__ . ' getMaxLogId() failed: '
-                    . $e->getMessage() . '. Falling back to maxLogId=0.');
-                $maxLogId = 0;
-            }
-            $cacheKey = 'abj404_logs_count_v1_' . $blogId . '_' . $maxLogId;
+        $cacheKey = $this->logsCountCacheKey($logID);
+        if ($cacheKey !== null) {
             $cached = get_transient($cacheKey);
             if (is_numeric($cached)) {
                 return (int)$cached;
@@ -364,7 +400,7 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
         if (!empty($rows)) {
             $first = $rows[0];
             $value = is_array($first) ? reset($first) : $first;
-            $count = intval($value);
+            $count = self::scalarToInt($value);
         }
 
         if (!$hadError && $cacheKey !== null && function_exists('set_transient')
@@ -955,7 +991,7 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
        }
        $first = $rows[0];
        $value = is_array($first) ? reset($first) : $first;
-       return intval($value);
+       return self::scalarToInt($value);
    }
 
    /** @return array<int, string> */
