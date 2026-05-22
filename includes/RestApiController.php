@@ -45,6 +45,13 @@ class ABJ_404_Solution_RestApiController {
     public function __construct($daoOrLogic, $logic = null) {
         if ($logic !== null) {
             $this->logic = $logic;
+            $this->viewRead = $daoOrLogic;
+            $this->viewBuild = $daoOrLogic;
+            $this->redirectsRepo = $daoOrLogic;
+            $this->logsRepo = $daoOrLogic;
+            $this->statsRepo = $daoOrLogic;
+            $this->dbCore = $daoOrLogic;
+            return;
         } else {
             $this->logic = $daoOrLogic;
         }
@@ -581,7 +588,7 @@ class ABJ_404_Solution_RestApiController {
 
         if (!is_array($redirect) || empty($redirect) || !isset($redirect['id']) || !is_scalar($redirect['id']) || intval($redirect['id']) === 0) {
             // Also check regex redirects.
-            $regexRedirects = $this->redirectsRepo->getRedirectsWithRegEx();
+            $regexRedirects = $this->viewRead->getRedirectsWithRegEx();
             $matchedRegex   = null;
             if (is_array($regexRedirects)) {
                 foreach ($regexRedirects as $rr) {

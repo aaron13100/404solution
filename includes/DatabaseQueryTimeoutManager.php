@@ -155,7 +155,7 @@ class ABJ_404_Solution_DatabaseQueryTimeoutManager {
      * @return string The query with timeout hint applied
      */
     public function applySelectTimeout(string $query, int $timeoutSeconds): string {
-        if ($this->isMariaDB() && !ABJ_404_Solution_DatabaseCore::isSetStatementWrapperUnsupported()) {
+        if ($this->isMariaDB() && !ABJ_404_Solution_DatabaseRuntimeState::isSetStatementWrapperUnsupported()) {
             return "SET STATEMENT max_statement_time=" . $timeoutSeconds . " FOR " . $query;
         }
         // MySQL hint also works for the MariaDB-with-disabled-wrapper case:
@@ -181,7 +181,7 @@ class ABJ_404_Solution_DatabaseQueryTimeoutManager {
      * @return string The query with timeout applied
      */
     public function applyNonLeadingSelectTimeout(string $query, int $timeoutSeconds): string {
-        if ($this->isMariaDB() && !ABJ_404_Solution_DatabaseCore::isSetStatementWrapperUnsupported()) {
+        if ($this->isMariaDB() && !ABJ_404_Solution_DatabaseRuntimeState::isSetStatementWrapperUnsupported()) {
             return "SET STATEMENT max_statement_time=" . $timeoutSeconds . " FOR " . $query;
         }
         $timeoutMs = $timeoutSeconds * 1000;
@@ -205,7 +205,7 @@ class ABJ_404_Solution_DatabaseQueryTimeoutManager {
      * @return string The query with timeout applied (unchanged on MySQL)
      */
     public function applyStatementTimeout(string $query, int $timeoutSeconds): string {
-        if ($this->isMariaDB() && !ABJ_404_Solution_DatabaseCore::isSetStatementWrapperUnsupported()) {
+        if ($this->isMariaDB() && !ABJ_404_Solution_DatabaseRuntimeState::isSetStatementWrapperUnsupported()) {
             return "SET STATEMENT max_statement_time=" . $timeoutSeconds . " FOR " . $query;
         }
         // MySQL has no timeout mechanism for non-SELECT queries. MariaDB hosts
@@ -295,7 +295,7 @@ class ABJ_404_Solution_DatabaseQueryTimeoutManager {
         $unwrapped = $this->stripSetStatementWrapper($query);
         // Cache the negative result for the rest of the request so we don't
         // wrap-then-fail on every subsequent query. Reset between requests.
-        ABJ_404_Solution_DatabaseCore::setSetStatementWrapperUnsupported(true);
+        ABJ_404_Solution_DatabaseRuntimeState::setSetStatementWrapperUnsupported(true);
         $this->logger->infoMessage(
             'SET STATEMENT timeout wrapper rejected by server; '
             . 'retrying query without wrapper and caching unsupported flag '

@@ -273,6 +273,20 @@ function abj_service($name) {
         }
         try {
             $dao = call_user_func(array($legacyDaoClass, 'getInstance'));
+            static $legacyDaoShapeMethods = array(
+                'content_repository' => 'getPublishedPagesAndPostsIDs',
+                'redirects_repository' => 'moveRedirectsToTrash',
+                'logs_repository' => 'logRedirectHit',
+                'stats_repository' => 'getTopCapturedForDigest',
+                'view_read_service' => 'getRedirectStatusCounts',
+                'view_build_orchestrator' => 'markViewDoneInvalidatedByAdminMutation',
+                'db_core' => 'queryAndGetResults',
+            );
+            if (get_class($dao) !== $legacyDaoClass
+                && isset($legacyDaoShapeMethods[$name])
+                && method_exists($dao, $legacyDaoShapeMethods[$name])) {
+                return $dao;
+            }
             $getter = $legacyDataAccessModuleGetters[$name];
             if (method_exists($dao, $getter)) {
                 return $dao->$getter();

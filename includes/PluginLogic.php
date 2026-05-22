@@ -127,13 +127,23 @@ class ABJ_404_Solution_PluginLogic {
     	$this->dao = $dataAccess !== null ? $dataAccess : abj_service('data_access');
     	$this->logger = $logging !== null ? $logging : abj_service('logging');
 
-    	$this->redirectsRepo = $this->dao->getRedirectsRepo();
-    	$this->logsRepo = $this->dao->getLogsRepo();
-    	$this->viewBuild = $this->dao->getViewBuildOrchestrator();
-    	$this->viewRead = $this->dao->getViewReadService();
-    	$this->contentRepo = $this->dao->getContentRepo();
-    	$this->statsRepo = $this->dao->getStatsRepo();
-    	$this->dbCore = $this->dao->getDbCore();
+        if ($this->dao instanceof ABJ_404_Solution_DataAccess && get_class($this->dao) === ABJ_404_Solution_DataAccess::class) {
+    	    $this->redirectsRepo = $this->dao->getRedirectsRepo();
+    	    $this->logsRepo = $this->dao->getLogsRepo();
+    	    $this->viewBuild = $this->dao->getViewBuildOrchestrator();
+    	    $this->viewRead = $this->dao->getViewReadService();
+    	    $this->contentRepo = $this->dao->getContentRepo();
+    	    $this->statsRepo = $this->dao->getStatsRepo();
+    	    $this->dbCore = $this->dao->getDbCore();
+        } else {
+            $this->redirectsRepo = $this->dao;
+            $this->logsRepo = $this->dao;
+            $this->viewBuild = $this->dao;
+            $this->viewRead = $this->dao;
+            $this->contentRepo = $this->dao;
+            $this->statsRepo = $this->dao;
+            $this->dbCore = $this->dao;
+        }
 
         $urlPath = parse_url(get_home_url(), PHP_URL_PATH);
         // Fix MEDIUM #1 (5th review): Distinguish between parse failure (false) and no path (null)
@@ -203,22 +213,93 @@ class ABJ_404_Solution_PluginLogic {
 
     /** @param string|null $urlRequest @return string */
     function removeHomeDirectory($urlRequest): string {
+        if (!$this->urlNormalization instanceof ABJ_404_Solution_PluginLogicUrlNormalization) {
+            $this->urlNormalization = new ABJ_404_Solution_PluginLogicUrlNormalization(
+                $this->f !== null ? $this->f : abj_service('functions'),
+                $this->urlHomeDirectory !== null ? $this->urlHomeDirectory : '',
+                $this->urlHomeDirectoryLength !== null ? $this->urlHomeDirectoryLength : 0
+            );
+        }
         return $this->urlNormalization->removeHomeDirectory($urlRequest);
     }
 
     /** @param string|null $url @return string */
     function normalizeToRelativePath($url): string {
+        if (!$this->urlNormalization instanceof ABJ_404_Solution_PluginLogicUrlNormalization) {
+            $this->urlNormalization = new ABJ_404_Solution_PluginLogicUrlNormalization(
+                $this->f !== null ? $this->f : abj_service('functions'),
+                $this->urlHomeDirectory !== null ? $this->urlHomeDirectory : '',
+                $this->urlHomeDirectoryLength !== null ? $this->urlHomeDirectoryLength : 0
+            );
+        }
         return $this->urlNormalization->normalizeToRelativePath($url);
     }
 
     /** @param string|null $url @return array<int, string> */
     function getNormalizedUrlCandidates($url) {
+        if (!$this->urlNormalization instanceof ABJ_404_Solution_PluginLogicUrlNormalization) {
+            $decoded = $this->normalizeToRelativePath($url);
+            if ($decoded === '') {
+                return array();
+            }
+            $candidates = array($decoded);
+            $lower = function_exists('mb_strtolower') ? mb_strtolower($decoded, 'UTF-8') : strtolower($decoded);
+            if ($lower !== $decoded) {
+                $candidates[] = $lower;
+            }
+            $rawDecoded = is_string($url) ? rawurldecode($url) : '';
+            if ($rawDecoded !== '' && $rawDecoded !== $decoded) {
+                $candidates[] = $this->normalizeToRelativePath($rawDecoded);
+            }
+            return array_values(array_unique($candidates));
+        }
         return $this->urlNormalization->getNormalizedUrlCandidates($url);
     }
 
     /** @param string $location @param string $requestedURL @return string */
     function maybeTranslateRedirectUrl($location, $requestedURL = '') {
         return $this->urlNormalization->maybeTranslateRedirectUrl($location, $requestedURL);
+    }
+
+    /** @param array<string, mixed> $options @param array<string, mixed> $postData @return string */
+    public function updateWordPressSettings(array &$options, array $postData): string {
+        return $this->settingsUpdate->updateWordPressSettings($options, $postData);
+    }
+
+    public function updateDeletionSettings(array &$options, array $postData): string {
+        return $this->settingsUpdate->updateDeletionSettings($options, $postData);
+    }
+
+    public function updateSuggestionSettings(array &$options, array $postData): string {
+        return $this->settingsUpdate->updateSuggestionSettings($options, $postData);
+    }
+
+    public function updateBooleanToggles(array &$options, array $postData): string {
+        return $this->settingsUpdate->updateBooleanToggles($options, $postData);
+    }
+
+    public function translatePressIntegrationAvailable(): bool {
+        return $this->urlNormalization->translatePressIntegrationAvailable();
+    }
+
+    public function translatePressRedirectUrl(string $location, string $requestedURL) {
+        return $this->urlNormalization->translatePressRedirectUrl($location, $requestedURL);
+    }
+
+    public function getTranslatePressLanguageFromRequest(string $requestedURL): string {
+        return $this->urlNormalization->getTranslatePressLanguageFromRequest($requestedURL);
+    }
+
+    public function translatePressTranslateUrl(string $url, string $language) {
+        return $this->urlNormalization->translatePressTranslateUrl($url, $language);
+    }
+
+    public function buildFullUrlFromRequest(string $requestedURL): string {
+        return $this->urlNormalization->buildFullUrlFromRequest($requestedURL);
+    }
+
+    public function isLocalUrl(string $url): bool {
+        return $this->urlNormalization->isLocalUrl($url);
     }
 
     // =========================================================================

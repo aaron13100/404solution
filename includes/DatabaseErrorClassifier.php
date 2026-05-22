@@ -16,9 +16,9 @@ if (!defined('ABSPATH')) {
 class ABJ_404_Solution_DatabaseErrorClassifier {
 
     /** @var int Cooldown when DB query quota is exceeded. */
-    const DB_QUOTA_COOLDOWN_SECONDS = ABJ_404_Solution_DatabaseCore::DB_QUOTA_COOLDOWN_SECONDS;
+    const DB_QUOTA_COOLDOWN_SECONDS = ABJ_404_Solution_DatabaseRuntimeState::DB_QUOTA_COOLDOWN_SECONDS;
     /** @var int Cooldown when DB is read-only or storage is full. */
-    const DB_WRITE_BLOCK_COOLDOWN_SECONDS = ABJ_404_Solution_DatabaseCore::DB_WRITE_BLOCK_COOLDOWN_SECONDS;
+    const DB_WRITE_BLOCK_COOLDOWN_SECONDS = ABJ_404_Solution_DatabaseRuntimeState::DB_WRITE_BLOCK_COOLDOWN_SECONDS;
 
 
     /** @var ABJ_404_Solution_DatabaseCore */

@@ -80,12 +80,12 @@ class ABJ_404_Solution_ViewCacheInvalidator {
      * @return T
      */
     public function runWithDeferredInvalidation(callable $work) {
-        $prior = ABJ_404_Solution_ViewReadService::$bulkMutationInProgress;
-        ABJ_404_Solution_ViewReadService::$bulkMutationInProgress = true;
+        $prior = ABJ_404_Solution_ViewReadRuntimeState::$bulkMutationInProgress;
+        ABJ_404_Solution_ViewReadRuntimeState::$bulkMutationInProgress = true;
         try {
             return $work();
         } finally {
-            ABJ_404_Solution_ViewReadService::$bulkMutationInProgress = $prior;
+            ABJ_404_Solution_ViewReadRuntimeState::$bulkMutationInProgress = $prior;
             $this->bumpMutationWatermark();
         }
     }
@@ -97,12 +97,12 @@ class ABJ_404_Solution_ViewCacheInvalidator {
      * @return void
      */
     public function invalidateStatusCountsCache(): void {
-        if (ABJ_404_Solution_ViewReadService::$bulkMutationInProgress) {
+        if (ABJ_404_Solution_ViewReadRuntimeState::$bulkMutationInProgress) {
             return;
         }
-        delete_transient(ABJ_404_Solution_ViewReadService::CACHE_KEY_REDIRECT_STATUS);
-        delete_transient(ABJ_404_Solution_ViewReadService::CACHE_KEY_CAPTURED_STATUS);
-        delete_transient(ABJ_404_Solution_ViewReadService::CACHE_KEY_HIGH_IMPACT_CAPTURED);
+        delete_transient(ABJ_404_Solution_ViewReadRuntimeState::CACHE_KEY_REDIRECT_STATUS);
+        delete_transient(ABJ_404_Solution_ViewReadRuntimeState::CACHE_KEY_CAPTURED_STATUS);
+        delete_transient(ABJ_404_Solution_ViewReadRuntimeState::CACHE_KEY_HIGH_IMPACT_CAPTURED);
         $this->invalidateViewSnapshotCache();
     }
 
@@ -124,6 +124,7 @@ class ABJ_404_Solution_ViewCacheInvalidator {
         global $wpdb;
         if (isset($wpdb->options) && method_exists($wpdb, 'query')) {
             /** @var string $optionsTable */
+            // @utf8-audit: opt-out — wpdb->options is a WordPress-controlled table identifier.
             $optionsTable = esc_sql($wpdb->options);
             // DAO-bypass-approved: View-cache clear targets wp_options -- outside the plugin's owned tables; runs during cache invalidation hot path; failure is best-effort
             $wpdb->query(

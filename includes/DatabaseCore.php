@@ -5,6 +5,7 @@ if (!defined('ABSPATH')) {
 }
 
 require_once __DIR__ . '/DatabaseCoreInterface.php';
+require_once __DIR__ . '/DatabaseRuntimeState.php';
 require_once __DIR__ . '/DatabaseConnectionManager.php';
 require_once __DIR__ . '/DatabaseQueryTimeoutManager.php';
 require_once __DIR__ . '/DatabaseErrorClassifier.php';
@@ -100,139 +101,59 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
     }
 
     /** @param object $wpdb @param bool $allowReconnect @return bool */
-    public function safeCheckConnection($wpdb, bool $allowReconnect = false): bool {
-        return $this->connectionManager->safeCheckConnection($wpdb, $allowReconnect);
-    }
-
+    public function safeCheckConnection($wpdb, bool $allowReconnect = false): bool { return $this->connectionManager->safeCheckConnection($wpdb, $allowReconnect); }
     /** @return bool */
-    public function ensureConnection() {
-        return $this->connectionManager->ensureConnection();
-    }
-
+    public function ensureConnection() { return $this->connectionManager->ensureConnection(); }
     /** @param string $errorText @return bool */
-    public function classifyAndHandleInfrastructureError(string $errorText): bool {
-        return $this->errorClassifier->classifyAndHandleInfrastructureError($errorText);
-    }
-
+    public function classifyAndHandleInfrastructureError(string $errorText): bool { return $this->errorClassifier->classifyAndHandleInfrastructureError($errorText); }
     /** @param int $stageNumber @param string $errorText @return string */
-    public function classifyStageFailure(int $stageNumber, string $errorText): string {
-        return $this->errorClassifier->classifyStageFailure($stageNumber, $errorText);
-    }
-
+    public function classifyStageFailure(int $stageNumber, string $errorText): string { return $this->errorClassifier->classifyStageFailure($stageNumber, $errorText); }
     /** @param string $errorText @return bool */
-    public function isOutOfMemoryError(string $errorText): bool {
-        return $this->errorClassifier->isOutOfMemoryError($errorText);
-    }
-
+    public function isOutOfMemoryError(string $errorText): bool { return $this->errorClassifier->isOutOfMemoryError($errorText); }
     /** @param mixed $errorText @return bool */
-    public function isInvalidDataError($errorText): bool {
-        return $this->errorClassifier->isInvalidDataError($errorText);
-    }
-
+    public function isInvalidDataError($errorText): bool { return $this->errorClassifier->isInvalidDataError($errorText); }
     /** @param string|null $errorText @return bool */
-    public function isTransientConnectionError(?string $errorText): bool {
-        return $this->errorClassifier->isTransientConnectionError($errorText);
-    }
-
+    public function isTransientConnectionError(?string $errorText): bool { return $this->errorClassifier->isTransientConnectionError($errorText); }
     /** @param string $errorText @return bool */
-    public function isQuotaLimitError(string $errorText): bool {
-        return $this->errorClassifier->isQuotaLimitError($errorText);
-    }
-
+    public function isQuotaLimitError(string $errorText): bool { return $this->errorClassifier->isQuotaLimitError($errorText); }
     /** @param string $errorText @return bool */
-    public function isDiskFullError(string $errorText): bool {
-        return $this->errorClassifier->isDiskFullError($errorText);
-    }
-
+    public function isDiskFullError(string $errorText): bool { return $this->errorClassifier->isDiskFullError($errorText); }
     /** @param string $errorText @return bool */
-    public function isReadOnlyError(string $errorText): bool {
-        return $this->errorClassifier->isReadOnlyError($errorText);
-    }
-
+    public function isReadOnlyError(string $errorText): bool { return $this->errorClassifier->isReadOnlyError($errorText); }
     /** @param string $errorText @return bool */
-    public function isAccessDeniedError(string $errorText): bool {
-        return $this->errorClassifier->isAccessDeniedError($errorText);
-    }
-
+    public function isAccessDeniedError(string $errorText): bool { return $this->errorClassifier->isAccessDeniedError($errorText); }
     /** @param string $errorText @return bool */
-    public function classifySetStatementFailure(string $errorText): bool {
-        return $this->errorClassifier->classifySetStatementFailure($errorText);
-    }
-
+    public function classifySetStatementFailure(string $errorText): bool { return $this->errorClassifier->classifySetStatementFailure($errorText); }
     /** @param string $errorText @return bool */
-    public function isCollationError(string $errorText): bool {
-        return $this->errorClassifier->isCollationError($errorText);
-    }
-
+    public function isCollationError(string $errorText): bool { return $this->errorClassifier->isCollationError($errorText); }
     /** @param string $errorText @return bool */
-    public function isCrashedTableError(string $errorText): bool {
-        return $this->errorClassifier->isCrashedTableError($errorText);
-    }
-
+    public function isCrashedTableError(string $errorText): bool { return $this->errorClassifier->isCrashedTableError($errorText); }
     /** @param string $errorText @return bool */
-    public function isIncorrectKeyFileError(string $errorText): bool {
-        return $this->errorClassifier->isIncorrectKeyFileError($errorText);
-    }
-
+    public function isIncorrectKeyFileError(string $errorText): bool { return $this->errorClassifier->isIncorrectKeyFileError($errorText); }
     /** @param string $errorText @return bool */
-    public function isQueryTimeoutError(string $errorText): bool {
-        return $this->errorClassifier->isQueryTimeoutError($errorText);
-    }
-
+    public function isQueryTimeoutError(string $errorText): bool { return $this->errorClassifier->isQueryTimeoutError($errorText); }
     /** @param string $errorText @return bool */
-    public function isPacketTooLarge(string $errorText): bool {
-        return $this->errorClassifier->isPacketTooLarge($errorText);
-    }
-
+    public function isPacketTooLarge(string $errorText): bool { return $this->errorClassifier->isPacketTooLarge($errorText); }
     /** @param string $errorText @return bool */
-    public function isDeadlockOrLockTimeoutError(string $errorText): bool {
-        return $this->errorClassifier->isDeadlockOrLockTimeoutError($errorText);
-    }
-
+    public function isDeadlockOrLockTimeoutError(string $errorText): bool { return $this->errorClassifier->isDeadlockOrLockTimeoutError($errorText); }
     /** @param string $errorText @return bool */
-    public function isGaleraConflictError(string $errorText): bool {
-        return $this->errorClassifier->isGaleraConflictError($errorText);
-    }
-
+    public function isGaleraConflictError(string $errorText): bool { return $this->errorClassifier->isGaleraConflictError($errorText); }
     /** @param string $errorText @return bool */
-    public function isPermanentHostSideStagedFailure(string $errorText): bool {
-        return $this->errorClassifier->isPermanentHostSideStagedFailure($errorText);
-    }
-
+    public function isPermanentHostSideStagedFailure(string $errorText): bool { return $this->errorClassifier->isPermanentHostSideStagedFailure($errorText); }
     /** @param string $errorText @return bool */
-    public function isResumableStagedKill(string $errorText): bool {
-        return $this->errorClassifier->isResumableStagedKill($errorText);
-    }
-
+    public function isResumableStagedKill(string $errorText): bool { return $this->errorClassifier->isResumableStagedKill($errorText); }
     /** @param string $errorText @return string|null */
-    public function extractTableNameFromFullError(string $errorText): ?string {
-        return $this->errorClassifier->extractTableNameFromFullError($errorText);
-    }
-
+    public function extractTableNameFromFullError(string $errorText): ?string { return $this->errorClassifier->extractTableNameFromFullError($errorText); }
     /** @param string $tableName @return bool */
-    public function isInnoDBTable(string $tableName): bool {
-        return $this->errorClassifier->isInnoDBTable($tableName);
-    }
-
+    public function isInnoDBTable(string $tableName): bool { return $this->errorClassifier->isInnoDBTable($tableName); }
     /** @param string $errorText @return void */
-    public function noteDatabaseIssueFromError(string $errorText): void {
-        $this->errorClassifier->noteDatabaseIssueFromError($errorText);
-    }
-
+    public function noteDatabaseIssueFromError(string $errorText): void { $this->errorClassifier->noteDatabaseIssueFromError($errorText); }
     /** @return bool */
-    public function isQuotaCooldownActive(): bool {
-        return $this->errorClassifier->isQuotaCooldownActive();
-    }
-
+    public function isQuotaCooldownActive(): bool { return $this->errorClassifier->isQuotaCooldownActive(); }
     /** @param string $errorText @return bool */
-    public function isMissingPluginTableError(string $errorText): bool {
-        return $this->errorClassifier->isMissingPluginTableError($errorText);
-    }
-
+    public function isMissingPluginTableError(string $errorText): bool { return $this->errorClassifier->isMissingPluginTableError($errorText); }
     /** @param string $errorText @return bool */
-    public function isTransientViewBuildTableError(string $errorText): bool {
-        return $this->errorClassifier->isTransientViewBuildTableError($errorText);
-    }
+    public function isTransientViewBuildTableError(string $errorText): bool { return $this->errorClassifier->isTransientViewBuildTableError($errorText); }
 
     /**
      * @param string $query
@@ -446,11 +367,13 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
      */
     public static function setSetStatementWrapperUnsupported(bool $value): void {
         self::$setStatementWrapperUnsupported = $value;
+        ABJ_404_Solution_DatabaseRuntimeState::setSetStatementWrapperUnsupported($value);
     }
 
     /** @return bool */
     public static function isSetStatementWrapperUnsupported(): bool {
-        return self::$setStatementWrapperUnsupported;
+        return self::$setStatementWrapperUnsupported
+            || ABJ_404_Solution_DatabaseRuntimeState::isSetStatementWrapperUnsupported();
     }
 
     /**
@@ -464,6 +387,7 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
         if (!isset($wpdb)) {
             return false;
         }
+        // @utf8-audit: opt-out — tableExists receives system-generated plugin table names from DAO/core callers.
         $table = $wpdb->get_var("SHOW TABLES LIKE '" . esc_sql($tableName) . "'");
         return ($table == $tableName);
     }
@@ -476,7 +400,8 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
      */
     public function getTableColumnNames(string $tableName): array {
         global $wpdb;
-        if (!isset($wpdb)) { return []; }
+        if (!isset($wpdb) || !is_object($wpdb) || !is_callable(array($wpdb, 'get_results'))) { return []; }
+        // @utf8-audit: opt-out — getTableColumnNames receives system-generated plugin table names only.
         $rows = $wpdb->get_results("SHOW COLUMNS FROM `" . esc_sql($tableName) . "`", ARRAY_A);
         if (!is_array($rows) || !empty($wpdb->last_error)) { return []; }
         $columns = [];
@@ -1414,7 +1339,7 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
                         'A database temporary table is corrupted — this is usually caused by a full or failing disk. Please contact your host. (MySQL error 1034)');
                     $this->setPluginDbNotice('corrupted_temp_table', $noticeMessage, $errorMessage);
                     if (function_exists('set_transient')) {
-                        // @cache-write-audit: opt-out, admin-notice dedup cooldown
+                        // @cache-write-audit: opt-out - admin-notice dedup cooldown
                         // (one notice per 24h per failure type), not a query result.
                         set_transient($cooldownKey, 1, 86400);
                     }
