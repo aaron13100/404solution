@@ -1479,6 +1479,9 @@ if (!function_exists('abj404_show_view_build_cron_notices')) {
 							. '</summary><pre style="white-space:pre-wrap;word-break:break-all;max-width:100%;margin:6px 0;">'
 							. esc_html($payload['last_failure_msg']) . '</pre></details>';
 					}
+					$retryUrl = admin_url('admin.php?page=' . ABJ404_PP . '&subpage=abj404_redirects&abj404_force_view_rebuild=1');
+					echo '<p><a class="button button-secondary" href="' . esc_url($retryUrl) . '">'
+						. esc_html(__('Retry Now', '404-solution')) . '</a></p>';
 					echo '</div>';
 				}
 			}

@@ -49,18 +49,28 @@ class ABJ_404_Solution_RebuildHealthState {
         $gate = $state['gate'];
         $trial = $state['trial'];
         $now = $this->clock->now();
-        $rawToken = $trial['token'] ?? '';
-        $trialToken = is_string($rawToken) ? $rawToken : '';
-        $rawStarted = $trial['started_at'] ?? 0;
-        $trialStarted = is_numeric($rawStarted) ? intval($rawStarted) : 0;
-        $rawTtl = $trial['ttl'] ?? 0;
-        $trialTtl = is_numeric($rawTtl) ? intval($rawTtl) : 0;
-        if ($trialToken !== '' && $trialStarted > 0 && ($now - $trialStarted) < $trialTtl) {
-            return false;
-        }
         $rawNext = $gate['next_allowed_at'] ?? 0;
         $nextAllowed = is_numeric($rawNext) ? intval($rawNext) : 0;
+        if ($this->trialIsActive($trial, $now)) {
+            return !$this->gateHasOpenFailureWindow($gate);
+        }
         return $nextAllowed <= $now;
+    }
+
+    /** @return bool */
+    public function beginExpensiveRebuildAttempt(): bool {
+        if (!$this->mayStartExpensiveRebuild()) {
+            return false;
+        }
+        $state = $this->readState();
+        if ($state === null) {
+            return false;
+        }
+        $gate = $state['gate'];
+        if (!$this->gateHasOpenFailureWindow($gate)) {
+            return true;
+        }
+        return $this->acquireTrialToken() !== null;
     }
 
     /** @return string|null */
@@ -72,7 +82,12 @@ class ABJ_404_Solution_RebuildHealthState {
         if ($existingExpires > 0 && $existingExpires <= $now && function_exists('delete_option')) { delete_option(self::TRIAL_LOCK_OPTION); }
         $added = add_option(self::TRIAL_LOCK_OPTION, (string)($now + self::TRIAL_TTL_SECONDS), '', false);
         if (!$added) { return null; }
-        try { $token = bin2hex(random_bytes(8)); } catch (\Throwable $t) { $token = (string)mt_rand() . '_' . (string)$now; } // allow-silent-catch: random_bytes unavailable on some hosts
+        try {
+            $token = bin2hex(random_bytes(8));
+        } catch (\Throwable $t) {
+            // allow-silent-catch: random_bytes unavailable on some hosts; fallback token is sufficient for trial lock dedup.
+            $token = (string)mt_rand() . '_' . (string)$now;
+        }
         $this->mutateState(function (array $state) use ($token, $now): array { $state['trial'] = array('token' => $token, 'started_at' => $now, 'ttl' => self::TRIAL_TTL_SECONDS); return $state; });
         return $token;
     }
@@ -217,6 +232,37 @@ class ABJ_404_Solution_RebuildHealthState {
             'trial' => array('token' => '', 'started_at' => 0, 'ttl' => self::TRIAL_TTL_SECONDS),
             'hits_chunk_size' => array('last_successful' => null, 'current' => null),
         );
+    }
+
+    /**
+     * @param array<string, mixed> $gate
+     * @return bool
+     */
+    private function gateHasOpenFailureWindow(array $gate): bool {
+        $rawFailureCount = $gate['failure_count'] ?? 0;
+        $failureCount = is_numeric($rawFailureCount) ? intval($rawFailureCount) : 0;
+        $rawNext = $gate['next_allowed_at'] ?? 0;
+        $nextAllowed = is_numeric($rawNext) ? intval($rawNext) : 0;
+        $rawLastFailure = $gate['last_failure_ts'] ?? 0;
+        $lastFailure = is_numeric($rawLastFailure) ? intval($rawLastFailure) : 0;
+        $rawLastSuccess = $gate['last_success_ts'] ?? 0;
+        $lastSuccess = is_numeric($rawLastSuccess) ? intval($rawLastSuccess) : 0;
+        return $failureCount > 0 || $nextAllowed > 0 || $lastFailure > $lastSuccess;
+    }
+
+    /**
+     * @param array<string, mixed> $trial
+     * @param int $now
+     * @return bool
+     */
+    private function trialIsActive(array $trial, int $now): bool {
+        $rawToken = $trial['token'] ?? '';
+        $trialToken = is_string($rawToken) ? $rawToken : '';
+        $rawStarted = $trial['started_at'] ?? 0;
+        $trialStarted = is_numeric($rawStarted) ? intval($rawStarted) : 0;
+        $rawTtl = $trial['ttl'] ?? 0;
+        $trialTtl = is_numeric($rawTtl) ? intval($rawTtl) : 0;
+        return $trialToken !== '' && $trialStarted > 0 && ($now - $trialStarted) < $trialTtl;
     }
 
     /**

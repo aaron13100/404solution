@@ -330,6 +330,7 @@ class ABJ_404_Solution_ViewBuildForceRestart extends ABJ_404_Solution_ViewBuildC
             $this->runForceRestartCleanupInsideLock();
             if ($this->rebuildHealth instanceof ABJ_404_Solution_RebuildHealthState) {
                 $this->rebuildHealth->reset();
+                $this->rebuildHealth->acquireTrialToken();
             }
         } finally {
             // Release the lock BEFORE scheduling the next tick so the

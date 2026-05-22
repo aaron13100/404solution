@@ -105,7 +105,7 @@ class ABJ_404_Solution_LogsRepository implements ABJ_404_Solution_LogsRepository
                     return $service;
                 }
             } catch (Throwable $t) {
-                // allow-silent-catch: test and partial-bootstrap contexts may not register the service.
+                $this->logger->debugMessage(__FUNCTION__ . ' rebuild_health service unavailable: ' . $t->getMessage());
             }
         }
         return null;
@@ -460,8 +460,9 @@ class ABJ_404_Solution_LogsRepository implements ABJ_404_Solution_LogsRepository
                     $requestedUrlColumnMeta = array('charset_name' => $legacyCharset, 'collation_name' => null);
                 }
             }
-            $getCharsetQuery = $wpdb->prepare("SELECT character_set_name as charset_name, collation_name as collation_name \n FROM information_schema.columns \n WHERE lower(table_schema) = lower(%s) \n AND lower(table_name) = lower(%s) \n AND lower(column_name) = lower(%s) ", DB_NAME, $logTableName, 'requested_url');
-            if ($requestedUrlColumnMeta === null) {
+            $dbName = defined('DB_NAME') ? (string)DB_NAME : '';
+            if ($requestedUrlColumnMeta === null && $dbName !== '' && is_object($wpdb)) {
+                $getCharsetQuery = $wpdb->prepare("SELECT character_set_name as charset_name, collation_name as collation_name \n FROM information_schema.columns \n WHERE lower(table_schema) = lower(%s) \n AND lower(table_name) = lower(%s) \n AND lower(column_name) = lower(%s) ", $dbName, $logTableName, 'requested_url');
                 $resultArray = $wpdb->get_results($getCharsetQuery, ARRAY_A);
                 if (!empty($resultArray)) {
                     $requestedUrlColumnMeta = array(
@@ -469,6 +470,7 @@ class ABJ_404_Solution_LogsRepository implements ABJ_404_Solution_LogsRepository
                         'collation_name' => $resultArray[0]['collation_name'] ?? $resultArray[0]['COLLATION_NAME'] ?? null,
                     );
                     if (function_exists('set_transient')) {
+                        // @cache-write-audit: opt-out - schema metadata probe cache, not user-query result data.
                         $ttl = defined('WEEK_IN_SECONDS') ? WEEK_IN_SECONDS : 604800;
                         set_transient('abj404_logs_requested_url_column_meta', $requestedUrlColumnMeta, $ttl);
                         if (!empty($requestedUrlColumnMeta['charset_name'])) {
@@ -487,6 +489,7 @@ class ABJ_404_Solution_LogsRepository implements ABJ_404_Solution_LogsRepository
                     $already = get_transient($warnKey);
                     if ($already !== $warnVal) {
                         $ttl = defined('WEEK_IN_SECONDS') ? WEEK_IN_SECONDS : 604800;
+                        // @cache-write-audit: opt-out - charset warning dedup marker, not query result data.
                         set_transient($warnKey, $warnVal, $ttl);
                         $this->logger->warn("Logs table column charset is '{$requestedUrlCharset}' for {$logTableName}. URL-encoding stored requested URLs to avoid charset issues.");
                     }
@@ -497,17 +500,22 @@ class ABJ_404_Solution_LogsRepository implements ABJ_404_Solution_LogsRepository
         }
 
         $options = $abj404logic->getOptions(true);
-        $referer = wp_get_referer();
+        $referer = function_exists('wp_get_referer') ? wp_get_referer() : '';
         if ($referer !== null && $referer !== false) {
-            $referer = esc_url_raw($referer);
+            $referer = function_exists('esc_url_raw') ? esc_url_raw($referer) : (string)$referer;
             $referer = substr($referer, 0, 512);
         } else {
             $referer = '';
         }
-        $current_user = ABJ_404_Solution_UserRef::fromWpUser(wp_get_current_user());
+        $current_user = function_exists('wp_get_current_user')
+            ? ABJ_404_Solution_UserRef::fromWpUser(wp_get_current_user())
+            : null;
         $current_user_name = $current_user !== null ? $current_user->getLogin() : '';
-        $ipAddressToSave = is_string($_SERVER['REMOTE_ADDR'] ?? '') ? (string)$_SERVER['REMOTE_ADDR'] : '';
-        $ipAddressToSave = filter_var($ipAddressToSave, FILTER_VALIDATE_IP) ? esc_sql($ipAddressToSave) : '';
+        $remoteAddrRaw = $_SERVER['REMOTE_ADDR'] ?? '';
+        $ipAddressToSave = is_string($remoteAddrRaw) ? $remoteAddrRaw : '';
+        $ipAddressToSave = filter_var($ipAddressToSave, FILTER_VALIDATE_IP)
+            ? (function_exists('esc_sql') ? esc_sql($ipAddressToSave) : $ipAddressToSave)
+            : '';
         if (!array_key_exists('log_raw_ips', $options) || $options['log_raw_ips'] != '1') {
             $ipAddressToSave = $this->f->md5lastOctet($ipAddressToSave);
         }
@@ -539,7 +547,9 @@ class ABJ_404_Solution_LogsRepository implements ABJ_404_Solution_LogsRepository
         }
         if (empty($checkMinIDQueryResults)) { $minLogID = true; }
 
-        if (trim($action) != "404") { $action = esc_url_raw($action); }
+        if (trim($action) != "404") {
+            $action = function_exists('esc_url_raw') ? esc_url_raw($action) : $action;
+        }
 
         $helperFunctions = abj_service('functions');
         $reasonMessage = trim(implode(", ", array_filter(array(abj_service('request_context')->ignore_doprocess ?: '', abj_service('request_context')->ignore_donotprocess ?: ''))));
@@ -548,11 +558,15 @@ class ABJ_404_Solution_LogsRepository implements ABJ_404_Solution_LogsRepository
         if ($this->logger->isDebug() && !empty($ctx->permalinks_found)) {
             $permalinksKept = $ctx->permalinks_kept;
         }
-        $this->logger->debugMessage("Logging redirect. Referer: " . esc_html($referer) . " | Current user: " . $current_user_name . " | From: " . $helperFunctions->normalizeUrlString($_SERVER['REQUEST_URI']) . esc_html(" to: ") . esc_html($action) . ', Reason: ' . $matchReason . ", Ignore msg(s): " . $reasonMessage . ', Execution time: ' . round((float)$helperFunctions->getExecutionTime(), 2) . ' seconds, permalinks found: ' . $permalinksKept);
+        $requestUri = is_string($_SERVER['REQUEST_URI'] ?? '') ? (string)($_SERVER['REQUEST_URI'] ?? '') : '';
+        $escapeHtml = function($value) {
+            return function_exists('esc_html') ? esc_html($value) : htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
+        };
+        $this->logger->debugMessage("Logging redirect. Referer: " . $escapeHtml($referer) . " | Current user: " . $current_user_name . " | From: " . $helperFunctions->normalizeUrlString($requestUri) . $escapeHtml(" to: ") . $escapeHtml($action) . ', Reason: ' . $matchReason . ", Ignore msg(s): " . $reasonMessage . ', Execution time: ' . round((float)$helperFunctions->getExecutionTime(), 2) . ' seconds, permalinks found: ' . $permalinksKept);
 
         $usernameLookupID = $this->insertLookupValueAndGetID($current_user_name);
 
-        $reqUrlForLog = esc_url_raw($requested_url);
+        $reqUrlForLog = function_exists('esc_url_raw') ? esc_url_raw($requested_url) : $requested_url;
         $reqUrlForLogStr = is_string($reqUrlForLog) ? $reqUrlForLog : '';
         $this->queueLogEntry([
             'timestamp' => $now, 'user_ip' => $ipAddressToSave, 'referrer' => $referer,
@@ -733,13 +747,13 @@ class ABJ_404_Solution_LogsRepository implements ABJ_404_Solution_LogsRepository
     }
 
     /** @param string $error @return bool */
-    private function isTableFullError(string $error): bool {
+    public function isTableFullError(string $error): bool {
         $lower = strtolower($error);
         return stripos($lower, 'is full') !== false || stripos($lower, 'table full') !== false;
     }
 
     /** @param string $tableName @param string $errorMessage @return bool */
-    private function autoTrimLogsv2IfNeeded(string $tableName, string $errorMessage): bool {
+    public function autoTrimLogsv2IfNeeded(string $tableName, string $errorMessage): bool {
         if (!preg_match('/^[a-zA-Z0-9_]+$/', $tableName) || strpos($tableName, 'abj404_logsv2') === false) {
             $this->logger->warn("autoTrimLogsv2IfNeeded: rejected unexpected table name: " . substr($tableName, 0, 100));
             return false;
@@ -751,6 +765,7 @@ class ABJ_404_Solution_LogsRepository implements ABJ_404_Solution_LogsRepository
         $trimSql = "DELETE FROM `{$tableName}` ORDER BY timestamp ASC LIMIT 1000";
         $wpdb->query($trimSql);
         $ttl = defined('HOUR_IN_SECONDS') ? (int) HOUR_IN_SECONDS : 3600;
+        // @cache-write-audit: opt-out - log-trim cooldown marker, not query result data.
         if (function_exists('set_transient')) { set_transient($cooldownKey, 1, $ttl); }
         if (!empty($wpdb->last_error)) {
             $this->logger->warn("Log table full: auto-trim failed: " . $wpdb->last_error);
@@ -767,7 +782,7 @@ class ABJ_404_Solution_LogsRepository implements ABJ_404_Solution_LogsRepository
     }
 
     /** @return wpdb|null */
-    private function getIsolatedWpdb(): ?wpdb {
+    public function getIsolatedWpdb(): ?wpdb {
         static $isolated = null;
         if ($isolated !== null) { return $isolated; }
         if (!class_exists('wpdb')) { return null; }
@@ -815,7 +830,7 @@ class ABJ_404_Solution_LogsRepository implements ABJ_404_Solution_LogsRepository
     }
 
     /** @param array<string, mixed> $entry @return array<string, mixed>|null */
-    private function sanitizeLogEntry(array $entry): ?array {
+    public function sanitizeLogEntry(array $entry): ?array {
         $required = array('timestamp', 'user_ip', 'referrer', 'dest_url', 'requested_url', 'requested_url_detail', 'username', 'min_log_id', 'engine');
         foreach ($required as $key) { if (!array_key_exists($key, $entry)) { return null; } }
         $normalizeString = function($value, $maxLen) {
@@ -1057,7 +1072,7 @@ class ABJ_404_Solution_LogsRepository implements ABJ_404_Solution_LogsRepository
     /** @inheritDoc */
     function createRedirectsForViewHitsTable(): bool {
         $wasRefreshed = false;
-        if ($this->rebuildHealth !== null && !$this->rebuildHealth->mayStartExpensiveRebuild()) {
+        if ($this->rebuildHealth !== null && !$this->rebuildHealth->beginExpensiveRebuildAttempt()) {
             $this->logger->debugMessage(__FUNCTION__ . " skipped because rebuild health gate is closed.");
             $this->dbCore->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'paused', 86400);
             return false;
@@ -1074,6 +1089,7 @@ class ABJ_404_Solution_LogsRepository implements ABJ_404_Solution_LogsRepository
             $createTempTableQuery = $this->dbCore->doTableNameReplacements($createTempTableQuery);
             $createTempTableQuery = str_replace('{COLLATION}', $resolvedCollation, $createTempTableQuery);
             $this->dbCore->queryAndGetResults($createTempTableQuery);
+            // @cache-write-audit: opt-out - truncates an unpublished temp table before rebuilding it.
             $this->dbCore->queryAndGetResults("truncate table " . $tempDestTable);
             $maxLogIdSnapshot = $this->getMaxLogId();
             $minLogId = $this->getMinLogId();
@@ -1090,8 +1106,9 @@ class ABJ_404_Solution_LogsRepository implements ABJ_404_Solution_LogsRepository
             }
             $elapsedTime = $results['elapsed_time'];
             $comment = $elapsedTime . '|' . $maxLogIdSnapshot;
+            // @utf8-audit: opt-out — rebuild table comment is synthesized from numeric timing and ID values.
             $comment = substr(esc_sql($comment), 0, 2048);
-            $this->dbCore->queryAndGetResults("ALTER TABLE " . $tempDestTable . " COMMENT '" . $comment . "'");
+            $this->dbCore->queryAndGetResults(sprintf("ALTER TABLE %s COMMENT '%s'", $tempDestTable, $comment));
             $statements = array("drop table if exists " . $finalDestTable, "rename table " . $tempDestTable . ' to ' . $finalDestTable);
             $this->dbCore->executeAsTransaction($statements);
             $this->dbCore->setRuntimeFlag(self::HITS_TABLE_LAST_REFRESHED_FLAG, time(), 86400);

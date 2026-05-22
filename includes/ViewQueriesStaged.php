@@ -958,7 +958,7 @@ class ABJ_404_Solution_ViewQueriesStaged extends ABJ_404_Solution_ViewBuildColla
     public function rebuildViewDoneInBackground(): void {
         $this->sweepStaleRebuildTransients();
         if ($this->rebuildHealth instanceof ABJ_404_Solution_RebuildHealthState
-                && !$this->rebuildHealth->mayStartExpensiveRebuild()) {
+                && !$this->rebuildHealth->beginExpensiveRebuildAttempt()) {
             $this->logger->debugMessage(
                 '[staged] rebuildViewDoneInBackground: skipped because rebuild health gate is closed.'
             );
