@@ -3918,3 +3918,27 @@ msgstr "Ошибка: порог уведомления администрато
 #: includes/ajax/Ajax_RestoreDefaults.php
 msgid "Settings restored to defaults."
 msgstr "Настройки восстановлены до значений по умолчанию."
+
+#: includes/PluginLogic.php
+msgid "Redirecting..."
+msgstr "Перенаправление..."
+
+#: includes/ViewTrait_RedirectsTable.php
+msgid "Destination returned 404 recently, redirect suspended until destination is restored."
+msgstr "Целевой адрес недавно вернул 404; перенаправление приостановлено до восстановления цели."
+
+#: includes/ViewTrait_RedirectsTable.php
+msgid "Manual redirect, no confidence score"
+msgstr "Ручное перенаправление, оценка уверенности отсутствует"
+
+#: includes/LogsRepository.php
+msgid "The 404 Solution redirects-hits rollup has been behind MAX(logsv2.id) for at least %d hour(s). The cron-driven rebuild event (abj404_updateLogsHitsTableAction) does not appear to be firing, so the redirects list will show stale \"hits\" and \"last hit\" columns until cron resumes. To resolve: if DISABLE_WP_CRON is set in wp-config.php either remove it, or configure a system cron job that requests wp-cron.php periodically. To force a rebuild right now in your browser, open the 404 Solution Redirects page with ?abj404_force_view_rebuild=1 appended to the URL."
+msgstr "Сводка redirects-hits в 404 Solution отстает от MAX(logsv2.id) минимум на %d час(а/ов). Событие перестроения через cron (abj404_updateLogsHitsTableAction), похоже, не запускается, поэтому список перенаправлений будет показывать устаревшие столбцы «hits» и «last hit», пока cron не возобновит работу. Чтобы исправить это: если DISABLE_WP_CRON задан в wp-config.php, удалите его или настройте системное задание cron, которое периодически запрашивает wp-cron.php. Чтобы принудительно перестроить данные сейчас в браузере, откройте страницу 404 Solution Redirects и добавьте к URL ?abj404_force_view_rebuild=1."
+
+#: 404-solution.php
+msgid "View/hits rebuild paused after %d consecutive failures (class: %s). Next retry in about %d minutes."
+msgstr "Перестроение просмотров/попаданий приостановлено после %d последовательных сбоев (класс: %s). Следующая попытка примерно через %d мин."
+
+#: 404-solution.php
+msgid "Retry Now"
+msgstr "Повторить сейчас"

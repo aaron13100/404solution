@@ -3908,3 +3908,27 @@ msgstr "Errore: la soglia di notifica dell'amministratore deve essere un numero 
 #: includes/ajax/Ajax_RestoreDefaults.php
 msgid "Settings restored to defaults."
 msgstr "Impostazioni ripristinate ai valori predefiniti."
+
+#: includes/PluginLogic.php
+msgid "Redirecting..."
+msgstr "Reindirizzamento..."
+
+#: includes/ViewTrait_RedirectsTable.php
+msgid "Destination returned 404 recently, redirect suspended until destination is restored."
+msgstr "La destinazione ha restituito di recente un 404; il reindirizzamento è sospeso finché la destinazione non viene ripristinata."
+
+#: includes/ViewTrait_RedirectsTable.php
+msgid "Manual redirect, no confidence score"
+msgstr "Reindirizzamento manuale, nessun punteggio di affidabilità"
+
+#: includes/LogsRepository.php
+msgid "The 404 Solution redirects-hits rollup has been behind MAX(logsv2.id) for at least %d hour(s). The cron-driven rebuild event (abj404_updateLogsHitsTableAction) does not appear to be firing, so the redirects list will show stale \"hits\" and \"last hit\" columns until cron resumes. To resolve: if DISABLE_WP_CRON is set in wp-config.php either remove it, or configure a system cron job that requests wp-cron.php periodically. To force a rebuild right now in your browser, open the 404 Solution Redirects page with ?abj404_force_view_rebuild=1 appended to the URL."
+msgstr "Il riepilogo redirects-hits di 404 Solution è indietro rispetto a MAX(logsv2.id) da almeno %d ora/e. L’evento di ricostruzione gestito da cron (abj404_updateLogsHitsTableAction) non sembra essere in esecuzione, quindi l’elenco dei reindirizzamenti mostrerà colonne “hits” e “last hit” obsolete finché cron non riprende. Per risolvere: se DISABLE_WP_CRON è impostato in wp-config.php, rimuovilo oppure configura un job cron di sistema che richiami periodicamente wp-cron.php. Per forzare subito la ricostruzione nel browser, apri la pagina 404 Solution Redirects con ?abj404_force_view_rebuild=1 aggiunto all’URL."
+
+#: 404-solution.php
+msgid "View/hits rebuild paused after %d consecutive failures (class: %s). Next retry in about %d minutes."
+msgstr "La ricostruzione di visualizzazioni/accessi è stata sospesa dopo %d errori consecutivi (classe: %s). Nuovo tentativo tra circa %d minuti."
+
+#: 404-solution.php
+msgid "Retry Now"
+msgstr "Riprova ora"

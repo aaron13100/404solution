@@ -3940,3 +3940,27 @@ msgstr "خطأ: يجب أن يكون حد إشعار المسؤول رقمًا �
 #: includes/ajax/Ajax_RestoreDefaults.php
 msgid "Settings restored to defaults."
 msgstr "تم استعادة الإعدادات إلى القيم الافتراضية."
+
+#: includes/PluginLogic.php
+msgid "Redirecting..."
+msgstr "جارٍ إعادة التوجيه..."
+
+#: includes/ViewTrait_RedirectsTable.php
+msgid "Destination returned 404 recently, redirect suspended until destination is restored."
+msgstr "أعاد الوجهة خطأ 404 مؤخرًا، لذلك تم تعليق إعادة التوجيه حتى تتم استعادة الوجهة."
+
+#: includes/ViewTrait_RedirectsTable.php
+msgid "Manual redirect, no confidence score"
+msgstr "إعادة توجيه يدوية، لا توجد درجة ثقة"
+
+#: includes/LogsRepository.php
+msgid "The 404 Solution redirects-hits rollup has been behind MAX(logsv2.id) for at least %d hour(s). The cron-driven rebuild event (abj404_updateLogsHitsTableAction) does not appear to be firing, so the redirects list will show stale \"hits\" and \"last hit\" columns until cron resumes. To resolve: if DISABLE_WP_CRON is set in wp-config.php either remove it, or configure a system cron job that requests wp-cron.php periodically. To force a rebuild right now in your browser, open the 404 Solution Redirects page with ?abj404_force_view_rebuild=1 appended to the URL."
+msgstr "تأخر تجميع redirects-hits في 404 Solution عن MAX(logsv2.id) لمدة لا تقل عن %d ساعة. يبدو أن حدث إعادة البناء المعتمد على cron (abj404_updateLogsHitsTableAction) لا يعمل، لذلك ستعرض قائمة إعادة التوجيه أعمدة “hits” و“last hit” القديمة حتى يستأنف cron العمل. للحل: إذا كان DISABLE_WP_CRON مضبوطًا في wp-config.php فقم بإزالته، أو قم بإعداد مهمة cron على النظام تطلب wp-cron.php بشكل دوري. لفرض إعادة البناء الآن من المتصفح، افتح صفحة 404 Solution Redirects وأضف ?abj404_force_view_rebuild=1 إلى نهاية الرابط."
+
+#: 404-solution.php
+msgid "View/hits rebuild paused after %d consecutive failures (class: %s). Next retry in about %d minutes."
+msgstr "تم إيقاف إعادة بناء المشاهدات/الزيارات مؤقتًا بعد %d حالات فشل متتالية (الفئة: %s). ستتم المحاولة التالية بعد حوالي %d دقائق."
+
+#: 404-solution.php
+msgid "Retry Now"
+msgstr "أعد المحاولة الآن"

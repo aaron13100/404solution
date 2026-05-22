@@ -3956,3 +3956,27 @@ msgstr "Error: Admin notification threshold must be a non-negative number"
 #: includes/ajax/Ajax_RestoreDefaults.php
 msgid "Settings restored to defaults."
 msgstr "Settings restored to defaults."
+
+#: includes/PluginLogic.php
+msgid "Redirecting..."
+msgstr "Redirecting..."
+
+#: includes/ViewTrait_RedirectsTable.php
+msgid "Destination returned 404 recently, redirect suspended until destination is restored."
+msgstr "Destination returned 404 recently, redirect suspended until destination is restored."
+
+#: includes/ViewTrait_RedirectsTable.php
+msgid "Manual redirect, no confidence score"
+msgstr "Manual redirect, no confidence score"
+
+#: includes/LogsRepository.php
+msgid "The 404 Solution redirects-hits rollup has been behind MAX(logsv2.id) for at least %d hour(s). The cron-driven rebuild event (abj404_updateLogsHitsTableAction) does not appear to be firing, so the redirects list will show stale \"hits\" and \"last hit\" columns until cron resumes. To resolve: if DISABLE_WP_CRON is set in wp-config.php either remove it, or configure a system cron job that requests wp-cron.php periodically. To force a rebuild right now in your browser, open the 404 Solution Redirects page with ?abj404_force_view_rebuild=1 appended to the URL."
+msgstr "The 404 Solution redirects-hits rollup has been behind MAX(logsv2.id) for at least %d hour(s). The cron-driven rebuild event (abj404_updateLogsHitsTableAction) does not appear to be firing, so the redirects list will show stale \"hits\" and \"last hit\" columns until cron resumes. To resolve: if DISABLE_WP_CRON is set in wp-config.php either remove it, or configure a system cron job that requests wp-cron.php periodically. To force a rebuild right now in your browser, open the 404 Solution Redirects page with ?abj404_force_view_rebuild=1 appended to the URL."
+
+#: 404-solution.php
+msgid "View/hits rebuild paused after %d consecutive failures (class: %s). Next retry in about %d minutes."
+msgstr "View/hits rebuild paused after %d consecutive failures (class: %s). Next retry in about %d minutes."
+
+#: 404-solution.php
+msgid "Retry Now"
+msgstr "Retry Now"

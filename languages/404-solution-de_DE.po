@@ -3909,3 +3909,27 @@ msgstr "Fehler: Der Schwellenwert für Admin-Benachrichtigungen muss eine nicht-
 #: includes/ajax/Ajax_RestoreDefaults.php
 msgid "Settings restored to defaults."
 msgstr "Einstellungen auf Standardwerte zurückgesetzt."
+
+#: includes/PluginLogic.php
+msgid "Redirecting..."
+msgstr "Weiterleitung..."
+
+#: includes/ViewTrait_RedirectsTable.php
+msgid "Destination returned 404 recently, redirect suspended until destination is restored."
+msgstr "Das Ziel hat kürzlich 404 zurückgegeben; die Weiterleitung ist ausgesetzt, bis das Ziel wiederhergestellt ist."
+
+#: includes/ViewTrait_RedirectsTable.php
+msgid "Manual redirect, no confidence score"
+msgstr "Manuelle Weiterleitung, kein Vertrauenswert"
+
+#: includes/LogsRepository.php
+msgid "The 404 Solution redirects-hits rollup has been behind MAX(logsv2.id) for at least %d hour(s). The cron-driven rebuild event (abj404_updateLogsHitsTableAction) does not appear to be firing, so the redirects list will show stale \"hits\" and \"last hit\" columns until cron resumes. To resolve: if DISABLE_WP_CRON is set in wp-config.php either remove it, or configure a system cron job that requests wp-cron.php periodically. To force a rebuild right now in your browser, open the 404 Solution Redirects page with ?abj404_force_view_rebuild=1 appended to the URL."
+msgstr "Der redirects-hits-Rollup von 404 Solution liegt seit mindestens %d Stunde(n) hinter MAX(logsv2.id) zurück. Das cron-gesteuerte Neuerstellungsereignis (abj404_updateLogsHitsTableAction) scheint nicht zu laufen, daher zeigt die Weiterleitungsliste veraltete Spalten für „hits“ und „last hit“, bis cron wieder läuft. Zur Behebung: Wenn DISABLE_WP_CRON in wp-config.php gesetzt ist, entfernen Sie es oder konfigurieren Sie einen System-Cronjob, der wp-cron.php regelmäßig aufruft. Um die Neuerstellung jetzt im Browser zu erzwingen, öffnen Sie die Seite 404 Solution Redirects und hängen Sie ?abj404_force_view_rebuild=1 an die URL an."
+
+#: 404-solution.php
+msgid "View/hits rebuild paused after %d consecutive failures (class: %s). Next retry in about %d minutes."
+msgstr "Der Neuaufbau der Ansichts-/Treffer-Daten wurde nach %d aufeinanderfolgenden Fehlern angehalten (Klasse: %s). Nächster Versuch in etwa %d Minuten."
+
+#: 404-solution.php
+msgid "Retry Now"
+msgstr "Jetzt erneut versuchen"

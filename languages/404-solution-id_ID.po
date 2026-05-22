@@ -3904,3 +3904,27 @@ msgstr "Kesalahan: ambang batas notifikasi admin harus berupa angka non-negatif"
 #: includes/ajax/Ajax_RestoreDefaults.php
 msgid "Settings restored to defaults."
 msgstr "Pengaturan dikembalikan ke default."
+
+#: includes/PluginLogic.php
+msgid "Redirecting..."
+msgstr "Mengalihkan..."
+
+#: includes/ViewTrait_RedirectsTable.php
+msgid "Destination returned 404 recently, redirect suspended until destination is restored."
+msgstr "Tujuan baru saja mengembalikan 404; pengalihan ditangguhkan sampai tujuan dipulihkan."
+
+#: includes/ViewTrait_RedirectsTable.php
+msgid "Manual redirect, no confidence score"
+msgstr "Pengalihan manual, tanpa skor kepercayaan"
+
+#: includes/LogsRepository.php
+msgid "The 404 Solution redirects-hits rollup has been behind MAX(logsv2.id) for at least %d hour(s). The cron-driven rebuild event (abj404_updateLogsHitsTableAction) does not appear to be firing, so the redirects list will show stale \"hits\" and \"last hit\" columns until cron resumes. To resolve: if DISABLE_WP_CRON is set in wp-config.php either remove it, or configure a system cron job that requests wp-cron.php periodically. To force a rebuild right now in your browser, open the 404 Solution Redirects page with ?abj404_force_view_rebuild=1 appended to the URL."
+msgstr "Rollup redirects-hits 404 Solution telah tertinggal dari MAX(logsv2.id) setidaknya selama %d jam. Peristiwa pembangunan ulang yang digerakkan cron (abj404_updateLogsHitsTableAction) tampaknya tidak berjalan, sehingga daftar pengalihan akan menampilkan kolom “hits” dan “last hit” yang usang sampai cron berjalan kembali. Untuk mengatasinya: jika DISABLE_WP_CRON diatur di wp-config.php, hapus pengaturan tersebut, atau konfigurasikan tugas cron sistem yang meminta wp-cron.php secara berkala. Untuk memaksa pembangunan ulang sekarang di browser, buka halaman 404 Solution Redirects dengan ?abj404_force_view_rebuild=1 ditambahkan ke URL."
+
+#: 404-solution.php
+msgid "View/hits rebuild paused after %d consecutive failures (class: %s). Next retry in about %d minutes."
+msgstr "Pembangunan ulang tampilan/hit dijeda setelah %d kegagalan berturut-turut (kelas: %s). Percobaan berikutnya sekitar %d menit lagi."
+
+#: 404-solution.php
+msgid "Retry Now"
+msgstr "Coba lagi sekarang"

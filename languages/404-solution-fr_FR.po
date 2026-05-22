@@ -3905,3 +3905,27 @@ msgstr "Erreur : le seuil de notification administrateur doit être un nombre no
 #: includes/ajax/Ajax_RestoreDefaults.php
 msgid "Settings restored to defaults."
 msgstr "Paramètres restaurés aux valeurs par défaut."
+
+#: includes/PluginLogic.php
+msgid "Redirecting..."
+msgstr "Redirection..."
+
+#: includes/ViewTrait_RedirectsTable.php
+msgid "Destination returned 404 recently, redirect suspended until destination is restored."
+msgstr "La destination a récemment renvoyé une erreur 404 ; la redirection est suspendue jusqu’à sa restauration."
+
+#: includes/ViewTrait_RedirectsTable.php
+msgid "Manual redirect, no confidence score"
+msgstr "Redirection manuelle, aucun score de confiance"
+
+#: includes/LogsRepository.php
+msgid "The 404 Solution redirects-hits rollup has been behind MAX(logsv2.id) for at least %d hour(s). The cron-driven rebuild event (abj404_updateLogsHitsTableAction) does not appear to be firing, so the redirects list will show stale \"hits\" and \"last hit\" columns until cron resumes. To resolve: if DISABLE_WP_CRON is set in wp-config.php either remove it, or configure a system cron job that requests wp-cron.php periodically. To force a rebuild right now in your browser, open the 404 Solution Redirects page with ?abj404_force_view_rebuild=1 appended to the URL."
+msgstr "Le cumul redirects-hits de 404 Solution est en retard sur MAX(logsv2.id) depuis au moins %d heure(s). L’événement de reconstruction lancé par cron (abj404_updateLogsHitsTableAction) ne semble pas s’exécuter ; la liste des redirections affichera donc des colonnes « hits » et « last hit » obsolètes jusqu’à la reprise de cron. Pour corriger cela : si DISABLE_WP_CRON est défini dans wp-config.php, supprimez-le ou configurez une tâche cron système qui appelle régulièrement wp-cron.php. Pour forcer une reconstruction maintenant dans votre navigateur, ouvrez la page 404 Solution Redirects avec ?abj404_force_view_rebuild=1 ajouté à l’URL."
+
+#: 404-solution.php
+msgid "View/hits rebuild paused after %d consecutive failures (class: %s). Next retry in about %d minutes."
+msgstr "La reconstruction des vues/clics est suspendue après %d échecs consécutifs (classe : %s). Nouvelle tentative dans environ %d minutes."
+
+#: 404-solution.php
+msgid "Retry Now"
+msgstr "Réessayer maintenant"

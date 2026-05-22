@@ -3911,3 +3911,27 @@ msgstr "Fout: de drempel voor beheerdersmelding moet een niet-negatief getal zij
 #: includes/ajax/Ajax_RestoreDefaults.php
 msgid "Settings restored to defaults."
 msgstr "Instellingen hersteld naar standaardwaarden."
+
+#: includes/PluginLogic.php
+msgid "Redirecting..."
+msgstr "Doorsturen..."
+
+#: includes/ViewTrait_RedirectsTable.php
+msgid "Destination returned 404 recently, redirect suspended until destination is restored."
+msgstr "De bestemming gaf onlangs een 404 terug; de omleiding is onderbroken totdat de bestemming is hersteld."
+
+#: includes/ViewTrait_RedirectsTable.php
+msgid "Manual redirect, no confidence score"
+msgstr "Handmatige omleiding, geen betrouwbaarheidsscore"
+
+#: includes/LogsRepository.php
+msgid "The 404 Solution redirects-hits rollup has been behind MAX(logsv2.id) for at least %d hour(s). The cron-driven rebuild event (abj404_updateLogsHitsTableAction) does not appear to be firing, so the redirects list will show stale \"hits\" and \"last hit\" columns until cron resumes. To resolve: if DISABLE_WP_CRON is set in wp-config.php either remove it, or configure a system cron job that requests wp-cron.php periodically. To force a rebuild right now in your browser, open the 404 Solution Redirects page with ?abj404_force_view_rebuild=1 appended to the URL."
+msgstr "De redirects-hits-samenvatting van 404 Solution loopt al minstens %d uur achter op MAX(logsv2.id). De door cron aangestuurde herbouwtaak (abj404_updateLogsHitsTableAction) lijkt niet te draaien, waardoor de omleidingenlijst verouderde kolommen “hits” en “last hit” toont totdat cron wordt hervat. Oplossing: als DISABLE_WP_CRON in wp-config.php staat, verwijder die instelling of configureer een systeem-crontaak die wp-cron.php periodiek aanroept. Om nu in de browser een herbouw te forceren, open je de pagina 404 Solution Redirects met ?abj404_force_view_rebuild=1 toegevoegd aan de URL."
+
+#: 404-solution.php
+msgid "View/hits rebuild paused after %d consecutive failures (class: %s). Next retry in about %d minutes."
+msgstr "Het opnieuw opbouwen van weergaven/hits is gepauzeerd na %d opeenvolgende fouten (klasse: %s). Nieuwe poging over ongeveer %d minuten."
+
+#: 404-solution.php
+msgid "Retry Now"
+msgstr "Nu opnieuw proberen"

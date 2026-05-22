@@ -3911,3 +3911,27 @@ msgstr "Fel: adminmeddelandetröskeln måste vara ett icke-negativt tal"
 #: includes/ajax/Ajax_RestoreDefaults.php
 msgid "Settings restored to defaults."
 msgstr "Inställningar återställda till standardvärden."
+
+#: includes/PluginLogic.php
+msgid "Redirecting..."
+msgstr "Omdirigerar..."
+
+#: includes/ViewTrait_RedirectsTable.php
+msgid "Destination returned 404 recently, redirect suspended until destination is restored."
+msgstr "Målet returnerade nyligen 404; omdirigeringen är pausad tills målet har återställts."
+
+#: includes/ViewTrait_RedirectsTable.php
+msgid "Manual redirect, no confidence score"
+msgstr "Manuell omdirigering, ingen förtroendepoäng"
+
+#: includes/LogsRepository.php
+msgid "The 404 Solution redirects-hits rollup has been behind MAX(logsv2.id) for at least %d hour(s). The cron-driven rebuild event (abj404_updateLogsHitsTableAction) does not appear to be firing, so the redirects list will show stale \"hits\" and \"last hit\" columns until cron resumes. To resolve: if DISABLE_WP_CRON is set in wp-config.php either remove it, or configure a system cron job that requests wp-cron.php periodically. To force a rebuild right now in your browser, open the 404 Solution Redirects page with ?abj404_force_view_rebuild=1 appended to the URL."
+msgstr "Sammanställningen redirects-hits i 404 Solution har legat efter MAX(logsv2.id) i minst %d timme/timmar. Den cron-styrda ombyggnadshändelsen (abj404_updateLogsHitsTableAction) verkar inte köras, så omdirigeringslistan visar inaktuella kolumner för “hits” och “last hit” tills cron återupptas. Lösning: om DISABLE_WP_CRON är satt i wp-config.php, ta bort det eller konfigurera ett system-cronjobb som anropar wp-cron.php regelbundet. För att tvinga en ombyggnad nu i webbläsaren, öppna sidan 404 Solution Redirects med ?abj404_force_view_rebuild=1 tillagt i URL:en."
+
+#: 404-solution.php
+msgid "View/hits rebuild paused after %d consecutive failures (class: %s). Next retry in about %d minutes."
+msgstr "Ombyggnad av visningar/träffar pausades efter %d fel i rad (klass: %s). Nästa försök om cirka %d minuter."
+
+#: 404-solution.php
+msgid "Retry Now"
+msgstr "Försök igen nu"
