@@ -37,5 +37,11 @@ trait ABJ_404_Solution_AjaxSecurityTrait {
             return; // @phpstan-ignore deadCode.unreachable
         }
 
+        try {
+            abj_service('logging')->infoMessage('AJAX authorized: ' . $action);
+        } catch (\Throwable $e) {
+            error_log('404 Solution: AJAX authorization logging failed for ' . $action .
+                ' (code ' . $e->getCode() . '): ' . $e->getMessage());
+        }
     }
 }
