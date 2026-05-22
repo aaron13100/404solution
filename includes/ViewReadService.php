@@ -4,6 +4,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+require_once __DIR__ . '/ViewSnapshotCache.php';
+
 /**
  * Admin list view read path, snapshot caching, and status counts.
  *
@@ -14,24 +16,26 @@ if (!defined('ABSPATH')) {
  *
  * @see docs/dataaccess-refactor-plan.md Phase 6.
  */
-class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServiceInterface {
+class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServiceInterface, ABJ_404_Solution_ViewSnapshotCacheHostInterface {
+    /** @var bool Legacy reflection bridge for tests and old diagnostics. */
+    private static $viewSnapshotTableEnsured = false;
 
     // --- Constants ---
 
-    const CACHE_KEY_REDIRECT_STATUS = 'abj404_redirect_status_counts';
-    const CACHE_KEY_CAPTURED_STATUS = 'abj404_captured_status_counts';
-    const CACHE_KEY_HIGH_IMPACT_CAPTURED = 'abj404_high_impact_captured';
-    const STATUS_CACHE_TTL = 86400;
-    const STATUS_CACHE_TIMEOUT_SELFHEAL_TTL = 300;
-    const VIEW_SNAPSHOT_CACHE_TTL_SECONDS = 120;
-    const VIEW_SNAPSHOT_REFRESH_COOLDOWN_SECONDS = 30;
-    const VIEW_SNAPSHOT_WARMUP_STAGE_TIMEOUT_SECONDS = 28;
-    const VIEW_SNAPSHOT_WARMUP_STALE_SECONDS = 35;
-    const VIEW_SNAPSHOT_WARMUP_MAX_ATTEMPTS = 3;
-    const VIEW_SNAPSHOT_MAX_PAYLOAD_BYTES = 2097152;
-    const HITS_TABLE_LAST_CHECKED_FLAG = 'abj404_logs_hits_last_checked_at';
-    const HITS_TABLE_LAST_DECISION_FLAG = 'abj404_logs_hits_last_decision';
-    const LOGS_COUNT_CACHE_TTL_SECONDS = 60;
+    const CACHE_KEY_REDIRECT_STATUS = ABJ_404_Solution_ViewReadRuntimeState::CACHE_KEY_REDIRECT_STATUS;
+    const CACHE_KEY_CAPTURED_STATUS = ABJ_404_Solution_ViewReadRuntimeState::CACHE_KEY_CAPTURED_STATUS;
+    const CACHE_KEY_HIGH_IMPACT_CAPTURED = ABJ_404_Solution_ViewReadRuntimeState::CACHE_KEY_HIGH_IMPACT_CAPTURED;
+    const STATUS_CACHE_TTL = ABJ_404_Solution_ViewReadRuntimeState::STATUS_CACHE_TTL;
+    const STATUS_CACHE_TIMEOUT_SELFHEAL_TTL = ABJ_404_Solution_ViewReadRuntimeState::STATUS_CACHE_TIMEOUT_SELFHEAL_TTL;
+    const VIEW_SNAPSHOT_CACHE_TTL_SECONDS = ABJ_404_Solution_ViewReadRuntimeState::VIEW_SNAPSHOT_CACHE_TTL_SECONDS;
+    const VIEW_SNAPSHOT_REFRESH_COOLDOWN_SECONDS = ABJ_404_Solution_ViewReadRuntimeState::VIEW_SNAPSHOT_REFRESH_COOLDOWN_SECONDS;
+    const VIEW_SNAPSHOT_WARMUP_STAGE_TIMEOUT_SECONDS = ABJ_404_Solution_ViewReadRuntimeState::VIEW_SNAPSHOT_WARMUP_STAGE_TIMEOUT_SECONDS;
+    const VIEW_SNAPSHOT_WARMUP_STALE_SECONDS = ABJ_404_Solution_ViewReadRuntimeState::VIEW_SNAPSHOT_WARMUP_STALE_SECONDS;
+    const VIEW_SNAPSHOT_WARMUP_MAX_ATTEMPTS = ABJ_404_Solution_ViewReadRuntimeState::VIEW_SNAPSHOT_WARMUP_MAX_ATTEMPTS;
+    const VIEW_SNAPSHOT_MAX_PAYLOAD_BYTES = ABJ_404_Solution_ViewReadRuntimeState::VIEW_SNAPSHOT_MAX_PAYLOAD_BYTES;
+    const HITS_TABLE_LAST_CHECKED_FLAG = ABJ_404_Solution_ViewReadRuntimeState::HITS_TABLE_LAST_CHECKED_FLAG;
+    const HITS_TABLE_LAST_DECISION_FLAG = ABJ_404_Solution_ViewReadRuntimeState::HITS_TABLE_LAST_DECISION_FLAG;
+    const LOGS_COUNT_CACHE_TTL_SECONDS = ABJ_404_Solution_ViewReadRuntimeState::LOGS_COUNT_CACHE_TTL_SECONDS;
 
     // --- Static properties ---
 
@@ -132,6 +136,7 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
 
     /** @param bool $value @return void */
     public static function setViewSnapshotTableEnsured(bool $value): void {
+        self::$viewSnapshotTableEnsured = $value;
         ABJ_404_Solution_ViewSnapshotCache::setViewSnapshotTableEnsured($value);
     }
 
@@ -183,7 +188,7 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
             );
         }
 
-        if (!$hadError) {
+        if (!$hadError && !$bypassCache) {
             set_transient(self::CACHE_KEY_REDIRECT_STATUS, $counts, self::STATUS_CACHE_TTL);
         }
 
@@ -230,7 +235,7 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
             );
         }
 
-        if (!$hadError) {
+        if (!$hadError && !$bypassCache) {
             set_transient(self::CACHE_KEY_CAPTURED_STATUS, $counts, self::STATUS_CACHE_TTL);
         }
 
@@ -362,7 +367,8 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
             $count = intval($value);
         }
 
-        if (!$hadError && $cacheKey !== null && function_exists('set_transient')) {
+        if (!$hadError && $cacheKey !== null && function_exists('set_transient')
+            && empty($GLOBALS['abj404_feedback_preview_readonly'])) {
             set_transient($cacheKey, $count, self::LOGS_COUNT_CACHE_TTL_SECONDS);
         }
 

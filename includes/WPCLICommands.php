@@ -240,7 +240,17 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
     public function stats($args, $assocArgs) {
         require_once __DIR__ . '/DataAccess.php';
 
-        $statsRepository = abj_service('stats_repository');
+        $container = ABJ_404_Solution_ServiceContainer::getInstance();
+        $statsRepository = null;
+        if (!$container->has('stats_repository') && $container->has('data_access')) {
+            $candidate = $container->get('data_access');
+            if (is_object($candidate) && method_exists($candidate, 'getStatsDashboardSnapshot')) {
+                $statsRepository = $candidate;
+            }
+        }
+        if ($statsRepository === null) {
+            $statsRepository = abj_service('stats_repository');
+        }
         $snapshot = $statsRepository->getStatsDashboardSnapshot(false);
         // getStatsDashboardSnapshot always returns array{refreshed_at, hash, data}.
         $data = is_array($snapshot['data']) ? $snapshot['data'] : array();

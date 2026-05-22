@@ -90,8 +90,8 @@ class ABJ_404_Solution_WordPress_Connector {
 	}
 
 	public function getCapturedCountForNotification(): int {
-		return (is_object($this->statsRepository) && method_exists($this->statsRepository, 'getCapturedCountForNotification'))
-			? (int)call_user_func(array($this->statsRepository, 'getCapturedCountForNotification')) : 0;
+		if (!is_object($this->statsRepository) || !method_exists($this->statsRepository, 'getCapturedCountForNotification')) { return 0; } try { return (int)call_user_func(array($this->statsRepository, 'getCapturedCountForNotification')); } catch (Throwable $e) {
+			if (is_object($this->logger) && method_exists($this->logger, 'errorMessage')) { $this->logger->errorMessage('Captured-count notification lookup failed: ' . $e->getMessage(), $e instanceof Exception ? $e : null); } else { error_log('404 Solution: Captured-count notification lookup failed: ' . $e->getMessage()); } return 0; }
 	}
 
 	/** @return ABJ_404_Solution_PluginLogic */

@@ -47,21 +47,32 @@ class ABJ_404_Solution_ContentRepository implements ABJ_404_Solution_ContentRepo
     // Published content lookups (from DataAccessTrait_PublishedContent)
     // =========================================================================
 
+    /** @return string */
+    private function getPostsTableName(): string {
+        global $wpdb;
+        if (isset($wpdb->posts) && is_string($wpdb->posts) && $wpdb->posts !== '') {
+            return $wpdb->posts;
+        }
+        $prefix = isset($wpdb->prefix) && is_string($wpdb->prefix) && $wpdb->prefix !== '' ? $wpdb->prefix : 'wp_';
+        return $prefix . 'posts';
+    }
+
     /** @inheritDoc */
     function getPublishedPagesAndPostsIDs($slug = '', $searchTerm = '',
         $limitResults = '', $orderResults = '', $extraWhereClause = '') {
         global $wpdb;
         $abj404logic = abj_service('plugin_logic');
-
-        if (!$this->dbCore->tableExists($wpdb->posts)) {
-            $this->logger->errorMessage("WordPress posts table not found: " . $wpdb->posts .
-                ". This may indicate an incorrect table prefix or database configuration issue.");
-            return array();
-        }
+        $postsTableName = $this->getPostsTableName();
 
         $options = $abj404logic->getOptions();
         $recognizedPostTypes = $this->dbCore->buildPostTypeSqlList($options);
         if ($recognizedPostTypes === '') {
+            return array();
+        }
+
+        if (!$this->dbCore->tableExists($postsTableName)) {
+            $this->logger->errorMessage("WordPress posts table not found: " . $postsTableName .
+                ". This may indicate an incorrect table prefix or database configuration issue.");
             return array();
         }
 
@@ -73,7 +84,7 @@ class ABJ_404_Solution_ContentRepository implements ABJ_404_Solution_ContentRepo
                  WHERE TABLE_SCHEMA = DATABASE()
                  AND TABLE_NAME = %s
                  AND COLUMN_NAME = 'post_name'",
-                array('query_params' => array($wpdb->posts), 'log_errors' => false)
+                array('query_params' => array($postsTableName), 'log_errors' => false)
             );
             $collationRows = isset($collationResult['rows']) && is_array($collationResult['rows']) ? $collationResult['rows'] : array();
             $columnCollation = null;
@@ -90,6 +101,7 @@ class ABJ_404_Solution_ContentRepository implements ABJ_404_Solution_ContentRepo
                         . "'" . esc_sql($slug) . "' \n ";
                 $specifiedSlug = str_replace('utf8mb4_unicode_ci', $resolvedCollation, $specifiedSlug);
             } else {
+                // latin1 databases cannot safely compare utf8mb4 casts; use the native column comparison unless the slug contains 4-byte characters.
                 if ($this->f->containsUtf8mb4Characters($slug)) {
                     $specifiedSlug = '';
                 } else {
@@ -465,6 +477,7 @@ class ABJ_404_Solution_ContentRepository implements ABJ_404_Solution_ContentRepo
 
     /** @inheritDoc */
     function deleteSpellingCache(): void {
+        // @cache-write-audit: opt-out - spelling cache table is itself the cache being invalidated.
         $query = "truncate table {wp_abj404_spelling_cache}";
         $this->dbCore->queryAndGetResults($query);
     }

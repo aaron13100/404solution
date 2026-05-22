@@ -4,12 +4,17 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-/**
- * Snapshot cache for admin list view data.
- *
- * Manages cache key generation, lock management, warmup orchestration,
- * and view snapshot table CRUD for the admin redirect/captured tables.
- */
+interface ABJ_404_Solution_ViewSnapshotCacheHostInterface {
+    /** @param string $sub @param array<string, mixed> $tableOptions @return bool */
+    public function viewTableSnapshotAvailable($sub, array $tableOptions): bool;
+    /** @param string $sub @param array<string, mixed> $tableOptions @return bool */
+    public function viewRowsSnapshotAvailable($sub, array $tableOptions): bool;
+    /** @param string $sub @param array<string, mixed> $tableOptions @return array<int|string, mixed> */
+    public function getRedirectsForView($sub, $tableOptions);
+    /** @param string $sub @param array<string, mixed> $tableOptions @return int */
+    public function getRedirectsForViewCount(string $sub, array $tableOptions): int;
+}
+
 class ABJ_404_Solution_ViewSnapshotCache {
 
     /** @var ABJ_404_Solution_DatabaseCore */
@@ -18,7 +23,7 @@ class ABJ_404_Solution_ViewSnapshotCache {
     /** @var ABJ_404_Solution_Logging */
     private $logger;
 
-    /** @var ABJ_404_Solution_ViewReadServiceInterface|null */
+    /** @var ABJ_404_Solution_ViewSnapshotCacheHostInterface|null */
     private $host;
 
     /** @var ABJ_404_Solution_ViewBuildOrchestratorInterface|null */
@@ -40,10 +45,10 @@ class ABJ_404_Solution_ViewSnapshotCache {
     }
 
     /**
-     * @param ABJ_404_Solution_ViewReadServiceInterface $host
+     * @param ABJ_404_Solution_ViewSnapshotCacheHostInterface $host
      * @return void
      */
-    public function setHost(ABJ_404_Solution_ViewReadServiceInterface $host): void {
+    public function setHost(ABJ_404_Solution_ViewSnapshotCacheHostInterface $host): void {
         $this->host = $host;
     }
 
@@ -378,7 +383,7 @@ class ABJ_404_Solution_ViewSnapshotCache {
         if ($state['status'] === 'running') {
             $stageStartedAt = $state['stage_started_at'] ?? 0;
             $elapsed = $now - (is_scalar($stageStartedAt) ? intval($stageStartedAt) : 0);
-            if ($elapsed <= ABJ_404_Solution_ViewReadService::VIEW_SNAPSHOT_WARMUP_STALE_SECONDS) {
+            if ($elapsed <= ABJ_404_Solution_ViewReadRuntimeState::VIEW_SNAPSHOT_WARMUP_STALE_SECONDS) {
                 return $this->formatViewWarmupResponse($state, false);
             }
             $currentBuildProgress = $this->getViewBuildProgressFingerprint();
@@ -387,7 +392,7 @@ class ABJ_404_Solution_ViewSnapshotCache {
                 $attemptCountRaw = $attempts[$stage] ?? 0;
                 $attemptCount = is_scalar($attemptCountRaw) ? intval($attemptCountRaw) : 0;
             }
-            if ($attemptCount >= ABJ_404_Solution_ViewReadService::VIEW_SNAPSHOT_WARMUP_MAX_ATTEMPTS) {
+            if ($attemptCount >= ABJ_404_Solution_ViewReadRuntimeState::VIEW_SNAPSHOT_WARMUP_MAX_ATTEMPTS) {
                 $state['status'] = 'blocked';
                 $previousLastError = $state['last_error'] ?? '';
                 $previousError = is_string($previousLastError) ? trim($previousLastError) : '';
@@ -406,17 +411,17 @@ class ABJ_404_Solution_ViewSnapshotCache {
             }
         }
 
-        if ($attemptCount >= ABJ_404_Solution_ViewReadService::VIEW_SNAPSHOT_WARMUP_MAX_ATTEMPTS) {
+        if ($attemptCount >= ABJ_404_Solution_ViewReadRuntimeState::VIEW_SNAPSHOT_WARMUP_MAX_ATTEMPTS) {
             $previousLastError = $state['last_error'] ?? '';
             $previousError = is_string($previousLastError) ? trim($previousLastError) : '';
             if (!$this->isViewWarmupErrorDiagnostic($previousError)) {
-                $attempts[$stage] = ABJ_404_Solution_ViewReadService::VIEW_SNAPSHOT_WARMUP_MAX_ATTEMPTS - 1;
+                $attempts[$stage] = ABJ_404_Solution_ViewReadRuntimeState::VIEW_SNAPSHOT_WARMUP_MAX_ATTEMPTS - 1;
                 $state['attempts_by_stage'] = $attempts;
                 $attemptCount = is_scalar($attempts[$stage] ?? 0) ? intval($attempts[$stage]) : 0;
             }
         }
 
-        if ($attemptCount >= ABJ_404_Solution_ViewReadService::VIEW_SNAPSHOT_WARMUP_MAX_ATTEMPTS) {
+        if ($attemptCount >= ABJ_404_Solution_ViewReadRuntimeState::VIEW_SNAPSHOT_WARMUP_MAX_ATTEMPTS) {
             $state['status'] = 'blocked';
             $state['last_error'] = 'Warmup stage reached the retry limit.'
                 . ($this->isViewWarmupErrorDiagnostic($previousError) ? ' Previous error: ' . $previousError : '');
@@ -446,7 +451,7 @@ class ABJ_404_Solution_ViewSnapshotCache {
         $this->setViewWarmupState($optionName, $state);
 
         $stageOptions = $tableOptions;
-        $stageOptions['_abj404_query_timeout'] = ABJ_404_Solution_ViewReadService::VIEW_SNAPSHOT_WARMUP_STAGE_TIMEOUT_SECONDS;
+        $stageOptions['_abj404_query_timeout'] = ABJ_404_Solution_ViewReadRuntimeState::VIEW_SNAPSHOT_WARMUP_STAGE_TIMEOUT_SECONDS;
         $stageOptions['_abj404_throw_on_view_query_error'] = true;
 
         $startMs = microtime(true);
@@ -502,7 +507,7 @@ class ABJ_404_Solution_ViewSnapshotCache {
                 $rawAttemptCount = $attempts[$stage] ?? 0;
                 $currentAttempts = is_scalar($rawAttemptCount) ? intval($rawAttemptCount) : 0;
             }
-            $state['status'] = ($currentAttempts >= ABJ_404_Solution_ViewReadService::VIEW_SNAPSHOT_WARMUP_MAX_ATTEMPTS) ? 'blocked' : 'idle';
+            $state['status'] = ($currentAttempts >= ABJ_404_Solution_ViewReadRuntimeState::VIEW_SNAPSHOT_WARMUP_MAX_ATTEMPTS) ? 'blocked' : 'idle';
 
             $timingsByStage = is_array($state['timings_by_stage'] ?? null) ? $state['timings_by_stage'] : array();
             $timings = $this->normalizeStageTiming($timingsByStage[$stage] ?? null);
@@ -639,7 +644,7 @@ class ABJ_404_Solution_ViewSnapshotCache {
             return false;
         }
         $lockTs = is_numeric($lockValue) ? (int)$lockValue : 0;
-        if ($lockTs > 0 && (time() - $lockTs) > ABJ_404_Solution_ViewReadService::VIEW_SNAPSHOT_REFRESH_COOLDOWN_SECONDS) {
+        if ($lockTs > 0 && (time() - $lockTs) > ABJ_404_Solution_ViewReadRuntimeState::VIEW_SNAPSHOT_REFRESH_COOLDOWN_SECONDS) {
             if (function_exists('delete_option')) {
                 delete_option($lockKey);
             }
@@ -702,7 +707,7 @@ class ABJ_404_Solution_ViewSnapshotCache {
         $refreshedAt = is_scalar($refreshedAtRaw) ? intval($refreshedAtRaw) : 0;
         $now = time();
         $isFresh = ($expiresAt > $now);
-        $recentEnough = ($refreshedAt > 0 && ($now - $refreshedAt) <= ABJ_404_Solution_ViewReadService::VIEW_SNAPSHOT_REFRESH_COOLDOWN_SECONDS);
+        $recentEnough = ($refreshedAt > 0 && ($now - $refreshedAt) <= ABJ_404_Solution_ViewReadRuntimeState::VIEW_SNAPSHOT_REFRESH_COOLDOWN_SECONDS);
         if (!$allowExpired && !$isFresh) {
             return null;
         }
@@ -730,7 +735,7 @@ class ABJ_404_Solution_ViewSnapshotCache {
             return;
         }
         $bytes = strlen($encoded);
-        if ($bytes > ABJ_404_Solution_ViewReadService::VIEW_SNAPSHOT_MAX_PAYLOAD_BYTES) {
+        if ($bytes > ABJ_404_Solution_ViewReadRuntimeState::VIEW_SNAPSHOT_MAX_PAYLOAD_BYTES) {
             return;
         }
         $now = time();
@@ -781,7 +786,7 @@ class ABJ_404_Solution_ViewSnapshotCache {
         set_transient('abj404_view_cache_cleanup_marker', time(), 1800);
         $query = "DELETE FROM {wp_abj404_view_cache} WHERE expires_at < %d";
         $this->dbCore->queryAndGetResults($query, array(
-            'query_params' => array(time() - ABJ_404_Solution_ViewReadService::VIEW_SNAPSHOT_REFRESH_COOLDOWN_SECONDS),
+            'query_params' => array(time() - ABJ_404_Solution_ViewReadRuntimeState::VIEW_SNAPSHOT_REFRESH_COOLDOWN_SECONDS),
             'log_errors' => false,
         ));
     }

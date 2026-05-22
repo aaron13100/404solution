@@ -290,7 +290,7 @@ trait ViewTrait_Redirects {
             
         } else if ($this->viewGetPostOrGetSanitize('idnum') !== '' || isset($_GET['idnum']) || isset($_POST['idnum'])) {
             $rawIdnum = isset($_GET['idnum']) ? $_GET['idnum'] : (isset($_POST['idnum']) ? $_POST['idnum'] : $this->viewGetPostOrGetSanitize('idnum'));
-            $recnums_multiple = array_map(function($v) { return absint($v); }, (array)$rawIdnum);
+            $recnums_multiple = array_values(array_filter(array_map(function($v) { return absint($v); }, (array)$rawIdnum), function($v) { return $v > 0; }));
             $this->logger->debugMessage("Edit redirect page. ids_multiple: " . 
                     wp_kses_post((string)json_encode($recnums_multiple)));
 
@@ -368,9 +368,9 @@ trait ViewTrait_Redirects {
             $redirectUrl = '';
 
         } else {
-            $idsText = '';
-            echo "Error: Invalid ID Number(s) specified! (id: " . esc_html((string)$recnum) . ", ids: " . esc_html($idsText) . ")";
-            $this->logger->debugMessage("Error: Invalid ID Number(s) specified! (id: " . esc_html((string)$recnum) .
+            $idsText = isset($rawIdnum) && is_array($rawIdnum) ? implode(',', array_map(function($v) { return is_scalar($v) ? (string)$v : ''; }, $rawIdnum)) : '';
+            echo $errorText = ($recnum === 0 || $idsText !== '') ? "Error: Invalid ID Number(s) specified! (id: " . esc_html((string)$recnum) . ", ids: " . esc_html($idsText) . ")" : __('Error: No ID(s) found for edit request.', '404-solution');
+            $this->logger->debugMessage($errorText . " (id: " . esc_html((string)$recnum) .
                     ", ids: " . esc_html($idsText) . ")");
             return;
         }
