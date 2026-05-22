@@ -24,6 +24,8 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
 
     /** @var ABJ_404_Solution_Logging */
     private $logger;
+    /** @var ABJ_404_Solution_RebuildHealthState|null */
+    private $rebuildHealth;
 
     // --- Setter-injected dependencies (circular reference resolution) ---
 
@@ -58,15 +60,20 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
      * @param ABJ_404_Solution_DatabaseCore $dbCore
      * @param ABJ_404_Solution_Functions|null $f Falls back to abj_service('functions')
      * @param ABJ_404_Solution_Logging|null $logger Falls back to abj_service('logging')
+     * @param ABJ_404_Solution_RebuildHealthState|null $rebuildHealth shared rebuild health gate
      */
     public function __construct(
         ABJ_404_Solution_DatabaseCore $dbCore,
         $f = null,
-        $logger = null
+        $logger = null,
+        $rebuildHealth = null
     ) {
         $this->dbCore = $dbCore;
         $this->f = $f !== null ? $f : abj_service('functions');
         $this->logger = $logger !== null ? $logger : abj_service('logging');
+        $this->rebuildHealth = $rebuildHealth instanceof ABJ_404_Solution_RebuildHealthState
+            ? $rebuildHealth
+            : $this->resolveRebuildHealthState();
         $this->queries = new ABJ_404_Solution_ViewQueriesStaged($this);
         $this->helpers = new ABJ_404_Solution_ViewBuildHelpers($this);
         $this->lockAndCron = new ABJ_404_Solution_ViewBuildLockAndCron($this);
@@ -91,6 +98,18 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
             'mutation_watermark' => $this->mutationWatermark,
             'admin_mutation_gate' => $this->adminMutationGate,
         );
+    }
+
+    /** @return ABJ_404_Solution_RebuildHealthState|null */
+    private function resolveRebuildHealthState() {
+        if (class_exists('ABJ_404_Solution_ServiceContainer')
+                && ABJ_404_Solution_ServiceContainer::safeHas('rebuild_health')) {
+            $service = ABJ_404_Solution_ServiceContainer::safeGet('rebuild_health');
+            if ($service instanceof ABJ_404_Solution_RebuildHealthState) {
+                return $service;
+            }
+        }
+        return null;
     }
 
     /** @return void */
@@ -406,12 +425,12 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
     }
 
     /** @param string $query @return string */
-    public function doTableNameReplacements(string $query): string {
+    public function doTableNameReplacements($query): string {
         return $this->dbCore->doTableNameReplacements($query);
     }
 
     /** @return string */
-    public function getLowercasePrefix() {
+    public function getLowercasePrefix(): string {
         return $this->dbCore->getLowercasePrefix();
     }
 

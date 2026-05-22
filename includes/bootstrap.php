@@ -48,8 +48,12 @@ function abj_404_solution_create_view_build_orchestrator($container) {
     $viewReadService = $container->get('view_read_service');
     /** @var ABJ_404_Solution_LogsRepository $logsRepository */
     $logsRepository = $container->get('logs_repository');
+    $rebuildHealth = $container->get('rebuild_health');
     $svc = new ABJ_404_Solution_ViewBuildOrchestrator(
-        $dbCore, $functions, $logging
+        $dbCore,
+        $functions,
+        $logging,
+        $rebuildHealth instanceof ABJ_404_Solution_RebuildHealthState ? $rebuildHealth : null
     );
     $svc->setViewReadService($viewReadService);
     $svc->setLogsRepository($logsRepository);

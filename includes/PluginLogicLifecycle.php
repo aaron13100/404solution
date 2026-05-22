@@ -360,6 +360,14 @@ class ABJ_404_Solution_PluginLogicLifecycle {
         if (!function_exists('wp_next_scheduled') || !function_exists('wp_schedule_single_event')) {
             return;
         }
+        if (class_exists('ABJ_404_Solution_ServiceContainer')
+                && ABJ_404_Solution_ServiceContainer::safeHas('rebuild_health')) {
+            $rebuildHealth = ABJ_404_Solution_ServiceContainer::safeGet('rebuild_health');
+            if ($rebuildHealth instanceof ABJ_404_Solution_RebuildHealthState
+                    && !$rebuildHealth->mayStartExpensiveRebuild()) {
+                return;
+            }
+        }
         if (wp_next_scheduled('abj404_rebuildViewDone') !== false) {
             return;
         }

@@ -138,32 +138,18 @@ function abj404_autoloader($class) {
 				$inc . 'ViewTrait_Settings.php',
 				$inc . 'ViewTrait_Redirects.php',
 				$inc . 'ViewTrait_RedirectsTable.php',
+				$inc . 'ViewTrait_RedirectTypeUI.php',
+				$inc . 'ViewTrait_RedirectConditions.php',
 				$inc . 'ViewTrait_Logs.php',
 			),
 			'ABJ_404_Solution_DataAccess' => array(
-				$inc . 'DataAccessTrait_Maintenance.php',
-				$inc . 'DataAccessTrait_ViewMetadata.php',
-				$inc . 'DataAccessTrait_ViewQueries.php',
-				$inc . 'DataAccessTrait_ViewQueriesHitsLifecycle.php',
-				$inc . 'DataAccessTrait_ViewQueriesStaged.php',
-				$inc . 'DataAccessTrait_ViewBuildStageRunner.php',
-				$inc . 'DataAccessTrait_ViewBuildStageCallbacks.php',
-				$inc . 'DataAccessTrait_ViewQueriesStagedRead.php',
-				$inc . 'DataAccessTrait_ViewBuildAdaptive.php',
-				$inc . 'DataAccessTrait_ViewBuildHelpers.php',
-				$inc . 'DataAccessTrait_ViewBuildLockAndCron.php',
-				$inc . 'DataAccessTrait_ViewBuildPhpEnvProbe.php',
-				$inc . 'DataAccessTrait_ViewBuildSessionEnvProbe.php',
-				$inc . 'DataAccessTrait_ViewBuildHostFailurePolicy.php',
-				$inc . 'DataAccessTrait_ViewBuildStartedWatermark.php',
-				$inc . 'DataAccessTrait_ViewBuildForceRestart.php',
-				$inc . 'DataAccessTrait_MutationWatermarkSeam.php',
-				$inc . 'DataAccessTrait_AdminMutationGate.php',
-				$inc . 'DataAccessTrait_ViewSnapshotCache.php',
-				$inc . 'DataAccessTrait_Logs.php',
-				$inc . 'DataAccessTrait_LogsHitsRebuild.php',
-				$inc . 'DataAccessTrait_Redirects.php',
-				$inc . 'DataAccessTrait_Stats.php',
+				$inc . 'DatabaseCore.php',
+				$inc . 'ContentRepository.php',
+				$inc . 'RedirectsRepository.php',
+				$inc . 'LogsRepository.php',
+				$inc . 'StatsRepository.php',
+				$inc . 'ViewReadService.php',
+				$inc . 'ViewBuildOrchestrator.php',
 			),
 			'ABJ_404_Solution_PluginLogic' => array(
 				$inc . 'PluginLogicUrlNormalization.php',
@@ -179,6 +165,9 @@ function abj404_autoloader($class) {
 				$inc . 'DatabaseUpgradesEtcTrait_PluginUpdate.php',
 				$inc . 'DatabaseUpgradesEtcTrait_TableRepair.php',
 				$inc . 'DatabaseUpgradesEtcTrait_Indexes.php',
+				$inc . 'DatabaseUpgradesEtcTrait_OrphanAdoption.php',
+				$inc . 'DatabaseUpgradesEtcTrait_MultiSite.php',
+				$inc . 'DatabaseUpgradesEtcTrait_SchemaDiff.php',
 			),
 			// AJAX handler classes that pull in shared traits via `use`.
 			// Without these entries, a corrupted upload that loses the trait
@@ -365,16 +354,25 @@ if (!function_exists('abj404_shortCodeListener')) {
 				$inc . 'ViewTrait_Settings.php',
 				$inc . 'ViewTrait_Redirects.php',
 				$inc . 'ViewTrait_RedirectsTable.php',
+				$inc . 'ViewTrait_RedirectTypeUI.php',
+				$inc . 'ViewTrait_RedirectConditions.php',
 				$inc . 'ViewTrait_Logs.php',
 				// DataAccess + traits + extracted modules
 				$inc . 'DataAccess.php',
 				$inc . 'ContentRepositoryInterface.php',
 				$inc . 'ContentRepository.php',
-				$inc . 'DataAccessTrait_ViewQueries.php',
-				$inc . 'DataAccessTrait_Logs.php',
-				$inc . 'DataAccessTrait_Redirects.php',
-				$inc . 'DataAccessTrait_PublishedContent.php',
-				$inc . 'DataAccessTrait_Stats.php',
+				$inc . 'RedirectsRepositoryInterface.php',
+				$inc . 'RedirectsRepository.php',
+				$inc . 'LogsRepositoryInterface.php',
+				$inc . 'LogsRepository.php',
+				$inc . 'StatsRepositoryInterface.php',
+				$inc . 'StatsRepository.php',
+				$inc . 'ViewReadServiceInterface.php',
+				$inc . 'ViewReadService.php',
+				$inc . 'ViewBuildOrchestratorInterface.php',
+				$inc . 'ViewBuildOrchestrator.php',
+				$inc . 'DatabaseCoreInterface.php',
+				$inc . 'DatabaseCore.php',
 				// PluginLogic + composition classes
 				$inc . 'PluginLogic.php',
 				$inc . 'PluginLogicUrlNormalization.php',
@@ -394,6 +392,11 @@ if (!function_exists('abj404_shortCodeListener')) {
 				$inc . 'DatabaseUpgradesEtcTrait_NGram.php',
 				$inc . 'DatabaseUpgradesEtcTrait_Maintenance.php',
 				$inc . 'DatabaseUpgradesEtcTrait_PluginUpdate.php',
+				$inc . 'DatabaseUpgradesEtcTrait_TableRepair.php',
+				$inc . 'DatabaseUpgradesEtcTrait_Indexes.php',
+				$inc . 'DatabaseUpgradesEtcTrait_OrphanAdoption.php',
+				$inc . 'DatabaseUpgradesEtcTrait_MultiSite.php',
+				$inc . 'DatabaseUpgradesEtcTrait_SchemaDiff.php',
 				// SQL templates — all files required for correct operation.
 				// A test (SqlFileIntegrityListCompletenessTest) verifies this list
 				// stays in sync with the actual files in includes/sql/.
@@ -1452,6 +1455,34 @@ if (!function_exists('abj404_show_view_build_cron_notices')) {
 			'abj404_view_done_hard_stale',
 			'abj404_logs_hits_rollup_stale',
 		);
+		if (class_exists('ABJ_404_Solution_ServiceContainer')
+				&& ABJ_404_Solution_ServiceContainer::safeHas('rebuild_health')) {
+			$rebuildHealth = ABJ_404_Solution_ServiceContainer::safeGet('rebuild_health');
+			if ($rebuildHealth instanceof ABJ_404_Solution_RebuildHealthState) {
+				$payload = $rebuildHealth->getNoticePayload();
+				if (is_array($payload)) {
+					$count = isset($payload['failure_count']) ? (int)$payload['failure_count'] : 0;
+					$class = isset($payload['last_failure_class']) && is_string($payload['last_failure_class'])
+						? $payload['last_failure_class']
+						: 'unknown';
+					$nextAllowed = isset($payload['next_allowed_at']) ? (int)$payload['next_allowed_at'] : 0;
+					$seconds = max(0, $nextAllowed - time());
+					echo '<div class="notice notice-warning"><p><strong>404 Solution:</strong> '
+						. esc_html(sprintf(
+							__('View/hits rebuild paused after %d consecutive failures (class: %s). Next retry in about %d minutes.', '404-solution'),
+							$count,
+							$class,
+							(int)ceil($seconds / 60)
+						)) . '</p>';
+					if (!empty($payload['last_failure_msg']) && is_string($payload['last_failure_msg'])) {
+						echo '<details><summary>' . esc_html(__('Show details', '404-solution'))
+							. '</summary><pre style="white-space:pre-wrap;word-break:break-all;max-width:100%;margin:6px 0;">'
+							. esc_html($payload['last_failure_msg']) . '</pre></details>';
+					}
+					echo '</div>';
+				}
+			}
+		}
 		foreach ($keys as $key) {
 			$notice = get_transient($key);
 			if (!is_array($notice) || empty($notice['message'])) {

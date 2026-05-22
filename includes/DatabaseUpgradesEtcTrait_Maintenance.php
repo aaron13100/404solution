@@ -10,7 +10,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
     function updateTableEngineToInnoDB() {
     	// get a list of all tables.
         global $wpdb;
-    	$result = $this->viewRead->getTableEngines();
+    	$result = $this->dao->getTableEngines();
     	// if any rows are found then update the tables.
     	$resultRows = isset($result['rows']) && is_array($result['rows']) ? $result['rows'] : [];
     	if (!empty($resultRows)) {
@@ -702,6 +702,16 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
     private function refreshViewDoneSnapshotInline(): void {
         $viewRead = abj_service('view_read_service');
         $viewBuild = abj_service('view_build_orchestrator');
+        $rebuildHealth = null;
+        if (class_exists('ABJ_404_Solution_ServiceContainer')
+                && ABJ_404_Solution_ServiceContainer::safeHas('rebuild_health')) {
+            $service = ABJ_404_Solution_ServiceContainer::safeGet('rebuild_health');
+            $rebuildHealth = $service instanceof ABJ_404_Solution_RebuildHealthState ? $service : null;
+        }
+        if ($rebuildHealth instanceof ABJ_404_Solution_RebuildHealthState
+                && !$rebuildHealth->mayStartExpensiveRebuild()) {
+            return;
+        }
         if (!is_object($viewRead)
                 || !method_exists($viewRead, 'invalidateViewSnapshotCache')
                 || !is_object($viewBuild)

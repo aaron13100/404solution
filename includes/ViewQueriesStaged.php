@@ -957,6 +957,13 @@ class ABJ_404_Solution_ViewQueriesStaged extends ABJ_404_Solution_ViewBuildColla
      */
     public function rebuildViewDoneInBackground(): void {
         $this->sweepStaleRebuildTransients();
+        if ($this->rebuildHealth instanceof ABJ_404_Solution_RebuildHealthState
+                && !$this->rebuildHealth->mayStartExpensiveRebuild()) {
+            $this->logger->debugMessage(
+                '[staged] rebuildViewDoneInBackground: skipped because rebuild health gate is closed.'
+            );
+            return;
+        }
         if ($this->foregroundViewBuildLeaseActive()) {
             $this->logger->debugMessage(
                 '[staged] rebuildViewDoneInBackground: deferring; '
@@ -991,6 +998,8 @@ class ABJ_404_Solution_ViewQueriesStaged extends ABJ_404_Solution_ViewBuildColla
             if (!$isComplete) {
                 // Build yielded mid-stage; schedule another tick to continue.
                 $this->scheduleViewDoneRebuild();
+            } elseif ($this->rebuildHealth instanceof ABJ_404_Solution_RebuildHealthState) {
+                $this->rebuildHealth->recordSuccess();
             }
         } catch (Throwable $e) {
             // Log at warning level, not error: a failed background rebuild
@@ -998,6 +1007,9 @@ class ABJ_404_Solution_ViewQueriesStaged extends ABJ_404_Solution_ViewBuildColla
             // if any, is still served).  Per CLAUDE.md self-healing rules,
             // infrastructure failures should not generate dev email reports.
             $this->logger->warn('[staged] background rebuild yielded an error: ' . $e->getMessage());
+            if ($this->rebuildHealth instanceof ABJ_404_Solution_RebuildHealthState) {
+                $this->rebuildHealth->recordFailure($e->getMessage(), $this->rebuildHealth->classifyError($e->getMessage()));
+            }
         } finally {
             $this->releaseViewBuildLock();
         }

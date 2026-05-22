@@ -552,6 +552,11 @@ class ABJ_404_Solution_ViewBuildLockAndCron extends ABJ_404_Solution_ViewBuildCo
         if (!function_exists('wp_next_scheduled') || !function_exists('wp_schedule_single_event')) {
             return;
         }
+        if ($this->rebuildHealth instanceof ABJ_404_Solution_RebuildHealthState
+                && !$this->rebuildHealth->mayStartExpensiveRebuild()) {
+            $this->logger->debugMessage(__FUNCTION__ . ' skipped because rebuild health gate is closed.');
+            return;
+        }
         $hook = 'abj404_rebuildViewDone';
         // Detect a stuck WordPress cron by reading WP's own scheduled-event
         // metadata. When cron is firing normally, wp_reschedule_event()

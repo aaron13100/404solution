@@ -25,6 +25,7 @@ if (!defined('ABSPATH')) {
  * @property mixed $namedLockSupportedThisRequest
  * @property mixed $phpEnvironmentProbeCache
  * @property mixed $prefixAtStageOne
+ * @property ABJ_404_Solution_RebuildHealthState|null $rebuildHealth
  * @property mixed $sessionVariablesProbeCache
  * @property mixed $sqlModeProbeCache
  * @property mixed $stagedQueryTimeoutSeconds
