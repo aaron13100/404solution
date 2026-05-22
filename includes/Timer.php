@@ -18,23 +18,37 @@ class ABJ_404_Solution_Timer {
     
     /** @var bool */
     private $isRunning = false;
+
+    /** @var callable */
+    private $currentTime;
     
-    public function __construct() {
+    /**
+     * @param callable|null $currentTime Optional clock returning the current time in seconds.
+     */
+    public function __construct(?callable $currentTime = null) {
+        $this->currentTime = $currentTime ?: static function (): float {
+            return microtime(true);
+        };
         $this->start();
+    }
+
+    /** @return float */
+    private function now(): float {
+        return (float) call_user_func($this->currentTime);
     }
 
     /** Also restart.
      * @return void
      */
     function start(): void {
-        $this->start = microtime(true);
+        $this->start = $this->now();
         $this->elapsed = 0;
         $this->isRunning = true;
     }
 
     /** @return float */
     function stop(): float {
-        $this->stop = microtime(true);
+        $this->stop = $this->now();
         $elapsedThisTime = $this->stop - $this->start;
         $this->elapsed += $elapsedThisTime;
         $this->isRunning = false;
@@ -44,7 +58,7 @@ class ABJ_404_Solution_Timer {
     
     /** @return void */
     function restartKeepElapsed(): void {
-        $this->start = microtime(true);
+        $this->start = $this->now();
         $this->isRunning = true;
     }
     
@@ -53,7 +67,7 @@ class ABJ_404_Solution_Timer {
      */
     function getElapsedTime() {
         if ($this->isRunning) {
-            return microtime(true) - $this->start + $this->elapsed;
+            return $this->now() - $this->start + $this->elapsed;
         }
         return $this->elapsed;
     }
