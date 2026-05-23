@@ -21,6 +21,7 @@ class ABJ_404_Solution_RebuildHealthState {
     const FAILURE_THRESHOLD = 3;
     const INITIAL_COOLDOWN_SECONDS = 300;
     const DISK_ERROR_COOLDOWN_SECONDS = 86400;
+    const DAILY_MAINTENANCE_RECOVERY_SECONDS = 86400;
     const MAX_CHUNK_SIZE = 100000;
     const MIN_CHUNK_SIZE = 100;
     const CHUNK_GROWTH_FACTOR = 1.5;
@@ -49,6 +50,9 @@ class ABJ_404_Solution_RebuildHealthState {
         $gate = $state['gate'];
         $trial = $state['trial'];
         $now = $this->clock->now();
+        if ($this->dailyRecoveryIsActive($trial, $now)) {
+            return true;
+        }
         $rawNext = $gate['next_allowed_at'] ?? 0;
         $nextAllowed = is_numeric($rawNext) ? intval($rawNext) : 0;
         if ($this->trialIsActive($trial, $now)) {
@@ -66,11 +70,40 @@ class ABJ_404_Solution_RebuildHealthState {
         if ($state === null) {
             return false;
         }
+        if ($this->dailyRecoveryIsActive($state['trial'], $this->clock->now())) {
+            return true;
+        }
         $gate = $state['gate'];
         if (!$this->gateHasOpenFailureWindow($gate)) {
             return true;
         }
         return $this->acquireTrialToken() !== null;
+    }
+
+    /** @return bool */
+    public function beginDailyMaintenanceRebuildAttempt(): bool {
+        if ($this->beginExpensiveRebuildAttempt()) {
+            return true;
+        }
+        $state = $this->readState();
+        if ($state === null) {
+            return false;
+        }
+        $now = $this->clock->now();
+        $rawLastDaily = $state['gate']['last_daily_maintenance_attempt_ts'] ?? 0;
+        $lastDaily = is_numeric($rawLastDaily) ? intval($rawLastDaily) : 0;
+        if ($lastDaily > 0 && ($now - $lastDaily) < self::DAILY_MAINTENANCE_RECOVERY_SECONDS) {
+            return false;
+        }
+        if ($this->acquireTrialToken() === null) {
+            return false;
+        }
+        $this->mutateState(function (array $state) use ($now): array {
+            $state['gate']['last_daily_maintenance_attempt_ts'] = $now;
+            $state['trial']['daily_recovery_until'] = $now + self::TRIAL_TTL_SECONDS;
+            return $state;
+        });
+        return true;
     }
 
     /** @return string|null */
@@ -115,7 +148,7 @@ class ABJ_404_Solution_RebuildHealthState {
                 $gate['cooldown_seconds'] = min(self::MAX_COOLDOWN_SECONDS, $cd * 2);
             }
             $state['gate'] = $gate;
-            $state['trial'] = array('token' => '', 'started_at' => 0, 'ttl' => self::TRIAL_TTL_SECONDS);
+            $state['trial'] = array('token' => '', 'started_at' => 0, 'ttl' => self::TRIAL_TTL_SECONDS, 'daily_recovery_until' => 0);
             return $state;
         });
         if (function_exists('delete_option')) { delete_option(self::TRIAL_LOCK_OPTION); }
@@ -127,7 +160,7 @@ class ABJ_404_Solution_RebuildHealthState {
         $now = $this->clock->now();
         $this->mutateState(function (array $state) use ($now): array {
             $state['gate'] = array('failure_count' => 0, 'next_allowed_at' => 0, 'last_failure_ts' => 0, 'last_failure_msg' => '', 'last_failure_class' => '', 'cooldown_seconds' => self::INITIAL_COOLDOWN_SECONDS, 'last_success_ts' => $now);
-            $state['trial'] = array('token' => '', 'started_at' => 0, 'ttl' => self::TRIAL_TTL_SECONDS);
+            $state['trial'] = array('token' => '', 'started_at' => 0, 'ttl' => self::TRIAL_TTL_SECONDS, 'daily_recovery_until' => 0);
             return $state;
         });
         if (function_exists('delete_option')) { delete_option(self::TRIAL_LOCK_OPTION); }
@@ -229,7 +262,7 @@ class ABJ_404_Solution_RebuildHealthState {
     private function defaultState(): array {
         return array(
             'gate' => array('failure_count' => 0, 'next_allowed_at' => 0, 'last_failure_ts' => 0, 'last_failure_msg' => '', 'last_failure_class' => '', 'cooldown_seconds' => self::INITIAL_COOLDOWN_SECONDS, 'last_success_ts' => 0),
-            'trial' => array('token' => '', 'started_at' => 0, 'ttl' => self::TRIAL_TTL_SECONDS),
+            'trial' => array('token' => '', 'started_at' => 0, 'ttl' => self::TRIAL_TTL_SECONDS, 'daily_recovery_until' => 0),
             'hits_chunk_size' => array('last_successful' => null, 'current' => null),
         );
     }
@@ -263,6 +296,17 @@ class ABJ_404_Solution_RebuildHealthState {
         $rawTtl = $trial['ttl'] ?? 0;
         $trialTtl = is_numeric($rawTtl) ? intval($rawTtl) : 0;
         return $trialToken !== '' && $trialStarted > 0 && ($now - $trialStarted) < $trialTtl;
+    }
+
+    /**
+     * @param array<string, mixed> $trial
+     * @param int $now
+     * @return bool
+     */
+    private function dailyRecoveryIsActive(array $trial, int $now): bool {
+        $rawUntil = $trial['daily_recovery_until'] ?? 0;
+        $until = is_numeric($rawUntil) ? intval($rawUntil) : 0;
+        return $until > $now;
     }
 
     /**

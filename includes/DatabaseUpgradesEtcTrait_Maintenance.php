@@ -709,7 +709,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
             $rebuildHealth = $service instanceof ABJ_404_Solution_RebuildHealthState ? $service : null;
         }
         if ($rebuildHealth instanceof ABJ_404_Solution_RebuildHealthState
-                && !$rebuildHealth->beginExpensiveRebuildAttempt()) {
+                && !$rebuildHealth->beginDailyMaintenanceRebuildAttempt()) {
             return;
         }
         if (!is_object($viewRead)
