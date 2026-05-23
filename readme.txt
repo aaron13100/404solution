@@ -5,7 +5,7 @@ Tags: 404, redirect, 404 redirect, broken links, spell check
 Requires at least: 5.0
 Requires PHP: 7.4
 Tested up to: 7.0
-Stable tag: 4.1.19
+Stable tag: 4.2.0
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -201,6 +201,16 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 
 == Changelog ==
 
+= Version 4.2.0 (May 23, 2026) =
+
+**Bug Fixes**
+
+* Fixed the "Page Redirects" and "Captured 404s" admin tabs occasionally failing to load on busy sites. The cache-warmup pipeline could race against ongoing 404 traffic and report that the data snapshot was missing even when the underlying query had succeeded. Admin tables on high-volume sites now load reliably.
+
+**Improvements**
+
+* Substantial internal refactor of the data-access, view-build, and admin-mutation layers for long-term maintainability. No visible behavior change is expected; the version bump from 4.1.x to 4.2.0 reflects the size of the change.
+
 = Version 4.1.19 (May 17, 2026) =
 
 **New Features**
@@ -221,7 +231,6 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 **Improvements**
 
 * Bulk CSV and WP-CLI imports are significantly faster. A 10,000-row import that previously issued ~60,000 extra cache-invalidation queries now batches them into a single invalidation at the end.
-* Admin tables now update immediately after any change, including changes made via WP-CLI, the REST API, or cross-plugin imports, instead of showing stale data until the next cache rebuild.
 * The admin settings page now validates URL length and rejects negative numeric values, preventing misconfigured redirects.
 
 **Internationalization**
