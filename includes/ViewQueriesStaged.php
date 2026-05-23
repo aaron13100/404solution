@@ -598,6 +598,20 @@ class ABJ_404_Solution_ViewQueriesStaged extends ABJ_404_Solution_ViewBuildColla
             // request already entered the once-guard; the diagnostic flow
             // explicitly wants to rerun.
             self::$viewBuildAlreadyRanThisRequest = false;
+            if ($this->rebuildHealth instanceof ABJ_404_Solution_RebuildHealthState) {
+                $this->rebuildHealth->reset();
+                $this->rebuildHealth->acquireTrialToken();
+            }
+        } elseif ($this->rebuildHealth instanceof ABJ_404_Solution_RebuildHealthState
+                && !$this->rebuildHealth->beginExpensiveRebuildAttempt()) {
+            $this->logger->debugMessage(
+                '[staged] advanceViewBuildOnce: skipped because rebuild health gate is closed.'
+            );
+            return array(
+                'status' => 'paused',
+                'locked' => false,
+                'healthGateClosed' => true,
+            );
         }
         if (!$forceRebuild && $this->viewDoneIsServeable()) {
             return $this->getViewBuildProgress();
