@@ -80,6 +80,15 @@ class ABJ_404_Solution_ViewSnapshotCache {
      * @return string
      */
     public function getViewSnapshotCacheKey($prefix, $sub, $tableOptions) {
+        // Cache key intentionally omits the mutation watermark. Including it
+        // produced a race on busy sites. getRedirectsForView read watermark
+        // value A, wrote the snapshot under key-with-A, then an incoming 404
+        // capture bumped the watermark to B before viewRowsSnapshotAvailable
+        // ran. The availability check read with key-with-B and missed,
+        // throwing "Warmup rows stage completed but the row snapshot was not
+        // available afterward." The cache TTL of 120 seconds bounds staleness
+        // to two minutes after any mutation, which is acceptable. The next
+        // admin page load picks up fresh data automatically.
         $cacheShape = array(
             'sub' => (string)$sub,
             'filter' => is_scalar($tableOptions['filter'] ?? 0) ? (int)($tableOptions['filter'] ?? 0) : 0,
@@ -90,7 +99,6 @@ class ABJ_404_Solution_ViewSnapshotCache {
             'filterText' => is_scalar($tableOptions['filterText'] ?? '') ? (string)($tableOptions['filterText'] ?? '') : '',
             'score_range' => (function ($v) { return is_string($v) ? $v : 'all'; })($tableOptions['score_range'] ?? 'all'),
             'blog' => function_exists('get_current_blog_id') ? (int)get_current_blog_id() : 1,
-            'mw' => $this->readMutationWatermarkForCacheKey(),
         );
         $encoded = function_exists('wp_json_encode') ? wp_json_encode($cacheShape) : json_encode($cacheShape);
         return $prefix . '_' . md5((string)$encoded);
@@ -791,18 +799,4 @@ class ABJ_404_Solution_ViewSnapshotCache {
         ));
     }
 
-    /**
-     * @return int
-     */
-    private function readMutationWatermarkForCacheKey(): int {
-        if (!class_exists('ABJ_404_Solution_MutationWatermark')) {
-            return 0;
-        }
-        try {
-            return ABJ_404_Solution_MutationWatermark::current();
-            // allow-silent-catch: degraded wpdb falls back to "version 0" cache bucket
-        } catch (\Throwable $e) {
-            return 0;
-        }
-    }
 }
