@@ -83,7 +83,17 @@ class ABJ_404_Solution_View {
 		// real modules internally. This keeps existing tests working while
 		// production code migrates to direct module calls.
 		$dao = $dataAccessOrViewReadService;
+		// A ViewReadService also exposes getRedirectsForView() but is NOT a
+		// legacy DataAccess facade: it implements only ViewReadServiceInterface,
+		// not the other five repository interfaces. The modern bootstrap.php
+		// wiring passes a ViewReadService here and must take the else branch
+		// so each repository field gets the correct dedicated service.
+		// (Regression caught by ViewServiceBindingTest after the General
+		// Settings admin tab crashed with "undefined method
+		// ABJ_404_Solution_ViewReadService::getEarliestLogTimestamp()" on
+		// 2026-05-23.)
 		$isLegacyDao = ($dao !== null && is_object($dao)
+			&& !($dao instanceof ABJ_404_Solution_ViewReadServiceInterface)
 			&& (method_exists($dao, 'getRedirectsForView') || $dao instanceof ABJ_404_Solution_DataAccess));
 
 		if ($isLegacyDao) {
