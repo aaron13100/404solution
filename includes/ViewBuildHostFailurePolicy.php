@@ -302,6 +302,7 @@ class ABJ_404_Solution_ViewBuildHostFailurePolicy extends ABJ_404_Solution_ViewB
      */
     public function markBuildHaltedForHostFailure(int $stageNumber, string $errorText): void {
         if (function_exists('set_transient')) {
+            // allow-cache-empty: host-failure halt marker intentionally stores error context, not query data.
             set_transient(
                 $this->buildHaltTransientKey(),
                 array(
@@ -375,6 +376,7 @@ class ABJ_404_Solution_ViewBuildHostFailurePolicy extends ABJ_404_Solution_ViewB
             'when'    => $this->clock()->now(),
         );
         if (function_exists('set_transient')) {
+            // allow-cache-empty: degraded-state notice marker intentionally stores diagnostics, not query data.
             set_transient(
                 $key,
                 $payload,
@@ -404,6 +406,7 @@ class ABJ_404_Solution_ViewBuildHostFailurePolicy extends ABJ_404_Solution_ViewB
             'when'     => $this->clock()->now(),
         );
         if (function_exists('set_transient')) {
+            // allow-cache-empty: scenario halt marker intentionally stores diagnostics, not query data.
             set_transient(
                 $key,
                 $payload,

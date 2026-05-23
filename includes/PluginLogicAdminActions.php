@@ -469,7 +469,7 @@ class ABJ_404_Solution_PluginLogicAdminActions {
             $ids = $this->f->getPostOrGetSanitize('ids_multiple');
             if (!($id === '' && $ids === '') && ($this->f->regexMatch('[0-9]+', '' . $id) || $this->f->regexMatch('[0-9]+', '' . $ids))) {
                 if (is_admin() && $this->verifyLinkNonce('abj404editRedirect')) {
-                    $message = $this->updateRedirectData();
+                    $message = $this->pluginLogic->updateRedirectData();
                     if ($message == "") {
                         $source_page = $this->f->getPostOrGetSanitize('source_page');
 

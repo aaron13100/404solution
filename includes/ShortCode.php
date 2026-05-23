@@ -272,7 +272,8 @@ class ABJ_404_Solution_ShortCode {
 
         // Check for cached suggestion computation (transient-based).
         // Normalize at the boundary: see ABJ_404_Solution_SuggestionTransient.
-        $urlKey = md5($urlRequest);
+        $urlForCacheKey = $f->normalizeURLForCacheKey($urlRequest);
+        $urlKey = md5($urlForCacheKey);
         $transientKey = 'abj404_suggest_' . $urlKey;
         $cached = ABJ_404_Solution_SuggestionTransient::fromRaw(get_transient($transientKey));
 

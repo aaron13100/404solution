@@ -52,7 +52,9 @@ class ABJ_404_Solution_FrontendRequestPipeline {
         $this->spellChecker = $spellChecker;
         $this->matchingEngines = $matchingEngines;
         $this->logsRepository = $logsRepository !== null ? $logsRepository :
-            (is_object($redirectsRepository) && method_exists($redirectsRepository, 'logRedirectHit') ? $redirectsRepository : abj_service('logs_repository'));
+            (is_object($redirectsRepository) && is_callable([$redirectsRepository, 'logRedirectHit'])
+                ? $redirectsRepository
+                : abj_service('logs_repository'));
     }
 
     /**
@@ -92,10 +94,10 @@ class ABJ_404_Solution_FrontendRequestPipeline {
      * @return void
      */
     private function logRedirectHit(string $requestedUrl, string $action, string $matchReason, ?string $requestedUrlDetail = null, ?array $pipelineTrace = null): void {
-        if (!is_object($this->logsRepository) || !method_exists($this->logsRepository, 'logRedirectHit')) {
+        if (!is_object($this->logsRepository) || !is_callable([$this->logsRepository, 'logRedirectHit'])) {
             return;
         }
-        call_user_func(array($this->logsRepository, 'logRedirectHit'), $requestedUrl, $action, $matchReason, $requestedUrlDetail, $pipelineTrace);
+        call_user_func([$this->logsRepository, 'logRedirectHit'], $requestedUrl, $action, $matchReason, $requestedUrlDetail, $pipelineTrace);
     }
 
     /** @return string */

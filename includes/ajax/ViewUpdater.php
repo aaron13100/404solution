@@ -668,6 +668,7 @@ class ABJ_404_Solution_ViewUpdater {
             return;
 
         } catch (Throwable $e) {
+            // allow-silent-catch: handlePaginationLinksException embeds/logs the throwable in the AJAX response path.
             self::handlePaginationLinksException(
                 $e, $viewBuildOrchestrator, $subpage, $cacheMode, $isPluginAdmin, $context
             );

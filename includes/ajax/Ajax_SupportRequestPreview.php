@@ -106,7 +106,17 @@ class ABJ_404_Solution_Ajax_SupportRequestPreview {
             'debug_log_excerpt' => self::truncateLogExcerpt($debugLogExcerpt),
         );
 
-        $payload = ABJ_404_Solution_FeedbackTransport::buildPayload('support_request', $extras);
+        $previousPreviewReadOnly = $GLOBALS['abj404_feedback_preview_readonly'] ?? null;
+        $GLOBALS['abj404_feedback_preview_readonly'] = true;
+        try {
+            $payload = ABJ_404_Solution_FeedbackTransport::buildPayload('support_request', $extras);
+        } finally {
+            if ($previousPreviewReadOnly === null) {
+                unset($GLOBALS['abj404_feedback_preview_readonly']);
+            } else {
+                $GLOBALS['abj404_feedback_preview_readonly'] = $previousPreviewReadOnly;
+            }
+        }
 
         // Defensive belt-and-braces: even if buildPayload changes later to
         // surface PII (raw IPs, user emails), strip those keys here so the

@@ -23,6 +23,13 @@ class ABJ_404_Solution_Logging {
     /** @var self|null */
     private static $instance = null;
 
+    /** @var int Latest error-log line emailed during this PHP request. */
+    private static $lastSentErrorLineThisRequest = 0;
+    /** @var string Latest error signature emailed during this PHP request. */
+    private static $lastSentErrorSignatureThisRequest = '';
+    /** @var string Debug file path associated with the request-local dedupe state. */
+    private static $lastSentDebugFilePathThisRequest = '';
+
     /**
      * Factory for the DI container.
      *
@@ -278,6 +285,7 @@ class ABJ_404_Solution_Logging {
         // -------------------
         // get/check the last line that was emailed to the admin.
         $sentDateFile = $this->getDebugFilePathSentFile();
+        $debugFilePath = $this->getDebugFilePath();
 
         $sentLine = -1;
         if (file_exists($sentDateFile)) {
@@ -291,7 +299,13 @@ class ABJ_404_Solution_Logging {
         }
 
         // if we already sent the error line then don't send the log file again.
-        if ($latestErrorLineFound['num'] <= $sentLine) {
+        if (self::$lastSentDebugFilePathThisRequest === $debugFilePath) {
+            $sentLine = max($sentLine, self::$lastSentErrorLineThisRequest);
+        }
+        $latestSignature = (string)($latestErrorLineFound['line'] ?? '');
+        if ($latestErrorLineFound['num'] <= $sentLine
+            || (self::$lastSentDebugFilePathThisRequest === $debugFilePath
+                && $latestSignature !== '' && $latestSignature === self::$lastSentErrorSignatureThisRequest)) {
             $this->debugMessage("The latest error line from the log file was already emailed. " . $latestErrorLineFound['num'] .
                     ' <= ' . $sentLine);
             return false;
@@ -304,6 +318,9 @@ class ABJ_404_Solution_Logging {
 
         // update the latest error line emailed to the developer.
         $options[self::LAST_SENT_LINE] = $latestErrorLineFound['num'];
+        self::$lastSentErrorLineThisRequest = (int)$latestErrorLineFound['num'];
+        self::$lastSentErrorSignatureThisRequest = $latestSignature;
+        self::$lastSentDebugFilePathThisRequest = $debugFilePath;
         $abj404logic->updateOptions($options);
         file_put_contents($sentDateFile, $latestErrorLineFound['num']);
         $fileContents = file_get_contents($sentDateFile);

@@ -472,7 +472,7 @@ class ABJ_404_Solution_PluginLogicSettingsUpdate {
     }
 
     /** @param array<string, mixed> $options @param array<string, mixed> $postData @return string */
-    private function updateWordPressSettings(array &$options, array $postData): string {
+    public function updateWordPressSettings(array &$options, array $postData): string {
         $message = "";
 
         if (isset($postData['ignore_dontprocess'])) {
@@ -601,7 +601,7 @@ class ABJ_404_Solution_PluginLogicSettingsUpdate {
     }
 
     /** @param array<string, mixed> $options @param array<string, mixed> $postData @return string */
-    private function updateDeletionSettings(array &$options, array $postData): string {
+    public function updateDeletionSettings(array &$options, array $postData): string {
         $message = "";
 
         $message .= $this->validateAndSetNumericField($options, $postData, 'capture_deletion',
@@ -626,7 +626,7 @@ class ABJ_404_Solution_PluginLogicSettingsUpdate {
     }
 
     /** @param array<string, mixed> $options @param array<string, mixed> $postData @return string */
-    private function updateSuggestionSettings(array &$options, array $postData): string {
+    public function updateSuggestionSettings(array &$options, array $postData): string {
         $message = "";
 
         if (isset($postData['suggest_max'])) {
@@ -672,7 +672,7 @@ class ABJ_404_Solution_PluginLogicSettingsUpdate {
     }
 
     /** @param array<string, mixed> $options @param array<string, mixed> $postData @return string */
-    private function updateBooleanToggles(array &$options, array $postData): string {
+    public function updateBooleanToggles(array &$options, array $postData): string {
         $message = "";
 
         $settingsMode = $this->pluginLogic->getSettingsMode();

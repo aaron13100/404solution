@@ -45,7 +45,7 @@ class ABJ_404_Solution_TitleMatchingEngine implements ABJ_404_Solution_MatchingE
         'our', 'own', 'who', 'you',
     ];
 
-    /** @var ABJ_404_Solution_ContentRepository */
+    /** @var ABJ_404_Solution_ContentRepositoryInterface */
     private $contentRepo;
 
     /** @var ABJ_404_Solution_Functions */
@@ -55,12 +55,12 @@ class ABJ_404_Solution_TitleMatchingEngine implements ABJ_404_Solution_MatchingE
     private $logger;
 
     /**
-     * @param ABJ_404_Solution_ContentRepository $contentRepo
+     * @param ABJ_404_Solution_ContentRepositoryInterface $contentRepo
      * @param ABJ_404_Solution_Functions $f
      * @param ABJ_404_Solution_Logging $logger
      */
     public function __construct(
-        ABJ_404_Solution_ContentRepository $contentRepo,
+        ABJ_404_Solution_ContentRepositoryInterface $contentRepo,
         ABJ_404_Solution_Functions $f,
         ABJ_404_Solution_Logging $logger
     ) {

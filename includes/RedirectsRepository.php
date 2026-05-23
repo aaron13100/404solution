@@ -410,6 +410,7 @@ class ABJ_404_Solution_RedirectsRepository implements ABJ_404_Solution_Redirects
         if (!isset($wpdb)) {
             return [];
         }
+        // @utf8-audit: opt-out — getRedirectsTableColumns receives system-generated redirects table names only.
         $result = $this->dbCore->queryAndGetResults(
             "SHOW COLUMNS FROM `" . esc_sql($tableName) . "`",
             array('log_errors' => false)
@@ -484,6 +485,7 @@ class ABJ_404_Solution_RedirectsRepository implements ABJ_404_Solution_Redirects
             return true;
         }
         $redirectsTable = $this->dbCore->doTableNameReplacements("{wp_abj404_redirects}");
+        // @utf8-audit: opt-out — redirectsTableHasColumn probes an internally resolved plugin table name.
         $result = $this->dbCore->queryAndGetResults(
             "SHOW COLUMNS FROM `" . esc_sql($redirectsTable) . "`",
             array('log_errors' => false, 'log_too_slow' => false)

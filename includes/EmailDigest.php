@@ -34,8 +34,8 @@ class ABJ_404_Solution_EmailDigest {
             $this->statsRepo = $loggerOrStatsRepo;
             $this->logger = $logger !== null ? $logger : abj_service('logging');
         } else {
-            $this->logsRepo = abj_service('logs_repository');
-            $this->statsRepo = abj_service('stats_repository');
+            $this->logsRepo = $logsRepoOrLegacyDao;
+            $this->statsRepo = $logsRepoOrLegacyDao;
             $this->logger = $loggerOrStatsRepo !== null ? $loggerOrStatsRepo : abj_service('logging');
         }
     }

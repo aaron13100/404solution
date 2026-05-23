@@ -25,9 +25,10 @@ trait ViewTrait_Shared {
 				// DI resolver call: delegate to the injected Functions service
 				$result = $this->f->getPostOrGetSanitize($name, $defaultValue);
 				return is_string($result) ? $result : (is_scalar($result) ? (string)$result : '');
-			} catch (\Throwable $e) {
-				// DI-injected service may not implement getPostOrGetSanitize
-				// (legacy mock). Fall through to inline GET/POST reader.
+            } catch (\Throwable $e) {
+                // allow-silent-catch: DI-injected service may not implement getPostOrGetSanitize.
+                // DI-injected service may not implement getPostOrGetSanitize
+                // (legacy mock). Fall through to inline GET/POST reader.
 				$val = null;
 			}
 		}

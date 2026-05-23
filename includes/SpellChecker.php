@@ -233,6 +233,7 @@ class ABJ_404_Solution_SpellChecker {
 	}
 
 	function save_postListener($post_id, $post = null, $update = null): void {
+		// @hook-lifecycle: opt-out - delegated SpellPostListeners::save_postListener owns request-level dedup.
 		$this->postListeners->save_postListener($post_id, $post, $update);
 	}
 
@@ -363,8 +364,8 @@ class ABJ_404_Solution_SpellChecker {
 
 		$token = wp_generate_password(32, false);
 
-		// allow-cache-empty: factory-built typed array; pendingArray always returns a
-		// non-empty associative array with at minimum a 'status' key.
+		// allow-cache-empty: factory-built typed array; keep the TTL at 120
+		// seconds so slow hosts can start before the polling UI gives up.
 		set_transient(
 			$transientKey,
 			ABJ_404_Solution_SuggestionTransient::pendingArray(

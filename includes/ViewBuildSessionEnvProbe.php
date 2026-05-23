@@ -602,6 +602,7 @@ class ABJ_404_Solution_ViewBuildSessionEnvProbe extends ABJ_404_Solution_ViewBui
             return;
         }
         if (function_exists('set_transient')) {
+            // allow-cache-empty: session-environment warning marker intentionally stores diagnostics, not query data.
             set_transient(
                 $key,
                 $payload,

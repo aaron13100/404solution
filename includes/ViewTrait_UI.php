@@ -130,7 +130,11 @@ trait ViewTrait_UI {
 
         } catch (\Throwable $e) {
             $encodedEx = json_encode($e);
-            $instance->logger->errorMessage("Caught exception: " . stripcslashes(wp_kses_post(is_string($encodedEx) ? $encodedEx : '')));
+            $encodedContext = is_string($encodedEx) ? stripcslashes(wp_kses_post($encodedEx)) : '';
+            $instance->logger->errorMessage(
+                "Caught exception (" . get_class($e) . "): " . $e->getMessage()
+                . ($encodedContext !== '' ? " | context=" . $encodedContext : '')
+            );
             $subpageForContext = (string)$instance->viewGetPostOrGetSanitize('subpage');
             $triggerForRenderError = ($subpageForContext === 'abj404_captured')
                 ? 'captured_404s_page' : 'redirects_page';

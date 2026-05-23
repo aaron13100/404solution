@@ -207,7 +207,7 @@ class ABJ_404_Solution_PluginLogicUrlNormalization {
     }
 
     /** @return string|null */
-    private function translatePressRedirectUrl(string $location, string $requestedURL) {
+    public function translatePressRedirectUrl(string $location, string $requestedURL) {
         if (!$this->translatePressIntegrationAvailable()) {
             return null;
         }
@@ -234,7 +234,7 @@ class ABJ_404_Solution_PluginLogicUrlNormalization {
     }
 
     /** @return bool */
-    private function translatePressIntegrationAvailable(): bool {
+    public function translatePressIntegrationAvailable(): bool {
         return function_exists('trp_get_language_from_url') ||
             function_exists('trp_get_current_language') ||
             function_exists('trp_get_url_for_language') ||
@@ -243,7 +243,7 @@ class ABJ_404_Solution_PluginLogicUrlNormalization {
     }
 
     /** @return mixed */
-    private function translatePressTranslateUrl(string $url, string $language) {
+    public function translatePressTranslateUrl(string $url, string $language) {
         if (function_exists('trp_get_url_for_language')) {
             return trp_get_url_for_language($language, $url);
         }
@@ -255,7 +255,7 @@ class ABJ_404_Solution_PluginLogicUrlNormalization {
         return apply_filters('trp_translate_url', $url, $language);
     }
 
-    private function getTranslatePressLanguageFromRequest(string $requestedURL): string {
+    public function getTranslatePressLanguageFromRequest(string $requestedURL): string {
         $fullRequestedUrl = $this->buildFullUrlFromRequest($requestedURL);
 
         if (function_exists('trp_get_language_from_url')) {
@@ -397,7 +397,7 @@ class ABJ_404_Solution_PluginLogicUrlNormalization {
         return '';
     }
 
-    private function buildFullUrlFromRequest(string $requestedURL): string {
+    public function buildFullUrlFromRequest(string $requestedURL): string {
         $path = $requestedURL;
         if ($path === '') {
             $userRequest = ABJ_404_Solution_UserRequest::getInstance();
@@ -417,7 +417,7 @@ class ABJ_404_Solution_PluginLogicUrlNormalization {
         return home_url($path);
     }
 
-    private function isLocalUrl(string $url): bool {
+    public function isLocalUrl(string $url): bool {
         if (!is_string($url) || $url === '') {
             return false;
         }

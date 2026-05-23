@@ -420,6 +420,7 @@ class ABJ_404_Solution_ViewBuildPhpEnvProbe extends ABJ_404_Solution_ViewBuildCo
             'when'         => $this->clock()->now(),
         );
         if (function_exists('set_transient')) {
+            // allow-cache-empty: PHP memory warning marker intentionally stores diagnostics, not query data.
             set_transient(
                 $key,
                 $payload,
@@ -688,6 +689,7 @@ class ABJ_404_Solution_ViewBuildPhpEnvProbe extends ABJ_404_Solution_ViewBuildCo
             'when'     => $this->clock()->now(),
         );
         if (function_exists('set_transient')) {
+            // allow-cache-empty: filesystem warning marker intentionally stores diagnostics, not query data.
             set_transient(
                 $key,
                 $payload,
