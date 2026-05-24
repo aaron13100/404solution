@@ -41,6 +41,7 @@ require_once __DIR__ . '/ViewQueryFailureException.php';
 require_once __DIR__ . '/ViewBuildPendingException.php';
 require_once __DIR__ . '/DatabaseCoreInterface.php';
 require_once __DIR__ . '/DatabaseCore.php';
+require_once __DIR__ . '/PluginUpdateMetadataRepository.php';
 
 /* Functions in this class should all reference one of the following variables or support functions that do.
  *      $wpdb, $_GET, $_POST, $_SERVER, $_.*
@@ -161,6 +162,9 @@ class ABJ_404_Solution_DataAccess implements ABJ_404_Solution_ContentRepositoryI
 
     /** @var ABJ_404_Solution_ViewBuildOrchestrator The extracted view build orchestrator (Phase 7). */
     private $viewBuildOrchestrator;
+
+    /** @var ABJ_404_Solution_PluginUpdateMetadataRepository Plugin self-maintenance metadata (wp.org version lookup, legacy import). */
+    private $pluginUpdateRepo;
 
     /** @param bool $value @return void */
     public static function setViewSnapshotTableEnsured(bool $value): void {
@@ -452,6 +456,10 @@ class ABJ_404_Solution_DataAccess implements ABJ_404_Solution_ContentRepositoryI
         $this->viewBuildOrchestrator->setViewReadService($this->viewReadService);
         $this->viewBuildOrchestrator->setLogsRepository($this->logsRepo);
         $this->viewReadService->setViewBuildOrchestrator($this->viewBuildOrchestrator);
+
+        $this->pluginUpdateRepo = new ABJ_404_Solution_PluginUpdateMetadataRepository(
+            $this->dbCore, $this->f, $this->logger
+        );
     }
 
     /** @return ABJ_404_Solution_DatabaseCore */
@@ -1385,127 +1393,37 @@ class ABJ_404_Solution_DataAccess implements ABJ_404_Solution_ContentRepositoryI
         return $this->dbCore->getTableColumnNames($tableName);
     }
 
+    /** @return ABJ_404_Solution_PluginUpdateMetadataRepository */
+    private function getPluginUpdateRepo(): ABJ_404_Solution_PluginUpdateMetadataRepository {
+        if ($this->pluginUpdateRepo === null) {
+            $this->pluginUpdateRepo = new ABJ_404_Solution_PluginUpdateMetadataRepository(
+                $this->getDbCore(), $this->f, $this->logger
+            );
+        }
+        return $this->pluginUpdateRepo;
+    }
+
     /** @return array{version: string, last_updated: string|null} */
     function getLatestPluginVersion() {
-        // Cache version info to avoid repeated slow wordpress.org API calls.
-        $cacheKey = 'abj404_latest_plugin_version_info';
-        if (function_exists('get_transient')) {
-            $cached = get_transient($cacheKey);
-            if (is_array($cached) && isset($cached['version'])) {
-                /** @var array{version: string, last_updated: string|null} $cached */
-                return $cached;
-            }
-        }
-
-        if (!function_exists('plugins_api')) {
-              require_once(ABSPATH . 'wp-admin/includes/plugin-install.php');
-        }
-        if (!function_exists('plugins_api')) {
-            $this->logger->infoMessage("I couldn't find the plugins_api function to check for the latest version.");
-            $fallback = array('version' => ABJ404_VERSION, 'last_updated' => null);
-            return $fallback;
-        }
-
-        $pluginSlug = dirname(ABJ404_NAME);
-
-        // set the arguments to get latest info from repository via API ##
-        $args = array(
-            'slug' => $pluginSlug,
-            'fields' => array(
-                'version' => true,
-                'last_updated' => true,
-            )
-        );
-
-        /** Prepare our query */
-        $call_api = plugins_api('plugin_information', $args);
-
-        /** Check for Errors & Display the results */
-        if (is_wp_error($call_api)) {
-            $api_error = $call_api->get_error_message();
-            $this->logger->infoMessage("There was an API issue checking the latest plugin version ("
-                    . $api_error . ")");
-
-            $fallback = array('version' => ABJ404_VERSION, 'last_updated' => null);
-            return $fallback;
-        }
-
-        /** @var object $call_api */
-        $apiVersion = property_exists($call_api, 'version') ? (string)$call_api->version : ABJ404_VERSION;
-        $apiLastUpdated = property_exists($call_api, 'last_updated') ? (string)$call_api->last_updated : null;
-        $result = array('version' => $apiVersion, 'last_updated' => $apiLastUpdated);
-        if (function_exists('set_transient')) {
-            $ttl = defined('DAY_IN_SECONDS') ? DAY_IN_SECONDS : 86400;
-            // allow-cache-empty: $result always carries a version string (fallback to ABJ404_VERSION when plugins_api omits it); is_wp_error early-returns above
-            set_transient($cacheKey, $result, $ttl);
-        }
-        return $result;
+        return $this->getPluginUpdateRepo()->getLatestPluginVersion();
     }
-    
-    /** Check wordpress.org for the latest version of this plugin. Return true if the latest version is installed, 
-     * false otherwise.
+
+    /**
+     * Check wordpress.org for the latest version of this plugin. Return true if
+     * the latest version is installed (or close enough), false otherwise.
+     *
+     * Routes the version lookup through `$this->getLatestPluginVersion()` so
+     * test doubles that override that method continue to work.
+     *
      * @return boolean
      */
     function shouldEmailErrorFile() {
-        $abj404logging = abj_service('logging');        
-        
-        $pluginInfo = $this->getLatestPluginVersion();
-        
-        $latestVersion = $pluginInfo['version'];
-        $currentVersion = ABJ404_VERSION;
-        if ($latestVersion == $currentVersion) {
-            return true;
-        }
-        
-        if (version_compare(ABJ404_VERSION, $latestVersion) == 1) {
-            $this->logger->infoMessage("Development version: A more recent version is installed than " . 
-                    "what is available on the WordPress site (" . ABJ404_VERSION . " / " . 
-                     $latestVersion . ").");
-            return true;
-        }
-        
-        $currentArray = explode(".", $currentVersion);
-        $latestArray = explode(".", $latestVersion);
-        
-        // verify that the version numbers were parsed correctly.
-        if (count($currentArray) != 3 || count($latestArray) != 3) {
-            $this->logger->errorMessage("Issue parsing version numbers. " . 
-                    $currentVersion . ' / ' . $latestVersion);
-            
-        } else if ($currentArray[0] == $latestArray[0] && $currentArray[1] == $latestArray[1]) {
-        	// get the difference in the version numbers.
-            $difference = absint(absint($latestArray[2]) - absint($currentArray[2]));
-            
-            // if the major versions mostly match then send the error file.
-            if ($difference <= 1) {
-                return true;
-            }
-        }
-
-        return (ABJ404_VERSION == $pluginInfo['version']);
+        return $this->getPluginUpdateRepo()->shouldEmailErrorFileFor($this->getLatestPluginVersion());
     }
-    
-    /**
-     * @return array<string, mixed>
-     */
+
+    /** @return array<string, mixed> */
     function importDataFromPluginRedirectioner() {
-        global $wpdb;
-        
-        $oldTable = $wpdb->prefix . 'wbz404_redirects';
-        $newTable = $this->dbCore->doTableNameReplacements('{wp_abj404_redirects}');
-        // wp_wbz404_redirects -- old table
-        // wp_abj404_redirects -- new table
-
-        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/importDataFromPluginRedirectioner.sql");
-        $query = $this->f->str_replace('{OLD_TABLE}', $oldTable, $query);
-        $query = $this->f->str_replace('{NEW_TABLE}', $newTable, $query);
-
-        $result = $this->dbCore->queryAndGetResults($query);
-
-        $this->logger->infoMessage("Importing redirectioner SQL result: " . 
-                wp_kses_post((string)json_encode($result)));
-        
-        return $result;
+        return $this->getPluginUpdateRepo()->importDataFromPluginRedirectioner();
     }
-    
+
 }
