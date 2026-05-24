@@ -56,14 +56,6 @@ class ABJ_404_Solution_ViewCacheInvalidator {
         return $this->viewBuildOrchestrator;
     }
 
-    /** @return int */
-    private function bumpMutationWatermark(): int {
-        if (!class_exists('ABJ_404_Solution_MutationWatermark')) {
-            return 0;
-        }
-        return ABJ_404_Solution_MutationWatermark::bump();
-    }
-
     /** @return void */
     public function setSqlBigSelects(): void {
         $ignoreErrorsOptions = array('log_errors' => false);
@@ -86,7 +78,6 @@ class ABJ_404_Solution_ViewCacheInvalidator {
             return $work();
         } finally {
             ABJ_404_Solution_ViewReadRuntimeState::$bulkMutationInProgress = $prior;
-            $this->bumpMutationWatermark();
         }
     }
 
@@ -141,20 +132,4 @@ class ABJ_404_Solution_ViewCacheInvalidator {
         $this->redirectsRepo->clearRegexRedirectsCache();
     }
 
-    /**
-     * Read the current mutation watermark for the per-blog cache key.
-     *
-     * @return int
-     */
-    public function readMutationWatermarkForCacheKey(): int {
-        if (!class_exists('ABJ_404_Solution_MutationWatermark')) {
-            return 0;
-        }
-        try {
-            return ABJ_404_Solution_MutationWatermark::current();
-            // allow-silent-catch: degraded wpdb (e.g. unit-test mocks lacking prepare()) falls back to "version 0" cache bucket; never propagate a watermark-read fault into the read hot path
-        } catch (\Throwable $e) {
-            return 0;
-        }
-    }
 }

@@ -36,6 +36,37 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_TableRepairTrait {
     	$this->repairStrippedViewCacheTable();
 
     	$this->correctMatchData();
+
+    	// t_260523_224315_207: drop the deprecated mutation watermark side
+    	// table. Replaced by ABJ_404_Solution_MutationDataSignature which
+    	// derives the "did anything change?" signal from data already in
+    	// wp_abj404_redirects. Idempotent DROP IF EXISTS so a fresh install
+    	// (no legacy table) and a re-upgrade (already dropped) are both
+    	// no-ops. See docs/design-lesson-watermark-overengineering.md.
+    	$this->dropDeprecatedMutationWatermarkTable();
+    }
+
+    /**
+     * Drop the deprecated `wp_abj404_mutation_watermark` table. The table
+     * held a single-row counter that the pre-removal watermark primitive
+     * incremented on every mutation; the post-removal data-signature
+     * reader does not need it. Safe to call on every upgrade -- the
+     * statement is idempotent and the table cannot reappear because no
+     * production code creates it any more.
+     *
+     * @return void
+     */
+    function dropDeprecatedMutationWatermarkTable() {
+    	if (function_exists('wp_doing_cron') && wp_doing_cron()) { return; }
+    	global $wpdb;
+    	if (!is_object($wpdb) || !method_exists($wpdb, 'query')) {
+    		return;
+    	}
+    	$prefix = isset($wpdb->prefix) ? strtolower((string)$wpdb->prefix) : 'wp_';
+    	$deprecatedWatermarkTableName = $prefix . 'abj404_mutation_watermark';
+    	// @utf8-audit: opt-out - system-controlled table name composed from $wpdb->prefix plus the fixed-literal "abj404_mutation_watermark", cannot contain invalid UTF-8 bytes.
+    	// DAO-bypass-approved: idempotent DROP TABLE IF EXISTS on a deprecated table; DAO error logging would surface a benign "table did not exist" line on every upgrade.
+    	$wpdb->query("DROP TABLE IF EXISTS `" . esc_sql($deprecatedWatermarkTableName) . "`");
     }
 
     /**

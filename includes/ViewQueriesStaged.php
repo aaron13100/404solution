@@ -51,7 +51,6 @@ if (!defined('ABSPATH')) {
  * @method string buildHaltTransientKey(...$arguments)
  * @method string buildViewDoneCountQuery(...$arguments)
  * @method string builtWatermarkOptionName(...$arguments)
- * @method int bumpMutationWatermark(...$arguments)
  * @method int bumpStageNoProgressStreak(...$arguments)
  * @method string capturedPrefixForLog(...$arguments)
  * @method void capturePrefixAtBuildStart(...$arguments)
@@ -123,10 +122,6 @@ if (!defined('ABSPATH')) {
  * @method int maxBuildBufferId(...$arguments)
  * @method void maybeRaiseViewDoneHardStaleNotice(...$arguments)
  * @method bool mutationWatermarkAdvancedSinceBuildStart(...$arguments)
- * @method int mutationWatermarkObservedByAdminAction(...$arguments)
- * @method int mutationWatermarkObservedByAdminActionAt(...$arguments)
- * @method string mutationWatermarkObservedByAdminActionAtOptionName(...$arguments)
- * @method string mutationWatermarkObservedByAdminActionOptionName(...$arguments)
  * @method string normalizePathPrefix(...$arguments)
  * @method bool optionReadBackMatches(...$arguments)
  * @method int parsePhpMemoryLimitToBytes(...$arguments)
@@ -174,7 +169,6 @@ if (!defined('ABSPATH')) {
  * @method void runStagedSqlFile(...$arguments)
  * @method void runStagedSqlFileTolerantOfDuplicateKey(...$arguments)
  * @method mixed runTimedViewBuildStage(...$arguments)
- * @method int safeCurrentMutationWatermark(...$arguments)
  * @method string sanitizeUrlBeforeInsert(...$arguments)
  * @method void scheduleViewDoneRebuild(...$arguments)
  * @method string sessionVariablesProbeOptionName(...$arguments)
@@ -216,7 +210,6 @@ if (!defined('ABSPATH')) {
  * @method string viewBuildTableName(...$arguments)
  * @method string viewDeletemeTableName(...$arguments)
  * @method int viewDoneBuiltAt(...$arguments)
- * @method int viewDoneBuiltWatermark(...$arguments)
  * @method int viewDoneDataBuiltAt(...$arguments)
  * @method string viewDoneDataBuiltAtOptionName(...$arguments)
  * @method string viewDoneFreshnessOptionName(...$arguments)
@@ -905,12 +898,13 @@ class ABJ_404_Solution_ViewQueriesStaged extends ABJ_404_Solution_ViewBuildColla
     // lifecycle, reader policy) and was the seam through which external code
     // destroyed runner-owned state. Replacements, by intent:
     //
-    //   - Source data changed (admin/REST/CLI/AJAX/cron mutation): call
-    //     bumpMutationWatermark() (DataAccessTrait_MutationWatermarkSeam).
-    //     For admin form actions that also need the strict admin-visibility
-    //     gate, call markViewDoneInvalidatedByAdminMutation()
-    //     (DataAccessTrait_AdminMutationGate) which composes the watermark
-    //     bump with the observed-watermark gate option.
+    //   - Source data changed (admin/REST/CLI/AJAX/cron mutation): no
+    //     explicit signal is needed -- ABJ_404_Solution_MutationDataSignature
+    //     reads the change directly from wp_abj404_redirects on the next
+    //     stage-boundary check. For admin form actions that also need the
+    //     strict admin-visibility gate, call
+    //     markViewDoneInvalidatedByAdminMutation() which stamps the wall-
+    //     clock gate option (AdminMutationGate).
     //   - Discard + restart the in-flight build (admin "rebuild now",
     //     diagnostic ?abj404_force_view_rebuild=1 paths): call
     //     forceRestartViewBuild() (DataAccessTrait_ViewBuildForceRestart).

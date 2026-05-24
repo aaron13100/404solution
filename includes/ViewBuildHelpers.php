@@ -58,7 +58,6 @@ if (!defined('ABSPATH')) {
  * @method string buildHaltTransientKey(...$arguments)
  * @method string buildViewDoneCountQuery(...$arguments)
  * @method string builtWatermarkOptionName(...$arguments)
- * @method int bumpMutationWatermark(...$arguments)
  * @method int bumpStageNoProgressStreak(...$arguments)
  * @method string capturedPrefixForLog(...$arguments)
  * @method void capturePrefixAtBuildStart(...$arguments)
@@ -130,10 +129,6 @@ if (!defined('ABSPATH')) {
  * @method int maxBuildBufferId(...$arguments)
  * @method void maybeRaiseViewDoneHardStaleNotice(...$arguments)
  * @method bool mutationWatermarkAdvancedSinceBuildStart(...$arguments)
- * @method int mutationWatermarkObservedByAdminAction(...$arguments)
- * @method int mutationWatermarkObservedByAdminActionAt(...$arguments)
- * @method string mutationWatermarkObservedByAdminActionAtOptionName(...$arguments)
- * @method string mutationWatermarkObservedByAdminActionOptionName(...$arguments)
  * @method string normalizePathPrefix(...$arguments)
  * @method bool optionReadBackMatches(...$arguments)
  * @method int parsePhpMemoryLimitToBytes(...$arguments)
@@ -181,7 +176,6 @@ if (!defined('ABSPATH')) {
  * @method void runStagedSqlFile(...$arguments)
  * @method void runStagedSqlFileTolerantOfDuplicateKey(...$arguments)
  * @method mixed runTimedViewBuildStage(...$arguments)
- * @method int safeCurrentMutationWatermark(...$arguments)
  * @method string sanitizeUrlBeforeInsert(...$arguments)
  * @method void scheduleViewDoneRebuild(...$arguments)
  * @method string sessionVariablesProbeOptionName(...$arguments)
@@ -223,7 +217,6 @@ if (!defined('ABSPATH')) {
  * @method string viewBuildTableName(...$arguments)
  * @method string viewDeletemeTableName(...$arguments)
  * @method int viewDoneBuiltAt(...$arguments)
- * @method int viewDoneBuiltWatermark(...$arguments)
  * @method int viewDoneDataBuiltAt(...$arguments)
  * @method string viewDoneDataBuiltAtOptionName(...$arguments)
  * @method string viewDoneFreshnessOptionName(...$arguments)
@@ -762,10 +755,11 @@ class ABJ_404_Solution_ViewBuildHelpers extends ABJ_404_Solution_ViewBuildCollab
         // pre-image.
         $this->clearActiveBuildStartedWatermark();
         if (is_object($this->logger) && method_exists($this->logger, 'infoMessage')) {
-            $current = class_exists('ABJ_404_Solution_MutationWatermark')
-                ? ABJ_404_Solution_MutationWatermark::current() : -1;
+            $current = class_exists('ABJ_404_Solution_MutationDataSignature')
+                ? ABJ_404_Solution_MutationDataSignature::current()
+                : ABJ_404_Solution_MutationDataSignature::UNAVAILABLE;
             $this->logger->infoMessage(sprintf(
-                '[staged] runStagedBuildOnce: mutation watermark advanced '
+                '[staged] runStagedBuildOnce: mutation data signature advanced '
                 . '(started=%d, current=%d); aborting before stage %d. '
                 . 'Buffer dropped, progress cleared; next tick rebuilds from S0.',
                 $startedForLog, $current, $aboutToRunStage

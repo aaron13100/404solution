@@ -17,7 +17,8 @@ if (!defined('ABSPATH')) {
  * `invalidateViewDone()` directly, which violated the runner-ownership
  * invariant the refactor exists to restore; Phase 4 (commit 2994e21c)
  * deleted that symbol and routed every external caller through either
- * `bumpMutationWatermark()` (source-mutation signal) or this primitive
+ * the source-mutation signal (now derived implicitly from
+ * {@see ABJ_404_Solution_MutationDataSignature}) or this primitive
  * (explicit restart-from-scratch).
  *
  * The contract is exactly seven bullets (and the absence of an eighth):
@@ -114,7 +115,6 @@ if (!defined('ABSPATH')) {
  * @method string buildHaltTransientKey(...$arguments)
  * @method string buildViewDoneCountQuery(...$arguments)
  * @method string builtWatermarkOptionName(...$arguments)
- * @method int bumpMutationWatermark(...$arguments)
  * @method int bumpStageNoProgressStreak(...$arguments)
  * @method string capturedPrefixForLog(...$arguments)
  * @method void capturePrefixAtBuildStart(...$arguments)
@@ -186,10 +186,6 @@ if (!defined('ABSPATH')) {
  * @method int maxBuildBufferId(...$arguments)
  * @method void maybeRaiseViewDoneHardStaleNotice(...$arguments)
  * @method bool mutationWatermarkAdvancedSinceBuildStart(...$arguments)
- * @method int mutationWatermarkObservedByAdminAction(...$arguments)
- * @method int mutationWatermarkObservedByAdminActionAt(...$arguments)
- * @method string mutationWatermarkObservedByAdminActionAtOptionName(...$arguments)
- * @method string mutationWatermarkObservedByAdminActionOptionName(...$arguments)
  * @method string normalizePathPrefix(...$arguments)
  * @method bool optionReadBackMatches(...$arguments)
  * @method int parsePhpMemoryLimitToBytes(...$arguments)
@@ -237,7 +233,6 @@ if (!defined('ABSPATH')) {
  * @method void runStagedSqlFile(...$arguments)
  * @method void runStagedSqlFileTolerantOfDuplicateKey(...$arguments)
  * @method mixed runTimedViewBuildStage(...$arguments)
- * @method int safeCurrentMutationWatermark(...$arguments)
  * @method string sanitizeUrlBeforeInsert(...$arguments)
  * @method void scheduleViewDoneRebuild(...$arguments)
  * @method string sessionVariablesProbeOptionName(...$arguments)
@@ -279,7 +274,6 @@ if (!defined('ABSPATH')) {
  * @method string viewBuildTableName(...$arguments)
  * @method string viewDeletemeTableName(...$arguments)
  * @method int viewDoneBuiltAt(...$arguments)
- * @method int viewDoneBuiltWatermark(...$arguments)
  * @method int viewDoneDataBuiltAt(...$arguments)
  * @method string viewDoneDataBuiltAtOptionName(...$arguments)
  * @method string viewDoneFreshnessOptionName(...$arguments)
@@ -397,11 +391,10 @@ class ABJ_404_Solution_ViewBuildForceRestart extends ABJ_404_Solution_ViewBuildC
         //     the cross-build pre-image for freshness checks until
         //     the new build's S11 swap publishes a fresh value.
 
-        // (6) DO NOT bump the mutation watermark. No call to
-        //     ABJ_404_Solution_MutationWatermark::bump() exists in
-        //     this method. Force-rebuild is a runner command, not a
-        //     data-change signal; a bump would propagate to every
-        //     concurrent reader as a phantom mutation.
+        // (6) NO mutation signal is emitted. Force-rebuild is a runner
+        //     command, not a data-change signal; the data-signature
+        //     reader (MutationDataSignature) is unchanged, and the new
+        //     build's S1 entry will stamp the live signature anyway.
 
         // Reset per-request serveability cache so a subsequent
         // viewDoneIsServeable() inside this request reflects the

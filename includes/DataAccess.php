@@ -19,7 +19,6 @@ require_once __DIR__ . '/ViewBuildPhpEnvProbe.php';
 require_once __DIR__ . '/ViewBuildSessionEnvProbe.php';
 require_once __DIR__ . '/ViewBuildHostFailurePolicy.php';
 require_once __DIR__ . '/ViewBuildForceRestart.php';
-require_once __DIR__ . '/MutationWatermarkSeam.php';
 require_once __DIR__ . '/AdminMutationGate.php';
 require_once __DIR__ . '/DatabaseRuntimeState.php';
 require_once __DIR__ . '/ViewReadRuntimeState.php';
@@ -1003,13 +1002,17 @@ class ABJ_404_Solution_DataAccess implements ABJ_404_Solution_ContentRepositoryI
                 return $this->legacyViewDoneServeableCache;
             }
 
-            $observed = function_exists('get_option') ? (int)get_option($this->mutationWatermarkObservedByAdminActionOptionName(), 0) : 0;
-            $observedAt = function_exists('get_option') ? (int)get_option($this->mutationWatermarkObservedByAdminActionAtOptionName(), 0) : 0;
-            $built = function_exists('get_option') ? (int)get_option($this->builtWatermarkOptionName(), 0) : 0;
+            // Wall-clock admin-mutation gate (t_260523_224315_207 replaces
+            // the watermark-counter comparison). The gate blocks reads when
+            // the most recent admin mutation happened AFTER the on-disk
+            // view_done was built, capped by the sanity window so a stuck
+            // cron / broken build cannot keep view_done unserveable forever.
+            $invalidatedAt = function_exists('get_option') ? (int)get_option($this->viewDoneMutationInvalidatedAtOptionName(), 0) : 0;
+            $builtAt = function_exists('get_option') ? (int)get_option($this->viewDoneDataBuiltAtOptionName(), 0) : 0;
             $sanity = defined('ABJ_404_Solution_ViewBuildConfig::VIEW_DONE_MUTATION_INVALIDATED_SANITY_SECONDS')
                 ? ABJ_404_Solution_ViewBuildConfig::VIEW_DONE_MUTATION_INVALIDATED_SANITY_SECONDS
                 : 300;
-            if ($observed > 0 && $built < $observed && $observedAt > 0 && (time() - $observedAt) <= $sanity) {
+            if ($invalidatedAt > 0 && $builtAt < $invalidatedAt && (time() - $invalidatedAt) <= $sanity) {
                 $this->legacyViewDoneServeableCache = false;
                 return $this->legacyViewDoneServeableCache;
             }
@@ -1140,9 +1143,6 @@ class ABJ_404_Solution_DataAccess implements ABJ_404_Solution_ContentRepositoryI
     /** @param int $lockTimeoutSeconds @return bool */
     public function forceRestartViewBuild(int $lockTimeoutSeconds = 10): bool { return $this->viewBuildOrchestrator->forceRestartViewBuild($lockTimeoutSeconds); }
 
-    /** @return int */
-    public function bumpMutationWatermark(): int { return $this->viewBuildOrchestrator->bumpMutationWatermark(); }
-
     /** @return void */
     public function invalidateViewDoneServeableCacheBridge(): void { $this->viewBuildOrchestrator->invalidateViewDoneServeableCacheBridge(); }
 
@@ -1221,10 +1221,6 @@ class ABJ_404_Solution_DataAccess implements ABJ_404_Solution_ContentRepositoryI
     public function viewDoneMutationInvalidatedAtOptionName(): string { return $this->viewBuildOrchestrator->viewDoneMutationInvalidatedAtOptionName(); }
 
     public function builtWatermarkOptionName(): string { return $this->viewBuildOrchestrator->builtWatermarkOptionName(); }
-
-    public function mutationWatermarkObservedByAdminActionOptionName(): string { return $this->viewBuildOrchestrator->mutationWatermarkObservedByAdminActionOptionName(); }
-
-    public function mutationWatermarkObservedByAdminActionAtOptionName(): string { return $this->viewBuildOrchestrator->mutationWatermarkObservedByAdminActionAtOptionName(); }
 
     /**
      * Backward-compatibility bridge for facade delegations removed in Phase 8e.

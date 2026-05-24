@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) {
  * ViewBuildStageCallbacks, ViewBuildLockAndCron, ViewBuildPhpEnvProbe,
  * ViewBuildHostFailurePolicy, ViewBuildSessionEnvProbe,
  * ViewBuildStageRunner, AdminMutationGate, ViewBuildStartedWatermark,
- * ViewBuildAdaptive, ViewBuildForceRestart, MutationWatermarkSeam.
+ * ViewBuildAdaptive, ViewBuildForceRestart.
  *
  * @see docs/dataaccess-refactor-plan.md Phase 7.
  */
@@ -145,11 +145,6 @@ interface ABJ_404_Solution_ViewBuildOrchestratorInterface {
      * @return bool
      */
     public function forceRestartViewBuild(int $lockTimeoutSeconds = 10): bool;
-
-    // --- MutationWatermarkSeam ---
-
-    /** @return int */
-    public function bumpMutationWatermark(): int;
 
     // --- Bridge methods for ViewReadService ---
 

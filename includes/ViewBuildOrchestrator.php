@@ -55,8 +55,6 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
     private $hostFailurePolicy;
     /** @var ABJ_404_Solution_ViewBuildForceRestart */
     private $forceRestart;
-    /** @var ABJ_404_Solution_MutationWatermarkSeam */
-    private $mutationWatermark;
     /** @var ABJ_404_Solution_AdminMutationGate */
     private $adminMutationGate;
 
@@ -87,7 +85,6 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
         $this->sessionEnvProbe = new ABJ_404_Solution_ViewBuildSessionEnvProbe($this);
         $this->hostFailurePolicy = new ABJ_404_Solution_ViewBuildHostFailurePolicy($this);
         $this->forceRestart = new ABJ_404_Solution_ViewBuildForceRestart($this);
-        $this->mutationWatermark = new ABJ_404_Solution_MutationWatermarkSeam($this);
         $this->adminMutationGate = new ABJ_404_Solution_AdminMutationGate($this);
         $this->collaborators = array(
             'queries' => $this->queries,
@@ -103,7 +100,6 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
             'session_env_probe' => $this->sessionEnvProbe,
             'host_failure_policy' => $this->hostFailurePolicy,
             'force_restart' => $this->forceRestart,
-            'mutation_watermark' => $this->mutationWatermark,
             'admin_mutation_gate' => $this->adminMutationGate,
         );
     }
@@ -276,11 +272,6 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
     /** @param int $lockTimeoutSeconds @return bool */
     public function forceRestartViewBuild(int $lockTimeoutSeconds = 10): bool {
         return $this->forceRestart->forceRestartViewBuild($lockTimeoutSeconds);
-    }
-
-    /** @return int */
-    public function bumpMutationWatermark(): int {
-        return $this->mutationWatermark->bumpMutationWatermark();
     }
 
     /**

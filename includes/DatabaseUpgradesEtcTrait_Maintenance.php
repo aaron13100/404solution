@@ -367,12 +367,13 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
 
 				if ($anyAlterFired) {
 					// Post-correction state may render or compare differently from the
-					// pre-correction view_done snapshot. The bump is non-destructive
-					// (no DROP, no progress clear) so it cannot race an in-flight
-					// staged build: the runner reads the watermark at the next stage
-					// boundary and either aborts cleanly or completes a build whose
-					// built_watermark covers the post-correction data.
-					$this->viewBuild->bumpMutationWatermark();
+					// pre-correction view_done snapshot. Signal the admin-mutation
+					// gate so reads block until the next build covers the post-
+					// correction data. The in-flight build's next stage-boundary
+					// signature read (MutationDataSignature) reflects no row-data
+					// change (collation is metadata, not rows), so we explicitly
+					// invalidate here rather than relying on the abort gate.
+					$this->viewBuild->markViewDoneInvalidatedByAdminMutation();
 				}
 		}
 
