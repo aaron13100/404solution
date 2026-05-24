@@ -41,6 +41,10 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
     private $queries;
     /** @var ABJ_404_Solution_ViewBuildHelpers */
     private $helpers;
+    /** @var ABJ_404_Solution_ViewBuildSqlModeProbe */
+    private $sqlModeProbe;
+    /** @var ABJ_404_Solution_ViewBuildRebuildReconcile */
+    private $rebuildReconcile;
     /** @var ABJ_404_Solution_ViewBuildLockAndCron */
     private $lockAndCron;
     /** @var ABJ_404_Solution_ViewBuildPhpEnvProbe */
@@ -76,6 +80,8 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
             : $this->resolveRebuildHealthState();
         $this->queries = new ABJ_404_Solution_ViewQueriesStaged($this);
         $this->helpers = new ABJ_404_Solution_ViewBuildHelpers($this);
+        $this->sqlModeProbe = new ABJ_404_Solution_ViewBuildSqlModeProbe($this);
+        $this->rebuildReconcile = new ABJ_404_Solution_ViewBuildRebuildReconcile($this);
         $this->lockAndCron = new ABJ_404_Solution_ViewBuildLockAndCron($this);
         $this->phpEnvProbe = new ABJ_404_Solution_ViewBuildPhpEnvProbe($this);
         $this->sessionEnvProbe = new ABJ_404_Solution_ViewBuildSessionEnvProbe($this);
@@ -89,6 +95,8 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
             'stage_callbacks' => new ABJ_404_Solution_ViewBuildStageCallbacks($this),
             'adaptive' => new ABJ_404_Solution_ViewBuildAdaptive($this),
             'helpers' => $this->helpers,
+            'sql_mode_probe' => $this->sqlModeProbe,
+            'rebuild_reconcile' => $this->rebuildReconcile,
             'started_watermark' => new ABJ_404_Solution_ViewBuildStartedWatermark($this),
             'lock_and_cron' => $this->lockAndCron,
             'php_env_probe' => $this->phpEnvProbe,
@@ -172,12 +180,12 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
 
     /** @return void */
     public function rebuildViewDoneInBackground(): void {
-        $this->queries->rebuildViewDoneInBackground();
+        $this->rebuildReconcile->rebuildViewDoneInBackground();
     }
 
     /** @return string */
     public function reconcileStagedTablesAtRunnerStartup(): string {
-        return $this->queries->reconcileStagedTablesAtRunnerStartup();
+        return $this->rebuildReconcile->reconcileStagedTablesAtRunnerStartup();
     }
 
     /** @param string $optionName @param mixed $expected @return bool */
@@ -202,12 +210,12 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
 
     /** @return array<string, mixed> */
     public function probeSqlModeForBuild(): array {
-        return $this->helpers->probeSqlModeForBuild();
+        return $this->sqlModeProbe->probeSqlModeForBuild();
     }
 
     /** @return array<string, mixed> */
     public function detectAndAdjustSqlMode(): array {
-        return $this->helpers->detectAndAdjustSqlMode();
+        return $this->sqlModeProbe->detectAndAdjustSqlMode();
     }
 
     /** @param string $url @param int $maxLength @return string */

@@ -12,6 +12,8 @@ require_once __DIR__ . '/ViewBuildStageRunner.php';
 require_once __DIR__ . '/ViewBuildStartedWatermark.php';
 require_once __DIR__ . '/ViewBuildAdaptive.php';
 require_once __DIR__ . '/ViewBuildHelpers.php';
+require_once __DIR__ . '/ViewBuildSqlModeProbe.php';
+require_once __DIR__ . '/ViewBuildRebuildReconcile.php';
 require_once __DIR__ . '/ViewBuildLockAndCron.php';
 require_once __DIR__ . '/ViewBuildPhpEnvProbe.php';
 require_once __DIR__ . '/ViewBuildSessionEnvProbe.php';
