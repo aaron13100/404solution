@@ -104,8 +104,14 @@ class ABJ_404_Solution_AdminMutationGate extends ABJ_404_Solution_ViewBuildColla
         if ($invalidatedAt <= time() - $sanity) {
             return false;
         }
+        // <= (not <) because wall-clock timestamps have 1-second resolution:
+        // when an admin mutation lands in the same second as the prior build's
+        // data_built_at, a strict < lets the gate pass and the read serves the
+        // pre-mutation snapshot. The next build clears invalidated_at via
+        // clearAdminMutationGateOptions(), so this stricter comparison cannot
+        // loop -- it just forces one extra rebuild for the same-second case.
         $builtAt = $this->viewDoneDataBuiltAt();
-        return $builtAt < $invalidatedAt;
+        return $builtAt <= $invalidatedAt;
     }
 
     /**
