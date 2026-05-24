@@ -7,7 +7,7 @@ if (!defined('ABSPATH')) {
 /**
  * ViewTrait_Stats methods.
  */
-trait ViewTrait_Stats {
+class ABJ_404_Solution_View_Stats extends ABJ_404_Solution_ViewComponent {
 
 
     /**
@@ -154,7 +154,7 @@ trait ViewTrait_Stats {
      * Queries the redirects table for score band counts and renders a Chart.js doughnut.
      * @return void
      */
-    private function echoConfidenceDistributionSection() {
+    public function echoConfidenceDistributionSection() {
         global $abj404view, $wpdb;
 
         if (!isset($wpdb)) {
@@ -266,7 +266,7 @@ trait ViewTrait_Stats {
      * Output the Trends (time-series charts) section on the Stats page.
      * @return void
      */
-    private function echoTrendsSection() {
+    public function echoTrendsSection() {
         global $abj404view;
 
         $trendNonce = wp_create_nonce('abj404_trendData');
@@ -436,7 +436,7 @@ trait ViewTrait_Stats {
      * Output the Broken Internal Links section on the Stats page (if results are cached).
      * @return void
      */
-    private function echoBrokenInternalLinksSection() {
+    public function echoBrokenInternalLinksSection() {
         global $abj404view;
 
         if (!class_exists('ABJ_404_Solution_InternalLinkScanner')) {
@@ -652,7 +652,7 @@ trait ViewTrait_Stats {
      *
      * @return string
      */
-    private function getMigrateFromPluginMarkup(): string {
+    public function getMigrateFromPluginMarkup(): string {
         $redirectsRepo = abj_service('redirects_repository');
         $logger        = abj_service('logging');
         $importer = new ABJ_404_Solution_CrossPluginImporter($redirectsRepo, $logger);
@@ -814,7 +814,7 @@ trait ViewTrait_Stats {
      *
      * @return string
      */
-    private function getToolsDiagnosticsMarkup() {
+    public function getToolsDiagnosticsMarkup() {
         $rows = $this->getToolsDiagnosticsRows();
         $html = '<div class="abj404-diagnostics-summary">';
         $html .= '<p>' . esc_html__('Quick environment checks for troubleshooting and support.', '404-solution') . '</p>';
@@ -850,7 +850,7 @@ trait ViewTrait_Stats {
      *
      * @return array<int, array<string, string>>
      */
-    private function getToolsDiagnosticsRows() {
+    public function getToolsDiagnosticsRows() {
         $wpVersion = get_bloginfo('version');
         if (!is_string($wpVersion) || trim($wpVersion) === '') {
             $wpVersion = __('Unknown', '404-solution');

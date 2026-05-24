@@ -7,7 +7,7 @@ if (!defined('ABSPATH')) {
 /**
  * ViewTrait_Settings methods.
  */
-trait ViewTrait_Settings {
+class ABJ_404_Solution_View_Settings extends ABJ_404_Solution_ViewComponent {
 
     
     /** @return void */
@@ -17,10 +17,10 @@ trait ViewTrait_Settings {
 
         // If globals are not set, use sensible defaults
         if ($abj404view === null) {
-            $abj404view = $this;
+            $abj404view = $this->view;
         }
 
-        $options = $this->getOptionsWithDefaults();
+        $options = $this->shared->getOptionsWithDefaults();
 
         // Get the current user's settings mode preference
         $settingsMode = $this->logic->getSettingsMode();
@@ -49,7 +49,7 @@ trait ViewTrait_Settings {
         echo "\n<div class=\"abj404-header-row\">";
         echo "<h2>" . esc_html__('Options', '404-solution') . "</h2>";
         echo "<div class=\"abj404-header-controls\">";
-        $this->echoInlineModeToggle();
+        $this->ui->echoInlineModeToggle();
         // Expand/Collapse All button for both Simple and Advanced modes
         echo '<button type="button" id="abj404-expand-collapse-all" class="button">';
         echo esc_html__('Expand All', '404-solution');
@@ -219,7 +219,7 @@ trait ViewTrait_Settings {
      * @return string
      */
     function getAdminOptionsPageAutoRedirects($options) {
-        $options = $this->normalizeOptionsForView($options);
+        $options = $this->shared->normalizeOptionsForView($options);
 
         $spaces = esc_html("&nbsp;&nbsp;&nbsp;");
         $content = "";
@@ -227,16 +227,16 @@ trait ViewTrait_Settings {
         // Behavior tiles (replaces the old page-search dropdown)
         $content .= '<div class="abj404-form-group">';
         $content .= '<label class="abj404-form-label">' . __('Default 404 destination', '404-solution') . '</label>';
-        $content .= $this->getBehaviorTilesHTML($options);
+        $content .= $this->shared->getBehaviorTilesHTML($options);
         $content .= '</div>';
 
         // -----------------------------------------------
         // Load auto redirects options template
-        $selectedAutoRedirects = $this->getCheckedAttr($options, 'auto_redirects');
-        $selectedAutoSlugs = $this->getCheckedAttr($options, 'auto_slugs');
-        $selectedAutoCats = $this->getCheckedAttr($options, 'auto_cats');
-        $selectedAutoTags = $this->getCheckedAttr($options, 'auto_tags');
-        $selectedAutoTrashRedirect = $this->getCheckedAttr($options, 'auto_trash_redirect');
+        $selectedAutoRedirects = $this->shared->getCheckedAttr($options, 'auto_redirects');
+        $selectedAutoSlugs = $this->shared->getCheckedAttr($options, 'auto_slugs');
+        $selectedAutoCats = $this->shared->getCheckedAttr($options, 'auto_cats');
+        $selectedAutoTags = $this->shared->getCheckedAttr($options, 'auto_tags');
+        $selectedAutoTrashRedirect = $this->shared->getCheckedAttr($options, 'auto_trash_redirect');
 
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/adminOptionsAutoRedirects.html");
         $html = $this->f->str_replace('{selectedAutoRedirects}', $selectedAutoRedirects, $html);
@@ -244,8 +244,8 @@ trait ViewTrait_Settings {
         $html = $this->f->str_replace('{selectedAutoCats}', $selectedAutoCats, $html);
         $html = $this->f->str_replace('{selectedAutoTags}', $selectedAutoTags, $html);
         $html = $this->f->str_replace('{selectedAutoTrashRedirect}', $selectedAutoTrashRedirect, $html);
-        $html = $this->f->str_replace('{auto_deletion}', esc_attr($this->optStr($options, 'auto_deletion')), $html);
-        $html = $this->f->str_replace('{auto_302_expiration_days}', esc_attr($this->optStr($options, 'auto_302_expiration_days')), $html);
+        $html = $this->f->str_replace('{auto_deletion}', esc_attr($this->shared->optStr($options, 'auto_deletion')), $html);
+        $html = $this->f->str_replace('{auto_302_expiration_days}', esc_attr($this->shared->optStr($options, 'auto_302_expiration_days')), $html);
         $html = $this->f->str_replace('{spaces}', $spaces, $html);
         $html = $this->f->doNormalReplacements($html);
         $content .= $html;
@@ -263,7 +263,7 @@ trait ViewTrait_Settings {
      * @return string
      */
     function getAdminOptionsPageAdvancedContent($options) {
-        $options = $this->normalizeOptionsForView($options);
+        $options = $this->shared->normalizeOptionsForView($options);
         $allPostTypesTemp = $this->viewReadService->getAllPostTypes();
         $allPostTypes = esc_html(implode(', ', $allPostTypesTemp));
 
@@ -271,15 +271,15 @@ trait ViewTrait_Settings {
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/settingsAdvancedContent.html");
 
         $html = $this->f->str_replace('{recognized_post_types}',
-            str_replace('\\n', "\n", wp_kses_post($this->optStr($options, 'recognized_post_types'))), $html);
+            str_replace('\\n', "\n", wp_kses_post($this->shared->optStr($options, 'recognized_post_types'))), $html);
         $html = $this->f->str_replace('{all_post_types}', $allPostTypes, $html);
 
         $html = $this->f->str_replace('{recognized_categories}',
-            str_replace('\\n', "\n", wp_kses_post($this->optStr($options, 'recognized_categories'))), $html);
+            str_replace('\\n', "\n", wp_kses_post($this->shared->optStr($options, 'recognized_categories'))), $html);
         $html = $this->f->str_replace('{folders_files_ignore}',
-            str_replace('\\n', "\n", wp_kses_post($this->optStr($options, 'folders_files_ignore'))), $html);
+            str_replace('\\n', "\n", wp_kses_post($this->shared->optStr($options, 'folders_files_ignore'))), $html);
         $html = $this->f->str_replace('{suggest_regex_exclusions}',
-            str_replace('\\n', "\n", esc_textarea($this->optStr($options, 'suggest_regex_exclusions'))), $html);
+            str_replace('\\n', "\n", esc_textarea($this->shared->optStr($options, 'suggest_regex_exclusions'))), $html);
 
         $html = $this->f->str_replace('{add-exclude-page-data-url}',
             "admin-ajax.php?action=echoRedirectToPages&includeDefault404Page=false&includeSpecial=false&nonce=" . wp_create_nonce('abj404_ajax'), $html);
@@ -292,7 +292,7 @@ trait ViewTrait_Settings {
         $html = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_URL}',
             __('(An external URL will be used.)', '404-solution'), $html);
         $html = $this->f->str_replace('{loaded-excluded-pages}',
-            urlencode($this->optStr($options, 'excludePages[]')), $html);
+            urlencode($this->shared->optStr($options, 'excludePages[]')), $html);
 
         // Constants and translations
         $html = $this->f->doNormalReplacements($html);
@@ -306,9 +306,9 @@ trait ViewTrait_Settings {
      * @return string
      */
 	    function getAdminOptionsPageAdvancedLogging($options) {
-	        $options = $this->normalizeOptionsForView($options);
-	        $selectedLogRawIPs = $this->getCheckedAttr($options, 'log_raw_ips');
-	        $selectedDebugLogging = $this->getCheckedAttr($options, 'debug_mode');
+	        $options = $this->shared->normalizeOptionsForView($options);
+	        $selectedLogRawIPs = $this->shared->getCheckedAttr($options, 'log_raw_ips');
+	        $selectedDebugLogging = $this->shared->getCheckedAttr($options, 'debug_mode');
 
         $debugExplanation = __('<a>View</a> the debug file.', '404-solution');
         $debugLogLink = $this->logic->getDebugLogFileLink();
@@ -331,9 +331,9 @@ trait ViewTrait_Settings {
         $html = $this->f->str_replace('{Debug file size: %s KB.}', $debugFileSize, $html);
 
         $html = $this->f->str_replace('{ignore_dontprocess}',
-            str_replace('\\n', "\n", wp_kses_post($this->optStr($options, 'ignore_dontprocess'))), $html);
+            str_replace('\\n', "\n", wp_kses_post($this->shared->optStr($options, 'ignore_dontprocess'))), $html);
         $html = $this->f->str_replace('{ignore_doprocess}',
-            str_replace('\\n', "\n", wp_kses_post($this->optStr($options, 'ignore_doprocess'))), $html);
+            str_replace('\\n', "\n", wp_kses_post($this->shared->optStr($options, 'ignore_doprocess'))), $html);
 
         // Constants and translations
         $html = $this->f->doNormalReplacements($html);
@@ -347,8 +347,8 @@ trait ViewTrait_Settings {
      * @return string
      */
 	    function getAdminOptionsPageAdvancedSystem($options) {
-	        $options = $this->normalizeOptionsForView($options);
-	        $selectedRedirectAllRequests = $this->getCheckedAttr($options, 'redirect_all_requests');
+	        $options = $this->shared->normalizeOptionsForView($options);
+	        $selectedRedirectAllRequests = $this->shared->getCheckedAttr($options, 'redirect_all_requests');
 
         $hideRedirectAllRequests = "false";
         if (array_key_exists('disallow-redirect-all-requests', $options)
@@ -359,16 +359,16 @@ trait ViewTrait_Settings {
         // Read the html content
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/settingsAdvancedSystem.html");
 
-        $html = $this->f->str_replace('{DATABASE_VERSION}', esc_html($this->optStr($options, 'DB_VERSION')), $html);
+        $html = $this->f->str_replace('{DATABASE_VERSION}', esc_html($this->shared->optStr($options, 'DB_VERSION')), $html);
         $html = $this->f->str_replace('checked="redirect_all_requests"', $selectedRedirectAllRequests, $html);
         $html = $this->f->str_replace('{disallow-redirect-all-requests}', $hideRedirectAllRequests, $html);
 
-        $html = $this->f->str_replace('{OPTION_MIN_AUTO_SCORE}', esc_attr($this->optStr($options, 'auto_score')), $html);
-        $html = $this->f->str_replace('{OPTION_AUTO_SCORE_TITLE}', esc_attr($this->optStr($options, 'auto_score_title')), $html);
-        $html = $this->f->str_replace('{OPTION_AUTO_SCORE_CATEGORY_TAG}', esc_attr($this->optStr($options, 'auto_score_category_tag')), $html);
-        $html = $this->f->str_replace('{OPTION_AUTO_SCORE_CONTENT}', esc_attr($this->optStr($options, 'auto_score_content')), $html);
-        $html = $this->f->str_replace('{OPTION_TEMPLATE_REDIRECT_PRIORITY}', esc_attr($this->optStr($options, 'template_redirect_priority')), $html);
-        $html = $this->f->str_replace('{days_wait_before_major_update}', esc_attr($this->optStr($options, 'days_wait_before_major_update')), $html);
+        $html = $this->f->str_replace('{OPTION_MIN_AUTO_SCORE}', esc_attr($this->shared->optStr($options, 'auto_score')), $html);
+        $html = $this->f->str_replace('{OPTION_AUTO_SCORE_TITLE}', esc_attr($this->shared->optStr($options, 'auto_score_title')), $html);
+        $html = $this->f->str_replace('{OPTION_AUTO_SCORE_CATEGORY_TAG}', esc_attr($this->shared->optStr($options, 'auto_score_category_tag')), $html);
+        $html = $this->f->str_replace('{OPTION_AUTO_SCORE_CONTENT}', esc_attr($this->shared->optStr($options, 'auto_score_content')), $html);
+        $html = $this->f->str_replace('{OPTION_TEMPLATE_REDIRECT_PRIORITY}', esc_attr($this->shared->optStr($options, 'template_redirect_priority')), $html);
+        $html = $this->f->str_replace('{days_wait_before_major_update}', esc_attr($this->shared->optStr($options, 'days_wait_before_major_update')), $html);
 
         // Handle plugin_admin_users - convert array to string first before sanitization
         $pluginAdminUsersRaw2 = $options['plugin_admin_users'];
@@ -391,15 +391,15 @@ trait ViewTrait_Settings {
      * @return string
      */
 	    function getAdminOptionsPageGeneralSettings($options) {
-	        $options = $this->normalizeOptionsForView($options);
+	        $options = $this->shared->normalizeOptionsForView($options);
 	        
 	        $selectedDefaultRedirect301 = ($options['default_redirect'] == '301') ? ' selected' : '';
         $selectedDefaultRedirect302 = ($options['default_redirect'] == '302') ? ' selected' : '';
         $selectedDefaultRedirect307 = ($options['default_redirect'] == '307') ? ' selected' : '';
         $selectedDefaultRedirect308 = ($options['default_redirect'] == '308') ? ' selected' : '';
 
-        $selectedCapture404 = $this->getCheckedAttr($options, 'capture_404');
-        $selectedSendErrorLogs = $this->getCheckedAttr($options, 'send_error_logs');
+        $selectedCapture404 = $this->shared->getCheckedAttr($options, 'capture_404');
+        $selectedSendErrorLogs = $this->shared->getCheckedAttr($options, 'send_error_logs');
 
         $selectedUnderSettings = "";
         $selecteSsettingsLevel = "";
@@ -452,7 +452,7 @@ trait ViewTrait_Settings {
         }
 
 
-        $selectedRemoveMatches = $this->getCheckedAttr($options, 'remove_matches');
+        $selectedRemoveMatches = $this->shared->getCheckedAttr($options, 'remove_matches');
 
         // Notification frequency selection
         $notifyFrequency = isset($options['admin_notification_frequency']) ? (string)(is_scalar($options['admin_notification_frequency']) ? $options['admin_notification_frequency'] : 'instant') : 'instant';
@@ -467,10 +467,10 @@ trait ViewTrait_Settings {
         $html = $this->f->str_replace('{selectedDefaultRedirect307}', $selectedDefaultRedirect307, $html);
         $html = $this->f->str_replace('{selectedDefaultRedirect308}', $selectedDefaultRedirect308, $html);
         $html = $this->f->str_replace('{selectedCapture404}', $selectedCapture404, $html);
-        $html = $this->f->str_replace('{admin_notification}', esc_attr($this->optStr($options, 'admin_notification')), $html);
-        $html = $this->f->str_replace('{capture_deletion}', esc_attr($this->optStr($options, 'capture_deletion')), $html);
-        $html = $this->f->str_replace('{manual_deletion}', esc_attr($this->optStr($options, 'manual_deletion')), $html);
-        $html = $this->f->str_replace('{maximum_log_disk_usage}', esc_attr($this->optStr($options, 'maximum_log_disk_usage')), $html);
+        $html = $this->f->str_replace('{admin_notification}', esc_attr($this->shared->optStr($options, 'admin_notification')), $html);
+        $html = $this->f->str_replace('{capture_deletion}', esc_attr($this->shared->optStr($options, 'capture_deletion')), $html);
+        $html = $this->f->str_replace('{manual_deletion}', esc_attr($this->shared->optStr($options, 'manual_deletion')), $html);
+        $html = $this->f->str_replace('{maximum_log_disk_usage}', esc_attr($this->shared->optStr($options, 'maximum_log_disk_usage')), $html);
         $html = $this->f->str_replace('{logCurrentSizeDiskUsage}', (string)$logSizeMB, $html);
         $html = $this->f->str_replace('{logCurrentRowCount}', (string)$totalLogLines, $html);
         $html = $this->f->str_replace('{earliestLogDate}', $earliestLogDate, $html);
@@ -497,14 +497,14 @@ trait ViewTrait_Settings {
         $html = $this->f->str_replace('{selectedLanguageIdID}', $selectedLanguageIdID, $html);
         $html = $this->f->str_replace('{selectedLanguageSvSE}', $selectedLanguageSvSE, $html);
         $html = $this->f->str_replace('{disableAutoDarkModeChecked}', $disableAutoDarkModeChecked, $html);
-        $html = $this->f->str_replace('{admin_notification_email}', esc_attr($this->optStr($options, 'admin_notification_email')), $html);
+        $html = $this->f->str_replace('{admin_notification_email}', esc_attr($this->shared->optStr($options, 'admin_notification_email')), $html);
         $adminEmail = get_option('admin_email');
         $html = $this->f->str_replace('{default_wordpress_admin_email}', is_string($adminEmail) ? $adminEmail : '', $html);
         $html = $this->f->str_replace('{PHP_VERSION}', PHP_VERSION, $html);
         $html = $this->f->str_replace('{selectedNotifyInstant}', $selectedNotifyInstant, $html);
         $html = $this->f->str_replace('{selectedNotifyDaily}', $selectedNotifyDaily, $html);
         $html = $this->f->str_replace('{selectedNotifyWeekly}', $selectedNotifyWeekly, $html);
-        $selectedAutoTrashJunk = $this->getCheckedAttr($options, 'auto_trash_junk_urls');
+        $selectedAutoTrashJunk = $this->shared->getCheckedAttr($options, 'auto_trash_junk_urls');
         $html = $this->f->str_replace('{selectedAutoTrashJunk}', $selectedAutoTrashJunk, $html);
         // constants and translations.
         $html = $this->f->doNormalReplacements($html);

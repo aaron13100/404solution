@@ -7,7 +7,7 @@ if (!defined('ABSPATH')) {
 /**
  * ViewTrait_Logs methods.
  */
-trait ViewTrait_Logs {
+class ABJ_404_Solution_View_Logs extends ABJ_404_Solution_ViewComponent {
 
     
     /**
@@ -50,7 +50,7 @@ trait ViewTrait_Logs {
                 . ' data-pagination-current-filter="0"'
                 . ' data-pagination-current-paged="1"'
                 . ' data-pagination-current-score-range="all"'
-                . ' data-pagination-current-logsid="' . esc_attr((string)$this->viewGetPostOrGetSanitize('redirect_to_data_field_id')) . '"'
+                . ' data-pagination-current-logsid="' . esc_attr((string)$this->shared->viewGetPostOrGetSanitize('redirect_to_data_field_id')) . '"'
                 . ' data-pagination-initial-load="1"'
                 . ' data-pagination-auto-refresh="1"'
                 . ' data-pagination-refresh-started-text="' . esc_attr(__('Refreshing data in background…', '404-solution')) . '"'
@@ -66,8 +66,8 @@ trait ViewTrait_Logs {
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ .
                 "/html/viewLogsForSearchBox.html");
 
-        $redirectPageTitle = $this->viewGetPostOrGetSanitize('redirect_to_data_field_title');
-        $pageIDAndType = $this->viewGetPostOrGetSanitize('redirect_to_data_field_id');
+        $redirectPageTitle = $this->shared->viewGetPostOrGetSanitize('redirect_to_data_field_title');
+        $pageIDAndType = $this->shared->viewGetPostOrGetSanitize('redirect_to_data_field_id');
 
         $html = $this->f->str_replace('{redirect_to_label}', __('View logs for', '404-solution'), $html);
         $html = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_EMPTY}',
@@ -154,7 +154,7 @@ trait ViewTrait_Logs {
             }
             $sortUrl = "?page=" . ABJ404_PP . "&subpage=abj404_logs";
             $sortUrl .= "&orderby=" . $orderbyCol;
-            $sortState = $this->getHeaderSortState($tableOptions, $orderbyCol, false);
+            $sortState = $this->shared->getHeaderSortState($tableOptions, $orderbyCol, false);
             $newOrder = $sortState['nextOrder'];
             $sortUrl .= "&order=" . $newOrder;
 
@@ -171,7 +171,7 @@ trait ViewTrait_Logs {
         $rows = $this->logsRepository->getLogRecords($tableOptions);
         /** @var array<int, array<string, mixed>> $typedLogRows */
         $typedLogRows = array_values(array_filter($rows, 'is_array'));
-        $this->rememberTableDataSignature($sub, $typedLogRows);
+        $this->shared->rememberTableDataSignature($sub, $typedLogRows);
         $logRecordsDisplayed = 0;
 
         foreach ($typedLogRows as $row) {
@@ -305,7 +305,7 @@ trait ViewTrait_Logs {
      * @return string       The translated string (falls through unchanged
      *                      for dynamic/unknown values like engine names or URLs).
      */
-    private function translateTraceLabel(string $text): string {
+    public function translateTraceLabel(string $text): string {
         // Static map — evaluated once per request.
         static $map = null;
         if ($map === null) {
@@ -370,7 +370,7 @@ trait ViewTrait_Logs {
      * @param string $outcome
      * @return string
      */
-    private function traceOutcomeClass(string $outcome): string {
+    public function traceOutcomeClass(string $outcome): string {
         $lower = strtolower($outcome);
         // Negative / blocking outcomes
         if (strpos($lower, 'blocked') !== false || strpos($lower, 'unreachable') !== false
@@ -428,7 +428,7 @@ trait ViewTrait_Logs {
             $preferDescOnFirstClick = ($orderby == "timestamp" ||
                     $orderby == "last_used" ||
                     $orderby == "logshits");
-            $sortState = $this->getHeaderSortState($tableOptions, (string)$orderby, $preferDescOnFirstClick);
+            $sortState = $this->shared->getHeaderSortState($tableOptions, (string)$orderby, $preferDescOnFirstClick);
             if (!$sortState['isSortable']) {
                 $thClass = "";
                 $nolink = 1;
@@ -644,7 +644,7 @@ trait ViewTrait_Logs {
         $html = $this->f->str_replace('{data-pagination-ajax-subpage}', esc_attr($sub), $html);
         $html = $this->f->str_replace('{data-pagination-ajax-nonce}', esc_attr($ajaxNonce), $html);
         $html = $this->f->str_replace('{data-pagination-inflight-nonce}', esc_attr($inflightNonce), $html);
-        $html = $this->f->str_replace('{data-pagination-current-signature}', esc_attr($this->getCurrentTableDataSignature($sub)), $html);
+        $html = $this->f->str_replace('{data-pagination-current-signature}', esc_attr($this->shared->getCurrentTableDataSignature($sub)), $html);
         $html = $this->f->str_replace('{data-pagination-current-orderby}', esc_attr((string)$orderby), $html);
         $html = $this->f->str_replace('{data-pagination-current-order}', esc_attr((string)$order), $html);
         $html = $this->f->str_replace('{data-pagination-current-filter}', esc_attr((string)$filter), $html);
@@ -818,7 +818,7 @@ trait ViewTrait_Logs {
 	        $html .= "</ul>";
 	        $html .= "\n\n<!-- page-form big outer form could go here -->\n\n";
         
-        $oneBigFormActionURL = $this->getBulkOperationsFormURL($sub, $tableOptions);
+        $oneBigFormActionURL = $this->redirectsTable->getBulkOperationsFormURL($sub, $tableOptions);
         $html .= '<form method="POST" name="bulk-operations-form" action="' . $oneBigFormActionURL . '">';
 
         

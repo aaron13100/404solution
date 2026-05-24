@@ -7,7 +7,7 @@ if (!defined('ABSPATH')) {
 /**
  * ViewTrait_UI methods.
  */
-trait ViewTrait_UI {
+class ABJ_404_Solution_View_UI extends ABJ_404_Solution_ViewComponent {
 
     /**
      * Render an error notice (notice notice-error) on a plugin admin page
@@ -65,96 +65,6 @@ trait ViewTrait_UI {
                 ":</strong> " . $capturedMessage . "</p></div>";
     }
 
-    /** Do an action like trash/delete/ignore/edit and display a page like stats/logs/redirects/options.
-     * @return void
-     */
-    static function handleMainAdminPageActionAndDisplay() {
-        global $abj404view;
-        $instance = self::getInstance();
-
-        try {
-            $action = $instance->viewGetPostOrGetSanitize('action');
-
-            if (!is_admin() || !$instance->logic->userIsPluginAdmin()) {
-                $instance->logger->logUserCapabilities("handleMainAdminPageActionAndDisplay (" .
-                        esc_html($action == '' ? '(none)' : $action) . ")");
-
-                echo '<div class="wrap">';
-                echo '<h1>' . esc_html(PLUGIN_NAME) . '</h1>';
-                $permMessage = '<strong>' . esc_html__('Permission denied.', '404-solution') . '</strong> '
-                    . esc_html__('Your user account does not have permission to access this page.', '404-solution')
-                    . '</p><p>'
-                    . esc_html__('Please verify that your WordPress role has the', '404-solution') . ' '
-                    . '<code>manage_options</code> ' . esc_html__('capability.', '404-solution') . ' '
-                    . esc_html__('If you have a security plugin installed, it may be restricting access to this page.', '404-solution');
-                $subpageForContext = (string)$instance->viewGetPostOrGetSanitize('subpage');
-                $triggerForPerm = ($subpageForContext === 'abj404_captured')
-                    ? 'captured_404s_page' : 'redirects_page';
-                echo self::renderErrorNoticeWithSupportButton(
-                    $permMessage,
-                    $triggerForPerm,
-                    'Permission denied on plugin admin page (action=' .
-                        ($action == '' ? '(none)' : $action) . ')'
-                );
-                echo '</div>';
-                return;
-            }
-
-            $sub = "";
-
-            // --------------------------------------------------------------------
-            // Handle Post Actions
-            $instance->logger->debugMessage("Processing request for action: " .
-                    esc_html($action == '' ? '(none)' : $action));
-
-            // this should really not pass things by reference so it can be more object oriented (encapsulation etc).
-            $message = "";
-            $message .= $instance->logic->handlePluginAction($action, $sub);
-            $message .= $instance->logic->hanldeTrashAction();
-            $message .= $instance->logic->handleDeleteAction();
-            $message .= $instance->logic->handleIgnoreAction();
-            $message .= $instance->logic->handleLaterAction();
-            $message .= $instance->logic->handleActionEdit($sub, $action);
-            $message .= $instance->logic->handleActionImportRedirects();
-            $instance->logic->handleActionChangeItemsPerRow();
-            $message .= $instance->logic->handleActionImportFile();
-
-            if ($action !== '' && $message !== '') {
-                $instance->logger->debugMessage("Admin action completed: " .
-                    esc_html($action) . " => " . esc_html(substr($message, 0, 200)));
-            }
-
-            // --------------------------------------------------------------------
-            // Output the correct page.
-            $abj404view->echoChosenAdminTab($action, $sub, $message);
-
-        } catch (\Throwable $e) {
-            $encodedEx = json_encode($e);
-            $encodedContext = is_string($encodedEx) ? stripcslashes(wp_kses_post($encodedEx)) : '';
-            $instance->logger->errorMessage(
-                "Caught exception (" . get_class($e) . "): " . $e->getMessage()
-                . ($encodedContext !== '' ? " | context=" . $encodedContext : '')
-            );
-            $subpageForContext = (string)$instance->viewGetPostOrGetSanitize('subpage');
-            $triggerForRenderError = ($subpageForContext === 'abj404_captured')
-                ? 'captured_404s_page' : 'redirects_page';
-            $renderErrorMessage = '<strong>404 Solution:</strong> An error occurred while rendering this page.</p>'
-                . '<details><summary>Show error details</summary>'
-                . '<pre style="white-space:pre-wrap;word-break:break-all;max-width:100%;margin:6px 0;">'
-                . esc_html($e->getMessage() . "\n" . $e->getTraceAsString())
-                . '</pre>'
-                . '</details>'
-                . '<p>';
-            echo '<div class="wrap">';
-            echo self::renderErrorNoticeWithSupportButton(
-                $renderErrorMessage,
-                $triggerForRenderError,
-                'Render error: ' . substr($e->getMessage(), 0, 200)
-            );
-            echo '</div>';
-        }
-    }
-    
     /** Display the chosen admin page.
      * @param string $action
      * @param string $sub
@@ -166,12 +76,12 @@ trait ViewTrait_UI {
 
         // If globals are not set, use sensible defaults
         if ($abj404view === null) {
-            $abj404view = $this;
+            $abj404view = $this->view;
         }
 
         // Deal With Page Tabs
         if ($sub == "") {
-            $sub = $this->f->strtolower($this->viewGetPostOrGetSanitize('subpage'));
+            $sub = $this->f->strtolower($this->shared->viewGetPostOrGetSanitize('subpage'));
         }
         if ($sub == "") {
             $sub = 'abj404_redirects';
@@ -179,7 +89,7 @@ trait ViewTrait_UI {
         }
 
         // Check if we're returning from a successful redirect update
-        $updated = $this->viewGetPostOrGetSanitize('updated');
+        $updated = $this->shared->viewGetPostOrGetSanitize('updated');
         if ($updated == '1') {
             $message .= __('Redirect Information Updated Successfully!', '404-solution');
         }
@@ -188,7 +98,7 @@ trait ViewTrait_UI {
 
         $abj404view->outputAdminHeaderTabs($sub, $message);
 
-        $abj404action = $this->viewGetPostOrGetSanitize('abj404action');
+        $abj404action = $this->shared->viewGetPostOrGetSanitize('abj404action');
         if (($action == 'editRedirect') || ($abj404action == 'editRedirect') || ($sub == 'abj404_edit')) {
             $abj404view->echoAdminEditRedirectPage();
         } else if ($sub == 'abj404_redirects') {
@@ -247,7 +157,7 @@ trait ViewTrait_UI {
      *
      * @return string
      */
-    private function renderViewFreshnessLabel(): string {
+    public function renderViewFreshnessLabel(): string {
         if (!is_object($this->viewBuildOrchestrator) || !method_exists($this->viewBuildOrchestrator, 'getViewDoneBuiltAtTimestamp')) {
             return 'n/a';
         }
@@ -399,7 +309,7 @@ trait ViewTrait_UI {
      * @param array{redirect_id: int, original_url: string, new_url: string, url_rewritten: bool, created_at: int} $notice
      * @return void
      */
-    private function renderRegexAutoPromoteNotice(array $notice) {
+    public function renderRegexAutoPromoteNotice(array $notice) {
         $redirectId = (int)$notice['redirect_id'];
         $originalUrl = (string)$notice['original_url'];
         $newUrl = (string)$notice['new_url'];
@@ -647,11 +557,11 @@ trait ViewTrait_UI {
      */
     function echoSimpleModeOptions($options) {
         // Build behavior tiles HTML (replaces old dropdown)
-        $behaviorTilesHtml = $this->getBehaviorTilesHTML($options);
+        $behaviorTilesHtml = $this->shared->getBehaviorTilesHTML($options);
 
         // Build selected states for checkboxes and dropdowns
-        $selectedAutoRedirects = $this->getCheckedAttr($options, 'auto_redirects');
-        $selectedCapture404 = $this->getCheckedAttr($options, 'capture_404');
+        $selectedAutoRedirects = $this->shared->getCheckedAttr($options, 'auto_redirects');
+        $selectedCapture404 = $this->shared->getCheckedAttr($options, 'capture_404');
         $selectedDefaultRedirect301 = ($options['default_redirect'] == '301') ? 'selected' : '';
         $selectedDefaultRedirect302 = ($options['default_redirect'] == '302') ? 'selected' : '';
         $selectedDefaultRedirect307 = ($options['default_redirect'] == '307') ? 'selected' : '';
@@ -685,9 +595,9 @@ trait ViewTrait_UI {
         $html = $this->f->str_replace('{selectedDefaultRedirect308}', $selectedDefaultRedirect308, $html);
 
         // Replace values
-        $html = $this->f->str_replace('{capture_deletion}', esc_attr($this->optStr($options, 'capture_deletion')), $html);
-        $html = $this->f->str_replace('{admin_notification}', esc_attr($this->optStr($options, 'admin_notification')), $html);
-        $html = $this->f->str_replace('{maximum_log_disk_usage}', esc_attr($this->optStr($options, 'maximum_log_disk_usage')), $html);
+        $html = $this->f->str_replace('{capture_deletion}', esc_attr($this->shared->optStr($options, 'capture_deletion')), $html);
+        $html = $this->f->str_replace('{admin_notification}', esc_attr($this->shared->optStr($options, 'admin_notification')), $html);
+        $html = $this->f->str_replace('{maximum_log_disk_usage}', esc_attr($this->shared->optStr($options, 'maximum_log_disk_usage')), $html);
 
         // Theme selections
         $html = $this->f->str_replace('{selectedThemeDefault}', $selectedThemeDefault, $html);

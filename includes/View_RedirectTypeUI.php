@@ -4,7 +4,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-trait ViewTrait_RedirectTypeUI {
+class ABJ_404_Solution_View_RedirectTypeUI extends ABJ_404_Solution_ViewComponent {
 
     /**
      * Get a plain-language label for an HTTP redirect code.
@@ -13,7 +13,7 @@ trait ViewTrait_RedirectTypeUI {
      * @param string $code The numeric redirect code (e.g. '301', '302').
      * @return string Human-readable label.
      */
-    private static function getPlainLanguageCodeLabel(string $code): string {
+    public static function getPlainLanguageCodeLabel(string $code): string {
         $labels = array(
             '301' => __('Permanent', '404-solution'),
             '308' => __('Permanent', '404-solution'),
@@ -26,7 +26,7 @@ trait ViewTrait_RedirectTypeUI {
         return isset($labels[$code]) ? $labels[$code] : $code;
     }
 
-    private function echoRedirectTypeButtonGrid(string $selectedCode): void {
+    public function echoRedirectTypeButtonGrid(string $selectedCode): void {
         $isSimple = $this->logic->getSettingsMode() === 'simple';
 
         echo '<div class="abj404-form-group">';

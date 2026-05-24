@@ -4,7 +4,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-trait ViewTrait_RedirectConditions {
+class ABJ_404_Solution_View_RedirectConditions extends ABJ_404_Solution_ViewComponent {
 
     /**
      * Render the Conditions section on the Edit Redirect page.
@@ -14,7 +14,7 @@ trait ViewTrait_RedirectConditions {
      *
      * @return void
      */
-    private function echoRedirectConditionsSection(): void {
+    public function echoRedirectConditionsSection(): void {
         $redirectId = 0;
         if (isset($_GET['id']) && $this->f->regexMatch('[0-9]+', (string)$_GET['id'])) {
             $redirectId = absint($_GET['id']);
@@ -56,7 +56,7 @@ trait ViewTrait_RedirectConditions {
      * @param array<string, mixed> $cond   Existing condition data (empty = defaults).
      * @return void
      */
-    private function echoConditionRow($index, array $cond): void {
+    public function echoConditionRow($index, array $cond): void {
         $logic    = isset($cond['logic'])          && is_string($cond['logic'])          ? $cond['logic']          : 'AND';
         $type     = isset($cond['condition_type']) && is_string($cond['condition_type']) ? $cond['condition_type'] : '';
         $operator = isset($cond['operator'])       && is_string($cond['operator'])       ? $cond['operator']       : 'equals';
@@ -126,7 +126,7 @@ trait ViewTrait_RedirectConditions {
      *
      * @return void
      */
-    private function echoConditionsJavaScript(): void {
+    public function echoConditionsJavaScript(): void {
         $redirectId = 0;
         if (isset($_GET['id']) && is_scalar($_GET['id']) && ctype_digit((string)$_GET['id'])) {
             $redirectId = (int)$_GET['id'];

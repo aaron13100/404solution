@@ -7,7 +7,10 @@ if (!defined('ABSPATH')) {
 /**
  * ViewTrait_Shared methods.
  */
-trait ViewTrait_Shared {
+class ABJ_404_Solution_View_Shared extends ABJ_404_Solution_ViewComponent {
+
+	/** @var array<string,string> Latest table data signatures by subpage. */
+	protected $tableDataSignatures = array();
 
 	/**
 	 * Sanitize a GET or POST parameter.
@@ -19,7 +22,7 @@ trait ViewTrait_Shared {
 	 * @param string|null $defaultValue Default value when not found.
 	 * @return string
 	 */
-	private function viewGetPostOrGetSanitize($name, $defaultValue = null) {
+	public function viewGetPostOrGetSanitize($name, $defaultValue = null) {
 		if (is_object($this->f)) {
 			try {
 				// DI resolver call: delegate to the injected Functions service
@@ -45,12 +48,12 @@ trait ViewTrait_Shared {
 	 * @param string $key The option key to check
 	 * @return string Returns ' checked' if option is '1', empty string otherwise
 	 */
-	private function getCheckedAttr($options, $key) {
+	public function getCheckedAttr($options, $key) {
 		return (array_key_exists($key, $options) && $options[$key] == '1') ? " checked" : "";
 	}
 
 	/** @return array<string, string> */
-	private function getFallbackOptionDefaults() {
+	public function getFallbackOptionDefaults() {
 		return array(
 			'default_redirect' => '301',
 			'DB_VERSION' => defined('ABJ404_VERSION') ? ABJ404_VERSION : '',
@@ -91,7 +94,7 @@ trait ViewTrait_Shared {
 	 * @param array<string, mixed> $options
 	 * @return array<string, mixed>
 	 */
-	private function normalizeOptionsForView($options) {
+	public function normalizeOptionsForView($options) {
 		return array_merge($this->getFallbackOptionDefaults(), $options);
 	}
 
@@ -102,7 +105,7 @@ trait ViewTrait_Shared {
 	 * @param array<string, mixed> $options
 	 * @return string
 	 */
-	private function getBehaviorTilesHTML($options) {
+	public function getBehaviorTilesHTML($options) {
 		$behavior = isset($options['dest404_behavior']) && is_string($options['dest404_behavior'])
 			? $options['dest404_behavior'] : 'theme_default';
 
@@ -184,7 +187,7 @@ trait ViewTrait_Shared {
 	 * @param string $default
 	 * @return string
 	 */
-	private function optStr($options, $key, $default = '') {
+	public function optStr($options, $key, $default = '') {
 		if (!array_key_exists($key, $options)) {
 			return $default;
 		}
@@ -204,7 +207,7 @@ trait ViewTrait_Shared {
 	 * @param mixed $value
 	 * @return string
 	 */
-	private function normalizeSignatureValue($value) {
+	public function normalizeSignatureValue($value) {
 		if ($value === null) {
 			return '';
 		}
@@ -230,7 +233,7 @@ trait ViewTrait_Shared {
 	 * @param array<string, mixed> $row
 	 * @return array<string,string>
 	 */
-	private function getSignatureFieldsForSubpage($sub, $row) {
+	public function getSignatureFieldsForSubpage($sub, $row) {
 		$sub = (string)$sub;
 
 		if ($sub === 'abj404_redirects') {
@@ -291,7 +294,7 @@ trait ViewTrait_Shared {
 	 * @param array<int, array<string, mixed>> $rows
 	 * @return void
 	 */
-	private function rememberTableDataSignature($sub, $rows) {
+	public function rememberTableDataSignature($sub, $rows) {
 		$sub = (string)$sub;
 		if (!is_array($rows)) {
 			$this->tableDataSignatures[$sub] = sha1($sub . '|0');
@@ -331,7 +334,7 @@ trait ViewTrait_Shared {
 	 *
 	 * @return array<string, mixed>
 	 */
-	private function getOptionsWithDefaults() {
+	public function getOptionsWithDefaults() {
 		$options = $this->logic->getOptions();
 		if (!is_array($options)) {
 			$options = array();
@@ -365,7 +368,7 @@ trait ViewTrait_Shared {
 	 * @param array<string, mixed> $tableOptions Current table options.
 	 * @return string Tooltip HTML (not escaped - contains data attributes)
 	 */
-	private function getHitsColumnTooltip($tableOptions = array()) {
+	public function getHitsColumnTooltip($tableOptions = array()) {
 		$rawOrderby = $tableOptions['orderby'] ?? '';
 		$orderby = strtolower(is_string($rawOrderby) ? $rawOrderby : '');
 		$isAggregatedMode = ($orderby === 'logshits' || $orderby === 'last_used');
@@ -413,7 +416,7 @@ trait ViewTrait_Shared {
 	 * @param int $timestamp
 	 * @return string
 	 */
-	private function formatTimeAgo($timestamp) {
+	public function formatTimeAgo($timestamp) {
 		$diff = time() - absint($timestamp);
 		if ($diff < 60) {
 			return __('Just now', '404-solution');
@@ -438,7 +441,7 @@ trait ViewTrait_Shared {
 	 * @param bool $preferDescOnFirstClick
 	 * @return array{isSortable:bool,thClass:string,nextOrder:string,indicator:string}
 	 */
-	private function getHeaderSortState($tableOptions, $orderby, $preferDescOnFirstClick = false) {
+	public function getHeaderSortState($tableOptions, $orderby, $preferDescOnFirstClick = false) {
 		$result = array(
 			'isSortable' => false,
 			'thClass' => '',
@@ -481,7 +484,7 @@ trait ViewTrait_Shared {
 	 * @param bool $isCapturedPage True for captured URLs page, false for redirects page
 	 * @return array<string, string> Array of links and titles
 	 */
-	protected function buildTableActionLinks($row, $sub, $tableOptions, $isCapturedPage = false) {
+	public function buildTableActionLinks($row, $sub, $tableOptions, $isCapturedPage = false) {
 		$result = [];
 
 		// Sanitize $sub for safe use in URLs (prevents XSS via quote injection)

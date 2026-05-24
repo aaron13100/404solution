@@ -7,7 +7,7 @@ if (!defined('ABSPATH')) {
 /**
  * Redirects and captured URLs table/list pages.
  */
-trait ViewTrait_RedirectsTable {
+class ABJ_404_Solution_View_RedirectsTable extends ABJ_404_Solution_ViewComponent {
 
     /** @return void */
     function echoAdminCapturedURLsPage() {
@@ -171,7 +171,7 @@ trait ViewTrait_RedirectsTable {
         $tableOptions = $this->logic->getTableOptions($sub);
 
         // Build column headers with sorting
-        $hitsTooltip = $this->getHitsColumnTooltip($tableOptions);
+        $hitsTooltip = $this->shared->getHitsColumnTooltip($tableOptions);
         $columns = array(
             'url' => array('title' => __('URL', '404-solution'), 'orderby' => 'url'),
             'status' => array('title' => __('Status', '404-solution'), 'orderby' => 'status'),
@@ -188,7 +188,7 @@ trait ViewTrait_RedirectsTable {
         foreach ($columns as $key => $col) {
             $sortUrl = "?page=" . ABJ404_PP . "&subpage=abj404_captured&filter=" . ($tableOptions['filter'] ?? 0);
             $sortUrl .= "&orderby=" . $col['orderby'];
-            $sortState = $this->getHeaderSortState($tableOptions, (string)$col['orderby'], false);
+            $sortState = $this->shared->getHeaderSortState($tableOptions, (string)$col['orderby'], false);
             $newOrder = $sortState['nextOrder'];
             $sortUrl .= "&order=" . $newOrder;
 
@@ -217,7 +217,7 @@ trait ViewTrait_RedirectsTable {
         $rows = $this->viewReadService->getRedirectsForView($sub, $tableOptions);
         /** @var array<int, array<string, mixed>> $typedRows */
         $typedRows = array_values(array_filter($rows, 'is_array'));
-        $this->rememberTableDataSignature($sub, $typedRows);
+        $this->shared->rememberTableDataSignature($sub, $typedRows);
         $displayed = 0;
 
         foreach ($typedRows as $row) {
@@ -236,7 +236,7 @@ trait ViewTrait_RedirectsTable {
 
             // Build action links using helper method
             /** @var array<string, mixed> $row */
-            $links = $this->buildTableActionLinks($row, $sub, $tableOptions, true);
+            $links = $this->shared->buildTableActionLinks($row, $sub, $tableOptions, true);
             $editlink = '';
             $logslink = '';
             $trashlink = '';
@@ -593,7 +593,7 @@ trait ViewTrait_RedirectsTable {
      * @return void
      */
     function echoAddRedirectModal($tableOptions) {
-        $options = $this->getOptionsWithDefaults();
+        $options = $this->shared->getOptionsWithDefaults();
         $url = "?page=" . ABJ404_PP . "&subpage=abj404_redirects";
         $orderby = array_key_exists('orderby', $tableOptions) && is_string($tableOptions['orderby']) ? $tableOptions['orderby'] : 'url';
         $order = array_key_exists('order', $tableOptions) && is_string($tableOptions['order']) ? $tableOptions['order'] : 'ASC';
@@ -662,7 +662,7 @@ trait ViewTrait_RedirectsTable {
         // Redirect type — button grid
         $rawDefault = $options['default_redirect'] ?? '301';
         $defaultCode = is_string($rawDefault) ? $rawDefault : '301';
-        $this->echoRedirectTypeButtonGrid($defaultCode);
+        $this->redirectTypeUI->echoRedirectTypeButtonGrid($defaultCode);
 
         // Advanced Options: schedule + conditions
         echo '<details class="abj404-advanced-options">';
@@ -684,7 +684,7 @@ trait ViewTrait_RedirectsTable {
         echo '</div>';
 
         // Conditions
-        $this->echoRedirectConditionsSection();
+        $this->redirectConditions->echoRedirectConditionsSection();
 
         echo '</div>'; // end .abj404-advanced-options__body
         echo '</details>';
@@ -831,7 +831,7 @@ trait ViewTrait_RedirectsTable {
         $columns = $this->buildRedirectsColumnDefs($tableOptions);
 
         $html = "<table class=\"abj404-table\"><thead>";
-        $html .= $this->getTableColumns($sub, $columns);
+        $html .= $this->logs->getTableColumns($sub, $columns);
         $html .= "</thead><tbody id=\"the-list\">";
 
         $deadDestIds = function_exists('get_transient') ? get_transient('abj404_dead_dest_ids') : false;
@@ -842,7 +842,7 @@ trait ViewTrait_RedirectsTable {
         $rows = $this->viewReadService->getRedirectsForView($sub, $tableOptions);
         /** @var array<int, array<string, mixed>> $typedRedirectRows */
         $typedRedirectRows = array_values(array_filter($rows, 'is_array'));
-        $this->rememberTableDataSignature($sub, $typedRedirectRows);
+        $this->shared->rememberTableDataSignature($sub, $typedRedirectRows);
         $displayed = 0;
         $y = 1;
         foreach ($typedRedirectRows as $row) {
@@ -867,7 +867,7 @@ trait ViewTrait_RedirectsTable {
      * @param array<string, mixed> $tableOptions
      * @return array<string, array<string, string>>
      */
-    private function buildRedirectsColumnDefs(array $tableOptions): array {
+    public function buildRedirectsColumnDefs(array $tableOptions): array {
         $columns = array();
         $columns['url']['title'] = __('URL', '404-solution');
         $columns['url']['orderby'] = "url";
@@ -891,7 +891,7 @@ trait ViewTrait_RedirectsTable {
         $columns['hits']['title'] = __('Hits', '404-solution');
         $columns['hits']['orderby'] = "logshits";
         $columns['hits']['width'] = "7%";
-        $hitsTooltip = $this->getHitsColumnTooltip($tableOptions);
+        $hitsTooltip = $this->shared->getHitsColumnTooltip($tableOptions);
         $columns['hits']['title_attr_html'] = $hitsTooltip;
         $columns['timestamp']['title'] = __('Created', '404-solution');
         $columns['timestamp']['orderby'] = "timestamp";
@@ -912,7 +912,7 @@ trait ViewTrait_RedirectsTable {
      * @param int $y
      * @return string
      */
-    private function buildRedirectRowHTML(array $row, string $sub, array $tableOptions, array $deadDestIds, int $y): string {
+    public function buildRedirectRowHTML(array $row, string $sub, array $tableOptions, array $deadDestIds, int $y): string {
             $rowType = $row['type'] ?? 0;
             $rowStatus = $row['status'] ?? 0;
             $rowFinalDest = is_string($row['final_dest'] ?? '') ? (string)($row['final_dest'] ?? '') : '';
@@ -946,7 +946,7 @@ trait ViewTrait_RedirectsTable {
 
             // Build action links using helper method
             /** @var array<string, mixed> $row */
-            $links = $this->buildTableActionLinks($row, $sub, $tableOptions, false);
+            $links = $this->shared->buildTableActionLinks($row, $sub, $tableOptions, false);
             $editlink = '';
             $logslink = '';
             $trashlink = '';
@@ -1040,7 +1040,7 @@ trait ViewTrait_RedirectsTable {
             // In Simple mode, show plain language labels instead of numeric codes
             $codeDisplay = $rowCode;
             if ($this->logic->getSettingsMode() === 'simple') {
-                $codeDisplay = self::getPlainLanguageCodeLabel($rowCode);
+                $codeDisplay = ABJ_404_Solution_View_RedirectTypeUI::getPlainLanguageCodeLabel($rowCode);
             }
 
             $lastUsedClass = '';
@@ -1106,7 +1106,7 @@ trait ViewTrait_RedirectsTable {
      * @param array<mixed> $deadDestIds
      * @return array{exists: string, notExists: string, text: string, destForView: string}
      */
-    private function resolveDestinationWarnings(array $row, $rowType, string $rowFinalDest, string $destForView, bool $destinationIsMissing, array $deadDestIds): array {
+    public function resolveDestinationWarnings(array $row, $rowType, string $rowFinalDest, string $destForView, bool $destinationIsMissing, array $deadDestIds): array {
         $exists = '';
         $notExists = 'display: none;';
         $text = __("This page doesn't exist or is not published so the redirect won't work.", '404-solution');
@@ -1138,7 +1138,7 @@ trait ViewTrait_RedirectsTable {
      * @param array<string, string> $replacements
      * @return string
      */
-    private function fillRedirectRowTemplate(array $replacements): string {
+    public function fillRedirectRowTemplate(array $replacements): string {
         $htmlTemp = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/tableRowPageRedirects.html");
         foreach ($replacements as $placeholder => $value) {
             $htmlTemp = $this->f->str_replace($placeholder, $value, $htmlTemp);
@@ -1151,7 +1151,7 @@ trait ViewTrait_RedirectsTable {
      * @param string $rowEngine
      * @return string
      */
-    private function buildScoreCell($rawScore, string $rowEngine): string {
+    public function buildScoreCell($rawScore, string $rowEngine): string {
         if ($rawScore !== null && $rawScore !== '') {
             $scoreNum = (float)(is_numeric($rawScore) ? $rawScore : 0);
             $scorePct = number_format($scoreNum, 0);
@@ -1175,7 +1175,7 @@ trait ViewTrait_RedirectsTable {
      * @param string $rowFinalDest
      * @return array{link: string, title: string}
      */
-    private function resolveRedirectDestLink($rowType, string $rowFinalDest): array {
+    public function resolveRedirectDestLink($rowType, string $rowFinalDest): array {
         $link = '';
         $title = __('Visit', '404-solution') . ' ';
         if ($rowType == ABJ404_TYPE_EXTERNAL) {
@@ -1224,7 +1224,7 @@ trait ViewTrait_RedirectsTable {
      */
     function echoAddManualRedirect($tableOptions) {
 
-        $options = $this->getOptionsWithDefaults();
+        $options = $this->shared->getOptionsWithDefaults();
         
         $url = "?page=" . ABJ404_PP . "&subpage=abj404_redirects";
         $orderby = array_key_exists('orderby', $tableOptions) && is_string($tableOptions['orderby']) ? $tableOptions['orderby'] : 'url';
@@ -1311,7 +1311,7 @@ trait ViewTrait_RedirectsTable {
      */
     function echoEditRedirect($destination, $codeselected, $label, $source_page = null, $filter = null, $orderby = null, $order = null, $startDate = '', $endDate = '') {
         // Redirect type — button grid with hidden input
-        $this->echoRedirectTypeButtonGrid((string)$codeselected);
+        $this->redirectTypeUI->echoRedirectTypeButtonGrid((string)$codeselected);
 
         // Advanced Options: Active From/Until + Conditions (collapsed by default)
         {
@@ -1343,7 +1343,7 @@ trait ViewTrait_RedirectsTable {
             echo '</div>';
 
             // Conditions
-            $this->echoRedirectConditionsSection();
+            $this->redirectConditions->echoRedirectConditionsSection();
 
             echo '</div>'; // end abj404-advanced-options__body
             echo '</details>';

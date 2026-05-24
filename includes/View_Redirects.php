@@ -7,7 +7,7 @@ if (!defined('ABSPATH')) {
 /**
  * Edit redirect page and destination option helpers.
  */
-trait ViewTrait_Redirects {
+class ABJ_404_Solution_View_Redirects extends ABJ_404_Solution_ViewComponent {
 
 
     /**
@@ -17,7 +17,7 @@ trait ViewTrait_Redirects {
      * @param array<string, mixed> $options
      * @return array{final: string, pageIDAndType: string, codeSelected: string}
      */
-    private function resolveRedirectDestinationInfo(array $redirect, array $options): array {
+    public function resolveRedirectDestinationInfo(array $redirect, array $options): array {
         $final = "";
         $pageIDAndType = "";
         $redirectType = $redirect['type'] ?? null;
@@ -53,7 +53,7 @@ trait ViewTrait_Redirects {
      * @param string $pageIDAndType
      * @return string
      */
-    private function buildRedirectToDropdownHtml(string $pageTitle, string $pageIDAndType): string {
+    public function buildRedirectToDropdownHtml(string $pageTitle, string $pageIDAndType): string {
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ .
                 "/html/addManualRedirectPageSearchDropdown.html");
         $html = $this->f->str_replace('{redirect_to_label}', __('Redirect to', '404-solution'), $html);
@@ -81,7 +81,7 @@ trait ViewTrait_Redirects {
      * @param array<int, int> $recnums_multiple
      * @return array{redirect: array<string, mixed>, redirects_multiple: array<int, array<string, mixed>>}|null Null on error (already echoed).
      */
-    private function renderBulkRedirectFormFields(array $recnums_multiple): ?array {
+    public function renderBulkRedirectFormFields(array $recnums_multiple): ?array {
         $redirects_multiple = $this->redirectsRepository->getRedirectsByIDs($recnums_multiple);
         if ($redirects_multiple == null) {
             echo "Error: Invalid ID Numbers! (ids: " . esc_html(implode(',', $recnums_multiple)) . ")";
@@ -122,7 +122,7 @@ trait ViewTrait_Redirects {
      * @param array{title: string, score: int, id_and_type: string, type_label: string} $suggestion
      * @return void
      */
-    private function renderSuggestionBlock(array $suggestion): void {
+    public function renderSuggestionBlock(array $suggestion): void {
         echo '<div class="abj404-suggestion-block" id="abj404-suggestion-block">';
         echo '<div class="abj404-suggestion-label">' . esc_html__('Suggested destination', '404-solution') . '</div>';
         echo '<div class="abj404-suggestion-content">';
@@ -151,7 +151,7 @@ trait ViewTrait_Redirects {
      * @param bool $isSimpleMode
      * @return array{redirect: array<string, mixed>, redirects_multiple: array<int, array<string, mixed>>, redirectUrl: string, startDate: string, endDate: string}|null Null on error (already echoed).
      */
-    private function renderSingleRedirectFormFields(int $recnum, bool $isSimpleMode): ?array {
+    public function renderSingleRedirectFormFields(int $recnum, bool $isSimpleMode): ?array {
         $recnumAsArray = array();
         $recnumAsArray[] = $recnum;
         $redirects_multiple = $this->redirectsRepository->getRedirectsByIDs($recnumAsArray);
@@ -219,12 +219,12 @@ trait ViewTrait_Redirects {
     /** @return void */
     function echoAdminEditRedirectPage() {
 
-        $options = $this->getOptionsWithDefaults();
+        $options = $this->shared->getOptionsWithDefaults();
 
         // Compute source page early so we can use it in the back link
-        $source_page = $this->viewGetPostOrGetSanitize('source_page');
+        $source_page = $this->shared->viewGetPostOrGetSanitize('source_page');
         if ($source_page === '') {
-            $source_page = $this->viewGetPostOrGetSanitize('subpage');
+            $source_page = $this->shared->viewGetPostOrGetSanitize('subpage');
         }
         if ($source_page === '' || $source_page == 'abj404_edit') {
             $source_page = 'abj404_redirects';
@@ -257,19 +257,19 @@ trait ViewTrait_Redirects {
         echo "<input type=\"hidden\" name=\"source_page\" value=\"" . esc_attr($source_page) . "\">";
 
         // Preserve table options so we can return to the exact same view
-        $filter = $this->viewGetPostOrGetSanitize('filter');
+        $filter = $this->shared->viewGetPostOrGetSanitize('filter');
         if ($filter !== '') {
             echo "<input type=\"hidden\" name=\"source_filter\" value=\"" . esc_attr($filter) . "\">";
         }
-        $orderby = $this->viewGetPostOrGetSanitize('orderby');
+        $orderby = $this->shared->viewGetPostOrGetSanitize('orderby');
         if ($orderby !== '') {
             echo "<input type=\"hidden\" name=\"source_orderby\" value=\"" . esc_attr($orderby) . "\">";
         }
-        $order = $this->viewGetPostOrGetSanitize('order');
+        $order = $this->shared->viewGetPostOrGetSanitize('order');
         if ($order !== '') {
             echo "<input type=\"hidden\" name=\"source_order\" value=\"" . esc_attr($order) . "\">";
         }
-        $paged = $this->viewGetPostOrGetSanitize('paged');
+        $paged = $this->shared->viewGetPostOrGetSanitize('paged');
         if ($paged !== '') {
             echo "<input type=\"hidden\" name=\"source_paged\" value=\"" . esc_attr($paged) . "\">";
         }
@@ -288,8 +288,8 @@ trait ViewTrait_Redirects {
                     wp_kses_post((string)json_encode($_POST['id'])));
             $recnum = absint($_POST['id']);
             
-        } else if ($this->viewGetPostOrGetSanitize('idnum') !== '' || isset($_GET['idnum']) || isset($_POST['idnum'])) {
-            $rawIdnum = isset($_GET['idnum']) ? $_GET['idnum'] : (isset($_POST['idnum']) ? $_POST['idnum'] : $this->viewGetPostOrGetSanitize('idnum'));
+        } else if ($this->shared->viewGetPostOrGetSanitize('idnum') !== '' || isset($_GET['idnum']) || isset($_POST['idnum'])) {
+            $rawIdnum = isset($_GET['idnum']) ? $_GET['idnum'] : (isset($_POST['idnum']) ? $_POST['idnum'] : $this->shared->viewGetPostOrGetSanitize('idnum'));
             $recnums_multiple = array_values(array_filter(array_map(function($v) { return absint($v); }, (array)$rawIdnum), function($v) { return $v > 0; }));
             $this->logger->debugMessage("Edit redirect page. ids_multiple: " . 
                     wp_kses_post((string)json_encode($recnums_multiple)));
@@ -412,7 +412,7 @@ trait ViewTrait_Redirects {
         echo $html;
         echo '</div>';
         
-        $this->echoEditRedirect($final, $codeSelected, __('Update Redirect', '404-solution'), $source_page, $filter, $orderby, $order, $startDate, $endDate);
+        $this->redirectsTable->echoEditRedirect($final, $codeSelected, __('Update Redirect', '404-solution'), $source_page, $filter, $orderby, $order, $startDate, $endDate);
 
         echo '</form>';
         echo '</div>'; // end abj404-edit-container
@@ -571,7 +571,7 @@ trait ViewTrait_Redirects {
      * @param string $rawName
      * @return string
      */
-    private function humanizeEngineName(string $rawName): string {
+    public function humanizeEngineName(string $rawName): string {
         // Strip full namespace prefix if stored with it.
         $name = preg_replace('/^ABJ_404_Solution_/', '', $rawName);
         if (!is_string($name)) {
@@ -598,7 +598,7 @@ trait ViewTrait_Redirects {
      * @param array<string, mixed> $options Plugin options.
      * @return array{title: string, score: int, id_and_type: string, type_label: string}|null The best match, or null if none found.
      */
-    private function getSuggestedDestination(string $url, array $options): ?array {
+    public function getSuggestedDestination(string $url, array $options): ?array {
         try {
             $spellChecker = abj_service('spell_checker');
             $permalinksPacket = $spellChecker->findMatchingPosts($url, '1', '1');
