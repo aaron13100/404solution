@@ -4,7 +4,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
+class ABJ_404_Solution_DatabaseUpgradeMaintenance extends ABJ_404_Solution_DatabaseUpgradeComponent {
 
     /** @return void */
     function updateTableEngineToInnoDB() {
@@ -90,8 +90,11 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
 		$results = $this->dbCore->queryAndGetResults($query);
 
 		// Check for query errors or empty results
-		if (!empty($results['last_error'])) {
-			$this->logger->debugMessage("SHOW CREATE TABLE failed for $tableName: " . $results['last_error']);
+		$lastError = isset($results['last_error']) && is_scalar($results['last_error'])
+			? (string)$results['last_error']
+			: '';
+		if ($lastError !== '') {
+			$this->logger->debugMessage("SHOW CREATE TABLE failed for $tableName: " . $lastError);
 			return null;
 		}
 
@@ -107,6 +110,11 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
 		$row = array_values($firstRow);
 		if (count($row) < 2 || empty($row[1])) {
 			$this->logger->debugMessage("SHOW CREATE TABLE returned unexpected format for $tableName.");
+			return null;
+		}
+
+		if (!is_string($row[1])) {
+			$this->logger->debugMessage("SHOW CREATE TABLE returned non-string DDL for $tableName.");
 			return null;
 		}
 
@@ -169,8 +177,12 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
 
 		// Handle case-insensitive column names (some MySQL configs return uppercase)
 		$row = array_change_key_case($results[0], CASE_UPPER);
-		$collation = $row['TABLE_COLLATION'] ?? null;
-		$charset = $row['TABLE_CHARSET'] ?? null;
+		$collation = isset($row['TABLE_COLLATION']) && is_scalar($row['TABLE_COLLATION'])
+			? (string)$row['TABLE_COLLATION']
+			: null;
+		$charset = isset($row['TABLE_CHARSET']) && is_scalar($row['TABLE_CHARSET'])
+			? (string)$row['TABLE_CHARSET']
+			: null;
 
 		if (empty($collation)) {
 			return null;
@@ -259,8 +271,8 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
 			$varRows = isset($vars['rows']) && is_array($vars['rows']) ? $vars['rows'] : [];
 			if (!empty($varRows)) {
 				$row = is_array($varRows[0]) ? $varRows[0] : [];
-				$value = isset($row['Value']) ? $row['Value'] : (isset($row['value']) ? $row['value'] : '');
-				$value = $this->sanitizeCollationIdentifier((string)$value);
+				$valueRaw = isset($row['Value']) ? $row['Value'] : (isset($row['value']) ? $row['value'] : '');
+				$value = $this->sanitizeCollationIdentifier(is_scalar($valueRaw) ? (string)$valueRaw : '');
 				if ($value !== '' && stripos($value, 'utf8mb4') !== false) {
 					return $value;
 				}
@@ -281,16 +293,27 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
 			// layer as all other queries (enables testability via mock injection).
 			// {wp_prefix} is resolved by doTableNameReplacements inside queryAndGetResults.
 			$rawResult = $this->dbCore->queryAndGetResults("SHOW TABLES LIKE '{wp_prefix}abj404_%'");
+			/** @var array<int, string> $abjTableNames */
 			$abjTableNames = [];
 			if (isset($rawResult['rows']) && is_array($rawResult['rows'])) {
 				foreach ($rawResult['rows'] as $row) {
-					$abjTableNames[] = is_array($row) ? reset($row) : (string)$row;
+					$tableName = is_array($row) ? reset($row) : $row;
+					if (is_scalar($tableName)) {
+						$abjTableNames[] = (string)$tableName;
+					}
 				}
 			}
 
+				/** @var array<string, array{0: string, 1: string}|null> $tableCollations */
 				$tableCollations = [];
 				foreach ($abjTableNames as $tableName) {
-					$tableCollations[$tableName] = $this->getTableCollation($tableName);
+					$collationResult = $this->invokeOwnerOverrideOrSelf('getTableCollation', [$tableName]);
+					$tableCollations[$tableName] = (
+						is_array($collationResult)
+						&& isset($collationResult[0], $collationResult[1])
+						&& is_scalar($collationResult[0])
+						&& is_scalar($collationResult[1])
+					) ? [(string)$collationResult[0], (string)$collationResult[1]] : null;
 				}
 
 				$targetCharset = 'utf8mb4';
@@ -350,18 +373,24 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
 					$this->deleteIndexes($tableName);
 
 					$retryResults = $this->dbCore->queryAndGetResults($query);
-					if (!empty($retryResults['last_error'])) {
-						$this->logger->warn("Charset/collation retry for $tableName failed: " . $retryResults['last_error']);
+				$retryLastError = isset($retryResults['last_error']) && is_scalar($retryResults['last_error'])
+					? (string)$retryResults['last_error']
+					: '';
+				if ($retryLastError !== '') {
+					$this->logger->warn("Charset/collation retry for $tableName failed: " . $retryLastError);
 					} else {
 						$this->logger->infoMessage("Successfully changed charset/collation of $tableName after retry.");
 						$anyAlterFired = true;
 					}
 
-				} else if (empty($results['last_error'])) {
-					$this->logger->infoMessage("Successfully changed charset/collation of $tableName to {$targetCharset}/{$targetCollation}");
-					$anyAlterFired = true;
-				} else {
-					$this->logger->warn("Charset/collation change for $tableName failed: " . $results['last_error']);
+			} else if (empty($results['last_error'])) {
+				$this->logger->infoMessage("Successfully changed charset/collation of $tableName to {$targetCharset}/{$targetCollation}");
+				$anyAlterFired = true;
+			} else {
+				$resultLastError = isset($results['last_error']) && is_scalar($results['last_error'])
+					? (string)$results['last_error']
+					: '';
+				$this->logger->warn("Charset/collation change for $tableName failed: " . $resultLastError);
 				}
 			}
 
@@ -391,8 +420,11 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
 		 */
 		private function tableHasMismatchedCharacterColumnCollation($tableName, $targetCharset, $targetCollation) {
 			$results = $this->dbCore->queryAndGetResults("SHOW FULL COLUMNS FROM " . $tableName);
-			if (!empty($results['last_error'])) {
-				$this->logger->warn("Failed to read columns for {$tableName}: " . $results['last_error']);
+			$lastError = isset($results['last_error']) && is_scalar($results['last_error'])
+				? (string)$results['last_error']
+				: '';
+			if ($lastError !== '') {
+				$this->logger->warn("Failed to read columns for {$tableName}: " . $lastError);
 				return null;
 			}
 			/** @var array<int, array<string, mixed>> $rows */
@@ -539,7 +571,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
 
             // Repair: call the same idempotent routine activation uses
             // This is safe because createDatabaseTables() is idempotent
-            $this->createDatabaseTables(false);  // false = not updating to new version
+            $this->invokeOwnerOverrideOrSelf('createDatabaseTables', [false]);  // false = not updating to new version
 
             $this->logger->infoMessage("Table repair complete for site " . get_current_blog_id());
         } else {
@@ -547,9 +579,9 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
             // and enforce InnoDB engine. This catches collation drift (including column-level
             // drift), missed index additions, and MyISAM reversions from hosting migrations
             // or table restores — without waiting for the next plugin upgrade.
-            $this->correctCollations();
-            $this->createIndexes();
-            $this->updateTableEngineToInnoDB();
+            $this->invokeOwnerOverrideOrSelf('correctCollations');
+            $this->invokeOwnerOverrideOrSelf('createIndexes');
+            $this->invokeOwnerOverrideOrSelf('updateTableEngineToInnoDB');
         }
 
         // Check for orphaned tables under a stale/changed prefix and adopt their data.
@@ -730,11 +762,9 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
         }
     }
 
-    // Constants CANONICAL_URL_BACKFILL_CHUNK_SIZE and
-    // CANONICAL_URL_BACKFILL_TIME_BUDGET_SEC are defined on the using class
-    // (ABJ_404_Solution_DatabaseUpgradesEtc) because trait constants require
-    // PHP 8.2+ and the plugin supports PHP 7.4. self::* below resolves to
-    // the using class at compile time.
+    // Backfill tuning values live on the coordinator and are exposed through
+    // DatabaseUpgradeComponent accessors so the delegate does not duplicate
+    // constants owned by ABJ_404_Solution_DatabaseUpgradesEtc.
 
     /**
      * Populate {wp_abj404_redirects}.canonical_url for any rows still NULL,
@@ -779,8 +809,8 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
             return 0;
         }
 
-        $chunkSize = (int)self::CANONICAL_URL_BACKFILL_CHUNK_SIZE;
-        $timeBudget = (float)self::CANONICAL_URL_BACKFILL_TIME_BUDGET_SEC;
+        $chunkSize = (int)$this->getCanonicalUrlBackfillChunkSize();
+        $timeBudget = (float)$this->getCanonicalUrlBackfillTimeBudgetSec();
         $start = microtime(true);
         $totalUpdated = 0;
 
@@ -864,8 +894,8 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
             return 0;
         }
 
-        $chunkSize = (int)self::CANONICAL_URL_BACKFILL_CHUNK_SIZE;
-        $timeBudget = (float)self::LOGSV2_CANONICAL_URL_BACKFILL_TIME_BUDGET_SEC;
+        $chunkSize = (int)$this->getCanonicalUrlBackfillChunkSize();
+        $timeBudget = (float)$this->getLogsv2CanonicalUrlBackfillTimeBudgetSec();
         $start = microtime(true);
         $totalUpdated = 0;
 
@@ -903,17 +933,17 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
         // one row's worth of data via the canonical_url IS NULL filter (uses
         // idx_canonical_url because IS NULL is sargable on a B-tree on a
         // nullable column).
-        if (!get_option(self::LOGSV2_CANONICAL_URL_BACKFILL_COMPLETE_OPTION)) {
+        if (!get_option($this->getLogsv2CanonicalUrlBackfillCompleteOption())) {
             $remainingProbe = $this->dbCore->queryAndGetResults(
                 "SELECT 1 FROM " . $logsTable . " WHERE canonical_url IS NULL LIMIT 1"
             );
             $remainingRows = is_array($remainingProbe['rows'] ?? null) ? $remainingProbe['rows'] : [];
             $remainingError = isset($remainingProbe['last_error']) && is_string($remainingProbe['last_error']) ? $remainingProbe['last_error'] : '';
             if ($remainingError === '' && empty($remainingRows)) {
-                update_option(self::LOGSV2_CANONICAL_URL_BACKFILL_COMPLETE_OPTION, '1', false);
+                update_option($this->getLogsv2CanonicalUrlBackfillCompleteOption(), '1', false);
                 $this->logger->infoMessage(
                     "backfillLogsv2CanonicalUrl: backlog cleared — flipped " .
-                    self::LOGSV2_CANONICAL_URL_BACKFILL_COMPLETE_OPTION .
+                    $this->getLogsv2CanonicalUrlBackfillCompleteOption() .
                     "; reads can now drop the COALESCE fallback."
                 );
             }
@@ -949,10 +979,10 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
      * @return void
      */
     public function scheduleLogsv2CanonicalUrlBackfill(): void {
-        if (self::$logsv2CanonicalBackfillScheduled) {
+        if ($this->isLogsv2CanonicalBackfillScheduled()) {
             return;
         }
-        if (function_exists('get_option') && get_option(self::LOGSV2_CANONICAL_URL_BACKFILL_COMPLETE_OPTION)) {
+        if (function_exists('get_option') && get_option($this->getLogsv2CanonicalUrlBackfillCompleteOption())) {
             return;
         }
 
@@ -976,12 +1006,12 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
             // No NULL rows but flag wasn't set yet — flip it now to skip
             // future probes on this and later requests.
             if (function_exists('update_option')) {
-                update_option(self::LOGSV2_CANONICAL_URL_BACKFILL_COMPLETE_OPTION, '1', false);
+                update_option($this->getLogsv2CanonicalUrlBackfillCompleteOption(), '1', false);
             }
             return;
         }
 
-        self::$logsv2CanonicalBackfillScheduled = true;
+        $this->setLogsv2CanonicalBackfillScheduled(true);
         if ($this->shouldScheduleLogsv2CanonicalBackfillViaCron()) {
             if (function_exists('wp_schedule_single_event')) {
                 wp_schedule_single_event(time() + 5, 'abj404_logsv2_canonical_backfill');
@@ -1010,29 +1040,6 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
     }
 
     /**
-     * Test-only: reset the per-request shutdown-schedule dedup flag so the
-     * next call to scheduleLogsv2CanonicalUrlBackfill() can register again.
-     * Production callers never invoke this — the flag clears naturally when
-     * the PHP process ends.
-     *
-     * @return void
-     */
-    public static function resetLogsv2CanonicalBackfillScheduledFlagForTests(): void {
-        self::$logsv2CanonicalBackfillScheduled = false;
-    }
-
-    /**
-     * Test-only: read the current state of the per-request dedup flag so
-     * tests can assert that scheduleLogsv2CanonicalUrlBackfill() did or did
-     * not register a shutdown hook.
-     *
-     * @return bool
-     */
-    public static function getLogsv2CanonicalBackfillScheduledFlagForTests(): bool {
-        return self::$logsv2CanonicalBackfillScheduled;
-    }
-
-    /**
      * Cheap "does this column exist on this table" probe via SHOW COLUMNS.
      * Case-insensitive on the column name to match MySQL/MariaDB driver
      * variations in returned column-name casing.
@@ -1049,7 +1056,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
         foreach ($rows as $row) {
             if (!is_array($row)) { continue; }
             foreach ($row as $key => $value) {
-                if (strtolower((string)$key) !== 'field') { continue; }
+                if (strtolower((string)$key) !== 'field' || !is_scalar($value)) { continue; }
                 if (strtolower((string)$value) === $needle) {
                     return true;
                 }
@@ -1057,4 +1064,5 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait {
         }
         return false;
     }
+
 }

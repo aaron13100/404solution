@@ -16,7 +16,7 @@ if (!defined('ABSPATH')) {
  * drop them for clean recreation, or recreate them empty when the cache-style
  * table can be rebuilt by a later cron tick.
  */
-trait ABJ_404_Solution_DatabaseUpgradesEtc_TableRepairTrait {
+class ABJ_404_Solution_DatabaseUpgradeTableRepair extends ABJ_404_Solution_DatabaseUpgradeComponent {
 
     /**
      * Run before runInitialCreateTables() during an upgrade.  Cleans up data
@@ -26,24 +26,36 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_TableRepairTrait {
      * @return void
      */
     function correctIssuesBefore() {
-    	$this->logsRepo->correctDuplicateLookupValues();
+	$this->logsRepo->correctDuplicateLookupValues();
 
-    	// 3.3.4+: Repair any plugin table that was stripped of all columns by a
-    	// DDL parsing bug.  The 3.3.3 bug only affected view_cache, but any future
-    	// DDL file shipped without parseable column syntax could wipe any table.
-    	// Dropped tables are pure caches or safely recreatable; runInitialCreateTables()
-    	// will recreate them immediately after.
-    	$this->repairStrippedViewCacheTable();
+	// 3.3.4+: Repair any plugin table that was stripped of all columns by a
+	// DDL parsing bug.  The 3.3.3 bug only affected view_cache, but any future
+	// DDL file shipped without parseable column syntax could wipe any table.
+	// Dropped tables are pure caches or safely recreatable; runInitialCreateTables()
+	// will recreate them immediately after.
+	$this->repairStrippedViewCacheTable();
 
-    	$this->correctMatchData();
+	$this->correctMatchData();
+    }
 
-    	// t_260523_224315_207: drop the deprecated mutation watermark side
-    	// table. Replaced by ABJ_404_Solution_MutationDataSignature which
-    	// derives the "did anything change?" signal from data already in
-    	// wp_abj404_redirects. Idempotent DROP IF EXISTS so a fresh install
-    	// (no legacy table) and a re-upgrade (already dropped) are both
-    	// no-ops. See docs/design-lesson-watermark-overengineering.md.
-    	$this->dropDeprecatedMutationWatermarkTable();
+    /**
+     * Run after runInitialCreateTables() during an upgrade.  Cleans up data
+     * issues that depend on the new schema, then recreates any cache table
+     * that prior bugs may have dropped without recreating.
+     *
+     * @return void
+     */
+    function correctIssuesAfter() {
+	$this->correctMatchData();
+	$this->recoverMissingLogsHitsTable();
+
+	// t_260523_224315_207: drop the deprecated mutation watermark side
+	// table. Replaced by ABJ_404_Solution_MutationDataSignature which
+	// derives the "did anything change?" signal from data already in
+	// wp_abj404_redirects. Idempotent DROP IF EXISTS so a fresh install
+	// (no legacy table) and a re-upgrade (already dropped) are both
+	// no-ops. See docs/design-lesson-watermark-overengineering.md.
+	$this->dropDeprecatedMutationWatermarkTable();
     }
 
     /**
@@ -57,28 +69,16 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_TableRepairTrait {
      * @return void
      */
     function dropDeprecatedMutationWatermarkTable() {
-    	if (function_exists('wp_doing_cron') && wp_doing_cron()) { return; }
-    	global $wpdb;
-    	if (!is_object($wpdb) || !method_exists($wpdb, 'query')) {
-    		return;
-    	}
-    	$prefix = isset($wpdb->prefix) ? strtolower((string)$wpdb->prefix) : 'wp_';
-    	$deprecatedWatermarkTableName = $prefix . 'abj404_mutation_watermark';
-    	// @utf8-audit: opt-out - system-controlled table name composed from $wpdb->prefix plus the fixed-literal "abj404_mutation_watermark", cannot contain invalid UTF-8 bytes.
-    	// DAO-bypass-approved: idempotent DROP TABLE IF EXISTS on a deprecated table; DAO error logging would surface a benign "table did not exist" line on every upgrade.
-    	$wpdb->query("DROP TABLE IF EXISTS `" . esc_sql($deprecatedWatermarkTableName) . "`");
-    }
-
-    /**
-     * Run after runInitialCreateTables() during an upgrade.  Cleans up data
-     * issues that depend on the new schema, then recreates any cache table
-     * that prior bugs may have dropped without recreating.
-     *
-     * @return void
-     */
-    function correctIssuesAfter() {
-    	$this->correctMatchData();
-    	$this->recoverMissingLogsHitsTable();
+	if (function_exists('wp_doing_cron') && wp_doing_cron()) { return; }
+	global $wpdb;
+	if (!is_object($wpdb) || !method_exists($wpdb, 'query')) {
+		return;
+	}
+	$prefix = isset($wpdb->prefix) ? strtolower((string)$wpdb->prefix) : 'wp_';
+	$deprecatedWatermarkTableName = $prefix . 'abj404_mutation_watermark';
+	// @utf8-audit: opt-out - system-controlled table name composed from $wpdb->prefix plus the fixed-literal "abj404_mutation_watermark", cannot contain invalid UTF-8 bytes.
+	// DAO-bypass-approved: idempotent DROP TABLE IF EXISTS on a deprecated table; DAO error logging would surface a benign "table did not exist" line on every upgrade.
+	$wpdb->query("DROP TABLE IF EXISTS `" . esc_sql($deprecatedWatermarkTableName) . "`");
     }
 
     /**
@@ -121,42 +121,42 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_TableRepairTrait {
      * @return void
      */
     function repairStrippedViewCacheTable() {
-    	foreach ($this->discoverPermanentDDLFiles() as $ddlEntry) {
-    		$tableName = $this->dbCore->doTableNameReplacements($ddlEntry['placeholder']);
+	foreach ($this->discoverPermanentDDLFiles() as $ddlEntry) {
+		$tableName = $this->dbCore->doTableNameReplacements($ddlEntry['placeholder']);
 
-    		// Positive evidence required: the file's intended DDL must declare `id`.
-    		// If the file never had an `id` column, absence in the live table is
-    		// not "stripping" — it's the table's normal shape.
-    		$intendedDdl = $ddlEntry['ddlContent'];
-    		if (!$this->ddlDeclaresIdColumn($intendedDdl)) {
-    			continue;
-    		}
+		// Positive evidence required: the file's intended DDL must declare `id`.
+		// If the file never had an `id` column, absence in the live table is
+		// not "stripping" — it's the table's normal shape.
+		$intendedDdl = $ddlEntry['ddlContent'];
+		if (!$this->ddlDeclaresIdColumn($intendedDdl)) {
+			continue;
+		}
 
-    		$liveDdl = $this->dbCore->getCreateTableDDL($tableName);
+		$liveDdl = $this->dbCore->getCreateTableDDL($tableName);
 
-    		// Table doesn't exist at all — nothing to repair (recovery handled elsewhere).
-    		if (empty($liveDdl)) {
-    			continue;
-    		}
+		// Table doesn't exist at all — nothing to repair (recovery handled elsewhere).
+		if (empty($liveDdl)) {
+			continue;
+		}
 
-    		// Live table has the column the file declares — table is intact.
-    		if ($this->ddlDeclaresIdColumn($liveDdl)) {
-    			continue;
-    		}
+		// Live table has the column the file declares — table is intact.
+		if ($this->ddlDeclaresIdColumn($liveDdl)) {
+			continue;
+		}
 
-    		// File declares `id`, live table is missing it — stripped.
-    		// ALTER (not DROP): preserve whatever rows the table holds so a
-    		// false-positive detection cannot lose user data.  Both MySQL 5.7+
-    		// and MariaDB 10.x accept retro-adding an AUTO_INCREMENT PRIMARY
-    		// KEY in this single-statement form; the prior comment claiming
-    		// otherwise (rationale for the original DROP) was incorrect.
-    		$this->logger->infoMessage("Repairing stripped plugin table " . $tableName .
-    			" (missing id column — caused by DDL parsing bug). Adding id column via ALTER.");
-    		$this->dbCore->queryAndGetResults(
-    			"ALTER TABLE `" . $tableName . "` " .
-    			"ADD COLUMN `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY FIRST"
-    		);
-    	}
+		// File declares `id`, live table is missing it — stripped.
+		// ALTER (not DROP): preserve whatever rows the table holds so a
+		// false-positive detection cannot lose user data.  Both MySQL 5.7+
+		// and MariaDB 10.x accept retro-adding an AUTO_INCREMENT PRIMARY
+		// KEY in this single-statement form; the prior comment claiming
+		// otherwise (rationale for the original DROP) was incorrect.
+		$this->logger->infoMessage("Repairing stripped plugin table " . $tableName .
+			" (missing id column — caused by DDL parsing bug). Adding id column via ALTER.");
+		$this->dbCore->queryAndGetResults(
+			"ALTER TABLE `" . $tableName . "` " .
+			"ADD COLUMN `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY FIRST"
+		);
+	}
     }
 
     /**
@@ -171,7 +171,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_TableRepairTrait {
      * @return bool
      */
     private function ddlDeclaresIdColumn(string $ddl): bool {
-    	return stripos($ddl, '`id`') !== false;
+	return stripos($ddl, '`id`') !== false;
     }
 
     /**
@@ -190,36 +190,36 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_TableRepairTrait {
      * @return void
      */
     private function recoverMissingLogsHitsTable(): void {
-    	$tableName = $this->dbCore->doTableNameReplacements('{wp_abj404_logs_hits}');
-    	if ($this->dbCore->getCreateTableDDL($tableName) !== '') {
-    		return;
-    	}
+	$tableName = $this->dbCore->doTableNameReplacements('{wp_abj404_logs_hits}');
+	if ($this->dbCore->getCreateTableDDL($tableName) !== '') {
+		return;
+	}
 
-    	$tempDdl = ABJ_404_Solution_Functions::readFileContents(
-    		__DIR__ . '/sql/createLogsHitsTempTable.sql');
-    	if (!is_string($tempDdl) || trim($tempDdl) === '') {
-    		return;
-    	}
+	$tempDdl = ABJ_404_Solution_Functions::readFileContents(
+		__DIR__ . '/sql/createLogsHitsTempTable.sql');
+	if (!is_string($tempDdl) || trim($tempDdl) === '') {
+		return;
+	}
 
-    	// The temp DDL targets `{wp_abj404_logs_hits}_temp`. Strip the `_temp`
-    	// suffix to recreate the final table at its real name.
-    	$finalDdl = str_replace(
-    		'{wp_abj404_logs_hits}_temp',
-    		'{wp_abj404_logs_hits}',
-    		$tempDdl);
-    	$finalDdl = $this->applyPluginTableCharsetCollate($finalDdl);
-    	$finalDdl = $this->dbCore->doTableNameReplacements($finalDdl);
+	// The temp DDL targets `{wp_abj404_logs_hits}_temp`. Strip the `_temp`
+	// suffix to recreate the final table at its real name.
+	$finalDdl = str_replace(
+		'{wp_abj404_logs_hits}_temp',
+		'{wp_abj404_logs_hits}',
+		$tempDdl);
+	$finalDdl = $this->applyPluginTableCharsetCollate($finalDdl);
+	$finalDdl = $this->dbCore->doTableNameReplacements($finalDdl);
 
-    	$this->logger->infoMessage("Recreating missing " . $tableName .
-    		" (lost during the 4.1.6→4.1.7 upgrade). The scheduled rebuild will repopulate it.");
-    	$this->dbCore->queryAndGetResults($finalDdl);
+	$this->logger->infoMessage("Recreating missing " . $tableName .
+		" (lost during the 4.1.6→4.1.7 upgrade). The scheduled rebuild will repopulate it.");
+	$this->dbCore->queryAndGetResults($finalDdl);
 
-    	// The missing-table notice (set when ALTER TABLE failed during the 4.1.7
-    	// activation) is now stale — the table has been recovered.  Clear it so
-    	// the admin does not see an error notice on the next page load.
-    	if (function_exists('delete_transient')) {
-    		delete_transient('abj404_plugin_db_notice');
-    	}
+	// The missing-table notice (set when ALTER TABLE failed during the 4.1.7
+	// activation) is now stale — the table has been recovered.  Clear it so
+	// the admin does not see an error notice on the next page load.
+	if (function_exists('delete_transient')) {
+		delete_transient('abj404_plugin_db_notice');
+	}
     }
 
     /**
@@ -237,9 +237,10 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_TableRepairTrait {
      * @return void
      */
     function correctMatchData() {
-    	$this->dbCore->queryAndGetResults(
-    		"delete from {wp_abj404_spelling_cache} where matchdata is null or matchdata = ''",
-    		array('log_errors' => false, 'skip_repair' => true)
-    	);
+	$this->dbCore->queryAndGetResults(
+		"delete from {wp_abj404_spelling_cache} where matchdata is null or matchdata = ''",
+		array('log_errors' => false, 'skip_repair' => true)
+	);
     }
+
 }

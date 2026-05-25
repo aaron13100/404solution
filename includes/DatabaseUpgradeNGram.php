@@ -4,7 +4,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-trait ABJ_404_Solution_DatabaseUpgradesEtc_NGramTrait {
+class ABJ_404_Solution_DatabaseUpgradeNGram extends ABJ_404_Solution_DatabaseUpgradeComponent {
 
     /** @return bool */
     function scheduleNGramCacheRebuild() {
@@ -352,8 +352,8 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_NGramTrait {
             $missingRows = isset($missingResult['rows']) && is_array($missingResult['rows']) ? $missingResult['rows'] : [];
             $missingIds = [];
             foreach ($missingRows as $row) {
-                if (is_array($row) && isset($row['id'])) {
-                    $missingIds[] = $row['id'];
+                if (is_array($row) && isset($row['id']) && is_numeric($row['id'])) {
+                    $missingIds[] = (int)$row['id'];
                 }
             }
 
@@ -706,14 +706,23 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_NGramTrait {
             'posts' => $postsStats,
             'categories' => $categoriesStats,
             'tags' => $tagsStats,
-            'total_processed' => ($postsStats['processed'] ?? 0) + ($categoriesStats['processed'] ?? 0) + ($tagsStats['processed'] ?? 0),
-            'total_success' => ($postsStats['success'] ?? 0) + ($categoriesStats['success'] ?? 0) + ($tagsStats['success'] ?? 0),
-            'total_failed' => ($postsStats['failed'] ?? 0) + ($categoriesStats['failed'] ?? 0) + ($tagsStats['failed'] ?? 0)
+            'total_processed' => $this->numericStat($postsStats, 'processed') + $this->numericStat($categoriesStats, 'processed') + $this->numericStat($tagsStats, 'processed'),
+            'total_success' => $this->numericStat($postsStats, 'success') + $this->numericStat($categoriesStats, 'success') + $this->numericStat($tagsStats, 'success'),
+            'total_failed' => $this->numericStat($postsStats, 'failed') + $this->numericStat($categoriesStats, 'failed') + $this->numericStat($tagsStats, 'failed')
         ];
 
         $this->logger->infoMessage("Comprehensive N-gram build complete: {$totalStats['total_processed']} total processed, {$totalStats['total_success']} success, {$totalStats['total_failed']} failed.");
 
         return $totalStats;
+    }
+
+    /**
+     * @param array<string, mixed> $stats
+     * @return int
+     */
+    private function numericStat(array $stats, string $key): int {
+        $value = $stats[$key] ?? 0;
+        return is_numeric($value) ? (int)$value : 0;
     }
 
     /**
@@ -1074,4 +1083,5 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_NGramTrait {
 
         return $totalPages;
     }
+
 }

@@ -4,7 +4,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-trait ABJ_404_Solution_DatabaseUpgradesEtc_OrphanAdoptionTrait {
+class ABJ_404_Solution_DatabaseUpgradeOrphanAdoption extends ABJ_404_Solution_DatabaseUpgradeComponent {
 
 	/**
 	 * Detect orphaned plugin tables under old prefixes and adopt their data
@@ -13,7 +13,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_OrphanAdoptionTrait {
 	 *
 	 * @return void
 	 */
-	private function adoptOrphanedTables(): void {
+	public function adoptOrphanedTables(): void {
 		global $wpdb;
 
 		$dbNameRaw = $wpdb->dbname ?? '';
@@ -41,10 +41,14 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_OrphanAdoptionTrait {
 		// Group tables by their prefix (everything before 'abj404_').
 		/** @var array<string, array<string>> prefix => [table_name, ...] */
 		$tablesByPrefix = [];
-		foreach ($results['rows'] as $row) {
+		$rows = is_array($results['rows'] ?? null) ? $results['rows'] : [];
+		foreach ($rows as $row) {
+			if (!is_array($row)) {
+				continue;
+			}
 			$tableName = null;
 			foreach ($row as $key => $value) {
-				if (strtolower((string)$key) === 'table_name') {
+				if (strtolower((string)$key) === 'table_name' && is_scalar($value)) {
 					$tableName = strtolower((string)$value);
 					break;
 				}
@@ -70,6 +74,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_OrphanAdoptionTrait {
 
 		// Process each OLD prefix (not the current one).
 		foreach ($tablesByPrefix as $oldPrefix => $tables) {
+			$oldPrefix = (string)$oldPrefix;
 			if ($oldPrefix === $currentPrefix) {
 				continue;
 			}
@@ -125,7 +130,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_OrphanAdoptionTrait {
 	 */
 	private function countOldPrefixRows(string $oldPrefix, array $knownTables): int {
 		$total = 0;
-		foreach (self::PLUGIN_TABLE_SUFFIXES as $suffix) {
+		foreach ($this->getPluginTableSuffixes() as $suffix) {
 			$tableName = $oldPrefix . $suffix;
 			if (!in_array($tableName, $knownTables, true)) {
 				continue;
@@ -136,7 +141,8 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_OrphanAdoptionTrait {
 			);
 			if (is_array($result['rows']) && !empty($result['rows'])) {
 				$row = $result['rows'][0];
-				$cnt = is_array($row) ? (int)($row['cnt'] ?? $row['CNT'] ?? 0) : 0;
+				$countValue = is_array($row) ? ($row['cnt'] ?? $row['CNT'] ?? 0) : 0;
+				$cnt = is_numeric($countValue) ? (int)$countValue : 0;
 				$total += $cnt;
 			}
 		}
@@ -182,13 +188,13 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_OrphanAdoptionTrait {
 			return null;
 		}
 
-		$row = $result['rows'][0];
+		$row = is_array($result['rows'][0] ?? null) ? $result['rows'][0] : [];
 		$total = 0;
 		$matches = 0;
 		foreach ($row as $key => $value) {
 			$lk = strtolower((string)$key);
-			if ($lk === 'total') { $total = (int)$value; }
-			if ($lk === 'matches') { $matches = (int)$value; }
+			if ($lk === 'total' && is_numeric($value)) { $total = (int)$value; }
+			if ($lk === 'matches' && is_numeric($value)) { $matches = (int)$value; }
 		}
 
 		if ($total === 0) {
@@ -232,13 +238,13 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_OrphanAdoptionTrait {
 			return null;
 		}
 
-		$row = $result['rows'][0];
+		$row = is_array($result['rows'][0] ?? null) ? $result['rows'][0] : [];
 		$total = 0;
 		$matches = 0;
 		foreach ($row as $key => $value) {
 			$lk = strtolower((string)$key);
-			if ($lk === 'total') { $total = (int)$value; }
-			if ($lk === 'matches') { $matches = (int)$value; }
+			if ($lk === 'total' && is_numeric($value)) { $total = (int)$value; }
+			if ($lk === 'matches' && is_numeric($value)) { $matches = (int)$value; }
 		}
 
 		if ($total === 0) {
@@ -270,7 +276,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_OrphanAdoptionTrait {
 
 		$totalAdopted = 0;
 
-		foreach (self::PLUGIN_TABLE_SUFFIXES as $suffix) {
+		foreach ($this->getPluginTableSuffixes() as $suffix) {
 			$oldTable = $oldPrefix . $suffix;
 			if (!in_array($oldTable, $knownTables, true)) {
 				continue;
@@ -286,7 +292,8 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_OrphanAdoptionTrait {
 				continue;
 			}
 			$row = $countResult['rows'][0];
-			$oldCount = is_array($row) ? (int)($row['cnt'] ?? $row['CNT'] ?? 0) : 0;
+			$countValue = is_array($row) ? ($row['cnt'] ?? $row['CNT'] ?? 0) : 0;
+			$oldCount = is_numeric($countValue) ? (int)$countValue : 0;
 			if ($oldCount === 0) {
 				continue;
 			}
@@ -385,11 +392,15 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_OrphanAdoptionTrait {
 		}
 
 		$columns = [];
-		foreach ($result['rows'] as $row) {
+		$rows = is_array($result['rows'] ?? null) ? $result['rows'] : [];
+		foreach ($rows as $row) {
+			if (!is_array($row)) {
+				continue;
+			}
 			// SHOW COLUMNS returns 'Field' key — case-insensitive lookup.
 			$colName = null;
 			foreach ($row as $key => $value) {
-				if (strtolower((string)$key) === 'field') {
+				if (strtolower((string)$key) === 'field' && is_scalar($value)) {
 					$colName = strtolower((string)$value);
 					break;
 				}
@@ -401,4 +412,5 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_OrphanAdoptionTrait {
 
 		return $columns;
 	}
+
 }

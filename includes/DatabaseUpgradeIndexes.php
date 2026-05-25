@@ -12,15 +12,15 @@ if (!defined('ABSPATH')) {
  * Extracted from DatabaseUpgradesEtc.php in 4.1.12 to keep the host class
  * under the FileSizeLimitsTest line budget. No behavior change.
  */
-trait ABJ_404_Solution_DatabaseUpgradesEtc_IndexesTrait {
+class ABJ_404_Solution_DatabaseUpgradeIndexes extends ABJ_404_Solution_DatabaseUpgradeComponent {
 
     /** @return void */
     function createIndexes() {
-    	foreach ($this->discoverPermanentDDLFiles() as $ddlEntry) {
-    		$tableName = $this->dbCore->doTableNameReplacements($ddlEntry['placeholder']);
-    		$query = $this->dbCore->doTableNameReplacements($ddlEntry['ddlContent']);
-    		$this->verifyIndexes($tableName, $query);
-    	}
+	foreach ($this->discoverPermanentDDLFiles() as $ddlEntry) {
+		$tableName = $this->dbCore->doTableNameReplacements($ddlEntry['placeholder']);
+		$query = $this->dbCore->doTableNameReplacements($ddlEntry['ddlContent']);
+		$this->verifyIndexes($tableName, $query);
+	}
     }
 
     /**
@@ -30,68 +30,68 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_IndexesTrait {
      */
     function verifyIndexes($tableName, $createTableStatementGoal) {
 
-	    	// get the indexes.
-	    	// Pattern matches lines starting with "KEY" / "UNIQUE KEY" - handles composite indexes with commas inside parens
-	    	// Indexes: treat the CREATE TABLE SQL as source of truth, and treat the database as truth
-	    	// for what exists (SHOW INDEX). Avoid parsing SHOW CREATE TABLE output, which is vendor/format dependent.
-	    	$goalSpecsByName = $this->parseIndexSpecsFromCreateTableSql($createTableStatementGoal);
+		// get the indexes.
+		// Pattern matches lines starting with "KEY" / "UNIQUE KEY" - handles composite indexes with commas inside parens
+		// Indexes: treat the CREATE TABLE SQL as source of truth, and treat the database as truth
+		// for what exists (SHOW INDEX). Avoid parsing SHOW CREATE TABLE output, which is vendor/format dependent.
+		$goalSpecsByName = $this->parseIndexSpecsFromCreateTableSql($createTableStatementGoal);
 
-	    	$missingIndexNames = [];
-	    	foreach (array_keys($goalSpecsByName) as $indexName) {
-	    		if (!$this->indexExists($tableName, $indexName)) {
-	    			$missingIndexNames[] = $indexName;
-	    		}
-	    	}
+		$missingIndexNames = [];
+		foreach (array_keys($goalSpecsByName) as $indexName) {
+			if (!$this->indexExists($tableName, $indexName)) {
+				$missingIndexNames[] = $indexName;
+			}
+		}
 
-	    	if (count($missingIndexNames) > 0) {
-	    		$this->logger->infoMessage(self::$uniqID . ": On {$tableName} I'm adding missing indexes: " . implode(', ', $missingIndexNames));
-	    	}
+		if (count($missingIndexNames) > 0) {
+			$this->logger->infoMessage($this->getUpgradeRuntimeId() . ": On {$tableName} I'm adding missing indexes: " . implode(', ', $missingIndexNames));
+		}
 
-	    	// Get actual columns in the table so we can skip indexes that reference missing columns.
-	    	$existingColumns = [];
-	    	$showColResult = $this->dbCore->queryAndGetResults("SHOW COLUMNS FROM " . $tableName);
-	    	$showColRows = is_array($showColResult['rows'] ?? null) ? $showColResult['rows'] : [];
-	    	foreach ($showColRows as $colRow) {
-	    		if (!is_array($colRow)) { continue; }
-	    		foreach ($colRow as $key => $value) {
-	    			if (strtolower((string)$key) === 'field') {
-	    				$existingColumns[] = strtolower((string)$value);
-	    				break;
-	    			}
-	    		}
-	    	}
+		// Get actual columns in the table so we can skip indexes that reference missing columns.
+		$existingColumns = [];
+		$showColResult = $this->dbCore->queryAndGetResults("SHOW COLUMNS FROM " . $tableName);
+		$showColRows = is_array($showColResult['rows'] ?? null) ? $showColResult['rows'] : [];
+		foreach ($showColRows as $colRow) {
+			if (!is_array($colRow)) { continue; }
+			foreach ($colRow as $key => $value) {
+				if (strtolower((string)$key) === 'field' && is_scalar($value)) {
+					$existingColumns[] = strtolower((string)$value);
+					break;
+				}
+			}
+		}
 
-	    	foreach ($missingIndexNames as $indexName) {
-	    		$spec = $goalSpecsByName[$indexName] ?? null;
-	    		if (empty($spec)) {
-	    			continue;
-	    		}
+		foreach ($missingIndexNames as $indexName) {
+			$spec = $goalSpecsByName[$indexName] ?? null;
+			if (empty($spec)) {
+				continue;
+			}
 
-	    		// Verify all columns referenced by this index actually exist in the table.
-	    		if (!empty($existingColumns)) {
-	    			$indexColNames = [];
-	    			preg_match_all('/`([^`]+)`/', $spec['columns'], $colMatches);
-	    			if (!empty($colMatches[1])) {
-	    				$indexColNames = array_map('strtolower', $colMatches[1]);
-	    			}
-	    			$missingCols = array_diff($indexColNames, $existingColumns);
-	    			if (!empty($missingCols)) {
-	    				$this->logger->warn("Skipping index {$indexName} on {$tableName}: " .
-	    					"column(s) " . implode(', ', $missingCols) . " do not exist in the table.");
-	    				continue;
-	    			}
-	    		}
+			// Verify all columns referenced by this index actually exist in the table.
+			if (!empty($existingColumns)) {
+				$indexColNames = [];
+				preg_match_all('/`([^`]+)`/', $spec['columns'], $colMatches);
+				if (!empty($colMatches[1])) {
+					$indexColNames = array_map('strtolower', $colMatches[1]);
+				}
+				$missingCols = array_diff($indexColNames, $existingColumns);
+				if (!empty($missingCols)) {
+					$this->logger->warn("Skipping index {$indexName} on {$tableName}: " .
+						"column(s) " . implode(', ', $missingCols) . " do not exist in the table.");
+					continue;
+				}
+			}
 
-		    		$spellingCacheTableName = $this->dbCore->doTableNameReplacements('{wp_abj404_spelling_cache}');
-		    		$tableNameLower = strtolower($tableName);
-		    		if ($tableNameLower == $spellingCacheTableName && !empty($spec['unique'])) {
-		    			$this->contentRepo->deleteSpellingCache();
-		    		}
+				$spellingCacheTableName = $this->dbCore->doTableNameReplacements('{wp_abj404_spelling_cache}');
+				$tableNameLower = strtolower($tableName);
+				if ($tableNameLower == $spellingCacheTableName && !empty($spec['unique'])) {
+					$this->contentRepo->deleteSpellingCache();
+				}
 
-	    		$addStatement = $this->buildAddIndexStatementFromParts($tableName, $spec['name'], $spec['columns'], $spec['unique']);
-	    		$this->dbCore->queryAndGetResults($addStatement);
-	    		$this->logger->infoMessage("I added an index: " . $addStatement);
-	    	}
+			$addStatement = $this->buildAddIndexStatementFromParts($tableName, $spec['name'], $spec['columns'], $spec['unique']);
+			$this->dbCore->queryAndGetResults($addStatement);
+			$this->logger->infoMessage("I added an index: " . $addStatement);
+		}
 	    }
 
     /**
@@ -196,7 +196,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_IndexesTrait {
 	     * @param string|null $createSqlOverride
 	     * @return void
 	     */
-	    private function ensureLogsCompositeIndex($logsTable, $createSqlOverride = null) {
+	    public function ensureLogsCompositeIndex($logsTable, $createSqlOverride = null) {
 	        $indexName = 'idx_requested_url_timestamp';
 	        $createSql = is_string($createSqlOverride) ? $createSqlOverride : ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createLogTable.sql");
 	        $specsByName = $this->parseIndexSpecsFromCreateTableSql($createSql);
@@ -211,8 +211,11 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_IndexesTrait {
 	        }
 	        $query = $this->buildAddIndexStatementFromParts($logsTable, $spec['name'], $spec['columns'], $spec['unique']);
 	        $results = $this->dbCore->queryAndGetResults($query);
-        if (!empty($results['last_error'])) {
-            $this->logger->errorMessage("Failed to add {$indexName} to {$logsTable}: " . $results['last_error'] . " (query: {$query})");
+        $lastError = isset($results['last_error']) && is_scalar($results['last_error'])
+            ? (string)$results['last_error']
+            : '';
+	        if ($lastError !== '') {
+	            $this->logger->errorMessage("Failed to add {$indexName} to {$logsTable}: " . $lastError . " (query: {$query})");
         } else {
             $this->logger->infoMessage("Added {$indexName} to {$logsTable} using query: {$query}");
         }
@@ -236,7 +239,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_IndexesTrait {
 	     * @param string $logsTable
 	     * @return void
 	     */
-	    private function ensureLogsv2CanonicalUrlColumn(string $logsTable): void {
+	    public function ensureLogsv2CanonicalUrlColumn(string $logsTable): void {
 	        if ($this->columnExists($logsTable, 'canonical_url')) {
 	            return;
 	        }
@@ -281,7 +284,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_IndexesTrait {
 	     * @param string $redirectsTable
 	     * @return void
 	     */
-	    private function ensureRedirectsCanonicalUrlColumn(string $redirectsTable): void {
+	    public function ensureRedirectsCanonicalUrlColumn(string $redirectsTable): void {
 	        if ($this->columnExists($redirectsTable, 'canonical_url')) {
 	            return;
 	        }
@@ -302,4 +305,5 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_IndexesTrait {
 	            $this->logger->infoMessage("Added canonical_url to {$redirectsTable} (bare ALTER fallback).");
 	        }
 	    }
+
 }

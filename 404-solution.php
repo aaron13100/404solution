@@ -161,14 +161,16 @@ function abj404_autoloader($class) {
 				$inc . 'PluginLogicLifecycle.php',
 			),
 			'ABJ_404_Solution_DatabaseUpgradesEtc' => array(
-				$inc . 'DatabaseUpgradesEtcTrait_NGram.php',
-				$inc . 'DatabaseUpgradesEtcTrait_Maintenance.php',
-				$inc . 'DatabaseUpgradesEtcTrait_PluginUpdate.php',
-				$inc . 'DatabaseUpgradesEtcTrait_TableRepair.php',
-				$inc . 'DatabaseUpgradesEtcTrait_Indexes.php',
-				$inc . 'DatabaseUpgradesEtcTrait_OrphanAdoption.php',
-				$inc . 'DatabaseUpgradesEtcTrait_MultiSite.php',
-				$inc . 'DatabaseUpgradesEtcTrait_SchemaDiff.php',
+				$inc . 'DatabaseUpgradeCoordinator.php',
+				$inc . 'DatabaseUpgradeComponent.php',
+				$inc . 'DatabaseUpgradeNGram.php',
+				$inc . 'DatabaseUpgradeMaintenance.php',
+				$inc . 'DatabaseUpgradePluginUpdate.php',
+				$inc . 'DatabaseUpgradeTableRepair.php',
+				$inc . 'DatabaseUpgradeIndexes.php',
+				$inc . 'DatabaseUpgradeOrphanAdoption.php',
+				$inc . 'DatabaseUpgradeMultiSite.php',
+				$inc . 'DatabaseUpgradeSchemaDiff.php',
 			),
 			// AJAX handler classes that pull in shared traits via `use`.
 			// Without these entries, a corrupted upload that loses the trait
@@ -389,16 +391,18 @@ if (!function_exists('abj404_shortCodeListener')) {
 				$inc . 'SpellPostListeners.php',
 				$inc . 'SpellLevenshteinEngine.php',
 				$inc . 'SpellCandidateFilter.php',
-				// DatabaseUpgradesEtc + traits
+				// DatabaseUpgradesEtc + delegates
 				$inc . 'DatabaseUpgradesEtc.php',
-				$inc . 'DatabaseUpgradesEtcTrait_NGram.php',
-				$inc . 'DatabaseUpgradesEtcTrait_Maintenance.php',
-				$inc . 'DatabaseUpgradesEtcTrait_PluginUpdate.php',
-				$inc . 'DatabaseUpgradesEtcTrait_TableRepair.php',
-				$inc . 'DatabaseUpgradesEtcTrait_Indexes.php',
-				$inc . 'DatabaseUpgradesEtcTrait_OrphanAdoption.php',
-				$inc . 'DatabaseUpgradesEtcTrait_MultiSite.php',
-				$inc . 'DatabaseUpgradesEtcTrait_SchemaDiff.php',
+				$inc . 'DatabaseUpgradeCoordinator.php',
+				$inc . 'DatabaseUpgradeComponent.php',
+				$inc . 'DatabaseUpgradeNGram.php',
+				$inc . 'DatabaseUpgradeMaintenance.php',
+				$inc . 'DatabaseUpgradePluginUpdate.php',
+				$inc . 'DatabaseUpgradeTableRepair.php',
+				$inc . 'DatabaseUpgradeIndexes.php',
+				$inc . 'DatabaseUpgradeOrphanAdoption.php',
+				$inc . 'DatabaseUpgradeMultiSite.php',
+				$inc . 'DatabaseUpgradeSchemaDiff.php',
 				// SQL templates — all files required for correct operation.
 				// A test (SqlFileIntegrityListCompletenessTest) verifies this list
 				// stays in sync with the actual files in includes/sql/.

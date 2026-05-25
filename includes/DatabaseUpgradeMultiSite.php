@@ -4,7 +4,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-trait ABJ_404_Solution_DatabaseUpgradesEtc_MultiSiteTrait {
+class ABJ_404_Solution_DatabaseUpgradeMultiSite extends ABJ_404_Solution_DatabaseUpgradeComponent {
 
     /**
      * Schedule a background multisite batch operation.
@@ -48,8 +48,22 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MultiSiteTrait {
             $processedBlogs = array();
         }
 
-        $allSites = get_sites(array('fields' => 'ids', 'number' => 0));
-        $remainingSites = array_diff($allSites, $processedBlogs);
+        $allSitesRaw = get_sites(array('fields' => 'ids', 'number' => 0));
+        $allSites = array();
+        if (is_array($allSitesRaw)) {
+            foreach ($allSitesRaw as $siteId) {
+                if (is_numeric($siteId)) {
+                    $allSites[] = (int)$siteId;
+                }
+            }
+        }
+        $processedBlogIds = array();
+        foreach ($processedBlogs as $blogId) {
+            if (is_numeric($blogId)) {
+                $processedBlogIds[] = (int)$blogId;
+            }
+        }
+        $remainingSites = array_diff($allSites, $processedBlogIds);
 
         if (empty($remainingSites)) {
             delete_site_option($optionPrefix . '_processed_blogs');
@@ -114,7 +128,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MultiSiteTrait {
      * @param int $alreadyProcessedBlogId Blog ID of the site already activated.
      * @return void
      */
-    private function scheduleBackgroundMultisiteActivation(int $alreadyProcessedBlogId): void {
+    public function scheduleBackgroundMultisiteActivation(int $alreadyProcessedBlogId): void {
         $this->scheduleBackgroundMultisiteBatch(
             'abj404_activation', 'abj404_network_activation_background', 'activation', $alreadyProcessedBlogId
         );
@@ -164,7 +178,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MultiSiteTrait {
      * @param int $alreadyProcessedBlogId Blog ID of the site already upgraded.
      * @return void
      */
-    private function scheduleBackgroundMultisiteUpgrade(int $alreadyProcessedBlogId): void {
+    public function scheduleBackgroundMultisiteUpgrade(int $alreadyProcessedBlogId): void {
         $this->scheduleBackgroundMultisiteBatch(
             'abj404_upgrade', 'abj404_network_upgrade_background', 'upgrade', $alreadyProcessedBlogId
         );
@@ -290,4 +304,5 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_MultiSiteTrait {
             ));
         }
     }
+
 }

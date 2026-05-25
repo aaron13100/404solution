@@ -5,14 +5,16 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-require_once __DIR__ . '/DatabaseUpgradesEtcTrait_NGram.php';
-require_once __DIR__ . '/DatabaseUpgradesEtcTrait_Maintenance.php';
-require_once __DIR__ . '/DatabaseUpgradesEtcTrait_PluginUpdate.php';
-require_once __DIR__ . '/DatabaseUpgradesEtcTrait_TableRepair.php';
-require_once __DIR__ . '/DatabaseUpgradesEtcTrait_Indexes.php';
-require_once __DIR__ . '/DatabaseUpgradesEtcTrait_OrphanAdoption.php';
-require_once __DIR__ . '/DatabaseUpgradesEtcTrait_MultiSite.php';
-require_once __DIR__ . '/DatabaseUpgradesEtcTrait_SchemaDiff.php';
+require_once __DIR__ . '/DatabaseUpgradeCoordinator.php';
+require_once __DIR__ . '/DatabaseUpgradeComponent.php';
+require_once __DIR__ . '/DatabaseUpgradeNGram.php';
+require_once __DIR__ . '/DatabaseUpgradeMaintenance.php';
+require_once __DIR__ . '/DatabaseUpgradePluginUpdate.php';
+require_once __DIR__ . '/DatabaseUpgradeTableRepair.php';
+require_once __DIR__ . '/DatabaseUpgradeIndexes.php';
+require_once __DIR__ . '/DatabaseUpgradeOrphanAdoption.php';
+require_once __DIR__ . '/DatabaseUpgradeMultiSite.php';
+require_once __DIR__ . '/DatabaseUpgradeSchemaDiff.php';
 
 /* Functions in this class should all reference one of the following variables or support functions that do.
  *      $wpdb, $_GET, $_POST, $_SERVER, $_.*
@@ -21,7 +23,7 @@ require_once __DIR__ . '/DatabaseUpgradesEtcTrait_SchemaDiff.php';
  * Read the database, Store to the database,
  */
 
-class ABJ_404_Solution_DatabaseUpgradesEtc {
+class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseUpgradeCoordinator {
 
 	/** @var self|null */
 	private static $instance = null;
@@ -78,14 +80,29 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 	/** @var ABJ_404_Solution_NGramFilter */
 	private $ngramFilter;
 
-	use ABJ_404_Solution_DatabaseUpgradesEtc_NGramTrait;
-	use ABJ_404_Solution_DatabaseUpgradesEtc_MaintenanceTrait;
-	use ABJ_404_Solution_DatabaseUpgradesEtc_PluginUpdateTrait;
-	use ABJ_404_Solution_DatabaseUpgradesEtc_TableRepairTrait;
-	use ABJ_404_Solution_DatabaseUpgradesEtc_IndexesTrait;
-	use ABJ_404_Solution_DatabaseUpgradesEtc_OrphanAdoptionTrait;
-	use ABJ_404_Solution_DatabaseUpgradesEtc_MultiSiteTrait;
-	use ABJ_404_Solution_DatabaseUpgradesEtc_SchemaDiffTrait;
+	/** @var ABJ_404_Solution_DatabaseUpgradeNGram */
+	private $nGramUpgrade;
+
+	/** @var ABJ_404_Solution_DatabaseUpgradeMaintenance */
+	private $maintenanceUpgrade;
+
+	/** @var ABJ_404_Solution_DatabaseUpgradePluginUpdate */
+	private $pluginUpdateUpgrade;
+
+	/** @var ABJ_404_Solution_DatabaseUpgradeTableRepair */
+	private $tableRepairUpgrade;
+
+	/** @var ABJ_404_Solution_DatabaseUpgradeIndexes */
+	private $indexesUpgrade;
+
+	/** @var ABJ_404_Solution_DatabaseUpgradeOrphanAdoption */
+	private $orphanAdoptionUpgrade;
+
+	/** @var ABJ_404_Solution_DatabaseUpgradeMultiSite */
+	private $multiSiteUpgrade;
+
+	/** @var ABJ_404_Solution_DatabaseUpgradeSchemaDiff */
+	private $schemaDiffUpgrade;
 
 	/**
 	 * Constructor with dependency injection.
@@ -117,6 +134,29 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 		$this->viewBuild = $this->dao->getViewBuildOrchestrator();
 		$this->viewRead = $this->dao->getViewReadService();
 		$this->logsRepo = $this->dao->getLogsRepo();
+
+		$componentDeps = [
+			'dao' => $this->dao,
+			'dbCore' => $this->dbCore,
+			'contentRepo' => $this->contentRepo,
+			'viewBuild' => $this->viewBuild,
+			'viewRead' => $this->viewRead,
+			'logsRepo' => $this->logsRepo,
+			'logger' => $this->logger,
+			'f' => $this->f,
+			'permalinkCache' => $this->permalinkCache,
+			'syncUtils' => $this->syncUtils,
+			'logic' => $this->logic,
+			'ngramFilter' => $this->ngramFilter,
+		];
+		$this->nGramUpgrade = new ABJ_404_Solution_DatabaseUpgradeNGram($this, $componentDeps);
+		$this->maintenanceUpgrade = new ABJ_404_Solution_DatabaseUpgradeMaintenance($this, $componentDeps);
+		$this->pluginUpdateUpgrade = new ABJ_404_Solution_DatabaseUpgradePluginUpdate($this, $componentDeps);
+		$this->tableRepairUpgrade = new ABJ_404_Solution_DatabaseUpgradeTableRepair($this, $componentDeps);
+		$this->indexesUpgrade = new ABJ_404_Solution_DatabaseUpgradeIndexes($this, $componentDeps);
+		$this->orphanAdoptionUpgrade = new ABJ_404_Solution_DatabaseUpgradeOrphanAdoption($this, $componentDeps);
+		$this->multiSiteUpgrade = new ABJ_404_Solution_DatabaseUpgradeMultiSite($this, $componentDeps);
+		$this->schemaDiffUpgrade = new ABJ_404_Solution_DatabaseUpgradeSchemaDiff($this, $componentDeps);
 	}
 
 	/** @return self */
@@ -127,6 +167,793 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 		}
 
 		return self::$instance;
+	}
+
+	/**
+	 * Invoke a DatabaseUpgradesEtc method or delegate method by name.
+	 *
+	 * @param string $method
+	 * @param array<int, mixed> $args
+	 * @return mixed
+	 */
+	public function invokeDatabaseUpgradeMethod(string $method, array $args = []) {
+		$delegateMap = [
+			'createIndexes' => 'indexesUpgrade',
+			'verifyIndexes' => 'indexesUpgrade',
+			'indexExists' => 'indexesUpgrade',
+			'parseIndexDDLToSpec' => 'indexesUpgrade',
+			'parseIndexSpecsFromCreateTableSql' => 'indexesUpgrade',
+			'buildAddIndexStatementFromParts' => 'indexesUpgrade',
+			'ensureLogsCompositeIndex' => 'indexesUpgrade',
+			'ensureLogsv2CanonicalUrlColumn' => 'indexesUpgrade',
+			'ensureRedirectsCanonicalUrlColumn' => 'indexesUpgrade',
+			'updateTableEngineToInnoDB' => 'maintenanceUpgrade',
+			'getTableCollation' => 'maintenanceUpgrade',
+			'getTableCollationFromShowCreate' => 'maintenanceUpgrade',
+			'getTableCollationFromInformationSchema' => 'maintenanceUpgrade',
+			'getDefaultCollationForCharset' => 'maintenanceUpgrade',
+			'sanitizeCollationIdentifier' => 'maintenanceUpgrade',
+			'resolveTargetUtf8mb4Collation' => 'maintenanceUpgrade',
+			'correctCollations' => 'maintenanceUpgrade',
+			'tableHasMismatchedCharacterColumnCollation' => 'maintenanceUpgrade',
+			'runDailyInsuranceCheck' => 'maintenanceUpgrade',
+			'runSelfHealPrologue' => 'maintenanceUpgrade',
+			'verifyAndRepairCurrentSite' => 'maintenanceUpgrade',
+			'cleanupExpiredRateLimitTransients' => 'maintenanceUpgrade',
+			'runDatabaseMaintenanceTasks' => 'maintenanceUpgrade',
+			'refreshViewDoneSnapshotInline' => 'maintenanceUpgrade',
+			'backfillRedirectsCanonicalUrl' => 'maintenanceUpgrade',
+			'backfillLogsv2CanonicalUrl' => 'maintenanceUpgrade',
+			'scheduleLogsv2CanonicalUrlBackfill' => 'maintenanceUpgrade',
+			'shouldScheduleLogsv2CanonicalBackfillViaCron' => 'maintenanceUpgrade',
+			'columnExists' => 'maintenanceUpgrade',
+			'scheduleBackgroundMultisiteBatch' => 'multiSiteUpgrade',
+			'processMultisiteBatch' => 'multiSiteUpgrade',
+			'scheduleBackgroundMultisiteActivation' => 'multiSiteUpgrade',
+			'processMultisiteActivationBatch' => 'multiSiteUpgrade',
+			'scheduleBackgroundMultisiteUpgrade' => 'multiSiteUpgrade',
+			'processMultisiteUpgradeBatch' => 'multiSiteUpgrade',
+			'createTablesForAllSites' => 'multiSiteUpgrade',
+			'scheduleNGramCacheRebuild' => 'nGramUpgrade',
+			'rebuildNGramCacheAsync' => 'nGramUpgrade',
+			'rebuildNGramCache' => 'nGramUpgrade',
+			'syncMissingNGrams' => 'nGramUpgrade',
+			'cleanupOrphanedNGrams' => 'nGramUpgrade',
+			'buildNGramsForCategories' => 'nGramUpgrade',
+			'buildNGramsForTags' => 'nGramUpgrade',
+			'buildNGramsForAllContent' => 'nGramUpgrade',
+			'rebuildNGramCacheAsyncMultisite' => 'nGramUpgrade',
+			'rebuildNGramCacheAsyncSingleSite' => 'nGramUpgrade',
+			'isNetworkActivated' => 'nGramUpgrade',
+			'getNetworkAwareOption' => 'nGramUpgrade',
+			'updateNetworkAwareOption' => 'nGramUpgrade',
+			'countTotalPagesForNGramRebuild' => 'nGramUpgrade',
+			'adoptOrphanedTables' => 'orphanAdoptionUpgrade',
+			'countOldPrefixRows' => 'orphanAdoptionUpgrade',
+			'verifyOwnershipViaLogs' => 'orphanAdoptionUpgrade',
+			'verifyOwnershipViaRedirects' => 'orphanAdoptionUpgrade',
+			'adoptDataFromPrefix' => 'orphanAdoptionUpgrade',
+			'getCommonColumns' => 'orphanAdoptionUpgrade',
+			'getTableColumns' => 'orphanAdoptionUpgrade',
+			'migrateURLsToRelativePaths' => 'pluginUpdateUpgrade',
+			'updatePluginCheck' => 'pluginUpdateUpgrade',
+			'doUpdatePlugin' => 'pluginUpdateUpgrade',
+			'shouldUpdate' => 'pluginUpdateUpgrade',
+			'verifyColumns' => 'schemaDiffUpgrade',
+			'getTableDifferences' => 'schemaDiffUpgrade',
+			'updateATableBasedOnDifferences' => 'schemaDiffUpgrade',
+			'removeCommentsFromColumns' => 'schemaDiffUpgrade',
+			'normalizeColumnDDL' => 'schemaDiffUpgrade',
+			'deleteIndexes' => 'schemaDiffUpgrade',
+			'correctIssuesBefore' => 'tableRepairUpgrade',
+			'correctIssuesAfter' => 'tableRepairUpgrade',
+			'dropDeprecatedMutationWatermarkTable' => 'tableRepairUpgrade',
+			'repairStrippedViewCacheTable' => 'tableRepairUpgrade',
+			'ddlDeclaresIdColumn' => 'tableRepairUpgrade',
+			'recoverMissingLogsHitsTable' => 'tableRepairUpgrade',
+			'correctMatchData' => 'tableRepairUpgrade',
+		];
+
+		if (isset($delegateMap[$method])) {
+			$delegate = $delegateMap[$method];
+			$this->refreshDatabaseUpgradeComponents();
+			return $this->$delegate->invokeDatabaseUpgradeMethod($method, $args);
+		}
+
+		if (method_exists($this, $method)) {
+			return $this->$method(...$args);
+		}
+
+		throw new BadMethodCallException("Database upgrade method not found: {$method}");
+	}
+
+	/** @return void */
+	private function refreshDatabaseUpgradeComponents() {
+		$componentDeps = [
+			'dao' => $this->dao,
+			'dbCore' => $this->dbCore,
+			'contentRepo' => $this->contentRepo,
+			'viewBuild' => $this->viewBuild,
+			'viewRead' => $this->viewRead,
+			'logsRepo' => $this->logsRepo,
+			'logger' => $this->logger,
+			'f' => $this->f,
+			'permalinkCache' => $this->permalinkCache,
+			'syncUtils' => $this->syncUtils,
+			'logic' => $this->logic,
+			'ngramFilter' => $this->ngramFilter,
+		];
+
+		if (!$this->nGramUpgrade instanceof ABJ_404_Solution_DatabaseUpgradeNGram) {
+			$this->nGramUpgrade = new ABJ_404_Solution_DatabaseUpgradeNGram($this, $componentDeps);
+		}
+		if (!$this->maintenanceUpgrade instanceof ABJ_404_Solution_DatabaseUpgradeMaintenance) {
+			$this->maintenanceUpgrade = new ABJ_404_Solution_DatabaseUpgradeMaintenance($this, $componentDeps);
+		}
+		if (!$this->pluginUpdateUpgrade instanceof ABJ_404_Solution_DatabaseUpgradePluginUpdate) {
+			$this->pluginUpdateUpgrade = new ABJ_404_Solution_DatabaseUpgradePluginUpdate($this, $componentDeps);
+		}
+		if (!$this->tableRepairUpgrade instanceof ABJ_404_Solution_DatabaseUpgradeTableRepair) {
+			$this->tableRepairUpgrade = new ABJ_404_Solution_DatabaseUpgradeTableRepair($this, $componentDeps);
+		}
+		if (!$this->indexesUpgrade instanceof ABJ_404_Solution_DatabaseUpgradeIndexes) {
+			$this->indexesUpgrade = new ABJ_404_Solution_DatabaseUpgradeIndexes($this, $componentDeps);
+		}
+		if (!$this->orphanAdoptionUpgrade instanceof ABJ_404_Solution_DatabaseUpgradeOrphanAdoption) {
+			$this->orphanAdoptionUpgrade = new ABJ_404_Solution_DatabaseUpgradeOrphanAdoption($this, $componentDeps);
+		}
+		if (!$this->multiSiteUpgrade instanceof ABJ_404_Solution_DatabaseUpgradeMultiSite) {
+			$this->multiSiteUpgrade = new ABJ_404_Solution_DatabaseUpgradeMultiSite($this, $componentDeps);
+		}
+		if (!$this->schemaDiffUpgrade instanceof ABJ_404_Solution_DatabaseUpgradeSchemaDiff) {
+			$this->schemaDiffUpgrade = new ABJ_404_Solution_DatabaseUpgradeSchemaDiff($this, $componentDeps);
+		}
+
+		foreach ([
+			$this->nGramUpgrade,
+			$this->maintenanceUpgrade,
+			$this->pluginUpdateUpgrade,
+			$this->tableRepairUpgrade,
+			$this->indexesUpgrade,
+			$this->orphanAdoptionUpgrade,
+			$this->multiSiteUpgrade,
+			$this->schemaDiffUpgrade,
+		] as $component) {
+			$component->replaceDatabaseUpgradeDependencies($componentDeps);
+		}
+	}
+
+	/** @return string|null */
+	public function getUpgradeRuntimeId() {
+		return self::$uniqID;
+	}
+
+	public function isLogsv2CanonicalBackfillScheduled(): bool {
+		return self::$logsv2CanonicalBackfillScheduled;
+	}
+
+	public function setLogsv2CanonicalBackfillScheduled(bool $scheduled): void {
+		self::$logsv2CanonicalBackfillScheduled = $scheduled;
+	}
+
+	public function getCanonicalUrlBackfillChunkSize(): int {
+		return self::CANONICAL_URL_BACKFILL_CHUNK_SIZE;
+	}
+
+	public function getCanonicalUrlBackfillTimeBudgetSec(): float {
+		return self::CANONICAL_URL_BACKFILL_TIME_BUDGET_SEC;
+	}
+
+	public function getLogsv2CanonicalUrlBackfillTimeBudgetSec(): float {
+		return self::LOGSV2_CANONICAL_URL_BACKFILL_TIME_BUDGET_SEC;
+	}
+
+	public function getLogsv2CanonicalUrlBackfillCompleteOption(): string {
+		return self::LOGSV2_CANONICAL_URL_BACKFILL_COMPLETE_OPTION;
+	}
+
+	/** @return array<int, string> */
+	public function getPluginTableSuffixes(): array {
+		return self::PLUGIN_TABLE_SUFFIXES;
+	}
+
+	public static function resetLogsv2CanonicalBackfillScheduledFlagForTests(): void {
+		self::$logsv2CanonicalBackfillScheduled = false;
+	}
+
+	public static function getLogsv2CanonicalBackfillScheduledFlagForTests(): bool {
+		return self::$logsv2CanonicalBackfillScheduled;
+	}
+
+	/**
+	 * @return mixed
+	 */
+	public function createIndexes() {
+		return $this->invokeDatabaseUpgradeMethod('createIndexes', func_get_args());
+	}
+
+	/**
+	 * @param mixed $tableName
+	 * @param mixed $createTableStatementGoal
+	 * @return mixed
+	 */
+	public function verifyIndexes($tableName, $createTableStatementGoal) {
+		return $this->invokeDatabaseUpgradeMethod('verifyIndexes', func_get_args());
+	}
+
+	/**
+	 * @param mixed $tableName
+	 * @param mixed $indexName
+	 * @return mixed
+	 */
+	private function indexExists($tableName, $indexName) {
+		return $this->invokeDatabaseUpgradeMethod('indexExists', func_get_args());
+	}
+
+	/**
+	 * @param mixed $indexDDL
+	 * @return mixed
+	 */
+	private function parseIndexDDLToSpec($indexDDL) {
+		return $this->invokeDatabaseUpgradeMethod('parseIndexDDLToSpec', func_get_args());
+	}
+
+	/**
+	 * @param mixed $createTableSql
+	 * @return mixed
+	 */
+	private function parseIndexSpecsFromCreateTableSql($createTableSql) {
+		return $this->invokeDatabaseUpgradeMethod('parseIndexSpecsFromCreateTableSql', func_get_args());
+	}
+
+	/**
+	 * @param mixed $tableName
+	 * @param mixed $indexName
+	 * @param mixed $columnsSql
+	 * @param mixed $unique
+	 * @return mixed
+	 */
+	private function buildAddIndexStatementFromParts($tableName, $indexName, $columnsSql, $unique) {
+		return $this->invokeDatabaseUpgradeMethod('buildAddIndexStatementFromParts', func_get_args());
+	}
+
+	/**
+	 * @param mixed $logsTable
+	 * @param mixed $createSqlOverride
+	 * @return mixed
+	 */
+	private function ensureLogsCompositeIndex($logsTable, $createSqlOverride = null) {
+		return $this->invokeDatabaseUpgradeMethod('ensureLogsCompositeIndex', func_get_args());
+	}
+
+	/**
+	 * @param string $logsTable
+	 * @return mixed
+	 */
+	private function ensureLogsv2CanonicalUrlColumn(string $logsTable) {
+		return $this->invokeDatabaseUpgradeMethod('ensureLogsv2CanonicalUrlColumn', func_get_args());
+	}
+
+	/**
+	 * @param string $redirectsTable
+	 * @return mixed
+	 */
+	private function ensureRedirectsCanonicalUrlColumn(string $redirectsTable) {
+		return $this->invokeDatabaseUpgradeMethod('ensureRedirectsCanonicalUrlColumn', func_get_args());
+	}
+
+	/**
+	 * @return mixed
+	 */
+	public function updateTableEngineToInnoDB() {
+		return $this->invokeDatabaseUpgradeMethod('updateTableEngineToInnoDB', func_get_args());
+	}
+
+	/**
+	 * @param mixed $tableName
+	 * @return mixed
+	 */
+	public function getTableCollation($tableName) {
+		return $this->invokeDatabaseUpgradeMethod('getTableCollation', func_get_args());
+	}
+
+	/**
+	 * @param mixed $tableName
+	 * @return mixed
+	 */
+	public function getTableCollationFromShowCreate($tableName) {
+		return $this->invokeDatabaseUpgradeMethod('getTableCollationFromShowCreate', func_get_args());
+	}
+
+	/**
+	 * @param mixed $tableName
+	 * @return mixed
+	 */
+	public function getTableCollationFromInformationSchema($tableName) {
+		return $this->invokeDatabaseUpgradeMethod('getTableCollationFromInformationSchema', func_get_args());
+	}
+
+	/**
+	 * @param mixed $charset
+	 * @return mixed
+	 */
+	public function getDefaultCollationForCharset($charset) {
+		return $this->invokeDatabaseUpgradeMethod('getDefaultCollationForCharset', func_get_args());
+	}
+
+	/**
+	 * @param mixed $collation
+	 * @return mixed
+	 */
+	private function sanitizeCollationIdentifier($collation) {
+		return $this->invokeDatabaseUpgradeMethod('sanitizeCollationIdentifier', func_get_args());
+	}
+
+	/**
+	 * @param mixed $tableNames
+	 * @param mixed $tableCollations
+	 * @return mixed
+	 */
+	private function resolveTargetUtf8mb4Collation($tableNames, $tableCollations = []) {
+		return $this->invokeDatabaseUpgradeMethod('resolveTargetUtf8mb4Collation', func_get_args());
+	}
+
+	/**
+	 * @return mixed
+	 */
+	public function correctCollations() {
+		return $this->invokeDatabaseUpgradeMethod('correctCollations', func_get_args());
+	}
+
+	/**
+	 * @param mixed $tableName
+	 * @param mixed $targetCharset
+	 * @param mixed $targetCollation
+	 * @return mixed
+	 */
+	private function tableHasMismatchedCharacterColumnCollation($tableName, $targetCharset, $targetCollation) {
+		return $this->invokeDatabaseUpgradeMethod('tableHasMismatchedCharacterColumnCollation', func_get_args());
+	}
+
+	/**
+	 * @return mixed
+	 */
+	public function runDailyInsuranceCheck() {
+		return $this->invokeDatabaseUpgradeMethod('runDailyInsuranceCheck', func_get_args());
+	}
+
+	/**
+	 * @return mixed
+	 */
+	public function runSelfHealPrologue() {
+		return $this->invokeDatabaseUpgradeMethod('runSelfHealPrologue', func_get_args());
+	}
+
+	/**
+	 * @return mixed
+	 */
+	private function verifyAndRepairCurrentSite() {
+		return $this->invokeDatabaseUpgradeMethod('verifyAndRepairCurrentSite', func_get_args());
+	}
+
+	/**
+	 * @return mixed
+	 */
+	public function cleanupExpiredRateLimitTransients() {
+		return $this->invokeDatabaseUpgradeMethod('cleanupExpiredRateLimitTransients', func_get_args());
+	}
+
+	/**
+	 * @return mixed
+	 */
+	public function runDatabaseMaintenanceTasks() {
+		return $this->invokeDatabaseUpgradeMethod('runDatabaseMaintenanceTasks', func_get_args());
+	}
+
+	/**
+	 * @return mixed
+	 */
+	private function refreshViewDoneSnapshotInline() {
+		return $this->invokeDatabaseUpgradeMethod('refreshViewDoneSnapshotInline', func_get_args());
+	}
+
+	/**
+	 * @return mixed
+	 */
+	public function backfillRedirectsCanonicalUrl() {
+		return $this->invokeDatabaseUpgradeMethod('backfillRedirectsCanonicalUrl', func_get_args());
+	}
+
+	/**
+	 * @return mixed
+	 */
+	public function backfillLogsv2CanonicalUrl() {
+		return $this->invokeDatabaseUpgradeMethod('backfillLogsv2CanonicalUrl', func_get_args());
+	}
+
+	/**
+	 * @return mixed
+	 */
+	public function scheduleLogsv2CanonicalUrlBackfill() {
+		return $this->invokeDatabaseUpgradeMethod('scheduleLogsv2CanonicalUrlBackfill', func_get_args());
+	}
+
+	/**
+	 * @return mixed
+	 */
+	private function shouldScheduleLogsv2CanonicalBackfillViaCron() {
+		return $this->invokeDatabaseUpgradeMethod('shouldScheduleLogsv2CanonicalBackfillViaCron', func_get_args());
+	}
+
+	/**
+	 * @param string $tableName
+	 * @param string $columnName
+	 * @return mixed
+	 */
+	private function columnExists(string $tableName, string $columnName) {
+		return $this->invokeDatabaseUpgradeMethod('columnExists', func_get_args());
+	}
+
+	/**
+	 * @param string $optionPrefix
+	 * @param string $hookName
+	 * @param string $label
+	 * @param int $alreadyProcessedBlogId
+	 * @return mixed
+	 */
+	private function scheduleBackgroundMultisiteBatch(string $optionPrefix, string $hookName, string $label, int $alreadyProcessedBlogId) {
+		return $this->invokeDatabaseUpgradeMethod('scheduleBackgroundMultisiteBatch', func_get_args());
+	}
+
+	/**
+	 * @param string $optionPrefix
+	 * @param string $hookName
+	 * @param string $label
+	 * @param callable $perSiteAction
+	 * @return mixed
+	 */
+	public function processMultisiteBatch(string $optionPrefix, string $hookName, string $label, callable $perSiteAction) {
+		return $this->invokeDatabaseUpgradeMethod('processMultisiteBatch', func_get_args());
+	}
+
+	/**
+	 * @param int $alreadyProcessedBlogId
+	 * @return mixed
+	 */
+	private function scheduleBackgroundMultisiteActivation(int $alreadyProcessedBlogId) {
+		return $this->invokeDatabaseUpgradeMethod('scheduleBackgroundMultisiteActivation', func_get_args());
+	}
+
+	/**
+	 * @return mixed
+	 */
+	public function processMultisiteActivationBatch() {
+		return $this->invokeDatabaseUpgradeMethod('processMultisiteActivationBatch', func_get_args());
+	}
+
+	/**
+	 * @param int $alreadyProcessedBlogId
+	 * @return mixed
+	 */
+	private function scheduleBackgroundMultisiteUpgrade(int $alreadyProcessedBlogId) {
+		return $this->invokeDatabaseUpgradeMethod('scheduleBackgroundMultisiteUpgrade', func_get_args());
+	}
+
+	/**
+	 * @return mixed
+	 */
+	public function processMultisiteUpgradeBatch() {
+		return $this->invokeDatabaseUpgradeMethod('processMultisiteUpgradeBatch', func_get_args());
+	}
+
+	/**
+	 * @return mixed
+	 */
+	private function createTablesForAllSites() {
+		return $this->invokeDatabaseUpgradeMethod('createTablesForAllSites', func_get_args());
+	}
+
+	/**
+	 * @return mixed
+	 */
+	public function scheduleNGramCacheRebuild() {
+		return $this->invokeDatabaseUpgradeMethod('scheduleNGramCacheRebuild', func_get_args());
+	}
+
+	/**
+	 * @param mixed $offset
+	 * @return mixed
+	 */
+	public function rebuildNGramCacheAsync($offset = 0) {
+		return $this->invokeDatabaseUpgradeMethod('rebuildNGramCacheAsync', func_get_args());
+	}
+
+	/**
+	 * @param mixed $batchSize
+	 * @param mixed $forceRebuild
+	 * @return mixed
+	 */
+	public function rebuildNGramCache($batchSize = 100, $forceRebuild = false) {
+		return $this->invokeDatabaseUpgradeMethod('rebuildNGramCache', func_get_args());
+	}
+
+	/**
+	 * @param mixed $batchSize
+	 * @return mixed
+	 */
+	public function syncMissingNGrams($batchSize = 50) {
+		return $this->invokeDatabaseUpgradeMethod('syncMissingNGrams', func_get_args());
+	}
+
+	/**
+	 * @return mixed
+	 */
+	public function cleanupOrphanedNGrams() {
+		return $this->invokeDatabaseUpgradeMethod('cleanupOrphanedNGrams', func_get_args());
+	}
+
+	/**
+	 * @param mixed $batchSize
+	 * @return mixed
+	 */
+	public function buildNGramsForCategories($batchSize = 50) {
+		return $this->invokeDatabaseUpgradeMethod('buildNGramsForCategories', func_get_args());
+	}
+
+	/**
+	 * @param mixed $batchSize
+	 * @return mixed
+	 */
+	public function buildNGramsForTags($batchSize = 50) {
+		return $this->invokeDatabaseUpgradeMethod('buildNGramsForTags', func_get_args());
+	}
+
+	/**
+	 * @param mixed $batchSize
+	 * @return mixed
+	 */
+	public function buildNGramsForAllContent($batchSize = 100) {
+		return $this->invokeDatabaseUpgradeMethod('buildNGramsForAllContent', func_get_args());
+	}
+
+	/**
+	 * @param int $batchSize
+	 * @param int $maxBatchesPerRun
+	 * @return mixed
+	 */
+	private function rebuildNGramCacheAsyncMultisite(int $batchSize, int $maxBatchesPerRun) {
+		return $this->invokeDatabaseUpgradeMethod('rebuildNGramCacheAsyncMultisite', func_get_args());
+	}
+
+	/**
+	 * @param int $batchSize
+	 * @param int $maxBatchesPerRun
+	 * @return mixed
+	 */
+	private function rebuildNGramCacheAsyncSingleSite(int $batchSize, int $maxBatchesPerRun) {
+		return $this->invokeDatabaseUpgradeMethod('rebuildNGramCacheAsyncSingleSite', func_get_args());
+	}
+
+	/**
+	 * @return mixed
+	 */
+	private function isNetworkActivated() {
+		return $this->invokeDatabaseUpgradeMethod('isNetworkActivated', func_get_args());
+	}
+
+	/**
+	 * @param mixed $option_name
+	 * @param mixed $default
+	 * @return mixed
+	 */
+	private function getNetworkAwareOption($option_name, $default = false) {
+		return $this->invokeDatabaseUpgradeMethod('getNetworkAwareOption', func_get_args());
+	}
+
+	/**
+	 * @param mixed $option_name
+	 * @param mixed $value
+	 * @return mixed
+	 */
+	private function updateNetworkAwareOption($option_name, $value) {
+		return $this->invokeDatabaseUpgradeMethod('updateNetworkAwareOption', func_get_args());
+	}
+
+	/**
+	 * @return mixed
+	 */
+	private function countTotalPagesForNGramRebuild() {
+		return $this->invokeDatabaseUpgradeMethod('countTotalPagesForNGramRebuild', func_get_args());
+	}
+
+	/**
+	 * @return mixed
+	 */
+	private function adoptOrphanedTables() {
+		return $this->invokeDatabaseUpgradeMethod('adoptOrphanedTables', func_get_args());
+	}
+
+	/**
+	 * @param string $oldPrefix
+	 * @param array<int|string, mixed> $knownTables
+	 * @return mixed
+	 */
+	private function countOldPrefixRows(string $oldPrefix, array $knownTables) {
+		return $this->invokeDatabaseUpgradeMethod('countOldPrefixRows', func_get_args());
+	}
+
+	/**
+	 * @param string $oldPrefix
+	 * @return mixed
+	 */
+	private function verifyOwnershipViaLogs(string $oldPrefix) {
+		return $this->invokeDatabaseUpgradeMethod('verifyOwnershipViaLogs', func_get_args());
+	}
+
+	/**
+	 * @param string $oldPrefix
+	 * @return mixed
+	 */
+	private function verifyOwnershipViaRedirects(string $oldPrefix) {
+		return $this->invokeDatabaseUpgradeMethod('verifyOwnershipViaRedirects', func_get_args());
+	}
+
+	/**
+	 * @param string $oldPrefix
+	 * @param string $currentPrefix
+	 * @param array<int|string, mixed> $knownTables
+	 * @return mixed
+	 */
+	private function adoptDataFromPrefix(string $oldPrefix, string $currentPrefix, array $knownTables) {
+		return $this->invokeDatabaseUpgradeMethod('adoptDataFromPrefix', func_get_args());
+	}
+
+	/**
+	 * @param string $tableA
+	 * @param string $tableB
+	 * @return mixed
+	 */
+	private function getCommonColumns(string $tableA, string $tableB) {
+		return $this->invokeDatabaseUpgradeMethod('getCommonColumns', func_get_args());
+	}
+
+	/**
+	 * @param string $tableName
+	 * @return mixed
+	 */
+	private function getTableColumns(string $tableName) {
+		return $this->invokeDatabaseUpgradeMethod('getTableColumns', func_get_args());
+	}
+
+	/**
+	 * @return mixed
+	 */
+	public function migrateURLsToRelativePaths() {
+		return $this->invokeDatabaseUpgradeMethod('migrateURLsToRelativePaths', func_get_args());
+	}
+
+	/**
+	 * @return mixed
+	 */
+	public function updatePluginCheck() {
+		return $this->invokeDatabaseUpgradeMethod('updatePluginCheck', func_get_args());
+	}
+
+	/**
+	 * @param mixed $pluginInfo
+	 * @return mixed
+	 */
+	public function doUpdatePlugin($pluginInfo) {
+		return $this->invokeDatabaseUpgradeMethod('doUpdatePlugin', func_get_args());
+	}
+
+	/**
+	 * @param mixed $pluginInfo
+	 * @return mixed
+	 */
+	public function shouldUpdate($pluginInfo) {
+		return $this->invokeDatabaseUpgradeMethod('shouldUpdate', func_get_args());
+	}
+
+	/**
+	 * @param mixed $tableName
+	 * @param mixed $createTableStatementGoal
+	 * @return mixed
+	 */
+	public function verifyColumns($tableName, $createTableStatementGoal) {
+		return $this->invokeDatabaseUpgradeMethod('verifyColumns', func_get_args());
+	}
+
+	/**
+	 * @param mixed $tableName
+	 * @param mixed $createTableStatementGoal
+	 * @return mixed
+	 */
+	public function getTableDifferences($tableName, $createTableStatementGoal) {
+		return $this->invokeDatabaseUpgradeMethod('getTableDifferences', func_get_args());
+	}
+
+	/**
+	 * @param mixed $tableName
+	 * @param mixed $tableDifferences
+	 * @return mixed
+	 */
+	public function updateATableBasedOnDifferences($tableName, $tableDifferences) {
+		return $this->invokeDatabaseUpgradeMethod('updateATableBasedOnDifferences', func_get_args());
+	}
+
+	/**
+	 * @param mixed $createTableDDL
+	 * @return mixed
+	 */
+	public function removeCommentsFromColumns($createTableDDL) {
+		return $this->invokeDatabaseUpgradeMethod('removeCommentsFromColumns', func_get_args());
+	}
+
+	/**
+	 * @param mixed $ddl
+	 * @return mixed
+	 */
+	public function normalizeColumnDDL($ddl) {
+		return $this->invokeDatabaseUpgradeMethod('normalizeColumnDDL', func_get_args());
+	}
+
+	/**
+	 * @param mixed $tableName
+	 * @return mixed
+	 */
+	public function deleteIndexes($tableName) {
+		return $this->invokeDatabaseUpgradeMethod('deleteIndexes', func_get_args());
+	}
+
+	/**
+	 * @return mixed
+	 */
+	public function correctIssuesBefore() {
+		return $this->invokeDatabaseUpgradeMethod('correctIssuesBefore', func_get_args());
+	}
+
+	/**
+	 * @return mixed
+	 */
+	public function correctIssuesAfter() {
+		return $this->invokeDatabaseUpgradeMethod('correctIssuesAfter', func_get_args());
+	}
+
+	/**
+	 * @return mixed
+	 */
+	public function dropDeprecatedMutationWatermarkTable() {
+		return $this->invokeDatabaseUpgradeMethod('dropDeprecatedMutationWatermarkTable', func_get_args());
+	}
+
+	/**
+	 * @return mixed
+	 */
+	public function repairStrippedViewCacheTable() {
+		return $this->invokeDatabaseUpgradeMethod('repairStrippedViewCacheTable', func_get_args());
+	}
+
+	/**
+	 * @param string $ddl
+	 * @return mixed
+	 */
+	private function ddlDeclaresIdColumn(string $ddl) {
+		return $this->invokeDatabaseUpgradeMethod('ddlDeclaresIdColumn', func_get_args());
+	}
+
+	/**
+	 * @return mixed
+	 */
+	private function recoverMissingLogsHitsTable() {
+		return $this->invokeDatabaseUpgradeMethod('recoverMissingLogsHitsTable', func_get_args());
+	}
+
+	/**
+	 * @return mixed
+	 */
+	public function correctMatchData() {
+		return $this->invokeDatabaseUpgradeMethod('correctMatchData', func_get_args());
 	}
 	
 	/** Create the tables when the plugin is first activated.
@@ -261,7 +1088,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
     		$migrationResults = $this->migrateURLsToRelativePaths();
 
     		// Show admin notice if migration occurred
-    		if ($updatingToNewVersion && !empty($migrationResults['redirects_updated'])) {
+            if ($updatingToNewVersion && is_array($migrationResults) && !empty($migrationResults['redirects_updated'])) {
     			$rawRedirectsUpdated = $migrationResults['redirects_updated'];
     			$redirectsUpdated = is_scalar($rawRedirectsUpdated) ? (int)$rawRedirectsUpdated : 0;
     			$message = sprintf(
@@ -338,8 +1165,8 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 			// column names in varying cases (table_name, TABLE_NAME, Table_Name).
 			$tableName = null;
 			foreach ($row as $key => $value) {
-				if (strtolower((string)$key) === 'table_name') {
-					$tableName = $value;
+					if (strtolower((string)$key) === 'table_name' && is_scalar($value)) {
+						$tableName = (string)$value;
 					break;
 				}
 			}
@@ -415,7 +1242,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 	 * Known plugin table suffixes for adoption.
 	 * @var array<int, string>
 	 */
-	private const PLUGIN_TABLE_SUFFIXES = [
+	public const PLUGIN_TABLE_SUFFIXES = [
 		'abj404_redirects',
 		'abj404_logsv2',
 		'abj404_spelling_cache',

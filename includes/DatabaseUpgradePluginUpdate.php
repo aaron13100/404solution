@@ -4,7 +4,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-trait ABJ_404_Solution_DatabaseUpgradesEtc_PluginUpdateTrait {
+class ABJ_404_Solution_DatabaseUpgradePluginUpdate extends ABJ_404_Solution_DatabaseUpgradeComponent {
 
 
     /**
@@ -137,7 +137,10 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_PluginUpdateTrait {
      */
     function doUpdatePlugin($pluginInfo) {
 
-        $this->logger->infoMessage("Attempting update to " . $pluginInfo['version']);
+        $targetVersion = isset($pluginInfo['version']) && is_scalar($pluginInfo['version'])
+            ? (string)$pluginInfo['version']
+            : '';
+        $this->logger->infoMessage("Attempting update to " . $targetVersion);
         
         // do the update.
         if (!class_exists('WP_Upgrader')) {
@@ -167,13 +170,14 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_PluginUpdateTrait {
         $upgrader = new Plugin_Upgrader();
         $upret = $upgrader->upgrade(ABJ404_SOLUTION_BASENAME);
         if ($upret) {
-            $this->logger->infoMessage("Plugin successfully upgraded to " . $pluginInfo['version']);
+            $this->logger->infoMessage("Plugin successfully upgraded to " . $targetVersion);
         }
         $output = "";
-        if (@ob_get_contents()) {
-        	$output = @ob_get_contents();
-        	@ob_end_clean();
-        }
+	        if (@ob_get_contents()) {
+	            $outputValue = @ob_get_contents();
+	            $output = is_string($outputValue) ? $outputValue : '';
+	            @ob_end_clean();
+	        }
         if ($this->f->strlen(trim($output)) > 0) {
             $this->logger->infoMessage("Upgrade output: " . $output);
         }
@@ -185,7 +189,7 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_PluginUpdateTrait {
             
         } else {
             $this->logger->infoMessage("Successfully reactivated plugin after upgrade to version " .
-                $pluginInfo['version']);
+                $targetVersion);
         }        
     }
     
@@ -242,7 +246,9 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_PluginUpdateTrait {
             return true;
         }
 
-        $minDaysDifference = $options['days_wait_before_major_update'];
+        $minDaysDifference = isset($options['days_wait_before_major_update']) && is_numeric($options['days_wait_before_major_update'])
+            ? (int)$options['days_wait_before_major_update']
+            : 0;
         if ($daysDifference >= $minDaysDifference) {
             $this->logger->infoMessage("The latest major version is old enough for updating automatically (" . 
                     $minDaysDifference . "days minimum, version " . $latestVersion . " is " . $daysDifference . 
@@ -252,4 +258,5 @@ trait ABJ_404_Solution_DatabaseUpgradesEtc_PluginUpdateTrait {
 
         return false;
     }
+
 }
