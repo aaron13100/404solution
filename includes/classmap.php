@@ -13,6 +13,7 @@ return array(
     'ABJ_404_Solution_AjaxRequestContractValidator' => $base . 'includes/ajax/AjaxRequestContractValidator.php',
     'ABJ_404_Solution_AjaxFailureLogger' => $base . 'includes/ajax/AjaxFailureLogger.php',
     'ABJ_404_Solution_AjaxStageDiagnostics' => $base . 'includes/ajax/AjaxStageDiagnostics.php',
+    'ABJ_404_Solution_FeedbackDatabaseIdentity' => $base . 'includes/FeedbackDatabaseIdentity.php',
     'ABJ_404_Solution_FeedbackEnvironmentExtras' => $base . 'includes/FeedbackEnvironmentExtras.php',
     'ABJ_404_Solution_ViewBuildCollaborator' => $base . 'includes/ViewBuildCollaborator.php',
     'ABJ_404_Solution_AdminMutationGate' => $base . 'includes/AdminMutationGate.php',

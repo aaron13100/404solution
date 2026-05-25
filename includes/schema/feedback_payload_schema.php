@@ -61,7 +61,7 @@ return (function (): array {
         'locale'          => ['type' => 'string'],
 
         // Database identity
-        'db_type'         => ['type' => 'string', 'enum' => ['mysql', 'mariadb']],
+        'db_type'         => ['type' => 'string', 'enum' => ['mysql', 'mariadb', 'sqlite', 'other']],
         'db_version'      => ['type' => 'string'],
         'table_prefix'    => ['type' => 'string'],
 

@@ -5,6 +5,7 @@ if (!defined('ABSPATH')) {
 }
 
 require_once dirname(__FILE__) . '/FeedbackEnvironmentExtras.php';
+require_once dirname(__FILE__) . '/FeedbackDatabaseIdentity.php';
 require_once dirname(__FILE__) . '/PayloadSchema.php';
 require_once dirname(__FILE__) . '/ReportPayloadJsonSchemaValidator.php';
 
@@ -272,22 +273,9 @@ class ABJ_404_Solution_FeedbackTransport {
     public static function buildPayload(string $type, array $extra = array()): array {
         global $wpdb;
 
-        $dbVersion = '';
-        if (isset($wpdb) && is_object($wpdb) && method_exists($wpdb, 'db_version')) {
-            $raw = $wpdb->db_version();
-            $dbVersion = is_scalar($raw) ? (string)$raw : '';
-        }
-        // db_version() typically returns the numeric portion only; for
-        // mariadb detection we also probe the full VERSION() string.
-        $fullVersion = $dbVersion;
-        if (isset($wpdb) && is_object($wpdb) && method_exists($wpdb, 'get_var')) {
-            // DAO-bypass-approved: SELECT VERSION() is a parameterless server-introspection probe with no plugin tables involved; routing through queryAndGetResults() would force a missing-table-repair detour for a query that cannot fail with that error class
-            $probed = $wpdb->get_var('SELECT VERSION()');
-            if (is_string($probed) && $probed !== '') {
-                $fullVersion = $probed;
-            }
-        }
-        $dbType = (stripos($fullVersion, 'mariadb') !== false) ? 'mariadb' : 'mysql';
+        $databaseIdentity = ABJ_404_Solution_FeedbackDatabaseIdentity::detect(isset($wpdb) ? $wpdb : null);
+        $dbType = $databaseIdentity['type'];
+        $fullVersion = $databaseIdentity['version'];
 
         $tablePrefix = '';
         if (isset($wpdb) && is_object($wpdb) && isset($wpdb->prefix) && is_string($wpdb->prefix)) {
