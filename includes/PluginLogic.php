@@ -14,6 +14,7 @@ require_once dirname(__FILE__) . '/PluginLogicSettingsUpdate.php';
 require_once dirname(__FILE__) . '/PluginLogicPageOrdering.php';
 require_once dirname(__FILE__) . '/PluginLogicLifecycle.php';
 require_once dirname(__FILE__) . '/PluginLogicDefaults.php';
+require_once dirname(__FILE__) . '/StorageOptionContracts.php';
 
 /**
  * @phpstan-type PageObject object{id: int, post_parent: int, depth: int, post_type: string, post_title: string}
@@ -980,11 +981,22 @@ class ABJ_404_Solution_PluginLogic {
             }
         }
 
-    	if ($this->options == null) {
-        	$optionResult = get_option('abj404_settings');
-        	$this->options = is_array($optionResult) ? $optionResult : null;
-    	}
-    	$options = $this->options;
+        if ($this->options == null) {
+            $optionResult = get_option('abj404_settings');
+            if (is_array($optionResult)) {
+                $normalizedOptions = ABJ_404_Solution_StorageOptionContracts::normalizeForRead(
+                    ABJ_404_Solution_StorageOptionContracts::OPTION_SETTINGS,
+                    $optionResult
+                );
+                $this->options = $normalizedOptions;
+                if ($normalizedOptions !== $optionResult) {
+                    $this->updateOptions($normalizedOptions);
+                }
+            } else {
+                $this->options = null;
+            }
+        }
+        $options = $this->options;
 
         if (!is_array($options)) {
             add_option('abj404_settings', '', '', false);
@@ -1025,6 +1037,11 @@ class ABJ_404_Solution_PluginLogic {
 
     /** @param array<string, mixed> $options @return void */
     function updateOptions(array $options): void {
+        $options = array_merge($this->getDefaultOptions(), $options);
+        $options = ABJ_404_Solution_StorageOptionContracts::prepareForWrite(
+            ABJ_404_Solution_StorageOptionContracts::OPTION_SETTINGS,
+            $options
+        );
     	$old_options = $this->options;
     	update_option('abj404_settings', $options);
     	$this->options = $options;

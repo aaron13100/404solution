@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://www.ajexperience.com/404-solution/contracts/storage-schemas/abj404-uninstall-preferences.schema.json",
+  "title": "404 Solution wp_options: abj404_uninstall_preferences",
+  "type": "object",
+  "required": [
+    "_schemaVersion",
+    "delete_redirects",
+    "delete_logs",
+    "delete_cache",
+    "send_feedback",
+    "uninstall_reason",
+    "selected_issues",
+    "followup_details",
+    "feedback_details",
+    "feedback_email",
+    "include_diagnostics"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "_schemaVersion": {
+      "type": "integer",
+      "const": 2
+    },
+    "delete_redirects": {
+      "type": "boolean"
+    },
+    "delete_logs": {
+      "type": "boolean"
+    },
+    "delete_cache": {
+      "type": "boolean"
+    },
+    "send_feedback": {
+      "type": "boolean"
+    },
+    "uninstall_reason": {
+      "type": "string"
+    },
+    "selected_issues": {
+      "type": "string"
+    },
+    "followup_details": {
+      "type": "string"
+    },
+    "feedback_details": {
+      "type": "string"
+    },
+    "better_plugin_name": {
+      "type": "string"
+    },
+    "other_reason_text": {
+      "type": "string"
+    },
+    "feedback_email": {
+      "type": "string"
+    },
+    "include_diagnostics": {
+      "type": "boolean"
+    }
+  }
+}

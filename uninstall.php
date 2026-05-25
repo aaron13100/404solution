@@ -31,6 +31,7 @@ define('ABJ404_VERSION', $plugin_data['Version']);
 
 // Load the Uninstaller class
 require_once __DIR__ . '/includes/Uninstaller.php';
+require_once __DIR__ . '/includes/StorageOptionContracts.php';
 
 // Get saved preferences from the uninstall modal
 // Use site option for network-activated plugins, regular option for single-site
@@ -71,6 +72,7 @@ if (false === $preferences || !is_array($preferences)) {
         'feedback_details' => ''
     );
 }
+$preferences = ABJ_404_Solution_StorageOptionContracts::normalizeForRead($option_name, $preferences);
 
 // Delete the preferences (cleanup)
 if (is_multisite() && $is_network_active) {

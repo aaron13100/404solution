@@ -1,0 +1,6 @@
+{
+  "default_redirect": "301",
+  "capture_404": "1",
+  "DB_VERSION": "3.0.0",
+  "admin_notification_frequency": "weekly"
+}

@@ -1,0 +1,10 @@
+{
+  "_schemaVersion": 1,
+  "delete_redirects": false,
+  "delete_logs": false,
+  "delete_cache": true,
+  "send_feedback": true,
+  "uninstall_reason": "temporary",
+  "feedback_email": "legacy@example.com",
+  "feedback_details": "Trying another plugin for now."
+}

@@ -1,0 +1,9 @@
+{
+  "delete_redirects": true,
+  "delete_logs": true,
+  "delete_cache": true,
+  "send_feedback": false,
+  "uninstall_reason": "",
+  "feedback_email": "",
+  "feedback_details": ""
+}

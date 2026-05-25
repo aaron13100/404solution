@@ -414,6 +414,7 @@ class ABJ_404_Solution_UninstallModal {
         // Save preferences using site options for multisite compatibility
         // In multisite, use site_option for network-activated plugins, regular option for single-site
         $option_name = 'abj404_uninstall_preferences';
+        $preferences = ABJ_404_Solution_StorageOptionContracts::prepareForWrite($option_name, $preferences);
 
         // Capture return value to verify save success
         $save_result = false;

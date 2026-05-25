@@ -1,0 +1,15 @@
+{
+  "_schemaVersion": 2,
+  "delete_redirects": true,
+  "delete_logs": false,
+  "delete_cache": true,
+  "send_feedback": true,
+  "uninstall_reason": "performance",
+  "selected_issues": "slow-admin",
+  "followup_details": "Please contact me.",
+  "feedback_details": "Please contact me.",
+  "feedback_email": {
+    "address": "owner@example.com"
+  },
+  "include_diagnostics": true
+}

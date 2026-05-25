@@ -108,6 +108,7 @@ return array(
     'ABJ_404_Solution_FeedbackTransport' => $base . 'includes/FeedbackTransport.php',
     'ABJ_404_Solution_PayloadSchema' => $base . 'includes/PayloadSchema.php',
     'ABJ_404_Solution_ReportPayloadJsonSchemaValidator' => $base . 'includes/ReportPayloadJsonSchemaValidator.php',
+    'ABJ_404_Solution_StorageOptionContracts' => $base . 'includes/StorageOptionContracts.php',
     'ABJ_404_Solution_SuggestionTransient' => $base . 'includes/SuggestionTransient.php',
     'ABJ_404_Solution_RedirectRow' => $base . 'includes/RedirectRow.php',
     'ABJ_404_Solution_EngineProfileSaveRequest' => $base . 'includes/EngineProfileSaveRequest.php',

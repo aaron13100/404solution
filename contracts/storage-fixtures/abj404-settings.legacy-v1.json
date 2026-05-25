@@ -1,0 +1,7 @@
+{
+  "_schemaVersion": 1,
+  "default_redirect": "302",
+  "capture_404": "0",
+  "DB_VERSION": "4.1.12",
+  "admin_notification_email": "legacy@example.com"
+}

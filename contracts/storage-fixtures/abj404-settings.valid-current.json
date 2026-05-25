@@ -1,0 +1,10 @@
+{
+  "_schemaVersion": 2,
+  "default_redirect": "301",
+  "capture_404": "1",
+  "DB_VERSION": "4.2.0",
+  "admin_notification_email": "owner@example.com",
+  "admin_notification_frequency": "daily",
+  "admin_notification_digest_limit": "10",
+  "dest404_behavior": "theme_default"
+}

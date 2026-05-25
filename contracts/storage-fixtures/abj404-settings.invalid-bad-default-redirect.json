@@ -1,0 +1,7 @@
+{
+  "_schemaVersion": 2,
+  "default_redirect": ["301"],
+  "capture_404": "1",
+  "DB_VERSION": "4.2.0",
+  "admin_notification_frequency": "daily"
+}

@@ -1,0 +1,65 @@
+{
+  "$schema": "~/.claude/templates/quality-gates/shared/storage-contracts.schema.json",
+  "contracts": [
+    {
+      "id": "abj404-settings",
+      "description": "Primary wp_options settings blob for plugin behavior and admin preferences.",
+      "schema": "storage-schemas/abj404-settings.schema.json",
+      "storageKey": "abj404_settings",
+      "currentVersion": 2,
+      "writer": {
+        "file": "includes/PluginLogic.php",
+        "test": "tests/WpOptionsStorageContractTest.php"
+      },
+      "reader": {
+        "file": "includes/PluginLogic.php",
+        "test": "tests/WpOptionsStorageContractTest.php"
+      },
+      "migrations": {
+        "1-to-2": "../includes/storage-migrations/abj404-settings-v1-to-v2.php"
+      },
+      "fixtures": {
+        "valid": [
+          "storage-fixtures/abj404-settings.valid-current.json"
+        ],
+        "invalid": [
+          "storage-fixtures/abj404-settings.invalid-bad-default-redirect.json"
+        ],
+        "legacy": [
+          "storage-fixtures/abj404-settings.legacy-v1.json",
+          "storage-fixtures/abj404-settings.legacy-unversioned.json"
+        ]
+      }
+    },
+    {
+      "id": "abj404-uninstall-preferences",
+      "description": "Deactivation/uninstall preferences saved before WordPress deletes the plugin.",
+      "schema": "storage-schemas/abj404-uninstall-preferences.schema.json",
+      "storageKey": "abj404_uninstall_preferences",
+      "currentVersion": 2,
+      "writer": {
+        "file": "includes/UninstallModal.php",
+        "test": "tests/WpOptionsStorageContractTest.php"
+      },
+      "reader": {
+        "file": "uninstall.php",
+        "test": "tests/WpOptionsStorageContractTest.php"
+      },
+      "migrations": {
+        "1-to-2": "../includes/storage-migrations/abj404-uninstall-preferences-v1-to-v2.php"
+      },
+      "fixtures": {
+        "valid": [
+          "storage-fixtures/abj404-uninstall-preferences.valid-current.json"
+        ],
+        "invalid": [
+          "storage-fixtures/abj404-uninstall-preferences.invalid-bad-feedback-email.json"
+        ],
+        "legacy": [
+          "storage-fixtures/abj404-uninstall-preferences.legacy-v1.json",
+          "storage-fixtures/abj404-uninstall-preferences.legacy-unversioned.json"
+        ]
+      }
+    }
+  ]
+}

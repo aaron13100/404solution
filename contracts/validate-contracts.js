@@ -53,9 +53,9 @@ function findJsonSchemaFiles(dir) {
   return results;
 }
 
-function fileContainsAnnotation(filePath, contractId) {
+function fileContainsAnnotation(filePath, contractId, annotationName = "contract") {
   const content = fs.readFileSync(filePath, "utf8");
-  const pattern = new RegExp(`@contract\\s+${contractId.replace(/-/g, "\\-")}\\b`);
+  const pattern = new RegExp(`@${annotationName}\\s+${contractId.replace(/-/g, "\\-")}\\b`);
   return pattern.test(content);
 }
 
@@ -108,7 +108,7 @@ function validateFixtures(schema, schemaPath, fixtures, baseDir, label) {
   const ajv = new Ajv({ allErrors: true, strict: false });
   let validate;
   try {
-    validate = ajv.compile(schema);
+    validate = compileJsonSchema(ajv, schema);
   } catch (e) {
     fail(`${label}: schema compilation failed: ${e.message}`);
     return;
@@ -154,7 +154,25 @@ function validateFixtures(schema, schemaPath, fixtures, baseDir, label) {
   }
 }
 
-function validateTestFiles(testSpec, contractId, side, label) {
+function compileJsonSchema(ajv, schema) {
+  try {
+    return ajv.compile(schema);
+  } catch (e) {
+    const message = e && e.message ? e.message : "";
+    if (
+      schema &&
+      schema.$schema === "https://json-schema.org/draft/2020-12/schema" &&
+      /no schema with key or ref/.test(message)
+    ) {
+      const fallbackSchema = JSON.parse(JSON.stringify(schema));
+      delete fallbackSchema.$schema;
+      return ajv.compile(fallbackSchema);
+    }
+    throw e;
+  }
+}
+
+function validateTestFiles(testSpec, contractId, side, label, annotationName = "contract") {
   const tests = Array.isArray(testSpec) ? testSpec : [testSpec];
   for (const t of tests) {
     const tp = path.resolve(t);
@@ -164,13 +182,13 @@ function validateTestFiles(testSpec, contractId, side, label) {
         fail(`${label}: ${side} test file not found: ${t}`);
         continue;
       }
-      if (!fileContainsAnnotation(relTp, contractId)) {
-        fail(`${label}: ${side} test file missing @contract ${contractId} annotation: ${t}`);
+      if (!fileContainsAnnotation(relTp, contractId, annotationName)) {
+        fail(`${label}: ${side} test file missing @${annotationName} ${contractId} annotation: ${t}`);
       }
       continue;
     }
-    if (!fileContainsAnnotation(tp, contractId)) {
-      fail(`${label}: ${side} test file missing @contract ${contractId} annotation: ${t}`);
+    if (!fileContainsAnnotation(tp, contractId, annotationName)) {
+      fail(`${label}: ${side} test file missing @${annotationName} ${contractId} annotation: ${t}`);
     }
   }
 }
@@ -315,6 +333,127 @@ function validateVendorContracts(dir) {
   }
 }
 
+function validateLegacyFixtures(fixtures, baseDir, label) {
+  for (const f of fixtures.legacy || []) {
+    const fp = path.resolve(baseDir, f);
+    if (!fileExists(fp)) {
+      fail(`${label}: legacy fixture not found: ${f}`);
+      continue;
+    }
+    try {
+      loadJson(fp);
+    } catch (e) {
+      fail(`${label}: legacy fixture is not valid JSON: ${f} (${e.message})`);
+    }
+  }
+}
+
+function validateStorageContracts(dir) {
+  const manifestPath = path.join(dir, "storage-contracts.json");
+  if (!fileExists(manifestPath)) return;
+
+  console.log(`Validating storage contracts: ${manifestPath}`);
+
+  let manifest;
+  try {
+    manifest = loadJson(manifestPath);
+  } catch (e) {
+    fail(`storage-contracts.json is not valid JSON: ${e.message}`);
+    return;
+  }
+
+  if (!manifest.contracts || !Array.isArray(manifest.contracts)) {
+    fail("storage-contracts.json must have a 'contracts' array");
+    return;
+  }
+
+  const referencedSchemas = new Set();
+  const seenIds = new Set();
+
+  for (const contract of manifest.contracts) {
+    const label = `storage contract '${contract.id}'`;
+
+    if (!contract.id) {
+      fail("storage contract missing 'id' field");
+      continue;
+    }
+    if (seenIds.has(contract.id)) {
+      fail(`${label}: duplicate contract id`);
+    }
+    seenIds.add(contract.id);
+
+    if (!contract.schema) {
+      fail(`${label}: missing 'schema' field`);
+      continue;
+    }
+    if (!contract.storageKey) {
+      fail(`${label}: missing 'storageKey' field`);
+    }
+    if (!Number.isInteger(contract.currentVersion) || contract.currentVersion < 1) {
+      fail(`${label}: currentVersion must be a positive integer`);
+    }
+
+    const schemaPath = path.resolve(dir, contract.schema);
+    referencedSchemas.add(schemaPath);
+    const schema = validateSchemaFile(schemaPath, label);
+    if (schema) {
+      const required = Array.isArray(schema.required) ? schema.required : [];
+      if (!required.includes("_schemaVersion")) {
+        fail(`${label}: schema must require _schemaVersion`);
+      }
+      const versionSchema = schema.properties && schema.properties._schemaVersion;
+      if (!versionSchema || versionSchema.type !== "integer") {
+        fail(`${label}: schema property _schemaVersion must have type integer`);
+      } else if (
+        Number.isInteger(contract.currentVersion) &&
+        Object.prototype.hasOwnProperty.call(versionSchema, "const") &&
+        versionSchema.const !== contract.currentVersion
+      ) {
+        fail(`${label}: _schemaVersion const must match currentVersion`);
+      }
+    }
+
+    if (contract.writer && contract.writer.test) {
+      validateTestFiles(contract.writer.test, contract.id, "writer", label, "storage-contract");
+    } else {
+      fail(`${label}: writer missing 'test' field`);
+    }
+
+    if (contract.reader && contract.reader.test) {
+      validateTestFiles(contract.reader.test, contract.id, "reader", label, "storage-contract");
+    } else {
+      fail(`${label}: reader missing 'test' field`);
+    }
+
+    if (contract.migrations && typeof contract.migrations === "object") {
+      for (const [transition, migrationFile] of Object.entries(contract.migrations)) {
+        if (!/^[1-9][0-9]*-to-[1-9][0-9]*$/.test(transition)) {
+          fail(`${label}: migration key must look like 1-to-2: ${transition}`);
+        }
+        const migrationPath = path.resolve(dir, String(migrationFile));
+        if (!fileExists(migrationPath)) {
+          fail(`${label}: migration file not found for ${transition}: ${migrationFile}`);
+        }
+      }
+    }
+
+    if (contract.fixtures && schema) {
+      validateFixtures(schema, schemaPath, contract.fixtures, dir, label);
+      validateLegacyFixtures(contract.fixtures, dir, label);
+    } else if (!contract.fixtures) {
+      fail(`${label}: missing 'fixtures' (need valid, invalid, and legacy fixtures)`);
+    }
+  }
+
+  const allSchemas = findJsonSchemaFiles(path.join(dir, "storage-schemas"));
+  for (const s of allSchemas) {
+    if (!referencedSchemas.has(s)) {
+      const rel = path.relative(dir, s);
+      fail(`orphan storage schema not referenced by any storage contract: ${rel}`);
+    }
+  }
+}
+
 // --- Main ---
 
 if (!fs.existsSync(contractsDir) && !fs.existsSync(vendorDir)) {
@@ -323,6 +462,7 @@ if (!fs.existsSync(contractsDir) && !fs.existsSync(vendorDir)) {
 
 validateBilateralContracts(contractsDir);
 validateVendorContracts(vendorDir);
+validateStorageContracts(contractsDir);
 
 if (errors.length > 0) {
   console.error(`\n${errors.length} contract validation error(s):\n`);
@@ -335,6 +475,14 @@ if (errors.length > 0) {
   const contractCount =
     (fs.existsSync(path.join(contractsDir, "contracts.json")) ? loadJson(path.join(contractsDir, "contracts.json")).contracts.length : 0) +
     (fs.existsSync(path.join(vendorDir, "vendor-contracts.json")) ? loadJson(path.join(vendorDir, "vendor-contracts.json")).contracts.length : 0);
-  console.log(`  OK: ${contractCount} contract(s) validated`);
+  const storageContractCount =
+    fs.existsSync(path.join(contractsDir, "storage-contracts.json"))
+      ? loadJson(path.join(contractsDir, "storage-contracts.json")).contracts.length
+      : 0;
+  if (storageContractCount > 0) {
+    console.log(`  OK: ${contractCount} contract(s), ${storageContractCount} storage contract(s) validated`);
+  } else {
+    console.log(`  OK: ${contractCount} contract(s) validated`);
+  }
   process.exit(0);
 }

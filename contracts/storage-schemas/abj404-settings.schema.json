@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://www.ajexperience.com/404-solution/contracts/storage-schemas/abj404-settings.schema.json",
+  "title": "404 Solution wp_options: abj404_settings",
+  "type": "object",
+  "required": [
+    "_schemaVersion",
+    "default_redirect",
+    "capture_404",
+    "DB_VERSION",
+    "admin_notification_frequency"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "_schemaVersion": {
+      "type": "integer",
+      "const": 2
+    },
+    "default_redirect": {
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "integer"
+        }
+      ]
+    },
+    "capture_404": {
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "integer"
+        }
+      ]
+    },
+    "DB_VERSION": {
+      "type": "string"
+    },
+    "admin_notification_email": {
+      "type": "string"
+    },
+    "admin_notification_frequency": {
+      "type": "string"
+    },
+    "admin_notification_digest_limit": {
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "integer"
+        }
+      ]
+    },
+    "dest404_behavior": {
+      "type": "string"
+    }
+  }
+}
