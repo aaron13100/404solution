@@ -59,6 +59,12 @@ function fileContainsAnnotation(filePath, contractId, annotationName = "contract
   return pattern.test(content);
 }
 
+function fileContainsParityAnnotation(filePath, contractId) {
+  const content = fs.readFileSync(filePath, "utf8");
+  const pattern = new RegExp(`@parityTest\\s+${contractId.replace(/-/g, "\\-")}\\b`);
+  return pattern.test(content);
+}
+
 function validateSchemaFile(schemaPath, label) {
   if (!fileExists(schemaPath)) {
     fail(`${label}: schema file not found: ${schemaPath}`);
@@ -193,6 +199,21 @@ function validateTestFiles(testSpec, contractId, side, label, annotationName = "
   }
 }
 
+function validateParityTestFiles(testSpec, contractId, label) {
+  const tests = Array.isArray(testSpec) ? testSpec : [testSpec];
+  for (const t of tests) {
+    const tp = path.resolve(t);
+    const resolved = fileExists(tp) ? tp : path.resolve(process.cwd(), t);
+    if (!fileExists(resolved)) {
+      fail(`${label}: parityTest file not found: ${t}`);
+      continue;
+    }
+    if (!fileContainsParityAnnotation(resolved, contractId)) {
+      fail(`${label}: parityTest file missing @parityTest ${contractId} annotation: ${t}`);
+    }
+  }
+}
+
 function validateBilateralContracts(dir) {
   const manifestPath = path.join(dir, "contracts.json");
   if (!fileExists(manifestPath)) return;
@@ -264,6 +285,14 @@ function validateBilateralContracts(dir) {
       validateFixtures(schema, schemaPath, contract.fixtures, dir, label);
     } else if (!contract.fixtures) {
       fail(`${label}: missing 'fixtures' (need at least one valid and one invalid)`);
+    }
+
+    if (contract.parityTest) {
+      validateParityTestFiles(contract.parityTest, contract.id, label);
+    } else {
+      fail(
+        `${label}: missing 'parityTest' field. Every over-the-wire contract needs an integration test that exercises the real client -> real server -> real DB round-trip. See ~/.claude/docs/outbound-contracts.md for the pattern.`
+      );
     }
   }
 

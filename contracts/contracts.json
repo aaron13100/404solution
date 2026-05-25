@@ -17,6 +17,7 @@
         "file": "src/routes/reports.js",
         "test": "tests/FeedbackPayloadSchemaContractTest.php"
       },
+      "parityTest": "tests/FeedbackTransportE2ERoundTripTest.php",
       "fixtures": {
         "valid": ["fixtures/error-report.valid.json"],
         "invalid": ["fixtures/error-report.invalid-missing-debug-log.json"]
@@ -35,6 +36,7 @@
         "file": "src/routes/reports.js",
         "test": "tests/FeedbackPayloadSchemaContractTest.php"
       },
+      "parityTest": "tests/FeedbackTransportE2ERoundTripTest.php",
       "fixtures": {
         "valid": ["fixtures/heartbeat.valid.json"],
         "invalid": ["fixtures/heartbeat.invalid-missing-version.json"]
@@ -53,6 +55,7 @@
         "file": "src/routes/reports.js",
         "test": "tests/FeedbackPayloadSchemaContractTest.php"
       },
+      "parityTest": "tests/FeedbackTransportE2ERoundTripTest.php",
       "fixtures": {
         "valid": ["fixtures/uninstall-report.valid.json"],
         "invalid": ["fixtures/uninstall-report.invalid-missing-version.json"]
@@ -74,6 +77,7 @@
         "file": "src/routes/reports.js",
         "test": "tests/FeedbackPayloadSchemaContractTest.php"
       },
+      "parityTest": "tests/FeedbackTransportE2ERoundTripTest.php",
       "fixtures": {
         "valid": ["fixtures/support-request.valid.json"],
         "invalid": ["fixtures/support-request.invalid-missing-user-message.json"]
@@ -92,6 +96,7 @@
         "file": "includes/ajax/ViewUpdater.php",
         "test": "tests-js/ajax-response-validation.test.js"
       },
+      "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
       "fixtures": {
         "valid": ["fixtures/ajax-update-pagination.valid.json"],
         "invalid": ["fixtures/ajax-update-pagination.invalid-missing-subpage.json"]
@@ -110,6 +115,7 @@
         "file": "includes/ajax/ViewUpdater.php",
         "test": "tests-js/ajax-response-validation.test.js"
       },
+      "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
       "fixtures": {
         "valid": ["fixtures/ajax-warm-table-cache.valid.json"],
         "invalid": ["fixtures/ajax-warm-table-cache.invalid-bad-subpage.json"]
@@ -128,6 +134,7 @@
         "file": "includes/ajax/ViewUpdater.php",
         "test": "tests-js/ajax-response-validation.test.js"
       },
+      "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
       "fixtures": {
         "valid": ["fixtures/ajax-refresh-stats.valid.json"],
         "invalid": ["fixtures/ajax-refresh-stats.invalid-missing-nonce.json"]
@@ -146,6 +153,7 @@
         "file": "includes/ajax/ViewUpdater.php",
         "test": "tests-js/ajax-response-validation.test.js"
       },
+      "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
       "fixtures": {
         "valid": ["fixtures/ajax-refresh-health-bar.valid.json"],
         "invalid": ["fixtures/ajax-refresh-health-bar.invalid-missing-nonce.json"]
@@ -164,6 +172,7 @@
         "file": "includes/ajax/ViewUpdater.php",
         "test": "tests-js/ajax-response-validation.test.js"
       },
+      "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
       "fixtures": {
         "valid": ["fixtures/ajax-fetch-inflight-stage.valid.json"],
         "invalid": ["fixtures/ajax-fetch-inflight-stage.invalid-bad-request-id.json"]
@@ -182,6 +191,7 @@
         "file": "includes/ajax/ViewUpdater.php",
         "test": "tests-js/ajax-response-validation.test.js"
       },
+      "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
       "fixtures": {
         "valid": ["fixtures/ajax-advance-view-build.valid.json"],
         "invalid": ["fixtures/ajax-advance-view-build.invalid-missing-nonce.json"]
@@ -200,6 +210,7 @@
         "file": "includes/ajax/Ajax_SupportRequest.php",
         "test": "tests-js/support-request-button.test.js"
       },
+      "parityTest": "tests-js/support-request-button.test.js",
       "fixtures": {
         "valid": ["fixtures/ajax-support-request.valid.json"],
         "invalid": ["fixtures/ajax-support-request.invalid-bad-trigger.json"]
@@ -218,6 +229,7 @@
         "file": "includes/ajax/Ajax_SupportRequestPreview.php",
         "test": "tests-js/support-request-button.test.js"
       },
+      "parityTest": "tests-js/support-request-button.test.js",
       "fixtures": {
         "valid": ["fixtures/ajax-support-request-preview.valid.json"],
         "invalid": ["fixtures/ajax-support-request-preview.invalid-missing-trigger.json"]
@@ -236,6 +248,7 @@
         "file": "includes/ajax/Ajax_CrossPluginImporter.php",
         "test": "tests/AjaxCrossPluginImporterContractTest.php"
       },
+      "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
       "fixtures": {
         "valid": ["fixtures/ajax-cross-plugin-preview.valid.json"],
         "invalid": ["fixtures/ajax-cross-plugin-preview.invalid-bad-source.json"]
@@ -254,6 +267,7 @@
         "file": "includes/ajax/Ajax_EngineProfiles.php",
         "test": "tests/AjaxEngineProfilesContractTest.php"
       },
+      "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
       "fixtures": {
         "valid": ["fixtures/ajax-engine-profiles.valid.json"],
         "invalid": ["fixtures/ajax-engine-profiles.invalid-missing-nonce.json"]
@@ -272,6 +286,7 @@
         "file": "includes/ajax/Ajax_Php.php",
         "test": "tests/AjaxUpdateOptionsContractTest.php"
       },
+      "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
       "fixtures": {
         "valid": ["fixtures/ajax-update-options.valid.json"],
         "invalid": ["fixtures/ajax-update-options.invalid-missing-nonce.json"]
@@ -290,6 +305,7 @@
         "file": "includes/ajax/Ajax_RestoreDefaults.php",
         "test": "tests/SettingsRestoreDefaultsActionTest.php"
       },
+      "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
       "fixtures": {
         "valid": ["fixtures/ajax-restore-defaults.valid.json"],
         "invalid": ["fixtures/ajax-restore-defaults.invalid-missing-nonce.json"]
@@ -308,6 +324,7 @@
         "file": "includes/ajax/Ajax_SettingsModeToggle.php",
         "test": "tests/AjaxSettingsModeToggleTest.php"
       },
+      "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
       "fixtures": {
         "valid": ["fixtures/ajax-settings-mode-toggle.valid.json"],
         "invalid": ["fixtures/ajax-settings-mode-toggle.invalid-bad-mode.json"]
@@ -326,6 +343,7 @@
         "file": "includes/ajax/Ajax_SuggestionCompute.php",
         "test": "tests/AjaxSuggestionComputeContractTest.php"
       },
+      "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
       "fixtures": {
         "valid": ["fixtures/ajax-suggestion-compute.valid.json"],
         "invalid": ["fixtures/ajax-suggestion-compute.invalid-missing-token.json"]
@@ -344,6 +362,7 @@
         "file": "includes/ajax/Ajax_SuggestionPolling.php",
         "test": "tests/AjaxSuggestionPollingJsonContractTest.php"
       },
+      "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
       "fixtures": {
         "valid": ["fixtures/ajax-suggestion-polling.valid.json"],
         "invalid": ["fixtures/ajax-suggestion-polling.invalid-missing-url.json"]
@@ -362,6 +381,7 @@
         "file": "includes/ajax/Ajax_TrashLink.php",
         "test": "tests/AjaxTrashLinkContractTest.php"
       },
+      "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
       "fixtures": {
         "valid": ["fixtures/ajax-trash-link.valid.json"],
         "invalid": ["fixtures/ajax-trash-link.invalid-missing-id.json"]
@@ -380,6 +400,7 @@
         "file": "includes/ajax/Ajax_TrendData.php",
         "test": "tests/AjaxTrendDataContractTest.php"
       },
+      "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
       "fixtures": {
         "valid": ["fixtures/ajax-trend-data.valid.json"],
         "invalid": ["fixtures/ajax-trend-data.invalid-missing-nonce.json"]
