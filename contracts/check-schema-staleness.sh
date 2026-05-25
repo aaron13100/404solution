@@ -3,27 +3,29 @@
 # Exit 0 if identical, exit 1 if stale.
 #
 # Usage: bash contracts/check-schema-staleness.sh [server-contracts-dir]
-# Default server dir: ~/dev/404-solution-server/contracts
+# Default server dir: $ABJ404_SERVER_CONTRACTS_DIR, or
+#                     ~/dev/404-solution-server/contracts
 
 set -euo pipefail
 
-SERVER_DIR="${1:-$HOME/dev/404-solution-server/contracts}"
-LOCAL_SCHEMA="$(dirname "$0")/schemas/report.schema.json"
-SERVER_SCHEMA="$SERVER_DIR/schemas/report.schema.json"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+SERVER_DIR="${1:-${ABJ404_SERVER_CONTRACTS_DIR:-$HOME/dev/404-solution-server/contracts}}"
+LOCAL_SCHEMA="$SCRIPT_DIR/schemas/report.schema.json"
+SERVER_SCHEMA="${SERVER_DIR%/}/schemas/report.schema.json"
 
 if [ ! -f "$LOCAL_SCHEMA" ]; then
-  echo "FAIL: vendored schema not found: $LOCAL_SCHEMA"
+  echo "FAIL: vendored schema not found: $LOCAL_SCHEMA" >&2
   exit 1
 fi
 
 if [ ! -f "$SERVER_SCHEMA" ]; then
-  echo "WARN: server schema not found at $SERVER_SCHEMA (server repo may not be checked out)"
-  echo "Skipping staleness check."
-  exit 0
+  echo "FAIL: server schema not found: $SERVER_SCHEMA" >&2
+  echo "Pass the server contracts directory or set ABJ404_SERVER_CONTRACTS_DIR." >&2
+  exit 1
 fi
 
-# allow-silent-catch: diff exit code 1 means files differ, which is the condition we test for
-if diff -q "$LOCAL_SCHEMA" "$SERVER_SCHEMA" > /dev/null 2>&1; then
+# allow-silent-catch: cmp exit code 1 means files differ, which is the condition we test for
+if cmp -s "$LOCAL_SCHEMA" "$SERVER_SCHEMA"; then
   echo "OK: vendored schema matches server"
   exit 0
 else
