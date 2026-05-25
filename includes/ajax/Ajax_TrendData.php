@@ -10,11 +10,10 @@ if (!defined('ABSPATH')) {
  * Returns daily 404/redirect activity for Chart.js charts on the Stats page.
  */
 class ABJ_404_Solution_Ajax_TrendData {
-    use ABJ_404_Solution_AjaxSecurityTrait;
 
     /** @return void */
     public static function echoTrendData(): void {
-        self::requireAdminWithNonce('abj404_trendData');
+        abj_service('ajax_security_gate')->requireAdminWithNonce('abj404_trendData');
 
         // Rate limiting: 60 requests per minute.
         if (ABJ_404_Solution_Ajax_Php::checkRateLimit('trend_data', 60, 60)) {

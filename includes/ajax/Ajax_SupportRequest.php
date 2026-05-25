@@ -19,7 +19,6 @@ if (!defined('ABSPATH')) {
  * follow-up tasks B (reusable button) and C (wire button into error sites).
  */
 class ABJ_404_Solution_Ajax_SupportRequest {
-    use ABJ_404_Solution_AjaxSecurityTrait;
 
     /** Per-site cooldown between support requests (seconds). */
     const COOLDOWN_SECONDS = 300;
@@ -80,7 +79,7 @@ class ABJ_404_Solution_Ajax_SupportRequest {
     public function handleRequest(): void {
         // Nonce + manage_options gate. requireAdminWithNonce() reads from
         // POST first, then GET; the matching JS posts a 'nonce' field.
-        self::requireAdminWithNonce(self::NONCE_ACTION);
+        abj_service('ajax_security_gate')->requireAdminWithNonce(self::NONCE_ACTION);
 
         // Cooldown check (per site, cheap transient read). 'manage_options'
         // already gated above so the cooldown is purely about endpoint-spam

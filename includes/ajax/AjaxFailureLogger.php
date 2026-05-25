@@ -6,32 +6,22 @@ if (!defined('ABSPATH')) {
 
 /**
  * AJAX failure-logging utilities used by the AJAX handler classes.
- *
- * Four pure static helpers, all callable as `self::method()` from any class
- * that composes this trait:
- *
- *   - safeJsonEncode: json_encode wrapper that handles encoding failures so
- *     a malformed payload can never throw inside the failure path itself.
- *   - redactSqlShape: collapse a $wpdb->last_query value into a placeholder
- *     shape (numbers + quoted strings becomes "?") for safe logging.
- *   - safeLogAjaxFailure: write a single error line to the plugin debug log
- *     with summary + details + throwable trace, with a fallback path that
- *     writes next to the plugin file when logging services are unavailable.
- *   - extractViewQueryDiagnostics: walk an exception chain looking for an
- *     ABJ_404_Solution_ViewQueryFailureException and return its diagnostics
- *     payload (table counts, indexes, EXPLAIN, etc.) for the AJAX response.
- *
- * Composed into ABJ_404_Solution_ViewUpdater. No state of its own; methods
- * are static and use only globals (\$GLOBALS['abj404_ajax_context'] is read
- * by callers, not by these helpers directly) plus the plugin logging service.
  */
-trait ABJ_404_Solution_AjaxFailureLoggingTrait {
+class ABJ_404_Solution_AjaxFailureLogger {
+
+    /** @var object|null */
+    private $logger;
+
+    /** @param object|null $logger */
+    public function __construct($logger = null) {
+        $this->logger = $logger;
+    }
 
     /**
      * @param mixed $value
      * @return string
      */
-    private static function safeJsonEncode($value) {
+    public function safeJsonEncode($value) {
         $encoded = json_encode($value, JSON_PARTIAL_OUTPUT_ON_ERROR);
         if ($encoded === false) {
             return '(json_encode failed) ' . print_r($value, true);
@@ -43,7 +33,7 @@ trait ABJ_404_Solution_AjaxFailureLoggingTrait {
      * @param mixed $sql
      * @return string
      */
-    private static function redactSqlShape($sql) {
+    public function redactSqlShape($sql) {
         if (!is_string($sql) || $sql === '') {
             return '';
         }
@@ -78,10 +68,10 @@ trait ABJ_404_Solution_AjaxFailureLoggingTrait {
      * @param \Throwable|null $throwable
      * @return void
      */
-    private static function safeLogAjaxFailure($summary, $details = null, $throwable = null) {
+    public function safeLogAjaxFailure($summary, $details = null, $throwable = null) {
         $line = date('c') . ' (ERROR): ' . $summary;
         if ($details !== null) {
-            $line .= ' Details: ' . self::safeJsonEncode($details);
+            $line .= ' Details: ' . $this->safeJsonEncode($details);
         }
         if ($throwable instanceof Throwable) {
             $line .= ' Exception: ' . $throwable->getMessage() . ' @ ' . $throwable->getFile() . ':' . $throwable->getLine() .
@@ -89,7 +79,7 @@ trait ABJ_404_Solution_AjaxFailureLoggingTrait {
         }
 
         // Always attempt to write to the plugin debug file.
-        $logger = abj_service('logging');
+        $logger = $this->resolveLogger();
         if (is_object($logger) && method_exists($logger, 'writeLineToDebugFile')) {
             $logger->writeLineToDebugFile($line);
             return;
@@ -106,15 +96,12 @@ trait ABJ_404_Solution_AjaxFailureLoggingTrait {
     /**
      * If the captured throwable is an ABJ_404_Solution_ViewQueryFailureException
      * (or a wrapped version of one), return its diagnostics payload. Otherwise
-     * return null. Used by the AJAX error handlers to surface getRedirectsForView /
-     * getRedirectsForViewCount diagnostics (table counts, engine, indexes,
-     * canonical_url state, EXPLAIN, db_version, etc.) to plugin admins and the
-     * debug log without a follow-up debug zip.
+     * return null.
      *
      * @param Throwable $throwable
      * @return array<string, mixed>|null
      */
-    private static function extractViewQueryDiagnostics(Throwable $throwable) {
+    public function extractViewQueryDiagnostics(Throwable $throwable) {
         $current = $throwable;
         $depth = 0;
         while ($current !== null && $depth < 5) {
@@ -123,6 +110,17 @@ trait ABJ_404_Solution_AjaxFailureLoggingTrait {
             }
             $current = $current->getPrevious();
             $depth++;
+        }
+        return null;
+    }
+
+    /** @return object|null */
+    private function resolveLogger() {
+        if (is_object($this->logger)) {
+            return $this->logger;
+        }
+        if (function_exists('abj_service')) {
+            return abj_service('logging');
         }
         return null;
     }

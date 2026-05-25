@@ -18,11 +18,10 @@ if (!defined('ABSPATH')) {
  *   { success: false, data: { message: '...' } }
  */
 class ABJ_404_Solution_Ajax_CrossPluginImporter {
-    use ABJ_404_Solution_AjaxSecurityTrait;
 
     /** @return void */
     public static function handlePreview(): void {
-        self::requireAdminWithNonce('abj404_crossPluginPreview');
+        abj_service('ajax_security_gate')->requireAdminWithNonce('abj404_crossPluginPreview');
 
         $allowedSources = array('rankmath', 'yoast', 'aioseo', 'safe-redirect-manager', 'redirection');
         $source = isset($_POST['import_source']) && is_string($_POST['import_source'])

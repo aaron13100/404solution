@@ -10,7 +10,6 @@ if (!defined('ABSPATH')) {
  */
 
 class ABJ_404_Solution_Ajax_SettingsModeToggle {
-    use ABJ_404_Solution_AjaxSecurityTrait;
 
     /** @var self|null */
     private static $instance = null;
@@ -38,7 +37,7 @@ class ABJ_404_Solution_Ajax_SettingsModeToggle {
      * @return void
      */
     function handleModeToggle(): void {
-        self::requireAdminWithNonce('abj404_mode_toggle');
+        abj_service('ajax_security_gate')->requireAdminWithNonce('abj404_mode_toggle');
 
         $container = ABJ_404_Solution_ServiceContainer::getInstance();
         /** @var ABJ_404_Solution_Functions $functions */

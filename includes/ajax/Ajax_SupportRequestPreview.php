@@ -27,7 +27,6 @@ if (!defined('ABSPATH')) {
  * name 'wp_ajax_abj404_support_request_preview'.
  */
 class ABJ_404_Solution_Ajax_SupportRequestPreview {
-    use ABJ_404_Solution_AjaxSecurityTrait;
 
     /** Nonce action used by both wp_create_nonce() and wp_verify_nonce(). */
     const NONCE_ACTION = 'abj404_support_request_preview';
@@ -71,7 +70,7 @@ class ABJ_404_Solution_Ajax_SupportRequestPreview {
      * @return void
      */
     public function handleRequest(): void {
-        self::requireAdminWithNonce(self::NONCE_ACTION);
+        abj_service('ajax_security_gate')->requireAdminWithNonce(self::NONCE_ACTION);
 
         $triggeredFromRaw = isset($_POST['triggered_from']) && is_scalar($_POST['triggered_from'])
             ? (string)$_POST['triggered_from'] : '';

@@ -14,7 +14,6 @@ if (!defined('ABSPATH')) {
  * preserving the DB_VERSION key so a settings restore does not trigger a schema downgrade.
  */
 class ABJ_404_Solution_Ajax_RestoreDefaults {
-    use ABJ_404_Solution_AjaxSecurityTrait;
 
     /** @var self|null */
     private static $instance = null;
@@ -45,7 +44,7 @@ class ABJ_404_Solution_Ajax_RestoreDefaults {
      * @return void
      */
     function handleRestoreDefaults(): void {
-        self::requireAdminWithNonce('abj404_restore_defaults');
+        abj_service('ajax_security_gate')->requireAdminWithNonce('abj404_restore_defaults');
 
         $abj404logic = abj_service('plugin_logic');
 

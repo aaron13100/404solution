@@ -243,9 +243,11 @@ class ABJ_404_Solution_ServiceContainer {
  *     $name is 'request_context' ? ABJ_404_Solution_RequestContext : (
  *     $name is 'view' ? ABJ_404_Solution_View : (
  *     $name is 'view_suggestions' ? ABJ_404_Solution_View_Suggestions : (
- *     $name is 'shortcode' ? ABJ_404_Solution_ShortCode :
+ *     $name is 'shortcode' ? ABJ_404_Solution_ShortCode : (
+ *     $name is 'ajax_security_gate' ? ABJ_404_Solution_AjaxSecurityGate : (
+ *     $name is 'ajax_failure_logger' ? ABJ_404_Solution_AjaxFailureLogger :
  *     mixed
- * )))))))))))))))))))))))))))))))))
+ * )))))))))))))))))))))))))))))))))))
  */
 function abj_service($name) {
     $container = ABJ_404_Solution_ServiceContainer::getInstance();
@@ -255,6 +257,14 @@ function abj_service($name) {
 
     if ($name === 'pii_redactor' && class_exists('ABJ_404_Solution_PiiRedactor')) {
         return new ABJ_404_Solution_PiiRedactor(abj_service('functions'));
+    }
+
+    if ($name === 'ajax_security_gate' && class_exists('ABJ_404_Solution_AjaxSecurityGate')) {
+        return new ABJ_404_Solution_AjaxSecurityGate(abj_service('plugin_logic'), abj_service('logging'));
+    }
+
+    if ($name === 'ajax_failure_logger' && class_exists('ABJ_404_Solution_AjaxFailureLogger')) {
+        return new ABJ_404_Solution_AjaxFailureLogger(abj_service('logging'));
     }
 
     static $legacyDataAccessModuleGetters = array(

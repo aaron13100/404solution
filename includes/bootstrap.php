@@ -295,6 +295,14 @@ function abj_404_solution_register_frontend_services($container) {
  * @return void
  */
 function abj_404_solution_register_presentation_layer($container) {
+    $container->set('ajax_security_gate', function($c) {
+        return new ABJ_404_Solution_AjaxSecurityGate($c->get('plugin_logic'), $c->get('logging'));
+    });
+
+    $container->set('ajax_failure_logger', function($c) {
+        return new ABJ_404_Solution_AjaxFailureLogger($c->get('logging'));
+    });
+
     $container->set('view', function($c) {
         return new ABJ_404_Solution_View(
             $c->get('functions'),

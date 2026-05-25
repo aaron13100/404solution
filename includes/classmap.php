@@ -9,15 +9,8 @@ if (!defined('ABSPATH')) {
 
 $base = dirname(__DIR__) . DIRECTORY_SEPARATOR;
 return array(
-    // Traits used by host classes via `use TraitName`.  Each host class
-    // require_once's its trait files at the top of its source file, but under
-    // ParaTest's 16-worker parallel runs Patchwork's stream wrapper can hit
-    // fd saturation and silently fail to open a trait source — the autoloader
-    // then needs to find the trait by name.  Without these entries the
-    // autoloader returns null, the host class declaration hits "Trait not
-    // found", and the test fails with no useful error.
-    'ABJ_404_Solution_AjaxSecurityTrait' => $base . 'includes/ajax/AjaxSecurityTrait.php',
-    'ABJ_404_Solution_AjaxFailureLoggingTrait' => $base . 'includes/ajax/AjaxFailureLoggingTrait.php',
+    'ABJ_404_Solution_AjaxSecurityGate' => $base . 'includes/ajax/AjaxSecurityGate.php',
+    'ABJ_404_Solution_AjaxFailureLogger' => $base . 'includes/ajax/AjaxFailureLogger.php',
     'ABJ_404_Solution_AjaxStageDiagnostics' => $base . 'includes/ajax/AjaxStageDiagnostics.php',
     'ABJ_404_Solution_FeedbackEnvironmentExtras' => $base . 'includes/FeedbackEnvironmentExtras.php',
     'ABJ_404_Solution_ViewBuildCollaborator' => $base . 'includes/ViewBuildCollaborator.php',

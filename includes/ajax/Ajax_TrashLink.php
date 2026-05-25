@@ -7,7 +7,6 @@ if (!defined('ABSPATH')) {
 
 /* Funtcions supporting Ajax stuff.  */
 class ABJ_404_Solution_Ajax_TrashLink {
-    use ABJ_404_Solution_AjaxSecurityTrait;
 
     /** Handle trash/restore actions via AJAX.
      * @return void
@@ -30,7 +29,7 @@ class ABJ_404_Solution_Ajax_TrashLink {
 
         /** @var ABJ_404_Solution_PluginLogic $abj404logic */
 
-        self::requireAdminWithNonce('abj404_ajaxTrash', '_wpnonce');
+        abj_service('ajax_security_gate')->requireAdminWithNonce('abj404_ajaxTrash', '_wpnonce');
         
         $idToTrash = $functions->getPostOrGetSanitize('id');
         $trashAction = $functions->getPostOrGetSanitize('trash');

@@ -9,9 +9,6 @@ if (!defined('ABSPATH')) {
 
 class ABJ_404_Solution_ViewUpdater {
 
-    use ABJ_404_Solution_AjaxFailureLoggingTrait;
-
-
 	/** @var self|null */
 	private static $instance = null;
 
@@ -253,10 +250,40 @@ class ABJ_404_Solution_ViewUpdater {
         throw new Exception('ABJ404 view service not initialized (abj404view is null).');
     }
 
-    // safeJsonEncode / redactSqlShape / safeLogAjaxFailure /
-    // extractViewQueryDiagnostics live on ABJ_404_Solution_AjaxFailureLoggingTrait
-    // (see includes/ajax/AjaxFailureLoggingTrait.php). self::method() calls
-    // resolve through the trait composition unchanged.
+    /** @return ABJ_404_Solution_AjaxFailureLogger */
+    private static function ajaxFailureLogger() {
+        $logger = function_exists('abj_service') ? abj_service('ajax_failure_logger') : null;
+        if ($logger instanceof ABJ_404_Solution_AjaxFailureLogger) {
+            return $logger;
+        }
+        return new ABJ_404_Solution_AjaxFailureLogger(function_exists('abj_service') ? abj_service('logging') : null);
+    }
+
+    /**
+     * @param mixed $sql
+     * @return string
+     */
+    private static function redactSqlShape($sql) {
+        return self::ajaxFailureLogger()->redactSqlShape($sql);
+    }
+
+    /**
+     * @param string $summary
+     * @param mixed $details
+     * @param \Throwable|null $throwable
+     * @return void
+     */
+    private static function safeLogAjaxFailure($summary, $details = null, $throwable = null) {
+        self::ajaxFailureLogger()->safeLogAjaxFailure($summary, $details, $throwable);
+    }
+
+    /**
+     * @param Throwable $throwable
+     * @return array<string, mixed>|null
+     */
+    private static function extractViewQueryDiagnostics(Throwable $throwable) {
+        return self::ajaxFailureLogger()->extractViewQueryDiagnostics($throwable);
+    }
 
     /**
      * @param array<string, mixed> $context

@@ -123,9 +123,9 @@ function abj404_autoloader($class) {
 		return;
 	}
 
-	// Trait dependency pre-check: classes that use require_once for trait files at file
-	// scope will cause an uncatchable compile-time fatal if any trait file is missing.
-	// Verify all trait files exist BEFORE loading the parent class.
+	// Composition dependency pre-check: parent facade classes depend on files
+	// being present before they are loaded. Verify those files exist first so
+	// a corrupt install can surface a degraded admin page instead of a fatal.
 	static $traitDependencies = null;
 	if ($traitDependencies === null) {
 		// Use __DIR__ (not ABJ404_PATH) to match the classmap's path resolution.
@@ -172,36 +172,6 @@ function abj404_autoloader($class) {
 				$inc . 'DatabaseUpgradeMultiSite.php',
 				$inc . 'DatabaseUpgradeSchemaDiff.php',
 			),
-			// AJAX handler classes that pull in shared traits via `use`.
-			// Without these entries, a corrupted upload that loses the trait
-			// file would cause an uncatchable compile fatal in the host class.
-			'ABJ_404_Solution_Ajax_TrashLink' => array(
-				$inc . 'ajax/AjaxSecurityTrait.php',
-			),
-			'ABJ_404_Solution_Ajax_TrendData' => array(
-				$inc . 'ajax/AjaxSecurityTrait.php',
-			),
-			'ABJ_404_Solution_Ajax_CrossPluginImporter' => array(
-				$inc . 'ajax/AjaxSecurityTrait.php',
-			),
-			'ABJ_404_Solution_Ajax_EngineProfiles' => array(
-				$inc . 'ajax/AjaxSecurityTrait.php',
-			),
-			'ABJ_404_Solution_Ajax_SettingsModeToggle' => array(
-				$inc . 'ajax/AjaxSecurityTrait.php',
-			),
-			'ABJ_404_Solution_Ajax_SupportRequest' => array(
-				$inc . 'ajax/AjaxSecurityTrait.php',
-			),
-			'ABJ_404_Solution_Ajax_SupportRequestPreview' => array(
-				$inc . 'ajax/AjaxSecurityTrait.php',
-			),
-			'ABJ_404_Solution_Ajax_RestoreDefaults' => array(
-				$inc . 'ajax/AjaxSecurityTrait.php',
-			),
-			'ABJ_404_Solution_ViewUpdater' => array(
-				$inc . 'ajax/AjaxFailureLoggingTrait.php',
-			),
 			'ABJ_404_Solution_FeedbackTransport' => array(
 				$inc . 'FeedbackEnvironmentExtras.php',
 			),
@@ -215,9 +185,9 @@ function abj404_autoloader($class) {
 	}
 
 	if (isset($traitDependencies[$class])) {
-		foreach ($traitDependencies[$class] as $traitFile) {
-			if (!file_exists($traitFile)) {
-				$GLOBALS['abj404_missing_files'][] = $traitFile;
+		foreach ($traitDependencies[$class] as $dependencyFile) {
+			if (!file_exists($dependencyFile)) {
+				$GLOBALS['abj404_missing_files'][] = $dependencyFile;
 				// Don't load the parent class — the compile-time fatal is uncatchable.
 				return;
 			}
@@ -344,7 +314,7 @@ if (!function_exists('abj404_shortCodeListener')) {
 				// support button.
 				$inc . 'SupportRequestButton.php',
 				$inc . 'FeedbackTransport.php',
-				$inc . 'ajax/AjaxSecurityTrait.php',
+				$inc . 'ajax/AjaxSecurityGate.php',
 				$inc . 'ajax/Ajax_SupportRequest.php',
 				$inc . 'ajax/Ajax_SupportRequestPreview.php',
 				$inc . 'ajax/SupportRequest.js',
@@ -705,7 +675,7 @@ if (!function_exists('abj404_degraded_register_support_request')) {
 	function abj404_degraded_register_support_request() {
 		$inc = ABJ404_PATH . 'includes/';
 		$supportFiles = array(
-			$inc . 'ajax/AjaxSecurityTrait.php',
+			$inc . 'ajax/AjaxSecurityGate.php',
 			$inc . 'FeedbackTransport.php',
 			$inc . 'SupportRequestButton.php',
 			$inc . 'ajax/Ajax_SupportRequest.php',

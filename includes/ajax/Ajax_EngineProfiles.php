@@ -13,7 +13,6 @@ if (!defined('ABSPATH')) {
  *   abj404_engine_profiles_delete – Delete a profile by ID.
  */
 class ABJ_404_Solution_Ajax_EngineProfiles {
-    use ABJ_404_Solution_AjaxSecurityTrait;
 
     /** @return void */
     public static function registerActions(): void {
@@ -37,7 +36,7 @@ class ABJ_404_Solution_Ajax_EngineProfiles {
      * @return void
      */
     public static function handleList(): void {
-        self::requireAdminWithNonce('abj404_engine_profiles_nonce');
+        abj_service('ajax_security_gate')->requireAdminWithNonce('abj404_engine_profiles_nonce');
 
         $profiles = ABJ_404_Solution_EngineProfileResolver::getInstance()->getAllProfilesForAdmin();
         wp_send_json_success(['profiles' => $profiles]);
@@ -52,7 +51,7 @@ class ABJ_404_Solution_Ajax_EngineProfiles {
      * @return void
      */
     public static function handleSave(): void {
-        self::requireAdminWithNonce('abj404_engine_profiles_nonce');
+        abj_service('ajax_security_gate')->requireAdminWithNonce('abj404_engine_profiles_nonce');
 
         // Boundary normalizer: $_POST shape probing lives in the VO, not here.
         // See ABJ_404_Solution_EngineProfileSaveRequest.
@@ -110,7 +109,7 @@ class ABJ_404_Solution_Ajax_EngineProfiles {
      * @return void
      */
     public static function handleDelete(): void {
-        self::requireAdminWithNonce('abj404_engine_profiles_nonce');
+        abj_service('ajax_security_gate')->requireAdminWithNonce('abj404_engine_profiles_nonce');
 
         $id = isset($_POST['id']) ? absint($_POST['id']) : 0;
 
