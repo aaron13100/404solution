@@ -6,6 +6,13 @@
   "required": ["nonce"],
   "additionalProperties": false,
   "properties": {
-    "nonce": { "type": "string", "minLength": 1 }
+    "nonce": { "type": "string", "minLength": 1 },
+    "id": { "type": ["string", "integer"] },
+    "name": { "type": "string" },
+    "url_pattern": { "type": "string" },
+    "is_regex": { "type": ["string", "integer"], "enum": ["0", "1", 0, 1] },
+    "enabled_engines": { "type": "string" },
+    "priority": { "type": ["string", "integer"] },
+    "status": { "type": ["string", "integer"], "enum": ["0", "1", 0, 1] }
   }
 }

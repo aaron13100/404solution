@@ -10,6 +10,7 @@
     "triggered_from": {
       "type": "string",
       "enum": ["redirects_page", "captured_404s_page", "plugins_row_action", "settings_debug", "system_corrupt_install"]
-    }
+    },
+    "user_message": { "type": "string", "maxLength": 2000 }
   }
 }

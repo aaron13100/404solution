@@ -69,6 +69,10 @@ class ABJ_404_Solution_Ajax_SuggestionPolling {
      * @return void
      */
     public static function pollSuggestions(): void {
+        if (!ABJ_404_Solution_AjaxRequestContractValidator::requireValidCurrentRequest('ajax-suggestion-polling')) {
+            return;
+        }
+
         // Verify nonce for CSRF protection
         if (!check_ajax_referer('abj404_poll_suggestions', '_ajax_nonce', false)) {
             wp_send_json(array('status' => 'error', 'message' => 'Security check failed'), 403);

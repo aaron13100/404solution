@@ -36,6 +36,10 @@ class ABJ_404_Solution_Ajax_EngineProfiles {
      * @return void
      */
     public static function handleList(): void {
+        if (!ABJ_404_Solution_AjaxRequestContractValidator::requireValidCurrentRequest('ajax-engine-profiles')) {
+            return;
+        }
+
         abj_service('ajax_security_gate')->requireAdminWithNonce('abj404_engine_profiles_nonce');
 
         $profiles = ABJ_404_Solution_EngineProfileResolver::getInstance()->getAllProfilesForAdmin();
@@ -51,6 +55,10 @@ class ABJ_404_Solution_Ajax_EngineProfiles {
      * @return void
      */
     public static function handleSave(): void {
+        if (!ABJ_404_Solution_AjaxRequestContractValidator::requireValidCurrentRequest('ajax-engine-profiles')) {
+            return;
+        }
+
         abj_service('ajax_security_gate')->requireAdminWithNonce('abj404_engine_profiles_nonce');
 
         // Boundary normalizer: $_POST shape probing lives in the VO, not here.
@@ -109,6 +117,10 @@ class ABJ_404_Solution_Ajax_EngineProfiles {
      * @return void
      */
     public static function handleDelete(): void {
+        if (!ABJ_404_Solution_AjaxRequestContractValidator::requireValidCurrentRequest('ajax-engine-profiles')) {
+            return;
+        }
+
         abj_service('ajax_security_gate')->requireAdminWithNonce('abj404_engine_profiles_nonce');
 
         $id = isset($_POST['id']) ? absint($_POST['id']) : 0;

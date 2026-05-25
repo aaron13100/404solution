@@ -21,6 +21,10 @@ class ABJ_404_Solution_Ajax_CrossPluginImporter {
 
     /** @return void */
     public static function handlePreview(): void {
+        if (!ABJ_404_Solution_AjaxRequestContractValidator::requireValidCurrentRequest('ajax-cross-plugin-preview')) {
+            return;
+        }
+
         abj_service('ajax_security_gate')->requireAdminWithNonce('abj404_crossPluginPreview');
 
         $allowedSources = array('rankmath', 'yoast', 'aioseo', 'safe-redirect-manager', 'redirection');

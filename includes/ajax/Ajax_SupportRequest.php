@@ -77,6 +77,10 @@ class ABJ_404_Solution_Ajax_SupportRequest {
      * @return void
      */
     public function handleRequest(): void {
+        if (!ABJ_404_Solution_AjaxRequestContractValidator::requireValidCurrentRequest('ajax-support-request')) {
+            return;
+        }
+
         // Nonce + manage_options gate. requireAdminWithNonce() reads from
         // POST first, then GET; the matching JS posts a 'nonce' field.
         abj_service('ajax_security_gate')->requireAdminWithNonce(self::NONCE_ACTION);

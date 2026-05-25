@@ -65,10 +65,76 @@ class ABJ_404_Solution_Ajax_Php {
 		return ABJ_404_Solution_ServiceContainer::safeGet($serviceName);
 	}
 
+	/** @return object */
+	private static function getFunctionsService() {
+		$service = self::getServiceIfAvailable('functions');
+		if (is_object($service) && is_callable(array($service, 'decodeComplicatedData'))) {
+			return $service;
+		}
+
+		$fallback = abj_service('functions');
+		if (is_object($fallback) && is_callable(array($fallback, 'decodeComplicatedData'))) {
+			return $fallback;
+		}
+
+		throw new \RuntimeException('404 Solution functions service is unavailable.');
+	}
+
+	/**
+	 * @param object $service
+	 * @return mixed
+	 */
+	private static function decodeComplicatedDataWithService($service, string $encodedData) {
+		$callback = array($service, 'decodeComplicatedData');
+		if (!is_callable($callback)) {
+			throw new \RuntimeException('404 Solution functions service cannot decode request payloads.');
+		}
+		return call_user_func($callback, $encodedData);
+	}
+
+	/** @return array<mixed, mixed>|null */
+	private static function decodeUpdateOptionsPayload() {
+		if (!isset($_POST['encodedData']) || !is_scalar($_POST['encodedData'])) {
+			ABJ_404_Solution_AjaxRequestContractValidator::requireValidPayload(
+				'ajax-update-options',
+				array()
+			);
+			return null;
+		}
+
+		$postData = self::decodeComplicatedDataWithService(
+			self::getFunctionsService(),
+			(string)$_POST['encodedData']
+		);
+		if (!is_array($postData) ||
+				!ABJ_404_Solution_AjaxRequestContractValidator::requireValidPayload(
+					'ajax-update-options',
+					$postData
+				)) {
+			return null;
+		}
+
+		return $postData;
+	}
+
+	/**
+	 * @param array<mixed, mixed> $postData
+	 * @return string
+	 */
+	private static function nonceFromDecodedPostData(array $postData) {
+		$nonce = $postData['nonce'] ?? '';
+		return is_string($nonce) ? $nonce : '';
+	}
+
 	/** Update plugin options via AJAX.
 	 * @return void
 	 */
 	static function updateOptions() {
+		$postData = self::decodeUpdateOptionsPayload();
+		if ($postData === null) {
+			return;
+		}
+
 		$logic = self::getServiceIfAvailable('plugin_logic');
 		/** @var ABJ_404_Solution_PluginLogic $abj404logic */
 		$abj404logic = ($logic !== null) ? $logic : abj_service('plugin_logic');
@@ -81,16 +147,8 @@ class ABJ_404_Solution_Ajax_Php {
 
 		// Verify nonce for CSRF protection
 		// The nonce is sent as part of the form data which is JSON-encoded in 'encodedData'
-		if (isset($_POST['encodedData'])) {
-			$f = abj_service('functions');
-			$postData = $f->decodeComplicatedData($_POST['encodedData']);
-			$nonce = (is_array($postData) && isset($postData['nonce']) && is_string($postData['nonce'])) ? $postData['nonce'] : '';
-			if (!wp_verify_nonce($nonce, 'abj404UpdateOptions')) {
-				wp_send_json_error(array('message' => 'Invalid security token'), 403);
-				return; // @phpstan-ignore deadCode.unreachable
-			}
-		} else {
-			wp_send_json_error(array('message' => 'Missing form data'), 400);
+		if (!wp_verify_nonce(self::nonceFromDecodedPostData($postData), 'abj404UpdateOptions')) {
+			wp_send_json_error(array('message' => 'Invalid security token'), 403);
 			return; // @phpstan-ignore deadCode.unreachable
 		}
 

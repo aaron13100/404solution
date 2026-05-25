@@ -14,6 +14,11 @@
     "page": { "type": "string" },
     "rowsPerPage": { "type": ["string", "integer"] },
     "filterText": { "type": "string" },
-    "filter": { "type": "string" }
+    "filter": { "type": "string" },
+    "orderby": { "type": "string" },
+    "order": { "type": "string" },
+    "paged": { "type": ["string", "integer"] },
+    "score_range": { "type": "string" },
+    "requestId": { "type": "string", "pattern": "^[a-zA-Z0-9]{8,64}$" }
   }
 }

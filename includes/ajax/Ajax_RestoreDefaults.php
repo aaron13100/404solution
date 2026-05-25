@@ -44,6 +44,10 @@ class ABJ_404_Solution_Ajax_RestoreDefaults {
      * @return void
      */
     function handleRestoreDefaults(): void {
+        if (!ABJ_404_Solution_AjaxRequestContractValidator::requireValidCurrentRequest('ajax-restore-defaults')) {
+            return;
+        }
+
         abj_service('ajax_security_gate')->requireAdminWithNonce('abj404_restore_defaults');
 
         $abj404logic = abj_service('plugin_logic');

@@ -37,6 +37,10 @@ class ABJ_404_Solution_Ajax_SettingsModeToggle {
      * @return void
      */
     function handleModeToggle(): void {
+        if (!ABJ_404_Solution_AjaxRequestContractValidator::requireValidCurrentRequest('ajax-settings-mode-toggle')) {
+            return;
+        }
+
         abj_service('ajax_security_gate')->requireAdminWithNonce('abj404_mode_toggle');
 
         $container = ABJ_404_Solution_ServiceContainer::getInstance();

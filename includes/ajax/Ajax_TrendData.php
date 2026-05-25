@@ -13,6 +13,10 @@ class ABJ_404_Solution_Ajax_TrendData {
 
     /** @return void */
     public static function echoTrendData(): void {
+        if (!ABJ_404_Solution_AjaxRequestContractValidator::requireValidCurrentRequest('ajax-trend-data')) {
+            return;
+        }
+
         abj_service('ajax_security_gate')->requireAdminWithNonce('abj404_trendData');
 
         // Rate limiting: 60 requests per minute.

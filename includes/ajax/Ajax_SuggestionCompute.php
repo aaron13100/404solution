@@ -57,6 +57,8 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
      * @return void
      */
     public static function computeSuggestions(): void {
+        ABJ_404_Solution_AjaxRequestContractValidator::enforceCurrentRequest('ajax-suggestion-compute');
+
         // (1) Per-IP rate limit FIRST — cheapest possible rejection so an
         // attacker rotating fresh URLs (each producing a new token via a
         // real 404) cannot trigger unbounded expensive computations.

@@ -70,6 +70,10 @@ class ABJ_404_Solution_Ajax_SupportRequestPreview {
      * @return void
      */
     public function handleRequest(): void {
+        if (!ABJ_404_Solution_AjaxRequestContractValidator::requireValidCurrentRequest('ajax-support-request-preview')) {
+            return;
+        }
+
         abj_service('ajax_security_gate')->requireAdminWithNonce(self::NONCE_ACTION);
 
         $triggeredFromRaw = isset($_POST['triggered_from']) && is_scalar($_POST['triggered_from'])

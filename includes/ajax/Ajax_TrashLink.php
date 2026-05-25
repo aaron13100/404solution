@@ -12,6 +12,10 @@ class ABJ_404_Solution_Ajax_TrashLink {
      * @return void
      */
     static function trashAction(): void {
+        if (!ABJ_404_Solution_AjaxRequestContractValidator::requireValidCurrentRequest('ajax-trash-link')) {
+            return;
+        }
+
         $container = ABJ_404_Solution_ServiceContainer::getInstance();
         /** @var ABJ_404_Solution_Functions $functions */
         $functions = $container->has('functions') ? $container->get('functions') : abj_service('functions');

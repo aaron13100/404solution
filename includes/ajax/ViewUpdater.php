@@ -530,6 +530,8 @@ class ABJ_404_Solution_ViewUpdater {
 
     /** @return void */
     function getPaginationLinks() {
+        ABJ_404_Solution_AjaxRequestContractValidator::enforceCurrentRequest('ajax-update-pagination');
+
         $functions = self::getRequestReader();
         /** @var ABJ_404_Solution_ViewBuildOrchestratorInterface $viewBuildOrchestrator */
         $viewBuildOrchestrator = abj_service('view_build_orchestrator');
@@ -705,6 +707,10 @@ class ABJ_404_Solution_ViewUpdater {
 
     /** @return void */
     function warmTableCache() {
+        if (!ABJ_404_Solution_AjaxRequestContractValidator::requireValidCurrentRequest('ajax-warm-table-cache')) {
+            return;
+        }
+
         $functions = self::getRequestReader();
         /** @var ABJ_404_Solution_ViewBuildOrchestratorInterface $viewBuildOrchestrator */
         $viewBuildOrchestrator = abj_service('view_build_orchestrator');
@@ -862,6 +868,10 @@ class ABJ_404_Solution_ViewUpdater {
 
     /** @return void */
     function refreshStatsDashboard() {
+        if (!ABJ_404_Solution_AjaxRequestContractValidator::requireValidCurrentRequest('ajax-refresh-stats-dashboard')) {
+            return;
+        }
+
         $functions = self::getRequestReader();
         /** @var ABJ_404_Solution_StatsRepositoryInterface $statsRepository */
         $statsRepository = abj_service('stats_repository');
@@ -973,6 +983,10 @@ class ABJ_404_Solution_ViewUpdater {
      * @return void
      */
     function refreshHealthBar() {
+        if (!ABJ_404_Solution_AjaxRequestContractValidator::requireValidCurrentRequest('ajax-refresh-health-bar')) {
+            return;
+        }
+
         $functions = self::getRequestReader();
         /** @var ABJ_404_Solution_ViewReadServiceInterface $viewReadService */
         $viewReadService = abj_service('view_read_service');
@@ -1100,6 +1114,8 @@ class ABJ_404_Solution_ViewUpdater {
      * @return void
      */
     function fetchInflightStage() {
+        ABJ_404_Solution_AjaxRequestContractValidator::enforceCurrentRequest('ajax-fetch-inflight-stage');
+
         $functions = self::getRequestReader();
         $abj404logic = abj_service('plugin_logic');
 
@@ -1202,6 +1218,8 @@ class ABJ_404_Solution_ViewUpdater {
      * @return void
      */
     function advanceViewBuild() {
+        ABJ_404_Solution_AjaxRequestContractValidator::enforceCurrentRequest('ajax-advance-view-build');
+
         $functions = self::getRequestReader();
         /** @var ABJ_404_Solution_ViewBuildOrchestratorInterface $viewBuildOrchestrator */
         $viewBuildOrchestrator = abj_service('view_build_orchestrator');
