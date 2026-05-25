@@ -1227,10 +1227,13 @@ class ABJ_404_Solution_RedirectsRepository implements ABJ_404_Solution_Redirects
             return;
         }
 
+        // Plain equality gives the optimizer an indexable requested_url probe;
+        // the BINARY predicate keeps exact-match URL semantics.
         $sql = "SELECT DISTINCT r.id
              FROM {wp_abj404_redirects} r
              INNER JOIN {wp_abj404_logs_hits} h
-                 ON BINARY h.requested_url = BINARY CONCAT('/', TRIM(BOTH '/' FROM r.final_dest))
+                 ON h.requested_url = CONCAT('/', TRIM(BOTH '/' FROM r.final_dest))
+                AND BINARY h.requested_url = BINARY CONCAT('/', TRIM(BOTH '/' FROM r.final_dest))
              WHERE h.last_used > %d
                AND h.failed_hits > 0
                AND r.disabled = 0

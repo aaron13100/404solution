@@ -81,10 +81,14 @@ class ABJ_404_Solution_ViewQueryBuilder {
      * @return string Fully-replaced SQL (table-name placeholders resolved).
      */
     public function buildHighImpactCapturedCountQuery(): string {
+        // Plain equality gives the optimizer an indexable requested_url probe;
+        // the BINARY predicate keeps exact-match URL semantics.
         $query = "SELECT COUNT(*) AS cnt
             FROM {wp_abj404_redirects} r
             INNER JOIN {wp_abj404_logs_hits} h
-                ON BINARY h.requested_url = BINARY
+                ON h.requested_url =
+                   COALESCE(r.canonical_url, CONCAT('/', TRIM(BOTH '/' FROM r.url)))
+               AND BINARY h.requested_url = BINARY
                    COALESCE(r.canonical_url, CONCAT('/', TRIM(BOTH '/' FROM r.url)))
             WHERE r.status = " . ABJ404_STATUS_CAPTURED . " AND r.disabled = 0
               AND h.logshits >= 3";
