@@ -6,6 +6,7 @@ if (!defined('ABSPATH')) {
 
 require_once dirname(__FILE__) . '/FeedbackEnvironmentExtras.php';
 require_once dirname(__FILE__) . '/PayloadSchema.php';
+require_once dirname(__FILE__) . '/ReportPayloadJsonSchemaValidator.php';
 
 /**
  * HTTP-first transport for plugin feedback reports.
@@ -98,7 +99,12 @@ class ABJ_404_Solution_FeedbackTransport {
      * @return void
      */
     public static function queue(array $payload, string $type): void {
-        self::validatePayloadContract($payload, $type);
+        $payload = self::normalizePayloadForReportSchema($payload);
+        $contract = self::validateSharedReportSchema($payload, $type);
+        if (empty($contract['valid'])) {
+            return;
+        }
+        self::logInternalPayloadContractWarnings($payload, $type);
         $uuid = self::generateUuid();
         $envelope = array(
             'payload' => $payload,
@@ -126,7 +132,27 @@ class ABJ_404_Solution_FeedbackTransport {
      */
     public static function sendNow(array $payload, string $type): bool {
         self::$lastSendUsedFallback = false;
-        self::validatePayloadContract($payload, $type);
+        self::$lastSendDiagnostics = array(
+            'http_status'     => null,
+            'http_reason'     => '',
+            'http_detail'     => '',
+            'email_attempted' => false,
+            'email_ok'        => null,
+        );
+
+        $payload = self::normalizePayloadForReportSchema($payload);
+        $contract = self::validateSharedReportSchema($payload, $type);
+        if (empty($contract['valid'])) {
+            self::$lastSendDiagnostics = array(
+                'http_status'     => null,
+                'http_reason'     => ABJ_404_Solution_ReportPayloadJsonSchemaValidator::REASON_VALIDATION_FAILED,
+                'http_detail'     => isset($contract['detail']) && is_scalar($contract['detail']) ? (string)$contract['detail'] : '',
+                'email_attempted' => false,
+                'email_ok'        => null,
+            );
+            return false;
+        }
+        self::logInternalPayloadContractWarnings($payload, $type);
         $payload = self::redactPayloadStrings($payload);
         $started = microtime(true);
         $result = self::httpSend($payload);
@@ -337,6 +363,9 @@ class ABJ_404_Solution_FeedbackTransport {
             $payload[(string)$k] = $v;
         }
 
+        $payload = self::normalizePayloadForReportSchema($payload);
+        self::assertSharedReportSchema($payload, $type, 'buildPayload');
+
         return $payload;
     }
 
@@ -424,6 +453,9 @@ class ABJ_404_Solution_FeedbackTransport {
             $payload[(string)$k] = $v;
         }
 
+        $payload = self::normalizePayloadForReportSchema($payload);
+        self::assertSharedReportSchema($payload, $type, 'buildMinimalPayload');
+
         return $payload;
     }
 
@@ -436,7 +468,8 @@ class ABJ_404_Solution_FeedbackTransport {
      */
     private static function httpSend(array $payload): array {
         $endpoint = self::resolveEndpoint();
-        $json = function_exists('wp_json_encode') ? wp_json_encode($payload) : json_encode($payload);
+        $wirePayload = ABJ_404_Solution_ReportPayloadJsonSchemaValidator::toWirePayload($payload);
+        $json = function_exists('wp_json_encode') ? wp_json_encode($wirePayload) : json_encode($wirePayload);
         if (!is_string($json) || $json === '') {
             return array('ok' => false, 'reason' => 'json_encode_failed');
         }
@@ -1276,9 +1309,68 @@ class ABJ_404_Solution_FeedbackTransport {
 
     /**
      * @param array<string, mixed> $payload
-     * @param string $type One of: error, heartbeat, uninstall, support_request
+     * @return array<string, mixed>
      */
-    private static function validatePayloadContract(array $payload, string $type): void {
+    private static function normalizePayloadForReportSchema(array $payload): array {
+        if (array_key_exists('contact_email', $payload) && is_string($payload['contact_email']) &&
+            trim($payload['contact_email']) === '') {
+            $payload['contact_email'] = null;
+        }
+        return $payload;
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     * @param string $type One of: error, heartbeat, uninstall, support_request
+     * @return array{valid: bool, reason: string, detail: string}
+     */
+    private static function validateSharedReportSchema(array $payload, string $type): array {
+        $validation = ABJ_404_Solution_ReportPayloadJsonSchemaValidator::validate($payload);
+        if (!empty($validation['valid'])) {
+            return $validation;
+        }
+
+        $detail = isset($validation['detail']) && is_scalar($validation['detail'])
+            ? (string)$validation['detail']
+            : '';
+        self::log('warn', sprintf(
+            'abj404_transport: type=%s contract_validation_failed detail=%s',
+            $type,
+            $detail
+        ));
+        return $validation;
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     * @param string $type One of: error, heartbeat, uninstall, support_request
+     * @param string $context
+     * @return void
+     */
+    private static function assertSharedReportSchema(array $payload, string $type, string $context): void {
+        $validation = self::validateSharedReportSchema($payload, $type);
+        if (!empty($validation['valid'])) {
+            return;
+        }
+
+        $detail = isset($validation['detail']) && is_scalar($validation['detail'])
+            ? (string)$validation['detail']
+            : 'unknown validation failure';
+        throw new \UnexpectedValueException(sprintf(
+            'FeedbackTransport::%s produced payload that violates %s for type=%s: %s',
+            $context,
+            ABJ_404_Solution_ReportPayloadJsonSchemaValidator::SCHEMA_RELATIVE_PATH,
+            $type,
+            $detail
+        ));
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     * @param string $type One of: error, heartbeat, uninstall, support_request
+     * @return void
+     */
+    private static function logInternalPayloadContractWarnings(array $payload, string $type): void {
         static $schemas = null;
         if ($schemas === null) {
             $schemaFile = dirname(__FILE__) . '/schema/feedback_payload_schema.php';
@@ -1295,7 +1387,7 @@ class ABJ_404_Solution_FeedbackTransport {
             return;
         }
         self::log('warn', sprintf(
-            'abj404_transport: payload contract violation for type=%s: %s',
+            'abj404_transport: internal payload contract warning for type=%s: %s',
             $type,
             implode('; ', $violations)
         ));
