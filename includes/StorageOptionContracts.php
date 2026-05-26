@@ -237,11 +237,25 @@ class ABJ_404_Solution_StorageOptionContracts {
      * @return array<string, mixed>
      */
     private static function mergeSettingsDefaults(array $value): array {
-        if (class_exists('ABJ_404_Solution_PluginLogicDefaults')) {
-            $value = array_merge(ABJ_404_Solution_PluginLogicDefaults::defaults(), $value);
-        }
+        $value = array_merge(self::defaultSettings(), $value);
         $value['_schemaVersion'] = self::CURRENT_VERSION;
         return $value;
+    }
+
+    /**
+     * Storage-contract defaults must stay standalone because this file is
+     * loaded by uninstall.php without the plugin autoloader.
+     *
+     * @return array<string, mixed>
+     */
+    private static function defaultSettings(): array {
+        return array(
+            '_schemaVersion' => self::CURRENT_VERSION,
+            'default_redirect' => '301',
+            'capture_404' => '1',
+            'DB_VERSION' => '0.0.0',
+            'admin_notification_frequency' => 'instant',
+        );
     }
 
     /**
