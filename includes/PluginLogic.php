@@ -1444,6 +1444,7 @@ class ABJ_404_Solution_PluginLogic {
         if (function_exists('abj404_benchmark_emit_headers')) {
             abj404_benchmark_emit_headers();
         }
+        // inline-html-approved: emergency redirect fallback must emit a complete minimal response when headers are unavailable.
         $c = '<script>' . 'function doRedirect() {' . "\n" .
                 '   window.location.replace(' . wp_json_encode($finalDestination) . ');' . "\n" .
                 '}' . "\n" .
