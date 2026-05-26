@@ -501,8 +501,31 @@ class ABJ_404_Solution_PluginLogicAdminActions {
                             $redirect_url .= "&paged=" . urlencode($source_paged);
                         }
 
+                        // Attempt Post/Redirect/Get. This sends a Location
+                        // header so the browser issues a fresh GET, which is
+                        // what produces the canonical "?updated=1" URL.
                         wp_safe_redirect(admin_url('admin.php' . $redirect_url));
-                        return "";
+
+                        // In-process fallback. The plugin's admin callback
+                        // runs AFTER admin-header.php has flushed output, so
+                        // headers_sent() is true and wp_safe_redirect cannot
+                        // actually send the Location header. PHP raises a
+                        // warning, the browser sees no redirect, and the rest
+                        // of this request renders into the response body.
+                        //
+                        // Rewrite the by-ref routing vars so the page callback
+                        // lands on the source tab instead of falling through
+                        // to echoAdminEditRedirectPage (which emits "Error:
+                        // No ID(s) found for edit request." when the next
+                        // render loses the POST id, and otherwise re-renders
+                        // a stale edit form for the row the user just saved).
+                        $sub = $source_page;
+                        $action = '';
+                        // Return the success message for the fallback render.
+                        // If the Location header was honored the browser will
+                        // follow the redirect and this body is discarded, so
+                        // returning a message is safe in both cases.
+                        return __('Redirect Information Updated Successfully!', '404-solution');
                     } else {
                         $message .= __('Error: Unable to update redirect data.', '404-solution');
                     }
