@@ -450,8 +450,6 @@ function paginationLinksChange(triggerItem, options) {
                 // Native alert() blocks the page, breaks browser automation tests,
                 // and forces the admin to dismiss before they can refresh.
                 var noticeTitle = '404 Solution: AJAX error while updating the table.';
-                var $notice = jQuery('<div class="notice notice-error abj404-ajax-error-notice is-dismissible"></div>');
-                var $titleEl = jQuery('<p></p>').css('font-weight', 'bold').text(noticeTitle);
                 // Wall-clock elapsed since AJAX dispatch.  Distinguishes
                 // "instant network drop" (small elapsed) from "real slow query"
                 // (close to the timeout budget) on pure client-timeout errors
@@ -489,7 +487,25 @@ function paginationLinksChange(triggerItem, options) {
                 var $detailsEl = jQuery('<pre></pre>')
                     .css({whiteSpace: 'pre-wrap', margin: '0 0 8px 0'})
                     .text(detailLines.join('\n'));
-                $notice.append($titleEl).append($detailsEl);
+                // Trigger slug + context summary for the support button so
+                // server-side log attribution distinguishes the two tabs and
+                // the modal preview shows the admin which failure they are
+                // reporting. Both slugs live in Ajax_SupportRequest::
+                // ALLOWED_TRIGGER_SOURCES so the AJAX handler will accept them.
+                var triggeredFromSlug = (subpage === 'abj404_captured')
+                    ? 'captured_404s_page' : 'redirects_page';
+                var contextSummary = noticeTitle;
+                if (messageFromServer) {
+                    contextSummary += ' ' + String(messageFromServer).slice(0, 200);
+                } else if (textStatus) {
+                    contextSummary += ' (' + String(textStatus) + ')';
+                }
+                abj404RenderAjaxErrorNotice({
+                    noticeTitle: noticeTitle,
+                    $detailsEl: $detailsEl,
+                    triggeredFromSlug: triggeredFromSlug,
+                    contextSummary: contextSummary
+                });
                 if (shouldFetchInflightStage) {
                     var inflightAjaxRunner = (typeof abj404AjaxWithNonceRetry === 'function')
                         ? abj404AjaxWithNonceRetry : jQuery.ajax;
@@ -543,39 +559,6 @@ function paginationLinksChange(triggerItem, options) {
                         }
                         $detailsEl.text(updated.join('\n'));
                     });
-                }
-                jQuery('.abj404-ajax-error-notice').remove();
-                var $tableContainer = jQuery('.abj404-table-container').first();
-                if ($tableContainer.length > 0) {
-                    $tableContainer.before($notice);
-                } else {
-                    jQuery('.wrap').first().prepend($notice);
-                }
-
-                // Mount the reusable "Send debug log to developer" button
-                // inside the error notice. The trigger source is the
-                // current admin tab (redirects_page or captured_404s_page)
-                // so the server log can attribute the click. The context
-                // summary is the AJAX error one-liner so the modal shows
-                // the admin which failure they are reporting. Both slugs
-                // are in Ajax_SupportRequest::ALLOWED_TRIGGER_SOURCES so
-                // the AJAX handler will accept them.
-                var triggeredFromSlug = (subpage === 'abj404_captured')
-                    ? 'captured_404s_page' : 'redirects_page';
-                var contextSummary = noticeTitle;
-                if (messageFromServer) {
-                    contextSummary += ' ' + String(messageFromServer).slice(0, 200);
-                } else if (textStatus) {
-                    contextSummary += ' (' + String(textStatus) + ')';
-                }
-                var mountDiv = document.createElement('div');
-                mountDiv.className = 'abj404-support-request-mount';
-                mountDiv.setAttribute('data-triggered-from', triggeredFromSlug);
-                mountDiv.setAttribute('data-context-summary', contextSummary);
-                $notice.append(mountDiv);
-                if (window.ABJ404 && window.ABJ404.SupportRequestButton &&
-                    typeof window.ABJ404.SupportRequestButton.mountAll === 'function') {
-                    window.ABJ404.SupportRequestButton.mountAll();
                 }
             }
             if (typeof options.onError === 'function') {

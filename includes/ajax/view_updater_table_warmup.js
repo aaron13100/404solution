@@ -213,12 +213,66 @@ function showTableWarmupFailure(meta) {
     if (meta.lastError) {
         message += '. ' + meta.lastError;
     }
-    jQuery('.abj404-refresh-status').text(message);
     abj404UpdateAjaxDebugLog('Table Warmup Failure: ' + message, meta);
+    // Clear the small status-line text. The proper notice below carries
+    // the "Send debug log to developer" button and is the surface admins
+    // act on. Rendering the same message both here and in the table row
+    // is the double-render the Bruno report flagged.
+    jQuery('.abj404-refresh-status').text('');
+
+    var $ajaxConfigEl = jQuery('[data-pagination-ajax-url]').first();
+    if ($ajaxConfigEl.length === 0) {
+        $ajaxConfigEl = jQuery('.abj404-filter-bar').first();
+    }
+    var subpage = $ajaxConfigEl.attr('data-pagination-ajax-subpage')
+        || (typeof getURLParameter === 'function' ? getURLParameter('subpage') : '');
+    var triggeredFromSlug = (subpage === 'abj404_captured')
+        ? 'captured_404s_page' : 'redirects_page';
+
+    // Build a details block from the same formatter the foreground path
+    // uses, augmented with the warmup-specific stage / queryLabel /
+    // lastError so the admin can copy/paste the same diagnostic surface
+    // either way.
+    var $detailsEl = null;
+    if (typeof abj404FormatAjaxFailureDetails === 'function') {
+        var detailMeta = {
+            whatsHappening: meta.whatsHappening || 'Refreshing the table snapshot in the background',
+            queryLabel: meta.queryLabel || queryLabel,
+            status: meta.status || '',
+            textStatus: meta.textStatus || '',
+            errorThrown: meta.errorThrown || '',
+            action: meta.action || 'ajaxWarmTableCache',
+            subpage: subpage,
+            elapsedMs: meta.elapsedMs,
+            timeoutMs: meta.timeoutMs,
+            stage: meta.stage || stage,
+            message: meta.message || meta.lastError || '',
+            lastQueryRedacted: meta.lastQueryRedacted || ''
+        };
+        var detailLines = abj404FormatAjaxFailureDetails(detailMeta);
+        $detailsEl = jQuery('<pre></pre>')
+            .css({whiteSpace: 'pre-wrap', margin: '0 0 8px 0'})
+            .text(detailLines.join('\n'));
+    }
+
+    if (typeof abj404RenderAjaxErrorNotice === 'function') {
+        abj404RenderAjaxErrorNotice({
+            noticeTitle: message,
+            $detailsEl: $detailsEl,
+            triggeredFromSlug: triggeredFromSlug,
+            contextSummary: message
+        });
+    }
+
     if (tablePlaceholderStillAwaitingLoad()) {
+        // Brief pointer-only text in the table row. The full diagnostic
+        // and "Send debug log to developer" button live in the notice
+        // above the table; rendering the long message here too is the
+        // double-render we are eliminating, and an empty placeholder
+        // would otherwise spin forever.
         jQuery('.abj404-table[data-table-awaiting-load] tbody').html(
             '<tr><td class="abj404-empty-message abj404-error">' +
-            jQuery('<div/>').text(message).html() +
+            jQuery('<div/>').text('Could not load table data. See the error notice above.').html() +
             '</td></tr>'
         );
     }

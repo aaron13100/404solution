@@ -17,9 +17,10 @@
  * Also exposes the shared refresh-status host lookup and the AJAX
  * failure-details formatter consumed by the pagination error handler.
  *
- * Globals defined: abj404FormatAjaxFailureDetails, refreshHealthBarIfNeeded,
- * getRefreshStatusHost, isDetectOnlyRefreshInFlight, setDetectOnlyRefreshInFlight,
- * triggerBackgroundTableRefreshIfEnabled, triggerInitialTableLoadIfNeeded.
+ * Globals defined: abj404FormatAjaxFailureDetails, abj404RenderAjaxErrorNotice,
+ * refreshHealthBarIfNeeded, getRefreshStatusHost, isDetectOnlyRefreshInFlight,
+ * setDetectOnlyRefreshInFlight, triggerBackgroundTableRefreshIfEnabled,
+ * triggerInitialTableLoadIfNeeded.
  *
  * Depends on view_updater.js (abj404UpdateAjaxDebugLog, getURLParameter,
  * paginationLinksChange, isElementFullyVisible), view_updater_table_warmup.js
@@ -58,6 +59,67 @@ function abj404FormatAjaxFailureDetails(meta) {
         lines.push('Last query (redacted): ' + meta.lastQueryRedacted);
     }
     return lines;
+}
+
+/**
+ * Render a non-blocking admin error notice that carries a SupportRequestButton
+ * mount point, so any user-facing AJAX failure on the redirects / captured-404s
+ * tabs offers a "Send debug log to developer" affordance instead of bare text.
+ *
+ * Single rendering contract for both the foreground pagination error path
+ * (view_updater_pagination.js) and the background-refresh warmup failure path
+ * (view_updater_table_warmup.js). Without this helper the two paths drifted:
+ * foreground produced a proper notice + button, background-refresh produced
+ * status-line text + a duplicate table-row message and no button, so users on
+ * the background-refresh path could not report the failure.
+ *
+ * options:
+ *   - noticeTitle (string, required): bold title at the top of the notice.
+ *   - $detailsEl (jQuery element, optional): a <pre> with the failure details
+ *     formatted by abj404FormatAjaxFailureDetails. Inserted below the title.
+ *   - triggeredFromSlug (string, optional): one of Ajax_SupportRequest's
+ *     ALLOWED_TRIGGER_SOURCES. Defaults to 'redirects_page'.
+ *   - contextSummary (string, optional): one-line summary shown inside the
+ *     send-debug-log modal. Defaults to the noticeTitle.
+ *
+ * Returns the appended notice element so callers can mutate it (e.g. the
+ * pagination path patches detail lines once the inflight-stage lookup
+ * completes).
+ */
+function abj404RenderAjaxErrorNotice(options) {
+    options = options || {};
+    var noticeTitle = options.noticeTitle || '';
+    var $detailsEl = options.$detailsEl || null;
+    var triggeredFromSlug = options.triggeredFromSlug || 'redirects_page';
+    var contextSummary = (typeof options.contextSummary === 'string' && options.contextSummary !== '')
+        ? options.contextSummary : noticeTitle;
+
+    var $notice = jQuery('<div class="notice notice-error abj404-ajax-error-notice is-dismissible"></div>');
+    var $titleEl = jQuery('<p></p>').css('font-weight', 'bold').text(noticeTitle);
+    $notice.append($titleEl);
+    if ($detailsEl) {
+        $notice.append($detailsEl);
+    }
+
+    // Replace any prior notice so repeated failures do not stack.
+    jQuery('.abj404-ajax-error-notice').remove();
+    var $tableContainer = jQuery('.abj404-table-container').first();
+    if ($tableContainer.length > 0) {
+        $tableContainer.before($notice);
+    } else {
+        jQuery('.wrap').first().prepend($notice);
+    }
+
+    var mountDiv = document.createElement('div');
+    mountDiv.className = 'abj404-support-request-mount';
+    mountDiv.setAttribute('data-triggered-from', triggeredFromSlug);
+    mountDiv.setAttribute('data-context-summary', contextSummary);
+    $notice.append(mountDiv);
+    if (window.ABJ404 && window.ABJ404.SupportRequestButton &&
+        typeof window.ABJ404.SupportRequestButton.mountAll === 'function') {
+        window.ABJ404.SupportRequestButton.mountAll();
+    }
+    return $notice;
 }
 
 /**
