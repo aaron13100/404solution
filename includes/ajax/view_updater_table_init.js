@@ -95,11 +95,16 @@ function abj404RenderAjaxErrorNotice(options) {
         ? options.contextSummary : noticeTitle;
 
     var $notice = jQuery('<div class="notice notice-error abj404-ajax-error-notice is-dismissible"></div>');
-    var $titleEl = jQuery('<p></p>').css('font-weight', 'bold').text(noticeTitle);
+    var $titleEl = jQuery('<p></p>').text(noticeTitle + ' ');
+    var linkEl = document.createElement('a');
+    linkEl.className = 'abj404-support-request-link';
+    linkEl.setAttribute('href', '#abj404-support-request');
+    linkEl.setAttribute('data-triggered-from', triggeredFromSlug);
+    linkEl.setAttribute('data-context-summary', contextSummary);
+    linkEl.textContent = (window.ABJ404 && window.ABJ404.i18n && window.ABJ404.i18n.sendDebugLog) ? String(window.ABJ404.i18n.sendDebugLog) : 'Send debug log to developer';
+    $titleEl[0].appendChild(linkEl);
     $notice.append($titleEl);
-    if ($detailsEl) {
-        $notice.append($detailsEl);
-    }
+    if ($detailsEl) { $notice.append($detailsEl); }
 
     // Replace any prior notice so repeated failures do not stack.
     jQuery('.abj404-ajax-error-notice').remove();
@@ -118,11 +123,6 @@ function abj404RenderAjaxErrorNotice(options) {
         jQuery('.wrap').first().prepend($notice);
     }
 
-    var mountDiv = document.createElement('div');
-    mountDiv.className = 'abj404-support-request-mount';
-    mountDiv.setAttribute('data-triggered-from', triggeredFromSlug);
-    mountDiv.setAttribute('data-context-summary', contextSummary);
-    $notice.append(mountDiv);
     if (window.ABJ404 && window.ABJ404.SupportRequestButton &&
         typeof window.ABJ404.SupportRequestButton.mountAll === 'function') {
         window.ABJ404.SupportRequestButton.mountAll();

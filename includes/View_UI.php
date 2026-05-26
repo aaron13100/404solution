@@ -10,18 +10,18 @@ if (!defined('ABSPATH')) {
 class ABJ_404_Solution_View_UI extends ABJ_404_Solution_ViewComponent {
 
     /**
-     * Render an error notice (notice notice-error) on a plugin admin page
-     * with the "Send debug log to developer" support button appended inside
-     * the same notice block. This is the wrapper for the existing
-     * <div class="notice notice-error"> pattern across the plugin so every
-     * user-facing error notice on a plugin screen ships a one-click way to
-     * report the failure.
+     * Render a native-shape error notice (`.notice.notice-error`) on a
+     * plugin admin page with the "Send debug log to developer" support
+     * affordance as a small inline text link inside the notice body.
+     * Shape matches wp-admin/css/common.css:1441-1580 (white background,
+     * 4px red left border, 13px near-black text, no bold heading wall,
+     * no green CTA button. See docs/ui-aesthetic/UI_AESTHETIC.md).
      *
-     * The button mount div renders after the message paragraph so the JS
-     * component bootstraps it on DOMContentLoaded. The trigger source is
-     * allowlisted server-side by Ajax_SupportRequest::ALLOWED_TRIGGER_SOURCES;
-     * passing a slug not in that list will render a button that 400s on
-     * click. The integration test pins the matching set.
+     * The link is the same anchor mountAll() attaches to via attachLink(),
+     * so a JS regression that breaks the modal still leaves a clickable
+     * fallback link to the Settings support section. Trigger sources are
+     * allowlisted server-side by ALLOWED_TRIGGER_SOURCES; an off-list
+     * slug renders a link whose AJAX 400s on click.
      *
      * Only call this from screens that live under the plugin's own pages
      * (CLAUDE.md Self-Healing §4 bans support buttons on generic wp-admin
@@ -39,12 +39,12 @@ class ABJ_404_Solution_View_UI extends ABJ_404_Solution_ViewComponent {
      */
     public static function renderErrorNoticeWithSupportButton(string $messageHtml,
             string $triggeredFrom, ?string $contextSummary = null): string {
-        $buttonHtml = class_exists('ABJ_404_Solution_SupportRequestButton')
-            ? ABJ_404_Solution_SupportRequestButton::render($triggeredFrom, $contextSummary)
+        $linkHtml = class_exists('ABJ_404_Solution_SupportRequestButton')
+            ? ABJ_404_Solution_SupportRequestButton::renderInlineLink($triggeredFrom, $contextSummary)
             : '';
-        return '<div class="notice notice-error"><p>' . $messageHtml . '</p>'
-            . $buttonHtml
-            . '</div>';
+        $tpl = __DIR__ . '/html/ajaxErrorNoticeWithSupportLink.html';
+        $template = is_readable($tpl) ? (string)@file_get_contents($tpl) : '';
+        return str_replace(['{message}', '{support_link}'], [$messageHtml, $linkHtml], $template);
     }
 
 	/** Get the text to notify the user when some URLs have been captured and need attention.
