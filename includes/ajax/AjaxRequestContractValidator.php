@@ -5,6 +5,16 @@ if (!defined('ABSPATH')) {
 }
 
 /**
+ * Thrown by the AJAX request-contract validator when the merged current
+ * request fails its schema check. In production wp_send_json_error()
+ * terminates through wp_die() before the throw can propagate; in tests the
+ * exception bubbles so the handler never silently continues past a failed
+ * validation when the wp_send_json_error stub does not exit.
+ */
+class ABJ_404_Solution_AjaxContractViolationException extends RuntimeException {
+}
+
+/**
  * Runtime validator for the vendored admin-ajax request contracts.
  *
  * The schemas are JSON Schema draft-07 files, but the runtime surface here is
@@ -20,14 +30,16 @@ class ABJ_404_Solution_AjaxRequestContractValidator {
     /**
      * Validate the merged current request and terminate the request on failure.
      *
-     * WordPress' wp_send_json_error() terminates through wp_die(); tests may
-     * replace it with an exception-throwing stub to observe the response.
+     * On failure wp_send_json_error() is invoked (which wp_die()s in
+     * production) and an ABJ_404_Solution_AjaxContractViolationException is
+     * thrown so the entry-point handler bails out cleanly even when the
+     * wp_send_json_error stub does not exit (parallel test harness).
      *
      * @param string $contractId
      * @return void
      */
     public static function enforceCurrentRequest(string $contractId): void {
-        self::requireValidCurrentRequest($contractId);
+        self::enforcePayload($contractId, self::currentRequestPayload());
     }
 
     /**
@@ -38,7 +50,9 @@ class ABJ_404_Solution_AjaxRequestContractValidator {
      * @return void
      */
     public static function enforcePayload(string $contractId, array $payload): void {
-        self::requireValidPayload($contractId, $payload);
+        if (!self::requireValidPayload($contractId, $payload)) {
+            throw new ABJ_404_Solution_AjaxContractViolationException(self::MESSAGE);
+        }
     }
 
     /**

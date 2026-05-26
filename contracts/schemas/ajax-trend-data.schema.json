@@ -6,6 +6,6 @@
   "required": ["nonce"],
   "properties": {
     "nonce": { "type": "string", "minLength": 1 },
-    "days": { "type": "integer", "minimum": 1, "maximum": 90 }
+    "days": { "type": ["string", "integer"] }
   }
 }
