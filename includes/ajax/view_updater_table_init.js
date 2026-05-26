@@ -103,6 +103,14 @@ function abj404RenderAjaxErrorNotice(options) {
 
     // Replace any prior notice so repeated failures do not stack.
     jQuery('.abj404-ajax-error-notice').remove();
+    // Suppress the server-rendered "Do you think 404 Solution deserves a
+    // 5-star review?" prompt (ReviewFeedback::echoDashboardNotification)
+    // whenever a user-facing AJAX error is shown. The server-side notice
+    // is rendered earlier in the request lifecycle and can't see errors
+    // that have not yet happened, so the coordination point has to be
+    // here. The class is shared across all three review-prompt templates
+    // (reviewQualificationQuestion / reviewLinkNotice / feedbackFormNotice).
+    jQuery('.abj404-review-notice').remove();
     var $tableContainer = jQuery('.abj404-table-container').first();
     if ($tableContainer.length > 0) {
         $tableContainer.before($notice);
