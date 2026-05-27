@@ -75,6 +75,102 @@ body[data-theme="mono"] {
   --abj404-row-selected: #DBEAFE;
   --abj404-badge-bg: #EFF1F5;
   --abj404-badge-text: #374151;
+
+  /* Derived / aliased semantic vars used by 404solutionStyles.css. Aliasing
+     here means a host theme that retargets the base var (e.g. --abj404-surface)
+     automatically recolors everything that depends on it. */
+  --abj404-accent-hover: var(--wp-admin-theme-color-darker-10, #135e96);
+  --abj404-on-accent: #ffffff;
+  --abj404-bg-hover: var(--abj404-surface-hover);
+  --abj404-bg-subtle: var(--abj404-bg-muted);
+  --abj404-border-light: var(--abj404-border);
+  --abj404-card-bg: var(--abj404-surface);
+  --abj404-card-header-hover: var(--abj404-surface-hover);
+  --abj404-input-bg: var(--abj404-surface);
+  --abj404-surface-alt: var(--abj404-surface-muted);
+  --abj404-text-secondary: var(--abj404-text-muted);
+  --abj404-link-hover: var(--abj404-accent);
+
+  /* Status surface families (notice / pill backgrounds). Neutrals; host themes
+     can retarget. Other theme branches inherit unless they override. */
+  --abj404-success-bg: #D4EDDA;
+  --abj404-success-border: #C3E6CB;
+  --abj404-success-text: #155724;
+  --abj404-info-bg: #F0F6FC;
+  --abj404-info-border: #C3E1FF;
+  --abj404-info-text: #0C5A99;
+  --abj404-warning-bg: #FFF8E5;
+  --abj404-warning-border: #F0B429;
+  --abj404-warning-text: #614200;
+  --abj404-danger-bg: #FCF0F1;
+  --abj404-danger-border: #D63638;
+  --abj404-danger-text: #8A2424;
+
+  /* Shadows (elevation tokens). Translucent black layers safely composite
+     over any theme background. Dark themes can override below if needed. */
+  --abj404-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --abj404-shadow-md: 0 2px 8px rgba(0, 0, 0, 0.15);
+  --abj404-shadow-lg: 0 4px 20px rgba(0, 0, 0, 0.25);
+  --abj404-shadow-up: 0 -2px 8px rgba(0, 0, 0, 0.05);
+
+  /* Modal/overlay dim. */
+  --abj404-overlay-bg: rgba(0, 0, 0, 0.5);
+
+  /* Tooltip chrome. */
+  --abj404-tooltip-bg: #1D2327;
+  --abj404-tooltip-text: #FFFFFF;
+
+  /* Row striping for dark themes (no-op on light themes, transparent layer
+     over base row background). */
+  --abj404-row-stripe-soft: transparent;
+  --abj404-row-stripe-med: transparent;
+  --abj404-cell-stripe: transparent;
+
+  /* Legacy dark-mode hooks (body.abj404-dark-mode). These are overridden
+     by the dark-mode class below; default to inherit so light themes are
+     unaffected if the class is applied. */
+  --abj404-dark-text-soft: var(--abj404-text);
+  --abj404-dark-text-muted: var(--abj404-text-muted);
+  --abj404-dark-accent-border: var(--abj404-accent);
+  --abj404-dark-surface-deep: var(--abj404-surface);
+  --abj404-dark-border-deep: var(--abj404-border);
+
+  /* Captured-row danger highlight tints (lighter than the danger surface
+     used by notices). Used by tbody row backgrounds for broken
+     destinations. */
+  --abj404-danger-row-bg: #FFE7E7;
+  --abj404-danger-row-bg-hover: #FFD8D8;
+  --abj404-danger-row-text: #A02222;
+
+  /* Captured-row zebra stripe (light theme). */
+  --abj404-row-stripe: #FAFAFA;
+  --abj404-row-stripe-hover: #F5F5F5;
+
+  /* Loading overlay scrim. Default: translucent white over light tables.
+     Dark themes override below. */
+  --abj404-loading-overlay-bg: rgba(255, 255, 255, 0.8);
+}
+
+/* Dark-theme overrides for tokens added above. */
+html[data-theme="neon"],
+body[data-theme="neon"],
+html[data-theme="obsidian"],
+body[data-theme="obsidian"] {
+  --abj404-row-stripe-soft: rgba(255, 255, 255, 0.02);
+  --abj404-row-stripe-med: rgba(255, 255, 255, 0.05);
+  --abj404-cell-stripe: rgba(255, 255, 255, 0.03);
+  --abj404-row-stripe: rgba(255, 255, 255, 0.02);
+  --abj404-row-stripe-hover: rgba(255, 255, 255, 0.05);
+  --abj404-loading-overlay-bg: rgba(12, 15, 19, 0.8);
+}
+
+/* Legacy body.abj404-dark-mode hook (used by setup wizard etc). */
+body.abj404-dark-mode {
+  --abj404-dark-text-soft: #B0B0B0;
+  --abj404-dark-text-muted: #A0A0A0;
+  --abj404-dark-accent-border: #5AA2FF;
+  --abj404-dark-surface-deep: #1A2332;
+  --abj404-dark-border-deep: #3D3D3D;
 }
 
 /* === Calm Ops (Light) === */
