@@ -245,56 +245,33 @@ class ABJ_404_Solution_View_UI extends ABJ_404_Solution_ViewComponent {
 
         $isSimpleMode = $this->logic->getSettingsMode() === 'simple';
 
-        echo '<nav class="abj404-tab-navigation" role="tablist">';
-
-        // Page Redirects tab
-        $class = ($sub == 'abj404_redirects') ? "active" : "";
-        echo '<a href="?page=' . ABJ404_PP . '&subpage=abj404_redirects" title="' . esc_attr__('Page Redirects', '404-solution') . '" class="abj404-tab ' . $class . '" role="tab">';
-        echo '<span class="dashicons dashicons-randomize"></span>';
-        echo '<span class="abj404-tab-text">' . esc_html__('Page Redirects', '404-solution') . '</span>';
-        echo '</a>';
-
-        // Captured 404 URLs tab
-        $class = ($sub == 'abj404_captured') ? "active" : "";
-        echo '<a href="?page=' . ABJ404_PP . '&subpage=abj404_captured" title="' . esc_attr__('Captured 404 URLs', '404-solution') . '" class="abj404-tab ' . $class . '" role="tab">';
-        echo '<span class="dashicons dashicons-search"></span>';
-        echo '<span class="abj404-tab-text">' . esc_html__('Captured 404s', '404-solution') . '</span>';
-        echo '</a>';
-
+        // Tab definitions: [subKey, label]. Order is the display order.
+        $tabs = array(
+            array('abj404_redirects', __('Page Redirects', '404-solution')),
+            array('abj404_captured',  __('Captured 404s', '404-solution')),
+        );
         if (!$isSimpleMode) {
-            // Logs tab (hidden in Simple mode)
-            $class = ($sub == 'abj404_logs') ? "active" : "";
-            echo '<a href="?page=' . ABJ404_PP . '&subpage=abj404_logs" title="' . esc_attr__('Redirect & Capture Logs', '404-solution') . '" class="abj404-tab ' . $class . '" role="tab">';
-            echo '<span class="dashicons dashicons-list-view"></span>';
-            echo '<span class="abj404-tab-text">' . esc_html__('Logs', '404-solution') . '</span>';
-            echo '</a>';
+            $tabs[] = array('abj404_logs',  __('Logs', '404-solution'));
+            $tabs[] = array('abj404_stats', __('Stats', '404-solution'));
+        }
+        $tabs[] = array('abj404_tools',   __('Tools', '404-solution'));
+        $tabs[] = array('abj404_options', __('Options', '404-solution'));
 
-            // Stats tab (hidden in Simple mode)
-            $class = ($sub == 'abj404_stats') ? "active" : "";
-            echo '<a href="?page=' . ABJ404_PP . '&subpage=abj404_stats" title="' . esc_attr__('Stats', '404-solution') . '" class="abj404-tab ' . $class . '" role="tab">';
-            echo '<span class="dashicons dashicons-chart-bar"></span>';
-            echo '<span class="abj404-tab-text">' . esc_html__('Stats', '404-solution') . '</span>';
-            echo '</a>';
+        $itemTpl = ABJ_404_Solution_Functions::readFileContents(__DIR__ . '/html/adminHeaderTab.html');
+        $tabsHtml = '';
+        foreach ($tabs as $pair) {
+            list($subKey, $label) = $pair;
+            $isActive = ($sub == $subKey);
+            $row = $itemTpl;
+            $row = str_replace('{url}',           esc_url('?page=' . ABJ404_PP . '&subpage=' . $subKey), $row);
+            $row = str_replace('{activeClass}',   $isActive ? ' nav-tab-active active' : '',             $row);
+            $row = str_replace('{ariaSelected}',  $isActive ? ' aria-selected="true"' : '',              $row);
+            $row = str_replace('{label}',         esc_html($label),                                      $row);
+            $tabsHtml .= $row;
         }
 
-        // Tools tab
-        $class = ($sub == 'abj404_tools') ? "active" : "";
-        echo '<a href="?page=' . ABJ404_PP . '&subpage=abj404_tools" title="' . esc_attr__('Tools', '404-solution') . '" class="abj404-tab ' . $class . '" role="tab">';
-        echo '<span class="dashicons dashicons-admin-tools"></span>';
-        echo '<span class="abj404-tab-text">' . esc_html__('Tools', '404-solution') . '</span>';
-        echo '</a>';
-
-        // Options tab
-        $class = ($sub == "abj404_options") ? "active" : "";
-        echo '<a href="?page=' . ABJ404_PP . '&subpage=abj404_options" title="' . esc_attr__('Options', '404-solution') . '" class="abj404-tab ' . $class . '" role="tab">';
-        echo '<span class="dashicons dashicons-admin-generic"></span>';
-        echo '<span class="abj404-tab-text">' . esc_html__('Options', '404-solution') . '</span>';
-        echo '</a>';
-
-        // Plugin branding - right side of tabs
-        echo '<span class="abj404-tab-branding">' . esc_html(PLUGIN_NAME) . '</span>';
-
-        echo '</nav>';
+        $outer = ABJ_404_Solution_Functions::readFileContents(__DIR__ . '/html/adminHeaderTabs.html');
+        echo str_replace('{tabs}', $tabsHtml, $outer);
     }
 
     /**
