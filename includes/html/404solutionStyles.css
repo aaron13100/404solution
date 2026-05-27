@@ -137,12 +137,14 @@
 
 .abj404-info-badge {
     display: inline-block;
-    background: var(--abj404-info-bg, #e7f3ff);
-    color: var(--abj404-info-text, #0c5a99);
-    padding: 4px 10px;
-    border-radius: 12px;
-    font-size: 12px;
-    font-weight: 500;
+    padding: 2px 8px;
+    border: 1px solid var(--abj404-info);
+    border-radius: 2px;
+    background: transparent;
+    color: inherit;
+    font-size: 11px;
+    font-weight: 400;
+    line-height: 1.5;
     margin-left: 8px;
 }
 
@@ -1523,102 +1525,51 @@ th:nth-last-child(-n+3) .lefty-tooltiptext {
    Status & Type Badges
    ============================================ */
 
+/* Native bordered-label pattern: 1px border carries semantic, no fill,
+   regular text weight. Mirrors WP Site Health Security/Performance badges
+   (wp-admin/css/edit.css ~L925). Colors come from --abj404-* custom
+   properties defined in adminThemes.css so admin-theme plugins (Dark Mode,
+   etc.) can recolor by overriding the variables. */
 .abj404-badge {
     display: inline-block;
-    padding: 3px 8px;
-    border-radius: 10px;
+    padding: 2px 8px;
+    border: 1px solid var(--abj404-border);
+    border-radius: 2px;
+    background: transparent;
+    color: inherit;
     font-size: 11px;
-    font-weight: 500;
+    font-weight: 400;
+    line-height: 1.5;
     white-space: nowrap;
 }
 
-.abj404-badge-auto {
-    background: var(--abj404-info-bg, #e7f3ff);
-    color: var(--abj404-info-text, #0c5a99);
-}
-
-.abj404-badge-manual {
-    background: var(--abj404-bg, #f0f0f1);
-    color: var(--abj404-text-muted, #50575e);
-}
-
-.abj404-badge-regex {
-    background: #f3e8ff;
-    color: #6b21a8;
-}
-
-.abj404-badge-301 {
-    background: #e7f5e9;
-    color: #1e7e34;
-}
-
-.abj404-badge-302 {
-    background: #fff8e5;
-    color: #614200;
-}
-
-.abj404-badge-307 {
-    background: #e0f2fe;
-    color: #0369a1;
-}
-
-.abj404-badge-308 {
-    background: #dbeafe;
-    color: #1d4ed8;
-}
-
-.abj404-badge-410 {
-    background: #fee2e2;
-    color: #991b1b;
-}
-
-.abj404-badge-451 {
-    background: #fee2e2;
-    color: #991b1b;
-}
-
-.abj404-badge-meta {
-    background: #ccfbf1;
-    color: #0f766e;
-}
-
-.abj404-badge-captured {
-    background: #fef3c7;
-    color: #92400e;
-}
-
-.abj404-badge-ignored {
-    background: #f3f4f6;
-    color: #6b7280;
-}
-
-.abj404-badge-later {
-    background: #dbeafe;
-    color: #1e40af;
-}
-
-.abj404-badge-trash {
-    background: var(--abj404-danger-bg, #fcf0f1);
-    color: var(--abj404-danger-text, #8a2424);
-}
-
-.abj404-badge-404 {
-    background: #fef2f2;
-    color: #dc2626;
-}
-
-.abj404-badge-redirect {
-    background: #ecfdf5;
-    color: #059669;
-}
+.abj404-badge-auto     { border-color: var(--abj404-info); }
+.abj404-badge-manual   { border-color: var(--abj404-border); }
+.abj404-badge-regex    { border-color: var(--abj404-info); }
+.abj404-badge-301      { border-color: var(--abj404-success); }
+.abj404-badge-302      { border-color: var(--abj404-warning); }
+.abj404-badge-307      { border-color: var(--abj404-info); }
+.abj404-badge-308      { border-color: var(--abj404-info); }
+.abj404-badge-410      { border-color: var(--abj404-danger); }
+.abj404-badge-451      { border-color: var(--abj404-danger); }
+.abj404-badge-meta     { border-color: var(--abj404-border); }
+.abj404-badge-captured { border-color: var(--abj404-warning); }
+.abj404-badge-ignored  { border-color: var(--abj404-border); }
+.abj404-badge-later    { border-color: var(--abj404-info); }
+.abj404-badge-trash    { border-color: var(--abj404-danger); }
+.abj404-badge-404      { border-color: var(--abj404-danger); }
+.abj404-badge-redirect { border-color: var(--abj404-success); }
 
 .abj404-type-badge {
-    background: var(--abj404-bg, #f0f0f1);
-    color: var(--abj404-text-muted, #50575e);
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 10px;
-    font-weight: 500;
+    display: inline-block;
+    padding: 2px 8px;
+    border: 1px solid var(--abj404-border);
+    border-radius: 2px;
+    background: transparent;
+    color: inherit;
+    font-size: 11px;
+    font-weight: 400;
+    line-height: 1.5;
 }
 
 .abj404-never-used {
@@ -2842,29 +2793,22 @@ html[data-theme="obsidian"] .abj404-filter-bar {
 
 .abj404-score-badge {
     display: inline-block;
+    padding: 2px 8px;
+    border: 1px solid var(--abj404-border);
+    border-radius: 2px;
+    background: transparent;
+    color: inherit;
     font-size: 11px;
-    font-weight: 600;
-    border-radius: 3px;
-    padding: 1px 5px;
+    font-weight: 400;
+    line-height: 1.5;
 }
 
-.abj404-score-high {
-    color: #1a5c2a;
-    background: #d4edda;
-}
-
-.abj404-score-medium {
-    color: #7a4e00;
-    background: #fff3cd;
-}
-
-.abj404-score-low {
-    color: #721c24;
-    background: #f8d7da;
-}
+.abj404-score-high   { border-color: var(--abj404-success); }
+.abj404-score-medium { border-color: var(--abj404-warning); }
+.abj404-score-low    { border-color: var(--abj404-danger); }
 
 .abj404-score-manual {
-    color: #646970;
+    color: var(--abj404-text-muted);
     font-size: 14px;
 }
 
@@ -3546,26 +3490,18 @@ input[type="checkbox"]:focus-visible {
 .abj404-status-pill {
     display: inline-block;
     padding: 2px 8px;
-    border-radius: 999px;
-    font-size: 12px;
-    font-weight: 600;
-    line-height: 1.6;
+    border: 1px solid var(--abj404-border);
+    border-radius: 2px;
+    background: transparent;
+    color: inherit;
+    font-size: 11px;
+    font-weight: 400;
+    line-height: 1.5;
 }
 
-.abj404-pill-success {
-    background: #d1e7dd;
-    color: #0f5132;
-}
-
-.abj404-pill-warning {
-    background: #fff3cd;
-    color: #664d03;
-}
-
-.abj404-pill-info {
-    background: #cff4fc;
-    color: #055160;
-}
+.abj404-pill-success { border-color: var(--abj404-success); }
+.abj404-pill-warning { border-color: var(--abj404-warning); }
+.abj404-pill-info    { border-color: var(--abj404-info); }
 
 /* ── Advanced Options collapsible (Edit Redirect page) ─────────────────── */
 
@@ -3647,27 +3583,23 @@ input[type="checkbox"]:focus-visible {
     border-color: #46b450;
 }
 
-/* Status pills */
+/* GSC status: native bordered-label pattern */
 .abj404-gsc-status {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-weight: 600;
-    font-size: 13px;
+    padding: 2px 8px;
+    border: 1px solid var(--abj404-border);
+    border-radius: 2px;
+    background: transparent;
+    color: inherit;
+    font-size: 11px;
+    font-weight: 400;
+    line-height: 1.5;
     margin-bottom: 12px;
 }
-.abj404-gsc-status--green {
-    background: #edfaef;
-    color: #1a6830;
-    border: 1px solid #46b450;
-}
-.abj404-gsc-status--amber {
-    background: #fef9e7;
-    color: #7a5c00;
-    border: 1px solid #dba617;
-}
+.abj404-gsc-status--green { border-color: var(--abj404-success); }
+.abj404-gsc-status--amber { border-color: var(--abj404-warning); }
 
 /* Error box */
 .abj404-gsc-error-box {
@@ -3737,14 +3669,16 @@ input[type="checkbox"]:focus-visible {
     position: absolute;
     top: -10px;
     right: 12px;
+    padding: 2px 8px;
+    border: 1px solid var(--abj404-primary);
+    border-radius: 2px;
+    background: var(--abj404-surface);
+    color: inherit;
     font-size: 11px;
-    font-weight: 600;
+    font-weight: 400;
+    line-height: 1.5;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    padding: 2px 8px;
-    border-radius: 4px;
-    background: var(--abj404-primary, #2271b1);
-    color: #fff;
 }
 
 .abj404-tile[data-behavior="suggest"] .abj404-tile-badge {
