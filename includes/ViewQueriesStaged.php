@@ -39,7 +39,6 @@ if (!defined('ABSPATH')) {
  * @property bool $usingTransientFallbackLock
  * @property string $lastNamedLockUnsupportedReason
  * @property string $lastNamedLockUnsupportedError
- * @method void abortStagedBuildForMutationWatermarkAdvance(...$arguments)
  * @method bool acquireTransientFallbackLock(...$arguments)
  * @method bool acquireViewBuildLock(...$arguments)
  * @method string activeBuildStartedWatermarkOptionName(...$arguments)
@@ -88,7 +87,6 @@ if (!defined('ABSPATH')) {
  * @method bool forceRestartViewBuild(...$arguments)
  * @method bool foregroundViewBuildLeaseActive(...$arguments)
  * @method string formatPhpMemoryBytesHuman(...$arguments)
- * @method bool gateAbortIfMutationWatermarkAdvanced(...$arguments)
  * @method string getColumnCollationString(...$arguments)
  * @method int getCronStuckHours(...$arguments)
  * @method string getLowercasePrefix(...$arguments)
@@ -163,7 +161,7 @@ if (!defined('ABSPATH')) {
  * @method array{ran: bool, reason: string, progress: array<string, mixed>} runPageLoadFallbackAdvance(...$arguments)
  * @method int runRedirectsForViewCountStaged(...$arguments)
  * @method array<int, array<string, mixed>> runRedirectsForViewStaged(...$arguments)
- * @method bool runS11SwapWithPreRenameWatermarkRecheck(...$arguments)
+ * @method bool runS11Swap(...$arguments)
  * @method bool runStagedBuildOnce(...$arguments)
  * @method bool runStagedBuildStages6Through11(...$arguments)
  * @method void runStagedSqlFile(...$arguments)
@@ -1094,7 +1092,6 @@ class ABJ_404_Solution_ViewQueriesStaged extends ABJ_404_Solution_ViewBuildColla
         if ($stage < 6) {
             if (!$this->releaseAndReacquireBetweenStages()) { return false; }
             if ($this->haltIfPrefixChangedSinceStageOne(6)) { return false; }
-            if ($this->gateAbortIfMutationWatermarkAdvanced(6)) { return false; }
             $this->markBuildStage('staged_build_s6_update_home');
             $r = $this->runTimedViewBuildStage(6, 'staged_build_s6_update_home', function () {
                 $this->stageUpdateHome();
@@ -1109,7 +1106,6 @@ class ABJ_404_Solution_ViewQueriesStaged extends ABJ_404_Solution_ViewBuildColla
         if ($stage < 7) {
             if (!$this->releaseAndReacquireBetweenStages()) { return false; }
             if ($this->haltIfPrefixChangedSinceStageOne(7)) { return false; }
-            if ($this->gateAbortIfMutationWatermarkAdvanced(7)) { return false; }
             $this->markBuildStage('staged_build_s7_update_external');
             $r = $this->runTimedViewBuildStage(7, 'staged_build_s7_update_external', function () {
                 $this->stageUpdateExternal();
@@ -1124,7 +1120,6 @@ class ABJ_404_Solution_ViewQueriesStaged extends ABJ_404_Solution_ViewBuildColla
         if ($stage < 8) {
             if (!$this->releaseAndReacquireBetweenStages()) { return false; }
             if ($this->haltIfPrefixChangedSinceStageOne(8)) { return false; }
-            if ($this->gateAbortIfMutationWatermarkAdvanced(8)) { return false; }
             $this->markBuildStage('staged_build_s8_update_special');
             $r = $this->runTimedViewBuildStage(8, 'staged_build_s8_update_special', function () {
                 $this->stageUpdateSpecial();
@@ -1139,7 +1134,6 @@ class ABJ_404_Solution_ViewQueriesStaged extends ABJ_404_Solution_ViewBuildColla
         if ($stage < 9) {
             if (!$this->releaseAndReacquireBetweenStages()) { return false; }
             if ($this->haltIfPrefixChangedSinceStageOne(9)) { return false; }
-            if ($this->gateAbortIfMutationWatermarkAdvanced(9)) { return false; }
             if ($this->isStageMarkedSkipped(9)) {
                 $this->writeProgressOption('current_stage', 9);
                 $stage = 9;
@@ -1173,7 +1167,6 @@ class ABJ_404_Solution_ViewQueriesStaged extends ABJ_404_Solution_ViewBuildColla
         if ($stage < 10) {
             if (!$this->releaseAndReacquireBetweenStages()) { return false; }
             if ($this->haltIfPrefixChangedSinceStageOne(10)) { return false; }
-            if ($this->gateAbortIfMutationWatermarkAdvanced(10)) { return false; }
             if ($this->isStageMarkedSkipped(10)) {
                 $this->writeProgressOption('current_stage', 10);
                 $stage = 10;
@@ -1197,9 +1190,8 @@ class ABJ_404_Solution_ViewQueriesStaged extends ABJ_404_Solution_ViewBuildColla
         if ($stage < 11) {
             if (!$this->releaseAndReacquireBetweenStages()) { return false; }
             if ($this->haltIfPrefixChangedSinceStageOne(11)) { return false; }
-            if ($this->gateAbortIfMutationWatermarkAdvanced(11)) { return false; }
             $this->markBuildStage('staged_build_s11_swap');
-            if (!$this->runS11SwapWithPreRenameWatermarkRecheck()) { return false; }
+            if (!$this->runS11Swap()) { return false; }
             $this->publishBuiltWatermarkFromActiveBuildStartedWatermark();
             $this->markViewDoneBuildCompleted();
             $this->clearAllProgressOptions();
@@ -1349,7 +1341,6 @@ class ABJ_404_Solution_ViewQueriesStaged extends ABJ_404_Solution_ViewBuildColla
         if ($stage < 2) {
             if (!$this->releaseAndReacquireBetweenStages()) { return false; }
             if ($this->haltIfPrefixChangedSinceStageOne(2)) { return false; }
-            if ($this->gateAbortIfMutationWatermarkAdvanced(2)) { return false; }
             $r = $this->runTimedViewBuildStage(2, 'staged_build_s2_insert', function () {
                 return $this->stageInsertRedirectsBatched();
             });
@@ -1363,7 +1354,6 @@ class ABJ_404_Solution_ViewQueriesStaged extends ABJ_404_Solution_ViewBuildColla
         if ($stage < 3) {
             if (!$this->releaseAndReacquireBetweenStages()) { return false; }
             if ($this->haltIfPrefixChangedSinceStageOne(3)) { return false; }
-            if ($this->gateAbortIfMutationWatermarkAdvanced(3)) { return false; }
             if ($this->isStageMarkedSkipped(3)) {
                 // Permanent host-side denial recorded on a prior tick.
                 // Advance current_stage past S3 without touching the SQL.
@@ -1390,7 +1380,6 @@ class ABJ_404_Solution_ViewQueriesStaged extends ABJ_404_Solution_ViewBuildColla
         if ($stage < 4) {
             if (!$this->releaseAndReacquireBetweenStages()) { return false; }
             if ($this->haltIfPrefixChangedSinceStageOne(4)) { return false; }
-            if ($this->gateAbortIfMutationWatermarkAdvanced(4)) { return false; }
             $r = $this->runTimedViewBuildStage(4, 'staged_build_s4_update_posts', function () {
                 return $this->stageUpdatePostsBatched();
             });
@@ -1404,7 +1393,6 @@ class ABJ_404_Solution_ViewQueriesStaged extends ABJ_404_Solution_ViewBuildColla
         if ($stage < 5) {
             if (!$this->releaseAndReacquireBetweenStages()) { return false; }
             if ($this->haltIfPrefixChangedSinceStageOne(5)) { return false; }
-            if ($this->gateAbortIfMutationWatermarkAdvanced(5)) { return false; }
             $r = $this->runTimedViewBuildStage(5, 'staged_build_s5_update_terms', function () {
                 return $this->stageUpdateTermsBatched();
             });

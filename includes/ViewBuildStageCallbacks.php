@@ -51,7 +51,6 @@ if (!defined('ABSPATH')) {
  * @property bool $usingTransientFallbackLock
  * @property string $lastNamedLockUnsupportedReason
  * @property string $lastNamedLockUnsupportedError
- * @method void abortStagedBuildForMutationWatermarkAdvance(...$arguments)
  * @method bool acquireTransientFallbackLock(...$arguments)
  * @method bool acquireViewBuildLock(...$arguments)
  * @method string activeBuildStartedWatermarkOptionName(...$arguments)
@@ -100,7 +99,6 @@ if (!defined('ABSPATH')) {
  * @method bool forceRestartViewBuild(...$arguments)
  * @method bool foregroundViewBuildLeaseActive(...$arguments)
  * @method string formatPhpMemoryBytesHuman(...$arguments)
- * @method bool gateAbortIfMutationWatermarkAdvanced(...$arguments)
  * @method string getColumnCollationString(...$arguments)
  * @method int getCronStuckHours(...$arguments)
  * @method string getLowercasePrefix(...$arguments)
@@ -175,7 +173,7 @@ if (!defined('ABSPATH')) {
  * @method array{ran: bool, reason: string, progress: array<string, mixed>} runPageLoadFallbackAdvance(...$arguments)
  * @method int runRedirectsForViewCountStaged(...$arguments)
  * @method array<int, array<string, mixed>> runRedirectsForViewStaged(...$arguments)
- * @method bool runS11SwapWithPreRenameWatermarkRecheck(...$arguments)
+ * @method bool runS11Swap(...$arguments)
  * @method bool runStagedBuildOnce(...$arguments)
  * @method bool runStagedBuildStages6Through11(...$arguments)
  * @method void runStagedSqlFile(...$arguments)

@@ -39,7 +39,6 @@ if (!defined('ABSPATH')) {
  * @property mixed $viewBuildStageOpenForShutdown
  * @property mixed $viewDoneIsServeableCache
  * @property mixed $viewReadService
- * @method mixed abortStagedBuildForMutationWatermarkAdvance(...$arguments)
  * @method mixed acquireTransientFallbackLock(...$arguments)
  * @method mixed acquireViewBuildLock(...$arguments)
  * @method mixed activeBuildStartedWatermarkOptionName(...$arguments)
@@ -83,7 +82,6 @@ if (!defined('ABSPATH')) {
  * @method mixed forceRestartViewBuild(...$arguments)
  * @method mixed foregroundViewBuildLeaseActive(...$arguments)
  * @method mixed formatPhpMemoryBytesHuman(...$arguments)
- * @method mixed gateAbortIfMutationWatermarkAdvanced(...$arguments)
  * @method mixed getCronStuckHours(...$arguments)
  * @method mixed getViewBuildProgress(...$arguments)
  * @method mixed getViewDoneBuiltAtTimestamp(...$arguments)
@@ -153,7 +151,7 @@ if (!defined('ABSPATH')) {
  * @method mixed runPageLoadFallbackAdvance(...$arguments)
  * @method mixed runRedirectsForViewCountStaged(...$arguments)
  * @method mixed runRedirectsForViewStaged(...$arguments)
- * @method mixed runS11SwapWithPreRenameWatermarkRecheck(...$arguments)
+ * @method mixed runS11Swap(...$arguments)
  * @method mixed runStagedBuildOnce(...$arguments)
  * @method mixed runStagedBuildStages6Through11(...$arguments)
  * @method mixed runStagedSqlFile(...$arguments)
