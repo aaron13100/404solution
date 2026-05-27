@@ -245,6 +245,117 @@ body.abj404-dark-mode {
   --abj404-wizard-spinner-head: #5aa2ff;
 }
 
+/* ===== Host Dark-Mode Adaptation =====
+ *
+ * Detects host admin-theme plugins that flip WordPress admin to dark mode.
+ * WP Dark Mode plugin signals via `html.wp-dark-mode-active` and
+ * `html[data-darkmode-scheme="dark"]`. When the host has gone dark and the
+ * user has NOT explicitly selected one of our themed palettes, remap the
+ * base abj404 vars to dark equivalents. Everything downstream consumes the
+ * vars, so all surfaces follow.
+ *
+ * Scoped with `:not([data-theme])` so intentional plugin themes
+ * (mono/calm/neon/obsidian) win over host detection. A user who explicitly
+ * picked "Calm Ops" keeps Calm Ops even when the host enables dark mode.
+ */
+html.wp-dark-mode-active:not([data-theme]),
+html.wp-dark-mode-active:not([data-theme]) body:not([data-theme]),
+html[data-darkmode-scheme="dark"]:not([data-theme]),
+html[data-darkmode-scheme="dark"]:not([data-theme]) body:not([data-theme]) {
+  --abj404-bg: #0E1421;
+  --abj404-bg-muted: #131A28;
+  --abj404-surface: #1A2233;
+  --abj404-surface-hover: #222B40;
+  --abj404-surface-muted: #1F2738;
+  --abj404-text: #DCE3EF;
+  --abj404-text-muted: #B0BCD0;
+  --abj404-border: #2B3853;
+
+  --abj404-primary: #4F7CD6;
+  --abj404-accent: var(--wp-admin-theme-color, #5B8DEF);
+  --abj404-link: var(--wp-admin-theme-color, #8AB4FF);
+  --abj404-focus: #8AB4FF;
+  --abj404-accent-hover: var(--wp-admin-theme-color-darker-10, #3D6BCB);
+
+  --abj404-info: #5B8DEF;
+  --abj404-success: #3CC07B;
+  --abj404-warning: #F1A93B;
+  --abj404-danger: #EF6464;
+
+  --abj404-table-header: #1F2738;
+  --abj404-row-hover: #1A2233;
+  --abj404-row-selected: #1A2A46;
+  --abj404-badge-bg: #1F2738;
+  --abj404-badge-text: #D5DEF0;
+
+  /* Derived vars must be re-aliased: the default branch aliases point at
+     the light-mode values that were in scope when they were declared. */
+  --abj404-card-bg: var(--abj404-surface);
+  --abj404-card-header-hover: var(--abj404-surface-hover);
+  --abj404-input-bg: var(--abj404-surface);
+  --abj404-surface-alt: var(--abj404-surface-muted);
+  --abj404-text-secondary: var(--abj404-text-muted);
+  --abj404-bg-hover: var(--abj404-surface-hover);
+  --abj404-bg-subtle: var(--abj404-bg-muted);
+  --abj404-border-light: var(--abj404-border);
+  --abj404-link-hover: var(--abj404-accent);
+
+  /* Status families: keep readable on dark surfaces. */
+  --abj404-success-bg: #143626;
+  --abj404-success-border: #1F5236;
+  --abj404-success-text: #A8E8C2;
+  --abj404-info-bg: #15243C;
+  --abj404-info-border: #29456E;
+  --abj404-info-text: #B8D2F4;
+  --abj404-warning-bg: #3B2D10;
+  --abj404-warning-border: #6D4E18;
+  --abj404-warning-text: #F5D38F;
+  --abj404-danger-bg: #3B1A1B;
+  --abj404-danger-border: #6D2C2E;
+  --abj404-danger-text: #F4B8B9;
+
+  /* Row striping over dark surfaces. */
+  --abj404-row-stripe-soft: rgba(255, 255, 255, 0.02);
+  --abj404-row-stripe-med: rgba(255, 255, 255, 0.05);
+  --abj404-cell-stripe: rgba(255, 255, 255, 0.03);
+  --abj404-row-stripe: rgba(255, 255, 255, 0.02);
+  --abj404-row-stripe-hover: rgba(255, 255, 255, 0.05);
+
+  /* Loading overlay scrim. Dark scrim over dark tables. */
+  --abj404-loading-overlay-bg: rgba(12, 15, 19, 0.8);
+
+  /* Captured-row danger tint (subtle red wash over dark surface). */
+  --abj404-danger-row-bg: #3A1A1B;
+  --abj404-danger-row-bg-hover: #4A2122;
+  --abj404-danger-row-text: #F4B8B9;
+}
+
+/* Apply the same card/header treatment to host-dark-mode that the explicit
+   data-theme branch gets, so .abj404-card flips off white without depending
+   on darkmode.js inversion. */
+html.wp-dark-mode-active:not([data-theme]) body .abj404-card,
+html[data-darkmode-scheme="dark"]:not([data-theme]) body .abj404-card {
+  background: var(--abj404-surface) !important;
+  border-color: var(--abj404-border) !important;
+}
+
+html.wp-dark-mode-active:not([data-theme]) body .abj404-card-header,
+html[data-darkmode-scheme="dark"]:not([data-theme]) body .abj404-card-header {
+  border-bottom-color: var(--abj404-border) !important;
+}
+
+html.wp-dark-mode-active:not([data-theme]) body .abj404-card-header:hover,
+html[data-darkmode-scheme="dark"]:not([data-theme]) body .abj404-card-header:hover {
+  background: var(--abj404-surface-hover) !important;
+}
+
+html.wp-dark-mode-active:not([data-theme]) body .abj404-card-title,
+html[data-darkmode-scheme="dark"]:not([data-theme]) body .abj404-card-title,
+html.wp-dark-mode-active:not([data-theme]) body .abj404-card-content,
+html[data-darkmode-scheme="dark"]:not([data-theme]) body .abj404-card-content {
+  color: var(--abj404-text) !important;
+}
+
 /* === Calm Ops (Light) === */
 html[data-theme="calm"],
 body[data-theme="calm"] {
