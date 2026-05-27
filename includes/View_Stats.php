@@ -226,10 +226,10 @@ class ABJ_404_Solution_View_Stats extends ABJ_404_Solution_ViewComponent {
             . '.abj404-confidence-legend { list-style: none; margin: 0; padding: 0; }'
             . '.abj404-confidence-legend li { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; font-size: 13px; }'
             . '.abj404-legend-dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }'
-            . '.abj404-conf-high   { background: #28a745; }'
-            . '.abj404-conf-medium { background: #ffc107; }'
-            . '.abj404-conf-low    { background: #dc3545; }'
-            . '.abj404-conf-manual { background: #adb5bd; }'
+            . '.abj404-conf-high   { background: #28a745; }' /* allow-hardcoded-color: chart palette dot; must match Chart.js dataset below */
+            . '.abj404-conf-medium { background: #ffc107; }' /* allow-hardcoded-color: chart palette dot; must match Chart.js dataset below */
+            . '.abj404-conf-low    { background: #dc3545; }' /* allow-hardcoded-color: chart palette dot; must match Chart.js dataset below */
+            . '.abj404-conf-manual { background: #adb5bd; }' /* allow-hardcoded-color: chart palette dot; must match Chart.js dataset below */
             . '</style>';
 
         $content .= '<script>'
@@ -242,7 +242,7 @@ class ABJ_404_Solution_View_Stats extends ABJ_404_Solution_ViewComponent {
             . '      data: {'
             . '        labels: [' . json_encode($labelHigh) . ',' . json_encode($labelMedium) . ',' . json_encode($labelLow) . ',' . json_encode($labelManual) . '],'
             . '        datasets: [{ data: [' . $highCount . ',' . $mediumCount . ',' . $lowCount . ',' . $manualCount . '],'
-            . '          backgroundColor: ["#28a745","#ffc107","#dc3545","#adb5bd"] }]'
+            . '          backgroundColor: ["#28a745","#ffc107","#dc3545","#adb5bd"] }]' /* allow-hardcoded-color: chart dataset palette; matches .abj404-conf-* dots above */
             . '      },'
             . '      options: { responsive: true, plugins: { legend: { display: false } } }'
             . '    });'
@@ -288,7 +288,7 @@ class ABJ_404_Solution_View_Stats extends ABJ_404_Solution_ViewComponent {
         $trendsContent .= '<div class="abj404-trend-chart-wrap"><canvas id="abj404-chart-redirects"></canvas></div>';
         $trendsContent .= '<div class="abj404-trend-chart-wrap"><canvas id="abj404-chart-captures"></canvas></div>';
         $trendsContent .= '</div>';
-        $trendsContent .= '<p id="abj404-trends-error" style="display:none;color:#d63638">'
+        $trendsContent .= '<p id="abj404-trends-error" style="display:none;color:var(--abj404-danger-border)">'
             . esc_html__('Could not load chart data.', '404-solution') . '</p>';
         $trendsContent .= '</div>';
 
@@ -297,7 +297,7 @@ class ABJ_404_Solution_View_Stats extends ABJ_404_Solution_ViewComponent {
             . '.abj404-trends-period-label { cursor: pointer; font-weight: 500; }'
             . '.abj404-trends-period-label input { margin-right: 4px; }'
             . '.abj404-trend-chart-wrap { margin-bottom: 24px; }'
-            . '.abj404-trends-loading { color: #646970; font-style: italic; }'
+            . '.abj404-trends-loading { color: var(--abj404-text-muted); font-style: italic; }'
             . '</style>';
 
         // Inline JS: load Chart.js from CDN then fetch data and render charts.

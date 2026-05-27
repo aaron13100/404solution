@@ -76,23 +76,23 @@ class ABJ_404_Solution_UninstallModal {
         // Custom CSS for modal styling
         wp_add_inline_style('wp-jquery-ui-dialog', '
             .abj404-uninstall-dialog .ui-dialog-titlebar {
-                background: #d63638;
-                color: white;
+                background: var(--abj404-danger-border);
+                color: var(--abj404-on-accent);
             }
             .abj404-uninstall-dialog .ui-dialog-titlebar-close {
-                color: white;
+                color: var(--abj404-on-accent);
             }
             .abj404-uninstall-dialog .ui-dialog-titlebar-close:hover {
-                background: #b32d2e;
+                background: #b32d2e; /* allow-hardcoded-color: darker-red danger hover; no --abj404-danger-hover var defined */
             }
             .abj404-uninstall-dialog .button-danger {
-                background: #d63638;
-                border-color: #d63638;
-                color: white;
+                background: var(--abj404-danger-border);
+                border-color: var(--abj404-danger-border);
+                color: var(--abj404-on-accent);
             }
             .abj404-uninstall-dialog .button-danger:hover {
-                background: #b32d2e;
-                border-color: #b32d2e;
+                background: #b32d2e; /* allow-hardcoded-color: darker-red danger hover; no --abj404-danger-hover var defined */
+                border-color: #b32d2e; /* allow-hardcoded-color: darker-red danger hover border; matches background */
             }
             .abj404-uninstall-content label {
                 display: block;
@@ -105,13 +105,13 @@ class ABJ_404_Solution_UninstallModal {
             }
             .abj404-uninstall-content .description {
                 margin: 0;
-                color: #646970;
+                color: var(--abj404-text-muted);
                 font-size: 12px;
             }
             .abj404-uninstall-content h3 {
                 margin-top: 18px;
                 margin-bottom: 8px;
-                border-bottom: 1px solid #dcdcde;
+                border-bottom: 1px solid var(--abj404-border);
                 padding-bottom: 6px;
                 font-size: 14px;
             }
@@ -183,7 +183,7 @@ class ABJ_404_Solution_UninstallModal {
                 <?php self::echoDeactivationReasons(); ?>
 
                 <!-- Conditional follow-up sections (shown based on selected reason) -->
-                <div id="abj404-followup-not-working" class="abj404-followup-section" style="display:none; background: #f6f7f7; border-radius: 4px; border-left: 3px solid #d63638;">
+                <div id="abj404-followup-not-working" class="abj404-followup-section" style="display:none; background: var(--abj404-surface-hover); border-radius: 4px; border-left: 3px solid var(--abj404-danger-border);">
                     <p style="font-weight: 600;">
                         <?php _e('What specifically isn\'t working?', '404-solution'); ?>
                     </p>
@@ -213,7 +213,7 @@ class ABJ_404_Solution_UninstallModal {
                     </label>
                 </div>
 
-                <div id="abj404-followup-performance" class="abj404-followup-section" style="display:none; background: #f6f7f7; border-radius: 4px; border-left: 3px solid #d63638;">
+                <div id="abj404-followup-performance" class="abj404-followup-section" style="display:none; background: var(--abj404-surface-hover); border-radius: 4px; border-left: 3px solid var(--abj404-danger-border);">
                     <p style="font-weight: 600;">
                         <?php _e('What type of performance issue?', '404-solution'); ?>
                     </p>
@@ -239,7 +239,7 @@ class ABJ_404_Solution_UninstallModal {
                     </label>
                 </div>
 
-                <div id="abj404-followup-complicated" class="abj404-followup-section" style="display:none; background: #f6f7f7; border-radius: 4px; border-left: 3px solid #d63638;">
+                <div id="abj404-followup-complicated" class="abj404-followup-section" style="display:none; background: var(--abj404-surface-hover); border-radius: 4px; border-left: 3px solid var(--abj404-danger-border);">
                     <p style="font-weight: 600;">
                         <?php _e('What was confusing?', '404-solution'); ?>
                     </p>
@@ -318,7 +318,7 @@ class ABJ_404_Solution_UninstallModal {
                     <input type="checkbox" id="abj404-include-diagnostics" checked>
                     <?php _e('Include technical details (site URL, system info, plugin counts, and a sanitized log excerpt) to help diagnose the issue', '404-solution'); ?>
                 </label>
-                <p class="abj404-privacy-note" style="margin: 0 0 15px 24px; font-size: 11px; color: #555;">
+                <p class="abj404-privacy-note" style="margin: 0 0 15px 24px; font-size: 11px; color: var(--abj404-text-muted);">
                     <?php
                     /* translators: %s is a literal relative file path to the plugin's privacy policy stub, rendered as <code>. */
                     printf(

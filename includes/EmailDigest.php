@@ -1,5 +1,5 @@
 <?php
-
+/* allow-hardcoded-color: file-level exemption. Every literal in this file is required: HTML emitted here is delivered via wp_mail() and rendered by remote mail clients (Gmail, Outlook, Apple Mail) which do not load the admin stylesheet and strip external CSS, so theme vars (--abj404-*) cannot be used. */
 if (!defined('ABSPATH')) {
     exit;
 }

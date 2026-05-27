@@ -669,7 +669,7 @@ class ABJ_404_Solution_GoogleSearchConsole {
 
         // Advanced: custom credentials toggle + wizard
         $html .= '<details class="abj404-gsc-advanced">';
-        $html .= '<summary style="cursor:pointer;margin-top:12px;color:#646970;">' . esc_html__('Advanced: use your own Google Cloud credentials', '404-solution') . '</summary>';
+        $html .= '<summary style="cursor:pointer;margin-top:12px;color:var(--abj404-text-muted);">' . esc_html__('Advanced: use your own Google Cloud credentials', '404-solution') . '</summary>';
         $html .= '<div style="margin-top:10px;">';
 
         $html .= '<p><strong>' . esc_html__('Setup steps:', '404-solution') . '</strong></p>';
@@ -745,7 +745,7 @@ class ABJ_404_Solution_GoogleSearchConsole {
 
             // Advanced: use your own credentials
             $html .= '<details class="abj404-gsc-advanced" style="margin-top:16px;">';
-            $html .= '<summary style="cursor:pointer;color:#646970;">' . esc_html__('Advanced: use your own Google Cloud credentials', '404-solution') . '</summary>';
+            $html .= '<summary style="cursor:pointer;color:var(--abj404-text-muted);">' . esc_html__('Advanced: use your own Google Cloud credentials', '404-solution') . '</summary>';
             $html .= '<div style="margin-top:10px;">';
             $html .= $this->renderCustomCredentialsForm();
             $html .= '</div>';
@@ -872,9 +872,9 @@ class ABJ_404_Solution_GoogleSearchConsole {
             }
             $html .= '</tbody></table>';
         } elseif ($this->isRefreshNeeded()) {
-            $html .= '<p style="margin-top:12px;color:#646970;">' . esc_html__('GSC data is being fetched in the background. Reload this page in a few minutes.', '404-solution') . '</p>';
+            $html .= '<p style="margin-top:12px;color:var(--abj404-text-muted);">' . esc_html__('GSC data is being fetched in the background. Reload this page in a few minutes.', '404-solution') . '</p>';
         } else {
-            $html .= '<p style="margin-top:12px;color:#646970;">' . esc_html__('No search traffic data found for your captured 404 URLs in the last 90 days.', '404-solution') . '</p>';
+            $html .= '<p style="margin-top:12px;color:var(--abj404-text-muted);">' . esc_html__('No search traffic data found for your captured 404 URLs in the last 90 days.', '404-solution') . '</p>';
         }
 
         return $html;

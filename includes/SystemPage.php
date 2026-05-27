@@ -356,9 +356,9 @@ class ABJ_404_Solution_SystemPage {
         $settingsUrl = admin_url('options-general.php?page=' . ABJ404_PP . '&subpage=abj404_options');
 
         add_action('wp_footer', function() use ($settingsUrl) {
-            echo '<div style="position:fixed;top:0;left:0;right:0;z-index:999999;background:#fff3cd;border-bottom:2px solid #ffc107;padding:12px 20px;font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:14px;">';
+            echo '<div style="position:fixed;top:0;left:0;right:0;z-index:999999;background:#fff3cd;border-bottom:2px solid #ffc107;padding:12px 20px;font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:14px;">'; /* allow-hardcoded-color: wp_footer front-end banner; admin theme vars are not loaded on the public site */
             echo esc_html__('Your 404 Solution suggestion page was deleted. Visitors are seeing this default 404 page instead.', '404-solution');
-            echo ' <a href="' . esc_url($settingsUrl) . '" style="color:#0073aa;text-decoration:underline;">';
+            echo ' <a href="' . esc_url($settingsUrl) . '" style="color:#0073aa;text-decoration:underline;">'; /* allow-hardcoded-color: wp_footer front-end link color; admin theme vars not loaded on public site */
             echo esc_html__('Go to settings', '404-solution');
             echo '</a>';
             echo '</div>';
