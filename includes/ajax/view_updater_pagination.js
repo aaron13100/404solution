@@ -500,6 +500,17 @@ function paginationLinksChange(triggerItem, options) {
                 } else if (textStatus) {
                     contextSummary += ' (' + String(textStatus) + ')';
                 }
+                // Append the stage label to the support-request context so
+                // the outgoing payload retains the same diagnostic trace
+                // (e.g. "stage 1, getAdminRedirectsPageTable() ...") that
+                // is no longer shown verbatim in the user-visible notice.
+                var stageDiagnosticForPayload = inferredDiagnostics.stageNumber
+                    ? 'stage ' + inferredDiagnostics.stageNumber + ', '
+                    : '';
+                stageDiagnosticForPayload += (queryLabelFromServer || inferredDiagnostics.queryLabel || '');
+                if (stageDiagnosticForPayload) {
+                    contextSummary += ' [' + stageDiagnosticForPayload + ']';
+                }
                 abj404RenderAjaxErrorNotice({
                     noticeTitle: noticeTitle,
                     $detailsEl: $detailsEl,

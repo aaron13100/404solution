@@ -209,23 +209,32 @@ function showTableWarmupFailure(meta) {
     var stage = meta.stage || 'rows';
     var stageNumber = meta.stageNumber || (stage === 'count' ? 2 : 1);
     var queryLabel = meta.queryLabel || (stage === 'count' ? 'getRedirectsForViewCount' : 'getRedirectsForView');
-    var message = 'Could not finish refreshing data (stage ' + stageNumber + ', ' + queryLabel + ')';
+    // Diagnostic string kept for the support payload context and debug
+    // log; it is NOT shown verbatim to the admin (see plain message
+    // below).
+    var diagnosticTrace = 'stage ' + stageNumber + ', ' + queryLabel;
     if (meta.lastError) {
-        message += '. ' + meta.lastError;
+        diagnosticTrace += '; ' + meta.lastError;
     }
-    abj404UpdateAjaxDebugLog('Table Warmup Failure: ' + message, meta);
+    abj404UpdateAjaxDebugLog('Table Warmup Failure: ' + diagnosticTrace, meta);
+    var $ajaxConfigElForSubpage = jQuery('[data-pagination-ajax-url]').first();
+    if ($ajaxConfigElForSubpage.length === 0) {
+        $ajaxConfigElForSubpage = jQuery('.abj404-filter-bar').first();
+    }
+    var subpageForLabel = $ajaxConfigElForSubpage.attr('data-pagination-ajax-subpage')
+        || (typeof getURLParameter === 'function' ? getURLParameter('subpage') : '');
+    var tableNoun = 'redirects';
+    if (subpageForLabel === 'abj404_captured') { tableNoun = 'captured 404s'; }
+    else if (subpageForLabel === 'abj404_logs') { tableNoun = 'logs'; }
+    var message = 'Could not refresh the ' + tableNoun + ' table. Try again, or send the debug log.';
     // Clear the small status-line text. The proper notice below carries
     // the "Send debug log to developer" button and is the surface admins
     // act on. Rendering the same message both here and in the table row
     // is the double-render the Bruno report flagged.
     jQuery('.abj404-refresh-status').text('');
 
-    var $ajaxConfigEl = jQuery('[data-pagination-ajax-url]').first();
-    if ($ajaxConfigEl.length === 0) {
-        $ajaxConfigEl = jQuery('.abj404-filter-bar').first();
-    }
-    var subpage = $ajaxConfigEl.attr('data-pagination-ajax-subpage')
-        || (typeof getURLParameter === 'function' ? getURLParameter('subpage') : '');
+    var $ajaxConfigEl = $ajaxConfigElForSubpage;
+    var subpage = subpageForLabel;
     var triggeredFromSlug = (subpage === 'abj404_captured')
         ? 'captured_404s_page' : 'redirects_page';
 
@@ -256,11 +265,15 @@ function showTableWarmupFailure(meta) {
     }
 
     if (typeof abj404RenderAjaxErrorNotice === 'function') {
+        // contextSummary keeps the diagnostic trace ("stage N, queryLabel,
+        // lastError") so the outgoing support-request payload carries the
+        // same internal context the admin would have seen verbatim before
+        // the restyle. The user-visible title stays plain.
         abj404RenderAjaxErrorNotice({
             noticeTitle: message,
             $detailsEl: $detailsEl,
             triggeredFromSlug: triggeredFromSlug,
-            contextSummary: message
+            contextSummary: message + ' (' + diagnosticTrace + ')'
         });
     }
 
