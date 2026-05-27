@@ -1,0 +1,17 @@
+<script>
+(function() {
+    if (window._abj404TraceToggleInit) { return; }
+    window._abj404TraceToggleInit = true;
+    document.addEventListener("click", function(e) {
+        var btn = e.target;
+        if (!btn || !btn.classList || !btn.classList.contains("abj404-trace-toggle")) { return; }
+        var rowId = btn.getAttribute("data-row-id");
+        if (!rowId) { return; }
+        var detail = document.getElementById("abj404-trace-" + rowId);
+        if (!detail) { return; }
+        var visible = detail.style.display !== "none";
+        detail.style.display = visible ? "none" : "";
+        btn.textContent = visible ? "\u25B6" : "\u25BC";
+    });
+}());
+</script>

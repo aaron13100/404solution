@@ -1,0 +1,19 @@
+<div class="abj404-table-page">
+<div class="abj404-table-header">
+<h2>{logs_title}</h2>
+</div>
+<div class="abj404-filter-bar tablenav" data-pagination-ajax-url="{data-pagination-ajax-url}" data-pagination-ajax-action="ajaxUpdatePaginationLinks" data-pagination-ajax-subpage="{data-pagination-ajax-subpage}" data-pagination-ajax-nonce="{data-pagination-ajax-nonce}" data-pagination-inflight-nonce="{data-pagination-inflight-nonce}" data-pagination-current-signature="" data-pagination-current-orderby="{data-pagination-current-orderby}" data-pagination-current-order="{data-pagination-current-order}" data-pagination-current-filter="0" data-pagination-current-paged="1" data-pagination-current-score-range="all" data-pagination-current-logsid="{data-pagination-current-logsid}" data-pagination-initial-load="1" data-pagination-auto-refresh="1" data-pagination-refresh-started-text="{refresh_started_text}" data-pagination-refresh-finished-text="{refresh_finished_text}" data-pagination-refresh-available-text="{refresh_available_text}">
+{search_form}
+<div class="abj404-rows-per-page">
+<span>{rows_per_page_label}</span>
+<select class="abj404-filter-select perpage" name="perpage" onchange="paginationLinksChange(this);">
+{perpage_options}
+</select>
+</div>
+<span class="abj404-refresh-status" aria-live="polite"></span>
+</div><!-- .abj404-filter-bar -->
+{warmup_placeholder}
+<div class="abj404-pagination tablenav abj404-pagination-right abj404-pagination-bottom">
+<span class="abj404-refresh-status" aria-live="polite"></span>
+</div>
+</div><!-- .abj404-table-page -->
