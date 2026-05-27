@@ -94,7 +94,6 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
             'helpers' => $this->helpers,
             'sql_mode_probe' => $this->sqlModeProbe,
             'rebuild_reconcile' => $this->rebuildReconcile,
-            'started_watermark' => new ABJ_404_Solution_ViewBuildStartedWatermark($this),
             'lock_and_cron' => $this->lockAndCron,
             'php_env_probe' => $this->phpEnvProbe,
             'session_env_probe' => $this->sessionEnvProbe,

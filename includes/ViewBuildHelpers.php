@@ -48,7 +48,6 @@ if (!defined('ABSPATH')) {
  * @property string $lastNamedLockUnsupportedError
  * @method bool acquireTransientFallbackLock(...$arguments)
  * @method bool acquireViewBuildLock(...$arguments)
- * @method string activeBuildStartedWatermarkOptionName(...$arguments)
  * @method bool adminMutationGateBlocks(...$arguments)
  * @method array<mixed> advanceViewBuildOnce(...$arguments)
  * @method void assertBuildBufferExistsOrHalt(...$arguments)
@@ -56,7 +55,6 @@ if (!defined('ABSPATH')) {
  * @method bool bufferIntegrityPassesForPromote(...$arguments)
  * @method string buildHaltTransientKey(...$arguments)
  * @method string buildViewDoneCountQuery(...$arguments)
- * @method string builtWatermarkOptionName(...$arguments)
  * @method int bumpStageNoProgressStreak(...$arguments)
  * @method string capturedPrefixForLog(...$arguments)
  * @method void capturePrefixAtBuildStart(...$arguments)
@@ -64,7 +62,6 @@ if (!defined('ABSPATH')) {
  * @method string classifyAndHandleStageFailure(...$arguments)
  * @method array<mixed> classifySessionVariableWarnings(...$arguments)
  * @method string classifyStageFailure(...$arguments)
- * @method void clearActiveBuildStartedWatermark(...$arguments)
  * @method void clearAdminMutationGateOptions(...$arguments)
  * @method void clearAllProgressOptions(...$arguments)
  * @method void clearPhpEnvironmentProbeCache(...$arguments)
@@ -110,8 +107,6 @@ if (!defined('ABSPATH')) {
  * @method bool isResumableStagedKill(...$arguments)
  * @method bool isStageMarkedSkipped(...$arguments)
  * @method bool isTransientConnectionError(...$arguments)
- * @method string lastBuildStartedWatermarkOptionName(...$arguments)
- * @method string legacyStartedWatermarkOptionName(...$arguments)
  * @method string localizeOrDefaultViewBuildNotice(...$arguments)
  * @method bool logsHitsTableExists(...$arguments)
  * @method void logTimedViewBuildStage(...$arguments)
@@ -126,7 +121,6 @@ if (!defined('ABSPATH')) {
  * @method void markViewDoneInvalidatedByAdminMutation(...$arguments)
  * @method int maxBuildBufferId(...$arguments)
  * @method void maybeRaiseViewDoneHardStaleNotice(...$arguments)
- * @method bool mutationWatermarkAdvancedSinceBuildStart(...$arguments)
  * @method string normalizePathPrefix(...$arguments)
  * @method bool optionReadBackMatches(...$arguments)
  * @method int parsePhpMemoryLimitToBytes(...$arguments)
@@ -146,12 +140,9 @@ if (!defined('ABSPATH')) {
  * @method array<mixed> probeSqlModeForBuild(...$arguments)
  * @method string probeStringFromValues(...$arguments)
  * @method string progressOptionName(...$arguments)
- * @method void publishBuiltWatermarkFromActiveBuildStartedWatermark(...$arguments)
  * @method array<mixed> queryAndGetResults(...$arguments)
- * @method int readActiveBuildStartedWatermark(...$arguments)
  * @method array<int, array<string, mixed>> readFromViewDone(...$arguments)
  * @method int readProgressOption(...$arguments)
- * @method int readWatermarkOption(...$arguments)
  * @method void rebuildViewDoneInBackground(...$arguments)
  * @method bool reconcilePostStageElevenState(...$arguments)
  * @method string reconcileStagedTablesAtRunnerStartup(...$arguments)
@@ -202,7 +193,6 @@ if (!defined('ABSPATH')) {
  * @method bool stageUpdatePostsBatched(...$arguments)
  * @method void stageUpdateSpecial(...$arguments)
  * @method bool stageUpdateTermsBatched(...$arguments)
- * @method void stampStartedWatermarksAtS1Entry(...$arguments)
  * @method void sweepStaleRebuildTransients(...$arguments)
  * @method string transientFallbackLockOptionName(...$arguments)
  * @method bool verifyBuildLockSerializesWriter(...$arguments)
@@ -226,7 +216,6 @@ if (!defined('ABSPATH')) {
  * @method bool viewDoneTableExists(...$arguments)
  * @method string viewDoneTableName(...$arguments)
  * @method void writeProgressOption(...$arguments)
- * @method void writeWatermarkOption(...$arguments)
  */
 class ABJ_404_Solution_ViewBuildHelpers extends ABJ_404_Solution_ViewBuildCollaborator {
 
@@ -635,23 +624,10 @@ class ABJ_404_Solution_ViewBuildHelpers extends ABJ_404_Solution_ViewBuildCollab
     }
 
     /**
-     * Per-build watermark stamp machinery -- option-name helpers, raw
-     * read/write, the stage-boundary advance gate, and the
-     * stamp/clear/publish methods -- lives on
-     * {@see ABJ_404_Solution_DataAccess_ViewBuildStartedWatermarkTrait}.
-     * The orchestrator and abort/fresh-start methods below call into it
-     * via `$this->` (both traits compose into ABJ_404_Solution_DataAccess).
-     */
-
-    /**
      * One-call cleanup for the fresh-start branch of runStagedBuildOnce:
-     * scrap progress options (registry + Phase-2 active stamp), drop any
-     * leftover buffer tables. Pulled out of the orchestrator so the
-     * body line count stays within the per-function cap.
-     *
-     * last_build_started_watermark is intentionally NOT cleared here: it
-     * is diagnostic-only and survives across fresh-start boundaries (and
-     * gets overwritten on the next S1 entry stamp).
+     * scrap progress options, drop any leftover buffer tables. Pulled out
+     * of the orchestrator so the body line count stays within the
+     * per-function cap.
      *
      * @return void
      */
@@ -665,8 +641,7 @@ class ABJ_404_Solution_ViewBuildHelpers extends ABJ_404_Solution_ViewBuildCollab
      * (`abj404_view_build_before_rename_swap`) immediately before the
      * RENAME TABLE statement, then performs the swap.
      *
-     * @return bool  True when the swap completed cleanly (orchestrator
-     *               should publish built_watermark); false when the
+     * @return bool  True when the swap completed cleanly; false when the
      *               stage halted / yielded (orchestrator should return
      *               false from runStagedBuildOnce).
      */

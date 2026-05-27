@@ -9,7 +9,6 @@ require_once __DIR__ . '/ViewBuildCollaborator.php';
 require_once __DIR__ . '/ViewQueriesStaged.php';
 require_once __DIR__ . '/ViewBuildStageCallbacks.php';
 require_once __DIR__ . '/ViewBuildStageRunner.php';
-require_once __DIR__ . '/ViewBuildStartedWatermark.php';
 require_once __DIR__ . '/ViewBuildAdaptive.php';
 require_once __DIR__ . '/ViewBuildHelpers.php';
 require_once __DIR__ . '/ViewBuildSqlModeProbe.php';
@@ -1219,8 +1218,6 @@ class ABJ_404_Solution_DataAccess implements ABJ_404_Solution_ContentRepositoryI
     public function viewDoneDataBuiltAtOptionName(): string { return $this->viewBuildOrchestrator->viewDoneDataBuiltAtOptionName(); }
 
     public function viewDoneMutationInvalidatedAtOptionName(): string { return $this->viewBuildOrchestrator->viewDoneMutationInvalidatedAtOptionName(); }
-
-    public function builtWatermarkOptionName(): string { return $this->viewBuildOrchestrator->builtWatermarkOptionName(); }
 
     /**
      * Backward-compatibility bridge for facade delegations removed in Phase 8e.

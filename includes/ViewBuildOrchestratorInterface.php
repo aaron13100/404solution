@@ -11,8 +11,8 @@ if (!defined('ABSPATH')) {
  * Absorbs 13 traits: ViewQueriesStaged, ViewBuildHelpers,
  * ViewBuildStageCallbacks, ViewBuildLockAndCron, ViewBuildPhpEnvProbe,
  * ViewBuildHostFailurePolicy, ViewBuildSessionEnvProbe,
- * ViewBuildStageRunner, AdminMutationGate, ViewBuildStartedWatermark,
- * ViewBuildAdaptive, ViewBuildForceRestart.
+ * ViewBuildStageRunner, AdminMutationGate, ViewBuildAdaptive,
+ * ViewBuildForceRestart.
  *
  * @see docs/dataaccess-refactor-plan.md Phase 7.
  */

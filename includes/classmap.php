@@ -26,7 +26,6 @@ return array(
     'ABJ_404_Solution_ViewBuildSessionEnvProbe' => $base . 'includes/ViewBuildSessionEnvProbe.php',
     'ABJ_404_Solution_ViewBuildStageCallbacks' => $base . 'includes/ViewBuildStageCallbacks.php',
     'ABJ_404_Solution_ViewBuildStageRunner' => $base . 'includes/ViewBuildStageRunner.php',
-    'ABJ_404_Solution_ViewBuildStartedWatermark' => $base . 'includes/ViewBuildStartedWatermark.php',
     'ABJ_404_Solution_ViewQueriesStaged' => $base . 'includes/ViewQueriesStaged.php',
     'ABJ_404_Solution_ViewBuildOrchestratorInterface' => $base . 'includes/ViewBuildOrchestratorInterface.php',
     'ABJ_404_Solution_ViewBuildOrchestrator' => $base . 'includes/ViewBuildOrchestrator.php',

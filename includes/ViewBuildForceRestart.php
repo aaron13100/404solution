@@ -21,25 +21,16 @@ if (!defined('ABSPATH')) {
  * {@see ABJ_404_Solution_MutationDataSignature}) or this primitive
  * (explicit restart-from-scratch).
  *
- * The contract is exactly seven bullets (and the absence of an eighth):
+ * Contract:
  *
  *   1. Acquire the runner lock.
  *   2. Drop the runner-owned buffer table (`view_build`).
  *   3. Clear runner progress options (registry + prefix-at-S1 capture +
  *      probe caches -- the same set `clearAllProgressOptions()` owns).
- *   4. Clear `active_build_started_watermark` (the in-flight build's
- *      S1-entry stamp). The sibling `last_build_started_watermark`
- *      stays put -- it is diagnostic-only and survives both abort and
- *      force-rebuild so an operator can see the most recent stamp.
- *   5. PRESERVE `built_watermark` (the prior successful build's published
- *      coverage). The rebuild is in flight, the old view_done snapshot is
- *      still serveable until the new S11 RENAME completes; deleting
- *      built_watermark would orphan the freshness signal until then.
- *   6. Do NOT bump the mutation watermark (force-rebuild is a runner
- *      command, not a data-change signal). Bumping would propagate as a
- *      phantom mutation to every concurrent reader that bracketed this
- *      moment -- their stage-boundary checks would abort their own builds.
- *   7. Schedule S0/S1 immediately (via the existing cron primitive
+ *   4. Do NOT emit a mutation signal (force-rebuild is a runner
+ *      command, not a data-change signal). The data-signature reader
+ *      (MutationDataSignature) is unchanged.
+ *   5. Schedule S0/S1 immediately (via the existing cron primitive
  *      `scheduleViewDoneRebuild()`). The lock is released before the
  *      schedule call so the cron tick can acquire cleanly.
  *
@@ -53,7 +44,6 @@ if (!defined('ABSPATH')) {
  *     progress (the AJAX force-rebuild path) call `advanceViewBuildOnce()`
  *     after this primitive returns; callers without a request context
  *     (CLI, admin "rebuild now") rely on the scheduled cron tick.
- *   - write to `built_watermark` for any reason.
  *
  * Failure modes.
  *
@@ -84,9 +74,7 @@ if (!defined('ABSPATH')) {
  * `ABJ_404_Solution_DataAccess_ViewBuildLockAndCronTrait`,
  * `ABJ_404_Solution_DataAccess_ViewBuildStageCallbacksTrait`; all three
  * provide the helpers this primitive composes (lock acquire/release,
- * buffer drop, progress clear, watermark stamp clear, rebuild
- * scheduling). All four traits are mixed into
- * `ABJ_404_Solution_DataAccess`.
+ * buffer drop, progress clear, rebuild scheduling).
  *
  * @property ABJ_404_Solution_DatabaseCore $dbCore
  * @property ABJ_404_Solution_Functions $f
@@ -105,7 +93,6 @@ if (!defined('ABSPATH')) {
  * @property string $lastNamedLockUnsupportedError
  * @method bool acquireTransientFallbackLock(...$arguments)
  * @method bool acquireViewBuildLock(...$arguments)
- * @method string activeBuildStartedWatermarkOptionName(...$arguments)
  * @method bool adminMutationGateBlocks(...$arguments)
  * @method array<mixed> advanceViewBuildOnce(...$arguments)
  * @method void assertBuildBufferExistsOrHalt(...$arguments)
@@ -113,7 +100,6 @@ if (!defined('ABSPATH')) {
  * @method bool bufferIntegrityPassesForPromote(...$arguments)
  * @method string buildHaltTransientKey(...$arguments)
  * @method string buildViewDoneCountQuery(...$arguments)
- * @method string builtWatermarkOptionName(...$arguments)
  * @method int bumpStageNoProgressStreak(...$arguments)
  * @method string capturedPrefixForLog(...$arguments)
  * @method void capturePrefixAtBuildStart(...$arguments)
@@ -121,7 +107,6 @@ if (!defined('ABSPATH')) {
  * @method string classifyAndHandleStageFailure(...$arguments)
  * @method array<mixed> classifySessionVariableWarnings(...$arguments)
  * @method string classifyStageFailure(...$arguments)
- * @method void clearActiveBuildStartedWatermark(...$arguments)
  * @method void clearAdminMutationGateOptions(...$arguments)
  * @method void clearAllProgressOptions(...$arguments)
  * @method void clearPhpEnvironmentProbeCache(...$arguments)
@@ -167,8 +152,6 @@ if (!defined('ABSPATH')) {
  * @method bool isResumableStagedKill(...$arguments)
  * @method bool isStageMarkedSkipped(...$arguments)
  * @method bool isTransientConnectionError(...$arguments)
- * @method string lastBuildStartedWatermarkOptionName(...$arguments)
- * @method string legacyStartedWatermarkOptionName(...$arguments)
  * @method string localizeOrDefaultViewBuildNotice(...$arguments)
  * @method bool logsHitsTableExists(...$arguments)
  * @method void logTimedViewBuildStage(...$arguments)
@@ -183,7 +166,6 @@ if (!defined('ABSPATH')) {
  * @method void markViewDoneInvalidatedByAdminMutation(...$arguments)
  * @method int maxBuildBufferId(...$arguments)
  * @method void maybeRaiseViewDoneHardStaleNotice(...$arguments)
- * @method bool mutationWatermarkAdvancedSinceBuildStart(...$arguments)
  * @method string normalizePathPrefix(...$arguments)
  * @method bool optionReadBackMatches(...$arguments)
  * @method int parsePhpMemoryLimitToBytes(...$arguments)
@@ -203,12 +185,9 @@ if (!defined('ABSPATH')) {
  * @method array<mixed> probeSqlModeForBuild(...$arguments)
  * @method string probeStringFromValues(...$arguments)
  * @method string progressOptionName(...$arguments)
- * @method void publishBuiltWatermarkFromActiveBuildStartedWatermark(...$arguments)
  * @method array<mixed> queryAndGetResults(...$arguments)
- * @method int readActiveBuildStartedWatermark(...$arguments)
  * @method array<int, array<string, mixed>> readFromViewDone(...$arguments)
  * @method int readProgressOption(...$arguments)
- * @method int readWatermarkOption(...$arguments)
  * @method void rebuildViewDoneInBackground(...$arguments)
  * @method bool reconcilePostStageElevenState(...$arguments)
  * @method string reconcileStagedTablesAtRunnerStartup(...$arguments)
@@ -259,7 +238,6 @@ if (!defined('ABSPATH')) {
  * @method bool stageUpdatePostsBatched(...$arguments)
  * @method void stageUpdateSpecial(...$arguments)
  * @method bool stageUpdateTermsBatched(...$arguments)
- * @method void stampStartedWatermarksAtS1Entry(...$arguments)
  * @method void sweepStaleRebuildTransients(...$arguments)
  * @method string transientFallbackLockOptionName(...$arguments)
  * @method bool verifyBuildLockSerializesWriter(...$arguments)
@@ -283,7 +261,6 @@ if (!defined('ABSPATH')) {
  * @method bool viewDoneTableExists(...$arguments)
  * @method string viewDoneTableName(...$arguments)
  * @method void writeProgressOption(...$arguments)
- * @method void writeWatermarkOption(...$arguments)
  */
 class ABJ_404_Solution_ViewBuildForceRestart extends ABJ_404_Solution_ViewBuildCollaborator {
 
@@ -291,12 +268,9 @@ class ABJ_404_Solution_ViewBuildForceRestart extends ABJ_404_Solution_ViewBuildC
      * Runner-owned force-restart primitive. Per Phase 3a step 2 (c554).
      *
      * Returns true when the restart completed cleanly: lock acquired,
-     * buffer dropped, progress cleared, active_build_started_watermark
-     * cleared, last_build_started_watermark preserved (diagnostic),
-     * built_watermark preserved (cross-build pre-image), watermark
-     * counter unchanged, rebuild scheduled. Returns false when the lock
-     * could not be acquired within `$lockTimeoutSeconds`; the caller
-     * may retry on the next request.
+     * buffer dropped, progress cleared, rebuild scheduled. Returns false
+     * when the lock could not be acquired within `$lockTimeoutSeconds`;
+     * the caller may retry on the next request.
      *
      * Default lock wait of 10s matches the existing
      * `?abj404_force_view_rebuild=1` AJAX handler in
@@ -332,11 +306,10 @@ class ABJ_404_Solution_ViewBuildForceRestart extends ABJ_404_Solution_ViewBuildC
             $this->releaseViewBuildLock();
         }
 
-        // (7) Schedule S0/S1 immediately. scheduleViewDoneRebuild() is
+        // (5) Schedule S0/S1 immediately. scheduleViewDoneRebuild() is
         //     idempotent (wp_next_scheduled short-circuit) so callers
         //     can chain or replay safely. Cron tick will drive S0 fresh
-        //     cleanup -> S1 prefix capture + started-watermark re-stamp
-        //     -> S2..S11.
+        //     cleanup -> S1 prefix capture -> S2..S11.
         $this->scheduleViewDoneRebuild();
 
         return true;
@@ -350,14 +323,12 @@ class ABJ_404_Solution_ViewBuildForceRestart extends ABJ_404_Solution_ViewBuildC
      * {@see forceRestartViewBuild()} -- this helper does NOT acquire the
      * lock and does NOT schedule the next cron tick.
      *
-     * Performs steps 2-6 of the seven-bullet force-restart contract
+     * Performs the inside-lock cleanup steps of the force-restart contract
      * documented on the trait docblock above:
      *
      *   - drop the runner-owned buffer table (and the deleteme leftover)
      *   - clear runner progress options + prefix-at-S1 capture
-     *   - clear active_build_started_watermark
-     *   - preserve built_watermark (no write, no delete)
-     *   - DO NOT bump the mutation watermark
+     *   - DO NOT emit a mutation signal
      *
      * Also resets the per-request serveability cache so a subsequent
      * viewDoneIsServeable() inside the same request observes the new
@@ -376,23 +347,9 @@ class ABJ_404_Solution_ViewBuildForceRestart extends ABJ_404_Solution_ViewBuildC
         //     probe-cache clears as one atomic fresh-start step.
         $this->clearAllProgressOptions();
 
-        // (4) Clear active_build_started_watermark. Lives outside
-        //     the progress registry (so the S11 happy-path
-        //     observability contract holds across the boundary), so
-        //     it needs its own delete call. The sibling
-        //     last_build_started_watermark is left alone --
-        //     diagnostic-only, survives abort and force-restart.
-        $this->clearActiveBuildStartedWatermark();
-
-        // (5) PRESERVE built_watermark. No write, no delete. The
-        //     prior successful build's published coverage stays as
-        //     the cross-build pre-image for freshness checks until
-        //     the new build's S11 swap publishes a fresh value.
-
-        // (6) NO mutation signal is emitted. Force-rebuild is a runner
+        // (4) NO mutation signal is emitted. Force-rebuild is a runner
         //     command, not a data-change signal; the data-signature
-        //     reader (MutationDataSignature) is unchanged, and the new
-        //     build's S1 entry will stamp the live signature anyway.
+        //     reader (MutationDataSignature) is unchanged.
 
         // Reset per-request serveability cache so a subsequent
         // viewDoneIsServeable() inside this request reflects the
