@@ -1090,6 +1090,7 @@ abstract class ABJ_404_Solution_Functions {
         if ($returnValue === null && $name === 'action') {
             $returnValue = isset($_GET['abj404action']) ? $_GET['abj404action'] : (isset($_POST['abj404action']) ? $_POST['abj404action'] : null);
         }
+        $returnValue = self::applyBulkActionFallback($name, $returnValue);
         if ($returnValue !== null) {
             if (is_array($returnValue)) {
                 $returnValue = array_map('sanitize_text_field', $returnValue);
@@ -1099,6 +1100,31 @@ abstract class ABJ_404_Solution_Functions {
         }
         $finalValue = $returnValue ?? $defaultValue;
         return is_string($finalValue) ? $finalValue : (is_string($defaultValue) ? $defaultValue : '');
+    }
+
+    /**
+     * Native WP_List_Table renders bulk-action <select>s at top and bottom of
+     * the table using name="action" and name="action2". The 404 Solution
+     * wrappers mirror this with abj404action (top) and abj404action2 (bottom).
+     * When the top select is empty (default placeholder), fall back to the
+     * bottom select's value so Apply submits from either utility row.
+     *
+     * @param string $name
+     * @param mixed $current
+     * @return mixed
+     */
+    private static function applyBulkActionFallback($name, $current) {
+        if ($name !== 'abj404action') {
+            return $current;
+        }
+        if ($current !== null && $current !== '' && $current !== '-1') {
+            return $current;
+        }
+        $alt = isset($_GET['abj404action2']) ? $_GET['abj404action2'] : (isset($_POST['abj404action2']) ? $_POST['abj404action2'] : null);
+        if ($alt === null || $alt === '' || $alt === '-1') {
+            return $current;
+        }
+        return $alt;
     }
 
     /**

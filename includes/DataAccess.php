@@ -560,6 +560,7 @@ class ABJ_404_Solution_DataAccess implements ABJ_404_Solution_ContentRepositoryI
         if ($returnValue === null && $name === 'action') {
             $returnValue = isset($_GET['abj404action']) ? $_GET['abj404action'] : (isset($_POST['abj404action']) ? $_POST['abj404action'] : null);
         }
+        $returnValue = self::applyAbj404ActionBulkFallback($name, $returnValue);
         if ($returnValue !== null && function_exists('sanitize_text_field')) {
             $returnValue = is_array($returnValue) ? array_map('sanitize_text_field', $returnValue) : sanitize_text_field($returnValue);
         }
@@ -573,6 +574,29 @@ class ABJ_404_Solution_DataAccess implements ABJ_404_Solution_ContentRepositoryI
         }
         $returnValue = isset($_GET[$name]) ? $_GET[$name] : (isset($_POST[$name]) ? $_POST[$name] : null);
         return $returnValue === null ? $defaultValue : $returnValue;
+    }
+
+    /**
+     * Fallback shim for the top/bottom bulk-action selects used by the native
+     * WP_List_Table utility-row shape. See Functions::applyBulkActionFallback
+     * for the rationale.
+     *
+     * @param string $name
+     * @param mixed $current
+     * @return mixed
+     */
+    private static function applyAbj404ActionBulkFallback($name, $current) {
+        if ($name !== 'abj404action') {
+            return $current;
+        }
+        if ($current !== null && $current !== '' && $current !== '-1') {
+            return $current;
+        }
+        $alt = isset($_GET['abj404action2']) ? $_GET['abj404action2'] : (isset($_POST['abj404action2']) ? $_POST['abj404action2'] : null);
+        if ($alt === null || $alt === '' || $alt === '-1') {
+            return $current;
+        }
+        return $alt;
     }
 
     /** @return ABJ_404_Solution_ContentRepository */

@@ -6,26 +6,35 @@
 </div>
 </div>
 {subsubsub}
-<div class="abj404-filter-bar tablenav" data-pagination-ajax-url="{data-pagination-ajax-url}" data-pagination-ajax-action="ajaxUpdatePaginationLinks" data-pagination-ajax-subpage="{data-pagination-ajax-subpage}" data-pagination-ajax-nonce="{data-pagination-ajax-nonce}" data-pagination-inflight-nonce="{data-pagination-inflight-nonce}" data-pagination-current-signature="" data-pagination-current-orderby="{data-pagination-current-orderby}" data-pagination-current-order="{data-pagination-current-order}" data-pagination-current-filter="{data-pagination-current-filter}" data-pagination-current-paged="{data-pagination-current-paged}" data-pagination-current-score-range="{data-pagination-current-score-range}" data-pagination-current-logsid="" data-pagination-initial-load="1" data-pagination-auto-refresh="{data-pagination-auto-refresh}" data-pagination-refresh-started-text="{data-pagination-refresh-started-text}" data-pagination-refresh-finished-text="{data-pagination-refresh-finished-text}" data-pagination-refresh-available-text="{data-pagination-refresh-available-text}">
-<div class="abj404-search-box">
+<form id="bulk-action-form" method="POST" action="{form_action}">
+{nonce_field}<div class="abj404-filter-bar tablenav top" data-pagination-ajax-url="{data-pagination-ajax-url}" data-pagination-ajax-action="ajaxUpdatePaginationLinks" data-pagination-ajax-subpage="{data-pagination-ajax-subpage}" data-pagination-ajax-nonce="{data-pagination-ajax-nonce}" data-pagination-inflight-nonce="{data-pagination-inflight-nonce}" data-pagination-current-signature="" data-pagination-current-orderby="{data-pagination-current-orderby}" data-pagination-current-order="{data-pagination-current-order}" data-pagination-current-filter="{data-pagination-current-filter}" data-pagination-current-paged="{data-pagination-current-paged}" data-pagination-current-score-range="{data-pagination-current-score-range}" data-pagination-current-logsid="" data-pagination-initial-load="1" data-pagination-auto-refresh="{data-pagination-auto-refresh}" data-pagination-refresh-started-text="{data-pagination-refresh-started-text}" data-pagination-refresh-finished-text="{data-pagination-refresh-finished-text}" data-pagination-refresh-available-text="{data-pagination-refresh-available-text}">
+<div class="alignleft actions bulkactions abj404-bulk-actions">
+<div class="abj404-selection-info"><strong>0</strong> {selected_label}</div>
+<div class="abj404-bulk-buttons">
+{bulk_buttons}</div>
+<button type="button" class="button abj404-clear-selection" onclick="abj404ClearSelection()">{clear_label}</button>
+</div>
+<div class="alignleft actions abj404-search-box">
 <input type="search" name="searchFilter" placeholder="{search_placeholder}" value="{filter_text}" data-lpignore="true">
 </div>
-<div class="abj404-rows-per-page">
+<div class="alignleft actions abj404-rows-per-page">
 <span>{rows_per_page_label}</span>
 <select class="abj404-filter-select perpage" name="perpage" onchange="paginationLinksChange(this);">
 {perpage_options}</select>
 </div>
-{empty_trash_button}<span class="abj404-refresh-status" aria-live="polite"></span>
-</div>
-<div class="abj404-bulk-actions">
-<div class="abj404-selection-info"><strong>0</strong> {selected_label}</div>
-<div class="abj404-bulk-buttons">
-{bulk_buttons}</div>
-<button type="button" class="abj404-clear-selection" onclick="abj404ClearSelection()">{clear_label}</button>
-</div>
-<form id="bulk-action-form" method="POST" action="{form_action}">
-{nonce_field}{warmup_placeholder}<div class="abj404-pagination tablenav abj404-pagination-right">
+{empty_trash_button}<div class="abj404-pagination tablenav-pages abj404-pagination-right abj404-pagination-top">
 <span class="abj404-refresh-status" aria-live="polite"></span>
 </div>
+</div><!-- .tablenav.top -->
+{warmup_placeholder}
+<div class="abj404-filter-bar tablenav bottom">
+<div class="alignleft actions bulkactions abj404-bulk-actions">
+<div class="abj404-bulk-buttons">
+{bulk_buttons}</div>
+</div>
+<div class="abj404-pagination tablenav-pages abj404-pagination-right abj404-pagination-bottom">
+<span class="abj404-refresh-status" aria-live="polite"></span>
+</div>
+</div><!-- .tablenav.bottom -->
 </form>
 </div><!-- .abj404-table-page -->
