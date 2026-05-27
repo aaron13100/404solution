@@ -147,15 +147,14 @@ class ABJ_404_Solution_View_RedirectsTable extends ABJ_404_Solution_ViewComponen
         wp_nonce_field('abj404_bulkProcess');
 
         // Table + pagination placeholders. Full data is loaded via AJAX
-        // so initial page render is not blocked on heavy queries.
-        echo '<table class="abj404-table" data-table-awaiting-load="1">';
-        echo '<thead><tr><th>' . esc_html__('Loading captured URLs…', '404-solution') . '</th></tr></thead>';
-        echo '<tbody><tr><td class="abj404-empty-message">' . esc_html__('Loading captured URLs…', '404-solution') . '</td></tr></tbody>';
-        echo '</table>';
+        // so initial page render is not blocked on heavy queries. Per
+        // UI_AESTHETIC: native WP list tables show no loading chrome
+        // during pagination, so the placeholder is silent (no text).
+        echo ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/tableWarmupPlaceholder.html");
 
         // Pagination placeholder (bottom only, matching original layout).
         echo '<div class="abj404-pagination tablenav abj404-pagination-right">';
-        echo '<span class="abj404-refresh-status" aria-live="polite">' . esc_html__('Loading…', '404-solution') . '</span>';
+        echo '<span class="abj404-refresh-status" aria-live="polite"></span>';
         echo '</div>';
 
         echo '</form>';
@@ -524,17 +523,15 @@ class ABJ_404_Solution_View_RedirectsTable extends ABJ_404_Solution_ViewComponen
         echo '<button type="button" class="abj404-btn abj404-btn-secondary abj404-clear-selection" onclick="abj404ClearSelection()">' . esc_html__('Clear Selection', '404-solution') . '</button>';
         echo '</div>';
 
-        // Table container
+        // Table container. Silent warmup placeholder (no loading text)
+        // per UI_AESTHETIC.md "list tables" guidance.
         echo '<div class="abj404-table-container">';
-        echo '<table class="abj404-table" data-table-awaiting-load="1">';
-        echo '<thead><tr><th>' . esc_html__('Loading redirects…', '404-solution') . '</th></tr></thead>';
-        echo '<tbody><tr><td class="abj404-empty-message">' . esc_html__('Loading redirects…', '404-solution') . '</td></tr></tbody>';
-        echo '</table>';
+        echo ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/tableWarmupPlaceholder.html");
         echo '</div>';
 
         // Pagination placeholder (bottom only, matching original layout).
         echo '<div class="abj404-pagination tablenav abj404-pagination-right">';
-        echo '<span class="abj404-refresh-status" aria-live="polite">' . esc_html__('Loading…', '404-solution') . '</span>';
+        echo '<span class="abj404-refresh-status" aria-live="polite"></span>';
         echo '</div>';
 
         echo '</form>';

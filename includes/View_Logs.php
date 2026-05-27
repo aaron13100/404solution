@@ -103,15 +103,14 @@ class ABJ_404_Solution_View_Logs extends ABJ_404_Solution_ViewComponent {
         echo '<span class="abj404-refresh-status" aria-live="polite"></span>';
         echo '</div><!-- .abj404-filter-bar -->';
 
-        // Table placeholder — data loaded via AJAX
-        echo '<table class="abj404-table" data-table-awaiting-load="1">';
-        echo '<thead><tr><th>' . esc_html__('Loading logs…', '404-solution') . '</th></tr></thead>';
-        echo '<tbody><tr><td class="abj404-empty-message">' . esc_html__('Loading logs…', '404-solution') . '</td></tr></tbody>';
-        echo '</table>';
+        // Silent warmup placeholder. Data loaded via AJAX. Per
+        // UI_AESTHETIC.md, native WP list tables show no loading
+        // chrome during pagination, so no visible text is rendered.
+        echo ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/tableWarmupPlaceholder.html");
 
         // Bottom pagination placeholder
         echo '<div class="abj404-pagination tablenav abj404-pagination-right abj404-pagination-bottom">';
-        echo '<span class="abj404-refresh-status" aria-live="polite">' . esc_html__('Loading…', '404-solution') . '</span>';
+        echo '<span class="abj404-refresh-status" aria-live="polite"></span>';
         echo '</div>';
 
         echo '</div><!-- .abj404-table-page -->';
