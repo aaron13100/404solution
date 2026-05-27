@@ -322,24 +322,33 @@ class ABJ_404_Solution_View {
 				$instance->logger->logUserCapabilities("handleMainAdminPageActionAndDisplay (" .
 						esc_html($action == '' ? '(none)' : $action) . ")");
 
-				echo '<div class="wrap">';
-				echo '<h1>' . esc_html(PLUGIN_NAME) . '</h1>';
-				$permMessage = '<strong>' . esc_html__('Permission denied.', '404-solution') . '</strong> '
-					. esc_html__('Your user account does not have permission to access this page.', '404-solution')
-					. '</p><p>'
-					. esc_html__('Please verify that your WordPress role has the', '404-solution') . ' '
-					. '<code>manage_options</code> ' . esc_html__('capability.', '404-solution') . ' '
-					. esc_html__('If you have a security plugin installed, it may be restricting access to this page.', '404-solution');
+				$permMessageTpl = ABJ_404_Solution_Functions::readFileContents(__DIR__ . '/html/adminPagePermissionDeniedMessage.html');
+				$permMessage = str_replace(
+					['{permission_denied_label}', '{access_explanation}', '{verify_role_prefix}', '{capability_word}', '{security_plugin_note}'],
+					[
+						esc_html__('Permission denied.', '404-solution'),
+						esc_html__('Your user account does not have permission to access this page.', '404-solution'),
+						esc_html__('Please verify that your WordPress role has the', '404-solution'),
+						esc_html__('capability.', '404-solution'),
+						esc_html__('If you have a security plugin installed, it may be restricting access to this page.', '404-solution'),
+					],
+					$permMessageTpl
+				);
 				$subpageForContext = (string)$instance->viewGetPostOrGetSanitize('subpage');
 				$triggerForPerm = ($subpageForContext === 'abj404_captured')
 					? 'captured_404s_page' : 'redirects_page';
-				echo self::renderErrorNoticeWithSupportButton(
+				$permNotice = self::renderErrorNoticeWithSupportButton(
 					$permMessage,
 					$triggerForPerm,
 					'Permission denied on plugin admin page (action=' .
 						($action == '' ? '(none)' : $action) . ')'
 				);
-				echo '</div>';
+				$permWrap = ABJ_404_Solution_Functions::readFileContents(__DIR__ . '/html/adminPagePermissionDeniedWrap.html');
+				echo str_replace(
+					['{plugin_name}', '{notice}'],
+					[esc_html(PLUGIN_NAME), $permNotice],
+					$permWrap
+				);
 				return;
 			}
 
@@ -378,20 +387,19 @@ class ABJ_404_Solution_View {
 			$subpageForContext = (string)$instance->viewGetPostOrGetSanitize('subpage');
 			$triggerForRenderError = ($subpageForContext === 'abj404_captured')
 				? 'captured_404s_page' : 'redirects_page';
-			$renderErrorMessage = '<strong>404 Solution:</strong> An error occurred while rendering this page.</p>'
-				. '<details><summary>Show error details</summary>'
-				. '<pre style="white-space:pre-wrap;word-break:break-all;max-width:100%;margin:6px 0;">'
-				. esc_html($e->getMessage() . "\n" . $e->getTraceAsString())
-				. '</pre>'
-				. '</details>'
-				. '<p>';
-			echo '<div class="wrap">';
-			echo self::renderErrorNoticeWithSupportButton(
+			$renderErrorMessageTpl = ABJ_404_Solution_Functions::readFileContents(__DIR__ . '/html/adminPageRenderErrorMessage.html');
+			$renderErrorMessage = str_replace(
+				'{escaped_details}',
+				esc_html($e->getMessage() . "\n" . $e->getTraceAsString()),
+				$renderErrorMessageTpl
+			);
+			$renderErrorNotice = self::renderErrorNoticeWithSupportButton(
 				$renderErrorMessage,
 				$triggerForRenderError,
 				'Render error: ' . substr($e->getMessage(), 0, 200)
 			);
-			echo '</div>';
+			$renderErrorWrap = ABJ_404_Solution_Functions::readFileContents(__DIR__ . '/html/adminPageRenderErrorWrap.html');
+			echo str_replace('{notice}', $renderErrorNotice, $renderErrorWrap);
 		}
 	}
 
