@@ -62,8 +62,11 @@ class ABJ_404_Solution_ReviewFeedback {
                         'query_quota',
                     );
                     $cssClass = in_array($type, $warningTypes, true) ? 'notice-warning' : 'notice-error';
-                    echo '<div class="notice ' . esc_attr($cssClass) . '"><p>' .
-                        esc_html($dbNotice['message']) . '</p></div>';
+                    $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/notice.html");
+                    $f = abj_service('functions');
+                    $html = $f->str_replace('{class}', esc_attr('notice ' . $cssClass), $html);
+                    $html = $f->str_replace('{message}', esc_html($dbNotice['message']), $html);
+                    echo $html;
                 }
             }
         }
