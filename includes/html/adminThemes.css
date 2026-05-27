@@ -15,33 +15,66 @@
  * allowing WordPress to use its default admin styling.
  */
 
-/* ===== Default Theme: Monochrome Minimal (Light) ===== */
+/* ===== Default Theme: Monochrome Minimal (Light) =====
+ *
+ * Host-theme adaptability: the default branch (no data-theme attribute, or
+ * data-theme="mono") layers WP core admin CSS variables UNDER neutral hex
+ * fallbacks. Where WordPress core exposes a semantic var for a role
+ * (currently only the admin-theme accent family), the abj404 var falls
+ * through to it so host admin-theme plugins (WP Dark Mode, Material Admin,
+ * the user's chosen WP admin color scheme, etc.) can recolor the plugin
+ * without overriding our rules.
+ *
+ * Roles with no WP-core counterpart (surface, text, border, row-hover, etc.)
+ * keep a neutral hex. Host plugins can still recolor those by retargeting
+ * the --abj404-* variable directly. The rules below assume nothing about
+ * how each color relates to any other.
+ *
+ * Other theme branches (calm/neon/obsidian) are intentional themed palettes
+ * and keep their explicit hex values unchanged.
+ */
 :root,
 html:not([data-theme]),
 html:not([data-theme]) body,
 html[data-theme="mono"],
 body[data-theme="mono"] {
+  /* Surfaces and text: no WP-core admin var exists for these roles; keep
+     neutrals so a host theme can override by retargeting --abj404-*. */
   --abj404-bg: #F8FAFC;
   --abj404-bg-muted: #F5F7FA;
   --abj404-surface: #ffffff;
-  --abj404-surface-hover: #F6F7F7;  /* Light gray for hover */
+  --abj404-surface-hover: #F6F7F7;
   --abj404-surface-muted: #F1F5F9;
   --abj404-text: #111827;
   --abj404-text-muted: #6B7280;
   --abj404-border: #E5E7EB;
+
+  /* Neutral primary (used for button-primary fill, autocomplete active row).
+     No WP-core neutral var exists; #374151 is a quiet slate that reads as
+     "WordPress-ish" without competing with the user's admin color scheme. */
   --abj404-primary: #374151;
-  --abj404-accent: #2563EB;
+
+  /* Accent / link / focus: route through WP's admin-theme color so the
+     plugin follows whatever admin color scheme the user has selected
+     (Profile, Admin Color Scheme) or whatever a host theme plugin sets. */
+  --abj404-accent: var(--wp-admin-theme-color, #2271b1);
+  --abj404-link: var(--wp-admin-theme-color, #2271b1);
+  --abj404-focus: var(--wp-admin-theme-color, #2271b1);
+
+  /* Status colors: WP core has no semantic vars for info/success/warning/
+     danger in the admin (notice borders are hardcoded). Keep neutrals; host
+     themes can override --abj404-* directly. */
   --abj404-info: #3B82F6;
   --abj404-success: #10B981;
   --abj404-warning: #F59E0B;
   --abj404-danger: #EF4444;
-  --abj404-focus: #93C5FD;
+
+  /* Table chrome and badges: no WP-core counterpart; keep neutrals. */
   --abj404-table-header: #F1F5F9;
   --abj404-row-hover: #F5F7FA;
   --abj404-row-selected: #DBEAFE;
   --abj404-badge-bg: #EFF1F5;
   --abj404-badge-text: #374151;
-  --abj404-link: var(--abj404-accent);
 }
 
 /* === Calm Ops (Light) === */
