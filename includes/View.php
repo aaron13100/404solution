@@ -47,7 +47,7 @@ require_once __DIR__ . '/View_Logs.php';
  * @method mixed echoConditionRow($index, array<mixed> $cond)
  * @method mixed echoConditionsJavaScript()
  * @method mixed echoConfidenceDistributionSection()
- * @method mixed echoContentTab($sub, $filter, $label, $count, $tableOptions)
+ * @method string buildSubsubsubFilters(string $sub, array<int, array{0: int|string, 1: string}> $items, array<string, mixed> $tableOptions)
  * @method mixed echoEditRedirect($destination, $codeselected, $label, $source_page = null, $filter = null, $orderby = null, $order = null, $startDate = '', $endDate = '')
  * @method mixed echoExpandCollapseButton($showSuggestions = true)
  * @method mixed echoFileContents($fileName)

@@ -1340,66 +1340,8 @@ html[data-theme="obsidian"] .abj404-tab-branding {
    Content Tabs (All, Manual, Automatic, Trash)
    ============================================ */
 
-.abj404-content-tabs {
-    background: var(--abj404-bg, #f9f9f9);
-    border-bottom: 1px solid var(--abj404-border, #e0e0e0);
-    padding: 0 32px;
-    display: flex;
-    gap: 4px;
-    flex-wrap: wrap;
-    position: sticky;
-    top: 32px;
-    z-index: 12;
-}
-
-@media screen and (max-width: 782px) {
-    .abj404-content-tabs {
-        top: 46px;
-    }
-}
-
-.abj404-content-tab {
-    padding: 12px 16px;
-    border: none;
-    background: transparent;
-    color: var(--abj404-text-muted, #646970);
-    font-weight: 500;
-    font-size: 14px;
-    cursor: pointer;
-    border-bottom: 2px solid transparent;
-    transition: all 0.2s;
-    text-decoration: none;
-    white-space: nowrap;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.abj404-content-tab:hover {
-    color: var(--abj404-accent, #2271b1);
-    background: var(--abj404-bg, #f0f0f1);
-    text-decoration: none;
-}
-
-.abj404-content-tab.active {
-    color: var(--abj404-accent, #2271b1);
-    border-bottom-color: var(--abj404-accent, #2271b1);
-    background: var(--abj404-surface, #fff);
-}
-
-.abj404-content-tab .abj404-tab-count {
-    display: inline-block;
-    background: var(--abj404-text-muted, #646970);
-    color: #fff;
-    padding: 2px 8px;
-    border-radius: 10px;
-    font-size: 12px;
-    font-weight: 500;
-}
-
-.abj404-content-tab.active .abj404-tab-count {
-    background: var(--abj404-accent, #2271b1);
-}
+/* Native WordPress .subsubsub markup is used for list-table filter rows.
+   No custom tab chrome is needed; core handles spacing, pipes, and active state. */
 
 /* ============================================
    Filter Bar
@@ -2741,11 +2683,6 @@ html[data-theme="obsidian"] .abj404-tab-branding {
         padding-right: 16px;
     }
 
-    .abj404-content-tabs {
-        padding-left: 16px;
-        padding-right: 16px;
-    }
-
     .abj404-table-header {
         flex-direction: column;
         align-items: flex-start;
@@ -2849,8 +2786,6 @@ html[data-theme="obsidian"] .abj404-table tbody tr:hover {
     background: rgba(255, 255, 255, 0.05);
 }
 
-html[data-theme="neon"] .abj404-content-tabs,
-html[data-theme="obsidian"] .abj404-content-tabs,
 html[data-theme="neon"] .abj404-filter-bar,
 html[data-theme="obsidian"] .abj404-filter-bar {
     background: var(--abj404-bg, #252525);
@@ -3623,7 +3558,6 @@ select:focus-visible,
 textarea:focus-visible,
 [tabindex]:focus-visible,
 .abj404-tab:focus-visible,
-.abj404-content-tab:focus-visible,
 .abj404-page-btn:focus-visible,
 .abj404-btn:focus-visible,
 .abj404-action-link:focus-visible {

@@ -31,21 +31,22 @@ class ABJ_404_Solution_View_RedirectsTable extends ABJ_404_Solution_ViewComponen
         echo '</div>';
         echo '</div>';
 
-        // Content tabs — counts are placeholders, populated via AJAX
-        echo '<div class="abj404-content-tabs" data-tab-counts-placeholder="1">';
+        // Filter row (native WP subsubsub). Counts are placeholders, populated via AJAX.
         if ($isSimpleMode) {
-            // Simple mode: two tabs — "Needs Review" and "Handled"
-            $this->echoContentTab('abj404_captured', ABJ404_STATUS_CAPTURED, __('Needs Review', '404-solution'), '…', $tableOptions);
-            $this->echoContentTab('abj404_captured', ABJ404_HANDLED_FILTER, __('Handled', '404-solution'), '…', $tableOptions);
+            $items = array(
+                array(ABJ404_STATUS_CAPTURED, __('Needs Review', '404-solution')),
+                array(ABJ404_HANDLED_FILTER,  __('Handled', '404-solution')),
+            );
         } else {
-            // Advanced mode: full 5-tab layout
-            $this->echoContentTab('abj404_captured', 0, __('All', '404-solution'), '…', $tableOptions);
-            $this->echoContentTab('abj404_captured', ABJ404_STATUS_CAPTURED, __('Captured', '404-solution'), '…', $tableOptions);
-            $this->echoContentTab('abj404_captured', ABJ404_STATUS_IGNORED, __('Ignored', '404-solution'), '…', $tableOptions);
-            $this->echoContentTab('abj404_captured', ABJ404_STATUS_LATER, __('Later', '404-solution'), '…', $tableOptions);
-            $this->echoContentTab('abj404_captured', ABJ404_TRASH_FILTER, __('Trash', '404-solution'), '…', $tableOptions);
+            $items = array(
+                array(0,                       __('All', '404-solution')),
+                array(ABJ404_STATUS_CAPTURED,  __('Captured', '404-solution')),
+                array(ABJ404_STATUS_IGNORED,   __('Ignored', '404-solution')),
+                array(ABJ404_STATUS_LATER,     __('Later', '404-solution')),
+                array(ABJ404_TRASH_FILTER,     __('Trash', '404-solution')),
+            );
         }
-        echo '</div>';
+        echo $this->buildSubsubsubFilters('abj404_captured', $items, $tableOptions);
 
         // Filter bar with server-side search
         $filterText = is_string($tableOptions['filterText'] ?? '') ? (string)($tableOptions['filterText'] ?? '') : '';
@@ -415,13 +416,13 @@ class ABJ_404_Solution_View_RedirectsTable extends ABJ_404_Solution_ViewComponen
         }
         echo '</div>';
 
-        // Content tabs — counts are placeholders, populated via AJAX
-        echo '<div class="abj404-content-tabs" data-tab-counts-placeholder="1">';
-        $this->echoContentTab($sub, 0, __('All', '404-solution'), '…', $tableOptions);
-        $this->echoContentTab($sub, ABJ404_STATUS_MANUAL, __('Manual', '404-solution'), '…', $tableOptions);
-        $this->echoContentTab($sub, ABJ404_STATUS_AUTO, __('Automatic', '404-solution'), '…', $tableOptions);
-        $this->echoContentTab($sub, ABJ404_TRASH_FILTER, __('Trash', '404-solution'), '…', $tableOptions);
-        echo '</div>';
+        // Filter row (native WP subsubsub). Counts are placeholders, populated via AJAX.
+        echo $this->buildSubsubsubFilters($sub, array(
+            array(0,                      __('All', '404-solution')),
+            array(ABJ404_STATUS_MANUAL,   __('Manual', '404-solution')),
+            array(ABJ404_STATUS_AUTO,     __('Automatic', '404-solution')),
+            array(ABJ404_TRASH_FILTER,    __('Trash', '404-solution')),
+        ), $tableOptions);
 
         // Filter bar with server-side search
         $filterText = is_string($tableOptions['filterText'] ?? '') ? (string)($tableOptions['filterText'] ?? '') : '';
@@ -559,27 +560,43 @@ class ABJ_404_Solution_View_RedirectsTable extends ABJ_404_Solution_ViewComponen
     }
 
     /**
-     * Echo a content tab for the table pages
+     * Build the native-WordPress subsubsub filter row for a list-table page.
+     *
+     * Counts are emitted as a placeholder character; the real numbers are
+     * populated by the pagination AJAX response (see view_updater_pagination.js).
+     *
+     * @param string $sub               Subpage key (abj404_redirects, abj404_captured).
+     * @param array<int, array{0:int|string, 1:string}> $items One [filterValue, label] pair per link.
+     * @param array<string, mixed> $tableOptions Current table options (for active-link detection).
+     * @return string Rendered HTML for the filter row.
      */
-    /**
-     * @param string $sub
-     * @param int|string $filter
-     * @param string $label
-     * @param int|string $count
-     * @param array<string, mixed> $tableOptions
-     * @return void
-     */
-    function echoContentTab($sub, $filter, $label, $count, $tableOptions) {
-        $currentFilter = $tableOptions['filter'] ?? 0;
-        $isActive = ($currentFilter == $filter) ? 'active' : '';
-        $url = "?page=" . ABJ404_PP . "&subpage=" . $sub;
-        if ($filter != 0) {
-            $url .= "&filter=" . $filter;
+    function buildSubsubsubFilters($sub, array $items, array $tableOptions) {
+        $currentFilter = isset($tableOptions['filter']) ? $tableOptions['filter'] : 0;
+        $itemTpl = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/listTableSubsubsubItem.html");
+        $itemsHtml = '';
+        $lastIndex = count($items) - 1;
+        foreach ($items as $i => $pair) {
+            list($filter, $label) = $pair;
+            $url = "?page=" . ABJ404_PP . "&subpage=" . $sub;
+            if ($filter != 0) {
+                $url .= "&filter=" . $filter;
+            }
+            $isCurrent = ($currentFilter == $filter);
+            $classAttr = $isCurrent ? ' class="current"' : '';
+            $separator = ($i < $lastIndex) ? ' |' : '';
+
+            $row = $itemTpl;
+            $row = str_replace('{url}',       esc_url($url),                   $row);
+            $row = str_replace('{classAttr}', $classAttr,                      $row);
+            $row = str_replace('{filter}',    esc_attr((string)$filter),       $row);
+            $row = str_replace('{label}',     esc_html($label),                $row);
+            $row = str_replace('{count}',     '&hellip;',                      $row);
+            $row = str_replace('{separator}', $separator,                      $row);
+            $itemsHtml .= $row;
         }
-        echo '<a href="' . esc_url($url) . '" class="abj404-content-tab ' . $isActive . '" data-tab-filter="' . esc_attr((string)$filter) . '">';
-        echo esc_html($label);
-        echo '<span class="abj404-tab-count">' . esc_html((string)$count) . '</span>';
-        echo '</a>';
+
+        $outer = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/listTableSubsubsub.html");
+        return str_replace('{items}', $itemsHtml, $outer);
     }
 
     /**

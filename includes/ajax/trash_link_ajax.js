@@ -41,14 +41,13 @@ function bindTrashLinkListeners() {
 
                 } else {
                     row.hide(1000, function(){ row.remove(); });
-                    // Update tab count badges with fresh counts from the server
+                    // Update filter-row counts with fresh values from the server.
                     if (payload.tabCounts && Array.isArray(payload.tabCounts)) {
-                        jQuery('.abj404-content-tab .abj404-tab-count').each(function(i) {
+                        jQuery('.subsubsub a .count').each(function(i) {
                             if (i < payload.tabCounts.length) {
-                                jQuery(this).text(payload.tabCounts[i]);
+                                jQuery(this).text('(' + payload.tabCounts[i] + ')');
                             }
                         });
-                        jQuery('.abj404-content-tabs').effect('highlight');
                     }
                 }
             },

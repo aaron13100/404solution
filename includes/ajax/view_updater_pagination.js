@@ -312,15 +312,15 @@ function paginationLinksChange(triggerItem, options) {
             } else if (jQuery('.abj404-table').length > 0) {
                 jQuery('.abj404-table').replaceWith(result.table);
             }
-            // Update tab counts from AJAX response
+            // Update filter-row counts from AJAX response.
             if (result.tabCounts) {
-                jQuery('.abj404-content-tab[data-tab-filter]').each(function() {
+                jQuery('.subsubsub a[data-tab-filter]').each(function() {
                     var filterVal = jQuery(this).attr('data-tab-filter');
                     if (filterVal in result.tabCounts) {
-                        jQuery(this).find('.abj404-tab-count').text(result.tabCounts[filterVal]);
+                        jQuery(this).find('.count').text('(' + result.tabCounts[filterVal] + ')');
                     }
                 });
-                jQuery('.abj404-content-tabs').removeAttr('data-tab-counts-placeholder');
+                jQuery('.subsubsub').removeAttr('data-tab-counts-placeholder');
             }
             // Health bar is hydrated by a separate AJAX call (refreshHealthBarIfNeeded)
             // so the slow getHighImpactCapturedCount() query never blocks first paint

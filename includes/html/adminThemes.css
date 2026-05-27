@@ -199,37 +199,8 @@ body[data-theme] .abj404-card-content {
   color: var(--abj404-text) !important;
 }
 
-/* ===== Content Tab (Filter Links) Styling for Themes ===== */
-/* Non-active content tabs - make text readable in dark mode */
-html[data-theme] body .abj404-content-tab,
-body[data-theme] .abj404-content-tab {
-  color: var(--abj404-text) !important;
-}
-
-html[data-theme] body .abj404-content-tab:hover,
-body[data-theme] .abj404-content-tab:hover {
-  color: var(--abj404-accent) !important;
-  background: var(--abj404-surface-hover) !important;
-}
-
-html[data-theme] body .abj404-content-tab.active,
-body[data-theme] .abj404-content-tab.active {
-  color: var(--abj404-accent) !important;
-  background: var(--abj404-surface) !important;
-}
-
-/* Tab count badges - make readable in dark mode */
-html[data-theme] body .abj404-content-tab .abj404-tab-count,
-body[data-theme] .abj404-content-tab .abj404-tab-count {
-  background: var(--abj404-badge-bg) !important;
-  color: var(--abj404-badge-text) !important;
-}
-
-html[data-theme] body .abj404-content-tab.active .abj404-tab-count,
-body[data-theme] .abj404-content-tab.active .abj404-tab-count {
-  background: var(--abj404-accent) !important;
-  color: #fff !important;
-}
+/* Filter-row link theming lives further down under the .subsubsub selectors;
+   no per-theme overrides are needed for the native pipe-separated layout. */
 
 /* ===== Logs Table Layout Improvements ===== */
 /* Better column distribution for logs table */

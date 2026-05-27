@@ -314,13 +314,3 @@ body.rtl .abj404-filter-btn,
     margin-right: -5px;
 }
 
-/* ===== Content Tabs ===== */
-body.rtl .abj404-content-tabs,
-[dir="rtl"] .abj404-content-tabs {
-    direction: rtl;
-}
-
-body.rtl .abj404-content-tab,
-[dir="rtl"] .abj404-content-tab {
-    float: right;
-}
