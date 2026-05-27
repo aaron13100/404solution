@@ -154,7 +154,12 @@ class ABJ_404_Solution_Ajax_Php {
 
 		$result = $abj404logic->updateOptionsFromPOST();
 		if (!is_array($result) || !array_key_exists('success', $result)) {
-			wp_send_json_error(array('message' => 'Server error'), 500);
+			// No underlying cause to surface: this is a developer-side contract
+			// violation (updateOptionsFromPOST() must return ['success'=>bool,...]).
+			// Include the observed array keys so a developer reading the response
+			// can locate the violation; the end user cannot self-fix this.
+			$keys = implode(',', array_keys($result));
+			wp_send_json_error(array('message' => 'Server error (handler result array missing "success" key; keys present: ' . $keys . ')'), 500);
 			return; // @phpstan-ignore deadCode.unreachable
 		}
 
@@ -216,7 +221,15 @@ class ABJ_404_Solution_Ajax_Php {
 			if (is_object($logger) && method_exists($logger, 'errorMessage')) {
 				$logger->errorMessage('Error loading deferred GSC section: ' . $e->getMessage());
 			}
-			wp_send_json_error(array('message' => __('Unable to load Google Search Console section.', '404-solution')), 500);
+			// Per CLAUDE.md error visibility rule: surface the underlying exception
+			// detail so the admin can self-diagnose (e.g. missing OAuth credential
+			// file, GSC class autoload failure) instead of seeing only a canned
+			// "Unable to..." message. This endpoint is admin-only (gated above),
+			// so leaking the exception text is acceptable.
+			$detail = (string)$e->getMessage();
+			$framing = __('Unable to load Google Search Console section.', '404-solution');
+			$message = $detail !== '' ? $framing . ' (' . $detail . ')' : $framing;
+			wp_send_json_error(array('message' => $message), 500);
 			return; // @phpstan-ignore deadCode.unreachable
 		}
 	}

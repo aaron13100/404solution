@@ -148,8 +148,15 @@ class ABJ_404_Solution_Ajax_SuggestionPolling {
         }
 
         if ($transient->isError()) {
-            // Computation crashed; return error immediately with generic message.
-            // Detailed error info is logged server-side, not exposed to frontend.
+            // Computation crashed. No underlying detail is available to surface
+            // here by design: this endpoint is hit by public 404-page visitors
+            // (not authenticated admins), and the producer's shutdown handler
+            // (Ajax_SuggestionCompute::handleComputationCrash) deliberately
+            // strips the PHP fatal-error message, file path, and line number
+            // from the transient payload to avoid leaking implementation details
+            // (paths, plugin internals) to the public web. The full crash detail
+            // is recorded server-side via the plugin logger; site admins should
+            // consult the plugin log for diagnosis.
             wp_send_json(array('status' => 'error', 'message' => 'Suggestion computation failed'), 500);
             return; // @phpstan-ignore deadCode.unreachable
         }

@@ -104,7 +104,14 @@ class ABJ_404_Solution_Ajax_EngineProfiles {
                     ', name=' . $req->getName() . ', is_regex=' . $req->getIsRegexInt() .
                     '. Returning HTTP 200 with success=false to AJAX caller.');
             }
-            wp_send_json_error(['message' => __('Failed to save engine profile.', '404-solution')]);
+            // Surface the wpdb-reported failure so the admin can self-diagnose
+            // (table missing, column-count mismatch, deadlock, full disk, etc.)
+            // instead of seeing only a canned "Failed to save" message.
+            global $wpdb;
+            $dbError = isset($wpdb->last_error) && is_string($wpdb->last_error) ? $wpdb->last_error : '';
+            $framing = __('Failed to save engine profile.', '404-solution');
+            $message = $dbError !== '' ? $framing . ' (DB error: ' . $dbError . ')' : $framing;
+            wp_send_json_error(['message' => $message]);
             return; // @phpstan-ignore deadCode.unreachable
         }
 
@@ -137,7 +144,15 @@ class ABJ_404_Solution_Ajax_EngineProfiles {
                 $logger->warn('Ajax_EngineProfiles::handleDelete: deleteProfile(' . (int)$id .
                     ') returned false (row missing or DB error). Returning HTTP 200 with success=false to AJAX caller.');
             }
-            wp_send_json_error(['message' => __('Failed to delete engine profile.', '404-solution')]);
+            // Surface the wpdb-reported failure so the admin can self-diagnose
+            // instead of seeing only a canned "Failed to delete" message. When
+            // the resolver returns false because the row simply wasn't there,
+            // last_error is empty and the framing message stands on its own.
+            global $wpdb;
+            $dbError = isset($wpdb->last_error) && is_string($wpdb->last_error) ? $wpdb->last_error : '';
+            $framing = __('Failed to delete engine profile.', '404-solution');
+            $message = $dbError !== '' ? $framing . ' (DB error: ' . $dbError . ')' : $framing;
+            wp_send_json_error(['message' => $message]);
             return; // @phpstan-ignore deadCode.unreachable
         }
 

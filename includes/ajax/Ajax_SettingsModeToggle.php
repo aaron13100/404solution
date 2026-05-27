@@ -70,7 +70,16 @@ class ABJ_404_Solution_Ajax_SettingsModeToggle {
                 $logger->warn('Ajax_SettingsModeToggle::handleModeToggle: setSettingsMode("' . $mode .
                     '") returned false (option write failed or value unchanged). Returning HTTP 500 to AJAX caller.');
             }
-            wp_send_json_error(array('message' => __('Failed to update settings mode', '404-solution')), 500);
+            // Surface the wpdb-reported failure so the admin can self-diagnose
+            // (corrupted user_meta table, read-only DB, etc.). When
+            // update_user_meta() returns false because the value is unchanged
+            // rather than because of a DB error, last_error is empty and the
+            // framing message stands alone.
+            global $wpdb;
+            $dbError = isset($wpdb->last_error) && is_string($wpdb->last_error) ? $wpdb->last_error : '';
+            $framing = __('Failed to update settings mode', '404-solution');
+            $message = $dbError !== '' ? $framing . ' (DB error: ' . $dbError . ')' : $framing;
+            wp_send_json_error(array('message' => $message), 500);
         }
     }
 }
