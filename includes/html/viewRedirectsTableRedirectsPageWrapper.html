@@ -1,0 +1,43 @@
+<div class="abj404-table-page">
+<div class="abj404-health-bar" data-health-bar-placeholder="1" data-health-bar-ajax-url="{data-health-bar-ajax-url}" data-health-bar-ajax-action="ajaxRefreshHealthBar" data-health-bar-nonce="{data-health-bar-nonce}">
+<span class="abj404-health-dot"></span>
+{loading_status_text}</div>
+<div class="abj404-table-header">
+<div class="abj404-table-header-text">
+<h1>{redirects_title}</h1>
+{subtitle}
+</div>
+{add_redirect_button}</div>
+{subsubsub}
+<div class="abj404-filter-bar tablenav" data-pagination-ajax-url="{data-pagination-ajax-url}" data-pagination-ajax-action="ajaxUpdatePaginationLinks" data-pagination-ajax-subpage="{data-pagination-ajax-subpage}" data-pagination-ajax-nonce="{data-pagination-ajax-nonce}" data-pagination-inflight-nonce="{data-pagination-inflight-nonce}" data-pagination-current-signature="" data-pagination-current-orderby="{data-pagination-current-orderby}" data-pagination-current-order="{data-pagination-current-order}" data-pagination-current-filter="{data-pagination-current-filter}" data-pagination-current-paged="{data-pagination-current-paged}" data-pagination-current-score-range="{data-pagination-current-score-range}" data-pagination-current-logsid="" data-pagination-initial-load="1" data-pagination-auto-refresh="{data-pagination-auto-refresh}" data-pagination-refresh-started-text="{data-pagination-refresh-started-text}" data-pagination-refresh-finished-text="{data-pagination-refresh-finished-text}" data-pagination-refresh-available-text="{data-pagination-refresh-available-text}">
+<div class="abj404-search-box">
+<input type="search" name="searchFilter" placeholder="{search_placeholder}" value="{filter_text}" data-lpignore="true">
+</div>
+<div class="abj404-rows-per-page">
+<span>{rows_per_page_label}</span>
+<select class="abj404-filter-select perpage" name="perpage" onchange="paginationLinksChange(this);">
+{perpage_options}</select>
+</div>
+<div class="abj404-rows-per-page">
+<span>{confidence_label}</span>
+<select class="abj404-filter-select" name="score_range_filter" onchange="window.location='{score_range_base_url_js}&score_range='+encodeURIComponent(this.value);">
+{score_range_options}</select>
+</div>
+<span class="abj404-refresh-status" aria-live="polite"></span>
+</div>
+<form method="POST" action="{form_action}">
+<div class="abj404-bulk-actions" id="abj404-bulk-actions">
+<span class="abj404-selection-info"><strong>0</strong> {selected_label}</span>
+<select class="abj404-filter-select" name="abj404action">
+<option value="">{bulk_actions_label}</option>
+{bulk_action_options}</select>
+<button type="submit" class="abj404-btn abj404-btn-primary">{apply_label}</button>
+<button type="button" class="abj404-btn abj404-btn-secondary abj404-clear-selection" onclick="abj404ClearSelection()">{clear_selection_label}</button>
+</div>
+<div class="abj404-table-container">
+{warmup_placeholder}</div>
+<div class="abj404-pagination tablenav abj404-pagination-right">
+<span class="abj404-refresh-status" aria-live="polite"></span>
+</div>
+</form>
+{empty_trash_form}</div>

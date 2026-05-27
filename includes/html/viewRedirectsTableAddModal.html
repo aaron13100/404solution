@@ -1,0 +1,36 @@
+<div class="abj404-modal" id="abj404-add-redirect-modal">
+<div class="abj404-modal-content">
+<div class="abj404-modal-header">
+<h2>{modal_title}</h2>
+<button type="button" class="abj404-modal-close" onclick="abj404CloseAddRedirectModal()">&times;</button>
+</div>
+<form method="POST" action="{form_action}" onsubmit="return validateAddManualRedirectForm(event);">
+<input type="hidden" name="action" value="addRedirect">
+<div class="abj404-modal-body">
+<div class="abj404-form-group">
+<label class="abj404-form-label">{url_label} *</label>
+<input type="text" name="manual_redirect_url" class="abj404-form-input" placeholder="{url_placeholder}" required>
+<p class="abj404-form-help">{url_help}</p>
+<div class="abj404-checkbox-group" style="margin-top: 12px;">
+<input type="checkbox" name="is_regex_url" id="modal_is_regex" class="abj404-checkbox-input" value="1">
+<label for="modal_is_regex" class="abj404-checkbox-label">{regex_label}</label>
+ <a href="#" class="abj404-regex-toggle" onclick="abj404ToggleRegexInfo(event)">{explain_label}</a>
+</div>
+<div class="abj404-regex-info" style="display: none;">
+<p>{regex_help_1}</p>
+<p><strong>{example_label}</strong> <code>/events/(.+)</code></p>
+<p>{regex_help_2}</p>
+<p>{regex_help_3}</p>
+</div>
+</div>
+<div class="abj404-form-group abj404-autocomplete-wrapper">
+{redirect_to_html}
+</div>
+{redirect_type_grid}{advanced_options}</div>
+<div class="abj404-modal-footer">
+<button type="button" class="abj404-btn abj404-btn-secondary" onclick="abj404CloseAddRedirectModal()">{cancel_label}</button>
+<button type="submit" class="abj404-btn abj404-btn-primary">{add_redirect_label}</button>
+</div>
+</form>
+</div>
+</div>
