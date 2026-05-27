@@ -19,44 +19,44 @@ body.rtl .abj404-wrap,
 body.rtl .abj404-status-warning,
 [dir="rtl"] .abj404-status-warning {
     border-left: none;
-    border-right: 4px solid var(--abj404-warning-border, #f0b429);
+    border-right: 4px solid var(--abj404-warning-border);
 }
 
 body.rtl .abj404-status-error,
 [dir="rtl"] .abj404-status-error {
     border-left: none;
-    border-right: 4px solid var(--abj404-danger-border, #d63638);
+    border-right: 4px solid var(--abj404-danger-border);
 }
 
 body.rtl .abj404-error-log-entry,
 [dir="rtl"] .abj404-error-log-entry {
     border-left: none;
-    border-right: 4px solid #d63638;
+    border-right: 4px solid var(--abj404-danger-border);
 }
 
 /* ===== Notice and Alert Borders ===== */
 body.rtl .abj404-notice,
 [dir="rtl"] .abj404-notice {
     border-left: none;
-    border-right: 3px solid var(--abj404-accent, #2271b1);
+    border-right: 3px solid var(--abj404-accent);
 }
 
 body.rtl .abj404-highlight,
 [dir="rtl"] .abj404-highlight {
     border-left: none;
-    border-right: 4px solid var(--abj404-primary, #2271b1);
+    border-right: 4px solid var(--abj404-primary);
 }
 
 body.rtl .abj404-danger-highlight,
 [dir="rtl"] .abj404-danger-highlight {
     border-left: none !important;
-    border-right: 4px solid var(--abj404-danger-text, #d63638) !important;
+    border-right: 4px solid var(--abj404-danger-text) !important;
 }
 
 body.rtl .abj404-info-box,
 [dir="rtl"] .abj404-info-box {
     border-left: none;
-    border-right: 4px solid var(--abj404-primary, #2271b1);
+    border-right: 4px solid var(--abj404-primary);
 }
 
 /* ===== Margins - Swap Left/Right ===== */
@@ -184,7 +184,7 @@ body.rtl .abj404-tree-level-10,
 body.rtl .abj404-sidebar,
 [dir="rtl"] .abj404-sidebar {
     border-right: none;
-    border-left: 1px solid var(--abj404-border-light, #e0e0e0);
+    border-left: 1px solid var(--abj404-border-light);
 }
 
 body.rtl .abj404-sidebar:last-child,

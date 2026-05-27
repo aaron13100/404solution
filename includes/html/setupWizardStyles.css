@@ -5,7 +5,7 @@
                 left: 160px; /* WordPress admin menu width */
                 right: 0;
                 bottom: 0;
-                background: rgba(255, 255, 255, 0.85);
+                background: var(--abj404-wizard-overlay-bg);
                 z-index: 200;
                 display: flex;
                 align-items: flex-start;
@@ -29,20 +29,20 @@
             }
 
             .abj404-setup-modal {
-                background: #fff;
+                background: var(--abj404-wizard-modal-bg);
                 border-radius: 8px;
-                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+                box-shadow: var(--abj404-wizard-modal-shadow);
                 max-width: 500px;
                 width: 95%;
                 max-height: calc(100vh - 150px);
                 overflow-y: auto;
                 position: relative;
-                border: 1px solid #c3c4c7;
+                border: 1px solid var(--abj404-wizard-modal-border);
             }
 
             .abj404-setup-header {
-                background: #2271b1;
-                color: #fff;
+                background: var(--abj404-wizard-header-bg);
+                color: var(--abj404-wizard-header-text);
                 padding: 16px 20px;
                 border-radius: 8px 8px 0 0;
                 display: flex;
@@ -54,14 +54,14 @@
                 margin: 0;
                 font-size: 18px;
                 font-weight: 600;
-                color: #fff;
+                color: var(--abj404-wizard-header-text);
             }
 
             .abj404-setup-close {
-                background: rgba(255, 255, 255, 0.1);
-                border: 1px solid rgba(255, 255, 255, 0.3);
+                background: var(--abj404-wizard-close-bg);
+                border: 1px solid var(--abj404-wizard-close-border);
                 border-radius: 4px;
-                color: #fff;
+                color: var(--abj404-wizard-header-text);
                 font-size: 20px;
                 cursor: pointer;
                 padding: 2px 8px;
@@ -71,21 +71,22 @@
 
             .abj404-setup-close:hover {
                 opacity: 1;
-                background: rgba(255, 255, 255, 0.2);
+                background: var(--abj404-wizard-close-bg-hover);
             }
 
             .abj404-setup-close:focus {
-                outline: 2px solid rgba(255, 255, 255, 0.5);
+                outline: 2px solid var(--abj404-wizard-close-focus-outline);
                 outline-offset: 1px;
             }
 
             .abj404-setup-content {
                 padding: 16px 24px 10px 24px;
+                color: var(--abj404-wizard-content-text);
             }
 
             .abj404-setup-intro {
                 margin-bottom: 24px;
-                color: #50575e;
+                color: var(--abj404-wizard-intro-text);
                 font-size: 14px;
                 line-height: 1.5;
             }
@@ -98,7 +99,7 @@
                 margin: 0 0 12px 0;
                 font-size: 14px;
                 font-weight: 600;
-                color: #1d2327;
+                color: var(--abj404-wizard-heading-text);
             }
 
             .abj404-setup-options {
@@ -111,31 +112,31 @@
                 display: flex;
                 align-items: flex-start;
                 padding: 10px 12px;
-                background: #f6f7f7;
+                background: var(--abj404-wizard-option-bg);
                 border-radius: 4px;
                 cursor: pointer;
                 transition: background 0.2s;
             }
 
             .abj404-setup-option:hover {
-                background: #eef0f0;
+                background: var(--abj404-wizard-option-bg-hover);
             }
 
             .abj404-setup-option:has(input:checked) {
-                background: #e6f2ff;
-                border: 1px solid #2271b1;
+                background: var(--abj404-wizard-option-selected-bg);
+                border: 1px solid var(--abj404-wizard-option-selected-border);
                 margin: -1px;
             }
 
             .abj404-setup-option:focus-within {
-                outline: 2px solid #2271b1;
+                outline: 2px solid var(--abj404-wizard-focus-outline);
                 outline-offset: 1px;
             }
 
             .abj404-setup-option input[type="radio"] {
                 margin: 2px 10px 0 0;
                 flex-shrink: 0;
-                accent-color: #2271b1;
+                accent-color: var(--abj404-wizard-accent);
             }
 
             .abj404-setup-option input[type="radio"],
@@ -144,7 +145,7 @@
             .abj404-setup-option input[type="radio"]:checked:focus {
                 outline: none !important;
                 box-shadow: none !important;
-                border-color: #2271b1 !important;
+                border-color: var(--abj404-wizard-accent) !important;
             }
 
             .abj404-setup-option-text {
@@ -154,19 +155,19 @@
             .abj404-setup-option-label {
                 display: block;
                 font-weight: 500;
-                color: #1d2327;
+                color: var(--abj404-wizard-label-text);
                 margin-bottom: 2px;
             }
 
             .abj404-setup-option-desc {
                 display: block;
                 font-size: 12px;
-                color: #646970;
+                color: var(--abj404-wizard-desc-text);
             }
 
             .abj404-setup-footer {
                 padding: 16px 24px;
-                background: #f6f7f7;
+                background: var(--abj404-wizard-footer-bg);
                 border-radius: 0 0 8px 8px;
                 display: flex;
                 justify-content: space-between;
@@ -179,10 +180,10 @@
             }
 
             .abj404-setup-skip {
-                background: #f6f7f7;
-                border: 1px solid #c3c4c7;
+                background: var(--abj404-wizard-skip-bg);
+                border: 1px solid var(--abj404-wizard-skip-border);
                 border-radius: 3px;
-                color: #50575e;
+                color: var(--abj404-wizard-skip-text);
                 padding: 6px 16px;
                 font-size: 13px;
                 cursor: pointer;
@@ -191,25 +192,25 @@
             }
 
             .abj404-setup-skip:hover {
-                background: #f0f0f1;
-                border-color: #8c8f94;
-                color: #1d2327;
+                background: var(--abj404-wizard-skip-bg-hover);
+                border-color: var(--abj404-wizard-skip-border-hover);
+                color: var(--abj404-wizard-skip-text-hover);
             }
 
             .abj404-setup-skip:focus {
-                outline: 2px solid #2271b1;
+                outline: 2px solid var(--abj404-wizard-focus-outline);
                 outline-offset: 1px;
             }
 
             .abj404-setup-primary {
-                background: #2271b1 !important;
-                border-color: #2271b1 !important;
-                color: #fff !important;
+                background: var(--abj404-wizard-accent) !important;
+                border-color: var(--abj404-wizard-accent) !important;
+                color: var(--abj404-wizard-header-text) !important;
             }
 
             .abj404-setup-primary:hover {
-                background: #135e96 !important;
-                border-color: #135e96 !important;
+                background: var(--abj404-wizard-accent-hover) !important;
+                border-color: var(--abj404-wizard-accent-hover) !important;
             }
 
             /* Loading overlay */
@@ -219,7 +220,7 @@
                 left: 0;
                 right: 0;
                 bottom: 0;
-                background: rgba(255, 255, 255, 0.9);
+                background: var(--abj404-wizard-loading-overlay-bg);
                 display: flex;
                 flex-direction: column;
                 align-items: center;
@@ -234,11 +235,11 @@
                 position: fixed;
                 bottom: 20px;
                 right: 20px;
-                background: #d63638;
-                color: #fff;
+                background: var(--abj404-wizard-toast-bg);
+                color: var(--abj404-wizard-toast-text);
                 padding: 12px 16px;
                 border-radius: 4px;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+                box-shadow: var(--abj404-wizard-toast-shadow);
                 z-index: 9999;
                 max-width: 350px;
                 font-size: 13px;
@@ -260,7 +261,7 @@
             .abj404-toast-close {
                 background: none;
                 border: none;
-                color: #fff;
+                color: var(--abj404-wizard-toast-text);
                 font-size: 16px;
                 cursor: pointer;
                 float: right;
@@ -273,20 +274,16 @@
                 opacity: 1;
             }
 
-            body.abj404-dark-mode .abj404-toast {
-                background: #dc3545;
-            }
-
             .abj404-setup-loading span {
-                color: #1d2327;
+                color: var(--abj404-wizard-loading-text);
                 font-size: 14px;
             }
 
             .abj404-setup-spinner {
                 width: 24px;
                 height: 24px;
-                border: 3px solid #c3c4c7;
-                border-top-color: #2271b1;
+                border: 3px solid var(--abj404-wizard-spinner-track);
+                border-top-color: var(--abj404-wizard-spinner-head);
                 border-radius: 50%;
                 animation: abj404-setup-spin 0.8s linear infinite;
             }
@@ -295,87 +292,3 @@
                 to { transform: rotate(360deg); }
             }
 
-            /* Dark mode support */
-            body.abj404-dark-mode .abj404-setup-overlay {
-                background: rgba(0, 0, 0, 0.75);
-            }
-
-            body.abj404-dark-mode .abj404-setup-modal {
-                background: #1e1e1e;
-                border-color: #3d3d3d;
-            }
-
-            body.abj404-dark-mode .abj404-setup-content {
-                color: #e0e0e0;
-            }
-
-            body.abj404-dark-mode .abj404-setup-intro {
-                color: #b0b0b0;
-            }
-
-            body.abj404-dark-mode .abj404-setup-question h3 {
-                color: #e0e0e0;
-            }
-
-            body.abj404-dark-mode .abj404-setup-option {
-                background: #2d2d2d;
-            }
-
-            body.abj404-dark-mode .abj404-setup-option:hover {
-                background: #3d3d3d;
-            }
-
-            body.abj404-dark-mode .abj404-setup-option:has(input:checked) {
-                background: #1a3a5c;
-                border-color: #5aa2ff;
-            }
-
-            body.abj404-dark-mode .abj404-setup-option:focus-within {
-                outline-color: #5aa2ff;
-            }
-
-            body.abj404-dark-mode .abj404-setup-option input[type="radio"],
-            body.abj404-dark-mode .abj404-setup-option input[type="radio"]:focus,
-            body.abj404-dark-mode .abj404-setup-option input[type="radio"]:checked,
-            body.abj404-dark-mode .abj404-setup-option input[type="radio"]:checked:focus {
-                accent-color: #5aa2ff;
-                border-color: #5aa2ff !important;
-            }
-
-            body.abj404-dark-mode .abj404-setup-option-label {
-                color: #e0e0e0;
-            }
-
-            body.abj404-dark-mode .abj404-setup-option-desc {
-                color: #a0a0a0;
-            }
-
-            body.abj404-dark-mode .abj404-setup-footer {
-                background: #2d2d2d;
-            }
-
-            body.abj404-dark-mode .abj404-setup-skip {
-                background: #3d3d3d;
-                border-color: #505050;
-                color: #b0b0b0;
-            }
-
-            body.abj404-dark-mode .abj404-setup-skip:hover {
-                background: #4d4d4d;
-                border-color: #606060;
-                color: #e0e0e0;
-            }
-
-            body.abj404-dark-mode .abj404-setup-loading {
-                background: rgba(30, 30, 30, 0.9);
-            }
-
-            body.abj404-dark-mode .abj404-setup-loading span {
-                color: #e0e0e0;
-            }
-
-            body.abj404-dark-mode .abj404-setup-spinner {
-                border-color: #505050;
-                border-top-color: #5aa2ff;
-            }
-        

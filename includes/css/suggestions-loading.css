@@ -1,6 +1,12 @@
 /**
  * Loading skeleton animation for async 404 suggestions.
  * Displays placeholder animation while suggestions are being computed.
+ *
+ * This stylesheet is enqueued by the [abj404] shortcode on the user-facing
+ * (front-end) site. The plugin's admin theme variables (--abj404-*) defined
+ * in adminThemes.css are admin-only and are NOT available here, so the
+ * skeleton/text colors below must remain literal. The values are designed to
+ * read neutrally on any host theme (light + dark via prefers-color-scheme).
  */
 
 /* Container for loading state */
@@ -12,6 +18,7 @@
 
 /* Individual skeleton item */
 .abj404-skeleton {
+    /* allow-hardcoded-color: frontend shortcode CSS; admin theme vars are not loaded on the user site, and skeleton shimmer must read on any host theme. */
     background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
     background-size: 200% 100%;
     animation: abj404-shimmer 1.5s infinite;
@@ -41,6 +48,7 @@
 
 /* Loading text message */
 .abj404-loading-text {
+    /* allow-hardcoded-color: frontend shortcode CSS, theme vars unavailable; mid-gray reads on light host themes. */
     color: #666;
     font-style: italic;
     margin: 5px 0 10px;
@@ -49,6 +57,7 @@
 
 /* No suggestions fallback message */
 .abj404-no-suggestions {
+    /* allow-hardcoded-color: frontend shortcode CSS, theme vars unavailable; mid-gray reads on light host themes. */
     color: #666;
     font-style: italic;
     list-style: none;
@@ -58,15 +67,18 @@
 /* Dark mode support */
 @media (prefers-color-scheme: dark) {
     .abj404-skeleton {
+        /* allow-hardcoded-color: frontend shortcode CSS, theme vars unavailable; dark-mode shimmer tuned for dark host themes. */
         background: linear-gradient(90deg, #2a2a2a 25%, #333333 50%, #2a2a2a 75%);
         background-size: 200% 100%;
     }
 
     .abj404-loading-text {
+        /* allow-hardcoded-color: frontend shortcode CSS, theme vars unavailable; light gray reads on dark host themes. */
         color: #aaa;
     }
 
     .abj404-no-suggestions {
+        /* allow-hardcoded-color: frontend shortcode CSS, theme vars unavailable; light gray reads on dark host themes. */
         color: #aaa;
     }
 }

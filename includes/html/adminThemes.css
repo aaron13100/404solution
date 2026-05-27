@@ -149,6 +149,48 @@ body[data-theme="mono"] {
   /* Loading overlay scrim. Default: translucent white over light tables.
      Dark themes override below. */
   --abj404-loading-overlay-bg: rgba(255, 255, 255, 0.8);
+
+  /* Setup-wizard chrome. The wizard is rendered on first-run admin pages and
+     uses the legacy body.abj404-dark-mode hook for its dark variant. These
+     tokens carry the wizard's specific (non-semantic) palette so the rules in
+     setupWizardStyles.css stay literal-free; overrides live in the
+     body.abj404-dark-mode block below. */
+  --abj404-wizard-overlay-bg: rgba(255, 255, 255, 0.85);
+  --abj404-wizard-modal-bg: #ffffff;
+  --abj404-wizard-modal-border: #c3c4c7;
+  --abj404-wizard-modal-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  --abj404-wizard-header-bg: #2271b1;
+  --abj404-wizard-header-text: #ffffff;
+  --abj404-wizard-close-bg: rgba(255, 255, 255, 0.1);
+  --abj404-wizard-close-bg-hover: rgba(255, 255, 255, 0.2);
+  --abj404-wizard-close-border: rgba(255, 255, 255, 0.3);
+  --abj404-wizard-close-focus-outline: rgba(255, 255, 255, 0.5);
+  --abj404-wizard-intro-text: #50575e;
+  --abj404-wizard-heading-text: #1d2327;
+  --abj404-wizard-content-text: inherit;
+  --abj404-wizard-option-bg: #f6f7f7;
+  --abj404-wizard-option-bg-hover: #eef0f0;
+  --abj404-wizard-option-selected-bg: #e6f2ff;
+  --abj404-wizard-option-selected-border: #2271b1;
+  --abj404-wizard-focus-outline: #2271b1;
+  --abj404-wizard-accent: #2271b1;
+  --abj404-wizard-accent-hover: #135e96;
+  --abj404-wizard-label-text: #1d2327;
+  --abj404-wizard-desc-text: #646970;
+  --abj404-wizard-footer-bg: #f6f7f7;
+  --abj404-wizard-skip-bg: #f6f7f7;
+  --abj404-wizard-skip-border: #c3c4c7;
+  --abj404-wizard-skip-text: #50575e;
+  --abj404-wizard-skip-bg-hover: #f0f0f1;
+  --abj404-wizard-skip-border-hover: #8c8f94;
+  --abj404-wizard-skip-text-hover: #1d2327;
+  --abj404-wizard-loading-overlay-bg: rgba(255, 255, 255, 0.9);
+  --abj404-wizard-loading-text: #1d2327;
+  --abj404-wizard-toast-bg: #d63638;
+  --abj404-wizard-toast-text: #ffffff;
+  --abj404-wizard-toast-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  --abj404-wizard-spinner-track: #c3c4c7;
+  --abj404-wizard-spinner-head: #2271b1;
 }
 
 /* Dark-theme overrides for tokens added above. */
@@ -171,6 +213,36 @@ body.abj404-dark-mode {
   --abj404-dark-accent-border: #5AA2FF;
   --abj404-dark-surface-deep: #1A2332;
   --abj404-dark-border-deep: #3D3D3D;
+
+  /* Setup-wizard dark variant. Overrides the wizard tokens defined in the
+     default branch; light values stay untouched when the dark-mode class
+     isn't present. */
+  --abj404-wizard-overlay-bg: rgba(0, 0, 0, 0.75);
+  --abj404-wizard-modal-bg: #1e1e1e;
+  --abj404-wizard-modal-border: #3d3d3d;
+  --abj404-wizard-intro-text: #b0b0b0;
+  --abj404-wizard-heading-text: #e0e0e0;
+  --abj404-wizard-content-text: #e0e0e0;
+  --abj404-wizard-option-bg: #2d2d2d;
+  --abj404-wizard-option-bg-hover: #3d3d3d;
+  --abj404-wizard-option-selected-bg: #1a3a5c;
+  --abj404-wizard-option-selected-border: #5aa2ff;
+  --abj404-wizard-focus-outline: #5aa2ff;
+  --abj404-wizard-accent: #5aa2ff;
+  --abj404-wizard-label-text: #e0e0e0;
+  --abj404-wizard-desc-text: #a0a0a0;
+  --abj404-wizard-footer-bg: #2d2d2d;
+  --abj404-wizard-skip-bg: #3d3d3d;
+  --abj404-wizard-skip-border: #505050;
+  --abj404-wizard-skip-text: #b0b0b0;
+  --abj404-wizard-skip-bg-hover: #4d4d4d;
+  --abj404-wizard-skip-border-hover: #606060;
+  --abj404-wizard-skip-text-hover: #e0e0e0;
+  --abj404-wizard-loading-overlay-bg: rgba(30, 30, 30, 0.9);
+  --abj404-wizard-loading-text: #e0e0e0;
+  --abj404-wizard-toast-bg: #dc3545;
+  --abj404-wizard-spinner-track: #505050;
+  --abj404-wizard-spinner-head: #5aa2ff;
 }
 
 /* === Calm Ops (Light) === */
