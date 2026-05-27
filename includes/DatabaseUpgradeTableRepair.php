@@ -79,6 +79,24 @@ class ABJ_404_Solution_DatabaseUpgradeTableRepair extends ABJ_404_Solution_Datab
 	// @utf8-audit: opt-out - system-controlled table name composed from $wpdb->prefix plus the fixed-literal "abj404_mutation_watermark", cannot contain invalid UTF-8 bytes.
 	// DAO-bypass-approved: idempotent DROP TABLE IF EXISTS on a deprecated table; DAO error logging would surface a benign "table did not exist" line on every upgrade.
 	$wpdb->query("DROP TABLE IF EXISTS `" . esc_sql($deprecatedWatermarkTableName) . "`");
+
+	// Also drop the orphaned wp_options keys from the removed watermark/
+	// AdminMutationGate system. These options were used by the staged-build
+	// at-stage abort gate and the admin-mutation visibility gate, both of
+	// which were removed in favor of the 120s cache TTL + explicit
+	// invalidation on admin mutation.
+	if (function_exists('delete_option')) {
+		$orphanedOptions = array(
+			$prefix . 'abj404_view_done_mutation_invalidated_at',
+			$prefix . 'abj404_view_build_started_watermark',
+			$prefix . 'abj404_view_build_active_started_watermark',
+			$prefix . 'abj404_view_build_last_started_watermark',
+			$prefix . 'abj404_view_build_built_watermark',
+		);
+		foreach ($orphanedOptions as $optionName) {
+			delete_option($optionName);
+		}
+	}
     }
 
     /**

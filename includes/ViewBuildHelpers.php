@@ -48,7 +48,6 @@ if (!defined('ABSPATH')) {
  * @property string $lastNamedLockUnsupportedError
  * @method bool acquireTransientFallbackLock(...$arguments)
  * @method bool acquireViewBuildLock(...$arguments)
- * @method bool adminMutationGateBlocks(...$arguments)
  * @method array<mixed> advanceViewBuildOnce(...$arguments)
  * @method void assertBuildBufferExistsOrHalt(...$arguments)
  * @method ?bool attemptRelaxSqlModeForBuildConnection(...$arguments)
@@ -62,7 +61,6 @@ if (!defined('ABSPATH')) {
  * @method string classifyAndHandleStageFailure(...$arguments)
  * @method array<mixed> classifySessionVariableWarnings(...$arguments)
  * @method string classifyStageFailure(...$arguments)
- * @method void clearAdminMutationGateOptions(...$arguments)
  * @method void clearAllProgressOptions(...$arguments)
  * @method void clearPhpEnvironmentProbeCache(...$arguments)
  * @method void clearPrefixAtStageOne(...$arguments)
@@ -118,7 +116,6 @@ if (!defined('ABSPATH')) {
  * @method void markViewBuildStageCompleted(...$arguments)
  * @method void markViewBuildStageStarted(...$arguments)
  * @method void markViewDoneBuildCompleted(...$arguments)
- * @method void markViewDoneInvalidatedByAdminMutation(...$arguments)
  * @method int maxBuildBufferId(...$arguments)
  * @method void maybeRaiseViewDoneHardStaleNotice(...$arguments)
  * @method string normalizePathPrefix(...$arguments)
@@ -159,7 +156,7 @@ if (!defined('ABSPATH')) {
  * @method array{ran: bool, reason: string, progress: array<string, mixed>} runPageLoadFallbackAdvance(...$arguments)
  * @method int runRedirectsForViewCountStaged(...$arguments)
  * @method array<int, array<string, mixed>> runRedirectsForViewStaged(...$arguments)
- * @method bool runS11Swap(...$arguments)
+ * @method bool runS11SwapWithPreRenameWatermarkRecheck(...$arguments)
  * @method bool runStagedBuildOnce(...$arguments)
  * @method bool runStagedBuildStages6Through11(...$arguments)
  * @method void runStagedSqlFile(...$arguments)
@@ -211,8 +208,6 @@ if (!defined('ABSPATH')) {
  * @method bool viewDoneHasRows(...$arguments)
  * @method bool viewDoneIsFresh(...$arguments)
  * @method bool viewDoneIsServeable(...$arguments)
- * @method int viewDoneMutationInvalidatedAt(...$arguments)
- * @method string viewDoneMutationInvalidatedAtOptionName(...$arguments)
  * @method bool viewDoneTableExists(...$arguments)
  * @method string viewDoneTableName(...$arguments)
  * @method void writeProgressOption(...$arguments)
@@ -624,10 +619,23 @@ class ABJ_404_Solution_ViewBuildHelpers extends ABJ_404_Solution_ViewBuildCollab
     }
 
     /**
+     * Per-build watermark stamp machinery -- option-name helpers, raw
+     * read/write, the stage-boundary advance gate, and the
+     * stamp/clear/publish methods -- lives on
+     * {@see ABJ_404_Solution_DataAccess_ViewBuildStartedWatermarkTrait}.
+     * The orchestrator and abort/fresh-start methods below call into it
+     * via `$this->` (both traits compose into ABJ_404_Solution_DataAccess).
+     */
+
+    /**
      * One-call cleanup for the fresh-start branch of runStagedBuildOnce:
-     * scrap progress options, drop any leftover buffer tables. Pulled out
-     * of the orchestrator so the body line count stays within the
-     * per-function cap.
+     * scrap progress options (registry + Phase-2 active stamp), drop any
+     * leftover buffer tables. Pulled out of the orchestrator so the
+     * body line count stays within the per-function cap.
+     *
+     * last_build_started_watermark is intentionally NOT cleared here: it
+     * is diagnostic-only and survives across fresh-start boundaries (and
+     * gets overwritten on the next S1 entry stamp).
      *
      * @return void
      */
@@ -637,15 +645,15 @@ class ABJ_404_Solution_ViewBuildHelpers extends ABJ_404_Solution_ViewBuildCollab
     }
 
     /**
-     * S11 swap. Fires the CLAUDE.md R6 pre-RENAME action hook
-     * (`abj404_view_build_before_rename_swap`) immediately before the
-     * RENAME TABLE statement, then performs the swap.
+     * S11 swap that fires the CLAUDE.md R6 pre-RENAME action hook
+     * (`abj404_view_build_before_rename_swap`) and runs the RENAME
+     * TABLE statement.
      *
      * @return bool  True when the swap completed cleanly; false when the
      *               stage halted / yielded (orchestrator should return
      *               false from runStagedBuildOnce).
      */
-    public function runS11Swap(): bool {
+    public function runS11SwapWithPreRenameWatermarkRecheck(): bool {
         $result = $this->runTimedViewBuildStage(11, 'staged_build_s11_swap', function () {
             if (function_exists('do_action')) {
                 do_action('abj404_view_build_before_rename_swap');

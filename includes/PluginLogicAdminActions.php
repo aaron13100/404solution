@@ -456,6 +456,63 @@ class ABJ_404_Solution_PluginLogicAdminActions {
         return $this->handleStatusUpdate('later', 'abj404_organizeLater', ABJ404_STATUS_LATER, 'organize later', 'organize later');
     }
 
+    /**
+     * The parent admin script under which the plugin's menu page is registered.
+     * Default install registers as a submenu under Settings (options-general.php);
+     * users who set menuLocation=settingsLevel get a top-level menu (admin.php).
+     * Using the wrong parent script in admin_url() produces a URL that doesn't
+     * match the registered page, which historically landed users on the wrong
+     * page after a redirect.
+     *
+     * @return string
+     */
+    /**
+     * Build the post-edit redirect querystring (also used to determine the source
+     * page the in-request render should target). Extracted from handleActionEdit
+     * to keep that method's cyclomatic complexity within project limits.
+     *
+     * @return array{source_page: string, redirect_url: string}
+     */
+    private function buildPostEditRedirect(): array {
+        $valid_tabs = array('abj404_redirects', 'abj404_captured', 'abj404_logs',
+                          'abj404_stats', 'abj404_tools', 'abj404_options');
+        $source_page = $this->f->getPostOrGetSanitize('source_page');
+        if ($source_page === '' || !in_array($source_page, $valid_tabs)) {
+            $source_page = 'abj404_redirects';
+        }
+
+        $redirect_url = "?page=" . ABJ404_PP . "&subpage=" . $source_page . "&updated=1";
+
+        $source_filter = $this->f->getPostOrGetSanitize('source_filter', '');
+        if ($source_filter !== '' && $source_filter !== '0') {
+            $redirect_url .= "&filter=" . urlencode($source_filter);
+        }
+
+        $source_orderby = $this->f->getPostOrGetSanitize('source_orderby', '');
+        $source_order = $this->f->getPostOrGetSanitize('source_order', '');
+        if ($source_orderby !== '' && $source_order !== ''
+                && !($source_orderby === "url" && $source_order === "ASC")) {
+            $redirect_url .= "&orderby=" . urlencode($source_orderby);
+            $redirect_url .= "&order=" . urlencode($source_order);
+        }
+
+        $source_paged = $this->f->getPostOrGetSanitize('source_paged', '');
+        if ($source_paged !== '' && (int)$source_paged > 1) {
+            $redirect_url .= "&paged=" . urlencode($source_paged);
+        }
+
+        return array('source_page' => $source_page, 'redirect_url' => $redirect_url);
+    }
+
+    private function getMenuParentScript(): string {
+        $options = $this->pluginLogic->getOptions();
+        $menuLocation = 'underSettings';
+        if (is_array($options) && isset($options['menuLocation']) && is_string($options['menuLocation'])) {
+            $menuLocation = $options['menuLocation'];
+        }
+        return $menuLocation === 'settingsLevel' ? 'admin.php' : 'options-general.php';
+    }
+
     /** Edit redirect data.
      * @param string $sub
      * @param string $action
@@ -471,60 +528,26 @@ class ABJ_404_Solution_PluginLogicAdminActions {
                 if (is_admin() && $this->verifyLinkNonce('abj404editRedirect')) {
                     $message = $this->pluginLogic->updateRedirectData();
                     if ($message == "") {
-                        $source_page = $this->f->getPostOrGetSanitize('source_page');
+                        $redirect = $this->buildPostEditRedirect();
 
-                        $valid_tabs = array('abj404_redirects', 'abj404_captured', 'abj404_logs',
-                                          'abj404_stats', 'abj404_tools', 'abj404_options');
-                        if ($source_page === '' || !in_array($source_page, $valid_tabs)) {
-                            $source_page = 'abj404_redirects';
+                        // PRG attempt: only works when called early enough that
+                        // no output has been flushed yet (e.g. on admin_init).
+                        // When called from the menu-page callback, admin-header.php
+                        // has already streamed the admin chrome and headers_sent()
+                        // is true, so the Location header is silently dropped.
+                        if (!headers_sent()) {
+                            wp_safe_redirect(admin_url($this->getMenuParentScript() . $redirect['redirect_url']));
                         }
 
-                        $redirect_url = "?page=" . ABJ404_PP . "&subpage=" . $source_page;
-                        $redirect_url .= "&updated=1";
-
-                        $source_filter = $this->f->getPostOrGetSanitize('source_filter', '');
-                        if ($source_filter !== '' && $source_filter !== '0') {
-                            $redirect_url .= "&filter=" . urlencode($source_filter);
-                        }
-
-                        $source_orderby = $this->f->getPostOrGetSanitize('source_orderby', '');
-                        $source_order = $this->f->getPostOrGetSanitize('source_order', '');
-                        if ($source_orderby !== '' && $source_order !== '') {
-                            if (!($source_orderby === "url" && $source_order === "ASC")) {
-                                $redirect_url .= "&orderby=" . urlencode($source_orderby);
-                                $redirect_url .= "&order=" . urlencode($source_order);
-                            }
-                        }
-
-                        $source_paged = $this->f->getPostOrGetSanitize('source_paged', '');
-                        if ($source_paged !== '' && (int)$source_paged > 1) {
-                            $redirect_url .= "&paged=" . urlencode($source_paged);
-                        }
-
-                        // Attempt Post/Redirect/Get. This sends a Location
-                        // header so the browser issues a fresh GET, which is
-                        // what produces the canonical "?updated=1" URL.
-                        wp_safe_redirect(admin_url('admin.php' . $redirect_url));
-
-                        // In-process fallback. The plugin's admin callback
-                        // runs AFTER admin-header.php has flushed output, so
-                        // headers_sent() is true and wp_safe_redirect cannot
-                        // actually send the Location header. PHP raises a
-                        // warning, the browser sees no redirect, and the rest
-                        // of this request renders into the response body.
-                        //
-                        // Rewrite the by-ref routing vars so the page callback
-                        // lands on the source tab instead of falling through
-                        // to echoAdminEditRedirectPage (which emits "Error:
-                        // No ID(s) found for edit request." when the next
-                        // render loses the POST id, and otherwise re-renders
-                        // a stale edit form for the row the user just saved).
-                        $sub = $source_page;
+                        // Defense in depth: even if PRG didn't fire, route the
+                        // in-request render to the source page (redirects table
+                        // by default) instead of re-rendering the edit form.
+                        // Re-rendering echoAdminEditRedirectPage post-update
+                        // surfaced "Error: No ID(s) found for edit request."
+                        // for users whose admin chrome already flushed headers
+                        // (Chad/lonesync, 2026-05-26).
+                        $sub = $redirect['source_page'];
                         $action = '';
-                        // Return the success message for the fallback render.
-                        // If the Location header was honored the browser will
-                        // follow the redirect and this body is discarded, so
-                        // returning a message is safe in both cases.
                         return __('Redirect Information Updated Successfully!', '404-solution');
                     } else {
                         $message .= __('Error: Unable to update redirect data.', '404-solution');

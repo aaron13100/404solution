@@ -55,8 +55,6 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
     private $hostFailurePolicy;
     /** @var ABJ_404_Solution_ViewBuildForceRestart */
     private $forceRestart;
-    /** @var ABJ_404_Solution_AdminMutationGate */
-    private $adminMutationGate;
 
     /**
      * @param ABJ_404_Solution_DatabaseCore $dbCore
@@ -85,7 +83,6 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
         $this->sessionEnvProbe = new ABJ_404_Solution_ViewBuildSessionEnvProbe($this);
         $this->hostFailurePolicy = new ABJ_404_Solution_ViewBuildHostFailurePolicy($this);
         $this->forceRestart = new ABJ_404_Solution_ViewBuildForceRestart($this);
-        $this->adminMutationGate = new ABJ_404_Solution_AdminMutationGate($this);
         $this->collaborators = array(
             'queries' => $this->queries,
             'stage_runner' => new ABJ_404_Solution_ViewBuildStageRunner($this),
@@ -99,7 +96,6 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
             'session_env_probe' => $this->sessionEnvProbe,
             'host_failure_policy' => $this->hostFailurePolicy,
             'force_restart' => $this->forceRestart,
-            'admin_mutation_gate' => $this->adminMutationGate,
         );
     }
 
@@ -263,9 +259,19 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
         return $this->sessionEnvProbe->probeSessionVariablesAtS1Entry();
     }
 
-    /** @return void */
+    /**
+     * Admin mutation entry point: invalidate the cached view snapshot
+     * and schedule a rebuild so the next AJAX warmup sees fresh data.
+     *
+     * Replaces the previous watermark-based gate (removed): admins now
+     * rely on the 120s cache TTL + explicit invalidation on mutation
+     * rather than a wall-clock or signature gate that blocked reads.
+     *
+     * @return void
+     */
     public function markViewDoneInvalidatedByAdminMutation(): void {
-        $this->adminMutationGate->markViewDoneInvalidatedByAdminMutation();
+        $this->invalidateViewDoneServeableCacheBridge();
+        $this->scheduleViewDoneRebuild();
     }
 
     /** @param int $lockTimeoutSeconds @return bool */

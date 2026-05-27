@@ -18,7 +18,6 @@ require_once __DIR__ . '/ViewBuildPhpEnvProbe.php';
 require_once __DIR__ . '/ViewBuildSessionEnvProbe.php';
 require_once __DIR__ . '/ViewBuildHostFailurePolicy.php';
 require_once __DIR__ . '/ViewBuildForceRestart.php';
-require_once __DIR__ . '/AdminMutationGate.php';
 require_once __DIR__ . '/DatabaseRuntimeState.php';
 require_once __DIR__ . '/ViewReadRuntimeState.php';
 require_once __DIR__ . '/DatabaseConnectionManager.php';

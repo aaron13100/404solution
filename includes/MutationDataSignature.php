@@ -5,9 +5,8 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Single-line replacement for the watermark-counter primitive that lived
- * in {@see ABJ_404_Solution_MutationWatermark} before
- * t_260523_224315_207. Answers "did anything change since I last looked?"
+ * Single-line replacement for the watermark-counter primitive that was
+ * removed in t_260523_224315_207. Answers "did anything change since I last looked?"
  * by reading data the schema already encodes (the row's `timestamp`
  * column on `wp_abj404_redirects`, plus `COUNT(*)` to catch DELETEs that
  * don't advance MAX(timestamp)).

@@ -41,7 +41,6 @@ if (!defined('ABSPATH')) {
  * @property string $lastNamedLockUnsupportedError
  * @method bool acquireTransientFallbackLock(...$arguments)
  * @method bool acquireViewBuildLock(...$arguments)
- * @method bool adminMutationGateBlocks(...$arguments)
  * @method array<mixed> advanceViewBuildOnce(...$arguments)
  * @method void assertBuildBufferExistsOrHalt(...$arguments)
  * @method ?bool attemptRelaxSqlModeForBuildConnection(...$arguments)
@@ -55,7 +54,6 @@ if (!defined('ABSPATH')) {
  * @method string classifyAndHandleStageFailure(...$arguments)
  * @method array<mixed> classifySessionVariableWarnings(...$arguments)
  * @method string classifyStageFailure(...$arguments)
- * @method void clearAdminMutationGateOptions(...$arguments)
  * @method void clearAllProgressOptions(...$arguments)
  * @method void clearPhpEnvironmentProbeCache(...$arguments)
  * @method void clearPrefixAtStageOne(...$arguments)
@@ -111,7 +109,6 @@ if (!defined('ABSPATH')) {
  * @method void markViewBuildStageCompleted(...$arguments)
  * @method void markViewBuildStageStarted(...$arguments)
  * @method void markViewDoneBuildCompleted(...$arguments)
- * @method void markViewDoneInvalidatedByAdminMutation(...$arguments)
  * @method int maxBuildBufferId(...$arguments)
  * @method void maybeRaiseViewDoneHardStaleNotice(...$arguments)
  * @method string normalizePathPrefix(...$arguments)
@@ -152,7 +149,7 @@ if (!defined('ABSPATH')) {
  * @method array{ran: bool, reason: string, progress: array<string, mixed>} runPageLoadFallbackAdvance(...$arguments)
  * @method int runRedirectsForViewCountStaged(...$arguments)
  * @method array<int, array<string, mixed>> runRedirectsForViewStaged(...$arguments)
- * @method bool runS11Swap(...$arguments)
+ * @method bool runS11SwapWithPreRenameWatermarkRecheck(...$arguments)
  * @method bool runStagedBuildOnce(...$arguments)
  * @method bool runStagedBuildStages6Through11(...$arguments)
  * @method void runStagedSqlFile(...$arguments)
@@ -204,8 +201,6 @@ if (!defined('ABSPATH')) {
  * @method bool viewDoneHasRows(...$arguments)
  * @method bool viewDoneIsFresh(...$arguments)
  * @method bool viewDoneIsServeable(...$arguments)
- * @method int viewDoneMutationInvalidatedAt(...$arguments)
- * @method string viewDoneMutationInvalidatedAtOptionName(...$arguments)
  * @method bool viewDoneTableExists(...$arguments)
  * @method string viewDoneTableName(...$arguments)
  * @method void writeProgressOption(...$arguments)
@@ -409,14 +404,6 @@ class ABJ_404_Solution_ViewQueriesStaged extends ABJ_404_Solution_ViewBuildColla
             $this->viewDoneIsServeableCache = false;
             return false;
         }
-        // Admin-mutation gate (owned by
-        // ABJ_404_Solution_DataAccess_AdminMutationGateTrait). Blocks
-        // reads after an admin click-Save until either the next build
-        // covers it, or the sanity window elapses.
-        if ($this->adminMutationGateBlocks()) {
-            $this->viewDoneIsServeableCache = false;
-            return false;
-        }
         // Empty view_done is NOT serveable when there has never been a
         // successful build: rendering an empty admin screen during a cold
         // start is a worse UX than a brief pending/loading state that drives
@@ -497,12 +484,6 @@ class ABJ_404_Solution_ViewQueriesStaged extends ABJ_404_Solution_ViewBuildColla
             update_option($this->viewDoneDataBuiltAtOptionName(), $now, false);
         }
         $this->clearViewDoneHardStaleNotice();
-        // Clear the admin-mutation gate: the fresh build covers any
-        // mutation that triggered it, so viewDoneIsServeable() no longer
-        // needs to block reads. Leaving it set would force "Loading
-        // redirects" for the full 5-minute sanity window after every
-        // admin save even though fresh data is on disk.
-        $this->clearAdminMutationGateOptions();
         $this->invalidateViewDoneServeableCache();
     }
 
@@ -1180,7 +1161,7 @@ class ABJ_404_Solution_ViewQueriesStaged extends ABJ_404_Solution_ViewBuildColla
             if (!$this->releaseAndReacquireBetweenStages()) { return false; }
             if ($this->haltIfPrefixChangedSinceStageOne(11)) { return false; }
             $this->markBuildStage('staged_build_s11_swap');
-            if (!$this->runS11Swap()) { return false; }
+            if (!$this->runS11SwapWithPreRenameWatermarkRecheck()) { return false; }
             $this->markViewDoneBuildCompleted();
             $this->clearAllProgressOptions();
         }

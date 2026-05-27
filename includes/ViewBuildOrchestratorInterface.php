@@ -133,9 +133,12 @@ interface ABJ_404_Solution_ViewBuildOrchestratorInterface {
     /** @return array<string, mixed> */
     public function probeSessionVariablesAtS1Entry(): array;
 
-    // --- AdminMutationGate (watermark-based visibility gate) ---
-
-    /** @return void */
+    /**
+     * Admin mutation entry point: invalidate the cached view snapshot
+     * and schedule a rebuild. Replaces the previous watermark/gate system.
+     *
+     * @return void
+     */
     public function markViewDoneInvalidatedByAdminMutation(): void;
 
     // --- ViewBuildForceRestart ---

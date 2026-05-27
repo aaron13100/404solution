@@ -104,19 +104,7 @@ function abj404RenderAjaxErrorNotice(options) {
     linkEl.textContent = (window.ABJ404 && window.ABJ404.i18n && window.ABJ404.i18n.sendDebugLog) ? String(window.ABJ404.i18n.sendDebugLog) : 'Send debug log to developer';
     $titleEl[0].appendChild(linkEl);
     $notice.append($titleEl);
-    if ($detailsEl) {
-        // Hide raw stage / query diagnostics behind a collapsed native
-        // <details> panel so the admin sees a plain user-facing message
-        // by default. The stage label still ships in the support-request
-        // payload via data-context-summary on the support link above.
-        var $debugWrap = jQuery('<details class="abj404-ajax-error-debug"></details>');
-        var debugToggleText = (window.ABJ404 && window.ABJ404.i18n && window.ABJ404.i18n.showTechnicalDetails)
-            ? String(window.ABJ404.i18n.showTechnicalDetails) : 'Show technical details';
-        var $summary = jQuery('<summary></summary>').text(debugToggleText);
-        $debugWrap.append($summary);
-        $debugWrap.append($detailsEl);
-        $notice.append($debugWrap);
-    }
+    if ($detailsEl) { $notice.append($detailsEl); }
 
     // Replace any prior notice so repeated failures do not stack.
     jQuery('.abj404-ajax-error-notice').remove();
@@ -178,6 +166,7 @@ function refreshHealthBarIfNeeded() {
     abj404UpdateAjaxDebugLog('Starting Health Bar AJAX: ' + action);
 
     var healthBarAjaxRunner = (typeof abj404AjaxWithNonceRetry === 'function')
+        // ajax-direct-approved: fallback when abj404AjaxWithNonceRetry helper not yet loaded in this bundle
         ? abj404AjaxWithNonceRetry : jQuery.ajax;
     healthBarAjaxRunner({
         url: url,
