@@ -104,7 +104,6 @@ require_once __DIR__ . '/View_Logs.php';
  * @method mixed rememberTableDataSignature($sub, $rows)
  * @method mixed renderBulkRedirectFormFields(array<mixed> $recnums_multiple)
  * @method mixed renderRegexAutoPromoteNotice(array<mixed> $notice)
- * @method mixed renderSingleRedirectFormFields(int $recnum, bool $isSimpleMode)
  * @method mixed renderSuggestionBlock(array<mixed> $suggestion)
  * @method mixed renderViewFreshnessLabel()
  * @method mixed resolveDestinationWarnings(array<mixed> $row, $rowType, string $rowFinalDest, string $destForView, bool $destinationIsMissing, array<mixed> $deadDestIds)

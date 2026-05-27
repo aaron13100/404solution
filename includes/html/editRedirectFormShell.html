@@ -1,0 +1,18 @@
+<div class="wrap abj404-edit-redirect">
+<h1 class="wp-heading-inline">{title}</h1>
+<p class="abj404-edit-redirect__back"><a href="{back_url}">&larr; {back_label}</a></p>
+
+<form method="POST" name="admin-edit-redirect" action="{action_url}" onsubmit="return validateAddManualRedirectForm(event);">
+<input type="hidden" name="action" value="editRedirect">
+{hidden_inputs}
+{pre_table_block}
+<table class="form-table" role="presentation"><tbody>
+{form_rows}
+</tbody></table>
+{advanced_options}
+<p class="submit">
+<button type="submit" name="submit" id="submit" class="button button-primary">{submit_label}</button>
+<a href="{cancel_url}" class="button">{cancel_label}</a>
+</p>
+</form>
+</div>
