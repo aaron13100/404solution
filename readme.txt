@@ -201,6 +201,12 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 
 == Changelog ==
 
+= Unreleased =
+
+**Bug Fixes**
+
+* Fixed the Page Redirects and Captured 404s admin tabs still occasionally failing to load on high-traffic sites running 4.2.0. The 4.2.0 release notes claimed this was fixed, but only the cache-warmup race was addressed. A separate internal "mutation watermark" gate could still abort the cache rebuild mid-stage when 404 traffic arrived during the rebuild, and surface the same "Could not finish refreshing data" message at the 45-second budget. That gate and its supporting machinery (watermark counter table, admin-mutation gate, view-build watermark stamping) have now been removed in full. On Bruno-class data (about 30,000 active redirects, about 384,000 hit rows, sustained 1 request per second or higher 404 traffic), the admin tabs hydrate within budget across consecutive refreshes.
+
 = Version 4.2.0 (May 23, 2026) =
 
 **Bug Fixes**
