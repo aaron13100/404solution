@@ -381,6 +381,9 @@ function paginationLinksChange(triggerItem, options) {
             // message spinning forever once the fetch failed.
             stopStageProgressPolling(false);
             jQuery('.abj404-refresh-status').text('');
+            if (typeof abj404CollapseEmptyPaginationStrips === 'function') {
+                abj404CollapseEmptyPaginationStrips();
+            }
 
             if (isBackgroundRefresh && detectOnly) {
                 setDetectOnlyRefreshInFlight(false);

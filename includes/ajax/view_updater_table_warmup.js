@@ -21,7 +21,7 @@
  *
  * Globals defined: warmTableCacheStage, startViewBuildPollingThenRetry,
  * tablePlaceholderStillAwaitingLoad, startPlaceholderTableHydration,
- * showTableWarmupFailure.
+ * showTableWarmupFailure, abj404CollapseEmptyPaginationStrips.
  *
  * Depends on view_updater.js (abj404UpdateAjaxDebugLog, abj404GenerateRequestId,
  * getURLParameter, paginationLinksChange), view_updater_stage_diagnostics.js
@@ -207,8 +207,32 @@ function startPlaceholderTableHydration(triggerItem) {
     }, 250);
 }
 
+/**
+ * Collapse pagination strips that never received real controls.
+ *
+ * On a failed/timed-out table load the top and bottom .abj404-pagination
+ * strips are still just the spinner placeholder the initial render shipped:
+ * the real <nav class="pagination-links"> is injected only by a successful
+ * AJAX response. Left visible they render as empty bordered bars, the bottom
+ * one overlapping the footer/credits. Hide any strip that has no real controls
+ * so the failed page stays clean. Strips that already hold links (a successful
+ * prior render, or an explicit user action that failed without removing them)
+ * are left untouched.
+ *
+ * @returns {void}
+ */
+function abj404CollapseEmptyPaginationStrips() {
+    jQuery('.abj404-pagination').each(function() {
+        var $strip = jQuery(this);
+        if ($strip.find('.pagination-links, .abj404-page-btn').length === 0) {
+            $strip.hide();
+        }
+    });
+}
+
 function showTableWarmupFailure(meta) {
     meta = meta || {};
+    abj404CollapseEmptyPaginationStrips();
     var stage = meta.stage || 'rows';
     var stageNumber = meta.stageNumber || (stage === 'count' ? 2 : 1);
     var queryLabel = meta.queryLabel || (stage === 'count' ? 'getRedirectsForViewCount' : 'getRedirectsForView');
