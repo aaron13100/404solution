@@ -157,7 +157,7 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
         $status     = $regex ? (string)ABJ404_STATUS_REGEX : (string)ABJ404_STATUS_MANUAL;
         $insertedId = $redirectsRepository->setupRedirect($from, $status, $type, $dest, (string)$code, 0, 'wp-cli');
         if ($insertedId) {
-            $viewBuildOrchestrator->markViewDoneInvalidatedByAdminMutation();
+            $viewBuildOrchestrator->invalidateViewDoneAndScheduleRebuild();
             $displayDest = $isTerminalCode ? "(none — {$code})" : "{$to}";
             \WP_CLI::success("Redirect created (ID: {$insertedId}): {$from} → {$displayDest} [{$code}]");
         } else {
@@ -219,7 +219,7 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
         $error = $redirectsRepository->moveRedirectsToTrash($id, 1);
 
         if ($error === '') {
-            $viewBuildOrchestrator->markViewDoneInvalidatedByAdminMutation();
+            $viewBuildOrchestrator->invalidateViewDoneAndScheduleRebuild();
             \WP_CLI::success("Redirect ID {$id} moved to trash.");
         } else {
             \WP_CLI::error("No redirect with ID {$id} found, or database error: {$error}");
@@ -489,7 +489,7 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
         // the next admin tab read so imported rows appear immediately, matching
         // the admin form path (handleActionImportFile in
         // PluginLogicTrait_AdminActions.php).
-        $viewBuild->markViewDoneInvalidatedByAdminMutation();
+        $viewBuild->invalidateViewDoneAndScheduleRebuild();
         \WP_CLI::success("Import complete. Valid={$validRows}, invalid={$invalidRows}, total={$processedRows}");
     }
 

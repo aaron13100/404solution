@@ -1028,7 +1028,7 @@ class ABJ_404_Solution_DataAccess implements ABJ_404_Solution_ContentRepositoryI
             // longer consults a wall-clock admin-mutation gate. The watermark /
             // mutation-gate that blocked reads after an admin mutation was
             // removed (Bruno blocked-reads bug class): a mutation now schedules
-            // a background rebuild (markViewDoneInvalidatedByAdminMutation ->
+            // a background rebuild (invalidateViewDoneAndScheduleRebuild ->
             // scheduleViewDoneRebuild), and the staleness window between the
             // mutation and the rebuild is bounded by the freshness TTL rather
             // than by blocking the read. Mirrors the orchestrator path below.
@@ -1153,7 +1153,7 @@ class ABJ_404_Solution_DataAccess implements ABJ_404_Solution_ContentRepositoryI
     public function probeSessionVariablesAtS1Entry(): array { return $this->viewBuildOrchestrator->probeSessionVariablesAtS1Entry(); }
 
     /** @return void */
-    public function markViewDoneInvalidatedByAdminMutation(): void { $this->legacyViewDoneServeableCache = null; $this->viewBuildOrchestrator->markViewDoneInvalidatedByAdminMutation(); }
+    public function invalidateViewDoneAndScheduleRebuild(): void { $this->legacyViewDoneServeableCache = null; $this->viewBuildOrchestrator->invalidateViewDoneAndScheduleRebuild(); }
 
     /** @param int $lockTimeoutSeconds @return bool */
     public function forceRestartViewBuild(int $lockTimeoutSeconds = 10): bool { return $this->viewBuildOrchestrator->forceRestartViewBuild($lockTimeoutSeconds); }

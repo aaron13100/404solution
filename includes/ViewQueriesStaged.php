@@ -871,7 +871,7 @@ class ABJ_404_Solution_ViewQueriesStaged extends ABJ_404_Solution_ViewBuildColla
     //     reads the change directly from wp_abj404_redirects on the next
     //     stage-boundary check. For admin form actions that need the next
     //     read to reflect the mutation promptly, call
-    //     markViewDoneInvalidatedByAdminMutation() which busts the
+    //     invalidateViewDoneAndScheduleRebuild() which busts the
     //     request-lifetime serveable cache and schedules a background
     //     rebuild (the wall-clock gate that blocked reads was removed).
     //   - Discard + restart the in-flight build (admin "rebuild now",

@@ -289,7 +289,7 @@ function abj_service($name) {
                 'logs_repository' => 'logRedirectHit',
                 'stats_repository' => 'getTopCapturedForDigest',
                 'view_read_service' => 'getRedirectStatusCounts',
-                'view_build_orchestrator' => 'markViewDoneInvalidatedByAdminMutation',
+                'view_build_orchestrator' => 'invalidateViewDoneAndScheduleRebuild',
                 'db_core' => 'queryAndGetResults',
             );
             if (get_class($dao) !== $legacyDaoClass

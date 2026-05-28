@@ -141,7 +141,7 @@ class ABJ_404_Solution_PluginLogicAdminActions {
         } else if ($action == "emptyRedirectTrash") {
             if (check_admin_referer('abj404_bulkProcess') && is_admin()) {
                 $this->doEmptyTrash('abj404_redirects');
-                $this->viewBuild->markViewDoneInvalidatedByAdminMutation();
+                $this->viewBuild->invalidateViewDoneAndScheduleRebuild();
                 $message = __('All trashed URLs have been deleted!', '404-solution');
             } else {
                 $this->logger->debugMessage("Unexpected result. How did we get here? is_admin: " .
@@ -150,7 +150,7 @@ class ABJ_404_Solution_PluginLogicAdminActions {
         } else if ($action == "emptyCapturedTrash") {
             if (check_admin_referer('abj404_bulkProcess') && is_admin()) {
                 $this->doEmptyTrash('abj404_captured');
-                $this->viewBuild->markViewDoneInvalidatedByAdminMutation();
+                $this->viewBuild->invalidateViewDoneAndScheduleRebuild();
                 $message = __('All trashed URLs have been deleted!', '404-solution');
             } else {
                 $this->logger->debugMessage("Unexpected result. How did we get here? is_admin: " .
@@ -159,7 +159,7 @@ class ABJ_404_Solution_PluginLogicAdminActions {
         } else if ($action == "purgeRedirects") {
             if (check_admin_referer('abj404_purgeRedirects') && is_admin()) {
                 $message = $this->redirectsRepo->deleteSpecifiedRedirects();
-                $this->viewBuild->markViewDoneInvalidatedByAdminMutation();
+                $this->viewBuild->invalidateViewDoneAndScheduleRebuild();
             } else {
                 $this->logger->debugMessage("Unexpected result. How did we get here? is_admin: " .
                         is_admin() . ", Action: " . $action . ", Sub: " . $sub);
@@ -221,7 +221,7 @@ class ABJ_404_Solution_PluginLogicAdminActions {
         } else if ($action == "importFromPlugin") {
             if (check_admin_referer('abj404_importFromPlugin') && is_admin()) {
                 $message = $this->handleActionImportFromPlugin();
-                $this->viewBuild->markViewDoneInvalidatedByAdminMutation();
+                $this->viewBuild->invalidateViewDoneAndScheduleRebuild();
             } else {
                 $this->logger->debugMessage("Unexpected result. How did we get here? is_admin: " .
                         is_admin() . ", Action: " . $action . ", Sub: " . $sub);
@@ -242,7 +242,7 @@ class ABJ_404_Solution_PluginLogicAdminActions {
                     return '';
                 }
                 $message = $this->doBulkAction($action, array_map('absint', $_POST['idnum']));
-                $this->viewBuild->markViewDoneInvalidatedByAdminMutation();
+                $this->viewBuild->invalidateViewDoneAndScheduleRebuild();
             } else {
                 $this->logger->debugMessage("Unexpected result. How did we get here? is_admin: " .
                         is_admin() . ", Action: " . $action . ", Sub: " . $sub);
@@ -280,7 +280,7 @@ class ABJ_404_Solution_PluginLogicAdminActions {
                     if ($trash == 0 && $subpage === 'abj404_captured' && $filter === ABJ404_TRASH_FILTER) {
                         $this->redirectsRepo->updateRedirectTypeStatus($id, (string)ABJ404_STATUS_CAPTURED);
                     }
-                    $this->viewBuild->markViewDoneInvalidatedByAdminMutation();
+                    $this->viewBuild->invalidateViewDoneAndScheduleRebuild();
                     if ($trash == 1) {
                         $message = __('Redirect moved to trash successfully!', '404-solution');
                     } else {
@@ -324,7 +324,7 @@ class ABJ_404_Solution_PluginLogicAdminActions {
         if (($this->f->getPostOrGetSanitize('action') == 'importRedirectsFile') && $this->pluginLogic->userIsPluginAdmin()) {
             check_admin_referer('abj404_importRedirectsFile');
             $result = $this->pluginLogic->doImportFile();
-            $this->viewBuild->markViewDoneInvalidatedByAdminMutation();
+            $this->viewBuild->invalidateViewDoneAndScheduleRebuild();
             return $result;
         }
 
@@ -365,7 +365,7 @@ class ABJ_404_Solution_PluginLogicAdminActions {
                 } else {
                     $rowsAffected = is_scalar($result['rows_affected']) ? (string)$result['rows_affected'] : '0';
                     $message = sprintf(__("Records imported: %s", '404-solution'), esc_html($rowsAffected));
-                    $this->viewBuild->markViewDoneInvalidatedByAdminMutation();
+                    $this->viewBuild->invalidateViewDoneAndScheduleRebuild();
                 }
 
             } catch (Exception $e) {
@@ -387,7 +387,7 @@ class ABJ_404_Solution_PluginLogicAdminActions {
             if (is_admin() && $this->verifyLinkNonce('abj404_removeRedirect')) {
                 if ($this->f->regexMatch('[0-9]+', $_GET['id'])) {
                     $this->redirectsRepo->deleteRedirect(absint($_GET['id']));
-                    $this->viewBuild->markViewDoneInvalidatedByAdminMutation();
+                    $this->viewBuild->invalidateViewDoneAndScheduleRebuild();
                     $message = __('Redirect Removed Successfully!', '404-solution');
                 }
             }
@@ -426,7 +426,7 @@ class ABJ_404_Solution_PluginLogicAdminActions {
 
                     $message = $this->redirectsRepo->updateRedirectTypeStatus(absint($id), (string)$newstatus);
                     if ($message == "") {
-                        $this->viewBuild->markViewDoneInvalidatedByAdminMutation();
+                        $this->viewBuild->invalidateViewDoneAndScheduleRebuild();
                         if ($newstatus == ABJ404_STATUS_CAPTURED) {
                             $message = sprintf(__('Removed 404 URL from %s list successfully!', '404-solution'), $successActionName);
                         } else {
@@ -767,7 +767,7 @@ class ABJ_404_Solution_PluginLogicAdminActions {
                 if ($id > 0) {
                     $this->redirectsRepo->saveRedirectConditions($id, $sanitizedConditions);
                 }
-                $this->viewBuild->markViewDoneInvalidatedByAdminMutation();
+                $this->viewBuild->invalidateViewDoneAndScheduleRebuild();
 
             } else if ($ids_multiple != "") {
                 $redirects_multiple = $this->redirectsRepo->getRedirectsByIDs($ids_multiple);
@@ -778,7 +778,7 @@ class ABJ_404_Solution_PluginLogicAdminActions {
                     $this->redirectsRepo->updateRedirect($tdType, $tdDest,
                             $redirectUrl, $redirectId, $code, (string)$statusType);
                 }
-                $this->viewBuild->markViewDoneInvalidatedByAdminMutation();
+                $this->viewBuild->invalidateViewDoneAndScheduleRebuild();
 
             } else {
                 $this->logger->errorMessage("Issue determining which redirect(s) to update. " .
@@ -918,7 +918,7 @@ class ABJ_404_Solution_PluginLogicAdminActions {
             if ($autoPromoteAdd['autoPromoted']) {
                 $this->saveRegexAutoPromoteNotice((int)$newRedirectId, $originalManualURL, $manualURL, $autoPromoteAdd['urlRewritten']);
             }
-            $this->viewBuild->markViewDoneInvalidatedByAdminMutation();
+            $this->viewBuild->invalidateViewDoneAndScheduleRebuild();
 
         } else {
             $message .= __('Error: Data not formatted properly.', '404-solution') . "<BR/>";
@@ -984,7 +984,7 @@ class ABJ_404_Solution_PluginLogicAdminActions {
             (int)ABJ404_STATUS_MANUAL,
             (int)$notice['redirect_id'],
         )));
-        $this->viewBuild->markViewDoneInvalidatedByAdminMutation();
+        $this->viewBuild->invalidateViewDoneAndScheduleRebuild();
         ABJ_404_Solution_RegexAutoPromote::clearNotice();
         return sprintf(
             /* translators: %s = the original from_url string that was restored */
@@ -1018,7 +1018,7 @@ class ABJ_404_Solution_PluginLogicAdminActions {
         $count    = $importer->importFrom($source);
 
         if ($count > 0) {
-            $this->viewBuild->markViewDoneInvalidatedByAdminMutation();
+            $this->viewBuild->invalidateViewDoneAndScheduleRebuild();
         }
 
         return sprintf(

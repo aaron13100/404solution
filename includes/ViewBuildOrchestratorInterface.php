@@ -139,7 +139,7 @@ interface ABJ_404_Solution_ViewBuildOrchestratorInterface {
      *
      * @return void
      */
-    public function markViewDoneInvalidatedByAdminMutation(): void;
+    public function invalidateViewDoneAndScheduleRebuild(): void;
 
     // --- ViewBuildForceRestart ---
 

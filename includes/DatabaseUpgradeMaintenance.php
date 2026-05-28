@@ -402,7 +402,7 @@ class ABJ_404_Solution_DatabaseUpgradeMaintenance extends ABJ_404_Solution_Datab
 					// signature read (MutationDataSignature) reflects no row-data
 					// change (collation is metadata, not rows), so we explicitly
 					// invalidate here rather than relying on the abort gate.
-					$this->viewBuild->markViewDoneInvalidatedByAdminMutation();
+					$this->viewBuild->invalidateViewDoneAndScheduleRebuild();
 				}
 		}
 

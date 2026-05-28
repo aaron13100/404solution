@@ -269,7 +269,7 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
      *
      * @return void
      */
-    public function markViewDoneInvalidatedByAdminMutation(): void {
+    public function invalidateViewDoneAndScheduleRebuild(): void {
         $this->invalidateViewDoneServeableCacheBridge();
         $this->scheduleViewDoneRebuild();
     }

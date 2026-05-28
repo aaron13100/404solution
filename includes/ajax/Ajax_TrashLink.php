@@ -44,7 +44,7 @@ class ABJ_404_Solution_Ajax_TrashLink {
         if (empty($data['resultset'])) {
             // Mark view_done as needing a rebuild so the next admin AJAX
             // fetch lands on fresh data that reflects this trash action.
-            $viewBuildOrchestrator->markViewDoneInvalidatedByAdminMutation();
+            $viewBuildOrchestrator->invalidateViewDoneAndScheduleRebuild();
         }
 
         // Return fresh tab counts so the JS can update the tab badges.

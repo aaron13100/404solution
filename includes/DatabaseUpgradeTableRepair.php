@@ -80,8 +80,8 @@ class ABJ_404_Solution_DatabaseUpgradeTableRepair extends ABJ_404_Solution_Datab
 	// DAO-bypass-approved: idempotent DROP TABLE IF EXISTS on a deprecated table; DAO error logging would surface a benign "table did not exist" line on every upgrade.
 	$wpdb->query("DROP TABLE IF EXISTS `" . esc_sql($deprecatedWatermarkTableName) . "`");
 
-	// Also drop the orphaned wp_options keys from the removed watermark/
-	// AdminMutationGate system. These options were used by the staged-build
+	// Also drop the orphaned wp_options keys from the removed watermark /
+	// admin-mutation gate system. These options were used by the staged-build
 	// at-stage abort gate and the admin-mutation visibility gate, both of
 	// which were removed in favor of the 120s cache TTL + explicit
 	// invalidation on admin mutation.
