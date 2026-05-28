@@ -213,7 +213,12 @@ function paginationLinksChange(triggerItem, options) {
             requestId: requestId
         },
         success: function (result) {
-            stopStageProgressPolling(true);
+            // Stop WITHOUT flushing here too. The flushed final stage read
+            // re-writes the stage label into .abj404-refresh-status after the
+            // clear below; on a foreground load the strip replace wipes it, but
+            // a background detect-only refresh returns without replacing the
+            // strips, so the re-written "(stage 4)" badge stays stuck.
+            stopStageProgressPolling(false);
             jQuery('.abj404-refresh-status').text('');
 
             if (result && result.viewBuildPending) {

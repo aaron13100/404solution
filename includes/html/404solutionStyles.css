@@ -1701,6 +1701,18 @@ th:nth-last-child(-n+3) .lefty-tooltiptext {
     border-top: 0;
 }
 
+/* WordPress core gives .tablenav a fixed 30px height and .tablenav-pages a
+   fixed 28px height. Our filter/pagination bars reuse those classes but hold
+   taller, wrapping content (the search box; the refresh-status badge; the
+   pagination controls, which wrap to a second line while a background refresh
+   is running). A fixed-height box cannot grow for that second line, so it
+   overflowed downward and overlapped the footer/credits. Let the bars size to
+   their content instead. */
+.abj404-filter-bar.tablenav,
+.abj404-pagination.tablenav-pages {
+    height: auto;
+}
+
 .abj404-pagination-info {
     color: var(--abj404-text-muted);
     font-size: 14px;
