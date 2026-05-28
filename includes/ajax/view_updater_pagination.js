@@ -45,7 +45,10 @@ function paginationLinksChange(triggerItem, options) {
     var cacheMode = options.cacheMode || 'normal';
     var rowThatChanged = jQuery(triggerItem).parentsUntil('.tablenav').parent();
     var rowsPerPage = jQuery(rowThatChanged).find('select[name=perpage]').val();
-    var filterText = jQuery(rowThatChanged).find('input[name=searchFilter]').val();
+    // The search box lives in the list-top row (next to the filter links),
+    // outside the .tablenav, so read it globally rather than within the
+    // triggering row. There is exactly one search input per list page.
+    var filterText = jQuery('input[name=searchFilter]').first().val();
 
     // Only show loading on the table itself, not the filter bar or pagination
     var tableSelector = jQuery('.abj404-table').length > 0 ? '.abj404-table' : '.wp-list-table';

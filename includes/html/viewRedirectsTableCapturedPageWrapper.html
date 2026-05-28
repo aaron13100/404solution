@@ -5,7 +5,12 @@
 {subtitle}
 </div>
 </div>
+<div class="abj404-list-top">
 {subsubsub}
+<div class="abj404-search-box">
+<input type="search" name="searchFilter" placeholder="{search_placeholder}" value="{filter_text}" data-lpignore="true">
+</div>
+</div>
 <form id="bulk-action-form" method="POST" action="{form_action}">
 {nonce_field}<div class="abj404-filter-bar tablenav top" data-pagination-ajax-url="{data-pagination-ajax-url}" data-pagination-ajax-action="ajaxUpdatePaginationLinks" data-pagination-ajax-subpage="{data-pagination-ajax-subpage}" data-pagination-ajax-nonce="{data-pagination-ajax-nonce}" data-pagination-inflight-nonce="{data-pagination-inflight-nonce}" data-pagination-current-signature="" data-pagination-current-orderby="{data-pagination-current-orderby}" data-pagination-current-order="{data-pagination-current-order}" data-pagination-current-filter="{data-pagination-current-filter}" data-pagination-current-paged="{data-pagination-current-paged}" data-pagination-current-score-range="{data-pagination-current-score-range}" data-pagination-current-logsid="" data-pagination-initial-load="1" data-pagination-auto-refresh="{data-pagination-auto-refresh}" data-pagination-refresh-started-text="{data-pagination-refresh-started-text}" data-pagination-refresh-finished-text="{data-pagination-refresh-finished-text}" data-pagination-refresh-available-text="{data-pagination-refresh-available-text}">
 <div class="alignleft actions bulkactions abj404-bulk-actions">
@@ -13,9 +18,6 @@
 <div class="abj404-bulk-buttons">
 {bulk_buttons}</div>
 <button type="button" class="button abj404-clear-selection" onclick="abj404ClearSelection()">{clear_label}</button>
-</div>
-<div class="alignleft actions abj404-search-box">
-<input type="search" name="searchFilter" placeholder="{search_placeholder}" value="{filter_text}" data-lpignore="true">
 </div>
 <div class="alignleft actions abj404-rows-per-page">
 <span>{rows_per_page_label}</span>

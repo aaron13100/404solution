@@ -1188,7 +1188,33 @@ th:nth-last-child(-n+3) .lefty-tooltiptext {
    (filter bar, pagination) instead of butting against the card edge. */
 .abj404-table-page .subsubsub {
     margin: 8px 0;
-    padding-left: 32px;
+}
+
+/* Native WP_List_Table top row: filter links (subsubsub) on the left,
+   search box on the right -- mirrors the Posts list table header. */
+.abj404-list-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 0 32px;
+}
+
+.abj404-list-top .subsubsub {
+    margin: 0;
+}
+
+.abj404-list-top .abj404-search-box {
+    flex: 0 0 auto;
+    min-width: 0;
+    max-width: 100%;
+    margin-left: auto;
+}
+
+.abj404-list-top .abj404-search-box input {
+    width: 280px;
+    max-width: 100%;
 }
 
 /* ============================================
@@ -1196,7 +1222,7 @@ th:nth-last-child(-n+3) .lefty-tooltiptext {
    ============================================ */
 
 .abj404-filter-bar {
-    padding: 20px 32px;
+    padding: 10px 32px;
     background: var(--abj404-bg);
     border-bottom: 1px solid var(--abj404-border);
     display: flex;
@@ -1253,7 +1279,6 @@ th:nth-last-child(-n+3) .lefty-tooltiptext {
     gap: 8px;
     font-size: 14px;
     color: var(--abj404-text-muted);
-    margin-left: auto;
 }
 
 .abj404-rows-per-page select {
@@ -1687,18 +1712,28 @@ th:nth-last-child(-n+3) .lefty-tooltiptext {
    Modern Pagination
    ============================================ */
 
+/* The pagination strip (count + First/Prev/Next/Last nav) is a flex item
+   inside the .abj404-filter-bar tablenav row, which already supplies the row's
+   horizontal padding and border. The strip itself must stay padding- and
+   border-free, otherwise it renders as a second indented, bordered block that
+   doubles the vertical gap above the table (top strip) and below the last row
+   (bottom strip). The search filter and rows-per-page controls live in the
+   static filter bar, not here. */
 .abj404-pagination {
-    padding: 20px 32px;
-    border-top: 1px solid var(--abj404-border);
     display: flex;
-    justify-content: space-between;
     align-items: center;
     flex-wrap: wrap;
-    gap: 16px;
+    gap: 12px;
+    padding: 0;
 }
 
-.abj404-pagination-bottom {
-    border-top: 0;
+/* Right-justify the count + nav at the end of the tablenav row, matching the
+   native Posts list table where pagination sits hard-right. The descendant
+   selector is required to outrank WordPress core's
+   `.tablenav .tablenav-pages { margin-left: 0 }` (load-styles.php), which the
+   strip also matches via its tablenav-pages class. */
+.abj404-filter-bar .abj404-pagination {
+    margin-left: auto;
 }
 
 /* WordPress core gives .tablenav a fixed 30px height and .tablenav-pages a
@@ -2507,6 +2542,21 @@ th:nth-last-child(-n+3) .lefty-tooltiptext {
         max-width: none;
     }
 
+    .abj404-list-top {
+        flex-direction: column;
+        align-items: stretch;
+        padding-left: 16px;
+        padding-right: 16px;
+    }
+
+    .abj404-list-top .abj404-search-box {
+        margin-left: 0;
+    }
+
+    .abj404-list-top .abj404-search-box input {
+        width: 100%;
+    }
+
     .abj404-rows-per-page {
         margin-left: 0;
         justify-content: flex-start;
@@ -2516,6 +2566,10 @@ th:nth-last-child(-n+3) .lefty-tooltiptext {
         flex-direction: column;
         align-items: center;
         text-align: center;
+    }
+
+    .abj404-filter-bar .abj404-pagination {
+        margin-left: 0;
     }
 
     .abj404-table th,

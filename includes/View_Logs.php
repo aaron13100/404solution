@@ -625,20 +625,9 @@ class ABJ_404_Solution_View_Logs extends ABJ_404_Solution_ViewComponent {
         /* Translators: 1: Starting number, 2: Ending number, 3: Total count. */
         $currentlyShowingText = sprintf(__('%1$s - %2$s of %3$s', '404-solution'), $start, $end, $num_records);
         $currentPageText = __('Page', '404-solution') . " " . $paged . " " . __('of', '404-solution') . " " . esc_html((string)$total_pages);
-        $showRowsText = __('Rows per page:', '404-solution');
-        $showRowsLink = wp_nonce_url($url . '&action=changeItemsPerRow', "abj404_changeItemsPerRow");
-
         $ajaxAction = 'ajaxUpdatePaginationLinks';
         $ajaxNonce = wp_create_nonce('abj404_updatePaginationLink');
         $inflightNonce = wp_create_nonce('abj404_fetchInflightStage');
-
-        $searchFilterControl = '<!--';
-        if ($sub == 'abj404_redirects' || $sub == 'abj404_captured') {
-            $searchFilterControl = '';
-        }
-        if (!$showSearchFilter) {
-            $searchFilterControl = '<!--';
-        }
 
         $filterText = array_key_exists('filterText', $tableOptions) && is_string($tableOptions['filterText']) ? $tableOptions['filterText'] : '';
         if ($filterText != '') {
@@ -651,15 +640,7 @@ class ABJ_404_Solution_View_Logs extends ABJ_404_Solution_ViewComponent {
 
         // read the html content.
         $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/paginationLinks.html");
-        // do special replacements
-        $perpage = array_key_exists('perpage', $tableOptions) && is_scalar($tableOptions['perpage']) ? $tableOptions['perpage'] : ABJ404_OPTION_DEFAULT_PERPAGE;
-        $html = $this->f->str_replace(' value="' . $perpage . '"',
-                ' value="' . $perpage . '" selected',
-                $html);
-        $html = $this->f->str_replace('{changeItemsPerPage}', $showRowsLink, $html);
-        $html = $this->f->str_replace('{showSearchFilter}', $searchFilterControl, $html);
         $html = $this->f->str_replace('{TEXT_BEFORE_LINKS}', $currentlyShowingText, $html);
-        $html = $this->f->str_replace('{TEXT_SHOW_ROWS}', $showRowsText, $html);
         // Build navigation buttons: disabled (span) when at the boundary page, link (a) otherwise.
         $onFirstPage = ($paged <= 1);
         $onLastPage  = ($paged >= $total_pages);

@@ -322,7 +322,9 @@ function warmTableCacheStage(triggerItem, options) {
     options = options || {};
     var rowThatChanged = jQuery(triggerItem).parentsUntil('.tablenav').parent();
     var rowsPerPage = jQuery(rowThatChanged).find('select[name=perpage]').val();
-    var filterText = jQuery(rowThatChanged).find('input[name=searchFilter]').val();
+    // The search box lives in the list-top row, outside the .tablenav, so
+    // read it globally. There is exactly one search input per list page.
+    var filterText = jQuery('input[name=searchFilter]').first().val();
     var $ajaxConfigEl = jQuery("[data-pagination-ajax-url]").first();
     if ($ajaxConfigEl.length === 0) {
         $ajaxConfigEl = jQuery(".abj404-filter-bar").first();

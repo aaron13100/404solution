@@ -108,16 +108,21 @@ body.rtl .abj404-table td,
     text-align: right;
 }
 
-body.rtl .abj404-pagination,
-[dir="rtl"] .abj404-pagination {
+/* Pagination right-justifies via margin-left:auto in LTR; mirror it to the
+   left edge in RTL. */
+body.rtl .abj404-filter-bar .abj404-pagination,
+[dir="rtl"] .abj404-filter-bar .abj404-pagination {
     text-align: left;
+    margin-left: 0;
+    margin-right: auto;
 }
 
-/* Status filter row gutter sits on the right in RTL. */
-body.rtl .abj404-table-page .subsubsub,
-[dir="rtl"] .abj404-table-page .subsubsub {
-    padding-left: 0;
-    padding-right: 32px;
+/* The search box right-aligns in the list-top row via margin-left:auto in
+   LTR; mirror it to the left in RTL. */
+body.rtl .abj404-list-top .abj404-search-box,
+[dir="rtl"] .abj404-list-top .abj404-search-box {
+    margin-left: 0;
+    margin-right: auto;
 }
 
 /* ===== Tree Indentation - Swap padding-left to padding-right ===== */
