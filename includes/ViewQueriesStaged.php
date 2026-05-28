@@ -149,7 +149,7 @@ if (!defined('ABSPATH')) {
  * @method array{ran: bool, reason: string, progress: array<string, mixed>} runPageLoadFallbackAdvance(...$arguments)
  * @method int runRedirectsForViewCountStaged(...$arguments)
  * @method array<int, array<string, mixed>> runRedirectsForViewStaged(...$arguments)
- * @method bool runS11SwapWithPreRenameWatermarkRecheck(...$arguments)
+ * @method bool runS11Swap(...$arguments)
  * @method bool runStagedBuildOnce(...$arguments)
  * @method bool runStagedBuildStages6Through11(...$arguments)
  * @method void runStagedSqlFile(...$arguments)
@@ -1162,7 +1162,7 @@ class ABJ_404_Solution_ViewQueriesStaged extends ABJ_404_Solution_ViewBuildColla
             if (!$this->releaseAndReacquireBetweenStages()) { return false; }
             if ($this->haltIfPrefixChangedSinceStageOne(11)) { return false; }
             $this->markBuildStage('staged_build_s11_swap');
-            if (!$this->runS11SwapWithPreRenameWatermarkRecheck()) { return false; }
+            if (!$this->runS11Swap()) { return false; }
             $this->markViewDoneBuildCompleted();
             $this->clearAllProgressOptions();
         }

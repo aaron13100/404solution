@@ -156,7 +156,7 @@ if (!defined('ABSPATH')) {
  * @method array{ran: bool, reason: string, progress: array<string, mixed>} runPageLoadFallbackAdvance(...$arguments)
  * @method int runRedirectsForViewCountStaged(...$arguments)
  * @method array<int, array<string, mixed>> runRedirectsForViewStaged(...$arguments)
- * @method bool runS11SwapWithPreRenameWatermarkRecheck(...$arguments)
+ * @method bool runS11Swap(...$arguments)
  * @method bool runStagedBuildOnce(...$arguments)
  * @method bool runStagedBuildStages6Through11(...$arguments)
  * @method void runStagedSqlFile(...$arguments)
@@ -653,7 +653,7 @@ class ABJ_404_Solution_ViewBuildHelpers extends ABJ_404_Solution_ViewBuildCollab
      *               stage halted / yielded (orchestrator should return
      *               false from runStagedBuildOnce).
      */
-    public function runS11SwapWithPreRenameWatermarkRecheck(): bool {
+    public function runS11Swap(): bool {
         $result = $this->runTimedViewBuildStage(11, 'staged_build_s11_swap', function () {
             if (function_exists('do_action')) {
                 do_action('abj404_view_build_before_rename_swap');

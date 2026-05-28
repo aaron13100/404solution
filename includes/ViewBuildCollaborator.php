@@ -139,7 +139,7 @@ if (!defined('ABSPATH')) {
  * @method mixed runPageLoadFallbackAdvance(...$arguments)
  * @method mixed runRedirectsForViewCountStaged(...$arguments)
  * @method mixed runRedirectsForViewStaged(...$arguments)
- * @method mixed runS11SwapWithPreRenameWatermarkRecheck(...$arguments)
+ * @method mixed runS11Swap(...$arguments)
  * @method mixed runStagedBuildOnce(...$arguments)
  * @method mixed runStagedBuildStages6Through11(...$arguments)
  * @method mixed runStagedSqlFile(...$arguments)
