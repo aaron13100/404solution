@@ -7,6 +7,13 @@
 </div>
 <div class="abj404-list-top">
 {subsubsub}
+<div class="abj404-view-settings">
+<div class="abj404-rows-per-page">
+<span>{rows_per_page_label}</span>
+<select class="abj404-filter-select perpage" name="perpage" onchange="paginationLinksChange(this);">
+{perpage_options}</select>
+</div>
+</div>
 <div class="abj404-search-box">
 <input type="search" name="searchFilter" placeholder="{search_placeholder}" value="{filter_text}" data-lpignore="true">
 </div>
@@ -18,11 +25,6 @@
 <div class="abj404-bulk-buttons">
 {bulk_buttons}</div>
 <button type="button" class="button abj404-clear-selection" onclick="abj404ClearSelection()">{clear_label}</button>
-</div>
-<div class="alignleft actions abj404-rows-per-page">
-<span>{rows_per_page_label}</span>
-<select class="abj404-filter-select perpage" name="perpage" onchange="paginationLinksChange(this);">
-{perpage_options}</select>
 </div>
 {empty_trash_button}<div class="abj404-pagination tablenav-pages abj404-pagination-right abj404-pagination-top">
 <span class="abj404-refresh-status" aria-live="polite"></span>

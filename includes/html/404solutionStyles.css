@@ -1190,19 +1190,28 @@ th:nth-last-child(-n+3) .lefty-tooltiptext {
     margin: 8px 0;
 }
 
-/* Native WP_List_Table top row: filter links (subsubsub) on the left,
-   search box on the right -- mirrors the Posts list table header. */
+/* Native WP_List_Table top row: filter links (subsubsub) plus the view
+   settings (rows-per-page, confidence) on the left, search box on the right.
+   These view settings deliberately live here rather than on the .tablenav row
+   so the tablenav can hold only the native bulk-actions + pagination pair and
+   never wraps to a second line when a selection is active. */
 .abj404-list-top {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     flex-wrap: wrap;
-    gap: 12px;
+    gap: 16px;
     padding: 0 32px;
 }
 
 .abj404-list-top .subsubsub {
     margin: 0;
+}
+
+.abj404-view-settings {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
 }
 
 .abj404-list-top .abj404-search-box {
@@ -1289,6 +1298,13 @@ th:nth-last-child(-n+3) .lefty-tooltiptext {
     line-height: normal;
     background: var(--abj404-surface);
     cursor: pointer;
+}
+
+/* The rows-per-page select only ever shows a small number; it does not need
+   the 120px min-width the other filter selects use. */
+.abj404-rows-per-page select.perpage {
+    min-width: 0;
+    width: auto;
 }
 
 /* ============================================
@@ -1723,7 +1739,7 @@ th:nth-last-child(-n+3) .lefty-tooltiptext {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    gap: 12px;
+    gap: 8px;
     padding: 0;
 }
 
@@ -1798,12 +1814,18 @@ th:nth-last-child(-n+3) .lefty-tooltiptext {
 
 .abj404-pagination-controls {
     display: flex;
-    gap: 8px;
+    gap: 3px;
     align-items: center;
 }
 
+/* Compact, square-ish page buttons matching WordPress core's .tablenav-pages
+   navigation (28px tall, tight spacing) so pagination does not eat horizontal
+   room on the tablenav row. */
 .abj404-page-btn {
-    padding: 8px 12px;
+    padding: 0 4px;
+    min-width: 28px;
+    height: 28px;
+    line-height: 26px;
     border: 1px solid var(--abj404-border);
     background: var(--abj404-surface);
     border-radius: 4px;
@@ -1811,7 +1833,6 @@ th:nth-last-child(-n+3) .lefty-tooltiptext {
     font-size: 14px;
     color: var(--abj404-accent);
     transition: all 0.15s;
-    min-width: 36px;
     text-align: center;
     text-decoration: none;
     display: inline-block;
@@ -1842,7 +1863,7 @@ th:nth-last-child(-n+3) .lefty-tooltiptext {
 }
 
 .abj404-pagination-text {
-    padding: 8px 12px;
+    padding: 0 6px;
     color: var(--abj404-text-muted);
     font-size: 14px;
     white-space: nowrap;

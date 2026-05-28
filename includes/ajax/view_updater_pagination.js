@@ -43,11 +43,11 @@ function paginationLinksChange(triggerItem, options) {
     var isBackgroundRefresh = options.backgroundRefresh === true;
     var detectOnly = options.detectOnly === true;
     var cacheMode = options.cacheMode || 'normal';
-    var rowThatChanged = jQuery(triggerItem).parentsUntil('.tablenav').parent();
-    var rowsPerPage = jQuery(rowThatChanged).find('select[name=perpage]').val();
-    // The search box lives in the list-top row (next to the filter links),
-    // outside the .tablenav, so read it globally rather than within the
-    // triggering row. There is exactly one search input per list page.
+    // The rows-per-page select and the search box both live in the list-top
+    // row (next to the filter links), outside the .tablenav, so read them
+    // globally rather than within the triggering row. There is exactly one of
+    // each per list page.
+    var rowsPerPage = jQuery('select[name=perpage]').first().val();
     var filterText = jQuery('input[name=searchFilter]').first().val();
 
     // Only show loading on the table itself, not the filter bar or pagination
