@@ -403,9 +403,9 @@ class ABJ_404_Solution_View_Stats extends ABJ_404_Solution_ViewComponent {
             . '        var valsRedir = rows.map(function(r) { return r.hits_redirect; });'
             . '        var valsCapt  = rows.map(function(r) { return r.new_captures; });'
             . '        if (chartsEl) chartsEl.style.display = "";'
-            . '        chartInstances["abj404-chart-404s"]      = buildChart("abj404-chart-404s",      "' . $label404      . '", "rgb(0,115,170)",  labels, vals404);'
-            . '        chartInstances["abj404-chart-redirects"] = buildChart("abj404-chart-redirects", "' . $labelRedirect . '", "rgb(70,170,100)", labels, valsRedir);'
-            . '        chartInstances["abj404-chart-captures"]  = buildChart("abj404-chart-captures",  "' . $labelCapture  . '", "rgb(220,100,50)", labels, valsCapt);'
+            . '        chartInstances["abj404-chart-404s"]      = buildChart("abj404-chart-404s",      "' . $label404      . '", "rgb(0,115,170)",  labels, vals404);' /* allow-hardcoded-color: Chart.js dataset border color passed as a JS string literal; Chart.js cannot read CSS custom properties (--abj404-*) from a canvas context */
+            . '        chartInstances["abj404-chart-redirects"] = buildChart("abj404-chart-redirects", "' . $labelRedirect . '", "rgb(70,170,100)", labels, valsRedir);' /* allow-hardcoded-color: Chart.js dataset border color passed as a JS string literal; Chart.js cannot read CSS custom properties (--abj404-*) from a canvas context */
+            . '        chartInstances["abj404-chart-captures"]  = buildChart("abj404-chart-captures",  "' . $labelCapture  . '", "rgb(220,100,50)", labels, valsCapt);' /* allow-hardcoded-color: Chart.js dataset border color passed as a JS string literal; Chart.js cannot read CSS custom properties (--abj404-*) from a canvas context */
             . '      })'
             . '      .catch(function() {'
             . '        if (loadEl) loadEl.style.display = "none";'
