@@ -1024,21 +1024,14 @@ class ABJ_404_Solution_DataAccess implements ABJ_404_Solution_ContentRepositoryI
                 return $this->legacyViewDoneServeableCache;
             }
 
-            // Wall-clock admin-mutation gate (t_260523_224315_207 replaces
-            // the watermark-counter comparison). The gate blocks reads when
-            // the most recent admin mutation happened AFTER the on-disk
-            // view_done was built, capped by the sanity window so a stuck
-            // cron / broken build cannot keep view_done unserveable forever.
-            $invalidatedAt = function_exists('get_option') ? (int)get_option($this->viewDoneMutationInvalidatedAtOptionName(), 0) : 0;
-            $builtAt = function_exists('get_option') ? (int)get_option($this->viewDoneDataBuiltAtOptionName(), 0) : 0;
-            $sanity = defined('ABJ_404_Solution_ViewBuildConfig::VIEW_DONE_MUTATION_INVALIDATED_SANITY_SECONDS')
-                ? ABJ_404_Solution_ViewBuildConfig::VIEW_DONE_MUTATION_INVALIDATED_SANITY_SECONDS
-                : 300;
-            if ($invalidatedAt > 0 && $builtAt < $invalidatedAt && (time() - $invalidatedAt) <= $sanity) {
-                $this->legacyViewDoneServeableCache = false;
-                return $this->legacyViewDoneServeableCache;
-            }
-
+            // Serveability is rows-on-disk OR a prior successful build; it no
+            // longer consults a wall-clock admin-mutation gate. The watermark /
+            // mutation-gate that blocked reads after an admin mutation was
+            // removed (Bruno blocked-reads bug class): a mutation now schedules
+            // a background rebuild (markViewDoneInvalidatedByAdminMutation ->
+            // scheduleViewDoneRebuild), and the staleness window between the
+            // mutation and the rebuild is bounded by the freshness TTL rather
+            // than by blocking the read. Mirrors the orchestrator path below.
             $rowCheck = $this->queryAndGetResults("SELECT 1 FROM `" . $table . "` LIMIT 1", array('log_errors' => false));
             if (!empty($rowCheck['rows'])) {
                 $this->legacyViewDoneServeableCache = true;
@@ -1239,8 +1232,6 @@ class ABJ_404_Solution_DataAccess implements ABJ_404_Solution_ContentRepositoryI
     public function viewDoneFreshnessOptionName(): string { return $this->viewBuildOrchestrator->viewDoneFreshnessOptionName(); }
 
     public function viewDoneDataBuiltAtOptionName(): string { return $this->viewBuildOrchestrator->viewDoneDataBuiltAtOptionName(); }
-
-    public function viewDoneMutationInvalidatedAtOptionName(): string { return $this->viewBuildOrchestrator->viewDoneMutationInvalidatedAtOptionName(); }
 
     /**
      * Backward-compatibility bridge for facade delegations removed in Phase 8e.

@@ -869,10 +869,11 @@ class ABJ_404_Solution_ViewQueriesStaged extends ABJ_404_Solution_ViewBuildColla
     //   - Source data changed (admin/REST/CLI/AJAX/cron mutation): no
     //     explicit signal is needed -- ABJ_404_Solution_MutationDataSignature
     //     reads the change directly from wp_abj404_redirects on the next
-    //     stage-boundary check. For admin form actions that also need the
-    //     strict admin-visibility gate, call
-    //     markViewDoneInvalidatedByAdminMutation() which stamps the wall-
-    //     clock gate option (AdminMutationGate).
+    //     stage-boundary check. For admin form actions that need the next
+    //     read to reflect the mutation promptly, call
+    //     markViewDoneInvalidatedByAdminMutation() which busts the
+    //     request-lifetime serveable cache and schedules a background
+    //     rebuild (the wall-clock gate that blocked reads was removed).
     //   - Discard + restart the in-flight build (admin "rebuild now",
     //     diagnostic ?abj404_force_view_rebuild=1 paths): call
     //     forceRestartViewBuild() (DataAccessTrait_ViewBuildForceRestart).
