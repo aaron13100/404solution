@@ -22,24 +22,64 @@ class ABJ_404_Solution_AjaxContractViolationException extends RuntimeException {
  * This validator intentionally implements the subset used by the ajax-*.schema
  * files: required fields, closed objects, primitive types, enum, string length,
  * regex pattern, and numeric bounds.
+ *
+ * Enforcement policy (two distinct cases, see enforceCurrentRequest /
+ * requireValidCurrentRequest):
+ *
+ *   1. Unexpected extra fields (additionalProperties=false violations) are
+ *      tolerated in EVERY environment, dev included. admin-ajax shares the
+ *      $_GET/$_REQUEST/$_POST superglobals with every other active plugin,
+ *      and plugins such as WooCommerce inject their own nonce fields on every
+ *      request. That is outside our control and happens on developer machines
+ *      too, so a foreign key must never turn into a 400 that breaks our admin
+ *      AJAX surface. Unknown keys are ignored; only our own declared fields
+ *      are checked. (Our own contract drift is still caught by the contract
+ *      conformance tests, which run against clean superglobals.)
+ *
+ *   2. Substantive violations of OUR OWN declared fields (wrong type, bad
+ *      enum, missing required, length/pattern/bound) are real breaches of our
+ *      client's contract. These fail fast with a 400 off production so the
+ *      drift is caught during development, but in production the validator
+ *      "tries to work": it logs the breach (debug level, no admin email) and
+ *      lets the handler proceed, since the downstream code sanitizes every
+ *      value it reads and breaking a live admin screen is the worse outcome.
+ *
+ * The pure validate()/enforcePayload()/requireValidPayload() helpers stay
+ * strict (closed-object included): they validate caller-supplied payloads, not
+ * the shared live superglobals, and are what the contract tests assert against.
  */
 class ABJ_404_Solution_AjaxRequestContractValidator {
 
     const MESSAGE = 'Invalid AJAX request.';
 
+    /** Violation-message prefix for additionalProperties=false breaches. */
+    const UNEXPECTED_FIELD_PREFIX = 'unexpected field: ';
+
     /**
      * Validate the merged current request and terminate the request on failure.
      *
-     * On failure wp_send_json_error() is invoked (which wp_die()s in
-     * production) and an ABJ_404_Solution_AjaxContractViolationException is
-     * thrown so the entry-point handler bails out cleanly even when the
+     * Applies the live-request enforcement policy (see the class docblock):
+     * unexpected extra fields are always tolerated; a substantive breach of
+     * our own declared fields fails fast off production but is logged and
+     * tolerated in production. On a fail-fast outcome wp_send_json_error() is
+     * invoked (which wp_die()s in production for the real entry points that
+     * exit first) and an ABJ_404_Solution_AjaxContractViolationException is
+     * thrown so the handler bails out cleanly even when the
      * wp_send_json_error stub does not exit (parallel test harness).
      *
      * @param string $contractId
      * @return void
      */
     public static function enforceCurrentRequest(string $contractId): void {
-        self::enforcePayload($contractId, self::currentRequestPayload());
+        $result = self::validate($contractId, self::currentRequestPayload());
+        if ($result['valid']) {
+            return;
+        }
+        if (self::shouldProceedDespiteViolations($contractId, $result['violations'])) {
+            return;
+        }
+        self::sendValidationError($contractId, $result['violations']);
+        throw new ABJ_404_Solution_AjaxContractViolationException(self::MESSAGE);
     }
 
     /**
@@ -58,11 +98,100 @@ class ABJ_404_Solution_AjaxRequestContractValidator {
     /**
      * Validate the merged current request and send a 400 JSON error on failure.
      *
+     * Applies the live-request enforcement policy (see the class docblock):
+     * returns true (request proceeds) when the only violations are unexpected
+     * extra fields, or when a substantive breach occurs in production (logged
+     * and tolerated). Off production, a substantive breach sends a 400 JSON
+     * error and returns false.
+     *
      * @param string $contractId
      * @return bool
      */
     public static function requireValidCurrentRequest(string $contractId): bool {
-        return self::requireValidPayload($contractId, self::currentRequestPayload());
+        $result = self::validate($contractId, self::currentRequestPayload());
+        if ($result['valid']) {
+            return true;
+        }
+        if (self::shouldProceedDespiteViolations($contractId, $result['violations'])) {
+            return true;
+        }
+        self::sendValidationError($contractId, $result['violations']);
+        return false;
+    }
+
+    /**
+     * Decide whether a live request with contract violations may still proceed.
+     *
+     * Unexpected extra fields (foreign-plugin superglobal pollution) are
+     * tolerated in every environment. A substantive breach of our own declared
+     * fields is tolerated only in production, where it is logged at debug level
+     * so the admin is never emailed and the live screen keeps working.
+     *
+     * @param string $contractId
+     * @param array<int, string> $violations
+     * @return bool
+     */
+    private static function shouldProceedDespiteViolations(string $contractId, array $violations): bool {
+        $substantive = self::substantiveViolations($violations);
+        if (empty($substantive)) {
+            return true;
+        }
+        if (self::isProductionEnvironment()) {
+            self::logToleratedViolations($contractId, $substantive);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Filter out the additionalProperties=false ("unexpected field") breaches,
+     * leaving only violations of our own declared fields.
+     *
+     * @param array<int, string> $violations
+     * @return array<int, string>
+     */
+    private static function substantiveViolations(array $violations): array {
+        $prefixLength = strlen(self::UNEXPECTED_FIELD_PREFIX);
+        $substantive = array();
+        foreach ($violations as $violation) {
+            if (strncmp($violation, self::UNEXPECTED_FIELD_PREFIX, $prefixLength) !== 0) {
+                $substantive[] = $violation;
+            }
+        }
+        return $substantive;
+    }
+
+    /**
+     * True only on a WordPress site reporting the 'production' environment.
+     * When wp_get_environment_type() is unavailable (CLI / unit tests with no
+     * WP loaded) the answer is false, so the strict fail-fast path runs.
+     *
+     * @return bool
+     */
+    private static function isProductionEnvironment(): bool {
+        if (!function_exists('wp_get_environment_type')) {
+            return false;
+        }
+        return wp_get_environment_type() === 'production';
+    }
+
+    /**
+     * Record a tolerated substantive contract breach at debug level so it
+     * never triggers an admin email (per the plugin's error-visibility rules)
+     * but is still discoverable when debug logging is on.
+     *
+     * @param string $contractId
+     * @param array<int, string> $violations
+     * @return void
+     */
+    private static function logToleratedViolations(string $contractId, array $violations): void {
+        $logger = function_exists('abj_service') ? abj_service('logging') : null;
+        if (!is_object($logger) || !method_exists($logger, 'debugMessage')) {
+            return;
+        }
+        $logger->debugMessage('AJAX request contract "' . $contractId
+            . '" had violations but was allowed to proceed (production tolerance): '
+            . implode('; ', array_values($violations)));
     }
 
     /**
@@ -117,7 +246,7 @@ class ABJ_404_Solution_AjaxRequestContractValidator {
         if (($schema['additionalProperties'] ?? null) === false) {
             foreach ($payload as $field => $_value) {
                 if (!array_key_exists($field, $properties)) {
-                    $violations[] = 'unexpected field: ' . (string)$field;
+                    $violations[] = self::UNEXPECTED_FIELD_PREFIX . (string)$field;
                 }
             }
         }
