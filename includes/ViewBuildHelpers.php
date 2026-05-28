@@ -619,23 +619,10 @@ class ABJ_404_Solution_ViewBuildHelpers extends ABJ_404_Solution_ViewBuildCollab
     }
 
     /**
-     * Per-build watermark stamp machinery -- option-name helpers, raw
-     * read/write, the stage-boundary advance gate, and the
-     * stamp/clear/publish methods -- lives on
-     * {@see ABJ_404_Solution_DataAccess_ViewBuildStartedWatermarkTrait}.
-     * The orchestrator and abort/fresh-start methods below call into it
-     * via `$this->` (both traits compose into ABJ_404_Solution_DataAccess).
-     */
-
-    /**
      * One-call cleanup for the fresh-start branch of runStagedBuildOnce:
      * scrap progress options (registry + Phase-2 active stamp), drop any
      * leftover buffer tables. Pulled out of the orchestrator so the
      * body line count stays within the per-function cap.
-     *
-     * last_build_started_watermark is intentionally NOT cleared here: it
-     * is diagnostic-only and survives across fresh-start boundaries (and
-     * gets overwritten on the next S1 entry stamp).
      *
      * @return void
      */

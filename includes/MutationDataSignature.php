@@ -59,10 +59,8 @@ final class ABJ_404_Solution_MutationDataSignature {
      * Read the data signature for the redirects table on the active blog
      * prefix. Returns {@see UNAVAILABLE} when the table cannot be read
      * (test stubs without a real `$wpdb`, dropped table, transient DB
-     * error). Callers treat UNAVAILABLE the same way the old
-     * the removed `MutationWatermark` primitive's `current()` returned 0 on cold-bootstrap: as
-     * "no signal", which makes downstream comparisons (gate-blocks,
-     * abort-when-advanced) fall through to their safe default.
+     * error). Callers treat UNAVAILABLE as "no signal", which makes
+     * downstream comparisons fall through to their safe default.
      *
      * The encoded signature is `(MAX(timestamp) << 32) | (COUNT(*) & 0xffffffff)`.
      * MAX(timestamp) is a Unix epoch second (10 digits today, 11 in year

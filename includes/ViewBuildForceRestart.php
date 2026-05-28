@@ -5,41 +5,26 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Runner-owned `forceRestartViewBuild()` primitive (Phase 3a step 2 of the
- * staged view-build watermark refactor; see
- * docs/refactor-staged-view-build-watermark.md and queue task c554).
+ * Runner-owned `forceRestartViewBuild()` primitive.
  *
  * Purpose. Replaces every external "discard whatever the runner has on disk
  * and restart the build from scratch" caller (the diagnostic AJAX
- * `?abj404_force_view_rebuild=1` path, the admin "rebuild now" button if
- * any, the WP-CLI rebuild commands -- migrated by Phase 3a step 4 and the
- * Cluster A-D tasks). Before Phase 4, those callers reached
- * `invalidateViewDone()` directly, which violated the runner-ownership
- * invariant the refactor exists to restore; Phase 4 (commit 2994e21c)
- * deleted that symbol and routed every external caller through either
- * the source-mutation signal (now derived implicitly from
+ * `?abj404_force_view_rebuild=1` path, the admin "rebuild now" button, the
+ * WP-CLI rebuild commands). External callers now go through either the
+ * source-mutation signal (derived implicitly from
  * {@see ABJ_404_Solution_MutationDataSignature}) or this primitive
  * (explicit restart-from-scratch).
  *
- * The contract is exactly seven bullets (and the absence of an eighth):
+ * The contract is exactly five bullets:
  *
  *   1. Acquire the runner lock.
  *   2. Drop the runner-owned buffer table (`view_build`).
  *   3. Clear runner progress options (registry + prefix-at-S1 capture +
  *      probe caches -- the same set `clearAllProgressOptions()` owns).
- *   4. Clear `active_build_started_watermark` (the in-flight build's
- *      S1-entry stamp). The sibling `last_build_started_watermark`
- *      stays put -- it is diagnostic-only and survives both abort and
- *      force-rebuild so an operator can see the most recent stamp.
- *   5. PRESERVE `built_watermark` (the prior successful build's published
- *      coverage). The rebuild is in flight, the old view_done snapshot is
- *      still serveable until the new S11 RENAME completes; deleting
- *      built_watermark would orphan the freshness signal until then.
- *   6. Do NOT bump the mutation watermark (force-rebuild is a runner
- *      command, not a data-change signal). Bumping would propagate as a
- *      phantom mutation to every concurrent reader that bracketed this
- *      moment -- their stage-boundary checks would abort their own builds.
- *   7. Schedule S0/S1 immediately (via the existing cron primitive
+ *   4. PRESERVE the prior successful build's published view_done snapshot.
+ *      The rebuild is in flight; the old snapshot stays serveable until
+ *      the new S11 RENAME completes.
+ *   5. Schedule S0/S1 immediately (via the existing cron primitive
  *      `scheduleViewDoneRebuild()`). The lock is released before the
  *      schedule call so the cron tick can acquire cleanly.
  *
@@ -53,7 +38,6 @@ if (!defined('ABSPATH')) {
  *     progress (the AJAX force-rebuild path) call `advanceViewBuildOnce()`
  *     after this primitive returns; callers without a request context
  *     (CLI, admin "rebuild now") rely on the scheduled cron tick.
- *   - write to `built_watermark` for any reason.
  *
  * Failure modes.
  *
@@ -84,8 +68,7 @@ if (!defined('ABSPATH')) {
  * `ABJ_404_Solution_DataAccess_ViewBuildLockAndCronTrait`,
  * `ABJ_404_Solution_DataAccess_ViewBuildStageCallbacksTrait`; all three
  * provide the helpers this primitive composes (lock acquire/release,
- * buffer drop, progress clear, watermark stamp clear, rebuild
- * scheduling). All four traits are mixed into
+ * buffer drop, progress clear, rebuild scheduling). All four traits are mixed into
  * `ABJ_404_Solution_DataAccess`.
  *
  * @property ABJ_404_Solution_DatabaseCore $dbCore
@@ -272,15 +255,13 @@ if (!defined('ABSPATH')) {
 class ABJ_404_Solution_ViewBuildForceRestart extends ABJ_404_Solution_ViewBuildCollaborator {
 
     /**
-     * Runner-owned force-restart primitive. Per Phase 3a step 2 (c554).
+     * Runner-owned force-restart primitive.
      *
      * Returns true when the restart completed cleanly: lock acquired,
-     * buffer dropped, progress cleared, active_build_started_watermark
-     * cleared, last_build_started_watermark preserved (diagnostic),
-     * built_watermark preserved (cross-build pre-image), watermark
-     * counter unchanged, rebuild scheduled. Returns false when the lock
-     * could not be acquired within `$lockTimeoutSeconds`; the caller
-     * may retry on the next request.
+     * buffer dropped, progress cleared, prior view_done snapshot
+     * preserved, rebuild scheduled. Returns false when the lock could
+     * not be acquired within `$lockTimeoutSeconds`; the caller may retry
+     * on the next request.
      *
      * Default lock wait of 10s matches the existing
      * `?abj404_force_view_rebuild=1` AJAX handler in
@@ -319,8 +300,7 @@ class ABJ_404_Solution_ViewBuildForceRestart extends ABJ_404_Solution_ViewBuildC
         // (7) Schedule S0/S1 immediately. scheduleViewDoneRebuild() is
         //     idempotent (wp_next_scheduled short-circuit) so callers
         //     can chain or replay safely. Cron tick will drive S0 fresh
-        //     cleanup -> S1 prefix capture + started-watermark re-stamp
-        //     -> S2..S11.
+        //     cleanup -> S1 prefix capture -> S2..S11.
         $this->scheduleViewDoneRebuild();
 
         return true;
@@ -334,14 +314,12 @@ class ABJ_404_Solution_ViewBuildForceRestart extends ABJ_404_Solution_ViewBuildC
      * {@see forceRestartViewBuild()} -- this helper does NOT acquire the
      * lock and does NOT schedule the next cron tick.
      *
-     * Performs steps 2-6 of the seven-bullet force-restart contract
-     * documented on the trait docblock above:
+     * Performs steps 2-4 of the force-restart contract documented on the
+     * trait docblock above:
      *
      *   - drop the runner-owned buffer table (and the deleteme leftover)
      *   - clear runner progress options + prefix-at-S1 capture
-     *   - clear active_build_started_watermark
-     *   - preserve built_watermark (no write, no delete)
-     *   - DO NOT bump the mutation watermark
+     *   - preserve the prior view_done snapshot (no write, no delete)
      *
      * Also resets the per-request serveability cache so a subsequent
      * viewDoneIsServeable() inside the same request observes the new
