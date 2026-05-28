@@ -1146,11 +1146,6 @@ th:nth-last-child(-n+3) .lefty-tooltiptext {
    Navigation Tabs (Modern Design)
    ============================================ */
 
-/* Add spacing for fixed tabs so they don't cover page header */
-.wrap {
-    padding-top: 50px; /* Space for fixed tab navigation */
-}
-
 /* Top sub-navigation tabs use the native WordPress .nav-tab-wrapper / .nav-tab
    pattern. No custom positioning, colors, icons, or branding chrome here; core
    admin styles apply. */
@@ -1188,7 +1183,13 @@ th:nth-last-child(-n+3) .lefty-tooltiptext {
    ============================================ */
 
 /* Native WordPress .subsubsub markup is used for list-table filter rows.
-   No custom tab chrome is needed; core handles spacing, pipes, and active state. */
+   No custom tab chrome is needed; core handles pipes and active state. The only
+   adjustment is to align the row's left edge with the card's 32px content gutter
+   (filter bar, pagination) instead of butting against the card edge. */
+.abj404-table-page .subsubsub {
+    margin: 8px 0;
+    padding-left: 32px;
+}
 
 /* ============================================
    Filter Bar
@@ -1346,14 +1347,14 @@ th:nth-last-child(-n+3) .lefty-tooltiptext {
     color: var(--abj404-text);
     white-space: normal;
     position: sticky;
-    top: 77px;  /* 32px admin bar + ~45px tabs */
+    top: 32px;  /* WordPress admin bar; the nav tabs scroll away (not fixed) */
     z-index: 10;
     background: var(--abj404-bg);
 }
 
 @media screen and (max-width: 782px) {
     .abj404-table th {
-        top: 91px;  /* 46px admin bar + ~45px tabs */
+        top: 46px;  /* taller mobile admin bar */
     }
 }
 
@@ -1361,13 +1362,13 @@ th:nth-last-child(-n+3) .lefty-tooltiptext {
 /* Matches both .abj404-table-container (Page Redirects) and form (Captured 404s) */
 .abj404-bulk-actions.active ~ .abj404-table-container .abj404-table th,
 .abj404-bulk-actions.active ~ form .abj404-table th {
-    top: 130px;  /* 77px + ~53px bulk actions bar */
+    top: 85px;  /* 32px admin bar + ~53px bulk actions bar */
 }
 
 @media screen and (max-width: 782px) {
     .abj404-bulk-actions.active ~ .abj404-table-container .abj404-table th,
     .abj404-bulk-actions.active ~ form .abj404-table th {
-        top: 144px;
+        top: 99px;  /* 46px admin bar + ~53px bulk actions bar */
     }
 }
 

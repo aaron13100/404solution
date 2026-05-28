@@ -113,6 +113,13 @@ body.rtl .abj404-pagination,
     text-align: left;
 }
 
+/* Status filter row gutter sits on the right in RTL. */
+body.rtl .abj404-table-page .subsubsub,
+[dir="rtl"] .abj404-table-page .subsubsub {
+    padding-left: 0;
+    padding-right: 32px;
+}
+
 /* ===== Tree Indentation - Swap padding-left to padding-right ===== */
 body.rtl .abj404-tree-level-0,
 [dir="rtl"] .abj404-tree-level-0 {
