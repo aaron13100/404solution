@@ -374,7 +374,12 @@ function paginationLinksChange(triggerItem, options) {
             }
         },
         error: function (jqXHR, textStatus, errorThrown) {
-            stopStageProgressPolling(true);
+            // Stop WITHOUT flushing. flushFinalEvents=true fires one more async
+            // ajaxFetchInflightStage read whose success handler re-writes the
+            // "stage N" label into .abj404-refresh-status AFTER we clear it just
+            // below, which is what left the "Refreshing data... (stage 4)"
+            // message spinning forever once the fetch failed.
+            stopStageProgressPolling(false);
             jQuery('.abj404-refresh-status').text('');
 
             if (isBackgroundRefresh && detectOnly) {

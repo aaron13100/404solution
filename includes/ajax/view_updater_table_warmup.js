@@ -115,7 +115,10 @@ function startViewBuildPollingThenRetry(triggerItem, $config, fetchAttemptNumber
             });
         },
         onError: function(errorMeta) {
-            stopBuildStageProgressPolling(true);
+            // Do not flush: a flushed final stage read re-writes the stage
+            // label back into .abj404-refresh-status after showTableWarmupFailure
+            // clears it, leaving the refresh message stuck on screen.
+            stopBuildStageProgressPolling(false);
             window.abj404ViewBuildAdvanceRunning = false;
             abj404UpdateSharedBuildOwner(sharedOwnerId, 'error', {progress_text: (errorMeta && errorMeta.lastError) || 'error'});
             if ($config && $config.length > 0) {
