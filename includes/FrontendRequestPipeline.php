@@ -424,9 +424,32 @@ class ABJ_404_Solution_FrontendRequestPipeline {
         }
 
         // Last resort: defer to WordPress's built-in URL guessing.
-        // WordPress matches partial slugs via LIKE 'slug%' — a complementary
-        // strategy to our Levenshtein-based spell checker. For example,
-        // /redes matches /redes-social because the slug starts with "redes".
+        $this->tryWordPressGuessFallback($autoRedirectsAreOn, $requestedURL, $options);
+
+        $this->logic->tryNormalPostQuery($options);
+        $this->addTraceStep('Result', 'No redirect — showed 404 page');
+        $this->logRedirectHit($requestedURL, '404', 'gave up.', null, $this->trace);
+        $this->triggerAsyncSuggestionsIfNeeded($requestedURL);
+        $this->emitBenchmarkHeadersIfEnabled();
+        $this->logic->sendTo404Page($requestedURL, '', true, $options);
+    }
+
+    /**
+     * Last-resort redirect attempt using WordPress's built-in 404 permalink guess.
+     *
+     * WordPress matches partial slugs via LIKE 'slug%', a complementary strategy
+     * to our Levenshtein-based spell checker (e.g. /redes matches /redes-social
+     * because the slug starts with "redes"). When a guess matches and is not
+     * excluded, this records the redirect and emits it, then exits. If no guess
+     * matches, the guess is a self-redirect, the destination is excluded, or the
+     * emit is blocked, it records a trace step and returns so the caller can fall
+     * through to the normal-post query / 404 page.
+     *
+     * @param bool   $autoRedirectsAreOn Whether auto-redirect creation is enabled.
+     * @param string $requestedURL       The normalized requested URL that 404'd.
+     * @param array<string, mixed> $options Plugin options.
+     */
+    private function tryWordPressGuessFallback(bool $autoRedirectsAreOn, string $requestedURL, array $options): void {
         $wpGuessFallbackEnabled = $autoRedirectsAreOn && $this->shouldRunWordPressGuessFallback($requestedURL);
         $wpGuessEngineName = __('wp guess', '404-solution');
         if ($wpGuessFallbackEnabled && function_exists('redirect_guess_404_permalink')) {
@@ -459,9 +482,9 @@ class ABJ_404_Solution_FrontendRequestPipeline {
                         $wpGuessEngineName
                     );
                     if ($this->isExcluded($wpGuessResult, $options)) {
-                        $this->addTraceStep('WordPress URL guess', 'Excluded destination — skipped', $wpGuess);
+                        $this->addTraceStep('WordPress URL guess', 'Excluded destination: skipped', $wpGuess);
                     } else {
-                        $this->addTraceStep('WordPress URL guess', 'Matched — redirecting', $wpGuess);
+                        $this->addTraceStep('WordPress URL guess', 'Matched: redirecting', $wpGuess);
                         $this->redirectsRepository->setupRedirect(ABJ_404_Solution_RedirectSpec::create(
                             $requestedURL, (string)ABJ404_STATUS_AUTO,
                             $wpGuessType, $wpGuessPostId, $defaultRedirect, 0, $wpGuessEngineName
@@ -471,22 +494,15 @@ class ABJ_404_Solution_FrontendRequestPipeline {
                         if ($redirectSent !== false) {
                             exit;
                         }
-                        $this->addTraceStep('WordPress URL guess', 'Redirect blocked — continued', $wpGuess);
+                        $this->addTraceStep('WordPress URL guess', 'Redirect blocked: continued', $wpGuess);
                     }
                 }
             }
             $this->addTraceStep('WordPress URL guess', 'No match');
         } elseif (!$wpGuessFallbackEnabled) {
             $reason = !$autoRedirectsAreOn ? 'auto_redirects off' : 'engine profile/filter';
-            $this->addTraceStep('WordPress URL guess', 'Skipped — ' . $reason);
+            $this->addTraceStep('WordPress URL guess', 'Skipped: ' . $reason);
         }
-
-        $this->logic->tryNormalPostQuery($options);
-        $this->addTraceStep('Result', 'No redirect — showed 404 page');
-        $this->logRedirectHit($requestedURL, '404', 'gave up.', null, $this->trace);
-        $this->triggerAsyncSuggestionsIfNeeded($requestedURL);
-        $this->emitBenchmarkHeadersIfEnabled();
-        $this->logic->sendTo404Page($requestedURL, '', true, $options);
     }
 
     /**
