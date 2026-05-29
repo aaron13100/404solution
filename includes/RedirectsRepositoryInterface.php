@@ -26,17 +26,16 @@ interface ABJ_404_Solution_RedirectsRepositoryInterface {
     /**
      * Store a redirect for future use.
      *
-     * @param string $fromURL
-     * @param string $status ABJ404_STATUS_MANUAL etc
-     * @param string $type ABJ404_TYPE_POST, ABJ404_TYPE_CAT, ABJ404_TYPE_TAG, etc.
-     * @param string $final_dest
-     * @param string $code
-     * @param int $disabled
-     * @param string|null $engine
-     * @param float|null $score
+     * Refactored in queue task c738 (audit source: design-audit-2026-05-29.md,
+     * criterion 220 Interface Size). The previous 8-positional signature
+     * (fromURL, status, type, final_dest, code, disabled, engine, score) had
+     * two transposable URL strings and five overlapping numeric fields; all
+     * those fields are now bundled into {@see ABJ_404_Solution_RedirectSpec}.
+     *
+     * @param ABJ_404_Solution_RedirectSpec $spec
      * @return int
      */
-    public function setupRedirect($fromURL, $status, $type, $final_dest, $code, $disabled = 0, $engine = null, $score = null);
+    public function setupRedirect(ABJ_404_Solution_RedirectSpec $spec);
 
     /**
      * @param string $url

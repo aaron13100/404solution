@@ -79,7 +79,8 @@ class ABJ_404_Solution_SlugChangeHandler {
         if (!is_object($repository) || !method_exists($repository, 'setupRedirect')) {
             return;
         }
-        call_user_func(array($repository, 'setupRedirect'), $oldSlug, $status, $type, $finalDest, $redirectCode, 0, $engine);
+        $spec = ABJ_404_Solution_RedirectSpec::create($oldSlug, $status, $type, $finalDest, $redirectCode, 0, $engine);
+        call_user_func(array($repository, 'setupRedirect'), $spec);
     }
 
     /**

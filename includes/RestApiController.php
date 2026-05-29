@@ -274,7 +274,9 @@ class ABJ_404_Solution_RestApiController {
         $type     = $resolved['type'];
         $dest     = $resolved['dest'];
 
-        $insertedId = $this->redirectsRepo->setupRedirect($from, $status, (string)$type, $dest, (string)$code, 0, 'rest-api');
+        $insertedId = $this->redirectsRepo->setupRedirect(
+            \ABJ_404_Solution_RedirectSpec::create($from, $status, (string)$type, $dest, (string)$code, 0, 'rest-api')
+        );
 
         if (!$insertedId) {
             return new \WP_Error('create_failed', __('Failed to create redirect.', '404-solution'), array('status' => 500));

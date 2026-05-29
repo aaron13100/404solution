@@ -155,7 +155,9 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
         }
 
         $status     = $regex ? (string)ABJ404_STATUS_REGEX : (string)ABJ404_STATUS_MANUAL;
-        $insertedId = $redirectsRepository->setupRedirect($from, $status, $type, $dest, (string)$code, 0, 'wp-cli');
+        $insertedId = $redirectsRepository->setupRedirect(
+            ABJ_404_Solution_RedirectSpec::create($from, $status, $type, $dest, (string)$code, 0, 'wp-cli')
+        );
         if ($insertedId) {
             $viewBuildOrchestrator->invalidateViewDoneAndScheduleRebuild();
             $displayDest = $isTerminalCode ? "(none — {$code})" : "{$to}";

@@ -763,8 +763,10 @@ class ABJ_404_Solution_PluginLogic {
                 $redirect = $this->redirectsRepo->getExistingRedirectForURL($fromURL);
                 $defaultRedirect = is_scalar($options['default_redirect']) ? (string)$options['default_redirect'] : '301';
                 if (!isset($redirect['id']) || $redirect['id'] == 0) {
-                    $this->redirectsRepo->setupRedirect($fromURL, (string)ABJ404_STATUS_AUTO, (string)ABJ404_TYPE_POST,
-                            (string)$pageid, $defaultRedirect, 0, 'page ID');
+                    $this->redirectsRepo->setupRedirect(ABJ_404_Solution_RedirectSpec::create(
+                        $fromURL, (string)ABJ404_STATUS_AUTO, (string)ABJ404_TYPE_POST,
+                        (string)$pageid, $defaultRedirect, 0, 'page ID'
+                    ));
                 }
                 $this->logsRepo->logRedirectHit($fromURL, $permalink, 'page ID');
                 $this->forceRedirect($permalink, (int)$defaultRedirect);
@@ -926,7 +928,9 @@ class ABJ_404_Solution_PluginLogic {
 	            $pLink = is_scalar($permalink['link']) ? (string)$permalink['link'] : '';
 	            $defRedir = is_scalar($options['default_redirect']) ? (string)$options['default_redirect'] : '301';
 	            if (!isset($redirect['id']) || $redirect['id'] == 0) {
-	                $this->redirectsRepo->setupRedirect($requestedURL, (string)ABJ404_STATUS_CAPTURED, $pType, $pId, $defRedir, 0);
+	                $this->redirectsRepo->setupRedirect(ABJ_404_Solution_RedirectSpec::create(
+	                    $requestedURL, (string)ABJ404_STATUS_CAPTURED, $pType, $pId, $defRedir, 0
+	                ));
 	            }
 
 	            $this->logsRepo->logRedirectHit($requestedURL, $pLink, 'user specified 404 page. ' . $reason);
@@ -943,7 +947,9 @@ class ABJ_404_Solution_PluginLogic {
             $redirect = $this->redirectsRepo->getExistingRedirectForURL($requestedURL);
             $defRedir2 = is_scalar($options['default_redirect']) ? (string)$options['default_redirect'] : '301';
             if (!isset($redirect['id']) || $redirect['id'] == 0) {
-                $this->redirectsRepo->setupRedirect($requestedURL, (string)ABJ404_STATUS_CAPTURED, (string)ABJ404_TYPE_404_DISPLAYED, (string)ABJ404_TYPE_404_DISPLAYED, $defRedir2, 0);
+                $this->redirectsRepo->setupRedirect(ABJ_404_Solution_RedirectSpec::create(
+                    $requestedURL, (string)ABJ404_STATUS_CAPTURED, (string)ABJ404_TYPE_404_DISPLAYED, (string)ABJ404_TYPE_404_DISPLAYED, $defRedir2, 0
+                ));
             }
         } else {
             $optionsJson = json_encode($options);

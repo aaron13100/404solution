@@ -257,7 +257,9 @@ class ABJ_404_Solution_FrontendRequestPipeline {
                             $spFinalDest = isset($permalink['id']) && is_scalar($permalink['id']) ? (string)$permalink['id'] : '';
                             $spDefaultRedirect = isset($options['default_redirect']) && is_scalar($options['default_redirect']) ? (string)$options['default_redirect'] : '';
                             // Legacy audit marker for source-inspection tests: this->dao->setupRedirect(esc_url($requestedURL)
-                            $this->redirectsRepository->setupRedirect(esc_url($requestedURL), (string)ABJ404_STATUS_AUTO, (string)$this->wpTypePost(), $spFinalDest, $spDefaultRedirect, 0, 'single page');
+                            $this->redirectsRepository->setupRedirect(ABJ_404_Solution_RedirectSpec::create(
+                                esc_url($requestedURL), (string)ABJ404_STATUS_AUTO, (string)$this->wpTypePost(), $spFinalDest, $spDefaultRedirect, 0, 'single page'
+                            ));
                             $spLink = isset($permalink['link']) && is_string($permalink['link']) ? $permalink['link'] : '';
                             // Legacy audit marker for source-inspection tests: this->dao->logRedirectHit($requestedURL, $spLink, 'single page'
                             $this->logRedirectHit($requestedURL, $spLink, 'single page', null, $this->trace);
@@ -389,7 +391,9 @@ class ABJ_404_Solution_FrontendRequestPipeline {
                 $matchResult = $this->runMatchingEngines($matchRequest);
                 if ($matchResult !== null) {
                     $defaultRedirect = isset($options['default_redirect']) && is_scalar($options['default_redirect']) ? (string)$options['default_redirect'] : '';
-                    $this->redirectsRepository->setupRedirect($requestedURL, (string)ABJ404_STATUS_AUTO, $matchResult->getType(), $matchResult->getId(), $defaultRedirect, 0, $matchResult->getEngineName(), $matchResult->getScore());
+                    $this->redirectsRepository->setupRedirect(ABJ_404_Solution_RedirectSpec::create(
+                        $requestedURL, (string)ABJ404_STATUS_AUTO, $matchResult->getType(), $matchResult->getId(), $defaultRedirect, 0, $matchResult->getEngineName(), $matchResult->getScore()
+                    ));
 
                     // Resolve link via WordPress API to ensure correct site prefix
                     // (cached URLs from permalink_cache may omit subdirectory prefix)
@@ -458,8 +462,10 @@ class ABJ_404_Solution_FrontendRequestPipeline {
                         $this->addTraceStep('WordPress URL guess', 'Excluded destination — skipped', $wpGuess);
                     } else {
                         $this->addTraceStep('WordPress URL guess', 'Matched — redirecting', $wpGuess);
-                        $this->redirectsRepository->setupRedirect($requestedURL, (string)ABJ404_STATUS_AUTO,
-                            $wpGuessType, $wpGuessPostId, $defaultRedirect, 0, $wpGuessEngineName);
+                        $this->redirectsRepository->setupRedirect(ABJ_404_Solution_RedirectSpec::create(
+                            $requestedURL, (string)ABJ404_STATUS_AUTO,
+                            $wpGuessType, $wpGuessPostId, $defaultRedirect, 0, $wpGuessEngineName
+                        ));
                         $this->logRedirectHit($requestedURL, $wpGuess, $wpGuessEngineName, null, $this->trace);
                         $redirectSent = $this->logic->forceRedirect(esc_url($wpGuess), (int)$defaultRedirect);
                         if ($redirectSent !== false) {

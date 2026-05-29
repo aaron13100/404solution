@@ -113,12 +113,14 @@ class ABJ_404_Solution_CrossPluginImporter {
             $destUrl = $resolved['dest'];
 
             $result = $this->redirectsRepository->setupRedirect(
-                $sourceUrl,
-                (string)$status,
-                (string)$type,
-                $destUrl,
-                (string)$code,
-                0
+                ABJ_404_Solution_RedirectSpec::create(
+                    $sourceUrl,
+                    (string)$status,
+                    (string)$type,
+                    $destUrl,
+                    (string)$code,
+                    0
+                )
             );
 
             if ($result !== 0 && $result !== false) {

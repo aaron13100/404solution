@@ -942,7 +942,9 @@ class ABJ_404_Solution_ImportExportService {
                 // without per-row admin clicks.
                 $this->redirectsRepository->updateRedirect((int)$type, (string)$final_dest, $fromURL, $existingId, $code, (int)$status);
             } else {
-                $this->redirectsRepository->setupRedirect($fromURL, (string)$status, (string)$type, (string)$final_dest, $code, 0, $engine);
+                $this->redirectsRepository->setupRedirect(ABJ_404_Solution_RedirectSpec::create(
+                    $fromURL, (string)$status, (string)$type, (string)$final_dest, $code, 0, $engine
+                ));
             }
         }
 

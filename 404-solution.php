@@ -346,6 +346,7 @@ if (!function_exists('abj404_shortCodeListener')) {
 				$inc . 'ContentRepository.php',
 				$inc . 'RedirectsRepositoryInterface.php',
 				$inc . 'RedirectsRepository.php',
+				$inc . 'RedirectSpec.php',
 				$inc . 'LogsRepositoryInterface.php',
 				$inc . 'LogsRepository.php',
 				$inc . 'StatsRepositoryInterface.php',

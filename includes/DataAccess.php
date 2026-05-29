@@ -718,8 +718,8 @@ class ABJ_404_Solution_DataAccess implements ABJ_404_Solution_ContentRepositoryI
         return $this->getRedirectsRepo()->deleteRedirect($id);
     }
 
-    public function setupRedirect($fromURL, $status, $type, $final_dest, $code, $disabled = 0, $engine = null, $score = null) {
-        return $this->getRedirectsRepo()->setupRedirect($fromURL, $status, $type, $final_dest, $code, $disabled, $engine, $score);
+    public function setupRedirect(ABJ_404_Solution_RedirectSpec $spec) {
+        return $this->getRedirectsRepo()->setupRedirect($spec);
     }
 
     public function getActiveRedirectForURL($url, $degradedMode = false) {

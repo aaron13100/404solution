@@ -166,7 +166,16 @@ class ABJ_404_Solution_RedirectsRepository implements ABJ_404_Solution_Redirects
     }
 
     /** @inheritDoc */
-    function setupRedirect($fromURL, $status, $type, $final_dest, $code, $disabled = 0, $engine = null, $score = null) {
+    function setupRedirect(ABJ_404_Solution_RedirectSpec $spec) {
+        $fromURL = $spec->getFromURL();
+        $status = $spec->getStatus();
+        $type = $spec->getType();
+        $final_dest = $spec->getFinalDest();
+        $code = $spec->getCode();
+        $disabled = $spec->getDisabled();
+        $engine = $spec->getEngine();
+        $score = $spec->getScore();
+
         if (!is_numeric($type)) {
             $this->logger->errorMessage("Wrong data type for redirect. TYPE is non-numeric. From: " .
                     esc_url($fromURL) . " to: " . esc_url($final_dest) . ", Type: " .esc_html($type) . ", Status: " . $status);

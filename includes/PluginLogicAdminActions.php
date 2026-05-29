@@ -912,9 +912,11 @@ class ABJ_404_Solution_PluginLogicAdminActions {
             $statusType = $autoPromoteAdd['statusType'];
             $manualURL = $autoPromoteAdd['url'];
 
-            $newRedirectId = $this->redirectsRepo->setupRedirect($manualURL, (string)$statusType,
+            $newRedirectId = $this->redirectsRepo->setupRedirect(ABJ_404_Solution_RedirectSpec::create(
+                    $manualURL, (string)$statusType,
                     $tdType2, $tdDest2,
-                    sanitize_text_field($code), 0);
+                    sanitize_text_field($code), 0
+            ));
             if ($autoPromoteAdd['autoPromoted']) {
                 $this->saveRegexAutoPromoteNotice((int)$newRedirectId, $originalManualURL, $manualURL, $autoPromoteAdd['urlRewritten']);
             }
