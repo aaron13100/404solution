@@ -279,7 +279,7 @@ class ABJ_404_Solution_RedirectsRetentionService implements ABJ_404_Solution_Red
                 $message .= ', The admin email notification option is skipped for user '
                         . 'initiated maintenance runs.';
             } else {
-                $message .= ', ' . $abj404logic->emailCaptured404Notification();
+                $message .= ', ' . $abj404logic->pageOrdering()->emailCaptured404Notification();
             }
         } else {
             $message .= ', Admin email notification option turned off.';
