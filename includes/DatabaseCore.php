@@ -12,6 +12,7 @@ require_once __DIR__ . '/DatabaseErrorClassifier.php';
 require_once __DIR__ . '/DatabaseSqlErrorReporter.php';
 require_once __DIR__ . '/DatabaseTableNameResolver.php';
 require_once __DIR__ . '/DatabaseNoticeStateHolder.php';
+require_once __DIR__ . '/DatabaseCollationHelper.php';
 
 /**
  * Shared database infrastructure: query execution, error recovery, timeouts,
@@ -54,6 +55,9 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
     /** @var ABJ_404_Solution_DatabaseNoticeStateHolder */
     private $noticeState;
 
+    /** @var ABJ_404_Solution_DatabaseCollationHelper */
+    private $collationHelper;
+
     /** @var bool Prevent recursive auto-repair attempts on SQL errors. */
     private static $tableRepairInProgress = false;
 
@@ -69,9 +73,6 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
 
     /** @var string Current wpdb result type for queryAndGetResults (ARRAY_A or OBJECT). */
     private $currentResultType = ARRAY_A;
-
-    /** @var bool Prevent recursive collation auto-recovery. */
-    private static $collationRecoveryInProgress = false;
 
     /**
      * @param ABJ_404_Solution_Functions|null $functions
@@ -94,6 +95,26 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
             function (): bool {
                 return $this->errorClassifier->isQuotaCooldownActive();
             }
+        );
+        $this->collationHelper = new ABJ_404_Solution_DatabaseCollationHelper(
+            function (string $query, array $options): array {
+                return $this->queryAndGetResults($query, $options);
+            },
+            function (string $tableName): string {
+                // Call through $this so test-stub subclass overrides of
+                // getCreateTableDDL are honored, matching pre-extraction behavior.
+                return $this->getCreateTableDDL($tableName);
+            },
+            function (string $key) {
+                return $this->noticeState->getRuntimeFlag($key);
+            },
+            function (string $key, $value, int $ttl): void {
+                $this->noticeState->setRuntimeFlag($key, $value, $ttl);
+            },
+            function (array &$result): void {
+                $this->harvestWpdbResult($result);
+            },
+            $this->logger
         );
     }
 
@@ -847,115 +868,43 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
     }
 
     /**
+     * Delegate: sanitize a raw collation identifier (strip non-word chars).
+     *
      * @param string $collation
      * @return string
      */
-    public function sanitizeCollationIdentifier($collation) {
-        if (!is_string($collation) || $collation === '') {
-            return '';
-        }
-        $sanitized = preg_replace('/[^A-Za-z0-9_]/', '', $collation);
-        return $sanitized !== null ? $sanitized : '';
+    public function sanitizeCollationIdentifier($collation): string {
+        return $this->collationHelper->sanitizeCollationIdentifier($collation);
     }
 
     /**
-     * Get the table-level default collation for a given table.
-     *
-     * Queries SHOW CREATE TABLE for the COLLATE clause. Falls back to
-     * utf8mb4_unicode_ci on any failure. Result is validated through
-     * sanitizeCollationIdentifier().
+     * Delegate: get the table-level default collation for a given table.
      *
      * @param string $tableName Fully-qualified table name (including prefix).
      * @return string
      */
     public function getTableCollationString(string $tableName): string {
-        $fallback = 'utf8mb4_unicode_ci';
-        $ddl = $this->getCreateTableDDL($tableName);
-        if (preg_match('/COLLATE[= ]([A-Za-z0-9_]+)/i', $ddl, $m)) {
-            $sanitized = $this->sanitizeCollationIdentifier($m[1]);
-            return $sanitized !== '' ? $sanitized : $fallback;
-        }
-        global $wpdb;
-        if (isset($wpdb) && method_exists($wpdb, 'prepare')) {
-            /** @var wpdb $wpdb */
-            $sql = $wpdb->prepare(
-                "SELECT TABLE_COLLATION FROM information_schema.TABLES "
-                . "WHERE TABLE_SCHEMA = DATABASE() "
-                . "AND TABLE_NAME = %s "
-                . "LIMIT 1",
-                $tableName
-            );
-            if (is_string($sql) && $sql !== '') {
-                $result = $this->queryAndGetResults($sql, array('log_errors' => false));
-                $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
-                if (!empty($rows) && is_array($rows[0])) {
-                    $row = array_change_key_case($rows[0]);
-                    $collation = $row['table_collation'] ?? '';
-                    if (is_string($collation) && $collation !== '') {
-                        $sanitized = $this->sanitizeCollationIdentifier($collation);
-                        return $sanitized !== '' ? $sanitized : $fallback;
-                    }
-                }
-            }
-        }
-        return $fallback;
+        return $this->collationHelper->getTableCollationString($tableName);
     }
 
     /**
-     * Get the column-level collation for a specific column in a table.
-     *
-     * Queries information_schema.COLUMNS for the COLLATION_NAME of the
-     * given column. Falls back to getTableCollationString() if the column
-     * query fails, and ultimately to utf8mb4_unicode_ci. Result is
-     * validated through sanitizeCollationIdentifier().
+     * Delegate: get the column-level collation for a specific column.
      *
      * @param string $tableName  Fully-qualified table name (including prefix).
      * @param string $columnName Column name to look up.
      * @return string
      */
     public function getColumnCollationString(string $tableName, string $columnName): string {
-        $fallback = 'utf8mb4_unicode_ci';
-        global $wpdb;
-        if (!isset($wpdb) || !method_exists($wpdb, 'prepare')) {
-            return $this->getTableCollationString($tableName);
-        }
-        /** @var wpdb $wpdb */
-        $sql = $wpdb->prepare(
-            "SELECT COLLATION_NAME FROM information_schema.COLUMNS "
-            . "WHERE TABLE_SCHEMA = DATABASE() "
-            . "AND TABLE_NAME = %s "
-            . "AND COLUMN_NAME = %s "
-            . "LIMIT 1",
-            $tableName,
-            $columnName
-        );
-        if (!is_string($sql) || $sql === '') {
-            return $this->getTableCollationString($tableName);
-        }
-        $result = $this->queryAndGetResults($sql, array('log_errors' => false));
-        $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
-        if (empty($rows) || !is_array($rows[0])) {
-            return $this->getTableCollationString($tableName);
-        }
-        $row = array_change_key_case($rows[0]);
-        $collation = $row['collation_name'] ?? '';
-        if (!is_string($collation) || $collation === '') {
-            return $this->getTableCollationString($tableName);
-        }
-        $sanitized = $this->sanitizeCollationIdentifier($collation);
-        return $sanitized !== '' ? $sanitized : $fallback;
+        return $this->collationHelper->getColumnCollationString($tableName, $columnName);
     }
 
-    /** @return string */
-    public function getPreferredUtf8mb4Collation() {
-        global $wpdb;
-        if (isset($wpdb) && isset($wpdb->collate) && !empty($wpdb->collate)) {
-            $wpdbCollation = $this->sanitizeCollationIdentifier((string)$wpdb->collate);
-            if ($wpdbCollation !== '' && stripos($wpdbCollation, 'utf8mb4') !== false) {
-                return $wpdbCollation;
-            }
-        }
-        return 'utf8mb4_unicode_ci';
+    /**
+     * Delegate: return the preferred utf8mb4 collation for this wpdb connection.
+     *
+     * @return string
+     */
+    public function getPreferredUtf8mb4Collation(): string {
+        return $this->collationHelper->getPreferredUtf8mb4Collation();
     }
 
     /**
@@ -1142,7 +1091,7 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
     // =========================================================================
 
     /**
-     * Auto-recover from a collation mismatch detected at query time.
+     * Delegate: auto-recover from a collation mismatch detected at query time.
      *
      * @param string $query
      * @param array<string, mixed> $result passed by reference
@@ -1151,46 +1100,7 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
      * @return void
      */
     public function recoverFromCollationMismatchAndRetry(string $query, array &$result, bool $producesRows, string $resultType): void {
-        if (self::$collationRecoveryInProgress) {
-            return;
-        }
-
-        $cooldownKey = 'abj404_collation_recovery_cooldown';
-        $cooldownUntil = $this->getRuntimeFlag($cooldownKey);
-        $onCooldown = is_scalar($cooldownUntil) && (int)$cooldownUntil > $this->clock()->now();
-
-        if (!$onCooldown) {
-            self::$collationRecoveryInProgress = true;
-            try {
-                $this->logger->infoMessage("Collation mismatch detected: running correctCollations() to converge plugin tables."); // allow-em-dash: original string from DataAccessTrait_Maintenance had em dash, replaced with colon
-                if (class_exists('ABJ_404_Solution_DatabaseUpgradesEtc')) {
-                    $upgrades = abj_service('database_upgrades');
-                    if (method_exists($upgrades, 'correctCollations')) {
-                        $upgrades->correctCollations();
-                    }
-                }
-            } catch (Throwable $e) {
-                $this->logger->warn("correctCollations() threw during collation auto-recovery: " . $e->getMessage());
-            } finally {
-                self::$collationRecoveryInProgress = false;
-                $this->setRuntimeFlag($cooldownKey, $this->clock()->now() + 3600, 3600);
-            }
-        }
-
-        global $wpdb;
-        /** @var wpdb $wpdb */
-        $wpdb->flush();
-        if ($producesRows) {
-            $result['rows'] = $wpdb->get_results($query, $resultType);
-        } else {
-            $wpdb->query($query);
-            $result['rows'] = array();
-        }
-        $this->harvestWpdbResult($result);
-
-        if ($result['last_error'] === '') {
-            $this->logger->debugMessage("Collation auto-recovery succeeded; query retry passed.");
-        }
+        $this->collationHelper->recoverFromCollationMismatchAndRetry($query, $result, $producesRows, $resultType);
     }
 
     /**
