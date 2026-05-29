@@ -192,6 +192,31 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
     	);
     }
 
+    /** @return ABJ_404_Solution_PluginLogicUrlNormalization */
+    public function urlNormalization() {
+        return $this->urlNormalization;
+    }
+
+    /** @return ABJ_404_Solution_PluginLogicAdminActions */
+    public function adminActions() {
+        return $this->adminActions;
+    }
+
+    /** @return ABJ_404_Solution_PluginLogicImportExport */
+    public function importExport() {
+        return $this->importExport;
+    }
+
+    /** @return ABJ_404_Solution_PluginLogicSettingsUpdate */
+    public function settingsUpdate() {
+        return $this->settingsUpdate;
+    }
+
+    /** @return ABJ_404_Solution_PluginLogicPageOrdering */
+    public function pageOrdering() {
+        return $this->pageOrdering;
+    }
+
     /** @return ABJ_404_Solution_ImportExportService */
     private function getImportExportService() {
         if ($this->importExportService !== null) {
