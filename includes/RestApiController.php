@@ -327,7 +327,14 @@ class ABJ_404_Solution_RestApiController {
         $type       = $resolved['type'];
         $dest       = $resolved['dest'];
 
-        $error = $this->redirectsRepo->updateRedirect((int)$type, $dest, $from, $id, (string)$code, $statusType);
+        $error = $this->redirectsRepo->updateRedirect(ABJ_404_Solution_RedirectUpdate::create(
+            $id,
+            (int)$type,
+            (string)$from,
+            (string)$dest,
+            (string)$code,
+            (string)$statusType
+        ));
 
         if ($error !== '') {
             return new \WP_Error('update_failed', $error, array('status' => 500));
@@ -448,7 +455,14 @@ class ABJ_404_Solution_RestApiController {
         $resolved = $this->resolveDestinationType($to);
         $type     = $resolved['type'];
         $dest     = $resolved['dest'];
-        $error    = $this->redirectsRepo->updateRedirect((int)$type, $dest, $from, $id, (string)$code, (string)ABJ404_STATUS_MANUAL);
+        $error    = $this->redirectsRepo->updateRedirect(ABJ_404_Solution_RedirectUpdate::create(
+            $id,
+            (int)$type,
+            (string)$from,
+            (string)$dest,
+            (string)$code,
+            (string)ABJ404_STATUS_MANUAL
+        ));
 
         if ($error !== '') {
             return new \WP_Error('update_failed', $error, array('status' => 500));

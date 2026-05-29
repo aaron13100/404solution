@@ -75,17 +75,14 @@ interface ABJ_404_Solution_RedirectsRepositoryInterface {
     // =========================================================================
 
     /**
-     * @param string $type
-     * @param string $dest
-     * @param string $fromURL
-     * @param int $idForUpdate
-     * @param string $redirectCode
-     * @param string $statusType
-     * @param int|null $startTs
-     * @param int|null $endTs
-     * @return string
+     * Mutate an existing redirect row. Inputs flow through
+     * {@see ABJ_404_Solution_RedirectUpdate}, a typed parameter object that
+     * replaced an eight-argument positional signature so $fromUrl and
+     * $destination (both arbitrary strings) cannot be silently swapped.
+     *
+     * @return string Error message on validation failure, empty string on success.
      */
-    public function updateRedirect($type, $dest, $fromURL, $idForUpdate, $redirectCode, $statusType, $startTs = null, $endTs = null);
+    public function updateRedirect(ABJ_404_Solution_RedirectUpdate $update): string;
 
     /**
      * @param array<int, int|string> $ids

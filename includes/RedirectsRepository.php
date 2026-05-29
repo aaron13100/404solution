@@ -178,10 +178,10 @@ class ABJ_404_Solution_RedirectsRepository implements ABJ_404_Solution_Redirects
 
         if (!is_numeric($type)) {
             $this->logger->errorMessage("Wrong data type for redirect. TYPE is non-numeric. From: " .
-                    esc_url($fromURL) . " to: " . esc_url($final_dest) . ", Type: " .esc_html($type) . ", Status: " . $status);
+                    esc_url($fromURL) . " to: " . esc_url($final_dest) . ", Type: " .esc_html((string)$type) . ", Status: " . $status);
         } else if (!is_numeric($status)) {
             $this->logger->errorMessage("Wrong data type for redirect. STATUS is non-numeric. From: " .
-                    esc_url($fromURL) . " to: " . esc_url($final_dest) . ", Type: " .esc_html($type) . ", Status: " . $status);
+                    esc_url($fromURL) . " to: " . esc_url($final_dest) . ", Type: " .esc_html((string)$type) . ", Status: " . $status);
         }
 
         $statusAsInt = is_numeric($status) ? absint($status) : -1;
@@ -698,22 +698,28 @@ class ABJ_404_Solution_RedirectsRepository implements ABJ_404_Solution_Redirects
     // =========================================================================
 
     /** @inheritDoc */
-    function updateRedirect($type, $dest, $fromURL, $idForUpdate, $redirectCode, $statusType, $startTs = null, $endTs = null) {
+    public function updateRedirect(ABJ_404_Solution_RedirectUpdate $update): string {
+        $type = $update->getType();
+        $idForUpdate = $update->getId();
         if (($type < 0) || ($idForUpdate <= 0)) {
             $this->logger->errorMessage("Bad data passed for update redirect request. Type: " .
-                esc_html((string)$type) . ", Dest: " . esc_html($dest) . ", ID(s): " . esc_html((string)$idForUpdate));
+                esc_html((string)$type) . ", Dest: " . esc_html($update->getDestination()) .
+                ", ID(s): " . esc_html((string)$idForUpdate));
             echo __('Error: Bad data passed for update redirect request.', '404-solution');
             return '';
         }
 
+        $startTs = $update->getStartTs();
+        $endTs = $update->getEndTs();
+
         $redirectsTable = $this->dbCore->doTableNameReplacements("{wp_abj404_redirects}");
 
         $updateData = array(
-            'url' => $fromURL,
-            'status' => $statusType,
+            'url' => $update->getFromUrl(),
+            'status' => $update->getStatusType(),
             'type' => absint($type),
-            'final_dest' => $dest,
-            'code' => esc_attr($redirectCode),
+            'final_dest' => $update->getDestination(),
+            'code' => esc_attr($update->getCode()),
         );
         $updateFormats = array('%s', '%d', '%d', '%s', '%d');
 

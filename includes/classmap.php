@@ -136,6 +136,7 @@ return array(
     'ABJ_404_Solution_StorageOptionContracts' => $base . 'includes/StorageOptionContracts.php',
     'ABJ_404_Solution_SuggestionTransient' => $base . 'includes/SuggestionTransient.php',
     'ABJ_404_Solution_RedirectRow' => $base . 'includes/RedirectRow.php',
+    'ABJ_404_Solution_RedirectUpdate' => $base . 'includes/RedirectUpdate.php',
     'ABJ_404_Solution_EngineProfileSaveRequest' => $base . 'includes/EngineProfileSaveRequest.php',
     'ABJ_404_Solution_SuggestionDisplayOptions' => $base . 'includes/SuggestionDisplayOptions.php',
     'ABJ_404_Solution_PostRef' => $base . 'includes/PostRef.php',

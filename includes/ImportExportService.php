@@ -940,7 +940,14 @@ class ABJ_404_Solution_ImportExportService {
                 // Overwrite path: mutate the existing row so the user's bulk
                 // CSV edit (e.g. Manual to Regex on 55 city patterns) lands
                 // without per-row admin clicks.
-                $this->redirectsRepository->updateRedirect((int)$type, (string)$final_dest, $fromURL, $existingId, $code, (int)$status);
+                $this->redirectsRepository->updateRedirect(ABJ_404_Solution_RedirectUpdate::create(
+                    (int)$existingId,
+                    (int)$type,
+                    (string)$fromURL,
+                    (string)$final_dest,
+                    (string)$code,
+                    (string)(int)$status
+                ));
             } else {
                 $this->redirectsRepository->setupRedirect(ABJ_404_Solution_RedirectSpec::create(
                     $fromURL, (string)$status, (string)$type, (string)$final_dest, $code, 0, $engine

@@ -774,17 +774,8 @@ class ABJ_404_Solution_DataAccess implements ABJ_404_Solution_ContentRepositoryI
         $this->getRedirectsRepo()->saveRedirectConditions($redirectId, $conditions);
     }
 
-    public function updateRedirect($type, $dest, $fromURL, $idForUpdate, $redirectCode, $statusType, $startTs = null, $endTs = null) {
-        return $this->getRedirectsRepo()->updateRedirect(
-            $type,
-            $dest,
-            $fromURL,
-            $idForUpdate,
-            $redirectCode,
-            $statusType,
-            $startTs,
-            $endTs
-        );
+    public function updateRedirect(ABJ_404_Solution_RedirectUpdate $update): string {
+        return $this->getRedirectsRepo()->updateRedirect($update);
     }
 
     public function getRedirectsByIDs($ids) {

@@ -765,8 +765,16 @@ class ABJ_404_Solution_PluginLogicAdminActions {
                 $autoPromote = $this->maybeAutoPromoteRegex($statusType, $fromURL);
                 $statusType = $autoPromote['statusType'];
                 $fromURL = $autoPromote['url'];
-                $this->redirectsRepo->updateRedirect($tdType, $tdDest,
-                        $fromURL, $id, $code, (string)$statusType, $startTs, $endTs);
+                $this->redirectsRepo->updateRedirect(ABJ_404_Solution_RedirectUpdate::create(
+                    $id,
+                    (int)$tdType,
+                    (string)$fromURL,
+                    (string)$tdDest,
+                    (string)$code,
+                    (string)$statusType,
+                    $startTs,
+                    $endTs
+                ));
                 if ($autoPromote['autoPromoted']) {
                     $this->saveRegexAutoPromoteNotice($id, $originalFromURL, $fromURL, $autoPromote['urlRewritten']);
                 }
@@ -782,8 +790,14 @@ class ABJ_404_Solution_PluginLogicAdminActions {
                 foreach ($redirects_multiple as $redirect) {
                     $redirectUrl = is_string($redirect['url']) ? $redirect['url'] : '';
                     $redirectId = is_scalar($redirect['id']) ? (int)$redirect['id'] : 0;
-                    $this->redirectsRepo->updateRedirect($tdType, $tdDest,
-                            $redirectUrl, $redirectId, $code, (string)$statusType);
+                    $this->redirectsRepo->updateRedirect(ABJ_404_Solution_RedirectUpdate::create(
+                        $redirectId,
+                        (int)$tdType,
+                        (string)$redirectUrl,
+                        (string)$tdDest,
+                        (string)$code,
+                        (string)$statusType
+                    ));
                 }
                 $this->viewBuild->invalidateViewDoneAndScheduleRebuild();
 
