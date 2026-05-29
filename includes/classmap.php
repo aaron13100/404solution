@@ -113,6 +113,7 @@ return array(
     'ABJ_404_Solution_RedirectsRepositoryInterface' => $base . 'includes/RedirectsRepositoryInterface.php',
     'ABJ_404_Solution_RedirectsRepository' => $base . 'includes/RedirectsRepository.php',
     'ABJ_404_Solution_RedirectSpec' => $base . 'includes/RedirectSpec.php',
+    'ABJ_404_Solution_AdminActionsDependencies' => $base . 'includes/AdminActionsDependencies.php',
     'ABJ_404_Solution_RedirectsRetentionServiceInterface' => $base . 'includes/RedirectsRetentionServiceInterface.php',
     'ABJ_404_Solution_RedirectsRetentionService' => $base . 'includes/RedirectsRetentionService.php',
     'ABJ_404_Solution_LogsHitsRollupServiceInterface' => $base . 'includes/LogsHitsRollupServiceInterface.php',

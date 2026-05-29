@@ -158,6 +158,7 @@ function abj404_autoloader($class) {
 			'ABJ_404_Solution_PluginLogic' => array(
 				$inc . 'PluginLogicUrlNormalization.php',
 				$inc . 'PluginLogicAdminActions.php',
+				$inc . 'AdminActionsDependencies.php',
 				$inc . 'PluginLogicImportExport.php',
 				$inc . 'PluginLogicSettingsUpdate.php',
 				$inc . 'PluginLogicPageOrdering.php',
@@ -361,6 +362,7 @@ if (!function_exists('abj404_shortCodeListener')) {
 				$inc . 'PluginLogic.php',
 				$inc . 'PluginLogicUrlNormalization.php',
 				$inc . 'PluginLogicAdminActions.php',
+				$inc . 'AdminActionsDependencies.php',
 				$inc . 'PluginLogicImportExport.php',
 				$inc . 'PluginLogicSettingsUpdate.php',
 				$inc . 'PluginLogicPageOrdering.php',

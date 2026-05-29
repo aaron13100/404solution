@@ -17,19 +17,19 @@ class ABJ_404_Solution_PluginLogicAdminActions {
     /** @var ABJ_404_Solution_Logging */
     private $logger;
 
-    /** @var ABJ_404_Solution_RedirectsRepositoryInterface */
+    /** @var ABJ_404_Solution_RedirectsRepositoryInterface|ABJ_404_Solution_DataAccess */
     private $redirectsRepo;
 
-    /** @var ABJ_404_Solution_ViewBuildOrchestratorInterface */
+    /** @var ABJ_404_Solution_ViewBuildOrchestratorInterface|ABJ_404_Solution_DataAccess */
     private $viewBuild;
 
-    /** @var ABJ_404_Solution_ViewReadServiceInterface */
+    /** @var ABJ_404_Solution_ViewReadServiceInterface|ABJ_404_Solution_DataAccess */
     private $viewRead;
 
     /** @var ABJ_404_Solution_ContentRepositoryInterface */
     private $contentRepo;
 
-    /** @var ABJ_404_Solution_DatabaseCoreInterface */
+    /** @var ABJ_404_Solution_DatabaseCoreInterface|ABJ_404_Solution_DataAccess */
     private $dbCore;
 
     /** @var ABJ_404_Solution_DataAccess */
@@ -42,28 +42,24 @@ class ABJ_404_Solution_PluginLogicAdminActions {
     private $pluginLogic;
 
     /**
-     * @param ABJ_404_Solution_Functions $f
-     * @param ABJ_404_Solution_Logging $logger
-     * @param ABJ_404_Solution_RedirectsRepositoryInterface $redirectsRepo
-     * @param ABJ_404_Solution_ViewBuildOrchestratorInterface $viewBuild
-     * @param ABJ_404_Solution_ViewReadServiceInterface $viewRead
-     * @param ABJ_404_Solution_ContentRepositoryInterface $contentRepo
-     * @param ABJ_404_Solution_DatabaseCoreInterface $dbCore
-     * @param ABJ_404_Solution_DataAccess $dao
-     * @param ABJ_404_Solution_PluginLogicUrlNormalization $urlNormalization
-     * @param ABJ_404_Solution_PluginLogic $pluginLogic
+     * Construct with a single typed dependency bundle. Replaces a
+     * 10-positional-parameter signature (audit source design-audit-2026-05-29.md,
+     * criterion 220 Interface Size). Internal field layout is unchanged; only
+     * the constructor interface narrows.
+     *
+     * @param ABJ_404_Solution_AdminActionsDependencies $deps
      */
-    function __construct($f, $logger, $redirectsRepo, $viewBuild, $viewRead, $contentRepo, $dbCore, $dao, $urlNormalization, $pluginLogic) {
-        $this->f = $f;
-        $this->logger = $logger;
-        $this->redirectsRepo = $redirectsRepo;
-        $this->viewBuild = $viewBuild;
-        $this->viewRead = $viewRead;
-        $this->contentRepo = $contentRepo;
-        $this->dbCore = $dbCore;
-        $this->dao = $dao;
-        $this->urlNormalization = $urlNormalization;
-        $this->pluginLogic = $pluginLogic;
+    function __construct(ABJ_404_Solution_AdminActionsDependencies $deps) {
+        $this->f = $deps->getFunctions();
+        $this->logger = $deps->getLogger();
+        $this->redirectsRepo = $deps->getRedirectsRepo();
+        $this->viewBuild = $deps->getViewBuild();
+        $this->viewRead = $deps->getViewRead();
+        $this->contentRepo = $deps->getContentRepo();
+        $this->dbCore = $deps->getDbCore();
+        $this->dao = $deps->getDao();
+        $this->urlNormalization = $deps->getUrlNormalization();
+        $this->pluginLogic = $deps->getPluginLogic();
     }
 
     /**
@@ -78,12 +74,12 @@ class ABJ_404_Solution_PluginLogicAdminActions {
         return $this->logger;
     }
 
-    /** @return ABJ_404_Solution_ViewBuildOrchestratorInterface */
+    /** @return ABJ_404_Solution_ViewBuildOrchestratorInterface|ABJ_404_Solution_DataAccess */
     public function getViewBuild() {
         return $this->viewBuild;
     }
 
-    /** @return ABJ_404_Solution_RedirectsRepositoryInterface */
+    /** @return ABJ_404_Solution_RedirectsRepositoryInterface|ABJ_404_Solution_DataAccess */
     public function getRedirectsRepo() {
         return $this->redirectsRepo;
     }

@@ -185,8 +185,10 @@ class ABJ_404_Solution_PluginLogic {
     	);
 
     	$this->adminActions = new ABJ_404_Solution_PluginLogicAdminActions(
-    	    $this->f, $this->logger, $this->redirectsRepo, $this->viewBuild, $this->viewRead,
-    	    $this->contentRepo, $this->dbCore, $this->dao, $this->urlNormalization, $this
+    	    new ABJ_404_Solution_AdminActionsDependencies(
+    	        $this->f, $this->logger, $this->redirectsRepo, $this->viewBuild, $this->viewRead,
+    	        $this->contentRepo, $this->dbCore, $this->dao, $this->urlNormalization, $this
+    	    )
     	);
     }
 
