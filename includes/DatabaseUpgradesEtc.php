@@ -23,6 +23,85 @@ require_once __DIR__ . '/DatabaseUpgradeSchemaDiff.php';
  * Read the database, Store to the database,
  */
 
+/**
+ * Sub-component methods reached via __call -> invokeDatabaseUpgradeMethod().
+ * Listed here so static analysis and IDEs recognize them on this facade.
+ *
+ * @method mixed createIndexes()
+ * @method mixed verifyIndexes($tableName, $createTableStatementGoal)
+ * @method mixed indexExists($tableName, $indexName)
+ * @method mixed parseIndexDDLToSpec($indexDDL)
+ * @method mixed parseIndexSpecsFromCreateTableSql($createTableSql)
+ * @method mixed buildAddIndexStatementFromParts($tableName, $indexName, $columnsSql, $unique)
+ * @method mixed ensureLogsCompositeIndex($logsTable, $createSqlOverride = null)
+ * @method mixed ensureLogsv2CanonicalUrlColumn(string $logsTable)
+ * @method mixed ensureRedirectsCanonicalUrlColumn(string $redirectsTable)
+ * @method mixed updateTableEngineToInnoDB()
+ * @method mixed getTableCollation($tableName)
+ * @method mixed getTableCollationFromShowCreate($tableName)
+ * @method mixed getTableCollationFromInformationSchema($tableName)
+ * @method mixed getDefaultCollationForCharset($charset)
+ * @method mixed sanitizeCollationIdentifier($collation)
+ * @method mixed resolveTargetUtf8mb4Collation($tableNames, $tableCollations = [])
+ * @method mixed correctCollations()
+ * @method mixed tableHasMismatchedCharacterColumnCollation($tableName, $targetCharset, $targetCollation)
+ * @method mixed runDailyInsuranceCheck()
+ * @method mixed runSelfHealPrologue()
+ * @method mixed verifyAndRepairCurrentSite()
+ * @method mixed cleanupExpiredRateLimitTransients()
+ * @method mixed runDatabaseMaintenanceTasks()
+ * @method mixed refreshViewDoneSnapshotInline()
+ * @method mixed backfillRedirectsCanonicalUrl()
+ * @method mixed backfillLogsv2CanonicalUrl()
+ * @method mixed scheduleLogsv2CanonicalUrlBackfill()
+ * @method mixed shouldScheduleLogsv2CanonicalBackfillViaCron()
+ * @method mixed columnExists(string $tableName, string $columnName)
+ * @method mixed scheduleBackgroundMultisiteBatch(string $optionPrefix, string $hookName, string $label, int $alreadyProcessedBlogId)
+ * @method mixed processMultisiteBatch(string $optionPrefix, string $hookName, string $label, callable $perSiteAction)
+ * @method mixed scheduleBackgroundMultisiteActivation(int $alreadyProcessedBlogId)
+ * @method mixed processMultisiteActivationBatch()
+ * @method mixed scheduleBackgroundMultisiteUpgrade(int $alreadyProcessedBlogId)
+ * @method mixed processMultisiteUpgradeBatch()
+ * @method mixed createTablesForAllSites()
+ * @method mixed scheduleNGramCacheRebuild()
+ * @method mixed rebuildNGramCacheAsync($offset = 0)
+ * @method mixed rebuildNGramCache($batchSize = 100, $forceRebuild = false)
+ * @method mixed syncMissingNGrams($batchSize = 50)
+ * @method mixed cleanupOrphanedNGrams()
+ * @method mixed buildNGramsForCategories($batchSize = 50)
+ * @method mixed buildNGramsForTags($batchSize = 50)
+ * @method mixed buildNGramsForAllContent($batchSize = 100)
+ * @method mixed rebuildNGramCacheAsyncMultisite(int $batchSize, int $maxBatchesPerRun)
+ * @method mixed rebuildNGramCacheAsyncSingleSite(int $batchSize, int $maxBatchesPerRun)
+ * @method mixed isNetworkActivated()
+ * @method mixed getNetworkAwareOption($option_name, $default = false)
+ * @method mixed updateNetworkAwareOption($option_name, $value)
+ * @method mixed countTotalPagesForNGramRebuild()
+ * @method mixed adoptOrphanedTables()
+ * @method mixed countOldPrefixRows(string $oldPrefix, array<int, string> $knownTables)
+ * @method mixed verifyOwnershipViaLogs(string $oldPrefix)
+ * @method mixed verifyOwnershipViaRedirects(string $oldPrefix)
+ * @method mixed adoptDataFromPrefix(string $oldPrefix, string $currentPrefix, array<int, string> $knownTables)
+ * @method mixed getCommonColumns(string $tableA, string $tableB)
+ * @method mixed getTableColumns(string $tableName)
+ * @method mixed migrateURLsToRelativePaths()
+ * @method mixed updatePluginCheck()
+ * @method mixed doUpdatePlugin($pluginInfo)
+ * @method mixed shouldUpdate($pluginInfo)
+ * @method mixed verifyColumns($tableName, $createTableStatementGoal)
+ * @method mixed getTableDifferences($tableName, $createTableStatementGoal)
+ * @method mixed updateATableBasedOnDifferences($tableName, $tableDifferences)
+ * @method mixed removeCommentsFromColumns($createTableDDL)
+ * @method mixed normalizeColumnDDL($ddl)
+ * @method mixed deleteIndexes($tableName)
+ * @method mixed correctIssuesBefore()
+ * @method mixed correctIssuesAfter()
+ * @method mixed dropDeprecatedMutationWatermarkTable()
+ * @method mixed repairStrippedViewCacheTable()
+ * @method mixed ddlDeclaresIdColumn(string $ddl)
+ * @method mixed recoverMissingLogsHitsTable()
+ * @method mixed correctMatchData()
+ */
 class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseUpgradeCoordinator {
 
 	/** @var self|null */
@@ -366,595 +445,25 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 	}
 
 	/**
-	 * @return mixed
-	 */
-	public function createIndexes() {
-		return $this->invokeDatabaseUpgradeMethod('createIndexes', func_get_args());
-	}
-
-	/**
-	 * @param mixed $tableName
-	 * @param mixed $createTableStatementGoal
-	 * @return mixed
-	 */
-	public function verifyIndexes($tableName, $createTableStatementGoal) {
-		return $this->invokeDatabaseUpgradeMethod('verifyIndexes', func_get_args());
-	}
-
-	/**
-	 * @param mixed $tableName
-	 * @param mixed $indexName
-	 * @return mixed
-	 */
-	private function indexExists($tableName, $indexName) {
-		return $this->invokeDatabaseUpgradeMethod('indexExists', func_get_args());
-	}
-
-	/**
-	 * @param mixed $indexDDL
-	 * @return mixed
-	 */
-	private function parseIndexDDLToSpec($indexDDL) {
-		return $this->invokeDatabaseUpgradeMethod('parseIndexDDLToSpec', func_get_args());
-	}
-
-	/**
-	 * @param mixed $createTableSql
-	 * @return mixed
-	 */
-	private function parseIndexSpecsFromCreateTableSql($createTableSql) {
-		return $this->invokeDatabaseUpgradeMethod('parseIndexSpecsFromCreateTableSql', func_get_args());
-	}
-
-	/**
-	 * @param mixed $tableName
-	 * @param mixed $indexName
-	 * @param mixed $columnsSql
-	 * @param mixed $unique
-	 * @return mixed
-	 */
-	private function buildAddIndexStatementFromParts($tableName, $indexName, $columnsSql, $unique) {
-		return $this->invokeDatabaseUpgradeMethod('buildAddIndexStatementFromParts', func_get_args());
-	}
-
-	/**
-	 * @param mixed $logsTable
-	 * @param mixed $createSqlOverride
-	 * @return mixed
-	 */
-	private function ensureLogsCompositeIndex($logsTable, $createSqlOverride = null) {
-		return $this->invokeDatabaseUpgradeMethod('ensureLogsCompositeIndex', func_get_args());
-	}
-
-	/**
-	 * @param string $logsTable
-	 * @return mixed
-	 */
-	private function ensureLogsv2CanonicalUrlColumn(string $logsTable) {
-		return $this->invokeDatabaseUpgradeMethod('ensureLogsv2CanonicalUrlColumn', func_get_args());
-	}
-
-	/**
-	 * @param string $redirectsTable
-	 * @return mixed
-	 */
-	private function ensureRedirectsCanonicalUrlColumn(string $redirectsTable) {
-		return $this->invokeDatabaseUpgradeMethod('ensureRedirectsCanonicalUrlColumn', func_get_args());
-	}
-
-	/**
-	 * @return mixed
-	 */
-	public function updateTableEngineToInnoDB() {
-		return $this->invokeDatabaseUpgradeMethod('updateTableEngineToInnoDB', func_get_args());
-	}
-
-	/**
-	 * @param mixed $tableName
-	 * @return mixed
-	 */
-	public function getTableCollation($tableName) {
-		return $this->invokeDatabaseUpgradeMethod('getTableCollation', func_get_args());
-	}
-
-	/**
-	 * @param mixed $tableName
-	 * @return mixed
-	 */
-	public function getTableCollationFromShowCreate($tableName) {
-		return $this->invokeDatabaseUpgradeMethod('getTableCollationFromShowCreate', func_get_args());
-	}
-
-	/**
-	 * @param mixed $tableName
-	 * @return mixed
-	 */
-	public function getTableCollationFromInformationSchema($tableName) {
-		return $this->invokeDatabaseUpgradeMethod('getTableCollationFromInformationSchema', func_get_args());
-	}
-
-	/**
-	 * @param mixed $charset
-	 * @return mixed
-	 */
-	public function getDefaultCollationForCharset($charset) {
-		return $this->invokeDatabaseUpgradeMethod('getDefaultCollationForCharset', func_get_args());
-	}
-
-	/**
-	 * @param mixed $collation
-	 * @return mixed
-	 */
-	private function sanitizeCollationIdentifier($collation) {
-		return $this->invokeDatabaseUpgradeMethod('sanitizeCollationIdentifier', func_get_args());
-	}
-
-	/**
-	 * @param mixed $tableNames
-	 * @param mixed $tableCollations
-	 * @return mixed
-	 */
-	private function resolveTargetUtf8mb4Collation($tableNames, $tableCollations = []) {
-		return $this->invokeDatabaseUpgradeMethod('resolveTargetUtf8mb4Collation', func_get_args());
-	}
-
-	/**
-	 * @return mixed
-	 */
-	public function correctCollations() {
-		return $this->invokeDatabaseUpgradeMethod('correctCollations', func_get_args());
-	}
-
-	/**
-	 * @param mixed $tableName
-	 * @param mixed $targetCharset
-	 * @param mixed $targetCollation
-	 * @return mixed
-	 */
-	private function tableHasMismatchedCharacterColumnCollation($tableName, $targetCharset, $targetCollation) {
-		return $this->invokeDatabaseUpgradeMethod('tableHasMismatchedCharacterColumnCollation', func_get_args());
-	}
-
-	/**
-	 * @return mixed
-	 */
-	public function runDailyInsuranceCheck() {
-		return $this->invokeDatabaseUpgradeMethod('runDailyInsuranceCheck', func_get_args());
-	}
-
-	/**
-	 * @return mixed
-	 */
-	public function runSelfHealPrologue() {
-		return $this->invokeDatabaseUpgradeMethod('runSelfHealPrologue', func_get_args());
-	}
-
-	/**
-	 * @return mixed
-	 */
-	private function verifyAndRepairCurrentSite() {
-		return $this->invokeDatabaseUpgradeMethod('verifyAndRepairCurrentSite', func_get_args());
-	}
-
-	/**
-	 * @return mixed
-	 */
-	public function cleanupExpiredRateLimitTransients() {
-		return $this->invokeDatabaseUpgradeMethod('cleanupExpiredRateLimitTransients', func_get_args());
-	}
-
-	/**
-	 * @return mixed
-	 */
-	public function runDatabaseMaintenanceTasks() {
-		return $this->invokeDatabaseUpgradeMethod('runDatabaseMaintenanceTasks', func_get_args());
-	}
-
-	/**
-	 * @return mixed
-	 */
-	private function refreshViewDoneSnapshotInline() {
-		return $this->invokeDatabaseUpgradeMethod('refreshViewDoneSnapshotInline', func_get_args());
-	}
-
-	/**
-	 * @return mixed
-	 */
-	public function backfillRedirectsCanonicalUrl() {
-		return $this->invokeDatabaseUpgradeMethod('backfillRedirectsCanonicalUrl', func_get_args());
-	}
-
-	/**
-	 * @return mixed
-	 */
-	public function backfillLogsv2CanonicalUrl() {
-		return $this->invokeDatabaseUpgradeMethod('backfillLogsv2CanonicalUrl', func_get_args());
-	}
-
-	/**
-	 * @return mixed
-	 */
-	public function scheduleLogsv2CanonicalUrlBackfill() {
-		return $this->invokeDatabaseUpgradeMethod('scheduleLogsv2CanonicalUrlBackfill', func_get_args());
-	}
-
-	/**
-	 * @return mixed
-	 */
-	private function shouldScheduleLogsv2CanonicalBackfillViaCron() {
-		return $this->invokeDatabaseUpgradeMethod('shouldScheduleLogsv2CanonicalBackfillViaCron', func_get_args());
-	}
-
-	/**
-	 * @param string $tableName
-	 * @param string $columnName
-	 * @return mixed
-	 */
-	private function columnExists(string $tableName, string $columnName) {
-		return $this->invokeDatabaseUpgradeMethod('columnExists', func_get_args());
-	}
-
-	/**
-	 * @param string $optionPrefix
-	 * @param string $hookName
-	 * @param string $label
-	 * @param int $alreadyProcessedBlogId
-	 * @return mixed
-	 */
-	private function scheduleBackgroundMultisiteBatch(string $optionPrefix, string $hookName, string $label, int $alreadyProcessedBlogId) {
-		return $this->invokeDatabaseUpgradeMethod('scheduleBackgroundMultisiteBatch', func_get_args());
-	}
-
-	/**
-	 * @param string $optionPrefix
-	 * @param string $hookName
-	 * @param string $label
-	 * @param callable $perSiteAction
-	 * @return mixed
-	 */
-	public function processMultisiteBatch(string $optionPrefix, string $hookName, string $label, callable $perSiteAction) {
-		return $this->invokeDatabaseUpgradeMethod('processMultisiteBatch', func_get_args());
-	}
-
-	/**
-	 * @param int $alreadyProcessedBlogId
-	 * @return mixed
-	 */
-	private function scheduleBackgroundMultisiteActivation(int $alreadyProcessedBlogId) {
-		return $this->invokeDatabaseUpgradeMethod('scheduleBackgroundMultisiteActivation', func_get_args());
-	}
-
-	/**
-	 * @return mixed
-	 */
-	public function processMultisiteActivationBatch() {
-		return $this->invokeDatabaseUpgradeMethod('processMultisiteActivationBatch', func_get_args());
-	}
-
-	/**
-	 * @param int $alreadyProcessedBlogId
-	 * @return mixed
-	 */
-	private function scheduleBackgroundMultisiteUpgrade(int $alreadyProcessedBlogId) {
-		return $this->invokeDatabaseUpgradeMethod('scheduleBackgroundMultisiteUpgrade', func_get_args());
-	}
-
-	/**
-	 * @return mixed
-	 */
-	public function processMultisiteUpgradeBatch() {
-		return $this->invokeDatabaseUpgradeMethod('processMultisiteUpgradeBatch', func_get_args());
-	}
-
-	/**
-	 * @return mixed
-	 */
-	private function createTablesForAllSites() {
-		return $this->invokeDatabaseUpgradeMethod('createTablesForAllSites', func_get_args());
-	}
-
-	/**
-	 * @return mixed
-	 */
-	public function scheduleNGramCacheRebuild() {
-		return $this->invokeDatabaseUpgradeMethod('scheduleNGramCacheRebuild', func_get_args());
+	 * Pass-through magic delegation to sub-component upgrade classes.
+	 *
+	 * The 9 ABJ_404_Solution_DatabaseUpgrade* sub-components own the actual
+	 * upgrade logic; this coordinator owns lifecycle + dependency wiring only.
+	 * Every external caller that used to invoke a typed wrapper here (e.g.
+	 * createIndexes(), backfillRedirectsCanonicalUrl()) now lands in __call
+	 * and routes through invokeDatabaseUpgradeMethod()'s delegate map.
+	 *
+	 * Internal callers in this file (e.g. $this->isNetworkActivated()) also
+	 * resolve through __call because no concrete method declarations exist.
+	 *
+	 * @param string $name
+	 * @param array<int, mixed> $arguments
+	 * @return mixed
+	 */
+	public function __call(string $name, array $arguments) {
+		return $this->invokeDatabaseUpgradeMethod($name, $arguments);
 	}
 
-	/**
-	 * @param mixed $offset
-	 * @return mixed
-	 */
-	public function rebuildNGramCacheAsync($offset = 0) {
-		return $this->invokeDatabaseUpgradeMethod('rebuildNGramCacheAsync', func_get_args());
-	}
-
-	/**
-	 * @param mixed $batchSize
-	 * @param mixed $forceRebuild
-	 * @return mixed
-	 */
-	public function rebuildNGramCache($batchSize = 100, $forceRebuild = false) {
-		return $this->invokeDatabaseUpgradeMethod('rebuildNGramCache', func_get_args());
-	}
-
-	/**
-	 * @param mixed $batchSize
-	 * @return mixed
-	 */
-	public function syncMissingNGrams($batchSize = 50) {
-		return $this->invokeDatabaseUpgradeMethod('syncMissingNGrams', func_get_args());
-	}
-
-	/**
-	 * @return mixed
-	 */
-	public function cleanupOrphanedNGrams() {
-		return $this->invokeDatabaseUpgradeMethod('cleanupOrphanedNGrams', func_get_args());
-	}
-
-	/**
-	 * @param mixed $batchSize
-	 * @return mixed
-	 */
-	public function buildNGramsForCategories($batchSize = 50) {
-		return $this->invokeDatabaseUpgradeMethod('buildNGramsForCategories', func_get_args());
-	}
-
-	/**
-	 * @param mixed $batchSize
-	 * @return mixed
-	 */
-	public function buildNGramsForTags($batchSize = 50) {
-		return $this->invokeDatabaseUpgradeMethod('buildNGramsForTags', func_get_args());
-	}
-
-	/**
-	 * @param mixed $batchSize
-	 * @return mixed
-	 */
-	public function buildNGramsForAllContent($batchSize = 100) {
-		return $this->invokeDatabaseUpgradeMethod('buildNGramsForAllContent', func_get_args());
-	}
-
-	/**
-	 * @param int $batchSize
-	 * @param int $maxBatchesPerRun
-	 * @return mixed
-	 */
-	private function rebuildNGramCacheAsyncMultisite(int $batchSize, int $maxBatchesPerRun) {
-		return $this->invokeDatabaseUpgradeMethod('rebuildNGramCacheAsyncMultisite', func_get_args());
-	}
-
-	/**
-	 * @param int $batchSize
-	 * @param int $maxBatchesPerRun
-	 * @return mixed
-	 */
-	private function rebuildNGramCacheAsyncSingleSite(int $batchSize, int $maxBatchesPerRun) {
-		return $this->invokeDatabaseUpgradeMethod('rebuildNGramCacheAsyncSingleSite', func_get_args());
-	}
-
-	/**
-	 * @return mixed
-	 */
-	private function isNetworkActivated() {
-		return $this->invokeDatabaseUpgradeMethod('isNetworkActivated', func_get_args());
-	}
-
-	/**
-	 * @param mixed $option_name
-	 * @param mixed $default
-	 * @return mixed
-	 */
-	private function getNetworkAwareOption($option_name, $default = false) {
-		return $this->invokeDatabaseUpgradeMethod('getNetworkAwareOption', func_get_args());
-	}
-
-	/**
-	 * @param mixed $option_name
-	 * @param mixed $value
-	 * @return mixed
-	 */
-	private function updateNetworkAwareOption($option_name, $value) {
-		return $this->invokeDatabaseUpgradeMethod('updateNetworkAwareOption', func_get_args());
-	}
-
-	/**
-	 * @return mixed
-	 */
-	private function countTotalPagesForNGramRebuild() {
-		return $this->invokeDatabaseUpgradeMethod('countTotalPagesForNGramRebuild', func_get_args());
-	}
-
-	/**
-	 * @return mixed
-	 */
-	private function adoptOrphanedTables() {
-		return $this->invokeDatabaseUpgradeMethod('adoptOrphanedTables', func_get_args());
-	}
-
-	/**
-	 * @param string $oldPrefix
-	 * @param array<int|string, mixed> $knownTables
-	 * @return mixed
-	 */
-	private function countOldPrefixRows(string $oldPrefix, array $knownTables) {
-		return $this->invokeDatabaseUpgradeMethod('countOldPrefixRows', func_get_args());
-	}
-
-	/**
-	 * @param string $oldPrefix
-	 * @return mixed
-	 */
-	private function verifyOwnershipViaLogs(string $oldPrefix) {
-		return $this->invokeDatabaseUpgradeMethod('verifyOwnershipViaLogs', func_get_args());
-	}
-
-	/**
-	 * @param string $oldPrefix
-	 * @return mixed
-	 */
-	private function verifyOwnershipViaRedirects(string $oldPrefix) {
-		return $this->invokeDatabaseUpgradeMethod('verifyOwnershipViaRedirects', func_get_args());
-	}
-
-	/**
-	 * @param string $oldPrefix
-	 * @param string $currentPrefix
-	 * @param array<int|string, mixed> $knownTables
-	 * @return mixed
-	 */
-	private function adoptDataFromPrefix(string $oldPrefix, string $currentPrefix, array $knownTables) {
-		return $this->invokeDatabaseUpgradeMethod('adoptDataFromPrefix', func_get_args());
-	}
-
-	/**
-	 * @param string $tableA
-	 * @param string $tableB
-	 * @return mixed
-	 */
-	private function getCommonColumns(string $tableA, string $tableB) {
-		return $this->invokeDatabaseUpgradeMethod('getCommonColumns', func_get_args());
-	}
-
-	/**
-	 * @param string $tableName
-	 * @return mixed
-	 */
-	private function getTableColumns(string $tableName) {
-		return $this->invokeDatabaseUpgradeMethod('getTableColumns', func_get_args());
-	}
-
-	/**
-	 * @return mixed
-	 */
-	public function migrateURLsToRelativePaths() {
-		return $this->invokeDatabaseUpgradeMethod('migrateURLsToRelativePaths', func_get_args());
-	}
-
-	/**
-	 * @return mixed
-	 */
-	public function updatePluginCheck() {
-		return $this->invokeDatabaseUpgradeMethod('updatePluginCheck', func_get_args());
-	}
-
-	/**
-	 * @param mixed $pluginInfo
-	 * @return mixed
-	 */
-	public function doUpdatePlugin($pluginInfo) {
-		return $this->invokeDatabaseUpgradeMethod('doUpdatePlugin', func_get_args());
-	}
-
-	/**
-	 * @param mixed $pluginInfo
-	 * @return mixed
-	 */
-	public function shouldUpdate($pluginInfo) {
-		return $this->invokeDatabaseUpgradeMethod('shouldUpdate', func_get_args());
-	}
-
-	/**
-	 * @param mixed $tableName
-	 * @param mixed $createTableStatementGoal
-	 * @return mixed
-	 */
-	public function verifyColumns($tableName, $createTableStatementGoal) {
-		return $this->invokeDatabaseUpgradeMethod('verifyColumns', func_get_args());
-	}
-
-	/**
-	 * @param mixed $tableName
-	 * @param mixed $createTableStatementGoal
-	 * @return mixed
-	 */
-	public function getTableDifferences($tableName, $createTableStatementGoal) {
-		return $this->invokeDatabaseUpgradeMethod('getTableDifferences', func_get_args());
-	}
-
-	/**
-	 * @param mixed $tableName
-	 * @param mixed $tableDifferences
-	 * @return mixed
-	 */
-	public function updateATableBasedOnDifferences($tableName, $tableDifferences) {
-		return $this->invokeDatabaseUpgradeMethod('updateATableBasedOnDifferences', func_get_args());
-	}
-
-	/**
-	 * @param mixed $createTableDDL
-	 * @return mixed
-	 */
-	public function removeCommentsFromColumns($createTableDDL) {
-		return $this->invokeDatabaseUpgradeMethod('removeCommentsFromColumns', func_get_args());
-	}
-
-	/**
-	 * @param mixed $ddl
-	 * @return mixed
-	 */
-	public function normalizeColumnDDL($ddl) {
-		return $this->invokeDatabaseUpgradeMethod('normalizeColumnDDL', func_get_args());
-	}
-
-	/**
-	 * @param mixed $tableName
-	 * @return mixed
-	 */
-	public function deleteIndexes($tableName) {
-		return $this->invokeDatabaseUpgradeMethod('deleteIndexes', func_get_args());
-	}
-
-	/**
-	 * @return mixed
-	 */
-	public function correctIssuesBefore() {
-		return $this->invokeDatabaseUpgradeMethod('correctIssuesBefore', func_get_args());
-	}
-
-	/**
-	 * @return mixed
-	 */
-	public function correctIssuesAfter() {
-		return $this->invokeDatabaseUpgradeMethod('correctIssuesAfter', func_get_args());
-	}
-
-	/**
-	 * @return mixed
-	 */
-	public function dropDeprecatedMutationWatermarkTable() {
-		return $this->invokeDatabaseUpgradeMethod('dropDeprecatedMutationWatermarkTable', func_get_args());
-	}
-
-	/**
-	 * @return mixed
-	 */
-	public function repairStrippedViewCacheTable() {
-		return $this->invokeDatabaseUpgradeMethod('repairStrippedViewCacheTable', func_get_args());
-	}
-
-	/**
-	 * @param string $ddl
-	 * @return mixed
-	 */
-	private function ddlDeclaresIdColumn(string $ddl) {
-		return $this->invokeDatabaseUpgradeMethod('ddlDeclaresIdColumn', func_get_args());
-	}
-
-	/**
-	 * @return mixed
-	 */
-	private function recoverMissingLogsHitsTable() {
-		return $this->invokeDatabaseUpgradeMethod('recoverMissingLogsHitsTable', func_get_args());
-	}
-
-	/**
-	 * @return mixed
-	 */
-	public function correctMatchData() {
-		return $this->invokeDatabaseUpgradeMethod('correctMatchData', func_get_args());
-	}
 	
 	/** Create the tables when the plugin is first activated.
      * @param bool $updatingToNewVersion
