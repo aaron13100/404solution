@@ -356,6 +356,24 @@ class ABJ_404_Solution_WordPress_Connector {
             self::enqueueViewUpdaterModules(plugin_dir_url(__FILE__) . 'ajax/');
         }
 
+        if ($isStatsPage) {
+            // Stats page chart modules. Both read their config (labels, counts,
+            // ajaxUrl, nonce) from data-attributes emitted by View_Stats.php,
+            // so no wp_localize_script binding is needed here.
+            ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-stats-confidence-chart',
+                ABJ404_URL . 'includes/js/statsConfidenceChart.js', array());
+            ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-stats-trends',
+                ABJ404_URL . 'includes/js/statsTrends.js', array());
+        }
+
+        if ($isToolsPage) {
+            // Tools page: "Migrate from Another Plugin" two-step flow.
+            // Config (ajaxUrl, nonce, messages) comes from a data-attribute
+            // on #abj404-migrate-config, emitted by View_Stats.php.
+            ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-tools-migrate-plugin',
+                ABJ404_URL . 'includes/js/toolsMigratePlugin.js', array());
+        }
+
         if ($isLogsPage) {
             ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-search_logs_ajax', plugin_dir_url(__FILE__) . 'ajax/search_logs_ajax.js',
                 array('jquery', 'jquery-ui-autocomplete'));

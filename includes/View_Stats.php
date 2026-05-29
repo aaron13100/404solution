@@ -209,9 +209,24 @@ class ABJ_404_Solution_View_Stats extends ABJ_404_Solution_ViewComponent {
             )
             : '';
 
+        // Configuration carrier for statsConfidenceChart.js. The external JS
+        // reads labels + band counts from this canvas's data attribute, so
+        // PHP doesn't need to inline any JavaScript.
+        $confidenceConfig = wp_json_encode(array(
+            'labelHigh'   => $labelHigh,
+            'labelMedium' => $labelMedium,
+            'labelLow'    => $labelLow,
+            'labelManual' => $labelManual,
+            'high'        => $highCount,
+            'medium'      => $mediumCount,
+            'low'         => $lowCount,
+            'manual'      => $manualCount,
+        ));
+
         $content  = '<div class="abj404-confidence-dist">';
         $content .= '<p class="abj404-confidence-avg">' . $avgLabel . '</p>';
-        $content .= '<canvas id="abj404-chart-confidence" style="max-height:200px;max-width:400px;"></canvas>';
+        $content .= '<canvas id="abj404-chart-confidence" style="max-height:200px;max-width:400px;"'
+            . ' data-abj404-confidence="' . esc_attr((string)$confidenceConfig) . '"></canvas>';
         $content .= '<ul class="abj404-confidence-legend">';
         $content .= '<li><span class="abj404-legend-dot abj404-conf-high"></span>' . esc_html($labelHigh) . ' <strong>' . esc_html((string)$highCount) . '</strong></li>';
         $content .= '<li><span class="abj404-legend-dot abj404-conf-medium"></span>' . esc_html($labelMedium) . ' <strong>' . esc_html((string)$mediumCount) . '</strong></li>';
@@ -232,25 +247,8 @@ class ABJ_404_Solution_View_Stats extends ABJ_404_Solution_ViewComponent {
             . '.abj404-conf-manual { background: #adb5bd; }' /* allow-hardcoded-color: chart palette dot; must match Chart.js dataset below */
             . '</style>';
 
-        $content .= '<script>'
-            . '(function() {'
-            . '  function renderConfidenceChart() {'
-            . '    var ctx = document.getElementById("abj404-chart-confidence");'
-            . '    if (!ctx || !window.Chart) return;'
-            . '    new Chart(ctx, {'
-            . '      type: "doughnut",'
-            . '      data: {'
-            . '        labels: [' . json_encode($labelHigh) . ',' . json_encode($labelMedium) . ',' . json_encode($labelLow) . ',' . json_encode($labelManual) . '],'
-            . '        datasets: [{ data: [' . $highCount . ',' . $mediumCount . ',' . $lowCount . ',' . $manualCount . '],'
-            . '          backgroundColor: ["#28a745","#ffc107","#dc3545","#adb5bd"] }]' /* allow-hardcoded-color: chart dataset palette; matches .abj404-conf-* dots above */
-            . '      },'
-            . '      options: { responsive: true, plugins: { legend: { display: false } } }'
-            . '    });'
-            . '  }'
-            . '  if (window.Chart) { renderConfidenceChart(); }'
-            . '  else { document.addEventListener("abj404ChartJsLoaded", renderConfidenceChart); }'
-            . '})();'
-            . '</script>';
+        // Confidence chart rendering moved to includes/js/statsConfidenceChart.js.
+        // The canvas above carries its config via data-abj404-confidence.
 
         $abj404view->echoOptionsSection(
             'stats-confidence',
@@ -300,127 +298,18 @@ class ABJ_404_Solution_View_Stats extends ABJ_404_Solution_ViewComponent {
             . '.abj404-trends-loading { color: var(--abj404-text-muted); font-style: italic; }'
             . '</style>';
 
-        // Inline JS: load Chart.js from CDN then fetch data and render charts.
-        $label404      = esc_js(__('404 Hits per Day', '404-solution'));
-        $labelRedirect = esc_js(__('Redirects per Day', '404-solution'));
-        $labelCapture  = esc_js(__('New Captures per Day', '404-solution'));
-        $ajaxUrlEsc    = esc_js($ajaxUrl);
-        $nonceEsc      = esc_js($trendNonce);
-
-        $trendsContent .= '<script>'
-            . '(function() {'
-            . '  var ajaxUrl = "' . $ajaxUrlEsc . '";'
-            . '  var nonce   = "' . $nonceEsc . '";'
-            . '  function loadChartJs(cb) {'
-            . '    if (window.Chart) { cb(); return; }'
-            . '    var s = document.createElement("script");'
-            . '    s.src = "https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js";'
-            . '    s.onload = function() {'
-            . '      document.dispatchEvent(new Event("abj404ChartJsLoaded"));'
-            . '      cb();'
-            . '    };'
-            . '    s.onerror = function() {'
-            . '      var loadEl = document.querySelector(".abj404-trends-loading");'
-            . '      if (loadEl) loadEl.style.display = "none";'
-            . '      var errEl = document.getElementById("abj404-trends-error");'
-            . '      if (errEl) errEl.style.display = "";'
-            . '    };'
-            . '    document.head.appendChild(s);'
-            . '  }'
-            . '  function buildChart(canvasId, label, color, labels, values) {'
-            . '    var ctx = document.getElementById(canvasId);'
-            . '    if (!ctx) return null;'
-            . '    return new Chart(ctx, {'
-            . '      type: "line",'
-            . '      data: {'
-            . '        labels: labels,'
-            . '        datasets: [{'
-            . '          label: label,'
-            . '          data: values,'
-            . '          borderColor: color,'
-            . '          backgroundColor: color.replace("rgb(", "rgba(").replace(")", ", 0.15)"),'
-            . '          tension: 0.3,'
-            . '          fill: true,'
-            . '          pointRadius: 3'
-            . '        }]'
-            . '      },'
-            . '      options: {'
-            . '        responsive: true,'
-            . '        plugins: { legend: { display: true } },'
-            . '        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }'
-            . '      }'
-            . '    });'
-            . '  }'
-            . '  var chartInstances = {};'
-            . '  function getSelectedDays() {'
-            . '    var radios = document.querySelectorAll("input[name=abj404_trend_period]");'
-            . '    for (var i = 0; i < radios.length; i++) {'
-            . '      if (radios[i].checked) return parseInt(radios[i].value, 10);'
-            . '    }'
-            . '    return 30;'
-            . '  }'
-            . '  function destroyCharts() {'
-            . '    ["abj404-chart-404s","abj404-chart-redirects","abj404-chart-captures"].forEach(function(id) {'
-            . '      if (chartInstances[id]) { chartInstances[id].destroy(); delete chartInstances[id]; }'
-            . '    });'
-            . '  }'
-            . '  function fetchTrendData(days, allowRetry) {'
-            . '    return fetch(ajaxUrl + "?action=abj404getTrendData&nonce=" + encodeURIComponent(nonce) + "&days=" + days)'
-            . '      .then(function(r) {'
-            // B20: a 12-24h-idle nonce expires; admin-ajax replies 403.
-            // Mint a fresh nonce via the shared refresh helper (if loaded)
-            // and retry once. allowRetry guards against an infinite loop.
-            . '        if (r.status === 403 && allowRetry !== false && window.abj404NonceRefresh) {'
-            . '          return window.abj404NonceRefresh.fetchFresh().then(function(freshNonces) {'
-            . '            if (freshNonces && freshNonces["abj404_trendData"]) {'
-            . '              nonce = freshNonces["abj404_trendData"];'
-            . '            }'
-            . '            return fetchTrendData(days, false);'
-            . '          });'
-            . '        }'
-            . '        return r.json();'
-            . '      });'
-            . '  }'
-            . '  function fetchAndRender() {'
-            . '    var days = getSelectedDays();'
-            . '    var loadEl = document.querySelector(".abj404-trends-loading");'
-            . '    var errEl  = document.getElementById("abj404-trends-error");'
-            . '    var chartsEl = document.getElementById("abj404-trends-charts");'
-            . '    if (loadEl) loadEl.style.display = "";'
-            . '    if (errEl)  errEl.style.display  = "none";'
-            . '    if (chartsEl) chartsEl.style.display = "none";'
-            . '    destroyCharts();'
-            . '    fetchTrendData(days, true)'
-            . '      .then(function(resp) {'
-            . '        if (loadEl) loadEl.style.display = "none";'
-            . '        if (!resp || !resp.success || !Array.isArray(resp.data)) {'
-            . '          if (errEl) errEl.style.display = "";'
-            . '          return;'
-            . '        }'
-            . '        var rows = resp.data;'
-            . '        var labels    = rows.map(function(r) { return r.date; });'
-            . '        var vals404   = rows.map(function(r) { return r.hits_404; });'
-            . '        var valsRedir = rows.map(function(r) { return r.hits_redirect; });'
-            . '        var valsCapt  = rows.map(function(r) { return r.new_captures; });'
-            . '        if (chartsEl) chartsEl.style.display = "";'
-            . '        chartInstances["abj404-chart-404s"]      = buildChart("abj404-chart-404s",      "' . $label404      . '", "rgb(0,115,170)",  labels, vals404);' /* allow-hardcoded-color: Chart.js dataset border color passed as a JS string literal; Chart.js cannot read CSS custom properties (--abj404-*) from a canvas context */
-            . '        chartInstances["abj404-chart-redirects"] = buildChart("abj404-chart-redirects", "' . $labelRedirect . '", "rgb(70,170,100)", labels, valsRedir);' /* allow-hardcoded-color: Chart.js dataset border color passed as a JS string literal; Chart.js cannot read CSS custom properties (--abj404-*) from a canvas context */
-            . '        chartInstances["abj404-chart-captures"]  = buildChart("abj404-chart-captures",  "' . $labelCapture  . '", "rgb(220,100,50)", labels, valsCapt);' /* allow-hardcoded-color: Chart.js dataset border color passed as a JS string literal; Chart.js cannot read CSS custom properties (--abj404-*) from a canvas context */
-            . '      })'
-            . '      .catch(function() {'
-            . '        if (loadEl) loadEl.style.display = "none";'
-            . '        if (errEl) errEl.style.display = "";'
-            . '      });'
-            . '  }'
-            . '  function onPeriodChange() { fetchAndRender(); }'
-            . '  document.addEventListener("DOMContentLoaded", function() {'
-            . '    loadChartJs(fetchAndRender);'
-            . '    document.querySelectorAll("input[name=abj404_trend_period]").forEach(function(r) {'
-            . '      r.addEventListener("change", onPeriodChange);'
-            . '    });'
-            . '  });'
-            . '})();'
-            . '</script>';
+        // Trend chart rendering moved to includes/js/statsTrends.js. We emit a
+        // small JSON config carrier; the external JS reads ajaxUrl/nonce/labels
+        // from #abj404-trends-config's data attribute.
+        $trendsConfig = wp_json_encode(array(
+            'ajaxUrl'       => $ajaxUrl,
+            'nonce'         => $trendNonce,
+            'label404'      => __('404 Hits per Day', '404-solution'),
+            'labelRedirect' => __('Redirects per Day', '404-solution'),
+            'labelCapture'  => __('New Captures per Day', '404-solution'),
+        ));
+        $trendsContent .= '<div id="abj404-trends-config" style="display:none"'
+            . ' data-abj404-trends="' . esc_attr((string)$trendsConfig) . '"></div>';
 
         $abj404view->echoOptionsSection(
             'stats-trends',
@@ -733,77 +622,20 @@ class ABJ_404_Solution_View_Stats extends ABJ_404_Solution_ViewComponent {
 
         $html .= '<p><em>' . esc_html__('This will import all active redirects from the selected plugin into 404 Solution. Regex and redirect codes are preserved.', '404-solution') . '</em></p>';
 
-        // Inline JS for the two-step flow
-        $html .= '<script>(function() {';
-        $html .= 'var ajaxUrl   = ' . json_encode($ajaxUrl) . ';';
-        $html .= 'var nonce     = ' . json_encode($previewNonce) . ';';
-        $html .= 'var msgFound  = ' . json_encode(__('Found %d redirect(s) from %s — proceed with import?', '404-solution')) . ';';
-        $html .= 'var msgNone   = ' . json_encode(__('No redirects found in %s. Nothing to import.', '404-solution')) . ';';
-        $html .= 'var msgError  = ' . json_encode(__('Could not fetch preview. Please try again.', '404-solution')) . ';';
-        $html .= 'function showStep1() {';
-        $html .= '  document.getElementById("abj404-migrate-step1").style.display = "";';
-        $html .= '  document.getElementById("abj404-migrate-step2").style.display = "none";';
-        $html .= '}';
-        $html .= 'function showStep2(count, source, label) {';
-        $html .= '  document.getElementById("abj404-migrate-step1").style.display = "none";';
-        $html .= '  document.getElementById("abj404-migrate-step2").style.display = "";';
-        $html .= '  var msgEl  = document.getElementById("abj404-migrate-preview-msg");';
-        $html .= '  var form   = document.getElementById("abj404-migrate-confirm-form");';
-        $html .= '  var noForm = document.getElementById("abj404-migrate-back-noform");';
-        $html .= '  if (count > 0) {';
-        $html .= '    msgEl.textContent = msgFound.replace("%d", count).replace("%s", label);';
-        $html .= '    document.getElementById("abj404-migrate-confirm-source").value = source;';
-        $html .= '    form.style.display = "";';
-        $html .= '    noForm.style.display = "none";';
-        $html .= '  } else {';
-        $html .= '    msgEl.textContent = msgNone.replace("%s", label);';
-        $html .= '    form.style.display = "none";';
-        $html .= '    noForm.style.display = "";';
-        $html .= '  }';
-        $html .= '}';
-        $html .= 'function showError() {';
-        $html .= '  document.getElementById("abj404-migrate-step1").style.display = "none";';
-        $html .= '  document.getElementById("abj404-migrate-step2").style.display = "";';
-        $html .= '  document.getElementById("abj404-migrate-preview-msg").textContent = msgError;';
-        $html .= '  document.getElementById("abj404-migrate-confirm-form").style.display = "none";';
-        $html .= '  document.getElementById("abj404-migrate-back-noform").style.display = "";';
-        $html .= '}';
-        $html .= 'document.addEventListener("DOMContentLoaded", function() {';
-        $html .= '  var previewBtn = document.getElementById("abj404-migrate-preview-btn");';
-        $html .= '  var backBtn    = document.getElementById("abj404-migrate-back-btn");';
-        $html .= '  var backBtn2   = document.getElementById("abj404-migrate-back-btn2");';
-        $html .= '  if (previewBtn) {';
-        $html .= '    previewBtn.addEventListener("click", function() {';
-        $html .= '      var select = document.getElementById("abj404-import-source");';
-        $html .= '      var source = select ? select.value : "";';
-        $html .= '      if (!source) return;';
-        $html .= '      var spinner = document.getElementById("abj404-migrate-preview-spinner");';
-        $html .= '      if (spinner) spinner.style.display = "";';
-        $html .= '      previewBtn.disabled = true;';
-        $html .= '      var fd = new FormData();';
-        $html .= '      fd.append("action", "abj404_crossPluginPreview");';
-        $html .= '      fd.append("nonce", nonce);';
-        $html .= '      fd.append("import_source", source);';
-        $html .= '      fetch(ajaxUrl, { method: "POST", body: fd, credentials: "same-origin" })';
-        $html .= '        .then(function(r) { return r.json(); })';
-        $html .= '        .then(function(resp) {';
-        $html .= '          if (spinner) spinner.style.display = "none";';
-        $html .= '          previewBtn.disabled = false;';
-        $html .= '          if (resp && resp.success && resp.data) {';
-        $html .= '            showStep2(parseInt(resp.data.count, 10) || 0, resp.data.source, resp.data.label);';
-        $html .= '          } else { showError(); }';
-        $html .= '        })';
-        $html .= '        .catch(function() {';
-        $html .= '          if (spinner) spinner.style.display = "none";';
-        $html .= '          previewBtn.disabled = false;';
-        $html .= '          showError();';
-        $html .= '        });';
-        $html .= '    });';
-        $html .= '  }';
-        $html .= '  if (backBtn)  { backBtn.addEventListener("click",  function() { showStep1(); }); }';
-        $html .= '  if (backBtn2) { backBtn2.addEventListener("click", function() { showStep1(); }); }';
-        $html .= '});';
-        $html .= '})();</script>';
+        // Two-step flow JS moved to includes/js/toolsMigratePlugin.js. Emit a
+        // JSON config carrier; the external JS reads ajaxUrl/nonce/messages
+        // from #abj404-migrate-config's data attribute.
+        // allow-em-dash: preserving shipped translation string verbatim (extracted, not authored, here)
+        $msgFound = __('Found %d redirect(s) from %s — proceed with import?', '404-solution');
+        $migrateConfig = wp_json_encode(array(
+            'ajaxUrl'  => $ajaxUrl,
+            'nonce'    => $previewNonce,
+            'msgFound' => $msgFound,
+            'msgNone'  => __('No redirects found in %s. Nothing to import.', '404-solution'),
+            'msgError' => __('Could not fetch preview. Please try again.', '404-solution'),
+        ));
+        $html .= '<div id="abj404-migrate-config" style="display:none"'
+            . ' data-abj404-migrate="' . esc_attr((string)$migrateConfig) . '"></div>';
 
         return $html;
     }
