@@ -144,11 +144,17 @@ function abj_404_solution_register_data_layer($container) {
         );
     });
     $container->set('logs_repository', function($c) {
+        $rollup = new ABJ_404_Solution_LogsHitsRollupService(
+            $c->get('db_core'),
+            $c->get('logging'),
+            $c->get('rebuild_health')
+        );
         return new ABJ_404_Solution_LogsRepository(
             $c->get('db_core'),
             $c->get('functions'),
             $c->get('logging'),
-            $c->get('rebuild_health')
+            $c->get('rebuild_health'),
+            $rollup
         );
     });
     $container->set('stats_repository', function($c) {
