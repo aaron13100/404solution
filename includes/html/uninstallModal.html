@@ -1,0 +1,201 @@
+<div id="abj404-uninstall-modal" class="hidden" style="max-width:600px">
+    <div class="abj404-uninstall-content">
+        <!-- Data Deletion Options -->
+        <h3 style="margin-top: 0;">
+            &#9888;&#65039; {{LABEL_BEFORE_DEACTIVATING}}
+        </h3>
+
+        <label>
+            <input type="checkbox" id="abj404-keep-redirects" checked>
+            <strong>{{LABEL_KEEP_REDIRECTS}}</strong>
+            <span class="description" style="display: inline; margin-left: 5px;">
+                {{LABEL_KEEP_REDIRECTS_DESC}}
+            </span>
+        </label>
+
+        <label>
+            <input type="checkbox" id="abj404-keep-logs" checked>
+            <strong>{{LABEL_KEEP_LOGS}}</strong>
+            <span class="description" style="display: inline; margin-left: 5px;">
+                {{LABEL_KEEP_LOGS_DESC}}
+            </span>
+        </label>
+
+        <p class="description" style="margin: 5px 0 0 25px; font-size: 12px;">
+            {{LABEL_CACHE_NOTE}}
+        </p>
+
+        <!-- Deactivation Reason -->
+        <h3 style="margin-top: 20px;">{{LABEL_HELP_IMPROVE}}</h3>
+        <div class="abj404-uninstall-reasons">
+            <label>
+                <input type="radio" name="abj404-reason" value="temporary">
+                {{REASON_TEMPORARY}}
+            </label>
+            <label>
+                <input type="radio" name="abj404-reason" value="not-working">
+                {{REASON_NOT_WORKING}}
+            </label>
+            <label>
+                <input type="radio" name="abj404-reason" value="found-better">
+                {{REASON_FOUND_BETTER}}
+            </label>
+            <label>
+                <input type="radio" name="abj404-reason" value="no-longer-needed">
+                {{REASON_NO_LONGER_NEEDED}}
+            </label>
+            <label>
+                <input type="radio" name="abj404-reason" value="too-complicated">
+                {{REASON_TOO_COMPLICATED}}
+            </label>
+            <label>
+                <input type="radio" name="abj404-reason" value="performance">
+                {{REASON_PERFORMANCE}}
+            </label>
+            <label>
+                <input type="radio" name="abj404-reason" value="other">
+                {{REASON_OTHER}}
+            </label>
+        </div>
+
+        <!-- Conditional follow-up sections (shown based on selected reason) -->
+        <div id="abj404-followup-not-working" class="abj404-followup-section" style="display:none; background: var(--abj404-surface-hover); border-radius: 4px; border-left: 3px solid var(--abj404-danger-border);">
+            <p style="font-weight: 600;">
+                {{LABEL_NOT_WORKING_HEADER}}
+            </p>
+            <label>
+                <input type="checkbox" class="abj404-issue-checkbox" name="abj404-issue[]" value="redirects-not-triggering">
+                {{ISSUE_REDIRECTS_NOT_TRIGGERING}}
+            </label>
+            <label>
+                <input type="checkbox" class="abj404-issue-checkbox" name="abj404-issue[]" value="settings-not-saving">
+                {{ISSUE_SETTINGS_NOT_SAVING}}
+            </label>
+            <label>
+                <input type="checkbox" class="abj404-issue-checkbox" name="abj404-issue[]" value="admin-errors">
+                {{ISSUE_ADMIN_ERRORS}}
+            </label>
+            <label>
+                <input type="checkbox" class="abj404-issue-checkbox" name="abj404-issue[]" value="suggestions-not-appearing">
+                {{ISSUE_SUGGESTIONS_NOT_APPEARING}}
+            </label>
+            <label>
+                <input type="checkbox" class="abj404-issue-checkbox" name="abj404-issue[]" value="plugin-conflicts">
+                {{ISSUE_PLUGIN_CONFLICTS}}
+            </label>
+            <label>
+                <input type="checkbox" class="abj404-issue-checkbox" name="abj404-issue[]" value="other-issue">
+                {{ISSUE_OTHER_ISSUE}}
+            </label>
+        </div>
+
+        <div id="abj404-followup-performance" class="abj404-followup-section" style="display:none; background: var(--abj404-surface-hover); border-radius: 4px; border-left: 3px solid var(--abj404-danger-border);">
+            <p style="font-weight: 600;">
+                {{LABEL_PERFORMANCE_HEADER}}
+            </p>
+            <label>
+                <input type="checkbox" class="abj404-issue-checkbox" name="abj404-issue[]" value="slow-admin">
+                {{ISSUE_SLOW_ADMIN}}
+            </label>
+            <label>
+                <input type="checkbox" class="abj404-issue-checkbox" name="abj404-issue[]" value="slow-frontend">
+                {{ISSUE_SLOW_FRONTEND}}
+            </label>
+            <label>
+                <input type="checkbox" class="abj404-issue-checkbox" name="abj404-issue[]" value="high-database">
+                {{ISSUE_HIGH_DATABASE}}
+            </label>
+            <label>
+                <input type="checkbox" class="abj404-issue-checkbox" name="abj404-issue[]" value="memory-issues">
+                {{ISSUE_MEMORY_ISSUES}}
+            </label>
+            <label>
+                <input type="checkbox" class="abj404-issue-checkbox" name="abj404-issue[]" value="other-performance">
+                {{ISSUE_OTHER_PERFORMANCE}}
+            </label>
+        </div>
+
+        <div id="abj404-followup-complicated" class="abj404-followup-section" style="display:none; background: var(--abj404-surface-hover); border-radius: 4px; border-left: 3px solid var(--abj404-danger-border);">
+            <p style="font-weight: 600;">
+                {{LABEL_CONFUSING_HEADER}}
+            </p>
+            <label>
+                <input type="checkbox" class="abj404-issue-checkbox" name="abj404-issue[]" value="settings-confusing">
+                {{ISSUE_SETTINGS_CONFUSING}}
+            </label>
+            <label>
+                <input type="checkbox" class="abj404-issue-checkbox" name="abj404-issue[]" value="too-many-options">
+                {{ISSUE_TOO_MANY_OPTIONS}}
+            </label>
+            <label>
+                <input type="checkbox" class="abj404-issue-checkbox" name="abj404-issue[]" value="unclear-docs">
+                {{ISSUE_UNCLEAR_DOCS}}
+            </label>
+            <label>
+                <input type="checkbox" class="abj404-issue-checkbox" name="abj404-issue[]" value="other-confusion">
+                {{ISSUE_OTHER_CONFUSION}}
+            </label>
+        </div>
+
+        <!-- Follow-up for "Found a better plugin" -->
+        <div id="abj404-followup-better-plugin" class="abj404-followup-section" style="display:none; padding: 0 !important;">
+            <label for="abj404-better-plugin-name" style="margin-bottom: 5px;">
+                {{LABEL_BETTER_PLUGIN_PROMPT}}
+            </label>
+            <input
+                type="text"
+                id="abj404-better-plugin-name"
+                class="widefat"
+                placeholder="{{PLACEHOLDER_BETTER_PLUGIN}}"
+            >
+        </div>
+
+        <!-- Follow-up for "Other reason" -->
+        <div id="abj404-followup-other" class="abj404-followup-section" style="display:none; padding: 0 !important;">
+            <label for="abj404-other-reason-text" style="margin-bottom: 5px;">
+                {{LABEL_OTHER_REASON_PROMPT}}
+            </label>
+            <textarea
+                id="abj404-other-reason-text"
+                rows="3"
+                class="widefat"
+                placeholder="{{PLACEHOLDER_OTHER_REASON}}"
+            ></textarea>
+        </div>
+
+        <!-- Additional details for conditional sections -->
+        <div id="abj404-followup-details" class="abj404-followup-section" style="display:none; padding: 0 !important; margin-top: 10px !important;">
+            <label for="abj404-followup-details-text" style="margin-bottom: 5px;">
+                {{LABEL_ADDITIONAL_DETAILS}}
+            </label>
+            <textarea
+                id="abj404-followup-details-text"
+                rows="3"
+                class="widefat"
+                placeholder="{{PLACEHOLDER_ADDITIONAL_DETAILS}}"
+            ></textarea>
+        </div>
+
+        <!-- Optional Feedback Email -->
+        <div id="abj404-feedback-email-section" style="margin: 15px 0 10px 0;">
+            <label for="abj404-feedback-email" style="display: block; margin-bottom: 5px;">
+                <strong>{{LABEL_YOUR_EMAIL}}</strong>
+            </label>
+            <input
+                type="email"
+                id="abj404-feedback-email"
+                placeholder="{{PLACEHOLDER_FEEDBACK_EMAIL}}"
+                class="widefat"
+            >
+        </div>
+
+        <!-- Technical Details Opt-in -->
+        <label style="margin: 10px 0 5px 0; display: block;">
+            <input type="checkbox" id="abj404-include-diagnostics" checked>
+            {{LABEL_INCLUDE_DIAGNOSTICS}}
+        </label>
+        <p class="abj404-privacy-note" style="margin: 0 0 15px 24px; font-size: 11px; color: var(--abj404-text-muted);">
+            {{PRIVACY_NOTE}}
+        </p>
+    </div>
+</div>

@@ -1,0 +1,62 @@
+.abj404-uninstall-dialog .ui-dialog-titlebar {
+    background: var(--abj404-danger-border);
+    color: var(--abj404-on-accent);
+}
+.abj404-uninstall-dialog .ui-dialog-titlebar-close {
+    color: var(--abj404-on-accent);
+}
+.abj404-uninstall-dialog .ui-dialog-titlebar-close:hover {
+    background: #b32d2e; /* allow-hardcoded-color: darker-red danger hover; no --abj404-danger-hover var defined */
+}
+.abj404-uninstall-dialog .button-danger {
+    background: var(--abj404-danger-border);
+    border-color: var(--abj404-danger-border);
+    color: var(--abj404-on-accent);
+}
+.abj404-uninstall-dialog .button-danger:hover {
+    background: #b32d2e; /* allow-hardcoded-color: darker-red danger hover; no --abj404-danger-hover var defined */
+    border-color: #b32d2e; /* allow-hardcoded-color: darker-red danger hover border; matches background */
+}
+.abj404-uninstall-content label {
+    display: block;
+    margin: 8px 0;
+    cursor: pointer;
+}
+.abj404-uninstall-content label input[type="checkbox"],
+.abj404-uninstall-content label input[type="radio"] {
+    margin-right: 8px;
+}
+.abj404-uninstall-content .description {
+    margin: 0;
+    color: var(--abj404-text-muted);
+    font-size: 12px;
+}
+.abj404-uninstall-content h3 {
+    margin-top: 18px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid var(--abj404-border);
+    padding-bottom: 6px;
+    font-size: 14px;
+}
+.abj404-uninstall-content h3:first-child {
+    margin-top: 0;
+}
+.abj404-uninstall-reasons {
+    margin-left: 25px;
+}
+.abj404-uninstall-reasons label {
+    margin: 6px 0;
+    font-size: 13px;
+}
+.abj404-followup-section {
+    margin: 12px 0 !important;
+    padding: 12px !important;
+}
+.abj404-followup-section p {
+    margin: 0 0 8px 0 !important;
+    font-size: 13px !important;
+}
+.abj404-followup-section label {
+    margin: 4px 0 !important;
+    font-size: 13px !important;
+}

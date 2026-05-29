@@ -6,15 +6,20 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Handles the deactivation modal popup display and AJAX functionality
- * Shows options before plugin deactivation to preserve user data
+ * Handles the deactivation modal popup display.
+ *
+ * Owns the bootstrap/enqueue path (registers WP hooks, queues modal JS/CSS
+ * on plugins.php, renders the modal markup via the external HTML template).
+ * AJAX persistence is delegated to ABJ_404_Solution_Ajax_UninstallPrefs,
+ * diagnostic snapshot collection to ABJ_404_Solution_UninstallDiagnostics,
+ * and email-fallback dispatch to ABJ_404_Solution_UninstallFeedbackEmail.
  *
  * @since 2.36.11
  */
 class ABJ_404_Solution_UninstallModal {
 
     /**
-     * Initialize the deactivation modal functionality
+     * Initialize the deactivation modal functionality.
      * @return void
      */
     public static function init(): void {
@@ -26,7 +31,7 @@ class ABJ_404_Solution_UninstallModal {
     }
 
     /**
-     * Enqueue modal assets (JavaScript, CSS) on plugins.php page
+     * Enqueue modal assets (JavaScript, CSS) on plugins.php page.
      *
      * @param string $hook Current admin page hook
      * @return void
@@ -56,7 +61,7 @@ class ABJ_404_Solution_UninstallModal {
         );
 
         // Get redirect count for display in modal
-        $redirectCount = self::getRedirectCount();
+        $redirectCount = ABJ_404_Solution_UninstallDiagnostics::getRedirectCount();
 
         // Pass data to JavaScript
         wp_localize_script('abj404-uninstall-modal', 'abj404UninstallModal', array(
@@ -73,1200 +78,119 @@ class ABJ_404_Solution_UninstallModal {
             )
         ));
 
-        // Custom CSS for modal styling
-        wp_add_inline_style('wp-jquery-ui-dialog', '
-            .abj404-uninstall-dialog .ui-dialog-titlebar {
-                background: var(--abj404-danger-border);
-                color: var(--abj404-on-accent);
-            }
-            .abj404-uninstall-dialog .ui-dialog-titlebar-close {
-                color: var(--abj404-on-accent);
-            }
-            .abj404-uninstall-dialog .ui-dialog-titlebar-close:hover {
-                background: #b32d2e; /* allow-hardcoded-color: darker-red danger hover; no --abj404-danger-hover var defined */
-            }
-            .abj404-uninstall-dialog .button-danger {
-                background: var(--abj404-danger-border);
-                border-color: var(--abj404-danger-border);
-                color: var(--abj404-on-accent);
-            }
-            .abj404-uninstall-dialog .button-danger:hover {
-                background: #b32d2e; /* allow-hardcoded-color: darker-red danger hover; no --abj404-danger-hover var defined */
-                border-color: #b32d2e; /* allow-hardcoded-color: darker-red danger hover border; matches background */
-            }
-            .abj404-uninstall-content label {
-                display: block;
-                margin: 8px 0;
-                cursor: pointer;
-            }
-            .abj404-uninstall-content label input[type="checkbox"],
-            .abj404-uninstall-content label input[type="radio"] {
-                margin-right: 8px;
-            }
-            .abj404-uninstall-content .description {
-                margin: 0;
-                color: var(--abj404-text-muted);
-                font-size: 12px;
-            }
-            .abj404-uninstall-content h3 {
-                margin-top: 18px;
-                margin-bottom: 8px;
-                border-bottom: 1px solid var(--abj404-border);
-                padding-bottom: 6px;
-                font-size: 14px;
-            }
-            .abj404-uninstall-content h3:first-child {
-                margin-top: 0;
-            }
-            .abj404-uninstall-reasons {
-                margin-left: 25px;
-            }
-            .abj404-uninstall-reasons label {
-                margin: 6px 0;
-                font-size: 13px;
-            }
-            .abj404-followup-section {
-                margin: 12px 0 !important;
-                padding: 12px !important;
-            }
-            .abj404-followup-section p {
-                margin: 0 0 8px 0 !important;
-                font-size: 13px !important;
-            }
-            .abj404-followup-section label {
-                margin: 4px 0 !important;
-                font-size: 13px !important;
-            }
-        ');
+        // Enqueue modal-specific stylesheet (extracted from inline CSS).
+        wp_enqueue_style(
+            'abj404-uninstall-modal',
+            plugin_dir_url(ABJ404_FILE) . 'includes/css/uninstall-modal.css',
+            array('wp-jquery-ui-dialog'),
+            '1.0.0'
+        );
 
         // Output modal HTML in footer
         add_action('admin_footer', array(__CLASS__, 'outputModalHTML'));
     }
 
     /**
-     * Output the modal HTML structure
+     * Output the modal HTML structure by loading the external template
+     * and substituting i18n placeholders.
+     *
      * @return void
      */
     public static function outputModalHTML(): void {
-        $redirectCount = self::getRedirectCount();
+        $redirectCount = ABJ_404_Solution_UninstallDiagnostics::getRedirectCount();
 
-        ?>
-        <div id="abj404-uninstall-modal" class="hidden" style="max-width:600px">
-            <div class="abj404-uninstall-content">
-                <!-- Data Deletion Options -->
-                <h3 style="margin-top: 0;">
-                    ⚠️ <?php _e('Before deactivating, choose what happens to your data:', '404-solution'); ?>
-                </h3>
+        $templatePath = __DIR__ . '/html/uninstallModal.html';
+        if (class_exists('ABJ_404_Solution_Functions')) {
+            $html = ABJ_404_Solution_Functions::readFileContents($templatePath);
+        } else {
+            $html = is_readable($templatePath) ? (string) file_get_contents($templatePath) : '';
+        }
 
-                <label>
-                    <input type="checkbox" id="abj404-keep-redirects" checked>
-                    <strong><?php printf(_n('Keep my redirect (%d)', 'Keep my redirects (%d)', $redirectCount, '404-solution'), $redirectCount); ?></strong>
-                    <span class="description" style="display: inline; margin-left: 5px;">
-                        <?php _e('— saves them for later if you reinstall', '404-solution'); ?>
-                    </span>
-                </label>
+        $replacements = array(
+            '{{LABEL_BEFORE_DEACTIVATING}}'        => __('Before deactivating, choose what happens to your data:', '404-solution'),
+            '{{LABEL_KEEP_REDIRECTS}}'             => sprintf(_n('Keep my redirect (%d)', 'Keep my redirects (%d)', $redirectCount, '404-solution'), $redirectCount),
+            // Original copy used a Unicode em-dash glyph rendered as text in
+            // the modal preface; ASCII-fy to a parenthetical clause to keep
+            // dash policy clean while preserving the description meaning.
+            '{{LABEL_KEEP_REDIRECTS_DESC}}'        => __('(saves them for later if you reinstall)', '404-solution'),
+            '{{LABEL_KEEP_LOGS}}'                  => __('Keep 404 logs', '404-solution'),
+            '{{LABEL_KEEP_LOGS_DESC}}'             => __('(historical data preserved)', '404-solution'),
+            '{{LABEL_CACHE_NOTE}}'                 => __('Cache tables are always deleted (can be rebuilt)', '404-solution'),
+            '{{LABEL_HELP_IMPROVE}}'               => __('Help us improve (Optional)', '404-solution'),
+            '{{REASON_TEMPORARY}}'                 => __('Temporary deactivation for debugging', '404-solution'),
+            '{{REASON_NOT_WORKING}}'               => __('The plugin is not working as expected', '404-solution'),
+            '{{REASON_FOUND_BETTER}}'              => __('I found a better plugin', '404-solution'),
+            '{{REASON_NO_LONGER_NEEDED}}'          => __('I no longer need this functionality', '404-solution'),
+            '{{REASON_TOO_COMPLICATED}}'           => __('Too complicated to configure', '404-solution'),
+            '{{REASON_PERFORMANCE}}'               => __('Performance issues', '404-solution'),
+            '{{REASON_OTHER}}'                     => __('Other reason', '404-solution'),
+            '{{LABEL_NOT_WORKING_HEADER}}'         => __('What specifically isn\'t working?', '404-solution'),
+            '{{ISSUE_REDIRECTS_NOT_TRIGGERING}}'   => __('Redirects not triggering/working', '404-solution'),
+            '{{ISSUE_SETTINGS_NOT_SAVING}}'        => __('Settings not saving', '404-solution'),
+            '{{ISSUE_ADMIN_ERRORS}}'               => __('Admin pages showing errors', '404-solution'),
+            '{{ISSUE_SUGGESTIONS_NOT_APPEARING}}'  => __('Suggestions not appearing', '404-solution'),
+            '{{ISSUE_PLUGIN_CONFLICTS}}'           => __('Conflicts with other plugins', '404-solution'),
+            '{{ISSUE_OTHER_ISSUE}}'                => __('Other issue (please specify below)', '404-solution'),
+            '{{LABEL_PERFORMANCE_HEADER}}'         => __('What type of performance issue?', '404-solution'),
+            '{{ISSUE_SLOW_ADMIN}}'                 => __('Slow admin dashboard', '404-solution'),
+            '{{ISSUE_SLOW_FRONTEND}}'              => __('Slow frontend page loads', '404-solution'),
+            '{{ISSUE_HIGH_DATABASE}}'              => __('High database usage', '404-solution'),
+            '{{ISSUE_MEMORY_ISSUES}}'              => __('Memory issues', '404-solution'),
+            '{{ISSUE_OTHER_PERFORMANCE}}'          => __('Other (please specify below)', '404-solution'),
+            '{{LABEL_CONFUSING_HEADER}}'           => __('What was confusing?', '404-solution'),
+            '{{ISSUE_SETTINGS_CONFUSING}}'         => __('Settings are confusing', '404-solution'),
+            '{{ISSUE_TOO_MANY_OPTIONS}}'           => __('Too many options', '404-solution'),
+            '{{ISSUE_UNCLEAR_DOCS}}'               => __('Unclear documentation', '404-solution'),
+            '{{ISSUE_OTHER_CONFUSION}}'            => __('Other (please specify below)', '404-solution'),
+            '{{LABEL_BETTER_PLUGIN_PROMPT}}'       => __('Which plugin are you switching to?', '404-solution'),
+            '{{PLACEHOLDER_BETTER_PLUGIN}}'        => esc_attr(__('Plugin name (optional)', '404-solution')),
+            '{{LABEL_OTHER_REASON_PROMPT}}'        => __('Please tell us more (optional):', '404-solution'),
+            '{{PLACEHOLDER_OTHER_REASON}}'         => esc_attr(__('What\'s your reason for deactivating?', '404-solution')),
+            '{{LABEL_ADDITIONAL_DETAILS}}'         => __('Additional details (optional):', '404-solution'),
+            '{{PLACEHOLDER_ADDITIONAL_DETAILS}}'   => esc_attr(__('Any other information about the issue...', '404-solution')),
+            '{{LABEL_YOUR_EMAIL}}'                 => __('Your email (optional):', '404-solution'),
+            '{{PLACEHOLDER_FEEDBACK_EMAIL}}'       => esc_attr(__('For follow-up if needed', '404-solution')),
+            '{{LABEL_INCLUDE_DIAGNOSTICS}}'        => __('Include technical details (site URL, system info, plugin counts, and a sanitized log excerpt) to help diagnose the issue', '404-solution'),
+            /* translators: %s is a literal relative file path to the plugin's privacy policy stub, rendered as <code>. */
+            '{{PRIVACY_NOTE}}'                     => sprintf(
+                esc_html__('Privacy details (retention, erasure path, processing region): %s', '404-solution'),
+                '<code>docs/privacy.md</code>'
+            ),
+        );
 
-                <label>
-                    <input type="checkbox" id="abj404-keep-logs" checked>
-                    <strong><?php _e('Keep 404 logs', '404-solution'); ?></strong>
-                    <span class="description" style="display: inline; margin-left: 5px;">
-                        <?php _e('— historical data preserved', '404-solution'); ?>
-                    </span>
-                </label>
-
-                <p class="description" style="margin: 5px 0 0 25px; font-size: 12px;">
-                    <?php _e('Cache tables are always deleted (can be rebuilt)', '404-solution'); ?>
-                </p>
-
-                <!-- Deactivation Reason -->
-                <h3 style="margin-top: 20px;"><?php _e('Help us improve (Optional)', '404-solution'); ?></h3>
-                <?php self::echoDeactivationReasons(); ?>
-
-                <!-- Conditional follow-up sections (shown based on selected reason) -->
-                <div id="abj404-followup-not-working" class="abj404-followup-section" style="display:none; background: var(--abj404-surface-hover); border-radius: 4px; border-left: 3px solid var(--abj404-danger-border);">
-                    <p style="font-weight: 600;">
-                        <?php _e('What specifically isn\'t working?', '404-solution'); ?>
-                    </p>
-                    <label>
-                        <input type="checkbox" class="abj404-issue-checkbox" name="abj404-issue[]" value="redirects-not-triggering">
-                        <?php _e('Redirects not triggering/working', '404-solution'); ?>
-                    </label>
-                    <label>
-                        <input type="checkbox" class="abj404-issue-checkbox" name="abj404-issue[]" value="settings-not-saving">
-                        <?php _e('Settings not saving', '404-solution'); ?>
-                    </label>
-                    <label>
-                        <input type="checkbox" class="abj404-issue-checkbox" name="abj404-issue[]" value="admin-errors">
-                        <?php _e('Admin pages showing errors', '404-solution'); ?>
-                    </label>
-                    <label>
-                        <input type="checkbox" class="abj404-issue-checkbox" name="abj404-issue[]" value="suggestions-not-appearing">
-                        <?php _e('Suggestions not appearing', '404-solution'); ?>
-                    </label>
-                    <label>
-                        <input type="checkbox" class="abj404-issue-checkbox" name="abj404-issue[]" value="plugin-conflicts">
-                        <?php _e('Conflicts with other plugins', '404-solution'); ?>
-                    </label>
-                    <label>
-                        <input type="checkbox" class="abj404-issue-checkbox" name="abj404-issue[]" value="other-issue">
-                        <?php _e('Other issue (please specify below)', '404-solution'); ?>
-                    </label>
-                </div>
-
-                <div id="abj404-followup-performance" class="abj404-followup-section" style="display:none; background: var(--abj404-surface-hover); border-radius: 4px; border-left: 3px solid var(--abj404-danger-border);">
-                    <p style="font-weight: 600;">
-                        <?php _e('What type of performance issue?', '404-solution'); ?>
-                    </p>
-                    <label>
-                        <input type="checkbox" class="abj404-issue-checkbox" name="abj404-issue[]" value="slow-admin">
-                        <?php _e('Slow admin dashboard', '404-solution'); ?>
-                    </label>
-                    <label>
-                        <input type="checkbox" class="abj404-issue-checkbox" name="abj404-issue[]" value="slow-frontend">
-                        <?php _e('Slow frontend page loads', '404-solution'); ?>
-                    </label>
-                    <label>
-                        <input type="checkbox" class="abj404-issue-checkbox" name="abj404-issue[]" value="high-database">
-                        <?php _e('High database usage', '404-solution'); ?>
-                    </label>
-                    <label>
-                        <input type="checkbox" class="abj404-issue-checkbox" name="abj404-issue[]" value="memory-issues">
-                        <?php _e('Memory issues', '404-solution'); ?>
-                    </label>
-                    <label>
-                        <input type="checkbox" class="abj404-issue-checkbox" name="abj404-issue[]" value="other-performance">
-                        <?php _e('Other (please specify below)', '404-solution'); ?>
-                    </label>
-                </div>
-
-                <div id="abj404-followup-complicated" class="abj404-followup-section" style="display:none; background: var(--abj404-surface-hover); border-radius: 4px; border-left: 3px solid var(--abj404-danger-border);">
-                    <p style="font-weight: 600;">
-                        <?php _e('What was confusing?', '404-solution'); ?>
-                    </p>
-                    <label>
-                        <input type="checkbox" class="abj404-issue-checkbox" name="abj404-issue[]" value="settings-confusing">
-                        <?php _e('Settings are confusing', '404-solution'); ?>
-                    </label>
-                    <label>
-                        <input type="checkbox" class="abj404-issue-checkbox" name="abj404-issue[]" value="too-many-options">
-                        <?php _e('Too many options', '404-solution'); ?>
-                    </label>
-                    <label>
-                        <input type="checkbox" class="abj404-issue-checkbox" name="abj404-issue[]" value="unclear-docs">
-                        <?php _e('Unclear documentation', '404-solution'); ?>
-                    </label>
-                    <label>
-                        <input type="checkbox" class="abj404-issue-checkbox" name="abj404-issue[]" value="other-confusion">
-                        <?php _e('Other (please specify below)', '404-solution'); ?>
-                    </label>
-                </div>
-
-                <!-- Follow-up for "Found a better plugin" -->
-                <div id="abj404-followup-better-plugin" class="abj404-followup-section" style="display:none; padding: 0 !important;">
-                    <label for="abj404-better-plugin-name" style="margin-bottom: 5px;">
-                        <?php _e('Which plugin are you switching to?', '404-solution'); ?>
-                    </label>
-                    <input
-                        type="text"
-                        id="abj404-better-plugin-name"
-                        class="widefat"
-                        placeholder="<?php _e('Plugin name (optional)', '404-solution'); ?>"
-                    >
-                </div>
-
-                <!-- Follow-up for "Other reason" -->
-                <div id="abj404-followup-other" class="abj404-followup-section" style="display:none; padding: 0 !important;">
-                    <label for="abj404-other-reason-text" style="margin-bottom: 5px;">
-                        <?php _e('Please tell us more (optional):', '404-solution'); ?>
-                    </label>
-                    <textarea
-                        id="abj404-other-reason-text"
-                        rows="3"
-                        class="widefat"
-                        placeholder="<?php _e('What\'s your reason for deactivating?', '404-solution'); ?>"
-                    ></textarea>
-                </div>
-
-                <!-- Additional details for conditional sections -->
-                <div id="abj404-followup-details" class="abj404-followup-section" style="display:none; padding: 0 !important; margin-top: 10px !important;">
-                    <label for="abj404-followup-details-text" style="margin-bottom: 5px;">
-                        <?php _e('Additional details (optional):', '404-solution'); ?>
-                    </label>
-                    <textarea
-                        id="abj404-followup-details-text"
-                        rows="3"
-                        class="widefat"
-                        placeholder="<?php _e('Any other information about the issue...', '404-solution'); ?>"
-                    ></textarea>
-                </div>
-
-                <!-- Optional Feedback Email -->
-                <div id="abj404-feedback-email-section" style="margin: 15px 0 10px 0;">
-                    <label for="abj404-feedback-email" style="display: block; margin-bottom: 5px;">
-                        <strong><?php _e('Your email (optional):', '404-solution'); ?></strong>
-                    </label>
-                    <input
-                        type="email"
-                        id="abj404-feedback-email"
-                        placeholder="<?php _e('For follow-up if needed', '404-solution'); ?>"
-                        class="widefat"
-                    >
-                </div>
-
-                <!-- Technical Details Opt-in -->
-                <label style="margin: 10px 0 5px 0; display: block;">
-                    <input type="checkbox" id="abj404-include-diagnostics" checked>
-                    <?php _e('Include technical details (site URL, system info, plugin counts, and a sanitized log excerpt) to help diagnose the issue', '404-solution'); ?>
-                </label>
-                <p class="abj404-privacy-note" style="margin: 0 0 15px 24px; font-size: 11px; color: var(--abj404-text-muted);">
-                    <?php
-                    /* translators: %s is a literal relative file path to the plugin's privacy policy stub, rendered as <code>. */
-                    printf(
-                        esc_html__('Privacy details (retention, erasure path, processing region): %s', '404-solution'),
-                        '<code>docs/privacy.md</code>'
-                    );
-                    ?>
-                </p>
-            </div>
-        </div>
-        <?php
-    }
-
-    private static function echoDeactivationReasons(): void {
-        ?>
-        <div class="abj404-uninstall-reasons">
-            <label>
-                <input type="radio" name="abj404-reason" value="temporary">
-                <?php _e('Temporary deactivation for debugging', '404-solution'); ?>
-            </label>
-            <label>
-                <input type="radio" name="abj404-reason" value="not-working">
-                <?php _e('The plugin is not working as expected', '404-solution'); ?>
-            </label>
-            <label>
-                <input type="radio" name="abj404-reason" value="found-better">
-                <?php _e('I found a better plugin', '404-solution'); ?>
-            </label>
-            <label>
-                <input type="radio" name="abj404-reason" value="no-longer-needed">
-                <?php _e('I no longer need this functionality', '404-solution'); ?>
-            </label>
-            <label>
-                <input type="radio" name="abj404-reason" value="too-complicated">
-                <?php _e('Too complicated to configure', '404-solution'); ?>
-            </label>
-            <label>
-                <input type="radio" name="abj404-reason" value="performance">
-                <?php _e('Performance issues', '404-solution'); ?>
-            </label>
-            <label>
-                <input type="radio" name="abj404-reason" value="other">
-                <?php _e('Other reason', '404-solution'); ?>
-            </label>
-        </div>
-        <?php
+        echo strtr($html, $replacements);
     }
 
     /**
-     * Handle AJAX request to save uninstall preferences
+     * Back-compat entry point: delegates to Ajax_UninstallPrefs.
+     * Production hook (wp_ajax_abj404_save_uninstall_prefs) and existing
+     * tests reference this static method directly.
+     *
      * @return void
      */
     public static function handleAjaxSavePreferences(): void {
-        // Security: Verify nonce
-        $nonceOk = check_ajax_referer('abj404_uninstall_nonce', 'nonce', false);
-        if (!$nonceOk) {
-            wp_send_json_error(array('message' => __('Invalid security token', '404-solution')), 403);
-            return; // @phpstan-ignore deadCode.unreachable
-        }
-
-        // Security: Check user capabilities
-        if (!current_user_can('activate_plugins')) {
-            wp_send_json_error(array('message' => __('Insufficient permissions', '404-solution')), 403);
-            return; // @phpstan-ignore deadCode.unreachable
-        }
-
-        // Get preferences from AJAX request
-        // Use filter_var to properly handle boolean values sent from JavaScript
-        $preferences = array(
-            'delete_redirects' => isset($_POST['delete_redirects']) ? filter_var($_POST['delete_redirects'], FILTER_VALIDATE_BOOLEAN) : false,
-            'delete_logs' => isset($_POST['delete_logs']) ? filter_var($_POST['delete_logs'], FILTER_VALIDATE_BOOLEAN) : false,
-            'delete_cache' => true, // Always delete cache tables
-            'send_feedback' => isset($_POST['send_feedback']) ? filter_var($_POST['send_feedback'], FILTER_VALIDATE_BOOLEAN) : false,
-            'uninstall_reason' => isset($_POST['uninstall_reason']) ? sanitize_text_field($_POST['uninstall_reason']) : '',
-            'selected_issues' => isset($_POST['selected_issues']) ? sanitize_text_field($_POST['selected_issues']) : '',
-            'followup_details' => isset($_POST['followup_details']) ? sanitize_textarea_field($_POST['followup_details']) : '',
-            // Back-compat for older tests/UI that used a single text field.
-            'feedback_details' => isset($_POST['followup_details']) ? sanitize_textarea_field($_POST['followup_details']) : '',
-            'better_plugin_name' => isset($_POST['better_plugin_name']) ? sanitize_text_field($_POST['better_plugin_name']) : '',
-            'other_reason_text' => isset($_POST['other_reason_text']) ? sanitize_textarea_field($_POST['other_reason_text']) : '',
-            'feedback_email' => isset($_POST['feedback_email']) ? sanitize_email($_POST['feedback_email']) : '',
-            'include_diagnostics' => isset($_POST['include_diagnostics']) ? filter_var($_POST['include_diagnostics'], FILTER_VALIDATE_BOOLEAN) : false
-        );
-
-        // Debug logging (only in debug mode to avoid logging PII like email/feedback in production)
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('404 Solution: AJAX handler received deactivation preferences');
-            error_log('404 Solution: Raw POST send_feedback = ' . (isset($_POST['send_feedback']) ? $_POST['send_feedback'] : 'NOT SET'));
-            error_log('404 Solution: Parsed send_feedback = ' . ($preferences['send_feedback'] ? 'true' : 'false'));
-            error_log('404 Solution: Parsed preferences: ' . print_r($preferences, true));
-        }
-
-        // Save preferences using site options for multisite compatibility
-        // In multisite, use site_option for network-activated plugins, regular option for single-site
-        $option_name = 'abj404_uninstall_preferences';
-        $preferences = ABJ_404_Solution_StorageOptionContracts::prepareForWrite($option_name, $preferences);
-
-        // Capture return value to verify save success
-        $save_result = false;
-        if (is_multisite() && self::isNetworkActivated()) {
-            // Network-activated: Use site option (accessible across all sites)
-            $save_result = update_site_option($option_name, $preferences);
-        } else {
-            // Single-site or site-specific activation: Use regular option
-            $save_result = update_option($option_name, $preferences, false); // autoload=false
-        }
-
-        // Verify the save was successful (false could mean unchanged OR failure)
-        if ($save_result === false) {
-            // Read back the option to verify it was actually saved
-            $saved_value = is_multisite() && self::isNetworkActivated()
-                ? get_site_option($option_name)
-                : get_option($option_name);
-
-            // If the saved value doesn't match what we tried to save, it's a real failure
-            if ($saved_value !== $preferences) {
-                $logger = abj_service('logging');
-                if ($logger !== null) {
-                    $logger->warn('UninstallModal preference save failed: option ' . $option_name .
-                        ' did not round-trip after update_option/update_site_option (multisite=' .
-                        (is_multisite() ? '1' : '0') .
-                        '). Returning HTTP 500 to AJAX caller.');
-                }
-                wp_send_json_error(array(
-                    'message' => __('Could not save preferences. Your choices may not be preserved.', '404-solution')
-                ), 500);
-            }
-            // If values match, the false return was just because value was unchanged (which is OK)
-        }
-
-        // Queue feedback for asynchronous send only if user explicitly opted in.
-        // The actual HTTP POST + email-fallback runs out-of-band on the next
-        // page load via wp_schedule_single_event(), so this AJAX call never
-        // blocks on the network, even on slow SMTP / WAN paths.
-        if ($preferences['send_feedback']) {
-            $includeDiagnostics = !empty($preferences['include_diagnostics']);
-            $debugLog = '';
-            // Only fetch the log excerpt when the user opted into diagnostics.
-            // abj_service() is contractually non-throwing (returns null for
-            // unresolved services), so guarding with method_exists() is enough
-            // to keep this fire-and-forget path from needing a try/catch shim.
-            if ($includeDiagnostics && function_exists('abj_service')) {
-                $logger = abj_service('logging');
-                if (is_object($logger) && method_exists($logger, 'getSanitizedLogExcerptForSupport')) {
-                    $excerpt = $logger->getSanitizedLogExcerptForSupport();
-                    if (is_string($excerpt)) {
-                        $debugLog = $excerpt;
-                    }
-                }
-            }
-
-            $extras = array(
-                'uninstall_reason'    => $preferences['uninstall_reason'],
-                'selected_issues'     => $preferences['selected_issues'],
-                'followup_details'    => $preferences['followup_details'],
-                'better_plugin_name'  => $preferences['better_plugin_name'],
-                'other_reason_text'   => $preferences['other_reason_text'],
-                'contact_email'       => $preferences['feedback_email'],
-                'include_diagnostics' => $includeDiagnostics,
-                'debug_log'           => $debugLog,
-            );
-            // F1 (docs/diagnostic-catalog.md): the "Include technical details"
-            // checkbox is the modal's diagnostic opt-in. When unchecked, we
-            // must NOT collect or ship site_url, environment_extras, counts,
-            // server_software, active_plugins, or any other diagnostic /
-            // site-identifying field. The minimal-payload builder keeps the
-            // payload schema-valid (server still accepts the feedback) while
-            // suppressing every diagnostic row.
-            $payload = $includeDiagnostics
-                ? ABJ_404_Solution_FeedbackTransport::buildPayload('uninstall', $extras)
-                : ABJ_404_Solution_FeedbackTransport::buildMinimalPayload('uninstall', $extras);
-            ABJ_404_Solution_FeedbackTransport::queue($payload, 'uninstall');
-
-            $message = __('Thanks for the feedback!', '404-solution');
-        } else {
-            // User skipped feedback - minimal message (won't be shown anyway due to instant redirect)
-            $message = '';
-        }
-
-        // Return success (failures are already handled above)
-        wp_send_json_success(array('message' => $message));
+        ABJ_404_Solution_Ajax_UninstallPrefs::handle();
     }
 
     /**
-     * Check if plugin is network-activated
-     *
-     * @return bool True if network-activated, false otherwise
-     */
-    private static function isNetworkActivated() {
-        if (!is_multisite()) {
-            return false;
-        }
-
-        if (!function_exists('is_plugin_active_for_network')) {
-            require_once ABSPATH . 'wp-admin/includes/plugin.php';
-        }
-
-        return is_plugin_active_for_network(plugin_basename(ABJ404_FILE));
-    }
-
-    /**
-     * Get the plugin slug for JavaScript
-     *
-     * @return string Plugin directory slug
-     */
-    private static function getPluginSlug() {
-        // Get plugin directory name from plugin file path
-        $pluginPath = plugin_basename(ABJ404_FILE);
-        $parts = explode('/', $pluginPath);
-        return $parts[0];
-    }
-
-    /**
-     * Get the count of redirects for display
-     *
-     * @return int Number of redirects
-     */
-    private static function getRedirectCount() {
-        global $wpdb;
-
-        // Guard for test environment where DataAccess class may not be loaded
-        if (!class_exists('ABJ_404_Solution_DatabaseCore')) {
-            return 0;
-        }
-
-        $dbCore = abj_service('db_core');
-        $table_name = $dbCore->getPrefixedTableName('abj404_redirects');
-
-        // Check if table exists
-        // DAO-bypass-approved: Diagnostic table-existence probe for redirect-count display
-        $table_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_name)) === $table_name;
-
-        if (!$table_exists) {
-            return 0;
-        }
-
-        // DAO-bypass-approved: Diagnostic count for uninstall-modal preview
-        $count = $wpdb->get_var("SELECT COUNT(*) FROM $table_name WHERE status != " . ABJ404_STATUS_TRASH);
-
-        return $count ? intval($count) : 0;
-    }
-
-    /**
-     * Get comprehensive plugin statistics for diagnostics.
-     * Includes redirect counts by type, captured 404s, log entries, and storage sizes.
-     *
-     * @return array{redirects: array<string, int>, captured: array<string, int>, log_count: int, log_table_size_mb: float, debug_file_size_mb: float}
-     */
-    private static function getPluginStatistics(): array {
-        $stats = array(
-            'redirects' => array('all' => 0, 'manual' => 0, 'auto' => 0, 'regex' => 0, 'trash' => 0),
-            'captured' => array('all' => 0, 'captured' => 0, 'ignored' => 0, 'later' => 0, 'trash' => 0),
-            'log_count' => 0,
-            'log_table_size_mb' => 0,
-            'debug_file_size_mb' => 0,
-        );
-
-        // Guard for test environment where DataAccess class may not be loaded
-        if (!class_exists('ABJ_404_Solution_DataAccess')) {
-            return $stats;
-        }
-
-        // Additional guard: check if wpdb has the required methods (test environments may use mocks)
-        global $wpdb;
-        if (!isset($wpdb) || !method_exists($wpdb, 'get_results')) {
-            return $stats;
-        }
-
-        try {
-            $viewRead = abj_service('view_read_service');
-
-            // Get redirect counts by status
-            $redirectCounts = $viewRead->getRedirectStatusCounts(true);
-            if (is_array($redirectCounts)) {
-                $stats['redirects'] = $redirectCounts;
-            }
-
-            // Get captured 404s counts by status
-            $capturedCounts = $viewRead->getCapturedStatusCounts(true);
-            if (is_array($capturedCounts)) {
-                $stats['captured'] = $capturedCounts;
-            }
-
-            // Get log entry count
-            $stats['log_count'] = $viewRead->getLogsCount(0);
-
-            // Get log table size
-            $logTableSizeBytes = $viewRead->getLogDiskUsage();
-            if ($logTableSizeBytes > 0) {
-                $stats['log_table_size_mb'] = round($logTableSizeBytes / (1024 * 1024), 2);
-            }
-
-            // Get debug file size
-            if (class_exists('ABJ_404_Solution_Logging')) {
-                $logger = abj_service('logging');
-                $debugFilePath = $logger->getDebugFilePath();
-                if (file_exists($debugFilePath)) {
-                    $debugFileSize = filesize($debugFilePath);
-                    $stats['debug_file_size_mb'] = round($debugFileSize / (1024 * 1024), 2);
-                }
-            }
-        } catch (\Throwable $e) {
-            // Surface which call failed so the support-bundle reader sees the
-            // reason values are missing instead of silently returning defaults.
-            $stats['_errors'][] = 'getDebugFileSize: ' . $e->getMessage();
-        }
-
-        return $stats;
-    }
-
-    /**
-     * Get counts of categories, tags, pages, and posts for diagnostics.
-     * These counts help identify if memory issues are caused by large content volume.
-     *
-     * @return array{categories: int, tags: int, pages: int, posts: int}
-     */
-    private static function getContentCounts(): array {
-        $counts = array(
-            'categories' => 0,
-            'tags' => 0,
-            'pages' => 0,
-            'posts' => 0,
-        );
-
-        // Guard for test environment where WordPress functions may not be available
-        if (!function_exists('wp_count_terms') || !function_exists('wp_count_posts')) {
-            return $counts;
-        }
-
-        // Count categories (includes product_cat for WooCommerce)
-        $category_count = wp_count_terms(array('taxonomy' => 'category', 'hide_empty' => false));
-        if (!is_wp_error($category_count)) {
-            $counts['categories'] = intval($category_count);
-        }
-
-        // Also count WooCommerce product categories if they exist
-        if (function_exists('taxonomy_exists') && taxonomy_exists('product_cat')) {
-            $product_cat_count = wp_count_terms(array('taxonomy' => 'product_cat', 'hide_empty' => false));
-            if (!is_wp_error($product_cat_count)) {
-                $counts['categories'] += intval($product_cat_count);
-            }
-        }
-
-        // Count tags (includes product_tag for WooCommerce)
-        $tag_count = wp_count_terms(array('taxonomy' => 'post_tag', 'hide_empty' => false));
-        if (!is_wp_error($tag_count)) {
-            $counts['tags'] = intval($tag_count);
-        }
-
-        // Also count WooCommerce product tags if they exist
-        if (function_exists('taxonomy_exists') && taxonomy_exists('product_tag')) {
-            $product_tag_count = wp_count_terms(array('taxonomy' => 'product_tag', 'hide_empty' => false));
-            if (!is_wp_error($product_tag_count)) {
-                $counts['tags'] += intval($product_tag_count);
-            }
-        }
-
-        // Count pages
-        $page_counts = wp_count_posts('page');
-        if (isset($page_counts->publish)) {
-            $counts['pages'] = intval($page_counts->publish);
-        }
-
-        // Count posts
-        $post_counts = wp_count_posts('post');
-        if (isset($post_counts->publish)) {
-            $counts['posts'] = intval($post_counts->publish);
-        }
-
-        // Also count WooCommerce products if they exist
-        if (function_exists('post_type_exists') && post_type_exists('product')) {
-            $product_counts = wp_count_posts('product');
-            if (isset($product_counts->publish)) {
-                $counts['posts'] += intval($product_counts->publish);
-            }
-        }
-
-        return $counts;
-    }
-
-    /**
-     * Email-fallback for FeedbackTransport when the HTTP POST fails. Builds a
-     * deactivation-feedback email body from a FeedbackTransport payload and
-     * dispatches it via wp_mail(). Public because the cron-context fallback in
-     * FeedbackTransport::sendNow() invokes this for type='uninstall'.
-     *
-     * The payload is the array produced by FeedbackTransport::buildPayload(),
-     * carrying the uninstall extras (uninstall_reason, selected_issues,
-     * followup_details, better_plugin_name, other_reason_text, contact_email,
-     * include_diagnostics, debug_log). The diagnostic block is rebuilt live
-     * from the same in-class helpers the AJAX path used pre-migration so the
-     * email retains its existing shape and call surface (getPluginStatistics,
-     * getContentCounts, getDatabaseInfo, getActivePluginsList).
+     * Back-compat entry point: delegates to UninstallFeedbackEmail::send().
+     * FeedbackEmailFallback::sendNow() calls this for type='uninstall'.
      *
      * @param array<string, mixed> $payload FeedbackTransport-built payload.
      * @return bool True if wp_mail() reported success, false otherwise.
      */
     public static function sendFeedbackEmail(array $payload): bool {
-        global $wp_version;
-
-        $site_name = function_exists('get_bloginfo') ? (string)get_bloginfo('name') : '';
-        $rawAdminEmail = function_exists('get_option') ? get_option('admin_email') : '';
-        $admin_email = is_string($rawAdminEmail) ? $rawAdminEmail : '';
-
-        $contactEmail = isset($payload['contact_email']) && is_string($payload['contact_email']) ? $payload['contact_email'] : '';
-        $includeDiag = !empty($payload['include_diagnostics']);
-
-        $subject = sprintf('[404 Solution] Deactivation Feedback from %s', $site_name);
-
-        $body = "Deactivation feedback received:\n\n";
-        $body .= "===============================================\n";
-        $body .= "USER FEEDBACK\n";
-        $body .= "===============================================\n\n";
-
-        $uninstallReason = isset($payload['uninstall_reason']) && is_string($payload['uninstall_reason']) ? $payload['uninstall_reason'] : '';
-        if ($uninstallReason !== '') {
-            $body .= "Reason: " . ucfirst(str_replace('-', ' ', $uninstallReason)) . "\n\n";
-        }
-
-        $selectedIssues = isset($payload['selected_issues']) && is_string($payload['selected_issues']) ? $payload['selected_issues'] : '';
-        if ($selectedIssues !== '') {
-            $body .= "Specific Issues:\n";
-            foreach (explode(',', $selectedIssues) as $issue) {
-                $body .= "  [x] " . ucfirst(str_replace('-', ' ', $issue)) . "\n";
-            }
-            $body .= "\n";
-        }
-
-        $followup = isset($payload['followup_details']) && is_string($payload['followup_details']) ? $payload['followup_details'] : '';
-        if ($followup !== '') {
-            $body .= "Additional Details:\n" . $followup . "\n\n";
-        }
-
-        $betterPlugin = isset($payload['better_plugin_name']) && is_string($payload['better_plugin_name']) ? $payload['better_plugin_name'] : '';
-        if ($betterPlugin !== '') {
-            $body .= "Switching to: " . $betterPlugin . "\n\n";
-        }
-
-        $otherReason = isset($payload['other_reason_text']) && is_string($payload['other_reason_text']) ? $payload['other_reason_text'] : '';
-        if ($otherReason !== '') {
-            $body .= "Other Reason Details:\n" . $otherReason . "\n\n";
-        }
-
-        if ($contactEmail !== '') {
-            $body .= "User Email: " . $contactEmail . "\n\n";
-        }
-
-        if ($includeDiag) {
-            $plugin_stats = self::getPluginStatistics();
-            $db_info = self::getDatabaseInfo();
-            $content_counts = self::getContentCounts();
-            $system_info = array(
-                'WordPress Version' => $wp_version,
-                'PHP Version'       => phpversion(),
-                'Plugin Version'    => defined('ABJ404_VERSION') ? ABJ404_VERSION : 'Unknown',
-                'MySQL Version'     => $db_info['version'],
-                'DB Charset'        => $db_info['charset'],
-                'DB Collation'      => $db_info['collation'],
-                'Multisite'         => is_multisite() ? 'Yes' : 'No',
-                'Active Plugins'    => self::getActivePluginsList(),
-                'Category Count'    => $content_counts['categories'],
-                'Tag Count'         => $content_counts['tags'],
-                'Total Pages'       => $content_counts['pages'],
-                'Total Posts'       => $content_counts['posts'],
-                'Redirects (active)' => $plugin_stats['redirects']['all'],
-                '  - Manual'        => $plugin_stats['redirects']['manual'],
-                '  - Automatic'     => $plugin_stats['redirects']['auto'],
-                '  - Regex'         => $plugin_stats['redirects']['regex'],
-                '  - Trashed'       => $plugin_stats['redirects']['trash'],
-                'Captured 404s (active)' => $plugin_stats['captured']['all'],
-                '  - New'           => $plugin_stats['captured']['captured'],
-                '  - Ignored'       => $plugin_stats['captured']['ignored'],
-                '  - Later'         => $plugin_stats['captured']['later'],
-                '  - Trash'         => $plugin_stats['captured']['trash'],
-                'Log Entries in DB' => $plugin_stats['log_count'],
-                'Log Table Size'    => $plugin_stats['log_table_size_mb'] . ' MB',
-                'Debug File Size'   => $plugin_stats['debug_file_size_mb'] . ' MB',
-            );
-
-            $body .= "===============================================\n";
-            $body .= "PLUGIN DEBUG LOG\n";
-            $body .= "===============================================\n\n";
-            $debugLog = isset($payload['debug_log']) && is_string($payload['debug_log']) ? $payload['debug_log'] : '';
-            $body .= ($debugLog !== '' ? $debugLog : 'Log excerpt unavailable.') . "\n\n";
-
-            $body .= "===============================================\n";
-            $body .= "DATABASE COLLATIONS\n";
-            $body .= "===============================================\n\n";
-            $body .= self::getDatabaseCollationSnapshot() . "\n\n";
-
-            $body .= "===============================================\n";
-            $body .= "SYSTEM INFORMATION\n";
-            $body .= "===============================================\n\n";
-            foreach ($system_info as $label => $value) {
-                $body .= sprintf("%-20s: %s\n", $label, $value);
-            }
-        }
-
-        $body .= "\n===============================================\n";
-        $body .= "This feedback was sent automatically when the user deactivated the plugin.\n";
-
-        $headers = array(
-            'Content-Type: text/plain; charset=UTF-8',
-            'From: ' . $site_name . ' <' . $admin_email . '>'
-        );
-        if ($contactEmail !== '') {
-            $headers[] = 'Reply-To: ' . $contactEmail;
-        }
-
-        $to = defined('ABJ404_AUTHOR_EMAIL') ? ABJ404_AUTHOR_EMAIL : '404solution@ajexperience.com';
-        return (bool) wp_mail($to, $subject, $body, $headers);
+        return ABJ_404_Solution_UninstallFeedbackEmail::send($payload);
     }
 
     /**
-     * Get list of active plugins
+     * Get the plugin slug for JavaScript.
      *
-     * @return string Comma-separated list of active plugin names
+     * @return string Plugin directory slug
      */
-    private static function getActivePluginsList() {
-        if (!function_exists('get_plugins')) {
-            $pluginFile = ABSPATH . 'wp-admin/includes/plugin.php';
-            if (!is_readable($pluginFile)) {
-                return 'Unavailable: wp-admin/includes/plugin.php not readable';
-            }
-            require_once $pluginFile;
-        }
-
-        $all_plugins = get_plugins();
-        $active_plugins = get_option('active_plugins', array());
-        if (!is_array($active_plugins)) {
-            $active_plugins = array();
-        }
-
-        $active_plugin_names = array();
-        foreach ($active_plugins as $plugin_path) {
-            if (isset($all_plugins[$plugin_path])) {
-                $active_plugin_names[] = $all_plugins[$plugin_path]['Name'];
-            }
-        }
-
-        return !empty($active_plugin_names)
-            ? implode(', ', array_slice($active_plugin_names, 0, 10)) . (count($active_plugin_names) > 10 ? '...' : '')
-            : 'None';
-    }
-
-    /**
-     * Get database version and charset info for diagnostics.
-     * Uses fallback chain for locked-down hosts.
-     *
-     * @return array{version: string, charset: string, collation: string}
-     */
-    private static function getDatabaseInfo(): array {
-        global $wpdb;
-
-        $info = array(
-            'version' => 'Unknown',
-            'charset' => 'Unknown',
-            'collation' => 'Unknown',
-        );
-
-        // Get MySQL/MariaDB version
-        // DAO-bypass-approved: Diagnostic — MySQL VERSION() for support email
-        $version = $wpdb->get_var("SELECT VERSION()");
-        if ($version) {
-            $info['version'] = $version;
-        }
-
-        // Get database default charset and collation
-        if (!defined('DB_NAME')) {
-            // Test environment - use wpdb defaults
-            $charset = isset($wpdb->charset) ? $wpdb->charset : '';
-            $collate = isset($wpdb->collate) ? $wpdb->collate : '';
-            $info['charset'] = $charset ?: 'utf8mb4';
-            $info['collation'] = $collate ?: 'utf8mb4_unicode_ci';
-            return $info;
-        }
-
-        // Try information_schema.SCHEMATA first
-        $db_name = DB_NAME;
-        // DAO-bypass-approved: Diagnostic database-default charset/collation probe.
-        $charset_query = $wpdb->prepare(
-            "SELECT DEFAULT_CHARACTER_SET_NAME, DEFAULT_COLLATION_NAME " .
-            "FROM information_schema.SCHEMATA WHERE SCHEMA_NAME = %s",
-            $db_name
-        );
-        // DAO-bypass-approved: Diagnostic — information_schema.SCHEMATA probe
-        $db_result = $wpdb->get_row($charset_query, ARRAY_A);
-
-        if ($db_result && !empty($db_result['DEFAULT_CHARACTER_SET_NAME'])) {
-            $info['charset'] = $db_result['DEFAULT_CHARACTER_SET_NAME'];
-            $info['collation'] = $db_result['DEFAULT_COLLATION_NAME'] ?? 'Unknown';
-            return $info;
-        }
-
-        // Fallback: SHOW VARIABLES for character_set_database and collation_database
-        // DAO-bypass-approved: Diagnostic — server variable readout for support email
-        $charset_result = $wpdb->get_row("SHOW VARIABLES LIKE 'character_set_database'", ARRAY_A);
-        // DAO-bypass-approved: Diagnostic — server variable readout for support email
-        $collation_result = $wpdb->get_row("SHOW VARIABLES LIKE 'collation_database'", ARRAY_A);
-
-        if ($charset_result && isset($charset_result['Value'])) {
-            $info['charset'] = $charset_result['Value'];
-        }
-        if ($collation_result && isset($collation_result['Value'])) {
-            $info['collation'] = $collation_result['Value'];
-        }
-
-        // Final fallback: WordPress connection settings
-        if ($info['charset'] === 'Unknown') {
-            $charset = isset($wpdb->charset) ? $wpdb->charset : '';
-            $info['charset'] = $charset ?: (defined('DB_CHARSET') ? DB_CHARSET : 'utf8mb4');
-        }
-        if ($info['collation'] === 'Unknown') {
-            $collate = isset($wpdb->collate) ? $wpdb->collate : '';
-            $info['collation'] = $collate ?: 'utf8mb4_unicode_ci';
-        }
-
-        return $info;
-    }
-
-    /**
-     * Capture charset/collation details for key plugin tables.
-     *
-     * @return string Human-readable summary for email diagnostics
-     */
-    private static function getDatabaseCollationSnapshot() {
-        global $wpdb;
-
-        $summaryLines = array();
-
-        // Show the table prefix to help diagnose prefix mismatch issues
-        $summaryLines[] = "Table prefix: " . $wpdb->prefix;
-        $summaryLines[] = "";
-
-        // Safely get class instances - may not exist in test environment
-        if (!class_exists('ABJ_404_Solution_DatabaseUpgradesEtc') ||
-            !class_exists('ABJ_404_Solution_DataAccess')) {
-            $summaryLines[] = "Collation details unavailable (required classes not loaded).";
-            return implode("\n", $summaryLines);
-        }
-
-        $dbUtils = abj_service('database_upgrades');
-        $dbCore = abj_service('db_core');
-
-        // Get baseline from wp_posts
-        $targetTable = $wpdb->prefix . 'posts';
-        $targetInfo = self::getTableInfo($targetTable);
-
-        if (isset($targetInfo['error'])) {
-            $summaryLines[] = "Could not read collation for {$targetTable} (baseline): " . $targetInfo['error'];
-            return implode("\n", $summaryLines);
-        }
-
-        $targetCollation = isset($targetInfo['collation']) ? $targetInfo['collation'] : '';
-        $targetCharset = isset($targetInfo['charset']) ? $targetInfo['charset'] : '';
-        $targetEngine = isset($targetInfo['engine']) ? $targetInfo['engine'] : '';
-
-        $summaryLines[] = sprintf(
-            "%s -> %s / %s / %s (baseline)",
-            $targetTable,
-            $targetCharset,
-            $targetCollation,
-            $targetEngine
-        );
-
-        // Discover all plugin tables dynamically so new tables are automatically included.
-        $prefix = $dbCore->getLowercasePrefix();
-        // DAO-bypass-approved: Diagnostic table enumeration for collation snapshot
-        if (is_object($wpdb) && method_exists($wpdb, 'esc_like')) {
-            $escapedPrefix = $wpdb->esc_like($prefix . 'abj404_');
-        } else {
-            $escapedPrefix = addcslashes($prefix . 'abj404_', '_%\\');
-        }
-        $rawTables = $wpdb->get_results(
-            // DAO-bypass-approved: Diagnostic table enumeration needs SHOW TABLES metadata directly.
-            $wpdb->prepare("SHOW TABLES LIKE %s", $escapedPrefix . '%'),
-            ARRAY_N
-        );
-        $pluginTables = array();
-        foreach ($rawTables as $row) {
-            $fullName = $row[0];
-            $pluginTables[$fullName] = $fullName;
-        }
-
-        foreach ($pluginTables as $label => $tableName) {
-            $tableInfo = self::getTableInfo($tableName);
-
-            if (isset($tableInfo['error'])) {
-                $summaryLines[] = sprintf(
-                    "%s (%s) -> unavailable (%s)",
-                    $label,
-                    $tableName,
-                    $tableInfo['error']
-                );
-                continue;
-            }
-
-            $collation = isset($tableInfo['collation']) ? $tableInfo['collation'] : '';
-            $charset = isset($tableInfo['charset']) ? $tableInfo['charset'] : '';
-            $engine = isset($tableInfo['engine']) ? $tableInfo['engine'] : '';
-
-            $matchesBaseline = ($collation === $targetCollation && $charset === $targetCharset);
-            $utf8mb4Note = (is_string($charset) && stripos($charset, 'utf8mb4') === false) ? ' [non-utf8mb4]' : '';
-            $matchNote = $matchesBaseline ? 'matches' : 'DIFFERS';
-
-            $summaryLines[] = sprintf(
-                "%s (%s) -> %s / %s / %s (%s)%s",
-                $label,
-                $tableName,
-                $charset,
-                $collation,
-                $engine,
-                $matchNote,
-                $utf8mb4Note
-            );
-        }
-
-        return implode("\n", $summaryLines);
-    }
-
-    /**
-     * Get table info with fallback chain for locked-down hosts.
-     *
-     * Tries multiple methods in order:
-     * 1. information_schema (most complete)
-     * 2. SHOW TABLE STATUS (widely permitted)
-     * 3. SHOW CREATE TABLE (parse DDL)
-     * 4. WordPress globals (connection-level defaults)
-     *
-     * @param string $tableName Table name to look up
-     * @return array{charset?: string|null, collation?: string|null, engine?: string, error?: string, source?: string}
-     */
-    private static function getTableInfo(string $tableName): array {
-        // Try information_schema first (most complete data)
-        $result = self::tryInformationSchema($tableName);
-        if ($result !== null && !isset($result['error'])) {
-            return $result;
-        }
-
-        // Fallback: SHOW TABLE STATUS
-        $result = self::tryShowTableStatus($tableName);
-        if ($result !== null && !isset($result['error'])) {
-            return $result;
-        }
-
-        // Fallback: SHOW CREATE TABLE
-        $result = self::tryShowCreateTable($tableName);
-        if ($result !== null && !isset($result['error'])) {
-            return $result;
-        }
-
-        // Final fallback: WordPress connection defaults
-        return self::getWpdbDefaults();
-    }
-
-    /**
-     * Try to get table info from information_schema.
-     *
-     * @param string $tableName Table name to look up
-     * @return array{charset?: string|null, collation?: string|null, engine?: string, error?: string}|null
-     */
-    private static function tryInformationSchema(string $tableName) {
-        /** @var \wpdb $wpdb */
-        global $wpdb;
-
-        // Guard for test environment where wpdb may be a minimal mock
-        if (!method_exists($wpdb, 'get_row')) {
-            return array('error' => 'wpdb methods unavailable');
-        }
-
-        // DAO-bypass-approved: Diagnostic table charset/collation metadata probe.
-        $query = $wpdb->prepare(
-            "SELECT TABLE_COLLATION, ENGINE, " .
-            "SUBSTRING_INDEX(TABLE_COLLATION, '_', 1) as TABLE_CHARSET " .
-            "FROM information_schema.tables " .
-            "WHERE TABLE_NAME = %s AND TABLE_SCHEMA = DATABASE()",
-            $tableName
-        );
-
-        // DAO-bypass-approved: Diagnostic — information_schema.tables probe
-        $result = $wpdb->get_row($query, ARRAY_A);
-
-        // Check for query error
-        if (!empty($wpdb->last_error)) {
-            // Check for permission-related errors
-            if (stripos($wpdb->last_error, 'denied') !== false ||
-                stripos($wpdb->last_error, 'permission') !== false) {
-                return array('error' => 'permission denied');
-            }
-            return array('error' => 'query error');
-        }
-
-        // Table not found
-        if (empty($result)) {
-            return null;
-        }
-
-        // Handle case variations in column names
-        $result = array_change_key_case($result, CASE_UPPER);
-
-        $collation = isset($result['TABLE_COLLATION']) && is_string($result['TABLE_COLLATION']) ? $result['TABLE_COLLATION'] : null;
-        $engine = isset($result['ENGINE']) && is_string($result['ENGINE']) ? $result['ENGINE'] : 'Unknown';
-        $charset = isset($result['TABLE_CHARSET']) && is_string($result['TABLE_CHARSET']) ? $result['TABLE_CHARSET'] : null;
-
-        // Fallback charset extraction from collation
-        if (empty($charset) && !empty($collation)) {
-            $charset = explode('_', $collation)[0];
-        }
-
-        if (empty($collation)) {
-            return array('error' => 'no collation data');
-        }
-
-        return array(
-            'charset' => $charset,
-            'collation' => $collation,
-            'engine' => $engine
-        );
-    }
-
-    /**
-     * Try to get table info using SHOW TABLE STATUS.
-     *
-     * @param string $tableName Table name to look up
-     * @return array{charset?: string|null, collation?: string|null, engine?: string, error?: string}|null
-     */
-    private static function tryShowTableStatus(string $tableName) {
-        /** @var \wpdb $wpdb */
-        global $wpdb;
-
-        if (!method_exists($wpdb, 'get_row')) {
-            return array('error' => 'wpdb methods unavailable');
-        }
-
-        // SHOW TABLE STATUS LIKE requires the table name without database prefix matching
-        // DAO-bypass-approved: Diagnostic — fallback metadata probe (SHOW TABLE STATUS)
-        $result = $wpdb->get_row(
-            // DAO-bypass-approved: Diagnostic fallback metadata probe needs SHOW TABLE STATUS directly.
-            $wpdb->prepare("SHOW TABLE STATUS LIKE %s", $tableName),
-            ARRAY_A
-        );
-
-        if (!empty($wpdb->last_error)) {
-            return array('error' => 'SHOW TABLE STATUS failed');
-        }
-
-        if (empty($result)) {
-            return null;
-        }
-
-        $collation = isset($result['Collation']) && is_string($result['Collation']) ? $result['Collation'] : null;
-        $engine = isset($result['Engine']) && is_string($result['Engine']) ? $result['Engine'] : 'Unknown';
-        $charset = (is_string($collation) && $collation !== '') ? explode('_', $collation)[0] : null;
-
-        if (empty($collation)) {
-            return null;
-        }
-
-        return array(
-            'charset' => $charset,
-            'collation' => $collation,
-            'engine' => $engine
-        );
-    }
-
-    /**
-     * Try to get table info by parsing SHOW CREATE TABLE output.
-     *
-     * @param string $tableName Table name to look up
-     * @return array{charset?: string|null, collation?: string|null, engine?: string, error?: string}|null
-     */
-    private static function tryShowCreateTable(string $tableName) {
-        /** @var \wpdb $wpdb */
-        global $wpdb;
-
-        if (!is_object($wpdb) || !method_exists($wpdb, 'get_row')) {
-            return null;
-        }
-
-        // @utf8-audit: opt-out — $tableName is built from $wpdb->prefix +
-        // 'abj404_*' constants by the uninstall flow; never user input.
-        // Use backticks to safely quote table name
-        // DAO-bypass-approved: Diagnostic — last-resort SHOW CREATE TABLE charset parse
-        $result = $wpdb->get_row("SHOW CREATE TABLE `" . esc_sql($tableName) . "`", ARRAY_N);
-
-        if (empty($result[1])) {
-            return null;
-        }
-
-        $ddl = is_string($result[1]) ? $result[1] : '';
-
-        // Match charset: CHARSET=utf8mb4, DEFAULT CHARSET=utf8mb4, CHARACTER SET utf8mb4
-        preg_match('/(?:DEFAULT\s+)?(?:CHARSET|CHARACTER\s+SET)(?:\s*=\s*|\s+)([\w\d]+)/i', $ddl, $charsetMatch);
-
-        // Match collation: COLLATE=utf8mb4_unicode_ci, COLLATE utf8mb4_unicode_ci
-        preg_match('/(?:DEFAULT\s+)?COLLATE(?:\s*=\s*|\s+)([\w\d_]+)/i', $ddl, $collationMatch);
-
-        // Match engine: ENGINE=InnoDB
-        preg_match('/ENGINE\s*=\s*([\w]+)/i', $ddl, $engineMatch);
-
-        $charset = $charsetMatch[1] ?? null;
-        $collation = $collationMatch[1] ?? null;
-        $engine = $engineMatch[1] ?? 'Unknown';
-
-        // Derive collation from charset if not explicit
-        if ($charset && !$collation) {
-            $collation = $charset . '_general_ci';
-        }
-
-        // Need at least charset or collation to return valid data
-        if (empty($charset) && empty($collation)) {
-            return null;
-        }
-
-        return array(
-            'charset' => $charset ?: explode('_', $collation)[0],
-            'collation' => $collation,
-            'engine' => $engine
-        );
-    }
-
-    /**
-     * Get WordPress connection-level charset/collation as final fallback.
-     *
-     * @return array{charset: string, collation: string, engine: string, source: string}
-     */
-    private static function getWpdbDefaults(): array {
-        global $wpdb;
-
-        $charset = 'utf8mb4';
-        $collation = 'utf8mb4_unicode_ci';
-
-        // Try to get from wpdb properties
-        if (isset($wpdb->charset) && !empty($wpdb->charset)) {
-            $charset = $wpdb->charset;
-        } elseif (defined('DB_CHARSET') && DB_CHARSET) {
-            $charset = DB_CHARSET;
-        }
-
-        if (isset($wpdb->collate) && !empty($wpdb->collate)) {
-            $collation = $wpdb->collate;
-        }
-
-        return array(
-            'charset' => $charset,
-            'collation' => $collation,
-            'engine' => 'Unknown',
-            'source' => 'wpdb defaults'
-        );
+    private static function getPluginSlug(): string {
+        $pluginPath = plugin_basename(ABJ404_FILE);
+        $parts = explode('/', $pluginPath);
+        return $parts[0];
     }
 }
