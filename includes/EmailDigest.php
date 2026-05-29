@@ -69,190 +69,49 @@ class ABJ_404_Solution_EmailDigest {
         $tableRows = $this->buildDigestTableRows($topCaptured, $rollupAvailable);
         $t = $this->getDigestTranslations((int) $s['resolved'], (int) $s['totalAll']);
 
-        $html = '<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>' . $t['digest'] . '</title>
-</head>
-<body style="margin:0;padding:0;background-color:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif;font-size:14px;color:#1e293b;">
+        // Load the digest email body template from disk and substitute
+        // computed values. The HTML/CSS lives in includes/html/emailDigestBody.html
+        // so that presentation can be edited independently of PHP. Email-client
+        // compatibility requires inline / embedded CSS, so styles intentionally
+        // live inside the template rather than an external stylesheet.
+        $template = ABJ_404_Solution_Functions::readFileContents(__DIR__ . '/html/emailDigestBody.html', false);
 
-<!-- Outer wrapper -->
-<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#f1f5f9;">
-<tr><td align="center" style="padding:32px 16px;">
+        $replacements = array(
+            '{t_digest}'        => $t['digest'],
+            '{t_report}'        => $t['report'],
+            '{t_summary}'       => $t['summary'],
+            '{t_captured}'      => $t['captured'],
+            '{t_urls404}'       => $t['urls404'],
+            '{t_auto}'          => $t['auto'],
+            '{t_redirected}'    => $t['redirected'],
+            '{t_manual}'        => $t['manual'],
+            '{t_configured}'    => $t['configured'],
+            '{t_resolution}'    => $t['resolution'],
+            '{t_handled}'       => $t['handled'],
+            '{t_top_urls}'      => $t['top_urls'],
+            '{t_url}'           => $t['url'],
+            '{t_hits}'          => $t['hits'],
+            '{t_first_seen}'    => $t['first_seen'],
+            '{t_view_cta}'      => $t['view_cta'],
+            '{t_settings}'      => $t['settings'],
+            '{t_unsubscribe}'   => $t['unsubscribe'],
+            '{t_manage}'        => $t['manage'],
+            '{dateRange}'       => esc_html($dateRange),
+            '{totalCaptured}'   => (string) $s['totalCaptured'],
+            '{totalAuto}'       => (string) $s['totalAuto'],
+            '{totalManual}'     => (string) $s['totalManual'],
+            '{resolutionPct}'   => (string) $s['resolutionPct'],
+            '{progressBarFill}' => (string) $s['progressBarFill'],
+            '{progressBarEmpty}'=> (string) $s['progressBarEmpty'],
+            '{tableRows}'       => $tableRows,
+            '{adminUrl}'        => esc_url($adminUrl),
+            '{settingsUrl}'     => esc_url($settingsUrl),
+            '{pluginVersion}'   => esc_html((string) $s['pluginVersion']),
+            '{phpVersion}'      => esc_html((string) $s['phpVersion']),
+            '{sentAt}'          => esc_html((string) $s['sentAt']),
+        );
 
-<!-- Main card -->
-<table width="600" cellpadding="0" cellspacing="0" role="presentation"
-  style="max-width:600px;width:100%;background:#ffffff;border-radius:12px;overflow:hidden;
-         box-shadow:0 4px 6px rgba(0,0,0,0.07),0 1px 3px rgba(0,0,0,0.06);">
-
-<!-- ===== HEADER ===== -->
-<tr>
-<td style="background:#1d4ed8;padding:0;">
-<table width="100%" cellpadding="0" cellspacing="0" role="presentation">
-<tr>
-<td style="padding:26px 32px 22px;">
-<table cellpadding="0" cellspacing="0" role="presentation">
-<tr>
-<td style="background:rgba(255,255,255,0.18);border-radius:10px;padding:9px 11px;vertical-align:middle;">
-<span style="font-size:22px;line-height:1;" role="img" aria-label="shield">&#x1F6E1;&#xFE0F;</span>
-</td>
-<td style="padding-left:14px;vertical-align:middle;">
-<div style="color:#ffffff;font-size:19px;font-weight:700;letter-spacing:-0.2px;">404 Solution</div>
-<div style="color:#93c5fd;font-size:11px;font-weight:600;letter-spacing:0.8px;text-transform:uppercase;margin-top:2px;">'
-. $t['report'] . '</div>
-</td>
-</tr>
-</table>
-</td>
-<td align="right" style="padding:26px 32px 22px;vertical-align:middle;">
-<div style="background:rgba(255,255,255,0.15);border-radius:8px;padding:6px 14px;display:inline-block;">
-<div style="color:#bfdbfe;font-size:12px;font-weight:500;">' . esc_html($dateRange) . '</div>
-</div>
-</td>
-</tr>
-</table>
-</td>
-</tr>
-
-<!-- ===== SUMMARY STATS ===== -->
-<tr>
-<td style="padding:24px 32px 0;">
-<div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;">'
-. $t['summary'] . '</div>
-<table width="100%" cellpadding="0" cellspacing="0" role="presentation">
-<tr>
-<!-- Captured -->
-<td style="width:32%;">
-<table width="100%" cellpadding="0" cellspacing="0" role="presentation">
-<tr><td style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:14px 10px;text-align:center;">
-<div style="font-size:10px;font-weight:700;color:#3b82f6;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:7px;">&#x1F4CA; ' . $t['captured'] . '</div>
-<div style="font-size:32px;font-weight:800;color:#1d4ed8;line-height:1;">' . $s['totalCaptured'] . '</div>
-<div style="font-size:11px;color:#94a3b8;margin-top:5px;">' . $t['urls404'] . '</div>
-</td></tr>
-</table>
-</td>
-<td width="8">&nbsp;</td>
-<!-- Auto -->
-<td style="width:32%;">
-<table width="100%" cellpadding="0" cellspacing="0" role="presentation">
-<tr><td style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px 10px;text-align:center;">
-<div style="font-size:10px;font-weight:700;color:#16a34a;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:7px;">&#x2705; ' . $t['auto'] . '</div>
-<div style="font-size:32px;font-weight:800;color:#15803d;line-height:1;">' . $s['totalAuto'] . '</div>
-<div style="font-size:11px;color:#94a3b8;margin-top:5px;">' . $t['redirected'] . '</div>
-</td></tr>
-</table>
-</td>
-<td width="8">&nbsp;</td>
-<!-- Manual -->
-<td style="width:32%;">
-<table width="100%" cellpadding="0" cellspacing="0" role="presentation">
-<tr><td style="background:#faf5ff;border:1px solid #ddd6fe;border-radius:10px;padding:14px 10px;text-align:center;">
-<div style="font-size:10px;font-weight:700;color:#7c3aed;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:7px;">&#x270D; ' . $t['manual'] . '</div>
-<div style="font-size:32px;font-weight:800;color:#6d28d9;line-height:1;">' . $s['totalManual'] . '</div>
-<div style="font-size:11px;color:#94a3b8;margin-top:5px;">' . $t['configured'] . '</div>
-</td></tr>
-</table>
-</td>
-</tr>
-</table>
-</td>
-</tr>
-
-<!-- ===== RESOLUTION RATE BAR ===== -->
-<tr>
-<td style="padding:14px 32px 0;">
-<table width="100%" cellpadding="0" cellspacing="0" role="presentation">
-<tr><td style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 16px;">
-<table width="100%" cellpadding="0" cellspacing="0" role="presentation">
-<tr>
-<td><span style="font-size:12px;font-weight:600;color:#475569;">' . $t['resolution'] . '</span></td>
-<td align="right"><span style="font-size:12px;font-weight:800;color:#2563eb;">' . $s['resolutionPct'] . '%</span></td>
-</tr>
-</table>
-<!-- Progress bar track -->
-<table width="100%" cellpadding="0" cellspacing="0" role="presentation"
-  style="margin-top:8px;border-radius:3px;overflow:hidden;background:#e2e8f0;" height="6">
-<tr>' . $s['progressBarFill'] . $s['progressBarEmpty'] . '</tr>
-</table>
-<div style="font-size:11px;color:#94a3b8;margin-top:7px;">' . $t['handled'] . '</div>
-</td></tr>
-</table>
-</td>
-</tr>
-
-<!-- ===== TOP URLS TABLE ===== -->
-<tr>
-<td style="padding:20px 32px 0;">
-<div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">'
-. $t['top_urls'] . '</div>
-<table width="100%" cellpadding="0" cellspacing="0" role="presentation"
-  style="border-collapse:collapse;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;">
-<thead>
-<tr style="background:#f8fafc;">
-<th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:#64748b;
-    text-transform:uppercase;letter-spacing:0.7px;border-bottom:1px solid #e2e8f0;">'
-. $t['url'] . '</th>
-<th style="padding:10px 12px;text-align:center;font-size:11px;font-weight:700;color:#64748b;
-    text-transform:uppercase;letter-spacing:0.7px;border-bottom:1px solid #e2e8f0;white-space:nowrap;">'
-. $t['hits'] . '</th>
-<th style="padding:10px 12px;text-align:center;font-size:11px;font-weight:700;color:#64748b;
-    text-transform:uppercase;letter-spacing:0.7px;border-bottom:1px solid #e2e8f0;white-space:nowrap;">'
-. $t['first_seen'] . '</th>
-</tr>
-</thead>
-<tbody>
-' . $tableRows . '
-</tbody>
-</table>
-</td>
-</tr>
-
-<!-- ===== CTA BUTTONS ===== -->
-<tr>
-<td style="padding:20px 32px;">
-<table width="100%" cellpadding="0" cellspacing="0" role="presentation">
-<tr>
-<td style="width:50%;padding-right:6px;">
-<a href="' . esc_url($adminUrl) . '"
-  style="display:block;padding:12px 0;background:#2563eb;color:#ffffff;text-decoration:none;
-         border-radius:8px;font-size:13px;font-weight:700;text-align:center;letter-spacing:0.2px;">'
-. $t['view_cta'] . ' &#x2192;</a>
-</td>
-<td style="width:50%;padding-left:6px;">
-<a href="' . esc_url($settingsUrl) . '"
-  style="display:block;padding:12px 0;background:#f8fafc;color:#374151;text-decoration:none;
-         border-radius:8px;font-size:13px;font-weight:600;text-align:center;
-         border:1px solid #e2e8f0;letter-spacing:0.2px;">'
-. $t['settings'] . '</a>
-</td>
-</tr>
-</table>
-</td>
-</tr>
-
-<!-- ===== FOOTER ===== -->
-<tr>
-<td style="padding:16px 32px;background:#f8fafc;border-top:1px solid #e2e8f0;border-radius:0 0 12px 12px;">
-<p style="margin:0;font-size:12px;color:#94a3b8;text-align:center;">'
-. $t['unsubscribe']
-. ' <a href="' . esc_url($settingsUrl) . '" style="color:#2563eb;text-decoration:none;">'
-. $t['manage'] . '</a></p>
-<p style="margin:8px 0 0;font-size:11px;color:#cbd5e1;text-align:center;">404 Solution v'
-. esc_html((string)$s['pluginVersion'])
-. ' &nbsp;&#183;&nbsp; PHP ' . esc_html((string)$s['phpVersion'])
-. ' &nbsp;&#183;&nbsp; ' . esc_html((string)$s['sentAt']) . '</p>
-</td>
-</tr>
-
-</table>
-</td></tr>
-</table>
-</body>
-</html>';
-
-        return $html;
+        return str_replace(array_keys($replacements), array_values($replacements), $template);
     }
 
     /**
@@ -295,11 +154,11 @@ class ABJ_404_Solution_EmailDigest {
             $emptyMessage = $rollupAvailable
                 ? esc_html__('No captured 404s in this period.', '404-solution')
                 : esc_html__('Top URLs unavailable: log rollup is being rebuilt. Will be available in the next digest.', '404-solution');
-            return '<tr><td colspan="3" style="padding:14px;text-align:center;color:#94a3b8;font-size:13px;">'
-                . $emptyMessage
-                . '</td></tr>';
+            $emptyTemplate = ABJ_404_Solution_Functions::readFileContents(__DIR__ . '/html/emailDigestEmptyRow.html', false);
+            return str_replace('{emptyMessage}', $emptyMessage, $emptyTemplate);
         }
 
+        $rowTemplate = ABJ_404_Solution_Functions::readFileContents(__DIR__ . '/html/emailDigestTableRow.html', false);
         $tableRows = '';
         $rowIndex = 0;
         foreach ($topCaptured as $row) {
@@ -319,18 +178,11 @@ class ABJ_404_Solution_EmailDigest {
                 $badgeBg = '#f1f5f9'; $badgeFg = '#475569';
             }
 
-            $tableRows .= '<tr bgcolor="' . $rowBg . '" style="background:' . $rowBg . ';">'
-                . '<td style="padding:9px 12px;border-bottom:1px solid #f1f5f9;font-size:12px;'
-                .   'font-family:\'Courier New\',Courier,monospace;word-break:break-all;color:#334155;">'
-                .   $urlText
-                . '</td>'
-                . '<td style="padding:9px 12px;border-bottom:1px solid #f1f5f9;text-align:center;white-space:nowrap;">'
-                .   '<span style="display:inline-block;padding:2px 8px;background:' . $badgeBg . ';color:' . $badgeFg . ';'
-                .     'border-radius:12px;font-size:12px;font-weight:700;">' . $hits . '</span>'
-                . '</td>'
-                . '<td style="padding:9px 12px;border-bottom:1px solid #f1f5f9;text-align:center;'
-                .   'font-size:12px;color:#64748b;white-space:nowrap;">' . esc_html($created) . '</td>'
-                . '</tr>' . "\n";
+            $tableRows .= str_replace(
+                array('{rowBg}', '{urlText}', '{badgeBg}', '{badgeFg}', '{hits}', '{created}'),
+                array($rowBg, $urlText, $badgeBg, $badgeFg, (string) $hits, esc_html($created)),
+                $rowTemplate
+            );
         }
         return $tableRows;
     }
