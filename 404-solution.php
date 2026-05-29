@@ -177,6 +177,9 @@ function abj404_autoloader($class) {
 			),
 			'ABJ_404_Solution_FeedbackTransport' => array(
 				$inc . 'FeedbackEnvironmentExtras.php',
+				$inc . 'FeedbackEnvironmentExtras_DbProbes.php',
+				$inc . 'FeedbackEnvironmentExtras_HostProbes.php',
+				$inc . 'FeedbackEnvironmentExtras_DebugLogSignatures.php',
 			),
 			'ABJ_404_Solution_DatabaseCore' => array(
 				$inc . 'DatabaseConnectionManager.php',

@@ -4,13 +4,30 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+require_once dirname(__FILE__) . '/FeedbackEnvironmentExtras_DbProbes.php';
+require_once dirname(__FILE__) . '/FeedbackEnvironmentExtras_HostProbes.php';
+require_once dirname(__FILE__) . '/FeedbackEnvironmentExtras_DebugLogSignatures.php';
+
 /**
  * Environment-extras passthrough probes for the feedback payload's JSON column.
  *
- * Collects best-effort diagnostic probes about the server environment
- * (MySQL globals, disk headroom, PHP SAPI, hosting class, etc.) and
- * packages them into a keyed array for the `environment_extras` field
- * of the feedback payload.
+ * Orchestrates a set of best-effort diagnostic probes about the server
+ * environment (MySQL globals, disk headroom, PHP SAPI, hosting class,
+ * etc.) and packages them into a keyed array for the `environment_extras`
+ * field of the feedback payload.
+ *
+ * This class owns ONLY the probe registry and the failure-isolation
+ * wrapper. The probe implementations live in three collaborator classes,
+ * partitioned by data source:
+ *   - FeedbackEnvironmentExtras_DbProbes: MySQL/MariaDB probes via $wpdb
+ *     (SHOW GLOBAL VARIABLES/STATUS, SHOW PROCESSLIST, SHOW INDEX,
+ *     information_schema, view-build option signals).
+ *   - FeedbackEnvironmentExtras_HostProbes: PHP/OS/WP runtime probes
+ *     (SAPI, opcache, filesystem headroom, hosting class, object-cache
+ *     backend, timezone, multisite role, htaccess writability, lifecycle).
+ *   - FeedbackEnvironmentExtras_DebugLogSignatures: tail-read of the
+ *     plugin debug log + PII-stripping signature normalization for
+ *     `recent_error_signatures`.
  *
  * Each probe is wrapped by recordProbe() so a single probe failure
  * cannot blank the others or block the support send. Failures emit a
@@ -25,6 +42,21 @@ if (!defined('ABSPATH')) {
  * targets) and pinned by tests/FeedbackTransportEnvironmentExtrasTest.
  */
 class ABJ_404_Solution_FeedbackEnvironmentExtras {
+
+    /** @var ABJ_404_Solution_FeedbackEnvironmentExtras_DbProbes */
+    private $db;
+
+    /** @var ABJ_404_Solution_FeedbackEnvironmentExtras_HostProbes */
+    private $host;
+
+    /** @var ABJ_404_Solution_FeedbackEnvironmentExtras_DebugLogSignatures */
+    private $debugLog;
+
+    public function __construct() {
+        $this->db = new ABJ_404_Solution_FeedbackEnvironmentExtras_DbProbes();
+        $this->host = new ABJ_404_Solution_FeedbackEnvironmentExtras_HostProbes();
+        $this->debugLog = new ABJ_404_Solution_FeedbackEnvironmentExtras_DebugLogSignatures();
+    }
 
     /**
      * Best-effort diagnostic passthrough for the server's JSON column. The
@@ -45,11 +77,14 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras {
      */
     public function collect(): array {
         $extras = array();
+        $db = $this->db;
+        $host = $this->host;
+        $debugLog = $this->debugLog;
 
         // MySQL global variables: the binding constraints for slow
         // JOIN / GROUP BY on Bruno-class sites. SHOW GLOBAL VARIABLES
         // is read-only, no plugin tables involved.
-        $this->recordProbe($extras, 'mysql_globals', function () { return $this->collectMysqlGlobals(); }, array());
+        $this->recordProbe($extras, 'mysql_globals', function () use ($db) { return $db->collectMysqlGlobals(); }, array());
 
         // MySQL session-variable probe persisted by the staged view-build
         // (DataAccessTrait_ViewBuildSessionEnvProbe). Already covers
@@ -57,14 +92,14 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras {
         // wait_timeout, innodb_flush_method, character_set_server.
         // Reading the option instead of re-querying keeps the support
         // request cheap and reflects the state of the most recent build.
-        $this->recordProbe($extras, 'mysql_session_probe', function () { return $this->loadViewBuildSessionEnvProbe(); }, array());
+        $this->recordProbe($extras, 'mysql_session_probe', function () use ($db) { return $db->loadViewBuildSessionEnvProbe(); }, array());
 
         // Disk headroom on the WP uploads directory (where the plugin's
         // debug log and any cron-scratch files land). "Table is full"
         // errors are nearly always disk-quota, not the logical
         // table-full condition.
-        $this->recordProbe($extras, 'disk_free_bytes', function () { return $this->diskFreeBytesOrThrow(); }, null);
-        $this->recordProbe($extras, 'disk_total_bytes', function () { return $this->diskTotalBytesOrThrow(); }, null);
+        $this->recordProbe($extras, 'disk_free_bytes', function () use ($host) { return $host->diskFreeBytesOrThrow(); }, null);
+        $this->recordProbe($extras, 'disk_total_bytes', function () use ($host) { return $host->diskTotalBytesOrThrow(); }, null);
 
         // PHP runtime identity beyond version. SAPI distinguishes
         // mod_php (per-request fork, fresh memory) from php-fpm
@@ -73,7 +108,7 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras {
         // size matters for sites with many include paths.
         $extras['php_sapi'] = function_exists('php_sapi_name') ? (string)php_sapi_name() : '';
         $extras['php_memory_peak_bytes'] = function_exists('memory_get_peak_usage') ? (int)memory_get_peak_usage(true) : 0;
-        $extras['php_opcache_enabled'] = $this->opcacheEnabled();
+        $extras['php_opcache_enabled'] = $host->opcacheEnabled();
         $extras['php_max_input_vars'] = function_exists('ini_get') ? (int)ini_get('max_input_vars') : 0;
         $extras['php_realpath_cache_size_bytes'] = function_exists('realpath_cache_size') ? (int)realpath_cache_size() : 0;
 
@@ -81,106 +116,106 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras {
         // column). redirects volume and logs_hits rollup size are
         // direct signals for the getRedirectsForViewTempTable.sql
         // perf class.
-        $this->recordProbe($extras, 'plugin_tables_bytes', function () { return $this->collectPluginTableSizes(); }, array());
+        $this->recordProbe($extras, 'plugin_tables_bytes', function () use ($db) { return $db->collectPluginTableSizes(); }, array());
 
         // View-build freshness signals: when did the rollup last
         // complete, what stage did the most recent build reach, is
         // the rollup stale relative to logsv2? Hand-assembled from
         // plugin options the staged build already writes; no new SQL.
-        $this->recordProbe($extras, 'view_build_state', function () { return $this->collectViewBuildState(); }, array());
+        $this->recordProbe($extras, 'view_build_state', function () use ($db) { return $db->collectViewBuildState(); }, array());
 
         // SHOW PROCESSLIST row count. Indicator of shared-host MySQL
         // saturation: a queue of 200+ idle connections explains why
         // the staged build's BEGIN/COMMIT slots wait. Just the count;
         // no connection details (user/host) are emitted.
-        $this->recordProbe($extras, 'active_connection_count', function () { return $this->probeActiveConnectionCount(); }, null);
+        $this->recordProbe($extras, 'active_connection_count', function () use ($db) { return $db->probeActiveConnectionCount(); }, null);
 
         // SHOW INDEX cardinality for the canonical indexes on
         // redirects + logs_hits + logs_hits_preagg. A degraded
         // cardinality (1 row, or NULL after a crash recovery) is a
         // sufficient explanation for a previously-fast JOIN suddenly
         // doing a full table scan. Shape: {table: {index: int}}.
-        $this->recordProbe($extras, 'index_cardinality', function () { return $this->probeIndexCardinality(); }, array());
+        $this->recordProbe($extras, 'index_cardinality', function () use ($db) { return $db->probeIndexCardinality(); }, array());
 
         // Best-effort hosting-class hint parsed from server_software
         // and host-specific environment markers (cPanel, hPanel,
         // Plesk, WP Engine, Kinsta, Pantheon, Flywheel, RunCloud,
         // CloudPanel). Lets server-side group heartbeats by host
         // class retroactively without paying for a deep fingerprint.
-        $this->recordProbe($extras, 'hosting_class', function () { return $this->probeHostingClass(); }, array());
+        $this->recordProbe($extras, 'hosting_class', function () use ($host) { return $host->probeHostingClass(); }, array());
 
         // Object-cache backend NAME, not just the on/off enum already
         // shipped in `object_cache`. Detect Redis / Memcached / APCu
         // / W3TC / LiteSpeed / WP Engine native via known constants
         // + wp_using_ext_object_cache(). Stale-cache reports cluster
         // by backend class.
-        $this->recordProbe($extras, 'object_cache_backend', function () { return $this->probeObjectCacheBackend(); }, array());
+        $this->recordProbe($extras, 'object_cache_backend', function () use ($host) { return $host->probeObjectCacheBackend(); }, array());
 
         // SHOW GLOBAL STATUS counterpart to mysql_globals. Captures
         // runtime symptoms (lock waits, tmp-disk spills, aborted
         // connects, slow queries) that the variables can only
         // bound, never observe.
-        $this->recordProbe($extras, 'mysql_status', function () { return $this->probeMysqlStatus(); }, array());
+        $this->recordProbe($extras, 'mysql_status', function () use ($db) { return $db->probeMysqlStatus(); }, array());
 
         // DB charset + collation, plus per-column collation on the
         // canonical JOIN keys for redirects (url, canonical_url) and
         // logs_hits (requested_url). Collation drift silently
         // disables index seeks on JOIN: symptom is "fast on staging,
         // slow on prod with identical data."
-        $this->recordProbe($extras, 'db_collation', function () { return $this->probeDbCollation(); }, array());
+        $this->recordProbe($extras, 'db_collation', function () use ($db) { return $db->probeDbCollation(); }, array());
 
         // WP + PHP timezone identity. Bruno-class sites in non-UTC
         // zones (pt_BR, ja_JP) sometimes show off-by-N-hours bugs
         // in cooldown arithmetic; capturing both lets us diff
         // server time vs WP time vs PHP time after the fact.
-        $this->recordProbe($extras, 'timezone', function () { return $this->probeTimezone(); }, array());
+        $this->recordProbe($extras, 'timezone', function () use ($host) { return $host->probeTimezone(); }, array());
 
         // Install + upgrade history. The single most useful
         // bifurcator for "started after upgrade Tuesday" vs
         // "always broken since install." Read-only from plugin
         // options the upgrade path already writes.
-        $this->recordProbe($extras, 'plugin_lifecycle', function () { return $this->probePluginLifecycle(); }, array());
+        $this->recordProbe($extras, 'plugin_lifecycle', function () use ($host) { return $host->probePluginLifecycle(); }, array());
 
         // Top distinct recurring error signatures from the debug
         // log file over the last 7 days, capped at 5 entries. The
         // triggering error is captured by the report itself; this
         // captures the recurring error which is often different
         // and which the email-on-first-error path would never send.
-        $this->recordProbe($extras, 'recent_error_signatures', function () { return $this->probeRecentErrorSignatures(); }, array());
+        $this->recordProbe($extras, 'recent_error_signatures', function () use ($debugLog) { return $debugLog->probeRecentErrorSignatures(); }, array());
 
         // opcache detail beyond the on/off enum already shipped
         // in `php_opcache_enabled`. validate_timestamps=0 +
         // revalidate_freq high explains "fresh install still
         // buggy after upgrade" reports where the host serves
         // cached bytecode from the prior version.
-        $this->recordProbe($extras, 'opcache_settings', function () { return $this->probeOpcacheSettings(); }, array());
+        $this->recordProbe($extras, 'opcache_settings', function () use ($host) { return $host->probeOpcacheSettings(); }, array());
 
         // open_basedir restriction string (or null when not set).
         // Hardened shared hosts use this to box file access;
         // explains "permission denied" failures on paths the
         // plugin can otherwise write.
-        $extras['open_basedir'] = $this->probeOpenBasedir();
+        $extras['open_basedir'] = $host->probeOpenBasedir();
 
         // Multisite identity: is this the main site, what blog
         // and network are we on, is the plugin network-activated?
         // Behavior differs significantly across these axes
         // (network-active vs single-site-active changes hook
         // registration and upgrade scheduling).
-        $this->recordProbe($extras, 'multisite_role', function () { return $this->probeMultisiteRole(); }, array());
+        $this->recordProbe($extras, 'multisite_role', function () use ($host) { return $host->probeMultisiteRole(); }, array());
 
         // .htaccess writability at the WP home path. When false
         // the plugin's Apache-rule install path cannot succeed
         // and we fall back to the DB-only redirect handler.
         // Differentiates "redirects not firing" reports between
         // "Apache rule never wrote" and "DB handler bug".
-        $extras['htaccess_writable'] = $this->probeHtaccessWritable();
+        $extras['htaccess_writable'] = $host->probeHtaccessWritable();
 
         // /tmp filesystem free bytes. Some shared hosts have
         // separate /tmp quotas from the WP install path; tmp
         // exhaustion breaks MySQL tmp tables (Created_tmp_disk_*
         // counter) and PHP file uploads. disk_free_bytes on the
         // uploads dir cannot see this.
-        $this->recordProbe($extras, 'tmp_free_bytes', function () { return $this->probeTmpFreeBytesOrThrow(); }, null);
+        $this->recordProbe($extras, 'tmp_free_bytes', function () use ($host) { return $host->probeTmpFreeBytesOrThrow(); }, null);
 
         if (function_exists('apply_filters')) {
             $filtered = apply_filters('abj404_environment_extras', $extras);
@@ -269,1064 +304,5 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras {
         }
         $shortClass = (new \ReflectionClass($e))->getShortName();
         return 'exception:' . $shortClass;
-    }
-
-    /**
-     * Pull a fixed set of MySQL global variables relevant to staged
-     * view-build / temp-table JOIN performance on Bruno-class hosts. One
-     * SHOW GLOBAL VARIABLES query, parameterized name list, suppressed
-     * errors so a perms-denied response degrades to an empty map rather
-     * than a payload error.
-     *
-     * @return array<string, mixed>
-     */
-    private function collectMysqlGlobals(): array {
-        global $wpdb;
-        if (!isset($wpdb) || !is_object($wpdb) || !method_exists($wpdb, 'get_results')) {
-            throw new \RuntimeException('wpdb unavailable for SHOW GLOBAL VARIABLES probe');
-        }
-        $names = array(
-            'innodb_buffer_pool_size',
-            'innodb_log_file_size',
-            'innodb_flush_method',
-            'innodb_file_per_table',
-            'innodb_lock_wait_timeout',
-            'tmp_table_size',
-            'max_heap_table_size',
-            'key_buffer_size',
-            'max_allowed_packet',
-            'sort_buffer_size',
-            'join_buffer_size',
-            'max_connections',
-            'thread_cache_size',
-            'table_open_cache',
-            'wait_timeout',
-            'interactive_timeout',
-            'character_set_server',
-            'collation_server',
-            'optimizer_switch',
-            'sql_mode',
-            'long_query_time',
-            'slow_query_log',
-            'open_files_limit',
-        );
-        $placeholders = implode(',', array_fill(0, count($names), '%s'));
-        $prevSuppress = method_exists($wpdb, 'suppress_errors') ? $wpdb->suppress_errors(true) : false;
-        try {
-            $prepared = "SHOW GLOBAL VARIABLES";
-            if (method_exists($wpdb, 'prepare')) {
-                // DAO-bypass-approved: SHOW GLOBAL VARIABLES placeholder bind; no plugin-table writes possible.
-                $prepared = $wpdb->prepare("SHOW GLOBAL VARIABLES WHERE Variable_name IN ($placeholders)", $names);
-            }
-            // DAO-bypass-approved: read-only probe of @@GLOBAL; no plugin tables involved.
-            $rows = $wpdb->get_results($prepared, ARRAY_A);
-        } finally {
-            if (method_exists($wpdb, 'suppress_errors')) {
-                $wpdb->suppress_errors($prevSuppress);
-            }
-        }
-
-        if (!is_array($rows)) {
-            throw new \RuntimeException('SHOW GLOBAL VARIABLES returned non-array');
-        }
-        $out = array();
-        foreach ($rows as $row) {
-            if (!is_array($row)) { continue; }
-            $name = '';
-            $value = '';
-            foreach ($row as $k => $v) {
-                $klow = strtolower((string)$k);
-                if ($klow === 'variable_name' && is_scalar($v)) { $name = strtolower((string)$v); }
-                if ($klow === 'value' && is_scalar($v))         { $value = (string)$v; }
-            }
-            if ($name === '') { continue; }
-            // Coerce numeric-looking values so the server-side JSON sort
-            // is meaningful (otherwise 9 sorts after 100 lexically).
-            if (is_numeric($value) && strpos($value, '.') === false) {
-                $out[$name] = (int)$value;
-            } elseif (is_numeric($value)) {
-                $out[$name] = (float)$value;
-            } else {
-                $out[$name] = $value;
-            }
-        }
-        return $out;
-    }
-
-    /**
-     * Read the persisted session-variable probe written at S1 entry by
-     * the staged view-build pipeline (DataAccessTrait_ViewBuildSessionEnvProbe).
-     * Reflects the most recent build's MySQL session settings without
-     * paying for a fresh SHOW SESSION VARIABLES on the support-request path.
-     *
-     * @return array<string, mixed>
-     */
-    private function loadViewBuildSessionEnvProbe(): array {
-        if (!function_exists('get_option')) {
-            return array();
-        }
-        $opt = get_option('abj404_view_build_session_env_probe', array());
-        if (!is_array($opt)) {
-            return array();
-        }
-        $out = array();
-        foreach ($opt as $k => $v) {
-            if (is_string($k)) {
-                $out[$k] = $v;
-            }
-        }
-        return $out;
-    }
-
-    /**
-     * Free bytes available on the WP uploads directory's filesystem. Used
-     * to triage "Table is full" reports (the logical table-full condition
-     * is rare, disk quota is common). Throws when disk_free_space() is
-     * disabled (open_basedir, hardened hosts) so the caller's tryInt
-     * wrapper records null rather than a misleading zero.
-     *
-     * @return int
-     */
-    private function diskFreeBytesOrThrow(): int {
-        if (!function_exists('disk_free_space')) {
-            throw new \RuntimeException('disk_free_space unavailable');
-        }
-        $dir = $this->supportDiagnosticsDirectory();
-        $v = @disk_free_space($dir);
-        if ($v === false) {
-            throw new \RuntimeException('disk_free_space returned false for ' . $dir);
-        }
-        return (int)$v;
-    }
-
-    /**
-     * Total bytes on the same filesystem. Combined with disk_free_bytes,
-     * lets the server-side report show "8% free" rather than a raw byte
-     * count that is hard to interpret across hosts.
-     *
-     * @return int
-     */
-    private function diskTotalBytesOrThrow(): int {
-        if (!function_exists('disk_total_space')) {
-            throw new \RuntimeException('disk_total_space unavailable');
-        }
-        $dir = $this->supportDiagnosticsDirectory();
-        $v = @disk_total_space($dir);
-        if ($v === false) {
-            throw new \RuntimeException('disk_total_space returned false for ' . $dir);
-        }
-        return (int)$v;
-    }
-
-    /**
-     * Best directory to probe for the plugin's filesystem headroom. The
-     * uploads dir is the most useful target (the debug log and any
-     * cron-scratch files land there), but it may not be writable in
-     * locked-down installs. Falls back to ABSPATH and finally __DIR__.
-     *
-     * @return string
-     */
-    private function supportDiagnosticsDirectory(): string {
-        if (function_exists('wp_upload_dir')) {
-            $info = wp_upload_dir(null, false);
-            if (is_array($info) && isset($info['basedir']) && is_string($info['basedir']) && $info['basedir'] !== '') {
-                return $info['basedir'];
-            }
-        }
-        if (defined('ABSPATH') && is_string(ABSPATH) && ABSPATH !== '') {
-            return ABSPATH;
-        }
-        return __DIR__;
-    }
-
-    /** @return bool */
-    private function opcacheEnabled(): bool {
-        if (function_exists('opcache_get_status')) {
-            $st = @opcache_get_status(false);
-            if (is_array($st) && isset($st['opcache_enabled'])) {
-                return (bool)$st['opcache_enabled'];
-            }
-        }
-        if (function_exists('ini_get')) {
-            $v = ini_get('opcache.enable');
-            if ($v === false) {
-                return false;
-            }
-            return ((int)$v === 1 || strtolower((string)$v) === 'on');
-        }
-        return false;
-    }
-
-    /**
-     * Size of plugin-owned tables beyond logsv2 (which has its own typed
-     * column). The redirects-tab perf bug is bounded by the
-     * redirects/logs_hits volume, not logsv2, so shipping both lets the
-     * report rank reports by the right axis.
-     *
-     * Per-table shape: {data_length: int, index_length: int, data_free: int,
-     * bytes: int}. `data_free` is the fragmentation indicator (bytes
-     * allocated to the file but not in use); a fragmentation ratio of
-     * data_free / (data_length + index_length) over ~0.3 explains the
-     * "tables are 200 MB but only 50 MB of data" long-tail slowness.
-     * `bytes` is the legacy combined data+index size kept for backward
-     * compatibility with consumers that pre-dated the data_free split.
-     *
-     * @return array<string, array<string, int>>
-     */
-    private function collectPluginTableSizes(): array {
-        global $wpdb;
-        if (!isset($wpdb) || !is_object($wpdb) || !method_exists($wpdb, 'get_results') || !method_exists($wpdb, 'get_row')) {
-            throw new \RuntimeException('wpdb unavailable for plugin_tables_bytes probe');
-        }
-        $prefix = (isset($wpdb->prefix) && is_string($wpdb->prefix)) ? $wpdb->prefix : 'wp_';
-        $candidates = array(
-            'redirects'        => $prefix . 'abj404_redirects',
-            'logs_hits'        => $prefix . 'abj404_logs_hits',
-            'logs_hits_preagg' => $prefix . 'abj404_logs_hits_preagg',
-            'permalink_cache'  => $prefix . 'abj404_permalink_cache',
-            'spelling_cache'   => $prefix . 'abj404_spelling_cache',
-            'lookup'           => $prefix . 'abj404_lookup',
-        );
-        $prevSuppress = method_exists($wpdb, 'suppress_errors') ? $wpdb->suppress_errors(true) : false;
-        $out = array();
-        $errors = 0;
-        $attempted = 0;
-        foreach ($candidates as $key => $table) {
-            $attempted++;
-            try {
-                if (!method_exists($wpdb, 'prepare')) { continue; }
-                // DAO-bypass-approved: information_schema metadata probe placeholder bind; no plugin-table writes.
-                $prepared = $wpdb->prepare(
-                    'SELECT data_length, index_length, data_free '
-                  . 'FROM information_schema.TABLES '
-                  . 'WHERE table_schema = DATABASE() AND table_name = %s',
-                    $table
-                );
-                if ($prepared === null) { continue; }
-                // DAO-bypass-approved: information_schema probe; no plugin tables touched, no error class repair would apply.
-                $row = $wpdb->get_row($prepared, ARRAY_A);
-                if (!is_array($row)) { continue; }
-                $dl = 0; $il = 0; $df = 0;
-                foreach ($row as $col => $val) {
-                    if (!is_scalar($val) || !is_numeric($val)) { continue; }
-                    $clow = strtolower((string)$col);
-                    if ($clow === 'data_length')  { $dl = (int)$val; }
-                    if ($clow === 'index_length') { $il = (int)$val; }
-                    if ($clow === 'data_free')    { $df = (int)$val; }
-                }
-                $out[$key] = array(
-                    'data_length'  => $dl,
-                    'index_length' => $il,
-                    'data_free'    => $df,
-                    'bytes'        => $dl + $il,
-                );
-            } catch (\Throwable $e) {
-                // allow-silent-catch: per-table probe is best-effort; a missing-table or permissions error must not abort the whole map. Aggregated failure is rethrown after the loop when ALL attempts failed (see $errors check below) so the recordProbe wrapper can write the marker key.
-                @error_log('404 Solution: collectPluginTableSizes probe failed for ' . $table . ': ' . $e->getMessage());
-                $errors++;
-            }
-        }
-        if (method_exists($wpdb, 'suppress_errors')) {
-            $wpdb->suppress_errors($prevSuppress);
-        }
-        if ($errors === $attempted && empty($out)) {
-            throw new \RuntimeException('plugin_tables_bytes: all tables failed SQL probe');
-        }
-        return $out;
-    }
-
-    /**
-     * View-build freshness signals: when did the rollup last complete,
-     * what stage did the most recent build reach, and is the rollup
-     * stale relative to logsv2? Hand-assembled from plugin options the
-     * staged build already writes; no new SQL.
-     *
-     * @return array<string, int>
-     */
-    private function collectViewBuildState(): array {
-        if (!function_exists('get_option')) {
-            return array();
-        }
-        $out = array();
-        $optMap = array(
-            'last_build_completed_at' => 'abj404_view_build_last_completed_at',
-            'last_build_started_at'   => 'abj404_view_build_last_started_at',
-            'last_build_stage'        => 'abj404_view_build_last_stage',
-            'last_build_failure_at'   => 'abj404_view_build_last_failure_at',
-            'logs_hits_max_log_id'    => 'abj404_logs_hits_max_log_id',
-        );
-        foreach ($optMap as $outKey => $optName) {
-            $v = get_option($optName, null);
-            if (is_scalar($v)) {
-                $out[$outKey] = is_numeric($v) ? (int)$v : 0;
-            }
-        }
-        return $out;
-    }
-
-    /**
-     * Row count from SHOW PROCESSLIST. Cheap on a shared host (returns
-     * the current request's view of connection saturation) and a strong
-     * leading indicator for "the BEGIN/COMMIT in the staged build is
-     * waiting because there are 200 other queries in flight". Only the
-     * row count is emitted; user/host/info columns are dropped to avoid
-     * PII leakage from other tenants on the same MySQL instance.
-     *
-     * Throws when the probe genuinely cannot complete (no $wpdb, query
-     * failed) so the caller's tryInt wrapper records null rather than
-     * a misleading zero.
-     *
-     * @return int
-     */
-    private function probeActiveConnectionCount(): int {
-        global $wpdb;
-        if (!isset($wpdb) || !is_object($wpdb) || !method_exists($wpdb, 'get_results')) {
-            throw new \RuntimeException('wpdb unavailable');
-        }
-        $prevSuppress = method_exists($wpdb, 'suppress_errors') ? $wpdb->suppress_errors(true) : false;
-        $rows = null;
-        try {
-            // DAO-bypass-approved: read-only probe of @@PROCESSLIST; no plugin tables involved.
-            $rows = $wpdb->get_results('SHOW PROCESSLIST', ARRAY_A);
-        } catch (\Throwable $e) {
-            // allow-silent-catch: probe is best-effort; rethrow after restoring suppress so the outer tryInt records null
-            @error_log('404 Solution: probeActiveConnectionCount failed: ' . $e->getMessage());
-            $rows = null;
-        }
-        if (method_exists($wpdb, 'suppress_errors')) {
-            $wpdb->suppress_errors($prevSuppress);
-        }
-        if (!is_array($rows)) {
-            throw new \RuntimeException('processlist probe failed');
-        }
-        return count($rows);
-    }
-
-    /**
-     * Per-index cardinality for the canonical indexes on the JOIN-hot
-     * plugin tables. Output shape:
-     *   { redirects: {idx_url_disabled_status: int, idx_canonical_url: int, ...},
-     *     logs_hits: {requested_url: int, ...},
-     *     logs_hits_preagg: {...} }
-     *
-     * Each table is probed in its own SHOW INDEX statement, isolated in
-     * try/catch so a missing table (rebuild race, repair pending) does
-     * not blank the whole map. Only the Cardinality value is captured;
-     * the rest of the SHOW INDEX columns are not emitted.
-     *
-     * @return array<string, array<string, int>>
-     */
-    private function probeIndexCardinality(): array {
-        global $wpdb;
-        if (!isset($wpdb) || !is_object($wpdb) || !method_exists($wpdb, 'get_results')) {
-            throw new \RuntimeException('wpdb unavailable for index_cardinality probe');
-        }
-        $prefix = (isset($wpdb->prefix) && is_string($wpdb->prefix)) ? $wpdb->prefix : 'wp_';
-        $candidates = array(
-            'redirects'        => $prefix . 'abj404_redirects',
-            'logs_hits'        => $prefix . 'abj404_logs_hits',
-            'logs_hits_preagg' => $prefix . 'abj404_logs_hits_preagg',
-            'logsv2'           => $prefix . 'abj404_logsv2',
-        );
-        $prevSuppress = method_exists($wpdb, 'suppress_errors') ? $wpdb->suppress_errors(true) : false;
-        $out = array();
-        $errors = 0;
-        $attempted = 0;
-        foreach ($candidates as $key => $table) {
-            $attempted++;
-            try {
-                $prepared = 'SHOW INDEX FROM `' . $table . '`';
-                if (method_exists($wpdb, 'prepare')) {
-                    // DAO-bypass-approved: SHOW INDEX metadata probe placeholder bind; no plugin-table writes possible.
-                    $prepared = $wpdb->prepare($prepared);
-                }
-                if ($prepared === null || $prepared === '') {
-                    continue;
-                }
-                // DAO-bypass-approved: SHOW INDEX is read-only metadata; no plugin-table writes possible.
-                $rows = $wpdb->get_results($prepared, ARRAY_A);
-                if (!is_array($rows)) {
-                    continue;
-                }
-                $byIndex = array();
-                foreach ($rows as $row) {
-                    if (!is_array($row)) { continue; }
-                    $idxName = '';
-                    $card = null;
-                    foreach ($row as $col => $val) {
-                        $clow = strtolower((string)$col);
-                        if ($clow === 'key_name' && is_scalar($val)) { $idxName = (string)$val; }
-                        if ($clow === 'cardinality' && is_scalar($val) && is_numeric($val)) { $card = (int)$val; }
-                    }
-                    if ($idxName === '' || $card === null) { continue; }
-                    if (!isset($byIndex[$idxName]) || $card > $byIndex[$idxName]) {
-                        $byIndex[$idxName] = $card;
-                    }
-                }
-                if (!empty($byIndex)) {
-                    $out[$key] = $byIndex;
-                }
-            } catch (\Throwable $e) {
-                // allow-silent-catch: per-table probe is best-effort; a missing-table or permissions error must not abort the whole map. Aggregated failure is rethrown after the loop when ALL attempts failed (see $errors check below) so the recordProbe wrapper can write the marker key.
-                @error_log('404 Solution: probeIndexCardinality failed for ' . $table . ': ' . $e->getMessage());
-                $errors++;
-            }
-        }
-        if (method_exists($wpdb, 'suppress_errors')) {
-            $wpdb->suppress_errors($prevSuppress);
-        }
-        if ($errors === $attempted && empty($out)) {
-            throw new \RuntimeException('index_cardinality: all tables failed SHOW INDEX probe');
-        }
-        return $out;
-    }
-
-    /**
-     * Best-effort hosting-class hint. Parses well-known markers from
-     * server_software + per-host environment vars + per-host PHP
-     * constants. Returns a small object so the server side can
-     * distinguish "WP Engine" from "Kinsta" without re-parsing strings.
-     *
-     * No PII: only matched markers are returned. server_software is NOT
-     * echoed wholesale; it may include a hostname.
-     *
-     * @return array<string, mixed>
-     */
-    private function probeHostingClass(): array {
-        $out = array(
-            'host'           => 'unknown',
-            'panel'          => 'unknown',
-            'matched_marker' => '',
-        );
-        $sw = '';
-        if (isset($_SERVER['SERVER_SOFTWARE']) && is_scalar($_SERVER['SERVER_SOFTWARE'])) {
-            $sw = strtolower((string)$_SERVER['SERVER_SOFTWARE']);
-        }
-        // Webserver class only (no version, no hostname).
-        if (strpos($sw, 'apache') !== false)       { $out['server_class'] = 'apache'; }
-        elseif (strpos($sw, 'nginx') !== false)    { $out['server_class'] = 'nginx'; }
-        elseif (strpos($sw, 'litespeed') !== false){ $out['server_class'] = 'litespeed'; }
-        elseif (strpos($sw, 'iis') !== false)      { $out['server_class'] = 'iis'; }
-        else                                       { $out['server_class'] = ($sw === '' ? 'unknown' : 'other'); }
-
-        // Managed-host markers: each host publishes a distinctive
-        // constant or environment variable.
-        $managedHostChecks = array(
-            'wp_engine'   => array('const' => array('WPE_APIKEY', 'WPE_PLUGIN_DIR'), 'env' => array('IS_WPE')),
-            'kinsta'      => array('const' => array('KINSTA_CACHE_ZONE'), 'env' => array('KINSTA_SERVICE_NAME')),
-            'pantheon'    => array('const' => array('PANTHEON_ENVIRONMENT'), 'env' => array('PANTHEON_ENVIRONMENT')),
-            'flywheel'    => array('const' => array('FLYWHEEL_CONFIG_DIR', 'FLYWHEEL_PLUGIN_DIR'), 'env' => array()),
-            'pressable'   => array('const' => array('PRESSABLE_VERSION'), 'env' => array()),
-            'siteground'  => array('const' => array('SG_OPTIMIZER_VERSION'), 'env' => array()),
-            'wordpress_com' => array('const' => array('IS_ATOMIC', 'IS_WPCOM'), 'env' => array()),
-            'cloudways'   => array('const' => array(), 'env' => array('cw_allowed_ip')),
-        );
-        foreach ($managedHostChecks as $hostKey => $checks) {
-            foreach ((array)$checks['const'] as $c) {
-                if (defined($c)) {
-                    $out['host'] = $hostKey;
-                    $out['matched_marker'] = 'const:' . $c;
-                    break 2;
-                }
-            }
-            foreach ((array)$checks['env'] as $e) {
-                if (getenv($e) !== false) {
-                    $out['host'] = $hostKey;
-                    $out['matched_marker'] = 'env:' . $e;
-                    break 2;
-                }
-            }
-        }
-
-        // Control-panel markers: cPanel / hPanel / Plesk / DirectAdmin /
-        // RunCloud / CloudPanel. These are independent of the managed-host
-        // class above: a cPanel site might also be on SiteGround.
-        $panelChecks = array(
-            'cpanel'      => array('env' => array('CPANEL'), 'path' => array('/usr/local/cpanel')),
-            'hpanel'      => array('env' => array('HOSTINGER'), 'path' => array('/usr/local/hostinger')),
-            'plesk'       => array('env' => array('PLESK_ADMIN_PASSWORD'), 'path' => array('/usr/local/psa', '/opt/psa')),
-            'directadmin' => array('env' => array(), 'path' => array('/usr/local/directadmin')),
-            'runcloud'    => array('env' => array(), 'path' => array('/etc/runcloud')),
-            'cloudpanel'  => array('env' => array(), 'path' => array('/home/clp')),
-        );
-        foreach ($panelChecks as $panelKey => $checks) {
-            foreach ((array)$checks['env'] as $e) {
-                if (getenv($e) !== false) {
-                    $out['panel'] = $panelKey;
-                    if ($out['matched_marker'] === '') {
-                        $out['matched_marker'] = 'env:' . $e;
-                    }
-                    break 2;
-                }
-            }
-            foreach ((array)$checks['path'] as $p) {
-                if (is_dir($p)) {
-                    $out['panel'] = $panelKey;
-                    if ($out['matched_marker'] === '') {
-                        $out['matched_marker'] = 'path:' . $p;
-                    }
-                    break 2;
-                }
-            }
-        }
-
-        return $out;
-    }
-
-    /**
-     * Object-cache backend NAME. The base payload's `object_cache` enum
-     * answers "external or default"; this answers "external WHAT": Redis
-     * (predis vs phpredis vs Redis Object Cache plugin), Memcached,
-     * APCu, W3TC, LiteSpeed, WP Engine native, Pantheon, etc.
-     *
-     * @return array<string, mixed>
-     */
-    private function probeObjectCacheBackend(): array {
-        $out = array(
-            'using_ext_cache' => false,
-            'backend'         => 'unknown',
-            'backend_detail'  => '',
-        );
-        if (function_exists('wp_using_ext_object_cache')) {
-            $out['using_ext_cache'] = (bool)wp_using_ext_object_cache();
-        }
-        // Known constants/classes/extensions from popular object-cache
-        // drop-ins. Each tuple is (name, type, marker): the first match
-        // wins so a Redis Object Cache Pro install is not also tagged
-        // as plain Redis.
-        $checks = array(
-            array('redis_object_cache_pro', 'const', 'WP_REDIS_VERSION'),
-            array('redis_object_cache_pro', 'class', 'RedisCachePro\\Plugin'),
-            array('redis_object_cache',     'class', 'WP_Object_Cache'),
-            array('memcached',              'class', 'Memcached'),
-            array('apcu',                   'ext',   'apcu'),
-            array('w3_total_cache',         'const', 'W3TC_VERSION'),
-            array('litespeed_cache',        'const', 'LSCWP_DIR'),
-            array('wp_engine_native',       'const', 'WPE_APIKEY'),
-            array('pantheon',               'const', 'PANTHEON_ENVIRONMENT'),
-        );
-        foreach ($checks as $check) {
-            list($name, $type, $marker) = $check;
-            if ($type === 'const' && defined($marker)) {
-                $out['backend'] = $name;
-                $out['backend_detail'] = 'const:' . $marker;
-                return $out;
-            }
-            if ($type === 'class' && class_exists($marker, false)) {
-                $out['backend'] = $name;
-                $out['backend_detail'] = 'class:' . $marker;
-                return $out;
-            }
-            if ($type === 'ext' && extension_loaded($marker)) {
-                $out['backend'] = $name;
-                $out['backend_detail'] = 'ext:' . $marker;
-                return $out;
-            }
-        }
-        // Default WP object cache used in-memory per request.
-        if (!$out['using_ext_cache']) {
-            $out['backend'] = 'default';
-            $out['backend_detail'] = 'wp_object_cache:in_memory';
-        }
-        return $out;
-    }
-
-    /**
-     * SHOW GLOBAL STATUS counterpart to mysql_globals. The variables tell
-     * us what the server is CONFIGURED to allow; the status counters tell
-     * us what is actually HAPPENING. Counters that have ticked up since
-     * boot are the strongest proximate-cause signal: lock-wait pile-ups,
-     * tmp-disk spills, aborted connects, slow queries.
-     *
-     * One SHOW GLOBAL STATUS query, parameterized name list, suppressed
-     * errors so a perms-denied response degrades to an empty map rather
-     * than a payload error.
-     *
-     * @return array<string, int>
-     */
-    private function probeMysqlStatus(): array {
-        global $wpdb;
-        if (!isset($wpdb) || !is_object($wpdb) || !method_exists($wpdb, 'get_results')) {
-            throw new \RuntimeException('wpdb unavailable for SHOW GLOBAL STATUS probe');
-        }
-        $names = array(
-            'Innodb_buffer_pool_pages_dirty',
-            'Innodb_buffer_pool_pages_total',
-            'Innodb_row_lock_waits',
-            'Innodb_row_lock_time_avg',
-            'Innodb_deadlocks',
-            'Threads_running',
-            'Threads_connected',
-            'Aborted_connects',
-            'Aborted_clients',
-            'Created_tmp_disk_tables',
-            'Created_tmp_tables',
-            'Slow_queries',
-            'Table_locks_waited',
-            'Open_tables',
-            'Opened_tables',
-            'Uptime',
-        );
-        $placeholders = implode(',', array_fill(0, count($names), '%s'));
-        $prevSuppress = method_exists($wpdb, 'suppress_errors') ? $wpdb->suppress_errors(true) : false;
-        try {
-            $prepared = 'SHOW GLOBAL STATUS';
-            if (method_exists($wpdb, 'prepare')) {
-                // DAO-bypass-approved: SHOW GLOBAL STATUS placeholder bind; no plugin-table writes possible.
-                $prepared = $wpdb->prepare("SHOW GLOBAL STATUS WHERE Variable_name IN ($placeholders)", $names);
-            }
-            // DAO-bypass-approved: read-only probe of @@GLOBAL_STATUS; no plugin tables involved.
-            $rows = $wpdb->get_results($prepared, ARRAY_A);
-        } finally {
-            if (method_exists($wpdb, 'suppress_errors')) {
-                $wpdb->suppress_errors($prevSuppress);
-            }
-        }
-        if (!is_array($rows)) {
-            throw new \RuntimeException('SHOW GLOBAL STATUS returned non-array');
-        }
-        $out = array();
-        foreach ($rows as $row) {
-            if (!is_array($row)) { continue; }
-            $name = '';
-            $value = '';
-            foreach ($row as $k => $v) {
-                $klow = strtolower((string)$k);
-                if ($klow === 'variable_name' && is_scalar($v)) { $name = strtolower((string)$v); }
-                if ($klow === 'value' && is_scalar($v))         { $value = (string)$v; }
-            }
-            if ($name === '') { continue; }
-            if (is_numeric($value)) {
-                $out[$name] = (int)$value;
-            }
-        }
-        return $out;
-    }
-
-    /**
-     * DB-level + per-column collation for the JOIN-hot URL columns on
-     * `abj404_redirects` and `abj404_logs_hits`. Collation drift between
-     * the two columns disables the index seek silently: MySQL falls back
-     * to a full-scan ON the un-joined column. Capturing both lets the
-     * server side classify "fast on staging, slow on prod" reports by
-     * the cause that is invisible from the SHOW CREATE TABLE output.
-     *
-     * Shape:
-     *   { db_charset: string, db_collate: string,
-     *     columns: { '{prefix}abj404_redirects.url': string,
-     *                '{prefix}abj404_redirects.canonical_url': string,
-     *                '{prefix}abj404_logs_hits.requested_url': string } }
-     *
-     * @return array<string, mixed>
-     */
-    private function probeDbCollation(): array {
-        $out = array(
-            'db_charset' => defined('DB_CHARSET') && is_string(DB_CHARSET) ? DB_CHARSET : '',
-            'db_collate' => defined('DB_COLLATE') && is_string(DB_COLLATE) ? DB_COLLATE : '',
-            'columns'    => array(),
-        );
-        global $wpdb;
-        if (!isset($wpdb) || !is_object($wpdb) || !method_exists($wpdb, 'get_results') || !method_exists($wpdb, 'get_var')) {
-            throw new \RuntimeException('wpdb unavailable for db_collation probe');
-        }
-        $prefix = (isset($wpdb->prefix) && is_string($wpdb->prefix)) ? $wpdb->prefix : 'wp_';
-        $targets = array(
-            $prefix . 'abj404_redirects'  => array('url', 'canonical_url'),
-            $prefix . 'abj404_logs_hits'  => array('requested_url'),
-            $prefix . 'abj404_logsv2'     => array('url'),
-        );
-        $prevSuppress = method_exists($wpdb, 'suppress_errors') ? $wpdb->suppress_errors(true) : false;
-        $errors = 0;
-        $attempted = 0;
-        foreach ($targets as $table => $cols) {
-            foreach ($cols as $col) {
-                $attempted++;
-                try {
-                    if (!method_exists($wpdb, 'prepare')) { continue; }
-                    // DAO-bypass-approved: information_schema collation probe placeholder bind; no plugin-table writes.
-                    $prepared = $wpdb->prepare(
-                        'SELECT COLLATION_NAME '
-                      . 'FROM information_schema.COLUMNS '
-                      . 'WHERE table_schema = DATABASE() AND table_name = %s AND column_name = %s',
-                        $table,
-                        $col
-                    );
-                    if ($prepared === null) { continue; }
-                    // DAO-bypass-approved: information_schema metadata probe; no plugin-table writes.
-                    $v = $wpdb->get_var($prepared);
-                    if (is_scalar($v) && (string)$v !== '') {
-                        $out['columns'][$table . '.' . $col] = (string)$v;
-                    }
-                } catch (\Throwable $e) {
-                    // allow-silent-catch: per-column probe is best-effort; missing-table / permissions errors must not abort the whole map. Aggregated failure is rethrown after the loop when ALL attempts failed (see $errors check below) so the recordProbe wrapper can write the marker key.
-                    @error_log('404 Solution: probeDbCollation probe failed for ' . $table . '.' . $col . ': ' . $e->getMessage());
-                    $errors++;
-                }
-            }
-        }
-        if (method_exists($wpdb, 'suppress_errors')) {
-            $wpdb->suppress_errors($prevSuppress);
-        }
-        if ($errors === $attempted && empty($out['columns'])) {
-            throw new \RuntimeException('db_collation: all per-column SQL probes failed');
-        }
-        return $out;
-    }
-
-    /**
-     * Timezone identity for the WP install, PHP runtime, and OS. The
-     * canonical "off-by-N-hours" cron-window bug class is when WP thinks
-     * it is in pt_BR while PHP is in UTC; capturing all three lets us
-     * detect drift retroactively.
-     *
-     * @return array<string, mixed>
-     */
-    private function probeTimezone(): array {
-        $out = array(
-            'wp_timezone'              => '',
-            'wp_gmt_offset'            => 0,
-            'php_timezone'             => '',
-            'server_utc_offset_seconds' => 0,
-        );
-        if (function_exists('get_option')) {
-            $tz = get_option('timezone_string', '');
-            if (is_scalar($tz)) { $out['wp_timezone'] = (string)$tz; }
-            $off = get_option('gmt_offset', 0);
-            if (is_scalar($off)) { $out['wp_gmt_offset'] = (int)round((float)$off * 3600); }
-        }
-        if (function_exists('date_default_timezone_get')) {
-            $out['php_timezone'] = (string)date_default_timezone_get();
-        }
-        try {
-            $tz = new \DateTimeZone($out['php_timezone'] !== '' ? $out['php_timezone'] : 'UTC');
-            $dt = new \DateTime('now', $tz);
-            $out['server_utc_offset_seconds'] = (int)$tz->getOffset($dt);
-        } catch (\Throwable $e) {
-            // allow-silent-catch: server_utc_offset is best-effort; an invalid tz string leaves the default zero in place
-            @error_log('404 Solution: probeTimezone offset probe failed: ' . $e->getMessage());
-        }
-        return $out;
-    }
-
-    /**
-     * Install + upgrade timeline. The single most useful bifurcator for
-     * "started after upgrade Tuesday" vs "always broken since install."
-     * Read-only from plugin options the upgrade path already writes;
-     * no new SQL, no new options.
-     *
-     * Fields:
-     *   installed_at:     int|null  unix seconds, from abj404_installed_time
-     *   current_version:  string    ABJ404_VERSION (live)
-     *   db_version_option string|null abj404_settings['DB_VERSION'] (the value
-     *                                 stamped at the last upgrade; equals
-     *                                 current_version after the upgrade path
-     *                                 ran, mismatches between upgrade tick
-     *                                 and DB_VERSION write on lock contention)
-     *
-     * @return array<string, mixed>
-     */
-    private function probePluginLifecycle(): array {
-        $out = array(
-            'installed_at'      => null,
-            'current_version'   => defined('ABJ404_VERSION') ? (string)ABJ404_VERSION : '',
-            'db_version_option' => null,
-        );
-        if (function_exists('get_option')) {
-            $t = get_option('abj404_installed_time', null);
-            if (is_scalar($t) && is_numeric($t)) {
-                $out['installed_at'] = (int)$t;
-            }
-            $settings = get_option('abj404_settings', null);
-            if (is_array($settings) && isset($settings['DB_VERSION']) && is_scalar($settings['DB_VERSION'])) {
-                $out['db_version_option'] = (string)$settings['DB_VERSION'];
-            }
-        }
-        return $out;
-    }
-
-    /**
-     * Top distinct recurring error signatures from the plugin's debug
-     * log file over the last 7 days, capped at 5 entries. The triggering
-     * error is captured by the report itself ('error_signature' on the
-     * payload); this probe captures the recurring error which is often
-     * different and would never reach the email-on-first-error path.
-     *
-     * Bounded cost: reads the tail 256 KB of the debug file, parses
-     * lines matching the canonical "YYYY-MM-DD HH:MM:SS (LEVEL): ..."
-     * shape, keeps only [ERROR]/[WARN] entries within the last 7 days,
-     * groups by a coarse signature (first 200 chars after the level),
-     * keeps the top 5 by count. Returns an empty array on any read
-     * failure.
-     *
-     * Shape:
-     *   [ {signature: string, count: int, last_seen_at: int}, ... ]
-     *
-     * @return array<int, array<string, mixed>>
-     */
-    private function probeRecentErrorSignatures(): array {
-        $out = array();
-        try {
-            $log = abj_service('logging');
-        // allow-silent-catch: container miss is fatal for this probe; null check below records empty
-        } catch (\Throwable $e) {
-            return $out;
-        }
-        if (!is_object($log) || !method_exists($log, 'getDebugFilePath')) {
-            return $out;
-        }
-        $path = (string)$log->getDebugFilePath();
-        if ($path === '' || !is_file($path) || !is_readable($path)) {
-            return $out;
-        }
-        $size = @filesize($path);
-        if ($size === false || $size === 0) {
-            return $out;
-        }
-        $readBytes = 262144; // 256 KB
-        $offset = $size > $readBytes ? $size - $readBytes : 0;
-        $fh = @fopen($path, 'rb');
-        if (!is_resource($fh)) {
-            return $out;
-        }
-        $tail = '';
-        try {
-            if ($offset > 0) {
-                @fseek($fh, $offset);
-                // Discard the partial first line so we only group on whole records.
-                @fgets($fh);
-            }
-            $chunk = @fread($fh, $readBytes);
-            if (is_string($chunk)) {
-                $tail = $chunk;
-            }
-        } finally {
-            @fclose($fh);
-        }
-        if ($tail === '') {
-            return $out;
-        }
-        $cutoff = time() - 7 * 86400;
-        $byKey = array();
-        $lines = preg_split('/\r?\n/', $tail);
-        if (!is_array($lines)) {
-            return $out;
-        }
-        foreach ($lines as $line) {
-            if (!is_string($line) || $line === '') { continue; }
-            // Match "YYYY-MM-DD HH:MM:SS (LEVEL): tail..." per Logging.php format.
-            if (!preg_match('/^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) \((ERROR|WARN)\):\s*(.*)$/', $line, $m)) {
-                continue;
-            }
-            $ts = strtotime($m[1]);
-            if ($ts === false || $ts < $cutoff) { continue; }
-            $level = $m[2];
-            $msg = trim($m[3]);
-            if ($msg === '') { continue; }
-            $sig = $level . ':' . substr($this->normalizeErrorSignature($msg), 0, 200);
-            if (!isset($byKey[$sig])) {
-                $byKey[$sig] = array('signature' => $sig, 'count' => 0, 'last_seen_at' => 0);
-            }
-            $byKey[$sig]['count']++;
-            if ($ts > $byKey[$sig]['last_seen_at']) {
-                $byKey[$sig]['last_seen_at'] = $ts;
-            }
-        }
-        if (empty($byKey)) {
-            return $out;
-        }
-        $list = array_values($byKey);
-        usort($list, function ($a, $b) {
-            $cmp = $b['count'] - $a['count'];
-            if ($cmp !== 0) { return $cmp; }
-            return $b['last_seen_at'] - $a['last_seen_at'];
-        });
-        return array_slice($list, 0, 5);
-    }
-
-    /**
-     * Coarse-grain an error message so different incident timestamps,
-     * memory addresses, file paths, and line numbers fold into the same
-     * signature. Used by probeRecentErrorSignatures to group recurring
-     * errors.
-     *
-     * @param string $msg
-     * @return string
-     */
-    private function normalizeErrorSignature(string $msg): string {
-        $s = $msg;
-        // Strip absolute paths to just the basename.
-        $s = preg_replace('#/[A-Za-z0-9_\-\./]+/([A-Za-z0-9_\-]+\.php)#', '$1', $s) ?? $s;
-        // Collapse memory addresses, hex, and digit sequences.
-        $s = preg_replace('/\b0x[0-9a-fA-F]+\b/', '0xN', $s) ?? $s;
-        $s = preg_replace('/\b\d{4,}\b/', 'N', $s) ?? $s;
-        // Collapse runs of whitespace.
-        $s = preg_replace('/\s+/', ' ', $s) ?? $s;
-        return trim($s);
-    }
-
-    /**
-     * opcache detail fields beyond the on/off enum. Each value is
-     * explicitly nullable: ini_get() returns false when the directive
-     * is unknown, and "we couldn't read it" is materially different
-     * from a stamped 0/false the host configured deliberately.
-     *
-     * Shape:
-     *   { revalidate_freq: int|null,
-     *     validate_timestamps: bool|null,
-     *     enable_cli: bool|null }
-     *
-     * @return array<string, mixed>
-     */
-    private function probeOpcacheSettings(): array {
-        $out = array(
-            'revalidate_freq'     => null,
-            'validate_timestamps' => null,
-            'enable_cli'          => null,
-        );
-        if (!function_exists('ini_get')) {
-            return $out;
-        }
-        $rf = ini_get('opcache.revalidate_freq');
-        if ($rf !== false) {
-            $out['revalidate_freq'] = (int)$rf;
-        }
-        $vt = ini_get('opcache.validate_timestamps');
-        if ($vt !== false) {
-            $out['validate_timestamps'] = ((int)$vt === 1 || strtolower((string)$vt) === 'on');
-        }
-        $ec = ini_get('opcache.enable_cli');
-        if ($ec !== false) {
-            $out['enable_cli'] = ((int)$ec === 1 || strtolower((string)$ec) === 'on');
-        }
-        return $out;
-    }
-
-    /**
-     * open_basedir restriction string, or null when not configured.
-     * Returned wholesale (path list) so the server side can match it
-     * against the plugin's known write targets; the value is not PII
-     * and the per-host shapes vary enough that any normalization here
-     * would lose signal.
-     *
-     * @return string|null
-     */
-    private function probeOpenBasedir(): ?string {
-        if (!function_exists('ini_get')) {
-            return null;
-        }
-        $v = ini_get('open_basedir');
-        if (!is_string($v) || $v === '') {
-            return null;
-        }
-        return $v;
-    }
-
-    /**
-     * Multisite identity for the request the report originates from.
-     * When `is_multisite()` is false the rest of the shape is omitted
-     * rather than emitted as nulls per probe (a single-site install
-     * has no blog_id/network_id and the keys would be misleading).
-     *
-     * Shape (multisite):
-     *   { is_multisite: true,
-     *     is_main_site: bool|null,
-     *     blog_id: int|null,
-     *     network_id: int|null,
-     *     network_activated: bool|null }
-     *
-     * Shape (single-site):
-     *   { is_multisite: false }
-     *
-     * @return array<string, mixed>
-     */
-    private function probeMultisiteRole(): array {
-        $isMultisite = function_exists('is_multisite') && (bool)is_multisite();
-        $out = array('is_multisite' => $isMultisite);
-        if (!$isMultisite) {
-            return $out;
-        }
-        $out['is_main_site'] = function_exists('is_main_site') ? (bool)is_main_site() : null;
-        $out['blog_id'] = function_exists('get_current_blog_id') ? (int)get_current_blog_id() : null;
-        $out['network_id'] = function_exists('get_current_network_id') ? (int)get_current_network_id() : null;
-
-        $networkActivated = null;
-        if (function_exists('is_plugin_active_for_network') && function_exists('plugin_basename') && defined('ABJ404_FILE')) {
-            try {
-                $networkActivated = (bool) is_plugin_active_for_network(plugin_basename(ABJ404_FILE));
-            } catch (\Throwable $e) {
-                // allow-silent-catch: best-effort multisite probe; is_plugin_active_for_network requires wp-admin context that may not be loaded on front-end / cron paths, leave null
-                @error_log('404 Solution: probeMultisiteRole network-activated check failed: ' . $e->getMessage());
-                $networkActivated = null;
-            }
-        }
-        $out['network_activated'] = $networkActivated;
-        return $out;
-    }
-
-    /**
-     * Whether the .htaccess at the WP home path is writable by the
-     * plugin. Differentiates "Apache rule install will succeed" from
-     * "must use the DB-only redirect handler". Falls back to ABSPATH
-     * when get_home_path() is unavailable (front-end / cron context
-     * loads it on demand from wp-admin/includes/file.php).
-     *
-     * @return bool
-     */
-    private function probeHtaccessWritable(): bool {
-        $path = $this->resolveHtaccessPath();
-        if ($path === '') {
-            return false;
-        }
-        // is_writable() returns false on a non-existent file too,
-        // which matches the install-method intent: if the file does
-        // not yet exist and we cannot write the directory either, the
-        // Apache-rule path cannot succeed.
-        return @is_writable($path);
-    }
-
-    /**
-     * Best path to test for .htaccess writability. Prefers
-     * get_home_path() (which honors WordPress in-subdir installs);
-     * falls back to ABSPATH for early-boot / front-end contexts where
-     * wp-admin/includes/file.php has not been loaded.
-     *
-     * @return string
-     */
-    private function resolveHtaccessPath(): string {
-        if (function_exists('get_home_path')) {
-            $home = (string) get_home_path();
-            if ($home !== '') {
-                return rtrim($home, "/\\") . '/.htaccess';
-            }
-        }
-        if (defined('ABSPATH') && ABSPATH !== '') {
-            return rtrim(ABSPATH, "/\\") . '/.htaccess';
-        }
-        return '';
-    }
-
-    /**
-     * Free bytes on the system temp directory's filesystem. Some
-     * shared hosts mount /tmp as a separate quota from the WP install
-     * path; the disk_free_bytes probe (which targets the uploads dir)
-     * cannot see /tmp exhaustion. Throws when disk_free_space is
-     * disabled so the caller's tryInt wrapper records null rather
-     * than a misleading zero.
-     *
-     * @return int
-     */
-    private function probeTmpFreeBytesOrThrow(): int {
-        if (!function_exists('disk_free_space')) {
-            throw new \RuntimeException('disk_free_space unavailable');
-        }
-        $tmp = function_exists('sys_get_temp_dir') ? sys_get_temp_dir() : '';
-        if ($tmp === '') {
-            throw new \RuntimeException('sys_get_temp_dir returned empty');
-        }
-        $v = @disk_free_space($tmp);
-        if ($v === false) {
-            throw new \RuntimeException('disk_free_space returned false for ' . $tmp);
-        }
-        return (int)$v;
     }
 }
