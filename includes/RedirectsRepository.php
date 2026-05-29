@@ -202,7 +202,7 @@ class ABJ_404_Solution_RedirectsRepository implements ABJ_404_Solution_Redirects
             $redirectsTable = $this->dbCore->doTableNameReplacements("{wp_abj404_redirects}");
 
             $abj404logic = abj_service('plugin_logic');
-            $fromURL = $abj404logic->normalizeToRelativePath($fromURL);
+            $fromURL = $abj404logic->urlNormalization()->normalizeToRelativePath($fromURL);
 
             $insertData = array(
                 'url' => $fromURL,
@@ -299,7 +299,7 @@ class ABJ_404_Solution_RedirectsRepository implements ABJ_404_Solution_Redirects
         }
 
         $abj404logic = abj_service('plugin_logic');
-        $candidates = $abj404logic->getNormalizedUrlCandidates($url);
+        $candidates = $abj404logic->urlNormalization()->getNormalizedUrlCandidates($url);
         foreach ($candidates as $candidate) {
             $redirect = $this->getActiveRedirectForNormalizedUrl($candidate, $degradedMode);
             if ($redirect['id'] !== 0) {
@@ -319,7 +319,7 @@ class ABJ_404_Solution_RedirectsRepository implements ABJ_404_Solution_Redirects
         }
 
         $abj404logic = abj_service('plugin_logic');
-        $candidates = $abj404logic->getNormalizedUrlCandidates($url);
+        $candidates = $abj404logic->urlNormalization()->getNormalizedUrlCandidates($url);
         foreach ($candidates as $candidate) {
             $redirect = $this->getExistingRedirectForNormalizedUrl($candidate);
             if ($redirect['id'] !== 0) {

@@ -431,7 +431,7 @@ class ABJ_404_Solution_LogsRepository implements ABJ_404_Solution_LogsRepository
         $logTableName = $this->dbCore->doTableNameReplacements("{wp_abj404_logsv2}");
         $now = time();
         $requested_url = preg_replace('/[\x00-\x1F\x7F]/u', '', $requested_url) ?? $requested_url;
-        $requested_url = $abj404logic->normalizeToRelativePath($requested_url);
+        $requested_url = $abj404logic->urlNormalization()->normalizeToRelativePath($requested_url);
 
         try {
             static $requestedUrlColumnMeta = null;

@@ -297,7 +297,7 @@ class ABJ_404_Solution_ShortCode {
         }
 
         // No async data - fall back to synchronous computation
-        $urlSlugOnly = $abj404logic->removeHomeDirectory($urlRequest);
+        $urlSlugOnly = $abj404logic->urlNormalization()->removeHomeDirectory($urlRequest);
 
         // Try cache first (populated by processRedirect() for existing redirects)
         $permalinkSuggestionsPacket = $abj404spellChecker->getFromPermalinkCache($urlSlugOnly);
@@ -329,7 +329,7 @@ class ABJ_404_Solution_ShortCode {
             )) . "\n";
         
         $requestUriVal = isset($_SERVER['REQUEST_URI']) && is_string($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
-        $currentSlug = $abj404logic->removeHomeDirectory(
+        $currentSlug = $abj404logic->urlNormalization()->removeHomeDirectory(
                 $f->regexReplace('\?.*', '', $f->normalizeUrlString($requestUriVal)));
         $displayed = 0;
         $commentPartAndQueryPart = $abj404logic->getCommentPartAndQueryPartOfRequest();
@@ -584,7 +584,7 @@ class ABJ_404_Solution_ShortCode {
 
         $currentSlug = '';
         if (isset($_SERVER['REQUEST_URI']) && is_string($_SERVER['REQUEST_URI'])) {
-            $currentSlug = $abj404logic->removeHomeDirectory(
+            $currentSlug = $abj404logic->urlNormalization()->removeHomeDirectory(
                 $f->regexReplace('\?.*', '', $f->normalizeUrlString($_SERVER['REQUEST_URI'])));
         }
 
