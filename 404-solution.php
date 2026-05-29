@@ -1130,8 +1130,8 @@ if (!function_exists('abj404_dailyMaintenanceCronJobListener')) {
 function abj404_dailyMaintenanceCronJobListener() {
     try {
         require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
-        $redirectsRepo = abj_service('redirects_repository');
-        $redirectsRepo->deleteOldRedirectsCron();
+        $retentionService = abj_service('redirects_retention_service');
+        $retentionService->deleteOldRedirectsCron();
 
         $dbUpgrades = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
         $dbUpgrades->runDatabaseMaintenanceTasks();

@@ -109,46 +109,6 @@ interface ABJ_404_Solution_RedirectsRepositoryInterface {
     public function moveRedirectsToTrash($id, $trash);
 
     // =========================================================================
-    // Cron maintenance (from DataAccessTrait_Redirects)
-    // =========================================================================
-
-    /** @return int */
-    public function cleanupOrphanedAutoRedirects(): int;
-
-    /** @return string */
-    public function deleteOldRedirectsCron();
-
-    /** @return int */
-    public function removeDuplicatesCron(): int;
-
-    /** @return bool */
-    public function limitDebugFileSize(): bool;
-
-    /**
-     * @param array<string, mixed> $options
-     * @return int
-     */
-    public function autoTrashJunkCapturedUrls(array $options): int;
-
-    // =========================================================================
-    // Redirect maintenance (from DataAccessTrait_Maintenance, Phase 5)
-    // =========================================================================
-
-    /**
-     * Flag redirects whose destination URL appears in the 404 log as a recent 404.
-     *
-     * @return void
-     */
-    public function flagDeadDestinationRedirects(): void;
-
-    /**
-     * Move auto-created redirects to trash if they are older than the configured expiration.
-     *
-     * @return int Number of redirects moved to trash
-     */
-    public function expireOldAutoRedirects(): int;
-
-    // =========================================================================
     // Regex cache (from DataAccess static state)
     // =========================================================================
 

@@ -218,6 +218,7 @@ class ABJ_404_Solution_ServiceContainer {
  *     $name is 'db_core' ? ABJ_404_Solution_DatabaseCore : (
  *     $name is 'content_repository' ? ABJ_404_Solution_ContentRepository : (
  *     $name is 'redirects_repository' ? ABJ_404_Solution_RedirectsRepository : (
+ *     $name is 'redirects_retention_service' ? ABJ_404_Solution_RedirectsRetentionService : (
  *     $name is 'logs_repository' ? ABJ_404_Solution_LogsRepository : (
  *     $name is 'stats_repository' ? ABJ_404_Solution_StatsRepository : (
  *     $name is 'view_read_service' ? ABJ_404_Solution_ViewReadService : (
@@ -247,7 +248,7 @@ class ABJ_404_Solution_ServiceContainer {
  *     $name is 'ajax_security_gate' ? ABJ_404_Solution_AjaxSecurityGate : (
  *     $name is 'ajax_failure_logger' ? ABJ_404_Solution_AjaxFailureLogger :
  *     mixed
- * )))))))))))))))))))))))))))))))))))
+ * ))))))))))))))))))))))))))))))))))))
  */
 function abj_service($name) {
     $container = ABJ_404_Solution_ServiceContainer::getInstance();
@@ -271,6 +272,7 @@ function abj_service($name) {
         'db_core' => 'getDbCore',
         'content_repository' => 'getContentRepo',
         'redirects_repository' => 'getRedirectsRepo',
+        'redirects_retention_service' => 'getRetentionService',
         'logs_repository' => 'getLogsRepo',
         'stats_repository' => 'getStatsRepo',
         'view_read_service' => 'getViewReadService',
@@ -286,6 +288,7 @@ function abj_service($name) {
             static $legacyDaoShapeMethods = array(
                 'content_repository' => 'getPublishedPagesAndPostsIDs',
                 'redirects_repository' => 'moveRedirectsToTrash',
+                'redirects_retention_service' => 'deleteOldRedirectsCron',
                 'logs_repository' => 'logRedirectHit',
                 'stats_repository' => 'getTopCapturedForDigest',
                 'view_read_service' => 'getRedirectStatusCounts',

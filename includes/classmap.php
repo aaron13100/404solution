@@ -94,6 +94,8 @@ return array(
     'ABJ_404_Solution_ContentRepository' => $base . 'includes/ContentRepository.php',
     'ABJ_404_Solution_RedirectsRepositoryInterface' => $base . 'includes/RedirectsRepositoryInterface.php',
     'ABJ_404_Solution_RedirectsRepository' => $base . 'includes/RedirectsRepository.php',
+    'ABJ_404_Solution_RedirectsRetentionServiceInterface' => $base . 'includes/RedirectsRetentionServiceInterface.php',
+    'ABJ_404_Solution_RedirectsRetentionService' => $base . 'includes/RedirectsRetentionService.php',
     'ABJ_404_Solution_StatsRepositoryInterface' => $base . 'includes/StatsRepositoryInterface.php',
     'ABJ_404_Solution_StatsRepository' => $base . 'includes/StatsRepository.php',
     'ABJ_404_Solution_PluginUpdateMetadataRepository' => $base . 'includes/PluginUpdateMetadataRepository.php',

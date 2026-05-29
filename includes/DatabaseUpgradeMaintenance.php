@@ -690,10 +690,10 @@ class ABJ_404_Solution_DatabaseUpgradeMaintenance extends ABJ_404_Solution_Datab
         $this->cleanupExpiredRateLimitTransients();
 
         // Flag redirects whose destination URL is generating 404s (drives redirect suspension)
-        abj_service('redirects_repository')->flagDeadDestinationRedirects();
+        abj_service('redirects_retention_service')->flagDeadDestinationRedirects();
 
         // Expire auto-created redirects that exceed the configured age threshold
-        abj_service('redirects_repository')->expireOldAutoRedirects();
+        abj_service('redirects_retention_service')->expireOldAutoRedirects();
 
         // Backfill canonical_url on legacy redirect rows so the captured-page
         // JOIN to logs_hits.requested_url stays index-friendly. Chunked + rate-

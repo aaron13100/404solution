@@ -34,6 +34,8 @@ require_once __DIR__ . '/ContentRepositoryInterface.php';
 require_once __DIR__ . '/ContentRepository.php';
 require_once __DIR__ . '/RedirectsRepositoryInterface.php';
 require_once __DIR__ . '/RedirectsRepository.php';
+require_once __DIR__ . '/RedirectsRetentionServiceInterface.php';
+require_once __DIR__ . '/RedirectsRetentionService.php';
 require_once __DIR__ . '/DatabaseErrorClassifier.php';
 require_once __DIR__ . '/DatabaseSqlErrorReporter.php';
 require_once __DIR__ . '/ViewQueryFailureException.php';
@@ -149,6 +151,9 @@ class ABJ_404_Solution_DataAccess implements ABJ_404_Solution_ContentRepositoryI
 
     /** @var ABJ_404_Solution_RedirectsRepository The extracted redirects repository. */
     private $redirectsRepo;
+
+    /** @var ABJ_404_Solution_RedirectsRetentionService|null Lazy-initialized retention workflow service. */
+    private $retentionService = null;
 
     /** @var ABJ_404_Solution_LogsRepository The extracted logs repository. */
     private $logsRepo;
@@ -691,9 +696,22 @@ class ABJ_404_Solution_DataAccess implements ABJ_404_Solution_ContentRepositoryI
         return $this->redirectsRepo;
     }
 
+    /** @return ABJ_404_Solution_RedirectsRetentionService */
+    public function getRetentionService(): ABJ_404_Solution_RedirectsRetentionService {
+        if ($this->retentionService === null) {
+            $this->retentionService = new ABJ_404_Solution_RedirectsRetentionService(
+                $this->dbCore !== null ? $this->dbCore : $this->getDbCore(),
+                $this->redirectsRepo !== null ? $this->redirectsRepo : $this->getRedirectsRepo(),
+                $this->f,
+                $this->logger
+            );
+        }
+        return $this->retentionService;
+    }
+
     /** @return int */
     public function cleanupOrphanedAutoRedirects(): int {
-        return $this->getRedirectsRepo()->cleanupOrphanedAutoRedirects();
+        return $this->getRetentionService()->cleanupOrphanedAutoRedirects();
     }
 
     public function deleteRedirect($id) {
@@ -782,19 +800,19 @@ class ABJ_404_Solution_DataAccess implements ABJ_404_Solution_ContentRepositoryI
     }
 
     public function deleteOldRedirectsCron() {
-        return $this->getRedirectsRepo()->deleteOldRedirectsCron();
+        return $this->getRetentionService()->deleteOldRedirectsCron();
     }
 
     public function limitDebugFileSize(): bool {
-        return $this->getRedirectsRepo()->limitDebugFileSize();
+        return $this->getRetentionService()->limitDebugFileSize();
     }
 
     public function removeDuplicatesCron(): int {
-        return $this->getRedirectsRepo()->removeDuplicatesCron();
+        return $this->getRetentionService()->removeDuplicatesCron();
     }
 
     public function autoTrashJunkCapturedUrls(array $options): int {
-        return $this->getRedirectsRepo()->autoTrashJunkCapturedUrls($options);
+        return $this->getRetentionService()->autoTrashJunkCapturedUrls($options);
     }
 
     /** @return ABJ_404_Solution_LogsRepository */
@@ -1247,6 +1265,7 @@ class ABJ_404_Solution_DataAccess implements ABJ_404_Solution_ContentRepositoryI
             $this->dbCore,
             $this->logsRepo,
             $this->redirectsRepo,
+            $this->getRetentionService(),
             $this->contentRepo,
             $this->statsRepo,
             $this->viewBuildOrchestrator,

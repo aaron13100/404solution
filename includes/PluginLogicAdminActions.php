@@ -166,7 +166,7 @@ class ABJ_404_Solution_PluginLogicAdminActions {
             }
         } else if ($action == "runMaintenance") {
             if (check_admin_referer('abj404_runMaintenance') && is_admin()) {
-                $message = $this->redirectsRepo->deleteOldRedirectsCron();
+                $message = abj_service('redirects_retention_service')->deleteOldRedirectsCron();
             } else {
                 $this->logger->debugMessage("Unexpected result. How did we get here? is_admin: " .
                         is_admin() . ", Action: " . $action . ", Sub: " . $sub);
