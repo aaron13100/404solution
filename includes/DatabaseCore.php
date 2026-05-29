@@ -11,6 +11,7 @@ require_once __DIR__ . '/DatabaseQueryTimeoutManager.php';
 require_once __DIR__ . '/DatabaseErrorClassifier.php';
 require_once __DIR__ . '/DatabaseSqlErrorReporter.php';
 require_once __DIR__ . '/DatabaseTableNameResolver.php';
+require_once __DIR__ . '/DatabaseNoticeStateHolder.php';
 
 /**
  * Shared database infrastructure: query execution, error recovery, timeouts,
@@ -50,6 +51,9 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
     /** @var ABJ_404_Solution_DatabaseTableNameResolver */
     private $tableNameResolver;
 
+    /** @var ABJ_404_Solution_DatabaseNoticeStateHolder */
+    private $noticeState;
+
     /** @var bool Prevent recursive auto-repair attempts on SQL errors. */
     private static $tableRepairInProgress = false;
 
@@ -65,12 +69,6 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
 
     /** @var string Current wpdb result type for queryAndGetResults (ARRAY_A or OBJECT). */
     private $currentResultType = ARRAY_A;
-
-    /** @var bool Whether a server-side DB issue was noted this request (for auto-clear). */
-    private $serverSideIssueNoted = false;
-
-    /** @var bool Whether we already checked for a stale notice transient this request. */
-    private $serverSideIssueChecked = false;
 
     /** @var bool Prevent recursive collation auto-recovery. */
     private static $collationRecoveryInProgress = false;
@@ -90,6 +88,11 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
             $this->f,
             function (string $query, array $options): array {
                 return $this->queryAndGetResults($query, $options);
+            }
+        );
+        $this->noticeState = new ABJ_404_Solution_DatabaseNoticeStateHolder(
+            function (): bool {
+                return $this->errorClassifier->isQuotaCooldownActive();
             }
         );
     }
@@ -332,7 +335,7 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
 
     /** @return void */
     public function markServerSideIssueNoted(): void {
-        $this->serverSideIssueNoted = true;
+        $this->noticeState->markServerSideIssueNoted();
     }
 
     /** @return bool */
@@ -353,6 +356,7 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
     /** @param ABJ_404_Solution_Clock $clock @return void */
     public function setClock(ABJ_404_Solution_Clock $clock): void {
         $this->clock = $clock;
+        $this->noticeState->setClock($clock);
     }
 
     /** @return ABJ_404_Solution_Clock */
@@ -564,16 +568,16 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
             }
 
             if ($result['last_error'] === '') {
-                if (!$this->serverSideIssueNoted && !$this->serverSideIssueChecked) {
-                    $this->serverSideIssueChecked = true;
+                if (!$this->noticeState->isServerSideIssueNoted() && !$this->noticeState->isServerSideIssueChecked()) {
+                    $this->noticeState->markServerSideIssueChecked();
                     $existing = $this->getRuntimeFlag('abj404_plugin_db_notice');
                     $excludedTypes = array('stale_permalink_cache', 'missing_table');
                     if (is_array($existing) && !empty($existing['type'])
                         && !in_array($existing['type'], $excludedTypes, true)) {
-                        $this->serverSideIssueNoted = true;
+                        $this->noticeState->markServerSideIssueNoted();
                     }
                 }
-                if ($this->serverSideIssueNoted && !$this->isWriteBlockActive() && !$this->isQuotaCooldownActive()) {
+                if ($this->noticeState->isServerSideIssueNoted() && !$this->isWriteBlockActive() && !$this->isQuotaCooldownActive()) {
                     $this->clearServerSideDbNotice();
                 }
             }
@@ -1015,14 +1019,7 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
      * @return void
      */
     public function setRuntimeFlag(string $key, $value, int $ttlSeconds): void {
-        if (function_exists('set_transient')) {
-            // allow-cache-empty: passthrough helper. Callers store admin-notice payloads, cooldown timestamps, and lock-state markers, not query results.
-            set_transient($key, $value, $ttlSeconds);
-            return;
-        }
-        if (function_exists('update_option')) {
-            update_option($key, $value, false);
-        }
+        $this->noticeState->setRuntimeFlag($key, $value, $ttlSeconds);
     }
 
     /**
@@ -1030,13 +1027,7 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
      * @return mixed
      */
     public function getRuntimeFlag(string $key) {
-        if (function_exists('get_transient')) {
-            return get_transient($key);
-        }
-        if (function_exists('get_option')) {
-            return get_option($key, false);
-        }
-        return false;
+        return $this->noticeState->getRuntimeFlag($key);
     }
 
     /**
@@ -1046,13 +1037,7 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
      * @return void
      */
     public function setPluginDbNotice(string $type, string $message, string $errorString = ''): void {
-        $payload = array(
-            'type' => $type,
-            'message' => $message,
-            'timestamp' => $this->clock()->now(),
-            'error_string' => $errorString,
-        );
-        $this->setRuntimeFlag('abj404_plugin_db_notice', $payload, self::DB_WRITE_BLOCK_COOLDOWN_SECONDS);
+        $this->noticeState->setPluginDbNotice($type, $message, $errorString);
     }
 
     /**
@@ -1060,48 +1045,27 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
      * @return void
      */
     public function clearPluginDbNoticeIfType(string $type): void {
-        $existing = $this->getRuntimeFlag('abj404_plugin_db_notice');
-        if (!is_array($existing)) {
-            return;
-        }
-        $currentType = isset($existing['type']) && is_string($existing['type']) ? $existing['type'] : '';
-        if ($currentType !== $type) {
-            return;
-        }
-        $this->clearServerSideDbNotice();
+        $this->noticeState->clearPluginDbNoticeIfType($type);
     }
 
     /** @return void */
     public function clearServerSideDbNotice(): void {
-        if (function_exists('delete_transient')) {
-            delete_transient('abj404_plugin_db_notice');
-        } elseif (function_exists('delete_option')) {
-            delete_option('abj404_plugin_db_notice');
-        }
-        $this->serverSideIssueNoted = false;
+        $this->noticeState->clearServerSideDbNotice();
     }
 
     /** @param string $text @return string */
     public function localizeOrDefault(string $text): string {
-        if (function_exists('__')) {
-            return __($text, '404-solution');
-        }
-        return $text;
+        return $this->noticeState->localizeOrDefault($text);
     }
 
     /** @return bool */
     public function isWriteBlockActive(): bool {
-        $rawDiskFlag = $this->getRuntimeFlag('abj404_db_disk_full_until');
-        $diskUntil = is_scalar($rawDiskFlag) ? (int)$rawDiskFlag : 0;
-        $rawReadOnlyFlag = $this->getRuntimeFlag('abj404_db_read_only_until');
-        $readOnlyUntil = is_scalar($rawReadOnlyFlag) ? (int)$rawReadOnlyFlag : 0;
-        $now = $this->clock()->now();
-        return ($diskUntil > $now || $readOnlyUntil > $now);
+        return $this->noticeState->isWriteBlockActive();
     }
 
     /** @return bool */
     public function shouldSkipNonEssentialDbWrites(): bool {
-        return ($this->isQuotaCooldownActive() || $this->isWriteBlockActive());
+        return $this->noticeState->shouldSkipNonEssentialDbWrites();
     }
 
     /**
