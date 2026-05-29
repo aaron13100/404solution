@@ -71,7 +71,7 @@ abstract class ABJ_404_Solution_DatabaseUpgradeComponent {
     /** @var ABJ_404_Solution_SynchronizationUtils */
     protected $syncUtils;
 
-    /** @var ABJ_404_Solution_PluginLogic */
+    /** @var ABJ_404_Solution_PluginLogicInterface */
     protected $logic;
 
     /** @var ABJ_404_Solution_NGramFilter */

@@ -160,7 +160,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 	/** @var ABJ_404_Solution_SynchronizationUtils */
 	private $syncUtils;
 
-	/** @var ABJ_404_Solution_PluginLogic */
+	/** @var ABJ_404_Solution_PluginLogicInterface */
 	private $logic;
 
 	/** @var ABJ_404_Solution_NGramFilter */
@@ -201,7 +201,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 	 * @param ABJ_404_Solution_Functions|null $functions String utilities
 	 * @param ABJ_404_Solution_PermalinkCache|null $permalinkCache Permalink cache service
 	 * @param ABJ_404_Solution_SynchronizationUtils|null $syncUtils Sync utilities
-	 * @param ABJ_404_Solution_PluginLogic|null $pluginLogic Business logic service
+	 * @param ABJ_404_Solution_PluginLogicInterface|null $pluginLogic Business logic service
 	 * @param ABJ_404_Solution_NGramFilter|null $ngramFilter N-gram filter service
 	 */
 	public function __construct($dataAccess = null, $logging = null, $functions = null, $permalinkCache = null, $syncUtils = null, $pluginLogic = null, $ngramFilter = null) {

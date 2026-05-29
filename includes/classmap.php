@@ -162,6 +162,8 @@ return array(
     'ABJ_404_Solution_PermalinkCache' => $base . 'includes/PermalinkCache.php',
     'ABJ_404_Solution_PiiRedactor' => $base . 'includes/PiiRedactor.php',
     'ABJ_404_Solution_PluginLogic' => $base . 'includes/PluginLogic.php',
+    'ABJ_404_Solution_PluginLogicInterface' => $base . 'includes/PluginLogicInterface.php',
+    'ABJ_404_Solution_StopWords' => $base . 'includes/StopWords.php',
     'ABJ_404_Solution_RedirectConditionEvaluator' => $base . 'includes/RedirectConditionEvaluator.php',
     'ABJ_404_Solution_RegexAutoPromote' => $base . 'includes/RegexAutoPromote.php',
     'ABJ_404_Solution_RequestContext' => $base . 'includes/RequestContext.php',

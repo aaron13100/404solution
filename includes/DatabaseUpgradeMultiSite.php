@@ -163,7 +163,7 @@ class ABJ_404_Solution_DatabaseUpgradeMultiSite extends ABJ_404_Solution_Databas
                 // reach the same recovery primitives as the daily cron.
                 $this->runSelfHealPrologue();
 
-                ABJ_404_Solution_PluginLogic::doRegisterCrons();
+                $this->logic->registerCrons();
 
                 $logic = abj_service('plugin_logic');
                 $logic->doUpdateDBVersionOption();

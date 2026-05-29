@@ -27,7 +27,7 @@ class ABJ_404_Solution_PermalinkCache {
     /** @var ABJ_404_Solution_Logging */
     private $logger;
 
-    /** @var ABJ_404_Solution_PluginLogic */
+    /** @var ABJ_404_Solution_PluginLogicInterface */
     private $logic;
 
     /**
@@ -35,7 +35,7 @@ class ABJ_404_Solution_PermalinkCache {
      *
      * @param ABJ_404_Solution_ContentRepository|null $contentRepository Content repository
      * @param ABJ_404_Solution_Logging|null $logging Logging service
-     * @param ABJ_404_Solution_PluginLogic|null $pluginLogic Business logic service
+     * @param ABJ_404_Solution_PluginLogicInterface|null $pluginLogic Business logic service
      * @param ABJ_404_Solution_StatsRepository|null $statsRepository Stats repository
      */
     public function __construct($contentRepository = null, $logging = null, $pluginLogic = null, $statsRepository = null) {
@@ -273,7 +273,7 @@ class ABJ_404_Solution_PermalinkCache {
             return '';
         }
 
-        $stopLookup = array_flip(ABJ_404_Solution_ContentMatchingEngine::$stopWords);
+        $stopLookup = array_flip(ABJ_404_Solution_StopWords::$common);
         $freq = [];
 
         foreach ($words as $word) {

@@ -19,7 +19,7 @@ require_once dirname(__FILE__) . '/StorageOptionContracts.php';
 /**
  * @phpstan-type PageObject object{id: int, post_parent: int, depth: int, post_type: string, post_title: string}
  */
-class ABJ_404_Solution_PluginLogic {
+class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterface {
 
 	/** @var ABJ_404_Solution_Functions */
 	private $f = null;
@@ -355,6 +355,11 @@ class ABJ_404_Solution_PluginLogic {
 
     /** @return void */
     static function doRegisterCrons(): void {
+        ABJ_404_Solution_PluginLogicLifecycle::doRegisterCrons();
+    }
+
+    /** Instance counterpart used by the Data layer through PluginLogicInterface. */
+    public function registerCrons(): void {
         ABJ_404_Solution_PluginLogicLifecycle::doRegisterCrons();
     }
 
