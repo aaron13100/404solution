@@ -67,6 +67,33 @@ class ABJ_404_Solution_PluginLogicAdminActions {
     }
 
     /**
+     * Accessors used by ABJ_404_Solution_AdminActionHandlerInterface implementations
+     * under includes/admin/actions/. The dispatcher passes $this to each handler
+     * (constructor injection) so handlers can reach shared collaborators without
+     * each handler getting its own 10-argument constructor.
+     *
+     * @return ABJ_404_Solution_Logging
+     */
+    public function getLogger() {
+        return $this->logger;
+    }
+
+    /** @return ABJ_404_Solution_ViewBuildOrchestratorInterface */
+    public function getViewBuild() {
+        return $this->viewBuild;
+    }
+
+    /** @return ABJ_404_Solution_RedirectsRepositoryInterface */
+    public function getRedirectsRepo() {
+        return $this->redirectsRepo;
+    }
+
+    /** @return ABJ_404_Solution_ContentRepositoryInterface */
+    public function getContentRepo() {
+        return $this->contentRepo;
+    }
+
+    /**
      * Verify a nonce for admin-link actions, without depending on the browser's Referer header.
      *
      * @param string $action Nonce action string used in wp_nonce_url()
@@ -97,159 +124,139 @@ class ABJ_404_Solution_PluginLogicAdminActions {
         return wp_verify_nonce($nonce, $action) !== false;
     }
 
+    /**
+     * Exact-match action -> handler-class registry. Built lazily once per
+     * request. Each handler class implements
+     * ABJ_404_Solution_AdminActionHandlerInterface. See includes/admin/actions/.
+     *
+     * To add a new admin action: create a Handler class in includes/admin/actions/,
+     * add a classmap entry, and add it here. The nonce + is_admin() guard is
+     * centralized in handlePluginAction() so a new handler cannot ship without it.
+     *
+     * @return array<string, class-string<ABJ_404_Solution_AdminActionHandlerInterface>>
+     */
+    private function actionHandlerMap(): array {
+        return array(
+            'updateOptions'        => 'ABJ_404_Solution_UpdateOptionsHandler',
+            'addRedirect'          => 'ABJ_404_Solution_AddRedirectHandler',
+            'emptyRedirectTrash'   => 'ABJ_404_Solution_EmptyRedirectTrashHandler',
+            'emptyCapturedTrash'   => 'ABJ_404_Solution_EmptyCapturedTrashHandler',
+            'purgeRedirects'       => 'ABJ_404_Solution_PurgeRedirectsHandler',
+            'runMaintenance'       => 'ABJ_404_Solution_RunMaintenanceHandler',
+            'rebuildNgramCache'    => 'ABJ_404_Solution_RebuildNgramCacheHandler',
+            'clearSpellingCache'   => 'ABJ_404_Solution_ClearSpellingCacheHandler',
+            'saveGscSettings'      => 'ABJ_404_Solution_SaveGscSettingsHandler',
+            'importFromPlugin'     => 'ABJ_404_Solution_ImportFromPluginHandler',
+            'undoRegexAutoPromote' => 'ABJ_404_Solution_UndoRegexAutoPromoteHandler',
+        );
+    }
+
+    /**
+     * Prefix-match registry. Used after exact-match misses. Currently only
+     * 'bulk' is registered, matching the historical
+     * `substr($action, 0, 4) == "bulk"` branch (bulktrash, bulkignore, etc.).
+     *
+     * @return array<string, class-string<ABJ_404_Solution_AdminActionHandlerInterface>>
+     */
+    private function actionHandlerPrefixMap(): array {
+        return array(
+            'bulk' => 'ABJ_404_Solution_BulkActionHandler',
+        );
+    }
+
+    /**
+     * Resolve an action string to a handler instance, or null if no handler
+     * matches. Checks exact-match registry first, then prefix-match.
+     *
+     * @param string $action
+     * @return ABJ_404_Solution_AdminActionHandlerInterface|null
+     */
+    private function resolveActionHandler(string $action) {
+        $exact = $this->actionHandlerMap();
+        if (isset($exact[$action])) {
+            $cls = $exact[$action];
+            return $this->instantiateHandler($cls);
+        }
+        foreach ($this->actionHandlerPrefixMap() as $prefix => $cls) {
+            if ($action !== '' && strpos($action, $prefix) === 0) {
+                return $this->instantiateHandler($cls);
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Instantiate a handler. Handlers that need shared collaborators declare
+     * a constructor that takes ABJ_404_Solution_PluginLogicAdminActions
+     * (this dispatcher) as their only argument; handlers that need nothing
+     * declare no constructor. Reflection inspects which case applies.
+     *
+     * @param class-string<ABJ_404_Solution_AdminActionHandlerInterface> $cls
+     * @return ABJ_404_Solution_AdminActionHandlerInterface
+     */
+    private function instantiateHandler(string $cls): ABJ_404_Solution_AdminActionHandlerInterface {
+        $reflect = new ReflectionClass($cls);
+        $ctor = $reflect->getConstructor();
+        if ($ctor === null || $ctor->getNumberOfParameters() === 0) {
+            $instance = $reflect->newInstance();
+        } else {
+            $instance = $reflect->newInstance($this);
+        }
+        if (!$instance instanceof ABJ_404_Solution_AdminActionHandlerInterface) {
+            throw new RuntimeException("Handler class {$cls} does not implement AdminActionHandlerInterface.");
+        }
+        return $instance;
+    }
+
     /** Do the passed in action and return the associated message.
+     *
+     * Dispatches to a handler in includes/admin/actions/ via the registry above.
+     * Nonce verification + is_admin() guard are centralized here so they cannot
+     * be forgotten when a new action is added. Unknown actions are a no-op that
+     * returns the pre-populated display-this-message (preserving pre-refactor
+     * behavior of the original 12-branch if/else chain).
+     *
      * @param string $action
      * @param string $sub
      * @return string
      */
     function handlePluginAction($action, &$sub) {
-        $message = "";
         $message = array_key_exists('display-this-message', $_POST) ?
-        	sanitize_text_field($_POST['display-this-message']) : '';
+            sanitize_text_field($_POST['display-this-message']) : '';
 
-        if ($action == "updateOptions") {
-        	if (wp_verify_nonce($_POST['nonce'], 'abj404UpdateOptions') && is_admin()) {
-                if (array_key_exists('deleteDebugFile', $_POST) && $_POST['deleteDebugFile']) {
-                    $filepath = $this->logger->getDebugFilePath();
-                    if (!file_exists($filepath)) {
-                        $message = sprintf(__("Debug file not found. (%s)", '404-solution'), $filepath);
-                    } else if ($this->logger->deleteDebugFile()) {
-                        $message = sprintf(__("Debug file(s) deleted. (%s)", '404-solution'), $filepath);
-                    } else {
-                        $message = sprintf(__("Issue deleting debug file. (%s)", '404-solution'), $filepath);
-                    }
-                    return $message;
-                }
-
-                $sub = "abj404_options";
-            } else {
-                $this->logger->debugMessage("Unexpected result. How did we get here? is_admin: " .
-                        is_admin() . ", Action: " . $action . ", Sub: " . $sub);
-            }
-        } else if ($action == "addRedirect") {
-            if (check_admin_referer('abj404addRedirect') && is_admin()) {
-                $message = $this->addAdminRedirect();
-                if ($message == "") {
-                    $message = __('New Redirect Added Successfully!', '404-solution');
-                } else {
-                    $message .= __('Error: unable to add new redirect.', '404-solution');
-                }
-            } else {
-                $this->logger->debugMessage("Unexpected result. How did we get here? is_admin: " .
-                        is_admin() . ", Action: " . $action . ", Sub: " . $sub);
-            }
-        } else if ($action == "emptyRedirectTrash") {
-            if (check_admin_referer('abj404_bulkProcess') && is_admin()) {
-                $this->doEmptyTrash('abj404_redirects');
-                $this->viewBuild->invalidateViewDoneAndScheduleRebuild();
-                $message = __('All trashed URLs have been deleted!', '404-solution');
-            } else {
-                $this->logger->debugMessage("Unexpected result. How did we get here? is_admin: " .
-                        is_admin() . ", Action: " . $action . ", Sub: " . $sub);
-            }
-        } else if ($action == "emptyCapturedTrash") {
-            if (check_admin_referer('abj404_bulkProcess') && is_admin()) {
-                $this->doEmptyTrash('abj404_captured');
-                $this->viewBuild->invalidateViewDoneAndScheduleRebuild();
-                $message = __('All trashed URLs have been deleted!', '404-solution');
-            } else {
-                $this->logger->debugMessage("Unexpected result. How did we get here? is_admin: " .
-                        is_admin() . ", Action: " . $action . ", Sub: " . $sub);
-            }
-        } else if ($action == "purgeRedirects") {
-            if (check_admin_referer('abj404_purgeRedirects') && is_admin()) {
-                $message = $this->redirectsRepo->deleteSpecifiedRedirects();
-                $this->viewBuild->invalidateViewDoneAndScheduleRebuild();
-            } else {
-                $this->logger->debugMessage("Unexpected result. How did we get here? is_admin: " .
-                        is_admin() . ", Action: " . $action . ", Sub: " . $sub);
-            }
-        } else if ($action == "runMaintenance") {
-            if (check_admin_referer('abj404_runMaintenance') && is_admin()) {
-                $message = abj_service('redirects_retention_service')->deleteOldRedirectsCron();
-            } else {
-                $this->logger->debugMessage("Unexpected result. How did we get here? is_admin: " .
-                        is_admin() . ", Action: " . $action . ", Sub: " . $sub);
-            }
-        } else if ($action == "rebuildNgramCache") {
-            if (check_admin_referer('abj404_rebuildNgramCache') && is_admin()) {
-                $userId = get_current_user_id();
-                $transientKey = 'abj404_ngram_rebuild_request_' . $userId;
-                $recentRequest = get_transient($transientKey);
-
-                if ($recentRequest) {
-                    $message = __('N-gram cache rebuild is already scheduled or in progress. Please wait for it to complete.', '404-solution');
-                } else {
-                    set_transient($transientKey, time(), 10);
-
-                    $dbUpgrades = abj_service('database_upgrades');
-
-                    $scheduled = $dbUpgrades->scheduleNGramCacheRebuild();
-
-                    if ($scheduled) {
-                        $message = __('N-gram cache rebuild has been scheduled and will run in the background. This may take several minutes on large sites. You can continue using the plugin normally.', '404-solution');
-                    } else {
-                        $nextScheduled = wp_next_scheduled('abj404_rebuild_ngram_cache_hook');
-                        if ($nextScheduled) {
-                            $message = __('N-gram cache rebuild is already scheduled or in progress. Please wait for it to complete.', '404-solution');
-                        } else {
-                            $message = __('Failed to schedule N-gram cache rebuild. Please try again or check your WordPress cron configuration.', '404-solution');
-                        }
-                    }
-                }
-            } else {
-                $this->logger->debugMessage("Unexpected result. How did we get here? is_admin: " .
-                        is_admin() . ", Action: " . $action . ", Sub: " . $sub);
-            }
-        } else if ($action == "clearSpellingCache") {
-            if (check_admin_referer('abj404_clearSpellingCache') && is_admin()) {
-                $this->contentRepo->deleteSpellingCache();
-                $message = __('Spelling cache cleared successfully.', '404-solution');
-            } else {
-                $this->logger->debugMessage("Unexpected result. How did we get here? is_admin: " .
-                        is_admin() . ", Action: " . $action . ", Sub: " . $sub);
-            }
-        } else if ($action == "saveGscSettings") {
-            if (check_admin_referer('abj404_gsc_save', '_wpnonce_gsc') && is_admin()) {
-                $logger = abj_service('logging');
-                $gsc = new ABJ_404_Solution_GoogleSearchConsole($logger);
-                $error = $gsc->saveSettings($_POST);
-                $message = ($error === '') ? __('Google Search Console credentials saved.', '404-solution') : $error;
-            } else {
-                $this->logger->debugMessage("saveGscSettings security check failed. is_admin: " . is_admin());
-            }
-        } else if ($action == "importFromPlugin") {
-            if (check_admin_referer('abj404_importFromPlugin') && is_admin()) {
-                $message = $this->handleActionImportFromPlugin();
-                $this->viewBuild->invalidateViewDoneAndScheduleRebuild();
-            } else {
-                $this->logger->debugMessage("Unexpected result. How did we get here? is_admin: " .
-                        is_admin() . ", Action: " . $action . ", Sub: " . $sub);
-            }
-        } else if ($action == "undoRegexAutoPromote") {
-            if (check_admin_referer('abj404undoRegexAutoPromote') && is_admin()) {
-                $message = $this->handleActionUndoRegexAutoPromote();
-            } else {
-                $this->logger->debugMessage("Unexpected result. How did we get here? is_admin: " .
-                        is_admin() . ", Action: " . $action . ", Sub: " . $sub);
-            }
-        } else if ($this->f->substr($action . '', 0, 4) == "bulk") {
-            if (check_admin_referer('abj404_bulkProcess') && is_admin()) {
-                if (!isset($_POST['idnum'])) {
-                    $this->logger->debugMessage("No ID(s) specified for bulk action: " . esc_html($action));
-                    echo sprintf(__("Error: No ID(s) specified for bulk action. (%s)", '404-solution'),
-                        esc_html($action));
-                    return '';
-                }
-                $message = $this->doBulkAction($action, array_map('absint', $_POST['idnum']));
-                $this->viewBuild->invalidateViewDoneAndScheduleRebuild();
-            } else {
-                $this->logger->debugMessage("Unexpected result. How did we get here? is_admin: " .
-                        is_admin() . ", Action: " . $action . ", Sub: " . $sub);
-            }
+        $handler = $this->resolveActionHandler((string)$action);
+        if ($handler === null) {
+            return $message;
         }
 
-        return $message;
+        if (!$this->verifyHandlerNonce($handler) || !is_admin()) {
+            $this->logger->debugMessage("Unexpected result. How did we get here? is_admin: " .
+                    is_admin() . ", Action: " . $action . ", Sub: " . $sub);
+            return $message;
+        }
+
+        return $handler->handle((string)$action, $sub);
+    }
+
+    /**
+     * Run the handler's declared nonce check. Most handlers use
+     * check_admin_referer($action, $arg); the legacy 'updateOptions' branch
+     * uses wp_verify_nonce($_POST[$arg], $action) directly. Behavior is
+     * preserved verbatim per-handler so nonce semantics do not change.
+     *
+     * @param ABJ_404_Solution_AdminActionHandlerInterface $handler
+     * @return bool
+     */
+    private function verifyHandlerNonce(ABJ_404_Solution_AdminActionHandlerInterface $handler): bool {
+        $action = $handler->nonceAction();
+        $arg = $handler->nonceArg();
+        if ($handler->useCheckAdminReferer()) {
+            return (bool)check_admin_referer($action, $arg);
+        }
+        if (!isset($_POST[$arg]) || !is_scalar($_POST[$arg])) {
+            return false;
+        }
+        return (bool)wp_verify_nonce((string)$_POST[$arg], $action);
     }
 
     /** Move redirects to trash.
@@ -998,7 +1005,7 @@ class ABJ_404_Solution_PluginLogicAdminActions {
     /**
      * @return string Human-readable result message.
      */
-    private function handleActionImportFromPlugin(): string {
+    public function handleActionImportFromPlugin(): string {
         $source = isset($_POST['import_source']) && is_string($_POST['import_source'])
             ? sanitize_text_field($_POST['import_source'])
             : '';
