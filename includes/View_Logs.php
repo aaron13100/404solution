@@ -845,7 +845,7 @@ class ABJ_404_Solution_View_Logs extends ABJ_404_Solution_ViewComponent {
         $html .= "</ul>";
         $html .= "\n\n<!-- page-form big outer form could go here -->\n\n";
 
-        $oneBigFormActionURL = $this->redirectsTable->getBulkOperationsFormURL($sub, $tableOptions);
+        $oneBigFormActionURL = $this->listTableChrome->getBulkOperationsFormURL($sub, $tableOptions);
         $html .= $this->f->str_replace(
             '{action_url}', $oneBigFormActionURL,
             $this->tpl('viewLogsTabFiltersBulkForm.html')

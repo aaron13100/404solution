@@ -69,6 +69,15 @@ abstract class ABJ_404_Solution_ViewComponent {
     /** @var ABJ_404_Solution_View_RedirectsTable */
     protected $redirectsTable;
 
+    /** @var ABJ_404_Solution_View_CapturedURLsTable */
+    protected $capturedURLsTable;
+
+    /** @var ABJ_404_Solution_View_RedirectForms */
+    protected $redirectForms;
+
+    /** @var ABJ_404_Solution_View_ListTableChrome */
+    protected $listTableChrome;
+
     /** @var ABJ_404_Solution_View_RedirectTypeUI */
     protected $redirectTypeUI;
 
@@ -125,6 +134,9 @@ abstract class ABJ_404_Solution_ViewComponent {
         ABJ_404_Solution_View_Settings $settings,
         ABJ_404_Solution_View_Redirects $redirects,
         ABJ_404_Solution_View_RedirectsTable $redirectsTable,
+        ABJ_404_Solution_View_CapturedURLsTable $capturedURLsTable,
+        ABJ_404_Solution_View_RedirectForms $redirectForms,
+        ABJ_404_Solution_View_ListTableChrome $listTableChrome,
         ABJ_404_Solution_View_RedirectTypeUI $redirectTypeUI,
         ABJ_404_Solution_View_RedirectConditions $redirectConditions,
         ABJ_404_Solution_View_Logs $logs
@@ -135,6 +147,9 @@ abstract class ABJ_404_Solution_ViewComponent {
         $this->settings = $settings;
         $this->redirects = $redirects;
         $this->redirectsTable = $redirectsTable;
+        $this->capturedURLsTable = $capturedURLsTable;
+        $this->redirectForms = $redirectForms;
+        $this->listTableChrome = $listTableChrome;
         $this->redirectTypeUI = $redirectTypeUI;
         $this->redirectConditions = $redirectConditions;
         $this->logs = $logs;

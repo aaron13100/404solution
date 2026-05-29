@@ -15,6 +15,9 @@ require_once __DIR__ . '/View_Stats.php';
 require_once __DIR__ . '/View_Settings.php';
 require_once __DIR__ . '/View_Redirects.php';
 require_once __DIR__ . '/View_RedirectsTable.php';
+require_once __DIR__ . '/View_CapturedURLsTable.php';
+require_once __DIR__ . '/View_RedirectForms.php';
+require_once __DIR__ . '/View_ListTableChrome.php';
 require_once __DIR__ . '/View_RedirectTypeUI.php';
 require_once __DIR__ . '/View_RedirectConditions.php';
 require_once __DIR__ . '/View_Logs.php';
@@ -244,18 +247,23 @@ class ABJ_404_Solution_View {
 		$settings = new ABJ_404_Solution_View_Settings(...$args);
 		$redirects = new ABJ_404_Solution_View_Redirects(...$args);
 		$redirectsTable = new ABJ_404_Solution_View_RedirectsTable(...$args);
+		$capturedURLsTable = new ABJ_404_Solution_View_CapturedURLsTable(...$args);
+		$redirectForms = new ABJ_404_Solution_View_RedirectForms(...$args);
+		$listTableChrome = new ABJ_404_Solution_View_ListTableChrome(...$args);
 		$redirectTypeUI = new ABJ_404_Solution_View_RedirectTypeUI(...$args);
 		$redirectConditions = new ABJ_404_Solution_View_RedirectConditions(...$args);
 		$logs = new ABJ_404_Solution_View_Logs(...$args);
 
 		$components = array(
 			$shared, $ui, $stats, $settings, $redirects, $redirectsTable,
+			$capturedURLsTable, $redirectForms, $listTableChrome,
 			$redirectTypeUI, $redirectConditions, $logs,
 		);
 		foreach ($components as $component) {
 			$component->setSiblingComponents(
 				$shared, $ui, $stats, $settings, $redirects,
-				$redirectsTable, $redirectTypeUI, $redirectConditions, $logs
+				$redirectsTable, $capturedURLsTable, $redirectForms, $listTableChrome,
+				$redirectTypeUI, $redirectConditions, $logs
 			);
 		}
 
