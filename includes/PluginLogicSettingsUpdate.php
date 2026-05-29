@@ -312,7 +312,7 @@ class ABJ_404_Solution_PluginLogicSettingsUpdate {
         if (array_key_exists('deleteDebugFile', $_POST) && $_POST['deleteDebugFile'] == true) {
             $sub = '';
             $returnData['error'] = '';
-            $returnData['message'] = $this->pluginLogic->handlePluginAction('updateOptions', $sub);
+            $returnData['message'] = $this->pluginLogic->adminActions()->handlePluginAction('updateOptions', $sub);
 
         } else {
             $message .= $this->updateRedirectSettings($options, $_POST);

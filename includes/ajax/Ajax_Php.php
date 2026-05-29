@@ -152,7 +152,7 @@ class ABJ_404_Solution_Ajax_Php {
 			return; // @phpstan-ignore deadCode.unreachable
 		}
 
-		$result = $abj404logic->updateOptionsFromPOST();
+		$result = $abj404logic->settingsUpdate()->updateOptionsFromPOST();
 		if (!is_array($result) || !array_key_exists('success', $result)) {
 			// No underlying cause to surface: this is a developer-side contract
 			// violation (updateOptionsFromPOST() must return ['success'=>bool,...]).

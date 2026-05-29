@@ -108,7 +108,7 @@ class ABJ_404_Solution_Ajax_WarmTableCache {
                 return;
             }
 
-            $tableOptions = $abj404logic->getTableOptions($subpage);
+            $tableOptions = $abj404logic->settingsUpdate()->getTableOptions($subpage);
             $stage = 'table_cache_rows';
             if ($viewReadService->viewRowsSnapshotAvailable($subpage, $tableOptions)) {
                 $stage = 'table_cache_count';

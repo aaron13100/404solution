@@ -53,7 +53,7 @@ class ABJ_404_Solution_View_RedirectsTable extends ABJ_404_Solution_ViewComponen
 
         $sub = 'abj404_redirects';
 
-        $tableOptions = $this->logic->getTableOptions($sub);
+        $tableOptions = $this->logic->settingsUpdate()->getTableOptions($sub);
 
         // Sanitizing unchecked table options
         $tableOptions = $this->logic->sanitizePostData($tableOptions);
@@ -260,7 +260,7 @@ class ABJ_404_Solution_View_RedirectsTable extends ABJ_404_Solution_ViewComponen
      * @return string
      */
     public function getAdminRedirectsPageTable($sub) {
-        $tableOptions = $this->logic->getTableOptions($sub);
+        $tableOptions = $this->logic->settingsUpdate()->getTableOptions($sub);
         $columns = $this->buildRedirectsColumnDefs($tableOptions);
 
         $headerColumns = $this->logs->getTableColumns($sub, $columns);

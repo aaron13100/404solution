@@ -339,7 +339,7 @@ class ABJ_404_Solution_LogsRepository implements ABJ_404_Solution_LogsRepository
         $rawLogsId = $tableOptions['logsid'];
         if ($rawLogsId != 0) {
             $logsid_included = 'specific logs id included. */';
-            $logsid = esc_sql($abj404logic->sanitizeForSQL(is_scalar($rawLogsId) ? (string)$rawLogsId : ''));
+            $logsid = esc_sql($abj404logic->settingsUpdate()->sanitizeForSQL(is_scalar($rawLogsId) ? (string)$rawLogsId : ''));
         }
         $orderbyExpressionByName = array(
             'timestamp'     => '{wp_abj404_logsv2}.timestamp',
@@ -349,11 +349,11 @@ class ABJ_404_Solution_LogsRepository implements ABJ_404_Solution_LogsRepository
             'min_log_id'    => '{wp_abj404_logsv2}.min_log_id',
         );
         $rawOrderByVal = $tableOptions['orderby'];
-        $orderby = sanitize_text_field($abj404logic->sanitizeForSQL(is_string($rawOrderByVal) ? $rawOrderByVal : ''));
+        $orderby = sanitize_text_field($abj404logic->settingsUpdate()->sanitizeForSQL(is_string($rawOrderByVal) ? $rawOrderByVal : ''));
         $orderby = array_key_exists($orderby, $orderbyExpressionByName) ? $orderby : 'timestamp';
         $orderbyExpression = $orderbyExpressionByName[$orderby];
         $rawOrderVal2 = $tableOptions['order'];
-        $order = strtoupper(sanitize_text_field($abj404logic->sanitizeForSQL(is_string($rawOrderVal2) ? $rawOrderVal2 : '')));
+        $order = strtoupper(sanitize_text_field($abj404logic->settingsUpdate()->sanitizeForSQL(is_string($rawOrderVal2) ? $rawOrderVal2 : '')));
         if (!in_array($order, array('ASC', 'DESC'), true)) {
             $order = 'DESC';
         }

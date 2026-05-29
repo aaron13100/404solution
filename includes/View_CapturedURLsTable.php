@@ -42,7 +42,7 @@ class ABJ_404_Solution_View_CapturedURLsTable extends ABJ_404_Solution_ViewCompo
     public function echoAdminCapturedURLsPage() {
         $sub = 'abj404_captured';
 
-        $tableOptions = $this->logic->getTableOptions($sub);
+        $tableOptions = $this->logic->settingsUpdate()->getTableOptions($sub);
 
         $isSimpleMode = $this->logic->getSettingsMode() === 'simple';
 
@@ -65,7 +65,7 @@ class ABJ_404_Solution_View_CapturedURLsTable extends ABJ_404_Solution_ViewCompo
 
         // Filter bar with server-side search
         $filterText = is_string($tableOptions['filterText'] ?? '') ? (string)($tableOptions['filterText'] ?? '') : '';
-        $perPage = isset($tableOptions['perpage']) ? $tableOptions['perpage'] : 25;
+        $perPage = (int)($tableOptions['perpage'] ?? 25);
 
         $paginationNonce = wp_create_nonce('abj404_updatePaginationLink');
         $inflightNonce = wp_create_nonce('abj404_fetchInflightStage');
@@ -252,7 +252,7 @@ class ABJ_404_Solution_View_CapturedURLsTable extends ABJ_404_Solution_ViewCompo
 
     public function getCapturedURLSPageTable(string $sub): string {
 
-        $tableOptions = $this->logic->getTableOptions($sub);
+        $tableOptions = $this->logic->settingsUpdate()->getTableOptions($sub);
 
         // Build column headers with sorting
         $hitsTooltip = $this->shared->getHitsColumnTooltip($tableOptions);
