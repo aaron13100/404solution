@@ -15,6 +15,7 @@ require_once __DIR__ . '/DatabaseUpgradeIndexes.php';
 require_once __DIR__ . '/DatabaseUpgradeOrphanAdoption.php';
 require_once __DIR__ . '/DatabaseUpgradeMultiSite.php';
 require_once __DIR__ . '/DatabaseUpgradeSchemaDiff.php';
+require_once __DIR__ . '/DatabaseUpgradeBootstrap.php';
 
 /* Functions in this class should all reference one of the following variables or support functions that do.
  *      $wpdb, $_GET, $_POST, $_SERVER, $_.*
@@ -101,6 +102,12 @@ require_once __DIR__ . '/DatabaseUpgradeSchemaDiff.php';
  * @method mixed ddlDeclaresIdColumn(string $ddl)
  * @method mixed recoverMissingLogsHitsTable()
  * @method mixed correctMatchData()
+ * @method void createDatabaseTables($updatingToNewVersion = false, bool $force = false)
+ * @method void renameAbj404TablesToLowerCase()
+ * @method void handleSpecificCases($tableName, $colName)
+ * @method array<int, array{placeholder: string, bareTableName: string, ddlContent: string}> discoverPermanentDDLFiles()
+ * @method void runInitialCreateTables()
+ * @method string applyPluginTableCharsetCollate($createTableSql)
  */
 class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseUpgradeCoordinator {
 
@@ -112,7 +119,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 
 	/**
 	 * Per-request dedup flag for scheduleLogsv2CanonicalUrlBackfill().
-	 * Mirrors DataAccess::$hitsTableRebuildScheduled — ensures the shutdown
+	 * Mirrors DataAccess::$hitsTableRebuildScheduled. Ensures the shutdown
 	 * hook is registered at most once per request even if the schedule
 	 * function is called from multiple paths (Captured-404s tab render +
 	 * Stats panel + EmailDigest, etc.). Reset to false naturally when the
@@ -183,6 +190,9 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 	/** @var ABJ_404_Solution_DatabaseUpgradeSchemaDiff */
 	private $schemaDiffUpgrade;
 
+	/** @var ABJ_404_Solution_DatabaseUpgradeBootstrap */
+	private $bootstrapUpgrade;
+
 	/**
 	 * Constructor with dependency injection.
 	 *
@@ -214,20 +224,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 		$this->viewRead = $this->dao->getViewReadService();
 		$this->logsRepo = $this->dao->getLogsRepo();
 
-		$componentDeps = [
-			'dao' => $this->dao,
-			'dbCore' => $this->dbCore,
-			'contentRepo' => $this->contentRepo,
-			'viewBuild' => $this->viewBuild,
-			'viewRead' => $this->viewRead,
-			'logsRepo' => $this->logsRepo,
-			'logger' => $this->logger,
-			'f' => $this->f,
-			'permalinkCache' => $this->permalinkCache,
-			'syncUtils' => $this->syncUtils,
-			'logic' => $this->logic,
-			'ngramFilter' => $this->ngramFilter,
-		];
+		$componentDeps = $this->buildComponentDependencyMap();
 		$this->nGramUpgrade = new ABJ_404_Solution_DatabaseUpgradeNGram($this, $componentDeps);
 		$this->maintenanceUpgrade = new ABJ_404_Solution_DatabaseUpgradeMaintenance($this, $componentDeps);
 		$this->pluginUpdateUpgrade = new ABJ_404_Solution_DatabaseUpgradePluginUpdate($this, $componentDeps);
@@ -236,6 +233,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 		$this->orphanAdoptionUpgrade = new ABJ_404_Solution_DatabaseUpgradeOrphanAdoption($this, $componentDeps);
 		$this->multiSiteUpgrade = new ABJ_404_Solution_DatabaseUpgradeMultiSite($this, $componentDeps);
 		$this->schemaDiffUpgrade = new ABJ_404_Solution_DatabaseUpgradeSchemaDiff($this, $componentDeps);
+		$this->bootstrapUpgrade = new ABJ_404_Solution_DatabaseUpgradeBootstrap($this, $componentDeps);
 	}
 
 	/** @return self */
@@ -331,6 +329,12 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 			'ddlDeclaresIdColumn' => 'tableRepairUpgrade',
 			'recoverMissingLogsHitsTable' => 'tableRepairUpgrade',
 			'correctMatchData' => 'tableRepairUpgrade',
+			'createDatabaseTables' => 'bootstrapUpgrade',
+			'renameAbj404TablesToLowerCase' => 'bootstrapUpgrade',
+			'handleSpecificCases' => 'bootstrapUpgrade',
+			'discoverPermanentDDLFiles' => 'bootstrapUpgrade',
+			'runInitialCreateTables' => 'bootstrapUpgrade',
+			'applyPluginTableCharsetCollate' => 'bootstrapUpgrade',
 		];
 
 		if (isset($delegateMap[$method])) {
@@ -346,9 +350,11 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 		throw new BadMethodCallException("Database upgrade method not found: {$method}");
 	}
 
-	/** @return void */
-	private function refreshDatabaseUpgradeComponents() {
-		$componentDeps = [
+	/**
+	 * @return array<string, mixed>
+	 */
+	private function buildComponentDependencyMap(): array {
+		return [
 			'dao' => $this->dao,
 			'dbCore' => $this->dbCore,
 			'contentRepo' => $this->contentRepo,
@@ -362,6 +368,11 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 			'logic' => $this->logic,
 			'ngramFilter' => $this->ngramFilter,
 		];
+	}
+
+	/** @return void */
+	private function refreshDatabaseUpgradeComponents() {
+		$componentDeps = $this->buildComponentDependencyMap();
 
 		if (!$this->nGramUpgrade instanceof ABJ_404_Solution_DatabaseUpgradeNGram) {
 			$this->nGramUpgrade = new ABJ_404_Solution_DatabaseUpgradeNGram($this, $componentDeps);
@@ -387,6 +398,9 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 		if (!$this->schemaDiffUpgrade instanceof ABJ_404_Solution_DatabaseUpgradeSchemaDiff) {
 			$this->schemaDiffUpgrade = new ABJ_404_Solution_DatabaseUpgradeSchemaDiff($this, $componentDeps);
 		}
+		if (!$this->bootstrapUpgrade instanceof ABJ_404_Solution_DatabaseUpgradeBootstrap) {
+			$this->bootstrapUpgrade = new ABJ_404_Solution_DatabaseUpgradeBootstrap($this, $componentDeps);
+		}
 
 		foreach ([
 			$this->nGramUpgrade,
@@ -397,6 +411,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 			$this->orphanAdoptionUpgrade,
 			$this->multiSiteUpgrade,
 			$this->schemaDiffUpgrade,
+			$this->bootstrapUpgrade,
 		] as $component) {
 			$component->replaceDatabaseUpgradeDependencies($componentDeps);
 		}
@@ -464,243 +479,6 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 		return $this->invokeDatabaseUpgradeMethod($name, $arguments);
 	}
 
-	
-	/** Create the tables when the plugin is first activated.
-     * @param bool $updatingToNewVersion
-     * @return void
-     */
-    function createDatabaseTables($updatingToNewVersion = false, bool $force = false) {
-
-    	$synchronizedKeyFromUser = "create_db_tables";
-    	$uniqueID = null;
-
-    	if (!$force) {
-    		$uniqueID = $this->syncUtils->synchronizerAcquireLockTry($synchronizedKeyFromUser);
-
-    		if ($uniqueID == '' || $uniqueID == null) {
-    			$this->logger->debugMessage("Avoiding multiple calls for creating database tables.");
-    			return;
-    		}
-    	}
-
-    	// Fixed: Use finally block to ensure lock is ALWAYS released, even on fatal errors
-    	try {
-    		$this->reallyCreateDatabaseTables($updatingToNewVersion);
-
-    	} catch (\Exception $e) {
-    		$this->logger->errorMessage("Error creating database tables. ", $e);
-    		throw $e;  // Re-throw to propagate the error
-    	} finally {
-    		// Release the lock only if one was acquired (non-forced path).
-    		if ($uniqueID !== null && $uniqueID !== '') {
-    			$this->syncUtils->synchronizerReleaseLock($uniqueID, $synchronizedKeyFromUser);
-    		}
-    	}
-    }
-    
-    /**
-     * @param bool $updatingToNewVersion
-     * @return void
-     */
-    private function reallyCreateDatabaseTables($updatingToNewVersion = false) {
-    	if ($updatingToNewVersion) {
-    		$this->correctIssuesBefore();
-    	}
-
-    	// MULTISITE: Process current site immediately, schedule background task for remaining sites
-    	if ($this->isNetworkActivated() && !$updatingToNewVersion) {
-    		// Activation path: create tables for current site + schedule background for others.
-    		$currentBlogId = get_current_blog_id();
-    		$this->runInitialCreateTables();
-    		$this->correctCollations();
-    		$this->updateTableEngineToInnoDB();
-    		$this->createIndexes();
-
-    		// First chunk of the canonical_url backfill runs in-band so newly
-    		// upgraded small sites finish in one shot. Larger sites converge
-    		// over subsequent daily-maintenance cron ticks (same method).
-    		$this->backfillRedirectsCanonicalUrl();
-
-    		$this->logger->infoMessage(sprintf(
-    			"Network activation: Created tables for current site (ID %d). Scheduling background task for remaining sites.",
-    			$currentBlogId
-    		));
-
-    		$this->scheduleBackgroundMultisiteActivation($currentBlogId);
-
-    	} else if ($this->isNetworkActivated() && $updatingToNewVersion) {
-    		// Upgrade path on a network install: update tables for current site + schedule
-    		// background upgrade for other sites (so sub-site tables are also updated).
-    		$currentBlogId = get_current_blog_id();
-    		$this->runInitialCreateTables();
-    		$this->correctCollations();
-    		$this->updateTableEngineToInnoDB();
-    		$this->createIndexes();
-
-    		// First chunk of the canonical_url backfill runs in-band so newly
-    		// upgraded small sites finish in one shot. Larger sites converge
-    		// over subsequent daily-maintenance cron ticks (same method).
-    		$this->backfillRedirectsCanonicalUrl();
-
-    		$this->logger->infoMessage(sprintf(
-    			"Network upgrade: Updated tables for current site (ID %d). Scheduling background upgrade for remaining sites.",
-    			$currentBlogId
-    		));
-
-    		$this->scheduleBackgroundMultisiteUpgrade($currentBlogId);
-
-    	} else {
-    		// Single site (or non-network-activated): create/update tables for current site only.
-    		$this->runInitialCreateTables();
-    		$this->correctCollations();
-    		$this->updateTableEngineToInnoDB();
-    		$this->createIndexes();
-
-    		// First chunk of the canonical_url backfill runs in-band so newly
-    		// upgraded small sites finish in one shot. Larger sites converge
-    		// over subsequent daily-maintenance cron ticks (same method).
-    		$this->backfillRedirectsCanonicalUrl();
-    	}
-
-    	// Adopt orphaned tables AFTER target tables exist (rename handles prefix mismatches).
-    	$this->renameAbj404TablesToLowerCase();
-
-    	// we could do this only when a table is created or when the "meta" column is created
-    	// but it doesn't take long anyway so we do it every night.
-    	$this->permalinkCache->updatePermalinkCache(1);
-
-    	// One-time N-gram cache initialization (async via WP-Cron to prevent blocking)
-    	// MULTISITE: Use network-aware option getter to check initialization status
-    	if ($this->getNetworkAwareOption('abj404_ngram_cache_initialized') !== '1') {
-    		$this->logger->debugMessage("N-gram cache not initialized. Scheduling background build...");
-
-    		// Schedule async rebuild via WP-Cron instead of blocking activation
-    		$this->scheduleNGramCacheRebuild();
-
-    		// Show admin notice that build is scheduled
-    		if ($updatingToNewVersion && function_exists('add_settings_error')) {
-    			$context = is_multisite() && $this->isNetworkActivated() ? ' across all sites in the network' : '';
-    			$message = sprintf(
-    				__('404 Solution: N-gram spell check cache is being built in the background%s to optimize performance. This may take a few minutes on large sites.', '404-solution'),
-    				$context
-    			);
-    			add_settings_error('abj404_settings', 'ngram_cache_scheduled', $message, 'updated');
-    		}
-
-    		$this->logger->infoMessage("N-gram cache rebuild scheduled via WP-Cron.");
-    	} else {
-    		$this->logger->debugMessage("N-gram cache already initialized. Skipping rebuild.");
-    	}
-
-    	// Run one-time migration to relative paths (Issue #24)
-    	if (get_option('abj404_migrated_to_relative_paths') !== '1') {
-    		$migrationResults = $this->migrateURLsToRelativePaths();
-
-    		// Show admin notice if migration occurred
-            if ($updatingToNewVersion && is_array($migrationResults) && !empty($migrationResults['redirects_updated'])) {
-    			$rawRedirectsUpdated = $migrationResults['redirects_updated'];
-    			$redirectsUpdated = is_scalar($rawRedirectsUpdated) ? (int)$rawRedirectsUpdated : 0;
-    			$message = sprintf(
-    				_n(
-    					'404 Solution: Migrated %d redirect to subdirectory-independent format.',
-    					'404 Solution: Migrated %d redirects to subdirectory-independent format.',
-    					$redirectsUpdated,
-    					'404-solution'
-    				),
-    				$redirectsUpdated
-    			);
-    			if (function_exists('add_settings_error')) {
-    				add_settings_error('abj404_settings', 'migration_success', $message, 'updated');
-    			}
-    		}
-    	}
-
-    	if ($updatingToNewVersion) {
-    		$this->correctIssuesAfter();
-    	}
-    }
-
-    /**
-     * Makes all plugin table names lowercase, in case someone thought it was funny to use
-	 * the lower_case_table_names=0 setting. Also detects and adopts orphaned plugin tables
-	 * under old prefixes (from site migrations or the rename bug in v2.35.16–v3.x).
-     * @return void
-     */
-	function renameAbj404TablesToLowerCase() {
-		global $wpdb;
-
-		// On case-insensitive MySQL (lower_case_table_names >= 1), table names
-		// are already treated as lowercase internally. Renaming is pointless and
-		// can cause issues on some hosting setups.
-		// DAO-bypass-approved: Schema-bootstrap inside renameAbj404TablesToLowerCase() — runs before plugin DAO is fully wired during DB upgrades
-		$lctnResult = $wpdb->get_row("SHOW VARIABLES LIKE 'lower_case_table_names'", ARRAY_A);
-		if (is_array($lctnResult)) {
-			$lctnValue = null;
-			foreach ($lctnResult as $key => $value) {
-				if (strtolower((string)$key) === 'value') {
-					$lctnValue = $value;
-					break;
-				}
-			}
-			if ($lctnValue !== null && (int)$lctnValue >= 1) {
-				// MySQL already handles table names case-insensitively.
-				// Still run adoption check in case of prefix mismatch.
-				$this->adoptOrphanedTables();
-				return;
-			}
-		}
-
-		// Fetch all tables containing "abj404", case-insensitive
-		$dbNameRaw = $wpdb->dbname ?? '';
-		if ($dbNameRaw === '') {
-			$this->logger->warn("Could not determine database name for lowercase rename.");
-			return;
-		}
-		$dbNameEscaped = esc_sql($dbNameRaw);
-		$dbName = is_array($dbNameEscaped) ? '' : $dbNameEscaped;
-		$query = "SELECT table_name
-			FROM information_schema.tables
-			WHERE table_schema = '{$dbName}'
-			AND LOWER(table_name) LIKE '%abj404%'";
-		$results = $this->dbCore->queryAndGetResults($query);
-
-		if (!is_array($results['rows'])) {
-			$this->logger->warn("Could not query information_schema tables for lowercase rename.");
-			return;
-		}
-
-		foreach ($results['rows'] as $row) {
-			// Case-insensitive key lookup: MySQL drivers return information_schema
-			// column names in varying cases (table_name, TABLE_NAME, Table_Name).
-			$tableName = null;
-			foreach ($row as $key => $value) {
-					if (strtolower((string)$key) === 'table_name' && is_scalar($value)) {
-						$tableName = (string)$value;
-					break;
-				}
-			}
-
-			if (!empty($tableName)) {
-				$lowercaseName = strtolower($tableName);
-
-				// Check if the table name is already lowercase, skip if it is
-				if ($tableName !== $lowercaseName) {
-					// Rename the table to lowercase
-					$renameQuery = "RENAME TABLE `{$tableName}` TO `{$lowercaseName}`";
-					$this->dbCore->queryAndGetResults($renameQuery,
-						['ignore_errors' => ["already exists"]]);
-					$this->logger->infoMessage("Renamed table {$tableName} to {$lowercaseName}\n");
-				}
-			} else {
-				$this->logger->warn("I didn't find a table name in the results of this row: " .
-					print_r($row, true));
-			}
-		}
-
-		// After renaming, check for orphaned tables under old prefixes.
-		$this->adoptOrphanedTables();
-	}
-
 	/**
 	 * Number of rows updated per chunk by backfillRedirectsCanonicalUrl().
 	 * Sized so a single chunk completes well under the standard 60s query
@@ -728,7 +506,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 	 * holds a PHP-FPM worker for the duration. 15s caps worker-hold to a
 	 * window short enough that concurrent visitors are unlikely to notice
 	 * worker-pool pressure on shared hosts. Daily cron uses the same budget
-	 * so convergence math (~25K-75K rows per invocation) is consistent.
+	 * so convergence math (about 25K to 75K rows per invocation) is consistent.
 	 */
 	const LOGSV2_CANONICAL_URL_BACKFILL_TIME_BUDGET_SEC = 15;
 
@@ -737,12 +515,12 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 	 * confirms zero NULL rows remain on logsv2.canonical_url. Once set, the
 	 * read-side query can drop the COALESCE fallback and use the no-COALESCE
 	 * form ("logsv2.canonical_url = redirects.canonical_url"); the planner
-	 * picks the smaller side as driver and skips the Filter step (~17,000x
-	 * cost reduction vs the COALESCE form per the redirects-temp-table-perf
-	 * writeup).
+	 * picks the smaller side as driver and skips the Filter step (about
+	 * 17,000x cost reduction vs the COALESCE form per the
+	 * redirects-temp-table-perf writeup).
 	 *
 	 * Stored as autoload=false so the option doesn't bloat the autoloaded
-	 * options blob on every request — read on the captured-404s render path
+	 * options blob on every request. Read on the captured-404s render path
 	 * only, which already triggers wp_cache lookups for related options.
 	 */
 	const LOGSV2_CANONICAL_URL_BACKFILL_COMPLETE_OPTION = 'abj404_logsv2_canonical_url_backfill_complete';
@@ -763,198 +541,4 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 		'abj404_engine_profiles',
 		'abj404_view_cache',
 	];
-
-	/** When certain columns are created we have to populate data.
-     * @param string $tableName
-     * @param string $colName
-     * @return void
-     */
-	    function handleSpecificCases($tableName, $colName) {
-	    	if (empty($tableName) || !is_string($tableName)) {
-	    		return;
-	    	}
-
-	    	if (strpos($tableName, 'abj404_logsv2') !== false && $colName == 'min_log_id') {
-	    		global $wpdb;
-	    		$query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/logsSetMinLogID.sql");
-	    		$this->dbCore->queryAndGetResults($query);
-            // Ensure composite index exists after backfilling min_log_id.
-            $this->ensureLogsCompositeIndex($tableName);
-    	}
-    	if (strpos($tableName, 'abj404_permalink_cache') !== false && $colName == 'url_length') {
-    		// clear the permalink cache so that the url length column will be populated.
-    		// this could be more efficient but I'll assume that's not necessary.
-    		$this->contentRepo->truncatePermalinkCacheTable();
-    	}
-    }
-    
-	    /**
-	     * Discover all permanent (non-Temp) DDL files and extract table metadata.
-	     *
-	     * @return array<int, array{placeholder: string, bareTableName: string, ddlContent: string}>
-	     */
-	    function discoverPermanentDDLFiles(): array {
-	    	$sqlDir = __DIR__ . '/sql';
-	    	$files = glob($sqlDir . '/create*Table.sql');
-	    	if (!is_array($files)) {
-	    		$files = [];
-	    	}
-	    	sort($files);
-
-	    	$result = [];
-	    	foreach ($files as $file) {
-	    		if (stripos(basename($file), 'Temp') !== false) {
-	    			continue;
-	    		}
-	    		$ddlContent = ABJ_404_Solution_Functions::readFileContents($file);
-	    		if (!is_string($ddlContent) || trim($ddlContent) === '') {
-	    			continue;
-	    		}
-	    		if (!preg_match('/\{(wp_(abj404_\w+))\}/', $ddlContent, $m)) {
-	    			continue;
-	    		}
-	    		// Transient staged-build tables (view_build, view_done, view_deleteme)
-	    		// are owned by ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait.
-	    		// stageCreateBuildTable() creates view_build on demand, stageRenameSwap()
-	    		// renames it to view_done, and view_deleteme is the ephemeral previous-
-	    		// generation served table that gets dropped right after the swap. None
-	    		// of them should participate in the permanent-DDL bootstrap, repair, or
-	    		// missing-table check loops. Their absence between builds is normal,
-	    		// not a corruption signal.
-	    		if (in_array($m[2], array('abj404_view_build', 'abj404_view_done', 'abj404_view_deleteme'), true)) {
-	    			continue;
-	    		}
-	    		$result[] = [
-	    			'placeholder' => '{' . $m[1] . '}',
-	    			'bareTableName' => $m[2],
-	    			'ddlContent' => $ddlContent,
-	    		];
-	    	}
-	    	return $result;
-	    }
-
-	    /** @return void */
-	    function runInitialCreateTables() {
-	    	// Re-add a stripped `id` PRIMARY KEY (via ALTER) BEFORE any CREATE TABLE
-	    	// IF NOT EXISTS runs.  Without this step, an existing-but-broken table
-	    	// (missing the file's `id` PRIMARY KEY) would survive the IF NOT EXISTS
-	    	// check and verifyColumns would only ALTER ADD the missing non-PK
-	    	// columns, leaving the table without its primary key.  Lives here (not
-	    	// just in correctIssuesBefore) so cron callers of createDatabaseTables()
-	    	// — which don't pass the $updatingToNewVersion flag — also repair
-	    	// stripped tables instead of propagating the broken state.
-	    	$this->repairStrippedViewCacheTable();
-
-	    	foreach ($this->discoverPermanentDDLFiles() as $ddlEntry) {
-	    		$query = $this->applyPluginTableCharsetCollate($ddlEntry['ddlContent']);
-	    		$this->dbCore->queryAndGetResults($query);
-
-	    		$tableName = $this->dbCore->doTableNameReplacements($ddlEntry['placeholder']);
-
-	    		// Per-table post-CREATE verification: confirm the table actually
-	    		// exists on disk. queryAndGetResults logs SQL errors generically,
-	    		// but a silently-failing CREATE (concurrent DROP, swallowed parse
-	    		// error, prefix drift, or insufficient privileges) is invisible
-	    		// without an explicit existence check. Log per-table so the debug
-	    		// log identifies which DDL didn't materialize and why downstream
-	    		// auto-repair attempts will keep failing.
-	    		if (!$this->verifyTableMaterialized($tableName, $ddlEntry['placeholder'])) {
-	    			// Don't abort the loop — other tables can still get created.
-	    			continue;
-	    		}
-
-	    		// Targeted online-DDL column add(s) before the generic verifyColumns()
-	    		// flow runs a bare ALTER. On large logsv2 tables (multi-GB on
-	    		// busy sites) bare ADD COLUMN can block the table for tens of
-	    		// seconds; the targeted helper uses ALGORITHM=INPLACE, LOCK=NONE
-	    		// so InnoDB ≥ 5.6 picks the lockless online-DDL path. If the
-	    		// engine doesn't support it the helper falls back silently and
-	    		// verifyColumns() picks up the column add as a safety net.
-	    		if ($ddlEntry['bareTableName'] === 'abj404_logsv2') {
-	    			$this->ensureLogsv2CanonicalUrlColumn($tableName);
-	    		}
-	    		// Same logic for the redirects side. canonical_url is required by
-	    		// setupRedirect() and was added in 4.1.11; on a small fraction of
-	    		// sites dbDelta silently fails to add it, so every captured 404
-	    		// emits "Unknown column 'canonical_url' in 'field list'" until
-	    		// verifyColumns eventually retries. Eagerly running the targeted
-	    		// add closes that window.
-	    		if ($ddlEntry['bareTableName'] === 'abj404_redirects') {
-	    			$this->ensureRedirectsCanonicalUrlColumn($tableName);
-	    		}
-
-	    		$this->verifyColumns($tableName, $query);
-	    	}
-
-	    	// Table-specific post-creation steps.
-	    	$logsTable = $this->dbCore->doTableNameReplacements("{wp_abj404_logsv2}");
-	    	$this->ensureLogsCompositeIndex($logsTable);
-
-	    	// Mark view cache table as ensured so ensureViewSnapshotTableExists() skips redundant DDL.
-	    	ABJ_404_Solution_ViewReadService::setViewSnapshotTableEnsured(true);
-	    }
-
-	    /**
-	     * Verify that a CREATE TABLE actually materialized the named table on disk.
-	     * Returns true if the table exists, false (and logs a per-table error) if not.
-	     *
-	     * Distinguishes silently-failing CREATEs from generic SQL errors so the
-	     * debug log identifies which specific DDL didn't materialize. Common causes:
-	     * concurrent DROP from a parallel cron, SQL parse error swallowed by
-	     * queryAndGetResults, prefix drift between request and table_prefix in
-	     * wp-config, or missing CREATE TABLE privileges on the DB user.
-	     *
-	     * @param string $tableName  Fully-qualified table name (with prefix).
-	     * @param string $placeholder Original placeholder (e.g. "{wp_abj404_redirects}") for diagnostic context.
-	     * @return bool True if table exists post-CREATE, false otherwise.
-	     */
-	    private function verifyTableMaterialized(string $tableName, string $placeholder): bool {
-	    	global $wpdb;
-	    	if (!isset($wpdb)) {
-	    		return false;
-	    	}
-	    	// @utf8-audit: opt-out — $tableName is fully-qualified plugin table
-	    	// name from doTableNameReplacements / $wpdb->prefix; never user input.
-	    	// DAO-bypass-approved: Schema-bootstrap inside verifyTableMaterialized() — verifies CREATE TABLE actually materialized; DAO timeout wrapper is irrelevant for DDL existence probe
-	    	$found = $wpdb->get_var("SHOW TABLES LIKE '" . esc_sql($tableName) . "'");
-	    	if ($found === $tableName) {
-	    		return true;
-	    	}
-	    	$this->logger->errorMessage(
-	    		"CREATE TABLE did not materialize '" . $tableName . "' "
-	    		. "(placeholder " . $placeholder . "). "
-	    		. "Table is still missing on disk after CREATE TABLE IF NOT EXISTS ran. "
-	    		. "Likely causes: concurrent DROP from a parallel request, "
-	    		. "SQL parse error suppressed by queryAndGetResults, "
-	    		. "prefix mismatch between request and wp-config table_prefix, "
-	    		. "or insufficient CREATE TABLE privileges on the DB user."
-	    	);
-	    	return false;
-	    }
-
-	    /**
-	     * @param string $createTableSql
-	     * @return string
-	     */
-	    function applyPluginTableCharsetCollate($createTableSql) {
-	    	global $wpdb;
-	    	if (!is_string($createTableSql) || $createTableSql === '') {
-	    		return $createTableSql;
-	    	}
-
-	    	// Always prefer utf8mb4 for plugin tables, regardless of site defaults.
-	    	$collate = 'utf8mb4_unicode_ci';
-	    	if (!empty($wpdb->collate) && stripos($wpdb->collate, 'utf8mb4') !== false) {
-	    		$collate = $wpdb->collate;
-	    	}
-
-	    	$createTableSql = str_replace('{COLLATION}', $collate, $createTableSql);
-	    	// If the statement already specifies charset/collation, don't override.
-	    	if (preg_match('/\b(?:default\s+)?(?:character\s+set|charset|collate)\b/i', $createTableSql)) {
-	    		return $createTableSql;
-	    	}
-	    	
-	    	return rtrim($createTableSql) . " DEFAULT CHARACTER SET utf8mb4 COLLATE {$collate}";
-	    }
-
 }

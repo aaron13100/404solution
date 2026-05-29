@@ -38,6 +38,7 @@ return array(
     'ABJ_404_Solution_DatabaseUpgradeOrphanAdoption' => $base . 'includes/DatabaseUpgradeOrphanAdoption.php',
     'ABJ_404_Solution_DatabaseUpgradeMultiSite' => $base . 'includes/DatabaseUpgradeMultiSite.php',
     'ABJ_404_Solution_DatabaseUpgradeSchemaDiff' => $base . 'includes/DatabaseUpgradeSchemaDiff.php',
+    'ABJ_404_Solution_DatabaseUpgradeBootstrap' => $base . 'includes/DatabaseUpgradeBootstrap.php',
     'ABJ_404_Solution_PluginLogicAdminActions' => $base . 'includes/PluginLogicAdminActions.php',
     'ABJ_404_Solution_PluginLogicImportExport' => $base . 'includes/PluginLogicImportExport.php',
     'ABJ_404_Solution_PluginLogicLifecycle' => $base . 'includes/PluginLogicLifecycle.php',

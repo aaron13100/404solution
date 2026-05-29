@@ -24,6 +24,17 @@ if (!defined('ABSPATH')) {
  * @method mixed cleanupOrphanedNGrams()
  * @method mixed handleSpecificCases(string $tableName, string $colName)
  * @method string applyPluginTableCharsetCollate(string $createTableSql)
+ * @method bool isNetworkActivated()
+ * @method mixed scheduleBackgroundMultisiteActivation(int $alreadyProcessedBlogId)
+ * @method mixed scheduleBackgroundMultisiteUpgrade(int $alreadyProcessedBlogId)
+ * @method mixed getNetworkAwareOption(string $option_name, mixed $default = false)
+ * @method mixed scheduleNGramCacheRebuild()
+ * @method mixed migrateURLsToRelativePaths()
+ * @method mixed ensureLogsCompositeIndex(string $logsTable, ?string $createSqlOverride = null)
+ * @method mixed repairStrippedViewCacheTable()
+ * @method mixed ensureLogsv2CanonicalUrlColumn(string $logsTable)
+ * @method mixed ensureRedirectsCanonicalUrlColumn(string $redirectsTable)
+ * @method mixed verifyColumns(string $tableName, string $createTableStatementGoal)
  */
 abstract class ABJ_404_Solution_DatabaseUpgradeComponent {
 
@@ -121,6 +132,14 @@ abstract class ABJ_404_Solution_DatabaseUpgradeComponent {
                     || !method_exists($this, $method)) {
                 return $ownerMethod->invokeArgs($this->owner, $args);
             }
+        }
+
+        // Method is not a real method on owner or self. If owner can route it
+        // through its delegate map (another sub-component owns it), prefer that
+        // over a self-only lookup. Falls back to self for cases where neither
+        // routes the call.
+        if (!method_exists($this, $method)) {
+            return $this->owner->invokeDatabaseUpgradeMethod($method, $args);
         }
 
         return $this->invokeDatabaseUpgradeMethod($method, $args);
