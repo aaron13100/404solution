@@ -167,11 +167,13 @@ class ABJ_404_Solution_View_Stats extends ABJ_404_Solution_ViewComponent {
         // Query score distribution bands. Route through the DAO so the
         // 5x SUM(CASE...) aggregate inherits the centralized 60s SELECT
         // timeout — the redirects table can be very large on busy sites.
+        $high = ABJ_404_Solution_ScoreThresholds::HIGH;
+        $medium = ABJ_404_Solution_ScoreThresholds::MEDIUM;
         $sql = "SELECT
                SUM(CASE WHEN score IS NULL THEN 1 ELSE 0 END) AS manual_count,
-               SUM(CASE WHEN score >= 80 THEN 1 ELSE 0 END) AS high_count,
-               SUM(CASE WHEN score >= 50 AND score < 80 THEN 1 ELSE 0 END) AS medium_count,
-               SUM(CASE WHEN score IS NOT NULL AND score < 50 THEN 1 ELSE 0 END) AS low_count,
+               SUM(CASE WHEN score >= {$high} THEN 1 ELSE 0 END) AS high_count,
+               SUM(CASE WHEN score >= {$medium} AND score < {$high} THEN 1 ELSE 0 END) AS medium_count,
+               SUM(CASE WHEN score IS NOT NULL AND score < {$medium} THEN 1 ELSE 0 END) AS low_count,
                AVG(score) AS avg_score
              FROM `{$redirectsTable}`
              WHERE disabled = %d AND status != %d";

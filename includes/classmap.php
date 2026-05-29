@@ -83,6 +83,7 @@ return array(
     'ABJ_404_Solution_View_UI' => $base . 'includes/View_UI.php',
     'ABJ_404_Solution_ViewReadRuntimeState' => $base . 'includes/ViewReadRuntimeState.php',
     'ABJ_404_Solution_ViewQueryBuilder' => $base . 'includes/ViewQueryBuilder.php',
+    'ABJ_404_Solution_ScoreThresholds' => $base . 'includes/ScoreThresholds.php',
     'ABJ_404_Solution_ViewDiagnostics' => $base . 'includes/ViewDiagnostics.php',
     'ABJ_404_Solution_ViewCacheInvalidator' => $base . 'includes/ViewCacheInvalidator.php',
     'ABJ_404_Solution_ViewSnapshotCache' => $base . 'includes/ViewSnapshotCache.php',

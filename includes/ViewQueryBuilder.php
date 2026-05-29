@@ -78,6 +78,45 @@ class ABJ_404_Solution_ViewQueryBuilder {
     }
 
     /**
+     * Build the SQL fragment that filters by score-confidence band.
+     *
+     * Returns one of (no leading space; caller controls spacing):
+     *   high:   "AND <alias>score >= 80"
+     *   medium: "AND <alias>score >= 50 AND <alias>score < 80"
+     *   low:    "AND <alias>score IS NOT NULL AND <alias>score < 50"
+     *   manual: "AND <alias>score IS NULL"
+     *   anything else (e.g. 'all', ''): ""
+     *
+     * Thresholds come from ABJ_404_Solution_ScoreThresholds (single source of truth,
+     * shared with View_Stats).
+     *
+     * @param array<string, mixed> $tableOptions caller's options array; reads 'score_range' key
+     * @param string $columnPrefix qualifier to put in front of the column name (e.g.
+     *     "wp_abj404_redirects." for queries that join against an alias, "" for queries
+     *     that select FROM the redirects table by itself).
+     * @return string SQL fragment (possibly empty).
+     */
+    private function buildScoreRangeClause(array $tableOptions, string $columnPrefix): string {
+        $rawScoreRange = $tableOptions['score_range'] ?? 'all';
+        $scoreRange = is_string($rawScoreRange) ? $rawScoreRange : 'all';
+        $col = $columnPrefix . 'score';
+        $high = (int) ABJ_404_Solution_ScoreThresholds::HIGH;
+        $medium = (int) ABJ_404_Solution_ScoreThresholds::MEDIUM;
+        switch ($scoreRange) {
+            case ABJ_404_Solution_ScoreThresholds::RANGE_HIGH:
+                return 'AND ' . $col . ' >= ' . $high;
+            case ABJ_404_Solution_ScoreThresholds::RANGE_MEDIUM:
+                return 'AND ' . $col . ' >= ' . $medium . ' AND ' . $col . ' < ' . $high;
+            case ABJ_404_Solution_ScoreThresholds::RANGE_LOW:
+                return 'AND ' . $col . ' IS NOT NULL AND ' . $col . ' < ' . $medium;
+            case ABJ_404_Solution_ScoreThresholds::MANUAL:
+                return 'AND ' . $col . ' IS NULL';
+            default:
+                return '';
+        }
+    }
+
+    /**
      * @return string Fully-replaced SQL (table-name placeholders resolved).
      */
     public function buildHighImpactCapturedCountQuery(): string {
@@ -141,14 +180,7 @@ class ABJ_404_Solution_ViewQueryBuilder {
 
         $trashValue = ($tableOptions['filter'] == ABJ404_TRASH_FILTER) ? 1 : 0;
 
-        $scoreRangeClause = '';
-        $rawScoreRange = is_string($tableOptions['score_range'] ?? '') ? ($tableOptions['score_range'] ?? 'all') : 'all';
-        switch ($rawScoreRange) {
-            case 'high': $scoreRangeClause = 'AND wp_abj404_redirects.score >= 80'; break; // allow-prefix-literal: SQL alias, see comment above
-            case 'medium': $scoreRangeClause = 'AND wp_abj404_redirects.score >= 50 AND wp_abj404_redirects.score < 80'; break; // allow-prefix-literal: SQL alias
-            case 'low': $scoreRangeClause = 'AND wp_abj404_redirects.score IS NOT NULL AND wp_abj404_redirects.score < 50'; break; // allow-prefix-literal: SQL alias
-            case 'manual': $scoreRangeClause = 'AND wp_abj404_redirects.score IS NULL'; break; // allow-prefix-literal: SQL alias
-        }
+        $scoreRangeClause = $this->buildScoreRangeClause($tableOptions, 'wp_abj404_redirects.'); // allow-prefix-literal: SQL alias bound by FROM clause
 
         $query = "SELECT COUNT(*) AS count\n" .
                  "FROM {wp_abj404_redirects} wp_abj404_redirects\n" . // allow-prefix-literal: second token is the SQL alias name, not a table reference
@@ -254,24 +286,7 @@ class ABJ_404_Solution_ViewQueryBuilder {
                 ", wp_abj404_redirects.url ASC, wp_abj404_redirects.id " . $order; // allow-prefix-literal: SQL alias bound by `FROM {wp_abj404_redirects} wp_abj404_redirects`
         }
 
-        $rawScoreRange = is_string($tableOptions['score_range'] ?? '') ? ($tableOptions['score_range'] ?? 'all') : 'all';
-        switch ($rawScoreRange) {
-            case 'high':
-                $scoreRangeClause = 'AND wp_abj404_redirects.score >= 80'; // allow-prefix-literal: SQL alias
-                break;
-            case 'medium':
-                $scoreRangeClause = 'AND wp_abj404_redirects.score >= 50 AND wp_abj404_redirects.score < 80'; // allow-prefix-literal: SQL alias
-                break;
-            case 'low':
-                $scoreRangeClause = 'AND wp_abj404_redirects.score IS NOT NULL AND wp_abj404_redirects.score < 50'; // allow-prefix-literal: SQL alias
-                break;
-            case 'manual':
-                $scoreRangeClause = 'AND wp_abj404_redirects.score IS NULL'; // allow-prefix-literal: SQL alias
-                break;
-            default:
-                $scoreRangeClause = '';
-                break;
-        }
+        $scoreRangeClause = $this->buildScoreRangeClause($tableOptions, 'wp_abj404_redirects.'); // allow-prefix-literal: SQL alias bound by FROM clause
 
         $searchFilterForRedirectsExists = "no redirects fiter text found";
         $searchFilterForCapturedExists = "no captured 404s filter text found";
@@ -368,15 +383,7 @@ class ABJ_404_Solution_ViewQueryBuilder {
         $trashValue = ($tableOptions['filter'] ?? 0) == ABJ404_TRASH_FILTER ? 1 : 0;
         $trashClause = 'AND disabled = ' . intval($trashValue);
 
-        $rawScoreRange = $tableOptions['score_range'] ?? 'all';
-        $scoreRange = is_string($rawScoreRange) ? $rawScoreRange : 'all';
-        $scoreRangeClause = '';
-        switch ($scoreRange) {
-            case 'high':   $scoreRangeClause = 'AND score >= 80'; break;
-            case 'medium': $scoreRangeClause = 'AND score >= 50 AND score < 80'; break;
-            case 'low':    $scoreRangeClause = 'AND score IS NOT NULL AND score < 50'; break;
-            case 'manual': $scoreRangeClause = 'AND score IS NULL'; break;
-        }
+        $scoreRangeClause = $this->buildScoreRangeClause($tableOptions, '');
 
         $rawFilterText = $tableOptions['filterText'] ?? '';
         $rawFilterText = is_string($rawFilterText) ? $rawFilterText : '';
@@ -439,15 +446,7 @@ class ABJ_404_Solution_ViewQueryBuilder {
         $trashValue = ($tableOptions['filter'] ?? 0) == ABJ404_TRASH_FILTER ? 1 : 0;
         $trashClause = 'AND disabled = ' . intval($trashValue);
 
-        $rawScoreRange = $tableOptions['score_range'] ?? 'all';
-        $scoreRange = is_string($rawScoreRange) ? $rawScoreRange : 'all';
-        $scoreRangeClause = '';
-        switch ($scoreRange) {
-            case 'high':   $scoreRangeClause = 'AND score >= 80'; break;
-            case 'medium': $scoreRangeClause = 'AND score >= 50 AND score < 80'; break;
-            case 'low':    $scoreRangeClause = 'AND score IS NOT NULL AND score < 50'; break;
-            case 'manual': $scoreRangeClause = 'AND score IS NULL'; break;
-        }
+        $scoreRangeClause = $this->buildScoreRangeClause($tableOptions, '');
 
         $rawFilterText = $tableOptions['filterText'] ?? '';
         $rawFilterText = is_string($rawFilterText) ? $rawFilterText : '';
