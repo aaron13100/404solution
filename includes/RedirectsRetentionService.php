@@ -205,7 +205,7 @@ class ABJ_404_Solution_RedirectsRetentionService implements ABJ_404_Solution_Red
 
         $this->dbCore->ensureConnection();
 
-        $tempFile = $abj404logic->getExportFilename();
+        $tempFile = $abj404logic->importExport()->getExportFilename();
         if (file_exists($tempFile)) {
             ABJ_404_Solution_Functions::safeUnlink($tempFile);
         }

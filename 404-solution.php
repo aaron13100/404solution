@@ -1660,7 +1660,7 @@ function abj404_loadSomethingWhenWordPressIsReady() {
 	if ($isAdminRequest && $action === 'exportRedirects') {
 	    require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
 		$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
-		$abj404logic->handleActionExport();
+		$abj404logic->adminActions()->handleActionExport();
 	}
 }
 }
