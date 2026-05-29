@@ -10,6 +10,7 @@ require_once __DIR__ . '/DatabaseConnectionManager.php';
 require_once __DIR__ . '/DatabaseQueryTimeoutManager.php';
 require_once __DIR__ . '/DatabaseErrorClassifier.php';
 require_once __DIR__ . '/DatabaseSqlErrorReporter.php';
+require_once __DIR__ . '/DatabaseTableNameResolver.php';
 
 /**
  * Shared database infrastructure: query execution, error recovery, timeouts,
@@ -45,6 +46,9 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
 
     /** @var ABJ_404_Solution_DatabaseSqlErrorReporter */
     private $sqlErrorReporter;
+
+    /** @var ABJ_404_Solution_DatabaseTableNameResolver */
+    private $tableNameResolver;
 
     /** @var bool Prevent recursive auto-repair attempts on SQL errors. */
     private static $tableRepairInProgress = false;
@@ -82,6 +86,12 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
         $this->queryTimeoutManager = new ABJ_404_Solution_DatabaseQueryTimeoutManager($this, $this->logger);
         $this->errorClassifier = new ABJ_404_Solution_DatabaseErrorClassifier($this, $this->f, $this->logger);
         $this->sqlErrorReporter = new ABJ_404_Solution_DatabaseSqlErrorReporter($this, $this->logger);
+        $this->tableNameResolver = new ABJ_404_Solution_DatabaseTableNameResolver(
+            $this->f,
+            function (string $query, array $options): array {
+                return $this->queryAndGetResults($query, $options);
+            }
+        );
     }
 
     /**
@@ -383,13 +393,7 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
      * @return bool
      */
     public function tableExists($tableName): bool {
-        global $wpdb;
-        if (!isset($wpdb)) {
-            return false;
-        }
-        // @utf8-audit: opt-out — tableExists receives system-generated plugin table names from DAO/core callers.
-        $table = $wpdb->get_var("SHOW TABLES LIKE '" . esc_sql($tableName) . "'");
-        return ($table == $tableName);
+        return $this->tableNameResolver->tableExists($tableName);
     }
 
     /**
@@ -399,16 +403,7 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
      * @return array<int, string>
      */
     public function getTableColumnNames(string $tableName): array {
-        global $wpdb;
-        if (!isset($wpdb) || !is_object($wpdb) || !is_callable(array($wpdb, 'get_results'))) { return []; }
-        // @utf8-audit: opt-out — getTableColumnNames receives system-generated plugin table names only.
-        $rows = $wpdb->get_results("SHOW COLUMNS FROM `" . esc_sql($tableName) . "`", ARRAY_A);
-        if (!is_array($rows) || !empty($wpdb->last_error)) { return []; }
-        $columns = [];
-        foreach ($rows as $row) {
-            if (isset($row['Field'])) { $columns[] = $row['Field']; }
-        }
-        return $columns;
+        return $this->tableNameResolver->getTableColumnNames($tableName);
     }
 
     /**
@@ -416,40 +411,12 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
      * @return string
      */
     public function doTableNameReplacements($query): string {
-        global $wpdb;
-
-        $replacements = array();
-        $tables = (isset($wpdb->tables) && is_array($wpdb->tables)) ? $wpdb->tables : array();
-        $prefix = isset($wpdb->prefix) ? $wpdb->prefix : 'wp_';
-        foreach ($tables as $tableName) {
-            $replacements['{wp_' . $tableName . '}'] = $prefix . $tableName;
-        }
-        $replacements['{wp_users}'] = isset($wpdb->users) ? $wpdb->users : ($prefix . 'users');
-        $replacements['{wp_prefix}'] = $prefix;
-        $replacements['{wp_prefix_lower}'] = $this->getLowercasePrefix();
-
-        $wpdbCollate = 'utf8mb4_unicode_ci';
-        if (isset($wpdb->collate) && !empty($wpdb->collate)) {
-            $sanitized = preg_replace('/[^A-Za-z0-9_]/', '', $wpdb->collate);
-            if ($sanitized !== '' && $sanitized !== null) {
-                $wpdbCollate = $sanitized;
-            }
-        }
-        $replacements['{wpdb_collate}'] = $wpdbCollate;
-
-        $query = $this->f->str_replace(array_keys($replacements), array_values($replacements), $query);
-
-        $fpreg = ABJ_404_Solution_FunctionsPreg::getInstance();
-        $query = $fpreg->regexReplace('[{]wp_abj404_(.*?)[}]',
-            $this->getLowercasePrefix() . "abj404_\\1", $query);
-
-        return $query !== null ? $query : '';
+        return $this->tableNameResolver->doTableNameReplacements($query);
     }
 
     /** @return string */
     public function getLowercasePrefix(): string {
-        global $wpdb;
-        return $this->f->strtolower($wpdb->prefix ?? 'wp_');
+        return $this->tableNameResolver->getLowercasePrefix();
     }
 
     /**
@@ -457,7 +424,7 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
      * @return string
      */
     public function getPrefixedTableName($tableSuffix): string {
-        return $this->getLowercasePrefix() . ltrim($tableSuffix, '_');
+        return $this->tableNameResolver->getPrefixedTableName($tableSuffix);
     }
 
     /**
@@ -465,15 +432,7 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
      * @return string
      */
     public function getCreateTableDDL($tableName): string {
-        $query = "show create table " . $tableName;
-        $result = $this->queryAndGetResults($query, array('log_errors' => false, 'skip_repair' => true));
-        $rows = $result['rows'];
-        if (!is_array($rows) || empty($rows) || !isset($rows[0]) || !is_array($rows[0])) {
-            return '';
-        }
-        $row1 = array_values($rows[0]);
-        $existingTableSQL = $row1[1];
-        return $existingTableSQL;
+        return $this->tableNameResolver->getCreateTableDDL($tableName);
     }
 
     /**
@@ -481,13 +440,7 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
      * @return string
      */
     public function buildPostTypeSqlList(array $options): string {
-        $rptVal = $options['recognized_post_types'] ?? '';
-        $postTypes = $this->f->explodeNewline(is_string($rptVal) ? $rptVal : '');
-        $recognizedPostTypes = '';
-        foreach ($postTypes as $postType) {
-            $recognizedPostTypes .= "'" . trim($this->f->strtolower($postType)) . "', ";
-        }
-        return rtrim($recognizedPostTypes, ", ");
+        return $this->tableNameResolver->buildPostTypeSqlList($options);
     }
 
     /**
@@ -495,21 +448,12 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
      * @return string
      */
     public function buildCategorySqlList(array $options): string {
-        $rcVal = $options['recognized_categories'] ?? '';
-        $categories = $this->f->explodeNewline(is_string($rcVal) ? $rcVal : '');
-        $recognizedCategories = '';
-        foreach ($categories as $category) {
-            $recognizedCategories .= "'" . trim($this->f->strtolower($category)) . "', ";
-        }
-        return rtrim($recognizedCategories, ", ");
+        return $this->tableNameResolver->buildCategorySqlList($options);
     }
 
     /** @return void */
     public function setSqlBigSelects(): void {
-        $ignoreErrorsOptions = array('log_errors' => false);
-        $this->queryAndGetResults("set session max_join_size = 18446744073709551615",
-            $ignoreErrorsOptions);
-        $this->queryAndGetResults("set session sql_big_selects = 1", $ignoreErrorsOptions);
+        $this->tableNameResolver->setSqlBigSelects();
     }
 
     /**
