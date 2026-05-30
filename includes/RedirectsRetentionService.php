@@ -205,7 +205,7 @@ class ABJ_404_Solution_RedirectsRetentionService implements ABJ_404_Solution_Red
 
         $this->dbCore->ensureConnection();
 
-        $tempFile = $abj404logic->getExportFilename();
+        $tempFile = $abj404logic->importExport()->getExportFilename();
         if (file_exists($tempFile)) {
             ABJ_404_Solution_Functions::safeUnlink($tempFile);
         }
@@ -279,7 +279,7 @@ class ABJ_404_Solution_RedirectsRetentionService implements ABJ_404_Solution_Red
                 $message .= ', The admin email notification option is skipped for user '
                         . 'initiated maintenance runs.';
             } else {
-                $message .= ', ' . $abj404logic->emailCaptured404Notification();
+                $message .= ', ' . $abj404logic->pageOrdering()->emailCaptured404Notification();
             }
         } else {
             $message .= ', Admin email notification option turned off.';

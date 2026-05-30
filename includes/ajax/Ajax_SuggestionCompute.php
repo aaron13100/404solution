@@ -163,7 +163,7 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
         $logger->debugMessage("Ajax_SuggestionCompute: Starting computation for " . esc_html($requestedURL));
 
         // Extract URL slug for spell checking
-        $urlSlugOnly = $abj404logic->removeHomeDirectory($requestedURL);
+        $urlSlugOnly = $abj404logic->urlNormalization()->removeHomeDirectory($requestedURL);
 
         // Get options for suggestion settings
         $options = $abj404logic->getOptions();

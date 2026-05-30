@@ -152,7 +152,7 @@ class ABJ_404_Solution_Ajax_Php {
 			return; // @phpstan-ignore deadCode.unreachable
 		}
 
-		$result = $abj404logic->updateOptionsFromPOST();
+		$result = $abj404logic->settingsUpdate()->updateOptionsFromPOST();
 		if (!is_array($result) || !array_key_exists('success', $result)) {
 			// No underlying cause to surface: this is a developer-side contract
 			// violation (updateOptionsFromPOST() must return ['success'=>bool,...]).
@@ -393,7 +393,7 @@ class ABJ_404_Solution_Ajax_Php {
         // Query to get the posts and pages matching the search term
         $rowsOtherTypes = $contentRepository->getPublishedPagesAndPostsIDs('', $term, (string)ABJ404_MAX_AJAX_DROPDOWN_SIZE);
         // order the results. this also sets the page depth (for child pages).
-        $rowsOtherTypes = $abj404logic->orderPageResults($rowsOtherTypes, true);
+        $rowsOtherTypes = $abj404logic->pageOrdering()->orderPageResults($rowsOtherTypes, true);
         /** @var array<int, object{post_title: string, post_type: string, id: int|string, depth: int|string}> $rowsOtherTypesTyped */
         $rowsOtherTypesTyped = $rowsOtherTypes;
         $publishedPosts = $abj404AjaxPhp->formatRedirectDestinations($rowsOtherTypesTyped);
@@ -408,7 +408,7 @@ class ABJ_404_Solution_Ajax_Php {
 
         /** @var array<int, object{taxonomy: string, name: string, term_id: int|string}> $catsForCustom */
         $catsForCustom = $cats;
-        $customCategoriesMap = $abj404logic->getMapOfCustomCategories($catsForCustom);
+        $customCategoriesMap = $abj404logic->pageOrdering()->getMapOfCustomCategories($catsForCustom);
         /** @var array<string, array<int, object{name: string, term_id: int|string}>> $customCategoriesMapTyped */
         $customCategoriesMapTyped = $customCategoriesMap;
         $customCategoryOptions = $abj404AjaxPhp->formatCustomCategoryDestinations($customCategoriesMapTyped);
