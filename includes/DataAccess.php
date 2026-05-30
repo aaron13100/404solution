@@ -49,35 +49,6 @@ require_once __DIR__ . '/PluginUpdateMetadataRepository.php';
  * everything $wpdb related.
  * everything $_GET, $_POST, (etc) related.
  * Read the database, Store to the database,
- *
- * The following methods are forwarded to the LogsRepository sub-service via
- * __call() rather than being declared as explicit one-line pass-throughs.
- * They are documented here so PHPStan and IDEs see the public surface.
- *
- * @method array<int, array<string, mixed>> populateLogsData(array $rows)
- * @method array<int, string> getDistinctLoggedUrls()
- * @method array<int, array<string, mixed>> getLogsIDandURL(string $specificURL = '')
- * @method array<int, array<string, mixed>> getLogsIDandURLLike(string $specificURL, $limitResults)
- * @method void queueLogEntry(array $entry)
- * @method void flushLogQueue()
- * @method int insertLookupValueAndGetID(string $valueToInsert)
- * @method int getLookupIDForUser(string $userName)
- * @method void correctDuplicateLookupValues()
- * @method array<int, array<string, mixed>> getDailyActivityTrend(int $days = 30)
- * @method bool logsHitsTableExists()
- * @method bool createRedirectsForViewHitsTable()
- * @method void scheduleHitsTableRebuild()
- * @method int|null getLogsHitsTableLastUpdated()
- * @method string getLogsHitsTableLastUpdatedHuman()
- * @method bool hitsTableNeedsRebuild()
- * @method int getMaxLogId()
- * @method int getMinLogId()
- * @method int getStoredMaxLogId()
- * @method void logRedirectHit(string $requested_url, string $action, string $matchReason, ?string $requestedURLDetail = null, ?array $pipelineTrace = null)
- * @method int[] getLogsv2IdsForLookupValue(string $lkupValue, int $page = 1, int $perPage = 100)
- * @method array<int, array<string, mixed>> getLogsv2RowsForLookupValue(string $lkupValue, int $page = 1, int $perPage = 50)
- * @method bool anonymizeLogsv2RowsByIds(int[] $ids)
- * @method void recordLogsHitsRollupStalenessSignal()
  */
 
 class ABJ_404_Solution_DataAccess implements ABJ_404_Solution_ContentRepositoryInterface {
@@ -857,15 +828,6 @@ class ABJ_404_Solution_DataAccess implements ABJ_404_Solution_ContentRepositoryI
 
     public function sanitizeLogEntry(array $entry): ?array { return $this->getLogsRepo()->sanitizeLogEntry($entry); }
 
-    // populateLogsData, getDistinctLoggedUrls, getLogsIDandURL[Like], queueLogEntry,
-    // flushLogQueue, insertLookupValueAndGetID, getLookupIDForUser,
-    // correctDuplicateLookupValues, getDailyActivityTrend, logsHitsTableExists,
-    // createRedirectsForViewHitsTable, scheduleHitsTableRebuild,
-    // getLogsHitsTableLast{Updated,UpdatedHuman}, hitsTableNeedsRebuild,
-    // get{Max,Min,Stored}LogId, logRedirectHit, getLogsv2{Ids,Rows}ForLookupValue,
-    // anonymizeLogsv2RowsByIds, recordLogsHitsRollupStalenessSignal are all
-    // routed to $this->logsRepo via __call(). See @method docblock on the class.
-
     /** @return ABJ_404_Solution_StatsRepository */
     public function getStatsRepo(): ABJ_404_Solution_StatsRepository {
         if ($this->statsRepo === null) {
@@ -1252,7 +1214,6 @@ class ABJ_404_Solution_DataAccess implements ABJ_404_Solution_ContentRepositoryI
     public function __call(string $name, array $arguments) {
         $delegates = [
             $this->dbCore,
-            $this->logsRepo,
             $this->redirectsRepo,
             $this->getRetentionService(),
             $this->contentRepo,
