@@ -24,9 +24,14 @@ class ABJ_404_Solution_EmailDigest {
     private $logger;
 
     /**
-     * @param ABJ_404_Solution_LogsRepository|object $logsRepoOrLegacyDao
-     * @param ABJ_404_Solution_Logging|ABJ_404_Solution_StatsRepository $loggerOrStatsRepo
-     * @param ABJ_404_Solution_Logging|null $logger
+     * @param ABJ_404_Solution_LogsRepository|object $logsRepoOrLegacyDao Real LogsRepository, or a
+     *     DataAccess facade that exposes getLogsRepo() (legacy + test path). When a DataAccess is
+     *     supplied, this class resolves the real LogsRepository off the facade so it does not
+     *     depend on pass-through LogsRepo methods existing on DataAccess.
+     * @param ABJ_404_Solution_Logging|ABJ_404_Solution_StatsRepository|null $loggerOrStatsRepo
+     *     StatsRepository when first arg is LogsRepository (modern signature); otherwise the
+     *     Logging service (legacy signature where the DAO is also the stats repo via pass-through).
+     * @param ABJ_404_Solution_Logging|null $logger Logging service for the modern signature.
      */
     public function __construct($logsRepoOrLegacyDao, $loggerOrStatsRepo = null, $logger = null) {
         if ($logsRepoOrLegacyDao instanceof ABJ_404_Solution_LogsRepository) {
@@ -34,7 +39,13 @@ class ABJ_404_Solution_EmailDigest {
             $this->statsRepo = $loggerOrStatsRepo;
             $this->logger = $logger !== null ? $logger : abj_service('logging');
         } else {
-            $this->logsRepo = $logsRepoOrLegacyDao;
+            // Legacy / test path: caller handed in a DataAccess facade. Resolve the real
+            // LogsRepository off the facade so this class talks to the typed LogsRepo surface
+            // (no LogsRepo pass-throughs on DataAccess). StatsRepo stays on the DataAccess
+            // facade because the DataAccess->Stats pass-throughs are a separate scope.
+            $this->logsRepo = method_exists($logsRepoOrLegacyDao, 'getLogsRepo')
+                ? $logsRepoOrLegacyDao->getLogsRepo()
+                : $logsRepoOrLegacyDao;
             $this->statsRepo = $logsRepoOrLegacyDao;
             $this->logger = $loggerOrStatsRepo !== null ? $loggerOrStatsRepo : abj_service('logging');
         }

@@ -51,10 +51,38 @@ class ABJ_404_Solution_FrontendRequestPipeline {
         $this->f = $functions;
         $this->spellChecker = $spellChecker;
         $this->matchingEngines = $matchingEngines;
-        $this->logsRepository = $logsRepository !== null ? $logsRepository :
-            (is_object($redirectsRepository) && is_callable([$redirectsRepository, 'logRedirectHit'])
-                ? $redirectsRepository
-                : abj_service('logs_repository'));
+        // Resolve the LogsRepository for logRedirectHit() writes. Preference order:
+        //   1. Explicit $logsRepository argument (modern DI signature).
+        //   2. If the redirects-repo facade exposes getLogsRepo(), resolve the typed
+        //      LogsRepository off it. Avoids depending on a logRedirectHit pass-through
+        //      living on DataAccess (see q task i775).
+        //   3. Legacy fallback: facade with a logRedirectHit() entry point.
+        //   4. Service container lookup.
+        if ($logsRepository !== null) {
+            $this->logsRepository = $logsRepository;
+        } else if (is_object($redirectsRepository) && method_exists($redirectsRepository, 'getLogsRepo')) {
+            // Real method (DataAccess facade): resolve the typed LogsRepository off it so we
+            // do not depend on logRedirectHit() pass-throughs living on DataAccess (q task i775).
+            // method_exists is preferred over is_callable here because Mockery mocks answer
+            // is_callable for every method but raise BadMethodCallException unless an
+            // expectation was declared; method_exists only sees declared methods.
+            try {
+                $resolved = $redirectsRepository->getLogsRepo();
+                $this->logsRepository = ($resolved !== null) ? $resolved : $redirectsRepository;
+            } catch (\Throwable $e) {
+                // allow-silent-catch: Mockery mocks throw if getLogsRepo() has no expectation;
+                // tests that pre-date this resolver may construct a redirects mock without
+                // the LogsRepo plumbing. Fall through to the legacy logRedirectHit path so
+                // those pre-existing tests keep working until they migrate.
+                $this->logsRepository = (method_exists($redirectsRepository, 'logRedirectHit'))
+                    ? $redirectsRepository
+                    : abj_service('logs_repository');
+            }
+        } else if (is_object($redirectsRepository) && method_exists($redirectsRepository, 'logRedirectHit')) {
+            $this->logsRepository = $redirectsRepository;
+        } else {
+            $this->logsRepository = abj_service('logs_repository');
+        }
     }
 
     /**
