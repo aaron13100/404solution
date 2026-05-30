@@ -11,6 +11,9 @@ if (!defined('ABSPATH')) {
  * Absorbs 13 traits that previously composed into DataAccess.
  *
  * @see docs/dataaccess-refactor-plan.md Phase 7.
+ *
+ * @method void runStagedSqlFile(string $relativePath, array<string, string> $extraTranslations = array())
+ * @method string viewDoneDataBuiltAtOptionName()
  */
 class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBuildOrchestratorInterface {
 

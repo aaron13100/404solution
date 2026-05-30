@@ -907,15 +907,6 @@ class ABJ_404_Solution_DataAccess implements ABJ_404_Solution_ContentRepositoryI
         return $this->viewBuildOrchestrator;
     }
 
-    /** @return void */
-    public function claimForegroundViewBuildLease(): void { $this->viewBuildOrchestrator->claimForegroundViewBuildLease(); }
-
-    /**
-     * @param string $sub
-     * @param array<string, mixed> $tableOptions
-     * @return array<int, array<string, mixed>>
-     */
-    public function runRedirectsForViewStaged(string $sub, array $tableOptions): array { return $this->viewBuildOrchestrator->runRedirectsForViewStaged($sub, $tableOptions); }
 
     public function getRedirectStatusCounts($bypassCache = false): array {
         return $this->getViewReadService()->getRedirectStatusCounts($bypassCache);
@@ -1004,38 +995,28 @@ class ABJ_404_Solution_DataAccess implements ABJ_404_Solution_ContentRepositoryI
                 $this->legacyViewDoneServeableCache = true;
                 return $this->legacyViewDoneServeableCache;
             }
-            $builtAt = function_exists('get_option') ? (int)get_option($this->viewDoneDataBuiltAtOptionName(), 0) : 0;
+            $builtAt = function_exists('get_option') ? (int)get_option($this->viewBuildOrchestrator->viewDoneDataBuiltAtOptionName(), 0) : 0;
             $this->legacyViewDoneServeableCache = $builtAt > 0;
             return $this->legacyViewDoneServeableCache;
         }
         return $this->viewBuildOrchestrator->viewDoneIsServeable();
     }
 
-    /** @return int */
-    public function getViewDoneBuiltAtTimestamp(): int { return $this->viewBuildOrchestrator->getViewDoneBuiltAtTimestamp(); }
 
     /** @return void */
     public function markViewDoneBuildCompleted(): void { $this->legacyViewDoneServeableCache = null; $this->viewBuildOrchestrator->markViewDoneBuildCompleted(); }
 
-    /** @return array<string, mixed> */
-    public function getViewBuildProgress(): array { return $this->viewBuildOrchestrator->getViewBuildProgress(); }
-
-    /**
-     * @param bool $forceRebuild
-     * @return array<string, mixed>
-     */
-    public function advanceViewBuildOnce(bool $forceRebuild = false): array { return $this->viewBuildOrchestrator->advanceViewBuildOnce($forceRebuild); }
 
     /** @return array{ran:bool, reason:string, progress:array<string,mixed>} */
     public function runPageLoadFallbackAdvance(): array {
         if (get_class($this) !== __CLASS__
             && method_exists($this, 'advanceViewBuildOnce')
             && (new \ReflectionMethod($this, 'advanceViewBuildOnce'))->getDeclaringClass()->getName() !== __CLASS__) {
-            if ($this->viewBuildOrchestrator->getCronStuckHours() < 24) { return array('ran' => false, 'reason' => 'cron_healthy', 'progress' => $this->getViewBuildProgress()); }
-            if ($this->viewDoneIsServeable()) { return array('ran' => false, 'reason' => 'not_needed', 'progress' => $this->getViewBuildProgress()); }
+            if ($this->viewBuildOrchestrator->getCronStuckHours() < 24) { return array('ran' => false, 'reason' => 'cron_healthy', 'progress' => $this->viewBuildOrchestrator->getViewBuildProgress()); }
+            if ($this->viewDoneIsServeable()) { return array('ran' => false, 'reason' => 'not_needed', 'progress' => $this->viewBuildOrchestrator->getViewBuildProgress()); }
             $haveTransientApi = function_exists('get_transient') && function_exists('set_transient');
             $gateKey = ABJ_404_Solution_ViewBuildConfig::PAGE_LOAD_FALLBACK_GATE_KEY;
-            if ($haveTransientApi && get_transient($gateKey) !== false) { return array('ran' => false, 'reason' => 'gate_active', 'progress' => $this->getViewBuildProgress()); }
+            if ($haveTransientApi && get_transient($gateKey) !== false) { return array('ran' => false, 'reason' => 'gate_active', 'progress' => $this->viewBuildOrchestrator->getViewBuildProgress()); }
             if ($haveTransientApi) { set_transient($gateKey, 1, (int)ABJ_404_Solution_ViewBuildConfig::PAGE_LOAD_FALLBACK_GATE_SECONDS); }
             $budgetSeconds = (float)ABJ_404_Solution_ViewBuildConfig::PAGE_LOAD_FALLBACK_BUDGET_SECONDS;
             $budgetFilter = static function ($incoming) use ($budgetSeconds) {
@@ -1054,93 +1035,13 @@ class ABJ_404_Solution_DataAccess implements ABJ_404_Solution_ContentRepositoryI
         return $this->viewBuildOrchestrator->runPageLoadFallbackAdvance();
     }
 
-    /**
-     * @param string $sub
-     * @param array<string, mixed> $tableOptions
-     * @return int
-     */
-    public function runRedirectsForViewCountStaged(string $sub, array $tableOptions): int { return $this->viewBuildOrchestrator->runRedirectsForViewCountStaged($sub, $tableOptions); }
-
-    /** @return void */
-    public function rebuildViewDoneInBackground(): void { $this->viewBuildOrchestrator->rebuildViewDoneInBackground(); }
-
-    /** @return string */
-    public function reconcileStagedTablesAtRunnerStartup(): string { return $this->viewBuildOrchestrator->reconcileStagedTablesAtRunnerStartup(); }
-
-    /**
-     * @param string $optionName
-     * @param mixed $expected
-     * @return bool
-     */
-    public function verifyOptionWriteCoherent(string $optionName, $expected): bool { return $this->viewBuildOrchestrator->verifyOptionWriteCoherent($optionName, $expected); }
-
-    /** @return void */
-    public function capturePrefixAtBuildStart(): void { $this->viewBuildOrchestrator->capturePrefixAtBuildStart(); }
-
-    /** @return bool */
-    public function verifyPrefixUnchangedSinceStageOne(): bool { return $this->viewBuildOrchestrator->verifyPrefixUnchangedSinceStageOne(); }
-
-    /** @return void */
-    public function clearPrefixAtStageOne(): void { $this->viewBuildOrchestrator->clearPrefixAtStageOne(); }
-
-    /** @return array<string, mixed> */
-    public function probeSqlModeForBuild(): array { return $this->viewBuildOrchestrator->probeSqlModeForBuild(); }
-
-    /** @return array<string, mixed> */
-    public function detectAndAdjustSqlMode(): array { return $this->viewBuildOrchestrator->detectAndAdjustSqlMode(); }
-
-    /** @param string $url @param int $maxLength @return string */
-    public function sanitizeUrlBeforeInsert(string $url, int $maxLength = 0): string { return $this->viewBuildOrchestrator->sanitizeUrlBeforeInsert($url, $maxLength); }
-
-    /** @return bool */
-    public function verifyBuildLockSerializesWriter(): bool { return $this->viewBuildOrchestrator->verifyBuildLockSerializesWriter(); }
-
-    /** @param int $delaySeconds @return void */
-    public function scheduleViewDoneRebuild(int $delaySeconds = 1): void { $this->viewBuildOrchestrator->scheduleViewDoneRebuild($delaySeconds); }
-
-    /** @return array<string, mixed> */
-    public function probePhpEnvironmentForBuild(): array { return $this->viewBuildOrchestrator->probePhpEnvironmentForBuild(); }
-
-    /** @return bool */
-    public function probeSetTimeLimitAvailability(): bool { return $this->viewBuildOrchestrator->probeSetTimeLimitAvailability(); }
-
-    /** @return int */
-    public function probeMemoryLimitForS9(): int { return $this->viewBuildOrchestrator->probeMemoryLimitForS9(); }
-
-    /** @return array<string, mixed> */
-    public function probeFilesystemEnvironmentForBuild(): array { return $this->viewBuildOrchestrator->probeFilesystemEnvironmentForBuild(); }
-
-    /** @return void */
-    public function clearStagedBuildDegradedState(): void { $this->viewBuildOrchestrator->clearStagedBuildDegradedState(); }
-
-    /** @return bool */
-    public function reconcilePostStageElevenState(): bool { return $this->viewBuildOrchestrator->reconcilePostStageElevenState(); }
-
-    /** @return array<string, mixed> */
-    public function probeSessionVariablesAtS1Entry(): array { return $this->viewBuildOrchestrator->probeSessionVariablesAtS1Entry(); }
 
     /** @return void */
     public function invalidateViewDoneAndScheduleRebuild(): void { $this->legacyViewDoneServeableCache = null; $this->viewBuildOrchestrator->invalidateViewDoneAndScheduleRebuild(); }
 
-    /** @param int $lockTimeoutSeconds @return bool */
-    public function forceRestartViewBuild(int $lockTimeoutSeconds = 10): bool { return $this->viewBuildOrchestrator->forceRestartViewBuild($lockTimeoutSeconds); }
-
-    /** @return void */
-    public function invalidateViewDoneServeableCacheBridge(): void { $this->viewBuildOrchestrator->invalidateViewDoneServeableCacheBridge(); }
 
     public function invalidateViewDoneServeableCache(): void { $this->viewBuildOrchestrator->invalidateViewDoneServeableCacheBridge(); }
-
-    public function classifyAndHandleStageFailure(int $stageNumber, string $stageKey, string $errMsg, float $started): string {
-        return $this->viewBuildOrchestrator->classifyAndHandleStageFailure($stageNumber, $stageKey, $errMsg, $started);
-    }
-
-    public function stageInsertRedirectsBatched(): bool { return $this->viewBuildOrchestrator->stageInsertRedirectsBatched(); }
-    public function stageUpdatePostsBatched(): bool { return $this->viewBuildOrchestrator->stageUpdatePostsBatched(); }
-    public function stageUpdateTermsBatched(): bool { return $this->viewBuildOrchestrator->stageUpdateTermsBatched(); }
-    public function stageUpdateHome(): void { $this->viewBuildOrchestrator->stageUpdateHome(); }
     public function runStagedSqlFile(string $relativePath, array $extraTranslations = array()): void { $this->viewBuildOrchestrator->runStagedSqlFile($relativePath, $extraTranslations); }
-    public function runTimedViewBuildStage(int $stageNumber, string $stageKey, callable $callback) { return $this->viewBuildOrchestrator->runTimedViewBuildStage($stageNumber, $stageKey, $callback); }
-    public function isStageMarkedSkipped(int $stageNumber): bool { return $this->viewBuildOrchestrator->isStageMarkedSkipped($stageNumber); }
 
     public function normalizeViewWarmupState($state): array {
         $default = array(
@@ -1184,21 +1085,6 @@ class ABJ_404_Solution_DataAccess implements ABJ_404_Solution_ContentRepositoryI
         return $out;
     }
 
-    /** @return array<string, mixed> */
-    public function getStagedQueryOptionsForRead(): array { return $this->viewBuildOrchestrator->getStagedQueryOptionsForRead(); }
-
-    /** @param string $shortName @param int $default @return int */
-    public function readBuildProgressOption(string $shortName, int $default = 0): int { return $this->viewBuildOrchestrator->readBuildProgressOption($shortName, $default); }
-
-    public function readProgressOption(string $shortName, int $default = 0): int { return $this->viewBuildOrchestrator->readProgressOption($shortName, $default); }
-
-    public function viewBuildPerStageBudgetSeconds(): float { return $this->viewBuildOrchestrator->viewBuildPerStageBudgetSeconds(); }
-
-    public function optionReadBackMatches($actual, $expected): bool { return $this->viewBuildOrchestrator->optionReadBackMatches($actual, $expected); }
-
-    public function viewDoneFreshnessOptionName(): string { return $this->viewBuildOrchestrator->viewDoneFreshnessOptionName(); }
-
-    public function viewDoneDataBuiltAtOptionName(): string { return $this->viewBuildOrchestrator->viewDoneDataBuiltAtOptionName(); }
 
     /**
      * Backward-compatibility bridge for facade delegations removed in Phase 8e.
