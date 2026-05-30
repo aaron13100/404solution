@@ -57,14 +57,23 @@ class ABJ_404_Solution_ViewBuildPendingResponseBuilder {
      */
     public static function progress($abj404dao, $pending = null) {
         $progress = null;
-        if (is_object($abj404dao) && method_exists($abj404dao, 'getViewBuildOrchestrator')) {
-            $vbo = $abj404dao->getViewBuildOrchestrator();
-            if (is_object($vbo) && method_exists($vbo, 'getViewBuildProgress')) {
-                try {
-                    $progress = $vbo->getViewBuildProgress();
-                } catch (Throwable $ignored) { // allow-silent-catch: progress lookup is best-effort for the pending-build response; null falls through to the exception's own progress text
-                    $progress = null;
-                }
+        // $abj404dao here is actually a ViewBuildOrchestrator (passed by the AJAX
+        // handlers post-i268) but we also tolerate a DataAccess-like object that
+        // has a getViewBuildOrchestrator() getter, for any caller still passing $dao.
+        $vbo = null;
+        if (is_object($abj404dao) && method_exists($abj404dao, 'getViewBuildProgress')) {
+            $vbo = $abj404dao;
+        } else if (is_object($abj404dao) && method_exists($abj404dao, 'getViewBuildOrchestrator')) {
+            $candidate = $abj404dao->getViewBuildOrchestrator();
+            if (is_object($candidate) && method_exists($candidate, 'getViewBuildProgress')) {
+                $vbo = $candidate;
+            }
+        }
+        if ($vbo !== null) {
+            try {
+                $progress = $vbo->getViewBuildProgress();
+            } catch (Throwable $ignored) { // allow-silent-catch: progress lookup is best-effort for the pending-build response; null falls through to the exception's own progress text
+                $progress = null;
             }
         }
         if (!is_array($progress)) {
