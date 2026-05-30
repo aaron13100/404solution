@@ -13,6 +13,7 @@ require_once __DIR__ . '/DatabaseSqlErrorReporter.php';
 require_once __DIR__ . '/DatabaseTableNameResolver.php';
 require_once __DIR__ . '/DatabaseNoticeStateHolder.php';
 require_once __DIR__ . '/DatabaseCollationHelper.php';
+require_once __DIR__ . '/DatabaseTableRepairer.php';
 
 /**
  * Shared database infrastructure: query execution, error recovery, timeouts,
@@ -58,11 +59,8 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
     /** @var ABJ_404_Solution_DatabaseCollationHelper */
     private $collationHelper;
 
-    /** @var bool Prevent recursive auto-repair attempts on SQL errors. */
-    private static $tableRepairInProgress = false;
-
-    /** @var bool Prevent recursive invalid-data retry attempts. */
-    private static $invalidDataRetryInProgress = false;
+    /** @var ABJ_404_Solution_DatabaseTableRepairer */
+    private $tableRepairer;
 
     /**
      * @var bool Per-request cache: this server rejected the
@@ -114,6 +112,25 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
             function (array &$result): void {
                 $this->harvestWpdbResult($result);
             },
+            $this->logger
+        );
+        $this->tableRepairer = new ABJ_404_Solution_DatabaseTableRepairer(
+            function (string $query, array $options): array {
+                return $this->queryAndGetResults($query, $options);
+            },
+            function (array &$result): void {
+                $this->harvestWpdbResult($result);
+            },
+            function (): string {
+                return $this->currentResultType;
+            },
+            function (string $type, string $message, string $errorString): void {
+                $this->noticeState->setPluginDbNotice($type, $message, $errorString);
+            },
+            function (string $text): string {
+                return $this->noticeState->localizeOrDefault($text);
+            },
+            $this->f,
             $this->logger
         );
     }
@@ -361,12 +378,12 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
 
     /** @return bool */
     public function isTableRepairInProgress(): bool {
-        return self::$tableRepairInProgress;
+        return $this->tableRepairer->isTableRepairInProgress();
     }
 
     /** @param bool $value @return void */
     public function setTableRepairInProgress(bool $value): void {
-        self::$tableRepairInProgress = $value;
+        $this->tableRepairer->setTableRepairInProgress($value);
     }
 
     /** @return string */
@@ -908,32 +925,15 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
     }
 
     /**
+     * Delegate: attempt a single invalid-data retry by asking WPDBExtension to
+     * strip invalid bytes from the query, then re-running the stripped query.
+     *
      * @param string $query
-     * @param array<string, mixed> $result
+     * @param array<string, mixed> $result Passed by reference.
      * @return void
      */
     public function attemptInvalidDataRetry($query, &$result) {
-        if (self::$invalidDataRetryInProgress) {
-            return;
-        }
-        self::$invalidDataRetryInProgress = true;
-        try {
-            $retryQuery = $this->get_stripped_query_result($query);
-            $retryQuery = function_exists('apply_filters')
-                ? apply_filters('abj404_invalid_data_retry_query', $retryQuery, $query)
-                : $retryQuery;
-            if (!is_string($retryQuery) || trim($retryQuery) === '' || $retryQuery === $query) {
-                return;
-            }
-            global $wpdb;
-            $wpdb->flush();
-            $result['rows'] = $wpdb->get_results($retryQuery, $this->currentResultType);
-            $this->harvestWpdbResult($result);
-        } catch (Throwable $e) {
-            $this->logger->warn("Invalid-data retry failed: " . $e->getMessage());
-        } finally {
-            self::$invalidDataRetryInProgress = false;
-        }
+        $this->tableRepairer->attemptInvalidDataRetry($query, $result);
     }
 
     /** @return void */
@@ -1018,72 +1018,24 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
     }
 
     /**
-     * Attempt REPAIR TABLE after errno 1034, then retry once.
+     * Delegate: REPAIR TABLE after errno 1034, then retry the original query once.
      *
      * @param string $query
-     * @param array<string, mixed> $result
+     * @param array<string, mixed> $result Passed by reference.
      * @return void
      */
     public function repairCorruptedTableAndRetry(string $query, array &$result): void {
-        $errorMessage = is_string($result['last_error']) ? $result['last_error'] : '';
-        $this->repairTable($errorMessage);
-        if (stripos($errorMessage, 'abj404') !== false) {
-            global $wpdb;
-            $wpdb->flush();
-            $result['rows'] = $wpdb->get_results($query, $this->currentResultType);
-            $result['last_error'] = (string)($wpdb->last_error ?? '');
-            $result['last_result'] = $wpdb->last_result ?? array();
-            $result['rows_affected'] = $wpdb->rows_affected ?? 0;
-            $result['insert_id'] = $wpdb->insert_id ?? 0;
-            if ($result['last_error'] === '') {
-                $this->logger->infoMessage("Retry after 'Incorrect key file' repair succeeded for plugin table.");
-            }
-        }
+        $this->tableRepairer->repairCorruptedTableAndRetry($query, $result);
     }
 
     /**
+     * Delegate: ask WPDBExtension to strip invalid bytes from a query string.
+     *
      * @param string $query
      * @return NULL|string|WP_Error
      */
     public function get_stripped_query_result($query) {
-        try {
-            if (!class_exists('wpdb')) {
-                return null;
-            }
-            if (!method_exists('wpdb', 'strip_invalid_text_from_query')) {
-                return null;
-            }
-
-            $filename = ABJ404_PATH . 'includes/php/wordpress/WPDBExtension.php';
-            if (!file_exists($filename)) {
-                return null;
-            }
-            require_once $filename;
-
-            $my_custom_db = null;
-            if (class_exists('ABJ_404_Solution_WPDBExtension_PHP7')) {
-                $my_custom_db = new ABJ_404_Solution_WPDBExtension_PHP7(DB_USER, DB_PASSWORD, DB_NAME, DB_HOST);
-            } else if (class_exists('ABJ_404_Solution_WPDBExtension_PHP5')) {
-                $my_custom_db = new ABJ_404_Solution_WPDBExtension_PHP5(DB_USER, DB_PASSWORD, DB_NAME, DB_HOST);
-            }
-            if ($my_custom_db == null) {
-                return null;
-            }
-
-            $result = $my_custom_db->public_strip_invalid_text_from_query($query);
-
-            if (is_wp_error($result)) {
-                return 'WP_Error: ' . $result->get_error_message();
-            }
-
-            return $result;
-
-        } catch (Throwable $e) {
-            $this->logger->warn(
-                'get_stripped_query_result failed; returning null: ' . $e->getMessage()
-            );
-            return null;
-        }
+        return $this->tableRepairer->get_stripped_query_result($query);
     }
 
     // =========================================================================
@@ -1104,102 +1056,25 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
     }
 
     /**
-     * Validate and sanitize a table name extracted from error messages or SQL.
+     * Delegate: validate and sanitize a table name extracted from error
+     * messages or SQL. Kept private to preserve the pre-extraction visibility;
+     * the canonical implementation lives on DatabaseTableRepairer.
      *
-     * @param string $name Raw table name
-     * @return string|null Sanitized name, or null if invalid
+     * @param string $name Raw table name.
+     * @return string|null Sanitized name, or null if invalid.
      */
     private function sanitizeTableName(string $name): ?string {
-        $name = trim($name, '`');
-        if (!preg_match('/^[a-zA-Z0-9_]+$/', $name)) {
-            $this->logger->warn("sanitizeTableName: rejected invalid table name: " . substr($name, 0, 100));
-            return null;
-        }
-        if (strpos($name, 'abj404') === false) {
-            $this->logger->warn("sanitizeTableName: rejected non-plugin table name: " . $name);
-            return null;
-        }
-        return $name;
+        return $this->tableRepairer->sanitizeTableName($name);
     }
 
     /** @inheritDoc */
     public function repairTable(string $errorMessage): void {
-
-        $re1 = "Table '(.*\/)?(.+)' is marked as crashed and ";
-        $re2 = "Incorrect key file for table '(?:.*\/)?([^'.]+?)(?:\\.MYI)?'";
-
-        $matches = array();
-        $this->f->regexMatch($re1, $errorMessage, $matches);
-
-        if (empty($matches) || count($matches) <= 2 || $this->f->strlen($matches[2]) === 0) {
-            $this->f->regexMatch($re2, $errorMessage, $matches);
-            if (!empty($matches) && isset($matches[1]) && $this->f->strlen($matches[1]) > 0) {
-                $matches[2] = $matches[1];
-            }
-        }
-
-        if (!empty($matches) && count($matches) > 2 && $this->f->strlen($matches[2]) > 0) {
-            $rawTableName = $matches[2];
-            $tableToRepair = $this->sanitizeTableName($rawTableName);
-            if ($tableToRepair !== null) {
-                $query = "REPAIR TABLE `{$tableToRepair}`";
-                $result = $this->queryAndGetResults($query, array('log_errors' => false));
-                $this->logger->infoMessage("Attempted to repair table " . $tableToRepair . ". Result: " .
-                        json_encode($result));
-            } else {
-                $this->logger->warn("The table " . $rawTableName . " needs to be " .
-                    "repaired with something like: repair table " . $rawTableName);
-
-                $cooldownKey = 'abj404_corrupted_temp_table_notice_until';
-                $alreadyNotified = function_exists('get_transient') ? get_transient($cooldownKey) : false;
-                if (!$alreadyNotified) {
-                    $noticeMessage = $this->localizeOrDefault( // allow-em-dash: verbatim localized string from production, changing it breaks existing translations
-                        'A database temporary table is corrupted — this is usually caused by a full or failing disk. Please contact your host. (MySQL error 1034)');
-                    $this->setPluginDbNotice('corrupted_temp_table', $noticeMessage, $errorMessage);
-                    if (function_exists('set_transient')) {
-                        // @cache-write-audit: opt-out - admin-notice dedup cooldown
-                        // (one notice per 24h per failure type), not a query result.
-                        set_transient($cooldownKey, 1, 86400);
-                    }
-                }
-            }
-        }
+        $this->tableRepairer->repairTable($errorMessage);
     }
 
     /** @inheritDoc */
     public function repairDuplicateIDs(string $errorMessage, string $sqlThatWasRun): void {
-
-    	$reForID = 'resulting in duplicate entry \'(.+)\' for key';
-    	$reForTableName = "ALTER TABLE (.+) ADD ";
-    	$matchesForID = null;
-    	$matchesForTableName = null;
-
-    	$this->f->regexMatch($reForID, $errorMessage, $matchesForID);
-    	$this->f->regexMatch($reForTableName, $sqlThatWasRun, $matchesForTableName);
-    	if (is_array($matchesForID) && isset($matchesForID[1]) && $this->f->strlen($matchesForID[1]) > 0 &&
-    			is_array($matchesForTableName) && isset($matchesForTableName[1]) && $this->f->strlen($matchesForTableName[1]) > 0) {
-
-    		$idWithDuplicate = $matchesForID[1];
-    		$tableName = $this->sanitizeTableName($matchesForTableName[1]);
-    		if ($tableName === null) {
-    			$this->logger->warn("repairDuplicateIDs: rejected invalid table name from SQL: " . substr($matchesForTableName[1], 0, 100));
-    			return;
-    		}
-
-    		if (!is_numeric($idWithDuplicate)) {
-    			$this->logger->errorMessage("Invalid ID extracted from error message: " . $idWithDuplicate);
-    			return;
-    		}
-
-    		if ($idWithDuplicate == 1) {
-    			$idWithDuplicate = 0;
-    		}
-
-    		$result = $this->queryAndGetResults("DELETE FROM `{$tableName}` where id = %d",
-    			array('log_errors' => false, 'query_params' => array(absint($idWithDuplicate))));
-   			$this->logger->infoMessage("Attempted to fix a duplicate entry issue. Table: " .
-   				$tableName . ", Result: " . json_encode($result));
-    	}
+        $this->tableRepairer->repairDuplicateIDs($errorMessage, $sqlThatWasRun);
     }
 
     /** @inheritDoc */
