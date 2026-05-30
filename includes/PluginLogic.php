@@ -1018,7 +1018,7 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
             exit;
         }
 
-        $finalDestination = $this->buildFinalRedirectDestination($location, $requestedURL, $isCustom404);
+        $finalDestination = $this->pageOrdering()->buildFinalRedirectDestination($location, $requestedURL, $isCustom404);
 
     	$previousRequest = $this->readCookieWithPreviousRqeuestShort();
     	$schemePos = $this->f->strpos($finalDestination, '://');
