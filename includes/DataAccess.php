@@ -1043,16 +1043,6 @@ class ABJ_404_Solution_DataAccess implements ABJ_404_Solution_ContentRepositoryI
     public function invalidateViewDoneServeableCache(): void { $this->viewBuildOrchestrator->invalidateViewDoneServeableCacheBridge(); }
     public function runStagedSqlFile(string $relativePath, array $extraTranslations = array()): void { $this->viewBuildOrchestrator->runStagedSqlFile($relativePath, $extraTranslations); }
 
-    // Kept as DataAccess-surface pass-throughs because the test-double seam
-    // (ABJ404_TestDataAccessDouble) cannot be extended to mirror them onto
-    // ABJ404_TestViewBuildOrchestratorDouble under the current global mock
-    // guardrail. Callers in production may equivalently use
-    // $dao->getViewBuildOrchestrator()->X(), but keeping these here preserves
-    // the stub registration shape used by ViewUpdaterAjaxContractTest et al.
-    /** @return array<string,mixed> */
-    public function getViewBuildProgress(): array { return $this->viewBuildOrchestrator->getViewBuildProgress(); }
-    public function claimForegroundViewBuildLease(): void { $this->viewBuildOrchestrator->claimForegroundViewBuildLease(); }
-
     public function normalizeViewWarmupState($state): array {
         $default = array(
             'status' => 'idle',
