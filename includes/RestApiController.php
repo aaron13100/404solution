@@ -594,7 +594,7 @@ class ABJ_404_Solution_RestApiController {
         // Normalize to relative path for lookup. Empty $url falls through to
         // the lookup as-is; the DAO returns no match and the endpoint emits
         // matched=false at 200, which is the malformed-input contract.
-        $normalizedUrl = $this->logic->normalizeToRelativePath($url);
+        $normalizedUrl = $this->logic->urlNormalization()->normalizeToRelativePath($url);
         if (!is_string($normalizedUrl) || $normalizedUrl === '') {
             $normalizedUrl = $url;
         }

@@ -73,7 +73,7 @@ class ABJ_404_Solution_ReviewFeedback {
 
         if ($isPluginPage || $isDashboard) {
             $captured404Count = $connector->getCapturedCountForNotification();
-            if ($connector->getPluginLogic()->shouldNotifyAboutCaptured404s($captured404Count)) {
+            if ($connector->getPluginLogic()->pageOrdering()->shouldNotifyAboutCaptured404s($captured404Count)) {
                 $msg = $abj404view->getDashboardNotificationCaptured($captured404Count);
                 echo $msg;
             }

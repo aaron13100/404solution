@@ -216,7 +216,7 @@ class ABJ_404_Solution_SpellCandidateFilter {
                  $this->logger->debugMessage("Skipping URL that failed parse_url for key in removeExcludedPagesWithRegex: " . $key . ", URL: " . esc_url($urlOfPage));
                  continue;
             }
-            $pathOnly = $this->logic->removeHomeDirectory($urlParts['path']);
+            $pathOnly = $this->logic->urlNormalization()->removeHomeDirectory($urlParts['path']);
              if ( $pathOnly !== '' && substr($pathOnly, 0, 1) !== '/' ) {
                 $pathOnly = '/' . $pathOnly;
              }
@@ -300,7 +300,7 @@ class ABJ_404_Solution_SpellCandidateFilter {
 			if (!is_array($urlParts) || !isset($urlParts['path'])) {
 				continue;
 			}
-			$pathOnly = $this->logic->removeHomeDirectory($urlParts['path']);
+			$pathOnly = $this->logic->urlNormalization()->removeHomeDirectory($urlParts['path']);
 			$scoreBasis = $this->f->strlen($pathOnly);
 			if ($scoreBasis == 0) {
 				continue;
@@ -373,7 +373,7 @@ class ABJ_404_Solution_SpellCandidateFilter {
 			if (!is_array($urlParts) || !isset($urlParts['path'])) {
 				continue;
 			}
-			$pathOnly = $this->logic->removeHomeDirectory($urlParts['path']);
+			$pathOnly = $this->logic->urlNormalization()->removeHomeDirectory($urlParts['path']);
 			$scoreBasis = $this->f->strlen($pathOnly);
 			if ($scoreBasis == 0) {
 				continue;
@@ -443,7 +443,7 @@ class ABJ_404_Solution_SpellCandidateFilter {
 			if (!is_array($urlParts) || !isset($urlParts['path'])) {
 				continue;
 			}
-			$existingPageURL = $this->logic->removeHomeDirectory($urlParts['path']);
+			$existingPageURL = $this->logic->urlNormalization()->removeHomeDirectory($urlParts['path']);
 			$existingPageURLSpaces = $this->f->str_replace($this->separatingCharacters, " ", $existingPageURL);
 
 			$existingPageURLCleaned = $this->urlMatcher->getLastURLPart($existingPageURLSpaces);

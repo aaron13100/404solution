@@ -222,7 +222,7 @@ class ABJ_404_Solution_SpellLevenshteinEngine {
 			if (is_string($the_permalink)) {
 				$observedPermalinksById[$idInt] = $the_permalink;
 			}
-			$existingPageURL = $this->logic->removeHomeDirectory($urlParts['path']);
+			$existingPageURL = $this->logic->urlNormalization()->removeHomeDirectory($urlParts['path']);
 			$urlParts = null;
 
 			$existingPageURLSpaces = $this->f->str_replace($this->separatingCharacters, " ", $existingPageURL);

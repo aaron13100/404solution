@@ -367,15 +367,15 @@ class ABJ_404_Solution_View {
 					esc_html($action == '' ? '(none)' : $action));
 
 			$message = "";
-			$message .= $instance->logic->handlePluginAction($action, $sub);
-			$message .= $instance->logic->hanldeTrashAction();
-			$message .= $instance->logic->handleDeleteAction();
-			$message .= $instance->logic->handleIgnoreAction();
-			$message .= $instance->logic->handleLaterAction();
-			$message .= $instance->logic->handleActionEdit($sub, $action);
-			$message .= $instance->logic->handleActionImportRedirects();
-			$instance->logic->handleActionChangeItemsPerRow();
-			$message .= $instance->logic->handleActionImportFile();
+			$message .= $instance->logic->adminActions()->handlePluginAction($action, $sub);
+			$message .= $instance->logic->adminActions()->hanldeTrashAction();
+			$message .= $instance->logic->adminActions()->handleDeleteAction();
+			$message .= $instance->logic->adminActions()->handleIgnoreAction();
+			$message .= $instance->logic->adminActions()->handleLaterAction();
+			$message .= $instance->logic->adminActions()->handleActionEdit($sub, $action);
+			$message .= $instance->logic->adminActions()->handleActionImportRedirects();
+			$instance->logic->adminActions()->handleActionChangeItemsPerRow();
+			$message .= $instance->logic->adminActions()->handleActionImportFile();
 
 			if ($action !== '' && $message !== '') {
 				$instance->logger->debugMessage("Admin action completed: " .

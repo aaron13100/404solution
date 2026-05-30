@@ -236,402 +236,11 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
         return $this->importExportService;
     }
 
-    // =========================================================================
-    // Delegation: UrlNormalization
-    // =========================================================================
-
-    /** @param string|null $urlRequest @return string */
-    function removeHomeDirectory($urlRequest): string {
-        if (!$this->urlNormalization instanceof ABJ_404_Solution_PluginLogicUrlNormalization) {
-            $this->urlNormalization = new ABJ_404_Solution_PluginLogicUrlNormalization(
-                $this->f !== null ? $this->f : abj_service('functions'),
-                $this->urlHomeDirectory !== null ? $this->urlHomeDirectory : '',
-                $this->urlHomeDirectoryLength !== null ? $this->urlHomeDirectoryLength : 0
-            );
-        }
-        return $this->urlNormalization->removeHomeDirectory($urlRequest);
-    }
-
-    /** @param string|null $url @return string */
-    function normalizeToRelativePath($url): string {
-        if (!$this->urlNormalization instanceof ABJ_404_Solution_PluginLogicUrlNormalization) {
-            $this->urlNormalization = new ABJ_404_Solution_PluginLogicUrlNormalization(
-                $this->f !== null ? $this->f : abj_service('functions'),
-                $this->urlHomeDirectory !== null ? $this->urlHomeDirectory : '',
-                $this->urlHomeDirectoryLength !== null ? $this->urlHomeDirectoryLength : 0
-            );
-        }
-        return $this->urlNormalization->normalizeToRelativePath($url);
-    }
-
-    /** @param string|null $url @return array<int, string> */
-    function getNormalizedUrlCandidates($url) {
-        if (!$this->urlNormalization instanceof ABJ_404_Solution_PluginLogicUrlNormalization) {
-            $decoded = $this->normalizeToRelativePath($url);
-            if ($decoded === '') {
-                return array();
-            }
-            $candidates = array($decoded);
-            $lower = function_exists('mb_strtolower') ? mb_strtolower($decoded, 'UTF-8') : strtolower($decoded);
-            if ($lower !== $decoded) {
-                $candidates[] = $lower;
-            }
-            $rawDecoded = is_string($url) ? rawurldecode($url) : '';
-            if ($rawDecoded !== '' && $rawDecoded !== $decoded) {
-                $candidates[] = $this->normalizeToRelativePath($rawDecoded);
-            }
-            return array_values(array_unique($candidates));
-        }
-        return $this->urlNormalization->getNormalizedUrlCandidates($url);
-    }
-
-    /** @param string $location @param string $requestedURL @return string */
-    function maybeTranslateRedirectUrl($location, $requestedURL = '') {
-        return $this->urlNormalization->maybeTranslateRedirectUrl($location, $requestedURL);
-    }
-
-    /** @param array<string, mixed> $options @param array<string, mixed> $postData @return string */
-    public function updateWordPressSettings(array &$options, array $postData): string {
-        return $this->settingsUpdate->updateWordPressSettings($options, $postData);
-    }
-
-    public function updateDeletionSettings(array &$options, array $postData): string {
-        return $this->settingsUpdate->updateDeletionSettings($options, $postData);
-    }
-
-    public function updateSuggestionSettings(array &$options, array $postData): string {
-        return $this->settingsUpdate->updateSuggestionSettings($options, $postData);
-    }
-
-    public function updateBooleanToggles(array &$options, array $postData): string {
-        return $this->settingsUpdate->updateBooleanToggles($options, $postData);
-    }
-
-    public function translatePressIntegrationAvailable(): bool {
-        return $this->urlNormalization->translatePressIntegrationAvailable();
-    }
-
-    public function translatePressRedirectUrl(string $location, string $requestedURL) {
-        return $this->urlNormalization->translatePressRedirectUrl($location, $requestedURL);
-    }
-
-    public function getTranslatePressLanguageFromRequest(string $requestedURL): string {
-        return $this->urlNormalization->getTranslatePressLanguageFromRequest($requestedURL);
-    }
-
-    public function translatePressTranslateUrl(string $url, string $language) {
-        return $this->urlNormalization->translatePressTranslateUrl($url, $language);
-    }
-
-    public function buildFullUrlFromRequest(string $requestedURL): string {
-        return $this->urlNormalization->buildFullUrlFromRequest($requestedURL);
-    }
-
-    public function isLocalUrl(string $url): bool {
-        return $this->urlNormalization->isLocalUrl($url);
-    }
-
-    // =========================================================================
-    // Delegation: Lifecycle (static forwarding)
-    // =========================================================================
-
-    /** @return void */
-    static function doUnregisterCrons(): void {
-        ABJ_404_Solution_PluginLogicLifecycle::doUnregisterCrons();
-    }
-
-    /** @param bool $network_wide @return void */
-    static function runOnPluginActivation(bool $network_wide = false): void {
-        ABJ_404_Solution_PluginLogicLifecycle::runOnPluginActivation($network_wide);
-    }
-
-    /** @return void */
-    static function networkActivationCronHandler(): void {
-        ABJ_404_Solution_PluginLogicLifecycle::networkActivationCronHandler();
-    }
-
-    /**
-     * @param int $blog_id
-     * @param int $user_id
-     * @param string $domain
-     * @param string $path
-     * @param int $site_id
-     * @param array<string, mixed> $meta
-     * @return void
-     */
-    static function activateNewSite($blog_id, $user_id, $domain, $path, $site_id, $meta): void {
-        ABJ_404_Solution_PluginLogicLifecycle::activateNewSite($blog_id, $user_id, $domain, $path, $site_id, $meta);
-    }
-
-    /** @param mixed $site @param array<string, mixed> $args @return void */
-    static function activateNewSiteModern($site, $args): void {
-        ABJ_404_Solution_PluginLogicLifecycle::activateNewSiteModern($site, $args);
-    }
-
-    /** @param bool $network_wide @return void */
-    static function runOnPluginDeactivation(bool $network_wide = false): void {
-        ABJ_404_Solution_PluginLogicLifecycle::runOnPluginDeactivation($network_wide);
-    }
-
-    /** @param int $blog_id @param bool $drop @return void */
-    static function deleteBlogData($blog_id, $drop = false): void {
-        ABJ_404_Solution_PluginLogicLifecycle::deleteBlogData($blog_id, $drop);
-    }
-
-    /** @return void */
-    static function doRegisterCrons(): void {
-        ABJ_404_Solution_PluginLogicLifecycle::doRegisterCrons();
-    }
-
     /** Instance counterpart used by the Data layer through PluginLogicInterface. */
     public function registerCrons(): void {
         ABJ_404_Solution_PluginLogicLifecycle::doRegisterCrons();
     }
 
-    // =========================================================================
-    // Delegation: ImportExport
-    // =========================================================================
-
-    /** @return string */
-    function getExportFilename(string $format = 'native'): string {
-        return $this->importExport->getExportFilename($format);
-    }
-
-    /** @return void */
-    function doExport(): void {
-        $this->importExport->doExport();
-    }
-
-    /** @param string $sourceFile @param string $destinationFile @return string */
-    function convertExportCsvToRedirectionFormat($sourceFile, $destinationFile) {
-        return $this->importExport->convertExportCsvToRedirectionFormat($sourceFile, $destinationFile);
-    }
-
-    /** @return string */
-    function doImportFile(): string {
-        return $this->importExport->doImportFile();
-    }
-
-    /** @param array<string, mixed> $dataArray @param bool $dryRun @return array<int, string> */
-    function loadDataArrayFromFile(array $dataArray, bool $dryRun = false): array {
-        return $this->importExport->loadDataArrayFromFile($dataArray, $dryRun);
-    }
-
-    /** @return array<string, string> */
-    function splitCsvLine(string $line): array {
-        return $this->importExport->splitCsvLine($line);
-    }
-
-    /** @param array<int, string> $columns @return bool */
-    function isCompatibleImportHeaderRow(array $columns): bool {
-        return $this->importExport->isCompatibleImportHeaderRow($columns);
-    }
-
-    /** @param array<int, string> $columns @return array<int, string> */
-    function normalizeImportHeaders(array $columns): array {
-        return $this->importExport->normalizeImportHeaders($columns);
-    }
-
-    /** @param array<int, string> $row @param array<int, string> $normalizedHeaders @return array<string, string> */
-    function mapImportRowByHeaders(array $row, array $normalizedHeaders): array {
-        return $this->importExport->mapImportRowByHeaders($row, $normalizedHeaders);
-    }
-
-    /** @param array<int, string> $columns @return string */
-    function detectImportFormatFromHeaders(array $columns): string {
-        return $this->importExport->detectImportFormatFromHeaders($columns);
-    }
-
-    // =========================================================================
-    // Delegation: AdminActions
-    // =========================================================================
-
-    /** @param string $action @param string $sub @return string */
-    function handlePluginAction($action, &$sub) {
-        return $this->adminActions->handlePluginAction($action, $sub);
-    }
-
-    /** @return string */
-    function hanldeTrashAction() {
-        return $this->adminActions->hanldeTrashAction();
-    }
-
-    /** @return void */
-    function handleActionChangeItemsPerRow(): void {
-        $this->adminActions->handleActionChangeItemsPerRow();
-    }
-
-    /** @return void */
-    function handleActionExport(): void {
-        $this->adminActions->handleActionExport();
-    }
-
-    /** @return string|null */
-    function handleActionImportFile() {
-        return $this->adminActions->handleActionImportFile();
-    }
-
-    /** @return void */
-    function updatePerPageOption(int $rows): void {
-        $this->adminActions->updatePerPageOption($rows);
-    }
-
-    /** @return string */
-    function handleActionImportRedirects() {
-        return $this->adminActions->handleActionImportRedirects();
-    }
-
-    /** @return string */
-    function handleDeleteAction() {
-        return $this->adminActions->handleDeleteAction();
-    }
-
-    /** @return string */
-    function handleIgnoreAction() {
-        return $this->adminActions->handleIgnoreAction();
-    }
-
-    /** @return string */
-    function handleLaterAction() {
-        return $this->adminActions->handleLaterAction();
-    }
-
-    /** @param string $sub @param string $action @return string */
-    function handleActionEdit(&$sub, &$action) {
-        return $this->adminActions->handleActionEdit($sub, $action);
-    }
-
-    /** @param string $action @param array<int, int> $ids @return string */
-    function doBulkAction(string $action, array $ids): string {
-        return $this->adminActions->doBulkAction($action, $ids);
-    }
-
-    /** @param string $sub @return void */
-    function doEmptyTrash(string $sub): void {
-        $this->adminActions->doEmptyTrash($sub);
-    }
-
-    /** @return string */
-    function updateRedirectData() {
-        return $this->adminActions->updateRedirectData();
-    }
-
-    /** @return array<string, mixed> */
-    function getRedirectTypeAndDest(): array {
-        return $this->adminActions->getRedirectTypeAndDest();
-    }
-
-    /** @return string */
-    function addAdminRedirect() {
-        return $this->adminActions->addAdminRedirect();
-    }
-
-    /** @return string */
-    function handleActionUndoRegexAutoPromote() {
-        return $this->adminActions->handleActionUndoRegexAutoPromote();
-    }
-
-    // =========================================================================
-    // Delegation: SettingsUpdate
-    // =========================================================================
-
-    /** @param string $pageBeingViewed @return array<string, mixed> */
-    function getTableOptions(string $pageBeingViewed): array {
-        return $this->settingsUpdate->getTableOptions($pageBeingViewed);
-    }
-
-    /** @param array<string, mixed> $postData @param bool $restoreNewlines @return array<string, mixed> */
-    function sanitizePostData(array $postData, bool $restoreNewlines = false): array {
-        return $this->settingsUpdate->sanitizePostData($postData, $restoreNewlines);
-    }
-
-    /** @param string $str @return string */
-    function sanitizeForSQL($str) {
-        return $this->settingsUpdate->sanitizeForSQL($str);
-    }
-
-    /** @return array<string, mixed> */
-    function updateOptionsFromPOST() {
-        return $this->settingsUpdate->updateOptionsFromPOST();
-    }
-
-    /** @param array<string, mixed> $options @return bool */
-    function normalizeSuggestionTemplateOptions(array &$options): bool {
-        return $this->settingsUpdate->normalizeSuggestionTemplateOptions($options);
-    }
-
-    // =========================================================================
-    // Delegation: PageOrdering
-    // =========================================================================
-
-    /** @param string $location @param string $requestedURL @param bool $isCustom404 @return string */
-    public function buildFinalRedirectDestination($location, $requestedURL = '', $isCustom404 = false) {
-        return $this->pageOrdering->buildFinalRedirectDestination($location, $requestedURL, $isCustom404);
-    }
-
-    /** @param array<int, object> $pages @param bool $includeMissingParentPages @return array<int, object> */
-    function orderPageResults(array $pages, bool $includeMissingParentPages = false): array {
-        return $this->pageOrdering->orderPageResults($pages, $includeMissingParentPages);
-    }
-
-    /** @param array<int, object{taxonomy: string, name?: string}> $categoryRows @return array<string, array<int, object{taxonomy: string, name?: string}>> */
-    function getMapOfCustomCategories(array $categoryRows): array {
-        return $this->pageOrdering->getMapOfCustomCategories($categoryRows);
-    }
-
-    /** @param array<int, object> $pages @return array<int, mixed> */
-    function getMissingParentPageIDs(array $pages): array {
-        return $this->pageOrdering->getMissingParentPageIDs($pages);
-    }
-
-    /** @param object $a @param object $b @return int */
-    function compareByID(object $a, object $b): int {
-        return $this->pageOrdering->compareByID($a, $b);
-    }
-
-    /** @param array<int, object> $pages @return array<int, object> */
-    function setDepthAndAddChildren(array $pages): array {
-        return $this->pageOrdering->setDepthAndAddChildren($pages);
-    }
-
-    /** @param array<int, object> $pages @return array<int, object> */
-    function findAllMainPages(array $pages): array {
-        return $this->pageOrdering->findAllMainPages($pages);
-    }
-
-    /** @param array<int, object> $childPages @param array<int, object> $removeThese @return array<int, object> */
-    function removeUsedChildPages(array $childPages, array $removeThese): array {
-        return $this->pageOrdering->removeUsedChildPages($childPages, $removeThese);
-    }
-
-    /** @param array<int, object> $pages @return array<int, object> */
-    function findChildPages(array $pages): array {
-        return $this->pageOrdering->findChildPages($pages);
-    }
-
-    /** @param object $a @param object $b @return int */
-    function sortByTypeThenTitle(object $a, object $b): int {
-        return $this->pageOrdering->sortByTypeThenTitle($a, $b);
-    }
-
-    /** @return string */
-    function emailCaptured404Notification() {
-        return $this->pageOrdering->emailCaptured404Notification();
-    }
-
-    /** @param number $captured404Count @return boolean */
-    function shouldNotifyAboutCaptured404s($captured404Count) {
-        return $this->pageOrdering->shouldNotifyAboutCaptured404s($captured404Count);
-    }
-
-    /** @param string $idAndType @param string $externalLinkURL @return string */
-    function getPageTitleFromIDAndType($idAndType, $externalLinkURL) {
-        return $this->pageOrdering->getPageTitleFromIDAndType($idAndType, $externalLinkURL);
-    }
-
-    // =========================================================================
-    // Methods that remain on PluginLogic (not from traits)
-    // =========================================================================
 
     /** This replaces the current_user_can('administrator') function.
      * @return bool true if $abj404logic->userIsPluginAdmin()
@@ -1041,7 +650,7 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
             $options = array();
         }
 
-        $defaults = $this->getDefaultOptions();
+        $defaults = ABJ_404_Solution_PluginLogicDefaults::defaults();
         $missing = false;
         foreach ($defaults as $key => $value) {
             if (!isset($options[$key]) || $options[$key] === '') {
@@ -1075,7 +684,7 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
 
     /** @param array<string, mixed> $options @return void */
     function updateOptions(array $options): void {
-        $options = array_merge($this->getDefaultOptions(), $options);
+        $options = array_merge(ABJ_404_Solution_PluginLogicDefaults::defaults(), $options);
         $options = ABJ_404_Solution_StorageOptionContracts::prepareForWrite(
             ABJ_404_Solution_StorageOptionContracts::OPTION_SETTINGS,
             $options
@@ -1126,7 +735,7 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
         if (!is_array($options)) {
             $options = array();
         }
-        $options = array_merge($this->getDefaultOptions(), $options);
+        $options = array_merge(ABJ_404_Solution_PluginLogicDefaults::defaults(), $options);
 
         $currentDBVersion = "(unknown)";
         if (array_key_exists('DB_VERSION', $options) && is_string($options['DB_VERSION'])) {
@@ -1144,8 +753,8 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
 
         wp_clear_scheduled_hook('abj404_duplicateCronAction');
 
-        ABJ_404_Solution_PluginLogic::doUnregisterCrons();
-        ABJ_404_Solution_PluginLogic::doRegisterCrons();
+        ABJ_404_Solution_PluginLogicLifecycle::doUnregisterCrons();
+        ABJ_404_Solution_PluginLogicLifecycle::doRegisterCrons();
 
         if (version_compare($currentDBVersion, '1.9.0') < 0) {
             $ignoreDoProcessStr = is_string($options['ignore_doprocess']) ? $options['ignore_doprocess'] : '';
@@ -1262,11 +871,6 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
         	ABJ404_VERSION . " (end).");
 
         return $options;
-    }
-
-    /** @return array<string, mixed> */
-    function getDefaultOptions() {
-        return ABJ_404_Solution_PluginLogicDefaults::defaults();
     }
 
     /** @param array<string, mixed>|null $options @return array<string, mixed> */

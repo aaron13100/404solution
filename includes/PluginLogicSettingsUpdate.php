@@ -737,7 +737,7 @@ class ABJ_404_Solution_PluginLogicSettingsUpdate {
      */
     function normalizeSuggestionTemplateOptions(array &$options): bool {
         $changed = false;
-        $defaults = $this->pluginLogic->getDefaultOptions();
+        $defaults = ABJ_404_Solution_PluginLogicDefaults::defaults();
 
         $titleDefault = isset($defaults['suggest_title']) && is_string($defaults['suggest_title']) ?
             $defaults['suggest_title'] : '<h3>{suggest_title_text}</h3>';

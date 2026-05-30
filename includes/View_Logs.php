@@ -26,10 +26,10 @@ class ABJ_404_Solution_View_Logs extends ABJ_404_Solution_ViewComponent {
     function echoAdminLogsPage() {
 
         $sub = 'abj404_logs';
-        $tableOptions = $this->logic->settingsUpdate()->getTableOptions($sub);
+        $tableOptions = $this->logic->getTableOptions($sub);
 
         // Sanitizing unchecked table options
-        $tableOptions = $this->logic->sanitizePostData($tableOptions);
+        $tableOptions = $this->logic->settingsUpdate()->sanitizePostData($tableOptions);
 
         // Extract current table options for the filter bar data attributes
         $perpage = array_key_exists('perpage', $tableOptions) && is_scalar($tableOptions['perpage']) ? $tableOptions['perpage'] : 25;
@@ -128,7 +128,7 @@ class ABJ_404_Solution_View_Logs extends ABJ_404_Solution_ViewComponent {
      */
     function getAdminLogsPageTable($sub) {
 
-        $tableOptions = $this->logic->settingsUpdate()->getTableOptions($sub);
+        $tableOptions = $this->logic->getTableOptions($sub);
 
         // Build column headers with sorting.
         // Engine is displayed inside the Action cell; User is displayed inside the Date cell.
@@ -432,7 +432,7 @@ class ABJ_404_Solution_View_Logs extends ABJ_404_Solution_ViewComponent {
      * @return string
      */
     function getTableColumns($sub, $columns) {
-        $tableOptions = $this->logic->settingsUpdate()->getTableOptions($sub);
+        $tableOptions = $this->logic->getTableOptions($sub);
 
         $cbinfoStyle = 'vertical-align: middle; padding-bottom: 6px;';
         if ($sub == 'abj404_logs') {
@@ -548,7 +548,7 @@ class ABJ_404_Solution_View_Logs extends ABJ_404_Solution_ViewComponent {
      */
     function getPaginationLinks($sub, $showSearchFilter = true) {
 
-        $tableOptions = $this->logic->settingsUpdate()->getTableOptions($sub);
+        $tableOptions = $this->logic->getTableOptions($sub);
         $logsid = array_key_exists('logsid', $tableOptions) && is_scalar($tableOptions['logsid']) ? $tableOptions['logsid'] : 0;
         $orderby = array_key_exists('orderby', $tableOptions) && is_string($tableOptions['orderby']) ? $tableOptions['orderby'] : 'url';
         $order = array_key_exists('order', $tableOptions) && is_string($tableOptions['order']) ? $tableOptions['order'] : 'ASC';
@@ -708,7 +708,7 @@ class ABJ_404_Solution_View_Logs extends ABJ_404_Solution_ViewComponent {
     function getTabFilters($sub, $tableOptions) {
 
         if (empty($tableOptions)) {
-            $tableOptions = $this->logic->settingsUpdate()->getTableOptions($sub);
+            $tableOptions = $this->logic->getTableOptions($sub);
         }
 
         $html = '';
@@ -729,7 +729,7 @@ class ABJ_404_Solution_View_Logs extends ABJ_404_Solution_ViewComponent {
         global $abj404_redirect_types;
         global $abj404_captured_types;
 
-        $tableOptions = $this->logic->settingsUpdate()->getTableOptions($sub);
+        $tableOptions = $this->logic->getTableOptions($sub);
         $filter = isset($tableOptions['filter']) ? intval(is_scalar($tableOptions['filter']) ? $tableOptions['filter'] : 0) : 0;
         $orderby = isset($tableOptions['orderby']) && is_string($tableOptions['orderby']) ? $tableOptions['orderby'] : 'url';
         $order = isset($tableOptions['order']) && is_string($tableOptions['order']) ? $tableOptions['order'] : 'ASC';

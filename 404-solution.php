@@ -1207,7 +1207,7 @@ if (!function_exists('abj404_networkActivationListener')) {
 function abj404_networkActivationListener() {
     try {
         require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
-        ABJ_404_Solution_PluginLogic::networkActivationCronHandler();
+        ABJ_404_Solution_PluginLogicLifecycle::networkActivationCronHandler();
     } catch (\Throwable $e) {
         error_log('404 Solution cron (network activation): ' . $e->getMessage());
     }
@@ -1660,7 +1660,7 @@ function abj404_loadSomethingWhenWordPressIsReady() {
 	if ($isAdminRequest && $action === 'exportRedirects') {
 	    require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
 		$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
-		$abj404logic->adminActions()->handleActionExport();
+		$abj404logic->handleActionExport();
 	}
 }
 }

@@ -117,7 +117,7 @@ class ABJ_404_Solution_View_Shared extends ABJ_404_Solution_ViewComponent {
 		$urlDestination = is_string($urlDestinationRaw) ? $urlDestinationRaw : '';
 
 		// Build the custom page dropdown for when 'custom' is selected
-		$pageTitle = $this->logic->getPageTitleFromIDAndType($userSelectedDefault404Page, $urlDestination);
+		$pageTitle = $this->logic->pageOrdering()->getPageTitleFromIDAndType($userSelectedDefault404Page, $urlDestination);
 		$pageMissingWarning = "";
 		if ($behavior === 'custom' && $userSelectedDefault404Page !== '') {
 			$permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($userSelectedDefault404Page, 0);
@@ -343,7 +343,7 @@ class ABJ_404_Solution_View_Shared extends ABJ_404_Solution_ViewComponent {
 		$defaults = array();
 		if (is_object($this->logic) && method_exists($this->logic, 'getDefaultOptions')) {
 			try {
-				$defaults = $this->logic->getDefaultOptions();
+				$defaults = ABJ_404_Solution_PluginLogicDefaults::defaults();
 			} catch (Throwable $e) { // allow-silent-catch: getDefaultOptions() is best-effort; empty array merges with getFallbackOptionDefaults() below
 				$defaults = array();
 			}

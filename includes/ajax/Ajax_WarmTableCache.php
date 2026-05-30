@@ -71,7 +71,7 @@ class ABJ_404_Solution_Ajax_WarmTableCache {
             }
 
             if ($rowsPerPage > 0) {
-                $abj404logic->updatePerPageOption($rowsPerPage);
+                $abj404logic->adminActions()->updatePerPageOption($rowsPerPage);
             }
 
             if ($subpage !== 'abj404_redirects' && $subpage !== 'abj404_captured') {
@@ -108,7 +108,7 @@ class ABJ_404_Solution_Ajax_WarmTableCache {
                 return;
             }
 
-            $tableOptions = $abj404logic->settingsUpdate()->getTableOptions($subpage);
+            $tableOptions = $abj404logic->getTableOptions($subpage);
             $stage = 'table_cache_rows';
             if ($viewReadService->viewRowsSnapshotAvailable($subpage, $tableOptions)) {
                 $stage = 'table_cache_count';

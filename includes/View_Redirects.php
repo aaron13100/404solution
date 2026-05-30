@@ -274,7 +274,7 @@ class ABJ_404_Solution_View_Redirects extends ABJ_404_Solution_ViewComponent {
             $pageTitle = '';
             $pageIDAndType = '';
         } else {
-            $pageTitle = $this->logic->getPageTitleFromIDAndType($pageIDAndType, $redirectFinalDest);
+            $pageTitle = $this->logic->pageOrdering()->getPageTitleFromIDAndType($pageIDAndType, $redirectFinalDest);
         }
         $manualPickerHiddenClass = ($suggestion !== null && $isSimpleMode) ? ' abj404-hidden' : '';
         $redirectToInner = $this->buildRedirectToDropdownHtml($pageTitle, $pageIDAndType);
@@ -598,7 +598,7 @@ class ABJ_404_Solution_View_Redirects extends ABJ_404_Solution_ViewComponent {
         }
         $content .= "\n" . '</optgroup>' . "\n";
         /** @var array<int, object{taxonomy: string, name?: string}> $cats */
-        $customTagsEtc = $this->logic->getMapOfCustomCategories($cats);
+        $customTagsEtc = $this->logic->pageOrdering()->getMapOfCustomCategories($cats);
 
         // tags ---------------------------------------------
         $content .= "\n" . '<optgroup label="Tags">' . "\n";

@@ -74,7 +74,7 @@ class ABJ_404_Solution_UserRequest {
         	while ($f->strpos($urlToParse, "//") !== false) {
         		$urlToParse = $f->str_replace('//', '/', $urlToParse);
         	}
-        	$urlToParse = ltrim($abj404logic->urlNormalization()->removeHomeDirectory($urlToParse), '/');
+        	$urlToParse = ltrim($abj404logic->removeHomeDirectory($urlToParse), '/');
             $urlToParse = get_site_url() . '/' . $urlToParse;
         }
         
@@ -209,7 +209,7 @@ class ABJ_404_Solution_UserRequest {
     function getOnlyTheSlug() {
         $abj404logic = abj_service('plugin_logic');
         $path = $this->getRequestURIWithoutCommentsPage();
-        return $abj404logic->urlNormalization()->removeHomeDirectory($path);
+        return $abj404logic->removeHomeDirectory($path);
     }
 
     /** @return array<string, int|string>|null */

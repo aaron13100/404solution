@@ -52,7 +52,7 @@ class ABJ_404_Solution_Ajax_RestoreDefaults {
 
         $abj404logic = abj_service('plugin_logic');
 
-        $defaults = $abj404logic->getDefaultOptions();
+        $defaults = ABJ_404_Solution_PluginLogicDefaults::defaults();
 
         // Preserve DB_VERSION so the restore does not appear as a schema
         // downgrade to the upgrade engine.

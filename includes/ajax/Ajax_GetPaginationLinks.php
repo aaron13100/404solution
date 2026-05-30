@@ -98,7 +98,7 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
             // Update the perpage option (but only if provided). Some environments may omit
             // rowsPerPage on Enter key events; avoid unnecessary option writes.
             if ($rowsPerPage > 0) {
-                $abj404logic->updatePerPageOption($rowsPerPage);
+                $abj404logic->adminActions()->updatePerPageOption($rowsPerPage);
             }
 
             /** @var ABJ_404_Solution_View $view */
@@ -131,7 +131,7 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
                     && is_object($viewReadService)) {
                 $stage = ($subpage === 'abj404_captured') ? 'table_captured' : 'table_redirects';
                 ABJ_404_Solution_AjaxStageDiagnostics::setStage($context, $stage);
-                $tableOptions = $abj404logic->settingsUpdate()->getTableOptions($subpage);
+                $tableOptions = $abj404logic->getTableOptions($subpage);
                 if (!$viewReadService->viewTableSnapshotAvailable($subpage, $tableOptions)) {
                     ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
                     ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();

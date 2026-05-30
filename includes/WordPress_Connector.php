@@ -185,7 +185,7 @@ class ABJ_404_Solution_WordPress_Connector {
         self::registerLifecycleHooks();
         self::registerAdminHooks();
         self::registerAsyncSuggestionHooks();
-        ABJ_404_Solution_PluginLogic::doRegisterCrons();
+        ABJ_404_Solution_PluginLogicLifecycle::doRegisterCrons();
     }
 
     /** @return void */
@@ -194,13 +194,13 @@ class ABJ_404_Solution_WordPress_Connector {
             return;
         }
 
-        register_deactivation_hook(ABJ404_NAME, 'ABJ_404_Solution_PluginLogic::runOnPluginDeactivation');
-        register_activation_hook(ABJ404_NAME, 'ABJ_404_Solution_PluginLogic::runOnPluginActivation');
+        register_deactivation_hook(ABJ404_NAME, 'ABJ_404_Solution_PluginLogicLifecycle::runOnPluginDeactivation');
+        register_activation_hook(ABJ404_NAME, 'ABJ_404_Solution_PluginLogicLifecycle::runOnPluginActivation');
 
         if (is_multisite()) {
-            add_action('wpmu_new_blog', 'ABJ_404_Solution_PluginLogic::activateNewSite', 10, 6);
-            add_action('wp_initialize_site', 'ABJ_404_Solution_PluginLogic::activateNewSiteModern', 10, 2);
-            add_action('delete_blog', 'ABJ_404_Solution_PluginLogic::deleteBlogData', 10, 2);
+            add_action('wpmu_new_blog', 'ABJ_404_Solution_PluginLogicLifecycle::activateNewSite', 10, 6);
+            add_action('wp_initialize_site', 'ABJ_404_Solution_PluginLogicLifecycle::activateNewSiteModern', 10, 2);
+            add_action('delete_blog', 'ABJ_404_Solution_PluginLogicLifecycle::deleteBlogData', 10, 2);
         }
     }
 

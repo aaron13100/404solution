@@ -148,7 +148,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
         if ($path === '') {
             $path = '/';
         }
-        $path = $this->logic->removeHomeDirectory($path);
+        $path = $this->logic->urlNormalization()->removeHomeDirectory($path);
         if ($path === '') {
             $path = '/';
         }
@@ -855,7 +855,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
             $this->logic->setCookieWithPreviousRequest();
             setcookie(ABJ404_PP . '_STATUS_404', 'true', time() + 20, "/");
 
-            $urlSlugOnly = $this->logic->removeHomeDirectory($requestedURL);
+            $urlSlugOnly = $this->logic->urlNormalization()->removeHomeDirectory($requestedURL);
             $spellChecker = abj_service('spell_checker');
             $options = $this->logic->getOptions();
             // Boundary normalizer: option shape-probing for the suggest_* slice
