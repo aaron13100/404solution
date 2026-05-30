@@ -824,8 +824,6 @@ class ABJ_404_Solution_DataAccess implements ABJ_404_Solution_ContentRepositoryI
 
     public function isInnoDBTable(string $tableName): bool { return $this->getDbCore()->isInnoDBTable($tableName); }
 
-    public function getLogRecords($tableOptions) { return $this->getLogsRepo()->getLogRecords($tableOptions); }
-
     public function sanitizeLogEntry(array $entry): ?array { return $this->getLogsRepo()->sanitizeLogEntry($entry); }
 
     /** @return ABJ_404_Solution_StatsRepository */
