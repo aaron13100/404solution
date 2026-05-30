@@ -150,15 +150,11 @@ class ABJ_404_Solution_Ajax_AdminEndpointSupport {
      * @return void
      */
     public static function tryClaimForegroundViewBuildLease($dao): void {
-        if (!is_object($dao) || !method_exists($dao, 'getViewBuildOrchestrator')) {
+        if (!is_object($dao) || !method_exists($dao, 'claimForegroundViewBuildLease')) {
             return;
         }
         try {
-            $orchestrator = $dao->getViewBuildOrchestrator();
-            if (!is_object($orchestrator) || !method_exists($orchestrator, 'claimForegroundViewBuildLease')) {
-                return;
-            }
-            $orchestrator->claimForegroundViewBuildLease();
+            $dao->claimForegroundViewBuildLease();
         } catch (Throwable $e) {
             self::safeLogAjaxFailure(
                 'claimForegroundViewBuildLease failed; cron may compete for the build lock.',

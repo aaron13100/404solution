@@ -30,6 +30,9 @@ class ABJ_404_Solution_RedirectsRepository implements ABJ_404_Solution_Redirects
     /** @var ABJ_404_Solution_Logging */
     private $logger;
 
+    /** @var ABJ_404_Solution_PluginLogicUrlNormalization|null DI seam for URL normalization. Resolved lazily through plugin_logic when null. */
+    private $urlNormalization;
+
     /** @var array<int, array<string, mixed>>|null Per-request cache for regex redirects */
     private static $regexRedirectsCache = null;
 
@@ -52,11 +55,28 @@ class ABJ_404_Solution_RedirectsRepository implements ABJ_404_Solution_Redirects
     public function __construct(
         ABJ_404_Solution_DatabaseCore $dbCore,
         $functions = null,
-        $logging = null
+        $logging = null,
+        ?ABJ_404_Solution_PluginLogicUrlNormalization $urlNormalization = null
     ) {
         $this->dbCore = $dbCore;
         $this->f = $functions !== null ? $functions : abj_service('functions');
         $this->logger = $logging !== null ? $logging : abj_service('logging');
+        $this->urlNormalization = $urlNormalization;
+    }
+
+    /**
+     * Resolve the URL-normalization helper, preferring the injected instance
+     * so callers can construct a repo without a fully-initialized PluginLogic
+     * singleton. Production wiring leaves this null and resolves through
+     * plugin_logic on first use.
+     *
+     * @return ABJ_404_Solution_PluginLogicUrlNormalization
+     */
+    private function urlNormalization() {
+        if ($this->urlNormalization !== null) {
+            return $this->urlNormalization;
+        }
+        return abj_service('plugin_logic')->urlNormalization();
     }
 
     // =========================================================================
@@ -298,8 +318,7 @@ class ABJ_404_Solution_RedirectsRepository implements ABJ_404_Solution_Redirects
             return array('id' => 0);
         }
 
-        $abj404logic = abj_service('plugin_logic');
-        $candidates = $abj404logic->urlNormalization()->getNormalizedUrlCandidates($url);
+        $candidates = $this->urlNormalization()->getNormalizedUrlCandidates($url);
         foreach ($candidates as $candidate) {
             $redirect = $this->getActiveRedirectForNormalizedUrl($candidate, $degradedMode);
             if ($redirect['id'] !== 0) {
@@ -318,8 +337,7 @@ class ABJ_404_Solution_RedirectsRepository implements ABJ_404_Solution_Redirects
             return array('id' => 0);
         }
 
-        $abj404logic = abj_service('plugin_logic');
-        $candidates = $abj404logic->urlNormalization()->getNormalizedUrlCandidates($url);
+        $candidates = $this->urlNormalization()->getNormalizedUrlCandidates($url);
         foreach ($candidates as $candidate) {
             $redirect = $this->getExistingRedirectForNormalizedUrl($candidate);
             if ($redirect['id'] !== 0) {

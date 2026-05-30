@@ -57,12 +57,9 @@ class ABJ_404_Solution_ViewBuildPendingResponseBuilder {
      */
     public static function progress($abj404dao, $pending = null) {
         $progress = null;
-        if (is_object($abj404dao) && method_exists($abj404dao, 'getViewBuildOrchestrator')) {
+        if (is_object($abj404dao) && method_exists($abj404dao, 'getViewBuildProgress')) {
             try {
-                $orchestrator = $abj404dao->getViewBuildOrchestrator();
-                if (is_object($orchestrator) && method_exists($orchestrator, 'getViewBuildProgress')) {
-                    $progress = $orchestrator->getViewBuildProgress();
-                }
+                $progress = $abj404dao->getViewBuildProgress();
             } catch (Throwable $ignored) { // allow-silent-catch: progress lookup is best-effort for the pending-build response; null falls through to the exception's own progress text
                 $progress = null;
             }
