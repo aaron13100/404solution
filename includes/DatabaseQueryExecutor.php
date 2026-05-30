@@ -404,6 +404,7 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
             'recoverFromCollationMismatchAndRetry' => true,
             'call_user_func_array' => true,
             'call_user_func' => true,
+            '__call' => true,
         );
         $frames = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 40);
         foreach ($frames as $frame) {

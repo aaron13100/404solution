@@ -20,8 +20,75 @@ require_once __DIR__ . '/DatabaseQueryExecutor.php';
  * Shared database infrastructure: query execution, error recovery, timeouts,
  * connection management, table-name resolution, and error classification.
  *
- * Extracted from the DataAccess monolith (Phase 0 of the DataAccess refactor).
- * Every DAO module receives a DatabaseCore instance via constructor injection.
+ * Extracted from the DataAccess monolith. Every DAO module receives a
+ * DatabaseCore instance via constructor injection.
+ *
+ * Interface-required methods (see DatabaseCoreInterface) are declared
+ * explicitly below. All other public surface is routed through __call() to
+ * the focused component classes. The @method annotations below describe that
+ * routed surface so PHPStan and IDEs see the same signatures the components
+ * provide.
+ *
+ * @method bool safeCheckConnection(object $wpdb, bool $allowReconnect = false)
+ * @method bool ensureConnection()
+ *
+ * @method bool queryStartsWithSelect(string $query)
+ * @method bool queryProducesResultRows(string $query)
+ * @method string applyQueryTimeout(string $query, int $timeoutSeconds)
+ * @method bool isMariaDB()
+ * @method string applySelectTimeout(string $query, int $timeoutSeconds)
+ * @method string applyNonLeadingSelectTimeout(string $query, int $timeoutSeconds)
+ * @method string applyStatementTimeout(string $query, int $timeoutSeconds)
+ * @method string applyTimeoutToInsertSelect(string $insertSelectQuery, int $timeoutSeconds)
+ * @method bool queryHasSetStatementWrapper(string $query)
+ * @method string stripSetStatementWrapper(string $query)
+ *
+ * @method bool isInvalidDataError(mixed $errorText)
+ * @method bool isQuotaLimitError(string $errorText)
+ * @method bool isDiskFullError(string $errorText)
+ * @method bool isReadOnlyError(string $errorText)
+ * @method bool isAccessDeniedError(string $errorText)
+ * @method bool classifySetStatementFailure(string $errorText)
+ * @method bool isCollationError(string $errorText)
+ * @method bool isCrashedTableError(string $errorText)
+ * @method bool isIncorrectKeyFileError(string $errorText)
+ * @method bool isQueryTimeoutError(string $errorText)
+ * @method bool isPacketTooLarge(string $errorText)
+ * @method bool isDeadlockOrLockTimeoutError(string $errorText)
+ * @method bool isGaleraConflictError(string $errorText)
+ * @method bool isPermanentHostSideStagedFailure(string $errorText)
+ * @method bool isResumableStagedKill(string $errorText)
+ * @method string|null extractTableNameFromFullError(string $errorText)
+ * @method bool isInnoDBTable(string $tableName)
+ * @method bool isQuotaCooldownActive()
+ * @method bool isMissingPluginTableError(string $errorText)
+ * @method bool isTransientViewBuildTableError(string $errorText)
+ * @method void setMissingTablePluginDbNotice(array<string, mixed> $result, string $missingTable, string $prefixDiag)
+ * @method string extractMissingTableNameFromError(string $errorText)
+ * @method string diagnosePrefixMismatch()
+ * @method bool isMultisiteCrossPrefixError(string $errorText)
+ *
+ * @method void logObservedSqlError(string $query, array<string, mixed> $result, array<string, mixed> $options, bool $producesRows)
+ * @method bool isInfrastructureSqlError(string $errorText)
+ * @method void logSqlThrowable(string $query, \Throwable $e, array<string, mixed> $options, bool $producesRows)
+ *
+ * @method void clearServerSideDbNotice()
+ * @method string localizeOrDefault(string $text)
+ * @method void markServerSideIssueNoted()
+ * @method bool isServerSideIssueNoted()
+ * @method bool isServerSideIssueChecked()
+ * @method void markServerSideIssueChecked()
+ *
+ * @method string sanitizeCollationIdentifier(string $collation)
+ *
+ * @method bool isTableRepairInProgress()
+ * @method void setTableRepairInProgress(bool $value)
+ * @method NULL|string|\WP_Error get_stripped_query_result(string $query)
+ *
+ * @method string getCurrentResultType()
+ * @method string extractSqlFilename(string $query)
+ * @method string resolveCallerFromBacktrace()
+ * @method void applyDiagnosticLatencyIfConfigured()
  */
 class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInterface {
 
@@ -112,7 +179,7 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
                 $this->noticeState->setRuntimeFlag($key, $value, $ttl);
             },
             function (array &$result): void {
-                $this->harvestWpdbResult($result);
+                $this->queryExecutor->harvestWpdbResult($result);
             },
             $this->logger
         );
@@ -121,7 +188,7 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
                 return $this->queryAndGetResults($query, $options);
             },
             function (array &$result): void {
-                $this->harvestWpdbResult($result);
+                $this->queryExecutor->harvestWpdbResult($result);
             },
             function (): string {
                 return $this->queryExecutor->getCurrentResultType();
@@ -138,14 +205,30 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
     }
 
     /**
-     * Delegate extracted database infrastructure methods to their focused components.
+     * Dispatch any non-interface method to the focused component that owns it.
+     *
+     * Components are scanned in declaration order; the first one with a
+     * matching public method wins. There are no name collisions across
+     * components (verified at extraction time); add a `@method` annotation
+     * above for any new method you want callers/PHPStan to see.
      *
      * @param string $name
      * @param array<int, mixed> $arguments
      * @return mixed
      */
     public function __call(string $name, array $arguments) {
-        foreach (array($this->connectionManager, $this->queryTimeoutManager, $this->errorClassifier, $this->sqlErrorReporter) as $component) {
+        $components = array(
+            $this->connectionManager,
+            $this->queryTimeoutManager,
+            $this->errorClassifier,
+            $this->sqlErrorReporter,
+            $this->tableNameResolver,
+            $this->noticeState,
+            $this->collationHelper,
+            $this->tableRepairer,
+            $this->queryExecutor,
+        );
+        foreach ($components as $component) {
             if (method_exists($component, $name)) {
                 return $component->$name(...$arguments);
             }
@@ -153,60 +236,167 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
         throw new BadMethodCallException('Unknown DatabaseCore method: ' . $name);
     }
 
-    /** @param object $wpdb @param bool $allowReconnect @return bool */
-    public function safeCheckConnection($wpdb, bool $allowReconnect = false): bool { return $this->connectionManager->safeCheckConnection($wpdb, $allowReconnect); }
-    /** @return bool */
-    public function ensureConnection() { return $this->connectionManager->ensureConnection(); }
-    /** @param string $errorText @return bool */
-    public function classifyAndHandleInfrastructureError(string $errorText): bool { return $this->errorClassifier->classifyAndHandleInfrastructureError($errorText); }
-    /** @param int $stageNumber @param string $errorText @return string */
-    public function classifyStageFailure(int $stageNumber, string $errorText): string { return $this->errorClassifier->classifyStageFailure($stageNumber, $errorText); }
-    /** @param string $errorText @return bool */
-    public function isOutOfMemoryError(string $errorText): bool { return $this->errorClassifier->isOutOfMemoryError($errorText); }
-    /** @param mixed $errorText @return bool */
-    public function isInvalidDataError($errorText): bool { return $this->errorClassifier->isInvalidDataError($errorText); }
-    /** @param string|null $errorText @return bool */
-    public function isTransientConnectionError(?string $errorText): bool { return $this->errorClassifier->isTransientConnectionError($errorText); }
-    /** @param string $errorText @return bool */
-    public function isQuotaLimitError(string $errorText): bool { return $this->errorClassifier->isQuotaLimitError($errorText); }
-    /** @param string $errorText @return bool */
-    public function isDiskFullError(string $errorText): bool { return $this->errorClassifier->isDiskFullError($errorText); }
-    /** @param string $errorText @return bool */
-    public function isReadOnlyError(string $errorText): bool { return $this->errorClassifier->isReadOnlyError($errorText); }
-    /** @param string $errorText @return bool */
-    public function isAccessDeniedError(string $errorText): bool { return $this->errorClassifier->isAccessDeniedError($errorText); }
-    /** @param string $errorText @return bool */
-    public function classifySetStatementFailure(string $errorText): bool { return $this->errorClassifier->classifySetStatementFailure($errorText); }
-    /** @param string $errorText @return bool */
-    public function isCollationError(string $errorText): bool { return $this->errorClassifier->isCollationError($errorText); }
-    /** @param string $errorText @return bool */
-    public function isCrashedTableError(string $errorText): bool { return $this->errorClassifier->isCrashedTableError($errorText); }
-    /** @param string $errorText @return bool */
-    public function isIncorrectKeyFileError(string $errorText): bool { return $this->errorClassifier->isIncorrectKeyFileError($errorText); }
-    /** @param string $errorText @return bool */
-    public function isQueryTimeoutError(string $errorText): bool { return $this->errorClassifier->isQueryTimeoutError($errorText); }
-    /** @param string $errorText @return bool */
-    public function isPacketTooLarge(string $errorText): bool { return $this->errorClassifier->isPacketTooLarge($errorText); }
-    /** @param string $errorText @return bool */
-    public function isDeadlockOrLockTimeoutError(string $errorText): bool { return $this->errorClassifier->isDeadlockOrLockTimeoutError($errorText); }
-    /** @param string $errorText @return bool */
-    public function isGaleraConflictError(string $errorText): bool { return $this->errorClassifier->isGaleraConflictError($errorText); }
-    /** @param string $errorText @return bool */
-    public function isPermanentHostSideStagedFailure(string $errorText): bool { return $this->errorClassifier->isPermanentHostSideStagedFailure($errorText); }
-    /** @param string $errorText @return bool */
-    public function isResumableStagedKill(string $errorText): bool { return $this->errorClassifier->isResumableStagedKill($errorText); }
-    /** @param string $errorText @return string|null */
-    public function extractTableNameFromFullError(string $errorText): ?string { return $this->errorClassifier->extractTableNameFromFullError($errorText); }
-    /** @param string $tableName @return bool */
-    public function isInnoDBTable(string $tableName): bool { return $this->errorClassifier->isInnoDBTable($tableName); }
-    /** @param string $errorText @return void */
-    public function noteDatabaseIssueFromError(string $errorText): void { $this->errorClassifier->noteDatabaseIssueFromError($errorText); }
-    /** @return bool */
-    public function isQuotaCooldownActive(): bool { return $this->errorClassifier->isQuotaCooldownActive(); }
-    /** @param string $errorText @return bool */
-    public function isMissingPluginTableError(string $errorText): bool { return $this->errorClassifier->isMissingPluginTableError($errorText); }
-    /** @param string $errorText @return bool */
-    public function isTransientViewBuildTableError(string $errorText): bool { return $this->errorClassifier->isTransientViewBuildTableError($errorText); }
+    // =========================================================================
+    // Interface-required methods (kept explicit). All other public surface is
+    // dispatched through __call(); see the @method annotations on the class.
+    // =========================================================================
+
+    /** @inheritDoc */
+    public function queryAndGetResults($query, $options = array()): array {
+        return $this->queryExecutor->queryAndGetResults($query, $options);
+    }
+
+    /** @inheritDoc */
+    public function queryScalarInt($query, $options = array()): int {
+        return $this->queryExecutor->queryScalarInt($query, $options);
+    }
+
+    /** @inheritDoc */
+    public function doTableNameReplacements($query): string {
+        return $this->tableNameResolver->doTableNameReplacements($query);
+    }
+
+    /** @inheritDoc */
+    public function getLowercasePrefix(): string {
+        return $this->tableNameResolver->getLowercasePrefix();
+    }
+
+    /** @inheritDoc */
+    public function getPrefixedTableName($tableSuffix): string {
+        return $this->tableNameResolver->getPrefixedTableName($tableSuffix);
+    }
+
+    /** @inheritDoc */
+    public function getCreateTableDDL($tableName): string {
+        return $this->tableNameResolver->getCreateTableDDL($tableName);
+    }
+
+    /** @inheritDoc */
+    public function getTableCollationString(string $tableName): string {
+        return $this->collationHelper->getTableCollationString($tableName);
+    }
+
+    /** @inheritDoc */
+    public function getColumnCollationString(string $tableName, string $columnName): string {
+        return $this->collationHelper->getColumnCollationString($tableName, $columnName);
+    }
+
+    /** @inheritDoc */
+    public function tableExists($tableName): bool {
+        return $this->tableNameResolver->tableExists($tableName);
+    }
+
+    /** @inheritDoc */
+    public function getTableColumnNames(string $tableName): array {
+        return $this->tableNameResolver->getTableColumnNames($tableName);
+    }
+
+    /** @inheritDoc */
+    public function buildPostTypeSqlList(array $options): string {
+        return $this->tableNameResolver->buildPostTypeSqlList($options);
+    }
+
+    /** @inheritDoc */
+    public function buildCategorySqlList(array $options): string {
+        return $this->tableNameResolver->buildCategorySqlList($options);
+    }
+
+    /** @inheritDoc */
+    public function setSqlBigSelects(): void {
+        $this->tableNameResolver->setSqlBigSelects();
+    }
+
+    /** @inheritDoc */
+    public function classifyAndHandleInfrastructureError(string $errorText): bool {
+        return $this->errorClassifier->classifyAndHandleInfrastructureError($errorText);
+    }
+
+    /** @inheritDoc */
+    public function classifyStageFailure(int $stageNumber, string $errorText): string {
+        return $this->errorClassifier->classifyStageFailure($stageNumber, $errorText);
+    }
+
+    /** @inheritDoc */
+    public function isOutOfMemoryError(string $errorText): bool {
+        return $this->errorClassifier->isOutOfMemoryError($errorText);
+    }
+
+    /** @inheritDoc */
+    public function setClock(ABJ_404_Solution_Clock $clock): void {
+        $this->clock = $clock;
+        $this->noticeState->setClock($clock);
+    }
+
+    /** @inheritDoc */
+    public function setRuntimeFlag(string $key, $value, int $ttlSeconds): void {
+        $this->noticeState->setRuntimeFlag($key, $value, $ttlSeconds);
+    }
+
+    /** @inheritDoc */
+    public function getRuntimeFlag(string $key) {
+        return $this->noticeState->getRuntimeFlag($key);
+    }
+
+    /** @inheritDoc */
+    public function setPluginDbNotice(string $type, string $message, string $errorString = ''): void {
+        $this->noticeState->setPluginDbNotice($type, $message, $errorString);
+    }
+
+    /** @inheritDoc */
+    public function clearPluginDbNoticeIfType(string $type): void {
+        $this->noticeState->clearPluginDbNoticeIfType($type);
+    }
+
+    /** @inheritDoc */
+    public function isWriteBlockActive(): bool {
+        return $this->noticeState->isWriteBlockActive();
+    }
+
+    /** @inheritDoc */
+    public function shouldSkipNonEssentialDbWrites(): bool {
+        return $this->noticeState->shouldSkipNonEssentialDbWrites();
+    }
+
+    /** @inheritDoc */
+    public function repairTable(string $errorMessage): void {
+        $this->tableRepairer->repairTable($errorMessage);
+    }
+
+    /** @inheritDoc */
+    public function repairDuplicateIDs(string $errorMessage, string $sqlThatWasRun): void {
+        $this->tableRepairer->repairDuplicateIDs($errorMessage, $sqlThatWasRun);
+    }
+
+    /**
+     * @inheritDoc
+     * @param 'OBJECT'|'OBJECT_K'|'ARRAY_A'|'ARRAY_N' $resultType
+     */
+    public function recoverFromCollationMismatchAndRetry(string $query, array &$result, bool $producesRows, string $resultType): void {
+        $this->collationHelper->recoverFromCollationMismatchAndRetry($query, $result, $producesRows, $resultType);
+    }
+
+    /** @inheritDoc */
+    public function executeAsTransaction(array $statementArray): void {
+        $this->queryExecutor->executeAsTransaction($statementArray);
+    }
+
+    // =========================================================================
+    // Explicit delegates kept for one of three reasons:
+    //  - by-reference parameters: __call() copies args into $arguments, so
+    //    `&$result` would not propagate writes back to the caller.
+    //  - tests reflect on the method by name on this class (Reflection cannot
+    //    see __call-routed methods, even with @method docblocks).
+    //  - source-code grep tests assert the literal `function X` appears in
+    //    DataAccess.php / DatabaseCore.php.
+    // =========================================================================
+
+    /**
+     * @param array<string, mixed> $result
+     * @return void
+     */
+    public function harvestWpdbResult(array &$result): void {
+        $this->queryExecutor->harvestWpdbResult($result);
+    }
 
     /**
      * @param string $query
@@ -226,7 +416,11 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
         return $this->errorClassifier->handleTransientViewBuildTableMissing($query, $result);
     }
 
-    /** @param array<string, mixed> $result @param string $repairCooldownKey @return bool */
+    /**
+     * @param array<string, mixed> $result
+     * @param string $repairCooldownKey
+     * @return bool
+     */
     public function isMissingTableRepairOnCooldown(array &$result, string $repairCooldownKey): bool {
         return $this->errorClassifier->isMissingTableRepairOnCooldown($result, $repairCooldownKey);
     }
@@ -266,74 +460,22 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
         );
     }
 
-    /** @param array<string, mixed> $result @param string $missingTable @param string $prefixDiag @return void */
-    public function setMissingTablePluginDbNotice(array $result, string $missingTable, string $prefixDiag): void {
-        $this->errorClassifier->setMissingTablePluginDbNotice($result, $missingTable, $prefixDiag);
+    /**
+     * @param string $query
+     * @param array<string, mixed> $result
+     * @return void
+     */
+    public function repairCorruptedTableAndRetry(string $query, array &$result): void {
+        $this->tableRepairer->repairCorruptedTableAndRetry($query, $result);
     }
 
-    /** @param string $errorText @return string */
-    public function extractMissingTableNameFromError(string $errorText): string {
-        return $this->errorClassifier->extractMissingTableNameFromError($errorText);
-    }
-
-    /** @return string */
-    public function diagnosePrefixMismatch(): string {
-        return $this->errorClassifier->diagnosePrefixMismatch();
-    }
-
-    /** @param string $errorText @return bool */
-    public function isMultisiteCrossPrefixError(string $errorText): bool {
-        return $this->errorClassifier->isMultisiteCrossPrefixError($errorText);
-    }
-
-    /** @param string $query @return bool */
-    public function queryStartsWithSelect(string $query): bool {
-        return $this->queryTimeoutManager->queryStartsWithSelect($query);
-    }
-
-    /** @param string $query @return bool */
-    public function queryProducesResultRows(string $query): bool {
-        return $this->queryTimeoutManager->queryProducesResultRows($query);
-    }
-
-    /** @param string $query @param int $timeoutSeconds @return string */
-    public function applyQueryTimeout(string $query, int $timeoutSeconds): string {
-        return $this->queryTimeoutManager->applyQueryTimeout($query, $timeoutSeconds);
-    }
-
-    /** @return bool */
-    public function isMariaDB(): bool {
-        return $this->queryTimeoutManager->isMariaDB();
-    }
-
-    /** @param string $query @param int $timeoutSeconds @return string */
-    public function applySelectTimeout(string $query, int $timeoutSeconds): string {
-        return $this->queryTimeoutManager->applySelectTimeout($query, $timeoutSeconds);
-    }
-
-    /** @param string $query @param int $timeoutSeconds @return string */
-    public function applyNonLeadingSelectTimeout(string $query, int $timeoutSeconds): string {
-        return $this->queryTimeoutManager->applyNonLeadingSelectTimeout($query, $timeoutSeconds);
-    }
-
-    /** @param string $query @param int $timeoutSeconds @return string */
-    public function applyStatementTimeout(string $query, int $timeoutSeconds): string {
-        return $this->queryTimeoutManager->applyStatementTimeout($query, $timeoutSeconds);
-    }
-
-    /** @param string $insertSelectQuery @param int $timeoutSeconds @return string */
-    public function applyTimeoutToInsertSelect(string $insertSelectQuery, int $timeoutSeconds): string {
-        return $this->queryTimeoutManager->applyTimeoutToInsertSelect($insertSelectQuery, $timeoutSeconds);
-    }
-
-    /** @param string $query @return bool */
-    public function queryHasSetStatementWrapper(string $query): bool {
-        return $this->queryTimeoutManager->queryHasSetStatementWrapper($query);
-    }
-
-    /** @param string $query @return string */
-    public function stripSetStatementWrapper(string $query): string {
-        return $this->queryTimeoutManager->stripSetStatementWrapper($query);
+    /**
+     * @param string $query
+     * @param array<string, mixed> $result
+     * @return void
+     */
+    public function attemptInvalidDataRetry(string $query, array &$result): void {
+        $this->tableRepairer->attemptInvalidDataRetry($query, $result);
     }
 
     /**
@@ -347,74 +489,45 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
     }
 
     /**
-     * @param string $query
-     * @param array<string, mixed> $result
-     * @param array<string, mixed> $options
-     * @param bool $producesRows
-     * @return void
+     * Reflection target.
+     *
+     * @param string|null $errorText
+     * @return bool
      */
-    public function logObservedSqlError(string $query, array $result, array $options, bool $producesRows): void {
-        $this->sqlErrorReporter->logObservedSqlError($query, $result, $options, $producesRows);
-    }
-
-    /** @param string $errorText @return bool */
-    public function isInfrastructureSqlError(string $errorText): bool {
-        return $this->sqlErrorReporter->isInfrastructureSqlError($errorText);
+    public function isTransientConnectionError(?string $errorText): bool {
+        return $this->errorClassifier->isTransientConnectionError($errorText);
     }
 
     /**
-     * @param string $query
-     * @param Throwable $e
-     * @param array<string, mixed> $options
-     * @param bool $producesRows
+     * Reflection target.
+     *
+     * @param string $errorText
      * @return void
      */
-    public function logSqlThrowable(string $query, Throwable $e, array $options, bool $producesRows): void {
-        $this->sqlErrorReporter->logSqlThrowable($query, $e, $options, $producesRows);
+    public function noteDatabaseIssueFromError(string $errorText): void {
+        $this->errorClassifier->noteDatabaseIssueFromError($errorText);
     }
 
-    /** @return void */
-    public function markServerSideIssueNoted(): void {
-        $this->noticeState->markServerSideIssueNoted();
+    /**
+     * Source-code-grep target (DatabaseEdgeCasesIntegrationTest).
+     *
+     * @return string
+     */
+    public function getPreferredUtf8mb4Collation(): string {
+        return $this->collationHelper->getPreferredUtf8mb4Collation();
     }
 
-    /** @return bool */
-    public function isTableRepairInProgress(): bool {
-        return $this->tableRepairer->isTableRepairInProgress();
-    }
+    // =========================================================================
+    // Special-case public surface: methods with local state or lazy init that
+    // cannot be a pure pass-through.
+    // =========================================================================
 
-    /** @param bool $value @return void */
-    public function setTableRepairInProgress(bool $value): void {
-        $this->tableRepairer->setTableRepairInProgress($value);
-    }
-
-    /** @return string */
-    public function getCurrentResultType(): string {
-        return $this->queryExecutor->getCurrentResultType();
-    }
-
-    /** @return bool */
-    public function isServerSideIssueNoted(): bool {
-        return $this->noticeState->isServerSideIssueNoted();
-    }
-
-    /** @return bool */
-    public function isServerSideIssueChecked(): bool {
-        return $this->noticeState->isServerSideIssueChecked();
-    }
-
-    /** @return void */
-    public function markServerSideIssueChecked(): void {
-        $this->noticeState->markServerSideIssueChecked();
-    }
-
-    /** @param ABJ_404_Solution_Clock $clock @return void */
-    public function setClock(ABJ_404_Solution_Clock $clock): void {
-        $this->clock = $clock;
-        $this->noticeState->setClock($clock);
-    }
-
-    /** @return ABJ_404_Solution_Clock */
+    /**
+     * Lazy-resolve the Clock instance: explicit setClock wins, then the
+     * service container, then a fresh SystemClock.
+     *
+     * @return ABJ_404_Solution_Clock
+     */
     public function clock(): ABJ_404_Solution_Clock {
         if ($this->clock !== null) { return $this->clock; }
         if (class_exists('ABJ_404_Solution_ServiceContainer')) {
@@ -443,294 +556,5 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
     public static function isSetStatementWrapperUnsupported(): bool {
         return self::$setStatementWrapperUnsupported
             || ABJ_404_Solution_DatabaseRuntimeState::isSetStatementWrapperUnsupported();
-    }
-
-    /**
-     * Check if a database table exists.
-     *
-     * @param string $tableName Full table name to check (including prefix)
-     * @return bool
-     */
-    public function tableExists($tableName): bool {
-        return $this->tableNameResolver->tableExists($tableName);
-    }
-
-    /**
-     * Get the column names of an actual database table via SHOW COLUMNS.
-     *
-     * @param string $tableName Full table name (including prefix)
-     * @return array<int, string>
-     */
-    public function getTableColumnNames(string $tableName): array {
-        return $this->tableNameResolver->getTableColumnNames($tableName);
-    }
-
-    /**
-     * @param string $query
-     * @return string
-     */
-    public function doTableNameReplacements($query): string {
-        return $this->tableNameResolver->doTableNameReplacements($query);
-    }
-
-    /** @return string */
-    public function getLowercasePrefix(): string {
-        return $this->tableNameResolver->getLowercasePrefix();
-    }
-
-    /**
-     * @param string $tableSuffix
-     * @return string
-     */
-    public function getPrefixedTableName($tableSuffix): string {
-        return $this->tableNameResolver->getPrefixedTableName($tableSuffix);
-    }
-
-    /**
-     * @param string $tableName
-     * @return string
-     */
-    public function getCreateTableDDL($tableName): string {
-        return $this->tableNameResolver->getCreateTableDDL($tableName);
-    }
-
-    /**
-     * @param array<string, mixed> $options
-     * @return string
-     */
-    public function buildPostTypeSqlList(array $options): string {
-        return $this->tableNameResolver->buildPostTypeSqlList($options);
-    }
-
-    /**
-     * @param array<string, mixed> $options
-     * @return string
-     */
-    public function buildCategorySqlList(array $options): string {
-        return $this->tableNameResolver->buildCategorySqlList($options);
-    }
-
-    /** @return void */
-    public function setSqlBigSelects(): void {
-        $this->tableNameResolver->setSqlBigSelects();
-    }
-
-    /**
-     * @param string $query
-     * @param array<string, mixed> $options
-     * @return int
-     */
-    public function queryScalarInt($query, $options = array()): int {
-        return $this->queryExecutor->queryScalarInt($query, $options);
-    }
-
-    /**
-     * @param string $query
-     * @param array<string, mixed> $options
-     * @return array<string, mixed>
-     */
-    public function queryAndGetResults($query, $options = array()): array {
-        return $this->queryExecutor->queryAndGetResults($query, $options);
-    }
-
-    /**
-     * Resolve a stable source identifier for safe logging.
-     *
-     * @param string $query
-     * @return string
-     */
-    public function extractSqlFilename($query) {
-        return $this->queryExecutor->extractSqlFilename($query);
-    }
-
-    /** @return string */
-    public function resolveCallerFromBacktrace() {
-        return $this->queryExecutor->resolveCallerFromBacktrace();
-    }
-
-    /**
-     * Delegate: sanitize a raw collation identifier (strip non-word chars).
-     *
-     * @param string $collation
-     * @return string
-     */
-    public function sanitizeCollationIdentifier($collation): string {
-        return $this->collationHelper->sanitizeCollationIdentifier($collation);
-    }
-
-    /**
-     * Delegate: get the table-level default collation for a given table.
-     *
-     * @param string $tableName Fully-qualified table name (including prefix).
-     * @return string
-     */
-    public function getTableCollationString(string $tableName): string {
-        return $this->collationHelper->getTableCollationString($tableName);
-    }
-
-    /**
-     * Delegate: get the column-level collation for a specific column.
-     *
-     * @param string $tableName  Fully-qualified table name (including prefix).
-     * @param string $columnName Column name to look up.
-     * @return string
-     */
-    public function getColumnCollationString(string $tableName, string $columnName): string {
-        return $this->collationHelper->getColumnCollationString($tableName, $columnName);
-    }
-
-    /**
-     * Delegate: return the preferred utf8mb4 collation for this wpdb connection.
-     *
-     * @return string
-     */
-    public function getPreferredUtf8mb4Collation(): string {
-        return $this->collationHelper->getPreferredUtf8mb4Collation();
-    }
-
-    /**
-     * Delegate: attempt a single invalid-data retry by asking WPDBExtension to
-     * strip invalid bytes from the query, then re-running the stripped query.
-     *
-     * @param string $query
-     * @param array<string, mixed> $result Passed by reference.
-     * @return void
-     */
-    public function attemptInvalidDataRetry($query, &$result) {
-        $this->tableRepairer->attemptInvalidDataRetry($query, $result);
-    }
-
-    /** @return void */
-    public function applyDiagnosticLatencyIfConfigured(): void {
-        $this->queryExecutor->applyDiagnosticLatencyIfConfigured();
-    }
-
-    /**
-     * @param array<string, mixed> $result
-     * @return void
-     */
-    public function harvestWpdbResult(array &$result): void {
-        $this->queryExecutor->harvestWpdbResult($result);
-    }
-
-    /**
-     * @param string $key
-     * @param mixed $value
-     * @param int $ttlSeconds
-     * @return void
-     */
-    public function setRuntimeFlag(string $key, $value, int $ttlSeconds): void {
-        $this->noticeState->setRuntimeFlag($key, $value, $ttlSeconds);
-    }
-
-    /**
-     * @param string $key
-     * @return mixed
-     */
-    public function getRuntimeFlag(string $key) {
-        return $this->noticeState->getRuntimeFlag($key);
-    }
-
-    /**
-     * @param string $type
-     * @param string $message
-     * @param string $errorString
-     * @return void
-     */
-    public function setPluginDbNotice(string $type, string $message, string $errorString = ''): void {
-        $this->noticeState->setPluginDbNotice($type, $message, $errorString);
-    }
-
-    /**
-     * @param string $type
-     * @return void
-     */
-    public function clearPluginDbNoticeIfType(string $type): void {
-        $this->noticeState->clearPluginDbNoticeIfType($type);
-    }
-
-    /** @return void */
-    public function clearServerSideDbNotice(): void {
-        $this->noticeState->clearServerSideDbNotice();
-    }
-
-    /** @param string $text @return string */
-    public function localizeOrDefault(string $text): string {
-        return $this->noticeState->localizeOrDefault($text);
-    }
-
-    /** @return bool */
-    public function isWriteBlockActive(): bool {
-        return $this->noticeState->isWriteBlockActive();
-    }
-
-    /** @return bool */
-    public function shouldSkipNonEssentialDbWrites(): bool {
-        return $this->noticeState->shouldSkipNonEssentialDbWrites();
-    }
-
-    /**
-     * Delegate: REPAIR TABLE after errno 1034, then retry the original query once.
-     *
-     * @param string $query
-     * @param array<string, mixed> $result Passed by reference.
-     * @return void
-     */
-    public function repairCorruptedTableAndRetry(string $query, array &$result): void {
-        $this->tableRepairer->repairCorruptedTableAndRetry($query, $result);
-    }
-
-    /**
-     * Delegate: ask WPDBExtension to strip invalid bytes from a query string.
-     *
-     * @param string $query
-     * @return NULL|string|WP_Error
-     */
-    public function get_stripped_query_result($query) {
-        return $this->tableRepairer->get_stripped_query_result($query);
-    }
-
-    // =========================================================================
-    // Repair / recovery methods (moved from DataAccessTrait_Maintenance, Phase 5)
-    // =========================================================================
-
-    /**
-     * Delegate: auto-recover from a collation mismatch detected at query time.
-     *
-     * @param string $query
-     * @param array<string, mixed> $result passed by reference
-     * @param bool   $producesRows Whether the query returns result rows.
-     * @param 'OBJECT'|'OBJECT_K'|'ARRAY_A'|'ARRAY_N' $resultType wpdb output type for get_results().
-     * @return void
-     */
-    public function recoverFromCollationMismatchAndRetry(string $query, array &$result, bool $producesRows, string $resultType): void {
-        $this->collationHelper->recoverFromCollationMismatchAndRetry($query, $result, $producesRows, $resultType);
-    }
-
-    /**
-     * Delegate: validate and sanitize a table name extracted from error
-     * messages or SQL. Kept private to preserve the pre-extraction visibility;
-     * the canonical implementation lives on DatabaseTableRepairer.
-     *
-     * @param string $name Raw table name.
-     * @return string|null Sanitized name, or null if invalid.
-     */
-    private function sanitizeTableName(string $name): ?string {
-        return $this->tableRepairer->sanitizeTableName($name);
-    }
-
-    /** @inheritDoc */
-    public function repairTable(string $errorMessage): void {
-        $this->tableRepairer->repairTable($errorMessage);
-    }
-
-    /** @inheritDoc */
-    public function repairDuplicateIDs(string $errorMessage, string $sqlThatWasRun): void {
-        $this->tableRepairer->repairDuplicateIDs($errorMessage, $sqlThatWasRun);
-    }
-
-    /** @inheritDoc */
-    public function executeAsTransaction(array $statementArray): void {
-        $this->queryExecutor->executeAsTransaction($statementArray);
     }
 }

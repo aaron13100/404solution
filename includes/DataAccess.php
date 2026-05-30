@@ -1263,8 +1263,21 @@ class ABJ_404_Solution_DataAccess implements ABJ_404_Solution_ContentRepositoryI
             $this->viewReadService,
         ];
         foreach ($delegates as $delegate) {
-            if ($delegate !== null && method_exists($delegate, $name)) {
+            if ($delegate === null) {
+                continue;
+            }
+            if (method_exists($delegate, $name)) {
                 return $delegate->$name(...$arguments);
+            }
+            // dbCore now dispatches non-interface surface through its own __call().
+            // method_exists() can't see __call-routed methods, so try the call
+            // and treat a BadMethodCallException as "not found here, keep looking".
+            if ($delegate === $this->dbCore) {
+                try {
+                    return $delegate->$name(...$arguments);
+                } catch (\BadMethodCallException $e) {
+                    continue;
+                }
             }
         }
         throw new \BadMethodCallException(
