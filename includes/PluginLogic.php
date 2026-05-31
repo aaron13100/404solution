@@ -60,13 +60,6 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
 	/** @var int|null */
 	private $urlHomeDirectoryLength = null;
 
-	/** @var array<string, mixed>|null */
-	private $options = null;
-	/** @var array<string, mixed>|null */
-	private $resolvedOptionsSkipDbCheck = null;
-	/** @var array<string, mixed>|null */
-	private $resolvedOptionsWithDbCheck = null;
-
 	/** @var self|null */
     private static $instance = null;
 
@@ -610,86 +603,19 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
     /**
      * @param bool $skip_db_check
      * @return array<string, mixed>
+     * @deprecated Use abj_service('options_repository')->getOptions() directly. This delegate exists only during the migration window for the OptionsRepository extraction and will be removed before the parent task closes.
      */
     function getOptions(bool $skip_db_check = false) {
-        if (!$skip_db_check && is_array($this->resolvedOptionsWithDbCheck)) {
-            return $this->resolvedOptionsWithDbCheck;
-        }
-        if ($skip_db_check) {
-            if (is_array($this->resolvedOptionsSkipDbCheck)) {
-                return $this->resolvedOptionsSkipDbCheck;
-            }
-            if (is_array($this->resolvedOptionsWithDbCheck)) {
-                return $this->resolvedOptionsWithDbCheck;
-            }
-        }
-
-        if ($this->options == null) {
-            $optionResult = get_option('abj404_settings');
-            if (is_array($optionResult)) {
-                $normalizedOptions = ABJ_404_Solution_StorageOptionContracts::normalizeForRead(
-                    ABJ_404_Solution_StorageOptionContracts::OPTION_SETTINGS,
-                    $optionResult
-                );
-                $this->options = $normalizedOptions;
-                if ($normalizedOptions !== $optionResult) {
-                    $this->updateOptions($normalizedOptions);
-                }
-            } else {
-                $this->options = null;
-            }
-        }
-        $options = $this->options;
-
-        if (!is_array($options)) {
-            add_option('abj404_settings', '', '', false);
-            $options = array();
-        }
-
-        $defaults = ABJ_404_Solution_PluginLogicDefaults::defaults();
-        $missing = false;
-        foreach ($defaults as $key => $value) {
-            if (!isset($options[$key]) || $options[$key] === '') {
-                $options[$key] = $value;
-                $missing = true;
-            }
-        }
-
-        if ($missing) {
-            $this->updateOptions($options);
-        }
-
-        if ($skip_db_check == false) {
-            if (!array_key_exists('DB_VERSION', $options) || $options['DB_VERSION'] != ABJ404_VERSION) {
-                $options = abj_service('version_upgrade')->upgradeIfNeeded($options);
-            }
-        }
-
-        if ($this->settingsUpdate->normalizeSuggestionTemplateOptions($options)) {
-            $this->updateOptions($options);
-        }
-
-        if ($skip_db_check) {
-            $this->resolvedOptionsSkipDbCheck = $options;
-        } else {
-            $this->resolvedOptionsWithDbCheck = $options;
-        }
-
-        return $options;
+        return abj_service('options_repository')->getOptions($skip_db_check);
     }
 
-    /** @param array<string, mixed> $options @return void */
+    /**
+     * @param array<string, mixed> $options
+     * @return void
+     * @deprecated Use abj_service('options_repository')->updateOptions() directly. This delegate exists only during the migration window for the OptionsRepository extraction and will be removed before the parent task closes.
+     */
     function updateOptions(array $options): void {
-        $options = array_merge(ABJ_404_Solution_PluginLogicDefaults::defaults(), $options);
-        $options = ABJ_404_Solution_StorageOptionContracts::prepareForWrite(
-            ABJ_404_Solution_StorageOptionContracts::OPTION_SETTINGS,
-            $options
-        );
-    	$old_options = $this->options;
-    	update_option('abj404_settings', $options);
-    	$this->options = $options;
-        $this->resolvedOptionsSkipDbCheck = null;
-        $this->resolvedOptionsWithDbCheck = null;
+        abj_service('options_repository')->updateOptions($options);
     }
 
     /** @return string */

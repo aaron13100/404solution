@@ -75,6 +75,7 @@ function abj_404_solution_init_services() {
     abj_404_solution_register_core_utilities($container);
     abj_404_solution_register_data_layer($container);
     abj_404_solution_register_business_logic($container);
+    abj_404_solution_register_options_repository($container);
     abj_404_solution_register_matching_engines($container);
     abj_404_solution_register_frontend_services($container);
     abj_404_solution_register_presentation_layer($container);
@@ -342,6 +343,20 @@ function abj_404_solution_register_presentation_layer($container) {
 
     $container->set('shortcode', function($c) {
         return new ABJ_404_Solution_ShortCode();
+    });
+}
+
+/**
+ * Register OptionsRepository in the DI container. Factored out to its own
+ * helper so the call site in abj_404_solution_init_services reads as a
+ * single named registration rather than an inline closure.
+ *
+ * @param ABJ_404_Solution_ServiceContainer $registry
+ * @return void
+ */
+function abj_404_solution_register_options_repository($registry) {
+    $registry->set('options_repository', function($c) {
+        return new ABJ_404_Solution_OptionsRepository();
     });
 }
 
