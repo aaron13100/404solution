@@ -34,9 +34,6 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
 	/** @var ABJ_404_Solution_RedirectsRepositoryInterface */
 	private $redirectsRepo;
 
-	/** @var ABJ_404_Solution_LogsRepositoryInterface */
-	private $logsRepo;
-
 	/** @var ABJ_404_Solution_ViewBuildOrchestratorInterface */
 	private $viewBuild;
 
@@ -117,7 +114,6 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
 
         if ($this->dao instanceof ABJ_404_Solution_DataAccess && get_class($this->dao) === ABJ_404_Solution_DataAccess::class) {
     	    $this->redirectsRepo = $this->dao->getRedirectsRepo();
-    	    $this->logsRepo = $this->dao->getLogsRepo();
     	    $this->viewBuild = $this->dao->getViewBuildOrchestrator();
     	    $this->viewRead = $this->dao->getViewReadService();
     	    $this->contentRepo = $this->dao->getContentRepo();
@@ -187,7 +183,6 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
     private function resolveDaoAccessorsForTestMock(): void {
         $accessors = [
             'redirectsRepo' => 'getRedirectsRepo',
-            'logsRepo' => 'getLogsRepo',
             'viewBuild' => 'getViewBuildOrchestrator',
             'viewRead' => 'getViewReadService',
             'contentRepo' => 'getContentRepo',
@@ -252,161 +247,6 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
         ABJ_404_Solution_PluginLogicLifecycle::doRegisterCrons();
     }
 
-
-    /** Forward to a real page for queries like ?p=10
-     * @param array<string, mixed> $options
-     * @return void
-     */
-    function tryNormalPostQuery(array $options): void {
-        global $wp_query;
-
-        $query = $wp_query->query;
-        if (!isset($query['p'])) {
-            return;
-        }
-        $pageid = $query['p'];
-        if (!empty($pageid)) {
-            $rawPermalink = get_permalink($pageid);
-            $permalink = $this->f->normalizeUrlString($rawPermalink !== false ? $rawPermalink : null);
-            $status = get_post_status($pageid);
-            if (($permalink != false) &&
-            	(in_array($status, array('publish', 'published')))) {
-            	$homeURL = get_home_url();
-            	if ($homeURL == null) {
-            		$homeURL = '';
-            	}
-            	$urlHomeDirectory = parse_url($homeURL, PHP_URL_PATH);
-            	if ($urlHomeDirectory == null) {
-            		$urlHomeDirectory = '';
-            	}
-            	$urlHomeDirectory = rtrim($urlHomeDirectory, '/');
-                $fromURL = $urlHomeDirectory . '/?p=' . $pageid;
-                $redirect = $this->redirectsRepo->getExistingRedirectForURL($fromURL);
-                $defaultRedirect = is_scalar($options['default_redirect']) ? (string)$options['default_redirect'] : '301';
-                if (!isset($redirect['id']) || $redirect['id'] == 0) {
-                    $this->redirectsRepo->setupRedirect(ABJ_404_Solution_RedirectSpec::create(
-                        $fromURL, (string)ABJ404_STATUS_AUTO, (string)ABJ404_TYPE_POST,
-                        (string)$pageid, $defaultRedirect, 0, 'page ID'
-                    ));
-                }
-                $this->logsRepo->logRedirectHit($fromURL, $permalink, 'page ID');
-                abj_service('not_found_response')->forceRedirect($permalink, (int)$defaultRedirect);
-                exit;
-            }
-        }
-    }
-
-    /**
-     * @param string $urlRequest the requested URL
-     * @param string $urlSlugOnly only the slug
-     * @return void
-     */
-    function initializeIgnoreValues(string $urlRequest, string $urlSlugOnly): void {
-        $abj404logic = abj_service('plugin_logic');
-
-        $options = $abj404logic->getOptions();
-        $ignoreReasonDoNotProcess = null;
-        $ignoreReasonDoProcess = null;
-        $httpUserAgent = array_key_exists('HTTP_USER_AGENT', $_SERVER) ?
-                $this->f->strtolower($_SERVER['HTTP_USER_AGENT']) : '';
-
-        $adminURLRaw = parse_url(admin_url(), PHP_URL_PATH);
-        $adminURL = is_string($adminURLRaw) ? $adminURLRaw : '/wp-admin/';
-        if (is_admin() || $this->f->substr($urlRequest, 0, $this->f->strlen($adminURL)) == $adminURL) {
-            $this->logger->debugMessage("Ignoring admin URL: " . $urlRequest);
-            $ignoreReasonDoNotProcess = 'Admin URL';
-        }
-
-        $ignoreDontProcess = is_string($options['ignore_dontprocess']) ? $options['ignore_dontprocess'] : '';
-        $userAgents = $this->f->explodeNewline($ignoreDontProcess);
-
-        foreach ($userAgents as $agentToIgnore) {
-            if (stripos($httpUserAgent, trim($agentToIgnore)) !== false) {
-                $this->logger->debugMessage("Ignoring user agent (do not redirect): " .
-                        esc_html($_SERVER['HTTP_USER_AGENT']) . " for URL: " . esc_html($urlRequest));
-                $ignoreReasonDoNotProcess = 'User agent (do not redirect): ' . esc_html($_SERVER['HTTP_USER_AGENT']);
-            }
-        }
-
-        $patternsToIgnore = is_array($options['folders_files_ignore_usable']) ? $options['folders_files_ignore_usable'] : array();
-        if (!empty($patternsToIgnore)) {
-            foreach ($patternsToIgnore as $patternToIgnore) {
-                $patternToIgnoreStr = is_string($patternToIgnore) ? $patternToIgnore : (string)$patternToIgnore;
-                $patternToIgnoreNoSlashes = stripslashes($patternToIgnoreStr);
-                abj_service('request_context')->debug_info = 'Applying regex pattern to ignore\"' .
-                    $patternToIgnoreNoSlashes . '" to URL slug: ' . $urlSlugOnly;
-                $matches = array();
-                if ($this->f->regexMatch($patternToIgnoreNoSlashes, $urlSlugOnly, $matches)) {
-                    $this->logger->debugMessage("Ignoring file/folder (do not redirect) for URL: " .
-                            esc_html($urlSlugOnly) . ", pattern used: " . $patternToIgnoreNoSlashes);
-                    $ignoreReasonDoNotProcess = 'Files and folders (do not redirect) pattern: ' .
-                        esc_html($patternToIgnoreNoSlashes);
-                }
-                abj_service('request_context')->debug_info = 'Cleared after regex pattern to ignore.';
-            }
-        }
-        abj_service('request_context')->ignore_donotprocess = is_string($ignoreReasonDoNotProcess) ? $ignoreReasonDoNotProcess : false;
-
-        $ignoreDoProcess = is_string($options['ignore_doprocess']) ? $options['ignore_doprocess'] : '';
-        $userAgents = $this->f->explodeNewline($ignoreDoProcess);
-
-        foreach ($userAgents as $agentToIgnore) {
-            if (stripos($httpUserAgent, trim($agentToIgnore)) !== false) {
-                $this->logger->debugMessage("Ignoring user agent (process ok): " .
-                        esc_html($_SERVER['HTTP_USER_AGENT']) . " for URL: " . esc_html($urlRequest));
-                $ignoreReasonDoProcess = 'User agent (process ok): ' . $agentToIgnore;
-            }
-        }
-        abj_service('request_context')->ignore_doprocess = is_string($ignoreReasonDoProcess) ? $ignoreReasonDoProcess : false;
-    }
-
-    /** @return string */
-    function readCookieWithPreviousRqeuestShort(): string {
-        $cookieName = ABJ404_PP . '_REQUEST_URI';
-        $cookieNameShort = $cookieName . '_SHORT';
-
-        if (array_key_exists($cookieNameShort, $_COOKIE) &&
-            array_key_exists($cookieName, $_COOKIE)) {
-    		return $_COOKIE[$cookieName];
-    	}
-
-    	return '';
-    }
-
-    /** @return void */
-    function setCookieWithPreviousRequest(): void {
-
-        $requested_url_raw = $this->f->normalizeUrlString($_SERVER['REQUEST_URI']);
-
-        $requested_url_cleaned = preg_replace('/\?.*$/', '', $requested_url_raw);
-        $requested_url = is_string($requested_url_cleaned) ? $requested_url_cleaned : $requested_url_raw;
-
-    	$cookieName = ABJ404_PP . '_REQUEST_URI';
-    	$cookieNameShort = $cookieName . '_SHORT';
-    	try {
-    		setcookie($cookieName, $requested_url, time() + (60 * 4), "/");
-    		setcookie($cookieNameShort, $requested_url, time() + (5), "/");
-
-    		if (!isset($_COOKIE[$cookieName . '_UPDATE_URL']) ||
-    				empty($_COOKIE[$cookieName . '_UPDATE_URL'])) {
-    			$update_url_raw = $this->f->normalizeUrlString($_SERVER['REQUEST_URI']);
-    			$update_url_cleaned = preg_replace('/\?.*$/', '', $update_url_raw);
-    			$update_url = is_string($update_url_cleaned) ? $update_url_cleaned : $update_url_raw;
-    			setcookie($cookieName . '_UPDATE_URL', $update_url,
-    				time() + (60 * 4), "/");
-    		}
-
-    	} catch (Exception $e) {
-    		$this->logger->debugMessage("There was an issue setting a cookie: " . $e->getMessage());
-    		$expireTime = date("D, d M Y H:i:s T", time() + (60 * 4));
-    		$c = "\n" . '<script>document.cookie = "' . $cookieName . '=' .
-     		esc_js($requested_url) .
-     		'; expires=' . $expireTime . '";</script>' . "\n";
-     		echo $c;
-    	}
-
-    	abj_service('request_context')->requested_url = $requested_url;
-    }
 
     /**
      * @param bool $skip_db_check

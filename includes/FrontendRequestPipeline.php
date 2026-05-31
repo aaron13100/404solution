@@ -32,6 +32,12 @@ class ABJ_404_Solution_FrontendRequestPipeline {
     /** @var ABJ_404_Solution_NotFoundResponseService */
     private $notFoundResponse;
 
+    /** @var ABJ_404_Solution_RequestIgnoreNormalizer */
+    private $requestIgnoreNormalizer;
+
+    /** @var ABJ_404_Solution_PreviousRequestCookieTracker */
+    private $previousRequestCookieTracker;
+
     /** @var array<int, mixed> Engines from apply_filters — may contain non-engine items */
     private $matchingEngines;
 
@@ -47,22 +53,20 @@ class ABJ_404_Solution_FrontendRequestPipeline {
      * @param array<int, mixed> $matchingEngines
      * @param mixed|null $logsRepository Log writer. Accepts legacy doubles with logRedirectHit().
      * @param ABJ_404_Solution_NotFoundResponseService|null $notFoundResponse
+     * @param ABJ_404_Solution_RequestIgnoreNormalizer|null $requestIgnoreNormalizer
+     * @param ABJ_404_Solution_PreviousRequestCookieTracker|null $previousRequestCookieTracker
      */
-    function __construct($pluginLogic, $redirectsRepository, $logging, $functions, $spellChecker, array $matchingEngines = [], $logsRepository = null, $notFoundResponse = null) {
+    function __construct($pluginLogic, $redirectsRepository, $logging, $functions, $spellChecker, array $matchingEngines = [], $logsRepository = null, $notFoundResponse = null, $requestIgnoreNormalizer = null, $previousRequestCookieTracker = null) {
         $this->logic = $pluginLogic;
         $this->redirectsRepository = $redirectsRepository;
         $this->logger = $logging;
         $this->f = $functions;
         $this->spellChecker = $spellChecker;
         $this->matchingEngines = $matchingEngines;
-        $resolvedNotFoundResponse = $notFoundResponse !== null ? $notFoundResponse : abj_service('not_found_response');
-        if (!is_object($resolvedNotFoundResponse)
-                || !method_exists($resolvedNotFoundResponse, 'forceRedirect')
-                || !method_exists($resolvedNotFoundResponse, 'sendTo404Page')
-                || !method_exists($resolvedNotFoundResponse, 'thereIsAUserSpecified404Page')) {
-            throw new InvalidArgumentException('FrontendRequestPipeline requires NotFoundResponseService.');
-        }
-        $this->notFoundResponse = $resolvedNotFoundResponse;
+        $this->notFoundResponse = $this->resolveNotFoundResponse($notFoundResponse);
+        $normalizerLogsRepo = ($logsRepository instanceof ABJ_404_Solution_LogsRepositoryInterface) ? $logsRepository : null;
+        $this->requestIgnoreNormalizer = $this->resolveRequestIgnoreNormalizer($requestIgnoreNormalizer, $normalizerLogsRepo);
+        $this->previousRequestCookieTracker = $this->resolvePreviousRequestCookieTracker($previousRequestCookieTracker);
         // Resolve the LogsRepository for logRedirectHit() writes. Preference order:
         //   1. Explicit $logsRepository argument (modern DI signature).
         //   2. If the redirects-repo facade exposes getLogsRepo(), resolve the typed
@@ -95,6 +99,166 @@ class ABJ_404_Solution_FrontendRequestPipeline {
         } else {
             $this->logsRepository = abj_service('logs_repository');
         }
+    }
+
+    /**
+     * @param mixed $notFoundResponse
+     * @return ABJ_404_Solution_NotFoundResponseService
+     */
+    private function resolveNotFoundResponse($notFoundResponse) {
+        $resolved = $notFoundResponse !== null ? $notFoundResponse : abj_service('not_found_response');
+        if ($resolved instanceof ABJ_404_Solution_NotFoundResponseService) {
+            return $resolved;
+        }
+        if (is_object($resolved)) {
+            $forceRedirect = array($resolved, 'forceRedirect');
+            $sendTo404Page = array($resolved, 'sendTo404Page');
+            $thereIsAUserSpecified404Page = array($resolved, 'thereIsAUserSpecified404Page');
+            if (is_callable($forceRedirect)
+                    && is_callable($sendTo404Page)
+                    && is_callable($thereIsAUserSpecified404Page)) {
+                return $this->adaptNotFoundResponse($forceRedirect, $sendTo404Page, $thereIsAUserSpecified404Page);
+            }
+        }
+        throw new InvalidArgumentException('FrontendRequestPipeline requires NotFoundResponseService.');
+    }
+
+    /**
+     * @param callable $forceRedirect
+     * @param callable $sendTo404Page
+     * @param callable $thereIsAUserSpecified404Page
+     * @return ABJ_404_Solution_NotFoundResponseService
+     */
+    private function adaptNotFoundResponse($forceRedirect, $sendTo404Page, $thereIsAUserSpecified404Page) {
+        return new class($forceRedirect, $sendTo404Page, $thereIsAUserSpecified404Page) extends ABJ_404_Solution_NotFoundResponseService {
+            /** @var callable */
+            private $forceRedirect;
+
+            /** @var callable */
+            private $sendTo404Page;
+
+            /** @var callable */
+            private $thereIsAUserSpecified404Page;
+
+            function __construct(callable $forceRedirect, callable $sendTo404Page, callable $thereIsAUserSpecified404Page) {
+                $this->forceRedirect = $forceRedirect;
+                $this->sendTo404Page = $sendTo404Page;
+                $this->thereIsAUserSpecified404Page = $thereIsAUserSpecified404Page;
+            }
+
+            function forceRedirect(string $location, int $status = 302, $type = -1, string $requestedURL = '', bool $isCustom404 = false): bool {
+                return (bool)call_user_func($this->forceRedirect, $location, $status, $type, $requestedURL, $isCustom404);
+            }
+
+            function sendTo404Page(string $requestedURL, string $reason = '', bool $useUserSpecified404 = true, $optionsOverride = null): void {
+                call_user_func($this->sendTo404Page, $requestedURL, $reason, $useUserSpecified404, $optionsOverride);
+            }
+
+            function thereIsAUserSpecified404Page($dest404page): bool {
+                return (bool)call_user_func($this->thereIsAUserSpecified404Page, $dest404page);
+            }
+        };
+    }
+
+    /**
+     * @param mixed $requestIgnoreNormalizer
+     * @param ABJ_404_Solution_LogsRepositoryInterface|null $logsRepository
+     * @return ABJ_404_Solution_RequestIgnoreNormalizer
+     */
+    private function resolveRequestIgnoreNormalizer($requestIgnoreNormalizer, $logsRepository) {
+        if ($requestIgnoreNormalizer instanceof ABJ_404_Solution_RequestIgnoreNormalizer) {
+            return $requestIgnoreNormalizer;
+        }
+        if (is_object($requestIgnoreNormalizer)) {
+            $initializeIgnoreValues = array($requestIgnoreNormalizer, 'initializeIgnoreValues');
+            $tryNormalPostQuery = array($requestIgnoreNormalizer, 'tryNormalPostQuery');
+            if (is_callable($initializeIgnoreValues) && is_callable($tryNormalPostQuery)) {
+                return $this->adaptRequestIgnoreNormalizer($initializeIgnoreValues, $tryNormalPostQuery);
+            }
+        }
+        return new ABJ_404_Solution_RequestIgnoreNormalizer(
+            $this->logic,
+            $this->f,
+            $this->logger,
+            $this->redirectsRepository,
+            $logsRepository,
+            $this->notFoundResponse
+        );
+    }
+
+    /**
+     * @param callable $initializeIgnoreValues
+     * @param callable $tryNormalPostQuery
+     * @return ABJ_404_Solution_RequestIgnoreNormalizer
+     */
+    private function adaptRequestIgnoreNormalizer($initializeIgnoreValues, $tryNormalPostQuery) {
+        return new class($initializeIgnoreValues, $tryNormalPostQuery) extends ABJ_404_Solution_RequestIgnoreNormalizer {
+            /** @var callable */
+            private $initializeIgnoreValues;
+
+            /** @var callable */
+            private $tryNormalPostQuery;
+
+            function __construct(callable $initializeIgnoreValues, callable $tryNormalPostQuery) {
+                $this->initializeIgnoreValues = $initializeIgnoreValues;
+                $this->tryNormalPostQuery = $tryNormalPostQuery;
+            }
+
+            function initializeIgnoreValues(string $urlRequest, string $urlSlugOnly): void {
+                call_user_func($this->initializeIgnoreValues, $urlRequest, $urlSlugOnly);
+            }
+
+            function tryNormalPostQuery(array $options): void {
+                call_user_func($this->tryNormalPostQuery, $options);
+            }
+        };
+    }
+
+    /**
+     * @param mixed $previousRequestCookieTracker
+     * @return ABJ_404_Solution_PreviousRequestCookieTracker
+     */
+    private function resolvePreviousRequestCookieTracker($previousRequestCookieTracker) {
+        if ($previousRequestCookieTracker instanceof ABJ_404_Solution_PreviousRequestCookieTracker) {
+            return $previousRequestCookieTracker;
+        }
+        if (is_object($previousRequestCookieTracker)) {
+            $setCookieWithPreviousRequest = array($previousRequestCookieTracker, 'setCookieWithPreviousRequest');
+            $readCookieWithPreviousRqeuestShort = array($previousRequestCookieTracker, 'readCookieWithPreviousRqeuestShort');
+            if (is_callable($setCookieWithPreviousRequest) && is_callable($readCookieWithPreviousRqeuestShort)) {
+                return $this->adaptPreviousRequestCookieTracker($readCookieWithPreviousRqeuestShort, $setCookieWithPreviousRequest);
+            }
+        }
+        return new ABJ_404_Solution_PreviousRequestCookieTracker($this->f, $this->logger);
+    }
+
+    /**
+     * @param callable $readCookieWithPreviousRqeuestShort
+     * @param callable $setCookieWithPreviousRequest
+     * @return ABJ_404_Solution_PreviousRequestCookieTracker
+     */
+    private function adaptPreviousRequestCookieTracker($readCookieWithPreviousRqeuestShort, $setCookieWithPreviousRequest) {
+        return new class($readCookieWithPreviousRqeuestShort, $setCookieWithPreviousRequest) extends ABJ_404_Solution_PreviousRequestCookieTracker {
+            /** @var callable */
+            private $readCookieWithPreviousRqeuestShort;
+
+            /** @var callable */
+            private $setCookieWithPreviousRequest;
+
+            function __construct(callable $readCookieWithPreviousRqeuestShort, callable $setCookieWithPreviousRequest) {
+                $this->readCookieWithPreviousRqeuestShort = $readCookieWithPreviousRqeuestShort;
+                $this->setCookieWithPreviousRequest = $setCookieWithPreviousRequest;
+            }
+
+            function readCookieWithPreviousRqeuestShort(): string {
+                $value = call_user_func($this->readCookieWithPreviousRqeuestShort);
+                return is_string($value) ? $value : '';
+            }
+
+            function setCookieWithPreviousRequest(): void {
+                call_user_func($this->setCookieWithPreviousRequest);
+            }
+        };
     }
 
     /**
@@ -237,7 +401,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
         $pathOnly = $userRequest->getPath();
         $urlSlugOnly = $userRequest->getOnlyTheSlug();
 
-        $this->logic->initializeIgnoreValues($pathOnly, $urlSlugOnly);
+        $this->requestIgnoreNormalizer->initializeIgnoreValues($pathOnly, $urlSlugOnly);
         $requestedURL = $userRequest->getPathWithSortedQueryString();
 
         $this->tryRegexRedirect($options, $requestedURL);
@@ -356,7 +520,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
 
         $pathOnly = $userRequest->getPath();
         $urlSlugOnly = $userRequest->getOnlyTheSlug();
-        $this->logic->initializeIgnoreValues($pathOnly, $urlSlugOnly);
+        $this->requestIgnoreNormalizer->initializeIgnoreValues($pathOnly, $urlSlugOnly);
         $this->trace = [];
 
         if (abj_service('request_context')->ignore_donotprocess) {
@@ -466,7 +630,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
         // Last resort: defer to WordPress's built-in URL guessing.
         $this->tryWordPressGuessFallback($autoRedirectsAreOn, $requestedURL, $options);
 
-        $this->logic->tryNormalPostQuery($options);
+        $this->requestIgnoreNormalizer->tryNormalPostQuery($options);
         $this->addTraceStep('Result', 'No redirect — showed 404 page');
         $this->logRedirectHit($requestedURL, '404', 'gave up.', null, $this->trace);
         $this->triggerAsyncSuggestionsIfNeeded($requestedURL);
@@ -892,7 +1056,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
         }
 
         if ($isRedirectToCustom404Page) {
-            $this->logic->setCookieWithPreviousRequest();
+            $this->previousRequestCookieTracker->setCookieWithPreviousRequest();
             setcookie(ABJ404_PP . '_STATUS_404', 'true', time() + 20, "/");
 
             $urlSlugOnly = $this->logic->urlNormalization()->removeHomeDirectory($requestedURL);

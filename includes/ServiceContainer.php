@@ -228,6 +228,7 @@ class ABJ_404_Solution_ServiceContainer {
  *     $name is 'permalink_cache' ? ABJ_404_Solution_PermalinkCache : (
  *     $name is 'ngram_filter' ? ABJ_404_Solution_NGramFilter : (
  *     $name is 'plugin_logic' ? ABJ_404_Solution_PluginLogic : (
+ *     $name is 'request_ignore_normalizer' ? ABJ_404_Solution_RequestIgnoreNormalizer : (
  *     $name is 'spell_checker' ? ABJ_404_Solution_SpellChecker : (
  *     $name is 'engine_slug' ? ABJ_404_Solution_SlugMatchingEngine : (
  *     $name is 'engine_url_fix' ? ABJ_404_Solution_UrlFixEngine : (
@@ -242,6 +243,7 @@ class ABJ_404_Solution_ServiceContainer {
  *     $name is 'published_posts_provider' ? ABJ_404_Solution_PublishedPostsProvider : (
  *     $name is 'sync_utils' ? ABJ_404_Solution_SynchronizationUtils : (
  *     $name is 'request_context' ? ABJ_404_Solution_RequestContext : (
+ *     $name is 'previous_request_cookie_tracker' ? ABJ_404_Solution_PreviousRequestCookieTracker : (
  *     $name is 'view' ? ABJ_404_Solution_View : (
  *     $name is 'view_suggestions' ? ABJ_404_Solution_View_Suggestions : (
  *     $name is 'shortcode' ? ABJ_404_Solution_ShortCode : (
@@ -253,7 +255,7 @@ class ABJ_404_Solution_ServiceContainer {
  *     $name is 'settings_mode_preference' ? ABJ_404_Solution_SettingsModePreference : (
  *     $name is 'not_found_response' ? ABJ_404_Solution_NotFoundResponseService :
  *     mixed
- * )))))))))))))))))))))))))))))))))))))))))
+ * )))))))))))))))))))))))))))))))))))))))))))
  */
 function abj_service($name) {
     $container = ABJ_404_Solution_ServiceContainer::getInstance();
@@ -279,7 +281,26 @@ function abj_service($name) {
             abj_service('redirects_repository'),
             abj_service('logs_repository'),
             abj_service('logging'),
-            abj_service('options_repository')
+            abj_service('options_repository'),
+            abj_service('previous_request_cookie_tracker')
+        );
+    }
+
+    if ($name === 'previous_request_cookie_tracker' && class_exists('ABJ_404_Solution_PreviousRequestCookieTracker')) {
+        return new ABJ_404_Solution_PreviousRequestCookieTracker(
+            abj_service('functions'),
+            abj_service('logging')
+        );
+    }
+
+    if ($name === 'request_ignore_normalizer' && class_exists('ABJ_404_Solution_RequestIgnoreNormalizer')) {
+        return new ABJ_404_Solution_RequestIgnoreNormalizer(
+            abj_service('plugin_logic'),
+            abj_service('functions'),
+            abj_service('logging'),
+            abj_service('redirects_repository'),
+            abj_service('logs_repository'),
+            abj_service('not_found_response')
         );
     }
 
@@ -338,6 +359,7 @@ function abj_service($name) {
         'logging' => 'ABJ_404_Solution_Logging',
         'data_access' => 'ABJ_404_Solution_DataAccess',
         'plugin_logic' => 'ABJ_404_Solution_PluginLogic',
+        'request_ignore_normalizer' => 'ABJ_404_Solution_RequestIgnoreNormalizer',
         'view' => 'ABJ_404_Solution_View',
         'view_suggestions' => 'ABJ_404_Solution_View_Suggestions',
         'spell_checker' => 'ABJ_404_Solution_SpellChecker',
@@ -350,6 +372,7 @@ function abj_service($name) {
         'sync_utils' => 'ABJ_404_Solution_SynchronizationUtils',
         'shortcode' => 'ABJ_404_Solution_ShortCode',
         'request_context' => 'ABJ_404_Solution_RequestContext',
+        'previous_request_cookie_tracker' => 'ABJ_404_Solution_PreviousRequestCookieTracker',
         'version_upgrade' => 'ABJ_404_Solution_PluginVersionUpgradeService',
         'options_repository' => 'ABJ_404_Solution_OptionsRepository',
         'admin_access_policy' => 'ABJ_404_Solution_PluginAdminAccessPolicy',

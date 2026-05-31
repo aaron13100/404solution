@@ -24,19 +24,26 @@ class ABJ_404_Solution_NotFoundResponseService {
     /** @var ABJ_404_Solution_OptionsRepository */
     private $optionsRepository;
 
+    /** @var ABJ_404_Solution_PreviousRequestCookieTracker */
+    private $previousRequestCookieTracker;
+
     /**
      * @param ABJ_404_Solution_Functions|null $functions
      * @param ABJ_404_Solution_RedirectsRepositoryInterface|null $redirectsRepo
      * @param ABJ_404_Solution_LogsRepositoryInterface|null $logsRepo
      * @param ABJ_404_Solution_Logging|null $logging
      * @param ABJ_404_Solution_OptionsRepository|null $optionsRepository
+     * @param ABJ_404_Solution_PreviousRequestCookieTracker|null $previousRequestCookieTracker
      */
-    function __construct($functions = null, $redirectsRepo = null, $logsRepo = null, $logging = null, $optionsRepository = null) {
+    function __construct($functions = null, $redirectsRepo = null, $logsRepo = null, $logging = null, $optionsRepository = null, $previousRequestCookieTracker = null) {
         $this->f = $functions !== null ? $functions : abj_service('functions');
         $this->redirectsRepo = $redirectsRepo !== null ? $redirectsRepo : abj_service('redirects_repository');
         $this->logsRepo = $logsRepo !== null ? $logsRepo : abj_service('logs_repository');
         $this->logger = $logging !== null ? $logging : abj_service('logging');
         $this->optionsRepository = $optionsRepository !== null ? $optionsRepository : abj_service('options_repository');
+        $this->previousRequestCookieTracker = $previousRequestCookieTracker !== null
+            ? $previousRequestCookieTracker
+            : abj_service('previous_request_cookie_tracker');
     }
 
     /**
@@ -227,7 +234,7 @@ class ABJ_404_Solution_NotFoundResponseService {
             $finalDestination = (string)$location . $this->getCommentPartAndQueryPartOfRequest();
         }
 
-        $previousRequest = $this->readCookieWithPreviousRqeuestShort();
+        $previousRequest = $this->previousRequestCookieTracker->readCookieWithPreviousRqeuestShort();
         $schemePos = $this->f->strpos($finalDestination, '://');
         $finalDestNoHome = ($schemePos !== false)
             ? $this->f->substr($finalDestination, $schemePos + 3) : $finalDestination;
@@ -257,7 +264,7 @@ class ABJ_404_Solution_NotFoundResponseService {
             return true;
         }
 
-        $this->setCookieWithPreviousRequest();
+        $this->previousRequestCookieTracker->setCookieWithPreviousRequest();
         if (!headers_sent()) {
             if (function_exists('abj404_benchmark_emit_headers')) {
                 abj404_benchmark_emit_headers();
@@ -304,53 +311,4 @@ class ABJ_404_Solution_NotFoundResponseService {
         exit;
     }
 
-    /** @return string */
-    private function readCookieWithPreviousRqeuestShort(): string {
-        $cookieName = ABJ404_PP . '_REQUEST_URI';
-        $cookieNameShort = $cookieName . '_SHORT';
-
-        if (array_key_exists($cookieNameShort, $_COOKIE) &&
-            array_key_exists($cookieName, $_COOKIE)) {
-            return $_COOKIE[$cookieName];
-        }
-
-        return '';
-    }
-
-    /** @return void */
-    private function setCookieWithPreviousRequest(): void {
-        $requestUri = isset($_SERVER['REQUEST_URI']) && is_string($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
-        $requested_url_raw = $this->f->normalizeUrlString($requestUri);
-
-        $requested_url_cleaned = preg_replace('/\?.*$/', '', $requested_url_raw);
-        $requested_url = is_string($requested_url_cleaned) ? $requested_url_cleaned : $requested_url_raw;
-
-        $cookieName = ABJ404_PP . '_REQUEST_URI';
-        $cookieNameShort = $cookieName . '_SHORT';
-        try {
-            setcookie($cookieName, $requested_url, time() + (60 * 4), "/");
-            setcookie($cookieNameShort, $requested_url, time() + (5), "/");
-
-            if (!isset($_COOKIE[$cookieName . '_UPDATE_URL']) ||
-                    empty($_COOKIE[$cookieName . '_UPDATE_URL'])) {
-                $update_url_raw = $this->f->normalizeUrlString($requestUri);
-                $update_url_cleaned = preg_replace('/\?.*$/', '', $update_url_raw);
-                $update_url = is_string($update_url_cleaned) ? $update_url_cleaned : $update_url_raw;
-                setcookie($cookieName . '_UPDATE_URL', $update_url, time() + (60 * 4), "/");
-            }
-
-        } catch (Exception $e) {
-            $this->logger->debugMessage("There was an issue setting a cookie: " . $e->getMessage());
-            $expireTime = date("D, d M Y H:i:s T", time() + (60 * 4));
-            $c = "\n" . '<script>document.cookie = "' . $cookieName . '=' .
-                esc_js($requested_url) .
-                '; expires=' . $expireTime . '";</script>' . "\n";
-            echo $c;
-        }
-
-        $requestContext = abj_service('request_context');
-        if (is_object($requestContext)) {
-            $requestContext->requested_url = $requested_url;
-        }
-    }
 }

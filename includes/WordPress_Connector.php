@@ -86,7 +86,9 @@ class ABJ_404_Solution_WordPress_Connector {
 			$this->spellChecker,
 			$matchingEngines,
 			$this->logsRepository,
-			abj_service('not_found_response')
+			abj_service('not_found_response'),
+			abj_service('request_ignore_normalizer'),
+			abj_service('previous_request_cookie_tracker')
 		);
 		return $this->frontendPipeline;
 	}
