@@ -292,49 +292,9 @@ class ABJ_404_Solution_DataAccess {
      * @param ABJ_404_Solution_ViewBuildOrchestrator|null $viewBuildOrchestrator
      */
     public function __construct($functions = null, $logging = null, $dbCore = null, $contentRepo = null, $redirectsRepo = null, $logsRepo = null, $statsRepo = null, $viewReadService = null, $viewBuildOrchestrator = null) {
-        $this->f = is_object($functions) && method_exists($functions, 'strtolower') ? $functions : abj_service('functions');
-        $this->logger = is_object($logging) && (method_exists($logging, 'debugMessage') || method_exists($logging, 'errorMessage')) ? $logging : abj_service('logging');
-
-        if ($dbCore !== null) {
-            $this->dbCore = $dbCore;
-        } else if (get_class($this) !== __CLASS__
-            && method_exists($this, 'queryAndGetResults')
-            && (new \ReflectionMethod($this, 'queryAndGetResults'))->getDeclaringClass()->getName() !== __CLASS__) {
-            $owner = $this;
-            $this->dbCore = new class($owner, $this->f, $this->logger) extends ABJ_404_Solution_DatabaseCore {
-                private $owner;
-                public function __construct($owner, $functions, $logger) {
-                    $this->owner = $owner;
-                    parent::__construct($functions, $logger);
-                }
-                public function queryAndGetResults($query, $options = array()): array {
-                    return $this->owner->queryAndGetResults($query, $options);
-                }
-                public function doTableNameReplacements($query): string {
-                    if (method_exists($this->owner, 'doTableNameReplacements')
-                        && (new \ReflectionMethod($this->owner, 'doTableNameReplacements'))->getDeclaringClass()->getName() !== 'ABJ_404_Solution_DataAccess') {
-                        return (string)$this->owner->doTableNameReplacements($query);
-                    }
-                    return parent::doTableNameReplacements($query);
-                }
-                public function tableExists($tableName): bool {
-                    if (method_exists($this->owner, 'tableExists')
-                        && (new \ReflectionMethod($this->owner, 'tableExists'))->getDeclaringClass()->getName() !== 'ABJ_404_Solution_DataAccess') {
-                        return (bool)$this->owner->tableExists($tableName);
-                    }
-                    return parent::tableExists($tableName);
-                }
-                public function getLowercasePrefix(): string {
-                    if (method_exists($this->owner, 'getLowercasePrefix')
-                        && (new \ReflectionMethod($this->owner, 'getLowercasePrefix'))->getDeclaringClass()->getName() !== 'ABJ_404_Solution_DataAccess') {
-                        return (string)$this->owner->getLowercasePrefix();
-                    }
-                    return parent::getLowercasePrefix();
-                }
-            };
-        } else {
-            $this->dbCore = new ABJ_404_Solution_DatabaseCore($this->f, $this->logger);
-        }
+        $this->f = self::resolveFunctions($functions);
+        $this->logger = self::resolveLogger($logging);
+        $this->dbCore = $dbCore !== null ? $dbCore : $this->createDbCore();
         if ($contentRepo !== null) {
             $this->contentRepo = $contentRepo;
         } else {
@@ -347,30 +307,7 @@ class ABJ_404_Solution_DataAccess {
             $this->redirectsRepo = new ABJ_404_Solution_RedirectsRepository($this->dbCore, $this->f, $this->logger);
         }
 
-        if ($logsRepo !== null) {
-            $this->logsRepo = $logsRepo;
-        } else if (get_class($this) !== __CLASS__
-            && ((method_exists($this, 'logsHitsTableExists')
-                    && (new \ReflectionMethod($this, 'logsHitsTableExists'))->getDeclaringClass()->getName() !== __CLASS__)
-                || (method_exists($this, 'scheduleHitsTableRebuild')
-                    && (new \ReflectionMethod($this, 'scheduleHitsTableRebuild'))->getDeclaringClass()->getName() !== __CLASS__))) {
-            $owner = $this;
-            $this->logsRepo = new class($owner, $this->dbCore, $this->f, $this->logger) extends ABJ_404_Solution_LogsRepository {
-                private $owner;
-                public function __construct($owner, $dbCore, $functions, $logger) {
-                    $this->owner = $owner;
-                    parent::__construct($dbCore, $functions, $logger);
-                }
-                public function logsHitsTableExists() {
-                    return (bool)$this->owner->logsHitsTableExists();
-                }
-                public function scheduleHitsTableRebuild(): void {
-                    $this->owner->scheduleHitsTableRebuild();
-                }
-            };
-        } else {
-            $this->logsRepo = new ABJ_404_Solution_LogsRepository($this->dbCore, $this->f, $this->logger);
-        }
+        $this->logsRepo = $logsRepo !== null ? $logsRepo : $this->createLogsRepo();
 
         if ($statsRepo !== null) {
             $this->statsRepo = $statsRepo;
@@ -386,57 +323,9 @@ class ABJ_404_Solution_DataAccess {
             );
         }
 
-        if ($viewBuildOrchestrator !== null) {
-            $this->viewBuildOrchestrator = $viewBuildOrchestrator;
-        } else if (get_class($this) !== __CLASS__
-            && ((method_exists($this, 'runRedirectsForViewStaged')
-                    && (new \ReflectionMethod($this, 'runRedirectsForViewStaged'))->getDeclaringClass()->getName() !== __CLASS__)
-                || (method_exists($this, 'advanceViewBuildOnce')
-                    && (new \ReflectionMethod($this, 'advanceViewBuildOnce'))->getDeclaringClass()->getName() !== __CLASS__)
-                || (method_exists($this, 'runPageLoadFallbackAdvance')
-                    && (new \ReflectionMethod($this, 'runPageLoadFallbackAdvance'))->getDeclaringClass()->getName() !== __CLASS__)
-                || (method_exists($this, 'viewDoneIsServeable')
-                    && (new \ReflectionMethod($this, 'viewDoneIsServeable'))->getDeclaringClass()->getName() !== __CLASS__))) {
-            $owner = $this;
-            $this->viewBuildOrchestrator = new class($owner, $this->dbCore, $this->f, $this->logger) extends ABJ_404_Solution_ViewBuildOrchestrator {
-                private $owner;
-                public function __construct($owner, $dbCore, $functions, $logger) {
-                    $this->owner = $owner;
-                    parent::__construct($dbCore, $functions, $logger);
-                }
-                public function runRedirectsForViewStaged(string $sub, array $tableOptions): array {
-                    return $this->owner->runRedirectsForViewStaged($sub, $tableOptions);
-                }
-                public function runRedirectsForViewCountStaged(string $sub, array $tableOptions): int {
-                    return $this->owner->runRedirectsForViewCountStaged($sub, $tableOptions);
-                }
-                public function advanceViewBuildOnce(bool $forceRebuild = false): array {
-                    if (method_exists($this->owner, 'advanceViewBuildOnce')
-                        && (new \ReflectionMethod($this->owner, 'advanceViewBuildOnce'))->getDeclaringClass()->getName() !== 'ABJ_404_Solution_DataAccess') {
-                        return $this->owner->advanceViewBuildOnce($forceRebuild);
-                    }
-                    return parent::advanceViewBuildOnce($forceRebuild);
-                }
-                public function runPageLoadFallbackAdvance(): array {
-                    if (method_exists($this->owner, 'runPageLoadFallbackAdvance')
-                        && (new \ReflectionMethod($this->owner, 'runPageLoadFallbackAdvance'))->getDeclaringClass()->getName() !== 'ABJ_404_Solution_DataAccess') {
-                        return $this->owner->runPageLoadFallbackAdvance();
-                    }
-                    return parent::runPageLoadFallbackAdvance();
-                }
-                public function viewDoneIsServeable(): bool {
-                    if (method_exists($this->owner, 'viewDoneIsServeable')
-                        && (new \ReflectionMethod($this->owner, 'viewDoneIsServeable'))->getDeclaringClass()->getName() !== 'ABJ_404_Solution_DataAccess') {
-                        return (bool)$this->owner->viewDoneIsServeable();
-                    }
-                    return parent::viewDoneIsServeable();
-                }
-            };
-        } else {
-            $this->viewBuildOrchestrator = new ABJ_404_Solution_ViewBuildOrchestrator(
-                $this->dbCore, $this->f, $this->logger, $this->resolveRebuildHealthState()
-            );
-        }
+        $this->viewBuildOrchestrator = $viewBuildOrchestrator !== null
+            ? $viewBuildOrchestrator
+            : $this->createViewBuildOrchestrator();
         $this->viewBuildOrchestrator->setViewReadService($this->viewReadService);
         $this->viewBuildOrchestrator->setLogsRepository($this->logsRepo);
         $this->viewReadService->setViewBuildOrchestrator($this->viewBuildOrchestrator);
@@ -444,6 +333,253 @@ class ABJ_404_Solution_DataAccess {
         $this->pluginUpdateRepo = new ABJ_404_Solution_PluginUpdateMetadataRepository(
             $this->dbCore, $this->f, $this->logger
         );
+    }
+
+    /**
+     * @param mixed $functions
+     * @return ABJ_404_Solution_Functions
+     */
+    private static function resolveFunctions($functions) {
+        if ($functions instanceof ABJ_404_Solution_Functions) {
+            return $functions;
+        }
+        return ABJ_404_Solution_Functions::getInstance();
+    }
+
+    /**
+     * @param mixed $logging
+     * @return ABJ_404_Solution_Logging
+     */
+    private static function resolveLogger($logging) {
+        if ($logging instanceof ABJ_404_Solution_Logging) {
+            return $logging;
+        }
+        if (is_object($logging) && (method_exists($logging, 'debugMessage') || method_exists($logging, 'errorMessage'))) {
+            return self::createLoggerAdapter($logging);
+        }
+        return ABJ_404_Solution_Logging::getInstance();
+    }
+
+    /**
+     * @param object $logging
+     * @return ABJ_404_Solution_Logging
+     */
+    private static function createLoggerAdapter($logging) {
+        return new class($logging) extends ABJ_404_Solution_Logging {
+            /** @var object */
+            private $delegate;
+
+            /** @param object $delegate */
+            public function __construct($delegate) {
+                $this->delegate = $delegate;
+            }
+
+            public function debugMessage(string $message, $e = null): void {
+                $this->callDelegate('debugMessage', array($message, $e));
+            }
+
+            public function infoMessage(string $message): void {
+                $this->callDelegate('infoMessage', array($message));
+            }
+
+            public function warn(string $message): void {
+                $this->callDelegate('warn', array($message));
+            }
+
+            public function errorMessage(string $message, $e = null): void {
+                $this->callDelegate('errorMessage', array($message, $e));
+            }
+
+            /**
+             * @param string $method
+             * @param array<int, mixed> $args
+             * @return void
+             */
+            private function callDelegate(string $method, array $args): void {
+                if (method_exists($this->delegate, $method)) {
+                    $this->delegate->$method(...$args);
+                }
+            }
+        };
+    }
+
+    /** @return ABJ_404_Solution_DatabaseCore */
+    private function createDbCore() {
+        if (get_class($this) !== __CLASS__
+            && method_exists($this, 'queryAndGetResults')
+            && (new \ReflectionMethod($this, 'queryAndGetResults'))->getDeclaringClass()->getName() !== __CLASS__) {
+            $owner = $this;
+            return new class($owner, $this->f, $this->logger) extends ABJ_404_Solution_DatabaseCore {
+            /** @var ABJ_404_Solution_DataAccess */
+            private $owner;
+
+            /**
+             * @param ABJ_404_Solution_DataAccess $owner
+             * @param ABJ_404_Solution_Functions|null $functions
+             * @param ABJ_404_Solution_Logging|null $logger
+             */
+            public function __construct($owner, $functions, $logger) {
+                $this->owner = $owner;
+                parent::__construct($functions, $logger);
+            }
+
+            public function queryAndGetResults($query, $options = array()): array {
+                return $this->owner->queryAndGetResults($query, $options);
+            }
+
+            public function doTableNameReplacements($query): string {
+                if ($this->owner->hasSubclassOverride('doTableNameReplacements')) {
+                    return (string)$this->owner->doTableNameReplacements($query);
+                }
+                return parent::doTableNameReplacements($query);
+            }
+
+            public function tableExists($tableName): bool {
+                if ($this->owner->hasSubclassOverride('tableExists')) {
+                    return (bool)$this->owner->invokeSubclassOverride('tableExists', array($tableName));
+                }
+                return parent::tableExists($tableName);
+            }
+
+            public function getLowercasePrefix(): string {
+                if ($this->owner->hasSubclassOverride('getLowercasePrefix')) {
+                    return (string)$this->owner->getLowercasePrefix();
+                }
+                return parent::getLowercasePrefix();
+            }
+        };
+        }
+
+        return new ABJ_404_Solution_DatabaseCore($this->f, $this->logger);
+    }
+
+    /** @return ABJ_404_Solution_LogsRepository */
+    private function createLogsRepo() {
+        if (!$this->hasSubclassOverride('logsHitsTableExists') && !$this->hasSubclassOverride('scheduleHitsTableRebuild')) {
+            return new ABJ_404_Solution_LogsRepository($this->dbCore, $this->f, $this->logger);
+        }
+
+        $owner = $this;
+        return new class($owner, $this->dbCore, $this->f, $this->logger) extends ABJ_404_Solution_LogsRepository {
+            /** @var ABJ_404_Solution_DataAccess */
+            private $owner;
+
+            /**
+             * @param ABJ_404_Solution_DataAccess $owner
+             * @param ABJ_404_Solution_DatabaseCore $dbCore
+             * @param ABJ_404_Solution_Functions|null $functions
+             * @param ABJ_404_Solution_Logging|null $logger
+             */
+            public function __construct($owner, $dbCore, $functions, $logger) {
+                $this->owner = $owner;
+                parent::__construct($dbCore, $functions, $logger);
+            }
+
+            public function logsHitsTableExists() {
+                return (bool)$this->owner->invokeSubclassOverride('logsHitsTableExists');
+            }
+
+            public function scheduleHitsTableRebuild(): void {
+                $this->owner->invokeSubclassOverride('scheduleHitsTableRebuild');
+            }
+        };
+    }
+
+    /** @return ABJ_404_Solution_ViewBuildOrchestrator */
+    private function createViewBuildOrchestrator() {
+        $bridgeMethods = array(
+            'runRedirectsForViewStaged',
+            'advanceViewBuildOnce',
+            'runPageLoadFallbackAdvance',
+            'viewDoneIsServeable',
+        );
+        foreach ($bridgeMethods as $method) {
+            if ($this->hasSubclassOverride($method)) {
+                return $this->createLegacyViewBuildOrchestratorBridge();
+            }
+        }
+
+        return new ABJ_404_Solution_ViewBuildOrchestrator(
+            $this->dbCore, $this->f, $this->logger, $this->resolveRebuildHealthState()
+        );
+    }
+
+    /** @return ABJ_404_Solution_ViewBuildOrchestrator */
+    private function createLegacyViewBuildOrchestratorBridge() {
+        $owner = $this;
+        return new class($owner, $this->dbCore, $this->f, $this->logger) extends ABJ_404_Solution_ViewBuildOrchestrator {
+            /** @var ABJ_404_Solution_DataAccess */
+            private $owner;
+
+            /**
+             * @param ABJ_404_Solution_DataAccess $owner
+             * @param ABJ_404_Solution_DatabaseCore $dbCore
+             * @param ABJ_404_Solution_Functions|null $functions
+             * @param ABJ_404_Solution_Logging|null $logger
+             */
+            public function __construct($owner, $dbCore, $functions, $logger) {
+                $this->owner = $owner;
+                parent::__construct($dbCore, $functions, $logger);
+            }
+
+            public function runRedirectsForViewStaged(string $sub, array $tableOptions): array {
+                $result = $this->owner->invokeSubclassOverride('runRedirectsForViewStaged', array($sub, $tableOptions));
+                $rows = array();
+                if (!is_array($result)) {
+                    return $rows;
+                }
+                foreach ($result as $row) {
+                    if (is_array($row)) {
+                        $rows[] = $row;
+                    }
+                }
+                return $rows;
+            }
+
+            public function runRedirectsForViewCountStaged(string $sub, array $tableOptions): int {
+                $result = $this->owner->invokeSubclassOverride('runRedirectsForViewCountStaged', array($sub, $tableOptions));
+                return is_scalar($result) ? intval($result) : 0;
+            }
+
+            public function advanceViewBuildOnce(bool $forceRebuild = false): array {
+                if ($this->owner->hasSubclassOverride('advanceViewBuildOnce')) {
+                    $result = $this->owner->invokeSubclassOverride('advanceViewBuildOnce', array($forceRebuild));
+                    return is_array($result) ? $result : array();
+                }
+                return parent::advanceViewBuildOnce($forceRebuild);
+            }
+
+            public function runPageLoadFallbackAdvance(): array {
+                if ($this->owner->hasSubclassOverride('runPageLoadFallbackAdvance')) {
+                    return $this->owner->runPageLoadFallbackAdvance();
+                }
+                return parent::runPageLoadFallbackAdvance();
+            }
+
+            public function viewDoneIsServeable(): bool {
+                if ($this->owner->hasSubclassOverride('viewDoneIsServeable')) {
+                    return (bool)$this->owner->viewDoneIsServeable();
+                }
+                return parent::viewDoneIsServeable();
+            }
+        };
+    }
+
+    /** @param string $method @return bool */
+    public function hasSubclassOverride(string $method): bool {
+        if (get_class($this) === __CLASS__ || !method_exists($this, $method)) {
+            return false;
+        }
+        return (new \ReflectionMethod($this, $method))->getDeclaringClass()->getName() !== __CLASS__;
+    }
+
+    /**
+     * @param string $method
+     * @param array<int, mixed> $args
+     * @return mixed
+     */
+    public function invokeSubclassOverride(string $method, array $args = array()) {
+        return (new \ReflectionMethod($this, $method))->invokeArgs($this, $args);
     }
 
     /** @return ABJ_404_Solution_DatabaseCore */
@@ -881,7 +1017,6 @@ class ABJ_404_Solution_DataAccess {
             $this->redirectsRepo,
             $this->getRetentionService(),
             $this->contentRepo,
-            $this->statsRepo,
             $this->viewBuildOrchestrator,
             $this->viewReadService,
         ];
