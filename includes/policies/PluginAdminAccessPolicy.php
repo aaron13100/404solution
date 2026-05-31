@@ -90,86 +90,170 @@ class ABJ_404_Solution_PluginAdminAccessPolicy {
 
         self::$checkingIsAdmin = true;
         try {
-            $optionsRepo = $this->optionsRepo !== null ? $this->optionsRepo : abj_service('options_repository');
-            $options = array();
-            if (is_object($optionsRepo) && method_exists($optionsRepo, 'getOptions')) {
-                try {
-                    $resolvedOptions = $optionsRepo->getOptions(true);
-                    if (is_array($resolvedOptions)) {
-                        $options = $resolvedOptions;
-                    }
-                } catch (\Throwable $e) {
-                    error_log('404 Solution: plugin admin option lookup failed (code ' .
-                        $e->getCode() . '): ' . $e->getMessage());
-                }
-            }
-            $functions = $this->functions !== null ? $this->functions : abj_service('functions');
+            $options = $this->loadOptions();
             $logger = $this->logger !== null ? $this->logger : abj_service('logging');
-            global $current_user;
+            $logger = is_object($logger) ? $logger : null;
+            $currentUserName = $this->currentUserName();
+            $capability = $this->currentUserAdminCapability();
 
-            $canManageOptions = false;
-            $hasAdministratorRole = false;
-            try {
-                $canManageOptions = function_exists('current_user_can') && current_user_can('manage_options');
-                $hasAdministratorRole = function_exists('current_user_can') && current_user_can('administrator');
-            } catch (\Throwable $e) {
-                error_log('404 Solution: plugin admin capability lookup failed (code ' .
-                    $e->getCode() . '): ' . $e->getMessage());
-            }
-            $isPluginAdmin = $canManageOptions || $hasAdministratorRole;
-            if (function_exists('is_multisite') && is_multisite() && function_exists('is_super_admin') && is_super_admin()) {
-                $isPluginAdmin = true;
-            }
-
-            $extraAdmins = isset($options['plugin_admin_users']) ? $options['plugin_admin_users'] : array();
-            $currentUserName = null;
-            if (isset($current_user)) {
-                $currentUserName = $current_user->user_login;
-            }
-            if ($currentUserName != null && $currentUserName != false) {
-                $check = false;
-                if (is_array($extraAdmins)) {
-                    if (is_object($functions) && method_exists($functions, 'removeEmptyCustom')) {
-                        $extraAdmins = array_filter($extraAdmins, array($functions, 'removeEmptyCustom'));
-                    } else {
-                        $extraAdmins = array_filter($extraAdmins);
-                    }
-                    $check = true;
-                } else if (is_string($extraAdmins) && is_object($functions) && method_exists($functions, 'explodeNewline')) {
-                    $extraAdmins = $functions->explodeNewline($extraAdmins);
-                    $check = true;
-                }
-                /** @var array<int|string, mixed> $extraAdmins */
-                if ($check && is_array($extraAdmins) && in_array($currentUserName, $extraAdmins)) {
-                    $isPluginAdmin = true;
-                }
-            }
+            $isPluginAdmin = $capability['is_plugin_admin'] ||
+                $this->currentUserIsListedPluginAdmin($options, $currentUserName);
 
             $filtered = apply_filters('abj404_userIsPluginAdmin', $isPluginAdmin);
 
-            if ((!$filtered || ($filtered !== $isPluginAdmin)) && is_object($logger) && method_exists($logger, 'debugMessage')) {
-                $extraAdminsSummary = '';
-                $rawExtra = isset($options['plugin_admin_users']) ? $options['plugin_admin_users'] : array();
-                if (is_array($rawExtra)) {
-                    $extraAdminsSummary = implode(', ', array_filter($rawExtra));
-                } else if (is_string($rawExtra)) {
-                    $extraAdminsSummary = $rawExtra;
-                }
-
-                $logger->debugMessage(
-                    "userIsPluginAdmin detail: result=" . ($filtered ? 'true' : 'false') .
-                    ", pre-filter=" . ($isPluginAdmin ? 'true' : 'false') .
-                    ", manage_options=" . ($canManageOptions ? 'yes' : 'no') .
-                    ", user=" . ($currentUserName !== null ? $currentUserName : '(none)') .
-                    ", plugin_admin_users=[" . esc_html($extraAdminsSummary) . "]" .
-                    ($filtered !== $isPluginAdmin ? ", NOTE: abj404_userIsPluginAdmin filter changed the result" : "")
-                );
-            }
+            $this->logPluginAdminDecision(
+                $logger,
+                $options,
+                $currentUserName,
+                $capability['can_manage_options'],
+                $isPluginAdmin,
+                (bool) $filtered
+            );
 
             return (bool) $filtered;
         } finally {
             self::$checkingIsAdmin = false;
         }
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function loadOptions(): array {
+        $optionsRepo = $this->optionsRepo !== null ? $this->optionsRepo : abj_service('options_repository');
+        if (!is_object($optionsRepo) || !method_exists($optionsRepo, 'getOptions')) {
+            return array();
+        }
+
+        try {
+            $resolvedOptions = $optionsRepo->getOptions(true);
+            return is_array($resolvedOptions) ? $resolvedOptions : array();
+        } catch (\Throwable $e) {
+            error_log('404 Solution: plugin admin option lookup failed (code ' .
+                $e->getCode() . '): ' . $e->getMessage());
+            return array();
+        }
+    }
+
+    /**
+     * @return array{can_manage_options: bool, is_plugin_admin: bool}
+     */
+    private function currentUserAdminCapability(): array {
+        $canManageOptions = false;
+        $hasAdministratorRole = false;
+        try {
+            $canManageOptions = function_exists('current_user_can') && current_user_can('manage_options');
+            $hasAdministratorRole = function_exists('current_user_can') && current_user_can('administrator');
+        } catch (\Throwable $e) {
+            error_log('404 Solution: plugin admin capability lookup failed (code ' .
+                $e->getCode() . '): ' . $e->getMessage());
+        }
+
+        $isPluginAdmin = $canManageOptions || $hasAdministratorRole;
+        if (function_exists('is_multisite') && is_multisite() && function_exists('is_super_admin') && is_super_admin()) {
+            $isPluginAdmin = true;
+        }
+
+        return array(
+            'can_manage_options' => $canManageOptions,
+            'is_plugin_admin' => $isPluginAdmin,
+        );
+    }
+
+    /** @return string|null */
+    private function currentUserName() {
+        global $current_user;
+        if (!isset($current_user) || !isset($current_user->user_login)) {
+            return null;
+        }
+
+        return is_string($current_user->user_login) ? $current_user->user_login : null;
+    }
+
+    /**
+     * @param array<string, mixed> $options
+     */
+    private function currentUserIsListedPluginAdmin(array $options, ?string $currentUserName): bool {
+        if ($currentUserName === null || $currentUserName === '') {
+            return false;
+        }
+
+        $extraAdmins = isset($options['plugin_admin_users']) ? $options['plugin_admin_users'] : array();
+        $normalizedAdmins = $this->normalizeExtraAdmins($extraAdmins);
+        return in_array($currentUserName, $normalizedAdmins, true);
+    }
+
+    /**
+     * @param mixed $extraAdmins
+     * @return array<int, string>
+     */
+    private function normalizeExtraAdmins($extraAdmins): array {
+        $functions = $this->functions !== null ? $this->functions : abj_service('functions');
+
+        if (is_array($extraAdmins)) {
+            if (is_object($functions) && method_exists($functions, 'removeEmptyCustom')) {
+                $extraAdmins = array_filter($extraAdmins, array($functions, 'removeEmptyCustom'));
+            } else {
+                $extraAdmins = array_filter($extraAdmins);
+            }
+            return $this->stringList($extraAdmins);
+        }
+
+        if (is_string($extraAdmins) && is_object($functions) && method_exists($functions, 'explodeNewline')) {
+            $splitAdmins = $functions->explodeNewline($extraAdmins);
+            return is_array($splitAdmins) ? $this->stringList(array_filter($splitAdmins)) : array();
+        }
+
+        return array();
+    }
+
+    /**
+     * @param array<int|string, mixed> $values
+     * @return array<int, string>
+     */
+    private function stringList(array $values): array {
+        $strings = array();
+        foreach ($values as $value) {
+            if (is_scalar($value)) {
+                $strings[] = (string) $value;
+            }
+        }
+        return $strings;
+    }
+
+    /**
+     * @param object|null $logger
+     * @param array<string, mixed> $options
+     * @return void
+     */
+    private function logPluginAdminDecision(?object $logger, array $options, ?string $currentUserName, bool $canManageOptions, bool $isPluginAdmin, bool $filtered): void {
+        if (($filtered && $filtered === $isPluginAdmin) || !is_object($logger) || !method_exists($logger, 'debugMessage')) {
+            return;
+        }
+
+        $logger->debugMessage(
+            "userIsPluginAdmin detail: result=" . ($filtered ? 'true' : 'false') .
+            ", pre-filter=" . ($isPluginAdmin ? 'true' : 'false') .
+            ", manage_options=" . ($canManageOptions ? 'yes' : 'no') .
+            ", user=" . ($currentUserName !== null ? $currentUserName : '(none)') .
+            ", plugin_admin_users=[" . esc_html($this->extraAdminsSummary($options)) . "]" .
+            ($filtered !== $isPluginAdmin ? ", NOTE: abj404_userIsPluginAdmin filter changed the result" : "")
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $options
+     */
+    private function extraAdminsSummary(array $options): string {
+        $rawExtra = isset($options['plugin_admin_users']) ? $options['plugin_admin_users'] : array();
+        if (is_string($rawExtra)) {
+            return $rawExtra;
+        }
+        if (!is_array($rawExtra)) {
+            return '';
+        }
+
+        return implode(', ', $this->normalizeExtraAdmins($rawExtra));
     }
 
     /**
