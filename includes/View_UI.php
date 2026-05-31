@@ -243,7 +243,7 @@ class ABJ_404_Solution_View_UI extends ABJ_404_Solution_ViewComponent {
             }
         }
 
-        $isSimpleMode = $this->logic->getSettingsMode() === 'simple';
+        $isSimpleMode = abj_service('settings_mode_preference')->getMode() === 'simple';
 
         // Tab definitions: [subKey, label]. Order is the display order.
         $tabs = array(
@@ -509,7 +509,7 @@ class ABJ_404_Solution_View_UI extends ABJ_404_Solution_ViewComponent {
      * @return void
      */
     function echoInlineModeToggle() {
-        $currentMode = $this->logic->getSettingsMode();
+        $currentMode = abj_service('settings_mode_preference')->getMode();
         $simpleActive = ($currentMode === 'simple') ? 'active' : '';
         $advancedActive = ($currentMode === 'advanced') ? 'active' : '';
         $simplePressedState = ($currentMode === 'simple') ? 'true' : 'false';

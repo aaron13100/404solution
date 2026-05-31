@@ -44,7 +44,7 @@ class ABJ_404_Solution_View_CapturedURLsTable extends ABJ_404_Solution_ViewCompo
 
         $tableOptions = $this->logic->getTableOptions($sub);
 
-        $isSimpleMode = $this->logic->getSettingsMode() === 'simple';
+        $isSimpleMode = abj_service('settings_mode_preference')->getMode() === 'simple';
 
         // Filter row (native WP subsubsub). Counts are placeholders, populated via AJAX.
         if ($isSimpleMode) {
@@ -179,7 +179,7 @@ class ABJ_404_Solution_View_CapturedURLsTable extends ABJ_404_Solution_ViewCompo
         $edit = $logs = $trash = $delete = $ignore = $later = '';
 
         $currentFilter = $tableOptions['filter'] ?? 0;
-        $isSimpleModeRow = $this->logic->getSettingsMode() === 'simple';
+        $isSimpleModeRow = abj_service('settings_mode_preference')->getMode() === 'simple';
 
         if ($isSimpleModeRow) {
             $edit = $this->buildActionLink('viewRedirectsTableActionLink.html', array(

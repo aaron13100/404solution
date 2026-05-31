@@ -604,7 +604,7 @@ class ABJ_404_Solution_WordPress_Connector {
             $links = array();
         }
 
-        if (!is_admin() || !$instance->logic->userIsPluginAdmin()) {
+        if (!is_admin() || !abj_service('admin_access_policy')->isPluginAdmin()) {
             $instance->logger->logUserCapabilities("addSettingsLinkToPluginPage");
 
             return $links;
@@ -797,7 +797,7 @@ class ABJ_404_Solution_WordPress_Connector {
         try {
             $instance = self::getInstance();
 
-            if (!is_admin() || !$instance->logic->userIsPluginAdmin()) {
+            if (!is_admin() || !abj_service('admin_access_policy')->isPluginAdmin()) {
                 $instance->logger->logUserCapabilities("addMainSettingsPageLink");
                 return;
             }

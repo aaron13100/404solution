@@ -18,14 +18,13 @@ class ABJ_404_Solution_Ajax_RefreshAdminNonces {
 
     /** @return void */
     public function handle() {
-        $abj404logic = abj_service('plugin_logic');
         $ctx = ABJ_404_Solution_Ajax_AdminEndpointSupport::startAjaxDebugContext(array(
             'action' => 'ajaxRefreshAdminNonces',
             'request_uri' => $_SERVER['REQUEST_URI'] ?? '',
             'user_id' => function_exists('get_current_user_id') ? get_current_user_id() : 0,
         ), 'ViewUpdater::refreshAdminNonces');
         try {
-            if (!$abj404logic->userIsPluginAdmin()) {
+            if (!abj_service('admin_access_policy')->isPluginAdmin()) {
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::safeLogAjaxFailure('AJAX unauthorized in ajaxRefreshAdminNonces.', $ctx);
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit(ABJ_404_Solution_Ajax_AdminEndpointSupport::buildAjaxErrorResponse('Unauthorized', null, false), 403);

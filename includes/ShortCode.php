@@ -314,7 +314,7 @@ class ABJ_404_Solution_ShortCode {
         $permalinkSuggestions = isset($permalinkSuggestionsPacket[0]) ? (array)$permalinkSuggestionsPacket[0] : [];
         $rowType = isset($permalinkSuggestionsPacket[1]) ? $permalinkSuggestionsPacket[1] : 'pages';
 
-        $showExtraAdminData = (is_user_logged_in() && $abj404logic->userIsPluginAdmin());
+        $showExtraAdminData = (is_user_logged_in() && abj_service('admin_access_policy')->isPluginAdmin());
         $extraDataById = $showExtraAdminData
             ? self::collectAdminDebugExtraData($permalinkSuggestions, $viewReadService, $f)
             : [];
@@ -566,7 +566,7 @@ class ABJ_404_Solution_ShortCode {
         $rowType = isset($suggestionsPacket[1]) ? $suggestionsPacket[1] : 'pages';
 
         // Check if user is plugin admin to show scores
-        $showExtraAdminData = (is_user_logged_in() && $abj404logic->userIsPluginAdmin());
+        $showExtraAdminData = (is_user_logged_in() && abj_service('admin_access_policy')->isPluginAdmin());
 
         // Extract option strings safely
         $rSuggestTitle = isset($options['suggest_title']) && is_string($options['suggest_title']) ? $options['suggest_title'] : '';

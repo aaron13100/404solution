@@ -322,10 +322,10 @@ class ABJ_404_Solution_Ajax_AdminEndpointSupport {
         if ($isPluginAdmin) {
             return true;
         }
-        $abj404logic = abj_service('plugin_logic');
-        if (is_object($abj404logic) && method_exists($abj404logic, 'userIsPluginAdmin')) {
+        $adminAccessPolicy = abj_service('admin_access_policy');
+        if (is_object($adminAccessPolicy) && method_exists($adminAccessPolicy, 'isPluginAdmin')) {
             try {
-                $isPluginAdmin = (bool)$abj404logic->userIsPluginAdmin();
+                $isPluginAdmin = (bool)$adminAccessPolicy->isPluginAdmin();
             } catch (Throwable $ignored) { // allow-silent-catch: admin-status detection; PluginLogic may be the broken component, default to non-admin (hide details)
                 $isPluginAdmin = false;
             }

@@ -97,7 +97,6 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
     	self::$instance = new ABJ_404_Solution_PluginLogic();
 
     	// these filters allow non-admins to have admin access to the plugin.
-    	// Owned by PluginAdminAccessPolicy after the t_260530_130204_889 split.
     	add_filter( 'user_has_cap',
     		'ABJ_404_Solution_PluginAdminAccessPolicy::wpUserHasCapFilter', 10, 4 );
 
@@ -242,51 +241,6 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
         ABJ_404_Solution_PluginLogicLifecycle::doRegisterCrons();
     }
 
-
-    /**
-     * @deprecated Use abj_service('admin_access_policy')->isPluginAdmin() directly.
-     * Thin delegate kept so that test doubles extending PluginLogic and a small
-     * tail of remaining callers continue to work during the migration window
-     * (will be removed in part 5/5 of t_260530_130204_889).
-     * @return bool
-     */
-    function userIsPluginAdmin() {
-        return abj_service('admin_access_policy')->isPluginAdmin();
-    }
-
-    /**
-     * @deprecated Use abj_service('settings_mode_preference')->getMode() directly.
-     * Thin delegate kept during the SettingsModePreference migration window.
-     * @return string 'simple' or 'advanced'
-     */
-    function getSettingsMode() {
-        return abj_service('settings_mode_preference')->getMode();
-    }
-
-    /**
-     * @deprecated Use abj_service('settings_mode_preference')->setMode($mode) directly.
-     * Thin delegate kept during the SettingsModePreference migration window.
-     * @param string $mode
-     * @return bool|int
-     */
-    function setSettingsMode($mode) {
-        return abj_service('settings_mode_preference')->setMode($mode);
-    }
-
-    /**
-     * @deprecated Use ABJ_404_Solution_PluginAdminAccessPolicy::wpUserHasCapFilter.
-     * Static forwarder retained for any third-party that hooked our old
-     * callback name; removed in part 5/5.
-     *
-     * @param array<string, bool> $allcaps
-     * @param array<int, string> $caps
-     * @param array<int, mixed> $args
-     * @param \WP_User $user
-     * @return array<string, bool>
-     */
-    static function override_user_can_access_admin_page( $allcaps, $caps, $args, $user ) {
-        return ABJ_404_Solution_PluginAdminAccessPolicy::wpUserHasCapFilter($allcaps, $caps, $args, $user);
-    }
 
     /** Forward to a real page for queries like ?p=10
      * @param array<string, mixed> $options

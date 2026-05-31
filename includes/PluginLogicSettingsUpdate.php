@@ -675,7 +675,7 @@ class ABJ_404_Solution_PluginLogicSettingsUpdate {
     public function updateBooleanToggles(array &$options, array $postData): string {
         $message = "";
 
-        $settingsMode = $this->pluginLogic->getSettingsMode();
+        $settingsMode = abj_service('settings_mode_preference')->getMode();
 
         $allBooleanOptions = array('remove_matches', 'debug_mode', 'suggest_cats', 'suggest_tags',
             'auto_redirects', 'auto_slugs', 'auto_cats', 'auto_tags', 'auto_trash_redirect',

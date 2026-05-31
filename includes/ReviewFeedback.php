@@ -33,7 +33,7 @@ class ABJ_404_Solution_ReviewFeedback {
     static function echoDashboardNotification() {
         $connector = abj_service('wordpress_connector');
 
-        if (!is_admin() || !$connector->getPluginLogic()->userIsPluginAdmin()) {
+        if (!is_admin() || !abj_service('admin_access_policy')->isPluginAdmin()) {
             $connector->getLogger()->logUserCapabilities("echoDashboardNotification");
             return;
         }

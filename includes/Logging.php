@@ -209,7 +209,7 @@ class ABJ_404_Solution_Logging {
         $usercaps = $f->str_replace(',"', ', "', wp_kses_post((string)json_encode($user->get_role_caps())));
         
         $userIsPluginAdminStr = "false";
-        if ($abj404logic->userIsPluginAdmin()) {
+        if (abj_service('admin_access_policy')->isPluginAdmin()) {
         	$userIsPluginAdminStr = "true";
         }
         

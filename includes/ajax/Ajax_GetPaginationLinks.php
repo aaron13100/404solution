@@ -72,7 +72,7 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
 
             // Verify user has appropriate capabilities (respects plugin admin users)
             $abj404logic = abj_service('plugin_logic');
-            $isPluginAdmin = $abj404logic->userIsPluginAdmin();
+            $isPluginAdmin = abj_service('admin_access_policy')->isPluginAdmin();
             if (isset($GLOBALS['abj404_ajax_context']) && is_array($GLOBALS['abj404_ajax_context'])) {
                 $GLOBALS['abj404_ajax_context']['is_plugin_admin'] = $isPluginAdmin;
             }

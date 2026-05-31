@@ -76,6 +76,7 @@ function abj_404_solution_init_services() {
     abj_404_solution_register_data_layer($container);
     abj_404_solution_register_business_logic($container);
     abj_404_solution_register_options_repository($container);
+    abj_404_solution_register_user_access_services($container);
     abj_404_solution_register_matching_engines($container);
     abj_404_solution_register_frontend_services($container);
     abj_404_solution_register_presentation_layer($container);
@@ -319,7 +320,7 @@ function abj_404_solution_register_frontend_services($container) {
  */
 function abj_404_solution_register_presentation_layer($container) {
     $container->set('ajax_security_gate', function($c) {
-        return new ABJ_404_Solution_AjaxSecurityGate($c->get('plugin_logic'), $c->get('logging'));
+        return new ABJ_404_Solution_AjaxSecurityGate($c->get('admin_access_policy'), $c->get('logging'));
     });
 
     $container->set('ajax_failure_logger', function($c) {
@@ -357,6 +358,27 @@ function abj_404_solution_register_presentation_layer($container) {
 function abj_404_solution_register_options_repository($registry) {
     $registry->set('options_repository', function($c) {
         return new ABJ_404_Solution_OptionsRepository();
+    });
+}
+
+/**
+ * Register PluginAdminAccessPolicy + SettingsModePreference in the
+ * DI container. Both extracted from PluginLogic during the
+ * plugin-logic decomposition (t_260530_130204_889 split, part 3/5).
+ *
+ * @param ABJ_404_Solution_ServiceContainer $registry
+ * @return void
+ */
+function abj_404_solution_register_user_access_services($registry) {
+    $registry->set('admin_access_policy', function($c) {
+        return new ABJ_404_Solution_PluginAdminAccessPolicy(
+            $c->get('options_repository'),
+            $c->get('functions'),
+            $c->get('logging')
+        );
+    });
+    $registry->set('settings_mode_preference', function($c) {
+        return new ABJ_404_Solution_SettingsModePreference();
     });
 }
 

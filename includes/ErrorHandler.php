@@ -489,9 +489,9 @@ class ABJ_404_Solution_ErrorHandler {
             // Only try to compute admin status if it wasn't already determined earlier in the request.
             if ($isPluginAdmin === null) {
                 try {
-                    $logic = abj_service('plugin_logic');
-                    if (is_object($logic) && method_exists($logic, 'userIsPluginAdmin')) {
-                        $isPluginAdmin = $logic->userIsPluginAdmin();
+                    $adminAccessPolicy = abj_service('admin_access_policy');
+                    if (is_object($adminAccessPolicy) && method_exists($adminAccessPolicy, 'isPluginAdmin')) {
+                        $isPluginAdmin = $adminAccessPolicy->isPluginAdmin();
                     }
                 } catch (Throwable $e) { // allow-silent-catch: admin-status detection; PluginLogic may be the broken component, fall through to WP capability check
                     $isPluginAdmin = null;

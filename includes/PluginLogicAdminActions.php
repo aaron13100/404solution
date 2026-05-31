@@ -306,7 +306,7 @@ class ABJ_404_Solution_PluginLogicAdminActions {
     /** @return void */
     function handleActionChangeItemsPerRow(): void {
 
-        if ($this->f->getPostOrGetSanitize('action') == 'changeItemsPerRow' && $this->pluginLogic->userIsPluginAdmin()) {
+        if ($this->f->getPostOrGetSanitize('action') == 'changeItemsPerRow' && abj_service('admin_access_policy')->isPluginAdmin()) {
             check_admin_referer('abj404_changeItemsPerRow');
             $this->updatePerPageOption(absint($this->f->getPostOrGetSanitize('perpage')));
         }
@@ -315,7 +315,7 @@ class ABJ_404_Solution_PluginLogicAdminActions {
     /** @return void */
     function handleActionExport(): void {
 
-        if (($this->f->getPostOrGetSanitize('action') == 'exportRedirects') && $this->pluginLogic->userIsPluginAdmin()) {
+        if (($this->f->getPostOrGetSanitize('action') == 'exportRedirects') && abj_service('admin_access_policy')->isPluginAdmin()) {
             check_admin_referer('abj404_exportRedirects');
             $this->pluginLogic->doExport();
         }
@@ -324,7 +324,7 @@ class ABJ_404_Solution_PluginLogicAdminActions {
     /** @return string|null */
     function handleActionImportFile() {
 
-        if (($this->f->getPostOrGetSanitize('action') == 'importRedirectsFile') && $this->pluginLogic->userIsPluginAdmin()) {
+        if (($this->f->getPostOrGetSanitize('action') == 'importRedirectsFile') && abj_service('admin_access_policy')->isPluginAdmin()) {
             check_admin_referer('abj404_importRedirectsFile');
             $result = $this->pluginLogic->doImportFile();
             $this->viewBuild->invalidateViewDoneAndScheduleRebuild();

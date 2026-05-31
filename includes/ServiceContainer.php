@@ -248,9 +248,11 @@ class ABJ_404_Solution_ServiceContainer {
  *     $name is 'ajax_security_gate' ? ABJ_404_Solution_AjaxSecurityGate : (
  *     $name is 'ajax_failure_logger' ? ABJ_404_Solution_AjaxFailureLogger : (
  *     $name is 'version_upgrade' ? ABJ_404_Solution_PluginVersionUpgradeService : (
- *     $name is 'options_repository' ? ABJ_404_Solution_OptionsRepository :
+ *     $name is 'options_repository' ? ABJ_404_Solution_OptionsRepository : (
+ *     $name is 'admin_access_policy' ? ABJ_404_Solution_PluginAdminAccessPolicy : (
+ *     $name is 'settings_mode_preference' ? ABJ_404_Solution_SettingsModePreference :
  *     mixed
- * ))))))))))))))))))))))))))))))))))))))
+ * )))))))))))))))))))))))))))))))))))))))))
  */
 function abj_service($name) {
     $container = ABJ_404_Solution_ServiceContainer::getInstance();
@@ -263,7 +265,7 @@ function abj_service($name) {
     }
 
     if ($name === 'ajax_security_gate' && class_exists('ABJ_404_Solution_AjaxSecurityGate')) {
-        return new ABJ_404_Solution_AjaxSecurityGate(abj_service('plugin_logic'), abj_service('logging'));
+        return new ABJ_404_Solution_AjaxSecurityGate(abj_service('admin_access_policy'), abj_service('logging'));
     }
 
     if ($name === 'ajax_failure_logger' && class_exists('ABJ_404_Solution_AjaxFailureLogger')) {
@@ -339,6 +341,8 @@ function abj_service($name) {
         'request_context' => 'ABJ_404_Solution_RequestContext',
         'version_upgrade' => 'ABJ_404_Solution_PluginVersionUpgradeService',
         'options_repository' => 'ABJ_404_Solution_OptionsRepository',
+        'admin_access_policy' => 'ABJ_404_Solution_PluginAdminAccessPolicy',
+        'settings_mode_preference' => 'ABJ_404_Solution_SettingsModePreference',
     );
     if (isset($serviceClassMap[$name])) {
         $class = $serviceClassMap[$name];

@@ -23,7 +23,7 @@ class ABJ_404_Solution_View_Settings extends ABJ_404_Solution_ViewComponent {
         $options = $this->shared->getOptionsWithDefaults();
 
         // Get the current user's settings mode preference
-        $settingsMode = $this->logic->getSettingsMode();
+        $settingsMode = abj_service('settings_mode_preference')->getMode();
 
         // if the current URL does not match the chosen menuLocation then redirect to the correct URL
         $helperFunctions = abj_service('functions');

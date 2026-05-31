@@ -59,7 +59,7 @@ class ABJ_404_Solution_Ajax_AdvanceViewBuild {
                 return;
             }
 
-            $isPluginAdmin = $abj404logic->userIsPluginAdmin();
+            $isPluginAdmin = abj_service('admin_access_policy')->isPluginAdmin();
             if (!$isPluginAdmin) {
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::safeLogAjaxFailure('AJAX unauthorized in ajaxAdvanceViewBuild.', $context);
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();

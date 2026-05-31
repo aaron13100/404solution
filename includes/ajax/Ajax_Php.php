@@ -140,7 +140,7 @@ class ABJ_404_Solution_Ajax_Php {
 		$abj404logic = ($logic !== null) ? $logic : abj_service('plugin_logic');
 
 		// Verify user has appropriate capabilities (respects plugin admin users)
-		if (!$abj404logic->userIsPluginAdmin()) {
+		if (!abj_service('admin_access_policy')->isPluginAdmin()) {
 			wp_send_json_error(array('message' => 'Unauthorized'), 403);
 			return; // @phpstan-ignore deadCode.unreachable
 		}
@@ -184,7 +184,7 @@ class ABJ_404_Solution_Ajax_Php {
 		/** @var ABJ_404_Solution_PluginLogic $abj404logic */
 		$abj404logic = ($logic !== null) ? $logic : abj_service('plugin_logic');
 
-		if (!$abj404logic->userIsPluginAdmin()) {
+		if (!abj_service('admin_access_policy')->isPluginAdmin()) {
 			wp_send_json_error(array('message' => __('Unauthorized', '404-solution')), 403);
 			return; // @phpstan-ignore deadCode.unreachable
 		}
@@ -305,7 +305,7 @@ class ABJ_404_Solution_Ajax_Php {
         $logicSvc = self::getServiceIfAvailable('plugin_logic');
         /** @var ABJ_404_Solution_PluginLogic $abj404logic */
         $abj404logic = ($logicSvc !== null) ? $logicSvc : abj_service('plugin_logic');
-        if (!$abj404logic->userIsPluginAdmin()) {
+        if (!abj_service('admin_access_policy')->isPluginAdmin()) {
             self::sendJson(self::buildAutocompleteErrorItem(__('Unauthorized', '404-solution')), 200);
             return;
         }
@@ -365,7 +365,7 @@ class ABJ_404_Solution_Ajax_Php {
         }
 
         // Verify user has appropriate capabilities (respects plugin admin users)
-        if (!$abj404logic->userIsPluginAdmin()) {
+        if (!abj_service('admin_access_policy')->isPluginAdmin()) {
             self::sendJson(self::buildAutocompleteErrorItem(__('Unauthorized', '404-solution')), 200);
             return;
         }

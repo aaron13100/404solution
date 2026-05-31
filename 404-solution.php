@@ -1627,8 +1627,7 @@ function abj404_loadSomethingWhenWordPressIsReady() {
 		// Keep localhost debug helper on admin screens only; frontend requests stay lean.
 		if ($serverNameIsInTheWhiteList && function_exists('wp_get_current_user')) {
 	    require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
-		$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
-		if ($abj404logic->userIsPluginAdmin()) {
+		if (abj_service('admin_access_policy')->isPluginAdmin()) {
 			$GLOBALS['abj404_display_errors'] = true;
 		}
 	}

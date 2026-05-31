@@ -18,7 +18,10 @@ if (!defined('ABSPATH')) {
  */
 class ABJ_404_Solution_PluginAdminAccessPolicy {
 
-    /** Avoid infinite recursion when current_user_can() re-enters via filter. */
+    /**
+     * Avoid infinite recursion when current_user_can() re-enters via filter.
+     * @var bool
+     */
     private static $checkingIsAdmin = false;
 
     /** @var self|null */
@@ -88,14 +91,32 @@ class ABJ_404_Solution_PluginAdminAccessPolicy {
         self::$checkingIsAdmin = true;
         try {
             $optionsRepo = $this->optionsRepo !== null ? $this->optionsRepo : abj_service('options_repository');
-            $options = is_object($optionsRepo) && method_exists($optionsRepo, 'getOptions')
-                ? $optionsRepo->getOptions(true)
-                : array();
+            $options = array();
+            if (is_object($optionsRepo) && method_exists($optionsRepo, 'getOptions')) {
+                try {
+                    $resolvedOptions = $optionsRepo->getOptions(true);
+                    if (is_array($resolvedOptions)) {
+                        $options = $resolvedOptions;
+                    }
+                } catch (\Throwable $e) {
+                    error_log('404 Solution: plugin admin option lookup failed (code ' .
+                        $e->getCode() . '): ' . $e->getMessage());
+                }
+            }
             $functions = $this->functions !== null ? $this->functions : abj_service('functions');
             $logger = $this->logger !== null ? $this->logger : abj_service('logging');
             global $current_user;
 
-            $isPluginAdmin = current_user_can('manage_options') || current_user_can('administrator');
+            $canManageOptions = false;
+            $hasAdministratorRole = false;
+            try {
+                $canManageOptions = function_exists('current_user_can') && current_user_can('manage_options');
+                $hasAdministratorRole = function_exists('current_user_can') && current_user_can('administrator');
+            } catch (\Throwable $e) {
+                error_log('404 Solution: plugin admin capability lookup failed (code ' .
+                    $e->getCode() . '): ' . $e->getMessage());
+            }
+            $isPluginAdmin = $canManageOptions || $hasAdministratorRole;
             if (function_exists('is_multisite') && is_multisite() && function_exists('is_super_admin') && is_super_admin()) {
                 $isPluginAdmin = true;
             }
@@ -138,7 +159,7 @@ class ABJ_404_Solution_PluginAdminAccessPolicy {
                 $logger->debugMessage(
                     "userIsPluginAdmin detail: result=" . ($filtered ? 'true' : 'false') .
                     ", pre-filter=" . ($isPluginAdmin ? 'true' : 'false') .
-                    ", manage_options=" . (current_user_can('manage_options') ? 'yes' : 'no') .
+                    ", manage_options=" . ($canManageOptions ? 'yes' : 'no') .
                     ", user=" . ($currentUserName !== null ? $currentUserName : '(none)') .
                     ", plugin_admin_users=[" . esc_html($extraAdminsSummary) . "]" .
                     ($filtered !== $isPluginAdmin ? ", NOTE: abj404_userIsPluginAdmin filter changed the result" : "")
@@ -170,15 +191,12 @@ class ABJ_404_Solution_PluginAdminAccessPolicy {
             return $allcaps;
         }
 
-        // Route the admin check through the plugin_logic facade so that
-        // test doubles which stub `$pluginLogic->userIsPluginAdmin()` keep
-        // intercepting the gate; the facade itself delegates to this class.
-        $logic = abj_service('plugin_logic');
-        if (!is_object($logic) || !method_exists($logic, 'userIsPluginAdmin')) {
+        $policy = abj_service('admin_access_policy');
+        if (!is_object($policy) || !method_exists($policy, 'isPluginAdmin')) {
             return $allcaps;
         }
 
-        if (!$logic->userIsPluginAdmin()) {
+        if (!$policy->isPluginAdmin()) {
             return $allcaps;
         }
 

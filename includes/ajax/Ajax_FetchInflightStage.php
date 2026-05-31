@@ -36,7 +36,7 @@ class ABJ_404_Solution_Ajax_FetchInflightStage {
                 );
                 return;
             }
-            if (!$abj404logic->userIsPluginAdmin()) {
+            if (!abj_service('admin_access_policy')->isPluginAdmin()) {
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit(
                     ABJ_404_Solution_Ajax_AdminEndpointSupport::buildAjaxErrorResponse('Unauthorized', null, false),
                     403

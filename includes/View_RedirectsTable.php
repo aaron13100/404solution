@@ -67,7 +67,7 @@ class ABJ_404_Solution_View_RedirectsTable extends ABJ_404_Solution_ViewComponen
 
         // Subtitle
         $subtitleHtml = '';
-        if ($this->logic->getSettingsMode() === 'simple') {
+        if (abj_service('settings_mode_preference')->getMode() === 'simple') {
             $subtitleHtml = $this->f->str_replace(
                 '{text}',
                 esc_html__('The plugin creates these automatically. You only need to act when the status bar above says so.', '404-solution'),
@@ -454,7 +454,7 @@ class ABJ_404_Solution_View_RedirectsTable extends ABJ_404_Solution_ViewComponen
 
             // In Simple mode, show plain language labels instead of numeric codes
             $codeDisplay = $rowCode;
-            if ($this->logic->getSettingsMode() === 'simple') {
+            if (abj_service('settings_mode_preference')->getMode() === 'simple') {
                 $codeDisplay = ABJ_404_Solution_View_RedirectTypeUI::getPlainLanguageCodeLabel($rowCode);
             }
 

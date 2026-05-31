@@ -10,17 +10,17 @@ if (!defined('ABSPATH')) {
 class ABJ_404_Solution_AjaxSecurityGate {
 
     /** @var object|null */
-    private $pluginLogic;
+    private $adminAccessPolicy;
 
     /** @var object|null */
     private $logger;
 
     /**
-     * @param object|null $pluginLogic Service exposing userIsPluginAdmin().
+     * @param object|null $adminAccessPolicy Service exposing isPluginAdmin().
      * @param object|null $logger Service exposing infoMessage().
      */
-    public function __construct($pluginLogic, $logger) {
-        $this->pluginLogic = $pluginLogic;
+    public function __construct($adminAccessPolicy, $logger) {
+        $this->adminAccessPolicy = $adminAccessPolicy;
         $this->logger = $logger;
     }
 
@@ -44,7 +44,7 @@ class ABJ_404_Solution_AjaxSecurityGate {
             return; // @phpstan-ignore deadCode.unreachable
         }
 
-        if (!$this->userIsPluginAdmin($action)) {
+        if (!$this->isPluginAdmin($action)) {
             wp_send_json_error(array('message' => __('Unauthorized', '404-solution')), 403);
             return; // @phpstan-ignore deadCode.unreachable
         }
@@ -52,15 +52,15 @@ class ABJ_404_Solution_AjaxSecurityGate {
         $this->logAuthorizedAction($action);
     }
 
-    private function userIsPluginAdmin(string $action): bool {
-        if (!is_object($this->pluginLogic) || !method_exists($this->pluginLogic, 'userIsPluginAdmin')) {
+    private function isPluginAdmin(string $action): bool {
+        if (!is_object($this->adminAccessPolicy) || !method_exists($this->adminAccessPolicy, 'isPluginAdmin')) {
             error_log('404 Solution: AJAX authorization failed for ' . $action .
-                ' because plugin_logic service is unavailable.');
+                ' because admin_access_policy service is unavailable.');
             return false;
         }
 
         try {
-            return (bool)$this->pluginLogic->userIsPluginAdmin();
+            return (bool)$this->adminAccessPolicy->isPluginAdmin();
         } catch (\Throwable $e) {
             error_log('404 Solution: AJAX authorization failed for ' . $action .
                 ' (code ' . $e->getCode() . '): ' . $e->getMessage());

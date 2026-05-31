@@ -46,7 +46,6 @@ class ABJ_404_Solution_Ajax_SettingsModeToggle {
         $container = ABJ_404_Solution_ServiceContainer::getInstance();
         /** @var ABJ_404_Solution_Functions $functions */
         $functions = $container->has('functions') ? $container->get('functions') : abj_service('functions');
-        $abj404logic = abj_service('plugin_logic');
 
         $mode = $functions->getPostOrGetSanitize('mode');
 
@@ -57,7 +56,7 @@ class ABJ_404_Solution_Ajax_SettingsModeToggle {
         }
 
         // Set the mode
-        $result = $abj404logic->setSettingsMode($mode);
+        $result = abj_service('settings_mode_preference')->setMode($mode);
 
         if ($result !== false) {
             wp_send_json_success(array(

@@ -43,10 +43,9 @@ class ABJ_404_Solution_WPNotices {
      */
     static function echoAdminNotices() {
     	$f = abj_service('functions');
-    	$abj404logic = abj_service('plugin_logic');
 
     	$allHTML = '';
-    	if (!$abj404logic->userIsPluginAdmin()) {
+    	if (!abj_service('admin_access_policy')->isPluginAdmin()) {
             return '';
         }
 

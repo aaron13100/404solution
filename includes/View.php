@@ -336,7 +336,7 @@ class ABJ_404_Solution_View {
 		try {
 			$action = (string)$instance->viewGetPostOrGetSanitize('action');
 
-			if (!is_admin() || !$instance->logic->userIsPluginAdmin()) {
+			if (!is_admin() || !abj_service('admin_access_policy')->isPluginAdmin()) {
 				$instance->logger->logUserCapabilities("handleMainAdminPageActionAndDisplay (" .
 						esc_html($action == '' ? '(none)' : $action) . ")");
 

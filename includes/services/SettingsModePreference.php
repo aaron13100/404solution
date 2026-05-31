@@ -44,11 +44,29 @@ class ABJ_404_Solution_SettingsModePreference {
      * @return string 'simple' or 'advanced'
      */
     public function getMode(): string {
-        $userId = get_current_user_id();
+        if (!function_exists('get_current_user_id')) {
+            return self::MODE_SIMPLE;
+        }
+        try {
+            $userId = get_current_user_id();
+        } catch (\Throwable $e) {
+            error_log('404 Solution: settings mode user lookup failed (code ' .
+                $e->getCode() . '): ' . $e->getMessage());
+            return self::MODE_SIMPLE;
+        }
         if (!$userId) {
             return self::MODE_SIMPLE;
         }
-        $mode = get_user_meta($userId, self::META_KEY, true);
+        if (!function_exists('get_user_meta')) {
+            return self::MODE_SIMPLE;
+        }
+        try {
+            $mode = get_user_meta($userId, self::META_KEY, true);
+        } catch (\Throwable $e) {
+            error_log('404 Solution: settings mode read failed (code ' .
+                $e->getCode() . '): ' . $e->getMessage());
+            return self::MODE_SIMPLE;
+        }
         return ($mode === self::MODE_ADVANCED) ? self::MODE_ADVANCED : self::MODE_SIMPLE;
     }
 
@@ -60,11 +78,29 @@ class ABJ_404_Solution_SettingsModePreference {
      * @return bool|int Meta ID on insert, true on update, false on failure / no user
      */
     public function setMode($mode) {
-        $userId = get_current_user_id();
+        if (!function_exists('get_current_user_id')) {
+            return false;
+        }
+        try {
+            $userId = get_current_user_id();
+        } catch (\Throwable $e) {
+            error_log('404 Solution: settings mode user lookup failed (code ' .
+                $e->getCode() . '): ' . $e->getMessage());
+            return false;
+        }
         if (!$userId) {
             return false;
         }
+        if (!function_exists('update_user_meta')) {
+            return false;
+        }
         $validMode = ($mode === self::MODE_ADVANCED) ? self::MODE_ADVANCED : self::MODE_SIMPLE;
-        return update_user_meta($userId, self::META_KEY, $validMode);
+        try {
+            return update_user_meta($userId, self::META_KEY, $validMode);
+        } catch (\Throwable $e) {
+            error_log('404 Solution: settings mode write failed (code ' .
+                $e->getCode() . '): ' . $e->getMessage());
+            return false;
+        }
     }
 }

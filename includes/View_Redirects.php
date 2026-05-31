@@ -170,7 +170,7 @@ class ABJ_404_Solution_View_Redirects extends ABJ_404_Solution_ViewComponent {
         }
         $backUrl = '?page=' . ABJ404_PP . '&subpage=' . esc_attr($source_page);
 
-        $isSimpleMode = $this->logic->getSettingsMode() === 'simple';
+        $isSimpleMode = abj_service('settings_mode_preference')->getMode() === 'simple';
         $isFromCaptured = ($source_page === 'abj404_captured');
 
         if ($isSimpleMode && $isFromCaptured) {
