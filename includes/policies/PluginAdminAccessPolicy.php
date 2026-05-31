@@ -126,6 +126,11 @@ class ABJ_404_Solution_PluginAdminAccessPolicy {
         }
 
         try {
+            if (method_exists($optionsRepo, 'getPluginAdminUsersOption')) {
+                return array(
+                    'plugin_admin_users' => $optionsRepo->getPluginAdminUsersOption(),
+                );
+            }
             $resolvedOptions = $optionsRepo->getOptions(true);
             return is_array($resolvedOptions) ? $resolvedOptions : array();
         } catch (\Throwable $e) {

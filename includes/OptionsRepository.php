@@ -55,6 +55,33 @@ class ABJ_404_Solution_OptionsRepository {
     }
 
     /**
+     * Return only the delegated plugin-admin option needed by the
+     * authorization policy. This intentionally avoids the full getOptions()
+     * read path because capability checks can run while plugin_logic is being
+     * resolved; the full path performs suggestion-template normalization via
+     * PluginLogicSettingsUpdate and would create an auth-time service cycle.
+     *
+     * @return mixed String, array, or default value accepted by the policy normalizer.
+     */
+    public function getPluginAdminUsersOption() {
+        $optionResult = get_option('abj404_settings');
+        if (!is_array($optionResult)) {
+            return ABJ_404_Solution_PluginLogicDefaults::defaults()['plugin_admin_users'];
+        }
+
+        $normalizedOptions = ABJ_404_Solution_StorageOptionContracts::normalizeForRead(
+            ABJ_404_Solution_StorageOptionContracts::OPTION_SETTINGS,
+            $optionResult
+        );
+
+        if (array_key_exists('plugin_admin_users', $normalizedOptions)) {
+            return $normalizedOptions['plugin_admin_users'];
+        }
+
+        return ABJ_404_Solution_PluginLogicDefaults::defaults()['plugin_admin_users'];
+    }
+
+    /**
      * Resolve the current plugin options. With $skip_db_check=true, the
      * DB_VERSION pipeline is skipped (used during the version-upgrade
      * sequence itself and from contexts that must not trigger upgrades).
