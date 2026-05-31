@@ -163,7 +163,7 @@ class ABJ_404_Solution_ShortCode {
 		if ($isManualRedirect) {
 			// Manual redirect - we know we're on a custom 404 page, allow URL restoration
 			$debugMessage .= "ok to update (manual redirect to custom 404 page), ";
-		} else if ($abj404logic->thereIsAUserSpecified404Page($dest404page)) {
+		} else if (abj_service('not_found_response')->thereIsAUserSpecified404Page($dest404page)) {
 
 			// get the user specified 404 page.
 			$permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($dest404page, 0,
@@ -332,7 +332,7 @@ class ABJ_404_Solution_ShortCode {
         $currentSlug = $abj404logic->urlNormalization()->removeHomeDirectory(
                 $f->regexReplace('\?.*', '', $f->normalizeUrlString($requestUriVal)));
         $displayed = 0;
-        $commentPartAndQueryPart = $abj404logic->getCommentPartAndQueryPartOfRequest();
+        $commentPartAndQueryPart = abj_service('not_found_response')->getCommentPartAndQueryPartOfRequest();
 
         // Check if minimum score filtering is enabled
         $minScoreEnabled = isset($options['suggest_minscore_enabled']) && $options['suggest_minscore_enabled'] == '1';
@@ -589,7 +589,7 @@ class ABJ_404_Solution_ShortCode {
         }
 
         $displayed = 0;
-        $commentPartAndQueryPart = $abj404logic->getCommentPartAndQueryPartOfRequest();
+        $commentPartAndQueryPart = abj_service('not_found_response')->getCommentPartAndQueryPartOfRequest();
 
         // Check if minimum score filtering is enabled
         $minScoreEnabled = isset($options['suggest_minscore_enabled']) && $options['suggest_minscore_enabled'] == '1';

@@ -33,12 +33,12 @@ class ABJ_404_Solution_View_Settings extends ABJ_404_Solution_ViewComponent {
                 $options['menuLocation'] == 'settingsLevel') {
             if ($this->f->strpos($currentURL, 'options-general.php') !== false) {
                 // the option changed and we're at the wrong URL now, so we redirect to the correct one.
-                $this->logic->forceRedirect(admin_url() . "admin.php?page=" .
+                abj_service('not_found_response')->forceRedirect(admin_url() . "admin.php?page=" .
                         ABJ404_PP . '&subpage=abj404_options');
             }
         } else if ($this->f->strpos($currentURL, 'admin.php') !== false) {
             // if the current URL has admin.php then the URLs don't match and we need to reload.
-            $this->logic->forceRedirect(admin_url() . "options-general.php?page=" .
+            abj_service('not_found_response')->forceRedirect(admin_url() . "options-general.php?page=" .
                     ABJ404_PP . '&subpage=abj404_options');
         }
 

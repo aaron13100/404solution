@@ -250,7 +250,8 @@ class ABJ_404_Solution_ServiceContainer {
  *     $name is 'version_upgrade' ? ABJ_404_Solution_PluginVersionUpgradeService : (
  *     $name is 'options_repository' ? ABJ_404_Solution_OptionsRepository : (
  *     $name is 'admin_access_policy' ? ABJ_404_Solution_PluginAdminAccessPolicy : (
- *     $name is 'settings_mode_preference' ? ABJ_404_Solution_SettingsModePreference :
+ *     $name is 'settings_mode_preference' ? ABJ_404_Solution_SettingsModePreference : (
+ *     $name is 'not_found_response' ? ABJ_404_Solution_NotFoundResponseService :
  *     mixed
  * )))))))))))))))))))))))))))))))))))))))))
  */
@@ -270,6 +271,16 @@ function abj_service($name) {
 
     if ($name === 'ajax_failure_logger' && class_exists('ABJ_404_Solution_AjaxFailureLogger')) {
         return new ABJ_404_Solution_AjaxFailureLogger(abj_service('logging'));
+    }
+
+    if ($name === 'not_found_response' && class_exists('ABJ_404_Solution_NotFoundResponseService')) {
+        return new ABJ_404_Solution_NotFoundResponseService(
+            abj_service('functions'),
+            abj_service('redirects_repository'),
+            abj_service('logs_repository'),
+            abj_service('logging'),
+            abj_service('options_repository')
+        );
     }
 
     static $legacyDataAccessModuleGetters = array(
@@ -343,6 +354,7 @@ function abj_service($name) {
         'options_repository' => 'ABJ_404_Solution_OptionsRepository',
         'admin_access_policy' => 'ABJ_404_Solution_PluginAdminAccessPolicy',
         'settings_mode_preference' => 'ABJ_404_Solution_SettingsModePreference',
+        'not_found_response' => 'ABJ_404_Solution_NotFoundResponseService',
     );
     if (isset($serviceClassMap[$name])) {
         $class = $serviceClassMap[$name];

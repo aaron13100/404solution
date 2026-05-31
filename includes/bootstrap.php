@@ -290,6 +290,16 @@ function abj_404_solution_register_matching_engines($container) {
  * @return void
  */
 function abj_404_solution_register_frontend_services($container) {
+    $container->set('not_found_response', function($c) {
+        return new ABJ_404_Solution_NotFoundResponseService(
+            $c->get('functions'),
+            $c->get('redirects_repository'),
+            $c->get('logs_repository'),
+            $c->get('logging'),
+            $c->get('options_repository')
+        );
+    });
+
     $container->set('wordpress_connector', function($c) {
         return new ABJ_404_Solution_WordPress_Connector($c->get('plugin_logic'),
             $c->get('redirects_repository'), $c->get('logging'), $c->get('functions'),
@@ -413,6 +423,7 @@ function abj_get_instance($className) {
         'ABJ_404_Solution_View_Suggestions' => 'view_suggestions',
         'ABJ_404_Solution_ShortCode' => 'shortcode',
         'ABJ_404_Solution_RequestContext' => 'request_context',
+        'ABJ_404_Solution_NotFoundResponseService' => 'not_found_response',
     );
 
     if (isset($serviceMap[$className])) {

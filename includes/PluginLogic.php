@@ -124,27 +124,7 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
     	    $this->statsRepo = $this->dao->getStatsRepo();
     	    $this->dbCore = $this->dao->getDbCore();
         } else {
-            $this->redirectsRepo = (is_object($this->dao) && method_exists($this->dao, 'getRedirectsRepo'))
-                ? $this->dao->getRedirectsRepo()
-                : $this->dao;
-            $this->logsRepo = (is_object($this->dao) && method_exists($this->dao, 'getLogsRepo'))
-                ? $this->dao->getLogsRepo()
-                : $this->dao;
-            $this->viewBuild = (is_object($this->dao) && method_exists($this->dao, 'getViewBuildOrchestrator'))
-                ? $this->dao->getViewBuildOrchestrator()
-                : $this->dao;
-            $this->viewRead = (is_object($this->dao) && method_exists($this->dao, 'getViewReadService'))
-                ? $this->dao->getViewReadService()
-                : $this->dao;
-            $this->contentRepo = (is_object($this->dao) && method_exists($this->dao, 'getContentRepo'))
-                ? $this->dao->getContentRepo()
-                : $this->dao;
-            $this->statsRepo = (is_object($this->dao) && method_exists($this->dao, 'getStatsRepo'))
-                ? $this->dao->getStatsRepo()
-                : $this->dao;
-            $this->dbCore = (is_object($this->dao) && method_exists($this->dao, 'getDbCore'))
-                ? $this->dao->getDbCore()
-                : $this->dao;
+            $this->resolveDaoAccessorsForTestMock();
         }
 
         $urlPath = parse_url(get_home_url(), PHP_URL_PATH);
@@ -190,6 +170,31 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
     	        $this->contentRepo, $this->dbCore, $this->dao, $this->urlNormalization, $this
     	    )
     	);
+    }
+
+    /**
+     * Polymorphic test-mock fallback: $this->dao may be a mock implementing the repo
+     * getters, OR a mock that stands in for individual repos directly. Either shape is
+     * accepted at runtime; PHPStan cannot follow this without per-assignment markers.
+     * @return void
+     */
+    private function resolveDaoAccessorsForTestMock(): void {
+        $accessors = [
+            'redirectsRepo' => 'getRedirectsRepo',
+            'logsRepo' => 'getLogsRepo',
+            'viewBuild' => 'getViewBuildOrchestrator',
+            'viewRead' => 'getViewReadService',
+            'contentRepo' => 'getContentRepo',
+            'statsRepo' => 'getStatsRepo',
+            'dbCore' => 'getDbCore',
+        ];
+        foreach ($accessors as $property => $method) {
+            $value = (is_object($this->dao) && method_exists($this->dao, $method))
+                ? $this->dao->{$method}()
+                : $this->dao;
+            // @phpstan-ignore-next-line assign.propertyType
+            $this->{$property} = $value;
+        }
     }
 
     /** @return ABJ_404_Solution_PluginLogicUrlNormalization */
@@ -279,7 +284,7 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
                     ));
                 }
                 $this->logsRepo->logRedirectHit($fromURL, $permalink, 'page ID');
-                $this->forceRedirect($permalink, (int)$defaultRedirect);
+                abj_service('not_found_response')->forceRedirect($permalink, (int)$defaultRedirect);
                 exit;
             }
         }
@@ -398,89 +403,6 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
     }
 
     /**
-     * @param string $requestedURL
-     * @param string $reason
-     * @param bool $useUserSpecified404
-     * @param array<string, mixed>|null $optionsOverride
-     * @return void
-     */
-    function sendTo404Page(string $requestedURL, string $reason = '', bool $useUserSpecified404 = true, $optionsOverride = null): void {
-        $abj404logic = abj_service('plugin_logic');
-
-        $options = (is_array($optionsOverride) ? $optionsOverride : $abj404logic->getOptions());
-
-        $behavior = isset($options['dest404_behavior']) ? $options['dest404_behavior'] : '';
-        if ($behavior === 'suggest') {
-            $systemPage = ABJ_404_Solution_SystemPage::getInstance();
-            if (!$systemPage->systemPageExists()) {
-                $systemPage->handleSystemPageDeleted();
-                $options = $this->getOptions(true);
-            }
-        }
-
-        $dest404pageRaw = isset($options['dest404page']) ? $options['dest404page'] : null;
-        $dest404page = is_string($dest404pageRaw) ? $dest404pageRaw : (ABJ404_TYPE_404_DISPLAYED . '|' . ABJ404_TYPE_404_DISPLAYED);
-
-        if ($useUserSpecified404 && $this->thereIsAUserSpecified404Page($dest404page)) {
-           	$permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($dest404page, 0,
-           		null, $options);
-
-            if (!in_array($permalink['status'], array('publish', 'published'))) {
-            	$msg = __("The user specified 404 page wasn't found. " .
-            			"Please update the user-specified 404 page on the Options page.",
-            			'404-solution');
-            	$this->logger->infoMessage($msg);
-
-            } else {
-	            $redirect = $this->redirectsRepo->getExistingRedirectForURL($requestedURL);
-	            $pType = is_scalar($permalink['type']) ? (string)$permalink['type'] : '';
-	            $pId = is_scalar($permalink['id']) ? (string)$permalink['id'] : '';
-	            $pLink = is_scalar($permalink['link']) ? (string)$permalink['link'] : '';
-	            $defRedir = is_scalar($options['default_redirect']) ? (string)$options['default_redirect'] : '301';
-	            if (!isset($redirect['id']) || $redirect['id'] == 0) {
-	                $this->redirectsRepo->setupRedirect(ABJ_404_Solution_RedirectSpec::create(
-	                    $requestedURL, (string)ABJ404_STATUS_CAPTURED, $pType, $pId, $defRedir, 0
-	                ));
-	            }
-
-	            $this->logsRepo->logRedirectHit($requestedURL, $pLink, 'user specified 404 page. ' . $reason);
-
-	            setcookie(ABJ404_PP . '_STATUS_404', 'true', time() + 20, "/");
-
-	            $abj404logic->forceRedirect(esc_url($pLink),
-	            	(int)$defRedir);
-	            exit;
-            }
-        }
-
-        if (@$options['capture_404'] == '1') {
-            $redirect = $this->redirectsRepo->getExistingRedirectForURL($requestedURL);
-            $defRedir2 = is_scalar($options['default_redirect']) ? (string)$options['default_redirect'] : '301';
-            if (!isset($redirect['id']) || $redirect['id'] == 0) {
-                $this->redirectsRepo->setupRedirect(ABJ_404_Solution_RedirectSpec::create(
-                    $requestedURL, (string)ABJ404_STATUS_CAPTURED, (string)ABJ404_TYPE_404_DISPLAYED, (string)ABJ404_TYPE_404_DISPLAYED, $defRedir2, 0
-                ));
-            }
-        } else {
-            $optionsJson = json_encode($options);
-            $this->logger->debugMessage("No permalink found to redirect to. capture_404 is off. Requested URL: " . $requestedURL .
-                    " | Redirect: (none)" . " | is_single(): " . is_single() . " | " .
-                    "is_page(): " . is_page() . " | is_feed(): " . is_feed() . " | is_trackback(): " .
-                    is_trackback() . " | is_preview(): " . is_preview() . " | options: " . wp_kses_post(is_string($optionsJson) ? $optionsJson : ''));
-        }
-    }
-
-    /** @param string|null $dest404page @return bool */
-    function thereIsAUserSpecified404Page($dest404page): bool {
-    	if ($dest404page == null) {
-    		return false;
-    	}
-    	$check1 = ($dest404page !== (ABJ404_TYPE_404_DISPLAYED . '|' . ABJ404_TYPE_404_DISPLAYED));
-    	$check2 = ($dest404page !== (string)ABJ404_TYPE_404_DISPLAYED);
-    	return $check1 && $check2;
-    }
-
-    /**
      * @param bool $skip_db_check
      * @return array<string, mixed>
      * @deprecated Use abj_service('options_repository')->getOptions() directly. This delegate exists only during the migration window for the OptionsRepository extraction and will be removed before the parent task closes.
@@ -501,193 +423,6 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
     /** @return string */
     function getDebugLogFileLink(): string {
         return "?page=" . ABJ404_PP . "&subpage=abj404_debugfile";
-    }
-
-    /** @return string */
-    function getCommentPartAndQueryPartOfRequest() {
-        $requestUri = isset($_SERVER['REQUEST_URI']) ? (string)$_SERVER['REQUEST_URI'] : '';
-        if ($requestUri !== '' &&
-                strpos($requestUri, '?') === false &&
-                strpos($requestUri, '/comment-page-') === false) {
-            return '';
-        }
-
-    	$userRequest = ABJ_404_Solution_UserRequest::getInstance();
-    	if ($userRequest === null) {
-    		return '';
-    	}
-    	$queryString = $userRequest->getQueryString();
-    	$queryParts = $this->f->removePageIDFromQueryString(is_string($queryString) ? $queryString : '');
-    	$queryParts = ($queryParts == '') ? '' : '?' . $queryParts;
-    	$commentPart = $userRequest->getCommentPagePart();
-    	return (is_string($commentPart) ? $commentPart : '') . $queryParts;
-    }
-
-    /**
-     * @param string $location
-     * @param int $status
-     * @param int|string $type only 0 for sending to a 404 page
-     * @param string $requestedURL
-     * @param bool $isCustom404
-     * @return bool true if the user is sent to the default 404 page.
-     */
-    function forceRedirect(string $location, int $status = 302, $type = -1, string $requestedURL = '', bool $isCustom404 = false): bool {
-        // 410 Gone
-        if ($status === 410) {
-            status_header(410);
-            $templatePath = __DIR__ . '/html/gone410.html';
-            if (file_exists($templatePath)) {
-                $siteName = function_exists('get_bloginfo') ? get_bloginfo('name') : '';
-                $siteUrl  = function_exists('home_url') ? home_url('/') : '/';
-                $templateContent = file_get_contents($templatePath);
-                if (is_string($templateContent)) {
-                    $templateContent = str_replace(
-                        array('{site_name}', '{site_url}', '{heading}', '{message}', '{back_home}'),
-                        array(
-                            esc_html($siteName),
-                            esc_url($siteUrl),
-                            esc_html__('This content has been permanently removed.', '404-solution'),
-                            esc_html__('The page you requested no longer exists and has not been moved to a new location.', '404-solution'),
-                            esc_html__('Back to home page', '404-solution'),
-                        ),
-                        $templateContent
-                    );
-                    echo $templateContent;
-                }
-            }
-            exit;
-        }
-
-        // 451 Unavailable For Legal Reasons
-        if ($status === 451) {
-            status_header(451);
-            $templatePath = __DIR__ . '/html/gone451.html';
-            if (file_exists($templatePath)) {
-                $siteName = function_exists('get_bloginfo') ? get_bloginfo('name') : '';
-                $siteUrl  = function_exists('home_url') ? home_url('/') : '/';
-                $templateContent = file_get_contents($templatePath);
-                if (is_string($templateContent)) {
-                    $templateContent = str_replace(
-                        array('{site_name}', '{site_url}', '{heading}', '{message}', '{back_home}'),
-                        array(
-                            esc_html($siteName),
-                            esc_url($siteUrl),
-                            esc_html__('451 Unavailable For Legal Reasons', '404-solution'),
-                            esc_html__('This content is unavailable due to a legal demand.', '404-solution'),
-                            esc_html__('Back to home page', '404-solution'),
-                        ),
-                        $templateContent
-                    );
-                    echo $templateContent;
-                }
-            }
-            exit;
-        }
-
-        // Meta Refresh
-        if ($status === 0 && $location !== '') {
-            status_header(200);
-            $templatePath = __DIR__ . '/html/metaRefresh.html';
-            if (file_exists($templatePath)) {
-                $templateContent = file_get_contents($templatePath);
-                if (is_string($templateContent)) {
-                    $templateContent = str_replace(
-                        array('{url}', '{delay}', '{title}', '{message}'),
-                        array(
-                            esc_url($location),
-                            '0',
-                            esc_html__('Redirecting...', '404-solution'),
-                            esc_html__('You are being redirected. Click the link if not redirected automatically.', '404-solution'),
-                        ),
-                        $templateContent
-                    );
-                    echo $templateContent;
-                }
-            }
-            exit;
-        }
-
-        $finalDestination = $this->pageOrdering()->buildFinalRedirectDestination($location, $requestedURL, $isCustom404);
-
-    	$previousRequest = $this->readCookieWithPreviousRqeuestShort();
-    	$schemePos = $this->f->strpos($finalDestination, '://');
-    	$finalDestNoHome = ($schemePos !== false)
-    		? $this->f->substr($finalDestination, $schemePos + 3) : $finalDestination;
-    	$slashPos = $this->f->strpos($finalDestNoHome, '/');
-    	$finalDestNoHome = ($slashPos !== false)
-    		? $this->f->substr($finalDestNoHome, $slashPos) : '/';
-
-    	$schemePos2 = $this->f->strpos($location, '://');
-    	$locationNoHome = ($schemePos2 !== false)
-    		? $this->f->substr($location, $schemePos2 + 3) : $location;
-    	$slashPos2 = $this->f->strpos($locationNoHome, '/');
-    	$locationNoHome = ($slashPos2 !== false)
-    		? $this->f->substr($locationNoHome, $slashPos2) : '/';
-    	if (!empty($previousRequest)) {
-    		if ($previousRequest == $finalDestNoHome && $previousRequest != $locationNoHome) {
-    			$this->logger->infoMessage("Maybe avoided infite redirects to/from: " .
-    				$previousRequest);
-    			$finalDestination = $location;
-
-    		} else if ($previousRequest == $finalDestination) {
-    			$this->logger->infoMessage("Avoided infite redirects to/from: " .
-    				$previousRequest);
-    			return false;
-    		}
-    	}
-
-    	if ($type == ABJ404_TYPE_404_DISPLAYED) {
-    		$abj404logic = abj_service('plugin_logic');
-    		$abj404logic->sendTo404Page($requestedURL, '', false);
-
-    		return true;
-    	}
-
-    	$this->setCookieWithPreviousRequest();
-        if (!headers_sent()) {
-            if (function_exists('abj404_benchmark_emit_headers')) {
-                abj404_benchmark_emit_headers();
-            }
-            $useSafe = false;
-            if (function_exists('wp_safe_redirect')) {
-                $destHost = parse_url($finalDestination, PHP_URL_HOST);
-                if ($destHost === null || $destHost === false || $destHost === '') {
-                    $useSafe = true;
-                } else {
-                    $homeHost = parse_url(home_url(), PHP_URL_HOST);
-                    if (is_string($homeHost) && $homeHost !== '' && strtolower($homeHost) === strtolower($destHost)) {
-                        $useSafe = true;
-                    }
-                }
-            }
-
-            if ($useSafe) {
-                wp_safe_redirect($finalDestination, $status, ABJ404_NAME);
-            } else {
-                wp_redirect($finalDestination, $status, ABJ404_NAME);
-            }
-            if (!apply_filters('abj404_should_exit', true, array('source' => 'forceRedirect_header'))) {
-                return false;
-            }
-            exit;
-        }
-
-        if (function_exists('abj404_benchmark_emit_headers')) {
-            abj404_benchmark_emit_headers();
-        }
-        // inline-html-approved: emergency redirect fallback must emit a complete minimal response when headers are unavailable.
-        $c = '<script>' . 'function doRedirect() {' . "\n" .
-                '   window.location.replace(' . wp_json_encode($finalDestination) . ');' . "\n" .
-                '}' . "\n" .
-                'setTimeout(doRedirect, 1);' . "\n" .
-                '</script>' . "\n" .
-                'Page moved: <a href="' . esc_url($finalDestination) . '">' .
-                    esc_html($finalDestination) . '</a>';
-        echo $c;
-        if (!apply_filters('abj404_should_exit', true, array('source' => 'forceRedirect_js'))) {
-            return false;
-        }
-        exit;
     }
 
 }

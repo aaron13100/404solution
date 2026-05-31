@@ -122,6 +122,7 @@ return array(
     'ABJ_404_Solution_OptionsRepository' => $base . 'includes/OptionsRepository.php',
     'ABJ_404_Solution_PluginAdminAccessPolicy' => $base . 'includes/policies/PluginAdminAccessPolicy.php',
     'ABJ_404_Solution_SettingsModePreference' => $base . 'includes/services/SettingsModePreference.php',
+    'ABJ_404_Solution_NotFoundResponseService' => $base . 'includes/services/NotFoundResponseService.php',
     'ABJ_404_Solution_StatsRepositoryInterface' => $base . 'includes/StatsRepositoryInterface.php',
     'ABJ_404_Solution_StatsRepository' => $base . 'includes/StatsRepository.php',
     'ABJ_404_Solution_PluginUpdateMetadataRepository' => $base . 'includes/PluginUpdateMetadataRepository.php',

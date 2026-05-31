@@ -29,6 +29,9 @@ class ABJ_404_Solution_FrontendRequestPipeline {
     /** @var ABJ_404_Solution_SpellChecker */
     private $spellChecker;
 
+    /** @var ABJ_404_Solution_NotFoundResponseService */
+    private $notFoundResponse;
+
     /** @var array<int, mixed> Engines from apply_filters — may contain non-engine items */
     private $matchingEngines;
 
@@ -43,14 +46,26 @@ class ABJ_404_Solution_FrontendRequestPipeline {
      * @param ABJ_404_Solution_SpellChecker $spellChecker
      * @param array<int, mixed> $matchingEngines
      * @param mixed|null $logsRepository Log writer. Accepts legacy doubles with logRedirectHit().
+     * @param ABJ_404_Solution_NotFoundResponseService|null $notFoundResponse
      */
-    function __construct($pluginLogic, $redirectsRepository, $logging, $functions, $spellChecker, array $matchingEngines = [], $logsRepository = null) {
+    function __construct($pluginLogic, $redirectsRepository, $logging, $functions, $spellChecker, array $matchingEngines = [], $logsRepository = null, $notFoundResponse = null) {
         $this->logic = $pluginLogic;
         $this->redirectsRepository = $redirectsRepository;
         $this->logger = $logging;
         $this->f = $functions;
         $this->spellChecker = $spellChecker;
         $this->matchingEngines = $matchingEngines;
+        $resolvedNotFoundResponse = $notFoundResponse;
+        if ($resolvedNotFoundResponse === null
+                && class_exists('ABJ_404_Solution_ServiceContainer')
+                && ABJ_404_Solution_ServiceContainer::safeHas('not_found_response')) {
+            $resolvedNotFoundResponse = abj_service('not_found_response');
+        }
+        // Legacy fallback: when no NotFoundResponseService is available, $pluginLogic
+        // historically provided forceRedirect() / sendTo404Page() compatibly. Mock test
+        // injections also rely on this slot accepting any object that quacks the same.
+        // @phpstan-ignore-next-line assign.propertyType
+        $this->notFoundResponse = $resolvedNotFoundResponse !== null ? $resolvedNotFoundResponse : $pluginLogic;
         // Resolve the LogsRepository for logRedirectHit() writes. Preference order:
         //   1. Explicit $logsRepository argument (modern DI signature).
         //   2. If the redirects-repo facade exposes getLogsRepo(), resolve the typed
@@ -291,7 +306,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
                             $spLink = isset($permalink['link']) && is_string($permalink['link']) ? $permalink['link'] : '';
                             // Legacy audit marker for source-inspection tests: this->dao->logRedirectHit($requestedURL, $spLink, 'single page'
                             $this->logRedirectHit($requestedURL, $spLink, 'single page', null, $this->trace);
-                            $this->logic->forceRedirect(esc_url($spLink), (int)$spDefaultRedirect);
+                            $this->notFoundResponse->forceRedirect(esc_url($spLink), (int)$spDefaultRedirect);
                             exit;
                         }
                     }
@@ -436,7 +451,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
                     }
 
                     $this->logRedirectHit($requestedURL, $resolvedLink, $matchResult->getEngineName(), null, $this->trace);
-                    $this->logic->forceRedirect(esc_url($resolvedLink), (int)$defaultRedirect);
+                    $this->notFoundResponse->forceRedirect(esc_url($resolvedLink), (int)$defaultRedirect);
                     exit;
                 }
             }
@@ -444,7 +459,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
             if (!$autoRedirectsAreOn) {
                 $this->triggerAsyncSuggestionsIfNeeded($requestedURL);
                 $this->emitBenchmarkHeadersIfEnabled();
-                $this->logic->sendTo404Page($requestedURL, 'Do not create redirects per the options.', true, $options);
+                $this->notFoundResponse->sendTo404Page($requestedURL, 'Do not create redirects per the options.', true, $options);
                 return;
             }
         } else {
@@ -459,7 +474,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
         $this->logRedirectHit($requestedURL, '404', 'gave up.', null, $this->trace);
         $this->triggerAsyncSuggestionsIfNeeded($requestedURL);
         $this->emitBenchmarkHeadersIfEnabled();
-        $this->logic->sendTo404Page($requestedURL, '', true, $options);
+        $this->notFoundResponse->sendTo404Page($requestedURL, '', true, $options);
     }
 
     /**
@@ -518,7 +533,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
                             $wpGuessType, $wpGuessPostId, $defaultRedirect, 0, $wpGuessEngineName
                         ));
                         $this->logRedirectHit($requestedURL, $wpGuess, $wpGuessEngineName, null, $this->trace);
-                        $redirectSent = $this->logic->forceRedirect(esc_url($wpGuess), (int)$defaultRedirect);
+                        $redirectSent = $this->notFoundResponse->forceRedirect(esc_url($wpGuess), (int)$defaultRedirect);
                         if ($redirectSent !== false) {
                             exit;
                         }
@@ -743,7 +758,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
                 ? (int)$regexPermalink['code'] : $regexDefaultRedirect;
             $this->addTraceStep('Regex rules', 'Matched', $regexMatchingUrl . ' → ' . $regexLink);
             $this->logRedirectHit($regexMatchingUrl, $regexAction, 'regex match', $requestedURL, $this->trace);
-            $sentTo404Page = $this->logic->forceRedirect(
+            $sentTo404Page = $this->notFoundResponse->forceRedirect(
                 $regexLink,
                 $regexCode,
                 $regexType,
@@ -832,7 +847,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
         if ($redirectCode === 410) {
             $this->addTraceStep('Result', 'Responded with 410 Gone', $redirectUrl);
             $this->logRedirectHit($redirectUrl, '410', $matchReason, null, $this->trace);
-            $this->logic->forceRedirect('', 410);
+            $this->notFoundResponse->forceRedirect('', 410);
             // forceRedirect returns false for 410 without exiting — page continues to render.
             return false;
         }
@@ -841,7 +856,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
         if ($redirectCode === 451) {
             $this->addTraceStep('Result', 'Responded with 451 Unavailable For Legal Reasons', $redirectUrl);
             $this->logRedirectHit($redirectUrl, '451', $matchReason, null, $this->trace);
-            $this->logic->forceRedirect('', 451);
+            $this->notFoundResponse->forceRedirect('', 451);
             return false;
         }
 
@@ -850,7 +865,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
             $this->logRedirectHit($redirectUrl, '404', $matchReason, null, $this->trace);
             $this->triggerAsyncSuggestionsIfNeeded($requestedURL);
             $this->emitBenchmarkHeadersIfEnabled();
-            $this->logic->sendTo404Page($requestedURL, $matchReason);
+            $this->notFoundResponse->sendTo404Page($requestedURL, $matchReason);
             return true;
         }
 
@@ -860,7 +875,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
             $dest404pageRaw = isset($options['dest404page']) ? $options['dest404page'] : null;
             $dest404page = is_string($dest404pageRaw) ? $dest404pageRaw : null;
 
-            if ($dest404page !== null && $this->logic->thereIsAUserSpecified404Page($dest404page)) {
+            if ($dest404page !== null && $this->notFoundResponse->thereIsAUserSpecified404Page($dest404page)) {
                 $dest404Parts = explode('|', $dest404page);
                 $custom404Id = isset($dest404Parts[0]) ? (int)$dest404Parts[0] : 0;
                 if ($custom404Id > 0 && $redirect['final_dest'] == $custom404Id) {
@@ -900,7 +915,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
         if ($redirect['type'] == ABJ404_TYPE_EXTERNAL) {
             $this->addTraceStep('Result', 'Redirected to external URL', $redirectFinalDest);
             $this->logRedirectHit($redirectUrl, $redirectFinalDest, 'external', null, $this->trace);
-            $this->logic->forceRedirect($redirectFinalDest, $redirectCode);
+            $this->notFoundResponse->forceRedirect($redirectFinalDest, $redirectCode);
             exit;
         }
 
@@ -913,7 +928,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
             $this->logRedirectHit($redirectUrl, '404', $matchReason . ' (missing destination)', null, $this->trace);
             $this->triggerAsyncSuggestionsIfNeeded($requestedURL);
             $this->emitBenchmarkHeadersIfEnabled();
-            $this->logic->sendTo404Page($requestedURL, 'missing redirect destination');
+            $this->notFoundResponse->sendTo404Page($requestedURL, 'missing redirect destination');
             return true;
         }
 
@@ -929,7 +944,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
             $this->logRedirectHit($redirectUrl, '404', $matchReason . ' (invalid destination)', null, $this->trace);
             $this->triggerAsyncSuggestionsIfNeeded($requestedURL);
             $this->emitBenchmarkHeadersIfEnabled();
-            $this->logic->sendTo404Page($requestedURL, 'invalid redirect destination');
+            $this->notFoundResponse->sendTo404Page($requestedURL, 'invalid redirect destination');
             return true;
         }
 
@@ -942,7 +957,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
         $this->addTraceStep('Result', 'Redirected (' . $redirectCode . ')', $redirectedTo);
         $this->logRedirectHit($redirectUrl, $redirectedTo, $matchReason, null, $this->trace);
 
-        $sendTo404Page = $this->logic->forceRedirect(
+        $sendTo404Page = $this->notFoundResponse->forceRedirect(
             $finalLink,
             $redirectCode,
             -1,
