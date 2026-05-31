@@ -118,6 +118,7 @@ return array(
     'ABJ_404_Solution_RedirectsRetentionService' => $base . 'includes/RedirectsRetentionService.php',
     'ABJ_404_Solution_LogsHitsRollupServiceInterface' => $base . 'includes/LogsHitsRollupServiceInterface.php',
     'ABJ_404_Solution_LogsHitsRollupService' => $base . 'includes/LogsHitsRollupService.php',
+    'ABJ_404_Solution_PluginVersionUpgradeService' => $base . 'includes/PluginVersionUpgradeService.php',
     'ABJ_404_Solution_StatsRepositoryInterface' => $base . 'includes/StatsRepositoryInterface.php',
     'ABJ_404_Solution_StatsRepository' => $base . 'includes/StatsRepository.php',
     'ABJ_404_Solution_PluginUpdateMetadataRepository' => $base . 'includes/PluginUpdateMetadataRepository.php',

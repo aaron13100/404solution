@@ -165,8 +165,7 @@ class ABJ_404_Solution_DatabaseUpgradeMultiSite extends ABJ_404_Solution_Databas
 
                 $this->logic->registerCrons();
 
-                $logic = abj_service('plugin_logic');
-                $logic->doUpdateDBVersionOption();
+                abj_service('version_upgrade')->stampDbVersion();
             }
         );
     }
@@ -216,8 +215,7 @@ class ABJ_404_Solution_DatabaseUpgradeMultiSite extends ABJ_404_Solution_Databas
                 // as the daily cron tick.
                 $this->runSelfHealPrologue();
 
-                $logic = abj_service('plugin_logic');
-                $logic->doUpdateDBVersionOption();
+                abj_service('version_upgrade')->stampDbVersion();
             }
         );
     }

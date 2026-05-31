@@ -84,7 +84,6 @@ class ABJ_404_Solution_PluginLogicLifecycle {
      * @return void
      */
     private static function activateSingleSite(): void {
-        $abj404logic = abj_service('plugin_logic');
         add_option('abj404_settings', '', '', false);
 
         $upgradesEtc = abj_service('database_upgrades');
@@ -94,7 +93,7 @@ class ABJ_404_Solution_PluginLogicLifecycle {
 
         self::doRegisterCrons();
 
-        $abj404logic->doUpdateDBVersionOption();
+        abj_service('version_upgrade')->stampDbVersion();
     }
 
     /**

@@ -206,6 +206,14 @@ function abj_404_solution_register_business_logic($container) {
         );
     });
 
+    $container->set('version_upgrade', function($c) {
+        return new ABJ_404_Solution_PluginVersionUpgradeService(
+            $c->get('functions'),
+            $c->get('logging'),
+            $c->get('db_core')
+        );
+    });
+
     $container->set('spell_checker', function($c) {
         return new ABJ_404_Solution_SpellChecker($c->get('functions'), $c->get('plugin_logic'),
             $c->get('content_repository'), $c->get('logging'), $c->get('permalink_cache'),

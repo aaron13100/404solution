@@ -246,9 +246,10 @@ class ABJ_404_Solution_ServiceContainer {
  *     $name is 'view_suggestions' ? ABJ_404_Solution_View_Suggestions : (
  *     $name is 'shortcode' ? ABJ_404_Solution_ShortCode : (
  *     $name is 'ajax_security_gate' ? ABJ_404_Solution_AjaxSecurityGate : (
- *     $name is 'ajax_failure_logger' ? ABJ_404_Solution_AjaxFailureLogger :
+ *     $name is 'ajax_failure_logger' ? ABJ_404_Solution_AjaxFailureLogger : (
+ *     $name is 'version_upgrade' ? ABJ_404_Solution_PluginVersionUpgradeService :
  *     mixed
- * ))))))))))))))))))))))))))))))))))))
+ * )))))))))))))))))))))))))))))))))))))
  */
 function abj_service($name) {
     $container = ABJ_404_Solution_ServiceContainer::getInstance();
@@ -335,6 +336,7 @@ function abj_service($name) {
         'sync_utils' => 'ABJ_404_Solution_SynchronizationUtils',
         'shortcode' => 'ABJ_404_Solution_ShortCode',
         'request_context' => 'ABJ_404_Solution_RequestContext',
+        'version_upgrade' => 'ABJ_404_Solution_PluginVersionUpgradeService',
     );
     if (isset($serviceClassMap[$name])) {
         $class = $serviceClassMap[$name];

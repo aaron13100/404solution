@@ -965,9 +965,9 @@ class ABJ_404_Solution_FrontendRequestPipeline {
      * (cooldown active, lock held by another worker, or upgrade failed).
      *
      * Throttled by a transient so concurrent 404s don't all queue on the
-     * synchronizer lock. updateToNewVersion() is itself locked
-     * (synchronizerAcquireLockTry), so the worst case is a single 300ms
-     * lock-acquire attempt per cooldown window.
+     * synchronizer lock. PluginVersionUpgradeService::upgradeIfNeeded() is
+     * itself locked (synchronizerAcquireLockTry), so the worst case is a
+     * single 300ms lock-acquire attempt per cooldown window.
      *
      * @param array<string, mixed> $options Current options as returned by getOptions(true).
      * @return array<string, mixed> Options after attempted recovery.
@@ -986,7 +986,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
         }
 
         try {
-            $upgraded = $this->logic->updateToNewVersion($options);
+            $upgraded = abj_service('version_upgrade')->upgradeIfNeeded($options);
             if (is_array($upgraded)) {
                 $options = $upgraded;
             }
@@ -995,7 +995,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
             return $options;
         }
 
-        // updateToNewVersion ends in updateOptions() which clears the resolved-
+        // upgradeIfNeeded ends in updateOptions() which clears the resolved-
         // options cache, so getOptions(true) returns fresh values from the DB.
         $fresh = $this->logic->getOptions(true);
         if (is_array($fresh) && isset($fresh['DB_VERSION'])
