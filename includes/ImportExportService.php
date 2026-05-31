@@ -54,12 +54,15 @@ class ABJ_404_Solution_ImportExportService {
     function __construct($viewReadServiceOrDataAccess, $redirectsRepoOrLogging, $contentRepository = null, $logging = null) {
         if ($contentRepository === null && $logging === null) {
             // Legacy 2-arg signature: (DataAccess, Logging)
-            // DataAccess is a facade that delegates to the modules, so
-            // reuse the same object for all three module interfaces.
-            /** @var ABJ_404_Solution_ViewReadServiceInterface&ABJ_404_Solution_RedirectsRepositoryInterface&ABJ_404_Solution_ContentRepositoryInterface $viewReadServiceOrDataAccess */
+            // DataAccess is a facade for ViewRead + Redirects; for ContentRepo
+            // we resolve via $dao->getContentRepo() now that the ContentRepository
+            // pass-throughs have been removed from DataAccess (i758).
+            /** @var ABJ_404_Solution_ViewReadServiceInterface&ABJ_404_Solution_RedirectsRepositoryInterface $viewReadServiceOrDataAccess */
             $this->viewReadService = $viewReadServiceOrDataAccess;
             $this->redirectsRepository = $viewReadServiceOrDataAccess;
-            $this->contentRepository = $viewReadServiceOrDataAccess;
+            $this->contentRepository = (is_object($viewReadServiceOrDataAccess) && method_exists($viewReadServiceOrDataAccess, 'getContentRepo'))
+                ? $viewReadServiceOrDataAccess->getContentRepo()
+                : $viewReadServiceOrDataAccess;
             /** @var ABJ_404_Solution_Logging $redirectsRepoOrLogging */
             $this->logger = $redirectsRepoOrLogging;
         } else {

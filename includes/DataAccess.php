@@ -51,7 +51,7 @@ require_once __DIR__ . '/PluginUpdateMetadataRepository.php';
  * Read the database, Store to the database,
  */
 
-class ABJ_404_Solution_DataAccess implements ABJ_404_Solution_ContentRepositoryInterface {
+class ABJ_404_Solution_DataAccess {
 
     const UPDATE_LOGS_HITS_TABLE_HOOK = 'abj404_updateLogsHitsTableAction';
 
@@ -610,82 +610,6 @@ class ABJ_404_Solution_DataAccess implements ABJ_404_Solution_ContentRepositoryI
             $this->contentRepo = new ABJ_404_Solution_ContentRepository($this->getDbCore(), $this->f, $this->logger);
         }
         return $this->contentRepo;
-    }
-
-    public function getPublishedPagesAndPostsIDs($slug = '', $searchTerm = '',
-        $limitResults = '', $orderResults = '', $extraWhereClause = '') {
-        return $this->getContentRepo()->getPublishedPagesAndPostsIDs(
-            $slug, $searchTerm, $limitResults, $orderResults, $extraWhereClause
-        );
-    }
-
-    /** @return array<int, object> */
-    public function getPublishedImagesIDs() {
-        return $this->getContentRepo()->getPublishedImagesIDs();
-    }
-
-    public function getPublishedTags($slug = null, $limit = null) {
-        return $this->getContentRepo()->getPublishedTags($slug, $limit);
-    }
-
-    public function addURLToTermsRows($rows) {
-        return $this->getContentRepo()->addURLToTermsRows($rows);
-    }
-
-    public function getPublishedCategories($term_id = null, $slug = null, $limit = null) {
-        return $this->getContentRepo()->getPublishedCategories($term_id, $slug, $limit);
-    }
-
-    public function truncatePermalinkCacheTable(): void {
-        $this->getContentRepo()->truncatePermalinkCacheTable();
-    }
-
-    public function removeFromPermalinkCache(int $post_id): void {
-        $this->getContentRepo()->removeFromPermalinkCache($post_id);
-    }
-
-    public function getPermalinkFromCache($id) {
-        return $this->getContentRepo()->getPermalinkFromCache($id);
-    }
-
-    public function getPermalinksByIds(array $ids) {
-        return $this->getContentRepo()->getPermalinksByIds($ids);
-    }
-
-    public function getPermalinkEtcFromCache($id) {
-        return $this->getContentRepo()->getPermalinkEtcFromCache($id);
-    }
-
-    public function getIDsNeededForPermalinkCache() {
-        return $this->getContentRepo()->getIDsNeededForPermalinkCache();
-    }
-
-    public function storeSpellingPermalinksToCache(string $requestedURLRaw, $returnValue): void {
-        $this->getContentRepo()->storeSpellingPermalinksToCache($requestedURLRaw, $returnValue);
-    }
-
-    public function getSpellingPermalinksFromCache(string $requestedURLRaw) {
-        return $this->getContentRepo()->getSpellingPermalinksFromCache($requestedURLRaw);
-    }
-
-    public function deleteSpellingCache(): void {
-        $this->getContentRepo()->deleteSpellingCache();
-    }
-
-    public function getOldSlug($post_id) {
-        return $this->getContentRepo()->getOldSlug($post_id);
-    }
-
-    public function updatePermalinkCache() {
-        return $this->getContentRepo()->updatePermalinkCache();
-    }
-
-    public function updatePermalinkCacheParentPages() {
-        return $this->getContentRepo()->updatePermalinkCacheParentPages();
-    }
-
-    public function getPermalinkCacheCount(): int {
-        return $this->getContentRepo()->getPermalinkCacheCount();
     }
 
     /** @return ABJ_404_Solution_RedirectsRepository */

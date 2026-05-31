@@ -173,18 +173,22 @@ class ABJ_404_Solution_View {
 			&& (method_exists($dao, 'getRedirectsForView') || $dao instanceof ABJ_404_Solution_DataAccess));
 
 		if ($isLegacyDao) {
-			/** @var ABJ_404_Solution_ViewReadServiceInterface&ABJ_404_Solution_ViewBuildOrchestratorInterface&ABJ_404_Solution_RedirectsRepositoryInterface&ABJ_404_Solution_ContentRepositoryInterface&ABJ_404_Solution_StatsRepositoryInterface $dao */
+			/** @var ABJ_404_Solution_ViewReadServiceInterface&ABJ_404_Solution_ViewBuildOrchestratorInterface&ABJ_404_Solution_RedirectsRepositoryInterface&ABJ_404_Solution_StatsRepositoryInterface $dao */
 			$this->viewReadService = $dao;
 			$this->viewBuildOrchestrator = $dao;
-			// Resolve LogsRepository off the DataAccess facade so the View talks to the typed
-			// LogsRepo surface (no LogsRepo pass-throughs on DataAccess). Other repository
-			// interfaces stay on the DataAccess facade because their pass-throughs are out of
-			// scope for this migration (see q task i775).
+			// Resolve typed repository surfaces off the DataAccess facade so the
+			// View talks to the real LogsRepository / ContentRepository objects.
+			// Pass-throughs for these repos have been removed from DataAccess
+			// (i266/i775 for LogsRepo, i758 for ContentRepo); other repo
+			// interfaces remain on DataAccess until their own migration tasks
+			// complete (i759 Redirects, i761 Stats).
 			$this->logsRepository = (is_object($dao) && method_exists($dao, 'getLogsRepo'))
 				? $dao->getLogsRepo()
 				: $dao;
 			$this->redirectsRepository = $dao;
-			$this->contentRepository = $dao;
+			$this->contentRepository = (is_object($dao) && method_exists($dao, 'getContentRepo'))
+				? $dao->getContentRepo()
+				: $dao;
 			$this->statsRepository = $dao;
 		} else {
 			/** @var ABJ_404_Solution_ViewReadServiceInterface $vrs */

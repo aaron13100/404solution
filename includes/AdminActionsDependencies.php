@@ -17,10 +17,12 @@ if (!defined('ABSPATH')) {
  * production ABJ_404_Solution_DataAccess or a subclass test double (see
  * PluginLogic::__construct() if/else around the dao type check). Adding
  * interface type hints here would break the subclass-double path because
- * ABJ_404_Solution_DataAccess only implements ContentRepositoryInterface,
- * not the other repository interfaces. Its subclass doubles wear $dao as
- * each repo without implementing those interfaces. The @var docblocks
- * document the resolved-type intent for static analysis.
+ * ABJ_404_Solution_DataAccess does not implement the repository interfaces
+ * (post-i266/i775/i758: typed surfaces are obtained via $dao->getLogsRepo(),
+ * $dao->getContentRepo(), etc.; the DataAccess facade itself no longer
+ * carries those pass-throughs). Its subclass doubles wear $dao as each
+ * repo without implementing those interfaces. The @var docblocks document
+ * the resolved-type intent for static analysis.
  */
 final class ABJ_404_Solution_AdminActionsDependencies {
 
