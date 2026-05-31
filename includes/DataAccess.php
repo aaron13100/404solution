@@ -195,17 +195,7 @@ class ABJ_404_Solution_DataAccess {
         ABJ_404_Solution_ViewBuildOrchestrator::resetViewBuildOncePerRequestGuard();
     }
 
-    /** @param string $url @return string */
-    public static function computeRedirectsCanonicalUrl($url): string {
-        return ABJ_404_Solution_RedirectsRepository::computeRedirectsCanonicalUrl($url);
-    }
-
-    /** @param string $columnExpr @return string */
-    public static function hitsCanonicalUrlSqlExpression(string $columnExpr): string {
-        return ABJ_404_Solution_RedirectsRepository::hitsCanonicalUrlSqlExpression($columnExpr);
-    }
-
-    /**
+/**
      * @param string|null $raw
      * @return array<int, array{step: string, outcome: string, detail: string}>|null
      */
@@ -636,82 +626,6 @@ class ABJ_404_Solution_DataAccess {
     /** @return int */
     public function cleanupOrphanedAutoRedirects(): int {
         return $this->getRetentionService()->cleanupOrphanedAutoRedirects();
-    }
-
-    public function deleteRedirect($id) {
-        return $this->getRedirectsRepo()->deleteRedirect($id);
-    }
-
-    public function setupRedirect(ABJ_404_Solution_RedirectSpec $spec) {
-        return $this->getRedirectsRepo()->setupRedirect($spec);
-    }
-
-    public function getActiveRedirectForURL($url, $degradedMode = false) {
-        if (get_class($this) !== __CLASS__
-            && (method_exists($this, 'prepare_query_wp') || method_exists($this, 'queryAndGetResults'))) {
-            $url = $this->f->sanitizeInvalidUTF8($url);
-            if (function_exists('mb_check_encoding') && !mb_check_encoding($url, 'UTF-8')) {
-                return array('id' => 0);
-            }
-            $logic = abj_service('plugin_logic');
-            $candidates = is_object($logic) && method_exists($logic, 'getNormalizedUrlCandidates')
-                ? $logic->getNormalizedUrlCandidates($url)
-                : array($url);
-            foreach ($candidates as $candidate) {
-                $url1 = $candidate;
-                $url2 = substr($candidate, -1) === '/' ? rtrim($candidate, '/') : $candidate . '/';
-                $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getPermalinkFromURL.sql");
-                $query = $this->prepare_query_wp($query, array("url1" => $url1, "url2" => $url2));
-                $query = $this->doTableNameReplacements($query);
-                $query = $this->f->doNormalReplacements($query);
-                $results = $this->queryAndGetResults($query);
-                $rows = is_array($results['rows'] ?? null) ? $results['rows'] : array();
-                if (!empty($rows)) {
-                    $redirect = array();
-                    foreach ($rows[0] as $key => $value) {
-                        $redirect[$key] = $value;
-                    }
-                    if (!isset($redirect['id'])) {
-                        $redirect['id'] = 0;
-                    }
-                    return $redirect;
-                }
-            }
-            return array('id' => 0);
-        }
-        return $this->getRedirectsRepo()->getActiveRedirectForURL($url, $degradedMode);
-    }
-
-    public function getExistingRedirectForURL($url) {
-        return $this->getRedirectsRepo()->getExistingRedirectForURL($url);
-    }
-
-    public function deleteSpecifiedRedirects() {
-        return $this->getRedirectsRepo()->deleteSpecifiedRedirects();
-    }
-
-    public function getRedirectConditions(int $redirectId): array {
-        return $this->getRedirectsRepo()->getRedirectConditions($redirectId);
-    }
-
-    public function saveRedirectConditions(int $redirectId, array $conditions): void {
-        $this->getRedirectsRepo()->saveRedirectConditions($redirectId, $conditions);
-    }
-
-    public function updateRedirect(ABJ_404_Solution_RedirectUpdate $update): string {
-        return $this->getRedirectsRepo()->updateRedirect($update);
-    }
-
-    public function getRedirectsByIDs($ids) {
-        return $this->getRedirectsRepo()->getRedirectsByIDs($ids);
-    }
-
-    public function updateRedirectTypeStatus($id, $newstatus) {
-        return $this->getRedirectsRepo()->updateRedirectTypeStatus($id, $newstatus);
-    }
-
-    public function moveRedirectsToTrash($id, $trash) {
-        return $this->getRedirectsRepo()->moveRedirectsToTrash($id, $trash);
     }
 
     public function deleteOldRedirectsCron() {
