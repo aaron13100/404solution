@@ -64,7 +64,7 @@ class ABJ_404_Solution_ContentRepository implements ABJ_404_Solution_ContentRepo
         $abj404logic = abj_service('plugin_logic');
         $postsTableName = $this->getPostsTableName();
 
-        $options = $abj404logic->getOptions();
+        $options = abj_service('options_repository')->getOptions();
         $recognizedPostTypes = $this->dbCore->buildPostTypeSqlList($options);
         if ($recognizedPostTypes === '') {
             return array();
@@ -197,7 +197,7 @@ class ABJ_404_Solution_ContentRepository implements ABJ_404_Solution_ContentRepo
         global $wpdb;
         $abj404logic = abj_service('plugin_logic');
 
-        $options = $abj404logic->getOptions();
+        $options = abj_service('options_repository')->getOptions();
         $recognizedPostTypes = $this->dbCore->buildPostTypeSqlList($options);
         if ($recognizedPostTypes === '') {
             return array();
@@ -221,7 +221,7 @@ class ABJ_404_Solution_ContentRepository implements ABJ_404_Solution_ContentRepo
         global $wpdb;
         $abj404logic = abj_service('plugin_logic');
 
-        $options = $abj404logic->getOptions();
+        $options = abj_service('options_repository')->getOptions();
         $recognizedCategories = $this->dbCore->buildCategorySqlList($options);
 
         if ($slug != null) {
@@ -278,7 +278,7 @@ class ABJ_404_Solution_ContentRepository implements ABJ_404_Solution_ContentRepo
         global $wpdb;
         $abj404logic = abj_service('plugin_logic');
 
-        $options = $abj404logic->getOptions();
+        $options = abj_service('options_repository')->getOptions();
         $recognizedCategories = $this->dbCore->buildCategorySqlList($options);
         if ($recognizedCategories === '') {
             $recognizedCategories = "''";
@@ -383,7 +383,7 @@ class ABJ_404_Solution_ContentRepository implements ABJ_404_Solution_ContentRepo
     function getIDsNeededForPermalinkCache() {
         $abj404logic = abj_service('plugin_logic');
 
-        $options = $abj404logic->getOptions();
+        $options = abj_service('options_repository')->getOptions();
         $recognizedPostTypes = $this->dbCore->buildPostTypeSqlList($options);
         if ($recognizedPostTypes === '') {
             return null;

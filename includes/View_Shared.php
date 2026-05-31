@@ -335,7 +335,7 @@ class ABJ_404_Solution_View_Shared extends ABJ_404_Solution_ViewComponent {
 	 * @return array<string, mixed>
 	 */
 	public function getOptionsWithDefaults() {
-		$options = $this->logic->getOptions();
+		$options = abj_service('options_repository')->getOptions();
 		if (!is_array($options)) {
 			$options = array();
 		}
@@ -485,140 +485,167 @@ class ABJ_404_Solution_View_Shared extends ABJ_404_Solution_ViewComponent {
 	 * @return array<string, string> Array of links and titles
 	 */
 	public function buildTableActionLinks($row, $sub, $tableOptions, $isCapturedPage = false) {
-		$result = [];
-
-		// Sanitize $sub for safe use in URLs (prevents XSS via quote injection)
 		$sub = rawurlencode($sub);
+		$ids = $this->resolveTableActionIds($row, $isCapturedPage);
+		$result = $this->buildBaseTableActionLinks($ids['id'], $ids['logsId'], $ids['rawId'], $sub, $isCapturedPage);
+		$options = $this->extractTableActionOptions($tableOptions);
 
-			// ID handling differs between pages
-			$rawId = $row['id'] ?? 0;
-			$rawLogsId = $row['logsid'] ?? 0;
-			if ($isCapturedPage) {
-				// Captured page uses raw ID for most links
-				$id = $rawId;
-				$logsId = $rawLogsId;
-			} else {
-				// Redirects page uses absint for all IDs
-				$id = absint(is_scalar($rawId) ? $rawId : 0);
-				$logsId = absint(is_scalar($rawLogsId) ? $rawLogsId : 0);
-			}
-
-		// Build base links
-		$result['editlink'] = "?page=" . ABJ404_PP . "&subpage=abj404_edit&id=" . $id . "&source_page=" . $sub;
-		$result['logslink'] = "?page=" . ABJ404_PP . "&subpage=abj404_logs&id=" . $logsId;
-
+		$result = $this->applyTrashAction($result, $options['filter']);
 		if ($isCapturedPage) {
-			// Captured page - use the dynamic $sub parameter only once
-			$result['trashlink'] = "?page=" . ABJ404_PP . "&id=" . $id .
-				"&subpage=" . $sub;
-				$result['ajaxTrashLink'] = "admin-ajax.php?action=trashLink" . "&id=" . absint(is_scalar($rawId) ? $rawId : 0) .
-					"&subpage=" . $sub;
-			$result['deletelink'] = "?page=" . ABJ404_PP . "&remove=1&id=" . $id .
-				"&subpage=" . $sub;
-		} else {
-			// Redirects page does not have hardcoded subpage
-			$result['trashlink'] = "?page=" . ABJ404_PP . "&id=" . $id .
-				"&subpage=" . $sub;
-			$result['ajaxTrashLink'] = "admin-ajax.php?action=trashLink" . "&id=" . $id .
-				"&subpage=" . $sub;
-			$result['deletelink'] = "?page=" . ABJ404_PP . "&remove=1&id=" . $id .
-				"&subpage=" . $sub;
+			$result = $this->applyCapturedPageActionLinks($result, $ids['id'], $sub, $options['filter']);
 		}
 
-		// Extract type-safe table option values
-		$toOrderby = is_array($tableOptions) && array_key_exists('orderby', $tableOptions) && is_string($tableOptions['orderby']) ? $tableOptions['orderby'] : '';
-		$toOrder = is_array($tableOptions) && array_key_exists('order', $tableOptions) && is_string($tableOptions['order']) ? $tableOptions['order'] : '';
-		$toFilter = is_array($tableOptions) && array_key_exists('filter', $tableOptions) ? $tableOptions['filter'] : 0;
+		$result = $this->appendTableActionQueryArgs($result, $options, $isCapturedPage);
+		return $this->applyTableActionNonces($result, $options['filter'], $isCapturedPage);
+	}
 
-		// Trash/Restore title and action
+	/**
+	 * @param array<string, mixed> $row
+	 * @return array{id: mixed, logsId: mixed, rawId: mixed}
+	 */
+	private function resolveTableActionIds(array $row, bool $isCapturedPage): array {
+		$rawId = $row['id'] ?? 0;
+		$rawLogsId = $row['logsid'] ?? 0;
+		if ($isCapturedPage) {
+			return ['id' => $rawId, 'logsId' => $rawLogsId, 'rawId' => $rawId];
+		}
+
+		return [
+			'id' => absint(is_scalar($rawId) ? $rawId : 0),
+			'logsId' => absint(is_scalar($rawLogsId) ? $rawLogsId : 0),
+			'rawId' => $rawId,
+		];
+	}
+
+	/**
+	 * @param mixed $id
+	 * @param mixed $logsId
+	 * @param mixed $rawId
+	 * @return array<string, string>
+	 */
+	private function buildBaseTableActionLinks($id, $logsId, $rawId, string $sub, bool $isCapturedPage): array {
+		$result = [];
+		$result['editlink'] = "?page=" . ABJ404_PP . "&subpage=abj404_edit&id=" . $id . "&source_page=" . $sub;
+		$result['logslink'] = "?page=" . ABJ404_PP . "&subpage=abj404_logs&id=" . $logsId;
+		$result['trashlink'] = "?page=" . ABJ404_PP . "&id=" . $id . "&subpage=" . $sub;
+		$result['deletelink'] = "?page=" . ABJ404_PP . "&remove=1&id=" . $id . "&subpage=" . $sub;
+		$ajaxId = $isCapturedPage ? absint(is_scalar($rawId) ? $rawId : 0) : $id;
+		$result['ajaxTrashLink'] = "admin-ajax.php?action=trashLink&id=" . $ajaxId . "&subpage=" . $sub;
+		return $result;
+	}
+
+	/**
+	 * @param array<string, mixed> $tableOptions
+	 * @return array{orderby: string, order: string, filter: mixed, paged: mixed}
+	 */
+	private function extractTableActionOptions(array $tableOptions): array {
+		return [
+			'orderby' => array_key_exists('orderby', $tableOptions) && is_string($tableOptions['orderby']) ? $tableOptions['orderby'] : '',
+			'order' => array_key_exists('order', $tableOptions) && is_string($tableOptions['order']) ? $tableOptions['order'] : '',
+			'filter' => array_key_exists('filter', $tableOptions) ? $tableOptions['filter'] : 0,
+			'paged' => array_key_exists('paged', $tableOptions) ? $tableOptions['paged'] : 0,
+		];
+	}
+
+	/**
+	 * @param array<string, string> $result
+	 * @param mixed $toFilter
+	 * @return array<string, string>
+	 */
+	private function applyTrashAction(array $result, $toFilter): array {
 		if ($toFilter == ABJ404_TRASH_FILTER) {
 			$result['trashlink'] .= "&trash=0";
 			$result['ajaxTrashLink'] .= "&trash=0";
 			$result['trashtitle'] = __('Restore', '404-solution');
-		} else {
-			$result['trashlink'] .= "&trash=1";
-			$result['ajaxTrashLink'] .= "&trash=1";
-			$result['trashtitle'] = __('Trash', '404-solution');
+			return $result;
 		}
 
-		// Captured page has ignore and later links
+		$result['trashlink'] .= "&trash=1";
+		$result['ajaxTrashLink'] .= "&trash=1";
+		$result['trashtitle'] = __('Trash', '404-solution');
+		return $result;
+	}
+
+	/**
+	 * @param array<string, string> $result
+	 * @param mixed $id
+	 * @param mixed $toFilter
+	 * @return array<string, string>
+	 */
+	private function applyCapturedPageActionLinks(array $result, $id, string $sub, $toFilter): array {
+		$result['ignorelink'] = "?page=" . ABJ404_PP . "&id=" . $id . "&subpage=" . $sub;
+		$result['laterlink'] = "?page=" . ABJ404_PP . "&id=" . $id . "&subpage=" . $sub;
+		$result['ignoretitle'] = $toFilter == ABJ404_STATUS_IGNORED ? __('Remove Ignore Status', '404-solution') : __('Ignore 404 Error', '404-solution');
+		$result['ignorelink'] .= $toFilter == ABJ404_STATUS_IGNORED ? "&ignore=0" : "&ignore=1";
+		$result['latertitle'] = $toFilter == ABJ404_STATUS_LATER ? __('Remove Later Status', '404-solution') : __('Organize Later', '404-solution');
+		$result['laterlink'] .= $toFilter == ABJ404_STATUS_LATER ? "&later=0" : "&later=1";
+		return $result;
+	}
+
+	/**
+	 * @param array<string, string> $result
+	 * @param array{orderby: string, order: string, filter: mixed, paged: mixed} $options
+	 * @return array<string, string>
+	 */
+	private function appendTableActionQueryArgs(array $result, array $options, bool $isCapturedPage): array {
+		$sortArgs = $this->buildSortQueryArgs($options['orderby'], $options['order']);
+		if ($sortArgs !== '') {
+			foreach (['trashlink', 'deletelink', 'editlink'] as $key) {
+				$result[$key] .= $sortArgs;
+			}
+			if ($isCapturedPage) {
+				$result['ignorelink'] .= $sortArgs;
+				$result['laterlink'] .= $sortArgs;
+			}
+		}
+
+		if ($options['filter'] != 0) {
+			$result = $this->appendFilterQueryArgs($result, $options['filter'], $isCapturedPage);
+		}
+		if ($options['paged'] > 1) {
+			$result['editlink'] .= "&paged=" . $options['paged'];
+		}
+		return $result;
+	}
+
+	private function buildSortQueryArgs(string $toOrderby, string $toOrder): string {
+		if ($toOrderby === '' || $toOrder === '' || ($toOrderby == "url" && $toOrder == "ASC")) {
+			return '';
+		}
+		return "&orderby=" . sanitize_text_field($toOrderby) . "&order=" . sanitize_text_field($toOrder);
+	}
+
+	/**
+	 * @param array<string, string> $result
+	 * @param mixed $toFilter
+	 * @return array<string, string>
+	 */
+	private function appendFilterQueryArgs(array $result, $toFilter, bool $isCapturedPage): array {
+		foreach (['trashlink', 'deletelink', 'editlink'] as $key) {
+			$result[$key] .= "&filter=" . $toFilter;
+		}
 		if ($isCapturedPage) {
-			$result['ignorelink'] = "?page=" . ABJ404_PP . "&id=" . $id .
-				"&subpage=" . $sub;
-			$result['laterlink'] = "?page=" . ABJ404_PP . "&id=" . $id .
-				"&subpage=" . $sub;
-
-			// Ignore title and action
-			$result['ignoretitle'] = "";
-			if ($toFilter == ABJ404_STATUS_IGNORED) {
-				$result['ignorelink'] .= "&ignore=0";
-				$result['ignoretitle'] = __('Remove Ignore Status', '404-solution');
-			} else {
-				$result['ignorelink'] .= "&ignore=1";
-				$result['ignoretitle'] = __('Ignore 404 Error', '404-solution');
-			}
-
-			// Later title and action
-			$result['latertitle'] = '?Organize Later?';
-			if ($toFilter == ABJ404_STATUS_LATER) {
-				$result['laterlink'] .= "&later=0";
-				$result['latertitle'] = __('Remove Later Status', '404-solution');
-			} else {
-				$result['laterlink'] .= "&later=1";
-				$result['latertitle'] = __('Organize Later', '404-solution');
-			}
+			$result['ignorelink'] .= "&filter=" . $toFilter;
+			$result['laterlink'] .= "&filter=" . $toFilter;
 		}
+		return $result;
+	}
 
-		// Add orderby/order parameters if not default
-		if ($toOrderby !== '' && $toOrder !== '') {
-			if (!($toOrderby == "url" && $toOrder == "ASC")) {
-				$result['trashlink'] .= "&orderby=" . sanitize_text_field($toOrderby) . "&order=" . sanitize_text_field($toOrder);
-				$result['deletelink'] .= "&orderby=" . sanitize_text_field($toOrderby) . "&order=" . sanitize_text_field($toOrder);
-
-				if ($isCapturedPage && array_key_exists('ignorelink', $result) && array_key_exists('laterlink', $result)) {
-					$result['ignorelink'] .= "&orderby=" . sanitize_text_field($toOrderby) . "&order=" . sanitize_text_field($toOrder);
-					$result['laterlink'] .= "&orderby=" . sanitize_text_field($toOrderby) . "&order=" . sanitize_text_field($toOrder);
-				}
-			}
-		}
-
-		// Add filter parameter if not zero
-		if ($toFilter != 0) {
-			$result['trashlink'] .= "&filter=" . $toFilter;
-			$result['deletelink'] .= "&filter=" . $toFilter;
-			$result['editlink'] .= "&filter=" . $toFilter;
-
-			if ($isCapturedPage && array_key_exists('ignorelink', $result) && array_key_exists('laterlink', $result)) {
-				$result['ignorelink'] .= "&filter=" . $toFilter;
-				$result['laterlink'] .= "&filter=" . $toFilter;
-			}
-		}
-
-		// Add orderby/order parameters to edit link
-		if ($toOrderby !== '' && $toOrder !== '') {
-			if (!($toOrderby == "url" && $toOrder == "ASC")) {
-				$result['editlink'] .= "&orderby=" . sanitize_text_field($toOrderby) . "&order=" . sanitize_text_field($toOrder);
-			}
-		}
-
-		// Add paged parameter to edit link if present
-		if (is_array($tableOptions) && array_key_exists('paged', $tableOptions) && $tableOptions['paged'] > 1) {
-			$result['editlink'] .= "&paged=" . $tableOptions['paged'];
-		}
-
-		// Apply nonces
+	/**
+	 * @param array<string, string> $result
+	 * @param mixed $toFilter
+	 * @return array<string, string>
+	 */
+	private function applyTableActionNonces(array $result, $toFilter, bool $isCapturedPage): array {
 		$result['trashlink'] = wp_nonce_url($result['trashlink'], "abj404_trashRedirect");
 		$result['ajaxTrashLink'] = wp_nonce_url($result['ajaxTrashLink'], "abj404_ajaxTrash");
-
 		if ($toFilter == ABJ404_TRASH_FILTER) {
 			$result['deletelink'] = wp_nonce_url($result['deletelink'], "abj404_removeRedirect");
 		}
-
-		if ($isCapturedPage && array_key_exists('ignorelink', $result) && array_key_exists('laterlink', $result)) {
+		if ($isCapturedPage) {
 			$result['ignorelink'] = wp_nonce_url($result['ignorelink'], "abj404_ignore404");
 			$result['laterlink'] = wp_nonce_url($result['laterlink'], "abj404_organizeLater");
 		}
-
 		return $result;
 	}
 

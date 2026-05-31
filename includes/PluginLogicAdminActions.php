@@ -17,7 +17,7 @@ class ABJ_404_Solution_PluginLogicAdminActions {
     /** @var ABJ_404_Solution_Logging */
     private $logger;
 
-    /** @var ABJ_404_Solution_RedirectsRepositoryInterface|ABJ_404_Solution_DataAccess */
+    /** @var ABJ_404_Solution_RedirectsRepositoryInterface */
     private $redirectsRepo;
 
     /** @var ABJ_404_Solution_ViewBuildOrchestratorInterface|ABJ_404_Solution_DataAccess */
@@ -79,7 +79,7 @@ class ABJ_404_Solution_PluginLogicAdminActions {
         return $this->viewBuild;
     }
 
-    /** @return ABJ_404_Solution_RedirectsRepositoryInterface|ABJ_404_Solution_DataAccess */
+    /** @return ABJ_404_Solution_RedirectsRepositoryInterface */
     public function getRedirectsRepo() {
         return $this->redirectsRepo;
     }
@@ -317,7 +317,7 @@ class ABJ_404_Solution_PluginLogicAdminActions {
 
         if (($this->f->getPostOrGetSanitize('action') == 'exportRedirects') && abj_service('admin_access_policy')->isPluginAdmin()) {
             check_admin_referer('abj404_exportRedirects');
-            $this->pluginLogic->doExport();
+            $this->pluginLogic->importExport()->doExport();
         }
     }
 
@@ -326,7 +326,7 @@ class ABJ_404_Solution_PluginLogicAdminActions {
 
         if (($this->f->getPostOrGetSanitize('action') == 'importRedirectsFile') && abj_service('admin_access_policy')->isPluginAdmin()) {
             check_admin_referer('abj404_importRedirectsFile');
-            $result = $this->pluginLogic->doImportFile();
+            $result = $this->pluginLogic->importExport()->doImportFile();
             $this->viewBuild->invalidateViewDoneAndScheduleRebuild();
             return $result;
         }
@@ -339,9 +339,9 @@ class ABJ_404_Solution_PluginLogicAdminActions {
         $showRows = max($rows, ABJ404_OPTION_MIN_PERPAGE);
         $showRows = min($showRows, ABJ404_OPTION_MAX_PERPAGE);
 
-        $options = $this->pluginLogic->getOptions();
+        $options = abj_service('options_repository')->getOptions();
         $options['perpage'] = $showRows;
-        $this->pluginLogic->updateOptions($options);
+        abj_service('options_repository')->updateOptions($options);
     }
 
     /**
@@ -508,7 +508,7 @@ class ABJ_404_Solution_PluginLogicAdminActions {
     }
 
     private function getMenuParentScript(): string {
-        $options = $this->pluginLogic->getOptions();
+        $options = abj_service('options_repository')->getOptions();
         $menuLocation = 'underSettings';
         if (is_array($options) && isset($options['menuLocation']) && is_string($options['menuLocation'])) {
             $menuLocation = $options['menuLocation'];

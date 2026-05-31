@@ -19,9 +19,6 @@ class ABJ_404_Solution_SlugChangeHandler {
     /** @var ABJ_404_Solution_Logging */
     private $logger;
 
-    /** @var ABJ_404_Solution_PluginLogic */
-    private $logic;
-
     /**
      * Track post IDs already processed within the current request.
      * WordPress fires save_post multiple times per save; this prevents duplicate redirects.
@@ -33,13 +30,11 @@ class ABJ_404_Solution_SlugChangeHandler {
      * @param ABJ_404_Solution_ContentRepository|null $contentRepository Content repository
      * @param ABJ_404_Solution_RedirectsRepository|null $redirectsRepository Redirects repository
      * @param ABJ_404_Solution_Logging|null $logging Logging service
-     * @param ABJ_404_Solution_PluginLogic|null $pluginLogic Business logic service
      */
-    public function __construct($contentRepository = null, $redirectsRepository = null, $logging = null, $pluginLogic = null) {
+    public function __construct($contentRepository = null, $redirectsRepository = null, $logging = null) {
         $this->contentRepository = $contentRepository;
         $this->redirectsRepository = $redirectsRepository;
         $this->logger = $logging !== null ? $logging : abj_service('logging');
-        $this->logic = $pluginLogic !== null ? $pluginLogic : abj_service('plugin_logic');
     }
 
     /** @return mixed */
@@ -136,7 +131,7 @@ class ABJ_404_Solution_SlugChangeHandler {
         }
 
         // Check if we should create a redirect (respects per-post override from editor)
-        $options = $this->logic->getOptions();
+        $options = abj_service('options_repository')->getOptions();
 
         // Check for per-post override from Quick Edit, Classic Editor, or Gutenberg
         if (class_exists('ABJ_404_Solution_PostEditorIntegration')) {
@@ -242,7 +237,7 @@ class ABJ_404_Solution_SlugChangeHandler {
         $post_id = (int)$post->ID;
 
         // Check option
-        $options = $this->logic->getOptions();
+        $options = abj_service('options_repository')->getOptions();
         if (!isset($options['auto_trash_redirect']) || $options['auto_trash_redirect'] != '1') {
             return;
         }
@@ -295,7 +290,7 @@ class ABJ_404_Solution_SlugChangeHandler {
         }
 
         // Check option
-        $options = $this->logic->getOptions();
+        $options = abj_service('options_repository')->getOptions();
         if (!isset($options['auto_trash_redirect']) || $options['auto_trash_redirect'] != '1') {
             return;
         }

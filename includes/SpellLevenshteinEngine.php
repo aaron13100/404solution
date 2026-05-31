@@ -128,7 +128,7 @@ class ABJ_404_Solution_SpellLevenshteinEngine {
 	 */
 	function getLikelyMatchIDs(string $requestedURLCleaned, string $fullURLspaces, string $rowType, ?array $rows = null) {
 
-		$options = $this->logic->getOptions();
+		$options = abj_service('options_repository')->getOptions();
 		$suggestMaxLikely = isset($options['suggest_max']) && is_scalar($options['suggest_max']) ? $options['suggest_max'] : 5;
 		$onlyNeedThisManyPages = min(5 * absint($suggestMaxLikely), 100);
 

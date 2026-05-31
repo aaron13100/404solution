@@ -392,7 +392,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
     /** @return void */
     function processRedirectAllRequests() {
         $this->trace = [];
-        $options = $this->logic->getOptions();
+        $options = abj_service('options_repository')->getOptions();
 
         $userRequest = ABJ_404_Solution_UserRequest::getInstance();
         if ($userRequest === null) {
@@ -502,7 +502,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
         // keep serving instead of every 404 falling to the theme 404 page.
         $degradedMode = false;
         if (defined('ABJ404_VERSION')) {
-            $options = $this->logic->getOptions(true);
+            $options = abj_service('options_repository')->getOptions(true);
             if (isset($options['DB_VERSION']) && $options['DB_VERSION'] != ABJ404_VERSION) {
                 $options = $this->recoverDbVersionIfStale($options);
                 if (!isset($options['DB_VERSION']) || $options['DB_VERSION'] != ABJ404_VERSION) {
@@ -541,7 +541,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
             }
         }
 
-        $options = $this->logic->getOptions();
+        $options = abj_service('options_repository')->getOptions();
 
         $lookupStart = microtime(true);
         $redirect = $this->redirectsRepository->getActiveRedirectForURL($requestedURL, $degradedMode);
@@ -1032,7 +1032,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
 
         $isRedirectToCustom404Page = false;
         if ($redirect['type'] == $this->wpTypePost()) {
-            $options = $this->logic->getOptions();
+            $options = abj_service('options_repository')->getOptions();
             $dest404pageRaw = isset($options['dest404page']) ? $options['dest404page'] : null;
             $dest404page = is_string($dest404pageRaw) ? $dest404pageRaw : null;
 
@@ -1061,7 +1061,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
 
             $urlSlugOnly = $this->logic->urlNormalization()->removeHomeDirectory($requestedURL);
             $spellChecker = abj_service('spell_checker');
-            $options = $this->logic->getOptions();
+            $options = abj_service('options_repository')->getOptions();
             // Boundary normalizer: option shape-probing for the suggest_* slice
             // lives in the VO. See ABJ_404_Solution_SuggestionDisplayOptions.
             $suggestOpts = ABJ_404_Solution_SuggestionDisplayOptions::fromOptionsArray($options);
@@ -1173,7 +1173,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
 
         // upgradeIfNeeded ends in updateOptions() which clears the resolved-
         // options cache, so getOptions(true) returns fresh values from the DB.
-        $fresh = $this->logic->getOptions(true);
+        $fresh = abj_service('options_repository')->getOptions(true);
         if (is_array($fresh) && isset($fresh['DB_VERSION'])
                 && $fresh['DB_VERSION'] == ABJ404_VERSION) {
             return $fresh;

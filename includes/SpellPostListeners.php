@@ -16,9 +16,6 @@ class ABJ_404_Solution_SpellPostListeners {
 	/** @var ABJ_404_Solution_Functions */
 	private $f;
 
-	/** @var ABJ_404_Solution_PluginLogic */
-	private $logic;
-
 	/** @var ABJ_404_Solution_Logging */
 	private $logger;
 
@@ -41,15 +38,13 @@ class ABJ_404_Solution_SpellPostListeners {
 
 	/**
 	 * @param ABJ_404_Solution_Functions $functions
-	 * @param ABJ_404_Solution_PluginLogic $logic
 	 * @param ABJ_404_Solution_Logging $logger
 	 * @param ABJ_404_Solution_ContentRepository $contentRepository
 	 * @param ABJ_404_Solution_PermalinkCache $permalinkCache
 	 * @param ABJ_404_Solution_NGramFilter $ngramFilter
 	 */
-	public function __construct($functions, $logic, $logger, $contentRepository, $permalinkCache, $ngramFilter) {
+	public function __construct($functions, $logger, $contentRepository, $permalinkCache, $ngramFilter) {
 		$this->f = $functions;
-		$this->logic = $logic;
 		$this->logger = $logger;
 		$this->contentRepository = $contentRepository;
 		$this->permalinkCache = $permalinkCache;
@@ -101,7 +96,7 @@ class ABJ_404_Solution_SpellPostListeners {
 	 * @param string $saveOrDelete
 	 */
 	function savePostHandler($post_id, $post, $update, $saveOrDelete): void {
-		$options = $this->logic->getOptions();
+		$options = abj_service('options_repository')->getOptions();
 		if (!is_object($post) || !isset($post->post_type) || !isset($post->post_status) || !isset($post->post_name)) {
 			$this->logger->debugMessage(__CLASS__ . "/" . __FUNCTION__ .
 				": Invalid post object for ID: " . $post_id . " (skipped).");

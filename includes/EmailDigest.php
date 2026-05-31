@@ -239,7 +239,7 @@ class ABJ_404_Solution_EmailDigest {
      * @return string
      */
     public function sendDigest(): string {
-        $options = abj_service('plugin_logic')->getOptions(true);
+        $options = abj_service('options_repository')->getOptions(true);
 
         $frequency = isset($options['admin_notification_frequency']) && is_string($options['admin_notification_frequency'])
             ? $options['admin_notification_frequency']
@@ -322,7 +322,7 @@ class ABJ_404_Solution_EmailDigest {
      * @return void
      */
     public function scheduleNextDigest(): void {
-        $options = abj_service('plugin_logic')->getOptions(true);
+        $options = abj_service('options_repository')->getOptions(true);
         $frequency = isset($options['admin_notification_frequency']) && is_string($options['admin_notification_frequency'])
             ? $options['admin_notification_frequency']
             : 'instant';

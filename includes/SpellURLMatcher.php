@@ -16,9 +16,6 @@ class ABJ_404_Solution_SpellURLMatcher {
 	/** @var ABJ_404_Solution_Functions */
 	private $f;
 
-	/** @var ABJ_404_Solution_PluginLogic */
-	private $logic;
-
 	/** @var ABJ_404_Solution_Logging */
 	private $logger;
 
@@ -36,15 +33,13 @@ class ABJ_404_Solution_SpellURLMatcher {
 
 	/**
 	 * @param ABJ_404_Solution_Functions $functions
-	 * @param ABJ_404_Solution_PluginLogic $logic
 	 * @param ABJ_404_Solution_Logging $logger
 	 * @param ABJ_404_Solution_ContentRepository $contentRepository
 	 * @param mixed $viewReadService
 	 * @param string|int|null $custom404PageID
 	 */
-	public function __construct($functions, $logic, $logger, $contentRepository, $viewReadService, $custom404PageID) {
+	public function __construct($functions, $logger, $contentRepository, $viewReadService, $custom404PageID) {
 		$this->f = $functions;
-		$this->logic = $logic;
 		$this->logger = $logger;
 		$this->contentRepository = $contentRepository;
 		$this->viewReadService = $viewReadService;
@@ -93,7 +88,7 @@ class ABJ_404_Solution_SpellURLMatcher {
 	 */
 	function getPermalinkUsingRegEx(string $requestedURL, $options = null) {
 		if (!is_array($options)) {
-			$options = $this->logic->getOptions();
+			$options = abj_service('options_repository')->getOptions();
 		}
 		$isDebug = $this->logger->isDebug();
 

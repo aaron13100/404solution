@@ -28,9 +28,6 @@ class ABJ_404_Solution_PluginLogicPageOrdering {
     /** @var ABJ_404_Solution_PluginLogicUrlNormalization */
     private $urlNormalization;
 
-    /** @var ABJ_404_Solution_PluginLogic */
-    private $pluginLogic;
-
     /** @var ABJ_404_Solution_NotFoundResponseService */
     private $notFoundResponse;
 
@@ -40,16 +37,14 @@ class ABJ_404_Solution_PluginLogicPageOrdering {
      * @param ABJ_404_Solution_ContentRepositoryInterface $contentRepo
      * @param ABJ_404_Solution_StatsRepositoryInterface $statsRepo
      * @param ABJ_404_Solution_PluginLogicUrlNormalization $urlNormalization
-     * @param ABJ_404_Solution_PluginLogic $pluginLogic
      * @param ABJ_404_Solution_NotFoundResponseService $notFoundResponse
      */
-    function __construct($f, $logger, $contentRepo, $statsRepo, $urlNormalization, $pluginLogic, $notFoundResponse) {
+    function __construct($f, $logger, $contentRepo, $statsRepo, $urlNormalization, $notFoundResponse) {
         $this->f = $f;
         $this->logger = $logger;
         $this->contentRepo = $contentRepo;
         $this->statsRepo = $statsRepo;
         $this->urlNormalization = $urlNormalization;
-        $this->pluginLogic = $pluginLogic;
         $this->notFoundResponse = $notFoundResponse;
     }
 
@@ -334,7 +329,7 @@ class ABJ_404_Solution_PluginLogicPageOrdering {
      */
     function emailCaptured404Notification() {
 
-        $options = $this->pluginLogic->getOptions(true);
+        $options = abj_service('options_repository')->getOptions(true);
 
         $frequency = isset($options['admin_notification_frequency']) && is_string($options['admin_notification_frequency'])
             ? $options['admin_notification_frequency']
@@ -377,7 +372,7 @@ class ABJ_404_Solution_PluginLogicPageOrdering {
      * @return boolean
      */
     function shouldNotifyAboutCaptured404s($captured404Count) {
-        $options = $this->pluginLogic->getOptions(true);
+        $options = abj_service('options_repository')->getOptions(true);
 
         if (isset($options['admin_notification']) && $options['admin_notification'] != '0') {
             if ($captured404Count >= $options['admin_notification']) {

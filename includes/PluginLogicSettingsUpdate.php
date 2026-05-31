@@ -93,7 +93,7 @@ class ABJ_404_Solution_PluginLogicSettingsUpdate {
      */
     function getTableOptions(string $pageBeingViewed): array {
         $tableOptions = array();
-        $options = $this->pluginLogic->getOptions(true);
+        $options = abj_service('options_repository')->getOptions(true);
 
         $translationArray = array(
             '{ABJ404_STATUS_MANUAL_text}' => __('Man', '404-solution'),
@@ -129,11 +129,11 @@ class ABJ_404_Solution_PluginLogicSettingsUpdate {
 
             if ($pageBeingViewed == 'abj404_redirects') {
                 $options['page_redirects_order_by'] = $tableOptions['orderby'];
-                $this->pluginLogic->updateOptions($options);
+                abj_service('options_repository')->updateOptions($options);
 
             } else if ($pageBeingViewed == 'abj404_captured') {
                 $options['captured_order_by'] = $tableOptions['orderby'];
-                $this->pluginLogic->updateOptions($options);
+                abj_service('options_repository')->updateOptions($options);
             }
 
         } else if ($pageBeingViewed == "abj404_logs") {
@@ -158,11 +158,11 @@ class ABJ_404_Solution_PluginLogicSettingsUpdate {
 
             if ($pageBeingViewed == 'abj404_redirects') {
                 $options['page_redirects_order'] = $tableOptions['order'];
-                $this->pluginLogic->updateOptions($options);
+                abj_service('options_repository')->updateOptions($options);
 
             } else if ($pageBeingViewed == 'abj404_captured') {
                 $options['captured_order'] = $tableOptions['order'];
-                $this->pluginLogic->updateOptions($options);
+                abj_service('options_repository')->updateOptions($options);
             }
 
         } else if ($tableOptions['orderby'] == "created" || $tableOptions['orderby'] == "lastused" || $tableOptions['orderby'] == "timestamp") {
@@ -273,7 +273,7 @@ class ABJ_404_Solution_PluginLogicSettingsUpdate {
      */
     function updateOptionsFromPOST() {
         $message = "";
-        $options = $this->pluginLogic->getOptions();
+        $options = abj_service('options_repository')->getOptions();
 
         $returnData = array();
         $returnData['newURL'] = admin_url() . "options-general.php?page=" . ABJ404_PP . '&subpage=abj404_options';
@@ -336,7 +336,7 @@ class ABJ_404_Solution_PluginLogicSettingsUpdate {
             $excludedPages = preg_replace('/[^\[\",\]a-zA-Z\d\|\\\\ ]/', '', $excludedPages);
             $new_options['excludePages[]'] = $excludedPages;
 
-            $this->pluginLogic->updateOptions($new_options);
+            abj_service('options_repository')->updateOptions($new_options);
 
             $permalinkCache = abj_service('permalink_cache');
             $permalinkCache->updatePermalinkCache(2);

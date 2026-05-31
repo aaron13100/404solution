@@ -151,12 +151,12 @@ class ABJ_404_Solution_PluginVersionUpgradeService {
     public function stampDbVersion($options = null): array {
         $pluginLogic = self::pluginLogic();
         if ($options == null) {
-            $options = $pluginLogic->getOptions(true);
+            $options = abj_service('options_repository')->getOptions(true);
         }
 
         $options['DB_VERSION'] = ABJ404_VERSION;
 
-        $pluginLogic->updateOptions($options);
+        abj_service('options_repository')->updateOptions($options);
 
         return $options;
     }
@@ -225,7 +225,7 @@ class ABJ_404_Solution_PluginVersionUpgradeService {
         }
 
         $options['ignore_doprocess'] = implode("\n", $userAgents);
-        $pluginLogic->updateOptions($options);
+        abj_service('options_repository')->updateOptions($options);
     }
 
     /** @return void */
@@ -289,7 +289,7 @@ class ABJ_404_Solution_PluginVersionUpgradeService {
         }
 
         $options['folders_files_ignore'] = implode("\n", $originalItems);
-        $pluginLogic->updateOptions($options);
+        abj_service('options_repository')->updateOptions($options);
     }
 
     /**
@@ -308,7 +308,7 @@ class ABJ_404_Solution_PluginVersionUpgradeService {
             $dest404page .= '|' . ABJ404_TYPE_POST;
         }
         $options['dest404page'] = $dest404page;
-        $pluginLogic->updateOptions($options);
+        abj_service('options_repository')->updateOptions($options);
     }
 
     /** @return void */
@@ -337,7 +337,7 @@ class ABJ_404_Solution_PluginVersionUpgradeService {
         } else {
             $options['suggest_minscore_enabled'] = '0';
         }
-        $pluginLogic->updateOptions($options);
+        abj_service('options_repository')->updateOptions($options);
     }
 
     /**
@@ -351,7 +351,7 @@ class ABJ_404_Solution_PluginVersionUpgradeService {
 
         $dest = is_string($options['dest404page']) ? $options['dest404page'] : '';
         $options['dest404_behavior'] = self::dest404BehaviorFromDestination($dest);
-        $pluginLogic->updateOptions($options);
+        abj_service('options_repository')->updateOptions($options);
     }
 
     private static function dest404BehaviorFromDestination(string $dest): string {

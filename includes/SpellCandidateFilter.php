@@ -80,7 +80,7 @@ class ABJ_404_Solution_SpellCandidateFilter {
 	 */
 	function findMatchingPosts(string $requestedURLRaw, string $includeCats = '1', string $includeTags = '1') {
 
-		$options = $this->logic->getOptions();
+		$options = abj_service('options_repository')->getOptions();
 		$excludePagesCount = 0;
 		$excludePagesRaw = isset($options['excludePages[]']) && is_string($options['excludePages[]']) ? $options['excludePages[]'] : '';
 		if (trim($excludePagesRaw) !== '') {
@@ -288,7 +288,7 @@ class ABJ_404_Solution_SpellCandidateFilter {
 		$likelyMatchIDsAndPermalinks = $this->levenshteinEngine->getLikelyMatchIDs($requestedURLCleaned, $fullURLspacesCleaned, 'categories', $rows);
 		$likelyMatchIDs = array_keys($likelyMatchIDsAndPermalinks);
 
-		$options = $this->logic->getOptions();
+		$options = abj_service('options_repository')->getOptions();
 		$suggestMaxRaw = isset($options['suggest_max']) && is_scalar($options['suggest_max']) ? $options['suggest_max'] : 5;
 		$suggestMax = absint($suggestMaxRaw);
 		$topKScores = new SplMinHeap();
@@ -361,7 +361,7 @@ class ABJ_404_Solution_SpellCandidateFilter {
 		$likelyMatchIDsAndPermalinks = $this->levenshteinEngine->getLikelyMatchIDs($requestedURLCleaned, $fullURLspacesCleaned, 'tags', $rows);
 		$likelyMatchIDs = array_keys($likelyMatchIDsAndPermalinks);
 
-		$options = $this->logic->getOptions();
+		$options = abj_service('options_repository')->getOptions();
 		$suggestMaxRawT = isset($options['suggest_max']) && is_scalar($options['suggest_max']) ? $options['suggest_max'] : 5;
 		$suggestMax = absint($suggestMaxRawT);
 		$topKScores = new SplMinHeap();
@@ -428,7 +428,7 @@ class ABJ_404_Solution_SpellCandidateFilter {
 
 		$this->logger->debugMessage("Found " . count($likelyMatchIDs) . " likely match IDs.");
 
-		$options = $this->logic->getOptions();
+		$options = abj_service('options_repository')->getOptions();
 		$suggestMaxRawP = isset($options['suggest_max']) && is_scalar($options['suggest_max']) ? $options['suggest_max'] : 5;
 		$suggestMax = absint($suggestMaxRawP);
 		$topKScores = new SplMinHeap();

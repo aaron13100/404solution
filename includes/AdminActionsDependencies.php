@@ -30,7 +30,7 @@ final class ABJ_404_Solution_AdminActionsDependencies {
     private $f;
     /** @var ABJ_404_Solution_Logging */
     private $logger;
-    /** @var ABJ_404_Solution_RedirectsRepositoryInterface|ABJ_404_Solution_DataAccess */
+    /** @var ABJ_404_Solution_RedirectsRepositoryInterface */
     private $redirectsRepo;
     /** @var ABJ_404_Solution_ViewBuildOrchestratorInterface|ABJ_404_Solution_DataAccess */
     private $viewBuild;
@@ -50,7 +50,7 @@ final class ABJ_404_Solution_AdminActionsDependencies {
     /**
      * @param ABJ_404_Solution_Functions $f
      * @param ABJ_404_Solution_Logging $logger
-     * @param ABJ_404_Solution_RedirectsRepositoryInterface|ABJ_404_Solution_DataAccess $redirectsRepo
+     * @param ABJ_404_Solution_RedirectsRepositoryInterface $redirectsRepo
      * @param ABJ_404_Solution_ViewBuildOrchestratorInterface|ABJ_404_Solution_DataAccess $viewBuild
      * @param ABJ_404_Solution_ViewReadServiceInterface|ABJ_404_Solution_DataAccess $viewRead
      * @param ABJ_404_Solution_ContentRepositoryInterface $contentRepo
@@ -89,7 +89,7 @@ final class ABJ_404_Solution_AdminActionsDependencies {
     /** @return ABJ_404_Solution_Logging */
     public function getLogger() { return $this->logger; }
 
-    /** @return ABJ_404_Solution_RedirectsRepositoryInterface|ABJ_404_Solution_DataAccess */
+    /** @return ABJ_404_Solution_RedirectsRepositoryInterface */
     public function getRedirectsRepo() { return $this->redirectsRepo; }
 
     /** @return ABJ_404_Solution_ViewBuildOrchestratorInterface|ABJ_404_Solution_DataAccess */

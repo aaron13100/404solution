@@ -162,7 +162,6 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
             $this->contentRepo,
             $this->statsRepo,
             $this->urlNormalization,
-            $this,
             abj_service('not_found_response')
     	);
 
@@ -247,24 +246,6 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
         ABJ_404_Solution_PluginLogicLifecycle::doRegisterCrons();
     }
 
-
-    /**
-     * @param bool $skip_db_check
-     * @return array<string, mixed>
-     * @deprecated Use abj_service('options_repository')->getOptions() directly. This delegate exists only during the migration window for the OptionsRepository extraction and will be removed before the parent task closes.
-     */
-    function getOptions(bool $skip_db_check = false) {
-        return abj_service('options_repository')->getOptions($skip_db_check);
-    }
-
-    /**
-     * @param array<string, mixed> $options
-     * @return void
-     * @deprecated Use abj_service('options_repository')->updateOptions() directly. This delegate exists only during the migration window for the OptionsRepository extraction and will be removed before the parent task closes.
-     */
-    function updateOptions(array $options): void {
-        abj_service('options_repository')->updateOptions($options);
-    }
 
     /** @return string */
     function getDebugLogFileLink(): string {

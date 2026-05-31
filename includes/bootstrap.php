@@ -187,7 +187,7 @@ function abj_404_solution_register_data_layer($container) {
 
     $container->set('permalink_cache', function($c) {
         return new ABJ_404_Solution_PermalinkCache($c->get('content_repository'),
-            $c->get('logging'), $c->get('plugin_logic'), $c->get('stats_repository'));
+            $c->get('logging'), $c->get('stats_repository'));
     });
 
     $container->set('ngram_filter', function($c) {
@@ -327,7 +327,7 @@ function abj_404_solution_register_frontend_services($container) {
 
     $container->set('slug_change_handler', function($c) {
         return new ABJ_404_Solution_SlugChangeHandler($c->get('content_repository'),
-            $c->get('redirects_repository'), $c->get('logging'), $c->get('plugin_logic'));
+            $c->get('redirects_repository'), $c->get('logging'));
     });
 
     $container->set('published_posts_provider', function($c) {

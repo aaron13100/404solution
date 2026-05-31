@@ -484,7 +484,7 @@ class ABJ_404_Solution_LogsRepository implements ABJ_404_Solution_LogsRepository
             $this->logger->debugMessage(__FUNCTION__ . " error. Issue getting character set for table: " . $logTableName . ", column: requested_url. Error message: " . $e->getMessage());
         }
 
-        $options = $abj404logic->getOptions(true);
+        $options = abj_service('options_repository')->getOptions(true);
         $referer = function_exists('wp_get_referer') ? wp_get_referer() : '';
         if ($referer !== null && $referer !== false) {
             $referer = function_exists('esc_url_raw') ? esc_url_raw($referer) : (string)$referer;

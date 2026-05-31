@@ -27,22 +27,17 @@ class ABJ_404_Solution_PermalinkCache {
     /** @var ABJ_404_Solution_Logging */
     private $logger;
 
-    /** @var ABJ_404_Solution_PluginLogicInterface */
-    private $logic;
-
     /**
      * Constructor with dependency injection.
      *
      * @param ABJ_404_Solution_ContentRepository|null $contentRepository Content repository
      * @param ABJ_404_Solution_Logging|null $logging Logging service
-     * @param ABJ_404_Solution_PluginLogicInterface|null $pluginLogic Business logic service
      * @param ABJ_404_Solution_StatsRepository|null $statsRepository Stats repository
      */
-    public function __construct($contentRepository = null, $logging = null, $pluginLogic = null, $statsRepository = null) {
+    public function __construct($contentRepository = null, $logging = null, $statsRepository = null) {
         // Use injected dependencies or fall back to getInstance() for backward compatibility
         $this->contentRepository = $contentRepository !== null ? $contentRepository : abj_service('content_repository');
         $this->logger = $logging !== null ? $logging : abj_service('logging');
-        $this->logic = $pluginLogic !== null ? $pluginLogic : abj_service('plugin_logic');
         $this->statsRepository = $statsRepository !== null ? $statsRepository :
             (is_object($contentRepository) && method_exists($contentRepository, 'getPostsNeedingContentKeywords') ? $contentRepository : abj_service('stats_repository'));
     }
@@ -99,7 +94,7 @@ class ABJ_404_Solution_PermalinkCache {
     function updatePermalinkCache($maxExecutionTime, $executionCount = 1) {
     	// check to see if we need to upgrade the database.
         // we must pass "true" here to avoid an infinite loop when updating the database.
-        $this->logic->getOptions(true);
+        abj_service('options_repository')->getOptions(true);
 
         // insert the new rows.
         $results = $this->contentRepository->updatePermalinkCache();

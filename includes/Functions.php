@@ -611,8 +611,7 @@ abstract class ABJ_404_Solution_Functions {
         	$permalink['link'] = $permalink['id'];
         	if ($permalink['link'] == ABJ404_TYPE_EXTERNAL) {
 	        	if ($options == null) {
-	        		$abj404logic = abj_service('plugin_logic');
-	        		$options = $abj404logic->getOptions();
+                    $options = abj_service('options_repository')->getOptions();
 	        	}
 	        	$urlDestination = (array_key_exists('dest404pageURL', $options) &&
 	        		isset($options['dest404pageURL']) ? $options['dest404pageURL'] : 

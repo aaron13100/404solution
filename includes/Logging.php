@@ -88,8 +88,7 @@ class ABJ_404_Solution_Logging {
     
     /** @return boolean true if debug mode is on. false otherwise. */
     function isDebug() {
-        $abj404logic = abj_service('plugin_logic');
-        $options = $abj404logic->getOptions(true);
+        $options = abj_service('options_repository')->getOptions(true);
 
         return (array_key_exists('debug_mode', $options) && $options['debug_mode'] == true);
     }
@@ -266,7 +265,7 @@ class ABJ_404_Solution_Logging {
     function emailErrorLogIfNecessary(): bool {
         $abj404dao = abj_service('data_access');
         $abj404logic = abj_service('plugin_logic');
-        $options = $abj404logic->getOptions(true);
+        $options = abj_service('options_repository')->getOptions(true);
 
         if (!file_exists($this->getDebugFilePath())) {
             $this->debugMessage("No log file found so no errors were found.");
@@ -321,7 +320,7 @@ class ABJ_404_Solution_Logging {
         self::$lastSentErrorLineThisRequest = (int)$latestErrorLineFound['num'];
         self::$lastSentErrorSignatureThisRequest = $latestSignature;
         self::$lastSentDebugFilePathThisRequest = $debugFilePath;
-        $abj404logic->updateOptions($options);
+        abj_service('options_repository')->updateOptions($options);
         file_put_contents($sentDateFile, $latestErrorLineFound['num']);
         $fileContents = file_get_contents($sentDateFile);
         if ($fileContents != $latestErrorLineFound['num']) {
@@ -697,14 +696,14 @@ class ABJ_404_Solution_Logging {
         // available even when upstream services are degraded.
         try {
             // get the UUID here.
-            $abj404logic = abj_service('plugin_logic');
+            $optionsRepo = abj_service('options_repository');
             // abj_service returns null when the container is uninitialised
             // or the factory threw — common during very-early boot, the
             // test harness, and self-healing recovery from broken installs.
-            if (!is_object($abj404logic) || !method_exists($abj404logic, 'getOptions')) {
+            if (!is_object($optionsRepo) || !method_exists($optionsRepo, 'getOptions')) {
                 return 'abj404_debug.txt';
             }
-            $options = $abj404logic->getOptions(true);
+            $options = $optionsRepo->getOptions(true);
             $debugFileKey = null;
             if (is_array($options) && array_key_exists(self::DEBUG_FILE_KEY, $options)) {
                 $debugFileKey = is_string($options[self::DEBUG_FILE_KEY]) ? $options[self::DEBUG_FILE_KEY] : null;
@@ -721,8 +720,8 @@ class ABJ_404_Solution_Logging {
                 }
                 $debugFileKey = $syncUtils->uniqidReal();
                 $options[self::DEBUG_FILE_KEY] = $debugFileKey;
-                if (method_exists($abj404logic, 'updateOptions')) {
-                    $abj404logic->updateOptions($options);
+                if (method_exists($optionsRepo, 'updateOptions')) {
+                    $optionsRepo->updateOptions($options);
                 }
             }
 
@@ -792,10 +791,9 @@ class ABJ_404_Solution_Logging {
     /** @return void */
     function removeLastSentErrorLineFromDatabase(): void {
     	// update the last sent error line since the debug file will be deleted.
-    	$abj404logic = abj_service('plugin_logic');
-    	$options = $abj404logic->getOptions(true);
+        $options = abj_service('options_repository')->getOptions(true);
     	$options[self::LAST_SENT_LINE] = 0;
-    	$abj404logic->updateOptions($options);
+        abj_service('options_repository')->updateOptions($options);
     }
     
     /** Deletes all files named abj404_debug_*.txt
@@ -831,9 +829,9 @@ class ABJ_404_Solution_Logging {
         }
         
         // reset the UUID since we deleted the log file.
-        $options = $abj404logic->getOptions(true);
+        $options = abj_service('options_repository')->getOptions(true);
         $options[self::DEBUG_FILE_KEY] = null;
-        $abj404logic->updateOptions($options);
+        abj_service('options_repository')->updateOptions($options);
         
         return $allIsWell;
     }
