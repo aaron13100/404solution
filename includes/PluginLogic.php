@@ -161,7 +161,13 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
     	);
 
     	$this->pageOrdering = new ABJ_404_Solution_PluginLogicPageOrdering(
-    	    $this->f, $this->logger, $this->contentRepo, $this->statsRepo, $this->urlNormalization, $this
+    	    $this->f,
+            $this->logger,
+            $this->contentRepo,
+            $this->statsRepo,
+            $this->urlNormalization,
+            $this,
+            abj_service('not_found_response')
     	);
 
     	$this->adminActions = new ABJ_404_Solution_PluginLogicAdminActions(

@@ -31,6 +31,9 @@ class ABJ_404_Solution_PluginLogicPageOrdering {
     /** @var ABJ_404_Solution_PluginLogic */
     private $pluginLogic;
 
+    /** @var ABJ_404_Solution_NotFoundResponseService */
+    private $notFoundResponse;
+
     /**
      * @param ABJ_404_Solution_Functions $f
      * @param ABJ_404_Solution_Logging $logger
@@ -38,14 +41,16 @@ class ABJ_404_Solution_PluginLogicPageOrdering {
      * @param ABJ_404_Solution_StatsRepositoryInterface $statsRepo
      * @param ABJ_404_Solution_PluginLogicUrlNormalization $urlNormalization
      * @param ABJ_404_Solution_PluginLogic $pluginLogic
+     * @param ABJ_404_Solution_NotFoundResponseService $notFoundResponse
      */
-    function __construct($f, $logger, $contentRepo, $statsRepo, $urlNormalization, $pluginLogic) {
+    function __construct($f, $logger, $contentRepo, $statsRepo, $urlNormalization, $pluginLogic, $notFoundResponse) {
         $this->f = $f;
         $this->logger = $logger;
         $this->contentRepo = $contentRepo;
         $this->statsRepo = $statsRepo;
         $this->urlNormalization = $urlNormalization;
         $this->pluginLogic = $pluginLogic;
+        $this->notFoundResponse = $notFoundResponse;
     }
 
     /**
@@ -59,11 +64,7 @@ class ABJ_404_Solution_PluginLogicPageOrdering {
     public function buildFinalRedirectDestination($location, $requestedURL = '', $isCustom404 = false) {
         $location = $this->urlNormalization->maybeTranslateRedirectUrl($location, $requestedURL);
 
-        if (is_object($this->pluginLogic) && method_exists($this->pluginLogic, 'getCommentPartAndQueryPartOfRequest')) {
-            $commentPartAndQueryPart = (string)$this->pluginLogic->getCommentPartAndQueryPartOfRequest();
-        } else {
-            $commentPartAndQueryPart = $this->getCommentPartAndQueryPartOfRequest();
-        }
+        $commentPartAndQueryPart = $this->notFoundResponse->getCommentPartAndQueryPartOfRequest();
         $finalDestination = (string)$location . $commentPartAndQueryPart;
 
         if ($isCustom404 && is_string($requestedURL) && $requestedURL !== '') {
@@ -91,33 +92,6 @@ class ABJ_404_Solution_PluginLogicPageOrdering {
         }
 
         return (string)$finalDestination;
-    }
-
-    /** @return string */
-    private function getCommentPartAndQueryPartOfRequest() {
-        $requestUri = isset($_SERVER['REQUEST_URI']) && is_string($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
-        if ($requestUri !== '' &&
-                strpos($requestUri, '?') === false &&
-                strpos($requestUri, '/comment-page-') === false) {
-            return '';
-        }
-
-        $queryString = '';
-        $queryRaw = parse_url($requestUri, PHP_URL_QUERY);
-        if (is_string($queryRaw)) {
-            $queryString = $queryRaw;
-        }
-        $queryParts = $this->f->removePageIDFromQueryString($queryString);
-        $queryParts = ($queryParts == '') ? '' : '?' . $queryParts;
-
-        $commentPart = '';
-        $pathRaw = parse_url($requestUri, PHP_URL_PATH);
-        $path = is_string($pathRaw) ? $pathRaw : '';
-        if (preg_match('#(/comment-page-[0-9]+/?)#', $path, $matches) === 1) {
-            $commentPart = $matches[1];
-        }
-
-        return $commentPart . $queryParts;
     }
 
     /** Order pages and set the page depth for child pages.

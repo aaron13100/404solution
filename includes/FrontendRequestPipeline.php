@@ -55,17 +55,14 @@ class ABJ_404_Solution_FrontendRequestPipeline {
         $this->f = $functions;
         $this->spellChecker = $spellChecker;
         $this->matchingEngines = $matchingEngines;
-        $resolvedNotFoundResponse = $notFoundResponse;
-        if ($resolvedNotFoundResponse === null
-                && class_exists('ABJ_404_Solution_ServiceContainer')
-                && ABJ_404_Solution_ServiceContainer::safeHas('not_found_response')) {
-            $resolvedNotFoundResponse = abj_service('not_found_response');
+        $resolvedNotFoundResponse = $notFoundResponse !== null ? $notFoundResponse : abj_service('not_found_response');
+        if (!is_object($resolvedNotFoundResponse)
+                || !method_exists($resolvedNotFoundResponse, 'forceRedirect')
+                || !method_exists($resolvedNotFoundResponse, 'sendTo404Page')
+                || !method_exists($resolvedNotFoundResponse, 'thereIsAUserSpecified404Page')) {
+            throw new InvalidArgumentException('FrontendRequestPipeline requires NotFoundResponseService.');
         }
-        // Legacy fallback: when no NotFoundResponseService is available, $pluginLogic
-        // historically provided forceRedirect() / sendTo404Page() compatibly. Mock test
-        // injections also rely on this slot accepting any object that quacks the same.
-        // @phpstan-ignore-next-line assign.propertyType
-        $this->notFoundResponse = $resolvedNotFoundResponse !== null ? $resolvedNotFoundResponse : $pluginLogic;
+        $this->notFoundResponse = $resolvedNotFoundResponse;
         // Resolve the LogsRepository for logRedirectHit() writes. Preference order:
         //   1. Explicit $logsRepository argument (modern DI signature).
         //   2. If the redirects-repo facade exposes getLogsRepo(), resolve the typed
