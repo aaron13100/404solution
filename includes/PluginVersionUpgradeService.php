@@ -22,7 +22,7 @@ class ABJ_404_Solution_PluginVersionUpgradeService {
     /** @var ABJ_404_Solution_Logging */
     private $logger;
 
-    /** @var ABJ_404_Solution_DatabaseCoreInterface */
+    /** @var object */
     private $dbCore;
 
     /** @var string Log-context id for correlating upgrade messages. */
@@ -34,12 +34,12 @@ class ABJ_404_Solution_PluginVersionUpgradeService {
     /**
      * @param ABJ_404_Solution_Functions $f
      * @param ABJ_404_Solution_Logging $logger
-     * @param ABJ_404_Solution_DatabaseCoreInterface $dbCore
+     * @param object $dbCore
      */
     public function __construct(
         ABJ_404_Solution_Functions $f,
         ABJ_404_Solution_Logging $logger,
-        $dbCore
+        object $dbCore
     ) {
         $this->f = $f;
         $this->logger = $logger;
@@ -55,9 +55,9 @@ class ABJ_404_Solution_PluginVersionUpgradeService {
         if (function_exists('abj_service')) {
             $dao = abj_service('data_access');
             self::$instance = new self(
-                abj_service('functions'),
-                abj_service('logging'),
-                is_object($dao) && method_exists($dao, 'getDbCore') ? $dao->getDbCore() : $dao
+                self::functions(),
+                self::logging(),
+                self::dbCoreFromService($dao)
             );
             return self::$instance;
         }
@@ -77,7 +77,7 @@ class ABJ_404_Solution_PluginVersionUpgradeService {
     public function upgradeIfNeeded(array $options) {
         self::invalidateOpcacheForCriticalFiles();
 
-        $syncUtils = abj_service('sync_utils');
+        $syncUtils = self::syncUtils();
 
         $synchronizedKeyFromUser = 'update_db_version';
         $uniqueID = $syncUtils->synchronizerAcquireLockTry($synchronizedKeyFromUser);
@@ -98,7 +98,7 @@ class ABJ_404_Solution_PluginVersionUpgradeService {
             $syncUtils->synchronizerReleaseLock($uniqueID, $synchronizedKeyFromUser);
         }
 
-        $permalinkCache = abj_service('permalink_cache');
+        $permalinkCache = self::permalinkCache();
         $permalinkCache->updatePermalinkCache(1);
 
         return $returnValue;
@@ -113,143 +113,23 @@ class ABJ_404_Solution_PluginVersionUpgradeService {
      * @return array<string, mixed>
      */
     public function runUpgradeAction(array $options) {
-        global $wpdb;
-
         $options = array_merge(ABJ_404_Solution_PluginLogicDefaults::defaults(), $options);
 
-        $currentDBVersion = '(unknown)';
-        if (array_key_exists('DB_VERSION', $options) && is_string($options['DB_VERSION'])) {
-            $currentDBVersion = $options['DB_VERSION'];
-        }
+        $currentDBVersion = self::currentDbVersionFromOptions($options);
         $this->logger->infoMessage($this->uniqID . ': Updating database version from ' .
             $currentDBVersion . ' to ' . ABJ404_VERSION . ' (begin).');
 
-        $fileUtils = abj_service('functions');
-        $fileUtils->deleteDirectoryRecursively(ABJ404_PATH . 'temp/');
+        self::functions()->deleteDirectoryRecursively(ABJ404_PATH . 'temp/');
+        $this->prepareDatabaseAndCrons();
 
-        $upgradesEtc = abj_service('database_upgrades');
-        $upgradesEtc->runSelfHealPrologue();
-        $upgradesEtc->createDatabaseTables(true);
-
-        wp_clear_scheduled_hook('abj404_duplicateCronAction');
-
-        ABJ_404_Solution_PluginLogicLifecycle::doUnregisterCrons();
-        ABJ_404_Solution_PluginLogicLifecycle::doRegisterCrons();
-
-        $pluginLogic = abj_service('plugin_logic');
-
-        if (version_compare($currentDBVersion, '1.9.0') < 0) {
-            $ignoreDoProcessStr = is_string($options['ignore_doprocess']) ? $options['ignore_doprocess'] : '';
-            $userAgents = $this->f->explodeNewline($ignoreDoProcessStr);
-
-            $uasForSearch = $this->f->explodeNewline($ignoreDoProcessStr);
-
-            foreach ($userAgents as &$str) {
-                if ($this->f->strtolower(trim($str)) == 'slurp') {
-                    $str = 'Yahoo! Slurp';
-                    $this->logger->infoMessage('Changed user agent "Slurp" to "Yahoo! Slurp" in the do not log list.');
-                }
-            }
-
-            if (!in_array('seznambot', $uasForSearch)) {
-                $userAgents[] = 'SeznamBot';
-                $this->logger->infoMessage('Added user agent "SeznamBot" to do not log list."');
-            }
-            if (!in_array('pinterestbot', $uasForSearch)) {
-                $userAgents[] = 'Pinterestbot';
-                $this->logger->infoMessage('Added user agent "Pinterestbot" to do not log list."');
-            }
-            if (!in_array('uptimerobot', $uasForSearch)) {
-                $userAgents[] = 'UptimeRobot';
-                $this->logger->infoMessage('Added user agent "UptimeRobot" to do not log list."');
-            }
-
-            $options['ignore_doprocess'] = implode("\n", $userAgents);
-            $pluginLogic->updateOptions($options);
-        }
-
-        if (version_compare($currentDBVersion, '1.8.0') < 0) {
-            $query = "SHOW TABLES LIKE '{wp_abj404_logs}'";
-            $result = $this->dbCore->queryAndGetResults($query);
-            $rows = $result['rows'];
-
-            $filteredRows = is_array($rows) ? array_filter($rows) : array();
-            if (!empty($filteredRows)) {
-                $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . '/sql/migrateToNewLogsTable.sql');
-                $query = $this->dbCore->doTableNameReplacements($query);
-                $result = $this->dbCore->queryAndGetResults($query);
-
-                $rowsAffected = isset($result['rows_affected']) && is_numeric($result['rows_affected'])
-                    ? (int)$result['rows_affected']
-                    : 0;
-                if ($rowsAffected > 0) {
-                    $this->logger->infoMessage($rowsAffected .
-                        ' log rows were migrated to the new table structre.');
-                    $this->dbCore->queryAndGetResults('drop table ' . $this->dbCore->getLowercasePrefix() . 'abj404_logs');
-                }
-            }
-        }
-
-        if (version_compare($currentDBVersion, '2.18.0') < 0) {
-            $foldersIgnoreStr = is_string($options['folders_files_ignore']) ? $options['folders_files_ignore'] : '';
-            $originalItems = $this->f->explodeNewline($foldersIgnoreStr);
-
-            $newItems = array('wp-content/plugins/*', 'wp-content/themes/*', '.well-known/acme-challenge/*');
-            foreach ($newItems as $newItem) {
-                if (array_search($newItem, $originalItems) === false) {
-                    $originalItems[] = $newItem;
-                    $this->logger->infoMessage('Added ' . $newItem . ' to the list of folders to ignore."');
-                }
-            }
-
-            $options['folders_files_ignore'] = implode("\n", $originalItems);
-            $pluginLogic->updateOptions($options);
-        }
-
-        $dest404page = is_string($options['dest404page']) ? $options['dest404page'] : '';
-        if ($this->f->strpos($dest404page, '|') === false) {
-            if ($dest404page == '0') {
-                $dest404page .= '|' . ABJ404_TYPE_404_DISPLAYED;
-            } else {
-                $dest404page .= '|' . ABJ404_TYPE_POST;
-            }
-            $options['dest404page'] = $dest404page;
-            $pluginLogic->updateOptions($options);
-        }
-
-        // @cache-write-audit: opt-out - stores a setup-completion date marker, not a query result
-        if ($currentDBVersion !== '0.0.0' && version_compare($currentDBVersion, '3.0.7') < 0) {
-            update_option('abj404_setup_completed', gmdate('Y-m-d'));
-            $this->logger->infoMessage('Marked setup wizard as completed for existing user.');
-        }
-
-        if (!isset($options['suggest_minscore_enabled'])) {
-            if (isset($options['suggest_minscore']) && is_scalar($options['suggest_minscore']) && intval($options['suggest_minscore']) >= 25) {
-                $options['suggest_minscore_enabled'] = '1';
-                $this->logger->infoMessage('Enabled minimum score filtering based on existing suggest_minscore setting.');
-            } else {
-                $options['suggest_minscore_enabled'] = '0';
-            }
-            $pluginLogic->updateOptions($options);
-        }
-
-        if (!isset($options['dest404_behavior']) || $options['dest404_behavior'] === 'theme_default') {
-            $dest = is_string($options['dest404page']) ? $options['dest404page'] : '';
-            if ($dest === '0|' . ABJ404_TYPE_404_DISPLAYED || $dest === (string)ABJ404_TYPE_404_DISPLAYED || $dest === '') {
-                $options['dest404_behavior'] = 'theme_default';
-            } else if ($dest === '0|' . ABJ404_TYPE_HOME) {
-                $options['dest404_behavior'] = 'homepage';
-            } else {
-                $parts = explode('|', $dest);
-                $pageId = isset($parts[0]) ? (int)$parts[0] : 0;
-                if ($pageId > 0 && ABJ_404_Solution_SystemPage::isSystemPage($pageId)) {
-                    $options['dest404_behavior'] = 'suggest';
-                } else {
-                    $options['dest404_behavior'] = 'custom';
-                }
-            }
-            $pluginLogic->updateOptions($options);
-        }
+        $pluginLogic = self::pluginLogic();
+        $this->migrateIgnoredUserAgents($options, $currentDBVersion, $pluginLogic);
+        $this->migrateLegacyLogsTable($currentDBVersion);
+        $this->migrateIgnoredFolders($options, $currentDBVersion, $pluginLogic);
+        $this->normalizeDest404Page($options, $pluginLogic);
+        $this->markSetupCompletedForExistingInstall($currentDBVersion);
+        $this->migrateSuggestMinScoreEnabled($options, $pluginLogic);
+        $this->migrateDest404Behavior($options, $pluginLogic);
 
         $options = $this->stampDbVersion($options);
         $this->logger->infoMessage($this->uniqID . ': Updating database version to ' .
@@ -269,7 +149,7 @@ class ABJ_404_Solution_PluginVersionUpgradeService {
      * @return array<string, mixed>
      */
     public function stampDbVersion($options = null): array {
-        $pluginLogic = abj_service('plugin_logic');
+        $pluginLogic = self::pluginLogic();
         if ($options == null) {
             $options = $pluginLogic->getOptions(true);
         }
@@ -279,6 +159,266 @@ class ABJ_404_Solution_PluginVersionUpgradeService {
         $pluginLogic->updateOptions($options);
 
         return $options;
+    }
+
+    /** @param array<string, mixed> $options */
+    private static function currentDbVersionFromOptions(array $options): string {
+        if (array_key_exists('DB_VERSION', $options) && is_string($options['DB_VERSION'])) {
+            return $options['DB_VERSION'];
+        }
+        return '(unknown)';
+    }
+
+    /** @return void */
+    private function prepareDatabaseAndCrons(): void {
+        $upgradesEtc = abj_service('database_upgrades');
+        if (!is_object($upgradesEtc)
+            || !method_exists($upgradesEtc, 'runSelfHealPrologue')
+            || !method_exists($upgradesEtc, 'createDatabaseTables')) {
+            throw new \RuntimeException('Service "database_upgrades" does not expose upgrade methods.');
+        }
+        $upgradesEtc->runSelfHealPrologue();
+        $upgradesEtc->createDatabaseTables(true);
+
+        wp_clear_scheduled_hook('abj404_duplicateCronAction');
+
+        ABJ_404_Solution_PluginLogicLifecycle::doUnregisterCrons();
+        ABJ_404_Solution_PluginLogicLifecycle::doRegisterCrons();
+    }
+
+    /**
+     * @param array<string, mixed> $options
+     * @return void
+     */
+    private function migrateIgnoredUserAgents(
+        array &$options,
+        string $currentDBVersion,
+        ABJ_404_Solution_PluginLogic $pluginLogic
+    ): void {
+        if (version_compare($currentDBVersion, '1.9.0') >= 0) {
+            return;
+        }
+
+        $ignoreDoProcessStr = is_string($options['ignore_doprocess']) ? $options['ignore_doprocess'] : '';
+        $userAgents = $this->f->explodeNewline($ignoreDoProcessStr);
+
+        $uasForSearch = $this->f->explodeNewline($ignoreDoProcessStr);
+
+        foreach ($userAgents as &$str) {
+            if ($this->f->strtolower(trim($str)) == 'slurp') {
+                $str = 'Yahoo! Slurp';
+                $this->logger->infoMessage('Changed user agent "Slurp" to "Yahoo! Slurp" in the do not log list.');
+            }
+        }
+
+        if (!in_array('seznambot', $uasForSearch)) {
+            $userAgents[] = 'SeznamBot';
+            $this->logger->infoMessage('Added user agent "SeznamBot" to do not log list."');
+        }
+        if (!in_array('pinterestbot', $uasForSearch)) {
+            $userAgents[] = 'Pinterestbot';
+            $this->logger->infoMessage('Added user agent "Pinterestbot" to do not log list."');
+        }
+        if (!in_array('uptimerobot', $uasForSearch)) {
+            $userAgents[] = 'UptimeRobot';
+            $this->logger->infoMessage('Added user agent "UptimeRobot" to do not log list."');
+        }
+
+        $options['ignore_doprocess'] = implode("\n", $userAgents);
+        $pluginLogic->updateOptions($options);
+    }
+
+    /** @return void */
+    private function migrateLegacyLogsTable(string $currentDBVersion): void {
+        if (version_compare($currentDBVersion, '1.8.0') >= 0) {
+            return;
+        }
+
+        $query = "SHOW TABLES LIKE '{wp_abj404_logs}'";
+        $dbCore = $this->dbCore;
+        if (!method_exists($dbCore, 'queryAndGetResults')
+            || !method_exists($dbCore, 'doTableNameReplacements')
+            || !method_exists($dbCore, 'getLowercasePrefix')) {
+            throw new \RuntimeException('PluginVersionUpgradeService requires database query methods.');
+        }
+
+        $result = $dbCore->queryAndGetResults($query);
+        $rows = isset($result['rows']) ? $result['rows'] : array();
+
+        $filteredRows = is_array($rows) ? array_filter($rows) : array();
+        if (empty($filteredRows)) {
+            return;
+        }
+
+        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . '/sql/migrateToNewLogsTable.sql');
+        $query = $dbCore->doTableNameReplacements($query);
+        $result = $dbCore->queryAndGetResults($query);
+
+        $rowsAffected = isset($result['rows_affected']) && is_numeric($result['rows_affected'])
+            ? (int)$result['rows_affected']
+            : 0;
+        if ($rowsAffected > 0) {
+            $this->logger->infoMessage($rowsAffected .
+                ' log rows were migrated to the new table structre.');
+            $dbCore->queryAndGetResults('drop table ' . $dbCore->getLowercasePrefix() . 'abj404_logs');
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $options
+     * @return void
+     */
+    private function migrateIgnoredFolders(
+        array &$options,
+        string $currentDBVersion,
+        ABJ_404_Solution_PluginLogic $pluginLogic
+    ): void {
+        if (version_compare($currentDBVersion, '2.18.0') >= 0) {
+            return;
+        }
+
+        $foldersIgnoreStr = is_string($options['folders_files_ignore']) ? $options['folders_files_ignore'] : '';
+        $originalItems = $this->f->explodeNewline($foldersIgnoreStr);
+
+        $newItems = array('wp-content/plugins/*', 'wp-content/themes/*', '.well-known/acme-challenge/*');
+        foreach ($newItems as $newItem) {
+            if (array_search($newItem, $originalItems) === false) {
+                $originalItems[] = $newItem;
+                $this->logger->infoMessage('Added ' . $newItem . ' to the list of folders to ignore."');
+            }
+        }
+
+        $options['folders_files_ignore'] = implode("\n", $originalItems);
+        $pluginLogic->updateOptions($options);
+    }
+
+    /**
+     * @param array<string, mixed> $options
+     * @return void
+     */
+    private function normalizeDest404Page(array &$options, ABJ_404_Solution_PluginLogic $pluginLogic): void {
+        $dest404page = is_string($options['dest404page']) ? $options['dest404page'] : '';
+        if ($this->f->strpos($dest404page, '|') !== false) {
+            return;
+        }
+
+        if ($dest404page == '0') {
+            $dest404page .= '|' . ABJ404_TYPE_404_DISPLAYED;
+        } else {
+            $dest404page .= '|' . ABJ404_TYPE_POST;
+        }
+        $options['dest404page'] = $dest404page;
+        $pluginLogic->updateOptions($options);
+    }
+
+    /** @return void */
+    private function markSetupCompletedForExistingInstall(string $currentDBVersion): void {
+        if ($currentDBVersion === '0.0.0' || version_compare($currentDBVersion, '3.0.7') >= 0) {
+            return;
+        }
+
+        // @cache-write-audit: opt-out - stores a setup-completion date marker, not a query result
+        update_option('abj404_setup_completed', gmdate('Y-m-d'));
+        $this->logger->infoMessage('Marked setup wizard as completed for existing user.');
+    }
+
+    /**
+     * @param array<string, mixed> $options
+     * @return void
+     */
+    private function migrateSuggestMinScoreEnabled(array &$options, ABJ_404_Solution_PluginLogic $pluginLogic): void {
+        if (isset($options['suggest_minscore_enabled'])) {
+            return;
+        }
+
+        if (isset($options['suggest_minscore']) && is_scalar($options['suggest_minscore']) && intval($options['suggest_minscore']) >= 25) {
+            $options['suggest_minscore_enabled'] = '1';
+            $this->logger->infoMessage('Enabled minimum score filtering based on existing suggest_minscore setting.');
+        } else {
+            $options['suggest_minscore_enabled'] = '0';
+        }
+        $pluginLogic->updateOptions($options);
+    }
+
+    /**
+     * @param array<string, mixed> $options
+     * @return void
+     */
+    private function migrateDest404Behavior(array &$options, ABJ_404_Solution_PluginLogic $pluginLogic): void {
+        if (isset($options['dest404_behavior']) && $options['dest404_behavior'] !== 'theme_default') {
+            return;
+        }
+
+        $dest = is_string($options['dest404page']) ? $options['dest404page'] : '';
+        $options['dest404_behavior'] = self::dest404BehaviorFromDestination($dest);
+        $pluginLogic->updateOptions($options);
+    }
+
+    private static function dest404BehaviorFromDestination(string $dest): string {
+        if ($dest === '0|' . ABJ404_TYPE_404_DISPLAYED || $dest === (string)ABJ404_TYPE_404_DISPLAYED || $dest === '') {
+            return 'theme_default';
+        }
+        if ($dest === '0|' . ABJ404_TYPE_HOME) {
+            return 'homepage';
+        }
+
+        $parts = explode('|', $dest);
+        $pageId = isset($parts[0]) ? (int)$parts[0] : 0;
+        if ($pageId > 0 && ABJ_404_Solution_SystemPage::isSystemPage($pageId)) {
+            return 'suggest';
+        }
+        return 'custom';
+    }
+
+    /** @return ABJ_404_Solution_Functions */
+    private static function functions(): ABJ_404_Solution_Functions {
+        return self::service('functions', ABJ_404_Solution_Functions::class);
+    }
+
+    /** @return ABJ_404_Solution_Logging */
+    private static function logging(): ABJ_404_Solution_Logging {
+        return self::service('logging', ABJ_404_Solution_Logging::class);
+    }
+
+    /** @return ABJ_404_Solution_SynchronizationUtils */
+    private static function syncUtils(): ABJ_404_Solution_SynchronizationUtils {
+        return self::service('sync_utils', ABJ_404_Solution_SynchronizationUtils::class);
+    }
+
+    /** @return ABJ_404_Solution_PermalinkCache */
+    private static function permalinkCache(): ABJ_404_Solution_PermalinkCache {
+        return self::service('permalink_cache', ABJ_404_Solution_PermalinkCache::class);
+    }
+
+    /** @return ABJ_404_Solution_PluginLogic */
+    private static function pluginLogic(): ABJ_404_Solution_PluginLogic {
+        return self::service('plugin_logic', ABJ_404_Solution_PluginLogic::class);
+    }
+
+    /**
+     * @template T of object
+     * @param string $name
+     * @param class-string<T> $className
+     * @return T
+     */
+    private static function service(string $name, string $className) {
+        $service = abj_service($name);
+        if (!$service instanceof $className) {
+            throw new \RuntimeException('Service "' . $name . '" is not a ' . $className . ' instance.');
+        }
+        return $service;
+    }
+
+    /**
+     * @param mixed $dao
+     * @return object
+     */
+    private static function dbCoreFromService($dao): object {
+        $dbCore = is_object($dao) && method_exists($dao, 'getDbCore') ? $dao->getDbCore() : $dao;
+        if (!is_object($dbCore)) {
+            throw new \RuntimeException('PluginVersionUpgradeService requires a database service object.');
+        }
+        return $dbCore;
     }
 
     /**
