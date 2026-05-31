@@ -56,7 +56,8 @@ class ABJ_404_Solution_WordPress_Connector {
 		$this->logsRepository = $logsRepository !== null ? $logsRepository :
 			(is_object($redirectsRepository) && method_exists($redirectsRepository, 'logRedirectHit') ? $redirectsRepository : abj_service('logs_repository'));
 		$this->statsRepository = $statsRepository !== null ? $statsRepository :
-			(is_object($redirectsRepository) && method_exists($redirectsRepository, 'getCapturedCountForNotification') ? $redirectsRepository : abj_service('stats_repository'));
+			(is_object($redirectsRepository) && method_exists($redirectsRepository, 'getStatsRepo') ? $redirectsRepository->getStatsRepo() :
+				(is_object($redirectsRepository) && method_exists($redirectsRepository, 'getCapturedCountForNotification') ? $redirectsRepository : abj_service('stats_repository')));
 	}
 
 	/** @return ABJ_404_Solution_FrontendRequestPipeline */

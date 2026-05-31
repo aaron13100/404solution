@@ -178,10 +178,8 @@ class ABJ_404_Solution_View {
 			$this->viewBuildOrchestrator = $dao;
 			// Resolve typed repository surfaces off the DataAccess facade so the
 			// View talks to the real LogsRepository / ContentRepository objects.
-			// Pass-throughs for these repos have been removed from DataAccess
-			// (i266/i775 for LogsRepo, i758 for ContentRepo); other repo
-			// interfaces remain on DataAccess until their own migration tasks
-			// complete (i759 Redirects, i761 Stats).
+			// Pass-throughs for these repos have been removed from DataAccess,
+			// so resolve the typed repositories from the facade when available.
 			$this->logsRepository = (is_object($dao) && method_exists($dao, 'getLogsRepo'))
 				? $dao->getLogsRepo()
 				: $dao;
@@ -189,7 +187,9 @@ class ABJ_404_Solution_View {
 			$this->contentRepository = (is_object($dao) && method_exists($dao, 'getContentRepo'))
 				? $dao->getContentRepo()
 				: $dao;
-			$this->statsRepository = $dao;
+			$this->statsRepository = (is_object($dao) && method_exists($dao, 'getStatsRepo'))
+				? $dao->getStatsRepo()
+				: $dao;
 		} else {
 			/** @var ABJ_404_Solution_ViewReadServiceInterface $vrs */
 			$vrs = abj_service('view_read_service');

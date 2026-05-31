@@ -14,6 +14,7 @@ require_once dirname(__FILE__) . '/PluginLogicSettingsUpdate.php';
 require_once dirname(__FILE__) . '/PluginLogicPageOrdering.php';
 require_once dirname(__FILE__) . '/PluginLogicLifecycle.php';
 require_once dirname(__FILE__) . '/PluginLogicDefaults.php';
+require_once dirname(__FILE__) . '/PluginLogicInterface.php';
 require_once dirname(__FILE__) . '/StorageOptionContracts.php';
 
 /**
@@ -63,10 +64,6 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
 	/** @var self|null */
     private static $instance = null;
 
-    /** Use this to avoid an infinite loop when checking if a user has admin access or not.
-     * @var bool */
-    private static $checkingIsAdmin = false;
-
     /** @var ABJ_404_Solution_PluginLogicUrlNormalization */
     private $urlNormalization;
 
@@ -100,8 +97,9 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
     	self::$instance = new ABJ_404_Solution_PluginLogic();
 
     	// these filters allow non-admins to have admin access to the plugin.
+    	// Owned by PluginAdminAccessPolicy after the t_260530_130204_889 split.
     	add_filter( 'user_has_cap',
-    		'ABJ_404_Solution_PluginLogic::override_user_can_access_admin_page', 10, 4 );
+    		'ABJ_404_Solution_PluginAdminAccessPolicy::wpUserHasCapFilter', 10, 4 );
 
     	return self::$instance;
     }
@@ -127,13 +125,27 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
     	    $this->statsRepo = $this->dao->getStatsRepo();
     	    $this->dbCore = $this->dao->getDbCore();
         } else {
-            $this->redirectsRepo = $this->dao;
-            $this->logsRepo = $this->dao;
-            $this->viewBuild = $this->dao;
-            $this->viewRead = $this->dao;
-            $this->contentRepo = $this->dao;
-            $this->statsRepo = $this->dao;
-            $this->dbCore = $this->dao;
+            $this->redirectsRepo = (is_object($this->dao) && method_exists($this->dao, 'getRedirectsRepo'))
+                ? $this->dao->getRedirectsRepo()
+                : $this->dao;
+            $this->logsRepo = (is_object($this->dao) && method_exists($this->dao, 'getLogsRepo'))
+                ? $this->dao->getLogsRepo()
+                : $this->dao;
+            $this->viewBuild = (is_object($this->dao) && method_exists($this->dao, 'getViewBuildOrchestrator'))
+                ? $this->dao->getViewBuildOrchestrator()
+                : $this->dao;
+            $this->viewRead = (is_object($this->dao) && method_exists($this->dao, 'getViewReadService'))
+                ? $this->dao->getViewReadService()
+                : $this->dao;
+            $this->contentRepo = (is_object($this->dao) && method_exists($this->dao, 'getContentRepo'))
+                ? $this->dao->getContentRepo()
+                : $this->dao;
+            $this->statsRepo = (is_object($this->dao) && method_exists($this->dao, 'getStatsRepo'))
+                ? $this->dao->getStatsRepo()
+                : $this->dao;
+            $this->dbCore = (is_object($this->dao) && method_exists($this->dao, 'getDbCore'))
+                ? $this->dao->getDbCore()
+                : $this->dao;
         }
 
         $urlPath = parse_url(get_home_url(), PHP_URL_PATH);
@@ -231,135 +243,49 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
     }
 
 
-    /** This replaces the current_user_can('administrator') function.
-     * @return bool true if $abj404logic->userIsPluginAdmin()
+    /**
+     * @deprecated Use abj_service('admin_access_policy')->isPluginAdmin() directly.
+     * Thin delegate kept so that test doubles extending PluginLogic and a small
+     * tail of remaining callers continue to work during the migration window
+     * (will be removed in part 5/5 of t_260530_130204_889).
+     * @return bool
      */
     function userIsPluginAdmin() {
-    	if (ABJ_404_Solution_PluginLogic::$checkingIsAdmin) {
-    		return false;
-    	}
-
-    	ABJ_404_Solution_PluginLogic::$checkingIsAdmin = true;
-    	try {
-    		$options = $this->getOptions(true);
-    		$f = $this->f;
-    		global $current_user;
-
-    		$isPluginAdmin = current_user_can('manage_options') || current_user_can('administrator');
-    		if (function_exists('is_multisite') && is_multisite() && function_exists('is_super_admin') && is_super_admin()) {
-    			$isPluginAdmin = true;
-    		}
-
-    		$extraAdmins = $options['plugin_admin_users'] ?? array();
-    		$current_user_name = null;
-    		if (isset($current_user)) {
-    			$current_user_name = $current_user->user_login;
-    		}
-    		if ($current_user_name != null && $current_user_name != false) {
-    			$check = false;
-    			if (is_array($extraAdmins)) {
-    				$extraAdmins = array_filter($extraAdmins,
-    					array($f, 'removeEmptyCustom'));
-    				$check = true;
-    			} else if (is_string($extraAdmins)) {
-    			    $extraAdmins = $this->f->explodeNewline($extraAdmins);
-    				$check = true;
-    			}
-    			/** @var array<int|string, mixed> $extraAdmins */
-    			if ($check && is_array($extraAdmins) && in_array($current_user_name, $extraAdmins)) {
-    				$isPluginAdmin = true;
-    			}
-    		}
-
-    		$filtered = apply_filters('abj404_userIsPluginAdmin', $isPluginAdmin);
-
-    		if (!$filtered || ($filtered !== $isPluginAdmin)) {
-    			$extraAdminsSummary = '';
-    			$rawExtra = $options['plugin_admin_users'] ?? array();
-    			if (is_array($rawExtra)) {
-    				$extraAdminsSummary = implode(', ', array_filter($rawExtra));
-    			} else if (is_string($rawExtra)) {
-    				$extraAdminsSummary = $rawExtra;
-    			}
-
-    			$this->logger->debugMessage(
-    				"userIsPluginAdmin detail: result=" . ($filtered ? 'true' : 'false') .
-    				", pre-filter=" . ($isPluginAdmin ? 'true' : 'false') .
-    				", manage_options=" . (current_user_can('manage_options') ? 'yes' : 'no') .
-    				", user=" . ($current_user_name ?? '(none)') .
-    				", plugin_admin_users=[" . esc_html($extraAdminsSummary) . "]" .
-    				($filtered !== $isPluginAdmin ? ", NOTE: abj404_userIsPluginAdmin filter changed the result" : "")
-    			);
-    		}
-
-    		return $filtered;
-    	} finally {
-    		ABJ_404_Solution_PluginLogic::$checkingIsAdmin = false;
-    	}
+        return abj_service('admin_access_policy')->isPluginAdmin();
     }
 
     /**
-     * Get the current user's settings mode preference.
+     * @deprecated Use abj_service('settings_mode_preference')->getMode() directly.
+     * Thin delegate kept during the SettingsModePreference migration window.
      * @return string 'simple' or 'advanced'
      */
     function getSettingsMode() {
-        $user_id = get_current_user_id();
-        if (!$user_id) {
-            return 'simple';
-        }
-        $mode = get_user_meta($user_id, 'abj404_settings_mode', true);
-        return ($mode === 'advanced') ? 'advanced' : 'simple';
+        return abj_service('settings_mode_preference')->getMode();
     }
 
     /**
-     * Set the current user's settings mode preference.
-     * @param string $mode 'simple' or 'advanced'
-     * @return bool|int Meta ID on success, false on failure
+     * @deprecated Use abj_service('settings_mode_preference')->setMode($mode) directly.
+     * Thin delegate kept during the SettingsModePreference migration window.
+     * @param string $mode
+     * @return bool|int
      */
     function setSettingsMode($mode) {
-        $user_id = get_current_user_id();
-        if (!$user_id) {
-            return false;
-        }
-        $valid_mode = ($mode === 'advanced') ? 'advanced' : 'simple';
-        return update_user_meta($user_id, 'abj404_settings_mode', $valid_mode);
+        return abj_service('settings_mode_preference')->setMode($mode);
     }
 
-    /** Allow the user to be an admin for the plugin.
+    /**
+     * @deprecated Use ABJ_404_Solution_PluginAdminAccessPolicy::wpUserHasCapFilter.
+     * Static forwarder retained for any third-party that hooked our old
+     * callback name; removed in part 5/5.
+     *
      * @param array<string, bool> $allcaps
      * @param array<int, string> $caps
      * @param array<int, mixed> $args
      * @param \WP_User $user
-     * @return array<string, bool> an array of the capabilities
+     * @return array<string, bool>
      */
     static function override_user_can_access_admin_page( $allcaps, $caps, $args, $user ) {
-    	if (!is_admin()) {
-    		return $allcaps;
-    	}
-
-    	$abj404logic = abj_service('plugin_logic');
-
-    	$isPluginAdmin = false;
-    	$isViewing404AdminPage = false;
-
-    	if ($abj404logic->userIsPluginAdmin()) {
-    		$isPluginAdmin = true;
-    	}
-
-    	if ($isPluginAdmin) {
-    		$userRequest = ABJ_404_Solution_UserRequest::getInstance();
-    		$queryParts = $userRequest !== null ? $userRequest->getQueryString() : null;
-
-    		if (is_string($queryParts) && strpos($queryParts, ABJ404_PP) !== false) {
-    			$isViewing404AdminPage = true;
-    		}
-    	}
-
-    	if ($isPluginAdmin && $isViewing404AdminPage) {
-    		$allcaps['manage_options'] = true;
-    	}
-
-    	return $allcaps;
+        return ABJ_404_Solution_PluginAdminAccessPolicy::wpUserHasCapFilter($allcaps, $caps, $args, $user);
     }
 
     /** Forward to a real page for queries like ?p=10

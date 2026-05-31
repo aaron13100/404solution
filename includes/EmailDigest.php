@@ -39,14 +39,15 @@ class ABJ_404_Solution_EmailDigest {
             $this->statsRepo = $loggerOrStatsRepo;
             $this->logger = $logger !== null ? $logger : abj_service('logging');
         } else {
-            // Legacy / test path: caller handed in a DataAccess facade. Resolve the real
-            // LogsRepository off the facade so this class talks to the typed LogsRepo surface
-            // (no LogsRepo pass-throughs on DataAccess). StatsRepo stays on the DataAccess
-            // facade because the DataAccess->Stats pass-throughs are a separate scope.
+            // Legacy / test path: caller handed in a DataAccess facade. Resolve both the real
+            // LogsRepository and the real StatsRepository off the facade so this class talks
+            // to the typed repo surfaces (no LogsRepo/StatsRepo pass-throughs on DataAccess).
             $this->logsRepo = method_exists($logsRepoOrLegacyDao, 'getLogsRepo')
                 ? $logsRepoOrLegacyDao->getLogsRepo()
                 : $logsRepoOrLegacyDao;
-            $this->statsRepo = $logsRepoOrLegacyDao;
+            $this->statsRepo = method_exists($logsRepoOrLegacyDao, 'getStatsRepo')
+                ? $logsRepoOrLegacyDao->getStatsRepo()
+                : $logsRepoOrLegacyDao;
             $this->logger = $loggerOrStatsRepo !== null ? $loggerOrStatsRepo : abj_service('logging');
         }
     }

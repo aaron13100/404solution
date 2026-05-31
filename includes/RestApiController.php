@@ -48,8 +48,12 @@ class ABJ_404_Solution_RestApiController {
             $this->viewRead = $daoOrLogic;
             $this->viewBuild = $daoOrLogic;
             $this->redirectsRepo = $daoOrLogic;
-            $this->logsRepo = $daoOrLogic;
-            $this->statsRepo = $daoOrLogic;
+            $this->logsRepo = (is_object($daoOrLogic) && method_exists($daoOrLogic, 'getLogsRepo'))
+                ? $daoOrLogic->getLogsRepo()
+                : $daoOrLogic;
+            $this->statsRepo = (is_object($daoOrLogic) && method_exists($daoOrLogic, 'getStatsRepo'))
+                ? $daoOrLogic->getStatsRepo()
+                : $daoOrLogic;
             $this->dbCore = $daoOrLogic;
             return;
         } else {

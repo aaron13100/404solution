@@ -25,6 +25,10 @@ require_once __DIR__ . '/DatabaseQueryTimeoutManager.php';
 require_once __DIR__ . '/ViewBuildOrchestratorInterface.php';
 require_once __DIR__ . '/ViewBuildOrchestrator.php';
 require_once __DIR__ . '/ViewReadServiceInterface.php';
+require_once __DIR__ . '/ViewDiagnostics.php';
+require_once __DIR__ . '/ViewCacheInvalidator.php';
+require_once __DIR__ . '/ViewQueryBuilder.php';
+require_once __DIR__ . '/ViewSnapshotCache.php';
 require_once __DIR__ . '/ViewReadService.php';
 require_once __DIR__ . '/LogsRepositoryInterface.php';
 require_once __DIR__ . '/LogsRepository.php';
@@ -370,20 +374,6 @@ class ABJ_404_Solution_DataAccess {
 
         if ($statsRepo !== null) {
             $this->statsRepo = $statsRepo;
-        } else if (get_class($this) !== __CLASS__
-            && method_exists($this, 'getStatsCount')
-            && (new \ReflectionMethod($this, 'getStatsCount'))->getDeclaringClass()->getName() !== __CLASS__) {
-            $owner = $this;
-            $this->statsRepo = new class($owner, $this->dbCore, $this->logsRepo, $this->f, $this->logger) extends ABJ_404_Solution_StatsRepository {
-                private $owner;
-                public function __construct($owner, $dbCore, $logsRepo, $functions, $logger) {
-                    $this->owner = $owner;
-                    parent::__construct($dbCore, $logsRepo, $functions, $logger);
-                }
-                public function getStatsCount($query, array $valueParams) {
-                    return $this->owner->getStatsCount($query, $valueParams);
-                }
-            };
         } else {
             $this->statsRepo = new ABJ_404_Solution_StatsRepository($this->dbCore, $this->logsRepo, $this->f, $this->logger);
         }
@@ -670,54 +660,6 @@ class ABJ_404_Solution_DataAccess {
             $this->statsRepo = new ABJ_404_Solution_StatsRepository($this->getDbCore(), $this->getLogsRepo(), $this->f, $this->logger);
         }
         return $this->statsRepo;
-    }
-
-    public function getStatsCount($query, array $valueParams) {
-        return $this->getStatsRepo()->getStatsCount($query, $valueParams);
-    }
-
-    public function getPeriodicStatsSummary($sinceTimestamp, $notFoundDest = '404') {
-        return $this->getStatsRepo()->getPeriodicStatsSummary($sinceTimestamp, $notFoundDest);
-    }
-
-    public function getPeriodicStatsSummariesCached($notFoundDest = '404') {
-        return $this->getStatsRepo()->getPeriodicStatsSummariesCached($notFoundDest);
-    }
-
-    public function getStatsDashboardSnapshot($allowStale = true) {
-        return $this->getStatsRepo()->getStatsDashboardSnapshot($allowStale);
-    }
-
-    public function refreshStatsDashboardSnapshot($force = false) {
-        return $this->getStatsRepo()->refreshStatsDashboardSnapshot($force);
-    }
-
-    public function getEarliestLogTimestamp() {
-        return $this->getStatsRepo()->getEarliestLogTimestamp();
-    }
-
-    public function getTopCapturedForDigest(int $limit): array {
-        return $this->getStatsRepo()->getTopCapturedForDigest($limit);
-    }
-
-    public function buildTopCapturedForDigestQuery(int $limit): string {
-        return $this->getStatsRepo()->buildTopCapturedForDigestQuery($limit);
-    }
-
-    public function getDigestSummaryStats(): array {
-        return $this->getStatsRepo()->getDigestSummaryStats();
-    }
-
-    public function getCapturedCountForNotification(): int {
-        return $this->getStatsRepo()->getCapturedCountForNotification();
-    }
-
-    public function getPostsNeedingContentKeywords(int $limit = 500): array {
-        return $this->getStatsRepo()->getPostsNeedingContentKeywords($limit);
-    }
-
-    public function bulkUpdateContentKeywords(array $idToKeywords): void {
-        $this->getStatsRepo()->bulkUpdateContentKeywords($idToKeywords);
     }
 
     /** @return ABJ_404_Solution_ViewReadService */
