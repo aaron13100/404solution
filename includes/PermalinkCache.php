@@ -39,7 +39,9 @@ class ABJ_404_Solution_PermalinkCache {
         $this->contentRepository = $contentRepository !== null ? $contentRepository : abj_service('content_repository');
         $this->logger = $logging !== null ? $logging : abj_service('logging');
         $this->statsRepository = $statsRepository !== null ? $statsRepository :
-            (is_object($contentRepository) && method_exists($contentRepository, 'getPostsNeedingContentKeywords') ? $contentRepository : abj_service('stats_repository'));
+            (is_object($contentRepository) && method_exists($contentRepository, 'getPostsNeedingContentKeywords')
+                ? $contentRepository
+                : call_user_func(array('ABJ_404_Solution_UnavailableStatsRepository', 'resolve'), __CLASS__));
     }
 
     /** @return self */

@@ -62,7 +62,7 @@ class ABJ_404_Solution_RestApiController {
         $this->viewBuild = abj_service('view_build_orchestrator');
         $this->redirectsRepo = abj_service('redirects_repository');
         $this->logsRepo = abj_service('logs_repository');
-        $this->statsRepo = abj_service('stats_repository');
+        $this->statsRepo = $this->resolveStatsRepository($statsRepository, null);
         $this->dbCore = abj_service('db_core');
     }
 
@@ -76,14 +76,6 @@ class ABJ_404_Solution_RestApiController {
             return $provided;
         }
 
-        $method = 'get' . 'StatsRepo';
-        if (is_object($legacyDao) && method_exists($legacyDao, $method)) {
-            $repo = $legacyDao->{$method}();
-            if ($repo instanceof ABJ_404_Solution_StatsRepositoryInterface) {
-                return $repo;
-            }
-        }
-
         $service = class_exists('ABJ_404_Solution_ServiceContainer')
             ? ABJ_404_Solution_ServiceContainer::safeGet('stats_repository')
             : null;
@@ -91,7 +83,7 @@ class ABJ_404_Solution_RestApiController {
             return $service;
         }
 
-        return abj_service('stats_repository');
+        return ABJ_404_Solution_UnavailableStatsRepository::resolve(__CLASS__);
     }
 
     /** @return void */

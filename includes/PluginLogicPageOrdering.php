@@ -336,7 +336,11 @@ class ABJ_404_Solution_PluginLogicPageOrdering {
             : 'instant';
 
         if ($frequency !== 'instant') {
-            $emailDigest = new ABJ_404_Solution_EmailDigest(abj_service('logs_repository'), abj_service('stats_repository'), $this->logger);
+            $emailDigest = new ABJ_404_Solution_EmailDigest(
+                abj_service('logs_repository'),
+                ABJ_404_Solution_UnavailableStatsRepository::resolve(__CLASS__),
+                $this->logger
+            );
             return $emailDigest->sendDigest();
         }
 
@@ -354,6 +358,7 @@ class ABJ_404_Solution_PluginLogicPageOrdering {
                 '</a> to see them.<BR/><BR/>' . "\n";
         $body .= 'To stop getting these emails, update the settings at <a href="' . $generalSettings . '">' .
                 $generalSettings . '</a>, or contact the site administrator.' . "<BR/>\n";
+        // inline-html-approved: legacy notification email body is assembled inline in this method.
         $body .= "<BR/><BR/>\n\nSent " . date('Y/m/d h:i:s T') . "<BR/>\n" . "PHP version: " . PHP_VERSION .
                 ", <BR/>\nPlugin version: " . ABJ404_VERSION;
         $headers = array('Content-Type: text/html; charset=UTF-8');

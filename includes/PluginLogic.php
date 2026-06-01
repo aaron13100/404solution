@@ -130,9 +130,7 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
             $this->statsRepo = $this->resolveStatsRepository($statsRepository);
     	    $this->dbCore = $this->dao->getDbCore();
         } else {
-            if ($statsRepository !== null) {
-                $this->statsRepo = $statsRepository;
-            }
+            $this->statsRepo = $this->resolveStatsRepository($statsRepository);
             $this->resolveDaoAccessorsForTestMock();
         }
 
@@ -199,13 +197,9 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
             'viewBuild' => 'getViewBuildOrchestrator',
             'viewRead' => 'getViewReadService',
             'contentRepo' => 'getContentRepo',
-            'statsRepo' => 'getStatsRepo',
             'dbCore' => 'getDbCore',
         ];
         foreach ($accessors as $property => $method) {
-            if ($property === 'statsRepo' && $this->statsRepo !== null) {
-                continue;
-            }
             if ($property === 'redirectsRepo'
                     && $this->daoOverridesAny([
                         'setupRedirect',
@@ -237,15 +231,7 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
             return $service;
         }
 
-        $method = 'get' . 'StatsRepo';
-        if (is_object($this->dao) && method_exists($this->dao, $method)) {
-            $repo = $this->dao->{$method}();
-            if ($repo instanceof ABJ_404_Solution_StatsRepositoryInterface) {
-                return $repo;
-            }
-        }
-
-        return abj_service('stats_repository');
+        return ABJ_404_Solution_UnavailableStatsRepository::resolve(__CLASS__);
     }
 
     /** @param array<int, string> $methods */

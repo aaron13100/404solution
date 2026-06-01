@@ -206,7 +206,7 @@ class ABJ_404_Solution_View {
 			$cr = abj_service('content_repository');
 			$this->contentRepository = $cr;
 			/** @var ABJ_404_Solution_StatsRepositoryInterface $sr */
-			$sr = $statsRepository !== null ? $statsRepository : abj_service('stats_repository');
+			$sr = $statsRepository !== null ? $statsRepository : $this->resolveStatsRepository(null, null);
 			$this->statsRepository = $sr;
 		}
 
@@ -250,15 +250,7 @@ class ABJ_404_Solution_View {
 			return $service;
 		}
 
-		$method = 'get' . 'StatsRepo';
-		if (is_object($legacyDao) && method_exists($legacyDao, $method)) {
-			$repo = $legacyDao->{$method}();
-			if ($repo instanceof ABJ_404_Solution_StatsRepositoryInterface) {
-				return $repo;
-			}
-		}
-
-		return abj_service('stats_repository');
+		return ABJ_404_Solution_UnavailableStatsRepository::resolve(__CLASS__);
 	}
 
 	/**

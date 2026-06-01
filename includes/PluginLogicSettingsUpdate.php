@@ -551,7 +551,11 @@ class ABJ_404_Solution_PluginLogicSettingsUpdate {
             $freq = sanitize_text_field(is_string($postData['admin_notification_frequency']) ? $postData['admin_notification_frequency'] : '');
             if (in_array($freq, $allowed_frequencies, true)) {
                 $options['admin_notification_frequency'] = $freq;
-                $emailDigest = new ABJ_404_Solution_EmailDigest(abj_service('logs_repository'), abj_service('stats_repository'), $this->logger);
+                $emailDigest = new ABJ_404_Solution_EmailDigest(
+                    abj_service('logs_repository'),
+                    ABJ_404_Solution_UnavailableStatsRepository::resolve(__CLASS__),
+                    $this->logger
+                );
                 $emailDigest->scheduleNextDigest();
             } else {
                 $message .= __('Error: Invalid email notification frequency selected', '404-solution') . ".<BR/>";

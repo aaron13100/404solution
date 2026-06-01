@@ -38,16 +38,15 @@ class ABJ_404_Solution_EmailDigest {
             $this->logsRepo = $logsRepoOrLegacyDao;
             $this->statsRepo = $loggerOrStatsRepo instanceof ABJ_404_Solution_StatsRepositoryInterface
                 ? $loggerOrStatsRepo
-                : abj_service('stats_repository');
+                : $this->resolveStatsRepository();
             $this->logger = $logger !== null ? $logger : abj_service('logging');
         } else {
-            // Legacy / test path: caller handed in a DataAccess facade. Resolve both the real
-            // LogsRepository and the real StatsRepository off the facade so this class talks
-            // to the typed repo surfaces (no LogsRepo/StatsRepo pass-throughs on DataAccess).
+            // Legacy / test path: caller handed in a DataAccess facade. Resolve the real
+            // LogsRepository off the facade; StatsRepository must be injected or registered.
             $this->logsRepo = method_exists($logsRepoOrLegacyDao, 'getLogsRepo')
                 ? $logsRepoOrLegacyDao->getLogsRepo()
                 : $logsRepoOrLegacyDao;
-            $this->statsRepo = $this->resolveStatsRepository($logsRepoOrLegacyDao);
+            $this->statsRepo = $this->resolveStatsRepository();
             $this->logger = $loggerOrStatsRepo instanceof ABJ_404_Solution_Logging
                 ? $loggerOrStatsRepo
                 : abj_service('logging');
@@ -55,18 +54,9 @@ class ABJ_404_Solution_EmailDigest {
     }
 
     /**
-     * @param mixed $legacyDao
      * @return ABJ_404_Solution_StatsRepositoryInterface
      */
-    private function resolveStatsRepository($legacyDao): ABJ_404_Solution_StatsRepositoryInterface {
-        $method = 'get' . 'StatsRepo';
-        if (is_object($legacyDao) && method_exists($legacyDao, $method)) {
-            $repo = $legacyDao->{$method}();
-            if ($repo instanceof ABJ_404_Solution_StatsRepositoryInterface) {
-                return $repo;
-            }
-        }
-
+    private function resolveStatsRepository(): ABJ_404_Solution_StatsRepositoryInterface {
         $service = class_exists('ABJ_404_Solution_ServiceContainer')
             ? ABJ_404_Solution_ServiceContainer::safeGet('stats_repository')
             : null;
@@ -74,7 +64,7 @@ class ABJ_404_Solution_EmailDigest {
             return $service;
         }
 
-        return abj_service('stats_repository');
+        return ABJ_404_Solution_UnavailableStatsRepository::resolve(__CLASS__);
     }
 
     /**

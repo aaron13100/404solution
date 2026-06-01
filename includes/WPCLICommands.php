@@ -251,7 +251,7 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
             }
         }
         if ($statsRepository === null) {
-            $statsRepository = abj_service('stats_repository');
+            $statsRepository = ABJ_404_Solution_UnavailableStatsRepository::resolve(__CLASS__);
         }
         $snapshot = $statsRepository->getStatsDashboardSnapshot(false);
         // getStatsDashboardSnapshot always returns array{refreshed_at, hash, data}.
