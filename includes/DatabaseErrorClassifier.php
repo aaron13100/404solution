@@ -77,7 +77,7 @@ class ABJ_404_Solution_DatabaseErrorClassifier {
      *
      * Use this at call sites that bypass queryAndGetResults() and call $wpdb directly.
      * Public so that NGramFilter, DatabaseUpgradesEtc, and other classes can call it
-     * via $this->dao->classifyAndHandleInfrastructureError().
+     * via their injected DatabaseCore dependency.
      *
      * @param string $errorText The value of $wpdb->last_error.
      * @return bool True if the error was classified as infrastructure (already handled).

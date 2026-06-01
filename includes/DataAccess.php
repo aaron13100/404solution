@@ -197,21 +197,6 @@ class ABJ_404_Solution_DataAccess {
         ABJ_404_Solution_ViewReadService::setViewSnapshotTableEnsured($value);
     }
 
-    /**
-     * Delegate to DatabaseCore for backward compatibility.
-     *
-     * @param bool $value
-     * @return void
-     */
-    public static function setSetStatementWrapperUnsupported(bool $value): void {
-        ABJ_404_Solution_DatabaseCore::setSetStatementWrapperUnsupported($value);
-    }
-
-    /** @return bool */
-    public static function isSetStatementWrapperUnsupported(): bool {
-        return ABJ_404_Solution_DatabaseCore::isSetStatementWrapperUnsupported();
-    }
-
     /** @return void */
     public static function resetViewBuildOncePerRequestGuard(): void {
         ABJ_404_Solution_ViewBuildOrchestrator::resetViewBuildOncePerRequestGuard();
@@ -439,12 +424,14 @@ class ABJ_404_Solution_DataAccess {
             }
 
             public function queryAndGetResults($query, $options = array()): array {
-                return $this->owner->queryAndGetResults($query, $options);
+                $result = $this->owner->invokeSubclassOverride('queryAndGetResults', array($query, $options));
+                return is_array($result) ? $result : array();
             }
 
             public function doTableNameReplacements($query): string {
                 if ($this->owner->hasSubclassOverride('doTableNameReplacements')) {
-                    return (string)$this->owner->doTableNameReplacements($query);
+                    $result = $this->owner->invokeSubclassOverride('doTableNameReplacements', array($query));
+                    return is_scalar($result) ? (string)$result : '';
                 }
                 return parent::doTableNameReplacements($query);
             }
@@ -458,7 +445,8 @@ class ABJ_404_Solution_DataAccess {
 
             public function getLowercasePrefix(): string {
                 if ($this->owner->hasSubclassOverride('getLowercasePrefix')) {
-                    return (string)$this->owner->getLowercasePrefix();
+                    $result = $this->owner->invokeSubclassOverride('getLowercasePrefix');
+                    return is_scalar($result) ? (string)$result : '';
                 }
                 return parent::getLowercasePrefix();
             }
@@ -606,10 +594,6 @@ class ABJ_404_Solution_DataAccess {
         return $this->dbCore;
     }
 
-    public function queryAndGetResults($query, $options = array()) {
-        return $this->getDbCore()->queryAndGetResults($query, $options);
-    }
-
     /** @return ABJ_404_Solution_RebuildHealthState|null */
     private function resolveRebuildHealthState() {
         if (class_exists('ABJ_404_Solution_ServiceContainer')
@@ -621,74 +605,6 @@ class ABJ_404_Solution_DataAccess {
         }
         return null;
     }
-
-    public function queryScalarInt($query, $options = array()): int {
-        return $this->getDbCore()->queryScalarInt($query, $options);
-    }
-
-    public function doTableNameReplacements($query): string {
-        return $this->getDbCore()->doTableNameReplacements($query);
-    }
-
-    public function getLowercasePrefix(): string {
-        return $this->getDbCore()->getLowercasePrefix();
-    }
-
-    public function getPrefixedTableName($tableSuffix): string {
-        return $this->getDbCore()->getPrefixedTableName($tableSuffix);
-    }
-
-    /** @param string $query @return string */
-    public function extractSqlFilename($query): string {
-        // DatabaseQueryExecutor applies the WP_DEBUG privacy guard before logging query details.
-        return $this->getDbCore()->extractSqlFilename($query);
-    }
-
-    /** @param string $errorText @return bool */
-    public function classifyAndHandleInfrastructureError(string $errorText): bool {
-        return $this->getDbCore()->classifyAndHandleInfrastructureError($errorText);
-    }
-
-    /** @param mixed $errorText @return bool */
-    public function isInvalidDataError($errorText): bool {
-        return $this->getDbCore()->isInvalidDataError($errorText);
-    }
-
-    /** @param string $errorText @return bool */
-    public function isCollationError(string $errorText): bool {
-        return $this->getDbCore()->isCollationError($errorText);
-    }
-
-    /** @return string */
-    public function diagnosePrefixMismatch(): string {
-        return $this->getDbCore()->diagnosePrefixMismatch();
-    }
-
-    /** @param string $errorText @return bool */
-    public function isMultisiteCrossPrefixError(string $errorText): bool {
-        return $this->getDbCore()->isMultisiteCrossPrefixError($errorText);
-    }
-
-    public function isDeadlockOrLockTimeoutError(string $errorText): bool {
-        return $this->getDbCore()->isDeadlockOrLockTimeoutError($errorText);
-    }
-
-    public function isTransientConnectionError(?string $errorText): bool { return $this->getDbCore()->isTransientConnectionError($errorText); }
-    public function isQuotaLimitError(string $errorText): bool { return $this->getDbCore()->isQuotaLimitError($errorText); }
-    public function isDiskFullError(string $errorText): bool { return $this->getDbCore()->isDiskFullError($errorText); }
-    public function isReadOnlyError(string $errorText): bool { return $this->getDbCore()->isReadOnlyError($errorText); }
-    public function isCrashedTableError(string $errorText): bool { return $this->getDbCore()->isCrashedTableError($errorText); }
-    public function isIncorrectKeyFileError(string $errorText): bool { return $this->getDbCore()->isIncorrectKeyFileError($errorText); }
-    public function isGaleraConflictError(string $errorText): bool { return $this->getDbCore()->isGaleraConflictError($errorText); }
-    public function isMissingPluginTableError(string $errorText): bool { return $this->getDbCore()->isMissingPluginTableError($errorText); }
-    public function isTransientViewBuildTableError(string $errorText): bool { return $this->getDbCore()->isTransientViewBuildTableError($errorText); }
-    public function noteDatabaseIssueFromError(string $errorText): void { $this->getDbCore()->noteDatabaseIssueFromError($errorText); }
-    public function isWriteBlockActive(): bool { return $this->getDbCore()->isWriteBlockActive(); }
-    public function isQuotaCooldownActive(): bool { return $this->getDbCore()->isQuotaCooldownActive(); }
-    public function getRuntimeFlag(string $name) { return $this->getDbCore()->getRuntimeFlag($name); }
-    public function setRuntimeFlag(string $name, $value, int $ttlSeconds = 0): void { $this->getDbCore()->setRuntimeFlag($name, $value, $ttlSeconds); }
-    public function setPluginDbNotice(string $type, string $message, string $errorString = ''): void { $this->getDbCore()->setPluginDbNotice($type, $message, $errorString); }
-    public function attemptMissingTableRepairAndRetry($query, array &$result): void { $this->getDbCore()->attemptMissingTableRepairAndRetry($query, $result); }
 
     public function getPostOrGetSanitize($name, $defaultValue = null) {
         if (is_object($this->f) && method_exists($this->f, 'getPostOrGetSanitize')) {
@@ -772,7 +688,7 @@ class ABJ_404_Solution_DataAccess {
     }
 
     public function deleteOldRedirectsCron() {
-        $this->ensureConnection();
+        $this->dbCore->ensureConnection();
         return $this->getRetentionService()->deleteOldRedirectsCron();
     }
 
@@ -803,8 +719,6 @@ class ABJ_404_Solution_DataAccess {
     }
 
     public function getIsolatedWpdb() { return $this->getLogsRepo()->getIsolatedWpdb(); }
-
-    public function isInnoDBTable(string $tableName): bool { return $this->getDbCore()->isInnoDBTable($tableName); }
 
     public function sanitizeLogEntry(array $entry): ?array { return $this->getLogsRepo()->sanitizeLogEntry($entry); }
 
@@ -990,6 +904,58 @@ class ABJ_404_Solution_DataAccess {
             );
         }
 
+        $removedDatabaseCorePassThroughs = [
+            'queryAndGetResults',
+            'queryScalarInt',
+            'doTableNameReplacements',
+            'getLowercasePrefix',
+            'getPrefixedTableName',
+            'extractSqlFilename',
+            'classifyAndHandleInfrastructureError',
+            'isInvalidDataError',
+            'isCollationError',
+            'diagnosePrefixMismatch',
+            'isMultisiteCrossPrefixError',
+            'isDeadlockOrLockTimeoutError',
+            'isTransientConnectionError',
+            'isQuotaLimitError',
+            'isDiskFullError',
+            'isReadOnlyError',
+            'isCrashedTableError',
+            'isIncorrectKeyFileError',
+            'isGaleraConflictError',
+            'isMissingPluginTableError',
+            'isTransientViewBuildTableError',
+            'noteDatabaseIssueFromError',
+            'isWriteBlockActive',
+            'isQuotaCooldownActive',
+            'getRuntimeFlag',
+            'setRuntimeFlag',
+            'setPluginDbNotice',
+            'attemptMissingTableRepairAndRetry',
+            'isInnoDBTable',
+            'safeCheckConnection',
+            'ensureConnection',
+            'queryStartsWithSelect',
+            'queryProducesResultRows',
+            'applyQueryTimeout',
+            'isMariaDB',
+            'applySelectTimeout',
+            'applyNonLeadingSelectTimeout',
+            'applyStatementTimeout',
+            'applyTimeoutToInsertSelect',
+            'queryHasSetStatementWrapper',
+            'stripSetStatementWrapper',
+            'retryWithoutSetStatementWrapper',
+            'setClock',
+            'clock',
+        ];
+        if (in_array($name, $removedDatabaseCorePassThroughs, true)) {
+            throw new \BadMethodCallException(
+                'Method ' . $name . '() was moved from ' . static::class . ' to ABJ_404_Solution_DatabaseCoreInterface.'
+            );
+        }
+
         $delegates = [
             $this->dbCore,
             $this->redirectsRepo,
@@ -1022,96 +988,9 @@ class ABJ_404_Solution_DataAccess {
         );
     }
 
-    /** @param object $wpdb @param bool $allowReconnect @return bool */
-    public function safeCheckConnection($wpdb, bool $allowReconnect = false): bool {
-        return $this->dbCore->safeCheckConnection($wpdb, $allowReconnect);
-    }
-
-    /** @return bool */
-    public function ensureConnection() {
-        return $this->dbCore->ensureConnection();
-    }
-
-    /** @param string $query @return bool */
-    public function queryStartsWithSelect(string $query): bool {
-        return $this->dbCore->queryStartsWithSelect($query);
-    }
-
     /** @return string */
     public function stageFailurePolicy(): string {
         return 'database-core-classifier';
-    }
-
-    /** @param string $query @return bool */
-    public function queryProducesResultRows(string $query): bool {
-        return $this->dbCore->queryProducesResultRows($query);
-    }
-
-    /** @param string $query @param int $timeoutSeconds @return string */
-    public function applyQueryTimeout(string $query, int $timeoutSeconds): string {
-        return $this->dbCore->applyQueryTimeout($query, $timeoutSeconds);
-    }
-
-    /** @return bool */
-    public function isMariaDB(): bool {
-        return $this->dbCore->isMariaDB();
-    }
-
-    /** @param string $query @param int $timeoutSeconds @return string */
-    public function applySelectTimeout(string $query, int $timeoutSeconds): string {
-        return $this->dbCore->applySelectTimeout($query, $timeoutSeconds);
-    }
-
-    /** @param string $query @param int $timeoutSeconds @return string */
-    public function applyNonLeadingSelectTimeout(string $query, int $timeoutSeconds): string {
-        return $this->dbCore->applyNonLeadingSelectTimeout($query, $timeoutSeconds);
-    }
-
-    /** @param string $query @param int $timeoutSeconds @return string */
-    public function applyStatementTimeout(string $query, int $timeoutSeconds): string {
-        return $this->dbCore->applyStatementTimeout($query, $timeoutSeconds);
-    }
-
-    /** @param string $insertSelectQuery @param int $timeoutSeconds @return string */
-    public function applyTimeoutToInsertSelect(string $insertSelectQuery, int $timeoutSeconds): string {
-        return $this->dbCore->applyTimeoutToInsertSelect($insertSelectQuery, $timeoutSeconds);
-    }
-
-    /** @param string $query @return bool */
-    public function queryHasSetStatementWrapper(string $query): bool {
-        return $this->dbCore->queryHasSetStatementWrapper($query);
-    }
-
-    /** @param string $query @return string */
-    public function stripSetStatementWrapper(string $query): string {
-        return $this->dbCore->stripSetStatementWrapper($query);
-    }
-
-    /**
-     * @param string $query
-     * @param array<string, mixed> $result
-     * @param 'OBJECT'|'OBJECT_K'|'ARRAY_A'|'ARRAY_N' $resultType
-     * @return void
-     */
-    public function retryWithoutSetStatementWrapper(string &$query, array &$result, string $resultType): void {
-        $this->dbCore->retryWithoutSetStatementWrapper($query, $result, $resultType);
-    }
-
-    /**
-     * @param ABJ_404_Solution_Clock $clock
-     * @return void
-     */
-    public function setClock(ABJ_404_Solution_Clock $clock): void {
-        $this->dbCore->setClock($clock);
-    }
-
-    /**
-     * Resolve the clock via DatabaseCore.
-     *
-     * @return ABJ_404_Solution_Clock
-     */
-    protected function clock(): ABJ_404_Solution_Clock {
-        return $this->dbCore->clock();
     }
 
     /** @return self */
