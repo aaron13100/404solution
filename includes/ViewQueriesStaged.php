@@ -601,9 +601,23 @@ class ABJ_404_Solution_ViewQueriesStaged extends ABJ_404_Solution_ViewBuildColla
             ));
             $progress = $this->getViewBuildProgress();
             if ((int)($progress['stage'] ?? 0) === 0) {
+                // Fallback when current_stage hasn't been persisted yet (S1
+                // hasn't completed, or the option write is briefly missing).
+                // Use last_completed_stage only -- NOT last_started_stage --
+                // because last_started_stage is written at stage entry and
+                // current_stage is written at stage exit, so last_started_stage
+                // is always >= current_stage. If a concurrent locked tab fell
+                // back to last_started_stage=N+1 while the lock holder was
+                // mid-stage, the next read after the lock holder writes
+                // current_stage=N would regress from N+1 to N -- the very
+                // monotonicity violation StagedBuildConcurrentTabsIntegrationTest
+                // contract (i) forbids. last_completed_stage tracks completed
+                // work and progresses in lockstep with current_stage (actually
+                // written just before it; see markViewBuildStageCompleted +
+                // the current_stage writes in runStagedBuildOnce / Stages6Through11),
+                // so substituting it cannot overshoot the true persisted state.
                 $progress['stage'] = max(
                     0,
-                    $this->readProgressOption('last_started_stage', 0),
                     $this->readProgressOption('last_completed_stage', 0)
                 );
                 $progress['progress_text'] = $progress['stage'] > 0
