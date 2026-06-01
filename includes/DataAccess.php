@@ -162,7 +162,25 @@ class ABJ_404_Solution_DataAccess {
     /** @var ABJ_404_Solution_LogsRepository The extracted logs repository. */
     private $logsRepo;
 
-    /** @var ABJ_404_Solution_StatsRepository The extracted stats repository. */
+    /**
+     * @var ABJ_404_Solution_StatsRepository
+     *
+     * Test-only composition surface. Production code MUST resolve the stats
+     * repository through StatsRepositoryInterface (constructor-injected) or via
+     * ABJ_404_Solution_UnavailableStatsRepository::resolve(). Held on DataAccess
+     * exclusively so tests that construct a real (or stubbed-deps) DataAccess
+     * can drive the real StatsRepository against a custom DbCore/LogsRepo.
+     *
+     * Production prohibition is enforced by
+     * StatsRepositoryExtractionTest::testProductionCallersDoNotResolveStatsRepositoryThroughDataAccess.
+     * The 12 prior pass-through methods (getStatsCount, getPeriodicStatsSummary,
+     * getStatsDashboardSnapshot, refreshStatsDashboardSnapshot,
+     * getEarliestLogTimestamp, getTopCapturedForDigest,
+     * buildTopCapturedForDigestQuery, getDigestSummaryStats,
+     * getCapturedCountForNotification, getPostsNeedingContentKeywords,
+     * bulkUpdateContentKeywords, getPeriodicStatsSummariesCached) have been
+     * removed; see StatsRepositoryExtractionTest::testDataAccessNoLongerExposesStatsRepoPassThroughs.
+     */
     private $statsRepo;
 
     /** @var ABJ_404_Solution_ViewReadService The extracted view read service (Phase 6). */
@@ -790,7 +808,21 @@ class ABJ_404_Solution_DataAccess {
 
     public function sanitizeLogEntry(array $entry): ?array { return $this->getLogsRepo()->sanitizeLogEntry($entry); }
 
-    /** @return ABJ_404_Solution_StatsRepository */
+    /**
+     * Test-only composition surface. Production callers must inject
+     * StatsRepositoryInterface via constructor or call
+     * ABJ_404_Solution_UnavailableStatsRepository::resolve(); using
+     * $dao->getStatsRepo() in includes/ is forbidden and is enforced by
+     * StatsRepositoryExtractionTest::testProductionCallersDoNotResolveStatsRepositoryThroughDataAccess
+     * (also catches the obfuscated 'get'.'StatsRepo' and quoted-string variants).
+     *
+     * Retained only as a composition exposure for tests that subclass
+     * DataAccess (e.g. StatsCacheInv_TestDAO, the makeRecordingDao() pattern in
+     * DataAccessQueryTimeoutAuditTest) and need the StatsRepository instance
+     * composed from the same private deps the test wired into DataAccess.
+     *
+     * @return ABJ_404_Solution_StatsRepository
+     */
     public function getStatsRepo(): ABJ_404_Solution_StatsRepository {
         if ($this->statsRepo === null) {
             $this->statsRepo = new ABJ_404_Solution_StatsRepository($this->getDbCore(), $this->getLogsRepo(), $this->f, $this->logger);
