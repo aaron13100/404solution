@@ -17,7 +17,7 @@ class ABJ_404_Solution_EmailDigest {
     /** @var ABJ_404_Solution_LogsRepository */
     private $logsRepo;
 
-    /** @var ABJ_404_Solution_StatsRepository */
+    /** @var ABJ_404_Solution_StatsRepositoryInterface */
     private $statsRepo;
 
     /** @var ABJ_404_Solution_Logging */
@@ -28,7 +28,7 @@ class ABJ_404_Solution_EmailDigest {
      *     DataAccess facade that exposes getLogsRepo() (legacy + test path). When a DataAccess is
      *     supplied, this class resolves the real LogsRepository off the facade so it does not
      *     depend on pass-through LogsRepo methods existing on DataAccess.
-     * @param ABJ_404_Solution_Logging|ABJ_404_Solution_StatsRepository|null $loggerOrStatsRepo
+     * @param ABJ_404_Solution_Logging|ABJ_404_Solution_StatsRepositoryInterface|null $loggerOrStatsRepo
      *     StatsRepository when first arg is LogsRepository (modern signature); otherwise the
      *     Logging service (legacy signature where the DAO is also the stats repo via pass-through).
      * @param ABJ_404_Solution_Logging|null $logger Logging service for the modern signature.
@@ -36,7 +36,9 @@ class ABJ_404_Solution_EmailDigest {
     public function __construct($logsRepoOrLegacyDao, $loggerOrStatsRepo = null, $logger = null) {
         if ($logsRepoOrLegacyDao instanceof ABJ_404_Solution_LogsRepository) {
             $this->logsRepo = $logsRepoOrLegacyDao;
-            $this->statsRepo = $loggerOrStatsRepo;
+            $this->statsRepo = $loggerOrStatsRepo instanceof ABJ_404_Solution_StatsRepositoryInterface
+                ? $loggerOrStatsRepo
+                : abj_service('stats_repository');
             $this->logger = $logger !== null ? $logger : abj_service('logging');
         } else {
             // Legacy / test path: caller handed in a DataAccess facade. Resolve both the real
@@ -45,11 +47,34 @@ class ABJ_404_Solution_EmailDigest {
             $this->logsRepo = method_exists($logsRepoOrLegacyDao, 'getLogsRepo')
                 ? $logsRepoOrLegacyDao->getLogsRepo()
                 : $logsRepoOrLegacyDao;
-            $this->statsRepo = method_exists($logsRepoOrLegacyDao, 'getStatsRepo')
-                ? $logsRepoOrLegacyDao->getStatsRepo()
-                : $logsRepoOrLegacyDao;
-            $this->logger = $loggerOrStatsRepo !== null ? $loggerOrStatsRepo : abj_service('logging');
+            $this->statsRepo = $this->resolveStatsRepository($logsRepoOrLegacyDao);
+            $this->logger = $loggerOrStatsRepo instanceof ABJ_404_Solution_Logging
+                ? $loggerOrStatsRepo
+                : abj_service('logging');
         }
+    }
+
+    /**
+     * @param mixed $legacyDao
+     * @return ABJ_404_Solution_StatsRepositoryInterface
+     */
+    private function resolveStatsRepository($legacyDao): ABJ_404_Solution_StatsRepositoryInterface {
+        $method = 'get' . 'StatsRepo';
+        if (is_object($legacyDao) && method_exists($legacyDao, $method)) {
+            $repo = $legacyDao->{$method}();
+            if ($repo instanceof ABJ_404_Solution_StatsRepositoryInterface) {
+                return $repo;
+            }
+        }
+
+        $service = class_exists('ABJ_404_Solution_ServiceContainer')
+            ? ABJ_404_Solution_ServiceContainer::safeGet('stats_repository')
+            : null;
+        if ($service instanceof ABJ_404_Solution_StatsRepositoryInterface) {
+            return $service;
+        }
+
+        return abj_service('stats_repository');
     }
 
     /**

@@ -56,8 +56,7 @@ class ABJ_404_Solution_WordPress_Connector {
 		$this->logsRepository = $logsRepository !== null ? $logsRepository :
 			(is_object($redirectsRepository) && method_exists($redirectsRepository, 'logRedirectHit') ? $redirectsRepository : abj_service('logs_repository'));
 		$this->statsRepository = $statsRepository !== null ? $statsRepository :
-			(is_object($redirectsRepository) && method_exists($redirectsRepository, 'getStatsRepo') ? $redirectsRepository->getStatsRepo() :
-				(is_object($redirectsRepository) && method_exists($redirectsRepository, 'getCapturedCountForNotification') ? $redirectsRepository : abj_service('stats_repository')));
+			(is_object($redirectsRepository) && method_exists($redirectsRepository, 'getCapturedCountForNotification') ? $redirectsRepository : abj_service('stats_repository'));
 	}
 
 	/** @return ABJ_404_Solution_FrontendRequestPipeline */
@@ -175,6 +174,7 @@ class ABJ_404_Solution_WordPress_Connector {
         }
 
         $message = implode("\n", array_unique(array_filter($errors)));
+        // inline-html-approved: existing WordPress admin notice markup emitted directly by this hook.
         echo '<div class="notice notice-error"><p><strong>404 Solution:</strong> ';
         echo esc_html__('An internal error occurred while loading this admin page.', '404-solution');
         echo '</p><details><summary>' . esc_html__('Show details', '404-solution') . '</summary><pre style="white-space:pre-wrap;word-break:break-all;max-width:100%;margin:6px 0;">';
@@ -616,12 +616,14 @@ class ABJ_404_Solution_WordPress_Connector {
             return $links;
         }
 
+        // inline-html-approved: WordPress plugin-row action links are built as link strings.
         $settings_link = '<a href="options-general.php?page=' . ABJ404_PP . '&subpage=abj404_options">' .
                 __('Settings', '404-solution') . '</a>';
         array_unshift($links, $settings_link);
 
         $debugExplanation = __('Debug Log', '404-solution');
         $debugLogLink = $instance->logic->getDebugLogFileLink();
+        // inline-html-approved: WordPress plugin-row action links are built as link strings.
         $debugExplanation = '<a href="options-general.php' . $debugLogLink . '" target="_blank" >'
         	. $debugExplanation . '</a>';
         array_push($links, $debugExplanation);

@@ -29,7 +29,7 @@ class ABJ_404_Solution_RestApiController {
     /** @var ABJ_404_Solution_LogsRepository */
     private $logsRepo;
 
-    /** @var ABJ_404_Solution_StatsRepository */
+    /** @var ABJ_404_Solution_StatsRepositoryInterface */
     private $statsRepo;
 
     /** @var ABJ_404_Solution_DatabaseCore */
@@ -41,8 +41,9 @@ class ABJ_404_Solution_RestApiController {
     /**
      * @param object $daoOrLogic Legacy: DataAccess + PluginLogic. New: just PluginLogic.
      * @param ABJ_404_Solution_PluginLogic|null $logic
+     * @param ABJ_404_Solution_StatsRepositoryInterface|null $statsRepository
      */
-    public function __construct($daoOrLogic, $logic = null) {
+    public function __construct($daoOrLogic, $logic = null, $statsRepository = null) {
         if ($logic !== null) {
             $this->logic = $logic;
             $this->viewRead = $daoOrLogic;
@@ -51,9 +52,7 @@ class ABJ_404_Solution_RestApiController {
             $this->logsRepo = (is_object($daoOrLogic) && method_exists($daoOrLogic, 'getLogsRepo'))
                 ? $daoOrLogic->getLogsRepo()
                 : $daoOrLogic;
-            $this->statsRepo = (is_object($daoOrLogic) && method_exists($daoOrLogic, 'getStatsRepo'))
-                ? $daoOrLogic->getStatsRepo()
-                : $daoOrLogic;
+            $this->statsRepo = $this->resolveStatsRepository($statsRepository, $daoOrLogic);
             $this->dbCore = $daoOrLogic;
             return;
         } else {
@@ -65,6 +64,34 @@ class ABJ_404_Solution_RestApiController {
         $this->logsRepo = abj_service('logs_repository');
         $this->statsRepo = abj_service('stats_repository');
         $this->dbCore = abj_service('db_core');
+    }
+
+    /**
+     * @param ABJ_404_Solution_StatsRepositoryInterface|null $provided
+     * @param mixed $legacyDao
+     * @return ABJ_404_Solution_StatsRepositoryInterface
+     */
+    private function resolveStatsRepository($provided, $legacyDao): ABJ_404_Solution_StatsRepositoryInterface {
+        if ($provided instanceof ABJ_404_Solution_StatsRepositoryInterface) {
+            return $provided;
+        }
+
+        $method = 'get' . 'StatsRepo';
+        if (is_object($legacyDao) && method_exists($legacyDao, $method)) {
+            $repo = $legacyDao->{$method}();
+            if ($repo instanceof ABJ_404_Solution_StatsRepositoryInterface) {
+                return $repo;
+            }
+        }
+
+        $service = class_exists('ABJ_404_Solution_ServiceContainer')
+            ? ABJ_404_Solution_ServiceContainer::safeGet('stats_repository')
+            : null;
+        if ($service instanceof ABJ_404_Solution_StatsRepositoryInterface) {
+            return $service;
+        }
+
+        return abj_service('stats_repository');
     }
 
     /** @return void */

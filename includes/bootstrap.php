@@ -204,7 +204,8 @@ function abj_404_solution_register_business_logic($container) {
         return new ABJ_404_Solution_PluginLogic(
             $c->get('functions'),
             $c->get('data_access'),
-            $c->get('logging')
+            $c->get('logging'),
+            $c->get('stats_repository')
         );
     });
 
@@ -365,7 +366,8 @@ function abj_404_solution_register_presentation_layer($container) {
             $c->get('functions'),
             $c->get('plugin_logic'),
             $c->get('view_read_service'),
-            $c->get('logging')
+            $c->get('logging'),
+            $c->get('stats_repository')
         );
     });
 

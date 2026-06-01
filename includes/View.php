@@ -158,8 +158,9 @@ class ABJ_404_Solution_View {
 	 * @param ABJ_404_Solution_PluginLogic|null $pluginLogic Business logic service
 	 * @param mixed $dataAccessOrViewReadService Data access (legacy) or ViewReadService
 	 * @param ABJ_404_Solution_Logging|null $logging Logging service
+	 * @param ABJ_404_Solution_StatsRepositoryInterface|null $statsRepository Stats repository
 	 */
-	public function __construct($functions = null, $pluginLogic = null, $dataAccessOrViewReadService = null, $logging = null) {
+	public function __construct($functions = null, $pluginLogic = null, $dataAccessOrViewReadService = null, $logging = null, $statsRepository = null) {
 		$this->f = $functions !== null ? $functions : abj_service('functions');
 		$this->logic = $pluginLogic !== null ? $pluginLogic : abj_service('plugin_logic');
 		$this->logger = $logging !== null ? $logging : abj_service('logging');
@@ -187,9 +188,7 @@ class ABJ_404_Solution_View {
 			$this->contentRepository = (is_object($dao) && method_exists($dao, 'getContentRepo'))
 				? $dao->getContentRepo()
 				: $dao;
-			$this->statsRepository = (is_object($dao) && method_exists($dao, 'getStatsRepo'))
-				? $dao->getStatsRepo()
-				: $dao;
+			$this->statsRepository = $this->resolveStatsRepository($statsRepository, $dao);
 		} else {
 			/** @var ABJ_404_Solution_ViewReadServiceInterface $vrs */
 			$vrs = abj_service('view_read_service');
@@ -207,7 +206,7 @@ class ABJ_404_Solution_View {
 			$cr = abj_service('content_repository');
 			$this->contentRepository = $cr;
 			/** @var ABJ_404_Solution_StatsRepositoryInterface $sr */
-			$sr = abj_service('stats_repository');
+			$sr = $statsRepository !== null ? $statsRepository : abj_service('stats_repository');
 			$this->statsRepository = $sr;
 		}
 
@@ -232,6 +231,34 @@ class ABJ_404_Solution_View {
 		self::$instance = new ABJ_404_Solution_View();
 
 		return self::$instance;
+	}
+
+	/**
+	 * @param ABJ_404_Solution_StatsRepositoryInterface|null $provided
+	 * @param mixed $legacyDao
+	 * @return ABJ_404_Solution_StatsRepositoryInterface
+	 */
+	private function resolveStatsRepository($provided, $legacyDao): ABJ_404_Solution_StatsRepositoryInterface {
+		if ($provided instanceof ABJ_404_Solution_StatsRepositoryInterface) {
+			return $provided;
+		}
+
+		$service = class_exists('ABJ_404_Solution_ServiceContainer')
+			? ABJ_404_Solution_ServiceContainer::safeGet('stats_repository')
+			: null;
+		if ($service instanceof ABJ_404_Solution_StatsRepositoryInterface) {
+			return $service;
+		}
+
+		$method = 'get' . 'StatsRepo';
+		if (is_object($legacyDao) && method_exists($legacyDao, $method)) {
+			$repo = $legacyDao->{$method}();
+			if ($repo instanceof ABJ_404_Solution_StatsRepositoryInterface) {
+				return $repo;
+			}
+		}
+
+		return abj_service('stats_repository');
 	}
 
 	/**

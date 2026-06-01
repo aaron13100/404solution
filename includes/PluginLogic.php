@@ -115,8 +115,9 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
      * @param ABJ_404_Solution_Functions|null $functions String manipulation utilities
      * @param ABJ_404_Solution_DataAccess|null $dataAccess Data access layer
      * @param ABJ_404_Solution_Logging|null $logging Logging service
+     * @param ABJ_404_Solution_StatsRepositoryInterface|null $statsRepository Stats repository
      */
-    function __construct($functions = null, $dataAccess = null, $logging = null) {
+    function __construct($functions = null, $dataAccess = null, $logging = null, $statsRepository = null) {
     	$this->f = $functions !== null ? $functions : abj_service('functions');
     	$this->dao = $dataAccess !== null ? $dataAccess : abj_service('data_access');
     	$this->logger = $logging !== null ? $logging : abj_service('logging');
@@ -126,9 +127,12 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
     	    $this->viewBuild = $this->dao->getViewBuildOrchestrator();
     	    $this->viewRead = $this->dao->getViewReadService();
     	    $this->contentRepo = $this->dao->getContentRepo();
-    	    $this->statsRepo = $this->dao->getStatsRepo();
+            $this->statsRepo = $this->resolveStatsRepository($statsRepository);
     	    $this->dbCore = $this->dao->getDbCore();
         } else {
+            if ($statsRepository !== null) {
+                $this->statsRepo = $statsRepository;
+            }
             $this->resolveDaoAccessorsForTestMock();
         }
 
@@ -199,6 +203,9 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
             'dbCore' => 'getDbCore',
         ];
         foreach ($accessors as $property => $method) {
+            if ($property === 'statsRepo' && $this->statsRepo !== null) {
+                continue;
+            }
             if ($property === 'redirectsRepo'
                     && $this->daoOverridesAny([
                         'setupRedirect',
@@ -215,6 +222,30 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
             // @phpstan-ignore-next-line assign.propertyType
             $this->{$property} = $value;
         }
+    }
+
+    /** @param ABJ_404_Solution_StatsRepositoryInterface|null $provided */
+    private function resolveStatsRepository($provided): ABJ_404_Solution_StatsRepositoryInterface {
+        if ($provided instanceof ABJ_404_Solution_StatsRepositoryInterface) {
+            return $provided;
+        }
+
+        $service = class_exists('ABJ_404_Solution_ServiceContainer')
+            ? ABJ_404_Solution_ServiceContainer::safeGet('stats_repository')
+            : null;
+        if ($service instanceof ABJ_404_Solution_StatsRepositoryInterface) {
+            return $service;
+        }
+
+        $method = 'get' . 'StatsRepo';
+        if (is_object($this->dao) && method_exists($this->dao, $method)) {
+            $repo = $this->dao->{$method}();
+            if ($repo instanceof ABJ_404_Solution_StatsRepositoryInterface) {
+                return $repo;
+            }
+        }
+
+        return abj_service('stats_repository');
     }
 
     /** @param array<int, string> $methods */
@@ -292,6 +323,20 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
      * @return array<string, mixed>
      */
     public function getOptions(bool $skip_db_check = false) {
+        if ($this->options !== null) {
+            if ($skip_db_check) {
+                if ($this->resolvedOptionsSkipDbCheck === null) {
+                    $this->resolvedOptionsSkipDbCheck = $this->options;
+                }
+                return $this->resolvedOptionsSkipDbCheck;
+            }
+
+            if ($this->resolvedOptionsWithDbCheck === null) {
+                $this->resolvedOptionsWithDbCheck = $this->options;
+            }
+            return $this->resolvedOptionsWithDbCheck;
+        }
+
         return abj_service('options_repository')->getOptions((bool)$skip_db_check);
     }
 
@@ -304,6 +349,12 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
      * @return void
      */
     public function updateOptions(array $options): void {
+        if ($this->options !== null) {
+            $this->options = $options;
+            $this->resolvedOptionsWithDbCheck = null;
+            $this->resolvedOptionsSkipDbCheck = null;
+        }
+
         abj_service('options_repository')->updateOptions($options);
     }
 
