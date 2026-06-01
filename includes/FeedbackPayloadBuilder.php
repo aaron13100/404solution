@@ -450,11 +450,11 @@ class ABJ_404_Solution_FeedbackPayloadBuilder {
      * @return array<string, int>
      */
     private static function redirectCountsRaw(): array {
-        $dao = self::viewReadService();
-        if ($dao === null || !method_exists($dao, 'getRedirectStatusCounts')) {
-            throw new \RuntimeException('DataAccess::getRedirectStatusCounts unavailable');
+        $viewReadService = self::viewReadService();
+        if ($viewReadService === null || !method_exists($viewReadService, 'getRedirectStatusCounts')) {
+            throw new \RuntimeException('ViewReadService::getRedirectStatusCounts unavailable');
         }
-        $raw = $dao->getRedirectStatusCounts(true);
+        $raw = $viewReadService->getRedirectStatusCounts(true);
         if (!is_array($raw)) {
             throw new \RuntimeException('getRedirectStatusCounts returned non-array');
         }
@@ -471,11 +471,11 @@ class ABJ_404_Solution_FeedbackPayloadBuilder {
      * @return array<string, int>
      */
     private static function capturedCountsRaw(): array {
-        $dao = self::viewReadService();
-        if ($dao === null || !method_exists($dao, 'getCapturedStatusCounts')) {
-            throw new \RuntimeException('DataAccess::getCapturedStatusCounts unavailable');
+        $viewReadService = self::viewReadService();
+        if ($viewReadService === null || !method_exists($viewReadService, 'getCapturedStatusCounts')) {
+            throw new \RuntimeException('ViewReadService::getCapturedStatusCounts unavailable');
         }
-        $raw = $dao->getCapturedStatusCounts(true);
+        $raw = $viewReadService->getCapturedStatusCounts(true);
         if (!is_array($raw)) {
             throw new \RuntimeException('getCapturedStatusCounts returned non-array');
         }
@@ -489,11 +489,11 @@ class ABJ_404_Solution_FeedbackPayloadBuilder {
     }
 
     private static function logEntriesCount(): int {
-        $dao = self::viewReadService();
-        if ($dao === null || !method_exists($dao, 'getLogsCount')) {
-            throw new \RuntimeException('DataAccess::getLogsCount unavailable');
+        $viewReadService = self::viewReadService();
+        if ($viewReadService === null || !method_exists($viewReadService, 'getLogsCount')) {
+            throw new \RuntimeException('ViewReadService::getLogsCount unavailable');
         }
-        $v = $dao->getLogsCount(0);
+        $v = $viewReadService->getLogsCount(0);
         if (is_scalar($v)) {
             return (int)$v;
         }

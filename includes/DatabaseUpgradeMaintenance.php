@@ -10,7 +10,7 @@ class ABJ_404_Solution_DatabaseUpgradeMaintenance extends ABJ_404_Solution_Datab
     function updateTableEngineToInnoDB() {
     	// get a list of all tables.
         global $wpdb;
-    	$result = $this->dao->getTableEngines();
+        $result = $this->viewRead->getTableEngines();
     	// if any rows are found then update the tables.
     	$resultRows = isset($result['rows']) && is_array($result['rows']) ? $result['rows'] : [];
     	if (!empty($resultRows)) {

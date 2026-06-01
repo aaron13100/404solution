@@ -860,75 +860,13 @@ class ABJ_404_Solution_DataAccess {
         return $this->getViewBuildOrchestrator()->viewDoneDataBuiltAtOptionName();
     }
 
-
-    public function getRedirectStatusCounts($bypassCache = false): array {
-        return $this->getViewReadService()->getRedirectStatusCounts($bypassCache);
-    }
-
-    public function getCapturedStatusCounts($bypassCache = false): array {
-        return $this->getViewReadService()->getCapturedStatusCounts($bypassCache);
-    }
-
-    public function getHighImpactCapturedCount(): int {
-        return $this->getViewReadService()->getHighImpactCapturedCount();
-    }
-
     /** @param mixed $tableOptions @return array<int, mixed> */
     public function getLogRecords($tableOptions) {
         return $this->getLogsRepo()->getLogRecords($tableOptions);
     }
 
-    public function getLogsCount($logID) {
-        return $this->getViewReadService()->getLogsCount($logID);
-    }
-
     public function flushLogQueue(): void {
         $this->getLogsRepo()->flushLogQueue();
-    }
-
-    public function getRedirectsAll() {
-        return $this->getViewReadService()->getRedirectsAll();
-    }
-
-    public function getRedirectsWithLogs() {
-        return $this->getViewReadService()->getRedirectsWithLogs();
-    }
-
-    public function getRedirectsWithRegEx() {
-        return $this->getViewReadService()->getRedirectsWithRegEx();
-    }
-
-    public function getManualRedirectsWithRegexMetachars() {
-        return $this->getViewReadService()->getManualRedirectsWithRegexMetachars();
-    }
-
-    public function getRedirectsForView($sub, $tableOptions) {
-        return $this->getViewReadService()->getRedirectsForView($sub, $tableOptions);
-    }
-
-    public function getRedirectsForViewCount(string $sub, array $tableOptions): int {
-        return $this->getViewReadService()->getRedirectsForViewCount($sub, $tableOptions);
-    }
-
-    public function getRedirectsForViewQuery($sub, $tableOptions, $queryAllRowsAtOnce, $limitStart, $limitEnd, $selectCountOnly) {
-        return $this->getViewReadService()->getRedirectsForViewQuery(
-            $sub,
-            $tableOptions,
-            $queryAllRowsAtOnce,
-            $limitStart,
-            $limitEnd,
-            $selectCountOnly
-        );
-    }
-
-    public function getTableEngines() { return $this->getViewReadService()->getTableEngines(); }
-
-    public function invalidateStatusCountsCache(): void {
-        $this->getViewReadService()->invalidateStatusCountsCache();
-    }
-
-    public function invalidateViewSnapshotCache(): void {
-        $this->getViewReadService()->invalidateViewSnapshotCache();
     }
 
     /** @return bool */
@@ -1030,6 +968,28 @@ class ABJ_404_Solution_DataAccess {
      * @throws \BadMethodCallException
      */
     public function __call(string $name, array $arguments) {
+        $removedViewReadPassThroughs = [
+            'getRedirectStatusCounts',
+            'getCapturedStatusCounts',
+            'getHighImpactCapturedCount',
+            'getLogsCount',
+            'getRedirectsAll',
+            'getRedirectsWithLogs',
+            'getRedirectsWithRegEx',
+            'getManualRedirectsWithRegexMetachars',
+            'getRedirectsForView',
+            'getRedirectsForViewCount',
+            'getRedirectsForViewQuery',
+            'getTableEngines',
+            'invalidateStatusCountsCache',
+            'invalidateViewSnapshotCache',
+        ];
+        if (in_array($name, $removedViewReadPassThroughs, true)) {
+            throw new \BadMethodCallException(
+                'Method ' . $name . '() was moved from ' . static::class . ' to ABJ_404_Solution_ViewReadServiceInterface.'
+            );
+        }
+
         $delegates = [
             $this->dbCore,
             $this->redirectsRepo,
