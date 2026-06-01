@@ -194,10 +194,19 @@ class ABJ_404_Solution_OptionsRepository {
     }
 
     /**
-     * Legacy test seam: reflection-based tests seed runtime options by setting
-     * ABJ_404_Solution_PluginLogic::$options and calling reset() on this
-     * repository. Returns the seeded array when present, or null when no
-     * legacy override applies. Production callers never set $options.
+     * Legacy test seam: returns options seeded by a test before the real
+     * WordPress option pipeline (and its DB_VERSION upgrade) is consulted.
+     * Production callers never trigger either branch.
+     *
+     * Two seam shapes are honored, both anchored on PluginLogic::$instance:
+     *   1. Reflection seam (older tests). ABJ_404_Solution_PluginLogic::$options
+     *      is set to an array via ReflectionProperty + OptionsRepository::reset().
+     *      Used by SpellChecker*Test, CodeReviewIssuesTest, LoggingTest, etc.
+     *   2. Subclass-getOptions seam (post-b2ab795d tests). A test subclass that
+     *      extends ABJ_404_Solution_PluginLogic overrides getOptions() and is
+     *      installed as the singleton. Real PluginLogic has no getOptions()
+     *      method (deleted with the options migration), so method_exists() is a
+     *      reliable test-subclass discriminator.
      *
      * @return array<string, mixed>|null
      */
@@ -205,22 +214,84 @@ class ABJ_404_Solution_OptionsRepository {
         if (!class_exists('ABJ_404_Solution_PluginLogic')) {
             return null;
         }
+        $pluginLogic = $this->readPluginLogicInstance();
+        if (!is_object($pluginLogic)) {
+            return null;
+        }
+
+        // Only the real PluginLogic class declares the private $options property; anonymous
+        // stubs (e.g. ShouldUpdatePluginTest::makeUpgrades) install a sibling class and would
+        // raise on the reflection. Guard so the subclass-getOptions branch below is reached.
+        if ($pluginLogic instanceof ABJ_404_Solution_PluginLogic) {
+            $reflectedOptions = $this->readPluginLogicOptionsProperty($pluginLogic);
+            if (is_array($reflectedOptions)) {
+                return $reflectedOptions;
+            }
+        }
+
+        if (method_exists($pluginLogic, 'getOptions')) {
+            $maybeOptions = $this->callPluginLogicGetOptions($pluginLogic);
+            if (is_array($maybeOptions)) {
+                return $maybeOptions;
+            }
+        }
+
+        return null;
+    }
+
+    /** @return object|null PluginLogic singleton instance, or null when reflection fails. */
+    private function readPluginLogicInstance() {
         try {
             $instanceProperty = new ReflectionProperty('ABJ_404_Solution_PluginLogic', 'instance');
-            $pluginLogic = $instanceProperty->getValue();
-            if (!is_object($pluginLogic)) {
-                return null;
-            }
+            $value = $instanceProperty->getValue();
+            return is_object($value) ? $value : null;
+        } catch (Throwable $e) {
+            error_log('404 Solution: OptionsRepository could not read PluginLogic::$instance via reflection (' . $e->getMessage() . '); falling back to WordPress options.');
+            return null;
+        }
+    }
+
+    /**
+     * @param ABJ_404_Solution_PluginLogic $pluginLogic Real PluginLogic instance (caller verified).
+     * @return array<string, mixed>|null Seeded options array, or null when the property is absent / non-array.
+     */
+    private function readPluginLogicOptionsProperty($pluginLogic) {
+        try {
             $optionsProperty = new ReflectionProperty('ABJ_404_Solution_PluginLogic', 'options');
             $options = $optionsProperty->getValue($pluginLogic);
             if (!is_array($options)) {
                 return null;
             }
-            /** @var array<string, mixed> $typedOptions */
-            $typedOptions = $options;
-            return $typedOptions;
+            /** @var array<string, mixed> $typed */
+            $typed = $options;
+            return $typed;
         } catch (Throwable $e) {
-            // allow-silent-catch: legacy reflection seam is optional; absence falls back to WordPress options.
+            error_log('404 Solution: OptionsRepository could not read PluginLogic::$options via reflection (' . $e->getMessage() . '); falling through to subclass-getOptions seam.');
+            return null;
+        }
+    }
+
+    /**
+     * Invoke a test-installed PluginLogic singleton's getOptions(true) override.
+     * Real PluginLogic has no getOptions() method (removed in b2ab795d) so this
+     * is only reached when a test subclass installs one as the singleton.
+     *
+     * @param object $pluginLogic Test stub with a getOptions(bool) method.
+     * @return array<string, mixed>|null Subclass-provided options, or null when the override raised.
+     */
+    private function callPluginLogicGetOptions($pluginLogic) {
+        try {
+            /** @var callable $callable */
+            $callable = array($pluginLogic, 'getOptions');
+            $maybeOptions = call_user_func($callable, true);
+            if (!is_array($maybeOptions)) {
+                return null;
+            }
+            /** @var array<string, mixed> $typed */
+            $typed = $maybeOptions;
+            return $typed;
+        } catch (Throwable $e) {
+            error_log('404 Solution: OptionsRepository subclass-getOptions seam raised (' . $e->getMessage() . '); falling back to WordPress options.');
             return null;
         }
     }
