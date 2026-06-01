@@ -24,10 +24,7 @@ class ABJ_404_Solution_Ajax_RefreshAdminNonces {
             'user_id' => function_exists('get_current_user_id') ? get_current_user_id() : 0,
         ), 'ViewUpdater::refreshAdminNonces');
         try {
-            $pluginLogic = abj_service('plugin_logic');
-            $userIsPluginAdmin = is_object($pluginLogic) && method_exists($pluginLogic, 'userIsPluginAdmin')
-                ? (bool)$pluginLogic->userIsPluginAdmin()
-                : (bool)abj_service('admin_access_policy')->isPluginAdmin();
+            $userIsPluginAdmin = (bool)abj_service('admin_access_policy')->isPluginAdmin();
             if (!$userIsPluginAdmin) {
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::safeLogAjaxFailure('AJAX unauthorized in ajaxRefreshAdminNonces.', $ctx);
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();

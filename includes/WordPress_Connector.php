@@ -56,7 +56,9 @@ class ABJ_404_Solution_WordPress_Connector {
 		$this->logsRepository = $logsRepository !== null ? $logsRepository :
 			(is_object($redirectsRepository) && method_exists($redirectsRepository, 'logRedirectHit') ? $redirectsRepository : abj_service('logs_repository'));
 		$this->statsRepository = $statsRepository !== null ? $statsRepository :
-			(is_object($redirectsRepository) && method_exists($redirectsRepository, 'getCapturedCountForNotification') ? $redirectsRepository : abj_service('stats_repository'));
+			(is_object($redirectsRepository) && method_exists($redirectsRepository, 'getCapturedCountForNotification')
+				? $redirectsRepository
+				: ABJ_404_Solution_UnavailableStatsRepository::resolve(__CLASS__));
 	}
 
 	/** @return ABJ_404_Solution_FrontendRequestPipeline */
@@ -607,9 +609,7 @@ class ABJ_404_Solution_WordPress_Connector {
             $links = array();
         }
 
-        $isPluginAdmin = is_object($instance->logic) && method_exists($instance->logic, 'userIsPluginAdmin')
-            ? (bool)$instance->logic->userIsPluginAdmin()
-            : abj_service('admin_access_policy')->isPluginAdmin();
+        $isPluginAdmin = abj_service('admin_access_policy')->isPluginAdmin();
         if (!is_admin() || !$isPluginAdmin) {
             $instance->logger->logUserCapabilities("addSettingsLinkToPluginPage");
 

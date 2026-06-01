@@ -27,9 +27,7 @@ class ABJ_404_Solution_View_RedirectTypeUI extends ABJ_404_Solution_ViewComponen
     }
 
     public function echoRedirectTypeButtonGrid(string $selectedCode): void {
-        $mode = is_object($this->logic) && method_exists($this->logic, 'getSettingsMode')
-            ? $this->logic->getSettingsMode()
-            : abj_service('settings_mode_preference')->getMode();
+        $mode = abj_service('settings_mode_preference')->getMode();
         $isSimple = $mode === 'simple';
 
         echo '<div class="abj404-form-group">';
@@ -58,21 +56,26 @@ class ABJ_404_Solution_View_RedirectTypeUI extends ABJ_404_Solution_ViewComponen
         foreach ($codeButtons as $code => $labels) {
             $isActive = ((string)$code === $selectedCode) ? ' abj404-redirect-type-btn--active' : '';
             $isFull   = ($code === 0) ? ' abj404-redirect-type-btn--full' : '';
+            // inline-html-approved: compact redirect-type button grid renderer.
             echo '<button type="button"'
                 . ' class="abj404-redirect-type-btn' . $isActive . $isFull . '"'
                 . ' data-code="' . esc_attr((string)$code) . '"'
                 . ' onclick="abj404SelectRedirectType(this)">';
             echo '<strong>' . esc_html($labels[0]) . '</strong>';
+            // inline-html-approved: compact redirect-type button label renderer.
             echo '<span>' . esc_html($labels[1]) . '</span>';
             echo '</button>';
         }
         echo '</div>';
         if ($isSimple) {
+            // inline-html-approved: compact mode-specific form help renderer.
             echo '<p class="abj404-form-help">' . esc_html__('Permanent is best for most redirects. Use Temporary if the page may come back.', '404-solution') . '</p>';
         } else {
+            // inline-html-approved: compact mode-specific form help renderer.
             echo '<p class="abj404-form-help">' . esc_html__('Use 301 for permanent page moves. Use 302 for A/B tests or seasonal pages.', '404-solution') . '</p>';
         }
         echo '</div>';
+        // inline-html-approved: small behavior script for this self-contained button grid.
         echo '<script type="text/javascript">';
         echo 'if (typeof window.abj404SelectRedirectType === "undefined") {';
         echo '    window.abj404SelectRedirectType = function(btn) {';

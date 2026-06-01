@@ -268,11 +268,7 @@ function abj_service($name) {
     }
 
     if ($name === 'ajax_security_gate' && class_exists('ABJ_404_Solution_AjaxSecurityGate')) {
-        $pluginLogic = ABJ_404_Solution_ServiceContainer::safeGet('plugin_logic');
-        $adminPolicy = is_object($pluginLogic) && is_callable(array($pluginLogic, 'userIsPluginAdmin'))
-            ? $pluginLogic
-            : abj_service('admin_access_policy');
-        return new ABJ_404_Solution_AjaxSecurityGate($adminPolicy, abj_service('logging'));
+        return new ABJ_404_Solution_AjaxSecurityGate(abj_service('admin_access_policy'), abj_service('logging'));
     }
 
     if ($name === 'ajax_failure_logger' && class_exists('ABJ_404_Solution_AjaxFailureLogger')) {
@@ -314,7 +310,6 @@ function abj_service($name) {
         'redirects_repository' => 'getRedirectsRepo',
         'redirects_retention_service' => 'getRetentionService',
         'logs_repository' => 'getLogsRepo',
-        'stats_repository' => 'getStatsRepo',
         'view_read_service' => 'getViewReadService',
         'view_build_orchestrator' => 'getViewBuildOrchestrator',
     );
@@ -330,7 +325,6 @@ function abj_service($name) {
                 'redirects_repository' => 'moveRedirectsToTrash',
                 'redirects_retention_service' => 'deleteOldRedirectsCron',
                 'logs_repository' => 'logRedirectHit',
-                'stats_repository' => 'getTopCapturedForDigest',
                 'view_read_service' => 'getRedirectStatusCounts',
                 'view_build_orchestrator' => 'invalidateViewDoneAndScheduleRebuild',
                 'db_core' => 'queryAndGetResults',

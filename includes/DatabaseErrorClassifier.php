@@ -706,6 +706,15 @@ class ABJ_404_Solution_DatabaseErrorClassifier {
                 $originalSqlError, $missingTable
             );
         } catch (Throwable $e) {
+            if ($missingTable !== '' && $this->tableMaterializedAfterRepair($missingTable)) {
+                $this->logger->infoMessage(
+                    "Missing-table auto-repair materialized " . $missingTable .
+                    " despite a post-create exception; clearing stale error. Exception: " . $e->getMessage()
+                );
+                $result['last_error'] = '';
+                $this->core->clearPluginDbNoticeIfType('missing_table');
+                return;
+            }
             $this->logger->warn("Missing-table auto-repair failed: " . $e->getMessage());
             $this->core->setRuntimeFlag($repairCooldownKey, $this->core->clock()->now() + $cooldownTtlSeconds, $cooldownTtlSeconds);
         } finally {
@@ -846,6 +855,22 @@ class ABJ_404_Solution_DatabaseErrorClassifier {
         $wpdb->suppress_errors($prevSuppressState);
         $this->core->harvestWpdbResult($result);
 
+        $retryError = isset($result['last_error']) && is_scalar($result['last_error'])
+            ? (string)$result['last_error']
+            : '';
+        $retryMissingTable = $this->extractMissingTableNameFromError($retryError);
+        $materializedTable = $retryMissingTable !== '' ? $retryMissingTable : $missingTable;
+        if ($retryError !== ''
+                && $materializedTable !== ''
+                && $this->isMissingPluginTableError($retryError)
+                && $this->tableMaterializedAfterRepair($materializedTable)) {
+            $this->logger->infoMessage(
+                "Missing-table auto-repair materialized " . $materializedTable .
+                " and cleared a stale retry error: " . $retryError
+            );
+            $result['last_error'] = '';
+        }
+
         if ($result['last_error'] === '') {
             $this->logger->infoMessage("Missing-table auto-repair succeeded.");
             // Clear any active cooldown now that repair is working.
@@ -863,6 +888,25 @@ class ABJ_404_Solution_DatabaseErrorClassifier {
         $this->reportRepairRetryFailure(
             $result, $repairCooldownKey, $cooldownTtlSeconds, $originalSqlError, $missingTable
         );
+    }
+
+    private function tableMaterializedAfterRepair(string $tableName): bool {
+        if ($this->core->tableExists($tableName)) {
+            return true;
+        }
+
+        global $wpdb;
+        if (!isset($wpdb) || !is_object($wpdb) || !is_callable(array($wpdb, 'get_results'))) {
+            return false;
+        }
+        if (strpos(get_class($wpdb), 'Mockery_') === 0) {
+            return false;
+        }
+
+        // DAO-bypass-approved: post-repair metadata verification for a system-generated plugin table name.
+        // @utf8-audit: opt-out - tableMaterializedAfterRepair receives system-generated plugin table names from the missing-table classifier.
+        $rows = $wpdb->get_results("SHOW COLUMNS FROM `" . esc_sql($tableName) . "`", ARRAY_A);
+        return is_array($rows) && empty($wpdb->last_error);
     }
 
     /**

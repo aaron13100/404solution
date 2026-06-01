@@ -26,7 +26,7 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
         $viewBuildOrchestrator = abj_service('view_build_orchestrator');
         /** @var ABJ_404_Solution_ViewReadServiceInterface $viewReadService */
         $viewReadService = abj_service('view_read_service');
-        $abj404logic = abj_service('plugin_logic');
+        $abj404logic = self::resolvePluginLogic();
         global $abj404view;
 
         $rowsPerPage = absint($functions->getPostOrGetSanitize('rowsPerPage'));
@@ -36,13 +36,8 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
         $filterText = $functions->getPostOrGetSanitize('filterText', '');
         $filter = $functions->getPostOrGetSanitize('filter', '');
         $detectOnly = ((string)$functions->getPostOrGetSanitize('detectOnly', '0') === '1');
-        $cacheModeRaw = (string)$functions->getPostOrGetSanitize('cacheMode', 'normal');
-        $cacheMode = in_array($cacheModeRaw, array('normal', 'cache_or_pending', 'refresh_cache'), true)
-            ? $cacheModeRaw : 'normal';
-        $currentSignature = strtolower(trim((string)$functions->getPostOrGetSanitize('currentSignature', '')));
-        if (strlen($currentSignature) > 128) {
-            $currentSignature = substr($currentSignature, 0, 128);
-        }
+        $cacheMode = self::normalizeCacheMode((string)$functions->getPostOrGetSanitize('cacheMode', 'normal'));
+        $currentSignature = self::normalizeCurrentSignature((string)$functions->getPostOrGetSanitize('currentSignature', ''));
 
         $isPluginAdmin = false;
         $context = array(
@@ -61,54 +56,25 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
         $context = ABJ_404_Solution_Ajax_AdminEndpointSupport::startAjaxDebugContext($context, 'ViewUpdater::getPaginationLinks');
 
         try {
-            // Verify nonce for CSRF protection
-            if (!wp_verify_nonce($nonce, 'abj404_updatePaginationLink')) {
-                ABJ_404_Solution_Ajax_AdminEndpointSupport::safeLogAjaxFailure('AJAX invalid nonce in ajaxUpdatePaginationLinks.', $context);
-                ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
-                $payload = ABJ_404_Solution_Ajax_AdminEndpointSupport::buildAjaxErrorResponse('Invalid security token', null, false);
-                ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
-                ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit($payload, 403);
+            if (!self::verifyNonceOrRespond($nonce, $context)) {
                 return;
             }
 
-            // Verify user has appropriate capabilities (respects plugin admin users)
-            $abj404logic = abj_service('plugin_logic');
-            $isPluginAdmin = is_object($abj404logic) && method_exists($abj404logic, 'userIsPluginAdmin')
-                ? (bool)$abj404logic->userIsPluginAdmin()
-                : (bool)abj_service('admin_access_policy')->isPluginAdmin();
-            if (isset($GLOBALS['abj404_ajax_context']) && is_array($GLOBALS['abj404_ajax_context'])) {
-                $GLOBALS['abj404_ajax_context']['is_plugin_admin'] = $isPluginAdmin;
-            }
+            $isPluginAdmin = self::authorizePluginAdminOrRespond($context);
             if (!$isPluginAdmin) {
-                ABJ_404_Solution_Ajax_AdminEndpointSupport::safeLogAjaxFailure('AJAX unauthorized in ajaxUpdatePaginationLinks.', $context);
-                ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
-                $payload = ABJ_404_Solution_Ajax_AdminEndpointSupport::buildAjaxErrorResponse('Unauthorized', null, false);
-                ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
-                ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit($payload, 403);
                 return;
             }
 
             // Rate limiting to prevent abuse. High ceilings: this endpoint is hit by first-paint
             // table loads, filter typing, pagination, and background detect-only checks.
             $maxRequestsPerMinute = $detectOnly ? 3000 : 1500;
-            if (ABJ_404_Solution_Ajax_Php::checkRateLimit('update_pagination', $maxRequestsPerMinute, 60)) {
-                ABJ_404_Solution_Ajax_AdminEndpointSupport::safeLogAjaxFailure('AJAX rate limit in ajaxUpdatePaginationLinks.', $context);
-                ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
-                $payload = ABJ_404_Solution_Ajax_AdminEndpointSupport::buildAjaxErrorResponse('Rate limit exceeded. Please try again later.', null, false);
-                ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
-                ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit($payload, 429);
+            if (!self::checkRateLimitOrRespond($maxRequestsPerMinute, $context)) {
                 return;
             }
 
             // Update the perpage option (but only if provided). Some environments may omit
             // rowsPerPage on Enter key events; avoid unnecessary option writes.
-            if ($rowsPerPage > 0) {
-                if (is_object($abj404logic) && method_exists($abj404logic, 'adminActions')) {
-                    $abj404logic->adminActions()->updatePerPageOption($rowsPerPage);
-                } else if (is_object($abj404logic) && method_exists($abj404logic, 'updatePerPageOption')) {
-                    $abj404logic->updatePerPageOption($rowsPerPage);
-                }
-            }
+            self::updatePerPageOption($abj404logic, $rowsPerPage);
 
             /** @var ABJ_404_Solution_View $view */
             $view = ABJ_404_Solution_Ajax_AdminEndpointSupport::resolveViewInstance($abj404view);
@@ -116,65 +82,20 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
             // View-build gate: never let an AJAX fetch trigger an inline staged build.
             // If view_done is not serveable, respond with `viewBuildPending` so the JS
             // poller can advance the build via ajaxAdvanceViewBuild.
-            if (($subpage === 'abj404_redirects' || $subpage === 'abj404_captured')
-                    && !$detectOnly
-                    && !$viewBuildOrchestrator->viewDoneIsServeable()) {
-                $stage = ($subpage === 'abj404_captured') ? 'table_captured' : 'table_redirects';
-                ABJ_404_Solution_AjaxStageDiagnostics::setStage($context, $stage);
-                $progress = $viewBuildOrchestrator->getViewBuildProgress();
-                ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
-                ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
-                ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit(array(
-                    'viewBuildPending' => true,
-                    'cacheMode' => $cacheMode,
-                    'subpage' => $subpage,
-                    'progress' => $progress,
-                    'message' => __('Preparing the redirects view table. Please wait.', '404-solution'),
-                ), 200);
+            if (self::sendViewBuildPendingWhenNeeded($subpage, $detectOnly, $cacheMode, $viewBuildOrchestrator, $context)) {
                 return;
             }
 
-            if ($cacheMode === 'cache_or_pending'
-                    && !$detectOnly
-                    && ($subpage === 'abj404_redirects' || $subpage === 'abj404_captured')
-                    && is_object($viewReadService)) {
-                $stage = ($subpage === 'abj404_captured') ? 'table_captured' : 'table_redirects';
-                ABJ_404_Solution_AjaxStageDiagnostics::setStage($context, $stage);
-                $tableOptions = $abj404logic->settingsUpdate()->getTableOptions($subpage);
-                if (!$viewReadService->viewTableSnapshotAvailable($subpage, $tableOptions)) {
-                    ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
-                    ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
-                    ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit(array(
-                        'cachePending' => true,
-                        'cacheMode' => $cacheMode,
-                        'subpage' => $subpage,
-                        'message' => __('Preparing table data in the background.', '404-solution'),
-                    ), 200);
-                    return;
-                }
+            if (self::sendCachePendingWhenNeeded($cacheMode, $detectOnly, $subpage, $viewReadService, $abj404logic, $context)) {
+                return;
             }
 
             $data = self::fetchTableDataForSubpage($subpage, $view, $viewReadService, $context);
 
-            $tableSignature = '';
-            if (is_object($view) && method_exists($view, 'getCurrentTableDataSignature')) {
-                $tableSignature = (string)$view->getCurrentTableDataSignature($subpage);
-            }
+            $tableSignature = self::getCurrentTableSignature($view, $subpage);
             $data['tableSignature'] = $tableSignature;
             if ($detectOnly) {
-                $signaturesMatch = false;
-                if ($currentSignature !== '' && $tableSignature !== '') {
-                    if (function_exists('hash_equals')) {
-                        $signaturesMatch = hash_equals($currentSignature, $tableSignature);
-                    } else {
-                        $signaturesMatch = ($currentSignature === $tableSignature);
-                    }
-                }
-                $data['hasUpdate'] = (
-                    $currentSignature !== '' &&
-                    $tableSignature !== '' &&
-                    !$signaturesMatch
-                );
+                $data['hasUpdate'] = self::hasSignatureUpdate($currentSignature, $tableSignature);
             }
 
             ABJ_404_Solution_AjaxStageDiagnostics::setStage($context, 'paginationLinksTop');
@@ -194,6 +115,211 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
             );
             return;
         }
+    }
+
+    private static function normalizeCacheMode(string $cacheModeRaw): string {
+        return in_array($cacheModeRaw, array('normal', 'cache_or_pending', 'refresh_cache'), true)
+            ? $cacheModeRaw : 'normal';
+    }
+
+    private static function resolvePluginLogic(): ABJ_404_Solution_PluginLogic {
+        $pluginLogic = abj_service('plugin_logic');
+        if ($pluginLogic instanceof ABJ_404_Solution_PluginLogic) {
+            return $pluginLogic;
+        }
+        throw new RuntimeException('plugin_logic service did not resolve to ABJ_404_Solution_PluginLogic.');
+    }
+
+    private static function normalizeCurrentSignature(string $currentSignature): string {
+        $currentSignature = strtolower(trim($currentSignature));
+        if (strlen($currentSignature) > 128) {
+            return substr($currentSignature, 0, 128);
+        }
+        return $currentSignature;
+    }
+
+    /**
+     * @param array<string, mixed> $context
+     */
+    private static function verifyNonceOrRespond(string $nonce, array $context): bool {
+        if (wp_verify_nonce($nonce, 'abj404_updatePaginationLink')) {
+            return true;
+        }
+
+        ABJ_404_Solution_Ajax_AdminEndpointSupport::safeLogAjaxFailure('AJAX invalid nonce in ajaxUpdatePaginationLinks.', $context);
+        ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
+        $payload = ABJ_404_Solution_Ajax_AdminEndpointSupport::buildAjaxErrorResponse('Invalid security token', null, false);
+        ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
+        ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit($payload, 403);
+        return false;
+    }
+
+    /**
+     * @param array<string, mixed> $context
+     */
+    private static function authorizePluginAdminOrRespond(array $context): bool {
+        // Verify user has appropriate capabilities (respects plugin admin users)
+        $isPluginAdmin = (bool)abj_service('admin_access_policy')->isPluginAdmin();
+        if (isset($GLOBALS['abj404_ajax_context']) && is_array($GLOBALS['abj404_ajax_context'])) {
+            $GLOBALS['abj404_ajax_context']['is_plugin_admin'] = $isPluginAdmin;
+        }
+        if ($isPluginAdmin) {
+            return true;
+        }
+
+        ABJ_404_Solution_Ajax_AdminEndpointSupport::safeLogAjaxFailure('AJAX unauthorized in ajaxUpdatePaginationLinks.', $context);
+        ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
+        $payload = ABJ_404_Solution_Ajax_AdminEndpointSupport::buildAjaxErrorResponse('Unauthorized', null, false);
+        ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
+        ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit($payload, 403);
+        return false;
+    }
+
+    /**
+     * @param array<string, mixed> $context
+     */
+    private static function checkRateLimitOrRespond(int $maxRequestsPerMinute, array $context): bool {
+        if (!ABJ_404_Solution_Ajax_Php::checkRateLimit('update_pagination', $maxRequestsPerMinute, 60)) {
+            return true;
+        }
+
+        ABJ_404_Solution_Ajax_AdminEndpointSupport::safeLogAjaxFailure('AJAX rate limit in ajaxUpdatePaginationLinks.', $context);
+        ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
+        $payload = ABJ_404_Solution_Ajax_AdminEndpointSupport::buildAjaxErrorResponse('Rate limit exceeded. Please try again later.', null, false);
+        ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
+        ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit($payload, 429);
+        return false;
+    }
+
+    /**
+     * @param mixed $abj404logic
+     */
+    private static function updatePerPageOption($abj404logic, int $rowsPerPage): void {
+        if ($rowsPerPage <= 0 || !is_object($abj404logic)) {
+            return;
+        }
+        if (method_exists($abj404logic, 'adminActions')) {
+            $abj404logic->adminActions()->updatePerPageOption($rowsPerPage);
+            return;
+        }
+        if (method_exists($abj404logic, 'updatePerPageOption')) {
+            $abj404logic->updatePerPageOption($rowsPerPage);
+        }
+    }
+
+    /**
+     * @param mixed $viewBuildOrchestrator
+     * @param array<string, mixed> $context
+     */
+    private static function sendViewBuildPendingWhenNeeded(
+        string $subpage, bool $detectOnly, string $cacheMode, $viewBuildOrchestrator, array &$context
+    ): bool {
+        if (!self::isViewTableSubpage($subpage) || $detectOnly || self::viewDoneIsServeable($viewBuildOrchestrator)) {
+            return false;
+        }
+
+        ABJ_404_Solution_AjaxStageDiagnostics::setStage($context, self::stageForSubpage($subpage));
+        $progress = self::getViewBuildProgress($viewBuildOrchestrator);
+        ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
+        ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
+        ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit(array(
+            'viewBuildPending' => true,
+            'cacheMode' => $cacheMode,
+            'subpage' => $subpage,
+            'progress' => $progress,
+            'message' => __('Preparing the redirects view table. Please wait.', '404-solution'),
+        ), 200);
+        return true;
+    }
+
+    /**
+     * @param mixed $viewReadService
+     * @param array<string, mixed> $context
+     */
+    private static function sendCachePendingWhenNeeded(
+        string $cacheMode, bool $detectOnly, string $subpage,
+        $viewReadService, ABJ_404_Solution_PluginLogic $abj404logic, array &$context
+    ): bool {
+        if ($cacheMode !== 'cache_or_pending' || $detectOnly || !self::isViewTableSubpage($subpage)) {
+            return false;
+        }
+
+        ABJ_404_Solution_AjaxStageDiagnostics::setStage($context, self::stageForSubpage($subpage));
+        $tableOptions = $abj404logic->settingsUpdate()->getTableOptions($subpage);
+        if (self::viewTableSnapshotAvailable($viewReadService, $subpage, $tableOptions)) {
+            return false;
+        }
+
+        ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
+        ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
+        ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit(array(
+            'cachePending' => true,
+            'cacheMode' => $cacheMode,
+            'subpage' => $subpage,
+            'message' => __('Preparing table data in the background.', '404-solution'),
+        ), 200);
+        return true;
+    }
+
+    private static function isViewTableSubpage(string $subpage): bool {
+        return $subpage === 'abj404_redirects' || $subpage === 'abj404_captured';
+    }
+
+    private static function stageForSubpage(string $subpage): string {
+        return ($subpage === 'abj404_captured') ? 'table_captured' : 'table_redirects';
+    }
+
+    /**
+     * @param mixed $viewBuildOrchestrator
+     */
+    private static function viewDoneIsServeable($viewBuildOrchestrator): bool {
+        if (is_object($viewBuildOrchestrator) && method_exists($viewBuildOrchestrator, 'viewDoneIsServeable')) {
+            return (bool)$viewBuildOrchestrator->viewDoneIsServeable();
+        }
+        throw new RuntimeException('view_build_orchestrator service does not expose viewDoneIsServeable().');
+    }
+
+    /**
+     * @param mixed $viewBuildOrchestrator
+     * @return array<string, mixed>
+     */
+    private static function getViewBuildProgress($viewBuildOrchestrator): array {
+        if (is_object($viewBuildOrchestrator) && method_exists($viewBuildOrchestrator, 'getViewBuildProgress')) {
+            $progress = $viewBuildOrchestrator->getViewBuildProgress();
+            return is_array($progress) ? $progress : array();
+        }
+        throw new RuntimeException('view_build_orchestrator service does not expose getViewBuildProgress().');
+    }
+
+    /**
+     * @param mixed $viewReadService
+     * @param array<string, mixed> $tableOptions
+     */
+    private static function viewTableSnapshotAvailable($viewReadService, string $subpage, array $tableOptions): bool {
+        if (is_object($viewReadService) && method_exists($viewReadService, 'viewTableSnapshotAvailable')) {
+            return (bool)$viewReadService->viewTableSnapshotAvailable($subpage, $tableOptions);
+        }
+        throw new RuntimeException('view_read_service service does not expose viewTableSnapshotAvailable().');
+    }
+
+    /**
+     * @param mixed $view
+     */
+    private static function getCurrentTableSignature($view, string $subpage): string {
+        if (is_object($view) && method_exists($view, 'getCurrentTableDataSignature')) {
+            return (string)$view->getCurrentTableDataSignature($subpage);
+        }
+        return '';
+    }
+
+    private static function hasSignatureUpdate(string $currentSignature, string $tableSignature): bool {
+        if ($currentSignature === '' || $tableSignature === '') {
+            return false;
+        }
+        if (function_exists('hash_equals')) {
+            return !hash_equals($currentSignature, $tableSignature);
+        }
+        return $currentSignature !== $tableSignature;
     }
 
     /**

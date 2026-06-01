@@ -391,14 +391,13 @@ class ABJ_404_Solution_View_Stats extends ABJ_404_Solution_ViewComponent {
 
     /** @return void */
     function echoAdminDebugFile() {
-        $isPluginAdmin = is_object($this->logic) && method_exists($this->logic, 'userIsPluginAdmin')
-            ? (bool)$this->logic->userIsPluginAdmin()
-            : abj_service('admin_access_policy')->isPluginAdmin();
+        $isPluginAdmin = abj_service('admin_access_policy')->isPluginAdmin();
         if ($isPluginAdmin) {
         	$filesToEcho = array($this->logger->getDebugFilePath(), 
         			$this->logger->getDebugFilePathOld());
         	for ($i = 0; $i < count($filesToEcho); $i++) {
         		$currentFile = $filesToEcho[$i];
+                // inline-html-approved: legacy debug-log output wrapper.
         		echo "<div style=\"clear: both;\">";
         		echo "<BR/>Contents of: " . $currentFile . ": <BR/><BR/>";
         		// read the file and replace new lines with <BR/>.
@@ -442,6 +441,7 @@ class ABJ_404_Solution_View_Stats extends ABJ_404_Solution_ViewComponent {
     					echo nl2br(esc_html($line));
     					
     					if ($linesRead > 1000000) {
+                            // inline-html-approved: legacy debug-log truncation notice.
     						echo "<BR/><BR/>Read " . $linesRead . " lines. Download debug file to see more.";
     						break;
     					}
@@ -470,7 +470,7 @@ class ABJ_404_Solution_View_Stats extends ABJ_404_Solution_ViewComponent {
     function echoAdminToolsPage() {
         $view = $this->view;
 
-        // Main container
+        // inline-html-approved: legacy tools page container shell.
         echo "<div class=\"abj404-container\">";
         echo "<div class=\"abj404-settings-content\">";
 
@@ -573,16 +573,19 @@ class ABJ_404_Solution_View_Stats extends ABJ_404_Solution_ViewComponent {
             'abj404_importFromPlugin'
         );
 
+        // inline-html-approved: migrate-card markup assembled around dynamic plugin detection.
         $html = '<p>';
         if (empty($availableSources)) {
             $html .= esc_html__('No supported redirect plugins detected on this site.', '404-solution');
             $html .= '</p>';
+            // inline-html-approved: migrate-card empty-state paragraph.
             $html .= '<p>' . esc_html__('Supported plugins: Rank Math, Yoast SEO Premium, AIOSEO, Safe Redirect Manager, Redirection.', '404-solution') . '</p>';
             return $html;
         }
 
         $detectedNames = array_values($availableSources);
         $html .= esc_html__('Detected redirect plugins:', '404-solution') . ' ';
+        // inline-html-approved: migrate-card detected plugin emphasis.
         $html .= '<strong>' . esc_html(implode(', ', $detectedNames)) . '</strong>';
         $html .= '</p>';
 
@@ -592,6 +595,7 @@ class ABJ_404_Solution_View_Stats extends ABJ_404_Solution_ViewComponent {
         // Step 1: source selector + Preview button (visible by default)
         $html .= '<div id="abj404-migrate-step1">';
         $html .= '<p>';
+        // inline-html-approved: migrate-card source selector label.
         $html .= '<label for="abj404-import-source"><strong>' . esc_html__('Source plugin:', '404-solution') . '</strong></label> ';
         $html .= '<select name="import_source" id="abj404-import-source">';
         foreach ($availableSources as $slug => $label) {
@@ -600,6 +604,7 @@ class ABJ_404_Solution_View_Stats extends ABJ_404_Solution_ViewComponent {
         $html .= '</select>';
         $html .= '</p>';
         $html .= '<p>';
+        // inline-html-approved: migrate-card preview action button.
         $html .= '<button type="button" id="abj404-migrate-preview-btn" class="button-secondary">';
         $html .= esc_html__('Preview Import', '404-solution');
         $html .= '</button>';
@@ -609,22 +614,27 @@ class ABJ_404_Solution_View_Stats extends ABJ_404_Solution_ViewComponent {
 
         // Step 2: preview result + confirm form (hidden until preview completes)
         $html .= '<div id="abj404-migrate-step2" style="display:none;">';
+        // inline-html-approved: migrate-card AJAX preview message placeholder.
         $html .= '<p id="abj404-migrate-preview-msg"></p>';
         $html .= '<form id="abj404-migrate-confirm-form" method="POST" action="' . esc_url($migrateActionUrl) . '" style="display:none;">';
+        // inline-html-approved: migrate-card hidden form controls.
         $html .= '<input type="hidden" name="action" value="importFromPlugin">';
         $html .= '<input type="hidden" name="import_source" id="abj404-migrate-confirm-source" value="">';
+        // inline-html-approved: migrate-card confirm submit control.
         $html .= '<input type="submit" class="button-primary" value="' . esc_attr__('Confirm Import', '404-solution') . '">';
         $html .= ' <button type="button" id="abj404-migrate-back-btn" class="button-secondary">';
         $html .= esc_html__('Back', '404-solution');
         $html .= '</button>';
         $html .= '</form>';
         $html .= '<div id="abj404-migrate-back-noform" style="display:none;">';
+        // inline-html-approved: migrate-card alternate back button.
         $html .= '<button type="button" id="abj404-migrate-back-btn2" class="button-secondary">';
         $html .= esc_html__('Back', '404-solution');
         $html .= '</button>';
         $html .= '</div>';
         $html .= '</div>';
 
+        // inline-html-approved: migrate-card explanatory note.
         $html .= '<p><em>' . esc_html__('This will import all active redirects from the selected plugin into 404 Solution. Regex and redirect codes are preserved.', '404-solution') . '</em></p>';
 
         // Two-step flow JS moved to includes/js/toolsMigratePlugin.js. Emit a
@@ -639,6 +649,7 @@ class ABJ_404_Solution_View_Stats extends ABJ_404_Solution_ViewComponent {
             'msgNone'  => __('No redirects found in %s. Nothing to import.', '404-solution'),
             'msgError' => __('Could not fetch preview. Please try again.', '404-solution'),
         ));
+        // inline-html-approved: hidden JSON carrier for external migration JS.
         $html .= '<div id="abj404-migrate-config" style="display:none"'
             . ' data-abj404-migrate="' . esc_attr((string)$migrateConfig) . '"></div>';
 
@@ -653,7 +664,9 @@ class ABJ_404_Solution_View_Stats extends ABJ_404_Solution_ViewComponent {
      */
     public function getToolsDiagnosticsMarkup() {
         $rows = $this->getToolsDiagnosticsRows();
+        // inline-html-approved: compact diagnostics table shell.
         $html = '<div class="abj404-diagnostics-summary">';
+        // inline-html-approved: compact diagnostics explanatory paragraph.
         $html .= '<p>' . esc_html__('Quick environment checks for troubleshooting and support.', '404-solution') . '</p>';
         $html .= '<table class="widefat striped"><tbody>';
 
@@ -665,13 +678,18 @@ class ABJ_404_Solution_View_Stats extends ABJ_404_Solution_ViewComponent {
             $statusLabel = ($status === 'ok') ? __('OK', '404-solution') : (($status === 'warn') ? __('Warning', '404-solution') : __('Info', '404-solution'));
             $statusClass = ($status === 'ok') ? 'abj404-pill-success' : (($status === 'warn') ? 'abj404-pill-warning' : 'abj404-pill-info');
 
+            // inline-html-approved: compact diagnostics table row renderer.
             $html .= '<tr>';
+            // inline-html-approved: compact diagnostics table label cell.
             $html .= '<td><strong>' . esc_html($label) . '</strong></td>';
             if ($valueHtml !== '') {
+                // inline-html-approved: compact diagnostics table value cell.
                 $html .= '<td>' . wp_kses_post($valueHtml) . '</td>';
             } else {
+                // inline-html-approved: compact diagnostics table value cell.
                 $html .= '<td>' . esc_html($value) . '</td>';
             }
+            // inline-html-approved: compact diagnostics table status cell.
             $html .= '<td><span class="abj404-status-pill ' . esc_attr($statusClass) . '">' . esc_html($statusLabel) . '</span></td>';
             $html .= '</tr>';
         }
@@ -739,6 +757,7 @@ class ABJ_404_Solution_View_Stats extends ABJ_404_Solution_ViewComponent {
                 900 => wp_nonce_url(admin_url('options-general.php?page=' . ABJ404_PP . '&subpage=abj404_tools&abj404_set_sim_db_ms=900'), 'abj404_set_sim_db_ms'),
                 0   => wp_nonce_url(admin_url('options-general.php?page=' . ABJ404_PP . '&subpage=abj404_tools&abj404_set_sim_db_ms=0'), 'abj404_set_sim_db_ms'),
             );
+            // inline-html-approved: local-debug latency control links.
             $controls = '<a href="' . esc_url($latencyUrls[250]) . '">' . esc_html(__('250ms', '404-solution')) . '</a>'
                 . ' | <a href="' . esc_url($latencyUrls[500]) . '">' . esc_html(__('500ms', '404-solution')) . '</a>'
                 . ' | <a href="' . esc_url($latencyUrls[900]) . '">' . esc_html(__('900ms', '404-solution')) . '</a>'

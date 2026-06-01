@@ -350,11 +350,7 @@ function abj_404_solution_register_frontend_services($container) {
  */
 function abj_404_solution_register_presentation_layer($container) {
     $container->set('ajax_security_gate', function($c) {
-        $pluginLogic = ABJ_404_Solution_ServiceContainer::safeGet('plugin_logic');
-        $adminPolicy = is_object($pluginLogic) && method_exists($pluginLogic, 'userIsPluginAdmin')
-            ? $pluginLogic
-            : $c->get('admin_access_policy');
-        return new ABJ_404_Solution_AjaxSecurityGate($adminPolicy, $c->get('logging'));
+        return new ABJ_404_Solution_AjaxSecurityGate($c->get('admin_access_policy'), $c->get('logging'));
     });
 
     $container->set('ajax_failure_logger', function($c) {

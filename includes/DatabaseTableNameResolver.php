@@ -47,7 +47,7 @@ class ABJ_404_Solution_DatabaseTableNameResolver {
      */
     public function tableExists($tableName): bool {
         global $wpdb;
-        if (!isset($wpdb)) {
+        if (!isset($wpdb) || !is_object($wpdb) || !is_callable(array($wpdb, 'get_var'))) {
             return false;
         }
         // @utf8-audit: opt-out - tableExists receives system-generated plugin table names from DAO/core callers.

@@ -54,10 +54,7 @@ class ABJ_404_Solution_Ajax_RefreshHealthBar {
                 return;
             }
 
-            $pluginLogic = abj_service('plugin_logic');
-            $isPluginAdmin = is_object($pluginLogic) && is_callable(array($pluginLogic, 'userIsPluginAdmin'))
-                ? (bool)$pluginLogic->userIsPluginAdmin()
-                : (bool)abj_service('admin_access_policy')->isPluginAdmin();
+            $isPluginAdmin = (bool)abj_service('admin_access_policy')->isPluginAdmin();
             if (!$isPluginAdmin) {
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::safeLogAjaxFailure('AJAX unauthorized in ajaxRefreshHealthBar.', $context);
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
