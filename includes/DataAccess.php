@@ -240,9 +240,6 @@ class ABJ_404_Solution_DataAccess {
 
     // $regexRedirectsCache and $regexCacheDisabled moved to RedirectsRepository (Phase 2).
 
-    /** @var bool|null Legacy per-request cache for DAO-shaped test subclasses. */
-    private $legacyViewDoneServeableCache = null;
-
     /** @var array<string, string> Legacy reflection bridge for view-build progress options. */
     private static $viewBuildProgressOptionNames = array(
         'started_at' => 'abj404_view_build_started_at',
@@ -904,40 +901,12 @@ class ABJ_404_Solution_DataAccess {
 
     /** @return bool */
     public function viewDoneIsServeable(): bool {
-        if (get_class($this) !== __CLASS__ && method_exists($this, 'queryAndGetResults')) {
-            if ($this->legacyViewDoneServeableCache !== null) {
-                return $this->legacyViewDoneServeableCache;
-            }
-            $table = $this->getDbCore()->doTableNameReplacements('{wp_abj404_view_done}');
-            $tableCheck = $this->queryAndGetResults("SHOW TABLES LIKE '" . $table . "'", array('log_errors' => false));
-            if (empty($tableCheck['rows'])) {
-                $this->legacyViewDoneServeableCache = false;
-                return $this->legacyViewDoneServeableCache;
-            }
-
-            // Serveability is rows-on-disk OR a prior successful build; it no
-            // longer consults a wall-clock admin-mutation gate. The watermark /
-            // mutation-gate that blocked reads after an admin mutation was
-            // removed (Bruno blocked-reads bug class): a mutation now schedules
-            // a background rebuild (invalidateViewDoneAndScheduleRebuild ->
-            // scheduleViewDoneRebuild), and the staleness window between the
-            // mutation and the rebuild is bounded by the freshness TTL rather
-            // than by blocking the read. Mirrors the orchestrator path below.
-            $rowCheck = $this->queryAndGetResults("SELECT 1 FROM `" . $table . "` LIMIT 1", array('log_errors' => false));
-            if (!empty($rowCheck['rows'])) {
-                $this->legacyViewDoneServeableCache = true;
-                return $this->legacyViewDoneServeableCache;
-            }
-            $builtAt = function_exists('get_option') ? (int)get_option($this->viewBuildOrchestrator->viewDoneDataBuiltAtOptionName(), 0) : 0;
-            $this->legacyViewDoneServeableCache = $builtAt > 0;
-            return $this->legacyViewDoneServeableCache;
-        }
         return $this->viewBuildOrchestrator->viewDoneIsServeable();
     }
 
 
     /** @return void */
-    public function markViewDoneBuildCompleted(): void { $this->legacyViewDoneServeableCache = null; $this->viewBuildOrchestrator->markViewDoneBuildCompleted(); }
+    public function markViewDoneBuildCompleted(): void { $this->viewBuildOrchestrator->markViewDoneBuildCompleted(); }
 
 
     /** @return array{ran:bool, reason:string, progress:array<string,mixed>} */
@@ -970,7 +939,7 @@ class ABJ_404_Solution_DataAccess {
 
 
     /** @return void */
-    public function invalidateViewDoneAndScheduleRebuild(): void { $this->legacyViewDoneServeableCache = null; $this->viewBuildOrchestrator->invalidateViewDoneAndScheduleRebuild(); }
+    public function invalidateViewDoneAndScheduleRebuild(): void { $this->viewBuildOrchestrator->invalidateViewDoneAndScheduleRebuild(); }
 
 
     public function invalidateViewDoneServeableCache(): void { $this->viewBuildOrchestrator->invalidateViewDoneServeableCacheBridge(); }
