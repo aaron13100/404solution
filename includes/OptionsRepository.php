@@ -102,6 +102,11 @@ class ABJ_404_Solution_OptionsRepository {
             }
         }
 
+        $legacyOptions = $this->legacyPluginLogicOptionsOverride();
+        if (is_array($legacyOptions)) {
+            return array_merge(ABJ_404_Solution_PluginLogicDefaults::defaults(), $legacyOptions);
+        }
+
         if ($this->rawCache === null) {
             $optionResult = get_option('abj404_settings');
             if (is_array($optionResult)) {
@@ -186,5 +191,37 @@ class ABJ_404_Solution_OptionsRepository {
         $this->rawCache = $options;
         $this->resolvedSkipDbCheck = null;
         $this->resolvedWithDbCheck = null;
+    }
+
+    /**
+     * Legacy test seam: reflection-based tests seed runtime options by setting
+     * ABJ_404_Solution_PluginLogic::$options and calling reset() on this
+     * repository. Returns the seeded array when present, or null when no
+     * legacy override applies. Production callers never set $options.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function legacyPluginLogicOptionsOverride() {
+        if (!class_exists('ABJ_404_Solution_PluginLogic')) {
+            return null;
+        }
+        try {
+            $instanceProperty = new ReflectionProperty('ABJ_404_Solution_PluginLogic', 'instance');
+            $pluginLogic = $instanceProperty->getValue();
+            if (!is_object($pluginLogic)) {
+                return null;
+            }
+            $optionsProperty = new ReflectionProperty('ABJ_404_Solution_PluginLogic', 'options');
+            $options = $optionsProperty->getValue($pluginLogic);
+            if (!is_array($options)) {
+                return null;
+            }
+            /** @var array<string, mixed> $typedOptions */
+            $typedOptions = $options;
+            return $typedOptions;
+        } catch (Throwable $e) {
+            // allow-silent-catch: legacy reflection seam is optional; absence falls back to WordPress options.
+            return null;
+        }
     }
 }
