@@ -36,7 +36,7 @@ class ABJ_404_Solution_RequestIgnoreNormalizer {
      * @param ABJ_404_Solution_NotFoundResponseService|null $notFoundResponse
      */
     function __construct($optionsProvider = null, $functions = null, $logging = null, $redirectsRepo = null, $logsRepo = null, $notFoundResponse = null) {
-        $this->optionsProvider = $optionsProvider !== null ? $optionsProvider : abj_service('plugin_logic');
+        $this->optionsProvider = $optionsProvider !== null ? $optionsProvider : abj_service('options_repository');
         $this->f = $functions !== null ? $functions : abj_service('functions');
         $this->logger = $logging !== null ? $logging : abj_service('logging');
         $this->redirectsRepo = $redirectsRepo !== null ? $redirectsRepo : abj_service('redirects_repository');

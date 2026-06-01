@@ -85,9 +85,7 @@ class ABJ_404_Solution_SpellChecker {
 		$viewReadServiceResolved = $viewReadService !== null ? $viewReadService :
 			(is_object($contentRepository) && method_exists($contentRepository, 'getRedirectsWithRegEx') ? $contentRepository : abj_service('view_read_service'));
 
-		$options = (is_object($this->logic) && method_exists($this->logic, 'getOptions'))
-			? $this->logic->getOptions(true)
-			: abj_service('options_repository')->getOptions(true);
+		$options = abj_service('options_repository')->getOptions(true);
 		$custom404PageIDRaw =
 			(is_array($options) && isset($options['dest404page']) ?
 			$options['dest404page'] : null);

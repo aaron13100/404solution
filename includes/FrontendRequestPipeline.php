@@ -177,7 +177,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
             }
         }
         return new ABJ_404_Solution_RequestIgnoreNormalizer(
-            $this->logic,
+            abj_service('options_repository'),
             $this->f,
             $this->logger,
             $this->redirectsRepository,
@@ -390,15 +390,13 @@ class ABJ_404_Solution_FrontendRequestPipeline {
     }
 
     /**
-     * Read runtime options through the injected PluginLogic facade. Production
-     * PluginLogic delegates to OptionsRepository; test and legacy subclasses can
-     * provide request-scoped options without depending on the global container.
+     * Read runtime options from OptionsRepository.
      *
      * @param bool $skipDbCheck
      * @return array<string, mixed>
      */
     private function getRuntimeOptions(bool $skipDbCheck = false): array {
-        $options = $this->logic->getOptions($skipDbCheck);
+        $options = abj_service('options_repository')->getOptions($skipDbCheck);
         return is_array($options) ? $options : array();
     }
 
@@ -1187,8 +1185,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
         // upgradeIfNeeded ends in updateOptions() which clears the resolved-
         // options cache, so getOptions(true) returns fresh values from the DB.
         $fresh = $this->getRuntimeOptions(true);
-        if (is_array($fresh) && isset($fresh['DB_VERSION'])
-                && $fresh['DB_VERSION'] == ABJ404_VERSION) {
+        if (isset($fresh['DB_VERSION']) && $fresh['DB_VERSION'] == ABJ404_VERSION) {
             return $fresh;
         }
 

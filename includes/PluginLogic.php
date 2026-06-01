@@ -49,16 +49,7 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
 	/** @var ABJ_404_Solution_DatabaseCoreInterface */
 	private $dbCore;
 
-	/** @var array<string, mixed>|null Legacy option-cache seam retained for older tests and integrations. */
-	private $options = null;
-
-	/** @var array<string, mixed>|null Legacy resolved option-cache seam retained for reflection-based tests. */
-	private $resolvedOptionsWithDbCheck = null;
-
-	/** @var array<string, mixed>|null Legacy resolved option-cache seam retained for reflection-based tests. */
-	private $resolvedOptionsSkipDbCheck = null;
-
-	/** @var ABJ_404_Solution_ImportExportService|null */
+/** @var ABJ_404_Solution_ImportExportService|null */
 	private $importExportService = null;
 
 	/** @var string|null */
@@ -300,51 +291,7 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
         ABJ_404_Solution_PluginLogicLifecycle::doRegisterCrons();
     }
 
-    /**
-     * Legacy options facade retained for callers that still ask PluginLogic
-     * for settings. Storage remains centralized in OptionsRepository, where
-     * the get_option/update_option calls and storage contracts live.
-     *
-     * @param bool $skip_db_check
-     * @return array<string, mixed>
-     */
-    public function getOptions(bool $skip_db_check = false) {
-        if ($this->options !== null) {
-            if ($skip_db_check) {
-                if ($this->resolvedOptionsSkipDbCheck === null) {
-                    $this->resolvedOptionsSkipDbCheck = $this->options;
-                }
-                return $this->resolvedOptionsSkipDbCheck;
-            }
-
-            if ($this->resolvedOptionsWithDbCheck === null) {
-                $this->resolvedOptionsWithDbCheck = $this->options;
-            }
-            return $this->resolvedOptionsWithDbCheck;
-        }
-
-        return abj_service('options_repository')->getOptions((bool)$skip_db_check);
-    }
-
-    /**
-     * Legacy options facade retained for callers that still persist settings
-     * through PluginLogic. OptionsRepository owns the actual update_option
-     * write and cache invalidation behavior.
-     *
-     * @param array<string, mixed> $options
-     * @return void
-     */
-    public function updateOptions(array $options): void {
-        if ($this->options !== null) {
-            $this->options = $options;
-            $this->resolvedOptionsWithDbCheck = null;
-            $this->resolvedOptionsSkipDbCheck = null;
-        }
-
-        abj_service('options_repository')->updateOptions($options);
-    }
-
-    /**
+/**
      * Legacy multisite hook facade retained for integrations that still point
      * at PluginLogic while the implementation lives in PluginLogicLifecycle.
      *

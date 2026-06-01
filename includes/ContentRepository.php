@@ -28,19 +28,25 @@ class ABJ_404_Solution_ContentRepository implements ABJ_404_Solution_ContentRepo
     /** @var ABJ_404_Solution_Logging */
     private $logger;
 
+    /** @var mixed Options provider exposing getOptions(): array. Resolved lazily from abj_service('options_repository'). */
+    private $optionsProvider;
+
     /**
      * @param ABJ_404_Solution_DatabaseCore $dbCore
      * @param ABJ_404_Solution_Functions|null $functions
      * @param ABJ_404_Solution_Logging|null $logging
+     * @param mixed $optionsProvider Object exposing getOptions(): array. Defaults to options_repository service.
      */
     public function __construct(
         ABJ_404_Solution_DatabaseCore $dbCore,
         $functions = null,
-        $logging = null
+        $logging = null,
+        $optionsProvider = null
     ) {
         $this->dbCore = $dbCore;
         $this->f = $functions !== null ? $functions : abj_service('functions');
         $this->logger = $logging !== null ? $logging : abj_service('logging');
+        $this->optionsProvider = $optionsProvider;
     }
 
     // =========================================================================
@@ -59,12 +65,12 @@ class ABJ_404_Solution_ContentRepository implements ABJ_404_Solution_ContentRepo
 
     /** @return array<string, mixed> */
     private function getRuntimeOptions(): array {
-        $pluginLogic = abj_service('plugin_logic');
-        if (is_object($pluginLogic) && method_exists($pluginLogic, 'getOptions')) {
-            $options = $pluginLogic->getOptions();
+        $provider = $this->optionsProvider !== null ? $this->optionsProvider : abj_service('options_repository');
+        if (is_object($provider) && method_exists($provider, 'getOptions')) {
+            $options = $provider->getOptions();
             return is_array($options) ? $options : array();
         }
-        return abj_service('options_repository')->getOptions();
+        return array();
     }
 
     /** @inheritDoc */

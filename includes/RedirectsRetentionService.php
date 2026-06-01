@@ -186,10 +186,7 @@ class ABJ_404_Solution_RedirectsRetentionService implements ABJ_404_Solution_Red
         $viewRead = abj_service('view_read_service');
         $abj404logic = abj_service('plugin_logic');
 
-        $pluginLogic = abj_service('plugin_logic');
-        $options = (is_object($pluginLogic) && method_exists($pluginLogic, 'getOptions'))
-            ? $pluginLogic->getOptions(true)
-            : abj_service('options_repository')->getOptions(true);
+        $options = abj_service('options_repository')->getOptions(true);
         $now = time();
         $capturedURLsCount = 0;
         $autoRedirectsCount = 0;

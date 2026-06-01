@@ -211,7 +211,7 @@ function abj_404_solution_register_business_logic($container) {
 
     $container->set('request_ignore_normalizer', function($c) {
         return new ABJ_404_Solution_RequestIgnoreNormalizer(
-            $c->get('plugin_logic'),
+            $c->get('options_repository'),
             $c->get('functions'),
             $c->get('logging'),
             $c->get('redirects_repository'),

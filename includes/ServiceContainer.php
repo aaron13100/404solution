@@ -295,7 +295,7 @@ function abj_service($name) {
 
     if ($name === 'request_ignore_normalizer' && class_exists('ABJ_404_Solution_RequestIgnoreNormalizer')) {
         return new ABJ_404_Solution_RequestIgnoreNormalizer(
-            abj_service('plugin_logic'),
+            abj_service('options_repository'),
             abj_service('functions'),
             abj_service('logging'),
             abj_service('redirects_repository'),

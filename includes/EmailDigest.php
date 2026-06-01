@@ -362,11 +362,6 @@ class ABJ_404_Solution_EmailDigest {
 
     /** @return array<string, mixed> */
     private function getOptions(): array {
-        $pluginLogic = abj_service('plugin_logic');
-        if (is_object($pluginLogic) && method_exists($pluginLogic, 'getOptions')) {
-            $options = $pluginLogic->getOptions(true);
-            return is_array($options) ? $options : array();
-        }
         return abj_service('options_repository')->getOptions(true);
     }
 
