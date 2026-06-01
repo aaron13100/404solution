@@ -408,11 +408,17 @@
     },
     {
       "id": "ajax-admin-endpoint-support-helper",
-      "description": "Shared admin AJAX response and diagnostics support helper",
-      "direction": "internal",
+      "description": "Shared admin AJAX response envelope emitted by Ajax_AdminEndpointSupport for every admin endpoint",
+      "schema": "schemas/ajax-admin-endpoint-support-helper.schema.json",
+      "direction": "server-to-client",
       "consumer": {
         "file": "includes/ajax/Ajax_AdminEndpointSupport.php",
         "test": "tests/ViewQueryFailureDiagnosticsTest.php"
+      },
+      "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
+      "fixtures": {
+        "valid": ["fixtures/ajax-admin-endpoint-support-helper.valid.json"],
+        "invalid": ["fixtures/ajax-admin-endpoint-support-helper.invalid-missing-success.json"]
       }
     },
     {
@@ -427,6 +433,11 @@
       "consumer": {
         "file": "includes/ajax/Ajax_AdvanceViewBuild.php",
         "test": "tests/ViewUpdaterAjaxBuildAdvanceE2ETest.php"
+      },
+      "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
+      "fixtures": {
+        "valid": ["fixtures/ajax-advance-view-build.valid.json"],
+        "invalid": ["fixtures/ajax-advance-view-build.invalid-missing-nonce.json"]
       }
     },
     {
@@ -441,6 +452,11 @@
       "consumer": {
         "file": "includes/ajax/Ajax_FetchInflightStage.php",
         "test": "tests/ViewUpdaterAjaxContractTest.php"
+      },
+      "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
+      "fixtures": {
+        "valid": ["fixtures/ajax-fetch-inflight-stage.valid.json"],
+        "invalid": ["fixtures/ajax-fetch-inflight-stage.invalid-bad-request-id.json"]
       }
     },
     {
@@ -455,15 +471,26 @@
       "consumer": {
         "file": "includes/ajax/Ajax_GetPaginationLinks.php",
         "test": "tests/ViewUpdaterAjaxContractTest.php"
+      },
+      "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
+      "fixtures": {
+        "valid": ["fixtures/ajax-update-pagination.valid.json"],
+        "invalid": ["fixtures/ajax-update-pagination.invalid-missing-subpage.json"]
       }
     },
     {
       "id": "ajax-refresh-admin-nonces-handler",
       "description": "Extracted PHP handler for refreshing admin AJAX nonces",
+      "schema": "schemas/ajax-refresh-admin-nonces.schema.json",
       "direction": "server-to-client",
       "consumer": {
         "file": "includes/ajax/Ajax_RefreshAdminNonces.php",
         "test": "tests/AjaxRefreshAdminNoncesTest.php"
+      },
+      "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
+      "fixtures": {
+        "valid": ["fixtures/ajax-refresh-admin-nonces.valid.json"],
+        "invalid": ["fixtures/ajax-refresh-admin-nonces.invalid-missing-data.json"]
       }
     },
     {
@@ -478,6 +505,11 @@
       "consumer": {
         "file": "includes/ajax/Ajax_RefreshHealthBar.php",
         "test": "tests/HealthBarAjaxDecouplingTest.php"
+      },
+      "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
+      "fixtures": {
+        "valid": ["fixtures/ajax-refresh-health-bar.valid.json"],
+        "invalid": ["fixtures/ajax-refresh-health-bar.invalid-missing-nonce.json"]
       }
     },
     {
@@ -492,15 +524,30 @@
       "consumer": {
         "file": "includes/ajax/Ajax_RefreshStatsDashboard.php",
         "test": "tests/ViewUpdaterAjaxContractTest.php"
+      },
+      "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
+      "fixtures": {
+        "valid": ["fixtures/ajax-refresh-stats.valid.json"],
+        "invalid": ["fixtures/ajax-refresh-stats.invalid-missing-nonce.json"]
       }
     },
     {
       "id": "ajax-uninstall-prefs-handler",
       "description": "Extracted PHP handler for uninstall/deactivation preference AJAX",
+      "schema": "schemas/ajax-uninstall-prefs.schema.json",
       "direction": "client-to-server",
+      "producer": {
+        "file": "includes/js/uninstall-modal.js",
+        "test": "tests-js/ajax-response-validation.test.js"
+      },
       "consumer": {
         "file": "includes/ajax/Ajax_UninstallPrefs.php",
         "test": "tests/UninstallPreferencesMultisiteTest.php"
+      },
+      "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
+      "fixtures": {
+        "valid": ["fixtures/ajax-uninstall-prefs.valid.json"],
+        "invalid": ["fixtures/ajax-uninstall-prefs.invalid-missing-nonce.json"]
       }
     },
     {
@@ -515,6 +562,11 @@
       "consumer": {
         "file": "includes/ajax/Ajax_WarmTableCache.php",
         "test": "tests/ViewUpdaterAjaxContractTest.php"
+      },
+      "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
+      "fixtures": {
+        "valid": ["fixtures/ajax-warm-table-cache.valid.json"],
+        "invalid": ["fixtures/ajax-warm-table-cache.invalid-bad-subpage.json"]
       }
     }
   ]

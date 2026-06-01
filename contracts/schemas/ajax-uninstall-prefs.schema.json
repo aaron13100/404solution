@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ajaxUninstallPrefsRequest",
+  "description": "Admin uninstall/deactivation preferences AJAX request from uninstall-modal.js to Ajax_UninstallPrefs.php. All non-required fields are sent as quoted booleans ('true'/'false') because WordPress' AJAX layer coerces all values to strings.",
+  "type": "object",
+  "required": ["action", "nonce"],
+  "properties": {
+    "action": { "type": "string", "enum": ["abj404_save_uninstall_prefs"] },
+    "nonce": { "type": "string", "minLength": 1 },
+    "delete_redirects": { "type": "string" },
+    "delete_logs": { "type": "string" },
+    "delete_cache": { "type": "string" },
+    "send_feedback": { "type": "string" },
+    "uninstall_reason": { "type": "string" },
+    "selected_issues": { "type": "string" },
+    "followup_details": { "type": "string" },
+    "better_plugin_name": { "type": "string" },
+    "other_reason_text": { "type": "string" },
+    "feedback_email": { "type": "string" },
+    "include_diagnostics": { "type": "string" }
+  }
+}

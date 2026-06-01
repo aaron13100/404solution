@@ -1,0 +1,4 @@
+{
+  "_comment": "Invalid: response must include a 'data' object mapping nonce action verbs to refreshed nonces.",
+  "success": true
+}

@@ -1,0 +1,6 @@
+{
+  "_comment": "Invalid: the standard envelope requires a boolean 'success' field.",
+  "data": {
+    "message": "ok"
+  }
+}

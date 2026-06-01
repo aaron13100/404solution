@@ -1,0 +1,15 @@
+{
+  "action": "abj404_save_uninstall_prefs",
+  "nonce": "abc123def456",
+  "delete_redirects": "true",
+  "delete_logs": "true",
+  "delete_cache": "true",
+  "send_feedback": "false",
+  "uninstall_reason": "no-longer-needed",
+  "selected_issues": "",
+  "followup_details": "",
+  "better_plugin_name": "",
+  "other_reason_text": "",
+  "feedback_email": "",
+  "include_diagnostics": "false"
+}

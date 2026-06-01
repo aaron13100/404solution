@@ -1,0 +1,9 @@
+{
+  "_comment": "Invalid: a CSRF nonce is required on every admin AJAX write.",
+  "action": "abj404_save_uninstall_prefs",
+  "delete_redirects": "true",
+  "delete_logs": "true",
+  "delete_cache": "true",
+  "send_feedback": "false",
+  "uninstall_reason": "no-longer-needed"
+}
