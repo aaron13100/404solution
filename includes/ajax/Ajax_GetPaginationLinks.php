@@ -26,7 +26,7 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
         $viewBuildOrchestrator = abj_service('view_build_orchestrator');
         /** @var ABJ_404_Solution_ViewReadServiceInterface $viewReadService */
         $viewReadService = abj_service('view_read_service');
-        $abj404logic = self::resolvePluginLogic();
+        $abj404logic = abj_service('plugin_logic');
         global $abj404view;
 
         $rowsPerPage = absint($functions->getPostOrGetSanitize('rowsPerPage'));
@@ -120,14 +120,6 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
     private static function normalizeCacheMode(string $cacheModeRaw): string {
         return in_array($cacheModeRaw, array('normal', 'cache_or_pending', 'refresh_cache'), true)
             ? $cacheModeRaw : 'normal';
-    }
-
-    private static function resolvePluginLogic(): ABJ_404_Solution_PluginLogic {
-        $pluginLogic = abj_service('plugin_logic');
-        if ($pluginLogic instanceof ABJ_404_Solution_PluginLogic) {
-            return $pluginLogic;
-        }
-        throw new RuntimeException('plugin_logic service did not resolve to ABJ_404_Solution_PluginLogic.');
     }
 
     private static function normalizeCurrentSignature(string $currentSignature): string {
@@ -234,18 +226,19 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
 
     /**
      * @param mixed $viewReadService
+     * @param mixed $abj404logic
      * @param array<string, mixed> $context
      */
     private static function sendCachePendingWhenNeeded(
         string $cacheMode, bool $detectOnly, string $subpage,
-        $viewReadService, ABJ_404_Solution_PluginLogic $abj404logic, array &$context
+        $viewReadService, $abj404logic, array &$context
     ): bool {
         if ($cacheMode !== 'cache_or_pending' || $detectOnly || !self::isViewTableSubpage($subpage)) {
             return false;
         }
 
         ABJ_404_Solution_AjaxStageDiagnostics::setStage($context, self::stageForSubpage($subpage));
-        $tableOptions = $abj404logic->settingsUpdate()->getTableOptions($subpage);
+        $tableOptions = self::getTableOptions($abj404logic, $subpage);
         if (self::viewTableSnapshotAvailable($viewReadService, $subpage, $tableOptions)) {
             return false;
         }
@@ -267,6 +260,24 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
 
     private static function stageForSubpage(string $subpage): string {
         return ($subpage === 'abj404_captured') ? 'table_captured' : 'table_redirects';
+    }
+
+    /**
+     * @param mixed $abj404logic
+     * @return array<string, mixed>
+     */
+    private static function getTableOptions($abj404logic, string $subpage): array {
+        if (!is_object($abj404logic) || !method_exists($abj404logic, 'settingsUpdate')) {
+            throw new RuntimeException('plugin_logic service does not expose settingsUpdate().');
+        }
+
+        $settingsUpdate = $abj404logic->settingsUpdate();
+        if (!is_object($settingsUpdate) || !method_exists($settingsUpdate, 'getTableOptions')) {
+            throw new RuntimeException('plugin_logic settings service does not expose getTableOptions().');
+        }
+
+        $tableOptions = $settingsUpdate->getTableOptions($subpage);
+        return is_array($tableOptions) ? $tableOptions : array();
     }
 
     /**
