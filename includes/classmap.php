@@ -62,6 +62,7 @@ return array(
     'ABJ_404_Solution_PluginLogicPageOrdering' => $base . 'includes/PluginLogicPageOrdering.php',
     'ABJ_404_Solution_PluginLogicSettingsUpdate' => $base . 'includes/PluginLogicSettingsUpdate.php',
     'ABJ_404_Solution_PluginLogicUrlNormalization' => $base . 'includes/PluginLogicUrlNormalization.php',
+    'ABJ_404_Solution_PluginLogicDefaults' => $base . 'includes/PluginLogicDefaults.php',
     // SpellChecker delegates to standalone classes (converted from traits).
     'ABJ_404_Solution_SpellURLMatcher' => $base . 'includes/SpellURLMatcher.php',
     'ABJ_404_Solution_SpellPostListeners' => $base . 'includes/SpellPostListeners.php',
