@@ -53,14 +53,40 @@ class ABJ_404_Solution_AjaxSecurityGate {
     }
 
     private function isPluginAdmin(string $action): bool {
-        if (!is_object($this->adminAccessPolicy) || !method_exists($this->adminAccessPolicy, 'isPluginAdmin')) {
+        $adminAccessPolicy = $this->adminAccessPolicy;
+        $pluginLogic = class_exists('ABJ_404_Solution_ServiceContainer')
+            ? ABJ_404_Solution_ServiceContainer::safeGet('plugin_logic')
+            : null;
+        if ((!is_object($pluginLogic) || !is_callable(array($pluginLogic, 'userIsPluginAdmin')))
+                && class_exists('ABJ_404_Solution_PluginLogic')) {
+            try {
+                $property = new \ReflectionProperty('ABJ_404_Solution_PluginLogic', 'instance');
+                $pluginLogic = $property->getValue();
+            } catch (\Throwable $e) {
+                // allow-silent-catch: optional legacy singleton lookup; constructor-injected policy remains the fallback.
+                $pluginLogic = null;
+            }
+        }
+        if (is_object($pluginLogic) && is_callable(array($pluginLogic, 'userIsPluginAdmin'))) {
+            $adminAccessPolicy = $pluginLogic;
+        }
+
+        if (!is_object($adminAccessPolicy)) {
             error_log('404 Solution: AJAX authorization failed for ' . $action .
                 ' because admin_access_policy service is unavailable.');
             return false;
         }
 
         try {
-            return (bool)$this->adminAccessPolicy->isPluginAdmin();
+            if (method_exists($adminAccessPolicy, 'isPluginAdmin')) {
+                return (bool)$adminAccessPolicy->isPluginAdmin();
+            }
+            if (is_callable(array($adminAccessPolicy, 'userIsPluginAdmin'))) {
+                return (bool)$adminAccessPolicy->userIsPluginAdmin();
+            }
+            error_log('404 Solution: AJAX authorization failed for ' . $action .
+                ' because admin_access_policy service has no admin-check method.');
+            return false;
         } catch (\Throwable $e) {
             error_log('404 Solution: AJAX authorization failed for ' . $action .
                 ' (code ' . $e->getCode() . '): ' . $e->getMessage());

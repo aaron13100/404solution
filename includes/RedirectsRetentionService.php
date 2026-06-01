@@ -5,6 +5,7 @@ if (!defined('ABSPATH')) {
 }
 
 require_once __DIR__ . '/RedirectsRetentionServiceInterface.php';
+require_once __DIR__ . '/ViewReadRuntimeState.php';
 
 /**
  * Scheduled-maintenance workflow for the redirects table.
@@ -94,7 +95,7 @@ class ABJ_404_Solution_RedirectsRetentionService implements ABJ_404_Solution_Red
      * @param string $debugMessageType
      * @return int
      */
-    private function deleteOldRedirectsByType($options, $now, $optionKey, $statusList, $debugMessageType) {
+    public function deleteOldRedirectsByType($options, $now, $optionKey, $statusList, $debugMessageType) {
         $logsRepo = abj_service('logs_repository');
         $deletedCount = 0;
 
@@ -146,7 +147,7 @@ class ABJ_404_Solution_RedirectsRetentionService implements ABJ_404_Solution_Red
      * @param int $now
      * @return int
      */
-    private function deleteOldLogsByAge(int $daysToKeep, int $now): int {
+    public function deleteOldLogsByAge(int $daysToKeep, int $now): int {
         if ($daysToKeep <= 0) {
             return 0;
         }
@@ -185,7 +186,10 @@ class ABJ_404_Solution_RedirectsRetentionService implements ABJ_404_Solution_Red
         $viewRead = abj_service('view_read_service');
         $abj404logic = abj_service('plugin_logic');
 
-        $options = abj_service('options_repository')->getOptions();
+        $pluginLogic = abj_service('plugin_logic');
+        $options = (is_object($pluginLogic) && method_exists($pluginLogic, 'getOptions'))
+            ? $pluginLogic->getOptions(true)
+            : abj_service('options_repository')->getOptions(true);
         $now = time();
         $capturedURLsCount = 0;
         $autoRedirectsCount = 0;
@@ -205,8 +209,14 @@ class ABJ_404_Solution_RedirectsRetentionService implements ABJ_404_Solution_Red
 
         $this->dbCore->ensureConnection();
 
-        $tempFile = $abj404logic->importExport()->getExportFilename();
-        if (file_exists($tempFile)) {
+        $tempFile = null;
+        if (is_object($abj404logic) && method_exists($abj404logic, 'importExport')) {
+            $importExport = $abj404logic->importExport();
+            if (is_object($importExport) && method_exists($importExport, 'getExportFilename')) {
+                $tempFile = $importExport->getExportFilename();
+            }
+        }
+        if (is_string($tempFile) && $tempFile !== '' && file_exists($tempFile)) {
             ABJ_404_Solution_Functions::safeUnlink($tempFile);
         }
 
@@ -438,7 +448,7 @@ class ABJ_404_Solution_RedirectsRetentionService implements ABJ_404_Solution_Red
 
         if ($totalTrashed > 0) {
             $this->logger->infoMessage("Auto-trashed " . $totalTrashed . " junk/stale captured URLs during maintenance.");
-            delete_transient(ABJ_404_Solution_DataAccess::CACHE_KEY_CAPTURED_STATUS);
+            delete_transient(ABJ_404_Solution_ViewReadRuntimeState::CACHE_KEY_CAPTURED_STATUS);
         }
 
         return $totalTrashed;

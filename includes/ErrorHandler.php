@@ -461,6 +461,9 @@ class ABJ_404_Solution_ErrorHandler {
                     $bufferedOutput = (string)ob_get_contents();
                 }
                 $minLevel = array_key_exists('ob_level_before', $ctx) ? intval($ctx['ob_level_before']) : 0;
+                if (PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg') {
+                    $minLevel = max($minLevel, ob_get_level());
+                }
                 while (ob_get_level() > $minLevel) {
                     @ob_end_clean();
                 }

@@ -234,7 +234,9 @@ class ABJ_404_Solution_NotFoundResponseService {
             $finalDestination = (string)$location . $this->getCommentPartAndQueryPartOfRequest();
         }
 
-        $previousRequest = $this->previousRequestCookieTracker->readCookieWithPreviousRqeuestShort();
+        $previousRequest = is_object($this->previousRequestCookieTracker)
+            ? $this->previousRequestCookieTracker->readCookieWithPreviousRqeuestShort()
+            : '';
         $schemePos = $this->f->strpos($finalDestination, '://');
         $finalDestNoHome = ($schemePos !== false)
             ? $this->f->substr($finalDestination, $schemePos + 3) : $finalDestination;
@@ -264,10 +266,16 @@ class ABJ_404_Solution_NotFoundResponseService {
             return true;
         }
 
-        $this->previousRequestCookieTracker->setCookieWithPreviousRequest();
+        if (is_object($this->previousRequestCookieTracker)) {
+            $this->previousRequestCookieTracker->setCookieWithPreviousRequest();
+        }
         if (!headers_sent()) {
             if (function_exists('abj404_benchmark_emit_headers')) {
-                abj404_benchmark_emit_headers();
+                try {
+                    abj404_benchmark_emit_headers();
+                } catch (Throwable $e) {
+                    error_log('404 Solution: abj404_benchmark_emit_headers failed: ' . $e->getMessage());
+                }
             }
             $useSafe = false;
             if (function_exists('wp_safe_redirect')) {

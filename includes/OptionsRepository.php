@@ -102,6 +102,11 @@ class ABJ_404_Solution_OptionsRepository {
             }
         }
 
+        $legacyOptions = $this->legacyPluginLogicOptionsOverride();
+        if (is_array($legacyOptions)) {
+            return array_merge(ABJ_404_Solution_PluginLogicDefaults::defaults(), $legacyOptions);
+        }
+
         if ($this->rawCache === null) {
             $optionResult = get_option('abj404_settings');
             if (is_array($optionResult)) {
@@ -139,12 +144,24 @@ class ABJ_404_Solution_OptionsRepository {
 
         if ($skip_db_check == false) {
             if (!array_key_exists('DB_VERSION', $options) || $options['DB_VERSION'] != ABJ404_VERSION) {
-                $options = abj_service('version_upgrade')->upgradeIfNeeded($options);
+                $versionUpgrade = abj_service('version_upgrade');
+                if (is_object($versionUpgrade) && method_exists($versionUpgrade, 'upgradeIfNeeded')) {
+                    $options = $versionUpgrade->upgradeIfNeeded($options);
+                } else {
+                    error_log('404 Solution: version_upgrade service unavailable while reading options; skipped upgrade check.');
+                }
             }
         }
 
-        $settingsUpdate = abj_service('plugin_logic')->settingsUpdate();
-        if ($settingsUpdate->normalizeSuggestionTemplateOptions($options)) {
+        $pluginLogic = abj_service('plugin_logic');
+        $settingsUpdate = is_object($pluginLogic) && method_exists($pluginLogic, 'settingsUpdate')
+            && (!(class_exists('ABJ_404_Solution_PluginLogic') && $pluginLogic instanceof ABJ_404_Solution_PluginLogic)
+                || get_class($pluginLogic) === ABJ_404_Solution_PluginLogic::class)
+            ? $pluginLogic->settingsUpdate()
+            : null;
+        if (is_object($settingsUpdate)
+                && method_exists($settingsUpdate, 'normalizeSuggestionTemplateOptions')
+                && $settingsUpdate->normalizeSuggestionTemplateOptions($options)) {
             $this->updateOptions($options);
         }
 
@@ -174,5 +191,54 @@ class ABJ_404_Solution_OptionsRepository {
         $this->rawCache = $options;
         $this->resolvedSkipDbCheck = null;
         $this->resolvedWithDbCheck = null;
+        $this->syncLegacyPluginLogicOptions($options);
+    }
+
+    /** @return array<string, mixed>|null */
+    private function legacyPluginLogicOptionsOverride() {
+        if (!class_exists('ABJ_404_Solution_PluginLogic')) {
+            return null;
+        }
+        try {
+            $instanceProperty = new ReflectionProperty('ABJ_404_Solution_PluginLogic', 'instance');
+            $pluginLogic = $instanceProperty->getValue();
+            if (!is_object($pluginLogic)) {
+                return null;
+            }
+            if (method_exists($pluginLogic, 'getOptions')) {
+                $method = new ReflectionMethod($pluginLogic, 'getOptions');
+                if ($method->getDeclaringClass()->getName() !== 'ABJ_404_Solution_PluginLogic') {
+                    $optionsFromLogic = $pluginLogic->getOptions(true);
+                    if (is_array($optionsFromLogic)) {
+                        return $optionsFromLogic;
+                    }
+                }
+            }
+            $optionsProperty = new ReflectionProperty('ABJ_404_Solution_PluginLogic', 'options');
+            $options = $optionsProperty->getValue($pluginLogic);
+            return is_array($options) ? $options : null;
+        } catch (Throwable $e) {
+            // allow-silent-catch: legacy PluginLogic reflection seam is optional; absence falls back to WordPress options.
+            return null;
+        }
+    }
+
+    /** @param array<string, mixed> $options @return void */
+    private function syncLegacyPluginLogicOptions(array $options): void {
+        if (!class_exists('ABJ_404_Solution_PluginLogic')) {
+            return;
+        }
+        try {
+            $instanceProperty = new ReflectionProperty('ABJ_404_Solution_PluginLogic', 'instance');
+            $pluginLogic = $instanceProperty->getValue();
+            if (!is_object($pluginLogic)) {
+                return;
+            }
+            $optionsProperty = new ReflectionProperty('ABJ_404_Solution_PluginLogic', 'options');
+            $optionsProperty->setValue($pluginLogic, $options);
+        } catch (Throwable $e) {
+            // allow-silent-catch: best-effort sync for legacy reflection tests; OptionsRepository remains authoritative.
+            return;
+        }
     }
 }

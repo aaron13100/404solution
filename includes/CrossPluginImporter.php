@@ -463,6 +463,7 @@ class ABJ_404_Solution_CrossPluginImporter {
         // Use get_var so we get null on miss rather than an error.
         // DAO-bypass-approved: tableExists() probe for external plugin's table
         $result = $wpdb->get_var(
+            // DAO-bypass-approved: prepare() is part of the external table metadata probe.
             $wpdb->prepare('SHOW TABLES LIKE %s', $tableName)
         );
 

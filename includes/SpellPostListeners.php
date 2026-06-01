@@ -279,7 +279,13 @@ class ABJ_404_Solution_SpellPostListeners {
 
 	function initializePublishedPostsProvider(): void {
 		if ($this->publishedPostsProvider == null) {
-			$this->publishedPostsProvider = abj_service('published_posts_provider');
+			$provider = class_exists('ABJ_404_Solution_ServiceContainer')
+					&& ABJ_404_Solution_ServiceContainer::safeHas('published_posts_provider')
+				? abj_service('published_posts_provider')
+				: null;
+			$this->publishedPostsProvider = $provider instanceof ABJ_404_Solution_PublishedPostsProvider
+				? $provider
+				: new ABJ_404_Solution_PublishedPostsProvider($this->contentRepository);
 		}
 		$this->permalinkCache->updatePermalinkCache(1);
 	}

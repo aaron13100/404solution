@@ -88,7 +88,7 @@ class ABJ_404_Solution_SpellURLMatcher {
 	 */
 	function getPermalinkUsingRegEx(string $requestedURL, $options = null) {
 		if (!is_array($options)) {
-			$options = abj_service('options_repository')->getOptions();
+				$options = abj_service('options_repository')->getOptions(true);
 		}
 		$isDebug = $this->logger->isDebug();
 

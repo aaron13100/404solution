@@ -391,7 +391,10 @@ class ABJ_404_Solution_View_Stats extends ABJ_404_Solution_ViewComponent {
 
     /** @return void */
     function echoAdminDebugFile() {
-        if (abj_service('admin_access_policy')->isPluginAdmin()) {
+        $isPluginAdmin = is_object($this->logic) && method_exists($this->logic, 'userIsPluginAdmin')
+            ? (bool)$this->logic->userIsPluginAdmin()
+            : abj_service('admin_access_policy')->isPluginAdmin();
+        if ($isPluginAdmin) {
         	$filesToEcho = array($this->logger->getDebugFilePath(), 
         			$this->logger->getDebugFilePathOld());
         	for ($i = 0; $i < count($filesToEcho); $i++) {

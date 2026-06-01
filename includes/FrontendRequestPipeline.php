@@ -389,10 +389,23 @@ class ABJ_404_Solution_FrontendRequestPipeline {
         abj404_benchmark_record_redirect_lookup($elapsedMs);
     }
 
+    /**
+     * Read runtime options through the injected PluginLogic facade. Production
+     * PluginLogic delegates to OptionsRepository; test and legacy subclasses can
+     * provide request-scoped options without depending on the global container.
+     *
+     * @param bool $skipDbCheck
+     * @return array<string, mixed>
+     */
+    private function getRuntimeOptions(bool $skipDbCheck = false): array {
+        $options = $this->logic->getOptions($skipDbCheck);
+        return is_array($options) ? $options : array();
+    }
+
     /** @return void */
     function processRedirectAllRequests() {
         $this->trace = [];
-        $options = abj_service('options_repository')->getOptions();
+        $options = $this->getRuntimeOptions();
 
         $userRequest = ABJ_404_Solution_UserRequest::getInstance();
         if ($userRequest === null) {
@@ -502,7 +515,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
         // keep serving instead of every 404 falling to the theme 404 page.
         $degradedMode = false;
         if (defined('ABJ404_VERSION')) {
-            $options = abj_service('options_repository')->getOptions(true);
+            $options = $this->getRuntimeOptions(true);
             if (isset($options['DB_VERSION']) && $options['DB_VERSION'] != ABJ404_VERSION) {
                 $options = $this->recoverDbVersionIfStale($options);
                 if (!isset($options['DB_VERSION']) || $options['DB_VERSION'] != ABJ404_VERSION) {
@@ -541,7 +554,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
             }
         }
 
-        $options = abj_service('options_repository')->getOptions();
+        $options = $this->getRuntimeOptions();
 
         $lookupStart = microtime(true);
         $redirect = $this->redirectsRepository->getActiveRedirectForURL($requestedURL, $degradedMode);
@@ -1032,7 +1045,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
 
         $isRedirectToCustom404Page = false;
         if ($redirect['type'] == $this->wpTypePost()) {
-            $options = abj_service('options_repository')->getOptions();
+            $options = $this->getRuntimeOptions();
             $dest404pageRaw = isset($options['dest404page']) ? $options['dest404page'] : null;
             $dest404page = is_string($dest404pageRaw) ? $dest404pageRaw : null;
 
@@ -1061,7 +1074,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
 
             $urlSlugOnly = $this->logic->urlNormalization()->removeHomeDirectory($requestedURL);
             $spellChecker = abj_service('spell_checker');
-            $options = abj_service('options_repository')->getOptions();
+            $options = $this->getRuntimeOptions();
             // Boundary normalizer: option shape-probing for the suggest_* slice
             // lives in the VO. See ABJ_404_Solution_SuggestionDisplayOptions.
             $suggestOpts = ABJ_404_Solution_SuggestionDisplayOptions::fromOptionsArray($options);
@@ -1173,7 +1186,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
 
         // upgradeIfNeeded ends in updateOptions() which clears the resolved-
         // options cache, so getOptions(true) returns fresh values from the DB.
-        $fresh = abj_service('options_repository')->getOptions(true);
+        $fresh = $this->getRuntimeOptions(true);
         if (is_array($fresh) && isset($fresh['DB_VERSION'])
                 && $fresh['DB_VERSION'] == ABJ404_VERSION) {
             return $fresh;

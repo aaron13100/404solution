@@ -55,6 +55,7 @@ class ABJ_404_Solution_Ajax_AdvanceViewBuild {
             if (!wp_verify_nonce($nonce, 'abj404_fetchInflightStage')) {
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::safeLogAjaxFailure('AJAX invalid nonce in ajaxAdvanceViewBuild.', $context);
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
+                ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit(ABJ_404_Solution_Ajax_AdminEndpointSupport::buildAjaxErrorResponse('Invalid security token', null, false), 403);
                 return;
             }
@@ -63,6 +64,7 @@ class ABJ_404_Solution_Ajax_AdvanceViewBuild {
             if (!$isPluginAdmin) {
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::safeLogAjaxFailure('AJAX unauthorized in ajaxAdvanceViewBuild.', $context);
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
+                ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit(ABJ_404_Solution_Ajax_AdminEndpointSupport::buildAjaxErrorResponse('Unauthorized', null, false), 403);
                 return;
             }
@@ -73,6 +75,7 @@ class ABJ_404_Solution_Ajax_AdvanceViewBuild {
             if (ABJ_404_Solution_Ajax_Php::checkRateLimit('advance_view_build', 600, 60)) {
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::safeLogAjaxFailure('AJAX rate limit in ajaxAdvanceViewBuild.', $context);
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
+                ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit(ABJ_404_Solution_Ajax_AdminEndpointSupport::buildAjaxErrorResponse('Rate limit exceeded. Please try again later.', null, false), 429);
                 return;
             }

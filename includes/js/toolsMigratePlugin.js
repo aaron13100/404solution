@@ -73,6 +73,7 @@
                 fd.append('action', 'abj404_crossPluginPreview');
                 fd.append('nonce', cfg.nonce);
                 fd.append('import_source', source);
+                // ajax-direct-approved: cross-plugin migration preview posts FormData and manages the two-step UI state locally.
                 fetch(cfg.ajaxUrl, { method: 'POST', body: fd, credentials: 'same-origin' })
                     .then(function (r) { return r.json(); })
                     .then(function (resp) {

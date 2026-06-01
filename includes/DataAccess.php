@@ -293,7 +293,7 @@ class ABJ_404_Solution_DataAccess {
      */
     public function __construct($functions = null, $logging = null, $dbCore = null, $contentRepo = null, $redirectsRepo = null, $logsRepo = null, $statsRepo = null, $viewReadService = null, $viewBuildOrchestrator = null) {
         $this->f = self::resolveFunctions($functions);
-        $this->logger = self::resolveLogger($logging);
+        $this->logger = $this->resolveLogger($logging);
         $this->dbCore = $dbCore !== null ? $dbCore : $this->createDbCore();
         if ($contentRepo !== null) {
             $this->contentRepo = $contentRepo;
@@ -343,28 +343,28 @@ class ABJ_404_Solution_DataAccess {
         if ($functions instanceof ABJ_404_Solution_Functions) {
             return $functions;
         }
-        return ABJ_404_Solution_Functions::getInstance();
+        return abj_service('functions');
     }
 
     /**
      * @param mixed $logging
      * @return ABJ_404_Solution_Logging
      */
-    private static function resolveLogger($logging) {
+    private function resolveLogger($logging) {
         if ($logging instanceof ABJ_404_Solution_Logging) {
             return $logging;
         }
         if (is_object($logging) && (method_exists($logging, 'debugMessage') || method_exists($logging, 'errorMessage'))) {
-            return self::createLoggerAdapter($logging);
+            return $this->createLoggerAdapter($logging);
         }
-        return ABJ_404_Solution_Logging::getInstance();
+        return abj_service('logging');
     }
 
     /**
      * @param object $logging
      * @return ABJ_404_Solution_Logging
      */
-    private static function createLoggerAdapter($logging) {
+    private function createLoggerAdapter($logging) {
         return new class($logging) extends ABJ_404_Solution_Logging {
             /** @var object */
             private $delegate;
@@ -550,7 +550,8 @@ class ABJ_404_Solution_DataAccess {
             }
 
             public function runPageLoadFallbackAdvance(): array {
-                if ($this->owner->hasSubclassOverride('runPageLoadFallbackAdvance')) {
+                if ($this->owner->hasSubclassOverride('runPageLoadFallbackAdvance')
+                        || $this->owner->hasSubclassOverride('advanceViewBuildOnce')) {
                     return $this->owner->runPageLoadFallbackAdvance();
                 }
                 return parent::runPageLoadFallbackAdvance();
@@ -624,6 +625,7 @@ class ABJ_404_Solution_DataAccess {
 
     /** @param string $query @return string */
     public function extractSqlFilename($query): string {
+        // DatabaseQueryExecutor applies the WP_DEBUG privacy guard before logging query details.
         return $this->getDbCore()->extractSqlFilename($query);
     }
 
@@ -755,6 +757,7 @@ class ABJ_404_Solution_DataAccess {
     }
 
     public function deleteOldRedirectsCron() {
+        $this->ensureConnection();
         return $this->getRetentionService()->deleteOldRedirectsCron();
     }
 
@@ -823,6 +826,11 @@ class ABJ_404_Solution_DataAccess {
         return $this->viewBuildOrchestrator;
     }
 
+    /** @return string */
+    private function viewDoneDataBuiltAtOptionName(): string {
+        return $this->getViewBuildOrchestrator()->viewDoneDataBuiltAtOptionName();
+    }
+
 
     public function getRedirectStatusCounts($bypassCache = false): array {
         return $this->getViewReadService()->getRedirectStatusCounts($bypassCache);
@@ -836,8 +844,17 @@ class ABJ_404_Solution_DataAccess {
         return $this->getViewReadService()->getHighImpactCapturedCount();
     }
 
+    /** @param mixed $tableOptions @return array<int, mixed> */
+    public function getLogRecords($tableOptions) {
+        return $this->getLogsRepo()->getLogRecords($tableOptions);
+    }
+
     public function getLogsCount($logID) {
         return $this->getViewReadService()->getLogsCount($logID);
+    }
+
+    public function flushLogQueue(): void {
+        $this->getLogsRepo()->flushLogQueue();
     }
 
     public function getRedirectsAll() {
@@ -1034,6 +1051,7 @@ class ABJ_404_Solution_DataAccess {
                 try {
                     return $delegate->$name(...$arguments);
                 } catch (\BadMethodCallException $e) {
+                    // allow-silent-catch: __call probe miss; the next delegate may expose the requested method.
                     continue;
                 }
             }

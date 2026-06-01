@@ -335,10 +335,8 @@ class ABJ_404_Solution_View_Redirects extends ABJ_404_Solution_ViewComponent {
         $hiddenInputs = ABJ_404_Solution_Functions::readFileContents(__DIR__ . '/html/editRedirectIdHiddenInput.html');
         $hiddenInputs = $this->f->str_replace('{redirect_id}', esc_attr($redirectId), $hiddenInputs);
         $formRows = $this->buildUrlRowHtml($redirectUrl, $redirectEngine);
-        if (!$isSimpleMode) {
-            $isRegexChecked = ($row !== null && $row->isRegex()) ? ' checked' : '';
-            $formRows .= $this->buildRegexRowHtml($isRegexChecked);
-        }
+        $isRegexChecked = ($row !== null && $row->isRegex()) ? ' checked' : '';
+        $formRows .= $this->buildRegexRowHtml($isRegexChecked);
 
         $startTs = $row !== null ? $row->getStartTs() : 0;
         $endTs = $row !== null ? $row->getEndTs() : 0;

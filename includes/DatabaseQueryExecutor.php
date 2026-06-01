@@ -122,6 +122,7 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
                 $preparedResult = call_user_func_array(array($wpdb, 'prepare'), array_merge(array($queryLiteral), $queryParameters));
                 $query = is_string($preparedResult) ? $preparedResult : $queryLiteral;
             } catch (Throwable $t) {
+                $this->logger->debugMessage('wpdb prepare variadic call failed; retrying with array parameters.', $t);
                 $preparedFallback = $wpdb->prepare($queryLiteral, $queryParameters);
                 $query = $preparedFallback !== null ? $preparedFallback : $queryLiteral;
             }

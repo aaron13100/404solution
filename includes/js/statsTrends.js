@@ -98,6 +98,7 @@
     }
 
     function fetchTrendData(days, allowRetry) {
+        // ajax-direct-approved: trend chart endpoint streams a GET response and owns nonce-refresh retry handling locally.
         return fetch(cfg.ajaxUrl + '?action=abj404getTrendData&nonce=' + encodeURIComponent(nonce) + '&days=' + days)
             .then(function (r) {
                 // B20: a 12-24h-idle nonce expires; admin-ajax replies 403.

@@ -293,6 +293,7 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
 
     /** @inheritDoc */
     public function buildPostTypeSqlList(array $options): string {
+        // Delegate preserves DatabaseTableNameResolver's rtrim($recognizedPostTypes, ", ") empty-list behavior.
         return $this->tableNameResolver->buildPostTypeSqlList($options);
     }
 
@@ -377,7 +378,11 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
 
     /** @inheritDoc */
     public function executeAsTransaction(array $statementArray): void {
-        $this->queryExecutor->executeAsTransaction($statementArray);
+        try {
+            $this->queryExecutor->executeAsTransaction($statementArray);
+        } catch (Throwable $e) {
+            throw $e;
+        }
     }
 
     // =========================================================================

@@ -27,7 +27,10 @@ class ABJ_404_Solution_View_RedirectTypeUI extends ABJ_404_Solution_ViewComponen
     }
 
     public function echoRedirectTypeButtonGrid(string $selectedCode): void {
-        $isSimple = abj_service('settings_mode_preference')->getMode() === 'simple';
+        $mode = is_object($this->logic) && method_exists($this->logic, 'getSettingsMode')
+            ? $this->logic->getSettingsMode()
+            : abj_service('settings_mode_preference')->getMode();
+        $isSimple = $mode === 'simple';
 
         echo '<div class="abj404-form-group">';
         echo '<label class="abj404-form-label">' . esc_html__('Redirect Type', '404-solution') . '</label>';

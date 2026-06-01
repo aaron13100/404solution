@@ -49,15 +49,20 @@ class ABJ_404_Solution_Ajax_RefreshHealthBar {
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::safeLogAjaxFailure('AJAX invalid nonce in ajaxRefreshHealthBar.', $context);
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
                 $payload = ABJ_404_Solution_Ajax_AdminEndpointSupport::buildAjaxErrorResponse('Invalid security token', null, false);
+                ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit($payload, 403);
                 return;
             }
 
-            $isPluginAdmin = abj_service('admin_access_policy')->isPluginAdmin();
+            $pluginLogic = abj_service('plugin_logic');
+            $isPluginAdmin = is_object($pluginLogic) && is_callable(array($pluginLogic, 'userIsPluginAdmin'))
+                ? (bool)$pluginLogic->userIsPluginAdmin()
+                : (bool)abj_service('admin_access_policy')->isPluginAdmin();
             if (!$isPluginAdmin) {
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::safeLogAjaxFailure('AJAX unauthorized in ajaxRefreshHealthBar.', $context);
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
                 $payload = ABJ_404_Solution_Ajax_AdminEndpointSupport::buildAjaxErrorResponse('Unauthorized', null, false);
+                ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit($payload, 403);
                 return;
             }
@@ -68,6 +73,7 @@ class ABJ_404_Solution_Ajax_RefreshHealthBar {
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::safeLogAjaxFailure('AJAX rate limit in ajaxRefreshHealthBar.', $context);
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
                 $payload = ABJ_404_Solution_Ajax_AdminEndpointSupport::buildAjaxErrorResponse('Rate limit exceeded. Please try again later.', null, false);
+                ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit($payload, 429);
                 return;
             }

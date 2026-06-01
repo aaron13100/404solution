@@ -492,9 +492,15 @@ class ABJ_404_Solution_LogsRepository implements ABJ_404_Solution_LogsRepository
         } else {
             $referer = '';
         }
-        $current_user = function_exists('wp_get_current_user')
-            ? ABJ_404_Solution_UserRef::fromWpUser(wp_get_current_user())
-            : null;
+        $current_user = null;
+        if (function_exists('wp_get_current_user')) {
+            try {
+                $current_user = ABJ_404_Solution_UserRef::fromWpUser(wp_get_current_user());
+            } catch (\Throwable $e) {
+                // allow-silent-catch: optional WP user context for log enrichment; absence leaves user_login blank.
+                $current_user = null;
+            }
+        }
         $current_user_name = $current_user !== null ? $current_user->getLogin() : '';
         $remoteAddrRaw = $_SERVER['REMOTE_ADDR'] ?? '';
         $ipAddressToSave = is_string($remoteAddrRaw) ? $remoteAddrRaw : '';

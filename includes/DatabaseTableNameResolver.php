@@ -51,6 +51,7 @@ class ABJ_404_Solution_DatabaseTableNameResolver {
             return false;
         }
         // @utf8-audit: opt-out - tableExists receives system-generated plugin table names from DAO/core callers.
+        // DAO-bypass-approved: metadata table existence probe for system-generated plugin table names.
         $table = $wpdb->get_var("SHOW TABLES LIKE '" . esc_sql($tableName) . "'");
         return ($table == $tableName);
     }
@@ -65,6 +66,7 @@ class ABJ_404_Solution_DatabaseTableNameResolver {
         global $wpdb;
         if (!isset($wpdb) || !is_object($wpdb) || !is_callable(array($wpdb, 'get_results'))) { return []; }
         // @utf8-audit: opt-out - getTableColumnNames receives system-generated plugin table names only.
+        // DAO-bypass-approved: metadata column probe for system-generated plugin table names.
         $rows = $wpdb->get_results("SHOW COLUMNS FROM `" . esc_sql($tableName) . "`", ARRAY_A);
         if (!is_array($rows) || !empty($wpdb->last_error)) { return []; }
         $columns = [];

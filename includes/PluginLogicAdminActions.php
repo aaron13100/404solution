@@ -306,7 +306,8 @@ class ABJ_404_Solution_PluginLogicAdminActions {
     /** @return void */
     function handleActionChangeItemsPerRow(): void {
 
-        if ($this->f->getPostOrGetSanitize('action') == 'changeItemsPerRow' && abj_service('admin_access_policy')->isPluginAdmin()) {
+        $userIsPluginAdmin = abj_service('admin_access_policy')->isPluginAdmin();
+        if ($this->f->getPostOrGetSanitize('action') == 'changeItemsPerRow' && $userIsPluginAdmin) {
             check_admin_referer('abj404_changeItemsPerRow');
             $this->updatePerPageOption(absint($this->f->getPostOrGetSanitize('perpage')));
         }
@@ -508,7 +509,7 @@ class ABJ_404_Solution_PluginLogicAdminActions {
     }
 
     private function getMenuParentScript(): string {
-        $options = abj_service('options_repository')->getOptions();
+        $options = abj_service('options_repository')->getOptions(true);
         $menuLocation = 'underSettings';
         if (is_array($options) && isset($options['menuLocation']) && is_string($options['menuLocation'])) {
             $menuLocation = $options['menuLocation'];

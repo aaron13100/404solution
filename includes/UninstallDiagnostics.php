@@ -322,6 +322,7 @@ class ABJ_404_Solution_UninstallDiagnostics {
         }
         // DAO-bypass-approved: Diagnostic table enumeration needs SHOW TABLES metadata directly.
         $rawTables = $wpdb->get_results(
+            // DAO-bypass-approved: prepare() is part of diagnostic SHOW TABLES metadata enumeration.
             $wpdb->prepare("SHOW TABLES LIKE %s", $escapedPrefix . '%'),
             ARRAY_N
         );
@@ -473,6 +474,7 @@ class ABJ_404_Solution_UninstallDiagnostics {
 
         // DAO-bypass-approved: Diagnostic fallback metadata probe needs SHOW TABLE STATUS directly.
         $result = $wpdb->get_row(
+            // DAO-bypass-approved: prepare() is part of diagnostic SHOW TABLE STATUS metadata probing.
             $wpdb->prepare("SHOW TABLE STATUS LIKE %s", $tableName),
             ARRAY_A
         );
@@ -514,7 +516,7 @@ class ABJ_404_Solution_UninstallDiagnostics {
             return null;
         }
 
-        // @utf8-audit: opt-out. $tableName is built from $wpdb->prefix plus
+        // @utf8-audit: opt-out - $tableName is built from $wpdb->prefix plus
         // 'abj404_*' constants by the uninstall flow; never user input.
         // DAO-bypass-approved: Diagnostic last-resort SHOW CREATE TABLE charset parse
         $result = $wpdb->get_row("SHOW CREATE TABLE `" . esc_sql($tableName) . "`", ARRAY_N);

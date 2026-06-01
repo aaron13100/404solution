@@ -66,13 +66,16 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::safeLogAjaxFailure('AJAX invalid nonce in ajaxUpdatePaginationLinks.', $context);
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
                 $payload = ABJ_404_Solution_Ajax_AdminEndpointSupport::buildAjaxErrorResponse('Invalid security token', null, false);
+                ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit($payload, 403);
                 return;
             }
 
             // Verify user has appropriate capabilities (respects plugin admin users)
             $abj404logic = abj_service('plugin_logic');
-            $isPluginAdmin = abj_service('admin_access_policy')->isPluginAdmin();
+            $isPluginAdmin = is_object($abj404logic) && method_exists($abj404logic, 'userIsPluginAdmin')
+                ? (bool)$abj404logic->userIsPluginAdmin()
+                : (bool)abj_service('admin_access_policy')->isPluginAdmin();
             if (isset($GLOBALS['abj404_ajax_context']) && is_array($GLOBALS['abj404_ajax_context'])) {
                 $GLOBALS['abj404_ajax_context']['is_plugin_admin'] = $isPluginAdmin;
             }
@@ -80,6 +83,7 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::safeLogAjaxFailure('AJAX unauthorized in ajaxUpdatePaginationLinks.', $context);
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
                 $payload = ABJ_404_Solution_Ajax_AdminEndpointSupport::buildAjaxErrorResponse('Unauthorized', null, false);
+                ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit($payload, 403);
                 return;
             }
@@ -91,6 +95,7 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::safeLogAjaxFailure('AJAX rate limit in ajaxUpdatePaginationLinks.', $context);
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
                 $payload = ABJ_404_Solution_Ajax_AdminEndpointSupport::buildAjaxErrorResponse('Rate limit exceeded. Please try again later.', null, false);
+                ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit($payload, 429);
                 return;
             }
@@ -98,7 +103,11 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
             // Update the perpage option (but only if provided). Some environments may omit
             // rowsPerPage on Enter key events; avoid unnecessary option writes.
             if ($rowsPerPage > 0) {
-                $abj404logic->adminActions()->updatePerPageOption($rowsPerPage);
+                if (is_object($abj404logic) && method_exists($abj404logic, 'adminActions')) {
+                    $abj404logic->adminActions()->updatePerPageOption($rowsPerPage);
+                } else if (is_object($abj404logic) && method_exists($abj404logic, 'updatePerPageOption')) {
+                    $abj404logic->updatePerPageOption($rowsPerPage);
+                }
             }
 
             /** @var ABJ_404_Solution_View $view */

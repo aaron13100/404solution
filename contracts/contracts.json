@@ -405,6 +405,117 @@
         "valid": ["fixtures/ajax-trend-data.valid.json"],
         "invalid": ["fixtures/ajax-trend-data.invalid-missing-nonce.json"]
       }
+    },
+    {
+      "id": "ajax-admin-endpoint-support-helper",
+      "description": "Shared admin AJAX response and diagnostics support helper",
+      "direction": "internal",
+      "consumer": {
+        "file": "includes/ajax/Ajax_AdminEndpointSupport.php",
+        "test": "tests/ViewQueryFailureDiagnosticsTest.php"
+      }
+    },
+    {
+      "id": "ajax-advance-view-build-handler",
+      "description": "Extracted PHP handler for staged view-build progression AJAX",
+      "schema": "schemas/ajax-advance-view-build.schema.json",
+      "direction": "client-to-server",
+      "producer": {
+        "file": "includes/ajax/view_updater_build_advance.js",
+        "test": "tests-js/ajax-response-validation.test.js"
+      },
+      "consumer": {
+        "file": "includes/ajax/Ajax_AdvanceViewBuild.php",
+        "test": "tests/ViewUpdaterAjaxBuildAdvanceE2ETest.php"
+      }
+    },
+    {
+      "id": "ajax-fetch-inflight-stage-handler",
+      "description": "Extracted PHP handler for diagnostic stage tracking AJAX",
+      "schema": "schemas/ajax-fetch-inflight-stage.schema.json",
+      "direction": "client-to-server",
+      "producer": {
+        "file": "includes/ajax/view_updater_build_advance.js",
+        "test": "tests-js/ajax-response-validation.test.js"
+      },
+      "consumer": {
+        "file": "includes/ajax/Ajax_FetchInflightStage.php",
+        "test": "tests/ViewUpdaterAjaxContractTest.php"
+      }
+    },
+    {
+      "id": "ajax-get-pagination-links-handler",
+      "description": "Extracted PHP handler for admin table pagination AJAX",
+      "schema": "schemas/ajax-update-pagination.schema.json",
+      "direction": "client-to-server",
+      "producer": {
+        "file": "includes/ajax/view_updater_pagination.js",
+        "test": "tests-js/ajax-response-validation.test.js"
+      },
+      "consumer": {
+        "file": "includes/ajax/Ajax_GetPaginationLinks.php",
+        "test": "tests/ViewUpdaterAjaxContractTest.php"
+      }
+    },
+    {
+      "id": "ajax-refresh-admin-nonces-handler",
+      "description": "Extracted PHP handler for refreshing admin AJAX nonces",
+      "direction": "server-to-client",
+      "consumer": {
+        "file": "includes/ajax/Ajax_RefreshAdminNonces.php",
+        "test": "tests/AjaxRefreshAdminNoncesTest.php"
+      }
+    },
+    {
+      "id": "ajax-refresh-health-bar-handler",
+      "description": "Extracted PHP handler for health bar refresh AJAX",
+      "schema": "schemas/ajax-refresh-health-bar.schema.json",
+      "direction": "client-to-server",
+      "producer": {
+        "file": "includes/ajax/view_updater_stats.js",
+        "test": "tests-js/ajax-response-validation.test.js"
+      },
+      "consumer": {
+        "file": "includes/ajax/Ajax_RefreshHealthBar.php",
+        "test": "tests/HealthBarAjaxDecouplingTest.php"
+      }
+    },
+    {
+      "id": "ajax-refresh-stats-dashboard-handler",
+      "description": "Extracted PHP handler for dashboard stats refresh AJAX",
+      "schema": "schemas/ajax-refresh-stats-dashboard.schema.json",
+      "direction": "client-to-server",
+      "producer": {
+        "file": "includes/ajax/view_updater_stats.js",
+        "test": "tests-js/ajax-response-validation.test.js"
+      },
+      "consumer": {
+        "file": "includes/ajax/Ajax_RefreshStatsDashboard.php",
+        "test": "tests/ViewUpdaterAjaxContractTest.php"
+      }
+    },
+    {
+      "id": "ajax-uninstall-prefs-handler",
+      "description": "Extracted PHP handler for uninstall/deactivation preference AJAX",
+      "direction": "client-to-server",
+      "consumer": {
+        "file": "includes/ajax/Ajax_UninstallPrefs.php",
+        "test": "tests/UninstallPreferencesMultisiteTest.php"
+      }
+    },
+    {
+      "id": "ajax-warm-table-cache-handler",
+      "description": "Extracted PHP handler for background snapshot warming AJAX",
+      "schema": "schemas/ajax-warm-table-cache.schema.json",
+      "direction": "client-to-server",
+      "producer": {
+        "file": "includes/ajax/view_updater_table_warmup.js",
+        "test": "tests-js/ajax-response-validation.test.js"
+      },
+      "consumer": {
+        "file": "includes/ajax/Ajax_WarmTableCache.php",
+        "test": "tests/ViewUpdaterAjaxContractTest.php"
+      }
     }
   ]
 }

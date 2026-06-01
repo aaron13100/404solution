@@ -57,14 +57,23 @@ class ABJ_404_Solution_ContentRepository implements ABJ_404_Solution_ContentRepo
         return $prefix . 'posts';
     }
 
+    /** @return array<string, mixed> */
+    private function getRuntimeOptions(): array {
+        $pluginLogic = abj_service('plugin_logic');
+        if (is_object($pluginLogic) && method_exists($pluginLogic, 'getOptions')) {
+            $options = $pluginLogic->getOptions();
+            return is_array($options) ? $options : array();
+        }
+        return abj_service('options_repository')->getOptions();
+    }
+
     /** @inheritDoc */
     function getPublishedPagesAndPostsIDs($slug = '', $searchTerm = '',
         $limitResults = '', $orderResults = '', $extraWhereClause = '') {
         global $wpdb;
-        $abj404logic = abj_service('plugin_logic');
         $postsTableName = $this->getPostsTableName();
 
-        $options = abj_service('options_repository')->getOptions();
+        $options = $this->getRuntimeOptions();
         $recognizedPostTypes = $this->dbCore->buildPostTypeSqlList($options);
         if ($recognizedPostTypes === '') {
             return array();
@@ -195,9 +204,8 @@ class ABJ_404_Solution_ContentRepository implements ABJ_404_Solution_ContentRepo
     /** @inheritDoc */
     function getPublishedImagesIDs() {
         global $wpdb;
-        $abj404logic = abj_service('plugin_logic');
 
-        $options = abj_service('options_repository')->getOptions();
+        $options = $this->getRuntimeOptions();
         $recognizedPostTypes = $this->dbCore->buildPostTypeSqlList($options);
         if ($recognizedPostTypes === '') {
             return array();
@@ -219,9 +227,8 @@ class ABJ_404_Solution_ContentRepository implements ABJ_404_Solution_ContentRepo
     /** @inheritDoc */
     function getPublishedTags($slug = null, $limit = null) {
         global $wpdb;
-        $abj404logic = abj_service('plugin_logic');
 
-        $options = abj_service('options_repository')->getOptions();
+        $options = $this->getRuntimeOptions();
         $recognizedCategories = $this->dbCore->buildCategorySqlList($options);
 
         if ($slug != null) {
@@ -276,9 +283,8 @@ class ABJ_404_Solution_ContentRepository implements ABJ_404_Solution_ContentRepo
     /** @inheritDoc */
     function getPublishedCategories($term_id = null, $slug = null, $limit = null) {
         global $wpdb;
-        $abj404logic = abj_service('plugin_logic');
 
-        $options = abj_service('options_repository')->getOptions();
+        $options = $this->getRuntimeOptions();
         $recognizedCategories = $this->dbCore->buildCategorySqlList($options);
         if ($recognizedCategories === '') {
             $recognizedCategories = "''";
@@ -381,9 +387,7 @@ class ABJ_404_Solution_ContentRepository implements ABJ_404_Solution_ContentRepo
 
     /** @inheritDoc */
     function getIDsNeededForPermalinkCache() {
-        $abj404logic = abj_service('plugin_logic');
-
-        $options = abj_service('options_repository')->getOptions();
+        $options = $this->getRuntimeOptions();
         $recognizedPostTypes = $this->dbCore->buildPostTypeSqlList($options);
         if ($recognizedPostTypes === '') {
             return null;

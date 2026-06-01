@@ -44,6 +44,7 @@ class ABJ_404_Solution_Ajax_RefreshStatsDashboard {
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::safeLogAjaxFailure('AJAX invalid nonce in ajaxRefreshStatsDashboard.', $context);
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
                 $payload = ABJ_404_Solution_Ajax_AdminEndpointSupport::buildAjaxErrorResponse('Invalid security token', null, false);
+                ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit($payload, 403);
                 return;
             }
@@ -53,6 +54,7 @@ class ABJ_404_Solution_Ajax_RefreshStatsDashboard {
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::safeLogAjaxFailure('AJAX unauthorized in ajaxRefreshStatsDashboard.', $context);
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
                 $payload = ABJ_404_Solution_Ajax_AdminEndpointSupport::buildAjaxErrorResponse('Unauthorized', null, false);
+                ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit($payload, 403);
                 return;
             }
@@ -61,6 +63,7 @@ class ABJ_404_Solution_Ajax_RefreshStatsDashboard {
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::safeLogAjaxFailure('AJAX rate limit in ajaxRefreshStatsDashboard.', $context);
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
                 $payload = ABJ_404_Solution_Ajax_AdminEndpointSupport::buildAjaxErrorResponse('Rate limit exceeded. Please try again later.', null, false);
+                ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit($payload, 429);
                 return;
             }

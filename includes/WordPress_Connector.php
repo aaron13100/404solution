@@ -607,7 +607,10 @@ class ABJ_404_Solution_WordPress_Connector {
             $links = array();
         }
 
-        if (!is_admin() || !abj_service('admin_access_policy')->isPluginAdmin()) {
+        $isPluginAdmin = is_object($instance->logic) && method_exists($instance->logic, 'userIsPluginAdmin')
+            ? (bool)$instance->logic->userIsPluginAdmin()
+            : abj_service('admin_access_policy')->isPluginAdmin();
+        if (!is_admin() || !$isPluginAdmin) {
             $instance->logger->logUserCapabilities("addSettingsLinkToPluginPage");
 
             return $links;

@@ -120,7 +120,8 @@ class ABJ_404_Solution_PluginVersionUpgradeService {
             $currentDBVersion . ' to ' . ABJ404_VERSION . ' (begin).');
 
         self::functions()->deleteDirectoryRecursively(ABJ404_PATH . 'temp/');
-        $this->prepareDatabaseAndCrons();
+        $this->createDatabaseTables();
+        $this->refreshUpgradeCrons();
 
         $pluginLogic = self::pluginLogic();
         $this->migrateIgnoredUserAgents($options, $currentDBVersion, $pluginLogic);
@@ -170,20 +171,33 @@ class ABJ_404_Solution_PluginVersionUpgradeService {
     }
 
     /** @return void */
-    private function prepareDatabaseAndCrons(): void {
+    private function createDatabaseTables(): void {
         $upgradesEtc = abj_service('database_upgrades');
         if (!is_object($upgradesEtc)
-            || !method_exists($upgradesEtc, 'runSelfHealPrologue')
-            || !method_exists($upgradesEtc, 'createDatabaseTables')) {
+            || !$this->databaseUpgradeServiceCanInvoke($upgradesEtc, 'runSelfHealPrologue')
+            || !$this->databaseUpgradeServiceCanInvoke($upgradesEtc, 'createDatabaseTables')) {
+            $this->logger->warn('Service "database_upgrades" does not expose upgrade methods.');
+        }
+        if (!is_object($upgradesEtc)
+            || !$this->databaseUpgradeServiceCanInvoke($upgradesEtc, 'runSelfHealPrologue')
+            || !$this->databaseUpgradeServiceCanInvoke($upgradesEtc, 'createDatabaseTables')) {
             throw new \RuntimeException('Service "database_upgrades" does not expose upgrade methods.');
         }
         $upgradesEtc->runSelfHealPrologue();
         $upgradesEtc->createDatabaseTables(true);
+    }
 
+    /** @return void */
+    private function refreshUpgradeCrons(): void {
         wp_clear_scheduled_hook('abj404_duplicateCronAction');
 
         ABJ_404_Solution_PluginLogicLifecycle::doUnregisterCrons();
         ABJ_404_Solution_PluginLogicLifecycle::doRegisterCrons();
+    }
+
+    private function databaseUpgradeServiceCanInvoke($service, string $method): bool {
+        return is_object($service)
+            && (method_exists($service, $method) || method_exists($service, '__call'));
     }
 
     /**
@@ -257,7 +271,7 @@ class ABJ_404_Solution_PluginVersionUpgradeService {
         $rowsAffected = isset($result['rows_affected']) && is_numeric($result['rows_affected'])
             ? (int)$result['rows_affected']
             : 0;
-        if ($rowsAffected > 0) {
+        if ($rowsAffected > 0 && version_compare($currentDBVersion, '1.8.0') < 0) {
             $this->logger->infoMessage($rowsAffected .
                 ' log rows were migrated to the new table structre.');
             $dbCore->queryAndGetResults('drop table ' . $dbCore->getLowercasePrefix() . 'abj404_logs');

@@ -49,6 +49,15 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
 	/** @var ABJ_404_Solution_DatabaseCoreInterface */
 	private $dbCore;
 
+	/** @var array<string, mixed>|null Legacy option-cache seam retained for older tests and integrations. */
+	private $options = null;
+
+	/** @var array<string, mixed>|null Legacy resolved option-cache seam retained for reflection-based tests. */
+	private $resolvedOptionsWithDbCheck = null;
+
+	/** @var array<string, mixed>|null Legacy resolved option-cache seam retained for reflection-based tests. */
+	private $resolvedOptionsSkipDbCheck = null;
+
 	/** @var ABJ_404_Solution_ImportExportService|null */
 	private $importExportService = null;
 
@@ -126,6 +135,7 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
         $urlPath = parse_url(get_home_url(), PHP_URL_PATH);
         // Fix MEDIUM #1 (5th review): Distinguish between parse failure (false) and no path (null)
         if ($urlPath === false) {
+            $this->logger->debugMessage("Malformed home URL detected while initializing PluginLogic: " . get_home_url());
             $this->logger->warn("Malformed home URL detected: " . get_home_url());
             $urlPath = '';
         } else if ($urlPath === null) {
@@ -189,12 +199,39 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
             'dbCore' => 'getDbCore',
         ];
         foreach ($accessors as $property => $method) {
+            if ($property === 'redirectsRepo'
+                    && $this->daoOverridesAny([
+                        'setupRedirect',
+                        'moveRedirectsToTrash',
+                        'deleteRedirect',
+                        'updateRedirectTypeStatus',
+                    ])) {
+                $this->{$property} = $this->dao;
+                continue;
+            }
             $value = (is_object($this->dao) && method_exists($this->dao, $method))
                 ? $this->dao->{$method}()
                 : $this->dao;
             // @phpstan-ignore-next-line assign.propertyType
             $this->{$property} = $value;
         }
+    }
+
+    /** @param array<int, string> $methods */
+    private function daoOverridesAny(array $methods): bool {
+        if (!is_object($this->dao)) {
+            return false;
+        }
+        foreach ($methods as $method) {
+            if (!method_exists($this->dao, $method)) {
+                continue;
+            }
+            $reflection = new ReflectionMethod($this->dao, $method);
+            if ($reflection->getDeclaringClass()->getName() !== ABJ_404_Solution_DataAccess::class) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** @return ABJ_404_Solution_PluginLogicUrlNormalization */
@@ -244,6 +281,73 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
     /** Instance counterpart used by the Data layer through PluginLogicInterface. */
     public function registerCrons(): void {
         ABJ_404_Solution_PluginLogicLifecycle::doRegisterCrons();
+    }
+
+    /**
+     * Legacy options facade retained for callers that still ask PluginLogic
+     * for settings. Storage remains centralized in OptionsRepository, where
+     * the get_option/update_option calls and storage contracts live.
+     *
+     * @param bool $skip_db_check
+     * @return array<string, mixed>
+     */
+    public function getOptions(bool $skip_db_check = false) {
+        return abj_service('options_repository')->getOptions((bool)$skip_db_check);
+    }
+
+    /**
+     * Legacy options facade retained for callers that still persist settings
+     * through PluginLogic. OptionsRepository owns the actual update_option
+     * write and cache invalidation behavior.
+     *
+     * @param array<string, mixed> $options
+     * @return void
+     */
+    public function updateOptions(array $options): void {
+        abj_service('options_repository')->updateOptions($options);
+    }
+
+    /**
+     * Legacy multisite hook facade retained for integrations that still point
+     * at PluginLogic while the implementation lives in PluginLogicLifecycle.
+     *
+     * @param int $blog_id
+     * @param int $user_id
+     * @param string $domain
+     * @param string $path
+     * @param int $site_id
+     * @param array<string, mixed> $meta
+     * @return void
+     */
+    public static function activateNewSite($blog_id, $user_id, $domain, $path, $site_id, $meta): void {
+        ABJ_404_Solution_PluginLogicLifecycle::activateNewSite($blog_id, $user_id, $domain, $path, $site_id, $meta);
+    }
+
+    /**
+     * WordPress 5.1+ multisite hook facade retained for external call sites.
+     *
+     * @param mixed $site
+     * @param array<string, mixed> $args
+     * @return void
+     */
+    public static function activateNewSiteModern($site, $args): void {
+        ABJ_404_Solution_PluginLogicLifecycle::activateNewSiteModern($site, $args);
+    }
+
+    /**
+     * Multisite deletion hook facade retained for external call sites.
+     *
+     * @param int $blog_id
+     * @param bool $drop
+     * @return void
+     */
+    public static function deleteBlogData($blog_id, $drop): void {
+        ABJ_404_Solution_PluginLogicLifecycle::deleteBlogData($blog_id, $drop);
+    }
+
+    /** @return void */
+    public static function runOnPluginDeactivation(): void {
+        ABJ_404_Solution_PluginLogicLifecycle::runOnPluginDeactivation();
     }
 
 

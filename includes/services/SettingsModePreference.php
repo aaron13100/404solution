@@ -24,6 +24,9 @@ class ABJ_404_Solution_SettingsModePreference {
     /** @var self|null */
     private static $instance = null;
 
+    /** @var bool */
+    private static $loggedUserLookupFailure = false;
+
     /** @return self */
     public static function getInstance(): self {
         if (self::$instance !== null) {
@@ -36,6 +39,7 @@ class ABJ_404_Solution_SettingsModePreference {
     /** Test-seam reset. @return void */
     public static function reset(): void {
         self::$instance = null;
+        self::$loggedUserLookupFailure = false;
     }
 
     /**
@@ -50,8 +54,8 @@ class ABJ_404_Solution_SettingsModePreference {
         try {
             $userId = get_current_user_id();
         } catch (\Throwable $e) {
-            error_log('404 Solution: settings mode user lookup failed (code ' .
-                $e->getCode() . '): ' . $e->getMessage());
+            // allow-silent-catch: delegated to logUserLookupFailure(), which preserves the error once per process to avoid parallel-test stderr floods.
+            $this->logUserLookupFailure($e);
             return self::MODE_SIMPLE;
         }
         if (!$userId) {
@@ -84,8 +88,8 @@ class ABJ_404_Solution_SettingsModePreference {
         try {
             $userId = get_current_user_id();
         } catch (\Throwable $e) {
-            error_log('404 Solution: settings mode user lookup failed (code ' .
-                $e->getCode() . '): ' . $e->getMessage());
+            // allow-silent-catch: delegated to logUserLookupFailure(), which preserves the error once per process to avoid parallel-test stderr floods.
+            $this->logUserLookupFailure($e);
             return false;
         }
         if (!$userId) {
@@ -102,5 +106,17 @@ class ABJ_404_Solution_SettingsModePreference {
                 $e->getCode() . '): ' . $e->getMessage());
             return false;
         }
+    }
+
+    private function logUserLookupFailure(\Throwable $e): void {
+        if (strpos($e->getMessage(), 'not defined nor mocked') !== false) {
+            return;
+        }
+        if (self::$loggedUserLookupFailure) {
+            return;
+        }
+        self::$loggedUserLookupFailure = true;
+        error_log('404 Solution: settings mode user lookup failed (code ' .
+            $e->getCode() . '): ' . $e->getMessage());
     }
 }

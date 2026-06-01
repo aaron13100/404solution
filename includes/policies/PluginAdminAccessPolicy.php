@@ -184,8 +184,8 @@ class ABJ_404_Solution_PluginAdminAccessPolicy {
         }
 
         $extraAdmins = isset($options['plugin_admin_users']) ? $options['plugin_admin_users'] : array();
-        $normalizedAdmins = $this->normalizeExtraAdmins($extraAdmins);
-        return in_array($currentUserName, $normalizedAdmins, true);
+        $extraAdmins = $this->normalizeExtraAdmins($extraAdmins);
+        return in_array($currentUserName, $extraAdmins, true);
     }
 
     /**

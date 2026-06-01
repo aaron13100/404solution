@@ -5,6 +5,7 @@ if (!defined('ABSPATH')) {
 }
 
 require_once __DIR__ . '/RedirectsRepositoryInterface.php';
+require_once __DIR__ . '/RedirectsRetentionService.php';
 
 /**
  * Redirect CRUD, conditions, regex matching, cleanup, and cron maintenance.
@@ -77,6 +78,32 @@ class ABJ_404_Solution_RedirectsRepository implements ABJ_404_Solution_Redirects
             return $this->urlNormalization;
         }
         return abj_service('plugin_logic')->urlNormalization();
+    }
+
+    /** @return ABJ_404_Solution_RedirectsRetentionService */
+    private function retentionService() {
+        return new ABJ_404_Solution_RedirectsRetentionService($this->dbCore, $this, $this->f, $this->logger);
+    }
+
+    /** Legacy facade retained for integrations that still call RedirectsRepository directly. */
+    function deleteOldRedirectsCron() {
+        return $this->retentionService()->deleteOldRedirectsCron();
+    }
+
+    /**
+     * @param array<string, mixed> $options
+     * @param int $now
+     * @param string $optionKey
+     * @param string $statusList
+     * @param string $debugMessageType
+     * @return int
+     */
+    private function deleteOldRedirectsByType($options, $now, $optionKey, $statusList, $debugMessageType) {
+        return $this->retentionService()->deleteOldRedirectsByType($options, $now, $optionKey, $statusList, $debugMessageType);
+    }
+
+    private function deleteOldLogsByAge(int $daysToKeep, int $now): int {
+        return $this->retentionService()->deleteOldLogsByAge($daysToKeep, $now);
     }
 
     // =========================================================================

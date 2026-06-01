@@ -109,12 +109,9 @@ class ABJ_404_Solution_UninstallModal {
         $replacements = array(
             '{{LABEL_BEFORE_DEACTIVATING}}'        => __('Before deactivating, choose what happens to your data:', '404-solution'),
             '{{LABEL_KEEP_REDIRECTS}}'             => sprintf(_n('Keep my redirect (%d)', 'Keep my redirects (%d)', $redirectCount, '404-solution'), $redirectCount),
-            // Original copy used a Unicode em-dash glyph rendered as text in
-            // the modal preface; ASCII-fy to a parenthetical clause to keep
-            // dash policy clean while preserving the description meaning.
-            '{{LABEL_KEEP_REDIRECTS_DESC}}'        => __('(saves them for later if you reinstall)', '404-solution'),
+            '{{LABEL_KEEP_REDIRECTS_DESC}}'        => __('— saves them for later if you reinstall', '404-solution'),
             '{{LABEL_KEEP_LOGS}}'                  => __('Keep 404 logs', '404-solution'),
-            '{{LABEL_KEEP_LOGS_DESC}}'             => __('(historical data preserved)', '404-solution'),
+            '{{LABEL_KEEP_LOGS_DESC}}'             => __('— historical data preserved', '404-solution'),
             '{{LABEL_CACHE_NOTE}}'                 => __('Cache tables are always deleted (can be rebuilt)', '404-solution'),
             '{{LABEL_HELP_IMPROVE}}'               => __('Help us improve (Optional)', '404-solution'),
             '{{REASON_TEMPORARY}}'                 => __('Temporary deactivation for debugging', '404-solution'),

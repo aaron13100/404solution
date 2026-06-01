@@ -140,7 +140,10 @@ class ABJ_404_Solution_Ajax_Php {
 		$abj404logic = ($logic !== null) ? $logic : abj_service('plugin_logic');
 
 		// Verify user has appropriate capabilities (respects plugin admin users)
-		if (!abj_service('admin_access_policy')->isPluginAdmin()) {
+		$userIsPluginAdmin = is_object($abj404logic) && method_exists($abj404logic, 'userIsPluginAdmin')
+			? (bool)$abj404logic->userIsPluginAdmin()
+			: (bool)abj_service('admin_access_policy')->isPluginAdmin();
+		if (!$userIsPluginAdmin) {
 			wp_send_json_error(array('message' => 'Unauthorized'), 403);
 			return; // @phpstan-ignore deadCode.unreachable
 		}
@@ -184,7 +187,10 @@ class ABJ_404_Solution_Ajax_Php {
 		/** @var ABJ_404_Solution_PluginLogic $abj404logic */
 		$abj404logic = ($logic !== null) ? $logic : abj_service('plugin_logic');
 
-		if (!abj_service('admin_access_policy')->isPluginAdmin()) {
+		$userIsPluginAdmin = is_object($abj404logic) && method_exists($abj404logic, 'userIsPluginAdmin')
+			? (bool)$abj404logic->userIsPluginAdmin()
+			: (bool)abj_service('admin_access_policy')->isPluginAdmin();
+		if (!$userIsPluginAdmin) {
 			wp_send_json_error(array('message' => __('Unauthorized', '404-solution')), 403);
 			return; // @phpstan-ignore deadCode.unreachable
 		}

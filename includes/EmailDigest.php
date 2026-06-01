@@ -239,7 +239,7 @@ class ABJ_404_Solution_EmailDigest {
      * @return string
      */
     public function sendDigest(): string {
-        $options = abj_service('options_repository')->getOptions(true);
+        $options = $this->getOptions();
 
         $frequency = isset($options['admin_notification_frequency']) && is_string($options['admin_notification_frequency'])
             ? $options['admin_notification_frequency']
@@ -322,7 +322,7 @@ class ABJ_404_Solution_EmailDigest {
      * @return void
      */
     public function scheduleNextDigest(): void {
-        $options = abj_service('options_repository')->getOptions(true);
+        $options = $this->getOptions();
         $frequency = isset($options['admin_notification_frequency']) && is_string($options['admin_notification_frequency'])
             ? $options['admin_notification_frequency']
             : 'instant';
@@ -343,6 +343,16 @@ class ABJ_404_Solution_EmailDigest {
                 wp_schedule_event(time(), $recurrence, $hook);
             }
         }
+    }
+
+    /** @return array<string, mixed> */
+    private function getOptions(): array {
+        $pluginLogic = abj_service('plugin_logic');
+        if (is_object($pluginLogic) && method_exists($pluginLogic, 'getOptions')) {
+            $options = $pluginLogic->getOptions(true);
+            return is_array($options) ? $options : array();
+        }
+        return abj_service('options_repository')->getOptions(true);
     }
 
     /**
