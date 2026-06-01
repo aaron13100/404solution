@@ -600,6 +600,16 @@ class ABJ_404_Solution_ViewQueriesStaged extends ABJ_404_Solution_ViewBuildColla
                 $forceRebuild ? 'true' : 'false', $lockTimeoutSeconds
             ));
             $progress = $this->getViewBuildProgress();
+            if ((int)($progress['stage'] ?? 0) === 0) {
+                $progress['stage'] = max(
+                    0,
+                    $this->readProgressOption('last_started_stage', 0),
+                    $this->readProgressOption('last_completed_stage', 0)
+                );
+                $progress['progress_text'] = $progress['stage'] > 0
+                    ? ('stage ' . $progress['stage'] . '/11')
+                    : (string)($progress['progress_text'] ?? 'not yet started');
+            }
             $progress['locked'] = true;
             return $progress;
         }

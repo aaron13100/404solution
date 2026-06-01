@@ -65,7 +65,7 @@ class ABJ_404_Solution_WPUtils {
 	 * @param mixed $b
 	 * @return int
 	 */
-	private static function compareAjaxActionArrays($a, $b): int {
+	public static function compareAjaxActionArrays($a, $b): int {
 		$str1 = self::getValueOrObjectClass($a);
 		$str2 = self::getValueOrObjectClass($b);
 		

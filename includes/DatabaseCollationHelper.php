@@ -298,8 +298,8 @@ class ABJ_404_Solution_DatabaseCollationHelper {
      */
     private function clock() {
         if ($this->clock === null) {
-            if (function_exists('abj_service')) {
-                $resolved = abj_service('clock');
+            if (class_exists('ABJ_404_Solution_ServiceContainer')) {
+                $resolved = ABJ_404_Solution_ServiceContainer::safeGet('clock');
                 if ($resolved instanceof ABJ_404_Solution_Clock) {
                     $this->clock = $resolved;
                     return $this->clock;
