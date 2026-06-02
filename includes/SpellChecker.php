@@ -352,7 +352,7 @@ class ABJ_404_Solution_SpellChecker {
 			esc_html($normalizedURL));
 	}
 
-	public function triggerAsyncSuggestionComputation($requestedURL) {
+	public function triggerAndCleanupOnFailure(string $requestedURL): bool {
 		$f = abj_service('functions');
 
 		$normalizedURL = $f->normalizeURLForCacheKey($requestedURL);
