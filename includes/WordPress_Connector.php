@@ -688,35 +688,6 @@ class ABJ_404_Solution_WordPress_Connector {
         $this->getFrontendPipeline()->process404();
     }
 
-    /**
-     * @param array<string, mixed> $options
-     * @param string $requestedURL
-     * @return bool true if the user is sent to the default 404 page.
-     */
-    function tryRegexRedirect($options, $requestedURL) {
-        return $this->getFrontendPipeline()->tryRegexRedirect($options, $requestedURL);
-    }
-    
-	/**
-	 * @param array<string, mixed> $options
-	 * @param string $requestedURL
-	 * @param array<string, mixed> $redirect
-	 * @return void
-	 */
-    function logAReallyLongDebugMessage($options, $requestedURL, $redirect) {
-        $this->getFrontendPipeline()->logAReallyLongDebugMessage($options, $requestedURL, $redirect);
-	}
-    
-    /** Redirect to the page specified.
-     * @param string $requestedURL
-     * @param array<string, mixed> $redirect
-     * @param string $matchReason
-     * @return bool true if the user is sent to the default 404 page.
-     */
-    function processRedirect($requestedURL, $redirect, $matchReason) {
-        return $this->getFrontendPipeline()->processRedirect($requestedURL, $redirect, $matchReason);
-    }
-
     /** @deprecated Use ABJ_404_Solution_ReviewFeedback::echoDashboardNotification() */
     static function echoDashboardNotification(): void {
         ABJ_404_Solution_ReviewFeedback::echoDashboardNotification();

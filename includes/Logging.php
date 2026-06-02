@@ -427,7 +427,10 @@ class ABJ_404_Solution_Logging {
             $bodyLines[] = "Network activated: " . (is_plugin_active_for_network(plugin_basename(ABJ404_FILE)) ? 'yes' : 'no');
         }
         $bodyLines[] = "WP_MEMORY_LIMIT: " . (defined('WP_MEMORY_LIMIT') ? WP_MEMORY_LIMIT : '');
-        $bodyLines[] = "Extensions: " . implode(", ", $extensions);
+        $extensionStrings = array_map(static function ($v): string {
+            return is_scalar($v) ? (string)$v : '';
+        }, $extensions);
+        $bodyLines[] = "Extensions: " . implode(", ", $extensionStrings);
         $bodyLines[] = " ";
         $bodyLines[] = "--- WordPress Content Counts ---";
         $bodyLines[] = "Published posts: " . (string)($payload['published_posts_count'] ?? '0');
