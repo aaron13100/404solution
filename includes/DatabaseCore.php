@@ -9,6 +9,7 @@ require_once __DIR__ . '/DatabaseRuntimeState.php';
 require_once __DIR__ . '/DatabaseConnectionManager.php';
 require_once __DIR__ . '/DatabaseQueryTimeoutManager.php';
 require_once __DIR__ . '/DatabaseErrorClassifier.php';
+require_once __DIR__ . '/DatabaseRepairPolicy.php';
 require_once __DIR__ . '/DatabaseSqlErrorReporter.php';
 require_once __DIR__ . '/DatabaseTableNameResolver.php';
 require_once __DIR__ . '/DatabaseNoticeStateHolder.php';
@@ -64,6 +65,9 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
     /** @var ABJ_404_Solution_DatabaseErrorClassifier */
     private $errorClassifier;
 
+    /** @var ABJ_404_Solution_DatabaseRepairPolicy */
+    private $repairPolicy;
+
     /** @var ABJ_404_Solution_DatabaseSqlErrorReporter */
     private $sqlErrorReporter;
 
@@ -99,6 +103,7 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
         $this->connectionManager = new ABJ_404_Solution_DatabaseConnectionManager($this, $this->logger);
         $this->queryTimeoutManager = new ABJ_404_Solution_DatabaseQueryTimeoutManager($this, $this->logger);
         $this->errorClassifier = new ABJ_404_Solution_DatabaseErrorClassifier($this, $this->f, $this->logger);
+        $this->repairPolicy = new ABJ_404_Solution_DatabaseRepairPolicy($this, $this->errorClassifier, $this->f, $this->logger);
         $this->sqlErrorReporter = new ABJ_404_Solution_DatabaseSqlErrorReporter($this, $this->logger);
         $this->queryExecutor = new ABJ_404_Solution_DatabaseQueryExecutor($this, $this->f, $this->logger);
         $this->tableNameResolver = new ABJ_404_Solution_DatabaseTableNameResolver(
@@ -175,6 +180,11 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
     /** @return ABJ_404_Solution_DatabaseErrorClassifier */
     public function errorClassifier(): ABJ_404_Solution_DatabaseErrorClassifier {
         return $this->errorClassifier;
+    }
+
+    /** @return ABJ_404_Solution_DatabaseRepairPolicy */
+    public function repairPolicy(): ABJ_404_Solution_DatabaseRepairPolicy {
+        return $this->repairPolicy;
     }
 
     /** @return ABJ_404_Solution_DatabaseSqlErrorReporter */
@@ -380,7 +390,7 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
      * @return void
      */
     public function attemptMissingTableRepairAndRetry($query, array &$result): void {
-        $this->errorClassifier->attemptMissingTableRepairAndRetry($query, $result);
+        $this->repairPolicy->attemptMissingTableRepairAndRetry($query, $result);
     }
 
     /**
@@ -389,7 +399,7 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
      * @return bool
      */
     public function handleTransientViewBuildTableMissing($query, array &$result): bool {
-        return $this->errorClassifier->handleTransientViewBuildTableMissing($query, $result);
+        return $this->repairPolicy->handleTransientViewBuildTableMissing($query, $result);
     }
 
     /**
@@ -398,7 +408,7 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
      * @return bool
      */
     public function isMissingTableRepairOnCooldown(array &$result, string $repairCooldownKey): bool {
-        return $this->errorClassifier->isMissingTableRepairOnCooldown($result, $repairCooldownKey);
+        return $this->repairPolicy->isMissingTableRepairOnCooldown($result, $repairCooldownKey);
     }
 
     /**
@@ -414,7 +424,7 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
         $query, array &$result, string $repairCooldownKey, int $cooldownTtlSeconds,
         string $originalSqlError, string $missingTable
     ): void {
-        $this->errorClassifier->runRepairCreateRetryAndReport(
+        $this->repairPolicy->runRepairCreateRetryAndReport(
             $query, $result, $repairCooldownKey, $cooldownTtlSeconds, $originalSqlError, $missingTable
         );
     }
@@ -431,7 +441,7 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
         array &$result, string $repairCooldownKey, int $cooldownTtlSeconds,
         string $originalSqlError, string $missingTable
     ): void {
-        $this->errorClassifier->reportRepairRetryFailure(
+        $this->repairPolicy->reportRepairRetryFailure(
             $result, $repairCooldownKey, $cooldownTtlSeconds, $originalSqlError, $missingTable
         );
     }
