@@ -29,6 +29,8 @@ return array(
     'ABJ_404_Solution_ViewBuildStageCallbacks' => $base . 'includes/ViewBuildStageCallbacks.php',
     'ABJ_404_Solution_ViewBuildStageRunner' => $base . 'includes/ViewBuildStageRunner.php',
     'ABJ_404_Solution_ViewQueriesStaged' => $base . 'includes/ViewQueriesStaged.php',
+    'ABJ_404_Solution_ViewDoneState' => $base . 'includes/ViewDoneState.php',
+    'ABJ_404_Solution_ViewBuildPageLoadFallback' => $base . 'includes/ViewBuildPageLoadFallback.php',
     'ABJ_404_Solution_ViewBuildOrchestratorInterface' => $base . 'includes/ViewBuildOrchestratorInterface.php',
     'ABJ_404_Solution_ViewBuildOrchestrator' => $base . 'includes/ViewBuildOrchestrator.php',
     'ABJ_404_Solution_DatabaseUpgradeCoordinator' => $base . 'includes/DatabaseUpgradeCoordinator.php',

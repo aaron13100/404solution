@@ -58,6 +58,10 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
     private $hostFailurePolicy;
     /** @var ABJ_404_Solution_ViewBuildForceRestart */
     private $forceRestart;
+    /** @var ABJ_404_Solution_ViewDoneState */
+    private $viewDoneState;
+    /** @var ABJ_404_Solution_ViewBuildPageLoadFallback */
+    private $pageLoadFallback;
 
     /** @var ABJ_404_Solution_DatabaseConnectionManager */
     private $connectionManager;
@@ -98,7 +102,17 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
         $this->sessionEnvProbe = new ABJ_404_Solution_ViewBuildSessionEnvProbe($this);
         $this->hostFailurePolicy = new ABJ_404_Solution_ViewBuildHostFailurePolicy($this);
         $this->forceRestart = new ABJ_404_Solution_ViewBuildForceRestart($this);
+        $this->viewDoneState = new ABJ_404_Solution_ViewDoneState($this);
+        $this->pageLoadFallback = new ABJ_404_Solution_ViewBuildPageLoadFallback($this);
+        // view_done_state is registered BEFORE queries so the orchestrator's
+        // __call routing resolves viewDoneIsServeable / viewDoneBuiltAt /
+        // markViewDoneBuildCompleted / invalidateViewDoneServeableCache /
+        // getViewDoneBuiltAtTimestamp / viewDoneFreshnessOptionName to the
+        // new owning collaborator rather than to ViewQueriesStaged (where
+        // these methods used to live before the i798 extraction).
         $this->collaborators = array(
+            'view_done_state' => $this->viewDoneState,
+            'page_load_fallback' => $this->pageLoadFallback,
             'queries' => $this->queries,
             'stage_runner' => new ABJ_404_Solution_ViewBuildStageRunner($this),
             'stage_callbacks' => new ABJ_404_Solution_ViewBuildStageCallbacks($this),
@@ -151,17 +165,17 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
 
     /** @return bool */
     public function viewDoneIsServeable(): bool {
-        return $this->queries->viewDoneIsServeable();
+        return $this->viewDoneState->viewDoneIsServeable();
     }
 
     /** @return int */
     public function getViewDoneBuiltAtTimestamp(): int {
-        return $this->queries->getViewDoneBuiltAtTimestamp();
+        return $this->viewDoneState->getViewDoneBuiltAtTimestamp();
     }
 
     /** @return void */
     public function markViewDoneBuildCompleted(): void {
-        $this->queries->markViewDoneBuildCompleted();
+        $this->viewDoneState->markViewDoneBuildCompleted();
     }
 
     /** @return array<string, mixed> */
@@ -176,7 +190,7 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
 
     /** @return array{ran:bool, reason:string, progress:array<string,mixed>} */
     public function runPageLoadFallbackAdvance(): array {
-        return $this->queries->runPageLoadFallbackAdvance();
+        return $this->pageLoadFallback->runPageLoadFallbackAdvance();
     }
 
     /** @param string $sub @param array<string, mixed> $tableOptions @return int */
@@ -415,7 +429,7 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
 
     /** @return void */
     public function invalidateViewDoneServeableCacheBridge(): void {
-        $this->queries->invalidateViewDoneServeableCache();
+        $this->viewDoneState->invalidateViewDoneServeableCache();
     }
 
     /** @return array<string, mixed> */
