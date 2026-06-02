@@ -165,6 +165,11 @@ function abj_404_solution_register_data_layer($container) {
             $c->get('functions'), $c->get('logging')
         );
     });
+    $container->set('plugin_update_metadata_repository', function($c) {
+        return new ABJ_404_Solution_PluginUpdateMetadataRepository(
+            $c->get('db_core'), $c->get('functions'), $c->get('logging')
+        );
+    });
     $container->set('view_read_service', function($c) use ($daoModuleDeps) { return abj_404_solution_create_view_read_service($c, $daoModuleDeps); });
     $container->set('view_build_orchestrator', function($c) { return abj_404_solution_create_view_build_orchestrator($c); });
     $container->set('data_access', function($c) {

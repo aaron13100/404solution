@@ -196,7 +196,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 	/**
 	 * Constructor with dependency injection.
 	 *
-	 * @param ABJ_404_Solution_DataAccess|null $dataAccess Data access layer (legacy, only for getLatestPluginVersion)
+	 * @param ABJ_404_Solution_DataAccess|null $dataAccess Data access layer (carries the repo composition the upgrade components resolve from)
 	 * @param ABJ_404_Solution_Logging|null $logging Logging service
 	 * @param ABJ_404_Solution_Functions|null $functions String utilities
 	 * @param ABJ_404_Solution_PermalinkCache|null $permalinkCache Permalink cache service

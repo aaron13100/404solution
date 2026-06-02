@@ -23,13 +23,13 @@ class ABJ_404_Solution_PluginLogicAdminActions {
     /** @var ABJ_404_Solution_ViewBuildOrchestratorInterface|ABJ_404_Solution_DataAccess */
     private $viewBuild;
 
-    /** @var ABJ_404_Solution_ViewReadServiceInterface|ABJ_404_Solution_DataAccess */
+    /** @var ABJ_404_Solution_ViewReadServiceInterface */
     private $viewRead;
 
     /** @var ABJ_404_Solution_ContentRepositoryInterface */
     private $contentRepo;
 
-    /** @var ABJ_404_Solution_DatabaseCoreInterface|ABJ_404_Solution_DataAccess */
+    /** @var ABJ_404_Solution_DatabaseCoreInterface */
     private $dbCore;
 
     /** @var ABJ_404_Solution_DataAccess */
@@ -40,6 +40,9 @@ class ABJ_404_Solution_PluginLogicAdminActions {
 
     /** @var ABJ_404_Solution_PluginLogic */
     private $pluginLogic;
+
+    /** @var ABJ_404_Solution_AdminActionsDependencies */
+    private $deps;
 
     /**
      * Construct with a single typed dependency bundle. Replaces a
@@ -60,6 +63,7 @@ class ABJ_404_Solution_PluginLogicAdminActions {
         $this->dao = $deps->getDao();
         $this->urlNormalization = $deps->getUrlNormalization();
         $this->pluginLogic = $deps->getPluginLogic();
+        $this->deps = $deps;
     }
 
     /**
@@ -361,7 +365,7 @@ class ABJ_404_Solution_PluginLogicAdminActions {
             check_admin_referer('abj404_importRedirects');
 
             try {
-                $result = $this->dao->importDataFromPluginRedirectioner();
+                $result = $this->deps->getPluginUpdateRepo()->importDataFromPluginRedirectioner();
                 if ($result['last_error'] != '') {
                     $lastErrorJson = json_encode($result['last_error']);
                     $message = sprintf(__("Error: No records were imported. SQL result: %s", '404-solution'),

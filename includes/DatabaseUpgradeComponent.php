@@ -59,6 +59,9 @@ abstract class ABJ_404_Solution_DatabaseUpgradeComponent {
     /** @var ABJ_404_Solution_LogsRepositoryInterface */
     protected $logsRepo;
 
+    /** @var ABJ_404_Solution_PluginUpdateMetadataRepository */
+    protected $pluginUpdateRepo;
+
     /** @var ABJ_404_Solution_Logging */
     protected $logger;
 

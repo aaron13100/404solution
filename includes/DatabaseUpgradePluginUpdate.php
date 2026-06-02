@@ -6,6 +6,36 @@ if (!defined('ABSPATH')) {
 
 class ABJ_404_Solution_DatabaseUpgradePluginUpdate extends ABJ_404_Solution_DatabaseUpgradeComponent {
 
+    /**
+     * Resolve the plugin-update metadata repository. Test subclasses can
+     * preload `$this->pluginUpdateRepo` via reflection; production paths
+     * read it from the service container; bare instantiation contexts
+     * (no container) build a fresh repo from the carrier deps.
+     *
+     * @return ABJ_404_Solution_PluginUpdateMetadataRepository
+     */
+    private function resolvePluginUpdateRepo(): ABJ_404_Solution_PluginUpdateMetadataRepository {
+        if ($this->pluginUpdateRepo instanceof ABJ_404_Solution_PluginUpdateMetadataRepository) {
+            return $this->pluginUpdateRepo;
+        }
+        if (class_exists('ABJ_404_Solution_ServiceContainer')
+                && ABJ_404_Solution_ServiceContainer::getInstance()->has('plugin_update_metadata_repository')) {
+            $repo = ABJ_404_Solution_ServiceContainer::getInstance()->get('plugin_update_metadata_repository');
+            if ($repo instanceof ABJ_404_Solution_PluginUpdateMetadataRepository) {
+                $this->pluginUpdateRepo = $repo;
+                return $repo;
+            }
+        }
+        $dbCore = $this->dbCore instanceof ABJ_404_Solution_DatabaseCore
+            ? $this->dbCore
+            : abj_service('db_core');
+        $fresh = new ABJ_404_Solution_PluginUpdateMetadataRepository(
+            $dbCore, $this->f, $this->logger
+        );
+        $this->pluginUpdateRepo = $fresh;
+        return $fresh;
+    }
+
 
     /**
      * Migrate existing redirects from absolute paths to relative paths.
@@ -66,6 +96,7 @@ class ABJ_404_Solution_DatabaseUpgradePluginUpdate extends ABJ_404_Solution_Data
                  ELSE url
              END";
 
+        // DAO-bypass-approved: One-shot path-relativization migration; $wpdb->prepare is the only safe way to bind 11 ordered placeholders for the multi-line CASE expression; result is fed to the approved $wpdb->query below.
         $updateQuery = $wpdb->prepare(
             "UPDATE {$redirectsTable}
              SET url = " . $canonicalCase . ",
@@ -122,8 +153,8 @@ class ABJ_404_Solution_DatabaseUpgradePluginUpdate extends ABJ_404_Solution_Data
     /** @return void */
     function updatePluginCheck() {
 
-        $pluginInfo = $this->dao->getLatestPluginVersion();
-        
+        $pluginInfo = $this->resolvePluginUpdateRepo()->getLatestPluginVersion();
+
         $shouldUpdate = $this->shouldUpdate($pluginInfo);
         
         if ($shouldUpdate) {

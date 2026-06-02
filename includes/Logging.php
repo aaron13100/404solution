@@ -263,8 +263,6 @@ class ABJ_404_Solution_Logging {
      * @return bool
      */
     function emailErrorLogIfNecessary(): bool {
-        $abj404dao = abj_service('data_access');
-        $abj404logic = abj_service('plugin_logic');
         $options = abj_service('plugin_logic')->optionsResolver()->getOptions(true);
 
         if (!file_exists($this->getDebugFilePath())) {
@@ -311,7 +309,8 @@ class ABJ_404_Solution_Logging {
         }
 
         // only email the error file if the latest version of the plugin is installed.
-        if (!$abj404dao->shouldEmailErrorFile()) {
+        $pluginUpdateRepo = abj_service('plugin_update_metadata_repository');
+        if (!$pluginUpdateRepo->shouldEmailErrorFileFor($pluginUpdateRepo->getLatestPluginVersion())) {
             return false;
         }
 

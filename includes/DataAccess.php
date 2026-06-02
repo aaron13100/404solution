@@ -1041,37 +1041,21 @@ class ABJ_404_Solution_DataAccess {
         return $this->dbCore->getTableColumnNames($tableName);
     }
 
-    /** @return ABJ_404_Solution_PluginUpdateMetadataRepository */
-    private function getPluginUpdateRepo(): ABJ_404_Solution_PluginUpdateMetadataRepository {
+    /**
+     * Composition accessor retained for test subclasses that need to wire a
+     * stub repository through the DAO surface. Production callers must inject
+     * ABJ_404_Solution_PluginUpdateMetadataRepository directly (constructor
+     * or abj_service('plugin_update_metadata_repository')).
+     *
+     * @return ABJ_404_Solution_PluginUpdateMetadataRepository
+     */
+    public function getPluginUpdateRepo(): ABJ_404_Solution_PluginUpdateMetadataRepository {
         if ($this->pluginUpdateRepo === null) {
             $this->pluginUpdateRepo = new ABJ_404_Solution_PluginUpdateMetadataRepository(
                 $this->getDbCore(), $this->f, $this->logger
             );
         }
         return $this->pluginUpdateRepo;
-    }
-
-    /** @return array{version: string, last_updated: string|null} */
-    function getLatestPluginVersion() {
-        return $this->getPluginUpdateRepo()->getLatestPluginVersion();
-    }
-
-    /**
-     * Check wordpress.org for the latest version of this plugin. Return true if
-     * the latest version is installed (or close enough), false otherwise.
-     *
-     * Routes the version lookup through `$this->getLatestPluginVersion()` so
-     * test doubles that override that method continue to work.
-     *
-     * @return boolean
-     */
-    function shouldEmailErrorFile() {
-        return $this->getPluginUpdateRepo()->shouldEmailErrorFileFor($this->getLatestPluginVersion());
-    }
-
-    /** @return array<string, mixed> */
-    function importDataFromPluginRedirectioner() {
-        return $this->getPluginUpdateRepo()->importDataFromPluginRedirectioner();
     }
 
 }
