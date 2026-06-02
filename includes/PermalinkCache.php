@@ -96,7 +96,7 @@ class ABJ_404_Solution_PermalinkCache {
     function updatePermalinkCache($maxExecutionTime, $executionCount = 1) {
     	// check to see if we need to upgrade the database.
         // we must pass "true" here to avoid an infinite loop when updating the database.
-        abj_service('plugin_logic')->optionsResolver()->getOptions(true);
+        abj_service('options_repository')->getOptions(true);
 
         // insert the new rows.
         $results = $this->contentRepository->updatePermalinkCache();

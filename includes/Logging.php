@@ -88,7 +88,7 @@ class ABJ_404_Solution_Logging {
     
     /** @return boolean true if debug mode is on. false otherwise. */
     function isDebug() {
-        $options = abj_service('plugin_logic')->optionsResolver()->getOptions(true);
+        $options = abj_service('options_repository')->getOptions(true);
 
         return (array_key_exists('debug_mode', $options) && $options['debug_mode'] == true);
     }
@@ -263,7 +263,7 @@ class ABJ_404_Solution_Logging {
      * @return bool
      */
     function emailErrorLogIfNecessary(): bool {
-        $options = abj_service('plugin_logic')->optionsResolver()->getOptions(true);
+        $options = abj_service('options_repository')->getOptions(true);
 
         if (!file_exists($this->getDebugFilePath())) {
             $this->debugMessage("No log file found so no errors were found.");
@@ -319,7 +319,7 @@ class ABJ_404_Solution_Logging {
         self::$lastSentErrorLineThisRequest = (int)$latestErrorLineFound['num'];
         self::$lastSentErrorSignatureThisRequest = $latestSignature;
         self::$lastSentDebugFilePathThisRequest = $debugFilePath;
-        abj_service('plugin_logic')->optionsResolver()->updateOptions($options);
+        abj_service('options_repository')->updateOptions($options);
         file_put_contents($sentDateFile, $latestErrorLineFound['num']);
         $fileContents = file_get_contents($sentDateFile);
         if ($fileContents != $latestErrorLineFound['num']) {
@@ -790,9 +790,9 @@ class ABJ_404_Solution_Logging {
     /** @return void */
     function removeLastSentErrorLineFromDatabase(): void {
     	// update the last sent error line since the debug file will be deleted.
-        $options = abj_service('plugin_logic')->optionsResolver()->getOptions(true);
+        $options = abj_service('options_repository')->getOptions(true);
     	$options[self::LAST_SENT_LINE] = 0;
-        abj_service('plugin_logic')->optionsResolver()->updateOptions($options);
+        abj_service('options_repository')->updateOptions($options);
     }
     
     /** Deletes all files named abj404_debug_*.txt
@@ -828,9 +828,9 @@ class ABJ_404_Solution_Logging {
         }
         
         // reset the UUID since we deleted the log file.
-        $options = abj_service('plugin_logic')->optionsResolver()->getOptions(true);
+        $options = abj_service('options_repository')->getOptions(true);
         $options[self::DEBUG_FILE_KEY] = null;
-        abj_service('plugin_logic')->optionsResolver()->updateOptions($options);
+        abj_service('options_repository')->updateOptions($options);
         
         return $allIsWell;
     }

@@ -192,7 +192,7 @@ class ABJ_404_Solution_RedirectsRetentionService implements ABJ_404_Solution_Red
         $viewRead = abj_service('view_read_service');
         $abj404logic = abj_service('plugin_logic');
 
-        $options = abj_service('plugin_logic')->optionsResolver()->getOptions(true);
+        $options = abj_service('options_repository')->getOptions(true);
         $now = time();
         $capturedURLsCount = 0;
         $autoRedirectsCount = 0;
@@ -554,7 +554,7 @@ class ABJ_404_Solution_RedirectsRetentionService implements ABJ_404_Solution_Red
 
     /** @inheritDoc */
     public function expireOldAutoRedirects(): int {
-        $options = abj_service('plugin_logic')->optionsResolver()->getOptions();
+        $options = abj_service('options_repository')->getOptions();
         $daysRaw = isset($options['auto_302_expiration_days']) ? $options['auto_302_expiration_days'] : 0;
         $days = is_numeric($daysRaw) ? (int)$daysRaw : 0;
         if ($days <= 0) {

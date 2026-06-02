@@ -162,12 +162,12 @@ class ABJ_404_Solution_SystemPage {
      */
     public function handleSystemPageDeleted(): void {
         $logic = abj_service('plugin_logic');
-        $options = abj_service('plugin_logic')->optionsResolver()->getOptions(true);
+        $options = abj_service('options_repository')->getOptions(true);
 
         if (isset($options['dest404_behavior']) && $options['dest404_behavior'] === 'suggest') {
             $options['dest404_behavior'] = 'theme_default';
             $options['dest404page'] = '0|' . ABJ404_TYPE_404_DISPLAYED;
-            abj_service('plugin_logic')->optionsResolver()->updateOptions($options);
+            abj_service('options_repository')->updateOptions($options);
 
             set_transient('abj404_system_page_deleted', '1', DAY_IN_SECONDS);
         }
@@ -181,7 +181,7 @@ class ABJ_404_Solution_SystemPage {
      */
     public function verifySystemPageOnRequest(): void {
         $logic = abj_service('plugin_logic');
-        $options = abj_service('plugin_logic')->optionsResolver()->getOptions(true);
+        $options = abj_service('options_repository')->getOptions(true);
 
         if (!isset($options['dest404_behavior']) || $options['dest404_behavior'] !== 'suggest') {
             return;
@@ -266,10 +266,10 @@ class ABJ_404_Solution_SystemPage {
 
         if ($pageId > 0) {
             $logic = abj_service('plugin_logic');
-            $options = abj_service('plugin_logic')->optionsResolver()->getOptions(true);
+            $options = abj_service('options_repository')->getOptions(true);
             $options['dest404_behavior'] = 'suggest';
             $options['dest404page'] = $pageId . '|' . ABJ404_TYPE_POST;
-            abj_service('plugin_logic')->optionsResolver()->updateOptions($options);
+            abj_service('options_repository')->updateOptions($options);
         }
 
         // Redirect back to settings page (without the action param)

@@ -131,7 +131,7 @@ class ABJ_404_Solution_SlugChangeHandler {
         }
 
         // Check if we should create a redirect (respects per-post override from editor)
-        $options = abj_service('plugin_logic')->optionsResolver()->getOptions();
+        $options = abj_service('options_repository')->getOptions();
 
         // Check for per-post override from Quick Edit, Classic Editor, or Gutenberg
         if (class_exists('ABJ_404_Solution_PostEditorIntegration')) {
@@ -237,7 +237,7 @@ class ABJ_404_Solution_SlugChangeHandler {
         $post_id = (int)$post->ID;
 
         // Check option
-        $options = abj_service('plugin_logic')->optionsResolver()->getOptions();
+        $options = abj_service('options_repository')->getOptions();
         if (!isset($options['auto_trash_redirect']) || $options['auto_trash_redirect'] != '1') {
             return;
         }
@@ -290,7 +290,7 @@ class ABJ_404_Solution_SlugChangeHandler {
         }
 
         // Check option
-        $options = abj_service('plugin_logic')->optionsResolver()->getOptions();
+        $options = abj_service('options_repository')->getOptions();
         if (!isset($options['auto_trash_redirect']) || $options['auto_trash_redirect'] != '1') {
             return;
         }

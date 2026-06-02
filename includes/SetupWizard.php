@@ -159,7 +159,7 @@ class ABJ_404_Solution_SetupWizard {
      */
     private static function applySettings(): void {
         $abj404logic = abj_service('plugin_logic');
-        $options = abj_service('plugin_logic')->optionsResolver()->getOptions();
+        $options = abj_service('options_repository')->getOptions();
 
         // Question 1: What happens when page not found
         // Validate against whitelist (Bug #13 fix)
@@ -204,7 +204,7 @@ class ABJ_404_Solution_SetupWizard {
         }
 
         // Save options
-        abj_service('plugin_logic')->optionsResolver()->updateOptions($options);
+        abj_service('options_repository')->updateOptions($options);
     }
 
     /**

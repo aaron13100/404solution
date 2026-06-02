@@ -231,7 +231,7 @@ class ABJ_404_Solution_DatabaseUpgradePluginUpdate extends ABJ_404_Solution_Data
     function shouldUpdate($pluginInfo) {
 
 
-        $options = abj_service('plugin_logic')->optionsResolver()->getOptions(true);
+        $options = abj_service('options_repository')->getOptions(true);
         $latestVersion = isset($pluginInfo['version']) && is_string($pluginInfo['version']) ? $pluginInfo['version'] : '';
 
         if (ABJ404_VERSION == $latestVersion) {

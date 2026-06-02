@@ -85,7 +85,7 @@ class ABJ_404_Solution_SpellChecker {
 		$viewReadServiceResolved = $viewReadService !== null ? $viewReadService :
 			(is_object($contentRepository) && method_exists($contentRepository, 'getRedirectsWithRegEx') ? $contentRepository : abj_service('view_read_service'));
 
-		$options = abj_service('plugin_logic')->optionsResolver()->getOptions(true);
+		$options = abj_service('options_repository')->getOptions(true);
 		$custom404PageIDRaw =
 			(is_array($options) && isset($options['dest404page']) ?
 			$options['dest404page'] : null);
@@ -280,7 +280,7 @@ class ABJ_404_Solution_SpellChecker {
 	function getPermalinkUsingSpelling(string $requestedURL, ?string $fullRequestedURL = null, $optionsOverride = null) {
 		$abj404spellChecker = abj_service('spell_checker');
 
-		$options = is_array($optionsOverride) ? $optionsOverride : abj_service('plugin_logic')->optionsResolver()->getOptions();
+		$options = is_array($optionsOverride) ? $optionsOverride : abj_service('options_repository')->getOptions();
 
 		if (@$options['auto_redirects'] == '1') {
             $autoCats = isset($options['auto_cats']) && is_string($options['auto_cats']) ? $options['auto_cats'] : '1';
@@ -407,7 +407,7 @@ class ABJ_404_Solution_SpellChecker {
 	}
 
 	public function does404PageHaveSuggestionsShortcode() {
-		$options = abj_service('plugin_logic')->optionsResolver()->getOptions();
+		$options = abj_service('options_repository')->getOptions();
 		$dest404pageRaw = isset($options['dest404page']) ? $options['dest404page'] : null;
 		$dest404page = is_string($dest404pageRaw) ? $dest404pageRaw : null;
 

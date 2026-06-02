@@ -96,7 +96,7 @@ class ABJ_404_Solution_SpellPostListeners {
 	 * @param string $saveOrDelete
 	 */
 	function savePostHandler($post_id, $post, $update, $saveOrDelete): void {
-		$options = abj_service('plugin_logic')->optionsResolver()->getOptions();
+		$options = abj_service('options_repository')->getOptions();
 		if (!is_object($post) || !isset($post->post_type) || !isset($post->post_status) || !isset($post->post_name)) {
 			$this->logger->debugMessage(__CLASS__ . "/" . __FUNCTION__ .
 				": Invalid post object for ID: " . $post_id . " (skipped).");

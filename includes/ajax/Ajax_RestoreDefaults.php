@@ -56,12 +56,12 @@ class ABJ_404_Solution_Ajax_RestoreDefaults {
 
         // Preserve DB_VERSION so the restore does not appear as a schema
         // downgrade to the upgrade engine.
-        $current = abj_service('plugin_logic')->optionsResolver()->getOptions(true);
+        $current = abj_service('options_repository')->getOptions(true);
         if (is_array($current) && array_key_exists('DB_VERSION', $current)) {
             $defaults['DB_VERSION'] = $current['DB_VERSION'];
         }
 
-        abj_service('plugin_logic')->optionsResolver()->updateOptions($defaults);
+        abj_service('options_repository')->updateOptions($defaults);
 
         wp_send_json_success(array(
             'message' => __('Settings restored to defaults.', '404-solution'),
