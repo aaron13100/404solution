@@ -7,13 +7,33 @@ if (!defined('ABSPATH')) {
 
 /* Static functions that can be used from anywhere.  */
 abstract class ABJ_404_Solution_Functions {
-    
+
     /** @var self|null */
     private static $instance = null;
 
     private const FILE_READ_MAX_ATTEMPTS = 3;
     private const FILE_READ_RETRY_BASE_US = 10000;
-    
+
+    /** @var ABJ_404_Solution_Logging|null */
+    protected $injectedLogging = null;
+
+    /** @var ABJ_404_Solution_RequestContext|null */
+    protected $injectedRequestContext = null;
+
+    /**
+     * Collaborators are passed in by the DI container's 'functions' factory
+     * (see bootstrap.php). Nulls are tolerated for early-boot and direct
+     * test instantiation; logging() and requestContext() lazy-resolve in
+     * that case as a singular bootstrap-only fallback.
+     *
+     * @param ABJ_404_Solution_Logging|null        $logging
+     * @param ABJ_404_Solution_RequestContext|null $requestContext
+     */
+    public function __construct($logging = null, $requestContext = null) {
+        $this->injectedLogging        = $logging;
+        $this->injectedRequestContext = $requestContext;
+    }
+
     /** @return self */
     public static function getInstance() {
         if (self::$instance !== null) {
@@ -35,8 +55,35 @@ abstract class ABJ_404_Solution_Functions {
         } else {
             self::$instance = new ABJ_404_Solution_FunctionsPreg();
         }
-        
+
         return self::$instance;
+    }
+
+    /**
+     * Returns the injected Logging service, falling back to the locator
+     * when constructed outside the DI container (early boot / tests).
+     * Production paths go through DI via the bootstrap factory.
+     *
+     * @return ABJ_404_Solution_Logging
+     */
+    protected function logging() {
+        if ($this->injectedLogging !== null) {
+            return $this->injectedLogging;
+        }
+        return abj_service('logging');
+    }
+
+    /**
+     * Returns the injected RequestContext, falling back to the locator
+     * when constructed outside the DI container (early boot / tests).
+     *
+     * @return ABJ_404_Solution_RequestContext
+     */
+    protected function requestContext() {
+        if ($this->injectedRequestContext !== null) {
+            return $this->injectedRequestContext;
+        }
+        return abj_service('request_context');
     }
 
     /**
@@ -46,12 +93,10 @@ abstract class ABJ_404_Solution_Functions {
      * @return string|array<int|string, mixed> The urlencoded string or array of strings.
      */
     function selectivelyURLEncode($input) {
-        $f = abj_service('functions');
-
         // Handle array input
         if (is_array($input)) {
             /** @var callable(mixed): mixed $callback */
-            $callback = [$f, 'selectivelyURLEncode'];
+            $callback = [$this, 'selectivelyURLEncode'];
             return array_map($callback, $input);
         }
 
@@ -79,7 +124,7 @@ abstract class ABJ_404_Solution_Functions {
         // Iterate through each character in the string
         for ($i = 0; $i < strlen($input); $i++) {
             $char = $input[$i];
-            $ord = $f->ord($char);
+            $ord = $this->ord($char);
             
             // If the character is outside of latin1 range or is not representable
             if ($ord > 255) {
@@ -302,7 +347,7 @@ abstract class ABJ_404_Solution_Functions {
     			$lastMessagePart = ", Stripped: " . $dataStripped;
     		}
     		
-    		$logger = abj_service('logging');
+    		$logger = $this->logging();
     		$logger->errorMessage("Error " . $jsonErrorNumber . " parsing JSON in "
     			. __CLASS__ . "->" . __FUNCTION__ . "(). Error message: " . $errorMsg . $lastMessagePart);
     	}
@@ -433,7 +478,7 @@ abstract class ABJ_404_Solution_Functions {
      * @return float|string
      */
     function getExecutionTime() {
-        $startTime = abj_service('request_context')->process_start_time;
+        $startTime = $this->requestContext()->process_start_time;
         if ($startTime !== null) {
             $elapsedTime = microtime(true) - $startTime;
             
@@ -536,7 +581,8 @@ abstract class ABJ_404_Solution_Functions {
      * @return array<string, mixed> an array with id, type, score, link, and title.
      */
     static function permalinkInfoToArray($idAndType, $linkScore, $rowType = null, $options = null) {
-        $abj404logging = abj_service('logging');
+        $self          = self::getInstance();
+        $abj404logging = $self->logging();
         $permalink = array();
 
         if ($idAndType == null) {
@@ -635,12 +681,11 @@ abstract class ABJ_404_Solution_Functions {
         
         // Decode anything that might be encoded to support utf8 characters
         if (array_key_exists('link', $permalink)) {
-        	$f = abj_service('functions');
         	$linkVal = is_string($permalink['link']) ? $permalink['link'] : (is_scalar($permalink['link']) ? (string)$permalink['link'] : '');
-        	$permalink['link'] = $f->normalizeUrlString($linkVal);
+        	$permalink['link'] = $self->normalizeUrlString($linkVal);
         }
         $titleVal = (array_key_exists('title', $permalink) && is_string($permalink['title'])) ? $permalink['title'] : '';
-        $permalink['title'] = abj_service('functions')->normalizeUrlString($titleVal);
+        $permalink['title'] = $self->normalizeUrlString($titleVal);
         
         return $permalink;
     }
@@ -858,7 +903,7 @@ abstract class ABJ_404_Solution_Functions {
      * @return array<string, string>
      */
     private static function getDataSupplement(string $filePath, bool $appendExtraData = true): array {
-        $f = abj_service('functions');
+        $f = self::getInstance();
         $path = strtolower($filePath);
         
         // remove the first part of the path because some people don't want to see
@@ -899,7 +944,7 @@ abstract class ABJ_404_Solution_Functions {
      * @return void
      */
     function readURLtoFile(string $url, string $filePath): void {
-        $abj404logging = abj_service('logging');
+        $abj404logging = $this->logging();
         
         ABJ_404_Solution_Functions::safeUnlink($filePath);
 
@@ -955,16 +1000,15 @@ abstract class ABJ_404_Solution_Functions {
      * @return bool
      */
     function endsWithCaseInsensitive(string $haystack, string $needle): bool {
-        $f = abj_service('functions');
-        $length = $f->strlen($needle);
-        if ($f->strlen($haystack) < $length) {
+        $length = $this->strlen($needle);
+        if ($this->strlen($haystack) < $length) {
             return false;
         }
-        
+
         $lowerNeedle = $this->strtolower($needle);
         $lowerHay = $this->strtolower($haystack);
-        
-        return ($f->substr($lowerHay, -$length) == $lowerNeedle);
+
+        return ($this->substr($lowerHay, -$length) == $lowerNeedle);
     }
     
     /**
@@ -973,13 +1017,12 @@ abstract class ABJ_404_Solution_Functions {
      * @return bool
      */
     function endsWithCaseSensitive(string $haystack, string $needle): bool {
-    	$f = abj_service('functions');
-    	$length = $f->strlen($needle);
-    	if ($f->strlen($haystack) < $length) {
+    	$length = $this->strlen($needle);
+    	if ($this->strlen($haystack) < $length) {
     		return false;
     	}
-    	
-    	return ($f->substr($haystack, -$length) == $needle);
+
+    	return ($this->substr($haystack, -$length) == $needle);
     }
     
     /** Sort the QUERY parts of the requested URL. 
@@ -1137,7 +1180,7 @@ abstract class ABJ_404_Solution_Functions {
             return $defaultValue;
         }
 
-        $f = abj_service('functions');
+        $f = $this;
         $unslash = function($value) {
             return function_exists('wp_unslash') ? wp_unslash($value) : $value;
         };

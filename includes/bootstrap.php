@@ -88,10 +88,12 @@ function abj_404_solution_init_services() {
  */
 function abj_404_solution_register_core_utilities($container) {
     $container->set('functions', function($c) {
+        $logging        = $c->get('logging');
+        $requestContext = $c->get('request_context');
         if (extension_loaded('mbstring')) {
-            return new ABJ_404_Solution_FunctionsMBString();
+            return new ABJ_404_Solution_FunctionsMBString($logging, $requestContext);
         }
-        return new ABJ_404_Solution_FunctionsPreg();
+        return new ABJ_404_Solution_FunctionsPreg($logging, $requestContext);
     });
 
     $container->set('pii_redactor', function($c) {
