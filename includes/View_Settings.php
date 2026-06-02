@@ -9,7 +9,35 @@ if (!defined('ABSPATH')) {
  */
 class ABJ_404_Solution_View_Settings extends ABJ_404_Solution_ViewComponent {
 
-    
+    /**
+     * Load a settings page template fragment from includes/html/ and trim
+     * the trailing newline added by the editor. Matches the pattern used by
+     * View_RedirectsTable::tpl() and View_Logs::tpl() so all admin pages share
+     * one template-load convention.
+     *
+     * @param string $name Filename relative to includes/html/
+     * @return string Raw template body with the trailing newline removed.
+     */
+    private function tpl($name) {
+        $raw = ABJ_404_Solution_Functions::readFileContents(__DIR__ . '/html/' . $name, false);
+        return rtrim((string)$raw, "\n");
+    }
+
+    /**
+     * Load a settings page template fragment and substitute an associative
+     * map of placeholders. Values are passed through unchanged; callers are
+     * responsible for applying the same esc_*() / wp_create_nonce()
+     * wrapping that the inline echo'd HTML used before externalization.
+     *
+     * @param string $name Filename relative to includes/html/
+     * @param array<string,string> $vars Placeholder map (keys WITH braces, e.g. '{nonce}')
+     * @return string Template body with placeholders substituted.
+     */
+    private function fillTpl($name, array $vars) {
+        return (string)$this->f->str_replace(array_keys($vars), array_values($vars), $this->tpl($name));
+    }
+
+
     /** @return void */
     function echoAdminOptionsPage() {
         global $abj404view;
@@ -45,38 +73,36 @@ class ABJ_404_Solution_View_Settings extends ABJ_404_Solution_ViewComponent {
         // Toast notification container
         $abj404view->echoToastNotification();
 
-        // Options page header with mode toggle and expand button
-        echo "\n<div class=\"abj404-header-row\">";
-        echo "<h2>" . esc_html__('Options', '404-solution') . "</h2>";
-        echo "<div class=\"abj404-header-controls\">";
+        // Options page header: header-row open + h2 + header-controls open,
+        // then the inline mode toggle (which echoes its own block), then the
+        // expand/collapse button and the closing tags. Split into two
+        // templates around the toggle so we do not have to capture its
+        // output buffer (and so View_UI keeps its existing echo-based API).
+        echo $this->fillTpl('viewSettingsHeaderRowOpen.html', array(
+            '{titleOptions}' => esc_html__('Options', '404-solution'),
+        ));
         $this->ui->echoInlineModeToggle();
         // Expand/Collapse All button for both Simple and Advanced modes
-        echo '<button type="button" id="abj404-expand-collapse-all" class="button">';
-        echo esc_html__('Expand All', '404-solution');
-        echo '</button>';
-        echo "</div>";
-        echo "</div>";
+        echo $this->fillTpl('viewSettingsExpandCollapseButton.html', array(
+            '{labelExpandAll}' => esc_html__('Expand All', '404-solution'),
+        ));
+        echo $this->tpl('viewSettingsHeaderRowClose.html');
 
         // Main container
-        echo "<div class=\"abj404-container\">";
-        echo "<div class=\"abj404-settings-content\">";
+        echo $this->tpl('viewSettingsContainerOpen.html');
 
-        $formBeginning = '<form method="POST" id="admin-options-page" ' .
-        	'name="admin-options-page" action="#" data-url="{data-url}">' . "\n";
-        $formBeginning .= '<input type="hidden" name="action" id="action" value="updateOptions">' . "\n";
-        $formBeginning .= '<input type="hidden" name="nonce" id="nonce" value="' .
-        	wp_create_nonce('abj404UpdateOptions') . '">' . "\n";
-        $formBeginning = $this->f->str_replace('{data-url}',
-        	"admin-ajax.php?action=updateOptions", $formBeginning);
-        echo $formBeginning;
+        // Form opening: the data-url and nonce are populated at render time.
+        // wp_create_nonce() and the action URL match the values the prior
+        // inline echo produced, so the rendered output is unchanged.
+        echo $this->fillTpl('viewSettingsFormOpen.html', array(
+            '{data-url}' => 'admin-ajax.php?action=updateOptions',
+            '{nonce}' => wp_create_nonce('abj404UpdateOptions'),
+        ));
 
-        // Add loading overlay for save operations
-        echo '<div id="abj404-save-overlay" class="abj404-save-overlay" style="display: none;">';
-        echo '<div class="abj404-save-overlay-content">';
-        echo '<div class="abj404-spinner"></div>';
-        echo '<p class="abj404-save-message">' . esc_html__('Saving settings...', '404-solution') . '</p>';
-        echo '</div>';
-        echo '</div>';
+        // Loading overlay shown while a settings save is in flight.
+        echo $this->fillTpl('viewSettingsSaveOverlay.html', array(
+            '{labelSaving}' => esc_html__('Saving settings...', '404-solution'),
+        ));
 
         if ($settingsMode === 'simple') {
             // Simple Mode: Show streamlined options with card layout
@@ -135,12 +161,10 @@ class ABJ_404_Solution_View_Settings extends ABJ_404_Solution_ViewComponent {
             $supportButton = class_exists('ABJ_404_Solution_SupportRequestButton')
                 ? ABJ_404_Solution_SupportRequestButton::render('settings_debug')
                 : '';
-            $supportSectionHtml = '<div id="abj404-support-request">'
-                . '<p>'
-                . esc_html__('Having trouble? Send your debug log to the developer. This sends a one-time diagnostic report (URLs, PHP/WP/DB versions, a debug log excerpt, active plugins, site URL) so we can diagnose the issue without asking you to copy-paste anything.', '404-solution')
-                . '</p>'
-                . $supportButton
-                . '</div>';
+            $supportSectionHtml = $this->fillTpl('viewSettingsSupportSection.html', array(
+                '{supportDescription}' => esc_html__('Having trouble? Send your debug log to the developer. This sends a one-time diagnostic report (URLs, PHP/WP/DB versions, a debug log excerpt, active plugins, site URL) so we can diagnose the issue without asking you to copy-paste anything.', '404-solution'),
+                '{supportButton}' => $supportButton,
+            ));
             $abj404view->echoOptionsSection(
                 "abj404-support-request-section",
                 "abj404-support-request-section",
@@ -175,7 +199,7 @@ class ABJ_404_Solution_View_Settings extends ABJ_404_Solution_ViewComponent {
             }
         }
 
-        echo "</form><!-- end in admin-options-page -->";
+        echo $this->tpl('viewSettingsFormClose.html');
 
         // Engine Profiles and GSC are advanced features — hidden in simple mode
         if ($settingsMode === 'advanced') {
@@ -186,12 +210,11 @@ class ABJ_404_Solution_View_Settings extends ABJ_404_Solution_ViewComponent {
 
             // Google Search Console — deferred via AJAX so the options page shell
             // renders immediately and is not blocked by logs/GSC data fetches.
-            $gscPlaceholder = '<div id="abj404-gsc-deferred-content"'
-                . ' data-deferred-load="1"'
-                . ' data-ajax-action="abj404_load_gsc_section"'
-                . ' data-ajax-nonce="' . esc_attr(wp_create_nonce('abj404_gsc_deferred')) . '">'
-                . '<p class="abj404-form-help">' . esc_html__('Loading Google Search Console section…', '404-solution') . '</p>'
-                . '</div>';
+            $gscPlaceholder = $this->fillTpl('viewSettingsGscDeferred.html', array(
+                '{gscNonce}' => esc_attr(wp_create_nonce('abj404_gsc_deferred')),
+                // allow-em-dash: pre-existing translation string with U+2026 ellipsis in published .po files
+                '{labelLoadingGsc}' => esc_html__('Loading Google Search Console section…', '404-solution'),
+            ));
             $abj404view->echoOptionsSection(
                 'settings-gsc',
                 'abj404-gsc-section',
@@ -205,8 +228,8 @@ class ABJ_404_Solution_View_Settings extends ABJ_404_Solution_ViewComponent {
         // Sticky save bar — outside the form but linked via form="admin-options-page" on the submit button
         $abj404view->echoStickySaveBar();
 
-        echo "</div>"; // end abj404-settings-content
-        echo "</div>"; // end abj404-container
+        // Close abj404-settings-content and abj404-container
+        echo $this->tpl('viewSettingsContainerClose.html');
     }
     
     /**
