@@ -221,7 +221,7 @@ function abj_404_solution_register_business_logic($container) {
     });
 
     $container->set('version_upgrade', function($c) {
-        return new ABJ_404_Solution_PluginVersionUpgradeService(
+        return new ABJ_404_Solution_PluginLogicVersionUpgrader(
             $c->get('functions'),
             $c->get('logging'),
             $c->get('db_core')

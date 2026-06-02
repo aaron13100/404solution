@@ -249,7 +249,7 @@ class ABJ_404_Solution_ServiceContainer {
  *     $name is 'shortcode' ? ABJ_404_Solution_ShortCode : (
  *     $name is 'ajax_security_gate' ? ABJ_404_Solution_AjaxSecurityGate : (
  *     $name is 'ajax_failure_logger' ? ABJ_404_Solution_AjaxFailureLogger : (
- *     $name is 'version_upgrade' ? ABJ_404_Solution_PluginVersionUpgradeService : (
+ *     $name is 'version_upgrade' ? ABJ_404_Solution_PluginLogicVersionUpgrader : (
  *     $name is 'options_repository' ? ABJ_404_Solution_PluginLogicOptionsResolver : (
  *     $name is 'admin_access_policy' ? ABJ_404_Solution_PluginAdminAccessPolicy : (
  *     $name is 'settings_mode_preference' ? ABJ_404_Solution_SettingsModePreference : (
@@ -371,7 +371,7 @@ function abj_service($name) {
         'shortcode' => 'ABJ_404_Solution_ShortCode',
         'request_context' => 'ABJ_404_Solution_RequestContext',
         'previous_request_cookie_tracker' => 'ABJ_404_Solution_PreviousRequestCookieTracker',
-        'version_upgrade' => 'ABJ_404_Solution_PluginVersionUpgradeService',
+        'version_upgrade' => 'ABJ_404_Solution_PluginLogicVersionUpgrader',
         'options_repository' => 'ABJ_404_Solution_PluginLogicOptionsResolver',
         'admin_access_policy' => 'ABJ_404_Solution_PluginAdminAccessPolicy',
         'settings_mode_preference' => 'ABJ_404_Solution_SettingsModePreference',

@@ -17,6 +17,7 @@ require_once dirname(__FILE__) . '/PluginLogicDefaults.php';
 require_once dirname(__FILE__) . '/PluginLogicInterface.php';
 require_once dirname(__FILE__) . '/StorageOptionContracts.php';
 require_once dirname(__FILE__) . '/PluginLogicOptionsResolver.php';
+require_once dirname(__FILE__) . '/PluginLogicVersionUpgrader.php';
 
 /**
  * @phpstan-type PageObject object{id: int, post_parent: int, depth: int, post_type: string, post_title: string}
@@ -303,6 +304,35 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
         // ::getInstance() so lint-getinstance-callers does not flag this
         // bootstrap fallback.
         return new ABJ_404_Solution_PluginLogicOptionsResolver();
+    }
+
+    /**
+     * Access the composed version upgrader. Returns whichever object is
+     * registered as abj_service('version_upgrade'). Duck-typed at runtime:
+     * any object responding to upgradeIfNeeded()/runUpgradeAction()/
+     * stampDbVersion() is accepted so tests can install lightweight stubs
+     * without subclassing the concrete upgrader. The declared return type
+     * is the concrete class so PHPStan can resolve caller chains.
+     *
+     * @return ABJ_404_Solution_PluginLogicVersionUpgrader
+     */
+    public function versionUpgrader() {
+        $candidate = abj_service('version_upgrade');
+        if (is_object($candidate) && method_exists($candidate, 'upgradeIfNeeded')) {
+            return $candidate;
+        }
+        // Fallback when the `version_upgrade` container key is unavailable
+        // (very-early boot, self-healing recovery from a broken install).
+        // Construct via `new` with individual services resolved so we route
+        // through the container's dependency wiring without going through
+        // the singleton entry (lint-getinstance-callers).
+        $dao = abj_service('data_access');
+        $dbCore = is_object($dao) && method_exists($dao, 'getDbCore') ? $dao->getDbCore() : $dao;
+        return new ABJ_404_Solution_PluginLogicVersionUpgrader(
+            abj_service('functions'),
+            abj_service('logging'),
+            is_object($dbCore) ? $dbCore : (object)[]
+        );
     }
 
     /** @return ABJ_404_Solution_ImportExportService */

@@ -14,7 +14,7 @@ if (!defined('ABSPATH')) {
  * reasoned about as a single service rather than tangled into the
  * options/redirect orchestration class. Composed (not inherited).
  */
-class ABJ_404_Solution_PluginVersionUpgradeService {
+class ABJ_404_Solution_PluginLogicVersionUpgrader {
 
     /** @var ABJ_404_Solution_Functions */
     private $f;
@@ -62,7 +62,7 @@ class ABJ_404_Solution_PluginVersionUpgradeService {
             return self::$instance;
         }
         throw new \RuntimeException(
-            'PluginVersionUpgradeService::getInstance() requires the service container helper '
+            'PluginLogicVersionUpgrader::getInstance() requires the service container helper '
             . 'abj_service() to be loaded.'
         );
     }
@@ -195,6 +195,9 @@ class ABJ_404_Solution_PluginVersionUpgradeService {
         ABJ_404_Solution_PluginLogicLifecycle::doRegisterCrons();
     }
 
+    /**
+     * @param mixed $service
+     */
     private function databaseUpgradeServiceCanInvoke($service, string $method): bool {
         return is_object($service)
             && (method_exists($service, $method) || method_exists($service, '__call'));
@@ -253,7 +256,7 @@ class ABJ_404_Solution_PluginVersionUpgradeService {
         if (!method_exists($dbCore, 'queryAndGetResults')
             || !method_exists($dbCore, 'doTableNameReplacements')
             || !method_exists($dbCore, 'getLowercasePrefix')) {
-            throw new \RuntimeException('PluginVersionUpgradeService requires database query methods.');
+            throw new \RuntimeException('PluginLogicVersionUpgrader requires database query methods.');
         }
 
         $result = $dbCore->queryAndGetResults($query);
@@ -271,7 +274,10 @@ class ABJ_404_Solution_PluginVersionUpgradeService {
         $rowsAffected = isset($result['rows_affected']) && is_numeric($result['rows_affected'])
             ? (int)$result['rows_affected']
             : 0;
-        if ($rowsAffected > 0 && version_compare($currentDBVersion, '1.8.0') < 0) {
+        // The early-return at the top of this function ensures
+        // $currentDBVersion < '1.8.0' here, so the version gate that previously
+        // wrapped this block has been removed (PHPStan smaller.alwaysTrue).
+        if ($rowsAffected > 0) {
             $this->logger->infoMessage($rowsAffected .
                 ' log rows were migrated to the new table structre.');
             $dbCore->queryAndGetResults('drop table ' . $dbCore->getLowercasePrefix() . 'abj404_logs');
@@ -430,7 +436,7 @@ class ABJ_404_Solution_PluginVersionUpgradeService {
     private static function dbCoreFromService($dao): object {
         $dbCore = is_object($dao) && method_exists($dao, 'getDbCore') ? $dao->getDbCore() : $dao;
         if (!is_object($dbCore)) {
-            throw new \RuntimeException('PluginVersionUpgradeService requires a database service object.');
+            throw new \RuntimeException('PluginLogicVersionUpgrader requires a database service object.');
         }
         return $dbCore;
     }

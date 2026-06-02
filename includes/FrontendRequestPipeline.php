@@ -1152,7 +1152,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
      * (cooldown active, lock held by another worker, or upgrade failed).
      *
      * Throttled by a transient so concurrent 404s don't all queue on the
-     * synchronizer lock. PluginVersionUpgradeService::upgradeIfNeeded() is
+     * synchronizer lock. PluginLogicVersionUpgrader::upgradeIfNeeded() is
      * itself locked (synchronizerAcquireLockTry), so the worst case is a
      * single 300ms lock-acquire attempt per cooldown window.
      *
@@ -1173,7 +1173,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
         }
 
         try {
-            $upgraded = abj_service('version_upgrade')->upgradeIfNeeded($options);
+            $upgraded = $this->logic->versionUpgrader()->upgradeIfNeeded($options);
             if (is_array($upgraded)) {
                 $options = $upgraded;
             }
