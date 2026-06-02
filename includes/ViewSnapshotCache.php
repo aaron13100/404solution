@@ -111,7 +111,7 @@ class ABJ_404_Solution_ViewSnapshotCache {
         }
         self::$viewSnapshotTableEnsured = true;
         $sqlFile = __DIR__ . '/sql/createViewCacheTable.sql';
-        $create = ABJ_404_Solution_Functions::readFileContents($sqlFile);
+        $create = ABJ_404_Solution_FileSystemService::readFileContents($sqlFile);
         if (is_string($create) && trim($create) !== '') {
             $this->dbCore->queryAndGetResults($create, array('log_errors' => false));
         }

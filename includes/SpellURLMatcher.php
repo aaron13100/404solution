@@ -142,7 +142,7 @@ class ABJ_404_Solution_SpellURLMatcher {
 					);
 				} else {
 					$idAndType = $rowDest . '|' . $row['type'];
-					$permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($idAndType, 0,
+					$permalink = ABJ_404_Solution_PermalinkResolver::permalinkInfoToArray($idAndType, 0,
 						null, $options);
 				}
 				$permalink['matching_regex'] = $regexURL;

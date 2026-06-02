@@ -244,7 +244,7 @@ class ABJ_404_Solution_SetupWizard {
      * @return void
      */
     public static function outputStyles(): void {
-        $css = ABJ_404_Solution_Functions::readFileContents(__DIR__ . '/html/setupWizardStyles.css');
+        $css = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/html/setupWizardStyles.css');
         echo '<style>' . $css . '</style>';
     }
 

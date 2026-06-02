@@ -34,11 +34,10 @@ class ABJ_404_Solution_FileSync {
 	 */
 	function getOwnerFromFile(string $key): string {
 		$filePath = $this->getSyncFilePath($key);
-		$fileUtils = abj_service('functions');
 
 		// Fixed: TOCTOU race condition - catch exception instead of check-then-read
 		try {
-			$contents = $fileUtils->readFileContents($filePath, false);
+			$contents = ABJ_404_Solution_FileSystemService::readFileContents($filePath, false);
 			return $contents;
 		} catch (Exception $e) { // allow-silent-catch: TOCTOU-safe file read; missing or unreadable file returns empty, caller treats as "no lock owner"
 			return "";
@@ -68,8 +67,7 @@ class ABJ_404_Solution_FileSync {
 	 */
 	function releaseLock(string $uniqueID, string $key): void {
 		$filePath = $this->getSyncFilePath($key);
-		$fileUtils = abj_service('functions');
-		$fileUtils->safeUnlink($filePath);
+		ABJ_404_Solution_FileSystemService::safeUnlink($filePath);
 	}
 	
 }

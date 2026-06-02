@@ -27,7 +27,7 @@ class ABJ_404_Solution_View_UI extends ABJ_404_Solution_ViewComponent {
      * @return string Template contents, no trailing newline.
      */
     private function tpl(string $name): string {
-        $raw = ABJ_404_Solution_Functions::readFileContents(__DIR__ . '/html/' . $name, false);
+        $raw = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/html/' . $name, false);
         return rtrim((string)$raw, "\n");
     }
 
@@ -179,7 +179,7 @@ class ABJ_404_Solution_View_UI extends ABJ_404_Solution_ViewComponent {
      */
     function echoAdminFooter() {
         // read the html content.
-        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/adminFooter.html");
+        $html = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/html/adminFooter.html");
         $html = $this->f->str_replace('{JAPANESE_FLASHCARDS_URL}', ABJ404_FC_URL, $html);
         $html = $this->f->str_replace(
             '{ABJ404_VIEW_FRESHNESS}',
@@ -311,7 +311,7 @@ class ABJ_404_Solution_View_UI extends ABJ_404_Solution_ViewComponent {
         $tabs[] = array('abj404_tools',   __('Tools', '404-solution'));
         $tabs[] = array('abj404_options', __('Options', '404-solution'));
 
-        $itemTpl = ABJ_404_Solution_Functions::readFileContents(__DIR__ . '/html/adminHeaderTab.html');
+        $itemTpl = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/html/adminHeaderTab.html');
         $tabsHtml = '';
         foreach ($tabs as $pair) {
             list($subKey, $label) = $pair;
@@ -324,7 +324,7 @@ class ABJ_404_Solution_View_UI extends ABJ_404_Solution_ViewComponent {
             $tabsHtml .= $row;
         }
 
-        $outer = ABJ_404_Solution_Functions::readFileContents(__DIR__ . '/html/adminHeaderTabs.html');
+        $outer = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/html/adminHeaderTabs.html');
         echo str_replace('{tabs}', $tabsHtml, $outer);
     }
 
@@ -529,7 +529,7 @@ class ABJ_404_Solution_View_UI extends ABJ_404_Solution_ViewComponent {
             $modeDescription = __('Advanced Mode shows all options. Switch to Simple Mode for a streamlined view.', '404-solution');
         }
 
-        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/settingsModeToggle.html");
+        $html = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/html/settingsModeToggle.html");
         $html = $this->f->str_replace('{nonce}', wp_create_nonce('abj404_mode_toggle'), $html);
         $html = $this->f->str_replace('{simpleActive}', $simpleActive, $html);
         $html = $this->f->str_replace('{advancedActive}', $advancedActive, $html);
@@ -596,7 +596,7 @@ class ABJ_404_Solution_View_UI extends ABJ_404_Solution_ViewComponent {
         $selectedNotifyWeekly  = ($notifyFrequency === 'weekly')  ? 'selected' : '';
 
         // Read and build the simple options template
-        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/adminOptionsSimple.html");
+        $html = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/html/adminOptionsSimple.html");
 
         // Replace dest404page tiles
         $html = $this->f->str_replace('{behaviorTiles}', $behaviorTilesHtml, $html);

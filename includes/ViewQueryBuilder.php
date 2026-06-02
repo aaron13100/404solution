@@ -313,7 +313,7 @@ class ABJ_404_Solution_ViewQueryBuilder {
         }
         $filterText = esc_sql($filterTextRaw);
 
-        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getRedirectsForView.sql");
+        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/sql/getRedirectsForView.sql");
         $wpdbCollate = 'utf8mb4_unicode_ci';
         $hasForcedCollate = false;
         if (array_key_exists('forceCollate', $tableOptions) && !empty($tableOptions['forceCollate'])) {

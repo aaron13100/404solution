@@ -237,7 +237,7 @@ class ABJ_404_Solution_LogsHitsRollupService implements ABJ_404_Solution_LogsHit
             $tempDestTable = $this->dbCore->doTableNameReplacements("{wp_abj404_logs_hits}_temp");
             $this->dbCore->queryAndGetResults("drop table if exists " . $tempDestTable);
             $resolvedCollation = $this->resolveHitsJoinCollation();
-            $createTempTableQuery = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createLogsHitsTempTable.sql");
+            $createTempTableQuery = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/sql/createLogsHitsTempTable.sql");
             $createTempTableQuery = $this->dbCore->doTableNameReplacements($createTempTableQuery);
             $createTempTableQuery = str_replace('{COLLATION}', $resolvedCollation, $createTempTableQuery);
             $this->dbCore->queryAndGetResults($createTempTableQuery);
@@ -281,7 +281,7 @@ class ABJ_404_Solution_LogsHitsRollupService implements ABJ_404_Solution_LogsHit
 
     /** @param string $tempDestTable @return array<string, mixed> */
     private function hitsTableInsertDirect(string $tempDestTable): array {
-        $ttSelectQuery = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getRedirectsForViewTempTable.sql");
+        $ttSelectQuery = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/sql/getRedirectsForViewTempTable.sql");
         if ($this->isLogsv2CanonicalUrlBackfillComplete()) { $ttSelectQuery = $this->dropLogsv2CanonicalCoalesceWrap($ttSelectQuery); }
         $ttSelectQuery = $this->dbCore->doTableNameReplacements($ttSelectQuery);
         $ttInsertQuery = "/* abj404:src=LogsHitsRollupService::hitsTableInsertDirect */ insert into " . $tempDestTable . " (requested_url, logsid, last_used, logshits, failed_hits) \n " . $ttSelectQuery;
@@ -308,7 +308,7 @@ class ABJ_404_Solution_LogsHitsRollupService implements ABJ_404_Solution_LogsHit
         $resolvedCollation = $this->resolveHitsJoinCollation();
         $startTime = microtime(true);
         $this->dbCore->queryAndGetResults("drop table if exists " . $preAggTable);
-        $createPreAggQuery = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createLogsHitsPreAggTempTable.sql");
+        $createPreAggQuery = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/sql/createLogsHitsPreAggTempTable.sql");
         $createPreAggQuery = $this->dbCore->doTableNameReplacements($createPreAggQuery);
         $createPreAggQuery = str_replace('{COLLATION}', $resolvedCollation, $createPreAggQuery);
         $this->dbCore->queryAndGetResults($createPreAggQuery);

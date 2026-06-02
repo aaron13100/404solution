@@ -16,7 +16,7 @@ class ABJ_404_Solution_View_Logs extends ABJ_404_Solution_ViewComponent {
      * @return string
      */
     private function tpl($name) {
-        $raw = ABJ_404_Solution_Functions::readFileContents(__DIR__ . '/html/' . $name, false);
+        $raw = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/html/' . $name, false);
         return rtrim((string)$raw, "\n");
     }
 
@@ -52,7 +52,7 @@ class ABJ_404_Solution_View_Logs extends ABJ_404_Solution_ViewComponent {
         }
 
         // Search dropdown (existing template)
-        $searchBox = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/viewLogsForSearchBox.html");
+        $searchBox = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/html/viewLogsForSearchBox.html");
         $redirectPageTitle = $this->shared->viewGetPostOrGetSanitize('redirect_to_data_field_title');
         $pageIDAndType = $this->shared->viewGetPostOrGetSanitize('redirect_to_data_field_id');
         $searchBox = $this->f->str_replace('{redirect_to_label}', __('View logs for', '404-solution'), $searchBox);
@@ -79,7 +79,7 @@ class ABJ_404_Solution_View_Logs extends ABJ_404_Solution_ViewComponent {
         // Silent warmup placeholder. Data loaded via AJAX. Per
         // UI_AESTHETIC.md, native WP list tables show no loading
         // chrome during pagination, so no visible text is rendered.
-        $warmup = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/tableWarmupPlaceholder.html");
+        $warmup = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/html/tableWarmupPlaceholder.html");
 
         $wrapper = $this->tpl('viewLogsPageWrapper.html');
         $wrapper = $this->f->str_replace(
@@ -639,7 +639,7 @@ class ABJ_404_Solution_View_Logs extends ABJ_404_Solution_ViewComponent {
         }
 
         // read the html content.
-        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/paginationLinks.html");
+        $html = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/html/paginationLinks.html");
         $html = $this->f->str_replace('{TEXT_BEFORE_LINKS}', $currentlyShowingText, $html);
         // Build navigation buttons: disabled (span) when at the boundary page, link (a) otherwise.
         $onFirstPage = ($paged <= 1);

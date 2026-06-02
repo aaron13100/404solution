@@ -198,7 +198,7 @@ class ABJ_404_Solution_DatabaseUpgradeIndexes extends ABJ_404_Solution_DatabaseU
 	     */
 	    public function ensureLogsCompositeIndex($logsTable, $createSqlOverride = null) {
 	        $indexName = 'idx_requested_url_timestamp';
-	        $createSql = is_string($createSqlOverride) ? $createSqlOverride : ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/createLogTable.sql");
+	        $createSql = is_string($createSqlOverride) ? $createSqlOverride : ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/sql/createLogTable.sql");
 	        $specsByName = $this->parseIndexSpecsFromCreateTableSql($createSql);
 	        $spec = $specsByName[$indexName] ?? null;
 	        if (empty($spec)) {

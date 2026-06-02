@@ -287,7 +287,7 @@ class ABJ_404_Solution_Logging {
         $sentLine = -1;
         if (file_exists($sentDateFile)) {
             $sentLine = absint(
-            	ABJ_404_Solution_Functions::readFileContents($sentDateFile, false));
+            	ABJ_404_Solution_FileSystemService::readFileContents($sentDateFile, false));
             $this->debugMessage("Last sent line from file: " . $sentLine);
         }
         if ($sentLine < 1 && array_key_exists(self::LAST_SENT_LINE, $options)) {
@@ -390,7 +390,7 @@ class ABJ_404_Solution_Logging {
         	"Previously sent error line: " . $previouslySentLine);
         $logFileZip = $this->getZipFilePath();
         if (file_exists($logFileZip)) {
-            ABJ_404_Solution_Functions::safeUnlink($logFileZip);
+            ABJ_404_Solution_FileSystemService::safeUnlink($logFileZip);
         }
         $zip = new ZipArchive;
         if ($zip->open($logFileZip, ZipArchive::CREATE) === true) {
@@ -472,7 +472,7 @@ class ABJ_404_Solution_Logging {
         $result = wp_mail($to, $subject, $body, $headers, $attachments);
 
         if (file_exists($logFileZip)) {
-            ABJ_404_Solution_Functions::safeUnlink($logFileZip);
+            ABJ_404_Solution_FileSystemService::safeUnlink($logFileZip);
         }
         $this->debugMessage("Mail sent. Log zip file deleted.");
         return (bool)$result;
@@ -760,9 +760,8 @@ class ABJ_404_Solution_Logging {
      * @return string
      */
     function getFilePathAndMoveOldFile($directory, $filename) {
-    	$f = abj_service('functions');
         // create the directory and move the file
-        if (!$f->createDirectoryWithErrorMessages($directory)) {
+        if (!ABJ_404_Solution_FileSystemService::createDirectoryWithErrorMessages($directory)) {
             return ABJ404_PATH . $filename;
         }
         
@@ -778,14 +777,14 @@ class ABJ_404_Solution_Logging {
     function limitDebugFileSize(): void {
         // delete the sent_line file since it's now incorrect.
         if (file_exists($this->getDebugFilePathSentFile())) {
-            ABJ_404_Solution_Functions::safeUnlink($this->getDebugFilePathSentFile());
+            ABJ_404_Solution_FileSystemService::safeUnlink($this->getDebugFilePathSentFile());
         }
 
         // update the last sent error line since the debug file will be deleted.
         $this->removeLastSentErrorLineFromDatabase();
         
         // delete _old log file
-        ABJ_404_Solution_Functions::safeUnlink($this->getDebugFilePathOld());
+        ABJ_404_Solution_FileSystemService::safeUnlink($this->getDebugFilePathOld());
         // rename current log file to _old
         rename($this->getDebugFilePath(), $this->getDebugFilePathOld());
     }
@@ -807,7 +806,7 @@ class ABJ_404_Solution_Logging {
         
         // since the debug file is being deleted we reset the last error line that was sent.
         if (file_exists($this->getDebugFilePathSentFile())) {
-            ABJ_404_Solution_Functions::safeUnlink($this->getDebugFilePathSentFile());
+            ABJ_404_Solution_FileSystemService::safeUnlink($this->getDebugFilePathSentFile());
         }
         // update the last sent error line since the debug file will be deleted.
         $this->removeLastSentErrorLineFromDatabase();
@@ -823,7 +822,7 @@ class ABJ_404_Solution_Logging {
             foreach ($files as $file) { // Loop through the files and delete them
                 if (is_file($file)) {
                     // Delete the file
-                    if (!ABJ_404_Solution_Functions::safeUnlink($file)) {
+                    if (!ABJ_404_Solution_FileSystemService::safeUnlink($file)) {
                         $allIsWell = false;
                     }
                 }

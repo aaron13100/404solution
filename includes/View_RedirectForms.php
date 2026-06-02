@@ -19,7 +19,7 @@ if (!defined('ABSPATH')) {
 class ABJ_404_Solution_View_RedirectForms extends ABJ_404_Solution_ViewComponent {
 
     private function tpl(string $name): string {
-        $raw = ABJ_404_Solution_Functions::readFileContents(__DIR__ . '/html/' . $name, false);
+        $raw = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/html/' . $name, false);
         return rtrim((string)$raw, "\n");
     }
 
@@ -64,8 +64,8 @@ class ABJ_404_Solution_View_RedirectForms extends ABJ_404_Solution_ViewComponent
         $selected0 = '';
 
         // read the html content.
-        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/addManualRedirectTop.html");
-        $html .= ABJ_404_Solution_Functions::readFileContents(__DIR__ .
+        $html = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/html/addManualRedirectTop.html");
+        $html .= ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ .
                 "/html/addManualRedirectPageSearchDropdown.html");
 
         $html = $this->f->str_replace(
@@ -82,7 +82,7 @@ class ABJ_404_Solution_View_RedirectForms extends ABJ_404_Solution_ViewComponent
             $html
         );
 
-        $html .= ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/addManualRedirectBottom.html");
+        $html .= ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/html/addManualRedirectBottom.html");
         $html = $this->f->str_replace(
             array('{addManualRedirectAction}', '{urlPlaceholder}', '{postedURL}',
                   '{301selected}', '{302selected}', '{307selected}', '{308selected}',

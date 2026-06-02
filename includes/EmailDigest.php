@@ -101,7 +101,7 @@ class ABJ_404_Solution_EmailDigest {
         // so that presentation can be edited independently of PHP. Email-client
         // compatibility requires inline / embedded CSS, so styles intentionally
         // live inside the template rather than an external stylesheet.
-        $template = ABJ_404_Solution_Functions::readFileContents(__DIR__ . '/html/emailDigestBody.html', false);
+        $template = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/html/emailDigestBody.html', false);
 
         $replacements = array(
             '{t_digest}'        => $t['digest'],
@@ -181,11 +181,11 @@ class ABJ_404_Solution_EmailDigest {
             $emptyMessage = $rollupAvailable
                 ? esc_html__('No captured 404s in this period.', '404-solution')
                 : esc_html__('Top URLs unavailable: log rollup is being rebuilt. Will be available in the next digest.', '404-solution');
-            $emptyTemplate = ABJ_404_Solution_Functions::readFileContents(__DIR__ . '/html/emailDigestEmptyRow.html', false);
+            $emptyTemplate = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/html/emailDigestEmptyRow.html', false);
             return str_replace('{emptyMessage}', $emptyMessage, $emptyTemplate);
         }
 
-        $rowTemplate = ABJ_404_Solution_Functions::readFileContents(__DIR__ . '/html/emailDigestTableRow.html', false);
+        $rowTemplate = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/html/emailDigestTableRow.html', false);
         $tableRows = '';
         $rowIndex = 0;
         foreach ($topCaptured as $row) {

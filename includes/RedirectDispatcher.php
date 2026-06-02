@@ -179,7 +179,7 @@ class ABJ_404_Solution_RedirectDispatcher {
         }
 
         $key = $redirectFinalDest . '|' . (is_scalar($redirect['type']) ? (string)$redirect['type'] : '');
-        $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($key, 0);
+        $permalink = ABJ_404_Solution_PermalinkResolver::permalinkInfoToArray($key, 0);
 
         $finalLink = (is_array($permalink) && array_key_exists('link', $permalink))
             ? $permalink['link']
@@ -275,7 +275,7 @@ class ABJ_404_Solution_RedirectDispatcher {
         }
 
         $theID = $this->callWpFunction('get_the_ID', array(), 0);
-        $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($theID . '|' . $this->typePost(), 0, null, $options);
+        $permalink = ABJ_404_Solution_PermalinkResolver::permalinkInfoToArray($theID . '|' . $this->typePost(), 0, null, $options);
 
         $permLinkVal = isset($permalink['link']) && is_string($permalink['link']) ? $permalink['link'] : '';
         $urlParts = parse_url($permLinkVal);

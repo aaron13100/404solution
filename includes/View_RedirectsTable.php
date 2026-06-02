@@ -21,7 +21,7 @@ class ABJ_404_Solution_View_RedirectsTable extends ABJ_404_Solution_ViewComponen
 
     /** Load a template file from includes/html/ and trim its trailing newline. */
     private function tpl(string $name): string {
-        $raw = ABJ_404_Solution_Functions::readFileContents(__DIR__ . '/html/' . $name, false);
+        $raw = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/html/' . $name, false);
         return rtrim((string)$raw, "\n");
     }
 
@@ -125,7 +125,7 @@ class ABJ_404_Solution_View_RedirectsTable extends ABJ_404_Solution_ViewComponen
             ? $this->listTableChrome->buildEmptyTrashForm($sub)
             : '';
 
-        $warmup = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/tableWarmupPlaceholder.html");
+        $warmup = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/html/tableWarmupPlaceholder.html");
 
         $refresh = $this->listTableChrome->paginationRefreshStrings();
 
@@ -195,7 +195,7 @@ class ABJ_404_Solution_View_RedirectsTable extends ABJ_404_Solution_ViewComponen
         $urlPlaceholder = parse_url(get_home_url(), PHP_URL_PATH) . "/example";
 
         // Redirect-to autocomplete (existing template)
-        $redirectHtml = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/addManualRedirectPageSearchDropdown.html");
+        $redirectHtml = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/html/addManualRedirectPageSearchDropdown.html");
         $redirectHtml = $this->f->str_replace(
             array('{redirect_to_label}', '{TOOLTIP_POPUP_EXPLANATION_EMPTY}', '{TOOLTIP_POPUP_EXPLANATION_PAGE}',
                   '{TOOLTIP_POPUP_EXPLANATION_CUSTOM_STRING}', '{TOOLTIP_POPUP_EXPLANATION_URL}',
@@ -601,7 +601,7 @@ class ABJ_404_Solution_View_RedirectsTable extends ABJ_404_Solution_ViewComponen
      * @return string
      */
     public function fillRedirectRowTemplate(array $replacements): string {
-        $htmlTemp = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/tableRowPageRedirects.html");
+        $htmlTemp = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/html/tableRowPageRedirects.html");
         $htmlTemp = $this->f->str_replace(array_keys($replacements), array_values($replacements), $htmlTemp);
         return $this->f->doNormalReplacements($htmlTemp);
     }
@@ -653,28 +653,28 @@ class ABJ_404_Solution_View_RedirectsTable extends ABJ_404_Solution_ViewComponen
             }
         } else if ($rowType == ABJ404_TYPE_CAT) {
             if ($rowFinalDest !== '') {
-                $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($rowFinalDest . '|' . ABJ404_TYPE_CAT, 0);
+                $permalink = ABJ_404_Solution_PermalinkResolver::permalinkInfoToArray($rowFinalDest . '|' . ABJ404_TYPE_CAT, 0);
                 $link = is_string($permalink['link']) ? $permalink['link'] : '';
                 $title .= __('Category:', '404-solution') . ' ' . (is_string($permalink['title']) ? $permalink['title'] : '');
             }
         } else if ($rowType == ABJ404_TYPE_TAG) {
             if ($rowFinalDest !== '') {
-                $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($rowFinalDest . '|' . ABJ404_TYPE_TAG, 0);
+                $permalink = ABJ_404_Solution_PermalinkResolver::permalinkInfoToArray($rowFinalDest . '|' . ABJ404_TYPE_TAG, 0);
                 $link = is_string($permalink['link']) ? $permalink['link'] : '';
                 $title .= __('Tag:', '404-solution') . ' ' . (is_string($permalink['title']) ? $permalink['title'] : '');
             }
         } else if ($rowType == ABJ404_TYPE_HOME) {
-            $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($rowFinalDest . '|' . ABJ404_TYPE_HOME, 0);
+            $permalink = ABJ_404_Solution_PermalinkResolver::permalinkInfoToArray($rowFinalDest . '|' . ABJ404_TYPE_HOME, 0);
             $link = is_string($permalink['link']) ? $permalink['link'] : '';
             $title .= __('Home Page:', '404-solution') . ' ' . (is_string($permalink['title']) ? $permalink['title'] : '');
         } else if ($rowType == ABJ404_TYPE_POST) {
             if ($rowFinalDest !== '') {
-                $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($rowFinalDest . '|' . ABJ404_TYPE_POST, 0);
+                $permalink = ABJ_404_Solution_PermalinkResolver::permalinkInfoToArray($rowFinalDest . '|' . ABJ404_TYPE_POST, 0);
                 $link = is_string($permalink['link']) ? $permalink['link'] : '';
                 $title .= is_string($permalink['title']) ? $permalink['title'] : '';
             }
         } else if ($rowType == ABJ404_TYPE_404_DISPLAYED) {
-            $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($rowFinalDest . '|' . ABJ404_TYPE_404_DISPLAYED, 0);
+            $permalink = ABJ_404_Solution_PermalinkResolver::permalinkInfoToArray($rowFinalDest . '|' . ABJ404_TYPE_404_DISPLAYED, 0);
             $link = is_string($permalink['link']) ? $permalink['link'] : '';
             $title .= is_string($permalink['title']) ? $permalink['title'] : '';
             if ($rowFinalDest == '0') {

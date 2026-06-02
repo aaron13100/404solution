@@ -384,7 +384,7 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
             }
         }
 
-        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getLogsCount.sql");
+        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/sql/getLogsCount.sql");
 
         if ($logID != 0) {
             $query = $this->f->str_replace('/* {SPECIFIC_ID}', '', $query);
@@ -430,10 +430,10 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
     	global $wpdb;
 
     	if (file_exists($tempFile)) {
-    		ABJ_404_Solution_Functions::safeUnlink($tempFile);
+    		ABJ_404_Solution_FileSystemService::safeUnlink($tempFile);
     	}
 
-    	$query = ABJ_404_Solution_Functions::readFileContents(__DIR__ .
+    	$query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ .
     		"/sql/getRedirectsExport.sql");
     	$query = $this->dbCore->doTableNameReplacements($query);
 
@@ -463,7 +463,7 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
 
     /** @return array<int, array<string, mixed>> */
     function getRedirectsWithLogs() {
-        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getRedirectsWithLogs.sql");
+        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/sql/getRedirectsWithLogs.sql");
 
         $result = $this->dbCore->queryAndGetResults($query);
         if (!empty($result['timed_out']) || (isset($result['last_error']) && $result['last_error'] != '')) {
@@ -755,7 +755,7 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
         $postIDs = array_map('absint', $postIDs);
         $postIDJoined = implode(", ", $postIDs);
 
-        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getAdditionalPostData.sql");
+        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/sql/getAdditionalPostData.sql");
         $query = $this->f->str_replace('{IDS_TO_INCLUDE}', $postIDJoined, $query);
         $query = $this->dbCore->doTableNameReplacements($query);
         $query = $this->f->doNormalReplacements($query);
@@ -917,7 +917,7 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
 
     /** @return array<string, mixed> */
     function getTableEngines() {
-    	$query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/selectTableEngines.sql");
+    	$query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/sql/selectTableEngines.sql");
     	$results = $this->dbCore->queryAndGetResults($query);
     	return $results;
     }

@@ -213,7 +213,7 @@ class ABJ_404_Solution_DatabaseUpgradeTableRepair extends ABJ_404_Solution_Datab
 		return;
 	}
 
-	$tempDdl = ABJ_404_Solution_Functions::readFileContents(
+	$tempDdl = ABJ_404_Solution_FileSystemService::readFileContents(
 		__DIR__ . '/sql/createLogsHitsTempTable.sql');
 	if (!is_string($tempDdl) || trim($tempDdl) === '') {
 		return;

@@ -120,13 +120,13 @@ class ABJ_404_Solution_View_Shared extends ABJ_404_Solution_ViewComponent {
 		$pageTitle = $this->logic->pageOrdering()->getPageTitleFromIDAndType($userSelectedDefault404Page, $urlDestination);
 		$pageMissingWarning = "";
 		if ($behavior === 'custom' && $userSelectedDefault404Page !== '') {
-			$permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($userSelectedDefault404Page, 0);
+			$permalink = ABJ_404_Solution_PermalinkResolver::permalinkInfoToArray($userSelectedDefault404Page, 0);
 			if (!in_array($permalink['status'], array('publish', 'published'))) {
 				$pageMissingWarning = __("(The specified page doesn't exist. Please update this setting.)", '404-solution');
 			}
 		}
 
-		$customDropdown = ABJ_404_Solution_Functions::readFileContents(__DIR__ .
+		$customDropdown = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ .
 			"/html/addManualRedirectPageSearchDropdown.html");
 		$customDropdown = $this->f->str_replace('{redirect_to_label}', '', $customDropdown);
 		$customDropdown = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_EMPTY}',
@@ -145,7 +145,7 @@ class ABJ_404_Solution_View_Shared extends ABJ_404_Solution_ViewComponent {
 		$customDropdown = $this->f->doNormalReplacements($customDropdown);
 
 		// Build tiles template
-		$html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/behaviorTiles.html");
+		$html = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/html/behaviorTiles.html");
 
 		$behaviors = array('suggest', 'homepage', 'custom', 'theme_default');
 		foreach ($behaviors as $b) {

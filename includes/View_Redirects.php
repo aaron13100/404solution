@@ -54,7 +54,7 @@ class ABJ_404_Solution_View_Redirects extends ABJ_404_Solution_ViewComponent {
      * @return string
      */
     public function buildRedirectToDropdownHtml(string $pageTitle, string $pageIDAndType): string {
-        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ .
+        $html = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ .
                 "/html/addManualRedirectPageSearchDropdown.html");
         $html = $this->f->str_replace('{redirect_to_label}', __('Redirect to', '404-solution'), $html);
         $html = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_EMPTY}',
@@ -97,12 +97,12 @@ class ABJ_404_Solution_View_Redirects extends ABJ_404_Solution_ViewComponent {
             $items .= '<li><code>' . esc_html($bulkUrl) . '</code></li>';
         }
 
-        $rowHtml = ABJ_404_Solution_Functions::readFileContents(__DIR__ . '/html/editRedirectBulkUrls.html');
+        $rowHtml = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/html/editRedirectBulkUrls.html');
         $rowHtml = $this->f->str_replace('{bulk_urls_label}', esc_html__('URLs to redirect', '404-solution'), $rowHtml);
         $rowHtml = $this->f->str_replace('{bulk_count}', (string)count($redirects_multiple), $rowHtml);
         $rowHtml = $this->f->str_replace('{bulk_url_items}', $items, $rowHtml);
 
-        $hiddenInput = ABJ_404_Solution_Functions::readFileContents(__DIR__ . '/html/editRedirectIdsMultipleHiddenInput.html');
+        $hiddenInput = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/html/editRedirectIdsMultipleHiddenInput.html');
         $hiddenInput = $this->f->str_replace('{ids_multiple}', esc_attr(implode(',', $recnums_multiple)), $hiddenInput);
 
         // here we set the variable to the first value returned because it's used to set default values
@@ -127,11 +127,11 @@ class ABJ_404_Solution_View_Redirects extends ABJ_404_Solution_ViewComponent {
         $bucket = $suggestion['score'] >= 75 ? 'high' : ($suggestion['score'] >= 50 ? 'medium' : 'low');
         $typeLabel = '';
         if (!empty($suggestion['type_label'])) {
-            $typeLabel = ABJ_404_Solution_Functions::readFileContents(__DIR__ . '/html/editRedirectSuggestionTypeLabel.html');
+            $typeLabel = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/html/editRedirectSuggestionTypeLabel.html');
             $typeLabel = $this->f->str_replace('{type_label}', esc_html($suggestion['type_label']), $typeLabel);
         }
 
-        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . '/html/editRedirectSuggestionBlock.html');
+        $html = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/html/editRedirectSuggestionBlock.html');
         $html = $this->f->str_replace('{suggestion_label}', esc_html__('Suggested destination', '404-solution'), $html);
         $html = $this->f->str_replace('{suggestion_title}', esc_html($suggestion['title']), $html);
         $html = $this->f->str_replace('{suggestion_title_attr}', esc_attr($suggestion['title']), $html);
@@ -278,7 +278,7 @@ class ABJ_404_Solution_View_Redirects extends ABJ_404_Solution_ViewComponent {
         }
         $manualPickerHiddenClass = ($suggestion !== null && $isSimpleMode) ? ' abj404-hidden' : '';
         $redirectToInner = $this->buildRedirectToDropdownHtml($pageTitle, $pageIDAndType);
-        $redirectToBody = ABJ_404_Solution_Functions::readFileContents(__DIR__ . '/html/editRedirectManualPickerWrapper.html');
+        $redirectToBody = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/html/editRedirectManualPickerWrapper.html');
         $redirectToBody = $this->f->str_replace('{hidden_class}', $manualPickerHiddenClass, $redirectToBody);
         $redirectToBody = $this->f->str_replace('{inner_html}', $redirectToInner, $redirectToBody);
         $formRows .= $this->buildFieldRowHtml('redirect_to_user_field', $this->buildRequiredLabel(__('Redirect to', '404-solution')), $redirectToBody);
@@ -295,7 +295,7 @@ class ABJ_404_Solution_View_Redirects extends ABJ_404_Solution_ViewComponent {
         // Compose the page using the shell template.
         $cancelUrl = $this->buildCancelUrl($source_page, $filter, $orderby, $order);
 
-        $shell = ABJ_404_Solution_Functions::readFileContents(__DIR__ . '/html/editRedirectFormShell.html');
+        $shell = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/html/editRedirectFormShell.html');
         $shell = $this->f->str_replace('{title}', esc_html($title), $shell);
         $shell = $this->f->str_replace('{back_url}', esc_url($backUrl), $shell);
         $shell = $this->f->str_replace('{back_label}', esc_html($backLabel), $shell);
@@ -332,7 +332,7 @@ class ABJ_404_Solution_View_Redirects extends ABJ_404_Solution_ViewComponent {
         $redirectUrl = $row !== null ? $row->getUrl() : '';
         $redirectEngine = $row !== null ? $row->getEngine() : '';
 
-        $hiddenInputs = ABJ_404_Solution_Functions::readFileContents(__DIR__ . '/html/editRedirectIdHiddenInput.html');
+        $hiddenInputs = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/html/editRedirectIdHiddenInput.html');
         $hiddenInputs = $this->f->str_replace('{redirect_id}', esc_attr($redirectId), $hiddenInputs);
         $formRows = $this->buildUrlRowHtml($redirectUrl, $redirectEngine);
         $isRegexChecked = ($row !== null && $row->isRegex()) ? ' checked' : '';
@@ -358,7 +358,7 @@ class ABJ_404_Solution_View_Redirects extends ABJ_404_Solution_ViewComponent {
      * @return string
      */
     private function buildRequiredLabel(string $baseLabel): string {
-        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . '/html/editRedirectRequiredLabelSuffix.html');
+        $html = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/html/editRedirectRequiredLabelSuffix.html');
         $html = $this->f->str_replace('{base_label}', esc_html($baseLabel), $html);
         $html = $this->f->str_replace('{required_label}', esc_html__('(Required)', '404-solution'), $html);
         return $html;
@@ -372,11 +372,11 @@ class ABJ_404_Solution_View_Redirects extends ABJ_404_Solution_ViewComponent {
     private function buildUrlRowHtml(string $redirectUrl, string $redirectEngine): string {
         $matchedByNote = '';
         if ($redirectEngine !== '') {
-            $matchedByNote = ABJ_404_Solution_Functions::readFileContents(__DIR__ . '/html/editRedirectMatchedByNote.html');
+            $matchedByNote = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/html/editRedirectMatchedByNote.html');
             $matchedByNote = $this->f->str_replace('{matched_by_label}', esc_html__('Auto-matched by:', '404-solution'), $matchedByNote);
             $matchedByNote = $this->f->str_replace('{engine_name}', esc_html($this->humanizeEngineName($redirectEngine)), $matchedByNote);
         }
-        $urlBody = ABJ_404_Solution_Functions::readFileContents(__DIR__ . '/html/editRedirectUrlRowBody.html');
+        $urlBody = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/html/editRedirectUrlRowBody.html');
         $urlBody = $this->f->str_replace('{url_value}', esc_attr($redirectUrl), $urlBody);
         $urlBody = $this->f->str_replace('{matched_by_note}', $matchedByNote, $urlBody);
         $label = $this->buildRequiredLabel(__('URL', '404-solution'));
@@ -391,7 +391,7 @@ class ABJ_404_Solution_View_Redirects extends ABJ_404_Solution_ViewComponent {
      */
     private function buildRegexRowHtml(string $isRegexChecked): string {
         $regexLabel = __('Treat this URL as a regular expression', '404-solution');
-        $body = ABJ_404_Solution_Functions::readFileContents(__DIR__ . '/html/editRedirectRegexBody.html');
+        $body = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/html/editRedirectRegexBody.html');
         $body = $this->f->str_replace('{regex_label}', esc_html($regexLabel), $body);
         $body = $this->f->str_replace('{is_regex_checked}', $isRegexChecked, $body);
         $body = $this->f->str_replace('{regex_explain_link}', esc_html__('(Explain)', '404-solution'), $body);
@@ -414,7 +414,7 @@ class ABJ_404_Solution_View_Redirects extends ABJ_404_Solution_ViewComponent {
             'source_order' => $order,
             'source_paged' => $paged,
         );
-        $template = ABJ_404_Solution_Functions::readFileContents(__DIR__ . '/html/editRedirectSourceHiddenInput.html');
+        $template = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/html/editRedirectSourceHiddenInput.html');
         $html = '';
         foreach ($pairs as $name => $value) {
             if ($value === '') {
@@ -470,7 +470,7 @@ class ABJ_404_Solution_View_Redirects extends ABJ_404_Solution_ViewComponent {
         $this->redirectConditions->echoRedirectConditionsSection();
         $conditionsHtml = (string)ob_get_clean();
 
-        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . '/html/editRedirectAdvancedOptions.html');
+        $html = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/html/editRedirectAdvancedOptions.html');
         $html = $this->f->str_replace('{advanced_options_label}', esc_html__('Advanced Options', '404-solution'), $html);
         $html = $this->f->str_replace('{open_attr}', $openAttr, $html);
         $html = $this->f->str_replace('{start_date_label}', esc_html__('Active From (optional)', '404-solution'), $html);
@@ -492,7 +492,7 @@ class ABJ_404_Solution_View_Redirects extends ABJ_404_Solution_ViewComponent {
      * @return string
      */
     private function buildFieldRowHtml(string $fieldId, string $labelHtml, string $bodyHtml): string {
-        $row = ABJ_404_Solution_Functions::readFileContents(__DIR__ . '/html/editRedirectFieldRow.html');
+        $row = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/html/editRedirectFieldRow.html');
         $row = $this->f->str_replace('{field_id}', esc_attr($fieldId), $row);
         $row = $this->f->str_replace('{field_label}', $labelHtml, $row);
         $row = $this->f->str_replace('{field_body}', $bodyHtml, $row);
@@ -698,7 +698,7 @@ class ABJ_404_Solution_View_Redirects extends ABJ_404_Solution_ViewComponent {
                 return null;
             }
 
-            $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray(
+            $permalink = ABJ_404_Solution_PermalinkResolver::permalinkInfoToArray(
                 $topIdAndType, $topScore, $rowType, $options
             );
 

@@ -16,7 +16,7 @@ if (!defined('ABSPATH')) {
 class ABJ_404_Solution_View_CapturedURLsTable extends ABJ_404_Solution_ViewComponent {
 
     private function tpl(string $name): string {
-        $raw = ABJ_404_Solution_Functions::readFileContents(__DIR__ . '/html/' . $name, false);
+        $raw = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/html/' . $name, false);
         return rtrim((string)$raw, "\n");
     }
 
@@ -122,7 +122,7 @@ class ABJ_404_Solution_View_CapturedURLsTable extends ABJ_404_Solution_ViewCompo
         wp_nonce_field('abj404_bulkProcess');
         $nonceField = (string)ob_get_clean();
 
-        $warmup = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/tableWarmupPlaceholder.html");
+        $warmup = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/html/tableWarmupPlaceholder.html");
 
         $refresh = $this->listTableChrome->paginationRefreshStrings();
 
@@ -392,7 +392,7 @@ class ABJ_404_Solution_View_CapturedURLsTable extends ABJ_404_Solution_ViewCompo
                     '{laterBtnHTML}' => $laterBtnHTML,
                 )),
                 array_values($vars),
-                ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/tableRowCapturedURLs.html")
+                ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/html/tableRowCapturedURLs.html")
             );
             $bodyRows .= $this->f->doNormalReplacements($tempHtml);
         }

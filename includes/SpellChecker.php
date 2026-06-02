@@ -300,7 +300,7 @@ class ABJ_404_Solution_SpellChecker {
 			$idAndType = key($permalinks);
 			$idAndTypeStr = is_string($idAndType) ? $idAndType : (string)$idAndType;
 			$linkScoreInt = is_scalar($linkScore) ? (int)$linkScore : 0;
-            $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($idAndTypeStr, $linkScoreInt,
+            $permalink = ABJ_404_Solution_PermalinkResolver::permalinkInfoToArray($idAndTypeStr, $linkScoreInt,
             	is_string($rowType) ? $rowType : null, $options);
 
 			if ($permalink['score'] >= $minScore) {

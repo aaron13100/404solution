@@ -19,7 +19,7 @@ class ABJ_404_Solution_View_Settings extends ABJ_404_Solution_ViewComponent {
      * @return string Raw template body with the trailing newline removed.
      */
     private function tpl($name) {
-        $raw = ABJ_404_Solution_Functions::readFileContents(__DIR__ . '/html/' . $name, false);
+        $raw = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/html/' . $name, false);
         return rtrim((string)$raw, "\n");
     }
 
@@ -204,7 +204,7 @@ class ABJ_404_Solution_View_Settings extends ABJ_404_Solution_ViewComponent {
         // Engine Profiles and GSC are advanced features — hidden in simple mode
         if ($settingsMode === 'advanced') {
             // Engine Profiles — outside the main form (uses its own AJAX save)
-            $epHtml = ABJ_404_Solution_Functions::readFileContents(__DIR__ . '/html/engineProfilesSection.html');
+            $epHtml = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/html/engineProfilesSection.html');
             $epHtml = $this->f->doNormalReplacements($epHtml);
             $abj404view->echoOptionsSection('settings-engine-profiles', 'abj404-engineProfiles', __('Engine Profiles', '404-solution'), $epHtml, false, $abj404view->getCardIcon('filter'));
 
@@ -261,7 +261,7 @@ class ABJ_404_Solution_View_Settings extends ABJ_404_Solution_ViewComponent {
         $selectedAutoTags = $this->shared->getCheckedAttr($options, 'auto_tags');
         $selectedAutoTrashRedirect = $this->shared->getCheckedAttr($options, 'auto_trash_redirect');
 
-        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/adminOptionsAutoRedirects.html");
+        $html = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/html/adminOptionsAutoRedirects.html");
         $html = $this->f->str_replace('{selectedAutoRedirects}', $selectedAutoRedirects, $html);
         $html = $this->f->str_replace('{selectedAutoSlugs}', $selectedAutoSlugs, $html);
         $html = $this->f->str_replace('{selectedAutoCats}', $selectedAutoCats, $html);
@@ -291,7 +291,7 @@ class ABJ_404_Solution_View_Settings extends ABJ_404_Solution_ViewComponent {
         $allPostTypes = esc_html(implode(', ', $allPostTypesTemp));
 
         // Read the html content
-        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/settingsAdvancedContent.html");
+        $html = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/html/settingsAdvancedContent.html");
 
         $html = $this->f->str_replace('{recognized_post_types}',
             str_replace('\\n', "\n", wp_kses_post($this->shared->optStr($options, 'recognized_post_types'))), $html);
@@ -346,7 +346,7 @@ class ABJ_404_Solution_View_Settings extends ABJ_404_Solution_ViewComponent {
                 $kbFileSizePretty, $mbFileSizePretty);
 
         // Read the html content
-        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/settingsAdvancedLogging.html");
+        $html = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/html/settingsAdvancedLogging.html");
 
         $html = $this->f->str_replace('checked="log_raw_ips"', $selectedLogRawIPs, $html);
         $html = $this->f->str_replace('checked="debug_mode"', $selectedDebugLogging, $html);
@@ -380,7 +380,7 @@ class ABJ_404_Solution_View_Settings extends ABJ_404_Solution_ViewComponent {
         }
 
         // Read the html content
-        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/settingsAdvancedSystem.html");
+        $html = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/html/settingsAdvancedSystem.html");
 
         $html = $this->f->str_replace('{DATABASE_VERSION}', esc_html($this->shared->optStr($options, 'DB_VERSION')), $html);
         $html = $this->f->str_replace('checked="redirect_all_requests"', $selectedRedirectAllRequests, $html);
@@ -483,7 +483,7 @@ class ABJ_404_Solution_View_Settings extends ABJ_404_Solution_ViewComponent {
         $selectedNotifyDaily   = ($notifyFrequency === 'daily')   ? ' selected' : '';
         $selectedNotifyWeekly  = ($notifyFrequency === 'weekly')  ? ' selected' : '';
 
-        $html = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/html/adminOptionsGeneral.html");
+        $html = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/html/adminOptionsGeneral.html");
         $html = $this->f->str_replace('{selectedSendErrorLogs}', $selectedSendErrorLogs, $html);
         $html = $this->f->str_replace('{selectedDefaultRedirect301}', $selectedDefaultRedirect301, $html);
         $html = $this->f->str_replace('{selectedDefaultRedirect302}', $selectedDefaultRedirect302, $html);

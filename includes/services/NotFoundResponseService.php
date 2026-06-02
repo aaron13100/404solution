@@ -69,7 +69,7 @@ class ABJ_404_Solution_NotFoundResponseService {
         $dest404page = is_string($dest404pageRaw) ? $dest404pageRaw : (ABJ404_TYPE_404_DISPLAYED . '|' . ABJ404_TYPE_404_DISPLAYED);
 
         if ($useUserSpecified404 && $this->thereIsAUserSpecified404Page($dest404page)) {
-            $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($dest404page, 0, null, $options);
+            $permalink = ABJ_404_Solution_PermalinkResolver::permalinkInfoToArray($dest404page, 0, null, $options);
 
             if (!in_array($permalink['status'], array('publish', 'published'))) {
                 $msg = __("The user specified 404 page wasn't found. " .

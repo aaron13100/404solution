@@ -158,7 +158,7 @@ class ABJ_404_Solution_ContentRepository implements ABJ_404_Solution_ContentRepo
             $orderResults = " */\n  order by " . $orderResults;
         }
 
-        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getPublishedPagesAndPostsIDs.sql");
+        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/sql/getPublishedPagesAndPostsIDs.sql");
         $query = $this->dbCore->doTableNameReplacements($query);
         $query = $this->f->str_replace('{recognizedPostTypes}', $recognizedPostTypes, $query);
         $query = $this->f->str_replace('{specifiedSlug}', $specifiedSlug, $query);
@@ -191,7 +191,7 @@ class ABJ_404_Solution_ContentRepository implements ABJ_404_Solution_ContentRepo
         if (!empty($queryError) && $this->errorClassifier->isInvalidDataError($queryError) &&
                 $slug != "" && strpos($query, 'CAST(wp_posts.post_name AS CHAR CHARACTER SET utf8mb4)') !== false) {
             $fallbackSpecifiedSlug = " */\n and wp_posts.post_name = '" . esc_sql($slug) . "' \n ";
-            $fallbackQuery = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getPublishedPagesAndPostsIDs.sql");
+            $fallbackQuery = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/sql/getPublishedPagesAndPostsIDs.sql");
             $fallbackQuery = $this->dbCore->doTableNameReplacements($fallbackQuery);
             $fallbackQuery = $this->f->str_replace('{recognizedPostTypes}', $recognizedPostTypes, $fallbackQuery);
             $fallbackQuery = $this->f->str_replace('{specifiedSlug}', $fallbackSpecifiedSlug, $fallbackQuery);
@@ -229,7 +229,7 @@ class ABJ_404_Solution_ContentRepository implements ABJ_404_Solution_ContentRepo
             return array();
         }
 
-        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getPublishedImageIDs.sql");
+        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/sql/getPublishedImageIDs.sql");
         $query = $this->dbCore->doTableNameReplacements($query);
         $query = $this->f->str_replace('{recognizedPostTypes}', $recognizedPostTypes, $query);
 
@@ -259,7 +259,7 @@ class ABJ_404_Solution_ContentRepository implements ABJ_404_Solution_ContentRepo
             $limitClause = "LIMIT " . intval($limit);
         }
 
-        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getPublishedTags.sql");
+        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/sql/getPublishedTags.sql");
         $query = $this->f->str_replace('{slug}', $slug, $query);
         $query = $this->f->str_replace('{limit}', $limitClause, $query);
         $query = $this->dbCore->doTableNameReplacements($query);
@@ -322,7 +322,7 @@ class ABJ_404_Solution_ContentRepository implements ABJ_404_Solution_ContentRepo
             $limitClause = "LIMIT " . intval($limit);
         }
 
-        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getPublishedCategories.sql");
+        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/sql/getPublishedCategories.sql");
         $query = $this->f->str_replace('{recognizedCategories}', $recognizedCategories, $query);
         $query = $this->f->str_replace('{term_id}', $term_id !== null ? (string)$term_id : '', $query);
         $query = $this->f->str_replace('{slug}', $slug, $query);
@@ -411,7 +411,7 @@ class ABJ_404_Solution_ContentRepository implements ABJ_404_Solution_ContentRepo
             return null;
         }
 
-        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getIDsNeededForPermalinkCache.sql");
+        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/sql/getIDsNeededForPermalinkCache.sql");
         $query = $this->f->str_replace('{recognizedPostTypes}', $recognizedPostTypes, $query);
 
         $results = $this->dbCore->queryAndGetResults($query);
@@ -423,7 +423,7 @@ class ABJ_404_Solution_ContentRepository implements ABJ_404_Solution_ContentRepo
 
     /** @inheritDoc */
     function updatePermalinkCache() {
-        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ .
+        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ .
             "/sql/updatePermalinkCache.sql");
 
         $this->dbCore->setSqlBigSelects();
@@ -435,7 +435,7 @@ class ABJ_404_Solution_ContentRepository implements ABJ_404_Solution_ContentRepo
 
     /** @inheritDoc */
     function updatePermalinkCacheParentPages() {
-        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ .
+        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ .
             "/sql/updatePermalinkCacheParentPages.sql");
 
         $depthSoFar = 0;
@@ -460,7 +460,7 @@ class ABJ_404_Solution_ContentRepository implements ABJ_404_Solution_ContentRepo
 
     /** @inheritDoc */
     function storeSpellingPermalinksToCache(string $requestedURLRaw, $returnValue): void {
-        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/insertSpellingCache.sql");
+        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/sql/insertSpellingCache.sql");
 
         $cleanURL = $this->f->sanitizeInvalidUTF8($requestedURLRaw);
 

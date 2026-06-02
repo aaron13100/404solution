@@ -304,7 +304,7 @@ class ABJ_404_Solution_LogsRepository implements ABJ_404_Solution_LogsRepository
 
     /** @inheritDoc */
     function getDistinctLoggedUrls(): array {
-        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getDistinctLoggedUrls.sql");
+        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/sql/getDistinctLoggedUrls.sql");
         $results = $this->dbCore->queryAndGetResults($query);
         $rows = is_array($results['rows']) ? $results['rows'] : array();
         $urls = array();
@@ -326,7 +326,7 @@ class ABJ_404_Solution_LogsRepository implements ABJ_404_Solution_LogsRepository
             $escapedURL = esc_sql($specificURL);
             $whereClause = "where requested_url = '" . $escapedURL . "'";
         }
-        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getLogsIDandURL.sql");
+        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/sql/getLogsIDandURL.sql");
         $query = $this->f->str_replace('{where_clause_here}', $whereClause, $query);
         $results = $this->dbCore->queryAndGetResults($query);
         return is_array($results['rows']) ? $results['rows'] : array();
@@ -342,7 +342,7 @@ class ABJ_404_Solution_LogsRepository implements ABJ_404_Solution_LogsRepository
             $whereClause = "where lower(requested_url) like lower('" . $escapedURL . "')\n";
             $whereClause .= "and min_log_id = true";
         }
-        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getLogsIDandURLForAjax.sql");
+        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/sql/getLogsIDandURLForAjax.sql");
         $query = $this->f->str_replace('{where_clause_here}', $whereClause, $query);
         $query = $this->f->str_replace('{limit-results}', 'limit ' . absint($limitResults), $query);
         $results = $this->dbCore->queryAndGetResults($query);
@@ -380,7 +380,7 @@ class ABJ_404_Solution_LogsRepository implements ABJ_404_Solution_LogsRepository
         $perpage = absint(is_scalar($tableOptions['perpage'] ?? ABJ404_OPTION_DEFAULT_PERPAGE) ? ($tableOptions['perpage'] ?? ABJ404_OPTION_DEFAULT_PERPAGE) : ABJ404_OPTION_DEFAULT_PERPAGE);
         if ($perpage < 1) { $perpage = ABJ404_OPTION_DEFAULT_PERPAGE; }
         $start = ($paged - 1) * $perpage;
-        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getLogRecords.sql");
+        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/sql/getLogRecords.sql");
         $query = $this->f->str_replace('{logsid_included}', $logsid_included, $query);
         $query = $this->f->str_replace('{logsid}', $logsid, $query);
         $query = $this->f->str_replace('{orderby}', $orderbyExpression, $query);
@@ -922,7 +922,7 @@ class ABJ_404_Solution_LogsRepository implements ABJ_404_Solution_LogsRepository
 
     /** @inheritDoc */
     public function correctDuplicateLookupValues(): void {
-        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/correctLookupTableIssue.sql");
+        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/sql/correctLookupTableIssue.sql");
         $this->dbCore->queryAndGetResults($query, array('log_errors' => false, 'skip_repair' => true));
     }
 

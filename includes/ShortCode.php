@@ -166,7 +166,7 @@ class ABJ_404_Solution_ShortCode {
 		} else if (abj_service('not_found_response')->thereIsAUserSpecified404Page($dest404page)) {
 
 			// get the user specified 404 page.
-			$permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($dest404page, 0,
+			$permalink = ABJ_404_Solution_PermalinkResolver::permalinkInfoToArray($dest404page, 0,
 				null, $options);
 
 			// if the last part of the URL does not match the custom 404 page then
@@ -343,7 +343,7 @@ class ABJ_404_Solution_ShortCode {
             $idAndTypeStr = is_string($idAndType) ? $idAndType : (string)$idAndType;
             $linkScoreFloat = is_scalar($linkScore) ? (float)$linkScore : 0.0;
             $rowTypeStr = is_string($rowType) ? $rowType : null;
-            $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($idAndTypeStr, $linkScoreFloat,
+            $permalink = ABJ_404_Solution_PermalinkResolver::permalinkInfoToArray($idAndTypeStr, $linkScoreFloat,
             	$rowTypeStr, $options);
 
             $permLink = isset($permalink['link']) && is_string($permalink['link']) ? $permalink['link'] : '';
@@ -415,7 +415,7 @@ class ABJ_404_Solution_ShortCode {
             if ($allSuggestionsJson === false) {
                 $allSuggestionsJson = '[]';
             }
-            $jsContent = ABJ_404_Solution_Functions::readFileContents(__DIR__ . '/js/suggestion-debug-modal.js');
+            $jsContent = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/js/suggestion-debug-modal.js');
             $content .= "<script type=\"text/javascript\">\n";
             $content .= "var abj404_suggestionData = " . $allSuggestionsJson . ";\n";
             $content .= $jsContent . "\n";
@@ -623,7 +623,7 @@ class ABJ_404_Solution_ShortCode {
                 }
             }
 
-            $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($rIdAndTypeStr, $rLinkScoreFloat,
+            $permalink = ABJ_404_Solution_PermalinkResolver::permalinkInfoToArray($rIdAndTypeStr, $rLinkScoreFloat,
                 $rRowTypeStr, $options);
 
             $rPermLink = isset($permalink['link']) && is_string($permalink['link']) ? $permalink['link'] : '';

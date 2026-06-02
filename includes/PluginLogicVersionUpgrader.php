@@ -119,7 +119,7 @@ class ABJ_404_Solution_PluginLogicVersionUpgrader {
         $this->logger->infoMessage($this->uniqID . ': Updating database version from ' .
             $currentDBVersion . ' to ' . ABJ404_VERSION . ' (begin).');
 
-        self::functions()->deleteDirectoryRecursively(ABJ404_PATH . 'temp/');
+        ABJ_404_Solution_FileSystemService::deleteDirectoryRecursively(ABJ404_PATH . 'temp/');
         $this->createDatabaseTables();
         $this->refreshUpgradeCrons();
 
@@ -267,7 +267,7 @@ class ABJ_404_Solution_PluginLogicVersionUpgrader {
             return;
         }
 
-        $query = ABJ_404_Solution_Functions::readFileContents(__DIR__ . '/sql/migrateToNewLogsTable.sql');
+        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/sql/migrateToNewLogsTable.sql');
         $query = $dbCore->doTableNameReplacements($query);
         $result = $dbCore->queryAndGetResults($query);
 

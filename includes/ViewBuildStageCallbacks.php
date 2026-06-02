@@ -267,7 +267,7 @@ class ABJ_404_Solution_ViewBuildStageCallbacks extends ABJ_404_Solution_ViewBuil
      * @return void
      */
     public function stageCreateBuildTable(): void {
-        $template = ABJ_404_Solution_Functions::readFileContents(__DIR__ . '/sql/createViewBuildTable.sql');
+        $template = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/sql/createViewBuildTable.sql');
         $base = $this->doTableNameReplacements(is_string($template) ? $template : '');
         if (trim($base) === '') {
             throw new \Exception('createViewBuildTable.sql is empty or unreadable.');

@@ -42,9 +42,8 @@ class ABJ_404_Solution_SynchronizationUtils {
 			$fileModePath = $this->getFileModePath();
 			$optionsModePath = $this->getOptionsModePath();
 			if (file_exists($fileModePath) && file_exists($optionsModePath)) {
-				$fileUtils = abj_service('functions');
-				$fileUtils->safeUnlink($fileModePath);
-				$fileUtils->safeUnlink($optionsModePath);
+				ABJ_404_Solution_FileSystemService::safeUnlink($fileModePath);
+				ABJ_404_Solution_FileSystemService::safeUnlink($optionsModePath);
 			}
 			
 			if (file_exists($fileModePath)) {
@@ -73,8 +72,7 @@ class ABJ_404_Solution_SynchronizationUtils {
 					$pass = false;
 				}
 				
-				$f = abj_service('functions');
-				$f->createDirectoryWithErrorMessages(dirname($optionsModePath));
+				ABJ_404_Solution_FileSystemService::createDirectoryWithErrorMessages(dirname($optionsModePath));
 				if ($pass) {
 					$usingFileMode = false;
 					touch($optionsModePath);
@@ -91,15 +89,12 @@ class ABJ_404_Solution_SynchronizationUtils {
 	
 	/** @return void */
 	function switchToFileSyncMode() {
-		$f = abj_service('functions');
-		$fileUtils = abj_service('functions');
-		
 		self::$usingFileMode = true;
 		$optionsModePath = $this->getOptionsModePath();
-		$fileUtils->safeUnlink($optionsModePath);
-			
+		ABJ_404_Solution_FileSystemService::safeUnlink($optionsModePath);
+
 		$fileModePath = $this->getFileModePath();
-		$f->createDirectoryWithErrorMessages(dirname($fileModePath));
+		ABJ_404_Solution_FileSystemService::createDirectoryWithErrorMessages(dirname($fileModePath));
 		touch($fileModePath);
 	}
     

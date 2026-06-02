@@ -101,7 +101,7 @@ class ABJ_404_Solution_UninstallModal {
 
         $templatePath = __DIR__ . '/html/uninstallModal.html';
         if (class_exists('ABJ_404_Solution_Functions')) {
-            $html = ABJ_404_Solution_Functions::readFileContents($templatePath);
+            $html = ABJ_404_Solution_FileSystemService::readFileContents($templatePath);
         } else {
             $html = is_readable($templatePath) ? (string) file_get_contents($templatePath) : '';
         }

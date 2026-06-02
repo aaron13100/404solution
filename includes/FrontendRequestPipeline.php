@@ -475,7 +475,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
                     // (cached URLs from permalink_cache may omit subdirectory prefix)
                     $resolvedLink = $matchResult->getLink();
                     if ($matchResult->getId() !== '' && $matchResult->getId() !== '0') {
-                        $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray(
+                        $permalink = ABJ_404_Solution_PermalinkResolver::permalinkInfoToArray(
                             $matchResult->getId() . '|' . $matchResult->getType(), 0
                         );
                         if (is_array($permalink) && !empty($permalink['link']) && is_string($permalink['link']) && $permalink['link'] !== 'dunno') {
