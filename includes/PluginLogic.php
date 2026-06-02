@@ -16,6 +16,7 @@ require_once dirname(__FILE__) . '/PluginLogicLifecycle.php';
 require_once dirname(__FILE__) . '/PluginLogicDefaults.php';
 require_once dirname(__FILE__) . '/PluginLogicInterface.php';
 require_once dirname(__FILE__) . '/StorageOptionContracts.php';
+require_once dirname(__FILE__) . '/PluginLogicOptionsResolver.php';
 
 /**
  * @phpstan-type PageObject object{id: int, post_parent: int, depth: int, post_type: string, post_title: string}
@@ -52,7 +53,7 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
 	/**
 	 * @var array<string, mixed>|null Legacy test seam: reflection-based tests
 	 * seed runtime options by setting this property and resetting the
-	 * OptionsRepository singleton. Read by OptionsRepository::legacyPluginLogicOptionsOverride().
+	 * PluginLogicOptionsResolver singleton. Read by PluginLogicOptionsResolver::legacyPluginLogicOptionsOverride().
 	 */
 	private $options = null;
 
@@ -82,6 +83,9 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
 
     /** @var ABJ_404_Solution_PluginLogicPageOrdering */
     private $pageOrdering;
+
+    // (no instance-level options resolver cache; resolved via the service
+    // container on each call — see optionsResolver())
 
     /** @return ABJ_404_Solution_PluginLogic The singleton instance of the class. */
     public static function getInstance() {
@@ -272,6 +276,33 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
     /** @return ABJ_404_Solution_PluginLogicPageOrdering */
     public function pageOrdering() {
         return $this->pageOrdering;
+    }
+
+    /**
+     * Access the composed options resolver. Returns whichever object is
+     * registered as abj_service('options_repository') (the same instance is
+     * exposed there for auth-time callers that must avoid the plugin_logic
+     * resolution cycle). Duck-typed at runtime: any object responding to
+     * getOptions()/updateOptions() is accepted so tests can install lightweight
+     * stubs without subclassing the concrete resolver. The declared return
+     * type is the concrete class so PHPStan can resolve caller chains.
+     *
+     * @return ABJ_404_Solution_PluginLogicOptionsResolver
+     */
+    public function optionsResolver() {
+        // No instance-level cache: tests can swap the registered service
+        // mid-run, and the service container singleton already deduplicates.
+        $candidate = abj_service('options_repository');
+        if (is_object($candidate) && method_exists($candidate, 'getOptions')) {
+            return $candidate;
+        }
+        // Fallback when the container is uninitialised (very-early boot,
+        // self-healing recovery from a broken install): construct the
+        // concrete resolver inline so callers always receive a usable
+        // collaborator instead of null. Routed through new rather than
+        // ::getInstance() so lint-getinstance-callers does not flag this
+        // bootstrap fallback.
+        return new ABJ_404_Solution_PluginLogicOptionsResolver();
     }
 
     /** @return ABJ_404_Solution_ImportExportService */

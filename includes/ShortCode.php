@@ -120,7 +120,7 @@ class ABJ_404_Solution_ShortCode {
 		$f = abj_service('functions');
 		$abj404logging = abj_service('logging');
 		$debugMessage = '';
-        $options = abj_service('options_repository')->getOptions();
+        $options = abj_service('plugin_logic')->optionsResolver()->getOptions();
 		
 		$shouldUpdateURL = true;
 		// if we're not supposed to update the URL then don't.
@@ -257,7 +257,7 @@ class ABJ_404_Solution_ShortCode {
                 $atts
             );
 
-        $options = abj_service('options_repository')->getOptions();
+        $options = abj_service('plugin_logic')->optionsResolver()->getOptions();
         
         $content = "\n<!-- " . ABJ404_PP . " - Begin 404 suggestions. -->\n";
 
@@ -559,7 +559,7 @@ class ABJ_404_Solution_ShortCode {
         $abj404logic = abj_service('plugin_logic');
         $f = abj_service('functions');
         // Rendering should be side-effect free (no upgrade/migration work triggered on frontend/AJAX).
-        $options = abj_service('options_repository')->getOptions(true);
+        $options = abj_service('plugin_logic')->optionsResolver()->getOptions(true);
 
         // Ensure suggestions is an array (cache may return stdClass from json_decode)
         $permalinkSuggestions = isset($suggestionsPacket[0]) ? (array)$suggestionsPacket[0] : [];

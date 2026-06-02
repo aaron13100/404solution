@@ -379,7 +379,7 @@ function abj_404_solution_register_presentation_layer($container) {
 }
 
 /**
- * Register OptionsRepository in the DI container. Factored out to its own
+ * Register PluginLogicOptionsResolver in the DI container. Factored out to its own
  * helper so the call site in abj_404_solution_init_services reads as a
  * single named registration rather than an inline closure.
  *
@@ -388,7 +388,7 @@ function abj_404_solution_register_presentation_layer($container) {
  */
 function abj_404_solution_register_options_repository($registry) {
     $registry->set('options_repository', function($c) {
-        return new ABJ_404_Solution_OptionsRepository();
+        return ABJ_404_Solution_PluginLogicOptionsResolver::getInstance();
     });
 }
 

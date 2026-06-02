@@ -335,7 +335,7 @@ class ABJ_404_Solution_View_Shared extends ABJ_404_Solution_ViewComponent {
 	 * @return array<string, mixed>
 	 */
 	public function getOptionsWithDefaults() {
-		$options = abj_service('options_repository')->getOptions();
+		$options = abj_service('plugin_logic')->optionsResolver()->getOptions();
 		if (!is_array($options)) {
 			$options = array();
 		}

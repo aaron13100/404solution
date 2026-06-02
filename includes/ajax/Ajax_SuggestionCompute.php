@@ -166,7 +166,7 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
         $urlSlugOnly = $abj404logic->urlNormalization()->removeHomeDirectory($requestedURL);
 
         // Get options for suggestion settings
-        $options = abj_service('options_repository')->getOptions();
+        $options = abj_service('plugin_logic')->optionsResolver()->getOptions();
 
         // Gate 4 is the early return that fires when the N-gram prefilter
         // finds zero candidates at Dice >= 0.3. That is useful in the

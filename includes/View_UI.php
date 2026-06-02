@@ -196,7 +196,7 @@ class ABJ_404_Solution_View_UI extends ABJ_404_Solution_ViewComponent {
 
         // Post-setup welcome banner
         if (isset($_GET['setup_complete']) && $_GET['setup_complete'] === '1') {
-            $options = abj_service('options_repository')->getOptions();
+            $options = abj_service('plugin_logic')->optionsResolver()->getOptions();
             $auto = !empty($options['auto_redirects']) && $options['auto_redirects'] !== '0';
             $notify = !empty($options['admin_notification']) && $options['admin_notification'] !== '0';
 

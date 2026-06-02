@@ -362,7 +362,7 @@ class ABJ_404_Solution_EmailDigest {
 
     /** @return array<string, mixed> */
     private function getOptions(): array {
-        return abj_service('options_repository')->getOptions(true);
+        return abj_service('plugin_logic')->optionsResolver()->getOptions(true);
     }
 
     /**

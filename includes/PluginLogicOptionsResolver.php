@@ -12,11 +12,14 @@ require_once dirname(__FILE__) . '/StorageOptionContracts.php';
  * read, normalize-for-read, merge defaults, version-upgrade if the
  * DB_VERSION stamp lags ABJ404_VERSION, normalize suggestion template
  * tokens, cache by db-check mode, and write-back through
- * StorageOptionContracts. Replaces the getOptions/updateOptions pair
- * previously hosted on PluginLogic. Composed by callers via
- * abj_service('options_repository').
+ * StorageOptionContracts. Hosts the getOptions/updateOptions pair
+ * extracted from PluginLogic. Composed by PluginLogic and exposed via
+ * `$pluginLogic->optionsResolver()`; the service container key
+ * `options_repository` remains as the internal plumbing handle used by
+ * auth-time callers (PluginAdminAccessPolicy) that cannot route through
+ * PluginLogic without creating a resolution cycle.
  */
-class ABJ_404_Solution_OptionsRepository {
+class ABJ_404_Solution_PluginLogicOptionsResolver {
 
     /** @var array<string, mixed>|null */
     private $rawCache = null;
@@ -154,9 +157,10 @@ class ABJ_404_Solution_OptionsRepository {
         }
 
         $pluginLogic = abj_service('plugin_logic');
+        $pluginLogicClass = 'ABJ_404_Solution_PluginLogic';
         $settingsUpdate = is_object($pluginLogic) && method_exists($pluginLogic, 'settingsUpdate')
-            && (!(class_exists('ABJ_404_Solution_PluginLogic') && $pluginLogic instanceof ABJ_404_Solution_PluginLogic)
-                || get_class($pluginLogic) === ABJ_404_Solution_PluginLogic::class)
+            && (!(class_exists($pluginLogicClass) && is_a($pluginLogic, $pluginLogicClass))
+                || get_class($pluginLogic) === $pluginLogicClass)
             ? $pluginLogic->settingsUpdate()
             : null;
         if (is_object($settingsUpdate)
@@ -200,7 +204,7 @@ class ABJ_404_Solution_OptionsRepository {
      *
      * Two seam shapes are honored, both anchored on PluginLogic::$instance:
      *   1. Reflection seam (older tests). ABJ_404_Solution_PluginLogic::$options
-     *      is set to an array via ReflectionProperty + OptionsRepository::reset().
+     *      is set to an array via ReflectionProperty + PluginLogicOptionsResolver::reset().
      *      Used by SpellChecker*Test, CodeReviewIssuesTest, LoggingTest, etc.
      *   2. Subclass-getOptions seam (post-b2ab795d tests). A test subclass that
      *      extends ABJ_404_Solution_PluginLogic overrides getOptions() and is
@@ -222,7 +226,7 @@ class ABJ_404_Solution_OptionsRepository {
         // Only the real PluginLogic class declares the private $options property; anonymous
         // stubs (e.g. ShouldUpdatePluginTest::makeUpgrades) install a sibling class and would
         // raise on the reflection. Guard so the subclass-getOptions branch below is reached.
-        if ($pluginLogic instanceof ABJ_404_Solution_PluginLogic) {
+        if (is_a($pluginLogic, 'ABJ_404_Solution_PluginLogic')) {
             $reflectedOptions = $this->readPluginLogicOptionsProperty($pluginLogic);
             if (is_array($reflectedOptions)) {
                 return $reflectedOptions;
@@ -246,7 +250,7 @@ class ABJ_404_Solution_OptionsRepository {
             $value = $instanceProperty->getValue();
             return is_object($value) ? $value : null;
         } catch (Throwable $e) {
-            error_log('404 Solution: OptionsRepository could not read PluginLogic::$instance via reflection (' . $e->getMessage() . '); falling back to WordPress options.');
+            error_log('404 Solution: PluginLogicOptionsResolver could not read PluginLogic::$instance via reflection (' . $e->getMessage() . '); falling back to WordPress options.');
             return null;
         }
     }
@@ -266,7 +270,7 @@ class ABJ_404_Solution_OptionsRepository {
             $typed = $options;
             return $typed;
         } catch (Throwable $e) {
-            error_log('404 Solution: OptionsRepository could not read PluginLogic::$options via reflection (' . $e->getMessage() . '); falling through to subclass-getOptions seam.');
+            error_log('404 Solution: PluginLogicOptionsResolver could not read PluginLogic::$options via reflection (' . $e->getMessage() . '); falling through to subclass-getOptions seam.');
             return null;
         }
     }
@@ -291,7 +295,7 @@ class ABJ_404_Solution_OptionsRepository {
             $typed = $maybeOptions;
             return $typed;
         } catch (Throwable $e) {
-            error_log('404 Solution: OptionsRepository subclass-getOptions seam raised (' . $e->getMessage() . '); falling back to WordPress options.');
+            error_log('404 Solution: PluginLogicOptionsResolver subclass-getOptions seam raised (' . $e->getMessage() . '); falling back to WordPress options.');
             return null;
         }
     }

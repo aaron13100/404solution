@@ -396,7 +396,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
      * @return array<string, mixed>
      */
     private function getRuntimeOptions(bool $skipDbCheck = false): array {
-        $options = abj_service('options_repository')->getOptions($skipDbCheck);
+        $options = abj_service('plugin_logic')->optionsResolver()->getOptions($skipDbCheck);
         return is_array($options) ? $options : array();
     }
 

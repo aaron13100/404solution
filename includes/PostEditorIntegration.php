@@ -68,7 +68,7 @@ class ABJ_404_Solution_PostEditorIntegration {
      */
     /** @return bool */
     public function getDefaultRedirectSetting() {
-        $options = abj_service('options_repository')->getOptions();
+        $options = abj_service('plugin_logic')->optionsResolver()->getOptions();
         return @$options['auto_slugs'] == '1';
     }
 

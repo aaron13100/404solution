@@ -21,7 +21,7 @@ class ABJ_404_Solution_NotFoundResponseService {
     /** @var ABJ_404_Solution_Logging */
     private $logger;
 
-    /** @var ABJ_404_Solution_OptionsRepository */
+    /** @var ABJ_404_Solution_PluginLogicOptionsResolver */
     private $optionsRepository;
 
     /** @var ABJ_404_Solution_PreviousRequestCookieTracker */
@@ -32,7 +32,7 @@ class ABJ_404_Solution_NotFoundResponseService {
      * @param ABJ_404_Solution_RedirectsRepositoryInterface|null $redirectsRepo
      * @param ABJ_404_Solution_LogsRepositoryInterface|null $logsRepo
      * @param ABJ_404_Solution_Logging|null $logging
-     * @param ABJ_404_Solution_OptionsRepository|null $optionsRepository
+     * @param ABJ_404_Solution_PluginLogicOptionsResolver|null $optionsRepository
      * @param ABJ_404_Solution_PreviousRequestCookieTracker|null $previousRequestCookieTracker
      */
     function __construct($functions = null, $redirectsRepo = null, $logsRepo = null, $logging = null, $optionsRepository = null, $previousRequestCookieTracker = null) {

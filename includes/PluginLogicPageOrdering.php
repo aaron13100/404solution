@@ -329,7 +329,7 @@ class ABJ_404_Solution_PluginLogicPageOrdering {
      */
     function emailCaptured404Notification() {
 
-        $options = abj_service('options_repository')->getOptions(true);
+        $options = abj_service('plugin_logic')->optionsResolver()->getOptions(true);
 
         $frequency = isset($options['admin_notification_frequency']) && is_string($options['admin_notification_frequency'])
             ? $options['admin_notification_frequency']
@@ -377,7 +377,7 @@ class ABJ_404_Solution_PluginLogicPageOrdering {
      * @return boolean
      */
     function shouldNotifyAboutCaptured404s($captured404Count) {
-        $options = abj_service('options_repository')->getOptions(true);
+        $options = abj_service('plugin_logic')->optionsResolver()->getOptions(true);
 
         if (isset($options['admin_notification']) && $options['admin_notification'] != '0') {
             if ($captured404Count >= $options['admin_notification']) {

@@ -120,7 +120,7 @@ return array(
     'ABJ_404_Solution_LogsHitsRollupServiceInterface' => $base . 'includes/LogsHitsRollupServiceInterface.php',
     'ABJ_404_Solution_LogsHitsRollupService' => $base . 'includes/LogsHitsRollupService.php',
     'ABJ_404_Solution_PluginVersionUpgradeService' => $base . 'includes/PluginVersionUpgradeService.php',
-    'ABJ_404_Solution_OptionsRepository' => $base . 'includes/OptionsRepository.php',
+    'ABJ_404_Solution_PluginLogicOptionsResolver' => $base . 'includes/PluginLogicOptionsResolver.php',
     'ABJ_404_Solution_PluginAdminAccessPolicy' => $base . 'includes/policies/PluginAdminAccessPolicy.php',
     'ABJ_404_Solution_SettingsModePreference' => $base . 'includes/services/SettingsModePreference.php',
     'ABJ_404_Solution_NotFoundResponseService' => $base . 'includes/services/NotFoundResponseService.php',
