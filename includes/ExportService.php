@@ -52,12 +52,32 @@ class ABJ_404_Solution_ExportService {
         return abj404_getUploadsDir() . 'export.csv';
     }
 
+    /**
+     * Registry of server-level / edge formats served directly (no temp file).
+     *
+     * Each entry pairs the format key with (a) the generator method, (b) the
+     * filename presented to the browser, and (c) the Content-Type header.
+     * doExport() and doServerFormatExport() both consume this map; adding a
+     * new server-format is one row here, not two coupled edits in the
+     * whitelist + switch.
+     *
+     * @return array<string, array{method: string, filename: string, mime: string}>
+     */
+    private function serverFormatRegistry() {
+        return array(
+            'htaccess'   => array('method' => 'generateHtaccessRules',          'filename' => 'redirects.htaccess',    'mime' => 'text/plain; charset=utf-8'),
+            'nginx'      => array('method' => 'generateNginxRules',             'filename' => 'redirects-nginx.conf',  'mime' => 'text/plain; charset=utf-8'),
+            'cloudflare' => array('method' => 'generateCloudflareWorkerScript', 'filename' => 'redirects-worker.js',   'mime' => 'application/javascript; charset=utf-8'),
+            'netlify'    => array('method' => 'generateNetlifyRedirects',       'filename' => '_redirects',            'mime' => 'text/plain; charset=utf-8'),
+            'vercel'     => array('method' => 'generateVercelRedirects',        'filename' => 'vercel-redirects.json', 'mime' => 'application/json; charset=utf-8'),
+        );
+    }
+
     /** @return void */
     function doExport() {
         $format = isset($_REQUEST['export_format']) ? sanitize_text_field((string)$_REQUEST['export_format']) : 'native';
 
-        $serverFormats = array('htaccess', 'nginx', 'cloudflare', 'netlify', 'vercel');
-        if (in_array($format, $serverFormats, true)) {
+        if (array_key_exists($format, $this->serverFormatRegistry())) {
             $this->doServerFormatExport($format);
             return;
         }
@@ -98,44 +118,22 @@ class ABJ_404_Solution_ExportService {
      * @return void
      */
     private function doServerFormatExport($format) {
-        switch ($format) {
-            case 'htaccess':
-                $content  = $this->generateHtaccessRules();
-                $filename = 'redirects.htaccess';
-                $mime     = 'text/plain; charset=utf-8';
-                break;
-            case 'nginx':
-                $content  = $this->generateNginxRules();
-                $filename = 'redirects-nginx.conf';
-                $mime     = 'text/plain; charset=utf-8';
-                break;
-            case 'cloudflare':
-                $content  = $this->generateCloudflareWorkerScript();
-                $filename = 'redirects-worker.js';
-                $mime     = 'application/javascript; charset=utf-8';
-                break;
-            case 'netlify':
-                $content  = $this->generateNetlifyRedirects();
-                $filename = '_redirects';
-                $mime     = 'text/plain; charset=utf-8';
-                break;
-            case 'vercel':
-                $content  = $this->generateVercelRedirects();
-                $filename = 'vercel-redirects.json';
-                $mime     = 'application/json; charset=utf-8';
-                break;
-            default:
-                $this->logger->warn('Unknown server export format: ' . $format);
-                return;
+        $registry = $this->serverFormatRegistry();
+        if (!array_key_exists($format, $registry)) {
+            $this->logger->warn('Unknown server export format: ' . $format);
+            return;
         }
 
+        $entry   = $registry[$format];
+        $content = $this->{$entry['method']}();
+
         header('Content-Description: File Transfer');
-        header('Content-Disposition: attachment; filename=' . $filename);
+        header('Content-Disposition: attachment; filename=' . $entry['filename']);
         header('Expires: 0');
         header('Cache-Control: must-revalidate');
         header('Pragma: public');
         header('Content-Length: ' . strlen($content));
-        header('Content-Type: ' . $mime);
+        header('Content-Type: ' . $entry['mime']);
         echo $content;
         exit();
     }
