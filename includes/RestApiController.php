@@ -239,6 +239,16 @@ class ABJ_404_Solution_RestApiController {
         // $statusFilter is the numeric status filter (0 = all active, or a specific status).
         $sub          = 'abj404_redirects';
         $statusFilter = $this->statusStringToNumericFilter($status);
+        if ($statusFilter === null) {
+            // Unknown/typo status: reject rather than fail-open by broadening
+            // scope to "all active". The empty string still maps to '0' so the
+            // default "no filter" call shape continues to work.
+            return new \WP_Error(
+                'invalid_status',
+                __('Unknown status filter. Valid values are: manual, auto, regex (or omit for all active).', '404-solution'),
+                array('status' => 400)
+            );
+        }
 
         $tableOptions = array(
             'orderby' => 'url',
@@ -692,12 +702,26 @@ class ABJ_404_Solution_RestApiController {
     /**
      * Convert a user-facing status string to the numeric filter value used by
      * getRedirectsForView/getRedirectsForViewCount.
-     * '0' means "all active" (default).
+     *
+     * Contract:
+     *   - '' (empty / unspecified) -> '0' (all active redirects; the legitimate default)
+     *   - 'manual' / 'auto' / 'regex' (case-insensitive) -> corresponding numeric status
+     *   - anything else (typos, unknown values) -> null (caller MUST reject the request)
+     *
+     * The null return is the fail-closed signal: an unrecognized status string
+     * must not silently broaden scope to "all active". The previous
+     * implementation returned '0' from the default branch, which is a
+     * fail-open: a typo such as ?status=manul widened the result set instead
+     * of rejecting it. See design audit 2026-06-02 finding 150 (Fail-Closed).
      *
      * @param string $status
-     * @return string
+     * @return string|null Numeric filter on success; null when the input is
+     *                    a non-empty unknown value (caller rejects).
      */
     private function statusStringToNumericFilter($status) {
+        if ($status === '') {
+            return '0';
+        }
         switch (strtolower($status)) {
             case 'manual':
                 return (string)ABJ404_STATUS_MANUAL;
@@ -706,8 +730,7 @@ class ABJ_404_Solution_RestApiController {
             case 'regex':
                 return (string)ABJ404_STATUS_REGEX;
             default:
-                // 0 means "all active redirects".
-                return '0';
+                return null;
         }
     }
 
