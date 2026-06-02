@@ -29,6 +29,9 @@ class ABJ_404_Solution_RedirectsRetentionService implements ABJ_404_Solution_Red
     /** @var ABJ_404_Solution_DatabaseCore */
     private $dbCore;
 
+    /** @var ABJ_404_Solution_DatabaseConnectionManager */
+    private $connectionManager;
+
     /** @var ABJ_404_Solution_RedirectsRepositoryInterface */
     private $redirectsRepo;
 
@@ -43,17 +46,20 @@ class ABJ_404_Solution_RedirectsRetentionService implements ABJ_404_Solution_Red
      * @param ABJ_404_Solution_RedirectsRepositoryInterface $redirectsRepo
      * @param ABJ_404_Solution_Functions|null $functions
      * @param ABJ_404_Solution_Logging|null $logging
+     * @param ABJ_404_Solution_DatabaseConnectionManager|null $connectionManager
      */
     public function __construct(
         ABJ_404_Solution_DatabaseCore $dbCore,
         ABJ_404_Solution_RedirectsRepositoryInterface $redirectsRepo,
         $functions = null,
-        $logging = null
+        $logging = null,
+        $connectionManager = null
     ) {
         $this->dbCore = $dbCore;
         $this->redirectsRepo = $redirectsRepo;
         $this->f = $functions !== null ? $functions : abj_service('functions');
         $this->logger = $logging !== null ? $logging : abj_service('logging');
+        $this->connectionManager = $connectionManager !== null ? $connectionManager : $dbCore->connectionManager();
     }
 
     /** @inheritDoc */
@@ -204,7 +210,7 @@ class ABJ_404_Solution_RedirectsRetentionService implements ABJ_404_Solution_Red
         $upgradesEtc = abj_service('database_upgrades');
         $upgradesEtc->createDatabaseTables(false);
 
-        $this->dbCore->ensureConnection();
+        $this->connectionManager->ensureConnection();
 
         $tempFile = null;
         if (is_object($abj404logic) && method_exists($abj404logic, 'importExport')) {

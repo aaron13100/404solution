@@ -97,7 +97,7 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
     public function queryAndGetResults($query, $options = array()): array {
         global $wpdb;
 
-        $this->core->ensureConnection();
+        $this->core->connectionManager()->ensureConnection();
 
         $ignoreErrorStrings = array();
 
@@ -130,7 +130,7 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
 
         $timeoutRaw = isset($options['timeout']) && is_numeric($options['timeout']) ? (int)$options['timeout'] : 0;
         $timeoutSeconds = $timeoutRaw > 0 ? $timeoutRaw : 60;
-        $query = $this->core->applyQueryTimeout($query, $timeoutSeconds);
+        $query = $this->core->queryTimeoutManager()->applyQueryTimeout($query, $timeoutSeconds);
 
         $this->applyDiagnosticLatencyIfConfigured();
 
@@ -143,7 +143,7 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
             $previousSuppressState = $wpdb->suppress_errors(true);
         }
 
-        $producesRows = $this->core->queryProducesResultRows($query);
+        $producesRows = $this->core->queryTimeoutManager()->queryProducesResultRows($query);
 
         $result = array();
         try {
@@ -155,7 +155,7 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
             }
         } catch (Throwable $e) {
             $result['elapsed_time'] = $timer->stop();
-            $this->core->logSqlThrowable($query, $e, $options, $producesRows);
+            $this->core->sqlErrorReporter()->logSqlThrowable($query, $e, $options, $producesRows);
             if ($suppressWpdbErrors) {
                 /** @var wpdb $wpdb */
                 $wpdb->suppress_errors($previousSuppressState);
@@ -176,7 +176,7 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
         $this->harvestWpdbResult($result);
         $lastErrorForObservedLog = is_string($result['last_error'] ?? null) ? $result['last_error'] : '';
         if ($lastErrorForObservedLog === '' || !$this->core->isTransientConnectionError($lastErrorForObservedLog)) {
-            $this->core->logObservedSqlError($query, $result, $options, $producesRows);
+            $this->core->sqlErrorReporter()->logObservedSqlError($query, $result, $options, $producesRows);
         }
 
         if ($producesRows && !is_array($result['rows'])) {
@@ -187,14 +187,14 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
 
         $lastErrorForSetStatement = is_string($result['last_error'] ?? null) ? $result['last_error'] : '';
         if ($lastErrorForSetStatement !== ''
-            && $this->core->classifySetStatementFailure($lastErrorForSetStatement)
-            && $this->core->queryHasSetStatementWrapper($query)) {
+            && $this->core->errorClassifier()->classifySetStatementFailure($lastErrorForSetStatement)
+            && $this->core->queryTimeoutManager()->queryHasSetStatementWrapper($query)) {
             $this->core->retryWithoutSetStatementWrapper($query, $result, $resultType);
-            $producesRows = $this->core->queryProducesResultRows($query);
+            $producesRows = $this->core->queryTimeoutManager()->queryProducesResultRows($query);
         }
 
         if ($result['last_error'] !== '' && $this->core->isTransientConnectionError($result['last_error'])) {
-            $this->core->ensureConnection();
+            $this->core->connectionManager()->ensureConnection();
             $wpdb->flush();
             if ($producesRows) {
                 $result['rows'] = $wpdb->get_results($query, $resultType);
@@ -205,19 +205,19 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
             $this->harvestWpdbResult($result);
         }
 
-        if (!$options['skip_repair'] && $result['last_error'] !== '' && $this->core->isMissingPluginTableError($result['last_error'])) {
+        if (!$options['skip_repair'] && $result['last_error'] !== '' && $this->core->errorClassifier()->isMissingPluginTableError(is_string($result['last_error']) ? $result['last_error'] : '')) {
             $this->core->attemptMissingTableRepairAndRetry($query, $result);
         }
 
         $lastError = isset($result['last_error']) && is_scalar($result['last_error']) ? (string)$result['last_error'] : '';
 
-        if ($lastError !== '' && $this->core->isInvalidDataError($lastError)) {
+        if ($lastError !== '' && $this->core->errorClassifier()->isInvalidDataError($lastError)) {
             $this->core->attemptInvalidDataRetry($query, $result);
         }
 
         $lastError = isset($result['last_error']) && is_scalar($result['last_error']) ? (string)$result['last_error'] : '';
 
-        if ($lastError !== '' && $this->core->isDeadlockOrLockTimeoutError($lastError)) {
+        if ($lastError !== '' && $this->core->errorClassifier()->isDeadlockOrLockTimeoutError($lastError)) {
             /** @var wpdb $wpdb */
             usleep(50000);
             if ($producesRows) {
@@ -228,19 +228,19 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
             }
             $this->harvestWpdbResult($result);
             $lastError = isset($result['last_error']) && is_scalar($result['last_error']) ? (string)$result['last_error'] : '';
-            if ($lastError !== '' && $this->core->isDeadlockOrLockTimeoutError($lastError)) {
+            if ($lastError !== '' && $this->core->errorClassifier()->isDeadlockOrLockTimeoutError($lastError)) {
                 // allow-em-dash: copied verbatim from existing user-facing localized string in DataAccess.php
-                $this->core->setPluginDbNotice('lock_timeout', $this->core->localizeOrDefault('A database lock wait timeout occurred. If this persists, contact your host — another process may be holding a long-running lock.'), $lastError);
+                $this->core->setPluginDbNotice('lock_timeout', $this->core->noticeState()->localizeOrDefault('A database lock wait timeout occurred. If this persists, contact your host — another process may be holding a long-running lock.'), $lastError);
             }
         }
 
         $lastError = isset($result['last_error']) && is_scalar($result['last_error']) ? (string)$result['last_error'] : '';
-        if ($lastError !== '' && $this->core->isCollationError($lastError)) {
+        if ($lastError !== '' && $this->core->errorClassifier()->isCollationError($lastError)) {
             $this->core->recoverFromCollationMismatchAndRetry($query, $result, $producesRows, $resultType);
         }
 
         $lastError = isset($result['last_error']) && is_scalar($result['last_error']) ? (string)$result['last_error'] : '';
-        if ($lastError !== '' && $this->core->isQueryTimeoutError($lastError)) {
+        if ($lastError !== '' && $this->core->errorClassifier()->isQueryTimeoutError($lastError)) {
             $sqlInfo = (defined('WP_DEBUG') && WP_DEBUG) ? $query : $this->extractSqlFilename($query);
             $this->logger->warn(
                 'Query timed out after ' . $timeoutSeconds . 's. ' .
@@ -293,7 +293,7 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
                     $this->f->strpos($result['last_error'], "resulting in duplicate entry") !== false) {
                 $this->core->repairDuplicateIDs($result['last_error'], $query);
             }
-            if ($this->core->isIncorrectKeyFileError($result['last_error'])) {
+            if ($this->core->errorClassifier()->isIncorrectKeyFileError(is_string($result['last_error']) ? $result['last_error'] : '')) {
                 $this->core->repairCorruptedTableAndRetry($query, $result);
             }
 
@@ -309,19 +309,19 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
 
             $lastErrorForClassification = is_string($result['last_error']) ? $result['last_error'] : '';
             if ($reportError && (
-                $this->core->isDiskFullError($lastErrorForClassification) ||
-                $this->core->isReadOnlyError($lastErrorForClassification) ||
-                $this->core->isQuotaLimitError($lastErrorForClassification) ||
-                $this->core->isInvalidDataError($lastErrorForClassification) ||
-                $this->core->isCollationError($lastErrorForClassification) ||
-                $this->core->isMissingPluginTableError($lastErrorForClassification) ||
-                $this->core->isIncorrectKeyFileError($lastErrorForClassification) ||
-                $this->core->isCrashedTableError($lastErrorForClassification) ||
-                $this->core->isDeadlockOrLockTimeoutError($lastErrorForClassification) ||
-                $this->core->isGaleraConflictError($lastErrorForClassification) ||
+                $this->core->errorClassifier()->isDiskFullError($lastErrorForClassification) ||
+                $this->core->errorClassifier()->isReadOnlyError($lastErrorForClassification) ||
+                $this->core->errorClassifier()->isQuotaLimitError($lastErrorForClassification) ||
+                $this->core->errorClassifier()->isInvalidDataError($lastErrorForClassification) ||
+                $this->core->errorClassifier()->isCollationError($lastErrorForClassification) ||
+                $this->core->errorClassifier()->isMissingPluginTableError($lastErrorForClassification) ||
+                $this->core->errorClassifier()->isIncorrectKeyFileError($lastErrorForClassification) ||
+                $this->core->errorClassifier()->isCrashedTableError($lastErrorForClassification) ||
+                $this->core->errorClassifier()->isDeadlockOrLockTimeoutError($lastErrorForClassification) ||
+                $this->core->errorClassifier()->isGaleraConflictError($lastErrorForClassification) ||
                 $this->core->isTransientConnectionError($lastErrorForClassification) ||
-                $this->core->isQueryTimeoutError($lastErrorForClassification) ||
-                $this->core->isAccessDeniedError($lastErrorForClassification)
+                $this->core->errorClassifier()->isQueryTimeoutError($lastErrorForClassification) ||
+                $this->core->errorClassifier()->isAccessDeniedError($lastErrorForClassification)
             )) {
                 $this->logger->warn("Server-side DB issue (handled): " . $lastErrorForClassification);
                 $reportError = false;
@@ -329,8 +329,8 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
 
             if ($reportError) {
                 $stripped_query = 'n/a';
-                if ($this->core->isInvalidDataError($result['last_error'])) {
-                    $strippedResult = $this->core->get_stripped_query_result($query);
+                if ($this->core->errorClassifier()->isInvalidDataError($result['last_error'])) {
+                    $strippedResult = $this->core->tableRepairer()->get_stripped_query_result($query);
                     $stripped_query = is_string($strippedResult) ? $strippedResult : 'n/a';
                 }
 
@@ -359,17 +359,17 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
             }
 
             if ($result['last_error'] === '') {
-                if (!$this->core->isServerSideIssueNoted() && !$this->core->isServerSideIssueChecked()) {
-                    $this->core->markServerSideIssueChecked();
+                if (!$this->core->noticeState()->isServerSideIssueNoted() && !$this->core->noticeState()->isServerSideIssueChecked()) {
+                    $this->core->noticeState()->markServerSideIssueChecked();
                     $existing = $this->core->getRuntimeFlag('abj404_plugin_db_notice');
                     $excludedTypes = array('stale_permalink_cache', 'missing_table');
                     if (is_array($existing) && !empty($existing['type'])
                         && !in_array($existing['type'], $excludedTypes, true)) {
-                        $this->core->markServerSideIssueNoted();
+                        $this->core->noticeState()->markServerSideIssueNoted();
                     }
                 }
-                if ($this->core->isServerSideIssueNoted() && !$this->core->isWriteBlockActive() && !$this->core->isQuotaCooldownActive()) {
-                    $this->core->clearServerSideDbNotice();
+                if ($this->core->noticeState()->isServerSideIssueNoted() && !$this->core->isWriteBlockActive() && !$this->core->errorClassifier()->isQuotaCooldownActive()) {
+                    $this->core->noticeState()->clearServerSideDbNotice();
                 }
             }
         }
@@ -531,7 +531,7 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
             }
 
             $wpdb->query('rollback');
-            $retryable = $this->core->isDeadlockOrLockTimeoutError($lastError);
+            $retryable = $this->core->errorClassifier()->isDeadlockOrLockTimeoutError($lastError);
             if (!$retryable || $attempt >= $maxAttempts) {
                 break;
             }

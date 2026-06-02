@@ -87,12 +87,12 @@ class ABJ_404_Solution_DatabaseSqlErrorReporter {
             }
         }
 
-        $sqlInfo = (defined('WP_DEBUG') && WP_DEBUG) ? $query : $this->core->extractSqlFilename($query);
+        $sqlInfo = (defined('WP_DEBUG') && WP_DEBUG) ? $query : $this->core->queryExecutor()->extractSqlFilename($query);
         $elapsed = isset($result['elapsed_time']) && is_numeric($result['elapsed_time'])
             ? round((float)$result['elapsed_time'], 4) : 0;
         $message = 'SQL query error observed: ' . $lastError
             . ', SQL: ' . $sqlInfo
-            . ', source: ' . $this->core->extractSqlFilename($query)
+            . ', source: ' . $this->core->queryExecutor()->extractSqlFilename($query)
             . ', route: ' . ($producesRows ? 'get_results' : 'query')
             . ', log_errors_option: ' . ($logErrors ? 'true' : 'false') /** @phpstan-ignore ternary.alwaysTrue */
             . ', execution_time: ' . $elapsed;
@@ -128,19 +128,19 @@ class ABJ_404_Solution_DatabaseSqlErrorReporter {
         if ($errorText === '') {
             return false;
         }
-        return $this->core->isDiskFullError($errorText)
-            || $this->core->isReadOnlyError($errorText)
-            || $this->core->isQuotaLimitError($errorText)
-            || $this->core->isInvalidDataError($errorText)
-            || $this->core->isCollationError($errorText)
-            || $this->core->isMissingPluginTableError($errorText)
-            || $this->core->isIncorrectKeyFileError($errorText)
-            || $this->core->isCrashedTableError($errorText)
-            || $this->core->isDeadlockOrLockTimeoutError($errorText)
-            || $this->core->isGaleraConflictError($errorText)
+        return $this->core->errorClassifier()->isDiskFullError($errorText)
+            || $this->core->errorClassifier()->isReadOnlyError($errorText)
+            || $this->core->errorClassifier()->isQuotaLimitError($errorText)
+            || $this->core->errorClassifier()->isInvalidDataError($errorText)
+            || $this->core->errorClassifier()->isCollationError($errorText)
+            || $this->core->errorClassifier()->isMissingPluginTableError($errorText)
+            || $this->core->errorClassifier()->isIncorrectKeyFileError($errorText)
+            || $this->core->errorClassifier()->isCrashedTableError($errorText)
+            || $this->core->errorClassifier()->isDeadlockOrLockTimeoutError($errorText)
+            || $this->core->errorClassifier()->isGaleraConflictError($errorText)
             || $this->core->isTransientConnectionError($errorText)
-            || $this->core->isQueryTimeoutError($errorText)
-            || $this->core->isAccessDeniedError($errorText);
+            || $this->core->errorClassifier()->isQueryTimeoutError($errorText)
+            || $this->core->errorClassifier()->isAccessDeniedError($errorText);
     }
 
     /**
@@ -151,11 +151,11 @@ class ABJ_404_Solution_DatabaseSqlErrorReporter {
      * @return void
      */
     public function logSqlThrowable(string $query, Throwable $e, array $options, bool $producesRows): void {
-        $sqlInfo = (defined('WP_DEBUG') && WP_DEBUG) ? $query : $this->core->extractSqlFilename($query);
+        $sqlInfo = (defined('WP_DEBUG') && WP_DEBUG) ? $query : $this->core->queryExecutor()->extractSqlFilename($query);
         $logErrors = !array_key_exists('log_errors', $options) || (bool)$options['log_errors'];
         $message = 'SQL query threw exception: ' . $e->getMessage()
             . ', SQL: ' . $sqlInfo
-            . ', source: ' . $this->core->extractSqlFilename($query)
+            . ', source: ' . $this->core->queryExecutor()->extractSqlFilename($query)
             . ', route: ' . ($producesRows ? 'get_results' : 'query')
             . ', log_errors_option: ' . ($logErrors ? 'true' : 'false');
 

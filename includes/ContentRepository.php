@@ -31,22 +31,34 @@ class ABJ_404_Solution_ContentRepository implements ABJ_404_Solution_ContentRepo
     /** @var mixed Options provider exposing getOptions(): array. Resolved lazily from abj_service('options_repository'). */
     private $optionsProvider;
 
+    /** @var ABJ_404_Solution_DatabaseErrorClassifier */
+    private $errorClassifier;
+
+    /** @var ABJ_404_Solution_DatabaseCollationHelper */
+    private $collationHelper;
+
     /**
      * @param ABJ_404_Solution_DatabaseCore $dbCore
      * @param ABJ_404_Solution_Functions|null $functions
      * @param ABJ_404_Solution_Logging|null $logging
      * @param mixed $optionsProvider Object exposing getOptions(): array. Defaults to options_repository service.
+     * @param ABJ_404_Solution_DatabaseErrorClassifier|null $errorClassifier
+     * @param ABJ_404_Solution_DatabaseCollationHelper|null $collationHelper
      */
     public function __construct(
         ABJ_404_Solution_DatabaseCore $dbCore,
         $functions = null,
         $logging = null,
-        $optionsProvider = null
+        $optionsProvider = null,
+        $errorClassifier = null,
+        $collationHelper = null
     ) {
         $this->dbCore = $dbCore;
         $this->f = $functions !== null ? $functions : abj_service('functions');
         $this->logger = $logging !== null ? $logging : abj_service('logging');
         $this->optionsProvider = $optionsProvider;
+        $this->errorClassifier = $errorClassifier !== null ? $errorClassifier : $dbCore->errorClassifier();
+        $this->collationHelper = $collationHelper !== null ? $collationHelper : $dbCore->collationHelper();
     }
 
     // =========================================================================
@@ -108,7 +120,7 @@ class ABJ_404_Solution_ContentRepository implements ABJ_404_Solution_ContentRepo
                 $columnCollation = is_scalar($first) ? (string)$first : null;
             }
             if ($columnCollation !== null && strpos(strtolower($columnCollation), 'utf8mb4') !== false) {
-                $resolvedCollation = $this->dbCore->sanitizeCollationIdentifier($columnCollation);
+                $resolvedCollation = $this->collationHelper->sanitizeCollationIdentifier($columnCollation);
                 if ($resolvedCollation === '') {
                     $resolvedCollation = $this->dbCore->getPreferredUtf8mb4Collation();
                 }
@@ -159,7 +171,7 @@ class ABJ_404_Solution_ContentRepository implements ABJ_404_Solution_ContentRepo
         $queryError = is_string($result['last_error'] ?? '') ? ($result['last_error'] ?? '') : '';
         $rows = is_array($result['rows']) ? $result['rows'] : array();
 
-        if (!empty($queryError) && $this->dbCore->isCollationError($queryError)) {
+        if (!empty($queryError) && $this->errorClassifier->isCollationError($queryError)) {
             $fpreg = ABJ_404_Solution_FunctionsPreg::getInstance();
             $fallbackQuery = $fpreg->regexReplace(
                 'CONVERT\(wpt\.name USING utf8mb4\) COLLATE [A-Za-z0-9_]+',
@@ -176,7 +188,7 @@ class ABJ_404_Solution_ContentRepository implements ABJ_404_Solution_ContentRepo
             }
         }
 
-        if (!empty($queryError) && $this->dbCore->isInvalidDataError($queryError) &&
+        if (!empty($queryError) && $this->errorClassifier->isInvalidDataError($queryError) &&
                 $slug != "" && strpos($query, 'CAST(wp_posts.post_name AS CHAR CHARACTER SET utf8mb4)') !== false) {
             $fallbackSpecifiedSlug = " */\n and wp_posts.post_name = '" . esc_sql($slug) . "' \n ";
             $fallbackQuery = ABJ_404_Solution_Functions::readFileContents(__DIR__ . "/sql/getPublishedPagesAndPostsIDs.sql");

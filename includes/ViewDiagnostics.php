@@ -16,9 +16,16 @@ class ABJ_404_Solution_ViewDiagnostics {
     /** @var ABJ_404_Solution_DatabaseCore */
     private $dbCore;
 
-    /** @param ABJ_404_Solution_DatabaseCore $dbCore */
-    public function __construct(ABJ_404_Solution_DatabaseCore $dbCore) {
+    /** @var ABJ_404_Solution_DatabaseQueryExecutor */
+    private $queryExecutor;
+
+    /**
+     * @param ABJ_404_Solution_DatabaseCore $dbCore
+     * @param ABJ_404_Solution_DatabaseQueryExecutor|null $queryExecutor
+     */
+    public function __construct(ABJ_404_Solution_DatabaseCore $dbCore, $queryExecutor = null) {
         $this->dbCore = $dbCore;
+        $this->queryExecutor = $queryExecutor !== null ? $queryExecutor : $dbCore->queryExecutor();
     }
 
     /**
@@ -31,7 +38,7 @@ class ABJ_404_Solution_ViewDiagnostics {
         $lastErrorRaw = $result['last_error'] ?? '';
         $lastError = is_string($lastErrorRaw) ? trim($lastErrorRaw) : '';
         $timedOut = !empty($result['timed_out']);
-        $sqlSource = $this->dbCore->extractSqlFilename($query);
+        $sqlSource = $this->queryExecutor->extractSqlFilename($query);
 
         if ($lastError === '' && $timedOut) {
             $lastError = $queryLabel . ' timed out';

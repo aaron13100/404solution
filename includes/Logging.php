@@ -129,7 +129,7 @@ class ABJ_404_Solution_Logging {
     /** Send a message to the log file if debug mode is on.
      * This goes to a file and is used by every other class so it goes here.
      * @param string $message
-     * @param \Exception|null $e If present then a stack trace is included.
+     * @param \Throwable|null $e If present then a stack trace is included.
      * @return void
      */
     function debugMessage(string $message, $e = null): void {

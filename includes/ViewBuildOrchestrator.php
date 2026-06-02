@@ -59,17 +59,27 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
     /** @var ABJ_404_Solution_ViewBuildForceRestart */
     private $forceRestart;
 
+    /** @var ABJ_404_Solution_DatabaseConnectionManager */
+    private $connectionManager;
+
+    /** @var ABJ_404_Solution_DatabaseErrorClassifier */
+    private $errorClassifier;
+
     /**
      * @param ABJ_404_Solution_DatabaseCore $dbCore
      * @param ABJ_404_Solution_Functions|null $f Falls back to abj_service('functions')
      * @param ABJ_404_Solution_Logging|null $logger Falls back to abj_service('logging')
      * @param ABJ_404_Solution_RebuildHealthState|null $rebuildHealth shared rebuild health gate
+     * @param ABJ_404_Solution_DatabaseConnectionManager|null $connectionManager Falls back to $dbCore->connectionManager()
+     * @param ABJ_404_Solution_DatabaseErrorClassifier|null $errorClassifier Falls back to $dbCore->errorClassifier()
      */
     public function __construct(
         ABJ_404_Solution_DatabaseCore $dbCore,
         $f = null,
         $logger = null,
-        $rebuildHealth = null
+        $rebuildHealth = null,
+        $connectionManager = null,
+        $errorClassifier = null
     ) {
         $this->dbCore = $dbCore;
         $this->f = $f !== null ? $f : abj_service('functions');
@@ -77,6 +87,8 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
         $this->rebuildHealth = $rebuildHealth instanceof ABJ_404_Solution_RebuildHealthState
             ? $rebuildHealth
             : $this->resolveRebuildHealthState();
+        $this->connectionManager = $connectionManager !== null ? $connectionManager : $dbCore->connectionManager();
+        $this->errorClassifier = $errorClassifier !== null ? $errorClassifier : $dbCore->errorClassifier();
         $this->queries = new ABJ_404_Solution_ViewQueriesStaged($this);
         $this->helpers = new ABJ_404_Solution_ViewBuildHelpers($this);
         $this->sqlModeProbe = new ABJ_404_Solution_ViewBuildSqlModeProbe($this);
@@ -443,7 +455,7 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
 
     /** @return void */
     public function ensureConnection(): void {
-        $this->dbCore->ensureConnection();
+        $this->connectionManager->ensureConnection();
     }
 
     /** @return ABJ_404_Solution_Clock */
@@ -462,12 +474,12 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
 
     /** @param string $errorText @return bool */
     public function isResumableStagedKill(string $errorText): bool {
-        return $this->dbCore->isResumableStagedKill($errorText);
+        return $this->errorClassifier->isResumableStagedKill($errorText);
     }
 
     /** @param string|null $errorText @return bool */
     public function isTransientConnectionError(?string $errorText): bool {
-        return $this->dbCore->isTransientConnectionError($errorText);
+        return $this->errorClassifier->isTransientConnectionError($errorText);
     }
 
     /**

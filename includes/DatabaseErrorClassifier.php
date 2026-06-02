@@ -581,7 +581,7 @@ class ABJ_404_Solution_DatabaseErrorClassifier {
             return;
         }
         if ($this->isDiskFullError($errorText)) {
-            $this->core->markServerSideIssueNoted();
+            $this->core->noticeState()->markServerSideIssueNoted();
             $this->core->setRuntimeFlag('abj404_db_disk_full_until', $this->core->clock()->now() + self::DB_WRITE_BLOCK_COOLDOWN_SECONDS, self::DB_WRITE_BLOCK_COOLDOWN_SECONDS);
 
             // Disambiguate InnoDB tablespace exhaustion from actual disk full or MyISAM limit.
@@ -591,24 +591,24 @@ class ABJ_404_Solution_DatabaseErrorClassifier {
             if ($tableFull) {
                 $tableName = $this->extractTableNameFromFullError($errorText);
                 if ($tableName !== null && $this->isInnoDBTable($tableName)) {
-                    $this->core->setPluginDbNotice('disk_full', $this->core->localizeOrDefault('The InnoDB tablespace appears to be exhausted. Deleting plugin data will NOT free this space. Contact your hosting provider to expand the InnoDB tablespace (ibdata1).'), $errorText);
+                    $this->core->setPluginDbNotice('disk_full', $this->core->noticeState()->localizeOrDefault('The InnoDB tablespace appears to be exhausted. Deleting plugin data will NOT free this space. Contact your hosting provider to expand the InnoDB tablespace (ibdata1).'), $errorText);
                     return;
                 }
             }
 
-            $this->core->setPluginDbNotice('disk_full', $this->core->localizeOrDefault('Database storage appears full (disk/engine space). Plugin write-heavy tasks are temporarily paused.'), $errorText);
+            $this->core->setPluginDbNotice('disk_full', $this->core->noticeState()->localizeOrDefault('Database storage appears full (disk/engine space). Plugin write-heavy tasks are temporarily paused.'), $errorText);
             return;
         }
         if ($this->isQuotaLimitError($errorText)) {
-            $this->core->markServerSideIssueNoted();
+            $this->core->noticeState()->markServerSideIssueNoted();
             $this->core->setRuntimeFlag('abj404_db_quota_cooldown_until', $this->core->clock()->now() + self::DB_QUOTA_COOLDOWN_SECONDS, self::DB_QUOTA_COOLDOWN_SECONDS);
-            $this->core->setPluginDbNotice('query_quota', $this->core->localizeOrDefault('Database query quota was exceeded (for example max_questions). Non-essential plugin background tasks are temporarily paused.'), $errorText);
+            $this->core->setPluginDbNotice('query_quota', $this->core->noticeState()->localizeOrDefault('Database query quota was exceeded (for example max_questions). Non-essential plugin background tasks are temporarily paused.'), $errorText);
             return;
         }
         if ($this->isReadOnlyError($errorText)) {
-            $this->core->markServerSideIssueNoted();
+            $this->core->noticeState()->markServerSideIssueNoted();
             $this->core->setRuntimeFlag('abj404_db_read_only_until', $this->core->clock()->now() + self::DB_WRITE_BLOCK_COOLDOWN_SECONDS, self::DB_WRITE_BLOCK_COOLDOWN_SECONDS);
-            $this->core->setPluginDbNotice('read_only', $this->core->localizeOrDefault('Database appears to be in read-only mode. Plugin write operations are temporarily paused.'), $errorText);
+            $this->core->setPluginDbNotice('read_only', $this->core->noticeState()->localizeOrDefault('Database appears to be in read-only mode. Plugin write operations are temporarily paused.'), $errorText);
             return;
         }
         if ($this->isCollationError($errorText)) {
@@ -671,7 +671,7 @@ class ABJ_404_Solution_DatabaseErrorClassifier {
      * @return void
      */
     public function attemptMissingTableRepairAndRetry($query, &$result) {
-        if ($this->core->isTableRepairInProgress()) {
+        if ($this->core->tableRepairer()->isTableRepairInProgress()) {
             return;
         }
         if ($this->handleTransientViewBuildTableMissing($query, $result)) {
@@ -699,7 +699,7 @@ class ABJ_404_Solution_DatabaseErrorClassifier {
         $this->logger->infoMessage("Missing plugin table detected during query. "
             . "Attempting auto-repair. SQL error: " . $originalSqlError);
 
-        $this->core->setTableRepairInProgress(true);
+        $this->core->tableRepairer()->setTableRepairInProgress(true);
         try {
             $this->runRepairCreateRetryAndReport(
                 $query, $result, $repairCooldownKey, $cooldownTtlSeconds,
@@ -718,7 +718,7 @@ class ABJ_404_Solution_DatabaseErrorClassifier {
             $this->logger->warn("Missing-table auto-repair failed: " . $e->getMessage());
             $this->core->setRuntimeFlag($repairCooldownKey, $this->core->clock()->now() + $cooldownTtlSeconds, $cooldownTtlSeconds);
         } finally {
-            $this->core->setTableRepairInProgress(false);
+            $this->core->tableRepairer()->setTableRepairInProgress(false);
         }
     }
 
@@ -767,7 +767,7 @@ class ABJ_404_Solution_DatabaseErrorClassifier {
         $lowerErr = strtolower($observedError);
         $errorMentionsViewDone = ($this->f->strpos($lowerErr, '_abj404_view_done') !== false)
             && ($this->f->strpos($lowerErr, '_abj404_view_deleteme') === false);
-        $isReadQuery = $this->core->queryProducesResultRows($query);
+        $isReadQuery = $this->core->queryTimeoutManager()->queryProducesResultRows($query);
 
         if ($errorMentionsViewDone && $isReadQuery) {
             $this->logger->debugMessage(
@@ -851,7 +851,7 @@ class ABJ_404_Solution_DatabaseErrorClassifier {
         // "WordPress database error" entry on top of the first, producing
         // duplicate noise in debug.log for every failed cron run.
         $prevSuppressState = $wpdb->suppress_errors(true);
-        $result['rows'] = $wpdb->get_results($query, $this->core->getCurrentResultType());
+        $result['rows'] = $wpdb->get_results($query, $this->core->queryExecutor()->getCurrentResultType());
         $wpdb->suppress_errors($prevSuppressState);
         $this->core->harvestWpdbResult($result);
 
@@ -1015,7 +1015,7 @@ class ABJ_404_Solution_DatabaseErrorClassifier {
         }
         $noticePayload = array(
             'type'         => 'missing_table',
-            'message'      => $this->core->localizeOrDefault($adminMsg),
+            'message'      => $this->core->noticeState()->localizeOrDefault($adminMsg),
             'timestamp'    => $this->core->clock()->now(),
             'error_string' => $rawError,
         );

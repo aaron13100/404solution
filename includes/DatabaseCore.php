@@ -20,75 +20,24 @@ require_once __DIR__ . '/DatabaseQueryExecutor.php';
  * Shared database infrastructure: query execution, error recovery, timeouts,
  * connection management, table-name resolution, and error classification.
  *
- * Extracted from the DataAccess monolith. Every DAO module receives a
- * DatabaseCore instance via constructor injection.
+ * Composition root for the nine infrastructure components
+ * (DatabaseConnectionManager, DatabaseQueryTimeoutManager,
+ * DatabaseErrorClassifier, DatabaseSqlErrorReporter,
+ * DatabaseTableNameResolver, DatabaseNoticeStateHolder,
+ * DatabaseCollationHelper, DatabaseTableRepairer, DatabaseQueryExecutor).
  *
- * Interface-required methods (see DatabaseCoreInterface) are declared
- * explicitly below. All other public surface is routed through __call() to
- * the focused component classes. The @method annotations below describe that
- * routed surface so PHPStan and IDEs see the same signatures the components
- * provide.
+ * Public surface:
+ *   - Interface-required methods (DatabaseCoreInterface) for callers that
+ *     hold the contract type.
+ *   - A small set of structurally-explicit methods that cannot be reached
+ *     via direct component calls: by-reference signatures, reflection
+ *     targets used by tests, and static-state helpers.
+ *   - Component accessor methods (connectionManager(), errorClassifier(),
+ *     etc.) for DAO-internal callers that need non-interface behavior.
  *
- * @method bool safeCheckConnection(object $wpdb, bool $allowReconnect = false)
- * @method bool ensureConnection()
- *
- * @method bool queryStartsWithSelect(string $query)
- * @method bool queryProducesResultRows(string $query)
- * @method string applyQueryTimeout(string $query, int $timeoutSeconds)
- * @method bool isMariaDB()
- * @method string applySelectTimeout(string $query, int $timeoutSeconds)
- * @method string applyNonLeadingSelectTimeout(string $query, int $timeoutSeconds)
- * @method string applyStatementTimeout(string $query, int $timeoutSeconds)
- * @method string applyTimeoutToInsertSelect(string $insertSelectQuery, int $timeoutSeconds)
- * @method bool queryHasSetStatementWrapper(string $query)
- * @method string stripSetStatementWrapper(string $query)
- *
- * @method bool isInvalidDataError(mixed $errorText)
- * @method bool isQuotaLimitError(string $errorText)
- * @method bool isDiskFullError(string $errorText)
- * @method bool isReadOnlyError(string $errorText)
- * @method bool isAccessDeniedError(string $errorText)
- * @method bool classifySetStatementFailure(string $errorText)
- * @method bool isCollationError(string $errorText)
- * @method bool isCrashedTableError(string $errorText)
- * @method bool isIncorrectKeyFileError(string $errorText)
- * @method bool isQueryTimeoutError(string $errorText)
- * @method bool isPacketTooLarge(string $errorText)
- * @method bool isDeadlockOrLockTimeoutError(string $errorText)
- * @method bool isGaleraConflictError(string $errorText)
- * @method bool isPermanentHostSideStagedFailure(string $errorText)
- * @method bool isResumableStagedKill(string $errorText)
- * @method string|null extractTableNameFromFullError(string $errorText)
- * @method bool isInnoDBTable(string $tableName)
- * @method bool isQuotaCooldownActive()
- * @method bool isMissingPluginTableError(string $errorText)
- * @method bool isTransientViewBuildTableError(string $errorText)
- * @method void setMissingTablePluginDbNotice(array<string, mixed> $result, string $missingTable, string $prefixDiag)
- * @method string extractMissingTableNameFromError(string $errorText)
- * @method string diagnosePrefixMismatch()
- * @method bool isMultisiteCrossPrefixError(string $errorText)
- *
- * @method void logObservedSqlError(string $query, array<string, mixed> $result, array<string, mixed> $options, bool $producesRows)
- * @method bool isInfrastructureSqlError(string $errorText)
- * @method void logSqlThrowable(string $query, \Throwable $e, array<string, mixed> $options, bool $producesRows)
- *
- * @method void clearServerSideDbNotice()
- * @method string localizeOrDefault(string $text)
- * @method void markServerSideIssueNoted()
- * @method bool isServerSideIssueNoted()
- * @method bool isServerSideIssueChecked()
- * @method void markServerSideIssueChecked()
- *
- * @method string sanitizeCollationIdentifier(string $collation)
- *
- * @method bool isTableRepairInProgress()
- * @method void setTableRepairInProgress(bool $value)
- * @method NULL|string|\WP_Error get_stripped_query_result(string $query)
- *
- * @method string getCurrentResultType()
- * @method string extractSqlFilename(string $query)
- * @method string resolveCallerFromBacktrace()
- * @method void applyDiagnosticLatencyIfConfigured()
+ * There is no __call() dispatch: every non-interface call site names the
+ * component class explicitly. This was reversed from commit dd7e9a30; see
+ * `docs/adr/database-core-explicit-component-access.md`.
  */
 class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInterface {
 
@@ -204,41 +153,63 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
         );
     }
 
-    /**
-     * Dispatch any non-interface method to the focused component that owns it.
-     *
-     * Components are scanned in declaration order; the first one with a
-     * matching public method wins. There are no name collisions across
-     * components (verified at extraction time); add a `@method` annotation
-     * above for any new method you want callers/PHPStan to see.
-     *
-     * @param string $name
-     * @param array<int, mixed> $arguments
-     * @return mixed
-     */
-    public function __call(string $name, array $arguments) {
-        $components = array(
-            $this->connectionManager,
-            $this->queryTimeoutManager,
-            $this->errorClassifier,
-            $this->sqlErrorReporter,
-            $this->tableNameResolver,
-            $this->noticeState,
-            $this->collationHelper,
-            $this->tableRepairer,
-            $this->queryExecutor,
-        );
-        foreach ($components as $component) {
-            if (method_exists($component, $name)) {
-                return $component->$name(...$arguments);
-            }
-        }
-        throw new BadMethodCallException('Unknown DatabaseCore method: ' . $name);
+    // =========================================================================
+    // Public accessors for the focused component classes. DAOs and other
+    // infrastructure-layer callers depend directly on the component they need
+    // and call methods on it. DatabaseCore itself satisfies
+    // DatabaseCoreInterface for type-system callers; non-interface surface
+    // does NOT dispatch through DatabaseCore (no __call, no pass-through
+    // wrappers).
+    // =========================================================================
+
+    /** @return ABJ_404_Solution_DatabaseConnectionManager */
+    public function connectionManager(): ABJ_404_Solution_DatabaseConnectionManager {
+        return $this->connectionManager;
+    }
+
+    /** @return ABJ_404_Solution_DatabaseQueryTimeoutManager */
+    public function queryTimeoutManager(): ABJ_404_Solution_DatabaseQueryTimeoutManager {
+        return $this->queryTimeoutManager;
+    }
+
+    /** @return ABJ_404_Solution_DatabaseErrorClassifier */
+    public function errorClassifier(): ABJ_404_Solution_DatabaseErrorClassifier {
+        return $this->errorClassifier;
+    }
+
+    /** @return ABJ_404_Solution_DatabaseSqlErrorReporter */
+    public function sqlErrorReporter(): ABJ_404_Solution_DatabaseSqlErrorReporter {
+        return $this->sqlErrorReporter;
+    }
+
+    /** @return ABJ_404_Solution_DatabaseTableNameResolver */
+    public function tableNameResolver(): ABJ_404_Solution_DatabaseTableNameResolver {
+        return $this->tableNameResolver;
+    }
+
+    /** @return ABJ_404_Solution_DatabaseNoticeStateHolder */
+    public function noticeState(): ABJ_404_Solution_DatabaseNoticeStateHolder {
+        return $this->noticeState;
+    }
+
+    /** @return ABJ_404_Solution_DatabaseCollationHelper */
+    public function collationHelper(): ABJ_404_Solution_DatabaseCollationHelper {
+        return $this->collationHelper;
+    }
+
+    /** @return ABJ_404_Solution_DatabaseTableRepairer */
+    public function tableRepairer(): ABJ_404_Solution_DatabaseTableRepairer {
+        return $this->tableRepairer;
+    }
+
+    /** @return ABJ_404_Solution_DatabaseQueryExecutor */
+    public function queryExecutor(): ABJ_404_Solution_DatabaseQueryExecutor {
+        return $this->queryExecutor;
     }
 
     // =========================================================================
-    // Interface-required methods (kept explicit). All other public surface is
-    // dispatched through __call(); see the @method annotations on the class.
+    // Interface-required methods (DatabaseCoreInterface). These remain
+    // explicit so PHP's type system sees the contract.
     // =========================================================================
 
     /** @inheritDoc */

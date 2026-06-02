@@ -150,6 +150,9 @@ class ABJ_404_Solution_DataAccess {
     /** @var ABJ_404_Solution_DatabaseCore The extracted database infrastructure layer. */
     private $dbCore;
 
+    /** @var ABJ_404_Solution_DatabaseConnectionManager The connection-management infrastructure component. */
+    private $connectionManager;
+
     /** @var ABJ_404_Solution_ContentRepository The extracted content/cache repository. */
     private $contentRepo;
 
@@ -295,6 +298,7 @@ class ABJ_404_Solution_DataAccess {
         $this->f = self::resolveFunctions($functions);
         $this->logger = $this->resolveLogger($logging);
         $this->dbCore = $dbCore !== null ? $dbCore : $this->createDbCore();
+        $this->connectionManager = $this->dbCore->connectionManager();
         if ($contentRepo !== null) {
             $this->contentRepo = $contentRepo;
         } else {
@@ -688,7 +692,7 @@ class ABJ_404_Solution_DataAccess {
     }
 
     public function deleteOldRedirectsCron() {
-        $this->dbCore->ensureConnection();
+        $this->connectionManager->ensureConnection();
         return $this->getRetentionService()->deleteOldRedirectsCron();
     }
 
@@ -970,17 +974,6 @@ class ABJ_404_Solution_DataAccess {
             }
             if (method_exists($delegate, $name)) {
                 return $delegate->$name(...$arguments);
-            }
-            // dbCore now dispatches non-interface surface through its own __call().
-            // method_exists() can't see __call-routed methods, so try the call
-            // and treat a BadMethodCallException as "not found here, keep looking".
-            if ($delegate === $this->dbCore) {
-                try {
-                    return $delegate->$name(...$arguments);
-                } catch (\BadMethodCallException $e) {
-                    // allow-silent-catch: __call probe miss; the next delegate may expose the requested method.
-                    continue;
-                }
             }
         }
         throw new \BadMethodCallException(

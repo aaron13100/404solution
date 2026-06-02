@@ -62,23 +62,41 @@ class ABJ_404_Solution_LogsRepository implements ABJ_404_Solution_LogsRepository
     /** @var bool Prevent re-entrancy during flush */
     private static $isFlushingLogQueue = false;
 
+    /** @var ABJ_404_Solution_DatabaseErrorClassifier */
+    private $errorClassifier;
+
+    /** @var ABJ_404_Solution_DatabaseCollationHelper */
+    private $collationHelper;
+
+    /** @var ABJ_404_Solution_DatabaseNoticeStateHolder */
+    private $noticeState;
+
     /**
      * @param ABJ_404_Solution_DatabaseCore $dbCore
      * @param ABJ_404_Solution_Functions|null $functions
      * @param ABJ_404_Solution_Logging|null $logging
      * @param ABJ_404_Solution_RebuildHealthState|null $rebuildHealth Forwarded to the rollup service when one is constructed internally.
      * @param ABJ_404_Solution_LogsHitsRollupServiceInterface|null $rollup Pre-built rollup service (preferred wiring). When null, an internal one is constructed.
+     * @param ABJ_404_Solution_DatabaseErrorClassifier|null $errorClassifier
+     * @param ABJ_404_Solution_DatabaseCollationHelper|null $collationHelper
+     * @param ABJ_404_Solution_DatabaseNoticeStateHolder|null $noticeState
      */
     public function __construct(
         ABJ_404_Solution_DatabaseCore $dbCore,
         $functions = null,
         $logging = null,
         $rebuildHealth = null,
-        $rollup = null
+        $rollup = null,
+        $errorClassifier = null,
+        $collationHelper = null,
+        $noticeState = null
     ) {
         $this->dbCore = $dbCore;
         $this->f = $functions !== null ? $functions : abj_service('functions');
         $this->logger = $logging !== null ? $logging : abj_service('logging');
+        $this->errorClassifier = $errorClassifier !== null ? $errorClassifier : $dbCore->errorClassifier();
+        $this->collationHelper = $collationHelper !== null ? $collationHelper : $dbCore->collationHelper();
+        $this->noticeState = $noticeState !== null ? $noticeState : $dbCore->noticeState();
         if ($rollup instanceof ABJ_404_Solution_LogsHitsRollupServiceInterface) {
             $this->rollup = $rollup;
         } else {
@@ -517,7 +535,7 @@ class ABJ_404_Solution_LogsRepository implements ABJ_404_Solution_LogsRepository
         }
 
         $minLogID = false;
-        $comparisonCollation = $this->dbCore->sanitizeCollationIdentifier(isset($requestedUrlCollation) ? (string)$requestedUrlCollation : '');
+        $comparisonCollation = $this->collationHelper->sanitizeCollationIdentifier(isset($requestedUrlCollation) ? (string)$requestedUrlCollation : '');
         if ($comparisonCollation === '' || stripos($comparisonCollation, 'utf8mb4') === false) {
             $comparisonCollation = $this->dbCore->getPreferredUtf8mb4Collation();
         }
@@ -532,7 +550,7 @@ class ABJ_404_Solution_LogsRepository implements ABJ_404_Solution_LogsRepository
         $checkMinIDQueryResults = is_array($primaryResult['rows'] ?? null) ? $primaryResult['rows'] : array();
         $lastErrorRaw = $primaryResult['last_error'] ?? '';
         $lastError = is_string($lastErrorRaw) ? $lastErrorRaw : '';
-        if ($lastError !== '' && $this->dbCore->isInvalidDataError($lastError) && $canUseUtf8Cast) {
+        if ($lastError !== '' && $this->errorClassifier->isInvalidDataError($lastError) && $canUseUtf8Cast) {
             $fallbackResult = $this->dbCore->queryAndGetResults("SELECT id FROM `" . $logTableName . "` \n WHERE requested_url = %s \n LIMIT 1", array('query_params' => array($requested_url), 'log_errors' => false));
             $checkMinIDQueryResults = is_array($fallbackResult['rows'] ?? null) ? $fallbackResult['rows'] : array();
         }
@@ -768,7 +786,7 @@ class ABJ_404_Solution_LogsRepository implements ABJ_404_Solution_LogsRepository
 
     /** @param string $errorMessage @return void */
     private function setLogsv2FullNotice(string $errorMessage): void {
-        $message = $this->dbCore->localizeOrDefault('The 404 Solution log table is full and cannot accept new entries. This is usually caused by a full disk. Please contact your host or manually prune the logs table.');
+        $message = $this->noticeState->localizeOrDefault('The 404 Solution log table is full and cannot accept new entries. This is usually caused by a full disk. Please contact your host or manually prune the logs table.');
         $this->dbCore->setPluginDbNotice('log_table_full', $message, $errorMessage);
     }
 
