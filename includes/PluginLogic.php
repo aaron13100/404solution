@@ -18,6 +18,9 @@ require_once dirname(__FILE__) . '/PluginLogicInterface.php';
 require_once dirname(__FILE__) . '/StorageOptionContracts.php';
 require_once dirname(__FILE__) . '/PluginLogicOptionsResolver.php';
 require_once dirname(__FILE__) . '/PluginLogicVersionUpgrader.php';
+require_once dirname(__FILE__) . '/services/NotFoundResponseService.php';
+require_once dirname(__FILE__) . '/services/RequestIgnoreNormalizer.php';
+require_once dirname(__FILE__) . '/services/PreviousRequestCookieTracker.php';
 
 /**
  * @phpstan-type PageObject object{id: int, post_parent: int, depth: int, post_type: string, post_title: string}
@@ -304,6 +307,78 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
         // ::getInstance() so lint-getinstance-callers does not flag this
         // bootstrap fallback.
         return new ABJ_404_Solution_PluginLogicOptionsResolver();
+    }
+
+    /**
+     * Access the composed not-found response service. The frontend
+     * dispatcher methods (sendTo404Page, forceRedirect,
+     * thereIsAUserSpecified404Page, getCommentPartAndQueryPartOfRequest)
+     * extracted from PluginLogic live here.
+     *
+     * Returns whichever object is registered as
+     * abj_service('not_found_response'). Duck-typed at runtime so tests
+     * can install lightweight doubles without subclassing the concrete
+     * service.
+     *
+     * @return ABJ_404_Solution_NotFoundResponseService
+     */
+    public function notFoundResponse() {
+        $candidate = abj_service('not_found_response');
+        if (is_object($candidate) && method_exists($candidate, 'sendTo404Page')) {
+            return $candidate;
+        }
+        return new ABJ_404_Solution_NotFoundResponseService();
+    }
+
+    /**
+     * Access the composed request-ignore normalizer. The
+     * initializeIgnoreValues() and tryNormalPostQuery() methods
+     * extracted from PluginLogic live here.
+     *
+     * @return ABJ_404_Solution_RequestIgnoreNormalizer
+     */
+    public function requestIgnoreNormalizer() {
+        $candidate = abj_service('request_ignore_normalizer');
+        if (is_object($candidate) && method_exists($candidate, 'tryNormalPostQuery')) {
+            return $candidate;
+        }
+        return new ABJ_404_Solution_RequestIgnoreNormalizer();
+    }
+
+    /**
+     * Access the composed previous-request cookie tracker. The
+     * readCookieWithPreviousRqeuestShort() and
+     * setCookieWithPreviousRequest() methods extracted from PluginLogic
+     * live here.
+     *
+     * @return ABJ_404_Solution_PreviousRequestCookieTracker
+     */
+    public function previousRequestCookieTracker() {
+        $candidate = abj_service('previous_request_cookie_tracker');
+        if (is_object($candidate) && method_exists($candidate, 'setCookieWithPreviousRequest')) {
+            return $candidate;
+        }
+        return new ABJ_404_Solution_PreviousRequestCookieTracker();
+    }
+
+    /**
+     * Alias accessor for the primary 404 dispatcher service. The
+     * original parent task asked for a single PluginLogicRequestDispatcher
+     * accessor; the extraction split the responsibilities across three
+     * single-responsibility services instead. NotFoundResponseService is
+     * the one that actually dispatches the 404 response, so this alias
+     * returns it. Prefer notFoundResponse() / requestIgnoreNormalizer() /
+     * previousRequestCookieTracker() at new call sites.
+     *
+     * Why: per [[feedback_no_trait_extractions]], the project rejects
+     * grab-bag extractions and prefers SRP-aligned classes; combining
+     * the three responsibilities behind one wrapper would be a
+     * pass-through facade flagged by [[modularity-extraction]].
+     *
+     * @return ABJ_404_Solution_NotFoundResponseService
+     */
+    public function requestDispatcher() {
+        return $this->notFoundResponse();
     }
 
     /**
