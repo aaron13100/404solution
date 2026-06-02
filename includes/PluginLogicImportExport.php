@@ -6,40 +6,60 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Import/export functionality delegated to ABJ_404_Solution_ImportExportService.
- * Standalone class extracted from PluginLogicTrait_ImportExport.
+ * Import/export functionality delegated to focused services:
+ *   - ABJ_404_Solution_ExportService for export-side calls
+ *   - ABJ_404_Solution_ImportService for import-side calls
+ *
+ * Standalone class composed from PluginLogic. Holds factories so the
+ * underlying services are constructed lazily on first use.
  */
 class ABJ_404_Solution_PluginLogicImportExport {
 
     /** @var callable */
-    private $serviceFactory;
+    private $exportServiceFactory;
 
-    /** @var ABJ_404_Solution_ImportExportService|null */
-    private $service = null;
+    /** @var callable */
+    private $importServiceFactory;
+
+    /** @var ABJ_404_Solution_ExportService|null */
+    private $exportService = null;
+
+    /** @var ABJ_404_Solution_ImportService|null */
+    private $importService = null;
 
     /**
-     * @param callable $serviceFactory Returns an ABJ_404_Solution_ImportExportService instance.
+     * @param callable $exportServiceFactory Returns an ABJ_404_Solution_ExportService instance.
+     * @param callable $importServiceFactory Returns an ABJ_404_Solution_ImportService instance.
      */
-    function __construct(callable $serviceFactory) {
-        $this->serviceFactory = $serviceFactory;
+    function __construct(callable $exportServiceFactory, callable $importServiceFactory) {
+        $this->exportServiceFactory = $exportServiceFactory;
+        $this->importServiceFactory = $importServiceFactory;
     }
 
-    /** @return ABJ_404_Solution_ImportExportService */
-    private function getService() {
-        if ($this->service === null) {
-            $this->service = ($this->serviceFactory)();
+    /** @return ABJ_404_Solution_ExportService */
+    private function getExportService() {
+        if ($this->exportService === null) {
+            $this->exportService = ($this->exportServiceFactory)();
         }
-        return $this->service;
+        return $this->exportService;
+    }
+
+    /** @return ABJ_404_Solution_ImportService */
+    private function getImportService() {
+        if ($this->importService === null) {
+            $this->importService = ($this->importServiceFactory)();
+        }
+        return $this->importService;
     }
 
     /** @return string */
     function getExportFilename(string $format = 'native'): string {
-        return $this->getService()->getExportFilename($format);
+        return $this->getExportService()->getExportFilename($format);
     }
 
     /** @return void */
     function doExport(): void {
-        $this->getService()->doExport();
+        $this->getExportService()->doExport();
     }
 
     /**
@@ -48,12 +68,12 @@ class ABJ_404_Solution_PluginLogicImportExport {
      * @return string Empty string on success, error message otherwise.
      */
     function convertExportCsvToRedirectionFormat($sourceFile, $destinationFile) {
-        return $this->getService()->convertExportCsvToRedirectionFormat($sourceFile, $destinationFile);
+        return $this->getExportService()->convertExportCsvToRedirectionFormat($sourceFile, $destinationFile);
     }
 
     /** @return string */
     function doImportFile(): string {
-        return $this->getService()->doImportFile();
+        return $this->getImportService()->doImportFile();
     }
 
     /**
@@ -62,12 +82,12 @@ class ABJ_404_Solution_PluginLogicImportExport {
      * @return array<int, string>
      */
     function loadDataArrayFromFile(array $dataArray, bool $dryRun = false): array {
-        return $this->getService()->loadDataArrayFromFile($dataArray, $dryRun);
+        return $this->getImportService()->loadDataArrayFromFile($dataArray, $dryRun);
     }
 
     /** @return array<string, string> */
     function splitCsvLine(string $line): array {
-        return $this->getService()->splitCsvLine($line);
+        return $this->getImportService()->splitCsvLine($line);
     }
 
     /**
@@ -75,7 +95,7 @@ class ABJ_404_Solution_PluginLogicImportExport {
      * @return bool
      */
     function isCompatibleImportHeaderRow(array $columns): bool {
-        return $this->getService()->isCompatibleImportHeaderRow($columns);
+        return $this->getImportService()->isCompatibleImportHeaderRow($columns);
     }
 
     /**
@@ -83,7 +103,7 @@ class ABJ_404_Solution_PluginLogicImportExport {
      * @return array<int, string>
      */
     function normalizeImportHeaders(array $columns): array {
-        $result = $this->getService()->normalizeImportHeaders($columns);
+        $result = $this->getImportService()->normalizeImportHeaders($columns);
         return array_map(function ($v) {
             return is_string($v) ? $v : '';
         }, $result);
@@ -95,7 +115,7 @@ class ABJ_404_Solution_PluginLogicImportExport {
      * @return array<string, string>
      */
     function mapImportRowByHeaders(array $row, array $normalizedHeaders): array {
-        return $this->getService()->mapImportRowByHeaders($row, $normalizedHeaders);
+        return $this->getImportService()->mapImportRowByHeaders($row, $normalizedHeaders);
     }
 
     /**
@@ -103,7 +123,7 @@ class ABJ_404_Solution_PluginLogicImportExport {
      * @return string
      */
     function detectImportFormatFromHeaders(array $columns): string {
-        return $this->getService()->detectImportFormatFromHeaders($columns);
+        return $this->getImportService()->detectImportFormatFromHeaders($columns);
     }
 
 }

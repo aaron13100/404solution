@@ -61,8 +61,11 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
 	 */
 	private $options = null;
 
-/** @var ABJ_404_Solution_ImportExportService|null */
-	private $importExportService = null;
+/** @var ABJ_404_Solution_ExportService|null */
+	private $exportService = null;
+
+	/** @var ABJ_404_Solution_ImportService|null */
+	private $importService = null;
 
 	/** @var string|null */
 	private $urlHomeDirectory = null;
@@ -166,9 +169,10 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
     	);
 
     	$self = $this;
-    	$this->importExport = new ABJ_404_Solution_PluginLogicImportExport(function() use ($self) {
-    	    return $self->getImportExportService();
-    	});
+    	$this->importExport = new ABJ_404_Solution_PluginLogicImportExport(
+    	    function() use ($self) { return $self->getExportService(); },
+    	    function() use ($self) { return $self->getImportService(); }
+    	);
 
     	$this->settingsUpdate = new ABJ_404_Solution_PluginLogicSettingsUpdate(
     	    $this->f, $this->logger, $this->contentRepo, $this
@@ -410,23 +414,39 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
         );
     }
 
-    /** @return ABJ_404_Solution_ImportExportService */
-    private function getImportExportService() {
-        if ($this->importExportService !== null) {
-            return $this->importExportService;
+    /** @return ABJ_404_Solution_ExportService */
+    private function getExportService() {
+        if ($this->exportService !== null) {
+            return $this->exportService;
         }
 
-        if (!class_exists('ABJ_404_Solution_ImportExportService')) {
-            require_once dirname(__FILE__) . '/ImportExportService.php';
+        if (!class_exists('ABJ_404_Solution_ExportService')) {
+            require_once dirname(__FILE__) . '/ExportService.php';
         }
 
-        $this->importExportService = new ABJ_404_Solution_ImportExportService(
+        $this->exportService = new ABJ_404_Solution_ExportService(
             abj_service('view_read_service'),
+            $this->logger
+        );
+        return $this->exportService;
+    }
+
+    /** @return ABJ_404_Solution_ImportService */
+    private function getImportService() {
+        if ($this->importService !== null) {
+            return $this->importService;
+        }
+
+        if (!class_exists('ABJ_404_Solution_ImportService')) {
+            require_once dirname(__FILE__) . '/ImportService.php';
+        }
+
+        $this->importService = new ABJ_404_Solution_ImportService(
             abj_service('redirects_repository'),
             abj_service('content_repository'),
             $this->logger
         );
-        return $this->importExportService;
+        return $this->importService;
     }
 
     /** Instance counterpart used by the Data layer through PluginLogicInterface. */

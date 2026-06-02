@@ -5,11 +5,21 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Handles redirect CSV import/export behavior.
+ * Owns the redirect-import pipeline.
  *
- * Kept intentionally focused so PluginLogic stays readable.
+ * Reads an uploaded CSV (native or third-party format: Redirection, Safe
+ * Redirect Manager, Simple 301), detects the delimiter and header row,
+ * normalises each row into the canonical `from_url/to_url/...` shape,
+ * validates regex patterns at the boundary so bad patterns never reach
+ * the runtime matcher, resolves slug-style destinations to post/category/
+ * tag IDs via the content repository, and persists each redirect via the
+ * redirects repository. Maintains a sha256-content-keyed checkpoint in
+ * wp_options so a PHP timeout mid-stream resumes on re-upload of the
+ * same file instead of restarting from row 1.
+ *
+ * Does NOT own the export pipeline. See ABJ_404_Solution_ExportService.
  */
-class ABJ_404_Solution_ImportExportService {
+class ABJ_404_Solution_ImportService {
 
     /**
      * Option key that stores resumable-import progress. Keyed by sha256
@@ -29,9 +39,6 @@ class ABJ_404_Solution_ImportExportService {
      */
     const IMPORT_PROGRESS_CHECKPOINT_INTERVAL = 50;
 
-    /** @var ABJ_404_Solution_ViewReadServiceInterface */
-    private $viewReadService;
-
     /** @var ABJ_404_Solution_RedirectsRepositoryInterface */
     private $redirectsRepository;
 
@@ -43,456 +50,33 @@ class ABJ_404_Solution_ImportExportService {
 
     /**
      * Constructor supports two signatures for backward compatibility:
-     *   (1) New: (ViewReadService, RedirectsRepository, ContentRepository, Logging)
+     *   (1) New: (RedirectsRepository, ContentRepository, Logging)
      *   (2) Legacy: (DataAccess, Logging) -- DataAccess delegates to modules
      *
-     * @param mixed $viewReadServiceOrDataAccess ViewReadService or legacy DataAccess facade
-     * @param mixed $redirectsRepoOrLogging RedirectsRepository or legacy Logging
-     * @param ABJ_404_Solution_ContentRepositoryInterface|null $contentRepository
+     * @param mixed $redirectsRepoOrDataAccess RedirectsRepository or legacy DataAccess facade
+     * @param mixed $contentRepoOrLogging ContentRepository or legacy Logging
      * @param ABJ_404_Solution_Logging|null $logging
      */
-    function __construct($viewReadServiceOrDataAccess, $redirectsRepoOrLogging, $contentRepository = null, $logging = null) {
-        if ($contentRepository === null && $logging === null) {
+    function __construct($redirectsRepoOrDataAccess, $contentRepoOrLogging, $logging = null) {
+        if ($logging === null) {
             // Legacy 2-arg signature: (DataAccess, Logging)
-            // DataAccess is a facade for ViewRead + Redirects; for ContentRepo
-            // we resolve via $dao->getContentRepo() now that the ContentRepository
-            // pass-throughs have been removed from DataAccess (i758).
-            /** @var ABJ_404_Solution_ViewReadServiceInterface&ABJ_404_Solution_RedirectsRepositoryInterface $viewReadServiceOrDataAccess */
-            $this->viewReadService = $viewReadServiceOrDataAccess;
-            $this->redirectsRepository = $viewReadServiceOrDataAccess;
-            $this->contentRepository = (is_object($viewReadServiceOrDataAccess) && method_exists($viewReadServiceOrDataAccess, 'getContentRepo'))
-                ? $viewReadServiceOrDataAccess->getContentRepo()
-                : $viewReadServiceOrDataAccess;
-            /** @var ABJ_404_Solution_Logging $redirectsRepoOrLogging */
-            $this->logger = $redirectsRepoOrLogging;
+            // DataAccess is a facade that implements RedirectsRepository methods directly,
+            // and exposes ContentRepository via $dao->getContentRepo().
+            /** @var ABJ_404_Solution_RedirectsRepositoryInterface $redirectsRepoOrDataAccess */
+            $this->redirectsRepository = $redirectsRepoOrDataAccess;
+            $this->contentRepository = (is_object($redirectsRepoOrDataAccess) && method_exists($redirectsRepoOrDataAccess, 'getContentRepo'))
+                ? $redirectsRepoOrDataAccess->getContentRepo()
+                : $redirectsRepoOrDataAccess;
+            /** @var ABJ_404_Solution_Logging $contentRepoOrLogging */
+            $this->logger = $contentRepoOrLogging;
         } else {
-            // New 4-arg signature
-            /** @var ABJ_404_Solution_ViewReadServiceInterface $viewReadServiceOrDataAccess */
-            $this->viewReadService = $viewReadServiceOrDataAccess;
-            /** @var ABJ_404_Solution_RedirectsRepositoryInterface $redirectsRepoOrLogging */
-            $this->redirectsRepository = $redirectsRepoOrLogging;
-            /** @var ABJ_404_Solution_ContentRepositoryInterface $contentRepository */
-            $this->contentRepository = $contentRepository;
-            /** @var ABJ_404_Solution_Logging $logging */
+            /** @var ABJ_404_Solution_RedirectsRepositoryInterface $redirectsRepoOrDataAccess */
+            $this->redirectsRepository = $redirectsRepoOrDataAccess;
+            /** @var ABJ_404_Solution_ContentRepositoryInterface $contentRepoOrLogging */
+            $this->contentRepository = $contentRepoOrLogging;
             $this->logger = $logging;
         }
     }
-
-    /**
-     * @param string $format
-     * @return string
-     */
-    function getExportFilename($format = 'native') {
-        if ($format === 'redirection') {
-            return abj404_getUploadsDir() . 'export-redirection.csv';
-        }
-        return abj404_getUploadsDir() . 'export.csv';
-    }
-
-    /** @return void */
-    function doExport() {
-        $format = isset($_REQUEST['export_format']) ? sanitize_text_field((string)$_REQUEST['export_format']) : 'native';
-
-        $serverFormats = array('htaccess', 'nginx', 'cloudflare', 'netlify', 'vercel');
-        if (in_array($format, $serverFormats, true)) {
-            $this->doServerFormatExport($format);
-            return;
-        }
-
-        $tempFile = $this->getExportFilename($format);
-
-        if ($format === 'redirection') {
-            $nativeExportFile = $this->getExportFilename('native');
-            $this->viewReadService->doRedirectsExport($nativeExportFile);
-            $error = $this->convertExportCsvToRedirectionFormat($nativeExportFile, $tempFile);
-            if ($error !== '') {
-                $this->logger->warn($error);
-                return;
-            }
-        } else {
-            $this->viewReadService->doRedirectsExport($tempFile);
-        }
-
-        if (file_exists($tempFile)) {
-            header('Content-Description: File Transfer');
-            header('Content-Disposition: attachment; filename=' . basename($tempFile));
-            header('Expires: 0');
-            header('Cache-Control: must-revalidate');
-            header('Pragma: public');
-            header('Content-Length: ' . filesize($tempFile));
-            header('Content-Type: text/csv; charset=utf-8');
-            readfile($tempFile);
-            exit();
-        }
-
-        $this->logger->infoMessage("I don't see any data to export.");
-    }
-
-    /**
-     * Serve a server-level or edge/CDN format export directly (no temp file needed).
-     *
-     * @param string $format One of: htaccess, nginx, cloudflare, netlify, vercel.
-     * @return void
-     */
-    private function doServerFormatExport($format) {
-        switch ($format) {
-            case 'htaccess':
-                $content  = $this->generateHtaccessRules();
-                $filename = 'redirects.htaccess';
-                $mime     = 'text/plain; charset=utf-8';
-                break;
-            case 'nginx':
-                $content  = $this->generateNginxRules();
-                $filename = 'redirects-nginx.conf';
-                $mime     = 'text/plain; charset=utf-8';
-                break;
-            case 'cloudflare':
-                $content  = $this->generateCloudflareWorkerScript();
-                $filename = 'redirects-worker.js';
-                $mime     = 'application/javascript; charset=utf-8';
-                break;
-            case 'netlify':
-                $content  = $this->generateNetlifyRedirects();
-                $filename = '_redirects';
-                $mime     = 'text/plain; charset=utf-8';
-                break;
-            case 'vercel':
-                $content  = $this->generateVercelRedirects();
-                $filename = 'vercel-redirects.json';
-                $mime     = 'application/json; charset=utf-8';
-                break;
-            default:
-                $this->logger->warn('Unknown server export format: ' . $format);
-                return;
-        }
-
-        header('Content-Description: File Transfer');
-        header('Content-Disposition: attachment; filename=' . $filename);
-        header('Expires: 0');
-        header('Cache-Control: must-revalidate');
-        header('Pragma: public');
-        header('Content-Length: ' . strlen($content));
-        header('Content-Type: ' . $mime);
-        echo $content;
-        exit();
-    }
-
-    /**
-     * Fetch all exportable (manual + regex, non-trashed) redirects and resolve
-     * destination URLs.
-     *
-     * Each returned element has:
-     *   source   string  The from-URL stored in the DB (relative path or full URL).
-     *   dest     string  Resolved destination URL or path.
-     *   code     int     HTTP status code (301, 302, 410, …).
-     *   is_regex bool    Whether this is a regex redirect.
-     *
-     * @return array<int, array{source: string, dest: string, code: int, is_regex: bool}>
-     */
-    function getExportableRedirects() {
-        $dbCore = abj_service('db_core');
-        $redirectsTable = $dbCore->doTableNameReplacements('{wp_abj404_redirects}');
-        $cacheTable     = $dbCore->doTableNameReplacements('{wp_abj404_permalink_cache}');
-
-        $manualStatus = defined('ABJ404_STATUS_MANUAL') ? (int)ABJ404_STATUS_MANUAL : 1;
-        $regexStatus  = defined('ABJ404_STATUS_REGEX')  ? (int)ABJ404_STATUS_REGEX  : 6;
-        $typeExternal = defined('ABJ404_TYPE_EXTERNAL') ? (int)ABJ404_TYPE_EXTERNAL : 4;
-        $typeHome     = defined('ABJ404_TYPE_HOME')     ? (int)ABJ404_TYPE_HOME     : 5;
-
-        $queryResult = $dbCore->queryAndGetResults(
-            "SELECT r.url, r.status, r.type, r.final_dest, r.code, r.disabled,
-                    pc.url AS cached_url
-             FROM {$redirectsTable} r
-             LEFT JOIN {$cacheTable} pc ON r.final_dest = pc.id
-             WHERE r.status IN (%d, %d)
-               AND (r.disabled IS NULL OR r.disabled = 0)
-               AND r.url IS NOT NULL AND r.url != ''
-             ORDER BY r.url",
-            ['query_params' => [$manualStatus, $regexStatus]]
-        );
-
-        $rows = $queryResult['rows'] ?? [];
-        if (!is_array($rows) || empty($rows)) {
-            return array();
-        }
-
-        $result = array();
-        foreach ($rows as $row) {
-            if (!is_array($row)) {
-                continue;
-            }
-
-            $source   = isset($row['url']) ? (string)$row['url'] : '';
-            $isRegex  = (isset($row['status']) && (int)$row['status'] === $regexStatus);
-            $code     = isset($row['code']) ? (int)$row['code'] : 301;
-            $type     = isset($row['type']) ? (int)$row['type'] : 0;
-            $finalDest = isset($row['final_dest']) ? (string)$row['final_dest'] : '';
-
-            // Resolve destination
-            if ($code === 410 || $code === 451) {
-                $dest = $source;
-            } elseif (!empty($row['cached_url'])) {
-                $dest = (string)$row['cached_url'];
-            } elseif ($type === $typeExternal) {
-                $dest = $finalDest;
-            } elseif ($type === $typeHome) {
-                $dest = function_exists('home_url') ? home_url('/') : '/';
-            } elseif (is_numeric($finalDest) && (int)$finalDest > 0) {
-                // Post/page/term ID — try get_permalink
-                if (function_exists('get_permalink')) {
-                    $url = get_permalink((int)$finalDest);
-                    $dest = ($url !== false && is_string($url)) ? $url : ('/?p=' . $finalDest);
-                } else {
-                    $dest = '/?p=' . $finalDest;
-                }
-            } elseif ($finalDest !== '') {
-                $dest = $finalDest;
-            } else {
-                // No destination — skip
-                continue;
-            }
-
-            $result[] = array(
-                'source'   => $source,
-                'dest'     => $dest,
-                'code'     => $code,
-                'is_regex' => $isRegex,
-            );
-        }
-
-        return $result;
-    }
-
-    /**
-     * Generate Apache .htaccess redirect rules.
-     *
-     * @return string
-     */
-    function generateHtaccessRules() {
-        $redirects = $this->getExportableRedirects();
-        $lines = array('# 404 Solution redirects', 'RewriteEngine On', '');
-
-        foreach ($redirects as $r) {
-            $source = $r['source'];
-            $dest   = $r['dest'];
-            $code   = $r['code'];
-
-            // Strip leading slash for RewriteRule pattern (anchored with ^)
-            $pattern = ltrim($source, '/');
-
-            if (!$r['is_regex']) {
-                // Escape regex metacharacters in literal paths
-                $pattern = preg_quote($pattern, '/');
-                $pattern = $pattern . '/?';
-            }
-
-            if ($code === 410 || $code === 451) {
-                // Apache [G] flag sends a 410 Gone response; it is the closest equivalent for 451.
-                $lines[] = 'RewriteRule ^' . $pattern . '$ - [G,L]';
-            } elseif ($code === 0) {
-                // Meta Refresh requires serving an HTML response — not supported in .htaccess.
-                $lines[] = '# Meta Refresh: ' . $source . ' → ' . $dest . ' (serve HTML; not representable as a RewriteRule)';
-            } else {
-                $flag    = ($code === 301) ? 'R=301' : 'R=' . $code;
-                $lines[] = 'RewriteRule ^' . $pattern . '$ ' . $dest . ' [' . $flag . ',L]';
-            }
-        }
-
-        if (count($redirects) === 0) {
-            $lines[] = '# No manual redirects found.';
-        }
-
-        return implode("\n", $lines) . "\n";
-    }
-
-    /**
-     * Generate Nginx location block redirect rules.
-     *
-     * @return string
-     */
-    function generateNginxRules() {
-        $redirects = $this->getExportableRedirects();
-        $lines = array('# 404 Solution redirects', '');
-
-        foreach ($redirects as $r) {
-            $source = $r['source'];
-            $dest   = $r['dest'];
-            $code   = $r['code'];
-
-            if ($r['is_regex']) {
-                $directive = 'location ~* ' . $source;
-            } else {
-                $directive = 'location = ' . $source;
-            }
-
-            if ($code === 410 || $code === 451) {
-                $lines[] = $directive . ' { return ' . $code . '; }';
-            } elseif ($code === 0) {
-                // Meta Refresh requires serving an HTML response — not representable as a return directive.
-                $lines[] = '# Meta Refresh: ' . $source . ' → ' . $dest . ' (serve HTML; not representable as a return directive)';
-            } else {
-                $lines[] = $directive . ' { return ' . $code . ' ' . $dest . '; }';
-            }
-        }
-
-        if (count($redirects) === 0) {
-            $lines[] = '# No manual redirects found.';
-        }
-
-        return implode("\n", $lines) . "\n";
-    }
-
-    /**
-     * Generate a Cloudflare Workers JavaScript snippet for handling redirects.
-     *
-     * @return string
-     */
-    function generateCloudflareWorkerScript() {
-        $redirects = $this->getExportableRedirects();
-
-        $entries = array();
-        foreach ($redirects as $r) {
-            $jsonFlags  = JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE;
-            $sourceJson = json_encode($r['source'], $jsonFlags);
-            $destJson   = json_encode($r['dest'], $jsonFlags);
-            // Fall back to UTF-8 sanitization if json_encode fails on invalid bytes
-            if ($sourceJson === false) {
-                $sourceJson = json_encode(mb_convert_encoding($r['source'], 'UTF-8', 'UTF-8'), $jsonFlags);
-            }
-            if ($destJson === false) {
-                $destJson = json_encode(mb_convert_encoding($r['dest'], 'UTF-8', 'UTF-8'), $jsonFlags);
-            }
-            if ($sourceJson === false || $destJson === false) {
-                continue;
-            }
-            $code = (int)$r['code'];
-            $entries[] = "  " . $sourceJson . ": { dest: " . $destJson . ", status: " . $code . " }";
-        }
-
-        $map = implode(",\n", $entries);
-
-        $script  = "const REDIRECTS = {\n";
-        $script .= ($map !== '' ? $map . "\n" : '');
-        $script .= "};\n";
-        $script .= "\n";
-        $script .= "addEventListener('fetch', event => {\n";
-        $script .= "  event.respondWith(handleRequest(event.request));\n";
-        $script .= "});\n";
-        $script .= "\n";
-        $script .= "async function handleRequest(request) {\n";
-        $script .= "  const url = new URL(request.url);\n";
-        $script .= "  const rule = REDIRECTS[url.pathname] || REDIRECTS[url.pathname.replace(/\\/$/, '')];\n";
-        $script .= "  if (rule) {\n";
-        $script .= "    if (rule.status === 410 || rule.status === 451) return new Response(null, { status: rule.status });\n";
-        $script .= "    if (rule.status === 0) return new Response('<meta http-equiv=\"refresh\" content=\"0;url=' + rule.dest + '\">', { status: 200, headers: { 'Content-Type': 'text/html' } });\n";
-        $script .= "    return Response.redirect(rule.dest.startsWith('http') ? rule.dest : url.origin + rule.dest, rule.status);\n";
-        $script .= "  }\n";
-        $script .= "  return fetch(request);\n";
-        $script .= "}\n";
-
-        return $script;
-    }
-
-    /**
-     * Generate a Netlify _redirects file.
-     *
-     * @return string
-     */
-    function generateNetlifyRedirects() {
-        $redirects = $this->getExportableRedirects();
-        $lines = array('# 404 Solution redirects');
-
-        foreach ($redirects as $r) {
-            $source = $r['source'];
-            $dest   = $r['dest'];
-            $code   = (int)$r['code'];
-            $lines[] = $source . '  ' . $dest . '  ' . $code;
-        }
-
-        if (count($redirects) === 0) {
-            $lines[] = '# No manual redirects found.';
-        }
-
-        return implode("\n", $lines) . "\n";
-    }
-
-    /**
-     * Generate a Vercel redirects JSON array (for use in vercel.json).
-     *
-     * Note: Vercel does not natively support 410 Gone responses; those redirects
-     * are omitted from this export.
-     *
-     * @return string JSON array string.
-     */
-    function generateVercelRedirects() {
-        $redirects = $this->getExportableRedirects();
-        $entries = array();
-
-        foreach ($redirects as $r) {
-            if ($r['code'] === 410 || $r['code'] === 451 || $r['code'] === 0) {
-                // Vercel has no native 410/451/meta-refresh support; skip.
-                continue;
-            }
-            $entries[] = array(
-                'source'      => $r['source'],
-                'destination' => $r['dest'],
-                'permanent'   => ($r['code'] === 301),
-            );
-        }
-
-        $encoded = json_encode($entries, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
-        return is_string($encoded) ? $encoded : '[]';
-    }
-
-    /**
-     * Convert native export format to a Redirection-compatible CSV shape.
-     *
-     * @param string $sourceFile Native export file path.
-     * @param string $destinationFile Output file path.
-     * @return string Empty string on success, error message otherwise.
-     */
-    function convertExportCsvToRedirectionFormat($sourceFile, $destinationFile) {
-        if (!file_exists($sourceFile)) {
-            return __('Error: Native export file does not exist.', '404-solution');
-        }
-
-        $in = fopen($sourceFile, 'r');
-        if ($in === false) {
-            return __('Error: Could not read native export file.', '404-solution');
-        }
-
-        $out = fopen($destinationFile, 'w');
-        if ($out === false) {
-            fclose($in);
-            return __('Error: Could not create Redirection export file.', '404-solution');
-        }
-
-        fputcsv($out, array('source', 'target', 'regex', 'code'), ',', '"', '\\');
-        fgetcsv($in, 0, ',', '"', '\\');
-        while (($row = fgetcsv($in, 0, ',', '"', '\\')) !== false) {
-            if (!is_array($row) || count($row) < 4) {
-                continue;
-            }
-            $from = trim((string)$row[0]);
-            $status = trim((string)$row[1]);
-            $to = trim((string)$row[3]);
-            if ($from === '' || $to === '') {
-                continue;
-            }
-
-            $regexFlag = (strtolower($status) === 'regex') ? '1' : '0';
-            $code = isset($row[6]) ? trim((string)$row[6]) : '301';
-            if ($code === '' || !is_numeric($code)) {
-                $code = '301';
-            }
-            fputcsv($out, array($from, $to, $regexFlag, $code), ',', '"', '\\');
-        }
-
-        fclose($in);
-        fclose($out);
-        return '';
-    }
-
 
     /**
      * Validate the uploaded import file (extension, size, MIME type).
@@ -523,6 +107,7 @@ class ABJ_404_Solution_ImportExportService {
 
         return '';
     }
+
     /**
      * Expected formats:
      * - from_url,status,type,to_url,wp_type

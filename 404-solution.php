@@ -310,7 +310,8 @@ if (!function_exists('abj404_shortCodeListener')) {
 				$inc . 'Functions.php',
 				$inc . 'Logging.php',
 				$inc . 'FrontendRequestPipeline.php',
-				$inc . 'ImportExportService.php',
+				$inc . 'ImportService.php',
+				$inc . 'ExportService.php',
 				$inc . 'QueryBudgetInstrumentation.php',
 				// Support-request button + AJAX. Listed here so that a
 				// corrupt install which lost any of these files is

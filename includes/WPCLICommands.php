@@ -378,13 +378,12 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
         $dryRun = isset($assocArgs['dry-run']);
 
         require_once __DIR__ . '/DataAccess.php';
-        require_once __DIR__ . '/ImportExportService.php';
+        require_once __DIR__ . '/ImportService.php';
 
         $viewReadService = abj_service('view_read_service');
         $viewBuild       = abj_service('view_build_orchestrator');
         $logging         = abj_service('logging');
-        $svc     = new ABJ_404_Solution_ImportExportService(
-            abj_service('view_read_service'),
+        $svc     = new ABJ_404_Solution_ImportService(
             abj_service('redirects_repository'),
             abj_service('content_repository'),
             $logging
@@ -521,7 +520,7 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
      */
     public function export_redirects($args, $assocArgs) {
         require_once __DIR__ . '/DataAccess.php';
-        require_once __DIR__ . '/ImportExportService.php';
+        require_once __DIR__ . '/ExportService.php';
 
         $format = isset($assocArgs['format']) ? strtolower(trim($assocArgs['format'])) : 'native';
         $output = isset($assocArgs['output']) ? trim($assocArgs['output']) : '';
@@ -529,10 +528,8 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
         $logging = abj_service('logging');
         /** @var ABJ_404_Solution_ViewReadServiceInterface $viewReadService */
         $viewReadService = abj_service('view_read_service');
-        $svc     = new ABJ_404_Solution_ImportExportService(
+        $svc     = new ABJ_404_Solution_ExportService(
             $viewReadService,
-            abj_service('redirects_repository'),
-            abj_service('content_repository'),
             $logging
         );
 
