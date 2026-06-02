@@ -1,0 +1,21 @@
+<div class="abj404-confidence-dist">
+<p class="abj404-confidence-avg">{avg_label}</p>
+<canvas id="abj404-chart-confidence" style="max-height:200px;max-width:400px;" data-abj404-confidence="{confidence_config}"></canvas>
+<ul class="abj404-confidence-legend">
+<li><span class="abj404-legend-dot abj404-conf-high"></span>{label_high} <strong>{high_count}</strong></li>
+<li><span class="abj404-legend-dot abj404-conf-medium"></span>{label_medium} <strong>{medium_count}</strong></li>
+<li><span class="abj404-legend-dot abj404-conf-low"></span>{label_low} <strong>{low_count}</strong></li>
+<li><span class="abj404-legend-dot abj404-conf-manual"></span>{label_manual} <strong>{manual_count}</strong></li>
+</ul>
+</div>
+<style>
+.abj404-confidence-dist { display: flex; align-items: center; gap: 32px; flex-wrap: wrap; }
+.abj404-confidence-avg { font-size: 14px; margin-bottom: 8px; }
+.abj404-confidence-legend { list-style: none; margin: 0; padding: 0; }
+.abj404-confidence-legend li { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; font-size: 13px; }
+.abj404-legend-dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+.abj404-conf-high   { background: #28a745; } /* allow-hardcoded-color: chart palette dot; must match Chart.js dataset below */
+.abj404-conf-medium { background: #ffc107; } /* allow-hardcoded-color: chart palette dot; must match Chart.js dataset below */
+.abj404-conf-low    { background: #dc3545; } /* allow-hardcoded-color: chart palette dot; must match Chart.js dataset below */
+.abj404-conf-manual { background: #adb5bd; } /* allow-hardcoded-color: chart palette dot; must match Chart.js dataset below */
+</style>

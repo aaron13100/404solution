@@ -11,6 +11,20 @@ class ABJ_404_Solution_View_Stats extends ABJ_404_Solution_ViewComponent {
 
 
     /**
+     * Load an HTML template from includes/html/ as a string.
+     *
+     * Centralized so every section of this class loads templates the same
+     * way. Returns the raw template contents; callers perform their own
+     * placeholder substitution via Functions::str_replace().
+     *
+     * @param string $name Filename relative to includes/html/.
+     * @return string
+     */
+    private function tpl($name) {
+        return (string)ABJ_404_Solution_Functions::readFileContents(__DIR__ . '/html/' . $name);
+    }
+
+    /**
      * Output the stats page.
      * @return void
      */
@@ -21,30 +35,21 @@ class ABJ_404_Solution_View_Stats extends ABJ_404_Solution_ViewComponent {
         $statsData = $statsSnapshot['data'];
         $statsHash = $statsSnapshot['hash'];
 
-        // Main container
-        echo "<div class=\"abj404-container\">";
-        echo "<div class=\"abj404-settings-content\">";
-
-        // Header row with Expand All button
-        echo "<div class=\"abj404-header-row\">";
-        echo "<h2>" . esc_html__('Statistics', '404-solution') . "</h2>";
-        echo "<div class=\"abj404-header-controls\">";
-        echo '<button type="button" id="abj404-expand-collapse-all" class="button">';
-        echo esc_html__('Expand All', '404-solution');
-        echo '</button>';
-        echo "</div>";
-        echo "</div>";
+        // Header (container open + h2 + Expand All button).
+        $header = $this->tpl('viewStatsPageHeader.html');
+        $header = $this->f->str_replace('{title}', esc_html__('Statistics', '404-solution'), $header);
+        $header = $this->f->str_replace('{expand_all}', esc_html__('Expand All', '404-solution'), $header);
+        echo $header;
 
         // Config for stale-while-refresh stats snapshot updates (no visible table overwrite).
-        echo '<div class="abj404-stats-refresh-config" style="display:none"'
-            . ' data-stats-refresh-enabled="1"'
-            . ' data-stats-refresh-action="ajaxRefreshStatsDashboard"'
-            . ' data-stats-refresh-nonce="' . esc_attr(wp_create_nonce('abj404_refreshStatsDashboard')) . '"'
-            . ' data-stats-refresh-current-hash="' . esc_attr($statsHash) . '"'
-            . ' data-stats-refresh-available-text="' . esc_attr(__('Refresh available', '404-solution')) . '"></div>';
+        $refresh = $this->tpl('viewStatsRefreshConfig.html');
+        $refresh = $this->f->str_replace('{refresh_nonce}', esc_attr(wp_create_nonce('abj404_refreshStatsDashboard')), $refresh);
+        $refresh = $this->f->str_replace('{current_hash}', esc_attr($statsHash), $refresh);
+        $refresh = $this->f->str_replace('{available_text}', esc_attr(__('Refresh available', '404-solution')), $refresh);
+        echo $refresh;
 
-        // Flow layout for stats cards
-        echo "<div class=\"abj404-flow-layout\">";
+        // Flow layout for stats cards.
+        echo $this->tpl('viewStatsFlowLayoutOpen.html');
 
         // Redirects Statistics Card
         $redirectStats = (is_array($statsData) && isset($statsData['redirects']) && is_array($statsData['redirects']))
@@ -134,8 +139,6 @@ class ABJ_404_Solution_View_Stats extends ABJ_404_Solution_ViewComponent {
             $abj404view->echoOptionsSection('stats-periodic-' . $x, 'abj404-stats' . $x, $title, $content, ($x == 0), $abj404view->getCardIcon('clock'));
         }
 
-        echo "</div>"; // Close flow layout
-
         // Match Confidence distribution card (full-width)
         $this->echoConfidenceDistributionSection();
 
@@ -145,8 +148,8 @@ class ABJ_404_Solution_View_Stats extends ABJ_404_Solution_ViewComponent {
         // Broken Internal Links section
         $this->echoBrokenInternalLinksSection();
 
-        echo "</div>"; // Close settings content
-        echo "</div>"; // Close container
+        // Closes flow layout, settings content, and container in that order.
+        echo $this->tpl('viewStatsPageFooter.html');
     }
 
     /**
@@ -225,32 +228,19 @@ class ABJ_404_Solution_View_Stats extends ABJ_404_Solution_ViewComponent {
             'manual'      => $manualCount,
         ));
 
-        $content  = '<div class="abj404-confidence-dist">';
-        $content .= '<p class="abj404-confidence-avg">' . $avgLabel . '</p>';
-        $content .= '<canvas id="abj404-chart-confidence" style="max-height:200px;max-width:400px;"'
-            . ' data-abj404-confidence="' . esc_attr((string)$confidenceConfig) . '"></canvas>';
-        $content .= '<ul class="abj404-confidence-legend">';
-        $content .= '<li><span class="abj404-legend-dot abj404-conf-high"></span>' . esc_html($labelHigh) . ' <strong>' . esc_html((string)$highCount) . '</strong></li>';
-        $content .= '<li><span class="abj404-legend-dot abj404-conf-medium"></span>' . esc_html($labelMedium) . ' <strong>' . esc_html((string)$mediumCount) . '</strong></li>';
-        $content .= '<li><span class="abj404-legend-dot abj404-conf-low"></span>' . esc_html($labelLow) . ' <strong>' . esc_html((string)$lowCount) . '</strong></li>';
-        $content .= '<li><span class="abj404-legend-dot abj404-conf-manual"></span>' . esc_html($labelManual) . ' <strong>' . esc_html((string)$manualCount) . '</strong></li>';
-        $content .= '</ul>';
-        $content .= '</div>';
-
-        $content .= '<style>'
-            . '.abj404-confidence-dist { display: flex; align-items: center; gap: 32px; flex-wrap: wrap; }'
-            . '.abj404-confidence-avg { font-size: 14px; margin-bottom: 8px; }'
-            . '.abj404-confidence-legend { list-style: none; margin: 0; padding: 0; }'
-            . '.abj404-confidence-legend li { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; font-size: 13px; }'
-            . '.abj404-legend-dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }'
-            . '.abj404-conf-high   { background: #28a745; }' /* allow-hardcoded-color: chart palette dot; must match Chart.js dataset below */
-            . '.abj404-conf-medium { background: #ffc107; }' /* allow-hardcoded-color: chart palette dot; must match Chart.js dataset below */
-            . '.abj404-conf-low    { background: #dc3545; }' /* allow-hardcoded-color: chart palette dot; must match Chart.js dataset below */
-            . '.abj404-conf-manual { background: #adb5bd; }' /* allow-hardcoded-color: chart palette dot; must match Chart.js dataset below */
-            . '</style>';
-
         // Confidence chart rendering moved to includes/js/statsConfidenceChart.js.
-        // The canvas above carries its config via data-abj404-confidence.
+        // The canvas in the template carries its config via data-abj404-confidence.
+        $content = $this->tpl('viewStatsConfidenceDistribution.html');
+        $content = $this->f->str_replace('{avg_label}', $avgLabel, $content);
+        $content = $this->f->str_replace('{confidence_config}', esc_attr((string)$confidenceConfig), $content);
+        $content = $this->f->str_replace('{label_high}', esc_html($labelHigh), $content);
+        $content = $this->f->str_replace('{label_medium}', esc_html($labelMedium), $content);
+        $content = $this->f->str_replace('{label_low}', esc_html($labelLow), $content);
+        $content = $this->f->str_replace('{label_manual}', esc_html($labelManual), $content);
+        $content = $this->f->str_replace('{high_count}', esc_html((string)$highCount), $content);
+        $content = $this->f->str_replace('{medium_count}', esc_html((string)$mediumCount), $content);
+        $content = $this->f->str_replace('{low_count}', esc_html((string)$lowCount), $content);
+        $content = $this->f->str_replace('{manual_count}', esc_html((string)$manualCount), $content);
 
         $abj404view->echoOptionsSection(
             'stats-confidence',
@@ -276,30 +266,6 @@ class ABJ_404_Solution_View_Stats extends ABJ_404_Solution_ViewComponent {
         $label30d = esc_html__('30 days', '404-solution');
         $label90d = esc_html__('90 days', '404-solution');
 
-        $trendsContent  = '<div id="abj404-trends-container">';
-        $trendsContent .= '<div class="abj404-trends-period-selector" role="group" aria-label="' . esc_attr__('Period', '404-solution') . '">';
-        $trendsContent .= '<label class="abj404-trends-period-label"><input type="radio" name="abj404_trend_period" value="7"> ' . $label7d . '</label>';
-        $trendsContent .= '<label class="abj404-trends-period-label"><input type="radio" name="abj404_trend_period" value="30" checked> ' . $label30d . '</label>';
-        $trendsContent .= '<label class="abj404-trends-period-label"><input type="radio" name="abj404_trend_period" value="90"> ' . $label90d . '</label>';
-        $trendsContent .= '</div>';
-        $trendsContent .= '<p class="abj404-trends-loading">' . esc_html__('Loading chart data…', '404-solution') . '</p>';
-        $trendsContent .= '<div id="abj404-trends-charts" style="display:none">';
-        $trendsContent .= '<div class="abj404-trend-chart-wrap"><canvas id="abj404-chart-404s"></canvas></div>';
-        $trendsContent .= '<div class="abj404-trend-chart-wrap"><canvas id="abj404-chart-redirects"></canvas></div>';
-        $trendsContent .= '<div class="abj404-trend-chart-wrap"><canvas id="abj404-chart-captures"></canvas></div>';
-        $trendsContent .= '</div>';
-        $trendsContent .= '<p id="abj404-trends-error" style="display:none;color:var(--abj404-danger-border)">'
-            . esc_html__('Could not load chart data.', '404-solution') . '</p>';
-        $trendsContent .= '</div>';
-
-        $trendsContent .= '<style>'
-            . '.abj404-trends-period-selector { margin-bottom: 16px; display: flex; gap: 16px; flex-wrap: wrap; align-items: center; }'
-            . '.abj404-trends-period-label { cursor: pointer; font-weight: 500; }'
-            . '.abj404-trends-period-label input { margin-right: 4px; }'
-            . '.abj404-trend-chart-wrap { margin-bottom: 24px; }'
-            . '.abj404-trends-loading { color: var(--abj404-text-muted); font-style: italic; }'
-            . '</style>';
-
         // Trend chart rendering moved to includes/js/statsTrends.js. We emit a
         // small JSON config carrier; the external JS reads ajaxUrl/nonce/labels
         // from #abj404-trends-config's data attribute.
@@ -310,8 +276,15 @@ class ABJ_404_Solution_View_Stats extends ABJ_404_Solution_ViewComponent {
             'labelRedirect' => __('Redirects per Day', '404-solution'),
             'labelCapture'  => __('New Captures per Day', '404-solution'),
         ));
-        $trendsContent .= '<div id="abj404-trends-config" style="display:none"'
-            . ' data-abj404-trends="' . esc_attr((string)$trendsConfig) . '"></div>';
+
+        $trendsContent = $this->tpl('viewStatsTrendsSection.html');
+        $trendsContent = $this->f->str_replace('{period_aria_label}', esc_attr__('Period', '404-solution'), $trendsContent);
+        $trendsContent = $this->f->str_replace('{label_7d}', $label7d, $trendsContent);
+        $trendsContent = $this->f->str_replace('{label_30d}', $label30d, $trendsContent);
+        $trendsContent = $this->f->str_replace('{label_90d}', $label90d, $trendsContent);
+        $trendsContent = $this->f->str_replace('{loading_text}', esc_html__('Loading chart data…', '404-solution'), $trendsContent);
+        $trendsContent = $this->f->str_replace('{error_text}', esc_html__('Could not load chart data.', '404-solution'), $trendsContent);
+        $trendsContent = $this->f->str_replace('{trends_config}', esc_attr((string)$trendsConfig), $trendsContent);
 
         $abj404view->echoOptionsSection(
             'stats-trends',
@@ -343,20 +316,13 @@ class ABJ_404_Solution_View_Stats extends ABJ_404_Solution_ViewComponent {
         }
 
         if (empty($results)) {
-            $content = '<p>' . esc_html__('No broken internal links found.', '404-solution') . '</p>';
+            $content = $this->tpl('viewStatsBrokenLinksEmpty.html');
+            $content = $this->f->str_replace('{empty_text}', esc_html__('No broken internal links found.', '404-solution'), $content);
         } else {
             $postCount = count(array_unique(array_column($results, 'post_id')));
-            $content  = '<p>' . esc_html(sprintf(
-                /* translators: 1: number of broken links, 2: number of posts/pages */
-                __('Found %1$d broken internal link(s) across %2$d post(s)/page(s).', '404-solution'),
-                count($results),
-                $postCount
-            )) . '</p>';
-            $content .= '<table class="widefat striped"><thead><tr>'
-                . '<th>' . esc_html__('Post/Page', '404-solution') . '</th>'
-                . '<th>' . esc_html__('Broken URL', '404-solution') . '</th>'
-                . '<th>' . esc_html__('404 Hits', '404-solution') . '</th>'
-                . '</tr></thead><tbody>';
+            $rowLinkedTpl = $this->tpl('viewStatsBrokenLinksRowLinked.html');
+            $rowPlainTpl  = $this->tpl('viewStatsBrokenLinksRowPlain.html');
+            $rowsHtml = '';
             foreach ($results as $item) {
                 if (!is_array($item)) {
                     continue;
@@ -366,17 +332,28 @@ class ABJ_404_Solution_View_Stats extends ABJ_404_Solution_ViewComponent {
                 $hitCount  = intval($item['hit_count']);
                 $postId    = intval($item['post_id']);
                 $editLink  = ($postId > 0) ? get_edit_post_link($postId) : '';
-                $content .= '<tr>';
                 if ($editLink) {
-                    $content .= '<td><a href="' . esc_url($editLink) . '">' . esc_html($postTitle) . '</a></td>';
+                    $row = $this->f->str_replace('{edit_link}', esc_url($editLink), $rowLinkedTpl);
+                    $row = $this->f->str_replace('{post_title}', esc_html($postTitle), $row);
                 } else {
-                    $content .= '<td>' . esc_html($postTitle) . '</td>';
+                    $row = $this->f->str_replace('{post_title}', esc_html($postTitle), $rowPlainTpl);
                 }
-                $content .= '<td><code>' . esc_html($brokenUrl) . '</code></td>';
-                $content .= '<td>' . esc_html((string)$hitCount) . '</td>';
-                $content .= '</tr>';
+                $row = $this->f->str_replace('{broken_url}', esc_html($brokenUrl), $row);
+                $row = $this->f->str_replace('{hit_count}', esc_html((string)$hitCount), $row);
+                $rowsHtml .= $row;
             }
-            $content .= '</tbody></table>';
+            $summary = esc_html(sprintf(
+                /* translators: 1: number of broken links, 2: number of posts/pages */
+                __('Found %1$d broken internal link(s) across %2$d post(s)/page(s).', '404-solution'),
+                count($results),
+                $postCount
+            ));
+            $content = $this->tpl('viewStatsBrokenLinksTable.html');
+            $content = $this->f->str_replace('{summary_text}', $summary, $content);
+            $content = $this->f->str_replace('{th_post}', esc_html__('Post/Page', '404-solution'), $content);
+            $content = $this->f->str_replace('{th_broken_url}', esc_html__('Broken URL', '404-solution'), $content);
+            $content = $this->f->str_replace('{th_hits}', esc_html__('404 Hits', '404-solution'), $content);
+            $content = $this->f->str_replace('{rows}', $rowsHtml, $content);
         }
 
         $abj404view->echoOptionsSection(
@@ -393,18 +370,22 @@ class ABJ_404_Solution_View_Stats extends ABJ_404_Solution_ViewComponent {
     function echoAdminDebugFile() {
         $isPluginAdmin = abj_service('admin_access_policy')->isPluginAdmin();
         if ($isPluginAdmin) {
-        	$filesToEcho = array($this->logger->getDebugFilePath(), 
+        	$filesToEcho = array($this->logger->getDebugFilePath(),
         			$this->logger->getDebugFilePathOld());
+        	$wrapperTpl = $this->tpl('viewStatsDebugFileWrapper.html');
         	for ($i = 0; $i < count($filesToEcho); $i++) {
         		$currentFile = $filesToEcho[$i];
-                // inline-html-approved: legacy debug-log output wrapper.
-        		echo "<div style=\"clear: both;\">";
-        		echo "<BR/>Contents of: " . $currentFile . ": <BR/><BR/>";
-        		// read the file and replace new lines with <BR/>.
+        		// Capture file contents into a buffer so they can be placed inside
+        		// the wrapper template; preserves the exact rendered structure.
+        		ob_start();
         		$this->echoFileContents($currentFile);
-        		echo "</div>";
+        		$contents = (string)ob_get_clean();
+        		$row = $this->f->str_replace('{file_name}', esc_html((string)$currentFile), $wrapperTpl);
+        		// {contents} carries already-escaped HTML (nl2br + esc_html) from echoFileContents.
+        		$row = $this->f->str_replace('{contents}', $contents, $row);
+        		echo $row;
         	}
-            
+
 	        } else {
 	        	echo "Non-admin request to view debug file.";
 	        	$current_user = ABJ_404_Solution_UserRef::fromWpUser(wp_get_current_user());
@@ -436,13 +417,13 @@ class ABJ_404_Solution_View_Stats extends ABJ_404_Solution_ViewComponent {
 	    		try {
     			if ($handle = fopen($fileName, "r")) {
     				// read the file one line at a time.
+    				$truncatedTpl = $this->tpl('viewStatsDebugFileTruncated.html');
     				while (($line = fgets($handle)) !== false) {
     					$linesRead++;
     					echo nl2br(esc_html($line));
-    					
+
     					if ($linesRead > 1000000) {
-                            // inline-html-approved: legacy debug-log truncation notice.
-    						echo "<BR/><BR/>Read " . $linesRead . " lines. Download debug file to see more.";
+    						echo $this->f->str_replace('{lines_read}', esc_html((string)$linesRead), $truncatedTpl);
     						break;
     					}
     				}
@@ -470,19 +451,11 @@ class ABJ_404_Solution_View_Stats extends ABJ_404_Solution_ViewComponent {
     function echoAdminToolsPage() {
         $view = $this->view;
 
-        // inline-html-approved: legacy tools page container shell.
-        echo "<div class=\"abj404-container\">";
-        echo "<div class=\"abj404-settings-content\">";
-
-        // Header row with Expand All button
-        echo "<div class=\"abj404-header-row\">";
-        echo "<h2>" . esc_html__('Tools', '404-solution') . "</h2>";
-        echo "<div class=\"abj404-header-controls\">";
-        echo '<button type="button" id="abj404-expand-collapse-all" class="button">';
-        echo esc_html__('Expand All', '404-solution');
-        echo '</button>';
-        echo "</div>";
-        echo "</div>";
+        // Tools-page header (container open + h2 + Expand All button).
+        $header = $this->tpl('viewStatsToolsPageHeader.html');
+        $header = $this->f->str_replace('{title}', esc_html__('Tools', '404-solution'), $header);
+        $header = $this->f->str_replace('{expand_all}', esc_html__('Expand All', '404-solution'), $header);
+        echo $header;
 
         // Export Card
         $link = wp_nonce_url("?page=" . ABJ404_PP . "&subpage=abj404_tools", "abj404_exportRedirects");
@@ -531,8 +504,8 @@ class ABJ_404_Solution_View_Stats extends ABJ_404_Solution_ViewComponent {
         $html = $this->getMigrateFromPluginMarkup();
         $view->echoOptionsSection('tools-migrate', 'abj404-migrateFromPlugin', __('Migrate from Another Plugin', '404-solution'), $html, false, $view->getCardIcon('upload'));
 
-        echo "</div>";
-        echo "</div>";
+        // Closes settings content + container.
+        echo $this->tpl('viewStatsToolsPageFooter.html');
     }
 
     /**
@@ -573,69 +546,26 @@ class ABJ_404_Solution_View_Stats extends ABJ_404_Solution_ViewComponent {
             'abj404_importFromPlugin'
         );
 
-        // inline-html-approved: migrate-card markup assembled around dynamic plugin detection.
-        $html = '<p>';
         if (empty($availableSources)) {
-            $html .= esc_html__('No supported redirect plugins detected on this site.', '404-solution');
-            $html .= '</p>';
-            // inline-html-approved: migrate-card empty-state paragraph.
-            $html .= '<p>' . esc_html__('Supported plugins: Rank Math, Yoast SEO Premium, AIOSEO, Safe Redirect Manager, Redirection.', '404-solution') . '</p>';
+            $html = $this->tpl('viewStatsMigrateEmpty.html');
+            $html = $this->f->str_replace('{empty_text}', esc_html__('No supported redirect plugins detected on this site.', '404-solution'), $html);
+            $html = $this->f->str_replace('{supported_text}', esc_html__('Supported plugins: Rank Math, Yoast SEO Premium, AIOSEO, Safe Redirect Manager, Redirection.', '404-solution'), $html);
             return $html;
         }
 
         $detectedNames = array_values($availableSources);
-        $html .= esc_html__('Detected redirect plugins:', '404-solution') . ' ';
-        // inline-html-approved: migrate-card detected plugin emphasis.
-        $html .= '<strong>' . esc_html(implode(', ', $detectedNames)) . '</strong>';
-        $html .= '</p>';
 
         $previewNonce = wp_create_nonce('abj404_crossPluginPreview');
         $ajaxUrl      = admin_url('admin-ajax.php');
 
-        // Step 1: source selector + Preview button (visible by default)
-        $html .= '<div id="abj404-migrate-step1">';
-        $html .= '<p>';
-        // inline-html-approved: migrate-card source selector label.
-        $html .= '<label for="abj404-import-source"><strong>' . esc_html__('Source plugin:', '404-solution') . '</strong></label> ';
-        $html .= '<select name="import_source" id="abj404-import-source">';
+        // Build the <option> list for the source selector.
+        $optionTpl = $this->tpl('viewStatsMigrateOption.html');
+        $sourceOptionsHtml = '';
         foreach ($availableSources as $slug => $label) {
-            $html .= '<option value="' . esc_attr($slug) . '">' . esc_html($label) . '</option>';
+            $opt = $this->f->str_replace('{slug}', esc_attr((string)$slug), $optionTpl);
+            $opt = $this->f->str_replace('{label}', esc_html((string)$label), $opt);
+            $sourceOptionsHtml .= $opt;
         }
-        $html .= '</select>';
-        $html .= '</p>';
-        $html .= '<p>';
-        // inline-html-approved: migrate-card preview action button.
-        $html .= '<button type="button" id="abj404-migrate-preview-btn" class="button-secondary">';
-        $html .= esc_html__('Preview Import', '404-solution');
-        $html .= '</button>';
-        $html .= ' <span id="abj404-migrate-preview-spinner" style="display:none;margin-left:6px;" class="spinner is-active"></span>';
-        $html .= '</p>';
-        $html .= '</div>';
-
-        // Step 2: preview result + confirm form (hidden until preview completes)
-        $html .= '<div id="abj404-migrate-step2" style="display:none;">';
-        // inline-html-approved: migrate-card AJAX preview message placeholder.
-        $html .= '<p id="abj404-migrate-preview-msg"></p>';
-        $html .= '<form id="abj404-migrate-confirm-form" method="POST" action="' . esc_url($migrateActionUrl) . '" style="display:none;">';
-        // inline-html-approved: migrate-card hidden form controls.
-        $html .= '<input type="hidden" name="action" value="importFromPlugin">';
-        $html .= '<input type="hidden" name="import_source" id="abj404-migrate-confirm-source" value="">';
-        // inline-html-approved: migrate-card confirm submit control.
-        $html .= '<input type="submit" class="button-primary" value="' . esc_attr__('Confirm Import', '404-solution') . '">';
-        $html .= ' <button type="button" id="abj404-migrate-back-btn" class="button-secondary">';
-        $html .= esc_html__('Back', '404-solution');
-        $html .= '</button>';
-        $html .= '</form>';
-        $html .= '<div id="abj404-migrate-back-noform" style="display:none;">';
-        // inline-html-approved: migrate-card alternate back button.
-        $html .= '<button type="button" id="abj404-migrate-back-btn2" class="button-secondary">';
-        $html .= esc_html__('Back', '404-solution');
-        $html .= '</button>';
-        $html .= '</div>';
-        $html .= '</div>';
-
-        // inline-html-approved: migrate-card explanatory note.
-        $html .= '<p><em>' . esc_html__('This will import all active redirects from the selected plugin into 404 Solution. Regex and redirect codes are preserved.', '404-solution') . '</em></p>';
 
         // Two-step flow JS moved to includes/js/toolsMigratePlugin.js. Emit a
         // JSON config carrier; the external JS reads ajaxUrl/nonce/messages
@@ -649,9 +579,18 @@ class ABJ_404_Solution_View_Stats extends ABJ_404_Solution_ViewComponent {
             'msgNone'  => __('No redirects found in %s. Nothing to import.', '404-solution'),
             'msgError' => __('Could not fetch preview. Please try again.', '404-solution'),
         ));
-        // inline-html-approved: hidden JSON carrier for external migration JS.
-        $html .= '<div id="abj404-migrate-config" style="display:none"'
-            . ' data-abj404-migrate="' . esc_attr((string)$migrateConfig) . '"></div>';
+
+        $html = $this->tpl('viewStatsMigrateForm.html');
+        $html = $this->f->str_replace('{detected_label}', esc_html__('Detected redirect plugins:', '404-solution'), $html);
+        $html = $this->f->str_replace('{detected_names}', esc_html(implode(', ', $detectedNames)), $html);
+        $html = $this->f->str_replace('{source_label}', esc_html__('Source plugin:', '404-solution'), $html);
+        $html = $this->f->str_replace('{source_options}', $sourceOptionsHtml, $html);
+        $html = $this->f->str_replace('{preview_text}', esc_html__('Preview Import', '404-solution'), $html);
+        $html = $this->f->str_replace('{action_url}', esc_url($migrateActionUrl), $html);
+        $html = $this->f->str_replace('{confirm_text}', esc_attr__('Confirm Import', '404-solution'), $html);
+        $html = $this->f->str_replace('{back_text}', esc_html__('Back', '404-solution'), $html);
+        $html = $this->f->str_replace('{note_text}', esc_html__('This will import all active redirects from the selected plugin into 404 Solution. Regex and redirect codes are preserved.', '404-solution'), $html);
+        $html = $this->f->str_replace('{migrate_config}', esc_attr((string)$migrateConfig), $html);
 
         return $html;
     }
@@ -664,11 +603,8 @@ class ABJ_404_Solution_View_Stats extends ABJ_404_Solution_ViewComponent {
      */
     public function getToolsDiagnosticsMarkup() {
         $rows = $this->getToolsDiagnosticsRows();
-        // inline-html-approved: compact diagnostics table shell.
-        $html = '<div class="abj404-diagnostics-summary">';
-        // inline-html-approved: compact diagnostics explanatory paragraph.
-        $html .= '<p>' . esc_html__('Quick environment checks for troubleshooting and support.', '404-solution') . '</p>';
-        $html .= '<table class="widefat striped"><tbody>';
+        $rowTpl = $this->tpl('viewStatsDiagnosticsRow.html');
+        $rowsHtml = '';
 
         foreach ($rows as $row) {
             $label = array_key_exists('label', $row) ? $row['label'] : '';
@@ -678,24 +614,18 @@ class ABJ_404_Solution_View_Stats extends ABJ_404_Solution_ViewComponent {
             $statusLabel = ($status === 'ok') ? __('OK', '404-solution') : (($status === 'warn') ? __('Warning', '404-solution') : __('Info', '404-solution'));
             $statusClass = ($status === 'ok') ? 'abj404-pill-success' : (($status === 'warn') ? 'abj404-pill-warning' : 'abj404-pill-info');
 
-            // inline-html-approved: compact diagnostics table row renderer.
-            $html .= '<tr>';
-            // inline-html-approved: compact diagnostics table label cell.
-            $html .= '<td><strong>' . esc_html($label) . '</strong></td>';
-            if ($valueHtml !== '') {
-                // inline-html-approved: compact diagnostics table value cell.
-                $html .= '<td>' . wp_kses_post($valueHtml) . '</td>';
-            } else {
-                // inline-html-approved: compact diagnostics table value cell.
-                $html .= '<td>' . esc_html($value) . '</td>';
-            }
-            // inline-html-approved: compact diagnostics table status cell.
-            $html .= '<td><span class="abj404-status-pill ' . esc_attr($statusClass) . '">' . esc_html($statusLabel) . '</span></td>';
-            $html .= '</tr>';
+            $valueCell = ($valueHtml !== '') ? wp_kses_post($valueHtml) : esc_html($value);
+
+            $rowHtml = $this->f->str_replace('{label}', esc_html($label), $rowTpl);
+            $rowHtml = $this->f->str_replace('{value_cell}', $valueCell, $rowHtml);
+            $rowHtml = $this->f->str_replace('{status_class}', esc_attr($statusClass), $rowHtml);
+            $rowHtml = $this->f->str_replace('{status_label}', esc_html($statusLabel), $rowHtml);
+            $rowsHtml .= $rowHtml;
         }
 
-        $html .= '</tbody></table>';
-        $html .= '</div>';
+        $html = $this->tpl('viewStatsDiagnosticsTable.html');
+        $html = $this->f->str_replace('{intro_text}', esc_html__('Quick environment checks for troubleshooting and support.', '404-solution'), $html);
+        $html = $this->f->str_replace('{rows}', $rowsHtml, $html);
 
         return $html;
     }
@@ -757,19 +687,23 @@ class ABJ_404_Solution_View_Stats extends ABJ_404_Solution_ViewComponent {
                 900 => wp_nonce_url(admin_url('options-general.php?page=' . ABJ404_PP . '&subpage=abj404_tools&abj404_set_sim_db_ms=900'), 'abj404_set_sim_db_ms'),
                 0   => wp_nonce_url(admin_url('options-general.php?page=' . ABJ404_PP . '&subpage=abj404_tools&abj404_set_sim_db_ms=0'), 'abj404_set_sim_db_ms'),
             );
-            // inline-html-approved: local-debug latency control links.
-            $controls = '<a href="' . esc_url($latencyUrls[250]) . '">' . esc_html(__('250ms', '404-solution')) . '</a>'
-                . ' | <a href="' . esc_url($latencyUrls[500]) . '">' . esc_html(__('500ms', '404-solution')) . '</a>'
-                . ' | <a href="' . esc_url($latencyUrls[900]) . '">' . esc_html(__('900ms', '404-solution')) . '</a>'
-                . ' | <a href="' . esc_url($latencyUrls[0]) . '">' . esc_html(__('Disable', '404-solution')) . '</a>';
+            $valueText = ($latencyMs > 0)
+                ? sprintf(__('ON (%d ms per plugin query)', '404-solution'), $latencyMs)
+                : __('OFF', '404-solution');
+            $controlsHtml = $this->tpl('viewStatsDiagnosticsLatencyControls.html');
+            $controlsHtml = $this->f->str_replace('{value_text}', esc_html($valueText), $controlsHtml);
+            $controlsHtml = $this->f->str_replace('{url_250}', esc_url($latencyUrls[250]), $controlsHtml);
+            $controlsHtml = $this->f->str_replace('{url_500}', esc_url($latencyUrls[500]), $controlsHtml);
+            $controlsHtml = $this->f->str_replace('{url_900}', esc_url($latencyUrls[900]), $controlsHtml);
+            $controlsHtml = $this->f->str_replace('{url_0}', esc_url($latencyUrls[0]), $controlsHtml);
+            $controlsHtml = $this->f->str_replace('{label_250}', esc_html(__('250ms', '404-solution')), $controlsHtml);
+            $controlsHtml = $this->f->str_replace('{label_500}', esc_html(__('500ms', '404-solution')), $controlsHtml);
+            $controlsHtml = $this->f->str_replace('{label_900}', esc_html(__('900ms', '404-solution')), $controlsHtml);
+            $controlsHtml = $this->f->str_replace('{label_disable}', esc_html(__('Disable', '404-solution')), $controlsHtml);
             $rows[] = array(
                 'label' => __('Simulated DB Latency', '404-solution'),
-                'value' => ($latencyMs > 0)
-                    ? sprintf(__('ON (%d ms per plugin query)', '404-solution'), $latencyMs)
-                    : __('OFF', '404-solution'),
-                'value_html' => '<div>' . esc_html(($latencyMs > 0)
-                    ? sprintf(__('ON (%d ms per plugin query)', '404-solution'), $latencyMs)
-                    : __('OFF', '404-solution')) . '</div><div>' . $controls . '</div>',
+                'value' => $valueText,
+                'value_html' => $controlsHtml,
                 'status' => ($latencyMs > 0) ? 'warn' : 'info',
             );
         }

@@ -1,0 +1,22 @@
+<div id="abj404-trends-container">
+<div class="abj404-trends-period-selector" role="group" aria-label="{period_aria_label}">
+<label class="abj404-trends-period-label"><input type="radio" name="abj404_trend_period" value="7"> {label_7d}</label>
+<label class="abj404-trends-period-label"><input type="radio" name="abj404_trend_period" value="30" checked> {label_30d}</label>
+<label class="abj404-trends-period-label"><input type="radio" name="abj404_trend_period" value="90"> {label_90d}</label>
+</div>
+<p class="abj404-trends-loading">{loading_text}</p>
+<div id="abj404-trends-charts" style="display:none">
+<div class="abj404-trend-chart-wrap"><canvas id="abj404-chart-404s"></canvas></div>
+<div class="abj404-trend-chart-wrap"><canvas id="abj404-chart-redirects"></canvas></div>
+<div class="abj404-trend-chart-wrap"><canvas id="abj404-chart-captures"></canvas></div>
+</div>
+<p id="abj404-trends-error" style="display:none;color:var(--abj404-danger-border)">{error_text}</p>
+</div>
+<style>
+.abj404-trends-period-selector { margin-bottom: 16px; display: flex; gap: 16px; flex-wrap: wrap; align-items: center; }
+.abj404-trends-period-label { cursor: pointer; font-weight: 500; }
+.abj404-trends-period-label input { margin-right: 4px; }
+.abj404-trend-chart-wrap { margin-bottom: 24px; }
+.abj404-trends-loading { color: var(--abj404-text-muted); font-style: italic; }
+</style>
+<div id="abj404-trends-config" style="display:none" data-abj404-trends="{trends_config}"></div>

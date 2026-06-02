@@ -1,0 +1,18 @@
+<p>{detected_label} <strong>{detected_names}</strong></p>
+<div id="abj404-migrate-step1">
+<p><label for="abj404-import-source"><strong>{source_label}</strong></label> <select name="import_source" id="abj404-import-source">{source_options}</select></p>
+<p><button type="button" id="abj404-migrate-preview-btn" class="button-secondary">{preview_text}</button> <span id="abj404-migrate-preview-spinner" style="display:none;margin-left:6px;" class="spinner is-active"></span></p>
+</div>
+<div id="abj404-migrate-step2" style="display:none;">
+<p id="abj404-migrate-preview-msg"></p>
+<form id="abj404-migrate-confirm-form" method="POST" action="{action_url}" style="display:none;">
+<input type="hidden" name="action" value="importFromPlugin">
+<input type="hidden" name="import_source" id="abj404-migrate-confirm-source" value="">
+<input type="submit" class="button-primary" value="{confirm_text}"> <button type="button" id="abj404-migrate-back-btn" class="button-secondary">{back_text}</button>
+</form>
+<div id="abj404-migrate-back-noform" style="display:none;">
+<button type="button" id="abj404-migrate-back-btn2" class="button-secondary">{back_text}</button>
+</div>
+</div>
+<p><em>{note_text}</em></p>
+<div id="abj404-migrate-config" style="display:none" data-abj404-migrate="{migrate_config}"></div>
