@@ -480,6 +480,14 @@ class ABJ_404_Solution_AjaxRequestContractValidator {
     }
 
     /**
+     * Return true only for the explicit JSON Schema primitive type names this
+     * validator recognizes. An unrecognized $type string is a schema author
+     * typo (e.g. 'int' instead of 'integer', 'bool' instead of 'boolean') and
+     * must NOT silently pass any value: returning false here surfaces the typo
+     * as a contract violation in dev so the schema gets fixed. This is a
+     * schema-author error, not a runtime value-level breach, so the
+     * production-lenient policy in the class docblock does not apply.
+     *
      * @param mixed $value
      */
     private static function matchesType($value, string $type): bool {
@@ -499,7 +507,7 @@ class ABJ_404_Solution_AjaxRequestContractValidator {
             case 'null':
                 return $value === null;
         }
-        return true;
+        return false;
     }
 
     /**
