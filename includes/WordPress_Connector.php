@@ -622,7 +622,7 @@ class ABJ_404_Solution_WordPress_Connector {
         array_unshift($links, $settings_link);
 
         $debugExplanation = __('Debug Log', '404-solution');
-        $debugLogLink = $instance->logic->getDebugLogFileLink();
+        $debugLogLink = '?page=' . ABJ404_PP . '&subpage=abj404_debugfile';
         // inline-html-approved: WordPress plugin-row action links are built as link strings.
         $debugExplanation = '<a href="options-general.php' . $debugLogLink . '" target="_blank" >'
         	. $debugExplanation . '</a>';

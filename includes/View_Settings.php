@@ -311,7 +311,7 @@ class ABJ_404_Solution_View_Settings extends ABJ_404_Solution_ViewComponent {
 	        $selectedDebugLogging = $this->shared->getCheckedAttr($options, 'debug_mode');
 
         $debugExplanation = __('<a>View</a> the debug file.', '404-solution');
-        $debugLogLink = $this->logic->getDebugLogFileLink();
+        $debugLogLink = '?page=' . ABJ404_PP . '&subpage=abj404_debugfile';
         $debugExplanation = $this->f->str_replace('<a>', '<a href="' . $debugLogLink . '" target="_blank" >', $debugExplanation);
 
         $kbFileSize = $this->logger->getDebugFileSize() / 1024;
