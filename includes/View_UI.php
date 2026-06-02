@@ -5,9 +5,57 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * ViewTrait_UI methods.
+ * View UI component. Owns the admin-page chrome (wrap open, header tabs,
+ * message notices, regex auto-promote notice, postbox / options-section /
+ * sticky save bar / toast / restore-defaults modal / mode toggles).
+ *
+ * HTML for every rendered fragment lives in includes/html/*.html with
+ * placeholder substitution at render time. This class is the PHP side of
+ * that contract: it loads the template, substitutes values, and echoes.
+ * Do not add raw inline HTML strings here. New surface gets a new template.
  */
 class ABJ_404_Solution_View_UI extends ABJ_404_Solution_ViewComponent {
+
+    /**
+     * Load a template file from includes/html/ and trim its trailing newline.
+     * Passes $appendExtraData=false to suppress the BEGIN/END HTML comment
+     * markers that readFileContents() adds by default, since these templates
+     * are spliced into tight inline contexts where stray comments would alter
+     * the rendered chrome.
+     *
+     * @param string $name Template filename under includes/html/
+     * @return string Template contents, no trailing newline.
+     */
+    private function tpl(string $name): string {
+        $raw = ABJ_404_Solution_Functions::readFileContents(__DIR__ . '/html/' . $name, false);
+        return rtrim((string)$raw, "\n");
+    }
+
+    /**
+     * Load a template and substitute an associative array of placeholders.
+     * Keys are placeholder tokens (without braces). Substitution is plain
+     * string replacement; callers must apply esc_html / esc_attr / esc_url
+     * BEFORE passing the value in.
+     *
+     * @param string                $name Template filename under includes/html/
+     * @param array<string,string>  $vars Placeholder name (without braces) to substituted value.
+     * @return string Filled template, no trailing newline.
+     */
+    private function fillTpl(string $name, array $vars): string {
+        $tpl = $this->tpl($name);
+        $search = array();
+        $replace = array();
+        foreach ($vars as $k => $v) {
+            $search[] = '{' . $k . '}';
+            $replace[] = $v;
+        }
+        // Fall back to native str_replace when the Functions helper isn't wired
+        // (e.g. reflection tests using newInstanceWithoutConstructor()).
+        if (is_object($this->f)) {
+            return (string)$this->f->str_replace($search, $replace, $tpl);
+        }
+        return (string)str_replace($search, $replace, $tpl);
+    }
 
     /**
      * Render a native-shape error notice (`.notice.notice-error`) on a
@@ -61,8 +109,10 @@ class ABJ_404_Solution_View_UI extends ABJ_404_Solution_ViewComponent {
                 $capturedMessage);
         $capturedMessage = $this->f->str_replace("</a>", "</a>", $capturedMessage);
 
-        return '<div class="notice notice-info"><p><strong>' . PLUGIN_NAME .
-                ":</strong> " . $capturedMessage . "</p></div>";
+        return $this->fillTpl('dashboardNotificationCaptured.html', array(
+            'plugin_name' => PLUGIN_NAME,
+            'message'     => $capturedMessage,
+        ));
     }
 
     /** Display the chosen admin page.
@@ -192,7 +242,7 @@ class ABJ_404_Solution_View_UI extends ABJ_404_Solution_ViewComponent {
     function outputAdminHeaderTabs($sub = 'list', $message = '') {
         ABJ_404_Solution_WPNotices::echoAdminNotices();
 
-        echo "<div class=\"wrap\" style='z-index: 1;position: relative;'>";
+        echo $this->tpl('adminHeaderWrapOpen.html');
 
         // Post-setup welcome banner
         if (isset($_GET['setup_complete']) && $_GET['setup_complete'] === '1') {
@@ -200,18 +250,19 @@ class ABJ_404_Solution_View_UI extends ABJ_404_Solution_ViewComponent {
             $auto = !empty($options['auto_redirects']) && $options['auto_redirects'] !== '0';
             $notify = !empty($options['admin_notification']) && $options['admin_notification'] !== '0';
 
-            echo '<div class="notice notice-success is-dismissible"><p>';
-            echo '<strong>' . esc_html__("You're all set!", '404-solution') . '</strong> ';
             if ($auto && $notify) {
-                echo esc_html__('404 Solution is now monitoring your site. When visitors hit broken links, they will be automatically redirected. We will email you if something needs attention.', '404-solution');
+                $body = esc_html__('404 Solution is now monitoring your site. When visitors hit broken links, they will be automatically redirected. We will email you if something needs attention.', '404-solution');
             } elseif ($auto) {
-                echo esc_html__('404 Solution is now monitoring your site. When visitors hit broken links, they will be automatically redirected.', '404-solution');
+                $body = esc_html__('404 Solution is now monitoring your site. When visitors hit broken links, they will be automatically redirected.', '404-solution');
             } elseif ($notify) {
-                echo esc_html__('404 Solution is now monitoring your site. We will email you if captured 404 URLs need attention.', '404-solution');
+                $body = esc_html__('404 Solution is now monitoring your site. We will email you if captured 404 URLs need attention.', '404-solution');
             } else {
-                echo esc_html__('404 Solution is now monitoring your site. You can create manual redirects anytime from the Page Redirects tab.', '404-solution');
+                $body = esc_html__('404 Solution is now monitoring your site. You can create manual redirects anytime from the Page Redirects tab.', '404-solution');
             }
-            echo '</p></div>' . "\n";
+            echo $this->fillTpl('setupCompleteWelcomeBanner.html', array(
+                'heading' => esc_html__("You're all set!", '404-solution'),
+                'body'    => $body,
+            )) . "\n";
         }
 
         if ($message != "") {
@@ -227,7 +278,10 @@ class ABJ_404_Solution_View_UI extends ABJ_404_Solution_ViewComponent {
                 $cssClasses = 'notice notice-success';
             }
 
-            echo '<div class="' . $cssClasses . '"><p>' . wp_kses($message, $allowed_tags) . "</p></div>\n";
+            echo $this->fillTpl('adminHeaderMessageNotice.html', array(
+                'cssClasses' => $cssClasses,
+                'message'    => (string)wp_kses($message, $allowed_tags),
+            )) . "\n";
         }
 
         // Regex auto-promote notice. Rendered as a separate info-level
@@ -311,14 +365,15 @@ class ABJ_404_Solution_View_UI extends ABJ_404_Solution_ViewComponent {
             );
         }
 
-        echo '<div class="notice notice-info abj404-regex-autopromote-notice"><p>';
-        echo '<strong>' . esc_html__('404 Solution:', '404-solution') . '</strong> ';
-        echo esc_html($message);
-        echo ' <a href="' . esc_url($editUrl) . '">' . esc_html__('Edit', '404-solution') . '</a>';
-        echo ' | ';
-        echo '<a href="' . esc_url($undoUrl) . '" onclick="return confirm(\'' . esc_js(__('Undo regex auto-promotion and restore Manual status?', '404-solution')) . '\');">';
-        echo esc_html__('Undo', '404-solution') . '</a>';
-        echo '</p></div>' . "\n";
+        echo $this->fillTpl('regexAutoPromoteNotice.html', array(
+            'label'      => esc_html__('404 Solution:', '404-solution'),
+            'message'    => esc_html($message),
+            'editUrl'    => esc_url($editUrl),
+            'editLabel'  => esc_html__('Edit', '404-solution'),
+            'undoUrl'    => esc_url($undoUrl),
+            'confirm'    => esc_js(__('Undo regex auto-promotion and restore Manual status?', '404-solution')),
+            'undoLabel'  => esc_html__('Undo', '404-solution'),
+        )) . "\n";
     }
 
     /** This outputs a box with a title and some content in it.
@@ -329,10 +384,12 @@ class ABJ_404_Solution_View_UI extends ABJ_404_Solution_ViewComponent {
      * @return void
      */
     function echoPostBox($id, $title, $content) {
-        echo "<div id=\"" . esc_attr((string)$id) . "\" class=\"postbox\">";
-        echo "<h3 class=\"\" ><span>" . esc_html($title) . "</span></h3>";
-        echo "<div class=\"inside\">" . $content /* Can't escape here, as contains forms */ . "</div>";
-        echo "</div>";
+        echo $this->fillTpl('postBox.html', array(
+            'id'      => esc_attr((string)$id),
+            'title'   => esc_html($title),
+            // $content can't be escaped here as it contains forms.
+            'content' => (string)$content,
+        ));
     }
 
     /**
@@ -348,26 +405,25 @@ class ABJ_404_Solution_View_UI extends ABJ_404_Solution_ViewComponent {
      */
     function echoOptionsSection($sectionId, $postboxId, $title, $content, $initiallyVisible = false, $icon = '', $badge = '') {
         $expandedClass = $initiallyVisible ? ' expanded' : '';
-
-        echo "<div class=\"abj404-card" . esc_attr($expandedClass) . "\" data-card=\"" . esc_attr($sectionId) . "\" id=\"" . esc_attr($postboxId) . "\">";
-        echo "<div class=\"abj404-card-header\" onclick=\"abj404ToggleCard(this)\" role=\"button\" aria-expanded=\"" . ($initiallyVisible ? 'true' : 'false') . "\" tabindex=\"0\">";
-        echo "<h2 class=\"abj404-card-title\">";
-        if ($icon) {
-            echo $icon; // Icon is pre-sanitized SVG
-        }
-        echo esc_html($title);
+        $badgeHtml = '';
         if ($badge) {
-            echo "<span class=\"abj404-info-badge\">" . esc_html($badge) . "</span>";
+            $badgeHtml = $this->fillTpl('optionsSectionBadge.html', array(
+                'badge' => esc_html($badge),
+            ));
         }
-        echo "</h2>";
-        echo "<svg class=\"abj404-collapse-icon\" width=\"20\" height=\"20\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\">";
-        echo "<path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M19 9l-7 7-7-7\"></path>";
-        echo "</svg>";
-        echo "</div>";
-        echo "<div class=\"abj404-card-content\">";
-        echo $content; /* Can't escape here, as contains forms */
-        echo "</div>";
-        echo "</div>";
+
+        echo $this->fillTpl('optionsSection.html', array(
+            'expandedClass' => esc_attr($expandedClass),
+            'sectionId'     => esc_attr($sectionId),
+            'postboxId'     => esc_attr($postboxId),
+            'ariaExpanded'  => $initiallyVisible ? 'true' : 'false',
+            // Icon is pre-sanitized SVG markup or empty string.
+            'icon'          => (string)$icon,
+            'title'         => esc_html($title),
+            'badge'         => $badgeHtml,
+            // $content can't be escaped here as it contains forms.
+            'content'       => (string)$content,
+        ));
     }
 
     /**
@@ -405,18 +461,15 @@ class ABJ_404_Solution_View_UI extends ABJ_404_Solution_ViewComponent {
     function echoStickySaveBar() {
         $version = ABJ404_VERSION;
         $restoreNonce = wp_create_nonce('abj404_restore_defaults');
-        echo '<div class="abj404-sticky-save-bar">';
-        echo '<div class="abj404-save-bar-status">';
         /* translators: %s: plugin version number */
-        echo esc_html(sprintf(__('Plugin v%s', '404-solution'), $version));
-        echo '</div>';
-        echo '<div class="abj404-save-bar-actions">';
-        echo '<button type="button" id="abj404-restore-defaults" class="button abj404-btn abj404-btn-secondary" data-nonce="' . esc_attr($restoreNonce) . '">';
-        echo esc_html__('Restore Defaults', '404-solution');
-        echo '</button>';
-        echo '<input type="submit" form="admin-options-page" name="abj404-optionssub" id="abj404-optionssub" value="' . esc_attr__('Save Settings', '404-solution') . '" class="button button-primary abj404-btn abj404-btn-primary">';
-        echo '</div>';
-        echo '</div>';
+        $versionLabel = esc_html(sprintf(__('Plugin v%s', '404-solution'), $version));
+
+        echo $this->fillTpl('stickySaveBar.html', array(
+            'versionLabel'  => $versionLabel,
+            'restoreNonce'  => esc_attr($restoreNonce),
+            'restoreLabel'  => esc_html__('Restore Defaults', '404-solution'),
+            'saveLabel'     => esc_attr__('Save Settings', '404-solution'),
+        ));
         $this->echoRestoreDefaultsModal();
     }
 
@@ -426,23 +479,13 @@ class ABJ_404_Solution_View_UI extends ABJ_404_Solution_ViewComponent {
      * @return void
      */
     function echoRestoreDefaultsModal() {
-        ?>
-        <div id="abj404-restore-defaults-modal" class="abj404-modal" role="dialog" aria-modal="true" aria-labelledby="abj404-restore-defaults-modal-title">
-            <div class="abj404-modal-content">
-                <div class="abj404-modal-header">
-                    <h2 id="abj404-restore-defaults-modal-title"><?php echo esc_html__('Restore Default Settings?', '404-solution'); ?></h2>
-                    <button type="button" id="abj404-restore-defaults-cancel" class="abj404-modal-close" aria-label="<?php echo esc_attr__('Close', '404-solution'); ?>">&times;</button>
-                </div>
-                <div class="abj404-modal-body">
-                    <p><?php echo esc_html__('This will reset all plugin settings to their default values. This cannot be undone. Your redirect rules and 404 logs will not be affected.', '404-solution'); ?></p>
-                </div>
-                <div class="abj404-modal-footer">
-                    <button type="button" id="abj404-restore-defaults-cancel-2" class="button"><?php echo esc_html__('Cancel', '404-solution'); ?></button>
-                    <button type="button" id="abj404-restore-defaults-confirm" class="button button-primary"><?php echo esc_html__('Restore Defaults', '404-solution'); ?></button>
-                </div>
-            </div>
-        </div>
-        <?php
+        echo "\n" . $this->fillTpl('restoreDefaultsModal.html', array(
+            'title'         => esc_html__('Restore Default Settings?', '404-solution'),
+            'closeLabel'    => esc_attr__('Close', '404-solution'),
+            'body'          => esc_html__('This will reset all plugin settings to their default values. This cannot be undone. Your redirect rules and 404 logs will not be affected.', '404-solution'),
+            'cancelLabel'   => esc_html__('Cancel', '404-solution'),
+            'confirmLabel'  => esc_html__('Restore Defaults', '404-solution'),
+        )) . "\n        ";
     }
 
     /**
@@ -450,10 +493,10 @@ class ABJ_404_Solution_View_UI extends ABJ_404_Solution_ViewComponent {
      * @return void
      */
     function echoToastNotification() {
-        echo '<div id="abj404-toast" class="abj404-toast">';
-        echo '<span class="abj404-toast-icon">✓</span> ';
-        echo '<span class="abj404-toast-message">' . esc_html__('Settings saved successfully!', '404-solution') . '</span>';
-        echo '</div>';
+        echo $this->fillTpl('toastNotification.html', array(
+            'icon'    => '✓',
+            'message' => esc_html__('Settings saved successfully!', '404-solution'),
+        ));
     }
 
 
@@ -463,14 +506,10 @@ class ABJ_404_Solution_View_UI extends ABJ_404_Solution_ViewComponent {
      * @return void
      */
     function echoExpandCollapseButton($showSuggestions = true) {
-        ?>
-        <div class="abj404-accordion-controls">
-            <button type="button" id="abj404-expand-collapse-all" class="button">
-                <?php echo esc_html__('Expand All', '404-solution'); ?>
-            </button>
-            <input type="submit" name="abj404-optionssub" id="abj404-optionssub" value="<?php echo esc_attr__('Save Settings', '404-solution'); ?>" class="button-primary">
-        </div>
-        <?php
+        echo "\n" . $this->fillTpl('expandCollapseButton.html', array(
+            'expandAllLabel' => esc_html__('Expand All', '404-solution'),
+            'saveLabel'      => esc_attr__('Save Settings', '404-solution'),
+        )) . "\n        ";
     }
 
     /**
@@ -515,16 +554,15 @@ class ABJ_404_Solution_View_UI extends ABJ_404_Solution_ViewComponent {
         $simplePressedState = ($currentMode === 'simple') ? 'true' : 'false';
         $advancedPressedState = ($currentMode === 'advanced') ? 'true' : 'false';
 
-        echo '<div class="abj404-mode-toggle abj404-mode-toggle-inline" data-nonce="' . esc_attr(wp_create_nonce('abj404_mode_toggle')) . '">';
-        echo '<div class="abj404-mode-toggle-buttons">';
-        echo '<button type="button" class="abj404-mode-btn ' . esc_attr($simpleActive) . '" data-mode="simple" aria-pressed="' . esc_attr($simplePressedState) . '">';
-        echo '<span class="abj404-mode-btn-text">' . esc_html__('Simple', '404-solution') . '</span>';
-        echo '</button>';
-        echo '<button type="button" class="abj404-mode-btn ' . esc_attr($advancedActive) . '" data-mode="advanced" aria-pressed="' . esc_attr($advancedPressedState) . '">';
-        echo '<span class="abj404-mode-btn-text">' . esc_html__('Advanced', '404-solution') . '</span>';
-        echo '</button>';
-        echo '</div>';
-        echo '</div>';
+        echo $this->fillTpl('inlineModeToggle.html', array(
+            'nonce'                => esc_attr(wp_create_nonce('abj404_mode_toggle')),
+            'simpleActive'         => esc_attr($simpleActive),
+            'advancedActive'       => esc_attr($advancedActive),
+            'simplePressedState'   => esc_attr($simplePressedState),
+            'advancedPressedState' => esc_attr($advancedPressedState),
+            'simpleLabel'          => esc_html__('Simple', '404-solution'),
+            'advancedLabel'        => esc_html__('Advanced', '404-solution'),
+        ));
     }
 
     /**
