@@ -7,12 +7,21 @@ if (!defined('ABSPATH')) {
 /**
  * Frontend request pipeline for 404 processing and redirects.
  *
- * Keeps runtime flow isolated from admin hook wiring.
+ * Orchestrator: sequences strategies and delegates the work to focused
+ * collaborators. The phases of a 404 request:
+ *
+ *   1. (process404 only) Self-heal stale DB_VERSION via FrontendDbVersionRecovery.
+ *   2. Initialize ignore values + check do-not-process list.
+ *   3. Lookup existing redirect for URL, evaluate via RedirectCandidateEvaluator.
+ *   4. tryRegexRedirect (via RedirectDispatcher).
+ *   5. Run matching engines (via MatchingEngineOrchestrator).
+ *   6. WordPress 404-permalink-guess fallback (via WordPressGuessFallback).
+ *   7. Emit 404 page (via NotFoundResponseService) and log "gave up".
+ *
+ * Construction still accepts legacy duck-typed objects so older test cases
+ * keep working until they migrate to the typed services.
  */
 class ABJ_404_Solution_FrontendRequestPipeline {
-
-    /** @var ABJ_404_Solution_PluginLogic */
-    private $logic;
 
     /** @var ABJ_404_Solution_RedirectsRepository */
     private $redirectsRepository;
@@ -38,11 +47,29 @@ class ABJ_404_Solution_FrontendRequestPipeline {
     /** @var ABJ_404_Solution_PreviousRequestCookieTracker */
     private $previousRequestCookieTracker;
 
-    /** @var array<int, mixed> Engines from apply_filters — may contain non-engine items */
-    private $matchingEngines;
+    /** @var ABJ_404_Solution_FrontendPipelineTrace */
+    private $trace;
 
-    /** @var list<array{step: string, outcome: string, detail: string}> */
-    private $trace = [];
+    /** @var ABJ_404_Solution_RedirectExclusionPolicy */
+    private $exclusionPolicy;
+
+    /** @var ABJ_404_Solution_MatchingEngineOrchestrator */
+    private $matchingEngineOrchestrator;
+
+    /** @var ABJ_404_Solution_RedirectCandidateEvaluator */
+    private $candidateEvaluator;
+
+    /** @var ABJ_404_Solution_WordPressGuessFallback */
+    private $wpGuessFallback;
+
+    /** @var ABJ_404_Solution_RedirectDispatcher */
+    private $dispatcher;
+
+    /** @var ABJ_404_Solution_FrontendDbVersionRecovery */
+    private $dbVersionRecovery;
+
+    /** @var ABJ_404_Solution_FrontendPipelineTelemetry */
+    private $telemetry;
 
     /**
      * @param ABJ_404_Solution_PluginLogic $pluginLogic
@@ -57,16 +84,41 @@ class ABJ_404_Solution_FrontendRequestPipeline {
      * @param ABJ_404_Solution_PreviousRequestCookieTracker|null $previousRequestCookieTracker
      */
     function __construct($pluginLogic, $redirectsRepository, $logging, $functions, $spellChecker, array $matchingEngines = [], $logsRepository = null, $notFoundResponse = null, $requestIgnoreNormalizer = null, $previousRequestCookieTracker = null) {
-        $this->logic = $pluginLogic;
         $this->redirectsRepository = $redirectsRepository;
         $this->logger = $logging;
         $this->f = $functions;
         $this->spellChecker = $spellChecker;
-        $this->matchingEngines = $matchingEngines;
         $this->notFoundResponse = $this->resolveNotFoundResponse($notFoundResponse);
         $normalizerLogsRepo = ($logsRepository instanceof ABJ_404_Solution_LogsRepositoryInterface) ? $logsRepository : null;
         $this->requestIgnoreNormalizer = $this->resolveRequestIgnoreNormalizer($requestIgnoreNormalizer, $normalizerLogsRepo);
         $this->previousRequestCookieTracker = $this->resolvePreviousRequestCookieTracker($previousRequestCookieTracker);
+        $this->logsRepository = $this->resolveLogsRepository($logsRepository, $redirectsRepository);
+
+        $this->trace = new ABJ_404_Solution_FrontendPipelineTrace();
+        $this->exclusionPolicy = new ABJ_404_Solution_RedirectExclusionPolicy();
+        $this->matchingEngineOrchestrator = new ABJ_404_Solution_MatchingEngineOrchestrator(
+            $matchingEngines, $logging, $this->exclusionPolicy
+        );
+        $this->candidateEvaluator = new ABJ_404_Solution_RedirectCandidateEvaluator($redirectsRepository);
+        $this->telemetry = new ABJ_404_Solution_FrontendPipelineTelemetry($logging, $functions);
+        $this->wpGuessFallback = new ABJ_404_Solution_WordPressGuessFallback(
+            $functions, $pluginLogic->urlNormalization(), $redirectsRepository,
+            $this->notFoundResponse, $this->exclusionPolicy, $this->logsRepository
+        );
+        $this->dispatcher = new ABJ_404_Solution_RedirectDispatcher(
+            $pluginLogic, $redirectsRepository, $logging, $functions, $spellChecker,
+            $this->notFoundResponse, $this->previousRequestCookieTracker,
+            $this->telemetry, $this->logsRepository
+        );
+        $this->dbVersionRecovery = new ABJ_404_Solution_FrontendDbVersionRecovery($pluginLogic, $logging);
+    }
+
+    /**
+     * @param mixed $logsRepository
+     * @param mixed $redirectsRepository
+     * @return mixed
+     */
+    private function resolveLogsRepository($logsRepository, $redirectsRepository) {
         // Resolve the LogsRepository for logRedirectHit() writes. Preference order:
         //   1. Explicit $logsRepository argument (modern DI signature).
         //   2. If the redirects-repo facade exposes getLogsRepo(), resolve the typed
@@ -75,8 +127,9 @@ class ABJ_404_Solution_FrontendRequestPipeline {
         //   3. Legacy fallback: facade with a logRedirectHit() entry point.
         //   4. Service container lookup.
         if ($logsRepository !== null) {
-            $this->logsRepository = $logsRepository;
-        } else if (is_object($redirectsRepository) && method_exists($redirectsRepository, 'getLogsRepo')) {
+            return $logsRepository;
+        }
+        if (is_object($redirectsRepository) && method_exists($redirectsRepository, 'getLogsRepo')) {
             // Real method (DataAccess facade): resolve the typed LogsRepository off it so we
             // do not depend on logRedirectHit() pass-throughs living on DataAccess (q task i775).
             // method_exists is preferred over is_callable here because Mockery mocks answer
@@ -84,21 +137,21 @@ class ABJ_404_Solution_FrontendRequestPipeline {
             // expectation was declared; method_exists only sees declared methods.
             try {
                 $resolved = $redirectsRepository->getLogsRepo();
-                $this->logsRepository = ($resolved !== null) ? $resolved : $redirectsRepository;
+                return ($resolved !== null) ? $resolved : $redirectsRepository;
             } catch (\Throwable $e) {
                 // allow-silent-catch: Mockery mocks throw if getLogsRepo() has no expectation;
                 // tests that pre-date this resolver may construct a redirects mock without
                 // the LogsRepo plumbing. Fall through to the legacy logRedirectHit path so
                 // those pre-existing tests keep working until they migrate.
-                $this->logsRepository = (method_exists($redirectsRepository, 'logRedirectHit'))
+                return (method_exists($redirectsRepository, 'logRedirectHit'))
                     ? $redirectsRepository
                     : abj_service('logs_repository');
             }
-        } else if (is_object($redirectsRepository) && method_exists($redirectsRepository, 'logRedirectHit')) {
-            $this->logsRepository = $redirectsRepository;
-        } else {
-            $this->logsRepository = abj_service('logs_repository');
         }
+        if (is_object($redirectsRepository) && method_exists($redirectsRepository, 'logRedirectHit')) {
+            return $redirectsRepository;
+        }
+        return abj_service('logs_repository');
     }
 
     /**
@@ -262,131 +315,13 @@ class ABJ_404_Solution_FrontendRequestPipeline {
     }
 
     /**
-     * @param string $name
-     * @param array<int, mixed> $args
-     * @param mixed $default
-     * @return mixed
-     */
-    private function callWpFunction($name, $args = array(), $default = null) {
-        if (!function_exists($name)) {
-            return $default;
-        }
-        return call_user_func_array($name, $args);
-    }
-
-    /** @return int */
-    private function wpTypePost() {
-        return defined('ABJ404_TYPE_POST') ? constant('ABJ404_TYPE_POST') : 1;
-    }
-
-    /**
-     * @param string $step
-     * @param string $outcome
-     * @param string $detail
-     * @return void
-     */
-    private function addTraceStep(string $step, string $outcome, string $detail = ''): void {
-        $this->trace[] = ['step' => $step, 'outcome' => $outcome, 'detail' => $detail];
-    }
-
-    /**
-     * @param string $requestedUrl
-     * @param string $action
-     * @param string $matchReason
-     * @param string|null $requestedUrlDetail
-     * @param list<array{step: string, outcome: string, detail: string}>|null $pipelineTrace
-     * @return void
-     */
-    private function logRedirectHit(string $requestedUrl, string $action, string $matchReason, ?string $requestedUrlDetail = null, ?array $pipelineTrace = null): void {
-        if (!is_object($this->logsRepository) || !is_callable([$this->logsRepository, 'logRedirectHit'])) {
-            return;
-        }
-        call_user_func([$this->logsRepository, 'logRedirectHit'], $requestedUrl, $action, $matchReason, $requestedUrlDetail, $pipelineTrace);
-    }
-
-    /** @return string */
-    private function wpGuessEngineClassName(): string {
-        return 'ABJ_404_Solution_WordPressUrlGuessEngine';
-    }
-
-    /**
-     * @param string $requestedURL
-     * @return bool
-     */
-    private function shouldRunWordPressGuessFallback(string $requestedURL): bool {
-        $enabled = true;
-        if (function_exists('apply_filters')) {
-            $enabled = (bool) apply_filters(
-                'abj404_wp_guess_fallback_enabled',
-                true,
-                $requestedURL
-            );
-        }
-        if (!$enabled) {
-            return false;
-        }
-
-        return ABJ_404_Solution_EngineProfileResolver::getInstance()
-            ->isEngineEnabledForUrl($requestedURL, $this->wpGuessEngineClassName());
-    }
-
-    /**
-     * Normalize a guessed URL into the same request-shape used by $requestedURL:
-     * path (relative to WP home directory) plus sorted query string.
+     * Exposed for tests that need to exercise the engine fanout in isolation
+     * (see ExclusionMetaTest). Production callers route through process404().
      *
-     * @param string $guessedUrl
-     * @return string
+     * @return ABJ_404_Solution_MatchingEngineOrchestrator
      */
-    private function normalizeGuessedUrlToRequestShape(string $guessedUrl): string {
-        $normalized = $this->f->normalizeUrlString($guessedUrl);
-        if ($normalized === '') {
-            return '';
-        }
-
-        $parts = parse_url($normalized);
-        if (!is_array($parts)) {
-            return '';
-        }
-
-        $path = isset($parts['path']) ? $parts['path'] : '/';
-        if ($path === '') {
-            $path = '/';
-        }
-        $path = $this->logic->urlNormalization()->removeHomeDirectory($path);
-        if ($path === '') {
-            $path = '/';
-        }
-        if ($path[0] !== '/') {
-            $path = '/' . $path;
-        }
-
-        /** @var array<string, string> $urlPartsStr */
-        $urlPartsStr = array_map('strval', $parts);
-        $sortedQuery = $this->f->sortQueryString($urlPartsStr);
-        return $path . $sortedQuery;
-    }
-
-    /**
-     * Emit benchmark header immediately for paths that may not reach WordPress send_headers.
-     *
-     * @return void
-     */
-    private function emitBenchmarkHeadersIfEnabled() {
-        if (function_exists('abj404_benchmark_emit_headers')) {
-            abj404_benchmark_emit_headers();
-        }
-    }
-
-    /**
-     * @param float $startTime
-     * @return void
-     */
-    private function recordRedirectLookupTiming($startTime) {
-        if (!function_exists('abj404_benchmark_record_redirect_lookup')) {
-            return;
-        }
-        $elapsedMs = (microtime(true) - (float)$startTime) * 1000.0;
-        abj404_benchmark_record_redirect_lookup($elapsedMs);
+    function getMatchingEngineOrchestrator(): ABJ_404_Solution_MatchingEngineOrchestrator {
+        return $this->matchingEngineOrchestrator;
     }
 
     /**
@@ -402,7 +337,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
 
     /** @return void */
     function processRedirectAllRequests() {
-        $this->trace = [];
+        $this->trace->reset();
         $options = $this->getRuntimeOptions();
 
         $userRequest = ABJ_404_Solution_UserRequest::getInstance();
@@ -415,94 +350,20 @@ class ABJ_404_Solution_FrontendRequestPipeline {
         $this->requestIgnoreNormalizer->initializeIgnoreValues($pathOnly, $urlSlugOnly);
         $requestedURL = $userRequest->getPathWithSortedQueryString();
 
-        $this->tryRegexRedirect($options, $requestedURL);
+        $this->dispatcher->tryRegexRedirect($options, $requestedURL, $this->trace);
 
         if (is_admin() || !is_404()) {
-            $this->logger->warn("If REDIRECT_ALL_REQUESTS is turned on then a regex redirect must be in place.");
+            $this->logger->warn('If REDIRECT_ALL_REQUESTS is turned on then a regex redirect must be in place.');
         }
     }
 
-
-    /**
-     * Handle the empty-URL branch: single page / page redirect cleanup.
-     *
-     * @param string $requestedURL
-     * @param array<string, mixed> $redirect
-     * @param array<string, mixed> $options
-     * @return void
-     */
-    private function handleEmptyUrlSinglePageRedirect(string $requestedURL, array $redirect, array $options): void {
-        if ($this->callWpFunction('is_single', array(), false) || $this->callWpFunction('is_page', array(), false)) {
-            if (!$this->callWpFunction('is_feed', array(), false) &&
-                    !$this->callWpFunction('is_trackback', array(), false) &&
-                    !$this->callWpFunction('is_preview', array(), false)) {
-                $theID = $this->callWpFunction('get_the_ID', array(), 0);
-                $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($theID . "|" . $this->wpTypePost(), 0, null, $options);
-
-                $permLinkVal = isset($permalink['link']) && is_string($permalink['link']) ? $permalink['link'] : '';
-                $urlParts = parse_url($permLinkVal);
-                if (!is_array($urlParts) || !isset($urlParts['path'])) {
-                    return;
-                }
-                $perma_link = $urlParts['path'];
-
-                $pageQueryVar = $this->callWpFunction('get_query_var', array('page'), false);
-                $paged = ($pageQueryVar !== false && is_string($pageQueryVar)) ? esc_html($pageQueryVar) : false;
-                if (!$paged === false) {
-                    if (isset($urlParts['query']) && $urlParts['query'] != "") {
-                        $urlParts['query'] .= "&page=" . $paged;
-                    } else {
-                        if ($this->f->substr($perma_link, -1) == "/") {
-                            $perma_link .= $paged . "/";
-                        } else {
-                            $perma_link .= "/" . $paged;
-                        }
-                    }
-                }
-
-                /** @var array<string, string> $urlPartsStr */
-                $urlPartsStr = array_map('strval', $urlParts);
-                $perma_link .= $this->f->sortQueryString($urlPartsStr);
-
-                if (@$options['auto_redirects'] == '1') {
-                    if ($requestedURL != $perma_link) {
-                        if ($redirect['id'] != '0') {
-                            $this->processRedirect($requestedURL, $redirect, 'single page 3');
-                        } else {
-                            $spFinalDest = isset($permalink['id']) && is_scalar($permalink['id']) ? (string)$permalink['id'] : '';
-                            $spDefaultRedirect = isset($options['default_redirect']) && is_scalar($options['default_redirect']) ? (string)$options['default_redirect'] : '';
-                            // Legacy audit marker for source-inspection tests: this->dao->setupRedirect(esc_url($requestedURL)
-                            $this->redirectsRepository->setupRedirect(ABJ_404_Solution_RedirectSpec::create(
-                                esc_url($requestedURL), (string)ABJ404_STATUS_AUTO, (string)$this->wpTypePost(), $spFinalDest, $spDefaultRedirect, 0, 'single page'
-                            ));
-                            $spLink = isset($permalink['link']) && is_string($permalink['link']) ? $permalink['link'] : '';
-                            // Legacy audit marker for source-inspection tests: this->dao->logRedirectHit($requestedURL, $spLink, 'single page'
-                            $this->logRedirectHit($requestedURL, $spLink, 'single page', null, $this->trace);
-                            $this->notFoundResponse->forceRedirect(esc_url($spLink), (int)$spDefaultRedirect);
-                            exit;
-                        }
-                    }
-                }
-
-                if ($requestedURL == $perma_link) {
-                    if ($options['remove_matches'] == '1') {
-                        if ($redirect['id'] != '0') {
-                            $redirectIdVal = isset($redirect['id']) && is_scalar($redirect['id']) ? (string)$redirect['id'] : '0';
-                            // Legacy audit marker for source-inspection tests: this->dao->deleteRedirect($redirectIdVal)
-                            $this->redirectsRepository->deleteRedirect($redirectIdVal);
-                        }
-                    }
-                }
-            }
-        }
-    }
     /**
      * Process the 404 path.
      * @return void
      */
     function process404() {
         if (!is_404() || is_admin()) {
-            // SAFE_BAIL: not a 404 or in wp-admin — nothing for us to do.
+            // SAFE_BAIL: not a 404 or in wp-admin - nothing for us to do.
             return;
         }
 
@@ -515,7 +376,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
         if (defined('ABJ404_VERSION')) {
             $options = $this->getRuntimeOptions(true);
             if (isset($options['DB_VERSION']) && $options['DB_VERSION'] != ABJ404_VERSION) {
-                $options = $this->recoverDbVersionIfStale($options);
+                $options = $this->dbVersionRecovery->recoverIfStale($options);
                 if (!isset($options['DB_VERSION']) || $options['DB_VERSION'] != ABJ404_VERSION) {
                     $degradedMode = true;
                 }
@@ -525,23 +386,23 @@ class ABJ_404_Solution_FrontendRequestPipeline {
         abj_service('request_context')->process_start_time = microtime(true);
         $userRequest = ABJ_404_Solution_UserRequest::getInstance();
         if ($userRequest === null) {
-            // SAFE_BAIL: no user request context — cannot resolve a URL to look up.
+            // SAFE_BAIL: no user request context - cannot resolve a URL to look up.
             return;
         }
 
         $pathOnly = $userRequest->getPath();
         $urlSlugOnly = $userRequest->getOnlyTheSlug();
         $this->requestIgnoreNormalizer->initializeIgnoreValues($pathOnly, $urlSlugOnly);
-        $this->trace = [];
+        $this->trace->reset();
 
         if (abj_service('request_context')->ignore_donotprocess) {
-            $this->addTraceStep('Ignore list', 'Matched — request ignored');
-            $this->logRedirectHit($pathOnly, '404', 'ignore_donotprocess', null, $this->trace);
-            $this->emitBenchmarkHeadersIfEnabled();
-            // SAFE_BAIL: ignore_donotprocess matched — admin opted this UA out.
+            $this->trace->add('Ignore list', 'Matched - request ignored', '');
+            $this->writeHit($pathOnly, '404', 'ignore_donotprocess', null, $this->trace->getSteps());
+            $this->telemetry->emitBenchmarkHeadersIfEnabled();
+            // SAFE_BAIL: ignore_donotprocess matched - admin opted this UA out.
             return;
         }
-        $this->addTraceStep('Ignore list', 'Not ignored');
+        $this->trace->add('Ignore list', 'Not ignored');
 
         $requestedURL = $userRequest->getPathWithSortedQueryString();
         $requestedURLWithoutComments = $requestedURL;
@@ -556,18 +417,18 @@ class ABJ_404_Solution_FrontendRequestPipeline {
 
         $lookupStart = microtime(true);
         $redirect = $this->redirectsRepository->getActiveRedirectForURL($requestedURL, $degradedMode);
-        $this->recordRedirectLookupTiming($lookupStart);
-        $this->logAReallyLongDebugMessage($options, $requestedURL, $redirect);
+        $this->telemetry->recordRedirectLookupTiming($lookupStart);
+        $this->telemetry->logAReallyLongDebugMessage($options, $requestedURL, $redirect);
         $autoRedirectsAreOn = !array_key_exists('auto_redirects', $options) || $options['auto_redirects'] == '1';
         $deferredAutoRedirect = null;
 
-        if ($requestedURL != "") {
-            $matched = $this->evaluateRedirectCandidate($redirect, '', $options);
+        if ($requestedURL != '') {
+            $matched = $this->candidateEvaluator->evaluate($redirect, '', $options, $this->trace);
             if ($matched !== null) {
-                if ($this->isAutoRedirect($matched)) {
+                if ($this->candidateEvaluator->isAutoRedirect($matched)) {
                     $deferredAutoRedirect = $matched;
                 } else {
-                    $this->processRedirect($requestedURL, $matched, 'existing');
+                    $this->dispatcher->processRedirect($requestedURL, $matched, 'existing', $this->trace);
                     exit;
                 }
             }
@@ -575,35 +436,35 @@ class ABJ_404_Solution_FrontendRequestPipeline {
             if ($requestedURLWithoutComments != $requestedURL) {
                 $lookupStart = microtime(true);
                 $wcRedirect = $this->redirectsRepository->getActiveRedirectForURL($requestedURLWithoutComments, $degradedMode);
-                $this->recordRedirectLookupTiming($lookupStart);
-                $matched = $this->evaluateRedirectCandidate($wcRedirect, ' (without comments)', $options);
+                $this->telemetry->recordRedirectLookupTiming($lookupStart);
+                $matched = $this->candidateEvaluator->evaluate($wcRedirect, ' (without comments)', $options, $this->trace);
                 if ($matched !== null) {
-                    if ($this->isAutoRedirect($matched)) {
+                    if ($this->candidateEvaluator->isAutoRedirect($matched)) {
                         if ($deferredAutoRedirect === null) {
                             $deferredAutoRedirect = $matched;
                         }
                     } else {
-                        $this->processRedirect($requestedURL, $matched, 'existing');
+                        $this->dispatcher->processRedirect($requestedURL, $matched, 'existing', $this->trace);
                         exit;
                     }
                 }
             }
 
-            $sentTo404Page = $this->tryRegexRedirect($options, $requestedURL);
+            $sentTo404Page = $this->dispatcher->tryRegexRedirect($options, $requestedURL, $this->trace);
             if ($sentTo404Page) {
-                $this->emitBenchmarkHeadersIfEnabled();
+                $this->telemetry->emitBenchmarkHeadersIfEnabled();
                 return;
             }
 
             if ($deferredAutoRedirect !== null) {
-                $this->processRedirect($requestedURL, $deferredAutoRedirect, 'existing');
+                $this->dispatcher->processRedirect($requestedURL, $deferredAutoRedirect, 'existing', $this->trace);
                 exit;
             }
 
             if ($autoRedirectsAreOn) {
                 $matchRequest = new ABJ_404_Solution_MatchRequest($requestedURL, $urlSlugOnly, $options);
 
-                $matchResult = $this->runMatchingEngines($matchRequest);
+                $matchResult = $this->matchingEngineOrchestrator->run($matchRequest, $this->trace);
                 if ($matchResult !== null) {
                     $defaultRedirect = isset($options['default_redirect']) && is_scalar($options['default_redirect']) ? (string)$options['default_redirect'] : '';
                     $this->redirectsRepository->setupRedirect(ABJ_404_Solution_RedirectSpec::create(
@@ -622,7 +483,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
                         }
                     }
 
-                    $this->logRedirectHit($requestedURL, $resolvedLink, $matchResult->getEngineName(), null, $this->trace);
+                    $this->writeHit($requestedURL, $resolvedLink, $matchResult->getEngineName(), null, $this->trace->getSteps());
                     $this->notFoundResponse->forceRedirect(esc_url($resolvedLink), (int)$defaultRedirect);
                     exit;
                 }
@@ -630,584 +491,45 @@ class ABJ_404_Solution_FrontendRequestPipeline {
 
             if (!$autoRedirectsAreOn) {
                 $this->triggerAsyncSuggestionsIfNeeded($requestedURL);
-                $this->emitBenchmarkHeadersIfEnabled();
+                $this->telemetry->emitBenchmarkHeadersIfEnabled();
                 $this->notFoundResponse->sendTo404Page($requestedURL, 'Do not create redirects per the options.', true, $options);
                 return;
             }
         } else {
-            $this->handleEmptyUrlSinglePageRedirect($requestedURL, $redirect, $options);
+            $this->dispatcher->handleEmptyUrlSinglePageRedirect($requestedURL, $redirect, $options, $this->trace);
         }
 
-        // Last resort: defer to WordPress's built-in URL guessing.
-        $this->tryWordPressGuessFallback($autoRedirectsAreOn, $requestedURL, $options);
+        $this->wpGuessFallback->tryFallback($autoRedirectsAreOn, $requestedURL, $options, $this->trace);
 
         $this->requestIgnoreNormalizer->tryNormalPostQuery($options);
-        $this->addTraceStep('Result', 'No redirect — showed 404 page');
-        $this->logRedirectHit($requestedURL, '404', 'gave up.', null, $this->trace);
+        $this->trace->add('Result', 'No redirect - showed 404 page');
+        $this->writeHit($requestedURL, '404', 'gave up.', null, $this->trace->getSteps());
         $this->triggerAsyncSuggestionsIfNeeded($requestedURL);
-        $this->emitBenchmarkHeadersIfEnabled();
+        $this->telemetry->emitBenchmarkHeadersIfEnabled();
         $this->notFoundResponse->sendTo404Page($requestedURL, '', true, $options);
     }
 
     /**
-     * Last-resort redirect attempt using WordPress's built-in 404 permalink guess.
-     *
-     * WordPress matches partial slugs via LIKE 'slug%', a complementary strategy
-     * to our Levenshtein-based spell checker (e.g. /redes matches /redes-social
-     * because the slug starts with "redes"). When a guess matches and is not
-     * excluded, this records the redirect and emits it, then exits. If no guess
-     * matches, the guess is a self-redirect, the destination is excluded, or the
-     * emit is blocked, it records a trace step and returns so the caller can fall
-     * through to the normal-post query / 404 page.
-     *
-     * @param bool   $autoRedirectsAreOn Whether auto-redirect creation is enabled.
-     * @param string $requestedURL       The normalized requested URL that 404'd.
-     * @param array<string, mixed> $options Plugin options.
-     */
-    private function tryWordPressGuessFallback(bool $autoRedirectsAreOn, string $requestedURL, array $options): void {
-        $wpGuessFallbackEnabled = $autoRedirectsAreOn && $this->shouldRunWordPressGuessFallback($requestedURL);
-        $wpGuessEngineName = __('wp guess', '404-solution');
-        if ($wpGuessFallbackEnabled && function_exists('redirect_guess_404_permalink')) {
-            $wpGuess = redirect_guess_404_permalink();
-            if ($wpGuess && is_string($wpGuess)) {
-                $normalizedGuess = $this->normalizeGuessedUrlToRequestShape($wpGuess);
-                if ($normalizedGuess !== '' && $normalizedGuess === $requestedURL) {
-                    $this->addTraceStep('WordPress URL guess', 'Ignored self-redirect guess', $wpGuess);
-                } else {
-                    $this->addTraceStep('WordPress URL guess', 'Matched candidate', $wpGuess);
-                    $defaultRedirect = isset($options['default_redirect']) && is_scalar($options['default_redirect'])
-                        ? (string)$options['default_redirect'] : '301';
-
-                    // Resolve post ID so the redirect record links to the destination post.
-                    $wpGuessPostId = '';
-                    $wpGuessType = (string)$this->wpTypePost();
-                    if (function_exists('url_to_postid')) {
-                        $postId = url_to_postid($wpGuess);
-                        if ($postId > 0) {
-                            $wpGuessPostId = (string)$postId;
-                        }
-                    }
-
-                    $wpGuessResult = new ABJ_404_Solution_MatchResult(
-                        $wpGuessPostId !== '' ? $wpGuessPostId : '0',
-                        $wpGuessType,
-                        $wpGuess,
-                        '',
-                        0.0,
-                        $wpGuessEngineName
-                    );
-                    if ($this->isExcluded($wpGuessResult, $options)) {
-                        $this->addTraceStep('WordPress URL guess', 'Excluded destination: skipped', $wpGuess);
-                    } else {
-                        $this->addTraceStep('WordPress URL guess', 'Matched: redirecting', $wpGuess);
-                        $this->redirectsRepository->setupRedirect(ABJ_404_Solution_RedirectSpec::create(
-                            $requestedURL, (string)ABJ404_STATUS_AUTO,
-                            $wpGuessType, $wpGuessPostId, $defaultRedirect, 0, $wpGuessEngineName
-                        ));
-                        $this->logRedirectHit($requestedURL, $wpGuess, $wpGuessEngineName, null, $this->trace);
-                        $redirectSent = $this->notFoundResponse->forceRedirect(esc_url($wpGuess), (int)$defaultRedirect);
-                        if ($redirectSent !== false) {
-                            exit;
-                        }
-                        $this->addTraceStep('WordPress URL guess', 'Redirect blocked: continued', $wpGuess);
-                    }
-                }
-            }
-            $this->addTraceStep('WordPress URL guess', 'No match');
-        } elseif (!$wpGuessFallbackEnabled) {
-            $reason = !$autoRedirectsAreOn ? 'auto_redirects off' : 'engine profile/filter';
-            $this->addTraceStep('WordPress URL guess', 'Skipped: ' . $reason);
-        }
-    }
-
-    /**
-     * Evaluate an already-fetched redirect: check actionability, health, and conditions.
-     *
-     * @param array<string, mixed>|null $redirect The redirect row from getActiveRedirectForURL().
-     * @param string $labelSuffix Appended to trace step labels (e.g. ' (without comments)').
-     * @param array<string, mixed> $options Plugin options.
-     * @return array<string, mixed>|null The redirect row if actionable, null otherwise.
-     */
-    private function evaluateRedirectCandidate(?array $redirect, string $labelSuffix, array $options): ?array {
-        if ($redirect === null) {
-            if ($labelSuffix === '') {
-                $this->addTraceStep('Redirect lookup', 'No matching redirect');
-            }
-            return null;
-        }
-
-        $typeHomeInt = defined('ABJ404_TYPE_HOME') ? (int)ABJ404_TYPE_HOME : 5;
-        $redirectType = isset($redirect['type']) && is_scalar($redirect['type']) ? (int)$redirect['type'] : 0;
-
-        if ($redirect['id'] == '0' || ($redirect['final_dest'] == '0' && $redirectType !== $typeHomeInt)) {
-            if ($labelSuffix === '') {
-                $this->addTraceStep('Redirect lookup', 'No matching redirect');
-            }
-            return null;
-        }
-
-        $this->addTraceStep('Redirect lookup' . $labelSuffix, 'Found existing redirect',
-            'rule #' . (is_scalar($redirect['id']) ? (string)$redirect['id'] : '?'));
-
-        $deadIds = function_exists('get_transient') ? get_transient('abj404_dead_dest_ids') : false;
-        $redirectIdStr = isset($redirect['id']) && is_scalar($redirect['id']) ? (string)$redirect['id'] : '0';
-        if (is_array($deadIds) && in_array($redirectIdStr, $deadIds, true)) {
-            $this->addTraceStep('Health check' . $labelSuffix, 'Destination unreachable — skipped');
-            return null;
-        }
-
-        $condEvaluator = new ABJ_404_Solution_RedirectConditionEvaluator($this->redirectsRepository);
-        $redirectIdForCond = is_scalar($redirect['id']) ? (int)$redirect['id'] : 0;
-        if ($condEvaluator->shouldApplyRedirect($redirectIdForCond)) {
-            $this->addTraceStep('Conditions' . $labelSuffix, 'All conditions met');
-            return $redirect;
-        }
-
-        $condTrace = $condEvaluator->getLastEvaluationTrace();
-        $condDetail = implode(', ', array_map(function ($c) {
-            $label = str_replace('_', ' ', $c['type']);
-            return $label . ': ' . ($c['result'] ? 'passed' : 'failed');
-        }, $condTrace));
-        $this->addTraceStep('Conditions' . $labelSuffix, 'Blocked by conditions', $condDetail);
-        return null;
-    }
-
-    /**
-     * @param array<string, mixed> $redirect
-     * @return bool
-     */
-    private function isAutoRedirect(array $redirect): bool {
-        return isset($redirect['status']) && is_scalar($redirect['status']) &&
-            (int)$redirect['status'] === (int)ABJ404_STATUS_AUTO;
-    }
-
-    /**
-     * Iterate registered matching engines in order. First non-null result wins.
-     *
-     * @param ABJ_404_Solution_MatchRequest $request
-     * @return ABJ_404_Solution_MatchResult|null
-     */
-    private function runMatchingEngines(ABJ_404_Solution_MatchRequest $request): ?ABJ_404_Solution_MatchResult {
-        $enginesToRun = ABJ_404_Solution_EngineProfileResolver::getInstance()
-            ->resolve($request->getRequestedURL(), $this->matchingEngines);
-
-        foreach ($enginesToRun as $engine) {
-            if (!($engine instanceof ABJ_404_Solution_MatchingEngine)) {
-                $this->logger->warn('Matching engine is not an instance of ABJ_404_Solution_MatchingEngine: ' .
-                    (is_object($engine) ? get_class($engine) : gettype($engine)));
-                continue;
-            }
-
-            try {
-                if (!$engine->shouldRun($request)) {
-                    $this->logger->debugMessage('Engine skipped: ' . $engine->getName());
-                    $this->addTraceStep('Engine: ' . $engine->getName(), 'Skipped', 'not applicable');
-                    continue;
-                }
-
-                $result = $engine->match($request);
-
-                if ($result === null) {
-                    $this->logger->debugMessage('Engine returned no match: ' . $engine->getName());
-                    $this->addTraceStep('Engine: ' . $engine->getName(), 'No match');
-                    continue;
-                }
-
-                if ($result->getLink() === '') {
-                    $this->logger->debugMessage('Engine returned empty link, skipping: ' . $engine->getName());
-                    $this->addTraceStep('Engine: ' . $engine->getName(), 'No match', 'empty link');
-                    continue;
-                }
-
-                if ($this->isExcluded($result, $request->getOptions())) {
-                    $this->logger->debugMessage('Match excluded: ' . $engine->getName() . ' id=' . $result->getId());
-                    $this->addTraceStep('Engine: ' . $engine->getName(), 'Excluded', 'post #' . $result->getId());
-                    continue;
-                }
-
-                $this->logger->debugMessage('Engine matched: ' . $engine->getName());
-                $this->addTraceStep(
-                    'Engine: ' . $engine->getName(),
-                    'Matched',
-                    'score ' . $result->getScore() . ' → ' . $result->getLink()
-                );
-                return $result;
-            } catch (\Throwable $e) {
-                $this->logger->warn('Matching engine error (' . $engine->getName() . '): ' . $e->getMessage());
-                $this->addTraceStep('Engine: ' . $engine->getName(), 'Error', $e->getMessage());
-                continue;
-            }
-        }
-
-        $this->addTraceStep('Suggestion engines', 'No match found');
-        return null;
-    }
-
-    /**
-     * Check whether a match result should be excluded from redirect suggestions.
-     *
-     * Checks post meta (_abj404_exclude), term meta, and the legacy excludePages[] option.
-     * External and Home redirect types are never excluded.
-     *
-     * @param ABJ_404_Solution_MatchResult $result
-     * @param array<string, mixed> $options
-     * @return bool
-     */
-    private function isExcluded(ABJ_404_Solution_MatchResult $result, array $options): bool {
-        $type = $result->getType();
-        $id = $result->getId();
-
-        $typeInt = is_numeric($type) ? (int)$type : 0;
-        $typePost = defined('ABJ404_TYPE_POST') ? (int)ABJ404_TYPE_POST : 1;
-        $typeCat = defined('ABJ404_TYPE_CAT') ? (int)ABJ404_TYPE_CAT : 2;
-        $typeTag = defined('ABJ404_TYPE_TAG') ? (int)ABJ404_TYPE_TAG : 3;
-        $typeExternal = defined('ABJ404_TYPE_EXTERNAL') ? (int)ABJ404_TYPE_EXTERNAL : 4;
-        $typeHome = defined('ABJ404_TYPE_HOME') ? (int)ABJ404_TYPE_HOME : 5;
-
-        // External and Home types are never excluded.
-        if ($typeInt === $typeExternal || $typeInt === $typeHome) {
-            return false;
-        }
-
-        // Empty or non-numeric ID — nothing to check.
-        if ($id === '' || !is_numeric($id)) {
-            return false;
-        }
-
-        $idInt = (int)$id;
-
-        // Check per-item meta.
-        if ($typeInt === $typePost) {
-            $meta = $this->callWpFunction('get_post_meta', [$idInt, '_abj404_exclude', true], '');
-            if ($meta === '1') {
-                return true;
-            }
-        } elseif ($typeInt === $typeCat || $typeInt === $typeTag) {
-            $meta = $this->callWpFunction('get_term_meta', [$idInt, '_abj404_exclude', true], '');
-            if ($meta === '1') {
-                return true;
-            }
-        }
-
-        // Check legacy excludePages[] option (covers ALL engines, not just Spelling).
-        $excludePagesRaw = isset($options['excludePages[]']) ? $options['excludePages[]'] : '';
-        $excludePagesJson = is_string($excludePagesRaw) ? $excludePagesRaw : '';
-        if (trim($excludePagesJson) !== '') {
-            $excludePages = json_decode($excludePagesJson);
-            if (!is_array($excludePages)) {
-                $excludePages = [$excludePages];
-            }
-            $key = $id . '|' . $type;
-            foreach ($excludePages as $entry) {
-                if (!is_string($entry) && !is_scalar($entry)) {
-                    continue;
-                }
-                if ((string)$entry === $key) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * @param array<string, mixed> $options
      * @param string $requestedURL
-     * @return bool True if sent to configured default 404 page.
-     */
-    function tryRegexRedirect($options, $requestedURL) {
-        $lookupStart = microtime(true);
-        $regexPermalink = $this->spellChecker->getPermalinkUsingRegEx($requestedURL, $options);
-        $this->recordRedirectLookupTiming($lookupStart);
-        if (!empty($regexPermalink)) {
-            $regexMatchingUrl = isset($regexPermalink['matching_regex']) && is_string($regexPermalink['matching_regex']) ? $regexPermalink['matching_regex'] : '';
-            $regexLink = isset($regexPermalink['link']) && is_string($regexPermalink['link']) ? $regexPermalink['link'] : '';
-            $regexAction = isset($regexPermalink['link']) && is_string($regexPermalink['link']) ? $regexPermalink['link'] : '';
-            $regexType = isset($regexPermalink['type']) && (is_int($regexPermalink['type']) || is_string($regexPermalink['type'])) ? $regexPermalink['type'] : -1;
-            $regexDefaultRedirect = isset($options['default_redirect']) && is_scalar($options['default_redirect']) ? (int)$options['default_redirect'] : 0;
-            $regexCode = isset($regexPermalink['code']) && is_numeric($regexPermalink['code']) && (int)$regexPermalink['code'] > 0
-                ? (int)$regexPermalink['code'] : $regexDefaultRedirect;
-            $this->addTraceStep('Regex rules', 'Matched', $regexMatchingUrl . ' → ' . $regexLink);
-            $this->logRedirectHit($regexMatchingUrl, $regexAction, 'regex match', $requestedURL, $this->trace);
-            $sentTo404Page = $this->notFoundResponse->forceRedirect(
-                $regexLink,
-                $regexCode,
-                $regexType,
-                $requestedURL
-            );
-            if ($sentTo404Page) {
-                return true;
-            }
-            exit;
-        }
-        $this->addTraceStep('Regex rules', 'No match');
-        return false;
-    }
-
-    /**
-     * @param array<string, mixed> $options
-     * @param string $requestedURL
-     * @param array<string, mixed> $redirect
      * @return void
      */
-    function logAReallyLongDebugMessage($options, $requestedURL, $redirect) {
-        if (!$this->logger->isDebug()) {
+    private function triggerAsyncSuggestionsIfNeeded($requestedURL): void {
+        if ($this->spellChecker->does404PageHaveSuggestionsShortcode()) {
+            $this->spellChecker->triggerAndCleanupOnFailure($requestedURL);
+        }
+    }
+
+    /**
+     * @param string $requestedUrl
+     * @param string $action
+     * @param string $matchReason
+     * @param string|null $requestedUrlDetail
+     * @param list<array{step: string, outcome: string, detail: string}>|null $pipelineTrace
+     */
+    private function writeHit(string $requestedUrl, string $action, string $matchReason, ?string $requestedUrlDetail = null, ?array $pipelineTrace = null): void {
+        if (!is_object($this->logsRepository) || !is_callable(array($this->logsRepository, 'logRedirectHit'))) {
             return;
         }
-
-        $optAutoRedirects = isset($options['auto_redirects']) && is_scalar($options['auto_redirects']) ? (string)$options['auto_redirects'] : '';
-        $optAutoScore = isset($options['auto_score']) && is_scalar($options['auto_score']) ? (string)$options['auto_score'] : '';
-        $optTemplatePriority = isset($options['template_redirect_priority']) && is_scalar($options['template_redirect_priority']) ? (string)$options['template_redirect_priority'] : '';
-        $optAutoCats = isset($options['auto_cats']) && is_scalar($options['auto_cats']) ? (string)$options['auto_cats'] : '';
-        $optAutoTags = isset($options['auto_tags']) && is_scalar($options['auto_tags']) ? (string)$options['auto_tags'] : '';
-        $optDest404 = isset($options['dest404page']) && is_scalar($options['dest404page']) ? (string)$options['dest404page'] : '';
-        $debugOptionsMsg = esc_html('auto_redirects: ' . $optAutoRedirects . ', auto_score: ' .
-                $optAutoScore . ', template_redirect_priority: ' . $optTemplatePriority .
-                ', auto_cats: ' . $optAutoCats . ', auto_tags: ' .
-                $optAutoTags . ', dest404page: ' . $optDest404);
-
-        $remoteAddressRaw = isset($_SERVER['REMOTE_ADDR']) && is_string($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : '';
-        $remoteAddress = esc_sql($remoteAddressRaw);
-        if (!is_string($remoteAddress)) {
-            $remoteAddress = '';
-        }
-        if (!array_key_exists('log_raw_ips', $options) || $options['log_raw_ips'] != '1') {
-            $remoteAddress = $this->f->md5lastOctet($remoteAddress);
-        }
-
-        $httpUserAgent = "";
-        if (array_key_exists("HTTP_USER_AGENT", $_SERVER) && is_string($_SERVER['HTTP_USER_AGENT'])) {
-            $httpUserAgent = $_SERVER['HTTP_USER_AGENT'];
-        }
-
-        $requestUriStr = isset($_SERVER['REQUEST_URI']) && is_string($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
-        $debugServerMsg = esc_html('HTTP_USER_AGENT: ' . $httpUserAgent . ', REMOTE_ADDR: ' .
-                $remoteAddress . ', REQUEST_URI: ' . $this->f->normalizeUrlString($requestUriStr));
-        $isSingle = $this->callWpFunction('is_single', array(), false);
-        $isPage = $this->callWpFunction('is_page', array(), false);
-        $isFeed = $this->callWpFunction('is_feed', array(), false);
-        $isTrackback = $this->callWpFunction('is_trackback', array(), false);
-        $isPreview = $this->callWpFunction('is_preview', array(), false);
-        $redirectJson = json_encode($redirect);
-        $this->logger->debugMessage("Processing 404 for URL: " . $requestedURL . " | Redirect: " .
-                wp_kses_post(is_string($redirectJson) ? $redirectJson : '{}') . " | is_single(): " . $isSingle . " | " . "is_page(): " . $isPage .
-                " | is_feed(): " . $isFeed . " | is_trackback(): " . $isTrackback . " | is_preview(): " .
-                $isPreview . " | options: " . $debugOptionsMsg . ', ' . $debugServerMsg);
-    }
-
-    /**
-     * Redirect to destination.
-     *
-     * @param string $requestedURL
-     * @param array<string, mixed> $redirect
-     * @param string $matchReason
-     * @return bool true if user is sent to default 404 page.
-     */
-    function processRedirect($requestedURL, $redirect, $matchReason) {
-        if (($redirect['status'] != ABJ404_STATUS_MANUAL && $redirect['status'] != ABJ404_STATUS_AUTO) || $redirect['disabled'] != 0) {
-            $this->logger->errorMessage("processRedirect() was called with bad redirect data. Data: " .
-                    wp_kses_post(print_r($redirect, true)));
-        }
-
-        $redirectUrl = isset($redirect['url']) && is_string($redirect['url']) ? $redirect['url'] : '';
-        $redirectFinalDest = isset($redirect['final_dest']) && is_scalar($redirect['final_dest']) ? (string)$redirect['final_dest'] : '';
-        $redirectCode = isset($redirect['code']) && is_scalar($redirect['code']) ? (int)$redirect['code'] : 0;
-        $redirectId = isset($redirect['id']) && is_scalar($redirect['id']) ? (string)$redirect['id'] : '0';
-
-        // 410 Gone: send HTTP 410 status and let WordPress render the suggestions page normally.
-        if ($redirectCode === 410) {
-            $this->addTraceStep('Result', 'Responded with 410 Gone', $redirectUrl);
-            $this->logRedirectHit($redirectUrl, '410', $matchReason, null, $this->trace);
-            $this->notFoundResponse->forceRedirect('', 410);
-            // forceRedirect returns false for 410 without exiting — page continues to render.
-            return false;
-        }
-
-        // 451 Unavailable For Legal Reasons: render template and exit.
-        if ($redirectCode === 451) {
-            $this->addTraceStep('Result', 'Responded with 451 Unavailable For Legal Reasons', $redirectUrl);
-            $this->logRedirectHit($redirectUrl, '451', $matchReason, null, $this->trace);
-            $this->notFoundResponse->forceRedirect('', 451);
-            return false;
-        }
-
-        if ($redirect['type'] == ABJ404_TYPE_404_DISPLAYED) {
-            $this->addTraceStep('Result', 'Showed 404 page', $redirectUrl);
-            $this->logRedirectHit($redirectUrl, '404', $matchReason, null, $this->trace);
-            $this->triggerAsyncSuggestionsIfNeeded($requestedURL);
-            $this->emitBenchmarkHeadersIfEnabled();
-            $this->notFoundResponse->sendTo404Page($requestedURL, $matchReason);
-            return true;
-        }
-
-        $isRedirectToCustom404Page = false;
-        if ($redirect['type'] == $this->wpTypePost()) {
-            $options = $this->getRuntimeOptions();
-            $dest404pageRaw = isset($options['dest404page']) ? $options['dest404page'] : null;
-            $dest404page = is_string($dest404pageRaw) ? $dest404pageRaw : null;
-
-            if ($dest404page !== null && $this->notFoundResponse->thereIsAUserSpecified404Page($dest404page)) {
-                $dest404Parts = explode('|', $dest404page);
-                $custom404Id = isset($dest404Parts[0]) ? (int)$dest404Parts[0] : 0;
-                if ($custom404Id > 0 && $redirect['final_dest'] == $custom404Id) {
-                    $isRedirectToCustom404Page = true;
-                }
-            }
-
-            if (!$isRedirectToCustom404Page) {
-                $destPage = $this->callWpFunction('get_post', array($redirect['final_dest']), null);
-                $hasShortcode = (is_object($destPage) && isset($destPage->post_content) && is_string($destPage->post_content))
-                    ? $this->callWpFunction('has_shortcode', array($destPage->post_content, ABJ404_SHORTCODE_NAME), false)
-                    : false;
-                if ($hasShortcode) {
-                    $isRedirectToCustom404Page = true;
-                }
-            }
-        }
-
-        if ($isRedirectToCustom404Page) {
-            $this->previousRequestCookieTracker->setCookieWithPreviousRequest();
-            setcookie(ABJ404_PP . '_STATUS_404', 'true', time() + 20, "/");
-
-            $urlSlugOnly = $this->logic->urlNormalization()->removeHomeDirectory($requestedURL);
-            $spellChecker = abj_service('spell_checker');
-            $options = $this->getRuntimeOptions();
-            // Boundary normalizer: option shape-probing for the suggest_* slice
-            // lives in the VO. See ABJ_404_Solution_SuggestionDisplayOptions.
-            $suggestOpts = ABJ_404_Solution_SuggestionDisplayOptions::fromOptionsArray($options);
-            $spellChecker->findMatchingPosts(
-                $urlSlugOnly,
-                $suggestOpts->getSuggestCatsString(),
-                $suggestOpts->getSuggestTagsString()
-            );
-            $spellChecker->triggerAsyncSuggestionComputation($requestedURL);
-        }
-
-        if ($redirect['type'] == ABJ404_TYPE_EXTERNAL) {
-            $this->addTraceStep('Result', 'Redirected to external URL', $redirectFinalDest);
-            $this->logRedirectHit($redirectUrl, $redirectFinalDest, 'external', null, $this->trace);
-            $this->notFoundResponse->forceRedirect($redirectFinalDest, $redirectCode);
-            exit;
-        }
-
-        // Guard against broken redirects with missing/invalid destinations.
-        $finalDestRaw = trim($redirectFinalDest);
-        $redirectTypeInt = is_scalar($redirect['type']) ? (int)$redirect['type'] : 0;
-        if ($finalDestRaw === '' && $redirectTypeInt !== ABJ404_TYPE_HOME && $redirectTypeInt !== ABJ404_TYPE_404_DISPLAYED) {
-            $this->logger->warn("Redirect destination missing. Sending request to 404 page instead. Redirect ID: " . $redirectId);
-            $this->addTraceStep('Result', 'Showed 404 page — redirect destination missing', 'rule #' . $redirectId);
-            $this->logRedirectHit($redirectUrl, '404', $matchReason . ' (missing destination)', null, $this->trace);
-            $this->triggerAsyncSuggestionsIfNeeded($requestedURL);
-            $this->emitBenchmarkHeadersIfEnabled();
-            $this->notFoundResponse->sendTo404Page($requestedURL, 'missing redirect destination');
-            return true;
-        }
-
-        $key = $redirectFinalDest . "|" . (is_scalar($redirect['type']) ? (string)$redirect['type'] : '');
-        $permalink = ABJ_404_Solution_Functions::permalinkInfoToArray($key, 0);
-
-        $finalLink = (is_array($permalink) && array_key_exists('link', $permalink))
-            ? $permalink['link']
-            : '';
-        if (!is_string($finalLink) || trim($finalLink) === '' || $finalLink === 'dunno') {
-            $this->logger->warn("Resolved permalink is empty/invalid. Sending request to 404 page instead. Redirect ID: " . $redirectId);
-            $this->addTraceStep('Result', 'Showed 404 page — redirect destination invalid', 'rule #' . $redirectId);
-            $this->logRedirectHit($redirectUrl, '404', $matchReason . ' (invalid destination)', null, $this->trace);
-            $this->triggerAsyncSuggestionsIfNeeded($requestedURL);
-            $this->emitBenchmarkHeadersIfEnabled();
-            $this->notFoundResponse->sendTo404Page($requestedURL, 'invalid redirect destination');
-            return true;
-        }
-
-        $redirectedTo = esc_url($finalLink);
-        $urlParts = parse_url($redirectedTo);
-        if (is_array($urlParts) && array_key_exists('path', $urlParts)) {
-            $redirectedTo = $urlParts['path'];
-        }
-
-        $this->addTraceStep('Result', 'Redirected (' . $redirectCode . ')', $redirectedTo);
-        $this->logRedirectHit($redirectUrl, $redirectedTo, $matchReason, null, $this->trace);
-
-        $sendTo404Page = $this->notFoundResponse->forceRedirect(
-            $finalLink,
-            $redirectCode,
-            -1,
-            $requestedURL,
-            $isRedirectToCustom404Page
-        );
-
-        if ($sendTo404Page) {
-            return true;
-        }
-        exit;
-    }
-
-    /**
-     * Self-heal a stale DB_VERSION on the frontend so end users get redirects
-     * without needing an admin visit.
-     *
-     * Returns the (possibly fresh) options array. Caller must re-check
-     * DB_VERSION before continuing — this method may return without healing
-     * (cooldown active, lock held by another worker, or upgrade failed).
-     *
-     * Throttled by a transient so concurrent 404s don't all queue on the
-     * synchronizer lock. PluginLogicVersionUpgrader::upgradeIfNeeded() is
-     * itself locked (synchronizerAcquireLockTry), so the worst case is a
-     * single 300ms lock-acquire attempt per cooldown window.
-     *
-     * @param array<string, mixed> $options Current options as returned by getOptions(true).
-     * @return array<string, mixed> Options after attempted recovery.
-     */
-    private function recoverDbVersionIfStale(array $options): array {
-        $cooldownKey = 'abj404_frontend_db_recovery_cooldown';
-
-        if (function_exists('get_transient') && get_transient($cooldownKey)) {
-            return $options;
-        }
-
-        // Set the cooldown BEFORE attempting recovery so concurrent requests
-        // bail immediately rather than piling onto the lock.
-        if (function_exists('set_transient')) {
-            set_transient($cooldownKey, '1', 5 * 60);
-        }
-
-        try {
-            $upgraded = $this->logic->versionUpgrader()->upgradeIfNeeded($options);
-            if (is_array($upgraded)) {
-                $options = $upgraded;
-            }
-        } catch (\Throwable $e) {
-            $this->logger->warn('Frontend DB version recovery failed: ' . $e->getMessage());
-            return $options;
-        }
-
-        // upgradeIfNeeded ends in updateOptions() which clears the resolved-
-        // options cache, so getOptions(true) returns fresh values from the DB.
-        $fresh = $this->getRuntimeOptions(true);
-        if (isset($fresh['DB_VERSION']) && $fresh['DB_VERSION'] == ABJ404_VERSION) {
-            return $fresh;
-        }
-
-        $observed = (isset($fresh['DB_VERSION']) && is_scalar($fresh['DB_VERSION']))
-            ? (string)$fresh['DB_VERSION']
-            : '(missing)';
-        $this->logger->warn(sprintf(
-            'Frontend DB_VERSION still stale after recovery attempt: have=%s expected=%s',
-            $observed,
-            ABJ404_VERSION
-        ));
-        return $fresh;
-    }
-
-    /**
-     * Trigger async suggestion computation only when needed.
-     * @param string $requestedURL
-     * @return void
-     */
-    private function triggerAsyncSuggestionsIfNeeded($requestedURL) {
-        if ($this->spellChecker->does404PageHaveSuggestionsShortcode()) {
-            $this->spellChecker->triggerAsyncSuggestionComputation($requestedURL);
-        }
+        call_user_func(array($this->logsRepository, 'logRedirectHit'), $requestedUrl, $action, $matchReason, $requestedUrlDetail, $pipelineTrace);
     }
 }
