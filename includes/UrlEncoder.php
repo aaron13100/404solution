@@ -18,25 +18,37 @@ if (!defined('ABSPATH')) {
  * M201 (Functions.php grab-bag split, parent task i802). This is a
  * percent-encoding concern, not a generic string utility.
  *
- * Depends on ABJ_404_Solution_MbStringAdapter for ord() and regexReplace()
- * (sibling task i825 pulled the adapter out of Functions). The constructor
- * also accepts a legacy ABJ_404_Solution_Functions instance for backward
- * compatibility with existing test fixtures - it will extract the adapter
- * from it.
+ * Depends on ABJ_404_Solution_MbStringAdapter for ord() (sibling task
+ * i825) and ABJ_404_Solution_RegexHelper for regexReplace() (sibling
+ * task i826). The constructor accepts the focused adapters directly, or
+ * a legacy ABJ_404_Solution_Functions instance for backward compatibility
+ * with existing test fixtures - it will extract both adapters from it.
  */
 class ABJ_404_Solution_UrlEncoder {
 
     /** @var ABJ_404_Solution_MbStringAdapter */
     private $mbAdapter;
 
+    /** @var ABJ_404_Solution_RegexHelper */
+    private $regexHelper;
+
     /**
      * @param ABJ_404_Solution_MbStringAdapter|ABJ_404_Solution_Functions $adapter
+     * @param ABJ_404_Solution_RegexHelper|null $regexHelper
      */
-    public function __construct($adapter) {
+    public function __construct($adapter, $regexHelper = null) {
         if ($adapter instanceof ABJ_404_Solution_MbStringAdapter) {
             $this->mbAdapter = $adapter;
+            if (!($regexHelper instanceof ABJ_404_Solution_RegexHelper)) {
+                throw new InvalidArgumentException(
+                    'ABJ_404_Solution_UrlEncoder requires a RegexHelper when constructed with an MbStringAdapter; got '
+                    . (is_object($regexHelper) ? get_class($regexHelper) : gettype($regexHelper))
+                );
+            }
+            $this->regexHelper = $regexHelper;
         } else if ($adapter instanceof ABJ_404_Solution_Functions) {
-            $this->mbAdapter = $adapter->getMbStringAdapter();
+            $this->mbAdapter   = $adapter->getMbStringAdapter();
+            $this->regexHelper = $adapter->getRegexHelper();
         } else {
             throw new InvalidArgumentException(
                 'ABJ_404_Solution_UrlEncoder requires an MbStringAdapter or Functions instance; got '
@@ -141,7 +153,7 @@ class ABJ_404_Solution_UrlEncoder {
     public function normalizeURLForCacheKey($url) {
         $url = abj_service('sanitizer')->normalizeUrlString($url);
         // Strip query string (everything after '?')
-        $normalized = $this->mbAdapter->regexReplace('\?.*', '', $url) ?? $url;
+        $normalized = $this->regexHelper->regexReplace('\?.*', '', $url) ?? $url;
         // Apply esc_url for security and consistency
         return esc_url($normalized);
     }

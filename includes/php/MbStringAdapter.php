@@ -12,14 +12,15 @@ if (!defined('ABSPATH')) {
  * needs across hosts with and without the PHP mbstring extension. Two
  * concrete implementations live alongside this base class:
  *
- *   - ABJ_404_Solution_MbStringAdapterMb   - uses mb_* / mb_ereg_* (mbstring extension)
+ *   - ABJ_404_Solution_MbStringAdapterMb   - uses mb_* (mbstring extension)
  *   - ABJ_404_Solution_MbStringAdapterPreg - uses native string / preg_* fallbacks
  *
- * Choose Mb when the mbstring extension is loaded; otherwise Preg. The Preg
- * variant is also used directly by callers that intentionally want PCRE
- * regex semantics regardless of host mbstring availability (e.g. SQL
- * placeholder rewrites that use \d / lookarounds, which mb_ereg's POSIX
- * syntax cannot express).
+ * Choose Mb when the mbstring extension is loaded; otherwise Preg.
+ *
+ * Regex primitives (regexMatch, regexMatchi, regexReplace) and the
+ * urlLooksLikeRegex URL classifier live on ABJ_404_Solution_RegexHelper
+ * (sibling extraction, task i826). This adapter now covers only the
+ * byte-vs-multibyte string primitives.
  *
  * Extracted from ABJ_404_Solution_Functions per design-audit-2026-06-02
  * M201 / M230 (parent task i802, this task i825). Functions previously
@@ -29,8 +30,8 @@ if (!defined('ABSPATH')) {
  * depend on the kitchen-sink Functions class and forced service-locator
  * re-entry from within Functions itself to fetch the polymorphic subclass.
  * Pulling the polymorphic surface into a dedicated adapter lets new callers
- * depend on only what they actually need (the 9 primitives) without
- * inheriting the rest of Functions and without re-entering the container.
+ * depend on only what they actually need without inheriting the rest of
+ * Functions and without re-entering the container.
  */
 abstract class ABJ_404_Solution_MbStringAdapter {
 
@@ -77,40 +78,6 @@ abstract class ABJ_404_Solution_MbStringAdapter {
      * @return string
      */
     abstract public function substr(?string $str, int $start, ?int $length = null): string;
-
-    /**
-     * Regex match. Mb implementations use POSIX (mb_ereg) syntax; Preg
-     * implementations use PCRE syntax (without delimiters - the adapter
-     * supplies them). Callers that intentionally rely on PCRE shorthand
-     * classes (\d, \w, lookarounds, etc.) MUST use the Preg adapter
-     * directly, not the polymorphic one.
-     *
-     * @param string $pattern
-     * @param string $string
-     * @param array<int, string>|null $regs
-     * @return bool|int
-     */
-    abstract public function regexMatch(string $pattern, string $string, ?array &$regs = null);
-
-    /**
-     * Case-insensitive regex match. Same syntax caveat as regexMatch().
-     *
-     * @param string $pattern
-     * @param string $string
-     * @param array<int, string>|null $regs
-     * @return bool|int
-     */
-    abstract public function regexMatchi(string $pattern, string $string, ?array &$regs = null);
-
-    /**
-     * Regex replace. Same syntax caveat as regexMatch().
-     *
-     * @param string $pattern
-     * @param string $replacement
-     * @param string $string
-     * @return string|null
-     */
-    abstract public function regexReplace($pattern, $replacement, $string);
 
     /**
      * Strip invalid UTF-8 byte sequences and problematic control bytes from

@@ -107,6 +107,8 @@ function abj404_autoloader($class) {
 		'ABJ_404_Solution_FunctionsPreg' => 'ABJ_404_Solution_Functions',
 		'ABJ_404_Solution_MbStringAdapterMb' => 'ABJ_404_Solution_MbStringAdapter',
 		'ABJ_404_Solution_MbStringAdapterPreg' => 'ABJ_404_Solution_MbStringAdapter',
+		'ABJ_404_Solution_RegexHelperMb' => 'ABJ_404_Solution_RegexHelper',
+		'ABJ_404_Solution_RegexHelperPreg' => 'ABJ_404_Solution_RegexHelper',
 	];
 
 	// only pay attention if it's for us. don't bother for other things.

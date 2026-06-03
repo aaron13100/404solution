@@ -416,7 +416,9 @@ class ABJ_404_Solution_View_RedirectsTable extends ABJ_404_Solution_ViewComponen
             // Check if URL looks like a regex pattern but is not marked as a regex redirect
             $urlLooksLikeRegexClass = '';
             $rowUrl = is_string($row['url'] ?? '') ? (string)($row['url'] ?? '') : '';
-            $urlLooksLikeRegex = ABJ_404_Solution_Functions::urlLooksLikeRegex($rowUrl);
+            /** @var ABJ_404_Solution_RegexHelper $regexHelper */
+            $regexHelper = abj_service('regex_helper');
+            $urlLooksLikeRegex = $regexHelper->urlLooksLikeRegex($rowUrl);
             $isRegexStatus = ($rowStatus == ABJ404_STATUS_REGEX);
             if ($urlLooksLikeRegex && !$isRegexStatus) {
                 $urlLooksLikeRegexClass = ' url-looks-like-regex';

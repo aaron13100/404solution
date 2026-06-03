@@ -94,11 +94,19 @@ function abj_404_solution_register_core_utilities($container) {
         return ABJ_404_Solution_MbStringAdapterPreg::getInstance();
     });
 
+    $container->set('regex_helper', function($c) {
+        if (extension_loaded('mbstring')) {
+            return ABJ_404_Solution_RegexHelperMb::getInstance();
+        }
+        return ABJ_404_Solution_RegexHelperPreg::getInstance();
+    });
+
     $container->set('functions', function($c) {
         return new ABJ_404_Solution_Functions(
             $c->get('logging'),
             $c->get('request_context'),
-            $c->get('mb_string_adapter')
+            $c->get('mb_string_adapter'),
+            $c->get('regex_helper')
         );
     });
 
@@ -107,7 +115,7 @@ function abj_404_solution_register_core_utilities($container) {
     });
 
     $container->set('url_encoder', function($c) {
-        return new ABJ_404_Solution_UrlEncoder($c->get('mb_string_adapter'));
+        return new ABJ_404_Solution_UrlEncoder($c->get('mb_string_adapter'), $c->get('regex_helper'));
     });
 
     $container->set('sanitizer', function($c) {

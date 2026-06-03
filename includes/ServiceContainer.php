@@ -272,7 +272,11 @@ function abj_service($name) {
     }
 
     if ($name === 'url_encoder' && class_exists('ABJ_404_Solution_UrlEncoder')) {
-        return new ABJ_404_Solution_UrlEncoder(abj_service('mb_string_adapter'));
+        $regexHelper = abj_service('regex_helper');
+        return new ABJ_404_Solution_UrlEncoder(
+            abj_service('mb_string_adapter'),
+            $regexHelper instanceof ABJ_404_Solution_RegexHelper ? $regexHelper : null
+        );
     }
 
     if ($name === 'sanitizer' && class_exists('ABJ_404_Solution_Sanitizer')) {
@@ -285,6 +289,15 @@ function abj_service($name) {
         }
         if (class_exists('ABJ_404_Solution_MbStringAdapterPreg')) {
             return ABJ_404_Solution_MbStringAdapterPreg::getInstance();
+        }
+    }
+
+    if ($name === 'regex_helper') {
+        if (extension_loaded('mbstring') && class_exists('ABJ_404_Solution_RegexHelperMb')) {
+            return ABJ_404_Solution_RegexHelperMb::getInstance();
+        }
+        if (class_exists('ABJ_404_Solution_RegexHelperPreg')) {
+            return ABJ_404_Solution_RegexHelperPreg::getInstance();
         }
     }
 
@@ -336,6 +349,9 @@ function abj_service($name) {
         'mb_string_adapter' => extension_loaded('mbstring')
             ? 'ABJ_404_Solution_MbStringAdapterMb'
             : 'ABJ_404_Solution_MbStringAdapterPreg',
+        'regex_helper' => extension_loaded('mbstring')
+            ? 'ABJ_404_Solution_RegexHelperMb'
+            : 'ABJ_404_Solution_RegexHelperPreg',
         'logging' => 'ABJ_404_Solution_Logging',
         'data_access' => 'ABJ_404_Solution_DataAccess',
         'plugin_logic' => 'ABJ_404_Solution_PluginLogic',

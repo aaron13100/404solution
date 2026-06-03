@@ -20,19 +20,24 @@ class ABJ_404_Solution_Functions {
     /** @var ABJ_404_Solution_MbStringAdapter */
     protected $mbAdapter;
 
+    /** @var ABJ_404_Solution_RegexHelper */
+    protected $regexHelper;
+
     /**
      * Collaborators are passed in by the DI container's 'functions' factory
      * (see bootstrap.php). Nulls are tolerated for early-boot and direct
      * test instantiation; logging() and requestContext() lazy-resolve in
      * that case as a singular bootstrap-only fallback. The mbstring
-     * adapter defaults to the platform-appropriate implementation so
-     * tests and early-boot callers do not have to wire it up explicitly.
+     * adapter and regex helper default to the platform-appropriate
+     * implementation so tests and early-boot callers do not have to wire
+     * them up explicitly.
      *
      * @param ABJ_404_Solution_Logging|null          $logging
      * @param ABJ_404_Solution_RequestContext|null   $requestContext
      * @param ABJ_404_Solution_MbStringAdapter|null  $mbAdapter
+     * @param ABJ_404_Solution_RegexHelper|null      $regexHelper
      */
-    public function __construct($logging = null, $requestContext = null, $mbAdapter = null) {
+    public function __construct($logging = null, $requestContext = null, $mbAdapter = null, $regexHelper = null) {
         $this->injectedLogging        = $logging;
         $this->injectedRequestContext = $requestContext;
         $this->mbAdapter              = $mbAdapter !== null
@@ -40,6 +45,11 @@ class ABJ_404_Solution_Functions {
             : (extension_loaded('mbstring')
                 ? ABJ_404_Solution_MbStringAdapterMb::getInstance()
                 : ABJ_404_Solution_MbStringAdapterPreg::getInstance());
+        $this->regexHelper            = $regexHelper !== null
+            ? $regexHelper
+            : (extension_loaded('mbstring')
+                ? ABJ_404_Solution_RegexHelperMb::getInstance()
+                : ABJ_404_Solution_RegexHelperPreg::getInstance());
     }
 
     /** @return self */
@@ -63,13 +73,24 @@ class ABJ_404_Solution_Functions {
 
     /**
      * Returns the polymorphic mbstring/preg adapter. Useful for callers
-     * that only need the 9 primitives and want to depend on a smaller
+     * that only need the string primitives and want to depend on a smaller
      * interface than ABJ_404_Solution_Functions.
      *
      * @return ABJ_404_Solution_MbStringAdapter
      */
     public function getMbStringAdapter() {
         return $this->mbAdapter;
+    }
+
+    /**
+     * Returns the polymorphic regex helper. Useful for callers that only
+     * need the regex primitives and want to depend on a smaller interface
+     * than ABJ_404_Solution_Functions.
+     *
+     * @return ABJ_404_Solution_RegexHelper
+     */
+    public function getRegexHelper() {
+        return $this->regexHelper;
     }
 
     /**
@@ -233,13 +254,25 @@ class ABJ_404_Solution_Functions {
     }
 
     /**
+     * @param string|null $string
+     * @return string
+     */
+    function sanitizeInvalidUTF8(?string $string): string {
+        return $this->mbAdapter->sanitizeInvalidUTF8($string);
+    }
+
+    // =========================================================================
+    // Regex primitives - delegated to ABJ_404_Solution_RegexHelper
+    // =========================================================================
+
+    /**
      * @param string $pattern
      * @param string $string
      * @param array<int, string>|null $regs
      * @return bool|int
      */
     function regexMatch(string $pattern, string $string, ?array &$regs = null) {
-        return $this->mbAdapter->regexMatch($pattern, $string, $regs);
+        return $this->regexHelper->regexMatch($pattern, $string, $regs);
     }
 
     /**
@@ -249,7 +282,7 @@ class ABJ_404_Solution_Functions {
      * @return bool|int
      */
     function regexMatchi(string $pattern, string $string, ?array &$regs = null) {
-        return $this->mbAdapter->regexMatchi($pattern, $string, $regs);
+        return $this->regexHelper->regexMatchi($pattern, $string, $regs);
     }
 
     /**
@@ -259,15 +292,7 @@ class ABJ_404_Solution_Functions {
      * @return string|null
      */
     function regexReplace($pattern, $replacement, $string) {
-        return $this->mbAdapter->regexReplace($pattern, $replacement, $string);
-    }
-
-    /**
-     * @param string|null $string
-     * @return string
-     */
-    function sanitizeInvalidUTF8(?string $string): string {
-        return $this->mbAdapter->sanitizeInvalidUTF8($string);
+        return $this->regexHelper->regexReplace($pattern, $replacement, $string);
     }
 
     /**  Used with array_filter()
@@ -428,49 +453,6 @@ class ABJ_404_Solution_Functions {
         $built = http_build_query($queryParts, '', '&', PHP_QUERY_RFC3986);
         $decoded = rawurldecode($built);
         return $sanitizer->normalizeUrlString($decoded, array('decode' => false));
-    }
-
-    /**
-     * Check if a URL appears to contain regex patterns.
-     *
-     * This is used to warn users when a redirect URL looks like it contains
-     * regex syntax but is not marked as a regex redirect.
-     *
-     * @param string $url The URL to check
-     * @return bool True if the URL appears to contain regex patterns
-     */
-    static function urlLooksLikeRegex($url) {
-        if (empty($url) || !is_string($url)) {
-            return false;
-        }
-
-        // Common regex patterns that are unlikely to appear in normal URLs
-        $regexIndicators = array(
-            '/\(\.\*\)/',           // (.*)  - common capture-all pattern
-            '/\(\.\+\)/',           // (.+)  - one or more of anything
-            '/\(\?\:/',             // (?:   - non-capturing group
-            '/\(\?=/',              // (?=   - positive lookahead
-            '/\(\?!/',              // (?!   - negative lookahead
-            '/\[\^[^\]]+\]/',       // [^...]  - negated character class
-            '/\[[a-z]-[a-z]\]/i',   // [a-z] or [A-Z] - character range
-            '/\[[0-9]-[0-9]\]/',    // [0-9] - digit range
-            '/\\\\d/',              // \d    - digit shorthand
-            '/\\\\w/',              // \w    - word character shorthand
-            '/\\\\s/',              // \s    - whitespace shorthand
-            '/\.\*/',               // .*    - match anything (greedy)
-            '/\.\+/',               // .+    - match one or more of anything
-            '/\.\?/',               // .?    - match zero or one of anything
-            '/\{\d+,?\d*\}/',       // {n} or {n,} or {n,m} - quantifiers
-            '/\|/',                 // |     - alternation (but common in some URLs, so check context)
-        );
-
-        foreach ($regexIndicators as $pattern) {
-            if (preg_match($pattern, $url)) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     // =========================================================================
