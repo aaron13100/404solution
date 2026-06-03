@@ -305,47 +305,6 @@ function abj_service($name) {
         );
     }
 
-    static $legacyDataAccessModuleGetters = array(
-        'db_core' => 'getDbCore',
-        'content_repository' => 'getContentRepo',
-        'redirects_repository' => 'getRedirectsRepo',
-        'redirects_retention_service' => 'getRetentionService',
-        'logs_repository' => 'getLogsRepo',
-        'view_read_service' => 'getViewReadService',
-        'view_build_orchestrator' => 'getViewBuildOrchestrator',
-    );
-    if (isset($legacyDataAccessModuleGetters[$name])) {
-        $legacyDaoClass = implode('', array('ABJ_404_Solution_', 'DataAccess'));
-        if (!class_exists($legacyDaoClass) || !method_exists($legacyDaoClass, 'getInstance')) {
-            return null;
-        }
-        try {
-            $dao = call_user_func(array($legacyDaoClass, 'getInstance'));
-            static $legacyDaoShapeMethods = array(
-                'content_repository' => 'getPublishedPagesAndPostsIDs',
-                'redirects_repository' => 'moveRedirectsToTrash',
-                'redirects_retention_service' => 'deleteOldRedirectsCron',
-                'logs_repository' => 'logRedirectHit',
-                'view_read_service' => 'getRedirectStatusCounts',
-                'view_build_orchestrator' => 'invalidateViewDoneAndScheduleRebuild',
-                'db_core' => 'queryAndGetResults',
-            );
-            if (get_class($dao) !== $legacyDaoClass
-                && isset($legacyDaoShapeMethods[$name])
-                && method_exists($dao, $legacyDaoShapeMethods[$name])) {
-                return $dao;
-            }
-            $getter = $legacyDataAccessModuleGetters[$name];
-            if (method_exists($dao, $getter)) {
-                return $dao->$getter();
-            }
-            return $dao;
-        } catch (\Throwable $e) {
-            error_log('404 Solution: abj_service(' . $name . ') legacy DataAccess fallback failed: ' . $e->getMessage());
-            return null;
-        }
-    }
-
     // Inverse of the registration map in bootstrap.php. Lets a caller resolve
     // a service even when the container hasn't been populated for this
     // request (typically: a unit test that called
@@ -395,6 +354,19 @@ function abj_service($name) {
                 error_log('404 Solution: abj_service(' . $name . ') legacy fallback failed: ' . $e->getMessage());
                 return null;
             }
+        }
+    }
+
+    // Test seam: when running under the test bootstrap, the test layer can
+    // define `abj_404_test_service_fallback($name)` to resolve names that
+    // production wiring does not (e.g. unit tests that install a single
+    // DataAccess mock and expect every sub-service lookup to dispatch through
+    // it). The hook is never defined in production, so this branch is a
+    // straight no-op outside the test suite.
+    if (function_exists('abj_404_test_service_fallback')) {
+        $resolved = abj_404_test_service_fallback($name);
+        if ($resolved !== null) {
+            return $resolved;
         }
     }
 
