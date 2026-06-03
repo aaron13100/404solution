@@ -8,7 +8,11 @@ if (!defined('ABSPATH')) {
 require_once __DIR__ . '/DatabaseUpgradeCoordinator.php';
 require_once __DIR__ . '/DatabaseUpgradeComponent.php';
 require_once __DIR__ . '/DatabaseUpgradeNGram.php';
-require_once __DIR__ . '/DatabaseUpgradeMaintenance.php';
+require_once __DIR__ . '/DatabaseUpgradeEngineNormalization.php';
+require_once __DIR__ . '/DatabaseUpgradeCollationDrift.php';
+require_once __DIR__ . '/DatabaseUpgradeSelfHeal.php';
+require_once __DIR__ . '/DatabaseUpgradeCanonicalUrlBackfill.php';
+require_once __DIR__ . '/DatabaseUpgradeDailyMaintenance.php';
 require_once __DIR__ . '/DatabaseUpgradePluginUpdate.php';
 require_once __DIR__ . '/DatabaseUpgradeTableRepair.php';
 require_once __DIR__ . '/DatabaseUpgradeIndexes.php';
@@ -169,8 +173,20 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 	/** @var ABJ_404_Solution_DatabaseUpgradeNGram */
 	private $nGramUpgrade;
 
-	/** @var ABJ_404_Solution_DatabaseUpgradeMaintenance */
-	private $maintenanceUpgrade;
+	/** @var ABJ_404_Solution_DatabaseUpgradeEngineNormalization */
+	private $engineNormalizationUpgrade;
+
+	/** @var ABJ_404_Solution_DatabaseUpgradeCollationDrift */
+	private $collationDriftUpgrade;
+
+	/** @var ABJ_404_Solution_DatabaseUpgradeSelfHeal */
+	private $selfHealUpgrade;
+
+	/** @var ABJ_404_Solution_DatabaseUpgradeCanonicalUrlBackfill */
+	private $canonicalUrlBackfillUpgrade;
+
+	/** @var ABJ_404_Solution_DatabaseUpgradeDailyMaintenance */
+	private $dailyMaintenanceUpgrade;
 
 	/** @var ABJ_404_Solution_DatabaseUpgradePluginUpdate */
 	private $pluginUpdateUpgrade;
@@ -226,7 +242,11 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 
 		$componentDeps = $this->buildComponentDependencyMap();
 		$this->nGramUpgrade = new ABJ_404_Solution_DatabaseUpgradeNGram($this, $componentDeps);
-		$this->maintenanceUpgrade = new ABJ_404_Solution_DatabaseUpgradeMaintenance($this, $componentDeps);
+		$this->engineNormalizationUpgrade = new ABJ_404_Solution_DatabaseUpgradeEngineNormalization($this, $componentDeps);
+		$this->collationDriftUpgrade = new ABJ_404_Solution_DatabaseUpgradeCollationDrift($this, $componentDeps);
+		$this->selfHealUpgrade = new ABJ_404_Solution_DatabaseUpgradeSelfHeal($this, $componentDeps);
+		$this->canonicalUrlBackfillUpgrade = new ABJ_404_Solution_DatabaseUpgradeCanonicalUrlBackfill($this, $componentDeps);
+		$this->dailyMaintenanceUpgrade = new ABJ_404_Solution_DatabaseUpgradeDailyMaintenance($this, $componentDeps);
 		$this->pluginUpdateUpgrade = new ABJ_404_Solution_DatabaseUpgradePluginUpdate($this, $componentDeps);
 		$this->tableRepairUpgrade = new ABJ_404_Solution_DatabaseUpgradeTableRepair($this, $componentDeps);
 		$this->indexesUpgrade = new ABJ_404_Solution_DatabaseUpgradeIndexes($this, $componentDeps);
@@ -264,26 +284,26 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 			'ensureLogsCompositeIndex' => 'indexesUpgrade',
 			'ensureLogsv2CanonicalUrlColumn' => 'indexesUpgrade',
 			'ensureRedirectsCanonicalUrlColumn' => 'indexesUpgrade',
-			'updateTableEngineToInnoDB' => 'maintenanceUpgrade',
-			'getTableCollation' => 'maintenanceUpgrade',
-			'getTableCollationFromShowCreate' => 'maintenanceUpgrade',
-			'getTableCollationFromInformationSchema' => 'maintenanceUpgrade',
-			'getDefaultCollationForCharset' => 'maintenanceUpgrade',
-			'sanitizeCollationIdentifier' => 'maintenanceUpgrade',
-			'resolveTargetUtf8mb4Collation' => 'maintenanceUpgrade',
-			'correctCollations' => 'maintenanceUpgrade',
-			'tableHasMismatchedCharacterColumnCollation' => 'maintenanceUpgrade',
-			'runDailyInsuranceCheck' => 'maintenanceUpgrade',
-			'runSelfHealPrologue' => 'maintenanceUpgrade',
-			'verifyAndRepairCurrentSite' => 'maintenanceUpgrade',
-			'cleanupExpiredRateLimitTransients' => 'maintenanceUpgrade',
-			'runDatabaseMaintenanceTasks' => 'maintenanceUpgrade',
-			'refreshViewDoneSnapshotInline' => 'maintenanceUpgrade',
-			'backfillRedirectsCanonicalUrl' => 'maintenanceUpgrade',
-			'backfillLogsv2CanonicalUrl' => 'maintenanceUpgrade',
-			'scheduleLogsv2CanonicalUrlBackfill' => 'maintenanceUpgrade',
-			'shouldScheduleLogsv2CanonicalBackfillViaCron' => 'maintenanceUpgrade',
-			'columnExists' => 'maintenanceUpgrade',
+			'updateTableEngineToInnoDB' => 'engineNormalizationUpgrade',
+			'getTableCollation' => 'collationDriftUpgrade',
+			'getTableCollationFromShowCreate' => 'collationDriftUpgrade',
+			'getTableCollationFromInformationSchema' => 'collationDriftUpgrade',
+			'getDefaultCollationForCharset' => 'collationDriftUpgrade',
+			'sanitizeCollationIdentifier' => 'collationDriftUpgrade',
+			'resolveTargetUtf8mb4Collation' => 'collationDriftUpgrade',
+			'correctCollations' => 'collationDriftUpgrade',
+			'tableHasMismatchedCharacterColumnCollation' => 'collationDriftUpgrade',
+			'runDailyInsuranceCheck' => 'selfHealUpgrade',
+			'runSelfHealPrologue' => 'selfHealUpgrade',
+			'verifyAndRepairCurrentSite' => 'selfHealUpgrade',
+			'cleanupExpiredRateLimitTransients' => 'dailyMaintenanceUpgrade',
+			'runDatabaseMaintenanceTasks' => 'dailyMaintenanceUpgrade',
+			'refreshViewDoneSnapshotInline' => 'dailyMaintenanceUpgrade',
+			'backfillRedirectsCanonicalUrl' => 'canonicalUrlBackfillUpgrade',
+			'backfillLogsv2CanonicalUrl' => 'canonicalUrlBackfillUpgrade',
+			'scheduleLogsv2CanonicalUrlBackfill' => 'canonicalUrlBackfillUpgrade',
+			'shouldScheduleLogsv2CanonicalBackfillViaCron' => 'canonicalUrlBackfillUpgrade',
+			'columnExists' => 'canonicalUrlBackfillUpgrade',
 			'scheduleBackgroundMultisiteBatch' => 'multiSiteUpgrade',
 			'processMultisiteBatch' => 'multiSiteUpgrade',
 			'scheduleBackgroundMultisiteActivation' => 'multiSiteUpgrade',
@@ -377,8 +397,20 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 		if (!$this->nGramUpgrade instanceof ABJ_404_Solution_DatabaseUpgradeNGram) {
 			$this->nGramUpgrade = new ABJ_404_Solution_DatabaseUpgradeNGram($this, $componentDeps);
 		}
-		if (!$this->maintenanceUpgrade instanceof ABJ_404_Solution_DatabaseUpgradeMaintenance) {
-			$this->maintenanceUpgrade = new ABJ_404_Solution_DatabaseUpgradeMaintenance($this, $componentDeps);
+		if (!$this->engineNormalizationUpgrade instanceof ABJ_404_Solution_DatabaseUpgradeEngineNormalization) {
+			$this->engineNormalizationUpgrade = new ABJ_404_Solution_DatabaseUpgradeEngineNormalization($this, $componentDeps);
+		}
+		if (!$this->collationDriftUpgrade instanceof ABJ_404_Solution_DatabaseUpgradeCollationDrift) {
+			$this->collationDriftUpgrade = new ABJ_404_Solution_DatabaseUpgradeCollationDrift($this, $componentDeps);
+		}
+		if (!$this->selfHealUpgrade instanceof ABJ_404_Solution_DatabaseUpgradeSelfHeal) {
+			$this->selfHealUpgrade = new ABJ_404_Solution_DatabaseUpgradeSelfHeal($this, $componentDeps);
+		}
+		if (!$this->canonicalUrlBackfillUpgrade instanceof ABJ_404_Solution_DatabaseUpgradeCanonicalUrlBackfill) {
+			$this->canonicalUrlBackfillUpgrade = new ABJ_404_Solution_DatabaseUpgradeCanonicalUrlBackfill($this, $componentDeps);
+		}
+		if (!$this->dailyMaintenanceUpgrade instanceof ABJ_404_Solution_DatabaseUpgradeDailyMaintenance) {
+			$this->dailyMaintenanceUpgrade = new ABJ_404_Solution_DatabaseUpgradeDailyMaintenance($this, $componentDeps);
 		}
 		if (!$this->pluginUpdateUpgrade instanceof ABJ_404_Solution_DatabaseUpgradePluginUpdate) {
 			$this->pluginUpdateUpgrade = new ABJ_404_Solution_DatabaseUpgradePluginUpdate($this, $componentDeps);
@@ -404,7 +436,11 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 
 		foreach ([
 			$this->nGramUpgrade,
-			$this->maintenanceUpgrade,
+			$this->engineNormalizationUpgrade,
+			$this->collationDriftUpgrade,
+			$this->selfHealUpgrade,
+			$this->canonicalUrlBackfillUpgrade,
+			$this->dailyMaintenanceUpgrade,
 			$this->pluginUpdateUpgrade,
 			$this->tableRepairUpgrade,
 			$this->indexesUpgrade,

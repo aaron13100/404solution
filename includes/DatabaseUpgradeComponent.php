@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
  * @method mixed updateTableEngineToInnoDB()
  * @method mixed createIndexes()
  * @method mixed backfillRedirectsCanonicalUrl()
+ * @method mixed backfillLogsv2CanonicalUrl()
  * @method mixed renameAbj404TablesToLowerCase()
  * @method mixed runSelfHealPrologue()
  * @method mixed correctIssuesBefore()
