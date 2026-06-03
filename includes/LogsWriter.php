@@ -170,7 +170,7 @@ class ABJ_404_Solution_LogsWriter {
         $escapeHtml = function($value) {
             return function_exists('esc_html') ? esc_html($value) : htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
         };
-        $this->logger->debugMessage("Logging redirect. Referer: " . $escapeHtml($referer) . " | Current user: " . $current_user_name . " | From: " . $helperFunctions->normalizeUrlString($requestUri) . $escapeHtml(" to: ") . $escapeHtml($action) . ', Reason: ' . $matchReason . ", Ignore msg(s): " . $reasonMessage . ', Execution time: ' . round((float)$helperFunctions->getExecutionTime(), 2) . ' seconds, permalinks found: ' . $permalinksKept);
+        $this->logger->debugMessage("Logging redirect. Referer: " . $escapeHtml($referer) . " | Current user: " . $current_user_name . " | From: " . abj_service('sanitizer')->normalizeUrlString($requestUri) . $escapeHtml(" to: ") . $escapeHtml($action) . ', Reason: ' . $matchReason . ", Ignore msg(s): " . $reasonMessage . ', Execution time: ' . round((float)$helperFunctions->getExecutionTime(), 2) . ' seconds, permalinks found: ' . $permalinksKept);
 
         $usernameLookupID = $this->lookups->insertLookupValueAndGetID($current_user_name);
 

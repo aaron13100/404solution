@@ -88,10 +88,9 @@ class ABJ_404_Solution_Ajax_SuggestionPolling {
         }
 
         // Sanitize input
-        $f = abj_service('functions');
         if (isset($_POST['url'])) {
             $rawUrl = function_exists('wp_unslash') ? wp_unslash($_POST['url']) : $_POST['url'];
-            $requestedURL = $f->normalizeUrlString($rawUrl);
+            $requestedURL = abj_service('sanitizer')->normalizeUrlString($rawUrl);
         } else {
             $requestedURL = '';
         }

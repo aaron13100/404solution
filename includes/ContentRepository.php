@@ -129,7 +129,7 @@ class ABJ_404_Solution_ContentRepository implements ABJ_404_Solution_ContentRepo
                 $specifiedSlug = str_replace('utf8mb4_unicode_ci', $resolvedCollation, $specifiedSlug);
             } else {
                 // latin1 databases cannot safely compare utf8mb4 casts; use the native column comparison unless the slug contains 4-byte characters.
-                if ($this->f->containsUtf8mb4Characters($slug)) {
+                if (abj_service('sanitizer')->containsUtf8mb4Characters($slug)) {
                     $specifiedSlug = '';
                 } else {
                     $specifiedSlug = " */\n and wp_posts.post_name = "

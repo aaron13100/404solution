@@ -78,10 +78,9 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
             wp_die('Missing required parameters');
         }
 
-        // URL normalization requires the Functions service.
-        $f = abj_service('functions');
+        // URL normalization requires the Sanitizer service.
         $rawUrl = function_exists('wp_unslash') ? wp_unslash($_POST['url']) : $_POST['url'];
-        $requestedURL = $f->normalizeUrlString($rawUrl);
+        $requestedURL = abj_service('sanitizer')->normalizeUrlString($rawUrl);
         if (empty($requestedURL)) {
             wp_die('Missing required parameters');
         }

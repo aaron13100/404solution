@@ -282,7 +282,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
                 return $this->adaptPreviousRequestCookieTracker($readCookieWithPreviousRqeuestShort, $setCookieWithPreviousRequest);
             }
         }
-        return new ABJ_404_Solution_PreviousRequestCookieTracker($this->f, $this->logger);
+        return new ABJ_404_Solution_PreviousRequestCookieTracker($this->logger);
     }
 
     /**

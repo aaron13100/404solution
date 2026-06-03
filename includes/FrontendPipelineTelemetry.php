@@ -99,7 +99,7 @@ class ABJ_404_Solution_FrontendPipelineTelemetry {
 
         $requestUriStr = isset($_SERVER['REQUEST_URI']) && is_string($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
         $debugServerMsg = esc_html('HTTP_USER_AGENT: ' . $httpUserAgent . ', REMOTE_ADDR: ' .
-                $remoteAddress . ', REQUEST_URI: ' . $this->f->normalizeUrlString($requestUriStr));
+                $remoteAddress . ', REQUEST_URI: ' . abj_service('sanitizer')->normalizeUrlString($requestUriStr));
         $isSingle = $this->callWpFunction('is_single', array(), false);
         $isPage = $this->callWpFunction('is_page', array(), false);
         $isFeed = $this->callWpFunction('is_feed', array(), false);

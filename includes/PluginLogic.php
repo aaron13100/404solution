@@ -154,7 +154,7 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
         }
 
 	    	// Fix HIGH #2 (4th review): Decode subdirectory for consistency with runtime processing
-	        $decodedPath = $this->f->normalizeUrlString(rtrim($urlPath, '/'));
+	        $decodedPath = abj_service('sanitizer')->normalizeUrlString(rtrim($urlPath, '/'));
 	        if (!is_string($decodedPath)) {
 	        	$decodedPath = '';
 	        }

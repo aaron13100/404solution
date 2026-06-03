@@ -83,111 +83,6 @@ abstract class ABJ_404_Solution_Functions {
         return abj_service('request_context');
     }
 
-    /**
-     * Recursively applies `sanitize_text_field` to strings in an array or other data structure.
-     * @param mixed $data The data to sanitize. If an array, will recursively
-     * apply this function to all elements.
-     * @return mixed The sanitized data.
-     */
-    function sanitize_text_field_recursive($data) {
-        if (is_array($data)) {
-            // Recursively apply to each element
-            return array_map([$this, 'sanitize_text_field_recursive'], $data);
-        }
-
-        return sanitize_text_field(is_string($data) ? $data : (is_scalar($data) ? (string)$data : ''));
-    }
-
-    /** Escape a string to avoid Cross Site Scripting (XSS) attacks by encoding unsafe HTML characters.
-     * @param string $value The string to be escaped.
-     * @return string The escaped string.
-     */
-    function escapeForXSS(?string $value): string {
-        if ($value === null) {
-            return '';
-        }
-        // Remove control characters and other unsafe characters
-        $value = preg_replace('/[\x00-\x1F\x7F]/u', '', $value) ?? '';
-        // Remove any other characters you consider unsafe
-        $value = preg_replace('/[<>"\'`{}()]/u', '', $value) ?? '';
-
-        return $value;
-    }
-
-    /**
-     * Normalize a URL string for storage or matching.
-     * - Optionally decode percent-encoded octets
-     * - Strip invalid UTF-8/control bytes
-     *
-     * @param string|null $url
-     * @param array<string, bool> $options Supported keys: decode (bool)
-     * @return string
-     */
-    function normalizeUrlString($url, array $options = array()) {
-        $options = array_merge(array('decode' => true), $options);
-
-        if ($url === null || $url === '') {
-            return '';
-        }
-
-        if (!is_string($url)) {
-            $url = strval($url);
-        }
-
-        $url = trim($url);
-        if ($options['decode']) {
-            $url = rawurldecode($url);
-        }
-
-        $url = $this->sanitizeInvalidUTF8($url);
-        // Remove remaining control characters (keep whitespace)
-        $url = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $url) ?? $url;
-
-        return $url;
-    }
-
-    /**
-     * Sanitize URL components without stripping reserved characters.
-     * Keeps characters like ()[]{} for matching but removes invalid UTF-8/control bytes.
-     *
-     * @param mixed $value
-     * @return mixed
-     */
-    function sanitizeUrlComponent($value) {
-        if (is_array($value)) {
-            return array_map([$this, 'sanitizeUrlComponent'], $value);
-        }
-
-        if ($value === null || $value === '') {
-            return '';
-        }
-
-        if (!is_string($value)) {
-            $value = is_scalar($value) ? strval($value) : '';
-        }
-
-        $value = $this->sanitizeInvalidUTF8($value);
-        $value = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $value);
-
-        return $value;
-    }
-
-    /**
-     * Check whether a string contains any UTF-8 4-byte characters (codepoints > U+FFFF).
-     * These characters require utf8mb4 storage; they cannot exist in a utf8mb3 or latin1 column.
-     *
-     * @param string $string
-     * @return bool true if the string contains at least one 4-byte UTF-8 character
-     */
-    function containsUtf8mb4Characters(string $string): bool {
-        if ($string === '') {
-            return false;
-        }
-        // 4-byte UTF-8 sequences start with a byte in the range F0-F4
-        // followed by three continuation bytes (80-BF).
-        return (bool) preg_match('/[\xF0-\xF4][\x80-\xBF]{3}/', $string);
-    }
-
     /** Uses explode() to return an array.
      * @param string $string
      * @return array<int, string>
@@ -458,19 +353,20 @@ abstract class ABJ_404_Solution_Functions {
         if (!array_key_exists('query', $urlParts) || $urlParts['query'] == '') {
             return '';
         }
-        
+
         // parse it into an array
         $queryParts = array();
         parse_str($urlParts['query'], $queryParts);
-        
+
         // sort the parts
         ksort($queryParts);
 
-        $sanitized = $this->sanitizeUrlComponent($queryParts);
+        $sanitizer = abj_service('sanitizer');
+        $sanitized = $sanitizer->sanitizeUrlComponent($queryParts);
         $queryParts = is_array($sanitized) ? $sanitized : $queryParts;
         $built = http_build_query($queryParts, '', '&', PHP_QUERY_RFC3986);
         $decoded = rawurldecode($built);
-        return $this->normalizeUrlString($decoded, array('decode' => false));
+        return $sanitizer->normalizeUrlString($decoded, array('decode' => false));
     }
 
     /** We have to remove any 'p=##' because it will cause a 404 otherwise.
@@ -488,11 +384,12 @@ abstract class ABJ_404_Solution_Functions {
         }
 
         // rebuild the string.
-        $sanitized = $this->sanitizeUrlComponent($queryParts);
+        $sanitizer = abj_service('sanitizer');
+        $sanitized = $sanitizer->sanitizeUrlComponent($queryParts);
         $queryParts = is_array($sanitized) ? $sanitized : $queryParts;
         $built = http_build_query($queryParts, '', '&', PHP_QUERY_RFC3986);
         $decoded = rawurldecode($built);
-        return $this->normalizeUrlString($decoded, array('decode' => false));
+        return $sanitizer->normalizeUrlString($decoded, array('decode' => false));
     }
 
     /**
@@ -600,20 +497,20 @@ abstract class ABJ_404_Solution_Functions {
             return $defaultValue;
         }
 
-        $f = $this;
+        $sanitizer = abj_service('sanitizer');
         $unslash = function($value) {
             return function_exists('wp_unslash') ? wp_unslash($value) : $value;
         };
 
         if (is_array($returnValue)) {
-            return array_map(function($value) use ($f, $unslash) {
+            return array_map(function($value) use ($sanitizer, $unslash) {
                 $value = $unslash($value);
-                return $f->normalizeUrlString($value);
+                return $sanitizer->normalizeUrlString($value);
             }, $returnValue);
         }
 
         $returnValue = $unslash($returnValue);
-        return $f->normalizeUrlString($returnValue);
+        return $sanitizer->normalizeUrlString($returnValue);
     }
 
 }

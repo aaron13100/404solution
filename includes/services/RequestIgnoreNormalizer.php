@@ -88,7 +88,7 @@ class ABJ_404_Solution_RequestIgnoreNormalizer {
         $pageid = (int)$pageidRaw;
         if (!empty($pageid)) {
             $rawPermalink = get_permalink($pageid);
-            $permalink = $this->f->normalizeUrlString($rawPermalink !== false ? $rawPermalink : null);
+            $permalink = abj_service('sanitizer')->normalizeUrlString($rawPermalink !== false ? $rawPermalink : null);
             $status = get_post_status($pageid);
             if (($permalink != false) &&
                     (in_array($status, array('publish', 'published')))) {

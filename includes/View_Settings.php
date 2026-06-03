@@ -54,8 +54,7 @@ class ABJ_404_Solution_View_Settings extends ABJ_404_Solution_ViewComponent {
         $settingsMode = abj_service('settings_mode_preference')->getMode();
 
         // if the current URL does not match the chosen menuLocation then redirect to the correct URL
-        $helperFunctions = abj_service('functions');
-        $urlParts = parse_url($helperFunctions->normalizeUrlString($_SERVER['REQUEST_URI'] ?? ''));
+        $urlParts = parse_url(abj_service('sanitizer')->normalizeUrlString($_SERVER['REQUEST_URI'] ?? ''));
         $currentURL = (is_array($urlParts) && isset($urlParts['path'])) ? $urlParts['path'] : '';
         if (is_array($options) && isset($options['menuLocation']) &&
                 $options['menuLocation'] == 'settingsLevel') {

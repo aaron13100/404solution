@@ -127,7 +127,7 @@ class ABJ_404_Solution_PluginLogicUrlNormalization {
      * @return string
      */
     function normalizeUserProvidedPath($url) {
-        $url = $this->f->normalizeUrlString($url);
+        $url = abj_service('sanitizer')->normalizeUrlString($url);
         if ($url === '') {
             return '';
         }
@@ -142,7 +142,7 @@ class ABJ_404_Solution_PluginLogicUrlNormalization {
      * @return string
      */
     function normalizeExternalDestinationUrl($url) {
-        return $this->f->normalizeUrlString($url);
+        return abj_service('sanitizer')->normalizeUrlString($url);
     }
 
     /**

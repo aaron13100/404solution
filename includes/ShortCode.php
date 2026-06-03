@@ -330,7 +330,7 @@ class ABJ_404_Solution_ShortCode {
         
         $requestUriVal = isset($_SERVER['REQUEST_URI']) && is_string($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
         $currentSlug = $abj404logic->urlNormalization()->removeHomeDirectory(
-                $f->regexReplace('\?.*', '', $f->normalizeUrlString($requestUriVal)));
+                $f->regexReplace('\?.*', '', abj_service('sanitizer')->normalizeUrlString($requestUriVal)));
         $displayed = 0;
         $commentPartAndQueryPart = abj_service('not_found_response')->getCommentPartAndQueryPartOfRequest();
 
@@ -442,7 +442,7 @@ class ABJ_404_Solution_ShortCode {
         $cookieName = ABJ404_PP . '_REQUEST_URI';
         $cookieVal = isset($_COOKIE[$cookieName]) && is_string($_COOKIE[$cookieName]) ? $_COOKIE[$cookieName] : '';
         if ($cookieVal !== '') {
-            $urlRequest = $urlEncoder->normalizeURLForCacheKey($f->normalizeUrlString($cookieVal));
+            $urlRequest = $urlEncoder->normalizeURLForCacheKey(abj_service('sanitizer')->normalizeUrlString($cookieVal));
             $cookieScripts .= "<script> \n" .
                     "   var d = new Date(); \n" .
                     "   d.setTime(d.getTime() - (60 * 5)); \n" .
@@ -456,7 +456,7 @@ class ABJ_404_Solution_ShortCode {
         $updateCookieVal = isset($_COOKIE[$updateURLCookieName]) && is_string($_COOKIE[$updateURLCookieName]) ? $_COOKIE[$updateURLCookieName] : '';
         if ($updateCookieVal !== '') {
             if ($urlRequest == '') {
-                $urlRequest = $urlEncoder->normalizeURLForCacheKey($f->normalizeUrlString($updateCookieVal));
+                $urlRequest = $urlEncoder->normalizeURLForCacheKey(abj_service('sanitizer')->normalizeUrlString($updateCookieVal));
             }
             $cookieScripts .= "<script> \n" .
                 "   var d = new Date(); /* delete the cookie */\n" .
@@ -468,13 +468,13 @@ class ABJ_404_Solution_ShortCode {
 
         $ctxUrl = abj_service('request_context')->requested_url;
         if ($ctxUrl !== '') {
-            $urlRequest = $urlEncoder->normalizeURLForCacheKey($f->normalizeUrlString($ctxUrl));
+            $urlRequest = $urlEncoder->normalizeURLForCacheKey(abj_service('sanitizer')->normalizeUrlString($ctxUrl));
         }
 
         $queryParamName = ABJ404_PP . '_ref';
         $getParamVal = isset($_GET[$queryParamName]) && is_string($_GET[$queryParamName]) ? $_GET[$queryParamName] : '';
         if ($urlRequest == '' && $getParamVal !== '') {
-            $urlRequest = $urlEncoder->normalizeURLForCacheKey($f->normalizeUrlString($getParamVal));
+            $urlRequest = $urlEncoder->normalizeURLForCacheKey(abj_service('sanitizer')->normalizeUrlString($getParamVal));
         }
 
         return array('url' => $urlRequest, 'cookieScripts' => $cookieScripts);
@@ -586,7 +586,7 @@ class ABJ_404_Solution_ShortCode {
         $currentSlug = '';
         if (isset($_SERVER['REQUEST_URI']) && is_string($_SERVER['REQUEST_URI'])) {
             $currentSlug = $abj404logic->urlNormalization()->removeHomeDirectory(
-                $f->regexReplace('\?.*', '', $f->normalizeUrlString($_SERVER['REQUEST_URI'])));
+                $f->regexReplace('\?.*', '', abj_service('sanitizer')->normalizeUrlString($_SERVER['REQUEST_URI'])));
         }
 
         $displayed = 0;

@@ -213,6 +213,7 @@ class ABJ_404_Solution_ServiceContainer {
  * @phpstan-return (
  *     $name is 'functions' ? ABJ_404_Solution_Functions : (
  *     $name is 'url_encoder' ? ABJ_404_Solution_UrlEncoder : (
+ *     $name is 'sanitizer' ? ABJ_404_Solution_Sanitizer : (
  *     $name is 'logging' ? ABJ_404_Solution_Logging : (
  *     $name is 'clock' ? ABJ_404_Solution_Clock : (
  *     $name is 'error_handler' ? class-string : (
@@ -257,7 +258,7 @@ class ABJ_404_Solution_ServiceContainer {
  *     $name is 'settings_mode_preference' ? ABJ_404_Solution_SettingsModePreference : (
  *     $name is 'not_found_response' ? ABJ_404_Solution_NotFoundResponseService :
  *     mixed
- * )))))))))))))))))))))))))))))))))))))))))))))
+ * ))))))))))))))))))))))))))))))))))))))))))))))
  */
 function abj_service($name) {
     $container = ABJ_404_Solution_ServiceContainer::getInstance();
@@ -271,6 +272,10 @@ function abj_service($name) {
 
     if ($name === 'url_encoder' && class_exists('ABJ_404_Solution_UrlEncoder')) {
         return new ABJ_404_Solution_UrlEncoder(abj_service('functions'));
+    }
+
+    if ($name === 'sanitizer' && class_exists('ABJ_404_Solution_Sanitizer')) {
+        return new ABJ_404_Solution_Sanitizer(abj_service('functions'));
     }
 
     if ($name === 'ajax_security_gate' && class_exists('ABJ_404_Solution_AjaxSecurityGate')) {
@@ -294,7 +299,6 @@ function abj_service($name) {
 
     if ($name === 'previous_request_cookie_tracker' && class_exists('ABJ_404_Solution_PreviousRequestCookieTracker')) {
         return new ABJ_404_Solution_PreviousRequestCookieTracker(
-            abj_service('functions'),
             abj_service('logging')
         );
     }

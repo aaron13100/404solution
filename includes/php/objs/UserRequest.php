@@ -46,8 +46,9 @@ class ABJ_404_Solution_UserRequest {
         $abj404logging = abj_service('logging');
         $f = abj_service('functions');
         $abj404logic = abj_service('plugin_logic');
-        
-        $urlToParse = $f->normalizeUrlString($_SERVER['REQUEST_URI'] ?? '');
+        $sanitizer = abj_service('sanitizer');
+
+        $urlToParse = $sanitizer->normalizeUrlString($_SERVER['REQUEST_URI'] ?? '');
       	
         // if the user somehow requested an invalid URL that's too long then fix it.
         if ($f->strlen($urlToParse) > ABJ404_MAX_URL_LENGTH) {
@@ -80,8 +81,8 @@ class ABJ_404_Solution_UserRequest {
         
         $urlParts = parse_url($urlToParse);
         if (!is_array($urlParts)) {
-            $abj404logging->errorMessage('parse_url returned a non-array value. REQUEST_URI: "' . 
-                    $f->normalizeUrlString($_SERVER['REQUEST_URI']) . '", parse_url result: "' . json_encode($urlParts) . '", ' .
+            $abj404logging->errorMessage('parse_url returned a non-array value. REQUEST_URI: "' .
+                    $sanitizer->normalizeUrlString($_SERVER['REQUEST_URI']) . '", parse_url result: "' . json_encode($urlParts) . '", ' .
                     'urlToParse result: ' . $urlToParse);
             return false;
         }
@@ -90,11 +91,11 @@ class ABJ_404_Solution_UserRequest {
             if ($key === 'query') {
                 // For query strings, preserve reserved characters while removing invalid bytes.
                 parse_str($value, $queryArray);
-                $safeQueryArray = $f->sanitizeUrlComponent($queryArray);
+                $safeQueryArray = $sanitizer->sanitizeUrlComponent($queryArray);
                 $urlParts[$key] = http_build_query(is_array($safeQueryArray) ? $safeQueryArray : $queryArray);
             } else {
                 // Sanitize path/host/etc. without stripping reserved URL characters.
-                $urlParts[$key] = $f->sanitizeUrlComponent($value);
+                $urlParts[$key] = $sanitizer->sanitizeUrlComponent($value);
             }
         }
 

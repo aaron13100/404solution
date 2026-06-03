@@ -306,20 +306,20 @@ class ABJ_404_Solution_SpellURLMatcher {
 				$linkResult = get_the_permalink($id);
 				$link = ($linkResult !== false) ? $linkResult : null;
 			}
-			return $this->f->normalizeUrlString($link);
+			return abj_service('sanitizer')->normalizeUrlString($link);
 
 		} else if ($rowType == 'tags') {
-			return $this->f->normalizeUrlString(get_tag_link($id));
+			return abj_service('sanitizer')->normalizeUrlString(get_tag_link($id));
 
 		} else if ($rowType == 'categories') {
-			return $this->f->normalizeUrlString(get_category_link($id));
+			return abj_service('sanitizer')->normalizeUrlString(get_category_link($id));
 
 		} else if ($rowType == 'image') {
 			$src = wp_get_attachment_image_src($id, "attached-image");
 			if ($src == false || !is_array($src)) {
 				return null;
 			}
-			return $this->f->normalizeUrlString($src[0]);
+			return abj_service('sanitizer')->normalizeUrlString($src[0]);
 
 		} else {
 			throw new \Exception("Unknown row type ..."); // allow-raw-error: assertion, should never reach user

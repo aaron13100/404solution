@@ -127,7 +127,7 @@ class ABJ_404_Solution_UrlEncoder {
      * @return string The normalized URL (query string stripped, esc_url applied)
      */
     public function normalizeURLForCacheKey($url) {
-        $url = $this->functions->normalizeUrlString($url);
+        $url = abj_service('sanitizer')->normalizeUrlString($url);
         // Strip query string (everything after '?')
         $normalized = $this->functions->regexReplace('\?.*', '', $url) ?? $url;
         // Apply esc_url for security and consistency

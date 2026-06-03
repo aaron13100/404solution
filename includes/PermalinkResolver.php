@@ -52,13 +52,13 @@ class ABJ_404_Solution_PermalinkResolver {
         }
 
         // Decode anything that might be encoded to support utf8 characters
-        $functions = abj_service('functions');
+        $sanitizer = abj_service('sanitizer');
         $linkVal = is_string($permalink['link']) ? $permalink['link']
             : (is_scalar($permalink['link']) ? (string)$permalink['link'] : '');
-        $permalink['link'] = $functions->normalizeUrlString($linkVal);
+        $permalink['link'] = $sanitizer->normalizeUrlString($linkVal);
         $titleVal = (array_key_exists('title', $permalink) && is_string($permalink['title']))
             ? $permalink['title'] : '';
-        $permalink['title'] = $functions->normalizeUrlString($titleVal);
+        $permalink['title'] = $sanitizer->normalizeUrlString($titleVal);
 
         return $permalink;
     }

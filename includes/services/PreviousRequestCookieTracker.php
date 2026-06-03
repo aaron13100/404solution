@@ -9,18 +9,13 @@ if (!defined('ABSPATH')) {
  */
 class ABJ_404_Solution_PreviousRequestCookieTracker {
 
-    /** @var ABJ_404_Solution_Functions */
-    private $f;
-
     /** @var ABJ_404_Solution_Logging */
     private $logger;
 
     /**
-     * @param ABJ_404_Solution_Functions|null $functions
      * @param ABJ_404_Solution_Logging|null $logging
      */
-    function __construct($functions = null, $logging = null) {
-        $this->f = $functions !== null ? $functions : abj_service('functions');
+    function __construct($logging = null) {
         $this->logger = $logging !== null ? $logging : abj_service('logging');
     }
 
@@ -41,7 +36,7 @@ class ABJ_404_Solution_PreviousRequestCookieTracker {
     /** @return void */
     function setCookieWithPreviousRequest(): void {
         $requestUri = isset($_SERVER['REQUEST_URI']) && is_string($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
-        $requestedUrlRaw = $this->f->normalizeUrlString($requestUri);
+        $requestedUrlRaw = abj_service('sanitizer')->normalizeUrlString($requestUri);
         $requestedUrlCleaned = preg_replace('/\?.*$/', '', $requestedUrlRaw);
         $requestedUrl = is_string($requestedUrlCleaned) ? $requestedUrlCleaned : $requestedUrlRaw;
 
@@ -53,7 +48,7 @@ class ABJ_404_Solution_PreviousRequestCookieTracker {
 
             if (!isset($_COOKIE[$cookieName . '_UPDATE_URL']) ||
                     empty($_COOKIE[$cookieName . '_UPDATE_URL'])) {
-                $updateUrlRaw = $this->f->normalizeUrlString($requestUri);
+                $updateUrlRaw = abj_service('sanitizer')->normalizeUrlString($requestUri);
                 $updateUrlCleaned = preg_replace('/\?.*$/', '', $updateUrlRaw);
                 $updateUrl = is_string($updateUrlCleaned) ? $updateUrlCleaned : $updateUrlRaw;
                 setcookie($cookieName . '_UPDATE_URL', $updateUrl, time() + (60 * 4), "/");

@@ -104,6 +104,10 @@ function abj_404_solution_register_core_utilities($container) {
         return new ABJ_404_Solution_UrlEncoder($c->get('functions'));
     });
 
+    $container->set('sanitizer', function($c) {
+        return new ABJ_404_Solution_Sanitizer($c->get('functions'));
+    });
+
     $container->set('logging', function($c) {
         return ABJ_404_Solution_Logging::createForContainer();
     });
@@ -363,7 +367,6 @@ function abj_404_solution_register_matching_engines($container) {
 function abj_404_solution_register_frontend_services($container) {
     $container->set('previous_request_cookie_tracker', function($c) {
         return new ABJ_404_Solution_PreviousRequestCookieTracker(
-            $c->get('functions'),
             $c->get('logging')
         );
     });

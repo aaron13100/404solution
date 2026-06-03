@@ -145,7 +145,7 @@ class ABJ_404_Solution_WordPressGuessFallback {
      * @return string
      */
     private function normalizeGuessedUrlToRequestShape(string $guessedUrl): string {
-        $normalized = $this->f->normalizeUrlString($guessedUrl);
+        $normalized = abj_service('sanitizer')->normalizeUrlString($guessedUrl);
         if ($normalized === '') {
             return '';
         }

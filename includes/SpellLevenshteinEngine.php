@@ -199,7 +199,7 @@ class ABJ_404_Solution_SpellLevenshteinEngine {
 
 			if (array_key_exists('url', $row)) {
 			    $the_permalink = isset($row['url']) && is_string($row['url']) ? $row['url'] : '';
-			    $the_permalink = $this->f->normalizeUrlString($the_permalink);
+			    $the_permalink = abj_service('sanitizer')->normalizeUrlString($the_permalink);
 			    $urlParts = parse_url($the_permalink);
 
 			    if (is_bool($urlParts)) {
@@ -209,7 +209,7 @@ class ABJ_404_Solution_SpellLevenshteinEngine {
 			if (!array_key_exists('url', $row) || (isset($urlParts) && is_bool($urlParts))) {
 			    $wasntReadyCount++;
 			    $the_permalink = $this->urlMatcher->getPermalink($idInt, $rowType);
-			    $the_permalink = $this->f->normalizeUrlString($the_permalink);
+			    $the_permalink = abj_service('sanitizer')->normalizeUrlString($the_permalink);
 			    $urlParts = parse_url($the_permalink);
 			}
 
@@ -440,12 +440,12 @@ class ABJ_404_Solution_SpellLevenshteinEngine {
 			foreach ($rows as $row) {
 				$row = (array)$row;
 				if (isset($row['id'], $row['url']) && is_string($row['url'])) {
-					$result[(int)$row['id']] = $this->f->normalizeUrlString($row['url']);
+					$result[(int)$row['id']] = abj_service('sanitizer')->normalizeUrlString($row['url']);
 				}
 			}
 			foreach ($intIds as $id) {
 				if (!isset($result[$id]) && isset($observedPermalinksById[$id])) {
-					$result[$id] = $this->f->normalizeUrlString($observedPermalinksById[$id]);
+					$result[$id] = abj_service('sanitizer')->normalizeUrlString($observedPermalinksById[$id]);
 				}
 			}
 		} else {
