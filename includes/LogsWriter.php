@@ -136,7 +136,7 @@ class ABJ_404_Solution_LogsWriter {
         $minLogID = false;
         $comparisonCollation = $this->collationHelper->sanitizeCollationIdentifier(isset($requestedUrlCollation) ? (string)$requestedUrlCollation : '');
         if ($comparisonCollation === '' || stripos($comparisonCollation, 'utf8mb4') === false) {
-            $comparisonCollation = $this->dbCore->getPreferredUtf8mb4Collation();
+            $comparisonCollation = $this->collationHelper->getPreferredUtf8mb4Collation();
         }
         $requestedUrlCharsetLower = isset($requestedUrlCharset) ? strtolower((string)$requestedUrlCharset) : '';
         $canUseUtf8Cast = ($requestedUrlCharsetLower === '' || strpos($requestedUrlCharsetLower, 'utf8') !== false);

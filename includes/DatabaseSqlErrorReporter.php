@@ -138,7 +138,7 @@ class ABJ_404_Solution_DatabaseSqlErrorReporter {
             || $this->core->errorClassifier()->isCrashedTableError($errorText)
             || $this->core->errorClassifier()->isDeadlockOrLockTimeoutError($errorText)
             || $this->core->errorClassifier()->isGaleraConflictError($errorText)
-            || $this->core->isTransientConnectionError($errorText)
+            || $this->core->errorClassifier()->isTransientConnectionError($errorText)
             || $this->core->errorClassifier()->isQueryTimeoutError($errorText)
             || $this->core->errorClassifier()->isAccessDeniedError($errorText);
     }

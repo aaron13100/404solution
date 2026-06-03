@@ -175,7 +175,7 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
         }
         $this->harvestWpdbResult($result);
         $lastErrorForObservedLog = is_string($result['last_error'] ?? null) ? $result['last_error'] : '';
-        if ($lastErrorForObservedLog === '' || !$this->core->isTransientConnectionError($lastErrorForObservedLog)) {
+        if ($lastErrorForObservedLog === '' || !$this->core->errorClassifier()->isTransientConnectionError($lastErrorForObservedLog)) {
             $this->core->sqlErrorReporter()->logObservedSqlError($query, $result, $options, $producesRows);
         }
 
@@ -189,11 +189,11 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
         if ($lastErrorForSetStatement !== ''
             && $this->core->errorClassifier()->classifySetStatementFailure($lastErrorForSetStatement)
             && $this->core->queryTimeoutManager()->queryHasSetStatementWrapper($query)) {
-            $this->core->retryWithoutSetStatementWrapper($query, $result, $resultType);
+            $this->core->queryTimeoutManager()->retryWithoutSetStatementWrapper($query, $result, $resultType);
             $producesRows = $this->core->queryTimeoutManager()->queryProducesResultRows($query);
         }
 
-        if ($result['last_error'] !== '' && $this->core->isTransientConnectionError($result['last_error'])) {
+        if ($result['last_error'] !== '' && $this->core->errorClassifier()->isTransientConnectionError($result['last_error'])) {
             $this->core->connectionManager()->ensureConnection();
             $wpdb->flush();
             if ($producesRows) {
@@ -206,13 +206,13 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
         }
 
         if (!$options['skip_repair'] && $result['last_error'] !== '' && $this->core->errorClassifier()->isMissingPluginTableError(is_string($result['last_error']) ? $result['last_error'] : '')) {
-            $this->core->attemptMissingTableRepairAndRetry($query, $result);
+            $this->core->repairPolicy()->attemptMissingTableRepairAndRetry($query, $result);
         }
 
         $lastError = isset($result['last_error']) && is_scalar($result['last_error']) ? (string)$result['last_error'] : '';
 
         if ($lastError !== '' && $this->core->errorClassifier()->isInvalidDataError($lastError)) {
-            $this->core->attemptInvalidDataRetry($query, $result);
+            $this->core->tableRepairer()->attemptInvalidDataRetry($query, $result);
         }
 
         $lastError = isset($result['last_error']) && is_scalar($result['last_error']) ? (string)$result['last_error'] : '';
@@ -252,7 +252,7 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
 
         $lastError = isset($result['last_error']) && is_scalar($result['last_error']) ? (string)$result['last_error'] : '';
         if ($lastError !== '') {
-            $this->core->noteDatabaseIssueFromError($lastError);
+            $this->core->errorClassifier()->noteDatabaseIssueFromError($lastError);
         }
 
         if ($suppressWpdbErrors) {
@@ -294,7 +294,7 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
                 $this->core->repairDuplicateIDs($result['last_error'], $query);
             }
             if ($this->core->errorClassifier()->isIncorrectKeyFileError(is_string($result['last_error']) ? $result['last_error'] : '')) {
-                $this->core->repairCorruptedTableAndRetry($query, $result);
+                $this->core->tableRepairer()->repairCorruptedTableAndRetry($query, $result);
             }
 
             if ($result['last_error'] === '') { return; }
@@ -319,7 +319,7 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
                 $this->core->errorClassifier()->isCrashedTableError($lastErrorForClassification) ||
                 $this->core->errorClassifier()->isDeadlockOrLockTimeoutError($lastErrorForClassification) ||
                 $this->core->errorClassifier()->isGaleraConflictError($lastErrorForClassification) ||
-                $this->core->isTransientConnectionError($lastErrorForClassification) ||
+                $this->core->errorClassifier()->isTransientConnectionError($lastErrorForClassification) ||
                 $this->core->errorClassifier()->isQueryTimeoutError($lastErrorForClassification) ||
                 $this->core->errorClassifier()->isAccessDeniedError($lastErrorForClassification)
             )) {

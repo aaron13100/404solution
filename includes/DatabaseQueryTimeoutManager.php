@@ -324,6 +324,6 @@ class ABJ_404_Solution_DatabaseQueryTimeoutManager {
             $wpdb->query($unwrapped);
             $result['rows'] = array();
         }
-        $this->core->harvestWpdbResult($result);
+        $this->core->queryExecutor()->harvestWpdbResult($result);
     }
 }

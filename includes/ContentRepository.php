@@ -122,7 +122,7 @@ class ABJ_404_Solution_ContentRepository implements ABJ_404_Solution_ContentRepo
             if ($columnCollation !== null && strpos(strtolower($columnCollation), 'utf8mb4') !== false) {
                 $resolvedCollation = $this->collationHelper->sanitizeCollationIdentifier($columnCollation);
                 if ($resolvedCollation === '') {
-                    $resolvedCollation = $this->dbCore->getPreferredUtf8mb4Collation();
+                    $resolvedCollation = $this->collationHelper->getPreferredUtf8mb4Collation();
                 }
                 $specifiedSlug = " */\n and CAST(wp_posts.post_name AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci = "
                         . "'" . esc_sql($slug) . "' \n ";
