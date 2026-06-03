@@ -212,6 +212,7 @@ class ABJ_404_Solution_ServiceContainer {
  *
  * @phpstan-return (
  *     $name is 'functions' ? ABJ_404_Solution_Functions : (
+ *     $name is 'mb_string_adapter' ? ABJ_404_Solution_MbStringAdapter : (
  *     $name is 'url_encoder' ? ABJ_404_Solution_UrlEncoder : (
  *     $name is 'sanitizer' ? ABJ_404_Solution_Sanitizer : (
  *     $name is 'logging' ? ABJ_404_Solution_Logging : (
@@ -258,7 +259,7 @@ class ABJ_404_Solution_ServiceContainer {
  *     $name is 'settings_mode_preference' ? ABJ_404_Solution_SettingsModePreference : (
  *     $name is 'not_found_response' ? ABJ_404_Solution_NotFoundResponseService :
  *     mixed
- * ))))))))))))))))))))))))))))))))))))))))))))))
+ * )))))))))))))))))))))))))))))))))))))))))))))))
  */
 function abj_service($name) {
     $container = ABJ_404_Solution_ServiceContainer::getInstance();
@@ -271,11 +272,20 @@ function abj_service($name) {
     }
 
     if ($name === 'url_encoder' && class_exists('ABJ_404_Solution_UrlEncoder')) {
-        return new ABJ_404_Solution_UrlEncoder(abj_service('functions'));
+        return new ABJ_404_Solution_UrlEncoder(abj_service('mb_string_adapter'));
     }
 
     if ($name === 'sanitizer' && class_exists('ABJ_404_Solution_Sanitizer')) {
-        return new ABJ_404_Solution_Sanitizer(abj_service('functions'));
+        return new ABJ_404_Solution_Sanitizer(abj_service('mb_string_adapter'));
+    }
+
+    if ($name === 'mb_string_adapter') {
+        if (extension_loaded('mbstring') && class_exists('ABJ_404_Solution_MbStringAdapterMb')) {
+            return ABJ_404_Solution_MbStringAdapterMb::getInstance();
+        }
+        if (class_exists('ABJ_404_Solution_MbStringAdapterPreg')) {
+            return ABJ_404_Solution_MbStringAdapterPreg::getInstance();
+        }
     }
 
     if ($name === 'ajax_security_gate' && class_exists('ABJ_404_Solution_AjaxSecurityGate')) {
@@ -323,6 +333,9 @@ function abj_service($name) {
     // call sites don't have to know whether a class is registered yet.
     static $serviceClassMap = array(
         'functions' => 'ABJ_404_Solution_Functions',
+        'mb_string_adapter' => extension_loaded('mbstring')
+            ? 'ABJ_404_Solution_MbStringAdapterMb'
+            : 'ABJ_404_Solution_MbStringAdapterPreg',
         'logging' => 'ABJ_404_Solution_Logging',
         'data_access' => 'ABJ_404_Solution_DataAccess',
         'plugin_logic' => 'ABJ_404_Solution_PluginLogic',

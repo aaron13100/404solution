@@ -18,24 +18,38 @@ if (!defined('ABSPATH')) {
  * Extracted from ABJ_404_Solution_Functions per design-audit-2026-06-02
  * M201 (Functions.php grab-bag split, parent task i802). This is a
  * sanitization concern distinct from the polymorphic mbstring/preg
- * Functions adapter and from URL percent-encoding (UrlEncoder).
+ * adapter and from URL percent-encoding (UrlEncoder).
  *
- * Depends on the polymorphic mbstring/preg Functions adapter for
- * sanitizeInvalidUTF8() (the abstract method implemented by
- * FunctionsMBString/FunctionsPreg). Injected via constructor; pending
- * the MbStringAdapter extraction (sibling task), this is the right
- * collaborator boundary.
+ * Depends on ABJ_404_Solution_MbStringAdapter for sanitizeInvalidUTF8().
+ * Injected via constructor - Sanitizer does not need the rest of the
+ * Functions utility surface, so it depends on the smaller adapter
+ * interface directly (sibling task i825 extracted the adapter).
  */
 class ABJ_404_Solution_Sanitizer {
 
-    /** @var ABJ_404_Solution_Functions */
-    private $functions;
+    /** @var ABJ_404_Solution_MbStringAdapter */
+    private $mbAdapter;
 
     /**
-     * @param ABJ_404_Solution_Functions $functions polymorphic mbstring/preg adapter
+     * Accepts either an MbStringAdapter (the focused dependency, preferred
+     * for new callers) or the legacy ABJ_404_Solution_Functions kitchen
+     * sink (which carries an MbStringAdapter internally). The Functions
+     * variant is kept for backward compatibility with test fixtures and
+     * older wiring that has not yet migrated.
+     *
+     * @param ABJ_404_Solution_MbStringAdapter|ABJ_404_Solution_Functions $adapter
      */
-    public function __construct(ABJ_404_Solution_Functions $functions) {
-        $this->functions = $functions;
+    public function __construct($adapter) {
+        if ($adapter instanceof ABJ_404_Solution_MbStringAdapter) {
+            $this->mbAdapter = $adapter;
+        } else if ($adapter instanceof ABJ_404_Solution_Functions) {
+            $this->mbAdapter = $adapter->getMbStringAdapter();
+        } else {
+            throw new InvalidArgumentException(
+                'ABJ_404_Solution_Sanitizer requires an MbStringAdapter or Functions instance; got '
+                . (is_object($adapter) ? get_class($adapter) : gettype($adapter))
+            );
+        }
     }
 
     /**
@@ -99,7 +113,7 @@ class ABJ_404_Solution_Sanitizer {
             $url = rawurldecode($url);
         }
 
-        $url = $this->functions->sanitizeInvalidUTF8($url);
+        $url = $this->mbAdapter->sanitizeInvalidUTF8($url);
         // Remove remaining control characters (keep whitespace)
         $url = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $url) ?? $url;
 
@@ -126,7 +140,7 @@ class ABJ_404_Solution_Sanitizer {
             $value = is_scalar($value) ? strval($value) : '';
         }
 
-        $value = $this->functions->sanitizeInvalidUTF8($value);
+        $value = $this->mbAdapter->sanitizeInvalidUTF8($value);
         $value = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $value);
 
         return $value;

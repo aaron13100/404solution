@@ -18,19 +18,31 @@ if (!defined('ABSPATH')) {
  * M201 (Functions.php grab-bag split, parent task i802). This is a
  * percent-encoding concern, not a generic string utility.
  *
- * Depends on the polymorphic mbstring/preg Functions adapter for ord(),
- * regexReplace(), and normalizeUrlString(), injected via constructor.
+ * Depends on ABJ_404_Solution_MbStringAdapter for ord() and regexReplace()
+ * (sibling task i825 pulled the adapter out of Functions). The constructor
+ * also accepts a legacy ABJ_404_Solution_Functions instance for backward
+ * compatibility with existing test fixtures - it will extract the adapter
+ * from it.
  */
 class ABJ_404_Solution_UrlEncoder {
 
-    /** @var ABJ_404_Solution_Functions */
-    private $functions;
+    /** @var ABJ_404_Solution_MbStringAdapter */
+    private $mbAdapter;
 
     /**
-     * @param ABJ_404_Solution_Functions $functions polymorphic mbstring/preg adapter
+     * @param ABJ_404_Solution_MbStringAdapter|ABJ_404_Solution_Functions $adapter
      */
-    public function __construct(ABJ_404_Solution_Functions $functions) {
-        $this->functions = $functions;
+    public function __construct($adapter) {
+        if ($adapter instanceof ABJ_404_Solution_MbStringAdapter) {
+            $this->mbAdapter = $adapter;
+        } else if ($adapter instanceof ABJ_404_Solution_Functions) {
+            $this->mbAdapter = $adapter->getMbStringAdapter();
+        } else {
+            throw new InvalidArgumentException(
+                'ABJ_404_Solution_UrlEncoder requires an MbStringAdapter or Functions instance; got '
+                . (is_object($adapter) ? get_class($adapter) : gettype($adapter))
+            );
+        }
     }
 
     /**
@@ -71,7 +83,7 @@ class ABJ_404_Solution_UrlEncoder {
         // Iterate through each character in the string
         for ($i = 0; $i < strlen($input); $i++) {
             $char = $input[$i];
-            $ord = $this->functions->ord($char);
+            $ord = $this->mbAdapter->ord($char);
 
             // If the character is outside of latin1 range or is not representable
             if ($ord > 255) {
@@ -129,7 +141,7 @@ class ABJ_404_Solution_UrlEncoder {
     public function normalizeURLForCacheKey($url) {
         $url = abj_service('sanitizer')->normalizeUrlString($url);
         // Strip query string (everything after '?')
-        $normalized = $this->functions->regexReplace('\?.*', '', $url) ?? $url;
+        $normalized = $this->mbAdapter->regexReplace('\?.*', '', $url) ?? $url;
         // Apply esc_url for security and consistency
         return esc_url($normalized);
     }

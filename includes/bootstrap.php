@@ -87,13 +87,19 @@ function abj_404_solution_init_services() {
  * @return void
  */
 function abj_404_solution_register_core_utilities($container) {
-    $container->set('functions', function($c) {
-        $logging        = $c->get('logging');
-        $requestContext = $c->get('request_context');
+    $container->set('mb_string_adapter', function($c) {
         if (extension_loaded('mbstring')) {
-            return new ABJ_404_Solution_FunctionsMBString($logging, $requestContext);
+            return ABJ_404_Solution_MbStringAdapterMb::getInstance();
         }
-        return new ABJ_404_Solution_FunctionsPreg($logging, $requestContext);
+        return ABJ_404_Solution_MbStringAdapterPreg::getInstance();
+    });
+
+    $container->set('functions', function($c) {
+        return new ABJ_404_Solution_Functions(
+            $c->get('logging'),
+            $c->get('request_context'),
+            $c->get('mb_string_adapter')
+        );
     });
 
     $container->set('pii_redactor', function($c) {
@@ -101,11 +107,11 @@ function abj_404_solution_register_core_utilities($container) {
     });
 
     $container->set('url_encoder', function($c) {
-        return new ABJ_404_Solution_UrlEncoder($c->get('functions'));
+        return new ABJ_404_Solution_UrlEncoder($c->get('mb_string_adapter'));
     });
 
     $container->set('sanitizer', function($c) {
-        return new ABJ_404_Solution_Sanitizer($c->get('functions'));
+        return new ABJ_404_Solution_Sanitizer($c->get('mb_string_adapter'));
     });
 
     $container->set('logging', function($c) {

@@ -456,6 +456,9 @@ class ABJ_404_Solution_PluginLogicVersionUpgrader {
 
         $files = [
             ABJ404_PATH . 'includes/Functions.php',
+            ABJ404_PATH . 'includes/php/MbStringAdapter.php',
+            ABJ404_PATH . 'includes/php/MbStringAdapterMb.php',
+            ABJ404_PATH . 'includes/php/MbStringAdapterPreg.php',
             ABJ404_PATH . 'includes/php/FunctionsMBString.php',
             ABJ404_PATH . 'includes/php/FunctionsPreg.php',
         ];

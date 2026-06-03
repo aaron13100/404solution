@@ -105,6 +105,8 @@ function abj404_autoloader($class) {
 	$childParentMap = [
 		'ABJ_404_Solution_FunctionsMBString' => 'ABJ_404_Solution_Functions',
 		'ABJ_404_Solution_FunctionsPreg' => 'ABJ_404_Solution_Functions',
+		'ABJ_404_Solution_MbStringAdapterMb' => 'ABJ_404_Solution_MbStringAdapter',
+		'ABJ_404_Solution_MbStringAdapterPreg' => 'ABJ_404_Solution_MbStringAdapter',
 	];
 
 	// only pay attention if it's for us. don't bother for other things.

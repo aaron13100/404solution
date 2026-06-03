@@ -5,96 +5,25 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-/* Static functions that can be used from anywhere.  */
+/**
+ * Backward-compatibility shim. New code should construct
+ * ABJ_404_Solution_Functions directly with an explicit
+ * ABJ_404_Solution_MbStringAdapter (or depend on the adapter alone if
+ * the kitchen-sink Functions surface is not needed).
+ *
+ * Wires Functions to ABJ_404_Solution_MbStringAdapterMb so the 9
+ * polymorphic primitives use the mbstring extension. The class itself
+ * has no extra behavior beyond adapter selection - the legacy inheritance
+ * pattern (abstract Functions + concrete subclass per platform) has been
+ * replaced with composition (Functions holds an adapter).
+ */
 class ABJ_404_Solution_FunctionsMBString extends ABJ_404_Solution_Functions {
 
-    function ord(string $char): int {
-        return mb_ord($char);
-    }
-
-    function strtolower(?string $string): string {
-        if ($string === null) {
-            return '';
-        }
-        return mb_strtolower($string);
-    }
-
-    function strlen(string $string): int {
-        return mb_strlen($string);
-    }
-
-    /** @return int|false */
-    function strpos(string $haystack, string $needle, int $offset = 0) {
-        return mb_strpos($haystack, $needle, $offset);
-    }
-
-    function substr(?string $str, int $start, ?int $length = null): string {
-        if ($str === null) {
-            return '';
-        }
-        return mb_substr($str, $start, $length);
-    }
-
     /**
-     * @param array<int, string>|null $regs
-     * @return bool|int
+     * @param ABJ_404_Solution_Logging|null        $logging
+     * @param ABJ_404_Solution_RequestContext|null $requestContext
      */
-    function regexMatch(string $pattern, string $string, ?array &$regs = null) {
-        return mb_ereg($pattern, $string, $regs);
+    public function __construct($logging = null, $requestContext = null) {
+        parent::__construct($logging, $requestContext, ABJ_404_Solution_MbStringAdapterMb::getInstance());
     }
-
-    /**
-     * @param array<int, string>|null $regs
-     * @return bool|int
-     */
-    function regexMatchi(string $pattern, string $string, ?array &$regs = null) {
-        return mb_eregi($pattern, $string, $regs);
-    }
-
-    /**  Replace regular expression with multibyte support.
-     * Scans string for matches to pattern, then replaces the matched text with replacement.
-     * @param string $pattern The regular expression pattern.
-     * @param string $replacement The replacement text.
-     * @param string $string The string being checked.
-     * @return string The resultant string on success, or FALSE on error.
-     */
-    function regexReplace($pattern, $replacement, $string) {
-        $result = mb_ereg_replace($pattern, $replacement, $string);
-        return is_string($result) ? $result : $string;
-    }
-
-    /**
-     * Sanitize invalid UTF-8 byte sequences from a string.
-     *
-     * This method removes or replaces invalid UTF-8 byte sequences that would cause
-     * database errors like "Could not perform query because it contains invalid data".
-     *
-     * Uses mb_convert_encoding() to strip invalid UTF-8 bytes by converting from UTF-8 to UTF-8,
-     * which automatically removes any invalid sequences.
-     *
-     * @param string|null $string The string to sanitize
-     * @return string The sanitized string with only valid UTF-8 characters
-     */
-    function sanitizeInvalidUTF8(?string $string): string {
-        // Handle null and empty cases
-        if ($string === null || $string === '') {
-            return '';
-        }
-
-        // Convert to string if not already
-        if (!is_string($string)) {
-            $string = strval($string);
-        }
-
-        // Use mb_convert_encoding to strip invalid UTF-8 bytes
-        // Converting from UTF-8 to UTF-8 removes invalid sequences
-        $sanitized = mb_convert_encoding($string, 'UTF-8', 'UTF-8');
-
-        // Additional safety: remove null bytes and control characters that might cause issues
-        // Keep only valid UTF-8 characters, removing C0 control characters except whitespace
-        $sanitized = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F]/u', '', $sanitized) ?? $sanitized;
-
-        return $sanitized;
-    }
-
 }

@@ -6,7 +6,7 @@ if (!defined('ABSPATH')) {
 }
 
 /* Static functions that can be used from anywhere.  */
-abstract class ABJ_404_Solution_Functions {
+class ABJ_404_Solution_Functions {
 
     /** @var self|null */
     private static $instance = null;
@@ -17,18 +17,29 @@ abstract class ABJ_404_Solution_Functions {
     /** @var ABJ_404_Solution_RequestContext|null */
     protected $injectedRequestContext = null;
 
+    /** @var ABJ_404_Solution_MbStringAdapter */
+    protected $mbAdapter;
+
     /**
      * Collaborators are passed in by the DI container's 'functions' factory
      * (see bootstrap.php). Nulls are tolerated for early-boot and direct
      * test instantiation; logging() and requestContext() lazy-resolve in
-     * that case as a singular bootstrap-only fallback.
+     * that case as a singular bootstrap-only fallback. The mbstring
+     * adapter defaults to the platform-appropriate implementation so
+     * tests and early-boot callers do not have to wire it up explicitly.
      *
-     * @param ABJ_404_Solution_Logging|null        $logging
-     * @param ABJ_404_Solution_RequestContext|null $requestContext
+     * @param ABJ_404_Solution_Logging|null          $logging
+     * @param ABJ_404_Solution_RequestContext|null   $requestContext
+     * @param ABJ_404_Solution_MbStringAdapter|null  $mbAdapter
      */
-    public function __construct($logging = null, $requestContext = null) {
+    public function __construct($logging = null, $requestContext = null, $mbAdapter = null) {
         $this->injectedLogging        = $logging;
         $this->injectedRequestContext = $requestContext;
+        $this->mbAdapter              = $mbAdapter !== null
+            ? $mbAdapter
+            : (extension_loaded('mbstring')
+                ? ABJ_404_Solution_MbStringAdapterMb::getInstance()
+                : ABJ_404_Solution_MbStringAdapterPreg::getInstance());
     }
 
     /** @return self */
@@ -46,14 +57,19 @@ abstract class ABJ_404_Solution_Functions {
             }
         }
 
-        if (extension_loaded('mbstring')) {
-            self::$instance = new ABJ_404_Solution_FunctionsMBString();
-
-        } else {
-            self::$instance = new ABJ_404_Solution_FunctionsPreg();
-        }
-
+        self::$instance = new self();
         return self::$instance;
+    }
+
+    /**
+     * Returns the polymorphic mbstring/preg adapter. Useful for callers
+     * that only need the 9 primitives and want to depend on a smaller
+     * interface than ABJ_404_Solution_Functions.
+     *
+     * @return ABJ_404_Solution_MbStringAdapter
+     */
+    public function getMbStringAdapter() {
+        return $this->mbAdapter;
     }
 
     /**
@@ -187,20 +203,34 @@ abstract class ABJ_404_Solution_Functions {
     	return $firstPart . $lastPart;
     }
 
+    // =========================================================================
+    // mbstring / preg primitives - delegated to ABJ_404_Solution_MbStringAdapter
+    // =========================================================================
+
     /** @return int */
-    abstract function ord(string $char): int;
+    function ord(string $char): int {
+        return $this->mbAdapter->ord($char);
+    }
 
     /** @return string */
-    abstract function strtolower(string $string): string;
+    function strtolower(string $string): string {
+        return $this->mbAdapter->strtolower($string);
+    }
 
     /** @return int */
-    abstract function strlen(string $string): int;
+    function strlen(string $string): int {
+        return $this->mbAdapter->strlen($string);
+    }
 
     /** @return int|false */
-    abstract function strpos(string $haystack, string $needle, int $offset = 0);
+    function strpos(string $haystack, string $needle, int $offset = 0) {
+        return $this->mbAdapter->strpos($haystack, $needle, $offset);
+    }
 
     /** @return string */
-    abstract function substr(string $str, int $start, ?int $length = null): string;
+    function substr(string $str, int $start, ?int $length = null): string {
+        return $this->mbAdapter->substr($str, $start, $length);
+    }
 
     /**
      * @param string $pattern
@@ -208,7 +238,9 @@ abstract class ABJ_404_Solution_Functions {
      * @param array<int, string>|null $regs
      * @return bool|int
      */
-    abstract function regexMatch(string $pattern, string $string, ?array &$regs = null);
+    function regexMatch(string $pattern, string $string, ?array &$regs = null) {
+        return $this->mbAdapter->regexMatch($pattern, $string, $regs);
+    }
 
     /**
      * @param string $pattern
@@ -216,7 +248,9 @@ abstract class ABJ_404_Solution_Functions {
      * @param array<int, string>|null $regs
      * @return bool|int
      */
-    abstract function regexMatchi(string $pattern, string $string, ?array &$regs = null);
+    function regexMatchi(string $pattern, string $string, ?array &$regs = null) {
+        return $this->mbAdapter->regexMatchi($pattern, $string, $regs);
+    }
 
     /**
      * @param string $pattern
@@ -224,13 +258,17 @@ abstract class ABJ_404_Solution_Functions {
      * @param string $string
      * @return string|null
      */
-    abstract function regexReplace($pattern, $replacement, $string);
+    function regexReplace($pattern, $replacement, $string) {
+        return $this->mbAdapter->regexReplace($pattern, $replacement, $string);
+    }
 
     /**
      * @param string|null $string
      * @return string
      */
-    abstract function sanitizeInvalidUTF8(?string $string): string;
+    function sanitizeInvalidUTF8(?string $string): string {
+        return $this->mbAdapter->sanitizeInvalidUTF8($string);
+    }
 
     /**  Used with array_filter()
      * @param string $value
