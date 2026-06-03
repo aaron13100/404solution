@@ -362,19 +362,6 @@ function abj_service($name) {
         }
     }
 
-    // Test seam: when running under the test bootstrap, the test layer can
-    // define `abj_404_test_service_fallback($name)` to resolve names that
-    // production wiring does not (e.g. unit tests that install a single
-    // DataAccess mock and expect every sub-service lookup to dispatch through
-    // it). The hook is never defined in production, so this branch is a
-    // straight no-op outside the test suite.
-    if (function_exists('abj_404_test_service_fallback')) {
-        $resolved = abj_404_test_service_fallback($name);
-        if ($resolved !== null) {
-            return $resolved;
-        }
-    }
-
     // Last resort — the container raises its standard "not registered"
     // exception. Catch and return null so callers can rely on a uniform
     // non-throwing contract; the swallow is logged via error_log() so the
