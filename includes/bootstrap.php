@@ -197,8 +197,56 @@ function abj_404_solution_register_data_layer($container) {
             $c->get('logging'), $c->get('stats_repository'));
     });
 
+    $container->set('ngram_extractor', function($c) {
+        return new ABJ_404_Solution_NGramExtractor($c->get('functions'), $c->get('logging'));
+    });
+
+    $container->set('ngram_similarity', function($c) {
+        return new ABJ_404_Solution_NGramSimilarity();
+    });
+
+    $container->set('ngram_coverage_policy', function($c) {
+        return new ABJ_404_Solution_NGramCoveragePolicy($c->get('db_core'));
+    });
+
+    $container->set('ngram_cache_repository', function($c) {
+        return new ABJ_404_Solution_NGramCacheRepository(
+            $c->get('db_core'),
+            $c->get('logging'),
+            $c->get('ngram_similarity'),
+            // Lazy resolver: the policy invalidation hook fires on write but the
+            // policy itself doesn't exist when the repo is constructed if both
+            // are wired in the same pass. Resolve on demand.
+            function() use ($c) { return $c->get('ngram_coverage_policy'); }
+        );
+    });
+
+    $container->set('ngram_usage_telemetry', function($c) {
+        return new ABJ_404_Solution_NGramUsageTelemetry();
+    });
+
+    $container->set('ngram_rebuilder', function($c) {
+        return new ABJ_404_Solution_NGramRebuilder(
+            $c->get('db_core'),
+            $c->get('logging'),
+            $c->get('functions'),
+            $c->get('ngram_extractor'),
+            $c->get('ngram_cache_repository'),
+            $c->get('ngram_coverage_policy')
+        );
+    });
+
     $container->set('ngram_filter', function($c) {
-        return new ABJ_404_Solution_NGramFilter($c->get('db_core'), $c->get('logging'), $c->get('functions'));
+        return new ABJ_404_Solution_NGramFilter(
+            $c->get('db_core'),
+            $c->get('logging'),
+            $c->get('functions'),
+            $c->get('ngram_extractor'),
+            $c->get('ngram_similarity'),
+            $c->get('ngram_cache_repository'),
+            $c->get('ngram_coverage_policy'),
+            $c->get('ngram_usage_telemetry')
+        );
     });
 }
 
