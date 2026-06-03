@@ -4,183 +4,102 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+require_once __DIR__ . '/NGramNetworkOptionStore.php';
+require_once __DIR__ . '/NGramCacheRebuildScheduler.php';
+require_once __DIR__ . '/NGramCacheSyncRebuilder.php';
+require_once __DIR__ . '/NGramCacheReconciler.php';
+require_once __DIR__ . '/NGramTaxonomyBuilder.php';
+
+/**
+ * DatabaseUpgradesEtc delegate that owns the n-gram cache lifecycle.
+ *
+ * Acts as a thin orchestrator around five single-responsibility
+ * collaborators:
+ *
+ *   - NGramNetworkOptionStore: network-aware option storage + multisite
+ *     detection (also reached from DatabaseUpgradeBootstrap via the
+ *     cross-component dispatcher).
+ *   - NGramCacheRebuildScheduler: WP-Cron driven async rebuild loop.
+ *   - NGramCacheSyncRebuilder: synchronous TRUNCATE+rebuild used by
+ *     manual rebuild tools and the all-content composer.
+ *   - NGramCacheReconciler: incremental sync-missing + cleanup-orphaned.
+ *   - NGramTaxonomyBuilder: build n-grams for category/tag terms.
+ *
+ * Lock ownership lives here on the public entry points: the three
+ * write paths (rebuildNGramCache, rebuildNGramCacheAsync,
+ * syncMissingNGrams) acquire the 'ngram_rebuild' SyncUtils lock and
+ * scheduleNGramCacheRebuild acquires 'ngram_schedule', then delegate
+ * the actual work. This keeps the lock contract on the public
+ * surface while the collaborators stay pure.
+ */
 class ABJ_404_Solution_DatabaseUpgradeNGram extends ABJ_404_Solution_DatabaseUpgradeComponent {
 
-    /** @return bool */
-    function scheduleNGramCacheRebuild() {
-        global $wpdb;
+    /**
+     * Documented cron hook for the n-gram rebuild loop. Defined here
+     * so the literal appears in this file for the Pattern 8
+     * coordination-key audit (AsyncWorkerCoordinationAuditTest).
+     * The scheduler collaborator owns the runtime use.
+     */
+    const REBUILD_CRON_HOOK = 'abj404_rebuild_ngram_cache_hook';
 
-        // MULTISITE: Acquire network-wide lock to prevent race conditions during scheduling
+    /**
+     * Acquire the 'ngram_schedule' SyncUtils lock and delegate to the
+     * scheduler. Multiple admin clicks during a click storm collapse
+     * into one scheduled cron event.
+     *
+     * @return bool
+     */
+    function scheduleNGramCacheRebuild() {
         $lockKey = 'ngram_schedule';
         $uniqueID = $this->syncUtils->synchronizerAcquireLockTry($lockKey);
 
         if (empty($uniqueID)) {
             $this->logger->debugMessage("N-gram rebuild scheduling: Another process holds the lock. Skipping.");
-            return true; // Another site is already handling scheduling
+            return true;
         }
 
         try {
-            // MULTISITE: Use network-aware option getter
-            $rawCurrentOffset = $this->getNetworkAwareOption('abj404_ngram_rebuild_offset', 0);
-            $currentOffset = is_scalar($rawCurrentOffset) ? (int)$rawCurrentOffset : 0;
-
-            // MULTISITE: Count pages across all sites if network-activated
-            $totalPages = $this->countTotalPagesForNGramRebuild();
-
-            // If offset is between 0 and total (exclusive), rebuild is in progress
-            if ($currentOffset > 0 && $currentOffset < $totalPages) {
-                $this->logger->debugMessage("N-gram cache rebuild already in progress at offset {$currentOffset} of {$totalPages}");
-                return true;
-            }
-
-            // Check if already scheduled
-            $nextScheduled = wp_next_scheduled('abj404_rebuild_ngram_cache_hook');
-            if ($nextScheduled) {
-                $this->logger->debugMessage("N-gram cache rebuild already scheduled for " . date('Y-m-d H:i:s', $nextScheduled));
-                return true;
-            }
-
-            // MULTISITE: Reset offset using network-aware setter
-            $this->updateNetworkAwareOption('abj404_ngram_rebuild_offset', 0);
-
-            // Schedule to run in 30 seconds (gives time for activation to complete)
-            $scheduleTime = time() + 30;
-            $hookName = 'abj404_rebuild_ngram_cache_hook';
-            $scheduled = wp_schedule_single_event($scheduleTime, $hookName);
-
-            if ($scheduled === false) {
-                // Quick check for DISABLE_WP_CRON as immediate diagnostic
-                if (defined('DISABLE_WP_CRON') && DISABLE_WP_CRON) {
-                    $this->logger->errorMessage(
-                        "Cannot schedule N-gram cache rebuild: WP-Cron is disabled (DISABLE_WP_CRON=true). " .
-                        "Consider enabling WP-Cron or using server-side cron with a fallback mechanism."
-                    );
-                    return false;
-                }
-
-                global $wpdb;
-
-                // Gather comprehensive diagnostic information for troubleshooting
-                $cronDisabled = defined('DISABLE_WP_CRON') && DISABLE_WP_CRON;
-                $alreadyScheduled = wp_next_scheduled($hookName);
-                $dbError = !empty($wpdb->last_error) ? $wpdb->last_error : 'none';
-                $rawRebuildOffset = $this->getNetworkAwareOption('abj404_ngram_rebuild_offset', 'not set');
-                $rebuildOffset = is_scalar($rawRebuildOffset) ? (string)$rawRebuildOffset : 'not set';
-                $rawCacheInit = $this->getNetworkAwareOption('abj404_ngram_cache_initialized', 'not set');
-                $cacheInitialized = is_scalar($rawCacheInit) ? (string)$rawCacheInit : 'not set';
-
-                $errorMsg = sprintf(
-                    "Failed to schedule N-gram cache rebuild. Hook: %s, Schedule time: %d (current: %d), " .
-                    "Already scheduled: %s, WP-Cron disabled: %s, DB error: %s, " .
-                    "Rebuild offset: %s, Cache initialized: %s, Multisite: %s, Blog ID: %d",
-                    $hookName,
-                    $scheduleTime,
-                    time(),
-                    $alreadyScheduled ? date('Y-m-d H:i:s', $alreadyScheduled) : 'no',
-                    $cronDisabled ? 'yes' : 'no',
-                    $dbError,
-                    $rebuildOffset,
-                    $cacheInitialized,
-                    is_multisite() ? 'yes' : 'no',
-                    get_current_blog_id()
-                );
-
-                // Pattern 7 (defense-in-depth): if a concurrent infra-level
-                // DB error (disk full, read-only, crashed table) contributed
-                // to wp_schedule_single_event() failing, surface it as a
-                // plugin-page admin notice. The cron failure itself remains
-                // ERROR level — the user must act on a broken cron — but
-                // the underlying hosting issue is the actionable cause.
-                if (!empty($wpdb->last_error)) {
-                    $this->dbCore->classifyAndHandleInfrastructureError($wpdb->last_error);
-                }
-
-                $this->logger->errorMessage($errorMsg);
-                return false;
-            }
-
-            $context = is_multisite() ? ' (network-wide)' : '';
-            $this->logger->infoMessage("N-gram cache rebuild scheduled to start in 30 seconds{$context}.");
-            return true;
-
+            return $this->newScheduler()->scheduleRebuild();
         } finally {
-            // Always release the lock
             $this->syncUtils->synchronizerReleaseLock($uniqueID, $lockKey);
         }
     }
 
     /**
-     * WP-Cron callback: Rebuild N-gram cache in batches (async).
+     * WP-Cron callback. Acquires the shared 'ngram_rebuild' lock so
+     * its INSERTs cannot race with a concurrent TRUNCATE from the
+     * sync rebuilder, then delegates to the scheduler's batch driver.
      *
-     * Lock Acquisition Flow (per-batch):
-     * 1. Create unique ID
-     * 2. Write unique ID to lock if empty
-     * 3. Sleep 30ms (allows race condition resolution)
-     * 4. Read lock back and verify ownership
-     * 5. Process batch only if lock belongs to this process
-     * 6. Release lock in finally block
-     *
-     * MULTISITE BEHAVIOR (FIXED):
-     * - Processes one site at a time completely before moving to the next site
-     * - Uses network options to track: pending sites, current site, and offset within current site
-     * - Switches to each site's blog context before processing its pages
-     * - Prevents the bug where only the first site got cache entries
-     * - Progress tracking shows per-site and network-wide completion status
-     *
-     * SINGLE SITE BEHAVIOR:
-     * - Uses simple offset tracking with network-aware options
-     * - Processes all pages in batches until complete
-     *
-     * @param int $offset Current batch offset (default: 0, overridden by network options)
+     * @param int $offset legacy parameter retained for cron payload
+     *                    compatibility; the scheduler reads the
+     *                    authoritative offset from the network option
+     *                    store.
      * @return void
      */
     function rebuildNGramCacheAsync($offset = 0) {
-        global $wpdb;
-
-        // Acquire lock using SynchronizationUtils (per-batch lock)
-        $uniqueID = $this->syncUtils->synchronizerAcquireLockTry('ngram_rebuild');
+        $lockKey = 'ngram_rebuild';
+        $uniqueID = $this->syncUtils->synchronizerAcquireLockTry($lockKey);
         if (empty($uniqueID)) {
             $this->logger->debugMessage("N-gram async rebuild batch already processing (another process holds lock). Skipping.");
             return;
         }
 
         try {
-            $batchSize = 50; // Smaller batches for async processing
-            $maxBatchesPerRun = 20; // Process up to 1000 pages per cron run
-
-            // MULTISITE: Process one site at a time to ensure all sites get cache entries
-            if ($this->isNetworkActivated()) {
-                $this->rebuildNGramCacheAsyncMultisite($batchSize, $maxBatchesPerRun);
-            } else {
-                // SINGLE SITE: Use original simple logic
-                $this->rebuildNGramCacheAsyncSingleSite($batchSize, $maxBatchesPerRun);
-
-
-            }
-
+            $this->newScheduler()->runAsyncBatch();
         } finally {
-            // Always release lock, even if exception occurs
-            $this->syncUtils->synchronizerReleaseLock($uniqueID, 'ngram_rebuild');
+            $this->syncUtils->synchronizerReleaseLock($uniqueID, $lockKey);
         }
     }
 
     /**
-     * Rebuild the N-gram cache for all pages (synchronous).
+     * Synchronous rebuild entry point. Same lock as the async path so
+     * its TRUNCATE cannot race batch INSERTs.
      *
-     * WARNING: This method is synchronous and can take minutes on large sites.
-     * Use scheduleNGramCacheRebuild() instead for non-blocking background processing.
-     *
-     * This method is kept for manual rebuilds and testing purposes.
-     *
-     * @param int $batchSize Number of pages to process per batch (default: 100)
-     * @param bool $forceRebuild Force rebuild even if cache is already populated (default: false)
-     * @return array<string, mixed> Statistics: ['total_pages' => int, 'processed' => int, 'success' => int, 'failed' => int]
+     * @param int $batchSize
+     * @param bool $forceRebuild
+     * @return array<string, mixed>
      */
     function rebuildNGramCache($batchSize = 100, $forceRebuild = false) {
-        global $wpdb;
-
-        // Use the same SynchronizationUtils lock as rebuildNGramCacheAsync() to
-        // prevent TRUNCATE TABLE from racing with async batch inserts.
         $lockKey = 'ngram_rebuild';
         $uniqueID = $this->syncUtils->synchronizerAcquireLockTry($lockKey);
         if (empty($uniqueID)) {
@@ -190,133 +109,25 @@ class ABJ_404_Solution_DatabaseUpgradeNGram extends ABJ_404_Solution_DatabaseUpg
                 'processed' => 0,
                 'success' => 0,
                 'failed' => 0,
-                'locked' => true
+                'locked' => true,
             ];
         }
 
         try {
-            $ngramTable = $this->dbCore->getPrefixedTableName('abj404_ngram_cache');
-            $permalinkCacheTable = $this->dbCore->getPrefixedTableName('abj404_permalink_cache');
-
-            // Check if cache is already populated (unless force rebuild)
-            if (!$forceRebuild) {
-                $existingCount = $this->dbCore->queryScalarInt("SELECT COUNT(*) AS c FROM {$ngramTable}");
-                if ($existingCount > 0) {
-                    $this->logger->debugMessage("N-gram cache already contains {$existingCount} entries. Skipping rebuild (use forceRebuild=true to override).");
-                    return [
-                        'total_pages' => $existingCount,
-                        'processed' => 0,
-                        'success' => $existingCount,
-                        'failed' => 0,
-                        'skipped' => true
-                    ];
-                }
-            }
-
-            $this->logger->debugMessage("Starting N-gram cache rebuild...");
-
-            // Clear existing N-gram cache (only if force rebuild or empty).
-            // skip_repair: TRUNCATE itself is the recovery path during rebuild;
-            // we must not recurse into the missing-table repairer here.
-            $truncateResult = $this->dbCore->queryAndGetResults(
-                "TRUNCATE TABLE {$ngramTable}",
-                ['skip_repair' => true]
-            );
-            $truncateError = isset($truncateResult['last_error']) && is_string($truncateResult['last_error']) ? $truncateResult['last_error'] : '';
-            if ($truncateError !== '') {
-                if (!$this->dbCore->classifyAndHandleInfrastructureError($truncateError)) {
-                    $this->logger->errorMessage("Failed to truncate N-gram cache table: " . $truncateError);
-                }
-                return ['total_pages' => 0, 'processed' => 0, 'success' => 0, 'failed' => 1, 'error' => $truncateError];
-            }
-
-            // Invalidate coverage ratio caches immediately after truncate
-            // This prevents stale transient data from making SpellChecker believe
-            // the cache is populated when it's actually empty
-            $this->ngramFilter->invalidateCoverageCaches();
-
-            // Get total page count from permalink cache
-            $totalPagesResult = $this->dbCore->queryAndGetResults("SELECT COUNT(*) AS c FROM {$permalinkCacheTable}");
-            $totalPagesRows = isset($totalPagesResult['rows']) && is_array($totalPagesResult['rows']) ? $totalPagesResult['rows'] : [];
-            $totalPagesRow = $totalPagesRows[0] ?? null;
-
-            if (!is_array($totalPagesRow) || !isset($totalPagesRow['c'])) {
-                $countError = isset($totalPagesResult['last_error']) && is_string($totalPagesResult['last_error']) ? $totalPagesResult['last_error'] : '';
-                if (!$this->dbCore->classifyAndHandleInfrastructureError($countError)) {
-                    $this->logger->errorMessage("Failed to query permalink cache table: " . $countError);
-                }
-                return ['total_pages' => 0, 'processed' => 0, 'success' => 0, 'failed' => 1, 'error' => $countError];
-            }
-            $totalPages = is_scalar($totalPagesRow['c']) ? (int)$totalPagesRow['c'] : 0;
-
-            if ($totalPages == 0) {
-                $this->logger->debugMessage("No pages in permalink cache. N-gram cache rebuild skipped (will rebuild when pages are added).");
-                return ['total_pages' => 0, 'processed' => 0, 'success' => 0, 'failed' => 0];
-            }
-
-            $this->logger->infoMessage("Rebuilding N-gram cache for {$totalPages} pages in batches of {$batchSize}...");
-
-            // Process in batches
-            $offset = 0;
-            $totalStats = ['processed' => 0, 'success' => 0, 'failed' => 0];
-
-            while ($offset < $totalPages) {
-                try {
-                    $stats = $this->ngramFilter->rebuildCache($batchSize, $offset);
-
-                    $totalStats['processed'] += $stats['processed'];
-                    $totalStats['success'] += $stats['success'];
-                    $totalStats['failed'] += $stats['failed'];
-
-                    $offset += $batchSize;
-
-                    // Stop if we processed fewer pages than expected (end of data)
-                    if ($stats['processed'] < $batchSize) {
-                        break;
-                    }
-
-                } catch (Exception $e) {
-                    $this->logger->errorMessage("Error during N-gram cache rebuild at offset {$offset}: " . $e->getMessage());
-                    $totalStats['failed'] += $batchSize; // Mark batch as failed
-                    $offset += $batchSize; // Continue to next batch
-                }
-            }
-
-            $totalStats['total_pages'] = $totalPages;
-
-            $successRate = $totalStats['processed'] > 0 ?
-                round(($totalStats['success'] / $totalStats['processed']) * 100, 1) : 0;
-
-            $this->logger->infoMessage(sprintf(
-                "N-gram cache rebuild complete: %d pages processed, %d success, %d failed (%.1f%% success rate)",
-                $totalStats['processed'],
-                $totalStats['success'],
-                $totalStats['failed'],
-                $successRate
-            ));
-
-            return $totalStats;
-
+            return $this->newSyncRebuilder()->rebuild($batchSize, $forceRebuild);
         } finally {
-            // Always release the lock
             $this->syncUtils->synchronizerReleaseLock($uniqueID, $lockKey);
         }
     }
 
     /**
-     * Sync missing ngram entries for posts/pages and categories that don't have them yet.
-     * This runs as a background task to add entries for newly published content.
+     * Sync entries that exist in the source but are missing from the
+     * cache. Same lock as rebuild to keep mutations serialized.
      *
-     * Uses the same lock as rebuildNGramCache to prevent concurrent execution.
-     *
-     * @param int $batchSize Number of entries to process per batch (default: 50)
-     * @return array<string, mixed> Statistics: ['posts_added' => int, 'posts_failed' => int, 'categories_added' => int, 'categories_failed' => int]
+     * @param int $batchSize
+     * @return array<string, mixed>
      */
     function syncMissingNGrams($batchSize = 50) {
-        global $wpdb;
-
-        // Use the same SynchronizationUtils lock as rebuildNGramCacheAsync() and
-        // rebuildNGramCache() to prevent concurrent modification of the ngram table.
         $lockKey = 'ngram_rebuild';
         $uniqueID = $this->syncUtils->synchronizerAcquireLockTry($lockKey);
         if (empty($uniqueID)) {
@@ -325,381 +136,50 @@ class ABJ_404_Solution_DatabaseUpgradeNGram extends ABJ_404_Solution_DatabaseUpg
         }
 
         try {
-            $ngramTable = $this->dbCore->getPrefixedTableName('abj404_ngram_cache');
-            $permalinkCacheTable = $this->dbCore->getPrefixedTableName('abj404_permalink_cache');
-
-            $stats = ['posts_added' => 0, 'posts_failed' => 0, 'categories_added' => 0, 'categories_failed' => 0];
-
-            // ===== SYNC POSTS =====
-            // Find posts in permalink cache that don't have ngram entries
-            // Using LEFT JOIN to find missing entries
-            $missingResult = $this->dbCore->queryAndGetResults(
-                "SELECT pc.id
-                 FROM {$permalinkCacheTable} pc
-                 LEFT JOIN {$ngramTable} ng ON pc.id = ng.id AND ng.type = 'post'
-                 WHERE ng.id IS NULL
-                 LIMIT %d",
-                ['query_params' => [$batchSize]]
-            );
-
-            $missingError = isset($missingResult['last_error']) && is_string($missingResult['last_error']) ? $missingResult['last_error'] : '';
-            if ($missingError !== '') {
-                if (!$this->dbCore->classifyAndHandleInfrastructureError($missingError)) {
-                    $this->logger->errorMessage("Failed to query for missing post ngram entries: " . $missingError);
-                }
-                return array_merge($stats, ['error' => $missingError]);
-            }
-            $missingRows = isset($missingResult['rows']) && is_array($missingResult['rows']) ? $missingResult['rows'] : [];
-            $missingIds = [];
-            foreach ($missingRows as $row) {
-                if (is_array($row) && isset($row['id']) && is_numeric($row['id'])) {
-                    $missingIds[] = (int)$row['id'];
-                }
-            }
-
-            if (!empty($missingIds)) {
-                $this->logger->infoMessage("Found " . count($missingIds) . " posts missing ngram entries. Adding...");
-
-                // Add ngrams for missing posts
-                $result = $this->ngramFilter->updateNGramsForPages($missingIds);
-
-                $stats['posts_added'] = $result['success'];
-                $stats['posts_failed'] = $result['failed'];
-            } else {
-                $this->logger->debugMessage("No missing post ngram entries found. All posts are synced.");
-            }
-
-            // ===== SYNC CATEGORIES =====
-            // Get all published categories
-            $categories = $this->contentRepo->getPublishedCategories();
-
-            if (!empty($categories)) {
-                $missingCategories = [];
-
-                // Check which categories are missing from ngram cache
-                foreach ($categories as $category) {
-                    /** @var object{term_id: int, url: string} $category */
-                    $termId = (int)$category->term_id;
-
-                    // Check if this category already has an ngram entry
-                    $exists = $this->dbCore->queryScalarInt(
-                        "SELECT COUNT(*) AS c FROM {$ngramTable} WHERE id = %d AND type = 'category'",
-                        ['query_params' => [$termId]]
-                    );
-
-                    if ($exists == 0) {
-                        $missingCategories[] = $category;
-                    }
-                }
-
-                if (!empty($missingCategories)) {
-                    $this->logger->infoMessage("Found " . count($missingCategories) . " categories missing ngram entries. Adding...");
-
-                    // Add ngrams for missing categories
-                    foreach ($missingCategories as $category) {
-                        try {
-                            /** @var object{term_id: int, url: string} $category */
-                            $termId = (int)$category->term_id;
-                            $url = (string)$category->url;
-
-                            if (empty($url) || $url === 'in code') {
-                                $this->logger->debugMessage("Skipping category {$termId} - no valid URL");
-                                continue;
-                            }
-
-                            // Normalize URL
-                            $urlNormalized = $this->f->strtolower(trim($url));
-
-                            // Extract N-grams
-                            $ngrams = $this->ngramFilter->extractNGrams($urlNormalized);
-
-                            // Store with type='category'
-                            $success = $this->ngramFilter->storeNGrams($termId, $url, $urlNormalized, $ngrams, 'category');
-
-                            if ($success) {
-                                $stats['categories_added']++;
-                            } else {
-                                $stats['categories_failed']++;
-                            }
-                        } catch (Exception $e) {
-                            $this->logger->errorMessage("Failed to add ngram for category {$termId}: " . $e->getMessage());
-                            $stats['categories_failed']++;
-                        }
-                    }
-                } else {
-                    $this->logger->debugMessage("No missing category ngram entries found. All categories are synced.");
-                }
-            }
-
-            $this->logger->infoMessage("Ngram sync complete: {$stats['posts_added']} posts added, {$stats['posts_failed']} posts failed, {$stats['categories_added']} categories added, {$stats['categories_failed']} categories failed.");
-
-            return $stats;
-
+            return $this->newReconciler()->syncMissing($batchSize);
         } finally {
-            // Always release the lock
             $this->syncUtils->synchronizerReleaseLock($uniqueID, $lockKey);
         }
     }
 
     /**
-     * Cleanup orphaned ngram entries that don't have corresponding posts/pages or categories.
-     * This removes stale entries when posts are deleted or categories are removed.
+     * Delete cache rows whose source no longer exists. Runs without
+     * the rebuild lock — it only deletes by primary key.
      *
-     * @return array<string, mixed> Statistics: ['posts_deleted' => int, 'categories_deleted' => int, 'errors' => int]
+     * @return array<string, mixed>
      */
     function cleanupOrphanedNGrams() {
-        $ngramTable = $this->dbCore->getPrefixedTableName('abj404_ngram_cache');
-        $permalinkCacheTable = $this->dbCore->getPrefixedTableName('abj404_permalink_cache');
-
-        $this->logger->debugMessage("Checking for orphaned ngram entries...");
-
-        $stats = ['posts_deleted' => 0, 'categories_deleted' => 0, 'errors' => 0];
-
-        // ===== CLEANUP ORPHANED POSTS =====
-        // Find ngram entries for posts that don't exist in permalink cache
-        // Using LEFT JOIN to find orphaned entries
-        $orphanedResult = $this->dbCore->queryAndGetResults(
-            "SELECT ng.id, ng.type
-                  FROM {$ngramTable} ng
-                  LEFT JOIN {$permalinkCacheTable} pc ON ng.id = pc.id AND ng.type = 'post'
-                  WHERE ng.type = 'post' AND pc.id IS NULL",
-            ['result_type' => OBJECT]
-        );
-
-        $orphanedError = isset($orphanedResult['last_error']) && is_string($orphanedResult['last_error']) ? $orphanedResult['last_error'] : '';
-        if ($orphanedError !== '') {
-            if (!$this->dbCore->classifyAndHandleInfrastructureError($orphanedError)) {
-                $this->logger->errorMessage("Failed to query for orphaned post ngram entries: " . $orphanedError);
-            }
-            return array_merge($stats, ['error' => $orphanedError]);
-        }
-        $orphanedPosts = isset($orphanedResult['rows']) && is_array($orphanedResult['rows']) ? $orphanedResult['rows'] : [];
-
-        if (!empty($orphanedPosts)) {
-            $this->logger->infoMessage("Found " . count($orphanedPosts) . " orphaned post ngram entries. Deleting...");
-
-            // Delete each orphaned post entry
-            foreach ($orphanedPosts as $entry) {
-                if (!is_object($entry)) {
-                    continue;
-                }
-                /** @var object{id: int, type: string} $entry */
-                $entryId = (int)$entry->id;
-                $entryType = (string)$entry->type;
-                $deleteResult = $this->dbCore->queryAndGetResults(
-                    "DELETE FROM {$ngramTable} WHERE id = %d AND type = %s",
-                    ['query_params' => [$entryId, $entryType]]
-                );
-
-                $deleteError = isset($deleteResult['last_error']) && is_string($deleteResult['last_error']) ? $deleteResult['last_error'] : '';
-                if ($deleteError !== '') {
-                    if (!$this->dbCore->classifyAndHandleInfrastructureError($deleteError)) {
-                        $this->logger->errorMessage("Failed to delete orphaned post ngram entry ID {$entryId}: " . $deleteError);
-                    }
-                    $stats['errors']++;
-                } else {
-                    $stats['posts_deleted']++;
-                }
-            }
-        } else {
-            $this->logger->debugMessage("No orphaned post ngram entries found.");
-        }
-
-        // ===== CLEANUP ORPHANED CATEGORIES =====
-        // Get all published categories
-        $publishedCategories = $this->contentRepo->getPublishedCategories();
-        $publishedCategoryIds = [];
-
-        if (!empty($publishedCategories)) {
-            foreach ($publishedCategories as $category) {
-                /** @var object{term_id: int, url: string} $category */
-                $publishedCategoryIds[] = (int)$category->term_id;
-            }
-        }
-
-        // Get all category ngram entries
-        $catEntriesResult = $this->dbCore->queryAndGetResults(
-            "SELECT DISTINCT id FROM {$ngramTable} WHERE type = 'category'",
-            ['result_type' => OBJECT]
-        );
-        $categoryNGramEntries = isset($catEntriesResult['rows']) && is_array($catEntriesResult['rows']) ? $catEntriesResult['rows'] : [];
-
-        if (!empty($categoryNGramEntries)) {
-            $orphanedCategories = [];
-
-            // Find category ngram entries that don't have corresponding published categories
-            foreach ($categoryNGramEntries as $entry) {
-                if (!is_object($entry)) {
-                    continue;
-                }
-                /** @var object{id: int} $entry */
-                $entId = (int)$entry->id;
-                if (!in_array($entId, $publishedCategoryIds)) {
-                    $orphanedCategories[] = $entId;
-                }
-            }
-
-            if (!empty($orphanedCategories)) {
-                $this->logger->infoMessage("Found " . count($orphanedCategories) . " orphaned category ngram entries. Deleting...");
-
-                // Delete orphaned category entries
-                foreach ($orphanedCategories as $categoryId) {
-                    $catDeleteResult = $this->dbCore->queryAndGetResults(
-                        "DELETE FROM {$ngramTable} WHERE id = %d AND type = %s",
-                        ['query_params' => [$categoryId, 'category']]
-                    );
-
-                    $catDeleteError = isset($catDeleteResult['last_error']) && is_string($catDeleteResult['last_error']) ? $catDeleteResult['last_error'] : '';
-                    if ($catDeleteError !== '') {
-                        if (!$this->dbCore->classifyAndHandleInfrastructureError($catDeleteError)) {
-                            $this->logger->errorMessage("Failed to delete orphaned category ngram entry ID {$categoryId}: " . $catDeleteError);
-                        }
-                        $stats['errors']++;
-                    } else {
-                        $stats['categories_deleted']++;
-                    }
-                }
-            } else {
-                $this->logger->debugMessage("No orphaned category ngram entries found.");
-            }
-        }
-
-        $this->logger->infoMessage("Orphaned ngram cleanup complete: {$stats['posts_deleted']} posts deleted, {$stats['categories_deleted']} categories deleted, {$stats['errors']} errors.");
-
-        return $stats;
+        return $this->newReconciler()->cleanupOrphaned();
     }
 
     /**
-     * Build ngrams for all categories.
-     * Should be called during initial setup or manual rebuild.
-     *
-     * @param int $batchSize Number of categories to process per batch (default: 50)
-     * @return array<string, int> Statistics: ['processed' => int, 'success' => int, 'failed' => int]
+     * @param int $batchSize
+     * @return array{processed:int, success:int, failed:int}
      */
     function buildNGramsForCategories($batchSize = 50) {
-        $this->logger->debugMessage("Building N-grams for categories...");
-
-        $categories = $this->contentRepo->getPublishedCategories();
-
-        if (empty($categories)) {
-            $this->logger->debugMessage("No published categories found.");
-            return ['processed' => 0, 'success' => 0, 'failed' => 0];
-        }
-
-        $stats = ['processed' => 0, 'success' => 0, 'failed' => 0];
-
-        foreach ($categories as $category) {
-            try {
-                /** @var object{term_id: int, url: string} $category */
-                $termId = (int)$category->term_id;
-                $url = (string)$category->url;
-
-                if (empty($url) || $url === 'in code') {
-                    $this->logger->debugMessage("Skipping category {$termId} - no valid URL");
-                    continue;
-                }
-
-                // Normalize URL
-                $urlNormalized = $this->f->strtolower(trim($url));
-
-                // Extract N-grams
-                $ngrams = $this->ngramFilter->extractNGrams($urlNormalized);
-
-                // Store with type='category'
-                $success = $this->ngramFilter->storeNGrams($termId, $url, $urlNormalized, $ngrams, 'category');
-
-                $stats['processed']++;
-                if ($success) {
-                    $stats['success']++;
-                } else {
-                    $stats['failed']++;
-                }
-            } catch (Exception $e) {
-                $this->logger->errorMessage("Failed to build ngram for category {$termId}: " . $e->getMessage());
-                $stats['processed']++;
-                $stats['failed']++;
-            }
-        }
-
-        $this->logger->infoMessage("Category N-grams built: {$stats['processed']} processed, {$stats['success']} success, {$stats['failed']} failed.");
-
-        return $stats;
+        return $this->newTaxonomyBuilder()->buildForCategories($batchSize);
     }
 
     /**
-     * Build ngrams for all tags.
-     * Should be called during initial setup or manual rebuild.
-     *
-     * @param int $batchSize Number of tags to process per batch (default: 50)
-     * @return array<string, int> Statistics: ['processed' => int, 'success' => int, 'failed' => int]
+     * @param int $batchSize
+     * @return array{processed:int, success:int, failed:int}
      */
     function buildNGramsForTags($batchSize = 50) {
-        $this->logger->debugMessage("Building N-grams for tags...");
-
-        $tags = $this->contentRepo->getPublishedTags();
-
-        if (empty($tags)) {
-            $this->logger->debugMessage("No published tags found.");
-            return ['processed' => 0, 'success' => 0, 'failed' => 0];
-        }
-
-        $stats = ['processed' => 0, 'success' => 0, 'failed' => 0];
-
-        foreach ($tags as $tag) {
-            try {
-                /** @var object{term_id: int, url: string} $tag */
-                $termId = (int)$tag->term_id;
-                $url = (string)$tag->url;
-
-                if (empty($url) || $url === 'in code') {
-                    $this->logger->debugMessage("Skipping tag {$termId} - no valid URL");
-                    continue;
-                }
-
-                // Normalize URL
-                $urlNormalized = $this->f->strtolower(trim($url));
-
-                // Extract N-grams
-                $ngrams = $this->ngramFilter->extractNGrams($urlNormalized);
-
-                // Store with type='tag'
-                $success = $this->ngramFilter->storeNGrams($termId, $url, $urlNormalized, $ngrams, 'tag');
-
-                $stats['processed']++;
-                if ($success) {
-                    $stats['success']++;
-                } else {
-                    $stats['failed']++;
-                }
-            } catch (Exception $e) {
-                $this->logger->errorMessage("Failed to build ngram for tag {$termId}: " . $e->getMessage());
-                $stats['processed']++;
-                $stats['failed']++;
-            }
-        }
-
-        $this->logger->infoMessage("Tag N-grams built: {$stats['processed']} processed, {$stats['success']} success, {$stats['failed']} failed.");
-
-        return $stats;
+        return $this->newTaxonomyBuilder()->buildForTags($batchSize);
     }
 
     /**
-     * Build ngrams for all content types (posts, pages, categories, tags).
-     * This is the comprehensive rebuild that should be called from the Tools page.
+     * Build n-grams for posts, categories, and tags. Used by the
+     * Tools page comprehensive rebuild.
      *
-     * @param int $batchSize Number of items to process per batch
-     * @return array<string, mixed> Combined statistics
+     * @param int $batchSize
+     * @return array<string, mixed>
      */
     function buildNGramsForAllContent($batchSize = 100) {
         $this->logger->infoMessage("Starting comprehensive N-gram cache build for all content types...");
 
-        // Rebuild posts/pages (existing functionality)
         $postsStats = $this->rebuildNGramCache($batchSize, true);
-
-        // Build categories
         $categoriesStats = $this->buildNGramsForCategories($batchSize);
-
-        // Build tags
         $tagsStats = $this->buildNGramsForTags($batchSize);
 
         $totalStats = [
@@ -708,12 +188,57 @@ class ABJ_404_Solution_DatabaseUpgradeNGram extends ABJ_404_Solution_DatabaseUpg
             'tags' => $tagsStats,
             'total_processed' => $this->numericStat($postsStats, 'processed') + $this->numericStat($categoriesStats, 'processed') + $this->numericStat($tagsStats, 'processed'),
             'total_success' => $this->numericStat($postsStats, 'success') + $this->numericStat($categoriesStats, 'success') + $this->numericStat($tagsStats, 'success'),
-            'total_failed' => $this->numericStat($postsStats, 'failed') + $this->numericStat($categoriesStats, 'failed') + $this->numericStat($tagsStats, 'failed')
+            'total_failed' => $this->numericStat($postsStats, 'failed') + $this->numericStat($categoriesStats, 'failed') + $this->numericStat($tagsStats, 'failed'),
         ];
 
         $this->logger->infoMessage("Comprehensive N-gram build complete: {$totalStats['total_processed']} total processed, {$totalStats['total_success']} success, {$totalStats['total_failed']} failed.");
 
         return $totalStats;
+    }
+
+    /**
+     * Cross-component contract: DatabaseUpgradeBootstrap and others
+     * reach this via the upgrade dispatcher to learn whether the
+     * plugin is network-activated.
+     *
+     * @return bool
+     */
+    function isNetworkActivated() {
+        return $this->newOptionStore()->isNetworkActivated();
+    }
+
+    /**
+     * Cross-component contract: network-aware option getter.
+     *
+     * @param string $option_name
+     * @param mixed $default
+     * @return mixed
+     */
+    function getNetworkAwareOption($option_name, $default = false) {
+        return $this->newOptionStore()->getOption($option_name, $default);
+    }
+
+    /**
+     * Cross-component contract: network-aware option setter.
+     *
+     * @param string $option_name
+     * @param mixed $value
+     * @return bool
+     */
+    function updateNetworkAwareOption($option_name, $value) {
+        return $this->newOptionStore()->updateOption($option_name, $value);
+    }
+
+    /**
+     * Exposed for the multisite race-condition test (calls through
+     * the upgrade dispatcher) and as part of the schedule
+     * pre-condition. Sums permalink_cache rows across every site when
+     * network-activated, otherwise returns the current site count.
+     *
+     * @return int
+     */
+    function countTotalPagesForNGramRebuild() {
+        return $this->newScheduler()->countTotalPagesForRebuild();
     }
 
     /**
@@ -725,363 +250,43 @@ class ABJ_404_Solution_DatabaseUpgradeNGram extends ABJ_404_Solution_DatabaseUpg
         return is_numeric($value) ? (int)$value : 0;
     }
 
-    /**
-     * Process N-gram cache rebuild for multisite (one site at a time).
-     *
-     * @param int $batchSize
-     * @param int $maxBatchesPerRun
-     * @return void
-     */
-    private function rebuildNGramCacheAsyncMultisite(int $batchSize, int $maxBatchesPerRun): void {
-        // Get or initialize list of pending sites
-        $pendingSitesRaw = $this->getNetworkAwareOption('abj404_ngram_pending_sites', null);
-        /** @var array<int, int> $pendingSites */
-        $pendingSites = is_array($pendingSitesRaw) ? $pendingSitesRaw : [];
-
-        if ($pendingSitesRaw === null) {
-            // First run: Initialize site list and tracking
-            $sites = get_sites(array('fields' => 'ids', 'number' => 0));
-            $this->updateNetworkAwareOption('abj404_ngram_pending_sites', $sites);
-            $this->updateNetworkAwareOption('abj404_ngram_total_sites', count($sites));
-            $this->updateNetworkAwareOption('abj404_ngram_current_site_offset', 0);
-            $pendingSites = $sites;
-        }
-
-        if (empty($pendingSites)) {
-            // All sites processed!
-            $this->updateNetworkAwareOption('abj404_ngram_cache_initialized', '1');
-            $this->updateNetworkAwareOption('abj404_ngram_pending_sites', null);
-            $this->updateNetworkAwareOption('abj404_ngram_total_sites', null);
-            $this->updateNetworkAwareOption('abj404_ngram_current_site_offset', null);
-            $this->logger->infoMessage("N-gram cache rebuild complete for all sites in network!");
-            return;
-        }
-
-        // Get current site to process
-        $currentSiteId = (int)$pendingSites[0];
-        $rawOffset = $this->getNetworkAwareOption('abj404_ngram_current_site_offset', 0);
-        $offset = is_scalar($rawOffset) ? (int)$rawOffset : 0;
-        $rawTotalSites = $this->getNetworkAwareOption('abj404_ngram_total_sites', count($pendingSites));
-        $totalSites = is_scalar($rawTotalSites) ? (int)$rawTotalSites : count($pendingSites);
-        $completedSites = $totalSites - count($pendingSites);
-
-        // Switch to the site being processed
-        switch_to_blog($currentSiteId);
-
-        // Count pages for THIS site only
-        $permalinkCacheTable = $this->dbCore->getPrefixedTableName('abj404_permalink_cache');
-        $sitePages = $this->dbCore->queryScalarInt("SELECT COUNT(*) AS c FROM {$permalinkCacheTable}");
-
-        if ($sitePages == 0) {
-            // This site has no pages, move to next site
-            array_shift($pendingSites);
-            $this->updateNetworkAwareOption('abj404_ngram_pending_sites', $pendingSites);
-            $this->updateNetworkAwareOption('abj404_ngram_current_site_offset', 0);
-            restore_current_blog();
-
-            $this->logger->infoMessage(sprintf(
-                "Site %d has no pages. Moving to next site. Progress: %d/%d sites completed.",
-                $currentSiteId,
-                $completedSites + 1,
-                $totalSites
-            ));
-
-            // Reschedule immediately for next site
-            wp_schedule_single_event(time(), 'abj404_rebuild_ngram_cache_hook');
-            return;
-        }
-
-        $this->logger->infoMessage(sprintf(
-            "Processing N-gram cache for site %d (Site %d of %d): Offset %d of %d pages",
-            $currentSiteId,
-            $completedSites + 1,
-            $totalSites,
-            $offset,
-            $sitePages
-        ));
-
-        // Process batches for current site
-        $batchesProcessed = 0;
-        $totalStats = ['processed' => 0, 'success' => 0, 'failed' => 0];
-
-        while ($batchesProcessed < $maxBatchesPerRun && $offset < $sitePages) {
-            try {
-                // Process batch (already switched to correct blog)
-                $stats = $this->ngramFilter->rebuildCache($batchSize, $offset);
-
-                $totalStats['processed'] += $stats['processed'];
-                $totalStats['success'] += $stats['success'];
-                $totalStats['failed'] += $stats['failed'];
-
-                $offset += $batchSize;
-                $batchesProcessed++;
-
-                // Update offset for current site
-                $this->updateNetworkAwareOption('abj404_ngram_current_site_offset', $offset);
-
-                // Stop if we processed fewer pages than expected (end of site data)
-                if ($stats['processed'] < $batchSize) {
-                    break;
-                }
-
-            } catch (Exception $e) {
-                $this->logger->errorMessage("Error during N-gram rebuild for site {$currentSiteId} at offset {$offset}: " . $e->getMessage());
-                $totalStats['failed'] += $batchSize;
-                $offset += $batchSize;
-                $batchesProcessed++;
-                $this->updateNetworkAwareOption('abj404_ngram_current_site_offset', $offset);
-            }
-        }
-
-        $progress = $sitePages > 0 ? min(100, round(($offset / $sitePages) * 100, 1)) : 100;
-
-        $this->logger->infoMessage(sprintf(
-            "Site %d progress: %d%% complete (%d/%d pages), %d success, %d failed",
-            $currentSiteId,
-            $progress,
-            $offset,
-            $sitePages,
-            $totalStats['success'],
-            $totalStats['failed']
-        ));
-
-        // Check if current site is complete
-        if ($offset >= $sitePages) {
-            // Site complete! Move to next site
-            array_shift($pendingSites);
-            $this->updateNetworkAwareOption('abj404_ngram_pending_sites', $pendingSites);
-            $this->updateNetworkAwareOption('abj404_ngram_current_site_offset', 0);
-
-            $this->logger->infoMessage(sprintf(
-                "Site %d complete! Progress: %d/%d sites completed.",
-                $currentSiteId,
-                $completedSites + 1,
-                $totalSites
-            ));
-        }
-
-        restore_current_blog();
-
-        // Reschedule for next batch or next site
-        wp_schedule_single_event(time() + 10, 'abj404_rebuild_ngram_cache_hook');
+    private function newOptionStore(): ABJ_404_Solution_NGramNetworkOptionStore {
+        return new ABJ_404_Solution_NGramNetworkOptionStore();
     }
 
-    /**
-     * Process N-gram cache rebuild for a single site.
-     *
-     * @param int $batchSize
-     * @param int $maxBatchesPerRun
-     * @return void
-     */
-    private function rebuildNGramCacheAsyncSingleSite(int $batchSize, int $maxBatchesPerRun): void {
-        $rawSingleOffset = $this->getNetworkAwareOption('abj404_ngram_rebuild_offset', 0);
-        $offset = is_scalar($rawSingleOffset) ? (int)$rawSingleOffset : 0;
-        $permalinkCacheTable = $this->dbCore->getPrefixedTableName('abj404_permalink_cache');
-        $totalPages = $this->dbCore->queryScalarInt("SELECT COUNT(*) AS c FROM {$permalinkCacheTable}");
-
-        if ($totalPages == 0) {
-            $this->logger->debugMessage("No pages to process. Setting initialized flag.");
-            $this->updateNetworkAwareOption('abj404_ngram_cache_initialized', '1');
-            $this->updateNetworkAwareOption('abj404_ngram_rebuild_offset', 0);
-            return;
-        }
-
-        $this->logger->infoMessage(sprintf(
-            "Async N-gram rebuild: Processing batch at offset %d of %d total pages",
-            $offset,
-            $totalPages
-        ));
-
-        // Process batches
-        $batchesProcessed = 0;
-        $totalStats = ['processed' => 0, 'success' => 0, 'failed' => 0];
-
-        while ($batchesProcessed < $maxBatchesPerRun && $offset < $totalPages) {
-            try {
-                $stats = $this->ngramFilter->rebuildCache($batchSize, $offset);
-
-                $totalStats['processed'] += $stats['processed'];
-                $totalStats['success'] += $stats['success'];
-                $totalStats['failed'] += $stats['failed'];
-
-                $offset += $batchSize;
-                $batchesProcessed++;
-
-                $this->updateNetworkAwareOption('abj404_ngram_rebuild_offset', $offset);
-
-                if ($stats['processed'] < $batchSize) {
-                    break;
-                }
-
-            } catch (Exception $e) {
-                $this->logger->errorMessage("Error during async N-gram cache rebuild at offset {$offset}: " . $e->getMessage());
-                $totalStats['failed'] += $batchSize;
-                $offset += $batchSize;
-                $batchesProcessed++;
-                $this->updateNetworkAwareOption('abj404_ngram_rebuild_offset', $offset);
-            }
-        }
-
-        $progress = $totalPages > 0 ? min(100, round(($offset / $totalPages) * 100, 1)) : 100;
-
-        $this->logger->infoMessage(sprintf(
-            "Async N-gram rebuild progress: %d%% complete (%d/%d pages), %d success, %d failed",
-            $progress,
-            $offset,
-            $totalPages,
-            $totalStats['success'],
-            $totalStats['failed']
-        ));
-
-        if ($offset < $totalPages) {
-            $scheduleTime = time() + 10;
-            $hookName = 'abj404_rebuild_ngram_cache_hook';
-            $scheduled = wp_schedule_single_event($scheduleTime, $hookName, [$offset]);
-
-            if ($scheduled === false) {
-                // Quick check for DISABLE_WP_CRON as immediate diagnostic
-                if (defined('DISABLE_WP_CRON') && DISABLE_WP_CRON) {
-                    $this->logger->errorMessage(
-                        "Cannot schedule next N-gram rebuild batch at offset {$offset}: WP-Cron is disabled (DISABLE_WP_CRON=true). " .
-                        "Consider enabling WP-Cron or using server-side cron with a fallback mechanism."
-                    );
-                    // Don't return - let the rebuild complete gracefully, just log the issue
-                } else {
-                    global $wpdb;
-
-                    // Gather comprehensive diagnostic information for troubleshooting
-                    $cronDisabled = defined('DISABLE_WP_CRON') && DISABLE_WP_CRON;
-                    $alreadyScheduled = wp_next_scheduled($hookName, [$offset]);
-                    $dbError = !empty($wpdb->last_error) ? $wpdb->last_error : 'none';
-                    $rawCacheInit2 = $this->getNetworkAwareOption('abj404_ngram_cache_initialized', 'not set');
-                    $cacheInitialized = is_scalar($rawCacheInit2) ? (string)$rawCacheInit2 : 'not set';
-
-                    $errorMsg = sprintf(
-                        "Failed to schedule next N-gram rebuild batch at offset %d. Hook: %s, Schedule time: %d (current: %d), " .
-                        "Already scheduled: %s, WP-Cron disabled: %s, DB error: %s, " .
-                        "Cache initialized: %s, Progress: %.1f%%, Multisite: %s, Blog ID: %d",
-                        $offset,
-                        $hookName,
-                        $scheduleTime,
-                        time(),
-                        $alreadyScheduled ? date('Y-m-d H:i:s', $alreadyScheduled) : 'no',
-                        $cronDisabled ? 'yes' : 'no',
-                        $dbError,
-                        $cacheInitialized,
-                        $progress,
-                        is_multisite() ? 'yes' : 'no',
-                        get_current_blog_id()
-                    );
-
-                    // Pattern 7 (defense-in-depth): if a concurrent
-                    // infra-level DB error contributed to the cron
-                    // failure, surface the hosting cause as a
-                    // plugin-page admin notice.
-                    if (!empty($wpdb->last_error)) {
-                        $this->dbCore->classifyAndHandleInfrastructureError($wpdb->last_error);
-                    }
-
-                    $this->logger->errorMessage($errorMsg);
-                }
-            }
-        } else {
-            // All done!
-            $this->updateNetworkAwareOption('abj404_ngram_cache_initialized', '1');
-            $this->updateNetworkAwareOption('abj404_ngram_rebuild_offset', 0);
-            $this->logger->infoMessage("N-gram cache rebuild complete! Total: {$totalStats['processed']} processed, {$totalStats['success']} success, {$totalStats['failed']} failed.");
-        }
+    private function newScheduler(): ABJ_404_Solution_NGramCacheRebuildScheduler {
+        return new ABJ_404_Solution_NGramCacheRebuildScheduler(
+            $this->dbCore,
+            $this->ngramFilter,
+            $this->logger,
+            $this->newOptionStore()
+        );
     }
 
-    /**
-     * Check if the plugin is network-activated in a multisite environment.
-     *
-     * @return bool True if network-activated, false otherwise
-     */
-    private function isNetworkActivated() {
-        if (!is_multisite()) {
-            return false;
-        }
-
-        if (!function_exists('is_plugin_active_for_network')) {
-            require_once ABSPATH . '/wp-admin/includes/plugin.php';
-        }
-
-        return is_plugin_active_for_network(plugin_basename(ABJ404_FILE));
+    private function newSyncRebuilder(): ABJ_404_Solution_NGramCacheSyncRebuilder {
+        return new ABJ_404_Solution_NGramCacheSyncRebuilder(
+            $this->dbCore,
+            $this->ngramFilter,
+            $this->logger
+        );
     }
 
-    /**
-     * Get an option value, using network-wide storage in multisite when network-activated.
-     *
-     * MULTISITE BEHAVIOR:
-     * - Network-activated: Uses get_site_option() for network-wide state
-     * - Single-site or per-site activation: Uses get_option() for site-specific state
-     *
-     * This ensures that N-gram rebuild state is shared across all sites in network-activated
-     * scenarios, preventing race conditions and duplicate work.
-     *
-     * @param string $option_name The option name
-     * @param mixed $default Default value if option doesn't exist
-     * @return mixed The option value
-     */
-    private function getNetworkAwareOption($option_name, $default = false) {
-        if ($this->isNetworkActivated()) {
-            return get_site_option($option_name, $default);
-        }
-        return get_option($option_name, $default);
+    private function newReconciler(): ABJ_404_Solution_NGramCacheReconciler {
+        return new ABJ_404_Solution_NGramCacheReconciler(
+            $this->dbCore,
+            $this->ngramFilter,
+            $this->contentRepo,
+            $this->f,
+            $this->logger
+        );
     }
 
-    /**
-     * Update an option value, using network-wide storage in multisite when network-activated.
-     *
-     * MULTISITE BEHAVIOR:
-     * - Network-activated: Uses update_site_option() for network-wide state
-     * - Single-site or per-site activation: Uses update_option() for site-specific state
-     *
-     * This ensures that N-gram rebuild state is shared across all sites in network-activated
-     * scenarios, preventing race conditions and duplicate work.
-     *
-     * @param string $option_name The option name
-     * @param mixed $value The value to store
-     * @return bool True if updated successfully
-     */
-    private function updateNetworkAwareOption($option_name, $value) {
-        if ($this->isNetworkActivated()) {
-            return update_site_option($option_name, $value);
-        }
-        return update_option($option_name, $value);
+    private function newTaxonomyBuilder(): ABJ_404_Solution_NGramTaxonomyBuilder {
+        return new ABJ_404_Solution_NGramTaxonomyBuilder(
+            $this->ngramFilter,
+            $this->contentRepo,
+            $this->f,
+            $this->logger
+        );
     }
-
-    /**
-     * Count total pages for N-gram rebuild across all sites if network-activated.
-     *
-     * MULTISITE BEHAVIOR:
-     * - Network-activated: Counts permalink cache entries across ALL sites in the network
-     * - Single-site: Counts only current site's permalink cache entries
-     *
-     * This allows the rebuild process to accurately track progress when processing
-     * pages from multiple sites.
-     *
-     * @return int Total number of pages to process
-     */
-    private function countTotalPagesForNGramRebuild() {
-        if (!$this->isNetworkActivated()) {
-            // Single site: count only current site's pages
-            $permalinkCacheTable = $this->dbCore->getPrefixedTableName('abj404_permalink_cache');
-            return $this->dbCore->queryScalarInt("SELECT COUNT(*) AS c FROM {$permalinkCacheTable}");
-        }
-
-        // Multisite network-activated: count pages across all sites
-        $sites = get_sites(array('fields' => 'ids', 'number' => 0));
-        $totalPages = 0;
-
-        foreach ($sites as $blog_id) {
-            switch_to_blog($blog_id);
-            $permalinkCacheTable = $this->dbCore->getPrefixedTableName('abj404_permalink_cache');
-            $totalPages += $this->dbCore->queryScalarInt("SELECT COUNT(*) AS c FROM {$permalinkCacheTable}");
-            restore_current_blog();
-        }
-
-        return $totalPages;
-    }
-
 }

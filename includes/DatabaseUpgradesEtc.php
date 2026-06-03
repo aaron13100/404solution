@@ -76,8 +76,6 @@ require_once __DIR__ . '/DatabaseUpgradeBootstrap.php';
  * @method mixed buildNGramsForCategories($batchSize = 50)
  * @method mixed buildNGramsForTags($batchSize = 50)
  * @method mixed buildNGramsForAllContent($batchSize = 100)
- * @method mixed rebuildNGramCacheAsyncMultisite(int $batchSize, int $maxBatchesPerRun)
- * @method mixed rebuildNGramCacheAsyncSingleSite(int $batchSize, int $maxBatchesPerRun)
  * @method mixed isNetworkActivated()
  * @method mixed getNetworkAwareOption($option_name, $default = false)
  * @method mixed updateNetworkAwareOption($option_name, $value)
@@ -319,8 +317,6 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 			'buildNGramsForCategories' => 'nGramUpgrade',
 			'buildNGramsForTags' => 'nGramUpgrade',
 			'buildNGramsForAllContent' => 'nGramUpgrade',
-			'rebuildNGramCacheAsyncMultisite' => 'nGramUpgrade',
-			'rebuildNGramCacheAsyncSingleSite' => 'nGramUpgrade',
 			'isNetworkActivated' => 'nGramUpgrade',
 			'getNetworkAwareOption' => 'nGramUpgrade',
 			'updateNetworkAwareOption' => 'nGramUpgrade',
