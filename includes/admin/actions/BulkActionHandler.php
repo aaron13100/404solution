@@ -8,10 +8,15 @@ if (!defined('ABSPATH')) {
  * Handles any action whose verb starts with 'bulk' (bulktrash,
  * bulk_trash_delete_permanently, bulk_trash_restore, bulkignore, bulklater,
  * bulkcaptured). Validates that $_POST['idnum'] is present (echoes an error
- * and returns '' if not, matching pre-refactor behavior), then delegates the
- * iteration + per-row logic to PluginLogicAdminActions::doBulkAction().
+ * and returns '' if not, matching pre-refactor behavior), then iterates ids
+ * and applies the per-row status/trash/delete operation.
  *
  * Registered in the dispatcher's prefix-match map (not the exact-match map).
+ *
+ * The per-row dispatch logic previously lived on
+ * PluginLogicAdminActions::doBulkAction() (M201, design-audit-2026-06-02).
+ * That parent method is now a thin shim that calls doBulkAction() here so
+ * existing tests/callers do not break.
  */
 class ABJ_404_Solution_BulkActionHandler implements ABJ_404_Solution_AdminActionHandlerInterface {
 
@@ -48,8 +53,83 @@ class ABJ_404_Solution_BulkActionHandler implements ABJ_404_Solution_AdminAction
                 $ids[] = absint($rawId);
             }
         }
-        $message = $this->parent->doBulkAction($action, $ids);
+        $message = $this->doBulkAction($action, $ids);
         $this->parent->getViewBuild()->invalidateViewDoneAndScheduleRebuild();
+        return $message;
+    }
+
+    /**
+     * Iterate the given ids and apply the per-row operation implied by the
+     * bulk action verb. Returns a human-readable summary. Public so the
+     * legacy PluginLogicAdminActions::doBulkAction() shim and existing tests
+     * can call it directly without going through handle()'s POST gate.
+     *
+     * @param string $action
+     * @param array<int, int> $ids
+     * @return string
+     */
+    public function doBulkAction(string $action, array $ids): string {
+        $message = "";
+        $logger = $this->parent->getLogger();
+        $redirectsRepo = $this->parent->getRedirectsRepo();
+
+        $logger->debugMessage("In doBulkAction. Action: " .
+                esc_html($action == '' ? '(none)' : $action) . ", ids: " . wp_kses_post((string)json_encode($ids)));
+
+        if ($action == "bulkignore" || $action == "bulkcaptured" || $action == "bulklater" ||
+                $action == "bulk_trash_restore") {
+
+            $status = 0;
+            if ($action == "bulkignore") {
+                $status = ABJ404_STATUS_IGNORED;
+            } else if ($action == "bulkcaptured") {
+                $status = ABJ404_STATUS_CAPTURED;
+            } else if ($action == "bulklater") {
+                $status = ABJ404_STATUS_LATER;
+            }
+
+            $count = 0;
+            foreach ($ids as $id) {
+                $s = $redirectsRepo->moveRedirectsToTrash($id, 0);
+                if ($action != "bulk_trash_restore") {
+                    $s = $redirectsRepo->updateRedirectTypeStatus($id, (string)$status);
+                }
+                if ($s == "") {
+                    $count++;
+                }
+            }
+            if ($action == "bulkignore") {
+                $message = $count . " " . __('URL(s) marked as Ignored.', '404-solution');
+            } else if ($action == "bulkcaptured") {
+                $message = $count . " " . __('URL(s) marked as Captured.', '404-solution');
+            } else if ($action == "bulklater") {
+                $message = $count . " " . __('URL(s) marked as Later.', '404-solution');
+            } else {
+                $message = $count . " " . __('URL(s) restored.', '404-solution');
+            }
+
+        } else if ($action == "bulk_trash_delete_permanently") {
+            $count = 0;
+            foreach ($ids as $id) {
+                $redirectsRepo->deleteRedirect(absint($id));
+                $count ++;
+            }
+            $message = $count . " " . __('URL(s) deleted', '404-solution');
+
+        } else if ($action == "bulktrash") {
+            $count = 0;
+            foreach ($ids as $id) {
+                $s = $redirectsRepo->moveRedirectsToTrash($id, 1);
+                if ($s == "") {
+                    $count ++;
+                }
+            }
+            $message = $count . " " . __('URL(s) moved to trash', '404-solution');
+
+        } else {
+            $logger->errorMessage("Unrecognized bulk action: " . esc_html($action));
+            echo sprintf(__("Error: Unrecognized bulk action. (%s)", '404-solution'), esc_html($action));
+        }
         return $message;
     }
 }

@@ -6,7 +6,34 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Admin action handlers: trash, delete, ignore, later, edit, bulk actions, empty trash.
+ * Admin action dispatcher + thin facade.
+ *
+ * Two roles:
+ *
+ *   1. Action-name -> handler-class registry. handlePluginAction() routes
+ *      POST verbs (addRedirect, updateOptions, emptyRedirectTrash, bulk*, ...)
+ *      to the matching class in includes/admin/actions/, centralizing the
+ *      nonce + is_admin() guard so it cannot be forgotten when a new action
+ *      is added.
+ *
+ *   2. Backward-compatible facade for non-dispatcher entry points
+ *      (link-style $_GET actions called from View.php, plus methods kept for
+ *      tests that already pin the existing API). Each facade method here is
+ *      a one-line delegator to the real implementation in
+ *      includes/admin/actions/*Handler.php; this class does not hold the
+ *      action logic itself.
+ *
+ * Per-action implementations live in:
+ *   - TrashLinkActionHandler   (link-style $_GET['trash'])
+ *   - EditRedirectHandler      (POST editRedirect, plus updateRedirectData)
+ *   - AddRedirectHandler       (POST addRedirect)
+ *   - BulkActionHandler        (POST bulk*)
+ *   - RedirectFormResolver     (shared form parsing + regex auto-promote)
+ *   - UpdateOptionsHandler, EmptyRedirectTrashHandler, EmptyCapturedTrashHandler,
+ *     PurgeRedirectsHandler, RunMaintenanceHandler, RebuildNgramCacheHandler,
+ *     ClearSpellingCacheHandler, SaveGscSettingsHandler, ImportFromPluginHandler,
+ *     UndoRegexAutoPromoteHandler
+ *
  * Standalone class extracted from PluginLogicTrait_AdminActions.
  */
 class ABJ_404_Solution_PluginLogicAdminActions {
@@ -44,6 +71,21 @@ class ABJ_404_Solution_PluginLogicAdminActions {
     /** @var ABJ_404_Solution_AdminActionsDependencies */
     private $deps;
 
+    /** @var ABJ_404_Solution_RedirectFormResolver|null lazy. */
+    private $formResolver;
+
+    /** @var ABJ_404_Solution_TrashLinkActionHandler|null lazy. */
+    private $trashLinkHandler;
+
+    /** @var ABJ_404_Solution_EditRedirectHandler|null lazy. */
+    private $editRedirectHandler;
+
+    /** @var ABJ_404_Solution_AddRedirectHandler|null lazy. */
+    private $addRedirectHandler;
+
+    /** @var ABJ_404_Solution_BulkActionHandler|null lazy. */
+    private $bulkActionHandler;
+
     /**
      * Construct with a single typed dependency bundle. Replaces a
      * 10-positional-parameter signature (audit source design-audit-2026-05-29.md,
@@ -72,8 +114,13 @@ class ABJ_404_Solution_PluginLogicAdminActions {
      * (constructor injection) so handlers can reach shared collaborators without
      * each handler getting its own 10-argument constructor.
      *
-     * @return ABJ_404_Solution_Logging
+     * @return ABJ_404_Solution_Functions
      */
+    public function getFunctions() {
+        return $this->f;
+    }
+
+    /** @return ABJ_404_Solution_Logging */
     public function getLogger() {
         return $this->logger;
     }
@@ -93,14 +140,37 @@ class ABJ_404_Solution_PluginLogicAdminActions {
         return $this->contentRepo;
     }
 
+    /** @return ABJ_404_Solution_PluginLogicUrlNormalization */
+    public function getUrlNormalization() {
+        return $this->urlNormalization;
+    }
+
+    /**
+     * Shared by Add and Edit redirect handlers. Lazy so construction stays
+     * cheap when admin actions never fire on this request.
+     *
+     * @return ABJ_404_Solution_RedirectFormResolver
+     */
+    public function redirectFormResolver(): ABJ_404_Solution_RedirectFormResolver {
+        if ($this->formResolver === null) {
+            $this->formResolver = new ABJ_404_Solution_RedirectFormResolver(
+                $this->f, $this->logger, $this->urlNormalization
+            );
+        }
+        return $this->formResolver;
+    }
+
     /**
      * Verify a nonce for admin-link actions, without depending on the browser's Referer header.
+     * Public so handlers under includes/admin/actions/ that respond to GET-link
+     * actions (TrashLinkActionHandler, EditRedirectHandler) can reuse the
+     * same nonce primitive used by the legacy methods on this class.
      *
      * @param string $action Nonce action string used in wp_nonce_url()
      * @param string $queryArg Nonce query arg name (default '_wpnonce')
      * @return bool
      */
-    private function verifyLinkNonce($action, $queryArg = '_wpnonce') {
+    public function verifyLinkNonce($action, $queryArg = '_wpnonce') {
         if (function_exists('check_admin_referer')) {
             $ok = check_admin_referer($action, $queryArg);
             if ($ok) {
@@ -259,52 +329,26 @@ class ABJ_404_Solution_PluginLogicAdminActions {
         return (bool)wp_verify_nonce((string)$_POST[$arg], $action);
     }
 
-    /** Move redirects to trash.
+    /**
+     * Backward-compatible facade for the trash link action. The real
+     * implementation lives in ABJ_404_Solution_TrashLinkActionHandler.
+     *
+     * The legacy misspelling (hanldeTrashAction) is preserved as an alias
+     * so existing call sites (View.php) and test stubs do not break; new
+     * code should call handleTrashAction().
+     *
      * @return string
      */
-    function hanldeTrashAction() {
-
-        $message = "";
-        if (isset($_GET['trash'])) {
-            if (is_admin() && $this->verifyLinkNonce('abj404_trashRedirect')) {
-                $trash = "";
-                if ($_GET['trash'] == 0) {
-                    $trash = 0;
-                } else if ($_GET['trash'] == 1) {
-                    $trash = 1;
-                } else {
-                    $this->logger->errorMessage("Unexpected trash operation: " .
-                            esc_html($_GET['trash']));
-                    $message = __('Error: Bad trash operation specified.', '404-solution');
-                    return $message;
-                }
-
-                $id = absint($_GET['id']);
-                $message = $this->redirectsRepo->moveRedirectsToTrash($id, $trash);
-                if ($message == "") {
-                    $subpage = isset($_GET['subpage']) ? sanitize_text_field(wp_unslash($_GET['subpage'])) : '';
-                    $filter = isset($_GET['filter']) ? intval($_GET['filter']) : 0;
-                    if ($trash == 0 && $subpage === 'abj404_captured' && $filter === ABJ404_TRASH_FILTER) {
-                        $this->redirectsRepo->updateRedirectTypeStatus($id, (string)ABJ404_STATUS_CAPTURED);
-                    }
-                    $this->viewBuild->invalidateViewDoneAndScheduleRebuild();
-                    if ($trash == 1) {
-                        $message = __('Redirect moved to trash successfully!', '404-solution');
-                    } else {
-                        $message = __('Redirect restored from trash successfully!', '404-solution');
-                    }
-                } else {
-                    if ($trash == 1) {
-                        $message = __('Error: Unable to move redirect to trash.', '404-solution');
-                    } else {
-                        $message = __('Error: Unable to move redirect from trash.', '404-solution');
-                    }
-                }
-
-            }
+    function handleTrashAction() {
+        if ($this->trashLinkHandler === null) {
+            $this->trashLinkHandler = new ABJ_404_Solution_TrashLinkActionHandler($this);
         }
+        return $this->trashLinkHandler->handle();
+    }
 
-        return $message;
+    /** @return string Legacy misspelled alias. Use handleTrashAction(). */
+    function hanldeTrashAction() {
+        return $this->handleTrashAction();
     }
 
     /** @return void */
@@ -464,175 +508,34 @@ class ABJ_404_Solution_PluginLogicAdminActions {
         return $this->handleStatusUpdate('later', 'abj404_organizeLater', ABJ404_STATUS_LATER, 'organize later', 'organize later');
     }
 
-    /**
-     * The parent admin script under which the plugin's menu page is registered.
-     * Default install registers as a submenu under Settings (options-general.php);
-     * users who set menuLocation=settingsLevel get a top-level menu (admin.php).
-     * Using the wrong parent script in admin_url() produces a URL that doesn't
-     * match the registered page, which historically landed users on the wrong
-     * page after a redirect.
-     *
-     * @return string
-     */
-    /**
-     * Build the post-edit redirect querystring (also used to determine the source
-     * page the in-request render should target). Extracted from handleActionEdit
-     * to keep that method's cyclomatic complexity within project limits.
-     *
-     * @return array{source_page: string, redirect_url: string}
-     */
-    private function buildPostEditRedirect(): array {
-        $valid_tabs = array('abj404_redirects', 'abj404_captured', 'abj404_logs',
-                          'abj404_stats', 'abj404_tools', 'abj404_options');
-        $source_page = $this->f->getPostOrGetSanitize('source_page');
-        if ($source_page === '' || !in_array($source_page, $valid_tabs)) {
-            $source_page = 'abj404_redirects';
-        }
-
-        $redirect_url = "?page=" . ABJ404_PP . "&subpage=" . $source_page . "&updated=1";
-
-        $source_filter = $this->f->getPostOrGetSanitize('source_filter', '');
-        if ($source_filter !== '' && $source_filter !== '0') {
-            $redirect_url .= "&filter=" . urlencode($source_filter);
-        }
-
-        $source_orderby = $this->f->getPostOrGetSanitize('source_orderby', '');
-        $source_order = $this->f->getPostOrGetSanitize('source_order', '');
-        if ($source_orderby !== '' && $source_order !== ''
-                && !($source_orderby === "url" && $source_order === "ASC")) {
-            $redirect_url .= "&orderby=" . urlencode($source_orderby);
-            $redirect_url .= "&order=" . urlencode($source_order);
-        }
-
-        $source_paged = $this->f->getPostOrGetSanitize('source_paged', '');
-        if ($source_paged !== '' && (int)$source_paged > 1) {
-            $redirect_url .= "&paged=" . urlencode($source_paged);
-        }
-
-        return array('source_page' => $source_page, 'redirect_url' => $redirect_url);
-    }
-
-    private function getMenuParentScript(): string {
-        $options = abj_service('options_repository')->getOptions(true);
-        $menuLocation = 'underSettings';
-        if (is_array($options) && isset($options['menuLocation']) && is_string($options['menuLocation'])) {
-            $menuLocation = $options['menuLocation'];
-        }
-        return $menuLocation === 'settingsLevel' ? 'admin.php' : 'options-general.php';
-    }
-
     /** Edit redirect data.
+     * Facade: real implementation lives in ABJ_404_Solution_EditRedirectHandler.
+     *
      * @param string $sub
      * @param string $action
      * @return string
      */
     function handleActionEdit(&$sub, &$action) {
-        $message = "";
-
-        if (array_key_exists('action', $_POST) && $_POST['action'] == "editRedirect") {
-            $id = $this->f->getPostOrGetSanitize('id');
-            $ids = $this->f->getPostOrGetSanitize('ids_multiple');
-            if (!($id === '' && $ids === '') && ($this->f->regexMatch('[0-9]+', '' . $id) || $this->f->regexMatch('[0-9]+', '' . $ids))) {
-                if (is_admin() && $this->verifyLinkNonce('abj404editRedirect')) {
-                    $message = $this->updateRedirectData();
-                    if ($message == "") {
-                        $redirect = $this->buildPostEditRedirect();
-
-                        // PRG attempt: only works when called early enough that
-                        // no output has been flushed yet (e.g. on admin_init).
-                        // When called from the menu-page callback, admin-header.php
-                        // has already streamed the admin chrome and headers_sent()
-                        // is true, so the Location header is silently dropped.
-                        if (!headers_sent()) {
-                            wp_safe_redirect(admin_url($this->getMenuParentScript() . $redirect['redirect_url']));
-                        }
-
-                        // Defense in depth: even if PRG didn't fire, route the
-                        // in-request render to the source page (redirects table
-                        // by default) instead of re-rendering the edit form.
-                        // Re-rendering echoAdminEditRedirectPage post-update
-                        // surfaced "Error: No ID(s) found for edit request."
-                        // for users whose admin chrome already flushed headers
-                        // (Chad/lonesync, 2026-05-26).
-                        $sub = $redirect['source_page'];
-                        $action = '';
-                        return __('Redirect Information Updated Successfully!', '404-solution');
-                    } else {
-                        $message .= __('Error: Unable to update redirect data.', '404-solution');
-                    }
-                }
-            }
+        if ($this->editRedirectHandler === null) {
+            $this->editRedirectHandler = new ABJ_404_Solution_EditRedirectHandler(
+                $this, $this->redirectFormResolver()
+            );
         }
-
-        return $message;
+        return $this->editRedirectHandler->handle($sub, $action);
     }
 
     /**
+     * Facade: real implementation lives in ABJ_404_Solution_BulkActionHandler.
+     *
      * @param string $action
      * @param array<int, int> $ids
      * @return string
      */
     function doBulkAction(string $action, array $ids): string {
-        $message = "";
-
-        $this->logger->debugMessage("In doBulkAction. Action: " .
-                esc_html($action == '' ? '(none)' : $action) . ", ids: " . wp_kses_post((string)json_encode($ids)));
-
-        if ($action == "bulkignore" || $action == "bulkcaptured" || $action == "bulklater" ||
-                $action == "bulk_trash_restore") {
-
-            $status = 0;
-            if ($action == "bulkignore") {
-                $status = ABJ404_STATUS_IGNORED;
-            } else if ($action == "bulkcaptured") {
-                $status = ABJ404_STATUS_CAPTURED;
-            } else if ($action == "bulklater") {
-                $status = ABJ404_STATUS_LATER;
-            }
-
-            $count = 0;
-            foreach ($ids as $id) {
-                $s = $this->redirectsRepo->moveRedirectsToTrash($id, 0);
-                if ($action != "bulk_trash_restore") {
-                    $s = $this->redirectsRepo->updateRedirectTypeStatus($id, (string)$status);
-                }
-                if ($s == "") {
-                    $count++;
-                }
-            }
-            if ($action == "bulkignore") {
-                $message = $count . " " . __('URL(s) marked as Ignored.', '404-solution');
-            } else if ($action == "bulkcaptured") {
-                $message = $count . " " . __('URL(s) marked as Captured.', '404-solution');
-            } else if ($action == "bulklater") {
-                $message = $count . " " . __('URL(s) marked as Later.', '404-solution');
-            } else {
-                $message = $count . " " . __('URL(s) restored.', '404-solution');
-            }
-
-        } else if ($action == "bulk_trash_delete_permanently") {
-            $count = 0;
-            foreach ($ids as $id) {
-                $this->redirectsRepo->deleteRedirect(absint($id));
-                $count ++;
-            }
-            $message = $count . " " . __('URL(s) deleted', '404-solution');
-
-        } else if ($action == "bulktrash") {
-            $count = 0;
-            foreach ($ids as $id) {
-                $s = $this->redirectsRepo->moveRedirectsToTrash($id, 1);
-                if ($s == "") {
-                    $count ++;
-                }
-            }
-            $message = $count . " " . __('URL(s) moved to trash', '404-solution');
-
-        } else {
-            $this->logger->errorMessage("Unrecognized bulk action: " . esc_html($action));
-            echo sprintf(__("Error: Unrecognized bulk action. (%s)", '404-solution'), esc_html($action));
+        if ($this->bulkActionHandler === null) {
+            $this->bulkActionHandler = new ABJ_404_Solution_BulkActionHandler($this);
         }
-        return $message;
+        return $this->bulkActionHandler->doBulkAction($action, $ids);
     }
 
     /**
@@ -669,328 +572,40 @@ class ABJ_404_Solution_PluginLogicAdminActions {
     }
 
     /**
+     * Facade: real implementation lives in ABJ_404_Solution_EditRedirectHandler.
+     *
      * @return string
      */
     function updateRedirectData() {
-        $message = "";
-        $fromURL = "";
-        $ids_multiple = "";
-
-        if (
-        	(!array_key_exists('url', $_POST) || $_POST['url'] == "") &&
-        	(array_key_exists('ids_multiple', $_POST) && $_POST['ids_multiple'] != "")) {
-            $ids_multiple = array_map('absint', explode(',', $_POST['ids_multiple']));
-
-        } else if (array_key_exists('url', $_POST) && $_POST['url'] != "" &&
-        	(!array_key_exists('ids_multiple', $_POST) || $_POST['ids_multiple'] == "")) {
-
-        	$fromURL = stripslashes($_POST['url']);
-        } else {
-            $message .= __('Error: URL is a required field.', '404-solution') . "<BR/>";
+        if ($this->editRedirectHandler === null) {
+            $this->editRedirectHandler = new ABJ_404_Solution_EditRedirectHandler(
+                $this, $this->redirectFormResolver()
+            );
         }
-
-        if ($fromURL != "" && $this->f->substr($_POST['url'], 0, 1) != "/") {
-            $message .= __('Error: URL must start with /', '404-solution') . "<BR/>";
-        }
-
-        $typeAndDest = $this->getRedirectTypeAndDest();
-
-        $typeAndDestMessage = is_string($typeAndDest['message']) ? $typeAndDest['message'] : '';
-        if ($typeAndDestMessage != "") {
-            return $typeAndDestMessage;
-        }
-
-        $tdTypeRaw = is_scalar($typeAndDest['type']) ? (string)$typeAndDest['type'] : '';
-        $tdType = ($tdTypeRaw !== '') ? (int)$tdTypeRaw : -1;
-        $tdDest = is_scalar($typeAndDest['dest']) ? (string)$typeAndDest['dest'] : '';
-        $postedCodeForCheck = isset($_POST['code']) && is_scalar($_POST['code']) ? (string)$_POST['code'] : '';
-        $isCode410 = $postedCodeForCheck === '410' || $postedCodeForCheck === '451';
-        if ($tdTypeRaw !== '' && ($tdDest !== "" || $isCode410)) {
-            $statusType = ABJ404_STATUS_MANUAL;
-            if (isset($_POST['is_regex_url']) &&
-                $_POST['is_regex_url'] != '0') {
-
-                $statusType = ABJ404_STATUS_REGEX;
-            }
-
-            $startDateRaw = isset($_POST['redirect_start_date']) && is_string($_POST['redirect_start_date']) ? trim($_POST['redirect_start_date']) : '';
-            $endDateRaw = isset($_POST['redirect_end_date']) && is_string($_POST['redirect_end_date']) ? trim($_POST['redirect_end_date']) : '';
-            $startTs = ($startDateRaw !== '') ? strtotime($startDateRaw . ' 00:00:00') : null;
-            $endTs = ($endDateRaw !== '') ? strtotime($endDateRaw . ' 23:59:59') : null;
-            if ($startTs === false) { $startTs = null; }
-            if ($endTs === false) { $endTs = null; }
-
-            $rawConditions = (isset($_POST['conditions']) && is_array($_POST['conditions']))
-                ? $_POST['conditions'] : [];
-            $sanitizedConditions = [];
-            $allowedConditionTypes = [
-                'login_status', 'user_role', 'referrer',
-                'user_agent', 'ip_range', 'http_header',
-            ];
-            $allowedOperators = [
-                'equals', 'not_equals', 'contains',
-                'not_contains', 'regex', 'cidr',
-            ];
-            foreach ($rawConditions as $rawCond) {
-                if (!is_array($rawCond)) {
-                    continue;
-                }
-                $condType = isset($rawCond['condition_type']) && is_string($rawCond['condition_type'])
-                    ? sanitize_text_field($rawCond['condition_type']) : '';
-                if (!in_array($condType, $allowedConditionTypes, true)) {
-                    continue;
-                }
-                $condLogic = (isset($rawCond['logic']) && strtoupper((string)$rawCond['logic']) === 'OR') ? 'OR' : 'AND';
-                $condOperator = isset($rawCond['operator']) && is_string($rawCond['operator'])
-                    ? sanitize_text_field($rawCond['operator']) : 'equals';
-                if (!in_array($condOperator, $allowedOperators, true)) {
-                    $condOperator = 'equals';
-                }
-                $condValue = isset($rawCond['value']) && is_string($rawCond['value'])
-                    ? sanitize_text_field(wp_unslash($rawCond['value'])) : '';
-                $condSortOrder = isset($rawCond['sort_order']) ? absint($rawCond['sort_order']) : 0;
-
-                $sanitizedConditions[] = [
-                    'logic'          => $condLogic,
-                    'condition_type' => $condType,
-                    'operator'       => $condOperator,
-                    'value'          => $condValue,
-                    'sort_order'     => $condSortOrder,
-                ];
-            }
-
-            if ($fromURL != "") {
-                $id = isset($_POST['id']) && is_scalar($_POST['id']) ? (int)$_POST['id'] : 0;
-                $code = isset($_POST['code']) && is_string($_POST['code']) ? $_POST['code'] : '';
-                $originalFromURL = $fromURL;
-                $autoPromote = $this->maybeAutoPromoteRegex($statusType, $fromURL);
-                $statusType = $autoPromote['statusType'];
-                $fromURL = $autoPromote['url'];
-                $this->redirectsRepo->updateRedirect(ABJ_404_Solution_RedirectUpdate::create(
-                    $id,
-                    (int)$tdType,
-                    (string)$fromURL,
-                    (string)$tdDest,
-                    (string)$code,
-                    (string)$statusType,
-                    $startTs,
-                    $endTs
-                ));
-                if ($autoPromote['autoPromoted']) {
-                    $this->saveRegexAutoPromoteNotice($id, $originalFromURL, $fromURL, $autoPromote['urlRewritten']);
-                }
-
-                if ($id > 0) {
-                    $this->redirectsRepo->saveRedirectConditions($id, $sanitizedConditions);
-                }
-                $this->viewBuild->invalidateViewDoneAndScheduleRebuild();
-
-            } else if ($ids_multiple != "") {
-                $redirects_multiple = $this->redirectsRepo->getRedirectsByIDs($ids_multiple);
-                $code = isset($_POST['code']) && is_string($_POST['code']) ? $_POST['code'] : '';
-                foreach ($redirects_multiple as $redirect) {
-                    $redirectUrl = is_string($redirect['url']) ? $redirect['url'] : '';
-                    $redirectId = is_scalar($redirect['id']) ? (int)$redirect['id'] : 0;
-                    $this->redirectsRepo->updateRedirect(ABJ_404_Solution_RedirectUpdate::create(
-                        $redirectId,
-                        (int)$tdType,
-                        (string)$redirectUrl,
-                        (string)$tdDest,
-                        (string)$code,
-                        (string)$statusType
-                    ));
-                }
-                $this->viewBuild->invalidateViewDoneAndScheduleRebuild();
-
-            } else {
-                $this->logger->errorMessage("Issue determining which redirect(s) to update. " .
-                    "fromURL: " . $fromURL . ", ids_multiple: " . $ids_multiple);
-            }
-
-        } else {
-            $message .= __('Error: Data not formatted properly.', '404-solution') . "<BR/>";
-            $this->logger->errorMessage("Update redirect data issue. Type: " . esc_html((string)$tdType) .
-                    ", dest: " . esc_html($tdDest));
-        }
-
-        return $message;
+        return $this->editRedirectHandler->updateRedirectData();
     }
 
     /**
+     * Facade: real implementation lives in ABJ_404_Solution_RedirectFormResolver.
+     *
      * @return array<string, mixed>
      */
     function getRedirectTypeAndDest(): array {
-
-        $response = array();
-        $response['type'] = "";
-        $response['dest'] = "";
-        $response['message'] = "";
-        $userEnteredURL = '';
-
-        $postedCode = isset($_POST['code']) && is_scalar($_POST['code']) ? (string)$_POST['code'] : '';
-        if ($postedCode === '410' || $postedCode === '451') {
-            $response['type'] = (string)ABJ404_TYPE_HOME;
-            $response['dest'] = '';
-            return $response;
-        }
-
-        if (!isset($_POST['redirect_to_data_field_id']) || $_POST['redirect_to_data_field_id'] === '') {
-            $response['message'] = __('Error: Redirect destination is required.', '404-solution') . "<BR/>";
-            return $response;
-        }
-
-        if ($_POST['redirect_to_data_field_id'] == ABJ404_TYPE_EXTERNAL . '|' . ABJ404_TYPE_EXTERNAL) {
-            $rawEnteredURLResult = $this->f->getPostOrGetSanitizeUrl('redirect_to_user_field');
-            $rawEnteredURL = is_string($rawEnteredURLResult) ? $rawEnteredURLResult : null;
-            $userEnteredURL = $this->urlNormalization->normalizeExternalDestinationUrl($rawEnteredURL);
-            $userEnteredURL = esc_url($userEnteredURL, array('http', 'https'));
-            if ($userEnteredURL == "") {
-                $response['message'] = __('Error: You selected external URL but did not enter a URL.', '404-solution') . "<BR/>";
-
-            } else if ($this->f->strlen($userEnteredURL) < 8) {
-                $response['message'] = __('Error: External URL is too short.', '404-solution') . "<BR/>";
-
-            } else if ($this->f->strpos($userEnteredURL, "://") === false) {
-                $response['message'] = __("Error: External URL doesn't contain ://", '404-solution') . "<BR/>";
-
-            } else {
-                $parsed_url = parse_url($userEnteredURL);
-                if (!is_array($parsed_url) || !isset($parsed_url['scheme']) || !in_array(strtolower($parsed_url['scheme']), array('http', 'https'))) {
-                    $response['message'] = __('Error: External URL must use http:// or https:// protocol only.', '404-solution') . "<BR/>";
-                }
-
-                $validated_url = apply_filters('abj404_validate_external_redirect', $userEnteredURL);
-                if ($validated_url === false) {
-                    $response['message'] = __('Error: External redirect URL failed validation.', '404-solution') . "<BR/>";
-                } else {
-                    $userEnteredURL = $validated_url;
-                }
-            }
-        }
-
-        if ($response['message'] != "") {
-            return $response;
-        }
-        $info = explode("|", sanitize_text_field($_POST['redirect_to_data_field_id']));
-
-        if ($_POST['redirect_to_data_field_id'] == ABJ404_TYPE_EXTERNAL . '|' . ABJ404_TYPE_EXTERNAL) {
-            $response['type'] = ABJ404_TYPE_EXTERNAL;
-            $response['dest'] = $userEnteredURL;
-        } else {
-            if (count($info) == 2) {
-                $response['dest'] = absint($info[0]);
-                $response['type'] = $info[1];
-            } else {
-                $infoJson = json_encode($info);
-                $this->logger->errorMessage("Unexpected info while updating redirect: " .
-                        wp_kses_post(is_string($infoJson) ? $infoJson : ''));
-            }
-        }
-
-        return $response;
+        return $this->redirectFormResolver()->getRedirectTypeAndDest();
     }
 
     /**
+     * Facade: real implementation lives in ABJ_404_Solution_AddRedirectHandler.
+     *
      * @return string
      */
     function addAdminRedirect() {
-        $message = "";
-
-        if (!isset($_POST['manual_redirect_url']) || $_POST['manual_redirect_url'] == "") {
-            $message .= __('Error: URL is a required field.', '404-solution') . "<BR/>";
-            return $message;
+        if ($this->addRedirectHandler === null) {
+            $this->addRedirectHandler = new ABJ_404_Solution_AddRedirectHandler(
+                $this, $this->redirectFormResolver()
+            );
         }
-
-        $manualURL = isset($_POST['manual_redirect_url']) ? wp_unslash($_POST['manual_redirect_url']) : '';
-        $manualURL = $this->urlNormalization->normalizeUserProvidedPath($manualURL);
-        if ($this->f->substr($manualURL, 0, 1) != "/") {
-            $message .= __('Error: URL must start with /', '404-solution') . "<BR/>";
-            return $message;
-        }
-
-        $typeAndDest = $this->getRedirectTypeAndDest();
-
-        $tdMsg = is_string($typeAndDest['message']) ? $typeAndDest['message'] : '';
-        if ($tdMsg != "") {
-            return $tdMsg;
-        }
-
-        $tdType2 = is_scalar($typeAndDest['type']) ? (string)$typeAndDest['type'] : '';
-        $tdDest2 = is_scalar($typeAndDest['dest']) ? (string)$typeAndDest['dest'] : '';
-        $postedCodeForCheck2 = isset($_POST['code']) && is_scalar($_POST['code']) ? (string)$_POST['code'] : '';
-        $code410 = $postedCodeForCheck2 === '410' || $postedCodeForCheck2 === '451';
-        if ($tdType2 != "" && ($tdDest2 !== "" || $code410)) {
-            $statusType = ABJ404_STATUS_MANUAL;
-            if (isset($_POST['is_regex_url']) &&
-                $_POST['is_regex_url'] != '0') {
-
-                $statusType = ABJ404_STATUS_REGEX;
-            }
-
-            $code = isset($_POST['code']) && is_scalar($_POST['code']) && (string)$_POST['code'] !== '' ? (string)$_POST['code'] : '301';
-
-            $originalManualURL = $manualURL;
-            $autoPromoteAdd = $this->maybeAutoPromoteRegex($statusType, $manualURL);
-            $statusType = $autoPromoteAdd['statusType'];
-            $manualURL = $autoPromoteAdd['url'];
-
-            $newRedirectId = $this->redirectsRepo->setupRedirect(ABJ_404_Solution_RedirectSpec::create(
-                    $manualURL, (string)$statusType,
-                    $tdType2, $tdDest2,
-                    sanitize_text_field($code), 0
-            ));
-            if ($autoPromoteAdd['autoPromoted']) {
-                $this->saveRegexAutoPromoteNotice((int)$newRedirectId, $originalManualURL, $manualURL, $autoPromoteAdd['urlRewritten']);
-            }
-            $this->viewBuild->invalidateViewDoneAndScheduleRebuild();
-
-        } else {
-            $message .= __('Error: Data not formatted properly.', '404-solution') . "<BR/>";
-            $this->logger->errorMessage("Add redirect data issue. Type: " . esc_html($tdType2) . ", dest: " .
-                    esc_html($tdDest2));
-        }
-
-        return $message;
-    }
-
-    /**
-     * @param int $statusTypeIn
-     * @param string $fromURL
-     * @return array{statusType: int, url: string, autoPromoted: bool, urlRewritten: bool}
-     */
-    private function maybeAutoPromoteRegex($statusTypeIn, $fromURL) {
-        $result = array(
-            'statusType' => (int)$statusTypeIn,
-            'url' => is_string($fromURL) ? $fromURL : '',
-            'autoPromoted' => false,
-            'urlRewritten' => false,
-        );
-
-        if ((int)$statusTypeIn === ABJ404_STATUS_REGEX) {
-            return $result;
-        }
-        if (!ABJ_404_Solution_RegexAutoPromote::looksLikeUnambiguousRegex($result['url'])) {
-            return $result;
-        }
-
-        $result['statusType'] = ABJ404_STATUS_REGEX;
-        $result['autoPromoted'] = true;
-        $glob = ABJ_404_Solution_RegexAutoPromote::applyGlobFixup($result['url']);
-        $result['url'] = $glob['url'];
-        $result['urlRewritten'] = $glob['changed'];
-
-        return $result;
-    }
-
-    /**
-     * @param int $redirectId
-     * @param string $originalURL
-     * @param string $newURL
-     * @param bool $urlRewritten
-     * @return void
-     */
-    private function saveRegexAutoPromoteNotice($redirectId, $originalURL, $newURL, $urlRewritten) {
-        ABJ_404_Solution_RegexAutoPromote::saveNotice($redirectId, $originalURL, $newURL, $urlRewritten);
+        return $this->addRedirectHandler->addAdminRedirect();
     }
 
     /**
