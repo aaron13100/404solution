@@ -7,11 +7,13 @@ if (!defined('ABSPATH')) {
 /**
  * MySQL session sql_mode and max_allowed_packet probe for the staged build.
  *
- * Sibling of ABJ_404_Solution_ViewBuildHelpers / ViewBuildPhpEnvProbe /
- * ViewBuildSessionEnvProbe -- extracted from ViewBuildHelpers when that file
- * crossed the 1500-line ceiling. Behavior is unchanged; callers continue to
- * see the same return shape and side effects (option persistence, dedup'd
- * warn log, best-effort `SET SESSION sql_mode = ''`).
+ * Sibling of ViewBuildProgressOptions / ViewBuildStagedSqlExecutor /
+ * ViewBuildStateProbe / ViewBuildPhpEnvProbe / ViewBuildSessionEnvProbe.
+ * Originally extracted from the now-deleted ViewBuildHelpers grouping when
+ * that file crossed the 1500-line ceiling; the i803 split further decomposed
+ * that grouping into its three real responsibilities. Behavior is unchanged;
+ * callers continue to see the same return shape and side effects (option
+ * persistence, dedup'd warn log, best-effort `SET SESSION sql_mode = ''`).
  *
  * Public entry point: {@see probeSqlModeForBuild()} (alias:
  * {@see detectAndAdjustSqlMode()}). The orchestrator delegates to these from

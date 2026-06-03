@@ -42,8 +42,12 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
     private $collaborators = array();
     /** @var ABJ_404_Solution_ViewQueriesStaged */
     private $queries;
-    /** @var ABJ_404_Solution_ViewBuildHelpers */
-    private $helpers;
+    /** @var ABJ_404_Solution_ViewBuildProgressOptions */
+    private $progressOptions;
+    /** @var ABJ_404_Solution_ViewBuildStagedSqlExecutor */
+    private $stagedSqlExecutor;
+    /** @var ABJ_404_Solution_ViewBuildStateProbe */
+    private $stateProbe;
     /** @var ABJ_404_Solution_ViewBuildSqlModeProbe */
     private $sqlModeProbe;
     /** @var ABJ_404_Solution_ViewBuildRebuildReconcile */
@@ -94,7 +98,9 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
         $this->connectionManager = $connectionManager !== null ? $connectionManager : $dbCore->connectionManager();
         $this->errorClassifier = $errorClassifier !== null ? $errorClassifier : $dbCore->errorClassifier();
         $this->queries = new ABJ_404_Solution_ViewQueriesStaged($this);
-        $this->helpers = new ABJ_404_Solution_ViewBuildHelpers($this);
+        $this->progressOptions = new ABJ_404_Solution_ViewBuildProgressOptions($this);
+        $this->stagedSqlExecutor = new ABJ_404_Solution_ViewBuildStagedSqlExecutor($this);
+        $this->stateProbe = new ABJ_404_Solution_ViewBuildStateProbe($this);
         $this->sqlModeProbe = new ABJ_404_Solution_ViewBuildSqlModeProbe($this);
         $this->rebuildReconcile = new ABJ_404_Solution_ViewBuildRebuildReconcile($this);
         $this->lockAndCron = new ABJ_404_Solution_ViewBuildLockAndCron($this);
@@ -117,7 +123,9 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
             'stage_runner' => new ABJ_404_Solution_ViewBuildStageRunner($this),
             'stage_callbacks' => new ABJ_404_Solution_ViewBuildStageCallbacks($this),
             'adaptive' => new ABJ_404_Solution_ViewBuildAdaptive($this),
-            'helpers' => $this->helpers,
+            'progress_options' => $this->progressOptions,
+            'staged_sql_executor' => $this->stagedSqlExecutor,
+            'state_probe' => $this->stateProbe,
             'sql_mode_probe' => $this->sqlModeProbe,
             'rebuild_reconcile' => $this->rebuildReconcile,
             'lock_and_cron' => $this->lockAndCron,
@@ -210,22 +218,22 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
 
     /** @param string $optionName @param mixed $expected @return bool */
     public function verifyOptionWriteCoherent(string $optionName, $expected): bool {
-        return $this->helpers->verifyOptionWriteCoherent($optionName, $expected);
+        return $this->progressOptions->verifyOptionWriteCoherent($optionName, $expected);
     }
 
     /** @return void */
     public function capturePrefixAtBuildStart(): void {
-        $this->helpers->capturePrefixAtBuildStart();
+        $this->progressOptions->capturePrefixAtBuildStart();
     }
 
     /** @return bool */
     public function verifyPrefixUnchangedSinceStageOne(): bool {
-        return $this->helpers->verifyPrefixUnchangedSinceStageOne();
+        return $this->progressOptions->verifyPrefixUnchangedSinceStageOne();
     }
 
     /** @return void */
     public function clearPrefixAtStageOne(): void {
-        $this->helpers->clearPrefixAtStageOne();
+        $this->progressOptions->clearPrefixAtStageOne();
     }
 
     /** @return array<string, mixed> */
@@ -240,7 +248,7 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
 
     /** @param string $url @param int $maxLength @return string */
     public function sanitizeUrlBeforeInsert(string $url, int $maxLength = 0): string {
-        return $this->helpers->sanitizeUrlBeforeInsert($url, $maxLength);
+        return $this->stagedSqlExecutor->sanitizeUrlBeforeInsert($url, $maxLength);
     }
 
     /** @return bool */
@@ -434,7 +442,7 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
 
     /** @return array<string, mixed> */
     public function getStagedQueryOptionsForRead(): array {
-        return $this->helpers->stagedQueryOptions();
+        return $this->stagedSqlExecutor->stagedQueryOptions();
     }
 
     /**
@@ -443,7 +451,7 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
      * @return int
      */
     public function readBuildProgressOption(string $shortName, int $default = 0): int {
-        return $this->helpers->readProgressOption($shortName, $default);
+        return $this->progressOptions->readProgressOption($shortName, $default);
     }
 
     // --- Delegation methods for external dependencies the traits call via $this-> ---
