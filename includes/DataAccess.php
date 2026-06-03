@@ -48,7 +48,6 @@ require_once __DIR__ . '/ViewQueryFailureException.php';
 require_once __DIR__ . '/ViewBuildPendingException.php';
 require_once __DIR__ . '/DatabaseCoreInterface.php';
 require_once __DIR__ . '/DatabaseCore.php';
-require_once __DIR__ . '/PluginUpdateMetadataRepository.php';
 
 /* Functions in this class should all reference one of the following variables or support functions that do.
  *      $wpdb, $_GET, $_POST, $_SERVER, $_.*
@@ -194,9 +193,6 @@ class ABJ_404_Solution_DataAccess {
     /** @var ABJ_404_Solution_ViewBuildOrchestrator The extracted view build orchestrator (Phase 7). */
     private $viewBuildOrchestrator;
 
-    /** @var ABJ_404_Solution_PluginUpdateMetadataRepository Plugin self-maintenance metadata (wp.org version lookup, legacy import). */
-    private $pluginUpdateRepo;
-
     /** @param bool $value @return void */
     public static function setViewSnapshotTableEnsured(bool $value): void {
         ABJ_404_Solution_ViewReadService::setViewSnapshotTableEnsured($value);
@@ -335,10 +331,6 @@ class ABJ_404_Solution_DataAccess {
         $this->viewBuildOrchestrator->setViewReadService($this->viewReadService);
         $this->viewBuildOrchestrator->setLogsRepository($this->logsRepo);
         $this->viewReadService->setViewBuildOrchestrator($this->viewBuildOrchestrator);
-
-        $this->pluginUpdateRepo = new ABJ_404_Solution_PluginUpdateMetadataRepository(
-            $this->dbCore, $this->f, $this->logger
-        );
     }
 
     /**
@@ -1034,23 +1026,6 @@ class ABJ_404_Solution_DataAccess {
      */
     private function getTableColumnNames(string $tableName): array {
         return $this->dbCore->getTableColumnNames($tableName);
-    }
-
-    /**
-     * Composition accessor retained for test subclasses that need to wire a
-     * stub repository through the DAO surface. Production callers must inject
-     * ABJ_404_Solution_PluginUpdateMetadataRepository directly (constructor
-     * or abj_service('plugin_update_metadata_repository')).
-     *
-     * @return ABJ_404_Solution_PluginUpdateMetadataRepository
-     */
-    public function getPluginUpdateRepo(): ABJ_404_Solution_PluginUpdateMetadataRepository {
-        if ($this->pluginUpdateRepo === null) {
-            $this->pluginUpdateRepo = new ABJ_404_Solution_PluginUpdateMetadataRepository(
-                $this->getDbCore(), $this->f, $this->logger
-            );
-        }
-        return $this->pluginUpdateRepo;
     }
 
 }
