@@ -90,7 +90,7 @@ class ABJ_404_Solution_LogsWriter {
             $requestedUrlCharset = is_array($columnMeta) ? ($columnMeta['charset_name'] ?? null) : null;
             $requestedUrlCollation = is_array($columnMeta) ? ($columnMeta['collation_name'] ?? null) : null;
             if (!empty($requestedUrlCharset) && strpos(strtolower($requestedUrlCharset), 'utf8') === false) {
-                $requested_url = $this->f->encodeUrlForLegacyMatch($requested_url);
+                $requested_url = abj_service('url_encoder')->encodeUrlForLegacyMatch($requested_url);
                 $this->warnLogsCharsetMismatchOnce($logTableName, $requestedUrlCharset);
             }
         } catch (Exception $e) {

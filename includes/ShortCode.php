@@ -272,7 +272,7 @@ class ABJ_404_Solution_ShortCode {
 
         // Check for cached suggestion computation (transient-based).
         // Normalize at the boundary: see ABJ_404_Solution_SuggestionTransient.
-        $urlForCacheKey = $f->normalizeURLForCacheKey($urlRequest);
+        $urlForCacheKey = abj_service('url_encoder')->normalizeURLForCacheKey($urlRequest);
         $urlKey = md5($urlForCacheKey);
         $transientKey = 'abj404_suggest_' . $urlKey;
         $cached = ABJ_404_Solution_SuggestionTransient::fromRaw(get_transient($transientKey));
@@ -437,11 +437,12 @@ class ABJ_404_Solution_ShortCode {
     private static function resolveRequestedUrl($f): array {
         $urlRequest = '';
         $cookieScripts = '';
+        $urlEncoder = abj_service('url_encoder');
 
         $cookieName = ABJ404_PP . '_REQUEST_URI';
         $cookieVal = isset($_COOKIE[$cookieName]) && is_string($_COOKIE[$cookieName]) ? $_COOKIE[$cookieName] : '';
         if ($cookieVal !== '') {
-            $urlRequest = $f->normalizeURLForCacheKey($f->normalizeUrlString($cookieVal));
+            $urlRequest = $urlEncoder->normalizeURLForCacheKey($f->normalizeUrlString($cookieVal));
             $cookieScripts .= "<script> \n" .
                     "   var d = new Date(); \n" .
                     "   d.setTime(d.getTime() - (60 * 5)); \n" .
@@ -455,7 +456,7 @@ class ABJ_404_Solution_ShortCode {
         $updateCookieVal = isset($_COOKIE[$updateURLCookieName]) && is_string($_COOKIE[$updateURLCookieName]) ? $_COOKIE[$updateURLCookieName] : '';
         if ($updateCookieVal !== '') {
             if ($urlRequest == '') {
-                $urlRequest = $f->normalizeURLForCacheKey($f->normalizeUrlString($updateCookieVal));
+                $urlRequest = $urlEncoder->normalizeURLForCacheKey($f->normalizeUrlString($updateCookieVal));
             }
             $cookieScripts .= "<script> \n" .
                 "   var d = new Date(); /* delete the cookie */\n" .
@@ -467,13 +468,13 @@ class ABJ_404_Solution_ShortCode {
 
         $ctxUrl = abj_service('request_context')->requested_url;
         if ($ctxUrl !== '') {
-            $urlRequest = $f->normalizeURLForCacheKey($f->normalizeUrlString($ctxUrl));
+            $urlRequest = $urlEncoder->normalizeURLForCacheKey($f->normalizeUrlString($ctxUrl));
         }
 
         $queryParamName = ABJ404_PP . '_ref';
         $getParamVal = isset($_GET[$queryParamName]) && is_string($_GET[$queryParamName]) ? $_GET[$queryParamName] : '';
         if ($urlRequest == '' && $getParamVal !== '') {
-            $urlRequest = $f->normalizeURLForCacheKey($f->normalizeUrlString($getParamVal));
+            $urlRequest = $urlEncoder->normalizeURLForCacheKey($f->normalizeUrlString($getParamVal));
         }
 
         return array('url' => $urlRequest, 'cookieScripts' => $cookieScripts);

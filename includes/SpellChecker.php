@@ -325,7 +325,7 @@ class ABJ_404_Solution_SpellChecker {
 	}
 
 	private function cacheComputedSuggestionsForShortcode(string $fullRequestedURL, array $permalinksPacket): void {
-		$normalizedURL = $this->f->normalizeURLForCacheKey($fullRequestedURL);
+		$normalizedURL = abj_service('url_encoder')->normalizeURLForCacheKey($fullRequestedURL);
 
 		$urlKey = md5($normalizedURL);
 		$transientKey = 'abj404_suggest_' . $urlKey;
@@ -353,9 +353,7 @@ class ABJ_404_Solution_SpellChecker {
 	}
 
 	public function triggerAndCleanupOnFailure(string $requestedURL): bool {
-		$f = abj_service('functions');
-
-		$normalizedURL = $f->normalizeURLForCacheKey($requestedURL);
+		$normalizedURL = abj_service('url_encoder')->normalizeURLForCacheKey($requestedURL);
 
 		$urlKey = md5($normalizedURL);
 		$transientKey = 'abj404_suggest_' . $urlKey;

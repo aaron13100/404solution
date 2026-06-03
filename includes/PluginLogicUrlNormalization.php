@@ -164,7 +164,7 @@ class ABJ_404_Solution_PluginLogicUrlNormalization {
             $candidates[] = $lower;
         }
 
-        $encoded = $this->normalizeToRelativePath($this->f->encodeUrlForLegacyMatch($decoded));
+        $encoded = $this->normalizeToRelativePath(abj_service('url_encoder')->encodeUrlForLegacyMatch($decoded));
         if ($encoded !== $decoded) {
             $candidates[] = $encoded;
         }

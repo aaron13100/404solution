@@ -100,6 +100,10 @@ function abj_404_solution_register_core_utilities($container) {
         return new ABJ_404_Solution_PiiRedactor($c->get('functions'));
     });
 
+    $container->set('url_encoder', function($c) {
+        return new ABJ_404_Solution_UrlEncoder($c->get('functions'));
+    });
+
     $container->set('logging', function($c) {
         return ABJ_404_Solution_Logging::createForContainer();
     });

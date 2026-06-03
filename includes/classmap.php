@@ -167,6 +167,7 @@ return array(
     'ABJ_404_Solution_FunctionsMBString' => $base . 'includes/php/FunctionsMBString.php',
     'ABJ_404_Solution_FunctionsPreg' => $base . 'includes/php/FunctionsPreg.php',
     'ABJ_404_Solution_PermalinkResolver' => $base . 'includes/PermalinkResolver.php',
+    'ABJ_404_Solution_UrlEncoder' => $base . 'includes/UrlEncoder.php',
     'ABJ_404_Solution_FeedbackTransport' => $base . 'includes/FeedbackTransport.php',
     'ABJ_404_Solution_PayloadSchema' => $base . 'includes/PayloadSchema.php',
     'ABJ_404_Solution_ReportPayloadJsonSchemaValidator' => $base . 'includes/ReportPayloadJsonSchemaValidator.php',

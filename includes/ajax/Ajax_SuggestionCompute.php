@@ -94,7 +94,7 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
         // hashes to a different transient key than the producer wrote, and
         // this worker reports "Unauthorized" while the polling client never
         // finds the result. Sibling shape of 73f21bce / 6e0908a8 / 83b9fb85.
-        $normalizedURL = $f->normalizeURLForCacheKey($requestedURL);
+        $normalizedURL = abj_service('url_encoder')->normalizeURLForCacheKey($requestedURL);
         $urlKey = md5($normalizedURL);
         $transientKey = 'abj404_suggest_' . $urlKey;
 

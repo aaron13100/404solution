@@ -197,7 +197,7 @@ class ABJ_404_Solution_UserRequest {
         }
         
         // otherwise various queries break.
-        $requestedURL = $f->urlencodeEmojis($requestedURL);
+        $requestedURL = abj_service('url_encoder')->urlencodeEmojis($requestedURL);
 
         return $requestedURL;
     }
