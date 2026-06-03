@@ -7,20 +7,34 @@ if (!defined('ABSPATH')) {
 require_once __DIR__ . '/ViewSnapshotCache.php';
 
 /**
- * Admin list view read path, snapshot caching, and status counts.
+ * Admin redirect-list staged view-read pipeline + hits-table-rebuild lifecycle.
  *
- * Extracted from DataAccess in Phase 6 of the DataAccess refactor.
- * Delegates to four collaborators: ViewQueryBuilder (SQL construction),
- * ViewDiagnostics (failure diagnostics), ViewCacheInvalidator (cache
- * clearing), and ViewSnapshotCache (cache CRUD and warmup).
+ * The class started as a kitchen-sink "ViewReadService" carrying status
+ * counts, bulk redirect reads, logs metrics, DB metadata, and the staged
+ * view-read pipeline itself. As of the i805 decomposition the focused
+ * responsibility kept here is the staged admin-list read pipeline plus the
+ * hits-table-rebuild policy that gates its joined queries. The remaining
+ * interface methods are one-line delegations to focused collaborators:
+ *
+ *   - ABJ_404_Solution_StatusCountsRepository  -- aggregate status tallies
+ *   - ABJ_404_Solution_RedirectsBulkReader     -- non-paginated redirect reads
+ *   - ABJ_404_Solution_LogsMetricsReader       -- logs row count + disk usage
+ *   - ABJ_404_Solution_DatabaseMetadataReader  -- engine + post-type metadata
+ *   - ABJ_404_Solution_ViewQueryBuilder        -- staged SQL construction
+ *   - ABJ_404_Solution_ViewSnapshotCache       -- snapshot CRUD + warmup
+ *   - ABJ_404_Solution_ViewCacheInvalidator    -- invalidation primitives
+ *   - ABJ_404_Solution_ViewDiagnostics         -- failure diagnostics
+ *
+ * The slim-facade pattern matches NGramFilter (i804): the interface stays
+ * intact so existing callers and ~80 test stubs keep working, while the
+ * actual work happens in single-responsibility collaborators that the rest
+ * of the codebase can also wire directly.
  *
  * @see docs/dataaccess-refactor-plan.md Phase 6.
  */
 class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServiceInterface, ABJ_404_Solution_ViewSnapshotCacheHostInterface {
     /** @var bool Legacy reflection bridge for tests and old diagnostics. */
     private static $viewSnapshotTableEnsured = false;
-
-    // --- Constants ---
 
     const CACHE_KEY_REDIRECT_STATUS = ABJ_404_Solution_ViewReadRuntimeState::CACHE_KEY_REDIRECT_STATUS;
     const CACHE_KEY_CAPTURED_STATUS = ABJ_404_Solution_ViewReadRuntimeState::CACHE_KEY_CAPTURED_STATUS;
@@ -35,18 +49,10 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
     const VIEW_SNAPSHOT_MAX_PAYLOAD_BYTES = ABJ_404_Solution_ViewReadRuntimeState::VIEW_SNAPSHOT_MAX_PAYLOAD_BYTES;
     const HITS_TABLE_LAST_CHECKED_FLAG = ABJ_404_Solution_ViewReadRuntimeState::HITS_TABLE_LAST_CHECKED_FLAG;
     const HITS_TABLE_LAST_DECISION_FLAG = ABJ_404_Solution_ViewReadRuntimeState::HITS_TABLE_LAST_DECISION_FLAG;
-    const LOGS_COUNT_CACHE_TTL_SECONDS = ABJ_404_Solution_ViewReadRuntimeState::LOGS_COUNT_CACHE_TTL_SECONDS;
+    const LOGS_COUNT_CACHE_TTL_SECONDS = ABJ_404_Solution_LogsMetricsReader::LOGS_COUNT_CACHE_TTL_SECONDS;
 
-    // --- Static properties ---
-
-    /**
-     * Per-request "bulk mutation in progress" flag.
-     *
-     * @var bool
-     */
+    /** @var bool Per-request "bulk mutation in progress" flag. */
     public static $bulkMutationInProgress = false;
-
-    // --- Dependencies (constructor injection) ---
 
     /** @var ABJ_404_Solution_DatabaseCore */
     private $dbCore;
@@ -74,12 +80,20 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
     /** @var ABJ_404_Solution_ViewSnapshotCache */
     private $snapshotCache;
 
-    // --- ViewBuildOrchestrator bridge ---
+    /** @var ABJ_404_Solution_StatusCountsRepository */
+    private $statusCounts;
+
+    /** @var ABJ_404_Solution_RedirectsBulkReader */
+    private $redirectsBulkReader;
+
+    /** @var ABJ_404_Solution_LogsMetricsReader */
+    private $logsMetricsReader;
+
+    /** @var ABJ_404_Solution_DatabaseMetadataReader */
+    private $dbMetadataReader;
 
     /** @var ABJ_404_Solution_ViewBuildOrchestratorInterface|null */
     private $viewBuildOrchestrator;
-
-    // --- Instance property ---
 
     /** @var array<string, int> */
     private $redirectsForViewCountRequestCache = array();
@@ -113,6 +127,11 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
         $this->queryBuilder->setHost($this);
         $this->snapshotCache = new ABJ_404_Solution_ViewSnapshotCache($dbCore, $this->logger);
         $this->snapshotCache->setHost($this);
+
+        $this->statusCounts = new ABJ_404_Solution_StatusCountsRepository($dbCore, $logsRepo, $this->queryBuilder);
+        $this->redirectsBulkReader = new ABJ_404_Solution_RedirectsBulkReader($dbCore, $this->queryBuilder, $this->f);
+        $this->logsMetricsReader = new ABJ_404_Solution_LogsMetricsReader($dbCore, $logsRepo, $this->f, $this->logger);
+        $this->dbMetadataReader = new ABJ_404_Solution_DatabaseMetadataReader($dbCore);
     }
 
     /**
@@ -150,378 +169,9 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
         return $this->dbCore->getLowercasePrefix() . 'abj404_view_done_built_at';
     }
 
-    /**
-     * @param mixed $value
-     * @return int
-     */
-    private static function scalarToInt($value): int {
-        return is_scalar($value) ? intval($value) : 0;
-    }
-
     // =========================================================================
-    // Interface-satisfying read methods and lightweight accessors
+    // Staged view-read pipeline (the residual single responsibility)
     // =========================================================================
-
-    /**
-     * @param bool $bypassCache
-     * @return array<string, int>
-     */
-    function getRedirectStatusCounts($bypassCache = false): array {
-        if (!$bypassCache) {
-            $cached = get_transient(self::CACHE_KEY_REDIRECT_STATUS);
-            if ($cached !== false && is_array($cached)) {
-                /** @var array<string, int> $cached */
-                return $cached;
-            }
-        }
-
-        $query = "SELECT
-            SUM(CASE WHEN disabled = 0 THEN 1 ELSE 0 END) as active_count,
-            SUM(CASE WHEN disabled = 0 AND status = " . ABJ404_STATUS_MANUAL . " THEN 1 ELSE 0 END) as manual_count,
-            SUM(CASE WHEN disabled = 0 AND status = " . ABJ404_STATUS_AUTO . " THEN 1 ELSE 0 END) as auto_count,
-            SUM(CASE WHEN disabled = 0 AND status = " . ABJ404_STATUS_REGEX . " THEN 1 ELSE 0 END) as regex_count,
-            SUM(CASE WHEN disabled = 1 THEN 1 ELSE 0 END) as trash_count
-            FROM {wp_abj404_redirects}
-            WHERE status IN (" . ABJ404_STATUS_MANUAL . ", " . ABJ404_STATUS_AUTO . ", " . ABJ404_STATUS_REGEX . ")";
-        $query = $this->dbCore->doTableNameReplacements($query);
-
-        $result = $this->dbCore->queryAndGetResults($query);
-        $hadError = !empty($result['last_error']) || !empty($result['timed_out']);
-        $rows = is_array($result['rows']) ? $result['rows'] : array();
-
-        $counts = array('all' => 0, 'manual' => 0, 'auto' => 0, 'regex' => 0, 'trash' => 0);
-        if (!empty($rows)) {
-            $row = is_array($rows[0] ?? null) ? $rows[0] : array();
-            $activeCount = $row['active_count'] ?? 0;
-            $manualCount = $row['manual_count'] ?? 0;
-            $autoCount = $row['auto_count'] ?? 0;
-            $regexCount = $row['regex_count'] ?? 0;
-            $trashCount = $row['trash_count'] ?? 0;
-            $counts = array(
-                'all' => self::scalarToInt($activeCount),
-                'manual' => self::scalarToInt($manualCount),
-                'auto' => self::scalarToInt($autoCount),
-                'regex' => self::scalarToInt($regexCount),
-                'trash' => self::scalarToInt($trashCount)
-            );
-        }
-
-        if (!$hadError && !$bypassCache) {
-            set_transient(self::CACHE_KEY_REDIRECT_STATUS, $counts, self::STATUS_CACHE_TTL);
-        }
-
-        return $counts;
-    }
-
-    /**
-     * @param bool $bypassCache
-     * @return array<string, int>
-     */
-    function getCapturedStatusCounts($bypassCache = false): array {
-        if (!$bypassCache) {
-            $cached = get_transient(self::CACHE_KEY_CAPTURED_STATUS);
-            if ($cached !== false && is_array($cached)) {
-                /** @var array<string, int> $cached */
-                return $cached;
-            }
-        }
-
-        $query = "SELECT
-            COUNT(*) as total,
-            SUM(CASE WHEN disabled = 0 THEN 1 ELSE 0 END) as active,
-            SUM(CASE WHEN disabled = 0 AND status = " . ABJ404_STATUS_CAPTURED . " THEN 1 ELSE 0 END) as captured,
-            SUM(CASE WHEN disabled = 0 AND status = " . ABJ404_STATUS_IGNORED . " THEN 1 ELSE 0 END) as ignored,
-            SUM(CASE WHEN disabled = 0 AND status = " . ABJ404_STATUS_LATER . " THEN 1 ELSE 0 END) as later,
-            SUM(CASE WHEN disabled = 1 THEN 1 ELSE 0 END) as trash
-            FROM {wp_abj404_redirects}
-            WHERE status IN (" . ABJ404_STATUS_CAPTURED . ", " . ABJ404_STATUS_IGNORED . ", " . ABJ404_STATUS_LATER . ")";
-        $query = $this->dbCore->doTableNameReplacements($query);
-
-        $result = $this->dbCore->queryAndGetResults($query);
-        $hadError = !empty($result['last_error']) || !empty($result['timed_out']);
-        $rows = is_array($result['rows']) ? $result['rows'] : array();
-
-        $counts = array('all' => 0, 'captured' => 0, 'ignored' => 0, 'later' => 0, 'trash' => 0);
-        if (!empty($rows)) {
-            $row = is_array($rows[0] ?? null) ? $rows[0] : array();
-            $activeCount = $row['active'] ?? 0;
-            $capturedCount = $row['captured'] ?? 0;
-            $ignoredCount = $row['ignored'] ?? 0;
-            $laterCount = $row['later'] ?? 0;
-            $trashCount = $row['trash'] ?? 0;
-            $counts = array(
-                'all' => self::scalarToInt($activeCount),
-                'captured' => self::scalarToInt($capturedCount),
-                'ignored' => self::scalarToInt($ignoredCount),
-                'later' => self::scalarToInt($laterCount),
-                'trash' => self::scalarToInt($trashCount)
-            );
-        }
-
-        if (!$hadError && !$bypassCache) {
-            set_transient(self::CACHE_KEY_CAPTURED_STATUS, $counts, self::STATUS_CACHE_TTL);
-        }
-
-        return $counts;
-    }
-
-    /**
-     * @return int
-     */
-    function getHighImpactCapturedCount(): int {
-        $cached = get_transient(self::CACHE_KEY_HIGH_IMPACT_CAPTURED);
-        if ($cached !== false) {
-            return intval(is_scalar($cached) ? $cached : 0);
-        }
-
-        if (!$this->logsRepo->logsHitsTableExists()) {
-            $this->logsRepo->scheduleHitsTableRebuild();
-            return 0;
-        }
-
-        $query = $this->queryBuilder->buildHighImpactCapturedCountQuery();
-
-        $result = $this->queryWithTimeout($query, 60);
-        $timedOut = !empty($result['timed_out']);
-        $hadError = !empty($result['last_error']) || $timedOut;
-        $rows = is_array($result['rows']) ? $result['rows'] : array();
-        $firstRow = (!empty($rows) && is_array($rows[0] ?? null)) ? $rows[0] : array();
-        $count = self::scalarToInt($firstRow['cnt'] ?? 0);
-
-        if ($timedOut) {
-            $this->logsRepo->scheduleHitsTableRebuild();
-            // allow-cache-empty: timeout self-heal sentinel, 5-minute window. Real value returns once the rebuild completes and the short cache expires.
-            set_transient(self::CACHE_KEY_HIGH_IMPACT_CAPTURED, 0, self::STATUS_CACHE_TIMEOUT_SELFHEAL_TTL);
-            return 0;
-        }
-
-        if ($hadError) {
-            return 0;
-        }
-
-        if ($count === 0) {
-            if ($this->isHitsTableEmpty()) {
-                $this->logsRepo->scheduleHitsTableRebuild();
-                return 0;
-            }
-        }
-
-        set_transient(self::CACHE_KEY_HIGH_IMPACT_CAPTURED, $count, self::STATUS_CACHE_TTL);
-
-        return $count;
-    }
-
-    /**
-     * @return bool
-     */
-    private function isHitsTableEmpty(): bool {
-        $check = "SELECT 1 FROM {wp_abj404_logs_hits} LIMIT 1";
-        $check = $this->dbCore->doTableNameReplacements($check);
-        $result = $this->dbCore->queryAndGetResults($check);
-        if (!empty($result['last_error']) || !empty($result['timed_out'])) {
-            return false;
-        }
-        $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
-        return empty($rows);
-    }
-
-    /**
-     * @param string $query
-     * @param int $timeoutSeconds
-     * @return array<string, mixed>
-     */
-    private function queryWithTimeout(string $query, int $timeoutSeconds = 60): array {
-        return $this->dbCore->queryAndGetResults($query, array(
-            'timeout' => $timeoutSeconds,
-        ));
-    }
-
-    /** @return string|null */
-    private function logsCountCacheKey(int $logID): ?string {
-        if ($logID !== 0 || !function_exists('get_transient')) {
-            return null;
-        }
-
-        return 'abj404_logs_count_v1_' . $this->currentBlogIdForCache() . '_' . $this->maxLogIdForCache();
-    }
-
-    /** @return int */
-    private function currentBlogIdForCache(): int {
-        if (!function_exists('get_current_blog_id')) {
-            return 1;
-        }
-
-        $rawBlogId = function_exists('absint')
-            ? absint(get_current_blog_id())
-            : abs(intval(get_current_blog_id()));
-
-        return $rawBlogId > 0 ? $rawBlogId : 1;
-    }
-
-    /** @return int */
-    private function maxLogIdForCache(): int {
-        try {
-            return max(0, intval($this->logsRepo->getMaxLogId()));
-        } catch (Throwable $e) {
-            $this->logger->debugMessage(__FUNCTION__ . ' getMaxLogId() failed: '
-                . $e->getMessage() . '. Falling back to maxLogId=0.');
-            return 0;
-        }
-    }
-
-    /**
-     * @param int $logID
-     * @return int
-     */
-    function getLogsCount($logID) {
-        $logID = absint($logID);
-
-        $cacheKey = $this->logsCountCacheKey($logID);
-        if ($cacheKey !== null) {
-            $cached = get_transient($cacheKey);
-            if (is_numeric($cached)) {
-                return (int)$cached;
-            }
-        }
-
-        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/sql/getLogsCount.sql");
-
-        if ($logID != 0) {
-            $query = $this->f->str_replace('/* {SPECIFIC_ID}', '', $query);
-            $query = $this->f->str_replace('{logID}', (string)$logID, $query);
-        }
-
-        $result = $this->dbCore->queryAndGetResults($query);
-        $hadError = !empty($result['timed_out'])
-            || (isset($result['last_error']) && $result['last_error'] != '');
-
-        $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
-        $count = 0;
-        if (!empty($rows)) {
-            $first = $rows[0];
-            $value = is_array($first) ? reset($first) : $first;
-            $count = self::scalarToInt($value);
-        }
-
-        if (!$hadError && $cacheKey !== null && function_exists('set_transient')
-            && empty($GLOBALS['abj404_feedback_preview_readonly'])) {
-            set_transient($cacheKey, $count, self::LOGS_COUNT_CACHE_TTL_SECONDS);
-        }
-
-        return function_exists('apply_filters')
-            ? (int) apply_filters('abj404_logs_count', $count, $logID)
-            : $count;
-    }
-
-    /** @return array<int, array<string, mixed>> */
-    function getRedirectsAll() {
-        $query = "select id, url from {wp_abj404_redirects} order by url";
-
-        $result = $this->dbCore->queryAndGetResults($query);
-        if (!empty($result['timed_out']) || (isset($result['last_error']) && $result['last_error'] != '')) {
-            return array();
-        }
-        $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
-        return $rows;
-    }
-
-    /** @param string $tempFile @return void */
-    function doRedirectsExport(string $tempFile): void {
-    	global $wpdb;
-
-    	if (file_exists($tempFile)) {
-    		ABJ_404_Solution_FileSystemService::safeUnlink($tempFile);
-    	}
-
-    	$query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ .
-    		"/sql/getRedirectsExport.sql");
-    	$query = $this->dbCore->doTableNameReplacements($query);
-
-    	$result = mysqli_query($wpdb->dbh, $query);
-    	if ($result instanceof \mysqli_result) {
-    		$fh = fopen($tempFile, 'w');
-    		if ($fh === false) {
-    			return;
-    		}
-    		fputcsv($fh, array('from_url', 'status', 'type', 'to_url', 'wp_type', 'engine', 'code'), ',', '"', '\\');
-
-    		while (($row = mysqli_fetch_array($result, MYSQLI_ASSOC))) {
-    			fputcsv($fh, array(
-    				$row['from_url'],
-    				$row['status'],
-    				$row['type'],
-    				$row['to_url'],
-    				$row['type_wp'],
-    				isset($row['engine']) ? $row['engine'] : '',
-    				isset($row['code']) ? $row['code'] : '301'
-    			), ',', '"', '\\');
-    		}
-    		fclose($fh);
-    		mysqli_free_result($result);
-    	}
-    }
-
-    /** @return array<int, array<string, mixed>> */
-    function getRedirectsWithLogs() {
-        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/sql/getRedirectsWithLogs.sql");
-
-        $result = $this->dbCore->queryAndGetResults($query);
-        if (!empty($result['timed_out']) || (isset($result['last_error']) && $result['last_error'] != '')) {
-            return array();
-        }
-        $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
-        return $rows;
-    }
-
-    /** @return array<int, array<string, mixed>> */
-    function getRedirectsWithRegEx() {
-        $cached = ABJ_404_Solution_RedirectsRepository::getRegexRedirectsCache();
-        $disabled = ABJ_404_Solution_RedirectsRepository::isRegexCacheDisabled();
-
-        if ($cached !== null && !$disabled) {
-            return $cached;
-        }
-
-        if ($disabled) {
-            return $this->queryBuilder->queryRegexRedirects();
-        }
-
-        $results = $this->queryBuilder->queryRegexRedirects();
-
-        if (count($results) <= ABJ_404_Solution_RedirectsRepository::REGEX_CACHE_MAX_COUNT) {
-            ABJ_404_Solution_RedirectsRepository::setRegexRedirectsCache($results);
-        } else {
-            ABJ_404_Solution_RedirectsRepository::setRegexCacheDisabled(true);
-        }
-
-        return $results;
-    }
-
-    /** @return array<int, array<string, mixed>> */
-    function getManualRedirectsWithRegexMetachars() {
-        $query = "select \n  {wp_abj404_redirects}.id,\n  {wp_abj404_redirects}.url,\n  {wp_abj404_redirects}.status,\n"
-                . "  {wp_abj404_redirects}.type,\n  {wp_abj404_redirects}.final_dest,\n  {wp_abj404_redirects}.code,\n"
-                . "  {wp_abj404_redirects}.timestamp,\n {wp_posts}.id as wp_post_id\n ";
-        $query .= "from {wp_abj404_redirects}\n " .
-                "  LEFT OUTER JOIN {wp_posts} \n " .
-                "    on {wp_abj404_redirects}.final_dest = {wp_posts}.id \n ";
-
-        $query .= "where status = " . ABJ404_STATUS_MANUAL . " \n " .
-                "     and disabled = 0 \n " .
-                "     and (INSTR(`url`, '*') > 0 " .
-                "       OR INSTR(`url`, '[') > 0 " .
-                "       OR INSTR(`url`, ']') > 0 " .
-                "       OR INSTR(`url`, '|') > 0 " .
-                "       OR INSTR(`url`, '^') > 0 " .
-                "       OR INSTR(`url`, '\\\\') > 0 " .
-                "       OR INSTR(`url`, '{') > 0 " .
-                "       OR INSTR(`url`, '}') > 0)";
-        $results = $this->dbCore->queryAndGetResults($query);
-
-        /** @var array<int, array<string, mixed>> $rows */
-        $rows = is_array($results['rows']) ? $results['rows'] : array();
-        return $rows;
-    }
 
     /**
      * @param string $sub
@@ -750,21 +400,182 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
         return $countValue;
     }
 
+    // =========================================================================
+    // Hits-table lifecycle (tightly coupled to staged view-read)
+    // =========================================================================
+
+    /** @return void */
+    function maybeUpdateRedirectsForViewHitsTable(): void {
+        $this->dbCore->setRuntimeFlag(self::HITS_TABLE_LAST_CHECKED_FLAG, time(), 86400);
+
+        if (function_exists('abj_service')) {
+            $upgradesEtc = abj_service('database_upgrades');
+            if (is_object($upgradesEtc) && method_exists($upgradesEtc, 'scheduleLogsv2CanonicalUrlBackfill')) {
+                $upgradesEtc->scheduleLogsv2CanonicalUrlBackfill();
+            }
+        }
+
+        if ($this->dbCore->shouldSkipNonEssentialDbWrites()) {
+            $this->logger->debugMessage(__FUNCTION__ . " skipped due to temporary DB write cooldown.");
+            $this->dbCore->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'paused', 86400);
+            return;
+        }
+
+        if (!$this->logsRepo->logsHitsTableExists()) {
+            $this->logger->debugMessage(__FUNCTION__ . " table doesn't exist, deferring creation to shutdown hook.");
+            $this->logsRepo->scheduleHitsTableRebuild();
+            return;
+        }
+
+        $this->logsRepo->recordLogsHitsRollupStalenessSignal();
+
+        if (!$this->logsRepo->hitsTableNeedsRebuild()) {
+            $this->dbCore->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'not_needed', 86400);
+            return;
+        }
+
+        $this->logsRepo->scheduleHitsTableRebuild();
+    }
+
+    // =========================================================================
+    // Delegated: StatusCountsRepository
+    // =========================================================================
+
+    /** @param bool $bypassCache @return array<string, int> */
+    function getRedirectStatusCounts($bypassCache = false): array {
+        return $this->statusCounts->getRedirectStatusCounts((bool)$bypassCache);
+    }
+
+    /** @param bool $bypassCache @return array<string, int> */
+    function getCapturedStatusCounts($bypassCache = false): array {
+        return $this->statusCounts->getCapturedStatusCounts((bool)$bypassCache);
+    }
+
+    /** @return int */
+    function getHighImpactCapturedCount(): int {
+        return $this->statusCounts->getHighImpactCapturedCount();
+    }
+
+    /** @return int */
+    function getCapturedCount() {
+        return $this->statusCounts->getCapturedCount();
+    }
+
+    /**
+     * @param array<int, int> $types
+     * @param int $trashed
+     * @return int
+     */
+    function getRecordCount($types = array(), $trashed = 0) {
+        return $this->statusCounts->getRecordCount(is_array($types) ? $types : array(), $trashed);
+    }
+
+    // =========================================================================
+    // Delegated: RedirectsBulkReader
+    // =========================================================================
+
+    /** @return array<int, array<string, mixed>> */
+    function getRedirectsAll() {
+        return $this->redirectsBulkReader->getRedirectsAll();
+    }
+
+    /** @param string $tempFile @return void */
+    function doRedirectsExport(string $tempFile): void {
+        $this->redirectsBulkReader->doRedirectsExport($tempFile);
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    function getRedirectsWithLogs() {
+        return $this->redirectsBulkReader->getRedirectsWithLogs();
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    function getRedirectsWithRegEx() {
+        return $this->redirectsBulkReader->getRedirectsWithRegEx();
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    function getManualRedirectsWithRegexMetachars() {
+        return $this->redirectsBulkReader->getManualRedirectsWithRegexMetachars();
+    }
+
     /** @param array<int, string> $postIDs @return array<int, mixed> */
     function getExtraDataToPermalinkSuggestions(array $postIDs): array {
-        $postIDs = array_map('absint', $postIDs);
-        $postIDJoined = implode(", ", $postIDs);
+        return $this->redirectsBulkReader->getExtraDataToPermalinkSuggestions($postIDs);
+    }
 
-        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/sql/getAdditionalPostData.sql");
-        $query = $this->f->str_replace('{IDS_TO_INCLUDE}', $postIDJoined, $query);
-        $query = $this->dbCore->doTableNameReplacements($query);
-        $query = $this->f->doNormalReplacements($query);
+    // =========================================================================
+    // Delegated: LogsMetricsReader
+    // =========================================================================
 
-        $results = $this->dbCore->queryAndGetResults($query);
+    /** @param int $logID @return int */
+    function getLogsCount($logID) {
+        return $this->logsMetricsReader->getLogsCount($logID);
+    }
 
-        /** @var array<int, mixed> $rows */
-        $rows = is_array($results['rows']) ? $results['rows'] : array();
-        return $rows;
+    /** @return int */
+    function getLogDiskUsage() {
+        return $this->logsMetricsReader->getLogDiskUsage();
+    }
+
+    // =========================================================================
+    // Delegated: DatabaseMetadataReader
+    // =========================================================================
+
+    /** @return array<string, mixed> */
+    function getTableEngines() {
+        return $this->dbMetadataReader->getTableEngines();
+    }
+
+    /** @return bool */
+    function isMyISAMSupported(): bool {
+        return $this->dbMetadataReader->isMyISAMSupported();
+    }
+
+    /** @return array<int, string> */
+    function getAllPostTypes() {
+        return $this->dbMetadataReader->getAllPostTypes();
+    }
+
+    // =========================================================================
+    // Generic helpers (interface-mandated; thin wrappers around $wpdb)
+    // =========================================================================
+
+    /**
+     * @param string $tableName
+     * @param array<string, mixed> $dataToInsert
+     * @return array<string, mixed>
+     */
+    function insertAndGetResults($tableName, $dataToInsert) {
+        $tableName = $this->dbCore->doTableNameReplacements($tableName);
+
+        $columns = array();
+        $placeholders = array();
+        $values = array();
+
+        foreach ($dataToInsert as $column => $value) {
+            $columns[] = '`' . $column . '`';
+
+            if ($value === null) {
+                $placeholders[] = 'NULL';
+            } else {
+                $currentDataType = gettype($value);
+                if ($currentDataType == 'integer' || $currentDataType == 'double') {
+                    $placeholders[] = '%d';
+                    $values[] = $value;
+                } elseif ($currentDataType == 'boolean') {
+                    $placeholders[] = '%d';
+                    $values[] = $value ? 1 : 0;
+                } else {
+                    $placeholders[] = '%s';
+                    $values[] = is_scalar($value) ? (string)$value : '';
+                }
+            }
+        }
+
+        $sql = 'INSERT INTO `' . $tableName . '` (' . implode(', ', $columns) . ') VALUES (' . implode(', ', $placeholders) . ')';
+
+        return $this->dbCore->queryAndGetResults($sql, ['query_params' => $values]);
     }
 
     /**
@@ -909,200 +720,5 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
     /** @return array<string, int> */
     public function getViewBuildProgressFingerprint(): array {
         return $this->snapshotCache->getViewBuildProgressFingerprint();
-    }
-
-    // =========================================================================
-    // ViewMetadata (originally in host, not from traits)
-    // =========================================================================
-
-    /** @return array<string, mixed> */
-    function getTableEngines() {
-    	$query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/sql/selectTableEngines.sql");
-    	$results = $this->dbCore->queryAndGetResults($query);
-    	return $results;
-    }
-
-    /** @return bool */
-    function isMyISAMSupported(): bool {
-        $supportResults = $this->dbCore->queryAndGetResults("SELECT ENGINE, SUPPORT " .
-            "FROM information_schema.ENGINES WHERE lower(ENGINE) = 'myisam'",
-            array('log_errors' => false));
-
-        if (!empty($supportResults) && !empty($supportResults['rows']) && is_array($supportResults['rows'])) {
-            $rows = $supportResults['rows'];
-            $row = is_array($rows[0] ?? null) ? $rows[0] : array();
-            $supportValue = array_key_exists('support', $row) ? (string)($row['support'] ?? '') :
-            (array_key_exists('SUPPORT', $row) ? (string)($row['SUPPORT'] ?? '') : "nope");
-
-            return strtolower($supportValue) == 'yes';
-        }
-        return false;
-    }
-
-    /**
-     * @param string $tableName
-     * @param array<string, mixed> $dataToInsert
-     * @return array<string, mixed>
-     */
-    function insertAndGetResults($tableName, $dataToInsert) {
-        $tableName = $this->dbCore->doTableNameReplacements($tableName);
-
-        $columns = array();
-        $placeholders = array();
-        $values = array();
-
-        foreach ($dataToInsert as $column => $value) {
-            $columns[] = '`' . $column . '`';
-
-            if ($value === null) {
-                $placeholders[] = 'NULL';
-            } else {
-                $currentDataType = gettype($value);
-                if ($currentDataType == 'integer' || $currentDataType == 'double') {
-                    $placeholders[] = '%d';
-                    $values[] = $value;
-                } elseif ($currentDataType == 'boolean') {
-                    $placeholders[] = '%d';
-                    $values[] = $value ? 1 : 0;
-                } else {
-                    $placeholders[] = '%s';
-                    $values[] = is_scalar($value) ? (string)$value : '';
-                }
-            }
-        }
-
-        $sql = 'INSERT INTO `' . $tableName . '` (' . implode(', ', $columns) . ') VALUES (' . implode(', ', $placeholders) . ')';
-
-        return $this->dbCore->queryAndGetResults($sql, ['query_params' => $values]);
-    }
-
-   /** @return int */
-   function getCapturedCount() {
-       $query = "select count(id) from {wp_abj404_redirects} where status = " . absint(ABJ404_STATUS_CAPTURED);
-
-       $result = $this->dbCore->queryAndGetResults($query);
-       if (!empty($result['timed_out']) || (isset($result['last_error']) && $result['last_error'] != '')) {
-           return 0;
-       }
-
-       $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
-       if (empty($rows)) {
-           return 0;
-       }
-       $first = $rows[0];
-       $value = is_array($first) ? reset($first) : $first;
-       return self::scalarToInt($value);
-   }
-
-   /** @return array<int, string> */
-   function getAllPostTypes() {
-       $query = "SELECT DISTINCT post_type FROM {wp_posts} order by post_type";
-       $results = $this->dbCore->queryAndGetResults($query);
-       $rows = $results['rows'];
-
-       $postType = array();
-
-       if (is_array($rows)) {
-           foreach ($rows as $row) {
-               array_push($postType, $row['post_type']);
-           }
-       }
-
-       return $postType;
-   }
-
-   /** @return int */
-   function getLogDiskUsage() {
-       $query = 'SELECT (data_length+index_length) tablesize FROM information_schema.tables '
-               . 'WHERE table_name=\'{wp_abj404_logsv2}\'';
-
-       $result = $this->dbCore->queryAndGetResults($query);
-
-       if (!empty($result['timed_out']) || (isset($result['last_error']) && $result['last_error'] != '')) {
-           $err = isset($result['last_error']) && is_string($result['last_error']) ? $result['last_error'] : '';
-           if ($err !== '') {
-               $this->logger->errorMessage("Error: " . esc_html($err));
-           }
-           return -1;
-       }
-
-       $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
-       if (empty($rows)) {
-           return 0;
-       }
-
-       $row = is_array($rows[0] ?? null) ? $rows[0] : array();
-       $size = $row['tablesize'] ?? null;
-       if ($size === null || !is_scalar($size)) {
-           return 0;
-       }
-       $bytes = intval($size);
-       return function_exists('apply_filters')
-           ? (int) apply_filters('abj404_log_disk_usage', $bytes)
-           : $bytes;
-   }
-
-    /**
-     * @param array<int, int> $types
-     * @param int $trashed
-     * @return int
-     */
-    function getRecordCount($types = array(), $trashed = 0) {
-        $recordCount = 0;
-
-        if (count($types) >= 1) {
-            $query = "select count(id) as count from {wp_abj404_redirects} where 1 and (status in (";
-
-            $filteredTypes = array_map('absint', $types);
-            $typesForSQL = implode(", ", $filteredTypes);
-            $query .= $typesForSQL . "))";
-            $query .= " and disabled = " . absint($trashed);
-
-            $result = $this->dbCore->queryAndGetResults($query);
-            $rows = is_array($result['rows']) ? $result['rows'] : array();
-            if (!empty($rows)) {
-	            $row = is_array($rows[0] ?? null) ? $rows[0] : array();
-	            $recordCount = isset($row['count']) && is_scalar($row['count']) ? intval($row['count']) : 0;
-            }
-        }
-
-        return intval($recordCount);
-    }
-
-    // =========================================================================
-    // ViewQueriesHitsLifecycle
-    // =========================================================================
-
-    /** @return void */
-    function maybeUpdateRedirectsForViewHitsTable(): void {
-        $this->dbCore->setRuntimeFlag(self::HITS_TABLE_LAST_CHECKED_FLAG, time(), 86400);
-
-        if (function_exists('abj_service')) {
-            $upgradesEtc = abj_service('database_upgrades');
-            if (is_object($upgradesEtc) && method_exists($upgradesEtc, 'scheduleLogsv2CanonicalUrlBackfill')) {
-                $upgradesEtc->scheduleLogsv2CanonicalUrlBackfill();
-            }
-        }
-
-        if ($this->dbCore->shouldSkipNonEssentialDbWrites()) {
-            $this->logger->debugMessage(__FUNCTION__ . " skipped due to temporary DB write cooldown.");
-            $this->dbCore->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'paused', 86400);
-            return;
-        }
-
-        if (!$this->logsRepo->logsHitsTableExists()) {
-            $this->logger->debugMessage(__FUNCTION__ . " table doesn't exist, deferring creation to shutdown hook.");
-            $this->logsRepo->scheduleHitsTableRebuild();
-            return;
-        }
-
-        $this->logsRepo->recordLogsHitsRollupStalenessSignal();
-
-        if (!$this->logsRepo->hitsTableNeedsRebuild()) {
-            $this->dbCore->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'not_needed', 86400);
-            return;
-        }
-
-        $this->logsRepo->scheduleHitsTableRebuild();
     }
 }
