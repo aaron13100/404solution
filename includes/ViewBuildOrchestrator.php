@@ -430,6 +430,15 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
      */
     private function invokeMethod($target, string $name, array $arguments) {
         $method = new \ReflectionMethod($target, $name);
+        // Let __call route to private/protected methods on $this so the
+        // orchestrator can keep cross-collaborator delegations
+        // (queryAndGetResults, doTableNameReplacements, ...) off its public
+        // API while collaborators still resolve them through $this->method().
+        // PHP 8.1+ makes private methods reflection-accessible by default;
+        // setAccessible() became a no-op in 8.1 and was deprecated in 8.5.
+        if (PHP_VERSION_ID < 80100) {
+            $method->setAccessible(true);
+        }
         return $method->invokeArgs($target, $arguments);
     }
 
@@ -454,29 +463,35 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
         return $this->progressOptions->readProgressOption($shortName, $default);
     }
 
-    // --- Delegation methods for external dependencies the traits call via $this-> ---
+    // --- Internal delegation methods (non-public; reached by collaborators
+    //     through __call routing, never by external callers). Marked
+    //     protected (rather than private) so PHPStan's method.unused rule
+    //     stays quiet, because the orchestrator is subclassed by anonymous
+    //     classes (see DataAccess::createLegacyViewBuildOrchestratorBridge()
+    //     and the test doubles). Removes them from the class's public API
+    //     surface per design audit M202 (Export Bloat). ---
 
     /**
      * @param string $query
      * @param array<string, mixed> $options
      * @return array<string, mixed>
      */
-    public function queryAndGetResults($query, $options = array()) {
+    protected function queryAndGetResults($query, $options = array()) {
         return $this->dbCore->queryAndGetResults($query, $options);
     }
 
     /** @param string $query @return string */
-    public function doTableNameReplacements($query): string {
+    protected function doTableNameReplacements($query): string {
         return $this->dbCore->doTableNameReplacements($query);
     }
 
     /** @return string */
-    public function getLowercasePrefix(): string {
+    protected function getLowercasePrefix(): string {
         return $this->dbCore->getLowercasePrefix();
     }
 
     /** @return void */
-    public function ensureConnection(): void {
+    protected function ensureConnection(): void {
         $this->connectionManager->ensureConnection();
     }
 
@@ -490,17 +505,17 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
      * @param string $errorText
      * @return string
      */
-    public function classifyStageFailure(int $stageNumber, string $errorText): string {
+    protected function classifyStageFailure(int $stageNumber, string $errorText): string {
         return $this->dbCore->classifyStageFailure($stageNumber, $errorText);
     }
 
     /** @param string $errorText @return bool */
-    public function isResumableStagedKill(string $errorText): bool {
+    protected function isResumableStagedKill(string $errorText): bool {
         return $this->errorClassifier->isResumableStagedKill($errorText);
     }
 
     /** @param string|null $errorText @return bool */
-    public function isTransientConnectionError(?string $errorText): bool {
+    protected function isTransientConnectionError(?string $errorText): bool {
         return $this->errorClassifier->isTransientConnectionError($errorText);
     }
 
@@ -509,14 +524,14 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
      * @param string $columnName
      * @return string
      */
-    public function getColumnCollationString(string $tableName, string $columnName): string {
+    protected function getColumnCollationString(string $tableName, string $columnName): string {
         return $this->dbCore->getColumnCollationString($tableName, $columnName);
     }
 
     // --- Delegation methods for ViewReadService methods the traits call ---
 
     /** @return array<string, string> */
-    public function viewBuildOnlyTranslations(): array {
+    protected function viewBuildOnlyTranslations(): array {
         return $this->requireViewReadService()->viewBuildOnlyTranslations();
     }
 
@@ -525,12 +540,12 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
      * @param array<string, mixed> $tableOptions
      * @return array<int, array<string, mixed>>
      */
-    public function readFromViewDone(string $sub, array $tableOptions): array {
+    protected function readFromViewDone(string $sub, array $tableOptions): array {
         return $this->requireViewReadService()->readFromViewDone($sub, $tableOptions);
     }
 
     /** @return array<string, int> */
-    public function getViewBuildProgressFingerprint(): array {
+    protected function getViewBuildProgressFingerprint(): array {
         return $this->requireViewReadService()->getViewBuildProgressFingerprint();
     }
 
@@ -539,14 +554,14 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
      * @param array<string, mixed> $tableOptions
      * @return string
      */
-    public function buildViewDoneCountQuery(string $sub, array $tableOptions): string {
+    protected function buildViewDoneCountQuery(string $sub, array $tableOptions): string {
         return $this->requireViewReadService()->buildViewDoneCountQuery($sub, $tableOptions);
     }
 
     // --- Delegation for LogsRepository ---
 
     /** @return bool */
-    public function logsHitsTableExists() {
+    protected function logsHitsTableExists() {
         return $this->requireLogsRepo()->logsHitsTableExists();
     }
 }
