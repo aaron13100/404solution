@@ -118,20 +118,6 @@ interface ABJ_404_Solution_ViewReadServiceInterface {
      */
     public function getExtraDataToPermalinkSuggestions(array $postIDs): array;
 
-    /**
-     * @param string $query
-     * @param array<string, mixed> $data
-     * @return string
-     */
-    public function prepare_query_wp($query, $data);
-
-    /**
-     * @param string $query
-     * @param array<string, mixed> $data
-     * @return array{0: string, 1: array<int, mixed>}
-     */
-    public function prepare_query($query, $data);
-
     // --- ViewSnapshotCache (warmup) ---
 
     /**
@@ -148,13 +134,6 @@ interface ABJ_404_Solution_ViewReadServiceInterface {
 
     /** @return bool */
     public function isMyISAMSupported(): bool;
-
-    /**
-     * @param string $tableName
-     * @param array<string, mixed> $dataToInsert
-     * @return array<string, mixed>
-     */
-    public function insertAndGetResults($tableName, $dataToInsert);
 
     /** @return int */
     public function getCapturedCount();

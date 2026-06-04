@@ -57,9 +57,6 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
     /** @var ABJ_404_Solution_DatabaseCore */
     private $dbCore;
 
-    /** @var ABJ_404_Solution_LogsRepository */
-    private $logsRepo;
-
     /** @var ABJ_404_Solution_Functions */
     private $f;
 
@@ -92,6 +89,9 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
     /** @var ABJ_404_Solution_DatabaseMetadataReader */
     private $dbMetadataReader;
 
+    /** @var ABJ_404_Solution_HitsTableRebuildPolicy */
+    private $hitsTableRebuildPolicy;
+
     /** @var ABJ_404_Solution_ViewBuildOrchestratorInterface|null */
     private $viewBuildOrchestrator;
 
@@ -113,7 +113,6 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
         $logger = null
     ) {
         $this->dbCore = $dbCore;
-        $this->logsRepo = $logsRepo;
         $this->f = $f !== null ? $f : abj_service('functions');
         $this->logger = $logger !== null ? $logger : abj_service('logging');
 
@@ -132,6 +131,7 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
         $this->redirectsBulkReader = new ABJ_404_Solution_RedirectsBulkReader($dbCore, $this->queryBuilder, $this->f);
         $this->logsMetricsReader = new ABJ_404_Solution_LogsMetricsReader($dbCore, $logsRepo, $this->f, $this->logger);
         $this->dbMetadataReader = new ABJ_404_Solution_DatabaseMetadataReader($dbCore);
+        $this->hitsTableRebuildPolicy = new ABJ_404_Solution_HitsTableRebuildPolicy($dbCore, $logsRepo, $this->logger);
     }
 
     /**
@@ -401,40 +401,12 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
     }
 
     // =========================================================================
-    // Hits-table lifecycle (tightly coupled to staged view-read)
+    // Delegated: HitsTableRebuildPolicy
     // =========================================================================
 
     /** @return void */
     function maybeUpdateRedirectsForViewHitsTable(): void {
-        $this->dbCore->setRuntimeFlag(self::HITS_TABLE_LAST_CHECKED_FLAG, time(), 86400);
-
-        if (function_exists('abj_service')) {
-            $upgradesEtc = abj_service('database_upgrades');
-            if (is_object($upgradesEtc) && method_exists($upgradesEtc, 'scheduleLogsv2CanonicalUrlBackfill')) {
-                $upgradesEtc->scheduleLogsv2CanonicalUrlBackfill();
-            }
-        }
-
-        if ($this->dbCore->shouldSkipNonEssentialDbWrites()) {
-            $this->logger->debugMessage(__FUNCTION__ . " skipped due to temporary DB write cooldown.");
-            $this->dbCore->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'paused', 86400);
-            return;
-        }
-
-        if (!$this->logsRepo->logsHitsTableExists()) {
-            $this->logger->debugMessage(__FUNCTION__ . " table doesn't exist, deferring creation to shutdown hook.");
-            $this->logsRepo->scheduleHitsTableRebuild();
-            return;
-        }
-
-        $this->logsRepo->recordLogsHitsRollupStalenessSignal();
-
-        if (!$this->logsRepo->hitsTableNeedsRebuild()) {
-            $this->dbCore->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'not_needed', 86400);
-            return;
-        }
-
-        $this->logsRepo->scheduleHitsTableRebuild();
+        $this->hitsTableRebuildPolicy->maybeUpdateRedirectsForViewHitsTable();
     }
 
     // =========================================================================
@@ -535,83 +507,6 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
     /** @return array<int, string> */
     function getAllPostTypes() {
         return $this->dbMetadataReader->getAllPostTypes();
-    }
-
-    // =========================================================================
-    // Generic helpers (interface-mandated; thin wrappers around $wpdb)
-    // =========================================================================
-
-    /**
-     * @param string $tableName
-     * @param array<string, mixed> $dataToInsert
-     * @return array<string, mixed>
-     */
-    function insertAndGetResults($tableName, $dataToInsert) {
-        $tableName = $this->dbCore->doTableNameReplacements($tableName);
-
-        $columns = array();
-        $placeholders = array();
-        $values = array();
-
-        foreach ($dataToInsert as $column => $value) {
-            $columns[] = '`' . $column . '`';
-
-            if ($value === null) {
-                $placeholders[] = 'NULL';
-            } else {
-                $currentDataType = gettype($value);
-                if ($currentDataType == 'integer' || $currentDataType == 'double') {
-                    $placeholders[] = '%d';
-                    $values[] = $value;
-                } elseif ($currentDataType == 'boolean') {
-                    $placeholders[] = '%d';
-                    $values[] = $value ? 1 : 0;
-                } else {
-                    $placeholders[] = '%s';
-                    $values[] = is_scalar($value) ? (string)$value : '';
-                }
-            }
-        }
-
-        $sql = 'INSERT INTO `' . $tableName . '` (' . implode(', ', $columns) . ') VALUES (' . implode(', ', $placeholders) . ')';
-
-        return $this->dbCore->queryAndGetResults($sql, ['query_params' => $values]);
-    }
-
-    /**
-     * @param string $query
-     * @param array<string, mixed> $data
-     * @return string
-     */
-    function prepare_query_wp($query, $data) {
-        global $wpdb;
-        list($prepared_query, $ordered_values) = $this->prepare_query($query, $data);
-        // DAO-bypass-approved: $wpdb->prepare is read-only string formatting; callers execute the result through queryAndGetResults
-        return $wpdb->prepare($prepared_query, $ordered_values);
-    }
-
-    /**
-     * @param string $query
-     * @param array<string, mixed> $data
-     * @return array{0: string, 1: array<int, mixed>}
-     */
-    function prepare_query($query, $data) {
-        $ordered_values = [];
-        $prepared_query = preg_replace_callback('/\{(\w+)\}/', function($matches) use ($data, &$ordered_values) {
-            $key = $matches[1];
-            if (!isset($data[$key])) {
-                return $matches[0];
-            }
-            $value = $data[$key];
-
-            $ordered_values[] = $value;
-
-            $placeholder_type = is_int($value) ? '%d' : '%s';
-
-            return $placeholder_type;
-        }, $query);
-
-        return [$prepared_query !== null ? $prepared_query : $query, $ordered_values];
     }
 
     // =========================================================================

@@ -139,6 +139,7 @@ return array(
     'ABJ_404_Solution_RedirectsBulkReader' => $base . 'includes/RedirectsBulkReader.php',
     'ABJ_404_Solution_LogsMetricsReader' => $base . 'includes/LogsMetricsReader.php',
     'ABJ_404_Solution_DatabaseMetadataReader' => $base . 'includes/DatabaseMetadataReader.php',
+    'ABJ_404_Solution_HitsTableRebuildPolicy' => $base . 'includes/HitsTableRebuildPolicy.php',
     'ABJ_404_Solution_Ajax_CrossPluginImporter' => $base . 'includes/ajax/Ajax_CrossPluginImporter.php',
     'ABJ_404_Solution_Ajax_Php' => $base . 'includes/ajax/Ajax_Php.php',
     'ABJ_404_Solution_Ajax_TrendData' => $base . 'includes/ajax/Ajax_TrendData.php',
