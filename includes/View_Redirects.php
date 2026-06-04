@@ -592,7 +592,7 @@ class ABJ_404_Solution_View_Redirects extends ABJ_404_Solution_ViewComponent {
             if ($thisval == $dest) {
                 $selected = " selected";
             }
-            $content .= "\n<option value=\"" . esc_attr($thisval) . "\"" . $selected . ">" . __('Category', '404-solution') . ": " . $theTitle . "</option>";
+            $content .= "\n<option value=\"" . esc_attr($thisval) . "\"" . $selected . ">" . __('Category', '404-solution') . ": " . esc_html($theTitle) . "</option>";
         }
         $content .= "\n" . '</optgroup>' . "\n";
         /** @var array<int, object{taxonomy: string, name?: string}> $cats */
@@ -611,7 +611,7 @@ class ABJ_404_Solution_View_Redirects extends ABJ_404_Solution_ViewComponent {
             if ($thisval == $dest) {
                 $selected = " selected";
             }
-            $content .= "\n<option value=\"" . esc_attr($thisval) . "\"" . $selected . ">" . __('Tag', '404-solution') . ": " . $theTitle . "</option>";
+            $content .= "\n<option value=\"" . esc_attr($thisval) . "\"" . $selected . ">" . __('Tag', '404-solution') . ": " . esc_html($theTitle) . "</option>";
         }
         $content .= "\n" . '</optgroup>' . "\n";
         
@@ -629,7 +629,7 @@ class ABJ_404_Solution_View_Redirects extends ABJ_404_Solution_ViewComponent {
                 if ($thisval == $dest) {
                     $selected = " selected";
                 }
-                $content .= "\n<option value=\"" . esc_attr($thisval) . "\"" . $selected . ">" . __('Custom', '404-solution') . ": " . $theTitle . "</option>";
+                $content .= "\n<option value=\"" . esc_attr($thisval) . "\"" . $selected . ">" . __('Custom', '404-solution') . ": " . esc_html($theTitle) . "</option>";
             }
             
             $content .= "\n" . '</optgroup>' . "\n";
