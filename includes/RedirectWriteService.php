@@ -4,6 +4,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+require_once __DIR__ . '/RedirectCanonicalUrl.php';
+
 /**
  * Application service for redirect row mutations and purge decisions.
  *
@@ -123,7 +125,7 @@ class ABJ_404_Solution_RedirectWriteService {
             $insertFormats = array('%s', '%d', '%d', '%s', '%d', '%d', '%d');
 
             if ($this->redirectsTableHasColumn('canonical_url')) {
-                $insertData['canonical_url'] = ABJ_404_Solution_RedirectsRepository::computeRedirectsCanonicalUrl($fromURL);
+                $insertData['canonical_url'] = ABJ_404_Solution_RedirectCanonicalUrl::compute($fromURL);
                 $insertFormats[] = '%s';
             }
             if ($engine !== null) {

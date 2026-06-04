@@ -8,6 +8,7 @@ require_once __DIR__ . '/RedirectsRepositoryInterface.php';
 require_once __DIR__ . '/RedirectsRetentionService.php';
 require_once __DIR__ . '/RedirectConditionsRepository.php';
 require_once __DIR__ . '/RedirectRegexCacheStore.php';
+require_once __DIR__ . '/RedirectCanonicalUrl.php';
 require_once __DIR__ . '/RedirectWriteService.php';
 
 /**
@@ -157,19 +158,12 @@ class ABJ_404_Solution_RedirectsRepository implements ABJ_404_Solution_Redirects
 
     /** @inheritDoc */
     public static function computeRedirectsCanonicalUrl($url): string {
-        if (!is_string($url)) {
-            return '/';
-        }
-        $trimmed = trim($url, '/');
-        if ($trimmed === '') {
-            return '/';
-        }
-        return '/' . $trimmed;
+        return ABJ_404_Solution_RedirectCanonicalUrl::compute($url);
     }
 
     /** @inheritDoc */
     public static function hitsCanonicalUrlSqlExpression(string $columnExpr): string {
-        return "CONCAT('/', TRIM(BOTH '/' FROM " . $columnExpr . "))";
+        return ABJ_404_Solution_RedirectCanonicalUrl::hitsSqlExpression($columnExpr);
     }
 
     // =========================================================================
