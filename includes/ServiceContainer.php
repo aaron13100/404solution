@@ -346,6 +346,15 @@ function abj_service($name) {
         );
     }
 
+    if ($name === 'stats_repository' && class_exists('ABJ_404_Solution_StatsRepository')) {
+        return new ABJ_404_Solution_StatsRepository(
+            abj_service('db_core'),
+            abj_service('logs_repository'),
+            abj_service('functions'),
+            abj_service('logging')
+        );
+    }
+
     $dataAccessClass = 'ABJ_404_Solution_DataAccess';
     if (class_exists($dataAccessClass)) {
         $dataAccessServiceGetters = array(
@@ -354,7 +363,6 @@ function abj_service($name) {
             'redirects_repository' => 'getRedirectsRepo',
             'redirects_retention_service' => 'getRetentionService',
             'logs_repository' => 'getLogsRepo',
-            'stats_repository' => 'getStatsRepo',
             'view_read_service' => 'getViewReadService',
             'view_build_orchestrator' => 'getViewBuildOrchestrator',
         );

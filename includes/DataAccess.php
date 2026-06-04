@@ -59,19 +59,6 @@ require_once __DIR__ . '/DatabaseCore.php';
 /**
  * Legacy compatibility facade for database, repository, and view services.
  *
- * @method array<int|string, mixed> getRedirectsForView(string $sub, array<string, mixed> $tableOptions)
- * @method int getRedirectsForViewCount(string $sub, array<string, mixed> $tableOptions)
- * @method int getRecordCount(array<int, int|string> $types = array(), int $trashed = 0)
- * @method array<int, array<string, mixed>> getRedirectsWithRegEx()
- * @method int getLogsCount(int $logID)
- * @method array<int, array<string, mixed>> getLogRecords(array<string, mixed> $tableOptions)
- * @method array<string, mixed> queryAndGetResults(string $query, array<string, mixed> $options = array())
- * @method string doTableNameReplacements(string $query)
- * @method int setupRedirect(ABJ_404_Solution_RedirectSpec $spec)
- * @method array<string, mixed> getExistingRedirectForURL(string $url)
- * @method string updateRedirect(ABJ_404_Solution_RedirectUpdate $update)
- * @method string moveRedirectsToTrash(int $id, int $trash)
- * @method array<int, array<string, mixed>> getRedirectsByIDs(array<int, int> $ids)
  */
 class ABJ_404_Solution_DataAccess {
 
@@ -564,9 +551,18 @@ class ABJ_404_Solution_DataAccess {
         return $this->viewBuildOrchestrator;
     }
 
-    /** @return string */
-    private function viewDoneDataBuiltAtOptionName(): string {
-        return $this->getViewBuildOrchestrator()->viewDoneDataBuiltAtOptionName();
+    /** @return int */
+    public function getCapturedCount() {
+        return $this->getViewReadService()->getCapturedCount();
+    }
+
+    /**
+     * @param array<int, int> $types
+     * @param int $trashed
+     * @return int
+     */
+    public function getRecordCount($types = array(), $trashed = 0) {
+        return $this->getViewReadService()->getRecordCount(is_array($types) ? $types : array(), $trashed);
     }
 
     /** @param mixed $tableOptions @return array<int, mixed> */
@@ -668,12 +664,12 @@ class ABJ_404_Solution_DataAccess {
 
 
     /**
-     * Routes method calls to the extracted sub-service that owns them.
+     * Rejects calls to removed facade pass-through methods.
      *
-     * DatabaseCore is intentionally absent from the delegate chain: its methods
-     * are DB-infrastructure concerns and must be reached via DatabaseCoreInterface,
-     * not through this facade. Calls for relocated DatabaseCore or ViewRead
-     * methods fall through to the trailing "method not found" branch.
+     * Extracted repositories and services are intentionally absent from a
+     * delegate chain: callers must use the typed accessor/injected interface
+     * for the owning collaborator instead of relying on this compatibility
+     * facade to redispatch arbitrary public methods.
      *
      * @param string $name
      * @param array<int, mixed> $arguments
@@ -681,21 +677,6 @@ class ABJ_404_Solution_DataAccess {
      * @throws \BadMethodCallException
      */
     public function __call(string $name, array $arguments) {
-        $delegates = [
-            $this->redirectsRepo,
-            $this->getRetentionService(),
-            $this->contentRepo,
-            $this->viewBuildOrchestrator,
-            $this->viewReadService,
-        ];
-        foreach ($delegates as $delegate) {
-            if ($delegate === null) {
-                continue;
-            }
-            if (method_exists($delegate, $name)) {
-                return $delegate->$name(...$arguments);
-            }
-        }
         throw new \BadMethodCallException(
             'Method ' . $name . '() not found on ' . static::class . ' or its sub-services.'
         );
@@ -726,32 +707,6 @@ class ABJ_404_Solution_DataAccess {
         self::$instance = new ABJ_404_Solution_DataAccess();
 
         return self::$instance;
-    }
-
-    /**
-     * Check if a database table exists.
-     *
-     * Fix for missing table error (reported by 2 users - 4% of errors)
-     * This prevents crashes when querying tables that don't exist or have
-     * incorrect table prefixes, returning false instead of causing fatal errors.
-     *
-     * @param string $tableName Full table name to check (including prefix)
-     * @return bool True if table exists, false otherwise
-     */
-    private function tableExists($tableName) {
-        return $this->dbCore->tableExists($tableName);
-    }
-
-    /**
-     * Get the column names of an actual database table via SHOW COLUMNS.
-     * Returns empty array on failure (table missing, permissions, etc.)
-     * so callers can fall back to their default behavior.
-     *
-     * @param string $tableName Full table name (including prefix)
-     * @return array<int, string>
-     */
-    private function getTableColumnNames(string $tableName): array {
-        return $this->dbCore->getTableColumnNames($tableName);
     }
 
 }
