@@ -133,6 +133,7 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
             'advance_coordinator' => $this->advanceCoordinator,
             'stage_pipeline' => $this->stagePipeline,
             'stage_runner' => new ABJ_404_Solution_ViewBuildStageRunner($this),
+            'batch_executor' => new ABJ_404_Solution_ViewBuildBatchExecutor($this),
             'stage_callbacks' => new ABJ_404_Solution_ViewBuildStageCallbacks($this),
             'adaptive' => new ABJ_404_Solution_ViewBuildAdaptive($this),
             'progress_options' => $this->progressOptions,

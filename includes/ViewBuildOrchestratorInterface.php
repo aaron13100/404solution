@@ -10,7 +10,7 @@ if (!defined('ABSPATH')) {
  * Extracted from DataAccess in Phase 7 of the DataAccess refactor.
  * Absorbs these collaborators: ViewBuildReadGateway,
  * ViewBuildAdvanceCoordinator, ViewBuildStagePipeline,
- * ViewBuildForegroundLease, ViewBuildStageCallbacks,
+ * ViewBuildForegroundLease, ViewBuildBatchExecutor, ViewBuildStageCallbacks,
  * ViewBuildLockAndCron, ViewBuildPhpEnvProbe,
  * ViewBuildHostFailurePolicy, ViewBuildSessionEnvProbe,
  * ViewBuildStageRunner, ViewBuildAdaptive, ViewBuildForceRestart.

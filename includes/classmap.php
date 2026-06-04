@@ -33,6 +33,7 @@ return array(
     'ABJ_404_Solution_ViewBuildPhpEnvProbe' => $base . 'includes/ViewBuildPhpEnvProbe.php',
     'ABJ_404_Solution_ViewBuildSessionEnvProbe' => $base . 'includes/ViewBuildSessionEnvProbe.php',
     'ABJ_404_Solution_ViewBuildStageCallbacks' => $base . 'includes/ViewBuildStageCallbacks.php',
+    'ABJ_404_Solution_ViewBuildBatchExecutor' => $base . 'includes/ViewBuildBatchExecutor.php',
     'ABJ_404_Solution_ViewBuildStageRunner' => $base . 'includes/ViewBuildStageRunner.php',
     'ABJ_404_Solution_ViewBuildForegroundLease' => $base . 'includes/ViewBuildForegroundLease.php',
     'ABJ_404_Solution_ViewBuildReadGateway' => $base . 'includes/ViewBuildReadGateway.php',

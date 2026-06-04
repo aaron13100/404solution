@@ -8,6 +8,7 @@ if (!defined('ABSPATH')) {
 require_once __DIR__ . '/ViewBuildCollaborator.php';
 require_once __DIR__ . '/ViewQueriesStaged.php';
 require_once __DIR__ . '/ViewBuildStageCallbacks.php';
+require_once __DIR__ . '/ViewBuildBatchExecutor.php';
 require_once __DIR__ . '/ViewBuildStageRunner.php';
 require_once __DIR__ . '/ViewBuildAdaptive.php';
 require_once __DIR__ . '/ViewBuildProgressOptions.php';
