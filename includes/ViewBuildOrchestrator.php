@@ -50,8 +50,10 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
     private $sqlModeProbe;
     /** @var ABJ_404_Solution_ViewBuildRebuildReconcile */
     private $rebuildReconcile;
-    /** @var ABJ_404_Solution_ViewBuildLockAndCron */
-    private $lockAndCron;
+    /** @var ABJ_404_Solution_ViewBuildLockCoordinator */
+    private $lockCoordinator;
+    /** @var ABJ_404_Solution_ViewBuildCronScheduler */
+    private $cronScheduler;
     /** @var ABJ_404_Solution_ViewBuildPhpEnvProbe */
     private $phpEnvProbe;
     /** @var ABJ_404_Solution_ViewBuildSessionEnvProbe */
@@ -108,7 +110,8 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
         $this->stateProbe = new ABJ_404_Solution_ViewBuildStateProbe($this);
         $this->sqlModeProbe = new ABJ_404_Solution_ViewBuildSqlModeProbe($this);
         $this->rebuildReconcile = new ABJ_404_Solution_ViewBuildRebuildReconcile($this);
-        $this->lockAndCron = new ABJ_404_Solution_ViewBuildLockAndCron($this);
+        $this->lockCoordinator = new ABJ_404_Solution_ViewBuildLockCoordinator($this);
+        $this->cronScheduler = new ABJ_404_Solution_ViewBuildCronScheduler($this);
         $this->phpEnvProbe = new ABJ_404_Solution_ViewBuildPhpEnvProbe($this);
         $this->sessionEnvProbe = new ABJ_404_Solution_ViewBuildSessionEnvProbe($this);
         $this->hostFailurePolicy = new ABJ_404_Solution_ViewBuildHostFailurePolicy($this);
@@ -141,7 +144,8 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
             'state_probe' => $this->stateProbe,
             'sql_mode_probe' => $this->sqlModeProbe,
             'rebuild_reconcile' => $this->rebuildReconcile,
-            'lock_and_cron' => $this->lockAndCron,
+            'lock_coordinator' => $this->lockCoordinator,
+            'cron_scheduler' => $this->cronScheduler,
             'php_env_probe' => $this->phpEnvProbe,
             'session_env_probe' => $this->sessionEnvProbe,
             'host_failure_policy' => $this->hostFailurePolicy,
@@ -169,7 +173,7 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
 
     /** @return void */
     public static function resetViewBuildLockFallbackMemos(): void {
-        ABJ_404_Solution_ViewBuildLockAndCron::resetViewBuildLockFallbackMemos();
+        ABJ_404_Solution_ViewBuildLockCoordinator::resetViewBuildLockFallbackMemos();
     }
 
     // --- Public ViewBuildOrchestratorInterface delegation ---
@@ -266,12 +270,12 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
 
     /** @return bool */
     public function verifyBuildLockSerializesWriter(): bool {
-        return $this->lockAndCron->verifyBuildLockSerializesWriter();
+        return $this->lockCoordinator->verifyBuildLockSerializesWriter();
     }
 
     /** @param int $delaySeconds @return void */
     public function scheduleViewDoneRebuild(int $delaySeconds = 1): void {
-        $this->lockAndCron->scheduleViewDoneRebuild($delaySeconds);
+        $this->cronScheduler->scheduleViewDoneRebuild($delaySeconds);
     }
 
     /** @return array<string, mixed> */

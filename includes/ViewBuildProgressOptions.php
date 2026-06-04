@@ -28,7 +28,7 @@ if (!defined('ABSPATH')) {
  * Staged SQL execution lives on ABJ_404_Solution_ViewBuildStagedSqlExecutor.
  * Build-side existence / freshness probes live on
  * ABJ_404_Solution_ViewBuildStateProbe. All three classes plus
- * ABJ_404_Solution_ViewBuildLockAndCron and the host-environment probes are
+ * ABJ_404_Solution_ViewBuildLockCoordinator and the host-environment probes are
  * registered as ViewBuildOrchestrator collaborators; properties declared here
  * are visible across the family via reflection-routed __get / __set on the
  * orchestrator.

@@ -11,7 +11,7 @@ if (!defined('ABSPATH')) {
  * Absorbs these collaborators: ViewBuildReadGateway,
  * ViewBuildAdvanceCoordinator, ViewBuildStagePipeline,
  * ViewBuildForegroundLease, ViewBuildBatchExecutor, ViewBuildStageCallbacks,
- * ViewBuildLockAndCron, ViewBuildPhpEnvProbe,
+ * ViewBuildLockCoordinator, ViewBuildCronScheduler, ViewBuildPhpEnvProbe,
  * ViewBuildHostFailurePolicy, ViewBuildSessionEnvProbe,
  * ViewBuildStageRunner, ViewBuildAdaptive, ViewBuildForceRestart.
  *
@@ -96,7 +96,7 @@ interface ABJ_404_Solution_ViewBuildOrchestratorInterface {
      */
     public function sanitizeUrlBeforeInsert(string $url, int $maxLength = 0): string;
 
-    // --- ViewBuildLockAndCron (cross-request lock, cron scheduling) ---
+    // --- View-build lock coordination and cron scheduling ---
 
     /** @return bool */
     public function verifyBuildLockSerializesWriter(): bool;
