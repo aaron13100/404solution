@@ -309,7 +309,9 @@ class ABJ_404_Solution_DataAccess {
             $this->redirectsRepo = new ABJ_404_Solution_RedirectsRepository($this->dbCore, $this->f, $this->logger);
         }
 
-        $this->logsRepo = $logsRepo !== null ? $logsRepo : $this->createLogsRepo();
+        $this->logsRepo = $logsRepo !== null
+            ? $logsRepo
+            : new ABJ_404_Solution_LogsRepository($this->dbCore, $this->f, $this->logger);
 
         if ($statsRepo !== null) {
             $this->statsRepo = $statsRepo;
@@ -406,38 +408,6 @@ class ABJ_404_Solution_DataAccess {
         }
 
         return new ABJ_404_Solution_DatabaseCore($this->f, $this->logger);
-    }
-
-    /** @return ABJ_404_Solution_LogsRepository */
-    private function createLogsRepo() {
-        if (!$this->hasSubclassOverride('logsHitsTableExists') && !$this->hasSubclassOverride('scheduleHitsTableRebuild')) {
-            return new ABJ_404_Solution_LogsRepository($this->dbCore, $this->f, $this->logger);
-        }
-
-        $owner = $this;
-        return new class($owner, $this->dbCore, $this->f, $this->logger) extends ABJ_404_Solution_LogsRepository {
-            /** @var ABJ_404_Solution_DataAccess */
-            private $owner;
-
-            /**
-             * @param ABJ_404_Solution_DataAccess $owner
-             * @param ABJ_404_Solution_DatabaseCore $dbCore
-             * @param ABJ_404_Solution_Functions|null $functions
-             * @param ABJ_404_Solution_Logging|null $logger
-             */
-            public function __construct($owner, $dbCore, $functions, $logger) {
-                $this->owner = $owner;
-                parent::__construct($dbCore, $functions, $logger);
-            }
-
-            public function logsHitsTableExists() {
-                return (bool)$this->owner->invokeSubclassOverride('logsHitsTableExists');
-            }
-
-            public function scheduleHitsTableRebuild(): void {
-                $this->owner->invokeSubclassOverride('scheduleHitsTableRebuild');
-            }
-        };
     }
 
     /** @return ABJ_404_Solution_ViewBuildOrchestrator */
