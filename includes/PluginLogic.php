@@ -175,7 +175,9 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
     	);
 
     	$this->settingsUpdate = new ABJ_404_Solution_PluginLogicSettingsUpdate(
-    	    $this->f, $this->logger, $this->contentRepo, $this
+            $this->f, $this->logger, $this->contentRepo, $this,
+            null,
+            new ABJ_404_Solution_SettingsFieldValidator()
     	);
 
     	$this->pageOrdering = new ABJ_404_Solution_PluginLogicPageOrdering(

@@ -5,9 +5,20 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+require_once dirname(__FILE__) . '/SettingsFieldValidator.php';
+require_once dirname(__FILE__) . '/TableViewOptionsResolver.php';
+
 /**
- * Settings update helpers: table options, POST sanitization, options-from-POST pipeline.
- * Standalone class extracted from PluginLogicTrait_SettingsUpdate.
+ * Settings save workflow: nonce verification, decoding the encoded POST
+ * payload, dispatching to per-section field validators, and persisting
+ * the resulting options snapshot.
+ *
+ * Decomposed during the M201 audit (design-audit-2026-06-04.md):
+ *
+ *   - Table-view options resolution moved to {@see ABJ_404_Solution_TableViewOptionsResolver}.
+ *   - Numeric field validation moved to {@see ABJ_404_Solution_SettingsFieldValidator}
+ *     (which now requires already-translated literal messages, fixing the
+ *     POT-extraction bug in finding 440).
  */
 class ABJ_404_Solution_PluginLogicSettingsUpdate {
 
@@ -23,208 +34,61 @@ class ABJ_404_Solution_PluginLogicSettingsUpdate {
     /** @var ABJ_404_Solution_PluginLogic */
     private $pluginLogic;
 
-    /** Allowed column names for orderby parameter.
-     * @var array<int, string> */
-    private static $allowedOrderbyColumns = [
-        'url',
-        'status',
-        'type',
-        'dest',
-        'final_dest',
-        'code',
-        'score',
-        'timestamp',
-        'created',
-        'lastused',
-        'last_used',
-        'logshits',
-        'remote_host',
-        'referrer',
-        'action',
-        'username'
-    ];
+    /** @var ABJ_404_Solution_TableViewOptionsResolver|null */
+    private $tableViewOptionsResolver;
 
-    /** Allowed values for order parameter.
-     * @var array<int, string> */
-    private static $allowedOrderValues = ['ASC', 'DESC'];
+    /** @var ABJ_404_Solution_SettingsFieldValidator */
+    private $fieldValidator;
 
     /**
      * @param ABJ_404_Solution_Functions $f
      * @param ABJ_404_Solution_Logging $logger
      * @param ABJ_404_Solution_ContentRepositoryInterface $contentRepo
      * @param ABJ_404_Solution_PluginLogic $pluginLogic
+     * @param ABJ_404_Solution_TableViewOptionsResolver|null $tableViewOptionsResolver
+     * @param ABJ_404_Solution_SettingsFieldValidator|null $fieldValidator
      */
-    function __construct($f, $logger, $contentRepo, $pluginLogic) {
+    function __construct($f, $logger, $contentRepo, $pluginLogic, $tableViewOptionsResolver = null, $fieldValidator = null) {
         $this->f = $f;
         $this->logger = $logger;
         $this->contentRepo = $contentRepo;
         $this->pluginLogic = $pluginLogic;
+        $this->tableViewOptionsResolver = $tableViewOptionsResolver;
+        $this->fieldValidator = $fieldValidator !== null ? $fieldValidator : new ABJ_404_Solution_SettingsFieldValidator();
     }
 
     /**
-     * Read a scalar query parameter directly from REQUEST_URI.
+     * Lazily instantiate the table-view options resolver. Lazy so existing
+     * callers that construct PluginLogicSettingsUpdate without the new
+     * collaborator (tests, legacy bootstraps) still work.
      *
-     * @param string $name
-     * @return string
+     * @return ABJ_404_Solution_TableViewOptionsResolver
      */
-    private function getQueryParamFromRequestUri($name) {
-        if (!is_string($name) || $name === '') {
-            return '';
+    private function tableViewOptionsResolver(): ABJ_404_Solution_TableViewOptionsResolver {
+        if ($this->tableViewOptionsResolver === null) {
+            $self = $this;
+            $this->tableViewOptionsResolver = new ABJ_404_Solution_TableViewOptionsResolver(
+                $this->f,
+                function (array $tableOptions) use ($self) {
+                    return $self->sanitizePostData($tableOptions);
+                }
+            );
         }
-        $requestUri = isset($_SERVER['REQUEST_URI']) && is_string($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
-        if ($requestUri === '') {
-            return '';
-        }
-        $queryString = parse_url($requestUri, PHP_URL_QUERY);
-        if (!is_string($queryString) || $queryString === '') {
-            return '';
-        }
-        $query = array();
-        parse_str($queryString, $query);
-        if (!array_key_exists($name, $query) || !is_scalar($query[$name])) {
-            return '';
-        }
-        return sanitize_text_field((string)$query[$name]);
+        return $this->tableViewOptionsResolver;
     }
 
     /**
+     * Resolve the per-page table view options for an admin list-table.
+     * Thin delegation to {@see ABJ_404_Solution_TableViewOptionsResolver::resolve()}.
+     * Kept on this class so the existing 12+ production call sites and the
+     * test stubs that mock $logic->settingsUpdate()->getTableOptions(...)
+     * continue to resolve through one entry point.
+     *
      * @param string $pageBeingViewed
      * @return array<string, mixed>
      */
     function getTableOptions(string $pageBeingViewed): array {
-        $tableOptions = array();
-        $options = abj_service('options_repository')->getOptions(true);
-
-        $translationArray = array(
-            '{ABJ404_STATUS_MANUAL_text}' => __('Man', '404-solution'),
-            '{ABJ404_STATUS_AUTO_text}' => __('Auto', '404-solution'),
-            '{ABJ404_STATUS_REGEX_text}' => __('RegEx', '404-solution'),
-            '{ABJ404_TYPE_EXTERNAL_text}' => __('External', '404-solution'),
-            '{ABJ404_TYPE_CAT_text}' => __('Category', '404-solution'),
-            '{ABJ404_TYPE_TAG_text}' => __('Tag', '404-solution'),
-       		'{ABJ404_TYPE_HOME_text}' => __('Home Page', '404-solution'),
-       		'{ABJ404_TYPE_404_DISPLAYED_text}' => __('(Default 404 Page)', '404-solution'),
-       		'{ABJ404_TYPE_SPECIAL_text}' => __('(Special)', '404-solution'),
-        );
-
-        $tableOptions['translations'] = $translationArray;
-
-        $rawFilter = $this->f->getPostOrGetSanitize("filter", "");
-        if ($rawFilter === "") {
-            if ($this->f->getPostOrGetSanitize('subpage') == 'abj404_captured') {
-                $tableOptions['filter'] = ABJ404_STATUS_CAPTURED;
-            } else {
-                $tableOptions['filter'] = 0;
-            }
-        } else {
-            $tableOptions['filter'] = intval($rawFilter);
-        }
-
-        $tableOptions['filterText'] = trim($this->f->getPostOrGetSanitize("filterText", ""));
-        $tableOptions['filterText'] = $this->f->str_replace(array('*', '/', '$'), '', $tableOptions['filterText']);
-
-        $orderbyInput = $this->f->getPostOrGetSanitize('orderby', "");
-        if ($orderbyInput != "" && in_array($orderbyInput, self::$allowedOrderbyColumns, true)) {
-            $tableOptions['orderby'] = $orderbyInput;
-
-            if ($pageBeingViewed == 'abj404_redirects') {
-                $options['page_redirects_order_by'] = $tableOptions['orderby'];
-                abj_service('options_repository')->updateOptions($options);
-
-            } else if ($pageBeingViewed == 'abj404_captured') {
-                $options['captured_order_by'] = $tableOptions['orderby'];
-                abj_service('options_repository')->updateOptions($options);
-            }
-
-        } else if ($pageBeingViewed == "abj404_logs") {
-            $tableOptions['orderby'] = "timestamp";
-        } else if ($pageBeingViewed == 'abj404_redirects') {
-            $savedRedirectsOrderBy = isset($options['page_redirects_order_by']) && is_scalar($options['page_redirects_order_by'])
-                ? (string)$options['page_redirects_order_by'] : 'url';
-            $tableOptions['orderby'] = in_array($savedRedirectsOrderBy, self::$allowedOrderbyColumns, true)
-                ? $savedRedirectsOrderBy : 'url';
-        } else if ($pageBeingViewed == 'abj404_captured') {
-            $savedCapturedOrderBy = isset($options['captured_order_by']) && is_scalar($options['captured_order_by'])
-                ? (string)$options['captured_order_by'] : 'timestamp';
-            $tableOptions['orderby'] = in_array($savedCapturedOrderBy, self::$allowedOrderbyColumns, true)
-                ? $savedCapturedOrderBy : 'timestamp';
-        } else {
-            $tableOptions['orderby'] = 'url';
-        }
-
-        $orderInput = strtoupper($this->f->getPostOrGetSanitize('order', ''));
-        if ($orderInput != '' && in_array($orderInput, self::$allowedOrderValues, true)) {
-            $tableOptions['order'] = $orderInput;
-
-            if ($pageBeingViewed == 'abj404_redirects') {
-                $options['page_redirects_order'] = $tableOptions['order'];
-                abj_service('options_repository')->updateOptions($options);
-
-            } else if ($pageBeingViewed == 'abj404_captured') {
-                $options['captured_order'] = $tableOptions['order'];
-                abj_service('options_repository')->updateOptions($options);
-            }
-
-        } else if ($tableOptions['orderby'] == "created" || $tableOptions['orderby'] == "lastused" || $tableOptions['orderby'] == "timestamp") {
-            $tableOptions['order'] = "DESC";
-
-        } else if ($pageBeingViewed == 'abj404_redirects') {
-            $savedRedirectsOrder = isset($options['page_redirects_order']) && is_scalar($options['page_redirects_order'])
-                ? strtoupper((string)$options['page_redirects_order']) : 'ASC';
-            $tableOptions['order'] = in_array($savedRedirectsOrder, self::$allowedOrderValues, true)
-                ? $savedRedirectsOrder : 'ASC';
-
-        } else if ($pageBeingViewed == 'abj404_captured') {
-            $savedCapturedOrder = isset($options['captured_order']) && is_scalar($options['captured_order'])
-                ? strtoupper((string)$options['captured_order']) : 'DESC';
-            $tableOptions['order'] = in_array($savedCapturedOrder, self::$allowedOrderValues, true)
-                ? $savedCapturedOrder : 'DESC';
-
-        } else {
-            $tableOptions['order'] = "ASC";
-        }
-
-        $paged = $this->f->getPostOrGetSanitize("paged", '');
-        if ($paged === '') {
-            $paged = $this->getQueryParamFromRequestUri('paged');
-        }
-        $tableOptions['paged'] = ($paged === '') ? '1' : $paged;
-
-        $perPageOption = ABJ404_OPTION_DEFAULT_PERPAGE;
-        if (isset($options['perpage'])) {
-            $perPageOption = max(absint(is_scalar($options['perpage']) ? $options['perpage'] : 0), ABJ404_OPTION_MIN_PERPAGE);
-        }
-        $tableOptions['perpage'] = $this->f->getPostOrGetSanitize("perpage", (string)$perPageOption);
-
-        $tableOptions['logsid'] = 0;
-        if ($this->f->getPostOrGetSanitize('subpage') == "abj404_logs") {
-            $logId = (string)$this->f->getPostOrGetSanitize('id', '');
-            if ($this->f->regexMatch('[0-9]+', $logId)) {
-                $tableOptions['logsid'] = absint($logId);
-
-            } else {
-                $redirectToDataFieldId = (string)$this->f->getPostOrGetSanitize('redirect_to_data_field_id', '');
-                if ($this->f->regexMatch('[0-9]+', $redirectToDataFieldId)) {
-                    $tableOptions['logsid'] = absint($redirectToDataFieldId);
-                }
-            }
-        }
-
-        $rawScoreRange = (string)$this->f->getPostOrGetSanitize('score_range', 'all');
-        $allowedScoreRanges = array('all', 'high', 'medium', 'low', 'manual');
-        $tableOptions['score_range'] = in_array($rawScoreRange, $allowedScoreRanges, true) ? $rawScoreRange : 'all';
-
-        $forceViewRebuild = (string)$this->f->getPostOrGetSanitize('forceViewRebuild', '');
-        if ($forceViewRebuild === '') {
-            $forceViewRebuild = (string)$this->f->getPostOrGetSanitize('abj404_force_view_rebuild', '');
-        }
-        if ($forceViewRebuild === '1') {
-            $tableOptions['_abj404_force_view_rebuild'] = '1';
-        }
-
-        $sanitizedTableOptions = $this->sanitizePostData($tableOptions);
-
-        return $sanitizedTableOptions;
+        return $this->tableViewOptionsResolver()->resolve($pageBeingViewed);
     }
 
     /**
@@ -573,58 +437,27 @@ class ABJ_404_Solution_PluginLogicSettingsUpdate {
         return $message;
     }
 
-    /**
-     * @param array<string, mixed> $options
-     * @param array<string, mixed> $postData
-     * @param string $fieldName
-     * @param string $errorMessage
-     * @param int $minValue
-     * @param bool $useAbsintForCheck
-     * @return string
-     */
-    private function validateAndSetNumericField(array &$options, array $postData, string $fieldName, string $errorMessage, int $minValue = 0, bool $useAbsintForCheck = false): string {
-        if (isset($postData[$fieldName])) {
-            $value = $postData[$fieldName];
-            $scalarValue = is_scalar($value) ? $value : 0;
-            $passesValidation = false;
-
-            if ($useAbsintForCheck) {
-                $passesValidation = is_numeric($value) && absint($scalarValue) > $minValue;
-            } else {
-                $passesValidation = is_numeric($value) && $value >= $minValue;
-            }
-
-            if ($passesValidation) {
-                $options[$fieldName] = absint($scalarValue);
-                return "";
-            } else {
-                return __($errorMessage, '404-solution') . ".<BR/>";
-            }
-        }
-        return "";
-    }
-
     /** @param array<string, mixed> $options @param array<string, mixed> $postData @return string */
     public function updateDeletionSettings(array &$options, array $postData): string {
         $message = "";
 
-        $message .= $this->validateAndSetNumericField($options, $postData, 'capture_deletion',
-            'Error: Collected URL deletion value must be a number greater than or equal to zero');
+        $message .= $this->fieldValidator->validateAndSetNumericField($options, $postData, 'capture_deletion',
+            __('Error: Collected URL deletion value must be a number greater than or equal to zero', '404-solution'));
 
-        $message .= $this->validateAndSetNumericField($options, $postData, 'manual_deletion',
-            'Error: Manual redirect deletion value must be a number greater than or equal to zero');
+        $message .= $this->fieldValidator->validateAndSetNumericField($options, $postData, 'manual_deletion',
+            __('Error: Manual redirect deletion value must be a number greater than or equal to zero', '404-solution'));
 
-        $message .= $this->validateAndSetNumericField($options, $postData, 'log_deletion',
-            'Error: Log deletion value must be a number greater than or equal to zero');
+        $message .= $this->fieldValidator->validateAndSetNumericField($options, $postData, 'log_deletion',
+            __('Error: Log deletion value must be a number greater than or equal to zero', '404-solution'));
 
-        $message .= $this->validateAndSetNumericField($options, $postData, 'auto_deletion',
-            'Error: Auto redirect deletion value must be a number greater than or equal to zero');
+        $message .= $this->fieldValidator->validateAndSetNumericField($options, $postData, 'auto_deletion',
+            __('Error: Auto redirect deletion value must be a number greater than or equal to zero', '404-solution'));
 
-        $message .= $this->validateAndSetNumericField($options, $postData, 'auto_302_expiration_days',
-            'Error: Auto-redirect expiration days must be a number greater than or equal to zero');
+        $message .= $this->fieldValidator->validateAndSetNumericField($options, $postData, 'auto_302_expiration_days',
+            __('Error: Auto-redirect expiration days must be a number greater than or equal to zero', '404-solution'));
 
-        $message .= $this->validateAndSetNumericField($options, $postData, 'maximum_log_disk_usage',
-            'Error: Maximum log disk usage must be a number greater than zero', 0, true);
+        $message .= $this->fieldValidator->validateAndSetNumericField($options, $postData, 'maximum_log_disk_usage',
+            __('Error: Maximum log disk usage must be a number greater than zero', '404-solution'), 0, true);
 
         return $message;
     }
