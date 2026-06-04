@@ -1,10 +1,11 @@
 <?php
 /**
- * Error classification, infrastructure error handling, missing-table repair,
- * and prefix mismatch diagnostics for DataAccess.
+ * Error classification facade, infrastructure issue handling, and DB notice
+ * side effects for DataAccess.
  *
- * Extracted from DataAccess.php to keep the main class under the file-size limit.
- * All methods are called via $this-> from DataAccess (trait context).
+ * The string taxonomy, staged-build policy, table metadata inspection, and
+ * prefix diagnostics live in focused collaborators. This class preserves the
+ * public surface used by DatabaseCore, repair policy, and staged-build code.
  *
  * @since 4.1.0
  */
@@ -20,15 +21,23 @@ class ABJ_404_Solution_DatabaseErrorClassifier {
     /** @var int Cooldown when DB is read-only or storage is full. */
     const DB_WRITE_BLOCK_COOLDOWN_SECONDS = ABJ_404_Solution_DatabaseRuntimeState::DB_WRITE_BLOCK_COOLDOWN_SECONDS;
 
-
     /** @var ABJ_404_Solution_DatabaseCore */
     private $core;
 
-    /** @var ABJ_404_Solution_Functions */
-    private $f;
-
     /** @var ABJ_404_Solution_Logging */
     private $logger;
+
+    /** @var ABJ_404_Solution_DatabaseInfrastructureErrorTaxonomy */
+    private $taxonomy;
+
+    /** @var ABJ_404_Solution_DatabaseStagedFailureClassifier */
+    private $stagedFailureClassifier;
+
+    /** @var ABJ_404_Solution_DatabaseErrorTableInspector */
+    private $tableInspector;
+
+    /** @var ABJ_404_Solution_DatabasePrefixDiagnostics */
+    private $prefixDiagnostics;
 
     /**
      * @param ABJ_404_Solution_DatabaseCore $core
@@ -37,8 +46,11 @@ class ABJ_404_Solution_DatabaseErrorClassifier {
      */
     public function __construct(ABJ_404_Solution_DatabaseCore $core, $functions, $logger) {
         $this->core = $core;
-        $this->f = $functions;
         $this->logger = $logger;
+        $this->taxonomy = new ABJ_404_Solution_DatabaseInfrastructureErrorTaxonomy($functions);
+        $this->stagedFailureClassifier = new ABJ_404_Solution_DatabaseStagedFailureClassifier($this->taxonomy);
+        $this->tableInspector = new ABJ_404_Solution_DatabaseErrorTableInspector($logger);
+        $this->prefixDiagnostics = new ABJ_404_Solution_DatabasePrefixDiagnostics($core, $logger);
     }
 
     /**
@@ -53,54 +65,18 @@ class ABJ_404_Solution_DatabaseErrorClassifier {
     }
 
     /**
-     * Determine whether an error indicates invalid text/charset payload.
+     * Classify and handle a host-side database issue from direct wpdb call
+     * sites that bypass queryAndGetResults().
      *
-     * @param mixed $errorText
+     * @param string $errorText
      * @return bool
-     */
-    public function isInvalidDataError($errorText) {
-        if (!is_string($errorText) || $errorText === '') {
-            return false;
-        }
-        $lower = strtolower($errorText);
-        return (
-            $this->f->strpos($lower, 'contains invalid data') !== false ||
-            $this->f->strpos($lower, 'incorrect string value') !== false ||
-            $this->f->strpos($lower, 'invalid utf8') !== false
-        );
-    }
-
-    /**
-     * Classify a $wpdb->last_error as an infrastructure issue (disk full, read-only, etc.).
-     * If it IS an infrastructure error: logs WARN and calls noteDatabaseIssueFromError().
-     * If it is NOT: returns false (caller is responsible for logging at ERROR level).
-     *
-     * Use this at call sites that bypass queryAndGetResults() and call $wpdb directly.
-     * Public so that NGramFilter, DatabaseUpgradesEtc, and other classes can call it
-     * via their injected DatabaseCore dependency.
-     *
-     * @param string $errorText The value of $wpdb->last_error.
-     * @return bool True if the error was classified as infrastructure (already handled).
      */
     public function classifyAndHandleInfrastructureError(string $errorText): bool {
         if ($errorText === '') {
             return false;
         }
 
-        if ($this->isDiskFullError($errorText) ||
-            $this->isReadOnlyError($errorText) ||
-            $this->isQuotaLimitError($errorText) ||
-            $this->isInvalidDataError($errorText) ||
-            $this->isCollationError($errorText) ||
-            $this->isMissingPluginTableError($errorText) ||
-            $this->isIncorrectKeyFileError($errorText) ||
-            $this->isCrashedTableError($errorText) ||
-            $this->isDeadlockOrLockTimeoutError($errorText) ||
-            $this->isGaleraConflictError($errorText) ||
-            $this->isTransientConnectionError($errorText) ||
-            $this->isQueryTimeoutError($errorText) ||
-            $this->isAccessDeniedError($errorText)
-        ) {
+        if ($this->taxonomy->isInfrastructureSqlError($errorText)) {
             $this->logger->warn("Server-side DB issue (handled): " . $errorText);
             $this->noteDatabaseIssueFromError($errorText);
             return true;
@@ -109,473 +85,161 @@ class ABJ_404_Solution_DatabaseErrorClassifier {
         return false;
     }
 
+    /** @param mixed $errorText @return bool */
+    public function isInvalidDataError($errorText): bool {
+        return $this->taxonomy->isInvalidDataError($errorText);
+    }
+
+    /** @param string $errorText @return bool */
+    public function classifySetStatementFailure(string $errorText): bool {
+        return $this->taxonomy->classifySetStatementFailure($errorText);
+    }
+
     /** @param string|null $errorText @return bool */
     public function isTransientConnectionError(?string $errorText): bool {
-        $errorText = $errorText ?? '';
-        if ($errorText === '') {
-            return false;
-        }
-        $lower = strtolower($errorText);
-        $transientMarkers = array(
-            'server has gone away',
-            'lost connection to mysql server during query',
-            'error while sending query packet',
-            'packets out of order',
-            'connection was killed',
-        );
-        foreach ($transientMarkers as $marker) {
-            if ($this->f->strpos($lower, $marker) !== false) {
-                return true;
-            }
-        }
-        // Numeric client-error codes for the connection-drop class. Some PDO
-        // / driver surfaces (and translated MySQL builds where the English
-        // text is missing) emit "(2006)", "[2006]", "errno 2006", or a
-        // SQLSTATE-formatted "SQLSTATE[HY000]: General error: 2006 ..." with
-        // no canonical "server has gone away" wording. Match the unambiguous
-        // bracketed / parenthesized / errno-prefixed forms so a bare "2006"
-        // appearing in some unrelated text (year, ID, row count) does not
-        // misclassify. 2006 = CR_SERVER_GONE_ERROR, 2013 = CR_SERVER_LOST.
-        foreach (array('2006', '2013') as $code) {
-            if ($this->f->strpos($lower, '[' . $code . ']') !== false
-                || $this->f->strpos($lower, '(' . $code . ')') !== false
-                || $this->f->strpos($lower, 'errno ' . $code) !== false
-                || $this->f->strpos($lower, 'errno: ' . $code) !== false
-                || $this->f->strpos($lower, 'error: ' . $code . ' ') !== false
-                || $this->f->strpos($lower, 'error ' . $code . ':') !== false) {
-                return true;
-            }
-        }
-        return false;
+        return $this->taxonomy->isTransientConnectionError($errorText);
     }
 
     /** @param string $errorText @return bool */
     public function isQuotaLimitError(string $errorText): bool {
-        if ($errorText === '') {
-            return false;
-        }
-        $lower = strtolower($errorText);
-        return ($this->f->strpos($lower, 'max_questions') !== false ||
-            $this->f->strpos($lower, 'resource') !== false && $this->f->strpos($lower, 'question') !== false);
+        return $this->taxonomy->isQuotaLimitError($errorText);
     }
 
     /** @param string $errorText @return bool */
     public function isDiskFullError(string $errorText): bool {
-        if ($errorText === '') {
-            return false;
-        }
-        $lower = strtolower($errorText);
-        // "Got error 28 from storage engine" (ER_GET_ERRNO with POSIX ENOSPC)
-        // "errno: 28" / "Errcode: 28" (ER_DISK_FULL, ER_ERROR_ON_WRITE)
-        // "No space left on device" (OS strerror for ENOSPC, English only)
-        // "The table '...' is full" (ER_RECORD_FILE_FULL / error 1114)
-        // "Disk full" (ER_DISK_FULL)
-        // Note: on servers with non-English lc_messages, the text around "28"
-        // may be translated (e.g. "erreur 28" in French), but the numeric 28
-        // always appears. The strpos checks cover all known English MySQL/MariaDB
-        // message formats; non-English servers are rare in WordPress hosting.
-        return ($this->f->strpos($lower, 'error 28') !== false ||
-            $this->f->strpos($lower, 'errno: 28') !== false ||
-            $this->f->strpos($lower, 'errcode: 28') !== false ||
-            $this->f->strpos($lower, 'no space left on device') !== false ||
-            $this->f->strpos($lower, "' is full") !== false ||
-            $this->f->strpos($lower, 'table is full') !== false ||
-            $this->f->strpos($lower, 'disk full') !== false);
+        return $this->taxonomy->isDiskFullError($errorText);
     }
 
     /** @param string $errorText @return bool */
     public function isReadOnlyError(string $errorText): bool {
-        if ($errorText === '') {
-            return false;
-        }
-        $lower = strtolower($errorText);
-        return ($this->f->strpos($lower, 'read only') !== false ||
-            $this->f->strpos($lower, 'read-only') !== false ||
-            $this->f->strpos($lower, 'super_read_only') !== false);
+        return $this->taxonomy->isReadOnlyError($errorText);
     }
 
-    /**
-     * Detect MySQL/MariaDB access-denied errors. ER_DBACCESS_DENIED_ERROR
-     * (1044) and ER_TABLEACCESS_DENIED_ERROR (1142) fire when the configured
-     * DB user lacks rights for the requested operation: typical on hosting
-     * providers where the plugin's CREATE TABLE / DROP TABLE privileges are
-     * revoked, or where wp_options has been moved between databases.
-     * Server config issue, not a plugin bug. Should be a WARN, not an ERROR.
-     *
-     * @param string $errorText
-     * @return bool
-     */
+    /** @param string $errorText @return bool */
     public function isAccessDeniedError(string $errorText): bool {
-        if ($errorText === '') {
-            return false;
-        }
-        $lower = strtolower($errorText);
-        return ($this->f->strpos($lower, 'access denied') !== false ||
-            $this->f->strpos($lower, 'command denied') !== false);
-    }
-
-    /**
-     * True when an error indicates that the `SET STATEMENT max_statement_time=N FOR ...`
-     * timeout wrapper itself was rejected by the server (privilege denied or
-     * syntax not understood). Distinct from an error in the wrapped query.
-     *
-     * Hosts that reject the wrapper:
-     *   1. MariaDB requiring SUPER for SET STATEMENT (errno 1227 / SQLSTATE 42000)
-     *   2. ProxySQL / older audit firewalls that do not parse the prefix and
-     *      return a syntax error (errno 1064 / SQLSTATE 42000) on "SET STATEMENT"
-     *   3. Galera clusters that reject SET STATEMENT in some replication modes
-     *
-     * The caller MUST also confirm the failed query actually started with
-     * a `SET STATEMENT max_statement_time=` prefix before treating the error
-     * as a wrapper rejection. Generic access-denied or syntax errors on
-     * other query shapes are not recoverable by stripping a wrapper that
-     * was never there.
-     *
-     * @param string $errorText
-     * @return bool
-     */
-    public function classifySetStatementFailure(string $errorText): bool {
-        if ($errorText === '') {
-            return false;
-        }
-        $lower = strtolower($errorText);
-        // SUPER privilege required (MariaDB SET STATEMENT requires SUPER on
-        // some configurations). The error is access-denied class, but the
-        // SUPER-privilege phrasing is the unambiguous tell. Generic
-        // table-access-denied uses "for user" or names a table.
-        if ($this->f->strpos($lower, 'super privilege') !== false ||
-            $this->f->strpos($lower, 'super_privilege') !== false ||
-            $this->f->strpos($lower, '(at least one of) the super') !== false) {
-            return true;
-        }
-        // ProxySQL / firewall syntax-error path: "syntax error" or
-        // "you have an error in your sql syntax" combined with "SET STATEMENT"
-        // mentioned in the error context. The wpdb->last_error often echoes
-        // a leading slice of the offending query.
-        if (($this->f->strpos($lower, 'syntax error') !== false ||
-             $this->f->strpos($lower, 'error in your sql syntax') !== false ||
-             $this->f->strpos($lower, '1064') !== false) &&
-            $this->f->strpos($lower, 'set statement') !== false) {
-            return true;
-        }
-        return false;
+        return $this->taxonomy->isAccessDeniedError($errorText);
     }
 
     /** @param string $errorText @return bool */
     public function isCollationError(string $errorText): bool {
-        if ($errorText === '') {
-            return false;
-        }
-        $lower = strtolower($errorText);
-        return ($this->f->strpos($lower, 'illegal mix of collations') !== false ||
-            $this->f->strpos($lower, 'unknown collation') !== false ||
-            $this->f->strpos($lower, 'collation') !== false && $this->f->strpos($lower, 'not valid') !== false);
+        return $this->taxonomy->isCollationError($errorText);
     }
 
     /** @param string $errorText @return bool */
     public function isCrashedTableError(string $errorText): bool {
-        if ($errorText === '') {
-            return false;
-        }
-        return stripos($errorText, 'is marked as crashed') !== false;
+        return $this->taxonomy->isCrashedTableError($errorText);
     }
 
     /** @param string $errorText @return bool */
     public function isIncorrectKeyFileError(string $errorText): bool {
-        if ($errorText === '') {
-            return false;
-        }
-        return stripos($errorText, 'Incorrect key file') !== false;
+        return $this->taxonomy->isIncorrectKeyFileError($errorText);
     }
 
-    /** Detect MySQL MAX_EXECUTION_TIME (errno 3024) and MariaDB max_statement_time (errno 1969) timeouts.
-     * @param string $errorText @return bool */
+    /** @param string $errorText @return bool */
     public function isQueryTimeoutError(string $errorText): bool {
-        if ($errorText === '') {
-            return false;
-        }
-        return (strpos($errorText, '3024') !== false ||
-            strpos($errorText, '1969') !== false ||
-            stripos($errorText, 'max_execution_time') !== false ||
-            stripos($errorText, 'max_statement_time') !== false);
+        return $this->taxonomy->isQueryTimeoutError($errorText);
     }
 
-    /**
-     * Detect MySQL/MariaDB max_allowed_packet errors. Default error message:
-     * "Got a packet bigger than 'max_allowed_packet' bytes" (errno 1153).
-     * Routed by the staged-build orchestrator into batch-shrink recovery so
-     * a host with a small packet limit doesn't loop forever on the same
-     * oversized INSERT.
-     *
-     * @param string $errorText
-     * @return bool
-     */
+    /** @param string $errorText @return bool */
     public function isPacketTooLarge(string $errorText): bool {
-        if ($errorText === '') {
-            return false;
-        }
-        $lower = strtolower($errorText);
-        return ($this->f->strpos($lower, 'max_allowed_packet') !== false ||
-            $this->f->strpos($lower, 'got a packet bigger') !== false ||
-            $this->f->strpos($lower, '1153') !== false);
+        return $this->taxonomy->isPacketTooLarge($errorText);
     }
 
     /** @param string $errorText @return bool */
     public function isDeadlockOrLockTimeoutError(string $errorText): bool {
-        if ($errorText === '') {
-            return false;
-        }
-        $lower = strtolower($errorText);
-        return ($this->f->strpos($lower, 'deadlock found') !== false ||
-            $this->f->strpos($lower, 'lock wait timeout exceeded') !== false ||
-            $this->f->strpos($lower, 'error 1213') !== false ||
-            $this->f->strpos($lower, 'error 1205') !== false);
+        return $this->taxonomy->isDeadlockOrLockTimeoutError($errorText);
     }
 
-    /**
-     * Detect MariaDB Galera optimistic-concurrency rejections.
-     *
-     * Galera (wsrep) clusters use optimistic concurrency control: a node
-     * accepts a write locally, then certifies it against the cluster on
-     * commit. If another node already wrote to the same row, certification
-     * fails and the local transaction is rolled back with errno 1020 /
-     * ER_CHECKREAD ("Record has changed since last read in table 'X'").
-     * Other related markers carry "wsrep_" or "cluster conflict" wording.
-     *
-     * Structurally this is the same retry-able conflict shape as InnoDB
-     * deadlock (errno 1213) and lock-wait timeout (errno 1205), but the
-     * error wording is different so isDeadlockOrLockTimeoutError() does
-     * not match. Like deadlock, the next cron tick can simply retry; it
-     * is a server-side coordination failure, not a plugin bug, and must
-     * be logged at WARN (not ERROR, which emails the admin).
-     *
-     * Source: 4.1.15 site (ohafiatv) running MariaDB 11.8.3 emitted 3 of
-     * these errors from updatePermalinkCache.sql; another cluster node was
-     * writing the same {prefix}_abj404_permalink_cache row.
-     *
-     * @param string $errorText
-     * @return bool
-     */
+    /** @param string $errorText @return bool */
     public function isGaleraConflictError(string $errorText): bool {
-        if ($errorText === '') {
-            return false;
-        }
-        $lower = strtolower($errorText);
-        return ($this->f->strpos($lower, 'record has changed since last read') !== false ||
-            $this->f->strpos($lower, 'wsrep_local_state') !== false ||
-            $this->f->strpos($lower, 'cluster conflict') !== false);
+        return $this->taxonomy->isGaleraConflictError($errorText);
     }
 
-    /**
-     * Detect PHP "Allowed memory size of N bytes exhausted" / "Out of memory"
-     * messages. Real OOM is a fatal that bypasses try/catch, but a Throwable
-     * wrapper (e.g. PHP 8 Error subclass surfaced from a memory-aware hook,
-     * or an explicit guard that pre-rejects an over-budget allocation) can
-     * carry the same wording. Routed through the staged-build classifier so
-     * S9 (optional) skips on OOM instead of bubbling out as a stage error.
-     *
-     * @param string $errorText
-     * @return bool
-     */
+    /** @param string $errorText @return bool */
     public function isOutOfMemoryError(string $errorText): bool {
-        if ($errorText === '') {
-            return false;
-        }
-        $lower = strtolower($errorText);
-        return ($this->f->strpos($lower, 'allowed memory size') !== false ||
-            $this->f->strpos($lower, 'out of memory') !== false ||
-            $this->f->strpos($lower, 'memory exhausted') !== false ||
-            $this->f->strpos($lower, 'memory_limit') !== false);
+        return $this->taxonomy->isOutOfMemoryError($errorText);
     }
 
-    /**
-     * True when an error from a staged-build query represents a permanent
-     * host-side environmental constraint we cannot recover from by retrying:
-     * GRANT-revoked privilege (CREATE TEMPORARY TABLES, ALTER, RENAME),
-     * read-only replica, exhausted disk/quota, table marked crashed (a
-     * crashed plugin table on a stage that does DDL we can't repair our
-     * way out of), or a PHP-side OOM. Re-running the same query on the
-     * next cron tick will just produce the same error.
-     *
-     * Used by classifyStageFailure() to decide between "skip optional stage"
-     * and "halt critical stage". Resumable kills (max_statement_time, lock
-     * waits, gone-away) are NOT permanent and are already handled by
-     * isResumableStagedKill().
-     *
-     * Programmer-class errors (syntax, undefined column, unknown function)
-     * deliberately return false: we want those to surface as bugs, not be
-     * silently degraded around. (Codex pushback in test docblock for
-     * testStage9SyntaxErrorIsNotSilentlySkipped.)
-     *
-     * @param string $errorText
-     * @return bool
-     */
+    /** @param string $errorText @return bool */
+    public function isMissingPluginTableError(string $errorText): bool {
+        return $this->taxonomy->isMissingPluginTableError($errorText);
+    }
+
+    /** @param string $errorText @return bool */
+    public function isTransientViewBuildTableError(string $errorText): bool {
+        return $this->taxonomy->isTransientViewBuildTableError($errorText);
+    }
+
+    /** @param string $errorText @return bool */
+    public function isInfrastructureSqlError(string $errorText): bool {
+        return $this->taxonomy->isInfrastructureSqlError($errorText);
+    }
+
+    /** @param string $errorText @return bool */
     public function isPermanentHostSideStagedFailure(string $errorText): bool {
-        if ($errorText === '') {
-            return false;
-        }
-        if ($this->isResumableStagedKill($errorText)) {
-            return false;
-        }
-        return ($this->isAccessDeniedError($errorText)
-            || $this->isReadOnlyError($errorText)
-            || $this->isDiskFullError($errorText)
-            || $this->isQuotaLimitError($errorText)
-            || $this->isOutOfMemoryError($errorText));
+        return $this->stagedFailureClassifier->isPermanentHostSideStagedFailure($errorText);
     }
 
     /**
-     * Per-stage classification for an error raised inside the staged view
-     * build. Routes the orchestrator's catch block instead of the legacy
-     * binary "resumable-kill or rethrow" decision: the staged build has
-     * stages that can be skipped without breaking publication (S3/S9/S10:
-     * adds/aggregates) and stages that genuinely cannot proceed without
-     * (S1 create, S2 insert, S11 swap).
+     * Classify an error raised inside the staged view build.
      *
-     * Returns one of:
-     *   - 'resumable' : kill class the next tick can retry (existing behavior)
-     *   - 'skip'      : permanent host failure on an optional stage; mark
-     *                   the stage permanently skipped, advance past it
-     *   - 'halt'      : permanent host failure on a critical stage; stop
-     *                   re-trying, surface a deduplicated admin notice
-     *   - 'rethrow'   : programmer-class or unknown error; let it propagate
-     *                   so the dev mailbox carries actionable context
-     *
-     * The per-stage policy lives on
-     * ABJ_404_Solution_ViewBuildConfig::stageFailurePolicy() so it can be
-     * tuned without touching this classifier.
-     *
-     * @param int    $stageNumber  1..11
+     * @param int $stageNumber
      * @param string $errorText
      * @return string
      */
     public function classifyStageFailure(int $stageNumber, string $errorText): string {
-        if ($errorText === '') {
-            return 'rethrow';
-        }
-        // Buffer-missing marker thrown by our own pre-stage probes
-        // (assertBuildBufferExistsOrHalt in DataAccessTrait_ViewBuildStage-
-        // Callbacks.php, the bespoke S2/S4/S5 inline guards in the same
-        // file). A concurrent invalidateViewDone() dropped view_build out
-        // from under the running build; the next tick rebuilds cleanly
-        // from S0. Classify as resumable so the orchestrator yields
-        // without escalating to the dev mailbox. Match before the
-        // resumable-kill / permanent-host-failure checks so a future
-        // change to those classifiers cannot accidentally shadow this
-        // marker. Substring match because the message includes the
-        // stage label ("at S3 entry", "during S2 INSERT", etc.) but the
-        // "Staged view-build buffer missing" prefix is invariant.
-        if (stripos($errorText, 'Staged view-build buffer missing') !== false) {
-            return 'resumable';
-        }
-        if ($this->isResumableStagedKill($errorText)) {
-            return 'resumable';
-        }
-        if (!$this->isPermanentHostSideStagedFailure($errorText)) {
-            return 'rethrow';
-        }
-        $policy = ABJ_404_Solution_ViewBuildConfig::stageFailurePolicy($stageNumber);
-        return $policy === 'optional' ? 'skip' : 'halt';
+        return $this->stagedFailureClassifier->classifyStageFailure($stageNumber, $errorText);
     }
 
-    /**
-     * True when an error from a staged-build query represents a kill the
-     * host inflicted on us (out of our control) that the build can resume
-     * from on the next request. The staged pipeline persists progress
-     * (current_stage, batch high-water ids) on every batch boundary, so
-     * any of these classes can be safely converted to "yield this tick"
-     * without losing work.
-     *
-     * Covered: query-timeout kills (max_statement_time / max_execution_time
-     * exceeded, "Query execution was interrupted"), transient connection
-     * loss ("server has gone away", "Lost connection"), and lock-wait /
-     * deadlock kills. Any of these on a slow shared host will end the
-     * stage's query without ending the request, and we want the build to
-     * keep making forward progress on the next tick instead of returning
-     * a 500 that breaks the JS poll loop.
-     *
-     * @param string $errorText
-     * @return bool
-     */
+    /** @param string $errorText @return bool */
     public function isResumableStagedKill(string $errorText): bool {
-        if ($errorText === '') {
-            return false;
-        }
-        if ($this->isQueryTimeoutError($errorText)) {
-            return true;
-        }
-        if ($this->isTransientConnectionError($errorText)) {
-            return true;
-        }
-        if ($this->isDeadlockOrLockTimeoutError($errorText)) {
-            return true;
-        }
-        // "Query execution was interrupted" is the bare MariaDB / MySQL
-        // message variant that does not always carry the "max_statement_time"
-        // substring (server-side KILL QUERY, client cancellation, replica
-        // failover). Same resume semantics.
-        if (stripos($errorText, 'query execution was interrupted') !== false) {
-            return true;
-        }
-        // max_allowed_packet exceeded: the next tick's batch-shrink path
-        // will halve the batch size and retry, exactly like a host-killed
-        // batch. Without this, an oversized INSERT loops with the same
-        // packet error and never converges (same infinite-retry shape as
-        // the access-denied bug pre-classifier).
-        if ($this->isPacketTooLarge($errorText)) {
-            return true;
-        }
-        return false;
+        return $this->stagedFailureClassifier->isResumableStagedKill($errorText);
     }
 
     /**
      * Extract a table name from a MySQL "table is full" error message.
-     * MySQL formats this as: The table 'table_name' is full
+     *
      * @param string $errorText
-     * @return string|null The table name, or null if not parseable.
+     * @return string|null
      */
     public function extractTableNameFromFullError(string $errorText): ?string {
-        if (preg_match("/table '([^']+)' is full/i", $errorText, $m)) {
-            return $m[1];
-        }
-        return null;
+        return $this->tableInspector->extractTableNameFromFullError($errorText);
     }
 
     /**
      * Check if a given table uses the InnoDB storage engine.
-     * Returns false on any query failure (safe default).
+     *
      * @param string $tableName
      * @return bool
      */
     public function isInnoDBTable(string $tableName): bool {
-        global $wpdb;
-        /** @var wpdb $wpdb */
-        if (!method_exists($wpdb, 'get_var') || !method_exists($wpdb, 'prepare')) {
-            return false; // Safe default when $wpdb is a partial stub
-        }
-        if (defined('DB_NAME')) {
-            $dbName = (string)DB_NAME;
-        } else {
-            // Per-request warn once: silent empty-string fallback hides
-            // whether the schema-probe is actually working in tests that
-            // forget to define DB_NAME (Smell 1 from error-swallow audit).
-            static $warnedNoDbName = false;
-            if (!$warnedNoDbName) {
-                $warnedNoDbName = true;
-                $this->logger->warn(__METHOD__ . ': DB_NAME undefined; using empty schema in InnoDB probe');
-            }
-            $dbName = '';
-        }
-        $engine = $wpdb->get_var(
-            $wpdb->prepare(
-                "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s",
-                $dbName,
-                $tableName
-            )
-        );
-        return is_string($engine) && strtolower($engine) === 'innodb';
+        return $this->tableInspector->isInnoDBTable($tableName);
     }
 
+    /**
+     * Extract the table name from a MySQL "doesn't exist" error message.
+     *
+     * @param string $errorText
+     * @return string
+     */
+    public function extractMissingTableNameFromError(string $errorText): string {
+        return $this->tableInspector->extractMissingTableNameFromError($errorText);
+    }
+
+    /** @return string */
+    public function diagnosePrefixMismatch(): string {
+        return $this->prefixDiagnostics->diagnosePrefixMismatch();
+    }
+
+    /**
+     * @param string $errorText
+     * @return bool
+     */
+    public function isMultisiteCrossPrefixError(string $errorText): bool {
+        return $this->prefixDiagnostics->isMultisiteCrossPrefixError($errorText);
+    }
+
+    /** @param string $errorText @return void */
     public function noteDatabaseIssueFromError(string $errorText): void {
         if (trim($errorText) === '') {
             return;
@@ -584,9 +248,6 @@ class ABJ_404_Solution_DatabaseErrorClassifier {
             $this->core->noticeState()->markServerSideIssueNoted();
             $this->core->setRuntimeFlag('abj404_db_disk_full_until', $this->core->clock()->now() + self::DB_WRITE_BLOCK_COOLDOWN_SECONDS, self::DB_WRITE_BLOCK_COOLDOWN_SECONDS);
 
-            // Disambiguate InnoDB tablespace exhaustion from actual disk full or MyISAM limit.
-            // "table is full" for InnoDB means the shared tablespace (ibdata1) is at capacity —
-            // trimming plugin rows will NOT free space; the host must expand the tablespace.
             $tableFull = stripos($errorText, 'table') !== false && stripos($errorText, 'is full') !== false;
             if ($tableFull) {
                 $tableName = $this->extractTableNameFromFullError($errorText);
@@ -612,11 +273,6 @@ class ABJ_404_Solution_DatabaseErrorClassifier {
             return;
         }
         if ($this->isCollationError($errorText)) {
-            // Per owner directive: collation issues must NEVER surface as user notices.
-            // The plugin auto-recovers by running correctCollations() at query time
-            // (see DataAccess::recoverFromCollationMismatchAndRetry()).  Here we only
-            // log the original error at debug level so developers can see it in
-            // debug.txt without the user ever being notified.
             $this->logger->debugMessage("Collation mismatch detected (auto-recovery will run): " . $errorText);
         }
     }
@@ -626,177 +282,5 @@ class ABJ_404_Solution_DatabaseErrorClassifier {
         $rawQuotaFlag = $this->core->getRuntimeFlag('abj404_db_quota_cooldown_until');
         $until = is_scalar($rawQuotaFlag) ? (int)$rawQuotaFlag : 0;
         return ($until > $this->core->clock()->now());
-    }
-
-    /** @param string $errorText @return bool */
-    public function isMissingPluginTableError(string $errorText): bool {
-        if ($errorText === '') {
-            return false;
-        }
-        $lower = strtolower($errorText);
-        if ($this->f->strpos($lower, '_abj404_logs_hits') !== false) {
-            return false;
-        }
-        return ($this->f->strpos($lower, "doesn't exist") !== false &&
-            $this->f->strpos($lower, '_abj404_') !== false);
-    }
-
-    /**
-     * The staged-view-build pipeline owns three transient tables
-     * (view_build, view_done, view_deleteme). They are created and dropped
-     * between build cycles by design; discoverPermanentDDLFiles() already
-     * excludes them from createDatabaseTables(). A SELECT that hits a
-     * swap-window race against any of them is not a corruption signal and
-     * must not surface the missing_table admin notice or engage the 1h
-     * repair cooldown.
-     *
-     * @param string $errorText
-     * @return bool
-     */
-    public function isTransientViewBuildTableError(string $errorText): bool {
-        if ($errorText === '') {
-            return false;
-        }
-        $lower = strtolower($errorText);
-        return ($this->f->strpos($lower, '_abj404_view_build') !== false ||
-            $this->f->strpos($lower, '_abj404_view_done') !== false ||
-            $this->f->strpos($lower, '_abj404_view_deleteme') !== false);
-    }
-
-    /**
-     * Extract the unprefixed-by-database table name from a MySQL "doesn't exist"
-     * error message. Returns the bare table name (e.g. "wp_abj404_redirects")
-     * or empty string if the error format does not match.
-     *
-     * MySQL emits errors as either:
-     *   Table 'dbname.tablename' doesn't exist
-     *   Table 'tablename' doesn't exist
-     * The database-name segment is stripped because callers want the live
-     * table name suitable for SHOW TABLES LIKE.
-     *
-     * @param string $errorText
-     * @return string
-     */
-    public function extractMissingTableNameFromError(string $errorText): string {
-        if ($errorText === '') {
-            return '';
-        }
-        if (!preg_match("/Table '([^']+)' doesn't exist/i", $errorText, $matches)) {
-            return '';
-        }
-        $fullName = $matches[1];
-        $dotPos = strrpos($fullName, '.');
-        return $dotPos !== false ? substr($fullName, $dotPos + 1) : $fullName;
-    }
-
-    /**
-     * Check whether plugin tables exist under a different prefix than $wpdb->prefix.
-     *
-     * After site migrations or hosting panel clones, $table_prefix in wp-config.php
-     * may differ from the prefix used when the plugin tables were originally created.
-     * Returns a diagnostic string if a mismatch is detected, empty string otherwise.
-     *
-     * @return string Diagnostic message or empty string.
-     */
-    public function diagnosePrefixMismatch(): string {
-        global $wpdb;
-        try {
-            $dbName = $wpdb->dbname ?? '';
-            if ($dbName === '') {
-                return '';
-            }
-            // @utf8-audit: opt-out — $wpdb->dbname is set by WordPress at
-            // bootstrap from wp-config.php; never user input.
-            $dbNameEscaped = esc_sql($dbName);
-            $dbNameStr = is_array($dbNameEscaped) ? '' : $dbNameEscaped;
-            // Find any table containing 'abj404_redirects' in this database.
-            $rows = $wpdb->get_results(
-                "SELECT table_name FROM information_schema.tables "
-                . "WHERE table_schema = '{$dbNameStr}' "
-                . "AND LOWER(table_name) LIKE '%abj404\_redirects'",
-                ARRAY_A
-            );
-            if (!is_array($rows) || empty($rows)) {
-                return '';
-            }
-            $expectedTable = $this->core->getLowercasePrefix() . 'abj404_redirects';
-            $foundTables = [];
-            foreach ($rows as $row) {
-                if (!is_iterable($row)) {
-                    continue;
-                }
-                // Case-insensitive key lookup (MySQL driver inconsistency).
-                $name = null;
-                foreach ($row as $key => $value) {
-                    if (strtolower((string)$key) === 'table_name') {
-                        $name = (string)$value;
-                        break;
-                    }
-                }
-                if ($name !== null) {
-                    $foundTables[] = $name;
-                }
-            }
-            // Filter out the table we're already looking for.
-            $mismatched = array_filter($foundTables, function ($t) use ($expectedTable) {
-                return strtolower($t) !== strtolower($expectedTable);
-            });
-            if (empty($mismatched)) {
-                return '';
-            }
-            $msg = ', PREFIX MISMATCH DETECTED: $wpdb->prefix is "' . ($wpdb->prefix ?? '')
-                . '" (expected table: ' . $expectedTable . ') but plugin tables exist as: '
-                . implode(', ', $mismatched) . '.';
-            if (function_exists('is_multisite') && is_multisite()) {
-                $msg .= ' This is a multisite installation — the other prefixes likely belong to other subsites (normal).';
-            } else {
-                $msg .= ' Check $table_prefix in wp-config.php.';
-            }
-            return $msg;
-        } catch (Throwable $e) { // allow-silent-catch: helper that builds a multisite-aware error message; if it itself fails the caller still gets the original error string
-            return '';
-        }
-    }
-
-    /**
-     * Detect whether a missing-table error references a different multisite subsite's prefix.
-     *
-     * On network-activated multisite, wp-cron can fire queries that reference tables
-     * from a different subsite's prefix (e.g. wp_4_abj404_* while current prefix is wp_).
-     * This is not an error — the other subsite's tables exist under its own prefix and
-     * will be serviced when that subsite's cron fires.
-     *
-     * @param string $errorText The MySQL error string.
-     * @return bool True if the error references a different multisite subsite's prefix.
-     */
-    public function isMultisiteCrossPrefixError(string $errorText): bool {
-        if ($errorText === '' || !function_exists('is_multisite') || !is_multisite()) {
-            return false;
-        }
-
-        global $wpdb;
-        // Extract table name from error. MySQL formats:
-        //   Table 'dbname.tablename' doesn't exist
-        //   Table `dbname`.`tablename` doesn't exist
-        if (!preg_match("/['\x60](?:[^'\x60]+\.)?([^'\x60]*abj404_[^'\x60]+)['\x60]/i", $errorText, $matches)) {
-            return false;
-        }
-        $referencedTable = strtolower($matches[1]);
-
-        $currentPrefix = strtolower($wpdb->prefix ?? 'wp_');
-        $basePrefix = strtolower($wpdb->base_prefix ?? 'wp_');
-
-        // If the table starts with the current prefix, it's genuinely missing for THIS site.
-        if (strpos($referencedTable, $currentPrefix . 'abj404_') === 0) {
-            return false;
-        }
-
-        // Check if it matches {base_prefix}{N}_abj404_ (a different subsite's table).
-        $pattern = '/^' . preg_quote($basePrefix, '/') . '(\d+)_abj404_/';
-        if (preg_match($pattern, $referencedTable)) {
-            return true;
-        }
-
-        return false;
     }
 }
