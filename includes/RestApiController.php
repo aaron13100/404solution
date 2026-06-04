@@ -5,65 +5,77 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * REST API controller for the abj404/v1 namespace.
+ * REST API route adapter for the abj404/v1 namespace.
  *
- * Registers routes for managing redirects, captured 404s, logs, stats,
- * and redirect simulation (POST /test).
- *
- * Authentication: WordPress REST nonce (cookie) or application passwords.
- * Permission: manage_options capability required for all endpoints.
+ * Registers routes and delegates request parsing, mutations, reads, and
+ * response shaping to focused collaborators.
  */
 class ABJ_404_Solution_RestApiController {
 
     const NAMESPACE = 'abj404/v1';
 
-    /** @var ABJ_404_Solution_ViewReadService */
-    private $viewRead;
-
-    /** @var ABJ_404_Solution_ViewBuildOrchestrator */
-    private $viewBuild;
-
-    /** @var ABJ_404_Solution_RedirectsRepository */
-    private $redirectsRepo;
-
-    /** @var ABJ_404_Solution_LogsRepository */
-    private $logsRepo;
-
-    /** @var ABJ_404_Solution_StatsRepositoryInterface */
-    private $statsRepo;
-
-    /** @var ABJ_404_Solution_DatabaseCore */
-    private $dbCore;
-
-    /** @var ABJ_404_Solution_PluginLogic */
+    /** @var object */
     private $logic;
 
+    /** @var ABJ_404_Solution_RestApiRequestParser */
+    private $requestParser;
+
+    /** @var ABJ_404_Solution_RestApiReadService */
+    private $readService;
+
+    /** @var ABJ_404_Solution_RestApiRedirectMutationService */
+    private $mutationService;
+
     /**
-     * @param object $daoOrLogic Legacy: DataAccess + PluginLogic. New: just PluginLogic.
+     * @param ABJ_404_Solution_DataAccess|ABJ_404_Solution_PluginLogic $daoOrLogic Legacy: DataAccess + PluginLogic. New: just PluginLogic.
      * @param ABJ_404_Solution_PluginLogic|null $logic
      * @param ABJ_404_Solution_StatsRepositoryInterface|null $statsRepository
      */
     public function __construct($daoOrLogic, $logic = null, $statsRepository = null) {
-        if ($logic !== null) {
+        $presenter = new ABJ_404_Solution_RestApiResponsePresenter();
+        $this->requestParser = new ABJ_404_Solution_RestApiRequestParser();
+
+        if ($logic !== null && $daoOrLogic instanceof ABJ_404_Solution_DataAccess) {
+            $dao = $daoOrLogic;
             $this->logic = $logic;
-            $this->viewRead = $daoOrLogic;
-            $this->viewBuild = $daoOrLogic;
-            $this->redirectsRepo = $daoOrLogic;
-            $this->logsRepo = (is_object($daoOrLogic) && method_exists($daoOrLogic, 'getLogsRepo'))
-                ? $daoOrLogic->getLogsRepo()
-                : $daoOrLogic;
-            $this->statsRepo = $this->resolveStatsRepository($statsRepository, $daoOrLogic);
-            $this->dbCore = $daoOrLogic;
-            return;
+            $viewRead = $dao;
+            $viewBuild = $dao;
+            $redirectsRepo = $dao;
+            $logsRepo = $dao->getLogsRepo();
+            $statsRepo = $this->resolveStatsRepository($statsRepository, $dao);
+            $dbCore = $dao;
         } else {
-            $this->logic = $daoOrLogic;
+            $this->logic = $daoOrLogic instanceof ABJ_404_Solution_PluginLogic
+                ? $daoOrLogic
+                : ABJ_404_Solution_PluginLogic::getInstance();
+            $fallbackDao = ABJ_404_Solution_DataAccess::getInstance();
+            $viewReadService = abj_service('view_read_service');
+            $viewRead = $viewReadService instanceof ABJ_404_Solution_ViewReadServiceInterface ? $viewReadService : $fallbackDao;
+            $viewBuildService = abj_service('view_build_orchestrator');
+            $viewBuild = $viewBuildService instanceof ABJ_404_Solution_ViewBuildOrchestratorInterface ? $viewBuildService : $fallbackDao;
+            $redirectsService = abj_service('redirects_repository');
+            $redirectsRepo = $redirectsService instanceof ABJ_404_Solution_RedirectsRepositoryInterface ? $redirectsService : $fallbackDao;
+            $logsService = abj_service('logs_repository');
+            $logsRepo = $logsService instanceof ABJ_404_Solution_LogsRepositoryInterface ? $logsService : $fallbackDao;
+            $statsRepo = $this->resolveStatsRepository($statsRepository, null);
+            $dbCoreService = abj_service('db_core');
+            $dbCore = $dbCoreService instanceof ABJ_404_Solution_DatabaseCoreInterface ? $dbCoreService : $fallbackDao;
         }
-        $this->viewRead = abj_service('view_read_service');
-        $this->viewBuild = abj_service('view_build_orchestrator');
-        $this->redirectsRepo = abj_service('redirects_repository');
-        $this->logsRepo = abj_service('logs_repository');
-        $this->statsRepo = $this->resolveStatsRepository($statsRepository, null);
-        $this->dbCore = abj_service('db_core');
+
+        $this->readService = new ABJ_404_Solution_RestApiReadService(
+            $viewRead,
+            $redirectsRepo,
+            $logsRepo,
+            $statsRepo,
+            $dbCore,
+            $this->logic,
+            $presenter
+        );
+        $this->mutationService = new ABJ_404_Solution_RestApiRedirectMutationService(
+            $redirectsRepo,
+            $viewBuild,
+            $presenter
+        );
     }
 
     /**
@@ -89,15 +101,11 @@ class ABJ_404_Solution_RestApiController {
     /** @return void */
     public function register() {
         add_action('rest_api_init', array($this, 'registerRoutes'));
-        // Hide the plugin namespace from the public REST index to reduce fingerprinting.
-        // Authenticated access is unaffected — routes still work normally.
         add_filter('rest_index_data', array($this, 'hideNamespaceFromIndex'));
     }
 
     /**
-     * Remove this plugin's namespace from the publicly-enumerable namespace list
-     * returned by GET /wp-json/. All routes remain accessible to authenticated
-     * requests; this only prevents unauthenticated namespace discovery.
+     * Remove this plugin's namespace from the publicly-enumerable namespace list.
      *
      * @param array<string,mixed> $data
      * @return array<string,mixed>
@@ -219,576 +227,105 @@ class ABJ_404_Solution_RestApiController {
     }
 
     /**
-     * GET /redirects — list active redirects with optional filtering and pagination.
-     *
      * @param \WP_REST_Request $request
      * @return \WP_REST_Response|\WP_Error
      */
     public function getRedirects($request) {
-        $rawPage    = $request->get_param('page');
-        $rawPerPage = $request->get_param('per_page');
-        $rawStatus  = $request->get_param('status');
-        $rawFilter  = $request->get_param('filter');
-
-        $page    = max(1, absint(is_scalar($rawPage) ? $rawPage : 1));
-        $perPage = min(100, max(1, absint(is_scalar($rawPerPage) ? $rawPerPage : 20)));
-        $status  = sanitize_text_field(is_scalar($rawStatus) ? (string)$rawStatus : '');
-        $filter  = sanitize_text_field(is_scalar($rawFilter) ? (string)$rawFilter : '');
-
-        // $sub is the tab/view name — always 'abj404_redirects' for this endpoint.
-        // $statusFilter is the numeric status filter (0 = all active, or a specific status).
-        $sub          = 'abj404_redirects';
-        $statusFilter = $this->statusStringToNumericFilter($status);
-        if ($statusFilter === null) {
-            // Unknown/typo status: reject rather than fail-open by broadening
-            // scope to "all active". The empty string still maps to '0' so the
-            // default "no filter" call shape continues to work.
-            return new \WP_Error(
-                'invalid_status',
-                __('Unknown status filter. Valid values are: manual, auto, regex (or omit for all active).', '404-solution'),
-                array('status' => 400)
-            );
+        $input = $this->requestParser->redirectsList($request);
+        if ($input instanceof \WP_Error) {
+            return $input;
         }
 
-        $tableOptions = array(
-            'orderby' => 'url',
-            'order'   => 'ASC',
-            'paged'   => $page,
-            'perpage' => $perPage,
-            'filter'  => $statusFilter,
-            'logsid'  => 0,
-            'sub'     => $sub,
-        );
-
-        $rows  = $this->viewRead->getRedirectsForView($sub, $tableOptions);
-        $total = $this->viewRead->getRedirectsForViewCount($sub, $tableOptions);
-
-        $rows = is_array($rows) ? $rows : array();
-
-        return new \WP_REST_Response(array(
-            'items'       => array_values($rows),
-            'total'       => intval($total),
-            'page'        => $page,
-            'per_page'    => $perPage,
-            'total_pages' => max(1, (int)ceil(intval($total) / $perPage)),
-        ), 200);
+        return $this->readService->redirects($input);
     }
 
     /**
-     * POST /redirects — create a manual redirect.
-     *
      * @param \WP_REST_Request $request
      * @return \WP_REST_Response|\WP_Error
      */
     public function createRedirect($request) {
-        $rawFrom  = $request->get_param('from');
-        $rawTo    = $request->get_param('to');
-        $rawCode  = $request->get_param('code');
-        $rawRegex = $request->get_param('regex');
-
-        $from  = trim(is_scalar($rawFrom) ? (string)$rawFrom : '');
-        $to    = trim(is_scalar($rawTo) ? (string)$rawTo : '');
-        $code  = absint(is_scalar($rawCode) ? $rawCode : 301);
-        $regex = (bool)$rawRegex;
-
-        if ($from === '') {
-            return new \WP_Error('missing_from', __('The "from" URL is required.', '404-solution'), array('status' => 400));
-        }
-        if ($to === '') {
-            return new \WP_Error('missing_to', __('The "to" URL is required.', '404-solution'), array('status' => 400));
-        }
-        if (!in_array($code, array(301, 302), true)) {
-            $code = 301;
+        $input = $this->requestParser->createRedirect($request);
+        if ($input instanceof \WP_Error) {
+            return $input;
         }
 
-        // Determine status and type.
-        $status   = $regex ? (string)ABJ404_STATUS_REGEX : (string)ABJ404_STATUS_MANUAL;
-        $resolved = $this->resolveDestinationType($to);
-        $type     = $resolved['type'];
-        $dest     = $resolved['dest'];
-
-        $insertedId = $this->redirectsRepo->setupRedirect(
-            \ABJ_404_Solution_RedirectSpec::create($from, $status, (string)$type, $dest, (string)$code, 0, 'rest-api')
-        );
-
-        if (!$insertedId) {
-            return new \WP_Error('create_failed', __('Failed to create redirect.', '404-solution'), array('status' => 500));
-        }
-
-        $this->viewBuild->invalidateViewDoneAndScheduleRebuild();
-
-        return new \WP_REST_Response(array(
-            'id'     => intval($insertedId),
-            'from'   => $from,
-            'to'     => $to,
-            'code'   => $code,
-            'status' => $status,
-        ), 201);
+        return $this->mutationService->create($input);
     }
 
     /**
-     * PUT /redirects/{id} — update an existing redirect.
-     *
      * @param \WP_REST_Request $request
      * @return \WP_REST_Response|\WP_Error
      */
     public function updateRedirect($request) {
-        $rawId    = $request->get_param('id');
-        $rawFrom  = $request->get_param('from');
-        $rawTo    = $request->get_param('to');
-        $rawCode  = $request->get_param('code');
-        $rawRegex = $request->get_param('regex');
-
-        $id   = absint(is_scalar($rawId) ? $rawId : 0);
-        $from = trim(is_scalar($rawFrom) ? (string)$rawFrom : '');
-        $to   = trim(is_scalar($rawTo) ? (string)$rawTo : '');
-        $code = ($rawCode !== null) ? absint(is_scalar($rawCode) ? $rawCode : 301) : 301;
-
-        if ($id <= 0) {
-            return new \WP_Error('invalid_id', __('Invalid redirect ID.', '404-solution'), array('status' => 400));
-        }
-        if ($from === '' || $to === '') {
-            return new \WP_Error('missing_params', __('Both "from" and "to" parameters are required.', '404-solution'), array('status' => 400));
-        }
-        if (!in_array($code, array(301, 302), true)) {
-            $code = 301;
+        $input = $this->requestParser->updateRedirect($request);
+        if ($input instanceof \WP_Error) {
+            return $input;
         }
 
-        $isRegex    = (bool)$rawRegex;
-        $statusType = $isRegex ? (string)ABJ404_STATUS_REGEX : (string)ABJ404_STATUS_MANUAL;
-        $resolved   = $this->resolveDestinationType($to);
-        $type       = $resolved['type'];
-        $dest       = $resolved['dest'];
-
-        $error = $this->redirectsRepo->updateRedirect(ABJ_404_Solution_RedirectUpdate::create(
-            $id,
-            (int)$type,
-            (string)$from,
-            (string)$dest,
-            (string)$code,
-            (string)$statusType
-        ));
-
-        if ($error !== '') {
-            return new \WP_Error('update_failed', $this->messageForRedirectUpdateError($error), array('status' => 500));
-        }
-
-        $this->viewBuild->invalidateViewDoneAndScheduleRebuild();
-
-        return new \WP_REST_Response(array(
-            'id'     => $id,
-            'from'   => $from,
-            'to'     => $to,
-            'code'   => $code,
-            'status' => $statusType,
-        ), 200);
+        return $this->mutationService->update($input);
     }
 
     /**
-     * DELETE /redirects/{id} — move redirect to trash (not permanent delete).
-     *
      * @param \WP_REST_Request $request
      * @return \WP_REST_Response|\WP_Error
      */
     public function deleteRedirect($request) {
-        $rawId = $request->get_param('id');
-        $id    = absint(is_scalar($rawId) ? $rawId : 0);
-
-        if ($id <= 0) {
-            return new \WP_Error('invalid_id', __('Invalid redirect ID.', '404-solution'), array('status' => 400));
+        $input = $this->requestParser->redirectId($request);
+        if ($input instanceof \WP_Error) {
+            return $input;
         }
 
-        $error = $this->redirectsRepo->moveRedirectsToTrash($id, 1);
-
-        if ($error !== '') {
-            return new \WP_Error('trash_failed', $error, array('status' => 500));
-        }
-
-        $this->viewBuild->invalidateViewDoneAndScheduleRebuild();
-
-        return new \WP_REST_Response(array('trashed' => true, 'id' => $id), 200);
+        return $this->mutationService->trash($input);
     }
 
     /**
-     * GET /captured — list captured 404 URLs with pagination.
-     *
      * @param \WP_REST_Request $request
-     * @return \WP_REST_Response|\WP_Error
+     * @return \WP_REST_Response
      */
     public function getCaptured($request) {
-        $rawPage    = $request->get_param('page');
-        $rawPerPage = $request->get_param('per_page');
-
-        $page    = max(1, absint(is_scalar($rawPage) ? $rawPage : 1));
-        $perPage = min(100, max(1, absint(is_scalar($rawPerPage) ? $rawPerPage : 20)));
-
-        $types = array(ABJ404_STATUS_CAPTURED, ABJ404_STATUS_IGNORED, ABJ404_STATUS_LATER);
-        $total = $this->viewRead->getRecordCount($types, 0);
-
-        $redirectsTable = $this->dbCore->doTableNameReplacements('{wp_abj404_redirects}');
-        $statusIn       = implode(', ', array_map('absint', $types));
-        $limitStart     = ($page - 1) * $perPage;
-
-        $queryResult = $this->dbCore->queryAndGetResults(
-            "SELECT id, url, status, type, final_dest, code, timestamp, disabled
-             FROM `{$redirectsTable}`
-             WHERE status IN ({$statusIn}) AND disabled = 0
-             ORDER BY url ASC
-             LIMIT %d, %d",
-            ['query_params' => [$limitStart, $perPage]]
-        );
-        $rows = is_array($queryResult['rows'] ?? null) ? $queryResult['rows'] : array();
-
-        return new \WP_REST_Response(array(
-            'items'       => array_values($rows),
-            'total'       => intval($total),
-            'page'        => $page,
-            'per_page'    => $perPage,
-            'total_pages' => max(1, (int)ceil(intval($total) / $perPage)),
-        ), 200);
+        return $this->readService->captured($this->requestParser->pagination($request));
     }
 
     /**
-     * POST /captured/{id}/redirect — promote a captured 404 to a manual redirect.
-     *
      * @param \WP_REST_Request $request
      * @return \WP_REST_Response|\WP_Error
      */
     public function createRedirectFromCaptured($request) {
-        $rawId   = $request->get_param('id');
-        $rawTo   = $request->get_param('to');
-        $rawCode = $request->get_param('code');
-
-        $id   = absint(is_scalar($rawId) ? $rawId : 0);
-        $to   = trim(is_scalar($rawTo) ? (string)$rawTo : '');
-        $code = absint(is_scalar($rawCode) ? $rawCode : 301);
-
-        if ($id <= 0) {
-            return new \WP_Error('invalid_id', __('Invalid captured 404 ID.', '404-solution'), array('status' => 400));
-        }
-        if ($to === '') {
-            return new \WP_Error('missing_to', __('The "to" URL is required.', '404-solution'), array('status' => 400));
-        }
-        if (!in_array($code, array(301, 302), true)) {
-            $code = 301;
+        $input = $this->requestParser->capturedRedirect($request);
+        if ($input instanceof \WP_Error) {
+            return $input;
         }
 
-        // Load the captured row to get the "from" URL.
-        $rows = $this->redirectsRepo->getRedirectsByIDs(array($id));
-        if (empty($rows)) {
-            return new \WP_Error('not_found', __('Captured 404 not found.', '404-solution'), array('status' => 404));
-        }
-        $row  = $rows[0];
-        $from = is_array($row) && isset($row['url']) && is_string($row['url']) ? $row['url'] : '';
-
-        if ($from === '') {
-            return new \WP_Error('bad_record', __('The captured 404 record has no URL.', '404-solution'), array('status' => 500));
-        }
-
-        $resolved = $this->resolveDestinationType($to);
-        $type     = $resolved['type'];
-        $dest     = $resolved['dest'];
-        $error    = $this->redirectsRepo->updateRedirect(ABJ_404_Solution_RedirectUpdate::create(
-            $id,
-            (int)$type,
-            (string)$from,
-            (string)$dest,
-            (string)$code,
-            (string)ABJ404_STATUS_MANUAL
-        ));
-
-        if ($error !== '') {
-            return new \WP_Error('update_failed', $this->messageForRedirectUpdateError($error), array('status' => 500));
-        }
-
-        $this->viewBuild->invalidateViewDoneAndScheduleRebuild();
-
-        return new \WP_REST_Response(array(
-            'id'   => $id,
-            'from' => $from,
-            'to'   => $to,
-            'code' => $code,
-        ), 200);
-    }
-
-    private function messageForRedirectUpdateError(string $errorCode): string {
-        if ($errorCode === 'bad_update_request') {
-            return __('Error: Bad data passed for update redirect request.', '404-solution');
-        }
-
-        return sprintf(
-            __('Error: Unable to update redirect data. Repository result: %s', '404-solution'),
-            esc_html($errorCode)
-        );
+        return $this->mutationService->promoteCaptured($input);
     }
 
     /**
-     * GET /stats — return summary statistics.
-     *
      * @param \WP_REST_Request $request
      * @return \WP_REST_Response|\WP_Error
      */
     public function getStats($request) {
-        try {
-            $snapshot = $this->statsRepo->getStatsDashboardSnapshot(true);
-            // getStatsDashboardSnapshot always returns array{refreshed_at, hash, data}.
-            $data = is_array($snapshot['data']) ? $snapshot['data'] : array();
-
-            $redirects = isset($data['redirects']) && is_array($data['redirects']) ? $data['redirects'] : array();
-            $captured  = isset($data['captured']) && is_array($data['captured']) ? $data['captured'] : array();
-
-            // Resolve each key once via `??` so the array access is bounded
-            // and Undefined-array-key warnings do not fire on a fresh-install
-            // state where the snapshot keys are absent. The ternary form
-            // `is_scalar($x['k'] ?? 0) ? $x['k'] : 0` reads the key twice
-            // and triggers the warning on the truthy branch.
-            $rAuto301   = $redirects['auto301']   ?? 0;
-            $rAuto302   = $redirects['auto302']   ?? 0;
-            $rManual301 = $redirects['manual301'] ?? 0;
-            $rManual302 = $redirects['manual302'] ?? 0;
-            $rTrashed   = $redirects['trashed']   ?? 0;
-            $cCaptured  = $captured['captured']   ?? 0;
-            $cIgnored   = $captured['ignored']    ?? 0;
-            $cTrashed   = $captured['trashed']    ?? 0;
-            $stats = array(
-                'redirects' => array(
-                    'auto_301'   => intval(is_scalar($rAuto301)   ? $rAuto301   : 0),
-                    'auto_302'   => intval(is_scalar($rAuto302)   ? $rAuto302   : 0),
-                    'manual_301' => intval(is_scalar($rManual301) ? $rManual301 : 0),
-                    'manual_302' => intval(is_scalar($rManual302) ? $rManual302 : 0),
-                    'trashed'    => intval(is_scalar($rTrashed)   ? $rTrashed   : 0),
-                ),
-                'captured' => array(
-                    'captured' => intval(is_scalar($cCaptured) ? $cCaptured : 0),
-                    'ignored'  => intval(is_scalar($cIgnored)  ? $cIgnored  : 0),
-                    'trashed'  => intval(is_scalar($cTrashed)  ? $cTrashed  : 0),
-                ),
-            );
-
-            return new \WP_REST_Response($stats, 200);
-
-        } catch (\Throwable $e) {
-            return new \WP_Error('stats_error', $e->getMessage(), array('status' => 500));
-        }
+        return $this->readService->stats();
     }
 
     /**
-     * GET /logs — return log entries with pagination.
-     *
      * @param \WP_REST_Request $request
-     * @return \WP_REST_Response|\WP_Error
+     * @return \WP_REST_Response
      */
     public function getLogs($request) {
-        $rawPage    = $request->get_param('page');
-        $rawPerPage = $request->get_param('per_page');
-
-        $page    = max(1, absint(is_scalar($rawPage) ? $rawPage : 1));
-        $perPage = min(100, max(1, absint(is_scalar($rawPerPage) ? $rawPerPage : 20)));
-
-        $tableOptions = array(
-            'orderby' => 'timestamp',
-            'order'   => 'DESC',
-            'paged'   => $page,
-            'perpage' => $perPage,
-            'logsid'  => 0,
-            'filter'  => '',
-        );
-
-        $rows  = $this->logsRepo->getLogRecords($tableOptions);
-        $total = $this->viewRead->getLogsCount(0);
-
-        $rows = is_array($rows) ? $rows : array();
-
-        return new \WP_REST_Response(array(
-            'items'       => array_values($rows),
-            'total'       => intval($total),
-            'page'        => $page,
-            'per_page'    => $perPage,
-            'total_pages' => max(1, (int)ceil(intval($total) / $perPage)),
-        ), 200);
+        return $this->readService->logs($this->requestParser->pagination($request));
     }
 
     /**
-     * POST /test — simulate URL matching: given a URL, return what redirect would fire.
-     *
      * @param \WP_REST_Request $request
      * @return \WP_REST_Response|\WP_Error
      */
     public function testRedirect($request) {
-        // Distinguish "parameter omitted" (legitimate 400; the caller broke
-        // the API contract) from "parameter present but whitespace-only"
-        // (treat as malformed input and return matched=false). The latter
-        // is the documented robust-input contract: malformed URLs (control
-        // chars, invalid schemes, extreme length, etc.) must produce a
-        // 200 / matched=false response, not a 5xx. Whitespace-only is one
-        // shape of malformed input.
-        //
-        // Inference: WP_REST_Request->get_param('url') returns null when
-        // the parameter was not present in body/query/json/url params and
-        // returns the raw value (including empty string) when it was. The
-        // null vs scalar split is the safe portable signal across WP
-        // versions and across the minimal test stub that doesn't expose
-        // has_param().
-        $rawUrl = $request->get_param('url');
-        if ($rawUrl === null) {
-            return new \WP_Error('missing_url', __('The "url" parameter is required.', '404-solution'), array('status' => 400));
-        }
-        $url = trim(is_scalar($rawUrl) ? (string)$rawUrl : '');
-
-        // Normalize to relative path for lookup. Empty $url falls through to
-        // the lookup as-is; the DAO returns no match and the endpoint emits
-        // matched=false at 200, which is the malformed-input contract.
-        $normalizedUrl = $this->logic->urlNormalization()->normalizeToRelativePath($url);
-        if (!is_string($normalizedUrl) || $normalizedUrl === '') {
-            $normalizedUrl = $url;
+        $input = $this->requestParser->testRedirect($request);
+        if ($input instanceof \WP_Error) {
+            return $input;
         }
 
-        // Check for an existing redirect stored in the database.
-        $redirect = $this->redirectsRepo->getExistingRedirectForURL($normalizedUrl);
-
-        if (!is_array($redirect) || empty($redirect) || !isset($redirect['id']) || !is_scalar($redirect['id']) || intval($redirect['id']) === 0) {
-            // Also check regex redirects.
-            $regexRedirects = $this->viewRead->getRedirectsWithRegEx();
-            $matchedRegex   = null;
-            if (is_array($regexRedirects)) {
-                foreach ($regexRedirects as $rr) {
-                    if (!is_array($rr) || empty($rr['url'])) {
-                        continue;
-                    }
-                    $pattern = is_string($rr['url']) ? $rr['url'] : '';
-                    // Patterns are stored without delimiters; wrap in {} like regexMatch() does.
-                    $delimited = '{' . $pattern . '}';
-                    if ($pattern !== '' && @preg_match($delimited, $normalizedUrl) === 1) {
-                        $matchedRegex = $rr;
-                        break;
-                    }
-                }
-            }
-
-            if ($matchedRegex !== null) {
-                $rrId   = is_scalar($matchedRegex['id'] ?? null) ? intval($matchedRegex['id']) : 0;
-                $rrDest = is_scalar($matchedRegex['final_dest'] ?? null) ? (string)$matchedRegex['final_dest'] : '';
-                $rrCode = is_scalar($matchedRegex['code'] ?? null) ? intval($matchedRegex['code']) : 301;
-
-                return new \WP_REST_Response(array(
-                    'matched'     => true,
-                    'type'        => 'regex',
-                    'redirect_id' => $rrId,
-                    'from'        => $normalizedUrl,
-                    'to'          => $rrDest,
-                    'code'        => $rrCode,
-                ), 200);
-            }
-
-            return new \WP_REST_Response(array(
-                'matched' => false,
-                'url'     => $normalizedUrl,
-            ), 200);
-        }
-
-        // A stored redirect was found.
-        $finalDest = isset($redirect['final_dest']) && is_string($redirect['final_dest']) ? $redirect['final_dest'] : '';
-
-        return new \WP_REST_Response(array(
-            'matched'     => true,
-            'type'        => 'stored',
-            'redirect_id' => intval(is_scalar($redirect['id']) ? $redirect['id'] : 0),
-            'from'        => $normalizedUrl,
-            'to'          => $finalDest,
-            'code'        => intval(is_scalar($redirect['code'] ?? 301) ? ($redirect['code'] ?? 301) : 301),
-            'status'      => intval(is_scalar($redirect['status'] ?? 0) ? ($redirect['status'] ?? 0) : 0),
-        ), 200);
+        return $this->readService->testRedirect($input);
     }
 
-    // -----------------------------------------------------------------------
-    // Private helpers
-    // -----------------------------------------------------------------------
-
-    /**
-     * Map a status string to the 'sub' value expected by getRedirectsForView.
-     *
-     * @param string $status
-     * @return string
-     */
-    /**
-     * Convert a user-facing status string to the numeric filter value used by
-     * getRedirectsForView/getRedirectsForViewCount.
-     *
-     * Contract:
-     *   - '' (empty / unspecified) -> '0' (all active redirects; the legitimate default)
-     *   - 'manual' / 'auto' / 'regex' (case-insensitive) -> corresponding numeric status
-     *   - anything else (typos, unknown values) -> null (caller MUST reject the request)
-     *
-     * The null return is the fail-closed signal: an unrecognized status string
-     * must not silently broaden scope to "all active". The previous
-     * implementation returned '0' from the default branch, which is a
-     * fail-open: a typo such as ?status=manul widened the result set instead
-     * of rejecting it. See design audit 2026-06-02 finding 150 (Fail-Closed).
-     *
-     * @param string $status
-     * @return string|null Numeric filter on success; null when the input is
-     *                    a non-empty unknown value (caller rejects).
-     */
-    private function statusStringToNumericFilter($status) {
-        if ($status === '') {
-            return '0';
-        }
-        switch (strtolower($status)) {
-            case 'manual':
-                return (string)ABJ404_STATUS_MANUAL;
-            case 'auto':
-                return (string)ABJ404_STATUS_AUTO;
-            case 'regex':
-                return (string)ABJ404_STATUS_REGEX;
-            default:
-                return null;
-        }
-    }
-
-    /**
-     * Resolve the redirect type and final destination for a given URL.
-     *
-     * ABJ404_TYPE_HOME (5) means "redirect to the home page" — permalinkInfoToArray()
-     * ignores the stored final_dest for this type. Internal paths must be resolved to
-     * a post ID (ABJ404_TYPE_POST) or stored as ABJ404_TYPE_EXTERNAL so the URL is
-     * preserved and used as-is by the redirect pipeline.
-     *
-     * @param string $to The destination URL provided by the API caller.
-     * @return array{type: int, dest: string}
-     */
-    private function resolveDestinationType($to) {
-        // External URLs (http/https).
-        if ($this->looksLikeExternalUrl($to)) {
-            return array('type' => (int)ABJ404_TYPE_EXTERNAL, 'dest' => $to);
-        }
-
-        // Home page: root path or empty string.
-        $trimmed = trim($to, '/ ');
-        if ($trimmed === '') {
-            return array('type' => (int)ABJ404_TYPE_HOME, 'dest' => (string)ABJ404_TYPE_HOME);
-        }
-
-        // Try to resolve the internal path to a WordPress post/page.
-        if (function_exists('url_to_postid')) {
-            $postId = url_to_postid(home_url($to));
-            if ($postId > 0) {
-                return array('type' => (int)ABJ404_TYPE_POST, 'dest' => (string)$postId);
-            }
-        }
-
-        // Unresolvable internal path — use EXTERNAL type so the URL is stored
-        // and used as-is by the redirect pipeline (FrontendRequestPipeline uses
-        // $redirectFinalDest directly for EXTERNAL type).
-        return array('type' => (int)ABJ404_TYPE_EXTERNAL, 'dest' => $to);
-    }
-
-    /**
-     * Return true if the URL starts with http:// or https://, indicating an external URL.
-     *
-     * @param string $url
-     * @return bool
-     */
-    private function looksLikeExternalUrl($url) {
-        return (strncasecmp($url, 'http://', 7) === 0 || strncasecmp($url, 'https://', 8) === 0);
-    }
 }

@@ -56,13 +56,23 @@ require_once __DIR__ . '/ViewBuildPendingException.php';
 require_once __DIR__ . '/DatabaseCoreInterface.php';
 require_once __DIR__ . '/DatabaseCore.php';
 
-/* Functions in this class should all reference one of the following variables or support functions that do.
- *      $wpdb, $_GET, $_POST, $_SERVER, $_.*
- * everything $wpdb related.
- * everything $_GET, $_POST, (etc) related.
- * Read the database, Store to the database,
+/**
+ * Legacy compatibility facade for database, repository, and view services.
+ *
+ * @method array<int|string, mixed> getRedirectsForView(string $sub, array<string, mixed> $tableOptions)
+ * @method int getRedirectsForViewCount(string $sub, array<string, mixed> $tableOptions)
+ * @method int getRecordCount(array<int, int|string> $types = array(), int $trashed = 0)
+ * @method array<int, array<string, mixed>> getRedirectsWithRegEx()
+ * @method int getLogsCount(int $logID)
+ * @method array<int, array<string, mixed>> getLogRecords(array<string, mixed> $tableOptions)
+ * @method array<string, mixed> queryAndGetResults(string $query, array<string, mixed> $options = array())
+ * @method string doTableNameReplacements(string $query)
+ * @method int setupRedirect(ABJ_404_Solution_RedirectSpec $spec)
+ * @method array<string, mixed> getExistingRedirectForURL(string $url)
+ * @method string updateRedirect(ABJ_404_Solution_RedirectUpdate $update)
+ * @method string moveRedirectsToTrash(int $id, int $trash)
+ * @method array<int, array<string, mixed>> getRedirectsByIDs(array<int, int> $ids)
  */
-
 class ABJ_404_Solution_DataAccess {
 
     const UPDATE_LOGS_HITS_TABLE_HOOK = 'abj404_updateLogsHitsTableAction';
