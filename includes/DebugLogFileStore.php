@@ -20,9 +20,21 @@ class ABJ_404_Solution_DebugLogFileStore {
     /** @var callable */
     private $sanitizeLogLine;
 
-    /** @param callable $sanitizeLogLine Receives a raw line and returns the sanitized line to write. */
-    public function __construct(callable $sanitizeLogLine) {
+    /** @var string */
+    private $debugFileKeyOptionName;
+
+    /** @var string */
+    private $lastSentLineOptionName;
+
+    /**
+     * @param callable $sanitizeLogLine Receives a raw line and returns the sanitized line to write.
+     * @param string $debugFileKeyOptionName Option key that stores the debug-file suffix.
+     * @param string $lastSentLineOptionName Option key that stores the last sent debug-log line.
+     */
+    public function __construct(callable $sanitizeLogLine, string $debugFileKeyOptionName, string $lastSentLineOptionName) {
         $this->sanitizeLogLine = $sanitizeLogLine;
+        $this->debugFileKeyOptionName = $debugFileKeyOptionName;
+        $this->lastSentLineOptionName = $lastSentLineOptionName;
     }
 
     /**
@@ -58,9 +70,9 @@ class ABJ_404_Solution_DebugLogFileStore {
             }
             $options = $optionsRepo->getOptions(true);
             $debugFileKey = null;
-            if (is_array($options) && array_key_exists(ABJ_404_Solution_Logging::DEBUG_FILE_KEY, $options)) {
-                $debugFileKey = is_string($options[ABJ_404_Solution_Logging::DEBUG_FILE_KEY])
-                    ? $options[ABJ_404_Solution_Logging::DEBUG_FILE_KEY] : null;
+            if (is_array($options) && array_key_exists($this->debugFileKeyOptionName, $options)) {
+                $debugFileKey = is_string($options[$this->debugFileKeyOptionName])
+                    ? $options[$this->debugFileKeyOptionName] : null;
             }
             if ($debugFileKey === null || trim($debugFileKey) === '') {
                 $this->deleteDebugFile();
@@ -70,7 +82,7 @@ class ABJ_404_Solution_DebugLogFileStore {
                     return 'abj404_debug.txt';
                 }
                 $debugFileKey = $syncUtils->uniqidReal();
-                $options[ABJ_404_Solution_Logging::DEBUG_FILE_KEY] = $debugFileKey;
+                $options[$this->debugFileKeyOptionName] = $debugFileKey;
                 if (method_exists($optionsRepo, 'updateOptions')) {
                     $optionsRepo->updateOptions($options);
                 }
@@ -131,7 +143,7 @@ class ABJ_404_Solution_DebugLogFileStore {
     public function removeLastSentErrorLineFromDatabase(): void {
         $optionsRepo = abj_service('options_repository');
         $options = $optionsRepo->getOptions(true);
-        $options[ABJ_404_Solution_Logging::LAST_SENT_LINE] = 0;
+        $options[$this->lastSentLineOptionName] = 0;
         $optionsRepo->updateOptions($options);
     }
 
@@ -159,7 +171,7 @@ class ABJ_404_Solution_DebugLogFileStore {
 
         $optionsRepo = abj_service('options_repository');
         $options = $optionsRepo->getOptions(true);
-        $options[ABJ_404_Solution_Logging::DEBUG_FILE_KEY] = null;
+        $options[$this->debugFileKeyOptionName] = null;
         $optionsRepo->updateOptions($options);
 
         return $allIsWell;

@@ -92,7 +92,9 @@ class ABJ_404_Solution_Logging {
     private function getDebugLogFileStore(): ABJ_404_Solution_DebugLogFileStore {
         if ($this->debugLogFileStore === null) {
             $this->debugLogFileStore = new ABJ_404_Solution_DebugLogFileStore(
-                array($this, 'sanitizeLogLine'));
+                array($this, 'sanitizeLogLine'),
+                self::DEBUG_FILE_KEY,
+                self::LAST_SENT_LINE);
         }
         return $this->debugLogFileStore;
     }

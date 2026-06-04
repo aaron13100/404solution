@@ -4,6 +4,10 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+require_once __DIR__ . '/ViewSnapshotStore.php';
+require_once __DIR__ . '/ViewWarmupStatePolicy.php';
+require_once __DIR__ . '/ViewWarmupDiagnostics.php';
+
 interface ABJ_404_Solution_ViewSnapshotCacheHostInterface {
     /** @param string $sub @param array<string, mixed> $tableOptions @return bool */
     public function viewTableSnapshotAvailable($sub, array $tableOptions): bool;
@@ -17,20 +21,20 @@ interface ABJ_404_Solution_ViewSnapshotCacheHostInterface {
 
 class ABJ_404_Solution_ViewSnapshotCache {
 
-    /** @var ABJ_404_Solution_DatabaseCore */
-    private $dbCore;
-
     /** @var ABJ_404_Solution_Logging */
     private $logger;
 
     /** @var ABJ_404_Solution_ViewSnapshotCacheHostInterface|null */
     private $host;
 
-    /** @var ABJ_404_Solution_ViewBuildOrchestratorInterface|null */
-    private $viewBuildOrchestrator;
+    /** @var ABJ_404_Solution_ViewSnapshotStore */
+    private $snapshotStore;
 
-    /** @var bool */
-    private static $viewSnapshotTableEnsured = false;
+    /** @var ABJ_404_Solution_ViewWarmupStatePolicy */
+    private $warmupStatePolicy;
+
+    /** @var ABJ_404_Solution_ViewWarmupDiagnostics */
+    private $warmupDiagnostics;
 
     /**
      * @param ABJ_404_Solution_DatabaseCore $dbCore
@@ -40,8 +44,10 @@ class ABJ_404_Solution_ViewSnapshotCache {
         ABJ_404_Solution_DatabaseCore $dbCore,
         $logger
     ) {
-        $this->dbCore = $dbCore;
         $this->logger = $logger;
+        $this->snapshotStore = new ABJ_404_Solution_ViewSnapshotStore($dbCore);
+        $this->warmupStatePolicy = new ABJ_404_Solution_ViewWarmupStatePolicy($dbCore);
+        $this->warmupDiagnostics = new ABJ_404_Solution_ViewWarmupDiagnostics($logger, $this->warmupStatePolicy);
     }
 
     /**
@@ -57,20 +63,12 @@ class ABJ_404_Solution_ViewSnapshotCache {
      * @return void
      */
     public function setViewBuildOrchestrator(ABJ_404_Solution_ViewBuildOrchestratorInterface $viewBuildOrchestrator): void {
-        $this->viewBuildOrchestrator = $viewBuildOrchestrator;
-    }
-
-    /** @return ABJ_404_Solution_ViewBuildOrchestratorInterface */
-    private function requireViewBuildOrchestrator(): ABJ_404_Solution_ViewBuildOrchestratorInterface {
-        if ($this->viewBuildOrchestrator === null) {
-            throw new \RuntimeException('ViewSnapshotCache requires ViewBuildOrchestrator (call setViewBuildOrchestrator first)'); // allow-raw-error: assertion, should never reach user
-        }
-        return $this->viewBuildOrchestrator;
+        $this->warmupStatePolicy->setViewBuildOrchestrator($viewBuildOrchestrator);
     }
 
     /** @param bool $value @return void */
     public static function setViewSnapshotTableEnsured(bool $value): void {
-        self::$viewSnapshotTableEnsured = $value;
+        ABJ_404_Solution_ViewSnapshotStore::setViewSnapshotTableEnsured($value);
     }
 
     /**
@@ -80,66 +78,22 @@ class ABJ_404_Solution_ViewSnapshotCache {
      * @return string
      */
     public function getViewSnapshotCacheKey($prefix, $sub, $tableOptions) {
-        // Cache key intentionally omits the mutation watermark. Including it
-        // produced a race on busy sites. getRedirectsForView read watermark
-        // value A, wrote the snapshot under key-with-A, then an incoming 404
-        // capture bumped the watermark to B before viewRowsSnapshotAvailable
-        // ran. The availability check read with key-with-B and missed,
-        // throwing "Warmup rows stage completed but the row snapshot was not
-        // available afterward." The cache TTL of 120 seconds bounds staleness
-        // to two minutes after any mutation, which is acceptable. The next
-        // admin page load picks up fresh data automatically.
-        $cacheShape = array(
-            'sub' => (string)$sub,
-            'filter' => is_scalar($tableOptions['filter'] ?? 0) ? (int)($tableOptions['filter'] ?? 0) : 0,
-            'orderby' => is_scalar($tableOptions['orderby'] ?? 'url') ? (string)($tableOptions['orderby'] ?? 'url') : 'url',
-            'order' => is_scalar($tableOptions['order'] ?? 'ASC') ? (string)($tableOptions['order'] ?? 'ASC') : 'ASC',
-            'paged' => is_scalar($tableOptions['paged'] ?? 1) ? (int)($tableOptions['paged'] ?? 1) : 1,
-            'perpage' => is_scalar($tableOptions['perpage'] ?? ABJ404_OPTION_DEFAULT_PERPAGE) ? (int)($tableOptions['perpage'] ?? ABJ404_OPTION_DEFAULT_PERPAGE) : ABJ404_OPTION_DEFAULT_PERPAGE,
-            'filterText' => is_scalar($tableOptions['filterText'] ?? '') ? (string)($tableOptions['filterText'] ?? '') : '',
-            'score_range' => (function ($v) { return is_string($v) ? $v : 'all'; })($tableOptions['score_range'] ?? 'all'),
-            'blog' => function_exists('get_current_blog_id') ? (int)get_current_blog_id() : 1,
-        );
-        $encoded = function_exists('wp_json_encode') ? wp_json_encode($cacheShape) : json_encode($cacheShape);
-        return $prefix . '_' . md5((string)$encoded);
-    }
-
-    /** @return void */
-    private function ensureViewSnapshotTableExists(): void {
-        if (self::$viewSnapshotTableEnsured) {
-            return;
-        }
-        self::$viewSnapshotTableEnsured = true;
-        $sqlFile = __DIR__ . '/sql/createViewCacheTable.sql';
-        $create = ABJ_404_Solution_FileSystemService::readFileContents($sqlFile);
-        if (is_string($create) && trim($create) !== '') {
-            $this->dbCore->queryAndGetResults($create, array('log_errors' => false));
-        }
-    }
-
-    /** @param string $cacheKey @return string */
-    private function getViewSnapshotLockOptionName(string $cacheKey): string {
-        return $this->dbCore->getLowercasePrefix() . 'abj404_view_cache_lock_' . md5((string)$cacheKey);
-    }
-
-    /** @return string */
-    private function getViewSnapshotWarmupGlobalLockKey(): string {
-        return 'abj404_view_table_warmup_global';
+        return $this->snapshotStore->getViewSnapshotCacheKey($prefix, $sub, $tableOptions);
     }
 
     /** @return bool */
     public function acquireViewSnapshotWarmupGlobalLock(): bool {
-        return $this->acquireViewSnapshotRefreshLock($this->getViewSnapshotWarmupGlobalLockKey());
+        return $this->snapshotStore->acquireViewSnapshotWarmupGlobalLock();
     }
 
     /** @return void */
     public function releaseViewSnapshotWarmupGlobalLock(): void {
-        $this->releaseViewSnapshotRefreshLock($this->getViewSnapshotWarmupGlobalLockKey());
+        $this->snapshotStore->releaseViewSnapshotWarmupGlobalLock();
     }
 
     /** @param string $cacheKey @return string */
     private function getViewWarmupStateOptionName(string $cacheKey): string {
-        return $this->dbCore->getLowercasePrefix() . 'abj404_view_warmup_' . md5((string)$cacheKey);
+        return $this->warmupStatePolicy->getViewWarmupStateOptionName($cacheKey);
     }
 
     /**
@@ -167,131 +121,21 @@ class ABJ_404_Solution_ViewSnapshotCache {
     }
 
     /**
-     * @param mixed $state
-     * @return array<string, mixed>
-     */
-    private function normalizeViewWarmupState($state): array {
-        $default = array(
-            'status' => 'idle',
-            'stage' => 'rows',
-            'stage_started_at' => 0,
-            'stage_completed_at' => 0,
-            'attempts_by_stage' => array('rows' => 0, 'count' => 0),
-            'timings_by_stage' => array(
-                'rows' => array('last_ms' => 0, 'max_ms' => 0, 'last_completed_at' => 0, 'last_error' => ''),
-                'count' => array('last_ms' => 0, 'max_ms' => 0, 'last_completed_at' => 0, 'last_error' => ''),
-            ),
-            'query_label' => 'getRedirectsForView',
-            'last_error' => '',
-            'logged_stale_by_stage' => array(),
-            'build_progress_at_stage_start' => array(),
-        );
-        if (!is_array($state)) {
-            return $default;
-        }
-        /** @var array<string, mixed> $out */
-        $out = array_merge($default, $state);
-        $status = is_string($out['status'] ?? null) ? $out['status'] : 'idle';
-        if (!in_array($status, array('idle', 'running', 'ready', 'blocked', 'error'), true)) {
-            $out['status'] = 'idle';
-        } else {
-            $out['status'] = $status;
-        }
-        $stage = is_string($out['stage'] ?? null) ? $out['stage'] : 'rows';
-        if (!in_array($stage, array('rows', 'count'), true)) {
-            $out['stage'] = 'rows';
-        } else {
-            $out['stage'] = $stage;
-        }
-        $stageStartedAt = $out['stage_started_at'] ?? 0;
-        $stageCompletedAt = $out['stage_completed_at'] ?? 0;
-        $out['stage_started_at'] = is_scalar($stageStartedAt) ? intval($stageStartedAt) : 0;
-        $out['stage_completed_at'] = is_scalar($stageCompletedAt) ? intval($stageCompletedAt) : 0;
-
-        $attempts = is_array($out['attempts_by_stage']) ? $out['attempts_by_stage'] : array();
-        $attemptsRows = $attempts['rows'] ?? 0;
-        $attemptsCount = $attempts['count'] ?? 0;
-        $out['attempts_by_stage'] = array(
-            'rows' => is_scalar($attemptsRows) ? intval($attemptsRows) : 0,
-            'count' => is_scalar($attemptsCount) ? intval($attemptsCount) : 0,
-        );
-
-        $timings = is_array($out['timings_by_stage']) ? $out['timings_by_stage'] : array();
-        $out['timings_by_stage'] = array(
-            'rows' => $this->normalizeStageTiming($timings['rows'] ?? null),
-            'count' => $this->normalizeStageTiming($timings['count'] ?? null),
-        );
-
-        $out['query_label'] = is_string($out['query_label'] ?? null) ? $out['query_label'] : $this->getViewWarmupStageQueryLabel((string)$out['stage']);
-        $out['last_error'] = is_string($out['last_error'] ?? null) ? $out['last_error'] : '';
-        $out['logged_stale_by_stage'] = is_array($out['logged_stale_by_stage']) ? $out['logged_stale_by_stage'] : array();
-        $out['build_progress_at_stage_start'] = is_array($out['build_progress_at_stage_start'] ?? null)
-            ? $out['build_progress_at_stage_start'] : array();
-        return $out;
-    }
-
-    /**
      * @param mixed $timing
      * @return array<string, mixed>
      */
     private function normalizeStageTiming($timing): array {
-        $default = array('last_ms' => 0, 'max_ms' => 0, 'last_completed_at' => 0, 'last_error' => '');
-        if (!is_array($timing)) {
-            return $default;
-        }
-        $lastMs = $timing['last_ms'] ?? 0;
-        $maxMs = $timing['max_ms'] ?? 0;
-        $lastCompletedAt = $timing['last_completed_at'] ?? 0;
-        $lastError = $timing['last_error'] ?? '';
-        return array(
-            'last_ms' => is_scalar($lastMs) ? intval($lastMs) : 0,
-            'max_ms' => is_scalar($maxMs) ? intval($maxMs) : 0,
-            'last_completed_at' => is_scalar($lastCompletedAt) ? intval($lastCompletedAt) : 0,
-            'last_error' => is_string($lastError) ? $lastError : '',
-        );
+        return $this->warmupStatePolicy->normalizeStageTiming($timing);
     }
 
     /** @param string $stage @return string */
     private function getViewWarmupStageQueryLabel(string $stage): string {
-        return $stage === 'count' ? 'getRedirectsForViewCount' : 'getRedirectsForView';
-    }
-
-    /** @param string $stage @return int */
-    private function getViewWarmupStageNumber(string $stage): int {
-        return $stage === 'count' ? 2 : 1;
+        return $this->warmupStatePolicy->getViewWarmupStageQueryLabel($stage);
     }
 
     /** @return array<string, int> */
     public function getViewBuildProgressFingerprint(): array {
-        return array(
-            'started_at' => $this->requireViewBuildOrchestrator()->readBuildProgressOption('started_at', 0),
-            'current_stage' => $this->requireViewBuildOrchestrator()->readBuildProgressOption('current_stage', 0),
-            'last_started_stage' => $this->requireViewBuildOrchestrator()->readBuildProgressOption('last_started_stage', 0),
-            'last_completed_stage' => $this->requireViewBuildOrchestrator()->readBuildProgressOption('last_completed_stage', 0),
-            's2_high_water' => $this->requireViewBuildOrchestrator()->readBuildProgressOption('s2_high_water', 0),
-            's4_high_water' => $this->requireViewBuildOrchestrator()->readBuildProgressOption('s4_high_water', 0),
-            's5_high_water' => $this->requireViewBuildOrchestrator()->readBuildProgressOption('s5_high_water', 0),
-        );
-    }
-
-    /**
-     * @param mixed $baseline
-     * @param array<string, int>|null $current
-     * @return bool
-     */
-    private function viewBuildProgressAdvancedSince($baseline, ?array $current = null): bool {
-        if (!is_array($baseline) || empty($baseline)) {
-            return false;
-        }
-        $current = $current ?? $this->getViewBuildProgressFingerprint();
-        foreach (array('current_stage', 's2_high_water', 's4_high_water', 's5_high_water') as $key) {
-            $before = is_scalar($baseline[$key] ?? null) ? intval($baseline[$key]) : 0;
-            $after = is_scalar($current[$key] ?? null) ? intval($current[$key]) : 0;
-            if ($after > $before) {
-                return true;
-            }
-        }
-        return false;
+        return $this->warmupStatePolicy->getViewBuildProgressFingerprint();
     }
 
     /**
@@ -301,16 +145,7 @@ class ABJ_404_Solution_ViewSnapshotCache {
      * @return bool
      */
     private function forgiveWarmupAttemptIfBuildProgressed(array &$state, string $stage, ?array $currentProgress = null): bool {
-        if (!$this->viewBuildProgressAdvancedSince($state['build_progress_at_stage_start'] ?? array(), $currentProgress)) {
-            return false;
-        }
-        $attempts = is_array($state['attempts_by_stage'] ?? null) ? $state['attempts_by_stage'] : array('rows' => 0, 'count' => 0);
-        $rawAttempt = $attempts[$stage] ?? 0;
-        $attempts[$stage] = max(0, (is_scalar($rawAttempt) ? intval($rawAttempt) : 0) - 1);
-        $state['attempts_by_stage'] = $attempts;
-        $state['build_progress_at_stage_start'] = is_array($currentProgress)
-            ? $currentProgress : $this->getViewBuildProgressFingerprint();
-        return true;
+        return $this->warmupStatePolicy->forgiveWarmupAttemptIfBuildProgressed($state, $stage, $currentProgress);
     }
 
     /**
@@ -318,10 +153,7 @@ class ABJ_404_Solution_ViewSnapshotCache {
      * @return array<string, mixed>
      */
     private function getViewWarmupState(string $optionName): array {
-        if (!function_exists('get_option')) {
-            return $this->normalizeViewWarmupState(null);
-        }
-        return $this->normalizeViewWarmupState(get_option($optionName, array()));
+        return $this->warmupStatePolicy->getViewWarmupState($optionName);
     }
 
     /**
@@ -330,11 +162,7 @@ class ABJ_404_Solution_ViewSnapshotCache {
      * @return void
      */
     private function setViewWarmupState(string $optionName, array $state): void {
-        if (function_exists('update_option')) {
-            update_option($optionName, $state, false);
-        } else if (function_exists('add_option')) {
-            add_option($optionName, $state, '', false);
-        }
+        $this->warmupStatePolicy->setViewWarmupState($optionName, $state);
     }
 
     /**
@@ -547,31 +375,7 @@ class ABJ_404_Solution_ViewSnapshotCache {
      * @return array<string, mixed>
      */
     private function formatViewWarmupResponse(array $state, bool $ready, array $extra = array()): array {
-        $stageValue = $state['stage'] ?? 'rows';
-        $stage = is_string($stageValue) ? $stageValue : 'rows';
-        $statusValue = $state['status'] ?? 'idle';
-        $status = is_string($statusValue) ? $statusValue : 'idle';
-        $stageStartedAt = $state['stage_started_at'] ?? 0;
-        $stageCompletedAt = $state['stage_completed_at'] ?? 0;
-        $lastError = $state['last_error'] ?? '';
-        $response = array(
-            'status' => $status,
-            'ready' => $ready || $status === 'ready',
-            'stage' => $stage,
-            'stageNumber' => $this->getViewWarmupStageNumber($stage),
-            'queryLabel' => $this->getViewWarmupStageQueryLabel($stage),
-            'stageStartedAt' => is_scalar($stageStartedAt) ? intval($stageStartedAt) : 0,
-            'stageCompletedAt' => is_scalar($stageCompletedAt) ? intval($stageCompletedAt) : 0,
-            'attemptsByStage' => is_array($state['attempts_by_stage'] ?? null) ? $state['attempts_by_stage'] : array(),
-            'timingsByStage' => is_array($state['timings_by_stage'] ?? null) ? $state['timings_by_stage'] : array(),
-            'lastError' => is_string($lastError) ? $lastError : '',
-        );
-        foreach ($extra as $key => $value) {
-            if (is_string($key)) {
-                $response[$key] = $value;
-            }
-        }
-        return $response;
+        return $this->warmupStatePolicy->formatViewWarmupResponse($state, $ready, $extra);
     }
 
     /**
@@ -583,24 +387,7 @@ class ABJ_404_Solution_ViewSnapshotCache {
      * @return void
      */
     private function logStaleViewWarmupStage(string $sub, array $tableOptions, array $state, int $elapsed, int $attemptCount): void {
-        $details = array(
-            'stage' => is_string($state['stage'] ?? null) ? $state['stage'] : '',
-            'query_label' => is_string($state['query_label'] ?? null) ? $state['query_label'] : '',
-            'elapsed_seconds' => $elapsed,
-            'subpage' => $sub,
-            'attempt_count' => $attemptCount,
-            'table_shape' => array(
-                'filter' => $tableOptions['filter'] ?? null,
-                'orderby' => $tableOptions['orderby'] ?? null,
-                'order' => $tableOptions['order'] ?? null,
-                'paged' => $tableOptions['paged'] ?? null,
-                'perpage' => $tableOptions['perpage'] ?? null,
-                'filterText_length' => is_string($tableOptions['filterText'] ?? null) ? strlen($tableOptions['filterText']) : 0,
-                'score_range' => $tableOptions['score_range'] ?? null,
-            ),
-        );
-        $message = 'Table cache warmup stage appears stalled: ' . json_encode($details);
-        $this->logger->warn($message);
+        $this->warmupDiagnostics->logStaleViewWarmupStage($sub, $tableOptions, $state, $elapsed, $attemptCount);
     }
 
     /**
@@ -610,120 +397,22 @@ class ABJ_404_Solution_ViewSnapshotCache {
      * @return void
      */
     private function logViewWarmupFailure(string $sub, array $tableOptions, array $state): void {
-        $details = array(
-            'status' => is_string($state['status'] ?? null) ? $state['status'] : '',
-            'stage' => is_string($state['stage'] ?? null) ? $state['stage'] : '',
-            'stage_number' => $this->getViewWarmupStageNumber(is_string($state['stage'] ?? null) ? $state['stage'] : 'rows'),
-            'query_label' => is_string($state['query_label'] ?? null) ? $state['query_label'] : '',
-            'last_error' => is_string($state['last_error'] ?? null) ? $state['last_error'] : '',
-            'subpage' => $sub,
-            'attempts_by_stage' => is_array($state['attempts_by_stage'] ?? null) ? $state['attempts_by_stage'] : array(),
-            'table_shape' => array(
-                'filter' => $tableOptions['filter'] ?? null,
-                'orderby' => $tableOptions['orderby'] ?? null,
-                'order' => $tableOptions['order'] ?? null,
-                'paged' => $tableOptions['paged'] ?? null,
-                'perpage' => $tableOptions['perpage'] ?? null,
-                'filterText_length' => is_string($tableOptions['filterText'] ?? null) ? strlen($tableOptions['filterText']) : 0,
-                'score_range' => $tableOptions['score_range'] ?? null,
-            ),
-        );
-        $message = 'Table cache warmup failed: ' . json_encode($details);
-        $this->logger->errorMessage($message);
+        $this->warmupDiagnostics->logViewWarmupFailure($sub, $tableOptions, $state);
     }
 
     /** @param string $lastError @return bool */
     private function isViewWarmupErrorDiagnostic(string $lastError): bool {
-        if ($lastError === '') {
-            return false;
-        }
-        return $lastError !== 'Warmup stage reached the retry limit.'
-            && $lastError !== 'Previous warmup stage was killed or stalled too many times.';
-    }
-
-    /** @param string $cacheKey @return bool */
-    private function isViewSnapshotRefreshLocked(string $cacheKey): bool {
-        if (!function_exists('get_option')) {
-            return false;
-        }
-        $lockKey = $this->getViewSnapshotLockOptionName($cacheKey);
-        $lockValue = get_option($lockKey, false);
-        if ($lockValue === false || $lockValue === '' || $lockValue === null) {
-            return false;
-        }
-        $lockTs = is_numeric($lockValue) ? (int)$lockValue : 0;
-        if ($lockTs > 0 && (time() - $lockTs) > ABJ_404_Solution_ViewReadRuntimeState::VIEW_SNAPSHOT_REFRESH_COOLDOWN_SECONDS) {
-            if (function_exists('delete_option')) {
-                delete_option($lockKey);
-            }
-            return false;
-        }
-        return true;
-    }
-
-    /** @param string $cacheKey @return bool */
-    private function acquireViewSnapshotRefreshLock(string $cacheKey): bool {
-        if (!function_exists('add_option')) {
-            return true;
-        }
-        if ($this->isViewSnapshotRefreshLocked($cacheKey)) {
-            return false;
-        }
-        $lockKey = $this->getViewSnapshotLockOptionName($cacheKey);
-        return (bool)add_option($lockKey, time(), '', false);
-    }
-
-    /** @param string $cacheKey @return void */
-    private function releaseViewSnapshotRefreshLock(string $cacheKey): void {
-        if (function_exists('delete_option')) {
-            delete_option($this->getViewSnapshotLockOptionName($cacheKey));
-        }
-    }
-
-    /**
-     * @param mixed $payload
-     * @return array<string, mixed>|null
-     */
-    private function decodeSnapshotPayload($payload) {
-        if (!is_string($payload) || $payload === '') {
-            return null;
-        }
-        $decoded = json_decode($payload, true);
-        return is_array($decoded) ? $decoded : null;
+        return $this->warmupStatePolicy->isViewWarmupErrorDiagnostic($lastError);
     }
 
     /**
      * @param string $cacheKey
      * @param bool $allowExpired
      * @param bool $respectCooldown
-     * @return array<string, mixed>|null
+     * @return array<int|string, mixed>|null
      */
     public function getViewRowsSnapshotFromTable(string $cacheKey, bool $allowExpired = false, bool $respectCooldown = false) {
-        $this->ensureViewSnapshotTableExists();
-        $query = "SELECT payload, refreshed_at, expires_at
-            FROM {wp_abj404_view_cache}
-            WHERE cache_key = %s LIMIT 1";
-        $result = $this->dbCore->queryAndGetResults($query, array('query_params' => array($cacheKey), 'log_errors' => true));
-        $resultRows = $result['rows'] ?? array();
-        if (!is_array($resultRows) || empty($resultRows) || !is_array($resultRows[0])) {
-            return null;
-        }
-        $row = $resultRows[0];
-        $expiresAtRaw = $row['expires_at'] ?? 0;
-        $refreshedAtRaw = $row['refreshed_at'] ?? 0;
-        $expiresAt = is_scalar($expiresAtRaw) ? intval($expiresAtRaw) : 0;
-        $refreshedAt = is_scalar($refreshedAtRaw) ? intval($refreshedAtRaw) : 0;
-        $now = time();
-        $isFresh = ($expiresAt > $now);
-        $recentEnough = ($refreshedAt > 0 && ($now - $refreshedAt) <= ABJ_404_Solution_ViewReadRuntimeState::VIEW_SNAPSHOT_REFRESH_COOLDOWN_SECONDS);
-        if (!$allowExpired && !$isFresh) {
-            return null;
-        }
-        if ($respectCooldown && !$isFresh && !$recentEnough) {
-            return null;
-        }
-        $payload = $row['payload'] ?? '';
-        return $this->decodeSnapshotPayload(is_scalar($payload) ? (string)$payload : '');
+        return $this->snapshotStore->getViewRowsSnapshotFromTable($cacheKey, $allowExpired, $respectCooldown);
     }
 
     /**
@@ -734,69 +423,16 @@ class ABJ_404_Solution_ViewSnapshotCache {
      * @return void
      */
     public function setViewRowsSnapshotToTable(string $cacheKey, string $sub, $rows, int $ttlSeconds): void {
-        if (!is_array($rows)) {
-            return;
-        }
-        $this->ensureViewSnapshotTableExists();
-        $encoded = function_exists('wp_json_encode') ? wp_json_encode($rows) : json_encode($rows);
-        if (!is_string($encoded)) {
-            return;
-        }
-        $bytes = strlen($encoded);
-        if ($bytes > ABJ_404_Solution_ViewReadRuntimeState::VIEW_SNAPSHOT_MAX_PAYLOAD_BYTES) {
-            return;
-        }
-        $now = time();
-        $expiresAt = $now + max(1, intval($ttlSeconds));
-        $query = "INSERT INTO {wp_abj404_view_cache}
-            (cache_key, subpage, payload, payload_bytes, refreshed_at, expires_at, updated_at)
-            VALUES (%s, %s, %s, %d, %d, %d, %d)
-            ON DUPLICATE KEY UPDATE
-                subpage = VALUES(subpage),
-                payload = VALUES(payload),
-                payload_bytes = VALUES(payload_bytes),
-                refreshed_at = VALUES(refreshed_at),
-                expires_at = VALUES(expires_at),
-                updated_at = VALUES(updated_at)";
-        $this->dbCore->queryAndGetResults($query, array(
-            'query_params' => array($cacheKey, (string)$sub, $encoded, $bytes, $now, $expiresAt, $now),
-            'log_errors' => false,
-        ));
-        $this->cleanupExpiredViewSnapshotRowsIfNeeded();
+        $this->snapshotStore->setViewRowsSnapshotToTable($cacheKey, $sub, $rows, $ttlSeconds);
     }
 
     /**
      * @param string $cacheKey
      * @param int $timeoutMs
-     * @return array<string, mixed>|null
+     * @return array<int|string, mixed>|null
      */
     public function waitForViewRowsSnapshotFromTable(string $cacheKey, int $timeoutMs = 4000) {
-        $deadline = microtime(true) + (max(100, intval($timeoutMs)) / 1000);
-        while (microtime(true) < $deadline) {
-            $rows = $this->getViewRowsSnapshotFromTable($cacheKey, false, false);
-            if (is_array($rows)) {
-                return $rows;
-            }
-            usleep(100000);
-        }
-        return null;
-    }
-
-    /** @return void */
-    private function cleanupExpiredViewSnapshotRowsIfNeeded(): void {
-        if (!function_exists('get_transient') || !function_exists('set_transient')) {
-            return;
-        }
-        $marker = get_transient('abj404_view_cache_cleanup_marker');
-        if ($marker !== false) {
-            return;
-        }
-        set_transient('abj404_view_cache_cleanup_marker', time(), 1800);
-        $query = "DELETE FROM {wp_abj404_view_cache} WHERE expires_at < %d";
-        $this->dbCore->queryAndGetResults($query, array(
-            'query_params' => array(time() - ABJ_404_Solution_ViewReadRuntimeState::VIEW_SNAPSHOT_REFRESH_COOLDOWN_SECONDS),
-            'log_errors' => false,
-        ));
+        return $this->snapshotStore->waitForViewRowsSnapshotFromTable($cacheKey, $timeoutMs);
     }
 
 }
