@@ -369,6 +369,18 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
         }
     }
 
+    /**
+     * Retry a query after the server rejects the MariaDB SET STATEMENT timeout wrapper.
+     *
+     * @param string $query Passed by reference; mutated to the unwrapped query on success.
+     * @param array<string, mixed> $result Passed by reference; updated with retry result fields.
+     * @param 'OBJECT'|'OBJECT_K'|'ARRAY_A'|'ARRAY_N' $resultType wpdb output type for get_results().
+     * @return void
+     */
+    public function retryWithoutSetStatementWrapper(string &$query, array &$result, string $resultType): void {
+        $this->queryTimeoutManager->retryWithoutSetStatementWrapper($query, $result, $resultType);
+    }
+
     // =========================================================================
     // Special-case public surface: methods with local state or lazy init that
     // cannot be a pure pass-through.

@@ -361,72 +361,7 @@ class ABJ_404_Solution_DataAccess {
 
     /** @return ABJ_404_Solution_DatabaseCore */
     private function createDbCore() {
-        if (get_class($this) !== __CLASS__
-            && method_exists($this, 'queryAndGetResults')
-            && (new \ReflectionMethod($this, 'queryAndGetResults'))->getDeclaringClass()->getName() !== __CLASS__) {
-            $owner = $this;
-            return new class($owner, $this->f, $this->logger) extends ABJ_404_Solution_DatabaseCore {
-            /** @var ABJ_404_Solution_DataAccess */
-            private $owner;
-
-            /**
-             * @param ABJ_404_Solution_DataAccess $owner
-             * @param ABJ_404_Solution_Functions|null $functions
-             * @param ABJ_404_Solution_Logging|null $logger
-             */
-            public function __construct($owner, $functions, $logger) {
-                $this->owner = $owner;
-                parent::__construct($functions, $logger);
-            }
-
-            public function queryAndGetResults($query, $options = array()): array {
-                $result = $this->owner->invokeSubclassOverride('queryAndGetResults', array($query, $options));
-                return is_array($result) ? $result : array();
-            }
-
-            public function doTableNameReplacements($query): string {
-                if ($this->owner->hasSubclassOverride('doTableNameReplacements')) {
-                    $result = $this->owner->invokeSubclassOverride('doTableNameReplacements', array($query));
-                    return is_scalar($result) ? (string)$result : '';
-                }
-                return parent::doTableNameReplacements($query);
-            }
-
-            public function tableExists($tableName): bool {
-                if ($this->owner->hasSubclassOverride('tableExists')) {
-                    return (bool)$this->owner->invokeSubclassOverride('tableExists', array($tableName));
-                }
-                return parent::tableExists($tableName);
-            }
-
-            public function getLowercasePrefix(): string {
-                if ($this->owner->hasSubclassOverride('getLowercasePrefix')) {
-                    $result = $this->owner->invokeSubclassOverride('getLowercasePrefix');
-                    return is_scalar($result) ? (string)$result : '';
-                }
-                return parent::getLowercasePrefix();
-            }
-        };
-        }
-
         return new ABJ_404_Solution_DatabaseCore($this->f, $this->logger);
-    }
-
-    /** @param string $method @return bool */
-    public function hasSubclassOverride(string $method): bool {
-        if (get_class($this) === __CLASS__ || !method_exists($this, $method)) {
-            return false;
-        }
-        return (new \ReflectionMethod($this, $method))->getDeclaringClass()->getName() !== __CLASS__;
-    }
-
-    /**
-     * @param string $method
-     * @param array<int, mixed> $args
-     * @return mixed
-     */
-    public function invokeSubclassOverride(string $method, array $args = array()) {
-        return (new \ReflectionMethod($this, $method))->invokeArgs($this, $args);
     }
 
     /** @return ABJ_404_Solution_DatabaseCore */

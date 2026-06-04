@@ -346,6 +346,26 @@ function abj_service($name) {
         );
     }
 
+    if (class_exists('ABJ_404_Solution_DataAccess')) {
+        $dataAccessServiceGetters = array(
+            'db_core' => 'getDbCore',
+            'content_repository' => 'getContentRepo',
+            'redirects_repository' => 'getRedirectsRepo',
+            'redirects_retention_service' => 'getRetentionService',
+            'logs_repository' => 'getLogsRepo',
+            'stats_repository' => 'getStatsRepo',
+            'view_read_service' => 'getViewReadService',
+            'view_build_orchestrator' => 'getViewBuildOrchestrator',
+        );
+        if (isset($dataAccessServiceGetters[$name])) {
+            $dataAccess = ABJ_404_Solution_DataAccess::getInstance();
+            $getter = $dataAccessServiceGetters[$name];
+            if (method_exists($dataAccess, $getter)) {
+                return $dataAccess->$getter();
+            }
+        }
+    }
+
     // Inverse of the registration map in bootstrap.php. Lets a caller resolve
     // a service even when the container hasn't been populated for this
     // request (typically: a unit test that called
