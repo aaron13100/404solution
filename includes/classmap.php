@@ -157,7 +157,6 @@ return array(
     'ABJ_404_Solution_PluginUpdateMetadataRepository' => $base . 'includes/PluginUpdateMetadataRepository.php',
     'ABJ_404_Solution_DataAccess' => $base . 'includes/DataAccess.php',
     'ABJ_404_Solution_ViewBuildConfig' => $base . 'includes/ViewBuildConfig.php',
-    'ABJ_404_Solution_MutationDataSignature' => $base . 'includes/MutationDataSignature.php',
     'ABJ_404_Solution_EmailDigest' => $base . 'includes/EmailDigest.php',
     'ABJ_404_Solution_DatabaseUpgradesEtc' => $base . 'includes/DatabaseUpgradesEtc.php',
     'ABJ_404_Solution_ErrorHandler' => $base . 'includes/ErrorHandler.php',

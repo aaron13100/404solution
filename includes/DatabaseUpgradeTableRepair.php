@@ -50,19 +50,17 @@ class ABJ_404_Solution_DatabaseUpgradeTableRepair extends ABJ_404_Solution_Datab
 	$this->recoverMissingLogsHitsTable();
 
 	// t_260523_224315_207: drop the deprecated mutation watermark side
-	// table. Replaced by ABJ_404_Solution_MutationDataSignature which
-	// derives the "did anything change?" signal from data already in
-	// wp_abj404_redirects. Idempotent DROP IF EXISTS so a fresh install
-	// (no legacy table) and a re-upgrade (already dropped) are both
-	// no-ops. See docs/design-lesson-watermark-overengineering.md.
+	// table. Redirect changes now use direct rebuild invalidation instead
+	// of a separate mutation-signal subsystem. Idempotent DROP IF EXISTS so
+	// a fresh install (no legacy table) and a re-upgrade (already dropped)
+	// are both no-ops. See docs/design-lesson-watermark-overengineering.md.
 	$this->dropDeprecatedMutationWatermarkTable();
     }
 
     /**
      * Drop the deprecated `wp_abj404_mutation_watermark` table. The table
      * held a single-row counter that the pre-removal watermark primitive
-     * incremented on every mutation; the post-removal data-signature
-     * reader does not need it. Safe to call on every upgrade -- the
+     * incremented on every mutation. Safe to call on every upgrade -- the
      * statement is idempotent and the table cannot reappear because no
      * production code creates it any more.
      *

@@ -11,9 +11,8 @@ if (!defined('ABSPATH')) {
  * and restart the build from scratch" caller (the diagnostic AJAX
  * `?abj404_force_view_rebuild=1` path, the admin "rebuild now" button, the
  * WP-CLI rebuild commands). External callers now go through either the
- * source-mutation signal (derived implicitly from
- * {@see ABJ_404_Solution_MutationDataSignature}) or this primitive
- * (explicit restart-from-scratch).
+ * source-mutation paths (which call rebuild invalidation directly) or
+ * this primitive (explicit restart-from-scratch).
  *
  * The contract is exactly five bullets:
  *
