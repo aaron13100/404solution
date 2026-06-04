@@ -1,0 +1,6 @@
+<script>
+   var d = new Date();{delete_comment}
+   d.setTime(d.getTime() - (60 * 5));
+   var expires = "expires="+ d.toUTCString();
+   document.cookie = "{cookie_name}=;" + expires + ";path=/";
+</script>
