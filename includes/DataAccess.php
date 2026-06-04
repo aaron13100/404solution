@@ -345,60 +345,14 @@ class ABJ_404_Solution_DataAccess {
     }
 
     /**
-     * @param mixed $logging
+     * @param ABJ_404_Solution_Logging|null $logging
      * @return ABJ_404_Solution_Logging
      */
     private function resolveLogger($logging) {
         if ($logging instanceof ABJ_404_Solution_Logging) {
             return $logging;
         }
-        if (is_object($logging) && (method_exists($logging, 'debugMessage') || method_exists($logging, 'errorMessage'))) {
-            return $this->createLoggerAdapter($logging);
-        }
         return abj_service('logging');
-    }
-
-    /**
-     * @param object $logging
-     * @return ABJ_404_Solution_Logging
-     */
-    private function createLoggerAdapter($logging) {
-        return new class($logging) extends ABJ_404_Solution_Logging {
-            /** @var object */
-            private $delegate;
-
-            /** @param object $delegate */
-            public function __construct($delegate) {
-                $this->delegate = $delegate;
-            }
-
-            public function debugMessage(string $message, $e = null): void {
-                $this->callDelegate('debugMessage', array($message, $e));
-            }
-
-            public function infoMessage(string $message): void {
-                $this->callDelegate('infoMessage', array($message));
-            }
-
-            public function warn(string $message): void {
-                $this->callDelegate('warn', array($message));
-            }
-
-            public function errorMessage(string $message, $e = null): void {
-                $this->callDelegate('errorMessage', array($message, $e));
-            }
-
-            /**
-             * @param string $method
-             * @param array<int, mixed> $args
-             * @return void
-             */
-            private function callDelegate(string $method, array $args): void {
-                if (method_exists($this->delegate, $method)) {
-                    $this->delegate->$method(...$args);
-                }
-            }
-        };
     }
 
     /** @return ABJ_404_Solution_DatabaseCore */
