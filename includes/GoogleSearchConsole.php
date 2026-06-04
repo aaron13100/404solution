@@ -4,6 +4,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+require_once __DIR__ . '/GscConfig.php';
 require_once __DIR__ . '/GscOAuthTokenStore.php';
 require_once __DIR__ . '/GscSearchAnalyticsClient.php';
 require_once __DIR__ . '/GscAdminSectionRenderer.php';
@@ -17,29 +18,29 @@ require_once __DIR__ . '/GscAdminSectionRenderer.php';
  */
 class ABJ_404_Solution_GoogleSearchConsole {
 
-    const OPTION_KEY        = 'abj404_gsc_settings';
-    const TOKEN_OPTION_KEY  = 'abj404_gsc_token';
-    const ERROR_OPTION_KEY  = 'abj404_gsc_last_error';
-    const TRANSIENT_KEY     = 'abj404_gsc_data';
-    const TRANSIENT_TTL     = 90000;
+    const OPTION_KEY        = ABJ_404_Solution_GscConfig::OPTION_KEY;
+    const TOKEN_OPTION_KEY  = ABJ_404_Solution_GscConfig::TOKEN_OPTION_KEY;
+    const ERROR_OPTION_KEY  = ABJ_404_Solution_GscConfig::ERROR_OPTION_KEY;
+    const TRANSIENT_KEY     = ABJ_404_Solution_GscConfig::TRANSIENT_KEY;
+    const TRANSIENT_TTL     = ABJ_404_Solution_GscConfig::TRANSIENT_TTL;
 
-    const CRON_HOOK               = 'abj404_gsc_fetch_cron';
-    const BACKGROUND_REFRESH_HOOK = 'abj404_gsc_background_refresh';
-    const LOCK_TRANSIENT_KEY      = 'abj404_gsc_fetch_lock';
-    const LOCK_TTL                = 900;
-    const LAST_FETCH_OPTION_KEY   = 'abj404_gsc_last_fetch_time';
-    const STALE_THRESHOLD         = 72000;
+    const CRON_HOOK               = ABJ_404_Solution_GscConfig::CRON_HOOK;
+    const BACKGROUND_REFRESH_HOOK = ABJ_404_Solution_GscConfig::BACKGROUND_REFRESH_HOOK;
+    const LOCK_TRANSIENT_KEY      = ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY;
+    const LOCK_TTL                = ABJ_404_Solution_GscConfig::LOCK_TTL;
+    const LAST_FETCH_OPTION_KEY   = ABJ_404_Solution_GscConfig::LAST_FETCH_OPTION_KEY;
+    const STALE_THRESHOLD         = ABJ_404_Solution_GscConfig::STALE_THRESHOLD;
 
-    const OAUTH_AUTH_URL  = 'https://accounts.google.com/o/oauth2/v2/auth';
-    const OAUTH_TOKEN_URL = 'https://oauth2.googleapis.com/token';
-    const API_BASE_URL    = 'https://www.googleapis.com/webmasters/v3';
-    const SCOPE           = 'https://www.googleapis.com/auth/webmasters.readonly';
+    const OAUTH_AUTH_URL  = ABJ_404_Solution_GscConfig::OAUTH_AUTH_URL;
+    const OAUTH_TOKEN_URL = ABJ_404_Solution_GscConfig::OAUTH_TOKEN_URL;
+    const API_BASE_URL    = ABJ_404_Solution_GscConfig::API_BASE_URL;
+    const SCOPE           = ABJ_404_Solution_GscConfig::SCOPE;
 
     /** Base URL of the centralized OAuth proxy Worker. */
-    const CENTRALIZED_AUTH_URL = 'https://404-solution-auth.forethought-studio.com';
+    const CENTRALIZED_AUTH_URL = ABJ_404_Solution_GscConfig::CENTRALIZED_AUTH_URL;
 
-    const CENTRALIZED_CALLBACK_SECRET_TRANSIENT_PREFIX = 'abj404_gsc_oauth_cb_secret_';
-    const CENTRALIZED_CALLBACK_SECRET_TTL              = 900;
+    const CENTRALIZED_CALLBACK_SECRET_TRANSIENT_PREFIX = ABJ_404_Solution_GscConfig::CENTRALIZED_CALLBACK_SECRET_TRANSIENT_PREFIX;
+    const CENTRALIZED_CALLBACK_SECRET_TTL              = ABJ_404_Solution_GscConfig::CENTRALIZED_CALLBACK_SECRET_TTL;
 
     /** @var ABJ_404_Solution_GscOAuthTokenStore */
     private $oauthStore;
@@ -119,7 +120,7 @@ class ABJ_404_Solution_GoogleSearchConsole {
      * @return string
      */
     public static function centralizedCallbackSecretTransientKey(string $nonce): string {
-        return self::CENTRALIZED_CALLBACK_SECRET_TRANSIENT_PREFIX . hash('sha256', $nonce);
+        return ABJ_404_Solution_GscConfig::centralizedCallbackSecretTransientKey($nonce);
     }
 
     /**

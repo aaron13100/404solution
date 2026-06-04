@@ -83,7 +83,10 @@ return array(
     'ABJ_404_Solution_PluginLogicSettingsUpdate' => $base . 'includes/PluginLogicSettingsUpdate.php',
     'ABJ_404_Solution_PluginLogicUrlNormalization' => $base . 'includes/PluginLogicUrlNormalization.php',
     'ABJ_404_Solution_PluginLogicDefaults' => $base . 'includes/PluginLogicDefaults.php',
+    'ABJ_404_Solution_SettingsOptionsPersister' => $base . 'includes/services/SettingsOptionsPersister.php',
     'ABJ_404_Solution_SettingsFieldValidator' => $base . 'includes/SettingsFieldValidator.php',
+    'ABJ_404_Solution_SettingsRegexPatternPolicy' => $base . 'includes/policies/SettingsRegexPatternPolicy.php',
+    'ABJ_404_Solution_SettingsUpdateRequestDecoder' => $base . 'includes/services/SettingsUpdateRequestDecoder.php',
     'ABJ_404_Solution_TableViewOptionsResolver' => $base . 'includes/TableViewOptionsResolver.php',
     // SpellChecker delegates to standalone classes (converted from traits).
     'ABJ_404_Solution_SpellURLMatcher' => $base . 'includes/SpellURLMatcher.php',
@@ -118,6 +121,7 @@ return array(
     'ABJ_404_Solution_Ajax_Php' => $base . 'includes/ajax/Ajax_Php.php',
     'ABJ_404_Solution_Ajax_TrendData' => $base . 'includes/ajax/Ajax_TrendData.php',
     'ABJ_404_Solution_CrossPluginImporter' => $base . 'includes/CrossPluginImporter.php',
+    'ABJ_404_Solution_GscConfig' => $base . 'includes/GscConfig.php',
     'ABJ_404_Solution_GscOAuthTokenStore' => $base . 'includes/GscOAuthTokenStore.php',
     'ABJ_404_Solution_GscSearchAnalyticsClient' => $base . 'includes/GscSearchAnalyticsClient.php',
     'ABJ_404_Solution_GscAdminSectionRenderer' => $base . 'includes/GscAdminSectionRenderer.php',

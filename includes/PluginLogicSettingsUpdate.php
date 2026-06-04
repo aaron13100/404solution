@@ -7,6 +7,9 @@ if (!defined('ABSPATH')) {
 
 require_once dirname(__FILE__) . '/SettingsFieldValidator.php';
 require_once dirname(__FILE__) . '/TableViewOptionsResolver.php';
+require_once dirname(__FILE__) . '/policies/SettingsRegexPatternPolicy.php';
+require_once dirname(__FILE__) . '/services/SettingsOptionsPersister.php';
+require_once dirname(__FILE__) . '/services/SettingsUpdateRequestDecoder.php';
 
 /**
  * Settings save workflow: nonce verification, decoding the encoded POST
@@ -19,6 +22,9 @@ require_once dirname(__FILE__) . '/TableViewOptionsResolver.php';
  *   - Numeric field validation moved to {@see ABJ_404_Solution_SettingsFieldValidator}
  *     (which now requires already-translated literal messages, fixing the
  *     POT-extraction bug in finding 440).
+ *   - Request decoding/admission moved to {@see ABJ_404_Solution_SettingsUpdateRequestDecoder}.
+ *   - Final option persistence moved to {@see ABJ_404_Solution_SettingsOptionsPersister}.
+ *   - Regex-backed settings moved to {@see ABJ_404_Solution_SettingsRegexPatternPolicy}.
  */
 class ABJ_404_Solution_PluginLogicSettingsUpdate {
 
@@ -40,6 +46,15 @@ class ABJ_404_Solution_PluginLogicSettingsUpdate {
     /** @var ABJ_404_Solution_SettingsFieldValidator */
     private $fieldValidator;
 
+    /** @var ABJ_404_Solution_SettingsUpdateRequestDecoder */
+    private $requestDecoder;
+
+    /** @var ABJ_404_Solution_SettingsOptionsPersister */
+    private $optionsPersister;
+
+    /** @var ABJ_404_Solution_SettingsRegexPatternPolicy */
+    private $regexPatternPolicy;
+
     /**
      * @param ABJ_404_Solution_Functions $f
      * @param ABJ_404_Solution_Logging $logger
@@ -47,14 +62,30 @@ class ABJ_404_Solution_PluginLogicSettingsUpdate {
      * @param ABJ_404_Solution_PluginLogic $pluginLogic
      * @param ABJ_404_Solution_TableViewOptionsResolver|null $tableViewOptionsResolver
      * @param ABJ_404_Solution_SettingsFieldValidator|null $fieldValidator
+     * @param ABJ_404_Solution_SettingsUpdateRequestDecoder|null $requestDecoder
+     * @param ABJ_404_Solution_SettingsOptionsPersister|null $optionsPersister
+     * @param ABJ_404_Solution_SettingsRegexPatternPolicy|null $regexPatternPolicy
      */
-    function __construct($f, $logger, $contentRepo, $pluginLogic, $tableViewOptionsResolver = null, $fieldValidator = null) {
+    function __construct(
+        $f,
+        $logger,
+        $contentRepo,
+        $pluginLogic,
+        $tableViewOptionsResolver = null,
+        $fieldValidator = null,
+        $requestDecoder = null,
+        $optionsPersister = null,
+        $regexPatternPolicy = null
+    ) {
         $this->f = $f;
         $this->logger = $logger;
         $this->contentRepo = $contentRepo;
         $this->pluginLogic = $pluginLogic;
         $this->tableViewOptionsResolver = $tableViewOptionsResolver;
         $this->fieldValidator = $fieldValidator !== null ? $fieldValidator : new ABJ_404_Solution_SettingsFieldValidator();
+        $this->requestDecoder = $requestDecoder !== null ? $requestDecoder : new ABJ_404_Solution_SettingsUpdateRequestDecoder($logger);
+        $this->optionsPersister = $optionsPersister !== null ? $optionsPersister : new ABJ_404_Solution_SettingsOptionsPersister();
+        $this->regexPatternPolicy = $regexPatternPolicy !== null ? $regexPatternPolicy : new ABJ_404_Solution_SettingsRegexPatternPolicy($f);
     }
 
     /**
@@ -92,30 +123,12 @@ class ABJ_404_Solution_PluginLogicSettingsUpdate {
     }
 
     /**
-     * @param array<string, mixed> $postData
+     * @param array<mixed, mixed> $postData
      * @param bool $restoreNewlines
      * @return array<string, mixed>
      */
     function sanitizePostData(array $postData, bool $restoreNewlines = false): array {
-        $newData = array();
-        foreach ($postData as $key => $value) {
-            $key = wp_kses_post($key);
-            if (is_array($value)) {
-                $newData[$key] = $this->sanitizePostData($value, $restoreNewlines);
-            } else {
-                if ($value === null) {
-                    $newData[$key] = '';
-                } else {
-                    $valueStr = is_string($value) ? $value : (is_scalar($value) ? (string)$value : '');
-                    $newData[$key] = wp_kses_post($valueStr);
-                    $newData[$key] = esc_sql($newData[$key]);
-                    if ($restoreNewlines) {
-                        $newData[$key] = str_replace('\n', "\n", $newData[$key]);
-                    }
-                }
-            }
-        }
-        return $newData;
+        return $this->optionsPersister->sanitizePostData($postData, $restoreNewlines);
     }
 
     /** Remove non a-zA-Z0-9 or _ characters.
@@ -137,13 +150,17 @@ class ABJ_404_Solution_PluginLogicSettingsUpdate {
      */
     function updateOptionsFromPOST() {
         $message = "";
-        $options = abj_service('options_repository')->getOptions();
 
         $returnData = array();
         $returnData['newURL'] = admin_url() . "options-general.php?page=" . ABJ404_PP . '&subpage=abj404_options';
 
-        if (!isset($_POST['encodedData'])) {
-            $this->logger->errorMessage('Missing encodedData in POST');
+        $decodedRequest = $this->requestDecoder->decode($_POST);
+        if (!$decodedRequest['success']) {
+            return $decodedRequest;
+        }
+
+        if (!isset($decodedRequest['postData']) || !is_array($decodedRequest['postData'])) {
+            $this->logger->errorMessage('Settings request decoder returned success without postData array');
             return array(
                 'success' => false,
                 'status' => 400,
@@ -151,26 +168,7 @@ class ABJ_404_Solution_PluginLogicSettingsUpdate {
             );
         }
 
-        $encodedData = $_POST['encodedData'];
-        $postData = abj_service('query_string_helper')->decodeComplicatedData(is_scalar($encodedData) ? (string)$encodedData : '');
-        if (!is_array($postData)) {
-            $this->logger->errorMessage('Invalid JSON encodedData in POST');
-            return array(
-                'success' => false,
-                'status' => 400,
-                'message' => 'Missing form data',
-            );
-        }
-
-        $nonce = isset($postData['nonce']) ? $postData['nonce'] : '';
-        if (!wp_verify_nonce($nonce, 'abj404UpdateOptions') || !is_admin()) {
-            return array(
-                'success' => false,
-                'status' => 403,
-                'message' => 'Invalid security token',
-            );
-        }
-
+        $postData = $decodedRequest['postData'];
         $_POST = $postData;
 
         if (array_key_exists('deleteDebugFile', $_POST) && $_POST['deleteDebugFile'] == true) {
@@ -179,6 +177,7 @@ class ABJ_404_Solution_PluginLogicSettingsUpdate {
             $returnData['message'] = $this->pluginLogic->adminActions()->handlePluginAction('updateOptions', $sub);
 
         } else {
+            $options = $this->optionsPersister->loadCurrentOptions();
             $message .= $this->updateRedirectSettings($options, $_POST);
             $message .= $this->updateWordPressSettings($options, $_POST);
             $message .= $this->updateNotificationSettings($options, $_POST);
@@ -190,20 +189,7 @@ class ABJ_404_Solution_PluginLogicSettingsUpdate {
             $message .= $this->updateAdminUsers($options, $_POST);
             $message .= $this->updateExcludedPages($options, $_POST);
 
-            $excludedPages = $options['excludePages[]'];
-
-            /** Sanitize all data. */
-            $new_options = array();
-            $new_options = $this->sanitizePostData($options, true);
-
-            $excludedPages = $excludedPages == null ? '' : trim($excludedPages);
-            $excludedPages = preg_replace('/[^\[\",\]a-zA-Z\d\|\\\\ ]/', '', $excludedPages);
-            $new_options['excludePages[]'] = $excludedPages;
-
-            abj_service('options_repository')->updateOptions($new_options);
-
-            $permalinkCache = abj_service('permalink_cache');
-            $permalinkCache->updatePermalinkCache(2);
+            $this->optionsPersister->persist($options);
 
             $returnData['error'] = $message;
             if ($message == "") {
@@ -618,41 +604,7 @@ class ABJ_404_Solution_PluginLogicSettingsUpdate {
 
     /** @param array<string, mixed> $options @param array<string, mixed> $postData @return string */
     private function updateRegexPatternSettings(array &$options, array $postData): string {
-        $message = "";
-
-        if (isset($postData['folders_files_ignore'])) {
-            $foldersFilesVal = is_string($postData['folders_files_ignore']) ? $postData['folders_files_ignore'] : '';
-            $options['folders_files_ignore'] = wp_unslash(wp_kses_post($foldersFilesVal));
-
-            $patternsToIgnore = $this->f->explodeNewline($options['folders_files_ignore']);
-            $usableFilePatterns = array();
-            foreach ($patternsToIgnore as $patternToIgnore) {
-                $newPattern = '^' . preg_quote(trim($patternToIgnore), '/') . '$';
-                $newPattern = $this->f->str_replace("\*",".*", $newPattern);
-                $usableFilePatterns[] = $newPattern;
-            }
-            $options['folders_files_ignore_usable'] = $usableFilePatterns;
-        }
-
-        if ( isset( $postData['suggest_regex_exclusions'] ) ) {
-            $suggestRegexRaw = is_string($postData['suggest_regex_exclusions']) ? $postData['suggest_regex_exclusions'] : '';
-            $sanitized_exclusions = sanitize_textarea_field( wp_unslash( $suggestRegexRaw ) );
-            $options['suggest_regex_exclusions'] = $sanitized_exclusions;
-
-            $patternsToIgnore = $this->f->explodeNewline( $sanitized_exclusions );
-            $usableFilePatterns = array();
-            foreach ( $patternsToIgnore as $patternToIgnore ) {
-                $trimmedPattern = trim( $patternToIgnore );
-                if ( ! empty( $trimmedPattern ) ) {
-                    $newPattern = '^' . preg_quote( $trimmedPattern, '/' ) . '$';
-                    $newPattern = str_replace( '\*', '.*', $newPattern );
-                    $usableFilePatterns[] = $newPattern;
-                }
-            }
-            $options['suggest_regex_exclusions_usable'] = $usableFilePatterns;
-        }
-
-        return $message;
+        return $this->regexPatternPolicy->apply($options, $postData);
     }
 
     /** @param array<string, mixed> $options @param array<string, mixed> $postData @return string */

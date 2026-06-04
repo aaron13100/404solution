@@ -4,6 +4,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+require_once __DIR__ . '/GscConfig.php';
+
 /**
  * Owns Google Search Console Search Analytics requests, cache writes, fetch
  * locks, and background refresh scheduling.
@@ -34,7 +36,7 @@ class ABJ_404_Solution_GscSearchAnalyticsClient {
             return array();
         }
 
-        $cached = get_transient(ABJ_404_Solution_GoogleSearchConsole::TRANSIENT_KEY);
+        $cached = get_transient(ABJ_404_Solution_GscConfig::TRANSIENT_KEY);
         $cachedRows = $this->normalizeRows($cached);
         if ($cachedRows !== false) {
             return $cachedRows;
@@ -42,8 +44,8 @@ class ABJ_404_Solution_GscSearchAnalyticsClient {
 
         $allRows = $this->doFetchFromApi($urls, $days);
         // allow-cache-empty: empty GSC result sets are valid recent fetches and drive the explicit no-data UI state.
-        set_transient(ABJ_404_Solution_GoogleSearchConsole::TRANSIENT_KEY, $allRows, ABJ_404_Solution_GoogleSearchConsole::TRANSIENT_TTL);
-        update_option(ABJ_404_Solution_GoogleSearchConsole::LAST_FETCH_OPTION_KEY, time(), false);
+        set_transient(ABJ_404_Solution_GscConfig::TRANSIENT_KEY, $allRows, ABJ_404_Solution_GscConfig::TRANSIENT_TTL);
+        update_option(ABJ_404_Solution_GscConfig::LAST_FETCH_OPTION_KEY, time(), false);
         return $allRows;
     }
 
@@ -58,23 +60,23 @@ class ABJ_404_Solution_GscSearchAnalyticsClient {
             return;
         }
 
-        if (get_transient(ABJ_404_Solution_GoogleSearchConsole::LOCK_TRANSIENT_KEY)) {
+        if (get_transient(ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY)) {
             return;
         }
         set_transient(
-            ABJ_404_Solution_GoogleSearchConsole::LOCK_TRANSIENT_KEY,
+            ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY,
             '1',
-            ABJ_404_Solution_GoogleSearchConsole::LOCK_TTL
+            ABJ_404_Solution_GscConfig::LOCK_TTL
         );
 
         try {
             $urls = $urlsProvider();
             $allRows = $this->doFetchFromApi($urls);
             // allow-cache-empty: empty GSC result sets are valid recent fetches and drive the explicit no-data UI state.
-            set_transient(ABJ_404_Solution_GoogleSearchConsole::TRANSIENT_KEY, $allRows, ABJ_404_Solution_GoogleSearchConsole::TRANSIENT_TTL);
-            update_option(ABJ_404_Solution_GoogleSearchConsole::LAST_FETCH_OPTION_KEY, time(), false);
+            set_transient(ABJ_404_Solution_GscConfig::TRANSIENT_KEY, $allRows, ABJ_404_Solution_GscConfig::TRANSIENT_TTL);
+            update_option(ABJ_404_Solution_GscConfig::LAST_FETCH_OPTION_KEY, time(), false);
         } finally {
-            delete_transient(ABJ_404_Solution_GoogleSearchConsole::LOCK_TRANSIENT_KEY);
+            delete_transient(ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY);
         }
     }
 
@@ -84,7 +86,7 @@ class ABJ_404_Solution_GscSearchAnalyticsClient {
      * @return array<int, array<string, mixed>>|false
      */
     public function getCachedData() {
-        $cached = get_transient(ABJ_404_Solution_GoogleSearchConsole::TRANSIENT_KEY);
+        $cached = get_transient(ABJ_404_Solution_GscConfig::TRANSIENT_KEY);
         return $this->normalizeRows($cached);
     }
 
@@ -94,9 +96,9 @@ class ABJ_404_Solution_GscSearchAnalyticsClient {
      * @return bool
      */
     public function isRefreshNeeded(): bool {
-        $lastFetch = get_option(ABJ_404_Solution_GoogleSearchConsole::LAST_FETCH_OPTION_KEY, 0);
+        $lastFetch = get_option(ABJ_404_Solution_GscConfig::LAST_FETCH_OPTION_KEY, 0);
         $lastFetchTime = is_numeric($lastFetch) ? (int)$lastFetch : 0;
-        return (time() - $lastFetchTime) > ABJ_404_Solution_GoogleSearchConsole::STALE_THRESHOLD;
+        return (time() - $lastFetchTime) > ABJ_404_Solution_GscConfig::STALE_THRESHOLD;
     }
 
     /**
@@ -105,13 +107,13 @@ class ABJ_404_Solution_GscSearchAnalyticsClient {
      * @return void
      */
     public function scheduleBackgroundRefresh(): void {
-        if (get_transient(ABJ_404_Solution_GoogleSearchConsole::LOCK_TRANSIENT_KEY)) {
+        if (get_transient(ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY)) {
             return;
         }
-        if (wp_next_scheduled(ABJ_404_Solution_GoogleSearchConsole::BACKGROUND_REFRESH_HOOK)) {
+        if (wp_next_scheduled(ABJ_404_Solution_GscConfig::BACKGROUND_REFRESH_HOOK)) {
             return;
         }
-        wp_schedule_single_event(time(), ABJ_404_Solution_GoogleSearchConsole::BACKGROUND_REFRESH_HOOK);
+        wp_schedule_single_event(time(), ABJ_404_Solution_GscConfig::BACKGROUND_REFRESH_HOOK);
     }
 
     /**
@@ -140,7 +142,7 @@ class ABJ_404_Solution_GscSearchAnalyticsClient {
      */
     private function doFetchFromApi(array $urls, int $days = 90): array {
         $s = $this->oauthStore->getSettings();
-        $token = get_option(ABJ_404_Solution_GoogleSearchConsole::TOKEN_OPTION_KEY, false);
+        $token = get_option(ABJ_404_Solution_GscConfig::TOKEN_OPTION_KEY, false);
         $accessToken = $this->tokenAccessToken($token);
         if ($accessToken === '') {
             return array();
@@ -176,7 +178,7 @@ class ABJ_404_Solution_GscSearchAnalyticsClient {
 
             $encodedSiteUrl = urlencode($siteUrl);
             $response = wp_remote_post(
-                ABJ_404_Solution_GoogleSearchConsole::API_BASE_URL . "/sites/{$encodedSiteUrl}/searchAnalytics/query",
+                ABJ_404_Solution_GscConfig::API_BASE_URL . "/sites/{$encodedSiteUrl}/searchAnalytics/query",
                 array(
                     'headers' => array(
                         'Authorization' => 'Bearer ' . $accessToken,
