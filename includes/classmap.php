@@ -72,6 +72,13 @@ return array(
     'ABJ_404_Solution_PluginLogicAdminActions' => $base . 'includes/PluginLogicAdminActions.php',
     // Admin action handlers (strategy/registry pattern for handlePluginAction dispatch).
     'ABJ_404_Solution_AdminAssetEnqueuer' => $base . 'includes/admin/AdminAssetEnqueuer.php',
+    'ABJ_404_Solution_RedirectsTableColumns' => $base . 'includes/admin/RedirectsTableColumns.php',
+    'ABJ_404_Solution_RedirectDestinationWarningPolicy' => $base . 'includes/admin/RedirectDestinationWarningPolicy.php',
+    'ABJ_404_Solution_RedirectDestinationLinkResolver' => $base . 'includes/admin/RedirectDestinationLinkResolver.php',
+    'ABJ_404_Solution_RedirectRowActionsPresenter' => $base . 'includes/admin/RedirectRowActionsPresenter.php',
+    'ABJ_404_Solution_RedirectRowPresenter' => $base . 'includes/admin/RedirectRowPresenter.php',
+    'ABJ_404_Solution_RedirectAddModalPresenter' => $base . 'includes/admin/RedirectAddModalPresenter.php',
+    'ABJ_404_Solution_RedirectsTablePagePresenter' => $base . 'includes/admin/RedirectsTablePagePresenter.php',
     'ABJ_404_Solution_AdminActionHandlerInterface' => $base . 'includes/admin/actions/AdminActionHandlerInterface.php',
     'ABJ_404_Solution_UpdateOptionsHandler' => $base . 'includes/admin/actions/UpdateOptionsHandler.php',
     'ABJ_404_Solution_AddRedirectHandler' => $base . 'includes/admin/actions/AddRedirectHandler.php',
