@@ -871,8 +871,12 @@ class ABJ_404_Solution_DataAccess {
 
 
     /**
-     * Backward-compatibility bridge for facade delegations removed in Phase 8e.
      * Routes method calls to the extracted sub-service that owns them.
+     *
+     * DatabaseCore is intentionally absent from the delegate chain: its methods
+     * are DB-infrastructure concerns and must be reached via DatabaseCoreInterface,
+     * not through this facade. Calls for relocated DatabaseCore or ViewRead
+     * methods fall through to the trailing "method not found" branch.
      *
      * @param string $name
      * @param array<int, mixed> $arguments
@@ -880,82 +884,7 @@ class ABJ_404_Solution_DataAccess {
      * @throws \BadMethodCallException
      */
     public function __call(string $name, array $arguments) {
-        $removedViewReadPassThroughs = [
-            'getRedirectStatusCounts',
-            'getCapturedStatusCounts',
-            'getHighImpactCapturedCount',
-            'getLogsCount',
-            'getRedirectsAll',
-            'getRedirectsWithLogs',
-            'getRedirectsWithRegEx',
-            'getManualRedirectsWithRegexMetachars',
-            'getRedirectsForView',
-            'getRedirectsForViewCount',
-            'getRedirectsForViewQuery',
-            'getTableEngines',
-            'invalidateStatusCountsCache',
-            'invalidateViewSnapshotCache',
-        ];
-        if (in_array($name, $removedViewReadPassThroughs, true)) {
-            throw new \BadMethodCallException(
-                'Method ' . $name . '() was moved from ' . static::class . ' to ABJ_404_Solution_ViewReadServiceInterface.'
-            );
-        }
-
-        $removedDatabaseCorePassThroughs = [
-            'queryAndGetResults',
-            'queryScalarInt',
-            'doTableNameReplacements',
-            'getLowercasePrefix',
-            'getPrefixedTableName',
-            'extractSqlFilename',
-            'classifyAndHandleInfrastructureError',
-            'isInvalidDataError',
-            'isCollationError',
-            'diagnosePrefixMismatch',
-            'isMultisiteCrossPrefixError',
-            'isDeadlockOrLockTimeoutError',
-            'isTransientConnectionError',
-            'isQuotaLimitError',
-            'isDiskFullError',
-            'isReadOnlyError',
-            'isCrashedTableError',
-            'isIncorrectKeyFileError',
-            'isGaleraConflictError',
-            'isMissingPluginTableError',
-            'isTransientViewBuildTableError',
-            'noteDatabaseIssueFromError',
-            'isWriteBlockActive',
-            'isQuotaCooldownActive',
-            'getRuntimeFlag',
-            'setRuntimeFlag',
-            'setPluginDbNotice',
-            'attemptMissingTableRepairAndRetry',
-            'isInnoDBTable',
-            'safeCheckConnection',
-            'ensureConnection',
-            'queryStartsWithSelect',
-            'queryProducesResultRows',
-            'applyQueryTimeout',
-            'isMariaDB',
-            'applySelectTimeout',
-            'applyNonLeadingSelectTimeout',
-            'applyStatementTimeout',
-            'applyTimeoutToInsertSelect',
-            'queryHasSetStatementWrapper',
-            'stripSetStatementWrapper',
-            'retryWithoutSetStatementWrapper',
-            'setClock',
-            'clock',
-        ];
-        if (in_array($name, $removedDatabaseCorePassThroughs, true)) {
-            throw new \BadMethodCallException(
-                'Method ' . $name . '() was moved from ' . static::class . ' to ABJ_404_Solution_DatabaseCoreInterface.'
-            );
-        }
-
         $delegates = [
-            $this->dbCore,
             $this->redirectsRepo,
             $this->getRetentionService(),
             $this->contentRepo,
