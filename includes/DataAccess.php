@@ -329,7 +329,9 @@ class ABJ_404_Solution_DataAccess {
 
         $this->viewBuildOrchestrator = $viewBuildOrchestrator !== null
             ? $viewBuildOrchestrator
-            : $this->createViewBuildOrchestrator();
+            : new ABJ_404_Solution_ViewBuildOrchestrator(
+                $this->dbCore, $this->f, $this->logger, $this->resolveRebuildHealthState()
+            );
         $this->viewBuildOrchestrator->setViewReadService($this->viewReadService);
         $this->viewBuildOrchestrator->setLogsRepository($this->logsRepo);
         $this->viewReadService->setViewBuildOrchestrator($this->viewBuildOrchestrator);
@@ -408,87 +410,6 @@ class ABJ_404_Solution_DataAccess {
         }
 
         return new ABJ_404_Solution_DatabaseCore($this->f, $this->logger);
-    }
-
-    /** @return ABJ_404_Solution_ViewBuildOrchestrator */
-    private function createViewBuildOrchestrator() {
-        $bridgeMethods = array(
-            'runRedirectsForViewStaged',
-            'advanceViewBuildOnce',
-            'runPageLoadFallbackAdvance',
-            'viewDoneIsServeable',
-        );
-        foreach ($bridgeMethods as $method) {
-            if ($this->hasSubclassOverride($method)) {
-                return $this->createLegacyViewBuildOrchestratorBridge();
-            }
-        }
-
-        return new ABJ_404_Solution_ViewBuildOrchestrator(
-            $this->dbCore, $this->f, $this->logger, $this->resolveRebuildHealthState()
-        );
-    }
-
-    /** @return ABJ_404_Solution_ViewBuildOrchestrator */
-    private function createLegacyViewBuildOrchestratorBridge() {
-        $owner = $this;
-        return new class($owner, $this->dbCore, $this->f, $this->logger) extends ABJ_404_Solution_ViewBuildOrchestrator {
-            /** @var ABJ_404_Solution_DataAccess */
-            private $owner;
-
-            /**
-             * @param ABJ_404_Solution_DataAccess $owner
-             * @param ABJ_404_Solution_DatabaseCore $dbCore
-             * @param ABJ_404_Solution_Functions|null $functions
-             * @param ABJ_404_Solution_Logging|null $logger
-             */
-            public function __construct($owner, $dbCore, $functions, $logger) {
-                $this->owner = $owner;
-                parent::__construct($dbCore, $functions, $logger);
-            }
-
-            public function runRedirectsForViewStaged(string $sub, array $tableOptions): array {
-                $result = $this->owner->invokeSubclassOverride('runRedirectsForViewStaged', array($sub, $tableOptions));
-                $rows = array();
-                if (!is_array($result)) {
-                    return $rows;
-                }
-                foreach ($result as $row) {
-                    if (is_array($row)) {
-                        $rows[] = $row;
-                    }
-                }
-                return $rows;
-            }
-
-            public function runRedirectsForViewCountStaged(string $sub, array $tableOptions): int {
-                $result = $this->owner->invokeSubclassOverride('runRedirectsForViewCountStaged', array($sub, $tableOptions));
-                return is_scalar($result) ? intval($result) : 0;
-            }
-
-            public function advanceViewBuildOnce(bool $forceRebuild = false): array {
-                if ($this->owner->hasSubclassOverride('advanceViewBuildOnce')) {
-                    $result = $this->owner->invokeSubclassOverride('advanceViewBuildOnce', array($forceRebuild));
-                    return is_array($result) ? $result : array();
-                }
-                return parent::advanceViewBuildOnce($forceRebuild);
-            }
-
-            public function runPageLoadFallbackAdvance(): array {
-                if ($this->owner->hasSubclassOverride('runPageLoadFallbackAdvance')
-                        || $this->owner->hasSubclassOverride('advanceViewBuildOnce')) {
-                    return $this->owner->runPageLoadFallbackAdvance();
-                }
-                return parent::runPageLoadFallbackAdvance();
-            }
-
-            public function viewDoneIsServeable(): bool {
-                if ($this->owner->hasSubclassOverride('viewDoneIsServeable')) {
-                    return (bool)$this->owner->viewDoneIsServeable();
-                }
-                return parent::viewDoneIsServeable();
-            }
-        };
     }
 
     /** @param string $method @return bool */

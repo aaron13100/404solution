@@ -466,10 +466,9 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
     // --- Internal delegation methods (non-public; reached by collaborators
     //     through __call routing, never by external callers). Marked
     //     protected (rather than private) so PHPStan's method.unused rule
-    //     stays quiet, because the orchestrator is subclassed by anonymous
-    //     classes (see DataAccess::createLegacyViewBuildOrchestratorBridge()
-    //     and the test doubles). Removes them from the class's public API
-    //     surface per design audit M202 (Export Bloat). ---
+    //     stays quiet, because the orchestrator is subclassed by test
+    //     doubles. Removes them from the class's public API surface per
+    //     design audit M202 (Export Bloat). ---
 
     /**
      * @param string $query
