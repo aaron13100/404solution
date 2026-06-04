@@ -50,8 +50,14 @@ interface ABJ_404_Solution_RedirectsRepositoryInterface {
      */
     public function getExistingRedirectForURL($url);
 
-    /** @return string */
-    public function deleteSpecifiedRedirects();
+    /**
+     * Move redirects with the specified status/type values to trash.
+     *
+     * @param array<int, int|string> $types
+     * @param string $purgeType
+     * @return array{status: string, rows_affected: int, redirect_types: array<int, int>}
+     */
+    public function deleteSpecifiedRedirects(array $types, string $purgeType): array;
 
     // =========================================================================
     // Redirect conditions (from DataAccessTrait_Redirects)

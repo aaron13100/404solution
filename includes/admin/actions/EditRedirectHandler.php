@@ -91,23 +91,55 @@ class ABJ_404_Solution_EditRedirectHandler {
      * @return string
      */
     public function updateRedirectData(): string {
+        $target = $this->resolveUpdateTarget();
+        $message = $target['message'];
+        $logger = $this->parent->getLogger();
+
+        $typeAndDest = $this->resolver->getRedirectTypeAndDest();
+        $typeAndDestMessage = is_string($typeAndDest['message']) ? $typeAndDest['message'] : '';
+        if ($typeAndDestMessage != "") {
+            return $typeAndDestMessage;
+        }
+
+        $context = $this->buildUpdateContext($typeAndDest);
+        if (!$this->contextHasDestination($context)) {
+            $message .= __('Error: Data not formatted properly.', '404-solution') . "<BR/>";
+            $logger->errorMessage("Update redirect data issue. Type: " . esc_html((string)$context['tdType']) .
+                    ", dest: " . esc_html($context['tdDest']));
+            return $message;
+        }
+
+        if ($target['fromURL'] != "") {
+            return $message . $this->updateSingleRedirect($target['fromURL'], $context);
+        }
+
+        if (!empty($target['ids_multiple'])) {
+            return $message . $this->updateMultipleRedirects($target['ids_multiple'], $context);
+        }
+
+        $logger->errorMessage("Issue determining which redirect(s) to update. " .
+            "fromURL: " . $target['fromURL'] . ", ids_multiple: " . implode(',', $target['ids_multiple']));
+        return $message;
+    }
+
+    /**
+     * @return array{fromURL: string, ids_multiple: array<int, int>, message: string}
+     */
+    private function resolveUpdateTarget(): array {
         $message = "";
         $fromURL = "";
-        $ids_multiple = "";
+        $idsMultiple = array();
         $f = $this->parent->getFunctions();
-        $redirectsRepo = $this->parent->getRedirectsRepo();
-        $logger = $this->parent->getLogger();
-        $viewBuild = $this->parent->getViewBuild();
 
         if (
             (!array_key_exists('url', $_POST) || $_POST['url'] == "") &&
             (array_key_exists('ids_multiple', $_POST) && $_POST['ids_multiple'] != "")) {
-            $ids_multiple = array_map('absint', explode(',', $_POST['ids_multiple']));
+            $idsMultiple = array_map('absint', explode(',', (string)$_POST['ids_multiple']));
 
         } else if (array_key_exists('url', $_POST) && $_POST['url'] != "" &&
             (!array_key_exists('ids_multiple', $_POST) || $_POST['ids_multiple'] == "")) {
 
-            $fromURL = stripslashes($_POST['url']);
+            $fromURL = stripslashes((string)$_POST['url']);
         } else {
             $message .= __('Error: URL is a required field.', '404-solution') . "<BR/>";
         }
@@ -116,90 +148,124 @@ class ABJ_404_Solution_EditRedirectHandler {
             $message .= __('Error: URL must start with /', '404-solution') . "<BR/>";
         }
 
-        $typeAndDest = $this->resolver->getRedirectTypeAndDest();
+        return array('fromURL' => $fromURL, 'ids_multiple' => $idsMultiple, 'message' => $message);
+    }
 
-        $typeAndDestMessage = is_string($typeAndDest['message']) ? $typeAndDest['message'] : '';
-        if ($typeAndDestMessage != "") {
-            return $typeAndDestMessage;
-        }
-
+    /**
+     * @param array<string, mixed> $typeAndDest
+     * @return array{tdTypeRaw: string, tdType: int, tdDest: string, code: string, statusType: int, startTs: int|null, endTs: int|null}
+     */
+    private function buildUpdateContext(array $typeAndDest): array {
         $tdTypeRaw = is_scalar($typeAndDest['type']) ? (string)$typeAndDest['type'] : '';
         $tdType = ($tdTypeRaw !== '') ? (int)$tdTypeRaw : -1;
         $tdDest = is_scalar($typeAndDest['dest']) ? (string)$typeAndDest['dest'] : '';
-        $postedCodeForCheck = isset($_POST['code']) && is_scalar($_POST['code']) ? (string)$_POST['code'] : '';
-        $isCode410 = $postedCodeForCheck === '410' || $postedCodeForCheck === '451';
-        if ($tdTypeRaw !== '' && ($tdDest !== "" || $isCode410)) {
-            $statusType = ABJ404_STATUS_MANUAL;
-            if (isset($_POST['is_regex_url']) &&
-                $_POST['is_regex_url'] != '0') {
-
-                $statusType = ABJ404_STATUS_REGEX;
-            }
-
-            $startDateRaw = isset($_POST['redirect_start_date']) && is_string($_POST['redirect_start_date']) ? trim($_POST['redirect_start_date']) : '';
-            $endDateRaw = isset($_POST['redirect_end_date']) && is_string($_POST['redirect_end_date']) ? trim($_POST['redirect_end_date']) : '';
-            $startTs = ($startDateRaw !== '') ? strtotime($startDateRaw . ' 00:00:00') : null;
-            $endTs = ($endDateRaw !== '') ? strtotime($endDateRaw . ' 23:59:59') : null;
-            if ($startTs === false) { $startTs = null; }
-            if ($endTs === false) { $endTs = null; }
-
-            $sanitizedConditions = $this->sanitizeRedirectConditions();
-
-            if ($fromURL != "") {
-                $id = isset($_POST['id']) && is_scalar($_POST['id']) ? (int)$_POST['id'] : 0;
-                $code = isset($_POST['code']) && is_string($_POST['code']) ? $_POST['code'] : '';
-                $originalFromURL = $fromURL;
-                $autoPromote = $this->resolver->maybeAutoPromoteRegex($statusType, $fromURL);
-                $statusType = $autoPromote['statusType'];
-                $fromURL = $autoPromote['url'];
-                $redirectsRepo->updateRedirect(ABJ_404_Solution_RedirectUpdate::create(
-                    $id,
-                    (int)$tdType,
-                    (string)$fromURL,
-                    (string)$tdDest,
-                    (string)$code,
-                    (string)$statusType,
-                    $startTs,
-                    $endTs
-                ));
-                if ($autoPromote['autoPromoted']) {
-                    $this->resolver->saveRegexAutoPromoteNotice($id, $originalFromURL, $fromURL, $autoPromote['urlRewritten']);
-                }
-
-                if ($id > 0) {
-                    $redirectsRepo->saveRedirectConditions($id, $sanitizedConditions);
-                }
-                $viewBuild->invalidateViewDoneAndScheduleRebuild();
-
-            } else if ($ids_multiple != "") {
-                $redirects_multiple = $redirectsRepo->getRedirectsByIDs($ids_multiple);
-                $code = isset($_POST['code']) && is_string($_POST['code']) ? $_POST['code'] : '';
-                foreach ($redirects_multiple as $redirect) {
-                    $redirectUrl = is_string($redirect['url']) ? $redirect['url'] : '';
-                    $redirectId = is_scalar($redirect['id']) ? (int)$redirect['id'] : 0;
-                    $redirectsRepo->updateRedirect(ABJ_404_Solution_RedirectUpdate::create(
-                        $redirectId,
-                        (int)$tdType,
-                        (string)$redirectUrl,
-                        (string)$tdDest,
-                        (string)$code,
-                        (string)$statusType
-                    ));
-                }
-                $viewBuild->invalidateViewDoneAndScheduleRebuild();
-
-            } else {
-                $logger->errorMessage("Issue determining which redirect(s) to update. " .
-                    "fromURL: " . $fromURL . ", ids_multiple: " . $ids_multiple);
-            }
-
-        } else {
-            $message .= __('Error: Data not formatted properly.', '404-solution') . "<BR/>";
-            $logger->errorMessage("Update redirect data issue. Type: " . esc_html((string)$tdType) .
-                    ", dest: " . esc_html($tdDest));
+        $code = isset($_POST['code']) && is_string($_POST['code']) ? $_POST['code'] : '';
+        $statusType = ABJ404_STATUS_MANUAL;
+        if (isset($_POST['is_regex_url']) && $_POST['is_regex_url'] != '0') {
+            $statusType = ABJ404_STATUS_REGEX;
         }
 
+        $startDateRaw = isset($_POST['redirect_start_date']) && is_string($_POST['redirect_start_date']) ? trim($_POST['redirect_start_date']) : '';
+        $endDateRaw = isset($_POST['redirect_end_date']) && is_string($_POST['redirect_end_date']) ? trim($_POST['redirect_end_date']) : '';
+        $startTs = ($startDateRaw !== '') ? strtotime($startDateRaw . ' 00:00:00') : null;
+        $endTs = ($endDateRaw !== '') ? strtotime($endDateRaw . ' 23:59:59') : null;
+        if ($startTs === false) { $startTs = null; }
+        if ($endTs === false) { $endTs = null; }
+
+        return array(
+            'tdTypeRaw' => $tdTypeRaw,
+            'tdType' => $tdType,
+            'tdDest' => $tdDest,
+            'code' => $code,
+            'statusType' => $statusType,
+            'startTs' => $startTs,
+            'endTs' => $endTs,
+        );
+    }
+
+    /**
+     * @param array{tdTypeRaw: string, tdType: int, tdDest: string, code: string, statusType: int, startTs: int|null, endTs: int|null} $context
+     */
+    private function contextHasDestination(array $context): bool {
+        $isGoneCode = $context['code'] === '410' || $context['code'] === '451';
+        return $context['tdTypeRaw'] !== '' && ($context['tdDest'] !== "" || $isGoneCode);
+    }
+
+    /**
+     * @param array{tdTypeRaw: string, tdType: int, tdDest: string, code: string, statusType: int, startTs: int|null, endTs: int|null} $context
+     */
+    private function updateSingleRedirect(string $fromURL, array $context): string {
+        $redirectsRepo = $this->parent->getRedirectsRepo();
+        $id = isset($_POST['id']) && is_scalar($_POST['id']) ? (int)$_POST['id'] : 0;
+        $originalFromURL = $fromURL;
+        $autoPromote = $this->resolver->maybeAutoPromoteRegex($context['statusType'], $fromURL);
+        $statusType = $autoPromote['statusType'];
+        $fromURL = $autoPromote['url'];
+        $updateError = $redirectsRepo->updateRedirect(ABJ_404_Solution_RedirectUpdate::create(
+            $id,
+            $context['tdType'],
+            (string)$fromURL,
+            $context['tdDest'],
+            $context['code'],
+            (string)$statusType,
+            $context['startTs'],
+            $context['endTs']
+        ));
+        if ($updateError !== '') {
+            return $this->formatUpdateRedirectError($updateError) . "<BR/>";
+        }
+        if ($autoPromote['autoPromoted']) {
+            $this->resolver->saveRegexAutoPromoteNotice($id, $originalFromURL, $fromURL, $autoPromote['urlRewritten']);
+        }
+
+        if ($id > 0) {
+            $redirectsRepo->saveRedirectConditions($id, $this->sanitizeRedirectConditions());
+        }
+        $this->parent->getViewBuild()->invalidateViewDoneAndScheduleRebuild();
+        return '';
+    }
+
+    /**
+     * @param array<int, int> $idsMultiple
+     * @param array{tdTypeRaw: string, tdType: int, tdDest: string, code: string, statusType: int, startTs: int|null, endTs: int|null} $context
+     */
+    private function updateMultipleRedirects(array $idsMultiple, array $context): string {
+        $message = "";
+        $updatedAny = false;
+        $redirectsRepo = $this->parent->getRedirectsRepo();
+        $redirectsMultiple = $redirectsRepo->getRedirectsByIDs($idsMultiple);
+        foreach ($redirectsMultiple as $redirect) {
+            $redirectUrl = is_string($redirect['url']) ? $redirect['url'] : '';
+            $redirectId = is_scalar($redirect['id']) ? (int)$redirect['id'] : 0;
+            $updateError = $redirectsRepo->updateRedirect(ABJ_404_Solution_RedirectUpdate::create(
+                $redirectId,
+                $context['tdType'],
+                (string)$redirectUrl,
+                $context['tdDest'],
+                $context['code'],
+                (string)$context['statusType']
+            ));
+            if ($updateError !== '') {
+                $message .= $this->formatUpdateRedirectError($updateError) . "<BR/>";
+                continue;
+            }
+            $updatedAny = true;
+        }
+        if ($updatedAny) {
+            $this->parent->getViewBuild()->invalidateViewDoneAndScheduleRebuild();
+        }
         return $message;
+    }
+
+    private function formatUpdateRedirectError(string $errorCode): string {
+        if ($errorCode === 'bad_update_request') {
+            return __('Error: Bad data passed for update redirect request.', '404-solution');
+        }
+
+        return sprintf(
+            __('Error: Unable to update redirect data. Repository result: %s', '404-solution'),
+            esc_html($errorCode)
+        );
     }
 
     /**

@@ -564,72 +564,58 @@ class ABJ_404_Solution_RedirectsRepository implements ABJ_404_Solution_Redirects
     }
 
     /** @inheritDoc */
-    function deleteSpecifiedRedirects() {
-        $message = "";
+    function deleteSpecifiedRedirects(array $types, string $purgeType): array {
+        $result = array(
+            'status' => 'noop',
+            'rows_affected' => 0,
+            'redirect_types' => array(),
+        );
 
-        if (!array_key_exists('sanity_purge', $_POST) || $_POST['sanity_purge'] != "1") {
-            $message = __('Error: You didn\'t check the I understand checkbox. No purging of records for you!', '404-solution');
-            return $message;
-        }
-
-        if (!isset($_POST['types']) || $_POST['types'] == '') {
-            $message = __('Error: No redirect types were selected. No purges will be done.', '404-solution');
-            return $message;
-        }
-
-        if (is_array($_POST['types'])) {
-            $type = array_map('sanitize_text_field', $_POST['types']);
-        } else {
-            $type = sanitize_text_field($_POST['types']);
-        }
-
-        if (!is_array($type)) {
-            $message = __('An unknown error has occurred.', '404-solution');
-            return $message;
+        if ($purgeType != 'abj404_logs' && $purgeType != 'abj404_redirects') {
+            $this->logger->debugMessage("Error: An invalid purge type was selected. Type: " .
+                    wp_kses_post((string)json_encode($purgeType)));
+            $result['status'] = 'invalid_purge_type';
+            return $result;
         }
 
         $redirectTypes = array();
-        foreach ($type as $aType) {
+        foreach ($types as $aType) {
             if (('' . $aType != ABJ404_TYPE_HOME) && ('' . $aType != ABJ404_TYPE_404_DISPLAYED)) {
                 array_push($redirectTypes, absint($aType));
             }
         }
 
         if (empty($redirectTypes)) {
-            $message = __('Error: No valid redirect types were selected. Exiting.', '404-solution');
             $this->logger->debugMessage("Error: No valid redirect types were selected. Types: " .
                     wp_kses_post((string)json_encode($redirectTypes)));
-            return $message;
-        }
-        $purge = isset($_POST['purgetype']) ? sanitize_text_field($_POST['purgetype']) : '';
-
-        if ($purge != 'abj404_logs' && $purge != 'abj404_redirects') {
-            $message = __('Error: An invalid purge type was selected. Exiting.', '404-solution');
-            $this->logger->debugMessage("Error: An invalid purge type was selected. Type: " .
-                    wp_kses_post((string)json_encode($purge)));
-            return $message;
+            $result['status'] = 'no_valid_types';
+            return $result;
         }
 
         array_push($redirectTypes, 0);
 
         $redirectTypes = array_map('absint', $redirectTypes);
-        $typesForSQL = implode(',', $redirectTypes);
+        $result['redirect_types'] = $redirectTypes;
 
-        if ($purge == 'abj404_redirects') {
-            // allow-no-watermark-bump: DAO layer; admin callers bump via invalidateViewDoneAndScheduleRebuild()
-            $query = "update {wp_abj404_redirects} set disabled = 1 where status in (" . $typesForSQL . ")";
-            $purgeResult = $this->dbCore->queryAndGetResults($query);
-            $rowsAffectedRaw = $purgeResult['rows_affected'] ?? 0;
-            $redirectCount = is_scalar($rowsAffectedRaw) ? (int)$rowsAffectedRaw : 0;
-
-            abj_service('view_read_service')->invalidateStatusCountsCache();
-            $this->clearRegexRedirectsCache();
-
-            $message .= sprintf( _n( '%s redirect entry was moved to the trash.',
-                    '%s redirect entries were moved to the trash.', $redirectCount, '404-solution'), $redirectCount);
+        if ($purgeType == 'abj404_logs') {
+            $result['status'] = 'logs_only';
+            return $result;
         }
 
-        return $message;
+        $typesForSQL = implode(',', $redirectTypes);
+
+        // allow-no-watermark-bump: DAO layer; admin callers bump via invalidateViewDoneAndScheduleRebuild()
+        $query = "update {wp_abj404_redirects} set disabled = 1 where status in (" . $typesForSQL . ")";
+        $purgeResult = $this->dbCore->queryAndGetResults($query);
+        $rowsAffectedRaw = $purgeResult['rows_affected'] ?? 0;
+        $redirectCount = is_scalar($rowsAffectedRaw) ? (int)$rowsAffectedRaw : 0;
+
+        abj_service('view_read_service')->invalidateStatusCountsCache();
+        $this->clearRegexRedirectsCache();
+
+        $result['status'] = 'redirects_purged';
+        $result['rows_affected'] = $redirectCount;
+        return $result;
     }
 
     // =========================================================================
@@ -750,8 +736,7 @@ class ABJ_404_Solution_RedirectsRepository implements ABJ_404_Solution_Redirects
             $this->logger->errorMessage("Bad data passed for update redirect request. Type: " .
                 esc_html((string)$type) . ", Dest: " . esc_html($update->getDestination()) .
                 ", ID(s): " . esc_html((string)$idForUpdate));
-            echo __('Error: Bad data passed for update redirect request.', '404-solution');
-            return '';
+            return 'bad_update_request';
         }
 
         $startTs = $update->getStartTs();

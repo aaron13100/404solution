@@ -346,7 +346,8 @@ function abj_service($name) {
         );
     }
 
-    if (class_exists('ABJ_404_Solution_DataAccess')) {
+    $dataAccessClass = 'ABJ_404_Solution_DataAccess';
+    if (class_exists($dataAccessClass)) {
         $dataAccessServiceGetters = array(
             'db_core' => 'getDbCore',
             'content_repository' => 'getContentRepo',
@@ -358,7 +359,7 @@ function abj_service($name) {
             'view_build_orchestrator' => 'getViewBuildOrchestrator',
         );
         if (isset($dataAccessServiceGetters[$name])) {
-            $dataAccess = ABJ_404_Solution_DataAccess::getInstance();
+            $dataAccess = $dataAccessClass::getInstance();
             $getter = $dataAccessServiceGetters[$name];
             if (method_exists($dataAccess, $getter)) {
                 return $dataAccess->$getter();

@@ -370,7 +370,7 @@ class ABJ_404_Solution_RestApiController {
         ));
 
         if ($error !== '') {
-            return new \WP_Error('update_failed', $error, array('status' => 500));
+            return new \WP_Error('update_failed', $this->messageForRedirectUpdateError($error), array('status' => 500));
         }
 
         $this->viewBuild->invalidateViewDoneAndScheduleRebuild();
@@ -498,7 +498,7 @@ class ABJ_404_Solution_RestApiController {
         ));
 
         if ($error !== '') {
-            return new \WP_Error('update_failed', $error, array('status' => 500));
+            return new \WP_Error('update_failed', $this->messageForRedirectUpdateError($error), array('status' => 500));
         }
 
         $this->viewBuild->invalidateViewDoneAndScheduleRebuild();
@@ -509,6 +509,17 @@ class ABJ_404_Solution_RestApiController {
             'to'   => $to,
             'code' => $code,
         ), 200);
+    }
+
+    private function messageForRedirectUpdateError(string $errorCode): string {
+        if ($errorCode === 'bad_update_request') {
+            return __('Error: Bad data passed for update redirect request.', '404-solution');
+        }
+
+        return sprintf(
+            __('Error: Unable to update redirect data. Repository result: %s', '404-solution'),
+            esc_html($errorCode)
+        );
     }
 
     /**
