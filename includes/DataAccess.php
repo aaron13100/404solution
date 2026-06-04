@@ -38,6 +38,7 @@ require_once __DIR__ . '/ViewDiagnostics.php';
 require_once __DIR__ . '/ViewCacheInvalidator.php';
 require_once __DIR__ . '/ViewQueryBuilder.php';
 require_once __DIR__ . '/ViewSnapshotCache.php';
+require_once __DIR__ . '/AdminViewReadCoordinator.php';
 require_once __DIR__ . '/ViewReadService.php';
 require_once __DIR__ . '/LogsRepositoryInterface.php';
 require_once __DIR__ . '/LogsRepository.php';

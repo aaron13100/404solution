@@ -135,6 +135,7 @@ return array(
     'ABJ_404_Solution_ViewWarmupStatePolicy' => $base . 'includes/ViewWarmupStatePolicy.php',
     'ABJ_404_Solution_ViewWarmupDiagnostics' => $base . 'includes/ViewWarmupDiagnostics.php',
     'ABJ_404_Solution_ViewSnapshotCache' => $base . 'includes/ViewSnapshotCache.php',
+    'ABJ_404_Solution_AdminViewReadCoordinator' => $base . 'includes/AdminViewReadCoordinator.php',
     'ABJ_404_Solution_StatusCountsRepository' => $base . 'includes/StatusCountsRepository.php',
     'ABJ_404_Solution_RedirectsBulkReader' => $base . 'includes/RedirectsBulkReader.php',
     'ABJ_404_Solution_LogsMetricsReader' => $base . 'includes/LogsMetricsReader.php',
