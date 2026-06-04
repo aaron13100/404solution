@@ -78,6 +78,54 @@ class ABJ_404_Solution_Logging {
     
     private function __construct() {
     }
+
+    /** @var ABJ_404_Solution_DebugLogFileStore|null */
+    private $debugLogFileStore = null;
+    /** @var ABJ_404_Solution_DebugLogReader|null */
+    private $debugLogReader = null;
+    /** @var ABJ_404_Solution_DebugLogArchiveBuilder|null */
+    private $debugLogArchiveBuilder = null;
+    /** @var ABJ_404_Solution_DeveloperLogMailer|null */
+    private $developerLogMailer = null;
+
+    /** @return ABJ_404_Solution_DebugLogFileStore */
+    private function getDebugLogFileStore(): ABJ_404_Solution_DebugLogFileStore {
+        if ($this->debugLogFileStore === null) {
+            $this->debugLogFileStore = new ABJ_404_Solution_DebugLogFileStore(
+                array($this, 'sanitizeLogLine'));
+        }
+        return $this->debugLogFileStore;
+    }
+
+    /** @return ABJ_404_Solution_DebugLogReader */
+    private function getDebugLogReader(): ABJ_404_Solution_DebugLogReader {
+        if ($this->debugLogReader === null) {
+            $this->debugLogReader = new ABJ_404_Solution_DebugLogReader(
+                array($this, 'errorMessage'));
+        }
+        return $this->debugLogReader;
+    }
+
+    /** @return ABJ_404_Solution_DebugLogArchiveBuilder */
+    private function getDebugLogArchiveBuilder(): ABJ_404_Solution_DebugLogArchiveBuilder {
+        if ($this->debugLogArchiveBuilder === null) {
+            $this->debugLogArchiveBuilder = new ABJ_404_Solution_DebugLogArchiveBuilder();
+        }
+        return $this->debugLogArchiveBuilder;
+    }
+
+    /** @return ABJ_404_Solution_DeveloperLogMailer */
+    private function getDeveloperLogMailer(): ABJ_404_Solution_DeveloperLogMailer {
+        if ($this->developerLogMailer === null) {
+            $this->developerLogMailer = new ABJ_404_Solution_DeveloperLogMailer(
+                $this->getBodyFormatter(),
+                $this->getDebugLogArchiveBuilder(),
+                array($this, 'debugMessage'),
+                array($this, 'errorMessage')
+            );
+        }
+        return $this->developerLogMailer;
+    }
     
     /** @return boolean true if debug mode is on. false otherwise. */
     function isDebug() {
@@ -226,22 +274,7 @@ class ABJ_404_Solution_Logging {
      * @return bool True on success, false on failure
      */
     function writeLineToDebugFile($line) {
-        // Sanitize PII at write-time (GDPR compliance)
-        // This protects all 372 logging calls across the codebase
-        $sanitizedLine = $this->sanitizeLogLine($line);
-
-        // Suppress errors to prevent fatal error when disk is full
-        $result = @file_put_contents($this->getDebugFilePath(), $sanitizedLine . "\n", FILE_APPEND);
-
-        if ($result === false) {
-            // Disk full or permissions issue - log to error_log instead to avoid infinite loop
-            // Don't use errorMessage() here as it would call this function again
-            error_log('404 Solution: Unable to write to debug log (possibly disk full): ' .
-                $this->getDebugFilePath());
-            return false;
-        }
-
-        return true;
+        return $this->getDebugLogFileStore()->writeLine((string)$line, $this->getDebugFilePath());
     }
     
     /** Email the log file to the plugin developer.
@@ -378,134 +411,20 @@ class ABJ_404_Solution_Logging {
      * @return bool True if wp_mail() reported success, false otherwise.
      */
     function emailLogFileToDeveloper(array $payload): bool {
-        $previouslySentLine = isset($payload['previously_sent_line']) && is_scalar($payload['previously_sent_line'])
-            ? (int)$payload['previously_sent_line'] : 0;
-        $this->debugMessage("Creating zip file of error log file. " .
-            "Previously sent error line: " . $previouslySentLine);
-
-        $logFileZip = $this->buildLogFileZip();
-
-        $formatter = $this->getBodyFormatter();
-        $subject = $formatter->buildSubject($payload);
-        $body = $formatter->buildBody($payload, $subject, $this->getDebugFilename());
-
-        $to = ABJ404_AUTHOR_EMAIL;
-        $headers = array('Content-Type: text/html; charset=UTF-8');
-        $headers[] = 'From: ' . get_option('admin_email');
-
-        $attachments = array();
-        if ($logFileZip !== '' && file_exists($logFileZip)) {
-            $attachments[] = $logFileZip;
-        }
-
-        $this->debugMessage("Sending error log zip file as attachment.");
-        $result = wp_mail($to, $subject, $body, $headers, $attachments);
-
-        if ($logFileZip !== '' && file_exists($logFileZip)) {
-            ABJ_404_Solution_FileSystemService::safeUnlink($logFileZip);
-        }
-        if ((bool)$result) {
-            $this->debugMessage("Mail sent. Log zip file deleted.");
-        } else {
-            $this->errorMessage("wp_mail() returned false while sending the developer error/heartbeat log email. " .
-                "Recipient: " . $to . ". Subject: " . $subject);
-        }
-        return (bool)$result;
-    }
-
-    /**
-     * Zip the current and rotated debug log files into the per-plugin temp
-     * zip path so they can ride along as a wp_mail attachment.
-     *
-     * Returns the zip path (which may be a non-existent file if the ZipArchive
-     * could not be opened -- the caller handles attachment-list filtering by
-     * file_exists()). Splitting this off keeps emailLogFileToDeveloper() free
-     * of I/O orchestration so the wp_mail dispatch step is straight-line.
-     *
-     * @return string
-     */
-    private function buildLogFileZip(): string {
-        $logFileZip = $this->getZipFilePath();
-        if (file_exists($logFileZip)) {
-            ABJ_404_Solution_FileSystemService::safeUnlink($logFileZip);
-        }
-        if (!class_exists('ZipArchive')) {
-            return '';
-        }
-        $zip = new ZipArchive;
-        if ($zip->open($logFileZip, ZipArchive::CREATE) === true) {
-            if (file_exists($this->getDebugFilePath())) {
-                $zip->addFile($this->getDebugFilePath(), basename($this->getDebugFilePath()));
-            }
-            if (file_exists($this->getDebugFilePathOld())) {
-                $zip->addFile($this->getDebugFilePathOld(), basename($this->getDebugFilePathOld()));
-            }
-            $zip->close();
-        }
-        return $logFileZip;
+        return $this->getDeveloperLogMailer()->send(
+            $payload,
+            $this->getDebugFilePath(),
+            $this->getDebugFilePathOld(),
+            $this->getZipFilePath(),
+            $this->getDebugFilename()
+        );
     }
     
     /**
      * @return array{num: int, line: string|null, total_error_count: int}
      */
     function getLatestErrorLine(): array {
-        $f = abj_service('functions');
-        $latestErrorLineFound = array();
-        $latestErrorLineFound['num'] = -1;
-        $latestErrorLineFound['line'] = null;
-        $latestErrorLineFound['total_error_count'] = 0;
-        $linesRead = 0;
-        $handle = null;
-        $collectingErrorLines = false;
-        try {
-            $debugPath = $this->getDebugFilePath();
-            // Check existence before fopen so PHP does not emit a warning on a
-            // missing debug file. The file is absent on fresh installs and in
-            // most test fixtures. Return the empty initialized array (no error
-            // line) in that case rather than letting fopen warn and return
-            // false. failOnWarning=true in phpunit.xml means an unguarded
-            // warning here trips the whole preflight gate.
-            if (!is_string($debugPath) || $debugPath === '' || !file_exists($debugPath)) {
-                return $latestErrorLineFound;
-            }
-            if ($handle = fopen($debugPath, "r")) {
-                // read the file one line at a time.
-                while (($line = fgets($handle)) !== false) {
-                    $linesRead++;
-                    // if the line has an error then save the line number.
-                    $hasError = stripos($line, '(ERROR)');
-                    $isDeleteError = stripos($line, 'SQL query error: DELETE command denied to user');
-                    if ($hasError !== false && $isDeleteError === false) {
-                    	$latestErrorLineFound['num'] = $linesRead;
-                        $latestErrorLineFound['line'] = $line;
-                        $latestErrorLineFound['total_error_count'] += 1;
-                        $collectingErrorLines = true;
-                        
-                    } else if ($collectingErrorLines && 
-                    	!$f->regexMatch("^\d{4}[-]\d{2}[-]\d{2} .*\(\w+\):\s.*$", $line)) {
-                        // if we're collecting error lines and we haven't found the 
-                        // beginning of a new debug message then continue collecting lines.
-                        $latestErrorLineFound['line'] .= "<BR/>\n" . $line;
-                        
-                    } else {
-                    	// this must be the beginning of a new debug message so we'll stop
-                    	// collecting error lines.
-                    	$collectingErrorLines = false;
-                   	}
-                }
-            } else {
-                $this->errorMessage("Error reading log file (1).");
-            }
-            
-        } catch (Exception $e) {
-            $this->errorMessage("Error reading log file. (2)", $e);
-        }
-            
-        if ($handle != null) {
-            fclose($handle);
-        }
-        
-        return $latestErrorLineFound;
+        return $this->getDebugLogReader()->getLatestErrorLine($this->getDebugFilePath());
     }
     
     /**
@@ -517,113 +436,7 @@ class ABJ_404_Solution_Logging {
      * @return string Sanitized log excerpt or message if no errors found
      */
     function getSanitizedLogExcerptForSupport() {
-        $f = abj_service('functions');
-        $errorEntries = array();
-        $recentLines = array();
-        $maxEntries = 15;
-        $maxRecentLines = 20;
-        $totalLines = 0;
-        $handle = null;
-
-        try {
-            $debugFilePath = $this->getDebugFilePath();
-
-            if (!file_exists($debugFilePath)) {
-                return "No log file available";
-            }
-
-            if ($handle = fopen($debugFilePath, "r")) {
-                $currentEntry = array();
-                $collectingEntry = false;
-
-                // Read file line by line
-                while (($line = fgets($handle)) !== false) {
-                    $totalLines++;
-
-                    // Keep a sliding window of recent lines (for fallback if no errors)
-                    $recentLines[] = $line;
-                    if (count($recentLines) > $maxRecentLines) {
-                        array_shift($recentLines);
-                    }
-
-                    // Check if this is an ERROR or WARN line
-                    $hasError = stripos($line, '(ERROR)') !== false;
-                    $hasWarn = stripos($line, '(WARN)') !== false;
-                    $isDeleteError = stripos($line, 'SQL query error: DELETE command denied to user') !== false;
-
-                    // Start collecting if we find ERROR or WARN (but skip known benign errors)
-                    if (($hasError || $hasWarn) && !$isDeleteError) {
-                        // If we were collecting a previous entry, save it
-                        if ($collectingEntry && !empty($currentEntry)) {
-                            $errorEntries[] = $currentEntry;
-                            // Keep only last N entries (sliding window)
-                            if (count($errorEntries) > $maxEntries) {
-                                array_shift($errorEntries);
-                            }
-                        }
-
-                        // Start new entry (no sanitization needed - already done at write-time)
-                        $currentEntry = array($line);
-                        $collectingEntry = true;
-
-                    } else if ($collectingEntry &&
-                               !$f->regexMatch("^\d{4}[-]\d{2}[-]\d{2} .*\(\w+\):\s.*$", $line)) {
-                        // Continue collecting multiline error (no sanitization needed - already done at write-time)
-                        $currentEntry[] = $line;
-
-                    } else {
-                        // New log entry started, save previous if exists
-                        if ($collectingEntry && !empty($currentEntry)) {
-                            $errorEntries[] = $currentEntry;
-                            if (count($errorEntries) > $maxEntries) {
-                                array_shift($errorEntries);
-                            }
-                        }
-                        $collectingEntry = false;
-                        $currentEntry = array();
-                    }
-                }
-
-                // Save last entry if we were still collecting
-                if ($collectingEntry && !empty($currentEntry)) {
-                    $errorEntries[] = $currentEntry;
-                    if (count($errorEntries) > $maxEntries) {
-                        array_shift($errorEntries);
-                    }
-                }
-
-                fclose($handle);
-
-            } else {
-                return "Log file not readable";
-            }
-
-        } catch (Exception $e) { // allow-silent-catch: log excerpt for support bundle; "Error reading log file" is itself diagnostic and gets embedded in the bundle output
-            return "Error reading log file";
-        }
-
-        // Format output
-        if (empty($errorEntries)) {
-            // No errors/warnings found - include last N lines for context
-            if (empty($recentLines)) {
-                return "Log file is empty";
-            }
-            $output = "No ERROR/WARN entries found. Last " . count($recentLines) . " log lines:\n\n";
-            $output .= implode("", $recentLines);
-            return trim($output);
-        }
-
-        $output = "Last " . count($errorEntries) . " ERROR/WARN entries:\n\n";
-        foreach ($errorEntries as $entry) {
-            $output .= implode("\n", $entry) . "\n\n";
-        }
-
-        if (!empty($recentLines)) {
-            $output .= "Recent context (last " . count($recentLines) . " lines):\n\n";
-            $output .= implode("", $recentLines);
-        }
-
-        return trim($output);
+        return $this->getDebugLogReader()->getSanitizedLogExcerptForSupport($this->getDebugFilePath());
     }
 
     /**
@@ -648,56 +461,12 @@ class ABJ_404_Solution_Logging {
      * @return string
      */
     function getDebugFilePath() {
-        $debugFileName = $this->getDebugFilename();
-        return $this->getFilePathAndMoveOldFile(abj404_getUploadsDir(), $debugFileName);
+        return $this->getDebugLogFileStore()->getDebugFilePath();
     }
     
     /** @return string */
     function getDebugFilename(): string {
-        // The is_object() / method_exists() guards below catch the static
-        // unreachability cases (container miss, factory returned null), but
-        // they cannot catch a Throwable raised from inside the resolved call
-        // — getOptions() may surface a DB read failure, uniqidReal() may
-        // raise on a corrupt random source, updateOptions() may fail to
-        // persist. writeLineToDebugFile() promises non-throwing; any escape
-        // from this method violates that contract. Absorb every Throwable
-        // and return the deterministic fallback name so logging stays
-        // available even when upstream services are degraded.
-        try {
-            // get the UUID here.
-            $optionsRepo = abj_service('options_repository');
-            // abj_service returns null when the container is uninitialised
-            // or the factory threw — common during very-early boot, the
-            // test harness, and self-healing recovery from broken installs.
-            if (!is_object($optionsRepo) || !method_exists($optionsRepo, 'getOptions')) {
-                return 'abj404_debug.txt';
-            }
-            $options = $optionsRepo->getOptions(true);
-            $debugFileKey = null;
-            if (is_array($options) && array_key_exists(self::DEBUG_FILE_KEY, $options)) {
-                $debugFileKey = is_string($options[self::DEBUG_FILE_KEY]) ? $options[self::DEBUG_FILE_KEY] : null;
-            }
-            // if the key doesn't exist then create it.
-            if ($debugFileKey === null || trim($debugFileKey) === '') {
-                // delete any lingering debug files.
-                $this->deleteDebugFile();
-
-                // create a probably unique UUID and store it to the database.
-                $syncUtils = abj_service('sync_utils');
-                if (!is_object($syncUtils) || !method_exists($syncUtils, 'uniqidReal')) {
-                    return 'abj404_debug.txt';
-                }
-                $debugFileKey = $syncUtils->uniqidReal();
-                $options[self::DEBUG_FILE_KEY] = $debugFileKey;
-                if (method_exists($optionsRepo, 'updateOptions')) {
-                    $optionsRepo->updateOptions($options);
-                }
-            }
-
-            return 'abj404_debug_' . $debugFileKey . '.txt';
-        } catch (\Throwable $e) { // allow-silent-catch: debug filename derivation; fallback to default name still produces a valid path for log writes
-            return 'abj404_debug.txt';
-        }
+        return $this->getDebugLogFileStore()->getDebugFilename();
     }
     
     /** @return string */
@@ -709,14 +478,14 @@ class ABJ_404_Solution_Logging {
      * @return string
      */
     function getDebugFilePathSentFile() {
-    	return $this->getFilePathAndMoveOldFile(abj404_getUploadsDir(), 'abj404_debug_sent_line.txt');
+        return $this->getDebugLogFileStore()->getDebugFilePathSentFile();
     }
     
     /** Return the path to the zip file for sending the debug file. 
      * @return string
      */
     function getZipFilePath() {
-    	return $this->getFilePathAndMoveOldFile(abj404_getUploadsDir(), 'abj404_debug.zip');
+        return $this->getDebugLogFileStore()->getZipFilePath();
     }
     
     /** This is for legacy support. On new installations it creates a directory and returns
@@ -727,97 +496,38 @@ class ABJ_404_Solution_Logging {
      * @return string
      */
     function getFilePathAndMoveOldFile($directory, $filename) {
-        // create the directory and move the file
-        if (!ABJ_404_Solution_FileSystemService::createDirectoryWithErrorMessages($directory)) {
-            return ABJ404_PATH . $filename;
-        }
-        
-        if (file_exists(ABJ404_PATH . $filename)) {
-            // move the file to the new location
-            rename(ABJ404_PATH . $filename, $directory . $filename);
-        }
-        
-        return $directory . $filename;
+        return $this->getDebugLogFileStore()->getFilePathAndMoveOldFile($directory, $filename);
     }
     
     /** @return void */
     function limitDebugFileSize(): void {
-        // delete the sent_line file since it's now incorrect.
-        if (file_exists($this->getDebugFilePathSentFile())) {
-            ABJ_404_Solution_FileSystemService::safeUnlink($this->getDebugFilePathSentFile());
-        }
-
-        // update the last sent error line since the debug file will be deleted.
-        $this->removeLastSentErrorLineFromDatabase();
-        
-        // delete _old log file
-        ABJ_404_Solution_FileSystemService::safeUnlink($this->getDebugFilePathOld());
-        // rename current log file to _old
-        rename($this->getDebugFilePath(), $this->getDebugFilePathOld());
+        $this->getDebugLogFileStore()->limitDebugFileSize(
+            $this->getDebugFilePathSentFile(),
+            $this->getDebugFilePathOld(),
+            $this->getDebugFilePath()
+        );
     }
     
     /** @return void */
     function removeLastSentErrorLineFromDatabase(): void {
-    	// update the last sent error line since the debug file will be deleted.
-        $options = abj_service('options_repository')->getOptions(true);
-    	$options[self::LAST_SENT_LINE] = 0;
-        abj_service('options_repository')->updateOptions($options);
+        $this->getDebugLogFileStore()->removeLastSentErrorLineFromDatabase();
     }
     
     /** Deletes all files named abj404_debug_*.txt
      * @return boolean true if the file was deleted.
      */
     function deleteDebugFile() {
-        $abj404logic = abj_service('plugin_logic');
-        $allIsWell = true;
-        
-        // since the debug file is being deleted we reset the last error line that was sent.
-        if (file_exists($this->getDebugFilePathSentFile())) {
-            ABJ_404_Solution_FileSystemService::safeUnlink($this->getDebugFilePathSentFile());
-        }
-        // update the last sent error line since the debug file will be deleted.
-        $this->removeLastSentErrorLineFromDatabase();
-        
-        // delete the debug file(s).
-        // list any files in the directory and delete any files named debug_*.txt
-        $uploadDir = abj404_getUploadsDir();
-        // Check if the directory exists
-        if (is_dir($uploadDir)) {
-            // Get all files matching the pattern abj404_debug_*.txt
-            $files = glob($uploadDir . '/abj404_debug_*.txt');
-            if (!is_array($files)) { $files = array(); }
-            foreach ($files as $file) { // Loop through the files and delete them
-                if (is_file($file)) {
-                    // Delete the file
-                    if (!ABJ_404_Solution_FileSystemService::safeUnlink($file)) {
-                        $allIsWell = false;
-                    }
-                }
-            }
-        }
-        
-        // reset the UUID since we deleted the log file.
-        $options = abj_service('options_repository')->getOptions(true);
-        $options[self::DEBUG_FILE_KEY] = null;
-        abj_service('options_repository')->updateOptions($options);
-        
-        return $allIsWell;
+        return $this->getDebugLogFileStore()->deleteDebugFile();
     }
     
     /** 
      * @return int file size in bytes
      */
     function getDebugFileSize() {
-        $file1Size = 0;
-        $file2Size = 0;
-        if (file_exists($this->getDebugFilePath())) {
-            $file1Size = filesize($this->getDebugFilePath());
-        }
-        if (file_exists($this->getDebugFilePathOld())) {
-            $file2Size = filesize($this->getDebugFilePathOld());
-        }
-        
-        return $file1Size + $file2Size;
+        return $this->getDebugLogFileStore()->getDebugFileSize(
+            $this->getDebugFilePath(),
+            $this->getDebugFilePathOld()
+        );
     }
     
 }
