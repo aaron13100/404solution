@@ -7,8 +7,8 @@ if (!defined('ABSPATH')) {
 /**
  * Background-rebuild scheduler entry + crashed-build reconciliation.
  *
- * Sibling of ABJ_404_Solution_ViewQueriesStaged. Owns three responsibilities
- * that previously bloated the queries collaborator past the 1500-line ceiling:
+ * Sibling of ABJ_404_Solution_ViewBuildStagePipeline. Owns three responsibilities
+ * that previously bloated the staged build collaborator past the line ceiling:
  *
  *   1. {@see sweepStaleRebuildTransients()} - reclaim expired
  *      `abj404_inflight_*` transient rows and orphaned temp/preagg tables
@@ -16,7 +16,7 @@ if (!defined('ABSPATH')) {
  *
  *   2. {@see rebuildViewDoneInBackground()} - the WP-Cron entry point. Takes
  *      the build lock, runs reconciliation, then drives runStagedBuildOnce()
- *      on the queries collaborator. Reschedules itself on yield and records
+ *      on the stage pipeline. Reschedules itself on yield and records
  *      health success/failure.
  *
  *   3. {@see reconcileStagedTablesAtRunnerStartup()} (+
@@ -25,7 +25,7 @@ if (!defined('ABSPATH')) {
  *      cases: orphan deleteme, orphan view_build that can be promoted in
  *      place, both tables present.
  *
- * Behavior is unchanged from the original location in ViewQueriesStaged.php.
+ * Behavior is unchanged from the original staged-build collaborator.
  * Cross-collaborator calls (e.g. `$this->runStagedBuildOnce()`,
  * `$this->acquireViewBuildLock()`) flow through the orchestrator's reflection
  * routed __call exactly as before.

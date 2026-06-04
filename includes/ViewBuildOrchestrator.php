@@ -40,8 +40,6 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
 
     /** @var array<string, ABJ_404_Solution_ViewBuildCollaborator> */
     private $collaborators = array();
-    /** @var ABJ_404_Solution_ViewQueriesStaged */
-    private $queries;
     /** @var ABJ_404_Solution_ViewBuildProgressOptions */
     private $progressOptions;
     /** @var ABJ_404_Solution_ViewBuildStagedSqlExecutor */
@@ -66,6 +64,14 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
     private $viewDoneState;
     /** @var ABJ_404_Solution_ViewBuildPageLoadFallback */
     private $pageLoadFallback;
+    /** @var ABJ_404_Solution_ViewBuildForegroundLease */
+    private $foregroundLease;
+    /** @var ABJ_404_Solution_ViewBuildReadGateway */
+    private $readGateway;
+    /** @var ABJ_404_Solution_ViewBuildAdvanceCoordinator */
+    private $advanceCoordinator;
+    /** @var ABJ_404_Solution_ViewBuildStagePipeline */
+    private $stagePipeline;
 
     /** @var ABJ_404_Solution_DatabaseConnectionManager */
     private $connectionManager;
@@ -97,7 +103,6 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
             : $this->resolveRebuildHealthState();
         $this->connectionManager = $connectionManager !== null ? $connectionManager : $dbCore->connectionManager();
         $this->errorClassifier = $errorClassifier !== null ? $errorClassifier : $dbCore->errorClassifier();
-        $this->queries = new ABJ_404_Solution_ViewQueriesStaged($this);
         $this->progressOptions = new ABJ_404_Solution_ViewBuildProgressOptions($this);
         $this->stagedSqlExecutor = new ABJ_404_Solution_ViewBuildStagedSqlExecutor($this);
         $this->stateProbe = new ABJ_404_Solution_ViewBuildStateProbe($this);
@@ -110,16 +115,23 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
         $this->forceRestart = new ABJ_404_Solution_ViewBuildForceRestart($this);
         $this->viewDoneState = new ABJ_404_Solution_ViewDoneState($this);
         $this->pageLoadFallback = new ABJ_404_Solution_ViewBuildPageLoadFallback($this);
+        $this->foregroundLease = new ABJ_404_Solution_ViewBuildForegroundLease($this);
+        $this->readGateway = new ABJ_404_Solution_ViewBuildReadGateway($this);
+        $this->advanceCoordinator = new ABJ_404_Solution_ViewBuildAdvanceCoordinator($this);
+        $this->stagePipeline = new ABJ_404_Solution_ViewBuildStagePipeline($this);
         // view_done_state is registered BEFORE queries so the orchestrator's
         // __call routing resolves viewDoneIsServeable / viewDoneBuiltAt /
         // markViewDoneBuildCompleted / invalidateViewDoneServeableCache /
         // getViewDoneBuiltAtTimestamp / viewDoneFreshnessOptionName to the
-        // new owning collaborator rather than to ViewQueriesStaged (where
+        // new owning collaborator rather than to the old staged-build shell (where
         // these methods used to live before the i798 extraction).
         $this->collaborators = array(
             'view_done_state' => $this->viewDoneState,
             'page_load_fallback' => $this->pageLoadFallback,
-            'queries' => $this->queries,
+            'foreground_lease' => $this->foregroundLease,
+            'read_gateway' => $this->readGateway,
+            'advance_coordinator' => $this->advanceCoordinator,
+            'stage_pipeline' => $this->stagePipeline,
             'stage_runner' => new ABJ_404_Solution_ViewBuildStageRunner($this),
             'stage_callbacks' => new ABJ_404_Solution_ViewBuildStageCallbacks($this),
             'adaptive' => new ABJ_404_Solution_ViewBuildAdaptive($this),
@@ -150,7 +162,7 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
 
     /** @return void */
     public static function resetViewBuildOncePerRequestGuard(): void {
-        ABJ_404_Solution_ViewQueriesStaged::resetViewBuildOncePerRequestGuard();
+        ABJ_404_Solution_ViewBuildStagePipeline::resetViewBuildOncePerRequestGuard();
         ABJ_404_Solution_ViewBuildStageRunner::resetViewBuildShutdownLoggerRegistration();
     }
 
@@ -163,12 +175,12 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
 
     /** @return void */
     public function claimForegroundViewBuildLease(): void {
-        $this->queries->claimForegroundViewBuildLease();
+        $this->foregroundLease->claimForegroundViewBuildLease();
     }
 
     /** @param string $sub @param array<string, mixed> $tableOptions @return array<int, array<string, mixed>> */
     public function runRedirectsForViewStaged(string $sub, array $tableOptions): array {
-        return $this->queries->runRedirectsForViewStaged($sub, $tableOptions);
+        return $this->readGateway->runRedirectsForViewStaged($sub, $tableOptions);
     }
 
     /** @return bool */
@@ -188,12 +200,12 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
 
     /** @return array<string, mixed> */
     public function getViewBuildProgress(): array {
-        return $this->queries->getViewBuildProgress();
+        return $this->readGateway->getViewBuildProgress();
     }
 
     /** @param bool $forceRebuild @return array<string, mixed> */
     public function advanceViewBuildOnce(bool $forceRebuild = false): array {
-        return $this->queries->advanceViewBuildOnce($forceRebuild);
+        return $this->advanceCoordinator->advanceViewBuildOnce($forceRebuild);
     }
 
     /** @return array{ran:bool, reason:string, progress:array<string,mixed>} */
@@ -203,7 +215,7 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
 
     /** @param string $sub @param array<string, mixed> $tableOptions @return int */
     public function runRedirectsForViewCountStaged(string $sub, array $tableOptions): int {
-        return $this->queries->runRedirectsForViewCountStaged($sub, $tableOptions);
+        return $this->readGateway->runRedirectsForViewCountStaged($sub, $tableOptions);
     }
 
     /** @return void */

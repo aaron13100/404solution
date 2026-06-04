@@ -315,7 +315,7 @@ class ABJ_404_Solution_DatabaseUpgradeBootstrap extends ABJ_404_Solution_Databas
                 continue;
             }
             // Transient staged-build tables (view_build, view_done, view_deleteme)
-            // are owned by ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait.
+            // are owned by the staged view-build collaborators.
             // stageCreateBuildTable() creates view_build on demand, stageRenameSwap()
             // renames it to view_done, and view_deleteme is the ephemeral previous-
             // generation served table that gets dropped right after the swap. None

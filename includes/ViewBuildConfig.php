@@ -7,8 +7,8 @@ if (!defined('ABSPATH')) {
 /**
  * Tunable constants for the staged getRedirectsForView rebuild pipeline.
  *
- * These would naturally live as `const` declarations on
- * ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait, but PHP 7.4 (the
+ * These would naturally live as `const` declarations on the stage pipeline,
+ * but PHP 7.4 (the
  * declared minimum, see Requires PHP in 404-solution.php) does not allow
  * constants inside a trait body, that arrived in PHP 8.2. They sat on
  * ABJ_404_Solution_DataAccess for one release (4.1.14) and pushed that

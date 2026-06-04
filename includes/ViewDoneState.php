@@ -22,7 +22,7 @@ if (!defined('ABSPATH')) {
  *    clears the hard-stale admin notice, invalidates the cache).
  *
  * Does NOT own:
- *  - the staged-build state machine (still on ViewQueriesStaged);
+ *  - the staged-build state machine (ViewBuildStagePipeline);
  *  - lock primitives, host probes, stage callbacks (sibling collaborators);
  *  - viewDoneTableExists / viewDoneHasRows / viewDoneDataBuiltAt — these
  *    are lower-level table/column probes that live on ViewBuildHelpers and
@@ -32,6 +32,7 @@ if (!defined('ABSPATH')) {
  * @method bool viewDoneHasRows(...$arguments)
  * @method int viewDoneDataBuiltAt(...$arguments)
  * @method string viewDoneDataBuiltAtOptionName(...$arguments)
+ * @method string getLowercasePrefix(...$arguments)
  * @method void clearViewDoneHardStaleNotice(...$arguments)
  * @method ABJ_404_Solution_Clock clock(...$arguments)
  */

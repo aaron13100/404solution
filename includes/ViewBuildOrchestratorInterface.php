@@ -8,17 +8,18 @@ if (!defined('ABSPATH')) {
  * Interface for the staged view-build pipeline and mutation watermark system.
  *
  * Extracted from DataAccess in Phase 7 of the DataAccess refactor.
- * Absorbs these collaborators: ViewQueriesStaged, ViewBuildHelpers,
- * ViewBuildStageCallbacks, ViewBuildLockAndCron, ViewBuildPhpEnvProbe,
+ * Absorbs these collaborators: ViewBuildReadGateway,
+ * ViewBuildAdvanceCoordinator, ViewBuildStagePipeline,
+ * ViewBuildForegroundLease, ViewBuildStageCallbacks,
+ * ViewBuildLockAndCron, ViewBuildPhpEnvProbe,
  * ViewBuildHostFailurePolicy, ViewBuildSessionEnvProbe,
- * ViewBuildStageRunner, ViewBuildAdaptive,
- * ViewBuildForceRestart.
+ * ViewBuildStageRunner, ViewBuildAdaptive, ViewBuildForceRestart.
  *
  * @see docs/dataaccess-refactor-plan.md Phase 7.
  */
 interface ABJ_404_Solution_ViewBuildOrchestratorInterface {
 
-    // --- ViewQueriesStaged (orchestrator entry point, staged build loop) ---
+    // --- Staged view-build public entry points ---
 
     /** @return void */
     public function claimForegroundViewBuildLease(): void;

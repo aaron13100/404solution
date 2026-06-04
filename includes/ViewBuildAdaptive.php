@@ -23,9 +23,9 @@ if (!defined('ABSPATH')) {
  *      generic connection drop into a clean classifiable kill the
  *      pipeline can resume from.
  *
- * Sibling to ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait; both are
- * mixed into ABJ_404_Solution_DataAccess. Private members declared here
- * are visible to the staged-build trait inside the composing class.
+ * Sibling to ABJ_404_Solution_ViewBuildStagePipeline. Private members
+ * declared here are reached by staged-build collaborators through the
+ * orchestrator host.
  *
  * @property ABJ_404_Solution_DatabaseCore $dbCore
  * @property ABJ_404_Solution_Functions $f

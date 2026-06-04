@@ -21,7 +21,8 @@ if (!defined('ABSPATH')) {
  *  - it must never throw or break admin page rendering (caller in
  *    404-solution.php wraps it in try/catch).
  *
- * The AJAX advance path (ABJ_404_Solution_ViewQueriesStaged::advanceViewBuildOnce)
+ * The AJAX advance path
+ * (ABJ_404_Solution_ViewBuildAdvanceCoordinator::advanceViewBuildOnce)
  * intentionally does NOT share these wrappers. Keeping them as a separate
  * collaborator makes the contract clear and prevents either path from
  * accidentally inheriting the other's gates.

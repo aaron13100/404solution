@@ -9,7 +9,7 @@ if (!defined('ABSPATH')) {
  *
  * Each `stage*` method here is invoked from the orchestrator's
  * runStagedBuildOnce() loop in
- * {@see ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait}. The orchestrator
+ * {@see ABJ_404_Solution_ViewBuildStagePipeline}. The stage pipeline
  * owns the `current_stage` progression, per-stage timing/logging, kill-streak
  * escape, and request-scope guards; this trait owns just the per-stage
  * SQL/work performed at each step:
@@ -30,11 +30,10 @@ if (!defined('ABSPATH')) {
  * countLiveRedirects, countViewBuildRows, maxBuildBufferId,
  * humanBatchProgress) that compose these stages.
  *
- * Sibling to ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait and
- * ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait; all three are mixed
- * into ABJ_404_Solution_DataAccess. Properties / helper methods declared on
- * those traits (markBuildStage, runStagedSqlFile, viewBuildTableName,
- * stagedQueryOptions, etc.) are visible inside the composing class.
+ * Sibling to ABJ_404_Solution_ViewBuildStagePipeline. Properties / helper
+ * methods declared on other collaborators (markBuildStage, runStagedSqlFile,
+ * viewBuildTableName, stagedQueryOptions, etc.) are reached through the
+ * orchestrator host.
  *
  * @property ABJ_404_Solution_DatabaseCore $dbCore
  * @property ABJ_404_Solution_Functions $f

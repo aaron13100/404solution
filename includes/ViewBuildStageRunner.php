@@ -8,8 +8,7 @@ if (!defined('ABSPATH')) {
  * Per-stage runner / telemetry / shutdown-diagnostics infrastructure for the
  * staged getRedirectsForView build pipeline.
  *
- * Extracted from {@see ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait}
- * so the orchestrator (runStagedBuildOnce) stays under the modularity cap
+ * Extracted from the former staged-build trait so runStagedBuildOnce stays under the modularity cap
  * without losing the timing/log/inflight wiring each stage relies on.
  *
  * What lives here:
@@ -31,11 +30,11 @@ if (!defined('ABSPATH')) {
  *     captured into $lastBatchProgressDetail so a mid-stage yield doesn't
  *     drop back to a bare "yielded in N ms" between ticks.
  *
- * Composed alongside the orchestrator trait into ABJ_404_Solution_DataAccess
- * so the cross-trait calls ($this->readProgressOption, $this->logger,
+ * Composed alongside the stage pipeline through ABJ_404_Solution_ViewBuildOrchestrator
+ * so the cross-collaborator calls ($this->readProgressOption, $this->logger,
  * $this->classifyAndHandleStageFailure, $this->resetStageNoProgressStreak,
  * $this->extendedTimeoutForKilledNonBatchedStage, $this->stagedQueryTimeoutSeconds)
- * resolve through the shared composing class.
+ * resolve through the shared orchestrator host.
  *
  * @property ABJ_404_Solution_DatabaseCore $dbCore
  * @property ABJ_404_Solution_Functions $f

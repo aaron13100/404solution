@@ -7,8 +7,7 @@ if (!defined('ABSPATH')) {
 /**
  * Cross-request coordination primitives for the staged view-build pipeline.
  *
- * Two responsibilities, both called from the staged-build orchestrator in
- * ABJ_404_Solution_DataAccess_ViewQueriesStagedTrait:
+ * Two responsibilities, both called from the staged-build collaborators:
  *
  *   1. Build-writer serialization: acquireViewBuildLock / releaseViewBuildLock
  *      with a wp_options-row advisory-lock fallback for managed/sharded MySQL
@@ -21,9 +20,9 @@ if (!defined('ABSPATH')) {
  *      stuck WordPress cron from wp_get_ready_cron_jobs() age and surfaces a
  *      notice without sending email or flooding wp-admin.
  *
- * Sibling to ABJ_404_Solution_DataAccess_ViewBuildHelpersTrait; both are
- * mixed into ABJ_404_Solution_DataAccess. Calls localizeOrDefaultViewBuildNotice()
- * from the helpers trait (resolved via $this-> on the composing class).
+ * Sibling to ABJ_404_Solution_ViewBuildStagePipeline and
+ * ABJ_404_Solution_ViewBuildReadGateway. Calls
+ * localizeOrDefaultViewBuildNotice() through the orchestrator host.
  *
  * @property ABJ_404_Solution_DatabaseCore $dbCore
  * @property ABJ_404_Solution_Functions $f
