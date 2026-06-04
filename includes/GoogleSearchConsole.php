@@ -40,6 +40,9 @@ class ABJ_404_Solution_GoogleSearchConsole {
     /** Base URL of the centralized OAuth proxy Worker. */
     const CENTRALIZED_AUTH_URL = 'https://404-solution-auth.forethought-studio.com';
 
+    const CENTRALIZED_CALLBACK_SECRET_TRANSIENT_PREFIX = 'abj404_gsc_oauth_cb_secret_';
+    const CENTRALIZED_CALLBACK_SECRET_TTL              = 900;
+
     /** @var ABJ_404_Solution_Logging */
     private $logger;
 
@@ -151,9 +154,11 @@ class ABJ_404_Solution_GoogleSearchConsole {
      */
     public function buildAuthUrl(): string {
         if ($this->isCentralizedMode()) {
+            $nonce = wp_create_nonce('abj404_gsc_oauth');
             $params = array(
                 'site_callback_url' => $this->getCallbackUrl(),
-                'nonce'             => wp_create_nonce('abj404_gsc_oauth'),
+                'nonce'             => $nonce,
+                'callback_signing_secret' => $this->createCentralizedCallbackSecret($nonce),
                 'scope'             => self::SCOPE,
             );
             return self::CENTRALIZED_AUTH_URL . '/authorize?' . http_build_query($params);
@@ -170,6 +175,36 @@ class ABJ_404_Solution_GoogleSearchConsole {
             'state'         => wp_create_nonce('abj404_gsc_oauth'),
         );
         return self::OAUTH_AUTH_URL . '?' . http_build_query($params);
+    }
+
+    /**
+     * Build the transient key that stores the one-time Worker callback signing secret.
+     *
+     * @param string $nonce WordPress OAuth callback nonce.
+     * @return string
+     */
+    public static function centralizedCallbackSecretTransientKey(string $nonce): string {
+        return self::CENTRALIZED_CALLBACK_SECRET_TRANSIENT_PREFIX . hash('sha256', $nonce);
+    }
+
+    /**
+     * Create and persist a short-lived secret the centralized Worker uses to sign its callback payload.
+     *
+     * @param string $nonce WordPress OAuth callback nonce.
+     * @return string
+     */
+    private function createCentralizedCallbackSecret(string $nonce): string {
+        $secret = function_exists('wp_generate_password')
+            ? wp_generate_password(64, false, false)
+            : bin2hex(random_bytes(32));
+
+        set_transient( // allow-cache-empty: OAuth callback signing secret is generated non-empty; storage is required for Worker HMAC verification.
+            self::centralizedCallbackSecretTransientKey($nonce),
+            $secret,
+            self::CENTRALIZED_CALLBACK_SECRET_TTL
+        );
+
+        return $secret;
     }
 
     /**
@@ -362,6 +397,7 @@ class ABJ_404_Solution_GoogleSearchConsole {
         }
 
         $allRows = $this->doFetchFromApi($urls, $days);
+        // allow-cache-empty: empty GSC result sets are valid recent fetches and drive the explicit no-data UI state.
         set_transient(self::TRANSIENT_KEY, $allRows, self::TRANSIENT_TTL);
         update_option(self::LAST_FETCH_OPTION_KEY, time(), false);
         return $allRows;
@@ -485,6 +521,7 @@ class ABJ_404_Solution_GoogleSearchConsole {
             $urls = $this->getUrlsToQuery();
 
             $allRows = $this->doFetchFromApi($urls);
+            // allow-cache-empty: empty GSC result sets are valid recent fetches and drive the explicit no-data UI state.
             set_transient(self::TRANSIENT_KEY, $allRows, self::TRANSIENT_TTL);
             update_option(self::LAST_FETCH_OPTION_KEY, time(), false);
         } finally {

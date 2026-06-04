@@ -68,16 +68,18 @@ class ABJ_404_Solution_GscOAuthHandler {
             wp_die(__('Security check failed.', '404-solution'), 403);
         }
 
-        $error = isset($_GET['abj404_gsc_error']) ? sanitize_text_field((string)$_GET['abj404_gsc_error']) : '';
+        $payload = self::verifiedCentralizedPayload($nonce);
+
+        $error = self::payloadString($payload, 'abj404_gsc_error');
         if ($error !== '') {
             $gsc->setLastOAuthError($error);
             wp_safe_redirect(admin_url('options-general.php?page=' . ABJ404_PP . '&subpage=abj404_options'));
             exit;
         }
 
-        $accessToken  = isset($_GET['access_token'])  ? sanitize_text_field((string)$_GET['access_token'])  : '';
-        $refreshToken = isset($_GET['refresh_token']) ? sanitize_text_field((string)$_GET['refresh_token']) : '';
-        $expiresIn    = isset($_GET['expires_in'])    ? (int)$_GET['expires_in']                             : 3600;
+        $accessToken  = self::payloadString($payload, 'access_token');
+        $refreshToken = self::payloadString($payload, 'refresh_token');
+        $expiresIn    = self::payloadInt($payload, 'expires_in', 3600);
 
         if ($accessToken === '') {
             $gsc->setLastOAuthError(__('No access token received from authorization.', '404-solution'));
@@ -89,6 +91,94 @@ class ABJ_404_Solution_GscOAuthHandler {
 
         wp_safe_redirect(admin_url('options-general.php?page=' . ABJ404_PP . '&subpage=abj404_options'));
         exit;
+    }
+
+    /**
+     * Verify and decode the centralized Worker's signed callback payload.
+     *
+     * @param string $nonce WordPress OAuth callback nonce.
+     * @return array<string, mixed>
+     */
+    private static function verifiedCentralizedPayload(string $nonce): array {
+        $rawEncodedPayload = $_GET['abj404_gsc_payload'] ?? '';
+        $encodedPayload = is_scalar($rawEncodedPayload)
+            ? sanitize_text_field((string)$rawEncodedPayload)
+            : '';
+        $rawSignature = $_GET['abj404_gsc_signature'] ?? '';
+        $signature = is_scalar($rawSignature)
+            ? sanitize_text_field((string)$rawSignature)
+            : '';
+
+        $secretKey = ABJ_404_Solution_GoogleSearchConsole::centralizedCallbackSecretTransientKey($nonce);
+        $secret = get_transient($secretKey);
+
+        if ($encodedPayload === '' || $signature === '' || !is_string($secret) || $secret === '') {
+            wp_die(__('Security check failed.', '404-solution'), 403);
+        }
+
+        $expectedSignature = hash_hmac('sha256', $encodedPayload, $secret);
+        if (!hash_equals($expectedSignature, $signature)) {
+            wp_die(__('Security check failed.', '404-solution'), 403);
+        }
+
+        $json = self::base64UrlDecode($encodedPayload);
+        if ($json === '') {
+            wp_die(__('Security check failed.', '404-solution'), 403);
+        }
+
+        $payload = json_decode($json, true);
+        if (!is_array($payload)) {
+            wp_die(__('Security check failed.', '404-solution'), 403);
+        }
+
+        $normalizedPayload = array();
+        foreach ($payload as $key => $value) {
+            if (!is_string($key)) {
+                wp_die(__('Security check failed.', '404-solution'), 403);
+            }
+            $normalizedPayload[$key] = $value;
+        }
+
+        $payloadNonce = $normalizedPayload['nonce'] ?? null;
+        if (!is_scalar($payloadNonce) || (string)$payloadNonce !== $nonce) {
+            wp_die(__('Security check failed.', '404-solution'), 403);
+        }
+
+        delete_transient($secretKey);
+
+        return $normalizedPayload;
+    }
+
+    private static function base64UrlDecode(string $value): string {
+        $padding = strlen($value) % 4;
+        if ($padding !== 0) {
+            $value .= str_repeat('=', 4 - $padding);
+        }
+
+        $decoded = base64_decode(strtr($value, '-_', '+/'), true);
+        return is_string($decoded) ? $decoded : '';
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     */
+    private static function payloadString(array $payload, string $key): string {
+        $value = $payload[$key] ?? '';
+        return is_scalar($value) ? sanitize_text_field((string)$value) : '';
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     */
+    private static function payloadInt(array $payload, string $key, int $default): int {
+        $value = $payload[$key] ?? null;
+        if (is_int($value)) {
+            return $value;
+        }
+        if (is_string($value) && is_numeric($value)) {
+            return (int)$value;
+        }
+        return $default;
     }
 
     /**
