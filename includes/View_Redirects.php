@@ -9,6 +9,61 @@ if (!defined('ABSPATH')) {
  */
 class ABJ_404_Solution_View_Redirects extends ABJ_404_Solution_ViewComponent {
 
+    /** @var ABJ_404_Solution_RedirectEditFormPresenter|null */
+    private $editFormPresenter = null;
+
+    /** @var ABJ_404_Solution_RedirectDestinationOptionsPresenter|null */
+    private $destinationOptionsPresenter = null;
+
+    /** @var ABJ_404_Solution_RedirectDestinationSuggestionService|null */
+    private $suggestionService = null;
+
+    /** @var ABJ_404_Solution_RedirectEngineLabeler|null */
+    private $engineLabeler = null;
+
+    /**
+     * @return ABJ_404_Solution_RedirectEditFormPresenter
+     */
+    private function editFormPresenter(): ABJ_404_Solution_RedirectEditFormPresenter {
+        if ($this->editFormPresenter === null) {
+            $this->editFormPresenter = new ABJ_404_Solution_RedirectEditFormPresenter(
+                $this->f,
+                $this->engineLabeler()
+            );
+        }
+        return $this->editFormPresenter;
+    }
+
+    /**
+     * @return ABJ_404_Solution_RedirectDestinationOptionsPresenter
+     */
+    private function destinationOptionsPresenter(): ABJ_404_Solution_RedirectDestinationOptionsPresenter {
+        if ($this->destinationOptionsPresenter === null) {
+            $this->destinationOptionsPresenter = new ABJ_404_Solution_RedirectDestinationOptionsPresenter();
+        }
+        return $this->destinationOptionsPresenter;
+    }
+
+    /**
+     * @return ABJ_404_Solution_RedirectDestinationSuggestionService
+     */
+    private function suggestionService(): ABJ_404_Solution_RedirectDestinationSuggestionService {
+        if ($this->suggestionService === null) {
+            $this->suggestionService = new ABJ_404_Solution_RedirectDestinationSuggestionService($this->logger);
+        }
+        return $this->suggestionService;
+    }
+
+    /**
+     * @return ABJ_404_Solution_RedirectEngineLabeler
+     */
+    private function engineLabeler(): ABJ_404_Solution_RedirectEngineLabeler {
+        if ($this->engineLabeler === null) {
+            $this->engineLabeler = new ABJ_404_Solution_RedirectEngineLabeler();
+        }
+        return $this->engineLabeler;
+    }
+
 
     /**
      * Resolve final destination, pageIDAndType, and redirect code from a redirect row.
@@ -18,32 +73,7 @@ class ABJ_404_Solution_View_Redirects extends ABJ_404_Solution_ViewComponent {
      * @return array{final: string, pageIDAndType: string, codeSelected: string}
      */
     public function resolveRedirectDestinationInfo(array $redirect, array $options): array {
-        $final = "";
-        $pageIDAndType = "";
-        $redirectType = $redirect['type'] ?? null;
-        $redirectFinalDestRaw = $redirect['final_dest'] ?? 0;
-        $redirectFinalDest = is_scalar($redirectFinalDestRaw) ? (string)$redirectFinalDestRaw : '0';
-        if ($redirectType == ABJ404_TYPE_EXTERNAL) {
-            $final = $redirectFinalDest;
-            $pageIDAndType = ABJ404_TYPE_EXTERNAL . "|" . ABJ404_TYPE_EXTERNAL;
-            
-        } else if ($redirectFinalDest != 0) {
-            // if a destination has been specified then let's fill it in.
-            $pageIDAndType = $redirectFinalDest . "|" . $redirectType;
-            
-        } else if ($redirectType == ABJ404_TYPE_404_DISPLAYED) {
-        	$pageIDAndType = ABJ404_TYPE_404_DISPLAYED . "|" . ABJ404_TYPE_404_DISPLAYED;
-        }
-        
-        $rawCode = $redirect['code'] ?? '';
-        if ($rawCode == "") {
-            $rawDefault = $options['default_redirect'] ?? '301';
-            $codeSelected = is_string($rawDefault) ? $rawDefault : '301';
-        } else {
-            $codeSelected = is_string($rawCode) ? $rawCode : '301';
-        }
-
-        return array('final' => $final, 'pageIDAndType' => $pageIDAndType, 'codeSelected' => $codeSelected);
+        return $this->editFormPresenter()->resolveRedirectDestinationInfo($redirect, $options);
     }
 
     /**
@@ -54,24 +84,7 @@ class ABJ_404_Solution_View_Redirects extends ABJ_404_Solution_ViewComponent {
      * @return string
      */
     public function buildRedirectToDropdownHtml(string $pageTitle, string $pageIDAndType): string {
-        $html = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ .
-                "/html/addManualRedirectPageSearchDropdown.html");
-        $html = $this->f->str_replace('{redirect_to_label}', __('Redirect to', '404-solution'), $html);
-        $html = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_EMPTY}',
-                __('(Type a page name or an external URL)', '404-solution'), $html);
-        $html = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_PAGE}',
-                __('(A page has been selected.)', '404-solution'), $html);
-        $html = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_CUSTOM_STRING}',
-        	__('(A custom string has been entered.)', '404-solution'), $html);
-        $html = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_URL}',
-                __('(An external URL will be used.)', '404-solution'), $html);
-        $html = $this->f->str_replace('{REDIRECT_TO_USER_FIELD_WARNING}', '', $html);
-        $html = $this->f->str_replace('{redirectPageTitle}', esc_attr($pageTitle), $html);
-        $html = $this->f->str_replace('{pageIDAndType}', esc_attr($pageIDAndType), $html);
-        $html = $this->f->str_replace('{data-url}',
-                "admin-ajax.php?action=echoRedirectToPages&includeDefault404Page=true&includeSpecial=true&nonce=" . wp_create_nonce('abj404_ajax'), $html);
-        $html = $this->f->doNormalReplacements($html);
-        return $html;
+        return $this->editFormPresenter()->buildRedirectToDropdownHtml($pageTitle, $pageIDAndType);
     }
 
 
@@ -90,20 +103,8 @@ class ABJ_404_Solution_View_Redirects extends ABJ_404_Solution_ViewComponent {
             return null;
         }
 
-        $items = '';
-        foreach ($redirects_multiple as $bulkRedirect) {
-            /** @var array<string, mixed> $bulkRedirect */
-            $bulkUrl = is_string($bulkRedirect['url'] ?? '') ? (string)($bulkRedirect['url'] ?? '') : '';
-            $items .= '<li><code>' . esc_html($bulkUrl) . '</code></li>';
-        }
-
-        $rowHtml = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/html/editRedirectBulkUrls.html');
-        $rowHtml = $this->f->str_replace('{bulk_urls_label}', esc_html__('URLs to redirect', '404-solution'), $rowHtml);
-        $rowHtml = $this->f->str_replace('{bulk_count}', (string)count($redirects_multiple), $rowHtml);
-        $rowHtml = $this->f->str_replace('{bulk_url_items}', $items, $rowHtml);
-
-        $hiddenInput = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/html/editRedirectIdsMultipleHiddenInput.html');
-        $hiddenInput = $this->f->str_replace('{ids_multiple}', esc_attr(implode(',', $recnums_multiple)), $hiddenInput);
+        $rowHtml = $this->editFormPresenter()->buildBulkUrlsRowHtml($redirects_multiple);
+        $hiddenInput = $this->editFormPresenter()->buildIdsMultipleHiddenInput($recnums_multiple);
 
         // here we set the variable to the first value returned because it's used to set default values
         // in the form data.
@@ -124,25 +125,7 @@ class ABJ_404_Solution_View_Redirects extends ABJ_404_Solution_ViewComponent {
      * @return string
      */
     public function buildSuggestionBlockHtml(array $suggestion): string {
-        $bucket = $suggestion['score'] >= 75 ? 'high' : ($suggestion['score'] >= 50 ? 'medium' : 'low');
-        $typeLabel = '';
-        if (!empty($suggestion['type_label'])) {
-            $typeLabel = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/html/editRedirectSuggestionTypeLabel.html');
-            $typeLabel = $this->f->str_replace('{type_label}', esc_html($suggestion['type_label']), $typeLabel);
-        }
-
-        $html = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/html/editRedirectSuggestionBlock.html');
-        $html = $this->f->str_replace('{suggestion_label}', esc_html__('Suggested destination', '404-solution'), $html);
-        $html = $this->f->str_replace('{suggestion_title}', esc_html($suggestion['title']), $html);
-        $html = $this->f->str_replace('{suggestion_title_attr}', esc_attr($suggestion['title']), $html);
-        $html = $this->f->str_replace('{suggestion_type_label}', $typeLabel, $html);
-        $html = $this->f->str_replace('{suggestion_score_bucket}', $bucket, $html);
-        $html = $this->f->str_replace('{suggestion_score}', esc_html((string)$suggestion['score']), $html);
-        $html = $this->f->str_replace('{suggestion_id_and_type}', esc_attr($suggestion['id_and_type']), $html);
-        $html = $this->f->str_replace('{match_text}', esc_html__('match', '404-solution'), $html);
-        $html = $this->f->str_replace('{accept_label}', esc_html__('Accept Suggestion', '404-solution'), $html);
-        $html = $this->f->str_replace('{pick_different_label}', esc_html__('Pick a Different Page', '404-solution'), $html);
-        return $html;
+        return $this->editFormPresenter()->buildSuggestionBlockHtml($suggestion);
     }
 
     /**
@@ -188,7 +171,7 @@ class ABJ_404_Solution_View_Redirects extends ABJ_404_Solution_ViewComponent {
         $orderby = $this->shared->viewGetPostOrGetSanitize('orderby');
         $order = $this->shared->viewGetPostOrGetSanitize('order');
         $paged = $this->shared->viewGetPostOrGetSanitize('paged');
-        $hiddenInputs = $this->buildSourceHiddenInputs($source_page, $filter, $orderby, $order, $paged);
+        $hiddenInputs = $this->editFormPresenter()->buildSourceHiddenInputs($source_page, $filter, $orderby, $order, $paged);
 
         // Resolve target record(s).
         $recnum = null;
@@ -278,37 +261,38 @@ class ABJ_404_Solution_View_Redirects extends ABJ_404_Solution_ViewComponent {
         }
         $manualPickerHiddenClass = ($suggestion !== null && $isSimpleMode) ? ' abj404-hidden' : '';
         $redirectToInner = $this->buildRedirectToDropdownHtml($pageTitle, $pageIDAndType);
-        $redirectToBody = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/html/editRedirectManualPickerWrapper.html');
-        $redirectToBody = $this->f->str_replace('{hidden_class}', $manualPickerHiddenClass, $redirectToBody);
-        $redirectToBody = $this->f->str_replace('{inner_html}', $redirectToInner, $redirectToBody);
-        $formRows .= $this->buildFieldRowHtml('redirect_to_user_field', $this->buildRequiredLabel(__('Redirect to', '404-solution')), $redirectToBody);
+        $redirectToBody = $this->editFormPresenter()->buildManualPickerWrapperHtml($manualPickerHiddenClass, $redirectToInner);
+        $formRows .= $this->editFormPresenter()->buildFieldRowHtml(
+            'redirect_to_user_field',
+            $this->editFormPresenter()->buildRequiredLabel(__('Redirect to', '404-solution')),
+            $redirectToBody
+        );
 
         // Capture the redirect-type button grid output and place it inside a form-table row.
         ob_start();
         $this->redirectTypeUI->echoRedirectTypeButtonGrid((string)$codeSelected);
         $typeGridHtml = (string)ob_get_clean();
-        $formRows .= $this->buildFieldRowHtml('code', esc_html__('Redirect Type', '404-solution'), $typeGridHtml);
+        $formRows .= $this->editFormPresenter()->buildFieldRowHtml('code', esc_html__('Redirect Type', '404-solution'), $typeGridHtml);
 
         // Build advanced options (dates + conditions).
         $advancedOptions = $this->buildAdvancedOptionsHtml($startDate, $endDate);
 
         // Compose the page using the shell template.
-        $cancelUrl = $this->buildCancelUrl($source_page, $filter, $orderby, $order);
+        $cancelUrl = $this->editFormPresenter()->buildCancelUrl($source_page, $filter, $orderby, $order);
 
-        $shell = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/html/editRedirectFormShell.html');
-        $shell = $this->f->str_replace('{title}', esc_html($title), $shell);
-        $shell = $this->f->str_replace('{back_url}', esc_url($backUrl), $shell);
-        $shell = $this->f->str_replace('{back_label}', esc_html($backLabel), $shell);
-        $shell = $this->f->str_replace('{action_url}', esc_attr($actionUrl), $shell);
-        $shell = $this->f->str_replace('{hidden_inputs}', $hiddenInputs, $shell);
-        $shell = $this->f->str_replace('{pre_table_block}', $preTableBlock, $shell);
-        $shell = $this->f->str_replace('{form_rows}', $formRows, $shell);
-        $shell = $this->f->str_replace('{advanced_options}', $advancedOptions, $shell);
-        $shell = $this->f->str_replace('{submit_label}', esc_html__('Update Redirect', '404-solution'), $shell);
-        $shell = $this->f->str_replace('{cancel_url}', esc_url($cancelUrl), $shell);
-        $shell = $this->f->str_replace('{cancel_label}', esc_html__('Cancel', '404-solution'), $shell);
-
-        echo $shell;
+        echo $this->editFormPresenter()->buildShellHtml(array(
+            '{title}' => esc_html($title),
+            '{back_url}' => esc_url($backUrl),
+            '{back_label}' => esc_html($backLabel),
+            '{action_url}' => esc_attr($actionUrl),
+            '{hidden_inputs}' => $hiddenInputs,
+            '{pre_table_block}' => $preTableBlock,
+            '{form_rows}' => $formRows,
+            '{advanced_options}' => $advancedOptions,
+            '{submit_label}' => esc_html__('Update Redirect', '404-solution'),
+            '{cancel_url}' => esc_url($cancelUrl),
+            '{cancel_label}' => esc_html__('Cancel', '404-solution'),
+        ));
     }
 
     /**
@@ -332,11 +316,10 @@ class ABJ_404_Solution_View_Redirects extends ABJ_404_Solution_ViewComponent {
         $redirectUrl = $row !== null ? $row->getUrl() : '';
         $redirectEngine = $row !== null ? $row->getEngine() : '';
 
-        $hiddenInputs = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/html/editRedirectIdHiddenInput.html');
-        $hiddenInputs = $this->f->str_replace('{redirect_id}', esc_attr($redirectId), $hiddenInputs);
-        $formRows = $this->buildUrlRowHtml($redirectUrl, $redirectEngine);
+        $hiddenInputs = $this->editFormPresenter()->buildRedirectIdHiddenInput($redirectId);
+        $formRows = $this->editFormPresenter()->buildUrlRowHtml($redirectUrl, $redirectEngine);
         $isRegexChecked = ($row !== null && $row->isRegex()) ? ' checked' : '';
-        $formRows .= $this->buildRegexRowHtml($isRegexChecked);
+        $formRows .= $this->editFormPresenter()->buildRegexRowHtml($isRegexChecked);
 
         $startTs = $row !== null ? $row->getStartTs() : 0;
         $endTs = $row !== null ? $row->getEndTs() : 0;
@@ -350,103 +333,6 @@ class ABJ_404_Solution_View_Redirects extends ABJ_404_Solution_ViewComponent {
             'hiddenInputs' => $hiddenInputs,
             'formRows' => $formRows,
         );
-    }
-
-    /**
-     * Build a form-table TH label with the native "(Required)" suffix.
-     *
-     * @return string
-     */
-    private function buildRequiredLabel(string $baseLabel): string {
-        $html = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/html/editRedirectRequiredLabelSuffix.html');
-        $html = $this->f->str_replace('{base_label}', esc_html($baseLabel), $html);
-        $html = $this->f->str_replace('{required_label}', esc_html__('(Required)', '404-solution'), $html);
-        return $html;
-    }
-
-    /**
-     * Build the URL form-table row with an optional "Auto-matched by" note.
-     *
-     * @return string
-     */
-    private function buildUrlRowHtml(string $redirectUrl, string $redirectEngine): string {
-        $matchedByNote = '';
-        if ($redirectEngine !== '') {
-            $matchedByNote = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/html/editRedirectMatchedByNote.html');
-            $matchedByNote = $this->f->str_replace('{matched_by_label}', esc_html__('Auto-matched by:', '404-solution'), $matchedByNote);
-            $matchedByNote = $this->f->str_replace('{engine_name}', esc_html($this->humanizeEngineName($redirectEngine)), $matchedByNote);
-        }
-        $urlBody = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/html/editRedirectUrlRowBody.html');
-        $urlBody = $this->f->str_replace('{url_value}', esc_attr($redirectUrl), $urlBody);
-        $urlBody = $this->f->str_replace('{matched_by_note}', $matchedByNote, $urlBody);
-        $label = $this->buildRequiredLabel(__('URL', '404-solution'));
-        return $this->buildFieldRowHtml('url', $label, $urlBody);
-    }
-
-    /**
-     * Build the "regular expression" form-table row (advanced-mode only).
-     *
-     * @param string $isRegexChecked ' checked' or ''
-     * @return string
-     */
-    private function buildRegexRowHtml(string $isRegexChecked): string {
-        $regexLabel = __('Treat this URL as a regular expression', '404-solution');
-        $body = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/html/editRedirectRegexBody.html');
-        $body = $this->f->str_replace('{regex_label}', esc_html($regexLabel), $body);
-        $body = $this->f->str_replace('{is_regex_checked}', $isRegexChecked, $body);
-        $body = $this->f->str_replace('{regex_explain_link}', esc_html__('(Explain)', '404-solution'), $body);
-        $body = $this->f->str_replace('{regex_explain_text}', esc_html__('When checked, the text is treated as a regular expression. Note that including a bad regular expression or one that takes too long will break your website. So please use caution and test them elsewhere before trying them here. If you don\'t know what you\'re doing please don\'t use this option (as it\'s not necessary for the functioning of the plugin).', '404-solution'), $body);
-        $body = $this->f->str_replace('{regex_example_label}', esc_html__('Example:', '404-solution'), $body);
-        $body = $this->f->str_replace('{regex_example_text}', esc_html__('/events/(.+) will match any URL that begins with /events/ and redirect to the specified page. Since a capture group is used, you can use a $1 replacement in the destination string of an external URL.', '404-solution'), $body);
-        return $this->buildFieldRowHtml('is_regex_url', '&nbsp;', $body);
-    }
-
-    /**
-     * Build hidden `source_*` inputs that preserve the originating list-table view.
-     *
-     * @return string
-     */
-    private function buildSourceHiddenInputs(string $sourcePage, string $filter, string $orderby, string $order, string $paged): string {
-        $pairs = array(
-            'source_page' => $sourcePage,
-            'source_filter' => $filter,
-            'source_orderby' => $orderby,
-            'source_order' => $order,
-            'source_paged' => $paged,
-        );
-        $template = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/html/editRedirectSourceHiddenInput.html');
-        $html = '';
-        foreach ($pairs as $name => $value) {
-            if ($value === '') {
-                continue;
-            }
-            $line = $this->f->str_replace('{name}', esc_attr($name), $template);
-            $line = $this->f->str_replace('{value}', esc_attr($value), $line);
-            $html .= $line;
-        }
-        return $html;
-    }
-
-    /**
-     * Build the back-to-list cancel URL with preserved filter/orderby/order params.
-     *
-     * @return string
-     */
-    private function buildCancelUrl(string $sourcePage, string $filter, string $orderby, string $order): string {
-        $url = '?page=' . ABJ404_PP;
-        $pairs = array(
-            'subpage' => $sourcePage,
-            'filter' => $filter,
-            'orderby' => $orderby,
-            'order' => $order,
-        );
-        foreach ($pairs as $name => $value) {
-            if ($value === '') {
-                continue;
-            }
-            $url .= '&' . $name . '=' . $value;
-        }
-        return $url;
     }
 
     /**
@@ -470,33 +356,12 @@ class ABJ_404_Solution_View_Redirects extends ABJ_404_Solution_ViewComponent {
         $this->redirectConditions->echoRedirectConditionsSection();
         $conditionsHtml = (string)ob_get_clean();
 
-        $html = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/html/editRedirectAdvancedOptions.html');
-        $html = $this->f->str_replace('{advanced_options_label}', esc_html__('Advanced Options', '404-solution'), $html);
-        $html = $this->f->str_replace('{open_attr}', $openAttr, $html);
-        $html = $this->f->str_replace('{start_date_label}', esc_html__('Active From (optional)', '404-solution'), $html);
-        $html = $this->f->str_replace('{start_date_value}', esc_attr($startDate), $html);
-        $html = $this->f->str_replace('{start_date_help}', esc_html__('Leave blank to activate immediately', '404-solution'), $html);
-        $html = $this->f->str_replace('{end_date_label}', esc_html__('Active Until (optional)', '404-solution'), $html);
-        $html = $this->f->str_replace('{end_date_value}', esc_attr($endDate), $html);
-        $html = $this->f->str_replace('{end_date_help}', esc_html__('Leave blank to never expire', '404-solution'), $html);
-        $html = $this->f->str_replace('{conditions_section}', $conditionsHtml, $html);
-        return $html;
-    }
-
-    /**
-     * Build a single `<tr><th><label></label></th><td>{body}</td></tr>` row using the field-row template.
-     *
-     * @param string $fieldId Form-control id used in the label's `for` attribute.
-     * @param string $labelHtml Already-escaped label HTML (may include inline <span class="description">).
-     * @param string $bodyHtml Already-built input/markup for the td cell.
-     * @return string
-     */
-    private function buildFieldRowHtml(string $fieldId, string $labelHtml, string $bodyHtml): string {
-        $row = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/html/editRedirectFieldRow.html');
-        $row = $this->f->str_replace('{field_id}', esc_attr($fieldId), $row);
-        $row = $this->f->str_replace('{field_label}', $labelHtml, $row);
-        $row = $this->f->str_replace('{field_body}', $bodyHtml, $row);
-        return $row;
+        return $this->editFormPresenter()->buildAdvancedOptionsHtml(
+            $startDate,
+            $endDate,
+            $conditionsHtml,
+            $openAttr !== ''
+        );
     }
     
     /**
@@ -505,64 +370,13 @@ class ABJ_404_Solution_View_Redirects extends ABJ_404_Solution_ViewComponent {
      * @return string
      */
     function echoRedirectDestinationOptionsOthers($dest, $rows) {
-        $content = array();
-
-        $rowCounter = 0;
-        $currentPostType = '';
-
-        foreach ($rows as $row) {
-            $rowCounter++;
-            /** @var object{id: int, post_type: string, depth?: int} $row */
-            $id = $row->id;
-            $theTitle = get_the_title($id);
-            $thisval = $id . "|" . ABJ404_TYPE_POST;
-
-            $selected = "";
-            if ($thisval == $dest) {
-                $selected = " selected";
+        return $this->destinationOptionsPresenter()->buildPostOptions(
+            (string)$dest,
+            $rows,
+            function(string $debugInfo): void {
+                abj_service('request_context')->debug_info = $debugInfo;
             }
-            
-            abj_service('request_context')->debug_info = 'Before row: ' . $rowCounter . ', Title: ' . $theTitle . 
-                    ', Post type: ' . $row->post_type;
-            
-            if ($row->post_type != $currentPostType) {
-                if ($currentPostType != '') {
-                    $content[] = "\n" . '</optgroup>' . "\n";
-                }
-                
-                $content[] = "\n" . '<optgroup label="' . __(ucwords($row->post_type), '404-solution') . '">' . "\n";
-                $currentPostType = $row->post_type;
-            }
-
-            // this is split in this ridiculous way to help me figure out how to resolve a memory issue.
-            // (https://wordpress.org/support/topic/options-tab-is-not-loading/)
-            $content[] = "\n <option value=\"";
-            $content[] = esc_attr($thisval);
-            $content[] = "\"";
-            $content[] = $selected;
-            $content[] = ">";
-            
-            // insert some spaces for child pages.
-            $depth = property_exists($row, 'depth') ? intval($row->depth) : 0;
-            for ($i = 0; $i < $depth; $i++) {
-                $content[] = "&nbsp;&nbsp;&nbsp;";
-            }
-            
-            $content[] = __(ucwords($row->post_type), '404-solution');
-            $content[] = ": ";
-            $content[] = esc_html($theTitle);
-            $content[] = "</option>";
-            
-            abj_service('request_context')->debug_info = 'After row: ' . $rowCounter . ', Title: ' . $theTitle . 
-                    ', Post type: ' . $row->post_type;
-        }
-        
-        $content[] = "\n" . '</optgroup>' . "\n";
-        
-
-        abj_service('request_context')->debug_info = 'Cleared after building redirect destination page list.';
-        
-        return implode('', $content);
+        );
     }
 
     /**
@@ -570,72 +384,11 @@ class ABJ_404_Solution_View_Redirects extends ABJ_404_Solution_ViewComponent {
      * @return string
      */
     function echoRedirectDestinationOptionsCatsTags($dest) {
-        $content = "";
-        $content .= "\n" . '<optgroup label="Categories">' . "\n";
-        
-        $customTagsEtc = array();
-
-        // categories ---------------------------------------------
         $cats = $this->contentRepository->getPublishedCategories();
-        foreach ($cats as $cat) {
-            /** @var \WP_Term $cat */
-            $taxonomy = $cat->taxonomy;
-            if ($taxonomy != 'category') {
-                continue;
-            }
-            
-            $id = $cat->term_id;
-            $theTitle = $cat->name;
-            $thisval = $id . "|" . ABJ404_TYPE_CAT;
-
-            $selected = "";
-            if ($thisval == $dest) {
-                $selected = " selected";
-            }
-            $content .= "\n<option value=\"" . esc_attr($thisval) . "\"" . $selected . ">" . __('Category', '404-solution') . ": " . esc_html($theTitle) . "</option>";
-        }
-        $content .= "\n" . '</optgroup>' . "\n";
         /** @var array<int, object{taxonomy: string, name?: string}> $cats */
         $customTagsEtc = $this->logic->pageOrdering()->getMapOfCustomCategories($cats);
-
-        // tags ---------------------------------------------
-        $content .= "\n" . '<optgroup label="Tags">' . "\n";
         $tags = $this->contentRepository->getPublishedTags();
-        foreach ($tags as $tag) {
-            /** @var \WP_Term $tag */
-            $id = $tag->term_id;
-            $theTitle = $tag->name;
-            $thisval = $id . "|" . ABJ404_TYPE_TAG;
-
-            $selected = "";
-            if ($thisval == $dest) {
-                $selected = " selected";
-            }
-            $content .= "\n<option value=\"" . esc_attr($thisval) . "\"" . $selected . ">" . __('Tag', '404-solution') . ": " . esc_html($theTitle) . "</option>";
-        }
-        $content .= "\n" . '</optgroup>' . "\n";
-        
-        // custom ---------------------------------------------
-        foreach ($customTagsEtc as $taxonomy => $catRow) {
-            $content .= "\n" . '<optgroup label="' . esc_html($taxonomy) . '">' . "\n";
-            
-            foreach ($catRow as $cat) {
-                /** @var \WP_Term $cat */
-                $id = $cat->term_id;
-                $theTitle = $cat->name;
-                $thisval = $id . "|" . ABJ404_TYPE_CAT;
-
-                $selected = "";
-                if ($thisval == $dest) {
-                    $selected = " selected";
-                }
-                $content .= "\n<option value=\"" . esc_attr($thisval) . "\"" . $selected . ">" . __('Custom', '404-solution') . ": " . esc_html($theTitle) . "</option>";
-            }
-            
-            $content .= "\n" . '</optgroup>' . "\n";
-        }
-        
-        return $content;
+        return $this->destinationOptionsPresenter()->buildTaxonomyOptions((string)$dest, $cats, $tags, $customTagsEtc);
     }
     
     /**
@@ -652,23 +405,7 @@ class ABJ_404_Solution_View_Redirects extends ABJ_404_Solution_ViewComponent {
      * @return string
      */
     public function humanizeEngineName(string $rawName): string {
-        // Strip full namespace prefix if stored with it.
-        $name = preg_replace('/^ABJ_404_Solution_/', '', $rawName);
-        if (!is_string($name)) {
-            $name = $rawName;
-        }
-        // Strip "MatchingEngine" or bare "Engine" suffix.
-        $name = (string)preg_replace('/MatchingEngine$/', ' Matching', $name);
-        $name = (string)preg_replace('/Engine$/', '', $name);
-        // Insert a space before each upper-case letter that follows a lower-case letter
-        // (e.g. CategoryTag → Category Tag).
-        $name = (string)preg_replace('/(?<=[a-z])([A-Z])/', ' $1', $name);
-        $name = trim($name);
-        // Fix known abbreviations.
-        $name = str_replace(array('Url ', 'Url'), array('URL ', 'URL'), $name);
-        // Fix Category/Tag — appears as "Category Tag Matching", make the separator a slash.
-        $name = str_replace('Category Tag', 'Category/Tag', $name);
-        return $name !== '' ? $name : $rawName;
+        return $this->engineLabeler()->humanize($rawName);
     }
 
     /**
@@ -679,58 +416,7 @@ class ABJ_404_Solution_View_Redirects extends ABJ_404_Solution_ViewComponent {
      * @return array{title: string, score: int, id_and_type: string, type_label: string}|null The best match, or null if none found.
      */
     public function getSuggestedDestination(string $url, array $options): ?array {
-        try {
-            $spellChecker = abj_service('spell_checker');
-            $permalinksPacket = $spellChecker->findMatchingPosts($url, '1', '1');
-            $permalinks = is_array($permalinksPacket[0] ?? null) ? $permalinksPacket[0] : array();
-            $rowType = is_string($permalinksPacket[1] ?? '') ? (string)($permalinksPacket[1] ?? '') : '';
-
-            if (empty($permalinks)) {
-                return null;
-            }
-
-            // Take the top match
-            $topIdAndType = array_key_first($permalinks);
-            $topScore = intval($permalinks[$topIdAndType]);
-
-            // Only suggest if score is at least 25%
-            if ($topScore < 25) {
-                return null;
-            }
-
-            $permalink = ABJ_404_Solution_PermalinkResolver::permalinkInfoToArray(
-                $topIdAndType, $topScore, $rowType, $options
-            );
-
-            $title = is_string($permalink['title'] ?? '') ? (string)($permalink['title'] ?? '') : '';
-            if ($title === '' || ($permalink['status'] ?? '') === 'trash') {
-                return null;
-            }
-
-            // Determine a human-readable type label
-            $typeParts = explode('|', is_string($topIdAndType) ? $topIdAndType : '');
-            $typeInt = isset($typeParts[1]) && is_numeric($typeParts[1]) ? (int)$typeParts[1] : -1;
-            $typeLabel = '';
-            if ($typeInt === ABJ404_TYPE_POST) {
-                $postType = get_post_type((int)$typeParts[0]);
-                $typeLabel = ($postType === 'page') ? __('Page', '404-solution') : __('Post', '404-solution');
-            } elseif ($typeInt === ABJ404_TYPE_CAT) {
-                $typeLabel = __('Category', '404-solution');
-            } elseif ($typeInt === ABJ404_TYPE_TAG) {
-                $typeLabel = __('Tag', '404-solution');
-            } elseif ($typeInt === ABJ404_TYPE_HOME) {
-                $typeLabel = __('Home', '404-solution');
-            }
-
-            return array(
-                'title' => $title,
-                'score' => $topScore,
-                'id_and_type' => is_string($topIdAndType) ? $topIdAndType : '',
-                'type_label' => $typeLabel,
-            );
-        } catch (\Throwable $e) { // allow-silent-catch: spell-checker may fail on some URLs (encoding, length); null signals "no suggestion" which the caller already handles
-            return null;
-        }
+        return $this->suggestionService()->getSuggestedDestination($url, $options);
     }
 
 }

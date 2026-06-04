@@ -243,7 +243,7 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
             return $service;
         }
 
-        return ABJ_404_Solution_UnavailableStatsRepository::resolve(__CLASS__);
+        return ABJ_404_Solution_StatsRepositoryResolver::resolve(__CLASS__);
     }
 
     /** @param array<int, string> $methods */

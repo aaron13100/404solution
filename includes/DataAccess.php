@@ -175,7 +175,7 @@ class ABJ_404_Solution_DataAccess {
      *
      * Test-only composition surface. Production code MUST resolve the stats
      * repository through StatsRepositoryInterface (constructor-injected) or via
-     * ABJ_404_Solution_UnavailableStatsRepository::resolve(). Held on DataAccess
+     * ABJ_404_Solution_StatsRepositoryResolver::resolve(). Held on DataAccess
      * exclusively so tests that construct a real (or stubbed-deps) DataAccess
      * can drive the real StatsRepository against a custom DbCore/LogsRepo.
      *
@@ -507,7 +507,7 @@ class ABJ_404_Solution_DataAccess {
     /**
      * Test-only composition surface. Production callers must inject
      * StatsRepositoryInterface via constructor or call
-     * ABJ_404_Solution_UnavailableStatsRepository::resolve(); using
+     * ABJ_404_Solution_StatsRepositoryResolver::resolve(); using
      * $dao->getStatsRepo() in includes/ is forbidden and is enforced by
      * StatsRepositoryExtractionTest::testProductionCallersDoNotResolveStatsRepositoryThroughDataAccess
      * (also catches the obfuscated 'get'.'StatsRepo' and quoted-string variants).

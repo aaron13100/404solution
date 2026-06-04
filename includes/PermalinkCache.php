@@ -41,7 +41,7 @@ class ABJ_404_Solution_PermalinkCache {
         $this->statsRepository = $statsRepository !== null ? $statsRepository :
             (is_object($contentRepository) && method_exists($contentRepository, 'getPostsNeedingContentKeywords')
                 ? $contentRepository
-                : call_user_func(array('ABJ_404_Solution_UnavailableStatsRepository', 'resolve'), __CLASS__));
+                : call_user_func(array('ABJ_404_Solution_StatsRepositoryResolver', 'resolve'), __CLASS__));
     }
 
     /** @return self */

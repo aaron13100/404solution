@@ -338,7 +338,7 @@ class ABJ_404_Solution_PluginLogicPageOrdering {
         if ($frequency !== 'instant') {
             $emailDigest = new ABJ_404_Solution_EmailDigest(
                 abj_service('logs_repository'),
-                ABJ_404_Solution_UnavailableStatsRepository::resolve(__CLASS__),
+                ABJ_404_Solution_StatsRepositoryResolver::resolve(__CLASS__),
                 $this->logger
             );
             return $emailDigest->sendDigest();

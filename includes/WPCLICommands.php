@@ -73,7 +73,7 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
             }
         }
         if ($statsRepository === null) {
-            $statsRepository = ABJ_404_Solution_UnavailableStatsRepository::resolve(__CLASS__);
+            $statsRepository = ABJ_404_Solution_StatsRepositoryResolver::resolve(__CLASS__);
         }
         $snapshot = $statsRepository->getStatsDashboardSnapshot(false);
         $data = is_array($snapshot['data']) ? $snapshot['data'] : array();

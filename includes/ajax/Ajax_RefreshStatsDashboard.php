@@ -20,7 +20,7 @@ class ABJ_404_Solution_Ajax_RefreshStatsDashboard {
         }
 
         $functions = ABJ_404_Solution_Ajax_AdminEndpointSupport::getRequestReader();
-        $statsRepository = ABJ_404_Solution_UnavailableStatsRepository::resolve(__CLASS__);
+        $statsRepository = ABJ_404_Solution_StatsRepositoryResolver::resolve(__CLASS__);
         $abj404logic = abj_service('plugin_logic');
 
         $nonce = $functions->getPostOrGetSanitize('nonce');

@@ -95,7 +95,7 @@ class ABJ_404_Solution_RestApiController {
             return $service;
         }
 
-        return ABJ_404_Solution_UnavailableStatsRepository::resolve(__CLASS__);
+        return ABJ_404_Solution_StatsRepositoryResolver::resolve(__CLASS__);
     }
 
     /** @return void */

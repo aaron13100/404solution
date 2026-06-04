@@ -130,13 +130,6 @@ class ABJ_404_Solution_UnavailableStatsRepository implements ABJ_404_Solution_St
     }
 
     public static function resolve(string $context = ''): ABJ_404_Solution_StatsRepositoryInterface {
-        $service = class_exists('ABJ_404_Solution_ServiceContainer')
-            ? ABJ_404_Solution_ServiceContainer::safeGet('stats_repository')
-            : null;
-        if ($service instanceof ABJ_404_Solution_StatsRepositoryInterface) {
-            return $service;
-        }
-
         return new self($context);
     }
 

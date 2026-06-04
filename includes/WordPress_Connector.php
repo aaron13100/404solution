@@ -58,7 +58,7 @@ class ABJ_404_Solution_WordPress_Connector {
 		$this->statsRepository = $statsRepository !== null ? $statsRepository :
 			(is_object($redirectsRepository) && method_exists($redirectsRepository, 'getCapturedCountForNotification')
 				? $redirectsRepository
-				: ABJ_404_Solution_UnavailableStatsRepository::resolve(__CLASS__));
+				: ABJ_404_Solution_StatsRepositoryResolver::resolve(__CLASS__));
 	}
 
 	/** @return ABJ_404_Solution_FrontendRequestPipeline */

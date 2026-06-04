@@ -403,7 +403,7 @@ class ABJ_404_Solution_PluginLogicSettingsUpdate {
                 $options['admin_notification_frequency'] = $freq;
                 $emailDigest = new ABJ_404_Solution_EmailDigest(
                     abj_service('logs_repository'),
-                    ABJ_404_Solution_UnavailableStatsRepository::resolve(__CLASS__),
+                    ABJ_404_Solution_StatsRepositoryResolver::resolve(__CLASS__),
                     $this->logger
                 );
                 $emailDigest->scheduleNextDigest();

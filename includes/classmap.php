@@ -91,6 +91,9 @@ return array(
     'ABJ_404_Solution_PluginLogicDefaults' => $base . 'includes/PluginLogicDefaults.php',
     'ABJ_404_Solution_SettingsOptionsPersister' => $base . 'includes/services/SettingsOptionsPersister.php',
     'ABJ_404_Solution_RequestInputNormalizer' => $base . 'includes/services/RequestInputNormalizer.php',
+    'ABJ_404_Solution_RedirectDestinationSuggestionService' => $base . 'includes/services/RedirectDestinationSuggestionService.php',
+    'ABJ_404_Solution_RedirectEngineLabeler' => $base . 'includes/services/RedirectEngineLabeler.php',
+    'ABJ_404_Solution_StatsRepositoryResolver' => $base . 'includes/services/StatsRepositoryResolver.php',
     'ABJ_404_Solution_RestApiRequestParser' => $base . 'includes/services/RestApiRequestParser.php',
     'ABJ_404_Solution_FrontendSuggestionLocaleScope' => $base . 'includes/services/FrontendSuggestionLocaleScope.php',
     'ABJ_404_Solution_ShortcodeRequestedUrlResolver' => $base . 'includes/services/ShortcodeRequestedUrlResolver.php',
@@ -109,6 +112,8 @@ return array(
     'ABJ_404_Solution_SpellCandidateFilter' => $base . 'includes/SpellCandidateFilter.php',
     // View components (converted from former ViewTrait_* family).
     'ABJ_404_Solution_ViewComponent' => $base . 'includes/ViewComponent.php',
+    'ABJ_404_Solution_RedirectDestinationOptionsPresenter' => $base . 'includes/RedirectDestinationOptionsPresenter.php',
+    'ABJ_404_Solution_RedirectEditFormPresenter' => $base . 'includes/RedirectEditFormPresenter.php',
     'ABJ_404_Solution_View_Logs' => $base . 'includes/View_Logs.php',
     'ABJ_404_Solution_View_Redirects' => $base . 'includes/View_Redirects.php',
     'ABJ_404_Solution_View_RedirectsTable' => $base . 'includes/View_RedirectsTable.php',
