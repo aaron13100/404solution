@@ -102,7 +102,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
         $this->candidateEvaluator = new ABJ_404_Solution_RedirectCandidateEvaluator($redirectsRepository);
         $this->telemetry = new ABJ_404_Solution_FrontendPipelineTelemetry($logging, $functions);
         $this->wpGuessFallback = new ABJ_404_Solution_WordPressGuessFallback(
-            $functions, $pluginLogic->urlNormalization(), $redirectsRepository,
+            $pluginLogic->urlNormalization(), $redirectsRepository,
             $this->notFoundResponse, $this->exclusionPolicy, $this->logsRepository
         );
         $this->dispatcher = new ABJ_404_Solution_RedirectDispatcher(

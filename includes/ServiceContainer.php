@@ -215,6 +215,7 @@ class ABJ_404_Solution_ServiceContainer {
  *     $name is 'mb_string_adapter' ? ABJ_404_Solution_MbStringAdapter : (
  *     $name is 'url_encoder' ? ABJ_404_Solution_UrlEncoder : (
  *     $name is 'sanitizer' ? ABJ_404_Solution_Sanitizer : (
+ *     $name is 'query_string_helper' ? ABJ_404_Solution_QueryStringHelper : (
  *     $name is 'logging' ? ABJ_404_Solution_Logging : (
  *     $name is 'clock' ? ABJ_404_Solution_Clock : (
  *     $name is 'error_handler' ? class-string : (
@@ -259,7 +260,7 @@ class ABJ_404_Solution_ServiceContainer {
  *     $name is 'settings_mode_preference' ? ABJ_404_Solution_SettingsModePreference : (
  *     $name is 'not_found_response' ? ABJ_404_Solution_NotFoundResponseService :
  *     mixed
- * )))))))))))))))))))))))))))))))))))))))))))))))
+ * ))))))))))))))))))))))))))))))))))))))))))))))))
  */
 function abj_service($name) {
     $container = ABJ_404_Solution_ServiceContainer::getInstance();
@@ -281,6 +282,14 @@ function abj_service($name) {
 
     if ($name === 'sanitizer' && class_exists('ABJ_404_Solution_Sanitizer')) {
         return new ABJ_404_Solution_Sanitizer(abj_service('mb_string_adapter'));
+    }
+
+    if ($name === 'query_string_helper' && class_exists('ABJ_404_Solution_QueryStringHelper')) {
+        $logging = abj_service('logging');
+        return new ABJ_404_Solution_QueryStringHelper(
+            abj_service('sanitizer'),
+            $logging instanceof ABJ_404_Solution_Logging ? $logging : null
+        );
     }
 
     if ($name === 'mb_string_adapter') {

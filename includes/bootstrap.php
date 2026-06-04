@@ -122,6 +122,10 @@ function abj_404_solution_register_core_utilities($container) {
         return new ABJ_404_Solution_Sanitizer($c->get('mb_string_adapter'));
     });
 
+    $container->set('query_string_helper', function($c) {
+        return new ABJ_404_Solution_QueryStringHelper($c->get('sanitizer'), $c->get('logging'));
+    });
+
     $container->set('logging', function($c) {
         return ABJ_404_Solution_Logging::createForContainer();
     });

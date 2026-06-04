@@ -462,6 +462,7 @@ class ABJ_404_Solution_PluginLogicVersionUpgrader {
             ABJ404_PATH . 'includes/RegexHelper.php',
             ABJ404_PATH . 'includes/RegexHelperMb.php',
             ABJ404_PATH . 'includes/RegexHelperPreg.php',
+            ABJ404_PATH . 'includes/QueryStringHelper.php',
             ABJ404_PATH . 'includes/php/FunctionsMBString.php',
             ABJ404_PATH . 'includes/php/FunctionsPreg.php',
         ];

@@ -188,11 +188,10 @@ class ABJ_404_Solution_UserRequest {
     
     /** @return string */
     function getPathWithSortedQueryString(): string {
-        $f = abj_service('functions');
         $requestedURL = $this->getPath();
         /** @var array<string, string> $urlPartsForSort */
         $urlPartsForSort = $this->getUrlParts() ?? array();
-        $urlParts = $f->sortQueryString($urlPartsForSort);
+        $urlParts = abj_service('query_string_helper')->sortQueryString($urlPartsForSort);
         if ($urlParts != null && trim($urlParts) != '') {
         	$requestedURL .= '?' . $urlParts;
         }

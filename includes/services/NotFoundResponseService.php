@@ -139,7 +139,7 @@ class ABJ_404_Solution_NotFoundResponseService {
             return '';
         }
         $queryString = $userRequest->getQueryString();
-        $queryParts = $this->f->removePageIDFromQueryString(is_string($queryString) ? $queryString : '');
+        $queryParts = abj_service('query_string_helper')->removePageIDFromQueryString(is_string($queryString) ? $queryString : '');
         $queryParts = ($queryParts == '') ? '' : '?' . $queryParts;
         $commentPart = $userRequest->getCommentPagePart();
         return (is_string($commentPart) ? $commentPart : '') . $queryParts;

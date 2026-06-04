@@ -288,7 +288,7 @@ class ABJ_404_Solution_PluginLogicSettingsUpdate {
         }
 
         $encodedData = $_POST['encodedData'];
-        $postData = $this->f->decodeComplicatedData($encodedData);
+        $postData = abj_service('query_string_helper')->decodeComplicatedData(is_scalar($encodedData) ? (string)$encodedData : '');
         if (!is_array($postData)) {
             $this->logger->errorMessage('Invalid JSON encodedData in POST');
             return array(

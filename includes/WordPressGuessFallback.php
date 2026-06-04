@@ -20,9 +20,6 @@ if (!defined('ABSPATH')) {
  */
 class ABJ_404_Solution_WordPressGuessFallback {
 
-    /** @var ABJ_404_Solution_Functions */
-    private $f;
-
     /** @var ABJ_404_Solution_PluginLogicUrlNormalization */
     private $urlNormalization;
 
@@ -39,15 +36,13 @@ class ABJ_404_Solution_WordPressGuessFallback {
     private $logsRepository;
 
     /**
-     * @param ABJ_404_Solution_Functions $functions
      * @param ABJ_404_Solution_PluginLogicUrlNormalization $urlNormalization
      * @param ABJ_404_Solution_RedirectsRepository $redirectsRepository
      * @param ABJ_404_Solution_NotFoundResponseService $notFoundResponse
      * @param ABJ_404_Solution_RedirectExclusionPolicy $exclusionPolicy
      * @param mixed $logsRepository Object with logRedirectHit(); shape is duck-typed.
      */
-    function __construct($functions, $urlNormalization, $redirectsRepository, $notFoundResponse, $exclusionPolicy, $logsRepository) {
-        $this->f = $functions;
+    function __construct($urlNormalization, $redirectsRepository, $notFoundResponse, $exclusionPolicy, $logsRepository) {
         $this->urlNormalization = $urlNormalization;
         $this->redirectsRepository = $redirectsRepository;
         $this->notFoundResponse = $notFoundResponse;
@@ -169,7 +164,7 @@ class ABJ_404_Solution_WordPressGuessFallback {
 
         /** @var array<string, string> $urlPartsStr */
         $urlPartsStr = array_map('strval', $parts);
-        $sortedQuery = $this->f->sortQueryString($urlPartsStr);
+        $sortedQuery = abj_service('query_string_helper')->sortQueryString($urlPartsStr);
         return $path . $sortedQuery;
     }
 

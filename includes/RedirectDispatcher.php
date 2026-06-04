@@ -300,7 +300,7 @@ class ABJ_404_Solution_RedirectDispatcher {
 
         /** @var array<string, string> $urlPartsStr */
         $urlPartsStr = array_map('strval', $urlParts);
-        $perma_link .= $this->f->sortQueryString($urlPartsStr);
+        $perma_link .= abj_service('query_string_helper')->sortQueryString($urlPartsStr);
 
         if (@$options['auto_redirects'] == '1') {
             if ($requestedURL != $perma_link) {

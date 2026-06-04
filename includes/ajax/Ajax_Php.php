@@ -66,18 +66,18 @@ class ABJ_404_Solution_Ajax_Php {
 	}
 
 	/** @return object */
-	private static function getFunctionsService() {
-		$service = self::getServiceIfAvailable('functions');
+	private static function getQueryStringHelperService() {
+		$service = self::getServiceIfAvailable('query_string_helper');
 		if (is_object($service) && is_callable(array($service, 'decodeComplicatedData'))) {
 			return $service;
 		}
 
-		$fallback = abj_service('functions');
+		$fallback = abj_service('query_string_helper');
 		if (is_object($fallback) && is_callable(array($fallback, 'decodeComplicatedData'))) {
 			return $fallback;
 		}
 
-		throw new \RuntimeException('404 Solution functions service is unavailable.');
+		throw new \RuntimeException('404 Solution query_string_helper service is unavailable.');
 	}
 
 	/**
@@ -87,7 +87,7 @@ class ABJ_404_Solution_Ajax_Php {
 	private static function decodeComplicatedDataWithService($service, string $encodedData) {
 		$callback = array($service, 'decodeComplicatedData');
 		if (!is_callable($callback)) {
-			throw new \RuntimeException('404 Solution functions service cannot decode request payloads.');
+			throw new \RuntimeException('404 Solution query_string_helper service cannot decode request payloads.');
 		}
 		return call_user_func($callback, $encodedData);
 	}
@@ -103,7 +103,7 @@ class ABJ_404_Solution_Ajax_Php {
 		}
 
 		$postData = self::decodeComplicatedDataWithService(
-			self::getFunctionsService(),
+			self::getQueryStringHelperService(),
 			(string)$_POST['encodedData']
 		);
 		if (!is_array($postData) ||

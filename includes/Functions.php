@@ -133,34 +133,6 @@ class ABJ_404_Solution_Functions {
         return $result;
     }
     
-    /** First urldecode then json_decode the data, then return it.
-     * All of this encoding and decoding is so that [] characters are supported.
-     * @param string $data
-     * @return mixed
-     */
-    function decodeComplicatedData($data) {
-    	$dataDecoded = urldecode($data);
-    	
-    	// JSON.stringify escapes single quotes and json_decode does not want them to be escaped.
-    	$dataStripped = str_replace("\'", "'", $dataDecoded);
-    	$fixedData = json_decode($dataStripped, true);
-    	
-    	$jsonErrorNumber = json_last_error();
-    	if ($jsonErrorNumber != 0) {
-    		$errorMsg = json_last_error_msg();
-    		$lastMessagePart = ", Decoded: " . $dataDecoded;
-    		if ($dataStripped != null && mb_strlen($dataStripped) > 1) {
-    			$lastMessagePart = ", Stripped: " . $dataStripped;
-    		}
-    		
-    		$logger = $this->logging();
-    		$logger->errorMessage("Error " . $jsonErrorNumber . " parsing JSON in "
-    			. __CLASS__ . "->" . __FUNCTION__ . "(). Error message: " . $errorMsg . $lastMessagePart);
-    	}
-    	
-    	return $fixedData;
-    }
-    
     /**
      * @param string|array<int, string> $needle
      * @param string|array<int, mixed>|null $replacement
@@ -403,58 +375,6 @@ class ABJ_404_Solution_Functions {
     	return ($this->substr($haystack, -$length) == $needle);
     }
     
-    /** Sort the QUERY parts of the requested URL. 
-     * This is in place because these are stored as part of the URL in the database and used for forwarding to another page.
-     * This is done because sometimes different query parts result in a completely different page. Therefore we have to 
-     * take into account the query part of the URL (?query=part) when looking for a page to redirect to. 
-     * 
-     * Here we sort the query parts so that the same request will always look the same.
-     * @param array<string, string> $urlParts
-     * @return string
-     */
-    function sortQueryString(array $urlParts): string {
-        if (!array_key_exists('query', $urlParts) || $urlParts['query'] == '') {
-            return '';
-        }
-
-        // parse it into an array
-        $queryParts = array();
-        parse_str($urlParts['query'], $queryParts);
-
-        // sort the parts
-        ksort($queryParts);
-
-        $sanitizer = abj_service('sanitizer');
-        $sanitized = $sanitizer->sanitizeUrlComponent($queryParts);
-        $queryParts = is_array($sanitized) ? $sanitized : $queryParts;
-        $built = http_build_query($queryParts, '', '&', PHP_QUERY_RFC3986);
-        $decoded = rawurldecode($built);
-        return $sanitizer->normalizeUrlString($decoded, array('decode' => false));
-    }
-
-    /** We have to remove any 'p=##' because it will cause a 404 otherwise.
-     * @param string $queryString
-     * @return string
-     */
-    function removePageIDFromQueryString($queryString) {
-        // parse the string
-        $queryParts = array();
-        parse_str($queryString, $queryParts);
-
-        // remove the page id
-        if (array_key_exists('p', $queryParts)) {
-            unset($queryParts['p']);
-        }
-
-        // rebuild the string.
-        $sanitizer = abj_service('sanitizer');
-        $sanitized = $sanitizer->sanitizeUrlComponent($queryParts);
-        $queryParts = is_array($sanitized) ? $sanitized : $queryParts;
-        $built = http_build_query($queryParts, '', '&', PHP_QUERY_RFC3986);
-        $decoded = rawurldecode($built);
-        return $sanitizer->normalizeUrlString($decoded, array('decode' => false));
-    }
-
     // =========================================================================
     // Request parameter sanitization (relocated from DataAccessTrait_Stats, Phase 4)
     // =========================================================================

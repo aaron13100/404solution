@@ -175,6 +175,7 @@ return array(
     'ABJ_404_Solution_PermalinkResolver' => $base . 'includes/PermalinkResolver.php',
     'ABJ_404_Solution_UrlEncoder' => $base . 'includes/UrlEncoder.php',
     'ABJ_404_Solution_Sanitizer' => $base . 'includes/Sanitizer.php',
+    'ABJ_404_Solution_QueryStringHelper' => $base . 'includes/QueryStringHelper.php',
     'ABJ_404_Solution_FeedbackTransport' => $base . 'includes/FeedbackTransport.php',
     'ABJ_404_Solution_PayloadSchema' => $base . 'includes/PayloadSchema.php',
     'ABJ_404_Solution_ReportPayloadJsonSchemaValidator' => $base . 'includes/ReportPayloadJsonSchemaValidator.php',
