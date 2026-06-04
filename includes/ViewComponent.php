@@ -5,7 +5,7 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Abstract base for the nine concrete View_* components that replaced
+ * Abstract base for the concrete View_* components that replaced
  * the legacy ViewTrait_* family. Each component holds:
  *   - typed back-reference to the owning View facade (for external code paths)
  *   - typed sibling references for every other component (for cross-component
@@ -59,6 +59,9 @@ abstract class ABJ_404_Solution_ViewComponent {
 
     /** @var ABJ_404_Solution_View_Stats */
     protected $stats;
+
+    /** @var ABJ_404_Solution_View_Tools */
+    protected $tools;
 
     /** @var ABJ_404_Solution_View_Settings */
     protected $settings;
@@ -131,6 +134,7 @@ abstract class ABJ_404_Solution_ViewComponent {
         ABJ_404_Solution_View_Shared $shared,
         ABJ_404_Solution_View_UI $ui,
         ABJ_404_Solution_View_Stats $stats,
+        ABJ_404_Solution_View_Tools $tools,
         ABJ_404_Solution_View_Settings $settings,
         ABJ_404_Solution_View_Redirects $redirects,
         ABJ_404_Solution_View_RedirectsTable $redirectsTable,
@@ -144,6 +148,7 @@ abstract class ABJ_404_Solution_ViewComponent {
         $this->shared = $shared;
         $this->ui = $ui;
         $this->stats = $stats;
+        $this->tools = $tools;
         $this->settings = $settings;
         $this->redirects = $redirects;
         $this->redirectsTable = $redirectsTable;

@@ -105,6 +105,7 @@ return array(
     'ABJ_404_Solution_SettingsRegexPatternPolicy' => $base . 'includes/policies/SettingsRegexPatternPolicy.php',
     'ABJ_404_Solution_SettingsUpdateRequestDecoder' => $base . 'includes/services/SettingsUpdateRequestDecoder.php',
     'ABJ_404_Solution_TableViewOptionsResolver' => $base . 'includes/TableViewOptionsResolver.php',
+    'ABJ_404_Solution_ToolsDiagnostics' => $base . 'includes/ToolsDiagnostics.php',
     // SpellChecker delegates to standalone classes (converted from traits).
     'ABJ_404_Solution_SpellURLMatcher' => $base . 'includes/SpellURLMatcher.php',
     'ABJ_404_Solution_SpellPostListeners' => $base . 'includes/SpellPostListeners.php',
@@ -125,6 +126,7 @@ return array(
     'ABJ_404_Solution_View_Settings' => $base . 'includes/View_Settings.php',
     'ABJ_404_Solution_View_Shared' => $base . 'includes/View_Shared.php',
     'ABJ_404_Solution_View_Stats' => $base . 'includes/View_Stats.php',
+    'ABJ_404_Solution_View_Tools' => $base . 'includes/View_Tools.php',
     'ABJ_404_Solution_View_UI' => $base . 'includes/View_UI.php',
     'ABJ_404_Solution_ViewReadRuntimeState' => $base . 'includes/ViewReadRuntimeState.php',
     'ABJ_404_Solution_ViewQueryBuilder' => $base . 'includes/ViewQueryBuilder.php',

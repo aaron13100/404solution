@@ -405,6 +405,7 @@ class ABJ_404_Solution_AdminViewReadCoordinator {
             $countCacheKey = $this->snapshotCache->getViewSnapshotCacheKey('abj404_view_count', $sub, $tableOptions);
         }
         if ($canUseSnapshotCache && $countCacheKey !== '') {
+            // allow-cache-empty: a resolved count of 0 is valid view data and must be cached.
             set_transient($countCacheKey, $countValue, ABJ_404_Solution_ViewReadRuntimeState::VIEW_SNAPSHOT_CACHE_TTL_SECONDS);
         }
     }

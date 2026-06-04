@@ -11,7 +11,9 @@ if (!defined('ABSPATH')) {
 require_once __DIR__ . '/ViewComponent.php';
 require_once __DIR__ . '/View_Shared.php';
 require_once __DIR__ . '/View_UI.php';
+require_once __DIR__ . '/ToolsDiagnostics.php';
 require_once __DIR__ . '/View_Stats.php';
+require_once __DIR__ . '/View_Tools.php';
 require_once __DIR__ . '/View_Settings.php';
 require_once __DIR__ . '/View_Redirects.php';
 require_once __DIR__ . '/View_RedirectsTable.php';
@@ -24,9 +26,9 @@ require_once __DIR__ . '/View_Logs.php';
 
 /**
  * Magic-method dispatch surface for the View facade. Each entry below points
- * at a method that lives on one of the nine ABJ_404_Solution_View_* components
- * (Shared, UI, Stats, Settings, Redirects, RedirectsTable, RedirectTypeUI,
- * RedirectConditions, Logs). __call routes the call to whichever component
+ * at a method that lives on one of the ABJ_404_Solution_View_* components
+ * (Shared, UI, Stats, Tools, Settings, Redirects, RedirectsTable,
+ * RedirectTypeUI, RedirectConditions, Logs). __call routes the call to whichever component
  * owns the method. PHPStan needs these annotations because it cannot trace
  * __call dispatch through the component array.
  *
@@ -273,6 +275,7 @@ class ABJ_404_Solution_View {
 		$shared = new ABJ_404_Solution_View_Shared(...$args);
 		$ui = new ABJ_404_Solution_View_UI(...$args);
 		$stats = new ABJ_404_Solution_View_Stats(...$args);
+		$tools = new ABJ_404_Solution_View_Tools(...$args);
 		$settings = new ABJ_404_Solution_View_Settings(...$args);
 		$redirects = new ABJ_404_Solution_View_Redirects(...$args);
 		$redirectsTable = new ABJ_404_Solution_View_RedirectsTable(...$args);
@@ -284,13 +287,13 @@ class ABJ_404_Solution_View {
 		$logs = new ABJ_404_Solution_View_Logs(...$args);
 
 		$components = array(
-			$shared, $ui, $stats, $settings, $redirects, $redirectsTable,
+			$shared, $ui, $stats, $tools, $settings, $redirects, $redirectsTable,
 			$capturedURLsTable, $redirectForms, $listTableChrome,
 			$redirectTypeUI, $redirectConditions, $logs,
 		);
 		foreach ($components as $component) {
 			$component->setSiblingComponents(
-				$shared, $ui, $stats, $settings, $redirects,
+				$shared, $ui, $stats, $tools, $settings, $redirects,
 				$redirectsTable, $capturedURLsTable, $redirectForms, $listTableChrome,
 				$redirectTypeUI, $redirectConditions, $logs
 			);

@@ -45,10 +45,11 @@ class ABJ_404_Solution_RestApiController {
             $statsRepo = $this->resolveStatsRepository($statsRepository, $dao);
             $dbCore = $dao;
         } else {
+            $logicService = abj_service('plugin_logic');
             $this->logic = $daoOrLogic instanceof ABJ_404_Solution_PluginLogic
                 ? $daoOrLogic
-                : ABJ_404_Solution_PluginLogic::getInstance();
-            $fallbackDao = ABJ_404_Solution_DataAccess::getInstance();
+                : $logicService;
+            $fallbackDao = abj_service('data_access');
             $viewReadService = abj_service('view_read_service');
             $viewRead = $viewReadService instanceof ABJ_404_Solution_ViewReadServiceInterface ? $viewReadService : $fallbackDao;
             $viewBuildService = abj_service('view_build_orchestrator');
