@@ -5,38 +5,16 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Owns the redirect-import pipeline.
+ * Owns upload-level redirect-import orchestration.
  *
- * Reads an uploaded CSV (native or third-party format: Redirection, Safe
- * Redirect Manager, Simple 301), detects the delimiter and header row,
- * normalises each row into the canonical `from_url/to_url/...` shape,
- * validates regex patterns at the boundary so bad patterns never reach
- * the runtime matcher, resolves slug-style destinations to post/category/
- * tag IDs via the content repository, and persists each redirect via the
- * redirects repository. Maintains a sha256-content-keyed checkpoint in
- * wp_options so a PHP timeout mid-stream resumes on re-upload of the
- * same file instead of restarting from row 1.
- *
- * Does NOT own the export pipeline. See ABJ_404_Solution_ExportService.
+ * This service validates the uploaded file, streams it through
+ * ImportCsvParser, delegates each canonical row to ImportRedirectRowProcessor,
+ * and coordinates ImportProgressStore checkpoints so interrupted imports can
+ * resume by re-uploading the same file content.
  */
 class ABJ_404_Solution_ImportService {
 
-    /**
-     * Option key that stores resumable-import progress. Keyed by sha256
-     * content hash of the uploaded CSV so a different file (or a different
-     * version of the same file) does not falsely resume from stale state.
-     * See `doImportFile()` and the timeout-resume contract in
-     * tests/ImportExportTimeoutResumeTest.php.
-     */
     const IMPORT_PROGRESS_OPTION = 'abj404_import_progress';
-
-    /**
-     * Persist progress every N data rows so a hard PHP timeout (where no
-     * exception can be caught) still leaves a usable checkpoint. Trade-off:
-     * higher N is fewer option-writes but loses more rows on hard kill; lower
-     * N writes more but keeps the resume window tight. 50 keeps writes
-     * around once per second at typical row-processing rates.
-     */
     const IMPORT_PROGRESS_CHECKPOINT_INTERVAL = 50;
 
     /** @var ABJ_404_Solution_RedirectsRepositoryInterface */
@@ -47,6 +25,18 @@ class ABJ_404_Solution_ImportService {
 
     /** @var ABJ_404_Solution_Logging */
     private $logger;
+
+    /** @var ABJ_404_Solution_ImportCsvParser */
+    private $parser;
+
+    /** @var ABJ_404_Solution_ImportProgressStore */
+    private $progressStore;
+
+    /** @var ABJ_404_Solution_ImportUploadValidator */
+    private $uploadValidator;
+
+    /** @var ABJ_404_Solution_ImportRedirectRowProcessor */
+    private $rowProcessor;
 
     /**
      * Constructor supports two signatures for backward compatibility:
@@ -59,9 +49,6 @@ class ABJ_404_Solution_ImportService {
      */
     function __construct($redirectsRepoOrDataAccess, $contentRepoOrLogging, $logging = null) {
         if ($logging === null) {
-            // Legacy 2-arg signature: (DataAccess, Logging)
-            // DataAccess is a facade that implements RedirectsRepository methods directly,
-            // and exposes ContentRepository via $dao->getContentRepo().
             /** @var ABJ_404_Solution_RedirectsRepositoryInterface $redirectsRepoOrDataAccess */
             $this->redirectsRepository = $redirectsRepoOrDataAccess;
             $this->contentRepository = (is_object($redirectsRepoOrDataAccess) && method_exists($redirectsRepoOrDataAccess, 'getContentRepo'))
@@ -76,36 +63,15 @@ class ABJ_404_Solution_ImportService {
             $this->contentRepository = $contentRepoOrLogging;
             $this->logger = $logging;
         }
-    }
 
-    /**
-     * Validate the uploaded import file (extension, size, MIME type).
-     *
-     * @return string Empty on success, error message on failure.
-     */
-    private function validateImportFile(): string {
-        $allowed_extensions = array('csv', 'txt');
-        $file_ext = strtolower(pathinfo($_FILES['import_file']['name'], PATHINFO_EXTENSION));
-        if (!in_array($file_ext, $allowed_extensions)) {
-            return __('Error: Invalid file type. Only CSV/TXT files are allowed.', '404-solution');
-        }
-
-        $max_file_size = 5 * 1024 * 1024;
-        if ($_FILES['import_file']['size'] > $max_file_size) {
-            return __('Error: File too large. Maximum size is 5MB.', '404-solution');
-        }
-
-        $allowed_mime_types = array('text/csv', 'text/plain', 'application/csv', 'text/comma-separated-values', 'application/vnd.ms-excel');
-        $finfo = finfo_open(FILEINFO_MIME_TYPE);
-        if ($finfo === false) {
-            return __('Error: Unable to determine file type.', '404-solution');
-        }
-        $mime_type = finfo_file($finfo, $_FILES['import_file']['tmp_name']);
-        if (!in_array($mime_type, $allowed_mime_types)) {
-            return __('Error: Invalid file type. Only CSV files are allowed.', '404-solution');
-        }
-
-        return '';
+        $this->parser = new ABJ_404_Solution_ImportCsvParser();
+        $this->progressStore = new ABJ_404_Solution_ImportProgressStore(self::IMPORT_PROGRESS_OPTION);
+        $this->uploadValidator = new ABJ_404_Solution_ImportUploadValidator();
+        $this->rowProcessor = new ABJ_404_Solution_ImportRedirectRowProcessor(
+            $this->redirectsRepository,
+            $this->contentRepository,
+            $this->logger
+        );
     }
 
     /**
@@ -115,601 +81,390 @@ class ABJ_404_Solution_ImportService {
      *
      * @return string
      */
-    function doImportFile() {
-        $anyIssuesToNote = array();
-        if (!isset($_FILES['import_file']) || $_FILES['import_file']['error'] != UPLOAD_ERR_OK) {
+    function doImportFile(): string {
+        $uploadFile = $_FILES['import_file'] ?? null;
+        if (!is_array($uploadFile) ||
+                !isset($uploadFile['error']) ||
+                !is_numeric($uploadFile['error']) ||
+                (int)$uploadFile['error'] !== UPLOAD_ERR_OK) {
             return __('File upload error.', '404-solution');
         }
 
         $dryRun = isset($_POST['dry_run']) && sanitize_text_field((string)$_POST['dry_run']) === '1';
         $overwriteExisting = isset($_POST['overwrite_existing']) && sanitize_text_field((string)$_POST['overwrite_existing']) === '1';
-        $processedRows = 0;
-        $validRows = 0;
-        $invalidRows = 0;
-        $overwrittenRows = 0;
 
-        $validationError = $this->validateImportFile();
+        $validationError = $this->uploadValidator->validate($uploadFile);
         if ($validationError !== '') {
             return $validationError;
         }
 
-        $file_handle = fopen($_FILES['import_file']['tmp_name'], 'r');
+        $tmpName = $this->uploadValidator->tmpName($uploadFile);
+        $file_handle = fopen($tmpName, 'r');
         if (!$file_handle) {
             return __('Error opening the file.', '404-solution');
         }
 
-        // Resume support: content-hash-keyed checkpoint. If a prior import
-        // of the SAME file content (same sha256) paused mid-stream, pick up
-        // at the recorded row count instead of restarting from row 1.
-        // Dry runs never write to the DB, so they never resume / persist.
-        $hashResult = hash_file('sha256', $_FILES['import_file']['tmp_name']);
+        $hashResult = hash_file('sha256', $tmpName);
         $contentHash = ($dryRun || !is_string($hashResult)) ? '' : $hashResult;
-        $resumeFromDataRow = 0;
-        if (!$dryRun) {
-            $existingProgress = $this->getResumeProgress($contentHash);
-            if ($existingProgress !== null) {
-                $resumeFromDataRow = self::progressInt($existingProgress, 'rows_processed', 0);
-                $processedRows    = self::progressInt($existingProgress, 'processed_count', $resumeFromDataRow);
-                $validRows        = self::progressInt($existingProgress, 'valid_count', 0);
-                $invalidRows      = self::progressInt($existingProgress, 'invalid_count', 0);
-                $overwrittenRows  = self::progressInt($existingProgress, 'overwritten_count', 0);
-                if (isset($existingProgress['issues']) && is_array($existingProgress['issues'])) {
-                    /** @var array<int, string> $persistedIssues */
-                    $persistedIssues = $existingProgress['issues'];
-                    $anyIssuesToNote = $persistedIssues;
-                }
-            }
+        $runState = $this->applyResumeProgress($contentHash, $dryRun, $this->emptyRunState());
+
+        $delimiter = $this->parser->detectCsvDelimiterFromFile($file_handle);
+        rewind($file_handle);
+        $runState = $this->processFileRows(
+            $file_handle,
+            $delimiter,
+            $this->stateInt($runState, 'resume_from'),
+            $dryRun,
+            $overwriteExisting,
+            $contentHash,
+            $runState
+        );
+        fclose($file_handle);
+
+        if (isset($runState['abort_message']) && is_string($runState['abort_message'])) {
+            return $runState['abort_message'];
         }
 
-        $delimiter = $this->detectCsvDelimiterFromFile($file_handle);
-        rewind($file_handle);
+        if (!$dryRun) {
+            $this->progressStore->clearImportProgress();
+        }
 
+        return $this->formatImportResult($runState, $dryRun, $overwriteExisting);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function emptyRunState(): array {
+        return array(
+            'issues' => array(),
+            'processed' => 0,
+            'valid' => 0,
+            'invalid' => 0,
+            'overwritten' => 0,
+            'resume_from' => 0,
+        );
+    }
+
+    /**
+     * @param string $contentHash
+     * @param bool $dryRun
+     * @param array<string, mixed> $state
+     * @return array<string, mixed>
+     */
+    private function applyResumeProgress(string $contentHash, bool $dryRun, array $state): array {
+        if ($dryRun) {
+            return $state;
+        }
+
+        $existingProgress = $this->progressStore->getResumeProgress($contentHash);
+        if ($existingProgress === null) {
+            return $state;
+        }
+
+        $resumeFrom = ABJ_404_Solution_ImportProgressStore::progressInt($existingProgress, 'rows_processed', 0);
+        $state['resume_from'] = $resumeFrom;
+        $state['processed'] = ABJ_404_Solution_ImportProgressStore::progressInt($existingProgress, 'processed_count', $resumeFrom);
+        $state['valid'] = ABJ_404_Solution_ImportProgressStore::progressInt($existingProgress, 'valid_count', 0);
+        $state['invalid'] = ABJ_404_Solution_ImportProgressStore::progressInt($existingProgress, 'invalid_count', 0);
+        $state['overwritten'] = ABJ_404_Solution_ImportProgressStore::progressInt($existingProgress, 'overwritten_count', 0);
+        if (isset($existingProgress['issues']) && is_array($existingProgress['issues'])) {
+            /** @var array<int, string> $persistedIssues */
+            $persistedIssues = $existingProgress['issues'];
+            $state['issues'] = $persistedIssues;
+        }
+        return $state;
+    }
+
+    /**
+     * @param resource $fileHandle
+     * @param string $delimiter
+     * @param int $resumeFromDataRow
+     * @param bool $dryRun
+     * @param bool $overwriteExisting
+     * @param string $contentHash
+     * @param array<string, mixed> $state
+     * @return array<string, mixed>
+     */
+    private function processFileRows($fileHandle, string $delimiter, int $resumeFromDataRow,
+                                     bool $dryRun, bool $overwriteExisting, string $contentHash,
+                                     array $state): array {
         $headerColumns = null;
         $dataRowsSeen = 0;
-        while (($row = fgetcsv($file_handle, 0, $delimiter, '"', '\\')) !== false) {
-            $data = array_map(function($v) {
-                return trim((string)$v);
-            }, $row);
+        while (($row = fgetcsv($fileHandle, 0, $delimiter, '"', '\\')) !== false) {
+            $data = $this->normalizeCsvRow($row);
 
-            if (count($data) === 1 && $data[0] === '') {
+            if ($this->isBlankCsvRow($data)) {
                 continue;
             }
 
-            if ($headerColumns === null && $this->isCompatibleImportHeaderRow($data)) {
-                $headerColumns = $this->normalizeImportHeaders($data);
+            if ($headerColumns === null && $this->parser->isCompatibleImportHeaderRow($data)) {
+                $headerColumns = $this->parser->normalizeImportHeaders($data);
                 continue;
             }
 
-            // Resume: skip data rows already processed in a prior (paused) run.
-            // The header has just been parsed above, so the skip applies only
-            // to data rows (the unit the resume counter is keyed on).
             if ($dataRowsSeen < $resumeFromDataRow) {
                 $dataRowsSeen++;
                 continue;
             }
 
-            if ($headerColumns !== null) {
-                $dataArray = $this->mapImportRowByHeaders($data, $headerColumns);
-            } else {
-                $dataArray = $this->mapImportRowWithoutHeaders($data);
-            }
-
+            $dataArray = $this->mapCsvDataRow($data, $headerColumns);
             if (isset($dataArray['error'])) {
-                fclose($file_handle);
-                return $dataArray['error'];
+                $state['abort_message'] = $dataArray['error'];
+                return $state;
             }
 
-            if (isset($dataArray['from_url']) &&
-                    ($dataArray['from_url'] === 'from_url' || $dataArray['from_url'] === 'request')) {
+            if ($this->isRepeatedHeaderDataRow($dataArray)) {
                 $dataRowsSeen++;
                 continue;
             }
 
-            try {
-                $processedRows++;
-                $wasOverwrite = false;
-                if ($overwriteExisting && isset($dataArray['from_url']) && is_string($dataArray['from_url'])) {
-                    $existing = $this->redirectsRepository->getExistingRedirectForURL($dataArray['from_url']);
-                    $wasOverwrite = (is_array($existing) && isset($existing['id']) && (int)$existing['id'] !== 0);
-                }
-                // Surface the data-row line number so loadDataArrayFromFile()
-                // can build "Invalid regex pattern at line N: ..." messages
-                // that point the user at the row to fix.
-                $dataArray['__line_number'] = $dataRowsSeen + 1;
-                $issues = $this->loadDataArrayFromFile($dataArray, $dryRun, $overwriteExisting);
-                if (count($issues) > 0) {
-                    $invalidRows++;
-                } else {
-                    $validRows++;
-                    if ($wasOverwrite) {
-                        $overwrittenRows++;
-                    }
-                }
-                $anyIssuesToNote = array_merge($anyIssuesToNote, $issues);
-                $dataRowsSeen++;
-            } catch (\Throwable $e) {
-                // Mid-import failure (PHP timeout exception, DB error, etc.).
-                // Persist what we completed so the next call with the same
-                // file content resumes from $dataRowsSeen (the failed row
-                // gets retried; its from_url is the resume frontier). The
-                // row we were processing did NOT succeed, so processedRows
-                // is rolled back by 1 to keep counters truthful.
-                if (!$dryRun) {
-                    $this->persistImportProgress($contentHash, array(
-                        'rows_processed'    => $dataRowsSeen,
-                        'processed_count'   => max(0, $processedRows - 1),
-                        'valid_count'       => $validRows,
-                        'invalid_count'     => $invalidRows,
-                        'overwritten_count' => $overwrittenRows,
-                        'issues'            => $anyIssuesToNote,
-                        'last_error'        => $e->getMessage(),
-                        'paused_at'         => time(),
-                    ));
-                }
-                fclose($file_handle);
-                $this->logger->warn(sprintf(
-                    'Import paused at row %d of %d due to: %s',
-                    $dataRowsSeen + 1,
-                    $dataRowsSeen + 1,
-                    $e->getMessage()
-                ));
-                return sprintf(
-                    __('Import paused at row %1$d. %2$d redirect(s) imported so far. Re-upload the same file to resume from row %1$d.', '404-solution'),
-                    $dataRowsSeen + 1,
-                    $validRows
-                );
-            }
+            $state = $this->processDataArray(
+                $dataArray, $dataRowsSeen, $dryRun, $overwriteExisting, $contentHash, $state
+            );
+            $dataRowsSeen++;
 
-            // Periodic checkpoint so a hard PHP timeout (uncatchable fatal)
-            // still leaves a recent progress marker. Skipped during dry runs
-            // since they perform no DB writes.
             if (!$dryRun && ($dataRowsSeen % self::IMPORT_PROGRESS_CHECKPOINT_INTERVAL) === 0) {
-                $this->persistImportProgress($contentHash, array(
-                    'rows_processed'    => $dataRowsSeen,
-                    'processed_count'   => $processedRows,
-                    'valid_count'       => $validRows,
-                    'invalid_count'     => $invalidRows,
-                    'overwritten_count' => $overwrittenRows,
-                    'issues'            => $anyIssuesToNote,
-                ));
+                $this->persistCheckpoint($contentHash, $dataRowsSeen, $state);
+            }
+            if (isset($state['abort_message'])) {
+                return $state;
             }
         }
-        fclose($file_handle);
 
-        // Full traversal completed successfully: clear any prior progress
-        // so a future unrelated upload of byte-identical content (e.g.
-        // re-applying the same exports) starts fresh, not "resumes" from
-        // the file's end.
-        if (!$dryRun) {
-            $this->clearImportProgress();
+        return $state;
+    }
+
+    /**
+     * @param array<int, string|null>|false|null $row
+     * @return array<int, string>
+     */
+    private function normalizeCsvRow($row): array {
+        if (!is_array($row)) {
+            return array();
         }
+        return array_map(function($v) {
+            return trim((string)$v);
+        }, $row);
+    }
 
+    /** @param array<int, string> $data @return bool */
+    private function isBlankCsvRow(array $data): bool {
+        return count($data) === 1 && $data[0] === '';
+    }
+
+    /**
+     * @param array<int, string> $data
+     * @param array<int, string|null>|null $headerColumns
+     * @return array<string, string>
+     */
+    private function mapCsvDataRow(array $data, $headerColumns): array {
+        return $headerColumns !== null
+            ? $this->parser->mapImportRowByHeaders($data, $headerColumns)
+            : $this->parser->mapImportRowWithoutHeaders($data);
+    }
+
+    /**
+     * @param array<string, string> $dataArray
+     * @return bool
+     */
+    private function isRepeatedHeaderDataRow(array $dataArray): bool {
+        return isset($dataArray['from_url']) &&
+            ($dataArray['from_url'] === 'from_url' || $dataArray['from_url'] === 'request');
+    }
+
+    /**
+     * @param array<string, string> $dataArray
+     * @param int $dataRowsSeen
+     * @param bool $dryRun
+     * @param bool $overwriteExisting
+     * @param string $contentHash
+     * @param array<string, mixed> $state
+     * @return array<string, mixed>
+     */
+    private function processDataArray(array $dataArray, int $dataRowsSeen, bool $dryRun,
+                                      bool $overwriteExisting, string $contentHash,
+                                      array $state): array {
+        try {
+            $state['processed'] = $this->stateInt($state, 'processed') + 1;
+            $wasOverwrite = $this->wouldOverwriteExisting($dataArray, $overwriteExisting);
+            $dataArray['__line_number'] = (string)($dataRowsSeen + 1);
+            $issues = $this->rowProcessor->loadDataArrayFromFile($dataArray, $dryRun, $overwriteExisting);
+            return $this->accountForRowIssues($state, $issues, $wasOverwrite);
+        } catch (\Throwable $e) {
+            $this->recordPausedImport($contentHash, $dataRowsSeen, $state, $dryRun, $e);
+            $state['abort_message'] = sprintf(
+                __('Import paused at row %1$d. %2$d redirect(s) imported so far. Re-upload the same file to resume from row %1$d.', '404-solution'),
+                $dataRowsSeen + 1,
+                $this->stateInt($state, 'valid')
+            );
+            return $state;
+        }
+    }
+
+    /**
+     * @param array<string, string> $dataArray
+     * @param bool $overwriteExisting
+     * @return bool
+     */
+    private function wouldOverwriteExisting(array $dataArray, bool $overwriteExisting): bool {
+        if (!$overwriteExisting || !isset($dataArray['from_url']) || !is_string($dataArray['from_url'])) {
+            return false;
+        }
+        $existing = $this->redirectsRepository->getExistingRedirectForURL($dataArray['from_url']);
+        return is_array($existing) && isset($existing['id']) && is_numeric($existing['id']) && (int)$existing['id'] !== 0;
+    }
+
+    /**
+     * @param array<string, mixed> $state
+     * @param array<int, string> $issues
+     * @param bool $wasOverwrite
+     * @return array<string, mixed>
+     */
+    private function accountForRowIssues(array $state, array $issues, bool $wasOverwrite): array {
+        if (count($issues) > 0) {
+            $state['invalid'] = $this->stateInt($state, 'invalid') + 1;
+        } else {
+            $state['valid'] = $this->stateInt($state, 'valid') + 1;
+            if ($wasOverwrite) {
+                $state['overwritten'] = $this->stateInt($state, 'overwritten') + 1;
+            }
+        }
+        $state['issues'] = array_merge($this->stateIssues($state), $issues);
+        return $state;
+    }
+
+    /**
+     * @param string $contentHash
+     * @param int $dataRowsSeen
+     * @param array<string, mixed> $state
+     * @param bool $dryRun
+     * @param Throwable $e
+     * @return void
+     */
+    private function recordPausedImport(string $contentHash, int $dataRowsSeen, array $state,
+                                        bool $dryRun, \Throwable $e): void {
+        if (!$dryRun) {
+            $this->progressStore->persistImportProgress($contentHash, array(
+                'rows_processed'    => $dataRowsSeen,
+                'processed_count'   => max(0, $this->stateInt($state, 'processed') - 1),
+                'valid_count'       => $this->stateInt($state, 'valid'),
+                'invalid_count'     => $this->stateInt($state, 'invalid'),
+                'overwritten_count' => $this->stateInt($state, 'overwritten'),
+                'issues'            => $this->stateIssues($state),
+                'last_error'        => $e->getMessage(),
+                'paused_at'         => time(),
+            ));
+        }
+        $this->logger->warn(sprintf(
+            'Import paused at row %d of %d due to: %s',
+            $dataRowsSeen + 1,
+            $dataRowsSeen + 1,
+            $e->getMessage()
+        ));
+    }
+
+    /**
+     * @param string $contentHash
+     * @param int $dataRowsSeen
+     * @param array<string, mixed> $state
+     * @return void
+     */
+    private function persistCheckpoint(string $contentHash, int $dataRowsSeen, array $state): void {
+        $this->progressStore->persistImportProgress($contentHash, array(
+            'rows_processed'    => $dataRowsSeen,
+            'processed_count'   => $this->stateInt($state, 'processed'),
+            'valid_count'       => $this->stateInt($state, 'valid'),
+            'invalid_count'     => $this->stateInt($state, 'invalid'),
+            'overwritten_count' => $this->stateInt($state, 'overwritten'),
+            'issues'            => $this->stateIssues($state),
+        ));
+    }
+
+    /**
+     * @param array<string, mixed> $state
+     * @param bool $dryRun
+     * @param bool $overwriteExisting
+     * @return string
+     */
+    private function formatImportResult(array $state, bool $dryRun, bool $overwriteExisting): string {
+        $issues = $this->stateIssues($state);
         if ($dryRun) {
             $msg = sprintf(
                 __('Dry run complete. Valid redirects: %d. Invalid rows: %d. Total rows processed: %d.', '404-solution'),
-                $validRows,
-                $invalidRows,
-                $processedRows
+                $this->stateInt($state, 'valid'),
+                $this->stateInt($state, 'invalid'),
+                $this->stateInt($state, 'processed')
             );
-            if (count($anyIssuesToNote) > 0) {
-                $msg .= ' ' . __('Preview issues:', '404-solution') . ' ' .
-                    implode(", <BR/>\n", array_slice($anyIssuesToNote, 0, 20));
-            }
-            return $msg;
+            return count($issues) > 0
+                ? $msg . ' ' . __('Preview issues:', '404-solution') . ' ' . implode(", <BR/>\n", array_slice($issues, 0, 20))
+                : $msg;
         }
-
-        if (count($anyIssuesToNote) > 0) {
-            return __('Error:', '404-solution') . ' ' . implode(", <BR/>\n", $anyIssuesToNote);
+        if (count($issues) > 0) {
+            return __('Error:', '404-solution') . ' ' . implode(", <BR/>\n", $issues);
         }
-
-        if ($overwriteExisting && $overwrittenRows > 0) {
+        if ($overwriteExisting && $this->stateInt($state, 'overwritten') > 0) {
             return sprintf(
                 __('The file seems to have loaded okay. %d existing redirect(s) were overwritten. Please check the redirects page.', '404-solution'),
-                $overwrittenRows
+                $this->stateInt($state, 'overwritten')
             );
         }
-
         return __('The file seems to have loaded okay. Please check the redirects page.', '404-solution');
     }
 
     /**
-     * Type-narrowing helper for `mixed` values pulled out of the persisted
-     * progress array. Keeps PHPStan level 9 happy without sprinkling
-     * `is_int / is_numeric` guards through `doImportFile()`.
-     *
-     * @param array<string, mixed> $progress
+     * @param array<string, mixed> $state
      * @param string $key
-     * @param int $default
      * @return int
      */
-    private static function progressInt(array $progress, string $key, int $default): int {
-        if (!isset($progress[$key])) {
-            return $default;
-        }
-        $v = $progress[$key];
-        if (is_int($v)) {
-            return $v;
-        }
-        if (is_numeric($v)) {
-            return (int)$v;
-        }
-        return $default;
+    private function stateInt(array $state, string $key): int {
+        $value = $state[$key] ?? 0;
+        return is_numeric($value) ? (int)$value : 0;
     }
 
     /**
-     * Look up resumable-import progress for the supplied content hash.
-     * Returns the persisted progress array only when the recorded hash
-     * matches; mismatches (different file content) and absent records both
-     * return null so the caller can begin a fresh import.
-     *
-     * @param string $contentHash sha256 of the current upload's contents.
-     * @return array<string, mixed>|null
-     */
-    private function getResumeProgress($contentHash) {
-        if ($contentHash === '' || !function_exists('get_option')) {
-            return null;
-        }
-        $progress = get_option(self::IMPORT_PROGRESS_OPTION, null);
-        if (!is_array($progress) || !isset($progress['hash']) || !is_string($progress['hash'])) {
-            return null;
-        }
-        if ($progress['hash'] !== $contentHash) {
-            return null;
-        }
-        /** @var array<string, mixed> $progress */
-        return $progress;
-    }
-
-    /**
-     * Persist a resumable-import checkpoint keyed by the file's sha256
-     * hash. Writes are idempotent (latest wins) and small (counters + a
-     * short issue list), so calling this every N rows is cheap.
-     *
-     * @param string $contentHash
      * @param array<string, mixed> $state
-     * @return void
+     * @return array<int, string>
      */
-    private function persistImportProgress($contentHash, $state) {
-        if ($contentHash === '' || !function_exists('update_option')) {
-            return;
-        }
-        $state['hash'] = $contentHash;
-        update_option(self::IMPORT_PROGRESS_OPTION, $state);
-    }
-
-    /**
-     * Clear the resume marker after a fully-successful import so a future
-     * upload of byte-identical content starts fresh rather than "resuming"
-     * from end-of-file.
-     *
-     * @return void
-     */
-    private function clearImportProgress() {
-        if (function_exists('delete_option')) {
-            delete_option(self::IMPORT_PROGRESS_OPTION);
-        }
+    private function stateIssues(array $state): array {
+        $issues = $state['issues'] ?? array();
+        return is_array($issues) ? array_values(array_filter($issues, 'is_string')) : array();
     }
 
     /**
      * @param array<string, mixed> $dataArray
      * @param bool $dryRun
-     * @param bool $overwriteExisting When true, an existing redirect with the
-     *   same from_url is updated instead of being skipped. Default false
-     *   preserves historical safe-by-default behavior.
+     * @param bool $overwriteExisting
      * @return array<int, string>
      */
-    function loadDataArrayFromFile($dataArray, $dryRun = false, $overwriteExisting = false) {
-        $fromURL = isset($dataArray['from_url']) && is_string($dataArray['from_url']) ? $dataArray['from_url'] : '';
-        if ($fromURL === 'from_url' || $fromURL === 'request') {
-            return array();
-        }
-
-        // Explicit regex signal from the CSV takes priority over the narrow
-        // URL-chars sniff further down. Recognized signals (any one wins):
-        //   1. Native CSV `status` column literal 'Regex' (case-insensitive)
-        //   2. Native CSV `status` numeric ABJ404_STATUS_REGEX value
-        //   3. Redirection-plugin `regex` column '1' / 'true' / 'yes'
-        $explicitRegex = $this->isExplicitRegexRow($dataArray);
-        $status = $explicitRegex ? ABJ404_STATUS_REGEX : ABJ404_STATUS_MANUAL;
-        $final_dest = isset($dataArray['to_url']) && is_string($dataArray['to_url']) ? $dataArray['to_url'] : '';
-        $anyIssuesToNote = array();
-
-        // Server-side regex auto-promote sniff. When the CSV row does not
-        // carry an explicit regex signal but the from_url contains
-        // unambiguous regex metachars (`* [ ] | ^ \ { }`), flip the
-        // status to REGEX and apply the bare-`*` to `.*` glob fixup so the
-        // stored pattern compiles at runtime. Applied regardless of
-        // destination type because the canonical case (Troy's 55-row
-        // import) imports `/sales/*` to internal pages, not just external
-        // destinations as the legacy narrow sniff assumed. Done BEFORE
-        // the existing-URL check so re-imports of the same CSV idempotently
-        // resolve to the same canonical rewritten pattern.
-        if (!$explicitRegex
-                && ABJ_404_Solution_RegexAutoPromote::looksLikeUnambiguousRegex($fromURL)) {
-            $status = ABJ404_STATUS_REGEX;
-            $glob = ABJ_404_Solution_RegexAutoPromote::applyGlobFixup($fromURL);
-            $fromURL = $glob['url'];
-        }
-
-        // Validate at the boundary: if the row is explicitly flagged as a regex
-        // redirect, refuse to persist a from_url that is not a syntactically
-        // valid PHP pattern. Without this guard, the bad pattern reaches
-        // SpellCheckerTrait_URLMatching::getPermalinkUsingRegEx() at runtime
-        // and emits a PHP warning per 404 request.
-        if ($explicitRegex) {
-            $patternError = $this->validateRegexPattern($fromURL);
-            if ($patternError !== '') {
-                $lineNumber = isset($dataArray['__line_number']) && is_numeric($dataArray['__line_number'])
-                    ? (int)$dataArray['__line_number'] : 0;
-                $msg = $lineNumber > 0
-                    ? sprintf(__('Invalid regex pattern at line %d: %s (%s)', '404-solution'),
-                        $lineNumber, $fromURL, $patternError)
-                    : sprintf(__('Invalid regex pattern: %s (%s)', '404-solution'),
-                        $fromURL, $patternError);
-                $this->logger->warn($msg);
-                $anyIssuesToNote[] = $msg;
-                return $anyIssuesToNote;
-            }
-        }
-
-        $maybeExisting2 = $this->redirectsRepository->getExistingRedirectForURL($fromURL);
-        $existingId = (count($maybeExisting2) > 0 && isset($maybeExisting2['id'])) ? (int)$maybeExisting2['id'] : 0;
-        if ($existingId !== 0 && !$overwriteExisting) {
-            $msg = __('Ignored importing redirect because a redirect with the same from URL already exists. URL:', '404-solution') . ' ' . $fromURL;
-            $this->logger->warn($msg);
-            $anyIssuesToNote[] = $msg;
-            return $anyIssuesToNote;
-        }
-
-        $typePost = defined('ABJ404_TYPE_POST') ? constant('ABJ404_TYPE_POST') : 1;
-        $typeCat = defined('ABJ404_TYPE_CAT') ? constant('ABJ404_TYPE_CAT') : 2;
-        $typeTag = defined('ABJ404_TYPE_TAG') ? constant('ABJ404_TYPE_TAG') : 3;
-
-        if (empty($final_dest)) {
-            $type = ABJ404_TYPE_404_DISPLAYED;
-        } else if ($final_dest == '5') {
-            $type = ABJ404_TYPE_HOME;
-        } else if (strpos($final_dest, 'http') !== false) {
-            $type = ABJ404_TYPE_EXTERNAL;
-        } else if (strpos($final_dest, '/') === 0) {
-            $type = $typePost;
-        } else {
-            $msg = __('Unrecognized destination type while importing file. Destination:', '404-solution') . ' ' . $final_dest;
-            $this->logger->warn($msg);
-            $anyIssuesToNote[] = $msg;
-            return $anyIssuesToNote;
-        }
-
-        if ($type == ABJ404_TYPE_404_DISPLAYED) {
-            $final_dest = ABJ404_TYPE_404_DISPLAYED;
-        } else if (strpos($final_dest, 'http') !== false) {
-            $type = ABJ404_TYPE_EXTERNAL;
-        } else if ($type == ABJ404_TYPE_HOME) {
-            $final_dest = ABJ404_TYPE_HOME;
-        } else {
-            $slug = trim($final_dest, '/');
-            $postsFromSlugRows = $this->contentRepository->getPublishedPagesAndPostsIDs($slug);
-            $postsFromCategoryRows = $this->contentRepository->getPublishedCategories(null, $slug);
-            $postsFromTagRows = $this->contentRepository->getPublishedTags($slug);
-
-            /** @var object{id?: int|string, term_id?: int|string}|null $postFromSlug */
-            $postFromSlug = isset($postsFromSlugRows[0]) ? $postsFromSlugRows[0] : null;
-            /** @var object{term_id?: int|string}|null $postFromCategory */
-            $postFromCategory = isset($postsFromCategoryRows[0]) ? $postsFromCategoryRows[0] : null;
-            /** @var object{term_id?: int|string}|null $postFromTag */
-            $postFromTag = isset($postsFromTagRows[0]) ? $postsFromTagRows[0] : null;
-
-            if ($postFromSlug && isset($postFromSlug->id)) {
-                $type = $typePost;
-                $final_dest = (string)$postFromSlug->id;
-            } else if ($postFromCategory && isset($postFromCategory->term_id)) {
-                $type = $typeCat;
-                $final_dest = (string)$postFromCategory->term_id;
-            } else if ($postFromTag && isset($postFromTag->term_id)) {
-                $type = $typeTag;
-                $final_dest = (string)$postFromTag->term_id;
-            } else {
-                // Slug doesn't resolve to any post/category/tag (use EXTERNAL
-                // so the path is used as-is by the redirect pipeline). Storing
-                // a non-numeric final_dest with TYPE_POST would cause the
-                // redirect to silently 404 (get_permalink() expects an ID).
-                $type = ABJ404_TYPE_EXTERNAL;
-                $this->logger->warn(__("Couldn't find post from slug. slug:", '404-solution') . ' ' . $slug);
-            }
-        }
-
-        if (!$dryRun) {
-            $engine = isset($dataArray['engine']) && is_string($dataArray['engine']) && $dataArray['engine'] !== ''
-                ? $dataArray['engine'] : 'import';
-            $code = isset($dataArray['code']) && is_numeric($dataArray['code'])
-                ? (string)(int)$dataArray['code'] : '301';
-
-            if ($existingId !== 0 && $overwriteExisting) {
-                // Overwrite path: mutate the existing row so the user's bulk
-                // CSV edit (e.g. Manual to Regex on 55 city patterns) lands
-                // without per-row admin clicks.
-                $this->redirectsRepository->updateRedirect(ABJ_404_Solution_RedirectUpdate::create(
-                    (int)$existingId,
-                    (int)$type,
-                    (string)$fromURL,
-                    (string)$final_dest,
-                    (string)$code,
-                    (string)(int)$status
-                ));
-            } else {
-                $this->redirectsRepository->setupRedirect(ABJ_404_Solution_RedirectSpec::create(
-                    $fromURL, (string)$status, (string)$type, (string)$final_dest, $code, 0, $engine
-                ));
-            }
-        }
-
-        return $anyIssuesToNote;
-    }
-
-    /**
-     * Run the same pattern preparation SpellCheckerTrait_URLMatching uses
-     * (forward-slashes escaped, then wrapped with `{` `}` or an alt delimiter)
-     * and ask preg_match whether the result compiles. Returns the empty string
-     * when the pattern is valid, or a short error message when it is not.
-     *
-     * Note: this validates the pattern shape only. It does not test against a
-     * sample URL because preg_match returning 0 (no match) is still a "valid
-     * pattern" outcome.
-     *
-     * @param string $fromUrl raw from_url from the CSV row
-     * @return string '' when valid; a short error message otherwise
-     */
-    private function validateRegexPattern(string $fromUrl): string {
-        if ($fromUrl === '') {
-            return __('pattern is empty', '404-solution');
-        }
-
-        // Mirror SpellCheckerTrait_URLMatching::getPreparedRegexPattern and
-        // FunctionsPreg::regexMatch so we test exactly what runs at request
-        // time.
-        $prepared = str_replace('/', '\/', $fromUrl);
-        $delimA = '{';
-        $delimB = '}';
-        if (strpos($prepared, '}') !== false) {
-            // Mirror FunctionsPreg::findADelimiter for the alt-delimiter path.
-            $candidates = array('`', '^', '|', '~', '!', ';', ':', ',', '@', "'", '/');
-            $picked = null;
-            foreach ($candidates as $c) {
-                if (strpos($prepared, $c) === false) { $picked = $c; break; }
-            }
-            if ($picked === null) {
-                return __('cannot find a safe delimiter character', '404-solution');
-            }
-            $delimA = $delimB = $picked;
-        }
-
-        $compiled = $delimA . $prepared . $delimB;
-        $result = @preg_match($compiled, '');
-        if ($result === false) {
-            $errMsg = function_exists('preg_last_error_msg')
-                ? preg_last_error_msg()
-                : 'preg_match compilation failed';
-            return $errMsg;
-        }
-        return '';
-    }
-
-    /**
-     * Decide whether a parsed CSV row explicitly asks for STATUS_REGEX, based
-     * on the `status` column (native format) or `regex` column (Redirection
-     * format). Case-insensitive; tolerant of common truthy spellings.
-     *
-     * @param array<string, mixed> $dataArray
-     * @return bool
-     */
-    private function isExplicitRegexRow(array $dataArray): bool {
-        if (isset($dataArray['status']) && is_scalar($dataArray['status'])) {
-            $raw = strtolower(trim((string)$dataArray['status']));
-            if ($raw === 'regex') {
-                return true;
-            }
-            if (is_numeric($raw) && (int)$raw === (int)ABJ404_STATUS_REGEX) {
-                return true;
-            }
-        }
-        if (isset($dataArray['regex']) && is_scalar($dataArray['regex'])) {
-            $raw = strtolower(trim((string)$dataArray['regex']));
-            if ($raw === '1' || $raw === 'true' || $raw === 'yes') {
-                return true;
-            }
-        }
-        return false;
+    function loadDataArrayFromFile($dataArray, $dryRun = false, $overwriteExisting = false): array {
+        return $this->rowProcessor->loadDataArrayFromFile($dataArray, $dryRun, $overwriteExisting);
     }
 
     /**
      * @param mixed $line
      * @return array<string, string>
      */
-    function splitCsvLine($line) {
-        if (!is_string($line)) {
-            $line = is_scalar($line) ? (string)$line : '';
-        }
-
-        $data = array_map(function($v) {
-            return trim((string)$v);
-        }, str_getcsv($line, ',', '"', '\\'));
-
-        if (count($data) === 5) {
-            return array(
-                'from_url' => $data[0],
-                'status'   => $data[1],
-                'type'     => $data[2],
-                'to_url'   => $data[3],
-                'wp_type'  => $data[4]
-            );
-        } else if (count($data) === 2) {
-            return array(
-                'from_url' => $data[0],
-                'to_url'   => $data[1]
-            );
-        }
-
-        return array('error' => sprintf(__('Invalid CSV format. %d columns found but 2 or 5 expected.', '404-solution'), count($data)));
+    function splitCsvLine($line): array {
+        return $this->parser->splitCsvLine($line);
     }
 
-    /**
-     * @param array<int, string> $columns
-     * @return bool
-     */
-    function isCompatibleImportHeaderRow($columns) {
-        $normalized = $this->normalizeImportHeaders($columns);
-        $fromIndex = $this->findImportHeaderIndex($normalized, array('from_url', 'request', 'source', 'url', 'match_url'));
-        $toIndex = $this->findImportHeaderIndex($normalized, array('to_url', 'target', 'destination', 'action_data', 'redirect_to', 'url_to'));
-        return ($fromIndex !== -1 && $toIndex !== -1);
+    /** @param array<int, string> $columns @return bool */
+    function isCompatibleImportHeaderRow($columns): bool {
+        return $this->parser->isCompatibleImportHeaderRow($columns);
     }
 
     /**
      * @param array<int, string> $columns
      * @return array<int, string|null>
      */
-    function normalizeImportHeaders($columns) {
-        return array_map(function($value) {
-            $value = preg_replace('/^\xEF\xBB\xBF/', '', (string)$value);
-            $value = trim(strtolower((string)$value));
-            return preg_replace('/[^a-z0-9_]/', '', str_replace(' ', '_', $value));
-        }, $columns);
+    function normalizeImportHeaders($columns): array {
+        return $this->parser->normalizeImportHeaders($columns);
     }
 
-    /**
-     * Best-effort format detection for import UX and diagnostics.
-     *
-     * @param array<int, string> $columns Raw header row.
-     * @return string One of: native, redirection, safe_redirect_manager, simple_301, unknown.
-     */
-    function detectImportFormatFromHeaders($columns) {
-        $normalized = $this->normalizeImportHeaders($columns);
-
-        if (in_array('source', $normalized, true) &&
-                in_array('target', $normalized, true) &&
-                in_array('regex', $normalized, true)) {
-            return 'redirection';
-        }
-
-        if (in_array('redirect_from', $normalized, true) &&
-                in_array('redirect_to', $normalized, true)) {
-            return 'safe_redirect_manager';
-        }
-
-        if (in_array('request', $normalized, true) &&
-                in_array('destination', $normalized, true)) {
-            return 'simple_301';
-        }
-
-        if ((in_array('from_url', $normalized, true) &&
-                in_array('to_url', $normalized, true)) ||
-                (in_array('from_url', $normalized, true) &&
-                in_array('status', $normalized, true) &&
-                in_array('type', $normalized, true) &&
-                in_array('to_url', $normalized, true))) {
-            return 'native';
-        }
-
-        return 'unknown';
+    /** @param array<int, string> $columns @return string */
+    function detectImportFormatFromHeaders($columns): string {
+        return $this->parser->detectImportFormatFromHeaders($columns);
     }
 
     /**
@@ -717,134 +472,20 @@ class ABJ_404_Solution_ImportService {
      * @param array<int, string|null> $normalizedHeaders
      * @return array<string, string>
      */
-    function mapImportRowByHeaders($row, $normalizedHeaders) {
-        $fromIndex = $this->findImportHeaderIndex($normalizedHeaders, array('from_url', 'request', 'source', 'url', 'match_url'));
-        $toIndex = $this->findImportHeaderIndex($normalizedHeaders, array('to_url', 'target', 'destination', 'action_data', 'redirect_to', 'url_to'));
-
-        if ($fromIndex === -1 || $toIndex === -1) {
-            return array('error' => __('Invalid CSV format. Could not map source/destination columns.', '404-solution'));
-        }
-
-        $from = array_key_exists($fromIndex, $row) ? trim((string)$row[$fromIndex]) : '';
-        $to = array_key_exists($toIndex, $row) ? trim((string)$row[$toIndex]) : '';
-
-        if ($from === '' && $to === '') {
-            return array('from_url' => '', 'to_url' => '');
-        }
-
-        $result = array(
-            'from_url' => $from,
-            'to_url' => $to,
-        );
-
-        $engineIndex = $this->findImportHeaderIndex($normalizedHeaders, array('engine'));
-        if ($engineIndex !== -1 && array_key_exists($engineIndex, $row)) {
-            $result['engine'] = trim((string)$row[$engineIndex]);
-        }
-
-        $codeIndex = $this->findImportHeaderIndex($normalizedHeaders, array('code', 'redirect_code', 'http_code'));
-        if ($codeIndex !== -1 && array_key_exists($codeIndex, $row)) {
-            $result['code'] = trim((string)$row[$codeIndex]);
-        }
-
-        // Native CSV: textual status (Manual / Regex / Auto / Captured / Ignored / Later).
-        $statusIndex = $this->findImportHeaderIndex($normalizedHeaders, array('status', 'redirect_status'));
-        if ($statusIndex !== -1 && array_key_exists($statusIndex, $row)) {
-            $result['status'] = trim((string)$row[$statusIndex]);
-        }
-
-        // Redirection-plugin CSV: explicit `regex` flag column (0/1).
-        $regexIndex = $this->findImportHeaderIndex($normalizedHeaders, array('regex', 'is_regex'));
-        if ($regexIndex !== -1 && array_key_exists($regexIndex, $row)) {
-            $result['regex'] = trim((string)$row[$regexIndex]);
-        }
-
-        return $result;
+    function mapImportRowByHeaders($row, $normalizedHeaders): array {
+        return $this->parser->mapImportRowByHeaders($row, $normalizedHeaders);
     }
 
     /**
-     * @param array<int, string|null> $headers
-     * @param array<int, string> $candidates
-     * @return int
-     */
-    private function findImportHeaderIndex($headers, $candidates) {
-        foreach ($candidates as $candidate) {
-            $idx = array_search($candidate, $headers, true);
-            if ($idx !== false) {
-                return (int)$idx;
-            }
-        }
-        return -1;
-    }
-
-    /**
-     * @param array<int, string> $columns Already parsed CSV columns for one row.
+     * @param array<int, string> $columns
      * @return array<string, string>
      */
-    function mapImportRowWithoutHeaders($columns) {
-        $columns = array_values($columns);
-        if (count($columns) === 7) {
-            return array(
-                'from_url' => trim((string)$columns[0]),
-                'status'   => trim((string)$columns[1]),
-                'type'     => trim((string)$columns[2]),
-                'to_url'   => trim((string)$columns[3]),
-                'wp_type'  => trim((string)$columns[4]),
-                'engine'   => trim((string)$columns[5]),
-                'code'     => trim((string)$columns[6]),
-            );
-        }
-        if (count($columns) === 6) {
-            return array(
-                'from_url' => trim((string)$columns[0]),
-                'status'   => trim((string)$columns[1]),
-                'type'     => trim((string)$columns[2]),
-                'to_url'   => trim((string)$columns[3]),
-                'wp_type'  => trim((string)$columns[4]),
-                'engine'   => trim((string)$columns[5]),
-            );
-        }
-        if (count($columns) === 5) {
-            return array(
-                'from_url' => trim((string)$columns[0]),
-                'status'   => trim((string)$columns[1]),
-                'type'     => trim((string)$columns[2]),
-                'to_url'   => trim((string)$columns[3]),
-                'wp_type'  => trim((string)$columns[4]),
-            );
-        }
-        if (count($columns) === 2) {
-            return array(
-                'from_url' => trim((string)$columns[0]),
-                'to_url'   => trim((string)$columns[1]),
-            );
-        }
-        return array('error' => sprintf(__('Invalid CSV format. %d columns found but 2, 5, 6, or 7 expected.', '404-solution'), count($columns)));
+    function mapImportRowWithoutHeaders($columns): array {
+        return $this->parser->mapImportRowWithoutHeaders($columns);
     }
 
-    /**
-     * Detect delimiter by inspecting the first non-empty line.
-     *
-     * @param resource $fileHandle
-     * @return string
-     */
-    function detectCsvDelimiterFromFile($fileHandle) {
-        while (($line = fgets($fileHandle)) !== false) {
-            if (trim($line) === '') {
-                continue;
-            }
-            $comma = count(str_getcsv($line, ',', '"', '\\'));
-            $semicolon = count(str_getcsv($line, ';', '"', '\\'));
-            $tab = count(str_getcsv($line, "\t", '"', '\\'));
-
-            if ($semicolon > $comma && $semicolon >= $tab) {
-                return ';';
-            }
-            if ($tab > $comma && $tab > $semicolon) {
-                return "\t";
-            }
-            return ',';
-        }
-        return ',';
+    /** @param resource $fileHandle @return string */
+    function detectCsvDelimiterFromFile($fileHandle): string {
+        return $this->parser->detectCsvDelimiterFromFile($fileHandle);
     }
 }
