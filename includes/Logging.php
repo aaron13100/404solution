@@ -23,13 +23,6 @@ class ABJ_404_Solution_Logging {
     /** @var self|null */
     private static $instance = null;
 
-    /** @var int Latest error-log line emailed during this PHP request. */
-    private static $lastSentErrorLineThisRequest = 0;
-    /** @var string Latest error signature emailed during this PHP request. */
-    private static $lastSentErrorSignatureThisRequest = '';
-    /** @var string Debug file path associated with the request-local dedupe state. */
-    private static $lastSentDebugFilePathThisRequest = '';
-
     /**
      * Factory for the DI container.
      *
@@ -263,48 +256,28 @@ class ABJ_404_Solution_Logging {
      * @return bool
      */
     function emailErrorLogIfNecessary(): bool {
-        $options = abj_service('options_repository')->getOptions(true);
-
-        if (!file_exists($this->getDebugFilePath())) {
+        $debugFilePath = $this->getDebugFilePath();
+        if (!file_exists($debugFilePath)) {
             $this->debugMessage("No log file found so no errors were found.");
             return false;
         }
 
-        // get the number of the last line with an error message.
         $latestErrorLineFound = $this->getLatestErrorLine();
-
-        // if no error was found then we're done.
         if ($latestErrorLineFound['num'] == -1) {
             $this->debugMessage("No errors found in the log file.");
             return false;
         }
 
-        // -------------------
-        // get/check the last line that was emailed to the admin.
-        $sentDateFile = $this->getDebugFilePathSentFile();
-        $debugFilePath = $this->getDebugFilePath();
+        $optionsRepo = abj_service('options_repository');
+        $options = $optionsRepo->getOptions(true);
+        $dedupe = $this->getDedupeState();
+        $sentinelFilePath = $this->getDebugFilePathSentFile();
+        $sentLine = $dedupe->readSentLine($options, $sentinelFilePath);
+        $this->debugMessage("Dedupe pointer: sentLine=" . $sentLine);
 
-        $sentLine = -1;
-        if (file_exists($sentDateFile)) {
-            $sentLine = absint(
-            	ABJ_404_Solution_FileSystemService::readFileContents($sentDateFile, false));
-            $this->debugMessage("Last sent line from file: " . $sentLine);
-        }
-        if ($sentLine < 1 && array_key_exists(self::LAST_SENT_LINE, $options)) {
-        	$sentLine = is_scalar($options[self::LAST_SENT_LINE]) ? (int)$options[self::LAST_SENT_LINE] : -1;
-       		$this->debugMessage("Last sent line from options: " . $sentLine);
-        }
-
-        // if we already sent the error line then don't send the log file again.
-        if (self::$lastSentDebugFilePathThisRequest === $debugFilePath) {
-            $sentLine = max($sentLine, self::$lastSentErrorLineThisRequest);
-        }
-        $latestSignature = (string)($latestErrorLineFound['line'] ?? '');
-        if ($latestErrorLineFound['num'] <= $sentLine
-            || (self::$lastSentDebugFilePathThisRequest === $debugFilePath
-                && $latestSignature !== '' && $latestSignature === self::$lastSentErrorSignatureThisRequest)) {
-            $this->debugMessage("The latest error line from the log file was already emailed. " . $latestErrorLineFound['num'] .
-                    ' <= ' . $sentLine);
+        if ($dedupe->isAlreadySent($sentLine, $latestErrorLineFound, $debugFilePath)) {
+            $this->debugMessage("The latest error line from the log file was already emailed. " .
+                $latestErrorLineFound['num'] . ' <= ' . $sentLine);
             return false;
         }
 
@@ -314,17 +287,9 @@ class ABJ_404_Solution_Logging {
             return false;
         }
 
-        // update the latest error line emailed to the developer.
-        $options[self::LAST_SENT_LINE] = $latestErrorLineFound['num'];
-        self::$lastSentErrorLineThisRequest = (int)$latestErrorLineFound['num'];
-        self::$lastSentErrorSignatureThisRequest = $latestSignature;
-        self::$lastSentDebugFilePathThisRequest = $debugFilePath;
-        abj_service('options_repository')->updateOptions($options);
-        file_put_contents($sentDateFile, $latestErrorLineFound['num']);
-        $fileContents = file_get_contents($sentDateFile);
-        if ($fileContents != $latestErrorLineFound['num']) {
-        	$this->errorMessage("There was an issue writing to the file " . $sentDateFile);
-        	return false;
+        if (!$dedupe->recordSent($options, $sentinelFilePath, $debugFilePath, $latestErrorLineFound)) {
+            $this->errorMessage("There was an issue writing to the file " . $sentinelFilePath);
+            return false;
         }
 
         $payload = ABJ_404_Solution_FeedbackTransport::buildPayload('error', array(
@@ -334,6 +299,41 @@ class ABJ_404_Solution_Logging {
         ));
         return ABJ_404_Solution_FeedbackTransport::sendNow($payload, 'error');
     }
+
+    /**
+     * Lazily-constructed dedupe-state collaborator. Built off
+     * abj_service('options_repository') to match the production wiring of the
+     * old inline code path. Memoized so a single request reusing the logger
+     * doesn't churn through repeated container lookups.
+     *
+     * @return ABJ_404_Solution_ErrorEmailDedupeState
+     */
+    private function getDedupeState(): ABJ_404_Solution_ErrorEmailDedupeState {
+        if ($this->dedupeState === null) {
+            $this->dedupeState = new ABJ_404_Solution_ErrorEmailDedupeState(
+                abj_service('options_repository'));
+        }
+        return $this->dedupeState;
+    }
+
+    /** @var ABJ_404_Solution_ErrorEmailDedupeState|null */
+    private $dedupeState = null;
+
+    /**
+     * Lazily-constructed body-formatter collaborator. Pure presentation, no
+     * dependencies, kept as a field only so it isn't reallocated every send.
+     *
+     * @return ABJ_404_Solution_ErrorEmailBodyFormatter
+     */
+    private function getBodyFormatter(): ABJ_404_Solution_ErrorEmailBodyFormatter {
+        if ($this->bodyFormatter === null) {
+            $this->bodyFormatter = new ABJ_404_Solution_ErrorEmailBodyFormatter();
+        }
+        return $this->bodyFormatter;
+    }
+
+    /** @var ABJ_404_Solution_ErrorEmailBodyFormatter|null */
+    private $bodyFormatter = null;
 
     /**
      * Roll a 1-in-N dice and send a full debug zip as a heartbeat if it hits.
@@ -378,19 +378,59 @@ class ABJ_404_Solution_Logging {
      * @return bool True if wp_mail() reported success, false otherwise.
      */
     function emailLogFileToDeveloper(array $payload): bool {
-        $isHeartbeat = (isset($payload['report_type']) && $payload['report_type'] === 'heartbeat');
-        $errorLineMessage = isset($payload['error_signature']) && is_scalar($payload['error_signature'])
-            ? (string)$payload['error_signature'] : '';
-        $totalErrorCount = isset($payload['error_count_in_log']) && is_scalar($payload['error_count_in_log'])
-            ? (int)$payload['error_count_in_log'] : 0;
         $previouslySentLine = isset($payload['previously_sent_line']) && is_scalar($payload['previously_sent_line'])
             ? (int)$payload['previously_sent_line'] : 0;
-
         $this->debugMessage("Creating zip file of error log file. " .
-        	"Previously sent error line: " . $previouslySentLine);
+            "Previously sent error line: " . $previouslySentLine);
+
+        $logFileZip = $this->buildLogFileZip();
+
+        $formatter = $this->getBodyFormatter();
+        $subject = $formatter->buildSubject($payload);
+        $body = $formatter->buildBody($payload, $subject, $this->getDebugFilename());
+
+        $to = ABJ404_AUTHOR_EMAIL;
+        $headers = array('Content-Type: text/html; charset=UTF-8');
+        $headers[] = 'From: ' . get_option('admin_email');
+
+        $attachments = array();
+        if ($logFileZip !== '' && file_exists($logFileZip)) {
+            $attachments[] = $logFileZip;
+        }
+
+        $this->debugMessage("Sending error log zip file as attachment.");
+        $result = wp_mail($to, $subject, $body, $headers, $attachments);
+
+        if ($logFileZip !== '' && file_exists($logFileZip)) {
+            ABJ_404_Solution_FileSystemService::safeUnlink($logFileZip);
+        }
+        if ((bool)$result) {
+            $this->debugMessage("Mail sent. Log zip file deleted.");
+        } else {
+            $this->errorMessage("wp_mail() returned false while sending the developer error/heartbeat log email. " .
+                "Recipient: " . $to . ". Subject: " . $subject);
+        }
+        return (bool)$result;
+    }
+
+    /**
+     * Zip the current and rotated debug log files into the per-plugin temp
+     * zip path so they can ride along as a wp_mail attachment.
+     *
+     * Returns the zip path (which may be a non-existent file if the ZipArchive
+     * could not be opened -- the caller handles attachment-list filtering by
+     * file_exists()). Splitting this off keeps emailLogFileToDeveloper() free
+     * of I/O orchestration so the wp_mail dispatch step is straight-line.
+     *
+     * @return string
+     */
+    private function buildLogFileZip(): string {
         $logFileZip = $this->getZipFilePath();
         if (file_exists($logFileZip)) {
             ABJ_404_Solution_FileSystemService::safeUnlink($logFileZip);
+        }
+        if (!class_exists('ZipArchive')) {
+            return '';
         }
         $zip = new ZipArchive;
         if ($zip->open($logFileZip, ZipArchive::CREATE) === true) {
@@ -398,84 +438,11 @@ class ABJ_404_Solution_Logging {
                 $zip->addFile($this->getDebugFilePath(), basename($this->getDebugFilePath()));
             }
             if (file_exists($this->getDebugFilePathOld())) {
-            	$zip->addFile($this->getDebugFilePathOld(), basename($this->getDebugFilePathOld()));
+                $zip->addFile($this->getDebugFilePathOld(), basename($this->getDebugFilePathOld()));
             }
             $zip->close();
         }
-
-        $logTableSizeMB = round((int)($payload['log_table_size_bytes'] ?? 0) / (1024 * 1024), 2);
-        $debugFileSizeMB = round((int)($payload['debug_file_size_bytes'] ?? 0) / (1024 * 1024), 2);
-
-        $to = ABJ404_AUTHOR_EMAIL;
-        $subject = ABJ404_PP . ($isHeartbeat ? ' heartbeat' : ' error') . ' log file. Plugin version: ' . ABJ404_VERSION;
-        $extensions = isset($payload['extensions']) && is_array($payload['extensions']) ? $payload['extensions'] : array();
-        $activePlugins = isset($payload['active_plugins']) && is_array($payload['active_plugins']) ? $payload['active_plugins'] : array();
-        $isMultisite = !empty($payload['is_multisite']);
-
-        $bodyLines = array();
-        $bodyLines[] = $subject . ". Sent " . date('Y/m/d h:i:s T');
-        $bodyLines[] = " ";
-        $bodyLines[] = "Error: " . $errorLineMessage;
-        $bodyLines[] = " ";
-        $bodyLines[] = "PHP version: " . (string)($payload['php_version'] ?? PHP_VERSION);
-        $bodyLines[] = "WordPress version: " . (string)($payload['wp_version'] ?? '');
-        $bodyLines[] = "Plugin version: " . (string)($payload['plugin_version'] ?? ABJ404_VERSION);
-        $bodyLines[] = "MySQL version: " . (string)($payload['db_version'] ?? '');
-        $bodyLines[] = "Site URL: " . (string)($payload['site_url'] ?? '');
-        $bodyLines[] = "Multisite: " . ($isMultisite ? 'yes' : 'no');
-        if ($isMultisite && function_exists('is_plugin_active_for_network')) {
-            $bodyLines[] = "Network activated: " . (is_plugin_active_for_network(plugin_basename(ABJ404_FILE)) ? 'yes' : 'no');
-        }
-        $bodyLines[] = "WP_MEMORY_LIMIT: " . (defined('WP_MEMORY_LIMIT') ? WP_MEMORY_LIMIT : '');
-        $extensionStrings = array_map(static function ($v): string {
-            return is_scalar($v) ? (string)$v : '';
-        }, $extensions);
-        $bodyLines[] = "Extensions: " . implode(", ", $extensionStrings);
-        $bodyLines[] = " ";
-        $bodyLines[] = "--- WordPress Content Counts ---";
-        $bodyLines[] = "Published posts: " . (string)($payload['published_posts_count'] ?? '0');
-        $bodyLines[] = "Published pages: " . (string)($payload['published_pages_count'] ?? '0');
-        $bodyLines[] = "Categories: " . (string)($payload['categories_count'] ?? '0');
-        $bodyLines[] = "Tags: " . (string)($payload['tags_count'] ?? '0');
-        $bodyLines[] = " ";
-        $bodyLines[] = "--- 404 Solution Counts ---";
-        $bodyLines[] = "Total redirects (active): " . (string)($payload['redirects_active_total'] ?? '0');
-        $bodyLines[] = "  - Manual redirects: " . (string)($payload['redirects_manual_count'] ?? '0');
-        $bodyLines[] = "  - Automatic redirects: " . (string)($payload['redirects_automatic_count'] ?? '0');
-        $bodyLines[] = "  - Regex redirects: " . (string)($payload['redirects_regex_count'] ?? '0');
-        $bodyLines[] = "  - Trashed redirects: " . (string)($payload['redirects_trashed_count'] ?? '0');
-        $bodyLines[] = "Captured 404s (active): " . (string)($payload['captured_404s_active_total'] ?? '0');
-        $bodyLines[] = "  - Captured (new): " . (string)($payload['captured_404s_new_count'] ?? '0');
-        $bodyLines[] = "  - Ignored: " . (string)($payload['captured_404s_ignored_count'] ?? '0');
-        $bodyLines[] = "  - Later: " . (string)($payload['captured_404s_later_count'] ?? '0');
-        $bodyLines[] = "  - Trashed: " . (string)($payload['captured_404s_trashed_count'] ?? '0');
-        $bodyLines[] = "Log entries in database: " . (string)($payload['log_entries_count'] ?? '0');
-        $bodyLines[] = "Log table size: " . $logTableSizeMB . " MB";
-        $bodyLines[] = " ";
-        $bodyLines[] = "Total error count in log file: " . $totalErrorCount;
-        $bodyLines[] = "Debug file name: " . $this->getDebugFilename();
-        $bodyLines[] = "Debug file size: " . $debugFileSizeMB . " MB";
-        $bodyLines[] = "Active plugins: <pre>" .
-          json_encode($activePlugins, JSON_PRETTY_PRINT) . "</pre>";
-
-        $body = implode("<BR/>\n", $bodyLines);
-
-        $headers = array('Content-Type: text/html; charset=UTF-8');
-        $headers[] = 'From: ' . get_option('admin_email');
-
-        $attachments = array();
-        if (file_exists($logFileZip)) {
-            $attachments[] = $logFileZip;
-        }
-
-        $this->debugMessage("Sending error log zip file as attachment.");
-        $result = wp_mail($to, $subject, $body, $headers, $attachments);
-
-        if (file_exists($logFileZip)) {
-            ABJ_404_Solution_FileSystemService::safeUnlink($logFileZip);
-        }
-        $this->debugMessage("Mail sent. Log zip file deleted.");
-        return (bool)$result;
+        return $logFileZip;
     }
     
     /**

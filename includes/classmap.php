@@ -206,6 +206,8 @@ return array(
     'ABJ_404_Solution_ExportService' => $base . 'includes/ExportService.php',
     'ABJ_404_Solution_ImportService' => $base . 'includes/ImportService.php',
     'ABJ_404_Solution_Logging' => $base . 'includes/Logging.php',
+    'ABJ_404_Solution_ErrorEmailDedupeState' => $base . 'includes/ErrorEmailDedupeState.php',
+    'ABJ_404_Solution_ErrorEmailBodyFormatter' => $base . 'includes/ErrorEmailBodyFormatter.php',
     'ABJ_404_Solution_EngineProfileResolver' => $base . 'includes/EngineProfileResolver.php',
     'ABJ_404_Solution_Ajax_EngineProfiles' => $base . 'includes/ajax/Ajax_EngineProfiles.php',
     'ABJ_404_Solution_MatchingEngine' => $base . 'includes/MatchingEngine.php',
