@@ -61,6 +61,7 @@ return array(
     'ABJ_404_Solution_DatabaseUpgradeBootstrap' => $base . 'includes/DatabaseUpgradeBootstrap.php',
     'ABJ_404_Solution_PluginLogicAdminActions' => $base . 'includes/PluginLogicAdminActions.php',
     // Admin action handlers (strategy/registry pattern for handlePluginAction dispatch).
+    'ABJ_404_Solution_AdminAssetEnqueuer' => $base . 'includes/admin/AdminAssetEnqueuer.php',
     'ABJ_404_Solution_AdminActionHandlerInterface' => $base . 'includes/admin/actions/AdminActionHandlerInterface.php',
     'ABJ_404_Solution_UpdateOptionsHandler' => $base . 'includes/admin/actions/UpdateOptionsHandler.php',
     'ABJ_404_Solution_AddRedirectHandler' => $base . 'includes/admin/actions/AddRedirectHandler.php',
@@ -84,6 +85,7 @@ return array(
     'ABJ_404_Solution_PluginLogicUrlNormalization' => $base . 'includes/PluginLogicUrlNormalization.php',
     'ABJ_404_Solution_PluginLogicDefaults' => $base . 'includes/PluginLogicDefaults.php',
     'ABJ_404_Solution_SettingsOptionsPersister' => $base . 'includes/services/SettingsOptionsPersister.php',
+    'ABJ_404_Solution_RequestInputNormalizer' => $base . 'includes/services/RequestInputNormalizer.php',
     'ABJ_404_Solution_SettingsFieldValidator' => $base . 'includes/SettingsFieldValidator.php',
     'ABJ_404_Solution_SettingsRegexPatternPolicy' => $base . 'includes/policies/SettingsRegexPatternPolicy.php',
     'ABJ_404_Solution_SettingsUpdateRequestDecoder' => $base . 'includes/services/SettingsUpdateRequestDecoder.php',
@@ -296,6 +298,7 @@ return array(
     'ABJ_404_Solution_WPNotice' => $base . 'includes/php/objs/WPNotice.php',
     'ABJ_404_Solution_WPNotices' => $base . 'includes/php/wordpress/WPNotices.php',
     'ABJ_404_Solution_WPUtils' => $base . 'includes/php/wordpress/WPUtils.php',
+    'ABJ_404_Solution_WordPressHookRegistrar' => $base . 'includes/WordPressHookRegistrar.php',
     'ABJ_404_Solution_WordPress_Connector' => $base . 'includes/WordPress_Connector.php',
     'ABJ_404_Solution_AdminThemeManager' => $base . 'includes/AdminThemeManager.php',
     'ABJ_404_Solution_GscOAuthHandler' => $base . 'includes/GscOAuthHandler.php',

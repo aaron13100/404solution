@@ -23,7 +23,7 @@ if (!defined('ABSPATH')) {
  *     can preview the payload as many times as they want without
  *     consuming their per-5-minute send budget.
  *
- * Wired in WordPress_Connector::registerAdminHooks() under the action
+ * Wired in WordPressHookRegistrar::registerAdminHooks() under the action
  * name 'wp_ajax_abj404_support_request_preview'.
  */
 class ABJ_404_Solution_Ajax_SupportRequestPreview {

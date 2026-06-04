@@ -19,7 +19,7 @@ if (!defined('ABSPATH')) {
  * Caller responsibilities:
  *   1. wp_enqueue_script() the abj404-support-request-button bundle and
  *      its dependency abj404-support-request-client (handled by
- *      WordPress_Connector::registerSupportRequestAssets()).
+ *      AdminAssetEnqueuer::registerSupportRequestAssets()).
  *   2. Pass a triggered_from slug that exists in the AJAX allowlist.
  *      Drift is caught at the server side (400 response) but the lint in
  *      tests/SupportRequestButtonRenderTest enforces the matching set.

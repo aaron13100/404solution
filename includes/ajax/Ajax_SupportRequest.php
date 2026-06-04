@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
  * request per 5 minutes) to prevent a frustrated admin (or a malicious one)
  * from flooding the developer endpoint with click-spam.
  *
- * Wired in WordPress_Connector::registerAdminHooks() under the action name
+ * Wired in WordPressHookRegistrar::registerAdminHooks() under the action name
  * 'wp_ajax_abj404_support_request'. The matching client lives at
  * includes/ajax/SupportRequest.js. The UI buttons that call it are added in
  * follow-up tasks B (reusable button) and C (wire button into error sites).

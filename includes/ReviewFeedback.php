@@ -97,12 +97,12 @@ class ABJ_404_Solution_ReviewFeedback {
 
         if (isset($_GET['abj404_review_response'])) {
             $rawResponseNonce = isset($_GET['_wpnonce']) ? $_GET['_wpnonce'] : '';
-            $responseNonce = sanitize_text_field(ABJ_404_Solution_WordPress_Connector::normalizeRequestScalar($rawResponseNonce));
+            $responseNonce = sanitize_text_field(ABJ_404_Solution_RequestInputNormalizer::normalizeScalar($rawResponseNonce));
             if ($responseNonce === '' || !wp_verify_nonce($responseNonce, 'abj404_review_response')) {
                 return;
             }
 
-            $response = sanitize_text_field(ABJ_404_Solution_WordPress_Connector::normalizeRequestScalar($_GET['abj404_review_response']));
+            $response = sanitize_text_field(ABJ_404_Solution_RequestInputNormalizer::normalizeScalar($_GET['abj404_review_response']));
             $allowedResponses = array('yes', 'not_yet', 'ask_later', 'close_x', 'never');
             if (!in_array($response, $allowedResponses, true)) {
                 return;
@@ -132,7 +132,7 @@ class ABJ_404_Solution_ReviewFeedback {
 
         if (isset($_GET['abj404_leaving_review'])) {
             $rawLeavingReviewNonce = isset($_GET['_wpnonce']) ? $_GET['_wpnonce'] : '';
-            $leavingReviewNonce = sanitize_text_field(ABJ_404_Solution_WordPress_Connector::normalizeRequestScalar($rawLeavingReviewNonce));
+            $leavingReviewNonce = sanitize_text_field(ABJ_404_Solution_RequestInputNormalizer::normalizeScalar($rawLeavingReviewNonce));
             if ($leavingReviewNonce !== '' && wp_verify_nonce($leavingReviewNonce, 'abj404_leaving_review')) {
                 update_user_meta(get_current_user_id(), 'abj404_review_dismissed', 'permanent');
                 delete_user_meta(get_current_user_id(), 'abj404_review_step');
@@ -148,16 +148,16 @@ class ABJ_404_Solution_ReviewFeedback {
         }
 
         $rawFeedbackNonce = isset($_POST['abj404_feedback_nonce']) ? $_POST['abj404_feedback_nonce'] : '';
-        $feedbackNonce = sanitize_text_field(ABJ_404_Solution_WordPress_Connector::normalizeRequestScalar($rawFeedbackNonce));
+        $feedbackNonce = sanitize_text_field(ABJ_404_Solution_RequestInputNormalizer::normalizeScalar($rawFeedbackNonce));
         if (isset($_POST['abj404_submit_feedback']) &&
             $feedbackNonce !== '' &&
             wp_verify_nonce($feedbackNonce, 'abj404_submit_feedback')) {
 
             $issuesRaw = isset($_POST['feedback_issues']) ? $_POST['feedback_issues'] : array();
-            $issues = ABJ_404_Solution_WordPress_Connector::sanitizeFeedbackIssues($issuesRaw);
+            $issues = ABJ_404_Solution_RequestInputNormalizer::sanitizeFeedbackIssues($issuesRaw);
 
             $feedbackDetailsRaw = isset($_POST['feedback_details']) ? $_POST['feedback_details'] : '';
-            $feedback_details = sanitize_textarea_field(ABJ_404_Solution_WordPress_Connector::normalizeRequestScalar($feedbackDetailsRaw));
+            $feedback_details = sanitize_textarea_field(ABJ_404_Solution_RequestInputNormalizer::normalizeScalar($feedbackDetailsRaw));
 
             $feedback_data = array(
                 'timestamp' => current_time('mysql'),

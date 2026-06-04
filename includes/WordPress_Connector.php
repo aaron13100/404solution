@@ -184,83 +184,38 @@ class ABJ_404_Solution_WordPress_Connector {
         echo '</pre></details></div>';
     }
 	
-	/** Setup.
+    /** Setup.
 	 * @return void
 	 */
     static function init() {
-        self::registerLifecycleHooks();
-        self::registerAdminHooks();
-        self::registerAsyncSuggestionHooks();
-        ABJ_404_Solution_PluginLogicLifecycle::doRegisterCrons();
+        ABJ_404_Solution_WordPressHookRegistrar::registerAll(self::wordpressHookCallbacks());
     }
 
-    /** @return void */
-    private static function registerLifecycleHooks() {
-        if (!is_admin()) {
-            return;
-        }
-
-        register_deactivation_hook(ABJ404_NAME, 'ABJ_404_Solution_PluginLogicLifecycle::runOnPluginDeactivation');
-        register_activation_hook(ABJ404_NAME, 'ABJ_404_Solution_PluginLogicLifecycle::runOnPluginActivation');
-
-        if (is_multisite()) {
-            add_action('wpmu_new_blog', 'ABJ_404_Solution_PluginLogicLifecycle::activateNewSite', 10, 6);
-            add_action('wp_initialize_site', 'ABJ_404_Solution_PluginLogicLifecycle::activateNewSiteModern', 10, 2);
-            add_action('delete_blog', 'ABJ_404_Solution_PluginLogicLifecycle::deleteBlogData', 10, 2);
-        }
-    }
-
-    /** @return void */
-    private static function registerAdminHooks() {
-        if (!is_admin()) {
-            return;
-        }
-
-        add_filter("plugin_action_links_" . ABJ404_NAME,
-            'ABJ_404_Solution_WordPress_Connector::addSettingsLinkToPluginPage');
-        add_filter('plugin_row_meta',
-            'ABJ_404_Solution_WordPress_Connector::addPluginRowMeta', 10, 2);
-        add_action('admin_notices',
-            'ABJ_404_Solution_ReviewFeedback::echoDashboardNotification');
-        add_action('admin_init',
-            'ABJ_404_Solution_ReviewFeedback::handleResponseRedirects');
-        add_action('admin_menu',
-            'ABJ_404_Solution_WordPress_Connector::addMainSettingsPageLink');
-        add_action('admin_enqueue_scripts',
-            'ABJ_404_Solution_WordPress_Connector::add_scripts', 11);
-        add_action('admin_enqueue_scripts',
-            'ABJ_404_Solution_WordPress_Connector::enqueueSupportRequestAssetsOnPluginsPage', 11);
-        add_action('admin_head',
-            'ABJ_404_Solution_AdminThemeManager::outputCriticalThemeCSS', 1);
-
-        ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_echoViewLogsFor', 'ABJ_404_Solution_Ajax_Php::echoViewLogsFor');
-        ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_trashLink', 'ABJ_404_Solution_Ajax_TrashLink::trashAction');
-        ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_echoRedirectToPages', 'ABJ_404_Solution_Ajax_Php::echoRedirectToPages');
-        ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_updateOptions', 'ABJ_404_Solution_Ajax_Php::updateOptions');
-        ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_abj404_load_gsc_section', 'ABJ_404_Solution_Ajax_Php::loadGscSection');
-        ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_abj404getTrendData', 'ABJ_404_Solution_Ajax_TrendData::echoTrendData');
-        ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_abj404_crossPluginPreview', 'ABJ_404_Solution_Ajax_CrossPluginImporter::handlePreview');
-        ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_abj404_gsc_oauth_callback', 'ABJ_404_Solution_GscOAuthHandler::handleCallback');
-        ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_abj404_gsc_revoke', 'ABJ_404_Solution_GscOAuthHandler::handleRevoke');
-
-        ABJ_404_Solution_Ajax_EngineProfiles::registerActions();
-        ABJ_404_Solution_Ajax_SettingsModeToggle::init();
-        ABJ_404_Solution_Ajax_RestoreDefaults::init();
-        ABJ_404_Solution_Ajax_SupportRequest::init();
-        ABJ_404_Solution_Ajax_SupportRequestPreview::init();
-        ABJ_404_Solution_UninstallModal::init();
-        ABJ_404_Solution_SetupWizard::init();
-        if (class_exists('ABJ_404_Solution_Privacy')) {
-            ABJ_404_Solution_Privacy::init();
-        }
-    }
-
-    /** @return void */
-    private static function registerAsyncSuggestionHooks() {
-        ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_abj404_compute_suggestions', 'ABJ_404_Solution_Ajax_SuggestionCompute::computeSuggestions');
-        ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_nopriv_abj404_compute_suggestions', 'ABJ_404_Solution_Ajax_SuggestionCompute::computeSuggestions');
-        ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_abj404_poll_suggestions', 'ABJ_404_Solution_Ajax_SuggestionPolling::pollSuggestions');
-        ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_nopriv_abj404_poll_suggestions', 'ABJ_404_Solution_Ajax_SuggestionPolling::pollSuggestions');
+    /**
+     * @return array<string, callable-string>
+     */
+    private static function wordpressHookCallbacks(): array {
+        return array(
+            'settings_link' => __CLASS__ . '::addSettingsLinkToPluginPage',
+            'plugin_row_meta' => __CLASS__ . '::addPluginRowMeta',
+            'review_notice' => 'ABJ_404_Solution_ReviewFeedback::echoDashboardNotification',
+            'review_redirects' => 'ABJ_404_Solution_ReviewFeedback::handleResponseRedirects',
+            'settings_page' => __CLASS__ . '::addMainSettingsPageLink',
+            'admin_assets' => __CLASS__ . '::add_scripts',
+            'plugins_page_assets' => __CLASS__ . '::enqueueSupportRequestAssetsOnPluginsPage',
+            'admin_theme_css' => 'ABJ_404_Solution_AdminThemeManager::outputCriticalThemeCSS',
+            'ajax_view_logs' => 'ABJ_404_Solution_Ajax_Php::echoViewLogsFor',
+            'ajax_trash_link' => 'ABJ_404_Solution_Ajax_TrashLink::trashAction',
+            'ajax_redirect_to_pages' => 'ABJ_404_Solution_Ajax_Php::echoRedirectToPages',
+            'ajax_update_options' => 'ABJ_404_Solution_Ajax_Php::updateOptions',
+            'ajax_load_gsc_section' => 'ABJ_404_Solution_Ajax_Php::loadGscSection',
+            'ajax_trend_data' => 'ABJ_404_Solution_Ajax_TrendData::echoTrendData',
+            'ajax_cross_plugin_preview' => 'ABJ_404_Solution_Ajax_CrossPluginImporter::handlePreview',
+            'ajax_gsc_oauth_callback' => 'ABJ_404_Solution_GscOAuthHandler::handleCallback',
+            'ajax_gsc_revoke' => 'ABJ_404_Solution_GscOAuthHandler::handleRevoke',
+            'ajax_compute_suggestions' => 'ABJ_404_Solution_Ajax_SuggestionCompute::computeSuggestions',
+            'ajax_poll_suggestions' => 'ABJ_404_Solution_Ajax_SuggestionPolling::pollSuggestions',
+        );
     }
 
     /** Include things necessary for ajax.
@@ -268,203 +223,7 @@ class ABJ_404_Solution_WordPress_Connector {
      * @return void
      */
     static function add_scripts($hook) {
-        // only load this stuff for this plugin. 
-        // thanks to https://pippinsplugins.com/loading-scripts-correctly-in-the-wordpress-admin/
-        if (!array_key_exists('abj404_settingsPageName', $GLOBALS) ||
-                $hook != $GLOBALS['abj404_settingsPageName']) {
-            return;
-        }
-
-        try {
-            $subpage = '';
-            if (array_key_exists('subpage', $_GET)) {
-                $subpage = sanitize_text_field(self::normalizeRequestScalar($_GET['subpage']));
-            }
-            // Default plugin landing is redirects when subpage is not specified.
-            if ($subpage === '') {
-                $subpage = 'abj404_redirects';
-            }
-
-            $isOptionsPage = ($subpage === 'abj404_options');
-            $isStatsPage = ($subpage === 'abj404_stats');
-            $isToolsPage = ($subpage === 'abj404_tools');
-            $isCardAccordionPage = in_array($subpage, array('abj404_options', 'abj404_tools', 'abj404_stats'), true);
-            $isLogsPage = ($subpage === 'abj404_logs');
-            $isListPage = in_array($subpage, array('abj404_redirects', 'abj404_captured', 'abj404_logs'), true);
-            $isEditPage = ($subpage === 'abj404_edit');
-            $needsDestinationAutocomplete = in_array($subpage, array('abj404_redirects', 'abj404_captured', 'abj404_options', 'abj404_edit'), true);
-
-        // remove the "thank you for creating with wordpress" message
-        add_filter('admin_footer_text',
-            'ABJ_404_Solution_WordPress_Connector::remove_admin_footer_text');
-        // remove the version number message
-        add_filter('update_footer',
-            'ABJ_404_Solution_WordPress_Connector::remove_admin_footer_text', 11);
-        
-        // jquery is used for the searchable dropdown list of pages for adding a redirect and other things.
-        ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('jquery');
-		ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('jquery-ui-autocomplete');
-		ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('jquery-effects-core');
-		ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('jquery-effects-highlight');
-		ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('jquery-color');
-        
-        ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-admin-ajax',
-            ABJ404_URL . 'includes/js/abj404-admin-ajax.js', array('jquery'));
-
-        wp_register_script('abj404-redirect_to_ajax', plugin_dir_url(__FILE__) . 'ajax/redirect_to_ajax.js',
-                array('jquery', 'jquery-ui-autocomplete'));
-        wp_register_script('abj404-exclude_pages_ajax', plugin_dir_url(__FILE__) . 'ajax/exclude_pages_ajax.js',
-        	array('jquery', 'jquery-ui-autocomplete', 'abj404-redirect_to_ajax'));
-        // Localize the script with new data
-        $translation_array = array(
-            'type_a_page_name' => __('(Type a page name or an external URL)', '404-solution'),
-            'a_page_has_been_selected' => __('(A page has been selected.)', '404-solution'),
-            'an_external_url_will_be_used' => __('(An external URL will be used.)', '404-solution')
-        );
-        wp_localize_script('abj404-redirect_to_ajax', 'abj404localization', $translation_array );        
-        if ($needsDestinationAutocomplete) {
-            ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-redirect_to_ajax');
-            wp_localize_script('abj404-exclude_pages_ajax', 'abj404localization', $translation_array );
-            ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-exclude_pages_ajax');
-        }
-        
-        // make sure the "apply" button is only enabled if at least one checkbox is selected
-        wp_register_script('abj404-enable_disable_apply_button_js', 
-                ABJ404_URL . 'includes/js/enableDisableApplyButton.js');
-        $translation_array = array('{altText}' => __('Choose at least one URL', '404-solution'));
-        wp_localize_script('abj404-enable_disable_apply_button_js', 'abj404localization', $translation_array);
-        if ($isListPage) {
-            ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-enable_disable_apply_button_js');
-            ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-trash_link_ajax', plugin_dir_url(__FILE__) . 'ajax/trash_link_ajax.js',
-                    array('jquery'));
-        }
-        // tableInteractions.js provides abj404ToggleRegexInfo() used on both list pages
-        // and the Edit Redirect page (subpage=abj404_edit).
-        if ($isListPage || $isEditPage) {
-            ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-table-interactions', plugin_dir_url(__FILE__) . 'js/tableInteractions.js',
-                    array('jquery'));
-
-            // Localized strings for time-ago display
-            wp_localize_script('abj404-table-interactions', 'abj404_time_ago', array(
-                'second'  => __('second', '404-solution'),
-                'seconds' => __('seconds', '404-solution'),
-                'minute'  => __('minute', '404-solution'),
-                'minutes' => __('minutes', '404-solution'),
-                'hour'    => __('hour', '404-solution'),
-                'hours'   => __('hours', '404-solution'),
-                'day'     => __('day', '404-solution'),
-                'days'    => __('days', '404-solution'),
-                'ago'     => __('ago', '404-solution'),
-            ));
-        }
-
-        if ($isListPage || $isStatsPage) {
-            self::enqueueViewUpdaterModules(plugin_dir_url(__FILE__) . 'ajax/');
-        }
-
-        if ($isStatsPage) {
-            // Stats page chart modules. Both read their config (labels, counts,
-            // ajaxUrl, nonce) from data-attributes emitted by View_Stats.php,
-            // so no wp_localize_script binding is needed here.
-            ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-stats-confidence-chart',
-                ABJ404_URL . 'includes/js/statsConfidenceChart.js', array());
-            ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-stats-trends',
-                ABJ404_URL . 'includes/js/statsTrends.js', array());
-        }
-
-        if ($isToolsPage) {
-            // Tools page: "Migrate from Another Plugin" two-step flow.
-            // Config (ajaxUrl, nonce, messages) comes from a data-attribute
-            // on #abj404-migrate-config, emitted by View_Stats.php.
-            ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-tools-migrate-plugin',
-                ABJ404_URL . 'includes/js/toolsMigratePlugin.js', array());
-        }
-
-        if ($isLogsPage) {
-            ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-search_logs_ajax', plugin_dir_url(__FILE__) . 'ajax/search_logs_ajax.js',
-                array('jquery', 'jquery-ui-autocomplete'));
-        }
-
-        if ($isOptionsPage) {
-            ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-general-js', plugin_dir_url(__FILE__) . 'js/general.js',
-                array('jquery'));
-
-            // Localize general.js strings for translation
-            wp_localize_script('abj404-general-js', 'abj404General', array(
-                'savingSettings' => __('Saving settings...', '404-solution'),
-            ));
-
-            ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-theme-preview', plugin_dir_url(__FILE__) . 'js/themePreview.js',
-                array('jquery'));
-
-            // Settings mode toggle (Simple/Advanced)
-            ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-settings-mode-toggle', plugin_dir_url(__FILE__) . 'ajax/SettingsModeToggle.js',
-                array('jquery'));
-
-            // Restore defaults (sticky save bar)
-            ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-restore-defaults', plugin_dir_url(__FILE__) . 'ajax/RestoreDefaults.js',
-                array('jquery'));
-
-            // Behavior tiles (404 destination selector)
-            ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-behavior-tiles', ABJ404_URL . 'includes/js/behaviorTiles.js',
-                array());
-            ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-settings-deferred', ABJ404_URL . 'includes/js/settingsDeferred.js',
-                array('jquery'));
-        }
-
-        if ($isCardAccordionPage) {
-            ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-options-accordion', plugin_dir_url(__FILE__) . 'js/optionsAccordion.js',
-                array('jquery'));
-
-            // Localize accordion strings for translation
-            wp_localize_script('abj404-options-accordion', 'abj404Accordion', array(
-                'expandAll' => __('Expand All', '404-solution'),
-                'collapseAll' => __('Collapse All', '404-solution'),
-            ));
-        }
-
-        if ($isOptionsPage) {
-            ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-engine-profiles',
-                plugin_dir_url(__FILE__) . 'ajax/ajax-engine-profiles.js',
-                array('jquery'));
-            wp_localize_script('abj404-engine-profiles', 'abj404EngineProfiles', array(
-                'nonce'   => wp_create_nonce('abj404_engine_profiles_nonce'),
-                'ajaxUrl' => admin_url('admin-ajax.php'),
-                'i18n'    => array(
-                    'edit'            => __('Edit', '404-solution'),
-                    'delete'          => __('Delete', '404-solution'),
-                    'addProfile'      => __('Add Engine Profile', '404-solution'),
-                    'editProfile'     => __('Edit Engine Profile', '404-solution'),
-                    'nameRequired'    => __('Profile name is required.', '404-solution'),
-                    'patternRequired' => __('URL pattern is required.', '404-solution'),
-                    'saved'           => __('Profile saved.', '404-solution'),
-                    'saveFailed'      => __('Failed to save profile.', '404-solution'),
-                    'confirmDelete'   => __('Delete this engine profile?', '404-solution'),
-                ),
-            ));
-        }
-
-        ABJ_404_Solution_WPUtils::my_wp_enq_scrpt(
-            'abj404-review-feedback',
-            plugin_dir_url(__FILE__) . 'js/reviewFeedback.js',
-            array()
-        );
-
-        self::registerSupportRequestAssets();
-
-        ABJ_404_Solution_WPUtils::my_wp_enq_style('abj404solution-styles', ABJ404_URL . 'includes/html/404solutionStyles.css',
-                array());
-        ABJ_404_Solution_WPUtils::my_wp_enq_style('abj404solution-themes', ABJ404_URL . 'includes/html/adminThemes.css',
-                array());
-
-            // Load RTL styles for Arabic, Hebrew, and other right-to-left languages
-            if (is_rtl()) {
-                ABJ_404_Solution_WPUtils::my_wp_enq_style('abj404solution-rtl', ABJ404_URL . 'includes/html/404solutionStyles-rtl.css',
-                        array('abj404solution-styles'));
-            }
-        } catch (Throwable $e) {
-            self::reportAdminRuntimeError('admin_enqueue_scripts', $e);
-        }
+        ABJ_404_Solution_AdminAssetEnqueuer::addScripts($hook, array(__CLASS__, 'reportAdminRuntimeError'));
     }
 
     /**
@@ -494,88 +253,10 @@ class ABJ_404_Solution_WordPress_Connector {
      * @return void
      */
     static function enqueueSupportRequestAssetsOnPluginsPage($hook) {
-        if ($hook !== 'plugins.php') {
-            return;
-        }
-        try {
-            self::registerSupportRequestAssets();
-        } catch (Throwable $e) {
-            self::reportAdminRuntimeError('admin_enqueue_scripts:plugins.php', $e);
-        }
-    }
-
-    /**
-     * Enqueue the view-updater module bundle (the AJAX-driven admin table
-     * orchestration). Split out of add_scripts() to keep that function under
-     * the ModularityTest body-line cap. Enqueue order matters: every file
-     * below uses globals defined by the modules listed before it; the
-     * bootstrap (view_updater.js) declares the jQuery.ready entry point and
-     * must load LAST so the helpers are defined when ready fires.
-     * WordPress's $deps array enforces this ordering on the emitted
-     * <script> tags. The B20 nonce-refresh helper exposes
-     * abj404AjaxWithNonceRetry which every sibling uses via a soft typeof
-     * reference, so its enqueue must precede them.
-     *
-     * @param string $vuBase URL prefix for the ajax/ assets directory.
-     * @return void
-     */
-    private static function enqueueViewUpdaterModules(string $vuBase): void {
-        $enq = array('ABJ_404_Solution_WPUtils', 'my_wp_enq_scrpt');
-        $enq('abj404-view-updater-nonce-refresh',
-            $vuBase . 'view_updater_nonce_refresh.js', array('jquery'));
-        $enq('abj404-view-updater-stage-diagnostics',
-            $vuBase . 'view_updater_stage_diagnostics.js', array('jquery'));
-        $enq('abj404-view-updater-compare',
-            $vuBase . 'view_updater_compare.js', array('jquery'));
-        $enq('abj404-view-updater-toast',
-            $vuBase . 'view_updater_toast.js', array('jquery'));
-        $enq('abj404-view-updater-stats', $vuBase . 'view_updater_stats.js',
-            array('jquery', 'abj404-view-updater-toast', 'abj404-view-updater-nonce-refresh'));
-        $enq('abj404-view-updater-build-advance', $vuBase . 'view_updater_build_advance.js',
-            array('jquery', 'abj404-view-updater-stage-diagnostics', 'abj404-view-updater-nonce-refresh'));
-        $enq('abj404-view-updater-table-init', $vuBase . 'view_updater_table_init.js',
-            array('jquery', 'abj404-view-updater-toast', 'abj404-view-updater-stats',
-                'abj404-view-updater-nonce-refresh'));
-        $enq('abj404-view-updater-table-warmup', $vuBase . 'view_updater_table_warmup.js',
-            array('jquery', 'abj404-view-updater-stage-diagnostics',
-                'abj404-view-updater-build-advance', 'abj404-view-updater-table-init',
-                'abj404-view-updater-nonce-refresh'));
-        $enq('abj404-view-updater-pagination', $vuBase . 'view_updater_pagination.js',
-            array('jquery', 'abj404-view-updater-compare', 'abj404-view-updater-stage-diagnostics',
-                'abj404-view-updater-build-advance', 'abj404-view-updater-table-init',
-                'abj404-view-updater-table-warmup', 'abj404-view-updater-toast',
-                'abj404-view-updater-nonce-refresh'));
-        $enq('abj404-view-updater', $vuBase . 'view_updater.js',
-            array('jquery', 'jquery-ui-autocomplete',
-                'abj404-view-updater-stage-diagnostics', 'abj404-view-updater-compare',
-                'abj404-view-updater-toast', 'abj404-view-updater-stats',
-                'abj404-view-updater-build-advance', 'abj404-view-updater-table-init',
-                'abj404-view-updater-table-warmup', 'abj404-view-updater-pagination',
-                'abj404-view-updater-nonce-refresh'));
-    }
-
-    private static function registerSupportRequestAssets(): void {
-        ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-support-request-client',
-            plugin_dir_url(__FILE__) . 'ajax/SupportRequest.js', array());
-        ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-support-request-button',
-            ABJ404_URL . 'includes/js/support-request-button.js',
-            array('abj404-support-request-client'));
-        if (!function_exists('wp_add_inline_script')) {
-            return;
-        }
-        $supportNonce = wp_create_nonce(ABJ_404_Solution_Ajax_SupportRequest::NONCE_ACTION);
-        $previewNonce = wp_create_nonce(ABJ_404_Solution_Ajax_SupportRequestPreview::NONCE_ACTION);
-        $ajaxUrl = function_exists('admin_url') ? admin_url('admin-ajax.php') : '/wp-admin/admin-ajax.php';
-        $payload = wp_json_encode(array(
-            'ajaxurl' => $ajaxUrl,
-            'nonces' => array(
-                'support_request' => $supportNonce,
-                'support_request_preview' => $previewNonce,
-            ),
-        ));
-        $bootstrap = 'window.ABJ404=window.ABJ404||{};Object.assign(window.ABJ404,'
-            . (is_string($payload) ? $payload : '{}') . ');';
-        wp_add_inline_script('abj404-support-request-client', $bootstrap, 'before');
+        ABJ_404_Solution_AdminAssetEnqueuer::enqueueSupportRequestAssetsOnPluginsPage(
+            $hook,
+            array(__CLASS__, 'reportAdminRuntimeError')
+        );
     }
 
     /** @deprecated Use ABJ_404_Solution_AdminThemeManager::isDarkModeDetected() */
@@ -706,15 +387,7 @@ class ABJ_404_Solution_WordPress_Connector {
      * @return mixed
      */
     public static function safeWpUnslash($value) {
-        if (!function_exists('wp_unslash')) {
-            return $value;
-        }
-
-        try {
-            return wp_unslash($value);
-        } catch (Throwable $e) { // allow-silent-catch: wp_unslash() failure; pass-through preserves the original value which is always usable
-            return $value;
-        }
+        return ABJ_404_Solution_RequestInputNormalizer::safeWpUnslash($value);
     }
 
     /**
@@ -724,11 +397,7 @@ class ABJ_404_Solution_WordPress_Connector {
      * @return string
      */
     public static function normalizeRequestScalar($value) {
-        $value = self::safeWpUnslash($value);
-        if (!is_scalar($value)) {
-            return '';
-        }
-        return (string)$value;
+        return ABJ_404_Solution_RequestInputNormalizer::normalizeScalar($value);
     }
 
     /**
@@ -738,22 +407,7 @@ class ABJ_404_Solution_WordPress_Connector {
      * @return array<int, string>
      */
     public static function sanitizeFeedbackIssues($issuesRaw) {
-        $issuesRaw = self::safeWpUnslash($issuesRaw);
-        if (!is_array($issuesRaw)) {
-            $issuesRaw = array($issuesRaw);
-        }
-
-        $issues = array();
-        foreach ($issuesRaw as $issue) {
-            if (is_array($issue) || is_object($issue)) {
-                continue;
-            }
-            $clean = sanitize_text_field((string)$issue);
-            if ($clean !== '') {
-                $issues[] = $clean;
-            }
-        }
-        return $issues;
+        return ABJ_404_Solution_RequestInputNormalizer::sanitizeFeedbackIssues($issuesRaw);
     }
 
     /** Adds a link under the "Settings" link to the plugin page.

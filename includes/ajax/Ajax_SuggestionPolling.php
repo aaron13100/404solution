@@ -15,7 +15,7 @@ if (!defined('ABSPATH')) {
  * SECURITY CONTRACT: anonymous-by-design.
  *
  *   This endpoint is registered for BOTH `wp_ajax_*` and
- *   `wp_ajax_nopriv_*` actions (see `WordPress_Connector::registerAsyncSuggestionHooks`),
+ *   `wp_ajax_nopriv_*` actions (see `WordPressHookRegistrar::registerAsyncSuggestionHooks`),
  *   mirroring `Ajax_SuggestionCompute::computeSuggestions` (the producer
  *   side of the same contract). There is intentionally no
  *   `userIsPluginAdmin()` / `current_user_can()` check: the public 404
