@@ -37,6 +37,8 @@ return array(
     'ABJ_404_Solution_ViewBuildCronScheduler' => $base . 'includes/ViewBuildCronScheduler.php',
     'ABJ_404_Solution_ViewBuildHostEnvironmentNoticePolicy' => $base . 'includes/ViewBuildHostEnvironmentNoticePolicy.php',
     'ABJ_404_Solution_ViewBuildHostEnvironmentProbe' => $base . 'includes/ViewBuildHostEnvironmentProbe.php',
+    'ABJ_404_Solution_ViewBuildHostFailureNotices' => $base . 'includes/ViewBuildHostFailureNotices.php',
+    'ABJ_404_Solution_ViewBuildHostFailureState' => $base . 'includes/ViewBuildHostFailureState.php',
     'ABJ_404_Solution_ViewBuildStageCallbacks' => $base . 'includes/ViewBuildStageCallbacks.php',
     'ABJ_404_Solution_ViewBuildBatchExecutor' => $base . 'includes/ViewBuildBatchExecutor.php',
     'ABJ_404_Solution_ViewBuildStageRunner' => $base . 'includes/ViewBuildStageRunner.php',

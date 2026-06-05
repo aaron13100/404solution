@@ -56,6 +56,10 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
     private $cronScheduler;
     /** @var ABJ_404_Solution_ViewBuildHostEnvironmentProbe */
     private $hostEnvironmentProbe;
+    /** @var ABJ_404_Solution_ViewBuildHostFailureNotices */
+    private $hostFailureNotices;
+    /** @var ABJ_404_Solution_ViewBuildHostFailureState */
+    private $hostFailureState;
     /** @var ABJ_404_Solution_ViewBuildHostFailurePolicy */
     private $hostFailurePolicy;
     /** @var ABJ_404_Solution_ViewBuildForceRestart */
@@ -111,6 +115,8 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
         $this->lockCoordinator = new ABJ_404_Solution_ViewBuildLockCoordinator($this);
         $this->cronScheduler = new ABJ_404_Solution_ViewBuildCronScheduler($this);
         $this->hostEnvironmentProbe = new ABJ_404_Solution_ViewBuildHostEnvironmentProbe($this);
+        $this->hostFailureNotices = new ABJ_404_Solution_ViewBuildHostFailureNotices($this);
+        $this->hostFailureState = new ABJ_404_Solution_ViewBuildHostFailureState($this);
         $this->hostFailurePolicy = new ABJ_404_Solution_ViewBuildHostFailurePolicy($this);
         $this->forceRestart = new ABJ_404_Solution_ViewBuildForceRestart($this);
         $this->viewDoneState = new ABJ_404_Solution_ViewDoneState($this);
@@ -144,6 +150,8 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
             'lock_coordinator' => $this->lockCoordinator,
             'cron_scheduler' => $this->cronScheduler,
             'host_environment_probe' => $this->hostEnvironmentProbe,
+            'host_failure_notices' => $this->hostFailureNotices,
+            'host_failure_state' => $this->hostFailureState,
             'host_failure_policy' => $this->hostFailurePolicy,
             'force_restart' => $this->forceRestart,
         );
@@ -296,12 +304,12 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
 
     /** @return void */
     public function clearStagedBuildDegradedState(): void {
-        $this->hostFailurePolicy->clearStagedBuildDegradedState();
+        $this->hostFailureState->clearStagedBuildDegradedState();
     }
 
     /** @return bool */
     public function reconcilePostStageElevenState(): bool {
-        return $this->hostFailurePolicy->reconcilePostStageElevenState();
+        return $this->rebuildReconcile->reconcilePostStageElevenState();
     }
 
     /** @return array<string, mixed> */

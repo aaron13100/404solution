@@ -35,11 +35,13 @@ if (!defined('ABSPATH')) {
  * @property ABJ_404_Solution_Logging $logger
  * @property ABJ_404_Solution_RebuildHealthState|null $rebuildHealth
  * @method bool acquireViewBuildLock(...$arguments)
+ * @method ABJ_404_Solution_Clock clock(...$arguments)
  * @method void clearAllProgressOptions(...$arguments)
  * @method int countLiveRedirects(...$arguments)
  * @method int countViewBuildRows(...$arguments)
  * @method string doTableNameReplacements(...$arguments)
  * @method bool foregroundViewBuildLeaseActive(...$arguments)
+ * @method void invalidateViewDoneServeableCache(...$arguments)
  * @method string getLowercasePrefix(...$arguments)
  * @method void markViewDoneBuildCompleted(...$arguments)
  * @method array<string,mixed> queryAndGetResults(...$arguments)
@@ -51,6 +53,7 @@ if (!defined('ABSPATH')) {
  * @method bool stagedTableExists(...$arguments)
  * @method string viewBuildTableName(...$arguments)
  * @method string viewDeletemeTableName(...$arguments)
+ * @method string viewDoneFreshnessOptionName(...$arguments)
  * @method string viewDoneTableName(...$arguments)
  */
 class ABJ_404_Solution_ViewBuildRebuildReconcile extends ABJ_404_Solution_ViewBuildCollaborator {
@@ -388,6 +391,32 @@ class ABJ_404_Solution_ViewBuildRebuildReconcile extends ABJ_404_Solution_ViewBu
         }
 
         return $action;
+    }
+
+    /**
+     * Reconcile post-S11 state when a RENAME swap raised an error after the
+     * rename committed but the client lost the OK packet.
+     *
+     * @return bool True when the committed swap was recovered as success.
+     */
+    public function reconcilePostStageElevenState(): bool {
+        $viewDoneTable  = $this->viewDoneTableName();
+        $viewBuildTable = $this->viewBuildTableName();
+
+        if (!$this->stagedTableExists($viewDoneTable)) {
+            return false;
+        }
+        if ($this->stagedTableExists($viewBuildTable)) {
+            return false;
+        }
+        // RENAME swap committed: view_done exists, view_build was renamed
+        // away. Treat as success even though the request flow saw an error.
+        if (function_exists('update_option')) {
+            update_option($this->viewDoneFreshnessOptionName(), $this->clock()->now(), false);
+        }
+        $this->clearAllProgressOptions();
+        $this->invalidateViewDoneServeableCache();
+        return true;
     }
 
     /**

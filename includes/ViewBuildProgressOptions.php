@@ -155,6 +155,53 @@ class ABJ_404_Solution_ViewBuildProgressOptions extends ABJ_404_Solution_ViewBui
     }
 
     /**
+     * Increment a stage's consecutive no-progress kill streak.
+     *
+     * @param int $stageNumber 1..11.
+     * @return int New streak value, or 0 when option API is unavailable.
+     */
+    public function bumpStageNoProgressStreak(int $stageNumber): int {
+        if (!function_exists('get_option') || !function_exists('update_option')) {
+            return 0;
+        }
+        $optName = $this->stageNoProgressStreakOptionName($stageNumber);
+        if ($optName === '') {
+            return 0;
+        }
+        $current = get_option($optName, 0);
+        $next = (is_scalar($current) ? max(0, intval($current)) : 0) + 1;
+        update_option($optName, $next, false);
+        return $next;
+    }
+
+    /**
+     * Reset a stage's no-progress kill streak after any successful stage tick.
+     *
+     * @param int $stageNumber
+     * @return void
+     */
+    public function resetStageNoProgressStreak(int $stageNumber): void {
+        if (!function_exists('update_option')) {
+            return;
+        }
+        $optName = $this->stageNoProgressStreakOptionName($stageNumber);
+        if ($optName !== '') {
+            update_option($optName, 0, false);
+        }
+    }
+
+    /**
+     * @param int $stageNumber
+     * @return string Empty when the stage is outside 1..11.
+     */
+    public function stageNoProgressStreakOptionName(int $stageNumber): string {
+        if ($stageNumber < 1 || $stageNumber > 11) {
+            return '';
+        }
+        return $this->progressOptionName('s' . $stageNumber . '_no_progress_streak');
+    }
+
+    /**
      * @param string $shortName  Progress key.
      * @param int    $default
      * @return int

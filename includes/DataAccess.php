@@ -20,6 +20,8 @@ require_once __DIR__ . '/ViewBuildLockCoordinator.php';
 require_once __DIR__ . '/ViewBuildCronScheduler.php';
 require_once __DIR__ . '/ViewBuildHostEnvironmentNoticePolicy.php';
 require_once __DIR__ . '/ViewBuildHostEnvironmentProbe.php';
+require_once __DIR__ . '/ViewBuildHostFailureNotices.php';
+require_once __DIR__ . '/ViewBuildHostFailureState.php';
 require_once __DIR__ . '/ViewBuildHostFailurePolicy.php';
 require_once __DIR__ . '/ViewBuildForceRestart.php';
 require_once __DIR__ . '/ViewBuildForegroundLease.php';
