@@ -9,6 +9,14 @@ if (!defined('ABSPATH')) {
  */
 class ABJ_404_Solution_ContentKeywordsRepository {
 
+    /**
+     * Hard upper bound on rows returned per batch. Caller-supplied limits
+     * above this are clamped; this is the safety backstop that keeps a
+     * misconfigured caller from issuing an effectively unbounded query
+     * over wp_posts on large sites.
+     */
+    const MAX_LIMIT = 5000;
+
     /** @var ABJ_404_Solution_DatabaseCore */
     private $dbCore;
     /** @var ABJ_404_Solution_Functions */
@@ -36,10 +44,10 @@ class ABJ_404_Solution_ContentKeywordsRepository {
      * @return array<int, object>
      */
     public function getPostsNeedingContentKeywords(int $limit = 500): array {
-        $limitResults = " */\n  limit " . absint($limit);
+        $clampedLimit = min(self::MAX_LIMIT, max(1, absint($limit)));
 
         $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/../sql/getPostsNeedingContentKeywords.sql");
-        $query = $this->functions->str_replace('{limit-results}', $limitResults, $query);
+        $query = $this->functions->str_replace('{limit-results}', (string) $clampedLimit, $query);
 
         $result = $this->dbCore->queryAndGetResults($query, array(
             'result_type' => OBJECT,
