@@ -35,6 +35,7 @@ return array(
     'ABJ_404_Solution_DebugLogReader' => $base . 'includes/DebugLogReader.php',
     'ABJ_404_Solution_DebugLogArchiveBuilder' => $base . 'includes/DebugLogArchiveBuilder.php',
     'ABJ_404_Solution_DeveloperLogMailer' => $base . 'includes/DeveloperLogMailer.php',
+    'ABJ_404_Solution_ViewBuildCollaborationContext' => $base . 'includes/ViewBuildCollaborationContext.php',
     'ABJ_404_Solution_ViewBuildCollaborator' => $base . 'includes/ViewBuildCollaborator.php',
     'ABJ_404_Solution_ViewBuildAdaptive' => $base . 'includes/ViewBuildAdaptive.php',
     'ABJ_404_Solution_ViewBuildForceRestart' => $base . 'includes/ViewBuildForceRestart.php',

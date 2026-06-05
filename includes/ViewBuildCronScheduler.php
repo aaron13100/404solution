@@ -26,15 +26,15 @@ class ABJ_404_Solution_ViewBuildCronScheduler extends ABJ_404_Solution_ViewBuild
         if (!function_exists('wp_next_scheduled') || !function_exists('wp_schedule_single_event')) {
             return;
         }
-        if ($this->rebuildHealth instanceof ABJ_404_Solution_RebuildHealthState
-                && !$this->rebuildHealth->mayStartExpensiveRebuild()) {
-            $this->logger->debugMessage(__FUNCTION__ . ' skipped because rebuild health gate is closed.');
+        if ($this->host->rebuildHealth() instanceof ABJ_404_Solution_RebuildHealthState
+                && !$this->host->rebuildHealth()->mayStartExpensiveRebuild()) {
+            $this->host->logger()->debugMessage(__FUNCTION__ . ' skipped because rebuild health gate is closed.');
             return;
         }
         $hook = 'abj404_rebuildViewDone';
-        $stuckHours = $this->getCronStuckHours();
+        $stuckHours = $this->host->getCronStuckHours();
         if ($stuckHours >= 24) {
-            $this->setViewBuildCronStuckNotice($stuckHours);
+            $this->host->setViewBuildCronStuckNotice($stuckHours);
         } elseif (function_exists('delete_transient')) {
             delete_transient('abj404_view_build_stuck_wp_cron_disabled');
         }
@@ -50,14 +50,14 @@ class ABJ_404_Solution_ViewBuildCronScheduler extends ABJ_404_Solution_ViewBuild
         );
         $isError = (function_exists('is_wp_error') && is_wp_error($scheduled));
         if ($scheduled === false) {
-            $this->setViewBuildScheduleFailedNotice('');
+            $this->host->setViewBuildScheduleFailedNotice('');
         } elseif ($isError) {
             $errMsg = '';
             if (is_object($scheduled) && method_exists($scheduled, 'get_error_message')) {
                 $msg = $scheduled->get_error_message();
                 $errMsg = is_string($msg) ? $msg : '';
             }
-            $this->setViewBuildScheduleFailedNotice($errMsg);
+            $this->host->setViewBuildScheduleFailedNotice($errMsg);
         }
     }
 
@@ -73,7 +73,7 @@ class ABJ_404_Solution_ViewBuildCronScheduler extends ABJ_404_Solution_ViewBuild
         if (function_exists('get_transient') && get_transient($key) !== false) {
             return;
         }
-        $template = $this->localizeOrDefaultViewBuildNotice('WordPress cron does not appear to be running. The earliest overdue '
+        $template = $this->host->localizeOrDefaultViewBuildNotice('WordPress cron does not appear to be running. The earliest overdue '
             . 'cron event has been waiting at least %d hours, so cron-dependent '
             . 'plugin features (staged view-build, daily cleanup, log updates, '
             . 'digest emails) are not advancing. To resolve: if DISABLE_WP_CRON '
@@ -148,7 +148,7 @@ class ABJ_404_Solution_ViewBuildCronScheduler extends ABJ_404_Solution_ViewBuild
         }
         $payload = array(
             'type'         => 'view_build_schedule_failed',
-            'message'      => $this->localizeOrDefaultViewBuildNotice($message),
+            'message'      => $this->host->localizeOrDefaultViewBuildNotice($message),
             'timestamp'    => time(),
             'error_string' => $detail,
         );

@@ -30,13 +30,13 @@ class ABJ_404_Solution_ViewBuildAdvanceCoordinator extends ABJ_404_Solution_View
     public function advanceViewBuildOnce(bool $forceRebuild = false): array {
         if ($forceRebuild) {
             ABJ_404_Solution_ViewBuildStagePipeline::resetViewBuildOncePerRequestGuard();
-            if ($this->rebuildHealth instanceof ABJ_404_Solution_RebuildHealthState) {
-                $this->rebuildHealth->reset();
-                $this->rebuildHealth->acquireTrialToken();
+            if ($this->host->rebuildHealth() instanceof ABJ_404_Solution_RebuildHealthState) {
+                $this->host->rebuildHealth()->reset();
+                $this->host->rebuildHealth()->acquireTrialToken();
             }
-        } elseif ($this->rebuildHealth instanceof ABJ_404_Solution_RebuildHealthState
-                && !$this->rebuildHealth->beginExpensiveRebuildAttempt()) {
-            $this->logger->debugMessage(
+        } elseif ($this->host->rebuildHealth() instanceof ABJ_404_Solution_RebuildHealthState
+                && !$this->host->rebuildHealth()->beginExpensiveRebuildAttempt()) {
+            $this->host->logger()->debugMessage(
                 '[staged] advanceViewBuildOnce: skipped because rebuild health gate is closed.'
             );
             return array(
@@ -45,21 +45,21 @@ class ABJ_404_Solution_ViewBuildAdvanceCoordinator extends ABJ_404_Solution_View
                 'healthGateClosed' => true,
             );
         }
-        if (!$forceRebuild && $this->viewDoneIsServeable()) {
-            return $this->getViewBuildProgress();
+        if (!$forceRebuild && $this->host->viewDoneIsServeable()) {
+            return $this->host->getViewBuildProgress();
         }
         $lockTimeoutSeconds = $forceRebuild ? 10 : 0;
-        if (!$this->acquireViewBuildLock($lockTimeoutSeconds)) {
-            $this->logger->debugMessage(sprintf(
+        if (!$this->host->acquireViewBuildLock($lockTimeoutSeconds)) {
+            $this->host->logger()->debugMessage(sprintf(
                 '[staged] advanceViewBuildOnce: lock not acquired '
                 . '(forceRebuild=%s, waited up to %ds)',
                 $forceRebuild ? 'true' : 'false', $lockTimeoutSeconds
             ));
-            $progress = $this->getViewBuildProgress();
+            $progress = $this->host->getViewBuildProgress();
             if ((int)($progress['stage'] ?? 0) === 0) {
                 $progress['stage'] = max(
                     0,
-                    $this->readProgressOption('last_completed_stage', 0)
+                    $this->host->readProgressOption('last_completed_stage', 0)
                 );
                 $progress['progress_text'] = $progress['stage'] > 0
                     ? ('stage ' . $progress['stage'] . '/11')
@@ -70,26 +70,26 @@ class ABJ_404_Solution_ViewBuildAdvanceCoordinator extends ABJ_404_Solution_View
         }
         try {
             if ($forceRebuild) {
-                $this->runForceRestartCleanupInsideLock();
-                $this->clearStagedBuildDegradedState();
+                $this->host->runForceRestartCleanupInsideLock();
+                $this->host->clearStagedBuildDegradedState();
             } else {
-                $this->invalidateViewDoneServeableCache();
-                if ($this->viewDoneIsServeable()) {
-                    return $this->getViewBuildProgress();
+                $this->host->invalidateViewDoneServeableCache();
+                if ($this->host->viewDoneIsServeable()) {
+                    return $this->host->getViewBuildProgress();
                 }
-                $reconcileResult = $this->reconcileStagedTablesAtRunnerStartup();
+                $reconcileResult = $this->host->reconcileStagedTablesAtRunnerStartup();
                 if ($reconcileResult === 'promoted') {
-                    return $this->getViewBuildProgress();
+                    return $this->host->getViewBuildProgress();
                 }
             }
-            $isComplete = $this->runStagedBuildOnce();
+            $isComplete = $this->host->runStagedBuildOnce();
         } finally {
-            $this->releaseViewBuildLock();
+            $this->host->releaseViewBuildLock();
         }
         if ($isComplete) {
-            return $this->getViewBuildProgress();
+            return $this->host->getViewBuildProgress();
         }
-        $this->scheduleViewDoneRebuild();
-        return $this->getViewBuildProgress();
+        $this->host->scheduleViewDoneRebuild();
+        return $this->host->getViewBuildProgress();
     }
 }

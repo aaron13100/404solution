@@ -24,7 +24,7 @@ if (!defined('ABSPATH')) {
  * formatting lives in ViewBuildStageLogPresenter. Shared process-local state
  * lives in ViewBuildStageRuntimeState.
  *
- * Composed alongside the stage pipeline through ABJ_404_Solution_ViewBuildOrchestrator
+ * Composed alongside the stage pipeline through ABJ_404_Solution_ViewBuildCollaborationContext
  * so the cross-collaborator calls ($this->readProgressOption, $this->logger,
  * $this->classifyAndHandleStageFailure, $this->resetStageNoProgressStreak,
  * $this->extendedTimeoutForKilledNonBatchedStage, staged query timeout state)
@@ -231,7 +231,7 @@ class ABJ_404_Solution_ViewBuildStageRunner extends ABJ_404_Solution_ViewBuildCo
     public function runTimedViewBuildStage(int $stageNumber, string $stageKey, callable $callback) {
         $started = microtime(true);
         try {
-            $this->markViewBuildStageStarted($stageNumber, $stageKey);
+            $this->host->markViewBuildStageStarted($stageNumber, $stageKey);
             // Public extension point. Sites can hook this for telemetry, custom
             // progress dashboards, or chaos-testing the build's resume contract.
             // The do_action call is inside the try so a callback that throws
@@ -257,15 +257,15 @@ class ABJ_404_Solution_ViewBuildStageRunner extends ABJ_404_Solution_ViewBuildCo
             // than at the DAO level. ensureConnection() is idempotent
             // (returns true when already connected) so the cost on the
             // non-connection-drop paths is one mysqli_ping per stage exit.
-            if ($this->isTransientConnectionError($e->getMessage())) {
-                $this->ensureConnection();
+            if ($this->host->isTransientConnectionError($e->getMessage())) {
+                $this->host->ensureConnection();
             }
             // Catch-block classification + side effects (skip / halt / streak)
             // live on the HostFailurePolicy trait so this orchestrator stays
             // focused on stage sequencing. classifyAndHandleStageFailure()
             // returns one of: 'resumable_yield', 'skipped', 'halted',
             // 'completed' (post-S11 reconcile), or 'rethrow'.
-            $outcome = $this->classifyAndHandleStageFailure($stageNumber, $stageKey, $e->getMessage(), $started);
+            $outcome = $this->host->classifyAndHandleStageFailure($stageNumber, $stageKey, $e->getMessage(), $started);
             if ($outcome === 'resumable_yield') {
                 return false;
             }
@@ -278,7 +278,7 @@ class ABJ_404_Solution_ViewBuildStageRunner extends ABJ_404_Solution_ViewBuildCo
             if ($outcome === 'completed') {
                 return null;
             }
-            $this->logTimedViewBuildStage($stageNumber, $stageKey, 'error', $started);
+            $this->host->logTimedViewBuildStage($stageNumber, $stageKey, 'error', $started);
             throw $e;
         }
 
@@ -293,11 +293,11 @@ class ABJ_404_Solution_ViewBuildStageRunner extends ABJ_404_Solution_ViewBuildCo
         // forward progress. Reset the no-progress streak so legitimate
         // long-running batched stages do not eventually trip the halt.
         // Completion / skip likewise reset.
-        $this->resetStageNoProgressStreak($stageNumber);
+        $this->host->resetStageNoProgressStreak($stageNumber);
         if ($status === 'completed' || $status === 'skipped') {
-            $this->markViewBuildStageCompleted($stageNumber);
+            $this->host->markViewBuildStageCompleted($stageNumber);
         }
-        $this->logTimedViewBuildStage($stageNumber, $stageKey, $status, $started);
+        $this->host->logTimedViewBuildStage($stageNumber, $stageKey, $status, $started);
         return $result;
     }
 
@@ -337,19 +337,19 @@ class ABJ_404_Solution_ViewBuildStageRunner extends ABJ_404_Solution_ViewBuildCo
         string $streakOptKey,
         callable $callback
     ) {
-        $savedTimeout = $this->stagedQueryTimeoutSeconds();
-        $this->setStagedQueryTimeoutSeconds($this->extendedTimeoutForKilledNonBatchedStage($streakOptKey));
+        $savedTimeout = $this->host->stagedQueryTimeoutSeconds();
+        $this->host->setStagedQueryTimeoutSeconds($this->host->extendedTimeoutForKilledNonBatchedStage($streakOptKey));
         try {
-            $result = $this->runTimedViewBuildStage($stageNumber, $stageKey, $callback);
+            $result = $this->host->runTimedViewBuildStage($stageNumber, $stageKey, $callback);
         } finally {
-            $this->setStagedQueryTimeoutSeconds($savedTimeout);
+            $this->host->setStagedQueryTimeoutSeconds($savedTimeout);
         }
         if ($result === false) {
-            $this->writeProgressOption($streakOptKey,
-                $this->readProgressOption($streakOptKey, 0) + 1
+            $this->host->writeProgressOption($streakOptKey,
+                $this->host->readProgressOption($streakOptKey, 0) + 1
             );
         } else {
-            $this->writeProgressOption($streakOptKey, 0);
+            $this->host->writeProgressOption($streakOptKey, 0);
         }
         return $result;
     }

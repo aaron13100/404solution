@@ -58,7 +58,7 @@ class ABJ_404_Solution_ViewBuildOptionWriteVerifier extends ABJ_404_Solution_Vie
         $prior = get_option($optionName, null);
         update_option($optionName, $expected, false);
         $actual = get_option($optionName, null);
-        if ($this->optionReadBackMatches($actual, $expected)) {
+        if ($this->host->optionReadBackMatches($actual, $expected)) {
             return true;
         }
         // First read disagrees with the just-written value. Surface a WARN
@@ -67,9 +67,9 @@ class ABJ_404_Solution_ViewBuildOptionWriteVerifier extends ABJ_404_Solution_Vie
         // Other high-stakes keys (s2/s4/s5_high_water) stay silent on the
         // first miss to avoid log volume; they still hit the persistent-
         // mismatch WARN further down if the retry also fails.
-        if ($this->isCurrentStageOptionName($optionName) && is_object($this->logger)
-                && method_exists($this->logger, 'warn')) {
-            $this->logger->warn(sprintf(
+        if ($this->host->isCurrentStageOptionName($optionName) && is_object($this->host->logger())
+                && method_exists($this->host->logger(), 'warn')) {
+            $this->host->logger()->warn(sprintf(
                 '[staged] option write incoherent (first read-back) on %s: prior=%s new=%s observed=%s; flushing cache and retrying',
                 $optionName,
                 is_scalar($prior)    ? (string)$prior    : '<non-scalar>',
@@ -89,7 +89,7 @@ class ABJ_404_Solution_ViewBuildOptionWriteVerifier extends ABJ_404_Solution_Vie
         }
         update_option($optionName, $expected, false);
         $retry = get_option($optionName, null);
-        if ($this->optionReadBackMatches($retry, $expected)) {
+        if ($this->host->optionReadBackMatches($retry, $expected)) {
             return true;
         }
 
@@ -109,7 +109,7 @@ class ABJ_404_Solution_ViewBuildOptionWriteVerifier extends ABJ_404_Solution_Vie
                 86400
             );
         }
-        if (is_object($this->logger)) {
+        if (is_object($this->host->logger())) {
             $message = sprintf(
                 '[staged] option write incoherent on this host: %s expected=%s observed=%s '
                 . '(persistent object cache likely returning stale values; '
@@ -118,10 +118,10 @@ class ABJ_404_Solution_ViewBuildOptionWriteVerifier extends ABJ_404_Solution_Vie
                 is_scalar($expected) ? (string)$expected : '<non-scalar>',
                 is_scalar($retry)    ? (string)$retry    : '<non-scalar>'
             );
-            if (method_exists($this->logger, 'warn')) {
-                $this->logger->warn($message);
-            } elseif (method_exists($this->logger, 'debugMessage')) {
-                $this->logger->debugMessage($message);
+            if (method_exists($this->host->logger(), 'warn')) {
+                $this->host->logger()->warn($message);
+            } elseif (method_exists($this->host->logger(), 'debugMessage')) {
+                $this->host->logger()->debugMessage($message);
             }
         }
         return false;

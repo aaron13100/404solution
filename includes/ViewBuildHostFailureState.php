@@ -24,7 +24,7 @@ class ABJ_404_Solution_ViewBuildHostFailureState extends ABJ_404_Solution_ViewBu
      * @return string Site-prefixed option name for the stage skip marker.
      */
     public function stageSkipOptionName(int $stageNumber): string {
-        return $this->getLowercasePrefix() . 'abj404_view_build_s' . $stageNumber . '_skipped';
+        return $this->host->getLowercasePrefix() . 'abj404_view_build_s' . $stageNumber . '_skipped';
     }
 
     /**
@@ -37,7 +37,7 @@ class ABJ_404_Solution_ViewBuildHostFailureState extends ABJ_404_Solution_ViewBu
         if (!function_exists('get_option')) {
             return false;
         }
-        $value = get_option($this->stageSkipOptionName($stageNumber), 0);
+        $value = get_option($this->host->stageSkipOptionName($stageNumber), 0);
         return is_scalar($value) && intval($value) > 0;
     }
 
@@ -50,10 +50,10 @@ class ABJ_404_Solution_ViewBuildHostFailureState extends ABJ_404_Solution_ViewBu
      */
     public function markStageSkippedForHostFailure(int $stageNumber, string $errorText): void {
         if (function_exists('update_option')) {
-            update_option($this->stageSkipOptionName($stageNumber), $this->clock()->now(), false);
+            update_option($this->host->stageSkipOptionName($stageNumber), $this->host->clock()->now(), false);
         }
-        $this->setStagedBuildDegradedNotice($stageNumber, 'skipped', $errorText);
-        $this->logger->warn(sprintf(
+        $this->host->setStagedBuildDegradedNotice($stageNumber, 'skipped', $errorText);
+        $this->host->logger()->warn(sprintf(
             '[staged] stage %d permanently skipped (host-side environmental '
             . 'constraint, will not retry until force rebuild). Reason: %s',
             $stageNumber,
@@ -72,17 +72,17 @@ class ABJ_404_Solution_ViewBuildHostFailureState extends ABJ_404_Solution_ViewBu
         if (function_exists('set_transient')) {
             // allow-cache-empty: host-failure halt marker intentionally stores error context, not query data.
             set_transient(
-                $this->buildHaltTransientKey(),
+                $this->host->buildHaltTransientKey(),
                 array(
                     'stage' => $stageNumber,
                     'error' => $errorText,
-                    'when'  => $this->clock()->now(),
+                    'when'  => $this->host->clock()->now(),
                 ),
                 ABJ_404_Solution_ViewBuildConfig::VIEW_BUILD_DEGRADED_NOTICE_TTL_SECONDS
             );
         }
-        $this->setStagedBuildDegradedNotice($stageNumber, 'halted', $errorText);
-        $this->logger->warn(sprintf(
+        $this->host->setStagedBuildDegradedNotice($stageNumber, 'halted', $errorText);
+        $this->host->logger()->warn(sprintf(
             '[staged] critical stage %d halted (host-side environmental '
             . 'constraint, will not retry until force rebuild or 24h dedup '
             . 'window expires). Reason: %s',
@@ -104,7 +104,7 @@ class ABJ_404_Solution_ViewBuildHostFailureState extends ABJ_404_Solution_ViewBu
         if (!function_exists('get_transient')) {
             return false;
         }
-        $value = get_transient($this->buildHaltTransientKey());
+        $value = get_transient($this->host->buildHaltTransientKey());
         return is_array($value);
     }
 
@@ -116,14 +116,14 @@ class ABJ_404_Solution_ViewBuildHostFailureState extends ABJ_404_Solution_ViewBu
     public function clearStagedBuildDegradedState(): void {
         if (function_exists('delete_option')) {
             for ($s = 1; $s <= 11; $s++) {
-                delete_option($this->stageSkipOptionName($s));
+                delete_option($this->host->stageSkipOptionName($s));
             }
         }
         if (function_exists('delete_transient')) {
-            delete_transient($this->buildHaltTransientKey());
+            delete_transient($this->host->buildHaltTransientKey());
         }
         // A force rebuild explicitly restarts the pipeline; the captured
         // prefix is per-build, not per-host, so wipe it so fresh S1 recaptures.
-        $this->clearPrefixAtStageOne();
+        $this->host->clearPrefixAtStageOne();
     }
 }

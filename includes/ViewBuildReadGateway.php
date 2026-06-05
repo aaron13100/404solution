@@ -35,25 +35,25 @@ class ABJ_404_Solution_ViewBuildReadGateway extends ABJ_404_Solution_ViewBuildCo
     public function runRedirectsForViewStaged(string $sub, array $tableOptions): array {
         $this->setReadQueryTimeout($tableOptions);
         if (!empty($tableOptions['_abj404_force_view_rebuild'])) {
-            $this->forceRestartViewBuild(0);
+            $this->host->forceRestartViewBuild(0);
         }
-        $builtAt = $this->viewDoneBuiltAt();
+        $builtAt = $this->host->viewDoneBuiltAt();
         $isFresh = $builtAt > 0
             && (time() - $builtAt) < ABJ_404_Solution_ViewBuildConfig::VIEW_DONE_FRESHNESS_TTL_SECONDS
-            && $this->viewDoneIsServeable();
+            && $this->host->viewDoneIsServeable();
 
         if ($isFresh) {
-            return $this->readFromViewDone($sub, $tableOptions);
+            return $this->host->readFromViewDone($sub, $tableOptions);
         }
 
-        if ($this->viewDoneIsServeable()) {
-            $this->scheduleViewDoneRebuild();
-            $this->maybeRaiseViewDoneHardStaleNotice();
-            return $this->readFromViewDone($sub, $tableOptions);
+        if ($this->host->viewDoneIsServeable()) {
+            $this->host->scheduleViewDoneRebuild();
+            $this->host->maybeRaiseViewDoneHardStaleNotice();
+            return $this->host->readFromViewDone($sub, $tableOptions);
         }
 
-        $this->scheduleViewDoneRebuild();
-        $progress = $this->describeBuildProgressForNotice();
+        $this->host->scheduleViewDoneRebuild();
+        $progress = $this->host->describeBuildProgressForNotice();
         throw new ABJ_404_Solution_ViewBuildPendingException(
             'Staged view build pending; background rebuild scheduled. Progress: ' . $progress,
             $progress
@@ -62,16 +62,16 @@ class ABJ_404_Solution_ViewBuildReadGateway extends ABJ_404_Solution_ViewBuildCo
 
     /** @return array<string, mixed> */
     public function getViewBuildProgress(): array {
-        $stage = $this->readProgressOption('current_stage', 0);
-        $startedAt = $this->readProgressOption('started_at', 0);
-        $status = $this->viewDoneIsServeable() ? 'ready' : 'pending';
+        $stage = $this->host->readProgressOption('current_stage', 0);
+        $startedAt = $this->host->readProgressOption('started_at', 0);
+        $status = $this->host->viewDoneIsServeable() ? 'ready' : 'pending';
         return array(
             'status' => $status,
             'stage' => max(0, $stage),
             'of' => 11,
             'build_started' => max(0, $startedAt),
             'progress_text' => $stage > 0 ? ('stage ' . $stage . '/11') : 'not yet started',
-            'fingerprint' => $this->getViewBuildProgressFingerprint(),
+            'fingerprint' => $this->host->getViewBuildProgressFingerprint(),
         );
     }
 
@@ -83,14 +83,14 @@ class ABJ_404_Solution_ViewBuildReadGateway extends ABJ_404_Solution_ViewBuildCo
      */
     public function runRedirectsForViewCountStaged(string $sub, array $tableOptions): int {
         $this->setReadQueryTimeout($tableOptions);
-        $builtAt = $this->viewDoneBuiltAt();
+        $builtAt = $this->host->viewDoneBuiltAt();
         $isFresh = $builtAt > 0
             && (time() - $builtAt) < ABJ_404_Solution_ViewBuildConfig::VIEW_DONE_FRESHNESS_TTL_SECONDS
-            && $this->viewDoneIsServeable();
+            && $this->host->viewDoneIsServeable();
 
-        if (!$this->viewDoneIsServeable()) {
-            $this->scheduleViewDoneRebuild();
-            $progress = $this->describeBuildProgressForNotice();
+        if (!$this->host->viewDoneIsServeable()) {
+            $this->host->scheduleViewDoneRebuild();
+            $progress = $this->host->describeBuildProgressForNotice();
             throw new ABJ_404_Solution_ViewBuildPendingException(
                 'Staged view-count build pending; background rebuild scheduled. Progress: ' . $progress,
                 $progress
@@ -98,12 +98,12 @@ class ABJ_404_Solution_ViewBuildReadGateway extends ABJ_404_Solution_ViewBuildCo
         }
 
         if (!$isFresh) {
-            $this->scheduleViewDoneRebuild();
-            $this->maybeRaiseViewDoneHardStaleNotice();
+            $this->host->scheduleViewDoneRebuild();
+            $this->host->maybeRaiseViewDoneHardStaleNotice();
         }
 
-        $sql = $this->buildViewDoneCountQuery($sub, $tableOptions);
-        $result = $this->queryAndGetResults($sql, $this->stagedQueryOptions());
+        $sql = $this->host->buildViewDoneCountQuery($sub, $tableOptions);
+        $result = $this->host->queryAndGetResults($sql, $this->host->stagedQueryOptions());
         $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
         if (empty($rows)) {
             return 0;
@@ -115,7 +115,7 @@ class ABJ_404_Solution_ViewBuildReadGateway extends ABJ_404_Solution_ViewBuildCo
 
     /** @param array<string, mixed> $tableOptions @return void */
     private function setReadQueryTimeout(array $tableOptions): void {
-        $this->setStagedQueryTimeoutSeconds(isset($tableOptions['_abj404_query_timeout'])
+        $this->host->setStagedQueryTimeoutSeconds(isset($tableOptions['_abj404_query_timeout'])
             && is_numeric($tableOptions['_abj404_query_timeout'])
             ? max(0, intval($tableOptions['_abj404_query_timeout'])) : 0);
     }

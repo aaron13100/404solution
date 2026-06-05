@@ -68,7 +68,7 @@ class ABJ_404_Solution_ViewBuildStagedSqlExecutor extends ABJ_404_Solution_ViewB
             $clean = $url;
         }
         if ($maxLength <= 0) {
-            $probe = $this->sqlModeProbeCache();
+            $probe = $this->host->sqlModeProbeCache();
             $truncTo = 0;
             if ($probe !== null && isset($probe['truncate_url_to'])
                     && is_scalar($probe['truncate_url_to'])) {
@@ -101,8 +101,8 @@ class ABJ_404_Solution_ViewBuildStagedSqlExecutor extends ABJ_404_Solution_ViewB
      * @return string Sanitized collation identifier (e.g. 'utf8mb4_unicode_520_ci').
      */
     public function resolveColumnCollationForStagedBuild(): string {
-        $logsHitsTable = $this->doTableNameReplacements('{wp_abj404_logs_hits}');
-        $collation = $this->getColumnCollationString($logsHitsTable, 'requested_url');
+        $logsHitsTable = $this->host->doTableNameReplacements('{wp_abj404_logs_hits}');
+        $collation = $this->host->getColumnCollationString($logsHitsTable, 'requested_url');
         return $collation;
     }
 
@@ -126,19 +126,19 @@ class ABJ_404_Solution_ViewBuildStagedSqlExecutor extends ABJ_404_Solution_ViewB
         if (!is_string($template) || trim($template) === '') {
             throw new \Exception("Staged SQL template missing or empty: $relativePath");
         }
-        $sql = $this->doTableNameReplacements($template);
+        $sql = $this->host->doTableNameReplacements($template);
         // extraTranslations (status_for_view / type_for_view labels, batch
         // bounds) must run BEFORE doNormalReplacements: doNormalReplacements
         // falls back to __() for any {key} it does not know, which strips
         // the braces and prevents the str_replace below from matching.
         if (!empty($extraTranslations)) {
-            $sql = $this->f->str_replace(array_keys($extraTranslations), array_values($extraTranslations), $sql);
+            $sql = $this->host->functions()->str_replace(array_keys($extraTranslations), array_values($extraTranslations), $sql);
         }
-        $sql = $this->f->doNormalReplacements($sql);
-        $result = $this->queryAndGetResults($sql, $this->stagedQueryOptions());
+        $sql = $this->host->functions()->doNormalReplacements($sql);
+        $result = $this->host->queryAndGetResults($sql, $this->host->stagedQueryOptions());
         $err = isset($result['last_error']) && is_string($result['last_error']) ? trim($result['last_error']) : '';
         if ($err !== '') {
-            $context = $this->describeStagedSqlFailure($relativePath, $extraTranslations);
+            $context = $this->host->describeStagedSqlFailure($relativePath, $extraTranslations);
             throw new \Exception('Staged SQL ' . $context . ' failed: ' . $err);
         }
     }
@@ -155,7 +155,7 @@ class ABJ_404_Solution_ViewBuildStagedSqlExecutor extends ABJ_404_Solution_ViewB
      */
     public function runStagedSqlFileTolerantOfDuplicateKey(string $relativePath, array $extraTranslations): void {
         try {
-            $this->runStagedSqlFile($relativePath, $extraTranslations);
+            $this->host->runStagedSqlFile($relativePath, $extraTranslations);
         } catch (\Throwable $e) {
             $msg = $e->getMessage();
             if (stripos($msg, 'Duplicate key name') !== false
@@ -163,7 +163,7 @@ class ABJ_404_Solution_ViewBuildStagedSqlExecutor extends ABJ_404_Solution_ViewB
                 // The index already exists from a prior partial run; the
                 // expected resume-time state, not a failure. Log at debug so
                 // a "why did this stage take 0ms" question has an answer.
-                $this->logger->debugMessage(sprintf(
+                $this->host->logger()->debugMessage(sprintf(
                     '[staged] %s: index already exists, tolerated as resume.',
                     $relativePath
                 ));
@@ -227,11 +227,11 @@ class ABJ_404_Solution_ViewBuildStagedSqlExecutor extends ABJ_404_Solution_ViewB
      *               false from runStagedBuildOnce).
      */
     public function runS11Swap(): bool {
-        $result = $this->runTimedViewBuildStage(11, 'staged_build_s11_swap', function () {
+        $result = $this->host->runTimedViewBuildStage(11, 'staged_build_s11_swap', function () {
             if (function_exists('do_action')) {
                 do_action('abj404_view_build_before_rename_swap');
             }
-            $this->stageRenameSwap();
+            $this->host->stageRenameSwap();
         });
         return $result !== false && $result !== 'halted';
     }

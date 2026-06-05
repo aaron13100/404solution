@@ -21,14 +21,10 @@ class ABJ_404_Solution_ViewBuildFilesystemEnvironmentProbe extends ABJ_404_Solut
     /** @var array<string,mixed>|null */
     private $filesystemEnvironmentProbeCache = null;
 
-    public function __construct(ABJ_404_Solution_ViewBuildOrchestrator $host) {
+    public function __construct(ABJ_404_Solution_ViewBuildCollaborationContext $host) {
         parent::__construct($host);
         $this->noticePolicy = new ABJ_404_Solution_ViewBuildHostEnvironmentNoticePolicy($host);
-        $logger = $host->viewBuildCollaboratorDependency('logger');
-        if (!$logger instanceof ABJ_404_Solution_Logging) {
-            throw new \UnexpectedValueException('ViewBuildFilesystemEnvironmentProbe requires ABJ_404_Solution_Logging from host.');
-        }
-        $this->logger = $logger;
+        $this->logger = $host->logger();
     }
 
     /** @return string */
@@ -56,19 +52,19 @@ class ABJ_404_Solution_ViewBuildFilesystemEnvironmentProbe extends ABJ_404_Solut
             $rawUploadTmpDir,
         ), function ($p) { return $p !== ''; });
 
-        $openBasedirPaths = $this->splitOpenBasedirPaths($rawOpenBasedir);
+        $openBasedirPaths = $this->host->splitOpenBasedirPaths($rawOpenBasedir);
 
         $tmpOutsideOpenBasedir = false;
         $uploadTmpOutsideOpenBasedir = false;
         if (!empty($openBasedirPaths)) {
             foreach ($pluginTmpCandidates as $candidate) {
-                if (!$this->pathFallsWithinAny($candidate, $openBasedirPaths)) {
+                if (!$this->host->pathFallsWithinAny($candidate, $openBasedirPaths)) {
                     $tmpOutsideOpenBasedir = true;
                     break;
                 }
             }
             if ($rawUploadTmpDir !== ''
-                && !$this->pathFallsWithinAny($rawUploadTmpDir, $openBasedirPaths)) {
+                && !$this->host->pathFallsWithinAny($rawUploadTmpDir, $openBasedirPaths)) {
                 $uploadTmpOutsideOpenBasedir = true;
             }
         }
@@ -110,7 +106,7 @@ class ABJ_404_Solution_ViewBuildFilesystemEnvironmentProbe extends ABJ_404_Solut
         }
 
         if (function_exists('update_option')) {
-            update_option($this->filesystemEnvironmentProbeOptionName(), $result, false);
+            update_option($this->host->filesystemEnvironmentProbeOptionName(), $result, false);
         }
 
         $this->filesystemEnvironmentProbeCache = $result;
@@ -121,7 +117,7 @@ class ABJ_404_Solution_ViewBuildFilesystemEnvironmentProbe extends ABJ_404_Solut
     public function clearFilesystemEnvironmentProbeCache(): void {
         $this->filesystemEnvironmentProbeCache = null;
         if (function_exists('delete_option')) {
-            delete_option($this->filesystemEnvironmentProbeOptionName());
+            delete_option($this->host->filesystemEnvironmentProbeOptionName());
         }
     }
 
@@ -131,7 +127,7 @@ class ABJ_404_Solution_ViewBuildFilesystemEnvironmentProbe extends ABJ_404_Solut
      */
     private function tmpPathIsProbeable(string $path, array $openBasedirPaths): bool {
         return $path !== ''
-            && (empty($openBasedirPaths) || $this->pathFallsWithinAny($path, $openBasedirPaths));
+            && (empty($openBasedirPaths) || $this->host->pathFallsWithinAny($path, $openBasedirPaths));
     }
 
     /**
@@ -269,9 +265,9 @@ class ABJ_404_Solution_ViewBuildFilesystemEnvironmentProbe extends ABJ_404_Solut
      */
     public function pathFallsWithinAny(string $candidate, array $allowed): bool {
         if ($candidate === '' || empty($allowed)) { return true; }
-        $normCandidate = $this->normalizePathPrefix($candidate);
+        $normCandidate = $this->host->normalizePathPrefix($candidate);
         foreach ($allowed as $a) {
-            $normA = $this->normalizePathPrefix($a);
+            $normA = $this->host->normalizePathPrefix($a);
             if ($normA === '') { continue; }
             if (strncmp($normCandidate, $normA, strlen($normA)) === 0) {
                 return true;

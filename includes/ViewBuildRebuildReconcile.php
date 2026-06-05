@@ -26,8 +26,8 @@ if (!defined('ABSPATH')) {
  *      place, both tables present.
  *
  * Behavior is unchanged from the original staged-build collaborator.
- * Cross-collaborator calls (e.g. `$this->runStagedBuildOnce()`,
- * `$this->acquireViewBuildLock()`) flow through the orchestrator's reflection
+ * Cross-collaborator calls (e.g. `$this->host->runStagedBuildOnce()`,
+ * `$this->host->acquireViewBuildLock()`) flow through the orchestrator's reflection
  * routed __call exactly as before.
  *
  * @property ABJ_404_Solution_DatabaseCore $dbCore
@@ -84,7 +84,7 @@ class ABJ_404_Solution_ViewBuildRebuildReconcile extends ABJ_404_Solution_ViewBu
 
         // Sweep expired abj404_inflight_* transients (older than 5 minutes).
         $now = time();
-        $prefix = $this->getLowercasePrefix();
+        $prefix = $this->host->getLowercasePrefix();
         $inflightLike = '_transient_timeout_abj404_inflight_%';
         $timeoutRows = $wpdb->get_results(
             // DAO-bypass-approved: Rebuild cleanup must scan WordPress transient timeout rows directly.
@@ -128,12 +128,12 @@ class ABJ_404_Solution_ViewBuildRebuildReconcile extends ABJ_404_Solution_ViewBu
 
         // Drop orphaned temp/preagg tables to reclaim disk before the
         // next rebuild attempt.
-        $logsHitsTable = $this->doTableNameReplacements('{wp_abj404_logs_hits}');
+        $logsHitsTable = $this->host->doTableNameReplacements('{wp_abj404_logs_hits}');
         $preaggTable = $logsHitsTable . '_preagg';
         $tempTable = $logsHitsTable . '_temp';
-        $this->queryAndGetResults("DROP TABLE IF EXISTS `" . esc_sql($preaggTable) . "`",
+        $this->host->queryAndGetResults("DROP TABLE IF EXISTS `" . esc_sql($preaggTable) . "`",
             array('log_errors' => false));
-        $this->queryAndGetResults("DROP TABLE IF EXISTS `" . esc_sql($tempTable) . "`",
+        $this->host->queryAndGetResults("DROP TABLE IF EXISTS `" . esc_sql($tempTable) . "`",
             array('log_errors' => false));
     }
 
@@ -145,24 +145,24 @@ class ABJ_404_Solution_ViewBuildRebuildReconcile extends ABJ_404_Solution_ViewBu
      * @return void
      */
     public function rebuildViewDoneInBackground(): void {
-        $this->sweepStaleRebuildTransients();
-        if ($this->rebuildHealth instanceof ABJ_404_Solution_RebuildHealthState
-                && !$this->rebuildHealth->beginExpensiveRebuildAttempt()) {
-            $this->logger->debugMessage(
+        $this->host->sweepStaleRebuildTransients();
+        if ($this->host->rebuildHealth() instanceof ABJ_404_Solution_RebuildHealthState
+                && !$this->host->rebuildHealth()->beginExpensiveRebuildAttempt()) {
+            $this->host->logger()->debugMessage(
                 '[staged] rebuildViewDoneInBackground: skipped because rebuild health gate is closed.'
             );
             return;
         }
-        if ($this->foregroundViewBuildLeaseActive()) {
-            $this->logger->debugMessage(
+        if ($this->host->foregroundViewBuildLeaseActive()) {
+            $this->host->logger()->debugMessage(
                 '[staged] rebuildViewDoneInBackground: deferring; '
                 . 'foreground build lease active. Rescheduled.'
             );
-            $this->scheduleViewDoneRebuild(ABJ_404_Solution_ViewBuildConfig::VIEW_BUILD_FOREGROUND_LEASE_SECONDS);
+            $this->host->scheduleViewDoneRebuild(ABJ_404_Solution_ViewBuildConfig::VIEW_BUILD_FOREGROUND_LEASE_SECONDS);
             return;
         }
-        if (!$this->acquireViewBuildLock()) {
-            $this->logger->debugMessage(
+        if (!$this->host->acquireViewBuildLock()) {
+            $this->host->logger()->debugMessage(
                 '[staged] rebuildViewDoneInBackground: lock not acquired '
                 . '(another worker is building); skipping this cron tick.'
             );
@@ -176,31 +176,31 @@ class ABJ_404_Solution_ViewBuildRebuildReconcile extends ABJ_404_Solution_ViewBu
             // circuits cannot suppress the cleanup, and it can short-
             // circuit the rebuild itself when it manages to recover the
             // previous run's buffer in place.
-            $reconcileResult = $this->reconcileStagedTablesAtRunnerStartup();
+            $reconcileResult = $this->host->reconcileStagedTablesAtRunnerStartup();
             if ($reconcileResult === 'promoted') {
                 // The previous run's view_build was renamed to view_done
                 // in place; freshness is recorded; view_done is now
                 // serveable. No need to re-run the staged build this tick.
                 return;
             }
-            $isComplete = $this->runStagedBuildOnce();
+            $isComplete = $this->host->runStagedBuildOnce();
             if (!$isComplete) {
                 // Build yielded mid-stage; schedule another tick to continue.
-                $this->scheduleViewDoneRebuild();
-            } elseif ($this->rebuildHealth instanceof ABJ_404_Solution_RebuildHealthState) {
-                $this->rebuildHealth->recordSuccess();
+                $this->host->scheduleViewDoneRebuild();
+            } elseif ($this->host->rebuildHealth() instanceof ABJ_404_Solution_RebuildHealthState) {
+                $this->host->rebuildHealth()->recordSuccess();
             }
         } catch (Throwable $e) {
             // Log at warning level, not error: a failed background rebuild
             // leaves the plugin functional (the prior view_done snapshot,
             // if any, is still served).  Per CLAUDE.md self-healing rules,
             // infrastructure failures should not generate dev email reports.
-            $this->logger->warn('[staged] background rebuild yielded an error: ' . $e->getMessage());
-            if ($this->rebuildHealth instanceof ABJ_404_Solution_RebuildHealthState) {
-                $this->rebuildHealth->recordFailure($e->getMessage(), $this->rebuildHealth->classifyError($e->getMessage()));
+            $this->host->logger()->warn('[staged] background rebuild yielded an error: ' . $e->getMessage());
+            if ($this->host->rebuildHealth() instanceof ABJ_404_Solution_RebuildHealthState) {
+                $this->host->rebuildHealth()->recordFailure($e->getMessage(), $this->host->rebuildHealth()->classifyError($e->getMessage()));
             }
         } finally {
-            $this->releaseViewBuildLock();
+            $this->host->releaseViewBuildLock();
         }
     }
 
@@ -258,30 +258,30 @@ class ABJ_404_Solution_ViewBuildRebuildReconcile extends ABJ_404_Solution_ViewBu
      *                              (privilege denied); admin notice set.
      */
     public function reconcileStagedTablesAtRunnerStartup(): string {
-        $tempDeletemeTable = $this->viewDeletemeTableName();
-        $tempBuildTable    = $this->viewBuildTableName();
-        $doneTable         = $this->viewDoneTableName();
+        $tempDeletemeTable = $this->host->viewDeletemeTableName();
+        $tempBuildTable    = $this->host->viewBuildTableName();
+        $doneTable         = $this->host->viewDoneTableName();
 
         $action = 'none';
-        $haveDeleteme = $this->stagedTableExists($tempDeletemeTable);
+        $haveDeleteme = $this->host->stagedTableExists($tempDeletemeTable);
 
         if ($haveDeleteme) {
-            $r = $this->queryAndGetResults('DROP TABLE IF EXISTS `' . $tempDeletemeTable . '`',
+            $r = $this->host->queryAndGetResults('DROP TABLE IF EXISTS `' . $tempDeletemeTable . '`',
                 array('log_errors' => false)
             );
             $err = isset($r['last_error']) && is_string($r['last_error']) ? trim($r['last_error']) : '';
-            if ($err === '' || !$this->stagedTableExists($tempDeletemeTable)) {
-                $this->logger->infoMessage(sprintf(
+            if ($err === '' || !$this->host->stagedTableExists($tempDeletemeTable)) {
+                $this->host->logger()->infoMessage(sprintf(
                     '[staged] reconcile: dropped orphan view_deleteme `%s` from a previous failed run',
                     $tempDeletemeTable
                 ));
                 $action = 'cleaned';
             } else {
-                $this->logger->warn(sprintf(
+                $this->host->logger()->warn(sprintf(
                     '[staged] reconcile: orphan view_deleteme `%s` could not be dropped: %s',
                     $tempDeletemeTable, substr($err, 0, 200)
                 ));
-                $this->setStagedBuildHaltNotice('orphan_deleteme', sprintf(
+                $this->host->setStagedBuildHaltNotice('orphan_deleteme', sprintf(
                     'An orphan staged-build buffer `%s` from a previous failed run could not be removed (privilege denied?): %s. Manual cleanup: drop the buffer table `%s` from your database (e.g. via phpMyAdmin or your hosting MySQL console).',
                     $tempDeletemeTable, substr($err, 0, 200), $tempDeletemeTable
                 ));
@@ -292,17 +292,17 @@ class ABJ_404_Solution_ViewBuildRebuildReconcile extends ABJ_404_Solution_ViewBu
         // Resumable build in flight? Leave $tempBuildTable / view_done alone
         // so the next tick can continue from the persisted high-water
         // id; orphan deleteme cleanup above already ran and is enough.
-        $startedAt = $this->readProgressOption('started_at', 0);
-        $currentStage = $this->readProgressOption('current_stage', 0);
-        $lastStartedStage = $this->readProgressOption('last_started_stage', 0);
+        $startedAt = $this->host->readProgressOption('started_at', 0);
+        $currentStage = $this->host->readProgressOption('current_stage', 0);
+        $lastStartedStage = $this->host->readProgressOption('last_started_stage', 0);
         $resumeWindowOk = $startedAt > 0
             && (time() - $startedAt) <= ABJ_404_Solution_ViewBuildConfig::VIEW_BUILD_RESUME_TTL_SECONDS;
         if ($resumeWindowOk && ($currentStage > 0 || $lastStartedStage > 0)) {
             return $action;
         }
 
-        $haveBuild = $this->stagedTableExists($tempBuildTable);
-        $haveDone  = $this->stagedTableExists($doneTable);
+        $haveBuild = $this->host->stagedTableExists($tempBuildTable);
+        $haveDone  = $this->host->stagedTableExists($doneTable);
 
         // Case 2: view_build exists, view_done missing. Promote the
         // buffer in place rather than re-running S1-S11 from scratch
@@ -312,35 +312,35 @@ class ABJ_404_Solution_ViewBuildRebuildReconcile extends ABJ_404_Solution_ViewBu
         // force-rebuild cleared progress while a redirect edit had
         // also added rows we never picked up).
         if ($haveBuild && !$haveDone) {
-            if (!$this->bufferIntegrityPassesForPromote($tempBuildTable)) {
-                $this->logger->infoMessage(sprintf(
+            if (!$this->host->bufferIntegrityPassesForPromote($tempBuildTable)) {
+                $this->host->logger()->infoMessage(sprintf(
                     '[staged] reconcile: not promoting view_build `%s` (integrity probe failed); dropping for fresh rebuild',
                     $tempBuildTable
                 ));
-                $this->queryAndGetResults('DROP TABLE IF EXISTS `' . $tempBuildTable . '`',
+                $this->host->queryAndGetResults('DROP TABLE IF EXISTS `' . $tempBuildTable . '`',
                     array('log_errors' => false));
                 return 'cleaned';
             }
             $sql = 'RENAME TABLE `' . $tempBuildTable . '` TO `' . $doneTable . '`';
-            $r = $this->queryAndGetResults($sql, array('log_errors' => true));
+            $r = $this->host->queryAndGetResults($sql, array('log_errors' => true));
             $err = isset($r['last_error']) && is_string($r['last_error']) ? trim($r['last_error']) : '';
-            if ($err === '' && $this->stagedTableExists($doneTable)) {
-                $this->logger->infoMessage(sprintf(
+            if ($err === '' && $this->host->stagedTableExists($doneTable)) {
+                $this->host->logger()->infoMessage(sprintf(
                     '[staged] reconcile: promoted view_build to view_done '
                     . '(`%s` -> `%s`); previous run crashed before S11 swap',
                     $tempBuildTable, $doneTable
                 ));
                 // Same as the S11 swap completion: update both freshness
                 // signals, clear hard-stale notice, reset serveability cache.
-                $this->markViewDoneBuildCompleted();
-                $this->clearAllProgressOptions();
+                $this->host->markViewDoneBuildCompleted();
+                $this->host->clearAllProgressOptions();
                 return 'promoted';
             }
-            $this->logger->warn(sprintf(
+            $this->host->logger()->warn(sprintf(
                 '[staged] reconcile: could not promote view_build to view_done: %s',
                 substr($err, 0, 200)
             ));
-            $this->setStagedBuildHaltNotice('promote_build_failed', sprintf(
+            $this->host->setStagedBuildHaltNotice('promote_build_failed', sprintf(
                 'A staged-build buffer `%s` exists from a previous run but could not be promoted to `%s` (privilege denied?): %s. Manual cleanup: rename the buffer `%s` to `%s`, or remove the buffer `%s` from your database (e.g. via phpMyAdmin or your hosting MySQL console).',
                 $tempBuildTable, $doneTable, substr($err, 0, 200),
                 $tempBuildTable, $doneTable, $tempBuildTable
@@ -352,20 +352,20 @@ class ABJ_404_Solution_ViewBuildRebuildReconcile extends ABJ_404_Solution_ViewBu
         // orphan $tempBuildTable is from a halted previous run. Drop it so
         // the next fresh build starts from a known empty buffer.
         if ($haveBuild && $haveDone) {
-            $r = $this->queryAndGetResults('DROP TABLE IF EXISTS `' . $tempBuildTable . '`',
+            $r = $this->host->queryAndGetResults('DROP TABLE IF EXISTS `' . $tempBuildTable . '`',
                 array('log_errors' => false)
             );
             $err = isset($r['last_error']) && is_string($r['last_error']) ? trim($r['last_error']) : '';
-            if ($err === '' || !$this->stagedTableExists($tempBuildTable)) {
+            if ($err === '' || !$this->host->stagedTableExists($tempBuildTable)) {
                 // WARN (not INFO) so this signal survives a site with DEBUG
                 // disabled. Carries the four progress fields support needs
                 // to distinguish "build keeps restarting at S1" from
                 // "build invalidated on every redirect edit / cron tick"
                 // from "multi-tab/cron lock contention orphaning each
                 // partial build" without asking for another debug zip.
-                $lastCompletedStage = $this->readProgressOption('last_completed_stage', 0);
+                $lastCompletedStage = $this->host->readProgressOption('last_completed_stage', 0);
                 $age = $startedAt > 0 ? max(0, time() - $startedAt) : 0;
-                $this->logger->warn(sprintf(
+                $this->host->logger()->warn(sprintf(
                     '[staged] reconcile: dropped orphan view_build `%s` (view_done is live; previous run halted before swap); '
                     . 'current_stage=%d last_started_stage=%d last_completed_stage=%d started_at=%d age=%ds',
                     $tempBuildTable,
@@ -377,11 +377,11 @@ class ABJ_404_Solution_ViewBuildRebuildReconcile extends ABJ_404_Solution_ViewBu
                 ));
                 return 'cleaned';
             }
-            $this->logger->warn(sprintf(
+            $this->host->logger()->warn(sprintf(
                 '[staged] reconcile: orphan view_build `%s` could not be dropped: %s',
                 $tempBuildTable, substr($err, 0, 200)
             ));
-            $this->setStagedBuildHaltNotice('orphan_build', sprintf(
+            $this->host->setStagedBuildHaltNotice('orphan_build', sprintf(
                 'A staged-build buffer `%s` from a previous run still exists alongside the live view_done, but could not be removed: %s. Manual cleanup: drop the buffer `%s` from your database (e.g. via phpMyAdmin or your hosting MySQL console).',
                 $tempBuildTable, substr($err, 0, 200), $tempBuildTable
             ));
@@ -398,22 +398,22 @@ class ABJ_404_Solution_ViewBuildRebuildReconcile extends ABJ_404_Solution_ViewBu
      * @return bool True when the committed swap was recovered as success.
      */
     public function reconcilePostStageElevenState(): bool {
-        $viewDoneTable  = $this->viewDoneTableName();
-        $viewBuildTable = $this->viewBuildTableName();
+        $viewDoneTable  = $this->host->viewDoneTableName();
+        $viewBuildTable = $this->host->viewBuildTableName();
 
-        if (!$this->stagedTableExists($viewDoneTable)) {
+        if (!$this->host->stagedTableExists($viewDoneTable)) {
             return false;
         }
-        if ($this->stagedTableExists($viewBuildTable)) {
+        if ($this->host->stagedTableExists($viewBuildTable)) {
             return false;
         }
         // RENAME swap committed: view_done exists, view_build was renamed
         // away. Treat as success even though the request flow saw an error.
         if (function_exists('update_option')) {
-            update_option($this->viewDoneFreshnessOptionName(), $this->clock()->now(), false);
+            update_option($this->host->viewDoneFreshnessOptionName(), $this->host->clock()->now(), false);
         }
-        $this->clearAllProgressOptions();
-        $this->invalidateViewDoneServeableCache();
+        $this->host->clearAllProgressOptions();
+        $this->host->invalidateViewDoneServeableCache();
         return true;
     }
 
@@ -435,11 +435,11 @@ class ABJ_404_Solution_ViewBuildRebuildReconcile extends ABJ_404_Solution_ViewBu
      * @return bool
      */
     public function bufferIntegrityPassesForPromote(string $bufferTable): bool {
-        $bufferRows = $this->countViewBuildRows();
+        $bufferRows = $this->host->countViewBuildRows();
         if ($bufferRows <= 0) {
             return false;
         }
-        $liveRows = $this->countLiveRedirects();
+        $liveRows = $this->host->countLiveRedirects();
         if ($liveRows <= 0) {
             // No redirects in the live table -- treat any buffer as
             // unsafe to publish (a bug pruned all redirects, or the

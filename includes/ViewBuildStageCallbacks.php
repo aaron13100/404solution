@@ -216,18 +216,18 @@ class ABJ_404_Solution_ViewBuildStageCallbacks extends ABJ_404_Solution_ViewBuil
 
     /** Drop both the build buffer and the leftover deleteme.  Used on fresh-start only. */
     public function dropTransientStagedTables(): void {
-        $buildTempTable = $this->viewBuildTableName();
-        $deletemeTempTable = $this->viewDeletemeTableName();
-        $this->queryAndGetResults('DROP TABLE IF EXISTS `' . $buildTempTable . '`',
+        $buildTempTable = $this->host->viewBuildTableName();
+        $deletemeTempTable = $this->host->viewDeletemeTableName();
+        $this->host->queryAndGetResults('DROP TABLE IF EXISTS `' . $buildTempTable . '`',
             array('log_errors' => false));
-        $this->queryAndGetResults('DROP TABLE IF EXISTS `' . $deletemeTempTable . '`',
+        $this->host->queryAndGetResults('DROP TABLE IF EXISTS `' . $deletemeTempTable . '`',
             array('log_errors' => false));
     }
 
     /** Drop only the deleteme leftover from a prior crashed RENAME swap. */
     public function dropDeletemeTable(): void {
-        $deletemeTempTable = $this->viewDeletemeTableName();
-        $this->queryAndGetResults('DROP TABLE IF EXISTS `' . $deletemeTempTable . '`',
+        $deletemeTempTable = $this->host->viewDeletemeTableName();
+        $this->host->queryAndGetResults('DROP TABLE IF EXISTS `' . $deletemeTempTable . '`',
             array('log_errors' => false));
     }
 
@@ -242,14 +242,14 @@ class ABJ_404_Solution_ViewBuildStageCallbacks extends ABJ_404_Solution_ViewBuil
      * @return void
      */
     public function dropTransientBuffersIfPresent(): void {
-        $buildTempTable = $this->viewBuildTableName();
-        $deletemeTempTable = $this->viewDeletemeTableName();
-        if ($this->stagedTableExists($buildTempTable)) {
-            $this->queryAndGetResults('DROP TABLE IF EXISTS `' . $buildTempTable . '`',
+        $buildTempTable = $this->host->viewBuildTableName();
+        $deletemeTempTable = $this->host->viewDeletemeTableName();
+        if ($this->host->stagedTableExists($buildTempTable)) {
+            $this->host->queryAndGetResults('DROP TABLE IF EXISTS `' . $buildTempTable . '`',
                 array('log_errors' => false));
         }
-        if ($this->stagedTableExists($deletemeTempTable)) {
-            $this->queryAndGetResults('DROP TABLE IF EXISTS `' . $deletemeTempTable . '`',
+        if ($this->host->stagedTableExists($deletemeTempTable)) {
+            $this->host->queryAndGetResults('DROP TABLE IF EXISTS `' . $deletemeTempTable . '`',
                 array('log_errors' => false));
         }
     }
@@ -263,7 +263,7 @@ class ABJ_404_Solution_ViewBuildStageCallbacks extends ABJ_404_Solution_ViewBuil
      */
     public function stageCreateBuildTable(): void {
         $template = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/sql/createViewBuildTable.sql');
-        $base = $this->doTableNameReplacements(is_string($template) ? $template : '');
+        $base = $this->host->doTableNameReplacements(is_string($template) ? $template : '');
         if (trim($base) === '') {
             throw new \Exception('createViewBuildTable.sql is empty or unreadable.');
         }
@@ -275,20 +275,20 @@ class ABJ_404_Solution_ViewBuildStageCallbacks extends ABJ_404_Solution_ViewBuil
         );
         $lastError = '';
         $errorsSoFar = array();
-        $opts = $this->stagedQueryOptions();
+        $opts = $this->host->stagedQueryOptions();
         $opts['log_errors'] = false;
         foreach ($attempts as $engineLabel => $sql) {
             $attemptStarted = microtime(true);
-            $this->logger->debugMessage(sprintf(
+            $this->host->logger()->debugMessage(sprintf(
                 '[staged] S1 createViewBuildTable attempt starting: engine=%s',
                 $engineLabel
             ));
-            $result = $this->queryAndGetResults($sql, $opts);
+            $result = $this->host->queryAndGetResults($sql, $opts);
             $err = isset($result['last_error']) && is_string($result['last_error'])
                 ? trim($result['last_error']) : '';
             $timedOut = !empty($result['timed_out']);
             $elapsedMs = (int)round((microtime(true) - $attemptStarted) * 1000);
-            $this->logger->debugMessage(sprintf(
+            $this->host->logger()->debugMessage(sprintf(
                 '[staged] S1 createViewBuildTable attempt finished: engine=%s elapsed_ms=%d timed_out=%s last_error=%s',
                 $engineLabel,
                 $elapsedMs,
@@ -301,7 +301,7 @@ class ABJ_404_Solution_ViewBuildStageCallbacks extends ABJ_404_Solution_ViewBuil
                     // because hosts that need a fallback often have other
                     // engine-specific quirks downstream (lock waits, ALTER
                     // semantics, etc.).
-                    $this->logger->warn(sprintf(
+                    $this->host->logger()->warn(sprintf(
                         '[staged] S1 createViewBuildTable: default engine '
                         . 'failed (%s); succeeded on fallback %s.',
                         substr(implode('; ', $errorsSoFar), 0, 200),
@@ -321,44 +321,44 @@ class ABJ_404_Solution_ViewBuildStageCallbacks extends ABJ_404_Solution_ViewBuil
         // S3 indexes are added with IF NOT EXISTS semantics emulated by
         // catching "Duplicate key name" on retry. See runStagedSqlFile
         // tolerance below.  ALTER TABLE itself is fast on the buffer.
-        $this->assertBuildBufferExistsOrHalt('S3 stageAddPreJoinIndexes');
-        $this->runStagedSqlFileTolerantOfDuplicateKey('03_index_fd.sql', array());
+        $this->host->assertBuildBufferExistsOrHalt('S3 stageAddPreJoinIndexes');
+        $this->host->runStagedSqlFileTolerantOfDuplicateKey('03_index_fd.sql', array());
     }
 
     /** @return void */
     public function stageUpdateHome(): void {
-        $this->assertBuildBufferExistsOrHalt('S6 stageUpdateHome');
-        $this->runStagedSqlFile('06_update_home.sql', array());
+        $this->host->assertBuildBufferExistsOrHalt('S6 stageUpdateHome');
+        $this->host->runStagedSqlFile('06_update_home.sql', array());
     }
 
     /** @return void */
     public function stageUpdateExternal(): void {
-        $this->assertBuildBufferExistsOrHalt('S7 stageUpdateExternal');
-        $this->runStagedSqlFile('07_update_external.sql', array());
+        $this->host->assertBuildBufferExistsOrHalt('S7 stageUpdateExternal');
+        $this->host->runStagedSqlFile('07_update_external.sql', array());
     }
 
     /** @return void */
     public function stageUpdateSpecial(): void {
-        $this->assertBuildBufferExistsOrHalt('S8 stageUpdateSpecial');
-        $this->runStagedSqlFile('08_update_special.sql', $this->viewBuildOnlyTranslations());
+        $this->host->assertBuildBufferExistsOrHalt('S8 stageUpdateSpecial');
+        $this->host->runStagedSqlFile('08_update_special.sql', $this->host->viewBuildOnlyTranslations());
     }
 
     /** @return void */
     public function stageUpdateHits(): void {
-        $this->assertBuildBufferExistsOrHalt('S9 stageUpdateHits');
-        $s9Collation = $this->resolveColumnCollationForStagedBuild();
+        $this->host->assertBuildBufferExistsOrHalt('S9 stageUpdateHits');
+        $s9Collation = $this->host->resolveColumnCollationForStagedBuild();
         $collationExtra = array('{S9_COLLATION}' => $s9Collation);
-        $this->runStagedSqlFile('09a_drop_hits_temp.sql', array());
-        $this->runStagedSqlFile('09b_create_hits_temp.sql', $collationExtra);
-        $this->runStagedSqlFile('09c_insert_hits_temp.sql', array());
-        $this->runStagedSqlFile('09_update_hits.sql', $collationExtra);
-        $this->runStagedSqlFile('09a_drop_hits_temp.sql', array());
+        $this->host->runStagedSqlFile('09a_drop_hits_temp.sql', array());
+        $this->host->runStagedSqlFile('09b_create_hits_temp.sql', $collationExtra);
+        $this->host->runStagedSqlFile('09c_insert_hits_temp.sql', array());
+        $this->host->runStagedSqlFile('09_update_hits.sql', $collationExtra);
+        $this->host->runStagedSqlFile('09a_drop_hits_temp.sql', array());
     }
 
     /** @return void */
     public function stageAddSortIndexes(): void {
-        $this->assertBuildBufferExistsOrHalt('S10 stageAddSortIndexes');
-        $this->runStagedSqlFileTolerantOfDuplicateKey('10_index_sort.sql', array());
+        $this->host->assertBuildBufferExistsOrHalt('S10 stageAddSortIndexes');
+        $this->host->runStagedSqlFileTolerantOfDuplicateKey('10_index_sort.sql', array());
     }
 
     /**
@@ -369,31 +369,31 @@ class ABJ_404_Solution_ViewBuildStageCallbacks extends ABJ_404_Solution_ViewBuil
      * @return void
      */
     public function stageRenameSwap(): void {
-        $this->assertBuildBufferExistsOrHalt('S11 stageRenameSwap');
-        $buildTempTable = $this->viewBuildTableName();
-        $done = $this->viewDoneTableName();
-        $deletemeTempTable = $this->viewDeletemeTableName();
+        $this->host->assertBuildBufferExistsOrHalt('S11 stageRenameSwap');
+        $buildTempTable = $this->host->viewBuildTableName();
+        $done = $this->host->viewDoneTableName();
+        $deletemeTempTable = $this->host->viewDeletemeTableName();
 
         // Defensive: ensure deleteme is gone before the swap (S0 already did
         // this, but a poorly-timed parallel rebuild could have created it).
-        $this->queryAndGetResults('DROP TABLE IF EXISTS `' . $deletemeTempTable . '`',
+        $this->host->queryAndGetResults('DROP TABLE IF EXISTS `' . $deletemeTempTable . '`',
             array('log_errors' => false));
 
-        if ($this->viewDoneTableExists()) {
+        if ($this->host->viewDoneTableExists()) {
             $sql = 'RENAME TABLE `' . $done . '` TO `' . $deletemeTempTable . '`,'
                  . ' `' . $buildTempTable . '` TO `' . $done . '`';
         } else {
             $sql = 'RENAME TABLE `' . $buildTempTable . '` TO `' . $done . '`';
         }
 
-        $result = $this->queryAndGetResults($sql, array('log_errors' => true));
+        $result = $this->host->queryAndGetResults($sql, array('log_errors' => true));
         $err = isset($result['last_error']) && is_string($result['last_error'])
             ? trim($result['last_error']) : '';
         if ($err !== '') {
             throw new \Exception('RENAME TABLE swap failed: ' . $err);
         }
 
-        $this->queryAndGetResults('DROP TABLE IF EXISTS `' . $deletemeTempTable . '`',
+        $this->host->queryAndGetResults('DROP TABLE IF EXISTS `' . $deletemeTempTable . '`',
             array('log_errors' => false));
     }
 
@@ -441,10 +441,10 @@ class ABJ_404_Solution_ViewBuildStageCallbacks extends ABJ_404_Solution_ViewBuil
      * @return void
      */
     public function assertBuildBufferExistsOrHalt(string $stageLabel): void {
-        if ($this->stagedTableExists($this->viewBuildTableName())) {
+        if ($this->host->stagedTableExists($this->host->viewBuildTableName())) {
             return;
         }
-        $this->logger->warn(sprintf(
+        $this->host->logger()->warn(sprintf(
             '[staged] %s halting: view_build buffer missing on disk. A '
             . 'concurrent invalidateViewDone() drop is the expected cause '
             . '(Pattern 13). Yielding stage; the next tick will rebuild '

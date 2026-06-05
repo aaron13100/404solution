@@ -26,14 +26,10 @@ class ABJ_404_Solution_ViewBuildHostEnvironmentProbe extends ABJ_404_Solution_Vi
      */
     private $phpEnvironmentProbeCache = null;
 
-    public function __construct(ABJ_404_Solution_ViewBuildOrchestrator $host) {
+    public function __construct(ABJ_404_Solution_ViewBuildCollaborationContext $host) {
         parent::__construct($host);
         $this->noticePolicy = new ABJ_404_Solution_ViewBuildHostEnvironmentNoticePolicy($host);
-        $logger = $host->viewBuildCollaboratorDependency('logger');
-        if (!$logger instanceof ABJ_404_Solution_Logging) {
-            throw new \UnexpectedValueException('ViewBuildHostEnvironmentProbe requires ABJ_404_Solution_Logging from host.');
-        }
-        $this->logger = $logger;
+        $this->logger = $host->logger();
     }
 
     /** @return string */
@@ -58,9 +54,9 @@ class ABJ_404_Solution_ViewBuildHostEnvironmentProbe extends ABJ_404_Solution_Vi
         }
 
         $rawMemory = (string)ini_get('memory_limit');
-        $memoryBytes = $this->parsePhpMemoryLimitToBytes($rawMemory);
+        $memoryBytes = $this->host->parsePhpMemoryLimitToBytes($rawMemory);
 
-        $disabled = $this->phpDisabledFunctionsList();
+        $disabled = $this->host->phpDisabledFunctionsList();
         $setTimeLimitAvailable = function_exists('set_time_limit')
             && !in_array('set_time_limit', $disabled, true);
 
@@ -92,7 +88,7 @@ class ABJ_404_Solution_ViewBuildHostEnvironmentProbe extends ABJ_404_Solution_Vi
         }
 
         if (function_exists('update_option')) {
-            update_option($this->phpEnvironmentProbeOptionName(), $result, false);
+            update_option($this->host->phpEnvironmentProbeOptionName(), $result, false);
         }
 
         $this->phpEnvironmentProbeCache = $result;
@@ -101,13 +97,13 @@ class ABJ_404_Solution_ViewBuildHostEnvironmentProbe extends ABJ_404_Solution_Vi
 
     /** @return bool */
     public function probeSetTimeLimitAvailability(): bool {
-        $probe = $this->probePhpEnvironmentForBuild();
+        $probe = $this->host->probePhpEnvironmentForBuild();
         return !empty($probe['set_time_limit_available']);
     }
 
     /** @return int */
     public function probeMemoryLimitForS9(): int {
-        $probe = $this->probePhpEnvironmentForBuild();
+        $probe = $this->host->probePhpEnvironmentForBuild();
         $bytes = $probe['memory_limit_bytes'] ?? 0;
         return is_numeric($bytes) ? (int)$bytes : 0;
     }
@@ -175,9 +171,9 @@ class ABJ_404_Solution_ViewBuildHostEnvironmentProbe extends ABJ_404_Solution_Vi
     public function clearPhpEnvironmentProbeCache(): void {
         $this->phpEnvironmentProbeCache = null;
         if (function_exists('delete_option')) {
-            delete_option($this->phpEnvironmentProbeOptionName());
+            delete_option($this->host->phpEnvironmentProbeOptionName());
         }
-        $this->clearFilesystemEnvironmentProbeCache();
+        $this->host->clearFilesystemEnvironmentProbeCache();
         $this->noticePolicy->clearPhpAndFilesystemEnvironmentNotices();
     }
 }

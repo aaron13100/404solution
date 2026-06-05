@@ -55,7 +55,7 @@ class ABJ_404_Solution_ViewDoneState extends ABJ_404_Solution_ViewBuildCollabora
 
     /** @return string */
     public function viewDoneFreshnessOptionName(): string {
-        return $this->getLowercasePrefix() . 'abj404_view_done_built_at';
+        return $this->host->getLowercasePrefix() . 'abj404_view_done_built_at';
     }
 
     /** @return int Unix timestamp of last successful build, or 0 if missing. */
@@ -63,7 +63,7 @@ class ABJ_404_Solution_ViewDoneState extends ABJ_404_Solution_ViewBuildCollabora
         if (!function_exists('get_option')) {
             return 0;
         }
-        $built = get_option($this->viewDoneFreshnessOptionName(), 0);
+        $built = get_option($this->host->viewDoneFreshnessOptionName(), 0);
         return is_scalar($built) ? max(0, intval($built)) : 0;
     }
 
@@ -77,7 +77,7 @@ class ABJ_404_Solution_ViewDoneState extends ABJ_404_Solution_ViewBuildCollabora
      * @return int  Unix timestamp, or 0.
      */
     public function getViewDoneBuiltAtTimestamp(): int {
-        return $this->viewDoneBuiltAt();
+        return $this->host->viewDoneBuiltAt();
     }
 
     /**
@@ -104,7 +104,7 @@ class ABJ_404_Solution_ViewDoneState extends ABJ_404_Solution_ViewBuildCollabora
         if ($this->viewDoneIsServeableCache !== null) {
             return $this->viewDoneIsServeableCache;
         }
-        if (!$this->viewDoneTableExists()) {
+        if (!$this->host->viewDoneTableExists()) {
             $this->viewDoneIsServeableCache = false;
             return false;
         }
@@ -128,11 +128,11 @@ class ABJ_404_Solution_ViewDoneState extends ABJ_404_Solution_ViewBuildCollabora
         // another advance, and the cycle repeats with no exit.
         // data_built_at distinguishes "build has never completed" from
         // "build completed and the dataset is genuinely empty".
-        if ($this->viewDoneHasRows()) {
+        if ($this->host->viewDoneHasRows()) {
             $this->viewDoneIsServeableCache = true;
             return true;
         }
-        if ($this->viewDoneDataBuiltAt() > 0) {
+        if ($this->host->viewDoneDataBuiltAt() > 0) {
             $this->viewDoneIsServeableCache = true;
             return true;
         }
@@ -172,11 +172,11 @@ class ABJ_404_Solution_ViewDoneState extends ABJ_404_Solution_ViewBuildCollabora
         if (function_exists('update_option')) {
             // clock() is an internal orchestrator dependency exposed through
             // the explicit collaborator operation map.
-            $now = $this->clock()->now();
-            update_option($this->viewDoneFreshnessOptionName(), $now, false);
-            update_option($this->viewDoneDataBuiltAtOptionName(), $now, false);
+            $now = $this->host->clock()->now();
+            update_option($this->host->viewDoneFreshnessOptionName(), $now, false);
+            update_option($this->host->viewDoneDataBuiltAtOptionName(), $now, false);
         }
-        $this->clearViewDoneHardStaleNotice();
-        $this->invalidateViewDoneServeableCache();
+        $this->host->clearViewDoneHardStaleNotice();
+        $this->host->invalidateViewDoneServeableCache();
     }
 }

@@ -25,17 +25,13 @@ class ABJ_404_Solution_ViewBuildSessionVariablesProbe extends ABJ_404_Solution_V
     private $sessionVariablesProbeCache = null;
 
     public function __construct(
-        ABJ_404_Solution_ViewBuildOrchestrator $host,
+        ABJ_404_Solution_ViewBuildCollaborationContext $host,
         ?ABJ_404_Solution_ViewBuildSessionVariablesRepository $repository = null,
         ?ABJ_404_Solution_ViewBuildSessionVariableWarningClassifier $warningClassifier = null
     ) {
         parent::__construct($host);
         $this->noticePolicy = new ABJ_404_Solution_ViewBuildHostEnvironmentNoticePolicy($host);
-        $logger = $host->viewBuildCollaboratorDependency('logger');
-        if (!$logger instanceof ABJ_404_Solution_Logging) {
-            throw new \UnexpectedValueException('ViewBuildSessionVariablesProbe requires ABJ_404_Solution_Logging from host.');
-        }
-        $this->logger = $logger;
+        $this->logger = $host->logger();
         $this->repository = $repository ?: new ABJ_404_Solution_ViewBuildSessionVariablesRepository($this->logger);
         $this->warningClassifier = $warningClassifier ?: new ABJ_404_Solution_ViewBuildSessionVariableWarningClassifier();
     }
@@ -100,7 +96,7 @@ class ABJ_404_Solution_ViewBuildSessionVariablesProbe extends ABJ_404_Solution_V
             }
         }
 
-        $warnings = $this->classifySessionVariableWarnings($values);
+        $warnings = $this->host->classifySessionVariableWarnings($values);
         $values['warnings'] = $warnings;
 
         foreach ($warnings as $w) {
@@ -113,7 +109,7 @@ class ABJ_404_Solution_ViewBuildSessionVariablesProbe extends ABJ_404_Solution_V
         }
 
         if (function_exists('update_option')) {
-            update_option($this->sessionVariablesProbeOptionName(), $values, false);
+            update_option($this->host->sessionVariablesProbeOptionName(), $values, false);
         }
 
         $this->sessionVariablesProbeCache = $values;
@@ -137,7 +133,7 @@ class ABJ_404_Solution_ViewBuildSessionVariablesProbe extends ABJ_404_Solution_V
     public function clearSessionVariablesProbeCache(): void {
         $this->sessionVariablesProbeCache = null;
         if (function_exists('delete_option')) {
-            delete_option($this->sessionVariablesProbeOptionName());
+            delete_option($this->host->sessionVariablesProbeOptionName());
         }
         $this->noticePolicy->clearSessionEnvironmentNotices();
     }

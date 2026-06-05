@@ -124,7 +124,7 @@ class ABJ_404_Solution_ViewBuildProgressOptions extends ABJ_404_Solution_ViewBui
         if (!isset(self::$viewBuildProgressOptionNames[$shortName])) {
             return '';
         }
-        return $this->getLowercasePrefix() . self::$viewBuildProgressOptionNames[$shortName];
+        return $this->host->getLowercasePrefix() . self::$viewBuildProgressOptionNames[$shortName];
     }
 
     /**
@@ -137,7 +137,7 @@ class ABJ_404_Solution_ViewBuildProgressOptions extends ABJ_404_Solution_ViewBui
         if (!function_exists('get_option') || !function_exists('update_option')) {
             return 0;
         }
-        $optName = $this->stageNoProgressStreakOptionName($stageNumber);
+        $optName = $this->host->stageNoProgressStreakOptionName($stageNumber);
         if ($optName === '') {
             return 0;
         }
@@ -157,7 +157,7 @@ class ABJ_404_Solution_ViewBuildProgressOptions extends ABJ_404_Solution_ViewBui
         if (!function_exists('update_option')) {
             return;
         }
-        $optName = $this->stageNoProgressStreakOptionName($stageNumber);
+        $optName = $this->host->stageNoProgressStreakOptionName($stageNumber);
         if ($optName !== '') {
             update_option($optName, 0, false);
         }
@@ -171,7 +171,7 @@ class ABJ_404_Solution_ViewBuildProgressOptions extends ABJ_404_Solution_ViewBui
         if ($stageNumber < 1 || $stageNumber > 11) {
             return '';
         }
-        return $this->progressOptionName('s' . $stageNumber . '_no_progress_streak');
+        return $this->host->progressOptionName('s' . $stageNumber . '_no_progress_streak');
     }
 
     /**
@@ -183,7 +183,7 @@ class ABJ_404_Solution_ViewBuildProgressOptions extends ABJ_404_Solution_ViewBui
         if (!function_exists('get_option')) {
             return $default;
         }
-        $name = $this->progressOptionName($shortName);
+        $name = $this->host->progressOptionName($shortName);
         if ($name === '') {
             return $default;
         }
@@ -213,7 +213,7 @@ class ABJ_404_Solution_ViewBuildProgressOptions extends ABJ_404_Solution_ViewBui
         if (!function_exists('update_option')) {
             return;
         }
-        $name = $this->progressOptionName($shortName);
+        $name = $this->host->progressOptionName($shortName);
         if ($name === '') {
             return;
         }
@@ -226,16 +226,16 @@ class ABJ_404_Solution_ViewBuildProgressOptions extends ABJ_404_Solution_ViewBui
         // cost is non-trivial and a single tick of stale streak data is
         // harmless.
         if (in_array($shortName, self::$viewBuildProgressHighStakesShortNames, true)) {
-            $writeOk = $this->verifyOptionWriteCoherent($name, $intValue);
+            $writeOk = $this->host->verifyOptionWriteCoherent($name, $intValue);
             $readBack = function_exists('get_option') ? get_option($name, null) : null;
-            $this->logViewBuildProgressOptionWrite($shortName, $name, $intValue, $writeOk, $readBack, 'coherent');
+            $this->host->logViewBuildProgressOptionWrite($shortName, $name, $intValue, $writeOk, $readBack, 'coherent');
             return;
         }
         // autoload=false so progress writes (potentially many per request)
         // don't bloat the alloptions cache that loads on every WP page.
         $writeOk = update_option($name, $intValue, false);
         $readBack = function_exists('get_option') ? get_option($name, null) : null;
-        $this->logViewBuildProgressOptionWrite($shortName, $name, $intValue, $writeOk, $readBack, 'direct');
+        $this->host->logViewBuildProgressOptionWrite($shortName, $name, $intValue, $writeOk, $readBack, 'direct');
     }
 
     /**
@@ -269,12 +269,12 @@ class ABJ_404_Solution_ViewBuildProgressOptions extends ABJ_404_Solution_ViewBui
         ), true)) {
             return;
         }
-        if (!is_object($this->logger) || !method_exists($this->logger, 'debugMessage')) {
+        if (!is_object($this->host->logger()) || !method_exists($this->host->logger(), 'debugMessage')) {
             return;
         }
 
         $readBackForLog = is_scalar($readBack) ? (string)$readBack : gettype($readBack);
-        $this->logger->debugMessage(sprintf(
+        $this->host->logger()->debugMessage(sprintf(
             '[staged] view build progress option write: key=%s option=%s expected=%d path=%s update_option_return=%s read_back=%s',
             $shortName,
             $optionName,
@@ -291,20 +291,20 @@ class ABJ_404_Solution_ViewBuildProgressOptions extends ABJ_404_Solution_ViewBui
             return;
         }
         foreach (self::$viewBuildProgressOptionNames as $optName) {
-            delete_option($this->getLowercasePrefix() . $optName);
+            delete_option($this->host->getLowercasePrefix() . $optName);
         }
         // The S1 prefix capture lives outside $viewBuildProgressOptionNames
         // because its option name is intentionally not prefix-bound (so a
         // mid-build switch_to_blog cannot make get_option silently miss it).
         // It belongs to the same fresh-start lifecycle, so clear it alongside.
-        $this->clearPrefixAtStageOne();
+        $this->host->clearPrefixAtStageOne();
         // Same lifecycle: a fresh build must re-probe the live session so a
         // hosting move that changed sql_mode (or a schema swap that changed
         // max_allowed_packet) is picked up at the next S1 entry. The PHP
         // environment probe (set_time_limit / memory_limit) is reset for the
         // same reason: an ini change between builds must take effect.
-        $this->clearSqlModeProbeCache();
-        $this->clearPhpEnvironmentProbeCache();
+        $this->host->clearSqlModeProbeCache();
+        $this->host->clearPhpEnvironmentProbeCache();
     }
 
     /**
@@ -316,8 +316,8 @@ class ABJ_404_Solution_ViewBuildProgressOptions extends ABJ_404_Solution_ViewBui
      * @return void
      */
     public function performFreshStartCleanup(): void {
-        $this->clearAllProgressOptions();
-        $this->dropTransientStagedTables();
+        $this->host->clearAllProgressOptions();
+        $this->host->dropTransientStagedTables();
     }
 
 }

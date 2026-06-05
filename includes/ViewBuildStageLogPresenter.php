@@ -19,11 +19,12 @@ class ABJ_404_Solution_ViewBuildStageLogPresenter extends ABJ_404_Solution_ViewB
     private $runtimeState;
 
     /**
-     * @param ABJ_404_Solution_ViewBuildOrchestrator $host
+     * @param object $host Explicit context or test double exposing the same methods.
+     * @phpstan-param ABJ_404_Solution_ViewBuildCollaborationContext $host
      * @param ABJ_404_Solution_ViewBuildStageRuntimeState $runtimeState
      */
     public function __construct(
-        ABJ_404_Solution_ViewBuildOrchestrator $host,
+        $host,
         ABJ_404_Solution_ViewBuildStageRuntimeState $runtimeState
     ) {
         parent::__construct($host);
@@ -66,8 +67,8 @@ class ABJ_404_Solution_ViewBuildStageLogPresenter extends ABJ_404_Solution_ViewB
             && $this->runtimeState->lastBatchProgressDetail() !== '') {
             $markerDetail = $this->runtimeState->lastBatchProgressDetail() . ', ' . $markerDetail;
         }
-        $this->markBuildStage($stageKey, $markerDetail);
-        $this->logger->debugMessage(sprintf(
+        $this->host->markBuildStage($stageKey, $markerDetail);
+        $this->host->logger()->debugMessage(sprintf(
             '[staged] build stage %d/11 %s %s in %d ms',
             $stageNumber,
             $stageKey,

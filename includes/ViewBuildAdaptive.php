@@ -232,8 +232,8 @@ class ABJ_404_Solution_ViewBuildAdaptive extends ABJ_404_Solution_ViewBuildColla
      * @return int  Always >= VIEW_BUILD_MIN_BATCH_SIZE.
      */
     public function viewBuildBatchSizeForStage(string $stageShortKey): int {
-        $defaultSize = $this->viewBuildBatchSize();
-        $persisted = $this->readProgressOption($stageShortKey, 0);
+        $defaultSize = $this->host->viewBuildBatchSize();
+        $persisted = $this->host->readProgressOption($stageShortKey, 0);
         $effective = $persisted > 0 ? $persisted : $defaultSize;
         return max(ABJ_404_Solution_ViewBuildConfig::VIEW_BUILD_MIN_BATCH_SIZE, $effective);
     }
@@ -249,12 +249,12 @@ class ABJ_404_Solution_ViewBuildAdaptive extends ABJ_404_Solution_ViewBuildColla
      * @return int  the new batch size.
      */
     public function recordStageBatchKilled(string $stageShortKey): int {
-        $current = $this->viewBuildBatchSizeForStage($stageShortKey);
+        $current = $this->host->viewBuildBatchSizeForStage($stageShortKey);
         $shrunk = (int)max(
             ABJ_404_Solution_ViewBuildConfig::VIEW_BUILD_MIN_BATCH_SIZE,
             (int)floor($current / 2)
         );
-        $this->writeProgressOption($stageShortKey, $shrunk);
+        $this->host->writeProgressOption($stageShortKey, $shrunk);
         return $shrunk;
     }
 
@@ -297,7 +297,7 @@ class ABJ_404_Solution_ViewBuildAdaptive extends ABJ_404_Solution_ViewBuildColla
         }
         $limitSeconds = 0.0;
 
-        $result = $this->queryAndGetResults("SHOW SESSION VARIABLES LIKE 'max_statement_time'",
+        $result = $this->host->queryAndGetResults("SHOW SESSION VARIABLES LIKE 'max_statement_time'",
             array('log_errors' => false)
         );
         $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
@@ -309,7 +309,7 @@ class ABJ_404_Solution_ViewBuildAdaptive extends ABJ_404_Solution_ViewBuildColla
         }
 
         if ($limitSeconds <= 0.0) {
-            $result = $this->queryAndGetResults("SHOW SESSION VARIABLES LIKE 'max_execution_time'",
+            $result = $this->host->queryAndGetResults("SHOW SESSION VARIABLES LIKE 'max_execution_time'",
                 array('log_errors' => false)
             );
             $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
@@ -353,7 +353,7 @@ class ABJ_404_Solution_ViewBuildAdaptive extends ABJ_404_Solution_ViewBuildColla
      * @return float  Seconds.
      */
     public function intelligentStagedQueryTimeoutSeconds(): float {
-        $ourLimit = max(5.0, (float)$this->viewBuildPerStageBudgetSeconds() - 2.0);
+        $ourLimit = max(5.0, (float)$this->host->viewBuildPerStageBudgetSeconds() - 2.0);
         $hostLimit = $this->detectHostStagedQueryLimitSeconds();
         if ($hostLimit > 0.0) {
             return max(1.0, min($ourLimit, $hostLimit - 1.0));
@@ -389,7 +389,7 @@ class ABJ_404_Solution_ViewBuildAdaptive extends ABJ_404_Solution_ViewBuildColla
      * @return int  Seconds.
      */
     public function extendedTimeoutForKilledNonBatchedStage(string $stageKillStreakOptKey): int {
-        $streak = $this->readProgressOption($stageKillStreakOptKey, 0);
+        $streak = $this->host->readProgressOption($stageKillStreakOptKey, 0);
         if ($streak <= 0) {
             return (int)round($this->intelligentStagedQueryTimeoutSeconds());
         }

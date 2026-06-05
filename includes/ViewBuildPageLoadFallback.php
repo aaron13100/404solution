@@ -90,11 +90,11 @@ class ABJ_404_Solution_ViewBuildPageLoadFallback extends ABJ_404_Solution_ViewBu
     public function runPageLoadFallbackAdvance(): array {
         // Cron is healthy: nothing for the fallback to do. Free check
         // (one wp_get_ready_cron_jobs call) so we can run it first.
-        if ($this->getCronStuckHours() < 24) {
+        if ($this->host->getCronStuckHours() < 24) {
             return array(
                 'ran' => false,
                 'reason' => 'cron_healthy',
-                'progress' => $this->getViewBuildProgress(),
+                'progress' => $this->host->getViewBuildProgress(),
             );
         }
 
@@ -102,11 +102,11 @@ class ABJ_404_Solution_ViewBuildPageLoadFallback extends ABJ_404_Solution_ViewBu
         // the fallback's steady-state cost at zero on hosts that recover,
         // which is the desirable shape (admin returns to a working page
         // without page-load latency).
-        if ($this->viewDoneIsServeable()) {
+        if ($this->host->viewDoneIsServeable()) {
             return array(
                 'ran' => false,
                 'reason' => 'not_needed',
-                'progress' => $this->getViewBuildProgress(),
+                'progress' => $this->host->getViewBuildProgress(),
             );
         }
 
@@ -122,7 +122,7 @@ class ABJ_404_Solution_ViewBuildPageLoadFallback extends ABJ_404_Solution_ViewBu
             return array(
                 'ran' => false,
                 'reason' => 'gate_active',
-                'progress' => $this->getViewBuildProgress(),
+                'progress' => $this->host->getViewBuildProgress(),
             );
         }
         if ($haveTransientApi) {
@@ -162,7 +162,7 @@ class ABJ_404_Solution_ViewBuildPageLoadFallback extends ABJ_404_Solution_ViewBu
             // separate gesture that intentionally clears degraded gates
             // and waits 30s for the lock. Page-load fallback should never
             // escalate to those semantics.
-            $progress = $this->advanceViewBuildOnce(false);
+            $progress = $this->host->advanceViewBuildOnce(false);
         } finally {
             if ($filterRegistered && function_exists('remove_filter')) {
                 remove_filter('abj404_view_build_per_stage_budget_seconds', $budgetFilter, 100);

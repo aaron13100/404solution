@@ -38,15 +38,15 @@ class ABJ_404_Solution_ViewBuildStateProbe extends ABJ_404_Solution_ViewBuildCol
      * @return string  e.g. "stage 2/11, 3000/12000 rows" or "not yet started".
      */
     public function describeBuildProgressForNotice(): string {
-        $stage = $this->readProgressOption('current_stage', 0);
+        $stage = $this->host->readProgressOption('current_stage', 0);
         if ($stage <= 0) {
             return 'not yet started';
         }
         $parts = array('stage ' . $stage . '/11');
         if ($stage < 2) {
             // S2 is the heaviest; surface buffer/redirect counts.
-            $copied = $this->countViewBuildRows();
-            $total = $this->countLiveRedirects();
+            $copied = $this->host->countViewBuildRows();
+            $total = $this->host->countLiveRedirects();
             if ($total > 0) {
                 $parts[] = $copied . '/' . $total . ' rows';
             }
@@ -56,7 +56,7 @@ class ABJ_404_Solution_ViewBuildStateProbe extends ABJ_404_Solution_ViewBuildCol
 
     /** @return bool */
     public function viewDoneTableExists(): bool {
-        return $this->stagedTableExists($this->viewDoneTableName());
+        return $this->host->stagedTableExists($this->host->viewDoneTableName());
     }
 
     /**
@@ -73,11 +73,11 @@ class ABJ_404_Solution_ViewBuildStateProbe extends ABJ_404_Solution_ViewBuildCol
      * @return bool
      */
     public function viewDoneHasRows(): bool {
-        if (!$this->viewDoneTableExists()) {
+        if (!$this->host->viewDoneTableExists()) {
             return false;
         }
-        $sql = 'SELECT 1 FROM `' . $this->viewDoneTableName() . '` LIMIT 1';
-        $result = $this->queryAndGetResults($sql, array('log_errors' => false));
+        $sql = 'SELECT 1 FROM `' . $this->host->viewDoneTableName() . '` LIMIT 1';
+        $result = $this->host->queryAndGetResults($sql, array('log_errors' => false));
         $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
         return !empty($rows);
     }
@@ -98,7 +98,7 @@ class ABJ_404_Solution_ViewBuildStateProbe extends ABJ_404_Solution_ViewBuildCol
      * @return string
      */
     public function viewDoneDataBuiltAtOptionName(): string {
-        return $this->getLowercasePrefix() . 'abj404_view_done_data_built_at';
+        return $this->host->getLowercasePrefix() . 'abj404_view_done_data_built_at';
     }
 
     /**
@@ -114,7 +114,7 @@ class ABJ_404_Solution_ViewBuildStateProbe extends ABJ_404_Solution_ViewBuildCol
         if (!function_exists('get_option')) {
             return 0;
         }
-        $built = get_option($this->viewDoneDataBuiltAtOptionName(), 0);
+        $built = get_option($this->host->viewDoneDataBuiltAtOptionName(), 0);
         return is_scalar($built) ? max(0, intval($built)) : 0;
     }
 
@@ -139,7 +139,7 @@ class ABJ_404_Solution_ViewBuildStateProbe extends ABJ_404_Solution_ViewBuildCol
             return; // dedup window still active
         }
         $hours = max(1, intval(floor($ageSeconds / 3600)));
-        $template = $this->localizeOrDefaultViewBuildNotice(
+        $template = $this->host->localizeOrDefaultViewBuildNotice(
             'The 404 Solution redirects table data is more than %d hours old. '
             . 'A background rebuild is scheduled but has not completed; the '
             . 'redirects screen is showing the most recent successful snapshot. '
@@ -183,13 +183,13 @@ class ABJ_404_Solution_ViewBuildStateProbe extends ABJ_404_Solution_ViewBuildCol
      * @return void
      */
     public function maybeRaiseViewDoneHardStaleNotice(): void {
-        $built = $this->viewDoneDataBuiltAt();
+        $built = $this->host->viewDoneDataBuiltAt();
         if ($built <= 0) {
             return;
         }
         $age = time() - $built;
         if ($age >= ABJ_404_Solution_ViewBuildConfig::VIEW_DONE_HARD_STALE_NOTICE_AGE_SECONDS) {
-            $this->setViewDoneHardStaleNotice($age);
+            $this->host->setViewDoneHardStaleNotice($age);
         }
     }
 
@@ -205,7 +205,7 @@ class ABJ_404_Solution_ViewBuildStateProbe extends ABJ_404_Solution_ViewBuildCol
         if (!is_string($sql) || $sql === '') {
             return false;
         }
-        $result = $this->queryAndGetResults($sql, array('log_errors' => false));
+        $result = $this->host->queryAndGetResults($sql, array('log_errors' => false));
         $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
         if (empty($rows)) {
             return false;
@@ -222,7 +222,7 @@ class ABJ_404_Solution_ViewBuildStateProbe extends ABJ_404_Solution_ViewBuildCol
         if (!function_exists('get_option')) {
             return false;
         }
-        $built = get_option($this->viewDoneFreshnessOptionName(), 0);
+        $built = get_option($this->host->viewDoneFreshnessOptionName(), 0);
         $builtAt = is_scalar($built) ? intval($built) : 0;
         if ($builtAt <= 0) {
             return false;

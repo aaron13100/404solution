@@ -152,7 +152,7 @@ class ABJ_404_Solution_ViewBuildSqlModeProbe extends ABJ_404_Solution_ViewBuildC
         $packet = (int)$result['max_allowed_packet'];
         if ($packet > 0 && $packet < 1048576) {
             $result['truncate_url_to'] = max(255, (int)floor($packet * 0.4));
-            $this->logger->warn(sprintf(
+            $this->host->logger()->warn(sprintf(
                 '[staged] max_allowed_packet=%d (<1MB); URL inputs will be truncated to %d chars to leave room for SQL framing.',
                 $packet, $result['truncate_url_to']
             ));
@@ -164,16 +164,16 @@ class ABJ_404_Solution_ViewBuildSqlModeProbe extends ABJ_404_Solution_ViewBuildC
         // The S2 INSERT already uses a strict-safe CAST so the build
         // survives a denied relax; the warn below makes it diagnosable.
         if ($result['strict_mode_active'] || $result['only_full_group_by_active']) {
-            $relaxed = $this->attemptRelaxSqlModeForBuildConnection($result['sql_mode']);
+            $relaxed = $this->host->attemptRelaxSqlModeForBuildConnection($result['sql_mode']);
             $result['adjusted'] = $relaxed === true;
             $result['adjustment_denied'] = $relaxed === false;
             if ($result['adjustment_denied']) {
-                $this->logger->warn(sprintf(
+                $this->host->logger()->warn(sprintf(
                     '[staged] sql_mode contains STRICT_TRANS_TABLES / ONLY_FULL_GROUP_BY (%s) and the relax attempt was denied. The S2 INSERT is strict-safe via REGEXP-guarded CAST; build will proceed.',
                     $result['sql_mode']
                 ));
             } elseif ($result['adjusted']) {
-                $this->logger->infoMessage(sprintf(
+                $this->host->logger()->infoMessage(sprintf(
                     '[staged] Relaxed sql_mode for build connection (was: %s).',
                     $result['sql_mode']
                 ));
@@ -186,7 +186,7 @@ class ABJ_404_Solution_ViewBuildSqlModeProbe extends ABJ_404_Solution_ViewBuildC
         // safe to persist (the dashboard reader treats sql_mode=='' as a
         // probe failure and skips its row).
         if (function_exists('update_option')) {
-            update_option($this->sqlModeProbeOptionName(), $result, false);
+            update_option($this->host->sqlModeProbeOptionName(), $result, false);
         }
 
         $this->sqlModeProbeCache = $result;
@@ -200,7 +200,7 @@ class ABJ_404_Solution_ViewBuildSqlModeProbe extends ABJ_404_Solution_ViewBuildC
      * @return array<string,mixed>
      */
     public function detectAndAdjustSqlMode(): array {
-        return $this->probeSqlModeForBuild();
+        return $this->host->probeSqlModeForBuild();
     }
 
     /** @return array<string,mixed>|null */
@@ -268,12 +268,12 @@ class ABJ_404_Solution_ViewBuildSqlModeProbe extends ABJ_404_Solution_ViewBuildC
     public function clearSqlModeProbeCache(): void {
         $this->sqlModeProbeCache = null;
         if (function_exists('delete_option')) {
-            delete_option($this->sqlModeProbeOptionName());
+            delete_option($this->host->sqlModeProbeOptionName());
         }
         // The session-variables probe (operational + DDL-safety MySQL vars)
         // shares the same lifecycle as the sql_mode probe: a fresh build must
         // re-evaluate session config in case the host was tuned between runs.
         // Lives on the host-environment probe collaborator.
-        $this->clearSessionVariablesProbeCache();
+        $this->host->clearSessionVariablesProbeCache();
     }
 }

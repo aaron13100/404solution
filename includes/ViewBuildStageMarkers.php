@@ -21,11 +21,12 @@ class ABJ_404_Solution_ViewBuildStageMarkers extends ABJ_404_Solution_ViewBuildC
     private $runtimeState;
 
     /**
-     * @param ABJ_404_Solution_ViewBuildOrchestrator $host
+     * @param object $host Explicit context or test double exposing the same methods.
+     * @phpstan-param ABJ_404_Solution_ViewBuildCollaborationContext $host
      * @param ABJ_404_Solution_ViewBuildStageRuntimeState $runtimeState
      */
     public function __construct(
-        ABJ_404_Solution_ViewBuildOrchestrator $host,
+        $host,
         ABJ_404_Solution_ViewBuildStageRuntimeState $runtimeState
     ) {
         parent::__construct($host);
@@ -43,13 +44,13 @@ class ABJ_404_Solution_ViewBuildStageMarkers extends ABJ_404_Solution_ViewBuildC
     public function markViewBuildStageStarted(int $stageNumber, string $stageKey): void {
         $now = time();
         $this->runtimeState->resetBatchProgressDetail();
-        if ($this->readProgressOption('started_at', 0) === 0) {
-            $this->writeProgressOption('started_at', $now);
+        if ($this->host->readProgressOption('started_at', 0) === 0) {
+            $this->host->writeProgressOption('started_at', $now);
         }
-        $this->writeProgressOption('last_started_stage', $stageNumber);
-        $this->writeProgressOption('last_started_at', $now);
+        $this->host->writeProgressOption('last_started_stage', $stageNumber);
+        $this->host->writeProgressOption('last_started_at', $now);
         $this->runtimeState->openStageForShutdown($stageNumber, $stageKey);
-        $this->logger->debugMessage(sprintf(
+        $this->host->logger()->debugMessage(sprintf(
             '[staged] build stage %d/11 %s starting',
             $stageNumber,
             $stageKey
@@ -61,7 +62,7 @@ class ABJ_404_Solution_ViewBuildStageMarkers extends ABJ_404_Solution_ViewBuildC
      * @return void
      */
     public function markViewBuildStageCompleted(int $stageNumber): void {
-        $this->writeProgressOption('last_completed_stage', $stageNumber);
-        $this->writeProgressOption('last_completed_at', time());
+        $this->host->writeProgressOption('last_completed_stage', $stageNumber);
+        $this->host->writeProgressOption('last_completed_at', time());
     }
 }

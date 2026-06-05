@@ -27,13 +27,14 @@ class ABJ_404_Solution_ViewBuildShutdownDiagnostics extends ABJ_404_Solution_Vie
     private $lastErrorProvider;
 
     /**
-     * @param ABJ_404_Solution_ViewBuildOrchestrator $host
+     * @param object $host Explicit context or test double exposing the same methods.
+     * @phpstan-param ABJ_404_Solution_ViewBuildCollaborationContext $host
      * @param ABJ_404_Solution_ViewBuildStageRuntimeState $runtimeState
      * @param callable|null $shutdownRegistrar Test seam for register_shutdown_function.
      * @param callable|null $lastErrorProvider Test seam for error_get_last.
      */
     public function __construct(
-        ABJ_404_Solution_ViewBuildOrchestrator $host,
+        $host,
         ABJ_404_Solution_ViewBuildStageRuntimeState $runtimeState,
         $shutdownRegistrar = null,
         $lastErrorProvider = null
@@ -64,7 +65,7 @@ class ABJ_404_Solution_ViewBuildShutdownDiagnostics extends ABJ_404_Solution_Vie
         }
         self::$viewBuildShutdownLoggerRegistered = true;
         $callback = function (): void {
-            $this->logViewBuildShutdownDiagnostics();
+            $this->host->logViewBuildShutdownDiagnostics();
         };
         if ($this->shutdownRegistrar !== null) {
             call_user_func($this->shutdownRegistrar, $callback);
@@ -80,16 +81,16 @@ class ABJ_404_Solution_ViewBuildShutdownDiagnostics extends ABJ_404_Solution_Vie
         }
         $stageNumber = $this->runtimeState->shutdownStageNumber() > 0
             ? $this->runtimeState->shutdownStageNumber()
-            : $this->readProgressOption('last_started_stage', 0);
+            : $this->host->readProgressOption('last_started_stage', 0);
         if ($stageNumber <= 0) {
             return;
         }
-        $lastCompleted = $this->readProgressOption('last_completed_stage', 0);
+        $lastCompleted = $this->host->readProgressOption('last_completed_stage', 0);
         if ($lastCompleted >= $stageNumber) {
             return;
         }
 
-        $this->logger->warn(sprintf(
+        $this->host->logger()->warn(sprintf(
             '[staged] shutdown while build stage %d/11 %s was still open; '
             . 'last_completed_stage=%d; fatal_context=%s',
             $stageNumber,
