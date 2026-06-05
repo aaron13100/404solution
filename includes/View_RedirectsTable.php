@@ -207,7 +207,7 @@ class ABJ_404_Solution_View_RedirectsTable extends ABJ_404_Solution_ViewComponen
         if (!($this->redirectAddModalPresenter instanceof ABJ_404_Solution_RedirectAddModalPresenter)) {
             $this->redirectAddModalPresenter = new ABJ_404_Solution_RedirectAddModalPresenter(
                 $this->f,
-                $this->shared,
+                $this->optionsPresenter,
                 $this->redirectTypeUI,
                 $this->redirectConditions
             );

@@ -34,7 +34,7 @@ class ABJ_404_Solution_View_RedirectForms extends ABJ_404_Solution_ViewComponent
      */
     public function echoAddManualRedirect($tableOptions) {
 
-        $options = $this->shared->getOptionsWithDefaults();
+        $options = $this->optionsPresenter->getOptionsWithDefaults();
 
         $url = "?page=" . ABJ404_PP . "&subpage=abj404_redirects";
         $orderby = array_key_exists('orderby', $tableOptions) && is_string($tableOptions['orderby']) ? $tableOptions['orderby'] : 'url';
@@ -118,10 +118,12 @@ class ABJ_404_Solution_View_RedirectForms extends ABJ_404_Solution_ViewComponent
 
         // Advanced Options: Active From/Until + Conditions (collapsed by default)
         $redirectId = 0;
-        if (isset($_GET['id']) && $this->f->regexMatch('[0-9]+', (string)$_GET['id'])) {
-            $redirectId = absint($_GET['id']);
-        } elseif (isset($_POST['id']) && $this->f->regexMatch('[0-9]+', (string)$_POST['id'])) {
-            $redirectId = absint($_POST['id']);
+        $getRedirectId = $_GET['id'] ?? null;
+        $postRedirectId = $_POST['id'] ?? null;
+        if (is_scalar($getRedirectId) && $this->f->regexMatch('[0-9]+', (string)$getRedirectId)) {
+            $redirectId = absint($getRedirectId);
+        } elseif (is_scalar($postRedirectId) && $this->f->regexMatch('[0-9]+', (string)$postRedirectId)) {
+            $redirectId = absint($postRedirectId);
         }
         $hasExistingConditions = ($redirectId > 0) && !empty($this->redirectsRepository->getRedirectConditions($redirectId));
         $hasAdvancedValues = ($startDate !== '' || $endDate !== '' || $hasExistingConditions);

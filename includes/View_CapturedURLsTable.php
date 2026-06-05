@@ -251,164 +251,219 @@ class ABJ_404_Solution_View_CapturedURLsTable extends ABJ_404_Solution_ViewCompo
     }
 
     public function getCapturedURLSPageTable(string $sub): string {
-
         $tableOptions = $this->logic->getTableOptions($sub);
-
-        // Build column headers with sorting
-        $hitsTooltip = $this->shared->getHitsColumnTooltip($tableOptions);
-        $columns = array(
-            'url' => array('title' => __('URL', '404-solution'), 'orderby' => 'url'),
-            'status' => array('title' => __('Status', '404-solution'), 'orderby' => 'status'),
-            'hits' => array('title' => __('Hits', '404-solution'), 'orderby' => 'logshits', 'title_attr_html' => $hitsTooltip),
-            'timestamp' => array('title' => __('Created', '404-solution'), 'orderby' => 'timestamp', 'class' => 'hide-on-tablet'),
-            'last_used' => array('title' => __('Last Used', '404-solution'), 'orderby' => 'last_used', 'title_attr_html' => $hitsTooltip),
-        );
-
-        $headerTpl = $this->tpl('viewRedirectsTableCapturedSortableHeader.html');
-        $tooltipTpl = $this->tpl('viewRedirectsTableHeaderTooltip.html');
-
-        $headerCells = '';
-        foreach ($columns as $key => $col) {
-            $sortUrl = "?page=" . ABJ404_PP . "&subpage=abj404_captured&filter=" . ($tableOptions['filter'] ?? 0);
-            $sortUrl .= "&orderby=" . $col['orderby'];
-            $sortState = $this->shared->getHeaderSortState($tableOptions, (string)$col['orderby'], false);
-            $newOrder = $sortState['nextOrder'];
-            $sortUrl .= "&order=" . $newOrder;
-
-            $extraClass = isset($col['class']) ? ' ' . esc_attr($col['class']) : '';
-            $sortClass = trim($sortState['thClass'] . $extraClass);
-            $sortIndicator = $sortState['indicator'];
-
-            $classAttr = $sortClass ? ' class="' . trim($sortClass) . '"' : '';
-
-            // Build tooltip HTML if present
-            $tooltipHtml = '';
-            if (isset($col['title_attr_html']) && !empty($col['title_attr_html'])) {
-                $tooltipHtml = $this->f->str_replace(
-                    array('{more_info_label}', '{tooltip_body}'),
-                    array(esc_attr__('More info', '404-solution'), (string)$col['title_attr_html']),
-                    $tooltipTpl
-                );
-            }
-
-            $headerCells .= $this->f->str_replace(
-                array('{class_attr}', '{sort_url}', '{title}', '{sort_indicator}', '{tooltip_html}'),
-                array($classAttr, esc_url($sortUrl), esc_html($col['title']), $sortIndicator, $tooltipHtml),
-                $headerTpl
-            ) . "\n";
-        }
-
         $rows = $this->viewReadService->getRedirectsForView($sub, $tableOptions);
         /** @var array<int, array<string, mixed>> $typedRows */
         $typedRows = array_values(array_filter($rows, 'is_array'));
         $this->shared->rememberTableDataSignature($sub, $typedRows);
-        $displayed = 0;
-        $bodyRows = '';
 
-        foreach ($typedRows as $row) {
-            $displayed++;
+        return $this->f->str_replace(
+            array('{select_all_label}', '{header_cells}', '{body_rows}'),
+            array(
+                esc_attr__('Select all', '404-solution'),
+                $this->buildCapturedHeaderCells($tableOptions),
+                $this->buildCapturedBodyRows($sub, $tableOptions, $typedRows),
+            ),
+            $this->tpl('viewRedirectsTableCapturedTableShell.html')
+        );
+    }
 
-            $hits = is_scalar($row['logshits'] ?? 0) ? (int)($row['logshits'] ?? 0) : 0;
+    /** @param array<string, mixed> $tableOptions */
+    private function buildCapturedHeaderCells(array $tableOptions): string {
+        $hitsTooltip = $this->shared->getHitsColumnTooltip($tableOptions);
+        $columns = array(
+            array('title' => __('URL', '404-solution'), 'orderby' => 'url'),
+            array('title' => __('Status', '404-solution'), 'orderby' => 'status'),
+            array('title' => __('Hits', '404-solution'), 'orderby' => 'logshits', 'title_attr_html' => $hitsTooltip),
+            array('title' => __('Created', '404-solution'), 'orderby' => 'timestamp', 'class' => 'hide-on-tablet'),
+            array('title' => __('Last Used', '404-solution'), 'orderby' => 'last_used', 'title_attr_html' => $hitsTooltip),
+        );
 
-            $last_used = is_scalar($row['last_used'] ?? 0) ? (int)($row['last_used'] ?? 0) : 0;
-            $lastUsedClass = '';
-            if ($last_used != 0) {
-                $last = (string)wp_date("Y/m/d h:i:s A", abs($last_used));
-            } else {
-                $last = __('Never', '404-solution');
-                $lastUsedClass = 'abj404-never-used';
-            }
+        $headerCells = '';
+        foreach ($columns as $col) {
+            $headerCells .= $this->capturedHeaderCell($tableOptions, $col) . "\n";
+        }
+        return $headerCells;
+    }
 
-            // Build action links using helper method
-            /** @var array<string, mixed> $row */
-            $links = $this->shared->buildTableActionLinks($row, $sub, $tableOptions, true);
-            $editlink = '';
-            $logslink = '';
-            $trashlink = '';
-            $trashtitle = '';
-            $deletelink = '';
-            $ignorelink = '';
-            $ignoretitle = '';
-            $laterlink = '';
-            $latertitle = '';
-            $ajaxTrashLink = '';
-            extract($links);
+    /**
+     * @param array<string, mixed> $tableOptions
+     * @param array<string, mixed> $col
+     */
+    private function capturedHeaderCell(array $tableOptions, array $col): string {
+        $rawFilter = $tableOptions['filter'] ?? 0;
+        $currentFilter = is_scalar($rawFilter) ? $rawFilter : 0;
+        $orderby = (string)($col['orderby'] ?? '');
+        $sortUrl = "?page=" . ABJ404_PP . "&subpage=abj404_captured&filter=" . $currentFilter;
+        $sortUrl .= "&orderby=" . $orderby;
+        $sortState = $this->shared->getHeaderSortState($tableOptions, $orderby, false);
+        $sortUrl .= "&order=" . $sortState['nextOrder'];
 
-            // Determine status badge
-            $statusBadgeClass = 'abj404-badge-captured';
-            $statusText = __('Captured', '404-solution');
-            $statusTitle = __('Captured 404 URL', '404-solution');
+        $extraClass = isset($col['class']) ? ' ' . esc_attr((string)$col['class']) : '';
+        $sortClass = trim($sortState['thClass'] . $extraClass);
+        $classAttr = $sortClass ? ' class="' . trim($sortClass) . '"' : '';
 
-            if ($row['status'] == ABJ404_STATUS_IGNORED) {
-                $statusBadgeClass = 'abj404-badge-ignored';
-                $statusText = __('Ignored', '404-solution');
-                $statusTitle = __('Ignored URL - will not be suggested', '404-solution');
-            } else if ($row['status'] == ABJ404_STATUS_LATER) {
-                $statusBadgeClass = 'abj404-badge-later';
-                $statusText = __('Later', '404-solution');
-                $statusTitle = __('Organize Later', '404-solution');
-            }
-
-            $btns = $this->buildCapturedRowActionButtons($row, $tableOptions, array(
-                'editlink' => $editlink, 'logslink' => $logslink,
-                'trashlink' => $trashlink, 'trashtitle' => $trashtitle,
-                'deletelink' => $deletelink, 'ignorelink' => $ignorelink,
-                'ignoretitle' => $ignoretitle, 'laterlink' => $laterlink,
-                'latertitle' => $latertitle,
-            ));
-            $editBtnHTML   = $btns['edit'];
-            $logsBtnHTML   = $btns['logs'];
-            $trashBtnHTML  = $btns['trash'];
-            $deleteBtnHTML = $btns['delete'];
-            $ignoreBtnHTML = $btns['ignore'];
-            $laterBtnHTML  = $btns['later'];
-
-            // Build full URL for visiting
-            $capturedRowUrl = is_string($row['url'] ?? '') ? (string)($row['url'] ?? '') : '';
-            $capturedRowId = is_scalar($row['id'] ?? '') ? (string)($row['id'] ?? '') : '';
-            $fullVisitorURL = esc_url(home_url($capturedRowUrl));
-
-            $capturedEngine = is_string($row['engine'] ?? '') ? trim((string)($row['engine'] ?? '')) : '';
-            $capturedEngineHTML = ($capturedEngine !== '') ? '<br><span class="abj404-engine-label">' . esc_html($capturedEngine) . '</span>' : '';
-            $tempHtml = $this->f->str_replace(
-                array_keys($vars = array(
-                    '{rowid}' => $capturedRowId,
-                    '{rowClass}' => '',
-                    '{visitorURL}' => $fullVisitorURL,
-                    '{url}' => esc_html($capturedRowUrl),
-                    '{statusBadgeClass}' => $statusBadgeClass,
-                    '{statusTitle}' => esc_attr($statusTitle),
-                    '{status}' => $statusText,
-                    '{engineHTML}' => $capturedEngineHTML,
-                    '{hits}' => esc_html((string)$hits),
-                    '{created_date}' => esc_html((string)wp_date("Y/m/d h:i:s A", abs(is_scalar($row['timestamp'] ?? 0) ? intval($row['timestamp'] ?? 0) : 0))),
-                    '{last_used_date}' => esc_html($last),
-                    '{lastUsedClass}' => $lastUsedClass,
-                    '{editBtnHTML}' => $editBtnHTML,
-                    '{logsBtnHTML}' => $logsBtnHTML,
-                    '{trashBtnHTML}' => $trashBtnHTML,
-                    '{deleteBtnHTML}' => $deleteBtnHTML,
-                    '{ignoreBtnHTML}' => $ignoreBtnHTML,
-                    '{laterBtnHTML}' => $laterBtnHTML,
-                )),
-                array_values($vars),
-                ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/html/tableRowCapturedURLs.html")
+        $tooltipHtml = '';
+        if (isset($col['title_attr_html']) && !empty($col['title_attr_html'])) {
+            $tooltipHtml = $this->f->str_replace(
+                array('{more_info_label}', '{tooltip_body}'),
+                array(esc_attr__('More info', '404-solution'), (string)$col['title_attr_html']),
+                $this->tpl('viewRedirectsTableHeaderTooltip.html')
             );
-            $bodyRows .= $this->f->doNormalReplacements($tempHtml);
         }
 
-        if ($displayed == 0) {
-            $bodyRows .= $this->f->str_replace(
+        return $this->f->str_replace(
+            array('{class_attr}', '{sort_url}', '{title}', '{sort_indicator}', '{tooltip_html}'),
+            array($classAttr, esc_url($sortUrl), esc_html((string)$col['title']), $sortState['indicator'], $tooltipHtml),
+            $this->tpl('viewRedirectsTableCapturedSortableHeader.html')
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $tableOptions
+     * @param array<int, array<string, mixed>> $rows
+     */
+    private function buildCapturedBodyRows(string $sub, array $tableOptions, array $rows): string {
+        if (count($rows) === 0) {
+            return $this->f->str_replace(
                 '{message}',
                 __('No Captured 404 Records To Display', '404-solution'),
                 $this->tpl('viewRedirectsTableCapturedEmptyRow.html')
             ) . "\n";
         }
 
-        return $this->f->str_replace(
-            array('{select_all_label}', '{header_cells}', '{body_rows}'),
-            array(esc_attr__('Select all', '404-solution'), $headerCells, $bodyRows),
-            $this->tpl('viewRedirectsTableCapturedTableShell.html')
+        $bodyRows = '';
+        foreach ($rows as $row) {
+            $bodyRows .= $this->capturedBodyRow($sub, $tableOptions, $row);
+        }
+        return $bodyRows;
+    }
+
+    /**
+     * @param array<string, mixed> $tableOptions
+     * @param array<string, mixed> $row
+     */
+    private function capturedBodyRow(string $sub, array $tableOptions, array $row): string {
+        $hits = is_scalar($row['logshits'] ?? 0) ? (int)($row['logshits'] ?? 0) : 0;
+        $lastUsed = $this->capturedLastUsedPresentation($row);
+        $status = $this->capturedStatusPresentation($row);
+        $btns = $this->capturedActionButtons($sub, $tableOptions, $row);
+        $vars = $this->capturedRowTemplateVars($row, $hits, $lastUsed, $status, $btns);
+
+        $tempHtml = $this->f->str_replace(
+            array_keys($vars),
+            array_values($vars),
+            ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/html/tableRowCapturedURLs.html")
         );
+        return $this->f->doNormalReplacements($tempHtml);
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     * @return array{date: string, class: string}
+     */
+    private function capturedLastUsedPresentation(array $row): array {
+        $last_used = is_scalar($row['last_used'] ?? 0) ? (int)($row['last_used'] ?? 0) : 0;
+        if ($last_used != 0) {
+            return array(
+                'date' => (string)wp_date("Y/m/d h:i:s A", abs($last_used)),
+                'class' => '',
+            );
+        }
+
+        return array(
+            'date' => __('Never', '404-solution'),
+            'class' => 'abj404-never-used',
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     * @return array{class: string, text: string, title: string}
+     */
+    private function capturedStatusPresentation(array $row): array {
+        if ($row['status'] == ABJ404_STATUS_IGNORED) {
+            return array(
+                'class' => 'abj404-badge-ignored',
+                'text' => __('Ignored', '404-solution'),
+                'title' => __('Ignored URL - will not be suggested', '404-solution'),
+            );
+        }
+        if ($row['status'] == ABJ404_STATUS_LATER) {
+            return array(
+                'class' => 'abj404-badge-later',
+                'text' => __('Later', '404-solution'),
+                'title' => __('Organize Later', '404-solution'),
+            );
+        }
+
+        return array(
+            'class' => 'abj404-badge-captured',
+            'text' => __('Captured', '404-solution'),
+            'title' => __('Captured 404 URL', '404-solution'),
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $tableOptions
+     * @param array<string, mixed> $row
+     * @return array{edit: string, logs: string, trash: string, delete: string, ignore: string, later: string}
+     */
+    private function capturedActionButtons(string $sub, array $tableOptions, array $row): array {
+        $links = $this->shared->buildTableActionLinks($row, $sub, $tableOptions, true);
+
+        return $this->buildCapturedRowActionButtons($row, $tableOptions, array(
+            'editlink' => $this->linkValue($links, 'editlink'),
+            'logslink' => $this->linkValue($links, 'logslink'),
+            'trashlink' => $this->linkValue($links, 'trashlink'),
+            'trashtitle' => $this->linkValue($links, 'trashtitle'),
+            'deletelink' => $this->linkValue($links, 'deletelink'),
+            'ignorelink' => $this->linkValue($links, 'ignorelink'),
+            'ignoretitle' => $this->linkValue($links, 'ignoretitle'),
+            'laterlink' => $this->linkValue($links, 'laterlink'),
+            'latertitle' => $this->linkValue($links, 'latertitle'),
+        ));
+    }
+
+    /** @param array<string, mixed> $links */
+    private function linkValue(array $links, string $key): string {
+        return is_scalar($links[$key] ?? '') ? (string)($links[$key] ?? '') : '';
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     * @param array{date: string, class: string} $lastUsed
+     * @param array{class: string, text: string, title: string} $status
+     * @param array{edit: string, logs: string, trash: string, delete: string, ignore: string, later: string} $btns
+     * @return array<string, string>
+     */
+    private function capturedRowTemplateVars(array $row, int $hits, array $lastUsed, array $status, array $btns): array {
+        $capturedRowUrl = is_string($row['url'] ?? '') ? (string)($row['url'] ?? '') : '';
+        $capturedRowId = is_scalar($row['id'] ?? '') ? (string)($row['id'] ?? '') : '';
+        $capturedEngine = is_string($row['engine'] ?? '') ? trim((string)($row['engine'] ?? '')) : '';
+        $capturedEngineHTML = ($capturedEngine !== '') ? '<br><span class="abj404-engine-label">' . esc_html($capturedEngine) . '</span>' : '';
+        $createdTimestamp = is_scalar($row['timestamp'] ?? 0) ? intval($row['timestamp'] ?? 0) : 0;
+
+        $vars = array(
+            '{rowid}' => $capturedRowId,
+            '{rowClass}' => '',
+            '{visitorURL}' => esc_url(home_url($capturedRowUrl)),
+            '{url}' => esc_html($capturedRowUrl),
+            '{statusBadgeClass}' => $status['class'],
+            '{statusTitle}' => esc_attr($status['title']),
+            '{status}' => $status['text'],
+            '{engineHTML}' => $capturedEngineHTML,
+            '{hits}' => esc_html((string)$hits),
+            '{created_date}' => esc_html((string)wp_date("Y/m/d h:i:s A", abs($createdTimestamp))),
+            '{last_used_date}' => esc_html($lastUsed['date']),
+            '{lastUsedClass}' => $lastUsed['class'],
+            '{editBtnHTML}' => $btns['edit'],
+            '{logsBtnHTML}' => $btns['logs'],
+            '{trashBtnHTML}' => $btns['trash'],
+            '{deleteBtnHTML}' => $btns['delete'],
+            '{ignoreBtnHTML}' => $btns['ignore'],
+            '{laterBtnHTML}' => $btns['later'],
+        );
+        return $vars;
     }
 }

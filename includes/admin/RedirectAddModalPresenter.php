@@ -12,8 +12,8 @@ class ABJ_404_Solution_RedirectAddModalPresenter {
     /** @var ABJ_404_Solution_Functions */
     private $functions;
 
-    /** @var ABJ_404_Solution_View_Shared */
-    private $shared;
+    /** @var ABJ_404_Solution_View_OptionsPresenter */
+    private $optionsPresenter;
 
     /** @var ABJ_404_Solution_View_RedirectTypeUI */
     private $redirectTypeUI;
@@ -21,11 +21,11 @@ class ABJ_404_Solution_RedirectAddModalPresenter {
     /** @var ABJ_404_Solution_View_RedirectConditions */
     private $redirectConditions;
 
-    public function __construct(ABJ_404_Solution_Functions $functions, ABJ_404_Solution_View_Shared $shared,
+    public function __construct(ABJ_404_Solution_Functions $functions, ABJ_404_Solution_View_OptionsPresenter $optionsPresenter,
             ABJ_404_Solution_View_RedirectTypeUI $redirectTypeUI,
             ABJ_404_Solution_View_RedirectConditions $redirectConditions) {
         $this->functions = $functions;
-        $this->shared = $shared;
+        $this->optionsPresenter = $optionsPresenter;
         $this->redirectTypeUI = $redirectTypeUI;
         $this->redirectConditions = $redirectConditions;
     }
@@ -34,7 +34,7 @@ class ABJ_404_Solution_RedirectAddModalPresenter {
      * @param array<string, mixed> $tableOptions
      */
     public function render(array $tableOptions): string {
-        $options = $this->shared->getOptionsWithDefaults();
+        $options = $this->optionsPresenter->getOptionsWithDefaults();
         $link = wp_nonce_url($this->formUrl($tableOptions), 'abj404addRedirect');
         $urlPlaceholder = parse_url(get_home_url(), PHP_URL_PATH) . '/example';
 

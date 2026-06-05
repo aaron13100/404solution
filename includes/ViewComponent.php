@@ -15,7 +15,7 @@ if (!defined('ABSPATH')) {
  *     repository interfaces, plus the view-build orchestrator)
  *
  * Cross-component access goes through typed sibling properties so PHPStan
- * can fully resolve $this->shared->getCheckedAttr(...). The View facade
+ * can fully resolve calls such as $this->optionsPresenter->getCheckedAttr(...). The View facade
  * keeps its __call dispatcher for the (smaller) set of EXTERNAL callers
  * that hold a View instance rather than a component.
  */
@@ -57,6 +57,12 @@ abstract class ABJ_404_Solution_ViewComponent {
     /** @var ABJ_404_Solution_View_UI */
     protected $ui;
 
+    /** @var ABJ_404_Solution_View_AdminChrome */
+    protected $adminChrome;
+
+    /** @var ABJ_404_Solution_View_OptionsPresenter */
+    protected $optionsPresenter;
+
     /** @var ABJ_404_Solution_View_Stats */
     protected $stats;
 
@@ -65,6 +71,12 @@ abstract class ABJ_404_Solution_ViewComponent {
 
     /** @var ABJ_404_Solution_View_Settings */
     protected $settings;
+
+    /** @var ABJ_404_Solution_View_SettingsSections */
+    protected $settingsSections;
+
+    /** @var ABJ_404_Solution_View_SimpleSettings */
+    protected $simpleSettings;
 
     /** @var ABJ_404_Solution_View_Redirects */
     protected $redirects;
@@ -133,9 +145,13 @@ abstract class ABJ_404_Solution_ViewComponent {
     public function setSiblingComponents(
         ABJ_404_Solution_View_Shared $shared,
         ABJ_404_Solution_View_UI $ui,
+        ABJ_404_Solution_View_AdminChrome $adminChrome,
+        ABJ_404_Solution_View_OptionsPresenter $optionsPresenter,
         ABJ_404_Solution_View_Stats $stats,
         ABJ_404_Solution_View_Tools $tools,
         ABJ_404_Solution_View_Settings $settings,
+        ABJ_404_Solution_View_SettingsSections $settingsSections,
+        ABJ_404_Solution_View_SimpleSettings $simpleSettings,
         ABJ_404_Solution_View_Redirects $redirects,
         ABJ_404_Solution_View_RedirectsTable $redirectsTable,
         ABJ_404_Solution_View_CapturedURLsTable $capturedURLsTable,
@@ -147,9 +163,13 @@ abstract class ABJ_404_Solution_ViewComponent {
     ): void {
         $this->shared = $shared;
         $this->ui = $ui;
+        $this->adminChrome = $adminChrome;
+        $this->optionsPresenter = $optionsPresenter;
         $this->stats = $stats;
         $this->tools = $tools;
         $this->settings = $settings;
+        $this->settingsSections = $settingsSections;
+        $this->simpleSettings = $simpleSettings;
         $this->redirects = $redirects;
         $this->redirectsTable = $redirectsTable;
         $this->capturedURLsTable = $capturedURLsTable;

@@ -141,127 +141,42 @@ class ABJ_404_Solution_View_Redirects extends ABJ_404_Solution_ViewComponent {
     /** @return void */
     function echoAdminEditRedirectPage() {
 
-        $options = $this->shared->getOptionsWithDefaults();
-
-        // Compute source page early so we can use it in the back link
-        $source_page = $this->shared->viewGetPostOrGetSanitize('source_page');
-        if ($source_page === '') {
-            $source_page = $this->shared->viewGetPostOrGetSanitize('subpage');
-        }
-        if ($source_page === '' || $source_page == 'abj404_edit') {
-            $source_page = 'abj404_redirects';
-        }
-        $backUrl = '?page=' . ABJ404_PP . '&subpage=' . esc_attr($source_page);
-
-        $isSimpleMode = abj_service('settings_mode_preference')->getMode() === 'simple';
-        $isFromCaptured = ($source_page === 'abj404_captured');
-
-        if ($isSimpleMode && $isFromCaptured) {
-            $title = __('Create Redirect', '404-solution');
-            $backLabel = __('Back to Captured 404s', '404-solution');
-        } else {
-            $title = __('Edit Redirect', '404-solution');
-            $backLabel = __('Back to Redirects', '404-solution');
-        }
-
+        $options = $this->optionsPresenter->getOptionsWithDefaults();
+        $context = $this->editRedirectPageContext();
         $actionUrl = wp_nonce_url("?page=" . ABJ404_PP . "&subpage=abj404_edit", "abj404editRedirect");
-
-        // Build hidden inputs that preserve source navigation state.
-        $filter = $this->shared->viewGetPostOrGetSanitize('filter');
-        $orderby = $this->shared->viewGetPostOrGetSanitize('orderby');
-        $order = $this->shared->viewGetPostOrGetSanitize('order');
-        $paged = $this->shared->viewGetPostOrGetSanitize('paged');
-        $hiddenInputs = $this->editFormPresenter()->buildSourceHiddenInputs($source_page, $filter, $orderby, $order, $paged);
-
-        // Resolve target record(s).
-        $recnum = null;
-        $recnums_multiple = null;
-        $startDate = '';
-        $endDate = '';
-        if (isset($_GET['id']) && $this->f->regexMatch('[0-9]+', $_GET['id'])) {
-            $this->logger->debugMessage("Edit redirect page. GET ID: " .
-                    wp_kses_post((string)json_encode($_GET['id'])));
-            $recnum = absint($_GET['id']);
-
-        } else if (isset($_POST['id']) && $this->f->regexMatch('[0-9]+', $_POST['id'])) {
-            $this->logger->debugMessage("Edit redirect page. POST ID: " .
-                    wp_kses_post((string)json_encode($_POST['id'])));
-            $recnum = absint($_POST['id']);
-
-        } else if ($this->shared->viewGetPostOrGetSanitize('idnum') !== '' || isset($_GET['idnum']) || isset($_POST['idnum'])) {
-            $rawIdnum = isset($_GET['idnum']) ? $_GET['idnum'] : (isset($_POST['idnum']) ? $_POST['idnum'] : $this->shared->viewGetPostOrGetSanitize('idnum'));
-            $recnums_multiple = array_values(array_filter(array_map(function($v) { return absint($v); }, (array)$rawIdnum), function($v) { return $v > 0; }));
-            $this->logger->debugMessage("Edit redirect page. ids_multiple: " .
-                    wp_kses_post((string)json_encode($recnums_multiple)));
-
-        } else {
-            echo __('Error: No ID(s) found for edit request.', '404-solution');
-            $this->logger->debugMessage("No ID(s) found in GET or POST data for edit request.");
+        $content = $this->editRedirectRecordContent($context['isSimpleMode'], $context['hiddenInputs']);
+        if ($content === null) {
             return;
         }
 
-        // Body parts composed below.
-        $preTableBlock = '';
-        $formRows = '';
-        $redirectUrl = '';
-
-        if ($recnum != null) {
-            $singleResult = $this->buildSingleRecordContent($recnum, $isSimpleMode);
-            if ($singleResult === null) {
-                return;
-            }
-            $redirect = $singleResult['redirect'];
-            $redirects_multiple = $singleResult['redirects_multiple'];
-            $redirectUrl = $singleResult['redirectUrl'];
-            $startDate = $singleResult['startDate'];
-            $endDate = $singleResult['endDate'];
-            $hiddenInputs .= $singleResult['hiddenInputs'];
-            $formRows .= $singleResult['formRows'];
-
-        } else if ($recnums_multiple != null) {
-            $bulkResult = $this->renderBulkRedirectFormFields($recnums_multiple);
-            if ($bulkResult === null) {
-                return;
-            }
-            $redirect = $bulkResult['redirect'];
-            $redirects_multiple = $bulkResult['redirects_multiple'];
-            $hiddenInputs .= $bulkResult['hiddenInput'];
-            $formRows .= $bulkResult['rowHtml'];
-
-        } else {
-            $idsText = isset($rawIdnum) && is_array($rawIdnum) ? implode(',', array_map(function($v) { return is_scalar($v) ? (string)$v : ''; }, $rawIdnum)) : '';
-            echo $errorText = ($recnum === 0 || $idsText !== '') ? "Error: Invalid ID Number(s) specified! (id: " . esc_html((string)$recnum) . ", ids: " . esc_html($idsText) . ")" : __('Error: No ID(s) found for edit request.', '404-solution');
-            $this->logger->debugMessage($errorText . " (id: " . esc_html((string)$recnum) .
-                    ", ids: " . esc_html($idsText) . ")");
-            return;
-        }
-
-        $destInfo = $this->resolveRedirectDestinationInfo($redirect, $options);
+        $destInfo = $this->resolveRedirectDestinationInfo($content['redirect'], $options);
         $final = $destInfo['final'];
         $pageIDAndType = $destInfo['pageIDAndType'];
         $codeSelected = $destInfo['codeSelected'];
 
-        // Try to find a suggested destination for captured URLs.
         $suggestion = null;
-        if ($isFromCaptured && !empty($redirectUrl)) {
-            $suggestion = $this->getSuggestedDestination($redirectUrl, $options);
+        if ($context['isFromCaptured'] && !empty($content['redirectUrl'])) {
+            $suggestion = $this->getSuggestedDestination($content['redirectUrl'], $options);
         }
+        $preTableBlock = '';
         if ($suggestion !== null) {
             $preTableBlock .= $this->buildSuggestionBlockHtml($suggestion);
         }
 
         // Redirect-to autocomplete row. When creating from captured URLs, clear the
         // redirect_to field so the placeholder text is visible.
-        $redirectFinalDest = is_scalar($redirect['final_dest'] ?? 0) ? (string)($redirect['final_dest'] ?? '0') : '0';
-        if ($isFromCaptured) {
+        $rawFinalDest = $content['redirect']['final_dest'] ?? 0;
+        $redirectFinalDest = is_scalar($rawFinalDest) ? (string)$rawFinalDest : '0';
+        if ($context['isFromCaptured']) {
             $pageTitle = '';
             $pageIDAndType = '';
         } else {
             $pageTitle = $this->logic->pageOrdering()->getPageTitleFromIDAndType($pageIDAndType, $redirectFinalDest);
         }
-        $manualPickerHiddenClass = ($suggestion !== null && $isSimpleMode) ? ' abj404-hidden' : '';
+        $manualPickerHiddenClass = ($suggestion !== null && $context['isSimpleMode']) ? ' abj404-hidden' : '';
         $redirectToInner = $this->buildRedirectToDropdownHtml($pageTitle, $pageIDAndType);
         $redirectToBody = $this->editFormPresenter()->buildManualPickerWrapperHtml($manualPickerHiddenClass, $redirectToInner);
+        $formRows = $content['formRows'];
         $formRows .= $this->editFormPresenter()->buildFieldRowHtml(
             'redirect_to_user_field',
             $this->editFormPresenter()->buildRequiredLabel(__('Redirect to', '404-solution')),
@@ -275,17 +190,17 @@ class ABJ_404_Solution_View_Redirects extends ABJ_404_Solution_ViewComponent {
         $formRows .= $this->editFormPresenter()->buildFieldRowHtml('code', esc_html__('Redirect Type', '404-solution'), $typeGridHtml);
 
         // Build advanced options (dates + conditions).
-        $advancedOptions = $this->buildAdvancedOptionsHtml($startDate, $endDate);
+        $advancedOptions = $this->buildAdvancedOptionsHtml($content['startDate'], $content['endDate']);
 
         // Compose the page using the shell template.
-        $cancelUrl = $this->editFormPresenter()->buildCancelUrl($source_page, $filter, $orderby, $order);
+        $cancelUrl = $this->editFormPresenter()->buildCancelUrl($context['sourcePage'], $context['filter'], $context['orderby'], $context['order']);
 
         echo $this->editFormPresenter()->buildShellHtml(array(
-            '{title}' => esc_html($title),
-            '{back_url}' => esc_url($backUrl),
-            '{back_label}' => esc_html($backLabel),
+            '{title}' => esc_html($context['title']),
+            '{back_url}' => esc_url($context['backUrl']),
+            '{back_label}' => esc_html($context['backLabel']),
             '{action_url}' => esc_attr($actionUrl),
-            '{hidden_inputs}' => $hiddenInputs,
+            '{hidden_inputs}' => $content['hiddenInputs'],
             '{pre_table_block}' => $preTableBlock,
             '{form_rows}' => $formRows,
             '{advanced_options}' => $advancedOptions,
@@ -293,6 +208,100 @@ class ABJ_404_Solution_View_Redirects extends ABJ_404_Solution_ViewComponent {
             '{cancel_url}' => esc_url($cancelUrl),
             '{cancel_label}' => esc_html__('Cancel', '404-solution'),
         ));
+    }
+
+    /**
+     * @return array{sourcePage: string, backUrl: string, isSimpleMode: bool, isFromCaptured: bool, title: string, backLabel: string, filter: string, orderby: string, order: string, hiddenInputs: string}
+     */
+    private function editRedirectPageContext(): array {
+        $sourcePage = $this->shared->viewGetPostOrGetSanitize('source_page');
+        if ($sourcePage === '') {
+            $sourcePage = $this->shared->viewGetPostOrGetSanitize('subpage');
+        }
+        if ($sourcePage === '' || $sourcePage == 'abj404_edit') {
+            $sourcePage = 'abj404_redirects';
+        }
+
+        $isSimpleMode = abj_service('settings_mode_preference')->getMode() === 'simple';
+        $isFromCaptured = ($sourcePage === 'abj404_captured');
+        $filter = $this->shared->viewGetPostOrGetSanitize('filter');
+        $orderby = $this->shared->viewGetPostOrGetSanitize('orderby');
+        $order = $this->shared->viewGetPostOrGetSanitize('order');
+        $paged = $this->shared->viewGetPostOrGetSanitize('paged');
+
+        return array(
+            'sourcePage' => $sourcePage,
+            'backUrl' => '?page=' . ABJ404_PP . '&subpage=' . esc_attr($sourcePage),
+            'isSimpleMode' => $isSimpleMode,
+            'isFromCaptured' => $isFromCaptured,
+            'title' => ($isSimpleMode && $isFromCaptured) ? __('Create Redirect', '404-solution') : __('Edit Redirect', '404-solution'),
+            'backLabel' => ($isSimpleMode && $isFromCaptured) ? __('Back to Captured 404s', '404-solution') : __('Back to Redirects', '404-solution'),
+            'filter' => $filter,
+            'orderby' => $orderby,
+            'order' => $order,
+            'hiddenInputs' => $this->editFormPresenter()->buildSourceHiddenInputs($sourcePage, $filter, $orderby, $order, $paged),
+        );
+    }
+
+    /**
+     * @return array{redirect: array<string, mixed>, redirects_multiple: array<int, array<string, mixed>>, redirectUrl: string, startDate: string, endDate: string, hiddenInputs: string, formRows: string}|null
+     */
+    private function editRedirectRecordContent(bool $isSimpleMode, string $baseHiddenInputs): ?array {
+        $request = $this->editRedirectRequestedIds();
+        if ($request === null) {
+            echo __('Error: No ID(s) found for edit request.', '404-solution');
+            $this->logger->debugMessage("No ID(s) found in GET or POST data for edit request.");
+            return null;
+        }
+
+        if ($request['recnum'] !== null) {
+            $singleResult = $this->buildSingleRecordContent($request['recnum'], $isSimpleMode);
+            if ($singleResult === null) {
+                return null;
+            }
+            $singleResult['hiddenInputs'] = $baseHiddenInputs . $singleResult['hiddenInputs'];
+            return $singleResult;
+        }
+
+        $bulkResult = $this->renderBulkRedirectFormFields($request['recnumsMultiple']);
+        if ($bulkResult === null) {
+            return null;
+        }
+
+        return array(
+            'redirect' => $bulkResult['redirect'],
+            'redirects_multiple' => $bulkResult['redirects_multiple'],
+            'redirectUrl' => '',
+            'startDate' => '',
+            'endDate' => '',
+            'hiddenInputs' => $baseHiddenInputs . $bulkResult['hiddenInput'],
+            'formRows' => $bulkResult['rowHtml'],
+        );
+    }
+
+    /** @return array{recnum: int|null, recnumsMultiple: array<int, int>}|null */
+    private function editRedirectRequestedIds(): ?array {
+        if (isset($_GET['id']) && is_scalar($_GET['id']) && $this->f->regexMatch('[0-9]+', (string)$_GET['id'])) {
+            $this->logger->debugMessage("Edit redirect page. GET ID: " .
+                    wp_kses_post((string)json_encode($_GET['id'])));
+            return array('recnum' => absint($_GET['id']), 'recnumsMultiple' => array());
+        }
+
+        if (isset($_POST['id']) && is_scalar($_POST['id']) && $this->f->regexMatch('[0-9]+', (string)$_POST['id'])) {
+            $this->logger->debugMessage("Edit redirect page. POST ID: " .
+                    wp_kses_post((string)json_encode($_POST['id'])));
+            return array('recnum' => absint($_POST['id']), 'recnumsMultiple' => array());
+        }
+
+        if ($this->shared->viewGetPostOrGetSanitize('idnum') === '' && !isset($_GET['idnum']) && !isset($_POST['idnum'])) {
+            return null;
+        }
+
+        $rawIdnum = isset($_GET['idnum']) ? $_GET['idnum'] : (isset($_POST['idnum']) ? $_POST['idnum'] : $this->shared->viewGetPostOrGetSanitize('idnum'));
+        $recnumsMultiple = array_values(array_filter(array_map(function($v) { return absint($v); }, (array)$rawIdnum), function($v) { return $v > 0; }));
+        $this->logger->debugMessage("Edit redirect page. ids_multiple: " .
+                wp_kses_post((string)json_encode($recnumsMultiple)));
+        return array('recnum' => null, 'recnumsMultiple' => $recnumsMultiple);
     }
 
     /**
