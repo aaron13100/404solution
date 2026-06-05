@@ -54,10 +54,8 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
     private $lockCoordinator;
     /** @var ABJ_404_Solution_ViewBuildCronScheduler */
     private $cronScheduler;
-    /** @var ABJ_404_Solution_ViewBuildPhpEnvProbe */
-    private $phpEnvProbe;
-    /** @var ABJ_404_Solution_ViewBuildSessionEnvProbe */
-    private $sessionEnvProbe;
+    /** @var ABJ_404_Solution_ViewBuildHostEnvironmentProbe */
+    private $hostEnvironmentProbe;
     /** @var ABJ_404_Solution_ViewBuildHostFailurePolicy */
     private $hostFailurePolicy;
     /** @var ABJ_404_Solution_ViewBuildForceRestart */
@@ -112,8 +110,7 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
         $this->rebuildReconcile = new ABJ_404_Solution_ViewBuildRebuildReconcile($this);
         $this->lockCoordinator = new ABJ_404_Solution_ViewBuildLockCoordinator($this);
         $this->cronScheduler = new ABJ_404_Solution_ViewBuildCronScheduler($this);
-        $this->phpEnvProbe = new ABJ_404_Solution_ViewBuildPhpEnvProbe($this);
-        $this->sessionEnvProbe = new ABJ_404_Solution_ViewBuildSessionEnvProbe($this);
+        $this->hostEnvironmentProbe = new ABJ_404_Solution_ViewBuildHostEnvironmentProbe($this);
         $this->hostFailurePolicy = new ABJ_404_Solution_ViewBuildHostFailurePolicy($this);
         $this->forceRestart = new ABJ_404_Solution_ViewBuildForceRestart($this);
         $this->viewDoneState = new ABJ_404_Solution_ViewDoneState($this);
@@ -146,8 +143,7 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
             'rebuild_reconcile' => $this->rebuildReconcile,
             'lock_coordinator' => $this->lockCoordinator,
             'cron_scheduler' => $this->cronScheduler,
-            'php_env_probe' => $this->phpEnvProbe,
-            'session_env_probe' => $this->sessionEnvProbe,
+            'host_environment_probe' => $this->hostEnvironmentProbe,
             'host_failure_policy' => $this->hostFailurePolicy,
             'force_restart' => $this->forceRestart,
         );
@@ -280,22 +276,22 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
 
     /** @return array<string, mixed> */
     public function probePhpEnvironmentForBuild(): array {
-        return $this->phpEnvProbe->probePhpEnvironmentForBuild();
+        return $this->hostEnvironmentProbe->probePhpEnvironmentForBuild();
     }
 
     /** @return bool */
     public function probeSetTimeLimitAvailability(): bool {
-        return $this->phpEnvProbe->probeSetTimeLimitAvailability();
+        return $this->hostEnvironmentProbe->probeSetTimeLimitAvailability();
     }
 
     /** @return int */
     public function probeMemoryLimitForS9(): int {
-        return $this->phpEnvProbe->probeMemoryLimitForS9();
+        return $this->hostEnvironmentProbe->probeMemoryLimitForS9();
     }
 
     /** @return array<string, mixed> */
     public function probeFilesystemEnvironmentForBuild(): array {
-        return $this->phpEnvProbe->probeFilesystemEnvironmentForBuild();
+        return $this->hostEnvironmentProbe->probeFilesystemEnvironmentForBuild();
     }
 
     /** @return void */
@@ -310,7 +306,7 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
 
     /** @return array<string, mixed> */
     public function probeSessionVariablesAtS1Entry(): array {
-        return $this->sessionEnvProbe->probeSessionVariablesAtS1Entry();
+        return $this->hostEnvironmentProbe->probeSessionVariablesAtS1Entry();
     }
 
     /**

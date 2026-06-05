@@ -11,8 +11,8 @@ if (!defined('ABSPATH')) {
  * Absorbs these collaborators: ViewBuildReadGateway,
  * ViewBuildAdvanceCoordinator, ViewBuildStagePipeline,
  * ViewBuildForegroundLease, ViewBuildBatchExecutor, ViewBuildStageCallbacks,
- * ViewBuildLockCoordinator, ViewBuildCronScheduler, ViewBuildPhpEnvProbe,
- * ViewBuildHostFailurePolicy, ViewBuildSessionEnvProbe,
+ * ViewBuildLockCoordinator, ViewBuildCronScheduler,
+ * ViewBuildHostEnvironmentProbe, ViewBuildHostFailurePolicy,
  * ViewBuildStageRunner, ViewBuildAdaptive, ViewBuildForceRestart.
  *
  * @see docs/dataaccess-refactor-plan.md Phase 7.
@@ -107,7 +107,7 @@ interface ABJ_404_Solution_ViewBuildOrchestratorInterface {
      */
     public function scheduleViewDoneRebuild(int $delaySeconds = 1): void;
 
-    // --- ViewBuildPhpEnvProbe (PHP runtime constraints) ---
+    // --- ViewBuildHostEnvironmentProbe (PHP runtime constraints) ---
 
     /** @return array<string, mixed> */
     public function probePhpEnvironmentForBuild(): array;
@@ -129,7 +129,7 @@ interface ABJ_404_Solution_ViewBuildOrchestratorInterface {
     /** @return bool */
     public function reconcilePostStageElevenState(): bool;
 
-    // --- ViewBuildSessionEnvProbe (MySQL session health) ---
+    // --- ViewBuildHostEnvironmentProbe (MySQL session health) ---
 
     /** @return array<string, mixed> */
     public function probeSessionVariablesAtS1Entry(): array;

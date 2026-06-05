@@ -8,7 +8,7 @@ if (!defined('ABSPATH')) {
  * MySQL session sql_mode and max_allowed_packet probe for the staged build.
  *
  * Sibling of ViewBuildProgressOptions / ViewBuildStagedSqlExecutor /
- * ViewBuildStateProbe / ViewBuildPhpEnvProbe / ViewBuildSessionEnvProbe.
+ * ViewBuildStateProbe / ViewBuildHostEnvironmentProbe.
  * Originally extracted from the now-deleted ViewBuildHelpers grouping when
  * that file crossed the 1500-line ceiling; the i803 split further decomposed
  * that grouping into its three real responsibilities. Behavior is unchanged;
@@ -268,7 +268,7 @@ class ABJ_404_Solution_ViewBuildSqlModeProbe extends ABJ_404_Solution_ViewBuildC
         // The session-variables probe (operational + DDL-safety MySQL vars)
         // shares the same lifecycle as the sql_mode probe: a fresh build must
         // re-evaluate session config in case the host was tuned between runs.
-        // Lives on the sibling ABJ_404_Solution_ViewBuildSessionEnvProbe.
+        // Lives on the host-environment probe collaborator.
         $this->clearSessionVariablesProbeCache();
     }
 }
