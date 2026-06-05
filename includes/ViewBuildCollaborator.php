@@ -53,6 +53,7 @@ if (!defined('ABSPATH')) {
  * @method mixed classifyAndHandleStageFailure(...$arguments)
  * @method mixed classifySessionVariableWarnings(...$arguments)
  * @method mixed clearAllProgressOptions(...$arguments)
+ * @method mixed clearFilesystemEnvironmentProbeCache(...$arguments)
  * @method mixed clearPhpEnvironmentProbeCache(...$arguments)
  * @method mixed clearPrefixAtStageOne(...$arguments)
  * @method mixed clearSessionVariablesProbeCache(...$arguments)

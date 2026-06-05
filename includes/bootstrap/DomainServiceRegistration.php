@@ -49,7 +49,7 @@ class ABJ_404_Solution_DomainServiceRegistration {
         });
 
         $container->set('options_repository', function($c) {
-            return ABJ_404_Solution_PluginLogicOptionsResolver::getInstance();
+            return new ABJ_404_Solution_PluginLogicOptionsResolver();
         });
 
         $container->set('admin_access_policy', function($c) {

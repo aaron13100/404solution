@@ -58,6 +58,10 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
     private $cronScheduler;
     /** @var ABJ_404_Solution_ViewBuildHostEnvironmentProbe */
     private $hostEnvironmentProbe;
+    /** @var ABJ_404_Solution_ViewBuildFilesystemEnvironmentProbe */
+    private $filesystemEnvironmentProbe;
+    /** @var ABJ_404_Solution_ViewBuildSessionVariablesProbe */
+    private $sessionVariablesProbe;
     /** @var ABJ_404_Solution_ViewBuildHostFailureNotices */
     private $hostFailureNotices;
     /** @var ABJ_404_Solution_ViewBuildHostFailureState */
@@ -127,6 +131,8 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
         $this->lockCoordinator = new ABJ_404_Solution_ViewBuildLockCoordinator($this);
         $this->cronScheduler = new ABJ_404_Solution_ViewBuildCronScheduler($this);
         $this->hostEnvironmentProbe = new ABJ_404_Solution_ViewBuildHostEnvironmentProbe($this);
+        $this->filesystemEnvironmentProbe = new ABJ_404_Solution_ViewBuildFilesystemEnvironmentProbe($this);
+        $this->sessionVariablesProbe = new ABJ_404_Solution_ViewBuildSessionVariablesProbe($this);
         $this->hostFailureNotices = new ABJ_404_Solution_ViewBuildHostFailureNotices($this);
         $this->hostFailureState = new ABJ_404_Solution_ViewBuildHostFailureState($this);
         $this->hostFailurePolicy = new ABJ_404_Solution_ViewBuildHostFailurePolicy($this);
@@ -171,6 +177,8 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
             'lock_coordinator' => $this->lockCoordinator,
             'cron_scheduler' => $this->cronScheduler,
             'host_environment_probe' => $this->hostEnvironmentProbe,
+            'filesystem_environment_probe' => $this->filesystemEnvironmentProbe,
+            'session_variables_probe' => $this->sessionVariablesProbe,
             'host_failure_notices' => $this->hostFailureNotices,
             'host_failure_state' => $this->hostFailureState,
             'host_failure_policy' => $this->hostFailurePolicy,
@@ -329,7 +337,7 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
 
     /** @return array<string, mixed> */
     public function probeFilesystemEnvironmentForBuild(): array {
-        return $this->hostEnvironmentProbe->probeFilesystemEnvironmentForBuild();
+        return $this->filesystemEnvironmentProbe->probeFilesystemEnvironmentForBuild();
     }
 
     /** @return void */
@@ -344,7 +352,7 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
 
     /** @return array<string, mixed> */
     public function probeSessionVariablesAtS1Entry(): array {
-        return $this->hostEnvironmentProbe->probeSessionVariablesAtS1Entry();
+        return $this->sessionVariablesProbe->probeSessionVariablesAtS1Entry();
     }
 
     /**
@@ -480,10 +488,12 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
             'capturePrefixAtBuildStart' => 'prefix_drift_guard',
             'capturedPrefixForLog' => 'prefix_drift_guard',
             'classifyAndHandleStageFailure' => 'host_failure_policy',
+            'classifySessionVariableWarnings' => 'session_variables_probe',
             'clearAllProgressOptions' => 'progress_options',
+            'clearFilesystemEnvironmentProbeCache' => 'filesystem_environment_probe',
             'clearPhpEnvironmentProbeCache' => 'host_environment_probe',
             'clearPrefixAtStageOne' => 'prefix_drift_guard',
-            'clearSessionVariablesProbeCache' => 'host_environment_probe',
+            'clearSessionVariablesProbeCache' => 'session_variables_probe',
             'clearSqlModeProbeCache' => 'sql_mode_probe',
             'clearStagedBuildDegradedState' => 'host_failure_state',
             'clearViewBuildOpenStageForShutdown' => 'shutdown_diagnostics',
@@ -519,9 +529,9 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
             'optionReadBackMatches' => 'option_write_verifier',
             'phpTimeRemainingSeconds' => 'adaptive',
             'prefixAtStageOneOptionName' => 'prefix_drift_guard',
-            'probeFilesystemEnvironmentForBuild' => 'host_environment_probe',
+            'probeFilesystemEnvironmentForBuild' => 'filesystem_environment_probe',
             'probePhpEnvironmentForBuild' => 'host_environment_probe',
-            'probeSessionVariablesAtS1Entry' => 'host_environment_probe',
+            'probeSessionVariablesAtS1Entry' => 'session_variables_probe',
             'probeSetTimeLimitAvailability' => 'host_environment_probe',
             'probeSqlModeForBuild' => 'sql_mode_probe',
             'progressOptionName' => 'progress_options',

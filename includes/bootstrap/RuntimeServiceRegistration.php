@@ -51,7 +51,7 @@ class ABJ_404_Solution_RuntimeServiceRegistration {
         });
 
         $container->set('request_context', function($c) {
-            return ABJ_404_Solution_RequestContext::getInstance();
+            return new ABJ_404_Solution_RequestContext();
         });
 
         $container->set('ajax_security_gate', function($c) {

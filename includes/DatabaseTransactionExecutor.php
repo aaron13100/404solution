@@ -43,8 +43,10 @@ class ABJ_404_Solution_DatabaseTransactionExecutor {
             $lastError = '';
             $lastException = null;
             try {
+                // DAO-bypass-approved: transaction boundary must run on the active wpdb connection before grouped statements execute.
                 $wpdb->query('START TRANSACTION');
                 foreach ($statementArray as $statement) {
+                    // DAO-bypass-approved: transaction executor must preserve same-connection transaction state and last_error per statement.
                     $wpdb->query($statement);
                     if ($wpdb->last_error != null && trim((string)$wpdb->last_error) !== '') {
                         $allIsWell = false;
@@ -63,10 +65,12 @@ class ABJ_404_Solution_DatabaseTransactionExecutor {
             }
 
             if ($allIsWell && $lastException == null) {
+                // DAO-bypass-approved: transaction boundary must commit the active wpdb connection.
                 $wpdb->query('commit');
                 return;
             }
 
+            // DAO-bypass-approved: transaction boundary must roll back the active wpdb connection after any grouped statement failure.
             $wpdb->query('rollback');
             $retryable = $this->core->errorClassifier()->isDeadlockOrLockTimeoutError($lastError);
             if (!$retryable || $attempt >= $maxAttempts) {
