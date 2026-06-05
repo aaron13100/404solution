@@ -106,6 +106,7 @@ return array(
     'ABJ_404_Solution_PluginLogicAdminActions' => $base . 'includes/core/PluginLogicAdminActions.php',
     // Admin action handlers (strategy/registry pattern for handlePluginAction dispatch).
     'ABJ_404_Solution_AdminAssetEnqueuer' => $base . 'includes/admin/AdminAssetEnqueuer.php',
+    'ABJ_404_Solution_SetupWizardPresenter' => $base . 'includes/admin/SetupWizardPresenter.php',
     'ABJ_404_Solution_RedirectsTableColumns' => $base . 'includes/admin/RedirectsTableColumns.php',
     'ABJ_404_Solution_RedirectDestinationWarningPolicy' => $base . 'includes/admin/RedirectDestinationWarningPolicy.php',
     'ABJ_404_Solution_RedirectDestinationLinkResolver' => $base . 'includes/admin/RedirectDestinationLinkResolver.php',
@@ -158,6 +159,7 @@ return array(
     'ABJ_404_Solution_SettingsAdminExcludedPagesPolicy' => $base . 'includes/policies/SettingsAdminExcludedPagesPolicy.php',
     'ABJ_404_Solution_SettingsBooleanModePolicy' => $base . 'includes/policies/SettingsBooleanModePolicy.php',
     'ABJ_404_Solution_SettingsNotificationPolicy' => $base . 'includes/policies/SettingsNotificationPolicy.php',
+    'ABJ_404_Solution_SetupWizardAnswerPolicy' => $base . 'includes/policies/SetupWizardAnswerPolicy.php',
     'ABJ_404_Solution_SettingsRedirectPolicy' => $base . 'includes/policies/SettingsRedirectPolicy.php',
     'ABJ_404_Solution_SettingsRegexPatternPolicy' => $base . 'includes/policies/SettingsRegexPatternPolicy.php',
     'ABJ_404_Solution_SettingsRetentionPolicy' => $base . 'includes/policies/SettingsRetentionPolicy.php',
@@ -399,6 +401,7 @@ return array(
     'ABJ_404_Solution_Clock' => $base . 'includes/core/Clock.php',
     'ABJ_404_Solution_SystemClock' => $base . 'includes/core/Clock.php',
     'ABJ_404_Solution_FrozenClock' => $base . 'includes/core/Clock.php',
+    'ABJ_404_Solution_SetupWizardOptionStore' => $base . 'includes/settings/SetupWizardOptionStore.php',
     'ABJ_404_Solution_SetupWizard' => $base . 'includes/core/SetupWizard.php',
     'ABJ_404_Solution_ShortCode' => $base . 'includes/frontend/ShortCode.php',
     'ABJ_404_Solution_ShortcodeSuggestionAdminDebugPresenter' => $base . 'includes/view/ShortcodeSuggestionAdminDebugPresenter.php',
