@@ -1705,9 +1705,9 @@ if (!function_exists('abj404_maybePageLoadFallbackAdvance')) {
  * admin their cron is broken; this fallback unblocks the page in the
  * meantime so they can fix cron without staring at the loading
  * indicator forever. The actual gate logic and budget compression live
- * in ABJ_404_Solution_DataAccess::runPageLoadFallbackAdvance() so they
- * can be unit-tested directly; this wrapper is the admin_init hook
- * that wires the DAO method into the request lifecycle.
+ * in ABJ_404_Solution_ViewBuildOrchestrator::runPageLoadFallbackAdvance()
+ * so they can be unit-tested directly; this wrapper is the admin_init
+ * hook that wires the view-build service into the request lifecycle.
  *
  * Guards (in order, all required):
  *  - boot succeeded (plugin class loadable);
@@ -1718,11 +1718,11 @@ if (!function_exists('abj404_maybePageLoadFallbackAdvance')) {
  *    work on every navigation;
  *  - current user has the plugin admin capability (manage_options) so
  *    an unauthenticated request cannot trigger build work;
- *  - DataAccess exposes runPageLoadFallbackAdvance (defense for older
- *    in-place upgrades whose DAO class predates this method).
+ *  - the view-build service exposes runPageLoadFallbackAdvance (defense
+ *    for older in-place upgrades whose service graph predates this method).
  *
- * The DAO method itself owns the cron-stuck check, the transient gate,
- * the per-stage budget compression, and the build-lock semantics.
+ * The view-build method itself owns the cron-stuck check, the transient
+ * gate, the per-stage budget compression, and the build-lock semantics.
  *
  * @return void
  */
@@ -1749,9 +1749,9 @@ function abj404_maybePageLoadFallbackAdvance() {
     }
     try {
         require_once(plugin_dir_path(__FILE__) . "includes/Loader.php");
-        $dao = ABJ_404_Solution_DataAccess::getInstance();
-        if (is_object($dao) && method_exists($dao, 'runPageLoadFallbackAdvance')) {
-            $dao->runPageLoadFallbackAdvance();
+        $viewBuildOrchestrator = abj_service('view_build_orchestrator');
+        if (is_object($viewBuildOrchestrator) && method_exists($viewBuildOrchestrator, 'runPageLoadFallbackAdvance')) {
+            $viewBuildOrchestrator->runPageLoadFallbackAdvance();
         }
     } catch (\Throwable $e) {
         // Page-load fallback is best-effort. A failure here must not
