@@ -5,8 +5,17 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-/* Funtcions supporting Ajax stuff.  */
+require_once __DIR__ . '/AjaxServiceResolver.php';
+require_once __DIR__ . '/AjaxSearchFeedback.php';
+require_once __DIR__ . '/Ajax_UpdateOptions.php';
+require_once __DIR__ . '/Ajax_LoadGscSection.php';
+require_once __DIR__ . '/Ajax_ViewLogs.php';
+require_once __DIR__ . '/Ajax_RedirectDestinationAutocomplete.php';
 
+/**
+ * Legacy AJAX facade kept for backward compatibility with existing callbacks
+ * and tests. Endpoint behavior lives in focused ABJ_404_Solution_Ajax_* adapters.
+ */
 class ABJ_404_Solution_Ajax_Php {
 
 	/** @var self|null */
@@ -28,12 +37,12 @@ class ABJ_404_Solution_Ajax_Php {
 	 * @return bool True if rate limit exceeded, false otherwise
 	 */
 	static function checkRateLimit($action, $max_requests = 100, $time_window = 60) {
-		// Get user identifier (prefer user ID, fallback to IP)
 		$user_id = get_current_user_id();
 		if ($user_id) {
 			$identifier = 'user_' . $user_id;
 		} else {
-			$remote = isset($_SERVER['REMOTE_ADDR']) ? (string)$_SERVER['REMOTE_ADDR'] : 'unknown';
+			$remote = (isset($_SERVER['REMOTE_ADDR']) && is_scalar($_SERVER['REMOTE_ADDR']))
+				? (string)$_SERVER['REMOTE_ADDR'] : 'unknown';
 			$identifier = 'ip_' . md5($remote);
 		}
 
@@ -41,218 +50,126 @@ class ABJ_404_Solution_Ajax_Php {
 		$request_count = get_transient($transient_key);
 
 		if ($request_count === false) {
-			// First request in this time window
 			set_transient($transient_key, 1, $time_window);
 			return false;
 		} elseif ($request_count >= $max_requests) {
-			// Rate limit exceeded
 			return true;
 		} else {
-			// Increment counter
 			set_transient($transient_key, $request_count + 1, $time_window);
 			return false;
 		}
-	}
-
-	/**
-	 * @param string $serviceName
-	 * @return mixed
-	 */
-	private static function getServiceIfAvailable($serviceName) {
-		if (!class_exists('ABJ_404_Solution_ServiceContainer')) {
-			return null;
-		}
-		return ABJ_404_Solution_ServiceContainer::safeGet($serviceName);
-	}
-
-	/** @return object */
-	private static function getQueryStringHelperService() {
-		$service = self::getServiceIfAvailable('query_string_helper');
-		if (is_object($service) && is_callable(array($service, 'decodeComplicatedData'))) {
-			return $service;
-		}
-
-		$fallback = abj_service('query_string_helper');
-		if (is_object($fallback) && is_callable(array($fallback, 'decodeComplicatedData'))) {
-			return $fallback;
-		}
-
-		throw new \RuntimeException('404 Solution query_string_helper service is unavailable.');
-	}
-
-	/**
-	 * @param object $service
-	 * @return mixed
-	 */
-	private static function decodeComplicatedDataWithService($service, string $encodedData) {
-		$callback = array($service, 'decodeComplicatedData');
-		if (!is_callable($callback)) {
-			throw new \RuntimeException('404 Solution query_string_helper service cannot decode request payloads.');
-		}
-		return call_user_func($callback, $encodedData);
-	}
-
-	/** @return array<mixed, mixed>|null */
-	private static function decodeUpdateOptionsPayload() {
-		if (!isset($_POST['encodedData']) || !is_scalar($_POST['encodedData'])) {
-			ABJ_404_Solution_AjaxRequestContractValidator::requireValidPayload(
-				'ajax-update-options',
-				array()
-			);
-			return null;
-		}
-
-		$postData = self::decodeComplicatedDataWithService(
-			self::getQueryStringHelperService(),
-			(string)$_POST['encodedData']
-		);
-		if (!is_array($postData) ||
-				!ABJ_404_Solution_AjaxRequestContractValidator::requireValidPayload(
-					'ajax-update-options',
-					$postData
-				)) {
-			return null;
-		}
-
-		return $postData;
-	}
-
-	/**
-	 * @param array<mixed, mixed> $postData
-	 * @return string
-	 */
-	private static function nonceFromDecodedPostData(array $postData) {
-		$nonce = $postData['nonce'] ?? '';
-		return is_string($nonce) ? $nonce : '';
 	}
 
 	/** Update plugin options via AJAX.
 	 * @return void
 	 */
 	static function updateOptions() {
-		$postData = self::decodeUpdateOptionsPayload();
-		if ($postData === null) {
-			return;
-		}
-
-		$logic = self::getServiceIfAvailable('plugin_logic');
-		/** @var ABJ_404_Solution_PluginLogic $abj404logic */
-		$abj404logic = ($logic !== null) ? $logic : abj_service('plugin_logic');
-
-		// Verify user has appropriate capabilities (respects plugin admin users)
-		$userIsPluginAdmin = (bool)abj_service('admin_access_policy')->isPluginAdmin();
-		if (!$userIsPluginAdmin) {
-			wp_send_json_error(array('message' => 'Unauthorized'), 403);
-			return; // @phpstan-ignore deadCode.unreachable
-		}
-
-		// Verify nonce for CSRF protection
-		// The nonce is sent as part of the form data which is JSON-encoded in 'encodedData'
-		if (!wp_verify_nonce(self::nonceFromDecodedPostData($postData), 'abj404UpdateOptions')) {
-			wp_send_json_error(array('message' => 'Invalid security token'), 403);
-			return; // @phpstan-ignore deadCode.unreachable
-		}
-
-		$result = $abj404logic->settingsUpdate()->updateOptionsFromPOST();
-		if (!is_array($result) || !array_key_exists('success', $result)) {
-			// No underlying cause to surface: this is a developer-side contract
-			// violation (updateOptionsFromPOST() must return ['success'=>bool,...]).
-			// Include the observed array keys so a developer reading the response
-			// can locate the violation; the end user cannot self-fix this.
-			$keys = implode(',', array_keys($result));
-			wp_send_json_error(array('message' => 'Server error (handler result array missing "success" key; keys present: ' . $keys . ')'), 500);
-			return; // @phpstan-ignore deadCode.unreachable
-		}
-
-		if (!$result['success']) {
-			$statusRaw = array_key_exists('status', $result) ? $result['status'] : 400;
-			$status = is_scalar($statusRaw) ? intval($statusRaw) : 400;
-			$messageRaw = array_key_exists('message', $result) ? $result['message'] : 'Server error';
-			$message = is_scalar($messageRaw) ? (string)$messageRaw : 'Server error';
-			wp_send_json_error(array('message' => $message), $status);
-			return; // @phpstan-ignore deadCode.unreachable
-		}
-
-		$data = array_key_exists('data', $result) ? $result['data'] : array();
-		wp_send_json_success($data, 200);
+		ABJ_404_Solution_Ajax_UpdateOptions::updateOptions();
 	}
 
 	/** Load the Google Search Console options section asynchronously.
 	 * @return void
 	 */
 	static function loadGscSection() {
-		$logic = self::getServiceIfAvailable('plugin_logic');
-		/** @var ABJ_404_Solution_PluginLogic $abj404logic */
-		$abj404logic = ($logic !== null) ? $logic : abj_service('plugin_logic');
-
-		$userIsPluginAdmin = (bool)abj_service('admin_access_policy')->isPluginAdmin();
-		if (!$userIsPluginAdmin) {
-			wp_send_json_error(array('message' => __('Unauthorized', '404-solution')), 403);
-			return; // @phpstan-ignore deadCode.unreachable
-		}
-
-		$nonceRaw = isset($_POST['nonce']) && is_string($_POST['nonce']) ? $_POST['nonce'] : '';
-		if ($nonceRaw === '' || !wp_verify_nonce($nonceRaw, 'abj404_gsc_deferred')) {
-			wp_send_json_error(array('message' => __('Invalid security token', '404-solution')), 403);
-			return; // @phpstan-ignore deadCode.unreachable
-		}
-
-		if (self::checkRateLimit('load_gsc_section', 30, 60)) {
-			wp_send_json_error(array('message' => __('Rate limit exceeded. Please try again later.', '404-solution')), 429);
-			return; // @phpstan-ignore deadCode.unreachable
-		}
-
-		try {
-			$gscLogger = abj_service('logging');
-			$gsc = new ABJ_404_Solution_GoogleSearchConsole($gscLogger);
-
-			// Render using cached data only — never blocks on API calls.
-			$html = $gsc->renderAdminSection();
-
-			// If connected and data is stale, kick off a background refresh.
-			$refreshScheduled = false;
-			if ($gsc->getState() === 'connected' && $gsc->isRefreshNeeded()) {
-				$gsc->scheduleBackgroundRefresh();
-				$refreshScheduled = true;
-			}
-
-			wp_send_json_success(array('html' => $html, 'refresh_scheduled' => $refreshScheduled), 200);
-			return; // @phpstan-ignore deadCode.unreachable
-		} catch (Throwable $e) {
-			$logger = abj_service('logging');
-			if (is_object($logger) && method_exists($logger, 'errorMessage')) {
-				$logger->errorMessage('Error loading deferred GSC section: ' . $e->getMessage());
-			}
-			// Per CLAUDE.md error visibility rule: surface the underlying exception
-			// detail so the admin can self-diagnose (e.g. missing OAuth credential
-			// file, GSC class autoload failure) instead of seeing only a canned
-			// "Unable to..." message. This endpoint is admin-only (gated above),
-			// so leaking the exception text is acceptable.
-			$detail = (string)$e->getMessage();
-			$framing = __('Unable to load Google Search Console section.', '404-solution');
-			$message = $detail !== '' ? $framing . ' (' . $detail . ')' : $framing;
-			wp_send_json_error(array('message' => $message), 500);
-			return; // @phpstan-ignore deadCode.unreachable
-		}
+		ABJ_404_Solution_Ajax_LoadGscSection::loadGscSection();
 	}
+
+    /** Find logs to display.
+     * @return void
+     */
+    static function echoViewLogsFor() {
+        ABJ_404_Solution_Ajax_ViewLogs::echoViewLogsFor();
+    }
+
+    /** Find pages to redirect to that match a search term, then echo the results in a json format.
+     * @return void
+     */
+    static function echoRedirectToPages() {
+        ABJ_404_Solution_Ajax_RedirectDestinationAutocomplete::echoRedirectToPages();
+    }
+
+    /** Add a message about whether there are too many results or none at all.
+     * @param array<int, array<string, string>> $suggestions
+     * @param string $term
+     * @return array<int, array<string, string>>
+     */
+    function provideSearchFeedback($suggestions, $term) {
+        return (new ABJ_404_Solution_Ajax_SearchFeedback())->provideSearchFeedback($suggestions, $term);
+    }
+
+    /** Remove any results from the list that don't match the search term.
+     * @param array<int, array<string, string>> $pagesToFilter
+     * @param string $searchTerm
+     * @return array<int, array<string, string>>
+     */
+    function filterPages($pagesToFilter, $searchTerm) {
+        return (new ABJ_404_Solution_Ajax_SearchFeedback())->filterPages($pagesToFilter, $searchTerm);
+    }
+
+    /** Create a "Home Page" destination.
+     * @param bool $includeDefault404Page
+     * @param bool $includeSpecial
+     * @return array<int, array<string, string>>
+     */
+    function getDefaultRedirectDestinations($includeDefault404Page, $includeSpecial) {
+        return ABJ_404_Solution_Ajax_RedirectDestinationAutocomplete::getDefaultRedirectDestinations(
+            $includeDefault404Page,
+            $includeSpecial
+        );
+    }
+
+    /** Prepare categories for json output.
+     * @param array<int, object{taxonomy: string, name: string, term_id: int|string}> $rows
+     * @return array<int, array<string, string>>
+     */
+    function formatCategoryDestinations($rows) {
+        return ABJ_404_Solution_Ajax_RedirectDestinationAutocomplete::formatCategoryDestinations($rows);
+    }
+
+    /** Prepare tags for json output.
+     * @param array<int, object{name: string, term_id: int|string}> $rows
+     * @return array<int, array<string, string>>
+     */
+    function formatTagDestinations($rows) {
+        return ABJ_404_Solution_Ajax_RedirectDestinationAutocomplete::formatTagDestinations($rows);
+    }
+
+    /** Prepare custom categories for json output.
+     * @param array<string, array<int, object{name: string, term_id: int|string}>> $customCategoriesMap
+     * @return array<int, array<string, string>>
+     */
+    function formatCustomCategoryDestinations($customCategoriesMap) {
+        return ABJ_404_Solution_Ajax_RedirectDestinationAutocomplete::formatCustomCategoryDestinations($customCategoriesMap);
+    }
+
+    /** Prepare pages and posts for json output.
+     * @param array<int, object{post_title: string, post_type: string, id: int|string, depth: int|string}> $rows
+     * @return array<int, array<string, string>>
+     */
+    function formatRedirectDestinations($rows) {
+        return ABJ_404_Solution_Ajax_RedirectDestinationAutocomplete::formatRedirectDestinations($rows);
+    }
+
+    /** Prepare log results for json output.
+     * @param array<int, array<string, mixed>> $rows
+     * @return array<int, array<string, string>>
+     */
+    function formatLogResults($rows) {
+        return ABJ_404_Solution_Ajax_ViewLogs::formatLogResults($rows);
+    }
 
 	/**
 	 * Consistent JSON response helper for endpoints that previously echoed JSON and exited.
-	 *
-	 * In production, wp_send_json() terminates the request.
-	 * In unit tests, callers can stub wp_send_json() or hook the
-	 * `abj404_should_exit` filter to return false (skips the trailing exit).
 	 *
 	 * @param mixed $payload
 	 * @param int $status
 	 * @return void
 	 */
-	private static function sendJson($payload, $status = 200) {
+	public static function sendJson($payload, $status = 200) {
 		if (function_exists('wp_send_json')) {
 			wp_send_json($payload, $status);
 		}
 
-		// Fallback for unusual environments (should not happen in WordPress).
 		if (!headers_sent()) {
 			header('Content-type: application/json; charset=UTF-8');
 			if (function_exists('status_header')) {
@@ -267,387 +184,4 @@ class ABJ_404_Solution_Ajax_Php {
 		}
 		exit;
 	}
-
-	/**
-	 * @param string $message
-	 * @return array<int, array<string, string>>
-	 */
-	private static function buildAutocompleteErrorItem($message) {
-		return array(
-			array(
-				'label' => '',
-				'category' => (string)$message,
-				'value' => '',
-				'data_overflow_item' => 'true',
-			),
-		);
-	}
-	
-    /** Find logs to display.
-     * @return void
-     */
-    static function echoViewLogsFor() {
-    	$abj404AjaxPhp = ABJ_404_Solution_Ajax_Php::getInstance();;
-        $logsRepo = self::getServiceIfAvailable('logs_repository');
-        /** @var ABJ_404_Solution_LogsRepository $logsRepository */
-        $logsRepository = ($logsRepo !== null) ? $logsRepo : abj_service('logs_repository');
-        $funcs = self::getServiceIfAvailable('functions');
-        /** @var ABJ_404_Solution_Functions $f */
-        $f = ($funcs !== null) ? $funcs : abj_service('functions');
-
-        // Verify nonce for CSRF protection
-        $getNonce = isset($_GET['nonce']) ? (string)$_GET['nonce'] : '';
-        if ($getNonce === '' || !wp_verify_nonce($getNonce, 'abj404_ajax')) {
-            // Keep HTTP 200 for jQuery UI autocomplete (it does not process non-2xx JSON well).
-            self::sendJson(self::buildAutocompleteErrorItem(__('Invalid security token', '404-solution')), 200);
-            return;
-        }
-
-        // Verify user has appropriate capabilities (respects plugin admin users)
-        $logicSvc = self::getServiceIfAvailable('plugin_logic');
-        /** @var ABJ_404_Solution_PluginLogic $abj404logic */
-        $abj404logic = ($logicSvc !== null) ? $logicSvc : abj_service('plugin_logic');
-        if (!abj_service('admin_access_policy')->isPluginAdmin()) {
-            self::sendJson(self::buildAutocompleteErrorItem(__('Unauthorized', '404-solution')), 200);
-            return;
-        }
-
-        // Rate limiting to prevent abuse (100 requests per minute)
-        if (self::checkRateLimit('view_logs', 100, 60)) {
-            self::sendJson(self::buildAutocompleteErrorItem(__('Rate limit exceeded. Please try again later.', '404-solution')), 200);
-            return;
-        }
-
-        // Limit search term length to prevent DoS
-        $termRaw = array_key_exists('term', $_GET) ? $_GET['term'] : '';
-        $term = $f->strtolower(sanitize_text_field($termRaw));
-        $term = substr($term, 0, 100);
-        $suggestions = array();
-
-        $suggestion = array();
-        $suggestion['label'] = __('(Show All Logs)', '404-solution');
-        $suggestion['category'] = 'Special';
-        $suggestion['value'] = 0;
-        $specialSuggestion = array();
-        $specialSuggestion[] = $suggestion;
-        
-        // Pass the raw term; getLogsIDandURLLike() builds the LIKE pattern safely.
-        $rows = $logsRepository->getLogsIDandURLLike($term, ABJ404_MAX_AJAX_DROPDOWN_SIZE);
-        $results = $abj404AjaxPhp->formatLogResults($rows);
-        
-        // limit search results
-        $suggestions = $abj404AjaxPhp->provideSearchFeedback($results, $term);
-        
-        $suggestions = array_merge($specialSuggestion, $suggestions);
-                
-        self::sendJson($suggestions, 200);
-        return;
-    }
-    
-    /** Find pages to redirect to that match a search term, then echo the results in a json format.
-     * @return void
-     */
-    static function echoRedirectToPages() {
-        $logic = self::getServiceIfAvailable('plugin_logic');
-        /** @var ABJ_404_Solution_PluginLogic $abj404logic */
-        $abj404logic = ($logic !== null) ? $logic : abj_service('plugin_logic');
-        $abj404AjaxPhp = ABJ_404_Solution_Ajax_Php::getInstance();
-        $contentRepo = self::getServiceIfAvailable('content_repository');
-        /** @var ABJ_404_Solution_ContentRepository $contentRepository */
-        $contentRepository = ($contentRepo !== null) ? $contentRepo : abj_service('content_repository');
-        $funcs = self::getServiceIfAvailable('functions');
-        /** @var ABJ_404_Solution_Functions $f */
-        $f = ($funcs !== null) ? $funcs : abj_service('functions');
-
-        // Verify nonce for CSRF protection
-        $getNonce = isset($_GET['nonce']) ? (string)$_GET['nonce'] : '';
-        if ($getNonce === '' || !wp_verify_nonce($getNonce, 'abj404_ajax')) {
-            self::sendJson(self::buildAutocompleteErrorItem(__('Invalid security token', '404-solution')), 200);
-            return;
-        }
-
-        // Verify user has appropriate capabilities (respects plugin admin users)
-        if (!abj_service('admin_access_policy')->isPluginAdmin()) {
-            self::sendJson(self::buildAutocompleteErrorItem(__('Unauthorized', '404-solution')), 200);
-            return;
-        }
-
-        // Rate limiting to prevent abuse (100 requests per minute)
-        if (self::checkRateLimit('redirect_pages', 100, 60)) {
-            self::sendJson(self::buildAutocompleteErrorItem(__('Rate limit exceeded. Please try again later.', '404-solution')), 200);
-            return;
-        }
-
-        // Limit search term length to prevent DoS
-        $termRaw = array_key_exists('term', $_GET) ? $_GET['term'] : '';
-        $term = $f->strtolower(sanitize_text_field($termRaw));
-        $term = substr($term, 0, 100);
-        $includeDefault404PageRaw = array_key_exists('includeDefault404Page', $_GET) ? $_GET['includeDefault404Page'] : 'false';
-        $includeDefault404Page = $includeDefault404PageRaw == "true";
-        $includeSpecial = array_key_exists('includeSpecial', $_GET) &&
-        	$_GET['includeSpecial'] == "true";
-        $suggestions = array();
-
-        // add the "Home Page" destination.
-        $specialPages = $abj404AjaxPhp->getDefaultRedirectDestinations($includeDefault404Page,
-        	$includeSpecial);
-
-        // Query to get the posts and pages matching the search term
-        $rowsOtherTypes = $contentRepository->getPublishedPagesAndPostsIDs('', $term, (string)ABJ404_MAX_AJAX_DROPDOWN_SIZE);
-        // order the results. this also sets the page depth (for child pages).
-        $rowsOtherTypes = $abj404logic->pageOrdering()->orderPageResults($rowsOtherTypes, true);
-        /** @var array<int, object{post_title: string, post_type: string, id: int|string, depth: int|string}> $rowsOtherTypesTyped */
-        $rowsOtherTypesTyped = $rowsOtherTypes;
-        $publishedPosts = $abj404AjaxPhp->formatRedirectDestinations($rowsOtherTypesTyped);
-
-        /** @var array<int, object{taxonomy: string, name: string, term_id: int|string}> $cats */
-        $cats = $contentRepository->getPublishedCategories(null, null, ABJ404_MAX_AJAX_DROPDOWN_SIZE);
-        $categoryOptions = $abj404AjaxPhp->formatCategoryDestinations($cats);
-
-        /** @var array<int, object{name: string, term_id: int|string}> $tags */
-        $tags = $contentRepository->getPublishedTags(null, ABJ404_MAX_AJAX_DROPDOWN_SIZE);
-        $tagOptions = $abj404AjaxPhp->formatTagDestinations($tags);
-
-        /** @var array<int, object{taxonomy: string, name: string, term_id: int|string}> $catsForCustom */
-        $catsForCustom = $cats;
-        $customCategoriesMap = $abj404logic->pageOrdering()->getMapOfCustomCategories($catsForCustom);
-        /** @var array<string, array<int, object{name: string, term_id: int|string}>> $customCategoriesMapTyped */
-        $customCategoriesMapTyped = $customCategoriesMap;
-        $customCategoryOptions = $abj404AjaxPhp->formatCustomCategoryDestinations($customCategoriesMapTyped);
-
-        // ---------------------------------------
-        // now we filter the results based on the search term.
-        $specialPages = $abj404AjaxPhp->filterPages($specialPages, $term);
-        $categoryOptions = $abj404AjaxPhp->filterPages($categoryOptions, $term);
-        $tagOptions = $abj404AjaxPhp->filterPages($tagOptions, $term);
-        $customCategoryOptions = $abj404AjaxPhp->filterPages($customCategoryOptions, $term);
-
-        // combine and display the search results.
-        $suggestions = array_merge($specialPages, $publishedPosts, $categoryOptions, $tagOptions,
-                $customCategoryOptions);
-
-        // limit search results
-        $suggestions = $abj404AjaxPhp->provideSearchFeedback($suggestions, $term);
-
-        self::sendJson($suggestions, 200);
-        return;
-    }
-
-    /** Add a message about whether there are too many results or none at all.
-     * @param array<int, array<string, string>> $suggestions
-     * @param string $term
-     * @return array<int, array<string, string>>
-     */
-    function provideSearchFeedback($suggestions, $term) {
-        $f = abj_service('functions');
-        $category = '';
-        
-        if (empty($suggestions)) {
-            // tell the user if there are no resluts.
-            if ($f->strlen(trim($term)) == 0) {
-                $category = sprintf(__("(No matching results found.)", '404-solution'));
-            } else {
-                $category = sprintf(__("(No matching results found for \"%s.\")", '404-solution'), $term);
-            }
-            
-        } else if (count($suggestions) > ABJ404_MAX_AJAX_DROPDOWN_SIZE) {
-            // limit the results if there are too many
-            $suggestions = array_slice($suggestions, 0, ABJ404_MAX_AJAX_DROPDOWN_SIZE);
-            if ($f->strlen(trim($term)) == 0) {
-                $category = sprintf(__("(Data truncated. Too many results!)", '404-solution'));
-            } else {
-                $category = sprintf(__("(Data truncated. Too many results for \"%s!\".)", '404-solution'), $term);
-            }
-            
-        } else {
-            if ($f->strlen(trim($term)) == 0) {
-                $category = sprintf(__("(All results displayed.)", '404-solution'));
-            } else {
-                $category = sprintf(__("(All results displayed for \"%s.\")", '404-solution'), $term);
-            }
-        }
-        
-        $suggestion = array();
-        $suggestion['label'] = '';
-        $suggestion['category'] = $category;
-        $suggestion['value'] = '';
-        $suggestion['data_overflow_item'] = 'true';
-        $suggestions[] = $suggestion;
-        
-        return $suggestions;
-    }
-    
-    /** Remove any results from the list that don't match the search term.
-     * @param array<int, array<string, string>> $pagesToFilter
-     * @param string $searchTerm
-     * @return array<int, array<string, string>>
-     */
-    function filterPages($pagesToFilter, $searchTerm) {
-        $f = abj_service('functions');
-        if ($searchTerm == "") {
-            return $pagesToFilter;
-        }        
-
-        // build a new list with only the included results to return.
-        $newPagesList = array();
-        
-        foreach ($pagesToFilter as $page) {
-        	$haystack = $f->strtolower($page['label']);
-        	$haystack2 = $f->strtolower($page['category']);
-        	$needle = $f->strtolower($searchTerm);
-        	if ($f->strpos($haystack, $needle) !== false) {
-        		$newPagesList[] = $page;
-        	} else if ($f->strpos($haystack2, $needle) !== false) {
-        		$newPagesList[] = $page;
-        	}
-        }
-        
-        return $newPagesList;
-    }
-    
-    /** Create a "Home Page" destination.
-     * @param bool $includeDefault404Page
-     * @param bool $includeSpecial
-     * @return array<int, array<string, string>>
-     */
-    function getDefaultRedirectDestinations($includeDefault404Page, $includeSpecial) {
-        $arrayWrapper = array();
-        $suggestion = array();
-        
-        // --- default 404 page
-        if ($includeSpecial && $includeDefault404Page) {
-            $suggestion['category'] = __('Special', '404-solution');
-            $suggestion['label'] = __('(Default 404 Page)', '404-solution');
-            $suggestion['value'] = ABJ404_TYPE_404_DISPLAYED . '|' . ABJ404_TYPE_404_DISPLAYED;
-            // depth 0 means it's not a child page
-            $suggestion['depth'] = '0';
-            $arrayWrapper[] = $suggestion;
-        }
-        
-        if ($includeSpecial) {
-	        // --- home page
-	        $suggestion['category'] = __('Special', '404-solution');
-	        $suggestion['label'] = __('Home Page', '404-solution');
-	        $suggestion['value'] = ABJ404_TYPE_HOME . '|' . ABJ404_TYPE_HOME;
-	        // depth 0 means it's not a child page
-	        $suggestion['depth'] = '0';
-	        $arrayWrapper[] = $suggestion;
-        }
-        
-        return $arrayWrapper;
-    }
-    
-    /** Prepare categories for json output.
-     * @param array<int, object{taxonomy: string, name: string, term_id: int|string}> $rows
-     * @return array<int, array<string, string>>
-     */
-    function formatCategoryDestinations($rows) {
-        $suggestions = array();
-        
-        foreach ($rows as $row) {
-            if ($row->taxonomy != 'category') {
-                continue;
-            }
-            
-            $suggestion = array();
-            $suggestion['label'] = $row->name;
-            $suggestion['category'] = __('Categories', '404-solution');
-            $suggestion['value'] = $row->term_id . "|" . ABJ404_TYPE_CAT;
-            // depth 0 means it's not a child page
-            $suggestion['depth'] = '0';
-            
-            $suggestions[] = $suggestion;
-        }
-        
-        return $suggestions;
-    }
-    
-    /** Prepare tags for json output.
-     * @param array<int, object{name: string, term_id: int|string}> $rows
-     * @return array<int, array<string, string>>
-     */
-    function formatTagDestinations($rows) {
-        $suggestions = array();
-        
-        foreach ($rows as $row) {
-            $suggestion = array();
-            $suggestion['label'] = $row->name;
-            $suggestion['category'] = __('Tags', '404-solution');
-            $suggestion['value'] = $row->term_id . "|" . ABJ404_TYPE_TAG;
-            // depth 0 means it's not a child page
-            $suggestion['depth'] = '0';
-            
-            $suggestions[] = $suggestion;
-        }
-        
-        return $suggestions;
-    }
-    
-    /** Prepare custom categories for json output.
-     * @param array<string, array<int, object{name: string, term_id: int|string}>> $customCategoriesMap
-     * @return array<int, array<string, string>>
-     */
-    function formatCustomCategoryDestinations($customCategoriesMap) {
-        $suggestions = array();
-        
-        foreach ($customCategoriesMap as $taxonomy => $rows) {
-        
-            foreach ($rows as $row) {
-
-                $suggestion = array();
-                $suggestion['label'] = $row->name;
-                $suggestion['category'] = $taxonomy;
-                $suggestion['value'] = $row->term_id . "|" . ABJ404_TYPE_CAT;
-                // depth 0 means it's not a child page
-                $suggestion['depth'] = '0';
-
-                $suggestions[] = $suggestion;
-            }
-        }
-        
-        return $suggestions;
-    }
-    
-    /** Prepare pages and posts for json output.
-     * @param array<int, object{post_title: string, post_type: string, id: int|string, depth: int|string}> $rows
-     * @return array<int, array<string, string>>
-     */
-    function formatRedirectDestinations($rows) {
-        $suggestions = array();
-        
-        foreach ($rows as $row) {
-            $suggestion = array();
-            $suggestion['label'] = $row->post_title;
-            $suggestion['category'] = ucwords($row->post_type);
-            $suggestion['value'] = $row->id . "|" . ABJ404_TYPE_POST;
-            // depth 0 means it's not a child page
-            $suggestion['depth'] = (string)$row->depth;
-            
-            $suggestions[] = $suggestion;
-        }
-        
-        return $suggestions;
-    }
-
-    /** Prepare log results for json output.
-     * @param array<int, array<string, mixed>> $rows
-     * @return array<int, array<string, string>>
-     */
-    function formatLogResults($rows) {
-        $suggestions = array();
-
-        foreach ($rows as $row) {
-            $reqUrl = isset($row['requested_url']) ? $row['requested_url'] : '';
-            $logsId = isset($row['logsid']) ? $row['logsid'] : '';
-            $suggestion = array();
-            $suggestion['label'] = is_scalar($reqUrl) ? (string)$reqUrl : '';
-            $suggestion['category'] = 'Normal';
-            $suggestion['value'] = is_scalar($logsId) ? (string)$logsId : '';
-
-            $suggestions[] = $suggestion;
-        }
-
-        return $suggestions;
-    }
-    
 }
