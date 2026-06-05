@@ -50,6 +50,9 @@ class ABJ_404_Solution_RedirectDispatcher {
     /** @var mixed */
     private $logsRepository;
 
+    /** @var ABJ_404_Solution_FrontendAsyncSuggestionTrigger */
+    private $asyncSuggestionTrigger;
+
     /**
      * @param ABJ_404_Solution_PluginLogic $logic
      * @param ABJ_404_Solution_RedirectsRepository $redirectsRepository
@@ -60,9 +63,10 @@ class ABJ_404_Solution_RedirectDispatcher {
      * @param ABJ_404_Solution_PreviousRequestCookieTracker $previousRequestCookieTracker
      * @param ABJ_404_Solution_FrontendPipelineTelemetry $telemetry
      * @param mixed $logsRepository Object with logRedirectHit(); duck-typed.
+     * @param ABJ_404_Solution_FrontendAsyncSuggestionTrigger|null $asyncSuggestionTrigger
      */
     function __construct($logic, $redirectsRepository, $logger, $functions, $spellChecker,
-            $notFoundResponse, $previousRequestCookieTracker, $telemetry, $logsRepository) {
+            $notFoundResponse, $previousRequestCookieTracker, $telemetry, $logsRepository, $asyncSuggestionTrigger = null) {
         $this->logic = $logic;
         $this->redirectsRepository = $redirectsRepository;
         $this->logger = $logger;
@@ -72,6 +76,9 @@ class ABJ_404_Solution_RedirectDispatcher {
         $this->previousRequestCookieTracker = $previousRequestCookieTracker;
         $this->telemetry = $telemetry;
         $this->logsRepository = $logsRepository;
+        $this->asyncSuggestionTrigger = $asyncSuggestionTrigger !== null
+            ? $asyncSuggestionTrigger
+            : new ABJ_404_Solution_FrontendAsyncSuggestionTrigger($spellChecker);
     }
 
     /**
@@ -111,7 +118,7 @@ class ABJ_404_Solution_RedirectDispatcher {
         if ($redirect['type'] == ABJ404_TYPE_404_DISPLAYED) {
             $trace->add('Result', 'Showed 404 page', $redirectUrl);
             $this->writeHit($redirectUrl, '404', $matchReason, null, $trace->getSteps());
-            $this->triggerAsyncSuggestionsIfNeeded($requestedURL);
+            $this->asyncSuggestionTrigger->triggerIfNeeded($requestedURL);
             $this->telemetry->emitBenchmarkHeadersIfEnabled();
             $this->notFoundResponse->sendTo404Page($requestedURL, $matchReason);
             return true;
@@ -172,7 +179,7 @@ class ABJ_404_Solution_RedirectDispatcher {
             $this->logger->warn('Redirect destination missing. Sending request to 404 page instead. Redirect ID: ' . $redirectId);
             $trace->add('Result', 'Showed 404 page - redirect destination missing', 'rule #' . $redirectId);
             $this->writeHit($redirectUrl, '404', $matchReason . ' (missing destination)', null, $trace->getSteps());
-            $this->triggerAsyncSuggestionsIfNeeded($requestedURL);
+            $this->asyncSuggestionTrigger->triggerIfNeeded($requestedURL);
             $this->telemetry->emitBenchmarkHeadersIfEnabled();
             $this->notFoundResponse->sendTo404Page($requestedURL, 'missing redirect destination');
             return true;
@@ -188,7 +195,7 @@ class ABJ_404_Solution_RedirectDispatcher {
             $this->logger->warn('Resolved permalink is empty/invalid. Sending request to 404 page instead. Redirect ID: ' . $redirectId);
             $trace->add('Result', 'Showed 404 page - redirect destination invalid', 'rule #' . $redirectId);
             $this->writeHit($redirectUrl, '404', $matchReason . ' (invalid destination)', null, $trace->getSteps());
-            $this->triggerAsyncSuggestionsIfNeeded($requestedURL);
+            $this->asyncSuggestionTrigger->triggerIfNeeded($requestedURL);
             $this->telemetry->emitBenchmarkHeadersIfEnabled();
             $this->notFoundResponse->sendTo404Page($requestedURL, 'invalid redirect destination');
             return true;
@@ -330,16 +337,6 @@ class ABJ_404_Solution_RedirectDispatcher {
                     $this->redirectsRepository->deleteRedirect($redirectIdVal);
                 }
             }
-        }
-    }
-
-    /**
-     * @param string $requestedURL
-     * @return void
-     */
-    private function triggerAsyncSuggestionsIfNeeded(string $requestedURL): void {
-        if ($this->spellChecker->does404PageHaveSuggestionsShortcode()) {
-            $this->spellChecker->triggerAndCleanupOnFailure($requestedURL);
         }
     }
 
