@@ -11,6 +11,10 @@ require_once __DIR__ . '/LogsLookupRepository.php';
 require_once __DIR__ . '/LogsPrivacyService.php';
 require_once __DIR__ . '/LogsReadQueries.php';
 require_once __DIR__ . '/LogsHitsDataPopulator.php';
+require_once __DIR__ . '/LogsEntrySanitizer.php';
+require_once __DIR__ . '/LogsRequestedUrlColumnMetadata.php';
+require_once __DIR__ . '/LogsWriteRecoveryPolicy.php';
+require_once __DIR__ . '/LogsQueueFlusher.php';
 require_once __DIR__ . '/LogsWriter.php';
 
 /**
