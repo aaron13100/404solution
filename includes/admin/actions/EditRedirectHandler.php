@@ -211,8 +211,9 @@ class ABJ_404_Solution_EditRedirectHandler {
             $context['startTs'],
             $context['endTs']
         ));
-        if ($updateError !== '') {
-            return $this->formatUpdateRedirectError($updateError) . "<BR/>";
+        $errorCode = is_scalar($updateError) ? (string)$updateError : '';
+        if ($errorCode !== '') {
+            return $this->formatUpdateRedirectError($errorCode) . "<BR/>";
         }
         if ($autoPromote['autoPromoted']) {
             $this->resolver->saveRegexAutoPromoteNotice($id, $originalFromURL, $fromURL, $autoPromote['urlRewritten']);
@@ -245,8 +246,9 @@ class ABJ_404_Solution_EditRedirectHandler {
                 $context['code'],
                 (string)$context['statusType']
             ));
-            if ($updateError !== '') {
-                $message .= $this->formatUpdateRedirectError($updateError) . "<BR/>";
+            $errorCode = is_scalar($updateError) ? (string)$updateError : '';
+            if ($errorCode !== '') {
+                $message .= $this->formatUpdateRedirectError($errorCode) . "<BR/>";
                 continue;
             }
             $updatedAny = true;
