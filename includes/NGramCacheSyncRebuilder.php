@@ -24,20 +24,25 @@ class ABJ_404_Solution_NGramCacheSyncRebuilder {
     /** @var ABJ_404_Solution_DatabaseCoreInterface */
     private $dbCore;
 
-    /** @var ABJ_404_Solution_NGramFilter */
-    private $ngramFilter;
+    /** @var mixed */
+    private $rebuilder;
+
+    /** @var mixed */
+    private $coveragePolicy;
 
     /** @var ABJ_404_Solution_Logging */
     private $logger;
 
     /**
      * @param ABJ_404_Solution_DatabaseCoreInterface $dbCore
-     * @param ABJ_404_Solution_NGramFilter $ngramFilter
+     * @param mixed $rebuilder Object exposing rebuildCache().
+     * @param mixed $coveragePolicy Object exposing invalidateCoverageCaches().
      * @param ABJ_404_Solution_Logging $logger
      */
-    public function __construct($dbCore, $ngramFilter, $logger) {
+    public function __construct($dbCore, $rebuilder, $coveragePolicy, $logger) {
         $this->dbCore = $dbCore;
-        $this->ngramFilter = $ngramFilter;
+        $this->rebuilder = $rebuilder;
+        $this->coveragePolicy = $coveragePolicy;
         $this->logger = $logger;
     }
 
@@ -141,7 +146,7 @@ class ABJ_404_Solution_NGramCacheSyncRebuilder {
         // Invalidate coverage ratio caches immediately after truncate
         // so SpellChecker does not see stale transient data while the
         // cache is empty.
-        $this->ngramFilter->invalidateCoverageCaches();
+        $this->invalidateCoverageCaches();
         return null;
     }
 
@@ -172,7 +177,7 @@ class ABJ_404_Solution_NGramCacheSyncRebuilder {
 
         while ($offset < $totalPages) {
             try {
-                $stats = $this->ngramFilter->rebuildCache($batchSize, $offset);
+                $stats = $this->runRebuildBatch($batchSize, $offset);
 
                 $totalStats['processed'] += $stats['processed'];
                 $totalStats['success'] += $stats['success'];
@@ -191,5 +196,32 @@ class ABJ_404_Solution_NGramCacheSyncRebuilder {
         }
 
         return $totalStats;
+    }
+
+    /** @return void */
+    private function invalidateCoverageCaches(): void {
+        $coveragePolicy = $this->coveragePolicy;
+        if (!is_object($coveragePolicy) || !method_exists($coveragePolicy, 'invalidateCoverageCaches')) {
+            throw new RuntimeException('NGramCacheSyncRebuilder requires a coverage policy with invalidateCoverageCaches().');
+        }
+        $coveragePolicy->invalidateCoverageCaches();
+    }
+
+    /**
+     * @param int $batchSize
+     * @param int $offset
+     * @return array{processed: int, success: int, failed: int}
+     */
+    private function runRebuildBatch(int $batchSize, int $offset): array {
+        $rebuilder = $this->rebuilder;
+        if (!is_object($rebuilder) || !method_exists($rebuilder, 'rebuildCache')) {
+            throw new RuntimeException('NGramCacheSyncRebuilder requires a rebuilder with rebuildCache().');
+        }
+        $stats = $rebuilder->rebuildCache($batchSize, $offset);
+        return [
+            'processed' => is_array($stats) && isset($stats['processed']) && is_numeric($stats['processed']) ? (int)$stats['processed'] : 0,
+            'success' => is_array($stats) && isset($stats['success']) && is_numeric($stats['success']) ? (int)$stats['success'] : 0,
+            'failed' => is_array($stats) && isset($stats['failed']) && is_numeric($stats['failed']) ? (int)$stats['failed'] : 0,
+        ];
     }
 }

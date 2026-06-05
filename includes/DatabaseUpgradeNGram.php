@@ -257,7 +257,7 @@ class ABJ_404_Solution_DatabaseUpgradeNGram extends ABJ_404_Solution_DatabaseUpg
     private function newScheduler(): ABJ_404_Solution_NGramCacheRebuildScheduler {
         return new ABJ_404_Solution_NGramCacheRebuildScheduler(
             $this->dbCore,
-            $this->ngramFilter,
+            $this->resolveNGramRebuilder(),
             $this->logger,
             $this->newOptionStore()
         );
@@ -266,7 +266,8 @@ class ABJ_404_Solution_DatabaseUpgradeNGram extends ABJ_404_Solution_DatabaseUpg
     private function newSyncRebuilder(): ABJ_404_Solution_NGramCacheSyncRebuilder {
         return new ABJ_404_Solution_NGramCacheSyncRebuilder(
             $this->dbCore,
-            $this->ngramFilter,
+            $this->resolveNGramRebuilder(),
+            $this->resolveNGramCoveragePolicy(),
             $this->logger
         );
     }
@@ -274,7 +275,10 @@ class ABJ_404_Solution_DatabaseUpgradeNGram extends ABJ_404_Solution_DatabaseUpg
     private function newReconciler(): ABJ_404_Solution_NGramCacheReconciler {
         return new ABJ_404_Solution_NGramCacheReconciler(
             $this->dbCore,
-            $this->ngramFilter,
+            $this->resolveNGramRebuilder(),
+            $this->resolveNGramExtractor(),
+            $this->resolveNGramCacheRepository(),
+            $this->resolveNGramCoveragePolicy(),
             $this->contentRepo,
             $this->f,
             $this->logger
@@ -283,10 +287,131 @@ class ABJ_404_Solution_DatabaseUpgradeNGram extends ABJ_404_Solution_DatabaseUpg
 
     private function newTaxonomyBuilder(): ABJ_404_Solution_NGramTaxonomyBuilder {
         return new ABJ_404_Solution_NGramTaxonomyBuilder(
-            $this->ngramFilter,
+            $this->resolveNGramExtractor(),
+            $this->resolveNGramCacheRepository(),
             $this->contentRepo,
             $this->f,
             $this->logger
         );
+    }
+
+    /** @return object */
+    private function resolveNGramExtractor() {
+        if ($this->ngramExtractor instanceof ABJ_404_Solution_NGramExtractor) {
+            return $this->ngramExtractor;
+        }
+        if (is_object($this->ngramExtractor) && method_exists($this->ngramExtractor, 'extractNGrams')) {
+            return $this->ngramExtractor;
+        }
+        $legacy = $this->legacyNGramFacade('extractNGrams');
+        if ($legacy !== null) {
+            return $legacy;
+        }
+        return new ABJ_404_Solution_NGramExtractor($this->f, $this->logger);
+    }
+
+    /** @return object */
+    private function resolveNGramCacheRepository() {
+        if ($this->ngramCacheRepository instanceof ABJ_404_Solution_NGramCacheRepository) {
+            return $this->ngramCacheRepository;
+        }
+        if (is_object($this->ngramCacheRepository) && method_exists($this->ngramCacheRepository, 'storeNGrams')) {
+            return $this->ngramCacheRepository;
+        }
+        $legacy = $this->legacyNGramFacade('storeNGrams');
+        if ($legacy !== null) {
+            return $legacy;
+        }
+        return new ABJ_404_Solution_NGramCacheRepository(
+            $this->typedDbCoreOrNull(),
+            $this->logger,
+            new ABJ_404_Solution_NGramSimilarity(),
+            function() {
+                return $this->resolveConcreteNGramCoveragePolicy();
+            }
+        );
+    }
+
+    /** @return object */
+    private function resolveNGramCoveragePolicy() {
+        if ($this->ngramCoveragePolicy instanceof ABJ_404_Solution_NGramCoveragePolicy) {
+            return $this->ngramCoveragePolicy;
+        }
+        if (is_object($this->ngramCoveragePolicy) && method_exists($this->ngramCoveragePolicy, 'invalidateCoverageCaches')) {
+            return $this->ngramCoveragePolicy;
+        }
+        $legacy = $this->legacyNGramFacade('invalidateCoverageCaches');
+        if ($legacy !== null) {
+            return $legacy;
+        }
+        return new ABJ_404_Solution_NGramCoveragePolicy($this->typedDbCoreOrNull());
+    }
+
+    /** @return object */
+    private function resolveNGramRebuilder() {
+        if ($this->ngramRebuilder instanceof ABJ_404_Solution_NGramRebuilder) {
+            return $this->ngramRebuilder;
+        }
+        if (is_object($this->ngramRebuilder) && method_exists($this->ngramRebuilder, 'rebuildCache')) {
+            return $this->ngramRebuilder;
+        }
+        $legacy = $this->legacyNGramFacade('rebuildCache');
+        if ($legacy !== null) {
+            return $legacy;
+        }
+        return new ABJ_404_Solution_NGramRebuilder(
+            $this->typedDbCoreOrNull(),
+            $this->logger,
+            $this->f,
+            $this->resolveConcreteNGramExtractor(),
+            $this->resolveConcreteNGramCacheRepository(),
+            $this->resolveConcreteNGramCoveragePolicy()
+        );
+    }
+
+    /**
+     * @param string $requiredMethod
+     * @return object|null
+     */
+    private function legacyNGramFacade(string $requiredMethod) {
+        return is_object($this->ngramFilter) && method_exists($this->ngramFilter, $requiredMethod)
+            ? $this->ngramFilter
+            : null;
+    }
+
+    /** @return ABJ_404_Solution_DatabaseCore|null */
+    private function typedDbCoreOrNull() {
+        return $this->dbCore instanceof ABJ_404_Solution_DatabaseCore ? $this->dbCore : null;
+    }
+
+    /** @return ABJ_404_Solution_NGramExtractor */
+    private function resolveConcreteNGramExtractor() {
+        if ($this->ngramExtractor instanceof ABJ_404_Solution_NGramExtractor) {
+            return $this->ngramExtractor;
+        }
+        return new ABJ_404_Solution_NGramExtractor($this->f, $this->logger);
+    }
+
+    /** @return ABJ_404_Solution_NGramCacheRepository */
+    private function resolveConcreteNGramCacheRepository() {
+        if ($this->ngramCacheRepository instanceof ABJ_404_Solution_NGramCacheRepository) {
+            return $this->ngramCacheRepository;
+        }
+        return new ABJ_404_Solution_NGramCacheRepository(
+            $this->typedDbCoreOrNull(),
+            $this->logger,
+            new ABJ_404_Solution_NGramSimilarity(),
+            function() {
+                return $this->resolveConcreteNGramCoveragePolicy();
+            }
+        );
+    }
+
+    /** @return ABJ_404_Solution_NGramCoveragePolicy */
+    private function resolveConcreteNGramCoveragePolicy() {
+        if ($this->ngramCoveragePolicy instanceof ABJ_404_Solution_NGramCoveragePolicy) {
+            return $this->ngramCoveragePolicy;
+        }
+        return new ABJ_404_Solution_NGramCoveragePolicy($this->typedDbCoreOrNull());
     }
 }

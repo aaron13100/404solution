@@ -81,7 +81,11 @@ class ABJ_404_Solution_DataServiceRegistration {
                 $c->get('permalink_cache'),
                 $c->get('sync_utils'),
                 $c->get('plugin_logic'),
-                $c->get('ngram_filter')
+                $c->get('ngram_filter'),
+                $c->get('ngram_extractor'),
+                $c->get('ngram_cache_repository'),
+                $c->get('ngram_coverage_policy'),
+                $c->get('ngram_rebuilder')
             );
         });
 

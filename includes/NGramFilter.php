@@ -345,17 +345,8 @@ class ABJ_404_Solution_NGramFilter {
         return $this->repo->getCacheCount() > 0;
     }
 
-    // =========================================================================
-    // Facade methods.
-    //
-    // These delegate to the i804 collaborators. They exist so callers can
-    // depend on the cohesive "n-gram subsystem" through one service handle
-    // (`ngram_filter`) rather than wiring six collaborators per call site,
-    // and so test doubles that extend ABJ_404_Solution_NGramFilter keep
-    // working without the test layer learning each collaborator's surface.
-    // Each method is a one-liner because the responsibility lives on the
-    // collaborator; the orchestrator only routes.
-    // =========================================================================
+    // Legacy compatibility methods for external/test callers that still
+    // subclass or hold the historical filter service.
 
     /**
      * @param string $url

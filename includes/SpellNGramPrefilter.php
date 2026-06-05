@@ -9,6 +9,14 @@ if (!defined('ABSPATH')) {
  */
 class ABJ_404_Solution_SpellNGramPrefilter {
 
+	const NGRAM_PREFILTER_THRESHOLD = 0.3;
+	const NGRAM_PREFILTER_MAX_CANDIDATES = 500;
+	const NGRAM_MIN_CACHE_ENTRIES = 50;
+	const NGRAM_SECONDARY_THRESHOLD = 0.4;
+	const NGRAM_SECONDARY_MAX_CANDIDATES = 100;
+	const NGRAM_MIN_COVERAGE_RATIO = 0.8;
+	const NGRAM_SECONDARY_MIN_CANDIDATES = 50;
+
 	/** @var ABJ_404_Solution_NGramFilter */
 	private $ngramFilter;
 
@@ -45,11 +53,11 @@ class ABJ_404_Solution_SpellNGramPrefilter {
 
 		$cacheCount = $this->ngramFilter->getCacheCount();
 
-		if ($cacheCount < ABJ_404_Solution_SpellLevenshteinEngine::NGRAM_MIN_CACHE_ENTRIES) {
+		if ($cacheCount < self::NGRAM_MIN_CACHE_ENTRIES) {
 			$this->logger->debugMessage(sprintf(
 				"N-gram prefilter skipped (gate 1: min entries): count=%d (need %d)",
 				$cacheCount,
-				ABJ_404_Solution_SpellLevenshteinEngine::NGRAM_MIN_CACHE_ENTRIES
+				self::NGRAM_MIN_CACHE_ENTRIES
 			));
 			return 'skipped';
 		}
@@ -61,19 +69,19 @@ class ABJ_404_Solution_SpellNGramPrefilter {
 			return 'skipped';
 		}
 		$coverageRatio = $this->ngramFilter->getCacheCoverageRatio();
-		if ($coverageRatio < ABJ_404_Solution_SpellLevenshteinEngine::NGRAM_MIN_COVERAGE_RATIO) {
+		if ($coverageRatio < self::NGRAM_MIN_COVERAGE_RATIO) {
 			$this->logger->debugMessage(sprintf(
 				"N-gram prefilter skipped (gate 3: low coverage): ratio=%.2f (need %.2f)",
 				$coverageRatio,
-				ABJ_404_Solution_SpellLevenshteinEngine::NGRAM_MIN_COVERAGE_RATIO
+				self::NGRAM_MIN_COVERAGE_RATIO
 			));
 			return 'skipped';
 		}
 
 		$similarPages = $this->ngramFilter->findSimilarPages(
 			$requestedURLCleaned,
-			ABJ_404_Solution_SpellLevenshteinEngine::NGRAM_PREFILTER_THRESHOLD,
-			ABJ_404_Solution_SpellLevenshteinEngine::NGRAM_PREFILTER_MAX_CANDIDATES
+			self::NGRAM_PREFILTER_THRESHOLD,
+			self::NGRAM_PREFILTER_MAX_CANDIDATES
 		);
 
 		if (!empty($similarPages) && $publishedPostsProvider !== null) {
@@ -109,19 +117,19 @@ class ABJ_404_Solution_SpellNGramPrefilter {
 	 * @return array<int, int|string>
 	 */
 	public function applySecondaryFilter(array $candidateIds, bool $ngramPrefilterApplied, string $requestedURLCleaned): array {
-		$beforeNGramCount = count($candidateIds);
+			$beforeNGramCount = count($candidateIds);
 		if ($ngramPrefilterApplied
-			|| $beforeNGramCount <= ABJ_404_Solution_SpellLevenshteinEngine::NGRAM_SECONDARY_MIN_CANDIDATES
-			|| $this->ngramFilter->getCacheCount() < ABJ_404_Solution_SpellLevenshteinEngine::NGRAM_MIN_CACHE_ENTRIES
+			|| $beforeNGramCount <= self::NGRAM_SECONDARY_MIN_CANDIDATES
+			|| $this->ngramFilter->getCacheCount() < self::NGRAM_MIN_CACHE_ENTRIES
 			|| !$this->ngramFilter->isCacheInitialized()
-			|| $this->ngramFilter->getCacheCoverageRatio() < ABJ_404_Solution_SpellLevenshteinEngine::NGRAM_MIN_COVERAGE_RATIO) {
+			|| $this->ngramFilter->getCacheCoverageRatio() < self::NGRAM_MIN_COVERAGE_RATIO) {
 			return $this->normalizeScalarIds($candidateIds);
 		}
 
 		$similarPages = $this->ngramFilter->findSimilarPages(
 			$requestedURLCleaned,
-			ABJ_404_Solution_SpellLevenshteinEngine::NGRAM_SECONDARY_THRESHOLD,
-			min($beforeNGramCount, ABJ_404_Solution_SpellLevenshteinEngine::NGRAM_SECONDARY_MAX_CANDIDATES)
+			self::NGRAM_SECONDARY_THRESHOLD,
+			min($beforeNGramCount, self::NGRAM_SECONDARY_MAX_CANDIDATES)
 		);
 		if (empty($similarPages)) {
 			return $this->normalizeScalarIds($candidateIds);

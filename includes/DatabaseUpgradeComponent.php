@@ -81,6 +81,18 @@ abstract class ABJ_404_Solution_DatabaseUpgradeComponent {
     /** @var ABJ_404_Solution_NGramFilter */
     protected $ngramFilter;
 
+    /** @var mixed */
+    protected $ngramExtractor;
+
+    /** @var mixed */
+    protected $ngramCacheRepository;
+
+    /** @var mixed */
+    protected $ngramCoveragePolicy;
+
+    /** @var mixed */
+    protected $ngramRebuilder;
+
     /**
      * @param array<string, mixed> $deps
      */

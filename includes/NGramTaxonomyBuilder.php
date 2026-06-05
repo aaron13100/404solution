@@ -15,8 +15,11 @@ if (!defined('ABSPATH')) {
  */
 class ABJ_404_Solution_NGramTaxonomyBuilder {
 
-    /** @var ABJ_404_Solution_NGramFilter */
-    private $ngramFilter;
+    /** @var mixed */
+    private $extractor;
+
+    /** @var mixed */
+    private $repo;
 
     /** @var ABJ_404_Solution_ContentRepositoryInterface */
     private $contentRepo;
@@ -28,13 +31,15 @@ class ABJ_404_Solution_NGramTaxonomyBuilder {
     private $logger;
 
     /**
-     * @param ABJ_404_Solution_NGramFilter $ngramFilter
+     * @param mixed $extractor Object exposing extractNGrams().
+     * @param mixed $repo Object exposing storeNGrams().
      * @param ABJ_404_Solution_ContentRepositoryInterface $contentRepo
      * @param ABJ_404_Solution_Functions $f
      * @param ABJ_404_Solution_Logging $logger
      */
-    public function __construct($ngramFilter, $contentRepo, $f, $logger) {
-        $this->ngramFilter = $ngramFilter;
+    public function __construct($extractor, $repo, $contentRepo, $f, $logger) {
+        $this->extractor = $extractor;
+        $this->repo = $repo;
         $this->contentRepo = $contentRepo;
         $this->f = $f;
         $this->logger = $logger;
@@ -113,8 +118,8 @@ class ABJ_404_Solution_NGramTaxonomyBuilder {
                 }
 
                 $urlNormalized = $this->f->strtolower(trim($url));
-                $ngrams = $this->ngramFilter->extractNGrams($urlNormalized);
-                $success = $this->ngramFilter->storeNGrams($termId, $url, $urlNormalized, $ngrams, $type);
+                $ngrams = $this->extractNGrams($urlNormalized);
+                $success = $this->storeNGrams($termId, $url, $urlNormalized, $ngrams, $type);
 
                 $stats['processed']++;
                 if ($success) {
@@ -130,5 +135,50 @@ class ABJ_404_Solution_NGramTaxonomyBuilder {
         }
 
         return $stats;
+    }
+
+    /**
+     * @param string $url
+     * @return array{bi: array<int, string>, tri: array<int, string>}
+     */
+    private function extractNGrams(string $url): array {
+        $extractor = $this->extractor;
+        if (!is_object($extractor) || !method_exists($extractor, 'extractNGrams')) {
+            throw new RuntimeException('NGramTaxonomyBuilder requires an extractor with extractNGrams().');
+        }
+        $ngrams = $extractor->extractNGrams($url);
+        $bi = [];
+        $tri = [];
+        if (is_array($ngrams)) {
+            $biRaw = isset($ngrams['bi']) && is_array($ngrams['bi']) ? $ngrams['bi'] : [];
+            foreach ($biRaw as $ngram) {
+                if (is_string($ngram)) {
+                    $bi[] = $ngram;
+                }
+            }
+            $triRaw = isset($ngrams['tri']) && is_array($ngrams['tri']) ? $ngrams['tri'] : [];
+            foreach ($triRaw as $ngram) {
+                if (is_string($ngram)) {
+                    $tri[] = $ngram;
+                }
+            }
+        }
+        return ['bi' => $bi, 'tri' => $tri];
+    }
+
+    /**
+     * @param int $termId
+     * @param string $url
+     * @param string $urlNormalized
+     * @param array<string, mixed> $ngrams
+     * @param string $type
+     * @return bool
+     */
+    private function storeNGrams(int $termId, string $url, string $urlNormalized, array $ngrams, string $type): bool {
+        $repo = $this->repo;
+        if (!is_object($repo) || !method_exists($repo, 'storeNGrams')) {
+            throw new RuntimeException('NGramTaxonomyBuilder requires a repository with storeNGrams().');
+        }
+        return (bool)$repo->storeNGrams($termId, $url, $urlNormalized, $ngrams, $type);
     }
 }

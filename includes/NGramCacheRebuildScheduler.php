@@ -35,8 +35,8 @@ class ABJ_404_Solution_NGramCacheRebuildScheduler {
     /** @var ABJ_404_Solution_DatabaseCoreInterface */
     private $dbCore;
 
-    /** @var ABJ_404_Solution_NGramFilter */
-    private $ngramFilter;
+    /** @var mixed */
+    private $rebuilder;
 
     /** @var ABJ_404_Solution_Logging */
     private $logger;
@@ -46,13 +46,13 @@ class ABJ_404_Solution_NGramCacheRebuildScheduler {
 
     /**
      * @param ABJ_404_Solution_DatabaseCoreInterface $dbCore
-     * @param ABJ_404_Solution_NGramFilter $ngramFilter
+     * @param mixed $rebuilder Object exposing rebuildCache().
      * @param ABJ_404_Solution_Logging $logger
      * @param ABJ_404_Solution_NGramNetworkOptionStore $optionStore
      */
-    public function __construct($dbCore, $ngramFilter, $logger, $optionStore) {
+    public function __construct($dbCore, $rebuilder, $logger, $optionStore) {
         $this->dbCore = $dbCore;
-        $this->ngramFilter = $ngramFilter;
+        $this->rebuilder = $rebuilder;
         $this->logger = $logger;
         $this->optionStore = $optionStore;
     }
@@ -71,8 +71,9 @@ class ABJ_404_Solution_NGramCacheRebuildScheduler {
 
         $totalPages = $this->countTotalPagesForRebuild();
 
-        // If offset is between 0 and total (exclusive), rebuild is in progress
-        if ($currentOffset > 0 && $currentOffset < $totalPages) {
+        // A positive offset means a prior batch started. If total-page counting
+        // is unavailable, skip scheduling rather than resetting in-flight state.
+        if ($currentOffset > 0 && ($totalPages <= 0 || $currentOffset < $totalPages)) {
             $this->logger->debugMessage("N-gram cache rebuild already in progress at offset {$currentOffset} of {$totalPages}");
             return true;
         }
@@ -218,7 +219,7 @@ class ABJ_404_Solution_NGramCacheRebuildScheduler {
 
         while ($batchesProcessed < $maxBatchesPerRun && $offset < $sitePages) {
             try {
-                $stats = $this->ngramFilter->rebuildCache($batchSize, $offset);
+                $stats = $this->runRebuildBatch($batchSize, $offset);
 
                 $totalStats['processed'] += $stats['processed'];
                 $totalStats['success'] += $stats['success'];
@@ -301,7 +302,7 @@ class ABJ_404_Solution_NGramCacheRebuildScheduler {
 
         while ($batchesProcessed < $maxBatchesPerRun && $offset < $totalPages) {
             try {
-                $stats = $this->ngramFilter->rebuildCache($batchSize, $offset);
+                $stats = $this->runRebuildBatch($batchSize, $offset);
 
                 $totalStats['processed'] += $stats['processed'];
                 $totalStats['success'] += $stats['success'];
@@ -447,5 +448,23 @@ class ABJ_404_Solution_NGramCacheRebuildScheduler {
         }
 
         $this->logger->errorMessage($errorMsg);
+    }
+
+    /**
+     * @param int $batchSize
+     * @param int $offset
+     * @return array{processed: int, success: int, failed: int}
+     */
+    private function runRebuildBatch(int $batchSize, int $offset): array {
+        $rebuilder = $this->rebuilder;
+        if (!is_object($rebuilder) || !method_exists($rebuilder, 'rebuildCache')) {
+            throw new RuntimeException('NGramCacheRebuildScheduler requires a rebuilder with rebuildCache().');
+        }
+        $stats = $rebuilder->rebuildCache($batchSize, $offset);
+        return [
+            'processed' => is_array($stats) && isset($stats['processed']) && is_numeric($stats['processed']) ? (int)$stats['processed'] : 0,
+            'success' => is_array($stats) && isset($stats['success']) && is_numeric($stats['success']) ? (int)$stats['success'] : 0,
+            'failed' => is_array($stats) && isset($stats['failed']) && is_numeric($stats['failed']) ? (int)$stats['failed'] : 0,
+        ];
     }
 }

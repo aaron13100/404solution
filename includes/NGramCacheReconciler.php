@@ -29,8 +29,17 @@ class ABJ_404_Solution_NGramCacheReconciler {
     /** @var ABJ_404_Solution_DatabaseCoreInterface */
     private $dbCore;
 
-    /** @var ABJ_404_Solution_NGramFilter */
-    private $ngramFilter;
+    /** @var mixed */
+    private $rebuilder;
+
+    /** @var mixed */
+    private $extractor;
+
+    /** @var mixed */
+    private $repo;
+
+    /** @var mixed */
+    private $coveragePolicy;
 
     /** @var ABJ_404_Solution_ContentRepositoryInterface */
     private $contentRepo;
@@ -43,14 +52,20 @@ class ABJ_404_Solution_NGramCacheReconciler {
 
     /**
      * @param ABJ_404_Solution_DatabaseCoreInterface $dbCore
-     * @param ABJ_404_Solution_NGramFilter $ngramFilter
+     * @param mixed $rebuilder Object exposing updateNGramsForPages().
+     * @param mixed $extractor Object exposing extractNGrams().
+     * @param mixed $repo Object exposing storeNGrams().
+     * @param mixed $coveragePolicy Object exposing invalidateCoverageCaches().
      * @param ABJ_404_Solution_ContentRepositoryInterface $contentRepo
      * @param ABJ_404_Solution_Functions $f
      * @param ABJ_404_Solution_Logging $logger
      */
-    public function __construct($dbCore, $ngramFilter, $contentRepo, $f, $logger) {
+    public function __construct($dbCore, $rebuilder, $extractor, $repo, $coveragePolicy, $contentRepo, $f, $logger) {
         $this->dbCore = $dbCore;
-        $this->ngramFilter = $ngramFilter;
+        $this->rebuilder = $rebuilder;
+        $this->extractor = $extractor;
+        $this->repo = $repo;
+        $this->coveragePolicy = $coveragePolicy;
         $this->contentRepo = $contentRepo;
         $this->f = $f;
         $this->logger = $logger;
@@ -153,7 +168,7 @@ class ABJ_404_Solution_NGramCacheReconciler {
 
         $this->logger->infoMessage("Found " . count($missingIds) . " posts missing ngram entries. Adding...");
 
-        $result = $this->ngramFilter->updateNGramsForPages($missingIds);
+        $result = $this->updateNGramsForPages($missingIds);
 
         return ['added' => $result['success'], 'failed' => $result['failed']];
     }
@@ -201,8 +216,8 @@ class ABJ_404_Solution_NGramCacheReconciler {
                 }
 
                 $urlNormalized = $this->f->strtolower(trim($url));
-                $ngrams = $this->ngramFilter->extractNGrams($urlNormalized);
-                $success = $this->ngramFilter->storeNGrams($termId, $url, $urlNormalized, $ngrams, 'category');
+                $ngrams = $this->extractNGrams($urlNormalized);
+                $success = $this->storeNGrams($termId, $url, $urlNormalized, $ngrams, 'category');
 
                 if ($success) {
                     $stats['added']++;
@@ -272,6 +287,10 @@ class ABJ_404_Solution_NGramCacheReconciler {
             }
         }
 
+        if ($deleted > 0) {
+            $this->invalidateCoverageCaches();
+        }
+
         return ['deleted' => $deleted, 'errors' => $errors];
     }
 
@@ -337,6 +356,89 @@ class ABJ_404_Solution_NGramCacheReconciler {
             }
         }
 
+        if ($deleted > 0) {
+            $this->invalidateCoverageCaches();
+        }
+
         return ['deleted' => $deleted, 'errors' => $errors];
+    }
+
+    /**
+     * @param array<int, int> $pageIds
+     * @return array{processed: int, success: int, failed: int}
+     */
+    private function updateNGramsForPages(array $pageIds): array {
+        $rebuilder = $this->rebuilder;
+        if (!is_object($rebuilder) || !method_exists($rebuilder, 'updateNGramsForPages')) {
+            throw new RuntimeException('NGramCacheReconciler requires a rebuilder with updateNGramsForPages().');
+        }
+        $stats = $rebuilder->updateNGramsForPages($pageIds);
+        return [
+            'processed' => is_array($stats) && isset($stats['processed']) && is_numeric($stats['processed']) ? (int)$stats['processed'] : 0,
+            'success' => is_array($stats) && isset($stats['success']) && is_numeric($stats['success']) ? (int)$stats['success'] : 0,
+            'failed' => is_array($stats) && isset($stats['failed']) && is_numeric($stats['failed']) ? (int)$stats['failed'] : 0,
+        ];
+    }
+
+    /**
+     * @param string $url
+     * @return array{bi: array<int, string>, tri: array<int, string>}
+     */
+    private function extractNGrams(string $url): array {
+        $extractor = $this->extractor;
+        if (!is_object($extractor) || !method_exists($extractor, 'extractNGrams')) {
+            throw new RuntimeException('NGramCacheReconciler requires an extractor with extractNGrams().');
+        }
+        $ngrams = $extractor->extractNGrams($url);
+        return $this->normalizeNGramPayload($ngrams);
+    }
+
+    /**
+     * @param int $pageId
+     * @param string $url
+     * @param string $urlNormalized
+     * @param array<string, mixed> $ngrams
+     * @param string $type
+     * @return bool
+     */
+    private function storeNGrams(int $pageId, string $url, string $urlNormalized, array $ngrams, string $type): bool {
+        $repo = $this->repo;
+        if (!is_object($repo) || !method_exists($repo, 'storeNGrams')) {
+            throw new RuntimeException('NGramCacheReconciler requires a repository with storeNGrams().');
+        }
+        return (bool)$repo->storeNGrams($pageId, $url, $urlNormalized, $ngrams, $type);
+    }
+
+    /** @return void */
+    private function invalidateCoverageCaches(): void {
+        $coveragePolicy = $this->coveragePolicy;
+        if (!is_object($coveragePolicy) || !method_exists($coveragePolicy, 'invalidateCoverageCaches')) {
+            throw new RuntimeException('NGramCacheReconciler requires a coverage policy with invalidateCoverageCaches().');
+        }
+        $coveragePolicy->invalidateCoverageCaches();
+    }
+
+    /**
+     * @param mixed $ngrams
+     * @return array{bi: array<int, string>, tri: array<int, string>}
+     */
+    private function normalizeNGramPayload($ngrams): array {
+        $bi = [];
+        $tri = [];
+        if (is_array($ngrams)) {
+            $biRaw = isset($ngrams['bi']) && is_array($ngrams['bi']) ? $ngrams['bi'] : [];
+            foreach ($biRaw as $ngram) {
+                if (is_string($ngram)) {
+                    $bi[] = $ngram;
+                }
+            }
+            $triRaw = isset($ngrams['tri']) && is_array($ngrams['tri']) ? $ngrams['tri'] : [];
+            foreach ($triRaw as $ngram) {
+                if (is_string($ngram)) {
+                    $tri[] = $ngram;
+                }
+            }
+        }
+        return ['bi' => $bi, 'tri' => $tri];
     }
 }

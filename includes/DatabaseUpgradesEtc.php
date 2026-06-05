@@ -154,6 +154,18 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 	/** @var ABJ_404_Solution_NGramFilter */
 	private $ngramFilter;
 
+	/** @var mixed */
+	private $ngramExtractor;
+
+	/** @var mixed */
+	private $ngramCacheRepository;
+
+	/** @var mixed */
+	private $ngramCoveragePolicy;
+
+	/** @var mixed */
+	private $ngramRebuilder;
+
 	/** @var ABJ_404_Solution_DatabaseUpgradeRegistry */
 	private $upgradeRegistry;
 
@@ -167,8 +179,12 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 	 * @param ABJ_404_Solution_SynchronizationUtils|null $syncUtils Sync utilities
 	 * @param ABJ_404_Solution_PluginLogicInterface|null $pluginLogic Business logic service
 	 * @param ABJ_404_Solution_NGramFilter|null $ngramFilter N-gram filter service
+	 * @param ABJ_404_Solution_NGramExtractor|null $ngramExtractor N-gram extraction service
+	 * @param ABJ_404_Solution_NGramCacheRepository|null $ngramCacheRepository N-gram cache repository
+	 * @param ABJ_404_Solution_NGramCoveragePolicy|null $ngramCoveragePolicy N-gram coverage policy
+	 * @param ABJ_404_Solution_NGramRebuilder|null $ngramRebuilder N-gram rebuild service
 	 */
-	public function __construct($dataAccess = null, $logging = null, $functions = null, $permalinkCache = null, $syncUtils = null, $pluginLogic = null, $ngramFilter = null) {
+	public function __construct($dataAccess = null, $logging = null, $functions = null, $permalinkCache = null, $syncUtils = null, $pluginLogic = null, $ngramFilter = null, $ngramExtractor = null, $ngramCacheRepository = null, $ngramCoveragePolicy = null, $ngramRebuilder = null) {
 		// Use injected dependencies or fall back to getInstance() for backward compatibility
 		$this->dao = $dataAccess !== null ? $dataAccess : abj_service('data_access');
 		$this->logger = $logging !== null ? $logging : abj_service('logging');
@@ -177,6 +193,10 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 		$this->syncUtils = $syncUtils !== null ? $syncUtils : abj_service('sync_utils');
 		$this->logic = $pluginLogic !== null ? $pluginLogic : abj_service('plugin_logic');
 		$this->ngramFilter = $ngramFilter !== null ? $ngramFilter : abj_service('ngram_filter');
+		$this->ngramExtractor = $ngramExtractor;
+		$this->ngramCacheRepository = $ngramCacheRepository;
+		$this->ngramCoveragePolicy = $ngramCoveragePolicy;
+		$this->ngramRebuilder = $ngramRebuilder;
 
 		$daoClass = is_object($this->dao) ? get_class($this->dao) : '';
 		$this->dbCore = ($dataAccess !== null && $daoClass !== 'ABJ_404_Solution_DataAccess'
@@ -241,6 +261,10 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 			'syncUtils' => $this->syncUtils,
 			'logic' => $this->logic,
 			'ngramFilter' => $this->ngramFilter,
+			'ngramExtractor' => $this->ngramExtractor,
+			'ngramCacheRepository' => $this->ngramCacheRepository,
+			'ngramCoveragePolicy' => $this->ngramCoveragePolicy,
+			'ngramRebuilder' => $this->ngramRebuilder,
 		];
 	}
 
