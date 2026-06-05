@@ -10,6 +10,9 @@ if (!defined('ABSPATH')) {
 $base = dirname(__DIR__) . DIRECTORY_SEPARATOR;
 return array(
     'ABJ_404_Solution_AjaxSecurityGate' => $base . 'includes/ajax/AjaxSecurityGate.php',
+    'ABJ_404_Solution_AjaxRequestContractEnforcementPolicy' => $base . 'includes/ajax/AjaxRequestContractEnforcementPolicy.php',
+    'ABJ_404_Solution_AjaxRequestContractSchemaRepository' => $base . 'includes/ajax/AjaxRequestContractSchemaRepository.php',
+    'ABJ_404_Solution_AjaxRequestContractSchemaValidator' => $base . 'includes/ajax/AjaxRequestContractSchemaValidator.php',
     'ABJ_404_Solution_AjaxRequestContractValidator' => $base . 'includes/ajax/AjaxRequestContractValidator.php',
     'ABJ_404_Solution_AjaxFailureLogger' => $base . 'includes/ajax/AjaxFailureLogger.php',
     'ABJ_404_Solution_AjaxStageDiagnostics' => $base . 'includes/ajax/AjaxStageDiagnostics.php',
