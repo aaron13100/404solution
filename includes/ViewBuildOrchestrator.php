@@ -78,6 +78,14 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
     private $advanceCoordinator;
     /** @var ABJ_404_Solution_ViewBuildStagePipeline */
     private $stagePipeline;
+    /** @var ABJ_404_Solution_ViewBuildStageRuntimeState */
+    private $stageRuntimeState;
+    /** @var ABJ_404_Solution_ViewBuildStageMarkers */
+    private $stageMarkers;
+    /** @var ABJ_404_Solution_ViewBuildShutdownDiagnostics */
+    private $shutdownDiagnostics;
+    /** @var ABJ_404_Solution_ViewBuildStageLogPresenter */
+    private $stageLogPresenter;
 
     /** @var ABJ_404_Solution_DatabaseConnectionManager */
     private $connectionManager;
@@ -129,6 +137,10 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
         $this->readGateway = new ABJ_404_Solution_ViewBuildReadGateway($this);
         $this->advanceCoordinator = new ABJ_404_Solution_ViewBuildAdvanceCoordinator($this);
         $this->stagePipeline = new ABJ_404_Solution_ViewBuildStagePipeline($this);
+        $this->stageRuntimeState = new ABJ_404_Solution_ViewBuildStageRuntimeState();
+        $this->stageMarkers = new ABJ_404_Solution_ViewBuildStageMarkers($this, $this->stageRuntimeState);
+        $this->shutdownDiagnostics = new ABJ_404_Solution_ViewBuildShutdownDiagnostics($this, $this->stageRuntimeState);
+        $this->stageLogPresenter = new ABJ_404_Solution_ViewBuildStageLogPresenter($this, $this->stageRuntimeState);
         // view_done_state is registered BEFORE queries so explicit
         // collaborator routing resolves viewDoneIsServeable / viewDoneBuiltAt
         // / markViewDoneBuildCompleted / invalidateViewDoneServeableCache /
@@ -143,6 +155,9 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
             'advance_coordinator' => $this->advanceCoordinator,
             'stage_pipeline' => $this->stagePipeline,
             'stage_runner' => new ABJ_404_Solution_ViewBuildStageRunner($this),
+            'stage_markers' => $this->stageMarkers,
+            'shutdown_diagnostics' => $this->shutdownDiagnostics,
+            'stage_log_presenter' => $this->stageLogPresenter,
             'batch_executor' => new ABJ_404_Solution_ViewBuildBatchExecutor($this),
             'stage_callbacks' => new ABJ_404_Solution_ViewBuildStageCallbacks($this),
             'adaptive' => new ABJ_404_Solution_ViewBuildAdaptive($this),
@@ -178,7 +193,7 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
     /** @return void */
     public static function resetViewBuildOncePerRequestGuard(): void {
         ABJ_404_Solution_ViewBuildStagePipeline::resetViewBuildOncePerRequestGuard();
-        ABJ_404_Solution_ViewBuildStageRunner::resetViewBuildShutdownLoggerRegistration();
+        ABJ_404_Solution_ViewBuildShutdownDiagnostics::resetViewBuildShutdownLoggerRegistration();
     }
 
     /** @return void */
@@ -471,6 +486,7 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
             'clearSessionVariablesProbeCache' => 'host_environment_probe',
             'clearSqlModeProbeCache' => 'sql_mode_probe',
             'clearStagedBuildDegradedState' => 'host_failure_state',
+            'clearViewBuildOpenStageForShutdown' => 'shutdown_diagnostics',
             'clearViewDoneHardStaleNotice' => 'state_probe',
             'countLiveRedirects' => 'batch_executor',
             'countViewBuildRows' => 'batch_executor',
@@ -490,10 +506,13 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
             'isCurrentStageOptionName' => 'option_write_verifier',
             'isStageMarkedSkipped' => 'host_failure_state',
             'localizeOrDefaultViewBuildNotice' => 'state_probe',
-            'logTimedViewBuildStage' => 'stage_runner',
+            'logTimedViewBuildStage' => 'stage_log_presenter',
+            'logViewBuildShutdownDiagnostics' => 'shutdown_diagnostics',
             'markBuildHaltedForHostFailure' => 'host_failure_state',
-            'markBuildStage' => 'stage_runner',
+            'markBuildStage' => 'stage_log_presenter',
             'markStageSkippedForHostFailure' => 'host_failure_state',
+            'markViewBuildStageCompleted' => 'stage_markers',
+            'markViewBuildStageStarted' => 'stage_markers',
             'markViewDoneBuildCompleted' => 'view_done_state',
             'maybeRaiseViewDoneHardStaleNotice' => 'state_probe',
             'performFreshStartCleanup' => 'progress_options',
@@ -510,7 +529,7 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
             'reconcilePostStageElevenState' => 'rebuild_reconcile',
             'reconcileStagedTablesAtRunnerStartup' => 'rebuild_reconcile',
             'recordStageBatchKilled' => 'adaptive',
-            'registerViewBuildShutdownDiagnostics' => 'stage_runner',
+            'registerViewBuildShutdownDiagnostics' => 'shutdown_diagnostics',
             'releaseViewBuildLock' => 'lock_coordinator',
             'resetStageNoProgressStreak' => 'progress_options',
             'resolveColumnCollationForStagedBuild' => 'staged_sql_executor',
