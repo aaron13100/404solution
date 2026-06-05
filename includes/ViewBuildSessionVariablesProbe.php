@@ -96,7 +96,7 @@ class ABJ_404_Solution_ViewBuildSessionVariablesProbe extends ABJ_404_Solution_V
             }
         }
 
-        $warnings = $this->host->classifySessionVariableWarnings($values);
+        $warnings = $this->classifySessionVariableWarnings($values);
         $values['warnings'] = $warnings;
 
         foreach ($warnings as $w) {
@@ -109,7 +109,7 @@ class ABJ_404_Solution_ViewBuildSessionVariablesProbe extends ABJ_404_Solution_V
         }
 
         if (function_exists('update_option')) {
-            update_option($this->host->sessionVariablesProbeOptionName(), $values, false);
+            update_option($this->sessionVariablesProbeOptionName(), $values, false);
         }
 
         $this->sessionVariablesProbeCache = $values;
@@ -133,7 +133,7 @@ class ABJ_404_Solution_ViewBuildSessionVariablesProbe extends ABJ_404_Solution_V
     public function clearSessionVariablesProbeCache(): void {
         $this->sessionVariablesProbeCache = null;
         if (function_exists('delete_option')) {
-            delete_option($this->host->sessionVariablesProbeOptionName());
+            delete_option($this->sessionVariablesProbeOptionName());
         }
         $this->noticePolicy->clearSessionEnvironmentNotices();
     }

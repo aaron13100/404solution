@@ -12,7 +12,6 @@ if (!defined('ABSPATH')) {
  *
  * @property ABJ_404_Solution_Logging $logger
  * @property ABJ_404_Solution_RebuildHealthState|null $rebuildHealth
- * @method string localizeOrDefaultViewBuildNotice(...$arguments)
  */
 class ABJ_404_Solution_ViewBuildCronScheduler extends ABJ_404_Solution_ViewBuildCollaborator {
 
@@ -32,9 +31,9 @@ class ABJ_404_Solution_ViewBuildCronScheduler extends ABJ_404_Solution_ViewBuild
             return;
         }
         $hook = 'abj404_rebuildViewDone';
-        $stuckHours = $this->host->getCronStuckHours();
+        $stuckHours = $this->getCronStuckHours();
         if ($stuckHours >= 24) {
-            $this->host->setViewBuildCronStuckNotice($stuckHours);
+            $this->setViewBuildCronStuckNotice($stuckHours);
         } elseif (function_exists('delete_transient')) {
             delete_transient('abj404_view_build_stuck_wp_cron_disabled');
         }
@@ -50,14 +49,14 @@ class ABJ_404_Solution_ViewBuildCronScheduler extends ABJ_404_Solution_ViewBuild
         );
         $isError = (function_exists('is_wp_error') && is_wp_error($scheduled));
         if ($scheduled === false) {
-            $this->host->setViewBuildScheduleFailedNotice('');
+            $this->setViewBuildScheduleFailedNotice('');
         } elseif ($isError) {
             $errMsg = '';
             if (is_object($scheduled) && method_exists($scheduled, 'get_error_message')) {
                 $msg = $scheduled->get_error_message();
                 $errMsg = is_string($msg) ? $msg : '';
             }
-            $this->host->setViewBuildScheduleFailedNotice($errMsg);
+            $this->setViewBuildScheduleFailedNotice($errMsg);
         }
     }
 
@@ -73,7 +72,7 @@ class ABJ_404_Solution_ViewBuildCronScheduler extends ABJ_404_Solution_ViewBuild
         if (function_exists('get_transient') && get_transient($key) !== false) {
             return;
         }
-        $template = $this->host->localizeOrDefaultViewBuildNotice('WordPress cron does not appear to be running. The earliest overdue '
+        $template = $this->host->stateProbe()->localizeOrDefaultViewBuildNotice('WordPress cron does not appear to be running. The earliest overdue '
             . 'cron event has been waiting at least %d hours, so cron-dependent '
             . 'plugin features (staged view-build, daily cleanup, log updates, '
             . 'digest emails) are not advancing. To resolve: if DISABLE_WP_CRON '
@@ -148,7 +147,7 @@ class ABJ_404_Solution_ViewBuildCronScheduler extends ABJ_404_Solution_ViewBuild
         }
         $payload = array(
             'type'         => 'view_build_schedule_failed',
-            'message'      => $this->host->localizeOrDefaultViewBuildNotice($message),
+            'message'      => $this->host->stateProbe()->localizeOrDefaultViewBuildNotice($message),
             'timestamp'    => time(),
             'error_string' => $detail,
         );

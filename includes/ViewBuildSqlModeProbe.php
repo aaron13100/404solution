@@ -22,7 +22,6 @@ if (!defined('ABSPATH')) {
  * @property ABJ_404_Solution_DatabaseCore $dbCore
  * @property ABJ_404_Solution_Functions $f
  * @property ABJ_404_Solution_Logging $logger
- * @method void clearSessionVariablesProbeCache(...$arguments)
  */
 class ABJ_404_Solution_ViewBuildSqlModeProbe extends ABJ_404_Solution_ViewBuildCollaborator {
 
@@ -164,7 +163,7 @@ class ABJ_404_Solution_ViewBuildSqlModeProbe extends ABJ_404_Solution_ViewBuildC
         // The S2 INSERT already uses a strict-safe CAST so the build
         // survives a denied relax; the warn below makes it diagnosable.
         if ($result['strict_mode_active'] || $result['only_full_group_by_active']) {
-            $relaxed = $this->host->attemptRelaxSqlModeForBuildConnection($result['sql_mode']);
+            $relaxed = $this->attemptRelaxSqlModeForBuildConnection($result['sql_mode']);
             $result['adjusted'] = $relaxed === true;
             $result['adjustment_denied'] = $relaxed === false;
             if ($result['adjustment_denied']) {
@@ -186,7 +185,7 @@ class ABJ_404_Solution_ViewBuildSqlModeProbe extends ABJ_404_Solution_ViewBuildC
         // safe to persist (the dashboard reader treats sql_mode=='' as a
         // probe failure and skips its row).
         if (function_exists('update_option')) {
-            update_option($this->host->sqlModeProbeOptionName(), $result, false);
+            update_option($this->sqlModeProbeOptionName(), $result, false);
         }
 
         $this->sqlModeProbeCache = $result;
@@ -200,7 +199,7 @@ class ABJ_404_Solution_ViewBuildSqlModeProbe extends ABJ_404_Solution_ViewBuildC
      * @return array<string,mixed>
      */
     public function detectAndAdjustSqlMode(): array {
-        return $this->host->probeSqlModeForBuild();
+        return $this->probeSqlModeForBuild();
     }
 
     /** @return array<string,mixed>|null */
@@ -268,12 +267,12 @@ class ABJ_404_Solution_ViewBuildSqlModeProbe extends ABJ_404_Solution_ViewBuildC
     public function clearSqlModeProbeCache(): void {
         $this->sqlModeProbeCache = null;
         if (function_exists('delete_option')) {
-            delete_option($this->host->sqlModeProbeOptionName());
+            delete_option($this->sqlModeProbeOptionName());
         }
         // The session-variables probe (operational + DDL-safety MySQL vars)
         // shares the same lifecycle as the sql_mode probe: a fresh build must
         // re-evaluate session config in case the host was tuned between runs.
         // Lives on the host-environment probe collaborator.
-        $this->host->clearSessionVariablesProbeCache();
+        $this->host->sessionVariablesProbe()->clearSessionVariablesProbeCache();
     }
 }

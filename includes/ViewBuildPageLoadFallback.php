@@ -27,11 +27,6 @@ if (!defined('ABSPATH')) {
  * collaborator makes the contract clear and prevents either path from
  * accidentally inheriting the other's gates.
  *
- * @method ABJ_404_Solution_Logging logger(...$arguments)
- * @method int getCronStuckHours(...$arguments)
- * @method bool viewDoneIsServeable(...$arguments)
- * @method array<string,mixed> getViewBuildProgress(...$arguments)
- * @method array<string,mixed> advanceViewBuildOnce(bool $forceRebuild = false)
  */
 class ABJ_404_Solution_ViewBuildPageLoadFallback extends ABJ_404_Solution_ViewBuildCollaborator {
 
@@ -90,11 +85,11 @@ class ABJ_404_Solution_ViewBuildPageLoadFallback extends ABJ_404_Solution_ViewBu
     public function runPageLoadFallbackAdvance(): array {
         // Cron is healthy: nothing for the fallback to do. Free check
         // (one wp_get_ready_cron_jobs call) so we can run it first.
-        if ($this->host->getCronStuckHours() < 24) {
+        if ($this->host->cronScheduler()->getCronStuckHours() < 24) {
             return array(
                 'ran' => false,
                 'reason' => 'cron_healthy',
-                'progress' => $this->host->getViewBuildProgress(),
+                'progress' => $this->host->readGateway()->getViewBuildProgress(),
             );
         }
 
@@ -102,11 +97,11 @@ class ABJ_404_Solution_ViewBuildPageLoadFallback extends ABJ_404_Solution_ViewBu
         // the fallback's steady-state cost at zero on hosts that recover,
         // which is the desirable shape (admin returns to a working page
         // without page-load latency).
-        if ($this->host->viewDoneIsServeable()) {
+        if ($this->host->viewDoneState()->viewDoneIsServeable()) {
             return array(
                 'ran' => false,
                 'reason' => 'not_needed',
-                'progress' => $this->host->getViewBuildProgress(),
+                'progress' => $this->host->readGateway()->getViewBuildProgress(),
             );
         }
 
@@ -122,7 +117,7 @@ class ABJ_404_Solution_ViewBuildPageLoadFallback extends ABJ_404_Solution_ViewBu
             return array(
                 'ran' => false,
                 'reason' => 'gate_active',
-                'progress' => $this->host->getViewBuildProgress(),
+                'progress' => $this->host->readGateway()->getViewBuildProgress(),
             );
         }
         if ($haveTransientApi) {
@@ -162,7 +157,7 @@ class ABJ_404_Solution_ViewBuildPageLoadFallback extends ABJ_404_Solution_ViewBu
             // separate gesture that intentionally clears degraded gates
             // and waits 30s for the lock. Page-load fallback should never
             // escalate to those semantics.
-            $progress = $this->host->advanceViewBuildOnce(false);
+            $progress = $this->host->advanceCoordinator()->advanceViewBuildOnce(false);
         } finally {
             if ($filterRegistered && function_exists('remove_filter')) {
                 remove_filter('abj404_view_build_per_stage_budget_seconds', $budgetFilter, 100);

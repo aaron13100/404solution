@@ -12,7 +12,6 @@ if (!defined('ABSPATH')) {
  * completed stage, and the last PHP fatal context available from error_get_last.
  *
  * @property ABJ_404_Solution_Logging $logger
- * @method int readProgressOption(...$arguments)
  */
 class ABJ_404_Solution_ViewBuildShutdownDiagnostics extends ABJ_404_Solution_ViewBuildCollaborator {
 
@@ -65,7 +64,7 @@ class ABJ_404_Solution_ViewBuildShutdownDiagnostics extends ABJ_404_Solution_Vie
         }
         self::$viewBuildShutdownLoggerRegistered = true;
         $callback = function (): void {
-            $this->host->logViewBuildShutdownDiagnostics();
+            $this->logViewBuildShutdownDiagnostics();
         };
         if ($this->shutdownRegistrar !== null) {
             call_user_func($this->shutdownRegistrar, $callback);
@@ -81,11 +80,11 @@ class ABJ_404_Solution_ViewBuildShutdownDiagnostics extends ABJ_404_Solution_Vie
         }
         $stageNumber = $this->runtimeState->shutdownStageNumber() > 0
             ? $this->runtimeState->shutdownStageNumber()
-            : $this->host->readProgressOption('last_started_stage', 0);
+            : $this->host->progressOptions()->readProgressOption('last_started_stage', 0);
         if ($stageNumber <= 0) {
             return;
         }
-        $lastCompleted = $this->host->readProgressOption('last_completed_stage', 0);
+        $lastCompleted = $this->host->progressOptions()->readProgressOption('last_completed_stage', 0);
         if ($lastCompleted >= $stageNumber) {
             return;
         }

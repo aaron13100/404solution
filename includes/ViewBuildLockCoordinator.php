@@ -12,8 +12,6 @@ if (!defined('ABSPATH')) {
  * with split lock and writer routing.
  *
  * @property ABJ_404_Solution_Logging $logger
- * @method string getLowercasePrefix(...$arguments)
- * @method array<mixed> queryAndGetResults(...$arguments)
  */
 class ABJ_404_Solution_ViewBuildLockCoordinator extends ABJ_404_Solution_ViewBuildCollaborator {
 
@@ -56,8 +54,8 @@ class ABJ_404_Solution_ViewBuildLockCoordinator extends ABJ_404_Solution_ViewBui
         $name = $this->host->getLowercasePrefix() . ABJ_404_Solution_ViewBuildConfig::VIEW_DONE_BUILD_LOCK_NAME;
 
         if (self::$namedLockSupportedThisRequest === false) {
-            $this->host->ensureFallbackLockNoticeAndLog();
-            return $this->host->acquireTransientFallbackLock($name);
+            $this->ensureFallbackLockNoticeAndLog();
+            return $this->acquireTransientFallbackLock($name);
         }
 
         $timeout = max(0, $timeoutSeconds);
@@ -66,12 +64,12 @@ class ABJ_404_Solution_ViewBuildLockCoordinator extends ABJ_404_Solution_ViewBui
 
         $err = isset($result['last_error']) && is_string($result['last_error'])
             ? trim($result['last_error']) : '';
-        if ($err !== '' && $this->host->isNamedLockUnsupportedError($err)) {
+        if ($err !== '' && $this->isNamedLockUnsupportedError($err)) {
             self::$namedLockSupportedThisRequest = false;
             $this->lastNamedLockUnsupportedReason = 'function_unsupported';
             $this->lastNamedLockUnsupportedError = $err;
-            $this->host->ensureFallbackLockNoticeAndLog();
-            return $this->host->acquireTransientFallbackLock($name);
+            $this->ensureFallbackLockNoticeAndLog();
+            return $this->acquireTransientFallbackLock($name);
         }
 
         $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
@@ -81,8 +79,8 @@ class ABJ_404_Solution_ViewBuildLockCoordinator extends ABJ_404_Solution_ViewBui
                 self::$namedLockSupportedThisRequest = false;
                 $this->lastNamedLockUnsupportedReason = 'returned_null';
                 $this->lastNamedLockUnsupportedError = '';
-                $this->host->ensureFallbackLockNoticeAndLog();
-                return $this->host->acquireTransientFallbackLock($name);
+                $this->ensureFallbackLockNoticeAndLog();
+                return $this->acquireTransientFallbackLock($name);
             }
             $intGot = is_scalar($got) ? intval($got) : 0;
             if ($intGot === 1) {
@@ -104,7 +102,7 @@ class ABJ_404_Solution_ViewBuildLockCoordinator extends ABJ_404_Solution_ViewBui
         if ($this->usingTransientFallbackLock) {
             $this->usingTransientFallbackLock = false;
             if (function_exists('delete_option')) {
-                delete_option($this->host->transientFallbackLockOptionName($name));
+                delete_option($this->transientFallbackLockOptionName($name));
             }
             return;
         }
@@ -123,7 +121,7 @@ class ABJ_404_Solution_ViewBuildLockCoordinator extends ABJ_404_Solution_ViewBui
         if (!function_exists('add_option') || !function_exists('get_option')) {
             return false;
         }
-        $optionName = $this->host->transientFallbackLockOptionName($name);
+        $optionName = $this->transientFallbackLockOptionName($name);
         $now = time();
         $ttl = ABJ_404_Solution_ViewBuildConfig::VIEW_BUILD_TRANSIENT_LOCK_TTL_SECONDS;
         $expiresAt = $now + $ttl;
@@ -203,7 +201,7 @@ class ABJ_404_Solution_ViewBuildLockCoordinator extends ABJ_404_Solution_ViewBui
 
     /** @return bool */
     public function verifyBuildLockSerializesWriter(): bool {
-        if (!$this->host->acquireViewBuildLock(0)) {
+        if (!$this->acquireViewBuildLock(0)) {
             return false;
         }
         try {
@@ -223,7 +221,7 @@ class ABJ_404_Solution_ViewBuildLockCoordinator extends ABJ_404_Solution_ViewBui
             }
             return is_string($readBack) && $readBack === $nonce;
         } finally {
-            $this->host->releaseViewBuildLock();
+            $this->releaseViewBuildLock();
         }
     }
 }

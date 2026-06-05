@@ -12,8 +12,6 @@ if (!defined('ABSPATH')) {
  * last made forward progress.
  *
  * @property ABJ_404_Solution_Logging $logger
- * @method int readProgressOption(...$arguments)
- * @method void writeProgressOption(...$arguments)
  */
 class ABJ_404_Solution_ViewBuildStageMarkers extends ABJ_404_Solution_ViewBuildCollaborator {
 
@@ -44,11 +42,11 @@ class ABJ_404_Solution_ViewBuildStageMarkers extends ABJ_404_Solution_ViewBuildC
     public function markViewBuildStageStarted(int $stageNumber, string $stageKey): void {
         $now = time();
         $this->runtimeState->resetBatchProgressDetail();
-        if ($this->host->readProgressOption('started_at', 0) === 0) {
-            $this->host->writeProgressOption('started_at', $now);
+        if ($this->host->progressOptions()->readProgressOption('started_at', 0) === 0) {
+            $this->host->progressOptions()->writeProgressOption('started_at', $now);
         }
-        $this->host->writeProgressOption('last_started_stage', $stageNumber);
-        $this->host->writeProgressOption('last_started_at', $now);
+        $this->host->progressOptions()->writeProgressOption('last_started_stage', $stageNumber);
+        $this->host->progressOptions()->writeProgressOption('last_started_at', $now);
         $this->runtimeState->openStageForShutdown($stageNumber, $stageKey);
         $this->host->logger()->debugMessage(sprintf(
             '[staged] build stage %d/11 %s starting',
@@ -62,7 +60,7 @@ class ABJ_404_Solution_ViewBuildStageMarkers extends ABJ_404_Solution_ViewBuildC
      * @return void
      */
     public function markViewBuildStageCompleted(int $stageNumber): void {
-        $this->host->writeProgressOption('last_completed_stage', $stageNumber);
-        $this->host->writeProgressOption('last_completed_at', time());
+        $this->host->progressOptions()->writeProgressOption('last_completed_stage', $stageNumber);
+        $this->host->progressOptions()->writeProgressOption('last_completed_at', time());
     }
 }

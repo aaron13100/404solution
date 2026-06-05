@@ -26,12 +26,6 @@ if (!defined('ABSPATH')) {
  * cross-class calls.
  *
  * @property ABJ_404_Solution_Logging $logger
- * @method string getLowercasePrefix(...$arguments)
- * @method bool verifyOptionWriteCoherent(...$arguments)
- * @method void clearPrefixAtStageOne(...$arguments)
- * @method void clearSqlModeProbeCache(...$arguments)
- * @method void clearPhpEnvironmentProbeCache(...$arguments)
- * @method void dropTransientStagedTables(...$arguments)
  */
 class ABJ_404_Solution_ViewBuildProgressOptions extends ABJ_404_Solution_ViewBuildCollaborator {
 
@@ -137,7 +131,7 @@ class ABJ_404_Solution_ViewBuildProgressOptions extends ABJ_404_Solution_ViewBui
         if (!function_exists('get_option') || !function_exists('update_option')) {
             return 0;
         }
-        $optName = $this->host->stageNoProgressStreakOptionName($stageNumber);
+        $optName = $this->stageNoProgressStreakOptionName($stageNumber);
         if ($optName === '') {
             return 0;
         }
@@ -157,7 +151,7 @@ class ABJ_404_Solution_ViewBuildProgressOptions extends ABJ_404_Solution_ViewBui
         if (!function_exists('update_option')) {
             return;
         }
-        $optName = $this->host->stageNoProgressStreakOptionName($stageNumber);
+        $optName = $this->stageNoProgressStreakOptionName($stageNumber);
         if ($optName !== '') {
             update_option($optName, 0, false);
         }
@@ -171,7 +165,7 @@ class ABJ_404_Solution_ViewBuildProgressOptions extends ABJ_404_Solution_ViewBui
         if ($stageNumber < 1 || $stageNumber > 11) {
             return '';
         }
-        return $this->host->progressOptionName('s' . $stageNumber . '_no_progress_streak');
+        return $this->progressOptionName('s' . $stageNumber . '_no_progress_streak');
     }
 
     /**
@@ -183,7 +177,7 @@ class ABJ_404_Solution_ViewBuildProgressOptions extends ABJ_404_Solution_ViewBui
         if (!function_exists('get_option')) {
             return $default;
         }
-        $name = $this->host->progressOptionName($shortName);
+        $name = $this->progressOptionName($shortName);
         if ($name === '') {
             return $default;
         }
@@ -213,7 +207,7 @@ class ABJ_404_Solution_ViewBuildProgressOptions extends ABJ_404_Solution_ViewBui
         if (!function_exists('update_option')) {
             return;
         }
-        $name = $this->host->progressOptionName($shortName);
+        $name = $this->progressOptionName($shortName);
         if ($name === '') {
             return;
         }
@@ -226,16 +220,16 @@ class ABJ_404_Solution_ViewBuildProgressOptions extends ABJ_404_Solution_ViewBui
         // cost is non-trivial and a single tick of stale streak data is
         // harmless.
         if (in_array($shortName, self::$viewBuildProgressHighStakesShortNames, true)) {
-            $writeOk = $this->host->verifyOptionWriteCoherent($name, $intValue);
+            $writeOk = $this->host->optionWriteVerifier()->verifyOptionWriteCoherent($name, $intValue);
             $readBack = function_exists('get_option') ? get_option($name, null) : null;
-            $this->host->logViewBuildProgressOptionWrite($shortName, $name, $intValue, $writeOk, $readBack, 'coherent');
+            $this->logViewBuildProgressOptionWrite($shortName, $name, $intValue, $writeOk, $readBack, 'coherent');
             return;
         }
         // autoload=false so progress writes (potentially many per request)
         // don't bloat the alloptions cache that loads on every WP page.
         $writeOk = update_option($name, $intValue, false);
         $readBack = function_exists('get_option') ? get_option($name, null) : null;
-        $this->host->logViewBuildProgressOptionWrite($shortName, $name, $intValue, $writeOk, $readBack, 'direct');
+        $this->logViewBuildProgressOptionWrite($shortName, $name, $intValue, $writeOk, $readBack, 'direct');
     }
 
     /**
@@ -297,14 +291,14 @@ class ABJ_404_Solution_ViewBuildProgressOptions extends ABJ_404_Solution_ViewBui
         // because its option name is intentionally not prefix-bound (so a
         // mid-build switch_to_blog cannot make get_option silently miss it).
         // It belongs to the same fresh-start lifecycle, so clear it alongside.
-        $this->host->clearPrefixAtStageOne();
+        $this->host->prefixDriftGuard()->clearPrefixAtStageOne();
         // Same lifecycle: a fresh build must re-probe the live session so a
         // hosting move that changed sql_mode (or a schema swap that changed
         // max_allowed_packet) is picked up at the next S1 entry. The PHP
         // environment probe (set_time_limit / memory_limit) is reset for the
         // same reason: an ini change between builds must take effect.
-        $this->host->clearSqlModeProbeCache();
-        $this->host->clearPhpEnvironmentProbeCache();
+        $this->host->sqlModeProbe()->clearSqlModeProbeCache();
+        $this->host->hostEnvironmentProbe()->clearPhpEnvironmentProbeCache();
     }
 
     /**
@@ -316,8 +310,8 @@ class ABJ_404_Solution_ViewBuildProgressOptions extends ABJ_404_Solution_ViewBui
      * @return void
      */
     public function performFreshStartCleanup(): void {
-        $this->host->clearAllProgressOptions();
-        $this->host->dropTransientStagedTables();
+        $this->clearAllProgressOptions();
+        $this->host->stageCallbacks()->dropTransientStagedTables();
     }
 
 }

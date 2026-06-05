@@ -58,7 +58,7 @@ class ABJ_404_Solution_ViewBuildOptionWriteVerifier extends ABJ_404_Solution_Vie
         $prior = get_option($optionName, null);
         update_option($optionName, $expected, false);
         $actual = get_option($optionName, null);
-        if ($this->host->optionReadBackMatches($actual, $expected)) {
+        if ($this->optionReadBackMatches($actual, $expected)) {
             return true;
         }
         // First read disagrees with the just-written value. Surface a WARN
@@ -67,7 +67,7 @@ class ABJ_404_Solution_ViewBuildOptionWriteVerifier extends ABJ_404_Solution_Vie
         // Other high-stakes keys (s2/s4/s5_high_water) stay silent on the
         // first miss to avoid log volume; they still hit the persistent-
         // mismatch WARN further down if the retry also fails.
-        if ($this->host->isCurrentStageOptionName($optionName) && is_object($this->host->logger())
+        if ($this->isCurrentStageOptionName($optionName) && is_object($this->host->logger())
                 && method_exists($this->host->logger(), 'warn')) {
             $this->host->logger()->warn(sprintf(
                 '[staged] option write incoherent (first read-back) on %s: prior=%s new=%s observed=%s; flushing cache and retrying',
@@ -89,7 +89,7 @@ class ABJ_404_Solution_ViewBuildOptionWriteVerifier extends ABJ_404_Solution_Vie
         }
         update_option($optionName, $expected, false);
         $retry = get_option($optionName, null);
-        if ($this->host->optionReadBackMatches($retry, $expected)) {
+        if ($this->optionReadBackMatches($retry, $expected)) {
             return true;
         }
 

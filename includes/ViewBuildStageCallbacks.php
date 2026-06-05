@@ -46,178 +46,13 @@ if (!defined('ABSPATH')) {
  * @property bool $usingTransientFallbackLock
  * @property string $lastNamedLockUnsupportedReason
  * @property string $lastNamedLockUnsupportedError
- * @method bool acquireTransientFallbackLock(...$arguments)
- * @method bool acquireViewBuildLock(...$arguments)
- * @method array<mixed> advanceViewBuildOnce(...$arguments)
- * @method void assertBuildBufferExistsOrHalt(...$arguments)
- * @method ?bool attemptRelaxSqlModeForBuildConnection(...$arguments)
- * @method bool bufferIntegrityPassesForPromote(...$arguments)
- * @method string buildHaltTransientKey(...$arguments)
- * @method string buildViewDoneCountQuery(...$arguments)
- * @method int bumpStageNoProgressStreak(...$arguments)
- * @method string capturedPrefixForLog(...$arguments)
- * @method void capturePrefixAtBuildStart(...$arguments)
- * @method void claimForegroundViewBuildLease(...$arguments)
- * @method string classifyAndHandleStageFailure(...$arguments)
- * @method array<mixed> classifySessionVariableWarnings(...$arguments)
- * @method string classifyStageFailure(...$arguments)
- * @method void clearAllProgressOptions(...$arguments)
- * @method void clearPhpEnvironmentProbeCache(...$arguments)
- * @method void clearPrefixAtStageOne(...$arguments)
- * @method void clearSessionVariablesProbeCache(...$arguments)
- * @method void clearSqlModeProbeCache(...$arguments)
- * @method void clearStagedBuildDegradedState(...$arguments)
- * @method void clearViewBuildOpenStageForShutdown(...$arguments)
- * @method void clearViewDoneHardStaleNotice(...$arguments)
- * @method ABJ_404_Solution_Clock clock(...$arguments)
- * @method int countLiveRedirects(...$arguments)
- * @method int countViewBuildRows(...$arguments)
- * @method string describeBuildProgressForNotice(...$arguments)
- * @method string describeDegradedNotice(...$arguments)
- * @method string describeStagedSqlFailure(...$arguments)
- * @method array<mixed> detectAndAdjustSqlMode(...$arguments)
- * @method float detectHostStagedQueryLimitSeconds(...$arguments)
- * @method string doTableNameReplacements(...$arguments)
- * @method void dropDeletemeTable(...$arguments)
- * @method void dropTransientBuffersIfPresent(...$arguments)
- * @method void dropTransientStagedTables(...$arguments)
- * @method void ensureConnection(...$arguments)
- * @method void ensureFallbackLockNoticeAndLog(...$arguments)
- * @method int extendedTimeoutForKilledNonBatchedStage(...$arguments)
- * @method array<mixed> fetchSessionVariablesRowOrEmpty(...$arguments)
- * @method string filesystemEnvironmentProbeOptionName(...$arguments)
- * @method bool forceRestartViewBuild(...$arguments)
- * @method bool foregroundViewBuildLeaseActive(...$arguments)
- * @method string formatPhpMemoryBytesHuman(...$arguments)
- * @method string getColumnCollationString(...$arguments)
- * @method int getCronStuckHours(...$arguments)
- * @method string getLowercasePrefix(...$arguments)
- * @method array<string, mixed> getViewBuildProgress(...$arguments)
- * @method array<mixed> getViewBuildProgressFingerprint(...$arguments)
- * @method int getViewDoneBuiltAtTimestamp(...$arguments)
- * @method bool haltIfPrefixChangedSinceStageOne(...$arguments)
- * @method string humanBatchProgress(...$arguments)
- * @method float intelligentStagedQueryTimeoutSeconds(...$arguments)
- * @method void invalidateViewDoneServeableCache(...$arguments)
- * @method bool isBuildHaltedForHostFailure(...$arguments)
- * @method bool isCurrentStageOptionName(...$arguments)
- * @method bool isNamedLockUnsupportedError(...$arguments)
- * @method bool isResumableStagedKill(...$arguments)
- * @method bool isStageMarkedSkipped(...$arguments)
- * @method bool isTransientConnectionError(...$arguments)
- * @method string localizeOrDefaultViewBuildNotice(...$arguments)
- * @method bool logsHitsTableExists(...$arguments)
- * @method void logTimedViewBuildStage(...$arguments)
- * @method void logViewBuildProgressOptionWrite(...$arguments)
- * @method void logViewBuildShutdownDiagnostics(...$arguments)
- * @method void markBuildHaltedForHostFailure(...$arguments)
- * @method void markBuildStage(...$arguments)
- * @method void markStageSkippedForHostFailure(...$arguments)
- * @method void markViewBuildStageCompleted(...$arguments)
- * @method void markViewBuildStageStarted(...$arguments)
- * @method void markViewDoneBuildCompleted(...$arguments)
- * @method int maxBuildBufferId(...$arguments)
- * @method void maybeRaiseViewDoneHardStaleNotice(...$arguments)
- * @method string normalizePathPrefix(...$arguments)
- * @method bool optionReadBackMatches(...$arguments)
- * @method int parsePhpMemoryLimitToBytes(...$arguments)
- * @method bool pathFallsWithinAny(...$arguments)
- * @method void performFreshStartCleanup(...$arguments)
- * @method array<mixed> phpDisabledFunctionsList(...$arguments)
- * @method string phpEnvironmentProbeOptionName(...$arguments)
- * @method float phpTimeRemainingSeconds(...$arguments)
- * @method string prefixAtStageOneOptionName(...$arguments)
- * @method array<mixed> probeFilesystemEnvironmentForBuild(...$arguments)
- * @method float probeFloatFromValues(...$arguments)
- * @method int probeIntFromValues(...$arguments)
- * @method int probeMemoryLimitForS9(...$arguments)
- * @method array<mixed> probePhpEnvironmentForBuild(...$arguments)
- * @method array<mixed> probeSessionVariablesAtS1Entry(...$arguments)
- * @method bool probeSetTimeLimitAvailability(...$arguments)
- * @method array<mixed> probeSqlModeForBuild(...$arguments)
- * @method string probeStringFromValues(...$arguments)
- * @method string progressOptionName(...$arguments)
- * @method array<mixed> queryAndGetResults(...$arguments)
- * @method array<int, array<string, mixed>> readFromViewDone(...$arguments)
- * @method int readProgressOption(...$arguments)
- * @method void rebuildViewDoneInBackground(...$arguments)
- * @method bool reconcilePostStageElevenState(...$arguments)
- * @method string reconcileStagedTablesAtRunnerStartup(...$arguments)
- * @method int recordStageBatchKilled(...$arguments)
- * @method void registerViewBuildShutdownDiagnostics(...$arguments)
- * @method bool releaseAndReacquireBetweenStages(...$arguments)
- * @method void releaseViewBuildLock(...$arguments)
- * @method void resetStageNoProgressStreak(...$arguments)
- * @method string resolveColumnCollationForStagedBuild(...$arguments)
- * @method void runForceRestartCleanupInsideLock(...$arguments)
- * @method bool runIdRangeBatchedUpdate(...$arguments)
- * @method int runInsertBatch(...$arguments)
- * @method mixed runNonBatchedStageWithKillStreakEscape(...$arguments)
- * @method array{ran: bool, reason: string, progress: array<string, mixed>} runPageLoadFallbackAdvance(...$arguments)
- * @method int runRedirectsForViewCountStaged(...$arguments)
- * @method array<int, array<string, mixed>> runRedirectsForViewStaged(...$arguments)
- * @method bool runS11Swap(...$arguments)
- * @method bool runStagedBuildOnce(...$arguments)
- * @method bool runStagedBuildStages6Through11(...$arguments)
- * @method void runStagedSqlFile(...$arguments)
- * @method void runStagedSqlFileTolerantOfDuplicateKey(...$arguments)
- * @method mixed runTimedViewBuildStage(...$arguments)
- * @method string sanitizeUrlBeforeInsert(...$arguments)
- * @method void scheduleViewDoneRebuild(...$arguments)
- * @method string sessionVariablesProbeOptionName(...$arguments)
- * @method void setFilesystemEnvAdminNotice(...$arguments)
- * @method void setLowMemoryLimitAdminNotice(...$arguments)
- * @method void setSessionEnvAdminNotice(...$arguments)
- * @method void setStagedBuildDegradedNotice(...$arguments)
- * @method void setStagedBuildHaltNotice(...$arguments)
- * @method void setViewBuildCronStuckNotice(...$arguments)
- * @method void setViewBuildScheduleFailedNotice(...$arguments)
- * @method void setViewDoneHardStaleNotice(...$arguments)
- * @method array<mixed> splitOpenBasedirPaths(...$arguments)
- * @method string sqlModeProbeOptionName(...$arguments)
- * @method void stageAddPreJoinIndexes(...$arguments)
- * @method void stageAddSortIndexes(...$arguments)
- * @method void stageCreateBuildTable(...$arguments)
- * @method array<string, mixed> stagedQueryOptions(...$arguments)
- * @method bool stagedTableExists(...$arguments)
- * @method bool stageInsertRedirectsBatched(...$arguments)
- * @method string stageNoProgressStreakOptionName(...$arguments)
- * @method void stageRenameSwap(...$arguments)
- * @method string stageSkipOptionName(...$arguments)
- * @method void stageUpdateExternal(...$arguments)
- * @method void stageUpdateHits(...$arguments)
- * @method void stageUpdateHome(...$arguments)
- * @method bool stageUpdatePostsBatched(...$arguments)
- * @method void stageUpdateSpecial(...$arguments)
- * @method bool stageUpdateTermsBatched(...$arguments)
- * @method void sweepStaleRebuildTransients(...$arguments)
- * @method string transientFallbackLockOptionName(...$arguments)
- * @method bool verifyBuildLockSerializesWriter(...$arguments)
- * @method bool verifyOptionWriteCoherent(...$arguments)
- * @method bool verifyPrefixUnchangedSinceStageOne(...$arguments)
- * @method int viewBuildBatchSize(...$arguments)
- * @method int viewBuildBatchSizeForStage(...$arguments)
- * @method array<mixed> viewBuildOnlyTranslations(...$arguments)
- * @method float viewBuildPerStageBudgetSeconds(...$arguments)
- * @method string viewBuildTableName(...$arguments)
- * @method string viewDeletemeTableName(...$arguments)
- * @method int viewDoneBuiltAt(...$arguments)
- * @method int viewDoneDataBuiltAt(...$arguments)
- * @method string viewDoneDataBuiltAtOptionName(...$arguments)
- * @method string viewDoneFreshnessOptionName(...$arguments)
- * @method bool viewDoneHasRows(...$arguments)
- * @method bool viewDoneIsFresh(...$arguments)
- * @method bool viewDoneIsServeable(...$arguments)
- * @method bool viewDoneTableExists(...$arguments)
- * @method string viewDoneTableName(...$arguments)
- * @method void writeProgressOption(...$arguments)
  */
 class ABJ_404_Solution_ViewBuildStageCallbacks extends ABJ_404_Solution_ViewBuildCollaborator {
 
     /** Drop both the build buffer and the leftover deleteme.  Used on fresh-start only. */
     public function dropTransientStagedTables(): void {
-        $buildTempTable = $this->host->viewBuildTableName();
-        $deletemeTempTable = $this->host->viewDeletemeTableName();
+        $buildTempTable = $this->host->stagePipeline()->viewBuildTableName();
+        $deletemeTempTable = $this->host->stagePipeline()->viewDeletemeTableName();
         $this->host->queryAndGetResults('DROP TABLE IF EXISTS `' . $buildTempTable . '`',
             array('log_errors' => false));
         $this->host->queryAndGetResults('DROP TABLE IF EXISTS `' . $deletemeTempTable . '`',
@@ -226,7 +61,7 @@ class ABJ_404_Solution_ViewBuildStageCallbacks extends ABJ_404_Solution_ViewBuil
 
     /** Drop only the deleteme leftover from a prior crashed RENAME swap. */
     public function dropDeletemeTable(): void {
-        $deletemeTempTable = $this->host->viewDeletemeTableName();
+        $deletemeTempTable = $this->host->stagePipeline()->viewDeletemeTableName();
         $this->host->queryAndGetResults('DROP TABLE IF EXISTS `' . $deletemeTempTable . '`',
             array('log_errors' => false));
     }
@@ -242,13 +77,13 @@ class ABJ_404_Solution_ViewBuildStageCallbacks extends ABJ_404_Solution_ViewBuil
      * @return void
      */
     public function dropTransientBuffersIfPresent(): void {
-        $buildTempTable = $this->host->viewBuildTableName();
-        $deletemeTempTable = $this->host->viewDeletemeTableName();
-        if ($this->host->stagedTableExists($buildTempTable)) {
+        $buildTempTable = $this->host->stagePipeline()->viewBuildTableName();
+        $deletemeTempTable = $this->host->stagePipeline()->viewDeletemeTableName();
+        if ($this->host->stateProbe()->stagedTableExists($buildTempTable)) {
             $this->host->queryAndGetResults('DROP TABLE IF EXISTS `' . $buildTempTable . '`',
                 array('log_errors' => false));
         }
-        if ($this->host->stagedTableExists($deletemeTempTable)) {
+        if ($this->host->stateProbe()->stagedTableExists($deletemeTempTable)) {
             $this->host->queryAndGetResults('DROP TABLE IF EXISTS `' . $deletemeTempTable . '`',
                 array('log_errors' => false));
         }
@@ -275,7 +110,7 @@ class ABJ_404_Solution_ViewBuildStageCallbacks extends ABJ_404_Solution_ViewBuil
         );
         $lastError = '';
         $errorsSoFar = array();
-        $opts = $this->host->stagedQueryOptions();
+        $opts = $this->host->stagedSqlExecutor()->stagedQueryOptions();
         $opts['log_errors'] = false;
         foreach ($attempts as $engineLabel => $sql) {
             $attemptStarted = microtime(true);
@@ -321,44 +156,44 @@ class ABJ_404_Solution_ViewBuildStageCallbacks extends ABJ_404_Solution_ViewBuil
         // S3 indexes are added with IF NOT EXISTS semantics emulated by
         // catching "Duplicate key name" on retry. See runStagedSqlFile
         // tolerance below.  ALTER TABLE itself is fast on the buffer.
-        $this->host->assertBuildBufferExistsOrHalt('S3 stageAddPreJoinIndexes');
-        $this->host->runStagedSqlFileTolerantOfDuplicateKey('03_index_fd.sql', array());
+        $this->assertBuildBufferExistsOrHalt('S3 stageAddPreJoinIndexes');
+        $this->host->stagedSqlExecutor()->runStagedSqlFileTolerantOfDuplicateKey('03_index_fd.sql', array());
     }
 
     /** @return void */
     public function stageUpdateHome(): void {
-        $this->host->assertBuildBufferExistsOrHalt('S6 stageUpdateHome');
-        $this->host->runStagedSqlFile('06_update_home.sql', array());
+        $this->assertBuildBufferExistsOrHalt('S6 stageUpdateHome');
+        $this->host->stagedSqlExecutor()->runStagedSqlFile('06_update_home.sql', array());
     }
 
     /** @return void */
     public function stageUpdateExternal(): void {
-        $this->host->assertBuildBufferExistsOrHalt('S7 stageUpdateExternal');
-        $this->host->runStagedSqlFile('07_update_external.sql', array());
+        $this->assertBuildBufferExistsOrHalt('S7 stageUpdateExternal');
+        $this->host->stagedSqlExecutor()->runStagedSqlFile('07_update_external.sql', array());
     }
 
     /** @return void */
     public function stageUpdateSpecial(): void {
-        $this->host->assertBuildBufferExistsOrHalt('S8 stageUpdateSpecial');
-        $this->host->runStagedSqlFile('08_update_special.sql', $this->host->viewBuildOnlyTranslations());
+        $this->assertBuildBufferExistsOrHalt('S8 stageUpdateSpecial');
+        $this->host->stagedSqlExecutor()->runStagedSqlFile('08_update_special.sql', $this->host->viewBuildOnlyTranslations());
     }
 
     /** @return void */
     public function stageUpdateHits(): void {
-        $this->host->assertBuildBufferExistsOrHalt('S9 stageUpdateHits');
-        $s9Collation = $this->host->resolveColumnCollationForStagedBuild();
+        $this->assertBuildBufferExistsOrHalt('S9 stageUpdateHits');
+        $s9Collation = $this->host->stagedSqlExecutor()->resolveColumnCollationForStagedBuild();
         $collationExtra = array('{S9_COLLATION}' => $s9Collation);
-        $this->host->runStagedSqlFile('09a_drop_hits_temp.sql', array());
-        $this->host->runStagedSqlFile('09b_create_hits_temp.sql', $collationExtra);
-        $this->host->runStagedSqlFile('09c_insert_hits_temp.sql', array());
-        $this->host->runStagedSqlFile('09_update_hits.sql', $collationExtra);
-        $this->host->runStagedSqlFile('09a_drop_hits_temp.sql', array());
+        $this->host->stagedSqlExecutor()->runStagedSqlFile('09a_drop_hits_temp.sql', array());
+        $this->host->stagedSqlExecutor()->runStagedSqlFile('09b_create_hits_temp.sql', $collationExtra);
+        $this->host->stagedSqlExecutor()->runStagedSqlFile('09c_insert_hits_temp.sql', array());
+        $this->host->stagedSqlExecutor()->runStagedSqlFile('09_update_hits.sql', $collationExtra);
+        $this->host->stagedSqlExecutor()->runStagedSqlFile('09a_drop_hits_temp.sql', array());
     }
 
     /** @return void */
     public function stageAddSortIndexes(): void {
-        $this->host->assertBuildBufferExistsOrHalt('S10 stageAddSortIndexes');
-        $this->host->runStagedSqlFileTolerantOfDuplicateKey('10_index_sort.sql', array());
+        $this->assertBuildBufferExistsOrHalt('S10 stageAddSortIndexes');
+        $this->host->stagedSqlExecutor()->runStagedSqlFileTolerantOfDuplicateKey('10_index_sort.sql', array());
     }
 
     /**
@@ -369,17 +204,17 @@ class ABJ_404_Solution_ViewBuildStageCallbacks extends ABJ_404_Solution_ViewBuil
      * @return void
      */
     public function stageRenameSwap(): void {
-        $this->host->assertBuildBufferExistsOrHalt('S11 stageRenameSwap');
-        $buildTempTable = $this->host->viewBuildTableName();
-        $done = $this->host->viewDoneTableName();
-        $deletemeTempTable = $this->host->viewDeletemeTableName();
+        $this->assertBuildBufferExistsOrHalt('S11 stageRenameSwap');
+        $buildTempTable = $this->host->stagePipeline()->viewBuildTableName();
+        $done = $this->host->stagePipeline()->viewDoneTableName();
+        $deletemeTempTable = $this->host->stagePipeline()->viewDeletemeTableName();
 
         // Defensive: ensure deleteme is gone before the swap (S0 already did
         // this, but a poorly-timed parallel rebuild could have created it).
         $this->host->queryAndGetResults('DROP TABLE IF EXISTS `' . $deletemeTempTable . '`',
             array('log_errors' => false));
 
-        if ($this->host->viewDoneTableExists()) {
+        if ($this->host->stateProbe()->viewDoneTableExists()) {
             $sql = 'RENAME TABLE `' . $done . '` TO `' . $deletemeTempTable . '`,'
                  . ' `' . $buildTempTable . '` TO `' . $done . '`';
         } else {
@@ -441,7 +276,7 @@ class ABJ_404_Solution_ViewBuildStageCallbacks extends ABJ_404_Solution_ViewBuil
      * @return void
      */
     public function assertBuildBufferExistsOrHalt(string $stageLabel): void {
-        if ($this->host->stagedTableExists($this->host->viewBuildTableName())) {
+        if ($this->host->stateProbe()->stagedTableExists($this->host->stagePipeline()->viewBuildTableName())) {
             return;
         }
         $this->host->logger()->warn(sprintf(

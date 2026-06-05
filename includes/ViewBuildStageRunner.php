@@ -40,171 +40,6 @@ if (!defined('ABSPATH')) {
  * @property bool $usingTransientFallbackLock
  * @property string $lastNamedLockUnsupportedReason
  * @property string $lastNamedLockUnsupportedError
- * @method bool acquireTransientFallbackLock(...$arguments)
- * @method bool acquireViewBuildLock(...$arguments)
- * @method array<mixed> advanceViewBuildOnce(...$arguments)
- * @method void assertBuildBufferExistsOrHalt(...$arguments)
- * @method ?bool attemptRelaxSqlModeForBuildConnection(...$arguments)
- * @method bool bufferIntegrityPassesForPromote(...$arguments)
- * @method string buildHaltTransientKey(...$arguments)
- * @method string buildViewDoneCountQuery(...$arguments)
- * @method int bumpStageNoProgressStreak(...$arguments)
- * @method string capturedPrefixForLog(...$arguments)
- * @method void capturePrefixAtBuildStart(...$arguments)
- * @method void claimForegroundViewBuildLease(...$arguments)
- * @method string classifyAndHandleStageFailure(...$arguments)
- * @method array<mixed> classifySessionVariableWarnings(...$arguments)
- * @method string classifyStageFailure(...$arguments)
- * @method void clearAllProgressOptions(...$arguments)
- * @method void clearPhpEnvironmentProbeCache(...$arguments)
- * @method void clearPrefixAtStageOne(...$arguments)
- * @method void clearSessionVariablesProbeCache(...$arguments)
- * @method void clearSqlModeProbeCache(...$arguments)
- * @method void clearStagedBuildDegradedState(...$arguments)
- * @method void clearViewBuildOpenStageForShutdown(...$arguments)
- * @method void clearViewDoneHardStaleNotice(...$arguments)
- * @method ABJ_404_Solution_Clock clock(...$arguments)
- * @method int countLiveRedirects(...$arguments)
- * @method int countViewBuildRows(...$arguments)
- * @method string describeBuildProgressForNotice(...$arguments)
- * @method string describeDegradedNotice(...$arguments)
- * @method string describeStagedSqlFailure(...$arguments)
- * @method array<mixed> detectAndAdjustSqlMode(...$arguments)
- * @method float detectHostStagedQueryLimitSeconds(...$arguments)
- * @method string doTableNameReplacements(...$arguments)
- * @method void dropDeletemeTable(...$arguments)
- * @method void dropTransientBuffersIfPresent(...$arguments)
- * @method void dropTransientStagedTables(...$arguments)
- * @method void ensureConnection(...$arguments)
- * @method void ensureFallbackLockNoticeAndLog(...$arguments)
- * @method int extendedTimeoutForKilledNonBatchedStage(...$arguments)
- * @method array<mixed> fetchSessionVariablesRowOrEmpty(...$arguments)
- * @method string filesystemEnvironmentProbeOptionName(...$arguments)
- * @method bool forceRestartViewBuild(...$arguments)
- * @method bool foregroundViewBuildLeaseActive(...$arguments)
- * @method string formatPhpMemoryBytesHuman(...$arguments)
- * @method string getColumnCollationString(...$arguments)
- * @method int getCronStuckHours(...$arguments)
- * @method string getLowercasePrefix(...$arguments)
- * @method array<string, mixed> getViewBuildProgress(...$arguments)
- * @method array<mixed> getViewBuildProgressFingerprint(...$arguments)
- * @method int getViewDoneBuiltAtTimestamp(...$arguments)
- * @method bool haltIfPrefixChangedSinceStageOne(...$arguments)
- * @method string humanBatchProgress(...$arguments)
- * @method float intelligentStagedQueryTimeoutSeconds(...$arguments)
- * @method void invalidateViewDoneServeableCache(...$arguments)
- * @method bool isBuildHaltedForHostFailure(...$arguments)
- * @method bool isCurrentStageOptionName(...$arguments)
- * @method bool isNamedLockUnsupportedError(...$arguments)
- * @method bool isResumableStagedKill(...$arguments)
- * @method bool isStageMarkedSkipped(...$arguments)
- * @method bool isTransientConnectionError(...$arguments)
- * @method string localizeOrDefaultViewBuildNotice(...$arguments)
- * @method bool logsHitsTableExists(...$arguments)
- * @method void logTimedViewBuildStage(...$arguments)
- * @method void logViewBuildProgressOptionWrite(...$arguments)
- * @method void logViewBuildShutdownDiagnostics(...$arguments)
- * @method void markBuildHaltedForHostFailure(...$arguments)
- * @method void markBuildStage(...$arguments)
- * @method void markStageSkippedForHostFailure(...$arguments)
- * @method void markViewBuildStageCompleted(...$arguments)
- * @method void markViewBuildStageStarted(...$arguments)
- * @method void markViewDoneBuildCompleted(...$arguments)
- * @method int maxBuildBufferId(...$arguments)
- * @method void maybeRaiseViewDoneHardStaleNotice(...$arguments)
- * @method string normalizePathPrefix(...$arguments)
- * @method bool optionReadBackMatches(...$arguments)
- * @method int parsePhpMemoryLimitToBytes(...$arguments)
- * @method bool pathFallsWithinAny(...$arguments)
- * @method void performFreshStartCleanup(...$arguments)
- * @method array<mixed> phpDisabledFunctionsList(...$arguments)
- * @method string phpEnvironmentProbeOptionName(...$arguments)
- * @method float phpTimeRemainingSeconds(...$arguments)
- * @method string prefixAtStageOneOptionName(...$arguments)
- * @method array<mixed> probeFilesystemEnvironmentForBuild(...$arguments)
- * @method float probeFloatFromValues(...$arguments)
- * @method int probeIntFromValues(...$arguments)
- * @method int probeMemoryLimitForS9(...$arguments)
- * @method array<mixed> probePhpEnvironmentForBuild(...$arguments)
- * @method array<mixed> probeSessionVariablesAtS1Entry(...$arguments)
- * @method bool probeSetTimeLimitAvailability(...$arguments)
- * @method array<mixed> probeSqlModeForBuild(...$arguments)
- * @method string probeStringFromValues(...$arguments)
- * @method string progressOptionName(...$arguments)
- * @method array<mixed> queryAndGetResults(...$arguments)
- * @method array<int, array<string, mixed>> readFromViewDone(...$arguments)
- * @method int readProgressOption(...$arguments)
- * @method void rebuildViewDoneInBackground(...$arguments)
- * @method bool reconcilePostStageElevenState(...$arguments)
- * @method string reconcileStagedTablesAtRunnerStartup(...$arguments)
- * @method int recordStageBatchKilled(...$arguments)
- * @method void registerViewBuildShutdownDiagnostics(...$arguments)
- * @method bool releaseAndReacquireBetweenStages(...$arguments)
- * @method void releaseViewBuildLock(...$arguments)
- * @method void resetStageNoProgressStreak(...$arguments)
- * @method string resolveColumnCollationForStagedBuild(...$arguments)
- * @method void runForceRestartCleanupInsideLock(...$arguments)
- * @method bool runIdRangeBatchedUpdate(...$arguments)
- * @method int runInsertBatch(...$arguments)
- * @method mixed runNonBatchedStageWithKillStreakEscape(...$arguments)
- * @method array{ran: bool, reason: string, progress: array<string, mixed>} runPageLoadFallbackAdvance(...$arguments)
- * @method int runRedirectsForViewCountStaged(...$arguments)
- * @method array<int, array<string, mixed>> runRedirectsForViewStaged(...$arguments)
- * @method bool runS11Swap(...$arguments)
- * @method bool runStagedBuildOnce(...$arguments)
- * @method bool runStagedBuildStages6Through11(...$arguments)
- * @method void runStagedSqlFile(...$arguments)
- * @method void runStagedSqlFileTolerantOfDuplicateKey(...$arguments)
- * @method mixed runTimedViewBuildStage(...$arguments)
- * @method string sanitizeUrlBeforeInsert(...$arguments)
- * @method void scheduleViewDoneRebuild(...$arguments)
- * @method string sessionVariablesProbeOptionName(...$arguments)
- * @method void setFilesystemEnvAdminNotice(...$arguments)
- * @method void setLowMemoryLimitAdminNotice(...$arguments)
- * @method void setSessionEnvAdminNotice(...$arguments)
- * @method void setStagedBuildDegradedNotice(...$arguments)
- * @method void setStagedBuildHaltNotice(...$arguments)
- * @method void setViewBuildCronStuckNotice(...$arguments)
- * @method void setViewBuildScheduleFailedNotice(...$arguments)
- * @method void setViewDoneHardStaleNotice(...$arguments)
- * @method array<mixed> splitOpenBasedirPaths(...$arguments)
- * @method string sqlModeProbeOptionName(...$arguments)
- * @method void stageAddPreJoinIndexes(...$arguments)
- * @method void stageAddSortIndexes(...$arguments)
- * @method void stageCreateBuildTable(...$arguments)
- * @method array<string, mixed> stagedQueryOptions(...$arguments)
- * @method bool stagedTableExists(...$arguments)
- * @method bool stageInsertRedirectsBatched(...$arguments)
- * @method string stageNoProgressStreakOptionName(...$arguments)
- * @method void stageRenameSwap(...$arguments)
- * @method string stageSkipOptionName(...$arguments)
- * @method void stageUpdateExternal(...$arguments)
- * @method void stageUpdateHits(...$arguments)
- * @method void stageUpdateHome(...$arguments)
- * @method bool stageUpdatePostsBatched(...$arguments)
- * @method void stageUpdateSpecial(...$arguments)
- * @method bool stageUpdateTermsBatched(...$arguments)
- * @method void sweepStaleRebuildTransients(...$arguments)
- * @method string transientFallbackLockOptionName(...$arguments)
- * @method bool verifyBuildLockSerializesWriter(...$arguments)
- * @method bool verifyOptionWriteCoherent(...$arguments)
- * @method bool verifyPrefixUnchangedSinceStageOne(...$arguments)
- * @method int viewBuildBatchSize(...$arguments)
- * @method int viewBuildBatchSizeForStage(...$arguments)
- * @method array<mixed> viewBuildOnlyTranslations(...$arguments)
- * @method float viewBuildPerStageBudgetSeconds(...$arguments)
- * @method string viewBuildTableName(...$arguments)
- * @method string viewDeletemeTableName(...$arguments)
- * @method int viewDoneBuiltAt(...$arguments)
- * @method int viewDoneDataBuiltAt(...$arguments)
- * @method string viewDoneDataBuiltAtOptionName(...$arguments)
- * @method string viewDoneFreshnessOptionName(...$arguments)
- * @method bool viewDoneHasRows(...$arguments)
- * @method bool viewDoneIsFresh(...$arguments)
- * @method bool viewDoneIsServeable(...$arguments)
- * @method bool viewDoneTableExists(...$arguments)
- * @method string viewDoneTableName(...$arguments)
- * @method void writeProgressOption(...$arguments)
  */
 class ABJ_404_Solution_ViewBuildStageRunner extends ABJ_404_Solution_ViewBuildCollaborator {
 
@@ -231,7 +66,7 @@ class ABJ_404_Solution_ViewBuildStageRunner extends ABJ_404_Solution_ViewBuildCo
     public function runTimedViewBuildStage(int $stageNumber, string $stageKey, callable $callback) {
         $started = microtime(true);
         try {
-            $this->host->markViewBuildStageStarted($stageNumber, $stageKey);
+            $this->host->stageMarkers()->markViewBuildStageStarted($stageNumber, $stageKey);
             // Public extension point. Sites can hook this for telemetry, custom
             // progress dashboards, or chaos-testing the build's resume contract.
             // The do_action call is inside the try so a callback that throws
@@ -265,7 +100,7 @@ class ABJ_404_Solution_ViewBuildStageRunner extends ABJ_404_Solution_ViewBuildCo
             // focused on stage sequencing. classifyAndHandleStageFailure()
             // returns one of: 'resumable_yield', 'skipped', 'halted',
             // 'completed' (post-S11 reconcile), or 'rethrow'.
-            $outcome = $this->host->classifyAndHandleStageFailure($stageNumber, $stageKey, $e->getMessage(), $started);
+            $outcome = $this->host->hostFailurePolicy()->classifyAndHandleStageFailure($stageNumber, $stageKey, $e->getMessage(), $started);
             if ($outcome === 'resumable_yield') {
                 return false;
             }
@@ -278,7 +113,7 @@ class ABJ_404_Solution_ViewBuildStageRunner extends ABJ_404_Solution_ViewBuildCo
             if ($outcome === 'completed') {
                 return null;
             }
-            $this->host->logTimedViewBuildStage($stageNumber, $stageKey, 'error', $started);
+            $this->host->stageLogPresenter()->logTimedViewBuildStage($stageNumber, $stageKey, 'error', $started);
             throw $e;
         }
 
@@ -293,11 +128,11 @@ class ABJ_404_Solution_ViewBuildStageRunner extends ABJ_404_Solution_ViewBuildCo
         // forward progress. Reset the no-progress streak so legitimate
         // long-running batched stages do not eventually trip the halt.
         // Completion / skip likewise reset.
-        $this->host->resetStageNoProgressStreak($stageNumber);
+        $this->host->progressOptions()->resetStageNoProgressStreak($stageNumber);
         if ($status === 'completed' || $status === 'skipped') {
-            $this->host->markViewBuildStageCompleted($stageNumber);
+            $this->host->stageMarkers()->markViewBuildStageCompleted($stageNumber);
         }
-        $this->host->logTimedViewBuildStage($stageNumber, $stageKey, $status, $started);
+        $this->host->stageLogPresenter()->logTimedViewBuildStage($stageNumber, $stageKey, $status, $started);
         return $result;
     }
 
@@ -337,19 +172,19 @@ class ABJ_404_Solution_ViewBuildStageRunner extends ABJ_404_Solution_ViewBuildCo
         string $streakOptKey,
         callable $callback
     ) {
-        $savedTimeout = $this->host->stagedQueryTimeoutSeconds();
-        $this->host->setStagedQueryTimeoutSeconds($this->host->extendedTimeoutForKilledNonBatchedStage($streakOptKey));
+        $savedTimeout = $this->host->stagedSqlExecutor()->getStagedQueryTimeoutSeconds();
+        $this->host->stagedSqlExecutor()->setStagedQueryTimeoutSeconds($this->host->adaptive()->extendedTimeoutForKilledNonBatchedStage($streakOptKey));
         try {
-            $result = $this->host->runTimedViewBuildStage($stageNumber, $stageKey, $callback);
+            $result = $this->runTimedViewBuildStage($stageNumber, $stageKey, $callback);
         } finally {
-            $this->host->setStagedQueryTimeoutSeconds($savedTimeout);
+            $this->host->stagedSqlExecutor()->setStagedQueryTimeoutSeconds($savedTimeout);
         }
         if ($result === false) {
-            $this->host->writeProgressOption($streakOptKey,
-                $this->host->readProgressOption($streakOptKey, 0) + 1
+            $this->host->progressOptions()->writeProgressOption($streakOptKey,
+                $this->host->progressOptions()->readProgressOption($streakOptKey, 0) + 1
             );
         } else {
-            $this->host->writeProgressOption($streakOptKey, 0);
+            $this->host->progressOptions()->writeProgressOption($streakOptKey, 0);
         }
         return $result;
     }

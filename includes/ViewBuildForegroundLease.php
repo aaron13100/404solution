@@ -10,7 +10,6 @@ if (!defined('ABSPATH')) {
  * Cron checks this short-lived lease before taking the build lock so stage
  * diagnostics stay attached to the browser request that initiated the work.
  *
- * @method string getLowercasePrefix(...$arguments)
  */
 class ABJ_404_Solution_ViewBuildForegroundLease extends ABJ_404_Solution_ViewBuildCollaborator {
 

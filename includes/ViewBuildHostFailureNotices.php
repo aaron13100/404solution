@@ -10,7 +10,6 @@ if (!defined('ABSPATH')) {
  * The notices stay on the plugin's own admin notice channel and are deduped
  * through transients, matching the self-healing reliability policy.
  *
- * @method ABJ_404_Solution_Clock clock()
  */
 class ABJ_404_Solution_ViewBuildHostFailureNotices extends ABJ_404_Solution_ViewBuildCollaborator {
 
@@ -32,7 +31,7 @@ class ABJ_404_Solution_ViewBuildHostFailureNotices extends ABJ_404_Solution_View
             'stage'   => $stageNumber,
             'kind'    => $kind,
             'error'   => $errorText,
-            'message' => $this->host->describeDegradedNotice($stageNumber, $kind, $errorText),
+            'message' => $this->describeDegradedNotice($stageNumber, $kind, $errorText),
             'when'    => $this->host->clock()->now(),
         );
         if (function_exists('set_transient')) {

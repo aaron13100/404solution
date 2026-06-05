@@ -62,7 +62,7 @@ class ABJ_404_Solution_ViewBuildPrefixDriftGuard extends ABJ_404_Solution_ViewBu
         $prefix = (isset($wpdb->prefix) && is_string($wpdb->prefix)) ? $wpdb->prefix : '';
         $this->prefixAtStageOne = $prefix;
         if (function_exists('update_option')) {
-            update_option($this->host->prefixAtStageOneOptionName(), $prefix, false);
+            update_option($this->prefixAtStageOneOptionName(), $prefix, false);
         }
     }
 
@@ -96,7 +96,7 @@ class ABJ_404_Solution_ViewBuildPrefixDriftGuard extends ABJ_404_Solution_ViewBu
         if (!function_exists('get_option')) {
             return true;
         }
-        $captured = get_option($this->host->prefixAtStageOneOptionName(), '');
+        $captured = get_option($this->prefixAtStageOneOptionName(), '');
         if (!is_string($captured) || $captured === '') {
             return true;
         }
@@ -113,7 +113,7 @@ class ABJ_404_Solution_ViewBuildPrefixDriftGuard extends ABJ_404_Solution_ViewBu
     public function clearPrefixAtStageOne(): void {
         $this->prefixAtStageOne = '';
         if (function_exists('delete_option')) {
-            delete_option($this->host->prefixAtStageOneOptionName());
+            delete_option($this->prefixAtStageOneOptionName());
         }
     }
 
@@ -130,7 +130,7 @@ class ABJ_404_Solution_ViewBuildPrefixDriftGuard extends ABJ_404_Solution_ViewBu
         if (!function_exists('get_option')) {
             return '';
         }
-        $captured = get_option($this->host->prefixAtStageOneOptionName(), '');
+        $captured = get_option($this->prefixAtStageOneOptionName(), '');
         return is_string($captured) ? $captured : '';
     }
 }

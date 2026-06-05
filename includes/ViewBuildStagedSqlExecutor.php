@@ -24,11 +24,6 @@ if (!defined('ABSPATH')) {
  *
  * @property ABJ_404_Solution_Functions $f
  * @property ABJ_404_Solution_Logging $logger
- * @method array<mixed> queryAndGetResults(...$arguments)
- * @method string doTableNameReplacements(...$arguments)
- * @method string getColumnCollationString(...$arguments)
- * @method mixed runTimedViewBuildStage(...$arguments)
- * @method void stageRenameSwap(...$arguments)
  */
 class ABJ_404_Solution_ViewBuildStagedSqlExecutor extends ABJ_404_Solution_ViewBuildCollaborator {
 
@@ -68,7 +63,7 @@ class ABJ_404_Solution_ViewBuildStagedSqlExecutor extends ABJ_404_Solution_ViewB
             $clean = $url;
         }
         if ($maxLength <= 0) {
-            $probe = $this->host->sqlModeProbeCache();
+            $probe = $this->host->sqlModeProbe()->sqlModeProbeCache();
             $truncTo = 0;
             if ($probe !== null && isset($probe['truncate_url_to'])
                     && is_scalar($probe['truncate_url_to'])) {
@@ -135,10 +130,10 @@ class ABJ_404_Solution_ViewBuildStagedSqlExecutor extends ABJ_404_Solution_ViewB
             $sql = $this->host->functions()->str_replace(array_keys($extraTranslations), array_values($extraTranslations), $sql);
         }
         $sql = $this->host->functions()->doNormalReplacements($sql);
-        $result = $this->host->queryAndGetResults($sql, $this->host->stagedQueryOptions());
+        $result = $this->host->queryAndGetResults($sql, $this->stagedQueryOptions());
         $err = isset($result['last_error']) && is_string($result['last_error']) ? trim($result['last_error']) : '';
         if ($err !== '') {
-            $context = $this->host->describeStagedSqlFailure($relativePath, $extraTranslations);
+            $context = $this->describeStagedSqlFailure($relativePath, $extraTranslations);
             throw new \Exception('Staged SQL ' . $context . ' failed: ' . $err);
         }
     }
@@ -155,7 +150,7 @@ class ABJ_404_Solution_ViewBuildStagedSqlExecutor extends ABJ_404_Solution_ViewB
      */
     public function runStagedSqlFileTolerantOfDuplicateKey(string $relativePath, array $extraTranslations): void {
         try {
-            $this->host->runStagedSqlFile($relativePath, $extraTranslations);
+            $this->runStagedSqlFile($relativePath, $extraTranslations);
         } catch (\Throwable $e) {
             $msg = $e->getMessage();
             if (stripos($msg, 'Duplicate key name') !== false
@@ -227,11 +222,11 @@ class ABJ_404_Solution_ViewBuildStagedSqlExecutor extends ABJ_404_Solution_ViewB
      *               false from runStagedBuildOnce).
      */
     public function runS11Swap(): bool {
-        $result = $this->host->runTimedViewBuildStage(11, 'staged_build_s11_swap', function () {
+        $result = $this->host->stageRunner()->runTimedViewBuildStage(11, 'staged_build_s11_swap', function () {
             if (function_exists('do_action')) {
                 do_action('abj404_view_build_before_rename_swap');
             }
-            $this->host->stageRenameSwap();
+            $this->host->stageCallbacks()->stageRenameSwap();
         });
         return $result !== false && $result !== 'halted';
     }

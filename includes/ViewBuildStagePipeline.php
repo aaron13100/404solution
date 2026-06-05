@@ -13,45 +13,6 @@ if (!defined('ABSPATH')) {
  * route here through the orchestrator.
  *
  * @property ABJ_404_Solution_Logging $logger
- * @method void capturePrefixAtBuildStart(...$arguments)
- * @method string capturedPrefixForLog(...$arguments)
- * @method void clearAllProgressOptions(...$arguments)
- * @method string doTableNameReplacements(string $query)
- * @method void dropDeletemeTable(...$arguments)
- * @method void performFreshStartCleanup(...$arguments)
- * @method bool acquireViewBuildLock(int $timeoutSeconds = 0)
- * @method void releaseViewBuildLock(...$arguments)
- * @method float intelligentStagedQueryTimeoutSeconds(...$arguments)
- * @method bool isBuildHaltedForHostFailure(...$arguments)
- * @method bool isStageMarkedSkipped(int $stage)
- * @method bool logsHitsTableExists(...$arguments)
- * @method void markBuildStage(string $stage, string $detail = '')
- * @method void markViewDoneBuildCompleted(...$arguments)
- * @method array<string, mixed> probeFilesystemEnvironmentForBuild(...$arguments)
- * @method array<string, mixed> probePhpEnvironmentForBuild(...$arguments)
- * @method bool probeSetTimeLimitAvailability(...$arguments)
- * @method array<string, mixed> probeSessionVariablesAtS1Entry(...$arguments)
- * @method array<string, mixed> probeSqlModeForBuild(...$arguments)
- * @method int readProgressOption(string $shortName, int $default = 0)
- * @method void registerViewBuildShutdownDiagnostics(...$arguments)
- * @method mixed runNonBatchedStageWithKillStreakEscape(int $stageNumber, string $stageKey, string $streakKey, callable $callback)
- * @method bool runS11Swap(...$arguments)
- * @method mixed runTimedViewBuildStage(int $stageNumber, string $stageKey, callable $callback)
- * @method void setStagedBuildHaltNotice(string $key, string $message)
- * @method void stageAddPreJoinIndexes(...$arguments)
- * @method void stageAddSortIndexes(...$arguments)
- * @method void stageCreateBuildTable(...$arguments)
- * @method int|false|string stageInsertRedirectsBatched(...$arguments)
- * @method bool stagedTableExists(string $tableName)
- * @method void stageUpdateExternal(...$arguments)
- * @method void stageUpdateHits(...$arguments)
- * @method void stageUpdateHome(...$arguments)
- * @method int|false|string stageUpdatePostsBatched(...$arguments)
- * @method void stageUpdateSpecial(...$arguments)
- * @method int|false|string stageUpdateTermsBatched(...$arguments)
- * @method bool verifyPrefixUnchangedSinceStageOne(...$arguments)
- * @method bool viewDoneIsFresh(...$arguments)
- * @method void writeProgressOption(string $shortName, int $value)
  */
 class ABJ_404_Solution_ViewBuildStagePipeline extends ABJ_404_Solution_ViewBuildCollaborator {
 
@@ -103,7 +64,7 @@ class ABJ_404_Solution_ViewBuildStagePipeline extends ABJ_404_Solution_ViewBuild
             $explicitOverride = true;
         }
 
-        $setTimeLimitAvailable = $this->host->probeSetTimeLimitAvailability();
+        $setTimeLimitAvailable = $this->host->hostEnvironmentProbe()->probeSetTimeLimitAvailability();
 
         if (!$explicitOverride) {
             $maxExec = (int)ini_get('max_execution_time');
@@ -131,8 +92,8 @@ class ABJ_404_Solution_ViewBuildStagePipeline extends ABJ_404_Solution_ViewBuild
 
     /** @return bool */
     public function releaseAndReacquireBetweenStages(): bool {
-        $this->host->releaseViewBuildLock();
-        if (!$this->host->acquireViewBuildLock(0)) {
+        $this->host->lockCoordinator()->releaseViewBuildLock();
+        if (!$this->host->lockCoordinator()->acquireViewBuildLock(0)) {
             $this->host->logger()->infoMessage(
                 '[staged] runStagedBuildOnce: released build lock between stages; '
                 . 'another worker took it during the gap. Yielding this tick; '
@@ -145,12 +106,12 @@ class ABJ_404_Solution_ViewBuildStagePipeline extends ABJ_404_Solution_ViewBuild
 
     /** @param int $aboutToRunStage @return bool */
     public function haltIfPrefixChangedSinceStageOne(int $aboutToRunStage): bool {
-        if ($this->host->verifyPrefixUnchangedSinceStageOne()) {
+        if ($this->host->prefixDriftGuard()->verifyPrefixUnchangedSinceStageOne()) {
             return false;
         }
         global $wpdb;
         $current = (isset($wpdb->prefix) && is_string($wpdb->prefix)) ? $wpdb->prefix : '';
-        $captured = $this->host->capturedPrefixForLog();
+        $captured = $this->host->prefixDriftGuard()->capturedPrefixForLog();
         $msg = sprintf(
             'Multisite blog context changed during view rebuild; rebuild '
             . 'aborted to prevent cross-blog data corruption. '
@@ -159,7 +120,7 @@ class ABJ_404_Solution_ViewBuildStagePipeline extends ABJ_404_Solution_ViewBuild
             $current,
             $aboutToRunStage
         );
-        $this->host->setStagedBuildHaltNotice('multisite_prefix_changed', $msg);
+        $this->host->hostFailureNotices()->setStagedBuildHaltNotice('multisite_prefix_changed', $msg);
         $this->host->logger()->warn('[staged] ' . $msg);
         return true;
     }
@@ -178,21 +139,21 @@ class ABJ_404_Solution_ViewBuildStagePipeline extends ABJ_404_Solution_ViewBuild
     /** @return bool */
     public function runStagedBuildOnce(): bool {
         if (self::$viewBuildAlreadyRanThisRequest) {
-            return $this->host->viewDoneIsFresh();
+            return $this->host->stateProbe()->viewDoneIsFresh();
         }
         self::$viewBuildAlreadyRanThisRequest = true;
-        $this->host->registerViewBuildShutdownDiagnostics();
+        $this->host->shutdownDiagnostics()->registerViewBuildShutdownDiagnostics();
 
-        $this->host->probePhpEnvironmentForBuild();
-        $this->host->probeFilesystemEnvironmentForBuild();
+        $this->host->hostEnvironmentProbe()->probePhpEnvironmentForBuild();
+        $this->host->filesystemEnvironmentProbe()->probeFilesystemEnvironmentForBuild();
 
-        if ($this->host->isBuildHaltedForHostFailure()) {
-            return $this->host->viewDoneIsFresh();
+        if ($this->host->hostFailureState()->isBuildHaltedForHostFailure()) {
+            return $this->host->stateProbe()->viewDoneIsFresh();
         }
 
         $this->prepareBuildRun();
-        $this->host->setStagedQueryTimeoutSeconds((int)round($this->host->intelligentStagedQueryTimeoutSeconds()));
-        $stage = $this->host->readProgressOption('current_stage', 0);
+        $this->host->stagedSqlExecutor()->setStagedQueryTimeoutSeconds((int)round($this->host->adaptive()->intelligentStagedQueryTimeoutSeconds()));
+        $stage = $this->host->progressOptions()->readProgressOption('current_stage', 0);
 
         if ($stage < 1 && !$this->runStageOne()) { return false; }
         if ($stage < 2 && !$this->runStageTwo()) { return false; }
@@ -200,21 +161,21 @@ class ABJ_404_Solution_ViewBuildStagePipeline extends ABJ_404_Solution_ViewBuild
         if ($stage < 4 && !$this->runStageFour()) { return false; }
         if ($stage < 5 && !$this->runStageFive()) { return false; }
 
-        return $this->host->runStagedBuildStages6Through11($this->host->readProgressOption('current_stage', 0));
+        return $this->runStagedBuildStages6Through11($this->host->progressOptions()->readProgressOption('current_stage', 0));
     }
 
     /** @return void */
     private function prepareBuildRun(): void {
-        $startedAt = $this->host->readProgressOption('started_at', 0);
-        $bufferExists = $this->host->stagedTableExists($this->host->viewBuildTableName());
+        $startedAt = $this->host->progressOptions()->readProgressOption('started_at', 0);
+        $bufferExists = $this->host->stateProbe()->stagedTableExists($this->viewBuildTableName());
         $isResuming = $startedAt > 0
             && (time() - $startedAt) <= ABJ_404_Solution_ViewBuildConfig::VIEW_BUILD_RESUME_TTL_SECONDS
             && $bufferExists;
 
-        $currentStage = $this->host->readProgressOption('current_stage', 0);
+        $currentStage = $this->host->progressOptions()->readProgressOption('current_stage', 0);
         if (!$isResuming) {
             $this->logFreshStart($startedAt, $bufferExists, $currentStage);
-            $this->host->performFreshStartCleanup();
+            $this->host->progressOptions()->performFreshStartCleanup();
             return;
         }
 
@@ -222,7 +183,7 @@ class ABJ_404_Solution_ViewBuildStagePipeline extends ABJ_404_Solution_ViewBuild
             '[staged] runStagedBuildOnce: resuming (started_at=%d, %ds ago); current_stage=%d',
             $startedAt, time() - $startedAt, $currentStage
         ));
-        $this->host->dropDeletemeTable();
+        $this->host->stageCallbacks()->dropDeletemeTable();
     }
 
     /** @param int $startedAt @param bool $bufferExists @param int $currentStage @return void */
@@ -241,30 +202,30 @@ class ABJ_404_Solution_ViewBuildStagePipeline extends ABJ_404_Solution_ViewBuild
 
     /** @return bool */
     private function runStageOne(): bool {
-        $this->host->capturePrefixAtBuildStart();
-        $this->host->probeSqlModeForBuild();
-        $this->host->probeSessionVariablesAtS1Entry();
+        $this->host->prefixDriftGuard()->capturePrefixAtBuildStart();
+        $this->host->sqlModeProbe()->probeSqlModeForBuild();
+        $this->host->sessionVariablesProbe()->probeSessionVariablesAtS1Entry();
         $this->host->logger()->debugMessage(sprintf(
             '[staged] runStagedBuildOnce: capturing prefix at S1 entry: prefix=%s',
-            $this->host->capturedPrefixForLog()
+            $this->host->prefixDriftGuard()->capturedPrefixForLog()
         ));
-        $this->host->markBuildStage('staged_build_s1_create');
-        $result = $this->host->runTimedViewBuildStage(1, 'staged_build_s1_create', function () {
-            $this->host->stageCreateBuildTable();
+        $this->host->stageLogPresenter()->markBuildStage('staged_build_s1_create');
+        $result = $this->host->stageRunner()->runTimedViewBuildStage(1, 'staged_build_s1_create', function () {
+            $this->host->stageCallbacks()->stageCreateBuildTable();
         });
         if (!$this->stageResultCompleted($result)) { return false; }
-        if ($this->host->readProgressOption('started_at', 0) === 0) {
-            $this->host->writeProgressOption('started_at', time());
+        if ($this->host->progressOptions()->readProgressOption('started_at', 0) === 0) {
+            $this->host->progressOptions()->writeProgressOption('started_at', time());
         }
-        $this->host->writeProgressOption('current_stage', 1);
+        $this->host->progressOptions()->writeProgressOption('current_stage', 1);
         return true;
     }
 
     /** @return bool */
     private function runStageTwo(): bool {
         if (!$this->beforeStage(2)) { return false; }
-        $result = $this->host->runTimedViewBuildStage(2, 'staged_build_s2_insert', function () {
-            return $this->host->stageInsertRedirectsBatched();
+        $result = $this->host->stageRunner()->runTimedViewBuildStage(2, 'staged_build_s2_insert', function () {
+            return $this->host->batchExecutor()->stageInsertRedirectsBatched();
         });
         return $this->markStageCompleteIfDone(2, $result);
     }
@@ -272,13 +233,13 @@ class ABJ_404_Solution_ViewBuildStagePipeline extends ABJ_404_Solution_ViewBuild
     /** @return bool */
     private function runStageThree(): bool {
         if (!$this->beforeStage(3)) { return false; }
-        if ($this->host->isStageMarkedSkipped(3)) {
-            $this->host->writeProgressOption('current_stage', 3);
+        if ($this->host->hostFailureState()->isStageMarkedSkipped(3)) {
+            $this->host->progressOptions()->writeProgressOption('current_stage', 3);
             return true;
         }
-        $this->host->markBuildStage('staged_build_s3_index_fd');
-        $result = $this->host->runNonBatchedStageWithKillStreakEscape(3, 'staged_build_s3_index_fd', 's3_kill_streak',
-            function () { $this->host->stageAddPreJoinIndexes(); }
+        $this->host->stageLogPresenter()->markBuildStage('staged_build_s3_index_fd');
+        $result = $this->host->stageRunner()->runNonBatchedStageWithKillStreakEscape(3, 'staged_build_s3_index_fd', 's3_kill_streak',
+            function () { $this->host->stageCallbacks()->stageAddPreJoinIndexes(); }
         );
         return $this->markStageCompleteIfDone(3, $result);
     }
@@ -286,8 +247,8 @@ class ABJ_404_Solution_ViewBuildStagePipeline extends ABJ_404_Solution_ViewBuild
     /** @return bool */
     private function runStageFour(): bool {
         if (!$this->beforeStage(4)) { return false; }
-        $result = $this->host->runTimedViewBuildStage(4, 'staged_build_s4_update_posts', function () {
-            return $this->host->stageUpdatePostsBatched();
+        $result = $this->host->stageRunner()->runTimedViewBuildStage(4, 'staged_build_s4_update_posts', function () {
+            return $this->host->batchExecutor()->stageUpdatePostsBatched();
         });
         return $this->markStageCompleteIfDone(4, $result);
     }
@@ -295,8 +256,8 @@ class ABJ_404_Solution_ViewBuildStagePipeline extends ABJ_404_Solution_ViewBuild
     /** @return bool */
     private function runStageFive(): bool {
         if (!$this->beforeStage(5)) { return false; }
-        $result = $this->host->runTimedViewBuildStage(5, 'staged_build_s5_update_terms', function () {
-            return $this->host->stageUpdateTermsBatched();
+        $result = $this->host->stageRunner()->runTimedViewBuildStage(5, 'staged_build_s5_update_terms', function () {
+            return $this->host->batchExecutor()->stageUpdateTermsBatched();
         });
         return $this->markStageCompleteIfDone(5, $result);
     }
@@ -304,9 +265,9 @@ class ABJ_404_Solution_ViewBuildStagePipeline extends ABJ_404_Solution_ViewBuild
     /** @return bool */
     private function runStageSix(): bool {
         if (!$this->beforeStage(6)) { return false; }
-        $this->host->markBuildStage('staged_build_s6_update_home');
-        $result = $this->host->runTimedViewBuildStage(6, 'staged_build_s6_update_home', function () {
-            $this->host->stageUpdateHome();
+        $this->host->stageLogPresenter()->markBuildStage('staged_build_s6_update_home');
+        $result = $this->host->stageRunner()->runTimedViewBuildStage(6, 'staged_build_s6_update_home', function () {
+            $this->host->stageCallbacks()->stageUpdateHome();
         });
         return $this->markStageCompleteIfDone(6, $result);
     }
@@ -314,9 +275,9 @@ class ABJ_404_Solution_ViewBuildStagePipeline extends ABJ_404_Solution_ViewBuild
     /** @return bool */
     private function runStageSeven(): bool {
         if (!$this->beforeStage(7)) { return false; }
-        $this->host->markBuildStage('staged_build_s7_update_external');
-        $result = $this->host->runTimedViewBuildStage(7, 'staged_build_s7_update_external', function () {
-            $this->host->stageUpdateExternal();
+        $this->host->stageLogPresenter()->markBuildStage('staged_build_s7_update_external');
+        $result = $this->host->stageRunner()->runTimedViewBuildStage(7, 'staged_build_s7_update_external', function () {
+            $this->host->stageCallbacks()->stageUpdateExternal();
         });
         return $this->markStageCompleteIfDone(7, $result);
     }
@@ -324,9 +285,9 @@ class ABJ_404_Solution_ViewBuildStagePipeline extends ABJ_404_Solution_ViewBuild
     /** @return bool */
     private function runStageEight(): bool {
         if (!$this->beforeStage(8)) { return false; }
-        $this->host->markBuildStage('staged_build_s8_update_special');
-        $result = $this->host->runTimedViewBuildStage(8, 'staged_build_s8_update_special', function () {
-            $this->host->stageUpdateSpecial();
+        $this->host->stageLogPresenter()->markBuildStage('staged_build_s8_update_special');
+        $result = $this->host->stageRunner()->runTimedViewBuildStage(8, 'staged_build_s8_update_special', function () {
+            $this->host->stageCallbacks()->stageUpdateSpecial();
         });
         return $this->markStageCompleteIfDone(8, $result);
     }
@@ -334,18 +295,18 @@ class ABJ_404_Solution_ViewBuildStagePipeline extends ABJ_404_Solution_ViewBuild
     /** @return bool */
     private function runStageNine(): bool {
         if (!$this->beforeStage(9)) { return false; }
-        if ($this->host->isStageMarkedSkipped(9)) {
-            $this->host->writeProgressOption('current_stage', 9);
+        if ($this->host->hostFailureState()->isStageMarkedSkipped(9)) {
+            $this->host->progressOptions()->writeProgressOption('current_stage', 9);
             return true;
         }
-        $result = $this->host->runNonBatchedStageWithKillStreakEscape(9, 'staged_build_s9_update_hits', 's9_kill_streak',
+        $result = $this->host->stageRunner()->runNonBatchedStageWithKillStreakEscape(9, 'staged_build_s9_update_hits', 's9_kill_streak',
             function () {
                 if ($this->host->logsHitsTableExists()) {
-                    $this->host->markBuildStage('staged_build_s9_update_hits');
-                    $this->host->stageUpdateHits();
+                    $this->host->stageLogPresenter()->markBuildStage('staged_build_s9_update_hits');
+                    $this->host->stageCallbacks()->stageUpdateHits();
                     return null;
                 }
-                $this->host->markBuildStage('staged_build_s9_update_hits', 'skipped; logs hits table unavailable');
+                $this->host->stageLogPresenter()->markBuildStage('staged_build_s9_update_hits', 'skipped; logs hits table unavailable');
                 return 'skipped';
             }
         );
@@ -355,13 +316,13 @@ class ABJ_404_Solution_ViewBuildStagePipeline extends ABJ_404_Solution_ViewBuild
     /** @return bool */
     private function runStageTen(): bool {
         if (!$this->beforeStage(10)) { return false; }
-        if ($this->host->isStageMarkedSkipped(10)) {
-            $this->host->writeProgressOption('current_stage', 10);
+        if ($this->host->hostFailureState()->isStageMarkedSkipped(10)) {
+            $this->host->progressOptions()->writeProgressOption('current_stage', 10);
             return true;
         }
-        $this->host->markBuildStage('staged_build_s10_index_sort');
-        $result = $this->host->runNonBatchedStageWithKillStreakEscape(10, 'staged_build_s10_index_sort', 's10_kill_streak',
-            function () { $this->host->stageAddSortIndexes(); }
+        $this->host->stageLogPresenter()->markBuildStage('staged_build_s10_index_sort');
+        $result = $this->host->stageRunner()->runNonBatchedStageWithKillStreakEscape(10, 'staged_build_s10_index_sort', 's10_kill_streak',
+            function () { $this->host->stageCallbacks()->stageAddSortIndexes(); }
         );
         return $this->markStageCompleteIfDone(10, $result);
     }
@@ -369,17 +330,17 @@ class ABJ_404_Solution_ViewBuildStagePipeline extends ABJ_404_Solution_ViewBuild
     /** @return bool */
     private function runStageEleven(): bool {
         if (!$this->beforeStage(11)) { return false; }
-        $this->host->markBuildStage('staged_build_s11_swap');
-        if (!$this->host->runS11Swap()) { return false; }
-        $this->host->markViewDoneBuildCompleted();
-        $this->host->clearAllProgressOptions();
+        $this->host->stageLogPresenter()->markBuildStage('staged_build_s11_swap');
+        if (!$this->host->stagedSqlExecutor()->runS11Swap()) { return false; }
+        $this->host->viewDoneState()->markViewDoneBuildCompleted();
+        $this->host->progressOptions()->clearAllProgressOptions();
         return true;
     }
 
     /** @param int $stage @return bool */
     private function beforeStage(int $stage): bool {
-        return $this->host->releaseAndReacquireBetweenStages()
-            && !$this->host->haltIfPrefixChangedSinceStageOne($stage);
+        return $this->releaseAndReacquireBetweenStages()
+            && !$this->haltIfPrefixChangedSinceStageOne($stage);
     }
 
     /** @param mixed $result @return bool */
@@ -394,7 +355,7 @@ class ABJ_404_Solution_ViewBuildStagePipeline extends ABJ_404_Solution_ViewBuild
      */
     private function markStageCompleteIfDone(int $stage, $result): bool {
         if (!$this->stageResultCompleted($result)) { return false; }
-        $this->host->writeProgressOption('current_stage', $stage);
+        $this->host->progressOptions()->writeProgressOption('current_stage', $stage);
         return true;
     }
 }

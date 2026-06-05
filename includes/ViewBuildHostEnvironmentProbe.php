@@ -54,9 +54,9 @@ class ABJ_404_Solution_ViewBuildHostEnvironmentProbe extends ABJ_404_Solution_Vi
         }
 
         $rawMemory = (string)ini_get('memory_limit');
-        $memoryBytes = $this->host->parsePhpMemoryLimitToBytes($rawMemory);
+        $memoryBytes = $this->parsePhpMemoryLimitToBytes($rawMemory);
 
-        $disabled = $this->host->phpDisabledFunctionsList();
+        $disabled = $this->phpDisabledFunctionsList();
         $setTimeLimitAvailable = function_exists('set_time_limit')
             && !in_array('set_time_limit', $disabled, true);
 
@@ -88,7 +88,7 @@ class ABJ_404_Solution_ViewBuildHostEnvironmentProbe extends ABJ_404_Solution_Vi
         }
 
         if (function_exists('update_option')) {
-            update_option($this->host->phpEnvironmentProbeOptionName(), $result, false);
+            update_option($this->phpEnvironmentProbeOptionName(), $result, false);
         }
 
         $this->phpEnvironmentProbeCache = $result;
@@ -97,13 +97,13 @@ class ABJ_404_Solution_ViewBuildHostEnvironmentProbe extends ABJ_404_Solution_Vi
 
     /** @return bool */
     public function probeSetTimeLimitAvailability(): bool {
-        $probe = $this->host->probePhpEnvironmentForBuild();
+        $probe = $this->probePhpEnvironmentForBuild();
         return !empty($probe['set_time_limit_available']);
     }
 
     /** @return int */
     public function probeMemoryLimitForS9(): int {
-        $probe = $this->host->probePhpEnvironmentForBuild();
+        $probe = $this->probePhpEnvironmentForBuild();
         $bytes = $probe['memory_limit_bytes'] ?? 0;
         return is_numeric($bytes) ? (int)$bytes : 0;
     }
@@ -171,9 +171,9 @@ class ABJ_404_Solution_ViewBuildHostEnvironmentProbe extends ABJ_404_Solution_Vi
     public function clearPhpEnvironmentProbeCache(): void {
         $this->phpEnvironmentProbeCache = null;
         if (function_exists('delete_option')) {
-            delete_option($this->host->phpEnvironmentProbeOptionName());
+            delete_option($this->phpEnvironmentProbeOptionName());
         }
-        $this->host->clearFilesystemEnvironmentProbeCache();
+        $this->host->filesystemEnvironmentProbe()->clearFilesystemEnvironmentProbeCache();
         $this->noticePolicy->clearPhpAndFilesystemEnvironmentNotices();
     }
 }

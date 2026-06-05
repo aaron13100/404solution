@@ -12,10 +12,6 @@ if (!defined('ABSPATH')) {
  * after the admin has fixed the host configuration.
  *
  * @property ABJ_404_Solution_Logging $logger
- * @method ABJ_404_Solution_Clock clock()
- * @method void clearPrefixAtStageOne()
- * @method string getLowercasePrefix()
- * @method void setStagedBuildDegradedNotice(int $stageNumber, string $kind, string $errorText)
  */
 class ABJ_404_Solution_ViewBuildHostFailureState extends ABJ_404_Solution_ViewBuildCollaborator {
 
@@ -37,7 +33,7 @@ class ABJ_404_Solution_ViewBuildHostFailureState extends ABJ_404_Solution_ViewBu
         if (!function_exists('get_option')) {
             return false;
         }
-        $value = get_option($this->host->stageSkipOptionName($stageNumber), 0);
+        $value = get_option($this->stageSkipOptionName($stageNumber), 0);
         return is_scalar($value) && intval($value) > 0;
     }
 
@@ -50,9 +46,9 @@ class ABJ_404_Solution_ViewBuildHostFailureState extends ABJ_404_Solution_ViewBu
      */
     public function markStageSkippedForHostFailure(int $stageNumber, string $errorText): void {
         if (function_exists('update_option')) {
-            update_option($this->host->stageSkipOptionName($stageNumber), $this->host->clock()->now(), false);
+            update_option($this->stageSkipOptionName($stageNumber), $this->host->clock()->now(), false);
         }
-        $this->host->setStagedBuildDegradedNotice($stageNumber, 'skipped', $errorText);
+        $this->host->hostFailureNotices()->setStagedBuildDegradedNotice($stageNumber, 'skipped', $errorText);
         $this->host->logger()->warn(sprintf(
             '[staged] stage %d permanently skipped (host-side environmental '
             . 'constraint, will not retry until force rebuild). Reason: %s',
@@ -72,7 +68,7 @@ class ABJ_404_Solution_ViewBuildHostFailureState extends ABJ_404_Solution_ViewBu
         if (function_exists('set_transient')) {
             // allow-cache-empty: host-failure halt marker intentionally stores error context, not query data.
             set_transient(
-                $this->host->buildHaltTransientKey(),
+                $this->buildHaltTransientKey(),
                 array(
                     'stage' => $stageNumber,
                     'error' => $errorText,
@@ -81,7 +77,7 @@ class ABJ_404_Solution_ViewBuildHostFailureState extends ABJ_404_Solution_ViewBu
                 ABJ_404_Solution_ViewBuildConfig::VIEW_BUILD_DEGRADED_NOTICE_TTL_SECONDS
             );
         }
-        $this->host->setStagedBuildDegradedNotice($stageNumber, 'halted', $errorText);
+        $this->host->hostFailureNotices()->setStagedBuildDegradedNotice($stageNumber, 'halted', $errorText);
         $this->host->logger()->warn(sprintf(
             '[staged] critical stage %d halted (host-side environmental '
             . 'constraint, will not retry until force rebuild or 24h dedup '
@@ -104,7 +100,7 @@ class ABJ_404_Solution_ViewBuildHostFailureState extends ABJ_404_Solution_ViewBu
         if (!function_exists('get_transient')) {
             return false;
         }
-        $value = get_transient($this->host->buildHaltTransientKey());
+        $value = get_transient($this->buildHaltTransientKey());
         return is_array($value);
     }
 
@@ -116,14 +112,14 @@ class ABJ_404_Solution_ViewBuildHostFailureState extends ABJ_404_Solution_ViewBu
     public function clearStagedBuildDegradedState(): void {
         if (function_exists('delete_option')) {
             for ($s = 1; $s <= 11; $s++) {
-                delete_option($this->host->stageSkipOptionName($s));
+                delete_option($this->stageSkipOptionName($s));
             }
         }
         if (function_exists('delete_transient')) {
-            delete_transient($this->host->buildHaltTransientKey());
+            delete_transient($this->buildHaltTransientKey());
         }
         // A force rebuild explicitly restarts the pipeline; the captured
         // prefix is per-build, not per-host, so wipe it so fresh S1 recaptures.
-        $this->host->clearPrefixAtStageOne();
+        $this->host->prefixDriftGuard()->clearPrefixAtStageOne();
     }
 }

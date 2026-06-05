@@ -12,13 +12,6 @@ if (!defined('ABSPATH')) {
  * and post-S11 reconciliation are separate collaborators reached through the
  * orchestrator's __call bridge.
  *
- * @method int bumpStageNoProgressStreak(int $stageNumber)
- * @method string classifyStageFailure(int $stageNumber, string $errorText)
- * @method void logTimedViewBuildStage(int $stageNumber, string $stageKey, string $status, float $started)
- * @method void markBuildHaltedForHostFailure(int $stageNumber, string $errorText)
- * @method void markStageSkippedForHostFailure(int $stageNumber, string $errorText)
- * @method bool reconcilePostStageElevenState()
- * @method void setStagedBuildHaltNotice(string $scenarioKey, string $errorText)
  */
 class ABJ_404_Solution_ViewBuildHostFailurePolicy extends ABJ_404_Solution_ViewBuildCollaborator {
 
@@ -46,36 +39,36 @@ class ABJ_404_Solution_ViewBuildHostFailurePolicy extends ABJ_404_Solution_ViewB
     public function classifyAndHandleStageFailure(int $stageNumber, string $stageKey, string $errMsg, float $started): string {
         $classification = $this->host->classifyStageFailure($stageNumber, $errMsg);
         if ($classification === 'resumable') {
-            $streak = $this->host->bumpStageNoProgressStreak($stageNumber);
+            $streak = $this->host->progressOptions()->bumpStageNoProgressStreak($stageNumber);
             if ($streak >= ABJ_404_Solution_ViewBuildConfig::VIEW_BUILD_FLOOR_KILL_STREAK_HALT_THRESHOLD) {
-                $this->host->setStagedBuildHaltNotice('floor_kill_streak', sprintf(
+                $this->host->hostFailureNotices()->setStagedBuildHaltNotice('floor_kill_streak', sprintf(
                     'stage %d: %d consecutive resumable kills with no progress (host_unfit). %s',
                     $stageNumber, $streak, substr($errMsg, 0, 200)
                 ));
-                $this->host->markBuildHaltedForHostFailure($stageNumber,
+                $this->host->hostFailureState()->markBuildHaltedForHostFailure($stageNumber,
                     'floor_kill_streak (host_unfit): stage ' . $stageNumber
                     . ' killed ' . $streak . ' consecutive ticks: ' . substr($errMsg, 0, 200)
                 );
-                $this->host->logTimedViewBuildStage($stageNumber, $stageKey, 'halted_floor_kill_streak', $started);
+                $this->host->stageLogPresenter()->logTimedViewBuildStage($stageNumber, $stageKey, 'halted_floor_kill_streak', $started);
                 return 'halted';
             }
-            $this->host->logTimedViewBuildStage($stageNumber, $stageKey, 'killed_resumable', $started);
+            $this->host->stageLogPresenter()->logTimedViewBuildStage($stageNumber, $stageKey, 'killed_resumable', $started);
             return 'resumable_yield';
         }
         if ($classification === 'skip') {
-            $this->host->markStageSkippedForHostFailure($stageNumber, $errMsg);
-            $this->host->logTimedViewBuildStage($stageNumber, $stageKey, 'skipped_host_failure', $started);
+            $this->host->hostFailureState()->markStageSkippedForHostFailure($stageNumber, $errMsg);
+            $this->host->stageLogPresenter()->logTimedViewBuildStage($stageNumber, $stageKey, 'skipped_host_failure', $started);
             return 'skipped';
         }
         if ($classification === 'halt') {
-            if ($stageNumber === 11 && $this->host->reconcilePostStageElevenState()) {
+            if ($stageNumber === 11 && $this->host->rebuildReconcile()->reconcilePostStageElevenState()) {
                 // RENAME committed server-side, error was a connection
                 // artifact. Treat as success.
-                $this->host->logTimedViewBuildStage($stageNumber, $stageKey, 'completed_after_reconcile', $started);
+                $this->host->stageLogPresenter()->logTimedViewBuildStage($stageNumber, $stageKey, 'completed_after_reconcile', $started);
                 return 'completed';
             }
-            $this->host->markBuildHaltedForHostFailure($stageNumber, $errMsg);
-            $this->host->logTimedViewBuildStage($stageNumber, $stageKey, 'halted_host_failure', $started);
+            $this->host->hostFailureState()->markBuildHaltedForHostFailure($stageNumber, $errMsg);
+            $this->host->stageLogPresenter()->logTimedViewBuildStage($stageNumber, $stageKey, 'halted_host_failure', $started);
             return 'halted';
         }
         return 'rethrow';
