@@ -8,6 +8,7 @@ if (!defined('ABSPATH')) {
 require_once __DIR__ . '/DatabaseUpgradeCoordinator.php';
 require_once __DIR__ . '/DatabaseUpgradeComponent.php';
 require_once __DIR__ . '/DatabaseUpgradeRuntimeState.php';
+require_once __DIR__ . '/DatabaseUpgradesDependencies.php';
 require_once __DIR__ . '/DatabaseUpgradeNGram.php';
 require_once __DIR__ . '/DatabaseUpgradeEngineNormalization.php';
 require_once __DIR__ . '/DatabaseUpgradeCollationDrift.php';
@@ -172,34 +173,25 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 	/**
 	 * Constructor with dependency injection.
 	 *
-	 * @param ABJ_404_Solution_DataAccess|null $dataAccess Data access layer (carries the repo composition the upgrade components resolve from)
-	 * @param ABJ_404_Solution_Logging|null $logging Logging service
-	 * @param ABJ_404_Solution_Functions|null $functions String utilities
-	 * @param ABJ_404_Solution_PermalinkCache|null $permalinkCache Permalink cache service
-	 * @param ABJ_404_Solution_SynchronizationUtils|null $syncUtils Sync utilities
-	 * @param ABJ_404_Solution_PluginLogicInterface|null $pluginLogic Business logic service
-	 * @param ABJ_404_Solution_NGramFilter|null $ngramFilter N-gram filter service
-	 * @param ABJ_404_Solution_NGramExtractor|null $ngramExtractor N-gram extraction service
-	 * @param ABJ_404_Solution_NGramCacheRepository|null $ngramCacheRepository N-gram cache repository
-	 * @param ABJ_404_Solution_NGramCoveragePolicy|null $ngramCoveragePolicy N-gram coverage policy
-	 * @param ABJ_404_Solution_NGramRebuilder|null $ngramRebuilder N-gram rebuild service
+	 * @param ABJ_404_Solution_DatabaseUpgradesDependencies|null $dependencies Upgrade facade collaborators.
 	 */
-	public function __construct($dataAccess = null, $logging = null, $functions = null, $permalinkCache = null, $syncUtils = null, $pluginLogic = null, $ngramFilter = null, $ngramExtractor = null, $ngramCacheRepository = null, $ngramCoveragePolicy = null, $ngramRebuilder = null) {
-		// Use injected dependencies or fall back to getInstance() for backward compatibility
-		$this->dao = $dataAccess !== null ? $dataAccess : abj_service('data_access');
-		$this->logger = $logging !== null ? $logging : abj_service('logging');
-		$this->f = $functions !== null ? $functions : abj_service('functions');
-		$this->permalinkCache = $permalinkCache !== null ? $permalinkCache : abj_service('permalink_cache');
-		$this->syncUtils = $syncUtils !== null ? $syncUtils : abj_service('sync_utils');
-		$this->logic = $pluginLogic !== null ? $pluginLogic : abj_service('plugin_logic');
-		$this->ngramFilter = $ngramFilter !== null ? $ngramFilter : abj_service('ngram_filter');
-		$this->ngramExtractor = $ngramExtractor;
-		$this->ngramCacheRepository = $ngramCacheRepository;
-		$this->ngramCoveragePolicy = $ngramCoveragePolicy;
-		$this->ngramRebuilder = $ngramRebuilder;
+	public function __construct(?ABJ_404_Solution_DatabaseUpgradesDependencies $dependencies = null) {
+		$dependencies = $dependencies !== null ? $dependencies : new ABJ_404_Solution_DatabaseUpgradesDependencies();
+
+		$this->dao = $dependencies->getDataAccess();
+		$this->logger = $dependencies->getLogging();
+		$this->f = $dependencies->getFunctions();
+		$this->permalinkCache = $dependencies->getPermalinkCache();
+		$this->syncUtils = $dependencies->getSyncUtils();
+		$this->logic = $dependencies->getPluginLogic();
+		$this->ngramFilter = $dependencies->getNGramFilter();
+		$this->ngramExtractor = $dependencies->getNGramExtractor();
+		$this->ngramCacheRepository = $dependencies->getNGramCacheRepository();
+		$this->ngramCoveragePolicy = $dependencies->getNGramCoveragePolicy();
+		$this->ngramRebuilder = $dependencies->getNGramRebuilder();
 
 		$daoClass = is_object($this->dao) ? get_class($this->dao) : '';
-		$this->dbCore = ($dataAccess !== null && $daoClass !== 'ABJ_404_Solution_DataAccess'
+		$this->dbCore = ($dependencies->hasDataAccessOverride() && $daoClass !== 'ABJ_404_Solution_DataAccess'
 			&& method_exists($this->dao, 'queryAndGetResults') && method_exists($this->dao, 'doTableNameReplacements'))
 			? $this->dao
 			: $this->dao->getDbCore();

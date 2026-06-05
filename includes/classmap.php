@@ -292,6 +292,7 @@ return array(
     'ABJ_404_Solution_DataAccess' => $base . 'includes/database/DataAccess.php',
     'ABJ_404_Solution_ViewBuildConfig' => $base . 'includes/view-build/ViewBuildConfig.php',
     'ABJ_404_Solution_EmailDigest' => $base . 'includes/logs/EmailDigest.php',
+    'ABJ_404_Solution_DatabaseUpgradesDependencies' => $base . 'includes/database/upgrades/DatabaseUpgradesDependencies.php',
     'ABJ_404_Solution_DatabaseUpgradesEtc' => $base . 'includes/database/upgrades/DatabaseUpgradesEtc.php',
     'ABJ_404_Solution_ErrorTypeClassifier' => $base . 'includes/policies/ErrorTypeClassifier.php',
     'ABJ_404_Solution_ErrorDiagnosticsReporter' => $base . 'includes/services/ErrorDiagnosticsReporter.php',

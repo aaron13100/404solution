@@ -75,17 +75,19 @@ class ABJ_404_Solution_DataServiceRegistration {
 
         $container->set('database_upgrades', function($c) {
             return new ABJ_404_Solution_DatabaseUpgradesEtc(
-                $c->get('data_access'),
-                $c->get('logging'),
-                $c->get('functions'),
-                $c->get('permalink_cache'),
-                $c->get('sync_utils'),
-                $c->get('plugin_logic'),
-                $c->get('ngram_filter'),
-                $c->get('ngram_extractor'),
-                $c->get('ngram_cache_repository'),
-                $c->get('ngram_coverage_policy'),
-                $c->get('ngram_rebuilder')
+                new ABJ_404_Solution_DatabaseUpgradesDependencies(array(
+                    'dataAccess' => $c->get('data_access'),
+                    'logging' => $c->get('logging'),
+                    'functions' => $c->get('functions'),
+                    'permalinkCache' => $c->get('permalink_cache'),
+                    'syncUtils' => $c->get('sync_utils'),
+                    'pluginLogic' => $c->get('plugin_logic'),
+                    'ngramFilter' => $c->get('ngram_filter'),
+                    'ngramExtractor' => $c->get('ngram_extractor'),
+                    'ngramCacheRepository' => $c->get('ngram_cache_repository'),
+                    'ngramCoveragePolicy' => $c->get('ngram_coverage_policy'),
+                    'ngramRebuilder' => $c->get('ngram_rebuilder'),
+                ))
             );
         });
 
