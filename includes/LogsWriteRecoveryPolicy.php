@@ -53,6 +53,7 @@ class ABJ_404_Solution_LogsWriteRecoveryPolicy {
         }
         global $wpdb;
         $trimSql = "DELETE FROM `{$tableName}` ORDER BY timestamp ASC LIMIT 1000";
+        // DAO-bypass-approved: recovery trim must run on the active wpdb handle so last_error reflects the immediate retry context.
         $wpdb->query($trimSql);
         $ttl = defined('HOUR_IN_SECONDS') ? (int) HOUR_IN_SECONDS : 3600;
         // @cache-write-audit: opt-out - log-trim cooldown marker, not query result data.

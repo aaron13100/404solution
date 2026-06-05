@@ -80,7 +80,9 @@ class ABJ_404_Solution_LogsRequestedUrlColumnMetadata {
         if (!method_exists($wpdb, 'prepare') || !method_exists($wpdb, 'get_results')) {
             return null;
         }
+        // DAO-bypass-approved: metadata probe needs wpdb prepare/get_results against information_schema and reads no plugin data.
         $getCharsetQuery = $wpdb->prepare("SELECT character_set_name as charset_name, collation_name as collation_name \n FROM information_schema.columns \n WHERE lower(table_schema) = lower(%s) \n AND lower(table_name) = lower(%s) \n AND lower(column_name) = lower(%s) ", $dbName, $logTableName, 'requested_url');
+        // DAO-bypass-approved: paired information_schema metadata read for requested_url charset/collation probe.
         $resultArray = $wpdb->get_results($getCharsetQuery, ARRAY_A);
         if (empty($resultArray)) {
             return null;

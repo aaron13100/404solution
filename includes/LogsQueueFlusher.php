@@ -100,8 +100,10 @@ class ABJ_404_Solution_LogsQueueFlusher {
 
             list($formats, $flattenedValues) = $this->buildValuePlaceholders($sanitizedEntries, $validatedColumns);
             $sql = "INSERT IGNORE INTO `{$tableName}` ({$columnList}) VALUES " . implode(', ', $formats);
+            // DAO-bypass-approved: queue flusher batches dynamic INSERT placeholders and must inspect wpdb last_error on the same connection.
             $prepared = $wpdb->prepare($sql, $flattenedValues);
             $wpdb->flush();
+            // DAO-bypass-approved: batch log insert must preserve same-handle last_error for recovery classification.
             $result = $wpdb->query($prepared);
 
             if ($result === false && !empty($wpdb->last_error)) {
@@ -163,6 +165,7 @@ class ABJ_404_Solution_LogsQueueFlusher {
             $trimmed = $this->recovery->autoTrimLogsv2IfNeeded($tableName, $batchError);
             if ($trimmed) {
                 $wpdb->flush();
+                // DAO-bypass-approved: table-full recovery retries the already-prepared batch on the same wpdb connection.
                 $retryResult = $wpdb->query($prepared);
                 if ($retryResult !== false) {
                     return;
@@ -223,8 +226,10 @@ class ABJ_404_Solution_LogsQueueFlusher {
             $rowPlaceholder = '(' . implode(', ', $rowFormats) . ')';
             /** @var literal-string $singleSqlTemplate */
             $singleSqlTemplate = "INSERT IGNORE INTO `{$tableName}` ({$columnList}) VALUES {$rowPlaceholder}";
+            // DAO-bypass-approved: row-level fallback reuses wpdb prepare/query so recovery can classify last_error per row.
             $singleSql = $wpdb->prepare($singleSqlTemplate, $rowValues);
             $wpdb->flush();
+            // DAO-bypass-approved: row-level retry must preserve same-handle last_error for per-row recovery.
             $singleResult = $wpdb->query((string)$singleSql);
 
             if ($singleResult === false && !empty($wpdb->last_error)) {

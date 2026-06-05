@@ -120,10 +120,10 @@ class ABJ_404_Solution_RedirectsBulkReader {
         }
 
         if ($disabled) {
-            return $this->queryBuilder->queryRegexRedirects();
+            return $this->queryBuilder->queryRegexRedirects(ABJ_404_Solution_RedirectsRepository::REGEX_CACHE_MAX_COUNT + 1);
         }
 
-        $results = $this->queryBuilder->queryRegexRedirects();
+        $results = $this->queryBuilder->queryRegexRedirects(ABJ_404_Solution_RedirectsRepository::REGEX_CACHE_MAX_COUNT + 1);
 
         if (count($results) <= ABJ_404_Solution_RedirectsRepository::REGEX_CACHE_MAX_COUNT) {
             ABJ_404_Solution_RedirectsRepository::setRegexRedirectsCache($results);
