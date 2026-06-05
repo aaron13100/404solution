@@ -79,7 +79,7 @@ class ABJ_404_Solution_WordPress_Connector {
 			}
 		}
 
-		$this->frontendPipeline = new ABJ_404_Solution_FrontendRequestPipeline(
+		$dependencies = new ABJ_404_Solution_FrontendPipelineDependencies(
 			$this->logic,
 			$this->redirectsRepository,
 			$this->logger,
@@ -91,6 +91,7 @@ class ABJ_404_Solution_WordPress_Connector {
 			abj_service('request_ignore_normalizer'),
 			abj_service('previous_request_cookie_tracker')
 		);
+		$this->frontendPipeline = new ABJ_404_Solution_FrontendRequestPipeline($dependencies);
 		return $this->frontendPipeline;
 	}
 

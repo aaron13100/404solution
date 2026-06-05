@@ -18,8 +18,8 @@ if (!defined('ABSPATH')) {
  *   6. WordPress 404-permalink-guess fallback (via WordPressGuessFallback).
  *   7. Emit 404 page (via NotFoundResponseService) and log "gave up".
  *
- * Construction still accepts legacy duck-typed objects so older test cases
- * keep working until they migrate to the typed services.
+ * Construction accepts a dependency bundle so collaborator assembly stays out
+ * of the request orchestration path.
  */
 class ABJ_404_Solution_FrontendRequestPipeline {
 
@@ -69,32 +69,11 @@ class ABJ_404_Solution_FrontendRequestPipeline {
     private $autoRedirectHandler;
 
     /**
-     * @param ABJ_404_Solution_PluginLogic $pluginLogic
-     * @param ABJ_404_Solution_RedirectsRepository $redirectsRepository
-     * @param ABJ_404_Solution_Logging $logging
-     * @param ABJ_404_Solution_Functions $functions
-     * @param ABJ_404_Solution_SpellChecker $spellChecker
-     * @param array<int, mixed> $matchingEngines
-     * @param mixed|null $logsRepository Log writer. Accepts legacy doubles with logRedirectHit().
-     * @param ABJ_404_Solution_NotFoundResponseService|null $notFoundResponse
-     * @param ABJ_404_Solution_RequestIgnoreNormalizer|null $requestIgnoreNormalizer
-     * @param ABJ_404_Solution_PreviousRequestCookieTracker|null $previousRequestCookieTracker
+     * @param ABJ_404_Solution_FrontendPipelineDependencies $dependencies
      */
-    function __construct($pluginLogic, $redirectsRepository, $logging, $functions, $spellChecker, array $matchingEngines = [], $logsRepository = null, $notFoundResponse = null, $requestIgnoreNormalizer = null, $previousRequestCookieTracker = null) {
-        $this->f = $functions;
-        $this->logger = $logging;
-        $dependencies = new ABJ_404_Solution_FrontendPipelineDependencies(
-            $pluginLogic,
-            $redirectsRepository,
-            $logging,
-            $functions,
-            $spellChecker,
-            $matchingEngines,
-            $logsRepository,
-            $notFoundResponse,
-            $requestIgnoreNormalizer,
-            $previousRequestCookieTracker
-        );
+    function __construct(ABJ_404_Solution_FrontendPipelineDependencies $dependencies) {
+        $this->f = $dependencies->functions();
+        $this->logger = $dependencies->logging();
         $this->notFoundResponse = $dependencies->notFoundResponse();
         $this->requestIgnoreNormalizer = $dependencies->requestIgnoreNormalizer();
         $this->trace = $dependencies->trace();

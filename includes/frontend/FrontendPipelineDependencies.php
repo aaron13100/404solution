@@ -12,6 +12,12 @@ class ABJ_404_Solution_FrontendPipelineDependencies {
     /** @var mixed */
     private $logsRepository;
 
+    /** @var ABJ_404_Solution_Logging */
+    private $logging;
+
+    /** @var ABJ_404_Solution_Functions */
+    private $functions;
+
     /** @var ABJ_404_Solution_NotFoundResponseService */
     private $notFoundResponse;
 
@@ -84,6 +90,9 @@ class ABJ_404_Solution_FrontendPipelineDependencies {
         $requestIgnoreNormalizer,
         $previousRequestCookieTracker
     ) {
+        $this->logging = $logging;
+        $this->functions = $functions;
+
         $adapters = new ABJ_404_Solution_FrontendLegacyAdapters();
         $this->notFoundResponse = $adapters->resolveNotFoundResponse($notFoundResponse);
         $normalizerLogsRepo = ($logsRepository instanceof ABJ_404_Solution_LogsRepositoryInterface) ? $logsRepository : null;
@@ -142,6 +151,16 @@ class ABJ_404_Solution_FrontendPipelineDependencies {
             $this->hitRecorder
         );
         $this->dbVersionRecovery = new ABJ_404_Solution_FrontendDbVersionRecovery($pluginLogic, $logging);
+    }
+
+    /** @return ABJ_404_Solution_Logging */
+    function logging(): ABJ_404_Solution_Logging {
+        return $this->logging;
+    }
+
+    /** @return ABJ_404_Solution_Functions */
+    function functions(): ABJ_404_Solution_Functions {
+        return $this->functions;
     }
 
     /** @return ABJ_404_Solution_NotFoundResponseService */
