@@ -132,71 +132,78 @@ function abj404_autoloader($class) {
 	// a corrupt install can surface a degraded admin page instead of a fatal.
 	static $traitDependencies = null;
 	if ($traitDependencies === null) {
-		// Use __DIR__ (not ABJ404_PATH) to match the classmap's path resolution.
-		$inc = __DIR__ . '/includes/';
-		$traitDependencies = array(
+		$traitDependencyClasses = array(
 			'ABJ_404_Solution_View' => array(
-				$inc . 'ViewComponent.php',
-				$inc . 'View_Shared.php',
-				$inc . 'View_UI.php',
-				$inc . 'View_Stats.php',
-				$inc . 'View_Settings.php',
-				$inc . 'View_Redirects.php',
-				$inc . 'View_RedirectsTable.php',
-				$inc . 'View_CapturedURLsTable.php',
-				$inc . 'View_RedirectForms.php',
-				$inc . 'View_ListTableChrome.php',
-				$inc . 'View_RedirectTypeUI.php',
-				$inc . 'View_RedirectConditions.php',
-				$inc . 'View_Logs.php',
+				'ABJ_404_Solution_ViewComponent',
+				'ABJ_404_Solution_View_Shared',
+				'ABJ_404_Solution_View_UI',
+				'ABJ_404_Solution_View_Stats',
+				'ABJ_404_Solution_View_Settings',
+				'ABJ_404_Solution_View_Redirects',
+				'ABJ_404_Solution_View_RedirectsTable',
+				'ABJ_404_Solution_View_CapturedURLsTable',
+				'ABJ_404_Solution_View_RedirectForms',
+				'ABJ_404_Solution_View_ListTableChrome',
+				'ABJ_404_Solution_View_RedirectTypeUI',
+				'ABJ_404_Solution_View_RedirectConditions',
+				'ABJ_404_Solution_View_Logs',
 			),
 			'ABJ_404_Solution_DataAccess' => array(
-				$inc . 'DatabaseCore.php',
-				$inc . 'ContentRepository.php',
-				$inc . 'RedirectsRepository.php',
-				$inc . 'LogsRepository.php',
-				$inc . 'StatsRepository.php',
-				$inc . 'ViewReadService.php',
-				$inc . 'ViewBuildOrchestrator.php',
+				'ABJ_404_Solution_DatabaseCore',
+				'ABJ_404_Solution_ContentRepository',
+				'ABJ_404_Solution_RedirectsRepository',
+				'ABJ_404_Solution_LogsRepository',
+				'ABJ_404_Solution_StatsRepository',
+				'ABJ_404_Solution_ViewReadService',
+				'ABJ_404_Solution_ViewBuildOrchestrator',
 			),
 			'ABJ_404_Solution_PluginLogic' => array(
-				$inc . 'PluginLogicUrlNormalization.php',
-				$inc . 'PluginLogicAdminActions.php',
-				$inc . 'AdminActionsDependencies.php',
-				$inc . 'PluginLogicImportExport.php',
-				$inc . 'PluginLogicSettingsUpdate.php',
-				$inc . 'PluginLogicPageOrdering.php',
-				$inc . 'PluginLogicLifecycle.php',
+				'ABJ_404_Solution_PluginLogicUrlNormalization',
+				'ABJ_404_Solution_PluginLogicAdminActions',
+				'ABJ_404_Solution_AdminActionsDependencies',
+				'ABJ_404_Solution_PluginLogicImportExport',
+				'ABJ_404_Solution_PluginLogicSettingsUpdate',
+				'ABJ_404_Solution_PluginLogicPageOrdering',
+				'ABJ_404_Solution_PluginLogicLifecycle',
 			),
 			'ABJ_404_Solution_DatabaseUpgradesEtc' => array(
-				$inc . 'DatabaseUpgradeCoordinator.php',
-				$inc . 'DatabaseUpgradeComponent.php',
-				$inc . 'DatabaseUpgradeNGram.php',
-				$inc . 'DatabaseUpgradeEngineNormalization.php',
-				$inc . 'DatabaseUpgradeCollationDrift.php',
-				$inc . 'DatabaseUpgradeSelfHeal.php',
-				$inc . 'DatabaseUpgradeCanonicalUrlBackfill.php',
-				$inc . 'DatabaseUpgradeDailyMaintenance.php',
-				$inc . 'DatabaseUpgradePluginUpdate.php',
-				$inc . 'DatabaseUpgradeTableRepair.php',
-				$inc . 'DatabaseUpgradeIndexes.php',
-				$inc . 'DatabaseUpgradeOrphanAdoption.php',
-				$inc . 'DatabaseUpgradeMultiSite.php',
-				$inc . 'DatabaseUpgradeSchemaDiff.php',
+				'ABJ_404_Solution_DatabaseUpgradeCoordinator',
+				'ABJ_404_Solution_DatabaseUpgradeComponent',
+				'ABJ_404_Solution_DatabaseUpgradeNGram',
+				'ABJ_404_Solution_DatabaseUpgradeEngineNormalization',
+				'ABJ_404_Solution_DatabaseUpgradeCollationDrift',
+				'ABJ_404_Solution_DatabaseUpgradeSelfHeal',
+				'ABJ_404_Solution_DatabaseUpgradeCanonicalUrlBackfill',
+				'ABJ_404_Solution_DatabaseUpgradeDailyMaintenance',
+				'ABJ_404_Solution_DatabaseUpgradePluginUpdate',
+				'ABJ_404_Solution_DatabaseUpgradeTableRepair',
+				'ABJ_404_Solution_DatabaseUpgradeIndexes',
+				'ABJ_404_Solution_DatabaseUpgradeOrphanAdoption',
+				'ABJ_404_Solution_DatabaseUpgradeMultiSite',
+				'ABJ_404_Solution_DatabaseUpgradeSchemaDiff',
 			),
 			'ABJ_404_Solution_FeedbackTransport' => array(
-				$inc . 'FeedbackEnvironmentExtras.php',
-				$inc . 'FeedbackEnvironmentExtras_DbProbes.php',
-				$inc . 'FeedbackEnvironmentExtras_HostProbes.php',
-				$inc . 'FeedbackEnvironmentExtras_DebugLogSignatures.php',
+				'ABJ_404_Solution_FeedbackEnvironmentExtras',
+				'ABJ_404_Solution_FeedbackEnvironmentExtras_DbProbes',
+				'ABJ_404_Solution_FeedbackEnvironmentExtras_HostProbes',
+				'ABJ_404_Solution_FeedbackEnvironmentExtras_DebugLogSignatures',
 			),
 			'ABJ_404_Solution_DatabaseCore' => array(
-				$inc . 'DatabaseConnectionManager.php',
-				$inc . 'DatabaseQueryTimeoutManager.php',
-				$inc . 'DatabaseErrorClassifier.php',
-				$inc . 'DatabaseSqlErrorReporter.php',
+				'ABJ_404_Solution_DatabaseConnectionManager',
+				'ABJ_404_Solution_DatabaseQueryTimeoutManager',
+				'ABJ_404_Solution_DatabaseErrorClassifier',
+				'ABJ_404_Solution_DatabaseSqlErrorReporter',
 			),
 		);
+		$traitDependencies = array();
+		foreach ($traitDependencyClasses as $hostClass => $dependencyClasses) {
+			$traitDependencies[$hostClass] = array();
+			foreach ($dependencyClasses as $dependencyClass) {
+				if (isset($abj404_autoLoaderClassMap[$dependencyClass])) {
+					$traitDependencies[$hostClass][] = $abj404_autoLoaderClassMap[$dependencyClass];
+				}
+			}
+		}
 	}
 
 	if (isset($traitDependencies[$class])) {
@@ -305,8 +312,23 @@ if (!function_exists('abj404_shortCodeListener')) {
 		 */
 		function abj404_get_required_runtime_files() {
 			$inc = ABJ404_PATH . 'includes/';
-			return array(
-				// Boot-critical
+			$classmapFile = $inc . 'classmap.php';
+			if (!file_exists($classmapFile)) {
+				$classmapFile = __DIR__ . '/includes/classmap.php';
+			}
+				$classmapFiles = array();
+				if (file_exists($classmapFile)) {
+					$classmap = require $classmapFile;
+					if (is_array($classmap)) {
+						foreach ($classmap as $classmapPath) {
+							if (is_string($classmapPath)) {
+								$classmapFiles[] = $classmapPath;
+							}
+						}
+					}
+				}
+
+			$bootFiles = array(
 				$inc . 'Loader.php',
 				$inc . 'bootstrap.php',
 				$inc . 'bootstrap/CoreServiceRegistration.php',
@@ -315,107 +337,16 @@ if (!function_exists('abj404_shortCodeListener')) {
 				$inc . 'bootstrap/MatchingEngineServiceRegistration.php',
 				$inc . 'bootstrap/RuntimeServiceRegistration.php',
 				$inc . 'bootstrap/LegacyInstanceResolver.php',
-				$inc . 'classmap.php',
-				$inc . 'ServiceContainer.php',
-				$inc . 'Clock.php',
-				$inc . 'ErrorHandler.php',
-				// Core classes
-				$inc . 'WordPress_Connector.php',
-				$inc . 'Functions.php',
-				$inc . 'Logging.php',
-				$inc . 'DebugLogFileStore.php',
-				$inc . 'DebugLogReader.php',
-				$inc . 'DebugLogArchiveBuilder.php',
-				$inc . 'DeveloperLogMailer.php',
-				$inc . 'FrontendRequestPipeline.php',
-				$inc . 'FrontendPipelineTrace.php',
-				$inc . 'RedirectExclusionPolicy.php',
-				$inc . 'MatchingEngineOrchestrator.php',
-				$inc . 'RedirectCandidateEvaluator.php',
-				$inc . 'WordPressGuessFallback.php',
-				$inc . 'RedirectDispatcher.php',
-				$inc . 'FrontendDbVersionRecovery.php',
-				$inc . 'FrontendPipelineTelemetry.php',
-				$inc . 'ImportService.php',
-				$inc . 'ExportService.php',
-				$inc . 'QueryBudgetInstrumentation.php',
-				// Support-request button + AJAX. Listed here so that a
-				// corrupt install which lost any of these files is
-				// surfaced to the admin (the "missing files" list on
-				// the degraded admin page is what tells the user what
-				// to re-upload). The degraded admin page itself uses
-				// these files when present to render the in-page
-				// support button.
-				$inc . 'SupportRequestButton.php',
-				$inc . 'FeedbackTransport.php',
-				$inc . 'ajax/AjaxSecurityGate.php',
-				$inc . 'ajax/Ajax_SupportRequest.php',
-				$inc . 'ajax/Ajax_SupportRequestPreview.php',
-				$inc . 'ajax/SupportRequest.js',
-				$inc . 'js/support-request-button.js',
-				// View facade + components (converted from former ViewTrait_* family)
-				$inc . 'View.php',
-				$inc . 'ViewComponent.php',
-				$inc . 'View_Shared.php',
-				$inc . 'View_UI.php',
-				$inc . 'View_Stats.php',
-				$inc . 'View_Settings.php',
-				$inc . 'View_Redirects.php',
-				$inc . 'View_RedirectsTable.php',
-				$inc . 'View_CapturedURLsTable.php',
-				$inc . 'View_RedirectForms.php',
-				$inc . 'View_ListTableChrome.php',
-				$inc . 'View_RedirectTypeUI.php',
-				$inc . 'View_RedirectConditions.php',
-				$inc . 'View_Logs.php',
-				// DataAccess + traits + extracted modules
-				$inc . 'DataAccess.php',
-				$inc . 'ContentRepositoryInterface.php',
-				$inc . 'ContentRepository.php',
-				$inc . 'RedirectsRepositoryInterface.php',
-				$inc . 'RedirectsRepository.php',
-				$inc . 'RedirectSpec.php',
-				$inc . 'LogsRepositoryInterface.php',
-				$inc . 'LogsRepository.php',
-				$inc . 'StatsRepositoryInterface.php',
-				$inc . 'StatsRepository.php',
-				$inc . 'ViewReadServiceInterface.php',
-				$inc . 'ViewReadService.php',
-				$inc . 'ViewBuildOrchestratorInterface.php',
-				$inc . 'ViewBuildOrchestrator.php',
-				$inc . 'DatabaseCoreInterface.php',
-				$inc . 'DatabaseCore.php',
-				// PluginLogic + composition classes
-				$inc . 'PluginLogic.php',
-				$inc . 'PluginLogicUrlNormalization.php',
-				$inc . 'PluginLogicAdminActions.php',
-				$inc . 'AdminActionsDependencies.php',
-				$inc . 'PluginLogicImportExport.php',
-				$inc . 'PluginLogicSettingsUpdate.php',
-				$inc . 'PluginLogicPageOrdering.php',
-				$inc . 'PluginLogicLifecycle.php',
-				// SpellChecker + delegate classes
-				$inc . 'SpellChecker.php',
-				$inc . 'SpellURLMatcher.php',
-				$inc . 'SpellPostListeners.php',
-				$inc . 'SpellLevenshteinEngine.php',
-				$inc . 'SpellCandidateFilter.php',
-				// DatabaseUpgradesEtc + delegates
-				$inc . 'DatabaseUpgradesEtc.php',
-				$inc . 'DatabaseUpgradeCoordinator.php',
-				$inc . 'DatabaseUpgradeComponent.php',
-				$inc . 'DatabaseUpgradeNGram.php',
-				$inc . 'DatabaseUpgradeEngineNormalization.php',
-				$inc . 'DatabaseUpgradeCollationDrift.php',
-				$inc . 'DatabaseUpgradeSelfHeal.php',
-				$inc . 'DatabaseUpgradeCanonicalUrlBackfill.php',
-				$inc . 'DatabaseUpgradeDailyMaintenance.php',
-				$inc . 'DatabaseUpgradePluginUpdate.php',
-				$inc . 'DatabaseUpgradeTableRepair.php',
-				$inc . 'DatabaseUpgradeIndexes.php',
-				$inc . 'DatabaseUpgradeOrphanAdoption.php',
-				$inc . 'DatabaseUpgradeMultiSite.php',
-				$inc . 'DatabaseUpgradeSchemaDiff.php',
+					$inc . 'classmap.php',
+					$inc . 'ajax/SupportRequest.js',
+					$inc . 'js/support-request-button.js',
+					ABJ404_PATH . 'contracts/schemas/report.schema.json',
+				);
+
+			return array_values(array_unique(array_merge(
+				$bootFiles,
+				$classmapFiles,
+				array(
 				// SQL templates — all files required for correct operation.
 				// A test (SqlFileIntegrityListCompletenessTest) verifies this list
 				// stays in sync with the actual files in includes/sql/.
@@ -460,7 +391,8 @@ if (!function_exists('abj404_shortCodeListener')) {
 				$inc . 'sql/selectTableEngines.sql',
 				$inc . 'sql/updatePermalinkCache.sql',
 				$inc . 'sql/updatePermalinkCacheParentPages.sql',
-			);
+				)
+			)));
 		}
 	}
 
@@ -1690,7 +1622,7 @@ function abj404_loadSomethingWhenWordPressIsReady() {
 	if ($isAdminRequest && $action === 'exportRedirects') {
 	    require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
 		$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
-		$abj404logic->handleActionExport();
+			$abj404logic->adminActions()->handleActionExport();
 	}
 }
 }

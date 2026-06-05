@@ -125,7 +125,7 @@ class ABJ_404_Solution_LegacyImportActionHandler {
             );
         }
 
-        $importer = new ABJ_404_Solution_CrossPluginImporter($this->parent->getDao(), $this->parent->getLogger());
+        $importer = new ABJ_404_Solution_CrossPluginImporter($this->parent->getRedirectsRepo(), $this->parent->getLogger());
         $count = $importer->importFrom($source);
 
         if ($count > 0) {

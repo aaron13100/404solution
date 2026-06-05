@@ -71,7 +71,7 @@ require_once(__DIR__ . '/bootstrap.php');
 // ABJ404_QUERY_BUDGET_LOG env var or constant points to a writable
 // directory.  Implements the deliverable of technique 4 in
 // docs/PROACTIVE_BUG_DISCOVERY.md ("reverse-proxy timeout budget audit").
-require_once(__DIR__ . '/QueryBudgetInstrumentation.php');
+require_once(__DIR__ . '/diagnostics/QueryBudgetInstrumentation.php');
 
 // Initialize the service container
 // This sets up dependency injection for all core services

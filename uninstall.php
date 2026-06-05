@@ -30,8 +30,8 @@ $plugin_data = get_file_data(__DIR__ . '/404-solution.php', array('Version' => '
 define('ABJ404_VERSION', $plugin_data['Version']);
 
 // Load the Uninstaller class
-require_once __DIR__ . '/includes/Uninstaller.php';
-require_once __DIR__ . '/includes/StorageOptionContracts.php';
+require_once __DIR__ . '/includes/uninstall/Uninstaller.php';
+require_once __DIR__ . '/includes/settings/StorageOptionContracts.php';
 
 // Get saved preferences from the uninstall modal
 // Use site option for network-activated plugins, regular option for single-site
