@@ -7,6 +7,7 @@ if (!defined('ABSPATH')) {
 
 require_once __DIR__ . '/DatabaseUpgradeCoordinator.php';
 require_once __DIR__ . '/DatabaseUpgradeComponent.php';
+require_once __DIR__ . '/DatabaseUpgradeRuntimeState.php';
 require_once __DIR__ . '/DatabaseUpgradeNGram.php';
 require_once __DIR__ . '/DatabaseUpgradeEngineNormalization.php';
 require_once __DIR__ . '/DatabaseUpgradeCollationDrift.php';
@@ -20,6 +21,7 @@ require_once __DIR__ . '/DatabaseUpgradeOrphanAdoption.php';
 require_once __DIR__ . '/DatabaseUpgradeMultiSite.php';
 require_once __DIR__ . '/DatabaseUpgradeSchemaDiff.php';
 require_once __DIR__ . '/DatabaseUpgradeBootstrap.php';
+require_once __DIR__ . '/DatabaseUpgradeRegistry.php';
 
 /* Functions in this class should all reference one of the following variables or support functions that do.
  *      $wpdb, $_GET, $_POST, $_SERVER, $_.*
@@ -116,22 +118,6 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 	/** @var self|null */
 	private static $instance = null;
 
-	/** @var string|null */
-	private static $uniqID = null;
-
-	/**
-	 * Per-request dedup flag for scheduleLogsv2CanonicalUrlBackfill().
-	 * Mirrors DataAccess::$hitsTableRebuildScheduled. Ensures the shutdown
-	 * hook is registered at most once per request even if the schedule
-	 * function is called from multiple paths (Captured-404s tab render +
-	 * Stats panel + EmailDigest, etc.). Reset to false naturally when the
-	 * PHP process ends; persistent SAPIs (PHP-FPM, mod_php) reset it
-	 * implicitly between requests because static is process-local.
-	 *
-	 * @var bool
-	 */
-	private static $logsv2CanonicalBackfillScheduled = false;
-
 	/** @var ABJ_404_Solution_DataAccess */
 	private $dao;
 
@@ -168,44 +154,8 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 	/** @var ABJ_404_Solution_NGramFilter */
 	private $ngramFilter;
 
-	/** @var ABJ_404_Solution_DatabaseUpgradeNGram */
-	private $nGramUpgrade;
-
-	/** @var ABJ_404_Solution_DatabaseUpgradeEngineNormalization */
-	private $engineNormalizationUpgrade;
-
-	/** @var ABJ_404_Solution_DatabaseUpgradeCollationDrift */
-	private $collationDriftUpgrade;
-
-	/** @var ABJ_404_Solution_DatabaseUpgradeSelfHeal */
-	private $selfHealUpgrade;
-
-	/** @var ABJ_404_Solution_DatabaseUpgradeCanonicalUrlBackfill */
-	private $canonicalUrlBackfillUpgrade;
-
-	/** @var ABJ_404_Solution_DatabaseUpgradeDailyMaintenance */
-	private $dailyMaintenanceUpgrade;
-
-	/** @var ABJ_404_Solution_DatabaseUpgradePluginUpdate */
-	private $pluginUpdateUpgrade;
-
-	/** @var ABJ_404_Solution_DatabaseUpgradeTableRepair */
-	private $tableRepairUpgrade;
-
-	/** @var ABJ_404_Solution_DatabaseUpgradeIndexes */
-	private $indexesUpgrade;
-
-	/** @var ABJ_404_Solution_DatabaseUpgradeOrphanAdoption */
-	private $orphanAdoptionUpgrade;
-
-	/** @var ABJ_404_Solution_DatabaseUpgradeMultiSite */
-	private $multiSiteUpgrade;
-
-	/** @var ABJ_404_Solution_DatabaseUpgradeSchemaDiff */
-	private $schemaDiffUpgrade;
-
-	/** @var ABJ_404_Solution_DatabaseUpgradeBootstrap */
-	private $bootstrapUpgrade;
+	/** @var ABJ_404_Solution_DatabaseUpgradeRegistry */
+	private $upgradeRegistry;
 
 	/**
 	 * Constructor with dependency injection.
@@ -238,27 +188,17 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 		$this->viewRead = $this->dao->getViewReadService();
 		$this->logsRepo = $this->dao->getLogsRepo();
 
-		$componentDeps = $this->buildComponentDependencyMap();
-		$this->nGramUpgrade = new ABJ_404_Solution_DatabaseUpgradeNGram($this, $componentDeps);
-		$this->engineNormalizationUpgrade = new ABJ_404_Solution_DatabaseUpgradeEngineNormalization($this, $componentDeps);
-		$this->collationDriftUpgrade = new ABJ_404_Solution_DatabaseUpgradeCollationDrift($this, $componentDeps);
-		$this->selfHealUpgrade = new ABJ_404_Solution_DatabaseUpgradeSelfHeal($this, $componentDeps);
-		$this->canonicalUrlBackfillUpgrade = new ABJ_404_Solution_DatabaseUpgradeCanonicalUrlBackfill($this, $componentDeps);
-		$this->dailyMaintenanceUpgrade = new ABJ_404_Solution_DatabaseUpgradeDailyMaintenance($this, $componentDeps);
-		$this->pluginUpdateUpgrade = new ABJ_404_Solution_DatabaseUpgradePluginUpdate($this, $componentDeps);
-		$this->tableRepairUpgrade = new ABJ_404_Solution_DatabaseUpgradeTableRepair($this, $componentDeps);
-		$this->indexesUpgrade = new ABJ_404_Solution_DatabaseUpgradeIndexes($this, $componentDeps);
-		$this->orphanAdoptionUpgrade = new ABJ_404_Solution_DatabaseUpgradeOrphanAdoption($this, $componentDeps);
-		$this->multiSiteUpgrade = new ABJ_404_Solution_DatabaseUpgradeMultiSite($this, $componentDeps);
-		$this->schemaDiffUpgrade = new ABJ_404_Solution_DatabaseUpgradeSchemaDiff($this, $componentDeps);
-		$this->bootstrapUpgrade = new ABJ_404_Solution_DatabaseUpgradeBootstrap($this, $componentDeps);
+		$this->upgradeRegistry = new ABJ_404_Solution_DatabaseUpgradeRegistry(
+			$this,
+			$this->buildComponentDependencyMap()
+		);
 	}
 
 	/** @return self */
 	public static function getInstance() {
 		if (self::$instance == null) {
 			self::$instance = new ABJ_404_Solution_DatabaseUpgradesEtc();
-			self::$uniqID = uniqid("", true);
+			ABJ_404_Solution_DatabaseUpgradeRuntimeState::initializeRuntimeId();
 		}
 
 		return self::$instance;
@@ -272,91 +212,9 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 	 * @return mixed
 	 */
 	public function invokeDatabaseUpgradeMethod(string $method, array $args = []) {
-		$delegateMap = [
-			'createIndexes' => 'indexesUpgrade',
-			'verifyIndexes' => 'indexesUpgrade',
-			'indexExists' => 'indexesUpgrade',
-			'parseIndexDDLToSpec' => 'indexesUpgrade',
-			'parseIndexSpecsFromCreateTableSql' => 'indexesUpgrade',
-			'buildAddIndexStatementFromParts' => 'indexesUpgrade',
-			'ensureLogsCompositeIndex' => 'indexesUpgrade',
-			'ensureLogsv2CanonicalUrlColumn' => 'indexesUpgrade',
-			'ensureRedirectsCanonicalUrlColumn' => 'indexesUpgrade',
-			'updateTableEngineToInnoDB' => 'engineNormalizationUpgrade',
-			'getTableCollation' => 'collationDriftUpgrade',
-			'getTableCollationFromShowCreate' => 'collationDriftUpgrade',
-			'getTableCollationFromInformationSchema' => 'collationDriftUpgrade',
-			'getDefaultCollationForCharset' => 'collationDriftUpgrade',
-			'sanitizeCollationIdentifier' => 'collationDriftUpgrade',
-			'resolveTargetUtf8mb4Collation' => 'collationDriftUpgrade',
-			'correctCollations' => 'collationDriftUpgrade',
-			'tableHasMismatchedCharacterColumnCollation' => 'collationDriftUpgrade',
-			'runDailyInsuranceCheck' => 'selfHealUpgrade',
-			'runSelfHealPrologue' => 'selfHealUpgrade',
-			'verifyAndRepairCurrentSite' => 'selfHealUpgrade',
-			'cleanupExpiredRateLimitTransients' => 'dailyMaintenanceUpgrade',
-			'runDatabaseMaintenanceTasks' => 'dailyMaintenanceUpgrade',
-			'refreshViewDoneSnapshotInline' => 'dailyMaintenanceUpgrade',
-			'backfillRedirectsCanonicalUrl' => 'canonicalUrlBackfillUpgrade',
-			'backfillLogsv2CanonicalUrl' => 'canonicalUrlBackfillUpgrade',
-			'scheduleLogsv2CanonicalUrlBackfill' => 'canonicalUrlBackfillUpgrade',
-			'shouldScheduleLogsv2CanonicalBackfillViaCron' => 'canonicalUrlBackfillUpgrade',
-			'columnExists' => 'canonicalUrlBackfillUpgrade',
-			'scheduleBackgroundMultisiteBatch' => 'multiSiteUpgrade',
-			'processMultisiteBatch' => 'multiSiteUpgrade',
-			'scheduleBackgroundMultisiteActivation' => 'multiSiteUpgrade',
-			'processMultisiteActivationBatch' => 'multiSiteUpgrade',
-			'scheduleBackgroundMultisiteUpgrade' => 'multiSiteUpgrade',
-			'processMultisiteUpgradeBatch' => 'multiSiteUpgrade',
-			'createTablesForAllSites' => 'multiSiteUpgrade',
-			'scheduleNGramCacheRebuild' => 'nGramUpgrade',
-			'rebuildNGramCacheAsync' => 'nGramUpgrade',
-			'rebuildNGramCache' => 'nGramUpgrade',
-			'syncMissingNGrams' => 'nGramUpgrade',
-			'cleanupOrphanedNGrams' => 'nGramUpgrade',
-			'buildNGramsForCategories' => 'nGramUpgrade',
-			'buildNGramsForTags' => 'nGramUpgrade',
-			'buildNGramsForAllContent' => 'nGramUpgrade',
-			'isNetworkActivated' => 'nGramUpgrade',
-			'getNetworkAwareOption' => 'nGramUpgrade',
-			'updateNetworkAwareOption' => 'nGramUpgrade',
-			'countTotalPagesForNGramRebuild' => 'nGramUpgrade',
-			'adoptOrphanedTables' => 'orphanAdoptionUpgrade',
-			'countOldPrefixRows' => 'orphanAdoptionUpgrade',
-			'verifyOwnershipViaLogs' => 'orphanAdoptionUpgrade',
-			'verifyOwnershipViaRedirects' => 'orphanAdoptionUpgrade',
-			'adoptDataFromPrefix' => 'orphanAdoptionUpgrade',
-			'getCommonColumns' => 'orphanAdoptionUpgrade',
-			'getTableColumns' => 'orphanAdoptionUpgrade',
-			'migrateURLsToRelativePaths' => 'pluginUpdateUpgrade',
-			'updatePluginCheck' => 'pluginUpdateUpgrade',
-			'doUpdatePlugin' => 'pluginUpdateUpgrade',
-			'shouldUpdate' => 'pluginUpdateUpgrade',
-			'verifyColumns' => 'schemaDiffUpgrade',
-			'getTableDifferences' => 'schemaDiffUpgrade',
-			'updateATableBasedOnDifferences' => 'schemaDiffUpgrade',
-			'removeCommentsFromColumns' => 'schemaDiffUpgrade',
-			'normalizeColumnDDL' => 'schemaDiffUpgrade',
-			'deleteIndexes' => 'schemaDiffUpgrade',
-			'correctIssuesBefore' => 'tableRepairUpgrade',
-			'correctIssuesAfter' => 'tableRepairUpgrade',
-			'dropDeprecatedMutationWatermarkTable' => 'tableRepairUpgrade',
-			'repairStrippedViewCacheTable' => 'tableRepairUpgrade',
-			'ddlDeclaresIdColumn' => 'tableRepairUpgrade',
-			'recoverMissingLogsHitsTable' => 'tableRepairUpgrade',
-			'correctMatchData' => 'tableRepairUpgrade',
-			'createDatabaseTables' => 'bootstrapUpgrade',
-			'renameAbj404TablesToLowerCase' => 'bootstrapUpgrade',
-			'handleSpecificCases' => 'bootstrapUpgrade',
-			'discoverPermanentDDLFiles' => 'bootstrapUpgrade',
-			'runInitialCreateTables' => 'bootstrapUpgrade',
-			'applyPluginTableCharsetCollate' => 'bootstrapUpgrade',
-		];
-
-		if (isset($delegateMap[$method])) {
-			$delegate = $delegateMap[$method];
-			$this->refreshDatabaseUpgradeComponents();
-			return $this->$delegate->invokeDatabaseUpgradeMethod($method, $args);
+		if ($this->upgradeRegistry->canInvoke($method)) {
+			$this->upgradeRegistry->replaceDependencies($this->buildComponentDependencyMap());
+			return $this->upgradeRegistry->invoke($method, $args);
 		}
 
 		if (method_exists($this, $method)) {
@@ -386,109 +244,46 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 		];
 	}
 
-	/** @return void */
-	private function refreshDatabaseUpgradeComponents() {
-		$componentDeps = $this->buildComponentDependencyMap();
-
-		if (!$this->nGramUpgrade instanceof ABJ_404_Solution_DatabaseUpgradeNGram) {
-			$this->nGramUpgrade = new ABJ_404_Solution_DatabaseUpgradeNGram($this, $componentDeps);
-		}
-		if (!$this->engineNormalizationUpgrade instanceof ABJ_404_Solution_DatabaseUpgradeEngineNormalization) {
-			$this->engineNormalizationUpgrade = new ABJ_404_Solution_DatabaseUpgradeEngineNormalization($this, $componentDeps);
-		}
-		if (!$this->collationDriftUpgrade instanceof ABJ_404_Solution_DatabaseUpgradeCollationDrift) {
-			$this->collationDriftUpgrade = new ABJ_404_Solution_DatabaseUpgradeCollationDrift($this, $componentDeps);
-		}
-		if (!$this->selfHealUpgrade instanceof ABJ_404_Solution_DatabaseUpgradeSelfHeal) {
-			$this->selfHealUpgrade = new ABJ_404_Solution_DatabaseUpgradeSelfHeal($this, $componentDeps);
-		}
-		if (!$this->canonicalUrlBackfillUpgrade instanceof ABJ_404_Solution_DatabaseUpgradeCanonicalUrlBackfill) {
-			$this->canonicalUrlBackfillUpgrade = new ABJ_404_Solution_DatabaseUpgradeCanonicalUrlBackfill($this, $componentDeps);
-		}
-		if (!$this->dailyMaintenanceUpgrade instanceof ABJ_404_Solution_DatabaseUpgradeDailyMaintenance) {
-			$this->dailyMaintenanceUpgrade = new ABJ_404_Solution_DatabaseUpgradeDailyMaintenance($this, $componentDeps);
-		}
-		if (!$this->pluginUpdateUpgrade instanceof ABJ_404_Solution_DatabaseUpgradePluginUpdate) {
-			$this->pluginUpdateUpgrade = new ABJ_404_Solution_DatabaseUpgradePluginUpdate($this, $componentDeps);
-		}
-		if (!$this->tableRepairUpgrade instanceof ABJ_404_Solution_DatabaseUpgradeTableRepair) {
-			$this->tableRepairUpgrade = new ABJ_404_Solution_DatabaseUpgradeTableRepair($this, $componentDeps);
-		}
-		if (!$this->indexesUpgrade instanceof ABJ_404_Solution_DatabaseUpgradeIndexes) {
-			$this->indexesUpgrade = new ABJ_404_Solution_DatabaseUpgradeIndexes($this, $componentDeps);
-		}
-		if (!$this->orphanAdoptionUpgrade instanceof ABJ_404_Solution_DatabaseUpgradeOrphanAdoption) {
-			$this->orphanAdoptionUpgrade = new ABJ_404_Solution_DatabaseUpgradeOrphanAdoption($this, $componentDeps);
-		}
-		if (!$this->multiSiteUpgrade instanceof ABJ_404_Solution_DatabaseUpgradeMultiSite) {
-			$this->multiSiteUpgrade = new ABJ_404_Solution_DatabaseUpgradeMultiSite($this, $componentDeps);
-		}
-		if (!$this->schemaDiffUpgrade instanceof ABJ_404_Solution_DatabaseUpgradeSchemaDiff) {
-			$this->schemaDiffUpgrade = new ABJ_404_Solution_DatabaseUpgradeSchemaDiff($this, $componentDeps);
-		}
-		if (!$this->bootstrapUpgrade instanceof ABJ_404_Solution_DatabaseUpgradeBootstrap) {
-			$this->bootstrapUpgrade = new ABJ_404_Solution_DatabaseUpgradeBootstrap($this, $componentDeps);
-		}
-
-		foreach ([
-			$this->nGramUpgrade,
-			$this->engineNormalizationUpgrade,
-			$this->collationDriftUpgrade,
-			$this->selfHealUpgrade,
-			$this->canonicalUrlBackfillUpgrade,
-			$this->dailyMaintenanceUpgrade,
-			$this->pluginUpdateUpgrade,
-			$this->tableRepairUpgrade,
-			$this->indexesUpgrade,
-			$this->orphanAdoptionUpgrade,
-			$this->multiSiteUpgrade,
-			$this->schemaDiffUpgrade,
-			$this->bootstrapUpgrade,
-		] as $component) {
-			$component->replaceDatabaseUpgradeDependencies($componentDeps);
-		}
-	}
-
 	/** @return string|null */
 	public function getUpgradeRuntimeId() {
-		return self::$uniqID;
+		return ABJ_404_Solution_DatabaseUpgradeRuntimeState::getRuntimeId();
 	}
 
 	public function isLogsv2CanonicalBackfillScheduled(): bool {
-		return self::$logsv2CanonicalBackfillScheduled;
+		return ABJ_404_Solution_DatabaseUpgradeRuntimeState::isLogsv2CanonicalBackfillScheduled();
 	}
 
 	public function setLogsv2CanonicalBackfillScheduled(bool $scheduled): void {
-		self::$logsv2CanonicalBackfillScheduled = $scheduled;
+		ABJ_404_Solution_DatabaseUpgradeRuntimeState::setLogsv2CanonicalBackfillScheduled($scheduled);
 	}
 
 	public function getCanonicalUrlBackfillChunkSize(): int {
-		return self::CANONICAL_URL_BACKFILL_CHUNK_SIZE;
+		return ABJ_404_Solution_DatabaseUpgradeRuntimeState::CANONICAL_URL_BACKFILL_CHUNK_SIZE;
 	}
 
 	public function getCanonicalUrlBackfillTimeBudgetSec(): float {
-		return self::CANONICAL_URL_BACKFILL_TIME_BUDGET_SEC;
+		return ABJ_404_Solution_DatabaseUpgradeRuntimeState::CANONICAL_URL_BACKFILL_TIME_BUDGET_SEC;
 	}
 
 	public function getLogsv2CanonicalUrlBackfillTimeBudgetSec(): float {
-		return self::LOGSV2_CANONICAL_URL_BACKFILL_TIME_BUDGET_SEC;
+		return ABJ_404_Solution_DatabaseUpgradeRuntimeState::LOGSV2_CANONICAL_URL_BACKFILL_TIME_BUDGET_SEC;
 	}
 
 	public function getLogsv2CanonicalUrlBackfillCompleteOption(): string {
-		return self::LOGSV2_CANONICAL_URL_BACKFILL_COMPLETE_OPTION;
+		return ABJ_404_Solution_DatabaseUpgradeRuntimeState::LOGSV2_CANONICAL_URL_BACKFILL_COMPLETE_OPTION;
 	}
 
 	/** @return array<int, string> */
 	public function getPluginTableSuffixes(): array {
-		return self::PLUGIN_TABLE_SUFFIXES;
+		return ABJ_404_Solution_DatabaseUpgradeRuntimeState::getPluginTableSuffixes();
 	}
 
 	public static function resetLogsv2CanonicalBackfillScheduledFlagForTests(): void {
-		self::$logsv2CanonicalBackfillScheduled = false;
+		ABJ_404_Solution_DatabaseUpgradeRuntimeState::resetLogsv2CanonicalBackfillScheduledFlagForTests();
 	}
 
 	public static function getLogsv2CanonicalBackfillScheduledFlagForTests(): bool {
-		return self::$logsv2CanonicalBackfillScheduled;
+		return ABJ_404_Solution_DatabaseUpgradeRuntimeState::isLogsv2CanonicalBackfillScheduled();
 	}
 
 	/**
@@ -510,67 +305,4 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 	public function __call(string $name, array $arguments) {
 		return $this->invokeDatabaseUpgradeMethod($name, $arguments);
 	}
-
-	/**
-	 * Number of rows updated per chunk by backfillRedirectsCanonicalUrl().
-	 * Sized so a single chunk completes well under the standard 60s query
-	 * timeout even on slow disks; the chunk loop will keep going until the
-	 * per-invocation budget is exhausted.
-	 *
-	 * Defined here (not on the trait) because trait constants require PHP 8.2+
-	 * and the plugin supports PHP 7.4. The trait references this via self::
-	 * which resolves to the using class at compile time.
-	 */
-	const CANONICAL_URL_BACKFILL_CHUNK_SIZE = 5000;
-
-	/**
-	 * Per-invocation wall-clock budget (seconds) for backfillRedirectsCanonicalUrl().
-	 * Bounds how long the daily cron / activation handler will spend on this
-	 * task in one call so a 350K-row site finishes over a few cron ticks
-	 * instead of all in one request that risks PHP max_execution_time.
-	 */
-	const CANONICAL_URL_BACKFILL_TIME_BUDGET_SEC = 25;
-
-	/**
-	 * Per-invocation wall-clock budget (seconds) for backfillLogsv2CanonicalUrl().
-	 * Tighter than the redirects-side budget because logsv2 backfill can also
-	 * be triggered from the Captured-404s admin-tab shutdown hook, which
-	 * holds a PHP-FPM worker for the duration. 15s caps worker-hold to a
-	 * window short enough that concurrent visitors are unlikely to notice
-	 * worker-pool pressure on shared hosts. Daily cron uses the same budget
-	 * so convergence math (about 25K to 75K rows per invocation) is consistent.
-	 */
-	const LOGSV2_CANONICAL_URL_BACKFILL_TIME_BUDGET_SEC = 15;
-
-	/**
-	 * wp_options key that flips to '1' once backfillLogsv2CanonicalUrl()
-	 * confirms zero NULL rows remain on logsv2.canonical_url. Once set, the
-	 * read-side query can drop the COALESCE fallback and use the no-COALESCE
-	 * form ("logsv2.canonical_url = redirects.canonical_url"); the planner
-	 * picks the smaller side as driver and skips the Filter step (about
-	 * 17,000x cost reduction vs the COALESCE form per the
-	 * redirects-temp-table-perf writeup).
-	 *
-	 * Stored as autoload=false so the option doesn't bloat the autoloaded
-	 * options blob on every request. Read on the captured-404s render path
-	 * only, which already triggers wp_cache lookups for related options.
-	 */
-	const LOGSV2_CANONICAL_URL_BACKFILL_COMPLETE_OPTION = 'abj404_logsv2_canonical_url_backfill_complete';
-
-	/**
-	 * Known plugin table suffixes for adoption.
-	 * @var array<int, string>
-	 */
-	public const PLUGIN_TABLE_SUFFIXES = [
-		'abj404_redirects',
-		'abj404_logsv2',
-		'abj404_spelling_cache',
-		'abj404_permalink_cache',
-		'abj404_lookup',
-		'abj404_ngram_cache',
-		'abj404_logs_hits',
-		'abj404_redirect_conditions',
-		'abj404_engine_profiles',
-		'abj404_view_cache',
-	];
 }

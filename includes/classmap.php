@@ -56,6 +56,7 @@ return array(
     'ABJ_404_Solution_ViewBuildOrchestrator' => $base . 'includes/ViewBuildOrchestrator.php',
     'ABJ_404_Solution_DatabaseUpgradeCoordinator' => $base . 'includes/DatabaseUpgradeCoordinator.php',
     'ABJ_404_Solution_DatabaseUpgradeComponent' => $base . 'includes/DatabaseUpgradeComponent.php',
+    'ABJ_404_Solution_DatabaseUpgradeRuntimeState' => $base . 'includes/DatabaseUpgradeRuntimeState.php',
     'ABJ_404_Solution_DatabaseUpgradeIndexes' => $base . 'includes/DatabaseUpgradeIndexes.php',
     'ABJ_404_Solution_DatabaseUpgradeEngineNormalization' => $base . 'includes/DatabaseUpgradeEngineNormalization.php',
     'ABJ_404_Solution_DatabaseUpgradeCollationDrift' => $base . 'includes/DatabaseUpgradeCollationDrift.php',
@@ -74,6 +75,7 @@ return array(
     'ABJ_404_Solution_DatabaseUpgradeMultiSite' => $base . 'includes/DatabaseUpgradeMultiSite.php',
     'ABJ_404_Solution_DatabaseUpgradeSchemaDiff' => $base . 'includes/DatabaseUpgradeSchemaDiff.php',
     'ABJ_404_Solution_DatabaseUpgradeBootstrap' => $base . 'includes/DatabaseUpgradeBootstrap.php',
+    'ABJ_404_Solution_DatabaseUpgradeRegistry' => $base . 'includes/DatabaseUpgradeRegistry.php',
     'ABJ_404_Solution_PluginLogicAdminActions' => $base . 'includes/PluginLogicAdminActions.php',
     // Admin action handlers (strategy/registry pattern for handlePluginAction dispatch).
     'ABJ_404_Solution_AdminAssetEnqueuer' => $base . 'includes/admin/AdminAssetEnqueuer.php',
