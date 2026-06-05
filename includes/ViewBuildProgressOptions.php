@@ -15,51 +15,25 @@ if (!defined('ABSPATH')) {
  *      requests (current_stage, sN_high_water, sN_kill_streak,
  *      sN_no_progress_streak).
  *
- *   2. Cache-coherence verification on high-stakes writes (current_stage,
- *      s2/s4/s5_high_water): persistent object caches that serve stale
- *      values can let a parallel worker rewind progress; the helper
- *      retries with cache flushes and surfaces a 24h transient on
- *      persistent mismatch.
- *
- *   3. The $wpdb->prefix snapshot captured at S1 entry, used to detect a
- *      mid-build switch_to_blog() before subsequent stages corrupt a
- *      different blog's tables.
- *
- * Staged SQL execution lives on ABJ_404_Solution_ViewBuildStagedSqlExecutor.
- * Build-side existence / freshness probes live on
- * ABJ_404_Solution_ViewBuildStateProbe. All three classes plus
- * ABJ_404_Solution_ViewBuildLockCoordinator and the host-environment probes are
- * registered as ViewBuildOrchestrator collaborators and use the orchestrator's
- * explicit operation map for cross-class calls.
+ * Cache-coherence verification for high-stakes writes lives on
+ * ABJ_404_Solution_ViewBuildOptionWriteVerifier. Prefix drift detection lives
+ * on ABJ_404_Solution_ViewBuildPrefixDriftGuard. Staged SQL execution lives on
+ * ABJ_404_Solution_ViewBuildStagedSqlExecutor. Build-side existence /
+ * freshness probes live on ABJ_404_Solution_ViewBuildStateProbe. These
+ * classes plus ABJ_404_Solution_ViewBuildLockCoordinator and the
+ * host-environment probes are registered as ViewBuildOrchestrator
+ * collaborators and use the orchestrator's explicit operation map for
+ * cross-class calls.
  *
  * @property ABJ_404_Solution_Logging $logger
  * @method string getLowercasePrefix(...$arguments)
+ * @method bool verifyOptionWriteCoherent(...$arguments)
+ * @method void clearPrefixAtStageOne(...$arguments)
  * @method void clearSqlModeProbeCache(...$arguments)
  * @method void clearPhpEnvironmentProbeCache(...$arguments)
  * @method void dropTransientStagedTables(...$arguments)
  */
 class ABJ_404_Solution_ViewBuildProgressOptions extends ABJ_404_Solution_ViewBuildCollaborator {
-
-    /**
-     * Captured `$wpdb->prefix` snapshot taken at S1 entry. Compared at every
-     * subsequent stage entry to detect mid-build `switch_to_blog()` that
-     * would otherwise let S2-S11 run against a different blog's tables and
-     * silently corrupt the precomputed view (Codex finding #8).
-     *
-     * Authoritative for within-request detection: if a `switch_to_blog()`
-     * happens mid-request, `$wpdb->prefix` changes but this property does
-     * not (it lives on the singleton orchestrator). The companion option
-     * `abj404_view_build_prefix_at_s1` provides cross-request persistence
-     * (multisite options tables are per-blog, so the option naturally
-     * isolates per-blog: a resume on the same blog finds its capture; a
-     * resume after a between-request switch lands on a different options
-     * table where current_stage is also 0 and re-runs S1 cleanly).
-     *
-     * Empty when no build is active. Cleared on S11 completion.
-     *
-     * @var string
-     */
-    private $prefixAtStageOne = '';
 
     /**
      * Persisted progress tracker between requests.  When a stage exits before
@@ -311,161 +285,6 @@ class ABJ_404_Solution_ViewBuildProgressOptions extends ABJ_404_Solution_ViewBui
         ));
     }
 
-    /**
-     * Cache-coherent option write. Persistent object caches (Redis,
-     * Memcached, mu-cluster split routing) can serve a stale `get_option`
-     * value for one tick after `update_option` writes the row. For
-     * high-stakes options (staged-build current_stage, batch high-water
-     * marks) that single tick is enough to let a parallel worker rewind to
-     * a just-completed stage and re-run destructive work.
-     *
-     * Procedure:
-     *   1. update_option($name, $expected, autoload=false).
-     *   2. get_option($name) and strict-compare to $expected.
-     *   3. On mismatch: wp_cache_delete($name, 'options') and the
-     *      'alloptions' bucket (covers both keying strategies WP uses), then
-     *      update_option + get_option once more.
-     *   4. On persistent mismatch: set a 24h transient
-     *      'abj404_option_cache_incoherent' carrying name + observed value
-     *      so other code can short-circuit cache-coherence-sensitive logic,
-     *      log a warning, return false.
-     *   5. On success (first or retry): return true.
-     *
-     * Idempotent and safe to call repeatedly. Loose-equal comparison is
-     * intentional: option values round-trip through serialization and
-     * scalar coercion, so an int 4 may come back as the string "4".
-     *
-     * @param string $optionName  WordPress option name (already fully prefixed).
-     * @param mixed  $expected    Value just written -- compared against the read-back.
-     * @return bool  True on coherent write (first try or retry); false when the
-     *               cache layer fails to invalidate even after wp_cache_delete.
-     */
-    public function verifyOptionWriteCoherent(string $optionName, $expected): bool {
-        if (!function_exists('update_option') || !function_exists('get_option')) {
-            return false;
-        }
-        // Capture the prior persisted value so a first-read-back-fail WARN
-        // (below, for current_stage only) can carry prior + new + observed,
-        // letting support see whether the cache returned the previous value
-        // or some unrelated state from a parallel request.
-        $prior = get_option($optionName, null);
-        update_option($optionName, $expected, false);
-        $actual = get_option($optionName, null);
-        if ($this->optionReadBackMatches($actual, $expected)) {
-            return true;
-        }
-        // First read disagrees with the just-written value. Surface a WARN
-        // for current_stage specifically (the most diagnostically valuable
-        // stage-progress key) so the signal survives a site with DEBUG off.
-        // Other high-stakes keys (s2/s4/s5_high_water) stay silent on the
-        // first miss to avoid log volume; they still hit the persistent-
-        // mismatch WARN further down if the retry also fails.
-        if ($this->isCurrentStageOptionName($optionName) && is_object($this->logger)
-                && method_exists($this->logger, 'warn')) {
-            $this->logger->warn(sprintf(
-                '[staged] option write incoherent (first read-back) on %s: prior=%s new=%s observed=%s; flushing cache and retrying',
-                $optionName,
-                is_scalar($prior)    ? (string)$prior    : '<non-scalar>',
-                is_scalar($expected) ? (string)$expected : '<non-scalar>',
-                is_scalar($actual)   ? (string)$actual   : '<non-scalar>'
-            ));
-        }
-        // Flush both candidate cache keys and retry. Use a typeof-guarded
-        // call because wp_cache_delete is part of WP core but not loaded
-        // in unit-test bootstraps that don't pull in cache.php.
-        if (function_exists('wp_cache_delete')) {
-            wp_cache_delete($optionName, 'options');
-            // alloptions is the bundled bucket WP loads on every page; even
-            // for autoload=false writes some object-cache backends miss the
-            // per-key invalidation and need the bucket flushed.
-            wp_cache_delete('alloptions', 'options');
-        }
-        update_option($optionName, $expected, false);
-        $retry = get_option($optionName, null);
-        if ($this->optionReadBackMatches($retry, $expected)) {
-            return true;
-        }
-
-        // Persistent mismatch: surface to other code via a deduplicated
-        // transient and log a warning. Don't email -- this is a host-config
-        // problem, not a plugin defect.
-        if (function_exists('set_transient')) {
-            // allow-cache-empty: payload is diagnostic state; empty observed/error fields are still actionable.
-            set_transient(
-                'abj404_option_cache_incoherent',
-                array(
-                    'option'   => $optionName,
-                    'expected' => is_scalar($expected) ? (string)$expected : 'non-scalar',
-                    'observed' => is_scalar($retry) ? (string)$retry : 'non-scalar',
-                    'when'     => time(),
-                ),
-                86400
-            );
-        }
-        if (is_object($this->logger)) {
-            $message = sprintf(
-                '[staged] option write incoherent on this host: %s expected=%s observed=%s '
-                . '(persistent object cache likely returning stale values; '
-                . 'wp_cache_delete + retry did not invalidate).',
-                $optionName,
-                is_scalar($expected) ? (string)$expected : '<non-scalar>',
-                is_scalar($retry)    ? (string)$retry    : '<non-scalar>'
-            );
-            if (method_exists($this->logger, 'warn')) {
-                $this->logger->warn($message);
-            } elseif (method_exists($this->logger, 'debugMessage')) {
-                $this->logger->debugMessage($message);
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Whether the fully-prefixed option name refers to the view-build
-     * `current_stage` key (the prefix component varies by site). Used by
-     * verifyOptionWriteCoherent() to scope its first-read-back-fail WARN to
-     * the most diagnostically valuable stage-progress key.
-     *
-     * @param string $optionName
-     * @return bool
-     */
-    public function isCurrentStageOptionName(string $optionName): bool {
-        $suffix = self::$viewBuildProgressOptionNames['current_stage'] ?? '';
-        if ($suffix === '') {
-            return false;
-        }
-        $len = strlen($suffix);
-        return $len > 0 && substr($optionName, -$len) === $suffix;
-    }
-
-    /**
-     * Loose-equal read-back comparison. WP option values round-trip through
-     * serialize() and may come back as a different scalar type than written
-     * (int 4 -> string "4"). The semantic question is "did the persisted
-     * value reflect the write," so we compare via string casts when both
-     * sides are scalar; otherwise fall back to ==.
-     *
-     * Null asymmetry is treated as a mismatch. PHP's loose-equal would
-     * otherwise have `null == 0`, `null == ''`, `null == false` all return
-     * true, so a cache layer that served null ("option not found") for a
-     * value-of-zero write (s2/s4/s5_high_water reset on a fresh build) would
-     * have spuriously passed verification. An unwritten cache slot is not
-     * the same value as a written falsy value.
-     *
-     * @param mixed $actual
-     * @param mixed $expected
-     * @return bool
-     */
-    public function optionReadBackMatches($actual, $expected): bool {
-        if (($actual === null) !== ($expected === null)) {
-            return false;
-        }
-        if (is_scalar($actual) && is_scalar($expected)) {
-            return (string)$actual === (string)$expected;
-        }
-        return $actual == $expected;
-    }
-
     /** @return void */
     public function clearAllProgressOptions(): void {
         if (!function_exists('delete_option')) {
@@ -501,103 +320,4 @@ class ABJ_404_Solution_ViewBuildProgressOptions extends ABJ_404_Solution_ViewBui
         $this->dropTransientStagedTables();
     }
 
-    /**
-     * Option name used to persist the `$wpdb->prefix` captured at S1. Kept
-     * deliberately NOT site-prefixed so that within a single request we can
-     * still tell when `switch_to_blog()` has flipped `$wpdb->prefix` out
-     * from under us: the option-key the get_option call computes does not
-     * itself depend on the current prefix. (WP's options table itself is
-     * per-blog in multisite, which gives the cross-blog isolation we want
-     * for the cross-request resume case for free.)
-     *
-     * @return string
-     */
-    public function prefixAtStageOneOptionName(): string {
-        return 'abj404_view_build_prefix_at_s1';
-    }
-
-    /**
-     * Snapshot the current `$wpdb->prefix` so subsequent stage entries can
-     * detect a mid-build `switch_to_blog()`. Called from runStagedBuildOnce
-     * at S1 entry. Idempotent on repeated S1 runs (fresh start clears via
-     * clearPrefixAtStageOne first, then captures the live prefix here).
-     *
-     * @return void
-     */
-    public function capturePrefixAtBuildStart(): void {
-        global $wpdb;
-        $prefix = (isset($wpdb->prefix) && is_string($wpdb->prefix)) ? $wpdb->prefix : '';
-        $this->prefixAtStageOne = $prefix;
-        if (function_exists('update_option')) {
-            update_option($this->prefixAtStageOneOptionName(), $prefix, false);
-        }
-    }
-
-    /**
-     * Compare the live `$wpdb->prefix` against the snapshot taken at S1.
-     * Returns true when they match (or no snapshot exists -- fresh blog or
-     * pre-S1). Returns false when a mismatch is detected, which is the
-     * orchestrator's signal to halt the rebuild before S2-S11 writes
-     * against a different blog's tables.
-     *
-     * Logic:
-     *   - In-memory `$this->prefixAtStageOne` is authoritative when set.
-     *     `switch_to_blog()` cannot flip an instance property, so any
-     *     change in `$wpdb->prefix` after capture is a real mismatch.
-     *   - Falls back to the persisted option for cross-request resumes
-     *     (the in-memory capture starts empty on each request).
-     *   - Empty captured value means S1 has never run on this blog (in
-     *     multisite, options are per-blog: a fresh blog has no record
-     *     of any past build) -- treat as "nothing to verify".
-     *
-     * @return bool  False on mismatch (caller should halt the build).
-     */
-    public function verifyPrefixUnchangedSinceStageOne(): bool {
-        global $wpdb;
-        $current = (isset($wpdb->prefix) && is_string($wpdb->prefix)) ? $wpdb->prefix : '';
-
-        if ($this->prefixAtStageOne !== '') {
-            return $this->prefixAtStageOne === $current;
-        }
-
-        if (!function_exists('get_option')) {
-            return true;
-        }
-        $captured = get_option($this->prefixAtStageOneOptionName(), '');
-        if (!is_string($captured) || $captured === '') {
-            return true;
-        }
-        return $captured === $current;
-    }
-
-    /**
-     * Clear the captured S1 prefix so the next rebuild starts fresh.
-     * Called after a successful S11 swap and from the explicit force
-     * rebuild path in clearStagedBuildDegradedState().
-     *
-     * @return void
-     */
-    public function clearPrefixAtStageOne(): void {
-        $this->prefixAtStageOne = '';
-        if (function_exists('delete_option')) {
-            delete_option($this->prefixAtStageOneOptionName());
-        }
-    }
-
-    /**
-     * Read-only accessor for diagnostic logging. Returns the in-memory
-     * capture if present, otherwise the persisted option, otherwise ''.
-     *
-     * @return string
-     */
-    public function capturedPrefixForLog(): string {
-        if ($this->prefixAtStageOne !== '') {
-            return $this->prefixAtStageOne;
-        }
-        if (!function_exists('get_option')) {
-            return '';
-        }
-        $captured = get_option($this->prefixAtStageOneOptionName(), '');
-        return is_string($captured) ? $captured : '';
-    }
 }

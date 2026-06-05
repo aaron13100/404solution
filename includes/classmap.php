@@ -32,6 +32,8 @@ return array(
     'ABJ_404_Solution_ViewBuildCollaborator' => $base . 'includes/ViewBuildCollaborator.php',
     'ABJ_404_Solution_ViewBuildAdaptive' => $base . 'includes/ViewBuildAdaptive.php',
     'ABJ_404_Solution_ViewBuildForceRestart' => $base . 'includes/ViewBuildForceRestart.php',
+    'ABJ_404_Solution_ViewBuildOptionWriteVerifier' => $base . 'includes/ViewBuildOptionWriteVerifier.php',
+    'ABJ_404_Solution_ViewBuildPrefixDriftGuard' => $base . 'includes/ViewBuildPrefixDriftGuard.php',
     'ABJ_404_Solution_ViewBuildProgressOptions' => $base . 'includes/ViewBuildProgressOptions.php',
     'ABJ_404_Solution_ViewBuildStagedSqlExecutor' => $base . 'includes/ViewBuildStagedSqlExecutor.php',
     'ABJ_404_Solution_ViewBuildStateProbe' => $base . 'includes/ViewBuildStateProbe.php',

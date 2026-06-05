@@ -11,6 +11,8 @@ require_once __DIR__ . '/ViewBuildStageCallbacks.php';
 require_once __DIR__ . '/ViewBuildBatchExecutor.php';
 require_once __DIR__ . '/ViewBuildStageRunner.php';
 require_once __DIR__ . '/ViewBuildAdaptive.php';
+require_once __DIR__ . '/ViewBuildOptionWriteVerifier.php';
+require_once __DIR__ . '/ViewBuildPrefixDriftGuard.php';
 require_once __DIR__ . '/ViewBuildProgressOptions.php';
 require_once __DIR__ . '/ViewBuildStagedSqlExecutor.php';
 require_once __DIR__ . '/ViewBuildStateProbe.php';

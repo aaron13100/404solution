@@ -40,6 +40,10 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
     private $collaborators = array();
     /** @var ABJ_404_Solution_ViewBuildProgressOptions */
     private $progressOptions;
+    /** @var ABJ_404_Solution_ViewBuildOptionWriteVerifier */
+    private $optionWriteVerifier;
+    /** @var ABJ_404_Solution_ViewBuildPrefixDriftGuard */
+    private $prefixDriftGuard;
     /** @var ABJ_404_Solution_ViewBuildStagedSqlExecutor */
     private $stagedSqlExecutor;
     /** @var ABJ_404_Solution_ViewBuildStateProbe */
@@ -105,6 +109,8 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
             : $this->resolveRebuildHealthState();
         $this->connectionManager = $connectionManager !== null ? $connectionManager : $dbCore->connectionManager();
         $this->errorClassifier = $errorClassifier !== null ? $errorClassifier : $dbCore->errorClassifier();
+        $this->optionWriteVerifier = new ABJ_404_Solution_ViewBuildOptionWriteVerifier($this);
+        $this->prefixDriftGuard = new ABJ_404_Solution_ViewBuildPrefixDriftGuard($this);
         $this->progressOptions = new ABJ_404_Solution_ViewBuildProgressOptions($this);
         $this->stagedSqlExecutor = new ABJ_404_Solution_ViewBuildStagedSqlExecutor($this);
         $this->stateProbe = new ABJ_404_Solution_ViewBuildStateProbe($this);
@@ -140,6 +146,8 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
             'batch_executor' => new ABJ_404_Solution_ViewBuildBatchExecutor($this),
             'stage_callbacks' => new ABJ_404_Solution_ViewBuildStageCallbacks($this),
             'adaptive' => new ABJ_404_Solution_ViewBuildAdaptive($this),
+            'option_write_verifier' => $this->optionWriteVerifier,
+            'prefix_drift_guard' => $this->prefixDriftGuard,
             'progress_options' => $this->progressOptions,
             'staged_sql_executor' => $this->stagedSqlExecutor,
             'state_probe' => $this->stateProbe,
@@ -237,22 +245,22 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
 
     /** @param string $optionName @param mixed $expected @return bool */
     public function verifyOptionWriteCoherent(string $optionName, $expected): bool {
-        return $this->progressOptions->verifyOptionWriteCoherent($optionName, $expected);
+        return $this->optionWriteVerifier->verifyOptionWriteCoherent($optionName, $expected);
     }
 
     /** @return void */
     public function capturePrefixAtBuildStart(): void {
-        $this->progressOptions->capturePrefixAtBuildStart();
+        $this->prefixDriftGuard->capturePrefixAtBuildStart();
     }
 
     /** @return bool */
     public function verifyPrefixUnchangedSinceStageOne(): bool {
-        return $this->progressOptions->verifyPrefixUnchangedSinceStageOne();
+        return $this->prefixDriftGuard->verifyPrefixUnchangedSinceStageOne();
     }
 
     /** @return void */
     public function clearPrefixAtStageOne(): void {
-        $this->progressOptions->clearPrefixAtStageOne();
+        $this->prefixDriftGuard->clearPrefixAtStageOne();
     }
 
     /** @return array<string, mixed> */
@@ -268,6 +276,15 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
     /** @param string $url @param int $maxLength @return string */
     public function sanitizeUrlBeforeInsert(string $url, int $maxLength = 0): string {
         return $this->stagedSqlExecutor->sanitizeUrlBeforeInsert($url, $maxLength);
+    }
+
+    /**
+     * @param string $relativePath
+     * @param array<string, string> $extraTranslations
+     * @return void
+     */
+    public function runStagedSqlFile(string $relativePath, array $extraTranslations): void {
+        $this->stagedSqlExecutor->runStagedSqlFile($relativePath, $extraTranslations);
     }
 
     /** @return bool */
@@ -445,12 +462,12 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
             'acquireViewBuildLock' => 'lock_coordinator',
             'advanceViewBuildOnce' => 'advance_coordinator',
             'bumpStageNoProgressStreak' => 'progress_options',
-            'capturePrefixAtBuildStart' => 'progress_options',
-            'capturedPrefixForLog' => 'progress_options',
+            'capturePrefixAtBuildStart' => 'prefix_drift_guard',
+            'capturedPrefixForLog' => 'prefix_drift_guard',
             'classifyAndHandleStageFailure' => 'host_failure_policy',
             'clearAllProgressOptions' => 'progress_options',
             'clearPhpEnvironmentProbeCache' => 'host_environment_probe',
-            'clearPrefixAtStageOne' => 'progress_options',
+            'clearPrefixAtStageOne' => 'prefix_drift_guard',
             'clearSessionVariablesProbeCache' => 'host_environment_probe',
             'clearSqlModeProbeCache' => 'sql_mode_probe',
             'clearStagedBuildDegradedState' => 'host_failure_state',
@@ -470,6 +487,7 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
             'detectHostStagedQueryLimitSeconds' => 'adaptive',
             'invalidateViewDoneServeableCache' => 'view_done_state',
             'isBuildHaltedForHostFailure' => 'host_failure_state',
+            'isCurrentStageOptionName' => 'option_write_verifier',
             'isStageMarkedSkipped' => 'host_failure_state',
             'localizeOrDefaultViewBuildNotice' => 'state_probe',
             'logTimedViewBuildStage' => 'stage_runner',
@@ -479,13 +497,15 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
             'markViewDoneBuildCompleted' => 'view_done_state',
             'maybeRaiseViewDoneHardStaleNotice' => 'state_probe',
             'performFreshStartCleanup' => 'progress_options',
-            'optionReadBackMatches' => 'progress_options',
+            'optionReadBackMatches' => 'option_write_verifier',
             'phpTimeRemainingSeconds' => 'adaptive',
+            'prefixAtStageOneOptionName' => 'prefix_drift_guard',
             'probeFilesystemEnvironmentForBuild' => 'host_environment_probe',
             'probePhpEnvironmentForBuild' => 'host_environment_probe',
             'probeSessionVariablesAtS1Entry' => 'host_environment_probe',
             'probeSetTimeLimitAvailability' => 'host_environment_probe',
             'probeSqlModeForBuild' => 'sql_mode_probe',
+            'progressOptionName' => 'progress_options',
             'readProgressOption' => 'progress_options',
             'reconcilePostStageElevenState' => 'rebuild_reconcile',
             'reconcileStagedTablesAtRunnerStartup' => 'rebuild_reconcile',
@@ -517,7 +537,8 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
             'stageUpdateTermsBatched' => 'batch_executor',
             'stagedQueryOptions' => 'staged_sql_executor',
             'stagedTableExists' => 'state_probe',
-            'verifyPrefixUnchangedSinceStageOne' => 'progress_options',
+            'stageNoProgressStreakOptionName' => 'progress_options',
+            'verifyPrefixUnchangedSinceStageOne' => 'prefix_drift_guard',
             'viewBuildBatchSize' => 'stage_pipeline',
             'viewBuildBatchSizeForStage' => 'adaptive',
             'viewBuildPerStageBudgetSeconds' => 'stage_pipeline',
