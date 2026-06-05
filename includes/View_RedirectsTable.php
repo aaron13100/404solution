@@ -4,6 +4,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+require_once __DIR__ . '/RedirectDeadDestinationStore.php';
 require_once __DIR__ . '/admin/RedirectsTableColumns.php';
 require_once __DIR__ . '/admin/RedirectDestinationWarningPolicy.php';
 require_once __DIR__ . '/admin/RedirectDestinationLinkResolver.php';
@@ -76,10 +77,7 @@ class ABJ_404_Solution_View_RedirectsTable extends ABJ_404_Solution_ViewComponen
 
         $headerColumns = $this->logs->getTableColumns($sub, $columns);
 
-        $deadDestIds = function_exists('get_transient') ? get_transient('abj404_dead_dest_ids') : false;
-        if (!is_array($deadDestIds)) {
-            $deadDestIds = array();
-        }
+        $deadDestIds = (new ABJ_404_Solution_RedirectDeadDestinationStore())->getIds();
 
         $rows = $this->viewReadService->getRedirectsForView($sub, $tableOptions);
         /** @var array<int, array<string, mixed>> $typedRedirectRows */
