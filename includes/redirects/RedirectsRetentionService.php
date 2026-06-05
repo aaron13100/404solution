@@ -259,7 +259,7 @@ class ABJ_404_Solution_RedirectsRetentionService implements ABJ_404_Solution_Red
             return 0;
         }
 
-        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/sql/deleteOldLogs.sql");
+        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/../sql/deleteOldLogs.sql");
         $query = $this->f->str_replace('{lines_to_delete}', (string)$logLinesToDelete, $query);
         $results = $this->dbCore->queryAndGetResults($query);
         $oldLogRowsDeletedBySizeRaw = $results['rows_affected'] ?? 0;

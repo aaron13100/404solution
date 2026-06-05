@@ -116,7 +116,7 @@ class ABJ_404_Solution_ViewBuildStagedSqlExecutor extends ABJ_404_Solution_ViewB
      * @return void
      */
     public function runStagedSqlFile(string $relativePath, array $extraTranslations): void {
-        $path = __DIR__ . '/sql/getRedirectsForViewStaged/' . $relativePath;
+        $path = __DIR__ . '/../sql/getRedirectsForViewStaged/' . $relativePath;
         $template = ABJ_404_Solution_FileSystemService::readFileContents($path);
         if (!is_string($template) || trim($template) === '') {
             throw new \Exception("Staged SQL template missing or empty: $relativePath");

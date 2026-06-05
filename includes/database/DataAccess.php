@@ -83,6 +83,7 @@ require_once __DIR__ . '/../view-build/ViewQueryFailureException.php';
 require_once __DIR__ . '/../view-build/ViewBuildPendingException.php';
 require_once __DIR__ . '/DatabaseCoreInterface.php';
 require_once __DIR__ . '/DatabaseCore.php';
+require_once __DIR__ . '/DataAccessDependencies.php';
 
 /**
  * Legacy compatibility facade for database, repository, and view services.
@@ -196,42 +197,49 @@ class ABJ_404_Solution_DataAccess {
     const REGEX_CACHE_MAX_COUNT = ABJ_404_Solution_RedirectsRepository::REGEX_CACHE_MAX_COUNT;
 
     /**
-     * @param ABJ_404_Solution_Functions|null $functions
-     * @param ABJ_404_Solution_Logging|null $logging
-     * @param ABJ_404_Solution_DatabaseCore|null $dbCore
-     * @param ABJ_404_Solution_ContentRepository|null $contentRepo
-     * @param ABJ_404_Solution_RedirectsRepository|null $redirectsRepo
-     * @param ABJ_404_Solution_LogsRepository|null $logsRepo
-     * @param ABJ_404_Solution_StatsRepository|null $statsRepo
-     * @param ABJ_404_Solution_ViewReadService|null $viewReadService
-     * @param ABJ_404_Solution_ViewBuildOrchestrator|null $viewBuildOrchestrator
+     * @param ABJ_404_Solution_DataAccessDependencies|null $dependencies
+     * @throws InvalidArgumentException when legacy positional arguments are supplied.
      */
-    public function __construct($functions = null, $logging = null, $dbCore = null, $contentRepo = null, $redirectsRepo = null, $logsRepo = null, $statsRepo = null, $viewReadService = null, $viewBuildOrchestrator = null) {
-        $this->f = self::resolveFunctions($functions);
-        $this->logger = $this->resolveLogger($logging);
+    public function __construct(?ABJ_404_Solution_DataAccessDependencies $dependencies = null) {
+        if (func_num_args() > 1) {
+            throw new InvalidArgumentException(
+                'DataAccess constructor accepts a DataAccessDependencies bundle; positional collaborator arguments were removed.'
+            );
+        }
+
+        $dependencies = $dependencies !== null ? $dependencies : new ABJ_404_Solution_DataAccessDependencies();
+        $this->f = self::resolveFunctions($dependencies->functions());
+        $this->logger = $this->resolveLogger($dependencies->logging());
+        $dbCore = $dependencies->dbCore();
         $this->dbCore = $dbCore !== null ? $dbCore : $this->createDbCore();
+        $contentRepo = $dependencies->contentRepo();
         if ($contentRepo !== null) {
             $this->contentRepo = $contentRepo;
         } else {
             $this->contentRepo = new ABJ_404_Solution_ContentRepository($this->dbCore, $this->f, $this->logger);
         }
 
+        $redirectsRepo = $dependencies->redirectsRepo();
         if ($redirectsRepo !== null) {
             $this->redirectsRepo = $redirectsRepo;
         } else {
             $this->redirectsRepo = new ABJ_404_Solution_RedirectsRepository($this->dbCore, $this->f, $this->logger);
         }
 
+        $logsRepo = $dependencies->logsRepo();
         $this->logsRepo = $logsRepo !== null
             ? $logsRepo
             : new ABJ_404_Solution_LogsRepository($this->dbCore, $this->f, $this->logger);
 
+        $statsRepo = $dependencies->statsRepo();
         if ($statsRepo !== null) {
             $this->statsRepo = $statsRepo;
         } else {
             $this->statsRepo = new ABJ_404_Solution_StatsRepository($this->dbCore, $this->logsRepo, $this->f, $this->logger);
         }
 
+        $this->retentionService = $dependencies->retentionService();
+        $viewReadService = $dependencies->viewReadService();
         if ($viewReadService !== null) {
             $this->viewReadService = $viewReadService;
         } else {
@@ -240,6 +248,7 @@ class ABJ_404_Solution_DataAccess {
             );
         }
 
+        $viewBuildOrchestrator = $dependencies->viewBuildOrchestrator();
         $this->viewBuildOrchestrator = $viewBuildOrchestrator !== null
             ? $viewBuildOrchestrator
             : new ABJ_404_Solution_ViewBuildOrchestrator(

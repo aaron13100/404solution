@@ -108,7 +108,7 @@ class ABJ_404_Solution_RedirectsForViewSqlBuilder {
         $filterMarkers = $this->resolveFilterTextMarkers((string)$sub, $tableOptions);
 
         $query = $this->applyRedirectsTemplateReplacements(
-            ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/sql/getRedirectsForView.sql"),
+            ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/../sql/getRedirectsForView.sql"),
             array(
                 'selectCountReplacement' => $selectCountReplacement,
                 'statusTypes' => $this->policy->resolveStatusTypeList((string)$sub, $tableOptions),

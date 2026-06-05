@@ -206,7 +206,7 @@ class ABJ_404_Solution_PublishedContentRepository {
      * @return string
      */
     private function buildPublishedPagesQuery(array $queryParts): string {
-        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/sql/getPublishedPagesAndPostsIDs.sql");
+        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/../sql/getPublishedPagesAndPostsIDs.sql");
         $query = $this->dbCore->doTableNameReplacements($query);
         $query = $this->f->str_replace('{recognizedPostTypes}', $queryParts['recognizedPostTypes'], $query);
         $query = $this->f->str_replace('{specifiedSlug}', $queryParts['specifiedSlug'], $query);
@@ -347,7 +347,7 @@ class ABJ_404_Solution_PublishedContentRepository {
             return array();
         }
 
-        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/sql/getPublishedImageIDs.sql");
+        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/../sql/getPublishedImageIDs.sql");
         $query = $this->dbCore->doTableNameReplacements($query);
         $query = $this->f->str_replace('{recognizedPostTypes}', $recognizedPostTypes, $query);
 
@@ -379,7 +379,7 @@ class ABJ_404_Solution_PublishedContentRepository {
             $limitClause = "LIMIT " . intval($limit);
         }
 
-        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/sql/getPublishedTags.sql");
+        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/../sql/getPublishedTags.sql");
         $query = $this->f->str_replace('{slug}', $slug, $query);
         $query = $this->f->str_replace('{limit}', $limitClause, $query);
         $query = $this->dbCore->doTableNameReplacements($query);
@@ -430,7 +430,7 @@ class ABJ_404_Solution_PublishedContentRepository {
             $limitClause = "LIMIT " . intval($limit);
         }
 
-        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/sql/getPublishedCategories.sql");
+        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/../sql/getPublishedCategories.sql");
         $query = $this->f->str_replace('{recognizedCategories}', $recognizedCategories, $query);
         $query = $this->f->str_replace('{term_id}', $term_id !== null ? (string)$term_id : '', $query);
         $query = $this->f->str_replace('{slug}', $slug, $query);

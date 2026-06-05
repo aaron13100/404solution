@@ -32,7 +32,7 @@ class ABJ_404_Solution_SpellingCacheRepository {
      * @return void
      */
     public function storeSpellingPermalinksToCache(string $requestedURLRaw, $returnValue): void {
-        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/sql/insertSpellingCache.sql");
+        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/../sql/insertSpellingCache.sql");
 
         $cleanURL = $this->f->sanitizeInvalidUTF8($requestedURLRaw);
 

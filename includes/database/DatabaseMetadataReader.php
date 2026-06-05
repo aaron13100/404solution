@@ -32,7 +32,7 @@ class ABJ_404_Solution_DatabaseMetadataReader {
      * @return array<string, mixed>
      */
     public function getTableEngines(): array {
-        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/sql/selectTableEngines.sql");
+        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/../sql/selectTableEngines.sql");
         return $this->dbCore->queryAndGetResults($query);
     }
 

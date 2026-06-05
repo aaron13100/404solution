@@ -267,7 +267,7 @@ class ABJ_404_Solution_PluginLogicVersionUpgrader {
             return;
         }
 
-        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/sql/migrateToNewLogsTable.sql');
+        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/../sql/migrateToNewLogsTable.sql');
         $query = $dbCore->doTableNameReplacements($query);
         $result = $dbCore->queryAndGetResults($query);
 

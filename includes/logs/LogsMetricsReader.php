@@ -64,7 +64,7 @@ class ABJ_404_Solution_LogsMetricsReader {
             }
         }
 
-        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/sql/getLogsCount.sql");
+        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/../sql/getLogsCount.sql");
 
         if ($logID != 0) {
             $query = $this->f->str_replace('/* {SPECIFIC_ID}', '', $query);

@@ -38,7 +38,7 @@ class ABJ_404_Solution_ContentKeywordsRepository {
     public function getPostsNeedingContentKeywords(int $limit = 500): array {
         $limitResults = " */\n  limit " . absint($limit);
 
-        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/sql/getPostsNeedingContentKeywords.sql");
+        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/../sql/getPostsNeedingContentKeywords.sql");
         $query = $this->functions->str_replace('{limit-results}', $limitResults, $query);
 
         $result = $this->dbCore->queryAndGetResults($query, array(

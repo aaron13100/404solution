@@ -140,7 +140,7 @@ class ABJ_404_Solution_PluginUpdateMetadataRepository {
         $oldTable = $wpdb->prefix . 'wbz404_redirects';
         $newTable = $this->dbCore->doTableNameReplacements('{wp_abj404_redirects}');
 
-        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/sql/importDataFromPluginRedirectioner.sql");
+        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/../sql/importDataFromPluginRedirectioner.sql");
         $query = $this->f->str_replace('{OLD_TABLE}', $oldTable, $query);
         $query = $this->f->str_replace('{NEW_TABLE}', $newTable, $query);
 

@@ -68,9 +68,18 @@ class ABJ_404_Solution_DataServiceRegistration {
             return self::createViewBuildOrchestrator($c);
         });
         $container->set('data_access', function($c) {
-            return new ABJ_404_Solution_DataAccess($c->get('functions'), $c->get('logging'), $c->get('db_core'),
-                $c->get('content_repository'), $c->get('redirects_repository'),
-                $c->get('logs_repository'), $c->get('stats_repository'), $c->get('view_read_service'), $c->get('view_build_orchestrator'));
+            return new ABJ_404_Solution_DataAccess(new ABJ_404_Solution_DataAccessDependencies(array(
+                'functions' => $c->get('functions'),
+                'logging' => $c->get('logging'),
+                'dbCore' => $c->get('db_core'),
+                'contentRepo' => $c->get('content_repository'),
+                'redirectsRepo' => $c->get('redirects_repository'),
+                'retentionService' => $c->get('redirects_retention_service'),
+                'logsRepo' => $c->get('logs_repository'),
+                'statsRepo' => $c->get('stats_repository'),
+                'viewReadService' => $c->get('view_read_service'),
+                'viewBuildOrchestrator' => $c->get('view_build_orchestrator'),
+            )));
         });
 
         $container->set('database_upgrades', function($c) {

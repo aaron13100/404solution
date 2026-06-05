@@ -277,7 +277,7 @@ class ABJ_404_Solution_DatabaseUpgradeBootstrap extends ABJ_404_Solution_Databas
 
         if (strpos($tableName, 'abj404_logsv2') !== false && $colName == 'min_log_id') {
             global $wpdb;
-            $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/sql/logsSetMinLogID.sql");
+            $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/../../sql/logsSetMinLogID.sql");
             $this->dbCore->queryAndGetResults($query);
             // Ensure composite index exists after backfilling min_log_id.
             $this->ensureLogsCompositeIndex($tableName);

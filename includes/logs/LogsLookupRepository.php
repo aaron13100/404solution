@@ -66,7 +66,7 @@ class ABJ_404_Solution_LogsLookupRepository {
      * @return void
      */
     public function correctDuplicateLookupValues(): void {
-        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/sql/correctLookupTableIssue.sql");
+        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/../sql/correctLookupTableIssue.sql");
         $this->dbCore->queryAndGetResults($query, array('log_errors' => false, 'skip_repair' => true));
     }
 }

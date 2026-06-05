@@ -55,7 +55,7 @@ class ABJ_404_Solution_RedirectsCleanupRepository {
             return 0;
         }
 
-        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/sql/getOrphanedAutoRedirects.sql");
+        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/../sql/getOrphanedAutoRedirects.sql");
         $query = $this->dbCore->doTableNameReplacements($query);
         $query = $this->f->doNormalReplacements($query);
 
@@ -104,7 +104,7 @@ class ABJ_404_Solution_RedirectsCleanupRepository {
             return 0;
         }
 
-        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/sql/getMostUnusedRedirects.sql");
+        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/../sql/getMostUnusedRedirects.sql");
         $query = $this->f->str_replace('{status_list}', $statusList, $query);
         $query = $this->f->str_replace('{timelimit}', (string)$then, $query);
 

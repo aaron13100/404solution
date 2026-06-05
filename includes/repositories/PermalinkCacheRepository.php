@@ -120,7 +120,7 @@ class ABJ_404_Solution_PermalinkCacheRepository {
             return null;
         }
 
-        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/sql/getIDsNeededForPermalinkCache.sql");
+        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/../sql/getIDsNeededForPermalinkCache.sql");
         $query = $this->f->str_replace('{recognizedPostTypes}', $recognizedPostTypes, $query);
 
         $results = $this->dbCore->queryAndGetResults($query);
@@ -133,7 +133,7 @@ class ABJ_404_Solution_PermalinkCacheRepository {
     /** @return array<string, mixed> */
     public function updatePermalinkCache() {
         $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ .
-            "/sql/updatePermalinkCache.sql");
+            "/../sql/updatePermalinkCache.sql");
 
         $this->dbCore->setSqlBigSelects();
 
@@ -145,7 +145,7 @@ class ABJ_404_Solution_PermalinkCacheRepository {
     /** @return array<string, mixed> */
     public function updatePermalinkCacheParentPages() {
         $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ .
-            "/sql/updatePermalinkCacheParentPages.sql");
+            "/../sql/updatePermalinkCacheParentPages.sql");
 
         $depthSoFar = 0;
         $results = array();

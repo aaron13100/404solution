@@ -289,6 +289,7 @@ return array(
     'ABJ_404_Solution_ContentKeywordsRepository' => $base . 'includes/repositories/ContentKeywordsRepository.php',
     'ABJ_404_Solution_StatsRepository' => $base . 'includes/stats/StatsRepository.php',
     'ABJ_404_Solution_PluginUpdateMetadataRepository' => $base . 'includes/repositories/PluginUpdateMetadataRepository.php',
+    'ABJ_404_Solution_DataAccessDependencies' => $base . 'includes/database/DataAccessDependencies.php',
     'ABJ_404_Solution_DataAccess' => $base . 'includes/database/DataAccess.php',
     'ABJ_404_Solution_ViewBuildConfig' => $base . 'includes/view-build/ViewBuildConfig.php',
     'ABJ_404_Solution_EmailDigest' => $base . 'includes/logs/EmailDigest.php',

@@ -72,7 +72,7 @@ class ABJ_404_Solution_RedirectsBulkReader {
             ABJ_404_Solution_FileSystemService::safeUnlink($tempFile);
         }
 
-        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/sql/getRedirectsExport.sql");
+        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/../sql/getRedirectsExport.sql");
         $query = $this->dbCore->doTableNameReplacements($query);
 
         $result = mysqli_query($wpdb->dbh, $query);
@@ -101,7 +101,7 @@ class ABJ_404_Solution_RedirectsBulkReader {
 
     /** @return array<int, array<string, mixed>> */
     public function getRedirectsWithLogs(): array {
-        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/sql/getRedirectsWithLogs.sql");
+        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/../sql/getRedirectsWithLogs.sql");
         $result = $this->dbCore->queryAndGetResults($query);
         if (!empty($result['timed_out']) || (isset($result['last_error']) && $result['last_error'] != '')) {
             return array();
@@ -168,7 +168,7 @@ class ABJ_404_Solution_RedirectsBulkReader {
         $postIDs = array_map('absint', $postIDs);
         $postIDJoined = implode(', ', $postIDs);
 
-        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/sql/getAdditionalPostData.sql");
+        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/../sql/getAdditionalPostData.sql");
         $query = $this->f->str_replace('{IDS_TO_INCLUDE}', $postIDJoined, $query);
         $query = $this->dbCore->doTableNameReplacements($query);
         $query = $this->f->doNormalReplacements($query);

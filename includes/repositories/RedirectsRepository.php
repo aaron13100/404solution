@@ -435,7 +435,7 @@ class ABJ_404_Solution_RedirectsRepository implements ABJ_404_Solution_Redirects
             $url2 = $url2 . '/';
         }
 
-        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/sql/getPermalinkFromURL.sql");
+        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/../sql/getPermalinkFromURL.sql");
 
         if ($degradedMode && $this->redirectsTableMissingScheduledColumns()) {
             $query = $this->stripScheduledRedirectPredicates($query);
