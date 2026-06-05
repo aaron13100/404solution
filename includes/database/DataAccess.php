@@ -5,92 +5,18 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-require_once __DIR__ . '/../view-build/ViewBuildCollaborator.php';
-require_once __DIR__ . '/../view-build/ViewBuildDataBoundary.php';
-require_once __DIR__ . '/../view-build/ViewBuildStageServices.php';
-require_once __DIR__ . '/../view-build/ViewBuildRecoveryServices.php';
-require_once __DIR__ . '/../view-build/ViewBuildCollaborationContext.php';
-require_once __DIR__ . '/../view-build/ViewQueriesStaged.php';
-require_once __DIR__ . '/../view-build/ViewBuildStageCallbacks.php';
-require_once __DIR__ . '/../view-build/ViewBuildBatchExecutor.php';
-require_once __DIR__ . '/../view-build/ViewBuildStageRunner.php';
-require_once __DIR__ . '/../view-build/ViewBuildStageRuntimeState.php';
-require_once __DIR__ . '/../view-build/ViewBuildStageMarkers.php';
-require_once __DIR__ . '/../view-build/ViewBuildShutdownDiagnostics.php';
-require_once __DIR__ . '/../view-build/ViewBuildStageLogPresenter.php';
-require_once __DIR__ . '/../view-build/ViewBuildAdaptive.php';
-require_once __DIR__ . '/../view-build/ViewBuildOptionWriteVerifier.php';
-require_once __DIR__ . '/../view-build/ViewBuildPrefixDriftGuard.php';
-require_once __DIR__ . '/../view-build/ViewBuildProgressOptions.php';
-require_once __DIR__ . '/../view-build/ViewBuildStagedSqlExecutor.php';
-require_once __DIR__ . '/../view-build/ViewBuildStateProbe.php';
-require_once __DIR__ . '/../view-build/ViewBuildSqlModeProbe.php';
-require_once __DIR__ . '/../view-build/ViewBuildRebuildReconcile.php';
-require_once __DIR__ . '/../view-build/ViewBuildLockCoordinator.php';
-require_once __DIR__ . '/../view-build/ViewBuildCronScheduler.php';
-require_once __DIR__ . '/../view-build/ViewBuildHostEnvironmentNoticePolicy.php';
-require_once __DIR__ . '/../view-build/ViewBuildHostEnvironmentProbe.php';
-require_once __DIR__ . '/../view-build/ViewBuildFilesystemEnvironmentProbe.php';
-require_once __DIR__ . '/../view-build/ViewBuildSessionVariablesRepository.php';
-require_once __DIR__ . '/../view-build/ViewBuildSessionVariableWarningClassifier.php';
-require_once __DIR__ . '/../view-build/ViewBuildSessionVariablesProbe.php';
-require_once __DIR__ . '/../view-build/ViewBuildHostFailureNotices.php';
-require_once __DIR__ . '/../view-build/ViewBuildHostFailureState.php';
-require_once __DIR__ . '/../view-build/ViewBuildHostFailurePolicy.php';
-require_once __DIR__ . '/../view-build/ViewBuildForceRestart.php';
-require_once __DIR__ . '/../view-build/ViewBuildForegroundLease.php';
-require_once __DIR__ . '/../view-build/ViewBuildReadGateway.php';
-require_once __DIR__ . '/../view-build/ViewBuildAdvanceCoordinator.php';
-require_once __DIR__ . '/../view-build/ViewBuildStagePipeline.php';
-require_once __DIR__ . '/../view-build/ViewDoneState.php';
-require_once __DIR__ . '/../view-build/ViewBuildPageLoadFallback.php';
-require_once __DIR__ . '/DatabaseRuntimeState.php';
-require_once __DIR__ . '/../view-build/ViewReadRuntimeState.php';
-require_once __DIR__ . '/DatabaseConnectionManager.php';
-require_once __DIR__ . '/DatabaseQueryTimeoutManager.php';
-require_once __DIR__ . '/../view-build/ViewBuildOrchestratorInterface.php';
-require_once __DIR__ . '/../view-build/ViewBuildOrchestrator.php';
-require_once __DIR__ . '/../view-build/ViewReadServiceInterface.php';
-require_once __DIR__ . '/../view-build/ViewDiagnostics.php';
-require_once __DIR__ . '/../view-build/ViewCacheInvalidator.php';
-require_once __DIR__ . '/../view-build/ViewQueryPolicy.php';
-require_once __DIR__ . '/../view-build/RedirectsForViewSqlBuilder.php';
-require_once __DIR__ . '/../view-build/ViewDoneQueryBuilder.php';
-require_once __DIR__ . '/../view-build/ViewDoneReader.php';
-require_once __DIR__ . '/../view-build/ViewQueryBuilder.php';
-require_once __DIR__ . '/../view-build/ViewSnapshotCache.php';
-require_once __DIR__ . '/../view-build/AdminViewReadCoordinator.php';
-require_once __DIR__ . '/../stats/StatusCountsRepository.php';
-require_once __DIR__ . '/../redirects/RedirectsBulkReader.php';
-require_once __DIR__ . '/../logs/LogsMetricsReader.php';
-require_once __DIR__ . '/DatabaseMetadataReader.php';
-require_once __DIR__ . '/../view-build/HitsTableRebuildPolicy.php';
-require_once __DIR__ . '/../view-build/ViewReadService.php';
-require_once __DIR__ . '/../logs/LogsRepositoryInterface.php';
-require_once __DIR__ . '/../logs/LogsRepository.php';
-require_once __DIR__ . '/../stats/StatsRepositoryInterface.php';
-require_once __DIR__ . '/../stats/StatsRepository.php';
-require_once __DIR__ . '/../repositories/ContentRepositoryInterface.php';
-require_once __DIR__ . '/../repositories/ContentRepository.php';
-require_once __DIR__ . '/../repositories/RedirectsRepositoryInterface.php';
-require_once __DIR__ . '/../repositories/RedirectsRepository.php';
-require_once __DIR__ . '/../redirects/RedirectsRetentionServiceInterface.php';
-require_once __DIR__ . '/../redirects/RedirectsRetentionPolicy.php';
-require_once __DIR__ . '/../redirects/RedirectsCleanupRepository.php';
-require_once __DIR__ . '/../redirects/RedirectDeadDestinationStore.php';
-require_once __DIR__ . '/../redirects/RedirectDeadDestinationScanner.php';
-require_once __DIR__ . '/../redirects/RedirectsRetentionService.php';
-require_once __DIR__ . '/DatabaseErrorClassifier.php';
-require_once __DIR__ . '/DatabaseSqlErrorReporter.php';
-require_once __DIR__ . '/../view-build/ViewQueryFailureException.php';
-require_once __DIR__ . '/../view-build/ViewBuildPendingException.php';
-require_once __DIR__ . '/DatabaseCoreInterface.php';
-require_once __DIR__ . '/DatabaseCore.php';
-require_once __DIR__ . '/DataAccessDependencies.php';
-
 /**
  * Legacy compatibility facade for database, repository, and view services.
  *
+ * Collaborator classes (LogsRepository, StatsRepository, ContentRepository,
+ * RedirectsRepository, RedirectsRetentionService, ViewReadService,
+ * ViewBuildOrchestrator, DatabaseCore, and the view-build/log/stats/redirects
+ * support classes) are resolved on demand by the plugin classmap autoloader
+ * registered in 404-solution.php (production) and tests/bootstrap.php
+ * (tests). Manual require_once wiring at parse time is intentionally absent:
+ * pre-loading unrelated subsystems at the facade boundary re-creates the
+ * god-object coupling the 2026-06-05 audit (M200) flagged. See
+ * tests/DataAccessRequireTimeWiringTest.php for the structural guard.
  */
 class ABJ_404_Solution_DataAccess {
 
