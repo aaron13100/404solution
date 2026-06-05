@@ -94,24 +94,6 @@ class ABJ_404_Solution_DataAccess {
     /** @var ABJ_404_Solution_ViewBuildOrchestrator The extracted view build orchestrator (Phase 7). */
     private $viewBuildOrchestrator;
 
-    /** @param bool $value @return void */
-    public static function setViewSnapshotTableEnsured(bool $value): void {
-        ABJ_404_Solution_ViewReadService::setViewSnapshotTableEnsured($value);
-    }
-
-    /** @return void */
-    public static function resetViewBuildOncePerRequestGuard(): void {
-        ABJ_404_Solution_ViewBuildOrchestrator::resetViewBuildOncePerRequestGuard();
-    }
-
-/**
-     * @param string|null $raw
-     * @return array<int, array{step: string, outcome: string, detail: string}>|null
-     */
-    public static function decompressPipelineTrace(?string $raw): ?array {
-        return ABJ_404_Solution_LogsRepository::decompressPipelineTrace($raw);
-    }
-
     /** @var ABJ_404_Solution_Functions */
     private $f;
 
