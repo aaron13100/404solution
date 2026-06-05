@@ -73,8 +73,7 @@ class ABJ_404_Solution_ViewBuildCronScheduler extends ABJ_404_Solution_ViewBuild
         if (function_exists('get_transient') && get_transient($key) !== false) {
             return;
         }
-        $template = $this->localizeOrDefaultViewBuildNotice(
-            'WordPress cron does not appear to be running. The earliest overdue '
+        $template = $this->localizeOrDefaultViewBuildNotice('WordPress cron does not appear to be running. The earliest overdue '
             . 'cron event has been waiting at least %d hours, so cron-dependent '
             . 'plugin features (staged view-build, daily cleanup, log updates, '
             . 'digest emails) are not advancing. To resolve: if DISABLE_WP_CRON '

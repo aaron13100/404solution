@@ -52,8 +52,7 @@ class ABJ_404_Solution_ViewBuildHostFailurePolicy extends ABJ_404_Solution_ViewB
                     'stage %d: %d consecutive resumable kills with no progress (host_unfit). %s',
                     $stageNumber, $streak, substr($errMsg, 0, 200)
                 ));
-                $this->markBuildHaltedForHostFailure(
-                    $stageNumber,
+                $this->markBuildHaltedForHostFailure($stageNumber,
                     'floor_kill_streak (host_unfit): stage ' . $stageNumber
                     . ' killed ' . $streak . ' consecutive ticks: ' . substr($errMsg, 0, 200)
                 );

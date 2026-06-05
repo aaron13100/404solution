@@ -11,7 +11,6 @@ if (!defined('ABSPATH')) {
  * runs the staged build inline; unavailable snapshots are surfaced as pending
  * so AJAX/REST callers can retry through the advance endpoint.
  *
- * @property int $stagedQueryTimeoutSeconds
  * @method string buildViewDoneCountQuery(string $sub, array<string, mixed> $tableOptions)
  * @method string describeBuildProgressForNotice(...$arguments)
  * @method array<string, mixed> getViewBuildProgressFingerprint(...$arguments)
@@ -116,8 +115,8 @@ class ABJ_404_Solution_ViewBuildReadGateway extends ABJ_404_Solution_ViewBuildCo
 
     /** @param array<string, mixed> $tableOptions @return void */
     private function setReadQueryTimeout(array $tableOptions): void {
-        $this->stagedQueryTimeoutSeconds = isset($tableOptions['_abj404_query_timeout'])
+        $this->setStagedQueryTimeoutSeconds(isset($tableOptions['_abj404_query_timeout'])
             && is_numeric($tableOptions['_abj404_query_timeout'])
-            ? max(0, intval($tableOptions['_abj404_query_timeout'])) : 0;
+            ? max(0, intval($tableOptions['_abj404_query_timeout'])) : 0);
     }
 }

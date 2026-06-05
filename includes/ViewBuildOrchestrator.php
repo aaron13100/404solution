@@ -12,8 +12,6 @@ if (!defined('ABSPATH')) {
  *
  * @see docs/dataaccess-refactor-plan.md Phase 7.
  *
- * @method void runStagedSqlFile(string $relativePath, array<string, string> $extraTranslations = array())
- * @method string viewDoneDataBuiltAtOptionName()
  */
 class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBuildOrchestratorInterface {
 
@@ -125,12 +123,12 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
         $this->readGateway = new ABJ_404_Solution_ViewBuildReadGateway($this);
         $this->advanceCoordinator = new ABJ_404_Solution_ViewBuildAdvanceCoordinator($this);
         $this->stagePipeline = new ABJ_404_Solution_ViewBuildStagePipeline($this);
-        // view_done_state is registered BEFORE queries so the orchestrator's
-        // __call routing resolves viewDoneIsServeable / viewDoneBuiltAt /
-        // markViewDoneBuildCompleted / invalidateViewDoneServeableCache /
+        // view_done_state is registered BEFORE queries so explicit
+        // collaborator routing resolves viewDoneIsServeable / viewDoneBuiltAt
+        // / markViewDoneBuildCompleted / invalidateViewDoneServeableCache /
         // getViewDoneBuiltAtTimestamp / viewDoneFreshnessOptionName to the
-        // new owning collaborator rather than to the old staged-build shell (where
-        // these methods used to live before the i798 extraction).
+        // new owning collaborator rather than to the old staged-build shell
+        // (where these methods used to live before the i798 extraction).
         $this->collaborators = array(
             'view_done_state' => $this->viewDoneState,
             'page_load_fallback' => $this->pageLoadFallback,
@@ -370,17 +368,12 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
     }
 
     /**
-     * Route private cross-collaborator calls through the orchestrator host.
-     *
      * @param string $name
      * @param array<int, mixed> $arguments
      * @return mixed
      */
     public function __call(string $name, array $arguments) {
-        if (method_exists($this, $name)) {
-            return $this->invokeMethod($this, $name, $arguments);
-        }
-        return $this->invokeCollaborator($name, $arguments);
+        return $this->invokeViewBuildOperation($name, $arguments);
     }
 
     /**
@@ -388,20 +381,11 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
      * @return mixed
      */
     public function __get(string $name) {
-        $publicProperties = get_object_vars($this);
-        if (array_key_exists($name, $publicProperties)) {
-            return $publicProperties[$name];
+        try {
+            return $this->viewBuildCollaboratorDependency($name);
+        } catch (\BadMethodCallException $e) {
+            throw new \RuntimeException('Unknown ViewBuildOrchestrator property: ' . $name, 0, $e);
         }
-        if (property_exists($this, $name)) {
-            return $this->$name;
-        }
-        foreach ($this->collaborators as $collaborator) {
-            if (property_exists($collaborator, $name)) {
-                $property = new \ReflectionProperty($collaborator, $name);
-                return $property->getValue($collaborator);
-            }
-        }
-        throw new \RuntimeException('Unknown ViewBuildOrchestrator property: ' . $name);
     }
 
     /**
@@ -410,23 +394,11 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
      * @return void
      */
     public function __set(string $name, $value): void {
-        $publicProperties = get_object_vars($this);
-        if (array_key_exists($name, $publicProperties)) {
-            $this->$name = $value;
-            return;
+        try {
+            $this->setViewBuildCollaboratorState($name, $value);
+        } catch (\BadMethodCallException $e) {
+            throw new \RuntimeException('Unknown ViewBuildOrchestrator property: ' . $name, 0, $e);
         }
-        if (property_exists($this, $name)) {
-            $this->$name = $value;
-            return;
-        }
-        foreach ($this->collaborators as $collaborator) {
-            if (property_exists($collaborator, $name)) {
-                $property = new \ReflectionProperty($collaborator, $name);
-                $property->setValue($collaborator, $value);
-                return;
-            }
-        }
-        throw new \RuntimeException('Unknown ViewBuildOrchestrator property: ' . $name);
     }
 
     /**
@@ -434,33 +406,182 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
      * @param array<int, mixed> $arguments
      * @return mixed
      */
-    private function invokeCollaborator(string $name, array $arguments = array()) {
-        foreach ($this->collaborators as $collaborator) {
-            if (method_exists($collaborator, $name)) {
-                return $this->invokeMethod($collaborator, $name, $arguments);
+    public function invokeViewBuildOperation(string $name, array $arguments = array()) {
+        $publicMethods = array_flip(get_class_methods($this));
+        $hostBoundaryMethods = array(
+            '__call' => true,
+            '__construct' => true,
+            '__get' => true,
+            '__set' => true,
+            'invokeViewBuildOperation' => true,
+            'viewBuildCollaboratorDependency' => true,
+            'setViewBuildCollaboratorState' => true,
+        );
+        if (isset($publicMethods[$name]) && !isset($hostBoundaryMethods[$name])) {
+            return $this->$name(...$arguments);
+        }
+
+        $hostMethods = array(
+            'queryAndGetResults' => true,
+            'doTableNameReplacements' => true,
+            'getLowercasePrefix' => true,
+            'ensureConnection' => true,
+            'clock' => true,
+            'classifyStageFailure' => true,
+            'isResumableStagedKill' => true,
+            'isTransientConnectionError' => true,
+            'getColumnCollationString' => true,
+            'viewBuildOnlyTranslations' => true,
+            'readFromViewDone' => true,
+            'getViewBuildProgressFingerprint' => true,
+            'buildViewDoneCountQuery' => true,
+            'logsHitsTableExists' => true,
+        );
+        if (isset($hostMethods[$name])) {
+            return call_user_func_array(array($this, $name), $arguments);
+        }
+
+        $operationOwners = array(
+            'acquireViewBuildLock' => 'lock_coordinator',
+            'advanceViewBuildOnce' => 'advance_coordinator',
+            'bumpStageNoProgressStreak' => 'progress_options',
+            'capturePrefixAtBuildStart' => 'progress_options',
+            'capturedPrefixForLog' => 'progress_options',
+            'classifyAndHandleStageFailure' => 'host_failure_policy',
+            'clearAllProgressOptions' => 'progress_options',
+            'clearPhpEnvironmentProbeCache' => 'host_environment_probe',
+            'clearPrefixAtStageOne' => 'progress_options',
+            'clearSessionVariablesProbeCache' => 'host_environment_probe',
+            'clearSqlModeProbeCache' => 'sql_mode_probe',
+            'clearStagedBuildDegradedState' => 'host_failure_state',
+            'clearViewDoneHardStaleNotice' => 'state_probe',
+            'countLiveRedirects' => 'batch_executor',
+            'countViewBuildRows' => 'batch_executor',
+            'describeBuildProgressForNotice' => 'state_probe',
+            'dropDeletemeTable' => 'stage_callbacks',
+            'dropTransientBuffersIfPresent' => 'stage_callbacks',
+            'dropTransientStagedTables' => 'stage_callbacks',
+            'extendedTimeoutForKilledNonBatchedStage' => 'adaptive',
+            'forceRestartViewBuild' => 'force_restart',
+            'foregroundViewBuildLeaseActive' => 'foreground_lease',
+            'getCronStuckHours' => 'cron_scheduler',
+            'getViewBuildProgress' => 'read_gateway',
+            'intelligentStagedQueryTimeoutSeconds' => 'adaptive',
+            'detectHostStagedQueryLimitSeconds' => 'adaptive',
+            'invalidateViewDoneServeableCache' => 'view_done_state',
+            'isBuildHaltedForHostFailure' => 'host_failure_state',
+            'isStageMarkedSkipped' => 'host_failure_state',
+            'localizeOrDefaultViewBuildNotice' => 'state_probe',
+            'logTimedViewBuildStage' => 'stage_runner',
+            'markBuildHaltedForHostFailure' => 'host_failure_state',
+            'markBuildStage' => 'stage_runner',
+            'markStageSkippedForHostFailure' => 'host_failure_state',
+            'markViewDoneBuildCompleted' => 'view_done_state',
+            'maybeRaiseViewDoneHardStaleNotice' => 'state_probe',
+            'performFreshStartCleanup' => 'progress_options',
+            'optionReadBackMatches' => 'progress_options',
+            'phpTimeRemainingSeconds' => 'adaptive',
+            'probeFilesystemEnvironmentForBuild' => 'host_environment_probe',
+            'probePhpEnvironmentForBuild' => 'host_environment_probe',
+            'probeSessionVariablesAtS1Entry' => 'host_environment_probe',
+            'probeSetTimeLimitAvailability' => 'host_environment_probe',
+            'probeSqlModeForBuild' => 'sql_mode_probe',
+            'readProgressOption' => 'progress_options',
+            'reconcilePostStageElevenState' => 'rebuild_reconcile',
+            'reconcileStagedTablesAtRunnerStartup' => 'rebuild_reconcile',
+            'recordStageBatchKilled' => 'adaptive',
+            'registerViewBuildShutdownDiagnostics' => 'stage_runner',
+            'releaseViewBuildLock' => 'lock_coordinator',
+            'resetStageNoProgressStreak' => 'progress_options',
+            'resolveColumnCollationForStagedBuild' => 'staged_sql_executor',
+            'runForceRestartCleanupInsideLock' => 'force_restart',
+            'runNonBatchedStageWithKillStreakEscape' => 'stage_runner',
+            'runS11Swap' => 'staged_sql_executor',
+            'runStagedBuildOnce' => 'stage_pipeline',
+            'runStagedSqlFile' => 'staged_sql_executor',
+            'runStagedSqlFileTolerantOfDuplicateKey' => 'staged_sql_executor',
+            'runTimedViewBuildStage' => 'stage_runner',
+            'scheduleViewDoneRebuild' => 'cron_scheduler',
+            'setStagedBuildDegradedNotice' => 'host_failure_notices',
+            'setStagedBuildHaltNotice' => 'host_failure_notices',
+            'stageAddPreJoinIndexes' => 'stage_callbacks',
+            'stageAddSortIndexes' => 'stage_callbacks',
+            'stageCreateBuildTable' => 'stage_callbacks',
+            'stageInsertRedirectsBatched' => 'batch_executor',
+            'stageRenameSwap' => 'stage_callbacks',
+            'stageUpdateExternal' => 'stage_callbacks',
+            'stageUpdateHits' => 'stage_callbacks',
+            'stageUpdateHome' => 'stage_callbacks',
+            'stageUpdatePostsBatched' => 'batch_executor',
+            'stageUpdateSpecial' => 'stage_callbacks',
+            'stageUpdateTermsBatched' => 'batch_executor',
+            'stagedQueryOptions' => 'staged_sql_executor',
+            'stagedTableExists' => 'state_probe',
+            'verifyPrefixUnchangedSinceStageOne' => 'progress_options',
+            'viewBuildBatchSize' => 'stage_pipeline',
+            'viewBuildBatchSizeForStage' => 'adaptive',
+            'viewBuildPerStageBudgetSeconds' => 'stage_pipeline',
+            'viewBuildTableName' => 'stage_pipeline',
+            'viewDeletemeTableName' => 'stage_pipeline',
+            'viewDoneBuiltAt' => 'view_done_state',
+            'viewDoneDataBuiltAt' => 'state_probe',
+            'viewDoneDataBuiltAtOptionName' => 'state_probe',
+            'viewDoneFreshnessOptionName' => 'view_done_state',
+            'viewDoneHasRows' => 'state_probe',
+            'viewDoneIsFresh' => 'state_probe',
+            'viewDoneIsServeable' => 'view_done_state',
+            'viewDoneTableExists' => 'state_probe',
+            'viewDoneTableName' => 'stage_pipeline',
+            'writeProgressOption' => 'progress_options',
+        );
+        if (isset($operationOwners[$name])) {
+            $owner = $operationOwners[$name];
+            if (!isset($this->collaborators[$owner])) {
+                throw new \BadMethodCallException('ViewBuildOrchestrator operation owner not wired: ' . $owner);
             }
+            return call_user_func_array(array($this->collaborators[$owner], $name), $arguments);
         }
         throw new \BadMethodCallException('Unknown ViewBuildOrchestrator method: ' . $name);
     }
 
     /**
-     * @param object $target
      * @param string $name
-     * @param array<int, mixed> $arguments
      * @return mixed
      */
-    private function invokeMethod($target, string $name, array $arguments) {
-        $method = new \ReflectionMethod($target, $name);
-        // Let __call route to private/protected methods on $this so the
-        // orchestrator can keep cross-collaborator delegations
-        // (queryAndGetResults, doTableNameReplacements, ...) off its public
-        // API while collaborators still resolve them through $this->method().
-        // PHP 8.1+ makes private methods reflection-accessible by default;
-        // setAccessible() became a no-op in 8.1 and was deprecated in 8.5.
-        if (PHP_VERSION_ID < 80100) {
-            $method->setAccessible(true);
+    public function viewBuildCollaboratorDependency(string $name) {
+        $publicProperties = get_object_vars($this);
+        if (array_key_exists($name, $publicProperties)) {
+            return $publicProperties[$name];
         }
-        return $method->invokeArgs($target, $arguments);
+        if ($name === 'f') {
+            return $this->f;
+        }
+        if ($name === 'logger') {
+            return $this->logger;
+        }
+        if ($name === 'rebuildHealth') {
+            return $this->rebuildHealth;
+        }
+        if ($name === 'stagedQueryTimeoutSeconds') {
+            return $this->stagedSqlExecutor->getStagedQueryTimeoutSeconds();
+        }
+        if ($name === 'sqlModeProbeCache') {
+            return $this->sqlModeProbe->getSqlModeProbeCache();
+        }
+        throw new \BadMethodCallException('Unknown ViewBuildOrchestrator dependency: ' . $name);
+    }
+
+    /**
+     * @param string $name
+     * @param mixed $value
+     * @return void
+     */
+    public function setViewBuildCollaboratorState(string $name, $value): void {
+        if ($name === 'stagedQueryTimeoutSeconds') {
+            $this->stagedSqlExecutor->setStagedQueryTimeoutSeconds((int)$value);
+            return;
+        }
+        throw new \BadMethodCallException('Unknown ViewBuildOrchestrator property: ' . $name);
     }
 
     // --- Bridge methods for ViewReadService (interface contract) ---
@@ -485,9 +606,9 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
     }
 
     // --- Internal delegation methods (non-public; reached by collaborators
-    //     through __call routing, never by external callers). Marked
-    //     protected (rather than private) so PHPStan's method.unused rule
-    //     stays quiet, because the orchestrator is subclassed by test
+    //     through invokeViewBuildOperation(), never by external callers).
+    //     Marked protected (rather than private) so PHPStan's method.unused
+    //     rule stays quiet, because the orchestrator is subclassed by test
     //     doubles. Removes them from the class's public API surface per
     //     design audit M202 (Export Bloat). ---
 

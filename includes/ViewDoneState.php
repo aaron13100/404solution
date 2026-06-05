@@ -170,11 +170,8 @@ class ABJ_404_Solution_ViewDoneState extends ABJ_404_Solution_ViewBuildCollabora
      */
     public function markViewDoneBuildCompleted(): void {
         if (function_exists('update_option')) {
-            // $this->clock() routes through the collaborator's __call into
-            // the orchestrator's reflection-based dispatch, which bypasses
-            // protected visibility. clock() on the orchestrator is
-            // protected; this matches the access pattern used by every
-            // sibling collaborator (ViewBuildHostFailurePolicy etc.).
+            // clock() is an internal orchestrator dependency exposed through
+            // the explicit collaborator operation map.
             $now = $this->clock()->now();
             update_option($this->viewDoneFreshnessOptionName(), $now, false);
             update_option($this->viewDoneDataBuiltAtOptionName(), $now, false);

@@ -9,8 +9,8 @@ if (!defined('ABSPATH')) {
  *
  * The view-build pipeline still has intentional cross-calls between stages,
  * progress bookkeeping, host probes, and watermark gates. This bridge keeps
- * those calls routed through the orchestrator while each collaborator owns its
- * local state.
+ * those calls routed through the orchestrator's explicit operation map while
+ * each collaborator owns its local state.
  *
  * @property mixed $dbCore
  * @property mixed $f
@@ -209,7 +209,7 @@ abstract class ABJ_404_Solution_ViewBuildCollaborator {
      * @return mixed
      */
     public function __call(string $name, array $arguments) {
-        return $this->host->__call($name, $arguments);
+        return $this->host->invokeViewBuildOperation($name, $arguments);
     }
 
     /**
@@ -217,7 +217,7 @@ abstract class ABJ_404_Solution_ViewBuildCollaborator {
      * @return mixed
      */
     public function __get(string $name) {
-        return $this->host->__get($name);
+        return $this->host->viewBuildCollaboratorDependency($name);
     }
 
     /**
@@ -226,6 +226,31 @@ abstract class ABJ_404_Solution_ViewBuildCollaborator {
      * @return void
      */
     public function __set(string $name, $value): void {
-        $this->host->__set($name, $value);
+        $this->host->setViewBuildCollaboratorState($name, $value);
+    }
+
+    /** @return int */
+    protected function stagedQueryTimeoutSeconds(): int {
+        return (int)$this->host->viewBuildCollaboratorDependency('stagedQueryTimeoutSeconds');
+    }
+
+    /** @param int $seconds @return void */
+    protected function setStagedQueryTimeoutSeconds(int $seconds): void {
+        $this->host->setViewBuildCollaboratorState('stagedQueryTimeoutSeconds', max(0, $seconds));
+    }
+
+    /** @return array<string, mixed>|null */
+    protected function sqlModeProbeCache() {
+        $cache = $this->host->viewBuildCollaboratorDependency('sqlModeProbeCache');
+        if (!is_array($cache)) {
+            return null;
+        }
+        $stringKeyed = array();
+        foreach ($cache as $key => $value) {
+            if (is_string($key)) {
+                $stringKeyed[$key] = $value;
+            }
+        }
+        return $stringKeyed;
     }
 }

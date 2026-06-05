@@ -20,11 +20,10 @@ if (!defined('ABSPATH')) {
  *     ABJ_404_Solution_ViewBuildStateProbe
  *
  * All three classes are registered as ViewBuildOrchestrator collaborators and
- * route cross-class calls through reflection-based __call on the orchestrator.
+ * use the orchestrator's explicit operation map for cross-class calls.
  *
  * @property ABJ_404_Solution_Functions $f
  * @property ABJ_404_Solution_Logging $logger
- * @property mixed $sqlModeProbeCache
  * @method array<mixed> queryAndGetResults(...$arguments)
  * @method string doTableNameReplacements(...$arguments)
  * @method string getColumnCollationString(...$arguments)
@@ -69,7 +68,7 @@ class ABJ_404_Solution_ViewBuildStagedSqlExecutor extends ABJ_404_Solution_ViewB
             $clean = $url;
         }
         if ($maxLength <= 0) {
-            $probe = is_array($this->sqlModeProbeCache) ? $this->sqlModeProbeCache : null;
+            $probe = $this->sqlModeProbeCache();
             $truncTo = 0;
             if ($probe !== null && isset($probe['truncate_url_to'])
                     && is_scalar($probe['truncate_url_to'])) {
@@ -206,6 +205,16 @@ class ABJ_404_Solution_ViewBuildStagedSqlExecutor extends ABJ_404_Solution_ViewB
             return array('timeout' => $this->stagedQueryTimeoutSeconds);
         }
         return array();
+    }
+
+    /** @return int */
+    public function getStagedQueryTimeoutSeconds(): int {
+        return $this->stagedQueryTimeoutSeconds;
+    }
+
+    /** @param int $seconds @return void */
+    public function setStagedQueryTimeoutSeconds(int $seconds): void {
+        $this->stagedQueryTimeoutSeconds = max(0, $seconds);
     }
 
     /**

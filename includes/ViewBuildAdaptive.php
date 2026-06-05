@@ -297,8 +297,7 @@ class ABJ_404_Solution_ViewBuildAdaptive extends ABJ_404_Solution_ViewBuildColla
         }
         $limitSeconds = 0.0;
 
-        $result = $this->queryAndGetResults(
-            "SHOW SESSION VARIABLES LIKE 'max_statement_time'",
+        $result = $this->queryAndGetResults("SHOW SESSION VARIABLES LIKE 'max_statement_time'",
             array('log_errors' => false)
         );
         $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
@@ -310,8 +309,7 @@ class ABJ_404_Solution_ViewBuildAdaptive extends ABJ_404_Solution_ViewBuildColla
         }
 
         if ($limitSeconds <= 0.0) {
-            $result = $this->queryAndGetResults(
-                "SHOW SESSION VARIABLES LIKE 'max_execution_time'",
+            $result = $this->queryAndGetResults("SHOW SESSION VARIABLES LIKE 'max_execution_time'",
                 array('log_errors' => false)
             );
             $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();

@@ -13,7 +13,6 @@ if (!defined('ABSPATH')) {
  * route here through the orchestrator.
  *
  * @property ABJ_404_Solution_Logging $logger
- * @property int $stagedQueryTimeoutSeconds
  * @method void capturePrefixAtBuildStart(...$arguments)
  * @method string capturedPrefixForLog(...$arguments)
  * @method void clearAllProgressOptions(...$arguments)
@@ -192,7 +191,7 @@ class ABJ_404_Solution_ViewBuildStagePipeline extends ABJ_404_Solution_ViewBuild
         }
 
         $this->prepareBuildRun();
-        $this->stagedQueryTimeoutSeconds = (int)round($this->intelligentStagedQueryTimeoutSeconds());
+        $this->setStagedQueryTimeoutSeconds((int)round($this->intelligentStagedQueryTimeoutSeconds()));
         $stage = $this->readProgressOption('current_stage', 0);
 
         if ($stage < 1 && !$this->runStageOne()) { return false; }
@@ -278,8 +277,7 @@ class ABJ_404_Solution_ViewBuildStagePipeline extends ABJ_404_Solution_ViewBuild
             return true;
         }
         $this->markBuildStage('staged_build_s3_index_fd');
-        $result = $this->runNonBatchedStageWithKillStreakEscape(
-            3, 'staged_build_s3_index_fd', 's3_kill_streak',
+        $result = $this->runNonBatchedStageWithKillStreakEscape(3, 'staged_build_s3_index_fd', 's3_kill_streak',
             function () { $this->stageAddPreJoinIndexes(); }
         );
         return $this->markStageCompleteIfDone(3, $result);
@@ -340,8 +338,7 @@ class ABJ_404_Solution_ViewBuildStagePipeline extends ABJ_404_Solution_ViewBuild
             $this->writeProgressOption('current_stage', 9);
             return true;
         }
-        $result = $this->runNonBatchedStageWithKillStreakEscape(
-            9, 'staged_build_s9_update_hits', 's9_kill_streak',
+        $result = $this->runNonBatchedStageWithKillStreakEscape(9, 'staged_build_s9_update_hits', 's9_kill_streak',
             function () {
                 if ($this->logsHitsTableExists()) {
                     $this->markBuildStage('staged_build_s9_update_hits');
@@ -363,8 +360,7 @@ class ABJ_404_Solution_ViewBuildStagePipeline extends ABJ_404_Solution_ViewBuild
             return true;
         }
         $this->markBuildStage('staged_build_s10_index_sort');
-        $result = $this->runNonBatchedStageWithKillStreakEscape(
-            10, 'staged_build_s10_index_sort', 's10_kill_streak',
+        $result = $this->runNonBatchedStageWithKillStreakEscape(10, 'staged_build_s10_index_sort', 's10_kill_streak',
             function () { $this->stageAddSortIndexes(); }
         );
         return $this->markStageCompleteIfDone(10, $result);

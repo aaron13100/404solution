@@ -41,9 +41,9 @@ class ABJ_404_Solution_ViewBuildSqlModeProbe extends ABJ_404_Solution_ViewBuildC
      *     truncate_url_to: int                 // 2048 default, smaller when packet is constrained
      *   }
      *
-     * Read by sanitizeUrlBeforeInsert() on the sibling helpers collaborator
-     * through the orchestrator's reflection-routed __get; cross-collaborator
-     * read keeps state authoritative on this single owner.
+     * Read by sanitizeUrlBeforeInsert() through the orchestrator's explicit
+     * dependency access; cross-collaborator read keeps state authoritative on
+     * this single owner.
      *
      * @var array<string,mixed>|null
      */
@@ -201,6 +201,11 @@ class ABJ_404_Solution_ViewBuildSqlModeProbe extends ABJ_404_Solution_ViewBuildC
      */
     public function detectAndAdjustSqlMode(): array {
         return $this->probeSqlModeForBuild();
+    }
+
+    /** @return array<string,mixed>|null */
+    public function getSqlModeProbeCache() {
+        return $this->sqlModeProbeCache;
     }
 
     /**

@@ -33,7 +33,7 @@ if (!defined('ABSPATH')) {
  * Composed alongside the stage pipeline through ABJ_404_Solution_ViewBuildOrchestrator
  * so the cross-collaborator calls ($this->readProgressOption, $this->logger,
  * $this->classifyAndHandleStageFailure, $this->resetStageNoProgressStreak,
- * $this->extendedTimeoutForKilledNonBatchedStage, $this->stagedQueryTimeoutSeconds)
+ * $this->extendedTimeoutForKilledNonBatchedStage, staged query timeout state)
  * resolve through the shared orchestrator host.
  *
  * @property ABJ_404_Solution_DatabaseCore $dbCore
@@ -41,7 +41,6 @@ if (!defined('ABSPATH')) {
  * @property ABJ_404_Solution_Logging $logger
  * @property ABJ_404_Solution_ViewReadService|null $viewReadService
  * @property ABJ_404_Solution_LogsRepository|null $logsRepo
- * @property int $stagedQueryTimeoutSeconds
  * @property string $lastBatchProgressDetail
  * @property bool $viewBuildStageOpenForShutdown
  * @property int $viewBuildShutdownStageNumber
@@ -502,16 +501,15 @@ class ABJ_404_Solution_ViewBuildStageRunner extends ABJ_404_Solution_ViewBuildCo
         string $streakOptKey,
         callable $callback
     ) {
-        $savedTimeout = $this->stagedQueryTimeoutSeconds;
-        $this->stagedQueryTimeoutSeconds = $this->extendedTimeoutForKilledNonBatchedStage($streakOptKey);
+        $savedTimeout = $this->stagedQueryTimeoutSeconds();
+        $this->setStagedQueryTimeoutSeconds($this->extendedTimeoutForKilledNonBatchedStage($streakOptKey));
         try {
             $result = $this->runTimedViewBuildStage($stageNumber, $stageKey, $callback);
         } finally {
-            $this->stagedQueryTimeoutSeconds = $savedTimeout;
+            $this->setStagedQueryTimeoutSeconds($savedTimeout);
         }
         if ($result === false) {
-            $this->writeProgressOption(
-                $streakOptKey,
+            $this->writeProgressOption($streakOptKey,
                 $this->readProgressOption($streakOptKey, 0) + 1
             );
         } else {

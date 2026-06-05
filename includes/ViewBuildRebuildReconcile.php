@@ -266,8 +266,7 @@ class ABJ_404_Solution_ViewBuildRebuildReconcile extends ABJ_404_Solution_ViewBu
         $haveDeleteme = $this->stagedTableExists($tempDeletemeTable);
 
         if ($haveDeleteme) {
-            $r = $this->queryAndGetResults(
-                'DROP TABLE IF EXISTS `' . $tempDeletemeTable . '`',
+            $r = $this->queryAndGetResults('DROP TABLE IF EXISTS `' . $tempDeletemeTable . '`',
                 array('log_errors' => false)
             );
             $err = isset($r['last_error']) && is_string($r['last_error']) ? trim($r['last_error']) : '';
@@ -353,8 +352,7 @@ class ABJ_404_Solution_ViewBuildRebuildReconcile extends ABJ_404_Solution_ViewBu
         // orphan $tempBuildTable is from a halted previous run. Drop it so
         // the next fresh build starts from a known empty buffer.
         if ($haveBuild && $haveDone) {
-            $r = $this->queryAndGetResults(
-                'DROP TABLE IF EXISTS `' . $tempBuildTable . '`',
+            $r = $this->queryAndGetResults('DROP TABLE IF EXISTS `' . $tempBuildTable . '`',
                 array('log_errors' => false)
             );
             $err = isset($r['last_error']) && is_string($r['last_error']) ? trim($r['last_error']) : '';

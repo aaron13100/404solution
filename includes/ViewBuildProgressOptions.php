@@ -29,9 +29,8 @@ if (!defined('ABSPATH')) {
  * Build-side existence / freshness probes live on
  * ABJ_404_Solution_ViewBuildStateProbe. All three classes plus
  * ABJ_404_Solution_ViewBuildLockCoordinator and the host-environment probes are
- * registered as ViewBuildOrchestrator collaborators; properties declared here
- * are visible across the family via reflection-routed __get / __set on the
- * orchestrator.
+ * registered as ViewBuildOrchestrator collaborators and use the orchestrator's
+ * explicit operation map for cross-class calls.
  *
  * @property ABJ_404_Solution_Logging $logger
  * @method string getLowercasePrefix(...$arguments)
