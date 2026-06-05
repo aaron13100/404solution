@@ -5,7 +5,7 @@
  * Extracted from DataAccess.php to keep the main class under the file-size
  * limit. All methods are called via $this-> from DataAccess (trait context)
  * and rely on sibling traits: ErrorClassificationTrait for the isXxxError()
- * predicates, plus the host class's $this->logger and extractSqlFilename().
+ * predicates, plus the host class's $this->logger and query diagnostics.
  *
  * @since 4.1.8
  */
@@ -87,12 +87,12 @@ class ABJ_404_Solution_DatabaseSqlErrorReporter {
             }
         }
 
-        $sqlInfo = (defined('WP_DEBUG') && WP_DEBUG) ? $query : $this->core->queryExecutor()->extractSqlFilename($query);
+        $sqlInfo = (defined('WP_DEBUG') && WP_DEBUG) ? $query : $this->core->queryDiagnostics()->extractSqlFilename($query);
         $elapsed = isset($result['elapsed_time']) && is_numeric($result['elapsed_time'])
             ? round((float)$result['elapsed_time'], 4) : 0;
         $message = 'SQL query error observed: ' . $lastError
             . ', SQL: ' . $sqlInfo
-            . ', source: ' . $this->core->queryExecutor()->extractSqlFilename($query)
+            . ', source: ' . $this->core->queryDiagnostics()->extractSqlFilename($query)
             . ', route: ' . ($producesRows ? 'get_results' : 'query')
             . ', log_errors_option: ' . ($logErrors ? 'true' : 'false') /** @phpstan-ignore ternary.alwaysTrue */
             . ', execution_time: ' . $elapsed;
@@ -151,11 +151,11 @@ class ABJ_404_Solution_DatabaseSqlErrorReporter {
      * @return void
      */
     public function logSqlThrowable(string $query, Throwable $e, array $options, bool $producesRows): void {
-        $sqlInfo = (defined('WP_DEBUG') && WP_DEBUG) ? $query : $this->core->queryExecutor()->extractSqlFilename($query);
+        $sqlInfo = (defined('WP_DEBUG') && WP_DEBUG) ? $query : $this->core->queryDiagnostics()->extractSqlFilename($query);
         $logErrors = !array_key_exists('log_errors', $options) || (bool)$options['log_errors'];
         $message = 'SQL query threw exception: ' . $e->getMessage()
             . ', SQL: ' . $sqlInfo
-            . ', source: ' . $this->core->queryExecutor()->extractSqlFilename($query)
+            . ', source: ' . $this->core->queryDiagnostics()->extractSqlFilename($query)
             . ', route: ' . ($producesRows ? 'get_results' : 'query')
             . ', log_errors_option: ' . ($logErrors ? 'true' : 'false');
 

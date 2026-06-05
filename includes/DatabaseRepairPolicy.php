@@ -246,7 +246,7 @@ class ABJ_404_Solution_DatabaseRepairPolicy {
         $prevSuppressState = $wpdb->suppress_errors(true);
         $result['rows'] = $wpdb->get_results($query, $this->core->queryExecutor()->getCurrentResultType());
         $wpdb->suppress_errors($prevSuppressState);
-        $this->core->queryExecutor()->harvestWpdbResult($result);
+        $this->core->resultHarvester()->harvestWpdbResult($result);
 
         $retryError = isset($result['last_error']) && is_scalar($result['last_error'])
             ? (string)$result['last_error']

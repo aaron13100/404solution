@@ -19,17 +19,22 @@ require_once __DIR__ . '/DatabaseTableNameResolver.php';
 require_once __DIR__ . '/DatabaseNoticeStateHolder.php';
 require_once __DIR__ . '/DatabaseCollationHelper.php';
 require_once __DIR__ . '/DatabaseTableRepairer.php';
+require_once __DIR__ . '/DatabaseWpdbResultHarvester.php';
+require_once __DIR__ . '/DatabaseQueryDiagnostics.php';
+require_once __DIR__ . '/DatabaseTransactionExecutor.php';
 require_once __DIR__ . '/DatabaseQueryExecutor.php';
 
 /**
  * Shared database infrastructure: query execution, error recovery, timeouts,
  * connection management, table-name resolution, and error classification.
  *
- * Composition root for the nine infrastructure components
+ * Composition root for the database infrastructure components
  * (DatabaseConnectionManager, DatabaseQueryTimeoutManager,
  * DatabaseErrorClassifier, DatabaseSqlErrorReporter,
  * DatabaseTableNameResolver, DatabaseNoticeStateHolder,
- * DatabaseCollationHelper, DatabaseTableRepairer, DatabaseQueryExecutor).
+ * DatabaseCollationHelper, DatabaseTableRepairer, DatabaseWpdbResultHarvester,
+ * DatabaseQueryDiagnostics, DatabaseTransactionExecutor,
+ * DatabaseQueryExecutor).
  *
  * Public surface:
  *   - Interface-required methods (DatabaseCoreInterface) for callers that
@@ -90,6 +95,15 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
     /** @var ABJ_404_Solution_DatabaseTableRepairer */
     private $tableRepairer;
 
+    /** @var ABJ_404_Solution_DatabaseWpdbResultHarvester */
+    private $resultHarvester;
+
+    /** @var ABJ_404_Solution_DatabaseQueryDiagnostics */
+    private $queryDiagnostics;
+
+    /** @var ABJ_404_Solution_DatabaseTransactionExecutor */
+    private $transactionExecutor;
+
     /** @var ABJ_404_Solution_DatabaseQueryExecutor */
     private $queryExecutor;
 
@@ -112,7 +126,16 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
         $this->errorClassifier = new ABJ_404_Solution_DatabaseErrorClassifier($this, $this->f, $this->logger);
         $this->repairPolicy = new ABJ_404_Solution_DatabaseRepairPolicy($this, $this->errorClassifier, $this->f, $this->logger);
         $this->sqlErrorReporter = new ABJ_404_Solution_DatabaseSqlErrorReporter($this, $this->logger);
-        $this->queryExecutor = new ABJ_404_Solution_DatabaseQueryExecutor($this, $this->f, $this->logger);
+        $this->resultHarvester = new ABJ_404_Solution_DatabaseWpdbResultHarvester();
+        $this->queryDiagnostics = new ABJ_404_Solution_DatabaseQueryDiagnostics($this->logger);
+        $this->queryExecutor = new ABJ_404_Solution_DatabaseQueryExecutor(
+            $this,
+            $this->f,
+            $this->logger,
+            $this->resultHarvester,
+            $this->queryDiagnostics
+        );
+        $this->transactionExecutor = new ABJ_404_Solution_DatabaseTransactionExecutor($this, $this->logger);
         $this->tableNameResolver = new ABJ_404_Solution_DatabaseTableNameResolver(
             $this->f,
             function (string $query, array $options): array {
@@ -140,7 +163,7 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
                 $this->noticeState->setRuntimeFlag($key, $value, $ttl);
             },
             function (array &$result): void {
-                $this->queryExecutor->harvestWpdbResult($result);
+                $this->resultHarvester->harvestWpdbResult($result);
             },
             $this->logger
         );
@@ -149,7 +172,7 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
                 return $this->queryAndGetResults($query, $options);
             },
             function (array &$result): void {
-                $this->queryExecutor->harvestWpdbResult($result);
+                $this->resultHarvester->harvestWpdbResult($result);
             },
             function (): string {
                 return $this->queryExecutor->getCurrentResultType();
@@ -217,6 +240,21 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
     /** @return ABJ_404_Solution_DatabaseTableRepairer */
     public function tableRepairer(): ABJ_404_Solution_DatabaseTableRepairer {
         return $this->tableRepairer;
+    }
+
+    /** @return ABJ_404_Solution_DatabaseWpdbResultHarvester */
+    public function resultHarvester(): ABJ_404_Solution_DatabaseWpdbResultHarvester {
+        return $this->resultHarvester;
+    }
+
+    /** @return ABJ_404_Solution_DatabaseQueryDiagnostics */
+    public function queryDiagnostics(): ABJ_404_Solution_DatabaseQueryDiagnostics {
+        return $this->queryDiagnostics;
+    }
+
+    /** @return ABJ_404_Solution_DatabaseTransactionExecutor */
+    public function transactionExecutor(): ABJ_404_Solution_DatabaseTransactionExecutor {
+        return $this->transactionExecutor;
     }
 
     /** @return ABJ_404_Solution_DatabaseQueryExecutor */
@@ -367,7 +405,7 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
     /** @inheritDoc */
     public function executeAsTransaction(array $statementArray): void {
         try {
-            $this->queryExecutor->executeAsTransaction($statementArray);
+            $this->transactionExecutor->executeAsTransaction($statementArray);
         } catch (Throwable $e) {
             throw $e;
         }

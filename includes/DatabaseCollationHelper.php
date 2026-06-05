@@ -28,7 +28,7 @@ if (!defined('ABSPATH')) {
  *     (signature: function(string): string);
  *   - getter/setter callables for runtime flags
  *     (signatures: function(string): mixed, function(string, mixed, int): void);
- *   - a result-harvester callable bound over DatabaseCore::harvestWpdbResult
+ *   - a result-harvester callable bound over DatabaseWpdbResultHarvester
  *     (signature: function(array<string,mixed>): void, by-reference);
  *   - the plugin logger and an optional clock.
  *
@@ -77,7 +77,7 @@ class ABJ_404_Solution_DatabaseCollationHelper {
      *   Persists a runtime-flag value with a TTL.
      * @param callable(array<string,mixed>): void $resultHarvester
      *   Copies wpdb->last_error / rows_affected / insert_id into the result array,
-     *   by reference. Bound by DatabaseCore over harvestWpdbResult().
+     *   by reference. Bound by DatabaseCore over DatabaseWpdbResultHarvester.
      * @param ABJ_404_Solution_Logging $logger
      * @param ABJ_404_Solution_Clock|null $clock Optional; lazily resolved when null.
      */

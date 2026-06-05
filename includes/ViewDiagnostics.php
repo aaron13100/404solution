@@ -16,16 +16,16 @@ class ABJ_404_Solution_ViewDiagnostics {
     /** @var ABJ_404_Solution_DatabaseCore */
     private $dbCore;
 
-    /** @var ABJ_404_Solution_DatabaseQueryExecutor */
-    private $queryExecutor;
+    /** @var ABJ_404_Solution_DatabaseQueryDiagnostics */
+    private $queryDiagnostics;
 
     /**
      * @param ABJ_404_Solution_DatabaseCore $dbCore
-     * @param ABJ_404_Solution_DatabaseQueryExecutor|null $queryExecutor
+     * @param ABJ_404_Solution_DatabaseQueryDiagnostics|null $queryDiagnostics
      */
-    public function __construct(ABJ_404_Solution_DatabaseCore $dbCore, $queryExecutor = null) {
+    public function __construct(ABJ_404_Solution_DatabaseCore $dbCore, $queryDiagnostics = null) {
         $this->dbCore = $dbCore;
-        $this->queryExecutor = $queryExecutor !== null ? $queryExecutor : $dbCore->queryExecutor();
+        $this->queryDiagnostics = $queryDiagnostics !== null ? $queryDiagnostics : $dbCore->queryDiagnostics();
     }
 
     /**
@@ -38,7 +38,7 @@ class ABJ_404_Solution_ViewDiagnostics {
         $lastErrorRaw = $result['last_error'] ?? '';
         $lastError = is_string($lastErrorRaw) ? trim($lastErrorRaw) : '';
         $timedOut = !empty($result['timed_out']);
-        $sqlSource = $this->queryExecutor->extractSqlFilename($query);
+        $sqlSource = $this->queryDiagnostics->extractSqlFilename($query);
 
         if ($lastError === '' && $timedOut) {
             $lastError = $queryLabel . ' timed out';

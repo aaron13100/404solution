@@ -18,16 +18,7 @@ if (!defined('ABSPATH')) {
  *                              and final error-logging / repair dispatch).
  *   - queryScalarInt():        thin wrapper that runs a query and returns the
  *                              first scalar column of the first row as an int.
- *   - executeAsTransaction():  multi-statement transactional execution with
- *                              deadlock-aware retry, BEGIN/COMMIT/ROLLBACK
- *                              bookkeeping, and infrastructure-error classification.
  *   - handleQueryErrorsAndLogging(): post-query error reporting + repair dispatch.
- *   - harvestWpdbResult():     copy wpdb->last_error / last_result /
- *                              rows_affected / insert_id into the result array.
- *   - applyDiagnosticLatencyIfConfigured(): test/diagnostic hook for simulating
- *                              latency before each query.
- *   - extractSqlFilename() / resolveCallerFromBacktrace(): resolve a stable
- *                              source identifier for safe logging.
  *
  * The executor holds a DatabaseCore back-reference and calls back into core's
  * already-extracted helpers (connection manager, query-timeout manager, error
@@ -54,6 +45,12 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
     /** @var ABJ_404_Solution_Logging */
     private $logger;
 
+    /** @var ABJ_404_Solution_DatabaseWpdbResultHarvester */
+    private $resultHarvester;
+
+    /** @var ABJ_404_Solution_DatabaseQueryDiagnostics */
+    private $queryDiagnostics;
+
     /** @var string Current wpdb result type for queryAndGetResults (ARRAY_A or OBJECT). */
     private $currentResultType = ARRAY_A;
 
@@ -61,11 +58,21 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
      * @param ABJ_404_Solution_DatabaseCore $core
      * @param ABJ_404_Solution_Functions $f
      * @param ABJ_404_Solution_Logging $logger
+     * @param ABJ_404_Solution_DatabaseWpdbResultHarvester $resultHarvester
+     * @param ABJ_404_Solution_DatabaseQueryDiagnostics $queryDiagnostics
      */
-    public function __construct(ABJ_404_Solution_DatabaseCore $core, $f, $logger) {
+    public function __construct(
+        ABJ_404_Solution_DatabaseCore $core,
+        $f,
+        $logger,
+        ABJ_404_Solution_DatabaseWpdbResultHarvester $resultHarvester,
+        ABJ_404_Solution_DatabaseQueryDiagnostics $queryDiagnostics
+    ) {
         $this->core = $core;
         $this->f = $f;
         $this->logger = $logger;
+        $this->resultHarvester = $resultHarvester;
+        $this->queryDiagnostics = $queryDiagnostics;
         $this->currentResultType = ARRAY_A;
     }
 
@@ -99,40 +106,21 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
 
         $this->core->connectionManager()->ensureConnection();
 
-        $ignoreErrorStrings = array();
-
-        $options = array_merge(array('log_errors' => true,
-            'log_too_slow' => true, 'ignore_errors' => array(),
-            'query_params' => array(), 'skip_repair' => false,
-            'result_type' => ARRAY_A, 'timeout' => 0),
-            $options);
-        $resultType = $options['result_type'] === OBJECT ? OBJECT : ARRAY_A;
+        $options = $this->normalizeQueryOptions($options);
+        $resultType = $this->normalizeResultType($options['result_type']);
         $this->currentResultType = $resultType;
 
         $ignoreErrorStrings = is_array($options['ignore_errors']) ? $options['ignore_errors'] : array();
         $queryParameters = is_array($options['query_params']) ? $options['query_params'] : array();
 
         $query = $this->core->doTableNameReplacements($query);
-
-        if (!empty($queryParameters)) {
-            /** @var literal-string $queryLiteral */
-            $queryLiteral = $query;
-            try {
-                /** @var wpdb $wpdb */
-                $preparedResult = call_user_func_array(array($wpdb, 'prepare'), array_merge(array($queryLiteral), $queryParameters));
-                $query = is_string($preparedResult) ? $preparedResult : $queryLiteral;
-            } catch (Throwable $t) {
-                $this->logger->debugMessage('wpdb prepare variadic call failed; retrying with array parameters.', $t);
-                $preparedFallback = $wpdb->prepare($queryLiteral, $queryParameters);
-                $query = $preparedFallback !== null ? $preparedFallback : $queryLiteral;
-            }
-        }
+        $query = $this->prepareQueryParameters($query, $queryParameters);
 
         $timeoutRaw = isset($options['timeout']) && is_numeric($options['timeout']) ? (int)$options['timeout'] : 0;
         $timeoutSeconds = $timeoutRaw > 0 ? $timeoutRaw : 60;
         $query = $this->core->queryTimeoutManager()->applyQueryTimeout($query, $timeoutSeconds);
 
-        $this->applyDiagnosticLatencyIfConfigured();
+        $this->queryDiagnostics->applyDiagnosticLatencyIfConfigured();
 
         $timer = new ABJ_404_Solution_Timer();
 
@@ -147,12 +135,7 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
 
         $result = array();
         try {
-            if ($producesRows) {
-                $result['rows'] = $wpdb->get_results($query, $resultType);
-            } else {
-                $wpdb->query($query);
-                $result['rows'] = array();
-            }
+            $result = $this->executeWpdbQuery($query, $resultType, $producesRows);
         } catch (Throwable $e) {
             $result['elapsed_time'] = $timer->stop();
             $this->core->sqlErrorReporter()->logSqlThrowable($query, $e, $options, $producesRows);
@@ -165,95 +148,18 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
 
         $result['elapsed_time'] = $timer->stop();
         $elapsedMs = ((float)$result['elapsed_time']) * 1000.0;
-        if (function_exists('abj404_benchmark_record_db_query')) {
-            abj404_benchmark_record_db_query($elapsedMs);
-        }
-        if (function_exists('abj404_query_budget_record')
-            && class_exists('ABJ_404_Solution_QueryBudgetInstrumentation', false)
-            && ABJ_404_Solution_QueryBudgetInstrumentation::isEnabled()) {
-            abj404_query_budget_record($this->extractSqlFilename($query), $elapsedMs, $timeoutSeconds);
-        }
-        $this->harvestWpdbResult($result);
+        $this->queryDiagnostics->recordQueryBudgetIfEnabled($query, $elapsedMs, $timeoutSeconds);
+        $this->resultHarvester->harvestWpdbResult($result);
         $lastErrorForObservedLog = is_string($result['last_error'] ?? null) ? $result['last_error'] : '';
         if ($lastErrorForObservedLog === '' || !$this->core->errorClassifier()->isTransientConnectionError($lastErrorForObservedLog)) {
             $this->core->sqlErrorReporter()->logObservedSqlError($query, $result, $options, $producesRows);
         }
 
         if ($producesRows && !is_array($result['rows'])) {
-            $sqlInfo = (defined('WP_DEBUG') && WP_DEBUG) ? $query : $this->extractSqlFilename($query);
-            $this->logger->errorMessage("Query result is not an array. Query: " . $sqlInfo,
-                        new Exception("Query result is not an array.")); // allow-raw-error: behavior preserved from pre-extraction DatabaseCore; passed to logger as diagnostic context, not thrown
+            $this->queryDiagnostics->logMalformedRowsIfNeeded($query, $result['rows']);
         }
 
-        $lastErrorForSetStatement = is_string($result['last_error'] ?? null) ? $result['last_error'] : '';
-        if ($lastErrorForSetStatement !== ''
-            && $this->core->errorClassifier()->classifySetStatementFailure($lastErrorForSetStatement)
-            && $this->core->queryTimeoutManager()->queryHasSetStatementWrapper($query)) {
-            $this->core->queryTimeoutManager()->retryWithoutSetStatementWrapper($query, $result, $resultType);
-            $producesRows = $this->core->queryTimeoutManager()->queryProducesResultRows($query);
-        }
-
-        if ($result['last_error'] !== '' && $this->core->errorClassifier()->isTransientConnectionError($result['last_error'])) {
-            $this->core->connectionManager()->ensureConnection();
-            $wpdb->flush();
-            if ($producesRows) {
-                $result['rows'] = $wpdb->get_results($query, $resultType);
-            } else {
-                $wpdb->query($query);
-                $result['rows'] = array();
-            }
-            $this->harvestWpdbResult($result);
-        }
-
-        if (!$options['skip_repair'] && $result['last_error'] !== '' && $this->core->errorClassifier()->isMissingPluginTableError(is_string($result['last_error']) ? $result['last_error'] : '')) {
-            $this->core->repairPolicy()->attemptMissingTableRepairAndRetry($query, $result);
-        }
-
-        $lastError = isset($result['last_error']) && is_scalar($result['last_error']) ? (string)$result['last_error'] : '';
-
-        if ($lastError !== '' && $this->core->errorClassifier()->isInvalidDataError($lastError)) {
-            $this->core->tableRepairer()->attemptInvalidDataRetry($query, $result);
-        }
-
-        $lastError = isset($result['last_error']) && is_scalar($result['last_error']) ? (string)$result['last_error'] : '';
-
-        if ($lastError !== '' && $this->core->errorClassifier()->isDeadlockOrLockTimeoutError($lastError)) {
-            /** @var wpdb $wpdb */
-            usleep(50000);
-            if ($producesRows) {
-                $result['rows'] = $wpdb->get_results($query, $resultType);
-            } else {
-                $wpdb->query($query);
-                $result['rows'] = array();
-            }
-            $this->harvestWpdbResult($result);
-            $lastError = isset($result['last_error']) && is_scalar($result['last_error']) ? (string)$result['last_error'] : '';
-            if ($lastError !== '' && $this->core->errorClassifier()->isDeadlockOrLockTimeoutError($lastError)) {
-                // allow-em-dash: copied verbatim from existing user-facing localized string in DataAccess.php
-                $this->core->setPluginDbNotice('lock_timeout', $this->core->noticeState()->localizeOrDefault('A database lock wait timeout occurred. If this persists, contact your host — another process may be holding a long-running lock.'), $lastError);
-            }
-        }
-
-        $lastError = isset($result['last_error']) && is_scalar($result['last_error']) ? (string)$result['last_error'] : '';
-        if ($lastError !== '' && $this->core->errorClassifier()->isCollationError($lastError)) {
-            $this->core->recoverFromCollationMismatchAndRetry($query, $result, $producesRows, $resultType);
-        }
-
-        $lastError = isset($result['last_error']) && is_scalar($result['last_error']) ? (string)$result['last_error'] : '';
-        if ($lastError !== '' && $this->core->errorClassifier()->isQueryTimeoutError($lastError)) {
-            $sqlInfo = (defined('WP_DEBUG') && WP_DEBUG) ? $query : $this->extractSqlFilename($query);
-            $this->logger->warn(
-                'Query timed out after ' . $timeoutSeconds . 's. ' .
-                'Query: ' . substr(preg_replace('/\s+/', ' ', trim($sqlInfo)) ?? $sqlInfo, 0, 500)
-            );
-            $result['rows'] = array();
-            $result['timed_out'] = true;
-        }
-
-        $lastError = isset($result['last_error']) && is_scalar($result['last_error']) ? (string)$result['last_error'] : '';
-        if ($lastError !== '') {
-            $this->core->errorClassifier()->noteDatabaseIssueFromError($lastError);
-        }
+        $producesRows = $this->recoverQueryResult($query, $result, $options, $resultType, $producesRows, $timeoutSeconds);
 
         if ($suppressWpdbErrors) {
             /** @var wpdb $wpdb */
@@ -265,6 +171,241 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
         );
 
         return $result;
+    }
+
+    /**
+     * @param array<string, mixed> $options
+     * @return array<string, mixed>
+     */
+    private function normalizeQueryOptions(array $options): array {
+        return array_merge(array(
+            'log_errors' => true,
+            'log_too_slow' => true,
+            'ignore_errors' => array(),
+            'query_params' => array(),
+            'skip_repair' => false,
+            'result_type' => ARRAY_A,
+            'timeout' => 0,
+        ), $options);
+    }
+
+    /**
+     * @param mixed $resultType
+     * @return 'OBJECT'|'ARRAY_A'
+     */
+    private function normalizeResultType($resultType): string {
+        return $resultType === OBJECT ? OBJECT : ARRAY_A;
+    }
+
+    /**
+     * @param string $query
+     * @param array<int|string, mixed> $queryParameters
+     * @return string
+     */
+    private function prepareQueryParameters(string $query, array $queryParameters): string {
+        if (empty($queryParameters)) {
+            return $query;
+        }
+
+        global $wpdb;
+        /** @var literal-string $queryLiteral */
+        $queryLiteral = $query;
+        $orderedParameters = array_values($queryParameters);
+        try {
+            /** @var wpdb $wpdb */
+            $preparedResult = call_user_func_array(array($wpdb, 'prepare'), array_merge(array($queryLiteral), $orderedParameters));
+            return is_string($preparedResult) ? $preparedResult : $queryLiteral;
+        } catch (Throwable $t) {
+            $this->logger->debugMessage('wpdb prepare variadic call failed; retrying with array parameters.', $t);
+            $preparedFallback = $wpdb->prepare($queryLiteral, $orderedParameters);
+            return $preparedFallback !== null ? $preparedFallback : $queryLiteral;
+        }
+    }
+
+    /**
+     * @param string $query
+     * @param 'OBJECT'|'OBJECT_K'|'ARRAY_A'|'ARRAY_N' $resultType
+     * @param bool $producesRows
+     * @return array<string, mixed>
+     */
+    private function executeWpdbQuery(string $query, string $resultType, bool $producesRows): array {
+        global $wpdb;
+        if ($producesRows) {
+            return array('rows' => $wpdb->get_results($query, $resultType));
+        }
+
+        $wpdb->query($query);
+        return array('rows' => array());
+    }
+
+    /**
+     * @param string $query
+     * @param array<string, mixed> $result
+     * @param array<string, mixed> $options
+     * @param 'OBJECT'|'OBJECT_K'|'ARRAY_A'|'ARRAY_N' $resultType
+     * @param bool $producesRows
+     * @param int $timeoutSeconds
+     * @return bool
+     */
+    private function recoverQueryResult(
+        string &$query,
+        array &$result,
+        array $options,
+        string $resultType,
+        bool $producesRows,
+        int $timeoutSeconds
+    ): bool {
+        $producesRows = $this->retryWithoutSetStatementIfNeeded($query, $result, $resultType, $producesRows);
+        $this->retryTransientConnectionIfNeeded($query, $result, $resultType, $producesRows);
+        $this->repairMissingTableIfNeeded($query, $result, $options);
+        $this->retryInvalidDataIfNeeded($query, $result);
+        $this->retryDeadlockIfNeeded($query, $result, $resultType, $producesRows);
+        $this->recoverCollationIfNeeded($query, $result, $resultType, $producesRows);
+        $this->handleTimeoutIfNeeded($query, $result, $timeoutSeconds);
+        $this->noteDatabaseIssueIfNeeded($result);
+        return $producesRows;
+    }
+
+    /**
+     * @param string $query
+     * @param array<string, mixed> $result
+     * @param 'OBJECT'|'OBJECT_K'|'ARRAY_A'|'ARRAY_N' $resultType
+     * @param bool $producesRows
+     * @return bool
+     */
+    private function retryWithoutSetStatementIfNeeded(string &$query, array &$result, string $resultType, bool $producesRows): bool {
+        $lastError = $this->lastErrorFromResult($result);
+        if ($lastError === ''
+            || !$this->core->errorClassifier()->classifySetStatementFailure($lastError)
+            || !$this->core->queryTimeoutManager()->queryHasSetStatementWrapper($query)) {
+            return $producesRows;
+        }
+
+        $this->core->queryTimeoutManager()->retryWithoutSetStatementWrapper($query, $result, $resultType);
+        return $this->core->queryTimeoutManager()->queryProducesResultRows($query);
+    }
+
+    /**
+     * @param string $query
+     * @param array<string, mixed> $result
+     * @param 'OBJECT'|'OBJECT_K'|'ARRAY_A'|'ARRAY_N' $resultType
+     * @param bool $producesRows
+     * @return void
+     */
+    private function retryTransientConnectionIfNeeded(string $query, array &$result, string $resultType, bool $producesRows): void {
+        $lastError = $this->lastErrorFromResult($result);
+        if ($lastError === '' || !$this->core->errorClassifier()->isTransientConnectionError($lastError)) {
+            return;
+        }
+
+        global $wpdb;
+        $this->core->connectionManager()->ensureConnection();
+        $wpdb->flush();
+        $result = array_merge($result, $this->executeWpdbQuery($query, $resultType, $producesRows));
+        $this->resultHarvester->harvestWpdbResult($result);
+    }
+
+    /**
+     * @param string $query
+     * @param array<string, mixed> $result
+     * @param array<string, mixed> $options
+     * @return void
+     */
+    private function repairMissingTableIfNeeded(string $query, array &$result, array $options): void {
+        $lastError = $this->lastErrorFromResult($result);
+        if ($options['skip_repair'] || $lastError === '' || !$this->core->errorClassifier()->isMissingPluginTableError($lastError)) {
+            return;
+        }
+        $this->core->repairPolicy()->attemptMissingTableRepairAndRetry($query, $result);
+    }
+
+    /**
+     * @param string $query
+     * @param array<string, mixed> $result
+     * @return void
+     */
+    private function retryInvalidDataIfNeeded(string $query, array &$result): void {
+        $lastError = $this->lastErrorFromResult($result);
+        if ($lastError !== '' && $this->core->errorClassifier()->isInvalidDataError($lastError)) {
+            $this->core->tableRepairer()->attemptInvalidDataRetry($query, $result);
+        }
+    }
+
+    /**
+     * @param string $query
+     * @param array<string, mixed> $result
+     * @param 'OBJECT'|'OBJECT_K'|'ARRAY_A'|'ARRAY_N' $resultType
+     * @param bool $producesRows
+     * @return void
+     */
+    private function retryDeadlockIfNeeded(string $query, array &$result, string $resultType, bool $producesRows): void {
+        $lastError = $this->lastErrorFromResult($result);
+        if ($lastError === '' || !$this->core->errorClassifier()->isDeadlockOrLockTimeoutError($lastError)) {
+            return;
+        }
+
+        usleep(50000);
+        $result = array_merge($result, $this->executeWpdbQuery($query, $resultType, $producesRows));
+        $this->resultHarvester->harvestWpdbResult($result);
+        $lastError = $this->lastErrorFromResult($result);
+        if ($lastError !== '' && $this->core->errorClassifier()->isDeadlockOrLockTimeoutError($lastError)) {
+            // allow-em-dash: copied verbatim from existing user-facing localized string in DataAccess.php
+            $this->core->setPluginDbNotice('lock_timeout', $this->core->noticeState()->localizeOrDefault('A database lock wait timeout occurred. If this persists, contact your host — another process may be holding a long-running lock.'), $lastError);
+        }
+    }
+
+    /**
+     * @param string $query
+     * @param array<string, mixed> $result
+     * @param 'OBJECT'|'OBJECT_K'|'ARRAY_A'|'ARRAY_N' $resultType
+     * @param bool $producesRows
+     * @return void
+     */
+    private function recoverCollationIfNeeded(string $query, array &$result, string $resultType, bool $producesRows): void {
+        $lastError = $this->lastErrorFromResult($result);
+        if ($lastError !== '' && $this->core->errorClassifier()->isCollationError($lastError)) {
+            $this->core->recoverFromCollationMismatchAndRetry($query, $result, $producesRows, $resultType);
+        }
+    }
+
+    /**
+     * @param string $query
+     * @param array<string, mixed> $result
+     * @param int $timeoutSeconds
+     * @return void
+     */
+    private function handleTimeoutIfNeeded(string $query, array &$result, int $timeoutSeconds): void {
+        $lastError = $this->lastErrorFromResult($result);
+        if ($lastError === '' || !$this->core->errorClassifier()->isQueryTimeoutError($lastError)) {
+            return;
+        }
+
+        $sqlInfo = (defined('WP_DEBUG') && WP_DEBUG) ? $query : $this->queryDiagnostics->extractSqlFilename($query);
+        $this->logger->warn(
+            'Query timed out after ' . $timeoutSeconds . 's. ' .
+            'Query: ' . substr(preg_replace('/\s+/', ' ', trim($sqlInfo)) ?? $sqlInfo, 0, 500)
+        );
+        $result['rows'] = array();
+        $result['timed_out'] = true;
+    }
+
+    /**
+     * @param array<string, mixed> $result
+     * @return void
+     */
+    private function noteDatabaseIssueIfNeeded(array $result): void {
+        $lastError = $this->lastErrorFromResult($result);
+        if ($lastError !== '') {
+            $this->core->errorClassifier()->noteDatabaseIssueFromError($lastError);
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $result
+     * @return string
+     */
+    private function lastErrorFromResult(array $result): string {
+        return isset($result['last_error']) && is_scalar($result['last_error']) ? (string)$result['last_error'] : '';
     }
 
     /**
@@ -340,7 +481,7 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
                 $someMySQLVariables = $wpdb->get_results($extraDataQuery, ARRAY_A);
                 $variables = print_r($someMySQLVariables, true);
 
-                $sqlInfo = (defined('WP_DEBUG') && WP_DEBUG) ? $query : $this->extractSqlFilename($query);
+                $sqlInfo = (defined('WP_DEBUG') && WP_DEBUG) ? $query : $this->queryDiagnostics->extractSqlFilename($query);
 
                 $dbVer = $wpdb->db_version();
                 $this->logger->errorMessage("Ugh. SQL query error: " . (is_string($result['last_error']) ? $result['last_error'] : '') .
@@ -353,7 +494,7 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
 
         } else {
             if ($options['log_too_slow'] && $timer->getElapsedTime() > 5) {
-                $sqlInfo = (defined('WP_DEBUG') && WP_DEBUG) ? $query : $this->extractSqlFilename($query);
+                $sqlInfo = (defined('WP_DEBUG') && WP_DEBUG) ? $query : $this->queryDiagnostics->extractSqlFilename($query);
                 $this->logger->debugMessage("Slow query (" . round($timer->getElapsedTime(), 2) . " seconds): " .
                         $sqlInfo);
             }
@@ -375,175 +516,4 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
         }
     }
 
-    /**
-     * Resolve a stable source identifier for safe logging.
-     *
-     * @param string $query
-     * @return string
-     */
-    public function extractSqlFilename($query) {
-        if (is_string($query) && $query !== '') {
-            if (preg_match('/\/\*\s*abj404:src=([A-Za-z0-9_:#.\\\\\-]+)\s*\*\//i', $query, $m)) {
-                return $m[1];
-            }
-            if (preg_match('/\/\*\s*-+\s*(.+?\.sql)\s+BEGIN\s*-+\s*\*\//i', $query, $m)) {
-                return basename($m[1]);
-            }
-        }
-        return $this->resolveCallerFromBacktrace();
-    }
-
-    /** @return string */
-    public function resolveCallerFromBacktrace() {
-        static $internalMethods = array(
-            'extractSqlFilename' => true,
-            'resolveCallerFromBacktrace' => true,
-            'queryAndGetResults' => true,
-            'attemptInvalidDataRetry' => true,
-            'attemptMissingTableRepairAndRetry' => true,
-            'repairCorruptedTableAndRetry' => true,
-            'recoverFromCollationMismatchAndRetry' => true,
-            'call_user_func_array' => true,
-            'call_user_func' => true,
-            '__call' => true,
-        );
-        $frames = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 40);
-        foreach ($frames as $frame) {
-            $fn = $frame['function'];
-            if ($fn === '' || isset($internalMethods[$fn])) {
-                continue;
-            }
-            if (strpos($fn, '{closure') !== false) {
-                continue;
-            }
-            $cls = isset($frame['class']) && is_string($frame['class']) ? $frame['class'] : '';
-            $fullFile = isset($frame['file']) && is_string($frame['file']) ? $frame['file'] : '';
-            if ($cls !== '' && (
-                strpos($cls, 'Patchwork') !== false ||
-                strpos($cls, 'PHPUnit\\') === 0
-            )) {
-                continue;
-            }
-            if (strpos($fn, 'Patchwork\\') !== false) {
-                continue;
-            }
-            if ($fullFile !== '' && (
-                strpos($fullFile, '/patchwork/') !== false ||
-                strpos($fullFile, '\\patchwork\\') !== false
-            )) {
-                continue;
-            }
-            $file = $fullFile !== '' ? basename($fullFile) : '';
-            $fileLabel = preg_replace('/\.php$/i', '', $file);
-            if (!is_string($fileLabel)) {
-                $fileLabel = $file;
-            }
-            if (($cls === 'ABJ_404_Solution_DatabaseCore'
-                    || $cls === 'ABJ_404_Solution_DatabaseQueryExecutor'
-                    || $cls === 'ABJ_404_Solution_DataAccess')
-                && $fileLabel !== '' && $fileLabel !== 'DatabaseCore'
-                && $fileLabel !== 'DatabaseQueryExecutor' && $fileLabel !== 'DataAccess') {
-                return $fileLabel . '::' . $fn;
-            }
-            if ($cls !== '') {
-                $shortClass = $cls;
-                $nsPos = strrpos($shortClass, '\\');
-                if ($nsPos !== false) {
-                    $shortClass = substr($shortClass, $nsPos + 1);
-                }
-                if (strpos($shortClass, 'ABJ_404_Solution_') === 0) {
-                    $shortClass = substr($shortClass, strlen('ABJ_404_Solution_'));
-                }
-                return $shortClass . '::' . $fn;
-            }
-            if ($fileLabel !== '') {
-                return $fileLabel . '::' . $fn;
-            }
-            return $fn;
-        }
-        return 'unknown-source';
-    }
-
-    /** @return void */
-    public function applyDiagnosticLatencyIfConfigured(): void {
-        if (!function_exists('abj404_get_simulated_db_latency_ms')) {
-            return;
-        }
-        $delayMs = absint(abj404_get_simulated_db_latency_ms());
-        if ($delayMs <= 0) {
-            return;
-        }
-        $delayMs = min(5000, $delayMs);
-        usleep($delayMs * 1000);
-    }
-
-    /**
-     * @param array<string, mixed> $result
-     * @return void
-     */
-    public function harvestWpdbResult(array &$result): void {
-        global $wpdb;
-        $result['last_error'] = (string)($wpdb->last_error ?? '');
-        $result['last_result'] = $wpdb->last_result ?? array();
-        $result['rows_affected'] = $wpdb->rows_affected ?? 0;
-        $result['insert_id'] = $wpdb->insert_id ?? 0;
-    }
-
-    /**
-     * Run a list of SQL statements as a single transaction with deadlock-aware retry.
-     *
-     * @param array<int, string> $statementArray
-     * @return void
-     */
-    public function executeAsTransaction(array $statementArray): void {
-        global $wpdb;
-        $maxAttempts = 3;
-        $lastException = null;
-        $lastError = '';
-
-        for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
-            $allIsWell = true;
-            $lastError = '';
-            $lastException = null;
-            try {
-                $wpdb->query('START TRANSACTION');
-                foreach ($statementArray as $statement) {
-                    $wpdb->query($statement);
-                    if ($wpdb->last_error != null && trim((string)$wpdb->last_error) !== '') {
-                        $allIsWell = false;
-                        $lastError = (string)$wpdb->last_error;
-                        if (!$this->core->classifyAndHandleInfrastructureError($lastError)) {
-                            $this->logger->errorMessage("Error executing SQL transaction: " . $lastError);
-                            $this->logger->errorMessage("SQL causing the transaction error: " . $statement);
-                        }
-                        break;
-                    }
-                }
-            } catch (Throwable $ex) {
-                $allIsWell = false;
-                $lastException = $ex;
-                $lastError = $ex->getMessage();
-            }
-
-            if ($allIsWell && $lastException == null) {
-                $wpdb->query('commit');
-                return;
-            }
-
-            $wpdb->query('rollback');
-            $retryable = $this->core->errorClassifier()->isDeadlockOrLockTimeoutError($lastError);
-            if (!$retryable || $attempt >= $maxAttempts) {
-                break;
-            }
-            $sleepMicros = 100000 + random_int(0, 200000);
-            usleep($sleepMicros);
-        }
-
-        if ($lastException != null) {
-            throw $lastException;
-        }
-        if ($lastError !== '') {
-            throw new Exception($lastError); // allow-raw-error: behavior preserved from pre-extraction DatabaseCore::executeAsTransaction
-        }
-    }
 }

@@ -28,7 +28,7 @@ if (!defined('ABSPATH')) {
  * This class holds no DatabaseCore back-reference. It receives:
  *   - a query-runner callable bound over DatabaseCore::queryAndGetResults
  *     (signature: function(string, array<string,mixed>): array<string,mixed>);
- *   - a result-harvester callable bound over DatabaseCore::harvestWpdbResult
+ *   - a result-harvester callable bound over DatabaseWpdbResultHarvester
  *     (signature: function(array<string,mixed>): void, by-reference);
  *   - a result-type getter bound over DatabaseCore::getCurrentResultType
  *     (signature: function(): string);
@@ -78,7 +78,7 @@ class ABJ_404_Solution_DatabaseTableRepairer {
      *   returns its result array. Bound by DatabaseCore over queryAndGetResults().
      * @param callable(array<string,mixed>): void $resultHarvester
      *   Copies wpdb->last_error / rows_affected / insert_id into the result array,
-     *   by reference. Bound by DatabaseCore over harvestWpdbResult().
+     *   by reference. Bound by DatabaseCore over DatabaseWpdbResultHarvester.
      * @param callable(): string $resultTypeGetter
      *   Returns the current wpdb result type (ARRAY_A or OBJECT) for retries.
      * @param callable(string, string, string): void $noticeSetter
