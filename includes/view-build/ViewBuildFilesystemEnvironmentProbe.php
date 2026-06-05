@@ -24,7 +24,7 @@ class ABJ_404_Solution_ViewBuildFilesystemEnvironmentProbe extends ABJ_404_Solut
     public function __construct(ABJ_404_Solution_ViewBuildCollaborationContext $host) {
         parent::__construct($host);
         $this->noticePolicy = new ABJ_404_Solution_ViewBuildHostEnvironmentNoticePolicy($host);
-        $this->logger = $host->logger();
+        $this->logger = $host->dataBoundary()->logger();
     }
 
     /** @return string */

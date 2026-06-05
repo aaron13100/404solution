@@ -67,9 +67,9 @@ class ABJ_404_Solution_ViewBuildOptionWriteVerifier extends ABJ_404_Solution_Vie
         // Other high-stakes keys (s2/s4/s5_high_water) stay silent on the
         // first miss to avoid log volume; they still hit the persistent-
         // mismatch WARN further down if the retry also fails.
-        if ($this->isCurrentStageOptionName($optionName) && is_object($this->host->logger())
-                && method_exists($this->host->logger(), 'warn')) {
-            $this->host->logger()->warn(sprintf(
+        if ($this->isCurrentStageOptionName($optionName) && is_object($this->host->dataBoundary()->logger())
+                && method_exists($this->host->dataBoundary()->logger(), 'warn')) {
+            $this->host->dataBoundary()->logger()->warn(sprintf(
                 '[staged] option write incoherent (first read-back) on %s: prior=%s new=%s observed=%s; flushing cache and retrying',
                 $optionName,
                 is_scalar($prior)    ? (string)$prior    : '<non-scalar>',
@@ -109,7 +109,7 @@ class ABJ_404_Solution_ViewBuildOptionWriteVerifier extends ABJ_404_Solution_Vie
                 86400
             );
         }
-        if (is_object($this->host->logger())) {
+        if (is_object($this->host->dataBoundary()->logger())) {
             $message = sprintf(
                 '[staged] option write incoherent on this host: %s expected=%s observed=%s '
                 . '(persistent object cache likely returning stale values; '
@@ -118,10 +118,10 @@ class ABJ_404_Solution_ViewBuildOptionWriteVerifier extends ABJ_404_Solution_Vie
                 is_scalar($expected) ? (string)$expected : '<non-scalar>',
                 is_scalar($retry)    ? (string)$retry    : '<non-scalar>'
             );
-            if (method_exists($this->host->logger(), 'warn')) {
-                $this->host->logger()->warn($message);
-            } elseif (method_exists($this->host->logger(), 'debugMessage')) {
-                $this->host->logger()->debugMessage($message);
+            if (method_exists($this->host->dataBoundary()->logger(), 'warn')) {
+                $this->host->dataBoundary()->logger()->warn($message);
+            } elseif (method_exists($this->host->dataBoundary()->logger(), 'debugMessage')) {
+                $this->host->dataBoundary()->logger()->debugMessage($message);
             }
         }
         return false;

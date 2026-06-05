@@ -19,13 +19,13 @@ class ABJ_404_Solution_ViewBuildAdvanceCoordinator extends ABJ_404_Solution_View
     public function advanceViewBuildOnce(bool $forceRebuild = false): array {
         if ($forceRebuild) {
             ABJ_404_Solution_ViewBuildStagePipeline::resetViewBuildOncePerRequestGuard();
-            if ($this->host->rebuildHealth() instanceof ABJ_404_Solution_RebuildHealthState) {
-                $this->host->rebuildHealth()->reset();
-                $this->host->rebuildHealth()->acquireTrialToken();
+            if ($this->host->dataBoundary()->rebuildHealth() instanceof ABJ_404_Solution_RebuildHealthState) {
+                $this->host->dataBoundary()->rebuildHealth()->reset();
+                $this->host->dataBoundary()->rebuildHealth()->acquireTrialToken();
             }
-        } elseif ($this->host->rebuildHealth() instanceof ABJ_404_Solution_RebuildHealthState
-                && !$this->host->rebuildHealth()->beginExpensiveRebuildAttempt()) {
-            $this->host->logger()->debugMessage(
+        } elseif ($this->host->dataBoundary()->rebuildHealth() instanceof ABJ_404_Solution_RebuildHealthState
+                && !$this->host->dataBoundary()->rebuildHealth()->beginExpensiveRebuildAttempt()) {
+            $this->host->dataBoundary()->logger()->debugMessage(
                 '[staged] advanceViewBuildOnce: skipped because rebuild health gate is closed.'
             );
             return array(
@@ -34,22 +34,22 @@ class ABJ_404_Solution_ViewBuildAdvanceCoordinator extends ABJ_404_Solution_View
                 'healthGateClosed' => true,
             );
         }
-        if (!$forceRebuild && $this->host->viewDoneState()->viewDoneIsServeable()) {
-            return $this->host->readGateway()->getViewBuildProgress();
+        if (!$forceRebuild && $this->host->stageServices()->viewDoneState()->viewDoneIsServeable()) {
+            return $this->host->recoveryServices()->readGateway()->getViewBuildProgress();
         }
         $lockTimeoutSeconds = $forceRebuild ? 10 : 0;
-        if (!$this->host->lockCoordinator()->acquireViewBuildLock($lockTimeoutSeconds)) {
-            $this->host->logger()->debugMessage(sprintf(
+        if (!$this->host->recoveryServices()->lockCoordinator()->acquireViewBuildLock($lockTimeoutSeconds)) {
+            $this->host->dataBoundary()->logger()->debugMessage(sprintf(
                 '[staged] advanceViewBuildOnce: lock not acquired '
                 . '(forceRebuild=%s, waited up to %ds)',
                 $forceRebuild ? 'true' : 'false', $lockTimeoutSeconds
             ));
-            $progress = $this->host->readGateway()->getViewBuildProgress();
+            $progress = $this->host->recoveryServices()->readGateway()->getViewBuildProgress();
             $stage = isset($progress['stage']) && is_scalar($progress['stage']) ? (int)$progress['stage'] : 0;
             if ($stage === 0) {
                 $progress['stage'] = max(
                     0,
-                    $this->host->progressOptions()->readProgressOption('last_completed_stage', 0)
+                    $this->host->stageServices()->progressOptions()->readProgressOption('last_completed_stage', 0)
                 );
                 $progress['progress_text'] = $progress['stage'] > 0
                     ? ('stage ' . $progress['stage'] . '/11')
@@ -60,26 +60,26 @@ class ABJ_404_Solution_ViewBuildAdvanceCoordinator extends ABJ_404_Solution_View
         }
         try {
             if ($forceRebuild) {
-                $this->host->forceRestart()->runForceRestartCleanupInsideLock();
-                $this->host->hostFailureState()->clearStagedBuildDegradedState();
+                $this->host->recoveryServices()->forceRestart()->runForceRestartCleanupInsideLock();
+                $this->host->recoveryServices()->hostFailureState()->clearStagedBuildDegradedState();
             } else {
-                $this->host->viewDoneState()->invalidateViewDoneServeableCache();
-                if ($this->host->viewDoneState()->viewDoneIsServeable()) {
-                    return $this->host->readGateway()->getViewBuildProgress();
+                $this->host->stageServices()->viewDoneState()->invalidateViewDoneServeableCache();
+                if ($this->host->stageServices()->viewDoneState()->viewDoneIsServeable()) {
+                    return $this->host->recoveryServices()->readGateway()->getViewBuildProgress();
                 }
-                $reconcileResult = $this->host->rebuildReconcile()->reconcileStagedTablesAtRunnerStartup();
+                $reconcileResult = $this->host->recoveryServices()->rebuildReconcile()->reconcileStagedTablesAtRunnerStartup();
                 if ($reconcileResult === 'promoted') {
-                    return $this->host->readGateway()->getViewBuildProgress();
+                    return $this->host->recoveryServices()->readGateway()->getViewBuildProgress();
                 }
             }
-            $isComplete = $this->host->stagePipeline()->runStagedBuildOnce();
+            $isComplete = $this->host->stageServices()->stagePipeline()->runStagedBuildOnce();
         } finally {
-            $this->host->lockCoordinator()->releaseViewBuildLock();
+            $this->host->recoveryServices()->lockCoordinator()->releaseViewBuildLock();
         }
         if ($isComplete) {
-            return $this->host->readGateway()->getViewBuildProgress();
+            return $this->host->recoveryServices()->readGateway()->getViewBuildProgress();
         }
-        $this->host->cronScheduler()->scheduleViewDoneRebuild();
-        return $this->host->readGateway()->getViewBuildProgress();
+        $this->host->recoveryServices()->cronScheduler()->scheduleViewDoneRebuild();
+        return $this->host->recoveryServices()->readGateway()->getViewBuildProgress();
     }
 }

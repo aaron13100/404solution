@@ -24,7 +24,7 @@ if (!defined('ABSPATH')) {
  * Does NOT own:
  *  - the staged-build state machine (ViewBuildStagePipeline);
  *  - lock primitives, host probes, stage callbacks (sibling collaborators);
- *  - viewDoneTableExists / viewDoneHasRows / viewDoneDataBuiltAt — these
+ *  - viewDoneTableExists / viewDoneHasRows / viewDoneDataBuiltAt. These
  *    are lower-level table/column probes that live on ViewBuildHelpers and
  *    are reached through the orchestrator's __call.
  *
@@ -48,7 +48,7 @@ class ABJ_404_Solution_ViewDoneState extends ABJ_404_Solution_ViewBuildCollabora
 
     /** @return string */
     public function viewDoneFreshnessOptionName(): string {
-        return $this->host->getLowercasePrefix() . 'abj404_view_done_built_at';
+        return $this->host->dataBoundary()->getLowercasePrefix() . 'abj404_view_done_built_at';
     }
 
     /** @return int Unix timestamp of last successful build, or 0 if missing. */
@@ -97,7 +97,7 @@ class ABJ_404_Solution_ViewDoneState extends ABJ_404_Solution_ViewBuildCollabora
         if ($this->viewDoneIsServeableCache !== null) {
             return $this->viewDoneIsServeableCache;
         }
-        if (!$this->host->stateProbe()->viewDoneTableExists()) {
+        if (!$this->host->stageServices()->stateProbe()->viewDoneTableExists()) {
             $this->viewDoneIsServeableCache = false;
             return false;
         }
@@ -121,11 +121,11 @@ class ABJ_404_Solution_ViewDoneState extends ABJ_404_Solution_ViewBuildCollabora
         // another advance, and the cycle repeats with no exit.
         // data_built_at distinguishes "build has never completed" from
         // "build completed and the dataset is genuinely empty".
-        if ($this->host->stateProbe()->viewDoneHasRows()) {
+        if ($this->host->stageServices()->stateProbe()->viewDoneHasRows()) {
             $this->viewDoneIsServeableCache = true;
             return true;
         }
-        if ($this->host->stateProbe()->viewDoneDataBuiltAt() > 0) {
+        if ($this->host->stageServices()->stateProbe()->viewDoneDataBuiltAt() > 0) {
             $this->viewDoneIsServeableCache = true;
             return true;
         }
@@ -163,13 +163,13 @@ class ABJ_404_Solution_ViewDoneState extends ABJ_404_Solution_ViewBuildCollabora
      */
     public function markViewDoneBuildCompleted(): void {
         if (function_exists('update_option')) {
-            // clock() is an internal orchestrator dependency exposed through
-            // the explicit collaborator operation map.
-            $now = $this->host->clock()->now();
+            // clock() is an internal infrastructure dependency exposed
+            // through the data boundary.
+            $now = $this->host->dataBoundary()->clock()->now();
             update_option($this->viewDoneFreshnessOptionName(), $now, false);
-            update_option($this->host->stateProbe()->viewDoneDataBuiltAtOptionName(), $now, false);
+            update_option($this->host->stageServices()->stateProbe()->viewDoneDataBuiltAtOptionName(), $now, false);
         }
-        $this->host->stateProbe()->clearViewDoneHardStaleNotice();
+        $this->host->stageServices()->stateProbe()->clearViewDoneHardStaleNotice();
         $this->invalidateViewDoneServeableCache();
     }
 }

@@ -68,7 +68,7 @@ class ABJ_404_Solution_ViewBuildStageLogPresenter extends ABJ_404_Solution_ViewB
             $markerDetail = $this->runtimeState->lastBatchProgressDetail() . ', ' . $markerDetail;
         }
         $this->markBuildStage($stageKey, $markerDetail);
-        $this->host->logger()->debugMessage(sprintf(
+        $this->host->dataBoundary()->logger()->debugMessage(sprintf(
             '[staged] build stage %d/11 %s %s in %d ms',
             $stageNumber,
             $stageKey,

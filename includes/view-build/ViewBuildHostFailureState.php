@@ -20,7 +20,7 @@ class ABJ_404_Solution_ViewBuildHostFailureState extends ABJ_404_Solution_ViewBu
      * @return string Site-prefixed option name for the stage skip marker.
      */
     public function stageSkipOptionName(int $stageNumber): string {
-        return $this->host->getLowercasePrefix() . 'abj404_view_build_s' . $stageNumber . '_skipped';
+        return $this->host->dataBoundary()->getLowercasePrefix() . 'abj404_view_build_s' . $stageNumber . '_skipped';
     }
 
     /**
@@ -46,10 +46,10 @@ class ABJ_404_Solution_ViewBuildHostFailureState extends ABJ_404_Solution_ViewBu
      */
     public function markStageSkippedForHostFailure(int $stageNumber, string $errorText): void {
         if (function_exists('update_option')) {
-            update_option($this->stageSkipOptionName($stageNumber), $this->host->clock()->now(), false);
+            update_option($this->stageSkipOptionName($stageNumber), $this->host->dataBoundary()->clock()->now(), false);
         }
-        $this->host->hostFailureNotices()->setStagedBuildDegradedNotice($stageNumber, 'skipped', $errorText);
-        $this->host->logger()->warn(sprintf(
+        $this->host->recoveryServices()->hostFailureNotices()->setStagedBuildDegradedNotice($stageNumber, 'skipped', $errorText);
+        $this->host->dataBoundary()->logger()->warn(sprintf(
             '[staged] stage %d permanently skipped (host-side environmental '
             . 'constraint, will not retry until force rebuild). Reason: %s',
             $stageNumber,
@@ -72,13 +72,13 @@ class ABJ_404_Solution_ViewBuildHostFailureState extends ABJ_404_Solution_ViewBu
                 array(
                     'stage' => $stageNumber,
                     'error' => $errorText,
-                    'when'  => $this->host->clock()->now(),
+                    'when'  => $this->host->dataBoundary()->clock()->now(),
                 ),
                 ABJ_404_Solution_ViewBuildConfig::VIEW_BUILD_DEGRADED_NOTICE_TTL_SECONDS
             );
         }
-        $this->host->hostFailureNotices()->setStagedBuildDegradedNotice($stageNumber, 'halted', $errorText);
-        $this->host->logger()->warn(sprintf(
+        $this->host->recoveryServices()->hostFailureNotices()->setStagedBuildDegradedNotice($stageNumber, 'halted', $errorText);
+        $this->host->dataBoundary()->logger()->warn(sprintf(
             '[staged] critical stage %d halted (host-side environmental '
             . 'constraint, will not retry until force rebuild or 24h dedup '
             . 'window expires). Reason: %s',
@@ -120,6 +120,6 @@ class ABJ_404_Solution_ViewBuildHostFailureState extends ABJ_404_Solution_ViewBu
         }
         // A force rebuild explicitly restarts the pipeline; the captured
         // prefix is per-build, not per-host, so wipe it so fresh S1 recaptures.
-        $this->host->prefixDriftGuard()->clearPrefixAtStageOne();
+        $this->host->stageServices()->prefixDriftGuard()->clearPrefixAtStageOne();
     }
 }

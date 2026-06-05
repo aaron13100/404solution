@@ -85,11 +85,11 @@ class ABJ_404_Solution_ViewBuildPageLoadFallback extends ABJ_404_Solution_ViewBu
     public function runPageLoadFallbackAdvance(): array {
         // Cron is healthy: nothing for the fallback to do. Free check
         // (one wp_get_ready_cron_jobs call) so we can run it first.
-        if ($this->host->cronScheduler()->getCronStuckHours() < 24) {
+        if ($this->host->recoveryServices()->cronScheduler()->getCronStuckHours() < 24) {
             return array(
                 'ran' => false,
                 'reason' => 'cron_healthy',
-                'progress' => $this->host->readGateway()->getViewBuildProgress(),
+                'progress' => $this->host->recoveryServices()->readGateway()->getViewBuildProgress(),
             );
         }
 
@@ -97,11 +97,11 @@ class ABJ_404_Solution_ViewBuildPageLoadFallback extends ABJ_404_Solution_ViewBu
         // the fallback's steady-state cost at zero on hosts that recover,
         // which is the desirable shape (admin returns to a working page
         // without page-load latency).
-        if ($this->host->viewDoneState()->viewDoneIsServeable()) {
+        if ($this->host->stageServices()->viewDoneState()->viewDoneIsServeable()) {
             return array(
                 'ran' => false,
                 'reason' => 'not_needed',
-                'progress' => $this->host->readGateway()->getViewBuildProgress(),
+                'progress' => $this->host->recoveryServices()->readGateway()->getViewBuildProgress(),
             );
         }
 
@@ -117,7 +117,7 @@ class ABJ_404_Solution_ViewBuildPageLoadFallback extends ABJ_404_Solution_ViewBu
             return array(
                 'ran' => false,
                 'reason' => 'gate_active',
-                'progress' => $this->host->readGateway()->getViewBuildProgress(),
+                'progress' => $this->host->recoveryServices()->readGateway()->getViewBuildProgress(),
             );
         }
         if ($haveTransientApi) {
@@ -157,7 +157,7 @@ class ABJ_404_Solution_ViewBuildPageLoadFallback extends ABJ_404_Solution_ViewBu
             // separate gesture that intentionally clears degraded gates
             // and waits 30s for the lock. Page-load fallback should never
             // escalate to those semantics.
-            $progress = $this->host->advanceCoordinator()->advanceViewBuildOnce(false);
+            $progress = $this->host->recoveryServices()->advanceCoordinator()->advanceViewBuildOnce(false);
         } finally {
             if ($filterRegistered && function_exists('remove_filter')) {
                 remove_filter('abj404_view_build_per_stage_budget_seconds', $budgetFilter, 100);

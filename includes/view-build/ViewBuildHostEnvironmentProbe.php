@@ -29,7 +29,7 @@ class ABJ_404_Solution_ViewBuildHostEnvironmentProbe extends ABJ_404_Solution_Vi
     public function __construct(ABJ_404_Solution_ViewBuildCollaborationContext $host) {
         parent::__construct($host);
         $this->noticePolicy = new ABJ_404_Solution_ViewBuildHostEnvironmentNoticePolicy($host);
-        $this->logger = $host->logger();
+        $this->logger = $host->dataBoundary()->logger();
     }
 
     /** @return string */
@@ -173,7 +173,7 @@ class ABJ_404_Solution_ViewBuildHostEnvironmentProbe extends ABJ_404_Solution_Vi
         if (function_exists('delete_option')) {
             delete_option($this->phpEnvironmentProbeOptionName());
         }
-        $this->host->filesystemEnvironmentProbe()->clearFilesystemEnvironmentProbeCache();
+        $this->host->recoveryServices()->filesystemEnvironmentProbe()->clearFilesystemEnvironmentProbeCache();
         $this->noticePolicy->clearPhpAndFilesystemEnvironmentNotices();
     }
 }

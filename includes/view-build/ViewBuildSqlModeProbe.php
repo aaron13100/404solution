@@ -151,7 +151,7 @@ class ABJ_404_Solution_ViewBuildSqlModeProbe extends ABJ_404_Solution_ViewBuildC
         $packet = (int)$result['max_allowed_packet'];
         if ($packet > 0 && $packet < 1048576) {
             $result['truncate_url_to'] = max(255, (int)floor($packet * 0.4));
-            $this->host->logger()->warn(sprintf(
+            $this->host->dataBoundary()->logger()->warn(sprintf(
                 '[staged] max_allowed_packet=%d (<1MB); URL inputs will be truncated to %d chars to leave room for SQL framing.',
                 $packet, $result['truncate_url_to']
             ));
@@ -167,12 +167,12 @@ class ABJ_404_Solution_ViewBuildSqlModeProbe extends ABJ_404_Solution_ViewBuildC
             $result['adjusted'] = $relaxed === true;
             $result['adjustment_denied'] = $relaxed === false;
             if ($result['adjustment_denied']) {
-                $this->host->logger()->warn(sprintf(
+                $this->host->dataBoundary()->logger()->warn(sprintf(
                     '[staged] sql_mode contains STRICT_TRANS_TABLES / ONLY_FULL_GROUP_BY (%s) and the relax attempt was denied. The S2 INSERT is strict-safe via REGEXP-guarded CAST; build will proceed.',
                     $result['sql_mode']
                 ));
             } elseif ($result['adjusted']) {
-                $this->host->logger()->infoMessage(sprintf(
+                $this->host->dataBoundary()->logger()->infoMessage(sprintf(
                     '[staged] Relaxed sql_mode for build connection (was: %s).',
                     $result['sql_mode']
                 ));
@@ -273,6 +273,6 @@ class ABJ_404_Solution_ViewBuildSqlModeProbe extends ABJ_404_Solution_ViewBuildC
         // shares the same lifecycle as the sql_mode probe: a fresh build must
         // re-evaluate session config in case the host was tuned between runs.
         // Lives on the host-environment probe collaborator.
-        $this->host->sessionVariablesProbe()->clearSessionVariablesProbeCache();
+        $this->host->recoveryServices()->sessionVariablesProbe()->clearSessionVariablesProbeCache();
     }
 }

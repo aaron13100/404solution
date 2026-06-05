@@ -42,13 +42,13 @@ class ABJ_404_Solution_ViewBuildStageMarkers extends ABJ_404_Solution_ViewBuildC
     public function markViewBuildStageStarted(int $stageNumber, string $stageKey): void {
         $now = time();
         $this->runtimeState->resetBatchProgressDetail();
-        if ($this->host->progressOptions()->readProgressOption('started_at', 0) === 0) {
-            $this->host->progressOptions()->writeProgressOption('started_at', $now);
+        if ($this->host->stageServices()->progressOptions()->readProgressOption('started_at', 0) === 0) {
+            $this->host->stageServices()->progressOptions()->writeProgressOption('started_at', $now);
         }
-        $this->host->progressOptions()->writeProgressOption('last_started_stage', $stageNumber);
-        $this->host->progressOptions()->writeProgressOption('last_started_at', $now);
+        $this->host->stageServices()->progressOptions()->writeProgressOption('last_started_stage', $stageNumber);
+        $this->host->stageServices()->progressOptions()->writeProgressOption('last_started_at', $now);
         $this->runtimeState->openStageForShutdown($stageNumber, $stageKey);
-        $this->host->logger()->debugMessage(sprintf(
+        $this->host->dataBoundary()->logger()->debugMessage(sprintf(
             '[staged] build stage %d/11 %s starting',
             $stageNumber,
             $stageKey
@@ -60,7 +60,7 @@ class ABJ_404_Solution_ViewBuildStageMarkers extends ABJ_404_Solution_ViewBuildC
      * @return void
      */
     public function markViewBuildStageCompleted(int $stageNumber): void {
-        $this->host->progressOptions()->writeProgressOption('last_completed_stage', $stageNumber);
-        $this->host->progressOptions()->writeProgressOption('last_completed_at', time());
+        $this->host->stageServices()->progressOptions()->writeProgressOption('last_completed_stage', $stageNumber);
+        $this->host->stageServices()->progressOptions()->writeProgressOption('last_completed_at', time());
     }
 }

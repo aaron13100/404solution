@@ -122,7 +122,7 @@ class ABJ_404_Solution_ViewBuildHostEnvironmentNoticePolicy extends ABJ_404_Solu
 
     /** @return int */
     private function now(): int {
-        $clock = $this->host->clock();
+        $clock = $this->host->dataBoundary()->clock();
         if (!$clock instanceof ABJ_404_Solution_Clock) {
             throw new \RuntimeException('ViewBuildHostEnvironmentNoticePolicy requires ABJ_404_Solution_Clock from host.');
         }

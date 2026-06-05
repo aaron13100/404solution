@@ -6,6 +6,9 @@ if (!defined('ABSPATH')) {
 }
 
 require_once __DIR__ . '/../view-build/ViewBuildCollaborator.php';
+require_once __DIR__ . '/../view-build/ViewBuildDataBoundary.php';
+require_once __DIR__ . '/../view-build/ViewBuildStageServices.php';
+require_once __DIR__ . '/../view-build/ViewBuildRecoveryServices.php';
 require_once __DIR__ . '/../view-build/ViewBuildCollaborationContext.php';
 require_once __DIR__ . '/../view-build/ViewQueriesStaged.php';
 require_once __DIR__ . '/../view-build/ViewBuildStageCallbacks.php';

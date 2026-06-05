@@ -25,9 +25,9 @@ class ABJ_404_Solution_ViewBuildCronScheduler extends ABJ_404_Solution_ViewBuild
         if (!function_exists('wp_next_scheduled') || !function_exists('wp_schedule_single_event')) {
             return;
         }
-        if ($this->host->rebuildHealth() instanceof ABJ_404_Solution_RebuildHealthState
-                && !$this->host->rebuildHealth()->mayStartExpensiveRebuild()) {
-            $this->host->logger()->debugMessage(__FUNCTION__ . ' skipped because rebuild health gate is closed.');
+        if ($this->host->dataBoundary()->rebuildHealth() instanceof ABJ_404_Solution_RebuildHealthState
+                && !$this->host->dataBoundary()->rebuildHealth()->mayStartExpensiveRebuild()) {
+            $this->host->dataBoundary()->logger()->debugMessage(__FUNCTION__ . ' skipped because rebuild health gate is closed.');
             return;
         }
         $hook = 'abj404_rebuildViewDone';
@@ -72,7 +72,7 @@ class ABJ_404_Solution_ViewBuildCronScheduler extends ABJ_404_Solution_ViewBuild
         if (function_exists('get_transient') && get_transient($key) !== false) {
             return;
         }
-        $template = $this->host->stateProbe()->localizeOrDefaultViewBuildNotice('WordPress cron does not appear to be running. The earliest overdue '
+        $template = $this->host->stageServices()->stateProbe()->localizeOrDefaultViewBuildNotice('WordPress cron does not appear to be running. The earliest overdue '
             . 'cron event has been waiting at least %d hours, so cron-dependent '
             . 'plugin features (staged view-build, daily cleanup, log updates, '
             . 'digest emails) are not advancing. To resolve: if DISABLE_WP_CRON '
@@ -147,7 +147,7 @@ class ABJ_404_Solution_ViewBuildCronScheduler extends ABJ_404_Solution_ViewBuild
         }
         $payload = array(
             'type'         => 'view_build_schedule_failed',
-            'message'      => $this->host->stateProbe()->localizeOrDefaultViewBuildNotice($message),
+            'message'      => $this->host->stageServices()->stateProbe()->localizeOrDefaultViewBuildNotice($message),
             'timestamp'    => time(),
             'error_string' => $detail,
         );

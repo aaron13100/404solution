@@ -31,7 +31,7 @@ class ABJ_404_Solution_ViewBuildSessionVariablesProbe extends ABJ_404_Solution_V
     ) {
         parent::__construct($host);
         $this->noticePolicy = new ABJ_404_Solution_ViewBuildHostEnvironmentNoticePolicy($host);
-        $this->logger = $host->logger();
+        $this->logger = $host->dataBoundary()->logger();
         $this->repository = $repository ?: new ABJ_404_Solution_ViewBuildSessionVariablesRepository($this->logger);
         $this->warningClassifier = $warningClassifier ?: new ABJ_404_Solution_ViewBuildSessionVariableWarningClassifier();
     }

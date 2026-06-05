@@ -113,29 +113,29 @@ class ABJ_404_Solution_ViewBuildForceRestart extends ABJ_404_Solution_ViewBuildC
     public function forceRestartViewBuild(int $lockTimeoutSeconds = 10): bool {
         // (1) Acquire runner lock. Returns false if a sibling worker (cron
         //     tick, admin form save, REST PUT) holds it -- caller retries.
-        if (!$this->host->lockCoordinator()->acquireViewBuildLock(max(0, $lockTimeoutSeconds))) {
+        if (!$this->host->recoveryServices()->lockCoordinator()->acquireViewBuildLock(max(0, $lockTimeoutSeconds))) {
             return false;
         }
 
         try {
             $this->runForceRestartCleanupInsideLock();
-            if ($this->host->rebuildHealth() instanceof ABJ_404_Solution_RebuildHealthState) {
-                $this->host->rebuildHealth()->reset();
-                $this->host->rebuildHealth()->acquireTrialToken();
+            if ($this->host->dataBoundary()->rebuildHealth() instanceof ABJ_404_Solution_RebuildHealthState) {
+                $this->host->dataBoundary()->rebuildHealth()->reset();
+                $this->host->dataBoundary()->rebuildHealth()->acquireTrialToken();
             }
         } finally {
             // Release the lock BEFORE scheduling the next tick so the
             // cron callback can acquire cleanly. A leaked lock would
             // stall every subsequent build attempt until the
             // session-scoped GET_LOCK times out.
-            $this->host->lockCoordinator()->releaseViewBuildLock();
+            $this->host->recoveryServices()->lockCoordinator()->releaseViewBuildLock();
         }
 
         // (7) Schedule S0/S1 immediately. scheduleViewDoneRebuild() is
         //     idempotent (wp_next_scheduled short-circuit) so callers
         //     can chain or replay safely. Cron tick will drive S0 fresh
         //     cleanup -> S1 prefix capture -> S2..S11.
-        $this->host->cronScheduler()->scheduleViewDoneRebuild();
+        $this->host->recoveryServices()->cronScheduler()->scheduleViewDoneRebuild();
 
         return true;
     }
@@ -165,16 +165,16 @@ class ABJ_404_Solution_ViewBuildForceRestart extends ABJ_404_Solution_ViewBuildC
         //     Gated by SHOW TABLES so a steady-state force-rebuild
         //     after a clean S11 (no buffer present) does not pile
         //     unconditional DDL on the hot path.
-        $this->host->stageCallbacks()->dropTransientBuffersIfPresent();
+        $this->host->stageServices()->stageCallbacks()->dropTransientBuffersIfPresent();
 
         // (3) Clear runner progress options. The helper owns the
         //     registry + prefix-at-S1 capture + sql_mode + php-env
         //     probe-cache clears as one atomic fresh-start step.
-        $this->host->progressOptions()->clearAllProgressOptions();
+        $this->host->stageServices()->progressOptions()->clearAllProgressOptions();
 
         // Reset per-request serveability cache so a subsequent
         // viewDoneIsServeable() inside this request reflects the
         // post-cleanup state rather than a stale-cached value.
-        $this->host->viewDoneState()->invalidateViewDoneServeableCache();
+        $this->host->stageServices()->viewDoneState()->invalidateViewDoneServeableCache();
     }
 }

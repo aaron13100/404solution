@@ -15,9 +15,9 @@ if (!defined('ABSPATH')) {
  *   - Progress checkpoint persistence: ABJ_404_Solution_ViewBuildProgressOptions
  *   - Staged SQL execution: ABJ_404_Solution_ViewBuildStagedSqlExecutor
  *
- * All three classes are registered as ViewBuildOrchestrator collaborators.
+ * All three classes are reached through the context's stage-service bundle.
  * stagedTableExists() and viewDoneHasRows() route their SHOW TABLES /
- * SELECT 1 queries through queryAndGetResults() on the orchestrator host.
+ * SELECT 1 queries through the data boundary.
  *
  */
 class ABJ_404_Solution_ViewBuildStateProbe extends ABJ_404_Solution_ViewBuildCollaborator {
@@ -31,15 +31,15 @@ class ABJ_404_Solution_ViewBuildStateProbe extends ABJ_404_Solution_ViewBuildCol
      * @return string  e.g. "stage 2/11, 3000/12000 rows" or "not yet started".
      */
     public function describeBuildProgressForNotice(): string {
-        $stage = $this->host->progressOptions()->readProgressOption('current_stage', 0);
+        $stage = $this->host->stageServices()->progressOptions()->readProgressOption('current_stage', 0);
         if ($stage <= 0) {
             return 'not yet started';
         }
         $parts = array('stage ' . $stage . '/11');
         if ($stage < 2) {
             // S2 is the heaviest; surface buffer/redirect counts.
-            $copied = $this->host->batchExecutor()->countViewBuildRows();
-            $total = $this->host->batchExecutor()->countLiveRedirects();
+            $copied = $this->host->stageServices()->batchExecutor()->countViewBuildRows();
+            $total = $this->host->stageServices()->batchExecutor()->countLiveRedirects();
             if ($total > 0) {
                 $parts[] = $copied . '/' . $total . ' rows';
             }
@@ -49,7 +49,7 @@ class ABJ_404_Solution_ViewBuildStateProbe extends ABJ_404_Solution_ViewBuildCol
 
     /** @return bool */
     public function viewDoneTableExists(): bool {
-        return $this->stagedTableExists($this->host->stagePipeline()->viewDoneTableName());
+        return $this->stagedTableExists($this->host->stageServices()->stagePipeline()->viewDoneTableName());
     }
 
     /**
@@ -69,8 +69,8 @@ class ABJ_404_Solution_ViewBuildStateProbe extends ABJ_404_Solution_ViewBuildCol
         if (!$this->viewDoneTableExists()) {
             return false;
         }
-        $sql = 'SELECT 1 FROM `' . $this->host->stagePipeline()->viewDoneTableName() . '` LIMIT 1';
-        $result = $this->host->queryAndGetResults($sql, array('log_errors' => false));
+        $sql = 'SELECT 1 FROM `' . $this->host->stageServices()->stagePipeline()->viewDoneTableName() . '` LIMIT 1';
+        $result = $this->host->dataBoundary()->queryAndGetResults($sql, array('log_errors' => false));
         $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
         return !empty($rows);
     }
@@ -91,7 +91,7 @@ class ABJ_404_Solution_ViewBuildStateProbe extends ABJ_404_Solution_ViewBuildCol
      * @return string
      */
     public function viewDoneDataBuiltAtOptionName(): string {
-        return $this->host->getLowercasePrefix() . 'abj404_view_done_data_built_at';
+        return $this->host->dataBoundary()->getLowercasePrefix() . 'abj404_view_done_data_built_at';
     }
 
     /**
@@ -198,7 +198,7 @@ class ABJ_404_Solution_ViewBuildStateProbe extends ABJ_404_Solution_ViewBuildCol
         if (!is_string($sql) || $sql === '') {
             return false;
         }
-        $result = $this->host->queryAndGetResults($sql, array('log_errors' => false));
+        $result = $this->host->dataBoundary()->queryAndGetResults($sql, array('log_errors' => false));
         $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
         if (empty($rows)) {
             return false;
@@ -215,7 +215,7 @@ class ABJ_404_Solution_ViewBuildStateProbe extends ABJ_404_Solution_ViewBuildCol
         if (!function_exists('get_option')) {
             return false;
         }
-        $built = get_option($this->host->viewDoneState()->viewDoneFreshnessOptionName(), 0);
+        $built = get_option($this->host->stageServices()->viewDoneState()->viewDoneFreshnessOptionName(), 0);
         $builtAt = is_scalar($built) ? intval($built) : 0;
         if ($builtAt <= 0) {
             return false;
@@ -229,7 +229,7 @@ class ABJ_404_Solution_ViewBuildStateProbe extends ABJ_404_Solution_ViewBuildCol
      * otherwise return the raw English. Kept local to the state-probe
      * collaborator (rather than DataAccess.php's private localizeOrDefault())
      * so the sibling lock-and-cron collaborator can reach it via $this-> on
-     * the orchestrator host without exposing the private DataAccess method.
+     * the data boundary without exposing the private DataAccess method.
      *
      * @param string $text
      * @return string

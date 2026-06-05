@@ -32,7 +32,7 @@ class ABJ_404_Solution_ViewBuildHostFailureNotices extends ABJ_404_Solution_View
             'kind'    => $kind,
             'error'   => $errorText,
             'message' => $this->describeDegradedNotice($stageNumber, $kind, $errorText),
-            'when'    => $this->host->clock()->now(),
+            'when'    => $this->host->dataBoundary()->clock()->now(),
         );
         if (function_exists('set_transient')) {
             // allow-cache-empty: degraded-state notice marker intentionally stores diagnostics, not query data.
@@ -59,7 +59,7 @@ class ABJ_404_Solution_ViewBuildHostFailureNotices extends ABJ_404_Solution_View
             'scenario' => $scenarioKey,
             'kind'     => 'halted',
             'error'    => $errorText,
-            'when'     => $this->host->clock()->now(),
+            'when'     => $this->host->dataBoundary()->clock()->now(),
         );
         if (function_exists('set_transient')) {
             // allow-cache-empty: scenario halt marker intentionally stores diagnostics, not query data.

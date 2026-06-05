@@ -33,19 +33,19 @@ class ABJ_404_Solution_ViewBuildBatchExecutor extends ABJ_404_Solution_ViewBuild
      *              false when the per-stage budget was exhausted mid-stage.
      */
     public function stageInsertRedirectsBatched(): bool {
-        $this->host->stageLogPresenter()->markBuildStage('staged_build_s2_insert');
-        $deadline = microtime(true) + $this->host->stagePipeline()->viewBuildPerStageBudgetSeconds();
+        $this->host->stageServices()->stageLogPresenter()->markBuildStage('staged_build_s2_insert');
+        $deadline = microtime(true) + $this->host->stageServices()->stagePipeline()->viewBuildPerStageBudgetSeconds();
         // Pre-flight check uses the SQL hint (smaller than the wall-clock
         // budget by design), not the budget itself. This is the worst-case
         // time a single batch can take before SET STATEMENT max_statement_time
         // fires. The budget is a loop-level wall clock; a single batch never
         // takes a full budget to run.
-        $perQueryLimit = max(1.0, (float)$this->host->adaptive()->intelligentStagedQueryTimeoutSeconds());
+        $perQueryLimit = max(1.0, (float)$this->host->stageServices()->adaptive()->intelligentStagedQueryTimeoutSeconds());
 
         $totalCount = $this->countLiveRedirects();
         if ($totalCount <= 0) {
             // Empty redirects table; nothing to copy.
-            $this->host->progressOptions()->writeProgressOption('s2_high_water', 0);
+            $this->host->stageServices()->progressOptions()->writeProgressOption('s2_high_water', 0);
             return true;
         }
 
@@ -58,7 +58,7 @@ class ABJ_404_Solution_ViewBuildBatchExecutor extends ABJ_404_Solution_ViewBuild
             // Wall-clock yield (Path A): per-stage budget exhausted. NOT a
             // batch-size problem; do not shrink.
             if (microtime(true) >= $deadline) {
-                $this->host->stageLogPresenter()->markBuildStage('staged_build_s2_insert',
+                $this->host->stageServices()->stageLogPresenter()->markBuildStage('staged_build_s2_insert',
                     'batch ' . $this->humanBatchProgress($copiedSoFar, $totalCount) . ' (yielded)');
                 return false;
             }
@@ -76,13 +76,13 @@ class ABJ_404_Solution_ViewBuildBatchExecutor extends ABJ_404_Solution_ViewBuild
             // first-batch escape, the build would yield on every request
             // without ever inserting a row -- exactly the "stuck at stage
             // 1/11" symptom that stranded large-site installs.
-            if ($batchNumber > 0 && $this->host->adaptive()->phpTimeRemainingSeconds() < $perQueryLimit + 1.0) {
-                $this->host->stageLogPresenter()->markBuildStage('staged_build_s2_insert',
+            if ($batchNumber > 0 && $this->host->stageServices()->adaptive()->phpTimeRemainingSeconds() < $perQueryLimit + 1.0) {
+                $this->host->stageServices()->stageLogPresenter()->markBuildStage('staged_build_s2_insert',
                     'batch ' . $this->humanBatchProgress($copiedSoFar, $totalCount) . ' (yielded; tight time)');
                 return false;
             }
 
-            $batchSize = $this->host->adaptive()->viewBuildBatchSizeForStage('s2_batch_size');
+            $batchSize = $this->host->stageServices()->adaptive()->viewBuildBatchSizeForStage('s2_batch_size');
             $batchNumber++;
             $loBound = $this->maxBuildBufferId();
             $beforeMax = $loBound;
@@ -97,16 +97,16 @@ class ABJ_404_Solution_ViewBuildBatchExecutor extends ABJ_404_Solution_ViewBuild
                 }
                 $afterMax = $this->runInsertBatch($loBound, $batchSize);
             } catch (\Throwable $e) {
-                if ($this->host->isResumableStagedKill($e->getMessage())) {
+                if ($this->host->dataBoundary()->isResumableStagedKill($e->getMessage())) {
                     // Path B: batch genuinely too big at the host limit.
                     // Halve, persist, yield. Next tick uses smaller size.
-                    $newSize = $this->host->adaptive()->recordStageBatchKilled('s2_batch_size');
-                    $this->host->logger()->warn(sprintf(
+                    $newSize = $this->host->stageServices()->adaptive()->recordStageBatchKilled('s2_batch_size');
+                    $this->host->dataBoundary()->logger()->warn(sprintf(
                         '[staged] S2 batch killed by host at size %d; '
                         . 'shrunk s2_batch_size to %d. Trigger: %s',
                         $batchSize, $newSize, substr($e->getMessage(), 0, 200)
                     ));
-                    $this->host->stageLogPresenter()->markBuildStage('staged_build_s2_insert',
+                    $this->host->stageServices()->stageLogPresenter()->markBuildStage('staged_build_s2_insert',
                         'batch killed at size ' . $batchSize
                         . '; shrunk to ' . $newSize . ', yielded');
                     return false;
@@ -120,7 +120,7 @@ class ABJ_404_Solution_ViewBuildBatchExecutor extends ABJ_404_Solution_ViewBuild
                 // returns 0 in both cases. The missing-buffer scenario is a
                 // pipeline corruption that must halt, not silently mark
                 // S2 complete. See Pattern 13.
-                if (!$this->host->stateProbe()->stagedTableExists($this->host->stagePipeline()->viewBuildTableName())) {
+                if (!$this->host->stageServices()->stateProbe()->stagedTableExists($this->host->stageServices()->stagePipeline()->viewBuildTableName())) {
                     throw new \Exception( // allow-raw-error: preserves staged-build classifier marker for resumable missing-buffer yield
                         'Staged view-build buffer missing during S2 INSERT; '
                         . 'pipeline state diverged from disk. Halting stage.'
@@ -131,7 +131,7 @@ class ABJ_404_Solution_ViewBuildBatchExecutor extends ABJ_404_Solution_ViewBuild
                 // (impossible given strict id-range semantics, but defensive).
                 // Treat as done; the read query will reflect whatever was
                 // captured.
-                $this->host->logger()->warn(sprintf(
+                $this->host->dataBoundary()->logger()->warn(sprintf(
                     '[staged] S2 stopping early: INSERT batch did not advance '
                     . 'MAX(id) (loBound=%d, beforeMax=%d, afterMax=%d, '
                     . 'copiedSoFar=%d, totalCount=%d). Treating as done.',
@@ -141,13 +141,13 @@ class ABJ_404_Solution_ViewBuildBatchExecutor extends ABJ_404_Solution_ViewBuild
             }
             // Mirror MAX(id) into the option for diagnostics. This is
             // best-effort; correctness does NOT depend on this write.
-            $this->host->progressOptions()->writeProgressOption('s2_high_water', $afterMax);
+            $this->host->stageServices()->progressOptions()->writeProgressOption('s2_high_water', $afterMax);
 
-            $this->host->stageLogPresenter()->markBuildStage('staged_build_s2_insert',
+            $this->host->stageServices()->stageLogPresenter()->markBuildStage('staged_build_s2_insert',
                 'batch ' . $this->humanBatchProgress($this->countViewBuildRows(), $totalCount));
         }
 
-        $this->host->progressOptions()->writeProgressOption('s2_high_water', 0);
+        $this->host->stageServices()->progressOptions()->writeProgressOption('s2_high_water', 0);
         return true;
     }
 
@@ -194,10 +194,10 @@ class ABJ_404_Solution_ViewBuildBatchExecutor extends ABJ_404_Solution_ViewBuild
         $loBound = max(0, intval($loBound));
         $batchSize = max(1, intval($batchSize));
 
-        $extra = $this->host->viewBuildOnlyTranslations();
+        $extra = $this->host->dataBoundary()->viewBuildOnlyTranslations();
         $extra['{LO_BOUND}']   = (string)$loBound;
         $extra['{BATCH_SIZE}'] = (string)$batchSize;
-        $this->host->stagedSqlExecutor()->runStagedSqlFile('02_insert.sql', $extra);
+        $this->host->stageServices()->stagedSqlExecutor()->runStagedSqlFile('02_insert.sql', $extra);
 
         return $this->maxBuildBufferId();
     }
@@ -214,19 +214,19 @@ class ABJ_404_Solution_ViewBuildBatchExecutor extends ABJ_404_Solution_ViewBuild
      * @return bool True when stage completed; false when budget exhausted.
      */
     public function runIdRangeBatchedUpdate(string $stageKey, string $highWaterKey, string $sqlFile): bool {
-        $this->host->stageLogPresenter()->markBuildStage($stageKey);
-        $deadline = microtime(true) + $this->host->stagePipeline()->viewBuildPerStageBudgetSeconds();
-        $perQueryLimit = max(1.0, (float)$this->host->adaptive()->intelligentStagedQueryTimeoutSeconds());
+        $this->host->stageServices()->stageLogPresenter()->markBuildStage($stageKey);
+        $deadline = microtime(true) + $this->host->stageServices()->stagePipeline()->viewBuildPerStageBudgetSeconds();
+        $perQueryLimit = max(1.0, (float)$this->host->stageServices()->adaptive()->intelligentStagedQueryTimeoutSeconds());
         // s4_high_water -> s4_batch_size; s5_high_water -> s5_batch_size.
         $batchSizeKey = str_replace('_high_water', '_batch_size', $highWaterKey);
 
-        $highWater = $this->host->progressOptions()->readProgressOption($highWaterKey, 0);
+        $highWater = $this->host->stageServices()->progressOptions()->readProgressOption($highWaterKey, 0);
         $totalMaxId = $this->maxBuildBufferId();
         if ($totalMaxId <= 0) {
             // Distinguish "buffer is empty" from "buffer is missing". The
             // former is fine; the latter must halt and let the orchestrator
             // restart cleanly on the next tick.
-            if (!$this->host->stateProbe()->stagedTableExists($this->host->stagePipeline()->viewBuildTableName())) {
+            if (!$this->host->stageServices()->stateProbe()->stagedTableExists($this->host->stageServices()->stagePipeline()->viewBuildTableName())) {
                 throw new \Exception(sprintf( // allow-raw-error: preserves staged-build classifier marker for resumable missing-buffer yield
                     'Staged view-build buffer missing at %s entry; pipeline state '
                     . 'diverged from disk. Halting stage.',
@@ -234,7 +234,7 @@ class ABJ_404_Solution_ViewBuildBatchExecutor extends ABJ_404_Solution_ViewBuild
                 ));
             }
             // Buffer is empty (no redirects). Nothing to update.
-            $this->host->progressOptions()->writeProgressOption($highWaterKey, 0);
+            $this->host->stageServices()->progressOptions()->writeProgressOption($highWaterKey, 0);
             return true;
         }
 
@@ -242,19 +242,19 @@ class ABJ_404_Solution_ViewBuildBatchExecutor extends ABJ_404_Solution_ViewBuild
         while ($highWater < $totalMaxId) {
             // Wall-clock yield (Path A); not a batch-size problem.
             if (microtime(true) >= $deadline) {
-                $this->host->stageLogPresenter()->markBuildStage($stageKey,
+                $this->host->stageServices()->stageLogPresenter()->markBuildStage($stageKey,
                     'batch ' . $this->humanBatchProgress($highWater, $totalMaxId) . ' (yielded)');
                 return false;
             }
             // Pre-flight: yield without shrinking when there is not enough
             // PHP request time left to finish a batch at the SQL hint.
-            if ($batchNumber > 0 && $this->host->adaptive()->phpTimeRemainingSeconds() < $perQueryLimit + 1.0) {
-                $this->host->stageLogPresenter()->markBuildStage($stageKey,
+            if ($batchNumber > 0 && $this->host->stageServices()->adaptive()->phpTimeRemainingSeconds() < $perQueryLimit + 1.0) {
+                $this->host->stageServices()->stageLogPresenter()->markBuildStage($stageKey,
                     'batch ' . $this->humanBatchProgress($highWater, $totalMaxId) . ' (yielded; tight time)');
                 return false;
             }
 
-            $batchSize = $this->host->adaptive()->viewBuildBatchSizeForStage($batchSizeKey);
+            $batchSize = $this->host->stageServices()->adaptive()->viewBuildBatchSizeForStage($batchSizeKey);
             $batchNumber++;
             $hiBound = min($totalMaxId, $highWater + $batchSize);
             $extra = array(
@@ -265,17 +265,17 @@ class ABJ_404_Solution_ViewBuildBatchExecutor extends ABJ_404_Solution_ViewBuild
                 if (function_exists('do_action')) {
                     do_action('abj404_view_build_batch_starting', $stageKey, $batchNumber, $batchSize);
                 }
-                $this->host->stagedSqlExecutor()->runStagedSqlFile($sqlFile, $extra);
+                $this->host->stageServices()->stagedSqlExecutor()->runStagedSqlFile($sqlFile, $extra);
             } catch (\Throwable $e) {
-                if ($this->host->isResumableStagedKill($e->getMessage())) {
-                    $newSize = $this->host->adaptive()->recordStageBatchKilled($batchSizeKey);
-                    $this->host->logger()->warn(sprintf(
+                if ($this->host->dataBoundary()->isResumableStagedKill($e->getMessage())) {
+                    $newSize = $this->host->stageServices()->adaptive()->recordStageBatchKilled($batchSizeKey);
+                    $this->host->dataBoundary()->logger()->warn(sprintf(
                         '[staged] %s batch killed by host at size %d; '
                         . 'shrunk %s to %d. Trigger: %s',
                         $stageKey, $batchSize, $batchSizeKey, $newSize,
                         substr($e->getMessage(), 0, 200)
                     ));
-                    $this->host->stageLogPresenter()->markBuildStage($stageKey,
+                    $this->host->stageServices()->stageLogPresenter()->markBuildStage($stageKey,
                         'batch killed at size ' . $batchSize
                         . '; shrunk to ' . $newSize . ', yielded');
                     return false;
@@ -283,22 +283,22 @@ class ABJ_404_Solution_ViewBuildBatchExecutor extends ABJ_404_Solution_ViewBuild
                 throw $e;
             }
             $highWater = $hiBound;
-            $this->host->progressOptions()->writeProgressOption($highWaterKey, $highWater);
+            $this->host->stageServices()->progressOptions()->writeProgressOption($highWaterKey, $highWater);
 
-            $this->host->stageLogPresenter()->markBuildStage($stageKey,
+            $this->host->stageServices()->stageLogPresenter()->markBuildStage($stageKey,
                 'batch ' . $this->humanBatchProgress($highWater, $totalMaxId));
         }
 
         // Stage done; reset high-water for the next rebuild.
-        $this->host->progressOptions()->writeProgressOption($highWaterKey, 0);
+        $this->host->stageServices()->progressOptions()->writeProgressOption($highWaterKey, 0);
         return true;
     }
 
     /** @return int Total active+inactive rows in wp_abj404_redirects. */
     public function countLiveRedirects(): int {
         $sql = 'SELECT COUNT(*) AS cnt FROM '
-            . $this->host->doTableNameReplacements('{wp_abj404_redirects}');
-        $result = $this->host->queryAndGetResults($sql, $this->host->stagedSqlExecutor()->stagedQueryOptions());
+            . $this->host->dataBoundary()->doTableNameReplacements('{wp_abj404_redirects}');
+        $result = $this->host->dataBoundary()->queryAndGetResults($sql, $this->host->stageServices()->stagedSqlExecutor()->stagedQueryOptions());
         $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
         if (empty($rows) || !is_array($rows[0])) {
             return 0;
@@ -310,8 +310,8 @@ class ABJ_404_Solution_ViewBuildBatchExecutor extends ABJ_404_Solution_ViewBuild
     /** @return int Rows currently in the build buffer. */
     public function countViewBuildRows(): int {
         $sql = 'SELECT COUNT(*) AS cnt FROM '
-            . $this->host->doTableNameReplacements('{wp_abj404_view_build}');
-        $result = $this->host->queryAndGetResults($sql, array('log_errors' => false));
+            . $this->host->dataBoundary()->doTableNameReplacements('{wp_abj404_view_build}');
+        $result = $this->host->dataBoundary()->queryAndGetResults($sql, array('log_errors' => false));
         $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
         if (empty($rows) || !is_array($rows[0])) {
             return 0;
@@ -323,8 +323,8 @@ class ABJ_404_Solution_ViewBuildBatchExecutor extends ABJ_404_Solution_ViewBuild
     /** @return int Max(id) in the build buffer, 0 when empty. */
     public function maxBuildBufferId(): int {
         $sql = 'SELECT MAX(id) AS max_id FROM '
-            . $this->host->doTableNameReplacements('{wp_abj404_view_build}');
-        $result = $this->host->queryAndGetResults($sql, array('log_errors' => false));
+            . $this->host->dataBoundary()->doTableNameReplacements('{wp_abj404_view_build}');
+        $result = $this->host->dataBoundary()->queryAndGetResults($sql, array('log_errors' => false));
         $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
         if (empty($rows) || !is_array($rows[0])) {
             return 0;

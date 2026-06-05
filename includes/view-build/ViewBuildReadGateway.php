@@ -23,25 +23,25 @@ class ABJ_404_Solution_ViewBuildReadGateway extends ABJ_404_Solution_ViewBuildCo
     public function runRedirectsForViewStaged(string $sub, array $tableOptions): array {
         $this->setReadQueryTimeout($tableOptions);
         if (!empty($tableOptions['_abj404_force_view_rebuild'])) {
-            $this->host->forceRestart()->forceRestartViewBuild(0);
+            $this->host->recoveryServices()->forceRestart()->forceRestartViewBuild(0);
         }
-        $builtAt = $this->host->viewDoneState()->viewDoneBuiltAt();
+        $builtAt = $this->host->stageServices()->viewDoneState()->viewDoneBuiltAt();
         $isFresh = $builtAt > 0
             && (time() - $builtAt) < ABJ_404_Solution_ViewBuildConfig::VIEW_DONE_FRESHNESS_TTL_SECONDS
-            && $this->host->viewDoneState()->viewDoneIsServeable();
+            && $this->host->stageServices()->viewDoneState()->viewDoneIsServeable();
 
         if ($isFresh) {
-            return $this->host->readFromViewDone($sub, $tableOptions);
+            return $this->host->dataBoundary()->readFromViewDone($sub, $tableOptions);
         }
 
-        if ($this->host->viewDoneState()->viewDoneIsServeable()) {
-            $this->host->cronScheduler()->scheduleViewDoneRebuild();
-            $this->host->stateProbe()->maybeRaiseViewDoneHardStaleNotice();
-            return $this->host->readFromViewDone($sub, $tableOptions);
+        if ($this->host->stageServices()->viewDoneState()->viewDoneIsServeable()) {
+            $this->host->recoveryServices()->cronScheduler()->scheduleViewDoneRebuild();
+            $this->host->stageServices()->stateProbe()->maybeRaiseViewDoneHardStaleNotice();
+            return $this->host->dataBoundary()->readFromViewDone($sub, $tableOptions);
         }
 
-        $this->host->cronScheduler()->scheduleViewDoneRebuild();
-        $progress = $this->host->stateProbe()->describeBuildProgressForNotice();
+        $this->host->recoveryServices()->cronScheduler()->scheduleViewDoneRebuild();
+        $progress = $this->host->stageServices()->stateProbe()->describeBuildProgressForNotice();
         throw new ABJ_404_Solution_ViewBuildPendingException(
             'Staged view build pending; background rebuild scheduled. Progress: ' . $progress,
             $progress
@@ -50,16 +50,16 @@ class ABJ_404_Solution_ViewBuildReadGateway extends ABJ_404_Solution_ViewBuildCo
 
     /** @return array<string, mixed> */
     public function getViewBuildProgress(): array {
-        $stage = $this->host->progressOptions()->readProgressOption('current_stage', 0);
-        $startedAt = $this->host->progressOptions()->readProgressOption('started_at', 0);
-        $status = $this->host->viewDoneState()->viewDoneIsServeable() ? 'ready' : 'pending';
+        $stage = $this->host->stageServices()->progressOptions()->readProgressOption('current_stage', 0);
+        $startedAt = $this->host->stageServices()->progressOptions()->readProgressOption('started_at', 0);
+        $status = $this->host->stageServices()->viewDoneState()->viewDoneIsServeable() ? 'ready' : 'pending';
         return array(
             'status' => $status,
             'stage' => max(0, $stage),
             'of' => 11,
             'build_started' => max(0, $startedAt),
             'progress_text' => $stage > 0 ? ('stage ' . $stage . '/11') : 'not yet started',
-            'fingerprint' => $this->host->getViewBuildProgressFingerprint(),
+            'fingerprint' => $this->host->dataBoundary()->getViewBuildProgressFingerprint(),
         );
     }
 
@@ -71,14 +71,14 @@ class ABJ_404_Solution_ViewBuildReadGateway extends ABJ_404_Solution_ViewBuildCo
      */
     public function runRedirectsForViewCountStaged(string $sub, array $tableOptions): int {
         $this->setReadQueryTimeout($tableOptions);
-        $builtAt = $this->host->viewDoneState()->viewDoneBuiltAt();
+        $builtAt = $this->host->stageServices()->viewDoneState()->viewDoneBuiltAt();
         $isFresh = $builtAt > 0
             && (time() - $builtAt) < ABJ_404_Solution_ViewBuildConfig::VIEW_DONE_FRESHNESS_TTL_SECONDS
-            && $this->host->viewDoneState()->viewDoneIsServeable();
+            && $this->host->stageServices()->viewDoneState()->viewDoneIsServeable();
 
-        if (!$this->host->viewDoneState()->viewDoneIsServeable()) {
-            $this->host->cronScheduler()->scheduleViewDoneRebuild();
-            $progress = $this->host->stateProbe()->describeBuildProgressForNotice();
+        if (!$this->host->stageServices()->viewDoneState()->viewDoneIsServeable()) {
+            $this->host->recoveryServices()->cronScheduler()->scheduleViewDoneRebuild();
+            $progress = $this->host->stageServices()->stateProbe()->describeBuildProgressForNotice();
             throw new ABJ_404_Solution_ViewBuildPendingException(
                 'Staged view-count build pending; background rebuild scheduled. Progress: ' . $progress,
                 $progress
@@ -86,12 +86,12 @@ class ABJ_404_Solution_ViewBuildReadGateway extends ABJ_404_Solution_ViewBuildCo
         }
 
         if (!$isFresh) {
-            $this->host->cronScheduler()->scheduleViewDoneRebuild();
-            $this->host->stateProbe()->maybeRaiseViewDoneHardStaleNotice();
+            $this->host->recoveryServices()->cronScheduler()->scheduleViewDoneRebuild();
+            $this->host->stageServices()->stateProbe()->maybeRaiseViewDoneHardStaleNotice();
         }
 
-        $sql = $this->host->buildViewDoneCountQuery($sub, $tableOptions);
-        $result = $this->host->queryAndGetResults($sql, $this->host->stagedSqlExecutor()->stagedQueryOptions());
+        $sql = $this->host->dataBoundary()->buildViewDoneCountQuery($sub, $tableOptions);
+        $result = $this->host->dataBoundary()->queryAndGetResults($sql, $this->host->stageServices()->stagedSqlExecutor()->stagedQueryOptions());
         $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
         if (empty($rows)) {
             return 0;
@@ -103,7 +103,7 @@ class ABJ_404_Solution_ViewBuildReadGateway extends ABJ_404_Solution_ViewBuildCo
 
     /** @param array<string, mixed> $tableOptions @return void */
     private function setReadQueryTimeout(array $tableOptions): void {
-        $this->host->stagedSqlExecutor()->setStagedQueryTimeoutSeconds(isset($tableOptions['_abj404_query_timeout'])
+        $this->host->stageServices()->stagedSqlExecutor()->setStagedQueryTimeoutSeconds(isset($tableOptions['_abj404_query_timeout'])
             && is_numeric($tableOptions['_abj404_query_timeout'])
             ? max(0, intval($tableOptions['_abj404_query_timeout'])) : 0);
     }

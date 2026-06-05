@@ -51,7 +51,7 @@ class ABJ_404_Solution_ViewBuildLockCoordinator extends ABJ_404_Solution_ViewBui
      * @return bool
      */
     public function acquireViewBuildLock(int $timeoutSeconds = 0): bool {
-        $name = $this->host->getLowercasePrefix() . ABJ_404_Solution_ViewBuildConfig::VIEW_DONE_BUILD_LOCK_NAME;
+        $name = $this->host->dataBoundary()->getLowercasePrefix() . ABJ_404_Solution_ViewBuildConfig::VIEW_DONE_BUILD_LOCK_NAME;
 
         if (self::$namedLockSupportedThisRequest === false) {
             $this->ensureFallbackLockNoticeAndLog();
@@ -60,7 +60,7 @@ class ABJ_404_Solution_ViewBuildLockCoordinator extends ABJ_404_Solution_ViewBui
 
         $timeout = max(0, $timeoutSeconds);
         $sql = "SELECT GET_LOCK('" . esc_sql($name) . "', " . $timeout . ") AS got";
-        $result = $this->host->queryAndGetResults($sql, array('log_errors' => false));
+        $result = $this->host->dataBoundary()->queryAndGetResults($sql, array('log_errors' => false));
 
         $err = isset($result['last_error']) && is_string($result['last_error'])
             ? trim($result['last_error']) : '';
@@ -98,7 +98,7 @@ class ABJ_404_Solution_ViewBuildLockCoordinator extends ABJ_404_Solution_ViewBui
 
     /** @return void */
     public function releaseViewBuildLock(): void {
-        $name = $this->host->getLowercasePrefix() . ABJ_404_Solution_ViewBuildConfig::VIEW_DONE_BUILD_LOCK_NAME;
+        $name = $this->host->dataBoundary()->getLowercasePrefix() . ABJ_404_Solution_ViewBuildConfig::VIEW_DONE_BUILD_LOCK_NAME;
         if ($this->usingTransientFallbackLock) {
             $this->usingTransientFallbackLock = false;
             if (function_exists('delete_option')) {
@@ -106,7 +106,7 @@ class ABJ_404_Solution_ViewBuildLockCoordinator extends ABJ_404_Solution_ViewBui
             }
             return;
         }
-        $this->host->queryAndGetResults("SELECT RELEASE_LOCK('" . esc_sql($name) . "')",
+        $this->host->dataBoundary()->queryAndGetResults("SELECT RELEASE_LOCK('" . esc_sql($name) . "')",
             array('log_errors' => false));
     }
 
@@ -185,10 +185,10 @@ class ABJ_404_Solution_ViewBuildLockCoordinator extends ABJ_404_Solution_ViewBui
                 . '(reason=' . ($this->lastNamedLockUnsupportedReason !== ''
                     ? $this->lastNamedLockUnsupportedReason : 'unknown')
                 . '); using option-row fallback.';
-            if (is_object($this->host->logger()) && method_exists($this->host->logger(), 'infoMessage')) {
-                $this->host->logger()->infoMessage($message);
-            } elseif (is_object($this->host->logger()) && method_exists($this->host->logger(), 'debugMessage')) {
-                $this->host->logger()->debugMessage($message);
+            if (is_object($this->host->dataBoundary()->logger()) && method_exists($this->host->dataBoundary()->logger(), 'infoMessage')) {
+                $this->host->dataBoundary()->logger()->infoMessage($message);
+            } elseif (is_object($this->host->dataBoundary()->logger()) && method_exists($this->host->dataBoundary()->logger(), 'debugMessage')) {
+                $this->host->dataBoundary()->logger()->debugMessage($message);
             }
         }
     }
@@ -208,7 +208,7 @@ class ABJ_404_Solution_ViewBuildLockCoordinator extends ABJ_404_Solution_ViewBui
             if (!function_exists('update_option') || !function_exists('get_option')) {
                 return false;
             }
-            $optionName = $this->host->getLowercasePrefix() . 'abj404_view_build_lock_writer_probe';
+            $optionName = $this->host->dataBoundary()->getLowercasePrefix() . 'abj404_view_build_lock_writer_probe';
             try {
                 $nonce = bin2hex(random_bytes(8));
             } catch (\Throwable $t) { // allow-silent-catch: random_bytes unavailable on some hosts; mt_rand fallback is sufficient for a disposable write-probe nonce

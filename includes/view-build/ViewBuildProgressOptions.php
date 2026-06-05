@@ -21,11 +21,9 @@ if (!defined('ABSPATH')) {
  * ABJ_404_Solution_ViewBuildStagedSqlExecutor. Build-side existence /
  * freshness probes live on ABJ_404_Solution_ViewBuildStateProbe. These
  * classes plus ABJ_404_Solution_ViewBuildLockCoordinator and the
- * host-environment probes are registered as ViewBuildOrchestrator
- * collaborators and use the orchestrator's explicit operation map for
- * cross-class calls.
+ * host-environment probes are reached through the context's stage,
+ * recovery, and data bundles.
  *
- * @property ABJ_404_Solution_Logging $logger
  */
 class ABJ_404_Solution_ViewBuildProgressOptions extends ABJ_404_Solution_ViewBuildCollaborator {
 
@@ -118,7 +116,7 @@ class ABJ_404_Solution_ViewBuildProgressOptions extends ABJ_404_Solution_ViewBui
         if (!isset(self::$viewBuildProgressOptionNames[$shortName])) {
             return '';
         }
-        return $this->host->getLowercasePrefix() . self::$viewBuildProgressOptionNames[$shortName];
+        return $this->host->dataBoundary()->getLowercasePrefix() . self::$viewBuildProgressOptionNames[$shortName];
     }
 
     /**
@@ -220,7 +218,7 @@ class ABJ_404_Solution_ViewBuildProgressOptions extends ABJ_404_Solution_ViewBui
         // cost is non-trivial and a single tick of stale streak data is
         // harmless.
         if (in_array($shortName, self::$viewBuildProgressHighStakesShortNames, true)) {
-            $writeOk = $this->host->optionWriteVerifier()->verifyOptionWriteCoherent($name, $intValue);
+            $writeOk = $this->host->stageServices()->optionWriteVerifier()->verifyOptionWriteCoherent($name, $intValue);
             $readBack = function_exists('get_option') ? get_option($name, null) : null;
             $this->logViewBuildProgressOptionWrite($shortName, $name, $intValue, $writeOk, $readBack, 'coherent');
             return;
@@ -263,12 +261,12 @@ class ABJ_404_Solution_ViewBuildProgressOptions extends ABJ_404_Solution_ViewBui
         ), true)) {
             return;
         }
-        if (!is_object($this->host->logger()) || !method_exists($this->host->logger(), 'debugMessage')) {
+        if (!is_object($this->host->dataBoundary()->logger()) || !method_exists($this->host->dataBoundary()->logger(), 'debugMessage')) {
             return;
         }
 
         $readBackForLog = is_scalar($readBack) ? (string)$readBack : gettype($readBack);
-        $this->host->logger()->debugMessage(sprintf(
+        $this->host->dataBoundary()->logger()->debugMessage(sprintf(
             '[staged] view build progress option write: key=%s option=%s expected=%d path=%s update_option_return=%s read_back=%s',
             $shortName,
             $optionName,
@@ -285,20 +283,20 @@ class ABJ_404_Solution_ViewBuildProgressOptions extends ABJ_404_Solution_ViewBui
             return;
         }
         foreach (self::$viewBuildProgressOptionNames as $optName) {
-            delete_option($this->host->getLowercasePrefix() . $optName);
+            delete_option($this->host->dataBoundary()->getLowercasePrefix() . $optName);
         }
         // The S1 prefix capture lives outside $viewBuildProgressOptionNames
         // because its option name is intentionally not prefix-bound (so a
         // mid-build switch_to_blog cannot make get_option silently miss it).
         // It belongs to the same fresh-start lifecycle, so clear it alongside.
-        $this->host->prefixDriftGuard()->clearPrefixAtStageOne();
+        $this->host->stageServices()->prefixDriftGuard()->clearPrefixAtStageOne();
         // Same lifecycle: a fresh build must re-probe the live session so a
         // hosting move that changed sql_mode (or a schema swap that changed
         // max_allowed_packet) is picked up at the next S1 entry. The PHP
         // environment probe (set_time_limit / memory_limit) is reset for the
         // same reason: an ini change between builds must take effect.
-        $this->host->sqlModeProbe()->clearSqlModeProbeCache();
-        $this->host->hostEnvironmentProbe()->clearPhpEnvironmentProbeCache();
+        $this->host->stageServices()->sqlModeProbe()->clearSqlModeProbeCache();
+        $this->host->recoveryServices()->hostEnvironmentProbe()->clearPhpEnvironmentProbeCache();
     }
 
     /**
@@ -311,7 +309,7 @@ class ABJ_404_Solution_ViewBuildProgressOptions extends ABJ_404_Solution_ViewBui
      */
     public function performFreshStartCleanup(): void {
         $this->clearAllProgressOptions();
-        $this->host->stageCallbacks()->dropTransientStagedTables();
+        $this->host->stageServices()->stageCallbacks()->dropTransientStagedTables();
     }
 
 }

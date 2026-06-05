@@ -29,17 +29,17 @@ abstract class ABJ_404_Solution_ViewBuildCollaborator {
 
     /** @return int */
     protected function stagedQueryTimeoutSeconds(): int {
-        return (int)$this->host->stagedSqlExecutor()->getStagedQueryTimeoutSeconds();
+        return (int)$this->host->stageServices()->stagedSqlExecutor()->getStagedQueryTimeoutSeconds();
     }
 
     /** @param int $seconds @return void */
     protected function setStagedQueryTimeoutSeconds(int $seconds): void {
-        $this->host->stagedSqlExecutor()->setStagedQueryTimeoutSeconds(max(0, $seconds));
+        $this->host->stageServices()->stagedSqlExecutor()->setStagedQueryTimeoutSeconds(max(0, $seconds));
     }
 
     /** @return array<string, mixed>|null */
     protected function sqlModeProbeCache() {
-        $cache = $this->host->sqlModeProbe()->getSqlModeProbeCache();
+        $cache = $this->host->stageServices()->sqlModeProbe()->getSqlModeProbeCache();
         if (!is_array($cache)) {
             return null;
         }

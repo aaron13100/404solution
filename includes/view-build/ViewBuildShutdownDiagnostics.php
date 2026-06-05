@@ -80,16 +80,16 @@ class ABJ_404_Solution_ViewBuildShutdownDiagnostics extends ABJ_404_Solution_Vie
         }
         $stageNumber = $this->runtimeState->shutdownStageNumber() > 0
             ? $this->runtimeState->shutdownStageNumber()
-            : $this->host->progressOptions()->readProgressOption('last_started_stage', 0);
+            : $this->host->stageServices()->progressOptions()->readProgressOption('last_started_stage', 0);
         if ($stageNumber <= 0) {
             return;
         }
-        $lastCompleted = $this->host->progressOptions()->readProgressOption('last_completed_stage', 0);
+        $lastCompleted = $this->host->stageServices()->progressOptions()->readProgressOption('last_completed_stage', 0);
         if ($lastCompleted >= $stageNumber) {
             return;
         }
 
-        $this->host->logger()->warn(sprintf(
+        $this->host->dataBoundary()->logger()->warn(sprintf(
             '[staged] shutdown while build stage %d/11 %s was still open; '
             . 'last_completed_stage=%d; fatal_context=%s',
             $stageNumber,
