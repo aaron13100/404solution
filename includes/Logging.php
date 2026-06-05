@@ -87,6 +87,12 @@ class ABJ_404_Solution_Logging {
     private $debugLogArchiveBuilder = null;
     /** @var ABJ_404_Solution_DeveloperLogMailer|null */
     private $developerLogMailer = null;
+    /** @var ABJ_404_Solution_LoggingMessageWriter|null */
+    private $messageWriter = null;
+    /** @var ABJ_404_Solution_LoggingCapabilityDiagnostics|null */
+    private $capabilityDiagnostics = null;
+    /** @var ABJ_404_Solution_LoggingFeedbackDispatcher|null */
+    private $feedbackDispatcher = null;
 
     /** @return ABJ_404_Solution_DebugLogFileStore */
     private function getDebugLogFileStore(): ABJ_404_Solution_DebugLogFileStore {
@@ -127,6 +133,35 @@ class ABJ_404_Solution_Logging {
             );
         }
         return $this->developerLogMailer;
+    }
+
+    /** @return ABJ_404_Solution_LoggingMessageWriter */
+    private function getMessageWriter(): ABJ_404_Solution_LoggingMessageWriter {
+        if ($this->messageWriter === null) {
+            $this->messageWriter = new ABJ_404_Solution_LoggingMessageWriter(
+                array($this, 'getTimestamp'),
+                array($this, 'isDebug'),
+                array($this, 'writeLineToDebugFile'),
+                self::$storedDebugMessages
+            );
+        }
+        return $this->messageWriter;
+    }
+
+    /** @return ABJ_404_Solution_LoggingCapabilityDiagnostics */
+    private function getCapabilityDiagnostics(): ABJ_404_Solution_LoggingCapabilityDiagnostics {
+        if ($this->capabilityDiagnostics === null) {
+            $this->capabilityDiagnostics = new ABJ_404_Solution_LoggingCapabilityDiagnostics();
+        }
+        return $this->capabilityDiagnostics;
+    }
+
+    /** @return ABJ_404_Solution_LoggingFeedbackDispatcher */
+    private function getFeedbackDispatcher(): ABJ_404_Solution_LoggingFeedbackDispatcher {
+        if ($this->feedbackDispatcher === null) {
+            $this->feedbackDispatcher = new ABJ_404_Solution_LoggingFeedbackDispatcher($this);
+        }
+        return $this->feedbackDispatcher;
     }
     
     /** @return boolean true if debug mode is on. false otherwise. */
@@ -176,18 +211,7 @@ class ABJ_404_Solution_Logging {
      * @return void
      */
     function debugMessage(string $message, $e = null): void {
-    	$stacktrace = "";
-    	if ($e != null) {
-    		$stacktrace = ", Stacktrace: " . $e->getTraceAsString();
-    	}
-    	
-        $timestamp = $this->getTimestamp() . ' (DEBUG): ';
-        if ($this->isDebug()) {
-        	$this->writeLineToDebugFile($timestamp . $message . $stacktrace);
-            
-        } else {
-        	array_push(self::$storedDebugMessages, $timestamp . $message . $stacktrace);
-        }
+        $this->getMessageWriter()->debugMessage($message, $e);
     }
 
     /** Send a message to the log.
@@ -196,8 +220,7 @@ class ABJ_404_Solution_Logging {
      * @return void
      */
     function infoMessage(string $message): void {
-    	$timestamp = $this->getTimestamp() . ' (INFO): ';
-    	$this->writeLineToDebugFile($timestamp . $message);
+        $this->getMessageWriter()->infoMessage($message);
     }
     
     /** Send a message to the log.
@@ -206,8 +229,7 @@ class ABJ_404_Solution_Logging {
      * @return void
      */
     function warn(string $message): void {
-        $timestamp = $this->getTimestamp() . ' (WARN): ';
-        $this->writeLineToDebugFile($timestamp . $message);
+        $this->getMessageWriter()->warn($message);
     }
 
     /** Always send a message to the error_log.
@@ -217,27 +239,7 @@ class ABJ_404_Solution_Logging {
      * @return void
      */
     function errorMessage(string $message, $e = null): void {
-        if ($e == null) {
-            $e = new Exception;
-        }
-        $stacktrace = $e->getTraceAsString();
-        
-        $savedDebugMessages = implode("\n", self::$storedDebugMessages);
-        self::$storedDebugMessages = array();
-        
-        $timestamp = $this->getTimestamp() . ' (ERROR): ';
-        $referrer = '';
-        if (array_key_exists('HTTP_REFERER', $_SERVER) && !empty($_SERVER['HTTP_REFERER'])) {
-            $referrer = $_SERVER['HTTP_REFERER'];
-        }
-        $requestedURL = '';
-        if (array_key_exists('REQUEST_URI', $_SERVER) && !empty($_SERVER['REQUEST_URI'])) {
-            $requestedURL = $_SERVER['REQUEST_URI'];
-        }
-        $this->writeLineToDebugFile($timestamp . $message . ", PHP version: " . PHP_VERSION . 
-                ", WP ver: " . get_bloginfo('version') . ", Plugin ver: " . ABJ404_VERSION . 
-                ", Referrer: " . $referrer . ", Requested URL: " . $requestedURL . 
-                ", \nStored debug messages: \n" . $savedDebugMessages . ", \nTrace: " . $stacktrace);
+        $this->getMessageWriter()->errorMessage($message, $e);
     }
     
     /** Log the user capabilities.
@@ -245,24 +247,7 @@ class ABJ_404_Solution_Logging {
      * @return void
      */
     function logUserCapabilities(string $msg): void {
-    	$f = abj_service('functions');
-    	$abj404logic = abj_service('plugin_logic');
-    	$user = wp_get_current_user();
-        $usercaps = $f->str_replace(',"', ', "', wp_kses_post((string)json_encode($user->get_role_caps())));
-        
-        $userIsPluginAdminStr = "false";
-        if (abj_service('admin_access_policy')->isPluginAdmin()) {
-        	$userIsPluginAdminStr = "true";
-        }
-        
-        $this->debugMessage("User caps msg: " . esc_html($msg == '' ? '(none)' : $msg) . ", is_admin(): " . is_admin() .
-        		", current_user_can('manage_options'): " . current_user_can('manage_options') .
-        		", current_user_can('administrator'): " . current_user_can('administrator') .
-        		", userIsPluginAdmin(): " . $userIsPluginAdminStr .
-        		", user_login: " . esc_html($user->user_login ?? '(none)') .
-                ", user caps: " . wp_kses_post((string)json_encode($user->caps)) . ", get_role_caps: " .
-                $usercaps . ", WP ver: " . get_bloginfo('version') . ", mbstring: " .
-                (extension_loaded('mbstring') ? 'true' : 'false'));
+        $this->debugMessage($this->getCapabilityDiagnostics()->format($msg));
     }
 
     /** Write the line to the debug file.
@@ -291,68 +276,8 @@ class ABJ_404_Solution_Logging {
      * @return bool
      */
     function emailErrorLogIfNecessary(): bool {
-        $debugFilePath = $this->getDebugFilePath();
-        if (!file_exists($debugFilePath)) {
-            $this->debugMessage("No log file found so no errors were found.");
-            return false;
-        }
-
-        $latestErrorLineFound = $this->getLatestErrorLine();
-        if ($latestErrorLineFound['num'] == -1) {
-            $this->debugMessage("No errors found in the log file.");
-            return false;
-        }
-
-        $optionsRepo = abj_service('options_repository');
-        $options = $optionsRepo->getOptions(true);
-        $dedupe = $this->getDedupeState();
-        $sentinelFilePath = $this->getDebugFilePathSentFile();
-        $sentLine = $dedupe->readSentLine($options, $sentinelFilePath);
-        $this->debugMessage("Dedupe pointer: sentLine=" . $sentLine);
-
-        if ($dedupe->isAlreadySent($sentLine, $latestErrorLineFound, $debugFilePath)) {
-            $this->debugMessage("The latest error line from the log file was already emailed. " .
-                $latestErrorLineFound['num'] . ' <= ' . $sentLine);
-            return false;
-        }
-
-        // only email the error file if the latest version of the plugin is installed.
-        $pluginUpdateRepo = abj_service('plugin_update_metadata_repository');
-        if (!$pluginUpdateRepo->shouldEmailErrorFileFor($pluginUpdateRepo->getLatestPluginVersion())) {
-            return false;
-        }
-
-        if (!$dedupe->recordSent($options, $sentinelFilePath, $debugFilePath, $latestErrorLineFound)) {
-            $this->errorMessage("There was an issue writing to the file " . $sentinelFilePath);
-            return false;
-        }
-
-        $payload = ABJ_404_Solution_FeedbackTransport::buildPayload('error', array(
-            'error_signature' => (string)($latestErrorLineFound['line'] ?? ''),
-            'previously_sent_line' => (int)$sentLine,
-            'error_count_in_log' => (int)$latestErrorLineFound['total_error_count'],
-        ));
-        return ABJ_404_Solution_FeedbackTransport::sendNow($payload, 'error');
+        return $this->getFeedbackDispatcher()->emailErrorLogIfNecessary();
     }
-
-    /**
-     * Lazily-constructed dedupe-state collaborator. Built off
-     * abj_service('options_repository') to match the production wiring of the
-     * old inline code path. Memoized so a single request reusing the logger
-     * doesn't churn through repeated container lookups.
-     *
-     * @return ABJ_404_Solution_ErrorEmailDedupeState
-     */
-    private function getDedupeState(): ABJ_404_Solution_ErrorEmailDedupeState {
-        if ($this->dedupeState === null) {
-            $this->dedupeState = new ABJ_404_Solution_ErrorEmailDedupeState(
-                abj_service('options_repository'));
-        }
-        return $this->dedupeState;
-    }
-
-    /** @var ABJ_404_Solution_ErrorEmailDedupeState|null */
-    private $dedupeState = null;
 
     /**
      * Lazily-constructed body-formatter collaborator. Pure presentation, no
@@ -382,22 +307,7 @@ class ABJ_404_Solution_Logging {
      * @return bool True if a heartbeat was sent.
      */
     function sendHeartbeatIfDueRandom(int $oneInN = 200): bool {
-        if (!file_exists($this->getDebugFilePath())) {
-            return false;
-        }
-        if (mt_rand(1, $oneInN) !== 1) {
-            return false;
-        }
-        $this->debugMessage("Heartbeat dice roll hit (1-in-{$oneInN}). Sending heartbeat log.");
-        $errorInfo = $this->getLatestErrorLine();
-
-        $payload = ABJ_404_Solution_FeedbackTransport::buildPayload('heartbeat', array(
-            'error_signature' => 'Heartbeat: no errors to report.',
-            'previously_sent_line' => 0,
-            'error_count_in_log' => (int)$errorInfo['total_error_count'],
-        ));
-        ABJ_404_Solution_FeedbackTransport::sendNow($payload, 'heartbeat');
-        return true;
+        return $this->getFeedbackDispatcher()->sendHeartbeatIfDueRandom($oneInN);
     }
 
     /**
