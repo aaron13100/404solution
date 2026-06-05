@@ -24,21 +24,42 @@ class ABJ_404_Solution_ExportService {
     /** @var ABJ_404_Solution_ViewReadServiceInterface */
     private $viewReadService;
 
-    /** @var ABJ_404_Solution_Logging */
+    /** @var mixed Logger-like object supplied by production or legacy tests. */
     private $logger;
 
+    /** @var ABJ_404_Solution_RedirectsRepositoryInterface|null */
+    private $redirectsRepository;
+
     /**
-     * Constructor supports two signatures for backward compatibility:
-     *   (1) New: (ViewReadService, Logging)
-     *   (2) Legacy: (DataAccess, Logging) -- DataAccess implements ViewReadService methods
+     * Constructor supports three signatures for backward compatibility:
+     *   (1) New: (ViewReadService, Logging, RedirectsRepository)
+     *   (2) Alternate injected order: (ViewReadService, RedirectsRepository, Logging)
+     *   (3) Legacy: (DataAccess, Logging) -- DataAccess implements ViewReadService methods
      *
      * @param mixed $viewReadServiceOrDataAccess
-     * @param ABJ_404_Solution_Logging $logging
+     * @param mixed $loggingOrRedirectsRepository
+     * @param mixed $redirectsRepositoryOrLogging
      */
-    function __construct($viewReadServiceOrDataAccess, $logging) {
+    function __construct($viewReadServiceOrDataAccess, $loggingOrRedirectsRepository, $redirectsRepositoryOrLogging = null) {
         /** @var ABJ_404_Solution_ViewReadServiceInterface $viewReadServiceOrDataAccess */
         $this->viewReadService = $viewReadServiceOrDataAccess;
-        $this->logger = $logging;
+        $this->logger = $loggingOrRedirectsRepository;
+        $this->redirectsRepository = null;
+
+        if ($loggingOrRedirectsRepository instanceof ABJ_404_Solution_RedirectsRepositoryInterface) {
+            $this->redirectsRepository = $loggingOrRedirectsRepository;
+            /** @var ABJ_404_Solution_Logging $redirectsRepositoryOrLogging */
+            $this->logger = $redirectsRepositoryOrLogging;
+        } elseif ($redirectsRepositoryOrLogging instanceof ABJ_404_Solution_RedirectsRepositoryInterface) {
+            $this->redirectsRepository = $redirectsRepositoryOrLogging;
+        } elseif ($viewReadServiceOrDataAccess instanceof ABJ_404_Solution_RedirectsRepositoryInterface) {
+            $this->redirectsRepository = $viewReadServiceOrDataAccess;
+        } elseif (is_object($viewReadServiceOrDataAccess) && method_exists($viewReadServiceOrDataAccess, 'getRedirectsRepo')) {
+            $candidate = $viewReadServiceOrDataAccess->getRedirectsRepo();
+            if ($candidate instanceof ABJ_404_Solution_RedirectsRepositoryInterface) {
+                $this->redirectsRepository = $candidate;
+            }
+        }
     }
 
     /**
@@ -89,7 +110,7 @@ class ABJ_404_Solution_ExportService {
             $this->viewReadService->doRedirectsExport($nativeExportFile);
             $error = $this->convertExportCsvToRedirectionFormat($nativeExportFile, $tempFile);
             if ($error !== '') {
-                $this->logger->warn($error);
+                $this->loggerWarn($error);
                 return;
             }
         } else {
@@ -108,7 +129,7 @@ class ABJ_404_Solution_ExportService {
             exit();
         }
 
-        $this->logger->infoMessage("I don't see any data to export.");
+        $this->loggerInfo("I don't see any data to export.");
     }
 
     /**
@@ -120,7 +141,7 @@ class ABJ_404_Solution_ExportService {
     private function doServerFormatExport($format) {
         $registry = $this->serverFormatRegistry();
         if (!array_key_exists($format, $registry)) {
-            $this->logger->warn('Unknown server export format: ' . $format);
+            $this->loggerWarn('Unknown server export format: ' . $format);
             return;
         }
 
@@ -151,74 +172,38 @@ class ABJ_404_Solution_ExportService {
      * @return array<int, array{source: string, dest: string, code: int, is_regex: bool}>
      */
     function getExportableRedirects() {
-        $dbCore = abj_service('db_core');
-        $redirectsTable = $dbCore->doTableNameReplacements('{wp_abj404_redirects}');
-        $cacheTable     = $dbCore->doTableNameReplacements('{wp_abj404_permalink_cache}');
-
-        $manualStatus = defined('ABJ404_STATUS_MANUAL') ? (int)ABJ404_STATUS_MANUAL : 1;
-        $regexStatus  = defined('ABJ404_STATUS_REGEX')  ? (int)ABJ404_STATUS_REGEX  : 6;
-        $typeExternal = defined('ABJ404_TYPE_EXTERNAL') ? (int)ABJ404_TYPE_EXTERNAL : 4;
-        $typeHome     = defined('ABJ404_TYPE_HOME')     ? (int)ABJ404_TYPE_HOME     : 5;
-
-        $queryResult = $dbCore->queryAndGetResults(
-            "SELECT r.url, r.status, r.type, r.final_dest, r.code, r.disabled,
-                    pc.url AS cached_url
-             FROM {$redirectsTable} r
-             LEFT JOIN {$cacheTable} pc ON r.final_dest = pc.id
-             WHERE r.status IN (%d, %d)
-               AND (r.disabled IS NULL OR r.disabled = 0)
-               AND r.url IS NOT NULL AND r.url != ''
-             ORDER BY r.url",
-            ['query_params' => [$manualStatus, $regexStatus]]
-        );
-
-        $rows = $queryResult['rows'] ?? [];
-        if (!is_array($rows) || empty($rows)) {
+        if (!$this->redirectsRepository instanceof ABJ_404_Solution_RedirectsRepositoryInterface) {
+            $this->loggerWarn('Exportable redirects repository is not available for server-format export.');
             return array();
         }
 
-        $result = array();
-        foreach ($rows as $row) {
-            if (!is_array($row)) {
-                continue;
-            }
+        return $this->redirectsRepository->getExportableRedirects();
+    }
 
-            $source   = isset($row['url']) ? (string)$row['url'] : '';
-            $isRegex  = (isset($row['status']) && (int)$row['status'] === $regexStatus);
-            $code     = isset($row['code']) ? (int)$row['code'] : 301;
-            $type     = isset($row['type']) ? (int)$row['type'] : 0;
-            $finalDest = isset($row['final_dest']) ? (string)$row['final_dest'] : '';
-
-            if ($code === 410 || $code === 451) {
-                $dest = $source;
-            } elseif (!empty($row['cached_url'])) {
-                $dest = (string)$row['cached_url'];
-            } elseif ($type === $typeExternal) {
-                $dest = $finalDest;
-            } elseif ($type === $typeHome) {
-                $dest = function_exists('home_url') ? home_url('/') : '/';
-            } elseif (is_numeric($finalDest) && (int)$finalDest > 0) {
-                if (function_exists('get_permalink')) {
-                    $url = get_permalink((int)$finalDest);
-                    $dest = ($url !== false && is_string($url)) ? $url : ('/?p=' . $finalDest);
-                } else {
-                    $dest = '/?p=' . $finalDest;
-                }
-            } elseif ($finalDest !== '') {
-                $dest = $finalDest;
-            } else {
-                continue;
-            }
-
-            $result[] = array(
-                'source'   => $source,
-                'dest'     => $dest,
-                'code'     => $code,
-                'is_regex' => $isRegex,
-            );
+    /**
+     * @param string $message
+     * @return void
+     */
+    private function loggerWarn(string $message): void {
+        if (is_object($this->logger) && method_exists($this->logger, 'warn')) {
+            $this->logger->warn($message);
+            return;
         }
 
-        return $result;
+        error_log('[404 Solution] ' . $message);
+    }
+
+    /**
+     * @param string $message
+     * @return void
+     */
+    private function loggerInfo(string $message): void {
+        if (is_object($this->logger) && method_exists($this->logger, 'infoMessage')) {
+            $this->logger->infoMessage($message);
+            return;
+        }
+
+        error_log('[404 Solution] ' . $message);
     }
 
     /**

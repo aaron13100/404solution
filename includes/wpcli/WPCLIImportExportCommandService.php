@@ -134,7 +134,8 @@ class ABJ_404_Solution_WPCLIImportExportCommandService {
     public function exportRedirects(string $format, string $output): array {
         $svc = new ABJ_404_Solution_ExportService(
             abj_service('view_read_service'),
-            abj_service('logging')
+            abj_service('logging'),
+            abj_service('redirects_repository')
         );
 
         $serverGenerators = array(

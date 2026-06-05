@@ -24,6 +24,14 @@ interface ABJ_404_Solution_RedirectsRepositoryInterface {
     public function deleteRedirect($id);
 
     /**
+     * Fetch manual and regex redirects that are eligible for server-format
+     * export, with destination URLs resolved into the serialized read shape.
+     *
+     * @return array<int, array{source: string, dest: string, code: int, is_regex: bool}>
+     */
+    public function getExportableRedirects(): array;
+
+    /**
      * Store a redirect for future use.
      *
      * Refactored in queue task c738 (audit source: design-audit-2026-05-29.md,

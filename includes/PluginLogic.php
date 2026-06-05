@@ -428,7 +428,8 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
 
         $this->exportService = new ABJ_404_Solution_ExportService(
             abj_service('view_read_service'),
-            $this->logger
+            $this->logger,
+            abj_service('redirects_repository')
         );
         return $this->exportService;
     }
