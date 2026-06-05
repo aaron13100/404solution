@@ -4,6 +4,6 @@ FROM (
     SELECT requested_url
     FROM {wp_abj404_logsv2} FORCE INDEX (`timestamp`)
     ORDER BY `timestamp` DESC
-    LIMIT 5000
+    LIMIT {recent_window}
 ) recent_logs
-LIMIT 500
+LIMIT {distinct_cap}

@@ -24,6 +24,22 @@ class ABJ_404_Solution_LogsReadQueries {
     /** @var int Max age for cached daily-activity trend data. */
     const TREND_DATA_CACHE_TTL_SECONDS = 900;
 
+    /**
+     * Default size of the recency window scanned to find distinct logged URLs.
+     * The GSC URL probe only needs recent traffic, so we cap rows read from
+     * logsv2 before deduplication.
+     */
+    const DEFAULT_RECENT_LOG_WINDOW = 5000;
+
+    /** Hard ceiling on the recency window so a misbehaving caller cannot exhaust memory. */
+    const MAX_RECENT_LOG_WINDOW = 50000;
+
+    /** Default cap on the number of distinct URLs returned. */
+    const DEFAULT_DISTINCT_URL_CAP = 500;
+
+    /** Hard ceiling on the distinct URL cap. */
+    const MAX_DISTINCT_URL_CAP = 5000;
+
     /** @var ABJ_404_Solution_DatabaseCore */
     private $dbCore;
 
@@ -43,9 +59,27 @@ class ABJ_404_Solution_LogsReadQueries {
         $this->logger = $logger;
     }
 
-    /** @return array<int, string> */
-    public function getDistinctLoggedUrls(): array {
+    /**
+     * Fetch the set of distinct recently-requested URLs from logsv2.
+     *
+     * Both bounds are caller-supplied so the cap is visible at the
+     * repository boundary instead of being hidden inside the SQL file.
+     * Values are clamped to [1, MAX_*] to keep this read safe even when
+     * callers (or test fixtures) pass garbage.
+     *
+     * @param int $recentLogWindow Max rows scanned from logsv2 (clamped to [1, MAX_RECENT_LOG_WINDOW]).
+     * @param int $distinctUrlCap  Max distinct URLs returned (clamped to [1, MAX_DISTINCT_URL_CAP]).
+     * @return array<int, string>
+     */
+    public function getDistinctLoggedUrls(
+        int $recentLogWindow = self::DEFAULT_RECENT_LOG_WINDOW,
+        int $distinctUrlCap = self::DEFAULT_DISTINCT_URL_CAP
+    ): array {
+        $recentLogWindow = max(1, min(self::MAX_RECENT_LOG_WINDOW, $recentLogWindow));
+        $distinctUrlCap = max(1, min(self::MAX_DISTINCT_URL_CAP, $distinctUrlCap));
         $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/../sql/getDistinctLoggedUrls.sql");
+        $query = $this->f->str_replace('{recent_window}', (string)$recentLogWindow, $query);
+        $query = $this->f->str_replace('{distinct_cap}', (string)$distinctUrlCap, $query);
         $results = $this->dbCore->queryAndGetResults($query);
         $rows = is_array($results['rows']) ? $results['rows'] : array();
         $urls = array();

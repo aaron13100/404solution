@@ -186,13 +186,25 @@ class ABJ_404_Solution_GoogleSearchConsole {
     }
 
     /**
+     * Recency window scanned by the GSC URL probe (rows from logsv2).
+     * Made explicit at the call site so the cap is visible here, not buried in SQL.
+     */
+    const GSC_URL_PROBE_RECENT_LOG_WINDOW = 5000;
+
+    /** Max distinct URLs the GSC URL probe pulls per fetch. */
+    const GSC_URL_PROBE_DISTINCT_URL_CAP = 500;
+
+    /**
      * Get the list of 404 URLs to query from the logs table.
      *
      * @return string[]
      */
     protected function getUrlsToQuery(): array {
         $logsRepo = abj_service('logs_repository');
-        return $logsRepo->getDistinctLoggedUrls();
+        return $logsRepo->getDistinctLoggedUrls(
+            self::GSC_URL_PROBE_RECENT_LOG_WINDOW,
+            self::GSC_URL_PROBE_DISTINCT_URL_CAP
+        );
     }
 
     /**

@@ -131,8 +131,11 @@ class ABJ_404_Solution_LogsRepository implements ABJ_404_Solution_LogsRepository
     }
 
     /** @inheritDoc */
-    function getDistinctLoggedUrls(): array {
-        return $this->reads->getDistinctLoggedUrls();
+    function getDistinctLoggedUrls(
+        int $recentLogWindow = self::DEFAULT_DISTINCT_RECENT_LOG_WINDOW,
+        int $distinctUrlCap = self::DEFAULT_DISTINCT_URL_CAP
+    ): array {
+        return $this->reads->getDistinctLoggedUrls($recentLogWindow, $distinctUrlCap);
     }
 
     /** @inheritDoc */

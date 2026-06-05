@@ -13,6 +13,16 @@ if (!defined('ABSPATH')) {
  */
 interface ABJ_404_Solution_LogsRepositoryInterface {
 
+    /**
+     * Default size of the recency window scanned to find distinct logged URLs.
+     * Mirrored as ABJ_404_Solution_LogsReadQueries::DEFAULT_RECENT_LOG_WINDOW so
+     * interface defaults do not depend on the implementation being loaded.
+     */
+    const DEFAULT_DISTINCT_RECENT_LOG_WINDOW = 5000;
+
+    /** Default cap on distinct URLs returned by getDistinctLoggedUrls(). */
+    const DEFAULT_DISTINCT_URL_CAP = 500;
+
     // =========================================================================
     // Log data population and querying (from DataAccessTrait_Logs)
     // =========================================================================
@@ -27,9 +37,19 @@ interface ABJ_404_Solution_LogsRepositoryInterface {
     public function populateLogsData($rows);
 
     /**
+     * Distinct recently-requested URLs from the 404 log table.
+     *
+     * Bounds are caller-supplied (with safe defaults) so the read cap is
+     * visible at the repository boundary, not hidden inside SQL.
+     *
+     * @param int $recentLogWindow Max rows scanned from logsv2 before deduplication.
+     * @param int $distinctUrlCap  Max distinct URLs returned.
      * @return array<int, string>
      */
-    public function getDistinctLoggedUrls(): array;
+    public function getDistinctLoggedUrls(
+        int $recentLogWindow = self::DEFAULT_DISTINCT_RECENT_LOG_WINDOW,
+        int $distinctUrlCap = self::DEFAULT_DISTINCT_URL_CAP
+    ): array;
 
     /**
      * @param string $specificURL
