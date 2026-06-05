@@ -309,6 +309,12 @@ if (!function_exists('abj404_shortCodeListener')) {
 				// Boot-critical
 				$inc . 'Loader.php',
 				$inc . 'bootstrap.php',
+				$inc . 'bootstrap/CoreServiceRegistration.php',
+				$inc . 'bootstrap/DataServiceRegistration.php',
+				$inc . 'bootstrap/DomainServiceRegistration.php',
+				$inc . 'bootstrap/MatchingEngineServiceRegistration.php',
+				$inc . 'bootstrap/RuntimeServiceRegistration.php',
+				$inc . 'bootstrap/LegacyInstanceResolver.php',
 				$inc . 'classmap.php',
 				$inc . 'ServiceContainer.php',
 				$inc . 'Clock.php',

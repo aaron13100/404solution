@@ -1,0 +1,73 @@
+<?php
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+/**
+ * Registers redirect matching engines and the filterable engine list.
+ */
+class ABJ_404_Solution_MatchingEngineServiceRegistration {
+
+    /**
+     * @param ABJ_404_Solution_ServiceContainer $container
+     * @return void
+     */
+    public static function register($container): void {
+        $container->set('engine_slug', function($c) {
+            return new ABJ_404_Solution_SlugMatchingEngine($c->get('spell_checker'));
+        });
+
+        $container->set('engine_url_fix', function($c) {
+            return new ABJ_404_Solution_UrlFixEngine(
+                $c->get('spell_checker'),
+                $c->get('functions'),
+                $c->get('logging')
+            );
+        });
+
+        $container->set('engine_title', function($c) {
+            return new ABJ_404_Solution_TitleMatchingEngine(
+                $c->get('content_repository'),
+                $c->get('functions'),
+                $c->get('logging')
+            );
+        });
+
+        $container->set('engine_category_tag', function($c) {
+            return new ABJ_404_Solution_CategoryTagMatchingEngine(
+                $c->get('content_repository'),
+                $c->get('functions'),
+                $c->get('logging')
+            );
+        });
+
+        $container->set('engine_content', function($c) {
+            return new ABJ_404_Solution_ContentMatchingEngine(
+                $c->get('content_repository'),
+                $c->get('functions'),
+                $c->get('logging')
+            );
+        });
+
+        $container->set('engine_spelling', function($c) {
+            return new ABJ_404_Solution_SpellingMatchingEngine($c->get('spell_checker'));
+        });
+
+        $container->set('engine_archive_fallback', function($c) {
+            return new ABJ_404_Solution_ArchiveFallbackEngine(
+                $c->get('functions'),
+                $c->get('logging')
+            );
+        });
+
+        $container->set('matching_engines', function($c) {
+            $engines = [$c->get('engine_slug'), $c->get('engine_url_fix'), $c->get('engine_title'), $c->get('engine_category_tag'), $c->get('engine_content'), $c->get('engine_spelling'), $c->get('engine_archive_fallback')];
+            if (function_exists('apply_filters')) {
+                $filtered = apply_filters('abj404_matching_engines', $engines);
+                $engines = is_array($filtered) ? $filtered : [];
+            }
+            return $engines;
+        });
+    }
+}
