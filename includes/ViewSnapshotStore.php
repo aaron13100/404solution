@@ -133,10 +133,13 @@ class ABJ_404_Solution_ViewSnapshotStore {
         if (!function_exists('add_option')) {
             return true;
         }
+        $lockKey = $this->getViewSnapshotLockOptionName($cacheKey);
+        if (add_option($lockKey, time(), '', false)) {
+            return true;
+        }
         if ($this->isViewSnapshotRefreshLocked($cacheKey)) {
             return false;
         }
-        $lockKey = $this->getViewSnapshotLockOptionName($cacheKey);
         return (bool)add_option($lockKey, time(), '', false);
     }
 

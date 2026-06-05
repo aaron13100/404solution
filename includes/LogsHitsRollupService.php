@@ -431,8 +431,10 @@ class ABJ_404_Solution_LogsHitsRollupService implements ABJ_404_Solution_LogsHit
     /** @return bool */
     private function acquireHitsTableRebuildLock(): bool {
         if (!function_exists('add_option')) { return true; }
+        $lockName = $this->getHitsTableRebuildLockOptionName();
+        if (add_option($lockName, (string)time(), '', false)) { return true; }
         if ($this->isHitsTableRebuildLocked()) { return false; }
-        return (bool)add_option($this->getHitsTableRebuildLockOptionName(), (string)time(), '', false);
+        return (bool)add_option($lockName, (string)time(), '', false);
     }
 
     /** @return void */
