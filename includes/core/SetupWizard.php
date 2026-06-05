@@ -6,6 +6,12 @@ if (!defined('ABSPATH')) {
 }
 
 /**
+ * Raised when a setup wizard presentation asset cannot be loaded.
+ */
+class ABJ_404_Solution_SetupWizardAssetException extends RuntimeException {
+}
+
+/**
  * Setup Wizard for first-time plugin configuration
  * Shows a welcome modal on first visit to 404 Solution admin pages
  *
@@ -244,8 +250,18 @@ class ABJ_404_Solution_SetupWizard {
      * @return void
      */
     public static function outputStyles(): void {
-        $css = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/html/setupWizardStyles.css');
-        echo '<style>' . $css . '</style>';
+        $cssPath = self::filteredAssetPath(
+            'abj404_setup_wizard_stylesheet_path',
+            dirname(__DIR__) . '/html/setupWizardStyles.css'
+        );
+        $wrapperPath = self::filteredAssetPath(
+            'abj404_setup_wizard_styles_template_path',
+            dirname(__DIR__) . '/html/setupWizardStyles.html'
+        );
+
+        echo self::fillTpl($wrapperPath, 'setup wizard style wrapper', array(
+            'css' => self::readSetupWizardAsset($cssPath, 'setup wizard stylesheet'),
+        ));
     }
 
     /**
@@ -253,101 +269,167 @@ class ABJ_404_Solution_SetupWizard {
      * @return void
      */
     public static function outputModalHTML(): void {
-        ?>
-        <div id="abj404-setup-wizard" class="abj404-setup-overlay">
-            <div class="abj404-setup-modal">
-                <form method="post" action="">
-                    <?php wp_nonce_field('abj404_setup_wizard', 'abj404_setup_wizard_nonce'); ?>
+        $templatePath = self::filteredAssetPath(
+            'abj404_setup_wizard_modal_template_path',
+            dirname(__DIR__) . '/html/setupWizardModal.html'
+        );
+        $answers = self::getDefaultAnswerValues();
 
-                    <div class="abj404-setup-header">
-                        <h2><?php esc_html_e('Welcome to 404 Solution', '404-solution'); ?></h2>
-                        <button type="button" id="abj404-setup-close" class="abj404-setup-close" title="<?php esc_attr_e('Close', '404-solution'); ?>">&times;</button>
-                    </div>
+        echo self::fillTpl($templatePath, 'setup wizard modal template', array(
+            'nonce_field' => self::renderNonceField(),
+            'welcome_heading' => esc_html__('Welcome to 404 Solution', '404-solution'),
+            'close_label' => esc_attr__('Close', '404-solution'),
+            'intro_primary' => esc_html__('404 Solution helps you automatically handle 404 errors and broken links on your site.', '404-solution'),
+            'intro_secondary' => esc_html__("Let's configure how it handles missing pages. You can always change these settings later.", '404-solution'),
+            'q1_heading' => esc_html__('When a page is not found, what should happen?', '404-solution'),
+            'q1_redirect_checked' => self::checkedAttribute($answers['q1'], 'redirect'),
+            'q1_redirect_label' => esc_html__('Automatically redirect to similar page (recommended)', '404-solution'),
+            'q1_redirect_desc' => esc_html__('When a match is found, redirect visitors automatically', '404-solution'),
+            'q1_default_checked' => self::checkedAttribute($answers['q1'], 'default'),
+            'q1_default_label' => esc_html__('Just show the default 404 page', '404-solution'),
+            'q1_default_desc' => esc_html__("Use WordPress's standard \"Page not found\" screen. Manual redirects still work.", '404-solution'),
+            'q2_heading' => esc_html__('Log 404 errors for review?', '404-solution'),
+            'q2_yes_checked' => self::checkedAttribute($answers['q2'], 'yes'),
+            'q2_yes_label' => esc_html__('Yes, log 404 errors', '404-solution'),
+            'q2_yes_desc' => esc_html__('Track missing pages so you can create redirects later', '404-solution'),
+            'q2_no_checked' => self::checkedAttribute($answers['q2'], 'no'),
+            'q2_no_label' => esc_html__("No, don't log 404s", '404-solution'),
+            'q2_no_desc' => esc_html__('Only handle manually created redirects', '404-solution'),
+            'q3_heading' => esc_html__('Get email alerts about 404 problems?', '404-solution'),
+            'q3_yes_checked' => self::checkedAttribute($answers['q3'], 'yes'),
+            'q3_yes_label' => esc_html__('Yes, email me a weekly summary (recommended)', '404-solution'),
+            'q3_yes_desc' => esc_html__('Get notified when captured 404 URLs exceed 50', '404-solution'),
+            'q3_no_checked' => self::checkedAttribute($answers['q3'], 'no'),
+            'q3_no_label' => esc_html__("No, I'll check manually", '404-solution'),
+            'q3_no_desc' => esc_html__('You can always enable email alerts later in Options', '404-solution'),
+            'skip_label' => esc_html__('Skip Setup', '404-solution'),
+            'save_label' => esc_html__('Save & Get Started', '404-solution'),
+        ));
+    }
 
-                    <div class="abj404-setup-content">
-                        <p class="abj404-setup-intro">
-                            <?php esc_html_e('404 Solution helps you automatically handle 404 errors and broken links on your site.', '404-solution'); ?>
-                            <?php esc_html_e("Let's configure how it handles missing pages. You can always change these settings later.", '404-solution'); ?>
-                        </p>
+    /**
+     * Render a template with string placeholders.
+     *
+     * @param string $path Absolute template path.
+     * @param string $assetLabel Human-readable asset label for diagnostics.
+     * @param array<string,string> $vars Escaped placeholder values.
+     * @return string Rendered template.
+     */
+    private static function fillTpl(string $path, string $assetLabel, array $vars): string {
+        $template = self::readSetupWizardAsset($path, $assetLabel);
+        $replacements = array();
+        foreach ($vars as $key => $value) {
+            $replacements['{' . $key . '}'] = $value;
+        }
 
-                        <!-- Question 1: What happens when page not found -->
-                        <div class="abj404-setup-question">
-                            <h3><?php esc_html_e('When a page is not found, what should happen?', '404-solution'); ?></h3>
-                            <div class="abj404-setup-options">
-                                <label class="abj404-setup-option">
-                                    <input type="radio" name="abj404_setup_q1" value="redirect" checked>
-                                    <span class="abj404-setup-option-text">
-                                        <span class="abj404-setup-option-label"><?php esc_html_e('Automatically redirect to similar page (recommended)', '404-solution'); ?></span>
-                                        <span class="abj404-setup-option-desc"><?php esc_html_e('When a match is found, redirect visitors automatically', '404-solution'); ?></span>
-                                    </span>
-                                </label>
-                                <label class="abj404-setup-option">
-                                    <input type="radio" name="abj404_setup_q1" value="default">
-                                    <span class="abj404-setup-option-text">
-                                        <span class="abj404-setup-option-label"><?php esc_html_e('Just show the default 404 page', '404-solution'); ?></span>
-                                        <span class="abj404-setup-option-desc"><?php esc_html_e("Use WordPress's standard \"Page not found\" screen. Manual redirects still work.", '404-solution'); ?></span>
-                                    </span>
-                                </label>
-                            </div>
-                        </div>
+        return strtr($template, $replacements);
+    }
 
-                        <!-- Question 2: Log 404s -->
-                        <div class="abj404-setup-question">
-                            <h3><?php esc_html_e('Log 404 errors for review?', '404-solution'); ?></h3>
-                            <div class="abj404-setup-options">
-                                <label class="abj404-setup-option">
-                                    <input type="radio" name="abj404_setup_q2" value="yes" checked>
-                                    <span class="abj404-setup-option-text">
-                                        <span class="abj404-setup-option-label"><?php esc_html_e('Yes, log 404 errors', '404-solution'); ?></span>
-                                        <span class="abj404-setup-option-desc"><?php esc_html_e('Track missing pages so you can create redirects later', '404-solution'); ?></span>
-                                    </span>
-                                </label>
-                                <label class="abj404-setup-option">
-                                    <input type="radio" name="abj404_setup_q2" value="no">
-                                    <span class="abj404-setup-option-text">
-                                        <span class="abj404-setup-option-label"><?php esc_html_e("No, don't log 404s", '404-solution'); ?></span>
-                                        <span class="abj404-setup-option-desc"><?php esc_html_e('Only handle manually created redirects', '404-solution'); ?></span>
-                                    </span>
-                                </label>
-                            </div>
-                        </div>
+    /**
+     * Read a setup wizard asset and preserve the failed path in diagnostics.
+     *
+     * @param string $path Absolute asset path.
+     * @param string $assetLabel Human-readable asset label.
+     * @return string Asset contents.
+     */
+    private static function readSetupWizardAsset(string $path, string $assetLabel): string {
+        try {
+            return ABJ_404_Solution_FileSystemService::readFileContents($path, false);
+        } catch (Throwable $e) {
+            throw new ABJ_404_Solution_SetupWizardAssetException(
+                'Could not load ' . $assetLabel . ' from ' . $path . ': ' . $e->getMessage(),
+                0,
+                $e
+            );
+        }
+    }
 
-                        <!-- Question 3: Email alerts -->
-                        <div class="abj404-setup-question">
-                            <h3><?php esc_html_e('Get email alerts about 404 problems?', '404-solution'); ?></h3>
-                            <div class="abj404-setup-options">
-                                <label class="abj404-setup-option">
-                                    <input type="radio" name="abj404_setup_q3" value="yes" checked>
-                                    <span class="abj404-setup-option-text">
-                                        <span class="abj404-setup-option-label"><?php esc_html_e('Yes, email me a weekly summary (recommended)', '404-solution'); ?></span>
-                                        <span class="abj404-setup-option-desc"><?php esc_html_e('Get notified when captured 404 URLs exceed 50', '404-solution'); ?></span>
-                                    </span>
-                                </label>
-                                <label class="abj404-setup-option">
-                                    <input type="radio" name="abj404_setup_q3" value="no">
-                                    <span class="abj404-setup-option-text">
-                                        <span class="abj404-setup-option-label"><?php esc_html_e("No, I'll check manually", '404-solution'); ?></span>
-                                        <span class="abj404-setup-option-desc"><?php esc_html_e('You can always enable email alerts later in Options', '404-solution'); ?></span>
-                                    </span>
-                                </label>
-                            </div>
-                        </div>
-                    </div>
+    /**
+     * Apply a string-valued asset path filter.
+     *
+     * @param non-empty-string $hook Filter hook name.
+     * @param string $defaultPath Default absolute path.
+     * @return string Filtered path when valid, otherwise the default.
+     */
+    private static function filteredAssetPath(string $hook, string $defaultPath): string {
+        if (!function_exists('apply_filters')) {
+            return $defaultPath;
+        }
 
-                    <div class="abj404-setup-footer">
-                        <button type="button" id="abj404-setup-skip" class="abj404-setup-skip">
-                            <?php esc_html_e('Skip Setup', '404-solution'); ?>
-                        </button>
-                        <!-- Hidden input ensures action is sent even if button is disabled during submit -->
-                        <input type="hidden" name="abj404_setup_wizard_action" value="save">
-                        <button type="submit" class="button abj404-setup-primary">
-                            <?php esc_html_e('Save & Get Started', '404-solution'); ?>
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-        <?php
+        $filtered = apply_filters($hook, $defaultPath);
+        if (!is_string($filtered) || $filtered === '') {
+            return $defaultPath;
+        }
+
+        return $filtered;
+    }
+
+    /**
+     * Return validated default answers for the rendered wizard form.
+     *
+     * @return array{q1:string,q2:string,q3:string}
+     */
+    private static function getDefaultAnswerValues(): array {
+        $answers = array(
+            'q1' => 'redirect',
+            'q2' => 'yes',
+            'q3' => 'yes',
+        );
+
+        if (function_exists('apply_filters')) {
+            $filtered = apply_filters('abj404_setup_wizard_default_answers', $answers);
+            if (is_array($filtered)) {
+                if (isset($filtered['q1']) && is_string($filtered['q1'])) {
+                    $answers['q1'] = $filtered['q1'];
+                }
+                if (isset($filtered['q2']) && is_string($filtered['q2'])) {
+                    $answers['q2'] = $filtered['q2'];
+                }
+                if (isset($filtered['q3']) && is_string($filtered['q3'])) {
+                    $answers['q3'] = $filtered['q3'];
+                }
+            }
+        }
+
+        return array(
+            'q1' => self::validAnswerValue($answers['q1'], self::$allowedQ1Values, 'redirect'),
+            'q2' => self::validAnswerValue($answers['q2'], self::$allowedQ2Values, 'yes'),
+            'q3' => self::validAnswerValue($answers['q3'], self::$allowedQ3Values, 'yes'),
+        );
+    }
+
+    /**
+     * Return an allowed answer or the safe default.
+     *
+     * @param string $value Candidate value.
+     * @param array<int,string> $allowed Allowed values.
+     * @param string $default Default value.
+     * @return string Validated answer.
+     */
+    private static function validAnswerValue(string $value, array $allowed, string $default): string {
+        return in_array($value, $allowed, true) ? $value : $default;
+    }
+
+    /**
+     * Return a leading-space checked attribute for selected radio options.
+     *
+     * @param string $current Current option value.
+     * @param string $candidate Candidate option value.
+     * @return string Attribute fragment.
+     */
+    private static function checkedAttribute(string $current, string $candidate): string {
+        return $current === $candidate ? ' checked' : '';
+    }
+
+    /**
+     * Capture WordPress nonce field output so it can be inserted into the template.
+     *
+     * @return string Nonce input HTML.
+     */
+    private static function renderNonceField(): string {
+        ob_start();
+        wp_nonce_field('abj404_setup_wizard', 'abj404_setup_wizard_nonce');
+        return (string)ob_get_clean();
     }
 
     /**
