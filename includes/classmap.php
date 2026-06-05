@@ -150,6 +150,10 @@ return array(
     // SpellChecker delegates to standalone classes (converted from traits).
     'ABJ_404_Solution_SpellURLMatcher' => $base . 'includes/SpellURLMatcher.php',
     'ABJ_404_Solution_SpellPostListeners' => $base . 'includes/SpellPostListeners.php',
+    'ABJ_404_Solution_SpellNGramPrefilter' => $base . 'includes/SpellNGramPrefilter.php',
+    'ABJ_404_Solution_SpellCandidatePermalinkLookup' => $base . 'includes/SpellCandidatePermalinkLookup.php',
+    'ABJ_404_Solution_SpellSuggestionExclusionPolicy' => $base . 'includes/SpellSuggestionExclusionPolicy.php',
+    'ABJ_404_Solution_SpellSuggestionScorer' => $base . 'includes/SpellSuggestionScorer.php',
     'ABJ_404_Solution_SpellLevenshteinEngine' => $base . 'includes/SpellLevenshteinEngine.php',
     'ABJ_404_Solution_SpellCandidateFilter' => $base . 'includes/SpellCandidateFilter.php',
     // View components (converted from former ViewTrait_* family).

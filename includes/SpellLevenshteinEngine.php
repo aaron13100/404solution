@@ -43,11 +43,14 @@ class ABJ_404_Solution_SpellLevenshteinEngine {
 	/** @var ABJ_404_Solution_ContentRepository */
 	private $contentRepository;
 
-	/** @var ABJ_404_Solution_NGramFilter */
-	private $ngramFilter;
-
 	/** @var ABJ_404_Solution_SpellURLMatcher */
 	private $urlMatcher;
+
+	/** @var ABJ_404_Solution_SpellNGramPrefilter */
+	private $ngramPrefilter;
+
+	/** @var ABJ_404_Solution_SpellCandidatePermalinkLookup */
+	private $permalinkLookup;
 
 	/** @var array<int, string> */
 	private array $separatingCharacters;
@@ -77,9 +80,10 @@ class ABJ_404_Solution_SpellLevenshteinEngine {
 		$this->logic = $logic;
 		$this->logger = $logger;
 		$this->contentRepository = $contentRepository;
-		$this->ngramFilter = $ngramFilter;
 		$this->urlMatcher = $urlMatcher;
 		$this->separatingCharacters = $separatingCharacters;
+		$this->ngramPrefilter = new ABJ_404_Solution_SpellNGramPrefilter($ngramFilter, $logger);
+		$this->permalinkLookup = new ABJ_404_Solution_SpellCandidatePermalinkLookup($contentRepository, $urlMatcher);
 	}
 
 	/** @param ABJ_404_Solution_PublishedPostsProvider|null $provider */
@@ -132,7 +136,13 @@ class ABJ_404_Solution_SpellLevenshteinEngine {
 		$suggestMaxLikely = isset($options['suggest_max']) && is_scalar($options['suggest_max']) ? $options['suggest_max'] : 5;
 		$onlyNeedThisManyPages = min(5 * absint($suggestMaxLikely), 100);
 
-		$ngramPrefilterResult = $this->tryApplyNgramPrefilter($rowType, $rows, $requestedURLCleaned);
+		$ngramPrefilterResult = $this->ngramPrefilter->tryApply(
+			$rowType,
+			$rows,
+			$requestedURLCleaned,
+			$this->publishedPostsProvider,
+			$this->skipNgramGate4
+		);
 		if ($ngramPrefilterResult === 'early_return') {
 			return array();
 		}
@@ -287,72 +297,9 @@ class ABJ_404_Solution_SpellLevenshteinEngine {
 			$idsWithWordsInCommon, $ngramPrefilterApplied, $requestedURLCleaned
 		);
 
-		return $this->batchLookupPermalinks(
+		return $this->permalinkLookup->lookup(
 			array_values(array_unique($candidateIds)), $rowType, $observedPermalinksById
 		);
-	}
-
-	/**
-	 * @param string $rowType
-	 * @param array<int, array<string, mixed>>|null $rows
-	 * @param string $requestedURLCleaned
-	 * @return string 'applied' if prefilter was used, 'early_return' if no matches exist, 'skipped' otherwise
-	 */
-	private function tryApplyNgramPrefilter(string $rowType, ?array $rows, string $requestedURLCleaned): string {
-		if ($rowType != 'pages' || $rows !== null) {
-			return 'skipped';
-		}
-
-		$cacheCount = $this->ngramFilter->getCacheCount();
-
-		if ($cacheCount < self::NGRAM_MIN_CACHE_ENTRIES) {
-			$this->logger->debugMessage(sprintf(
-				"N-gram prefilter skipped (gate 1: min entries): count=%d (need %d)",
-				$cacheCount, self::NGRAM_MIN_CACHE_ENTRIES
-			));
-			return 'skipped';
-		}
-		if (!$this->ngramFilter->isCacheInitialized()) {
-			$this->logger->debugMessage(sprintf(
-				"N-gram prefilter skipped (gate 2: not initialized): count=%d", $cacheCount
-			));
-			return 'skipped';
-		}
-		$coverageRatio = $this->ngramFilter->getCacheCoverageRatio();
-		if ($coverageRatio < self::NGRAM_MIN_COVERAGE_RATIO) {
-			$this->logger->debugMessage(sprintf(
-				"N-gram prefilter skipped (gate 3: low coverage): ratio=%.2f (need %.2f)",
-				$coverageRatio, self::NGRAM_MIN_COVERAGE_RATIO
-			));
-			return 'skipped';
-		}
-
-		$similarPages = $this->ngramFilter->findSimilarPages(
-			$requestedURLCleaned, self::NGRAM_PREFILTER_THRESHOLD, self::NGRAM_PREFILTER_MAX_CANDIDATES
-		);
-
-		if (!empty($similarPages) && $this->publishedPostsProvider !== null) {
-			$candidateIds = array_keys($similarPages);
-			$this->publishedPostsProvider->resetBatch();
-			$this->publishedPostsProvider->restrictToIds($candidateIds);
-			$this->logger->debugMessage(sprintf(
-				"N-gram prefilter: Restricted to %d candidates (cache has %d entries, coverage=%.2f)",
-				count($candidateIds), $cacheCount, $coverageRatio
-			));
-			return 'applied';
-		}
-
-		if ($this->skipNgramGate4) {
-			$this->logger->debugMessage(
-				"N-gram prefilter: zero candidates at Dice >= 0.3 \xe2\x80\x94 skipNgramGate4 is set, falling through to full scan"
-			);
-			return 'skipped';
-		}
-
-		$this->logger->debugMessage(
-			"N-gram prefilter: zero candidates at Dice >= 0.3 \xe2\x80\x94 no similar pages exist, returning early"
-		);
-		return 'early_return';
 	}
 
 	/**
@@ -384,36 +331,19 @@ class ABJ_404_Solution_SpellLevenshteinEngine {
 			$listOfIDsToReturn = array_merge($listOfIDsToReturn, $listOfMinDistanceIDs);
 		}
 
+		$listOfIDsToReturn = $this->normalizeScalarIds($listOfIDsToReturn);
+		$idsWithWordsInCommon = $this->normalizeScalarIds($idsWithWordsInCommon);
 		$idsWithWords = array_intersect($listOfIDsToReturn, $idsWithWordsInCommon);
 		$idsWithoutWords = array_diff($listOfIDsToReturn, $idsWithWordsInCommon);
 		$listOfIDsToReturn = array_merge($idsWithWords, $idsWithoutWords);
 
-		$beforeNGramCount = count($listOfIDsToReturn);
-		if (!$ngramPrefilterApplied
-			&& $beforeNGramCount > self::NGRAM_SECONDARY_MIN_CANDIDATES
-			&& $this->ngramFilter->getCacheCount() >= self::NGRAM_MIN_CACHE_ENTRIES
-			&& $this->ngramFilter->isCacheInitialized()
-			&& $this->ngramFilter->getCacheCoverageRatio() >= self::NGRAM_MIN_COVERAGE_RATIO) {
-			$similarPages = $this->ngramFilter->findSimilarPages(
-				$requestedURLCleaned,
-				self::NGRAM_SECONDARY_THRESHOLD,
-				min($beforeNGramCount, self::NGRAM_SECONDARY_MAX_CANDIDATES)
-			);
-			if (!empty($similarPages)) {
-				$ngramFilteredIDs = array_keys($similarPages);
-				$listOfIDsToReturn = array_intersect($listOfIDsToReturn, $ngramFilteredIDs);
-				usort($listOfIDsToReturn, function($a, $b) use ($similarPages) {
-					$simA = isset($similarPages[$a]) ? $similarPages[$a] : 0;
-					$simB = isset($similarPages[$b]) ? $similarPages[$b] : 0;
-					return $simB <=> $simA;
-				});
-				$this->logger->debugMessage(sprintf(
-					"N-gram filter (secondary): %d to %d candidates (%.1f%% reduction)",
-					$beforeNGramCount, count($listOfIDsToReturn),
-					100 * (1 - count($listOfIDsToReturn) / max(1, $beforeNGramCount))
-				));
-			}
-		}
+		$listOfIDsToReturn = $this->normalizeScalarIds(
+			$this->ngramPrefilter->applySecondaryFilter(
+				$listOfIDsToReturn,
+				$ngramPrefilterApplied,
+				$requestedURLCleaned
+			)
+		);
 
 		if (count($listOfIDsToReturn) > 300 && count($idsWithWordsInCommon) >= $onlyNeedThisManyPages) {
 			$maybeOKguesses = array_intersect($listOfIDsToReturn, $idsWithWordsInCommon);
@@ -425,39 +355,18 @@ class ABJ_404_Solution_SpellLevenshteinEngine {
 
 	/**
 	 * @param array<int, mixed> $ids
-	 * @param string $rowType
-	 * @param array<int, string> $observedPermalinksById
-	 * @return array<int|string, string>
+	 * @return array<int, int|string>
 	 */
-	private function batchLookupPermalinks(array $ids, string $rowType, array $observedPermalinksById = array()): array {
-		if (empty($ids)) {
-			return [];
-		}
-		$result = [];
-		if ($rowType === 'pages' || $rowType === 'image') {
-			$intIds = array_map(function($v) { return is_scalar($v) ? (int)$v : 0; }, $ids);
-			$rows = $this->contentRepository->getPermalinksByIds($intIds);
-			foreach ($rows as $row) {
-				$row = (array)$row;
-				if (isset($row['id'], $row['url']) && is_string($row['url'])) {
-					$result[(int)$row['id']] = abj_service('sanitizer')->normalizeUrlString($row['url']);
-				}
-			}
-			foreach ($intIds as $id) {
-				if (!isset($result[$id]) && isset($observedPermalinksById[$id])) {
-					$result[$id] = abj_service('sanitizer')->normalizeUrlString($observedPermalinksById[$id]);
-				}
-			}
-		} else {
-			foreach ($ids as $id) {
-				$idInt = is_scalar($id) ? (int)$id : 0;
-				$permalink = $this->urlMatcher->getPermalink($idInt, $rowType);
-				if (is_string($permalink) && $permalink !== '') {
-					$result[$id] = $permalink;
-				}
+	private function normalizeScalarIds(array $ids): array {
+		$normalized = array();
+		foreach ($ids as $id) {
+			if (is_int($id) || is_string($id)) {
+				$normalized[] = $id;
+			} else if (is_scalar($id)) {
+				$normalized[] = (string)$id;
 			}
 		}
-		return $result;
+		return $normalized;
 	}
 
 	/**
