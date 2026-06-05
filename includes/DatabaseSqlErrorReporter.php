@@ -162,4 +162,136 @@ class ABJ_404_Solution_DatabaseSqlErrorReporter {
         $exception = $e instanceof Exception ? $e : new Exception($e->getMessage(), (int)$e->getCode(), $e);
         $this->logger->errorMessage($message, $exception);
     }
+
+    /**
+     * Handle final SQL reporting and stale-notice cleanup after recovery.
+     *
+     * @param string $query
+     * @param array<string, mixed> $result
+     * @param array<string, mixed> $options
+     * @param array<int|string, string> $ignoreErrorStrings
+     * @param ABJ_404_Solution_Timer $timer
+     * @return void
+     */
+    public function handleFinalSqlErrorReporting(
+        string $query,
+        array &$result,
+        array $options,
+        array $ignoreErrorStrings,
+        ABJ_404_Solution_Timer $timer
+    ): void {
+        $lastError = isset($result['last_error']) && is_scalar($result['last_error'])
+            ? (string)$result['last_error'] : '';
+
+        if ($options['log_errors'] && $lastError !== '') {
+            $this->runRepairHooksForFinalError($query, $result, $lastError);
+            $lastError = isset($result['last_error']) && is_scalar($result['last_error'])
+                ? (string)$result['last_error'] : '';
+            if ($lastError === '') {
+                return;
+            }
+
+            if (!$this->shouldReportFinalError($lastError, $ignoreErrorStrings)) {
+                return;
+            }
+
+            if ($this->isInfrastructureSqlError($lastError)) {
+                $this->logger->warn("Server-side DB issue (handled): " . $lastError);
+                return;
+            }
+
+            $this->logDetailedFinalSqlError($query, $lastError, $timer);
+            return;
+        }
+
+        if ($options['log_too_slow'] && $timer->getElapsedTime() > 5) {
+            $sqlInfo = (defined('WP_DEBUG') && WP_DEBUG) ? $query : $this->core->queryDiagnostics()->extractSqlFilename($query);
+            $this->logger->debugMessage("Slow query (" . round($timer->getElapsedTime(), 2) . " seconds): " .
+                    $sqlInfo);
+        }
+
+        if ($lastError === '') {
+            $this->clearRecoveredServerSideNoticeIfNeeded();
+        }
+    }
+
+    /**
+     * @param string $query
+     * @param array<string, mixed> $result
+     * @param string $lastError
+     * @return void
+     */
+    private function runRepairHooksForFinalError(string $query, array &$result, string $lastError): void {
+        if (strpos($lastError, " is marked as crashed ") !== false) {
+            $this->core->repairTable($lastError);
+        }
+        if (strpos($lastError, "ALTER TABLE causes auto_increment resequencing") !== false &&
+                strpos($lastError, "resulting in duplicate entry") !== false) {
+            $this->core->repairDuplicateIDs($lastError, $query);
+        }
+        if ($this->core->errorClassifier()->isIncorrectKeyFileError($lastError)) {
+            $this->core->tableRepairer()->repairCorruptedTableAndRetry($query, $result);
+        }
+    }
+
+    /**
+     * @param string $lastError
+     * @param array<int|string, string> $ignoreErrorStrings
+     * @return bool
+     */
+    private function shouldReportFinalError(string $lastError, array $ignoreErrorStrings): bool {
+        foreach ($ignoreErrorStrings as $ignoreThis) {
+            if (is_string($ignoreThis) && strpos($lastError, $ignoreThis) !== false) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * @param string $query
+     * @param string $lastError
+     * @param ABJ_404_Solution_Timer $timer
+     * @return void
+     */
+    private function logDetailedFinalSqlError(string $query, string $lastError, ABJ_404_Solution_Timer $timer): void {
+        global $wpdb;
+
+        $strippedQuery = 'n/a';
+        if ($this->core->errorClassifier()->isInvalidDataError($lastError)) {
+            $strippedResult = $this->core->tableRepairer()->get_stripped_query_result($query);
+            $strippedQuery = is_string($strippedResult) ? $strippedResult : 'n/a';
+        }
+
+        $extraDataQuery = "select @@max_join_size as max_join_size, " .
+            "@@sql_big_selects as sql_big_selects, " .
+            "@@character_set_database as character_set_database";
+        $someMySQLVariables = $wpdb->get_results($extraDataQuery, ARRAY_A);
+        $variables = print_r($someMySQLVariables, true);
+
+        $sqlInfo = (defined('WP_DEBUG') && WP_DEBUG) ? $query : $this->core->queryDiagnostics()->extractSqlFilename($query);
+        $dbVer = $wpdb->db_version();
+        $this->logger->errorMessage("Ugh. SQL query error: " . $lastError .
+                ", SQL: " . $sqlInfo .
+                ", Execution time: " . round($timer->getElapsedTime(), 2) .
+                ", DB ver: " . (is_string($dbVer) ? $dbVer : 'unknown') .
+                ", Variables: " . $variables .
+                ", stripped_query: " . $strippedQuery);
+    }
+
+    /** @return void */
+    private function clearRecoveredServerSideNoticeIfNeeded(): void {
+        if (!$this->core->noticeState()->isServerSideIssueNoted() && !$this->core->noticeState()->isServerSideIssueChecked()) {
+            $this->core->noticeState()->markServerSideIssueChecked();
+            $existing = $this->core->getRuntimeFlag('abj404_plugin_db_notice');
+            $excludedTypes = array('stale_permalink_cache', 'missing_table');
+            if (is_array($existing) && !empty($existing['type'])
+                && !in_array($existing['type'], $excludedTypes, true)) {
+                $this->core->noticeState()->markServerSideIssueNoted();
+            }
+        }
+        if ($this->core->noticeState()->isServerSideIssueNoted() && !$this->core->isWriteBlockActive() && !$this->core->errorClassifier()->isQuotaCooldownActive()) {
+            $this->core->noticeState()->clearServerSideDbNotice();
+        }
+    }
 }

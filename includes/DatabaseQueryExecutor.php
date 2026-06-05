@@ -13,17 +13,16 @@ if (!defined('ABSPATH')) {
  *   - queryAndGetResults():    the main pipeline (option normalization, table-name
  *                              substitution, prepare(), timeout wrapping, latency
  *                              simulation, get_results/query call, error harvest,
- *                              transient-connection / set-statement / missing-table /
- *                              invalid-data / deadlock / collation / timeout retries,
- *                              and final error-logging / repair dispatch).
+ *                              recovery-policy dispatch, and final error reporter
+ *                              dispatch).
  *   - queryScalarInt():        thin wrapper that runs a query and returns the
  *                              first scalar column of the first row as an int.
- *   - handleQueryErrorsAndLogging(): post-query error reporting + repair dispatch.
  *
  * The executor holds a DatabaseCore back-reference and calls back into core's
  * already-extracted helpers (connection manager, query-timeout manager, error
- * classifier, sql-error reporter, table-name resolver, notice-state holder,
- * collation helper, table repairer) by their public method names. This mirrors
+ * classifier, sql-error reporter, recovery policy, table-name resolver,
+ * notice-state holder, collation helper, table repairer) by their public method
+ * names. This mirrors
  * the back-reference pattern used by DatabaseConnectionManager,
  * DatabaseQueryTimeoutManager, DatabaseErrorClassifier, and
  * DatabaseSqlErrorReporter.
@@ -39,9 +38,6 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
     /** @var ABJ_404_Solution_DatabaseCore */
     private $core;
 
-    /** @var ABJ_404_Solution_Functions */
-    private $f;
-
     /** @var ABJ_404_Solution_Logging */
     private $logger;
 
@@ -51,28 +47,31 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
     /** @var ABJ_404_Solution_DatabaseQueryDiagnostics */
     private $queryDiagnostics;
 
+    /** @var ABJ_404_Solution_DatabaseQueryRecoveryPolicy */
+    private $queryRecoveryPolicy;
+
     /** @var string Current wpdb result type for queryAndGetResults (ARRAY_A or OBJECT). */
     private $currentResultType = ARRAY_A;
 
     /**
      * @param ABJ_404_Solution_DatabaseCore $core
-     * @param ABJ_404_Solution_Functions $f
      * @param ABJ_404_Solution_Logging $logger
      * @param ABJ_404_Solution_DatabaseWpdbResultHarvester $resultHarvester
      * @param ABJ_404_Solution_DatabaseQueryDiagnostics $queryDiagnostics
+     * @param ABJ_404_Solution_DatabaseQueryRecoveryPolicy $queryRecoveryPolicy
      */
     public function __construct(
         ABJ_404_Solution_DatabaseCore $core,
-        $f,
         $logger,
         ABJ_404_Solution_DatabaseWpdbResultHarvester $resultHarvester,
-        ABJ_404_Solution_DatabaseQueryDiagnostics $queryDiagnostics
+        ABJ_404_Solution_DatabaseQueryDiagnostics $queryDiagnostics,
+        ABJ_404_Solution_DatabaseQueryRecoveryPolicy $queryRecoveryPolicy
     ) {
         $this->core = $core;
-        $this->f = $f;
         $this->logger = $logger;
         $this->resultHarvester = $resultHarvester;
         $this->queryDiagnostics = $queryDiagnostics;
+        $this->queryRecoveryPolicy = $queryRecoveryPolicy;
         $this->currentResultType = ARRAY_A;
     }
 
@@ -110,7 +109,7 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
         $resultType = $this->normalizeResultType($options['result_type']);
         $this->currentResultType = $resultType;
 
-        $ignoreErrorStrings = is_array($options['ignore_errors']) ? $options['ignore_errors'] : array();
+        $ignoreErrorStrings = $this->normalizeIgnoreErrorStrings($options['ignore_errors']);
         $queryParameters = is_array($options['query_params']) ? $options['query_params'] : array();
 
         $query = $this->core->doTableNameReplacements($query);
@@ -159,14 +158,16 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
             $this->queryDiagnostics->logMalformedRowsIfNeeded($query, $result['rows']);
         }
 
-        $producesRows = $this->recoverQueryResult($query, $result, $options, $resultType, $producesRows, $timeoutSeconds);
+        $producesRows = $this->queryRecoveryPolicy->recoverQueryResult(
+            $query, $result, $options, $resultType, $producesRows, $timeoutSeconds
+        );
 
         if ($suppressWpdbErrors) {
             /** @var wpdb $wpdb */
             $wpdb->suppress_errors($previousSuppressState);
         }
 
-        $this->handleQueryErrorsAndLogging(
+        $this->core->sqlErrorReporter()->handleFinalSqlErrorReporting(
             $query, $result, $options, $ignoreErrorStrings, $timer
         );
 
@@ -195,6 +196,24 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
      */
     private function normalizeResultType($resultType): string {
         return $resultType === OBJECT ? OBJECT : ARRAY_A;
+    }
+
+    /**
+     * @param mixed $ignoreErrors
+     * @return array<int|string, string>
+     */
+    private function normalizeIgnoreErrorStrings($ignoreErrors): array {
+        if (!is_array($ignoreErrors)) {
+            return array();
+        }
+
+        $ignoreErrorStrings = array();
+        foreach ($ignoreErrors as $key => $value) {
+            if (is_string($value)) {
+                $ignoreErrorStrings[$key] = $value;
+            }
+        }
+        return $ignoreErrorStrings;
     }
 
     /**
@@ -236,284 +255,6 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
 
         $wpdb->query($query);
         return array('rows' => array());
-    }
-
-    /**
-     * @param string $query
-     * @param array<string, mixed> $result
-     * @param array<string, mixed> $options
-     * @param 'OBJECT'|'OBJECT_K'|'ARRAY_A'|'ARRAY_N' $resultType
-     * @param bool $producesRows
-     * @param int $timeoutSeconds
-     * @return bool
-     */
-    private function recoverQueryResult(
-        string &$query,
-        array &$result,
-        array $options,
-        string $resultType,
-        bool $producesRows,
-        int $timeoutSeconds
-    ): bool {
-        $producesRows = $this->retryWithoutSetStatementIfNeeded($query, $result, $resultType, $producesRows);
-        $this->retryTransientConnectionIfNeeded($query, $result, $resultType, $producesRows);
-        $this->repairMissingTableIfNeeded($query, $result, $options);
-        $this->retryInvalidDataIfNeeded($query, $result);
-        $this->retryDeadlockIfNeeded($query, $result, $resultType, $producesRows);
-        $this->recoverCollationIfNeeded($query, $result, $resultType, $producesRows);
-        $this->handleTimeoutIfNeeded($query, $result, $timeoutSeconds);
-        $this->noteDatabaseIssueIfNeeded($result);
-        return $producesRows;
-    }
-
-    /**
-     * @param string $query
-     * @param array<string, mixed> $result
-     * @param 'OBJECT'|'OBJECT_K'|'ARRAY_A'|'ARRAY_N' $resultType
-     * @param bool $producesRows
-     * @return bool
-     */
-    private function retryWithoutSetStatementIfNeeded(string &$query, array &$result, string $resultType, bool $producesRows): bool {
-        $lastError = $this->lastErrorFromResult($result);
-        if ($lastError === ''
-            || !$this->core->errorClassifier()->classifySetStatementFailure($lastError)
-            || !$this->core->queryTimeoutManager()->queryHasSetStatementWrapper($query)) {
-            return $producesRows;
-        }
-
-        $this->core->queryTimeoutManager()->retryWithoutSetStatementWrapper($query, $result, $resultType);
-        return $this->core->queryTimeoutManager()->queryProducesResultRows($query);
-    }
-
-    /**
-     * @param string $query
-     * @param array<string, mixed> $result
-     * @param 'OBJECT'|'OBJECT_K'|'ARRAY_A'|'ARRAY_N' $resultType
-     * @param bool $producesRows
-     * @return void
-     */
-    private function retryTransientConnectionIfNeeded(string $query, array &$result, string $resultType, bool $producesRows): void {
-        $lastError = $this->lastErrorFromResult($result);
-        if ($lastError === '' || !$this->core->errorClassifier()->isTransientConnectionError($lastError)) {
-            return;
-        }
-
-        global $wpdb;
-        $this->core->connectionManager()->ensureConnection();
-        $wpdb->flush();
-        $result = array_merge($result, $this->executeWpdbQuery($query, $resultType, $producesRows));
-        $this->resultHarvester->harvestWpdbResult($result);
-    }
-
-    /**
-     * @param string $query
-     * @param array<string, mixed> $result
-     * @param array<string, mixed> $options
-     * @return void
-     */
-    private function repairMissingTableIfNeeded(string $query, array &$result, array $options): void {
-        $lastError = $this->lastErrorFromResult($result);
-        if ($options['skip_repair'] || $lastError === '' || !$this->core->errorClassifier()->isMissingPluginTableError($lastError)) {
-            return;
-        }
-        $this->core->repairPolicy()->attemptMissingTableRepairAndRetry($query, $result);
-    }
-
-    /**
-     * @param string $query
-     * @param array<string, mixed> $result
-     * @return void
-     */
-    private function retryInvalidDataIfNeeded(string $query, array &$result): void {
-        $lastError = $this->lastErrorFromResult($result);
-        if ($lastError !== '' && $this->core->errorClassifier()->isInvalidDataError($lastError)) {
-            $this->core->tableRepairer()->attemptInvalidDataRetry($query, $result);
-        }
-    }
-
-    /**
-     * @param string $query
-     * @param array<string, mixed> $result
-     * @param 'OBJECT'|'OBJECT_K'|'ARRAY_A'|'ARRAY_N' $resultType
-     * @param bool $producesRows
-     * @return void
-     */
-    private function retryDeadlockIfNeeded(string $query, array &$result, string $resultType, bool $producesRows): void {
-        $lastError = $this->lastErrorFromResult($result);
-        if ($lastError === '' || !$this->core->errorClassifier()->isDeadlockOrLockTimeoutError($lastError)) {
-            return;
-        }
-
-        usleep(50000);
-        $result = array_merge($result, $this->executeWpdbQuery($query, $resultType, $producesRows));
-        $this->resultHarvester->harvestWpdbResult($result);
-        $lastError = $this->lastErrorFromResult($result);
-        if ($lastError !== '' && $this->core->errorClassifier()->isDeadlockOrLockTimeoutError($lastError)) {
-            // allow-em-dash: copied verbatim from existing user-facing localized string in DataAccess.php
-            $this->core->setPluginDbNotice('lock_timeout', $this->core->noticeState()->localizeOrDefault('A database lock wait timeout occurred. If this persists, contact your host — another process may be holding a long-running lock.'), $lastError);
-        }
-    }
-
-    /**
-     * @param string $query
-     * @param array<string, mixed> $result
-     * @param 'OBJECT'|'OBJECT_K'|'ARRAY_A'|'ARRAY_N' $resultType
-     * @param bool $producesRows
-     * @return void
-     */
-    private function recoverCollationIfNeeded(string $query, array &$result, string $resultType, bool $producesRows): void {
-        $lastError = $this->lastErrorFromResult($result);
-        if ($lastError !== '' && $this->core->errorClassifier()->isCollationError($lastError)) {
-            $this->core->recoverFromCollationMismatchAndRetry($query, $result, $producesRows, $resultType);
-        }
-    }
-
-    /**
-     * @param string $query
-     * @param array<string, mixed> $result
-     * @param int $timeoutSeconds
-     * @return void
-     */
-    private function handleTimeoutIfNeeded(string $query, array &$result, int $timeoutSeconds): void {
-        $lastError = $this->lastErrorFromResult($result);
-        if ($lastError === '' || !$this->core->errorClassifier()->isQueryTimeoutError($lastError)) {
-            return;
-        }
-
-        $sqlInfo = (defined('WP_DEBUG') && WP_DEBUG) ? $query : $this->queryDiagnostics->extractSqlFilename($query);
-        $this->logger->warn(
-            'Query timed out after ' . $timeoutSeconds . 's. ' .
-            'Query: ' . substr(preg_replace('/\s+/', ' ', trim($sqlInfo)) ?? $sqlInfo, 0, 500)
-        );
-        $result['rows'] = array();
-        $result['timed_out'] = true;
-    }
-
-    /**
-     * @param array<string, mixed> $result
-     * @return void
-     */
-    private function noteDatabaseIssueIfNeeded(array $result): void {
-        $lastError = $this->lastErrorFromResult($result);
-        if ($lastError !== '') {
-            $this->core->errorClassifier()->noteDatabaseIssueFromError($lastError);
-        }
-    }
-
-    /**
-     * @param array<string, mixed> $result
-     * @return string
-     */
-    private function lastErrorFromResult(array $result): string {
-        return isset($result['last_error']) && is_scalar($result['last_error']) ? (string)$result['last_error'] : '';
-    }
-
-    /**
-     * Handle error logging, repair attempts, and slow-query logging after query execution.
-     *
-     * @param string $query
-     * @param array<string, mixed> $result
-     * @param array<string, mixed> $options
-     * @param array<int|string, string> $ignoreErrorStrings
-     * @param ABJ_404_Solution_Timer $timer
-     * @return void
-     */
-    private function handleQueryErrorsAndLogging(
-        string $query, array &$result, array $options,
-        array $ignoreErrorStrings, ABJ_404_Solution_Timer $timer
-    ): void {
-        global $wpdb;
-
-        if ($options['log_errors'] && $result['last_error'] != '') {
-            if ($this->f->strpos($result['last_error'],
-                    " is marked as crashed ") !== false) {
-                $this->core->repairTable($result['last_error']);
-            }
-            if ($this->f->strpos($result['last_error'],
-                    "ALTER TABLE causes auto_increment resequencing") !== false &&
-                    $this->f->strpos($result['last_error'], "resulting in duplicate entry") !== false) {
-                $this->core->repairDuplicateIDs($result['last_error'], $query);
-            }
-            if ($this->core->errorClassifier()->isIncorrectKeyFileError(is_string($result['last_error']) ? $result['last_error'] : '')) {
-                $this->core->tableRepairer()->repairCorruptedTableAndRetry($query, $result);
-            }
-
-            if ($result['last_error'] === '') { return; }
-
-            $reportError = true;
-            foreach ($ignoreErrorStrings as $ignoreThis) {
-                if (is_string($ignoreThis) && strpos($result['last_error'], $ignoreThis) !== false) {
-                    $reportError = false;
-                    break;
-                }
-            }
-
-            $lastErrorForClassification = is_string($result['last_error']) ? $result['last_error'] : '';
-            if ($reportError && (
-                $this->core->errorClassifier()->isDiskFullError($lastErrorForClassification) ||
-                $this->core->errorClassifier()->isReadOnlyError($lastErrorForClassification) ||
-                $this->core->errorClassifier()->isQuotaLimitError($lastErrorForClassification) ||
-                $this->core->errorClassifier()->isInvalidDataError($lastErrorForClassification) ||
-                $this->core->errorClassifier()->isCollationError($lastErrorForClassification) ||
-                $this->core->errorClassifier()->isMissingPluginTableError($lastErrorForClassification) ||
-                $this->core->errorClassifier()->isIncorrectKeyFileError($lastErrorForClassification) ||
-                $this->core->errorClassifier()->isCrashedTableError($lastErrorForClassification) ||
-                $this->core->errorClassifier()->isDeadlockOrLockTimeoutError($lastErrorForClassification) ||
-                $this->core->errorClassifier()->isGaleraConflictError($lastErrorForClassification) ||
-                $this->core->errorClassifier()->isTransientConnectionError($lastErrorForClassification) ||
-                $this->core->errorClassifier()->isQueryTimeoutError($lastErrorForClassification) ||
-                $this->core->errorClassifier()->isAccessDeniedError($lastErrorForClassification)
-            )) {
-                $this->logger->warn("Server-side DB issue (handled): " . $lastErrorForClassification);
-                $reportError = false;
-            }
-
-            if ($reportError) {
-                $stripped_query = 'n/a';
-                if ($this->core->errorClassifier()->isInvalidDataError($result['last_error'])) {
-                    $strippedResult = $this->core->tableRepairer()->get_stripped_query_result($query);
-                    $stripped_query = is_string($strippedResult) ? $strippedResult : 'n/a';
-                }
-
-                $extraDataQuery = "select @@max_join_size as max_join_size, " .
-                    "@@sql_big_selects as sql_big_selects, " .
-                    "@@character_set_database as character_set_database";
-                $someMySQLVariables = $wpdb->get_results($extraDataQuery, ARRAY_A);
-                $variables = print_r($someMySQLVariables, true);
-
-                $sqlInfo = (defined('WP_DEBUG') && WP_DEBUG) ? $query : $this->queryDiagnostics->extractSqlFilename($query);
-
-                $dbVer = $wpdb->db_version();
-                $this->logger->errorMessage("Ugh. SQL query error: " . (is_string($result['last_error']) ? $result['last_error'] : '') .
-                        ", SQL: " . $sqlInfo .
-                        ", Execution time: " . round($timer->getElapsedTime(), 2) .
-                        ", DB ver: " . (is_string($dbVer) ? $dbVer : 'unknown') .
-                        ", Variables: " . $variables .
-                        ", stripped_query: " . $stripped_query);
-            }
-
-        } else {
-            if ($options['log_too_slow'] && $timer->getElapsedTime() > 5) {
-                $sqlInfo = (defined('WP_DEBUG') && WP_DEBUG) ? $query : $this->queryDiagnostics->extractSqlFilename($query);
-                $this->logger->debugMessage("Slow query (" . round($timer->getElapsedTime(), 2) . " seconds): " .
-                        $sqlInfo);
-            }
-
-            if ($result['last_error'] === '') {
-                if (!$this->core->noticeState()->isServerSideIssueNoted() && !$this->core->noticeState()->isServerSideIssueChecked()) {
-                    $this->core->noticeState()->markServerSideIssueChecked();
-                    $existing = $this->core->getRuntimeFlag('abj404_plugin_db_notice');
-                    $excludedTypes = array('stale_permalink_cache', 'missing_table');
-                    if (is_array($existing) && !empty($existing['type'])
-                        && !in_array($existing['type'], $excludedTypes, true)) {
-                        $this->core->noticeState()->markServerSideIssueNoted();
-                    }
-                }
-                if ($this->core->noticeState()->isServerSideIssueNoted() && !$this->core->isWriteBlockActive() && !$this->core->errorClassifier()->isQuotaCooldownActive()) {
-                    $this->core->noticeState()->clearServerSideDbNotice();
-                }
-            }
-        }
     }
 
 }

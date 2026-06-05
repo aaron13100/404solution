@@ -22,6 +22,7 @@ require_once __DIR__ . '/DatabaseTableRepairer.php';
 require_once __DIR__ . '/DatabaseWpdbResultHarvester.php';
 require_once __DIR__ . '/DatabaseQueryDiagnostics.php';
 require_once __DIR__ . '/DatabaseTransactionExecutor.php';
+require_once __DIR__ . '/DatabaseQueryRecoveryPolicy.php';
 require_once __DIR__ . '/DatabaseQueryExecutor.php';
 
 /**
@@ -34,6 +35,7 @@ require_once __DIR__ . '/DatabaseQueryExecutor.php';
  * DatabaseTableNameResolver, DatabaseNoticeStateHolder,
  * DatabaseCollationHelper, DatabaseTableRepairer, DatabaseWpdbResultHarvester,
  * DatabaseQueryDiagnostics, DatabaseTransactionExecutor,
+ * DatabaseQueryRecoveryPolicy,
  * DatabaseQueryExecutor).
  *
  * Public surface:
@@ -104,6 +106,9 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
     /** @var ABJ_404_Solution_DatabaseTransactionExecutor */
     private $transactionExecutor;
 
+    /** @var ABJ_404_Solution_DatabaseQueryRecoveryPolicy */
+    private $queryRecoveryPolicy;
+
     /** @var ABJ_404_Solution_DatabaseQueryExecutor */
     private $queryExecutor;
 
@@ -128,12 +133,18 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
         $this->sqlErrorReporter = new ABJ_404_Solution_DatabaseSqlErrorReporter($this, $this->logger);
         $this->resultHarvester = new ABJ_404_Solution_DatabaseWpdbResultHarvester();
         $this->queryDiagnostics = new ABJ_404_Solution_DatabaseQueryDiagnostics($this->logger);
-        $this->queryExecutor = new ABJ_404_Solution_DatabaseQueryExecutor(
+        $this->queryRecoveryPolicy = new ABJ_404_Solution_DatabaseQueryRecoveryPolicy(
             $this,
-            $this->f,
             $this->logger,
             $this->resultHarvester,
             $this->queryDiagnostics
+        );
+        $this->queryExecutor = new ABJ_404_Solution_DatabaseQueryExecutor(
+            $this,
+            $this->logger,
+            $this->resultHarvester,
+            $this->queryDiagnostics,
+            $this->queryRecoveryPolicy
         );
         $this->transactionExecutor = new ABJ_404_Solution_DatabaseTransactionExecutor($this, $this->logger);
         $this->tableNameResolver = new ABJ_404_Solution_DatabaseTableNameResolver(
@@ -255,6 +266,11 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
     /** @return ABJ_404_Solution_DatabaseTransactionExecutor */
     public function transactionExecutor(): ABJ_404_Solution_DatabaseTransactionExecutor {
         return $this->transactionExecutor;
+    }
+
+    /** @return ABJ_404_Solution_DatabaseQueryRecoveryPolicy */
+    public function queryRecoveryPolicy(): ABJ_404_Solution_DatabaseQueryRecoveryPolicy {
+        return $this->queryRecoveryPolicy;
     }
 
     /** @return ABJ_404_Solution_DatabaseQueryExecutor */

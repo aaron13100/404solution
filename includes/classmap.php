@@ -242,6 +242,7 @@ return array(
     'ABJ_404_Solution_DatabaseConnectionManager' => $base . 'includes/DatabaseConnectionManager.php',
     'ABJ_404_Solution_DatabaseErrorClassifier' => $base . 'includes/DatabaseErrorClassifier.php',
     'ABJ_404_Solution_DatabaseRepairPolicy' => $base . 'includes/DatabaseRepairPolicy.php',
+    'ABJ_404_Solution_DatabaseQueryRecoveryPolicy' => $base . 'includes/DatabaseQueryRecoveryPolicy.php',
     'ABJ_404_Solution_DatabaseQueryTimeoutManager' => $base . 'includes/DatabaseQueryTimeoutManager.php',
     'ABJ_404_Solution_DatabaseSqlErrorReporter' => $base . 'includes/DatabaseSqlErrorReporter.php',
     'ABJ_404_Solution_ContentRepositoryInterface' => $base . 'includes/ContentRepositoryInterface.php',
