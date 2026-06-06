@@ -142,10 +142,21 @@ class ABJ_404_Solution_AdminPaginationLinks {
      */
     private function renderTemplate(string $sub, array $tableOptions, string $logsid, string $orderby, string $order,
             string $filter, int $paged, int $perpage, int $totalPages, int $numRecords, string $filterText, array $urls): string {
-        $start = (($paged - 1) * $perpage) + 1;
-        $end = min($start + $perpage - 1, $numRecords);
-        $currentlyShowingText = sprintf(__('%1$s - %2$s of %3$s', '404-solution'), $start, $end, $numRecords);
-        $currentPageText = __('Page', '404-solution') . ' ' . $paged . ' ' . __('of', '404-solution') . ' ' . esc_html((string)$totalPages);
+        // Match the WordPress core WP_List_Table::pagination() text shape:
+        // "{N} items" outer count and "{X} of {Y}" inline indicator. The
+        // earlier "1 - 25 of 487 redirects" / "Page 25 of 487" wording made
+        // the strip too wide to fit on the same tablenav row as bulk actions.
+        $currentlyShowingText = sprintf(
+            /* translators: %s is the total record count, already number-formatted for the current locale */
+            _n('%s item', '%s items', $numRecords, '404-solution'),
+            number_format_i18n($numRecords)
+        );
+        $currentPageText = sprintf(
+            /* translators: %1$d is current page number, %2$d is total page count */
+            esc_html__('%1$d of %2$d', '404-solution'),
+            $paged,
+            $totalPages
+        );
 
         $html = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/../html/paginationLinks.html');
         $html = $this->f->str_replace('{TEXT_BEFORE_LINKS}', $currentlyShowingText, $html);

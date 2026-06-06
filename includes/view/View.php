@@ -95,7 +95,6 @@ require_once __DIR__ . '/View_Logs.php';
  * @method mixed getHeaderSortState($tableOptions, $orderby, $preferDescOnFirstClick = false)
  * @method mixed getHitsColumnTooltip($tableOptions = array())
  * @method mixed getMigrateFromPluginMarkup()
- * @method mixed getModernPagination($sub, $tableOptions)
  * @method mixed getOptionsWithDefaults()
  * @method mixed getPaginationLinks($sub, $showSearchFilter = true)
  * @method mixed getSignatureFieldsForSubpage($sub, $row)

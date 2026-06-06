@@ -7,13 +7,10 @@ if (!defined('ABSPATH')) {
 /**
  * Admin list-table chrome shared by the Page Redirects and Captured 404 URLs
  * admin tables. Owns the widgets that surround the data rows: subsubsub filter
- * row, modern pagination, per-page selector, score-range filter, bulk-action
- * form URL/options, empty-trash form, and the i18n strings for the pagination
- * auto-refresh indicator.
- *
- * Outside callers:
- *   - includes/ajax/ViewUpdater.php (pagination AJAX -> getModernPagination)
- *   - includes/view/View_Logs.php (logs table reuses getBulkOperationsFormURL)
+ * row, per-page selector, score-range filter, bulk-action form URL/options,
+ * empty-trash form, and the i18n strings for the pagination auto-refresh
+ * indicator. Pagination itself is rendered by ABJ_404_Solution_AdminPaginationLinks
+ * (single source of truth) and reaches the page over the same AJAX warmup channel.
  */
 class ABJ_404_Solution_View_ListTableChrome extends ABJ_404_Solution_ViewComponent {
 
@@ -182,107 +179,4 @@ class ABJ_404_Solution_View_ListTableChrome extends ABJ_404_Solution_ViewCompone
         return $url;
     }
 
-    /**
-     * Get modern pagination HTML.
-     *
-     * @param array<string, mixed> $tableOptions
-     */
-    public function getModernPagination(string $sub, array $tableOptions): string {
-        $logsid = isset($tableOptions['logsid']) ? intval(is_scalar($tableOptions['logsid']) ? $tableOptions['logsid'] : 0) : 0;
-        $filter = isset($tableOptions['filter']) ? intval(is_scalar($tableOptions['filter']) ? $tableOptions['filter'] : 0) : 0;
-        $orderby = isset($tableOptions['orderby']) && is_string($tableOptions['orderby']) ? $tableOptions['orderby'] : 'url';
-        $order = isset($tableOptions['order']) && is_string($tableOptions['order']) ? $tableOptions['order'] : 'ASC';
-
-        $logsidInt = (int)$logsid;
-        if ($sub == 'abj404_logs') {
-            $totalRows = $this->viewReadService->getLogsCount($logsidInt);
-        } else {
-            $totalRows = $this->viewReadService->getRedirectsForViewCount($sub, $tableOptions);
-        }
-        $rawPerpage = array_key_exists('perpage', $tableOptions) && is_scalar($tableOptions['perpage']) ? $tableOptions['perpage'] : 25;
-        $perPage = intval($rawPerpage);
-        if ($perPage <= 0) {
-            $perPage = 25;
-        }
-        $rawPaged = array_key_exists('paged', $tableOptions) && is_scalar($tableOptions['paged']) ? $tableOptions['paged'] : 1;
-        $currentPage = intval($rawPaged);
-        $totalPages = ceil($totalRows / $perPage);
-
-        if ($totalPages <= 1) {
-            return '';
-        }
-
-        $startItem = (($currentPage - 1) * $perPage) + 1;
-        $endItem = min($currentPage * $perPage, $totalRows);
-
-        $baseUrl = "?page=" . ABJ404_PP . "&subpage=" . $sub;
-        if ($sub == 'abj404_logs' && isset($tableOptions['logsid'])) {
-            $baseUrl .= "&id=" . $tableOptions['logsid'];
-        }
-        if ($filter != 0) {
-            $baseUrl .= "&filter=" . $filter;
-        }
-        if (!( $orderby == "url" && $order == "ASC" )) {
-            $baseUrl .= "&orderby=" . sanitize_text_field($orderby) . "&order=" . sanitize_text_field($order);
-        }
-
-        $itemLabel = ($sub == 'abj404_logs') ? __('logs', '404-solution') : __('redirects', '404-solution');
-
-        $infoText = sprintf(
-            /* translators: %1$d is start item, %2$d is end item, %3$d is total count, %4$s is item type (logs/redirects) */
-            esc_html__('Showing %1$d-%2$d of %3$d %4$s', '404-solution'),
-            $startItem,
-            $endItem,
-            $totalRows,
-            $itemLabel
-        );
-
-        $linkTpl = $this->tpl('viewRedirectsTablePaginationLink.html');
-        $disabledTpl = $this->tpl('viewRedirectsTablePaginationDisabled.html');
-        $ellipsisTpl = $this->tpl('viewRedirectsTablePaginationEllipsis.html');
-
-        // Previous button
-        if ($currentPage > 1) {
-            $prevBtn = $this->f->str_replace(
-                array('{href}', '{active_class}', '{label}'),
-                array(esc_url($baseUrl . '&paged=' . ($currentPage - 1)), '', '&lsaquo;'),
-                $linkTpl
-            );
-        } else {
-            $prevBtn = $this->f->str_replace('{label}', '&lsaquo;', $disabledTpl);
-        }
-
-        // Page numbers
-        $range = 2;
-        $pageNumbers = '';
-        for ($i = 1; $i <= $totalPages; $i++) {
-            if ($i == 1 || $i == $totalPages || ($i >= $currentPage - $range && $i <= $currentPage + $range)) {
-                $activeClass = ($i == $currentPage) ? ' active' : '';
-                $pageNumbers .= $this->f->str_replace(
-                    array('{href}', '{active_class}', '{label}'),
-                    array(esc_url($baseUrl . '&paged=' . $i), $activeClass, (string)$i),
-                    $linkTpl
-                );
-            } elseif ($i == $currentPage - $range - 1 || $i == $currentPage + $range + 1) {
-                $pageNumbers .= $ellipsisTpl;
-            }
-        }
-
-        // Next button
-        if ($currentPage < $totalPages) {
-            $nextBtn = $this->f->str_replace(
-                array('{href}', '{active_class}', '{label}'),
-                array(esc_url($baseUrl . '&paged=' . ($currentPage + 1)), '', '&rsaquo;'),
-                $linkTpl
-            );
-        } else {
-            $nextBtn = $this->f->str_replace('{label}', '&rsaquo;', $disabledTpl);
-        }
-
-        return $this->f->str_replace(
-            array('{info_text}', '{prev_btn}', '{page_numbers}', '{next_btn}'),
-            array($infoText, $prevBtn, $pageNumbers, $nextBtn),
-            $this->tpl('viewRedirectsTablePagination.html')
-        );
-    }
 }
