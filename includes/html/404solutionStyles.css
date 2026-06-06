@@ -1314,32 +1314,27 @@ th:nth-last-child(-n+3) .lefty-tooltiptext {
    Bulk Actions Bar
    ============================================ */
 
+/* Bulk actions sit inline on the tablenav row, always visible (matching the
+   native WordPress Posts/Pages layout where "Bulk actions" + "Apply" are shown
+   even with no selection). When nothing is selected, dim the container so the
+   row visually reads as inactive without the layout shifting when a selection
+   appears. The .active class is added by tableInteractions.js when the user
+   checks at least one row. */
 .abj404-bulk-actions {
-    padding: 16px 32px;
-    background: var(--abj404-info-bg);
-    border-bottom: 1px solid var(--abj404-info-border);
-    display: none;
-    align-items: center;
-    gap: 16px;
-    flex-wrap: wrap;
-    position: sticky;
-    top: 77px;  /* 32px admin bar + ~45px tabs */
-    z-index: 11;
-}
-
-@media screen and (max-width: 782px) {
-    .abj404-bulk-actions {
-        top: 91px;  /* 46px admin bar + ~45px tabs */
-    }
-}
-
-.abj404-bulk-actions.active {
     display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.abj404-bulk-actions:not(.active) {
+    opacity: 0.55;
 }
 
 .abj404-selection-info {
     font-weight: 500;
-    color: var(--abj404-info-text);
+    color: var(--abj404-text-muted);
+    font-size: 13px;
 }
 
 .abj404-selection-info strong {
@@ -1347,12 +1342,8 @@ th:nth-last-child(-n+3) .lefty-tooltiptext {
 }
 
 .abj404-bulk-actions .abj404-btn {
-    padding: 8px 16px;
+    padding: 4px 10px;
     font-size: 13px;
-}
-
-.abj404-clear-selection {
-    margin-left: auto;
 }
 
 /* ============================================
@@ -1399,20 +1390,6 @@ th:nth-last-child(-n+3) .lefty-tooltiptext {
 @media screen and (max-width: 782px) {
     .abj404-table th {
         top: 46px;  /* taller mobile admin bar */
-    }
-}
-
-/* When bulk actions visible, push table header down */
-/* Matches both .abj404-table-container (Page Redirects) and form (Captured 404s) */
-.abj404-bulk-actions.active ~ .abj404-table-container .abj404-table th,
-.abj404-bulk-actions.active ~ form .abj404-table th {
-    top: 85px;  /* 32px admin bar + ~53px bulk actions bar */
-}
-
-@media screen and (max-width: 782px) {
-    .abj404-bulk-actions.active ~ .abj404-table-container .abj404-table th,
-    .abj404-bulk-actions.active ~ form .abj404-table th {
-        top: 99px;  /* 46px admin bar + ~53px bulk actions bar */
     }
 }
 
@@ -2544,7 +2521,6 @@ th:nth-last-child(-n+3) .lefty-tooltiptext {
 @media screen and (max-width: 782px) {
     .abj404-table-header,
     .abj404-filter-bar,
-    .abj404-bulk-actions,
     .abj404-table-container,
     .abj404-pagination {
         padding-left: 16px;
