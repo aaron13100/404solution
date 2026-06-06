@@ -51,7 +51,10 @@ class ABJ_404_Solution_PluginUpdateMetadataRepository {
         }
 
         if (!function_exists('plugins_api')) {
-              require_once(ABSPATH . 'wp-admin/includes/plugin-install.php');
+            $pluginInstallPath = ABSPATH . 'wp-admin/includes/plugin-install.php';
+            if (is_readable($pluginInstallPath)) {
+                require_once($pluginInstallPath);
+            }
         }
         if (!function_exists('plugins_api')) {
             $this->logger->infoMessage("I couldn't find the plugins_api function to check for the latest version.");
