@@ -40,14 +40,14 @@ class ABJ_404_Solution_StatsRepository implements ABJ_404_Solution_StatsReposito
     private $contentKeywordsRepository;
 
     /**
-     * @param ABJ_404_Solution_DatabaseCore $dbCore
-     * @param ABJ_404_Solution_LogsRepository $logsRepo
+     * @param ABJ_404_Solution_DatabaseCoreInterface $dbCore
+     * @param ABJ_404_Solution_LogsRepositoryInterface $logsRepo
      * @param ABJ_404_Solution_Functions|null $functions
      * @param ABJ_404_Solution_Logging|null $logging
      */
     public function __construct(
-        ABJ_404_Solution_DatabaseCore $dbCore,
-        ABJ_404_Solution_LogsRepository $logsRepo,
+        ABJ_404_Solution_DatabaseCoreInterface $dbCore,
+        ABJ_404_Solution_LogsRepositoryInterface $logsRepo,
         $functions = null,
         $logging = null
     ) {

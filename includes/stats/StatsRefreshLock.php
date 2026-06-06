@@ -12,11 +12,11 @@ class ABJ_404_Solution_StatsRefreshLock {
     /** @var int Cooldown for distributed refresh locks. */
     const REFRESH_LOCK_COOLDOWN_SECONDS = 30;
 
-    /** @var ABJ_404_Solution_DatabaseCore */
+    /** @var ABJ_404_Solution_DatabaseCoreInterface */
     private $dbCore;
 
-    /** @param ABJ_404_Solution_DatabaseCore $dbCore */
-    public function __construct(ABJ_404_Solution_DatabaseCore $dbCore) {
+    /** @param ABJ_404_Solution_DatabaseCoreInterface $dbCore */
+    public function __construct(ABJ_404_Solution_DatabaseCoreInterface $dbCore) {
         $this->dbCore = $dbCore;
     }
 

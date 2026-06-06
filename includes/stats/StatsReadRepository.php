@@ -14,9 +14,9 @@ class ABJ_404_Solution_StatsReadRepository {
     /** @var int Minimum interval before recalculating expensive stats aggregates. */
     const PERIODIC_STATS_REFRESH_COOLDOWN_SECONDS = 30;
 
-    /** @var ABJ_404_Solution_DatabaseCore */
+    /** @var ABJ_404_Solution_DatabaseCoreInterface */
     private $dbCore;
-    /** @var ABJ_404_Solution_LogsRepository */
+    /** @var ABJ_404_Solution_LogsRepositoryInterface */
     private $logsRepo;
     /** @var ABJ_404_Solution_Logging */
     private $logger;
@@ -24,14 +24,14 @@ class ABJ_404_Solution_StatsReadRepository {
     private $refreshLock;
 
     /**
-     * @param ABJ_404_Solution_DatabaseCore $dbCore
-     * @param ABJ_404_Solution_LogsRepository $logsRepo
+     * @param ABJ_404_Solution_DatabaseCoreInterface $dbCore
+     * @param ABJ_404_Solution_LogsRepositoryInterface $logsRepo
      * @param ABJ_404_Solution_Logging $logging
      * @param ABJ_404_Solution_StatsRefreshLock $refreshLock
      */
     public function __construct(
-        ABJ_404_Solution_DatabaseCore $dbCore,
-        ABJ_404_Solution_LogsRepository $logsRepo,
+        ABJ_404_Solution_DatabaseCoreInterface $dbCore,
+        ABJ_404_Solution_LogsRepositoryInterface $logsRepo,
         ABJ_404_Solution_Logging $logging,
         ABJ_404_Solution_StatsRefreshLock $refreshLock
     ) {

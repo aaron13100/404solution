@@ -9,9 +9,9 @@ if (!defined('ABSPATH')) {
  */
 class ABJ_404_Solution_StatsDigestDataProvider {
 
-    /** @var ABJ_404_Solution_DatabaseCore */
+    /** @var ABJ_404_Solution_DatabaseCoreInterface */
     private $dbCore;
-    /** @var ABJ_404_Solution_LogsRepository */
+    /** @var ABJ_404_Solution_LogsRepositoryInterface */
     private $logsRepo;
     /** @var ABJ_404_Solution_StatsReadRepository */
     private $statsReadRepository;
@@ -19,14 +19,14 @@ class ABJ_404_Solution_StatsDigestDataProvider {
     private $logger;
 
     /**
-     * @param ABJ_404_Solution_DatabaseCore $dbCore
-     * @param ABJ_404_Solution_LogsRepository $logsRepo
+     * @param ABJ_404_Solution_DatabaseCoreInterface $dbCore
+     * @param ABJ_404_Solution_LogsRepositoryInterface $logsRepo
      * @param ABJ_404_Solution_StatsReadRepository $statsReadRepository
      * @param ABJ_404_Solution_Logging $logging
      */
     public function __construct(
-        ABJ_404_Solution_DatabaseCore $dbCore,
-        ABJ_404_Solution_LogsRepository $logsRepo,
+        ABJ_404_Solution_DatabaseCoreInterface $dbCore,
+        ABJ_404_Solution_LogsRepositoryInterface $logsRepo,
         ABJ_404_Solution_StatsReadRepository $statsReadRepository,
         ABJ_404_Solution_Logging $logging
     ) {

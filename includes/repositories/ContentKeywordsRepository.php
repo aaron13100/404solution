@@ -17,7 +17,7 @@ class ABJ_404_Solution_ContentKeywordsRepository {
      */
     const MAX_LIMIT = 5000;
 
-    /** @var ABJ_404_Solution_DatabaseCore */
+    /** @var ABJ_404_Solution_DatabaseCoreInterface */
     private $dbCore;
     /** @var ABJ_404_Solution_Functions */
     private $functions;
@@ -25,12 +25,12 @@ class ABJ_404_Solution_ContentKeywordsRepository {
     private $logger;
 
     /**
-     * @param ABJ_404_Solution_DatabaseCore $dbCore
+     * @param ABJ_404_Solution_DatabaseCoreInterface $dbCore
      * @param ABJ_404_Solution_Functions $functions
      * @param ABJ_404_Solution_Logging $logging
      */
     public function __construct(
-        ABJ_404_Solution_DatabaseCore $dbCore,
+        ABJ_404_Solution_DatabaseCoreInterface $dbCore,
         ABJ_404_Solution_Functions $functions,
         ABJ_404_Solution_Logging $logging
     ) {
