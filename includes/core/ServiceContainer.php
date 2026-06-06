@@ -263,6 +263,17 @@ class ABJ_404_Solution_ServiceContainer {
  * ))))))))))))))))))))))))))))))))))))))))))))))))
  */
 function abj_service($name) {
+    // Keep abj_service('plugin_logic') aligned with PluginLogic::getInstance()
+    // by honoring a singleton override (self::$instance) when present. Without
+    // this, the container's first-resolved instance is cached and subsequent
+    // overrides (test mocks installed by setting self::$instance) are
+    // silently ignored, even though getInstance() respects them.
+    if ($name === 'plugin_logic' && class_exists('ABJ_404_Solution_PluginLogic', false)) {
+        $override = ABJ_404_Solution_PluginLogic::peekInstance();
+        if ($override !== null) {
+            return $override;
+        }
+    }
     $container = ABJ_404_Solution_ServiceContainer::getInstance();
     if ($container->has($name)) {
         return $container->get($name);

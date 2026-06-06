@@ -94,6 +94,20 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
     // (no instance-level options resolver cache; resolved via the service
     // container on each call — see optionsResolver())
 
+    /**
+     * Non-resolving accessor for the cached singleton. Returns whatever is
+     * currently stored in self::$instance without falling back to the
+     * service container or building a new instance. Used by abj_service()
+     * to honor a test-installed singleton override (or any other code that
+     * has populated $instance directly) without forcing the container to
+     * cache a stale binding.
+     *
+     * @return self|null
+     */
+    public static function peekInstance() {
+        return self::$instance;
+    }
+
     /** @return ABJ_404_Solution_PluginLogic The singleton instance of the class. */
     public static function getInstance() {
         if (self::$instance !== null) {
