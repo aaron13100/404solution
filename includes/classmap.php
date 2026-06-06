@@ -246,6 +246,7 @@ return array(
     'ABJ_404_Solution_DatabaseCore' => $base . 'includes/database/DatabaseCore.php',
     'ABJ_404_Solution_DatabaseConnectionManager' => $base . 'includes/database/DatabaseConnectionManager.php',
     'ABJ_404_Solution_DatabaseErrorClassifier' => $base . 'includes/database/DatabaseErrorClassifier.php',
+    'ABJ_404_Solution_DatabaseStagedFailureClassifier' => $base . 'includes/database/DatabaseStagedFailureClassifier.php',
     'ABJ_404_Solution_DatabaseRepairPolicy' => $base . 'includes/database/DatabaseRepairPolicy.php',
     'ABJ_404_Solution_DatabaseQueryRecoveryPolicy' => $base . 'includes/database/DatabaseQueryRecoveryPolicy.php',
     'ABJ_404_Solution_DatabaseQueryTimeoutManager' => $base . 'includes/database/DatabaseQueryTimeoutManager.php',
