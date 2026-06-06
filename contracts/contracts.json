@@ -568,6 +568,42 @@
         "valid": ["fixtures/ajax-warm-table-cache.valid.json"],
         "invalid": ["fixtures/ajax-warm-table-cache.invalid-bad-subpage.json"]
       }
+    },
+    {
+      "id": "ajax-load-gsc-section",
+      "description": "Deferred Google Search Console admin section AJAX. Loaded on demand from the Options page so the GSC OAuth + remote-fetch cost does not block initial admin render.",
+      "direction": "client-to-server",
+      "consumer": {
+        "file": "includes/ajax/Ajax_LoadGscSection.php",
+        "test": "tests/AjaxNullParamsAdversarialTest.php"
+      }
+    },
+    {
+      "id": "ajax-redirect-destination-autocomplete",
+      "description": "Autocomplete suggestions for the redirect-destination dropdown in the redirect edit modal.",
+      "direction": "client-to-server",
+      "consumer": {
+        "file": "includes/ajax/Ajax_RedirectDestinationAutocomplete.php",
+        "test": "tests/AjaxNullParamsAdversarialTest.php"
+      }
+    },
+    {
+      "id": "ajax-update-options-handler",
+      "description": "Admin-page options update AJAX (extracted from Ajax_Php for parity with other Ajax_*.php handlers).",
+      "direction": "client-to-server",
+      "consumer": {
+        "file": "includes/ajax/Ajax_UpdateOptions.php",
+        "test": "tests/AjaxNullParamsAdversarialTest.php"
+      }
+    },
+    {
+      "id": "ajax-view-logs",
+      "description": "Per-redirect log view AJAX. Returns the formatted hit log for a specific redirect ID for the admin logs modal.",
+      "direction": "client-to-server",
+      "consumer": {
+        "file": "includes/ajax/Ajax_ViewLogs.php",
+        "test": "tests/AjaxNullParamsAdversarialTest.php"
+      }
     }
   ]
 }

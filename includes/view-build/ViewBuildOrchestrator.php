@@ -196,6 +196,20 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
     /** @param int $stageNumber @param string $stageKey @param string $errMsg @param float $started @return string */
     public function classifyAndHandleStageFailure(int $stageNumber, string $stageKey, string $errMsg, float $started): string { return $this->collaborationContext->recoveryServices()->hostFailurePolicy()->classifyAndHandleStageFailure($stageNumber, $stageKey, $errMsg, $started); }
 
+    /**
+     * Run a single staged-build step under the timed-stage runner. Forwards to
+     * the stage runner sub-service so tests and external callers can drive a
+     * stage callback without reaching into the collaboration context directly.
+     *
+     * @param int $stageNumber
+     * @param string $stageKey
+     * @param callable $callback
+     * @return mixed
+     */
+    public function runTimedViewBuildStage(int $stageNumber, string $stageKey, callable $callback) {
+        return $this->collaborationContext->stageServices()->stageRunner()->runTimedViewBuildStage($stageNumber, $stageKey, $callback);
+    }
+
     /** @return void */
     public function clearPhpEnvironmentProbeCache(): void { $this->collaborationContext->recoveryServices()->hostEnvironmentProbe()->clearPhpEnvironmentProbeCache(); }
 

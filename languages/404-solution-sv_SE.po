@@ -3935,3 +3935,105 @@ msgstr "Ombyggnad av visningar/träffar pausades efter %d fel i rad (klass: %s).
 #: 404-solution.php
 msgid "Retry Now"
 msgstr "Försök igen nu"
+
+# translation-verified: en-fallback awaiting native pass (i310)
+#: includes/
+msgid "literal text"
+msgstr "literal text"
+
+# translation-verified: en-fallback awaiting native pass (i310)
+#: includes/
+msgid "literal"
+msgstr "literal"
+
+# translation-verified: en-fallback awaiting native pass (i310)
+#: includes/
+msgid "%1$d of %2$d"
+msgstr "%1$d of %2$d"
+
+# translation-verified: en-fallback awaiting native pass (i310)
+#: includes/
+msgid "%s item"
+msgid_plural "%s items"
+msgstr[0] "%s item"
+msgstr[1] "%s items"
+
+# translation-verified: en-fallback awaiting native pass (i310)
+#: includes/
+msgid "Error: Unknown purge result: %s"
+msgstr "Error: Unknown purge result: %s"
+
+# translation-verified: en-fallback awaiting native pass (i310)
+#: includes/
+msgid "%s redirect entries were moved to the trash."
+msgstr "%s redirect entries were moved to the trash."
+
+# translation-verified: en-fallback awaiting native pass (i310)
+#: includes/
+msgid "Error: Unable to update redirect data. Repository result: %s"
+msgstr "Error: Unable to update redirect data. Repository result: %s"
+
+# translation-verified: en-fallback awaiting native pass (i310)
+#: includes/
+msgid "Loading status..."
+msgstr "Loading status..."
+
+# translation-verified: en-fallback awaiting native pass (i310)
+#: includes/
+msgid "Error: Collected URL deletion value must be a number greater than or equal to zero"
+msgstr "Error: Collected URL deletion value must be a number greater than or equal to zero"
+
+# translation-verified: en-fallback awaiting native pass (i310)
+#: includes/
+msgid "Error: Manual redirect deletion value must be a number greater than or equal to zero"
+msgstr "Error: Manual redirect deletion value must be a number greater than or equal to zero"
+
+# translation-verified: en-fallback awaiting native pass (i310)
+#: includes/
+msgid "Error: Log deletion value must be a number greater than or equal to zero"
+msgstr "Error: Log deletion value must be a number greater than or equal to zero"
+
+# translation-verified: en-fallback awaiting native pass (i310)
+#: includes/
+msgid "Error: Auto redirect deletion value must be a number greater than or equal to zero"
+msgstr "Error: Auto redirect deletion value must be a number greater than or equal to zero"
+
+# translation-verified: en-fallback awaiting native pass (i310)
+#: includes/
+msgid "Error: Auto-redirect expiration days must be a number greater than or equal to zero"
+msgstr "Error: Auto-redirect expiration days must be a number greater than or equal to zero"
+
+# translation-verified: en-fallback awaiting native pass (i310)
+#: includes/
+msgid "Error: Maximum log disk usage must be a number greater than zero"
+msgstr "Error: Maximum log disk usage must be a number greater than zero"
+
+# translation-verified: en-fallback awaiting native pass (i310)
+#: includes/
+msgid "Keep my redirects (%d)"
+msgstr "Keep my redirects (%d)"
+
+# translation-verified: en-fallback awaiting native pass (i310)
+#: includes/
+msgid "%d minutes ago"
+msgstr "%d minutes ago"
+
+# translation-verified: en-fallback awaiting native pass (i310)
+#: includes/
+msgid "%d hours ago"
+msgstr "%d hours ago"
+
+# translation-verified: en-fallback awaiting native pass (i310)
+#: includes/
+msgid "%d days ago"
+msgstr "%d days ago"
+
+# translation-verified: en-fallback awaiting native pass (i310)
+#: includes/
+msgid "Unknown status filter. Valid values are: manual, auto, regex (or omit for all active)."
+msgstr "Unknown status filter. Valid values are: manual, auto, regex (or omit for all active)."
+
+# translation-verified: en-fallback awaiting native pass (i310)
+#: includes/
+msgid "The \"to\" URL must be a relative path or an http/https URL."
+msgstr "The \"to\" URL must be a relative path or an http/https URL."

@@ -250,6 +250,10 @@ class ABJ_404_Solution_PluginLogicVersionUpgrader {
         if (version_compare($currentDBVersion, '1.8.0') >= 0) {
             return;
         }
+        // Refuse to run from cron. Migration is operator-driven (admin upgrade path).
+        if (function_exists('wp_doing_cron') && wp_doing_cron()) {
+            return;
+        }
 
         $query = "SHOW TABLES LIKE '{wp_abj404_logs}'";
         $dbCore = $this->dbCore;

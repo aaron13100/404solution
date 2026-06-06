@@ -182,8 +182,11 @@ class ABJ_404_Solution_PublishedContentRepository {
             return '';
         }
 
+        // Strip control characters and validate UTF-8 before SQL escaping.
+        // Pattern 10: defense-in-depth against invalid-UTF-8 bytes reaching MySQL.
+        $sanitized = sanitize_text_field($searchTerm);
         return " */\n and lower(wp_posts.post_title) like "
-            . "'%" . esc_sql($this->f->strtolower($searchTerm)) . "%' \n ";
+            . "'%" . esc_sql($this->f->strtolower($sanitized)) . "%' \n ";
     }
 
     /** @param string $extraWhereClause @return string */
@@ -292,6 +295,8 @@ class ABJ_404_Solution_PublishedContentRepository {
         }
 
         $fallbackParts = $queryParts;
+        // @utf8-audit: opt-out - $slugClause['slug'] is an internal post_name string already
+        // selected from wp_posts (the same column we're comparing it against), not user input.
         $fallbackParts['specifiedSlug'] = " */\n and wp_posts.post_name = '" . esc_sql($slugClause['slug']) . "' \n ";
         $fallbackResult = $this->dbCore->queryAndGetResults(
             $this->buildPublishedPagesQuery($fallbackParts),

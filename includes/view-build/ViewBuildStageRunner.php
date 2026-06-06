@@ -100,6 +100,18 @@ class ABJ_404_Solution_ViewBuildStageRunner extends ABJ_404_Solution_ViewBuildCo
             if ($outcome === 'completed') {
                 return null;
             }
+            // Pattern 13 hardening: every catch path must emit a diagnostic
+            // line BEFORE re-throw or downgrade. Without this, an
+            // unclassified infrastructure write failure (disk full, table
+            // crashed, replica drift) propagates up the stack with
+            // debug.log empty, leaving the user with "build never
+            // completes" and no diagnostic trail.
+            $this->host->dataBoundary()->logger()->warn(sprintf(
+                '[staged] stage %d (%s) unclassified failure (re-throwing). Reason: %s',
+                $stageNumber,
+                $stageKey,
+                substr($e->getMessage(), 0, 240)
+            ));
             $this->host->stageServices()->stageLogPresenter()->logTimedViewBuildStage($stageNumber, $stageKey, 'error', $started);
             throw $e;
         }

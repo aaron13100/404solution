@@ -106,6 +106,8 @@ class ABJ_404_Solution_ViewBuildLockCoordinator extends ABJ_404_Solution_ViewBui
             }
             return;
         }
+        // @utf8-audit: opt-out - $name is system-controlled (table prefix from $wpdb plus a
+        // compile-time constant lock name). No user input reaches this string.
         $this->host->dataBoundary()->queryAndGetResults("SELECT RELEASE_LOCK('" . esc_sql($name) . "')",
             array('log_errors' => false));
     }

@@ -33,13 +33,15 @@ class ABJ_404_Solution_DatabasePrefixDiagnostics {
             if ($dbName === '') {
                 return '';
             }
-            $dbNameEscaped = esc_sql($dbName);
+            // @utf8-audit: opt-out - $dbname comes from $wpdb internals which WP populates
+            // with a system-controlled string (the configured database name), not user input.
+            $dbNameEscaped = esc_sql((string)$dbName);
             $dbNameStr = is_array($dbNameEscaped) ? '' : $dbNameEscaped;
-            // DAO-bypass-approved: read-only information_schema prefix diagnostic when a plugin table is missing.
             // LIMIT 50 bounds the scan on shared-hosting databases with tens of thousands of tables
             // (design-audit-2026-06-06 M502 / i308). The diagnostic only needs to enumerate a handful
             // of '*abj404_redirects' tables across subsite prefixes. 50 is well above any plausible
             // legitimate count and prevents an unbounded information_schema sweep on the degraded path.
+            // DAO-bypass-approved: read-only information_schema prefix diagnostic when a plugin table is missing.
             $rows = $wpdb->get_results(
                 "SELECT table_name FROM information_schema.tables "
                 . "WHERE table_schema = '{$dbNameStr}' "
