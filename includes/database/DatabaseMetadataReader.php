@@ -59,7 +59,12 @@ class ABJ_404_Solution_DatabaseMetadataReader {
      * @return array<int, string> Distinct post_type values from wp_posts in alphabetical order.
      */
     public function getAllPostTypes(): array {
-        $query = "SELECT DISTINCT post_type FROM {wp_posts} order by post_type";
+        // LIMIT 200 bounds the DISTINCT scan on wp_posts (design-audit-2026-06-06 M502 / i309).
+        // CPT-heavy ecommerce/learning installs can hold tens of millions of rows; without a
+        // LIMIT the admin advanced-settings render forces a full-table read to compute the
+        // distinct set. WordPress sites with over 200 distinct post types are pathological, so
+        // 200 is well above any legitimate count and keeps the read cheap on large installs.
+        $query = "SELECT DISTINCT post_type FROM {wp_posts} order by post_type LIMIT 200";
         $results = $this->dbCore->queryAndGetResults($query);
         $rows = $results['rows'];
 
