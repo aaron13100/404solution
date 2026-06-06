@@ -1162,20 +1162,21 @@ th:nth-last-child(-n+3) .lefty-tooltiptext {
 }
 
 .abj404-table-header {
-    padding: 5px 32px 15px;
-    border-bottom: 1px solid var(--abj404-border);
+    padding: 4px 32px 6px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     flex-wrap: wrap;
-    gap: 16px;
+    gap: 12px;
 }
 
 .abj404-table-header h1 {
-    font-size: 24px;
-    font-weight: 600;
+    font-size: 23px;
+    font-weight: 400;
     color: var(--abj404-text);
     margin: 0;
+    padding: 9px 0 4px;
+    line-height: 1.3;
 }
 
 /* ============================================
@@ -1719,7 +1720,7 @@ th:nth-last-child(-n+3) .lefty-tooltiptext {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 4px;
     padding: 0;
 }
 
@@ -1794,23 +1795,23 @@ th:nth-last-child(-n+3) .lefty-tooltiptext {
 
 .abj404-pagination-controls {
     display: flex;
-    gap: 3px;
+    gap: 2px;
     align-items: center;
 }
 
 /* Compact, square-ish page buttons matching WordPress core's .tablenav-pages
-   navigation (28px tall, tight spacing) so pagination does not eat horizontal
-   room on the tablenav row. */
+   navigation so pagination does not eat horizontal room on the tablenav row.
+   WP core uses ~24px square chevrons. */
 .abj404-page-btn {
-    padding: 0 4px;
-    min-width: 28px;
-    height: 28px;
-    line-height: 26px;
+    padding: 0 2px;
+    min-width: 24px;
+    height: 24px;
+    line-height: 22px;
     border: 1px solid var(--abj404-border);
     background: var(--abj404-surface);
     border-radius: 4px;
     cursor: pointer;
-    font-size: 14px;
+    font-size: 13px;
     color: var(--abj404-accent);
     transition: all 0.15s;
     text-align: center;
@@ -1843,9 +1844,9 @@ th:nth-last-child(-n+3) .lefty-tooltiptext {
 }
 
 .abj404-pagination-text {
-    padding: 0 6px;
+    padding: 0 4px;
     color: var(--abj404-text-muted);
-    font-size: 14px;
+    font-size: 13px;
     white-space: nowrap;
 }
 

@@ -58,12 +58,12 @@
         var $bulkActions = $('.abj404-bulk-actions');
         var $selectionInfo = $bulkActions.find('.abj404-selection-info strong');
 
-        if (selectedCount > 0) {
-            $bulkActions.addClass('active');
-            $selectionInfo.text(selectedCount);
-        } else {
-            $bulkActions.removeClass('active');
-        }
+        // The count text is always updated, including when the selection
+        // drops to 0. Previously the 0 case skipped this update because the
+        // bulk-actions bar was hidden via CSS when empty; now the bar stays
+        // inline and dimmed, so a stale count would remain visible.
+        $selectionInfo.text(selectedCount);
+        $bulkActions.toggleClass('active', selectedCount > 0);
 
         // Enable/disable the legacy apply buttons too
         var $applyButtons = $('input[name="abj404action"]').closest('form').find('input[type="submit"]');
