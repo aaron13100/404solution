@@ -1372,16 +1372,20 @@ th:nth-last-child(-n+3) .lefty-tooltiptext {
 
 .abj404-table thead {
     background: var(--abj404-bg);
-    border-bottom: 2px solid var(--abj404-border);
+    border-bottom: 1px solid var(--abj404-border);
 }
 
+/* Column header row matches WP core's .wp-list-table th:
+   8px vertical padding and white-space: nowrap so the question-mark
+   tooltip icon stays inline with the label instead of wrapping the
+   header to two lines on the Captured 404s tab. */
 .abj404-table th {
     text-align: left;
-    padding: 12px 8px;
+    padding: 8px 10px;
     font-weight: 600;
     font-size: 13px;
     color: var(--abj404-text);
-    white-space: normal;
+    white-space: nowrap;
     position: sticky;
     top: 32px;  /* WordPress admin bar; the nav tabs scroll away (not fixed) */
     z-index: 10;
