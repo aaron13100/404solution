@@ -24,6 +24,19 @@ class ABJ_404_Solution_Logging {
     private static $instance = null;
 
     /**
+     * Return the current singleton instance without consulting the container
+     * or building a new one. Used by `abj_service()` to honor a test-installed
+     * singleton override (or any other code that has populated `$instance`
+     * directly) without forcing the container to cache a stale binding.
+     * Mirrors the `peekInstance()` pattern on PluginLogic.
+     *
+     * @return self|null
+     */
+    public static function peekInstance() {
+        return self::$instance;
+    }
+
+    /**
      * Factory for the DI container.
      *
      * This avoids recursion when the container's 'logging' service is defined in terms of getInstance().
@@ -31,21 +44,53 @@ class ABJ_404_Solution_Logging {
      * @return ABJ_404_Solution_Logging
      */
     public static function createForContainer() {
+        // Honor a pre-existing singleton override only when it satisfies the
+        // canonical Logging contract. Sibling factories that bind
+        // `$c->get('logging')` are strictly typed against
+        // ABJ_404_Solution_Logging; returning an anonymous double from here
+        // would violate that contract and fatal at the call site. Anonymous
+        // doubles still take effect via the abj_service() override gate for
+        // callers that route through abj_service('logging') directly.
+        if (self::$instance instanceof self) {
+            // Drain any pending-errors buffer through the existing logger
+            // before returning it, so the textdomain-too-early closure
+            // contract holds even when a caller pre-populated the singleton.
+            $existing = self::$instance;
+            self::flushPendingErrorsTo($existing);
+            return $existing;
+        }
+
         // Create a fresh instance without consulting the container.
         $logger = new ABJ_404_Solution_Logging();
 
-        // Flush any pending errors captured before the logger existed.
-        if (isset($GLOBALS['abj404_pending_errors']) && is_array($GLOBALS['abj404_pending_errors'])) {
-            foreach ($GLOBALS['abj404_pending_errors'] as $message) {
-                $logger->errorMessage($message);
-            }
-            unset($GLOBALS['abj404_pending_errors']); // Clear after flushing
-        }
-
-        // Also sync singleton for legacy callers.
+        // Set the singleton before flushing so a recursive resolution
+        // through this same factory does not build a second instance and
+        // re-enter the flush loop.
         self::$instance = $logger;
 
+        self::flushPendingErrorsTo($logger);
+
         return $logger;
+    }
+
+    /**
+     * Drain $GLOBALS['abj404_pending_errors'] through $logger->errorMessage()
+     * and clear the buffer. Safe to call when the buffer is empty.
+     *
+     * @param self $logger
+     * @return void
+     */
+    private static function flushPendingErrorsTo(self $logger): void {
+        if (!isset($GLOBALS['abj404_pending_errors']) || !is_array($GLOBALS['abj404_pending_errors'])) {
+            return;
+        }
+        $pending = $GLOBALS['abj404_pending_errors'];
+        unset($GLOBALS['abj404_pending_errors']);
+        foreach ($pending as $message) {
+            if (is_string($message)) {
+                $logger->errorMessage($message);
+            }
+        }
     }
 
     /** @return self */
@@ -63,17 +108,13 @@ class ABJ_404_Solution_Logging {
             }
         }
 
-        self::$instance = new ABJ_404_Solution_Logging();
+        $fresh = new ABJ_404_Solution_Logging();
+        self::$instance = $fresh;
 
         // log any errors that were stored before the logger existed.
-        if (isset($GLOBALS['abj404_pending_errors']) && is_array($GLOBALS['abj404_pending_errors'])) {
-            foreach ($GLOBALS['abj404_pending_errors'] as $message) {
-                self::$instance->errorMessage($message);
-            }
-            unset($GLOBALS['abj404_pending_errors']); // Clear after flushing
-        }
+        self::flushPendingErrorsTo($fresh);
 
-        return self::$instance;
+        return $fresh;
     }
     
     private function __construct() {

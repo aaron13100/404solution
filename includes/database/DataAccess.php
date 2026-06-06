@@ -300,6 +300,18 @@ class ABJ_404_Solution_DataAccess {
         );
     }
 
+    /**
+     * Return the current singleton instance without consulting the container
+     * or building a new one. Used by `abj_service()` to honor a test-installed
+     * singleton override without forcing the container to cache a stale
+     * binding. Mirrors the pattern on PluginLogic / Logging.
+     *
+     * @return self|null
+     */
+    public static function peekInstance() {
+        return self::$instance;
+    }
+
     /** @return self */
     public static function getInstance() {
         if (self::$instance !== null) {

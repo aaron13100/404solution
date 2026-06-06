@@ -46,6 +46,20 @@ class ABJ_404_Solution_RequestContext {
         return self::$instance;
     }
 
+    /**
+     * Container factory entry point. Materializes the singleton lazily and
+     * returns it so the DI container path and the direct-class-accessor
+     * path share the same per-process message bus instance.
+     *
+     * @return self
+     */
+    public static function resolveForContainer(): ABJ_404_Solution_RequestContext {
+        if (self::$instance === null) {
+            self::$instance = new self();
+        }
+        return self::$instance;
+    }
+
     /** Reset the singleton (for tests). */
     public static function reset(): void {
         self::$instance = null;

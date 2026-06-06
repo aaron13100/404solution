@@ -144,7 +144,7 @@ class ABJ_404_Solution_EditRedirectHandler {
             $message .= __('Error: URL is a required field.', '404-solution') . "<BR/>";
         }
 
-        if ($fromURL != "" && $f->substr($_POST['url'], 0, 1) != "/") {
+        if ($fromURL != "" && $f->substr(isset($_POST['url']) && is_string($_POST['url']) ? $_POST['url'] : '', 0, 1) != "/") {
             $message .= __('Error: URL must start with /', '404-solution') . "<BR/>";
         }
 

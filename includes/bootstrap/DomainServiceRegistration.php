@@ -15,10 +15,20 @@ class ABJ_404_Solution_DomainServiceRegistration {
      */
     public static function register($container): void {
         $container->set('plugin_logic', function($c) {
+            if (class_exists('ABJ_404_Solution_PluginLogic', false)) {
+                $peeked = ABJ_404_Solution_PluginLogic::peekInstance();
+                if ($peeked !== null) {
+                    return $peeked;
+                }
+            }
+            // Use abj_service() for data_access and logging so a caller that
+            // installed a singleton override via reflection wins over the
+            // container's freshly-built default. The other deps remain
+            // container-resolved.
             return new ABJ_404_Solution_PluginLogic(
                 $c->get('functions'),
-                $c->get('data_access'),
-                $c->get('logging'),
+                abj_service('data_access'),
+                abj_service('logging'),
                 $c->get('stats_repository')
             );
         });

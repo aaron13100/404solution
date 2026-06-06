@@ -51,7 +51,12 @@ class ABJ_404_Solution_RuntimeServiceRegistration {
         });
 
         $container->set('request_context', function($c) {
-            return new ABJ_404_Solution_RequestContext();
+            // Reuse the per-process singleton so callers that reach the
+            // context via the class accessor and callers that reach it via
+            // this factory share the same intra-request message bus.
+            // Producing a fresh instance here forks request-scoped state
+            // between the two paths.
+            return ABJ_404_Solution_RequestContext::resolveForContainer();
         });
 
         $container->set('ajax_security_gate', function($c) {
@@ -59,7 +64,7 @@ class ABJ_404_Solution_RuntimeServiceRegistration {
         });
 
         $container->set('ajax_failure_logger', function($c) {
-            return new ABJ_404_Solution_AjaxFailureLogger($c->get('logging'));
+            return new ABJ_404_Solution_AjaxFailureLogger(abj_service('logging'));
         });
 
         $container->set('view', function($c) {

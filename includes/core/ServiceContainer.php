@@ -156,7 +156,7 @@ class ABJ_404_Solution_ServiceContainer {
      * Non-throwing service resolution. Returns the resolved instance, or
      * null if the service isn't registered or the factory raises any
      * Throwable. Replaces the legacy `try { ServiceContainer::get(...) }
-     * catch { fall back } ` pattern at call sites — the swallow lives
+     * catch { fall back } ` pattern at call sites - the swallow lives
      * here, in one place, and is logged via error_log() so it isn't
      * completely invisible.
      *
@@ -263,16 +263,15 @@ class ABJ_404_Solution_ServiceContainer {
  * ))))))))))))))))))))))))))))))))))))))))))))))))
  */
 function abj_service($name) {
-    // Keep abj_service('plugin_logic') aligned with PluginLogic::getInstance()
-    // by honoring a singleton override (self::$instance) when present. Without
-    // this, the container's first-resolved instance is cached and subsequent
-    // overrides (test mocks installed by setting self::$instance) are
-    // silently ignored, even though getInstance() respects them.
-    if ($name === 'plugin_logic' && class_exists('ABJ_404_Solution_PluginLogic', false)) {
-        $override = ABJ_404_Solution_PluginLogic::peekInstance();
-        if ($override !== null) {
-            return $override;
-        }
+    // Honor a singleton override (self::$instance) on each singleton class
+    // before consulting the container. Without this, the container caches
+    // its freshly-built default and any subsequent override (set via
+    // reflection or direct assignment) is silently ignored, even though
+    // each class's own getInstance() respects $instance. Same rationale
+    // for all four: plugin_logic, logging, data_access, database_upgrades.
+    $override = abj_service_singleton_override($name);
+    if ($override !== null) {
+        return $override;
     }
     $container = ABJ_404_Solution_ServiceContainer::getInstance();
     if ($container->has($name)) {
@@ -444,7 +443,7 @@ function abj_service($name) {
         }
     }
 
-    // Last resort — the container raises its standard "not registered"
+    // Last resort - the container raises its standard "not registered"
     // exception. Catch and return null so callers can rely on a uniform
     // non-throwing contract; the swallow is logged via error_log() so the
     // failure is still visible in production logs.
@@ -454,4 +453,45 @@ function abj_service($name) {
         error_log('404 Solution: abj_service(' . $name . ') unresolved: ' . $e->getMessage());
         return null;
     }
+}
+
+/**
+ * Return the singleton-installed instance for a given service name when one
+ * is set, else null. Exists so abj_service() can route around the container
+ * cache for services that expose a `peekInstance()` reflection seam.
+ *
+ * @param string $name
+ * @return mixed
+ */
+function abj_service_singleton_override($name) {
+    static $map = array(
+        'plugin_logic'      => 'ABJ_404_Solution_PluginLogic',
+        'logging'           => 'ABJ_404_Solution_Logging',
+        'data_access'       => 'ABJ_404_Solution_DataAccess',
+        'database_upgrades' => 'ABJ_404_Solution_DatabaseUpgradesEtc',
+    );
+    if (!isset($map[$name])) {
+        return null;
+    }
+    $class = $map[$name];
+    if (!class_exists($class, false) || !method_exists($class, 'peekInstance')) {
+        return null;
+    }
+    $peeked = $class::peekInstance();
+    if ($peeked === null) {
+        return null;
+    }
+    // If the installed instance IS exactly the canonical class (not a
+    // subclass or unrelated double), it was almost certainly populated by
+    // the production getInstance() path during normal setup, not by a
+    // caller asserting a behavioral override. Returning it here would also
+    // short-circuit any container.set() that a caller has installed for
+    // the same service. Subclass doubles (test stubs that extend the real
+    // class) and non-class doubles (anonymous classes that mimic the
+    // duck-type) are honored, since those are the cases where a caller
+    // wants the override.
+    if (is_object($peeked) && get_class($peeked) === $class) {
+        return null;
+    }
+    return $peeked;
 }

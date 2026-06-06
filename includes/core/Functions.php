@@ -221,7 +221,7 @@ class ABJ_404_Solution_Functions {
     }
 
     /** @return string */
-    function substr(string $str, int $start, ?int $length = null): string {
+    function substr(?string $str, int $start, ?int $length = null): string {
         return $this->mbAdapter->substr($str, $start, $length);
     }
 

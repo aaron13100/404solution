@@ -206,6 +206,18 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 		);
 	}
 
+	/**
+	 * Return the current singleton instance without consulting the container
+	 * or building a new one. Mirrors the peekInstance pattern on
+	 * PluginLogic / Logging / DataAccess so abj_service() can honor a
+	 * caller-installed singleton override.
+	 *
+	 * @return self|null
+	 */
+	public static function peekInstance() {
+		return self::$instance;
+	}
+
 	/** @return self */
 	public static function getInstance() {
 		if (self::$instance == null) {
