@@ -43,7 +43,7 @@ class ABJ_404_Solution_AdminTableColumnHeaders {
     }
 
     private function renderSelectAllHeader(string $sub): string {
-        $cbinfoStyle = 'vertical-align: middle; padding-bottom: 6px;';
+        $cbinfoStyle = 'vertical-align: middle; padding-bottom: 4px;';
         if ($sub == 'abj404_logs') {
             $cbinfoStyle .= ' width: 0px;';
         }

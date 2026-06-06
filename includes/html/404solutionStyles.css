@@ -1376,14 +1376,14 @@ th:nth-last-child(-n+3) .lefty-tooltiptext {
 }
 
 /* Column header row matches WP core's .wp-list-table th but tighter:
-   6px vertical padding. white-space: nowrap on the th alone is not
+   4px vertical padding. white-space: nowrap on the th alone is not
    enough when the cell contains a sibling tooltip span the browser
    may wrap; the .abj404-th-inner wrapper below pins title + tooltip
    into one inline-flex line so the header is single-row even when
    the Hits/Last Used columns carry a "?" tooltip icon. */
 .abj404-table th {
     text-align: left;
-    padding: 6px 10px;
+    padding: 4px 10px;
     font-weight: 600;
     font-size: 13px;
     color: var(--abj404-text);
@@ -1392,6 +1392,18 @@ th:nth-last-child(-n+3) .lefty-tooltiptext {
     top: 32px;  /* WordPress admin bar; the nav tabs scroll away (not fixed) */
     z-index: 10;
     background: var(--abj404-bg);
+}
+
+/* The checkbox column on both the Page Redirects and Captured 404s
+   tabs uses class="manage-column column-cb check-column". WordPress
+   admin loads .check-column rules from common.css that can override
+   our left padding; pin 10px here so both tabs are visually
+   identical regardless of WP-core CSS load order. */
+.abj404-table th.check-column,
+.abj404-table td.check-column,
+.abj404-table th:first-child,
+.abj404-table td:first-child {
+    padding-left: 10px;
 }
 
 .abj404-table th .abj404-th-inner {
