@@ -24,19 +24,22 @@ require_once __DIR__ . '/DatabaseQueryDiagnostics.php';
 require_once __DIR__ . '/DatabaseTransactionExecutor.php';
 require_once __DIR__ . '/DatabaseQueryRecoveryPolicy.php';
 require_once __DIR__ . '/DatabaseQueryExecutor.php';
+require_once __DIR__ . '/DatabaseRecoveryServices.php';
 
 /**
  * Shared database infrastructure: query execution, error recovery, timeouts,
  * connection management, table-name resolution, and error classification.
  *
- * Composition root for the database infrastructure components
+ * Composition root for the database infrastructure components. The recovery
+ * & repair cluster (DatabaseErrorClassifier, DatabaseRepairPolicy,
+ * DatabaseSqlErrorReporter, DatabaseCollationHelper, DatabaseTableRepairer)
+ * lives behind a single sub-composition-root, DatabaseRecoveryServices,
+ * which DatabaseCore owns. The remaining infrastructure components
  * (DatabaseConnectionManager, DatabaseQueryTimeoutManager,
- * DatabaseErrorClassifier, DatabaseSqlErrorReporter,
  * DatabaseTableNameResolver, DatabaseNoticeStateHolder,
- * DatabaseCollationHelper, DatabaseTableRepairer, DatabaseWpdbResultHarvester,
- * DatabaseQueryDiagnostics, DatabaseTransactionExecutor,
- * DatabaseQueryRecoveryPolicy,
- * DatabaseQueryExecutor).
+ * DatabaseWpdbResultHarvester, DatabaseQueryDiagnostics,
+ * DatabaseTransactionExecutor, DatabaseQueryRecoveryPolicy,
+ * DatabaseQueryExecutor) are held as direct fields.
  *
  * Public surface:
  *   - Interface-required methods (DatabaseCoreInterface) for callers that
@@ -76,26 +79,14 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
     /** @var ABJ_404_Solution_DatabaseQueryTimeoutManager */
     private $queryTimeoutManager;
 
-    /** @var ABJ_404_Solution_DatabaseErrorClassifier */
-    private $errorClassifier;
-
-    /** @var ABJ_404_Solution_DatabaseRepairPolicy */
-    private $repairPolicy;
-
-    /** @var ABJ_404_Solution_DatabaseSqlErrorReporter */
-    private $sqlErrorReporter;
-
     /** @var ABJ_404_Solution_DatabaseTableNameResolver */
     private $tableNameResolver;
 
     /** @var ABJ_404_Solution_DatabaseNoticeStateHolder */
     private $noticeState;
 
-    /** @var ABJ_404_Solution_DatabaseCollationHelper */
-    private $collationHelper;
-
-    /** @var ABJ_404_Solution_DatabaseTableRepairer */
-    private $tableRepairer;
+    /** @var ABJ_404_Solution_DatabaseRecoveryServices */
+    private $recoveryServices;
 
     /** @var ABJ_404_Solution_DatabaseWpdbResultHarvester */
     private $resultHarvester;
@@ -128,9 +119,6 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
         $this->logger = $logging !== null ? $logging : abj_service('logging');
         $this->connectionManager = new ABJ_404_Solution_DatabaseConnectionManager($this, $this->logger);
         $this->queryTimeoutManager = new ABJ_404_Solution_DatabaseQueryTimeoutManager($this, $this->logger);
-        $this->errorClassifier = new ABJ_404_Solution_DatabaseErrorClassifier($this, $this->f, $this->logger);
-        $this->repairPolicy = new ABJ_404_Solution_DatabaseRepairPolicy($this, $this->errorClassifier, $this->f, $this->logger);
-        $this->sqlErrorReporter = new ABJ_404_Solution_DatabaseSqlErrorReporter($this, $this->logger);
         $this->resultHarvester = new ABJ_404_Solution_DatabaseWpdbResultHarvester();
         $this->queryDiagnostics = new ABJ_404_Solution_DatabaseQueryDiagnostics($this->logger);
         $this->queryRecoveryPolicy = new ABJ_404_Solution_DatabaseQueryRecoveryPolicy(
@@ -155,47 +143,17 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
         );
         $this->noticeState = new ABJ_404_Solution_DatabaseNoticeStateHolder(
             function (): bool {
-                return $this->errorClassifier->isQuotaCooldownActive();
+                // Deferred lookup: recoveryServices is assigned below.
+                return $this->recoveryServices->errorClassifier()->isQuotaCooldownActive();
             }
         );
-        $this->collationHelper = new ABJ_404_Solution_DatabaseCollationHelper(
-            function (string $query, array $options): array {
-                return $this->queryAndGetResults($query, $options);
-            },
-            function (string $tableName): string {
-                // Call through $this so test-stub subclass overrides of
-                // getCreateTableDDL are honored, matching pre-extraction behavior.
-                return $this->getCreateTableDDL($tableName);
-            },
-            function (string $key) {
-                return $this->noticeState->getRuntimeFlag($key);
-            },
-            function (string $key, $value, int $ttl): void {
-                $this->noticeState->setRuntimeFlag($key, $value, $ttl);
-            },
-            function (array &$result): void {
-                $this->resultHarvester->harvestWpdbResult($result);
-            },
-            $this->logger
-        );
-        $this->tableRepairer = new ABJ_404_Solution_DatabaseTableRepairer(
-            function (string $query, array $options): array {
-                return $this->queryAndGetResults($query, $options);
-            },
-            function (array &$result): void {
-                $this->resultHarvester->harvestWpdbResult($result);
-            },
-            function (): string {
-                return $this->queryExecutor->getCurrentResultType();
-            },
-            function (string $type, string $message, string $errorString): void {
-                $this->noticeState->setPluginDbNotice($type, $message, $errorString);
-            },
-            function (string $text): string {
-                return $this->noticeState->localizeOrDefault($text);
-            },
+        $this->recoveryServices = new ABJ_404_Solution_DatabaseRecoveryServices(
+            $this,
             $this->f,
-            $this->logger
+            $this->logger,
+            $this->resultHarvester,
+            $this->noticeState,
+            $this->queryExecutor
         );
     }
 
@@ -218,19 +176,24 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
         return $this->queryTimeoutManager;
     }
 
+    /** @return ABJ_404_Solution_DatabaseRecoveryServices */
+    public function recoveryServices(): ABJ_404_Solution_DatabaseRecoveryServices {
+        return $this->recoveryServices;
+    }
+
     /** @return ABJ_404_Solution_DatabaseErrorClassifier */
     public function errorClassifier(): ABJ_404_Solution_DatabaseErrorClassifier {
-        return $this->errorClassifier;
+        return $this->recoveryServices->errorClassifier();
     }
 
     /** @return ABJ_404_Solution_DatabaseRepairPolicy */
     public function repairPolicy(): ABJ_404_Solution_DatabaseRepairPolicy {
-        return $this->repairPolicy;
+        return $this->recoveryServices->repairPolicy();
     }
 
     /** @return ABJ_404_Solution_DatabaseSqlErrorReporter */
     public function sqlErrorReporter(): ABJ_404_Solution_DatabaseSqlErrorReporter {
-        return $this->sqlErrorReporter;
+        return $this->recoveryServices->sqlErrorReporter();
     }
 
     /** @return ABJ_404_Solution_DatabaseTableNameResolver */
@@ -245,12 +208,12 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
 
     /** @return ABJ_404_Solution_DatabaseCollationHelper */
     public function collationHelper(): ABJ_404_Solution_DatabaseCollationHelper {
-        return $this->collationHelper;
+        return $this->recoveryServices->collationHelper();
     }
 
     /** @return ABJ_404_Solution_DatabaseTableRepairer */
     public function tableRepairer(): ABJ_404_Solution_DatabaseTableRepairer {
-        return $this->tableRepairer;
+        return $this->recoveryServices->tableRepairer();
     }
 
     /** @return ABJ_404_Solution_DatabaseWpdbResultHarvester */
@@ -315,12 +278,12 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
 
     /** @inheritDoc */
     public function getTableCollationString(string $tableName): string {
-        return $this->collationHelper->getTableCollationString($tableName);
+        return $this->recoveryServices->collationHelper()->getTableCollationString($tableName);
     }
 
     /** @inheritDoc */
     public function getColumnCollationString(string $tableName, string $columnName): string {
-        return $this->collationHelper->getColumnCollationString($tableName, $columnName);
+        return $this->recoveryServices->collationHelper()->getColumnCollationString($tableName, $columnName);
     }
 
     /** @inheritDoc */
@@ -351,17 +314,17 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
 
     /** @inheritDoc */
     public function classifyAndHandleInfrastructureError(string $errorText): bool {
-        return $this->errorClassifier->classifyAndHandleInfrastructureError($errorText);
+        return $this->recoveryServices->errorClassifier()->classifyAndHandleInfrastructureError($errorText);
     }
 
     /** @inheritDoc */
     public function classifyStageFailure(int $stageNumber, string $errorText): string {
-        return $this->errorClassifier->classifyStageFailure($stageNumber, $errorText);
+        return $this->recoveryServices->errorClassifier()->classifyStageFailure($stageNumber, $errorText);
     }
 
     /** @inheritDoc */
     public function isOutOfMemoryError(string $errorText): bool {
-        return $this->errorClassifier->isOutOfMemoryError($errorText);
+        return $this->recoveryServices->errorClassifier()->isOutOfMemoryError($errorText);
     }
 
     /** @inheritDoc */
@@ -402,12 +365,12 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
 
     /** @inheritDoc */
     public function repairTable(string $errorMessage): void {
-        $this->tableRepairer->repairTable($errorMessage);
+        $this->recoveryServices->tableRepairer()->repairTable($errorMessage);
     }
 
     /** @inheritDoc */
     public function repairDuplicateIDs(string $errorMessage, string $sqlThatWasRun): void {
-        $this->tableRepairer->repairDuplicateIDs($errorMessage, $sqlThatWasRun);
+        $this->recoveryServices->tableRepairer()->repairDuplicateIDs($errorMessage, $sqlThatWasRun);
     }
 
     /**
@@ -415,7 +378,7 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
      * @param 'OBJECT'|'OBJECT_K'|'ARRAY_A'|'ARRAY_N' $resultType
      */
     public function recoverFromCollationMismatchAndRetry(string $query, array &$result, bool $producesRows, string $resultType): void {
-        $this->collationHelper->recoverFromCollationMismatchAndRetry($query, $result, $producesRows, $resultType);
+        $this->recoveryServices->collationHelper()->recoverFromCollationMismatchAndRetry($query, $result, $producesRows, $resultType);
     }
 
     /** @inheritDoc */
