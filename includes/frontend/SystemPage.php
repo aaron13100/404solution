@@ -229,13 +229,13 @@ class ABJ_404_Solution_SystemPage {
             'abj404_recreate_system_page'
         );
 
-        echo '<div class="notice notice-warning is-dismissible">';
-        echo '<p>';
-        echo esc_html__('Your 404 suggestion page was deleted.', '404-solution');
-        echo ' <a href="' . esc_url($recreateUrl) . '">' . esc_html__('Recreate it', '404-solution') . '</a>';
-        echo ' ' . esc_html__('or choose a different option below.', '404-solution');
-        echo '</p>';
-        echo '</div>';
+        $tpl = ABJ_404_Solution_FileSystemService::readFileContents(
+            dirname(__DIR__) . '/html/systemPageDeletedAdminNotice.html'
+        );
+        $body = esc_html__('Your 404 suggestion page was deleted.', '404-solution')
+            . ' <a href="' . esc_url($recreateUrl) . '">' . esc_html__('Recreate it', '404-solution') . '</a>'
+            . ' ' . esc_html__('or choose a different option below.', '404-solution');
+        echo strtr($tpl, ['{message_with_link}' => $body]);
 
         delete_transient('abj404_system_page_deleted');
     }
@@ -290,12 +290,12 @@ class ABJ_404_Solution_SystemPage {
         }
 
         $settingsUrl = admin_url('options-general.php?page=' . ABJ404_PP . '&subpage=abj404_options');
-        echo '<div class="notice notice-info inline" style="margin: 12px 0;">';
-        echo '<p>';
-        echo esc_html__('This page is used by 404 Solution to display suggested pages to visitors.', '404-solution');
-        echo ' <a href="' . esc_url($settingsUrl) . '">' . esc_html__('Learn more', '404-solution') . '</a>';
-        echo '</p>';
-        echo '</div>';
+        $tpl = ABJ_404_Solution_FileSystemService::readFileContents(
+            dirname(__DIR__) . '/html/systemPageEditorNotice.html'
+        );
+        $body = esc_html__('This page is used by 404 Solution to display suggested pages to visitors.', '404-solution')
+            . ' <a href="' . esc_url($settingsUrl) . '">' . esc_html__('Learn more', '404-solution') . '</a>';
+        echo strtr($tpl, ['{message_with_link}' => $body]);
     }
 
     /**
@@ -356,12 +356,15 @@ class ABJ_404_Solution_SystemPage {
         $settingsUrl = admin_url('options-general.php?page=' . ABJ404_PP . '&subpage=abj404_options');
 
         add_action('wp_footer', function() use ($settingsUrl) {
-            echo '<div style="position:fixed;top:0;left:0;right:0;z-index:999999;background:#fff3cd;border-bottom:2px solid #ffc107;padding:12px 20px;font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:14px;">'; /* allow-hardcoded-color: wp_footer front-end banner; admin theme vars are not loaded on the public site */
-            echo esc_html__('Your 404 Solution suggestion page was deleted. Visitors are seeing this default 404 page instead.', '404-solution');
-            echo ' <a href="' . esc_url($settingsUrl) . '" style="color:#0073aa;text-decoration:underline;">'; /* allow-hardcoded-color: wp_footer front-end link color; admin theme vars not loaded on public site */
-            echo esc_html__('Go to settings', '404-solution');
-            echo '</a>';
-            echo '</div>';
+            /* allow-hardcoded-color: wp_footer front-end banner; admin theme vars are not loaded on the public site */
+            $tpl = ABJ_404_Solution_FileSystemService::readFileContents(
+                dirname(__DIR__) . '/html/systemPageAdminFrontend404Banner.html'
+            );
+            echo strtr($tpl, [
+                '{message}'        => esc_html__('Your 404 Solution suggestion page was deleted. Visitors are seeing this default 404 page instead.', '404-solution'),
+                '{settings_url}'   => esc_url($settingsUrl),
+                '{settings_label}' => esc_html__('Go to settings', '404-solution'),
+            ]);
         });
     }
 

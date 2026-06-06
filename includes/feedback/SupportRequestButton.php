@@ -44,14 +44,16 @@ final class ABJ_404_Solution_SupportRequestButton {
      * @return string HTML safe to print directly into an admin page.
      */
     public static function render(string $triggeredFrom, ?string $contextSummary = null): string {
-        $triggeredFromAttr = self::escAttr($triggeredFrom);
-        $html = '<div class="abj404-support-request-mount"'
-            . ' data-triggered-from="' . $triggeredFromAttr . '"';
+        $contextAttr = '';
         if ($contextSummary !== null && $contextSummary !== '') {
-            $html .= ' data-context-summary="' . self::escAttr($contextSummary) . '"';
+            $contextAttr = ' data-context-summary="' . self::escAttr($contextSummary) . '"';
         }
-        $html .= '></div>';
-        return $html;
+        $template = self::readTemplate('supportRequestButtonMount.html');
+        $html = strtr($template, [
+            '{triggered_from}'       => self::escAttr($triggeredFrom),
+            '{context_summary_attr}' => $contextAttr,
+        ]);
+        return rtrim($html, "\n");
     }
 
     /**

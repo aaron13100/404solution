@@ -1,0 +1,36 @@
+<script type="text/javascript">
+(function() {
+    var abj404ConditionIndex = {initial_index};
+
+    window.abj404AddConditionRow = function() {
+        var template = document.getElementById('abj404-condition-row-template');
+        if (!template) { return; }
+        var html = template.innerHTML.replace(/__IDX__/g, String(abj404ConditionIndex));
+        var container = document.getElementById('abj404-conditions-container');
+        if (!container) { return; }
+        var div = document.createElement('div');
+        div.innerHTML = html;
+        while (div.firstChild) {
+            container.appendChild(div.firstChild);
+        }
+        abj404UpdateConditionSortOrders();
+        abj404ConditionIndex++;
+    };
+
+    window.abj404RemoveConditionRow = function(btn) {
+        var row = btn.closest('.abj404-condition-row');
+        if (row) {
+            row.parentNode.removeChild(row);
+            abj404UpdateConditionSortOrders();
+        }
+    };
+
+    function abj404UpdateConditionSortOrders() {
+        var rows = document.querySelectorAll('#abj404-conditions-container .abj404-condition-row');
+        for (var i = 0; i < rows.length; i++) {
+            var so = rows[i].querySelector('.abj404-condition-sort-order');
+            if (so) { so.value = String(i); }
+        }
+    }
+}());
+</script>

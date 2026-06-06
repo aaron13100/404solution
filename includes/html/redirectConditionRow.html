@@ -1,0 +1,11 @@
+<div class="abj404-condition-row" data-index="{index}">
+<select name="{name_prefix}[logic]" class="abj404-condition-logic" aria-label="{logic_aria}">{logic_options}</select>
+<select name="{name_prefix}[condition_type]" class="abj404-condition-type" aria-label="{type_aria}">
+<option value="">{type_placeholder}</option>
+{type_options}
+</select>
+<select name="{name_prefix}[operator]" class="abj404-condition-operator" aria-label="{operator_aria}">{operator_options}</select>
+<input type="text" name="{name_prefix}[value]" class="abj404-condition-value abj404-form-input" value="{value}" placeholder="{value_placeholder}" aria-label="{value_aria}">
+<input type="hidden" name="{name_prefix}[sort_order]" class="abj404-condition-sort-order" value="{sort_order}">
+<button type="button" class="button abj404-remove-condition" onclick="abj404RemoveConditionRow(this)" aria-label="{remove_aria}">{remove_label}</button>
+</div>

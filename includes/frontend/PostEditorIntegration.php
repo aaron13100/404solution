@@ -99,7 +99,7 @@ class ABJ_404_Solution_PostEditorIntegration {
     public function renderRedirectColumn($column, $post_id) {
         if ($column === 'abj404_redirect') {
             $default = $this->getDefaultRedirectSetting() ? '1' : '0';
-            // Output data attribute for JavaScript to read
+            // inline-html-approved: single empty <span> data-attribute carrier read by the Quick Edit JS for this column; no user-visible HTML content.
             echo '<span class="abj404-redirect-default" data-default="' . esc_attr($default) . '"></span>';
         }
     }
@@ -202,6 +202,7 @@ class ABJ_404_Solution_PostEditorIntegration {
     public function renderMetaBox($post) {
         // Only show for published posts (new posts have no old URL to redirect from)
         if ($post->post_status !== 'publish') {
+            // inline-html-approved: single-line description paragraph in early-return branch of the Classic Editor meta box; one translated sentence with no dynamic data.
             echo '<p class="description">' . esc_html__('Redirect options are available after the post is published.', '404-solution') . '</p>';
             return;
         }

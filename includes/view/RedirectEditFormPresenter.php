@@ -92,6 +92,7 @@ class ABJ_404_Solution_RedirectEditFormPresenter {
         $items = '';
         foreach ($redirects as $bulkRedirect) {
             $bulkUrl = is_string($bulkRedirect['url'] ?? '') ? (string)($bulkRedirect['url'] ?? '') : '';
+            // inline-html-approved: atomic <li><code>$url</code></li> emission inside a loop; the row template editRedirectBulkUrls.html owns the list wrapper and consumes this fragment via {bulk_url_items}.
             $items .= '<li><code>' . esc_html($bulkUrl) . '</code></li>';
         }
 

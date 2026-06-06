@@ -10,7 +10,9 @@ class ABJ_404_Solution_View_RedirectConditions extends ABJ_404_Solution_ViewComp
      * Render the Conditions section on the Edit Redirect page.
      *
      * Reads the current redirect ID from GET/POST so existing conditions can
-     * be pre-populated.  New redirects (id = 0) render an empty container.
+     * be pre-populated. New redirects (id = 0) render an empty container.
+     *
+     * HTML is loaded from includes/html/redirectConditions*.html templates.
      *
      * @return void
      */
@@ -24,28 +26,26 @@ class ABJ_404_Solution_View_RedirectConditions extends ABJ_404_Solution_ViewComp
 
         $existingConditions = ($redirectId > 0) ? $this->redirectsRepository->getRedirectConditions($redirectId) : [];
 
-        echo '<div class="abj404-form-group abj404-conditions-section">';
-        echo '<h4>' . esc_html__('Conditions (optional)', '404-solution') . '</h4>';
-        echo '<p class="abj404-form-help">' . esc_html__('This redirect only fires when all conditions are met. Leave empty to always redirect.', '404-solution') . '</p>';
+        $openTpl = $this->loadTemplate('redirectConditionsSectionOpen.html');
+        echo strtr($openTpl, [
+            '{section_label}' => esc_html__('Conditions (optional)', '404-solution'),
+            '{section_help}'  => esc_html__('This redirect only fires when all conditions are met. Leave empty to always redirect.', '404-solution'),
+        ]);
 
-        echo '<div id="abj404-conditions-container">';
         foreach ($existingConditions as $i => $cond) {
             $this->echoConditionRow($i, $cond);
         }
-        echo '</div>';
 
-        echo '<button type="button" onclick="abj404AddConditionRow()" class="button abj404-btn-add-condition">'
-            . esc_html__('+ Add Condition', '404-solution')
-            . '</button>';
-
-        echo '</div>';
+        $closeTpl = $this->loadTemplate('redirectConditionsSectionClose.html');
+        echo strtr($closeTpl, [
+            '{add_label}' => esc_html__('+ Add Condition', '404-solution'),
+        ]);
 
         // Hidden template row (display:none) cloned by JS.
-        echo '<script type="text/template" id="abj404-condition-row-template">';
+        echo $this->loadTemplate('redirectConditionsRowTemplateOpen.html');
         $this->echoConditionRow('__IDX__', []);
-        echo '</script>';
+        echo $this->loadTemplate('redirectConditionsRowTemplateClose.html');
 
-        // Inline JS for dynamic condition rows.
         $this->echoConditionsJavaScript();
     }
 
@@ -65,60 +65,67 @@ class ABJ_404_Solution_View_RedirectConditions extends ABJ_404_Solution_ViewComp
 
         $namePrefix = 'conditions[' . $index . ']';
 
-        echo '<div class="abj404-condition-row" data-index="' . esc_attr((string)$index) . '">';
+        $logicOptions = $this->buildOptions([
+            'AND' => __('AND', '404-solution'),
+            'OR'  => __('OR', '404-solution'),
+        ], $logic);
 
-        // Logic (AND / OR) — shown only on rows after the first.
-        echo '<select name="' . esc_attr($namePrefix . '[logic]') . '" class="abj404-condition-logic" aria-label="' . esc_attr__('Logic', '404-solution') . '">';
-        foreach (['AND' => __('AND', '404-solution'), 'OR' => __('OR', '404-solution')] as $logicVal => $logicLabel) {
-            $sel = ($logic === $logicVal) ? ' selected' : '';
-            echo '<option value="' . esc_attr($logicVal) . '"' . $sel . '>' . esc_html($logicLabel) . '</option>';
-        }
-        echo '</select>';
-
-        // Condition type.
-        $typeOptions = [
+        $typeOptions = $this->buildOptions([
             'login_status' => __('Login Status', '404-solution'),
             'user_role'    => __('User Role', '404-solution'),
             'referrer'     => __('Referrer URL', '404-solution'),
             'user_agent'   => __('User Agent', '404-solution'),
             'ip_range'     => __('IP Range (CIDR)', '404-solution'),
             'http_header'  => __('HTTP Header', '404-solution'),
-        ];
-        echo '<select name="' . esc_attr($namePrefix . '[condition_type]') . '" class="abj404-condition-type" aria-label="' . esc_attr__('Condition type', '404-solution') . '">';
-        echo '<option value="">' . esc_html__('— Select type —', '404-solution') . '</option>';
-        foreach ($typeOptions as $typeVal => $typeLabel) {
-            $sel = ($type === $typeVal) ? ' selected' : '';
-            echo '<option value="' . esc_attr($typeVal) . '"' . $sel . '>' . esc_html($typeLabel) . '</option>';
-        }
-        echo '</select>';
+        ], $type);
 
-        // Operator.
-        $operatorOptions = [
+        $operatorOptions = $this->buildOptions([
             'equals'       => __('equals', '404-solution'),
             'not_equals'   => __('not equals', '404-solution'),
             'contains'     => __('contains', '404-solution'),
             'not_contains' => __('does not contain', '404-solution'),
             'regex'        => __('matches regex', '404-solution'),
-        ];
-        echo '<select name="' . esc_attr($namePrefix . '[operator]') . '" class="abj404-condition-operator" aria-label="' . esc_attr__('Operator', '404-solution') . '">';
-        foreach ($operatorOptions as $opVal => $opLabel) {
-            $sel = ($operator === $opVal) ? ' selected' : '';
-            echo '<option value="' . esc_attr($opVal) . '"' . $sel . '>' . esc_html($opLabel) . '</option>';
+        ], $operator);
+
+        $rowTpl = $this->loadTemplate('redirectConditionRow.html');
+        echo strtr($rowTpl, [
+            '{index}'            => esc_attr((string)$index),
+            '{name_prefix}'      => esc_attr($namePrefix),
+            '{logic_aria}'       => esc_attr__('Logic', '404-solution'),
+            '{logic_options}'    => $logicOptions,
+            '{type_aria}'        => esc_attr__('Condition type', '404-solution'),
+            // allow-em-dash: preserving translated placeholder label.
+            '{type_placeholder}' => esc_html__('— Select type —', '404-solution'),
+            '{type_options}'     => $typeOptions,
+            '{operator_aria}'    => esc_attr__('Operator', '404-solution'),
+            '{operator_options}' => $operatorOptions,
+            '{value}'            => esc_attr($value),
+            '{value_placeholder}' => esc_attr__('Value', '404-solution'),
+            '{value_aria}'       => esc_attr__('Condition value', '404-solution'),
+            '{sort_order}'       => esc_attr((string)$sortOrder),
+            '{remove_aria}'      => esc_attr__('Remove condition', '404-solution'),
+            '{remove_label}'     => esc_html__('Remove', '404-solution'),
+        ]);
+    }
+
+    /**
+     * Build the inner <option> markup for a <select>.
+     *
+     * @param array<string, string> $options    value => translated label map.
+     * @param string                $selected   Currently selected value.
+     * @return string Concatenated <option> HTML.
+     */
+    private function buildOptions(array $options, string $selected): string {
+        $tpl = $this->loadTemplate('redirectConditionOption.html');
+        $out = '';
+        foreach ($options as $val => $label) {
+            $out .= strtr($tpl, [
+                '{value}'    => esc_attr((string)$val),
+                '{selected}' => ((string)$val === $selected) ? ' selected' : '',
+                '{label}'    => esc_html((string)$label),
+            ]);
         }
-        echo '</select>';
-
-        // Value input.
-        echo '<input type="text" name="' . esc_attr($namePrefix . '[value]') . '" class="abj404-condition-value abj404-form-input" value="' . esc_attr($value) . '" placeholder="' . esc_attr__('Value', '404-solution') . '" aria-label="' . esc_attr__('Condition value', '404-solution') . '">';
-
-        // Sort order (hidden).
-        echo '<input type="hidden" name="' . esc_attr($namePrefix . '[sort_order]') . '" class="abj404-condition-sort-order" value="' . esc_attr((string)$sortOrder) . '">';
-
-        // Remove button.
-        echo '<button type="button" class="button abj404-remove-condition" onclick="abj404RemoveConditionRow(this)" aria-label="' . esc_attr__('Remove condition', '404-solution') . '">'
-            . esc_html__('Remove', '404-solution')
-            . '</button>';
-
-        echo '</div>';
+        return $out;
     }
 
     /**
@@ -135,41 +142,21 @@ class ABJ_404_Solution_View_RedirectConditions extends ABJ_404_Solution_ViewComp
         }
         $initialIndex = ($redirectId > 0) ? max(1, count($this->redirectsRepository->getRedirectConditions($redirectId))) : 1;
 
-        echo '<script type="text/javascript">' . "\n";
-        echo '(function() {' . "\n";
-        echo '    var abj404ConditionIndex = ' . (int)$initialIndex . ';' . "\n";
-        echo "\n";
-        echo '    window.abj404AddConditionRow = function() {' . "\n";
-        echo '        var template = document.getElementById(\'abj404-condition-row-template\');' . "\n";
-        echo '        if (!template) { return; }' . "\n";
-        echo '        var html = template.innerHTML.replace(/__IDX__/g, String(abj404ConditionIndex));' . "\n";
-        echo '        var container = document.getElementById(\'abj404-conditions-container\');' . "\n";
-        echo '        if (!container) { return; }' . "\n";
-        echo '        var div = document.createElement(\'div\');' . "\n";
-        echo '        div.innerHTML = html;' . "\n";
-        echo '        while (div.firstChild) {' . "\n";
-        echo '            container.appendChild(div.firstChild);' . "\n";
-        echo '        }' . "\n";
-        echo '        abj404UpdateConditionSortOrders();' . "\n";
-        echo '        abj404ConditionIndex++;' . "\n";
-        echo '    };' . "\n";
-        echo "\n";
-        echo '    window.abj404RemoveConditionRow = function(btn) {' . "\n";
-        echo '        var row = btn.closest(\'.abj404-condition-row\');' . "\n";
-        echo '        if (row) {' . "\n";
-        echo '            row.parentNode.removeChild(row);' . "\n";
-        echo '            abj404UpdateConditionSortOrders();' . "\n";
-        echo '        }' . "\n";
-        echo '    };' . "\n";
-        echo "\n";
-        echo '    function abj404UpdateConditionSortOrders() {' . "\n";
-        echo '        var rows = document.querySelectorAll(\'#abj404-conditions-container .abj404-condition-row\');' . "\n";
-        echo '        for (var i = 0; i < rows.length; i++) {' . "\n";
-        echo '            var so = rows[i].querySelector(\'.abj404-condition-sort-order\');' . "\n";
-        echo '            if (so) { so.value = String(i); }' . "\n";
-        echo '        }' . "\n";
-        echo '    }' . "\n";
-        echo '}());' . "\n";
-        echo '</script>' . "\n";
+        $tpl = $this->loadTemplate('redirectConditionsScript.html');
+        echo strtr($tpl, [
+            '{initial_index}' => (string)(int)$initialIndex,
+        ]);
+    }
+
+    /**
+     * Read an HTML template from includes/html/.
+     *
+     * @param string $filename Template filename relative to includes/html/.
+     * @return string Template contents.
+     */
+    private function loadTemplate(string $filename): string {
+        return ABJ_404_Solution_FileSystemService::readFileContents(
+            dirname(__DIR__) . '/html/' . $filename
+        );
     }
 }

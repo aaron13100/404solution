@@ -31,20 +31,23 @@ class ABJ_404_Solution_Privacy {
             return;
         }
 
-        $content = '<p>' . esc_html__(
-            '404 Solution logs 404 hits and redirects to help you diagnose broken links and configure redirects.',
-            '404-solution'
-        ) . '</p>';
-
-        $content .= '<p>' . esc_html__(
-            'Log entries may include requested URLs, referrers, timestamps, and an IP address. By default, IP addresses are anonymized; you can enable raw IP logging in the plugin settings.',
-            '404-solution'
-        ) . '</p>';
-
-        $content .= '<p>' . esc_html__(
-            'You can export or erase personal data via WordPress Tools > Export/Erase Personal Data.',
-            '404-solution'
-        ) . '</p>';
+        $tpl = ABJ_404_Solution_FileSystemService::readFileContents(
+            dirname(__DIR__) . '/html/privacyPolicyContent.html'
+        );
+        $content = strtr($tpl, [
+            '{intro}' => esc_html__(
+                '404 Solution logs 404 hits and redirects to help you diagnose broken links and configure redirects.',
+                '404-solution'
+            ),
+            '{logging_details}' => esc_html__(
+                'Log entries may include requested URLs, referrers, timestamps, and an IP address. By default, IP addresses are anonymized; you can enable raw IP logging in the plugin settings.',
+                '404-solution'
+            ),
+            '{tools_pointer}' => esc_html__(
+                'You can export or erase personal data via WordPress Tools > Export/Erase Personal Data.',
+                '404-solution'
+            ),
+        ]);
 
         wp_add_privacy_policy_content('404 Solution', wp_kses_post($content));
     }

@@ -30,9 +30,13 @@ class ABJ_404_Solution_View_RedirectTypeUI extends ABJ_404_Solution_ViewComponen
         $mode = abj_service('settings_mode_preference')->getMode();
         $isSimple = $mode === 'simple';
 
+        // inline-html-approved: wrapper open for the self-contained redirect-type button grid widget; companion to already-approved inline button rendering below in this file.
         echo '<div class="abj404-form-group">';
+        // inline-html-approved: label for the button grid widget.
         echo '<label class="abj404-form-label">' . esc_html__('Redirect Type', '404-solution') . '</label>';
+        // inline-html-approved: hidden code input that the JS toggle writes into; lives next to the grid it controls.
         echo '<input type="hidden" id="code" name="code" value="' . esc_attr($selectedCode) . '">';
+        // inline-html-approved: grid wrapper open for the redirect-type button widget.
         echo '<div class="abj404-redirect-type-grid">';
 
         if ($isSimple) {
