@@ -294,7 +294,7 @@ class ABJ_404_Solution_Ajax_AdminEndpointSupport {
         return $out;
     }
 
-    /** @return ABJ_404_Solution_Functions|ABJ_404_Solution_DataAccess */
+    /** @return ABJ_404_Solution_Functions */
     public static function getRequestReader() {
         $container = ABJ_404_Solution_ServiceContainer::getInstance();
         if ($container->has('functions')) {

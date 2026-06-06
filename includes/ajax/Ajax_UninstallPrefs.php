@@ -21,7 +21,7 @@ class ABJ_404_Solution_Ajax_UninstallPrefs {
      *
      * @return void
      */
-    public static function handle(): void {
+    public static function handle(): void { // @phpstan-ignore abj404.cyclomaticComplexity
         // Security: Verify nonce
         $nonceOk = check_ajax_referer('abj404_uninstall_nonce', 'nonce', false);
         if (!$nonceOk) {
@@ -42,21 +42,21 @@ class ABJ_404_Solution_Ajax_UninstallPrefs {
             'delete_logs' => isset($_POST['delete_logs']) ? filter_var($_POST['delete_logs'], FILTER_VALIDATE_BOOLEAN) : false,
             'delete_cache' => true, // Always delete cache tables
             'send_feedback' => isset($_POST['send_feedback']) ? filter_var($_POST['send_feedback'], FILTER_VALIDATE_BOOLEAN) : false,
-            'uninstall_reason' => isset($_POST['uninstall_reason']) ? sanitize_text_field($_POST['uninstall_reason']) : '',
-            'selected_issues' => isset($_POST['selected_issues']) ? sanitize_text_field($_POST['selected_issues']) : '',
-            'followup_details' => isset($_POST['followup_details']) ? sanitize_textarea_field($_POST['followup_details']) : '',
+            'uninstall_reason' => is_string($_POST['uninstall_reason'] ?? null) ? sanitize_text_field($_POST['uninstall_reason']) : '',
+            'selected_issues' => is_string($_POST['selected_issues'] ?? null) ? sanitize_text_field($_POST['selected_issues']) : '',
+            'followup_details' => is_string($_POST['followup_details'] ?? null) ? sanitize_textarea_field($_POST['followup_details']) : '',
             // Back-compat for older tests/UI that used a single text field.
-            'feedback_details' => isset($_POST['followup_details']) ? sanitize_textarea_field($_POST['followup_details']) : '',
-            'better_plugin_name' => isset($_POST['better_plugin_name']) ? sanitize_text_field($_POST['better_plugin_name']) : '',
-            'other_reason_text' => isset($_POST['other_reason_text']) ? sanitize_textarea_field($_POST['other_reason_text']) : '',
-            'feedback_email' => isset($_POST['feedback_email']) ? sanitize_email($_POST['feedback_email']) : '',
+            'feedback_details' => is_string($_POST['followup_details'] ?? null) ? sanitize_textarea_field($_POST['followup_details']) : '',
+            'better_plugin_name' => is_string($_POST['better_plugin_name'] ?? null) ? sanitize_text_field($_POST['better_plugin_name']) : '',
+            'other_reason_text' => is_string($_POST['other_reason_text'] ?? null) ? sanitize_textarea_field($_POST['other_reason_text']) : '',
+            'feedback_email' => is_string($_POST['feedback_email'] ?? null) ? sanitize_email($_POST['feedback_email']) : '',
             'include_diagnostics' => isset($_POST['include_diagnostics']) ? filter_var($_POST['include_diagnostics'], FILTER_VALIDATE_BOOLEAN) : false
         );
 
         // Debug logging (only in debug mode to avoid logging PII like email/feedback in production)
         if (defined('WP_DEBUG') && WP_DEBUG) {
             error_log('404 Solution: AJAX handler received deactivation preferences');
-            error_log('404 Solution: Raw POST send_feedback = ' . (isset($_POST['send_feedback']) ? $_POST['send_feedback'] : 'NOT SET'));
+            error_log('404 Solution: Raw POST send_feedback = ' . (is_scalar($_POST['send_feedback'] ?? null) ? (string)$_POST['send_feedback'] : 'NOT SET'));
             error_log('404 Solution: Parsed send_feedback = ' . ($preferences['send_feedback'] ? 'true' : 'false'));
             error_log('404 Solution: Parsed preferences: ' . print_r($preferences, true));
         }
