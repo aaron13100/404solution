@@ -1161,8 +1161,13 @@ th:nth-last-child(-n+3) .lefty-tooltiptext {
     overflow-x: clip; /* Prevent tooltips from causing horizontal scroll, doesn't break sticky */
 }
 
+/* All card-surface rows above the table (header, subsubsub list-top,
+   filter/tablenav bar) and the table itself share the same 8px
+   left/right gutter so the h1, subtabs, bulk actions, and table
+   edge stack on one vertical line, matching the WordPress core
+   Pages screen layout where everything aligns to the page wrap edge. */
 .abj404-table-header {
-    padding: 4px 32px 6px;
+    padding: 4px 8px 6px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -1204,7 +1209,7 @@ th:nth-last-child(-n+3) .lefty-tooltiptext {
     align-items: center;
     flex-wrap: wrap;
     gap: 16px;
-    padding: 2px 32px 6px;
+    padding: 2px 8px 6px;
 }
 
 .abj404-list-top .subsubsub {
@@ -1235,7 +1240,7 @@ th:nth-last-child(-n+3) .lefty-tooltiptext {
    ============================================ */
 
 .abj404-filter-bar {
-    padding: 6px 32px;
+    padding: 6px 8px;
     background: var(--abj404-bg);
     border-bottom: 1px solid var(--abj404-border);
     display: flex;
@@ -1353,7 +1358,7 @@ th:nth-last-child(-n+3) .lefty-tooltiptext {
 
 .abj404-table-container {
     margin: 0;
-    padding: 0 16px;
+    padding: 0 8px;
 }
 
 .abj404-table {
