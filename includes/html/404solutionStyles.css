@@ -1367,11 +1367,14 @@ th:nth-last-child(-n+3) .lefty-tooltiptext {
     table-layout: auto;
 }
 
-/* Column widths */
+/* Checkbox column: match WP core .check-column. No explicit width;
+   let the cell size to its 2.2em content + the asymmetric padding
+   in the override block below (8px left, 0 right). */
 .abj404-table th:first-child,
 .abj404-table td:first-child {
-    width: 40px;
-    min-width: 40px;
+    width: 2.2em;
+    min-width: 2.2em;
+    box-sizing: border-box;
 }
 
 
@@ -1408,7 +1411,8 @@ th:nth-last-child(-n+3) .lefty-tooltiptext {
 .abj404-table td.check-column,
 .abj404-table th:first-child,
 .abj404-table td:first-child {
-    padding-left: 10px;
+    padding-left: 8px;
+    padding-right: 0;
 }
 
 .abj404-table th .abj404-th-inner {
@@ -1470,8 +1474,6 @@ th:nth-last-child(-n+3) .lefty-tooltiptext {
 
 .abj404-table th input[type="checkbox"] {
     cursor: pointer;
-    width: 18px;
-    height: 18px;
 }
 
 .abj404-table tbody tr {
