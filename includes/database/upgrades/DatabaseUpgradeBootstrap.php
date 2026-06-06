@@ -295,7 +295,7 @@ class ABJ_404_Solution_DatabaseUpgradeBootstrap extends ABJ_404_Solution_Databas
      * @return array<int, array{placeholder: string, bareTableName: string, ddlContent: string}>
      */
     function discoverPermanentDDLFiles(): array {
-        $sqlDir = __DIR__ . '/sql';
+        $sqlDir = __DIR__ . '/../../sql';
         $files = glob($sqlDir . '/create*Table.sql');
         if (!is_array($files)) {
             $files = [];
