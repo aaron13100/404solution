@@ -22,9 +22,15 @@ class ABJ_404_Solution_LogsQueueFlusher {
     /** @var ABJ_404_Solution_LogsWriteRecoveryPolicy */
     private $recovery;
 
+    /**
+     * @param ABJ_404_Solution_DatabaseCore $dbCore
+     * @param ABJ_404_Solution_Logging $logger
+     * @param ABJ_404_Solution_LogsEntrySanitizer $entrySanitizer
+     * @param ABJ_404_Solution_LogsWriteRecoveryPolicy $recovery
+     */
     public function __construct(
         ABJ_404_Solution_DatabaseCore $dbCore,
-        ABJ_404_Solution_Logging $logger,
+        $logger,
         ABJ_404_Solution_LogsEntrySanitizer $entrySanitizer,
         ABJ_404_Solution_LogsWriteRecoveryPolicy $recovery
     ) {

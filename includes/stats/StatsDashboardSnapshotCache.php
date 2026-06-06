@@ -29,7 +29,7 @@ class ABJ_404_Solution_StatsDashboardSnapshotCache {
     public function __construct(
         ABJ_404_Solution_StatsReadRepository $statsReadRepository,
         ABJ_404_Solution_StatsRefreshLock $refreshLock,
-        ABJ_404_Solution_Logging $logging
+        $logging
     ) {
         $this->statsReadRepository = $statsReadRepository;
         $this->refreshLock = $refreshLock;

@@ -12,7 +12,8 @@ class ABJ_404_Solution_ViewBuildSessionVariablesRepository {
     /** @var ABJ_404_Solution_Logging */
     private $logger;
 
-    public function __construct(ABJ_404_Solution_Logging $logger) {
+    /** @param ABJ_404_Solution_Logging $logger */
+    public function __construct($logger) {
         $this->logger = $logger;
     }
 

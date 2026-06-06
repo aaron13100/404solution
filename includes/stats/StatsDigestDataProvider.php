@@ -28,7 +28,7 @@ class ABJ_404_Solution_StatsDigestDataProvider {
         ABJ_404_Solution_DatabaseCoreInterface $dbCore,
         ABJ_404_Solution_LogsRepositoryInterface $logsRepo,
         ABJ_404_Solution_StatsReadRepository $statsReadRepository,
-        ABJ_404_Solution_Logging $logging
+        $logging
     ) {
         $this->dbCore = $dbCore;
         $this->logsRepo = $logsRepo;

@@ -40,8 +40,8 @@ class ABJ_404_Solution_ViewBuildDataBoundary {
      */
     public function __construct(
         ABJ_404_Solution_DatabaseCore $dbCore,
-        ABJ_404_Solution_Functions $f,
-        ABJ_404_Solution_Logging $logger,
+        $f,
+        $logger,
         $rebuildHealth,
         ABJ_404_Solution_DatabaseConnectionManager $connectionManager,
         ABJ_404_Solution_DatabaseErrorClassifier $errorClassifier
@@ -65,10 +65,10 @@ class ABJ_404_Solution_ViewBuildDataBoundary {
     }
 
     /** @return ABJ_404_Solution_Functions */
-    public function functions(): ABJ_404_Solution_Functions { return $this->f; }
+    public function functions() { return $this->f; }
 
     /** @return ABJ_404_Solution_Logging */
-    public function logger(): ABJ_404_Solution_Logging { return $this->logger; }
+    public function logger() { return $this->logger; }
 
     /** @return ABJ_404_Solution_RebuildHealthState|null */
     public function rebuildHealth() { return $this->rebuildHealth; }

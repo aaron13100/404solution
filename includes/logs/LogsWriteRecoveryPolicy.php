@@ -18,9 +18,14 @@ class ABJ_404_Solution_LogsWriteRecoveryPolicy {
     /** @var ABJ_404_Solution_DatabaseNoticeStateHolder */
     private $noticeState;
 
+    /**
+     * @param ABJ_404_Solution_DatabaseCore $dbCore
+     * @param ABJ_404_Solution_Logging $logger
+     * @param ABJ_404_Solution_DatabaseNoticeStateHolder $noticeState
+     */
     public function __construct(
         ABJ_404_Solution_DatabaseCore $dbCore,
-        ABJ_404_Solution_Logging $logger,
+        $logger,
         ABJ_404_Solution_DatabaseNoticeStateHolder $noticeState
     ) {
         $this->dbCore = $dbCore;

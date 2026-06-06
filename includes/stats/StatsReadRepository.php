@@ -32,7 +32,7 @@ class ABJ_404_Solution_StatsReadRepository {
     public function __construct(
         ABJ_404_Solution_DatabaseCoreInterface $dbCore,
         ABJ_404_Solution_LogsRepositoryInterface $logsRepo,
-        ABJ_404_Solution_Logging $logging,
+        $logging,
         ABJ_404_Solution_StatsRefreshLock $refreshLock
     ) {
         $this->dbCore = $dbCore;

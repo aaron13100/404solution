@@ -31,8 +31,8 @@ class ABJ_404_Solution_ContentKeywordsRepository {
      */
     public function __construct(
         ABJ_404_Solution_DatabaseCoreInterface $dbCore,
-        ABJ_404_Solution_Functions $functions,
-        ABJ_404_Solution_Logging $logging
+        $functions,
+        $logging
     ) {
         $this->dbCore = $dbCore;
         $this->functions = $functions;

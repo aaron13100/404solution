@@ -47,8 +47,8 @@ class ABJ_404_Solution_DatabaseRepairPolicy {
     public function __construct(
         ABJ_404_Solution_DatabaseCore $core,
         ABJ_404_Solution_DatabaseErrorClassifier $classifier,
-        ABJ_404_Solution_Functions $functions,
-        ABJ_404_Solution_Logging $logger
+        $functions,
+        $logger
     ) {
         $this->core = $core;
         $this->classifier = $classifier;

@@ -31,8 +31,8 @@ class ABJ_404_Solution_ViewBuildCollaborationContext {
      */
     public function __construct(
         ABJ_404_Solution_DatabaseCore $dbCore,
-        ABJ_404_Solution_Functions $f,
-        ABJ_404_Solution_Logging $logger,
+        $f,
+        $logger,
         $rebuildHealth,
         ABJ_404_Solution_DatabaseConnectionManager $connectionManager,
         ABJ_404_Solution_DatabaseErrorClassifier $errorClassifier
