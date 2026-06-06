@@ -1,4 +1,9 @@
 <?php
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
 /**
  * Missing plugin-table repair/retry/notify policy.
  *
@@ -19,10 +24,6 @@
  *
  * @since 4.2.1
  */
-
-if (!defined('ABSPATH')) {
-    exit;
-}
 
 class ABJ_404_Solution_DatabaseRepairPolicy {
 

@@ -237,11 +237,9 @@ class ABJ_404_Solution_ShortcodeSuggestionsPresenter {
             return false;
         }
         $policy = abj_service('admin_access_policy');
-        if (is_object($policy) && method_exists($policy, 'isPluginAdmin')) {
-            return (bool)$policy->isPluginAdmin();
-        }
-        $logic = abj_service('plugin_logic');
-        return is_object($logic) && method_exists($logic, 'userIsPluginAdmin') && (bool)$logic->userIsPluginAdmin();
+        return is_object($policy)
+            && method_exists($policy, 'isPluginAdmin')
+            && (bool)$policy->isPluginAdmin();
     }
 
     /**

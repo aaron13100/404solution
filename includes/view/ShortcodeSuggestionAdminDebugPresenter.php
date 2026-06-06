@@ -29,7 +29,7 @@ class ABJ_404_Solution_ShortcodeSuggestionAdminDebugPresenter {
         if ($allSuggestionsJson === false) {
             $allSuggestionsJson = '[]';
         }
-        $jsContent = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/js/suggestion-debug-modal.js');
+        $jsContent = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . '/js/suggestion-debug-modal.js');
         return $this->fillTemplate('shortcodeAdminDebugScript.html', array(
             'json' => $allSuggestionsJson,
             'modal_script' => $jsContent,

@@ -129,7 +129,10 @@ class ABJ_404_Solution_UninstallStatisticsReader {
             }
         }
 
-        $prefix = isset($wpdb->prefix) && is_string($wpdb->prefix) ? $wpdb->prefix : '';
+        // Plugin tables are created lowercased; normalize $wpdb->prefix to
+        // lowercase so MySQL hosts with a mixed-case prefix still find the
+        // physical table (CentralizedTableNameTest invariant).
+        $prefix = isset($wpdb->prefix) && is_string($wpdb->prefix) ? strtolower($wpdb->prefix) : '';
         return $prefix . 'abj404_redirects';
     }
 }
