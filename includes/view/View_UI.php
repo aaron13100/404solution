@@ -27,7 +27,7 @@ class ABJ_404_Solution_View_UI extends ABJ_404_Solution_ViewComponent {
      * @return string Template contents, no trailing newline.
      */
     private function tpl(string $name): string {
-        $raw = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/html/' . $name, false);
+        $raw = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . '/html/' . $name, false);
         return rtrim((string)$raw, "\n");
     }
 
@@ -90,7 +90,7 @@ class ABJ_404_Solution_View_UI extends ABJ_404_Solution_ViewComponent {
         $linkHtml = class_exists('ABJ_404_Solution_SupportRequestButton')
             ? ABJ_404_Solution_SupportRequestButton::renderInlineLink($triggeredFrom, $contextSummary)
             : '';
-        $tpl = __DIR__ . '/html/ajaxErrorNoticeWithSupportLink.html';
+        $tpl = dirname(__DIR__) . '/html/ajaxErrorNoticeWithSupportLink.html';
         $template = is_readable($tpl) ? (string)@file_get_contents($tpl) : '';
         return str_replace(['{message}', '{support_link}'], [$messageHtml, $linkHtml], $template);
     }

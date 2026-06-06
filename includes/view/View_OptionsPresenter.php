@@ -124,7 +124,7 @@ class ABJ_404_Solution_View_OptionsPresenter extends ABJ_404_Solution_ViewCompon
 			}
 		}
 
-		$customDropdown = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ .
+		$customDropdown = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) .
 			"/html/addManualRedirectPageSearchDropdown.html");
 		$customDropdown = $this->f->str_replace('{redirect_to_label}', '', $customDropdown);
 		$customDropdown = $this->f->str_replace('{TOOLTIP_POPUP_EXPLANATION_EMPTY}',
@@ -142,7 +142,7 @@ class ABJ_404_Solution_View_OptionsPresenter extends ABJ_404_Solution_ViewCompon
 			"admin-ajax.php?action=echoRedirectToPages&includeDefault404Page=true&includeSpecial=true&nonce=" . wp_create_nonce('abj404_ajax'), $customDropdown);
 		$customDropdown = $this->f->doNormalReplacements($customDropdown);
 
-		$html = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/html/behaviorTiles.html");
+		$html = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . "/html/behaviorTiles.html");
 
 		$behaviors = array('suggest', 'homepage', 'custom', 'theme_default');
 		foreach ($behaviors as $b) {

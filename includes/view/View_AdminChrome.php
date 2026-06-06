@@ -14,7 +14,7 @@ if (!defined('ABSPATH')) {
 class ABJ_404_Solution_View_AdminChrome extends ABJ_404_Solution_ViewComponent {
 
     private function tpl(string $name): string {
-        $raw = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/html/' . $name, false);
+        $raw = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . '/html/' . $name, false);
         return rtrim((string)$raw, "\n");
     }
 
@@ -35,7 +35,7 @@ class ABJ_404_Solution_View_AdminChrome extends ABJ_404_Solution_ViewComponent {
 
     /** @return void */
     function echoAdminFooter(): void {
-        $html = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/html/adminFooter.html");
+        $html = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . "/html/adminFooter.html");
         $html = $this->f->str_replace('{JAPANESE_FLASHCARDS_URL}', ABJ404_FC_URL, $html);
         $html = $this->f->str_replace(
             '{ABJ404_VIEW_FRESHNESS}',
@@ -132,7 +132,7 @@ class ABJ_404_Solution_View_AdminChrome extends ABJ_404_Solution_ViewComponent {
         $tabs[] = array('abj404_tools',   __('Tools', '404-solution'));
         $tabs[] = array('abj404_options', __('Options', '404-solution'));
 
-        $itemTpl = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/html/adminHeaderTab.html');
+        $itemTpl = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . '/html/adminHeaderTab.html');
         $tabsHtml = '';
         foreach ($tabs as $pair) {
             list($subKey, $label) = $pair;
@@ -145,7 +145,7 @@ class ABJ_404_Solution_View_AdminChrome extends ABJ_404_Solution_ViewComponent {
             $tabsHtml .= $row;
         }
 
-        $outer = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/html/adminHeaderTabs.html');
+        $outer = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . '/html/adminHeaderTabs.html');
         echo str_replace('{tabs}', $tabsHtml, $outer);
     }
 
@@ -290,7 +290,7 @@ class ABJ_404_Solution_View_AdminChrome extends ABJ_404_Solution_ViewComponent {
             $modeDescription = __('Advanced Mode shows all options. Switch to Simple Mode for a streamlined view.', '404-solution');
         }
 
-        $html = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/html/settingsModeToggle.html");
+        $html = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . "/html/settingsModeToggle.html");
         $html = $this->f->str_replace('{nonce}', wp_create_nonce('abj404_mode_toggle'), $html);
         $html = $this->f->str_replace('{simpleActive}', $simpleActive, $html);
         $html = $this->f->str_replace('{advancedActive}', $advancedActive, $html);

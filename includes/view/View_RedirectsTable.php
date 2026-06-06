@@ -46,7 +46,7 @@ class ABJ_404_Solution_View_RedirectsTable extends ABJ_404_Solution_ViewComponen
 
     /** Load a template file from includes/html/ and trim its trailing newline. */
     private function tpl(string $name): string {
-        $raw = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/html/' . $name, false);
+        $raw = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . '/html/' . $name, false);
         return rtrim((string)$raw, "\n");
     }
 

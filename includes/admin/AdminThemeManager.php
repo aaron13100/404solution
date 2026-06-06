@@ -81,12 +81,12 @@ class ABJ_404_Solution_AdminThemeManager {
             }
 
             if ($theme === 'default') {
-                $html = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/html/themeRemoverScript.html");
+                $html = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . "/html/themeRemoverScript.html");
                 echo $html;
                 return;
             }
 
-            $html = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/html/themeSetterScript.html");
+            $html = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . "/html/themeSetterScript.html");
             $f = abj_service('functions');
             $html = $f->str_replace('{theme}', esc_js($theme), $html);
             echo $html;
@@ -186,7 +186,7 @@ class ABJ_404_Solution_AdminThemeManager {
                     $cssVars .= esc_html($var) . ':' . esc_html($value) . ';';
                 }
 
-                $html = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/html/criticalThemeCSS.html");
+                $html = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . "/html/criticalThemeCSS.html");
                 $f = abj_service('functions');
                 $html = $f->str_replace('{css_variables}', $cssVars, $html);
                 echo $html;

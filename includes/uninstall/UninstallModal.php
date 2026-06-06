@@ -99,7 +99,7 @@ class ABJ_404_Solution_UninstallModal {
     public static function outputModalHTML(): void {
         $redirectCount = ABJ_404_Solution_UninstallDiagnostics::getRedirectCount();
 
-        $templatePath = __DIR__ . '/html/uninstallModal.html';
+        $templatePath = dirname(__DIR__) . '/html/uninstallModal.html';
         if (class_exists('ABJ_404_Solution_Functions')) {
             $html = ABJ_404_Solution_FileSystemService::readFileContents($templatePath);
         } else {

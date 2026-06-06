@@ -19,7 +19,7 @@ class ABJ_404_Solution_View_Settings extends ABJ_404_Solution_ViewComponent {
      * @return string Raw template body with the trailing newline removed.
      */
     private function tpl($name) {
-        $raw = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/html/' . $name, false);
+        $raw = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . '/html/' . $name, false);
         return rtrim((string)$raw, "\n");
     }
 
@@ -203,7 +203,7 @@ class ABJ_404_Solution_View_Settings extends ABJ_404_Solution_ViewComponent {
         // Engine Profiles and GSC are advanced features — hidden in simple mode
         if ($settingsMode === 'advanced') {
             // Engine Profiles — outside the main form (uses its own AJAX save)
-            $epHtml = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/html/engineProfilesSection.html');
+            $epHtml = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . '/html/engineProfilesSection.html');
             $epHtml = $this->f->doNormalReplacements($epHtml);
             $this->adminChrome->echoOptionsSection('settings-engine-profiles', 'abj404-engineProfiles', __('Engine Profiles', '404-solution'), $epHtml, false, $this->adminChrome->getCardIcon('filter'));
 

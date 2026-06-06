@@ -113,7 +113,7 @@ class ABJ_404_Solution_ShortcodeSuggestionAdminDebugPresenter {
      * @return string
      */
     private function fillTemplate(string $name, array $vars): string {
-        $template = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/html/' . $name, false);
+        $template = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . '/html/' . $name, false);
         $search = [];
         $replace = [];
         foreach ($vars as $key => $value) {

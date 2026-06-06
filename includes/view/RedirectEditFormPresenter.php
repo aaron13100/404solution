@@ -302,6 +302,6 @@ class ABJ_404_Solution_RedirectEditFormPresenter {
      * @return string
      */
     private function readTemplate(string $name): string {
-        return ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/html/' . $name);
+        return ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . '/html/' . $name);
     }
 }

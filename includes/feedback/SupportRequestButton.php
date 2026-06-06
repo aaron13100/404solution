@@ -104,7 +104,7 @@ final class ABJ_404_Solution_SupportRequestButton {
      * @return string Template contents or '' on read failure.
      */
     private static function readTemplate(string $filename): string {
-        $path = __DIR__ . '/html/' . $filename;
+        $path = dirname(__DIR__) . '/html/' . $filename;
         if (!is_readable($path)) {
             return '';
         }

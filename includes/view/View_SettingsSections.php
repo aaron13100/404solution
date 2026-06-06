@@ -14,7 +14,7 @@ class ABJ_404_Solution_View_SettingsSections extends ABJ_404_Solution_ViewCompon
         $options = $this->optionsPresenter->normalizeOptionsForView($options);
 
         $spaces = esc_html("&nbsp;&nbsp;&nbsp;");
-        $content = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/html/adminOptionsDefault404Destination.html");
+        $content = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . "/html/adminOptionsDefault404Destination.html");
         $content = $this->f->str_replace(
             array('{default_404_destination_label}', '{behavior_tiles_html}'),
             array(esc_html__('Default 404 destination', '404-solution'), $this->optionsPresenter->getBehaviorTilesHTML($options)),
@@ -27,7 +27,7 @@ class ABJ_404_Solution_View_SettingsSections extends ABJ_404_Solution_ViewCompon
         $selectedAutoTags = $this->optionsPresenter->getCheckedAttr($options, 'auto_tags');
         $selectedAutoTrashRedirect = $this->optionsPresenter->getCheckedAttr($options, 'auto_trash_redirect');
 
-        $html = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/html/adminOptionsAutoRedirects.html");
+        $html = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . "/html/adminOptionsAutoRedirects.html");
         $html = $this->f->str_replace('{selectedAutoRedirects}', $selectedAutoRedirects, $html);
         $html = $this->f->str_replace('{selectedAutoSlugs}', $selectedAutoSlugs, $html);
         $html = $this->f->str_replace('{selectedAutoCats}', $selectedAutoCats, $html);
@@ -48,7 +48,7 @@ class ABJ_404_Solution_View_SettingsSections extends ABJ_404_Solution_ViewCompon
         $allPostTypesTemp = $this->viewReadService->getAllPostTypes();
         $allPostTypes = esc_html(implode(', ', $allPostTypesTemp));
 
-        $html = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/html/settingsAdvancedContent.html");
+        $html = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . "/html/settingsAdvancedContent.html");
 
         $html = $this->f->str_replace('{recognized_post_types}',
             str_replace('\\n', "\n", wp_kses_post($this->optionsPresenter->optStr($options, 'recognized_post_types'))), $html);
@@ -94,7 +94,7 @@ class ABJ_404_Solution_View_SettingsSections extends ABJ_404_Solution_ViewCompon
         $debugFileSize = sprintf(__('Debug file size: %1$s KB (%2$s MB).', '404-solution'),
                 $kbFileSizePretty, $mbFileSizePretty);
 
-        $html = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/html/settingsAdvancedLogging.html");
+        $html = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . "/html/settingsAdvancedLogging.html");
         $html = $this->f->str_replace('checked="log_raw_ips"', $selectedLogRawIPs, $html);
         $html = $this->f->str_replace('checked="debug_mode"', $selectedDebugLogging, $html);
         $html = $this->f->str_replace('{<a>View</a> the debug file.}', $debugExplanation, $html);
@@ -119,7 +119,7 @@ class ABJ_404_Solution_View_SettingsSections extends ABJ_404_Solution_ViewCompon
             $hideRedirectAllRequests = "true";
         }
 
-        $html = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/html/settingsAdvancedSystem.html");
+        $html = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . "/html/settingsAdvancedSystem.html");
         $html = $this->f->str_replace('{DATABASE_VERSION}', esc_html($this->optionsPresenter->optStr($options, 'DB_VERSION')), $html);
         $html = $this->f->str_replace('checked="redirect_all_requests"', $selectedRedirectAllRequests, $html);
         $html = $this->f->str_replace('{disallow-redirect-all-requests}', $hideRedirectAllRequests, $html);
@@ -205,7 +205,7 @@ class ABJ_404_Solution_View_SettingsSections extends ABJ_404_Solution_ViewCompon
         $selectedNotifyDaily   = ($notifyFrequency === 'daily')   ? ' selected' : '';
         $selectedNotifyWeekly  = ($notifyFrequency === 'weekly')  ? ' selected' : '';
 
-        $html = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/html/adminOptionsGeneral.html");
+        $html = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . "/html/adminOptionsGeneral.html");
         $html = $this->f->str_replace('{selectedSendErrorLogs}', $selectedSendErrorLogs, $html);
         $html = $this->f->str_replace('{selectedDefaultRedirect301}', $selectedDefaultRedirect301, $html);
         $html = $this->f->str_replace('{selectedDefaultRedirect302}', $selectedDefaultRedirect302, $html);

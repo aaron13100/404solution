@@ -21,7 +21,7 @@ class ABJ_404_Solution_View_Stats extends ABJ_404_Solution_ViewComponent {
      * @return string
      */
     private function tpl($name) {
-        return (string)ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/html/' . $name);
+        return (string)ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . '/html/' . $name);
     }
 
     /**
@@ -63,7 +63,7 @@ class ABJ_404_Solution_View_Stats extends ABJ_404_Solution_ViewComponent {
 
         $total = $auto301 + $auto302 + $manual301 + $manual302 + $trashed;
 
-        $content = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/html/statsRedirectsBox.html");
+        $content = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . "/html/statsRedirectsBox.html");
 
         // In Simple mode, replace technical "301"/"302" labels with plain language
         if (abj_service('settings_mode_preference')->getMode() === 'simple') {
@@ -92,7 +92,7 @@ class ABJ_404_Solution_View_Stats extends ABJ_404_Solution_ViewComponent {
 
         $total = $captured + $ignored + $trashed;
 
-        $content = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/html/statsCapturedURLsBox.html");
+        $content = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . "/html/statsCapturedURLsBox.html");
         $content = $this->f->str_replace('{captured}', esc_html((string)$captured), $content);
         $content = $this->f->str_replace('{ignored}', esc_html((string)$ignored), $content);
         $content = $this->f->str_replace('{trashed}', esc_html((string)$trashed), $content);
@@ -126,7 +126,7 @@ class ABJ_404_Solution_View_Stats extends ABJ_404_Solution_ViewComponent {
             $distinctvisitors = intval($periodStats['distinctvisitors'] ?? 0);
             $distinctrefer = intval($periodStats['distinctrefer'] ?? 0);
 
-            $content = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/html/statsPeriodicBox.html");
+            $content = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . "/html/statsPeriodicBox.html");
             $content = $this->f->str_replace('{disp404}', esc_html((string)$disp404), $content);
             $content = $this->f->str_replace('{distinct404}', esc_html((string)$distinct404), $content);
             $content = $this->f->str_replace('{visitors404}', esc_html((string)$visitors404), $content);

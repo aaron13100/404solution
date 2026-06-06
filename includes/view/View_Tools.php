@@ -18,7 +18,7 @@ class ABJ_404_Solution_View_Tools extends ABJ_404_Solution_ViewComponent {
      * @return string
      */
     private function tpl($name) {
-        return (string)ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/html/' . $name);
+        return (string)ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . '/html/' . $name);
     }
 
     /** @return void */
@@ -107,27 +107,27 @@ class ABJ_404_Solution_View_Tools extends ABJ_404_Solution_ViewComponent {
         echo $header;
 
         $link = wp_nonce_url("?page=" . ABJ404_PP . "&subpage=abj404_tools", "abj404_exportRedirects");
-        $html = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/html/toolsExportForm.html");
+        $html = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . "/html/toolsExportForm.html");
         $html = $this->f->str_replace('{toolsExportRedirectsLink}', $link, $html);
         $html = $this->f->doNormalReplacements($html);
         $view->echoOptionsSection('tools-export', 'abj404-exportRedirects', __('Export', '404-solution'), $html, true, $view->getCardIcon('download'));
 
         $link = wp_nonce_url("?page=" . ABJ404_PP . "&subpage=abj404_tools", "abj404_importRedirectsFile");
-        $html = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/html/toolsImportForm.html");
+        $html = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . "/html/toolsImportForm.html");
         $html = $this->f->str_replace('{toolsImportRedirectsLink}', $link, $html);
         $html = $this->f->doNormalReplacements($html);
         $view->echoOptionsSection('tools-import', 'abj404-importRedirects', __('Import', '404-solution'), $html, false, $view->getCardIcon('upload'));
 
         $url = "?page=" . ABJ404_PP . "&subpage=abj404_tools";
         $link = wp_nonce_url($url, "abj404_purgeRedirects");
-        $html = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/html/toolsPurgeForm.html");
+        $html = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . "/html/toolsPurgeForm.html");
         $html = $this->f->str_replace('{toolsPurgeFormActionLink}', $link, $html);
         $html = $this->f->doNormalReplacements($html);
         $view->echoOptionsSection('tools-purge', 'abj404-purgeRedirects', __('Purge Options', '404-solution'), $html, false, $view->getCardIcon('trash'));
 
         $ngramLink = wp_nonce_url("?page=" . ABJ404_PP . "&subpage=abj404_tools", "abj404_rebuildNgramCache");
         $spellingLink = wp_nonce_url("?page=" . ABJ404_PP . "&subpage=abj404_tools", "abj404_clearSpellingCache");
-        $html = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/html/toolsCacheForm.html");
+        $html = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . "/html/toolsCacheForm.html");
         $html = $this->f->str_replace('{toolsNgramCacheFormActionLink}', $ngramLink, $html);
         $html = $this->f->str_replace('{toolsSpellingCacheFormActionLink}', $spellingLink, $html);
         $html = $this->f->doNormalReplacements($html);
@@ -138,7 +138,7 @@ class ABJ_404_Solution_View_Tools extends ABJ_404_Solution_ViewComponent {
 
         $link = wp_nonce_url("?page=" . ABJ404_PP . "&subpage=abj404_tools", "abj404_runMaintenance");
         $link .= '&manually_fired=true';
-        $html = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/html/toolsEtcForm.html");
+        $html = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . "/html/toolsEtcForm.html");
         $html = $this->f->str_replace('{toolsMaintenanceFormActionLink}', $link, $html);
         $html = $this->f->doNormalReplacements($html);
         $view->echoOptionsSection('tools-etc', 'abj404-etcTools', __('Etcetera', '404-solution'), $html, false, $view->getCardIcon('cog'));

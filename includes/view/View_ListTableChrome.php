@@ -19,7 +19,7 @@ class ABJ_404_Solution_View_ListTableChrome extends ABJ_404_Solution_ViewCompone
 
     /** Load a template file from includes/html/ and trim its trailing newline. */
     private function tpl(string $name): string {
-        $raw = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/html/' . $name, false);
+        $raw = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . '/html/' . $name, false);
         return rtrim((string)$raw, "\n");
     }
 
@@ -137,7 +137,7 @@ class ABJ_404_Solution_View_ListTableChrome extends ABJ_404_Solution_ViewCompone
      */
     public function buildSubsubsubFilters(string $sub, array $items, array $tableOptions): string {
         $currentFilter = isset($tableOptions['filter']) ? $tableOptions['filter'] : 0;
-        $itemTpl = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/html/listTableSubsubsubItem.html");
+        $itemTpl = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . "/html/listTableSubsubsubItem.html");
         $itemsHtml = '';
         $lastIndex = count($items) - 1;
         foreach ($items as $i => $pair) {
@@ -160,7 +160,7 @@ class ABJ_404_Solution_View_ListTableChrome extends ABJ_404_Solution_ViewCompone
             $itemsHtml .= $row;
         }
 
-        $outer = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/html/listTableSubsubsub.html");
+        $outer = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . "/html/listTableSubsubsub.html");
         return str_replace('{items}', $itemsHtml, $outer);
     }
 

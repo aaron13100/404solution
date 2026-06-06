@@ -62,7 +62,7 @@ class ABJ_404_Solution_ReviewFeedback {
                         'query_quota',
                     );
                     $cssClass = in_array($type, $warningTypes, true) ? 'notice-warning' : 'notice-error';
-                    $html = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/html/notice.html");
+                    $html = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . "/html/notice.html");
                     $f = abj_service('functions');
                     $html = $f->str_replace('{class}', esc_attr('notice ' . $cssClass), $html);
                     $html = $f->str_replace('{message}', esc_html($dbNotice['message']), $html);
@@ -138,7 +138,7 @@ class ABJ_404_Solution_ReviewFeedback {
                 delete_user_meta(get_current_user_id(), 'abj404_review_step');
                 delete_user_meta(get_current_user_id(), 'abj404_review_remind_later');
 
-                $html = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/html/reviewRedirectScript.html");
+                $html = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . "/html/reviewRedirectScript.html");
                 $f = abj_service('functions');
                 $html = $f->str_replace('{review_url}', esc_js('https://wordpress.org/support/plugin/404-solution/reviews/#new-post'), $html);
                 echo $html;
@@ -196,7 +196,7 @@ class ABJ_404_Solution_ReviewFeedback {
         }
 
         if (self::$feedbackSubmitted) {
-            $html = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/html/feedbackSuccessNotice.html");
+            $html = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . "/html/feedbackSuccessNotice.html");
             echo $html;
             return;
         }
@@ -291,7 +291,7 @@ class ABJ_404_Solution_ReviewFeedback {
             'abj404_review_response'
         );
 
-        $html = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/html/reviewQualificationQuestion.html");
+        $html = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . "/html/reviewQualificationQuestion.html");
         $f = abj_service('functions');
         $html = $f->str_replace('{yes_url}', esc_attr($yes_url), $html);
         $html = $f->str_replace('{not_yet_url}', esc_attr($not_yet_url), $html);
@@ -317,7 +317,7 @@ class ABJ_404_Solution_ReviewFeedback {
             'abj404_review_response'
         );
 
-        $html = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/html/reviewLinkNotice.html");
+        $html = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . "/html/reviewLinkNotice.html");
         $f = abj_service('functions');
         $html = $f->str_replace('{review_link_url}', esc_attr($review_link_url), $html);
         $html = $f->str_replace('{never_url}', esc_attr($never_url), $html);
@@ -341,7 +341,7 @@ class ABJ_404_Solution_ReviewFeedback {
         $nonce_field = ob_get_clean();
         if ($nonce_field === false) { $nonce_field = ''; }
 
-        $html = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/html/feedbackFormNotice.html");
+        $html = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . "/html/feedbackFormNotice.html");
         $f = abj_service('functions');
         $html = $f->str_replace('{nonce_field}', $nonce_field, $html);
         $html = $f->str_replace('{never_url}', esc_attr($never_url), $html);

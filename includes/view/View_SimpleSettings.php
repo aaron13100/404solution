@@ -35,7 +35,7 @@ class ABJ_404_Solution_View_SimpleSettings extends ABJ_404_Solution_ViewComponen
         $selectedNotifyDaily   = ($notifyFrequency === 'daily')   ? 'selected' : '';
         $selectedNotifyWeekly  = ($notifyFrequency === 'weekly')  ? 'selected' : '';
 
-        $html = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/html/adminOptionsSimple.html");
+        $html = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . "/html/adminOptionsSimple.html");
         $html = $this->f->str_replace('{behaviorTiles}', $behaviorTilesHtml, $html);
         $html = $this->f->str_replace('{selectedAutoRedirects}', $selectedAutoRedirects, $html);
         $html = $this->f->str_replace('{selectedCapture404}', $selectedCapture404, $html);

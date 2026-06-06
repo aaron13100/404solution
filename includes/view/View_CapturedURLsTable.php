@@ -16,7 +16,7 @@ if (!defined('ABSPATH')) {
 class ABJ_404_Solution_View_CapturedURLsTable extends ABJ_404_Solution_ViewComponent {
 
     private function tpl(string $name): string {
-        $raw = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/html/' . $name, false);
+        $raw = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . '/html/' . $name, false);
         return rtrim((string)$raw, "\n");
     }
 
@@ -42,7 +42,7 @@ class ABJ_404_Solution_View_CapturedURLsTable extends ABJ_404_Solution_ViewCompo
     public function echoAdminCapturedURLsPage() {
         $sub = 'abj404_captured';
 
-        $tableOptions = $this->logic->getTableOptions($sub);
+        $tableOptions = $this->logic->settingsUpdate()->getTableOptions($sub);
 
         $isSimpleMode = abj_service('settings_mode_preference')->getMode() === 'simple';
 
@@ -65,7 +65,7 @@ class ABJ_404_Solution_View_CapturedURLsTable extends ABJ_404_Solution_ViewCompo
 
         // Filter bar with server-side search
         $filterText = is_string($tableOptions['filterText'] ?? '') ? (string)($tableOptions['filterText'] ?? '') : '';
-        $perPage = isset($tableOptions['perpage']) ? $tableOptions['perpage'] : 25;
+        $perPage = isset($tableOptions['perpage']) ? (int)$tableOptions['perpage'] : 25;
 
         $paginationNonce = wp_create_nonce('abj404_updatePaginationLink');
         $inflightNonce = wp_create_nonce('abj404_fetchInflightStage');
@@ -122,7 +122,7 @@ class ABJ_404_Solution_View_CapturedURLsTable extends ABJ_404_Solution_ViewCompo
         wp_nonce_field('abj404_bulkProcess');
         $nonceField = (string)ob_get_clean();
 
-        $warmup = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/html/tableWarmupPlaceholder.html");
+        $warmup = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . "/html/tableWarmupPlaceholder.html");
 
         $refresh = $this->listTableChrome->paginationRefreshStrings();
 
@@ -251,7 +251,7 @@ class ABJ_404_Solution_View_CapturedURLsTable extends ABJ_404_Solution_ViewCompo
     }
 
     public function getCapturedURLSPageTable(string $sub): string {
-        $tableOptions = $this->logic->getTableOptions($sub);
+        $tableOptions = $this->logic->settingsUpdate()->getTableOptions($sub);
         $rows = $this->viewReadService->getRedirectsForView($sub, $tableOptions);
         /** @var array<int, array<string, mixed>> $typedRows */
         $typedRows = array_values(array_filter($rows, 'is_array'));
@@ -353,7 +353,7 @@ class ABJ_404_Solution_View_CapturedURLsTable extends ABJ_404_Solution_ViewCompo
         $tempHtml = $this->f->str_replace(
             array_keys($vars),
             array_values($vars),
-            ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/html/tableRowCapturedURLs.html")
+            ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . "/html/tableRowCapturedURLs.html")
         );
         return $this->f->doNormalReplacements($tempHtml);
     }

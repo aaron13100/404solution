@@ -373,7 +373,7 @@ class ABJ_404_Solution_View {
 				$instance->logger->logUserCapabilities("handleMainAdminPageActionAndDisplay (" .
 						esc_html($action == '' ? '(none)' : $action) . ")");
 
-				$permMessageTpl = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/html/adminPagePermissionDeniedMessage.html');
+				$permMessageTpl = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . '/html/adminPagePermissionDeniedMessage.html');
 				$permMessage = str_replace(
 					['{permission_denied_label}', '{access_explanation}', '{verify_role_prefix}', '{capability_word}', '{security_plugin_note}'],
 					[
@@ -394,7 +394,7 @@ class ABJ_404_Solution_View {
 					'Permission denied on plugin admin page (action=' .
 						($action == '' ? '(none)' : $action) . ')'
 				);
-				$permWrap = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/html/adminPagePermissionDeniedWrap.html');
+				$permWrap = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . '/html/adminPagePermissionDeniedWrap.html');
 				echo str_replace(
 					['{plugin_name}', '{notice}'],
 					[esc_html(PLUGIN_NAME), $permNotice],
@@ -438,7 +438,7 @@ class ABJ_404_Solution_View {
 			$subpageForContext = (string)$instance->viewGetPostOrGetSanitize('subpage');
 			$triggerForRenderError = ($subpageForContext === 'abj404_captured')
 				? 'captured_404s_page' : 'redirects_page';
-			$renderErrorMessageTpl = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/html/adminPageRenderErrorMessage.html');
+			$renderErrorMessageTpl = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . '/html/adminPageRenderErrorMessage.html');
 			$renderErrorMessage = str_replace(
 				'{escaped_details}',
 				esc_html($e->getMessage() . "\n" . $e->getTraceAsString()),
@@ -449,7 +449,7 @@ class ABJ_404_Solution_View {
 				$triggerForRenderError,
 				'Render error: ' . substr($e->getMessage(), 0, 200)
 			);
-			$renderErrorWrap = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/html/adminPageRenderErrorWrap.html');
+			$renderErrorWrap = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . '/html/adminPageRenderErrorWrap.html');
 			echo str_replace('{notice}', $renderErrorNotice, $renderErrorWrap);
 		}
 	}

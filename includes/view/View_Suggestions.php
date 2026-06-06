@@ -69,7 +69,7 @@ class ABJ_404_Solution_View_Suggestions {
 
 
         // read the html content.
-        $html = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/html/viewSuggestions.html");
+        $html = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . "/html/viewSuggestions.html");
         // do special replacements
         $html = $this->f->str_replace('{SELECTED_SUGGEST_CATS}', $selectedSuggestCats, $html);
         $html = $this->f->str_replace('{SELECTED_SUGGEST_TAGS}', $selectedSuggestTags, $html);
