@@ -1375,13 +1375,15 @@ th:nth-last-child(-n+3) .lefty-tooltiptext {
     border-bottom: 1px solid var(--abj404-border);
 }
 
-/* Column header row matches WP core's .wp-list-table th:
-   8px vertical padding and white-space: nowrap so the question-mark
-   tooltip icon stays inline with the label instead of wrapping the
-   header to two lines on the Captured 404s tab. */
+/* Column header row matches WP core's .wp-list-table th but tighter:
+   6px vertical padding. white-space: nowrap on the th alone is not
+   enough when the cell contains a sibling tooltip span the browser
+   may wrap; the .abj404-th-inner wrapper below pins title + tooltip
+   into one inline-flex line so the header is single-row even when
+   the Hits/Last Used columns carry a "?" tooltip icon. */
 .abj404-table th {
     text-align: left;
-    padding: 8px 10px;
+    padding: 6px 10px;
     font-weight: 600;
     font-size: 13px;
     color: var(--abj404-text);
@@ -1390,6 +1392,13 @@ th:nth-last-child(-n+3) .lefty-tooltiptext {
     top: 32px;  /* WordPress admin bar; the nav tabs scroll away (not fixed) */
     z-index: 10;
     background: var(--abj404-bg);
+}
+
+.abj404-table th .abj404-th-inner {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
 }
 
 @media screen and (max-width: 782px) {
