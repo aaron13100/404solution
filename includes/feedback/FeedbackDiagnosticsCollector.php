@@ -210,10 +210,17 @@ class ABJ_404_Solution_FeedbackDiagnosticsCollector {
             throw new \RuntimeException('DataAccess::getLogDiskUsage unavailable');
         }
         $v = $dao->getLogDiskUsage();
-        if (is_scalar($v)) {
-            return (int)$v;
+        if (!is_scalar($v)) {
+            throw new \RuntimeException('getLogDiskUsage returned unexpected shape');
         }
-        throw new \RuntimeException('getLogDiskUsage returned unexpected shape');
+        $bytes = (int)$v;
+        if ($bytes < 0) {
+            // -1 is the documented "query failed / unknown" sentinel from
+            // LogsMetricsReader::getLogDiskUsage(). Map to null via tryInt()
+            // so the feedback payload matches its schema (minimum: 0 | null).
+            throw new \RuntimeException('getLogDiskUsage unknown (query failed)');
+        }
+        return $bytes;
     }
 
     private function errorCountInLog(): int {
