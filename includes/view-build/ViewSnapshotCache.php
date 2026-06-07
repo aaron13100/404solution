@@ -166,6 +166,81 @@ class ABJ_404_Solution_ViewSnapshotCache {
     }
 
     /**
+     * Run the rows-stage warmup query and assert the snapshot landed. An
+     * empty result for a filtered query is intentionally NOT cached by
+     * AdminViewReadCoordinator (the same filter could match a row the user
+     * just inserted but that the staged rebuild has not yet landed;
+     * caching the pre-rebuild empty payload would mask the new row for
+     * the TTL window). Treat that case as a successful warmup instead of
+     * throwing -- there is nothing to cache, the next read will be cheap,
+     * and once the rebuild lands the row a fresh read will populate the
+     * cache normally.
+     *
+     * @param ABJ_404_Solution_ViewSnapshotCacheHostInterface $host
+     * @param array<string, mixed> $tableOptions
+     * @param array<string, mixed> $stageOptions
+     */
+    private function runRowsWarmupStage(ABJ_404_Solution_ViewSnapshotCacheHostInterface $host, string $sub, array $tableOptions, array $stageOptions): void {
+        $rows = $host->getRedirectsForView($sub, $stageOptions);
+        $rowsArray = is_array($rows) ? $rows : array();
+        if ($host->viewRowsSnapshotAvailable($sub, $tableOptions)) {
+            return;
+        }
+        if ($this->isEmptyFilteredResult($tableOptions, $rowsArray)) {
+            return;
+        }
+        throw new \Exception('Warmup rows stage completed but the row snapshot was not available afterward.'); // allow-raw-error: pre-existing warmup assertion moved from ViewReadService.php
+    }
+
+    /**
+     * Count-stage twin of runRowsWarmupStage. A filtered count of 0 is
+     * also deliberately uncached and must not be treated as failure.
+     *
+     * @param ABJ_404_Solution_ViewSnapshotCacheHostInterface $host
+     * @param array<string, mixed> $tableOptions
+     * @param array<string, mixed> $stageOptions
+     */
+    private function runCountWarmupStage(ABJ_404_Solution_ViewSnapshotCacheHostInterface $host, string $sub, array $tableOptions, array $stageOptions): void {
+        $countValue = (int)$host->getRedirectsForViewCount($sub, $stageOptions);
+        if ($host->viewTableSnapshotAvailable($sub, $tableOptions)) {
+            return;
+        }
+        if ($this->isEmptyFilteredCount($tableOptions, $countValue)) {
+            return;
+        }
+        throw new \Exception('Warmup count stage completed but the full table snapshot was not available afterward.'); // allow-raw-error: pre-existing warmup assertion moved from ViewReadService.php
+    }
+
+    /**
+     * A filtered query that returns no rows is the mid-rebuild race signal
+     * the AdminViewReadCoordinator deliberately refuses to cache (see its
+     * shouldSkipFilteredEmptyResultCache for the full rationale).
+     *
+     * @param array<string, mixed> $tableOptions
+     * @param array<int|string, mixed> $rows
+     */
+    private function isEmptyFilteredResult(array $tableOptions, array $rows): bool {
+        if (!empty($rows)) {
+            return false;
+        }
+        $filterText = $tableOptions['filterText'] ?? '';
+        return is_string($filterText) && $filterText !== '';
+    }
+
+    /**
+     * Count-cache twin of isEmptyFilteredResult.
+     *
+     * @param array<string, mixed> $tableOptions
+     */
+    private function isEmptyFilteredCount(array $tableOptions, int $countValue): bool {
+        if ($countValue > 0) {
+            return false;
+        }
+        $filterText = $tableOptions['filterText'] ?? '';
+        return is_string($filterText) && $filterText !== '';
+    }
+
+    /**
      * @param string $sub
      * @param array<string, mixed> $tableOptions
      * @return array<string, mixed>
@@ -293,18 +368,12 @@ class ABJ_404_Solution_ViewSnapshotCache {
         $startMs = microtime(true);
         try {
             if ($stage === 'rows') {
-                $host->getRedirectsForView($sub, $stageOptions);
-                if (!$host->viewRowsSnapshotAvailable($sub, $tableOptions)) {
-                    throw new \Exception('Warmup rows stage completed but the row snapshot was not available afterward.'); // allow-raw-error: pre-existing warmup assertion moved from ViewReadService.php
-                }
+                $this->runRowsWarmupStage($host, $sub, $tableOptions, $stageOptions);
                 $state['status'] = 'idle';
                 $state['stage'] = 'count';
                 $state['query_label'] = 'getRedirectsForViewCount';
             } else {
-                $host->getRedirectsForViewCount($sub, $stageOptions);
-                if (!$host->viewTableSnapshotAvailable($sub, $tableOptions)) {
-                    throw new \Exception('Warmup count stage completed but the full table snapshot was not available afterward.'); // allow-raw-error: pre-existing warmup assertion moved from ViewReadService.php
-                }
+                $this->runCountWarmupStage($host, $sub, $tableOptions, $stageOptions);
                 $state['status'] = 'ready';
                 $state['stage'] = 'count';
                 $state['query_label'] = 'getRedirectsForViewCount';

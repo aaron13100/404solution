@@ -78,6 +78,49 @@ class ABJ_404_Solution_AdminViewReadCoordinator {
     }
 
     /**
+     * Return true when a filtered query produced no rows. Such results
+     * MUST NOT be cached: the same filter (a unique-URL lookup like
+     * `filterText=/foo-123`) might match a row the user just inserted via
+     * the admin modal but that the staged view_done rebuild has not yet
+     * landed; caching the pre-rebuild empty payload here would mask the
+     * new row for VIEW_SNAPSHOT_CACHE_TTL_SECONDS (120s) -- the user-
+     * visible symptom in i954 where freshly-added redirects stayed
+     * invisible to the listing table until the cache expired.
+     *
+     * Unfiltered empty results (e.g., fresh install with no redirects)
+     * are still cached: those reflect a stable system state, not a
+     * mid-rebuild race, and the count(*) cost is non-trivial enough on
+     * large tables to be worth memoizing.
+     *
+     * @param array<string, mixed> $tableOptions
+     * @param array<int|string, mixed> $rows
+     */
+    private function shouldSkipFilteredEmptyResultCache(array $tableOptions, array $rows): bool {
+        if (!empty($rows)) {
+            return false;
+        }
+        $filterText = $tableOptions['filterText'] ?? '';
+        return is_string($filterText) && $filterText !== '';
+    }
+
+    /**
+     * Count-cache twin of shouldSkipFilteredEmptyResultCache. A filtered
+     * count of 0 is the same mid-rebuild race signal: the user just
+     * inserted a row matching that filter and the staged build has not
+     * yet landed it in view_done. Skip caching so the next request
+     * re-queries instead of serving 0 until the TTL expires.
+     *
+     * @param array<string, mixed> $tableOptions
+     */
+    private function shouldSkipFilteredEmptyCountCache(array $tableOptions, int $countValue): bool {
+        if ($countValue > 0) {
+            return false;
+        }
+        $filterText = $tableOptions['filterText'] ?? '';
+        return is_string($filterText) && $filterText !== '';
+    }
+
+    /**
      * @param string $sub
      * @param array<string, mixed> $tableOptions
      * @return array<int|string, mixed>
@@ -140,7 +183,8 @@ class ABJ_404_Solution_AdminViewReadCoordinator {
         if ($canUseSnapshotCache && $snapshotCacheKey === '') {
             $snapshotCacheKey = $this->snapshotCache->getViewSnapshotCacheKey('abj404_view_rows', $sub, $tableOptionsArray);
         }
-        if ($canUseSnapshotCache && $snapshotCacheKey !== '') {
+        if ($canUseSnapshotCache && $snapshotCacheKey !== ''
+                && !$this->shouldSkipFilteredEmptyResultCache($tableOptionsArray, $rows)) {
             $this->snapshotCache->setViewRowsSnapshotToTable($snapshotCacheKey, $sub, $rows, ABJ_404_Solution_ViewReadRuntimeState::VIEW_SNAPSHOT_CACHE_TTL_SECONDS);
             if (function_exists('set_transient')) {
                 // allow-cache-empty: empty rows are legitimate on a fresh install; pending/error paths return before this cache write.
@@ -404,7 +448,8 @@ class ABJ_404_Solution_AdminViewReadCoordinator {
         if ($canUseSnapshotCache && $countCacheKey === '') {
             $countCacheKey = $this->snapshotCache->getViewSnapshotCacheKey('abj404_view_count', $sub, $tableOptions);
         }
-        if ($canUseSnapshotCache && $countCacheKey !== '') {
+        if ($canUseSnapshotCache && $countCacheKey !== ''
+                && !$this->shouldSkipFilteredEmptyCountCache($tableOptions, $countValue)) {
             // allow-cache-empty: a resolved count of 0 is valid view data and must be cached.
             set_transient($countCacheKey, $countValue, ABJ_404_Solution_ViewReadRuntimeState::VIEW_SNAPSHOT_CACHE_TTL_SECONDS);
         }
