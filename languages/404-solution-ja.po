@@ -210,6 +210,9 @@ msgstr "デバッグファイルを<a>表示</a>します。"
 msgid "Action Taken"
 msgstr "実行されたアクション"
 
+msgid "Add"
+msgstr "追加"
+
 msgid "Add Redirect"
 msgstr "リダイレクトを追加"
 

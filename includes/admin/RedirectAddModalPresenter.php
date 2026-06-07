@@ -54,7 +54,7 @@ class ABJ_404_Solution_RedirectAddModalPresenter {
             '{redirect_type_grid}' => $this->redirectTypeGrid($options),
             '{advanced_options}' => $this->advancedOptionsHtml(),
             '{cancel_label}' => esc_html__('Cancel', '404-solution'),
-            '{add_redirect_label}' => esc_html__('Add Redirect', '404-solution'),
+            '{add_redirect_label}' => esc_html__('Add', '404-solution'),
         ));
     }
 

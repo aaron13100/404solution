@@ -210,6 +210,9 @@ msgstr "<a>Bekijk</a> het debug-bestand."
 msgid "Action Taken"
 msgstr "Actie"
 
+msgid "Add"
+msgstr "Toevoegen"
+
 msgid "Add Redirect"
 msgstr "Omleiding toevoegen"
 

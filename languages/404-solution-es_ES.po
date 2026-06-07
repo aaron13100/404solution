@@ -210,6 +210,9 @@ msgstr "<a>Ver</a> el archivo de depuración."
 msgid "Action Taken"
 msgstr "Acción tomada"
 
+msgid "Add"
+msgstr "Añadir"
+
 msgid "Add Redirect"
 msgstr "Añadir redirección"
 

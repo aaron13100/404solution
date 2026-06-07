@@ -2202,8 +2202,11 @@ msgstr ""
 msgid "The plugin creates these automatically. You only need to act when the status bar above says so."
 msgstr ""
 
-#: includes/ViewTrait_RedirectsTable.php:411
-#: includes/ViewTrait_RedirectsTable.php:689
+#: includes/admin/RedirectAddModalPresenter.php:57
+msgid "Add"
+msgstr ""
+
+#: includes/admin/RedirectsTablePagePresenter.php:131
 msgid "Add Redirect"
 msgstr ""
 

@@ -210,6 +210,9 @@ msgstr "<a>查看</a>调试文件。"
 msgid "Action Taken"
 msgstr "已执行操作"
 
+msgid "Add"
+msgstr "添加"
+
 msgid "Add Redirect"
 msgstr "添加重定向"
 

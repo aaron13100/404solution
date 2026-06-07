@@ -209,6 +209,9 @@ msgstr "<a>Lihat</a> file debug."
 msgid "Action Taken"
 msgstr "Tindakan yang Diambil"
 
+msgid "Add"
+msgstr "Tambahkan"
+
 msgid "Add Redirect"
 msgstr "Tambahkan Pengalihan"
 

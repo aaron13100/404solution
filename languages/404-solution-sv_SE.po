@@ -210,6 +210,9 @@ msgstr "<a>Visa</a> felsökningsfilen."
 msgid "Action Taken"
 msgstr "Åtgärd vidtagen"
 
+msgid "Add"
+msgstr "Lägg till"
+
 msgid "Add Redirect"
 msgstr "Lägg till omdirigering"
 

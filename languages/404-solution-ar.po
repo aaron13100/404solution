@@ -214,6 +214,9 @@ msgstr "<a>عرض</a> ملف التصحيح."
 msgid "Action Taken"
 msgstr "الإجراء المتخذ"
 
+msgid "Add"
+msgstr "إضافة"
+
 msgid "Add Redirect"
 msgstr "إضافة إعادة توجيه"
 

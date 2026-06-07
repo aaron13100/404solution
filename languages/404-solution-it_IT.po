@@ -210,6 +210,9 @@ msgstr "<a>Mostra</a> il file di debug."
 msgid "Action Taken"
 msgstr "Azione eseguita"
 
+msgid "Add"
+msgstr "Aggiungi"
+
 msgid "Add Redirect"
 msgstr "Aggiungi redirect"
 

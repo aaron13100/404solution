@@ -211,6 +211,9 @@ msgstr "<a>Просмотреть</a> отладочный файл."
 msgid "Action Taken"
 msgstr "Выполненное действие"
 
+msgid "Add"
+msgstr "Добавить"
+
 msgid "Add Redirect"
 msgstr "Добавить перенаправление"
 

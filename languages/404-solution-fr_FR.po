@@ -213,6 +213,9 @@ msgstr "<a>Voir</a> le fichier de débogage."
 msgid "Action Taken"
 msgstr "Action effectuée"
 
+msgid "Add"
+msgstr "Ajouter"
+
 msgid "Add Redirect"
 msgstr "Ajouter une redirection"
 
