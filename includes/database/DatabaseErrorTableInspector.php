@@ -60,7 +60,7 @@ class ABJ_404_Solution_DatabaseErrorTableInspector {
     public function isInnoDBTable(string $tableName): bool {
         global $wpdb;
         /** @var wpdb $wpdb */
-        if (!method_exists($wpdb, 'get_var') || !method_exists($wpdb, 'prepare')) {
+        if (!is_object($wpdb) || !method_exists($wpdb, 'get_var') || !method_exists($wpdb, 'prepare')) {
             return false;
         }
         if (defined('DB_NAME')) {

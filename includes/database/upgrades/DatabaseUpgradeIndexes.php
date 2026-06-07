@@ -178,8 +178,8 @@ class ABJ_404_Solution_DatabaseUpgradeIndexes extends ABJ_404_Solution_DatabaseU
 	    private function buildAddIndexStatementFromParts($tableName, $indexName, $columnsSql, $unique) {
 	        global $wpdb;
 	        /** @var \wpdb $wpdb */
-	        $serverVersion = method_exists($wpdb, 'db_version') ? ($wpdb->db_version() ?: '') : '';
-	        $serverInfo = property_exists($wpdb, 'db_server_info') ? ($wpdb->db_server_info ?? '') : '';
+	        $serverVersion = is_object($wpdb) && method_exists($wpdb, 'db_version') ? ($wpdb->db_version() ?: '') : '';
+	        $serverInfo = is_object($wpdb) && property_exists($wpdb, 'db_server_info') ? ($wpdb->db_server_info ?? '') : '';
 
 	        $isMaria = stripos($serverInfo, 'mariadb') !== false || stripos($serverVersion, 'maria') !== false;
 	        $cleanedVersion = preg_replace('/[^\d\.]/', '', $serverVersion) ?? '';

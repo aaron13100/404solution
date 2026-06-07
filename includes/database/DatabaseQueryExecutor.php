@@ -109,6 +109,23 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
         $resultType = $this->normalizeResultType($options['result_type']);
         $this->currentResultType = $resultType;
 
+        // wpdb unavailable: degrade to an empty result rather than crashing on
+        // method_exists(null, ...) or null->method() downstream. Happens in
+        // very early-life code paths (fresh-install background workers reaching
+        // the DAO before WordPress has populated $wpdb, CLI bootstrap, unit
+        // tests that exercise the suggestion pipeline without a real wpdb).
+        // The DAO result contract (last_error populated, rows as an empty array)
+        // is preserved so queryAndGetResults remains the centralized
+        // graceful-degradation seam (Defensive Coding #2/#11).
+        if (!is_object($wpdb)) {
+            return array(
+                'rows' => array(),
+                'rows_affected' => 0,
+                'last_error' => 'wpdb unavailable',
+                'elapsed_time' => 0.0,
+            );
+        }
+
         $ignoreErrorStrings = $this->normalizeIgnoreErrorStrings($options['ignore_errors']);
         $queryParameters = is_array($options['query_params']) ? $options['query_params'] : array();
 
