@@ -48,10 +48,30 @@ class ABJ_404_Solution_DataAccessDependencies {
         return $value instanceof ABJ_404_Solution_Functions ? $value : null;
     }
 
-    /** @return ABJ_404_Solution_Logging|null */
-    public function logging(): ?ABJ_404_Solution_Logging {
+    /**
+     * Return the logging dependency. Accepts the production Logging class
+     * and also duck-typed test spies that expose the same method surface
+     * (debugMessage / infoMessage / warn / errorMessage). Returning the
+     * raw spy lets DAO components hold it as $this->logger and dispatch
+     * calls through it; without this, a spy is silently dropped and the
+     * production singleton is used instead, so level-discipline assertions
+     * see no captured warn/error output (broken test-as-mirror feedback).
+     *
+     * The widened return type lets the strict instanceof check live in one
+     * place (DataAccess::resolveLogger) instead of being duplicated here
+     * and there with adapter wrappers that the mock-lint blocks.
+     *
+     * @return ABJ_404_Solution_Logging|object|null
+     */
+    public function logging() {
         $value = $this->get('logging');
-        return $value instanceof ABJ_404_Solution_Logging ? $value : null;
+        if ($value instanceof ABJ_404_Solution_Logging) {
+            return $value;
+        }
+        if (is_object($value) && method_exists($value, 'warn') && method_exists($value, 'errorMessage')) {
+            return $value;
+        }
+        return null;
     }
 
     /** @return ABJ_404_Solution_DatabaseCore|null */

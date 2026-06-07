@@ -162,11 +162,24 @@ class ABJ_404_Solution_DataAccess {
     }
 
     /**
-     * @param ABJ_404_Solution_Logging|null $logging
+     * @param mixed $logging
      * @return ABJ_404_Solution_Logging
      */
     private function resolveLogger($logging) {
         if ($logging instanceof ABJ_404_Solution_Logging) {
+            return $logging;
+        }
+        // Accept duck-typed test spy loggers (warn/errorMessage/debugMessage)
+        // so per-test log-level assertions can observe what production code
+        // dispatched. Without this, the strict instanceof check above silently
+        // drops the spy and DAO sub-services capture the production singleton
+        // instead, making warn() / errorMessage() invisible to the test.
+        // The chain below ($contentRepo, $redirectsRepo, $logsRepo,
+        // $statsRepo, $viewReadService, $viewBuildOrchestrator, and DbCore
+        // including its recovery sub-services) accept untyped $logger
+        // parameters, so the spy reaches all of them.
+        if (is_object($logging) && method_exists($logging, 'warn') && method_exists($logging, 'errorMessage')) {
+            /** @var ABJ_404_Solution_Logging $logging */
             return $logging;
         }
         return abj_service('logging');
