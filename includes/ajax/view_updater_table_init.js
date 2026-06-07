@@ -104,7 +104,20 @@ function abj404RenderAjaxErrorNotice(options) {
     linkEl.textContent = (window.ABJ404 && window.ABJ404.i18n && window.ABJ404.i18n.sendDebugLog) ? String(window.ABJ404.i18n.sendDebugLog) : 'Send debug log to developer';
     $titleEl[0].appendChild(linkEl);
     $notice.append($titleEl);
-    if ($detailsEl) { $notice.append($detailsEl); }
+    if ($detailsEl) {
+        // Wrap the diagnostic details in a collapsed <details> panel so the
+        // user-visible notice stays quiet. Internal-looking stage labels and
+        // query method names belong behind a deliberate click, not in the
+        // headline. The support-request payload still picks up the full
+        // context via data-context-summary above.
+        var $debugWrap = jQuery('<details class="abj404-ajax-error-debug"></details>');
+        var summaryLabel = (window.ABJ404 && window.ABJ404.i18n && window.ABJ404.i18n.errorDebugDetails)
+            ? String(window.ABJ404.i18n.errorDebugDetails) : 'Debug details';
+        var $summary = jQuery('<summary></summary>').text(summaryLabel);
+        $debugWrap.append($summary);
+        $debugWrap.append($detailsEl);
+        $notice.append($debugWrap);
+    }
 
     // Replace any prior notice so repeated failures do not stack.
     jQuery('.abj404-ajax-error-notice').remove();

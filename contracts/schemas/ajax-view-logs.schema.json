@@ -1,0 +1,11 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "abj404_echoViewLogsFor",
+  "description": "Per-redirect log view autocomplete request from the admin logs page search box to Ajax_ViewLogs.php",
+  "type": "object",
+  "required": ["nonce"],
+  "properties": {
+    "nonce": { "type": "string", "minLength": 1 },
+    "term": { "type": "string" }
+  }
+}

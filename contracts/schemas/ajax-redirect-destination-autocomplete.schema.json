@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "abj404_echoRedirectToPages",
+  "description": "Redirect-destination autocomplete request from admin redirect/edit modals to Ajax_RedirectDestinationAutocomplete.php",
+  "type": "object",
+  "required": ["nonce"],
+  "properties": {
+    "nonce": { "type": "string", "minLength": 1 },
+    "term": { "type": "string" },
+    "includeDefault404Page": { "type": "string", "enum": ["true", "false"] },
+    "includeSpecial": { "type": "string", "enum": ["true", "false"] }
+  }
+}

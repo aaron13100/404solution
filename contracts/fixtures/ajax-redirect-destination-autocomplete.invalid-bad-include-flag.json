@@ -1,0 +1,6 @@
+{
+  "_comment": "This fixture MUST fail validation. includeDefault404Page accepts only 'true' or 'false' strings; 1 is rejected.",
+  "nonce": "abc123def456",
+  "term": "home",
+  "includeDefault404Page": "1"
+}

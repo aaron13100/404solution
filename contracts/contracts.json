@@ -572,37 +572,77 @@
     {
       "id": "ajax-load-gsc-section",
       "description": "Deferred Google Search Console admin section AJAX. Loaded on demand from the Options page so the GSC OAuth + remote-fetch cost does not block initial admin render.",
+      "schema": "schemas/ajax-load-gsc-section.schema.json",
       "direction": "client-to-server",
+      "producer": {
+        "file": "includes/js/settingsDeferred.js",
+        "test": "tests/AjaxNullParamsAdversarialTest.php"
+      },
       "consumer": {
         "file": "includes/ajax/Ajax_LoadGscSection.php",
         "test": "tests/AjaxNullParamsAdversarialTest.php"
+      },
+      "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
+      "fixtures": {
+        "valid": ["fixtures/ajax-load-gsc-section.valid.json"],
+        "invalid": ["fixtures/ajax-load-gsc-section.invalid-missing-nonce.json"]
       }
     },
     {
       "id": "ajax-redirect-destination-autocomplete",
       "description": "Autocomplete suggestions for the redirect-destination dropdown in the redirect edit modal.",
+      "schema": "schemas/ajax-redirect-destination-autocomplete.schema.json",
       "direction": "client-to-server",
+      "producer": {
+        "file": "includes/ajax/redirect_to_ajax.js",
+        "test": "tests/AjaxNullParamsAdversarialTest.php"
+      },
       "consumer": {
         "file": "includes/ajax/Ajax_RedirectDestinationAutocomplete.php",
         "test": "tests/AjaxNullParamsAdversarialTest.php"
+      },
+      "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
+      "fixtures": {
+        "valid": ["fixtures/ajax-redirect-destination-autocomplete.valid.json"],
+        "invalid": ["fixtures/ajax-redirect-destination-autocomplete.invalid-bad-include-flag.json"]
       }
     },
     {
       "id": "ajax-update-options-handler",
       "description": "Admin-page options update AJAX (extracted from Ajax_Php for parity with other Ajax_*.php handlers).",
+      "schema": "schemas/ajax-update-options.schema.json",
       "direction": "client-to-server",
+      "producer": {
+        "file": "includes/js/general.js",
+        "test": "tests/AjaxNullParamsAdversarialTest.php"
+      },
       "consumer": {
         "file": "includes/ajax/Ajax_UpdateOptions.php",
         "test": "tests/AjaxNullParamsAdversarialTest.php"
+      },
+      "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
+      "fixtures": {
+        "valid": ["fixtures/ajax-update-options.valid.json"],
+        "invalid": ["fixtures/ajax-update-options.invalid-missing-nonce.json"]
       }
     },
     {
       "id": "ajax-view-logs",
       "description": "Per-redirect log view AJAX. Returns the formatted hit log for a specific redirect ID for the admin logs modal.",
+      "schema": "schemas/ajax-view-logs.schema.json",
       "direction": "client-to-server",
+      "producer": {
+        "file": "includes/ajax/search_logs_ajax.js",
+        "test": "tests/AjaxNullParamsAdversarialTest.php"
+      },
       "consumer": {
         "file": "includes/ajax/Ajax_ViewLogs.php",
         "test": "tests/AjaxNullParamsAdversarialTest.php"
+      },
+      "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
+      "fixtures": {
+        "valid": ["fixtures/ajax-view-logs.valid.json"],
+        "invalid": ["fixtures/ajax-view-logs.invalid-missing-nonce.json"]
       }
     }
   ]

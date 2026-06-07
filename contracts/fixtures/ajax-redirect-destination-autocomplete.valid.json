@@ -1,0 +1,6 @@
+{
+  "nonce": "abc123def456",
+  "term": "home",
+  "includeDefault404Page": "true",
+  "includeSpecial": "true"
+}
