@@ -179,17 +179,64 @@ class ABJ_404_Solution_ViewSnapshotCache {
      * @param ABJ_404_Solution_ViewSnapshotCacheHostInterface $host
      * @param array<string, mixed> $tableOptions
      * @param array<string, mixed> $stageOptions
+     * @return bool True when the rows stage completed via the empty-filtered
+     *   skip path (the snapshot was deliberately not cached). False when the
+     *   rows snapshot is now available. The caller uses this to short-circuit
+     *   the count stage and mark the whole warmup as ready: re-running the
+     *   rows stage would land in the same isEmptyFilteredResult branch on
+     *   every retry, and viewTableSnapshotAvailable() requires the rows
+     *   snapshot, so the warmup would otherwise loop until MAX_ATTEMPTS and
+     *   surface "Could not refresh the redirects table" to the admin for a
+     *   filter that is correctly returning zero rows.
      */
-    private function runRowsWarmupStage(ABJ_404_Solution_ViewSnapshotCacheHostInterface $host, string $sub, array $tableOptions, array $stageOptions): void {
+    private function runRowsWarmupStage(ABJ_404_Solution_ViewSnapshotCacheHostInterface $host, string $sub, array $tableOptions, array $stageOptions): bool {
         $rows = $host->getRedirectsForView($sub, $stageOptions);
         $rowsArray = is_array($rows) ? $rows : array();
         if ($host->viewRowsSnapshotAvailable($sub, $tableOptions)) {
-            return;
+            return false;
         }
         if ($this->isEmptyFilteredResult($tableOptions, $rowsArray)) {
-            return;
+            return true;
         }
         throw new \Exception('Warmup rows stage completed but the row snapshot was not available afterward.'); // allow-raw-error: pre-existing warmup assertion moved from ViewReadService.php
+    }
+
+    /**
+     * Run the warmup stage that is current for this attempt and update
+     * `$state['status']` / `$state['stage']` / `$state['query_label']`
+     * to reflect the outcome.
+     *
+     * Extracted from warmViewTableSnapshotStage so the parent stays under
+     * the file-size guard while the rows-stage empty-filtered short-circuit
+     * stays inline with its rationale.
+     *
+     * @param ABJ_404_Solution_ViewSnapshotCacheHostInterface $host
+     * @param array<string, mixed> $tableOptions
+     * @param array<string, mixed> $stageOptions
+     * @param array<string, mixed> $state
+     */
+    private function dispatchWarmupStage(ABJ_404_Solution_ViewSnapshotCacheHostInterface $host, string $sub, array $tableOptions, array $stageOptions, string $stage, array &$state): void {
+        if ($stage === 'rows') {
+            $emptyFilteredSkip = $this->runRowsWarmupStage($host, $sub, $tableOptions, $stageOptions);
+            // The filtered query returned zero rows; the rows cache is
+            // intentionally not populated. Skip the count stage and finish
+            // the warmup as ready: re-running rows would hit the same skip
+            // path, and viewTableSnapshotAvailable (top-of-function in
+            // warmViewTableSnapshotStage) would never flip to true because
+            // the rows snapshot stays missing by design. Without this
+            // short-circuit the warmup loops to MAX_ATTEMPTS and surfaces
+            // "Could not refresh the redirects table" to the admin for a
+            // filter that legitimately matches no rows (e.g. paged>1 past
+            // the end of a filtered set).
+            $state['status'] = $emptyFilteredSkip ? 'ready' : 'idle';
+            $state['stage'] = 'count';
+            $state['query_label'] = 'getRedirectsForViewCount';
+            return;
+        }
+        $this->runCountWarmupStage($host, $sub, $tableOptions, $stageOptions);
+        $state['status'] = 'ready';
+        $state['stage'] = 'count';
+        $state['query_label'] = 'getRedirectsForViewCount';
     }
 
     /**
@@ -367,17 +414,7 @@ class ABJ_404_Solution_ViewSnapshotCache {
 
         $startMs = microtime(true);
         try {
-            if ($stage === 'rows') {
-                $this->runRowsWarmupStage($host, $sub, $tableOptions, $stageOptions);
-                $state['status'] = 'idle';
-                $state['stage'] = 'count';
-                $state['query_label'] = 'getRedirectsForViewCount';
-            } else {
-                $this->runCountWarmupStage($host, $sub, $tableOptions, $stageOptions);
-                $state['status'] = 'ready';
-                $state['stage'] = 'count';
-                $state['query_label'] = 'getRedirectsForViewCount';
-            }
+            $this->dispatchWarmupStage($host, $sub, $tableOptions, $stageOptions, $stage, $state);
             $elapsedMs = (int)round((microtime(true) - $startMs) * 1000);
             $state['stage_completed_at'] = time();
             $state['last_error'] = '';
