@@ -251,7 +251,7 @@ class ABJ_404_Solution_WPCLIRedirectCommandService {
             "SELECT id, url, status, type, final_dest, code, disabled, timestamp
                   FROM `{$dbCore->doTableNameReplacements('{wp_abj404_redirects}')}`
                   {$where}
-                  ORDER BY url ASC
+                  ORDER BY id DESC
                   LIMIT " . absint($limit)
         );
 
