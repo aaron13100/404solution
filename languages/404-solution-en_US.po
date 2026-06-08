@@ -4019,6 +4019,10 @@ msgid "Loading status..."
 msgstr "Loading status..."
 
 #: includes/
+msgid "Loading..."
+msgstr "Loading..."
+
+#: includes/
 msgid "Error: Collected URL deletion value must be a number greater than or equal to zero"
 msgstr "Error: Collected URL deletion value must be a number greater than or equal to zero"
 

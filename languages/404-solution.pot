@@ -2192,6 +2192,12 @@ msgstr ""
 msgid "Loading status…"
 msgstr ""
 
+#: includes/admin/RedirectsTablePagePresenter.php
+#: includes/view/View_CapturedURLsTable.php
+#: includes/admin/AdminLogsPageShell.php
+msgid "Loading..."
+msgstr ""
+
 #: includes/ViewTrait_RedirectsTable.php:402
 #: includes/ViewTrait_UI.php:338
 #: includes/ViewTrait_UI.php:340

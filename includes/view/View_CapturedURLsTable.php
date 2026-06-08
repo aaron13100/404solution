@@ -154,6 +154,7 @@ class ABJ_404_Solution_View_CapturedURLsTable extends ABJ_404_Solution_ViewCompo
             '{form_action}' => esc_url($formAction),
             '{nonce_field}' => $nonceField,
             '{warmup_placeholder}' => $warmup,
+            '{loading_badge_text}' => esc_html__('Loading...', '404-solution'),
         ));
     }
 

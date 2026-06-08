@@ -65,6 +65,7 @@ class ABJ_404_Solution_AdminLogsPageShell {
             '{rows_per_page_label}',
             '{perpage_options}',
             '{warmup_placeholder}',
+            '{loading_badge_text}',
         );
     }
 
@@ -88,6 +89,7 @@ class ABJ_404_Solution_AdminLogsPageShell {
             __('Rows per page:', '404-solution'),
             $perpageOptionsHtml,
             $warmup,
+            esc_html__('Loading...', '404-solution'),
         );
     }
 

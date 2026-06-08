@@ -77,6 +77,7 @@ class ABJ_404_Solution_RedirectsTablePagePresenter {
             '{apply_label}' => esc_html__('Apply', '404-solution'),
             '{clear_selection_label}' => esc_html__('Clear Selection', '404-solution'),
             '{warmup_placeholder}' => ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . '/html/tableWarmupPlaceholder.html'),
+            '{loading_badge_text}' => esc_html__('Loading...', '404-solution'),
             '{empty_trash_form}' => $currentFilter == ABJ404_TRASH_FILTER ? $this->listTableChrome->buildEmptyTrashForm($sub) : '',
         ));
 

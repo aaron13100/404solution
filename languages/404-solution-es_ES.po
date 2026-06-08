@@ -3978,6 +3978,10 @@ msgstr "Error: Unable to update redirect data. Repository result: %s"
 msgid "Loading status..."
 msgstr "Loading status..."
 
+#: includes/
+msgid "Loading..."
+msgstr "Cargando..."
+
 # translation-verified: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Error: Collected URL deletion value must be a number greater than or equal to zero"
