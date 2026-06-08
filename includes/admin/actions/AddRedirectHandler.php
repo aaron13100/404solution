@@ -115,6 +115,21 @@ class ABJ_404_Solution_AddRedirectHandler implements ABJ_404_Solution_AdminActio
                 $this->resolver->saveRegexAutoPromoteNotice((int)$newRedirectId, $originalManualURL, $manualURL, $autoPromoteAdd['urlRewritten']);
             }
             $viewBuild->invalidateViewDoneAndScheduleRebuild();
+            // Run the staged rebuild inline so the post-add admin navigation
+            // (often a filterText lookup for the just-added URL) reads fresh
+            // view_done data instead of the pre-add snapshot. Without this
+            // the cron-scheduled rebuild can lose the race against the
+            // user's next request and the new row stays invisible to
+            // filtered queries until the background tick lands. Same shape
+            // as 119cfbda (CSV import) -- the CSV fix's sibling-search
+            // labelled this path "safe via PRG to unfiltered", but the
+            // modal-add flow stays on a filterable list and the user
+            // (and the e2e suite) immediately filters by the new URL.
+            // Safe to call inline: the build pipeline yields per-stage
+            // on time pressure and the lock is non-blocking, so a
+            // concurrent worker just returns control here without
+            // doubling work.
+            $viewBuild->rebuildViewDoneInBackground();
 
         } else {
             $message .= __('Error: Data not formatted properly.', '404-solution') . "<BR/>";
