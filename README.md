@@ -203,11 +203,27 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 
 ## Changelog ##
 
-## Unreleased ##
+## Version 4.3.0 (June 8, 2026) ##
 
 **Bug Fixes**
 
 * Fixed the Page Redirects and Captured 404s admin tabs still occasionally failing to load on high-traffic sites running 4.2.0. The 4.2.0 release notes claimed this was fixed, but only the cache-warmup race was addressed. A separate internal "mutation watermark" gate could still abort the cache rebuild mid-stage when 404 traffic arrived during the rebuild, and surface the same "Could not finish refreshing data" message at the 45-second budget. That gate and its supporting machinery (watermark counter table, admin-mutation gate, view-build watermark stamping) have now been removed in full. On Bruno-class data (about 30,000 active redirects, about 384,000 hit rows, sustained 1 request per second or higher 404 traffic), the admin tabs hydrate within budget across consecutive refreshes.
+* Fixed a stale "No ID(s) found" notice appearing after a redirect was edited and saved successfully. The notice from the prior screen is now cleared so the success message stands alone.
+* Fixed a stuck "Refreshing data... (stage 4)" badge that could remain on the Page Redirects pagination strip after a background refresh failed. The strip now collapses placeholder-only rows on a failed table load, and the error notice no longer competes with the 5-star review prompt for attention.
+* Fixed generic "Something went wrong" messages on admin AJAX errors. The underlying cause is now appended in parentheses so the error is self-diagnosable, and the multi-stage diagnostic detail is tucked behind a collapsed Details panel.
+* Fixed `wp abj404 list` not returning redirects that were just created via `wp abj404 create` in the same session, and corrected the `--status=manual` filter so manually-created redirects are returned.
+* Fixed CSV-imported redirects not appearing in the Page Redirects table immediately after import. The cached view is now rebuilt synchronously when the import completes, so the table reflects the new rows on the next page load.
+* Fixed a "table doesn't exist" error path that could fire during a partial install or upgrade. The data layer now tolerates an unprepared `$wpdb` and surfaces a clean degraded state instead of a fatal.
+* Fixed the plugin's settings defaults not being available on the uninstall path, which could leave a stray option behind on some sites.
+* Fixed a duplicate-accessible-name accessibility warning on the redirects list. The "Add Redirect" submit button inside the modal is now labeled "Add", which removes the collision with the page-level "Add Redirect" action button.
+* Fixed a fatal that could occur on the Plugins admin screen when `wp-admin/includes/plugin-install.php` was unavailable on hardened hosts (the include is now guarded with `is_readable`).
+* Fixed a fail-open default in the REST captured-404s status filter that could return rows from an unintended status when an unknown filter value was supplied.
+
+**Improvements**
+
+* Several admin surfaces were restyled to match native WordPress chrome and feel quieter on the eye: the top sub-navigation now uses standard `.nav-tab` styling; the Edit Redirect form follows the native `form-table` shape; list-table filter rows use subsubsub pipe-separated links; status badges and pills use the bordered-label shape; checkbox columns and column-header padding match core WP list tables; AJAX error notices use the native `.notice-error` shape; and the self-healing dashboard notice routes through the standard notice template.
+* Several internal queries that scanned the full `information_schema`, post-type table, or content-keywords index on large sites are now bounded, removing a needless cost during background cache rebuilds. No behavior change for typical sites; smoother performance on sites with thousands of post types or very large content tables.
+* When a background refresh fails, a Support button is now mounted directly on the failure notice so the report path is one click instead of a hunt through Settings.
 
 ## Version 4.2.0 (May 23, 2026) ##
 

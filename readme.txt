@@ -5,7 +5,7 @@ Tags: 404, redirect, 404 redirect, broken links, spell check
 Requires at least: 5.0
 Requires PHP: 7.4
 Tested up to: 7.0
-Stable tag: 4.2.0
+Stable tag: 4.3.0
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -201,11 +201,27 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 
 == Changelog ==
 
-= Unreleased =
+= Version 4.3.0 (June 8, 2026) =
 
 **Bug Fixes**
 
 * Fixed the Page Redirects and Captured 404s admin tabs still occasionally failing to load on high-traffic sites running 4.2.0. The 4.2.0 release notes claimed this was fixed, but only the cache-warmup race was addressed. A separate internal "mutation watermark" gate could still abort the cache rebuild mid-stage when 404 traffic arrived during the rebuild, and surface the same "Could not finish refreshing data" message at the 45-second budget. That gate and its supporting machinery (watermark counter table, admin-mutation gate, view-build watermark stamping) have now been removed in full. On Bruno-class data (about 30,000 active redirects, about 384,000 hit rows, sustained 1 request per second or higher 404 traffic), the admin tabs hydrate within budget across consecutive refreshes.
+* Fixed a stale "No ID(s) found" notice appearing after a redirect was edited and saved successfully. The notice from the prior screen is now cleared so the success message stands alone.
+* Fixed a stuck "Refreshing data... (stage 4)" badge that could remain on the Page Redirects pagination strip after a background refresh failed. The strip now collapses placeholder-only rows on a failed table load, and the error notice no longer competes with the 5-star review prompt for attention.
+* Fixed generic "Something went wrong" messages on admin AJAX errors. The underlying cause is now appended in parentheses so the error is self-diagnosable, and the multi-stage diagnostic detail is tucked behind a collapsed Details panel.
+* Fixed `wp abj404 list` not returning redirects that were just created via `wp abj404 create` in the same session, and corrected the `--status=manual` filter so manually-created redirects are returned.
+* Fixed CSV-imported redirects not appearing in the Page Redirects table immediately after import. The cached view is now rebuilt synchronously when the import completes, so the table reflects the new rows on the next page load.
+* Fixed a "table doesn't exist" error path that could fire during a partial install or upgrade. The data layer now tolerates an unprepared `$wpdb` and surfaces a clean degraded state instead of a fatal.
+* Fixed the plugin's settings defaults not being available on the uninstall path, which could leave a stray option behind on some sites.
+* Fixed a duplicate-accessible-name accessibility warning on the redirects list. The "Add Redirect" submit button inside the modal is now labeled "Add", which removes the collision with the page-level "Add Redirect" action button.
+* Fixed a fatal that could occur on the Plugins admin screen when `wp-admin/includes/plugin-install.php` was unavailable on hardened hosts (the include is now guarded with `is_readable`).
+* Fixed a fail-open default in the REST captured-404s status filter that could return rows from an unintended status when an unknown filter value was supplied.
+
+**Improvements**
+
+* Several admin surfaces were restyled to match native WordPress chrome and feel quieter on the eye: the top sub-navigation now uses standard `.nav-tab` styling; the Edit Redirect form follows the native `form-table` shape; list-table filter rows use subsubsub pipe-separated links; status badges and pills use the bordered-label shape; checkbox columns and column-header padding match core WP list tables; AJAX error notices use the native `.notice-error` shape; and the self-healing dashboard notice routes through the standard notice template.
+* Several internal queries that scanned the full `information_schema`, post-type table, or content-keywords index on large sites are now bounded, removing a needless cost during background cache rebuilds. No behavior change for typical sites; smoother performance on sites with thousands of post types or very large content tables.
+* When a background refresh fails, a Support button is now mounted directly on the failure notice so the report path is one click instead of a hunt through Settings.
 
 = Version 4.2.0 (May 23, 2026) =
 
@@ -491,49 +507,4 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 **New Features**
 
 * Added heartbeat debug log emails for opted-in sites. Sites with the "send error logs" option enabled now have a 1-in-100 daily chance of sending their full debug zip even when no errors are detected, confirming the error-reporting pipeline is working. Subject line reads "heartbeat" instead of "error" for easy filtering.
-
-= Version 4.1.0 (Apr 4, 2026) =
-
-**New Features**
-
-* Added built-in 404 suggestion page with one-click setup — selecting "Suggest similar pages" automatically creates a page with the `[abj404_solution_page_suggestions]` shortcode. No manual page creation or shortcode knowledge required.
-* Simplified 404 behavior setting with visual tile picker — choose between "Suggest similar pages" (recommended), "Redirect to homepage", "Custom page", or "Theme default 404" with a single click.
-* Block editor notice when editing the system suggestion page — warns editors that the page is managed by 404 Solution to prevent accidental shortcode removal.
-
-**Bug Fixes**
-
-* Fixed infrastructure database errors (disk full, read-only, crashed tables, connection lost) being logged at ERROR level from direct query call sites, triggering unnecessary developer email reports. All 17 direct-$wpdb error sites now use centralized infrastructure error classification and log as WARN.
-* Fixed multisite cross-prefix missing-table errors being logged at ERROR level — when wp-cron references another subsite's table, the error is now correctly classified as WARN since it's not actionable from the current site's context.
-* Fixed N-gram index creation failing when expected columns were missing from the logs table — now guards against missing columns before attempting index creation.
-* Fixed N-gram cache rebuild progress exceeding 100% in some edge cases.
-* Fixed "required" attribute remaining on custom page picker input when switching away from "Custom page" behavior tile.
-* Improved prefix mismatch diagnostic message to distinguish multisite installations (normal cross-subsite references) from single-site prefix mismatches (wp-config.php issue).
-
-= Version 4.0.4 (Mar 29, 2026) =
-
-**Bug Fixes**
-
-* Fixed multisite activation/upgrade skipping orphaned table adoption — batch methods now run adoption after table creation, ensuring migrated data is recovered on multisite networks.
-* Fixed DDL schema comparison failing on MariaDB servers that use `COLLATE=utf8mb4_unicode_ci` (equals sign) instead of MySQL's `COLLATE utf8mb4_unicode_ci` (space), causing unnecessary schema rebuild loops.
-* Fixed `doEmptyTrash()` executing an empty SQL query when called with an unrecognized sub-page parameter — now early-returns after logging the error.
-* Fixed logs URL filter failing when `logsid` was passed as a non-string type, causing a type error in `sanitizeForSQL()`.
-* Fixed invalid UTF-8 byte sequences in captured URLs corrupting log INSERT queries — added `mb_convert_encoding()` sanitization at the log entry boundary.
-* Fixed DDL normalization not stripping `DEFAULT NULL` (which is implicit for nullable columns), causing infinite schema diff loops on some MySQL versions.
-* Fixed orphaned table adoption running on every page load instead of once — adopted prefixes are now recorded in `wp_options` to prevent re-detection.
-* Fixed table adoption running before target tables existed — adoption now executes after `runInitialCreateTables()`.
-
-**Internationalization**
-
-* Completed translations for all 204 pending strings across 12 languages.
-* Added proper `_n()` plural forms for redirect count strings.
-* Fixed culturally inappropriate translations and religious idioms in warning messages.
-* Fixed fuzzy flags, broken format specifiers, and missing slug translations in PO files.
-
-= Version 4.0.3 (Mar 28, 2026) =
-
-**Bug Fixes**
-
-* Fixed filter bar inputs and selects overflowing below their container's bottom border due to WordPress admin styles setting an inflated line-height on form controls.
-* Fixed Logs tab URL search input being too narrow — it now dynamically grows to fill available space.
-* Fixed database error notices not appearing on the plugin admin page when a table is missing or cannot be created.
 
