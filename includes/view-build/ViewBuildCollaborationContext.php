@@ -67,6 +67,7 @@ class ABJ_404_Solution_ViewBuildCollaborationContext {
         $stateProbe = new ABJ_404_Solution_ViewBuildStateProbe($this);
         $sqlModeProbe = new ABJ_404_Solution_ViewBuildSqlModeProbe($this);
         $rebuildReconcile = new ABJ_404_Solution_ViewBuildRebuildReconcile($this);
+        $sourceSyncer = new ABJ_404_Solution_ViewDoneSourceSyncer($this);
         $lockCoordinator = new ABJ_404_Solution_ViewBuildLockCoordinator($this);
         $cronScheduler = new ABJ_404_Solution_ViewBuildCronScheduler($this);
         $hostEnvironmentProbe = new ABJ_404_Solution_ViewBuildHostEnvironmentProbe($this);
@@ -100,6 +101,7 @@ class ABJ_404_Solution_ViewBuildCollaborationContext {
             $readGateway,
             $advanceCoordinator,
             $rebuildReconcile,
+            $sourceSyncer,
             $lockCoordinator,
             $cronScheduler,
             $hostEnvironmentProbe,

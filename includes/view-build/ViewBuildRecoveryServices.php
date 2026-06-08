@@ -19,6 +19,8 @@ class ABJ_404_Solution_ViewBuildRecoveryServices {
     private $advanceCoordinator;
     /** @var ABJ_404_Solution_ViewBuildRebuildReconcile */
     private $rebuildReconcile;
+    /** @var ABJ_404_Solution_ViewDoneSourceSyncer */
+    private $sourceSyncer;
     /** @var ABJ_404_Solution_ViewBuildLockCoordinator */
     private $lockCoordinator;
     /** @var ABJ_404_Solution_ViewBuildCronScheduler */
@@ -44,6 +46,7 @@ class ABJ_404_Solution_ViewBuildRecoveryServices {
      * @param ABJ_404_Solution_ViewBuildReadGateway $readGateway
      * @param ABJ_404_Solution_ViewBuildAdvanceCoordinator $advanceCoordinator
      * @param ABJ_404_Solution_ViewBuildRebuildReconcile $rebuildReconcile
+     * @param ABJ_404_Solution_ViewDoneSourceSyncer $sourceSyncer
      * @param ABJ_404_Solution_ViewBuildLockCoordinator $lockCoordinator
      * @param ABJ_404_Solution_ViewBuildCronScheduler $cronScheduler
      * @param ABJ_404_Solution_ViewBuildHostEnvironmentProbe $hostEnvironmentProbe
@@ -60,6 +63,7 @@ class ABJ_404_Solution_ViewBuildRecoveryServices {
         ABJ_404_Solution_ViewBuildReadGateway $readGateway,
         ABJ_404_Solution_ViewBuildAdvanceCoordinator $advanceCoordinator,
         ABJ_404_Solution_ViewBuildRebuildReconcile $rebuildReconcile,
+        ABJ_404_Solution_ViewDoneSourceSyncer $sourceSyncer,
         ABJ_404_Solution_ViewBuildLockCoordinator $lockCoordinator,
         ABJ_404_Solution_ViewBuildCronScheduler $cronScheduler,
         ABJ_404_Solution_ViewBuildHostEnvironmentProbe $hostEnvironmentProbe,
@@ -75,6 +79,7 @@ class ABJ_404_Solution_ViewBuildRecoveryServices {
         $this->readGateway = $readGateway;
         $this->advanceCoordinator = $advanceCoordinator;
         $this->rebuildReconcile = $rebuildReconcile;
+        $this->sourceSyncer = $sourceSyncer;
         $this->lockCoordinator = $lockCoordinator;
         $this->cronScheduler = $cronScheduler;
         $this->hostEnvironmentProbe = $hostEnvironmentProbe;
@@ -96,6 +101,8 @@ class ABJ_404_Solution_ViewBuildRecoveryServices {
     public function advanceCoordinator(): ABJ_404_Solution_ViewBuildAdvanceCoordinator { return $this->advanceCoordinator; }
     /** @return ABJ_404_Solution_ViewBuildRebuildReconcile */
     public function rebuildReconcile(): ABJ_404_Solution_ViewBuildRebuildReconcile { return $this->rebuildReconcile; }
+    /** @return ABJ_404_Solution_ViewDoneSourceSyncer */
+    public function sourceSyncer(): ABJ_404_Solution_ViewDoneSourceSyncer { return $this->sourceSyncer; }
     /** @return ABJ_404_Solution_ViewBuildLockCoordinator */
     public function lockCoordinator(): ABJ_404_Solution_ViewBuildLockCoordinator { return $this->lockCoordinator; }
     /** @return ABJ_404_Solution_ViewBuildCronScheduler */
@@ -123,6 +130,7 @@ class ABJ_404_Solution_ViewBuildRecoveryServices {
             $this->readGateway,
             $this->advanceCoordinator,
             $this->rebuildReconcile,
+            $this->sourceSyncer,
             $this->lockCoordinator,
             $this->cronScheduler,
             $this->hostEnvironmentProbe,
