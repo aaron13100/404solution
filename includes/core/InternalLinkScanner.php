@@ -23,6 +23,9 @@ class ABJ_404_Solution_InternalLinkScanner {
     /** Maximum posts to inspect in a single batch to guard large sites. */
     const BATCH_LIMIT = 1000;
 
+    /** Page size for streaming captured-404 URLs out of the redirects table. */
+    const CAPTURED_URL_PAGE_SIZE = 1000;
+
     /**
      * Scan all published posts/pages for broken internal links.
      *
@@ -142,43 +145,51 @@ class ABJ_404_Solution_InternalLinkScanner {
             $redirectsTable = strtolower($wpdb->prefix) . 'abj404_redirects';
         }
 
-        $sql = "SELECT `url` FROM `{$redirectsTable}` WHERE `status` = %d AND `disabled` = 0";
-
-        // Route through queryAndGetResults() so this nightly-cron scan inherits
-        // the centralized timeout, retry, and corrupted-table recovery instead
-        // of failing silently or hanging. Only fall back to the raw $wpdb path
-        // when the DatabaseCore class is unavailable (e.g. integration test bootstraps).
-        if ($dbCore !== null) {
-            $result = $dbCore->queryAndGetResults($sql, array(
-                'query_params' => array($capturedStatus),
-            ));
-            if (!empty($result['timed_out']) ||
-                (isset($result['last_error']) && $result['last_error'] != '')) {
-                return array();
-            }
-            $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
-        } else {
-            $prepared = $wpdb->prepare($sql, $capturedStatus);
-            // DAO-bypass-approved: Test-environment fallback — primary path goes through queryAndGetResults at :149
-            $rows = $wpdb->get_results($prepared, ARRAY_A);
-            if (!is_array($rows)) {
-                return array();
-            }
-        }
-
         $urlSet = array();
-        foreach ($rows as $row) {
-            if (!is_array($row) || !isset($row['url'])) {
-                continue;
-            }
-            $url = (string)$row['url'];
-            if ($url !== '') {
-                // Use 0 as a placeholder hit count; real hit counts would need a join.
-                $urlSet[$url] = 0;
-            }
-        }
+        $pageSize = self::CAPTURED_URL_PAGE_SIZE;
+        $offset = 0;
 
-        return $urlSet;
+        while (true) {
+            $sql = "SELECT `url` FROM `{$redirectsTable}` WHERE `status` = %d AND `disabled` = 0 "
+                . "ORDER BY `id` ASC LIMIT %d OFFSET %d";
+
+            if ($dbCore !== null) {
+                $result = $dbCore->queryAndGetResults($sql, array(
+                    'query_params' => array($capturedStatus, $pageSize, $offset),
+                ));
+                if (!empty($result['timed_out']) ||
+                    (isset($result['last_error']) && $result['last_error'] != '')) {
+                    return $urlSet;
+                }
+                $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
+            } else {
+                $prepared = $wpdb->prepare($sql, $capturedStatus, $pageSize, $offset);
+                // DAO-bypass-approved: Test-environment fallback. Primary path goes through queryAndGetResults above.
+                $rows = $wpdb->get_results($prepared, ARRAY_A);
+                if (!is_array($rows)) {
+                    return $urlSet;
+                }
+            }
+
+            if (count($rows) === 0) {
+                return $urlSet;
+            }
+
+            foreach ($rows as $row) {
+                if (!is_array($row) || !isset($row['url'])) {
+                    continue;
+                }
+                $url = (string)$row['url'];
+                if ($url !== '') {
+                    $urlSet[$url] = 0;
+                }
+            }
+
+            if (count($rows) < $pageSize) {
+                return $urlSet;
+            }
+            $offset += $pageSize;
+        }
     }
 
     /**
