@@ -39,7 +39,19 @@ class ABJ_404_Solution_LegacyImportActionHandler {
         if (($this->parent->getFunctions()->getPostOrGetSanitize('action') == 'importRedirectsFile') && abj_service('admin_access_policy')->isPluginAdmin()) {
             check_admin_referer('abj404_importRedirectsFile');
             $result = $this->parent->getPluginLogic()->importExport()->doImportFile();
-            $this->parent->getViewBuild()->invalidateViewDoneAndScheduleRebuild();
+            $viewBuild = $this->parent->getViewBuild();
+            $viewBuild->invalidateViewDoneAndScheduleRebuild();
+            // Run the staged rebuild inline so the post-import admin
+            // navigation (often a filtered lookup that verifies the
+            // imported rows) reads fresh view_done data instead of the
+            // pre-import snapshot. Without this the cron-scheduled rebuild
+            // can lose the race against the user's next request and the
+            // imported rows stay invisible to filtered queries until the
+            // background tick lands. Safe to call inline: the build
+            // pipeline yields per-stage on time pressure and the lock is
+            // non-blocking, so a concurrent worker just returns control
+            // here without doing extra work.
+            $viewBuild->rebuildViewDoneInBackground();
             return $result;
         }
 
