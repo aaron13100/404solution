@@ -179,7 +179,17 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras_HostProbes {
                 }
             }
             foreach ((array)$checks['path'] as $p) {
-                if (is_dir($p)) {
+                // The panel-detection paths (/home/clp, /usr/local/cpanel, /opt/psa,
+                // /etc/runcloud, etc.) sit outside the open_basedir of most managed
+                // shared-hosting environments. is_dir() raises E_WARNING on every
+                // miss. The plugin's NormalErrorHandler reports those warnings
+                // (errfile is THIS file, which lives under the plugin folder), so
+                // the diagnostic that was supposed to be silent ends up in the
+                // admin error inbox as "ABJ404-SOLUTION Normal error handler error:
+                // errno: 2, errstr: is_dir(): open_basedir restriction in effect.".
+                // Suppress with @ since the probe is intentionally best-effort and
+                // a denial here means "not on this host", not a logic bug.
+                if (@is_dir($p)) { // allow-silent-error: open_basedir restriction surface; absence here is the answer, not a fault. See production reports 22-39 (4.1.18-4.1.19) flooding the inbox with "is_dir(): open_basedir restriction in effect" for /home/clp probes on p2p-game.com and similar CloudLinux-hosted sites.
                     $out['panel'] = $panelKey;
                     if ($out['matched_marker'] === '') {
                         $out['matched_marker'] = 'path:' . $p;
