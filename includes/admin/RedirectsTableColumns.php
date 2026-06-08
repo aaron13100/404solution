@@ -27,7 +27,7 @@ class ABJ_404_Solution_RedirectsTableColumns {
             'url' => array(
                 'title' => __('URL', '404-solution'),
                 'orderby' => 'url',
-                'width' => '25%',
+                'width' => '27%',
             ),
             'status' => array(
                 'title' => __('Status', '404-solution'),
@@ -58,7 +58,7 @@ class ABJ_404_Solution_RedirectsTableColumns {
             'hits' => array(
                 'title' => __('Hits', '404-solution'),
                 'orderby' => 'logshits',
-                'width' => '7%',
+                'width' => '5%',
                 'title_attr_html' => $hitsTooltip,
             ),
             'timestamp' => array(
