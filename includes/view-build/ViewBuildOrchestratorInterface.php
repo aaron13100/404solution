@@ -62,6 +62,14 @@ interface ABJ_404_Solution_ViewBuildOrchestratorInterface {
     /** @return void */
     public function rebuildViewDoneInBackground(): void;
 
+    /**
+     * Write-through cache reconciliation. Closes the visibility gap
+     * between source-table mutation and S11 RENAME swap.
+     *
+     * @return void
+     */
+    public function syncViewDoneWithSource(): void;
+
     /** @return string */
     public function reconcileStagedTablesAtRunnerStartup(): string;
 

@@ -120,6 +120,7 @@ class ABJ_404_Solution_WPCLIImportExportCommandService {
         }
 
         abj_service('view_build_orchestrator')->invalidateViewDoneAndScheduleRebuild();
+        abj_service('view_build_orchestrator')->syncViewDoneWithSource();
         return $this->success(
             "Import complete. Valid={$validRows}, invalid={$invalidRows}, total={$processedRows}",
             $warnings

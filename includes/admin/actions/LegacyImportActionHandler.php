@@ -52,6 +52,7 @@ class ABJ_404_Solution_LegacyImportActionHandler {
             // non-blocking, so a concurrent worker just returns control
             // here without doing extra work.
             $viewBuild->rebuildViewDoneInBackground();
+            $viewBuild->syncViewDoneWithSource();
             return $result;
         }
 
@@ -83,6 +84,7 @@ class ABJ_404_Solution_LegacyImportActionHandler {
                     $viewBuild = $this->parent->getViewBuild();
                     $viewBuild->invalidateViewDoneAndScheduleRebuild();
                     $viewBuild->rebuildViewDoneInBackground();
+                    $viewBuild->syncViewDoneWithSource();
                 }
 
             } catch (Exception $e) {
@@ -112,6 +114,7 @@ class ABJ_404_Solution_LegacyImportActionHandler {
         $viewBuild = $this->parent->getViewBuild();
         $viewBuild->invalidateViewDoneAndScheduleRebuild();
         $viewBuild->rebuildViewDoneInBackground();
+        $viewBuild->syncViewDoneWithSource();
         ABJ_404_Solution_RegexAutoPromote::clearNotice();
         return sprintf(
             /* translators: %s = the original from_url string that was restored */
@@ -148,6 +151,7 @@ class ABJ_404_Solution_LegacyImportActionHandler {
             $viewBuild = $this->parent->getViewBuild();
             $viewBuild->invalidateViewDoneAndScheduleRebuild();
             $viewBuild->rebuildViewDoneInBackground();
+            $viewBuild->syncViewDoneWithSource();
         }
 
         return sprintf(

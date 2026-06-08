@@ -66,6 +66,7 @@ class ABJ_404_Solution_TrashLinkActionHandler {
             $viewBuild = $this->parent->getViewBuild();
             $viewBuild->invalidateViewDoneAndScheduleRebuild();
             $viewBuild->rebuildViewDoneInBackground();
+            $viewBuild->syncViewDoneWithSource();
             if ($trash == 1) {
                 return __('Redirect moved to trash successfully!', '404-solution');
             }

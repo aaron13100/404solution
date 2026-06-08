@@ -231,6 +231,7 @@ class ABJ_404_Solution_EditRedirectHandler {
         // the URL-rename case in particular leaves the new URL invisible
         // to filtered queries until the background cron tick lands.
         $viewBuild->rebuildViewDoneInBackground();
+        $viewBuild->syncViewDoneWithSource();
         return '';
     }
 
@@ -267,6 +268,7 @@ class ABJ_404_Solution_EditRedirectHandler {
             // Mirror the single-edit path: run the staged rebuild inline so
             // the post-bulk-edit admin navigation reads fresh view_done.
             $viewBuild->rebuildViewDoneInBackground();
+            $viewBuild->syncViewDoneWithSource();
         }
         return $message;
     }

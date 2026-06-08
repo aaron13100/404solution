@@ -94,6 +94,7 @@ class ABJ_404_Solution_WPCLIRedirectCommandService {
         }
 
         abj_service('view_build_orchestrator')->invalidateViewDoneAndScheduleRebuild();
+        abj_service('view_build_orchestrator')->syncViewDoneWithSource();
         $displayDest = $isTerminalCode ? '(none ' . "\xE2\x80\x94" . " {$code})" : $to;
         return $this->success("Redirect created (ID: {$insertedId}): {$from} " . "\xE2\x86\x92" . " {$displayDest} [{$code}]", $warnings);
     }
@@ -129,6 +130,7 @@ class ABJ_404_Solution_WPCLIRedirectCommandService {
         }
 
         abj_service('view_build_orchestrator')->invalidateViewDoneAndScheduleRebuild();
+        abj_service('view_build_orchestrator')->syncViewDoneWithSource();
         return $this->success("Redirect ID {$id} moved to trash.", array(), $messages);
     }
 

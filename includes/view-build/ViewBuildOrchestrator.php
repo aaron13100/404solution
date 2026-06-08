@@ -100,6 +100,16 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
     /** @return void */
     public function rebuildViewDoneInBackground(): void { $this->collaborationContext->recoveryServices()->rebuildReconcile()->rebuildViewDoneInBackground(); }
 
+    /**
+     * Write-through cache helper. Called from admin write handlers after
+     * any mutation to wp_abj404_redirects to close the staged-rebuild
+     * visibility gap surgically. See
+     * {@see ABJ_404_Solution_ViewBuildRebuildReconcile::syncViewDoneWithSource()}.
+     *
+     * @return void
+     */
+    public function syncViewDoneWithSource(): void { $this->collaborationContext->recoveryServices()->rebuildReconcile()->syncViewDoneWithSource(); }
+
     /** @return string */
     public function reconcileStagedTablesAtRunnerStartup(): string { return $this->collaborationContext->recoveryServices()->rebuildReconcile()->reconcileStagedTablesAtRunnerStartup(); }
 

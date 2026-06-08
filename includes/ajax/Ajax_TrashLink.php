@@ -46,6 +46,7 @@ class ABJ_404_Solution_Ajax_TrashLink {
             // fetch lands on fresh data that reflects this trash action.
             $viewBuildOrchestrator->invalidateViewDoneAndScheduleRebuild();
             $viewBuildOrchestrator->rebuildViewDoneInBackground();
+            $viewBuildOrchestrator->syncViewDoneWithSource();
         }
 
         // Return fresh tab counts so the JS can update the tab badges.

@@ -61,6 +61,7 @@ class ABJ_404_Solution_StatusLinkActionHandler {
             $viewBuild = $this->parent->getViewBuild();
             $viewBuild->invalidateViewDoneAndScheduleRebuild();
             $viewBuild->rebuildViewDoneInBackground();
+            $viewBuild->syncViewDoneWithSource();
             if ($newstatus == ABJ404_STATUS_CAPTURED) {
                 return sprintf(__('Removed 404 URL from %s list successfully!', '404-solution'), $successActionName);
             }

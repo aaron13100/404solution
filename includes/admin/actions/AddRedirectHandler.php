@@ -130,6 +130,16 @@ class ABJ_404_Solution_AddRedirectHandler implements ABJ_404_Solution_AdminActio
             // concurrent worker just returns control here without
             // doubling work.
             $viewBuild->rebuildViewDoneInBackground();
+            // Write-through cache reconciliation. The staged pipeline
+            // yields between stages so a single inline rebuildInBackground
+            // call rarely completes S1..S11 in the same request -- the
+            // new redirect's row stays missing from view_done until the
+            // next cron tick lands and the S11 swap publishes the buffer.
+            // syncViewDoneWithSource() closes the visibility gap surgically
+            // (INSERT IGNORE + DELETE LEFT JOIN + UPDATE INNER JOIN against
+            // the live source table). The next S11 swap atomically replaces
+            // view_done with the fully-derived buffer.
+            $viewBuild->syncViewDoneWithSource();
 
         } else {
             $message .= __('Error: Data not formatted properly.', '404-solution') . "<BR/>";

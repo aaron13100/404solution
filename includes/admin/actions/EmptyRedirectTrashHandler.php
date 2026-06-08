@@ -32,22 +32,12 @@ class ABJ_404_Solution_EmptyRedirectTrashHandler implements ABJ_404_Solution_Adm
 
     public function handle(string $action, string &$sub): string {
         $this->parent->doEmptyTrash('abj404_redirects');
-        // Surgical orphan-cleanup of view_done. See the matching comment in
-        // EmptyCapturedTrashHandler::handle() for the full rationale; tl;dr
-        // the staged-rebuild pipeline does not reliably complete S1..S11
-        // inside this request, so view_done holds the pre-delete snapshot
-        // until the cron tick catches up and stale trash rows reappear on
-        // the next admin GET. The orphan-DELETE below removes only the
-        // view_done rows whose source row was just deleted, restoring the
-        // invariant immediately.
+        // Surgical reconciliation of view_done with the source-table
+        // mutation. See the matching comment in
+        // EmptyCapturedTrashHandler::handle() for the full rationale.
         $viewBuild = $this->parent->getViewBuild();
         $viewBuild->invalidateViewDoneAndScheduleRebuild();
-        $this->parent->getDbCore()->queryAndGetResults(
-            "DELETE vd FROM {wp_abj404_view_done} vd"
-            . " LEFT JOIN {wp_abj404_redirects} r ON vd.id = r.id"
-            . " WHERE r.id IS NULL",
-            array('log_errors' => false)
-        );
+        $viewBuild->syncViewDoneWithSource();
         return __('All trashed URLs have been deleted!', '404-solution');
     }
 }

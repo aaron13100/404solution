@@ -50,6 +50,7 @@ class ABJ_404_Solution_PurgeRedirectsHandler implements ABJ_404_Solution_AdminAc
             $viewBuild = $this->parent->getViewBuild();
             $viewBuild->invalidateViewDoneAndScheduleRebuild();
             $viewBuild->rebuildViewDoneInBackground();
+            $viewBuild->syncViewDoneWithSource();
         }
 
         return $this->messageForStatus($status, $rowsAffected);
