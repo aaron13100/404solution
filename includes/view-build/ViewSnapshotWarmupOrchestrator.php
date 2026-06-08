@@ -1,5 +1,7 @@
 <?php
 
+// allow-no-test-found: behavior covered through ViewSnapshotCache->warmViewTableSnapshotStage() facade; DataAccessViewSnapshotCacheTest and ViewWarmupInstrumentationTest exercise every warmup stage, locking path, attempt-count forgiveness, and diagnostic shape through that public entry
+
 if (!defined('ABSPATH')) {
     exit;
 }

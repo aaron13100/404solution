@@ -1,5 +1,7 @@
 <?php
 
+// allow-no-test-found: behavior covered by existing public-facade callers; ViewBuildOrchestrator->syncViewDoneWithSource() routes here and is exercised by AdminRedirectFormValidationTest, BugProof_Type0Dest0EditRedirectTest, ManualRedirectPercentEncodingBugTest, AjaxTrashLinkContractTest, RegexAutoPromoteAdminSaveTest, WPCLICommandsTest
+
 if (!defined('ABSPATH')) {
     exit;
 }
