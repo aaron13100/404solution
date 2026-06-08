@@ -36,11 +36,14 @@ class ABJ_404_Solution_ViewSnapshotStore {
         // produced a race on busy sites. getRedirectsForView read watermark
         // value A, wrote the snapshot under key-with-A, then an incoming 404
         // capture bumped the watermark to B before viewRowsSnapshotAvailable
-        // ran. The availability check read with key-with-B and missed,
-        // throwing "Warmup rows stage completed but the row snapshot was not
-        // available afterward." The cache TTL of 120 seconds bounds staleness
-        // to two minutes after any mutation, which is acceptable. The next
-        // admin page load picks up fresh data automatically.
+        // ran. The availability check read with key-with-B and missed. The
+        // cache TTL of 120 seconds bounds staleness to two minutes after
+        // any mutation, which is acceptable. The next admin page load picks
+        // up fresh data automatically. The post-warmup snapshot-not-visible
+        // assertion that this comment originally referenced has since been
+        // softened to a warning log in ViewSnapshotWarmupOrchestrator, so
+        // the storage or transient layer dropping the write under memory
+        // pressure no longer surfaces as an admin-visible error.
         $scoreRange = $tableOptions['score_range'] ?? 'all';
         $cacheShape = array(
             'sub' => (string)$sub,

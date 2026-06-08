@@ -306,22 +306,32 @@ class ABJ_404_Solution_ViewSnapshotWarmupOrchestrator {
     }
 
     /**
-     * Run the rows-stage warmup query and assert the snapshot landed. An
+     * Run the rows-stage warmup query and check the snapshot landed. An
      * empty result for a filtered query is intentionally NOT cached by
      * AdminViewReadCoordinator (the same filter could match a row the user
      * just inserted but that the staged rebuild has not yet landed;
      * caching the pre-rebuild empty payload would mask the new row for
-     * the TTL window). Treat that case as a successful warmup instead of
-     * throwing -- there is nothing to cache, the next read will be cheap,
-     * and once the rebuild lands the row a fresh read will populate the
-     * cache normally.
+     * the TTL window). Treat that case as a successful warmup, there is
+     * nothing to cache, the next read will be cheap, and once the rebuild
+     * lands the row a fresh read will populate the cache normally.
+     *
+     * When the query returned non-empty rows but the snapshot is not
+     * visible afterward, the storage / transient layer dropped the write
+     * (transient evicted under memory pressure, disk full, custom object
+     * cache backend offline). Production reports observed at sites running
+     * Memcached LRU and CloudLinux quotas. This is infrastructure, not a
+     * logic bug. Log at warning level and report success: the next admin
+     * read populates the cache via the direct query path. Throwing here
+     * generated a "Table cache warmup failed" error report on every
+     * affected request, with no actionable signal for the admin.
      *
      * @param ABJ_404_Solution_ViewSnapshotCacheHostInterface $host
      * @param array<string, mixed> $tableOptions
      * @param array<string, mixed> $stageOptions
      * @return bool True when the rows stage completed via the empty-filtered
      *   skip path (the snapshot was deliberately not cached). False when the
-     *   rows snapshot is now available.
+     *   rows snapshot is now available, or when the snapshot is missing due
+     *   to infrastructure failure (treated as recoverable).
      */
     private function runRowsWarmupStage(ABJ_404_Solution_ViewSnapshotCacheHostInterface $host, string $sub, array $tableOptions, array $stageOptions): bool {
         $rows = $host->getRedirectsForView($sub, $stageOptions);
@@ -332,12 +342,21 @@ class ABJ_404_Solution_ViewSnapshotWarmupOrchestrator {
         if ($this->isEmptyFilteredResult($tableOptions, $rowsArray)) {
             return true;
         }
-        throw new \Exception('Warmup rows stage completed but the row snapshot was not available afterward.'); // allow-raw-error: pre-existing warmup assertion moved from ViewReadService.php
+        $this->logger->warn(sprintf(
+            '[warmup] rows stage ran (%d row(s) returned) but snapshot not visible; treating as recoverable (likely transient cache eviction or storage layer dropped the write). sub=%s rows=%d',
+            count($rowsArray),
+            (string)$sub,
+            count($rowsArray)
+        ));
+        return false;
     }
 
     /**
      * Count-stage twin of runRowsWarmupStage. A filtered count of 0 is
      * also deliberately uncached and must not be treated as failure.
+     * A non-zero count with no visible snapshot afterward is treated as
+     * recoverable infrastructure failure, see the rows-stage docblock for
+     * the rationale.
      *
      * @param ABJ_404_Solution_ViewSnapshotCacheHostInterface $host
      * @param array<string, mixed> $tableOptions
@@ -351,7 +370,12 @@ class ABJ_404_Solution_ViewSnapshotWarmupOrchestrator {
         if ($this->isEmptyFilteredCount($tableOptions, $countValue)) {
             return;
         }
-        throw new \Exception('Warmup count stage completed but the full table snapshot was not available afterward.'); // allow-raw-error: pre-existing warmup assertion moved from ViewReadService.php
+        $this->logger->warn(sprintf(
+            '[warmup] count stage ran (count=%d) but full table snapshot not visible; treating as recoverable (likely transient cache eviction or storage layer dropped the write). sub=%s count=%d',
+            $countValue,
+            (string)$sub,
+            $countValue
+        ));
     }
 
     /**
