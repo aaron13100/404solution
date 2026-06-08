@@ -58,7 +58,9 @@ class ABJ_404_Solution_StatusLinkActionHandler {
         $newstatus = $operation === '1' ? $activeStatus : ABJ404_STATUS_CAPTURED;
         $message = $this->parent->getRedirectsRepo()->updateRedirectTypeStatus(absint($id), (string)$newstatus);
         if ($message == '') {
-            $this->parent->getViewBuild()->invalidateViewDoneAndScheduleRebuild();
+            $viewBuild = $this->parent->getViewBuild();
+            $viewBuild->invalidateViewDoneAndScheduleRebuild();
+            $viewBuild->rebuildViewDoneInBackground();
             if ($newstatus == ABJ404_STATUS_CAPTURED) {
                 return sprintf(__('Removed 404 URL from %s list successfully!', '404-solution'), $successActionName);
             }

@@ -32,7 +32,9 @@ class ABJ_404_Solution_EmptyCapturedTrashHandler implements ABJ_404_Solution_Adm
 
     public function handle(string $action, string &$sub): string {
         $this->parent->doEmptyTrash('abj404_captured');
-        $this->parent->getViewBuild()->invalidateViewDoneAndScheduleRebuild();
+        $viewBuild = $this->parent->getViewBuild();
+        $viewBuild->invalidateViewDoneAndScheduleRebuild();
+        $viewBuild->rebuildViewDoneInBackground();
         return __('All trashed URLs have been deleted!', '404-solution');
     }
 }

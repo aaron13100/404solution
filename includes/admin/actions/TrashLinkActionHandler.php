@@ -63,7 +63,9 @@ class ABJ_404_Solution_TrashLinkActionHandler {
             if ($trash == 0 && $subpage === 'abj404_captured' && $filter === ABJ404_TRASH_FILTER) {
                 $this->parent->getRedirectsRepo()->updateRedirectTypeStatus($id, (string)ABJ404_STATUS_CAPTURED);
             }
-            $this->parent->getViewBuild()->invalidateViewDoneAndScheduleRebuild();
+            $viewBuild = $this->parent->getViewBuild();
+            $viewBuild->invalidateViewDoneAndScheduleRebuild();
+            $viewBuild->rebuildViewDoneInBackground();
             if ($trash == 1) {
                 return __('Redirect moved to trash successfully!', '404-solution');
             }

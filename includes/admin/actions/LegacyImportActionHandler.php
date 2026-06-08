@@ -80,7 +80,9 @@ class ABJ_404_Solution_LegacyImportActionHandler {
                 } else {
                     $rowsAffected = is_scalar($result['rows_affected']) ? (string)$result['rows_affected'] : '0';
                     $message = sprintf(__("Records imported: %s", '404-solution'), esc_html($rowsAffected));
-                    $this->parent->getViewBuild()->invalidateViewDoneAndScheduleRebuild();
+                    $viewBuild = $this->parent->getViewBuild();
+                    $viewBuild->invalidateViewDoneAndScheduleRebuild();
+                    $viewBuild->rebuildViewDoneInBackground();
                 }
 
             } catch (Exception $e) {
@@ -107,7 +109,9 @@ class ABJ_404_Solution_LegacyImportActionHandler {
             (int)ABJ404_STATUS_MANUAL,
             (int)$notice['redirect_id'],
         )));
-        $this->parent->getViewBuild()->invalidateViewDoneAndScheduleRebuild();
+        $viewBuild = $this->parent->getViewBuild();
+        $viewBuild->invalidateViewDoneAndScheduleRebuild();
+        $viewBuild->rebuildViewDoneInBackground();
         ABJ_404_Solution_RegexAutoPromote::clearNotice();
         return sprintf(
             /* translators: %s = the original from_url string that was restored */
@@ -141,7 +145,9 @@ class ABJ_404_Solution_LegacyImportActionHandler {
         $count = $importer->importFrom($source);
 
         if ($count > 0) {
-            $this->parent->getViewBuild()->invalidateViewDoneAndScheduleRebuild();
+            $viewBuild = $this->parent->getViewBuild();
+            $viewBuild->invalidateViewDoneAndScheduleRebuild();
+            $viewBuild->rebuildViewDoneInBackground();
         }
 
         return sprintf(
