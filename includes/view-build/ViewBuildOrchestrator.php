@@ -70,6 +70,19 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
         ABJ_404_Solution_ViewBuildLockCoordinator::resetViewBuildLockFallbackMemos();
     }
 
+    /**
+     * Access the underlying collaboration context that wires every staged-build
+     * sub-service. New code should depend on the narrow sub-service it actually
+     * uses (e.g. context()->stageServices()->progressOptions()) instead of the
+     * orchestrator facade. The orchestrator's pass-through methods are being
+     * migrated out per design audit M202 (export bloat).
+     *
+     * @return ABJ_404_Solution_ViewBuildCollaborationContext
+     */
+    public function collaborationContext(): ABJ_404_Solution_ViewBuildCollaborationContext {
+        return $this->collaborationContext;
+    }
+
     /** @return void */
     public function claimForegroundViewBuildLease(): void { $this->collaborationContext->recoveryServices()->foregroundLease()->claimForegroundViewBuildLease(); }
 
@@ -134,13 +147,6 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
     /** @param string $url @param int $maxLength @return string */
     public function sanitizeUrlBeforeInsert(string $url, int $maxLength = 0): string { return $this->collaborationContext->stageServices()->stagedSqlExecutor()->sanitizeUrlBeforeInsert($url, $maxLength); }
 
-    /**
-     * @param string $relativePath
-     * @param array<string, string> $extraTranslations
-     * @return void
-     */
-    public function runStagedSqlFile(string $relativePath, array $extraTranslations): void { $this->collaborationContext->stageServices()->stagedSqlExecutor()->runStagedSqlFile($relativePath, $extraTranslations); }
-
     /** @return bool */
     public function verifyBuildLockSerializesWriter(): bool { return $this->collaborationContext->recoveryServices()->lockCoordinator()->verifyBuildLockSerializesWriter(); }
 
@@ -192,20 +198,6 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
     /** @param string $shortName @param int $default @return int */
     public function readBuildProgressOption(string $shortName, int $default = 0): int { return $this->collaborationContext->stageServices()->progressOptions()->readProgressOption($shortName, $default); }
 
-    /** @param string $shortName @param int $default @return int */
-    public function readProgressOption(string $shortName, int $default = 0): int { return $this->collaborationContext->stageServices()->progressOptions()->readProgressOption($shortName, $default); }
-
-    /** @return void */
-    public function releaseViewBuildLock(): void { $this->collaborationContext->recoveryServices()->lockCoordinator()->releaseViewBuildLock(); }
-
-    /** @param int $stageNumber @param string $errorText @return string */
-    public function classifyStageFailure(int $stageNumber, string $errorText): string { return $this->collaborationContext->dataBoundary()->classifyStageFailure($stageNumber, $errorText); }
-
-    /** @return string */
-    public function viewDoneDataBuiltAtOptionName(): string { return $this->collaborationContext->stageServices()->stateProbe()->viewDoneDataBuiltAtOptionName(); }
-    /** @param int $stageNumber @param string $stageKey @param string $errMsg @param float $started @return string */
-    public function classifyAndHandleStageFailure(int $stageNumber, string $stageKey, string $errMsg, float $started): string { return $this->collaborationContext->recoveryServices()->hostFailurePolicy()->classifyAndHandleStageFailure($stageNumber, $stageKey, $errMsg, $started); }
-
     /**
      * Run a single staged-build step under the timed-stage runner. Forwards to
      * the stage runner sub-service so tests and external callers can drive a
@@ -219,58 +211,4 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
     public function runTimedViewBuildStage(int $stageNumber, string $stageKey, callable $callback) {
         return $this->collaborationContext->stageServices()->stageRunner()->runTimedViewBuildStage($stageNumber, $stageKey, $callback);
     }
-
-    /** @return void */
-    public function clearPhpEnvironmentProbeCache(): void { $this->collaborationContext->recoveryServices()->hostEnvironmentProbe()->clearPhpEnvironmentProbeCache(); }
-
-    /**
-     * @param mixed $actual
-     * @param mixed $expected
-     * @return bool
-     */
-    public function optionReadBackMatches($actual, $expected): bool { return $this->collaborationContext->stageServices()->optionWriteVerifier()->optionReadBackMatches($actual, $expected); }
-
-    /** @param string $shortName @return string */
-    public function progressOptionName(string $shortName): string { return $this->collaborationContext->stageServices()->progressOptions()->progressOptionName($shortName); }
-
-    /** @param string $shortName @param int $value @return void */
-    public function writeProgressOption(string $shortName, int $value): void { $this->collaborationContext->stageServices()->progressOptions()->writeProgressOption($shortName, $value); }
-
-    /** @return void */
-    public function clearAllProgressOptions(): void { $this->collaborationContext->stageServices()->progressOptions()->clearAllProgressOptions(); }
-
-    /** @return string */
-    public function capturedPrefixForLog(): string { return $this->collaborationContext->stageServices()->prefixDriftGuard()->capturedPrefixForLog(); }
-
-    /** @return void */
-    public function stageAddPreJoinIndexes(): void { $this->collaborationContext->stageServices()->stageCallbacks()->stageAddPreJoinIndexes(); }
-
-    /** @return void */
-    public function stageUpdateHome(): void { $this->collaborationContext->stageServices()->stageCallbacks()->stageUpdateHome(); }
-
-    /** @return void */
-    public function stageUpdateExternal(): void { $this->collaborationContext->stageServices()->stageCallbacks()->stageUpdateExternal(); }
-
-    /** @return void */
-    public function stageUpdateSpecial(): void { $this->collaborationContext->stageServices()->stageCallbacks()->stageUpdateSpecial(); }
-
-    /** @return void */
-    public function stageUpdateHits(): void { $this->collaborationContext->stageServices()->stageCallbacks()->stageUpdateHits(); }
-
-    /** @return void */
-    public function stageAddSortIndexes(): void { $this->collaborationContext->stageServices()->stageCallbacks()->stageAddSortIndexes(); }
-
-    /** @return void */
-    public function stageRenameSwap(): void { $this->collaborationContext->stageServices()->stageCallbacks()->stageRenameSwap(); }
-    /** @return float */
-    public function viewBuildPerStageBudgetSeconds(): float { return (float)$this->collaborationContext->stageServices()->stagePipeline()->viewBuildPerStageBudgetSeconds(); }
-
-    /** @param int $stageNumber @return bool */
-    public function isStageMarkedSkipped(int $stageNumber): bool { return $this->collaborationContext->recoveryServices()->hostFailureState()->isStageMarkedSkipped($stageNumber); }
-
-    /** @return void */
-    public function clearSessionVariablesProbeCache(): void { $this->collaborationContext->recoveryServices()->sessionVariablesProbe()->clearSessionVariablesProbeCache(); }
-
-    /** @param int $stageNumber @return string */
-    public function stageNoProgressStreakOptionName(int $stageNumber): string { return $this->collaborationContext->stageServices()->progressOptions()->stageNoProgressStreakOptionName($stageNumber); }
 }
