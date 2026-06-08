@@ -151,9 +151,12 @@ class ABJ_404_Solution_PostEditorIntegration {
             return;
         }
 
+        // ABJ404_URL (plugin root) rather than plugin_dir_url(__FILE__): this
+        // file lives in includes/frontend/ but the JS lives in includes/js/,
+        // so a relative-to-__FILE__ URL points at a non-existent path (i961).
         wp_enqueue_script(
             'abj404-quick-edit-redirect',
-            plugin_dir_url(__FILE__) . 'js/quick-edit-redirect.js',
+            ABJ404_URL . 'includes/js/quick-edit-redirect.js',
             array('jquery', 'inline-edit-post'),
             ABJ404_VERSION,
             true
@@ -295,9 +298,10 @@ class ABJ_404_Solution_PostEditorIntegration {
             return;
         }
 
+        // See enqueueQuickEditScript for the ABJ404_URL rationale (i961).
         wp_enqueue_script(
             'abj404-gutenberg-redirect',
-            plugin_dir_url(__FILE__) . 'js/gutenberg-redirect.js',
+            ABJ404_URL . 'includes/js/gutenberg-redirect.js',
             array('wp-plugins', 'wp-edit-post', 'wp-element', 'wp-components', 'wp-data', 'wp-i18n'),
             ABJ404_VERSION,
             true

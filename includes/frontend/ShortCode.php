@@ -184,10 +184,13 @@ class ABJ_404_Solution_ShortCode {
         // Enqueue jQuery dependency
         wp_enqueue_script('jquery');
 
-        // Enqueue polling script
+        // Enqueue polling script. Use ABJ404_URL (plugin root) rather than
+        // plugin_dir_url(__FILE__): this file lives in includes/frontend/ but
+        // the JS lives in includes/ajax/, so a relative-to-__FILE__ URL points
+        // at a non-existent path (i961).
         wp_enqueue_script(
             'abj404-suggestion-polling',
-            plugin_dir_url(__FILE__) . 'ajax/SuggestionPolling.js',
+            ABJ404_URL . 'includes/ajax/SuggestionPolling.js',
             array('jquery'),
             ABJ404_VERSION,
             true // Load in footer
@@ -200,10 +203,10 @@ class ABJ_404_Solution_ShortCode {
             'no_suggestions_text' => __('No suggestions. :/ ', '404-solution')
         ));
 
-        // Enqueue loading CSS
+        // Enqueue loading CSS. See note above on ABJ404_URL vs. plugin_dir_url.
         wp_enqueue_style(
             'abj404-suggestions-loading',
-            plugin_dir_url(__FILE__) . 'css/suggestions-loading.css',
+            ABJ404_URL . 'includes/css/suggestions-loading.css',
             array(),
             ABJ404_VERSION
         );
