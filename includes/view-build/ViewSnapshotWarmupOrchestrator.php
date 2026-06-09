@@ -195,23 +195,23 @@ class ABJ_404_Solution_ViewSnapshotWarmupOrchestrator {
             ));
         }
 
-        $attempts[$stage] = $attemptCount + 1;
-        $state['status'] = 'running';
-        $state['stage_started_at'] = $now;
-        $state['stage_completed_at'] = 0;
-        $state['attempts_by_stage'] = $attempts;
-        $state['query_label'] = $this->warmupStatePolicy->getViewWarmupStageQueryLabel($stage);
-        $state['last_error'] = '';
-        $state['build_progress_at_stage_start'] = $this->warmupStatePolicy->getViewBuildProgressFingerprint();
-        $this->warmupStatePolicy->setViewWarmupState($optionName, $state);
-
-        $stageOptions = $tableOptions;
-        $stageOptions['_abj404_query_timeout'] = ABJ_404_Solution_ViewReadRuntimeState::VIEW_SNAPSHOT_WARMUP_STAGE_TIMEOUT_SECONDS;
-        $stageOptions['_abj404_throw_on_view_query_error'] = true;
-
         $startMs = microtime(true);
-        $ctx = ABJ_404_Solution_ViewSnapshotWarmupContext::create($host, $sub, $tableOptions, $stageOptions);
         try {
+            $attempts[$stage] = $attemptCount + 1;
+            $state['status'] = 'running';
+            $state['stage_started_at'] = $now;
+            $state['stage_completed_at'] = 0;
+            $state['attempts_by_stage'] = $attempts;
+            $state['query_label'] = $this->warmupStatePolicy->getViewWarmupStageQueryLabel($stage);
+            $state['last_error'] = '';
+            $state['build_progress_at_stage_start'] = $this->warmupStatePolicy->getViewBuildProgressFingerprint();
+            $this->warmupStatePolicy->setViewWarmupState($optionName, $state);
+
+            $stageOptions = $tableOptions;
+            $stageOptions['_abj404_query_timeout'] = ABJ_404_Solution_ViewReadRuntimeState::VIEW_SNAPSHOT_WARMUP_STAGE_TIMEOUT_SECONDS;
+            $stageOptions['_abj404_throw_on_view_query_error'] = true;
+
+            $ctx = ABJ_404_Solution_ViewSnapshotWarmupContext::create($host, $sub, $tableOptions, $stageOptions);
             $this->dispatchWarmupStage($ctx, $stage, $state);
             $elapsedMs = (int)round((microtime(true) - $startMs) * 1000);
             $state['stage_completed_at'] = time();
