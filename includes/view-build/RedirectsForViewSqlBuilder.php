@@ -89,23 +89,25 @@ class ABJ_404_Solution_RedirectsForViewSqlBuilder {
     }
 
     /**
-     * @param string $sub
-     * @param array<string, mixed> $tableOptions
-     * @param bool $queryAllRowsAtOnce
-     * @param int $limitStart
-     * @param int $limitEnd
-     * @param bool $selectCountOnly
+     * @param ABJ_404_Solution_ViewListQueryRequest $request
      * @return string
      */
-    public function getRedirectsForViewQuery($sub, $tableOptions, $queryAllRowsAtOnce, $limitStart, $limitEnd, $selectCountOnly) {
+    public function getRedirectsForViewQuery(ABJ_404_Solution_ViewListQueryRequest $request) {
+        $sub = $request->sub;
+        $tableOptions = $request->tableOptions;
+        $queryAllRowsAtOnce = $request->queryAllRowsAtOnce;
+        $limitStart = $request->limitStart;
+        $limitEnd = $request->limitEnd;
+        $selectCountOnly = $request->selectCountOnly;
+
         $selectCountReplacement = '/* selecting data as usual */';
         if ($selectCountOnly) {
             $selectCountReplacement = "\n /*+ SET_VAR(max_join_size=18446744073709551615) */\n"
                 . "count(*) as count\n /* only selecting for count";
         }
 
-        $logsParts = $this->resolveLogsTableParts((bool)$queryAllRowsAtOnce, (bool)$selectCountOnly);
-        $filterMarkers = $this->resolveFilterTextMarkers((string)$sub, $tableOptions);
+        $logsParts = $this->resolveLogsTableParts($queryAllRowsAtOnce, $selectCountOnly);
+        $filterMarkers = $this->resolveFilterTextMarkers($sub, $tableOptions);
 
         $query = $this->applyRedirectsTemplateReplacements(
             ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/../sql/getRedirectsForView.sql"),

@@ -47,16 +47,10 @@ interface ABJ_404_Solution_ViewListReadInterface {
     public function getRedirectsForViewCount(string $sub, array $tableOptions): int;
 
     /**
-     * @param string $sub
-     * @param array<string, mixed> $tableOptions
-     * @param bool $queryAllRowsAtOnce
-     * @param int $limitStart
-     * @param int $limitEnd
-     * @param bool $selectCountOnly
+     * @param ABJ_404_Solution_ViewListQueryRequest $request
      * @return string
      */
-    public function getRedirectsForViewQuery($sub, $tableOptions, $queryAllRowsAtOnce,
-        $limitStart, $limitEnd, $selectCountOnly);
+    public function getRedirectsForViewQuery(ABJ_404_Solution_ViewListQueryRequest $request);
 
     /**
      * @param array<int, string> $postIDs

@@ -325,18 +325,11 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
     }
 
     /**
-     * @param string $sub
-     * @param array<string, mixed> $tableOptions
-     * @param bool $queryAllRowsAtOnce
-     * @param int $limitStart
-     * @param int $limitEnd
-     * @param bool $selectCountOnly
+     * @param ABJ_404_Solution_ViewListQueryRequest $request
      * @return string
      */
-    function getRedirectsForViewQuery($sub, $tableOptions, $queryAllRowsAtOnce,
-    	$limitStart, $limitEnd, $selectCountOnly) {
-        return $this->queryBuilder->getRedirectsForViewQuery($sub, $tableOptions, $queryAllRowsAtOnce,
-            $limitStart, $limitEnd, $selectCountOnly);
+    function getRedirectsForViewQuery(ABJ_404_Solution_ViewListQueryRequest $request) {
+        return $this->queryBuilder->getRedirectsForViewQuery($request);
     }
 
     /**

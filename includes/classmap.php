@@ -264,6 +264,7 @@ return array(
     'ABJ_404_Solution_ViewBuildReadBridgeInterface' => $base . 'includes/view-build/ViewBuildReadBridgeInterface.php',
     'ABJ_404_Solution_ViewStatusCountsInterface' => $base . 'includes/view-build/ViewStatusCountsInterface.php',
     'ABJ_404_Solution_ViewListReadInterface' => $base . 'includes/view-build/ViewListReadInterface.php',
+    'ABJ_404_Solution_ViewListQueryRequest' => $base . 'includes/view-build/ViewListQueryRequest.php',
     'ABJ_404_Solution_ViewSnapshotReadInterface' => $base . 'includes/view-build/ViewSnapshotReadInterface.php',
     'ABJ_404_Solution_ViewMetadataInterface' => $base . 'includes/view-build/ViewMetadataInterface.php',
     'ABJ_404_Solution_ViewHitsLifecycleInterface' => $base . 'includes/view-build/ViewHitsLifecycleInterface.php',

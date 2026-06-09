@@ -115,24 +115,11 @@ class ABJ_404_Solution_ViewQueryBuilder {
     }
 
     /**
-     * @param string $sub
-     * @param array<string, mixed> $tableOptions
-     * @param bool $queryAllRowsAtOnce
-     * @param int $limitStart
-     * @param int $limitEnd
-     * @param bool $selectCountOnly
+     * @param ABJ_404_Solution_ViewListQueryRequest $request
      * @return string
      */
-    public function getRedirectsForViewQuery($sub, $tableOptions, $queryAllRowsAtOnce,
-        $limitStart, $limitEnd, $selectCountOnly) {
-        return $this->redirectsSqlBuilder->getRedirectsForViewQuery(
-            $sub,
-            is_array($tableOptions) ? $tableOptions : array(),
-            (bool)$queryAllRowsAtOnce,
-            (int)$limitStart,
-            (int)$limitEnd,
-            (bool)$selectCountOnly
-        );
+    public function getRedirectsForViewQuery(ABJ_404_Solution_ViewListQueryRequest $request) {
+        return $this->redirectsSqlBuilder->getRedirectsForViewQuery($request);
     }
 
     /**
