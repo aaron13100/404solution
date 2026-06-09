@@ -6,9 +6,15 @@ if (!defined('ABSPATH')) {
 
 /**
  * Error classification + self-healing recovery: classify infrastructure
- * errors, classify staged-build stage failures, detect OOM, REPAIR TABLE for
- * crashed tables, fix duplicate auto_increment IDs, recover from collation
- * mismatches, and the test seam for the injected clock.
+ * errors, detect OOM, REPAIR TABLE for crashed tables, fix duplicate
+ * auto_increment IDs, recover from collation mismatches, and the test seam
+ * for the injected clock.
+ *
+ * View-build staged-failure routing (the 'resumable'/'skip'/'halt'/'rethrow'
+ * classifier) intentionally lives outside this database-layer interface:
+ * those tokens are view-build pipeline vocabulary. The concrete
+ * DatabaseStagedFailureClassifier (which view-build callers reach via
+ * ViewBuildDataBoundary) owns that surface.
  */
 interface ABJ_404_Solution_DatabaseErrorRecoveryInterface {
 
@@ -19,15 +25,6 @@ interface ABJ_404_Solution_DatabaseErrorRecoveryInterface {
      * @return bool True if handled as infrastructure error.
      */
     public function classifyAndHandleInfrastructureError(string $errorText): bool;
-
-    /**
-     * Classify a staged-build failure for the stage runner.
-     *
-     * @param int $stageNumber
-     * @param string $errorText
-     * @return string 'resumable', 'skip', 'halt', or 'rethrow'.
-     */
-    public function classifyStageFailure(int $stageNumber, string $errorText): string;
 
     /**
      * @param string $errorText

@@ -210,8 +210,9 @@ class ABJ_404_Solution_ViewSnapshotWarmupOrchestrator {
         $stageOptions['_abj404_throw_on_view_query_error'] = true;
 
         $startMs = microtime(true);
+        $ctx = ABJ_404_Solution_ViewSnapshotWarmupContext::create($host, $sub, $tableOptions, $stageOptions);
         try {
-            $this->dispatchWarmupStage($host, $sub, $tableOptions, $stageOptions, $stage, $state);
+            $this->dispatchWarmupStage($ctx, $stage, $state);
             $elapsedMs = (int)round((microtime(true) - $startMs) * 1000);
             $state['stage_completed_at'] = time();
             $state['last_error'] = '';
@@ -276,14 +277,13 @@ class ABJ_404_Solution_ViewSnapshotWarmupOrchestrator {
      * `$state['status']` / `$state['stage']` / `$state['query_label']`
      * to reflect the outcome.
      *
-     * @param ABJ_404_Solution_ViewSnapshotCacheHostInterface $host
-     * @param array<string, mixed> $tableOptions
-     * @param array<string, mixed> $stageOptions
+     * @param ABJ_404_Solution_ViewSnapshotWarmupContext $ctx
+     * @param string $stage
      * @param array<string, mixed> $state
      */
-    private function dispatchWarmupStage(ABJ_404_Solution_ViewSnapshotCacheHostInterface $host, string $sub, array $tableOptions, array $stageOptions, string $stage, array &$state): void {
+    private function dispatchWarmupStage(ABJ_404_Solution_ViewSnapshotWarmupContext $ctx, string $stage, array &$state): void {
         if ($stage === 'rows') {
-            $emptyFilteredSkip = $this->runRowsWarmupStage($host, $sub, $tableOptions, $stageOptions);
+            $emptyFilteredSkip = $this->runRowsWarmupStage($ctx);
             // The filtered query returned zero rows; the rows cache is
             // intentionally not populated. Skip the count stage and finish
             // the warmup as ready: re-running rows would hit the same skip
@@ -299,7 +299,7 @@ class ABJ_404_Solution_ViewSnapshotWarmupOrchestrator {
             $state['query_label'] = 'getRedirectsForViewCount';
             return;
         }
-        $this->runCountWarmupStage($host, $sub, $tableOptions, $stageOptions);
+        $this->runCountWarmupStage($ctx);
         $state['status'] = 'ready';
         $state['stage'] = 'count';
         $state['query_label'] = 'getRedirectsForViewCount';
@@ -325,27 +325,25 @@ class ABJ_404_Solution_ViewSnapshotWarmupOrchestrator {
      * generated a "Table cache warmup failed" error report on every
      * affected request, with no actionable signal for the admin.
      *
-     * @param ABJ_404_Solution_ViewSnapshotCacheHostInterface $host
-     * @param array<string, mixed> $tableOptions
-     * @param array<string, mixed> $stageOptions
+     * @param ABJ_404_Solution_ViewSnapshotWarmupContext $ctx
      * @return bool True when the rows stage completed via the empty-filtered
      *   skip path (the snapshot was deliberately not cached). False when the
      *   rows snapshot is now available, or when the snapshot is missing due
      *   to infrastructure failure (treated as recoverable).
      */
-    private function runRowsWarmupStage(ABJ_404_Solution_ViewSnapshotCacheHostInterface $host, string $sub, array $tableOptions, array $stageOptions): bool {
-        $rows = $host->getRedirectsForView($sub, $stageOptions);
+    private function runRowsWarmupStage(ABJ_404_Solution_ViewSnapshotWarmupContext $ctx): bool {
+        $rows = $ctx->host->getRedirectsForView($ctx->sub, $ctx->stageOptions);
         $rowsArray = is_array($rows) ? $rows : array();
-        if ($host->viewRowsSnapshotAvailable($sub, $tableOptions)) {
+        if ($ctx->host->viewRowsSnapshotAvailable($ctx->sub, $ctx->tableOptions)) {
             return false;
         }
-        if ($this->isEmptyFilteredResult($tableOptions, $rowsArray)) {
+        if ($this->isEmptyFilteredResult($ctx->tableOptions, $rowsArray)) {
             return true;
         }
         $this->logger->warn(sprintf(
             '[warmup] rows stage ran (%d row(s) returned) but snapshot not visible; treating as recoverable (likely transient cache eviction or storage layer dropped the write). sub=%s rows=%d',
             count($rowsArray),
-            (string)$sub,
+            (string)$ctx->sub,
             count($rowsArray)
         ));
         return false;
@@ -358,22 +356,20 @@ class ABJ_404_Solution_ViewSnapshotWarmupOrchestrator {
      * recoverable infrastructure failure, see the rows-stage docblock for
      * the rationale.
      *
-     * @param ABJ_404_Solution_ViewSnapshotCacheHostInterface $host
-     * @param array<string, mixed> $tableOptions
-     * @param array<string, mixed> $stageOptions
+     * @param ABJ_404_Solution_ViewSnapshotWarmupContext $ctx
      */
-    private function runCountWarmupStage(ABJ_404_Solution_ViewSnapshotCacheHostInterface $host, string $sub, array $tableOptions, array $stageOptions): void {
-        $countValue = (int)$host->getRedirectsForViewCount($sub, $stageOptions);
-        if ($host->viewTableSnapshotAvailable($sub, $tableOptions)) {
+    private function runCountWarmupStage(ABJ_404_Solution_ViewSnapshotWarmupContext $ctx): void {
+        $countValue = (int)$ctx->host->getRedirectsForViewCount($ctx->sub, $ctx->stageOptions);
+        if ($ctx->host->viewTableSnapshotAvailable($ctx->sub, $ctx->tableOptions)) {
             return;
         }
-        if ($this->isEmptyFilteredCount($tableOptions, $countValue)) {
+        if ($this->isEmptyFilteredCount($ctx->tableOptions, $countValue)) {
             return;
         }
         $this->logger->warn(sprintf(
             '[warmup] count stage ran (count=%d) but full table snapshot not visible; treating as recoverable (likely transient cache eviction or storage layer dropped the write). sub=%s count=%d',
             $countValue,
-            (string)$sub,
+            (string)$ctx->sub,
             $countValue
         ));
     }
