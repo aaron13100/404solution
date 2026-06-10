@@ -105,7 +105,7 @@ class ABJ_404_Solution_SpellPostListeners {
 		$postType = $post->post_type;
 
 		$recognizedPostTypesRaw = isset($options['recognized_post_types']) ? $options['recognized_post_types'] : '';
-		$acceptedPostTypes = $this->f->explodeNewline(is_string($recognizedPostTypesRaw) ? $recognizedPostTypesRaw : '');
+		$acceptedPostTypes = $this->f->explodeNewlineOrComma(is_string($recognizedPostTypesRaw) ? $recognizedPostTypesRaw : '');
 
 		$deleteSpellingCache = false;
 		$deleteFromPermalinkCache = false;

@@ -152,7 +152,7 @@ class ABJ_404_Solution_DatabaseTableNameResolver {
      */
     public function buildPostTypeSqlList(array $options): string {
         $rptVal = $options['recognized_post_types'] ?? '';
-        $postTypes = $this->f->explodeNewline(is_string($rptVal) ? $rptVal : '');
+        $postTypes = $this->f->explodeNewlineOrComma(is_string($rptVal) ? $rptVal : '');
         $recognizedPostTypes = '';
         foreach ($postTypes as $postType) {
             $recognizedPostTypes .= "'" . trim($this->f->strtolower($postType)) . "', ";
@@ -166,7 +166,7 @@ class ABJ_404_Solution_DatabaseTableNameResolver {
      */
     public function buildCategorySqlList(array $options): string {
         $rcVal = $options['recognized_categories'] ?? '';
-        $categories = $this->f->explodeNewline(is_string($rcVal) ? $rcVal : '');
+        $categories = $this->f->explodeNewlineOrComma(is_string($rcVal) ? $rcVal : '');
         $recognizedCategories = '';
         foreach ($categories as $category) {
             $recognizedCategories .= "'" . trim($this->f->strtolower($category)) . "', ";

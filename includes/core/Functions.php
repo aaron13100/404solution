@@ -129,7 +129,32 @@ class ABJ_404_Solution_Functions {
         $normalized = str_replace('\n', "\n", $normalized);
         $result = array_filter(explode("\n", $this->strtolower($normalized)),
             array($this, 'removeEmptyCustom'));
-        
+
+        return $result;
+    }
+
+    /**
+     * Like {@see explodeNewline()} but tolerates comma-separated input.
+     * Use for textarea-backed settings whose values are slug-like tokens
+     * (post type names, taxonomy slugs) that cannot legitimately contain
+     * commas. A site owner who types "post,page,product" instead of one
+     * per line should not silently break the suggestion engine (i321).
+     *
+     * Do NOT use for free-form values where commas are valid content
+     * (User-Agent strings, regex patterns, paths). Those callers must
+     * keep {@see explodeNewline()}.
+     *
+     * @param string $string
+     * @return array<int, string>
+     */
+    function explodeNewlineOrComma(string $string): array {
+        $normalized = str_replace("\r\n", "\n", $string);
+        $normalized = str_replace('\n', "\n", $normalized);
+        $normalized = str_replace(',', "\n", $normalized);
+        $result = array_filter(
+            array_map('trim', explode("\n", $this->strtolower($normalized))),
+            array($this, 'removeEmptyCustom')
+        );
         return $result;
     }
     
