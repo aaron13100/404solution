@@ -340,6 +340,8 @@ if (!function_exists('abj404_shortCodeListener')) {
 					$inc . 'classmap.php',
 					$inc . 'ajax/SupportRequest.js',
 					$inc . 'js/support-request-button.js',
+					$inc . 'js/support-request-transport.js',
+					$inc . 'js/support-request-modal-view.js',
 					ABJ404_PATH . 'contracts/schemas/report.schema.json',
 				);
 
@@ -695,16 +697,25 @@ if (!function_exists('abj404_degraded_register_support_request')) {
 			}
 			$clientJs = $inc . 'ajax/SupportRequest.js';
 			$buttonJs = $inc . 'js/support-request-button.js';
-			if (!file_exists($clientJs) || !file_exists($buttonJs)) {
+			$transportJs = $inc . 'js/support-request-transport.js';
+			$modalViewJs = $inc . 'js/support-request-modal-view.js';
+			if (!file_exists($clientJs) || !file_exists($buttonJs)
+				|| !file_exists($transportJs) || !file_exists($modalViewJs)) {
 				return;
 			}
 			$baseUrl = plugin_dir_url(__FILE__) . 'includes/';
 			$ver = defined('ABJ404_VERSION') ? ABJ404_VERSION : (string)time();
 			wp_enqueue_script('abj404-support-request-client',
 				$baseUrl . 'ajax/SupportRequest.js', array(), $ver, true);
+			wp_enqueue_script('abj404-support-request-transport',
+				$baseUrl . 'js/support-request-transport.js',
+				array('abj404-support-request-client'), $ver, true);
+			wp_enqueue_script('abj404-support-request-modal-view',
+				$baseUrl . 'js/support-request-modal-view.js', array(), $ver, true);
 			wp_enqueue_script('abj404-support-request-button',
 				$baseUrl . 'js/support-request-button.js',
-				array('abj404-support-request-client'), $ver, true);
+				array('abj404-support-request-client', 'abj404-support-request-transport', 'abj404-support-request-modal-view'),
+				$ver, true);
 			$supportNonce = wp_create_nonce(ABJ_404_Solution_Ajax_SupportRequest::NONCE_ACTION);
 			$previewNonce = wp_create_nonce(ABJ_404_Solution_Ajax_SupportRequestPreview::NONCE_ACTION);
 			$ajaxUrl = admin_url('admin-ajax.php');

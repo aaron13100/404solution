@@ -255,9 +255,14 @@ class ABJ_404_Solution_AdminAssetEnqueuer {
     private static function registerSupportRequestAssets(): void {
         ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-support-request-client',
             ABJ404_URL . 'includes/ajax/SupportRequest.js', array());
+        ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-support-request-transport',
+            ABJ404_URL . 'includes/js/support-request-transport.js',
+            array('abj404-support-request-client'));
+        ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-support-request-modal-view',
+            ABJ404_URL . 'includes/js/support-request-modal-view.js', array());
         ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-support-request-button',
             ABJ404_URL . 'includes/js/support-request-button.js',
-            array('abj404-support-request-client'));
+            array('abj404-support-request-client', 'abj404-support-request-transport', 'abj404-support-request-modal-view'));
         if (!function_exists('wp_add_inline_script')) {
             return;
         }
