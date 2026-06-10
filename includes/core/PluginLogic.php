@@ -108,6 +108,21 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
         return self::$instance;
     }
 
+    /**
+     * Install a singleton instance directly, bypassing the service container
+     * and the deferred construction in `getInstance()`. Symmetric with
+     * `peekInstance()`; the canonical seam for tests that need to swap in
+     * a test double, and for callers that have already constructed a fully
+     * configured instance. Pass `null` to clear the cached singleton so the
+     * next `getInstance()` falls through the container / constructor path.
+     *
+     * @param self|null $instance
+     * @return void
+     */
+    public static function setInstance($instance) {
+        self::$instance = $instance;
+    }
+
     /** @return ABJ_404_Solution_PluginLogic The singleton instance of the class. */
     public static function getInstance() {
         if (self::$instance !== null) {

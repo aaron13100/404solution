@@ -218,6 +218,19 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 		return self::$instance;
 	}
 
+	/**
+	 * Install a singleton instance directly. Symmetric with `peekInstance()`;
+	 * the canonical seam for tests that need to swap in a test double, and
+	 * for callers that have already constructed a fully configured instance.
+	 * Pass `null` to clear the cached singleton.
+	 *
+	 * @param self|null $instance
+	 * @return void
+	 */
+	public static function setInstance($instance) {
+		self::$instance = $instance;
+	}
+
 	/** @return self */
 	public static function getInstance() {
 		if (self::$instance == null) {

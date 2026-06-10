@@ -52,6 +52,19 @@ class ABJ_404_Solution_PermalinkCache {
 
     	return self::$instance;
     }
+
+    /**
+     * Install a singleton instance directly. The canonical seam for tests
+     * that need to swap in a test double, and for callers that have
+     * already constructed a fully configured instance. Pass `null` to
+     * clear the cached singleton.
+     *
+     * @param self|null $instance
+     * @return void
+     */
+    public static function setInstance($instance) {
+        self::$instance = $instance;
+    }
     
     /** @return void */
     static function init(): void {
