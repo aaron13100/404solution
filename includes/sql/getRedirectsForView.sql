@@ -122,4 +122,4 @@ and replace(lower(CONVERT(wp_abj404_redirects.url USING utf8mb4)) COLLATE {wpdb_
 
 {orderByString}
 
-limit {limitStart}, {limitEnd}
+{limitClause}

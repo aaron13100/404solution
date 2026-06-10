@@ -108,6 +108,9 @@ class ABJ_404_Solution_RedirectsForViewSqlBuilder {
 
         $logsParts = $this->resolveLogsTableParts($queryAllRowsAtOnce, $selectCountOnly);
         $filterMarkers = $this->resolveFilterTextMarkers($sub, $tableOptions);
+        // Count-only aggregates return one row inherently; emitting LIMIT 0,0
+        // would zero out the COUNT(*) result.
+        $limitClause = $selectCountOnly ? '' : ('limit ' . (string)$limitStart . ', ' . (string)$limitEnd);
 
         $query = $this->applyRedirectsTemplateReplacements(
             ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/../sql/getRedirectsForView.sql"),
@@ -115,8 +118,7 @@ class ABJ_404_Solution_RedirectsForViewSqlBuilder {
                 'selectCountReplacement' => $selectCountReplacement,
                 'statusTypes' => $this->policy->resolveStatusTypeList((string)$sub, $tableOptions),
                 'orderByString' => $selectCountOnly ? '' : $this->buildOrderByString($tableOptions),
-                'limitStart' => (string)$limitStart,
-                'limitEnd' => (string)$limitEnd,
+                'limitClause' => $limitClause,
                 'searchFilterForRedirectsExists' => $filterMarkers['redirects'],
                 'searchFilterForCapturedExists' => $filterMarkers['captured'],
                 'filterText' => $this->policy->sanitizeFilterText($filterMarkers['rawFilterText']),
@@ -209,8 +211,7 @@ class ABJ_404_Solution_RedirectsForViewSqlBuilder {
         $query = $this->f->str_replace('{selecting-for-count-true-false}', $values['selectCountReplacement'], $query);
         $query = $this->f->str_replace('{statusTypes}', $values['statusTypes'], $query);
         $query = $this->f->str_replace('{orderByString}', $values['orderByString'], $query);
-        $query = $this->f->str_replace('{limitStart}', $values['limitStart'], $query);
-        $query = $this->f->str_replace('{limitEnd}', $values['limitEnd'], $query);
+        $query = $this->f->str_replace('{limitClause}', $values['limitClause'], $query);
         $query = $this->f->str_replace('{searchFilterForRedirectsExists}', $values['searchFilterForRedirectsExists'], $query);
         $query = $this->f->str_replace('{searchFilterForCapturedExists}', $values['searchFilterForCapturedExists'], $query);
         $query = $this->f->str_replace('{filterText}', $values['filterText'], $query);
