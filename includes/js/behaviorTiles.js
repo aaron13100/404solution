@@ -60,6 +60,12 @@
                 }
             });
         });
+
+        // Signal that click handlers are bound. Any consumer that needs to
+        // interact with the tiles programmatically (E2E tests, ancillary
+        // scripts) can wait for this attribute instead of guessing at JS-bind
+        // timing. Generic, not test-only.
+        container.setAttribute('data-tiles-ready', '1');
     }
 
     // Initialize when DOM is ready
