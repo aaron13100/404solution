@@ -1,129 +1,17 @@
 /**
- * Stage progress polling and bounded view-build advance polling.
+ * Bounded view-build advance polling.
  *
- * Two cooperating loops drive cold-start view rebuilds from the browser:
+ * abj404PollViewBuildAdvance polls the bounded ajaxAdvanceViewBuild endpoint,
+ * which performs at most one resumable build tick per call (10s/stage budget,
+ * yields mid-stage on S2/S4/S5). The fetch endpoint never builds inline, so
+ * this poller is the only path that advances a cold-start build from the
+ * browser side.
  *
- *   - abj404StartStageProgressPolling: polls ajaxFetchInflightStage every 2.5s
- *     and updates the visible "Currently refreshing data (stage N, label)"
- *     status line. Read-only: never advances a build.
+ * Globals defined: abj404PollViewBuildAdvance.
  *
- *   - abj404PollViewBuildAdvance: polls the bounded ajaxAdvanceViewBuild
- *     endpoint, which performs at most one resumable build tick per call
- *     (10s/stage budget, yields mid-stage on S2/S4/S5). The fetch endpoint
- *     never builds inline, so this poller is the only path that advances a
- *     cold-start build from the browser side.
- *
- * Multi-tab coordination lives here too: shared build state is keyed in
- * localStorage so a second admin tab follows the active build instead of
- * racing it (45s stale-detection window). pagehide listener releases
- * ownership when the owning tab navigates away.
- *
- * Globals defined: abj404StartStageProgressPolling, abj404PollViewBuildAdvance,
- * abj404CanUseSharedBuildCoordination, abj404ReadSharedBuildState,
- * abj404WriteSharedBuildState, abj404TryClaimSharedBuildOwner,
- * abj404RegisterReleaseSharedBuildOnUnload, abj404UpdateSharedBuildOwner,
- * abj404FollowSharedBuildThenRetry.
- *
- * Depends on view_updater_stage_diagnostics.js (abj404AjaxStageDiagnostics,
- * abj404FormatRefreshingStageMessage) and view_updater.js
- * (abj404UpdateAjaxDebugLog, paginationLinksChange).
+ * Depends on view_updater.js (abj404UpdateAjaxDebugLog) and
+ * view_updater_nonce_refresh.js (abj404AjaxWithNonceRetry).
  */
-
-function abj404StartStageProgressPolling(config) {
-    config = config || {};
-    if (!config.baseUrl || !config.nonce || !config.requestId) {
-        return function() {};
-    }
-    var stopped = false;
-    var seenStageEvents = {};
-    var baseMessage = config.message || 'Currently refreshing data';
-    var processStageResult = function(stageResult, allowUiUpdate) {
-        if (!stageResult) {
-            return;
-        }
-        var stageEvents = (stageResult && jQuery.isArray(stageResult.events)) ? stageResult.events : [];
-        for (var i = 0; i < stageEvents.length; i++) {
-            var event = stageEvents[i] || {};
-            var eventStage = typeof event.stage === 'string' ? event.stage : '';
-            if (!eventStage) {
-                continue;
-            }
-            var eventTime = parseInt(event.timeMs || 0, 10) || 0;
-            var eventKey = eventTime + ':' + eventStage + ':' + i;
-            if (seenStageEvents[eventKey]) {
-                continue;
-            }
-            seenStageEvents[eventKey] = true;
-            var eventDiagnostics = abj404AjaxStageDiagnostics(eventStage, config.subpage || '');
-            abj404UpdateAjaxDebugLog('Stage progress: ' + eventDiagnostics.whatsHappening, {
-                stage: eventStage,
-                queryLabel: event.queryLabel || eventDiagnostics.queryLabel || '',
-                whatsHappening: event.whatsHappening || eventDiagnostics.whatsHappening || ''
-            });
-        }
-
-        var stage = typeof stageResult.stage === 'string' ? stageResult.stage : '';
-        var queryLabel = typeof stageResult.queryLabel === 'string' ? stageResult.queryLabel : '';
-        // When the build finishes between two polls, the inflight transient's
-        // top-level stage clears but the events list still records every
-        // completed stage. Fall back to the last event so the visible label
-        // still shows progress on fast builds (small sites, after-cache hits)
-        // instead of being stuck on the "(...)" placeholder.
-        if (!stage && !queryLabel && stageEvents.length > 0) {
-            var lastEvent = stageEvents[stageEvents.length - 1];
-            if (lastEvent && typeof lastEvent.stage === 'string') {
-                stage = lastEvent.stage;
-                queryLabel = (typeof lastEvent.queryLabel === 'string') ? lastEvent.queryLabel : '';
-            }
-        }
-        if (allowUiUpdate && (stage || queryLabel)) {
-            var message = abj404FormatRefreshingStageMessage(baseMessage, stage, queryLabel, config.subpage || '');
-            jQuery('.abj404-refresh-status').text(message);
-
-            var toast = document.getElementById('abj404-background-refresh-toast');
-            if (toast) {
-                var label = toast.querySelector('.abj404-refresh-label');
-                if (label) {
-                    label.textContent = message;
-                }
-            }
-        }
-    };
-    var stageAjaxRunner = (typeof abj404AjaxWithNonceRetry === 'function')
-        ? abj404AjaxWithNonceRetry : jQuery.ajax;
-    var updateStage = function(forceFinalFetch) {
-        if (stopped && forceFinalFetch !== true) {
-            return;
-        }
-        // Use the callback-style success/error keys (not .done()/.fail() on
-        // the returned jqXHR) so the B20 expired-nonce retry wrapper can
-        // intercept the 403 before the user's handler sees the failure.
-        stageAjaxRunner({
-            url: config.baseUrl,
-            type: 'POST',
-            dataType: 'json',
-            timeout: 5000,
-            data: {
-                action: 'ajaxFetchInflightStage',
-                nonce: config.nonce,
-                requestId: config.requestId
-            },
-            success: function(stageResult) {
-                processStageResult(stageResult, !stopped || forceFinalFetch === true);
-            }
-        });
-    };
-    jQuery('.abj404-refresh-status').text(baseMessage + ' (...)');
-    updateStage(false);
-    var intervalId = window.setInterval(updateStage, 2500);
-    return function(flushFinalEvents) {
-        stopped = true;
-        window.clearInterval(intervalId);
-        if (flushFinalEvents === true) {
-            updateStage(true);
-        }
-    };
-}
 
 /**
  * Poll the bounded ajaxAdvanceViewBuild endpoint until the staged view_done
@@ -191,7 +79,7 @@ function abj404PollViewBuildAdvance(config) {
     // when this string-serialized fingerprint stays unchanged for the
     // full noProgressDeadlineMs window.
     var lastFingerprintKey = '';
-    var lastProgressTickAtMs = Date.now();
+    var lastProgressTickAtMs = Date.now(); // allow-direct-time: no-progress deadline anchor; preserved verbatim from view_updater_build_advance.js pre-i353 split
 
     var serializeFingerprint = function(progress) {
         if (!progress || typeof progress !== 'object') { return ''; }
@@ -229,7 +117,7 @@ function abj404PollViewBuildAdvance(config) {
         // No-progress deadline. The build is presumed stuck (worker died,
         // database deadlock, GET_LOCK held by a dead session, etc.) when
         // the fingerprint hasn't changed in noProgressDeadlineMs.
-        var sinceLastProgressMs = Date.now() - lastProgressTickAtMs;
+        var sinceLastProgressMs = Date.now() - lastProgressTickAtMs; // allow-direct-time: no-progress deadline check; preserved verbatim from view_updater_build_advance.js pre-i353 split
         if (sinceLastProgressMs > noProgressDeadlineMs) {
             stopped = true;
             onError({
@@ -255,7 +143,7 @@ function abj404PollViewBuildAdvance(config) {
             sendForceViewRebuild = false;
         }
         var advanceAjaxRunner = (typeof abj404AjaxWithNonceRetry === 'function')
-            ? abj404AjaxWithNonceRetry : jQuery.ajax;
+            ? abj404AjaxWithNonceRetry : jQuery.ajax; // ajax-direct-approved: documented fallback when view_updater_nonce_refresh.js is not yet loaded; canonical pattern in every view_updater_*.js dispatch site, preserved verbatim from view_updater_build_advance.js pre-i353 split
         // Use the callback-style success/error keys (not .done()/.fail() on
         // the returned jqXHR) so the B20 expired-nonce retry wrapper can
         // intercept the 403 before the user's handler sees the failure.
@@ -275,7 +163,7 @@ function abj404PollViewBuildAdvance(config) {
                 var fingerprintKey = serializeFingerprint(progress);
                 if (fingerprintKey !== '' && fingerprintKey !== lastFingerprintKey) {
                     lastFingerprintKey = fingerprintKey;
-                    lastProgressTickAtMs = Date.now();
+                    lastProgressTickAtMs = Date.now(); // allow-direct-time: refresh no-progress anchor on observed forward progress; preserved verbatim from view_updater_build_advance.js pre-i353 split
                 }
                 // Visible status text is owned by abj404StartStageProgressPolling,
                 // which reads the inflight transient and shows the live mid-stage
@@ -298,7 +186,7 @@ function abj404PollViewBuildAdvance(config) {
                     return;
                 }
                 if (progress.locked === true) {
-                    window.setTimeout(fireOnce, (parseInt(config.lockedIntervalMs, 10) || 3500) + Math.floor(Math.random() * 750));
+                    window.setTimeout(fireOnce, (parseInt(config.lockedIntervalMs, 10) || 3500) + Math.floor(Math.random() * 750)); // allow-direct-random: jittered locked-retry backoff; preserved verbatim from view_updater_build_advance.js pre-i353 split
                     return;
                 }
                 window.setTimeout(fireOnce, intervalMs);
@@ -341,168 +229,4 @@ function abj404PollViewBuildAdvance(config) {
 
     fireOnce();
     return stop;
-}
-
-function abj404CanUseSharedBuildCoordination() {
-    try {
-        var key = 'abj404_coord_test';
-        window.localStorage.setItem(key, '1');
-        window.localStorage.removeItem(key);
-        return true;
-    } catch (e) {
-        return false;
-    }
-}
-
-function abj404ReadSharedBuildState() {
-    if (!abj404CanUseSharedBuildCoordination()) {
-        return null;
-    }
-    try {
-        var raw = window.localStorage.getItem('abj404ViewBuildAdvanceState');
-        return raw ? JSON.parse(raw) : null;
-    } catch (e) {
-        return null;
-    }
-}
-
-function abj404WriteSharedBuildState(state) {
-    if (!abj404CanUseSharedBuildCoordination()) {
-        return;
-    }
-    try {
-        window.localStorage.setItem('abj404ViewBuildAdvanceState', JSON.stringify(state || {}));
-    // allow-silent-catch: storage best-effort coordination key; quota or disabled storage must not break refresh flow
-    } catch (e) {}
-}
-
-function abj404TryClaimSharedBuildOwner(ownerId) {
-    if (!abj404CanUseSharedBuildCoordination()) {
-        return true;
-    }
-    var now = Date.now();
-    var current = abj404ReadSharedBuildState();
-    if (current && current.status === 'running' && current.ownerId && current.ownerId !== ownerId
-            && (now - (parseInt(current.updatedAt, 10) || 0)) < 45000) {
-        return false;
-    }
-    abj404WriteSharedBuildState({
-        ownerId: ownerId,
-        status: 'running',
-        updatedAt: now,
-        progressText: 'starting'
-    });
-    current = abj404ReadSharedBuildState();
-    var claimed = !current || current.ownerId === ownerId;
-    if (claimed) {
-        abj404RegisterReleaseSharedBuildOnUnload(ownerId);
-    }
-    return claimed;
-}
-
-/**
- * Release the shared build owner state if THIS tab is still the owner when
- * the page is unloaded. Without this, a tab that claims ownership and then
- * navigates away (form submit, link click, browser back) leaves the
- * localStorage state stuck at status:running. The next tab, including the
- * same tab loading its next page, falls into abj404FollowSharedBuildThenRetry
- * and waits the full 45 s stale-detection window before claiming itself,
- * blocking the redirects-table placeholder for that whole period.
- *
- * pagehide is preferred over beforeunload: it fires for both bfcache and
- * full unloads, and unlike beforeunload it does not block the navigation
- * UX. localStorage writes inside pagehide handlers are honoured by all
- * browsers we support.
- *
- * Idempotent and per-claim: once:true guarantees the listener detaches
- * after firing, so repeated claims within one page lifetime do not stack
- * handlers. The owner-id check ensures we never clobber state that another
- * tab has since taken over.
- *
- * @param {string} ownerId
- * @returns {void}
- */
-function abj404RegisterReleaseSharedBuildOnUnload(ownerId) {
-    if (!abj404CanUseSharedBuildCoordination()) {
-        return;
-    }
-    if (typeof window === 'undefined' || typeof window.addEventListener !== 'function') {
-        return;
-    }
-    var release = function() {
-        try {
-            var current = abj404ReadSharedBuildState();
-            if (current && current.ownerId === ownerId) {
-                window.localStorage.removeItem('abj404ViewBuildAdvanceState');
-            }
-        } catch (e) {
-            // allow-silent-catch: pagehide handlers cannot recover from
-            // storage failures, and any throw here would be discarded by the
-            // browser anyway. Best-effort release is the contract.
-        }
-    };
-    window.addEventListener('pagehide', release, { once: true });
-}
-
-function abj404UpdateSharedBuildOwner(ownerId, status, progress) {
-    if (!abj404CanUseSharedBuildCoordination()) {
-        return;
-    }
-    abj404WriteSharedBuildState({
-        ownerId: ownerId,
-        status: status || 'running',
-        updatedAt: Date.now(),
-        stage: progress && progress.stage,
-        of: progress && progress.of,
-        progressText: progress && progress.progress_text
-    });
-}
-
-function abj404FollowSharedBuildThenRetry(triggerItem, $config) {
-    var startedAt = Date.now();
-    var maxWaitMs = 300000;
-    var poll = function() {
-        var state = abj404ReadSharedBuildState();
-        var updatedAt = state ? (parseInt(state.updatedAt, 10) || 0) : 0;
-        var stale = !state || !updatedAt || (Date.now() - updatedAt) > 45000;
-        if (state && state.status === 'ready') {
-            window.abj404ViewBuildAdvanceRunning = false;
-            paginationLinksChange(triggerItem, {
-                backgroundRefresh: false,
-                detectOnly: false,
-                cacheMode: 'cache_or_pending',
-                onComplete: function(meta) {
-                    if (meta && meta.cachePending) {
-                        startPlaceholderTableHydration(triggerItem);
-                        return;
-                    }
-                    if ($config && $config.length > 0) {
-                        $config.attr('data-pagination-initial-load', '0');
-                    }
-                },
-                onError: function(errorMeta) {
-                    if ($config && $config.length > 0) {
-                        $config.attr('data-pagination-initial-load', '0');
-                    }
-                    showTableWarmupFailure(errorMeta || {});
-                }
-            });
-            return;
-        }
-        if (stale) {
-            window.abj404ViewBuildAdvanceRunning = false;
-            startViewBuildPollingThenRetry(triggerItem, $config, 1);
-            return;
-        }
-        if ((Date.now() - startedAt) > maxWaitMs) {
-            window.abj404ViewBuildAdvanceRunning = false;
-            showTableWarmupFailure({lastError: 'Timed out waiting for another tab to finish preparing redirects view.'});
-            return;
-        }
-        if (state && state.progressText) {
-            jQuery('.abj404-refresh-status').text('Preparing redirects view (' + state.progressText + ')');
-        }
-        window.setTimeout(poll, 1500 + Math.floor(Math.random() * 500));
-    };
-    poll();
 }

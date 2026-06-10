@@ -32,7 +32,7 @@
  * Depends on view_updater.js (abj404UpdateAjaxDebugLog),
  * view_updater_compare.js (hasBackgroundRefreshUpdateWithBaseline),
  * view_updater_stage_diagnostics.js (abj404AjaxStageDiagnostics),
- * view_updater_build_advance.js (abj404StartStageProgressPolling),
+ * view_updater_stage_progress.js (abj404StartStageProgressPolling),
  * view_updater_table_init.js (isDetectOnlyRefreshInFlight,
  * setDetectOnlyRefreshInFlight, refreshHealthBarIfNeeded,
  * triggerBackgroundTableRefreshIfEnabled,

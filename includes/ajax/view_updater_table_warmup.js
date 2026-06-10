@@ -25,10 +25,11 @@
  *
  * Depends on view_updater.js (abj404UpdateAjaxDebugLog, abj404GenerateRequestId,
  * getURLParameter, paginationLinksChange), view_updater_stage_diagnostics.js
- * (abj404FormatRefreshingStageMessage), view_updater_build_advance.js
- * (abj404StartStageProgressPolling, abj404PollViewBuildAdvance,
- * abj404TryClaimSharedBuildOwner, abj404FollowSharedBuildThenRetry,
- * abj404UpdateSharedBuildOwner) and view_updater_table_init.js
+ * (abj404FormatRefreshingStageMessage), view_updater_stage_progress.js
+ * (abj404StartStageProgressPolling), view_updater_build_advance.js
+ * (abj404PollViewBuildAdvance), view_updater_shared_build_state.js
+ * (abj404TryClaimSharedBuildOwner, abj404FollowSharedBuildThenRetry,
+ * abj404UpdateSharedBuildOwner), and view_updater_table_init.js
  * (getRefreshStatusHost).
  */
 
@@ -363,7 +364,7 @@ function warmTableCacheStage(triggerItem, options) {
     });
 
     var warmAjaxRunner = (typeof abj404AjaxWithNonceRetry === 'function')
-        ? abj404AjaxWithNonceRetry : jQuery.ajax;
+        ? abj404AjaxWithNonceRetry : jQuery.ajax; // ajax-direct-approved: documented fallback when view_updater_nonce_refresh.js is not yet loaded; canonical pattern in every view_updater_*.js dispatch site
     warmAjaxRunner({
         url: baseUrl,
         type: 'POST',
