@@ -1,5 +1,5 @@
 /**
- * Core paginationLinksChange fetch + success/error handling.
+ * paginationLinksChange orchestrator.
  *
  * One AJAX call per user-driven table action (search, sort, perpage,
  * pagination link, force-rebuild follow-up, background detect-only
@@ -18,129 +18,65 @@
  *     the placeholder hydration loop calls into this with permission to
  *     replace the table only if `data-table-awaiting-load="1"` is still set.
  *
- * On error, emits a non-blocking `<div class="notice notice-error">` with
- * a redacted last-query line and (when the failure was a pure client-side
- * timeout) follows up with `ajaxFetchInflightStage` so the inflight stage
- * label arrives a moment later.
+ * On error, the actual notice rendering + inflight-stage follow-up live
+ * in view_updater_pagination_error_notice.js. The DOM replacement on a
+ * successful response lives in view_updater_pagination_response_apply.js.
+ * Request payload assembly lives in view_updater_pagination_request.js.
+ * This file owns the AJAX lifecycle and the cross-cutting state machine
+ * (loading overlay, stage-progress polling, detect-only baseline guard,
+ * background-refresh telemetry, mayReplaceVisibleTable check, success/
+ * error dispatch).
  *
  * Globals defined: paginationLinksChange.
  *
- * Depends on view_updater.js (abj404UpdateAjaxDebugLog, abj404GenerateRequestId,
- * getURLParameter, extractPagedFromTrigger, bindSearchFieldListeners),
- * view_updater_compare.js (buildComparableTableSignature,
- * hasBackgroundRefreshUpdateWithBaseline), view_updater_stage_diagnostics.js
- * (abj404AjaxStageDiagnostics), view_updater_build_advance.js
- * (abj404StartStageProgressPolling), view_updater_table_init.js
- * (abj404FormatAjaxFailureDetails, isDetectOnlyRefreshInFlight,
+ * Depends on view_updater.js (abj404UpdateAjaxDebugLog),
+ * view_updater_compare.js (hasBackgroundRefreshUpdateWithBaseline),
+ * view_updater_stage_diagnostics.js (abj404AjaxStageDiagnostics),
+ * view_updater_build_advance.js (abj404StartStageProgressPolling),
+ * view_updater_table_init.js (isDetectOnlyRefreshInFlight,
  * setDetectOnlyRefreshInFlight, refreshHealthBarIfNeeded,
- * triggerBackgroundTableRefreshIfEnabled), view_updater_table_warmup.js
+ * triggerBackgroundTableRefreshIfEnabled,
+ * abj404CollapseEmptyPaginationStrips), view_updater_table_warmup.js
  * (tablePlaceholderStillAwaitingLoad), view_updater_toast.js
- * (hideRefreshAvailablePill) and trash_link_ajax.js (bindTrashLinkListeners).
+ * (hideRefreshAvailablePill), view_updater_nonce_refresh.js
+ * (abj404AjaxWithNonceRetry), view_updater_pagination_request.js
+ * (abj404BuildPaginationRequest), view_updater_pagination_response_apply.js
+ * (abj404ApplyPaginationSuccessResponse), and
+ * view_updater_pagination_error_notice.js (abj404HandlePaginationAjaxError).
  */
 
 function paginationLinksChange(triggerItem, options) {
     options = options || {};
-    var isBackgroundRefresh = options.backgroundRefresh === true;
-    var detectOnly = options.detectOnly === true;
-    var cacheMode = options.cacheMode || 'normal';
-    // The rows-per-page select and the search box both live in the list-top
-    // row (next to the filter links), outside the .tablenav, so read them
-    // globally rather than within the triggering row. There is exactly one of
-    // each per list page.
-    var rowsPerPage = jQuery('select[name=perpage]').first().val();
-    var filterText = jQuery('input[name=searchFilter]').first().val();
-
-    // Only show loading on the table itself, not the filter bar or pagination
-    var tableSelector = jQuery('.abj404-table').length > 0 ? '.abj404-table' : '.wp-list-table';
-
-    // Get AJAX config from the page (supports both new data-attrs and legacy URL-with-query).
-    var $ajaxConfigEl = jQuery("[data-pagination-ajax-url]").first();
-    if ($ajaxConfigEl.length === 0) {
-        $ajaxConfigEl = jQuery(".abj404-filter-bar").first();
-    }
-    if ($ajaxConfigEl.length === 0) {
-        $ajaxConfigEl = jQuery(".abj404-pagination-right").first();
-    }
-    var url = $ajaxConfigEl.attr("data-pagination-ajax-url") || window.ajaxurl;
-    if (!url) {
-        console.warn('404 Solution: data-pagination-ajax-url attribute not found');
+    var req = abj404BuildPaginationRequest(triggerItem, options);
+    if (req === null) {
         return;
     }
-    var action = $ajaxConfigEl.attr("data-pagination-ajax-action") || 'ajaxUpdatePaginationLinks';
-    var subpage = $ajaxConfigEl.attr("data-pagination-ajax-subpage") || getURLParameter('subpage');
-    var page = getURLParameter('page');
-    var trashFilter = $ajaxConfigEl.attr('data-pagination-current-filter');
-    if (typeof trashFilter === 'undefined' || trashFilter === null || trashFilter === '') {
-        trashFilter = getURLParameter('filter');
-    }
-    var orderby = $ajaxConfigEl.attr('data-pagination-current-orderby');
-    if (!orderby) {
-        orderby = getURLParameter('orderby');
-    }
-    var order = $ajaxConfigEl.attr('data-pagination-current-order');
-    if (!order) {
-        order = getURLParameter('order');
-    }
-    var paged = $ajaxConfigEl.attr('data-pagination-current-paged');
-    if (!paged) {
-        paged = getURLParameter('paged');
-    }
-    var clickedPaged = extractPagedFromTrigger(triggerItem);
-    if (clickedPaged !== '') {
-        paged = clickedPaged;
-    }
-    var id = $ajaxConfigEl.attr('data-pagination-current-logsid');
-    if (!id) {
-        id = getURLParameter('id');
-    }
-    var scoreRange = $ajaxConfigEl.attr('data-pagination-current-score-range');
-    if (typeof scoreRange === 'undefined' || scoreRange === null || scoreRange === '') {
-        scoreRange = getURLParameter('score_range');
-    }
-    if (!scoreRange) {
-        scoreRange = 'all';
-    }
+    var isBackgroundRefresh = req.isBackgroundRefresh;
+    var detectOnly = req.detectOnly;
+    var subpage = req.subpage;
+    var action = req.action;
+    var baseUrl = req.baseUrl;
+    var requestStartedAt = req.requestStartedAt;
+    var requestId = req.requestId;
+    var baselineComparison = req.baselineComparison;
+    var inflightNonce = req.inflightNonce;
+    var ajaxTimeoutMs = req.ajaxTimeoutMs;
 
-    // Prefer nonce from attribute; fall back to legacy parsing from URL.
-    var nonce = $ajaxConfigEl.attr("data-pagination-ajax-nonce") || '';
-    if (!nonce) {
-        var nonceMatch = url.match(/[?&]nonce=([^&]+)/);
-        nonce = nonceMatch ? nonceMatch[1] : '';
-    }
-    // Inflight-stage nonce is optional: older page renders won't have it,
-    // and the timeout follow-up call simply skips when missing.
-    var inflightNonce = $ajaxConfigEl.attr('data-pagination-inflight-nonce') || '';
-
-    // Use a clean admin-ajax base URL; always send 'action' in the payload for compatibility with security plugins.
-    var baseUrl = url.split('?')[0];
-    var requestStartedAt = Date.now();
-    var requestId = abj404GenerateRequestId();
-    var baselineComparison = null;
-    var isDetectOnlyBackground = (isBackgroundRefresh && detectOnly);
-    if (isBackgroundRefresh && detectOnly) {
-        var tableAtRequestStart = jQuery('.abj404-table, .wp-list-table').first();
-        baselineComparison = {
-            table: buildComparableTableSignature(
-                tableAtRequestStart.length > 0 ? (tableAtRequestStart.prop('outerHTML') || '') : ''
-            ),
-            serverSignature: ($ajaxConfigEl.attr('data-pagination-current-signature') || '')
-        };
-    }
-    if (isDetectOnlyBackground && isDetectOnlyRefreshInFlight()) {
+    if (req.isDetectOnlyBackground && isDetectOnlyRefreshInFlight()) {
         if (typeof options.onComplete === 'function') {
             options.onComplete({hasUpdate: false, skipped: true});
         }
         return;
     }
-    if (isDetectOnlyBackground) {
+    if (req.isDetectOnlyBackground) {
         setDetectOnlyRefreshInFlight(true);
     }
     if (window.abj404BackgroundRefreshState && isBackgroundRefresh) {
         window.abj404BackgroundRefreshState.requestCount = (window.abj404BackgroundRefreshState.requestCount || 0) + 1;
         window.abj404BackgroundRefreshState.lastSubpage = subpage;
         window.abj404BackgroundRefreshState.lastAction = action;
-        window.abj404BackgroundRefreshState.lastRowsPerPage = parseInt(rowsPerPage, 10) || 0;
-        window.abj404BackgroundRefreshState.lastFilterTextLength = (filterText || '').length;
+        window.abj404BackgroundRefreshState.lastRowsPerPage = parseInt(req.rowsPerPage, 10) || 0;
+        window.abj404BackgroundRefreshState.lastFilterTextLength = (req.filterText || '').length;
         window.abj404BackgroundRefreshState.lastError = null;
         window.abj404BackgroundRefreshState.lastStatusCode = null;
         window.abj404BackgroundRefreshState.lastResponseBytes = null;
@@ -150,7 +86,7 @@ function paginationLinksChange(triggerItem, options) {
     if (!isBackgroundRefresh) {
         hideRefreshAvailablePill();
         // Show loading overlay on the table for explicit user actions only.
-        var $table = jQuery(tableSelector);
+        var $table = jQuery(req.tableSelector);
         if (!$table.parent().hasClass('abj404-table-wrapper')) {
             $table.wrap('<div class="abj404-table-wrapper"></div>');
         }
@@ -159,12 +95,6 @@ function paginationLinksChange(triggerItem, options) {
         $wrapper.append('<div class="abj404-loading-overlay"><div class="abj404-spinner-container"><div class="abj404-spinner"></div></div></div>');
     }
 
-    // do an ajax call to update the data
-    // Background detect-only refreshes use a tight 15s budget so a stalled
-    // refresh never lingers in the background; explicit user actions use 45s
-    // so a cold-cache table query (large redirects/logs tables) has time to
-    // complete before the placeholder turns into an error notice.
-    var ajaxTimeoutMs = (isBackgroundRefresh && detectOnly) ? 15000 : 45000;
     var stopStageProgressPolling = function() {};
     if (options.showStageProgress === true) {
         stopStageProgressPolling = abj404StartStageProgressPolling({
@@ -177,16 +107,27 @@ function paginationLinksChange(triggerItem, options) {
     }
 
     abj404UpdateAjaxDebugLog('Starting AJAX: ' + action + ' for subpage ' + subpage, {
-        paged: paged,
-        filter: trashFilter,
-        filterText: filterText,
-        rowsPerPage: rowsPerPage,
+        paged: req.paged,
+        filter: req.filter,
+        filterText: req.filterText,
+        rowsPerPage: req.rowsPerPage,
         detectOnly: detectOnly,
-        cacheMode: cacheMode
+        cacheMode: req.cacheMode
     });
 
+    var errorCtx = {
+        baseUrl: baseUrl,
+        action: action,
+        subpage: subpage,
+        isBackgroundRefresh: isBackgroundRefresh,
+        inflightNonce: inflightNonce,
+        requestId: requestId,
+        requestStartedAt: requestStartedAt,
+        ajaxTimeoutMs: ajaxTimeoutMs
+    };
+
     var ajaxRunner = (typeof abj404AjaxWithNonceRetry === 'function')
-        ? abj404AjaxWithNonceRetry : jQuery.ajax;
+        ? abj404AjaxWithNonceRetry : jQuery.ajax; // ajax-direct-approved: documented fallback when view_updater_nonce_refresh.js is not yet loaded; canonical pattern in every view_updater_*.js dispatch site, preserved verbatim from view_updater_pagination.js pre-i352 split
     ajaxRunner({
         url: baseUrl,
         type: 'POST',
@@ -196,25 +137,7 @@ function paginationLinksChange(triggerItem, options) {
         // the table stuck on its loading placeholder forever. onError never
         // fires and the retry/fallback path never engages.
         timeout: ajaxTimeoutMs,
-        data: {
-            action: action,
-            page: page,
-            rowsPerPage: rowsPerPage,
-            filterText: filterText,
-            filter: trashFilter,
-            subpage: subpage,
-            nonce: nonce,
-            orderby: orderby,
-            order: order,
-            paged: paged,
-            id: id,
-            score_range: scoreRange,
-            detectOnly: detectOnly ? '1' : '0',
-            cacheMode: cacheMode,
-            currentSignature: (detectOnly && baselineComparison && baselineComparison.serverSignature)
-                ? baselineComparison.serverSignature : '',
-            requestId: requestId
-        },
+        data: req.payload,
         success: function (result) {
             // Stop WITHOUT flushing here too. The flushed final stage read
             // re-writes the stage label into .abj404-refresh-status after the
@@ -252,7 +175,7 @@ function paginationLinksChange(triggerItem, options) {
             }
 
             abj404UpdateAjaxDebugLog('AJAX Success: ' + action, {
-                durationMs: Date.now() - requestStartedAt,
+                durationMs: Date.now() - requestStartedAt, // allow-direct-time: AJAX wall-clock duration for the success debug log entry; preserved verbatim from view_updater_pagination.js pre-i352 split
                 tableLength: (result && result.table) ? result.table.length : 0,
                 hasUpdate: result && result.hasUpdate
             });
@@ -270,7 +193,7 @@ function paginationLinksChange(triggerItem, options) {
                     options.onComplete({hasUpdate: hasUpdate});
                 }
                 if (window.abj404BackgroundRefreshState) {
-                    var bgDurationMs = Date.now() - requestStartedAt;
+                    var bgDurationMs = Date.now() - requestStartedAt; // allow-direct-time: background-refresh duration telemetry; preserved verbatim from view_updater_pagination.js pre-i352 split
                     var bgResultSize = 0;
                     if (result) {
                         try {
@@ -279,7 +202,7 @@ function paginationLinksChange(triggerItem, options) {
                             bgResultSize = 0;
                         }
                     }
-                    window.abj404BackgroundRefreshState.finishedAt = Date.now();
+                    window.abj404BackgroundRefreshState.finishedAt = Date.now(); // allow-direct-time: telemetry finishedAt timestamp; preserved verbatim from view_updater_pagination.js pre-i352 split
                     window.abj404BackgroundRefreshState.durationMs = bgDurationMs;
                     window.abj404BackgroundRefreshState.difference = bgDurationMs;
                     window.abj404BackgroundRefreshState.lastStatusCode = 200;
@@ -289,8 +212,6 @@ function paginationLinksChange(triggerItem, options) {
                 return;
             }
 
-            // get the current text value
-            var currentFieldValue = jQuery('input[name=searchFilter]').val();
             var mayReplaceVisibleTable = !isBackgroundRefresh ||
                 (options.autoHydratePlaceholder === true && tablePlaceholderStillAwaitingLoad());
             if (!mayReplaceVisibleTable) {
@@ -300,58 +221,8 @@ function paginationLinksChange(triggerItem, options) {
                 return;
             }
 
-            // replace the tables - support both old (.wp-list-table) and new (.abj404-table) table classes
-            var pageLinks = jQuery('.abj404-pagination-right');
-            if (pageLinks.length > 1) {
-                // Two pagination bars: top gets search filter, bottom doesn't.
-                var $topPagination = jQuery(result.paginationLinksTop);
-                $topPagination.addClass('abj404-pagination-top');
-                jQuery(pageLinks[0]).replaceWith($topPagination);
-                var $bottomPagination = jQuery(result.paginationLinksBottom);
-                $bottomPagination.addClass('abj404-pagination-bottom');
-                jQuery(pageLinks[1]).replaceWith($bottomPagination);
-            } else if (pageLinks.length === 1) {
-                // Single pagination bar: use bottom variant (no search filter).
-                jQuery(pageLinks[0]).replaceWith(result.paginationLinksBottom);
-            }
-            // Replace the table - try both class names
-            if (jQuery('.wp-list-table').length > 0) {
-                jQuery('.wp-list-table').replaceWith(result.table);
-            } else if (jQuery('.abj404-table').length > 0) {
-                jQuery('.abj404-table').replaceWith(result.table);
-            }
-            // Update filter-row counts from AJAX response.
-            if (result.tabCounts) {
-                jQuery('.subsubsub a[data-tab-filter]').each(function() {
-                    var filterVal = jQuery(this).attr('data-tab-filter');
-                    if (filterVal in result.tabCounts) {
-                        jQuery(this).find('.count').text('(' + result.tabCounts[filterVal] + ')');
-                    }
-                });
-                jQuery('.subsubsub').removeAttr('data-tab-counts-placeholder');
-            }
-            // Health bar is hydrated by a separate AJAX call (refreshHealthBarIfNeeded)
-            // so the slow getHighImpactCapturedCount() query never blocks first paint
-            // of the redirects table.
-            refreshHealthBarIfNeeded();
-            // Reinitialize table interactions (checkboxes, bulk actions) after AJAX refresh
-            if (typeof window.abj404InitTableInteractions === 'function') {
-                window.abj404InitTableInteractions();
-            }
-            jQuery('.abj404-filter-bar').attr('data-pagination-initial-load', '0');
-            bindSearchFieldListeners();
-            if (typeof window.abj404InitTimeAgo === 'function') {
-                window.abj404InitTimeAgo();
-            }
-            jQuery('input[name=searchFilter]').val(currentFieldValue);
-            jQuery('input[name=searchFilter]').attr("data-previous-value", currentFieldValue);
+            abj404ApplyPaginationSuccessResponse(result);
 
-            // Remove the loading overlay
-            jQuery('.abj404-loading-overlay').fadeOut(200, function() {
-                jQuery(this).remove();
-            });
-
-            bindTrashLinkListeners();
             if (typeof options.onComplete === 'function') {
                 options.onComplete();
             }
@@ -365,7 +236,7 @@ function paginationLinksChange(triggerItem, options) {
                 }, 0);
             }
             if (window.abj404BackgroundRefreshState && isBackgroundRefresh) {
-                var durationMs = Date.now() - requestStartedAt;
+                var durationMs = Date.now() - requestStartedAt; // allow-direct-time: hydrate-path duration telemetry; preserved verbatim from view_updater_pagination.js pre-i352 split
                 var resultSize = 0;
                 if (result) {
                     try {
@@ -374,7 +245,7 @@ function paginationLinksChange(triggerItem, options) {
                         resultSize = 0;
                     }
                 }
-                window.abj404BackgroundRefreshState.finishedAt = Date.now();
+                window.abj404BackgroundRefreshState.finishedAt = Date.now(); // allow-direct-time: telemetry finishedAt timestamp; preserved verbatim from view_updater_pagination.js pre-i352 split
                 window.abj404BackgroundRefreshState.durationMs = durationMs;
                 window.abj404BackgroundRefreshState.difference = durationMs;
                 window.abj404BackgroundRefreshState.lastStatusCode = 200;
@@ -398,220 +269,34 @@ function paginationLinksChange(triggerItem, options) {
             }
             // Remove the loading overlay on error
             jQuery('.abj404-loading-overlay').remove();
-            var status = jqXHR && jqXHR.status ? jqXHR.status : '';
-            var responseText = jqXHR && jqXHR.responseText ? String(jqXHR.responseText) : '';
-            var responseJson = jqXHR && jqXHR.responseJSON ? jqXHR.responseJSON : null;
-            var responsePreview = responseText;
-            if (responsePreview.length > 2000) {
-                // allow-em-dash: visible truncation marker preserved verbatim from the original debug-log preview
-                responsePreview = responsePreview.slice(0, 2000) + "\n…(truncated)…";
-            }
 
-            abj404UpdateAjaxDebugLog('AJAX Error: ' + action, {
-                status: status,
-                textStatus: textStatus,
-                errorThrown: errorThrown,
-                durationMs: Date.now() - requestStartedAt
-            });
+            var parsed = abj404HandlePaginationAjaxError(errorCtx, jqXHR, textStatus, errorThrown);
 
-            // Always log full details to the console for easier debugging.
-            if (window && window.console && window.console.error) {
-                window.console.error('404 Solution AJAX error', {
-                    context: 'Updating table',
-                    status: status,
-                    textStatus: textStatus,
-                    errorThrown: errorThrown,
-                    url: baseUrl,
-                    action: action,
-                    subpage: subpage,
-                    responseJson: responseJson,
-                    responseText: responseText
-                });
-            }
-
-            var messageFromServer = '';
-            var stageFromServer = '';
-            var queryLabelFromServer = '';
-            var whatsHappeningFromServer = '';
-            var lastQueryRedacted = '';
-            if (responseJson && responseJson.data) {
-                if (responseJson.data.message) {
-                    messageFromServer = String(responseJson.data.message);
-                }
-                // ViewUpdater::ajaxUpdatePaginationLinks attaches a debug payload under
-                // data.details when the caller is a plugin admin. context.stage names the
-                // phase that was running (e.g. 'table_captured', 'captured_status_counts');
-                // wpdb.last_query_redacted is the most recent SQL with literal values masked.
-                // Surfacing both makes admin-side timeout/500 reports actionable without a
-                // server-side debug log dump.
-                if (responseJson.data.details && typeof responseJson.data.details === 'object') {
-                    var details = responseJson.data.details;
-                    if (details.context && details.context.stage) {
-                        stageFromServer = String(details.context.stage);
-                    }
-                    if (details.context && details.context.query_label) {
-                        queryLabelFromServer = String(details.context.query_label);
-                    }
-                    if (details.context && details.context.what_happening) {
-                        whatsHappeningFromServer = String(details.context.what_happening);
-                    }
-                    if (details.wpdb && details.wpdb.last_query_redacted) {
-                        lastQueryRedacted = String(details.wpdb.last_query_redacted);
-                    }
-                }
-            }
-
-            if (!isBackgroundRefresh) {
-                // Render a non-blocking admin notice instead of a native alert().
-                // Native alert() blocks the page, breaks browser automation tests,
-                // and forces the admin to dismiss before they can refresh.
-                var noticeTitle = '404 Solution: AJAX error while updating the table.';
-                // Wall-clock elapsed since AJAX dispatch.  Distinguishes
-                // "instant network drop" (small elapsed) from "real slow query"
-                // (close to the timeout budget) on pure client-timeout errors
-                // where no responseJson is available.
-                var elapsedMs = Date.now() - requestStartedAt;
-                var inferredDiagnostics = abj404AjaxStageDiagnostics(stageFromServer, subpage);
-                var detailMeta = {
-                    whatsHappening: whatsHappeningFromServer || inferredDiagnostics.whatsHappening,
-                    queryLabel: queryLabelFromServer || inferredDiagnostics.queryLabel,
-                    status: status,
-                    textStatus: textStatus,
-                    errorThrown: errorThrown,
-                    action: action,
-                    subpage: subpage,
-                    elapsedMs: elapsedMs,
-                    timeoutMs: ajaxTimeoutMs,
-                    stage: stageFromServer,
-                    message: messageFromServer,
-                    lastQueryRedacted: lastQueryRedacted
-                };
-                var detailLines = abj404FormatAjaxFailureDetails(detailMeta);
-                // On a pure client timeout the response never arrived, so
-                // stageFromServer/messageFromServer/lastQueryRedacted are all
-                // empty.  Fire one small follow-up call to the inflight-stage
-                // endpoint to read the transient the server stamped before
-                // the client gave up.  Adds a "Inflight stage:" line to the
-                // notice as soon as the lookup returns.
-                var shouldFetchInflightStage = (
-                    textStatus === 'timeout' && !stageFromServer && !!inflightNonce
-                );
-                if (shouldFetchInflightStage) {
-                    // allow-em-dash: visible ellipsis preserved verbatim from original placeholder line
-                    detailLines.push('Inflight stage: (looking up…)');
-                }
-                var $detailsEl = jQuery('<pre></pre>')
-                    .css({whiteSpace: 'pre-wrap', margin: '0 0 8px 0'})
-                    .text(detailLines.join('\n'));
-                // Trigger slug + context summary for the support button so
-                // server-side log attribution distinguishes the two tabs and
-                // the modal preview shows the admin which failure they are
-                // reporting. Both slugs live in Ajax_SupportRequest::
-                // ALLOWED_TRIGGER_SOURCES so the AJAX handler will accept them.
-                var triggeredFromSlug = (subpage === 'abj404_captured')
-                    ? 'captured_404s_page' : 'redirects_page';
-                var contextSummary = noticeTitle;
-                if (messageFromServer) {
-                    contextSummary += ' ' + String(messageFromServer).slice(0, 200);
-                } else if (textStatus) {
-                    contextSummary += ' (' + String(textStatus) + ')';
-                }
-                // Append the stage label to the support-request context so
-                // the outgoing payload retains the same diagnostic trace
-                // (e.g. "stage 1, getAdminRedirectsPageTable() ...") that
-                // is no longer shown verbatim in the user-visible notice.
-                var stageDiagnosticForPayload = inferredDiagnostics.stageNumber
-                    ? 'stage ' + inferredDiagnostics.stageNumber + ', '
-                    : '';
-                stageDiagnosticForPayload += (queryLabelFromServer || inferredDiagnostics.queryLabel || '');
-                if (stageDiagnosticForPayload) {
-                    contextSummary += ' [' + stageDiagnosticForPayload + ']';
-                }
-                abj404RenderAjaxErrorNotice({
-                    noticeTitle: noticeTitle,
-                    $detailsEl: $detailsEl,
-                    triggeredFromSlug: triggeredFromSlug,
-                    contextSummary: contextSummary
-                });
-                if (shouldFetchInflightStage) {
-                    var inflightAjaxRunner = (typeof abj404AjaxWithNonceRetry === 'function')
-                        ? abj404AjaxWithNonceRetry : jQuery.ajax;
-                    inflightAjaxRunner({
-                        url: baseUrl,
-                        type: 'POST',
-                        dataType: 'json',
-                        timeout: 5000,
-                        data: {
-                            action: 'ajaxFetchInflightStage',
-                            nonce: inflightNonce,
-                            requestId: requestId
-                        }
-                    }).done(function(stageResult) {
-                        var inflightStage = '';
-                        var inflightQueryLabel = '';
-                        var inflightwhatsHappening = '';
-                        if (stageResult && typeof stageResult.stage === 'string' && stageResult.stage !== '') {
-                            inflightStage = stageResult.stage;
-                        }
-                        if (stageResult && typeof stageResult.queryLabel === 'string' && stageResult.queryLabel !== '') {
-                            inflightQueryLabel = stageResult.queryLabel;
-                        }
-                        if (stageResult && typeof stageResult.whatsHappening === 'string' && stageResult.whatsHappening !== '') {
-                            inflightwhatsHappening = stageResult.whatsHappening;
-                        }
-                        var lookupLine = inflightStage
-                            ? 'Inflight stage: ' + inflightStage
-                            : 'Inflight stage: (unknown)';
-                        var lookupDiagnostics = abj404AjaxStageDiagnostics(inflightStage, subpage);
-                        var updated = detailLines.slice();
-                        for (var i = 0; i < updated.length; i++) {
-                            if (updated[i].indexOf('What was happening:') === 0) {
-                                updated[i] = 'What was happening: ' + (inflightwhatsHappening || lookupDiagnostics.whatsHappening);
-                            }
-                            if (updated[i].indexOf('Query:') === 0) {
-                                updated[i] = 'Query: ' + (inflightQueryLabel || lookupDiagnostics.queryLabel);
-                            }
-                            if (updated[i].indexOf('Inflight stage:') === 0) {
-                                updated[i] = lookupLine;
-                            }
-                        }
-                        $detailsEl.text(updated.join('\n'));
-                    }).fail(function() {
-                        var updated = detailLines.slice();
-                        for (var i = 0; i < updated.length; i++) {
-                            if (updated[i].indexOf('Inflight stage:') === 0) {
-                                updated[i] = 'Inflight stage: (lookup failed)';
-                                break;
-                            }
-                        }
-                        $detailsEl.text(updated.join('\n'));
-                    });
-                }
-            }
             if (typeof options.onError === 'function') {
+                var inferred = abj404AjaxStageDiagnostics(parsed.stageFromServer, subpage);
                 options.onError({
-                    status: status,
+                    status: parsed.status,
                     textStatus: textStatus,
                     errorThrown: errorThrown,
-                    message: messageFromServer,
+                    message: parsed.messageFromServer,
                     action: action,
                     subpage: subpage,
-                    elapsedMs: Date.now() - requestStartedAt,
+                    elapsedMs: Date.now() - requestStartedAt, // allow-direct-time: elapsed-ms reported to the onError callback; preserved verbatim from view_updater_pagination.js pre-i352 split
                     timeoutMs: ajaxTimeoutMs,
-                    stage: stageFromServer,
-                    queryLabel: queryLabelFromServer || abj404AjaxStageDiagnostics(stageFromServer, subpage).queryLabel,
-                    whatsHappening: whatsHappeningFromServer || abj404AjaxStageDiagnostics(stageFromServer, subpage).whatsHappening,
-                    lastQueryRedacted: lastQueryRedacted
+                    stage: parsed.stageFromServer,
+                    queryLabel: parsed.queryLabelFromServer || inferred.queryLabel,
+                    whatsHappening: parsed.whatsHappeningFromServer || inferred.whatsHappening,
+                    lastQueryRedacted: parsed.lastQueryRedacted
                 });
             }
             if (window.abj404BackgroundRefreshState && isBackgroundRefresh) {
-                var durationMs = Date.now() - requestStartedAt;
-                window.abj404BackgroundRefreshState.finishedAt = Date.now();
+                var durationMs = Date.now() - requestStartedAt; // allow-direct-time: failure-path duration telemetry; preserved verbatim from view_updater_pagination.js pre-i352 split
+                window.abj404BackgroundRefreshState.finishedAt = Date.now(); // allow-direct-time: telemetry finishedAt timestamp; preserved verbatim from view_updater_pagination.js pre-i352 split
                 window.abj404BackgroundRefreshState.durationMs = durationMs;
                 window.abj404BackgroundRefreshState.difference = durationMs;
-                window.abj404BackgroundRefreshState.lastStatusCode = status || null;
+                window.abj404BackgroundRefreshState.lastStatusCode = parsed.status || null;
                 window.abj404BackgroundRefreshState.lastError = textStatus || errorThrown || 'ajax-error';
-                window.abj404BackgroundRefreshState.lastResponseBytes = responseText ? responseText.length : 0;
+                window.abj404BackgroundRefreshState.lastResponseBytes = parsed.responseText ? parsed.responseText.length : 0;
             }
         }
     });

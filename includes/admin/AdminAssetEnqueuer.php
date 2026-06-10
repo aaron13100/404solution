@@ -237,11 +237,24 @@ class ABJ_404_Solution_AdminAssetEnqueuer {
             array('jquery', 'abj404-view-updater-stage-diagnostics',
                 'abj404-view-updater-build-advance', 'abj404-view-updater-table-init',
                 'abj404-view-updater-nonce-refresh'));
+        $enq('abj404-view-updater-pagination-request',
+            $vuBase . 'view_updater_pagination_request.js',
+            array('jquery', 'abj404-view-updater-compare'));
+        $enq('abj404-view-updater-pagination-response-apply',
+            $vuBase . 'view_updater_pagination_response_apply.js',
+            array('jquery', 'abj404-view-updater-table-init'));
+        $enq('abj404-view-updater-pagination-error-notice',
+            $vuBase . 'view_updater_pagination_error_notice.js',
+            array('jquery', 'abj404-view-updater-stage-diagnostics',
+                'abj404-view-updater-table-init', 'abj404-view-updater-nonce-refresh'));
         $enq('abj404-view-updater-pagination', $vuBase . 'view_updater_pagination.js',
             array('jquery', 'abj404-view-updater-compare', 'abj404-view-updater-stage-diagnostics',
                 'abj404-view-updater-build-advance', 'abj404-view-updater-table-init',
                 'abj404-view-updater-table-warmup', 'abj404-view-updater-toast',
-                'abj404-view-updater-nonce-refresh'));
+                'abj404-view-updater-nonce-refresh',
+                'abj404-view-updater-pagination-request',
+                'abj404-view-updater-pagination-response-apply',
+                'abj404-view-updater-pagination-error-notice'));
         $enq('abj404-view-updater', $vuBase . 'view_updater.js',
             array('jquery', 'jquery-ui-autocomplete',
                 'abj404-view-updater-stage-diagnostics', 'abj404-view-updater-compare',
