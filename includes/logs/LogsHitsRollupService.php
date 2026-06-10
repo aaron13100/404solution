@@ -5,6 +5,7 @@ if (!defined('ABSPATH')) {
 }
 
 require_once __DIR__ . '/LogsHitsRollupServiceInterface.php';
+require_once __DIR__ . '/LogsHitsCanonicalUrlJoinHelper.php';
 
 /**
  * wp_abj404_logs_hits rollup lifecycle (existence checks, scheduling,
@@ -71,6 +72,9 @@ class ABJ_404_Solution_LogsHitsRollupService implements ABJ_404_Solution_LogsHit
     /** @var ABJ_404_Solution_DatabaseNoticeStateHolder */
     private $noticeState;
 
+    /** @var ABJ_404_Solution_LogsHitsCanonicalUrlJoinHelper */
+    private $joinHelper;
+
     /**
      * @param ABJ_404_Solution_DatabaseCore $dbCore
      * @param ABJ_404_Solution_Logging|null $logging
@@ -89,6 +93,7 @@ class ABJ_404_Solution_LogsHitsRollupService implements ABJ_404_Solution_LogsHit
             ? $rebuildHealth
             : $this->resolveRebuildHealthState();
         $this->noticeState = $noticeState !== null ? $noticeState : $dbCore->noticeState();
+        $this->joinHelper = new ABJ_404_Solution_LogsHitsCanonicalUrlJoinHelper($dbCore);
     }
 
     /** @return ABJ_404_Solution_RebuildHealthState|null */
@@ -110,13 +115,13 @@ class ABJ_404_Solution_LogsHitsRollupService implements ABJ_404_Solution_LogsHit
 
     /**
      * Resolve the collation from the abj404_redirects.canonical_url column,
-     * the actual join partner for the hits rebuild phase2 JOIN.
+     * the actual join partner for the hits rebuild phase2 JOIN. Delegates
+     * to the canonical-url join helper.
      *
      * @return string Sanitized collation identifier.
      */
     public function resolveHitsJoinCollation(): string {
-        $redirectsTable = $this->dbCore->doTableNameReplacements('{wp_abj404_redirects}');
-        return $this->dbCore->getColumnCollationString($redirectsTable, 'canonical_url');
+        return $this->joinHelper->resolveHitsJoinCollation();
     }
 
     // =========================================================================
@@ -282,23 +287,11 @@ class ABJ_404_Solution_LogsHitsRollupService implements ABJ_404_Solution_LogsHit
     /** @param string $tempDestTable @return array<string, mixed> */
     private function hitsTableInsertDirect(string $tempDestTable): array {
         $ttSelectQuery = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/../sql/getRedirectsForViewTempTable.sql");
-        if ($this->isLogsv2CanonicalUrlBackfillComplete()) { $ttSelectQuery = $this->dropLogsv2CanonicalCoalesceWrap($ttSelectQuery); }
+        if ($this->joinHelper->isLogsv2CanonicalUrlBackfillComplete()) { $ttSelectQuery = $this->joinHelper->dropLogsv2CanonicalCoalesceWrap($ttSelectQuery); }
+        if ($this->joinHelper->isRedirectsCanonicalUrlBackfillComplete()) { $ttSelectQuery = $this->joinHelper->dropRedirectsCanonicalCoalesceWrap($ttSelectQuery); }
         $ttSelectQuery = $this->dbCore->doTableNameReplacements($ttSelectQuery);
         $ttInsertQuery = "/* abj404:src=LogsHitsRollupService::hitsTableInsertDirect */ insert into " . $tempDestTable . " (requested_url, logsid, last_used, logshits, failed_hits) \n " . $ttSelectQuery;
         return $this->dbCore->queryAndGetResults($ttInsertQuery, array('log_too_slow' => false, 'timeout' => 60));
-    }
-
-    /** @return bool */
-    private function isLogsv2CanonicalUrlBackfillComplete(): bool {
-        if (!function_exists('get_option')) { return false; }
-        return (bool)get_option('abj404_logsv2_canonical_url_backfill_complete');
-    }
-
-    /** @param string $sql @return string */
-    private function dropLogsv2CanonicalCoalesceWrap(string $sql): string {
-        $pattern = '/COALESCE\(\{wp_abj404_logsv2\}\.canonical_url,\s*CONCAT\(\'\/\',\s*TRIM\(BOTH\s+\'\/\'\s+FROM\s+\{wp_abj404_logsv2\}\.requested_url\)\)\)/';
-        $result = preg_replace($pattern, '{wp_abj404_logsv2}.canonical_url', $sql);
-        return is_string($result) ? $result : $sql;
     }
 
     /** @return array<string, mixed>|false */
@@ -312,14 +305,19 @@ class ABJ_404_Solution_LogsHitsRollupService implements ABJ_404_Solution_LogsHit
         $createPreAggQuery = $this->dbCore->doTableNameReplacements($createPreAggQuery);
         $createPreAggQuery = str_replace('{COLLATION}', $resolvedCollation, $createPreAggQuery);
         $this->dbCore->queryAndGetResults($createPreAggQuery);
-        $logsv2CanonicalExpr = $this->isLogsv2CanonicalUrlBackfillComplete() ? "canonical_url" : "COALESCE(canonical_url, CONCAT('/', TRIM(BOTH '/' FROM requested_url)))";
+        $logsv2CanonicalExpr = $this->joinHelper->isLogsv2CanonicalUrlBackfillComplete() ? "canonical_url" : "COALESCE(canonical_url, CONCAT('/', TRIM(BOTH '/' FROM requested_url)))";
         for ($start = $minId; $start <= $maxId; $start += $chunkSize) {
             $end = $start + $chunkSize;
             $chunkQuery = "/* abj404:src=LogsHitsRollupService::hitsTableInsertChunked#phase1Chunk */ INSERT INTO " . $preAggTable . " (requested_url, logsid, last_used, logshits, failed_hits) SELECT " . $logsv2CanonicalExpr . ", MIN(id), MAX(timestamp), COUNT(*), SUM(CASE WHEN dest_url = '' OR dest_url IS NULL THEN 1 ELSE 0 END) FROM " . $logsv2Table . " WHERE id >= %d AND id < %d GROUP BY " . $logsv2CanonicalExpr;
             $chunkResult = $this->dbCore->queryAndGetResults($chunkQuery, array('log_too_slow' => false, 'timeout' => 10, 'query_params' => array($start, $end)));
             if (!empty($chunkResult['timed_out']) || !empty($chunkResult['last_error'])) { $this->recordHitsChunkFailure(); $this->logger->debugMessage(__FUNCTION__ . " Phase 1 chunk failed at id range [{$start}, {$end}); aborting."); return false; }
         }
-        $phase2Query = "/* abj404:src=LogsHitsRollupService::hitsTableInsertChunked#phase2Aggregate */ INSERT INTO " . $tempDestTable . " (requested_url, logsid, last_used, logshits, failed_hits) SELECT a.requested_url, MIN(a.logsid), MAX(a.last_used), SUM(a.logshits), SUM(a.failed_hits) FROM " . $preAggTable . " a INNER JOIN " . $redirectsTable . " r ON a.requested_url = (COALESCE(r.canonical_url, CONCAT('/', TRIM(BOTH '/' FROM r.url))) COLLATE " . $resolvedCollation . ") GROUP BY a.requested_url";
+        // Defensive form covers legacy and in-progress installs; optimized
+        // form lets idx_canonical_url serve the JOIN probe and gets the
+        // rebuild under the host's 60s max_statement_time on Bruno-class
+        // data (i359). See LogsHitsCanonicalUrlJoinHelper::buildPhase2JoinRhs.
+        $joinRhs = $this->joinHelper->buildPhase2JoinRhs($resolvedCollation);
+        $phase2Query = "/* abj404:src=LogsHitsRollupService::hitsTableInsertChunked#phase2Aggregate */ INSERT INTO " . $tempDestTable . " (requested_url, logsid, last_used, logshits, failed_hits) SELECT a.requested_url, MIN(a.logsid), MAX(a.last_used), SUM(a.logshits), SUM(a.failed_hits) FROM " . $preAggTable . " a INNER JOIN " . $redirectsTable . " r ON a.requested_url = " . $joinRhs . " GROUP BY a.requested_url";
         $results = $this->dbCore->queryAndGetResults($phase2Query, array('log_too_slow' => false, 'timeout' => 60));
         $results['elapsed_time'] = round(microtime(true) - $startTime, 3);
         $this->dbCore->queryAndGetResults("drop table if exists " . $preAggTable);

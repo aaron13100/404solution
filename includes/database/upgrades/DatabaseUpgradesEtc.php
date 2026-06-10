@@ -301,6 +301,10 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 		return ABJ_404_Solution_DatabaseUpgradeRuntimeState::LOGSV2_CANONICAL_URL_BACKFILL_COMPLETE_OPTION;
 	}
 
+	public function getRedirectsCanonicalUrlBackfillCompleteOption(): string {
+		return ABJ_404_Solution_DatabaseUpgradeRuntimeState::REDIRECTS_CANONICAL_URL_BACKFILL_COMPLETE_OPTION;
+	}
+
 	/** @return array<int, string> */
 	public function getPluginTableSuffixes(): array {
 		return ABJ_404_Solution_DatabaseUpgradeRuntimeState::getPluginTableSuffixes();

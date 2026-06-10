@@ -28,6 +28,8 @@ interface ABJ_404_Solution_DatabaseUpgradeCoordinator {
 
     public function getLogsv2CanonicalUrlBackfillCompleteOption(): string;
 
+    public function getRedirectsCanonicalUrlBackfillCompleteOption(): string;
+
     /** @return array<int, string> */
     public function getPluginTableSuffixes(): array;
 }

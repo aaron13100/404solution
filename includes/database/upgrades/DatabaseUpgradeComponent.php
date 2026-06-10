@@ -201,6 +201,10 @@ abstract class ABJ_404_Solution_DatabaseUpgradeComponent {
         return $this->owner->getLogsv2CanonicalUrlBackfillCompleteOption();
     }
 
+    protected function getRedirectsCanonicalUrlBackfillCompleteOption(): string {
+        return $this->owner->getRedirectsCanonicalUrlBackfillCompleteOption();
+    }
+
     /** @return array<int, string> */
     protected function getPluginTableSuffixes(): array {
         return $this->owner->getPluginTableSuffixes();

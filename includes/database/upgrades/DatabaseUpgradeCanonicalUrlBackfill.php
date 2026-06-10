@@ -100,7 +100,40 @@ class ABJ_404_Solution_DatabaseUpgradeCanonicalUrlBackfill extends ABJ_404_Solut
                 microtime(true) - $start
             ));
         }
+
+        $this->maybeFlipRedirectsCanonicalUrlBackfillCompleteFlag($redirectsTable);
         return $totalUpdated;
+    }
+
+    /**
+     * Mirror logsv2 path: if the NULL backlog is fully drained, flip the
+     * completion flag so the hits-rebuild phase2 JOIN can drop the
+     * redirects-side COALESCE wrap and probe idx_canonical_url directly.
+     * Cheap LIMIT 1 probe -- IS NULL is sargable on a B-tree over a
+     * nullable column.
+     *
+     * @param string $redirectsTable
+     * @return void
+     */
+    private function maybeFlipRedirectsCanonicalUrlBackfillCompleteFlag(string $redirectsTable): void {
+        if (!function_exists('get_option')
+            || get_option($this->getRedirectsCanonicalUrlBackfillCompleteOption())) {
+            return;
+        }
+        $remainingProbe = $this->dbCore->queryAndGetResults(
+            "SELECT 1 FROM " . $redirectsTable . " WHERE canonical_url IS NULL LIMIT 1"
+        );
+        $remainingRows = is_array($remainingProbe['rows'] ?? null) ? $remainingProbe['rows'] : [];
+        $remainingError = isset($remainingProbe['last_error']) && is_string($remainingProbe['last_error']) ? $remainingProbe['last_error'] : '';
+        if ($remainingError !== '' || !empty($remainingRows) || !function_exists('update_option')) {
+            return;
+        }
+        update_option($this->getRedirectsCanonicalUrlBackfillCompleteOption(), '1', false);
+        $this->logger->infoMessage(
+            "backfillRedirectsCanonicalUrl: backlog cleared -- flipped " .
+            $this->getRedirectsCanonicalUrlBackfillCompleteOption() .
+            "; phase2 JOIN can now drop the redirects COALESCE fallback."
+        );
     }
 
     /**

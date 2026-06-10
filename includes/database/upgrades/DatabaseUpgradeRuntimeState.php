@@ -34,6 +34,14 @@ final class ABJ_404_Solution_DatabaseUpgradeRuntimeState {
     public const LOGSV2_CANONICAL_URL_BACKFILL_COMPLETE_OPTION = 'abj404_logsv2_canonical_url_backfill_complete';
 
     /**
+     * wp_options key flipped when every redirects canonical_url value is filled.
+     * Lets the hits-rebuild phase2 JOIN drop the COALESCE wrap on the redirects
+     * side and probe idx_canonical_url directly. See i359.
+     * @var string
+     */
+    public const REDIRECTS_CANONICAL_URL_BACKFILL_COMPLETE_OPTION = 'abj404_redirects_canonical_url_backfill_complete';
+
+    /**
      * Known plugin table suffixes for adoption.
      * @var array<int, string>
      */
