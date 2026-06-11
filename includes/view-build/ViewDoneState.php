@@ -18,8 +18,8 @@ if (!defined('ABSPATH')) {
  *  - the freshness signal read (viewDoneBuiltAt, getViewDoneBuiltAtTimestamp);
  *  - the serveability decision (viewDoneIsServeable);
  *  - the boundary write event that publishes a freshly-built snapshot
- *    (markViewDoneBuildCompleted: updates freshness + data-built-at signals,
- *    clears the hard-stale admin notice, invalidates the cache).
+ *    (markViewDoneBuildCompleted: updates freshness + data-built-at signals
+ *    and invalidates the request-lifetime serveability cache).
  *
  * Does NOT own:
  *  - the staged-build state machine (ViewBuildStagePipeline);

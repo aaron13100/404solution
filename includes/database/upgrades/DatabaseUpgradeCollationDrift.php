@@ -280,11 +280,11 @@ class ABJ_404_Solution_DatabaseUpgradeCollationDrift extends ABJ_404_Solution_Da
         // Track whether any ALTER actually fired. Drift correction can change
         // the byte-level representation of redirect URLs (latin1 -> utf8mb4),
         // which means a snapshot built against the pre-correction encoding
-        // could mis-compare against post-correction lookups. The watermark
-        // bump signals "source data changed; reconsider at the next stage
-        // boundary" without dropping in-flight runner state. BATCHED policy
-        // per refactor-staged-view-build-watermark.md: one bump per handler
-        // regardless of how many tables ALTERed.
+        // could mis-compare against post-correction lookups. When at least
+        // one ALTER lands, we trigger view_done invalidation + rebuild once
+        // at the end (single invalidate per handler regardless of how many
+        // tables ALTERed) so the next read serves a snapshot consistent
+        // with the corrected source.
         $anyAlterFired = false;
 
         foreach ($abjTableNames as $tableName) {
@@ -354,11 +354,12 @@ class ABJ_404_Solution_DatabaseUpgradeCollationDrift extends ABJ_404_Solution_Da
 
         if ($anyAlterFired) {
             // Post-correction state may render or compare differently from the
-            // pre-correction view_done snapshot. Signal the admin-mutation
-            // gate so reads block until the next build covers the post-
-            // correction data. Collation is metadata, not row data, so we
-            // explicitly invalidate here rather than relying on redirect-row
-            // mutation paths.
+            // pre-correction view_done snapshot. Invalidate the freshness
+            // signal and schedule a background rebuild so the next admin
+            // read serves stale-but-present data while the rebuild catches
+            // up against the corrected source. Collation is metadata, not
+            // row data, so we explicitly invalidate here rather than
+            // relying on redirect-row mutation paths.
             $this->viewBuild->invalidateViewDoneAndScheduleRebuild();
         }
     }

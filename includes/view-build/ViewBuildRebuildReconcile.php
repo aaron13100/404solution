@@ -304,7 +304,7 @@ class ABJ_404_Solution_ViewBuildRebuildReconcile extends ABJ_404_Solution_ViewBu
                     $tempBuildTable, $doneTable
                 ));
                 // Same as the S11 swap completion: update both freshness
-                // signals, clear hard-stale notice, reset serveability cache.
+                // signals and reset the serveability cache.
                 $this->host->stageServices()->viewDoneState()->markViewDoneBuildCompleted();
                 $this->host->stageServices()->progressOptions()->clearAllProgressOptions();
                 return 'promoted';
