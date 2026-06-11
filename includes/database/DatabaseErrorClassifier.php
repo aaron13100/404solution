@@ -1,4 +1,8 @@
 <?php
+if (!defined('ABSPATH')) {
+    exit;
+}
+
 /**
  * Coordinates database error response: applies notice and runtime-flag side
  * effects on top of focused error-classification collaborators.
@@ -17,10 +21,6 @@
  *
  * @since 4.1.0
  */
-
-if (!defined('ABSPATH')) {
-    exit;
-}
 
 class ABJ_404_Solution_DatabaseErrorClassifier {
 

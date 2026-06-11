@@ -1,4 +1,8 @@
 <?php
+if (!defined('ABSPATH')) {
+    exit;
+}
+
 /**
  * Composite database infrastructure error taxonomy.
  *
@@ -17,10 +21,6 @@
  *
  * No database, transient, notice, or logging side effects.
  */
-
-if (!defined('ABSPATH')) {
-    exit;
-}
 
 require_once __DIR__ . '/DatabaseConnectivityErrorTaxonomy.php';
 require_once __DIR__ . '/DatabaseHostStateErrorTaxonomy.php';
