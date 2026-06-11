@@ -38,7 +38,7 @@ final class ABJ_404_Solution_AdminActionsDependencies {
     private $viewRead;
     /** @var ABJ_404_Solution_ContentRepositoryInterface */
     private $contentRepo;
-    /** @var ABJ_404_Solution_DatabaseCoreInterface */
+    /** @var ABJ_404_Solution_DatabaseCoreInterface&ABJ_404_Solution_DatabaseQueryInterface */
     private $dbCore;
     /** @var ABJ_404_Solution_DataAccess */
     private $dao;
@@ -56,7 +56,7 @@ final class ABJ_404_Solution_AdminActionsDependencies {
      * @param ABJ_404_Solution_ViewBuildOrchestratorInterface $viewBuild
      * @param ABJ_404_Solution_ViewReadServiceInterface $viewRead
      * @param ABJ_404_Solution_ContentRepositoryInterface $contentRepo
-     * @param ABJ_404_Solution_DatabaseCoreInterface $dbCore
+     * @param ABJ_404_Solution_DatabaseCoreInterface&ABJ_404_Solution_DatabaseQueryInterface $dbCore
      * @param ABJ_404_Solution_DataAccess $dao
      * @param ABJ_404_Solution_PluginLogicUrlNormalization $urlNormalization
      * @param ABJ_404_Solution_PluginLogic $pluginLogic
@@ -108,6 +108,9 @@ final class ABJ_404_Solution_AdminActionsDependencies {
 
     /** @return ABJ_404_Solution_DatabaseCoreInterface */
     public function getDbCore() { return $this->dbCore; }
+
+    /** @return ABJ_404_Solution_DatabaseQueryInterface */
+    public function getDbQuery() { return $this->dbCore; }
 
     /** @return ABJ_404_Solution_DataAccess */
     public function getDao() { return $this->dao; }

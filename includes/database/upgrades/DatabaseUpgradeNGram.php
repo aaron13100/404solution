@@ -379,9 +379,9 @@ class ABJ_404_Solution_DatabaseUpgradeNGram extends ABJ_404_Solution_DatabaseUpg
             : null;
     }
 
-    /** @return ABJ_404_Solution_DatabaseCore|null */
+    /** @return ABJ_404_Solution_DatabaseCore */
     private function typedDbCoreOrNull() {
-        return $this->dbCore instanceof ABJ_404_Solution_DatabaseCore ? $this->dbCore : null;
+        return $this->dbCore;
     }
 
     /** @return ABJ_404_Solution_NGramExtractor */

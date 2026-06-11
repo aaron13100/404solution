@@ -104,9 +104,10 @@ class ABJ_404_Solution_LegacyImportActionHandler {
         if ($notice === null || $notice['redirect_id'] <= 0) {
             return __('Error: No regex auto-promotion to undo.', '404-solution');
         }
-        $redirectsTable = $this->parent->getDbCore()->doTableNameReplacements('{wp_abj404_redirects}');
+        $dbQuery = $this->parent->getDbQuery();
+        $redirectsTable = $dbQuery->doTableNameReplacements('{wp_abj404_redirects}');
         $sql = "UPDATE `" . $redirectsTable . "` SET `url` = %s, `status` = %d WHERE `id` = %d";
-        $this->parent->getDbCore()->queryAndGetResults($sql, array('query_params' => array(
+        $dbQuery->queryAndGetResults($sql, array('query_params' => array(
             $notice['original_url'],
             (int)ABJ404_STATUS_MANUAL,
             (int)$notice['redirect_id'],

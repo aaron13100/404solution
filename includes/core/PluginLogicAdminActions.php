@@ -59,6 +59,9 @@ class ABJ_404_Solution_PluginLogicAdminActions {
     /** @var ABJ_404_Solution_DatabaseCoreInterface */
     private $dbCore;
 
+    /** @var ABJ_404_Solution_DatabaseQueryInterface */
+    private $dbQuery;
+
     /** @var ABJ_404_Solution_DataAccess */
     private $dao;
 
@@ -120,6 +123,7 @@ class ABJ_404_Solution_PluginLogicAdminActions {
         $this->viewRead = $deps->getViewRead();
         $this->contentRepo = $deps->getContentRepo();
         $this->dbCore = $deps->getDbCore();
+        $this->dbQuery = $deps->getDbQuery();
         $this->dao = $deps->getDao();
         $this->urlNormalization = $deps->getUrlNormalization();
         $this->pluginLogic = $deps->getPluginLogic();
@@ -166,6 +170,11 @@ class ABJ_404_Solution_PluginLogicAdminActions {
     /** @return ABJ_404_Solution_DatabaseCoreInterface */
     public function getDbCore() {
         return $this->dbCore;
+    }
+
+    /** @return ABJ_404_Solution_DatabaseQueryInterface */
+    public function getDbQuery() {
+        return $this->dbQuery;
     }
 
     /** @return ABJ_404_Solution_DataAccess */
@@ -396,7 +405,7 @@ class ABJ_404_Solution_PluginLogicAdminActions {
      */
     function doEmptyTrash(string $sub): void {
         if ($this->trashEmptier === null) {
-            $this->trashEmptier = new ABJ_404_Solution_TrashEmptier($this->dbCore, $this->viewRead, $this->logger);
+            $this->trashEmptier = new ABJ_404_Solution_TrashEmptier($this->dbQuery, $this->viewRead, $this->logger);
         }
         $this->trashEmptier->emptyTrash($sub);
     }

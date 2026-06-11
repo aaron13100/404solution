@@ -51,7 +51,7 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
 	/** @var ABJ_404_Solution_StatsRepositoryInterface */
 	private $statsRepo;
 
-	/** @var ABJ_404_Solution_DatabaseCoreInterface */
+	/** @var ABJ_404_Solution_DatabaseCoreInterface&ABJ_404_Solution_DatabaseQueryInterface */
 	private $dbCore;
 
 	/**
