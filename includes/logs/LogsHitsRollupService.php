@@ -133,9 +133,9 @@ class ABJ_404_Solution_LogsHitsRollupService implements ABJ_404_Solution_LogsHit
         $currentMaxLogId = $this->getMaxLogId();
         $storedMaxLogId = $this->getStoredMaxLogId();
         if ($currentMaxLogId <= $storedMaxLogId) { $this->clearLogsHitsRollupStaleSignal(); return; }
-        $rawFirstStale = $this->dbCore->getRuntimeFlag(self::HITS_TABLE_FIRST_STALE_DETECTED_FLAG);
+        $rawFirstStale = $this->noticeState->getRuntimeFlag(self::HITS_TABLE_FIRST_STALE_DETECTED_FLAG);
         $firstStale = is_scalar($rawFirstStale) ? (int)$rawFirstStale : 0;
-        if ($firstStale <= 0) { $this->dbCore->setRuntimeFlag(self::HITS_TABLE_FIRST_STALE_DETECTED_FLAG, time(), 86400); return; }
+        if ($firstStale <= 0) { $this->noticeState->setRuntimeFlag(self::HITS_TABLE_FIRST_STALE_DETECTED_FLAG, time(), 86400); return; }
         $age = time() - $firstStale;
         if ($age >= self::HITS_TABLE_STALE_NOTICE_THRESHOLD_SECONDS) { $this->setLogsHitsRollupStaleNotice($age); }
     }
@@ -174,7 +174,7 @@ class ABJ_404_Solution_LogsHitsRollupService implements ABJ_404_Solution_LogsHit
 
     /** @inheritDoc */
     public function getLogsHitsTableLastUpdated() {
-        $rawRefreshedFlag = $this->dbCore->getRuntimeFlag(self::HITS_TABLE_LAST_REFRESHED_FLAG);
+        $rawRefreshedFlag = $this->noticeState->getRuntimeFlag(self::HITS_TABLE_LAST_REFRESHED_FLAG);
         $runtimeRefreshedAt = is_scalar($rawRefreshedFlag) ? (int)$rawRefreshedFlag : 0;
         $runtimeRefreshedAt = $runtimeRefreshedAt > 0 ? $runtimeRefreshedAt : null;
         $query = "SELECT create_time FROM information_schema.tables WHERE table_name = '{wp_abj404_logs_hits}' AND table_schema = DATABASE()";
@@ -231,11 +231,11 @@ class ABJ_404_Solution_LogsHitsRollupService implements ABJ_404_Solution_LogsHit
         $wasRefreshed = false;
         if ($this->rebuildHealth !== null && !$this->rebuildHealth->beginExpensiveRebuildAttempt()) {
             $this->logger->debugMessage(__FUNCTION__ . " skipped because rebuild health gate is closed.");
-            $this->dbCore->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'paused', 86400);
+            $this->noticeState->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'paused', 86400);
             return false;
         }
-        if ($this->dbCore->shouldSkipNonEssentialDbWrites()) { $this->logger->debugMessage(__FUNCTION__ . " skipped due to temporary DB write cooldown."); $this->dbCore->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'paused', 86400); return false; }
-        if (!$this->acquireHitsTableRebuildLock()) { $this->logger->debugMessage(__FUNCTION__ . " skipped because rebuild lock is already held."); $this->dbCore->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'running', 86400); return false; }
+        if ($this->noticeState->shouldSkipNonEssentialDbWrites()) { $this->logger->debugMessage(__FUNCTION__ . " skipped due to temporary DB write cooldown."); $this->noticeState->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'paused', 86400); return false; }
+        if (!$this->acquireHitsTableRebuildLock()) { $this->logger->debugMessage(__FUNCTION__ . " skipped because rebuild lock is already held."); $this->noticeState->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'running', 86400); return false; }
         $preAggTable = $this->dbCore->doTableNameReplacements("{wp_abj404_logs_hits}_preagg");
         try {
             $finalDestTable = $this->dbCore->doTableNameReplacements("{wp_abj404_logs_hits}");
@@ -259,7 +259,7 @@ class ABJ_404_Solution_LogsHitsRollupService implements ABJ_404_Solution_LogsHit
                 if ($idRange > self::HITS_TABLE_DIRECT_PATH_THRESHOLD && $results !== false && (!empty($results['timed_out']) || !empty($results['last_error']))) {
                     $this->recordHitsChunkFailure();
                 }
-                $this->dbCore->queryAndGetResults("drop table if exists " . $tempDestTable); $this->logger->debugMessage(__FUNCTION__ . " INSERT timed out or errored; aborting rebuild."); $this->dbCore->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'paused', 86400); return false;
+                $this->dbCore->queryAndGetResults("drop table if exists " . $tempDestTable); $this->logger->debugMessage(__FUNCTION__ . " INSERT timed out or errored; aborting rebuild."); $this->noticeState->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'paused', 86400); return false;
             }
             $elapsedTime = $results['elapsed_time'];
             $comment = $elapsedTime . '|' . $maxLogIdSnapshot;
@@ -268,7 +268,7 @@ class ABJ_404_Solution_LogsHitsRollupService implements ABJ_404_Solution_LogsHit
             $this->dbCore->queryAndGetResults(sprintf("ALTER TABLE %s COMMENT '%s'", $tempDestTable, $comment));
             $statements = array("drop table if exists " . $finalDestTable, "rename table " . $tempDestTable . ' to ' . $finalDestTable);
             $this->dbCore->executeAsTransaction($statements);
-            $this->dbCore->setRuntimeFlag(self::HITS_TABLE_LAST_REFRESHED_FLAG, time(), 86400);
+            $this->noticeState->setRuntimeFlag(self::HITS_TABLE_LAST_REFRESHED_FLAG, time(), 86400);
             $this->recordHitsRebuildSuccess($chunkSize);
             $this->clearLogsHitsRollupStaleSignal();
             $wasRefreshed = true;
@@ -276,7 +276,7 @@ class ABJ_404_Solution_LogsHitsRollupService implements ABJ_404_Solution_LogsHit
         } catch (Throwable $e) {
             $this->recordHitsRebuildFailure($e->getMessage());
             $this->logger->errorMessage(__FUNCTION__ . " failed: " . $e->getMessage(), $e instanceof \Exception ? $e : null);
-            $this->dbCore->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'paused', 86400);
+            $this->noticeState->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'paused', 86400);
         } finally {
             $this->dbCore->queryAndGetResults("drop table if exists " . $preAggTable);
             $this->releaseHitsTableRebuildLock();
@@ -388,16 +388,16 @@ class ABJ_404_Solution_LogsHitsRollupService implements ABJ_404_Solution_LogsHit
 
     /** @inheritDoc */
     public function scheduleHitsTableRebuild(): void {
-        if ($this->rebuildHealth !== null && !$this->rebuildHealth->mayStartExpensiveRebuild()) { $this->logger->debugMessage(__FUNCTION__ . " skipped because rebuild health gate is closed."); $this->dbCore->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'paused', 86400); return; }
-        if ($this->dbCore->shouldSkipNonEssentialDbWrites()) { $this->logger->debugMessage(__FUNCTION__ . " skipped due to temporary DB write cooldown."); $this->dbCore->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'paused', 86400); return; }
+        if ($this->rebuildHealth !== null && !$this->rebuildHealth->mayStartExpensiveRebuild()) { $this->logger->debugMessage(__FUNCTION__ . " skipped because rebuild health gate is closed."); $this->noticeState->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'paused', 86400); return; }
+        if ($this->noticeState->shouldSkipNonEssentialDbWrites()) { $this->logger->debugMessage(__FUNCTION__ . " skipped due to temporary DB write cooldown."); $this->noticeState->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'paused', 86400); return; }
         if (!self::$hitsTableRebuildScheduled) {
-            if ($this->isHitsTableRebuildLocked()) { $this->logger->debugMessage(__FUNCTION__ . " skipping scheduling because another rebuild is already running."); $this->dbCore->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'running', 86400); return; }
-            $rawScheduledFlag = $this->dbCore->getRuntimeFlag(self::HITS_TABLE_LAST_SCHEDULED_FLAG);
+            if ($this->isHitsTableRebuildLocked()) { $this->logger->debugMessage(__FUNCTION__ . " skipping scheduling because another rebuild is already running."); $this->noticeState->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'running', 86400); return; }
+            $rawScheduledFlag = $this->noticeState->getRuntimeFlag(self::HITS_TABLE_LAST_SCHEDULED_FLAG);
             $lastScheduled = is_scalar($rawScheduledFlag) ? (int)$rawScheduledFlag : 0;
-            if ($lastScheduled > 0 && (time() - $lastScheduled) < self::HITS_TABLE_SCHEDULE_COOLDOWN_SECONDS) { $this->logger->debugMessage(__FUNCTION__ . " skipping scheduling due to cooldown."); $this->dbCore->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'cooldown', 86400); return; }
+            if ($lastScheduled > 0 && (time() - $lastScheduled) < self::HITS_TABLE_SCHEDULE_COOLDOWN_SECONDS) { $this->logger->debugMessage(__FUNCTION__ . " skipping scheduling due to cooldown."); $this->noticeState->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'cooldown', 86400); return; }
             self::$hitsTableRebuildScheduled = true;
-            $this->dbCore->setRuntimeFlag(self::HITS_TABLE_LAST_SCHEDULED_FLAG, time(), 86400);
-            $this->dbCore->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'scheduled', 86400);
+            $this->noticeState->setRuntimeFlag(self::HITS_TABLE_LAST_SCHEDULED_FLAG, time(), 86400);
+            $this->noticeState->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'scheduled', 86400);
             if ($this->shouldScheduleHitsTableRebuildViaCron()) { $this->logger->debugMessage(__FUNCTION__ . " scheduling hits table rebuild via WP-Cron."); if (function_exists('wp_schedule_single_event')) { wp_schedule_single_event(time() + 5, 'abj404_updateLogsHitsTableAction'); } return; }
             $this->logger->debugMessage(__FUNCTION__ . " scheduling hits table rebuild for shutdown hook.");
             add_action('shutdown', function(): void { $this->createRedirectsForViewHitsTable(); });
@@ -485,11 +485,11 @@ class ABJ_404_Solution_LogsHitsRollupService implements ABJ_404_Solution_LogsHit
     }
 
     /** @inheritDoc */
-    public function getLogsHitsTableLastCheckedAt() { $rawTsFlag = $this->dbCore->getRuntimeFlag(self::HITS_TABLE_LAST_CHECKED_FLAG); $ts = is_scalar($rawTsFlag) ? (int)$rawTsFlag : 0; return $ts > 0 ? $ts : null; }
+    public function getLogsHitsTableLastCheckedAt() { $rawTsFlag = $this->noticeState->getRuntimeFlag(self::HITS_TABLE_LAST_CHECKED_FLAG); $ts = is_scalar($rawTsFlag) ? (int)$rawTsFlag : 0; return $ts > 0 ? $ts : null; }
 
     /** @inheritDoc */
-    public function getLogsHitsTableLastScheduledAt() { $rawTsFlag2 = $this->dbCore->getRuntimeFlag(self::HITS_TABLE_LAST_SCHEDULED_FLAG); $ts = is_scalar($rawTsFlag2) ? (int)$rawTsFlag2 : 0; return $ts > 0 ? $ts : null; }
+    public function getLogsHitsTableLastScheduledAt() { $rawTsFlag2 = $this->noticeState->getRuntimeFlag(self::HITS_TABLE_LAST_SCHEDULED_FLAG); $ts = is_scalar($rawTsFlag2) ? (int)$rawTsFlag2 : 0; return $ts > 0 ? $ts : null; }
 
     /** @inheritDoc */
-    public function getLogsHitsTableLastDecision(): string { $v = $this->dbCore->getRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG); return is_string($v) ? $v : ''; }
+    public function getLogsHitsTableLastDecision(): string { $v = $this->noticeState->getRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG); return is_string($v) ? $v : ''; }
 }

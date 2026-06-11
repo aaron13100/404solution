@@ -51,7 +51,7 @@ class ABJ_404_Solution_HitsTableRebuildPolicy {
      * @return void
      */
     public function maybeUpdateRedirectsForViewHitsTable(): void {
-        $this->dbCore->setRuntimeFlag(
+        $this->dbCore->noticeState()->setRuntimeFlag(
             ABJ_404_Solution_ViewReadRuntimeState::HITS_TABLE_LAST_CHECKED_FLAG,
             time(),
             86400
@@ -64,9 +64,9 @@ class ABJ_404_Solution_HitsTableRebuildPolicy {
             }
         }
 
-        if ($this->dbCore->shouldSkipNonEssentialDbWrites()) {
+        if ($this->dbCore->noticeState()->shouldSkipNonEssentialDbWrites()) {
             $this->logger->debugMessage(__METHOD__ . ' skipped due to temporary DB write cooldown.');
-            $this->dbCore->setRuntimeFlag(
+            $this->dbCore->noticeState()->setRuntimeFlag(
                 ABJ_404_Solution_ViewReadRuntimeState::HITS_TABLE_LAST_DECISION_FLAG,
                 'paused',
                 86400
@@ -83,7 +83,7 @@ class ABJ_404_Solution_HitsTableRebuildPolicy {
         $this->logsRepo->recordLogsHitsRollupStalenessSignal();
 
         if (!$this->logsRepo->hitsTableNeedsRebuild()) {
-            $this->dbCore->setRuntimeFlag(
+            $this->dbCore->noticeState()->setRuntimeFlag(
                 ABJ_404_Solution_ViewReadRuntimeState::HITS_TABLE_LAST_DECISION_FLAG,
                 'not_needed',
                 86400

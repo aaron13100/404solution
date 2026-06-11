@@ -106,11 +106,11 @@ class ABJ_404_Solution_DatabaseRepairPolicy {
                     " despite a post-create exception; clearing stale error. Exception: " . $e->getMessage()
                 );
                 $result['last_error'] = '';
-                $this->core->clearPluginDbNoticeIfType('missing_table');
+                $this->core->noticeState()->clearPluginDbNoticeIfType('missing_table');
                 return;
             }
             $this->logger->warn("Missing-table auto-repair failed: " . $e->getMessage());
-            $this->core->setRuntimeFlag($repairCooldownKey, $this->core->clock()->now() + $cooldownTtlSeconds, $cooldownTtlSeconds);
+            $this->core->noticeState()->setRuntimeFlag($repairCooldownKey, $this->core->clock()->now() + $cooldownTtlSeconds, $cooldownTtlSeconds);
         } finally {
             $this->core->tableRepairer()->setTableRepairInProgress(false);
         }
@@ -197,7 +197,7 @@ class ABJ_404_Solution_DatabaseRepairPolicy {
      * @return bool
      */
     public function isMissingTableRepairOnCooldown(array &$result, string $repairCooldownKey): bool {
-        $cooldownUntil = $this->core->getRuntimeFlag($repairCooldownKey);
+        $cooldownUntil = $this->core->noticeState()->getRuntimeFlag($repairCooldownKey);
         if (!is_scalar($cooldownUntil) || (int)$cooldownUntil <= $this->core->clock()->now()) {
             return false;
         }
@@ -275,7 +275,7 @@ class ABJ_404_Solution_DatabaseRepairPolicy {
             }
             // If a stale missing_table notice exists from an earlier failed
             // repair attempt, clear it immediately now that repair succeeded.
-            $this->core->clearPluginDbNoticeIfType('missing_table');
+            $this->core->noticeState()->clearPluginDbNoticeIfType('missing_table');
             return;
         }
 
@@ -373,7 +373,7 @@ class ABJ_404_Solution_DatabaseRepairPolicy {
         // Engage 1h cooldown and surface a single admin notice on
         // the plugin screen so the admin knows to investigate.
         // Never email; never show on all wp-admin pages.
-        $this->core->setRuntimeFlag($repairCooldownKey, $this->core->clock()->now() + $cooldownTtlSeconds, $cooldownTtlSeconds);
+        $this->core->noticeState()->setRuntimeFlag($repairCooldownKey, $this->core->clock()->now() + $cooldownTtlSeconds, $cooldownTtlSeconds);
         $this->setMissingTablePluginDbNotice($result, $missingTable, $prefixDiag);
     }
 
@@ -413,6 +413,6 @@ class ABJ_404_Solution_DatabaseRepairPolicy {
             'timestamp'    => $this->core->clock()->now(),
             'error_string' => $rawError,
         );
-        $this->core->setRuntimeFlag('abj404_plugin_db_notice', $noticePayload, 86400);
+        $this->core->noticeState()->setRuntimeFlag('abj404_plugin_db_notice', $noticePayload, 86400);
     }
 }

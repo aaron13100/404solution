@@ -76,7 +76,7 @@ class ABJ_404_Solution_LogsWriter {
         $this->lookups = $lookups;
         $this->entrySanitizer = new ABJ_404_Solution_LogsEntrySanitizer();
         $this->requestedUrlColumnMetadata = new ABJ_404_Solution_LogsRequestedUrlColumnMetadata($logger);
-        $this->recoveryPolicy = new ABJ_404_Solution_LogsWriteRecoveryPolicy($dbCore, $logger, $noticeState);
+        $this->recoveryPolicy = new ABJ_404_Solution_LogsWriteRecoveryPolicy($logger, $noticeState);
         $this->queueFlusher = new ABJ_404_Solution_LogsQueueFlusher($dbCore, $logger, $this->entrySanitizer, $this->recoveryPolicy);
     }
 

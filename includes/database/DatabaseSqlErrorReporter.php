@@ -272,14 +272,14 @@ class ABJ_404_Solution_DatabaseSqlErrorReporter {
     private function clearRecoveredServerSideNoticeIfNeeded(): void {
         if (!$this->core->noticeState()->isServerSideIssueNoted() && !$this->core->noticeState()->isServerSideIssueChecked()) {
             $this->core->noticeState()->markServerSideIssueChecked();
-            $existing = $this->core->getRuntimeFlag('abj404_plugin_db_notice');
+            $existing = $this->core->noticeState()->getRuntimeFlag('abj404_plugin_db_notice');
             $excludedTypes = array('stale_permalink_cache', 'missing_table');
             if (is_array($existing) && !empty($existing['type'])
                 && !in_array($existing['type'], $excludedTypes, true)) {
                 $this->core->noticeState()->markServerSideIssueNoted();
             }
         }
-        if ($this->core->noticeState()->isServerSideIssueNoted() && !$this->core->isWriteBlockActive() && !$this->core->errorClassifier()->isQuotaCooldownActive()) {
+        if ($this->core->noticeState()->isServerSideIssueNoted() && !$this->core->noticeState()->isWriteBlockActive() && !$this->core->errorClassifier()->isQuotaCooldownActive()) {
             $this->core->noticeState()->clearServerSideDbNotice();
         }
     }

@@ -32,7 +32,7 @@ if (!defined('ABSPATH')) {
  *     (signature: function(array<string,mixed>): void, by-reference);
  *   - a result-type getter bound over DatabaseCore::getCurrentResultType
  *     (signature: function(): string);
- *   - a notice setter bound over DatabaseCore::setPluginDbNotice
+ *   - a notice setter bound over DatabaseNoticeStateHolder::setPluginDbNotice
  *     (signature: function(string, string, string): void);
  *   - a string localizer bound over DatabaseCore::localizeOrDefault
  *     (signature: function(string): string);

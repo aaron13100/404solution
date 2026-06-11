@@ -9,9 +9,6 @@ if (!defined('ABSPATH')) {
  */
 class ABJ_404_Solution_LogsWriteRecoveryPolicy {
 
-    /** @var ABJ_404_Solution_DatabaseCore */
-    private $dbCore;
-
     /** @var ABJ_404_Solution_Logging */
     private $logger;
 
@@ -19,16 +16,13 @@ class ABJ_404_Solution_LogsWriteRecoveryPolicy {
     private $noticeState;
 
     /**
-     * @param ABJ_404_Solution_DatabaseCore $dbCore
      * @param ABJ_404_Solution_Logging $logger
      * @param ABJ_404_Solution_DatabaseNoticeStateHolder $noticeState
      */
     public function __construct(
-        ABJ_404_Solution_DatabaseCore $dbCore,
         $logger,
         ABJ_404_Solution_DatabaseNoticeStateHolder $noticeState
     ) {
-        $this->dbCore = $dbCore;
         $this->logger = $logger;
         $this->noticeState = $noticeState;
     }
@@ -75,7 +69,7 @@ class ABJ_404_Solution_LogsWriteRecoveryPolicy {
 
     public function setLogsv2FullNotice(string $errorMessage): void {
         $message = $this->noticeState->localizeOrDefault('The 404 Solution log table is full and cannot accept new entries. This is usually caused by a full disk. Please contact your host or manually prune the logs table.');
-        $this->dbCore->setPluginDbNotice('log_table_full', $message, $errorMessage);
+        $this->noticeState->setPluginDbNotice('log_table_full', $message, $errorMessage);
     }
 
     /**

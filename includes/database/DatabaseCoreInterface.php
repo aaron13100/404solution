@@ -7,7 +7,6 @@ if (!defined('ABSPATH')) {
 require_once __DIR__ . '/DatabaseQueryInterface.php';
 require_once __DIR__ . '/DatabaseTableMetadataInterface.php';
 require_once __DIR__ . '/DatabaseErrorRecoveryInterface.php';
-require_once __DIR__ . '/DatabaseRuntimeStateInterface.php';
 
 /**
  * Aggregate type that bundles the database-infrastructure sub-interfaces.
@@ -22,7 +21,11 @@ require_once __DIR__ . '/DatabaseRuntimeStateInterface.php';
  *   - Query timeouts (engine-aware: MariaDB SET STATEMENT, MySQL hints)
  *   - Error classification and infrastructure-error recovery
  *   - Connection management and reconnection
- *   - Runtime flags, admin notices, and write-block detection
+ *
+ * Runtime flags, plugin admin notices, and write-block detection live on
+ * ABJ_404_Solution_DatabaseRuntimeStateInterface, implemented by
+ * ABJ_404_Solution_DatabaseNoticeStateHolder. Reach them via
+ * DatabaseCore::noticeState()->setRuntimeFlag(...) etc.
  *
  * The post-type/category SQL-list builders and SQL session preamble live on
  * ABJ_404_Solution_DatabaseQueryBuilderInterface, implemented by
@@ -32,6 +35,5 @@ require_once __DIR__ . '/DatabaseRuntimeStateInterface.php';
 interface ABJ_404_Solution_DatabaseCoreInterface extends
     ABJ_404_Solution_DatabaseQueryInterface,
     ABJ_404_Solution_DatabaseTableMetadataInterface,
-    ABJ_404_Solution_DatabaseErrorRecoveryInterface,
-    ABJ_404_Solution_DatabaseRuntimeStateInterface {
+    ABJ_404_Solution_DatabaseErrorRecoveryInterface {
 }

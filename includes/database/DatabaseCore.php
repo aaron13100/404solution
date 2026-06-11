@@ -297,36 +297,6 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
     }
 
     /** @inheritDoc */
-    public function setRuntimeFlag(string $key, $value, int $ttlSeconds): void {
-        $this->noticeState->setRuntimeFlag($key, $value, $ttlSeconds);
-    }
-
-    /** @inheritDoc */
-    public function getRuntimeFlag(string $key) {
-        return $this->noticeState->getRuntimeFlag($key);
-    }
-
-    /** @inheritDoc */
-    public function setPluginDbNotice(string $type, string $message, string $errorString = ''): void {
-        $this->noticeState->setPluginDbNotice($type, $message, $errorString);
-    }
-
-    /** @inheritDoc */
-    public function clearPluginDbNoticeIfType(string $type): void {
-        $this->noticeState->clearPluginDbNoticeIfType($type);
-    }
-
-    /** @inheritDoc */
-    public function isWriteBlockActive(): bool {
-        return $this->noticeState->isWriteBlockActive();
-    }
-
-    /** @inheritDoc */
-    public function shouldSkipNonEssentialDbWrites(): bool {
-        return $this->noticeState->shouldSkipNonEssentialDbWrites();
-    }
-
-    /** @inheritDoc */
     public function repairTable(string $errorMessage): void {
         $this->recoveryServices->tableRepairer()->repairTable($errorMessage);
     }
