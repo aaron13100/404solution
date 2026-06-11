@@ -26,7 +26,7 @@ require_once __DIR__ . '/DatabaseConnectivityErrorTaxonomy.php';
 require_once __DIR__ . '/DatabaseHostStateErrorTaxonomy.php';
 require_once __DIR__ . '/DatabaseSchemaErrorTaxonomy.php';
 
-// allow-no-test-found: covered through DatabaseErrorClassifier facade by tests/SuppressWpdbErrorsTest.php and tests/DataAccessDatabaseEdgeCasesTest.php
+// allow-no-test-found: covered through DatabaseErrorClassifier facade by tests/SuppressWpdbErrorsTest.php and tests/DataAccessRetrySemanticsTest.php / tests/DataAccessInfraErrorNoticeLifecycleTest.php
 class ABJ_404_Solution_DatabaseInfrastructureErrorTaxonomy {
 
     /** @var ABJ_404_Solution_DatabaseConnectivityErrorTaxonomy */

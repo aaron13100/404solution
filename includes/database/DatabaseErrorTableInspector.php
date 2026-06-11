@@ -7,7 +7,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-// allow-no-test-found: covered through DatabaseErrorClassifier facade by tests/MissingTableErrorDoubleReportingTest.php and tests/DataAccessDatabaseEdgeCasesTest.php
+// allow-no-test-found: covered through DatabaseErrorClassifier facade by tests/MissingTableErrorDoubleReportingTest.php and tests/DataAccessRetrySemanticsTest.php
 class ABJ_404_Solution_DatabaseErrorTableInspector {
 
     /** @var ABJ_404_Solution_Logging */
