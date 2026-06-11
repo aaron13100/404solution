@@ -39,7 +39,7 @@ class ABJ_404_Solution_RedirectDeadDestinationScanner {
         $flaggedIds = array();
 
         $hitsTable = $this->dbCore->doTableNameReplacements('{wp_abj404_logs_hits}');
-        $hitsTableExists = $this->dbCore->tableExists($hitsTable);
+        $hitsTableExists = $this->dbCore->tableNameResolver()->tableExists($hitsTable);
 
         if (!$hitsTableExists || !$this->logsHitsHasFailedHitsColumn()) {
             /** @var ABJ_404_Solution_LogsRepository|null $logsRepo */

@@ -93,7 +93,7 @@ class ABJ_404_Solution_ViewSnapshotStore {
 
     /** @param string $cacheKey @return string */
     private function getViewSnapshotLockOptionName(string $cacheKey): string {
-        return $this->dbCore->getLowercasePrefix() . 'abj404_view_cache_lock_' . md5((string)$cacheKey);
+        return $this->dbCore->tableNameResolver()->getLowercasePrefix() . 'abj404_view_cache_lock_' . md5((string)$cacheKey);
     }
 
     /** @return string */

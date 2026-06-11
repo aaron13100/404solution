@@ -90,7 +90,7 @@ class ABJ_404_Solution_ViewBuildDataBoundary {
     public function doTableNameReplacements($query): string { return $this->dbCore->doTableNameReplacements($query); }
 
     /** @return string */
-    public function getLowercasePrefix(): string { return $this->dbCore->getLowercasePrefix(); }
+    public function getLowercasePrefix(): string { return $this->dbCore->tableNameResolver()->getLowercasePrefix(); }
 
     /** @return bool True if connection is active, false otherwise. */
     public function ensureConnection(): bool { return $this->connectionManager->ensureConnection(); }
@@ -112,7 +112,7 @@ class ABJ_404_Solution_ViewBuildDataBoundary {
     public function isTransientConnectionError(?string $errorText): bool { return $this->errorClassifier->taxonomy()->connectivity()->isTransientConnectionError($errorText); }
 
     /** @param string $tableName @param string $columnName @return string */
-    public function getColumnCollationString(string $tableName, string $columnName): string { return $this->dbCore->getColumnCollationString($tableName, $columnName); }
+    public function getColumnCollationString(string $tableName, string $columnName): string { return $this->dbCore->collationHelper()->getColumnCollationString($tableName, $columnName); }
 
     /** @return array<string, string> */
     public function viewBuildOnlyTranslations(): array { return $this->requireViewReadService()->viewBuildOnlyTranslations(); }

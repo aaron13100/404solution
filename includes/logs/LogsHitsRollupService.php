@@ -413,7 +413,7 @@ class ABJ_404_Solution_LogsHitsRollupService implements ABJ_404_Solution_LogsHit
         return $pagenow === 'admin-ajax.php';
     }
 
-    private function getHitsTableRebuildLockOptionName(): string { return $this->dbCore->getLowercasePrefix() . 'abj404_logs_hits_rebuild_lock'; }
+    private function getHitsTableRebuildLockOptionName(): string { return $this->dbCore->tableNameResolver()->getLowercasePrefix() . 'abj404_logs_hits_rebuild_lock'; }
 
     /** @return bool */
     private function isHitsTableRebuildLocked(): bool {

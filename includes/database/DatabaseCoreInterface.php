@@ -5,7 +5,8 @@ if (!defined('ABSPATH')) {
 }
 
 require_once __DIR__ . '/DatabaseQueryInterface.php';
-require_once __DIR__ . '/DatabaseTableMetadataInterface.php';
+require_once __DIR__ . '/DatabaseTableNameResolver.php';
+require_once __DIR__ . '/DatabaseCollationHelper.php';
 
 /**
  * Aggregate type that bundles the database-infrastructure sub-interfaces.
@@ -16,7 +17,6 @@ require_once __DIR__ . '/DatabaseTableMetadataInterface.php';
  * Every DAO module (RedirectsRepository, LogsRepository, etc.) receives a
  * DatabaseCore instance through this interface. It encapsulates:
  *   - The centralized error-handling query pipeline (queryAndGetResults)
- *   - Table-name resolution and DDL introspection
  *   - Query timeouts (engine-aware: MariaDB SET STATEMENT, MySQL hints)
  *   - Connection management and reconnection
  *
@@ -29,6 +29,13 @@ require_once __DIR__ . '/DatabaseTableMetadataInterface.php';
  * ABJ_404_Solution_DatabaseQueryBuilderInterface, implemented by
  * ABJ_404_Solution_DatabaseTableNameResolver. Reach them via
  * DatabaseCore::tableNameResolver()->buildPostTypeSqlList(...) etc.
+ * Table-name resolution, DDL introspection, existence checks, and column
+ * listing also live on DatabaseTableNameResolver. Reach them through
+ * DatabaseCore::tableNameResolver()->getPrefixedTableName(...) etc.
+ *
+ * Table and column collation lookup lives on DatabaseCollationHelper. Reach
+ * it through DatabaseCore::collationHelper()->getColumnCollationString(...)
+ * etc.
  *
  * Error classification, self-healing recovery, and clock injection live on
  * ABJ_404_Solution_DatabaseErrorRecoveryInterface, split across
@@ -41,6 +48,10 @@ require_once __DIR__ . '/DatabaseTableMetadataInterface.php';
  * ServiceContainer 'clock' binding (see clock_injection_pattern.md).
  */
 interface ABJ_404_Solution_DatabaseCoreInterface extends
-    ABJ_404_Solution_DatabaseQueryInterface,
-    ABJ_404_Solution_DatabaseTableMetadataInterface {
+    ABJ_404_Solution_DatabaseQueryInterface {
+    /** @return ABJ_404_Solution_DatabaseTableNameResolver */
+    public function tableNameResolver(): ABJ_404_Solution_DatabaseTableNameResolver;
+
+    /** @return ABJ_404_Solution_DatabaseCollationHelper */
+    public function collationHelper(): ABJ_404_Solution_DatabaseCollationHelper;
 }

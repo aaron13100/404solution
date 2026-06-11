@@ -60,6 +60,6 @@ class ABJ_404_Solution_StatsRefreshLock {
 
     /** @param string $cacheKey @return string */
     private function getOptionName(string $cacheKey): string {
-        return $this->dbCore->getLowercasePrefix() . 'abj404_view_cache_lock_' . md5((string)$cacheKey);
+        return $this->dbCore->tableNameResolver()->getLowercasePrefix() . 'abj404_view_cache_lock_' . md5((string)$cacheKey);
     }
 }

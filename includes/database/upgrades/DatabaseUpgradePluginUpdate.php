@@ -75,7 +75,7 @@ class ABJ_404_Solution_DatabaseUpgradePluginUpdate extends ABJ_404_Solution_Data
         }
 
         $startTime = microtime(true);
-        $redirectsTable = $this->dbCore->getPrefixedTableName('abj404_redirects');
+        $redirectsTable = $this->dbCore->tableNameResolver()->getPrefixedTableName('abj404_redirects');
 
         $abj404logging->infoMessage("Migrating redirects table to relative paths...");
 

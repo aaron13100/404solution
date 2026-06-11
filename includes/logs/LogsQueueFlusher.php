@@ -78,7 +78,7 @@ class ABJ_404_Solution_LogsQueueFlusher {
                     $validatedColumns[] = $col;
                 }
             }
-            $schemaColumns = $this->dbCore->getTableColumnNames($tableName);
+            $schemaColumns = $this->dbCore->tableNameResolver()->getTableColumnNames($tableName);
             if (!empty($schemaColumns)) {
                 $validatedColumns = array_intersect($validatedColumns, $schemaColumns);
             }

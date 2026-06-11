@@ -52,7 +52,7 @@ class ABJ_404_Solution_DatabasePrefixDiagnostics {
             if (!is_array($rows) || empty($rows)) {
                 return '';
             }
-            $expectedTable = $this->core->getLowercasePrefix() . 'abj404_redirects';
+            $expectedTable = $this->core->tableNameResolver()->getLowercasePrefix() . 'abj404_redirects';
             $foundTables = [];
             foreach ($rows as $row) {
                 if (!is_iterable($row)) {

@@ -36,7 +36,7 @@ class ABJ_404_Solution_DatabaseUpgradeOrphanAdoption extends ABJ_404_Solution_Da
 			return;
 		}
 
-		$currentPrefix = $this->dbCore->getLowercasePrefix();
+		$currentPrefix = $this->dbCore->tableNameResolver()->getLowercasePrefix();
 
 		// Group tables by their prefix (everything before 'abj404_').
 		/** @var array<string, array<string>> prefix => [table_name, ...] */

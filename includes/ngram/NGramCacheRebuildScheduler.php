@@ -129,7 +129,7 @@ class ABJ_404_Solution_NGramCacheRebuildScheduler {
      */
     public function countTotalPagesForRebuild() {
         if (!$this->optionStore->isNetworkActivated()) {
-            $permalinkCacheTable = $this->dbCore->getPrefixedTableName('abj404_permalink_cache');
+            $permalinkCacheTable = $this->dbCore->tableNameResolver()->getPrefixedTableName('abj404_permalink_cache');
             return $this->dbCore->queryScalarInt("SELECT COUNT(*) AS c FROM {$permalinkCacheTable}");
         }
 
@@ -138,7 +138,7 @@ class ABJ_404_Solution_NGramCacheRebuildScheduler {
 
         foreach ($sites as $blog_id) {
             switch_to_blog($blog_id);
-            $permalinkCacheTable = $this->dbCore->getPrefixedTableName('abj404_permalink_cache');
+            $permalinkCacheTable = $this->dbCore->tableNameResolver()->getPrefixedTableName('abj404_permalink_cache');
             $totalPages += $this->dbCore->queryScalarInt("SELECT COUNT(*) AS c FROM {$permalinkCacheTable}");
             restore_current_blog();
         }
@@ -185,7 +185,7 @@ class ABJ_404_Solution_NGramCacheRebuildScheduler {
 
         switch_to_blog($currentSiteId);
 
-        $permalinkCacheTable = $this->dbCore->getPrefixedTableName('abj404_permalink_cache');
+        $permalinkCacheTable = $this->dbCore->tableNameResolver()->getPrefixedTableName('abj404_permalink_cache');
         $sitePages = $this->dbCore->queryScalarInt("SELECT COUNT(*) AS c FROM {$permalinkCacheTable}");
 
         if ($sitePages == 0) {
@@ -281,7 +281,7 @@ class ABJ_404_Solution_NGramCacheRebuildScheduler {
     private function runSingleSiteBatch(int $batchSize, int $maxBatchesPerRun): void {
         $rawSingleOffset = $this->optionStore->getOption('abj404_ngram_rebuild_offset', 0);
         $offset = is_scalar($rawSingleOffset) ? (int)$rawSingleOffset : 0;
-        $permalinkCacheTable = $this->dbCore->getPrefixedTableName('abj404_permalink_cache');
+        $permalinkCacheTable = $this->dbCore->tableNameResolver()->getPrefixedTableName('abj404_permalink_cache');
         $totalPages = $this->dbCore->queryScalarInt("SELECT COUNT(*) AS c FROM {$permalinkCacheTable}");
 
         if ($totalPages == 0) {

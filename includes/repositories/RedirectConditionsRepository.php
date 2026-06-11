@@ -34,7 +34,7 @@ class ABJ_404_Solution_RedirectConditionsRepository {
     public function getRedirectConditions(int $redirectId): array {
         $table = $this->dbCore->doTableNameReplacements('{wp_abj404_redirect_conditions}');
 
-        if (!$this->dbCore->tableExists($table)) {
+        if (!$this->dbCore->tableNameResolver()->tableExists($table)) {
             return [];
         }
 
@@ -70,7 +70,7 @@ class ABJ_404_Solution_RedirectConditionsRepository {
     public function saveRedirectConditions(int $redirectId, array $conditions): void {
         $table = $this->dbCore->doTableNameReplacements('{wp_abj404_redirect_conditions}');
 
-        if (!$this->dbCore->tableExists($table)) {
+        if (!$this->dbCore->tableNameResolver()->tableExists($table)) {
             $this->logger->warn("saveRedirectConditions: conditions table missing, skipping save for redirect_id={$redirectId}.");
             return;
         }

@@ -82,8 +82,8 @@ class ABJ_404_Solution_NGramCacheReconciler {
      * @return array<string, mixed> ['posts_added' => int, 'posts_failed' => int, 'categories_added' => int, 'categories_failed' => int]
      */
     public function syncMissing($batchSize = 50) {
-        $ngramTable = $this->dbCore->getPrefixedTableName('abj404_ngram_cache');
-        $permalinkCacheTable = $this->dbCore->getPrefixedTableName('abj404_permalink_cache');
+        $ngramTable = $this->dbCore->tableNameResolver()->getPrefixedTableName('abj404_ngram_cache');
+        $permalinkCacheTable = $this->dbCore->tableNameResolver()->getPrefixedTableName('abj404_permalink_cache');
 
         $stats = ['posts_added' => 0, 'posts_failed' => 0, 'categories_added' => 0, 'categories_failed' => 0];
 
@@ -109,8 +109,8 @@ class ABJ_404_Solution_NGramCacheReconciler {
      * @return array{posts_deleted:int, categories_deleted:int, errors:int}|array<string, mixed>
      */
     public function cleanupOrphaned() {
-        $ngramTable = $this->dbCore->getPrefixedTableName('abj404_ngram_cache');
-        $permalinkCacheTable = $this->dbCore->getPrefixedTableName('abj404_permalink_cache');
+        $ngramTable = $this->dbCore->tableNameResolver()->getPrefixedTableName('abj404_ngram_cache');
+        $permalinkCacheTable = $this->dbCore->tableNameResolver()->getPrefixedTableName('abj404_permalink_cache');
 
         $this->logger->debugMessage("Checking for orphaned ngram entries...");
 

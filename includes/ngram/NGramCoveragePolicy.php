@@ -121,8 +121,8 @@ class ABJ_404_Solution_NGramCoveragePolicy {
         }
 
         // Transient miss or version mismatch - compute fresh ratio
-        $ngramTable = $this->dbCore->getPrefixedTableName('abj404_ngram_cache');
-        $permalinkTable = $this->dbCore->getPrefixedTableName('abj404_permalink_cache');
+        $ngramTable = $this->dbCore->tableNameResolver()->getPrefixedTableName('abj404_ngram_cache');
+        $permalinkTable = $this->dbCore->tableNameResolver()->getPrefixedTableName('abj404_permalink_cache');
 
         $ngramCount = $this->dbCore->queryScalarInt("SELECT COUNT(*) AS c FROM {$ngramTable}");
         $permalinkCount = $this->dbCore->queryScalarInt("SELECT COUNT(*) AS c FROM {$permalinkTable}");

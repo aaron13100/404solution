@@ -38,7 +38,7 @@ class ABJ_404_Solution_ViewWarmupStatePolicy {
 
     /** @param string $cacheKey @return string */
     public function getViewWarmupStateOptionName(string $cacheKey): string {
-        return $this->dbCore->getLowercasePrefix() . 'abj404_view_warmup_' . md5((string)$cacheKey);
+        return $this->dbCore->tableNameResolver()->getLowercasePrefix() . 'abj404_view_warmup_' . md5((string)$cacheKey);
     }
 
     /**

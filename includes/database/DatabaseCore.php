@@ -240,41 +240,6 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
         return $this->tableNameResolver->doTableNameReplacements($query);
     }
 
-    /** @inheritDoc */
-    public function getLowercasePrefix(): string {
-        return $this->tableNameResolver->getLowercasePrefix();
-    }
-
-    /** @inheritDoc */
-    public function getPrefixedTableName($tableSuffix): string {
-        return $this->tableNameResolver->getPrefixedTableName($tableSuffix);
-    }
-
-    /** @inheritDoc */
-    public function getCreateTableDDL($tableName): string {
-        return $this->tableNameResolver->getCreateTableDDL($tableName);
-    }
-
-    /** @inheritDoc */
-    public function getTableCollationString(string $tableName): string {
-        return $this->recoveryServices->collationHelper()->getTableCollationString($tableName);
-    }
-
-    /** @inheritDoc */
-    public function getColumnCollationString(string $tableName, string $columnName): string {
-        return $this->recoveryServices->collationHelper()->getColumnCollationString($tableName, $columnName);
-    }
-
-    /** @inheritDoc */
-    public function tableExists($tableName): bool {
-        return $this->tableNameResolver->tableExists($tableName);
-    }
-
-    /** @inheritDoc */
-    public function getTableColumnNames(string $tableName): array {
-        return $this->tableNameResolver->getTableColumnNames($tableName);
-    }
-
     /**
      * Classify a view-build pipeline stage failure into 'resumable',
      * 'skip', 'halt', or 'rethrow'. Not part of any sub-interface;

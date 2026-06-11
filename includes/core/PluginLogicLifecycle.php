@@ -259,7 +259,7 @@ class ABJ_404_Solution_PluginLogicLifecycle {
 
             global $wpdb;
             $dbCore = abj_service('db_core');
-            $prefix = $dbCore->getLowercasePrefix();
+            $prefix = $dbCore->tableNameResolver()->getLowercasePrefix();
 
             // DAO-bypass-approved: deleteBlogData() runs during multisite blog teardown after switch_to_blog()
             $tables = $wpdb->get_results(

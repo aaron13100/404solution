@@ -285,7 +285,7 @@ class ABJ_404_Solution_DatabaseRepairPolicy {
     }
 
     private function tableMaterializedAfterRepair(string $tableName): bool {
-        if ($this->core->tableExists($tableName)) {
+        if ($this->core->tableNameResolver()->tableExists($tableName)) {
             return true;
         }
 
@@ -353,7 +353,7 @@ class ABJ_404_Solution_DatabaseRepairPolicy {
         // existence check so the debug log distinguishes "CREATE didn't materialize
         // the table" (concurrency race, swallowed SQL error in queryAndGetResults,
         // insufficient privileges) from other retry-failure modes.
-        $tableStillMissing = ($missingTable !== '' && !$this->core->tableExists($missingTable));
+        $tableStillMissing = ($missingTable !== '' && !$this->core->tableNameResolver()->tableExists($missingTable));
         $tableContext = ($missingTable !== '')
             ? " Table: " . $missingTable . "."
             : '';

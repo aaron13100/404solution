@@ -58,7 +58,7 @@ class ABJ_404_Solution_UninstallCollationSnapshotPresenter {
             $targetEngine
         );
 
-        $prefix = $dbCore->getLowercasePrefix();
+        $prefix = $dbCore->tableNameResolver()->getLowercasePrefix();
         if (is_object($wpdb) && method_exists($wpdb, 'esc_like')) {
             $escapedPrefix = $wpdb->esc_like($prefix . 'abj404_');
         } else {

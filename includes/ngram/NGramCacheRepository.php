@@ -88,7 +88,7 @@ class ABJ_404_Solution_NGramCacheRepository {
         }
 
         $ngramCount = count($ngrams['bi']) + count($ngrams['tri']);
-        $table = $this->dbCore->getPrefixedTableName('abj404_ngram_cache');
+        $table = $this->dbCore->tableNameResolver()->getPrefixedTableName('abj404_ngram_cache');
 
         // REPLACE = DELETE + INSERT. Routed through DAO for timeout/retry/recovery.
         $queryResult = $this->dbCore->queryAndGetResults(
@@ -114,7 +114,7 @@ class ABJ_404_Solution_NGramCacheRepository {
                 $pageId,
                 $lastError,
                 $table,
-                $this->dbCore->getLowercasePrefix(),
+                $this->dbCore->tableNameResolver()->getLowercasePrefix(),
                 $dbName
             );
 
@@ -144,7 +144,7 @@ class ABJ_404_Solution_NGramCacheRepository {
      * @return array{bi: array<int, string>, tri: array<int, string>}|null
      */
     public function getNGramsForPage($pageId, $type = 'post') {
-        $table = $this->dbCore->getPrefixedTableName('abj404_ngram_cache');
+        $table = $this->dbCore->tableNameResolver()->getPrefixedTableName('abj404_ngram_cache');
 
         $queryResult = $this->dbCore->queryAndGetResults(
             "SELECT ngrams FROM {$table} WHERE id = %d AND type = %s",
@@ -174,7 +174,7 @@ class ABJ_404_Solution_NGramCacheRepository {
      * @return array<int, array<string, mixed>>
      */
     public function getAllCachedNGrams() {
-        $table = $this->dbCore->getPrefixedTableName('abj404_ngram_cache');
+        $table = $this->dbCore->tableNameResolver()->getPrefixedTableName('abj404_ngram_cache');
 
         $count = $this->dbCore->queryScalarInt("SELECT COUNT(*) AS c FROM {$table}");
         if ($count > 10000) {
@@ -225,7 +225,7 @@ class ABJ_404_Solution_NGramCacheRepository {
      * @return array<int, array<string, mixed>>
      */
     public function getCachedNGramsFiltered($minNgramCount, $maxNgramCount, $limit = 1000, $targetNgramCount = null) {
-        $table = $this->dbCore->getPrefixedTableName('abj404_ngram_cache');
+        $table = $this->dbCore->tableNameResolver()->getPrefixedTableName('abj404_ngram_cache');
 
         $orderTarget = ($targetNgramCount !== null)
             ? max($minNgramCount, min($maxNgramCount, (int)$targetNgramCount))
@@ -353,7 +353,7 @@ class ABJ_404_Solution_NGramCacheRepository {
      * @return bool
      */
     public function invalidatePage($pageId, $type = 'post') {
-        $table = $this->dbCore->getPrefixedTableName('abj404_ngram_cache');
+        $table = $this->dbCore->tableNameResolver()->getPrefixedTableName('abj404_ngram_cache');
         $queryResult = $this->dbCore->queryAndGetResults(
             "DELETE FROM {$table} WHERE id = %d AND type = %s",
             ['query_params' => [(int)$pageId, $type]]
@@ -382,7 +382,7 @@ class ABJ_404_Solution_NGramCacheRepository {
         }
 
         global $wpdb;
-        $table = $this->dbCore->getPrefixedTableName('abj404_ngram_cache');
+        $table = $this->dbCore->tableNameResolver()->getPrefixedTableName('abj404_ngram_cache');
         if (!isset($wpdb) || !is_object($wpdb) || !is_callable([$wpdb, 'get_var'])) {
             // Test environments / very early bootstrap: treat as no cache.
             $this->cacheCountMemo = 0;
@@ -411,7 +411,7 @@ class ABJ_404_Solution_NGramCacheRepository {
      * @return array<string, mixed>
      */
     public function getCacheStats() {
-        $table = $this->dbCore->getPrefixedTableName('abj404_ngram_cache');
+        $table = $this->dbCore->tableNameResolver()->getPrefixedTableName('abj404_ngram_cache');
 
         $totalEntries = $this->dbCore->queryScalarInt("SELECT COUNT(*) AS c FROM {$table}");
         $postsEntries = $this->dbCore->queryScalarInt(

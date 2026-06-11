@@ -71,7 +71,7 @@ class ABJ_404_Solution_DatabaseRecoveryServices {
             function (string $tableName) use ($core): string {
                 // Call through $core so test-stub subclass overrides of
                 // getCreateTableDDL are honored, matching pre-extraction behavior.
-                return $core->getCreateTableDDL($tableName);
+                return $core->tableNameResolver()->getCreateTableDDL($tableName);
             },
             function (string $key) use ($noticeState) {
                 return $noticeState->getRuntimeFlag($key);

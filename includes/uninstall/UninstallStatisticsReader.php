@@ -123,8 +123,8 @@ class ABJ_404_Solution_UninstallStatisticsReader {
             $container = ABJ_404_Solution_ServiceContainer::getInstance();
             if ($container->has('db_core')) {
                 $dbCore = $container->get('db_core');
-                if (is_object($dbCore) && method_exists($dbCore, 'getPrefixedTableName')) {
-                    return $dbCore->getPrefixedTableName('abj404_redirects');
+                if ($dbCore instanceof ABJ_404_Solution_DatabaseCoreInterface) {
+                    return $dbCore->tableNameResolver()->getPrefixedTableName('abj404_redirects');
                 }
             }
         }

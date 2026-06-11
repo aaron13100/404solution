@@ -56,8 +56,8 @@ class ABJ_404_Solution_NGramCacheSyncRebuilder {
      * @return array<string, mixed> ['total_pages' => int, 'processed' => int, 'success' => int, 'failed' => int]
      */
     public function rebuild(int $batchSize = 100, bool $forceRebuild = false): array {
-        $ngramTable = $this->dbCore->getPrefixedTableName('abj404_ngram_cache');
-        $permalinkCacheTable = $this->dbCore->getPrefixedTableName('abj404_permalink_cache');
+        $ngramTable = $this->dbCore->tableNameResolver()->getPrefixedTableName('abj404_ngram_cache');
+        $permalinkCacheTable = $this->dbCore->tableNameResolver()->getPrefixedTableName('abj404_permalink_cache');
 
         $alreadyPopulated = $this->checkAlreadyPopulated($ngramTable, $forceRebuild);
         if ($alreadyPopulated !== null) {

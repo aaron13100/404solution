@@ -95,11 +95,11 @@ class ABJ_404_Solution_DatabaseUpgradeSelfHeal extends ABJ_404_Solution_Database
         }
 
         $missingTables = [];
-        $normalizedPrefix = $this->dbCore->getLowercasePrefix();
+        $normalizedPrefix = $this->dbCore->tableNameResolver()->getLowercasePrefix();
 
         // Check each required table
         foreach ($requiredTables as $tableName) {
-            $fullTableName = $this->dbCore->getPrefixedTableName($tableName);
+            $fullTableName = $this->dbCore->tableNameResolver()->getPrefixedTableName($tableName);
             // DAO-bypass-approved: Schema-bootstrap inside repairMissingTables() -- runs before CREATE TABLE; routing through DAO would trigger the same missing-table auto-repair we are about to invoke ourselves (recursion)
             $tableExists = $wpdb->get_var("SHOW TABLES LIKE '{$fullTableName}'");
 

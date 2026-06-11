@@ -57,7 +57,7 @@ class ABJ_404_Solution_LogsHitsCanonicalUrlJoinHelper {
      */
     public function resolveHitsJoinCollation(): string {
         $redirectsTable = $this->dbCore->doTableNameReplacements('{wp_abj404_redirects}');
-        return $this->dbCore->getColumnCollationString($redirectsTable, 'canonical_url');
+        return $this->dbCore->collationHelper()->getColumnCollationString($redirectsTable, 'canonical_url');
     }
 
     /** @return bool */
@@ -174,8 +174,8 @@ class ABJ_404_Solution_LogsHitsCanonicalUrlJoinHelper {
         }
         $logsv2Table = $this->dbCore->doTableNameReplacements('{wp_abj404_logsv2}');
         $redirectsTable = $this->dbCore->doTableNameReplacements('{wp_abj404_redirects}');
-        $logsv2Collation = $this->dbCore->getColumnCollationString($logsv2Table, 'canonical_url');
-        $redirectsCollation = $this->dbCore->getColumnCollationString($redirectsTable, 'canonical_url');
+        $logsv2Collation = $this->dbCore->collationHelper()->getColumnCollationString($logsv2Table, 'canonical_url');
+        $redirectsCollation = $this->dbCore->collationHelper()->getColumnCollationString($redirectsTable, 'canonical_url');
         return $logsv2Collation === $resolvedCollation && $redirectsCollation === $resolvedCollation;
     }
 }

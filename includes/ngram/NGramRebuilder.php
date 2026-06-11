@@ -74,7 +74,7 @@ class ABJ_404_Solution_NGramRebuilder {
             return ['processed' => 0, 'success' => 0, 'failed' => 0];
         }
 
-        $permalinkCacheTable = $this->dbCore->getPrefixedTableName('abj404_permalink_cache');
+        $permalinkCacheTable = $this->dbCore->tableNameResolver()->getPrefixedTableName('abj404_permalink_cache');
 
         $placeholders = implode(',', array_fill(0, count($pageIds), '%d'));
         $pageResult = $this->dbCore->queryAndGetResults(
@@ -129,7 +129,7 @@ class ABJ_404_Solution_NGramRebuilder {
      * @return array{processed: int, success: int, failed: int}
      */
     public function rebuildCache($batchSize = 100, $offset = 0) {
-        $permalinkCacheTable = $this->dbCore->getPrefixedTableName('abj404_permalink_cache');
+        $permalinkCacheTable = $this->dbCore->tableNameResolver()->getPrefixedTableName('abj404_permalink_cache');
 
         $batchResult = $this->dbCore->queryAndGetResults(
             "SELECT id, url FROM {$permalinkCacheTable} LIMIT %d OFFSET %d",

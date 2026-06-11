@@ -148,7 +148,7 @@ class ABJ_404_Solution_DatabaseUpgradeTableRepair extends ABJ_404_Solution_Datab
 			continue;
 		}
 
-		$liveDdl = $this->dbCore->getCreateTableDDL($tableName);
+		$liveDdl = $this->dbCore->tableNameResolver()->getCreateTableDDL($tableName);
 
 		// Table doesn't exist at all — nothing to repair (recovery handled elsewhere).
 		if (empty($liveDdl)) {
@@ -207,7 +207,7 @@ class ABJ_404_Solution_DatabaseUpgradeTableRepair extends ABJ_404_Solution_Datab
      */
     private function recoverMissingLogsHitsTable(): void {
 	$tableName = $this->dbCore->doTableNameReplacements('{wp_abj404_logs_hits}');
-	if ($this->dbCore->getCreateTableDDL($tableName) !== '') {
+	if ($this->dbCore->tableNameResolver()->getCreateTableDDL($tableName) !== '') {
 		return;
 	}
 

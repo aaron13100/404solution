@@ -163,7 +163,7 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
 
     /** @return string */
     private function viewDoneFreshnessOptionName(): string {
-        return $this->dbCore->getLowercasePrefix() . 'abj404_view_done_built_at';
+        return $this->dbCore->tableNameResolver()->getLowercasePrefix() . 'abj404_view_done_built_at';
     }
 
     // =========================================================================

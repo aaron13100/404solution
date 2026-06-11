@@ -257,9 +257,7 @@ class ABJ_404_Solution_PluginLogicVersionUpgrader {
 
         $query = "SHOW TABLES LIKE '{wp_abj404_logs}'";
         $dbCore = $this->dbCore;
-        if (!method_exists($dbCore, 'queryAndGetResults')
-            || !method_exists($dbCore, 'doTableNameReplacements')
-            || !method_exists($dbCore, 'getLowercasePrefix')) {
+        if (!$dbCore instanceof ABJ_404_Solution_DatabaseCoreInterface) {
             throw new \RuntimeException('PluginLogicVersionUpgrader requires database query methods.');
         }
 
@@ -284,7 +282,7 @@ class ABJ_404_Solution_PluginLogicVersionUpgrader {
         if ($rowsAffected > 0) {
             $this->logger->infoMessage($rowsAffected .
                 ' log rows were migrated to the new table structre.');
-            $dbCore->queryAndGetResults('drop table ' . $dbCore->getLowercasePrefix() . 'abj404_logs');
+            $dbCore->queryAndGetResults('drop table ' . $dbCore->tableNameResolver()->getLowercasePrefix() . 'abj404_logs');
         }
     }
 

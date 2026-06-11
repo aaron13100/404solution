@@ -50,7 +50,7 @@ class ABJ_404_Solution_RedirectsCleanupRepository {
 
     public function cleanupOrphanedAutoRedirects(): int {
         $redirectsTable = $this->dbCore->doTableNameReplacements('{wp_abj404_redirects}');
-        if (!$this->dbCore->tableExists($redirectsTable)) {
+        if (!$this->dbCore->tableNameResolver()->tableExists($redirectsTable)) {
             $this->logger->warn("Skipping orphaned redirect cleanup: table missing.");
             return 0;
         }
@@ -295,7 +295,7 @@ class ABJ_404_Solution_RedirectsCleanupRepository {
         }
 
         $redirectsTable = $this->dbCore->doTableNameReplacements('{wp_abj404_redirects}');
-        if (!$this->dbCore->tableExists($redirectsTable)) {
+        if (!$this->dbCore->tableNameResolver()->tableExists($redirectsTable)) {
             $this->logger->warn("expireOldAutoRedirects: redirects table missing, skipping.");
             return 0;
         }

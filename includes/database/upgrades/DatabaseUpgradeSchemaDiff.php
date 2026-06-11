@@ -57,7 +57,7 @@ class ABJ_404_Solution_DatabaseUpgradeSchemaDiff extends ABJ_404_Solution_Databa
     function getTableDifferences($tableName, $createTableStatementGoal) {
 
 	// get the current create table statement
-	$existingTableSQL = $this->dbCore->getCreateTableDDL($tableName);
+	$existingTableSQL = $this->dbCore->tableNameResolver()->getCreateTableDDL($tableName);
 
 	$existingTableSQL = strtolower($this->removeCommentsFromColumns($existingTableSQL));
 	$createTableStatementGoal = strtolower(
