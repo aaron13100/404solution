@@ -215,18 +215,15 @@ class ABJ_404_Solution_ServiceFallbackResolver {
                 },
             ),
             'ajax_security_gate' => array(
-                'ABJ_404_Solution_AjaxSecurityGate',
+                'ABJ_404_Solution_RuntimeServiceRegistration',
                 static function () {
-                    return new ABJ_404_Solution_AjaxSecurityGate(
-                        abj_service('admin_access_policy'),
-                        abj_service('logging')
-                    );
+                    return ABJ_404_Solution_RuntimeServiceRegistration::buildAjaxSecurityGateFallback();
                 },
             ),
             'ajax_failure_logger' => array(
-                'ABJ_404_Solution_AjaxFailureLogger',
+                'ABJ_404_Solution_RuntimeServiceRegistration',
                 static function () {
-                    return new ABJ_404_Solution_AjaxFailureLogger(abj_service('logging'));
+                    return ABJ_404_Solution_RuntimeServiceRegistration::buildAjaxFailureLoggerFallback();
                 },
             ),
             'not_found_response' => array(

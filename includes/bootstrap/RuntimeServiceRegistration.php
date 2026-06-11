@@ -60,11 +60,11 @@ class ABJ_404_Solution_RuntimeServiceRegistration {
         });
 
         $container->set('ajax_security_gate', function($c) {
-            return new ABJ_404_Solution_AjaxSecurityGate($c->get('admin_access_policy'), $c->get('logging'));
+            return self::buildAjaxSecurityGate($c->get('admin_access_policy'), $c->get('logging'));
         });
 
         $container->set('ajax_failure_logger', function($c) {
-            return new ABJ_404_Solution_AjaxFailureLogger(abj_service('logging'));
+            return self::buildAjaxFailureLogger(abj_service('logging'));
         });
 
         $container->set('view', function($c) {
@@ -86,5 +86,45 @@ class ABJ_404_Solution_RuntimeServiceRegistration {
         $container->set('shortcode', function($c) {
             return new ABJ_404_Solution_ShortCode();
         });
+    }
+
+    /**
+     * Build the AJAX security gate for test-time service fallback resolution.
+     *
+     * The service container fallback resolver lives in the bootstrap layer and
+     * must not know presentation classes directly. Runtime registration already
+     * owns AJAX wiring, so the fallback path delegates this presentation
+     * construction here.
+     *
+     * @return ABJ_404_Solution_AjaxSecurityGate
+     */
+    public static function buildAjaxSecurityGateFallback() {
+        return self::buildAjaxSecurityGate(abj_service('admin_access_policy'), abj_service('logging'));
+    }
+
+    /**
+     * Build the AJAX failure logger for test-time service fallback resolution.
+     *
+     * @return ABJ_404_Solution_AjaxFailureLogger
+     */
+    public static function buildAjaxFailureLoggerFallback() {
+        return self::buildAjaxFailureLogger(abj_service('logging'));
+    }
+
+    /**
+     * @param object|null $adminAccessPolicy Service exposing isPluginAdmin().
+     * @param object|null $logging Service exposing infoMessage().
+     * @return ABJ_404_Solution_AjaxSecurityGate
+     */
+    private static function buildAjaxSecurityGate($adminAccessPolicy, $logging) {
+        return new ABJ_404_Solution_AjaxSecurityGate($adminAccessPolicy, $logging);
+    }
+
+    /**
+     * @param object|null $logging Service exposing writeLineToDebugFile().
+     * @return ABJ_404_Solution_AjaxFailureLogger
+     */
+    private static function buildAjaxFailureLogger($logging) {
+        return new ABJ_404_Solution_AjaxFailureLogger($logging);
     }
 }
