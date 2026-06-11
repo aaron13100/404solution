@@ -115,7 +115,7 @@ class ABJ_404_Solution_PermalinkCacheRepository {
     /** @return array<int, array<string, mixed>>|null */
     public function getIDsNeededForPermalinkCache() {
         $options = $this->getRuntimeOptions();
-        $recognizedPostTypes = $this->dbCore->buildPostTypeSqlList($options);
+        $recognizedPostTypes = $this->dbCore->tableNameResolver()->buildPostTypeSqlList($options);
         if ($recognizedPostTypes === '') {
             return null;
         }
@@ -135,7 +135,7 @@ class ABJ_404_Solution_PermalinkCacheRepository {
         $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ .
             "/../sql/updatePermalinkCache.sql");
 
-        $this->dbCore->setSqlBigSelects();
+        $this->dbCore->tableNameResolver()->setSqlBigSelects();
 
         $results = $this->dbCore->queryAndGetResults($query);
 

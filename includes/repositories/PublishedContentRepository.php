@@ -94,7 +94,7 @@ class ABJ_404_Solution_PublishedContentRepository {
         $postsTableName = $this->getPostsTableName();
 
         $options = $this->getRuntimeOptions();
-        $recognizedPostTypes = $this->dbCore->buildPostTypeSqlList($options);
+        $recognizedPostTypes = $this->dbCore->tableNameResolver()->buildPostTypeSqlList($options);
         if ($recognizedPostTypes === '') {
             return array();
         }
@@ -347,7 +347,7 @@ class ABJ_404_Solution_PublishedContentRepository {
     /** @return array<int, object> */
     public function getPublishedImagesIDs() {
         $options = $this->getRuntimeOptions();
-        $recognizedPostTypes = $this->dbCore->buildPostTypeSqlList($options);
+        $recognizedPostTypes = $this->dbCore->tableNameResolver()->buildPostTypeSqlList($options);
         if ($recognizedPostTypes === '') {
             return array();
         }
@@ -372,7 +372,7 @@ class ABJ_404_Solution_PublishedContentRepository {
      */
     public function getPublishedTags($slug = null, $limit = null) {
         $options = $this->getRuntimeOptions();
-        $recognizedCategories = $this->dbCore->buildCategorySqlList($options);
+        $recognizedCategories = $this->dbCore->tableNameResolver()->buildCategorySqlList($options);
 
         if ($slug != null) {
             $slug = $this->f->sanitizeInvalidUTF8($slug);
@@ -416,7 +416,7 @@ class ABJ_404_Solution_PublishedContentRepository {
      */
     public function getPublishedCategories($term_id = null, $slug = null, $limit = null) {
         $options = $this->getRuntimeOptions();
-        $recognizedCategories = $this->dbCore->buildCategorySqlList($options);
+        $recognizedCategories = $this->dbCore->tableNameResolver()->buildCategorySqlList($options);
         if ($recognizedCategories === '') {
             $recognizedCategories = "''";
         }

@@ -276,22 +276,6 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
     }
 
     /** @inheritDoc */
-    public function buildPostTypeSqlList(array $options): string {
-        // Delegate preserves DatabaseTableNameResolver's rtrim($recognizedPostTypes, ", ") empty-list behavior.
-        return $this->tableNameResolver->buildPostTypeSqlList($options);
-    }
-
-    /** @inheritDoc */
-    public function buildCategorySqlList(array $options): string {
-        return $this->tableNameResolver->buildCategorySqlList($options);
-    }
-
-    /** @inheritDoc */
-    public function setSqlBigSelects(): void {
-        $this->tableNameResolver->setSqlBigSelects();
-    }
-
-    /** @inheritDoc */
     public function classifyAndHandleInfrastructureError(string $errorText): bool {
         return $this->recoveryServices->errorClassifier()->classifyAndHandleInfrastructureError($errorText);
     }

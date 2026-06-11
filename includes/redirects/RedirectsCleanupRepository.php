@@ -96,7 +96,7 @@ class ABJ_404_Solution_RedirectsCleanupRepository {
             return 0;
         }
 
-        $this->dbCore->setSqlBigSelects();
+        $this->dbCore->tableNameResolver()->setSqlBigSelects();
 
         if (!$logsRepo->logsHitsTableExists()) {
             $this->logger->debugMessage(__FUNCTION__ . " skipping: logs_hits table missing; scheduling rebuild.");
