@@ -10,6 +10,8 @@ require_once __DIR__ . '/bootstrap/DomainServiceRegistration.php';
 require_once __DIR__ . '/bootstrap/MatchingEngineServiceRegistration.php';
 require_once __DIR__ . '/bootstrap/RuntimeServiceRegistration.php';
 require_once __DIR__ . '/bootstrap/LegacyInstanceResolver.php';
+require_once __DIR__ . '/bootstrap/ServiceFallbackResolver.php';
+require_once __DIR__ . '/bootstrap/service-locator.php';
 
 /**
  * Bootstrap file for initializing the service container and registering services.

@@ -32,6 +32,7 @@ return array(
     'ABJ_404_Solution_MatchingEngineServiceRegistration' => $base . 'includes/bootstrap/MatchingEngineServiceRegistration.php',
     'ABJ_404_Solution_RuntimeServiceRegistration' => $base . 'includes/bootstrap/RuntimeServiceRegistration.php',
     'ABJ_404_Solution_LegacyInstanceResolver' => $base . 'includes/bootstrap/LegacyInstanceResolver.php',
+    'ABJ_404_Solution_ServiceFallbackResolver' => $base . 'includes/bootstrap/ServiceFallbackResolver.php',
     'ABJ_404_Solution_DebugLogFileStore' => $base . 'includes/diagnostics/DebugLogFileStore.php',
     'ABJ_404_Solution_DebugLogReader' => $base . 'includes/diagnostics/DebugLogReader.php',
     'ABJ_404_Solution_DebugLogArchiveBuilder' => $base . 'includes/diagnostics/DebugLogArchiveBuilder.php',

@@ -338,6 +338,8 @@ if (!function_exists('abj404_shortCodeListener')) {
 				$inc . 'bootstrap/MatchingEngineServiceRegistration.php',
 				$inc . 'bootstrap/RuntimeServiceRegistration.php',
 				$inc . 'bootstrap/LegacyInstanceResolver.php',
+					$inc . 'bootstrap/ServiceFallbackResolver.php',
+					$inc . 'bootstrap/service-locator.php',
 					$inc . 'classmap.php',
 					$inc . 'ajax/SupportRequest.js',
 					$inc . 'js/support-request-button.js',
