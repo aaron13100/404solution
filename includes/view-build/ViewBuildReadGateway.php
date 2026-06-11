@@ -36,7 +36,6 @@ class ABJ_404_Solution_ViewBuildReadGateway extends ABJ_404_Solution_ViewBuildCo
 
         if ($this->host->stageServices()->viewDoneState()->viewDoneIsServeable()) {
             $this->host->recoveryServices()->cronScheduler()->scheduleViewDoneRebuild();
-            $this->host->stageServices()->stateProbe()->maybeRaiseViewDoneHardStaleNotice();
             return $this->host->dataBoundary()->readFromViewDone($sub, $tableOptions);
         }
 
@@ -87,7 +86,6 @@ class ABJ_404_Solution_ViewBuildReadGateway extends ABJ_404_Solution_ViewBuildCo
 
         if (!$isFresh) {
             $this->host->recoveryServices()->cronScheduler()->scheduleViewDoneRebuild();
-            $this->host->stageServices()->stateProbe()->maybeRaiseViewDoneHardStaleNotice();
         }
 
         $sql = $this->host->dataBoundary()->buildViewDoneCountQuery($sub, $tableOptions);

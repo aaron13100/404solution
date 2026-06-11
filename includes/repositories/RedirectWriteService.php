@@ -70,7 +70,6 @@ class ABJ_404_Solution_RedirectWriteService {
         $cleanedID = absint(sanitize_text_field((string)$id));
 
         if (is_numeric($id)) {
-            // allow-no-watermark-bump: DAO layer; admin callers bump via invalidateViewDoneAndScheduleRebuild()
             $query = "delete from {wp_abj404_redirects} where id = %d";
             $this->dbCore->queryAndGetResults($query, array('query_params' => array($cleanedID)));
             $this->invalidateRedirectMutationCaches();
@@ -199,7 +198,6 @@ class ABJ_404_Solution_RedirectWriteService {
 
         $typesForSQL = implode(',', $redirectTypes);
 
-        // allow-no-watermark-bump: DAO layer; admin callers bump via invalidateViewDoneAndScheduleRebuild()
         $query = "update {wp_abj404_redirects} set disabled = 1 where status in (" . $typesForSQL . ")";
         $purgeResult = $this->dbCore->queryAndGetResults($query);
         $rowsAffectedRaw = $purgeResult['rows_affected'] ?? 0;
@@ -308,7 +306,6 @@ class ABJ_404_Solution_RedirectWriteService {
      * @param string $newstatus
      */
     public function updateRedirectTypeStatus($id, $newstatus): string {
-        // allow-no-watermark-bump: DAO layer; admin callers bump via invalidateViewDoneAndScheduleRebuild()
         $query = "update {wp_abj404_redirects} set status = %s where id = %d";
         $result = $this->dbCore->queryAndGetResults($query, array(
             'query_params' => array($newstatus, absint($id))

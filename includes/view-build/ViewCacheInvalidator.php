@@ -5,11 +5,9 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Cache invalidation orchestration for admin view queries.
- *
- * Manages bulk mutation gating, status count cache invalidation,
- * view snapshot invalidation, regex cache clearing, and mutation
- * watermark reads.
+ * Cache invalidation orchestration for admin view queries. Coordinates
+ * status-count cache invalidation, view snapshot invalidation, and regex
+ * cache clearing when redirects mutate.
  */
 class ABJ_404_Solution_ViewCacheInvalidator {
 

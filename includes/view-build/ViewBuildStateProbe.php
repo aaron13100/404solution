@@ -8,8 +8,9 @@ if (!defined('ABSPATH')) {
  * Read-only probes against the view-build pipeline's persistent state:
  * table existence (view_done, view_build, view_deleteme, arbitrary staged
  * names), view_done freshness gate (built_at TTL), data-built-at timestamp
- * preserved across invalidations, hard-stale notice surfacing, and the
- * human-readable progress description used in admin notices.
+ * preserved across invalidations (the cold-install cycle-breaker signal
+ * read by ViewDoneState::viewDoneIsServeable), and the human-readable
+ * progress description used in the pending-build exception message.
  *
  * Sibling responsibilities:
  *   - Progress checkpoint persistence: ABJ_404_Solution_ViewBuildProgressOptions
@@ -84,9 +85,13 @@ class ABJ_404_Solution_ViewBuildStateProbe extends ABJ_404_Solution_ViewBuildCol
      *     TTL gate that decides whether to schedule a background rebuild.
      *
      *   - viewDoneDataBuiltAtOptionName() (data_built_at): preserved across
-     *     invalidate. "When was the snapshot currently on disk produced."
-     *     Drives the hard-stale notice and lets us answer "how old is the
-     *     data the admin is looking at" honestly even after invalidation.
+     *     invalidate. "Has a build ever completed?" Read by
+     *     ViewDoneState::viewDoneIsServeable() to distinguish "no build has
+     *     ever run" from "build completed and the dataset is legitimately
+     *     empty" (fresh install with no redirects, or admin truncated the
+     *     redirects table). Without this signal a cold install loops the
+     *     JS poller forever: every build produces an empty view_done, the
+     *     poller fires another advance, repeat.
      *
      * @return string
      */
@@ -95,11 +100,12 @@ class ABJ_404_Solution_ViewBuildStateProbe extends ABJ_404_Solution_ViewBuildCol
     }
 
     /**
-     * Unix timestamp when the data currently in the view_done table was
-     * produced. Survives every freshness-signal clear (admin mutation,
-     * cron-fired rebuild, force-restart) so the read path can compute an
-     * honest "data on disk is N hours old" age regardless of whether the
-     * built_at marker has been reset.
+     * Unix timestamp of any successful build, preserved across
+     * freshness-signal clears (admin mutation, cron-fired rebuild,
+     * force-restart). Used by ViewDoneState::viewDoneIsServeable() to
+     * distinguish "build never completed" from "build completed,
+     * dataset legitimately empty"; without this, cold installs would
+     * loop the JS poller indefinitely.
      *
      * @return int
      */
@@ -109,81 +115,6 @@ class ABJ_404_Solution_ViewBuildStateProbe extends ABJ_404_Solution_ViewBuildCol
         }
         $built = get_option($this->viewDoneDataBuiltAtOptionName(), 0);
         return is_scalar($built) ? max(0, intval($built)) : 0;
-    }
-
-    /**
-     * Set a deduplicated admin notice when the data in view_done is older
-     * than VIEW_DONE_HARD_STALE_NOTICE_AGE_SECONDS. Surfaced on the plugin's
-     * own admin screen by abj404_show_view_build_cron_notices in
-     * 404-solution.php; never sent via email or shown wp-admin-wide.
-     *
-     * Same 24h dedup TTL as the other view-build notices so the three
-     * notice families share a consistent lifecycle.
-     *
-     * @param int $ageSeconds Current age of data on disk.
-     * @return void
-     */
-    public function setViewDoneHardStaleNotice(int $ageSeconds): void {
-        if (!function_exists('set_transient')) {
-            return;
-        }
-        $key = 'abj404_view_done_hard_stale';
-        if (function_exists('get_transient') && get_transient($key) !== false) {
-            return; // dedup window still active
-        }
-        $hours = max(1, intval(floor($ageSeconds / 3600)));
-        $template = $this->localizeOrDefaultViewBuildNotice(
-            'The 404 Solution redirects table data is more than %d hours old. '
-            . 'A background rebuild is scheduled but has not completed; the '
-            . 'redirects screen is showing the most recent successful snapshot. '
-            . 'Check WordPress cron health and the staged-build progress.'
-        );
-        $payload = array(
-            'type'         => 'view_done_hard_stale',
-            'message'      => sprintf($template, $hours),
-            'timestamp'    => time(),
-            'error_string' => '',
-            'age_hours'    => $hours,
-        );
-        // allow-cache-empty: notice payload is intentional; error_string is empty by definition for stale-data state.
-        set_transient($key, $payload, ABJ_404_Solution_ViewBuildConfig::VIEW_BUILD_DEGRADED_NOTICE_TTL_SECONDS);
-    }
-
-    /**
-     * Self-heal: clear the hard-stale notice when a successful build
-     * completes and the data on disk is no longer stale. Called from
-     * markViewDoneBuildCompleted() so the notice does not linger for the
-     * full 24h dedup TTL after the build catches up.
-     *
-     * @return void
-     */
-    public function clearViewDoneHardStaleNotice(): void {
-        if (function_exists('delete_transient')) {
-            delete_transient('abj404_view_done_hard_stale');
-        }
-    }
-
-    /**
-     * Read-path hook: when serving stale data from view_done, surface the
-     * hard-stale notice if the data is older than the configured threshold.
-     *
-     * No-ops when data_built_at is missing (legacy installs that pre-date
-     * the data-built-at signal) so a one-time migration does not generate
-     * spurious 24h notices on the first read after upgrade. The next
-     * successful build sets the signal and from then on the staleness
-     * check is honest.
-     *
-     * @return void
-     */
-    public function maybeRaiseViewDoneHardStaleNotice(): void {
-        $built = $this->viewDoneDataBuiltAt();
-        if ($built <= 0) {
-            return;
-        }
-        $age = time() - $built;
-        if ($age >= ABJ_404_Solution_ViewBuildConfig::VIEW_DONE_HARD_STALE_NOTICE_AGE_SECONDS) {
-            $this->setViewDoneHardStaleNotice($age);
-        }
     }
 
     /** @param string $tableName @return bool */
@@ -224,12 +155,10 @@ class ABJ_404_Solution_ViewBuildStateProbe extends ABJ_404_Solution_ViewBuildCol
     }
 
     /**
-     * Tiny helper so the staged-build notices read the same way as the
-     * existing setPluginDbNotice() copy: call __() when WordPress is loaded,
-     * otherwise return the raw English. Kept local to the state-probe
-     * collaborator (rather than DataAccess.php's private localizeOrDefault())
-     * so the sibling lock-and-cron collaborator can reach it via $this-> on
-     * the data boundary without exposing the private DataAccess method.
+     * Localize an admin-notice template via WordPress when loaded, else
+     * return the raw English. Used by sibling collaborators that build
+     * notice payloads (cron-stuck / cron-schedule-failed) without
+     * reaching into DataAccess's private localizeOrDefault().
      *
      * @param string $text
      * @return string

@@ -147,17 +147,15 @@ class ABJ_404_Solution_ViewDoneState extends ABJ_404_Solution_ViewBuildCollabora
     /**
      * Public hook called from the S11 swap completion path and from the
      * reconcile-promote path when a fresh view_done has just been
-     * published. Updates both freshness and data-built-at signals to now,
-     * clears the hard-stale admin notice (self-heal), and resets the
-     * request-lifetime serveability cache so subsequent reads in the same
-     * request see the just-published table.
+     * published. Updates both freshness and data-built-at signals to now
+     * and resets the request-lifetime serveability cache so subsequent
+     * reads in the same request see the just-published table.
      *
-     * The data-built-at signal is the floor used by
-     * maybeRaiseViewDoneHardStaleNotice() to decide when to surface the
-     * "data may be out of date" admin notice. Updating it here means the
-     * notice can self-clear automatically once the build catches up, so an
-     * admin who fixed the underlying cron or host issue does not see a
-     * 24h-stale warning for the entire dedup TTL after recovery.
+     * The data-built-at signal is preserved across invalidations and is
+     * used by viewDoneIsServeable() to distinguish a never-built buffer
+     * from a build that completed against a legitimately empty source
+     * (fresh install, redirects table truncated). Updating it on every
+     * successful build keeps that distinction honest.
      *
      * @return void
      */
@@ -169,7 +167,6 @@ class ABJ_404_Solution_ViewDoneState extends ABJ_404_Solution_ViewBuildCollabora
             update_option($this->viewDoneFreshnessOptionName(), $now, false);
             update_option($this->host->stageServices()->stateProbe()->viewDoneDataBuiltAtOptionName(), $now, false);
         }
-        $this->host->stageServices()->stateProbe()->clearViewDoneHardStaleNotice();
         $this->invalidateViewDoneServeableCache();
     }
 }

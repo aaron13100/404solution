@@ -195,7 +195,7 @@ class ABJ_404_Solution_RedirectsCleanupRepository {
                 $original = isset($row['id']) ? $row['id'] : 0;
 
                 $queryl = $this->prepareQueryWp(
-                    "delete from {wp_abj404_redirects} where url = {url} and id != {original}", // allow-no-watermark-bump: DAO layer; admin callers bump via invalidateViewDoneAndScheduleRebuild()
+                    "delete from {wp_abj404_redirects} where url = {url} and id != {original}",
                     array("url" => $url, "original" => $original)
                 );
                 $deleteResult = $this->dbCore->queryAndGetResults($queryl);
@@ -247,7 +247,6 @@ class ABJ_404_Solution_RedirectsCleanupRepository {
         }
 
         $wherePatterns = implode(' OR ', $likeClauses);
-        // allow-no-watermark-bump: DAO layer; admin callers bump via invalidateViewDoneAndScheduleRebuild()
         $query = "UPDATE {wp_abj404_redirects}
             SET disabled = 1
             WHERE status = " . ABJ404_STATUS_CAPTURED . "
@@ -260,7 +259,6 @@ class ABJ_404_Solution_RedirectsCleanupRepository {
         $totalTrashed += is_numeric($affected) ? (int)$affected : 0;
 
         $cutoff = time() - (14 * DAY_IN_SECONDS);
-        // allow-no-watermark-bump: DAO layer; admin callers bump via invalidateViewDoneAndScheduleRebuild()
         // DAO-bypass-approved: $wpdb->prepare is read-only string formatting; result goes through queryAndGetResults
         $query = $wpdb->prepare("UPDATE {wp_abj404_redirects} r
             SET r.disabled = 1

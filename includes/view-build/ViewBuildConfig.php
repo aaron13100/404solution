@@ -102,22 +102,6 @@ final class ABJ_404_Solution_ViewBuildConfig {
     const VIEW_BUILD_FOREGROUND_LEASE_SECONDS = 120;
 
     /**
-     * Upper-bound staleness threshold. When viewDoneIsServeable() serves
-     * data older than this, an admin notice fires telling the admin the
-     * redirects table data is out of date. The fix that lets view_done
-     * serve stale post-invalidate data without blocking would otherwise
-     * let arbitrarily old data render silently if the rebuild never
-     * completes (cron stuck, repeated invalidation racing the build,
-     * floor-kill streak halt). This notice is the honest upper bound:
-     * stale-but-present is fine; stale-and-unsignalled is not.
-     *
-     * 24h matches the dedup TTL in VIEW_BUILD_DEGRADED_NOTICE_TTL_SECONDS
-     * and the cron-stuck threshold in scheduleViewDoneRebuild() so the
-     * three notice families speak in the same time units.
-     */
-    const VIEW_DONE_HARD_STALE_NOTICE_AGE_SECONDS = 86400;
-
-    /**
      * Cap on the per-query SET STATEMENT max_statement_time hint applied
      * to a non-batched stage (S3 / S9 / S10) on retry after a kill. The
      * hint is also bounded by the request's remaining PHP execution time

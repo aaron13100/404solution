@@ -1417,7 +1417,6 @@ if (!function_exists('abj404_show_view_build_cron_notices')) {
 		$keys = array(
 			'abj404_view_build_stuck_wp_cron_disabled',
 			'abj404_view_build_cron_schedule_failed',
-			'abj404_view_done_hard_stale',
 			'abj404_logs_hits_rollup_stale',
 		);
 		if (class_exists('ABJ_404_Solution_ServiceContainer')
