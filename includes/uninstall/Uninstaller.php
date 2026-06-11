@@ -171,7 +171,17 @@ class ABJ_404_Solution_Uninstaller {
     }
 
     /**
-     * Safely delete a database table
+     * Safely delete a database table.
+     *
+     * Defense-in-depth: refuses any name that is not shaped like a plugin
+     * table ({prefix}abj404_{suffix}). Today the only callers are the
+     * partial-deletion paths in deleteTables() using {prefix} + 'abj404_*'
+     * constants and a 'SHOW TABLES LIKE ...abj404_%' discovery loop, so an
+     * unsafe value cannot reach here. The shape check inside the sink keeps
+     * that property robust against future maintenance routing a user-derived
+     * value into the same private method, without relying on esc_sql() (which
+     * does not escape backticks and so cannot protect an identifier context
+     * on its own).
      *
      * @param string $table_name Full table name with prefix
      * @return void
@@ -188,12 +198,12 @@ class ABJ_404_Solution_Uninstaller {
             return;
         }
 
-        // @utf8-audit: opt-out — $table_name is built from $wpdb->prefix +
-        // 'abj404_*' constants in the deleteTables() loop, or comes from a
-        // SHOW TABLES query result; never user input.
-        // Security: Use wpdb methods and prepare statement
-        $table_name = esc_sql($table_name);
-        // DAO-bypass-approved: DDL drop during uninstall — no DAO autoloader
+        // q992: refuse anything outside the {prefix}abj404_{suffix} shape.
+        if (!preg_match('/^[a-z0-9_]+abj404_[a-z0-9_]+$/i', $table_name)) {
+            return;
+        }
+
+        // DAO-bypass-approved: DDL drop during uninstall. No DAO autoloader available.
         $wpdb->query("DROP TABLE IF EXISTS `$table_name`");
     }
 
