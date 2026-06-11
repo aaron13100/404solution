@@ -26,6 +26,19 @@ class ABJ_404_Solution_UserRequest {
     /** @var string */
     private $commentPagePart = null;
     
+    /**
+     * Replace the singleton instance. Used by integration tests that need
+     * a pre-populated UserRequest (or a programmable test double) so the
+     * pipeline reads stable path / slug / query-string values without
+     * relying on `$_SERVER['REQUEST_URI']` being set during the test run.
+     *
+     * @param self|null $instance
+     * @return void
+     */
+    public static function setInstance($instance) {
+        self::$instance = $instance;
+    }
+
     /** @return self|null */
     public static function getInstance() {
         if (self::$instance == null) {
