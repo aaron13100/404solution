@@ -157,7 +157,7 @@ class ABJ_404_Solution_LogsWriter {
         $checkMinIDQueryResults = is_array($primaryResult['rows'] ?? null) ? $primaryResult['rows'] : array();
         $lastErrorRaw = $primaryResult['last_error'] ?? '';
         $lastError = is_string($lastErrorRaw) ? $lastErrorRaw : '';
-        if ($lastError !== '' && $this->errorClassifier->taxonomy()->isInvalidDataError($lastError) && $canUseUtf8Cast) {
+        if ($lastError !== '' && $this->errorClassifier->taxonomy()->schema()->isInvalidDataError($lastError) && $canUseUtf8Cast) {
             $fallbackResult = $this->dbCore->queryAndGetResults("SELECT id FROM `" . $logTableName . "` \n WHERE requested_url = %s \n LIMIT 1", array('query_params' => array($requested_url), 'log_errors' => false));
             $checkMinIDQueryResults = is_array($fallbackResult['rows'] ?? null) ? $fallbackResult['rows'] : array();
         }

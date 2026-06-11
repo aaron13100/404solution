@@ -155,7 +155,7 @@ class ABJ_404_Solution_DatabaseRepairPolicy {
      */
     public function handleTransientViewBuildTableMissing($query, array &$result): bool {
         $observedError = is_string($result['last_error']) ? $result['last_error'] : '';
-        if (!$this->classifier->taxonomy()->isTransientViewBuildTableError($observedError)) {
+        if (!$this->classifier->taxonomy()->schema()->isTransientViewBuildTableError($observedError)) {
             return false;
         }
         $lowerErr = strtolower($observedError);
@@ -256,7 +256,7 @@ class ABJ_404_Solution_DatabaseRepairPolicy {
         $materializedTable = $retryMissingTable !== '' ? $retryMissingTable : $missingTable;
         if ($retryError !== ''
                 && $materializedTable !== ''
-                && $this->classifier->taxonomy()->isMissingPluginTableError($retryError)
+                && $this->classifier->taxonomy()->schema()->isMissingPluginTableError($retryError)
                 && $this->tableMaterializedAfterRepair($materializedTable)) {
             $this->logger->infoMessage(
                 "Missing-table auto-repair materialized " . $materializedTable .

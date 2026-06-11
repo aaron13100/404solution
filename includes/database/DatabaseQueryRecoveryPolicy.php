@@ -86,7 +86,7 @@ class ABJ_404_Solution_DatabaseQueryRecoveryPolicy {
     private function retryWithoutSetStatementIfNeeded(string &$query, array &$result, string $resultType, bool $producesRows): bool {
         $lastError = $this->lastErrorFromResult($result);
         if ($lastError === ''
-            || !$this->core->errorClassifier()->taxonomy()->classifySetStatementFailure($lastError)
+            || !$this->core->errorClassifier()->taxonomy()->hostState()->classifySetStatementFailure($lastError)
             || !$this->core->queryTimeoutManager()->queryHasSetStatementWrapper($query)) {
             return $producesRows;
         }
@@ -104,7 +104,7 @@ class ABJ_404_Solution_DatabaseQueryRecoveryPolicy {
      */
     private function retryTransientConnectionIfNeeded(string $query, array &$result, string $resultType, bool $producesRows): void {
         $lastError = $this->lastErrorFromResult($result);
-        if ($lastError === '' || !$this->core->errorClassifier()->taxonomy()->isTransientConnectionError($lastError)) {
+        if ($lastError === '' || !$this->core->errorClassifier()->taxonomy()->connectivity()->isTransientConnectionError($lastError)) {
             return;
         }
 
@@ -123,7 +123,7 @@ class ABJ_404_Solution_DatabaseQueryRecoveryPolicy {
      */
     private function repairMissingTableIfNeeded(string $query, array &$result, array $options): void {
         $lastError = $this->lastErrorFromResult($result);
-        if ($options['skip_repair'] || $lastError === '' || !$this->core->errorClassifier()->taxonomy()->isMissingPluginTableError($lastError)) {
+        if ($options['skip_repair'] || $lastError === '' || !$this->core->errorClassifier()->taxonomy()->schema()->isMissingPluginTableError($lastError)) {
             return;
         }
         $this->core->repairPolicy()->attemptMissingTableRepairAndRetry($query, $result);
@@ -136,7 +136,7 @@ class ABJ_404_Solution_DatabaseQueryRecoveryPolicy {
      */
     private function retryInvalidDataIfNeeded(string $query, array &$result): void {
         $lastError = $this->lastErrorFromResult($result);
-        if ($lastError !== '' && $this->core->errorClassifier()->taxonomy()->isInvalidDataError($lastError)) {
+        if ($lastError !== '' && $this->core->errorClassifier()->taxonomy()->schema()->isInvalidDataError($lastError)) {
             $this->core->tableRepairer()->attemptInvalidDataRetry($query, $result);
         }
     }
@@ -150,7 +150,7 @@ class ABJ_404_Solution_DatabaseQueryRecoveryPolicy {
      */
     private function retryDeadlockIfNeeded(string $query, array &$result, string $resultType, bool $producesRows): void {
         $lastError = $this->lastErrorFromResult($result);
-        if ($lastError === '' || !$this->core->errorClassifier()->taxonomy()->isDeadlockOrLockTimeoutError($lastError)) {
+        if ($lastError === '' || !$this->core->errorClassifier()->taxonomy()->connectivity()->isDeadlockOrLockTimeoutError($lastError)) {
             return;
         }
 
@@ -158,7 +158,7 @@ class ABJ_404_Solution_DatabaseQueryRecoveryPolicy {
         $result = array_merge($result, $this->executeWpdbQuery($query, $resultType, $producesRows));
         $this->resultHarvester->harvestWpdbResult($result);
         $lastError = $this->lastErrorFromResult($result);
-        if ($lastError !== '' && $this->core->errorClassifier()->taxonomy()->isDeadlockOrLockTimeoutError($lastError)) {
+        if ($lastError !== '' && $this->core->errorClassifier()->taxonomy()->connectivity()->isDeadlockOrLockTimeoutError($lastError)) {
             // allow-em-dash: copied verbatim from existing user-facing localized string in DataAccess.php
             $this->core->setPluginDbNotice('lock_timeout', $this->core->noticeState()->localizeOrDefault('A database lock wait timeout occurred. If this persists, contact your host — another process may be holding a long-running lock.'), $lastError);
         }
@@ -173,7 +173,7 @@ class ABJ_404_Solution_DatabaseQueryRecoveryPolicy {
      */
     private function recoverCollationIfNeeded(string $query, array &$result, string $resultType, bool $producesRows): void {
         $lastError = $this->lastErrorFromResult($result);
-        if ($lastError !== '' && $this->core->errorClassifier()->taxonomy()->isCollationError($lastError)) {
+        if ($lastError !== '' && $this->core->errorClassifier()->taxonomy()->schema()->isCollationError($lastError)) {
             $this->core->recoverFromCollationMismatchAndRetry($query, $result, $producesRows, $resultType);
         }
     }
@@ -186,7 +186,7 @@ class ABJ_404_Solution_DatabaseQueryRecoveryPolicy {
      */
     private function handleTimeoutIfNeeded(string $query, array &$result, int $timeoutSeconds): void {
         $lastError = $this->lastErrorFromResult($result);
-        if ($lastError === '' || !$this->core->errorClassifier()->taxonomy()->isQueryTimeoutError($lastError)) {
+        if ($lastError === '' || !$this->core->errorClassifier()->taxonomy()->connectivity()->isQueryTimeoutError($lastError)) {
             return;
         }
 

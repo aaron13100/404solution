@@ -72,7 +72,7 @@ class ABJ_404_Solution_DatabaseTransactionExecutor {
 
             // DAO-bypass-approved: transaction boundary must roll back the active wpdb connection after any grouped statement failure.
             $wpdb->query('rollback');
-            $retryable = $this->core->errorClassifier()->taxonomy()->isDeadlockOrLockTimeoutError($lastError);
+            $retryable = $this->core->errorClassifier()->taxonomy()->connectivity()->isDeadlockOrLockTimeoutError($lastError);
             if (!$retryable || $attempt >= $maxAttempts) {
                 break;
             }

@@ -128,20 +128,7 @@ class ABJ_404_Solution_DatabaseSqlErrorReporter {
         if ($errorText === '') {
             return false;
         }
-        $taxonomy = $this->core->errorClassifier()->taxonomy();
-        return $taxonomy->isDiskFullError($errorText)
-            || $taxonomy->isReadOnlyError($errorText)
-            || $taxonomy->isQuotaLimitError($errorText)
-            || $taxonomy->isInvalidDataError($errorText)
-            || $taxonomy->isCollationError($errorText)
-            || $taxonomy->isMissingPluginTableError($errorText)
-            || $taxonomy->isIncorrectKeyFileError($errorText)
-            || $taxonomy->isCrashedTableError($errorText)
-            || $taxonomy->isDeadlockOrLockTimeoutError($errorText)
-            || $taxonomy->isGaleraConflictError($errorText)
-            || $taxonomy->isTransientConnectionError($errorText)
-            || $taxonomy->isQueryTimeoutError($errorText)
-            || $taxonomy->isAccessDeniedError($errorText);
+        return $this->core->errorClassifier()->taxonomy()->isInfrastructureSqlError($errorText);
     }
 
     /**
@@ -230,7 +217,7 @@ class ABJ_404_Solution_DatabaseSqlErrorReporter {
                 strpos($lastError, "resulting in duplicate entry") !== false) {
             $this->core->repairDuplicateIDs($lastError, $query);
         }
-        if ($this->core->errorClassifier()->taxonomy()->isIncorrectKeyFileError($lastError)) {
+        if ($this->core->errorClassifier()->taxonomy()->schema()->isIncorrectKeyFileError($lastError)) {
             $this->core->tableRepairer()->repairCorruptedTableAndRetry($query, $result);
         }
     }
@@ -259,7 +246,7 @@ class ABJ_404_Solution_DatabaseSqlErrorReporter {
         global $wpdb;
 
         $strippedQuery = 'n/a';
-        if ($this->core->errorClassifier()->taxonomy()->isInvalidDataError($lastError)) {
+        if ($this->core->errorClassifier()->taxonomy()->schema()->isInvalidDataError($lastError)) {
             $strippedResult = $this->core->tableRepairer()->get_stripped_query_result($query);
             $strippedQuery = is_string($strippedResult) ? $strippedResult : 'n/a';
         }

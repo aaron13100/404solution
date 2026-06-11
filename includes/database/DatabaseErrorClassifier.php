@@ -116,7 +116,7 @@ class ABJ_404_Solution_DatabaseErrorClassifier {
         if (trim($errorText) === '') {
             return;
         }
-        if ($this->taxonomy->isDiskFullError($errorText)) {
+        if ($this->taxonomy->hostState()->isDiskFullError($errorText)) {
             $this->core->noticeState()->markServerSideIssueNoted();
             $this->core->setRuntimeFlag('abj404_db_disk_full_until', $this->core->clock()->now() + self::DB_WRITE_BLOCK_COOLDOWN_SECONDS, self::DB_WRITE_BLOCK_COOLDOWN_SECONDS);
 
@@ -132,19 +132,19 @@ class ABJ_404_Solution_DatabaseErrorClassifier {
             $this->core->setPluginDbNotice('disk_full', $this->core->noticeState()->localizeOrDefault('Database storage appears full (disk/engine space). Plugin write-heavy tasks are temporarily paused.'), $errorText);
             return;
         }
-        if ($this->taxonomy->isQuotaLimitError($errorText)) {
+        if ($this->taxonomy->hostState()->isQuotaLimitError($errorText)) {
             $this->core->noticeState()->markServerSideIssueNoted();
             $this->core->setRuntimeFlag('abj404_db_quota_cooldown_until', $this->core->clock()->now() + self::DB_QUOTA_COOLDOWN_SECONDS, self::DB_QUOTA_COOLDOWN_SECONDS);
             $this->core->setPluginDbNotice('query_quota', $this->core->noticeState()->localizeOrDefault('Database query quota was exceeded (for example max_questions). Non-essential plugin background tasks are temporarily paused.'), $errorText);
             return;
         }
-        if ($this->taxonomy->isReadOnlyError($errorText)) {
+        if ($this->taxonomy->hostState()->isReadOnlyError($errorText)) {
             $this->core->noticeState()->markServerSideIssueNoted();
             $this->core->setRuntimeFlag('abj404_db_read_only_until', $this->core->clock()->now() + self::DB_WRITE_BLOCK_COOLDOWN_SECONDS, self::DB_WRITE_BLOCK_COOLDOWN_SECONDS);
             $this->core->setPluginDbNotice('read_only', $this->core->noticeState()->localizeOrDefault('Database appears to be in read-only mode. Plugin write operations are temporarily paused.'), $errorText);
             return;
         }
-        if ($this->taxonomy->isCollationError($errorText)) {
+        if ($this->taxonomy->schema()->isCollationError($errorText)) {
             $this->logger->debugMessage("Collation mismatch detected (auto-recovery will run): " . $errorText);
         }
     }

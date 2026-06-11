@@ -34,19 +34,19 @@ class ABJ_404_Solution_DatabaseStagedFailureClassifier {
         if ($errorText === '') {
             return false;
         }
-        if ($this->taxonomy->isQueryTimeoutError($errorText)) {
+        if ($this->taxonomy->connectivity()->isQueryTimeoutError($errorText)) {
             return true;
         }
-        if ($this->taxonomy->isTransientConnectionError($errorText)) {
+        if ($this->taxonomy->connectivity()->isTransientConnectionError($errorText)) {
             return true;
         }
-        if ($this->taxonomy->isDeadlockOrLockTimeoutError($errorText)) {
+        if ($this->taxonomy->connectivity()->isDeadlockOrLockTimeoutError($errorText)) {
             return true;
         }
         if (stripos($errorText, 'query execution was interrupted') !== false) {
             return true;
         }
-        if ($this->taxonomy->isPacketTooLarge($errorText)) {
+        if ($this->taxonomy->connectivity()->isPacketTooLarge($errorText)) {
             return true;
         }
         return false;
@@ -66,11 +66,11 @@ class ABJ_404_Solution_DatabaseStagedFailureClassifier {
         if ($this->isResumableStagedKill($errorText)) {
             return false;
         }
-        return ($this->taxonomy->isAccessDeniedError($errorText)
-            || $this->taxonomy->isReadOnlyError($errorText)
-            || $this->taxonomy->isDiskFullError($errorText)
-            || $this->taxonomy->isQuotaLimitError($errorText)
-            || $this->taxonomy->isOutOfMemoryError($errorText));
+        return ($this->taxonomy->hostState()->isAccessDeniedError($errorText)
+            || $this->taxonomy->hostState()->isReadOnlyError($errorText)
+            || $this->taxonomy->hostState()->isDiskFullError($errorText)
+            || $this->taxonomy->hostState()->isQuotaLimitError($errorText)
+            || $this->taxonomy->hostState()->isOutOfMemoryError($errorText));
     }
 
     /**

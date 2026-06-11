@@ -109,7 +109,7 @@ class ABJ_404_Solution_ViewBuildDataBoundary {
     public function isResumableStagedKill(string $errorText): bool { return $this->errorClassifier->stagedFailures()->isResumableStagedKill($errorText); }
 
     /** @param string|null $errorText @return bool */
-    public function isTransientConnectionError(?string $errorText): bool { return $this->errorClassifier->taxonomy()->isTransientConnectionError($errorText); }
+    public function isTransientConnectionError(?string $errorText): bool { return $this->errorClassifier->taxonomy()->connectivity()->isTransientConnectionError($errorText); }
 
     /** @param string $tableName @param string $columnName @return string */
     public function getColumnCollationString(string $tableName, string $columnName): string { return $this->dbCore->getColumnCollationString($tableName, $columnName); }

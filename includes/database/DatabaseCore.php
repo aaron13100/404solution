@@ -57,7 +57,7 @@ require_once __DIR__ . '/DatabaseQueryServices.php';
  *
  * There is no __call() dispatch and no non-interface delegate surface:
  * every component method is reached through its component accessor
- * (e.g. errorClassifier()->taxonomy()->isTransientConnectionError(), not
+ * (e.g. errorClassifier()->taxonomy()->connectivity()->isTransientConnectionError(), not
  * DatabaseCore::isTransientConnectionError()). The previous explicit
  * delegate section was removed in i812; see design-audit-2026-06-02.md
  * M202.
@@ -303,7 +303,7 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
 
     /** @inheritDoc */
     public function isOutOfMemoryError(string $errorText): bool {
-        return $this->recoveryServices->errorClassifier()->taxonomy()->isOutOfMemoryError($errorText);
+        return $this->recoveryServices->errorClassifier()->taxonomy()->hostState()->isOutOfMemoryError($errorText);
     }
 
     /** @inheritDoc */

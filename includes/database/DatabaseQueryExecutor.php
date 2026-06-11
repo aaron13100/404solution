@@ -167,7 +167,7 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
         $this->queryDiagnostics->recordQueryBudgetIfEnabled($query, $elapsedMs, $timeoutSeconds);
         $this->resultHarvester->harvestWpdbResult($result);
         $lastErrorForObservedLog = is_string($result['last_error'] ?? null) ? $result['last_error'] : '';
-        if ($lastErrorForObservedLog === '' || !$this->core->errorClassifier()->taxonomy()->isTransientConnectionError($lastErrorForObservedLog)) {
+        if ($lastErrorForObservedLog === '' || !$this->core->errorClassifier()->taxonomy()->connectivity()->isTransientConnectionError($lastErrorForObservedLog)) {
             $this->core->sqlErrorReporter()->logObservedSqlError($query, $result, $options, $producesRows);
         }
 
