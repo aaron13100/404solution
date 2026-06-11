@@ -4,21 +4,13 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-require_once __DIR__ . '/DatabaseQueryInterface.php';
 require_once __DIR__ . '/DatabaseTableNameResolver.php';
 require_once __DIR__ . '/DatabaseCollationHelper.php';
 
 /**
- * Aggregate type that bundles the database-infrastructure sub-interfaces.
- * New code should depend on the narrowest sub-interface it actually uses;
- * this composite stays so every DAO and existing typed caller keeps
- * compiling.
- *
- * Every DAO module (RedirectsRepository, LogsRepository, etc.) receives a
- * DatabaseCore instance through this interface. It encapsulates:
- *   - The centralized error-handling query pipeline (queryAndGetResults)
- *   - Query timeouts (engine-aware: MariaDB SET STATEMENT, MySQL hints)
- *   - Connection management and reconnection
+ * Database component-access contract for callers that need core-owned
+ * collaborators. Query-only callers should depend on
+ * ABJ_404_Solution_DatabaseQueryInterface instead.
  *
  * Runtime flags, plugin admin notices, and write-block detection live on
  * ABJ_404_Solution_DatabaseRuntimeStateInterface, implemented by
@@ -47,8 +39,7 @@ require_once __DIR__ . '/DatabaseCollationHelper.php';
  * collationHelper()->...(). Test clock injection goes through the
  * ServiceContainer 'clock' binding (see clock_injection_pattern.md).
  */
-interface ABJ_404_Solution_DatabaseCoreInterface extends
-    ABJ_404_Solution_DatabaseQueryInterface {
+interface ABJ_404_Solution_DatabaseCoreInterface {
     /** @return ABJ_404_Solution_DatabaseTableNameResolver */
     public function tableNameResolver(): ABJ_404_Solution_DatabaseTableNameResolver;
 

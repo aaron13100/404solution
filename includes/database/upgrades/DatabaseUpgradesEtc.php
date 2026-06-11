@@ -122,7 +122,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 	/** @var ABJ_404_Solution_DataAccess */
 	private $dao;
 
-	/** @var ABJ_404_Solution_DatabaseCoreInterface */
+	/** @var ABJ_404_Solution_DatabaseCore */
 	private $dbCore;
 
 	/** @var ABJ_404_Solution_ContentRepositoryInterface */
@@ -190,11 +190,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 		$this->ngramCoveragePolicy = $dependencies->getNGramCoveragePolicy();
 		$this->ngramRebuilder = $dependencies->getNGramRebuilder();
 
-		$daoClass = is_object($this->dao) ? get_class($this->dao) : '';
-		$this->dbCore = ($dependencies->hasDataAccessOverride() && $daoClass !== 'ABJ_404_Solution_DataAccess'
-			&& method_exists($this->dao, 'queryAndGetResults') && method_exists($this->dao, 'doTableNameReplacements'))
-			? $this->dao
-			: $this->dao->getDbCore();
+		$this->dbCore = $this->dao->getDbCore();
 		$this->contentRepo = $this->dao->getContentRepo();
 		$this->viewBuild = $this->dao->getViewBuildOrchestrator();
 		$this->viewRead = $this->dao->getViewReadService();

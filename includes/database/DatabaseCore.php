@@ -5,6 +5,7 @@ if (!defined('ABSPATH')) {
 }
 
 require_once __DIR__ . '/DatabaseCoreInterface.php';
+require_once __DIR__ . '/DatabaseQueryInterface.php';
 require_once __DIR__ . '/DatabaseRuntimeState.php';
 require_once __DIR__ . '/DatabaseConnectionManager.php';
 require_once __DIR__ . '/DatabaseQueryTimeoutManager.php';
@@ -47,9 +48,11 @@ require_once __DIR__ . '/DatabaseQueryServices.php';
  * state holder (admin-notice + runtime-flag bookkeeping).
  *
  * Public surface:
- *   - Interface-required methods (DatabaseCoreInterface) for callers that
- *     hold the contract type. Each is a one-line delegate to the relevant
- *     component.
+ *   - Query-interface methods (DatabaseQueryInterface) for callers that need
+ *     the centralized query pipeline. Each is a one-line delegate to the
+ *     relevant component.
+ *   - Core-interface methods (DatabaseCoreInterface) for callers that need
+ *     database component accessors.
  *   - Component accessor methods (connectionManager(), errorClassifier(),
  *     etc.) for DAO-internal callers that need non-interface behavior.
  *   - Lazy clock() resolver and the two static SET STATEMENT wrapper
@@ -62,7 +65,9 @@ require_once __DIR__ . '/DatabaseQueryServices.php';
  * delegate section was removed in i812; see design-audit-2026-06-02.md
  * M202.
  */
-class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInterface {
+class ABJ_404_Solution_DatabaseCore implements
+    ABJ_404_Solution_DatabaseCoreInterface,
+    ABJ_404_Solution_DatabaseQueryInterface {
 
     /** @var int Cooldown when DB query quota is exceeded. */
     const DB_QUOTA_COOLDOWN_SECONDS = 900;
@@ -221,7 +226,7 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
     }
 
     // =========================================================================
-    // Interface-required methods (DatabaseCoreInterface). These remain
+    // Interface-required methods (DatabaseQueryInterface). These remain
     // explicit so PHP's type system sees the contract.
     // =========================================================================
 

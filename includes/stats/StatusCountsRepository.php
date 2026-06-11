@@ -26,7 +26,7 @@ class ABJ_404_Solution_StatusCountsRepository {
     const STATUS_CACHE_TTL = ABJ_404_Solution_ViewReadRuntimeState::STATUS_CACHE_TTL;
     const STATUS_CACHE_TIMEOUT_SELFHEAL_TTL = ABJ_404_Solution_ViewReadRuntimeState::STATUS_CACHE_TIMEOUT_SELFHEAL_TTL;
 
-    /** @var ABJ_404_Solution_DatabaseCore */
+    /** @var ABJ_404_Solution_DatabaseQueryInterface */
     private $dbCore;
 
     /** @var ABJ_404_Solution_LogsRepository */
@@ -36,12 +36,12 @@ class ABJ_404_Solution_StatusCountsRepository {
     private $queryBuilder;
 
     /**
-     * @param ABJ_404_Solution_DatabaseCore $dbCore
+     * @param ABJ_404_Solution_DatabaseQueryInterface $dbCore
      * @param ABJ_404_Solution_LogsRepository $logsRepo
      * @param ABJ_404_Solution_ViewQueryBuilder $queryBuilder
      */
     public function __construct(
-        ABJ_404_Solution_DatabaseCore $dbCore,
+        ABJ_404_Solution_DatabaseQueryInterface $dbCore,
         ABJ_404_Solution_LogsRepository $logsRepo,
         ABJ_404_Solution_ViewQueryBuilder $queryBuilder
     ) {

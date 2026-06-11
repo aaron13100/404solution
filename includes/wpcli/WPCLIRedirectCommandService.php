@@ -238,7 +238,7 @@ class ABJ_404_Solution_WPCLIRedirectCommandService {
     }
 
     /**
-     * @param ABJ_404_Solution_DatabaseCoreInterface $dbCore
+     * @param ABJ_404_Solution_DatabaseQueryInterface $dbCore
      * @param array<int, int> $types
      * @param int $limit
      * @return array<int, array<string, mixed>>

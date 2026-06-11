@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) {
  */
 class ABJ_404_Solution_TrashEmptier {
 
-    /** @var ABJ_404_Solution_DatabaseCoreInterface */
+    /** @var ABJ_404_Solution_DatabaseQueryInterface */
     private $dbCore;
 
     /** @var ABJ_404_Solution_ViewReadServiceInterface */
@@ -22,7 +22,7 @@ class ABJ_404_Solution_TrashEmptier {
     private $logger;
 
     /**
-     * @param ABJ_404_Solution_DatabaseCoreInterface $dbCore
+     * @param ABJ_404_Solution_DatabaseQueryInterface $dbCore
      * @param ABJ_404_Solution_ViewReadServiceInterface $viewRead
      * @param ABJ_404_Solution_Logging $logger
      */

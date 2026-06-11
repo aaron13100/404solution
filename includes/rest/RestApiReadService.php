@@ -17,7 +17,7 @@ final class ABJ_404_Solution_RestApiReadService {
     private $logsRepo;
     /** @var ABJ_404_Solution_StatsRepositoryInterface */
     private $statsRepo;
-    /** @var ABJ_404_Solution_DatabaseCoreInterface */
+    /** @var ABJ_404_Solution_DatabaseQueryInterface */
     private $dbCore;
     /** @var ABJ_404_Solution_PluginLogic */
     private $logic;
@@ -28,7 +28,7 @@ final class ABJ_404_Solution_RestApiReadService {
      * @param ABJ_404_Solution_ViewReadServiceInterface $viewRead
      * @param ABJ_404_Solution_RedirectsRepositoryInterface $redirectsRepo
      * @param ABJ_404_Solution_LogsRepositoryInterface $logsRepo
-     * @param ABJ_404_Solution_DatabaseCoreInterface $dbCore
+     * @param ABJ_404_Solution_DatabaseQueryInterface $dbCore
      * @param ABJ_404_Solution_PluginLogic $logic
      */
     public function __construct(

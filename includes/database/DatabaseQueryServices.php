@@ -30,7 +30,7 @@ require_once __DIR__ . '/DatabaseTransactionExecutor.php';
  * per-component accessor methods (queryExecutor(), queryTimeoutManager(),
  * queryRecoveryPolicy(), resultHarvester(), queryDiagnostics(),
  * transactionExecutor()); those accessors now delegate here. The public
- * contract from DatabaseCoreInterface is unchanged.
+ * contract from DatabaseQueryInterface is unchanged.
  */
 class ABJ_404_Solution_DatabaseQueryServices {
 

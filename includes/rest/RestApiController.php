@@ -60,7 +60,7 @@ class ABJ_404_Solution_RestApiController {
             $logsRepo = $logsService instanceof ABJ_404_Solution_LogsRepositoryInterface ? $logsService : $fallbackDao->getLogsRepo();
             $statsRepo = $this->resolveStatsRepository($statsRepository, null);
             $dbCoreService = abj_service('db_core');
-            $dbCore = $dbCoreService instanceof ABJ_404_Solution_DatabaseCoreInterface ? $dbCoreService : $fallbackDao->getDbCore();
+            $dbCore = $dbCoreService instanceof ABJ_404_Solution_DatabaseQueryInterface ? $dbCoreService : $fallbackDao->getDbCore();
         }
 
         $this->readService = new ABJ_404_Solution_RestApiReadService(

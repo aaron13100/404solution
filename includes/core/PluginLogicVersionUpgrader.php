@@ -257,8 +257,9 @@ class ABJ_404_Solution_PluginLogicVersionUpgrader {
 
         $query = "SHOW TABLES LIKE '{wp_abj404_logs}'";
         $dbCore = $this->dbCore;
-        if (!$dbCore instanceof ABJ_404_Solution_DatabaseCoreInterface) {
-            throw new \RuntimeException('PluginLogicVersionUpgrader requires database query methods.');
+        if (!$dbCore instanceof ABJ_404_Solution_DatabaseQueryInterface
+            || !$dbCore instanceof ABJ_404_Solution_DatabaseCoreInterface) {
+            throw new \RuntimeException('PluginLogicVersionUpgrader requires database query and table-name resolver methods.');
         }
 
         $result = $dbCore->queryAndGetResults($query);
