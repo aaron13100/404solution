@@ -211,16 +211,13 @@ class ABJ_404_Solution_PostEditorIntegration {
         }
 
         $default = $this->getDefaultRedirectSetting();
-        $checked = $default ? 'checked' : '';
-
         $excludeMeta = get_post_meta($post->ID, '_abj404_exclude', true);
-        $excludeChecked = ($excludeMeta === '1') ? 'checked' : '';
 
         wp_nonce_field('abj404_meta_box', 'abj404_meta_box_nonce');
         ?>
         <p>
             <label>
-                <input type="checkbox" name="abj404_create_redirect" value="1" <?php echo $checked; ?>>
+                <input type="checkbox" name="abj404_create_redirect" value="1" <?php checked($default); ?>>
                 <?php echo esc_html__('Create redirect from old URL to new URL', '404-solution'); ?>
             </label>
         </p>
@@ -230,7 +227,7 @@ class ABJ_404_Solution_PostEditorIntegration {
         <hr>
         <p>
             <label>
-                <input type="checkbox" name="abj404_exclude" value="1" <?php echo $excludeChecked; ?>>
+                <input type="checkbox" name="abj404_exclude" value="1" <?php checked($excludeMeta, '1'); ?>>
                 <?php echo esc_html__('Exclude from 404 redirect suggestions', '404-solution'); ?>
             </label>
         </p>
