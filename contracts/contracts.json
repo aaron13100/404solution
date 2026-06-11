@@ -451,7 +451,7 @@
       },
       "consumer": {
         "file": "includes/ajax/Ajax_FetchInflightStage.php",
-        "test": "tests/ViewUpdaterAjaxContractTest.php"
+        "test": "tests/ViewUpdaterAjaxInflightDiagnosticsContractTest.php"
       },
       "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
       "fixtures": {
@@ -470,7 +470,7 @@
       },
       "consumer": {
         "file": "includes/ajax/Ajax_GetPaginationLinks.php",
-        "test": "tests/ViewUpdaterAjaxContractTest.php"
+        "test": "tests/ViewUpdaterAjaxFetchRenderContractTest.php"
       },
       "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
       "fixtures": {
@@ -523,7 +523,7 @@
       },
       "consumer": {
         "file": "includes/ajax/Ajax_RefreshStatsDashboard.php",
-        "test": "tests/ViewUpdaterAjaxContractTest.php"
+        "test": "tests/ViewUpdaterAjaxRefreshStatsDashboardContractTest.php"
       },
       "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
       "fixtures": {
@@ -561,7 +561,7 @@
       },
       "consumer": {
         "file": "includes/ajax/Ajax_WarmTableCache.php",
-        "test": "tests/ViewUpdaterAjaxContractTest.php"
+        "test": "tests/ViewUpdaterAjaxViewBuildPendingContractTest.php"
       },
       "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
       "fixtures": {
