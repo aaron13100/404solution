@@ -1,11 +1,19 @@
 <?php
 /**
- * Error classification facade, infrastructure issue handling, and DB notice
- * side effects for DataAccess.
+ * Coordinates database error response: applies notice and runtime-flag side
+ * effects on top of focused error-classification collaborators.
  *
- * The string taxonomy, staged-build policy, table metadata inspection, and
- * prefix diagnostics live in focused collaborators. This class preserves the
- * public surface used by DatabaseCore, repair policy, and staged-build code.
+ * The pure error vocabulary lives in the four collaborators exposed via
+ * accessor methods:
+ *   - taxonomy(): string-pattern matchers (is*Error()).
+ *   - stagedFailures(): staged-build failure policy (classifyStageFailure() etc).
+ *   - tableInspector(): table name extraction + InnoDB engine probe.
+ *   - prefixDiagnostics(): prefix-mismatch + multisite cross-prefix detection.
+ *
+ * This class itself owns only the side-effecting coordination: noting an
+ * issue against notice state and runtime flags, gating writes via the quota
+ * cooldown, and dispatching the infrastructure-error entry point that direct
+ * wpdb sites use to bypass queryAndGetResults().
  *
  * @since 4.1.0
  */
@@ -31,7 +39,7 @@ class ABJ_404_Solution_DatabaseErrorClassifier {
     private $taxonomy;
 
     /** @var ABJ_404_Solution_DatabaseStagedFailureClassifier */
-    private $stagedFailureClassifier;
+    private $stagedFailures;
 
     /** @var ABJ_404_Solution_DatabaseErrorTableInspector */
     private $tableInspector;
@@ -48,20 +56,29 @@ class ABJ_404_Solution_DatabaseErrorClassifier {
         $this->core = $core;
         $this->logger = $logger;
         $this->taxonomy = new ABJ_404_Solution_DatabaseInfrastructureErrorTaxonomy($functions);
-        $this->stagedFailureClassifier = new ABJ_404_Solution_DatabaseStagedFailureClassifier($this->taxonomy);
+        $this->stagedFailures = new ABJ_404_Solution_DatabaseStagedFailureClassifier($this->taxonomy);
         $this->tableInspector = new ABJ_404_Solution_DatabaseErrorTableInspector($logger);
         $this->prefixDiagnostics = new ABJ_404_Solution_DatabasePrefixDiagnostics($core, $logger);
     }
 
-    /**
-     * Forward DatabaseCore infrastructure calls that remain owned by the core.
-     *
-     * @param string $name
-     * @param array<int, mixed> $arguments
-     * @return mixed
-     */
-    public function __call(string $name, array $arguments) {
-        return $this->core->$name(...$arguments);
+    /** @return ABJ_404_Solution_DatabaseInfrastructureErrorTaxonomy */
+    public function taxonomy(): ABJ_404_Solution_DatabaseInfrastructureErrorTaxonomy {
+        return $this->taxonomy;
+    }
+
+    /** @return ABJ_404_Solution_DatabaseStagedFailureClassifier */
+    public function stagedFailures(): ABJ_404_Solution_DatabaseStagedFailureClassifier {
+        return $this->stagedFailures;
+    }
+
+    /** @return ABJ_404_Solution_DatabaseErrorTableInspector */
+    public function tableInspector(): ABJ_404_Solution_DatabaseErrorTableInspector {
+        return $this->tableInspector;
+    }
+
+    /** @return ABJ_404_Solution_DatabasePrefixDiagnostics */
+    public function prefixDiagnostics(): ABJ_404_Solution_DatabasePrefixDiagnostics {
+        return $this->prefixDiagnostics;
     }
 
     /**
@@ -69,7 +86,8 @@ class ABJ_404_Solution_DatabaseErrorClassifier {
      * sites that bypass queryAndGetResults().
      *
      * @param string $errorText
-     * @return bool
+     * @return bool True when the text matched an infrastructure error and
+     *              notice-state side effects were applied.
      */
     public function classifyAndHandleInfrastructureError(string $errorText): bool {
         if ($errorText === '') {
@@ -85,173 +103,27 @@ class ABJ_404_Solution_DatabaseErrorClassifier {
         return false;
     }
 
-    /** @param mixed $errorText @return bool */
-    public function isInvalidDataError($errorText): bool {
-        return $this->taxonomy->isInvalidDataError($errorText);
-    }
-
-    /** @param string $errorText @return bool */
-    public function classifySetStatementFailure(string $errorText): bool {
-        return $this->taxonomy->classifySetStatementFailure($errorText);
-    }
-
-    /** @param string|null $errorText @return bool */
-    public function isTransientConnectionError(?string $errorText): bool {
-        return $this->taxonomy->isTransientConnectionError($errorText);
-    }
-
-    /** @param string $errorText @return bool */
-    public function isQuotaLimitError(string $errorText): bool {
-        return $this->taxonomy->isQuotaLimitError($errorText);
-    }
-
-    /** @param string $errorText @return bool */
-    public function isDiskFullError(string $errorText): bool {
-        return $this->taxonomy->isDiskFullError($errorText);
-    }
-
-    /** @param string $errorText @return bool */
-    public function isReadOnlyError(string $errorText): bool {
-        return $this->taxonomy->isReadOnlyError($errorText);
-    }
-
-    /** @param string $errorText @return bool */
-    public function isAccessDeniedError(string $errorText): bool {
-        return $this->taxonomy->isAccessDeniedError($errorText);
-    }
-
-    /** @param string $errorText @return bool */
-    public function isCollationError(string $errorText): bool {
-        return $this->taxonomy->isCollationError($errorText);
-    }
-
-    /** @param string $errorText @return bool */
-    public function isCrashedTableError(string $errorText): bool {
-        return $this->taxonomy->isCrashedTableError($errorText);
-    }
-
-    /** @param string $errorText @return bool */
-    public function isIncorrectKeyFileError(string $errorText): bool {
-        return $this->taxonomy->isIncorrectKeyFileError($errorText);
-    }
-
-    /** @param string $errorText @return bool */
-    public function isQueryTimeoutError(string $errorText): bool {
-        return $this->taxonomy->isQueryTimeoutError($errorText);
-    }
-
-    /** @param string $errorText @return bool */
-    public function isPacketTooLarge(string $errorText): bool {
-        return $this->taxonomy->isPacketTooLarge($errorText);
-    }
-
-    /** @param string $errorText @return bool */
-    public function isDeadlockOrLockTimeoutError(string $errorText): bool {
-        return $this->taxonomy->isDeadlockOrLockTimeoutError($errorText);
-    }
-
-    /** @param string $errorText @return bool */
-    public function isGaleraConflictError(string $errorText): bool {
-        return $this->taxonomy->isGaleraConflictError($errorText);
-    }
-
-    /** @param string $errorText @return bool */
-    public function isOutOfMemoryError(string $errorText): bool {
-        return $this->taxonomy->isOutOfMemoryError($errorText);
-    }
-
-    /** @param string $errorText @return bool */
-    public function isMissingPluginTableError(string $errorText): bool {
-        return $this->taxonomy->isMissingPluginTableError($errorText);
-    }
-
-    /** @param string $errorText @return bool */
-    public function isTransientViewBuildTableError(string $errorText): bool {
-        return $this->taxonomy->isTransientViewBuildTableError($errorText);
-    }
-
-    /** @param string $errorText @return bool */
-    public function isInfrastructureSqlError(string $errorText): bool {
-        return $this->taxonomy->isInfrastructureSqlError($errorText);
-    }
-
-    /** @param string $errorText @return bool */
-    public function isPermanentHostSideStagedFailure(string $errorText): bool {
-        return $this->stagedFailureClassifier->isPermanentHostSideStagedFailure($errorText);
-    }
-
     /**
-     * Classify an error raised inside the staged view build.
-     *
-     * @param int $stageNumber
-     * @param string $errorText
-     * @return string
-     */
-    public function classifyStageFailure(int $stageNumber, string $errorText): string {
-        return $this->stagedFailureClassifier->classifyStageFailure($stageNumber, $errorText);
-    }
-
-    /** @param string $errorText @return bool */
-    public function isResumableStagedKill(string $errorText): bool {
-        return $this->stagedFailureClassifier->isResumableStagedKill($errorText);
-    }
-
-    /**
-     * Extract a table name from a MySQL "table is full" error message.
+     * Apply notice and runtime-flag side effects for a recognized
+     * infrastructure-error string. Sets write-block / quota-cooldown runtime
+     * flags so subsequent write attempts short-circuit, and registers a
+     * plugin-admin notice describing the situation.
      *
      * @param string $errorText
-     * @return string|null
+     * @return void
      */
-    public function extractTableNameFromFullError(string $errorText): ?string {
-        return $this->tableInspector->extractTableNameFromFullError($errorText);
-    }
-
-    /**
-     * Check if a given table uses the InnoDB storage engine.
-     *
-     * @param string $tableName
-     * @return bool
-     */
-    public function isInnoDBTable(string $tableName): bool {
-        return $this->tableInspector->isInnoDBTable($tableName);
-    }
-
-    /**
-     * Extract the table name from a MySQL "doesn't exist" error message.
-     *
-     * @param string $errorText
-     * @return string
-     */
-    public function extractMissingTableNameFromError(string $errorText): string {
-        return $this->tableInspector->extractMissingTableNameFromError($errorText);
-    }
-
-    /** @return string */
-    public function diagnosePrefixMismatch(): string {
-        return $this->prefixDiagnostics->diagnosePrefixMismatch();
-    }
-
-    /**
-     * @param string $errorText
-     * @return bool
-     */
-    public function isMultisiteCrossPrefixError(string $errorText): bool {
-        return $this->prefixDiagnostics->isMultisiteCrossPrefixError($errorText);
-    }
-
-    /** @param string $errorText @return void */
     public function noteDatabaseIssueFromError(string $errorText): void {
         if (trim($errorText) === '') {
             return;
         }
-        if ($this->isDiskFullError($errorText)) {
+        if ($this->taxonomy->isDiskFullError($errorText)) {
             $this->core->noticeState()->markServerSideIssueNoted();
             $this->core->setRuntimeFlag('abj404_db_disk_full_until', $this->core->clock()->now() + self::DB_WRITE_BLOCK_COOLDOWN_SECONDS, self::DB_WRITE_BLOCK_COOLDOWN_SECONDS);
 
             $tableFull = stripos($errorText, 'table') !== false && stripos($errorText, 'is full') !== false;
             if ($tableFull) {
-                $tableName = $this->extractTableNameFromFullError($errorText);
-                if ($tableName !== null && $this->isInnoDBTable($tableName)) {
+                $tableName = $this->tableInspector->extractTableNameFromFullError($errorText);
+                if ($tableName !== null && $this->tableInspector->isInnoDBTable($tableName)) {
                     $this->core->setPluginDbNotice('disk_full', $this->core->noticeState()->localizeOrDefault('The InnoDB tablespace appears to be exhausted. Deleting plugin data will NOT free this space. Contact your hosting provider to expand the InnoDB tablespace (ibdata1).'), $errorText);
                     return;
                 }
@@ -260,24 +132,29 @@ class ABJ_404_Solution_DatabaseErrorClassifier {
             $this->core->setPluginDbNotice('disk_full', $this->core->noticeState()->localizeOrDefault('Database storage appears full (disk/engine space). Plugin write-heavy tasks are temporarily paused.'), $errorText);
             return;
         }
-        if ($this->isQuotaLimitError($errorText)) {
+        if ($this->taxonomy->isQuotaLimitError($errorText)) {
             $this->core->noticeState()->markServerSideIssueNoted();
             $this->core->setRuntimeFlag('abj404_db_quota_cooldown_until', $this->core->clock()->now() + self::DB_QUOTA_COOLDOWN_SECONDS, self::DB_QUOTA_COOLDOWN_SECONDS);
             $this->core->setPluginDbNotice('query_quota', $this->core->noticeState()->localizeOrDefault('Database query quota was exceeded (for example max_questions). Non-essential plugin background tasks are temporarily paused.'), $errorText);
             return;
         }
-        if ($this->isReadOnlyError($errorText)) {
+        if ($this->taxonomy->isReadOnlyError($errorText)) {
             $this->core->noticeState()->markServerSideIssueNoted();
             $this->core->setRuntimeFlag('abj404_db_read_only_until', $this->core->clock()->now() + self::DB_WRITE_BLOCK_COOLDOWN_SECONDS, self::DB_WRITE_BLOCK_COOLDOWN_SECONDS);
             $this->core->setPluginDbNotice('read_only', $this->core->noticeState()->localizeOrDefault('Database appears to be in read-only mode. Plugin write operations are temporarily paused.'), $errorText);
             return;
         }
-        if ($this->isCollationError($errorText)) {
+        if ($this->taxonomy->isCollationError($errorText)) {
             $this->logger->debugMessage("Collation mismatch detected (auto-recovery will run): " . $errorText);
         }
     }
 
-    /** @return bool */
+    /**
+     * True when a prior quota-exceeded error is still inside its cooldown
+     * window, so callers should skip non-essential queries.
+     *
+     * @return bool
+     */
     public function isQuotaCooldownActive(): bool {
         $rawQuotaFlag = $this->core->getRuntimeFlag('abj404_db_quota_cooldown_until');
         $until = is_scalar($rawQuotaFlag) ? (int)$rawQuotaFlag : 0;

@@ -246,7 +246,7 @@ class ABJ_404_Solution_PublishedContentRepository {
      * @return array{queryError: string, rows: array<int, object>}
      */
     private function applyCollationFallback(string $query, string $queryError, array $rows): array {
-        if (empty($queryError) || !$this->errorClassifier->isCollationError($queryError)) {
+        if (empty($queryError) || !$this->errorClassifier->taxonomy()->isCollationError($queryError)) {
             return array('queryError' => $queryError, 'rows' => $rows);
         }
 
@@ -288,7 +288,7 @@ class ABJ_404_Solution_PublishedContentRepository {
         array $slugClause,
         array $queryParts
     ): array {
-        if (empty($queryError) || !$this->errorClassifier->isInvalidDataError($queryError) ||
+        if (empty($queryError) || !$this->errorClassifier->taxonomy()->isInvalidDataError($queryError) ||
                 $slugClause['slug'] === '' ||
                 strpos($query, 'CAST(wp_posts.post_name AS CHAR CHARACTER SET utf8mb4)') === false) {
             return array('queryError' => $queryError, 'rows' => $rows);

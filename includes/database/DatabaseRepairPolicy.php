@@ -89,7 +89,7 @@ class ABJ_404_Solution_DatabaseRepairPolicy {
         // only escalate to ERROR if repair fails (avoids flooding admin with
         // error emails for transient issues that auto-repair resolves).
         $originalSqlError = is_string($result['last_error']) ? $result['last_error'] : '';
-        $missingTable = $this->classifier->extractMissingTableNameFromError($originalSqlError);
+        $missingTable = $this->classifier->tableInspector()->extractMissingTableNameFromError($originalSqlError);
         $this->logger->infoMessage("Missing plugin table detected during query. "
             . "Attempting auto-repair. SQL error: " . $originalSqlError);
 
@@ -155,7 +155,7 @@ class ABJ_404_Solution_DatabaseRepairPolicy {
      */
     public function handleTransientViewBuildTableMissing($query, array &$result): bool {
         $observedError = is_string($result['last_error']) ? $result['last_error'] : '';
-        if (!$this->classifier->isTransientViewBuildTableError($observedError)) {
+        if (!$this->classifier->taxonomy()->isTransientViewBuildTableError($observedError)) {
             return false;
         }
         $lowerErr = strtolower($observedError);
@@ -252,11 +252,11 @@ class ABJ_404_Solution_DatabaseRepairPolicy {
         $retryError = isset($result['last_error']) && is_scalar($result['last_error'])
             ? (string)$result['last_error']
             : '';
-        $retryMissingTable = $this->classifier->extractMissingTableNameFromError($retryError);
+        $retryMissingTable = $this->classifier->tableInspector()->extractMissingTableNameFromError($retryError);
         $materializedTable = $retryMissingTable !== '' ? $retryMissingTable : $missingTable;
         if ($retryError !== ''
                 && $materializedTable !== ''
-                && $this->classifier->isMissingPluginTableError($retryError)
+                && $this->classifier->taxonomy()->isMissingPluginTableError($retryError)
                 && $this->tableMaterializedAfterRepair($materializedTable)) {
             $this->logger->infoMessage(
                 "Missing-table auto-repair materialized " . $materializedTable .
@@ -326,13 +326,13 @@ class ABJ_404_Solution_DatabaseRepairPolicy {
         // Check for prefix mismatch: plugin tables may exist under a
         // different $table_prefix than the current $wpdb->prefix (common
         // after site migrations or hosting panel clones).
-        $prefixDiag = $this->classifier->diagnosePrefixMismatch();
+        $prefixDiag = $this->classifier->prefixDiagnostics()->diagnosePrefixMismatch();
 
         // Multisite cross-prefix: a query referenced another subsite's table.
         // The plugin correctly created tables for the current site, but cannot
         // fix another subsite's missing tables from this request context.
         // That subsite will get its tables when its own cron fires.
-        if ($this->classifier->isMultisiteCrossPrefixError($originalSqlError)) {
+        if ($this->classifier->prefixDiagnostics()->isMultisiteCrossPrefixError($originalSqlError)) {
             $this->logger->warn("Multisite cross-prefix table reference (not actionable from this site). "
                 . "Current prefix: " . ($wpdb->prefix ?? '')
                 . ", Original error: " . $originalSqlError . $prefixDiag);
