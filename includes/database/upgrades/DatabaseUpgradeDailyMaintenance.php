@@ -111,7 +111,7 @@ class ABJ_404_Solution_DatabaseUpgradeDailyMaintenance extends ABJ_404_Solution_
 
         $lastError = (string)($wpdb->last_error ?? '');
         if ($lastError !== '') {
-            if (!$this->dbCore->classifyAndHandleInfrastructureError($lastError)) {
+            if (!$this->dbCore->errorClassifier()->classifyAndHandleInfrastructureError($lastError)) {
                 $this->logger->errorMessage("Failed to query for expired rate limit transients: " . $lastError);
             }
             return ['deleted' => 0, 'errors' => 1, 'error' => $lastError];

@@ -274,7 +274,7 @@ class ABJ_404_Solution_LogsQueueFlusher {
             $detailsSuffix = count($failureDetails) > 3 ? ' | (additional failures omitted)' : '';
             $context = $this->recovery->getWpdbRecentQueryContextForLogs();
             $contextSuffix = ($context !== '') ? (" | savequeries_context=" . $context) : '';
-            if ($this->dbCore->classifyAndHandleInfrastructureError($batchError)) {
+            if ($this->dbCore->errorClassifier()->classifyAndHandleInfrastructureError($batchError)) {
                 $this->logger->warn("flushLogQueue recovery incomplete: {$successCount} inserted, {$failCount} failed. | batch_error=" . $batchError . " | failures=" . implode(' || ', $detailsParts) . $detailsSuffix . $contextSuffix);
             } else {
                 $this->logger->errorMessage("flushLogQueue recovery incomplete: {$successCount} inserted, {$failCount} failed. | batch_error=" . $batchError . " | failures=" . implode(' || ', $detailsParts) . $detailsSuffix . $contextSuffix);

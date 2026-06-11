@@ -174,7 +174,7 @@ class ABJ_404_Solution_DatabaseQueryRecoveryPolicy {
     private function recoverCollationIfNeeded(string $query, array &$result, string $resultType, bool $producesRows): void {
         $lastError = $this->lastErrorFromResult($result);
         if ($lastError !== '' && $this->core->errorClassifier()->taxonomy()->schema()->isCollationError($lastError)) {
-            $this->core->recoverFromCollationMismatchAndRetry($query, $result, $producesRows, $resultType);
+            $this->core->collationHelper()->recoverFromCollationMismatchAndRetry($query, $result, $producesRows, $resultType);
         }
     }
 

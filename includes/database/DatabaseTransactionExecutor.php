@@ -51,7 +51,7 @@ class ABJ_404_Solution_DatabaseTransactionExecutor {
                     if ($wpdb->last_error != null && trim((string)$wpdb->last_error) !== '') {
                         $allIsWell = false;
                         $lastError = (string)$wpdb->last_error;
-                        if (!$this->core->classifyAndHandleInfrastructureError($lastError)) {
+                        if (!$this->core->errorClassifier()->classifyAndHandleInfrastructureError($lastError)) {
                             $this->logger->errorMessage("Error executing SQL transaction: " . $lastError);
                             $this->logger->errorMessage("SQL causing the transaction error: " . $statement);
                         }

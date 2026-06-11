@@ -26,7 +26,7 @@ if (!defined('ABSPATH')) {
  */
 class ABJ_404_Solution_NGramCacheReconciler {
 
-    /** @var ABJ_404_Solution_DatabaseCoreInterface */
+    /** @var ABJ_404_Solution_DatabaseCore */
     private $dbCore;
 
     /** @var mixed */
@@ -51,7 +51,7 @@ class ABJ_404_Solution_NGramCacheReconciler {
     private $logger;
 
     /**
-     * @param ABJ_404_Solution_DatabaseCoreInterface $dbCore
+     * @param ABJ_404_Solution_DatabaseCore $dbCore
      * @param mixed $rebuilder Object exposing updateNGramsForPages().
      * @param mixed $extractor Object exposing extractNGrams().
      * @param mixed $repo Object exposing storeNGrams().
@@ -147,7 +147,7 @@ class ABJ_404_Solution_NGramCacheReconciler {
 
         $missingError = isset($missingResult['last_error']) && is_string($missingResult['last_error']) ? $missingResult['last_error'] : '';
         if ($missingError !== '') {
-            if (!$this->dbCore->classifyAndHandleInfrastructureError($missingError)) {
+            if (!$this->dbCore->errorClassifier()->classifyAndHandleInfrastructureError($missingError)) {
                 $this->logger->errorMessage("Failed to query for missing post ngram entries: " . $missingError);
             }
             return ['error' => $missingError, 'added' => 0, 'failed' => 0];
@@ -247,7 +247,7 @@ class ABJ_404_Solution_NGramCacheReconciler {
 
         $orphanedError = isset($orphanedResult['last_error']) && is_string($orphanedResult['last_error']) ? $orphanedResult['last_error'] : '';
         if ($orphanedError !== '') {
-            if (!$this->dbCore->classifyAndHandleInfrastructureError($orphanedError)) {
+            if (!$this->dbCore->errorClassifier()->classifyAndHandleInfrastructureError($orphanedError)) {
                 $this->logger->errorMessage("Failed to query for orphaned post ngram entries: " . $orphanedError);
             }
             return ['error' => $orphanedError, 'deleted' => 0, 'errors' => 0];
@@ -278,7 +278,7 @@ class ABJ_404_Solution_NGramCacheReconciler {
 
             $deleteError = isset($deleteResult['last_error']) && is_string($deleteResult['last_error']) ? $deleteResult['last_error'] : '';
             if ($deleteError !== '') {
-                if (!$this->dbCore->classifyAndHandleInfrastructureError($deleteError)) {
+                if (!$this->dbCore->errorClassifier()->classifyAndHandleInfrastructureError($deleteError)) {
                     $this->logger->errorMessage("Failed to delete orphaned post ngram entry ID {$entryId}: " . $deleteError);
                 }
                 $errors++;
@@ -347,7 +347,7 @@ class ABJ_404_Solution_NGramCacheReconciler {
 
             $catDeleteError = isset($catDeleteResult['last_error']) && is_string($catDeleteResult['last_error']) ? $catDeleteResult['last_error'] : '';
             if ($catDeleteError !== '') {
-                if (!$this->dbCore->classifyAndHandleInfrastructureError($catDeleteError)) {
+                if (!$this->dbCore->errorClassifier()->classifyAndHandleInfrastructureError($catDeleteError)) {
                     $this->logger->errorMessage("Failed to delete orphaned category ngram entry ID {$categoryId}: " . $catDeleteError);
                 }
                 $errors++;

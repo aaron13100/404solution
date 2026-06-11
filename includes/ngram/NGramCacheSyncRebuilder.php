@@ -21,7 +21,7 @@ if (!defined('ABSPATH')) {
  */
 class ABJ_404_Solution_NGramCacheSyncRebuilder {
 
-    /** @var ABJ_404_Solution_DatabaseCoreInterface */
+    /** @var ABJ_404_Solution_DatabaseCore */
     private $dbCore;
 
     /** @var mixed */
@@ -34,7 +34,7 @@ class ABJ_404_Solution_NGramCacheSyncRebuilder {
     private $logger;
 
     /**
-     * @param ABJ_404_Solution_DatabaseCoreInterface $dbCore
+     * @param ABJ_404_Solution_DatabaseCore $dbCore
      * @param mixed $rebuilder Object exposing rebuildCache().
      * @param mixed $coveragePolicy Object exposing invalidateCoverageCaches().
      * @param ABJ_404_Solution_Logging $logger
@@ -137,7 +137,7 @@ class ABJ_404_Solution_NGramCacheSyncRebuilder {
         );
         $truncateError = isset($truncateResult['last_error']) && is_string($truncateResult['last_error']) ? $truncateResult['last_error'] : '';
         if ($truncateError !== '') {
-            if (!$this->dbCore->classifyAndHandleInfrastructureError($truncateError)) {
+            if (!$this->dbCore->errorClassifier()->classifyAndHandleInfrastructureError($truncateError)) {
                 $this->logger->errorMessage("Failed to truncate N-gram cache table: " . $truncateError);
             }
             return ['total_pages' => 0, 'processed' => 0, 'success' => 0, 'failed' => 1, 'error' => $truncateError];
@@ -160,7 +160,7 @@ class ABJ_404_Solution_NGramCacheSyncRebuilder {
 
         if (!is_array($totalPagesRow) || !isset($totalPagesRow['c'])) {
             $countError = isset($totalPagesResult['last_error']) && is_string($totalPagesResult['last_error']) ? $totalPagesResult['last_error'] : '';
-            if (!$this->dbCore->classifyAndHandleInfrastructureError($countError)) {
+            if (!$this->dbCore->errorClassifier()->classifyAndHandleInfrastructureError($countError)) {
                 $this->logger->errorMessage("Failed to query permalink cache table: " . $countError);
             }
             return ['total_pages' => 0, 'processed' => 0, 'success' => 0, 'failed' => 1, 'error' => $countError];

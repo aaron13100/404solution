@@ -321,7 +321,7 @@ class ABJ_404_Solution_PublishedContentRepository {
             return;
         }
 
-        if (!$this->dbCore->classifyAndHandleInfrastructureError($queryError)) {
+        if (!$this->errorClassifier->classifyAndHandleInfrastructureError($queryError)) {
             $this->logger->errorMessage("Error executing query. Err: " . $queryError . ", Query: " . $query);
         }
     }
@@ -358,7 +358,7 @@ class ABJ_404_Solution_PublishedContentRepository {
 
         $result = $this->dbCore->queryAndGetResults($query, array('result_type' => OBJECT));
         $queryError = is_string($result['last_error'] ?? '') ? ($result['last_error'] ?? '') : '';
-        if ($queryError && !$this->dbCore->classifyAndHandleInfrastructureError($queryError)) {
+        if ($queryError && !$this->errorClassifier->classifyAndHandleInfrastructureError($queryError)) {
             $this->logger->errorMessage("Error executing query. Err: " . $queryError . ", Query: " . $query);
         }
 
@@ -392,7 +392,7 @@ class ABJ_404_Solution_PublishedContentRepository {
 
         $result = $this->dbCore->queryAndGetResults($query, array('result_type' => OBJECT));
         $queryError = is_string($result['last_error'] ?? '') ? ($result['last_error'] ?? '') : '';
-        if ($queryError && !$this->dbCore->classifyAndHandleInfrastructureError($queryError)) {
+        if ($queryError && !$this->errorClassifier->classifyAndHandleInfrastructureError($queryError)) {
             $this->logger->errorMessage("Error executing query. Err: " . $queryError . ", Query: " . $query);
         }
         $rows = $this->objectRows($result['rows'] ?? array());
@@ -444,7 +444,7 @@ class ABJ_404_Solution_PublishedContentRepository {
 
         $result = $this->dbCore->queryAndGetResults($query, array('result_type' => OBJECT));
         $queryError = is_string($result['last_error'] ?? '') ? ($result['last_error'] ?? '') : '';
-        if ($queryError && !$this->dbCore->classifyAndHandleInfrastructureError($queryError)) {
+        if ($queryError && !$this->errorClassifier->classifyAndHandleInfrastructureError($queryError)) {
             $this->logger->errorMessage("Error executing query. Err: " . $queryError . ", Query: " . $query);
         }
         $rows = $this->objectRows($result['rows'] ?? array());

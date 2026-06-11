@@ -45,7 +45,7 @@ abstract class ABJ_404_Solution_DatabaseUpgradeComponent {
     /** @var ABJ_404_Solution_DataAccess */
     protected $dao;
 
-    /** @var ABJ_404_Solution_DatabaseCoreInterface */
+    /** @var ABJ_404_Solution_DatabaseCore */
     protected $dbCore;
 
     /** @var ABJ_404_Solution_ContentRepositoryInterface */

@@ -275,43 +275,17 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
         return $this->tableNameResolver->getTableColumnNames($tableName);
     }
 
-    /** @inheritDoc */
-    public function classifyAndHandleInfrastructureError(string $errorText): bool {
-        return $this->recoveryServices->errorClassifier()->classifyAndHandleInfrastructureError($errorText);
-    }
-
-    /** @inheritDoc */
+    /**
+     * Classify a view-build pipeline stage failure into 'resumable',
+     * 'skip', 'halt', or 'rethrow'. Not part of any sub-interface;
+     * view-build callers reach this via ViewBuildDataBoundary.
+     *
+     * @param int $stageNumber
+     * @param string $errorText
+     * @return string
+     */
     public function classifyStageFailure(int $stageNumber, string $errorText): string {
         return $this->recoveryServices->errorClassifier()->stagedFailures()->classifyStageFailure($stageNumber, $errorText);
-    }
-
-    /** @inheritDoc */
-    public function isOutOfMemoryError(string $errorText): bool {
-        return $this->recoveryServices->errorClassifier()->taxonomy()->hostState()->isOutOfMemoryError($errorText);
-    }
-
-    /** @inheritDoc */
-    public function setClock(ABJ_404_Solution_Clock $clock): void {
-        $this->clock = $clock;
-        $this->noticeState->setClock($clock);
-    }
-
-    /** @inheritDoc */
-    public function repairTable(string $errorMessage): void {
-        $this->recoveryServices->tableRepairer()->repairTable($errorMessage);
-    }
-
-    /** @inheritDoc */
-    public function repairDuplicateIDs(string $errorMessage, string $sqlThatWasRun): void {
-        $this->recoveryServices->tableRepairer()->repairDuplicateIDs($errorMessage, $sqlThatWasRun);
-    }
-
-    /**
-     * @inheritDoc
-     * @param 'OBJECT'|'OBJECT_K'|'ARRAY_A'|'ARRAY_N' $resultType
-     */
-    public function recoverFromCollationMismatchAndRetry(string $query, array &$result, bool $producesRows, string $resultType): void {
-        $this->recoveryServices->collationHelper()->recoverFromCollationMismatchAndRetry($query, $result, $producesRows, $resultType);
     }
 
     /** @inheritDoc */
@@ -341,8 +315,9 @@ class ABJ_404_Solution_DatabaseCore implements ABJ_404_Solution_DatabaseCoreInte
     // =========================================================================
 
     /**
-     * Lazy-resolve the Clock instance: explicit setClock wins, then the
-     * service container, then a fresh SystemClock.
+     * Lazy-resolve the Clock instance: previously cached value wins, then the
+     * service container (the standard test-injection seam per
+     * clock_injection_pattern.md), then a fresh SystemClock.
      *
      * @return ABJ_404_Solution_Clock
      */

@@ -124,7 +124,7 @@ class ABJ_404_Solution_DatabaseUpgradePluginUpdate extends ABJ_404_Solution_Data
         // Check for errors
         if ($updateResult === false) {
             $results['errors'][] = "Failed to update redirects: " . $wpdb->last_error;
-            if (!$this->dbCore->classifyAndHandleInfrastructureError($wpdb->last_error ?? '')) {
+            if (!$this->dbCore->errorClassifier()->classifyAndHandleInfrastructureError($wpdb->last_error ?? '')) {
                 $abj404logging->errorMessage("Migration failed: " . $wpdb->last_error);
             }
         } else {

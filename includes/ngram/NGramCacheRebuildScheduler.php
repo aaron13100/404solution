@@ -32,7 +32,7 @@ class ABJ_404_Solution_NGramCacheRebuildScheduler {
     /** WP-Cron hook this scheduler enqueues and consumes. */
     const REBUILD_CRON_HOOK = 'abj404_rebuild_ngram_cache_hook';
 
-    /** @var ABJ_404_Solution_DatabaseCoreInterface */
+    /** @var ABJ_404_Solution_DatabaseCore */
     private $dbCore;
 
     /** @var mixed */
@@ -45,7 +45,7 @@ class ABJ_404_Solution_NGramCacheRebuildScheduler {
     private $optionStore;
 
     /**
-     * @param ABJ_404_Solution_DatabaseCoreInterface $dbCore
+     * @param ABJ_404_Solution_DatabaseCore $dbCore
      * @param mixed $rebuilder Object exposing rebuildCache().
      * @param ABJ_404_Solution_Logging $logger
      * @param ABJ_404_Solution_NGramNetworkOptionStore $optionStore
@@ -398,7 +398,7 @@ class ABJ_404_Solution_NGramCacheRebuildScheduler {
         // the hosting cause as an admin notice while keeping the cron
         // failure ERROR level so the user must act on it.
         if (!empty($wpdb->last_error)) {
-            $this->dbCore->classifyAndHandleInfrastructureError($wpdb->last_error);
+            $this->dbCore->errorClassifier()->classifyAndHandleInfrastructureError($wpdb->last_error);
         }
 
         $this->logger->errorMessage($errorMsg);
@@ -444,7 +444,7 @@ class ABJ_404_Solution_NGramCacheRebuildScheduler {
         );
 
         if (!empty($wpdb->last_error)) {
-            $this->dbCore->classifyAndHandleInfrastructureError($wpdb->last_error);
+            $this->dbCore->errorClassifier()->classifyAndHandleInfrastructureError($wpdb->last_error);
         }
 
         $this->logger->errorMessage($errorMsg);

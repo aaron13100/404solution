@@ -211,11 +211,11 @@ class ABJ_404_Solution_DatabaseSqlErrorReporter {
      */
     private function runRepairHooksForFinalError(string $query, array &$result, string $lastError): void {
         if (strpos($lastError, " is marked as crashed ") !== false) {
-            $this->core->repairTable($lastError);
+            $this->core->tableRepairer()->repairTable($lastError);
         }
         if (strpos($lastError, "ALTER TABLE causes auto_increment resequencing") !== false &&
                 strpos($lastError, "resulting in duplicate entry") !== false) {
-            $this->core->repairDuplicateIDs($lastError, $query);
+            $this->core->tableRepairer()->repairDuplicateIDs($lastError, $query);
         }
         if ($this->core->errorClassifier()->taxonomy()->schema()->isIncorrectKeyFileError($lastError)) {
             $this->core->tableRepairer()->repairCorruptedTableAndRetry($query, $result);

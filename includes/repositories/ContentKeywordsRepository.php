@@ -17,7 +17,7 @@ class ABJ_404_Solution_ContentKeywordsRepository {
      */
     const MAX_LIMIT = 5000;
 
-    /** @var ABJ_404_Solution_DatabaseCoreInterface */
+    /** @var ABJ_404_Solution_DatabaseCore */
     private $dbCore;
     /** @var ABJ_404_Solution_Functions */
     private $functions;
@@ -25,12 +25,12 @@ class ABJ_404_Solution_ContentKeywordsRepository {
     private $logger;
 
     /**
-     * @param ABJ_404_Solution_DatabaseCoreInterface $dbCore
+     * @param ABJ_404_Solution_DatabaseCore $dbCore
      * @param ABJ_404_Solution_Functions $functions
      * @param ABJ_404_Solution_Logging $logging
      */
     public function __construct(
-        ABJ_404_Solution_DatabaseCoreInterface $dbCore,
+        ABJ_404_Solution_DatabaseCore $dbCore,
         $functions,
         $logging
     ) {
@@ -58,7 +58,7 @@ class ABJ_404_Solution_ContentKeywordsRepository {
         if ($lastError !== '') {
             if (stripos($lastError, 'unknown column') !== false) {
                 $this->logger->warn("content_keywords column not yet available (DB migration pending): " . $lastError);
-            } else if (!$this->dbCore->classifyAndHandleInfrastructureError($lastError)) {
+            } else if (!$this->dbCore->errorClassifier()->classifyAndHandleInfrastructureError($lastError)) {
                 $this->logger->errorMessage("Error fetching posts for content keywords: " . $lastError);
             }
             return array();

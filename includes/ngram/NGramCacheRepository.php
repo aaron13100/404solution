@@ -122,7 +122,7 @@ class ABJ_404_Solution_NGramCacheRepository {
                 $errorContext .= sprintf(", Blog ID: %d", get_current_blog_id());
             }
 
-            if (!$this->dbCore->classifyAndHandleInfrastructureError($lastError)) {
+            if (!$this->dbCore->errorClassifier()->classifyAndHandleInfrastructureError($lastError)) {
                 $this->logger->errorMessage($errorContext);
             }
             return false;
