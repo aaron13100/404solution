@@ -28,6 +28,15 @@ class ABJ_404_Solution_ServiceContainer {
     private static $instance = null;
 
     /**
+     * Most recent Throwable suppressed by safeGet() / abj_service(), or
+     * null when the last resolution succeeded. Recovered by diagnostic
+     * code via getLastSuppressedError().
+     *
+     * @var \Throwable|null
+     */
+    private static $lastSuppressedError = null;
+
+    /**
      * Registered services and their factory functions.
      * @var array<string, callable>
      */
@@ -157,8 +166,15 @@ class ABJ_404_Solution_ServiceContainer {
      * null if the service isn't registered or the factory raises any
      * Throwable. Replaces the legacy `try { ServiceContainer::get(...) }
      * catch { fall back } ` pattern at call sites - the swallow lives
-     * here, in one place, and is logged via error_log() so it isn't
-     * completely invisible.
+     * here, in one place.
+     *
+     * On failure the underlying Throwable is preserved two ways:
+     *   1. Full context (class, code, file:line, message) is written to
+     *      error_log() so production sysadmins see it.
+     *   2. The Throwable instance is captured in self::$lastSuppressedError
+     *      so diagnostic surfaces (admin notices, integration tests, the
+     *      design-audit M401 fix in c367/368/369) can recover the full
+     *      exception chain by calling self::getLastSuppressedError().
      *
      * @param string $name Service identifier
      * @return mixed The service instance, or null on any failure
@@ -169,11 +185,79 @@ class ABJ_404_Solution_ServiceContainer {
             return null;
         }
         try {
-            return $c->get($name);
+            $result = $c->get($name);
+            self::$lastSuppressedError = null;
+            return $result;
         } catch (\Throwable $e) {
-            error_log('404 Solution: ServiceContainer::safeGet(' . $name . ') failed: ' . $e->getMessage());
+            self::recordSuppressedError('ServiceContainer::safeGet(' . $name . ')', $e);
             return null;
         }
+    }
+
+    /**
+     * Returns the most recent Throwable that was suppressed by safeGet() or
+     * by the abj_service() helper, or null if the last resolution succeeded.
+     *
+     * Diagnostic code should call this immediately after a null-return from
+     * safeGet()/abj_service() to recover the full exception chain. The wrappers
+     * intentionally return null instead of throwing, but the underlying error
+     * is preserved here for inspection.
+     *
+     * @return \Throwable|null
+     */
+    public static function getLastSuppressedError() {
+        return self::$lastSuppressedError;
+    }
+
+    /**
+     * Reset the suppressed-error capture. Useful between tests and after a
+     * caller has handled a prior failure.
+     *
+     * @return void
+     */
+    public static function clearLastSuppressedError() {
+        self::$lastSuppressedError = null;
+    }
+
+    /**
+     * Internal: capture a suppressed Throwable for getLastSuppressedError()
+     * and emit a fully-contextualised error_log() line.
+     *
+     * Centralising the swallow-and-log behaviour here ensures every catch in
+     * this file records the exception class, file:line, code, and message,
+     * not just the message, so the exception chain is recoverable from
+     * production logs alone.
+     *
+     * @param string     $context Short identifier for the call site
+     *                            (e.g. 'ServiceContainer::safeGet(foo)').
+     * @param \Throwable $e       The suppressed exception.
+     * @return void
+     */
+    private static function recordSuppressedError($context, \Throwable $e) {
+        self::$lastSuppressedError = $e;
+        error_log(sprintf(
+            '404 Solution: %s suppressed %s (code %s) at %s:%d: %s',
+            $context,
+            get_class($e),
+            (string) $e->getCode(),
+            $e->getFile(),
+            $e->getLine(),
+            $e->getMessage()
+        ));
+    }
+
+    /**
+     * Public seam for the abj_service() helper function. Functions outside
+     * the class cannot reach private statics, so this delegates to
+     * recordSuppressedError() and is otherwise identical. Not intended for
+     * call sites elsewhere in the codebase: use safeGet() instead.
+     *
+     * @param string     $context
+     * @param \Throwable $e
+     * @return void
+     */
+    public static function recordSuppressedErrorPublic($context, \Throwable $e) {
+        self::recordSuppressedError($context, $e);
     }
 
     /**
@@ -437,7 +521,10 @@ function abj_service($name) {
             try {
                 return call_user_func($callback);
             } catch (\Throwable $e) {
-                error_log('404 Solution: abj_service(' . $name . ') legacy fallback failed: ' . $e->getMessage());
+                ABJ_404_Solution_ServiceContainer::recordSuppressedErrorPublic(
+                    'abj_service(' . $name . ') legacy fallback',
+                    $e
+                );
                 return null;
             }
         }
@@ -450,7 +537,10 @@ function abj_service($name) {
     try {
         return $container->get($name);
     } catch (\Throwable $e) {
-        error_log('404 Solution: abj_service(' . $name . ') unresolved: ' . $e->getMessage());
+        ABJ_404_Solution_ServiceContainer::recordSuppressedErrorPublic(
+            'abj_service(' . $name . ') unresolved',
+            $e
+        );
         return null;
     }
 }

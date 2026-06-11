@@ -6,6 +6,7 @@ if (!defined('ABSPATH')) {
 
 require_once __DIR__ . '/FeedbackEnvironmentExtras_DbProbes.php';
 require_once __DIR__ . '/FeedbackEnvironmentExtras_HostProbes.php';
+require_once __DIR__ . '/FeedbackEnvironmentExtras_PlatformFingerprint.php';
 require_once __DIR__ . '/FeedbackEnvironmentExtras_DebugLogSignatures.php';
 
 /**
@@ -17,14 +18,17 @@ require_once __DIR__ . '/FeedbackEnvironmentExtras_DebugLogSignatures.php';
  * field of the feedback payload.
  *
  * This class owns ONLY the probe registry and the failure-isolation
- * wrapper. The probe implementations live in three collaborator classes,
- * partitioned by data source:
+ * wrapper. The probe implementations live in four collaborator classes,
+ * partitioned by data source and lifecycle:
  *   - FeedbackEnvironmentExtras_DbProbes: MySQL/MariaDB probes via $wpdb
  *     (SHOW GLOBAL VARIABLES/STATUS, SHOW PROCESSLIST, SHOW INDEX,
  *     information_schema, view-build option signals).
- *   - FeedbackEnvironmentExtras_HostProbes: PHP/OS/WP runtime probes
- *     (SAPI, opcache, filesystem headroom, hosting class, object-cache
- *     backend, timezone, multisite role, htaccess writability, lifecycle).
+ *   - FeedbackEnvironmentExtras_HostProbes: dynamic PHP/OS/WP runtime
+ *     state (opcache, filesystem headroom, open_basedir, timezone,
+ *     multisite role, htaccess writability, lifecycle).
+ *   - FeedbackEnvironmentExtras_PlatformFingerprint: static platform
+ *     identity (hosting class, control panel, object-cache backend) --
+ *     marker-table scans that rarely change for the life of the install.
  *   - FeedbackEnvironmentExtras_DebugLogSignatures: tail-read of the
  *     plugin debug log + PII-stripping signature normalization for
  *     `recent_error_signatures`.
@@ -49,12 +53,16 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras {
     /** @var ABJ_404_Solution_FeedbackEnvironmentExtras_HostProbes */
     private $host;
 
+    /** @var ABJ_404_Solution_FeedbackEnvironmentExtras_PlatformFingerprint */
+    private $platform;
+
     /** @var ABJ_404_Solution_FeedbackEnvironmentExtras_DebugLogSignatures */
     private $debugLog;
 
     public function __construct() {
         $this->db = new ABJ_404_Solution_FeedbackEnvironmentExtras_DbProbes();
         $this->host = new ABJ_404_Solution_FeedbackEnvironmentExtras_HostProbes();
+        $this->platform = new ABJ_404_Solution_FeedbackEnvironmentExtras_PlatformFingerprint();
         $this->debugLog = new ABJ_404_Solution_FeedbackEnvironmentExtras_DebugLogSignatures();
     }
 
@@ -79,6 +87,7 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras {
         $extras = array();
         $db = $this->db;
         $host = $this->host;
+        $platform = $this->platform;
         $debugLog = $this->debugLog;
 
         // MySQL global variables: the binding constraints for slow
@@ -142,14 +151,14 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras {
         // Plesk, WP Engine, Kinsta, Pantheon, Flywheel, RunCloud,
         // CloudPanel). Lets server-side group heartbeats by host
         // class retroactively without paying for a deep fingerprint.
-        $this->recordProbe($extras, 'hosting_class', function () use ($host) { return $host->probeHostingClass(); }, array());
+        $this->recordProbe($extras, 'hosting_class', function () use ($platform) { return $platform->probeHostingClass(); }, array());
 
         // Object-cache backend NAME, not just the on/off enum already
         // shipped in `object_cache`. Detect Redis / Memcached / APCu
         // / W3TC / LiteSpeed / WP Engine native via known constants
         // + wp_using_ext_object_cache(). Stale-cache reports cluster
         // by backend class.
-        $this->recordProbe($extras, 'object_cache_backend', function () use ($host) { return $host->probeObjectCacheBackend(); }, array());
+        $this->recordProbe($extras, 'object_cache_backend', function () use ($platform) { return $platform->probeObjectCacheBackend(); }, array());
 
         // SHOW GLOBAL STATUS counterpart to mysql_globals. Captures
         // runtime symptoms (lock waits, tmp-disk spills, aborted
