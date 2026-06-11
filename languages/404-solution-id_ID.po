@@ -14,7 +14,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=1; plural=0;\n"
+"Plural-Forms: nplurals=2; plural=n > 1;\n"
 "X-Generator: 404 Solution Translation Generator v2\n"
 "X-Poedit-KeywordsList: __;_e;_n:1,2;_x:1,2c;_ex:1,2c;_nx:4c,1,2;esc_attr__;esc_attr_e;esc_attr_x:1,2c;esc_html__;esc_html_e;esc_html_x:1,2c;_n_noop:1,2;_nx_noop:3c,1,2;__ngettext_noop:1,2\n"
 "X-Poedit-Basepath: ..\n"
@@ -56,6 +56,7 @@ msgstr "Pengaturan"
 msgid "404 Solution: Migrated %d redirect to subdirectory-independent format."
 msgid_plural "404 Solution: Migrated %d redirects to subdirectory-independent format."
 msgstr[0] "404 Solution: Berhasil memigrasikan %d pengalihan ke format independen subdirektori."
+msgstr[1] "404 Solution: Berhasil memigrasikan %d pengalihan ke format independen subdirektori."
 msgid "%1$s - %2$s of %3$s"
 msgstr "%1$s - %2$s dari %3$s"
 
@@ -1477,12 +1478,14 @@ msgstr "akan cocok dengan URL apa pun yang dimulai dengan"
 msgid "There is <a>%s captured 404 URL</a> that needs to be processed."
 msgid_plural "There are <a>%s captured 404 URLs</a> to be processed."
 msgstr[0] "Ada <a>%s URL 404 yang tercatat</a> yang perlu diproses."
+msgstr[1] "Ada <a>%s URL 404 yang tercatat</a> yang perlu diproses."
 
 #. Plural form with %s
 #: includes/DataAccess.php
 msgid "%s redirect entry was moved to the trash."
 msgid_plural "%s redirect entries were moved to the trash."
 msgstr[0] "%s entri pengalihan dipindahkan ke tong sampah."
+msgstr[1] "%s entri pengalihan dipindahkan ke tong sampah."
 
 #: includes/DatabaseUpgradesEtc.php:119
 msgid "404 Solution: N-gram spell check cache is being built in the background to optimize performance. This may take a few minutes on large sites."
@@ -1702,6 +1705,7 @@ msgstr "Sebelum menonaktifkan, pilih apa yang akan terjadi pada data Anda:"
 msgid "Keep my redirect (%d)"
 msgid_plural "Keep my redirects (%d)"
 msgstr[0] "Simpan pengalihan saya (%d)"
+msgstr[1] "Simpan pengalihan saya (%d)"
 
 #: includes/UninstallModal.php
 msgid "— saves them for later if you reinstall"
@@ -2462,14 +2466,17 @@ msgstr "destination-warning-text"
 msgid "%d minute ago"
 msgid_plural "%d minutes ago"
 msgstr[0] "%d menit yang lalu"
+msgstr[1] "%d menit yang lalu"
 
 msgid "%d hour ago"
 msgid_plural "%d hours ago"
 msgstr[0] "%d jam yang lalu"
+msgstr[1] "%d jam yang lalu"
 
 msgid "%d day ago"
 msgid_plural "%d days ago"
 msgstr[0] "%d hari yang lalu"
+msgstr[1] "%d hari yang lalu"
 
 msgid "Database storage appears full (disk/engine space). Plugin write-heavy tasks are temporarily paused."
 msgstr "Penyimpanan basis data tampaknya penuh (ruang disk/mesin). Tugas penulisan intensif plugin dijeda sementara."
@@ -3952,7 +3959,7 @@ msgstr "%1$d of %2$d"
 msgid "%s item"
 msgid_plural "%s items"
 msgstr[0] "%s item"
-msgstr[1] "%s items"
+msgstr[1] "%s item"
 
 # translation-verified: en-fallback awaiting native pass (i310)
 #: includes/

@@ -3987,8 +3987,12 @@ msgstr "%1$d of %2$d"
 #: includes/
 msgid "%s item"
 msgid_plural "%s items"
-msgstr[0] "%s item"
-msgstr[1] "%s items"
+msgstr[0] "%s عنصر"
+msgstr[1] "%s عنصر"
+msgstr[2] "%s عنصران"
+msgstr[3] "%s عناصر"
+msgstr[4] "%s عنصرًا"
+msgstr[5] "%s عنصر"
 
 # translation-verified: en-fallback awaiting native pass (i310)
 #: includes/

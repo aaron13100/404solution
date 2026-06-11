@@ -3964,8 +3964,7 @@ msgstr "%1$d of %2$d"
 #: includes/
 msgid "%s item"
 msgid_plural "%s items"
-msgstr[0] "%s item"
-msgstr[1] "%s items"
+msgstr[0] "%s 个项目"
 
 # translation-verified: en-fallback awaiting native pass (i310)
 #: includes/
