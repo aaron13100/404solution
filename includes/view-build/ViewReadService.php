@@ -350,11 +350,6 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
         return $this->queryBuilder->buildViewDoneCountQuery($sub, $tableOptions);
     }
 
-    /** @return array<string, string> */
-    public function viewBuildOnlyTranslations(): array {
-        return $this->queryBuilder->viewBuildOnlyTranslations();
-    }
-
     // =========================================================================
     // Delegated: ViewCacheInvalidator
     // =========================================================================

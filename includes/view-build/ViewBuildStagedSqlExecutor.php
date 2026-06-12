@@ -118,8 +118,8 @@ class ABJ_404_Solution_ViewBuildStagedSqlExecutor extends ABJ_404_Solution_ViewB
             throw new \Exception("Staged SQL template missing or empty: $relativePath");
         }
         $sql = $this->host->dataBoundary()->doTableNameReplacements($template);
-        // extraTranslations (status_for_view / type_for_view labels, batch
-        // bounds) must run BEFORE doNormalReplacements: doNormalReplacements
+        // extraTranslations (batch bounds and stage-specific values) must run
+        // BEFORE doNormalReplacements: doNormalReplacements
         // falls back to __() for any {key} it does not know, which strips
         // the braces and prevents the str_replace below from matching.
         if (!empty($extraTranslations)) {

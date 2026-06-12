@@ -43,7 +43,7 @@ class ABJ_404_Solution_ViewDoneQueryBuilder {
         $perpage = max(1, is_scalar($rawPerpage) ? intval($rawPerpage) : (int)ABJ404_OPTION_DEFAULT_PERPAGE);
         $limitStart = ($paged - 1) * $perpage;
 
-        return "SELECT id, url, status, status_for_view, type, type_for_view,\n"
+        return "SELECT id, url, status, type,\n"
             . "       final_dest, dest_for_view, published_status, code, timestamp,\n"
             . "       engine, score, wp_post_id, wp_post_type,\n"
             . "       logshits, logsid, last_used\n"

@@ -203,6 +203,12 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 
 ## Changelog ##
 
+## Version 4.3.1 (June 12, 2026) ##
+
+**Bug Fixes**
+
+* Fixed locale-stale labels in the Page Redirects view cache by storing status and type as integer codes only, translating labels at render time, and dropping the legacy translated-label columns during upgrade.
+
 ## Version 4.3.0 (June 8, 2026) ##
 
 **Bug Fixes**

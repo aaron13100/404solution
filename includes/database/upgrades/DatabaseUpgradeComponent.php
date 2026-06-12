@@ -20,6 +20,7 @@ if (!defined('ABSPATH')) {
  * @method mixed runSelfHealPrologue()
  * @method mixed correctIssuesBefore()
  * @method mixed correctIssuesAfter()
+ * @method mixed dropTranslatedViewLabelColumns()
  * @method mixed adoptOrphanedTables()
  * @method mixed syncMissingNGrams()
  * @method mixed cleanupOrphanedNGrams()

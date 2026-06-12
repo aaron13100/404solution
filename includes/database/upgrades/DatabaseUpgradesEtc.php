@@ -103,6 +103,7 @@ require_once __DIR__ . '/DatabaseUpgradeRegistry.php';
  * @method mixed correctIssuesBefore()
  * @method mixed correctIssuesAfter()
  * @method mixed dropDeprecatedMutationWatermarkTable()
+ * @method mixed dropTranslatedViewLabelColumns()
  * @method mixed repairStrippedViewCacheTable()
  * @method mixed ddlDeclaresIdColumn(string $ddl)
  * @method mixed recoverMissingLogsHitsTable()

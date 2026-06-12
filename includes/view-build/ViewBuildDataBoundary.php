@@ -114,9 +114,6 @@ class ABJ_404_Solution_ViewBuildDataBoundary {
     /** @param string $tableName @param string $columnName @return string */
     public function getColumnCollationString(string $tableName, string $columnName): string { return $this->dbCore->collationHelper()->getColumnCollationString($tableName, $columnName); }
 
-    /** @return array<string, string> */
-    public function viewBuildOnlyTranslations(): array { return $this->requireViewReadService()->viewBuildOnlyTranslations(); }
-
     /**
      * @param string $sub
      * @param array<string, mixed> $tableOptions

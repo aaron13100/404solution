@@ -71,7 +71,7 @@ class ABJ_404_Solution_RedirectRowPresenter {
         $rowType = $this->rowType($row);
         $rowStatus = $this->rowStatus($row);
         $rowFinalDest = $this->rowFinalDest($row);
-        $destForView = $this->destForView($row);
+        $destForView = $this->displayDestForView($row, $rowType);
         $rowUrl = $this->rowUrl($row);
         $lastUsed = $this->lastUsed($row);
         $destLink = $this->linkResolver->resolve($rowType, $rowFinalDest);
@@ -158,12 +158,12 @@ class ABJ_404_Solution_RedirectRowPresenter {
             '{destination-exists}' => $warning['exists'],
             '{destination-does-not-exist}' => $warning['notExists'],
             '{destination-warning-text}' => $warning['text'],
-            '{status}' => $this->scalarString($row['status_for_view'] ?? ''),
+            '{status}' => esc_html($this->statusLabel($rowStatus)),
             '{statusTitle}' => $this->statusTitle($rowStatus),
             '{engineHTML}' => $this->engineLabelHtml($rowEngine),
             '{rowScore}' => '',
             '{scoreCell}' => $this->buildScoreCell($row['score'] ?? null, $rowEngine),
-            '{type}' => $this->scalarString($row['type_for_view'] ?? ''),
+            '{type}' => esc_html($this->typeLabel($row)),
             '{rowCode}' => esc_html($this->codeDisplay($rowCode)),
             '{hits}' => esc_html((string)(is_scalar($row['logshits'] ?? 0) ? (int)($row['logshits'] ?? 0) : 0)),
             '{logsLink}' => $links['logslink'],
@@ -181,10 +181,9 @@ class ABJ_404_Solution_RedirectRowPresenter {
 
     /**
      * @param array<string, mixed> $row
-     * @return mixed
      */
-    private function rowType(array $row) {
-        return $row['type'] ?? 0;
+    private function rowType(array $row): int {
+        return is_scalar($row['type'] ?? 0) ? (int)($row['type'] ?? 0) : 0;
     }
 
     /** @param array<string, mixed> $row */
@@ -200,6 +199,15 @@ class ABJ_404_Solution_RedirectRowPresenter {
     /** @param array<string, mixed> $row */
     private function destForView(array $row): string {
         return trim(is_scalar($row['dest_for_view'] ?? '') ? (string)($row['dest_for_view'] ?? '') : '');
+    }
+
+    /** @param array<string, mixed> $row */
+    private function displayDestForView(array $row, int $rowType): string {
+        $destForView = $this->destForView($row);
+        if ($rowType === ABJ404_TYPE_404_DISPLAYED && $destForView === '') {
+            return __('(404 page)', '404-solution');
+        }
+        return $destForView;
     }
 
     /** @param array<string, mixed> $row */
@@ -269,6 +277,59 @@ class ABJ_404_Solution_RedirectRowPresenter {
             return __('Regular Expression (Manually Created)', '404-solution');
         }
         return __('Unknown', '404-solution');
+    }
+
+    private function statusLabel(int $rowStatus): string {
+        $labels = array(
+            ABJ404_STATUS_MANUAL => __('Manual', '404-solution'),
+            ABJ404_STATUS_AUTO => __('Auto', '404-solution'),
+            ABJ404_STATUS_REGEX => __('Regex', '404-solution'),
+        );
+        if (defined('ABJ404_STATUS_CAPTURED')) {
+            $labels[ABJ404_STATUS_CAPTURED] = __('Captured', '404-solution');
+        }
+        if (defined('ABJ404_STATUS_IGNORED')) {
+            $labels[ABJ404_STATUS_IGNORED] = __('Ignored', '404-solution');
+        }
+        if (defined('ABJ404_STATUS_LATER')) {
+            $labels[ABJ404_STATUS_LATER] = __('Later', '404-solution');
+        }
+        return isset($labels[$rowStatus]) ? $labels[$rowStatus] : __('Unknown', '404-solution');
+    }
+
+    /** @param array<string, mixed> $row */
+    private function typeLabel(array $row): string {
+        $rowType = is_scalar($row['type'] ?? 0) ? (int)($row['type'] ?? 0) : 0;
+        $labels = array(
+            ABJ404_TYPE_EXTERNAL => __('External', '404-solution'),
+            ABJ404_TYPE_CAT => __('Category', '404-solution'),
+            ABJ404_TYPE_TAG => __('Tag', '404-solution'),
+            ABJ404_TYPE_HOME => __('Home', '404-solution'),
+            ABJ404_TYPE_404_DISPLAYED => __('(404 page)', '404-solution'),
+        );
+        if ($rowType === ABJ404_TYPE_POST) {
+            return $this->postTypeLabel($row);
+        }
+        return isset($labels[$rowType]) ? $labels[$rowType] : '';
+    }
+
+    /** @param array<string, mixed> $row */
+    private function postTypeLabel(array $row): string {
+        $slug = is_scalar($row['wp_post_type'] ?? '') ? trim((string)($row['wp_post_type'] ?? '')) : '';
+        if ($slug === '') {
+            $slug = 'post';
+        }
+        if (function_exists('get_post_type_object')) {
+            $postType = get_post_type_object($slug);
+            $singular = is_object($postType) && property_exists($postType, 'labels') && is_object($postType->labels)
+                && property_exists($postType->labels, 'singular_name') && is_scalar($postType->labels->singular_name)
+                ? trim((string)$postType->labels->singular_name)
+                : '';
+            if ($singular !== '') {
+                return $singular;
+            }
+        }
+        return ucfirst(strtolower($slug));
     }
 
     /**

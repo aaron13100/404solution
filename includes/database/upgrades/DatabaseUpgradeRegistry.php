@@ -110,6 +110,7 @@ final class ABJ_404_Solution_DatabaseUpgradeRegistry {
         'correctIssuesBefore' => 'tableRepairUpgrade',
         'correctIssuesAfter' => 'tableRepairUpgrade',
         'dropDeprecatedMutationWatermarkTable' => 'tableRepairUpgrade',
+        'dropTranslatedViewLabelColumns' => 'tableRepairUpgrade',
         'repairStrippedViewCacheTable' => 'tableRepairUpgrade',
         'ddlDeclaresIdColumn' => 'tableRepairUpgrade',
         'recoverMissingLogsHitsTable' => 'tableRepairUpgrade',

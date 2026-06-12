@@ -45,9 +45,10 @@ class ABJ_404_Solution_DatabaseUpgradeTableRepair extends ABJ_404_Solution_Datab
      *
      * @return void
      */
-    function correctIssuesAfter() {
+	function correctIssuesAfter() {
 	$this->correctMatchData();
 	$this->recoverMissingLogsHitsTable();
+	$this->dropTranslatedViewLabelColumns();
 
 	// t_260523_224315_207: drop the deprecated mutation watermark side
 	// table. Redirect changes now use direct rebuild invalidation instead
@@ -55,6 +56,33 @@ class ABJ_404_Solution_DatabaseUpgradeTableRepair extends ABJ_404_Solution_Datab
 	// a fresh install (no legacy table) and a re-upgrade (already dropped)
 	// are both no-ops. See docs/design-lesson-watermark-overengineering.md.
 	$this->dropDeprecatedMutationWatermarkTable();
+    }
+
+    /**
+     * Remove legacy translated label columns from runtime view tables.
+     *
+     * view_build and view_done are transient runtime tables, so the permanent
+     * DDL diff sweep intentionally skips them. This targeted cleanup keeps
+     * existing snapshots compatible with render-time translation while leaving
+     * missing or already-migrated tables untouched.
+     *
+     * @return void
+     */
+    function dropTranslatedViewLabelColumns() {
+        $tablePlaceholders = array('{wp_abj404_view_done}', '{wp_abj404_view_build}');
+        $legacyColumns = array('status_for_view', 'type_for_view');
+
+        foreach ($tablePlaceholders as $placeholder) {
+            $tableName = $this->dbCore->doTableNameReplacements($placeholder);
+            foreach ($legacyColumns as $columnName) {
+                if (!$this->columnExists($tableName, $columnName)) {
+                    continue;
+                }
+                $query = 'ALTER TABLE `' . esc_sql($tableName) . '` DROP COLUMN `' . $columnName . '`';
+                $this->dbCore->queryAndGetResults($query);
+                $this->logger->infoMessage('Dropped legacy translated view label column: ' . $query);
+            }
+        }
     }
 
     /**

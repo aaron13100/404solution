@@ -194,7 +194,7 @@ class ABJ_404_Solution_ViewBuildBatchExecutor extends ABJ_404_Solution_ViewBuild
         $loBound = max(0, intval($loBound));
         $batchSize = max(1, intval($batchSize));
 
-        $extra = $this->host->dataBoundary()->viewBuildOnlyTranslations();
+        $extra = array();
         $extra['{LO_BOUND}']   = (string)$loBound;
         $extra['{BATCH_SIZE}'] = (string)$batchSize;
         $this->host->stageServices()->stagedSqlExecutor()->runStagedSqlFile('02_insert.sql', $extra);

@@ -5,7 +5,7 @@ Tags: 404, redirect, 404 redirect, broken links, spell check
 Requires at least: 5.0
 Requires PHP: 7.4
 Tested up to: 7.0
-Stable tag: 4.3.0
+Stable tag: 4.3.1
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -200,6 +200,12 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 6. **Email Digest** — Weekly HTML email summarizing captured 404s, resolution rate, and a ranked table of top 404 URLs with color-coded hit badges.
 
 == Changelog ==
+
+= Version 4.3.1 (June 12, 2026) =
+
+**Bug Fixes**
+
+* Fixed locale-stale labels in the Page Redirects view cache by storing status and type as integer codes only, translating labels at render time, and dropping the legacy translated-label columns during upgrade.
 
 = Version 4.3.0 (June 8, 2026) =
 
@@ -507,4 +513,3 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 **New Features**
 
 * Added heartbeat debug log emails for opted-in sites. Sites with the "send error logs" option enabled now have a 1-in-100 daily chance of sending their full debug zip even when no errors are detected, confirming the error-reporting pipeline is working. Subject line reads "heartbeat" instead of "error" for easy filtering.
-

@@ -142,9 +142,10 @@ class ABJ_404_Solution_ViewQueryPolicy {
 
         $filterText = $this->sanitizeFilterText($rawFilterText);
         if ($sub === 'abj404_redirects') {
-            return "AND REPLACE(LOWER(CONCAT(url, '////', status_for_view, '////',"
-                . " type_for_view, '////', dest_for_view, '////', code)), ' ', '')"
+            $predicates = $this->labelPredicatesForFilterText($filterText);
+            $predicates[] = "REPLACE(LOWER(CONCAT(url, '////', dest_for_view, '////', code)), ' ', '')"
                 . " LIKE REPLACE(LOWER('%" . $filterText . "%'), ' ', '')";
+            return 'AND (' . implode(' OR ', $predicates) . ')';
         }
         if ($sub === 'abj404_captured') {
             return "AND REPLACE(LOWER(url), ' ', '')"
@@ -192,18 +193,133 @@ class ABJ_404_Solution_ViewQueryPolicy {
         return $wpdbCollate === '' ? 'utf8mb4_unicode_ci' : $wpdbCollate;
     }
 
-    /** @return array<string, string> */
-    public function viewBuildOnlyTranslations(): array {
+    /** @return array<int, string> */
+    private function labelPredicatesForFilterText(string $filterText): array {
+        $normalized = $this->normalizeSearchLabel($filterText);
+        if ($normalized === '') {
+            return array();
+        }
+
+        $statusMatches = $this->matchingLabelCodes($normalized, $this->statusSearchLabels());
+        $typeMatches = $this->matchingLabelCodes($normalized, $this->typeSearchLabels());
+        $predicates = array();
+        if (count($statusMatches) > 0) {
+            $predicates[] = 'status IN (' . implode(', ', $statusMatches) . ')';
+        }
+        if (count($typeMatches) > 0) {
+            $predicates[] = 'type IN (' . implode(', ', $typeMatches) . ')';
+        }
+        $predicates = array_merge($predicates, $this->postTypeLabelPredicates($normalized));
+        return $predicates;
+    }
+
+    /**
+     * @param array<int, array<int, string>> $labelsByCode
+     * @return array<int, int>
+     */
+    private function matchingLabelCodes(string $normalized, array $labelsByCode): array {
+        $matches = array();
+        foreach ($labelsByCode as $code => $labels) {
+            foreach ($labels as $label) {
+                if ($this->normalizeSearchLabel($label) === $normalized) {
+                    $matches[] = (int)$code;
+                    break;
+                }
+            }
+        }
+        return $matches;
+    }
+
+    /** @return array<int, array<int, string>> */
+    private function statusSearchLabels(): array {
         return array(
-            '{ABJ404_STATUS_MANUAL_text}' => __('Manual', '404-solution'),
-            '{ABJ404_STATUS_AUTO_text}'   => __('Automatic', '404-solution'),
-            '{ABJ404_STATUS_REGEX_text}'  => __('Regex', '404-solution'),
-            '{ABJ404_TYPE_EXTERNAL_text}' => __('External', '404-solution'),
-            '{ABJ404_TYPE_CAT_text}'      => __('Category', '404-solution'),
-            '{ABJ404_TYPE_TAG_text}'      => __('Tag', '404-solution'),
-            '{ABJ404_TYPE_HOME_text}'     => __('Home', '404-solution'),
-            '{ABJ404_TYPE_404_DISPLAYED_text}' => __('(404 page)', '404-solution'),
-            '{ABJ404_TYPE_SPECIAL_text}'  => __('Special', '404-solution'),
+            ABJ404_STATUS_MANUAL => array(__('Manual', '404-solution')),
+            ABJ404_STATUS_AUTO => array(__('Auto', '404-solution'), __('Automatic', '404-solution')),
+            ABJ404_STATUS_REGEX => array(__('Regex', '404-solution')),
         );
+    }
+
+    /** @return array<int, array<int, string>> */
+    private function typeSearchLabels(): array {
+        return array(
+            ABJ404_TYPE_EXTERNAL => array(__('External', '404-solution')),
+            ABJ404_TYPE_CAT => array(__('Category', '404-solution')),
+            ABJ404_TYPE_TAG => array(__('Tag', '404-solution')),
+            ABJ404_TYPE_HOME => array(__('Home', '404-solution')),
+            ABJ404_TYPE_404_DISPLAYED => array(__('(404 page)', '404-solution')),
+        );
+    }
+
+    /** @return array<int, string> */
+    private function postTypeLabelPredicates(string $normalized): array {
+        $matchingSlugs = $this->matchingPostTypeSlugs($normalized);
+        if (count($matchingSlugs) === 0) {
+            return array();
+        }
+
+        $quotedSlugs = array();
+        foreach ($matchingSlugs as $slug) {
+            $quotedSlugs[] = "'" . esc_sql($slug) . "'";
+        }
+        return array('(type = ' . (int)ABJ404_TYPE_POST . ' AND wp_post_type IN (' . implode(', ', $quotedSlugs) . '))');
+    }
+
+    /** @return array<int, string> */
+    private function matchingPostTypeSlugs(string $normalized): array {
+        $postTypes = $this->currentPostTypeSearchLabels();
+        $matchingSlugs = array();
+        foreach ($postTypes as $slug => $labels) {
+            foreach ($labels as $label) {
+                if ($this->normalizeSearchLabel($label) === $normalized) {
+                    $matchingSlugs[] = (string)$slug;
+                    break;
+                }
+            }
+        }
+        return array_values(array_unique($matchingSlugs));
+    }
+
+    /** @return array<string, array<int, string>> */
+    private function currentPostTypeSearchLabels(): array {
+        $labelsBySlug = array(
+            'post' => array(__('Post', '404-solution'), 'Post'),
+            'page' => array(__('Page', '404-solution'), 'Page'),
+        );
+        if (!function_exists('get_post_types')) {
+            return $labelsBySlug;
+        }
+
+        $postTypes = get_post_types(array(), 'objects');
+        if (!is_array($postTypes)) {
+            return $labelsBySlug;
+        }
+        foreach ($postTypes as $slug => $postType) {
+            $slugString = (string)$slug;
+            if ($slugString === '' && is_object($postType) && property_exists($postType, 'name')
+                && is_scalar($postType->name)) {
+                $slugString = (string)$postType->name;
+            }
+            if ($slugString === '') {
+                continue;
+            }
+            $labels = array(ucfirst(strtolower($slugString)));
+            if (is_object($postType) && property_exists($postType, 'labels') && is_object($postType->labels)
+                && property_exists($postType->labels, 'singular_name') && is_scalar($postType->labels->singular_name)) {
+                $singular = trim((string)$postType->labels->singular_name);
+                if ($singular !== '') {
+                    $labels[] = $singular;
+                }
+            }
+            $labelsBySlug[$slugString] = array_values(array_unique(array_merge(
+                $labelsBySlug[$slugString] ?? array(),
+                $labels
+            )));
+        }
+        return $labelsBySlug;
+    }
+
+    private function normalizeSearchLabel(string $label): string {
+        $clean = str_replace(array('*', '/', '$'), '', $label);
+        return strtolower(str_replace(' ', '', trim($clean)));
     }
 }

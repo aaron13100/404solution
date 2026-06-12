@@ -157,7 +157,7 @@ class ABJ_404_Solution_ViewBuildStageCallbacks extends ABJ_404_Solution_ViewBuil
     /** @return void */
     public function stageUpdateSpecial(): void {
         $this->assertBuildBufferExistsOrHalt('S8 stageUpdateSpecial');
-        $this->host->stageServices()->stagedSqlExecutor()->runStagedSqlFile('08_update_special.sql', $this->host->dataBoundary()->viewBuildOnlyTranslations());
+        $this->host->stageServices()->stagedSqlExecutor()->runStagedSqlFile('08_update_special.sql', array());
     }
 
     /** @return void */

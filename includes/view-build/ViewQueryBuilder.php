@@ -157,8 +157,4 @@ class ABJ_404_Solution_ViewQueryBuilder {
         return $this->policy->resolveOrderByColumn($tableOptions);
     }
 
-    /** @return array<string, string> */
-    public function viewBuildOnlyTranslations(): array {
-        return $this->policy->viewBuildOnlyTranslations();
-    }
 }

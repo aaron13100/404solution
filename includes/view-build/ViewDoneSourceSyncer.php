@@ -53,10 +53,9 @@ class ABJ_404_Solution_ViewDoneSourceSyncer extends ABJ_404_Solution_ViewBuildCo
      *   - INSERT IGNORE: any source row missing from view_done is added
      *     with the source columns (id, url, status, type, final_dest,
      *     code, disabled, timestamp, engine, score). Derived columns
-     *     (status_for_view, type_for_view, dest_for_view,
-     *     published_status, fd_int, wp_post_id, wp_post_type, logshits,
-     *     logsid, last_used) take the DDL defaults and will be
-     *     re-derived by the next S11 swap.
+     *     (dest_for_view, published_status, fd_int, wp_post_id,
+     *     wp_post_type, logshits, logsid, last_used) take the DDL defaults
+     *     and will be re-derived by the next S11 swap.
      *
      *   - DELETE LEFT JOIN: any view_done row whose source-table row no
      *     longer exists is removed (orphan cleanup; previously inline in
