@@ -97,9 +97,6 @@ class ABJ_404_Solution_DatabaseRecoveryServices {
             function (string $type, string $message, string $errorString) use ($noticeState): void {
                 $noticeState->setPluginDbNotice($type, $message, $errorString);
             },
-            function (string $text) use ($noticeState): string {
-                return $noticeState->localizeOrDefault($text);
-            },
             $functions,
             $logger
         );

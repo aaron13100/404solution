@@ -159,8 +159,7 @@ class ABJ_404_Solution_DatabaseQueryRecoveryPolicy {
         $this->resultHarvester->harvestWpdbResult($result);
         $lastError = $this->lastErrorFromResult($result);
         if ($lastError !== '' && $this->core->errorClassifier()->taxonomy()->connectivity()->isDeadlockOrLockTimeoutError($lastError)) {
-            // allow-em-dash: copied verbatim from existing user-facing localized string in DataAccess.php
-            $this->core->noticeState()->setPluginDbNotice('lock_timeout', $this->core->noticeState()->localizeOrDefault('A database lock wait timeout occurred. If this persists, contact your host — another process may be holding a long-running lock.'), $lastError);
+            $this->core->noticeState()->setPluginDbNotice('lock_timeout', 'A database lock wait timeout occurred. If this persists, contact your host - another process may be holding a long-running lock.', $lastError);
         }
     }
 

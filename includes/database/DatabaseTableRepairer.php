@@ -34,8 +34,6 @@ if (!defined('ABSPATH')) {
  *     (signature: function(): string);
  *   - a notice setter bound over DatabaseNoticeStateHolder::setPluginDbNotice
  *     (signature: function(string, string, string): void);
- *   - a string localizer bound over DatabaseCore::localizeOrDefault
- *     (signature: function(string): string);
  *   - ABJ_404_Solution_Functions for regex/string helpers and the plugin logger.
  *
  * The recursion guards are static properties on this class (they must survive
@@ -63,9 +61,6 @@ class ABJ_404_Solution_DatabaseTableRepairer {
     /** @var callable(string, string, string): void */
     private $noticeSetter;
 
-    /** @var callable(string): string */
-    private $localizer;
-
     /** @var ABJ_404_Solution_Functions */
     private $f;
 
@@ -83,9 +78,6 @@ class ABJ_404_Solution_DatabaseTableRepairer {
      *   Returns the current wpdb result type (ARRAY_A or OBJECT) for retries.
      * @param callable(string, string, string): void $noticeSetter
      *   Persists a plugin-db admin notice (type, message, errorString).
-     * @param callable(string): string $localizer
-     *   Localizes a default English string via WordPress translation when
-     *   available, otherwise returns the default.
      * @param ABJ_404_Solution_Functions $functions
      * @param ABJ_404_Solution_Logging $logger
      */
@@ -94,7 +86,6 @@ class ABJ_404_Solution_DatabaseTableRepairer {
         callable $resultHarvester,
         callable $resultTypeGetter,
         callable $noticeSetter,
-        callable $localizer,
         $functions,
         $logger
     ) {
@@ -102,7 +93,6 @@ class ABJ_404_Solution_DatabaseTableRepairer {
         $this->resultHarvester = $resultHarvester;
         $this->resultTypeGetter = $resultTypeGetter;
         $this->noticeSetter = $noticeSetter;
-        $this->localizer = $localizer;
         $this->f = $functions;
         $this->logger = $logger;
     }
@@ -191,9 +181,11 @@ class ABJ_404_Solution_DatabaseTableRepairer {
                 $cooldownKey = 'abj404_corrupted_temp_table_notice_until';
                 $alreadyNotified = function_exists('get_transient') ? get_transient($cooldownKey) : false;
                 if (!$alreadyNotified) {
-                    $noticeMessage = ($this->localizer)( // allow-em-dash: verbatim localized string from production, changing it breaks existing translations
-                        'A database temporary table is corrupted — this is usually caused by a full or failing disk. Please contact your host. (MySQL error 1034)');
-                    ($this->noticeSetter)('corrupted_temp_table', $noticeMessage, $errorMessage);
+                    ($this->noticeSetter)(
+                        'corrupted_temp_table',
+                        'A database temporary table is corrupted - this is usually caused by a full or failing disk. Please contact your host. (MySQL error 1034)',
+                        $errorMessage
+                    );
                     if (function_exists('set_transient')) {
                         // @cache-write-audit: opt-out - admin-notice dedup cooldown
                         // (one notice per 24h per failure type), not a query result.

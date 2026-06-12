@@ -28,11 +28,12 @@ class ABJ_404_Solution_ViewBuildHostFailureNotices extends ABJ_404_Solution_View
             $kind === 'halted' ? 'halted' : 'skipped'
         );
         $payload = array(
-            'stage'   => $stageNumber,
-            'kind'    => $kind,
-            'error'   => $errorText,
-            'message' => $this->describeDegradedNotice($stageNumber, $kind, $errorText),
-            'when'    => $this->host->dataBoundary()->clock()->now(),
+            'stage'          => $stageNumber,
+            'kind'           => $kind,
+            'error'          => $errorText,
+            'message_key'    => 'view.stage_degraded',
+            'message_params' => array('stage' => $stageNumber, 'kind' => $kind, 'error' => $errorText),
+            'when'           => $this->host->dataBoundary()->clock()->now(),
         );
         if (function_exists('set_transient')) {
             // allow-cache-empty: degraded-state notice marker intentionally stores diagnostics, not query data.

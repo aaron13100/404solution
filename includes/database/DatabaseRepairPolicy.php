@@ -409,7 +409,12 @@ class ABJ_404_Solution_DatabaseRepairPolicy {
         }
         $noticePayload = array(
             'type'         => 'missing_table',
-            'message'      => $this->core->noticeState()->localizeOrDefault($adminMsg),
+            'message_key'  => 'db.missing_table',
+            'message_params' => array(
+                'table_label' => $tableLabel,
+                'raw_error'   => $rawError,
+                'prefix_diag' => $prefixDiag,
+            ),
             'timestamp'    => $this->core->clock()->now(),
             'error_string' => $rawError,
         );

@@ -124,24 +124,24 @@ class ABJ_404_Solution_DatabaseErrorClassifier {
             if ($tableFull) {
                 $tableName = $this->tableInspector->extractTableNameFromFullError($errorText);
                 if ($tableName !== null && $this->tableInspector->isInnoDBTable($tableName)) {
-                    $this->core->noticeState()->setPluginDbNotice('disk_full', $this->core->noticeState()->localizeOrDefault('The InnoDB tablespace appears to be exhausted. Deleting plugin data will NOT free this space. Contact your hosting provider to expand the InnoDB tablespace (ibdata1).'), $errorText);
+                    $this->core->noticeState()->setPluginDbNotice('disk_full', 'The InnoDB tablespace appears to be exhausted. Deleting plugin data will NOT free this space. Contact your hosting provider to expand the InnoDB tablespace (ibdata1).', $errorText);
                     return;
                 }
             }
 
-            $this->core->noticeState()->setPluginDbNotice('disk_full', $this->core->noticeState()->localizeOrDefault('Database storage appears full (disk/engine space). Plugin write-heavy tasks are temporarily paused.'), $errorText);
+            $this->core->noticeState()->setPluginDbNotice('disk_full', 'Database storage appears full (disk/engine space). Plugin write-heavy tasks are temporarily paused.', $errorText);
             return;
         }
         if ($this->taxonomy->hostState()->isQuotaLimitError($errorText)) {
             $this->core->noticeState()->markServerSideIssueNoted();
             $this->core->noticeState()->setRuntimeFlag('abj404_db_quota_cooldown_until', $this->core->clock()->now() + self::DB_QUOTA_COOLDOWN_SECONDS, self::DB_QUOTA_COOLDOWN_SECONDS);
-            $this->core->noticeState()->setPluginDbNotice('query_quota', $this->core->noticeState()->localizeOrDefault('Database query quota was exceeded (for example max_questions). Non-essential plugin background tasks are temporarily paused.'), $errorText);
+            $this->core->noticeState()->setPluginDbNotice('query_quota', 'Database query quota was exceeded (for example max_questions). Non-essential plugin background tasks are temporarily paused.', $errorText);
             return;
         }
         if ($this->taxonomy->hostState()->isReadOnlyError($errorText)) {
             $this->core->noticeState()->markServerSideIssueNoted();
             $this->core->noticeState()->setRuntimeFlag('abj404_db_read_only_until', $this->core->clock()->now() + self::DB_WRITE_BLOCK_COOLDOWN_SECONDS, self::DB_WRITE_BLOCK_COOLDOWN_SECONDS);
-            $this->core->noticeState()->setPluginDbNotice('read_only', $this->core->noticeState()->localizeOrDefault('Database appears to be in read-only mode. Plugin write operations are temporarily paused.'), $errorText);
+            $this->core->noticeState()->setPluginDbNotice('read_only', 'Database appears to be in read-only mode. Plugin write operations are temporarily paused.', $errorText);
             return;
         }
         if ($this->taxonomy->schema()->isCollationError($errorText)) {

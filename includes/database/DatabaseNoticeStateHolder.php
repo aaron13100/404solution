@@ -123,14 +123,17 @@ class ABJ_404_Solution_DatabaseNoticeStateHolder {
      * Store the plugin DB admin-notice payload as a runtime flag.
      *
      * @param string $type Notice type discriminator (e.g. 'lock_timeout').
-     * @param string $message User-facing notice message.
+     * @param string $message Source message template used to select a stable
+     *   render-time message key.
      * @param string $errorString Underlying MySQL error string (diagnostic).
      * @return void
      */
     public function setPluginDbNotice(string $type, string $message, string $errorString = ''): void {
+        $messageKey = ABJ_404_Solution_AdminNoticeMessageCatalog::dbMessageKeyForType($type, $message);
         $payload = array(
             'type' => $type,
-            'message' => $message,
+            'message_key' => $messageKey,
+            'message_params' => array(),
             'timestamp' => $this->clock()->now(),
             'error_string' => $errorString,
         );

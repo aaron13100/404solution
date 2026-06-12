@@ -48,25 +48,28 @@ class ABJ_404_Solution_ReviewFeedback {
 
         if ($isPluginPage) {
             $dbNotice = get_transient('abj404_plugin_db_notice');
-            if (is_array($dbNotice) && isset($dbNotice['message']) && is_string($dbNotice['message'])) {
+            if (is_array($dbNotice)) {
                 $type = isset($dbNotice['type']) && is_string($dbNotice['type']) ? $dbNotice['type'] : 'warning';
                 // Per owner directive: collation issues must NEVER surface as user notices.
                 if ($type === 'collation') {
                     // intentionally do not render
                 } else {
-                    $warningTypes = array(
-                        'stale_permalink_cache',
-                        'warning',
-                        'read_only',
-                        'disk_full',
-                        'query_quota',
-                    );
-                    $cssClass = in_array($type, $warningTypes, true) ? 'notice-warning' : 'notice-error';
-                    $html = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . "/html/notice.html");
-                    $f = abj_service('functions');
-                    $html = $f->str_replace('{class}', esc_attr('notice ' . $cssClass), $html);
-                    $html = $f->str_replace('{message}', esc_html($dbNotice['message']), $html);
-                    echo $html;
+                    $message = ABJ_404_Solution_AdminNoticeMessageCatalog::renderPayloadMessage($dbNotice);
+                    if ($message !== '') {
+                        $warningTypes = array(
+                            'stale_permalink_cache',
+                            'warning',
+                            'read_only',
+                            'disk_full',
+                            'query_quota',
+                        );
+                        $cssClass = in_array($type, $warningTypes, true) ? 'notice-warning' : 'notice-error';
+                        $html = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . "/html/notice.html");
+                        $f = abj_service('functions');
+                        $html = $f->str_replace('{class}', esc_attr('notice ' . $cssClass), $html);
+                        $html = $f->str_replace('{message}', esc_html($message), $html);
+                        echo $html;
+                    }
                 }
             }
         }

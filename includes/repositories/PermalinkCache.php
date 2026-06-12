@@ -144,14 +144,12 @@ class ABJ_404_Solution_PermalinkCache {
         if ($postCount + $pageCount === 0) {
             return;
         }
-        $message = function_exists('__')
-            ? __('Permalink cache appears empty after rebuild — suggestions may be degraded. Try rebuilding again or check available disk space.', '404-solution')
-            : 'Permalink cache appears empty after rebuild — suggestions may be degraded. Try rebuilding again or check available disk space.';
         if (function_exists('set_transient')) {
             // allow-cache-empty: notice payload is constructed locally and intentionally persisted as-is.
             set_transient('abj404_plugin_db_notice', array(
                 'type'      => 'stale_permalink_cache',
-                'message'   => $message,
+                'message_key' => 'db.stale_permalink_cache',
+                'message_params' => array(),
                 'timestamp' => time(),
             ), 86400);
         }

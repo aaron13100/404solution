@@ -1359,7 +1359,7 @@ if (!function_exists('abj404_show_plugin_db_notice')) {
 			return;
 		}
 		$notice = get_transient('abj404_plugin_db_notice');
-		if (!is_array($notice) || empty($notice['message'])) {
+		if (!is_array($notice)) {
 			return;
 		}
 		$type = isset($notice['type']) ? $notice['type'] : '';
@@ -1367,23 +1367,12 @@ if (!function_exists('abj404_show_plugin_db_notice')) {
 		if ($type === 'collation') {
 			return;
 		}
-		$guidance = '';
-		if ($type === 'disk_full') {
-			$guidance = __('Contact your hosting provider. This is usually caused by a database quota, tablespace limit, or full /tmp partition — not necessarily a full disk.', '404-solution');
-		} elseif ($type === 'read_only') {
-			$guidance = __('Your database is currently in read-only mode. Contact your hosting provider.', '404-solution');
-		} elseif ($type === 'query_quota') {
-			$guidance = __('Your database query quota was exceeded. This usually resets automatically.', '404-solution');
-		} elseif ($type === 'corrupted_temp_table') {
-			$guidance = __('A temporary MySQL table was corrupted, usually caused by disk or hardware issues. The plugin cannot repair it. Please contact your hosting provider.', '404-solution');
-		} elseif ($type === 'log_table_full') {
-			$guidance = __('The 404 Solution log table is full. The plugin automatically trimmed the oldest 1,000 log entries to free space, but logging may still be limited. Please contact your hosting provider about disk space.', '404-solution');
-		} elseif ($type === 'stale_permalink_cache') {
-			$guidance = __('The permalink cache appears to be empty. Try rebuilding it from the Tools tab, or check that your site has enough disk space.', '404-solution');
-		} elseif ($type === 'lock_timeout') {
-			$guidance = __('A database lock wait timeout occurred. This is usually caused by another process holding a table lock on your database. It may resolve itself automatically, or contact your hosting provider if it persists.', '404-solution');
+		$noticeMessage = ABJ_404_Solution_AdminNoticeMessageCatalog::renderPayloadMessage($notice);
+		if ($noticeMessage === '') {
+			return;
 		}
-		echo '<div class="notice notice-error"><p><strong>404 Solution:</strong> ' . esc_html($notice['message']) . '</p>';
+		$guidance = ABJ_404_Solution_AdminNoticeMessageCatalog::renderDbGuidance($notice);
+		echo '<div class="notice notice-error"><p><strong>404 Solution:</strong> ' . esc_html($noticeMessage) . '</p>';
 		if ($guidance !== '') {
 			echo '<p>' . esc_html($guidance) . '</p>';
 		}
@@ -1451,10 +1440,13 @@ if (!function_exists('abj404_show_view_build_cron_notices')) {
 		}
 		foreach ($keys as $key) {
 			$notice = get_transient($key);
-			if (!is_array($notice) || empty($notice['message'])) {
+			if (!is_array($notice)) {
 				continue;
 			}
-			$noticeMessage = is_string($notice['message']) ? $notice['message'] : '';
+			$noticeMessage = ABJ_404_Solution_AdminNoticeMessageCatalog::renderPayloadMessage($notice);
+			if ($noticeMessage === '') {
+				continue;
+			}
 			echo '<div class="notice notice-warning"><p><strong>404 Solution:</strong> '
 				. esc_html($noticeMessage) . '</p>';
 			if (!empty($notice['error_string'])) {
