@@ -47,12 +47,6 @@ interface ABJ_404_Solution_ViewListReadInterface {
     public function getRedirectsForViewCount(string $sub, array $tableOptions): int;
 
     /**
-     * @param ABJ_404_Solution_ViewListQueryRequest $request
-     * @return string
-     */
-    public function getRedirectsForViewQuery(ABJ_404_Solution_ViewListQueryRequest $request);
-
-    /**
      * @param array<int, string> $postIDs
      * @return array<int, mixed>
      */

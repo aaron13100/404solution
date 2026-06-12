@@ -117,10 +117,7 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
         $this->cacheInvalidator = new ABJ_404_Solution_ViewCacheInvalidator(
             $dbCore, $redirectsRepo, $this->viewDoneFreshnessOptionName()
         );
-        $this->queryBuilder = new ABJ_404_Solution_ViewQueryBuilder(
-            $dbCore, $this->f, $logsRepo, $this->logger
-        );
-        $this->queryBuilder->setHost($this);
+        $this->queryBuilder = new ABJ_404_Solution_ViewQueryBuilder($dbCore);
         $this->snapshotCache = new ABJ_404_Solution_ViewSnapshotCache($dbCore, $this->logger);
         $this->snapshotCache->setHost($this);
 
@@ -322,14 +319,6 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
     /** @return string */
     function buildHighImpactCapturedCountQuery(): string {
         return $this->queryBuilder->buildHighImpactCapturedCountQuery();
-    }
-
-    /**
-     * @param ABJ_404_Solution_ViewListQueryRequest $request
-     * @return string
-     */
-    function getRedirectsForViewQuery(ABJ_404_Solution_ViewListQueryRequest $request) {
-        return $this->queryBuilder->getRedirectsForViewQuery($request);
     }
 
     /**

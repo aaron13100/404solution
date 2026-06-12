@@ -141,17 +141,30 @@ class ABJ_404_Solution_ViewQueryPolicy {
         }
 
         $filterText = $this->sanitizeFilterText($rawFilterText);
+        $collation = $this->resolveCollation($tableOptions);
+        $needle = $this->normalizedSearchExpression("'%" . $filterText . "%'", $collation);
         if ($sub === 'abj404_redirects') {
             $predicates = $this->labelPredicatesForFilterText($filterText);
-            $predicates[] = "REPLACE(LOWER(CONCAT(url, '////', dest_for_view, '////', code)), ' ', '')"
-                . " LIKE REPLACE(LOWER('%" . $filterText . "%'), ' ', '')";
+            $predicates[] = $this->normalizedSearchExpression(
+                "CONCAT(url, '////', dest_for_view, '////', code)",
+                $collation
+            ) . " LIKE " . $needle;
             return 'AND (' . implode(' OR ', $predicates) . ')';
         }
         if ($sub === 'abj404_captured') {
-            return "AND REPLACE(LOWER(url), ' ', '')"
-                . " LIKE REPLACE(LOWER('%" . $filterText . "%'), ' ', '')";
+            return "AND " . $this->normalizedSearchExpression('url', $collation) . " LIKE " . $needle;
         }
         return 'AND 0 = 1';
+    }
+
+    /**
+     * @param string $sqlExpression
+     * @param string $collation
+     * @return string
+     */
+    private function normalizedSearchExpression(string $sqlExpression, string $collation): string {
+        return "REPLACE(LOWER(CONVERT(" . $sqlExpression . " USING utf8mb4) COLLATE "
+            . $collation . "), ' ', '')";
     }
 
     /**

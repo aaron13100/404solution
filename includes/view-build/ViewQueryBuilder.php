@@ -7,9 +7,10 @@ if (!defined('ABSPATH')) {
 /**
  * Compatibility facade for admin view query construction.
  *
- * Focused collaborators own policy decisions, live redirects SQL, staged
- * view_done SQL, and staged read execution. This facade preserves the public
- * methods used by ViewReadService and legacy tests.
+ * Focused collaborators own policy decisions, staged view_done SQL, and
+ * staged read execution. This facade preserves the public methods used by
+ * ViewReadService while the deprecated single-shot redirect-list SQL path is
+ * gone.
  */
 class ABJ_404_Solution_ViewQueryBuilder {
 
@@ -19,9 +20,6 @@ class ABJ_404_Solution_ViewQueryBuilder {
     /** @var ABJ_404_Solution_ViewQueryPolicy */
     private $policy;
 
-    /** @var ABJ_404_Solution_RedirectsForViewSqlBuilder */
-    private $redirectsSqlBuilder;
-
     /** @var ABJ_404_Solution_ViewDoneQueryBuilder */
     private $viewDoneQueryBuilder;
 
@@ -30,31 +28,12 @@ class ABJ_404_Solution_ViewQueryBuilder {
 
     /**
      * @param ABJ_404_Solution_DatabaseCore $dbCore
-     * @param ABJ_404_Solution_Functions $f
-     * @param ABJ_404_Solution_LogsRepository $logsRepo
-     * @param ABJ_404_Solution_Logging $logger
      */
-    public function __construct(
-        ABJ_404_Solution_DatabaseCore $dbCore,
-        ABJ_404_Solution_Functions $f,
-        ABJ_404_Solution_LogsRepository $logsRepo,
-        $logger
-    ) {
+    public function __construct(ABJ_404_Solution_DatabaseCore $dbCore) {
         $this->dbCore = $dbCore;
         $this->policy = new ABJ_404_Solution_ViewQueryPolicy();
-        $this->redirectsSqlBuilder = new ABJ_404_Solution_RedirectsForViewSqlBuilder(
-            $dbCore, $f, $logsRepo, $this->policy, $logger
-        );
         $this->viewDoneQueryBuilder = new ABJ_404_Solution_ViewDoneQueryBuilder($dbCore, $this->policy);
         $this->viewDoneReader = new ABJ_404_Solution_ViewDoneReader($dbCore, $this->viewDoneQueryBuilder);
-    }
-
-    /**
-     * @param ABJ_404_Solution_ViewReadServiceInterface $host
-     * @return void
-     */
-    public function setHost(ABJ_404_Solution_ViewReadServiceInterface $host): void {
-        $this->redirectsSqlBuilder->setHost($host);
     }
 
     /**
@@ -111,15 +90,16 @@ class ABJ_404_Solution_ViewQueryBuilder {
      * @return string
      */
     public function getOptimizedRedirectsForViewCountQuery(string $sub, array $tableOptions): string {
-        return $this->redirectsSqlBuilder->getOptimizedRedirectsForViewCountQuery($sub, $tableOptions);
-    }
+        $statusTypes = $this->policy->resolveStatusTypeList($sub, $tableOptions);
+        $trashValue = $this->policy->resolveTrashValue($tableOptions);
+        $scoreRangeClause = $this->policy->buildScoreRangeClause($tableOptions, 'wp_abj404_redirects.'); // allow-prefix-literal: SQL alias bound by FROM clause
 
-    /**
-     * @param ABJ_404_Solution_ViewListQueryRequest $request
-     * @return string
-     */
-    public function getRedirectsForViewQuery(ABJ_404_Solution_ViewListQueryRequest $request) {
-        return $this->redirectsSqlBuilder->getRedirectsForViewQuery($request);
+        $query = "SELECT COUNT(*) AS count\n"
+            . "FROM {wp_abj404_redirects} wp_abj404_redirects\n" // allow-prefix-literal: second token is the SQL alias name, not a table reference
+            . "WHERE 1 and status IN (" . $statusTypes . ") AND disabled = " . intval($trashValue) . "\n"
+            . $scoreRangeClause;
+
+        return $this->dbCore->doTableNameReplacements($query);
     }
 
     /**
