@@ -272,7 +272,18 @@ class ABJ_404_Solution_ViewQueryPolicy {
 
         $quotedSlugs = array();
         foreach ($matchingSlugs as $slug) {
-            $quotedSlugs[] = "'" . esc_sql($slug) . "'";
+            // Post-type slugs are validated by register_post_type() to be
+            // lowercase ASCII word/dash characters. Strip anything outside
+            // that whitelist defensively before esc_sql() so a misregistered
+            // (or scanner-injected) slug with invalid UTF-8 cannot reach SQL.
+            $safeSlug = preg_replace('/[^a-zA-Z0-9_-]/', '', $slug);
+            if ($safeSlug === null || $safeSlug === '') {
+                continue;
+            }
+            $quotedSlugs[] = "'" . esc_sql($safeSlug) . "'";
+        }
+        if (count($quotedSlugs) === 0) {
+            return array();
         }
         return array('(type = ' . (int)ABJ404_TYPE_POST . ' AND wp_post_type IN (' . implode(', ', $quotedSlugs) . '))');
     }

@@ -23,24 +23,6 @@ class ABJ_404_Solution_AdminNoticeMessageCatalog {
         return isset($payload['message']) && is_string($payload['message']) ? $payload['message'] : '';
     }
 
-    public static function dbMessageKeyForType(string $type, string $sourceMessage = ''): string {
-        if ($type === 'disk_full' && stripos($sourceMessage, 'innodb tablespace') !== false) {
-            return 'db.innodb_tablespace_full';
-        }
-        $map = array(
-            'disk_full' => 'db.disk_full',
-            'query_quota' => 'db.query_quota',
-            'read_only' => 'db.read_only',
-            'corrupted_temp_table' => 'db.corrupted_temp_table',
-            'table_full' => 'db.table_full',
-            'log_table_full' => 'db.log_table_full',
-            'stale_permalink_cache' => 'db.stale_permalink_cache',
-            'lock_timeout' => 'db.lock_timeout',
-            'missing_table' => 'db.missing_table',
-        );
-        return isset($map[$type]) ? $map[$type] : '';
-    }
-
     /**
      * @param array<mixed,mixed> $payload
      * @return string

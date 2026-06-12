@@ -78,6 +78,7 @@ class ABJ_404_Solution_DatabaseUpgradeTableRepair extends ABJ_404_Solution_Datab
                 if (!$this->columnExists($tableName, $columnName)) {
                     continue;
                 }
+                // @utf8-audit: opt-out - $tableName comes from doTableNameReplacements() of a fixed internal placeholder; system-controlled, cannot contain invalid UTF-8.
                 $query = 'ALTER TABLE `' . esc_sql($tableName) . '` DROP COLUMN `' . $columnName . '`';
                 $this->dbCore->queryAndGetResults($query);
                 $this->logger->infoMessage('Dropped legacy translated view label column: ' . $query);
