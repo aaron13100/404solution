@@ -106,11 +106,14 @@ class ABJ_404_Solution_AddRedirectHandler implements ABJ_404_Solution_AdminActio
             $statusType = $autoPromoteAdd['statusType'];
             $manualURL = $autoPromoteAdd['url'];
 
-            $newRedirectId = $redirectsRepo->setupRedirect(ABJ_404_Solution_RedirectSpec::create(
-                    $manualURL, (string)$statusType,
-                    $tdType2, $tdDest2,
-                    sanitize_text_field($code), 0
-            ));
+            $newRedirectId = $redirectsRepo->setupRedirect(ABJ_404_Solution_RedirectSpec::fromArray(array(
+                'fromURL' => $manualURL,
+                'status' => (string)$statusType,
+                'type' => $tdType2,
+                'finalDest' => $tdDest2,
+                'code' => sanitize_text_field($code),
+                'disabled' => 0,
+            )));
             if ($autoPromoteAdd['autoPromoted']) {
                 $this->resolver->saveRegexAutoPromoteNotice((int)$newRedirectId, $originalManualURL, $manualURL, $autoPromoteAdd['urlRewritten']);
             }

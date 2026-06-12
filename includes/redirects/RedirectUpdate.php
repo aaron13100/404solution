@@ -37,8 +37,8 @@ if (!defined('ABSPATH')) {
  *   - startTs     : ?int        epoch seconds; null clears the schedule lower bound
  *   - endTs       : ?int        epoch seconds; null clears the schedule upper bound
  *
- * Construct via {@see self::create()}. The constructor is private so the
- * field order is never depended on at call sites.
+ * Construct via {@see self::fromArray()} at new call sites. The constructor
+ * is private so the field order is never depended on at call sites.
  */
 final class ABJ_404_Solution_RedirectUpdate {
 
@@ -91,10 +91,8 @@ final class ABJ_404_Solution_RedirectUpdate {
     }
 
     /**
-     * Build a redirect-update request. Callers spell out every field by
-     * name; positional swap of $fromUrl/$destination is no longer possible
-     * at the boundary (the call site must literally type the two parameter
-     * names in order).
+     * Legacy positional factory. Prefer {@see self::fromArray()} at new call
+     * sites so same-type fields are spelled out before construction.
      *
      * @param int      $id          Primary key of the row to update.
      * @param int      $type        ABJ404_TYPE_* enum value.
@@ -116,6 +114,65 @@ final class ABJ_404_Solution_RedirectUpdate {
         $endTs = null
     ): self {
         return new self($id, $type, $fromUrl, $destination, $code, $statusType, $startTs, $endTs);
+    }
+
+    /**
+     * Build a redirect-update request from named fields.
+     *
+     * @param array<string, mixed> $fields
+     * @return self
+     */
+    public static function fromArray(array $fields): self {
+        return new self(
+            self::requiredInt($fields, 'id'),
+            self::requiredInt($fields, 'type'),
+            self::requiredString($fields, 'fromUrl'),
+            self::requiredString($fields, 'destination'),
+            self::requiredString($fields, 'code'),
+            self::requiredString($fields, 'statusType'),
+            array_key_exists('startTs', $fields) ? self::nullableInt($fields, 'startTs') : null,
+            array_key_exists('endTs', $fields) ? self::nullableInt($fields, 'endTs') : null
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $fields
+     */
+    private static function requiredString(array $fields, string $name): string {
+        if (!array_key_exists($name, $fields)) {
+            throw new InvalidArgumentException('RedirectUpdate is missing required field: ' . $name);
+        }
+        if (!is_string($fields[$name])) {
+            throw new InvalidArgumentException('RedirectUpdate field must be string: ' . $name);
+        }
+        return $fields[$name];
+    }
+
+    /**
+     * @param array<string, mixed> $fields
+     */
+    private static function requiredInt(array $fields, string $name): int {
+        if (!array_key_exists($name, $fields)) {
+            throw new InvalidArgumentException('RedirectUpdate is missing required field: ' . $name);
+        }
+        if (!is_int($fields[$name]) && !(is_string($fields[$name]) && is_numeric($fields[$name]))) {
+            throw new InvalidArgumentException('RedirectUpdate field must be int: ' . $name);
+        }
+        return (int)$fields[$name];
+    }
+
+    /**
+     * @param array<string, mixed> $fields
+     * @return int|null
+     */
+    private static function nullableInt(array $fields, string $name) {
+        if ($fields[$name] === null) {
+            return null;
+        }
+        if (!is_int($fields[$name]) && !(is_string($fields[$name]) && is_numeric($fields[$name]))) {
+            throw new InvalidArgumentException('RedirectUpdate field must be int or null: ' . $name);
+        }
+        return (int)$fields[$name];
     }
 
     public function getId(): int {

@@ -212,15 +212,26 @@ class ABJ_404_Solution_ImportRedirectRowProcessor {
         $code = $this->redirectCode($dataArray);
 
         if ($existingId !== 0 && $overwriteExisting) {
-            $this->redirectsRepository->updateRedirect(ABJ_404_Solution_RedirectUpdate::create(
-                $existingId, $type, $fromURL, (string)$finalDest, $code, (string)$status
-            ));
+            $this->redirectsRepository->updateRedirect(ABJ_404_Solution_RedirectUpdate::fromArray(array(
+                'id' => $existingId,
+                'type' => $type,
+                'fromUrl' => $fromURL,
+                'destination' => (string)$finalDest,
+                'code' => $code,
+                'statusType' => (string)$status,
+            )));
             return;
         }
 
-        $this->redirectsRepository->setupRedirect(ABJ_404_Solution_RedirectSpec::create(
-            $fromURL, (string)$status, (string)$type, (string)$finalDest, $code, 0, $engine
-        ));
+        $this->redirectsRepository->setupRedirect(ABJ_404_Solution_RedirectSpec::fromArray(array(
+            'fromURL' => $fromURL,
+            'status' => (string)$status,
+            'type' => (string)$type,
+            'finalDest' => (string)$finalDest,
+            'code' => $code,
+            'disabled' => 0,
+            'engine' => $engine,
+        )));
     }
 
     /**

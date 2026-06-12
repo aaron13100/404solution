@@ -30,9 +30,7 @@ class ABJ_404_Solution_AdminPaginationLinks {
 
     public function render(string $sub): string {
         $state = $this->paginationState($sub);
-        return $this->renderTemplate($sub, $state['tableOptions'], $state['logsid'], $state['orderby'],
-            $state['order'], $state['filter'], $state['paged'], $state['perpage'], $state['totalPages'],
-            $state['numRecords'], $state['filterText'], $state['urls']);
+        return $this->renderTemplate($sub, $state);
     }
 
     /**
@@ -137,11 +135,21 @@ class ABJ_404_Solution_AdminPaginationLinks {
     }
 
     /**
-     * @param array<string, mixed> $tableOptions
-     * @param array{first: string, previous: string, next: string, last: string} $urls
+     * @param array{tableOptions: array<string, mixed>, logsid: string, orderby: string, order: string,
+     *     filter: string, paged: int, perpage: int, totalPages: int, numRecords: int, filterText: string,
+     *     urls: array{first: string, previous: string, next: string, last: string}} $state
      */
-    private function renderTemplate(string $sub, array $tableOptions, string $logsid, string $orderby, string $order,
-            string $filter, int $paged, int $perpage, int $totalPages, int $numRecords, string $filterText, array $urls): string {
+    private function renderTemplate(string $sub, array $state): string {
+        $tableOptions = $state['tableOptions'];
+        $logsid = $state['logsid'];
+        $orderby = $state['orderby'];
+        $order = $state['order'];
+        $filter = $state['filter'];
+        $paged = $state['paged'];
+        $totalPages = $state['totalPages'];
+        $numRecords = $state['numRecords'];
+        $filterText = $state['filterText'];
+        $urls = $state['urls'];
         // Match the WordPress core WP_List_Table::pagination() text shape:
         // "{N} items" outer count and "{X} of {Y}" inline indicator. The
         // earlier "1 - 25 of 487 redirects" / "Page 25 of 487" wording made

@@ -201,16 +201,16 @@ class ABJ_404_Solution_EditRedirectHandler {
         $autoPromote = $this->resolver->maybeAutoPromoteRegex($context['statusType'], $fromURL);
         $statusType = $autoPromote['statusType'];
         $fromURL = $autoPromote['url'];
-        $updateError = $redirectsRepo->updateRedirect(ABJ_404_Solution_RedirectUpdate::create(
-            $id,
-            $context['tdType'],
-            (string)$fromURL,
-            $context['tdDest'],
-            $context['code'],
-            (string)$statusType,
-            $context['startTs'],
-            $context['endTs']
-        ));
+        $updateError = $redirectsRepo->updateRedirect(ABJ_404_Solution_RedirectUpdate::fromArray(array(
+            'id' => $id,
+            'type' => $context['tdType'],
+            'fromUrl' => (string)$fromURL,
+            'destination' => $context['tdDest'],
+            'code' => $context['code'],
+            'statusType' => (string)$statusType,
+            'startTs' => $context['startTs'],
+            'endTs' => $context['endTs'],
+        )));
         $errorCode = is_scalar($updateError) ? (string)$updateError : '';
         if ($errorCode !== '') {
             return $this->formatUpdateRedirectError($errorCode) . "<BR/>";
@@ -247,14 +247,14 @@ class ABJ_404_Solution_EditRedirectHandler {
         foreach ($redirectsMultiple as $redirect) {
             $redirectUrl = is_string($redirect['url']) ? $redirect['url'] : '';
             $redirectId = is_scalar($redirect['id']) ? (int)$redirect['id'] : 0;
-            $updateError = $redirectsRepo->updateRedirect(ABJ_404_Solution_RedirectUpdate::create(
-                $redirectId,
-                $context['tdType'],
-                (string)$redirectUrl,
-                $context['tdDest'],
-                $context['code'],
-                (string)$context['statusType']
-            ));
+            $updateError = $redirectsRepo->updateRedirect(ABJ_404_Solution_RedirectUpdate::fromArray(array(
+                'id' => $redirectId,
+                'type' => $context['tdType'],
+                'fromUrl' => (string)$redirectUrl,
+                'destination' => $context['tdDest'],
+                'code' => $context['code'],
+                'statusType' => (string)$context['statusType'],
+            )));
             $errorCode = is_scalar($updateError) ? (string)$updateError : '';
             if ($errorCode !== '') {
                 $message .= $this->formatUpdateRedirectError($errorCode) . "<BR/>";

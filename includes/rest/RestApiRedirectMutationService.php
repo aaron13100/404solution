@@ -37,15 +37,15 @@ final class ABJ_404_Solution_RestApiRedirectMutationService {
         $resolved = $this->resolveDestinationType($input['to']);
 
         $insertedId = $this->redirectsRepo->setupRedirect(
-            \ABJ_404_Solution_RedirectSpec::create(
-                $input['from'],
-                $status,
-                (string)$resolved['type'],
-                $resolved['dest'],
-                (string)$input['code'],
-                0,
-                'rest-api'
-            )
+            \ABJ_404_Solution_RedirectSpec::fromArray(array(
+                'fromURL' => $input['from'],
+                'status' => $status,
+                'type' => (string)$resolved['type'],
+                'finalDest' => $resolved['dest'],
+                'code' => (string)$input['code'],
+                'disabled' => 0,
+                'engine' => 'rest-api',
+            ))
         );
 
         if (!$insertedId) {
@@ -65,14 +65,14 @@ final class ABJ_404_Solution_RestApiRedirectMutationService {
         $statusType = $input['regex'] ? (string)ABJ404_STATUS_REGEX : (string)ABJ404_STATUS_MANUAL;
         $resolved = $this->resolveDestinationType($input['to']);
 
-        $error = $this->redirectsRepo->updateRedirect(ABJ_404_Solution_RedirectUpdate::create(
-            $input['id'],
-            (int)$resolved['type'],
-            (string)$input['from'],
-            (string)$resolved['dest'],
-            (string)$input['code'],
-            (string)$statusType
-        ));
+        $error = $this->redirectsRepo->updateRedirect(ABJ_404_Solution_RedirectUpdate::fromArray(array(
+            'id' => $input['id'],
+            'type' => (int)$resolved['type'],
+            'fromUrl' => (string)$input['from'],
+            'destination' => (string)$resolved['dest'],
+            'code' => (string)$input['code'],
+            'statusType' => (string)$statusType,
+        )));
 
         if ($error !== '') {
             return $this->presenter->updateFailed((string)$error);
@@ -116,14 +116,14 @@ final class ABJ_404_Solution_RestApiRedirectMutationService {
         }
 
         $resolved = $this->resolveDestinationType($input['to']);
-        $error = $this->redirectsRepo->updateRedirect(ABJ_404_Solution_RedirectUpdate::create(
-            $input['id'],
-            (int)$resolved['type'],
-            (string)$from,
-            (string)$resolved['dest'],
-            (string)$input['code'],
-            (string)ABJ404_STATUS_MANUAL
-        ));
+        $error = $this->redirectsRepo->updateRedirect(ABJ_404_Solution_RedirectUpdate::fromArray(array(
+            'id' => $input['id'],
+            'type' => (int)$resolved['type'],
+            'fromUrl' => (string)$from,
+            'destination' => (string)$resolved['dest'],
+            'code' => (string)$input['code'],
+            'statusType' => (string)ABJ404_STATUS_MANUAL,
+        )));
 
         if ($error !== '') {
             return $this->presenter->updateFailed((string)$error);
