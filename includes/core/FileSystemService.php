@@ -29,10 +29,34 @@ class ABJ_404_Solution_FileSystemService {
      * @return boolean
      */
     static function safeUnlink($path) {
-        if (file_exists($path)) {
-            return unlink($path);
+        if (!file_exists($path)) {
+            return true;
         }
-        return true;
+
+        $unlinkError = null;
+        set_error_handler(static function($errno, $errstr) use (&$unlinkError) {
+            $unlinkError = (string)$errstr;
+            return true;
+        });
+        try {
+            $result = unlink($path);
+        } finally {
+            restore_error_handler();
+        }
+        if ($result !== false) {
+            return true;
+        }
+
+        clearstatcache(true, (string)$path);
+        if (!file_exists($path)) {
+            return true;
+        }
+
+        $reason = $unlinkError !== null
+            ? $unlinkError
+            : 'unknown unlink failure';
+        error_log('404 Solution: Unable to unlink file: ' . (string)$path . ' (' . $reason . ')');
+        return false;
     }
 
     /** Returns true if the file does not exist after calling this method.
