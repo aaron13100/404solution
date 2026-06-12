@@ -51,41 +51,78 @@ class ABJ_404_Solution_ViewBuildRebuildReconcile extends ABJ_404_Solution_ViewBu
      */
     public function sweepStaleRebuildTransients(): void {
         global $wpdb;
-        if (!isset($wpdb) || !function_exists('get_option')) {
+        if (!isset($wpdb) || !is_object($wpdb) || !function_exists('get_option')) {
             return;
         }
 
-        // Sweep expired abj404_inflight_* transients (older than 5 minutes).
-        $now = time();
-        $prefix = $this->host->dataBoundary()->getLowercasePrefix();
-        $inflightLike = '_transient_timeout_abj404_inflight_%';
-        $timeoutRows = $wpdb->get_results(
-            // DAO-bypass-approved: Rebuild cleanup must scan WordPress transient timeout rows directly.
-            $wpdb->prepare(
-                "SELECT option_name, option_value FROM {$wpdb->options} "
-                . "WHERE option_name LIKE %s",
-                $inflightLike
-            ),
-            ARRAY_A
-        );
-        if (is_array($timeoutRows)) {
-            foreach ($timeoutRows as $row) {
-                $optName = is_array($row) ? ($row['option_name'] ?? '') : '';
-                $optVal = is_array($row) ? ($row['option_value'] ?? '') : '';
-                if (!is_string($optName) || $optName === '') {
-                    continue;
-                }
-                $timeout = is_numeric($optVal) ? (int)$optVal : 0;
-                if ($timeout > 0 && $timeout < $now) {
-                    // Expired inflight transient. Delete both the timeout and the value.
-                    $transientName = str_replace('_transient_timeout_', '', $optName);
-                    if (function_exists('delete_transient')) {
-                        delete_transient($transientName);
-                    }
+        $this->sweepExpiredInflightTransients($wpdb, time());
+        $this->clearExpiredViewCacheCleanupMarker();
+        $this->dropOrphanedRebuildTables();
+    }
+
+    /**
+     * Sweep expired abj404_inflight_* transients from wp_options.
+     *
+     * @param object $wpdb WordPress database object or compatible test double.
+     * @param int $now Current epoch seconds.
+     * @return void
+     */
+    private function sweepExpiredInflightTransients(object $wpdb, int $now): void {
+        $optionsTable = $this->resolveOptionsTableName($wpdb);
+        if ($optionsTable === null) {
+            return;
+        }
+        $timeoutRows = $this->readInflightTimeoutRows($optionsTable);
+        foreach ($timeoutRows as $row) {
+            $optName = is_array($row) ? ($row['option_name'] ?? '') : '';
+            $optVal = is_array($row) ? ($row['option_value'] ?? '') : '';
+            if (!is_string($optName) || $optName === '') {
+                continue;
+            }
+            $timeout = is_numeric($optVal) ? (int)$optVal : 0;
+            if ($timeout > 0 && $timeout < $now) {
+                // Expired inflight transient. Delete both the timeout and the value.
+                $transientName = str_replace('_transient_timeout_', '', $optName);
+                if (function_exists('delete_transient')) {
+                    delete_transient($transientName);
                 }
             }
         }
+    }
 
+    /**
+     * @param object $wpdb WordPress database object or compatible test double.
+     * @return string|null Safe wp_options table name, or null when malformed.
+     */
+    private function resolveOptionsTableName(object $wpdb): ?string {
+        $optionsTable = isset($wpdb->options) && is_string($wpdb->options) && $wpdb->options !== ''
+            ? $wpdb->options
+            : $this->host->dataBoundary()->getLowercasePrefix() . 'options';
+        if (preg_match('/^[a-zA-Z0-9_]+$/', $optionsTable) !== 1) {
+            return null;
+        }
+        return $optionsTable;
+    }
+
+    /**
+     * @param string $optionsTable Safe wp_options table name.
+     * @return array<int, mixed>
+     */
+    private function readInflightTimeoutRows(string $optionsTable): array {
+        $timeoutResult = $this->host->dataBoundary()->queryAndGetResults(
+            "SELECT option_name, option_value FROM {$optionsTable} WHERE option_name LIKE %s",
+            array(
+                'query_params' => array('_transient_timeout_abj404_inflight_%'),
+                'log_errors' => false,
+            )
+        );
+        return isset($timeoutResult['rows']) && is_array($timeoutResult['rows'])
+            ? $timeoutResult['rows']
+            : array();
+    }
+
+    /** @return void */
+    private function clearExpiredViewCacheCleanupMarker(): void {
         // Clear expired view_cache_cleanup_marker if present.
         if (function_exists('get_transient') && function_exists('delete_transient')) {
             $marker = get_transient('abj404_view_cache_cleanup_marker');
@@ -98,7 +135,10 @@ class ABJ_404_Solution_ViewBuildRebuildReconcile extends ABJ_404_Solution_ViewBu
                 delete_option('_transient_timeout_abj404_view_cache_cleanup_marker');
             }
         }
+    }
 
+    /** @return void */
+    private function dropOrphanedRebuildTables(): void {
         // Drop orphaned temp/preagg tables to reclaim disk before the
         // next rebuild attempt.
         $logsHitsTable = $this->host->dataBoundary()->doTableNameReplacements('{wp_abj404_logs_hits}');
