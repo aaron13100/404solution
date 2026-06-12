@@ -31,7 +31,7 @@ class ABJ_404_Solution_Ajax_RedirectDestinationAutocomplete {
             return;
         }
 
-        if (ABJ_404_Solution_Ajax_Php::checkRateLimit('redirect_pages', 100, 60)) {
+        if (ABJ_404_Solution_Ajax_Php::consumeRateLimit('redirect_pages', 100, 60)) {
             self::sendJson(ABJ_404_Solution_Ajax_SearchFeedback::autocompleteErrorItem(__('Rate limit exceeded. Please try again later.', '404-solution')), 200);
             return;
         }

@@ -125,7 +125,7 @@ class ABJ_404_Solution_SettingsRedirectPolicy {
         switch ($behavior) {
             case 'suggest':
                 $systemPage = ABJ_404_Solution_SystemPage::getInstance();
-                $pageId = $systemPage->getOrCreateSystemPage();
+                $pageId = $systemPage->ensureSystemPage();
                 if ($pageId > 0) {
                     $options['dest404page'] = $pageId . '|' . ABJ404_TYPE_POST;
                     return "";

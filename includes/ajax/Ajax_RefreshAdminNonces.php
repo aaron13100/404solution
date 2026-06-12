@@ -31,7 +31,7 @@ class ABJ_404_Solution_Ajax_RefreshAdminNonces {
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit(ABJ_404_Solution_Ajax_AdminEndpointSupport::buildAjaxErrorResponse('Unauthorized', null, false), 403);
                 return;
             }
-            if (ABJ_404_Solution_Ajax_Php::checkRateLimit('refresh_admin_nonces', 60, 60)) {
+            if (ABJ_404_Solution_Ajax_Php::consumeRateLimit('refresh_admin_nonces', 60, 60)) {
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::safeLogAjaxFailure('AJAX rate limit in ajaxRefreshAdminNonces.', $ctx);
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit(ABJ_404_Solution_Ajax_AdminEndpointSupport::buildAjaxErrorResponse(

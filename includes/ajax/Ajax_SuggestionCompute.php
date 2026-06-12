@@ -59,13 +59,13 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
     public static function computeSuggestions(): void {
         ABJ_404_Solution_AjaxRequestContractValidator::enforceCurrentRequest('ajax-suggestion-compute');
 
-        // (1) Per-IP rate limit FIRST — cheapest possible rejection so an
+        // (1) Per-IP rate limit FIRST - cheapest possible rejection so an
         // attacker rotating fresh URLs (each producing a new token via a
         // real 404) cannot trigger unbounded expensive computations.
         // Single-flight protects same-token replay; this protects distinct-
         // token flooding from one source.
         if (class_exists('ABJ_404_Solution_Ajax_Php') &&
-                ABJ_404_Solution_Ajax_Php::checkRateLimit(
+                ABJ_404_Solution_Ajax_Php::consumeRateLimit(
                     'compute_suggestions',
                     self::COMPUTE_RATE_LIMIT_MAX_REQUESTS,
                     self::COMPUTE_RATE_LIMIT_WINDOW_SECONDS
@@ -89,7 +89,7 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
         // Use the same normalizeURLForCacheKey() pipeline as the producer
         // (SpellChecker::triggerAndCleanupOnFailure) and the polling
         // consumer (Ajax_SuggestionPolling::pollSuggestions). Without this,
-        // any URL that esc_url touches — spaces, unicode, double ampersands —
+        // any URL that esc_url touches - spaces, unicode, double ampersands -
         // hashes to a different transient key than the producer wrote, and
         // this worker reports "Unauthorized" while the polling client never
         // finds the result. Sibling shape of 73f21bce / 6e0908a8 / 83b9fb85.

@@ -68,12 +68,12 @@ class ABJ_404_Solution_SystemPage {
     }
 
     /**
-     * Get or create the system page. If the page already exists and is published,
-     * return its ID. Otherwise, create a new one.
+     * Ensure the system page exists and is published. If the page already
+     * exists and is published, return its ID. Otherwise, republish or create it.
      *
      * @return int The page ID, or 0 on failure.
      */
-    public function getOrCreateSystemPage(): int {
+    public function ensureSystemPage(): int {
         $existingId = $this->getSystemPageId();
 
         if ($existingId > 0 && get_post_status($existingId) === 'publish') {
@@ -92,6 +92,15 @@ class ABJ_404_Solution_SystemPage {
         }
 
         return $this->createSystemPage();
+    }
+
+    /**
+     * Legacy alias for callers that still use the old read-like name.
+     *
+     * @return int The page ID, or 0 on failure.
+     */
+    public function getOrCreateSystemPage(): int {
+        return $this->ensureSystemPage();
     }
 
     /**
@@ -193,7 +202,7 @@ class ABJ_404_Solution_SystemPage {
     }
 
     /**
-     * Hook: before_delete_post / wp_trash_post — detect when system page is trashed/deleted.
+     * Hook: before_delete_post / wp_trash_post - detect when system page is trashed/deleted.
      *
      * @param int $postId
      * @return void
@@ -208,7 +217,7 @@ class ABJ_404_Solution_SystemPage {
     }
 
     /**
-     * Hook: admin_notices on plugin settings page — show notice if system page was deleted.
+     * Hook: admin_notices on plugin settings page - show notice if system page was deleted.
      *
      * @return void
      */
@@ -241,7 +250,7 @@ class ABJ_404_Solution_SystemPage {
     }
 
     /**
-     * Hook: admin_init — handle the recreate system page action.
+     * Hook: admin_init - handle the recreate system page action.
      *
      * @return void
      */
@@ -279,7 +288,7 @@ class ABJ_404_Solution_SystemPage {
     }
 
     /**
-     * Hook: edit_form_after_title — show admin notice when editing the system page.
+     * Hook: edit_form_after_title - show admin notice when editing the system page.
      *
      * @param \WP_Post $post
      * @return void
@@ -299,7 +308,7 @@ class ABJ_404_Solution_SystemPage {
     }
 
     /**
-     * Hook: wp_robots — add noindex to the system page.
+     * Hook: wp_robots - add noindex to the system page.
      *
      * @param array<string, bool|string> $robots
      * @return array<string, bool|string>
@@ -318,7 +327,7 @@ class ABJ_404_Solution_SystemPage {
     }
 
     /**
-     * Hook: wp_page_menu_args / wp_get_nav_menu_items — exclude system page from nav menus.
+     * Hook: wp_page_menu_args / wp_get_nav_menu_items - exclude system page from nav menus.
      *
      * @param array<string, mixed> $args
      * @return array<string, mixed>
@@ -334,7 +343,7 @@ class ABJ_404_Solution_SystemPage {
     }
 
     /**
-     * Hook: template_redirect — show admin-only banner when system page is deleted
+     * Hook: template_redirect - show admin-only banner when system page is deleted
      * and an admin visits a 404 page.
      *
      * @return void
@@ -369,7 +378,7 @@ class ABJ_404_Solution_SystemPage {
     }
 
     /**
-     * Hook: enqueue_block_editor_assets — show notice in the block editor when editing the system page.
+     * Hook: enqueue_block_editor_assets - show notice in the block editor when editing the system page.
      *
      * Uses the wp.data notices store to create an info notice at the top of the block editor.
      *

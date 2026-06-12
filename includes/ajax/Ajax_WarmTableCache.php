@@ -63,7 +63,7 @@ class ABJ_404_Solution_Ajax_WarmTableCache {
                 return;
             }
 
-            if (ABJ_404_Solution_Ajax_Php::checkRateLimit('warm_table_cache', 1500, 60)) {
+            if (ABJ_404_Solution_Ajax_Php::consumeRateLimit('warm_table_cache', 1500, 60)) {
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::safeLogAjaxFailure('AJAX rate limit in ajaxWarmTableCache.', $context);
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit(ABJ_404_Solution_Ajax_AdminEndpointSupport::buildAjaxErrorResponse('Rate limit exceeded. Please try again later.', null, false), 429);

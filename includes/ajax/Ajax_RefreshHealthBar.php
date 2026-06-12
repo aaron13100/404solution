@@ -66,7 +66,7 @@ class ABJ_404_Solution_Ajax_RefreshHealthBar {
 
             // Match the pagination AJAX rate limit ceiling. Admin workflows can
             // re-trigger this on filter typing and tab switches.
-            if (ABJ_404_Solution_Ajax_Php::checkRateLimit('refresh_health_bar', 1500, 60)) {
+            if (ABJ_404_Solution_Ajax_Php::consumeRateLimit('refresh_health_bar', 1500, 60)) {
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::safeLogAjaxFailure('AJAX rate limit in ajaxRefreshHealthBar.', $context);
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
                 $payload = ABJ_404_Solution_Ajax_AdminEndpointSupport::buildAjaxErrorResponse('Rate limit exceeded. Please try again later.', null, false);

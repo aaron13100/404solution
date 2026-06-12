@@ -171,7 +171,7 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
      * @param array<string, mixed> $context
      */
     private static function checkRateLimitOrRespond(int $maxRequestsPerMinute, array $context): bool {
-        if (!ABJ_404_Solution_Ajax_Php::checkRateLimit('update_pagination', $maxRequestsPerMinute, 60)) {
+        if (!ABJ_404_Solution_Ajax_Php::consumeRateLimit('update_pagination', $maxRequestsPerMinute, 60)) {
             return true;
         }
 

@@ -29,7 +29,7 @@ if (!defined('ABSPATH')) {
  *        the page emitting the polling JS also emits the nonce, so a
  *        scripted abuse attempt has to first fetch the 404 page.
  *     2. The shared per-actor (user-id or IP) rate limiter via
- *        `Ajax_Php::checkRateLimit('poll_suggestions', 120, 60)`.
+ *        `Ajax_Php::consumeRateLimit('poll_suggestions', 120, 60)`.
  *     3. The endpoint is strictly read-only and only emits status
  *        constants plus rendered suggestion HTML for the requested URL:
  *        the worst-case information leak is "which URLs on this site have
@@ -82,7 +82,7 @@ class ABJ_404_Solution_Ajax_SuggestionPolling {
         // Rate limit polling to avoid admin-ajax.php abuse on high-traffic 404 pages.
         // Uses the same transient-based limiter as other AJAX endpoints (user ID or IP).
         if (class_exists('ABJ_404_Solution_Ajax_Php') &&
-            ABJ_404_Solution_Ajax_Php::checkRateLimit('poll_suggestions', 120, 60)) {
+            ABJ_404_Solution_Ajax_Php::consumeRateLimit('poll_suggestions', 120, 60)) {
             wp_send_json(array('status' => 'error', 'message' => 'Rate limit exceeded. Please try again later.'), 429);
             return; // @phpstan-ignore deadCode.unreachable
         }

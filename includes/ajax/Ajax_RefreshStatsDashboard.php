@@ -58,7 +58,7 @@ class ABJ_404_Solution_Ajax_RefreshStatsDashboard {
                 return;
             }
 
-            if (ABJ_404_Solution_Ajax_Php::checkRateLimit('refresh_stats_dashboard', 30, 60)) {
+            if (ABJ_404_Solution_Ajax_Php::consumeRateLimit('refresh_stats_dashboard', 30, 60)) {
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::safeLogAjaxFailure('AJAX rate limit in ajaxRefreshStatsDashboard.', $context);
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
                 $payload = ABJ_404_Solution_Ajax_AdminEndpointSupport::buildAjaxErrorResponse('Rate limit exceeded. Please try again later.', null, false);

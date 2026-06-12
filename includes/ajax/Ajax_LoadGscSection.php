@@ -24,7 +24,7 @@ class ABJ_404_Solution_Ajax_LoadGscSection {
             return; // @phpstan-ignore deadCode.unreachable
         }
 
-        if (ABJ_404_Solution_Ajax_Php::checkRateLimit('load_gsc_section', 30, 60)) {
+        if (ABJ_404_Solution_Ajax_Php::consumeRateLimit('load_gsc_section', 30, 60)) {
             wp_send_json_error(array('message' => __('Rate limit exceeded. Please try again later.', '404-solution')), 429);
             return; // @phpstan-ignore deadCode.unreachable
         }

@@ -36,7 +36,7 @@ class ABJ_404_Solution_Ajax_Php {
 	 * @param int $time_window Time window in seconds (default 60)
 	 * @return bool True if rate limit exceeded, false otherwise
 	 */
-	static function checkRateLimit($action, $max_requests = 100, $time_window = 60) {
+	static function consumeRateLimit($action, $max_requests = 100, $time_window = 60) {
 		$user_id = get_current_user_id();
 		if ($user_id) {
 			$identifier = 'user_' . $user_id;
@@ -58,6 +58,18 @@ class ABJ_404_Solution_Ajax_Php {
 			set_transient($transient_key, $request_count + 1, $time_window);
 			return false;
 		}
+	}
+
+	/**
+	 * Legacy alias for callers that still use the old read-like name.
+	 *
+	 * @param string $action The action being rate limited
+	 * @param int $max_requests Maximum requests allowed per time window
+	 * @param int $time_window Time window in seconds
+	 * @return bool True if rate limit exceeded, false otherwise
+	 */
+	static function checkRateLimit($action, $max_requests = 100, $time_window = 60) {
+		return self::consumeRateLimit($action, $max_requests, $time_window);
 	}
 
 	/** Update plugin options via AJAX.

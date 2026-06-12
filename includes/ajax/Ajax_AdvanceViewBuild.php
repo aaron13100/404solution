@@ -72,7 +72,7 @@ class ABJ_404_Solution_Ajax_AdvanceViewBuild {
             // The poller fires this once per second per admin tab while a build
             // is in progress. A single tab might burn ~120 calls in a long
             // resumable build; keep the ceiling well above that.
-            if (ABJ_404_Solution_Ajax_Php::checkRateLimit('advance_view_build', 600, 60)) {
+            if (ABJ_404_Solution_Ajax_Php::consumeRateLimit('advance_view_build', 600, 60)) {
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::safeLogAjaxFailure('AJAX rate limit in ajaxAdvanceViewBuild.', $context);
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();

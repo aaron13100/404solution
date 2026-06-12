@@ -45,7 +45,7 @@ class ABJ_404_Solution_Ajax_FetchInflightStage {
             }
             // Tight rate limit: this endpoint only fires from the JS timeout handler.
             // A real admin sees ~1 hit per stuck request.
-            if (ABJ_404_Solution_Ajax_Php::checkRateLimit('fetch_inflight_stage', 120, 60)) {
+            if (ABJ_404_Solution_Ajax_Php::consumeRateLimit('fetch_inflight_stage', 120, 60)) {
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit(
                     ABJ_404_Solution_Ajax_AdminEndpointSupport::buildAjaxErrorResponse('Rate limit exceeded. Please try again later.', null, false),
                     429
