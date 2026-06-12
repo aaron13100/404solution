@@ -13,37 +13,7 @@ class ABJ_404_Solution_PluginLogicLifecycle {
 
     /** Remove cron jobs. @return void */
     static function doUnregisterCrons(): void {
-        $crons = array(
-            'abj404_cleanupCronAction',
-            'abj404_gsc_fetch_cron',
-            'abj404_gsc_background_refresh',
-            'abj404_rebuildViewDone',
-            'abj404_updatePermalinkCacheAction',
-            'abj404_updateLogsHitsTableAction',
-            'abj404_send_digest',
-            'abj404_rebuild_ngram_cache_hook',
-            'abj404_logsv2_canonical_backfill',
-            'abj404_send_queued_report',
-            'abj404_duplicateCronAction',
-            'removeDuplicatesCron',
-            'deleteOldRedirectsCron',
-        );
-        for ($i = 0; $i < count($crons); $i++) {
-            $cron_name = $crons[$i];
-            $timestamp1 = wp_next_scheduled($cron_name);
-            while ($timestamp1 != false) {
-                wp_unschedule_event($timestamp1, $cron_name);
-                $timestamp1 = wp_next_scheduled($cron_name);
-            }
-
-            $timestamp2 = wp_next_scheduled($cron_name, array(''));
-            while ($timestamp2 != false) {
-                wp_unschedule_event($timestamp2, $cron_name, array(''));
-                $timestamp2 = wp_next_scheduled($cron_name, array(''));
-            }
-
-            wp_clear_scheduled_hook($cron_name);
-        }
+        abj_cron_scheduler()->clearRegisteredHooks();
     }
 
     /**
@@ -59,7 +29,9 @@ class ABJ_404_Solution_PluginLogicLifecycle {
             update_site_option('abj404_pending_network_activation', $sites);
             update_site_option('abj404_network_activation_total', count($sites));
 
-            wp_schedule_single_event(time(), 'abj404_network_activation_hook');
+            abj_cron_scheduler()->scheduleSingle(
+                ABJ_404_Solution_CronScheduler::HOOK_NETWORK_ACTIVATION
+            );
 
             add_action('network_admin_notices', function() {
                 $pendingRaw = get_site_option('abj404_pending_network_activation', array());
@@ -134,7 +106,10 @@ class ABJ_404_Solution_PluginLogicLifecycle {
         update_site_option('abj404_pending_network_activation', $pending);
 
         if (!empty($pending)) {
-            wp_schedule_single_event(time() + 10, 'abj404_network_activation_hook');
+            abj_cron_scheduler()->scheduleSingle(
+                ABJ_404_Solution_CronScheduler::HOOK_NETWORK_ACTIVATION,
+                10
+            );
         } else {
             delete_site_option('abj404_pending_network_activation');
             delete_site_option('abj404_network_activation_total');
@@ -315,7 +290,7 @@ class ABJ_404_Solution_PluginLogicLifecycle {
             );
 
             foreach ($cron_hooks as $hook) {
-                wp_clear_scheduled_hook($hook);
+                abj_cron_scheduler()->clearHook($hook);
             }
 
             $legacy_hooks = array(
@@ -327,7 +302,7 @@ class ABJ_404_Solution_PluginLogicLifecycle {
             );
 
             foreach ($legacy_hooks as $hook) {
-                wp_clear_scheduled_hook($hook);
+                abj_cron_scheduler()->clearHook($hook);
             }
 
             restore_current_blog();
@@ -336,30 +311,15 @@ class ABJ_404_Solution_PluginLogicLifecycle {
 
     /** @return void */
     static function doRegisterCrons(): void {
-        if (!wp_next_scheduled('abj404_cleanupCronAction')) {
-            $timeForEvent = '0' . random_int(0, 5) . ':' . random_int(10, 59) . ':' . random_int(10, 59);
-            $eventTimestamp = strtotime($timeForEvent);
-            if ($eventTimestamp !== false) {
-                wp_schedule_event($eventTimestamp, 'daily', 'abj404_cleanupCronAction');
-            }
-        }
-
-        if (!wp_next_scheduled('abj404_gsc_fetch_cron')) {
-            $timeForGsc = '0' . random_int(1, 4) . ':' . random_int(10, 59) . ':' . random_int(10, 59);
-            $gscTimestamp = strtotime($timeForGsc);
-            if ($gscTimestamp !== false) {
-                wp_schedule_event($gscTimestamp, 'daily', 'abj404_gsc_fetch_cron');
-            }
-        }
+        $scheduler = abj_cron_scheduler();
+        $scheduler->scheduleDailyInWindowIfMissing(ABJ_404_Solution_CronScheduler::HOOK_CLEANUP, 0, 5);
+        $scheduler->scheduleDailyInWindowIfMissing(ABJ_404_Solution_CronScheduler::HOOK_GSC_FETCH, 1, 4);
 
         self::scheduleViewDoneWarmup();
     }
 
     /** @return void */
     private static function scheduleViewDoneWarmup(): void {
-        if (!function_exists('wp_next_scheduled') || !function_exists('wp_schedule_single_event')) {
-            return;
-        }
         if (class_exists('ABJ_404_Solution_ServiceContainer')
                 && ABJ_404_Solution_ServiceContainer::safeHas('rebuild_health')) {
             $rebuildHealth = ABJ_404_Solution_ServiceContainer::safeGet('rebuild_health');
@@ -368,9 +328,9 @@ class ABJ_404_Solution_PluginLogicLifecycle {
                 return;
             }
         }
-        if (wp_next_scheduled('abj404_rebuildViewDone') !== false) {
-            return;
-        }
-        wp_schedule_single_event(time() + 5, 'abj404_rebuildViewDone');
+        abj_cron_scheduler()->scheduleSingleIfMissing(
+            ABJ_404_Solution_CronScheduler::HOOK_REBUILD_VIEW_DONE,
+            5
+        );
     }
 }

@@ -61,6 +61,13 @@ class ABJ_404_Solution_CoreServiceRegistration {
             return new ABJ_404_Solution_SystemClock();
         });
 
+        $container->set('cron_scheduler', function($c) {
+            return new ABJ_404_Solution_CronScheduler(
+                $c->get('clock'),
+                $c->get('logging')
+            );
+        });
+
         $container->set('rebuild_health', function($c) {
             return new ABJ_404_Solution_RebuildHealthState(
                 $c->get('clock'),

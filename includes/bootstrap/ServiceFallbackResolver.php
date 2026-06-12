@@ -158,6 +158,21 @@ class ABJ_404_Solution_ServiceFallbackResolver {
             return $factories;
         }
         $factories = array(
+            'clock' => array(
+                'ABJ_404_Solution_SystemClock',
+                static function () {
+                    return new ABJ_404_Solution_SystemClock();
+                },
+            ),
+            'cron_scheduler' => array(
+                'ABJ_404_Solution_CronScheduler',
+                static function () {
+                    return new ABJ_404_Solution_CronScheduler(
+                        abj_service('clock'),
+                        abj_service('logging')
+                    );
+                },
+            ),
             'pii_redactor' => array(
                 'ABJ_404_Solution_PiiRedactor',
                 static function () {

@@ -108,6 +108,24 @@ function abj_service($name) {
 }
 
 /**
+ * Typed accessor for the WP-Cron scheduler service.
+ *
+ * @return ABJ_404_Solution_CronScheduler
+ */
+function abj_cron_scheduler(): ABJ_404_Solution_CronScheduler {
+    $scheduler = abj_service('cron_scheduler');
+    if ($scheduler instanceof ABJ_404_Solution_CronScheduler) {
+        return $scheduler;
+    }
+    $clock = abj_service('clock');
+    $logger = abj_service('logging');
+    return new ABJ_404_Solution_CronScheduler(
+        $clock instanceof ABJ_404_Solution_Clock ? $clock : new ABJ_404_Solution_SystemClock(),
+        $logger instanceof ABJ_404_Solution_Logging ? $logger : null
+    );
+}
+
+/**
  * Return the singleton-installed instance for a given service name when
  * one is set, else null. Exists so abj_service() can route around the
  * container cache for services that expose a `peekInstance()` reflection

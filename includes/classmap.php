@@ -145,6 +145,7 @@ return array(
     'ABJ_404_Solution_PluginLogicUrlNormalization' => $base . 'includes/core/PluginLogicUrlNormalization.php',
     'ABJ_404_Solution_PluginLogicDefaults' => $base . 'includes/core/PluginLogicDefaults.php',
     'ABJ_404_Solution_PerPageOptionUpdater' => $base . 'includes/services/PerPageOptionUpdater.php',
+    'ABJ_404_Solution_CronScheduler' => $base . 'includes/services/CronScheduler.php',
     'ABJ_404_Solution_RequestInputNormalizer' => $base . 'includes/services/RequestInputNormalizer.php',
     'ABJ_404_Solution_RedirectDestinationSuggestionService' => $base . 'includes/services/RedirectDestinationSuggestionService.php',
     'ABJ_404_Solution_RedirectEngineLabeler' => $base . 'includes/services/RedirectEngineLabeler.php',

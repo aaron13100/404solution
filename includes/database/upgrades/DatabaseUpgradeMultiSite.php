@@ -19,12 +19,12 @@ class ABJ_404_Solution_DatabaseUpgradeMultiSite extends ABJ_404_Solution_Databas
         update_site_option($optionPrefix . '_processed_blogs', array($alreadyProcessedBlogId));
         update_site_option($optionPrefix . '_in_progress', true);
 
-        if (wp_next_scheduled($hookName)) {
+        if (abj_cron_scheduler()->nextScheduled($hookName)) {
             $this->logger->debugMessage("Background multisite $label already scheduled.");
             return;
         }
 
-        $scheduled = wp_schedule_single_event(time() + 30, $hookName);
+        $scheduled = abj_cron_scheduler()->scheduleSingle($hookName, 30);
 
         if ($scheduled === false) {
             $this->logger->errorMessage("Failed to schedule background multisite $label. Remaining sites will not be processed automatically.");
@@ -111,7 +111,7 @@ class ABJ_404_Solution_DatabaseUpgradeMultiSite extends ABJ_404_Solution_Databas
                 "Batch complete. Rescheduling for %d remaining sites.",
                 $stillRemaining
             ));
-            wp_schedule_single_event(time() + 30, $hookName);
+            abj_cron_scheduler()->scheduleSingle($hookName, 30);
             return false;
         } else {
             delete_site_option($optionPrefix . '_processed_blogs');
@@ -130,7 +130,10 @@ class ABJ_404_Solution_DatabaseUpgradeMultiSite extends ABJ_404_Solution_Databas
      */
     public function scheduleBackgroundMultisiteActivation(int $alreadyProcessedBlogId): void {
         $this->scheduleBackgroundMultisiteBatch(
-            'abj404_activation', 'abj404_network_activation_background', 'activation', $alreadyProcessedBlogId
+            'abj404_activation',
+            ABJ_404_Solution_CronScheduler::HOOK_NETWORK_ACTIVATION_BACKGROUND,
+            'activation',
+            $alreadyProcessedBlogId
         );
     }
 
@@ -146,7 +149,7 @@ class ABJ_404_Solution_DatabaseUpgradeMultiSite extends ABJ_404_Solution_Databas
     public function processMultisiteActivationBatch(): bool {
         return $this->processMultisiteBatch(
             'abj404_activation',
-            'abj404_network_activation_background',
+            ABJ_404_Solution_CronScheduler::HOOK_NETWORK_ACTIVATION_BACKGROUND,
             'activation',
             function (int $siteId): void {
                 add_option('abj404_settings', '', '', false);
@@ -179,7 +182,10 @@ class ABJ_404_Solution_DatabaseUpgradeMultiSite extends ABJ_404_Solution_Databas
      */
     public function scheduleBackgroundMultisiteUpgrade(int $alreadyProcessedBlogId): void {
         $this->scheduleBackgroundMultisiteBatch(
-            'abj404_upgrade', 'abj404_network_upgrade_background', 'upgrade', $alreadyProcessedBlogId
+            'abj404_upgrade',
+            ABJ_404_Solution_CronScheduler::HOOK_NETWORK_UPGRADE_BACKGROUND,
+            'upgrade',
+            $alreadyProcessedBlogId
         );
     }
 
@@ -195,7 +201,7 @@ class ABJ_404_Solution_DatabaseUpgradeMultiSite extends ABJ_404_Solution_Databas
     public function processMultisiteUpgradeBatch(): bool {
         return $this->processMultisiteBatch(
             'abj404_upgrade',
-            'abj404_network_upgrade_background',
+            ABJ_404_Solution_CronScheduler::HOOK_NETWORK_UPGRADE_BACKGROUND,
             'upgrade',
             function (int $siteId): void {
                 // Run the full upgrade sequence for this site without going through

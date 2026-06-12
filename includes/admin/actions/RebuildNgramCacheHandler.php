@@ -44,7 +44,9 @@ class ABJ_404_Solution_RebuildNgramCacheHandler implements ABJ_404_Solution_Admi
             return __('N-gram cache rebuild has been scheduled and will run in the background. This may take several minutes on large sites. You can continue using the plugin normally.', '404-solution');
         }
 
-        $nextScheduled = wp_next_scheduled('abj404_rebuild_ngram_cache_hook');
+        $nextScheduled = abj_cron_scheduler()->nextScheduled(
+            ABJ_404_Solution_CronScheduler::HOOK_REBUILD_NGRAM_CACHE
+        );
         if ($nextScheduled) {
             return __('N-gram cache rebuild is already scheduled or in progress. Please wait for it to complete.', '404-solution');
         }

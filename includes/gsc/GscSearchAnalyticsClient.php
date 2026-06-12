@@ -110,10 +110,9 @@ class ABJ_404_Solution_GscSearchAnalyticsClient {
         if (get_transient(ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY)) {
             return;
         }
-        if (wp_next_scheduled(ABJ_404_Solution_GscConfig::BACKGROUND_REFRESH_HOOK)) {
-            return;
-        }
-        wp_schedule_single_event(time(), ABJ_404_Solution_GscConfig::BACKGROUND_REFRESH_HOOK);
+        abj_cron_scheduler()->scheduleSingleIfMissing(
+            ABJ_404_Solution_GscConfig::BACKGROUND_REFRESH_HOOK
+        );
     }
 
     /**

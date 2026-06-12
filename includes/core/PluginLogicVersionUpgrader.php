@@ -189,7 +189,7 @@ class ABJ_404_Solution_PluginLogicVersionUpgrader {
 
     /** @return void */
     private function refreshUpgradeCrons(): void {
-        wp_clear_scheduled_hook('abj404_duplicateCronAction');
+        abj_cron_scheduler()->clearHook(ABJ_404_Solution_CronScheduler::HOOK_DUPLICATE_LEGACY);
 
         ABJ_404_Solution_PluginLogicLifecycle::doUnregisterCrons();
         ABJ_404_Solution_PluginLogicLifecycle::doRegisterCrons();

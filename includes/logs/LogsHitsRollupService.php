@@ -397,7 +397,7 @@ class ABJ_404_Solution_LogsHitsRollupService implements ABJ_404_Solution_LogsHit
             self::$hitsTableRebuildScheduled = true;
             $this->noticeState->setRuntimeFlag(self::HITS_TABLE_LAST_SCHEDULED_FLAG, time(), 86400);
             $this->noticeState->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'scheduled', 86400);
-            if ($this->shouldScheduleHitsTableRebuildViaCron()) { $this->logger->debugMessage(__FUNCTION__ . " scheduling hits table rebuild via WP-Cron."); if (function_exists('wp_schedule_single_event')) { wp_schedule_single_event(time() + 5, 'abj404_updateLogsHitsTableAction'); } return; }
+            if ($this->shouldScheduleHitsTableRebuildViaCron()) { $this->logger->debugMessage(__FUNCTION__ . " scheduling hits table rebuild via WP-Cron."); abj_cron_scheduler()->scheduleSingle(ABJ_404_Solution_CronScheduler::HOOK_UPDATE_LOGS_HITS_TABLE, 5); return; }
             $this->logger->debugMessage(__FUNCTION__ . " scheduling hits table rebuild for shutdown hook.");
             add_action('shutdown', function(): void { $this->createRedirectsForViewHitsTable(); });
         }

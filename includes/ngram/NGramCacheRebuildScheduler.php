@@ -44,17 +44,24 @@ class ABJ_404_Solution_NGramCacheRebuildScheduler {
     /** @var ABJ_404_Solution_NGramNetworkOptionStore */
     private $optionStore;
 
+    /** @var ABJ_404_Solution_CronScheduler */
+    private $cronScheduler;
+
     /**
      * @param ABJ_404_Solution_DatabaseCore $dbCore
      * @param mixed $rebuilder Object exposing rebuildCache().
      * @param ABJ_404_Solution_Logging $logger
      * @param ABJ_404_Solution_NGramNetworkOptionStore $optionStore
+     * @param ABJ_404_Solution_CronScheduler|null $cronScheduler
      */
-    public function __construct($dbCore, $rebuilder, $logger, $optionStore) {
+    public function __construct($dbCore, $rebuilder, $logger, $optionStore, ?ABJ_404_Solution_CronScheduler $cronScheduler = null) {
         $this->dbCore = $dbCore;
         $this->rebuilder = $rebuilder;
         $this->logger = $logger;
         $this->optionStore = $optionStore;
+        $this->cronScheduler = $cronScheduler instanceof ABJ_404_Solution_CronScheduler
+            ? $cronScheduler
+            : abj_cron_scheduler();
     }
 
     /**
@@ -79,7 +86,7 @@ class ABJ_404_Solution_NGramCacheRebuildScheduler {
         }
 
         $hookName = self::REBUILD_CRON_HOOK;
-        $nextScheduled = wp_next_scheduled($hookName);
+        $nextScheduled = $this->cronScheduler->nextScheduled($hookName);
         if ($nextScheduled) {
             $this->logger->debugMessage("N-gram cache rebuild already scheduled for " . date('Y-m-d H:i:s', $nextScheduled));
             return true;
@@ -87,8 +94,8 @@ class ABJ_404_Solution_NGramCacheRebuildScheduler {
 
         $this->optionStore->updateOption('abj404_ngram_rebuild_offset', 0);
 
-        $scheduleTime = time() + 30;
-        $scheduled = wp_schedule_single_event($scheduleTime, $hookName);
+        $scheduleTime = $this->cronScheduler->now() + 30;
+        $scheduled = $this->cronScheduler->scheduleSingle($hookName, 30);
 
         if ($scheduled === false) {
             $this->reportScheduleFailure($hookName, $scheduleTime);
@@ -201,7 +208,7 @@ class ABJ_404_Solution_NGramCacheRebuildScheduler {
                 $totalSites
             ));
 
-            wp_schedule_single_event(time(), self::REBUILD_CRON_HOOK);
+            $this->cronScheduler->scheduleSingle(self::REBUILD_CRON_HOOK);
             return;
         }
 
@@ -270,7 +277,7 @@ class ABJ_404_Solution_NGramCacheRebuildScheduler {
 
         restore_current_blog();
 
-        wp_schedule_single_event(time() + 10, self::REBUILD_CRON_HOOK);
+        $this->cronScheduler->scheduleSingle(self::REBUILD_CRON_HOOK, 10);
     }
 
     /**
@@ -338,9 +345,9 @@ class ABJ_404_Solution_NGramCacheRebuildScheduler {
         ));
 
         if ($offset < $totalPages) {
-            $scheduleTime = time() + 10;
+            $scheduleTime = $this->cronScheduler->now() + 10;
             $hookName = self::REBUILD_CRON_HOOK;
-            $scheduled = wp_schedule_single_event($scheduleTime, $hookName, [$offset]);
+            $scheduled = $this->cronScheduler->scheduleSingle($hookName, 10, [$offset]);
 
             if ($scheduled === false) {
                 $this->reportRescheduleFailure($hookName, $scheduleTime, $offset, $progress);
@@ -369,7 +376,7 @@ class ABJ_404_Solution_NGramCacheRebuildScheduler {
         global $wpdb;
 
         $cronDisabled = defined('DISABLE_WP_CRON') && DISABLE_WP_CRON;
-        $alreadyScheduled = wp_next_scheduled($hookName);
+        $alreadyScheduled = $this->cronScheduler->nextScheduled($hookName);
         $dbError = !empty($wpdb->last_error) ? $wpdb->last_error : 'none';
         $rawRebuildOffset = $this->optionStore->getOption('abj404_ngram_rebuild_offset', 'not set');
         $rebuildOffset = is_scalar($rawRebuildOffset) ? (string)$rawRebuildOffset : 'not set';
@@ -382,7 +389,7 @@ class ABJ_404_Solution_NGramCacheRebuildScheduler {
             "Rebuild offset: %s, Cache initialized: %s, Multisite: %s, Blog ID: %d",
             $hookName,
             $scheduleTime,
-            time(),
+            $this->cronScheduler->now(),
             $alreadyScheduled ? date('Y-m-d H:i:s', $alreadyScheduled) : 'no',
             $cronDisabled ? 'yes' : 'no',
             $dbError,
@@ -421,7 +428,7 @@ class ABJ_404_Solution_NGramCacheRebuildScheduler {
         global $wpdb;
 
         $cronDisabled = defined('DISABLE_WP_CRON') && DISABLE_WP_CRON;
-        $alreadyScheduled = wp_next_scheduled($hookName, [$offset]);
+        $alreadyScheduled = $this->cronScheduler->nextScheduled($hookName, [$offset]);
         $dbError = !empty($wpdb->last_error) ? $wpdb->last_error : 'none';
         $rawCacheInit2 = $this->optionStore->getOption('abj404_ngram_cache_initialized', 'not set');
         $cacheInitialized = is_scalar($rawCacheInit2) ? (string)$rawCacheInit2 : 'not set';
@@ -433,7 +440,7 @@ class ABJ_404_Solution_NGramCacheRebuildScheduler {
             $offset,
             $hookName,
             $scheduleTime,
-            time(),
+            $this->cronScheduler->now(),
             $alreadyScheduled ? date('Y-m-d H:i:s', $alreadyScheduled) : 'no',
             $cronDisabled ? 'yes' : 'no',
             $dbError,

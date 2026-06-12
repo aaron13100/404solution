@@ -22,41 +22,24 @@ class ABJ_404_Solution_ViewBuildCronScheduler extends ABJ_404_Solution_ViewBuild
      * @return void
      */
     public function scheduleViewDoneRebuild(int $delaySeconds = 1): void {
-        if (!function_exists('wp_next_scheduled') || !function_exists('wp_schedule_single_event')) {
-            return;
-        }
         if ($this->host->dataBoundary()->rebuildHealth() instanceof ABJ_404_Solution_RebuildHealthState
                 && !$this->host->dataBoundary()->rebuildHealth()->mayStartExpensiveRebuild()) {
             $this->host->dataBoundary()->logger()->debugMessage(__FUNCTION__ . ' skipped because rebuild health gate is closed.');
             return;
         }
-        $hook = 'abj404_rebuildViewDone';
+        $hook = ABJ_404_Solution_CronScheduler::HOOK_REBUILD_VIEW_DONE;
         $stuckHours = $this->getCronStuckHours();
         if ($stuckHours >= 24) {
             $this->setViewBuildCronStuckNotice($stuckHours);
         } elseif (function_exists('delete_transient')) {
             delete_transient('abj404_view_build_stuck_wp_cron_disabled');
         }
-        $next = wp_next_scheduled($hook);
-        if ($next !== false) {
-            return;
-        }
-        $scheduled = wp_schedule_single_event(
-            time() + max(1, intval($delaySeconds)),
+        $scheduled = abj_cron_scheduler()->scheduleSingleIfMissing(
             $hook,
-            array(),
-            true
+            max(1, intval($delaySeconds))
         );
-        $isError = (function_exists('is_wp_error') && is_wp_error($scheduled));
-        if ($scheduled === false) {
-            $this->setViewBuildScheduleFailedNotice('');
-        } elseif ($isError) {
-            $errMsg = '';
-            if (is_object($scheduled) && method_exists($scheduled, 'get_error_message')) {
-                $msg = $scheduled->get_error_message();
-                $errMsg = is_string($msg) ? $msg : '';
-            }
-            $this->setViewBuildScheduleFailedNotice($errMsg);
+        if (!$scheduled) {
+            $this->setViewBuildScheduleFailedNotice(abj_cron_scheduler()->lastFailureDetail());
         }
     }
 
@@ -76,7 +59,7 @@ class ABJ_404_Solution_ViewBuildCronScheduler extends ABJ_404_Solution_ViewBuild
             'type'         => 'view_build_stuck_cron_disabled',
             'message_key'  => 'view.build_cron_stuck',
             'message_params' => array('hours_stuck' => $hoursStuck),
-            'timestamp'    => time(),
+            'timestamp'    => abj_cron_scheduler()->now(),
             'error_string' => '',
         );
         // allow-cache-empty: intentional notice payload; error_string is empty by definition for cron-disabled state.
@@ -88,11 +71,8 @@ class ABJ_404_Solution_ViewBuildCronScheduler extends ABJ_404_Solution_ViewBuild
      *             or 0 when cron is healthy / cannot be inspected.
      */
     public function getCronStuckHours(): int {
-        if (!function_exists('wp_get_ready_cron_jobs')) {
-            return 0;
-        }
-        $ready = wp_get_ready_cron_jobs();
-        if (!is_array($ready) || empty($ready)) {
+        $ready = abj_cron_scheduler()->readyCronJobs();
+        if (empty($ready)) {
             return 0;
         }
         $earliest = 0;
@@ -105,7 +85,7 @@ class ABJ_404_Solution_ViewBuildCronScheduler extends ABJ_404_Solution_ViewBuild
         if ($earliest <= 0) {
             return 0;
         }
-        $delta = time() - $earliest;
+        $delta = abj_cron_scheduler()->now() - $earliest;
         if ($delta <= 0) {
             return 0;
         }
@@ -128,7 +108,7 @@ class ABJ_404_Solution_ViewBuildCronScheduler extends ABJ_404_Solution_ViewBuild
             'type'         => 'view_build_schedule_failed',
             'message_key'  => 'view.build_schedule_failed',
             'message_params' => array('detail' => $detail),
-            'timestamp'    => time(),
+            'timestamp'    => abj_cron_scheduler()->now(),
             'error_string' => $detail,
         );
         // allow-cache-empty: schedule-failure notice remains useful even when WP returns no detail string.

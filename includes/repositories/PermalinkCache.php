@@ -163,8 +163,11 @@ class ABJ_404_Solution_PermalinkCache {
         $maxExecutionTime = (int)ini_get('max_execution_time') - 5;
         $maxExecutionTime = max($maxExecutionTime, 25);
 
-        wp_schedule_single_event(1, ABJ_404_Solution_PermalinkCache::UPDATE_PERMALINK_CACHE_HOOK,
-                array($maxExecutionTime, $executionCount));
+        abj_cron_scheduler()->scheduleSingleAt(
+            ABJ_404_Solution_PermalinkCache::UPDATE_PERMALINK_CACHE_HOOK,
+            1,
+            array($maxExecutionTime, $executionCount)
+        );
     }
 
     /** Maximum unique keywords to store per post. */

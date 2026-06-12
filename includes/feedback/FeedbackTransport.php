@@ -113,7 +113,7 @@ class ABJ_404_Solution_FeedbackTransport {
         );
         // allow-cache-empty: feedback envelope is generated locally and may contain an intentionally empty payload.
         set_transient(self::TRANSIENT_PREFIX . $uuid, $envelope, self::TRANSIENT_TTL);
-        wp_schedule_single_event(time(), self::CRON_HOOK, array($uuid));
+        abj_cron_scheduler()->scheduleSingle(self::CRON_HOOK, 0, array($uuid));
 
         // Trigger spawn_cron so the listener runs on the next request rather
         // than waiting for the next page load on a logged-in admin. spawn_cron

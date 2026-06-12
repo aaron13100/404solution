@@ -342,22 +342,16 @@ class ABJ_404_Solution_EmailDigest {
             ? $options['admin_notification_frequency']
             : 'instant';
 
-        $hook = 'abj404_send_digest';
+        $scheduler = abj_cron_scheduler();
+        $hook = ABJ_404_Solution_CronScheduler::HOOK_SEND_DIGEST;
 
         if ($frequency === 'instant') {
-            if (function_exists('wp_clear_scheduled_hook')) {
-                wp_clear_scheduled_hook($hook);
-            }
+            $scheduler->clearHook($hook);
             return;
         }
 
         $recurrence = ($frequency === 'weekly') ? 'weekly' : 'daily';
-
-        if (function_exists('wp_next_scheduled') && !wp_next_scheduled($hook)) {
-            if (function_exists('wp_schedule_event')) {
-                wp_schedule_event(time(), $recurrence, $hook);
-            }
-        }
+        $scheduler->scheduleRecurringIfMissing($hook, $recurrence);
     }
 
     /** @return array<string, mixed> */

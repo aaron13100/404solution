@@ -304,9 +304,10 @@ class ABJ_404_Solution_DatabaseUpgradeCanonicalUrlBackfill extends ABJ_404_Solut
 
         $this->setLogsv2CanonicalBackfillScheduled(true);
         if ($this->shouldScheduleLogsv2CanonicalBackfillViaCron()) {
-            if (function_exists('wp_schedule_single_event')) {
-                wp_schedule_single_event(time() + 5, 'abj404_logsv2_canonical_backfill');
-            }
+            abj_cron_scheduler()->scheduleSingle(
+                ABJ_404_Solution_CronScheduler::HOOK_LOGSV2_CANONICAL_BACKFILL,
+                5
+            );
             return;
         }
 
