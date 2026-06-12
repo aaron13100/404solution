@@ -123,51 +123,20 @@ class ABJ_404_Solution_DatabaseNoticeStateHolder {
      * Store the plugin DB admin-notice payload as a runtime flag.
      *
      * @param string $type Notice type discriminator (e.g. 'lock_timeout').
-     * @param string $message Source message template used to select a stable
-     *   render-time message key.
+     * @param string $message Already translated admin notice message.
+     * @param string $guidance Already translated optional remediation guidance.
      * @param string $errorString Underlying MySQL error string (diagnostic).
      * @return void
      */
-    public function setPluginDbNotice(string $type, string $message, string $errorString = ''): void {
+    public function setPluginDbNotice(string $type, string $message, string $guidance, string $errorString = ''): void {
         $payload = array(
             'type' => $type,
-            'message_key' => $this->dbMessageKeyForType($type, $message),
-            'message_params' => array(),
+            'message' => $message,
+            'guidance' => $guidance,
             'timestamp' => $this->clock()->now(),
             'error_string' => $errorString,
         );
         $this->setRuntimeFlag('abj404_plugin_db_notice', $payload, self::DB_WRITE_BLOCK_COOLDOWN_SECONDS);
-    }
-
-    /**
-     * Map a DB notice type discriminator to a stable message-catalog key.
-     *
-     * Lives here (Data layer) rather than on AdminNoticeMessageCatalog (Core
-     * layer) so the state-holder does not reach across the layer boundary.
-     * The catalog still owns the key->locale-rendered-string mapping at
-     * render time; this function just chooses which key to persist.
-     *
-     * @param string $type
-     * @param string $sourceMessage Original English source message; used to
-     *   disambiguate disk_full into the more specific innodb_tablespace key.
-     * @return string
-     */
-    private function dbMessageKeyForType(string $type, string $sourceMessage): string {
-        if ($type === 'disk_full' && stripos($sourceMessage, 'innodb tablespace') !== false) {
-            return 'db.innodb_tablespace_full';
-        }
-        $map = array(
-            'disk_full' => 'db.disk_full',
-            'query_quota' => 'db.query_quota',
-            'read_only' => 'db.read_only',
-            'corrupted_temp_table' => 'db.corrupted_temp_table',
-            'table_full' => 'db.table_full',
-            'log_table_full' => 'db.log_table_full',
-            'stale_permalink_cache' => 'db.stale_permalink_cache',
-            'lock_timeout' => 'db.lock_timeout',
-            'missing_table' => 'db.missing_table',
-        );
-        return isset($map[$type]) ? $map[$type] : '';
     }
 
     /**

@@ -148,8 +148,8 @@ class ABJ_404_Solution_PermalinkCache {
             // allow-cache-empty: notice payload is constructed locally and intentionally persisted as-is.
             set_transient('abj404_plugin_db_notice', array(
                 'type'      => 'stale_permalink_cache',
-                'message_key' => 'db.stale_permalink_cache',
-                'message_params' => array(),
+                'message'   => function_exists('__') ? __('Permalink cache appears empty after rebuild - suggestions may be degraded. Try rebuilding again or check available disk space.', '404-solution') : 'Permalink cache appears empty after rebuild - suggestions may be degraded. Try rebuilding again or check available disk space.',
+                'guidance'  => function_exists('__') ? __('The permalink cache appears to be empty. Try rebuilding it from the Tools tab, or check that your site has enough disk space.', '404-solution') : 'The permalink cache appears to be empty. Try rebuilding it from the Tools tab, or check that your site has enough disk space.',
                 'timestamp' => time(),
             ), 86400);
         }

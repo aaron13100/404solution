@@ -124,24 +124,44 @@ class ABJ_404_Solution_DatabaseErrorClassifier {
             if ($tableFull) {
                 $tableName = $this->tableInspector->extractTableNameFromFullError($errorText);
                 if ($tableName !== null && $this->tableInspector->isInnoDBTable($tableName)) {
-                    $this->core->noticeState()->setPluginDbNotice('disk_full', 'The InnoDB tablespace appears to be exhausted. Deleting plugin data will NOT free this space. Contact your hosting provider to expand the InnoDB tablespace (ibdata1).', $errorText);
+                    $this->core->noticeState()->setPluginDbNotice(
+                        'disk_full',
+                        function_exists('__') ? __('The InnoDB tablespace appears to be exhausted. Deleting plugin data will NOT free this space. Contact your hosting provider to expand the InnoDB tablespace (ibdata1).', '404-solution') : 'The InnoDB tablespace appears to be exhausted. Deleting plugin data will NOT free this space. Contact your hosting provider to expand the InnoDB tablespace (ibdata1).',
+                        function_exists('__') ? __('Contact your hosting provider. This is usually caused by a database quota, tablespace limit, or full /tmp partition - not necessarily a full disk.', '404-solution') : 'Contact your hosting provider. This is usually caused by a database quota, tablespace limit, or full /tmp partition - not necessarily a full disk.',
+                        $errorText
+                    );
                     return;
                 }
             }
 
-            $this->core->noticeState()->setPluginDbNotice('disk_full', 'Database storage appears full (disk/engine space). Plugin write-heavy tasks are temporarily paused.', $errorText);
+            $this->core->noticeState()->setPluginDbNotice(
+                'disk_full',
+                function_exists('__') ? __('Database storage appears full (disk/engine space). Plugin write-heavy tasks are temporarily paused.', '404-solution') : 'Database storage appears full (disk/engine space). Plugin write-heavy tasks are temporarily paused.',
+                function_exists('__') ? __('Contact your hosting provider. This is usually caused by a database quota, tablespace limit, or full /tmp partition - not necessarily a full disk.', '404-solution') : 'Contact your hosting provider. This is usually caused by a database quota, tablespace limit, or full /tmp partition - not necessarily a full disk.',
+                $errorText
+            );
             return;
         }
         if ($this->taxonomy->hostState()->isQuotaLimitError($errorText)) {
             $this->core->noticeState()->markServerSideIssueNoted();
             $this->core->noticeState()->setRuntimeFlag('abj404_db_quota_cooldown_until', $this->core->clock()->now() + self::DB_QUOTA_COOLDOWN_SECONDS, self::DB_QUOTA_COOLDOWN_SECONDS);
-            $this->core->noticeState()->setPluginDbNotice('query_quota', 'Database query quota was exceeded (for example max_questions). Non-essential plugin background tasks are temporarily paused.', $errorText);
+            $this->core->noticeState()->setPluginDbNotice(
+                'query_quota',
+                function_exists('__') ? __('Database query quota was exceeded (for example max_questions). Non-essential plugin background tasks are temporarily paused.', '404-solution') : 'Database query quota was exceeded (for example max_questions). Non-essential plugin background tasks are temporarily paused.',
+                function_exists('__') ? __('Your database query quota was exceeded. This usually resets automatically.', '404-solution') : 'Your database query quota was exceeded. This usually resets automatically.',
+                $errorText
+            );
             return;
         }
         if ($this->taxonomy->hostState()->isReadOnlyError($errorText)) {
             $this->core->noticeState()->markServerSideIssueNoted();
             $this->core->noticeState()->setRuntimeFlag('abj404_db_read_only_until', $this->core->clock()->now() + self::DB_WRITE_BLOCK_COOLDOWN_SECONDS, self::DB_WRITE_BLOCK_COOLDOWN_SECONDS);
-            $this->core->noticeState()->setPluginDbNotice('read_only', 'Database appears to be in read-only mode. Plugin write operations are temporarily paused.', $errorText);
+            $this->core->noticeState()->setPluginDbNotice(
+                'read_only',
+                function_exists('__') ? __('Database appears to be in read-only mode. Plugin write operations are temporarily paused.', '404-solution') : 'Database appears to be in read-only mode. Plugin write operations are temporarily paused.',
+                function_exists('__') ? __('Your database is currently in read-only mode. Contact your hosting provider.', '404-solution') : 'Your database is currently in read-only mode. Contact your hosting provider.',
+                $errorText
+            );
             return;
         }
         if ($this->taxonomy->schema()->isCollationError($errorText)) {

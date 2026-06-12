@@ -70,7 +70,8 @@ class ABJ_404_Solution_LogsWriteRecoveryPolicy {
     public function setLogsv2FullNotice(string $errorMessage): void {
         $this->noticeState->setPluginDbNotice(
             'log_table_full',
-            'The 404 Solution log table is full and cannot accept new entries. This is usually caused by a full disk. Please contact your host or manually prune the logs table.',
+            function_exists('__') ? __('The 404 Solution log table is full and cannot accept new entries. This is usually caused by a full disk. Please contact your host or manually prune the logs table.', '404-solution') : 'The 404 Solution log table is full and cannot accept new entries. This is usually caused by a full disk. Please contact your host or manually prune the logs table.',
+            function_exists('__') ? __('The 404 Solution log table is full. The plugin automatically trimmed the oldest 1,000 log entries to free space, but logging may still be limited. Please contact your hosting provider about disk space.', '404-solution') : 'The 404 Solution log table is full. The plugin automatically trimmed the oldest 1,000 log entries to free space, but logging may still be limited. Please contact your hosting provider about disk space.',
             $errorMessage
         );
     }

@@ -32,10 +32,11 @@ interface ABJ_404_Solution_DatabaseRuntimeStateInterface {
      *
      * @param string $type
      * @param string $message
+     * @param string $guidance
      * @param string $errorString
      * @return void
      */
-    public function setPluginDbNotice(string $type, string $message, string $errorString = ''): void;
+    public function setPluginDbNotice(string $type, string $message, string $guidance, string $errorString = ''): void;
 
     /**
      * Clear the plugin DB notice only when its current type matches.

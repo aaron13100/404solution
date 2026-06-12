@@ -33,7 +33,7 @@ if (!defined('ABSPATH')) {
  *   - a result-type getter bound over DatabaseCore::getCurrentResultType
  *     (signature: function(): string);
  *   - a notice setter bound over DatabaseNoticeStateHolder::setPluginDbNotice
- *     (signature: function(string, string, string): void);
+ *     (signature: function(string, string, string, string): void);
  *   - ABJ_404_Solution_Functions for regex/string helpers and the plugin logger.
  *
  * The recursion guards are static properties on this class (they must survive
@@ -58,7 +58,7 @@ class ABJ_404_Solution_DatabaseTableRepairer {
     /** @var callable(): string */
     private $resultTypeGetter;
 
-    /** @var callable(string, string, string): void */
+    /** @var callable(string, string, string, string): void */
     private $noticeSetter;
 
     /** @var ABJ_404_Solution_Functions */
@@ -76,8 +76,8 @@ class ABJ_404_Solution_DatabaseTableRepairer {
      *   by reference. Bound by DatabaseCore over DatabaseWpdbResultHarvester.
      * @param callable(): string $resultTypeGetter
      *   Returns the current wpdb result type (ARRAY_A or OBJECT) for retries.
-     * @param callable(string, string, string): void $noticeSetter
-     *   Persists a plugin-db admin notice (type, message, errorString).
+     * @param callable(string, string, string, string): void $noticeSetter
+     *   Persists a plugin-db admin notice (type, message, guidance, errorString).
      * @param ABJ_404_Solution_Functions $functions
      * @param ABJ_404_Solution_Logging $logger
      */
@@ -183,7 +183,8 @@ class ABJ_404_Solution_DatabaseTableRepairer {
                 if (!$alreadyNotified) {
                     ($this->noticeSetter)(
                         'corrupted_temp_table',
-                        'A database temporary table is corrupted - this is usually caused by a full or failing disk. Please contact your host. (MySQL error 1034)',
+                        function_exists('__') ? __('A database temporary table is corrupted - this is usually caused by a full or failing disk. Please contact your host. (MySQL error 1034)', '404-solution') : 'A database temporary table is corrupted - this is usually caused by a full or failing disk. Please contact your host. (MySQL error 1034)',
+                        function_exists('__') ? __('A temporary MySQL table was corrupted, usually caused by disk or hardware issues. The plugin cannot repair it. Please contact your hosting provider.', '404-solution') : 'A temporary MySQL table was corrupted, usually caused by disk or hardware issues. The plugin cannot repair it. Please contact your hosting provider.',
                         $errorMessage
                     );
                     if (function_exists('set_transient')) {
@@ -366,4 +367,5 @@ class ABJ_404_Solution_DatabaseTableRepairer {
             return null;
         }
     }
+
 }

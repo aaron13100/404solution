@@ -151,7 +151,13 @@ class ABJ_404_Solution_LogsHitsRollupService implements ABJ_404_Solution_LogsHit
         $key = self::HITS_TABLE_STALE_NOTICE_TRANSIENT;
         if (function_exists('get_transient') && get_transient($key) !== false) { return; }
         $hours = max(1, intval(floor($ageSeconds / 3600)));
-        $payload = array('type' => 'logs_hits_rollup_stale', 'message_key' => 'view.logs_hits_rollup_stale', 'message_params' => array('age_hours' => $hours), 'timestamp' => time(), 'error_string' => '', 'age_hours' => $hours);
+        $message = sprintf(
+            function_exists('__')
+                ? __('The 404 Solution redirects-hits rollup has been behind MAX(logsv2.id) for at least %d hour(s). The cron-driven rebuild event (abj404_updateLogsHitsTableAction) does not appear to be firing, so the redirects list will show stale "hits" and "last hit" columns until cron resumes. To resolve: if DISABLE_WP_CRON is set in wp-config.php either remove it, or configure a system cron job that requests wp-cron.php periodically. To force a rebuild right now in your browser, open the 404 Solution Redirects page with ?abj404_force_view_rebuild=1 appended to the URL.', '404-solution')
+                : 'The 404 Solution redirects-hits rollup has been behind MAX(logsv2.id) for at least %d hour(s). The cron-driven rebuild event (abj404_updateLogsHitsTableAction) does not appear to be firing, so the redirects list will show stale "hits" and "last hit" columns until cron resumes. To resolve: if DISABLE_WP_CRON is set in wp-config.php either remove it, or configure a system cron job that requests wp-cron.php periodically. To force a rebuild right now in your browser, open the 404 Solution Redirects page with ?abj404_force_view_rebuild=1 appended to the URL.',
+            $hours
+        );
+        $payload = array('type' => 'logs_hits_rollup_stale', 'message' => $message, 'timestamp' => time(), 'error_string' => '', 'age_hours' => $hours);
         // allow-cache-empty: intentional notice payload; error_string is empty by definition for stale-rollup state.
         set_transient($key, $payload, 86400);
     }

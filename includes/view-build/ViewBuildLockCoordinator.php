@@ -174,8 +174,7 @@ class ABJ_404_Solution_ViewBuildLockCoordinator extends ABJ_404_Solution_ViewBui
                         ? $this->lastNamedLockUnsupportedReason : 'unknown',
                     'error'   => substr($this->lastNamedLockUnsupportedError, 0, 500),
                     'when'    => time(),
-                    'message_key' => 'view.build_named_lock_unsupported',
-                    'message_params' => array(),
+                    'message' => function_exists('__') ? __('This database does not support session-scoped GET_LOCK named locks. The plugin is using a WordPress option-row fallback to coordinate the staged view-build. Common on PlanetScale, Vitess, and split-routing ProxySQL deployments.', '404-solution') : 'This database does not support session-scoped GET_LOCK named locks. The plugin is using a WordPress option-row fallback to coordinate the staged view-build. Common on PlanetScale, Vitess, and split-routing ProxySQL deployments.',
                 ),
                 ABJ_404_Solution_ViewBuildConfig::VIEW_BUILD_DEGRADED_NOTICE_TTL_SECONDS
             );

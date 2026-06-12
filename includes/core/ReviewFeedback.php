@@ -54,7 +54,7 @@ class ABJ_404_Solution_ReviewFeedback {
                 if ($type === 'collation') {
                     // intentionally do not render
                 } else {
-                    $message = ABJ_404_Solution_AdminNoticeMessageCatalog::renderPayloadMessage($dbNotice);
+                    $message = isset($dbNotice['message']) && is_string($dbNotice['message']) ? $dbNotice['message'] : '';
                     if ($message !== '') {
                         $warningTypes = array(
                             'stale_permalink_cache',

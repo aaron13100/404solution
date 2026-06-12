@@ -4049,3 +4049,60 @@ msgstr "Unknown status filter. Valid values are: manual, auto, regex (or omit fo
 #: includes/
 msgid "The \"to\" URL must be a relative path or an http/https URL."
 msgstr "The \"to\" URL must be a relative path or an http/https URL."
+
+msgid "Contact your hosting provider. This is usually caused by a database quota, tablespace limit, or full /tmp partition - not necessarily a full disk."
+msgstr ""
+
+msgid "A database lock wait timeout occurred. If this persists, contact your host - another process may be holding a long-running lock."
+msgstr ""
+
+msgid "404 Solution cannot function correctly: the database table %s is missing, and the plugin tried to recreate it but the CREATE TABLE statement could not be executed. This almost always means the WordPress database user does not have permission to run CREATE TABLE (and likely ALTER TABLE / CREATE INDEX) on this database. Until this is fixed, the plugin cannot record 404s, serve redirects, or generate suggestions. To fix it: ask your hosting provider or database administrator to grant CREATE, ALTER, and INDEX privileges to the WordPress database user for this site, then reload this page. Alternatively, restore the missing table from a recent database backup."
+msgstr ""
+
+msgid "Original database error: %s"
+msgstr ""
+
+msgid "A database temporary table is corrupted - this is usually caused by a full or failing disk. Please contact your host. (MySQL error 1034)"
+msgstr ""
+
+msgid "Permalink cache appears empty after rebuild - suggestions may be degraded. Try rebuilding again or check available disk space."
+msgstr ""
+
+msgid "WordPress cron does not appear to be running. The earliest overdue cron event has been waiting at least %d hours, so cron-dependent plugin features (staged view-build, daily cleanup, log updates, digest emails) are not advancing. To resolve: if DISABLE_WP_CRON is set in wp-config.php either remove it, or configure a system cron job that requests wp-cron.php periodically. To force the redirect view to rebuild right now in your browser (workaround while cron is broken), open the 404 Solution Redirects page with ?abj404_force_view_rebuild=1 appended to the URL."
+msgstr ""
+
+msgid "Scheduling the 404 Solution staged view-build cron event failed. The build will not advance in the background until this clears. This usually indicates the WordPress cron lock is held, the cron option is unwritable, or a custom cron implementation rejected the event. Check your hosting provider and any cron-replacement plugins. To force the redirect view to rebuild right now in your browser (workaround while cron scheduling is failing), open the 404 Solution Redirects page with ?abj404_force_view_rebuild=1 appended to the URL."
+msgstr ""
+
+msgid "Your PHP memory_limit (%s) is below the recommended 128M; the redirect view rebuild may fail on large sites."
+msgstr ""
+
+msgid "The 404 Solution view-build pipeline detected filesystem host constraints that may degrade the next rebuild: "
+msgstr ""
+
+msgid "The 404 Solution view-build pipeline detected MySQL session-variable settings that may degrade the next rebuild: "
+msgstr ""
+
+msgid "Original error: %s"
+msgstr ""
+
+msgid "The 404 Solution view-build pipeline halted at stage %d/11."
+msgstr ""
+
+msgid "The 404 Solution view-build pipeline skipped optional stage %d/11."
+msgstr ""
+
+msgid "Ask your host to grant the CREATE TEMPORARY TABLES privilege to your WordPress database user so the hits aggregate column can be populated."
+msgstr ""
+
+msgid "Ask your host to grant the ALTER privilege to your WordPress database user."
+msgstr ""
+
+msgid "Ask your host to grant ALTER + DROP + CREATE on the database used by WordPress so the view-build swap can complete."
+msgstr ""
+
+msgid "Ask your host to review your WordPress database user privileges."
+msgstr ""
+
+msgid "This database does not support session-scoped GET_LOCK named locks. The plugin is using a WordPress option-row fallback to coordinate the staged view-build. Common on PlanetScale, Vitess, and split-routing ProxySQL deployments."
+msgstr ""

@@ -389,32 +389,25 @@ class ABJ_404_Solution_DatabaseRepairPolicy {
     public function setMissingTablePluginDbNotice(array $result, string $missingTable, string $prefixDiag): void {
         $tableLabel = ($missingTable !== '') ? "'" . $missingTable . "'" : 'a plugin database table';
         $rawError = is_string($result['last_error']) ? $result['last_error'] : '';
-        $adminMsg =
-              '404 Solution cannot function correctly: the database table '
-            . $tableLabel . ' is missing, and the plugin tried to recreate it '
-            . 'but the CREATE TABLE statement could not be executed. '
-            . 'This almost always means the WordPress database user does not '
-            . 'have permission to run CREATE TABLE (and likely ALTER TABLE / '
-            . 'CREATE INDEX) on this database. Until this is fixed, the plugin '
-            . 'cannot record 404s, serve redirects, or generate suggestions. '
-            . 'To fix it: ask your hosting provider or database administrator '
-            . 'to grant CREATE, ALTER, and INDEX privileges to the WordPress '
-            . 'database user for this site, then reload this page. '
-            . 'Alternatively, restore the missing table from a recent database backup.';
+        $adminMsg = sprintf(
+            function_exists('__')
+                ? __('404 Solution cannot function correctly: the database table %s is missing, and the plugin tried to recreate it but the CREATE TABLE statement could not be executed. This almost always means the WordPress database user does not have permission to run CREATE TABLE (and likely ALTER TABLE / CREATE INDEX) on this database. Until this is fixed, the plugin cannot record 404s, serve redirects, or generate suggestions. To fix it: ask your hosting provider or database administrator to grant CREATE, ALTER, and INDEX privileges to the WordPress database user for this site, then reload this page. Alternatively, restore the missing table from a recent database backup.', '404-solution')
+                : '404 Solution cannot function correctly: the database table %s is missing, and the plugin tried to recreate it but the CREATE TABLE statement could not be executed. This almost always means the WordPress database user does not have permission to run CREATE TABLE (and likely ALTER TABLE / CREATE INDEX) on this database. Until this is fixed, the plugin cannot record 404s, serve redirects, or generate suggestions. To fix it: ask your hosting provider or database administrator to grant CREATE, ALTER, and INDEX privileges to the WordPress database user for this site, then reload this page. Alternatively, restore the missing table from a recent database backup.',
+            $tableLabel
+        );
         if ($rawError !== '') {
-            $adminMsg .= ' Original database error: ' . $rawError;
+            $adminMsg .= ' ' . sprintf(
+                function_exists('__') ? __('Original database error: %s', '404-solution') : 'Original database error: %s',
+                $rawError
+            );
         }
         if ($prefixDiag !== '') {
             $adminMsg .= ' ' . $prefixDiag;
         }
         $noticePayload = array(
             'type'         => 'missing_table',
-            'message_key'  => 'db.missing_table',
-            'message_params' => array(
-                'table_label' => $tableLabel,
-                'raw_error'   => $rawError,
-                'prefix_diag' => $prefixDiag,
-            ),
+            'message'      => $adminMsg,
+            'guidance'     => '',
             'timestamp'    => $this->core->clock()->now(),
             'error_string' => $rawError,
         );

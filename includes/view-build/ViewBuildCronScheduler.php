@@ -55,10 +55,15 @@ class ABJ_404_Solution_ViewBuildCronScheduler extends ABJ_404_Solution_ViewBuild
         if (function_exists('get_transient') && get_transient($key) !== false) {
             return;
         }
+        $message = sprintf(
+            function_exists('__')
+                ? __('WordPress cron does not appear to be running. The earliest overdue cron event has been waiting at least %d hours, so cron-dependent plugin features (staged view-build, daily cleanup, log updates, digest emails) are not advancing. To resolve: if DISABLE_WP_CRON is set in wp-config.php either remove it, or configure a system cron job that requests wp-cron.php periodically. To force the redirect view to rebuild right now in your browser (workaround while cron is broken), open the 404 Solution Redirects page with ?abj404_force_view_rebuild=1 appended to the URL.', '404-solution')
+                : 'WordPress cron does not appear to be running. The earliest overdue cron event has been waiting at least %d hours, so cron-dependent plugin features (staged view-build, daily cleanup, log updates, digest emails) are not advancing. To resolve: if DISABLE_WP_CRON is set in wp-config.php either remove it, or configure a system cron job that requests wp-cron.php periodically. To force the redirect view to rebuild right now in your browser (workaround while cron is broken), open the 404 Solution Redirects page with ?abj404_force_view_rebuild=1 appended to the URL.',
+            $hoursStuck
+        );
         $payload = array(
             'type'         => 'view_build_stuck_cron_disabled',
-            'message_key'  => 'view.build_cron_stuck',
-            'message_params' => array('hours_stuck' => $hoursStuck),
+            'message'      => $message,
             'timestamp'    => abj_cron_scheduler()->now(),
             'error_string' => '',
         );
@@ -104,10 +109,15 @@ class ABJ_404_Solution_ViewBuildCronScheduler extends ABJ_404_Solution_ViewBuild
         if (function_exists('get_transient') && get_transient($key) !== false) {
             return;
         }
+        $message = function_exists('__')
+            ? __('Scheduling the 404 Solution staged view-build cron event failed. The build will not advance in the background until this clears. This usually indicates the WordPress cron lock is held, the cron option is unwritable, or a custom cron implementation rejected the event. Check your hosting provider and any cron-replacement plugins. To force the redirect view to rebuild right now in your browser (workaround while cron scheduling is failing), open the 404 Solution Redirects page with ?abj404_force_view_rebuild=1 appended to the URL.', '404-solution')
+            : 'Scheduling the 404 Solution staged view-build cron event failed. The build will not advance in the background until this clears. This usually indicates the WordPress cron lock is held, the cron option is unwritable, or a custom cron implementation rejected the event. Check your hosting provider and any cron-replacement plugins. To force the redirect view to rebuild right now in your browser (workaround while cron scheduling is failing), open the 404 Solution Redirects page with ?abj404_force_view_rebuild=1 appended to the URL.';
+        if ($detail !== '') {
+            $message .= ' (' . $detail . ')';
+        }
         $payload = array(
             'type'         => 'view_build_schedule_failed',
-            'message_key'  => 'view.build_schedule_failed',
-            'message_params' => array('detail' => $detail),
+            'message'      => $message,
             'timestamp'    => abj_cron_scheduler()->now(),
             'error_string' => $detail,
         );

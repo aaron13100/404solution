@@ -94,8 +94,8 @@ class ABJ_404_Solution_DatabaseRecoveryServices {
             function () use ($queryExecutor): string {
                 return $queryExecutor->getCurrentResultType();
             },
-            function (string $type, string $message, string $errorString) use ($noticeState): void {
-                $noticeState->setPluginDbNotice($type, $message, $errorString);
+            function (string $type, string $message, string $guidance, string $errorString) use ($noticeState): void {
+                $noticeState->setPluginDbNotice($type, $message, $guidance, $errorString);
             },
             $functions,
             $logger

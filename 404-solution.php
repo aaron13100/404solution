@@ -1367,11 +1367,11 @@ if (!function_exists('abj404_show_plugin_db_notice')) {
 		if ($type === 'collation') {
 			return;
 		}
-		$noticeMessage = ABJ_404_Solution_AdminNoticeMessageCatalog::renderPayloadMessage($notice);
+		$noticeMessage = isset($notice['message']) && is_string($notice['message']) ? $notice['message'] : '';
 		if ($noticeMessage === '') {
 			return;
 		}
-		$guidance = ABJ_404_Solution_AdminNoticeMessageCatalog::renderDbGuidance($notice);
+		$guidance = isset($notice['guidance']) && is_string($notice['guidance']) ? $notice['guidance'] : '';
 		echo '<div class="notice notice-error"><p><strong>404 Solution:</strong> ' . esc_html($noticeMessage) . '</p>';
 		if ($guidance !== '') {
 			echo '<p>' . esc_html($guidance) . '</p>';
@@ -1443,7 +1443,7 @@ if (!function_exists('abj404_show_view_build_cron_notices')) {
 			if (!is_array($notice)) {
 				continue;
 			}
-			$noticeMessage = ABJ_404_Solution_AdminNoticeMessageCatalog::renderPayloadMessage($notice);
+			$noticeMessage = isset($notice['message']) && is_string($notice['message']) ? $notice['message'] : '';
 			if ($noticeMessage === '') {
 				continue;
 			}

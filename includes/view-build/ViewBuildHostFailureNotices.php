@@ -27,12 +27,17 @@ class ABJ_404_Solution_ViewBuildHostFailureNotices extends ABJ_404_Solution_View
             $stageNumber,
             $kind === 'halted' ? 'halted' : 'skipped'
         );
+        $message = $this->degradedNoticeBaseMessage($stageNumber, $kind)
+            . $this->degradedNoticePrivilegeHint($stageNumber, $errorText)
+            . ' ' . sprintf(
+            function_exists('__') ? __('Original error: %s', '404-solution') : 'Original error: %s',
+            substr(trim($errorText), 0, 200)
+        );
         $payload = array(
             'stage'          => $stageNumber,
             'kind'           => $kind,
             'error'          => $errorText,
-            'message_key'    => 'view.stage_degraded',
-            'message_params' => array('stage' => $stageNumber, 'kind' => $kind, 'error' => $errorText),
+            'message'        => $message,
             'when'           => $this->host->dataBoundary()->clock()->now(),
         );
         if (function_exists('set_transient')) {
@@ -45,6 +50,40 @@ class ABJ_404_Solution_ViewBuildHostFailureNotices extends ABJ_404_Solution_View
         } elseif (function_exists('update_option')) {
             update_option($key, $payload, false);
         }
+    }
+
+    private function degradedNoticeBaseMessage(int $stageNumber, string $kind): string {
+        if ($kind === 'halted') {
+            return sprintf(
+                function_exists('__')
+                    ? __('The 404 Solution view-build pipeline halted at stage %d/11.', '404-solution')
+                    : 'The 404 Solution view-build pipeline halted at stage %d/11.',
+                $stageNumber
+            );
+        }
+        return sprintf(
+            function_exists('__')
+                ? __('The 404 Solution view-build pipeline skipped optional stage %d/11.', '404-solution')
+                : 'The 404 Solution view-build pipeline skipped optional stage %d/11.',
+            $stageNumber
+        );
+    }
+
+    private function degradedNoticePrivilegeHint(int $stageNumber, string $errorText): string {
+        if (stripos($errorText, 'create temporary') !== false || stripos($errorText, "to database '") !== false
+            || ($stageNumber === 9 && stripos($errorText, 'access denied') !== false)) {
+            return ' ' . (function_exists('__') ? __('Ask your host to grant the CREATE TEMPORARY TABLES privilege to your WordPress database user so the hits aggregate column can be populated.', '404-solution') : 'Ask your host to grant the CREATE TEMPORARY TABLES privilege to your WordPress database user so the hits aggregate column can be populated.');
+        }
+        if (stripos($errorText, 'alter command denied') !== false) {
+            return ' ' . (function_exists('__') ? __('Ask your host to grant the ALTER privilege to your WordPress database user.', '404-solution') : 'Ask your host to grant the ALTER privilege to your WordPress database user.');
+        }
+        if (stripos($errorText, 'rename') !== false || $stageNumber === 11) {
+            return ' ' . (function_exists('__') ? __('Ask your host to grant ALTER + DROP + CREATE on the database used by WordPress so the view-build swap can complete.', '404-solution') : 'Ask your host to grant ALTER + DROP + CREATE on the database used by WordPress so the view-build swap can complete.');
+        }
+        if (stripos($errorText, 'access denied') !== false || stripos($errorText, 'command denied') !== false) {
+            return ' ' . (function_exists('__') ? __('Ask your host to review your WordPress database user privileges.', '404-solution') : 'Ask your host to review your WordPress database user privileges.');
+        }
+        return '';
     }
 
     /**

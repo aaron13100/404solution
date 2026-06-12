@@ -23,8 +23,12 @@ class ABJ_404_Solution_ViewBuildHostEnvironmentNoticePolicy extends ABJ_404_Solu
             'kind'         => 'low_memory_limit',
             'bytes'        => $memoryBytes,
             'recommended'  => ABJ_404_Solution_ViewBuildConfig::PHP_MEMORY_LIMIT_RECOMMENDED_BYTES,
-            'message_key'  => 'view.low_memory_limit',
-            'message_params' => array('memory_limit' => $this->formatPhpMemoryBytesHuman($memoryBytes)),
+            'message'      => sprintf(
+                function_exists('__')
+                    ? __('Your PHP memory_limit (%s) is below the recommended 128M; the redirect view rebuild may fail on large sites.', '404-solution')
+                    : 'Your PHP memory_limit (%s) is below the recommended 128M; the redirect view rebuild may fail on large sites.',
+                $this->formatPhpMemoryBytesHuman($memoryBytes)
+            ),
             'when'         => $this->now(),
         );
         $this->storeNotice(self::LOW_MEMORY_NOTICE_KEY, $payload);
@@ -43,8 +47,10 @@ class ABJ_404_Solution_ViewBuildHostEnvironmentNoticePolicy extends ABJ_404_Solu
         $payload = array(
             'kind'           => 'filesystem_env',
             'warnings'       => $stringWarnings,
-            'message_key'    => 'view.filesystem_env',
-            'message_params' => array('warnings' => implode(' | ', $stringWarnings)),
+            'message'        => (function_exists('__')
+                ? __('The 404 Solution view-build pipeline detected filesystem host constraints that may degrade the next rebuild: ', '404-solution')
+                : 'The 404 Solution view-build pipeline detected filesystem host constraints that may degrade the next rebuild: ')
+                . implode(' | ', $stringWarnings),
             'when'           => $this->now(),
         );
         $this->storeNotice(self::FILESYSTEM_NOTICE_KEY, $payload);
@@ -61,8 +67,10 @@ class ABJ_404_Solution_ViewBuildHostEnvironmentNoticePolicy extends ABJ_404_Solu
         $payload = array(
             'kind'           => 'session_env',
             'warnings'       => $warnings,
-            'message_key'    => 'view.session_env',
-            'message_params' => array('warnings' => implode(' | ', $warnings)),
+            'message'        => (function_exists('__')
+                ? __('The 404 Solution view-build pipeline detected MySQL session-variable settings that may degrade the next rebuild: ', '404-solution')
+                : 'The 404 Solution view-build pipeline detected MySQL session-variable settings that may degrade the next rebuild: ')
+                . implode(' | ', $warnings),
             'when'           => $this->now(),
         );
         $this->storeNotice(self::SESSION_NOTICE_KEY, $payload);
