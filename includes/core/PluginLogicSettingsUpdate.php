@@ -14,9 +14,9 @@ require_once __DIR__ . '/../policies/SettingsRegexPatternPolicy.php';
 require_once __DIR__ . '/../policies/SettingsRetentionPolicy.php';
 require_once __DIR__ . '/../policies/SettingsSuggestionPolicy.php';
 require_once __DIR__ . '/../policies/SettingsWordPressPolicy.php';
-require_once __DIR__ . '/../services/SettingsOptionsPersister.php';
-require_once __DIR__ . '/../services/SettingsUpdateRequestDecoder.php';
-require_once __DIR__ . '/../services/SettingsUpdateResultBuilder.php';
+
+/** Signals a miswired settings persistence dependency. */
+class ABJ_404_Solution_SettingsPersistenceException extends \RuntimeException {}
 
 /**
  * Settings save workflow: nonce verification, encoded POST decoding,
@@ -45,20 +45,11 @@ class ABJ_404_Solution_PluginLogicSettingsUpdate {
     /** @var ABJ_404_Solution_SettingsFieldValidator */
     private $fieldValidator;
 
-    /** @var ABJ_404_Solution_SettingsUpdateRequestDecoder */
-    private $requestDecoder;
-
-    /** @var ABJ_404_Solution_SettingsOptionsPersister */
-    private $optionsPersister;
-
     /** @var ABJ_404_Solution_SettingsRegexPatternPolicy */
     private $regexPatternPolicy;
 
     /** @var array<string, object> */
     private $sectionPolicies = array();
-
-    /** @var ABJ_404_Solution_SettingsUpdateResultBuilder|null */
-    private $resultBuilder;
 
     /**
      * @param ABJ_404_Solution_Functions $f
@@ -67,8 +58,6 @@ class ABJ_404_Solution_PluginLogicSettingsUpdate {
      * @param ABJ_404_Solution_PluginLogic $pluginLogic
      * @param ABJ_404_Solution_TableViewOptionsResolver|null $tableViewOptionsResolver
      * @param ABJ_404_Solution_SettingsFieldValidator|null $fieldValidator
-     * @param ABJ_404_Solution_SettingsUpdateRequestDecoder|null $requestDecoder
-     * @param ABJ_404_Solution_SettingsOptionsPersister|null $optionsPersister
      * @param ABJ_404_Solution_SettingsRegexPatternPolicy|null $regexPatternPolicy
      */
     function __construct(
@@ -78,8 +67,6 @@ class ABJ_404_Solution_PluginLogicSettingsUpdate {
         $pluginLogic,
         $tableViewOptionsResolver = null,
         $fieldValidator = null,
-        $requestDecoder = null,
-        $optionsPersister = null,
         $regexPatternPolicy = null
     ) {
         $this->f = $f;
@@ -88,8 +75,6 @@ class ABJ_404_Solution_PluginLogicSettingsUpdate {
         $this->pluginLogic = $pluginLogic;
         $this->tableViewOptionsResolver = $tableViewOptionsResolver;
         $this->fieldValidator = $fieldValidator !== null ? $fieldValidator : new ABJ_404_Solution_SettingsFieldValidator();
-        $this->requestDecoder = $requestDecoder !== null ? $requestDecoder : new ABJ_404_Solution_SettingsUpdateRequestDecoder($logger);
-        $this->optionsPersister = $optionsPersister !== null ? $optionsPersister : new ABJ_404_Solution_SettingsOptionsPersister();
         $this->regexPatternPolicy = $regexPatternPolicy !== null ? $regexPatternPolicy : new ABJ_404_Solution_SettingsRegexPatternPolicy($f);
     }
 
@@ -109,7 +94,25 @@ class ABJ_404_Solution_PluginLogicSettingsUpdate {
      * @return array<string, mixed>
      */
     function sanitizePostData(array $postData, bool $restoreNewlines = false): array {
-        return $this->optionsPersister->sanitizePostData($postData, $restoreNewlines);
+        $newData = array();
+        foreach ($postData as $key => $value) {
+            $key = wp_kses_post($key);
+            if (is_array($value)) {
+                $newData[$key] = $this->sanitizePostData($value, $restoreNewlines);
+            } else {
+                if ($value === null) {
+                    $newData[$key] = '';
+                } else {
+                    $valueStr = is_string($value) ? $value : (is_scalar($value) ? (string)$value : '');
+                    $newData[$key] = wp_kses_post($valueStr);
+                    $newData[$key] = esc_sql($newData[$key]);
+                    if ($restoreNewlines) {
+                        $newData[$key] = str_replace('\n', "\n", $newData[$key]);
+                    }
+                }
+            }
+        }
+        return $newData;
     }
 
     /** Remove non a-zA-Z0-9 or _ characters.
@@ -128,29 +131,155 @@ class ABJ_404_Solution_PluginLogicSettingsUpdate {
      * @return array<string, mixed>
      */
     function updateOptionsFromPOST() {
-        $decodedRequest = $this->requestDecoder->decode($_POST);
+        $decodedRequest = $this->decodeSettingsPost($_POST);
         if (!$decodedRequest['success']) {
             return $decodedRequest;
         }
         if (!isset($decodedRequest['postData']) || !is_array($decodedRequest['postData'])) {
-            $this->logger->errorMessage('Settings request decoder returned success without postData array');
+            $this->logger->errorMessage('Settings request decode returned success without postData array');
             return array('success' => false, 'status' => 400, 'message' => 'Missing form data');
         }
 
         $_POST = $decodedRequest['postData'];
         if (array_key_exists('deleteDebugFile', $_POST) && $_POST['deleteDebugFile'] == true) {
-            $returnData = $this->resultBuilder()->baseData();
+            $returnData = $this->baseSettingsUpdateData();
             $returnData['error'] = '';
             $sub = '';
             $returnData['message'] = $this->pluginLogic->adminActions()->handlePluginAction('updateOptions', $sub);
-            return $this->resultBuilder()->success($returnData);
+            return $this->successResult($returnData);
         }
 
-        $options = $this->optionsPersister->loadCurrentOptions();
+        $options = $this->loadCurrentOptions();
         $message = $this->applySettingsSections($options, $_POST);
-        $this->optionsPersister->persist($options);
+        $this->persistOptions($options);
 
-        return $this->resultBuilder()->success($this->resultBuilder()->settingsSaveData($message));
+        return $this->successResult($this->settingsSaveData($message));
+    }
+
+    /**
+     * Decode a settings POST array into the actual form payload.
+     *
+     * @param array<string, mixed> $post
+     * @return array<string, mixed>
+     */
+    private function decodeSettingsPost(array $post): array {
+        if (!isset($post['encodedData'])) {
+            $this->logger->errorMessage('Missing encodedData in POST');
+            return $this->settingsRequestFailure(400, 'Missing form data');
+        }
+
+        $encodedData = $post['encodedData'];
+        $encodedData = is_scalar($encodedData) ? (string)$encodedData : '';
+
+        try {
+            $postData = call_user_func(array(abj_service('query_string_helper'), 'decodeComplicatedData'), $encodedData);
+        } catch (\Throwable $e) {
+            $this->logger->errorMessage('Invalid JSON encodedData in POST: ' . $e->getMessage());
+            return $this->settingsRequestFailure(400, 'Missing form data');
+        }
+
+        if (!is_array($postData)) {
+            $this->logger->errorMessage('Invalid JSON encodedData in POST');
+            return $this->settingsRequestFailure(400, 'Missing form data');
+        }
+
+        $nonce = isset($postData['nonce']) && is_scalar($postData['nonce']) ? (string)$postData['nonce'] : '';
+        if (!wp_verify_nonce($nonce, 'abj404UpdateOptions') || !is_admin()) {
+            return $this->settingsRequestFailure(403, 'Invalid security token');
+        }
+
+        return array(
+            'success' => true,
+            'postData' => $postData,
+        );
+    }
+
+    /**
+     * @param int $status
+     * @param string $message
+     * @return array<string, mixed>
+     */
+    private function settingsRequestFailure(int $status, string $message): array {
+        return array(
+            'success' => false,
+            'status' => $status,
+            'message' => $message,
+        );
+    }
+
+    /** @return array<string, mixed> */
+    private function loadCurrentOptions(): array {
+        $repository = abj_service('options_repository');
+        if (!is_callable(array($repository, 'getOptions'))) {
+            throw new ABJ_404_Solution_SettingsPersistenceException('Options repository cannot load settings options.');
+        }
+        $options = call_user_func(array($repository, 'getOptions'));
+        return is_array($options) ? $options : array();
+    }
+
+    /**
+     * Sanitize and persist options, then refresh the permalink cache.
+     *
+     * @param array<string, mixed> $options
+     * @return array<string, mixed>
+     */
+    private function persistOptions(array $options): array {
+        $excludedPages = isset($options['excludePages[]']) ? $options['excludePages[]'] : '';
+
+        $newOptions = $this->sanitizePostData($options, true);
+
+        $excludedPages = ($excludedPages == null || !is_scalar($excludedPages)) ? '' : trim((string)$excludedPages);
+        $excludedPages = preg_replace('/[^\[\",\]a-zA-Z\d\|\\\\ ]/', '', $excludedPages);
+        $newOptions['excludePages[]'] = is_string($excludedPages) ? $excludedPages : '';
+
+        $repository = abj_service('options_repository');
+        if (!is_callable(array($repository, 'updateOptions'))) {
+            throw new ABJ_404_Solution_SettingsPersistenceException('Options repository cannot persist settings options.');
+        }
+        call_user_func(array($repository, 'updateOptions'), $newOptions);
+
+        $permalinkCache = abj_service('permalink_cache');
+        if (!is_callable(array($permalinkCache, 'updatePermalinkCache'))) {
+            throw new ABJ_404_Solution_SettingsPersistenceException('Permalink cache cannot refresh after settings save.');
+        }
+        call_user_func(array($permalinkCache, 'updatePermalinkCache'), 2);
+
+        return $newOptions;
+    }
+
+    /**
+     * @param string $errorMessage Concatenated translated validation messages.
+     * @return array<string, mixed>
+     */
+    private function settingsSaveData(string $errorMessage): array {
+        $returnData = $this->baseSettingsUpdateData();
+        $returnData['error'] = $errorMessage;
+        if ($errorMessage === "") {
+            $returnData['message'] = __('Options Saved Successfully!', '404-solution');
+        } else {
+            $returnData['message'] = __('Some options were not saved successfully.', '404-solution') .
+                '		' . $errorMessage;
+        }
+        return $returnData;
+    }
+
+    /** @return array<string, mixed> */
+    private function baseSettingsUpdateData(): array {
+        return array(
+            'newURL' => admin_url() . "options-general.php?page=" . ABJ404_PP . '&subpage=abj404_options',
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
+    private function successResult(array $data): array {
+        return array(
+            'success' => true,
+            'status' => 200,
+            'data' => $data,
+        );
     }
 
     /**
@@ -295,14 +424,6 @@ class ABJ_404_Solution_PluginLogicSettingsUpdate {
         return $this->policy('adminExcludedPages', ABJ_404_Solution_SettingsAdminExcludedPagesPolicy::class, function () {
             return new ABJ_404_Solution_SettingsAdminExcludedPagesPolicy($this->f, $this->logger, $this->contentRepo);
         });
-    }
-
-    /** @return ABJ_404_Solution_SettingsUpdateResultBuilder */
-    private function resultBuilder(): ABJ_404_Solution_SettingsUpdateResultBuilder {
-        if ($this->resultBuilder === null) {
-            $this->resultBuilder = new ABJ_404_Solution_SettingsUpdateResultBuilder();
-        }
-        return $this->resultBuilder;
     }
 
     /**
