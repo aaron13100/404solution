@@ -385,7 +385,6 @@ if (!function_exists('abj404_shortCodeListener')) {
 				$inc . 'sql/getPublishedPagesAndPostsIDs.sql',
 				$inc . 'sql/getPublishedTags.sql',
 				$inc . 'sql/getRedirectsExport.sql',
-				$inc . 'sql/getRedirectsForView.sql',
 				$inc . 'sql/getRedirectsForViewTempTable.sql',
 				$inc . 'sql/getRedirectsWithLogs.sql',
 				$inc . 'sql/importDataFromPluginRedirectioner.sql',
