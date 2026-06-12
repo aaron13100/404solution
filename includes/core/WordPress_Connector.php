@@ -260,16 +260,6 @@ class ABJ_404_Solution_WordPress_Connector {
         );
     }
 
-    /** @deprecated Use ABJ_404_Solution_AdminThemeManager::isDarkModeDetected() */
-    static function isDarkModeDetected(): bool {
-        return ABJ_404_Solution_AdminThemeManager::isDarkModeDetected();
-    }
-
-    /** @deprecated Use ABJ_404_Solution_AdminThemeManager::getAutoSelectedTheme() */
-    static function getAutoSelectedTheme(): string {
-        return ABJ_404_Solution_AdminThemeManager::getAutoSelectedTheme();
-    }
-
     /**
      * @param string $content
      * @return string
@@ -370,16 +360,6 @@ class ABJ_404_Solution_WordPress_Connector {
         $this->getFrontendPipeline()->process404();
     }
 
-    /** @deprecated Use ABJ_404_Solution_ReviewFeedback::echoDashboardNotification() */
-    static function echoDashboardNotification(): void {
-        ABJ_404_Solution_ReviewFeedback::echoDashboardNotification();
-    }
-
-    /** @deprecated Use ABJ_404_Solution_ReviewFeedback::handleResponseRedirects() */
-    static function handleReviewResponseRedirects(): void {
-        ABJ_404_Solution_ReviewFeedback::handleResponseRedirects();
-    }
-
     /**
      * Safely unslash request data when wp_unslash exists and is callable.
      * Some test environments report wp_unslash as existing but throw when called.
@@ -472,16 +452,6 @@ class ABJ_404_Solution_WordPress_Connector {
         	$GLOBALS['abj404_settingsPageName'] = add_submenu_page('options-general.php', PLUGIN_NAME, $pageName, 'manage_options', ABJ404_PP,
                     'abj404_admin_page_callback');
         }
-    }
-
-    /** @deprecated Use ABJ_404_Solution_GscOAuthHandler::handleCallback() */
-    public static function handleGscOauthCallback(): void {
-        ABJ_404_Solution_GscOAuthHandler::handleCallback();
-    }
-
-    /** @deprecated Use ABJ_404_Solution_GscOAuthHandler::handleRevoke() */
-    public static function handleGscRevoke(): void {
-        ABJ_404_Solution_GscOAuthHandler::handleRevoke();
     }
 
 }

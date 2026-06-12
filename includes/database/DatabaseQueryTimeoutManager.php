@@ -217,18 +217,6 @@ class ABJ_404_Solution_DatabaseQueryTimeoutManager {
     }
 
     /**
-     * @deprecated Use the 'timeout' option on queryAndGetResults() instead.
-     *             Kept for backward compatibility with any external callers.
-     *
-     * @param string $insertSelectQuery The INSERT INTO ... SELECT ... query
-     * @param int $timeoutSeconds Maximum execution time in seconds
-     * @return string The query with timeout applied
-     */
-    function applyTimeoutToInsertSelect(string $insertSelectQuery, int $timeoutSeconds): string {
-        return $this->applyNonLeadingSelectTimeout($insertSelectQuery, $timeoutSeconds);
-    }
-
-    /**
      * True when $query begins with the timeout wrapper this trait emits:
      * `SET STATEMENT max_statement_time=N FOR ...`. Used by the wrapper
      * fallback path to confirm the failed query was wrapped before stripping.
