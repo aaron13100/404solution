@@ -152,7 +152,7 @@ class ABJ_404_Solution_AjaxSecurityGate {
         try {
             return function_exists('current_user_can') && current_user_can($capability);
         } catch (\Throwable $e) {
-            error_log('404 Solution: AJAX authorization failed for ' . $action .
+            $this->warn('AJAX authorization failed for ' . $action .
                 ' while checking capability ' . $capability .
                 ' (code ' . $e->getCode() . '): ' . $e->getMessage());
             return false;
@@ -163,7 +163,7 @@ class ABJ_404_Solution_AjaxSecurityGate {
         $adminAccessPolicy = $this->adminAccessPolicy;
 
         if (!is_object($adminAccessPolicy)) {
-            error_log('404 Solution: AJAX authorization failed for ' . $action .
+            $this->warn('AJAX authorization failed for ' . $action .
                 ' because admin_access_policy service is unavailable.');
             return false;
         }
@@ -172,11 +172,11 @@ class ABJ_404_Solution_AjaxSecurityGate {
             if (method_exists($adminAccessPolicy, 'isPluginAdmin')) {
                 return (bool)$adminAccessPolicy->isPluginAdmin();
             }
-            error_log('404 Solution: AJAX authorization failed for ' . $action .
+            $this->warn('AJAX authorization failed for ' . $action .
                 ' because admin_access_policy service has no admin-check method.');
             return false;
         } catch (\Throwable $e) {
-            error_log('404 Solution: AJAX authorization failed for ' . $action .
+            $this->warn('AJAX authorization failed for ' . $action .
                 ' (code ' . $e->getCode() . '): ' . $e->getMessage());
             return false;
         }
@@ -189,8 +189,23 @@ class ABJ_404_Solution_AjaxSecurityGate {
             }
             $this->logger->infoMessage('AJAX authorized: ' . $action);
         } catch (\Throwable $e) {
-            error_log('404 Solution: AJAX authorization logging failed for ' . $action .
+            $this->warn('AJAX authorization logging failed for ' . $action .
                 ' (code ' . $e->getCode() . '): ' . $e->getMessage());
         }
+    }
+
+    private function warn(string $message): void {
+        if (is_object($this->logger) && method_exists($this->logger, 'warn')) {
+            $this->logger->warn($message);
+            return;
+        }
+
+        if (is_object($this->logger) && method_exists($this->logger, 'errorMessage')) {
+            $this->logger->errorMessage($message);
+            return;
+        }
+
+        // @abj404-raw-error-log-allowed: service-resolution-fallback AJAX authorization must remain observable if the injected logger is unavailable.
+        error_log('404 Solution: ' . $message);
     }
 }

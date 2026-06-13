@@ -143,6 +143,7 @@ class ABJ_404_Solution_ErrorHandler {
             // Ajax_SuggestionCompute::handleShutdown(). Widening from
             // Exception to Throwable is intentional because Error types are
             // exactly the case the outer handler exists for.
+            // @abj404-raw-error-log-allowed: fatal-handler-fallback the error handler cannot safely recurse into the plugin logger after its own logging path fails.
             @error_log('404 Solution: error handler itself failed (code ' .
                 $ex->getCode() . '): ' . $ex->getMessage());
         }

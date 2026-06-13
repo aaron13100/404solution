@@ -238,6 +238,7 @@ class ABJ_404_Solution_ServiceContainer {
      */
     private static function recordSuppressedError($context, \Throwable $e) {
         self::$lastSuppressedError = $e;
+        // @abj404-raw-error-log-allowed: service-resolution-fallback this records logger/container resolution failures without recursing into the container.
         error_log(sprintf(
             '404 Solution: %s suppressed %s (code %s) at %s:%d: %s',
             $context,

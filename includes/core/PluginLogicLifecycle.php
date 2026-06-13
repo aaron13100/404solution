@@ -95,7 +95,6 @@ class ABJ_404_Solution_PluginLogicLifecycle {
             $errorLine = '404 Solution: Network activation failed for site ' . $blog_id_int .
                 ': ' . $e->getMessage() . '. Remaining sites=' . $remaining .
                 '. Action: skipping this site, continuing with next.';
-            error_log($errorLine);
             $logger = abj_service('logging');
             if ($logger !== null) {
                 $logger->errorMessage($errorLine, $e);

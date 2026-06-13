@@ -193,7 +193,7 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras_DbProbes {
                 );
             } catch (\Throwable $e) {
                 // allow-silent-catch: per-table probe is best-effort; a missing-table or permissions error must not abort the whole map. Aggregated failure is rethrown after the loop when ALL attempts failed (see $errors check below) so the recordProbe wrapper can write the marker key.
-                @error_log('404 Solution: collectPluginTableSizes probe failed for ' . $table . ': ' . $e->getMessage());
+                ABJ_404_Solution_FeedbackTransportLog::log('warn', 'collectPluginTableSizes probe failed for ' . $table . ': ' . $e->getMessage());
                 $errors++;
             }
         }
@@ -261,7 +261,7 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras_DbProbes {
             $rows = $wpdb->get_results('SHOW PROCESSLIST', ARRAY_A);
         } catch (\Throwable $e) {
             // allow-silent-catch: probe is best-effort; rethrow after restoring suppress so the outer tryInt records null
-            @error_log('404 Solution: probeActiveConnectionCount failed: ' . $e->getMessage());
+            ABJ_404_Solution_FeedbackTransportLog::log('warn', 'probeActiveConnectionCount failed: ' . $e->getMessage());
             $rows = null;
         }
         if (method_exists($wpdb, 'suppress_errors')) {
@@ -339,7 +339,7 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras_DbProbes {
                 }
             } catch (\Throwable $e) {
                 // allow-silent-catch: per-table probe is best-effort; a missing-table or permissions error must not abort the whole map. Aggregated failure is rethrown after the loop when ALL attempts failed (see $errors check below) so the recordProbe wrapper can write the marker key.
-                @error_log('404 Solution: probeIndexCardinality failed for ' . $table . ': ' . $e->getMessage());
+                ABJ_404_Solution_FeedbackTransportLog::log('warn', 'probeIndexCardinality failed for ' . $table . ': ' . $e->getMessage());
                 $errors++;
             }
         }
@@ -480,7 +480,7 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras_DbProbes {
                     }
                 } catch (\Throwable $e) {
                     // allow-silent-catch: per-column probe is best-effort; missing-table / permissions errors must not abort the whole map. Aggregated failure is rethrown after the loop when ALL attempts failed (see $errors check below) so the recordProbe wrapper can write the marker key.
-                    @error_log('404 Solution: probeDbCollation probe failed for ' . $table . '.' . $col . ': ' . $e->getMessage());
+                    ABJ_404_Solution_FeedbackTransportLog::log('warn', 'probeDbCollation probe failed for ' . $table . '.' . $col . ': ' . $e->getMessage());
                     $errors++;
                 }
             }

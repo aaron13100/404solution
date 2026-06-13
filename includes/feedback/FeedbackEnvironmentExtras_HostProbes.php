@@ -135,7 +135,7 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras_HostProbes {
             $out['server_utc_offset_seconds'] = (int)$tz->getOffset($dt);
         } catch (\Throwable $e) {
             // allow-silent-catch: server_utc_offset is best-effort; an invalid tz string leaves the default zero in place
-            @error_log('404 Solution: probeTimezone offset probe failed: ' . $e->getMessage());
+            ABJ_404_Solution_FeedbackTransportLog::log('warn', 'probeTimezone offset probe failed: ' . $e->getMessage());
         }
         return $out;
     }
@@ -267,7 +267,7 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras_HostProbes {
                 $networkActivated = (bool) is_plugin_active_for_network(plugin_basename(ABJ404_FILE));
             } catch (\Throwable $e) {
                 // allow-silent-catch: best-effort multisite probe; is_plugin_active_for_network requires wp-admin context that may not be loaded on front-end / cron paths, leave null
-                @error_log('404 Solution: probeMultisiteRole network-activated check failed: ' . $e->getMessage());
+                ABJ_404_Solution_FeedbackTransportLog::log('warn', 'probeMultisiteRole network-activated check failed: ' . $e->getMessage());
                 $networkActivated = null;
             }
         }

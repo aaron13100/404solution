@@ -145,6 +145,7 @@ class ABJ_404_Solution_FatalErrorProcessor {
                 echo $errmsg;
             }
         } catch (Throwable $ex) {
+            // @abj404-raw-error-log-allowed: fatal-handler-fallback the fatal processor cannot safely recurse into the plugin logger after its own logging path fails.
             @error_log('404 Solution: error handler itself failed (code ' .
                 $ex->getCode() . '): ' . $ex->getMessage());
         }

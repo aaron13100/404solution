@@ -52,7 +52,7 @@ class ABJ_404_Solution_FeedbackDiagnosticsCollector {
             $v = $fn();
             return is_int($v) ? $v : null;
         } catch (\Throwable $e) {
-            @error_log('404 Solution: FeedbackDiagnosticsCollector count lookup failed: ' . $e->getMessage());
+            ABJ_404_Solution_FeedbackTransportLog::log('warn', 'FeedbackDiagnosticsCollector count lookup failed: ' . $e->getMessage());
             return null;
         }
     }
@@ -62,7 +62,7 @@ class ABJ_404_Solution_FeedbackDiagnosticsCollector {
             $v = $fn();
             return is_string($v) ? $v : '';
         } catch (\Throwable $e) {
-            @error_log('404 Solution: FeedbackDiagnosticsCollector string lookup failed: ' . $e->getMessage());
+            ABJ_404_Solution_FeedbackTransportLog::log('warn', 'FeedbackDiagnosticsCollector string lookup failed: ' . $e->getMessage());
             return '';
         }
     }
@@ -84,7 +84,7 @@ class ABJ_404_Solution_FeedbackDiagnosticsCollector {
             }
             return $coerced;
         } catch (\Throwable $e) {
-            @error_log('404 Solution: FeedbackDiagnosticsCollector array lookup failed: ' . $e->getMessage());
+            ABJ_404_Solution_FeedbackTransportLog::log('warn', 'FeedbackDiagnosticsCollector array lookup failed: ' . $e->getMessage());
             return array();
         }
     }

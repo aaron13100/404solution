@@ -244,8 +244,7 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras {
      * 'invalid_shape', 'exception:<class>'), not the raw exception
      * message. Exception text can carry PII (paths, user-supplied
      * fragments) and we explicitly do not ship it. The raw message
-     * still goes to error_log so the host's local debugging is
-     * unaffected.
+     * still goes to the plugin logger so local debugging is unaffected.
      *
      * Why marker keys at all: the prior pattern (tryMixedArray returning
      * empty array) could not distinguish "probe succeeded with no data"
@@ -266,7 +265,7 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras {
         } catch (\Throwable $e) {
             $extras[$key] = $default;
             $extras[$key . '_error'] = $this->classifyProbeError($e);
-            @error_log('404 Solution: FeedbackEnvironmentExtras probe "' . $key . '" failed: ' . $e->getMessage());
+            ABJ_404_Solution_FeedbackTransportLog::log('warn', 'FeedbackEnvironmentExtras probe "' . $key . '" failed: ' . $e->getMessage());
             return;
         }
         $extras[$key] = $value;

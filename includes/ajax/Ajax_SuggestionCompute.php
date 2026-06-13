@@ -269,9 +269,11 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
                 $logger->errorMessage($logMessage);
             } catch (Exception $e) {
                 // Logging failed during shutdown - use error_log as fallback
+                // @abj404-raw-error-log-allowed: fatal-handler-fallback shutdown handling must remain observable if plugin logging fails.
                 @error_log("404 Solution: " . $logMessage);
             }
         } else {
+            // @abj404-raw-error-log-allowed: fatal-handler-fallback shutdown handling can run before the logger class is loaded.
             @error_log("404 Solution: " . $logMessage);
         }
     }

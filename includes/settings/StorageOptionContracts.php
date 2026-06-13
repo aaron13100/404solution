@@ -363,6 +363,14 @@ class ABJ_404_Solution_StorageOptionContracts {
     }
 
     private static function logReadIssue(string $optionName, string $detail): void {
-        error_log('404 Solution storage contract read fallback for ' . $optionName . ': ' . $detail);
+        $message = 'Storage contract read fallback for ' . $optionName . ': ' . $detail;
+        $logger = function_exists('abj_service') ? abj_service('logging') : null;
+        if (is_object($logger) && method_exists($logger, 'warn')) {
+            $logger->warn($message);
+            return;
+        }
+
+        // @abj404-raw-error-log-allowed: service-resolution-fallback storage validation can run before the logger is available.
+        error_log('404 Solution: ' . $message);
     }
 }

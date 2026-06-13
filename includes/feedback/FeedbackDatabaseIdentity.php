@@ -30,7 +30,7 @@ class ABJ_404_Solution_FeedbackDatabaseIdentity {
                 $raw = $wpdb->db_version();
                 $dbVersion = is_scalar($raw) ? (string)$raw : '';
             } catch (\Throwable $e) {
-                @error_log('404 Solution: FeedbackTransport db_version probe failed: ' . $e->getMessage());
+                ABJ_404_Solution_FeedbackTransportLog::log('warn', 'FeedbackTransport db_version probe failed: ' . $e->getMessage());
             }
         }
 
@@ -45,7 +45,7 @@ class ABJ_404_Solution_FeedbackDatabaseIdentity {
                     $fullVersion = (string)$probed;
                 }
             } catch (\Throwable $e) {
-                @error_log('404 Solution: FeedbackTransport SELECT VERSION() probe failed: ' . $e->getMessage());
+                ABJ_404_Solution_FeedbackTransportLog::log('warn', 'FeedbackTransport SELECT VERSION() probe failed: ' . $e->getMessage());
             }
         }
 
@@ -72,7 +72,7 @@ class ABJ_404_Solution_FeedbackDatabaseIdentity {
             $driver = $wpdb->dbh->getAttribute(\PDO::ATTR_DRIVER_NAME);
             return is_scalar($driver) ? strtolower(trim((string)$driver)) : '';
         } catch (\Throwable $e) {
-            @error_log('404 Solution: FeedbackTransport PDO driver probe failed: ' . $e->getMessage());
+            ABJ_404_Solution_FeedbackTransportLog::log('warn', 'FeedbackTransport PDO driver probe failed: ' . $e->getMessage());
             return '';
         }
     }
@@ -90,7 +90,7 @@ class ABJ_404_Solution_FeedbackDatabaseIdentity {
             $schema = wp_get_db_schema();
             return is_string($schema) ? $schema : '';
         } catch (\Throwable $e) {
-            @error_log('404 Solution: FeedbackTransport wp_get_db_schema probe failed: ' . $e->getMessage());
+            ABJ_404_Solution_FeedbackTransportLog::log('warn', 'FeedbackTransport wp_get_db_schema probe failed: ' . $e->getMessage());
             return '';
         }
     }
@@ -157,7 +157,7 @@ class ABJ_404_Solution_FeedbackDatabaseIdentity {
             $info = $wpdb->db_server_info();
             return is_scalar($info) ? (string)$info : '';
         } catch (\Throwable $e) {
-            @error_log('404 Solution: FeedbackTransport db_server_info probe failed: ' . $e->getMessage());
+            ABJ_404_Solution_FeedbackTransportLog::log('warn', 'FeedbackTransport db_server_info probe failed: ' . $e->getMessage());
             return '';
         }
     }

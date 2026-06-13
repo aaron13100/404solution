@@ -112,6 +112,7 @@ class ABJ_404_Solution_AdminFatalErrorResponder {
                 return true;
             }
         } catch (Throwable $e) {
+            // @abj404-raw-error-log-allowed: fatal-handler-fallback admin fatal rendering must not depend on the normal plugin logger.
             error_log('404 Solution: admin fatal capability detection failed (code ' .
                 $e->getCode() . '): ' . $e->getMessage());
         }
@@ -205,6 +206,7 @@ class ABJ_404_Solution_AdminFatalErrorResponder {
                 try {
                     return (int)$clock->now();
                 } catch (Throwable $e) {
+                    // @abj404-raw-error-log-allowed: fatal-handler-fallback admin fatal rendering must not depend on the normal plugin logger.
                     error_log('404 Solution: admin fatal clock lookup failed (code ' .
                         $e->getCode() . '): ' . $e->getMessage());
                 }

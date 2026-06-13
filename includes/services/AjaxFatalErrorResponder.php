@@ -125,6 +125,7 @@ class ABJ_404_Solution_AjaxFatalErrorResponder {
                     $isPluginAdmin = $adminAccessPolicy->isPluginAdmin();
                 }
             } catch (Throwable $e) {
+                // @abj404-raw-error-log-allowed: fatal-handler-fallback AJAX fatal response building must not depend on the normal plugin logger.
                 error_log('404 Solution: AJAX fatal admin-status detection failed (code ' .
                     $e->getCode() . '): ' . $e->getMessage());
                 $isPluginAdmin = null;

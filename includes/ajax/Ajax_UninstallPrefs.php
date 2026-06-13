@@ -45,12 +45,16 @@ class ABJ_404_Solution_Ajax_UninstallPrefs {
             'include_diagnostics' => isset($_POST['include_diagnostics']) ? filter_var($_POST['include_diagnostics'], FILTER_VALIDATE_BOOLEAN) : false
         );
 
-        // Debug logging (only in debug mode to avoid logging PII like email/feedback in production)
+        // Debug logging without dumping raw preference payloads or contact fields.
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('404 Solution: AJAX handler received deactivation preferences');
-            error_log('404 Solution: Raw POST send_feedback = ' . (is_scalar($_POST['send_feedback'] ?? null) ? (string)$_POST['send_feedback'] : 'NOT SET'));
-            error_log('404 Solution: Parsed send_feedback = ' . ($preferences['send_feedback'] ? 'true' : 'false'));
-            error_log('404 Solution: Parsed preferences: ' . print_r($preferences, true));
+            $logger = abj_service('logging');
+            if (is_object($logger) && method_exists($logger, 'debugMessage')) {
+                $logger->debugMessage('Uninstall preferences AJAX received: send_feedback=' .
+                    ($preferences['send_feedback'] ? 'true' : 'false') .
+                    ', include_diagnostics=' . ($preferences['include_diagnostics'] ? 'true' : 'false') .
+                    ', delete_redirects=' . ($preferences['delete_redirects'] ? 'true' : 'false') .
+                    ', delete_logs=' . ($preferences['delete_logs'] ? 'true' : 'false'));
+            }
         }
 
         // Save preferences using site options for multisite compatibility

@@ -67,7 +67,7 @@ class ABJ_404_Solution_SettingsModePreference {
         try {
             $mode = get_user_meta($userId, self::META_KEY, true);
         } catch (\Throwable $e) {
-            error_log('404 Solution: settings mode read failed (code ' .
+            $this->logWarning('settings mode read failed (code ' .
                 $e->getCode() . '): ' . $e->getMessage());
             return self::MODE_SIMPLE;
         }
@@ -102,7 +102,7 @@ class ABJ_404_Solution_SettingsModePreference {
         try {
             return update_user_meta($userId, self::META_KEY, $validMode);
         } catch (\Throwable $e) {
-            error_log('404 Solution: settings mode write failed (code ' .
+            $this->logWarning('settings mode write failed (code ' .
                 $e->getCode() . '): ' . $e->getMessage());
             return false;
         }
@@ -116,7 +116,18 @@ class ABJ_404_Solution_SettingsModePreference {
             return;
         }
         self::$loggedUserLookupFailure = true;
-        error_log('404 Solution: settings mode user lookup failed (code ' .
+        $this->logWarning('settings mode user lookup failed (code ' .
             $e->getCode() . '): ' . $e->getMessage());
+    }
+
+    private function logWarning(string $message): void {
+        $logger = function_exists('abj_service') ? abj_service('logging') : null;
+        if (is_object($logger) && method_exists($logger, 'warn')) {
+            $logger->warn($message);
+            return;
+        }
+
+        // @abj404-raw-error-log-allowed: service-resolution-fallback settings mode preference can run before the logger service is available.
+        error_log('404 Solution: ' . $message);
     }
 }

@@ -45,7 +45,7 @@ class ABJ_404_Solution_FeedbackEmailFallback {
                     return (bool) $logger->emailLogFileToDeveloper($payload);
                 }
             } catch (\Throwable $e) {
-                @error_log('404 Solution: FeedbackEmailFallback delegate (' . $type . ') failed: ' . $e->getMessage());
+                ABJ_404_Solution_FeedbackTransportLog::log('warn', 'FeedbackEmailFallback delegate (' . $type . ') failed: ' . $e->getMessage());
             }
         }
         $to = defined('ABJ404_AUTHOR_EMAIL') ? ABJ404_AUTHOR_EMAIL : '404solution@ajexperience.com';

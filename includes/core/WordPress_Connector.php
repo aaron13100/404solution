@@ -97,7 +97,7 @@ class ABJ_404_Solution_WordPress_Connector {
 
 	public function getCapturedCountForNotification(): int {
 		if (!is_object($this->statsRepository) || !method_exists($this->statsRepository, 'getCapturedCountForNotification')) { return 0; } try { return (int)call_user_func(array($this->statsRepository, 'getCapturedCountForNotification')); } catch (Throwable $e) {
-			if (is_object($this->logger) && method_exists($this->logger, 'errorMessage')) { $this->logger->errorMessage('Captured-count notification lookup failed: ' . $e->getMessage(), $e instanceof Exception ? $e : null); } else { error_log('404 Solution: Captured-count notification lookup failed: ' . $e->getMessage()); } return 0; }
+			if (is_object($this->logger) && method_exists($this->logger, 'errorMessage')) { $this->logger->errorMessage('Captured-count notification lookup failed: ' . $e->getMessage(), $e instanceof Exception ? $e : null); } else { $this->logWarning('Captured-count notification lookup failed: ' . $e->getMessage()); } return 0; }
 	}
 
 	/** @return ABJ_404_Solution_PluginLogic */
@@ -146,6 +146,7 @@ class ABJ_404_Solution_WordPress_Connector {
             $logger->errorMessage('Admin runtime exception in ' . $hookName . ': ' . $e->getMessage());
         } catch (Throwable $ignored) {
             // Last-resort logging fallback.
+            // @abj404-raw-error-log-allowed: service-resolution-fallback admin runtime reporter could not resolve the plugin logger.
             @error_log('404 Solution admin runtime exception in ' . $hookName . ': ' . $e->getMessage());
         }
 
@@ -438,8 +439,11 @@ class ABJ_404_Solution_WordPress_Connector {
         } catch (\Throwable $e) {
             // Something failed before menu registration. Continue with defaults
             // so the admin page is still accessible for debugging. Surface the
-            // failure to PHP's error log so it isn't completely invisible.
-            error_log('404 Solution: addMainSettingsPageLink pre-registration failed: ' . $e->getMessage());
+            // failure through the plugin log so it isn't completely invisible.
+            self::logWarningUsingLogger(
+                isset($instance) && $instance instanceof self ? $instance->logger : null,
+                'addMainSettingsPageLink pre-registration failed: ' . $e->getMessage()
+            );
         }
 
         if ($menuLocation === 'settingsLevel') {
@@ -454,4 +458,23 @@ class ABJ_404_Solution_WordPress_Connector {
         }
     }
 
+    private function logWarning(string $message): void {
+        self::logWarningUsingLogger($this->logger, $message);
+    }
+
+    private static function logWarningUsingLogger(?object $logger, string $message): void {
+        if (is_object($logger) && method_exists($logger, 'warn')) {
+            $logger->warn($message);
+            return;
+        }
+
+        $resolvedLogger = function_exists('abj_service') ? abj_service('logging') : null;
+        if (is_object($resolvedLogger) && method_exists($resolvedLogger, 'warn')) {
+            $resolvedLogger->warn($message);
+            return;
+        }
+
+        // @abj404-raw-error-log-allowed: service-resolution-fallback WordPress connector must remain observable when logger resolution fails.
+        error_log('404 Solution: ' . $message);
+    }
 }

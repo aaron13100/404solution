@@ -98,7 +98,7 @@ class ABJ_404_Solution_Uninstaller {
         $plugin_file = '404-solution/404-solution.php';
         if (!is_plugin_active_for_network($plugin_file)) {
             // Log error and bail out - this method should not have been called
-            error_log('404 Solution: multisite_uninstall() called but plugin is not network-activated. Aborting to prevent data loss.');
+            self::logWarning('multisite_uninstall() called but plugin is not network-activated. Aborting to prevent data loss.');
             return;
         }
 
@@ -315,5 +315,16 @@ class ABJ_404_Solution_Uninstaller {
             'abj404_spelling_cache',
             'abj404_view_cache'
         );
+    }
+
+    private static function logWarning(string $message): void {
+        $logger = function_exists('abj_service') ? abj_service('logging') : null;
+        if (is_object($logger) && method_exists($logger, 'warn')) {
+            $logger->warn($message);
+            return;
+        }
+
+        // @abj404-raw-error-log-allowed: service-resolution-fallback uninstall can run after normal plugin services are unavailable.
+        error_log('404 Solution: ' . $message);
     }
 }

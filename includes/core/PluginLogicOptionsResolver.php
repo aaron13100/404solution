@@ -151,7 +151,7 @@ class ABJ_404_Solution_PluginLogicOptionsResolver {
                 if (is_object($versionUpgrade) && method_exists($versionUpgrade, 'upgradeIfNeeded')) {
                     $options = $versionUpgrade->upgradeIfNeeded($options);
                 } else {
-                    error_log('404 Solution: version_upgrade service unavailable while reading options; skipped upgrade check.');
+                    $this->warn('version_upgrade service unavailable while reading options; skipped upgrade check.');
                 }
             }
         }
@@ -250,7 +250,7 @@ class ABJ_404_Solution_PluginLogicOptionsResolver {
             $value = $instanceProperty->getValue();
             return is_object($value) ? $value : null;
         } catch (Throwable $e) {
-            error_log('404 Solution: PluginLogicOptionsResolver could not read PluginLogic::$instance via reflection (' . $e->getMessage() . '); falling back to WordPress options.');
+            $this->warn('PluginLogicOptionsResolver could not read PluginLogic::$instance via reflection (' . $e->getMessage() . '); falling back to WordPress options.');
             return null;
         }
     }
@@ -270,7 +270,7 @@ class ABJ_404_Solution_PluginLogicOptionsResolver {
             $typed = $options;
             return $typed;
         } catch (Throwable $e) {
-            error_log('404 Solution: PluginLogicOptionsResolver could not read PluginLogic::$options via reflection (' . $e->getMessage() . '); falling through to subclass-getOptions seam.');
+            $this->warn('PluginLogicOptionsResolver could not read PluginLogic::$options via reflection (' . $e->getMessage() . '); falling through to subclass-getOptions seam.');
             return null;
         }
     }
@@ -295,8 +295,19 @@ class ABJ_404_Solution_PluginLogicOptionsResolver {
             $typed = $maybeOptions;
             return $typed;
         } catch (Throwable $e) {
-            error_log('404 Solution: PluginLogicOptionsResolver subclass-getOptions seam raised (' . $e->getMessage() . '); falling back to WordPress options.');
+            $this->warn('PluginLogicOptionsResolver subclass-getOptions seam raised (' . $e->getMessage() . '); falling back to WordPress options.');
             return null;
         }
+    }
+
+    private function warn(string $message): void {
+        $logger = function_exists('abj_service') ? abj_service('logging') : null;
+        if (is_object($logger) && method_exists($logger, 'warn')) {
+            $logger->warn($message);
+            return;
+        }
+
+        // @abj404-raw-error-log-allowed: service-resolution-fallback options resolution can run while the logging service is unavailable.
+        error_log('404 Solution: ' . $message);
     }
 }

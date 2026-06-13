@@ -274,7 +274,7 @@ class ABJ_404_Solution_NotFoundResponseService {
                 try {
                     abj404_benchmark_emit_headers();
                 } catch (Throwable $e) {
-                    error_log('404 Solution: abj404_benchmark_emit_headers failed: ' . $e->getMessage());
+                    $this->warnBenchmarkHeaderFailure($e);
                 }
             }
             $useSafe = false;
@@ -317,6 +317,17 @@ class ABJ_404_Solution_NotFoundResponseService {
             return false;
         }
         exit;
+    }
+
+    private function warnBenchmarkHeaderFailure(Throwable $e): void {
+        $message = 'abj404_benchmark_emit_headers failed: ' . $e->getMessage();
+        if (is_object($this->logger) && method_exists($this->logger, 'warn')) {
+            $this->logger->warn($message);
+            return;
+        }
+
+        // @abj404-raw-error-log-allowed: service-resolution-fallback redirect response handling must remain observable if logger injection fails.
+        error_log('404 Solution: ' . $message);
     }
 
 }

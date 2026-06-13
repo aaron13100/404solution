@@ -55,7 +55,7 @@ class ABJ_404_Solution_FileSystemService {
         $reason = $unlinkError !== null
             ? $unlinkError
             : 'unknown unlink failure';
-        error_log('404 Solution: Unable to unlink file: ' . (string)$path . ' (' . $reason . ')');
+        self::logWarning('Unable to unlink file: ' . (string)$path . ' (' . $reason . ')');
         return false;
     }
 
@@ -128,7 +128,7 @@ class ABJ_404_Solution_FileSystemService {
     			}
 
     			if (file_exists($directory) || file_exists(rtrim($directory, '/'))) {
-					error_log("ABJ-404-SOLUTION (ERROR) " . date('Y-m-d H:i:s T', abj_clock()->now()) . ": Error creating the directory " .
+					self::logWarning("Error creating the directory " .
     						$directory . ". A file with that name already exists" .
     						($unlinkErr !== null ? " and unlink() failed: " . $unlinkErr : "") .
     						". Action: aborting directory creation, returning false.");
@@ -138,7 +138,7 @@ class ABJ_404_Solution_FileSystemService {
     		} else if (!@mkdir($directory, 0755, true)) {
     			$lastErr = error_get_last();
     			$mkdirErr = is_array($lastErr) ? $lastErr['message'] : 'unknown';
-					error_log("ABJ-404-SOLUTION (ERROR) " . date('Y-m-d H:i:s T', abj_clock()->now()) . ": Error creating the directory " .
+					self::logWarning("Error creating the directory " .
     					$directory . ". mkdir() failed: " . $mkdirErr .
     					". Action: aborting directory creation, returning false.");
     			return false;
@@ -165,8 +165,8 @@ class ABJ_404_Solution_FileSystemService {
         $fileContents = $readResult['contents'];
         if ($fileContents !== false) {
             if (!empty($readResult['warnings'])) {
-                error_log(
-                    '404 Solution: readFileContents recovered after transient file-open failure for '
+                self::logWarning(
+                    'readFileContents recovered after transient file-open failure for '
                     . $path . '. ' . self::formatFileReadWarnings($readResult['warnings'])
                 );
             }
@@ -190,8 +190,8 @@ class ABJ_404_Solution_FileSystemService {
         }
 
         if ($warningDetails !== '') {
-            error_log(
-                '404 Solution: readFileContents used cURL fallback after file_get_contents failed for '
+            self::logWarning(
+                'readFileContents used cURL fallback after file_get_contents failed for '
                 . $path . '. ' . $warningDetails
             );
         }
@@ -401,5 +401,16 @@ class ABJ_404_Solution_FileSystemService {
         } catch (Exception $e) {
             $abj404logging->errorMessage("Failed to download URL to file. URL: " . $url . ", Error: " . $e->getMessage());
         }
+    }
+
+    private static function logWarning(string $message): void {
+        $logger = function_exists('abj_service') ? abj_service('logging') : null;
+        if (is_object($logger) && method_exists($logger, 'warn')) {
+            $logger->warn($message);
+            return;
+        }
+
+        // @abj404-raw-error-log-allowed: service-resolution-fallback filesystem helpers can run while logger services are unavailable.
+        error_log('404 Solution: ' . $message);
     }
 }

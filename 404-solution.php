@@ -241,6 +241,59 @@ function abj404_autoloader($class) {
 }
 spl_autoload_register('abj404_autoloader');
 
+if (!function_exists('abj404_logRuntimeWarning')) {
+/**
+ * Route root-file runtime warnings through the plugin logger when available.
+ *
+ * The root plugin file owns early boot, shutdown, and cron callbacks where the
+ * service container may not be available yet. This helper keeps normal runtime
+ * failures in the plugin log while preserving a last-resort PHP error log
+ * breadcrumb if logger resolution itself fails.
+ *
+ * @param string $context
+ * @param \Throwable|null $throwable
+ * @return void
+ */
+function abj404_logRuntimeWarning(string $context, ?\Throwable $throwable = null): void {
+    $line = $context;
+    if ($throwable !== null) {
+        $line .= ' (code ' . (string)$throwable->getCode() . ') at ' .
+            $throwable->getFile() . ':' . (string)$throwable->getLine() .
+            ': ' . $throwable->getMessage();
+    }
+
+    $loggerFailure = null;
+    try {
+        $logger = null;
+        if (function_exists('abj_service')) {
+            $logger = abj_service('logging');
+        }
+        if (!is_object($logger) && class_exists('ABJ_404_Solution_Logging', false)) {
+            $logger = ABJ_404_Solution_Logging::getInstance();
+        }
+        if (is_object($logger) && method_exists($logger, 'warn')) {
+            $logger->warn($line);
+            return;
+        }
+        if (is_object($logger) && method_exists($logger, 'errorMessage')) {
+            $logger->errorMessage($line, $throwable instanceof Exception ? $throwable : null);
+            return;
+        }
+    } catch (\Throwable $loggingError) {
+        $loggerFailure = $loggingError;
+    }
+
+    $fallback = '404 Solution: ' . $line;
+    if ($loggerFailure !== null) {
+        $fallback .= ' | logger failure (code ' . (string)$loggerFailure->getCode() . ') at ' .
+            $loggerFailure->getFile() . ':' . (string)$loggerFailure->getLine() .
+            ': ' . $loggerFailure->getMessage();
+    }
+    // @abj404-raw-error-log-allowed: early-boot root callbacks need a PHP-log fallback before the plugin logger is reliable.
+    error_log($fallback);
+}
+}
+
 
 add_action('doing_it_wrong_run', function($function_name, $message, $version) {
 	if (strpos($message, '404-solution') !== false &&
@@ -280,8 +333,7 @@ add_action('doing_it_wrong_run', function($function_name, $message, $version) {
 			}
 
         } catch (Throwable $e) {
-            error_log('404 Solution: failed to capture early translation stack trace: ' .
-                $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+            abj404_logRuntimeWarning('Failed to capture early translation stack trace', $e);
         }
     }
 }, 10, 3);
@@ -573,7 +625,7 @@ if (file_exists($__abj404_loader_path)) {
 	} catch (\Throwable $e) {
 		$GLOBALS['abj404_boot_ok'] = false;
 		$GLOBALS['abj404_boot_error'] = $e->getMessage();
-		error_log('404 Solution: boot failed — ' . $e->getMessage());
+		abj404_logRuntimeWarning('Boot failed while loading Loader.php', $e);
 	}
 } else {
 	$GLOBALS['abj404_boot_ok'] = false;
@@ -593,8 +645,7 @@ if ($GLOBALS['abj404_boot_ok']) {
 			// so the user still has a menu item with error details instead of nothing.
 			$GLOBALS['abj404_boot_ok'] = false;
 			$GLOBALS['abj404_boot_error'] = 'Plugin initialization failed: ' . $e->getMessage();
-			error_log('404 Solution: admin initialization failed: ' .
-				$e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+			abj404_logRuntimeWarning('Admin initialization failed', $e);
 			add_action('admin_menu', 'abj404_degraded_admin_menu');
 			add_action('admin_notices', 'abj404_degraded_admin_notice');
 		}
@@ -946,8 +997,7 @@ if (!function_exists('abj404_admin_page_callback')) {
 				ABJ_404_Solution_View::handleMainAdminPageActionAndDisplay();
 			} catch (\Throwable $e) {
 				$renderError = $e;
-				error_log('404 Solution: admin page rendering failed: ' .
-					$e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+				abj404_logRuntimeWarning('Admin page rendering failed', $e);
 			}
 			$output = ob_get_clean();
 
@@ -1117,7 +1167,7 @@ function abj404_dailyMaintenanceCronJobListener() {
         $dbUpgrades = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
         $dbUpgrades->runDatabaseMaintenanceTasks();
     } catch (\Throwable $e) {
-        error_log('404 Solution cron (maintenance): ' . $e->getMessage());
+        abj404_logRuntimeWarning('Cron maintenance failed', $e);
     }
 }
 }
@@ -1130,7 +1180,7 @@ function abj404_updateLogsHitsTableListener() {
         $logsRepo = abj_service('logs_repository');
         $logsRepo->createRedirectsForViewHitsTable();
     } catch (\Throwable $e) {
-        error_log('404 Solution cron (logs/hits): ' . $e->getMessage());
+        abj404_logRuntimeWarning('Cron logs/hits refresh failed', $e);
     }
 }
 }
@@ -1142,7 +1192,7 @@ function abj404_logsv2CanonicalUrlBackfillListener() {
         $dbUpgrades = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
         $dbUpgrades->backfillLogsv2CanonicalUrl();
     } catch (\Throwable $e) {
-        error_log('404 Solution cron (log canonical URL backfill): ' . $e->getMessage());
+        abj404_logRuntimeWarning('Cron log canonical URL backfill failed', $e);
     }
 }
 }
@@ -1158,7 +1208,7 @@ function abj404_updatePermalinkCacheListener($maxExecutionTime, $executionCount 
         $permalinkCache = ABJ_404_Solution_PermalinkCache::getInstance();
         $permalinkCache->updatePermalinkCache($maxExecutionTime, $executionCount);
     } catch (\Throwable $e) {
-        error_log('404 Solution cron (permalink cache): ' . $e->getMessage());
+        abj404_logRuntimeWarning('Cron permalink cache update failed', $e);
     }
 }
 }
@@ -1173,7 +1223,7 @@ function abj404_rebuildNGramCacheListener($offset = 0) {
         $dbUpgrades = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
         $dbUpgrades->rebuildNGramCacheAsync($offset);
     } catch (\Throwable $e) {
-        error_log('404 Solution cron (ngram cache): ' . $e->getMessage());
+        abj404_logRuntimeWarning('Cron ngram cache rebuild failed', $e);
     }
 }
 }
@@ -1184,7 +1234,7 @@ function abj404_networkActivationListener() {
         require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
         ABJ_404_Solution_PluginLogicLifecycle::networkActivationCronHandler();
     } catch (\Throwable $e) {
-        error_log('404 Solution cron (network activation): ' . $e->getMessage());
+        abj404_logRuntimeWarning('Cron network activation failed', $e);
     }
 }
 }
@@ -1196,7 +1246,7 @@ function abj404_networkActivationBackgroundListener() {
         $upgradesEtc = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
         $upgradesEtc->processMultisiteActivationBatch();
     } catch (\Throwable $e) {
-        error_log('404 Solution cron (multisite activation): ' . $e->getMessage());
+        abj404_logRuntimeWarning('Cron multisite activation batch failed', $e);
     }
 }
 }
@@ -1208,7 +1258,7 @@ function abj404_networkUpgradeBackgroundListener() {
         $upgradesEtc = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
         $upgradesEtc->processMultisiteUpgradeBatch();
     } catch (\Throwable $e) {
-        error_log('404 Solution cron (multisite upgrade): ' . $e->getMessage());
+        abj404_logRuntimeWarning('Cron multisite upgrade batch failed', $e);
     }
 }
 }
@@ -1220,7 +1270,7 @@ function abj404_rebuildViewDoneListener() {
         $viewBuild = abj_service('view_build_orchestrator');
         $viewBuild->rebuildViewDoneInBackground();
     } catch (\Throwable $e) {
-        error_log('404 Solution cron (view table rebuild): ' . $e->getMessage());
+        abj404_logRuntimeWarning('Cron view table rebuild failed', $e);
     }
 }
 }
@@ -1244,7 +1294,7 @@ function abj404_sendQueuedReportListener($uuid) {
         require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
         ABJ_404_Solution_FeedbackTransport::handleQueuedSend(is_string($uuid) ? $uuid : '');
     } catch (\Throwable $e) {
-        error_log('404 Solution cron (feedback transport): ' . $e->getMessage());
+        abj404_logRuntimeWarning('Cron feedback transport failed', $e);
     }
 }
 }
@@ -1258,7 +1308,7 @@ function abj404_sendDigestCronListener() {
         $emailDigest = new ABJ_404_Solution_EmailDigest($dao, $logger);
         $emailDigest->onCronSendDigest();
     } catch (\Throwable $e) {
-        error_log('404 Solution cron (email digest): ' . $e->getMessage());
+        abj404_logRuntimeWarning('Cron email digest failed', $e);
     }
 }
 }
@@ -1278,7 +1328,7 @@ function abj404_gscFetchCronListener(): void {
         $gsc = new ABJ_404_Solution_GoogleSearchConsole($gscLogger);
         $gsc->fetchAndCacheGscData();
     } catch (\Throwable $e) {
-        error_log('404 Solution cron (GSC fetch): ' . $e->getMessage());
+        abj404_logRuntimeWarning('Cron GSC fetch failed', $e);
     }
 }
 }
@@ -1292,7 +1342,7 @@ function abj404_gscBackgroundRefreshListener(): void {
         $gsc = new ABJ_404_Solution_GoogleSearchConsole($gscLogger);
         $gsc->fetchAndCacheGscData();
     } catch (\Throwable $e) {
-        error_log('404 Solution cron (GSC background refresh): ' . $e->getMessage());
+        abj404_logRuntimeWarning('Cron GSC background refresh failed', $e);
     }
 }
 }
@@ -1690,12 +1740,9 @@ function abj404_maybePageLoadFallbackAdvance() {
         }
     } catch (\Throwable $e) {
         // Page-load fallback is best-effort. A failure here must not
-        // break admin page rendering. Log at warning level (error_log
-        // suffices for this surface) so the failure is observable
-        // without triggering the plugin's dev-email-report path. Per
-        // CLAUDE.md self-healing rule #6: infrastructure failures are
-        // warnings, not errors, when the plugin still functions.
-        error_log('404 Solution: page-load fallback advance failed: ' . $e->getMessage());
+        // break admin page rendering. Log at warning level so the failure
+        // is observable without triggering the plugin's dev-email-report path.
+        abj404_logRuntimeWarning('Page-load fallback advance failed', $e);
     }
 }
 }

@@ -134,7 +134,7 @@ class ABJ_404_Solution_PluginAdminAccessPolicy {
             $resolvedOptions = $optionsRepo->getOptions(true);
             return is_array($resolvedOptions) ? $resolvedOptions : array();
         } catch (\Throwable $e) {
-            error_log('404 Solution: plugin admin option lookup failed (code ' .
+            $this->warn('plugin admin option lookup failed (code ' .
                 $e->getCode() . '): ' . $e->getMessage());
             return array();
         }
@@ -150,7 +150,7 @@ class ABJ_404_Solution_PluginAdminAccessPolicy {
             $canManageOptions = function_exists('current_user_can') && current_user_can('manage_options');
             $hasAdministratorRole = function_exists('current_user_can') && current_user_can('administrator');
         } catch (\Throwable $e) {
-            error_log('404 Solution: plugin admin capability lookup failed (code ' .
+            $this->warn('plugin admin capability lookup failed (code ' .
                 $e->getCode() . '): ' . $e->getMessage());
         }
 
@@ -259,6 +259,17 @@ class ABJ_404_Solution_PluginAdminAccessPolicy {
         }
 
         return implode(', ', $this->normalizeExtraAdmins($rawExtra));
+    }
+
+    private function warn(string $message): void {
+        $logger = $this->logger !== null ? $this->logger : (function_exists('abj_service') ? abj_service('logging') : null);
+        if (is_object($logger) && method_exists($logger, 'warn')) {
+            $logger->warn($message);
+            return;
+        }
+
+        // @abj404-raw-error-log-allowed: service-resolution-fallback admin access checks must remain observable if logger resolution fails.
+        error_log('404 Solution: ' . $message);
     }
 
     /**

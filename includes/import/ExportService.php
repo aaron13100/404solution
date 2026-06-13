@@ -190,6 +190,13 @@ class ABJ_404_Solution_ExportService {
             return;
         }
 
+        $logger = function_exists('abj_service') ? abj_service('logging') : null;
+        if (is_object($logger) && method_exists($logger, 'warn')) {
+            $logger->warn($message);
+            return;
+        }
+
+        // @abj404-raw-error-log-allowed: service-resolution-fallback legacy export callers may omit the logger dependency.
         error_log('[404 Solution] ' . $message);
     }
 
@@ -203,6 +210,13 @@ class ABJ_404_Solution_ExportService {
             return;
         }
 
+        $logger = function_exists('abj_service') ? abj_service('logging') : null;
+        if (is_object($logger) && method_exists($logger, 'infoMessage')) {
+            $logger->infoMessage($message);
+            return;
+        }
+
+        // @abj404-raw-error-log-allowed: service-resolution-fallback legacy export callers may omit the logger dependency.
         error_log('[404 Solution] ' . $message);
     }
 

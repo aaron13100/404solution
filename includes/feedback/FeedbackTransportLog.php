@@ -41,9 +41,11 @@ class ABJ_404_Solution_FeedbackTransportLog {
                     }
                 }
             } catch (\Throwable $e) {
+                // @abj404-raw-error-log-allowed: transport-fallback logger lookup failed while handling feedback transport diagnostics.
                 @error_log('404 Solution: FeedbackTransport logger lookup failed (' . $e->getMessage() . '); falling back to error_log');
             }
         }
+        // @abj404-raw-error-log-allowed: transport-fallback feedback transport must remain observable when the plugin logger is unavailable.
         @error_log('404 Solution: ' . $message);
     }
 }

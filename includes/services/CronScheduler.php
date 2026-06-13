@@ -297,6 +297,7 @@ class ABJ_404_Solution_CronScheduler {
             $this->logger->errorMessage($message);
             return;
         }
+        // @abj404-raw-error-log-allowed: service-resolution-fallback cron scheduler may run before logger injection is available.
         error_log('404 Solution: ' . $message);
     }
 
@@ -305,6 +306,7 @@ class ABJ_404_Solution_CronScheduler {
             $this->logger->warn($message);
             return;
         }
+        // @abj404-raw-error-log-allowed: service-resolution-fallback cron scheduler may run before logger injection is available.
         error_log('404 Solution: ' . $message);
     }
 }

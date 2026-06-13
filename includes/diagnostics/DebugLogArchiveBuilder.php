@@ -33,6 +33,7 @@ class ABJ_404_Solution_DebugLogArchiveBuilder {
         }
         $zipDirectory = dirname($zipPath);
         if (!is_dir($zipDirectory)) {
+            // @abj404-raw-error-log-allowed: logger-internal archive creation runs underneath the plugin logger.
             error_log('404 Solution: debug log zip directory does not exist: ' . $zipDirectory);
             return $zipPath;
         }
@@ -46,9 +47,11 @@ class ABJ_404_Solution_DebugLogArchiveBuilder {
                 $zip->addFile($oldDebugFilePath, basename($oldDebugFilePath));
             }
             if (!$zip->close()) {
+                // @abj404-raw-error-log-allowed: logger-internal archive creation runs underneath the plugin logger.
                 error_log('404 Solution: debug log zip close failed for ' . $zipPath);
             }
         } else {
+            // @abj404-raw-error-log-allowed: logger-internal archive creation runs underneath the plugin logger.
             error_log('404 Solution: debug log zip open failed for ' . $zipPath . ' (status ' . (string)$openResult . ')');
         }
         return $zipPath;
