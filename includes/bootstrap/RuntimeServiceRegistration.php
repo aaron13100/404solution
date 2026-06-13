@@ -7,7 +7,12 @@ if (!defined('ABSPATH')) {
 /**
  * Registers frontend runtime, admin presentation, AJAX, and shortcode services.
  */
-class ABJ_404_Solution_RuntimeServiceRegistration {
+class ABJ_404_Solution_RuntimeServiceRegistration implements ABJ_404_Solution_Abj404ServiceRegistrationContract {
+
+    /** @return string[] */
+    public static function serviceNames(): array {
+        return ABJ_404_Solution_Abj404ServiceRegistrationContract::SERVICE_NAMES;
+    }
 
     /**
      * @param ABJ_404_Solution_ServiceContainer $container

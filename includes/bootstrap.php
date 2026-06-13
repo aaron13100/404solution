@@ -8,6 +8,7 @@ require_once __DIR__ . '/bootstrap/CoreServiceRegistration.php';
 require_once __DIR__ . '/bootstrap/DataServiceRegistration.php';
 require_once __DIR__ . '/bootstrap/DomainServiceRegistration.php';
 require_once __DIR__ . '/bootstrap/MatchingEngineServiceRegistration.php';
+require_once __DIR__ . '/bootstrap/Abj404ServiceRegistrationContract.php';
 require_once __DIR__ . '/bootstrap/RuntimeServiceRegistration.php';
 require_once __DIR__ . '/bootstrap/LegacyInstanceResolver.php';
 require_once __DIR__ . '/bootstrap/service-locator.php';

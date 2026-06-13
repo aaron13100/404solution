@@ -30,6 +30,7 @@ return array(
     'ABJ_404_Solution_DataServiceRegistration' => $base . 'includes/bootstrap/DataServiceRegistration.php',
     'ABJ_404_Solution_DomainServiceRegistration' => $base . 'includes/bootstrap/DomainServiceRegistration.php',
     'ABJ_404_Solution_MatchingEngineServiceRegistration' => $base . 'includes/bootstrap/MatchingEngineServiceRegistration.php',
+    'ABJ_404_Solution_Abj404ServiceRegistrationContract' => $base . 'includes/bootstrap/Abj404ServiceRegistrationContract.php',
     'ABJ_404_Solution_RuntimeServiceRegistration' => $base . 'includes/bootstrap/RuntimeServiceRegistration.php',
     'ABJ_404_Solution_LegacyInstanceResolver' => $base . 'includes/bootstrap/LegacyInstanceResolver.php',
     'ABJ_404_Solution_DebugLogFileStore' => $base . 'includes/diagnostics/DebugLogFileStore.php',

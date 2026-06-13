@@ -23,8 +23,8 @@ require_once __DIR__ . '/../core/PhpErrorLogFallback.php';
  * ABJ_404_Solution_ServiceContainer::getInstance()->get().
  *
  * The production bootstrap registers every service via
- * `abj_404_solution_init_services()`. Tests that clear the container must
- * register the collaborators they need explicitly.
+ * `abj_404_solution_init_services()`. A required lookup rehydrates the
+ * production graph after tests or early boot clear the container.
  *
  * @param string $name Service identifier
  * @return mixed The service instance
@@ -85,6 +85,10 @@ require_once __DIR__ . '/../core/PhpErrorLogFallback.php';
  */
 function abj_service($name) {
     $container = ABJ_404_Solution_ServiceContainer::getInstance();
+    if (!$container->has($name) && function_exists('abj_404_solution_init_services')) {
+        abj_404_solution_init_services();
+        $container = ABJ_404_Solution_ServiceContainer::getInstance();
+    }
     if (!$container->has($name)) {
         ABJ_404_Solution_ServiceContainer::clearLastSuppressedError();
         throw new ABJ_404_Solution_ServiceNotRegisteredException(
