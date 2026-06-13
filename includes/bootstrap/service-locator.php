@@ -34,6 +34,7 @@ require_once __DIR__ . '/../core/PhpErrorLogFallback.php';
  * @phpstan-return (
  *     $name is 'functions' ? ABJ_404_Solution_Functions : (
  *     $name is 'mb_string_adapter' ? ABJ_404_Solution_MbStringAdapter : (
+ *     $name is 'regex_helper' ? ABJ_404_Solution_RegexHelper : (
  *     $name is 'url_encoder' ? ABJ_404_Solution_UrlEncoder : (
  *     $name is 'sanitizer' ? ABJ_404_Solution_Sanitizer : (
  *     $name is 'query_string_helper' ? ABJ_404_Solution_QueryStringHelper : (
@@ -52,6 +53,9 @@ require_once __DIR__ . '/../core/PhpErrorLogFallback.php';
  *     $name is 'data_access' ? ABJ_404_Solution_DataAccess : (
  *     $name is 'database_upgrades' ? ABJ_404_Solution_DatabaseUpgradesEtc : (
  *     $name is 'permalink_cache' ? ABJ_404_Solution_PermalinkCache : (
+ *     $name is 'ngram_extractor' ? ABJ_404_Solution_NGramExtractor : (
+ *     $name is 'ngram_coverage_policy' ? ABJ_404_Solution_NGramCoveragePolicy : (
+ *     $name is 'ngram_cache_repository' ? ABJ_404_Solution_NGramCacheRepository : (
  *     $name is 'ngram_filter' ? ABJ_404_Solution_NGramFilter : (
  *     $name is 'plugin_logic' ? ABJ_404_Solution_PluginLogic : (
  *     $name is 'request_ignore_normalizer' ? ABJ_404_Solution_RequestIgnoreNormalizer : (
@@ -81,7 +85,7 @@ require_once __DIR__ . '/../core/PhpErrorLogFallback.php';
  *     $name is 'settings_mode_preference' ? ABJ_404_Solution_SettingsModePreference : (
  *     $name is 'not_found_response' ? ABJ_404_Solution_NotFoundResponseService :
  *     mixed
- * ))))))))))))))))))))))))))))))))))))))))))))))))
+ * ))))))))))))))))))))))))))))))))))))))))))))))))))))
  */
 function abj_service($name) {
     $container = ABJ_404_Solution_ServiceContainer::getInstance();
