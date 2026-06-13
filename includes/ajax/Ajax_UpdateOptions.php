@@ -83,16 +83,11 @@ class ABJ_404_Solution_Ajax_UpdateOptions {
         /** @var ABJ_404_Solution_PluginLogic $abj404logic */
         $abj404logic = ABJ_404_Solution_Ajax_ServiceResolver::required('plugin_logic');
 
-        $userIsPluginAdmin = (bool)abj_service('admin_access_policy')->isPluginAdmin();
-        if (!$userIsPluginAdmin) {
-            wp_send_json_error(array('message' => 'Unauthorized'), 403);
-            return; // @phpstan-ignore deadCode.unreachable
-        }
-
-        if (!wp_verify_nonce(self::nonceFromDecodedPostData($postData), 'abj404UpdateOptions')) {
-            wp_send_json_error(array('message' => 'Invalid security token'), 403);
-            return; // @phpstan-ignore deadCode.unreachable
-        }
+        abj_service('ajax_security_gate')->requireAdminWithNonce(
+            'abj404UpdateOptions',
+            'nonce',
+            array('nonce_value' => self::nonceFromDecodedPostData($postData))
+        );
 
         $result = $abj404logic->settingsUpdate()->updateOptionsFromPOST();
         if (!is_array($result) || !array_key_exists('success', $result)) {

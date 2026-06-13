@@ -22,18 +22,10 @@ class ABJ_404_Solution_Ajax_UninstallPrefs {
      * @return void
      */
     public static function handle(): void { // @phpstan-ignore abj404.cyclomaticComplexity
-        // Security: Verify nonce
-        $nonceOk = check_ajax_referer('abj404_uninstall_nonce', 'nonce', false);
-        if (!$nonceOk) {
-            wp_send_json_error(array('message' => __('Invalid security token', '404-solution')), 403);
-            return; // @phpstan-ignore deadCode.unreachable
-        }
-
-        // Security: Check user capabilities
-        if (!current_user_can('activate_plugins')) {
-            wp_send_json_error(array('message' => __('Insufficient permissions', '404-solution')), 403);
-            return; // @phpstan-ignore deadCode.unreachable
-        }
+        abj_service('ajax_security_gate')->requireCapabilityWithNonce(
+            'abj404_uninstall_nonce',
+            'activate_plugins'
+        );
 
         // Get preferences from AJAX request
         // Use filter_var to properly handle boolean values sent from JavaScript

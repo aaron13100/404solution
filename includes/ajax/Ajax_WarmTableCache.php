@@ -29,7 +29,6 @@ class ABJ_404_Solution_Ajax_WarmTableCache {
 
         $rowsPerPage = absint($functions->getPostOrGetSanitize('rowsPerPage'));
         $subpage = $functions->getPostOrGetSanitize('subpage');
-        $nonce = $functions->getPostOrGetSanitize('nonce');
         $page = $functions->getPostOrGetSanitize('page', '');
         $filterText = $functions->getPostOrGetSanitize('filterText', '');
         $filter = $functions->getPostOrGetSanitize('filter', '');
@@ -48,20 +47,14 @@ class ABJ_404_Solution_Ajax_WarmTableCache {
         $context = ABJ_404_Solution_Ajax_AdminEndpointSupport::startAjaxDebugContext($context, 'ViewUpdater::warmTableCache');
 
         try {
-            if (!wp_verify_nonce($nonce, 'abj404_updatePaginationLink')) {
-                ABJ_404_Solution_Ajax_AdminEndpointSupport::safeLogAjaxFailure('AJAX invalid nonce in ajaxWarmTableCache.', $context);
-                ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
-                ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit(ABJ_404_Solution_Ajax_AdminEndpointSupport::buildAjaxErrorResponse('Invalid security token', null, false), 403);
+            if (!ABJ_404_Solution_Ajax_AdminEndpointSupport::requireAdminWithNonceOrRespond(
+                'abj404_updatePaginationLink',
+                $context,
+                'ajaxWarmTableCache'
+            )) {
                 return;
             }
-
-            $isPluginAdmin = abj_service('admin_access_policy')->isPluginAdmin();
-            if (!$isPluginAdmin) {
-                ABJ_404_Solution_Ajax_AdminEndpointSupport::safeLogAjaxFailure('AJAX unauthorized in ajaxWarmTableCache.', $context);
-                ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
-                ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit(ABJ_404_Solution_Ajax_AdminEndpointSupport::buildAjaxErrorResponse('Unauthorized', null, false), 403);
-                return;
-            }
+            $isPluginAdmin = true;
 
             if (ABJ_404_Solution_Ajax_Php::consumeRateLimit('warm_table_cache', 1500, 60)) {
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::safeLogAjaxFailure('AJAX rate limit in ajaxWarmTableCache.', $context);

@@ -56,14 +56,15 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
         $context = ABJ_404_Solution_Ajax_AdminEndpointSupport::startAjaxDebugContext($context, 'ViewUpdater::getPaginationLinks');
 
         try {
-            if (!self::verifyNonceOrRespond($nonce, $context)) {
+            if (!ABJ_404_Solution_Ajax_AdminEndpointSupport::requireAdminWithNonceOrRespond(
+                'abj404_updatePaginationLink',
+                $context,
+                'ajaxUpdatePaginationLinks',
+                array('nonce_value' => $nonce)
+            )) {
                 return;
             }
-
-            $isPluginAdmin = self::authorizePluginAdminOrRespond($context);
-            if (!$isPluginAdmin) {
-                return;
-            }
+            $isPluginAdmin = true;
 
             // Rate limiting to prevent abuse. High ceilings: this endpoint is hit by first-paint
             // table loads, filter typing, pagination, and background detect-only checks.
@@ -128,43 +129,6 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
             return substr($currentSignature, 0, 128);
         }
         return $currentSignature;
-    }
-
-    /**
-     * @param array<string, mixed> $context
-     */
-    private static function verifyNonceOrRespond(string $nonce, array $context): bool {
-        if (wp_verify_nonce($nonce, 'abj404_updatePaginationLink')) {
-            return true;
-        }
-
-        ABJ_404_Solution_Ajax_AdminEndpointSupport::safeLogAjaxFailure('AJAX invalid nonce in ajaxUpdatePaginationLinks.', $context);
-        ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
-        $payload = ABJ_404_Solution_Ajax_AdminEndpointSupport::buildAjaxErrorResponse('Invalid security token', null, false);
-        ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
-        ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit($payload, 403);
-        return false;
-    }
-
-    /**
-     * @param array<string, mixed> $context
-     */
-    private static function authorizePluginAdminOrRespond(array $context): bool {
-        // Verify user has appropriate capabilities (respects plugin admin users)
-        $isPluginAdmin = (bool)abj_service('admin_access_policy')->isPluginAdmin();
-        if (isset($GLOBALS['abj404_ajax_context']) && is_array($GLOBALS['abj404_ajax_context'])) {
-            $GLOBALS['abj404_ajax_context']['is_plugin_admin'] = $isPluginAdmin;
-        }
-        if ($isPluginAdmin) {
-            return true;
-        }
-
-        ABJ_404_Solution_Ajax_AdminEndpointSupport::safeLogAjaxFailure('AJAX unauthorized in ajaxUpdatePaginationLinks.', $context);
-        ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
-        $payload = ABJ_404_Solution_Ajax_AdminEndpointSupport::buildAjaxErrorResponse('Unauthorized', null, false);
-        ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
-        ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit($payload, 403);
-        return false;
     }
 
     /**

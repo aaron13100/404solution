@@ -23,7 +23,6 @@ class ABJ_404_Solution_Ajax_RefreshStatsDashboard {
         $statsRepository = ABJ_404_Solution_StatsRepositoryResolver::resolve(__CLASS__);
         $abj404logic = abj_service('plugin_logic');
 
-        $nonce = $functions->getPostOrGetSanitize('nonce');
         $page = $functions->getPostOrGetSanitize('page', '');
         $subpage = $functions->getPostOrGetSanitize('subpage', '');
         $currentHash = $functions->getPostOrGetSanitize('currentHash', '');
@@ -39,24 +38,14 @@ class ABJ_404_Solution_Ajax_RefreshStatsDashboard {
         $context = ABJ_404_Solution_Ajax_AdminEndpointSupport::startAjaxDebugContext($context, 'ViewUpdater::refreshStatsDashboard');
 
         try {
-            if (!wp_verify_nonce($nonce, 'abj404_refreshStatsDashboard')) {
-                ABJ_404_Solution_Ajax_AdminEndpointSupport::safeLogAjaxFailure('AJAX invalid nonce in ajaxRefreshStatsDashboard.', $context);
-                ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
-                $payload = ABJ_404_Solution_Ajax_AdminEndpointSupport::buildAjaxErrorResponse('Invalid security token', null, false);
-                ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
-                ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit($payload, 403);
+            if (!ABJ_404_Solution_Ajax_AdminEndpointSupport::requireAdminWithNonceOrRespond(
+                'abj404_refreshStatsDashboard',
+                $context,
+                'ajaxRefreshStatsDashboard'
+            )) {
                 return;
             }
-
-            $isPluginAdmin = abj_service('admin_access_policy')->isPluginAdmin();
-            if (!$isPluginAdmin) {
-                ABJ_404_Solution_Ajax_AdminEndpointSupport::safeLogAjaxFailure('AJAX unauthorized in ajaxRefreshStatsDashboard.', $context);
-                ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
-                $payload = ABJ_404_Solution_Ajax_AdminEndpointSupport::buildAjaxErrorResponse('Unauthorized', null, false);
-                ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
-                ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit($payload, 403);
-                return;
-            }
+            $isPluginAdmin = true;
 
             if (ABJ_404_Solution_Ajax_Php::consumeRateLimit('refresh_stats_dashboard', 30, 60)) {
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::safeLogAjaxFailure('AJAX rate limit in ajaxRefreshStatsDashboard.', $context);

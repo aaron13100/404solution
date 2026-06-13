@@ -69,6 +69,62 @@ class ABJ_404_Solution_Ajax_AdminEndpointSupport {
     }
 
     /**
+     * Verify an admin AJAX nonce and plugin-admin authorization, then emit
+     * this layer's diagnostic error envelope on failure.
+     *
+     * @param string $nonceAction
+     * @param array<string, mixed> $context
+     * @param string $handlerName Human-readable handler label for logs.
+     * @param array<string, mixed> $options Passed to AjaxSecurityGate.
+     * @return bool True when authorized.
+     */
+    public static function requireAdminWithNonceOrRespond(
+        string $nonceAction,
+        array $context,
+        string $handlerName,
+        array $options = array()
+    ): bool {
+        $gate = function_exists('abj_service') ? abj_service('ajax_security_gate') : null;
+        if (!is_object($gate) || !method_exists($gate, 'authorizeAdminWithNonce')) {
+            self::safeLogAjaxFailure('AJAX authorization service unavailable in ' . $handlerName . '.', $context);
+            self::markAjaxResponseSent();
+            self::getAndClearAjaxBufferedOutput();
+            self::sendJsonResponseAndExit(
+                self::buildAjaxErrorResponse('Unauthorized', null, false),
+                403
+            );
+            return false;
+        }
+
+        $result = $gate->authorizeAdminWithNonce($nonceAction, $options);
+        if (is_array($result) && !empty($result['ok'])) {
+            if (isset($GLOBALS['abj404_ajax_context']) && is_array($GLOBALS['abj404_ajax_context'])) {
+                $GLOBALS['abj404_ajax_context']['is_plugin_admin'] = true;
+            }
+            return true;
+        }
+
+        $code = isset($result['code']) && is_string($result['code'])
+            ? $result['code'] : 'unauthorized';
+        $message = isset($result['message']) && is_string($result['message'])
+            ? $result['message'] : 'Unauthorized';
+        $status = isset($result['status']) && is_scalar($result['status'])
+            ? intval($result['status']) : 403;
+
+        $summary = $code === 'invalid_nonce'
+            ? 'AJAX invalid nonce in ' . $handlerName . '.'
+            : 'AJAX unauthorized in ' . $handlerName . '.';
+        self::safeLogAjaxFailure($summary, $context);
+        self::markAjaxResponseSent();
+        self::getAndClearAjaxBufferedOutput();
+        self::sendJsonResponseAndExit(
+            self::buildAjaxErrorResponse($message, null, false),
+            $status
+        );
+        return false;
+    }
+
+    /**
      * @param mixed $payload
      * @param int $httpStatus
      * @return void

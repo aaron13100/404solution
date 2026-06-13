@@ -48,15 +48,7 @@ class ABJ_404_Solution_SetupWizard {
      * @return void
      */
     public static function handleAjaxDismiss(): void {
-        // Verify nonce
-        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'abj404_setup_wizard')) {
-            wp_send_json_error(array('message' => __('Invalid security token', '404-solution')), 403);
-        }
-
-        // Verify user capabilities
-        if (!current_user_can('manage_options')) {
-            wp_send_json_error(array('message' => __('Insufficient permissions', '404-solution')), 403);
-        }
+        abj_service('ajax_security_gate')->requireAdminWithNonce('abj404_setup_wizard');
 
         ABJ_404_Solution_SetupWizardOptionStore::markCompleteToday();
 

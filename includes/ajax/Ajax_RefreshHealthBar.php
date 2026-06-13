@@ -30,7 +30,6 @@ class ABJ_404_Solution_Ajax_RefreshHealthBar {
         $logsRepository = abj_service('logs_repository');
         $abj404logic = abj_service('plugin_logic');
 
-        $nonce = $functions->getPostOrGetSanitize('nonce');
         $page = $functions->getPostOrGetSanitize('page', '');
         $subpage = $functions->getPostOrGetSanitize('subpage', '');
 
@@ -45,24 +44,14 @@ class ABJ_404_Solution_Ajax_RefreshHealthBar {
         $context = ABJ_404_Solution_Ajax_AdminEndpointSupport::startAjaxDebugContext($context, 'ViewUpdater::refreshHealthBar');
 
         try {
-            if (!wp_verify_nonce($nonce, 'abj404_refreshHealthBar')) {
-                ABJ_404_Solution_Ajax_AdminEndpointSupport::safeLogAjaxFailure('AJAX invalid nonce in ajaxRefreshHealthBar.', $context);
-                ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
-                $payload = ABJ_404_Solution_Ajax_AdminEndpointSupport::buildAjaxErrorResponse('Invalid security token', null, false);
-                ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
-                ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit($payload, 403);
+            if (!ABJ_404_Solution_Ajax_AdminEndpointSupport::requireAdminWithNonceOrRespond(
+                'abj404_refreshHealthBar',
+                $context,
+                'ajaxRefreshHealthBar'
+            )) {
                 return;
             }
-
-            $isPluginAdmin = (bool)abj_service('admin_access_policy')->isPluginAdmin();
-            if (!$isPluginAdmin) {
-                ABJ_404_Solution_Ajax_AdminEndpointSupport::safeLogAjaxFailure('AJAX unauthorized in ajaxRefreshHealthBar.', $context);
-                ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
-                $payload = ABJ_404_Solution_Ajax_AdminEndpointSupport::buildAjaxErrorResponse('Unauthorized', null, false);
-                ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
-                ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit($payload, 403);
-                return;
-            }
+            $isPluginAdmin = true;
 
             // Match the pagination AJAX rate limit ceiling. Admin workflows can
             // re-trigger this on filter typing and tab switches.

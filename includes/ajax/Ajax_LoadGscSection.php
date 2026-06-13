@@ -12,17 +12,7 @@ class ABJ_404_Solution_Ajax_LoadGscSection {
 
     /** @return void */
     public static function loadGscSection() {
-        $userIsPluginAdmin = (bool)abj_service('admin_access_policy')->isPluginAdmin();
-        if (!$userIsPluginAdmin) {
-            wp_send_json_error(array('message' => __('Unauthorized', '404-solution')), 403);
-            return; // @phpstan-ignore deadCode.unreachable
-        }
-
-        $nonceRaw = isset($_POST['nonce']) && is_string($_POST['nonce']) ? $_POST['nonce'] : '';
-        if ($nonceRaw === '' || !wp_verify_nonce($nonceRaw, 'abj404_gsc_deferred')) {
-            wp_send_json_error(array('message' => __('Invalid security token', '404-solution')), 403);
-            return; // @phpstan-ignore deadCode.unreachable
-        }
+        abj_service('ajax_security_gate')->requireAdminWithNonce('abj404_gsc_deferred');
 
         if (ABJ_404_Solution_Ajax_Php::consumeRateLimit('load_gsc_section', 30, 60)) {
             wp_send_json_error(array('message' => __('Rate limit exceeded. Please try again later.', '404-solution')), 429);

@@ -20,14 +20,9 @@ class ABJ_404_Solution_Ajax_RedirectDestinationAutocomplete {
         $f = ABJ_404_Solution_Ajax_ServiceResolver::required('functions');
         $feedback = new ABJ_404_Solution_Ajax_SearchFeedback();
 
-        $getNonce = (isset($_GET['nonce']) && is_scalar($_GET['nonce'])) ? (string)$_GET['nonce'] : '';
-        if ($getNonce === '' || !wp_verify_nonce($getNonce, 'abj404_ajax')) {
-            self::sendJson(ABJ_404_Solution_Ajax_SearchFeedback::autocompleteErrorItem(__('Invalid security token', '404-solution')), 200);
-            return;
-        }
-
-        if (!abj_service('admin_access_policy')->isPluginAdmin()) {
-            self::sendJson(ABJ_404_Solution_Ajax_SearchFeedback::autocompleteErrorItem(__('Unauthorized', '404-solution')), 200);
+        $authResult = abj_service('ajax_security_gate')->authorizeAdminWithNonce('abj404_ajax');
+        if (!$authResult['ok']) {
+            self::sendJson(ABJ_404_Solution_Ajax_SearchFeedback::autocompleteErrorItem($authResult['message']), 200);
             return;
         }
 
