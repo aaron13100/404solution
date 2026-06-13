@@ -93,7 +93,7 @@ class ABJ_404_Solution_NGramCacheRepository {
         // REPLACE = DELETE + INSERT. Routed through DAO for timeout/retry/recovery.
         $queryResult = $this->dbCore->queryAndGetResults(
             "REPLACE INTO {$table} (id, type, url, url_normalized, ngrams, ngram_count, last_updated)
-             VALUES (%d, %s, %s, %s, %s, %d, %s)",
+             VALUES (%d, %s, %s, %s, %s, %d, %d)",
             ['query_params' => [
                 (int)$pageId,
                 $type,
@@ -101,7 +101,7 @@ class ABJ_404_Solution_NGramCacheRepository {
                 $urlNormalized,
                 $ngramJson,
                 $ngramCount,
-                abj_clock()->wpNowMysql(),
+                abj_clock()->wpNow(),
             ]]
         );
 

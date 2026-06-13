@@ -344,6 +344,9 @@ class ABJ_404_Solution_DatabaseUpgradeBootstrap extends ABJ_404_Solution_Databas
         // stripped tables instead of propagating the broken state.
         $this->upgrades()->tableRepairUpgrade()->repairStrippedViewCacheTable();
 
+        $ngramTable = $this->dbCore->tableNameResolver()->getPrefixedTableName('abj404_ngram_cache');
+        $ngramEpochMigrationSafe = $this->upgrades()->nGramUpgrade()->ensureLastUpdatedEpochColumn($ngramTable);
+
         $ddlEntries = $this->discoverPermanentDDLFiles();
         foreach ($ddlEntries as $ddlEntry) {
             if (!is_array($ddlEntry)) {
@@ -391,6 +394,9 @@ class ABJ_404_Solution_DatabaseUpgradeBootstrap extends ABJ_404_Solution_Databas
             // add closes that window.
             if ($bareTableName === 'abj404_redirects') {
                 $this->upgrades()->indexesUpgrade()->ensureRedirectsCanonicalUrlColumn($tableName);
+            }
+            if ($bareTableName === 'abj404_ngram_cache' && !$ngramEpochMigrationSafe) {
+                continue;
             }
 
             $this->upgrades()->schemaDiffUpgrade()->verifyColumns($tableName, $query);

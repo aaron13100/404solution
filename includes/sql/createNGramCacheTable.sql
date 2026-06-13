@@ -6,10 +6,9 @@ CREATE TABLE IF NOT EXISTS `{wp_abj404_ngram_cache}` (
     `url_normalized` varchar(2048) NOT NULL COMMENT 'Normalized URL for matching',
     `ngrams` text NOT NULL COMMENT 'JSON: {"bi":["he","el"...], "tri":["hel","ell"...]}',
     `ngram_count` smallint(6) NOT NULL DEFAULT 0 COMMENT 'Total n-grams (for quick filtering)',
-    `last_updated` datetime NOT NULL COMMENT 'Last time N-grams were computed',
+    `last_updated` bigint(20) NOT NULL DEFAULT 0 COMMENT 'Last time N-grams were computed as Unix epoch seconds',
     PRIMARY KEY (`id`, `type`),
     KEY `idx_url_normalized` (`url_normalized`(255)),
     KEY `idx_ngram_count` (`ngram_count`),
     KEY `idx_type` (`type`)
 ) COMMENT='404 Solution Plugin N-Gram Cache Table for Spell Checker Optimization'
-
