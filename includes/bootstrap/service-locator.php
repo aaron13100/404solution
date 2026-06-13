@@ -11,8 +11,7 @@ if (!defined('ABSPATH')) {
  * tests/bootstrap.php during the test run, so abj_service() is defined
  * before any caller invokes it.
  *
- * Heavy fallback resolution lives in ABJ_404_Solution_ServiceFallbackResolver;
- * the container itself lives in ABJ_404_Solution_ServiceContainer.
+ * The container itself lives in ABJ_404_Solution_ServiceContainer.
  */
 
 /**
@@ -21,19 +20,9 @@ if (!defined('ABSPATH')) {
  * This provides a shorter, more convenient syntax than calling
  * ABJ_404_Solution_ServiceContainer::getInstance()->get().
  *
- * Fallback semantics: if the named service is not currently registered
- * (e.g. a test cleared the container without re-running
- * `abj_404_solution_init_services()`), delegates to
- * ABJ_404_Solution_ServiceFallbackResolver, which consults a static
- * name->class map and per-service hand-coded factories before falling
- * back to the legacy `ClassName::getInstance()` singleton. This
- * preserves test patterns that predate the c260 codemod (clear
- * container, register only the mocks the test cares about) without
- * forcing every test to re-init the entire service graph. Production
- * code paths are unaffected because services are always registered at
- * boot via `abj_404_solution_init_services()`; the lint at
- * `scripts/lint/lint-getinstance-callers.sh` enforces that production
- * callers must use this helper rather than `getInstance()` directly.
+ * The production bootstrap registers every service via
+ * `abj_404_solution_init_services()`. Tests that clear the container must
+ * register the collaborators they need explicitly.
  *
  * @param string $name Service identifier
  * @return mixed The service instance
@@ -91,20 +80,18 @@ if (!defined('ABSPATH')) {
  * ))))))))))))))))))))))))))))))))))))))))))))))))
  */
 function abj_service($name) {
-    // Honor a singleton override on each peekInstance-exposing singleton
-    // class before consulting the container. Without this, the container
-    // caches its freshly-built default and any subsequent override (set via
-    // reflection or direct assignment) is silently ignored, even though
-    // each class's own getInstance() respects $instance.
-    $override = ABJ_404_Solution_ServiceFallbackResolver::singletonOverride($name);
-    if ($override !== null) {
-        return $override;
-    }
     $container = ABJ_404_Solution_ServiceContainer::getInstance();
-    if ($container->has($name)) {
-        return $container->get($name);
+    try {
+        $service = $container->get($name);
+        ABJ_404_Solution_ServiceContainer::clearLastSuppressedError();
+        return $service;
+    } catch (\Throwable $e) {
+        ABJ_404_Solution_ServiceContainer::recordSuppressedErrorPublic(
+            'abj_service(' . $name . ')',
+            $e
+        );
+        return null;
     }
-    return ABJ_404_Solution_ServiceFallbackResolver::resolve($name, $container);
 }
 
 /**
@@ -140,18 +127,4 @@ function abj_clock(): ABJ_404_Solution_Clock {
         return $clock;
     }
     return new ABJ_404_Solution_SystemClock();
-}
-
-/**
- * Return the singleton-installed instance for a given service name when
- * one is set, else null. Exists so abj_service() can route around the
- * container cache for services that expose a `peekInstance()` reflection
- * seam. Thin wrapper over the resolver class; preserved as a global
- * function for backward compatibility with existing call sites.
- *
- * @param string $name
- * @return mixed
- */
-function abj_service_singleton_override($name) {
-    return ABJ_404_Solution_ServiceFallbackResolver::singletonOverride($name);
 }

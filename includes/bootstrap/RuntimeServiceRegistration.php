@@ -89,29 +89,6 @@ class ABJ_404_Solution_RuntimeServiceRegistration {
     }
 
     /**
-     * Build the AJAX security gate for test-time service fallback resolution.
-     *
-     * The service container fallback resolver lives in the bootstrap layer and
-     * must not know presentation classes directly. Runtime registration already
-     * owns AJAX wiring, so the fallback path delegates this presentation
-     * construction here.
-     *
-     * @return ABJ_404_Solution_AjaxSecurityGate
-     */
-    public static function buildAjaxSecurityGateFallback() {
-        return self::buildAjaxSecurityGate(abj_service('admin_access_policy'), abj_service('logging'));
-    }
-
-    /**
-     * Build the AJAX failure logger for test-time service fallback resolution.
-     *
-     * @return ABJ_404_Solution_AjaxFailureLogger
-     */
-    public static function buildAjaxFailureLoggerFallback() {
-        return self::buildAjaxFailureLogger(abj_service('logging'));
-    }
-
-    /**
      * @param object|null $adminAccessPolicy Service exposing isPluginAdmin().
      * @param object|null $logging Service exposing infoMessage().
      * @return ABJ_404_Solution_AjaxSecurityGate

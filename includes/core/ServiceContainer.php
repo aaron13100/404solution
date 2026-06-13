@@ -18,10 +18,8 @@ if (!defined('ABSPATH')) {
  * Or use the helper function:
  *   $service = abj_service('service_name');
  *
- * The global abj_service() / abj_service_singleton_override() helpers are
- * defined in includes/bootstrap/service-locator.php. Fallback resolution
- * (test-time bypass when the container is empty) lives in
- * ABJ_404_Solution_ServiceFallbackResolver.
+ * The global abj_service() helper is defined in
+ * includes/bootstrap/service-locator.php.
  */
 class ABJ_404_Solution_ServiceContainer {
 
@@ -252,7 +250,7 @@ class ABJ_404_Solution_ServiceContainer {
     }
 
     /**
-     * Public seam for fallback resolvers and the abj_service() helper.
+     * Public seam for the abj_service() helper.
      * Code outside the class cannot reach private statics, so this delegates
      * to recordSuppressedError() and is otherwise identical. Not intended
      * for call sites elsewhere in the codebase: use safeGet() instead.
@@ -282,5 +280,4 @@ class ABJ_404_Solution_ServiceContainer {
 // container file directly to get that helper without also booting the
 // production bootstrap.php. Production callers reach the same require via
 // bootstrap.php; require_once makes either path safe.
-require_once __DIR__ . '/../bootstrap/ServiceFallbackResolver.php';
 require_once __DIR__ . '/../bootstrap/service-locator.php';
