@@ -154,17 +154,17 @@ class ABJ_404_Solution_DatabaseUpgradeMultiSite extends ABJ_404_Solution_Databas
             function (int $siteId): void {
                 add_option('abj404_settings', '', '', false);
 
-                $this->runInitialCreateTables();
-                $this->correctCollations();
-                $this->updateTableEngineToInnoDB();
-                $this->createIndexes();
-                $this->backfillRedirectsCanonicalUrl();
-                $this->renameAbj404TablesToLowerCase();
+                $this->upgrades()->bootstrapUpgrade()->runInitialCreateTables();
+                $this->upgrades()->collationDriftUpgrade()->correctCollations();
+                $this->upgrades()->engineNormalizationUpgrade()->updateTableEngineToInnoDB();
+                $this->upgrades()->indexesUpgrade()->createIndexes();
+                $this->upgrades()->canonicalUrlBackfillUpgrade()->backfillRedirectsCanonicalUrl();
+                $this->upgrades()->bootstrapUpgrade()->renameAbj404TablesToLowerCase();
 
                 // Canonical self-heal prologue runs after schema creation so
                 // SelfHealingPrologueReachabilityTest sees per-subsite activation
                 // reach the same recovery primitives as the daily cron.
-                $this->runSelfHealPrologue();
+                $this->upgrades()->selfHealUpgrade()->runSelfHealPrologue();
 
                 $this->logic->registerCrons();
 
@@ -206,20 +206,20 @@ class ABJ_404_Solution_DatabaseUpgradeMultiSite extends ABJ_404_Solution_Databas
             function (int $siteId): void {
                 // Run the full upgrade sequence for this site without going through
                 // createDatabaseTables() — that would re-schedule more background tasks.
-                $this->correctIssuesBefore();
-                $this->runInitialCreateTables();
-                $this->correctCollations();
-                $this->updateTableEngineToInnoDB();
-                $this->createIndexes();
-                $this->backfillRedirectsCanonicalUrl();
-                $this->renameAbj404TablesToLowerCase();
-                $this->correctIssuesAfter();
+                $this->upgrades()->tableRepairUpgrade()->correctIssuesBefore();
+                $this->upgrades()->bootstrapUpgrade()->runInitialCreateTables();
+                $this->upgrades()->collationDriftUpgrade()->correctCollations();
+                $this->upgrades()->engineNormalizationUpgrade()->updateTableEngineToInnoDB();
+                $this->upgrades()->indexesUpgrade()->createIndexes();
+                $this->upgrades()->canonicalUrlBackfillUpgrade()->backfillRedirectsCanonicalUrl();
+                $this->upgrades()->bootstrapUpgrade()->renameAbj404TablesToLowerCase();
+                $this->upgrades()->tableRepairUpgrade()->correctIssuesAfter();
 
                 // Canonical self-heal prologue closes the per-subsite upgrade
                 // batch so SelfHealingPrologueReachabilityTest can prove the
                 // multisite upgrade path reaches the same recovery primitives
                 // as the daily cron tick.
-                $this->runSelfHealPrologue();
+                $this->upgrades()->selfHealUpgrade()->runSelfHealPrologue();
 
                 abj_service('version_upgrade')->stampDbVersion();
             }
@@ -266,11 +266,11 @@ class ABJ_404_Solution_DatabaseUpgradeMultiSite extends ABJ_404_Solution_Databas
                 ));
 
                 // Create tables for this site
-                $this->runInitialCreateTables();
-                $this->correctCollations();
-                $this->updateTableEngineToInnoDB();
-                $this->createIndexes();
-                $this->backfillRedirectsCanonicalUrl();
+                $this->upgrades()->bootstrapUpgrade()->runInitialCreateTables();
+                $this->upgrades()->collationDriftUpgrade()->correctCollations();
+                $this->upgrades()->engineNormalizationUpgrade()->updateTableEngineToInnoDB();
+                $this->upgrades()->indexesUpgrade()->createIndexes();
+                $this->upgrades()->canonicalUrlBackfillUpgrade()->backfillRedirectsCanonicalUrl();
 
                 $successCount++;
                 $this->logger->debugMessage(sprintf(

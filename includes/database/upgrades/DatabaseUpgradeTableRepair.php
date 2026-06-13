@@ -75,7 +75,7 @@ class ABJ_404_Solution_DatabaseUpgradeTableRepair extends ABJ_404_Solution_Datab
         foreach ($tablePlaceholders as $placeholder) {
             $tableName = $this->dbCore->doTableNameReplacements($placeholder);
             foreach ($legacyColumns as $columnName) {
-                if (!$this->columnExists($tableName, $columnName)) {
+                if (!$this->upgrades()->canonicalUrlBackfillUpgrade()->columnExists($tableName, $columnName)) {
                     continue;
                 }
                 // @utf8-audit: opt-out - $tableName comes from doTableNameReplacements() of a fixed internal placeholder; system-controlled, cannot contain invalid UTF-8.
@@ -166,7 +166,7 @@ class ABJ_404_Solution_DatabaseUpgradeTableRepair extends ABJ_404_Solution_Datab
      * @return void
      */
     function repairStrippedViewCacheTable() {
-	foreach ($this->discoverPermanentDDLFiles() as $ddlEntry) {
+	foreach ($this->upgrades()->bootstrapUpgrade()->discoverPermanentDDLFiles() as $ddlEntry) {
 		$tableName = $this->dbCore->doTableNameReplacements($ddlEntry['placeholder']);
 
 		// Positive evidence required: the file's intended DDL must declare `id`.
@@ -252,7 +252,7 @@ class ABJ_404_Solution_DatabaseUpgradeTableRepair extends ABJ_404_Solution_Datab
 		'{wp_abj404_logs_hits}_temp',
 		'{wp_abj404_logs_hits}',
 		$tempDdl);
-	$finalDdl = $this->applyPluginTableCharsetCollate($finalDdl);
+	$finalDdl = $this->upgrades()->bootstrapUpgrade()->applyPluginTableCharsetCollate($finalDdl);
 	$finalDdl = $this->dbCore->doTableNameReplacements($finalDdl);
 
 	$this->logger->infoMessage("Recreating missing " . $tableName .

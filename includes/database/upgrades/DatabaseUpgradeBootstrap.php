@@ -19,10 +19,8 @@ if (!defined('ABSPATH')) {
  *    (renameAbj404TablesToLowerCase) and post-column-add hooks
  *    (handleSpecificCases).
  *
- * Reached via __call invokeDatabaseUpgradeMethod() on the
- * ABJ_404_Solution_DatabaseUpgradesEtc facade, identical to the 8 other
- * DatabaseUpgrade* sub-components (NGram, Maintenance, PluginUpdate,
- * TableRepair, Indexes, OrphanAdoption, MultiSite, SchemaDiff).
+ * Reached through the explicit createDatabaseTables() facade method on
+ * ABJ_404_Solution_DatabaseUpgradesEtc.
  */
 class ABJ_404_Solution_DatabaseUpgradeBootstrap extends ABJ_404_Solution_DatabaseUpgradeComponent {
 
@@ -65,62 +63,62 @@ class ABJ_404_Solution_DatabaseUpgradeBootstrap extends ABJ_404_Solution_Databas
      */
     private function reallyCreateDatabaseTables($updatingToNewVersion = false) {
         if ($updatingToNewVersion) {
-            $this->correctIssuesBefore();
+            $this->upgrades()->tableRepairUpgrade()->correctIssuesBefore();
         }
 
         // MULTISITE: Process current site immediately, schedule background task for remaining sites
-        if ($this->isNetworkActivated() && !$updatingToNewVersion) {
+        if ($this->upgrades()->nGramUpgrade()->isNetworkActivated() && !$updatingToNewVersion) {
             // Activation path: create tables for current site + schedule background for others.
             $currentBlogId = get_current_blog_id();
             $this->runInitialCreateTables();
-            $this->correctCollations();
-            $this->updateTableEngineToInnoDB();
-            $this->createIndexes();
+            $this->upgrades()->collationDriftUpgrade()->correctCollations();
+            $this->upgrades()->engineNormalizationUpgrade()->updateTableEngineToInnoDB();
+            $this->upgrades()->indexesUpgrade()->createIndexes();
 
             // First chunk of the canonical_url backfill runs in-band so newly
             // upgraded small sites finish in one shot. Larger sites converge
             // over subsequent daily-maintenance cron ticks (same method).
-            $this->backfillRedirectsCanonicalUrl();
+            $this->upgrades()->canonicalUrlBackfillUpgrade()->backfillRedirectsCanonicalUrl();
 
             $this->logger->infoMessage(sprintf(
                 "Network activation: Created tables for current site (ID %d). Scheduling background task for remaining sites.",
                 $currentBlogId
             ));
 
-            $this->scheduleBackgroundMultisiteActivation($currentBlogId);
+            $this->upgrades()->multiSiteUpgrade()->scheduleBackgroundMultisiteActivation($currentBlogId);
 
-        } else if ($this->isNetworkActivated() && $updatingToNewVersion) {
+        } else if ($this->upgrades()->nGramUpgrade()->isNetworkActivated() && $updatingToNewVersion) {
             // Upgrade path on a network install: update tables for current site + schedule
             // background upgrade for other sites (so sub-site tables are also updated).
             $currentBlogId = get_current_blog_id();
             $this->runInitialCreateTables();
-            $this->correctCollations();
-            $this->updateTableEngineToInnoDB();
-            $this->createIndexes();
+            $this->upgrades()->collationDriftUpgrade()->correctCollations();
+            $this->upgrades()->engineNormalizationUpgrade()->updateTableEngineToInnoDB();
+            $this->upgrades()->indexesUpgrade()->createIndexes();
 
             // First chunk of the canonical_url backfill runs in-band so newly
             // upgraded small sites finish in one shot. Larger sites converge
             // over subsequent daily-maintenance cron ticks (same method).
-            $this->backfillRedirectsCanonicalUrl();
+            $this->upgrades()->canonicalUrlBackfillUpgrade()->backfillRedirectsCanonicalUrl();
 
             $this->logger->infoMessage(sprintf(
                 "Network upgrade: Updated tables for current site (ID %d). Scheduling background upgrade for remaining sites.",
                 $currentBlogId
             ));
 
-            $this->scheduleBackgroundMultisiteUpgrade($currentBlogId);
+            $this->upgrades()->multiSiteUpgrade()->scheduleBackgroundMultisiteUpgrade($currentBlogId);
 
         } else {
             // Single site (or non-network-activated): create/update tables for current site only.
             $this->runInitialCreateTables();
-            $this->correctCollations();
-            $this->updateTableEngineToInnoDB();
-            $this->createIndexes();
+            $this->upgrades()->collationDriftUpgrade()->correctCollations();
+            $this->upgrades()->engineNormalizationUpgrade()->updateTableEngineToInnoDB();
+            $this->upgrades()->indexesUpgrade()->createIndexes();
 
             // First chunk of the canonical_url backfill runs in-band so newly
             // upgraded small sites finish in one shot. Larger sites converge
             // over subsequent daily-maintenance cron ticks (same method).
-            $this->backfillRedirectsCanonicalUrl();
+            $this->upgrades()->canonicalUrlBackfillUpgrade()->backfillRedirectsCanonicalUrl();
         }
 
         // Adopt orphaned tables AFTER target tables exist (rename handles prefix mismatches).
@@ -132,15 +130,15 @@ class ABJ_404_Solution_DatabaseUpgradeBootstrap extends ABJ_404_Solution_Databas
 
         // One-time N-gram cache initialization (async via WP-Cron to prevent blocking)
         // MULTISITE: Use network-aware option getter to check initialization status
-        if ($this->getNetworkAwareOption('abj404_ngram_cache_initialized') !== '1') {
+        if ($this->upgrades()->nGramUpgrade()->getNetworkAwareOption('abj404_ngram_cache_initialized') !== '1') {
             $this->logger->debugMessage("N-gram cache not initialized. Scheduling background build...");
 
             // Schedule async rebuild via WP-Cron instead of blocking activation
-            $this->scheduleNGramCacheRebuild();
+            $this->upgrades()->nGramUpgrade()->scheduleNGramCacheRebuild();
 
             // Show admin notice that build is scheduled
             if ($updatingToNewVersion && function_exists('add_settings_error')) {
-                $context = is_multisite() && $this->isNetworkActivated() ? ' across all sites in the network' : '';
+                $context = is_multisite() && $this->upgrades()->nGramUpgrade()->isNetworkActivated() ? ' across all sites in the network' : '';
                 $message = sprintf(
                     __('404 Solution: N-gram spell check cache is being built in the background%s to optimize performance. This may take a few minutes on large sites.', '404-solution'),
                     $context
@@ -155,7 +153,7 @@ class ABJ_404_Solution_DatabaseUpgradeBootstrap extends ABJ_404_Solution_Databas
 
         // Run one-time migration to relative paths (Issue #24)
         if (get_option('abj404_migrated_to_relative_paths') !== '1') {
-            $migrationResults = $this->migrateURLsToRelativePaths();
+            $migrationResults = $this->upgrades()->pluginUpdateUpgrade()->migrateURLsToRelativePaths();
 
             // Show admin notice if migration occurred
             if ($updatingToNewVersion && is_array($migrationResults) && !empty($migrationResults['redirects_updated'])) {
@@ -177,7 +175,7 @@ class ABJ_404_Solution_DatabaseUpgradeBootstrap extends ABJ_404_Solution_Databas
         }
 
         if ($updatingToNewVersion) {
-            $this->correctIssuesAfter();
+            $this->upgrades()->tableRepairUpgrade()->correctIssuesAfter();
         }
     }
 
@@ -206,7 +204,7 @@ class ABJ_404_Solution_DatabaseUpgradeBootstrap extends ABJ_404_Solution_Databas
             if (is_scalar($lctnValue) && (int)$lctnValue >= 1) {
                 // MySQL already handles table names case-insensitively.
                 // Still run adoption check in case of prefix mismatch.
-                $this->adoptOrphanedTables();
+                $this->upgrades()->orphanAdoptionUpgrade()->adoptOrphanedTables();
                 return;
             }
         }
@@ -262,7 +260,7 @@ class ABJ_404_Solution_DatabaseUpgradeBootstrap extends ABJ_404_Solution_Databas
         }
 
         // After renaming, check for orphaned tables under old prefixes.
-        $this->adoptOrphanedTables();
+        $this->upgrades()->orphanAdoptionUpgrade()->adoptOrphanedTables();
     }
 
     /** When certain columns are created we have to populate data.
@@ -280,7 +278,7 @@ class ABJ_404_Solution_DatabaseUpgradeBootstrap extends ABJ_404_Solution_Databas
             $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/../../sql/logsSetMinLogID.sql");
             $this->dbCore->queryAndGetResults($query);
             // Ensure composite index exists after backfilling min_log_id.
-            $this->ensureLogsCompositeIndex($tableName);
+            $this->upgrades()->indexesUpgrade()->ensureLogsCompositeIndex($tableName);
         }
         if (strpos($tableName, 'abj404_permalink_cache') !== false && $colName == 'url_length') {
             // clear the permalink cache so that the url length column will be populated.
@@ -344,15 +342,9 @@ class ABJ_404_Solution_DatabaseUpgradeBootstrap extends ABJ_404_Solution_Databas
         // just in correctIssuesBefore) so cron callers of createDatabaseTables()
         // (which don't pass the $updatingToNewVersion flag) also repair
         // stripped tables instead of propagating the broken state.
-        $this->repairStrippedViewCacheTable();
+        $this->upgrades()->tableRepairUpgrade()->repairStrippedViewCacheTable();
 
-        // Honor subclass overrides of discoverPermanentDDLFiles() on the
-        // ABJ_404_Solution_DatabaseUpgradesEtc facade (test fixtures inject
-        // synthetic DDL entries by subclassing the facade).
-        $ddlEntries = $this->invokeOwnerOverrideOrSelf('discoverPermanentDDLFiles');
-        if (!is_array($ddlEntries)) {
-            $ddlEntries = [];
-        }
+        $ddlEntries = $this->discoverPermanentDDLFiles();
         foreach ($ddlEntries as $ddlEntry) {
             if (!is_array($ddlEntry)) {
                 continue;
@@ -389,7 +381,7 @@ class ABJ_404_Solution_DatabaseUpgradeBootstrap extends ABJ_404_Solution_Databas
             // engine doesn't support it the helper falls back silently and
             // verifyColumns() picks up the column add as a safety net.
             if ($bareTableName === 'abj404_logsv2') {
-                $this->ensureLogsv2CanonicalUrlColumn($tableName);
+                $this->upgrades()->indexesUpgrade()->ensureLogsv2CanonicalUrlColumn($tableName);
             }
             // Same logic for the redirects side. canonical_url is required by
             // setupRedirect() and was added in 4.1.11; on a small fraction of
@@ -398,15 +390,15 @@ class ABJ_404_Solution_DatabaseUpgradeBootstrap extends ABJ_404_Solution_Databas
             // verifyColumns eventually retries. Eagerly running the targeted
             // add closes that window.
             if ($bareTableName === 'abj404_redirects') {
-                $this->ensureRedirectsCanonicalUrlColumn($tableName);
+                $this->upgrades()->indexesUpgrade()->ensureRedirectsCanonicalUrlColumn($tableName);
             }
 
-            $this->verifyColumns($tableName, $query);
+            $this->upgrades()->schemaDiffUpgrade()->verifyColumns($tableName, $query);
         }
 
         // Table-specific post-creation steps.
         $logsTable = $this->dbCore->doTableNameReplacements("{wp_abj404_logsv2}");
-        $this->ensureLogsCompositeIndex($logsTable);
+        $this->upgrades()->indexesUpgrade()->ensureLogsCompositeIndex($logsTable);
 
         // Mark view cache table as ensured so ensureViewSnapshotTableExists() skips redundant DDL.
         ABJ_404_Solution_ViewReadService::setViewSnapshotTableEnsured(true);

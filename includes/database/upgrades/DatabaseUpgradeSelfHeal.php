@@ -90,7 +90,7 @@ class ABJ_404_Solution_DatabaseUpgradeSelfHeal extends ABJ_404_Solution_Database
 
         // Derive required tables from SQL DDL files -- same source of truth as runInitialCreateTables().
         $requiredTables = [];
-        foreach ($this->discoverPermanentDDLFiles() as $ddlEntry) {
+        foreach ($this->upgrades()->bootstrapUpgrade()->discoverPermanentDDLFiles() as $ddlEntry) {
             $requiredTables[] = $ddlEntry['bareTableName'];
         }
 
@@ -121,7 +121,7 @@ class ABJ_404_Solution_DatabaseUpgradeSelfHeal extends ABJ_404_Solution_Database
 
             // Repair: call the same idempotent routine activation uses
             // This is safe because createDatabaseTables() is idempotent
-            $this->invokeOwnerOverrideOrSelf('createDatabaseTables', [false]);  // false = not updating to new version
+            $this->upgrades()->createDatabaseTables(false);  // false = not updating to new version
 
             $this->logger->infoMessage("Table repair complete for site " . get_current_blog_id());
         } else {
@@ -129,9 +129,9 @@ class ABJ_404_Solution_DatabaseUpgradeSelfHeal extends ABJ_404_Solution_Database
             // and enforce InnoDB engine. This catches collation drift (including column-level
             // drift), missed index additions, and MyISAM reversions from hosting migrations
             // or table restores -- without waiting for the next plugin upgrade.
-            $this->invokeOwnerOverrideOrSelf('correctCollations');
-            $this->invokeOwnerOverrideOrSelf('createIndexes');
-            $this->invokeOwnerOverrideOrSelf('updateTableEngineToInnoDB');
+            $this->upgrades()->collationDriftUpgrade()->correctCollations();
+            $this->upgrades()->indexesUpgrade()->createIndexes();
+            $this->upgrades()->engineNormalizationUpgrade()->updateTableEngineToInnoDB();
         }
 
         // Check for orphaned tables under a stale/changed prefix and adopt their data.
@@ -140,6 +140,6 @@ class ABJ_404_Solution_DatabaseUpgradeSelfHeal extends ABJ_404_Solution_Database
         // (On the missing-tables path above, createDatabaseTables() already triggers adoption
         // via renameAbj404TablesToLowerCase(), but running it again is harmless and covers
         // edge cases where tables exist under the current prefix but orphans remain.)
-        $this->adoptOrphanedTables();
+        $this->upgrades()->orphanAdoptionUpgrade()->adoptOrphanedTables();
     }
 }

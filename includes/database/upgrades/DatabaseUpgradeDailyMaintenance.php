@@ -32,11 +32,11 @@ class ABJ_404_Solution_DatabaseUpgradeDailyMaintenance extends ABJ_404_Solution_
         // This catches failed activations, database corruption, and edge cases.
         // Routed through runSelfHealPrologue() so the SelfHealingPrologueReachabilityTest
         // can confirm the daily cron reaches the canonical prologue token.
-        $this->runSelfHealPrologue();
+        $this->upgrades()->selfHealUpgrade()->runSelfHealPrologue();
 
         // Ngram cache maintenance: sync missing entries and cleanup orphaned ones
-        $this->syncMissingNGrams();
-        $this->cleanupOrphanedNGrams();
+        $this->upgrades()->nGramUpgrade()->syncMissingNGrams();
+        $this->upgrades()->nGramUpgrade()->cleanupOrphanedNGrams();
 
         // Clean up expired rate limit transients to prevent wp_options bloat
         $this->cleanupExpiredRateLimitTransients();
@@ -51,7 +51,7 @@ class ABJ_404_Solution_DatabaseUpgradeDailyMaintenance extends ABJ_404_Solution_
         // JOIN to logs_hits.requested_url stays index-friendly. Chunked + rate-
         // limited so the daily cron continues progress without blocking large
         // sites; converges on its own across successive runs.
-        $this->backfillRedirectsCanonicalUrl();
+        $this->upgrades()->canonicalUrlBackfillUpgrade()->backfillRedirectsCanonicalUrl();
 
         // Same idea for logsv2: legacy rows (pre-4.1.x) lack canonical_url, so
         // the hits-rebuild JOIN falls back to CONCAT/TRIM and can't use
@@ -60,7 +60,7 @@ class ABJ_404_Solution_DatabaseUpgradeDailyMaintenance extends ABJ_404_Solution_
         // 15-second budget (vs redirects' 25) because this same function is
         // also reachable from the Captured-404s tab shutdown hook --
         // see scheduleLogsv2CanonicalUrlBackfill().
-        $this->backfillLogsv2CanonicalUrl();
+        $this->upgrades()->canonicalUrlBackfillUpgrade()->backfillLogsv2CanonicalUrl();
 
         // Nightly internal-link scan: find broken internal links in published content.
         if (class_exists('ABJ_404_Solution_InternalLinkScanner')) {

@@ -104,7 +104,6 @@ return array(
     'ABJ_404_Solution_DatabaseUpgradeMultiSite' => $base . 'includes/database/upgrades/DatabaseUpgradeMultiSite.php',
     'ABJ_404_Solution_DatabaseUpgradeSchemaDiff' => $base . 'includes/database/upgrades/DatabaseUpgradeSchemaDiff.php',
     'ABJ_404_Solution_DatabaseUpgradeBootstrap' => $base . 'includes/database/upgrades/DatabaseUpgradeBootstrap.php',
-    'ABJ_404_Solution_DatabaseUpgradeRegistry' => $base . 'includes/database/upgrades/DatabaseUpgradeRegistry.php',
     'ABJ_404_Solution_PluginLogicAdminActions' => $base . 'includes/core/PluginLogicAdminActions.php',
     // Admin action handlers (strategy/registry pattern for handlePluginAction dispatch).
     'ABJ_404_Solution_AdminAssetEnqueuer' => $base . 'includes/admin/AdminAssetEnqueuer.php',

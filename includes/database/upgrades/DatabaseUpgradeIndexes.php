@@ -16,7 +16,7 @@ class ABJ_404_Solution_DatabaseUpgradeIndexes extends ABJ_404_Solution_DatabaseU
 
     /** @return void */
     function createIndexes() {
-	foreach ($this->discoverPermanentDDLFiles() as $ddlEntry) {
+	foreach ($this->upgrades()->bootstrapUpgrade()->discoverPermanentDDLFiles() as $ddlEntry) {
 		$tableName = $this->dbCore->doTableNameReplacements($ddlEntry['placeholder']);
 		$query = $this->dbCore->doTableNameReplacements($ddlEntry['ddlContent']);
 		$this->verifyIndexes($tableName, $query);
@@ -240,7 +240,7 @@ class ABJ_404_Solution_DatabaseUpgradeIndexes extends ABJ_404_Solution_DatabaseU
 	     * @return void
 	     */
 	    public function ensureLogsv2CanonicalUrlColumn(string $logsTable): void {
-	        if ($this->columnExists($logsTable, 'canonical_url')) {
+	        if ($this->upgrades()->canonicalUrlBackfillUpgrade()->columnExists($logsTable, 'canonical_url')) {
 	            return;
 	        }
 	        $inplaceQuery = "ALTER TABLE " . $logsTable .
@@ -285,7 +285,7 @@ class ABJ_404_Solution_DatabaseUpgradeIndexes extends ABJ_404_Solution_DatabaseU
 	     * @return void
 	     */
 	    public function ensureRedirectsCanonicalUrlColumn(string $redirectsTable): void {
-	        if ($this->columnExists($redirectsTable, 'canonical_url')) {
+	        if ($this->upgrades()->canonicalUrlBackfillUpgrade()->columnExists($redirectsTable, 'canonical_url')) {
 	            return;
 	        }
 	        $inplaceQuery = "ALTER TABLE " . $redirectsTable .

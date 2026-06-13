@@ -16,7 +16,7 @@ class ABJ_404_Solution_DatabaseUpgradeSchemaDiff extends ABJ_404_Solution_Databa
 	$updatesWereNeeded = false;
 
 	// find the differences
-	$tableDifferences = $this->invokeOwnerOverrideOrSelf('getTableDifferences', [$tableName, $createTableStatementGoal]);
+	$tableDifferences = $this->getTableDifferences($tableName, $createTableStatementGoal);
 	$tableDifferences = is_array($tableDifferences) ? $tableDifferences : [];
 	$updateCols = is_array($tableDifferences['updateTheseColumns']) ? $tableDifferences['updateTheseColumns'] : [];
 	$createCols = is_array($tableDifferences['createTheseColumns']) ? $tableDifferences['createTheseColumns'] : [];
@@ -25,10 +25,10 @@ class ABJ_404_Solution_DatabaseUpgradeSchemaDiff extends ABJ_404_Solution_Databa
 		$updatesWereNeeded = true;
 	}
 	// make the changes
-	$this->invokeOwnerOverrideOrSelf('updateATableBasedOnDifferences', [$tableName, $tableDifferences]);
+	$this->updateATableBasedOnDifferences($tableName, $tableDifferences);
 
 	// verify that there are now no changes that need to be made.
-	$tableDifferences = $this->invokeOwnerOverrideOrSelf('getTableDifferences', [$tableName, $createTableStatementGoal]);
+	$tableDifferences = $this->getTableDifferences($tableName, $createTableStatementGoal);
 	$tableDifferences = is_array($tableDifferences) ? $tableDifferences : [];
 	$updateCols = is_array($tableDifferences['updateTheseColumns']) ? $tableDifferences['updateTheseColumns'] : [];
 	$createCols = is_array($tableDifferences['createTheseColumns']) ? $tableDifferences['createTheseColumns'] : [];
@@ -245,7 +245,7 @@ class ABJ_404_Solution_DatabaseUpgradeSchemaDiff extends ABJ_404_Solution_Databa
 			$this->logger->infoMessage("I added a column: " . $createColStatement);
 		}
 
-		$this->handleSpecificCases($tableName, $colName);
+		$this->upgrades()->bootstrapUpgrade()->handleSpecificCases($tableName, $colName);
 	}
     }
 

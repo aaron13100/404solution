@@ -5,38 +5,7 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Shared dependency carrier and dispatcher for DatabaseUpgradesEtc delegates.
- *
- * @method array<int, array{placeholder: string, bareTableName: string, ddlContent: string}> discoverPermanentDDLFiles()
- * @method bool columnExists(string $tableName, string $columnName)
- * @method mixed deleteIndexes(string $tableName)
- * @method mixed runInitialCreateTables()
- * @method mixed correctCollations()
- * @method mixed updateTableEngineToInnoDB()
- * @method mixed createIndexes()
- * @method mixed backfillRedirectsCanonicalUrl()
- * @method mixed backfillLogsv2CanonicalUrl()
- * @method mixed renameAbj404TablesToLowerCase()
- * @method mixed runSelfHealPrologue()
- * @method mixed correctIssuesBefore()
- * @method mixed correctIssuesAfter()
- * @method mixed dropTranslatedViewLabelColumns()
- * @method mixed adoptOrphanedTables()
- * @method mixed syncMissingNGrams()
- * @method mixed cleanupOrphanedNGrams()
- * @method mixed handleSpecificCases(string $tableName, string $colName)
- * @method string applyPluginTableCharsetCollate(string $createTableSql)
- * @method bool isNetworkActivated()
- * @method mixed scheduleBackgroundMultisiteActivation(int $alreadyProcessedBlogId)
- * @method mixed scheduleBackgroundMultisiteUpgrade(int $alreadyProcessedBlogId)
- * @method mixed getNetworkAwareOption(string $option_name, mixed $default = false)
- * @method mixed scheduleNGramCacheRebuild()
- * @method mixed migrateURLsToRelativePaths()
- * @method mixed ensureLogsCompositeIndex(string $logsTable, ?string $createSqlOverride = null)
- * @method mixed repairStrippedViewCacheTable()
- * @method mixed ensureLogsv2CanonicalUrlColumn(string $logsTable)
- * @method mixed ensureRedirectsCanonicalUrlColumn(string $redirectsTable)
- * @method mixed verifyColumns(string $tableName, string $createTableStatementGoal)
+ * Shared dependency carrier for DatabaseUpgradesEtc delegates.
  */
 abstract class ABJ_404_Solution_DatabaseUpgradeComponent {
 
@@ -112,65 +81,8 @@ abstract class ABJ_404_Solution_DatabaseUpgradeComponent {
         }
     }
 
-    /**
-     * Invoke a method declared on this component, including private helpers.
-     *
-     * @param string $method
-     * @param array<int, mixed> $args
-     * @return mixed
-     */
-    public function invokeDatabaseUpgradeMethod(string $method, array $args = []) {
-        if (!method_exists($this, $method)) {
-            throw new BadMethodCallException("Database upgrade component method not found: {$method}");
-        }
-
-        $invoker = \Closure::bind(function($targetMethod, $targetArgs) {
-            return $this->$targetMethod(...$targetArgs);
-        }, $this, get_class($this));
-
-        return $invoker($method, $args);
-    }
-
-    /**
-     * Preserve DatabaseUpgradesEtc subclass override behavior after trait
-     * extraction. Before conversion, a trait method's `$this->foo()` call
-     * resolved to an overriding method on the host subclass. Delegate classes
-     * need to check for that override explicitly before falling back to the
-     * component implementation.
-     *
-     * @param string $method
-     * @param array<int, mixed> $args
-     * @return mixed
-     */
-    protected function invokeOwnerOverrideOrSelf(string $method, array $args = []) {
-        if (method_exists($this->owner, $method)) {
-            $ownerMethod = new ReflectionMethod($this->owner, $method);
-            if ($ownerMethod->getDeclaringClass()->getName() !== 'ABJ_404_Solution_DatabaseUpgradesEtc'
-                    || !method_exists($this, $method)) {
-                return $ownerMethod->invokeArgs($this->owner, $args);
-            }
-        }
-
-        // Method is not a real method on owner or self. If owner can route it
-        // through its delegate map (another sub-component owns it), prefer that
-        // over a self-only lookup. Falls back to self for cases where neither
-        // routes the call.
-        if (!method_exists($this, $method)) {
-            return $this->owner->invokeDatabaseUpgradeMethod($method, $args);
-        }
-
-        return $this->invokeDatabaseUpgradeMethod($method, $args);
-    }
-
-    /**
-     * Delegate cross-component calls back through the DatabaseUpgradesEtc owner.
-     *
-     * @param string $method
-     * @param array<int, mixed> $args
-     * @return mixed
-     */
-    public function __call($method, $args) {
-        return $this->owner->invokeDatabaseUpgradeMethod($method, $args);
+    protected function upgrades(): ABJ_404_Solution_DatabaseUpgradeCoordinator {
+        return $this->owner;
     }
 
     /** @return string|null */

@@ -57,7 +57,7 @@ class ABJ_404_Solution_DatabaseUpgradeEngineNormalization extends ABJ_404_Soluti
               strpos($lastError, 'Index column size too large') !== false) {
 
                 // delete the indexes, try again, and create the indexes later.
-                $this->deleteIndexes($tableName);
+                $this->upgrades()->schemaDiffUpgrade()->deleteIndexes($tableName);
 
                 $this->dbCore->queryAndGetResults($query,
                   array("ignore_errors" => array("Unknown storage engine")));

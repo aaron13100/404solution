@@ -22,7 +22,6 @@ require_once __DIR__ . '/DatabaseUpgradeOrphanAdoption.php';
 require_once __DIR__ . '/DatabaseUpgradeMultiSite.php';
 require_once __DIR__ . '/DatabaseUpgradeSchemaDiff.php';
 require_once __DIR__ . '/DatabaseUpgradeBootstrap.php';
-require_once __DIR__ . '/DatabaseUpgradeRegistry.php';
 
 /* Functions in this class should all reference one of the following variables or support functions that do.
  *      $wpdb, $_GET, $_POST, $_SERVER, $_.*
@@ -31,90 +30,6 @@ require_once __DIR__ . '/DatabaseUpgradeRegistry.php';
  * Read the database, Store to the database,
  */
 
-/**
- * Sub-component methods reached via __call -> invokeDatabaseUpgradeMethod().
- * Listed here so static analysis and IDEs recognize them on this facade.
- *
- * @method mixed createIndexes()
- * @method mixed verifyIndexes($tableName, $createTableStatementGoal)
- * @method mixed indexExists($tableName, $indexName)
- * @method mixed parseIndexDDLToSpec($indexDDL)
- * @method mixed parseIndexSpecsFromCreateTableSql($createTableSql)
- * @method mixed buildAddIndexStatementFromParts($tableName, $indexName, $columnsSql, $unique)
- * @method mixed ensureLogsCompositeIndex($logsTable, $createSqlOverride = null)
- * @method mixed ensureLogsv2CanonicalUrlColumn(string $logsTable)
- * @method mixed ensureRedirectsCanonicalUrlColumn(string $redirectsTable)
- * @method mixed updateTableEngineToInnoDB()
- * @method mixed getTableCollation($tableName)
- * @method mixed getTableCollationFromShowCreate($tableName)
- * @method mixed getTableCollationFromInformationSchema($tableName)
- * @method mixed getDefaultCollationForCharset($charset)
- * @method mixed sanitizeCollationIdentifier($collation)
- * @method mixed resolveTargetUtf8mb4Collation($tableNames, $tableCollations = [])
- * @method mixed correctCollations()
- * @method mixed tableHasMismatchedCharacterColumnCollation($tableName, $targetCharset, $targetCollation)
- * @method mixed runDailyInsuranceCheck()
- * @method mixed runSelfHealPrologue()
- * @method mixed verifyAndRepairCurrentSite()
- * @method mixed cleanupExpiredRateLimitTransients()
- * @method mixed runDatabaseMaintenanceTasks()
- * @method mixed refreshViewDoneSnapshotInline()
- * @method mixed backfillRedirectsCanonicalUrl()
- * @method mixed backfillLogsv2CanonicalUrl()
- * @method mixed scheduleLogsv2CanonicalUrlBackfill()
- * @method mixed shouldScheduleLogsv2CanonicalBackfillViaCron()
- * @method mixed columnExists(string $tableName, string $columnName)
- * @method mixed scheduleBackgroundMultisiteBatch(string $optionPrefix, string $hookName, string $label, int $alreadyProcessedBlogId)
- * @method mixed processMultisiteBatch(string $optionPrefix, string $hookName, string $label, callable $perSiteAction)
- * @method mixed scheduleBackgroundMultisiteActivation(int $alreadyProcessedBlogId)
- * @method mixed processMultisiteActivationBatch()
- * @method mixed scheduleBackgroundMultisiteUpgrade(int $alreadyProcessedBlogId)
- * @method mixed processMultisiteUpgradeBatch()
- * @method mixed createTablesForAllSites()
- * @method mixed scheduleNGramCacheRebuild()
- * @method mixed rebuildNGramCacheAsync($offset = 0)
- * @method mixed rebuildNGramCache($batchSize = 100, $forceRebuild = false)
- * @method mixed syncMissingNGrams($batchSize = 50)
- * @method mixed cleanupOrphanedNGrams()
- * @method mixed buildNGramsForCategories($batchSize = 50)
- * @method mixed buildNGramsForTags($batchSize = 50)
- * @method mixed buildNGramsForAllContent($batchSize = 100)
- * @method mixed isNetworkActivated()
- * @method mixed getNetworkAwareOption($option_name, $default = false)
- * @method mixed updateNetworkAwareOption($option_name, $value)
- * @method mixed countTotalPagesForNGramRebuild()
- * @method mixed adoptOrphanedTables()
- * @method mixed countOldPrefixRows(string $oldPrefix, array<int, string> $knownTables)
- * @method mixed verifyOwnershipViaLogs(string $oldPrefix)
- * @method mixed verifyOwnershipViaRedirects(string $oldPrefix)
- * @method mixed adoptDataFromPrefix(string $oldPrefix, string $currentPrefix, array<int, string> $knownTables)
- * @method mixed getCommonColumns(string $tableA, string $tableB)
- * @method mixed getTableColumns(string $tableName)
- * @method mixed migrateURLsToRelativePaths()
- * @method mixed updatePluginCheck()
- * @method mixed doUpdatePlugin($pluginInfo)
- * @method mixed shouldUpdate($pluginInfo)
- * @method mixed verifyColumns($tableName, $createTableStatementGoal)
- * @method mixed getTableDifferences($tableName, $createTableStatementGoal)
- * @method mixed updateATableBasedOnDifferences($tableName, $tableDifferences)
- * @method mixed removeCommentsFromColumns($createTableDDL)
- * @method mixed normalizeColumnDDL($ddl)
- * @method mixed deleteIndexes($tableName)
- * @method mixed correctIssuesBefore()
- * @method mixed correctIssuesAfter()
- * @method mixed dropDeprecatedMutationWatermarkTable()
- * @method mixed dropTranslatedViewLabelColumns()
- * @method mixed repairStrippedViewCacheTable()
- * @method mixed ddlDeclaresIdColumn(string $ddl)
- * @method mixed recoverMissingLogsHitsTable()
- * @method mixed correctMatchData()
- * @method void createDatabaseTables($updatingToNewVersion = false, bool $force = false)
- * @method void renameAbj404TablesToLowerCase()
- * @method void handleSpecificCases($tableName, $colName)
- * @method array<int, array{placeholder: string, bareTableName: string, ddlContent: string}> discoverPermanentDDLFiles()
- * @method void runInitialCreateTables()
- * @method string applyPluginTableCharsetCollate($createTableSql)
- */
 class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseUpgradeCoordinator {
 
 	/** @var self|null */
@@ -168,8 +83,44 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 	/** @var mixed */
 	private $ngramRebuilder;
 
-	/** @var ABJ_404_Solution_DatabaseUpgradeRegistry */
-	private $upgradeRegistry;
+	/** @var ABJ_404_Solution_DatabaseUpgradeNGram */
+	private $nGramUpgrade;
+
+	/** @var ABJ_404_Solution_DatabaseUpgradeEngineNormalization */
+	private $engineNormalizationUpgrade;
+
+	/** @var ABJ_404_Solution_DatabaseUpgradeCollationDrift */
+	private $collationDriftUpgrade;
+
+	/** @var ABJ_404_Solution_DatabaseUpgradeSelfHeal */
+	private $selfHealUpgrade;
+
+	/** @var ABJ_404_Solution_DatabaseUpgradeCanonicalUrlBackfill */
+	private $canonicalUrlBackfillUpgrade;
+
+	/** @var ABJ_404_Solution_DatabaseUpgradeDailyMaintenance */
+	private $dailyMaintenanceUpgrade;
+
+	/** @var ABJ_404_Solution_DatabaseUpgradePluginUpdate */
+	private $pluginUpdateUpgrade;
+
+	/** @var ABJ_404_Solution_DatabaseUpgradeTableRepair */
+	private $tableRepairUpgrade;
+
+	/** @var ABJ_404_Solution_DatabaseUpgradeIndexes */
+	private $indexesUpgrade;
+
+	/** @var ABJ_404_Solution_DatabaseUpgradeOrphanAdoption */
+	private $orphanAdoptionUpgrade;
+
+	/** @var ABJ_404_Solution_DatabaseUpgradeMultiSite */
+	private $multiSiteUpgrade;
+
+	/** @var ABJ_404_Solution_DatabaseUpgradeSchemaDiff */
+	private $schemaDiffUpgrade;
+
+	/** @var ABJ_404_Solution_DatabaseUpgradeBootstrap */
+	private $bootstrapUpgrade;
 
 	/**
 	 * Constructor with dependency injection.
@@ -197,10 +148,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 		$this->viewRead = $this->dao->getViewReadService();
 		$this->logsRepo = $this->dao->getLogsRepo();
 
-		$this->upgradeRegistry = new ABJ_404_Solution_DatabaseUpgradeRegistry(
-			$this,
-			$this->buildComponentDependencyMap()
-		);
+		$this->initializeUpgradeComponents();
 	}
 
 	/**
@@ -239,26 +187,6 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 	}
 
 	/**
-	 * Invoke a DatabaseUpgradesEtc method or delegate method by name.
-	 *
-	 * @param string $method
-	 * @param array<int, mixed> $args
-	 * @return mixed
-	 */
-	public function invokeDatabaseUpgradeMethod(string $method, array $args = []) {
-		if ($this->upgradeRegistry->canInvoke($method)) {
-			$this->upgradeRegistry->replaceDependencies($this->buildComponentDependencyMap());
-			return $this->upgradeRegistry->invoke($method, $args);
-		}
-
-		if (method_exists($this, $method)) {
-			return $this->$method(...$args);
-		}
-
-		throw new BadMethodCallException("Database upgrade method not found: {$method}");
-	}
-
-	/**
 	 * @return array<string, mixed>
 	 */
 	private function buildComponentDependencyMap(): array {
@@ -281,6 +209,246 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 			'ngramRebuilder' => $this->ngramRebuilder,
 		];
 	}
+
+	/** @return void */
+	private function initializeUpgradeComponents(): void {
+		$deps = $this->buildComponentDependencyMap();
+		$this->nGramUpgrade = new ABJ_404_Solution_DatabaseUpgradeNGram($this, $deps);
+		$this->engineNormalizationUpgrade = new ABJ_404_Solution_DatabaseUpgradeEngineNormalization($this, $deps);
+		$this->collationDriftUpgrade = new ABJ_404_Solution_DatabaseUpgradeCollationDrift($this, $deps);
+		$this->selfHealUpgrade = new ABJ_404_Solution_DatabaseUpgradeSelfHeal($this, $deps);
+		$this->canonicalUrlBackfillUpgrade = new ABJ_404_Solution_DatabaseUpgradeCanonicalUrlBackfill($this, $deps);
+		$this->dailyMaintenanceUpgrade = new ABJ_404_Solution_DatabaseUpgradeDailyMaintenance($this, $deps);
+		$this->pluginUpdateUpgrade = new ABJ_404_Solution_DatabaseUpgradePluginUpdate($this, $deps);
+		$this->tableRepairUpgrade = new ABJ_404_Solution_DatabaseUpgradeTableRepair($this, $deps);
+		$this->indexesUpgrade = new ABJ_404_Solution_DatabaseUpgradeIndexes($this, $deps);
+		$this->orphanAdoptionUpgrade = new ABJ_404_Solution_DatabaseUpgradeOrphanAdoption($this, $deps);
+		$this->multiSiteUpgrade = new ABJ_404_Solution_DatabaseUpgradeMultiSite($this, $deps);
+		$this->schemaDiffUpgrade = new ABJ_404_Solution_DatabaseUpgradeSchemaDiff($this, $deps);
+		$this->bootstrapUpgrade = new ABJ_404_Solution_DatabaseUpgradeBootstrap($this, $deps);
+	}
+
+	public function nGramUpgrade(): ABJ_404_Solution_DatabaseUpgradeNGram {
+		return $this->nGramUpgrade;
+	}
+
+	public function engineNormalizationUpgrade(): ABJ_404_Solution_DatabaseUpgradeEngineNormalization {
+		return $this->engineNormalizationUpgrade;
+	}
+
+	public function collationDriftUpgrade(): ABJ_404_Solution_DatabaseUpgradeCollationDrift {
+		return $this->collationDriftUpgrade;
+	}
+
+	public function selfHealUpgrade(): ABJ_404_Solution_DatabaseUpgradeSelfHeal {
+		return $this->selfHealUpgrade;
+	}
+
+	public function canonicalUrlBackfillUpgrade(): ABJ_404_Solution_DatabaseUpgradeCanonicalUrlBackfill {
+		return $this->canonicalUrlBackfillUpgrade;
+	}
+
+	public function dailyMaintenanceUpgrade(): ABJ_404_Solution_DatabaseUpgradeDailyMaintenance {
+		return $this->dailyMaintenanceUpgrade;
+	}
+
+	public function pluginUpdateUpgrade(): ABJ_404_Solution_DatabaseUpgradePluginUpdate {
+		return $this->pluginUpdateUpgrade;
+	}
+
+	public function tableRepairUpgrade(): ABJ_404_Solution_DatabaseUpgradeTableRepair {
+		return $this->tableRepairUpgrade;
+	}
+
+	public function indexesUpgrade(): ABJ_404_Solution_DatabaseUpgradeIndexes {
+		return $this->indexesUpgrade;
+	}
+
+	public function orphanAdoptionUpgrade(): ABJ_404_Solution_DatabaseUpgradeOrphanAdoption {
+		return $this->orphanAdoptionUpgrade;
+	}
+
+	public function multiSiteUpgrade(): ABJ_404_Solution_DatabaseUpgradeMultiSite {
+		return $this->multiSiteUpgrade;
+	}
+
+	public function schemaDiffUpgrade(): ABJ_404_Solution_DatabaseUpgradeSchemaDiff {
+		return $this->schemaDiffUpgrade;
+	}
+
+	public function bootstrapUpgrade(): ABJ_404_Solution_DatabaseUpgradeBootstrap {
+		return $this->bootstrapUpgrade;
+	}
+
+	/**
+	 * @param bool $updatingToNewVersion
+	 * @return void
+	 */
+	public function createDatabaseTables($updatingToNewVersion = false, bool $force = false) {
+		$this->bootstrapUpgrade->createDatabaseTables($updatingToNewVersion, $force);
+	}
+
+	/** @return void */
+	public function runSelfHealPrologue() {
+		$this->selfHealUpgrade->runSelfHealPrologue();
+	}
+
+	/** @return void */
+	public function runDatabaseMaintenanceTasks() {
+		$this->dailyMaintenanceUpgrade->runDatabaseMaintenanceTasks();
+	}
+
+	/** @return bool */
+	public function processMultisiteActivationBatch() {
+		return $this->multiSiteUpgrade->processMultisiteActivationBatch();
+	}
+
+	/** @return bool */
+	public function processMultisiteUpgradeBatch() {
+		return $this->multiSiteUpgrade->processMultisiteUpgradeBatch();
+	}
+
+	/** @return bool */
+	public function scheduleNGramCacheRebuild() {
+		return $this->nGramUpgrade->scheduleNGramCacheRebuild();
+	}
+
+	/**
+	 * @param int $offset
+	 * @return void
+	 */
+	public function rebuildNGramCacheAsync($offset = 0) {
+		$this->nGramUpgrade->rebuildNGramCacheAsync($offset);
+	}
+
+	/** @return void */
+	public function scheduleLogsv2CanonicalUrlBackfill() {
+		$this->canonicalUrlBackfillUpgrade->scheduleLogsv2CanonicalUrlBackfill();
+	}
+
+	/** @return int */
+	public function backfillLogsv2CanonicalUrl() {
+		return $this->canonicalUrlBackfillUpgrade->backfillLogsv2CanonicalUrl();
+	}
+
+	/** @return void */
+	public function correctCollations() {
+		$this->collationDriftUpgrade->correctCollations();
+	}
+
+	/** @return void */
+	public function updatePluginCheck() {
+		$this->pluginUpdateUpgrade->updatePluginCheck();
+	}
+
+	/** @return int */
+	public function backfillRedirectsCanonicalUrl() { return $this->canonicalUrlBackfillUpgrade->backfillRedirectsCanonicalUrl(); }
+
+	/**
+	 * @param int $batchSize
+	 * @param bool $forceRebuild
+	 * @return array<string, mixed>
+	 */
+	public function rebuildNGramCache($batchSize = 100, $forceRebuild = false) { return $this->nGramUpgrade->rebuildNGramCache($batchSize, $forceRebuild); }
+
+	/**
+	 * @param int $batchSize
+	 * @return array<string, mixed>
+	 */
+	public function syncMissingNGrams($batchSize = 50) { return $this->nGramUpgrade->syncMissingNGrams($batchSize); }
+
+	/**
+	 * @param int $batchSize
+	 * @return array<string, mixed>
+	 */
+	public function buildNGramsForAllContent($batchSize = 100) { return $this->nGramUpgrade->buildNGramsForAllContent($batchSize); }
+
+	/**
+	 * @param string $option_name
+	 * @param mixed $default
+	 * @return mixed
+	 */
+	public function getNetworkAwareOption($option_name, $default = false) { return $this->nGramUpgrade->getNetworkAwareOption($option_name, $default); }
+
+	/** @return int */
+	public function countTotalPagesForNGramRebuild() { return $this->nGramUpgrade->countTotalPagesForNGramRebuild(); }
+
+	/** @return void */
+	public function updateTableEngineToInnoDB() { $this->engineNormalizationUpgrade->updateTableEngineToInnoDB(); }
+
+	/** @return void */
+	public function createIndexes() { $this->indexesUpgrade->createIndexes(); }
+
+	/** @return void */
+	public function runInitialCreateTables() { $this->bootstrapUpgrade->runInitialCreateTables(); }
+
+	/** @return void */
+	public function renameAbj404TablesToLowerCase() { $this->bootstrapUpgrade->renameAbj404TablesToLowerCase(); }
+
+	/** @return array<int, array{placeholder: string, bareTableName: string, ddlContent: string}> */
+	public function discoverPermanentDDLFiles(): array { return $this->bootstrapUpgrade->discoverPermanentDDLFiles(); }
+
+	/**
+	 * @param mixed $createTableSql
+	 * @return mixed
+	 */
+	public function applyPluginTableCharsetCollate($createTableSql) {
+		if (!is_string($createTableSql)) {
+			return $createTableSql;
+		}
+		return $this->bootstrapUpgrade->applyPluginTableCharsetCollate($createTableSql);
+	}
+
+	/** @return void */
+	public function correctIssuesBefore() { $this->tableRepairUpgrade->correctIssuesBefore(); }
+
+	/** @return void */
+	public function correctIssuesAfter() { $this->tableRepairUpgrade->correctIssuesAfter(); }
+
+	/** @return void */
+	public function repairStrippedViewCacheTable() { $this->tableRepairUpgrade->repairStrippedViewCacheTable(); }
+
+	/** @return array<string, mixed> */
+	public function migrateURLsToRelativePaths() { return $this->pluginUpdateUpgrade->migrateURLsToRelativePaths(); }
+
+	/**
+	 * @param array<string, mixed> $pluginInfo
+	 * @return bool
+	 */
+	public function shouldUpdate($pluginInfo) { return $this->pluginUpdateUpgrade->shouldUpdate($pluginInfo); }
+
+	/**
+	 * @param string $tableName
+	 * @param string $createTableStatementGoal
+	 * @return void
+	 */
+	public function verifyColumns($tableName, $createTableStatementGoal) { $this->schemaDiffUpgrade->verifyColumns($tableName, $createTableStatementGoal); }
+
+	/**
+	 * @param string $tableName
+	 * @param string $createTableStatementGoal
+	 * @return array<string, mixed>
+	 */
+	public function getTableDifferences($tableName, $createTableStatementGoal) { return $this->schemaDiffUpgrade->getTableDifferences($tableName, $createTableStatementGoal); }
+
+	/**
+	 * @param string $tableName
+	 * @param array<string, mixed> $tableDifferences
+	 * @return void
+	 */
+	public function updateATableBasedOnDifferences($tableName, $tableDifferences) { $this->schemaDiffUpgrade->updateATableBasedOnDifferences($tableName, $tableDifferences); }
+
+	/**
+	 * @param string|null $createTableDDL
+	 * @return string
+	 */
+	public function removeCommentsFromColumns($createTableDDL) { return $this->schemaDiffUpgrade->removeCommentsFromColumns($createTableDDL); }
+
+	/**
+	 * @param mixed $ddl
+	 * @return string
+	 */
+	public function normalizeColumnDDL($ddl) { return $this->schemaDiffUpgrade->normalizeColumnDDL($ddl); }
 
 	/** @return string|null */
 	public function getUpgradeRuntimeId() {
@@ -328,23 +496,4 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 		return ABJ_404_Solution_DatabaseUpgradeRuntimeState::isLogsv2CanonicalBackfillScheduled();
 	}
 
-	/**
-	 * Pass-through magic delegation to sub-component upgrade classes.
-	 *
-	 * The 9 ABJ_404_Solution_DatabaseUpgrade* sub-components own the actual
-	 * upgrade logic; this coordinator owns lifecycle + dependency wiring only.
-	 * Every external caller that used to invoke a typed wrapper here (e.g.
-	 * createIndexes(), backfillRedirectsCanonicalUrl()) now lands in __call
-	 * and routes through invokeDatabaseUpgradeMethod()'s delegate map.
-	 *
-	 * Internal callers in this file (e.g. $this->isNetworkActivated()) also
-	 * resolve through __call because no concrete method declarations exist.
-	 *
-	 * @param string $name
-	 * @param array<int, mixed> $arguments
-	 * @return mixed
-	 */
-	public function __call(string $name, array $arguments) {
-		return $this->invokeDatabaseUpgradeMethod($name, $arguments);
-	}
 }

@@ -265,7 +265,7 @@ class ABJ_404_Solution_DatabaseUpgradeCollationDrift extends ABJ_404_Solution_Da
         /** @var array<string, array{0: string, 1: string}|null> $tableCollations */
         $tableCollations = [];
         foreach ($abjTableNames as $tableName) {
-            $collationResult = $this->invokeOwnerOverrideOrSelf('getTableCollation', [$tableName]);
+            $collationResult = $this->getTableCollation($tableName);
             $tableCollations[$tableName] = (
                 is_array($collationResult)
                 && isset($collationResult[0], $collationResult[1])
@@ -328,7 +328,7 @@ class ABJ_404_Solution_DatabaseUpgradeCollationDrift extends ABJ_404_Solution_Da
                 $this->logger->warn("Charset/collation change for $tableName failed: Index column size too large. Deleting indexes and retrying...");
 
                 // delete indexes and try again.
-                $this->deleteIndexes($tableName);
+                $this->upgrades()->schemaDiffUpgrade()->deleteIndexes($tableName);
 
                 $retryResults = $this->dbCore->queryAndGetResults($query);
                 $retryLastError = isset($retryResults['last_error']) && is_scalar($retryResults['last_error'])
