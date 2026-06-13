@@ -76,6 +76,8 @@ require_once __DIR__ . '/includes/core/PhpErrorLogFallback.php';
 	if (!function_exists('abj404_get_settings_options')) {
 		/**
 		 * Centralized settings read so call sites don't repeat option-shape checks.
+		 * This is the plugin-root fallback boundary for raw abj404_settings reads:
+		 * ordinary callers must use this helper or options_repository.
 		 *
 		 * @return array<string, mixed>
 		 */
@@ -916,8 +918,7 @@ if (!function_exists('abj404_degraded_register_support_request')) {
 if (!function_exists('abj404_degraded_admin_menu')) {
 	/** @return void */
 	function abj404_degraded_admin_menu() {
-		$options = function_exists('get_option') ? get_option('abj404_settings') : false;
-		$options = is_array($options) ? $options : array();
+		$options = abj404_get_settings_options();
 
 		$menuName = '404 Solution';
 		$badge = " <span class='update-plugins count-1'><span class='plugin-count'>!</span></span>";
