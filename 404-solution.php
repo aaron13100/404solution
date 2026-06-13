@@ -315,6 +315,87 @@ function abj404_logRuntimeWarning(string $context, ?\Throwable $throwable = null
 }
 }
 
+if (!function_exists('abj404_resolve_clock')) {
+/**
+ * Resolve the project clock from the root plugin bootstrap.
+ *
+ * The normal service helper is not available until Loader.php pulls in the
+ * bootstrap files, but root-file callbacks also run before or after that
+ * boundary. This keeps those callbacks on the same clock abstraction without
+ * making early boot depend on the fully initialized container.
+ *
+ * @return object|null
+ */
+function abj404_resolve_clock() {
+	static $fallbackClock = null;
+
+	try {
+		if (function_exists('abj_clock')) {
+			$clock = abj_clock();
+			if (is_object($clock)) {
+				return $clock;
+			}
+		}
+		if (is_object($fallbackClock)) {
+			return $fallbackClock;
+		}
+		if (class_exists('ABJ_404_Solution_SystemClock')) {
+			$fallbackClock = new ABJ_404_Solution_SystemClock();
+			return $fallbackClock;
+		}
+	} catch (\Throwable $e) {
+		abj404_logRuntimeWarning('Clock resolution failed in root bootstrap', $e);
+	}
+
+	return null;
+}
+}
+
+if (!function_exists('abj404_now')) {
+/**
+ * Current epoch seconds for root-file callbacks.
+ *
+ * @return int
+ */
+function abj404_now(): int {
+	$clock = abj404_resolve_clock();
+	if (is_object($clock) && method_exists($clock, 'now')) {
+		try {
+			return (int)$clock->now();
+		} catch (\Throwable $e) {
+			abj404_logRuntimeWarning('Clock now() failed in root bootstrap', $e);
+		}
+	}
+
+	static $reportedUnavailable = false;
+	if (!$reportedUnavailable) {
+		abj404_logRuntimeWarning('Clock unavailable in root bootstrap; using zero epoch fallback');
+		$reportedUnavailable = true;
+	}
+	return 0;
+}
+}
+
+if (!function_exists('abj404_now_float')) {
+/**
+ * Current epoch seconds with sub-second precision for root-file callbacks.
+ *
+ * @return float
+ */
+function abj404_now_float(): float {
+	$clock = abj404_resolve_clock();
+	if (is_object($clock) && method_exists($clock, 'nowFloat')) {
+		try {
+			return (float)$clock->nowFloat();
+		} catch (\Throwable $e) {
+			abj404_logRuntimeWarning('Clock nowFloat() failed in root bootstrap', $e);
+		}
+	}
+
+	return (float)abj404_now();
+}
+}
+
 if (!function_exists('abj404_current_user_is_plugin_admin')) {
 /**
  * Root-file policy gate for admin callbacks declared before normal classes run.
@@ -535,7 +616,7 @@ if (!function_exists('abj404_shortCodeListener')) {
 			}
 			if (!isset($GLOBALS['abj404_benchmark_state']) || !is_array($GLOBALS['abj404_benchmark_state'])) {
 				$GLOBALS['abj404_benchmark_state'] = array(
-					'start' => microtime(true),
+					'start' => abj404_now_float(),
 					'bootstrap_done' => 0.0,
 					'db_query_count' => 0,
 					'db_query_ms' => 0.0,
@@ -551,7 +632,7 @@ if (!function_exists('abj404_shortCodeListener')) {
 			if (!abj404_is_benchmark_request() || !isset($GLOBALS['abj404_benchmark_state'])) {
 				return;
 			}
-			$GLOBALS['abj404_benchmark_state']['bootstrap_done'] = microtime(true);
+			$GLOBALS['abj404_benchmark_state']['bootstrap_done'] = abj404_now_float();
 		}
 	}
 
@@ -592,7 +673,7 @@ if (!function_exists('abj404_shortCodeListener')) {
 			$state = $GLOBALS['abj404_benchmark_state'];
 			$start = isset($state['start']) ? (float)$state['start'] : 0.0;
 			$bootstrapDone = isset($state['bootstrap_done']) ? (float)$state['bootstrap_done'] : 0.0;
-			$now = microtime(true);
+			$now = abj404_now_float();
 			$totalMs = ($start > 0.0) ? (($now - $start) * 1000.0) : 0.0;
 			$bootstrapMs = ($start > 0.0 && $bootstrapDone > 0.0) ? (($bootstrapDone - $start) * 1000.0) : 0.0;
 			$dbQueryCount = isset($state['db_query_count']) ? (int)$state['db_query_count'] : 0;
@@ -644,7 +725,7 @@ if (!function_exists('abj404_boot_shutdown_handler')) {
 			'file' => $error['file'],
 			'line' => $error['line'],
 			'type' => $error['type'],
-			'time' => time(),
+			'time' => abj404_now(),
 		);
 		// Use update_option as a fallback — set_transient might not be available
 		// during a fatal shutdown.
@@ -804,7 +885,7 @@ if (!function_exists('abj404_degraded_register_support_request')) {
 				return;
 			}
 			$baseUrl = plugin_dir_url(__FILE__) . 'includes/';
-			$ver = defined('ABJ404_VERSION') ? ABJ404_VERSION : (string)time();
+			$ver = defined('ABJ404_VERSION') ? ABJ404_VERSION : (string)abj404_now();
 			wp_enqueue_script('abj404-support-request-client',
 				$baseUrl . 'ajax/SupportRequest.js', array(), $ver, true);
 			wp_enqueue_script('abj404-support-request-transport',
@@ -1141,7 +1222,7 @@ function abj404_404listener() {
 
     	if ($has404StatusCookie) {
    			// clear the cookie
-    		setcookie($cookieName404, 'false', time() - 5, "/");
+			setcookie($cookieName404, 'false', abj404_now() - 5, "/");
     		// we're going to a custom 404 page so set the status to 404.
 	    	status_header(404);
     	}
@@ -1163,7 +1244,7 @@ function abj404_404listener() {
             $sanitizedOriginal = sanitize_text_field($originalURL);
 			$_REQUEST[ABJ404_PP . '_REQUEST_URI'] = $sanitizedOriginal;
             $_REQUEST[ABJ404_PP . '_REQUEST_URI_UPDATE_URL'] = $sanitizedOriginal;
-			setcookie($cookieName, '', time() - 5, "/");
+			setcookie($cookieName, '', abj404_now() - 5, "/");
 
 			require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
 			add_action('wp_head', 'ABJ_404_Solution_ShortCode::updateURLbarIfNecessary');
@@ -1515,7 +1596,7 @@ if (!function_exists('abj404_show_view_build_cron_notices')) {
 						? $payload['last_failure_class']
 						: 'unknown';
 					$nextAllowed = isset($payload['next_allowed_at']) ? (int)$payload['next_allowed_at'] : 0;
-					$seconds = max(0, $nextAllowed - time());
+					$seconds = max(0, $nextAllowed - abj404_now());
 					echo '<div class="notice notice-warning"><p><strong>404 Solution:</strong> '
 						. esc_html(sprintf(
 							__('View/hits rebuild paused after %d consecutive failures (class: %s). Next retry in about %d minutes.', '404-solution'),
