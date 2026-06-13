@@ -93,6 +93,15 @@ class ABJ_404_Solution_ServiceContainer {
     private $instances = array();
 
     /**
+     * When true, registration fills gaps without replacing factories that a
+     * caller already installed before lazy bootstrap. Direct registration
+     * calls outside this guarded mode still replace services.
+     *
+     * @var bool
+     */
+    private $preserveExistingRegistrations = false;
+
+    /**
      * Private constructor to enforce singleton pattern.
      */
     private function __construct() {
@@ -125,9 +134,22 @@ class ABJ_404_Solution_ServiceContainer {
         if (!is_callable($factory)) {
             throw new InvalidArgumentException("Factory for service '$name' must be callable");
         }
+        if ($this->preserveExistingRegistrations && isset($this->services[$name])) {
+            return;
+        }
         $this->services[$name] = $factory;
         // Clear any existing instance when re-registering
         unset($this->instances[$name]);
+    }
+
+    /** @return void */
+    public function beginPreservingExistingRegistrations(): void {
+        $this->preserveExistingRegistrations = true;
+    }
+
+    /** @return void */
+    public function endPreservingExistingRegistrations(): void {
+        $this->preserveExistingRegistrations = false;
     }
 
     /**

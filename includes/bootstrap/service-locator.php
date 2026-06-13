@@ -88,9 +88,29 @@ require_once __DIR__ . '/../core/PhpErrorLogFallback.php';
  * ))))))))))))))))))))))))))))))))))))))))))))))))))))
  */
 function abj_service($name) {
+    if ($name === 'logging' && class_exists('ABJ_404_Solution_Logging', false)) {
+        $logger = ABJ_404_Solution_Logging::peekInstance();
+        if ($logger !== null) {
+            ABJ_404_Solution_ServiceContainer::clearLastSuppressedError();
+            return $logger;
+        }
+    }
+    if ($name === 'database_upgrades' && class_exists('ABJ_404_Solution_DatabaseUpgradesEtc', false)) {
+        $upgrades = ABJ_404_Solution_DatabaseUpgradesEtc::peekInstance();
+        if ($upgrades !== null) {
+            ABJ_404_Solution_ServiceContainer::clearLastSuppressedError();
+            return $upgrades;
+        }
+    }
+
     $container = ABJ_404_Solution_ServiceContainer::getInstance();
     if (!$container->has($name) && function_exists('abj_404_solution_init_services')) {
-        abj_404_solution_init_services();
+        $container->beginPreservingExistingRegistrations();
+        try {
+            abj_404_solution_init_services();
+        } finally {
+            $container->endPreservingExistingRegistrations();
+        }
         $container = ABJ_404_Solution_ServiceContainer::getInstance();
     }
     if (!$container->has($name)) {

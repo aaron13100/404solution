@@ -22,10 +22,16 @@ class ABJ_404_Solution_Ajax_UninstallPrefs {
      * @return void
      */
     public static function handle(): void { // @phpstan-ignore abj404.cyclomaticComplexity
-        abj_service('ajax_security_gate')->requireCapabilityWithNonce(
+        $auth = abj_service('ajax_security_gate')->authorizeAdminWithNonce(
             'abj404_uninstall_nonce',
-            'activate_plugins'
+            array('nonce_param' => 'nonce', 'capability' => 'activate_plugins')
         );
+        // Explicit-return form of requireAdminWithNonce( for handlers whose
+        // tests use non-exiting wp_send_json_error() stubs.
+        if (!$auth['ok']) {
+            self::sendJsonError(array('message' => $auth['message']), $auth['status']);
+            return;
+        }
 
         // Get preferences from AJAX request
         // Use filter_var to properly handle boolean values sent from JavaScript
@@ -88,9 +94,10 @@ class ABJ_404_Solution_Ajax_UninstallPrefs {
                         (is_multisite() ? '1' : '0') .
                         '). Returning HTTP 500 to AJAX caller.');
                 }
-                wp_send_json_error(array(
+                self::sendJsonError(array(
                     'message' => __('Could not save preferences. Your choices may not be preserved.', '404-solution')
                 ), 500);
+                return;
             }
             // If values match, the false return was just because value was unchanged (which is OK)
         }
@@ -152,6 +159,15 @@ class ABJ_404_Solution_Ajax_UninstallPrefs {
 
         // Return success (failures are already handled above)
         wp_send_json_success(array('message' => $message));
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     * @param int $status
+     * @return void
+     */
+    private static function sendJsonError(array $payload, int $status): void {
+        wp_send_json_error($payload, $status);
     }
 
     /**

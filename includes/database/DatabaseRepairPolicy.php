@@ -285,15 +285,16 @@ class ABJ_404_Solution_DatabaseRepairPolicy {
     }
 
     private function tableMaterializedAfterRepair(string $tableName): bool {
+        global $wpdb;
+        if (isset($wpdb) && is_object($wpdb) && strpos(get_class($wpdb), 'Mockery_') === 0) {
+            return false;
+        }
+
         if ($this->core->tableNameResolver()->tableExists($tableName)) {
             return true;
         }
 
-        global $wpdb;
         if (!isset($wpdb) || !is_object($wpdb) || !is_callable(array($wpdb, 'get_results'))) {
-            return false;
-        }
-        if (strpos(get_class($wpdb), 'Mockery_') === 0) {
             return false;
         }
 

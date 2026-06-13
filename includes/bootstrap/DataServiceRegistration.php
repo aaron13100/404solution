@@ -83,7 +83,11 @@ class ABJ_404_Solution_DataServiceRegistration {
         });
 
         $container->set('database_upgrades', function($c) {
-            return new ABJ_404_Solution_DatabaseUpgradesEtc(
+            $existing = ABJ_404_Solution_DatabaseUpgradesEtc::peekInstance();
+            if ($existing instanceof ABJ_404_Solution_DatabaseUpgradesEtc) {
+                return $existing;
+            }
+            $upgrades = new ABJ_404_Solution_DatabaseUpgradesEtc(
                 new ABJ_404_Solution_DatabaseUpgradesDependencies(array(
                     'dataAccess' => $c->get('data_access'),
                     'logging' => $c->get('logging'),
@@ -98,6 +102,8 @@ class ABJ_404_Solution_DataServiceRegistration {
                     'ngramRebuilder' => $c->get('ngram_rebuilder'),
                 ))
             );
+            ABJ_404_Solution_DatabaseUpgradesEtc::setInstance($upgrades);
+            return $upgrades;
         });
 
         $container->set('permalink_cache', function($c) {

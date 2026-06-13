@@ -92,7 +92,10 @@ class ABJ_404_Solution_AjaxSecurityGate {
             : $this->isPluginAdmin($action);
 
         if (!$isAuthorized) {
-            return $this->failure('unauthorized', __('Unauthorized', '404-solution'), 403);
+            $message = $capability !== ''
+                ? __('Unauthorized: Insufficient permissions', '404-solution')
+                : __('Unauthorized', '404-solution');
+            return $this->failure('unauthorized', $message, 403);
         }
 
         $this->logAuthorizedAction($action);

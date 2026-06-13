@@ -228,6 +228,28 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 		$this->bootstrapUpgrade = new ABJ_404_Solution_DatabaseUpgradeBootstrap($this, $deps);
 	}
 
+	/** @return void */
+	public function refreshUpgradeComponentDependencies(): void {
+		$deps = $this->buildComponentDependencyMap();
+		foreach ([
+			$this->nGramUpgrade,
+			$this->engineNormalizationUpgrade,
+			$this->collationDriftUpgrade,
+			$this->selfHealUpgrade,
+			$this->canonicalUrlBackfillUpgrade,
+			$this->dailyMaintenanceUpgrade,
+			$this->pluginUpdateUpgrade,
+			$this->tableRepairUpgrade,
+			$this->indexesUpgrade,
+			$this->orphanAdoptionUpgrade,
+			$this->multiSiteUpgrade,
+			$this->schemaDiffUpgrade,
+			$this->bootstrapUpgrade,
+		] as $component) {
+			$component->replaceDatabaseUpgradeDependencies($deps);
+		}
+	}
+
 	public function nGramUpgrade(): ABJ_404_Solution_DatabaseUpgradeNGram {
 		return $this->nGramUpgrade;
 	}
@@ -303,6 +325,12 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 		$this->selfHealUpgrade->runDailyInsuranceCheck();
 	}
 
+	/** @return void */
+	public function verifyAndRepairCurrentSite() {
+		$this->refreshUpgradeComponentDependencies();
+		$this->selfHealUpgrade->verifyAndRepairCurrentSite();
+	}
+
 	/** @return array<string, mixed> */
 	public function cleanupExpiredRateLimitTransients() {
 		return $this->dailyMaintenanceUpgrade->cleanupExpiredRateLimitTransients();
@@ -341,6 +369,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 
 	/** @return bool */
 	public function scheduleNGramCacheRebuild() {
+		$this->refreshUpgradeComponentDependencies();
 		return $this->nGramUpgrade->scheduleNGramCacheRebuild();
 	}
 
@@ -349,6 +378,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 	 * @return void
 	 */
 	public function rebuildNGramCacheAsync($offset = 0) {
+		$this->refreshUpgradeComponentDependencies();
 		$this->nGramUpgrade->rebuildNGramCacheAsync($offset);
 	}
 
@@ -380,19 +410,28 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 	 * @param bool $forceRebuild
 	 * @return array<string, mixed>
 	 */
-	public function rebuildNGramCache($batchSize = 100, $forceRebuild = false) { return $this->nGramUpgrade->rebuildNGramCache($batchSize, $forceRebuild); }
+	public function rebuildNGramCache($batchSize = 100, $forceRebuild = false) {
+		$this->refreshUpgradeComponentDependencies();
+		return $this->nGramUpgrade->rebuildNGramCache($batchSize, $forceRebuild);
+	}
 
 	/**
 	 * @param int $batchSize
 	 * @return array<string, mixed>
 	 */
-	public function syncMissingNGrams($batchSize = 50) { return $this->nGramUpgrade->syncMissingNGrams($batchSize); }
+	public function syncMissingNGrams($batchSize = 50) {
+		$this->refreshUpgradeComponentDependencies();
+		return $this->nGramUpgrade->syncMissingNGrams($batchSize);
+	}
 
 	/**
 	 * @param int $batchSize
 	 * @return array<string, mixed>
 	 */
-	public function buildNGramsForAllContent($batchSize = 100) { return $this->nGramUpgrade->buildNGramsForAllContent($batchSize); }
+	public function buildNGramsForAllContent($batchSize = 100) {
+		$this->refreshUpgradeComponentDependencies();
+		return $this->nGramUpgrade->buildNGramsForAllContent($batchSize);
+	}
 
 	/**
 	 * @param string $option_name
@@ -402,7 +441,10 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 	public function getNetworkAwareOption($option_name, $default = false) { return $this->nGramUpgrade->getNetworkAwareOption($option_name, $default); }
 
 	/** @return int */
-	public function countTotalPagesForNGramRebuild() { return $this->nGramUpgrade->countTotalPagesForNGramRebuild(); }
+	public function countTotalPagesForNGramRebuild() {
+		$this->refreshUpgradeComponentDependencies();
+		return $this->nGramUpgrade->countTotalPagesForNGramRebuild();
+	}
 
 	/** @return void */
 	public function updateTableEngineToInnoDB() { $this->engineNormalizationUpgrade->updateTableEngineToInnoDB(); }
@@ -446,7 +488,10 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 	public function correctIssuesAfter() { $this->tableRepairUpgrade->correctIssuesAfter(); }
 
 	/** @return void */
-	public function repairStrippedViewCacheTable() { $this->tableRepairUpgrade->repairStrippedViewCacheTable(); }
+	public function repairStrippedViewCacheTable() {
+		$this->refreshUpgradeComponentDependencies();
+		$this->tableRepairUpgrade->repairStrippedViewCacheTable();
+	}
 
 	/** @return array<string, mixed> */
 	public function migrateURLsToRelativePaths() { return $this->pluginUpdateUpgrade->migrateURLsToRelativePaths(); }
@@ -462,21 +507,30 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 	 * @param string $createTableStatementGoal
 	 * @return void
 	 */
-	public function verifyColumns($tableName, $createTableStatementGoal) { $this->schemaDiffUpgrade->verifyColumns($tableName, $createTableStatementGoal); }
+	public function verifyColumns($tableName, $createTableStatementGoal) {
+		$this->refreshUpgradeComponentDependencies();
+		$this->schemaDiffUpgrade->verifyColumns($tableName, $createTableStatementGoal);
+	}
 
 	/**
 	 * @param string $tableName
 	 * @param string $createTableStatementGoal
 	 * @return array<string, mixed>
 	 */
-	public function getTableDifferences($tableName, $createTableStatementGoal) { return $this->schemaDiffUpgrade->getTableDifferences($tableName, $createTableStatementGoal); }
+	public function getTableDifferences($tableName, $createTableStatementGoal) {
+		$this->refreshUpgradeComponentDependencies();
+		return $this->schemaDiffUpgrade->getTableDifferences($tableName, $createTableStatementGoal);
+	}
 
 	/**
 	 * @param string $tableName
 	 * @param array<string, mixed> $tableDifferences
 	 * @return void
 	 */
-	public function updateATableBasedOnDifferences($tableName, $tableDifferences) { $this->schemaDiffUpgrade->updateATableBasedOnDifferences($tableName, $tableDifferences); }
+	public function updateATableBasedOnDifferences($tableName, $tableDifferences) {
+		$this->refreshUpgradeComponentDependencies();
+		$this->schemaDiffUpgrade->updateATableBasedOnDifferences($tableName, $tableDifferences);
+	}
 
 	/**
 	 * @param string|null $createTableDDL

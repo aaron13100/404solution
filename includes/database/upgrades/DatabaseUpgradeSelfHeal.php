@@ -85,7 +85,7 @@ class ABJ_404_Solution_DatabaseUpgradeSelfHeal extends ABJ_404_Solution_Database
      *
      * @return void
      */
-    private function verifyAndRepairCurrentSite() {
+    public function verifyAndRepairCurrentSite() {
         global $wpdb;
 
         // Derive required tables from SQL DDL files -- same source of truth as runInitialCreateTables().

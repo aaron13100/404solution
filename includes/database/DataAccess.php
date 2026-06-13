@@ -260,9 +260,9 @@ class ABJ_404_Solution_DataAccess {
      * DataAccessQueryTimeoutAuditTest) and need the StatsRepository instance
      * composed from the same private deps the test wired into DataAccess.
      *
-     * @return ABJ_404_Solution_StatsRepository
+     * @return ABJ_404_Solution_StatsRepositoryInterface
      */
-    public function getStatsRepo(): ABJ_404_Solution_StatsRepository {
+    public function getStatsRepo(): ABJ_404_Solution_StatsRepositoryInterface {
         if ($this->statsRepo === null) {
             $this->statsRepo = new ABJ_404_Solution_StatsRepository($this->getDbCore(), $this->getLogsRepo(), $this->f, $this->logger);
         }

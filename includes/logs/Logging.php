@@ -207,9 +207,38 @@ class ABJ_404_Solution_Logging {
     
     /** @return boolean true if debug mode is on. false otherwise. */
     function isDebug() {
+        $legacyDebugMode = $this->legacyPluginLogicDebugMode();
+        if ($legacyDebugMode !== null) {
+            return $legacyDebugMode;
+        }
+
         $options = abj_service('options_repository')->getOptions(true);
 
         return (array_key_exists('debug_mode', $options) && $options['debug_mode'] == true);
+    }
+
+    /** @return bool|null */
+    private function legacyPluginLogicDebugMode(): ?bool {
+        if (!class_exists('ABJ_404_Solution_PluginLogic', false)) {
+            return null;
+        }
+        $pluginLogic = ABJ_404_Solution_PluginLogic::peekInstance();
+        if (!is_object($pluginLogic)) {
+            return null;
+        }
+        try {
+            $optionsProperty = new ReflectionProperty('ABJ_404_Solution_PluginLogic', 'options');
+            $options = $optionsProperty->getValue($pluginLogic);
+            if (is_array($options) && array_key_exists('debug_mode', $options)) {
+                return $options['debug_mode'] == true;
+            }
+        } catch (\Throwable $e) {
+            abj404_logPhpFallback(
+                'logger-internal',
+                'could not inspect PluginLogic debug_mode override: ' . $e->getMessage()
+            );
+        }
+        return null;
     }
     
     /** for the current timezone. 
