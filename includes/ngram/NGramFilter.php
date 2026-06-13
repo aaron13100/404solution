@@ -299,9 +299,9 @@ class ABJ_404_Solution_NGramFilter {
             // Redundant for filtered queries; preserved for unfiltered path.
             $pageNgramCountRaw = isset($page['ngram_count']) ? $page['ngram_count'] : 0;
             $pageCombinedCount = is_scalar($pageNgramCountRaw) ? (int)$pageNgramCountRaw : 0;
-            $denominator = max(1, $queryCombinedCount, $pageCombinedCount);
-            $countRatio = min($queryCombinedCount, $pageCombinedCount) / $denominator;
-            if ($countRatio < 0.4) {
+            $commonUpperBound = min($queryCombinedCount, $pageCombinedCount);
+            $diceUpperBound = (2 * $commonUpperBound) / max(1, $queryCombinedCount + $pageCombinedCount);
+            if ($diceUpperBound < $minSimilarity) {
                 continue;
             }
 

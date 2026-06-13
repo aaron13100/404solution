@@ -298,14 +298,45 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 		$this->dailyMaintenanceUpgrade->runDatabaseMaintenanceTasks();
 	}
 
+	/** @return void */
+	public function runDailyInsuranceCheck() {
+		$this->selfHealUpgrade->runDailyInsuranceCheck();
+	}
+
+	/** @return array<string, mixed> */
+	public function cleanupExpiredRateLimitTransients() {
+		return $this->dailyMaintenanceUpgrade->cleanupExpiredRateLimitTransients();
+	}
+
 	/** @return bool */
 	public function processMultisiteActivationBatch() {
 		return $this->multiSiteUpgrade->processMultisiteActivationBatch();
 	}
 
+	/**
+	 * @param int $alreadyProcessedBlogId
+	 * @return void
+	 */
+	public function scheduleBackgroundMultisiteActivation(int $alreadyProcessedBlogId): void {
+		$this->multiSiteUpgrade->scheduleBackgroundMultisiteActivation($alreadyProcessedBlogId);
+	}
+
 	/** @return bool */
 	public function processMultisiteUpgradeBatch() {
 		return $this->multiSiteUpgrade->processMultisiteUpgradeBatch();
+	}
+
+	/**
+	 * @param int $alreadyProcessedBlogId
+	 * @return void
+	 */
+	public function scheduleBackgroundMultisiteUpgrade(int $alreadyProcessedBlogId): void {
+		$this->multiSiteUpgrade->scheduleBackgroundMultisiteUpgrade($alreadyProcessedBlogId);
+	}
+
+	/** @return void */
+	public function createTablesForAllSites(): void {
+		$this->multiSiteUpgrade->createTablesForAllSites();
 	}
 
 	/** @return bool */
@@ -378,6 +409,15 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 
 	/** @return void */
 	public function createIndexes() { $this->indexesUpgrade->createIndexes(); }
+
+	/**
+	 * @param string $tableName
+	 * @param string $createTableStatementGoal
+	 * @return void
+	 */
+	public function verifyIndexes($tableName, $createTableStatementGoal) {
+		$this->indexesUpgrade->verifyIndexes($tableName, $createTableStatementGoal);
+	}
 
 	/** @return void */
 	public function runInitialCreateTables() { $this->bootstrapUpgrade->runInitialCreateTables(); }

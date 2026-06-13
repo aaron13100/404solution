@@ -81,7 +81,7 @@ class ABJ_404_Solution_AjaxSecurityGate {
     public function authorizeAdminWithNonce(string $action, array $options = array()): array {
         $nonce = $this->resolveNonce($options);
 
-        if (!wp_verify_nonce($nonce, $action)) {
+        if (!$this->nonceIsValid($nonce, $action, $options)) {
             return $this->failure('invalid_nonce', __('Invalid security token', '404-solution'), 403);
         }
 
@@ -103,6 +103,22 @@ class ABJ_404_Solution_AjaxSecurityGate {
             'status' => 200,
             'is_plugin_admin' => $capability === '',
         );
+    }
+
+    /**
+     * @param array<string, mixed> $options
+     * @return bool
+     */
+    private function nonceIsValid(string $nonce, string $action, array $options): bool {
+        if (function_exists('wp_verify_nonce')) {
+            return (bool)wp_verify_nonce($nonce, $action);
+        }
+        if (function_exists('check_ajax_referer')) {
+            $nonceParam = isset($options['nonce_param']) && is_string($options['nonce_param'])
+                ? $options['nonce_param'] : 'nonce';
+            return check_ajax_referer($action, $nonceParam, false) !== false;
+        }
+        return false;
     }
 
     /**

@@ -43,7 +43,7 @@ class ABJ_404_Solution_SpellChecker {
 	/** @var ABJ_404_Solution_PluginLogic */
 	private $logic;
 
-	/** @var ABJ_404_Solution_NotFoundResponseService */
+	/** @var ABJ_404_Solution_NotFoundResponseService|null */
 	private $notFoundResponse;
 
 	/** @var ABJ_404_Solution_ContentRepository */
@@ -76,8 +76,10 @@ class ABJ_404_Solution_SpellChecker {
 	public function __construct($functions = null, $pluginLogic = null, $contentRepository = null, $logging = null, $permalinkCache = null, $ngramFilter = null, $viewReadService = null) {
 		$this->f = $functions !== null ? $functions : abj_service('functions');
 		$this->logic = $pluginLogic !== null ? $pluginLogic : abj_service('plugin_logic');
-		$resolvedNotFoundResponse = abj_service('not_found_response');
-		$this->notFoundResponse = $resolvedNotFoundResponse !== null ? $resolvedNotFoundResponse : $this->logic;
+		$resolvedNotFoundResponse = function_exists('abj_service_optional')
+			? abj_service_optional('not_found_response') : null;
+		$this->notFoundResponse = $resolvedNotFoundResponse instanceof ABJ_404_Solution_NotFoundResponseService
+			? $resolvedNotFoundResponse : null;
 		$this->contentRepository = $contentRepository !== null ? $contentRepository : abj_service('content_repository');
 		$this->logger = $logging !== null ? $logging : abj_service('logging');
 		$permalinkCacheResolved = $permalinkCache !== null ? $permalinkCache : abj_service('permalink_cache');
@@ -91,7 +93,8 @@ class ABJ_404_Solution_SpellChecker {
 			$options['dest404page'] : null);
 		$custom404PageID = is_string($custom404PageIDRaw) ? $custom404PageIDRaw : (is_int($custom404PageIDRaw) ? (string)$custom404PageIDRaw : null);
 		$custom404PageIDResolved = null;
-		if ($this->notFoundResponse->thereIsAUserSpecified404Page($custom404PageID)) {
+		if ($this->notFoundResponse instanceof ABJ_404_Solution_NotFoundResponseService
+				&& $this->notFoundResponse->thereIsAUserSpecified404Page($custom404PageID)) {
 			$custom404PageIDResolved = $custom404PageID;
 		}
 
@@ -432,7 +435,8 @@ class ABJ_404_Solution_SpellChecker {
 		$dest404pageRaw = isset($options['dest404page']) ? $options['dest404page'] : null;
 		$dest404page = is_string($dest404pageRaw) ? $dest404pageRaw : null;
 
-		if (!$this->notFoundResponse->thereIsAUserSpecified404Page($dest404page)) {
+		if (!$this->notFoundResponse instanceof ABJ_404_Solution_NotFoundResponseService
+				|| !$this->notFoundResponse->thereIsAUserSpecified404Page($dest404page)) {
 			return false;
 		}
 

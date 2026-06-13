@@ -235,11 +235,8 @@ class ABJ_404_Solution_DatabaseUpgradeMultiSite extends ABJ_404_Solution_Databas
      *
      * @since 3.0.1
      */
-    /**
-     * @return void
-     * @phpstan-ignore-next-line method.unused
-     */
-    private function createTablesForAllSites() {
+    /** @return void */
+    public function createTablesForAllSites() {
         global $wpdb;
 
         // Get all sites in the network
