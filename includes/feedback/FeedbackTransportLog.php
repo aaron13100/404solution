@@ -23,9 +23,9 @@ class ABJ_404_Solution_FeedbackTransportLog {
      * @return void
      */
     public static function log(string $level, string $message): void {
-        if (function_exists('abj_service')) {
+        if (function_exists('abj_service_optional')) {
             try {
-                $logger = abj_service('logging');
+                $logger = abj_service_optional('logging');
                 if (is_object($logger)) {
                     if ($level === 'info' && method_exists($logger, 'infoMessage')) {
                         $logger->infoMessage($message);

@@ -38,9 +38,9 @@ class ABJ_404_Solution_FeedbackEmailFallback {
         if ($type === 'support_request') {
             return self::supportRequest($payload);
         }
-        if (($type === 'error' || $type === 'heartbeat') && function_exists('abj_service')) {
+        if (($type === 'error' || $type === 'heartbeat') && function_exists('abj_service_optional')) {
             try {
-                $logger = abj_service('logging');
+                $logger = abj_service_optional('logging');
                 if (is_object($logger) && method_exists($logger, 'emailLogFileToDeveloper')) {
                     return (bool) $logger->emailLogFileToDeveloper($payload);
                 }

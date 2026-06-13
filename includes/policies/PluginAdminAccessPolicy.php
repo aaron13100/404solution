@@ -78,7 +78,7 @@ class ABJ_404_Solution_PluginAdminAccessPolicy {
      */
     public static function currentUserCanAccessPluginAdmin(): bool {
         try {
-            $policy = function_exists('abj_service') ? abj_service('admin_access_policy') : null;
+            $policy = function_exists('abj_service_optional') ? abj_service_optional('admin_access_policy') : null;
             if (is_object($policy) && method_exists($policy, 'isPluginAdmin')) {
                 return (bool)$policy->isPluginAdmin();
             }
@@ -288,7 +288,7 @@ class ABJ_404_Solution_PluginAdminAccessPolicy {
     }
 
     private function warn(string $message): void {
-        $logger = $this->logger !== null ? $this->logger : (function_exists('abj_service') ? abj_service('logging') : null);
+        $logger = $this->logger !== null ? $this->logger : (function_exists('abj_service_optional') ? abj_service_optional('logging') : null);
         if (is_object($logger) && method_exists($logger, 'warn')) {
             $logger->warn($message);
             return;

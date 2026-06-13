@@ -77,7 +77,7 @@ class ABJ_404_Solution_AjaxRequestContractEnforcementPolicy {
      * @param array<int, string> $violations
      */
     private function logToleratedViolations(string $contractId, array $violations): void {
-        $logger = function_exists('abj_service') ? abj_service('logging') : null;
+        $logger = function_exists('abj_service_optional') ? abj_service_optional('logging') : null;
         if (!is_object($logger) || !method_exists($logger, 'debugMessage')) {
             return;
         }

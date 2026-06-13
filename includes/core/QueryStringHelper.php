@@ -137,8 +137,8 @@ class ABJ_404_Solution_QueryStringHelper {
         if ($this->logger !== null) {
             return $this->logger;
         }
-        if (function_exists('abj_service')) {
-            $resolved = abj_service('logging');
+        if (function_exists('abj_service_optional')) {
+            $resolved = abj_service_optional('logging');
             if ($resolved instanceof ABJ_404_Solution_Logging) {
                 return $resolved;
             }

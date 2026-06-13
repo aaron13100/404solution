@@ -316,15 +316,10 @@ class ABJ_404_Solution_FeedbackDiagnosticsCollector {
     }
 
     private function viewReadService(): ?object {
-        if (!function_exists('abj_service')) {
+        if (!function_exists('abj_service_optional')) {
             return null;
         }
-        // allow-silent-catch: container may not be initialized in early-boot or test contexts; null return signals callers to use zero defaults, no diagnostic info exists yet to log
-        try {
-            $svc = abj_service('view_read_service');
-            return is_object($svc) ? $svc : null;
-        } catch (\Throwable $e) {
-            return null;
-        }
+        $svc = abj_service_optional('view_read_service');
+        return is_object($svc) ? $svc : null;
     }
 }

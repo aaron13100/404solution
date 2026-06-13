@@ -103,15 +103,21 @@ class ABJ_404_Solution_Ajax_UninstallPrefs {
             $includeDiagnostics = !empty($preferences['include_diagnostics']);
             $debugLog = '';
             // Only fetch the log excerpt when the user opted into diagnostics.
-            // abj_service() is contractually non-throwing (returns null for
-            // unresolved services), so guarding with method_exists() is enough
-            // to keep this fire-and-forget path from needing a try/catch shim.
-            if ($includeDiagnostics && function_exists('abj_service')) {
-                $logger = abj_service('logging');
+            // Missing logging is an optional degraded path; failures inside
+            // the excerpt reader are logged and omitted below.
+            if ($includeDiagnostics && function_exists('abj_service_optional')) {
+                $logger = abj_service_optional('logging');
                 if (is_object($logger) && method_exists($logger, 'getSanitizedLogExcerptForSupport')) {
-                    $excerpt = $logger->getSanitizedLogExcerptForSupport();
-                    if (is_string($excerpt)) {
-                        $debugLog = $excerpt;
+                    try {
+                        $excerpt = $logger->getSanitizedLogExcerptForSupport();
+                        if (is_string($excerpt)) {
+                            $debugLog = $excerpt;
+                        }
+                    } catch (\Throwable $e) {
+                        ABJ_404_Solution_FeedbackTransportLog::log(
+                            'warn',
+                            'Uninstall diagnostics debug-log excerpt unavailable: ' . $e->getMessage()
+                        );
                     }
                 }
             }

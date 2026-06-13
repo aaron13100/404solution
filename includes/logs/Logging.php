@@ -406,11 +406,9 @@ class ABJ_404_Solution_Logging {
      * @return string Sanitized line with PII masked adaptively
      */
     public function sanitizeLogLine($line) {
-        try {
-            /** @var ABJ_404_Solution_PiiRedactor $redactor */
-            $redactor = abj_service('pii_redactor');
-        } catch (\Exception $e) {
-            // allow-silent-catch: early boot before container is initialized; fall through to raw line
+        /** @var ABJ_404_Solution_PiiRedactor|null $redactor */
+        $redactor = function_exists('abj_service_optional') ? abj_service_optional('pii_redactor') : null;
+        if (!$redactor instanceof ABJ_404_Solution_PiiRedactor) {
             return $line;
         }
         return $redactor->redact($line);

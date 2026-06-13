@@ -182,18 +182,21 @@ class ABJ_404_Solution_Ajax_SupportRequestPreview {
      * @return string
      */
     private static function resolveDebugLogExcerpt(): string {
-        if (!function_exists('abj_service')) {
+        if (!function_exists('abj_service_optional')) {
             return '';
         }
-        try {
-            $logger = abj_service('logging');
-            if (is_object($logger) && method_exists($logger, 'getSanitizedLogExcerptForSupport')) {
+        $logger = abj_service_optional('logging');
+        if (is_object($logger) && method_exists($logger, 'getSanitizedLogExcerptForSupport')) {
+            try {
                 $excerpt = $logger->getSanitizedLogExcerptForSupport();
                 return is_string($excerpt) ? $excerpt : '';
+            } catch (\Throwable $e) {
+                ABJ_404_Solution_FeedbackTransportLog::log(
+                    'warn',
+                    'Support request preview debug-log excerpt unavailable: ' . $e->getMessage()
+                );
+                return '';
             }
-        // allow-silent-catch: log excerpt is best-effort context for the support-request preview; a Logging service failure must not block the user-initiated preview, and the failure is already surfaced via the plugin's own logging path
-        } catch (\Throwable $e) {
-            return '';
         }
         return '';
     }

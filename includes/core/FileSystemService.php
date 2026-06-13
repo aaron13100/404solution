@@ -404,7 +404,7 @@ class ABJ_404_Solution_FileSystemService {
     }
 
     private static function logWarning(string $message): void {
-        $logger = function_exists('abj_service') ? abj_service('logging') : null;
+        $logger = function_exists('abj_service_optional') ? abj_service_optional('logging') : null;
         if (is_object($logger) && method_exists($logger, 'warn')) {
             $logger->warn($message);
             return;

@@ -57,8 +57,8 @@ class ABJ_404_Solution_HitsTableRebuildPolicy {
             86400
         );
 
-        if (function_exists('abj_service')) {
-            $upgradesEtc = abj_service('database_upgrades');
+        if (function_exists('abj_service_optional')) {
+            $upgradesEtc = abj_service_optional('database_upgrades');
             if (is_object($upgradesEtc) && method_exists($upgradesEtc, 'scheduleLogsv2CanonicalUrlBackfill')) {
                 $upgradesEtc->scheduleLogsv2CanonicalUrlBackfill();
             }

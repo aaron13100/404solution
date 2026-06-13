@@ -49,12 +49,7 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras_DebugLogSignatures {
      */
     public function probeRecentErrorSignatures(): array {
         $out = array();
-        try {
-            $log = abj_service('logging');
-        // allow-silent-catch: container miss is fatal for this probe; null check below records empty
-        } catch (\Throwable $e) {
-            return $out;
-        }
+        $log = function_exists('abj_service_optional') ? abj_service_optional('logging') : null;
         if (!is_object($log) || !method_exists($log, 'getDebugFilePath')) {
             return $out;
         }

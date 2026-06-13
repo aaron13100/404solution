@@ -98,16 +98,10 @@ class ABJ_404_Solution_LogsHitsRollupService implements ABJ_404_Solution_LogsHit
 
     /** @return ABJ_404_Solution_RebuildHealthState|null */
     private function resolveRebuildHealthState(): ?ABJ_404_Solution_RebuildHealthState {
-        if (function_exists('abj_service')
-            && class_exists('ABJ_404_Solution_ServiceContainer')
-            && ABJ_404_Solution_ServiceContainer::safeHas('rebuild_health')) {
-            try {
-                $service = abj_service('rebuild_health');
-                if ($service instanceof ABJ_404_Solution_RebuildHealthState) {
-                    return $service;
-                }
-            } catch (Throwable $t) {
-                $this->logger->debugMessage(__FUNCTION__ . ' rebuild_health service unavailable: ' . $t->getMessage());
+        if (function_exists('abj_service_optional')) {
+            $service = abj_service_optional('rebuild_health');
+            if ($service instanceof ABJ_404_Solution_RebuildHealthState) {
+                return $service;
             }
         }
         return null;

@@ -82,13 +82,19 @@ require_once __DIR__ . '/includes/core/PhpErrorLogFallback.php';
 		 * @return array<string, mixed>
 		 */
 		function abj404_get_settings_options() {
-			if (function_exists('abj_service')) {
-				$optionsRepository = abj_service('options_repository');
+			if (function_exists('abj_service_optional')) {
+				$optionsRepository = abj_service_optional('options_repository');
 				if (is_object($optionsRepository) && method_exists($optionsRepository, 'getOptions')) {
 					try {
 						$options = $optionsRepository->getOptions(true);
 						if (is_array($options)) {
-							return $options;
+							$normalizedOptions = array();
+							foreach ($options as $key => $value) {
+								if (is_string($key)) {
+									$normalizedOptions[$key] = $value;
+								}
+							}
+							return $normalizedOptions;
 						}
 						if (function_exists('abj404_logRuntimeWarning')) {
 							abj404_logRuntimeWarning('options_repository->getOptions(true) returned ' . gettype($options) . '; falling back to raw bootstrap option read');
@@ -106,7 +112,16 @@ require_once __DIR__ . '/includes/core/PhpErrorLogFallback.php';
 				}
 			}
 			$options = function_exists('get_option') ? get_option('abj404_settings') : false;
-			return is_array($options) ? $options : array();
+			if (!is_array($options)) {
+				return array();
+			}
+			$normalizedOptions = array();
+			foreach ($options as $key => $value) {
+				if (is_string($key)) {
+					$normalizedOptions[$key] = $value;
+				}
+			}
+			return $normalizedOptions;
 		}
 	}
 
@@ -291,8 +306,8 @@ function abj404_logRuntimeWarning(string $context, ?\Throwable $throwable = null
     $loggerFailure = null;
     try {
         $logger = null;
-        if (function_exists('abj_service')) {
-            $logger = abj_service('logging');
+        if (function_exists('abj_service_optional')) {
+            $logger = abj_service_optional('logging');
         }
         if (!is_object($logger) && class_exists('ABJ_404_Solution_Logging', false)) {
             $logger = ABJ_404_Solution_Logging::getInstance();

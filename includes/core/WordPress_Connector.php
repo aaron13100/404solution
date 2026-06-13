@@ -499,7 +499,7 @@ class ABJ_404_Solution_WordPress_Connector {
             return;
         }
 
-        $resolvedLogger = function_exists('abj_service') ? abj_service('logging') : null;
+        $resolvedLogger = function_exists('abj_service_optional') ? abj_service_optional('logging') : null;
         if (is_object($resolvedLogger) && method_exists($resolvedLogger, 'warn')) {
             $resolvedLogger->warn($message);
             return;

@@ -84,7 +84,7 @@ class ABJ_404_Solution_Ajax_AdminEndpointSupport {
         string $handlerName,
         array $options = array()
     ): bool {
-        $gate = function_exists('abj_service') ? abj_service('ajax_security_gate') : null;
+        $gate = function_exists('abj_service_optional') ? abj_service_optional('ajax_security_gate') : null;
         if (!is_object($gate) || !method_exists($gate, 'authorizeAdminWithNonce')) {
             self::safeLogAjaxFailure('AJAX authorization service unavailable in ' . $handlerName . '.', $context);
             self::markAjaxResponseSent();
@@ -232,8 +232,8 @@ class ABJ_404_Solution_Ajax_AdminEndpointSupport {
         if (is_object($abj404view)) {
             return $abj404view;
         }
-        if (function_exists('abj_service')) {
-            $resolved = abj_service('view');
+        if (function_exists('abj_service_optional')) {
+            $resolved = abj_service_optional('view');
             if (is_object($resolved)) {
                 $abj404view = $resolved;
                 return $abj404view;
@@ -244,11 +244,12 @@ class ABJ_404_Solution_Ajax_AdminEndpointSupport {
 
     /** @return ABJ_404_Solution_AjaxFailureLogger */
     private static function ajaxFailureLogger() {
-        $logger = function_exists('abj_service') ? abj_service('ajax_failure_logger') : null;
+        $logger = function_exists('abj_service_optional') ? abj_service_optional('ajax_failure_logger') : null;
         if ($logger instanceof ABJ_404_Solution_AjaxFailureLogger) {
             return $logger;
         }
-        return new ABJ_404_Solution_AjaxFailureLogger(function_exists('abj_service') ? abj_service('logging') : null);
+        $logging = function_exists('abj_service_optional') ? abj_service_optional('logging') : null;
+        return new ABJ_404_Solution_AjaxFailureLogger(is_object($logging) ? $logging : null);
     }
 
     /**

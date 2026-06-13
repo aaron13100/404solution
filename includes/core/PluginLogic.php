@@ -331,7 +331,7 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
     public function optionsResolver() {
         // No instance-level cache: tests can swap the registered service
         // mid-run, and the service container singleton already deduplicates.
-        $candidate = abj_service('options_repository');
+        $candidate = abj_service_optional('options_repository');
         if (is_object($candidate) && method_exists($candidate, 'getOptions')) {
             return $candidate;
         }
@@ -358,7 +358,7 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
      * @return ABJ_404_Solution_NotFoundResponseService
      */
     public function notFoundResponse() {
-        $candidate = abj_service('not_found_response');
+        $candidate = abj_service_optional('not_found_response');
         if (is_object($candidate) && method_exists($candidate, 'sendTo404Page')) {
             return $candidate;
         }
@@ -373,7 +373,7 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
      * @return ABJ_404_Solution_RequestIgnoreNormalizer
      */
     public function requestIgnoreNormalizer() {
-        $candidate = abj_service('request_ignore_normalizer');
+        $candidate = abj_service_optional('request_ignore_normalizer');
         if (is_object($candidate) && method_exists($candidate, 'tryNormalPostQuery')) {
             return $candidate;
         }
@@ -389,7 +389,7 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
      * @return ABJ_404_Solution_PreviousRequestCookieTracker
      */
     public function previousRequestCookieTracker() {
-        $candidate = abj_service('previous_request_cookie_tracker');
+        $candidate = abj_service_optional('previous_request_cookie_tracker');
         if (is_object($candidate) && method_exists($candidate, 'setCookieWithPreviousRequest')) {
             return $candidate;
         }

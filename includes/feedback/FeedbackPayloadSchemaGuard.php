@@ -99,14 +99,12 @@ class ABJ_404_Solution_FeedbackPayloadSchemaGuard {
      * @return array<string, mixed>
      */
     public static function redact(array $payload): array {
-        if (!function_exists('abj_service')) {
+        if (!function_exists('abj_service_optional')) {
             return $payload;
         }
-        try {
-            /** @var ABJ_404_Solution_PiiRedactor $redactor */
-            $redactor = abj_service('pii_redactor');
-        } catch (\Throwable $e) {
-            // allow-silent-catch: container not initialized yet (early boot); skip redaction
+        /** @var ABJ_404_Solution_PiiRedactor|null $redactor */
+        $redactor = abj_service_optional('pii_redactor');
+        if (!$redactor instanceof ABJ_404_Solution_PiiRedactor) {
             return $payload;
         }
         foreach ($payload as $key => $value) {

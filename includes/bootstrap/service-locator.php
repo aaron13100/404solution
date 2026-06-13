@@ -28,6 +28,8 @@ require_once __DIR__ . '/../core/PhpErrorLogFallback.php';
  *
  * @param string $name Service identifier
  * @return mixed The service instance
+ * @throws ABJ_404_Solution_ServiceNotRegisteredException when the service has
+ *         no registered factory.
  *
  * @phpstan-return (
  *     $name is 'functions' ? ABJ_404_Solution_Functions : (
@@ -83,13 +85,62 @@ require_once __DIR__ . '/../core/PhpErrorLogFallback.php';
  */
 function abj_service($name) {
     $container = ABJ_404_Solution_ServiceContainer::getInstance();
+    if (!$container->has($name)) {
+        ABJ_404_Solution_ServiceContainer::clearLastSuppressedError();
+        throw new ABJ_404_Solution_ServiceNotRegisteredException(
+            $name,
+            'ABJ_404_Solution_RuntimeServiceRegistration'
+        );
+    }
+
+    $service = $container->get($name);
+    ABJ_404_Solution_ServiceContainer::clearLastSuppressedError();
+    return $service;
+}
+
+/**
+ * Optional service lookup for bootstrap probes and degraded-mode fallbacks.
+ *
+ * Required dependencies must use abj_service() so missing registrations fail
+ * with a named service. This helper is only for call sites where null is an
+ * explicit, handled outcome.
+ *
+ * @param string $name Service identifier
+ * @return mixed The service instance, or null when unavailable
+ *
+ * @phpstan-return (
+ *     $name is 'logging' ? ABJ_404_Solution_Logging|null : (
+ *     $name is 'options_repository' ? ABJ_404_Solution_PluginLogicOptionsResolver|null : (
+ *     $name is 'ajax_failure_logger' ? ABJ_404_Solution_AjaxFailureLogger|null : (
+ *     $name is 'ajax_security_gate' ? ABJ_404_Solution_AjaxSecurityGate|null : (
+ *     $name is 'view' ? ABJ_404_Solution_View|null : (
+ *     $name is 'database_upgrades' ? ABJ_404_Solution_DatabaseUpgradesEtc|null : (
+ *     $name is 'cron_scheduler' ? ABJ_404_Solution_CronScheduler|null : (
+ *     $name is 'clock' ? ABJ_404_Solution_Clock|null : (
+ *     $name is 'not_found_response' ? ABJ_404_Solution_NotFoundResponseService|null : (
+ *     $name is 'request_ignore_normalizer' ? ABJ_404_Solution_RequestIgnoreNormalizer|null : (
+ *     $name is 'previous_request_cookie_tracker' ? ABJ_404_Solution_PreviousRequestCookieTracker|null : (
+ *     $name is 'admin_access_policy' ? ABJ_404_Solution_PluginAdminAccessPolicy|null : (
+ *     $name is 'pii_redactor' ? ABJ_404_Solution_PiiRedactor|null : (
+ *     $name is 'view_read_service' ? ABJ_404_Solution_ViewReadService|null : (
+ *     $name is 'rebuild_health' ? ABJ_404_Solution_RebuildHealthState|null :
+ *     mixed|null
+ * )))))))))))))))
+ */
+function abj_service_optional($name) {
+    $container = ABJ_404_Solution_ServiceContainer::getInstance();
+    if (!$container->has($name)) {
+        ABJ_404_Solution_ServiceContainer::clearLastSuppressedError();
+        return null;
+    }
+
     try {
         $service = $container->get($name);
         ABJ_404_Solution_ServiceContainer::clearLastSuppressedError();
         return $service;
     } catch (\Throwable $e) {
         ABJ_404_Solution_ServiceContainer::recordSuppressedErrorPublic(
-            'abj_service(' . $name . ')',
+            'abj_service_optional(' . $name . ')',
             $e
         );
         return null;
@@ -102,12 +153,12 @@ function abj_service($name) {
  * @return ABJ_404_Solution_CronScheduler
  */
 function abj_cron_scheduler(): ABJ_404_Solution_CronScheduler {
-    $scheduler = abj_service('cron_scheduler');
+    $scheduler = abj_service_optional('cron_scheduler');
     if ($scheduler instanceof ABJ_404_Solution_CronScheduler) {
         return $scheduler;
     }
-    $clock = abj_service('clock');
-    $logger = abj_service('logging');
+    $clock = abj_service_optional('clock');
+    $logger = abj_service_optional('logging');
     return new ABJ_404_Solution_CronScheduler(
         $clock instanceof ABJ_404_Solution_Clock ? $clock : new ABJ_404_Solution_SystemClock(),
         $logger instanceof ABJ_404_Solution_Logging ? $logger : null
@@ -124,7 +175,7 @@ function abj_cron_scheduler(): ABJ_404_Solution_CronScheduler {
  * @return ABJ_404_Solution_Clock
  */
 function abj_clock(): ABJ_404_Solution_Clock {
-    $clock = abj_service('clock');
+    $clock = abj_service_optional('clock');
     if ($clock instanceof ABJ_404_Solution_Clock) {
         return $clock;
     }

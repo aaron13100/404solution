@@ -8,8 +8,8 @@ if (!defined('ABSPATH')) {
  * Diagnostic registry for Throwables suppressed by non-throwing call wrappers.
  *
  * Some helpers in this plugin (notably ServiceContainer::safeGet() and the
- * abj_service() helper) intentionally swallow exceptions and return null so
- * callers can rely on a uniform non-throwing contract. Swallowing alone would
+ * abj_service_optional() helper) intentionally swallow exceptions and return
+ * null so callers can rely on a uniform non-throwing contract. Swallowing alone would
  * lose the exception chain (class, code, file, line, message), which is what
  * design-audit criterion M401 "Silent catch blocks" flags.
  *

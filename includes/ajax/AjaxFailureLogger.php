@@ -119,8 +119,9 @@ class ABJ_404_Solution_AjaxFailureLogger {
         if (is_object($this->logger)) {
             return $this->logger;
         }
-        if (function_exists('abj_service')) {
-            return abj_service('logging');
+        if (function_exists('abj_service_optional')) {
+            $resolved = abj_service_optional('logging');
+            return is_object($resolved) ? $resolved : null;
         }
         return null;
     }

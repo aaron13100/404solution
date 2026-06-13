@@ -21,6 +21,47 @@ if (!defined('ABSPATH')) {
  * The global abj_service() helper is defined in
  * includes/bootstrap/service-locator.php.
  */
+class ABJ_404_Solution_ServiceNotRegisteredException extends RuntimeException {
+
+    /** @var string */
+    private $serviceName;
+
+    /** @var string */
+    private $registrationClass;
+
+    /** @var string */
+    private $hint;
+
+    /**
+     * @param string          $serviceName
+     * @param string          $registrationClass
+     * @param \Throwable|null $previous
+     */
+    public function __construct($serviceName, $registrationClass, ?\Throwable $previous = null) {
+        $this->serviceName = (string)$serviceName;
+        $this->registrationClass = (string)$registrationClass;
+        $this->hint = 'Register service "' . $this->serviceName . '" in ' . $this->registrationClass
+            . ' or use abj_service_optional() when absence is an intentional bootstrap probe.';
+
+        parent::__construct($this->hint, 0, $previous);
+    }
+
+    /** @return string */
+    public function getServiceName() {
+        return $this->serviceName;
+    }
+
+    /** @return string */
+    public function getRegistrationClass() {
+        return $this->registrationClass;
+    }
+
+    /** @return string */
+    public function getHint() {
+        return $this->hint;
+    }
+}
+
 class ABJ_404_Solution_ServiceContainer {
 
     /**
@@ -31,7 +72,7 @@ class ABJ_404_Solution_ServiceContainer {
     private static $instance = null;
 
     /**
-     * Most recent Throwable suppressed by safeGet() / abj_service(), or
+     * Most recent Throwable suppressed by safeGet() / abj_service_optional(), or
      * null when the last resolution succeeded. Recovered by diagnostic
      * code via getLastSuppressedError().
      *
@@ -107,7 +148,7 @@ class ABJ_404_Solution_ServiceContainer {
 
         // Check if service is registered
         if (!isset($this->services[$name])) {
-            throw new Exception("Service '$name' is not registered in the container"); // allow-raw-error: programmer assertion, callers either expect the throw or use safeGet()/abj_service() which catch it
+            throw new Exception("Service '$name' is not registered in the container"); // allow-raw-error: programmer assertion, callers either expect the throw or use safeGet()/abj_service_optional() which catch it
         }
 
         // Create the instance using the factory
@@ -199,10 +240,10 @@ class ABJ_404_Solution_ServiceContainer {
 
     /**
      * Returns the most recent Throwable that was suppressed by safeGet() or
-     * by the abj_service() helper, or null if the last resolution succeeded.
+     * by the abj_service_optional() helper, or null if the last resolution succeeded.
      *
      * Diagnostic code should call this immediately after a null-return from
-     * safeGet()/abj_service() to recover the full exception chain. The wrappers
+     * safeGet()/abj_service_optional() to recover the full exception chain. The wrappers
      * intentionally return null instead of throwing, but the underlying error
      * is preserved here for inspection.
      *
@@ -250,7 +291,7 @@ class ABJ_404_Solution_ServiceContainer {
     }
 
     /**
-     * Public seam for the abj_service() helper.
+     * Public seam for the abj_service_optional() helper.
      * Code outside the class cannot reach private statics, so this delegates
      * to recordSuppressedError() and is otherwise identical. Not intended
      * for call sites elsewhere in the codebase: use safeGet() instead.

@@ -169,7 +169,7 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras_HostProbes {
                 $out['installed_at'] = (int)$t;
             }
         }
-        $optionsRepository = function_exists('abj_service') ? abj_service('options_repository') : null;
+        $optionsRepository = function_exists('abj_service_optional') ? abj_service_optional('options_repository') : null;
         if (is_object($optionsRepository) && method_exists($optionsRepository, 'getOptions')) {
             try {
                 $settings = $optionsRepository->getOptions(true);
