@@ -99,8 +99,9 @@ class ABJ_404_Solution_PostEditorIntegration {
     public function renderRedirectColumn($column, $post_id) {
         if ($column === 'abj404_redirect') {
             $default = $this->getDefaultRedirectSetting() ? '1' : '0';
-            // inline-html-approved: single empty <span> data-attribute carrier read by the Quick Edit JS for this column; no user-visible HTML content.
-            echo '<span class="abj404-redirect-default" data-default="' . esc_attr($default) . '"></span>';
+            echo $this->renderTemplate('postEditorRedirectDefaultSpan.html', array(
+                '{default}' => esc_attr($default),
+            ));
         }
     }
 
@@ -127,16 +128,9 @@ class ABJ_404_Solution_PostEditorIntegration {
             wp_nonce_field('abj404_quick_edit', 'abj404_quick_edit_nonce');
             $nonce_printed = true;
         }
-        ?>
-        <fieldset class="inline-edit-col-right abj404-quick-edit">
-            <div class="inline-edit-col">
-                <label class="inline-edit-group">
-                    <input type="checkbox" name="abj404_create_redirect" value="1">
-                    <span class="checkbox-title"><?php echo esc_html__('Create redirect from old URL to new URL', '404-solution'); ?></span>
-                </label>
-            </div>
-        </fieldset>
-        <?php
+        echo $this->renderTemplate('postEditorQuickEditCheckbox.html', array(
+            '{label}' => esc_html__('Create redirect from old URL to new URL', '404-solution'),
+        ));
     }
 
     /**
@@ -205,8 +199,9 @@ class ABJ_404_Solution_PostEditorIntegration {
     public function renderMetaBox($post) {
         // Only show for published posts (new posts have no old URL to redirect from)
         if ($post->post_status !== 'publish') {
-            // inline-html-approved: single-line description paragraph in early-return branch of the Classic Editor meta box; one translated sentence with no dynamic data.
-            echo '<p class="description">' . esc_html__('Redirect options are available after the post is published.', '404-solution') . '</p>';
+            echo $this->renderTemplate('postEditorUnavailableDescription.html', array(
+                '{message}' => esc_html__('Redirect options are available after the post is published.', '404-solution'),
+            ));
             return;
         }
 
@@ -214,27 +209,14 @@ class ABJ_404_Solution_PostEditorIntegration {
         $excludeMeta = get_post_meta($post->ID, '_abj404_exclude', true);
 
         wp_nonce_field('abj404_meta_box', 'abj404_meta_box_nonce');
-        ?>
-        <p>
-            <label>
-                <input type="checkbox" name="abj404_create_redirect" value="1" <?php checked($default); ?>>
-                <?php echo esc_html__('Create redirect from old URL to new URL', '404-solution'); ?>
-            </label>
-        </p>
-        <p class="description">
-            <?php echo esc_html__('If you change the permalink/slug, a redirect will be created from the old URL to the new one.', '404-solution'); ?>
-        </p>
-        <hr>
-        <p>
-            <label>
-                <input type="checkbox" name="abj404_exclude" value="1" <?php checked($excludeMeta, '1'); ?>>
-                <?php echo esc_html__('Exclude from 404 redirect suggestions', '404-solution'); ?>
-            </label>
-        </p>
-        <p class="description">
-            <?php echo esc_html__('When checked, this post will not be suggested as a redirect target for 404 errors.', '404-solution'); ?>
-        </p>
-        <?php
+        echo $this->renderTemplate('postEditorMetaBox.html', array(
+            '{create_checked}'      => $default ? 'checked="checked"' : '',
+            '{create_label}'        => esc_html__('Create redirect from old URL to new URL', '404-solution'),
+            '{create_description}'  => esc_html__('If you change the permalink/slug, a redirect will be created from the old URL to the new one.', '404-solution'),
+            '{exclude_checked}'     => $excludeMeta === '1' ? 'checked="checked"' : '',
+            '{exclude_label}'       => esc_html__('Exclude from 404 redirect suggestions', '404-solution'),
+            '{exclude_description}' => esc_html__('When checked, this post will not be suggested as a redirect target for 404 errors.', '404-solution'),
+        ));
     }
 
     // ==================== Gutenberg Integration ====================
@@ -380,24 +362,14 @@ class ABJ_404_Solution_PostEditorIntegration {
      */
     public function renderTermExclusionField($term, $taxonomy = '') {
         $value = get_term_meta($term->term_id, '_abj404_exclude', true);
-        $checked = ($value === '1') ? 'checked' : '';
+        $checked = ($value === '1') ? 'checked="checked"' : '';
         wp_nonce_field('abj404_term_exclude', 'abj404_term_exclude_nonce');
-        ?>
-        <tr class="form-field">
-            <th scope="row">
-                <label for="abj404_exclude"><?php echo esc_html__('404 Solution', '404-solution'); ?></label>
-            </th>
-            <td>
-                <label>
-                    <input type="checkbox" name="abj404_exclude" id="abj404_exclude" value="1" <?php echo $checked; ?>>
-                    <?php echo esc_html__('Exclude from 404 redirect suggestions', '404-solution'); ?>
-                </label>
-                <p class="description">
-                    <?php echo esc_html__('When checked, this term will not be suggested as a redirect target for 404 errors.', '404-solution'); ?>
-                </p>
-            </td>
-        </tr>
-        <?php
+        echo $this->renderTemplate('postEditorTermExclusionField.html', array(
+            '{heading}'     => esc_html__('404 Solution', '404-solution'),
+            '{checked}'     => $checked,
+            '{label}'       => esc_html__('Exclude from 404 redirect suggestions', '404-solution'),
+            '{description}' => esc_html__('When checked, this term will not be suggested as a redirect target for 404 errors.', '404-solution'),
+        ));
     }
 
     /**
@@ -467,5 +439,18 @@ class ABJ_404_Solution_PostEditorIntegration {
 
         // Fall back to global setting
         return @$options['auto_slugs'] == '1';
+    }
+
+    /**
+     * @param string $templateName
+     * @param array<string, string> $replacements
+     * @return string
+     */
+    private function renderTemplate(string $templateName, array $replacements): string {
+        $template = ABJ_404_Solution_FileSystemService::readFileContents(
+            dirname(__DIR__) . '/html/' . $templateName,
+            false
+        );
+        return str_replace(array_keys($replacements), array_values($replacements), $template);
     }
 }

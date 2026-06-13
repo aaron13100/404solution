@@ -41,10 +41,15 @@ class ABJ_404_Solution_PluginLogicLifecycle {
                 $completed = $total - count($pending);
 
                 if (!empty($pending)) {
-                    // inline-html-approved: short progress notice with two interpolated counters; emitted from a network_admin_notices closure during multisite activation where the template loader / autoloader may not be fully wired.
-                    echo '<div class="notice notice-info"><p><strong>404 Solution:</strong> Network activation in progress... ' .
-                         esc_html((string)$completed) . ' of ' . esc_html((string)$total) . ' sites activated. ' .
-                         'This will complete in the background.</p></div>';
+                    $template = ABJ_404_Solution_FileSystemService::readFileContents(
+                        dirname(__DIR__) . '/html/networkActivationNotice.html',
+                        false
+                    );
+                    echo str_replace(
+                        array('{completed}', '{total}'),
+                        array(esc_html((string)$completed), esc_html((string)$total)),
+                        $template
+                    );
                 }
             });
         } else {

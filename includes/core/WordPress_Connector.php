@@ -179,12 +179,11 @@ class ABJ_404_Solution_WordPress_Connector {
         }
 
         $message = implode("\n", array_unique(array_filter($errors)));
-        // inline-html-approved: existing WordPress admin notice markup emitted directly by this hook.
-        echo '<div class="notice notice-error"><p><strong>404 Solution:</strong> ';
-        echo esc_html__('An internal error occurred while loading this admin page.', '404-solution');
-        echo '</p><details><summary>' . esc_html__('Show details', '404-solution') . '</summary><pre style="white-space:pre-wrap;word-break:break-all;max-width:100%;margin:6px 0;">';
-        echo esc_html($message);
-        echo '</pre></details></div>';
+        echo self::renderTemplate('adminRuntimeErrorNotice.html', array(
+            '{message}' => esc_html__('An internal error occurred while loading this admin page.', '404-solution'),
+            '{summary}' => esc_html__('Show details', '404-solution'),
+            '{details}' => esc_html($message),
+        ));
     }
 	
     /** Setup.
@@ -290,16 +289,19 @@ class ABJ_404_Solution_WordPress_Connector {
             return $links;
         }
 
-        // inline-html-approved: WordPress plugin-row action links are built as link strings.
-        $settings_link = '<a href="options-general.php?page=' . ABJ404_PP . '&subpage=abj404_options">' .
-                __('Settings', '404-solution') . '</a>';
+        $settings_link = self::renderPluginRowLink(
+            esc_url('options-general.php?page=' . ABJ404_PP . '&subpage=abj404_options'),
+            esc_html__('Settings', '404-solution')
+        );
         array_unshift($links, $settings_link);
 
         $debugExplanation = __('Debug Log', '404-solution');
         $debugLogLink = '?page=' . ABJ404_PP . '&subpage=abj404_debugfile';
-        // inline-html-approved: WordPress plugin-row action links are built as link strings.
-        $debugExplanation = '<a href="options-general.php' . $debugLogLink . '" target="_blank" >'
-        	. $debugExplanation . '</a>';
+        $debugExplanation = self::renderPluginRowLink(
+            esc_url('options-general.php' . $debugLogLink),
+            esc_html($debugExplanation),
+            ' target="_blank"'
+        );
         array_push($links, $debugExplanation);
 
         return $links;
@@ -328,11 +330,39 @@ class ABJ_404_Solution_WordPress_Connector {
         if ($file !== ABJ404_NAME) {
             return $links;
         }
-        $links[] = '<a href="#abj404-support-request"'
-            . ' class="abj404-support-request-link"'
-            . ' data-triggered-from="plugins_row_action">'
-            . esc_html__('Send debug log to developer', '404-solution') . '</a>';
+        $links[] = self::renderTemplate('supportRequestInlineLink.html', array(
+            '{triggered_from}'       => esc_attr('plugins_row_action'),
+            '{context_summary_attr}' => '',
+            '{label}'                => esc_html__('Send debug log to developer', '404-solution'),
+        ));
         return $links;
+    }
+
+    /**
+     * @param string $href
+     * @param string $label
+     * @param string $targetAttr
+     * @return string
+     */
+    private static function renderPluginRowLink(string $href, string $label, string $targetAttr = ''): string {
+        return self::renderTemplate('pluginRowLink.html', array(
+            '{href}'        => $href,
+            '{target_attr}' => $targetAttr,
+            '{label}'       => $label,
+        ));
+    }
+
+    /**
+     * @param string $templateName
+     * @param array<string, string> $replacements
+     * @return string
+     */
+    private static function renderTemplate(string $templateName, array $replacements): string {
+        $template = ABJ_404_Solution_FileSystemService::readFileContents(
+            dirname(__DIR__) . '/html/' . $templateName,
+            false
+        );
+        return str_replace(array_keys($replacements), array_values($replacements), $template);
     }
 
     /** This is called directly by php code inserted into the page by the user.

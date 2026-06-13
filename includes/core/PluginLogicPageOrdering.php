@@ -353,14 +353,29 @@ class ABJ_404_Solution_PluginLogicPageOrdering {
         $generalSettings = admin_url() . "options-general.php?page=" . ABJ404_PP . '&subpage=abj404_options';
         $to = is_string($options['admin_notification_email']) ? $options['admin_notification_email'] : '';
         $subject = '404 Solution: Captured 404 Notification';
-        $body = "There are currently " . $captured404Count . " captured 404s to look at. <BR/><BR/>\n\n";
-        $body .= 'Visit <a href="' . $captured404URLSettings . '">' . $captured404URLSettings .
-                '</a> to see them.<BR/><BR/>' . "\n";
-        $body .= 'To stop getting these emails, update the settings at <a href="' . $generalSettings . '">' .
-                $generalSettings . '</a>, or contact the site administrator.' . "<BR/>\n";
-        // inline-html-approved: legacy notification email body is assembled inline in this method.
-        $body .= "<BR/><BR/>\n\nSent " . date('Y/m/d h:i:s T', abj_clock()->now()) . "<BR/>\n" . "PHP version: " . PHP_VERSION .
-                ", <BR/>\nPlugin version: " . ABJ404_VERSION;
+        $bodyTemplate = ABJ_404_Solution_FileSystemService::readFileContents(
+            dirname(__DIR__) . '/html/emailCapturedNotificationBody.html',
+            false
+        );
+        $body = str_replace(
+            array(
+                '{captured_count}',
+                '{captured_url}',
+                '{settings_url}',
+                '{sent_at}',
+                '{php_version}',
+                '{plugin_version}',
+            ),
+            array(
+                esc_html((string)$captured404Count),
+                esc_url($captured404URLSettings),
+                esc_url($generalSettings),
+                esc_html(date('Y/m/d h:i:s T', abj_clock()->now())),
+                esc_html(PHP_VERSION),
+                esc_html(ABJ404_VERSION),
+            ),
+            $bodyTemplate
+        );
         $headers = array('Content-Type: text/html; charset=UTF-8');
         $adminEmail = get_option('admin_email');
         $adminEmailStr = is_string($adminEmail) ? $adminEmail : '';

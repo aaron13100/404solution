@@ -1,0 +1,16 @@
+<script type="text/javascript">
+if (typeof window.abj404SelectRedirectType === "undefined") {
+    window.abj404SelectRedirectType = function(btn) {
+        var grid = btn.closest(".abj404-redirect-type-grid");
+        grid.querySelectorAll(".abj404-redirect-type-btn").forEach(function(b) {
+            b.classList.remove("abj404-redirect-type-btn--active");
+        });
+        btn.classList.add("abj404-redirect-type-btn--active");
+        var hidden = document.getElementById("code");
+        if (hidden) {
+            hidden.value = btn.dataset.code;
+            if (typeof jQuery !== "undefined") { jQuery("#code").trigger("change"); }
+        }
+    };
+}
+</script>

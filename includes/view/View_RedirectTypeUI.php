@@ -30,15 +30,6 @@ class ABJ_404_Solution_View_RedirectTypeUI extends ABJ_404_Solution_ViewComponen
         $mode = abj_service('settings_mode_preference')->getMode();
         $isSimple = $mode === 'simple';
 
-        // inline-html-approved: wrapper open for the self-contained redirect-type button grid widget; companion to already-approved inline button rendering below in this file.
-        echo '<div class="abj404-form-group">';
-        // inline-html-approved: label for the button grid widget.
-        echo '<label class="abj404-form-label">' . esc_html__('Redirect Type', '404-solution') . '</label>';
-        // inline-html-approved: hidden code input that the JS toggle writes into; lives next to the grid it controls.
-        echo '<input type="hidden" id="code" name="code" value="' . esc_attr($selectedCode) . '">';
-        // inline-html-approved: grid wrapper open for the redirect-type button widget.
-        echo '<div class="abj404-redirect-type-grid">';
-
         if ($isSimple) {
             // Simple mode: show only Permanent and Temporary
             $codeButtons = array(
@@ -57,44 +48,48 @@ class ABJ_404_Solution_View_RedirectTypeUI extends ABJ_404_Solution_ViewComponen
             );
         }
 
+        $buttonTemplate = $this->readTemplate('redirectTypeButton.html');
+        $buttons = '';
         foreach ($codeButtons as $code => $labels) {
             $isActive = ((string)$code === $selectedCode) ? ' abj404-redirect-type-btn--active' : '';
             $isFull   = ($code === 0) ? ' abj404-redirect-type-btn--full' : '';
-            // inline-html-approved: compact redirect-type button grid renderer.
-            echo '<button type="button"'
-                . ' class="abj404-redirect-type-btn' . $isActive . $isFull . '"'
-                . ' data-code="' . esc_attr((string)$code) . '"'
-                . ' onclick="abj404SelectRedirectType(this)">';
-            echo '<strong>' . esc_html($labels[0]) . '</strong>';
-            // inline-html-approved: compact redirect-type button label renderer.
-            echo '<span>' . esc_html($labels[1]) . '</span>';
-            echo '</button>';
+            $buttons .= $this->replaceTemplate($buttonTemplate, array(
+                '{active_class}'    => esc_attr($isActive),
+                '{full_class}'      => esc_attr($isFull),
+                '{code}'            => esc_attr((string)$code),
+                '{primary_label}'   => esc_html($labels[0]),
+                '{secondary_label}' => esc_html($labels[1]),
+            ));
         }
-        echo '</div>';
         if ($isSimple) {
-            // inline-html-approved: compact mode-specific form help renderer.
-            echo '<p class="abj404-form-help">' . esc_html__('Permanent is best for most redirects. Use Temporary if the page may come back.', '404-solution') . '</p>';
+            $help = esc_html__('Permanent is best for most redirects. Use Temporary if the page may come back.', '404-solution');
         } else {
-            // inline-html-approved: compact mode-specific form help renderer.
-            echo '<p class="abj404-form-help">' . esc_html__('Use 301 for permanent page moves. Use 302 for A/B tests or seasonal pages.', '404-solution') . '</p>';
+            $help = esc_html__('Use 301 for permanent page moves. Use 302 for A/B tests or seasonal pages.', '404-solution');
         }
-        echo '</div>';
-        // inline-html-approved: small behavior script for this self-contained button grid.
-        echo '<script type="text/javascript">';
-        echo 'if (typeof window.abj404SelectRedirectType === "undefined") {';
-        echo '    window.abj404SelectRedirectType = function(btn) {';
-        echo '        var grid = btn.closest(".abj404-redirect-type-grid");';
-        echo '        grid.querySelectorAll(".abj404-redirect-type-btn").forEach(function(b) {';
-        echo '            b.classList.remove("abj404-redirect-type-btn--active");';
-        echo '        });';
-        echo '        btn.classList.add("abj404-redirect-type-btn--active");';
-        echo '        var hidden = document.getElementById("code");';
-        echo '        if (hidden) {';
-        echo '            hidden.value = btn.dataset.code;';
-        echo '            if (typeof jQuery !== "undefined") { jQuery("#code").trigger("change"); }';
-        echo '        }';
-        echo '    };';
-        echo '}';
-        echo '</script>';
+
+        echo $this->replaceTemplate($this->readTemplate('redirectTypeButtonGrid.html'), array(
+            '{label}'         => esc_html__('Redirect Type', '404-solution'),
+            '{selected_code}' => esc_attr($selectedCode),
+            '{buttons}'       => $buttons,
+            '{help}'          => $help,
+            '{script}'        => $this->readTemplate('redirectTypeScript.html'),
+        ));
+    }
+
+    /**
+     * @param string $name
+     * @return string
+     */
+    private function readTemplate(string $name): string {
+        return ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . '/html/' . $name, false);
+    }
+
+    /**
+     * @param string $template
+     * @param array<string, string> $replacements
+     * @return string
+     */
+    private function replaceTemplate(string $template, array $replacements): string {
+        return $this->f->str_replace(array_keys($replacements), array_values($replacements), $template);
     }
 }

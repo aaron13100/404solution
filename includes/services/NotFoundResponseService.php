@@ -304,15 +304,15 @@ class ABJ_404_Solution_NotFoundResponseService {
         if (function_exists('abj404_benchmark_emit_headers')) {
             abj404_benchmark_emit_headers();
         }
-        // inline-html-approved: emergency redirect fallback must emit a complete minimal response when headers are unavailable.
-        $c = '<script>' . 'function doRedirect() {' . "\n" .
-                '   window.location.replace(' . wp_json_encode($finalDestination) . ');' . "\n" .
-                '}' . "\n" .
-                'setTimeout(doRedirect, 1);' . "\n" .
-                '</script>' . "\n" .
-                'Page moved: <a href="' . esc_url($finalDestination) . '">' .
-                    esc_html($finalDestination) . '</a>';
-        echo $c;
+        $template = ABJ_404_Solution_FileSystemService::readFileContents(
+            dirname(__DIR__) . '/html/notFoundRedirectFallback.html',
+            false
+        );
+        echo $this->f->str_replace(
+            array('{destination_json}', '{destination_url}', '{destination_label}'),
+            array((string)wp_json_encode($finalDestination), esc_url($finalDestination), esc_html($finalDestination)),
+            $template
+        );
         if (!apply_filters('abj404_should_exit', true, array('source' => 'forceRedirect_js'))) {
             return false;
         }

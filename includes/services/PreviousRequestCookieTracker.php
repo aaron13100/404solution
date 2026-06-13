@@ -57,10 +57,15 @@ class ABJ_404_Solution_PreviousRequestCookieTracker {
         } catch (Exception $e) {
             $this->logger->debugMessage("There was an issue setting a cookie: " . $e->getMessage());
             $expireTime = date("D, d M Y H:i:s T", abj_clock()->now() + (60 * 4));
-            $c = "\n" . '<script>document.cookie = "' . $cookieName . '=' .
-                esc_js($requestedUrl) .
-                '; expires=' . $expireTime . '";</script>' . "\n";
-            echo $c;
+            $template = ABJ_404_Solution_FileSystemService::readFileContents(
+                dirname(__DIR__) . '/html/previousRequestCookieFallbackScript.html',
+                false
+            );
+            echo "\n" . str_replace(
+                array('{cookie_name}', '{requested_url}', '{expires}'),
+                array(esc_js($cookieName), esc_js($requestedUrl), esc_js($expireTime)),
+                $template
+            ) . "\n";
         }
 
         abj_service('request_context')->requested_url = $requestedUrl;

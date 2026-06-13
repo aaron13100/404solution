@@ -1,0 +1,136 @@
+<script>
+    (function() {
+        var overlay = document.getElementById('abj404-setup-wizard');
+        var closeBtn = document.getElementById('abj404-setup-close');
+        var skipBtn = document.getElementById('abj404-setup-skip');
+        var saveBtn = document.querySelector('.abj404-setup-primary');
+        var form = document.querySelector('#abj404-setup-wizard form');
+
+        // Bug #9 fix: Null check for nonce element
+        var nonceEl = document.getElementById('abj404_setup_wizard_nonce');
+        var nonce = nonceEl ? nonceEl.value : '';
+
+        // Bug #26 fix: Track dismiss state to prevent multiple calls
+        var isDismissing = false;
+        var isSubmitting = false;
+
+        function dismissWizard() {
+            // Bug #26 fix: Prevent multiple rapid dismissals
+            if (isDismissing) {
+                return;
+            }
+            isDismissing = true;
+
+            // Disable buttons to prevent further clicks
+            if (closeBtn) closeBtn.disabled = true;
+            if (skipBtn) skipBtn.disabled = true;
+
+            // Remove modal immediately
+            if (overlay) {
+                overlay.remove();
+            }
+
+            // Bug #9 fix: Don't send AJAX if no nonce
+            if (!nonce) {
+                showToast({missing_nonce_message});
+                return;
+            }
+
+            // Fire AJAX to mark as complete with error handling
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', ajaxurl, true);
+            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+            xhr.onload = function() {
+                if (xhr.status !== 200) {
+                    showToast({dismissal_failed_message});
+                    return;
+                }
+                try {
+                    var response = JSON.parse(xhr.responseText);
+                    if (!response.success) {
+                        var msg = response.data && response.data.message ? response.data.message : '';
+                        showToast({dismissal_prefix} + msg + {dismissal_suffix});
+                    }
+                } catch (e) {
+                    showToast({dismissal_failed_message});
+                }
+            };
+            xhr.onerror = function() {
+                showToast({network_error_message});
+            };
+            xhr.send('action=abj404_dismiss_setup_wizard&nonce=' + encodeURIComponent(nonce));
+        }
+
+        function showToast(message) {
+            // Remove any existing toast
+            var existingToast = document.querySelector('.abj404-toast');
+            if (existingToast) {
+                existingToast.remove();
+            }
+
+            // Create toast element using DOM methods
+            var toast = document.createElement('div');
+            toast.className = 'abj404-toast';
+            toast.setAttribute('role', 'alert');
+
+            var closeBtn = document.createElement('button');
+            closeBtn.className = 'abj404-toast-close';
+            closeBtn.setAttribute('aria-label', {close_label});
+            closeBtn.textContent = '\u00D7';
+            closeBtn.onclick = function() { toast.remove(); };
+
+            var textNode = document.createTextNode(message);
+
+            toast.appendChild(closeBtn);
+            toast.appendChild(textNode);
+            document.body.appendChild(toast);
+
+            // Auto-remove after 10 seconds
+            setTimeout(function() {
+                if (toast && toast.parentNode) {
+                    toast.remove();
+                }
+            }, 10000);
+        }
+
+        function showSavingOverlay() {
+            // Bug #26 fix: Prevent multiple submissions
+            if (isSubmitting) {
+                return false;
+            }
+            isSubmitting = true;
+
+            // Disable buttons
+            if (saveBtn) saveBtn.disabled = true;
+            if (skipBtn) skipBtn.disabled = true;
+            if (closeBtn) closeBtn.disabled = true;
+
+            // Bug #19 fix: Use DOM methods instead of innerHTML
+            var loadingOverlay = document.createElement('div');
+            loadingOverlay.className = 'abj404-setup-loading';
+
+            var spinner = document.createElement('div');
+            spinner.className = 'abj404-setup-spinner';
+            loadingOverlay.appendChild(spinner);
+
+            var loadingText = document.createElement('span');
+            loadingText.textContent = {saving_label};
+            loadingOverlay.appendChild(loadingText);
+
+            var modal = overlay ? overlay.querySelector('.abj404-setup-modal') : null;
+            if (modal) {
+                modal.appendChild(loadingOverlay);
+            }
+        }
+
+        if (closeBtn) {
+            closeBtn.addEventListener('click', dismissWizard);
+        }
+        if (skipBtn) {
+            skipBtn.addEventListener('click', dismissWizard);
+        }
+        if (form) {
+            form.addEventListener('submit', showSavingOverlay);
+        }
+    })();
+</script>

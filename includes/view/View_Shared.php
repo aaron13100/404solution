@@ -194,17 +194,24 @@ class ABJ_404_Solution_View_Shared extends ABJ_404_Solution_ViewComponent {
 
 		$timestamp = $this->logsRepository->getLogsHitsTableLastUpdated();
 		$lines = array();
+		$timeAgoTemplate = $this->readTemplate('viewSharedTimeAgo.html');
 		if ($timestamp !== null) {
 			$lastUpdated = $this->logsRepository->getLogsHitsTableLastUpdatedHuman();
-			// inline-html-approved: escaped time fragment inserted into the hits-tooltip template.
-			$timeHtml = '<span class="abj404-time-ago" data-timestamp="' . esc_attr((string)$timestamp) . '">' . esc_html($lastUpdated) . '</span>';
+			$timeHtml = $this->f->str_replace(
+				array('{timestamp}', '{label}'),
+				array(esc_attr((string)$timestamp), esc_html($lastUpdated)),
+				$timeAgoTemplate
+			);
 			$lines[] = sprintf(__('Last updated: %s', '404-solution'), $timeHtml);
 		}
 
 		$checkedAt = $this->logsRepository->getLogsHitsTableLastCheckedAt();
 		if ($checkedAt !== null) {
-			// inline-html-approved: escaped time fragment inserted into the hits-tooltip template.
-			$checkedHtml = '<span class="abj404-time-ago" data-timestamp="' . esc_attr((string)$checkedAt) . '">' . esc_html($this->formatTimeAgo($checkedAt)) . '</span>';
+			$checkedHtml = $this->f->str_replace(
+				array('{timestamp}', '{label}'),
+				array(esc_attr((string)$checkedAt), esc_html($this->formatTimeAgo($checkedAt))),
+				$timeAgoTemplate
+			);
 			$lines[] = sprintf(__('Last checked: %s', '404-solution'), $checkedHtml);
 		}
 
@@ -378,6 +385,14 @@ class ABJ_404_Solution_View_Shared extends ABJ_404_Solution_ViewComponent {
 		$result['ajaxTrashLink'] .= "&trash=1";
 		$result['trashtitle'] = __('Trash', '404-solution');
 		return $result;
+	}
+
+	/**
+	 * @param string $name
+	 * @return string
+	 */
+	private function readTemplate(string $name): string {
+		return ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . '/html/' . $name, false);
 	}
 
 	/**
