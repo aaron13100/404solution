@@ -79,7 +79,28 @@ if (!defined('ABJ404_PATH')) {
 		 * @return array<string, mixed>
 		 */
 		function abj404_get_settings_options() {
-			$options = get_option('abj404_settings');
+			if (function_exists('abj_service')) {
+				$optionsRepository = abj_service('options_repository');
+				if (is_object($optionsRepository) && method_exists($optionsRepository, 'getOptions')) {
+					try {
+						$options = $optionsRepository->getOptions(true);
+						if (is_array($options)) {
+							return $options;
+						}
+						if (function_exists('abj404_logRuntimeWarning')) {
+							abj404_logRuntimeWarning('options_repository->getOptions(true) returned ' . gettype($options) . '; falling back to raw bootstrap option read');
+						}
+					} catch (\Throwable $e) {
+						if (function_exists('abj404_logRuntimeWarning')) {
+							abj404_logRuntimeWarning('options_repository->getOptions(true) failed while reading settings options; falling back to raw bootstrap option read', $e);
+						} else {
+							// @abj404-raw-error-log-allowed: bootstrap fallback can run before the runtime warning helper is defined.
+							error_log('404 Solution: options_repository->getOptions(true) failed while reading settings options; falling back to raw bootstrap option read (' . $e->getMessage() . ')');
+						}
+					}
+				}
+			}
+			$options = function_exists('get_option') ? get_option('abj404_settings') : false;
 			return is_array($options) ? $options : array();
 		}
 	}

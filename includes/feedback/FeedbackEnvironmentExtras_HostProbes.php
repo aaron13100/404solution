@@ -168,9 +168,16 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras_HostProbes {
             if (is_scalar($t) && is_numeric($t)) {
                 $out['installed_at'] = (int)$t;
             }
-            $settings = get_option('abj404_settings', null);
-            if (is_array($settings) && isset($settings['DB_VERSION']) && is_scalar($settings['DB_VERSION'])) {
-                $out['db_version_option'] = (string)$settings['DB_VERSION'];
+        }
+        $optionsRepository = function_exists('abj_service') ? abj_service('options_repository') : null;
+        if (is_object($optionsRepository) && method_exists($optionsRepository, 'getOptions')) {
+            try {
+                $settings = $optionsRepository->getOptions(true);
+                if (isset($settings['DB_VERSION']) && is_scalar($settings['DB_VERSION'])) {
+                    $out['db_version_option'] = (string)$settings['DB_VERSION'];
+                }
+            } catch (\Throwable $e) {
+                ABJ_404_Solution_FeedbackTransportLog::log('warn', 'probePluginLifecycle options_repository probe failed: ' . $e->getMessage());
             }
         }
         return $out;
