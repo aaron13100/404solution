@@ -30,11 +30,11 @@ class ABJ_404_Solution_RedirectExclusionPolicy {
         $id = $result->getId();
 
         $typeInt = is_numeric($type) ? (int)$type : 0;
-        $typePost = defined('ABJ404_TYPE_POST') ? (int)ABJ404_TYPE_POST : 1;
-        $typeCat = defined('ABJ404_TYPE_CAT') ? (int)ABJ404_TYPE_CAT : 2;
-        $typeTag = defined('ABJ404_TYPE_TAG') ? (int)ABJ404_TYPE_TAG : 3;
-        $typeExternal = defined('ABJ404_TYPE_EXTERNAL') ? (int)ABJ404_TYPE_EXTERNAL : 4;
-        $typeHome = defined('ABJ404_TYPE_HOME') ? (int)ABJ404_TYPE_HOME : 5;
+        $typePost = (int)ABJ404_TYPE_POST;
+        $typeCat = (int)ABJ404_TYPE_CAT;
+        $typeTag = (int)ABJ404_TYPE_TAG;
+        $typeExternal = (int)ABJ404_TYPE_EXTERNAL;
+        $typeHome = (int)ABJ404_TYPE_HOME;
 
         if ($typeInt === $typeExternal || $typeInt === $typeHome) {
             return false;

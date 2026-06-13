@@ -44,7 +44,7 @@ class ABJ_404_Solution_RedirectCandidateEvaluator {
             return null;
         }
 
-        $typeHomeInt = defined('ABJ404_TYPE_HOME') ? (int)ABJ404_TYPE_HOME : 5;
+        $typeHomeInt = (int)ABJ404_TYPE_HOME;
         $redirectType = isset($redirect['type']) && is_scalar($redirect['type']) ? (int)$redirect['type'] : 0;
 
         if ($redirect['id'] == '0' || ($redirect['final_dest'] == '0' && $redirectType !== $typeHomeInt)) {

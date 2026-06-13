@@ -170,7 +170,7 @@ class ABJ_404_Solution_WordPressGuessFallback {
 
     /** @return int */
     private function typePost(): int {
-        return defined('ABJ404_TYPE_POST') ? (int)constant('ABJ404_TYPE_POST') : 1;
+        return (int)ABJ404_TYPE_POST;
     }
 
     /**

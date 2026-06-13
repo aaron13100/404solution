@@ -23,10 +23,10 @@ class ABJ_404_Solution_RedirectExportReader {
      * @return array<int, array{source: string, dest: string, code: int, is_regex: bool}>
      */
     public function getExportableRedirects(): array {
-        $manualStatus = defined('ABJ404_STATUS_MANUAL') ? (int)ABJ404_STATUS_MANUAL : 1;
-        $regexStatus  = defined('ABJ404_STATUS_REGEX')  ? (int)ABJ404_STATUS_REGEX  : 6;
-        $typeExternal = defined('ABJ404_TYPE_EXTERNAL') ? (int)ABJ404_TYPE_EXTERNAL : 4;
-        $typeHome     = defined('ABJ404_TYPE_HOME')     ? (int)ABJ404_TYPE_HOME     : 5;
+        $manualStatus = (int)ABJ404_STATUS_MANUAL;
+        $regexStatus  = (int)ABJ404_STATUS_REGEX;
+        $typeExternal = (int)ABJ404_TYPE_EXTERNAL;
+        $typeHome     = (int)ABJ404_TYPE_HOME;
 
         $rows = $this->queryExportableRedirectRows($manualStatus, $regexStatus);
         if (empty($rows)) {

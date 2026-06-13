@@ -134,7 +134,7 @@ class ABJ_404_Solution_InternalLinkScanner {
     private function getCapturedUrlSet(): array {
         global $wpdb;
 
-        $capturedStatus = defined('ABJ404_STATUS_CAPTURED') ? intval(ABJ404_STATUS_CAPTURED) : 3;
+        $capturedStatus = intval(ABJ404_STATUS_CAPTURED);
 
         // Use the plugin's DatabaseCore if available, otherwise fall back to strtolower prefix.
         $dbCore = null;
