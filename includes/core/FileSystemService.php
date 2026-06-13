@@ -410,7 +410,6 @@ class ABJ_404_Solution_FileSystemService {
             return;
         }
 
-        // @abj404-raw-error-log-allowed: service-resolution-fallback filesystem helpers can run while logger services are unavailable.
-        error_log('404 Solution: ' . $message);
+        abj404_logPhpFallback('service-resolution-fallback', $message);
     }
 }

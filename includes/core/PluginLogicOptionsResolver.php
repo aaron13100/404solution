@@ -307,7 +307,6 @@ class ABJ_404_Solution_PluginLogicOptionsResolver {
             return;
         }
 
-        // @abj404-raw-error-log-allowed: service-resolution-fallback options resolution can run while the logging service is unavailable.
-        error_log('404 Solution: ' . $message);
+        abj404_logPhpFallback('service-resolution-fallback', $message);
     }
 }

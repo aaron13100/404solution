@@ -12,8 +12,8 @@ if (!defined('ABSPATH')) {
  * all of them).
  *
  * Routes through the plugin's Logging service when the service container is
- * up, falls back to error_log() so messages aren't lost in standalone tests
- * or early-boot contexts.
+ * up, falls back to the centralized PHP error-log sink so messages aren't
+ * lost in standalone tests or early-boot contexts.
  */
 class ABJ_404_Solution_FeedbackTransportLog {
 
@@ -41,11 +41,12 @@ class ABJ_404_Solution_FeedbackTransportLog {
                     }
                 }
             } catch (\Throwable $e) {
-                // @abj404-raw-error-log-allowed: transport-fallback logger lookup failed while handling feedback transport diagnostics.
-                @error_log('404 Solution: FeedbackTransport logger lookup failed (' . $e->getMessage() . '); falling back to error_log');
+                abj404_logPhpFallback(
+                    'transport-fallback',
+                    'FeedbackTransport logger lookup failed (' . $e->getMessage() . '); falling back to PHP error log'
+                );
             }
         }
-        // @abj404-raw-error-log-allowed: transport-fallback feedback transport must remain observable when the plugin logger is unavailable.
-        @error_log('404 Solution: ' . $message);
+        abj404_logPhpFallback('transport-fallback', $message);
     }
 }

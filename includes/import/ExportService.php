@@ -196,8 +196,7 @@ class ABJ_404_Solution_ExportService {
             return;
         }
 
-        // @abj404-raw-error-log-allowed: service-resolution-fallback legacy export callers may omit the logger dependency.
-        error_log('[404 Solution] ' . $message);
+        abj404_logPhpFallback('service-resolution-fallback', $message);
     }
 
     /**
@@ -216,8 +215,7 @@ class ABJ_404_Solution_ExportService {
             return;
         }
 
-        // @abj404-raw-error-log-allowed: service-resolution-fallback legacy export callers may omit the logger dependency.
-        error_log('[404 Solution] ' . $message);
+        abj404_logPhpFallback('service-resolution-fallback', $message);
     }
 
     /**

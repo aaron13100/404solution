@@ -326,8 +326,7 @@ class ABJ_404_Solution_NotFoundResponseService {
             return;
         }
 
-        // @abj404-raw-error-log-allowed: service-resolution-fallback redirect response handling must remain observable if logger injection fails.
-        error_log('404 Solution: ' . $message);
+        abj404_logPhpFallback('service-resolution-fallback', $message);
     }
 
 }

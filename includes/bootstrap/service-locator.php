@@ -4,6 +4,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+require_once __DIR__ . '/../core/PhpErrorLogFallback.php';
+
 /**
  * Global service-locator helper functions.
  *

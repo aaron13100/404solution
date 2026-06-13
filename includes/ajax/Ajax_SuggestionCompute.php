@@ -262,19 +262,16 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
             $error['line']
         );
 
-        // Use plugin's logging if available, fallback to error_log
+        // Use plugin logging when available, then the centralized PHP-log fallback.
         if (class_exists('ABJ_404_Solution_Logging')) {
             try {
                 $logger = abj_service('logging');
                 $logger->errorMessage($logMessage);
             } catch (Exception $e) {
-                // Logging failed during shutdown - use error_log as fallback
-                // @abj404-raw-error-log-allowed: fatal-handler-fallback shutdown handling must remain observable if plugin logging fails.
-                @error_log("404 Solution: " . $logMessage);
+                abj404_logPhpFallback('fatal-handler-fallback', $logMessage);
             }
         } else {
-            // @abj404-raw-error-log-allowed: fatal-handler-fallback shutdown handling can run before the logger class is loaded.
-            @error_log("404 Solution: " . $logMessage);
+            abj404_logPhpFallback('fatal-handler-fallback', $logMessage);
         }
     }
 }

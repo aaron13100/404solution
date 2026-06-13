@@ -14,7 +14,7 @@ if (!defined('ABSPATH')) {
  * design-audit criterion M401 "Silent catch blocks" flags.
  *
  * This registry preserves the full Throwable instance and emits a
- * fully-contextualised error_log() line so:
+ * fully-contextualised PHP error-log line so:
  *   1. Production sysadmins see the exception class, code, file:line, and
  *      message in their PHP error log, not just the message.
  *   2. Diagnostic surfaces (admin notices, integration tests, the recovery
@@ -44,9 +44,8 @@ class ABJ_404_Solution_SuppressedErrorRegistry {
      */
     public static function record($context, \Throwable $e) {
         self::$last = $e;
-        // @abj404-raw-error-log-allowed: service-resolution-fallback this records suppressed resolver failures without recursing into logging services.
-        error_log(sprintf(
-            '404 Solution: %s suppressed %s (code %s) at %s:%d: %s',
+        abj404_logPhpFallback('service-resolution-fallback', sprintf(
+            '%s suppressed %s (code %s) at %s:%d: %s',
             $context,
             get_class($e),
             (string) $e->getCode(),

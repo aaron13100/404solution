@@ -93,8 +93,7 @@ class ABJ_404_Solution_DebugLogReader {
             }
             return $this->formatSupportExcerpt($excerptParts['error_entries'], $excerptParts['recent_lines']);
         } catch (Exception $e) {
-            // @abj404-raw-error-log-allowed: logger-internal support excerpt reading runs underneath the plugin logger.
-            error_log('404 Solution: support log excerpt read failed: ' . $e->getMessage());
+            abj404_logPhpFallback('logger-internal', 'support log excerpt read failed: ' . $e->getMessage());
             return "Error reading log file: " . $e->getMessage();
         }
     }

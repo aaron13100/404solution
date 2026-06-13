@@ -49,8 +49,10 @@ class ABJ_404_Solution_DebugLogFileStore {
         $result = @file_put_contents($debugFilePath, $sanitizedLine . "\n", FILE_APPEND);
 
         if ($result === false) {
-            // @abj404-raw-error-log-allowed: logger-internal debug-file writes cannot report through the same failed writer.
-            error_log('404 Solution: Unable to write to debug log (possibly disk full): ' . $debugFilePath);
+            abj404_logPhpFallback(
+                'logger-internal',
+                'Unable to write to debug log (possibly disk full): ' . $debugFilePath
+            );
             return false;
         }
 

@@ -370,7 +370,6 @@ class ABJ_404_Solution_StorageOptionContracts {
             return;
         }
 
-        // @abj404-raw-error-log-allowed: service-resolution-fallback storage validation can run before the logger is available.
-        error_log('404 Solution: ' . $message);
+        abj404_logPhpFallback('service-resolution-fallback', $message);
     }
 }

@@ -145,9 +145,10 @@ class ABJ_404_Solution_WordPress_Connector {
             $logger = abj_service('logging');
             $logger->errorMessage('Admin runtime exception in ' . $hookName . ': ' . $e->getMessage());
         } catch (Throwable $ignored) {
-            // Last-resort logging fallback.
-            // @abj404-raw-error-log-allowed: service-resolution-fallback admin runtime reporter could not resolve the plugin logger.
-            @error_log('404 Solution admin runtime exception in ' . $hookName . ': ' . $e->getMessage());
+            abj404_logPhpFallback(
+                'service-resolution-fallback',
+                'admin runtime exception in ' . $hookName . ': ' . $e->getMessage()
+            );
         }
 
         if (function_exists('set_transient')) {
@@ -474,7 +475,6 @@ class ABJ_404_Solution_WordPress_Connector {
             return;
         }
 
-        // @abj404-raw-error-log-allowed: service-resolution-fallback WordPress connector must remain observable when logger resolution fails.
-        error_log('404 Solution: ' . $message);
+        abj404_logPhpFallback('service-resolution-fallback', $message);
     }
 }

@@ -236,11 +236,13 @@ class ABJ_404_Solution_Logging {
                 $date = new DateTime('@' . abj_clock()->now());
                 $date->setTimezone(new DateTimeZone($tzString));
             } catch (Exception $e) {
-                // Use error_log (not $this->warn) because this method is part
-                // of the logging path; calling warn here would risk recursion
-                // if the timezone failure also breaks warn's own DateTime use.
-                // @abj404-raw-error-log-allowed: logger-internal timestamp formatting runs inside the plugin logger itself.
-                @error_log('404 Solution: timezone constructor failed (' . $e->getMessage() . '); using server default');
+                // Use the raw fallback sink because this method is part of
+                // the logging path; calling warn here would risk recursion if
+                // timezone failure also breaks warn's own DateTime use.
+                abj404_logPhpFallback(
+                    'logger-internal',
+                    'timezone constructor failed (' . $e->getMessage() . '); using server default'
+                );
                 $date = new DateTime('@' . abj_clock()->now());
                 $date->setTimezone(new DateTimeZone(date_default_timezone_get()));
             }

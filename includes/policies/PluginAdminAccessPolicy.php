@@ -294,8 +294,7 @@ class ABJ_404_Solution_PluginAdminAccessPolicy {
             return;
         }
 
-        // @abj404-raw-error-log-allowed: service-resolution-fallback admin access checks must remain observable if logger resolution fails.
-        error_log('404 Solution: ' . $message);
+        abj404_logPhpFallback('service-resolution-fallback', $message);
     }
 
     private static function warnStaticPolicyResolutionFailure(string $message, ?\Throwable $throwable = null): void {
@@ -310,8 +309,7 @@ class ABJ_404_Solution_PluginAdminAccessPolicy {
                 $throwable->getFile() . ':' . (string)$throwable->getLine() .
                 ': ' . $throwable->getMessage();
         }
-        // @abj404-raw-error-log-allowed: policy static accessor can be called before the runtime warning helper is loaded.
-        error_log('404 Solution: ' . $line);
+        abj404_logPhpFallback('service-resolution-fallback', $line);
     }
 
     /**

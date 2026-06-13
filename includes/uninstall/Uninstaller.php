@@ -324,7 +324,6 @@ class ABJ_404_Solution_Uninstaller {
             return;
         }
 
-        // @abj404-raw-error-log-allowed: service-resolution-fallback uninstall can run after normal plugin services are unavailable.
-        error_log('404 Solution: ' . $message);
+        abj404_logPhpFallback('service-resolution-fallback', $message);
     }
 }

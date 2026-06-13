@@ -46,6 +46,7 @@ if (!defined('ABJ404_FILE')) {
 if (!defined('ABJ404_PATH')) {
 	define('ABJ404_PATH', plugin_dir_path(ABJ404_FILE));
 }
+require_once __DIR__ . '/includes/core/PhpErrorLogFallback.php';
 	if (!defined('ABJ404_SHORTCODE_NAME')) {
 		define('ABJ404_SHORTCODE_NAME', 'abj404_solution_page_suggestions');
 	}
@@ -94,8 +95,10 @@ if (!defined('ABJ404_PATH')) {
 						if (function_exists('abj404_logRuntimeWarning')) {
 							abj404_logRuntimeWarning('options_repository->getOptions(true) failed while reading settings options; falling back to raw bootstrap option read', $e);
 						} else {
-							// @abj404-raw-error-log-allowed: bootstrap fallback can run before the runtime warning helper is defined.
-							error_log('404 Solution: options_repository->getOptions(true) failed while reading settings options; falling back to raw bootstrap option read (' . $e->getMessage() . ')');
+							abj404_logPhpFallback(
+								'early-boot',
+								'options_repository->getOptions(true) failed while reading settings options; falling back to raw bootstrap option read (' . $e->getMessage() . ')'
+							);
 						}
 					}
 				}
@@ -304,14 +307,13 @@ function abj404_logRuntimeWarning(string $context, ?\Throwable $throwable = null
         $loggerFailure = $loggingError;
     }
 
-    $fallback = '404 Solution: ' . $line;
+    $fallback = $line;
     if ($loggerFailure !== null) {
         $fallback .= ' | logger failure (code ' . (string)$loggerFailure->getCode() . ') at ' .
             $loggerFailure->getFile() . ':' . (string)$loggerFailure->getLine() .
             ': ' . $loggerFailure->getMessage();
     }
-    // @abj404-raw-error-log-allowed: early-boot root callbacks need a PHP-log fallback before the plugin logger is reliable.
-    error_log($fallback);
+    abj404_logPhpFallback('early-boot', $fallback);
 }
 }
 
@@ -329,13 +331,10 @@ if (!function_exists('abj404_resolve_clock')) {
 function abj404_resolve_clock() {
 	static $fallbackClock = null;
 
-	try {
-		if (function_exists('abj_clock')) {
-			$clock = abj_clock();
-			if (is_object($clock)) {
-				return $clock;
+		try {
+			if (function_exists('abj_clock')) {
+				return abj_clock();
 			}
-		}
 		if (is_object($fallbackClock)) {
 			return $fallbackClock;
 		}

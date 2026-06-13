@@ -173,7 +173,7 @@ class ABJ_404_Solution_ServiceContainer {
      *
      * On failure the underlying Throwable is preserved two ways:
      *   1. Full context (class, code, file:line, message) is written to
-     *      error_log() so production sysadmins see it.
+     *      the PHP error log so production sysadmins see it.
      *   2. The Throwable instance is captured in self::$lastSuppressedError
      *      so diagnostic surfaces (admin notices, integration tests, the
      *      design-audit M401 fix in c367/368/369) can recover the full
@@ -224,7 +224,7 @@ class ABJ_404_Solution_ServiceContainer {
 
     /**
      * Internal: capture a suppressed Throwable for getLastSuppressedError()
-     * and emit a fully-contextualised error_log() line.
+     * and emit a fully-contextualised PHP error-log line.
      *
      * Centralising the swallow-and-log behaviour here ensures every catch in
      * this file records the exception class, file:line, code, and message,
@@ -238,9 +238,8 @@ class ABJ_404_Solution_ServiceContainer {
      */
     private static function recordSuppressedError($context, \Throwable $e) {
         self::$lastSuppressedError = $e;
-        // @abj404-raw-error-log-allowed: service-resolution-fallback this records logger/container resolution failures without recursing into the container.
-        error_log(sprintf(
-            '404 Solution: %s suppressed %s (code %s) at %s:%d: %s',
+        abj404_logPhpFallback('service-resolution-fallback', sprintf(
+            '%s suppressed %s (code %s) at %s:%d: %s',
             $context,
             get_class($e),
             (string) $e->getCode(),

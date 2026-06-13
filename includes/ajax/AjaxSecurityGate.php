@@ -205,7 +205,6 @@ class ABJ_404_Solution_AjaxSecurityGate {
             return;
         }
 
-        // @abj404-raw-error-log-allowed: service-resolution-fallback AJAX authorization must remain observable if the injected logger is unavailable.
-        error_log('404 Solution: ' . $message);
+        abj404_logPhpFallback('service-resolution-fallback', $message);
     }
 }

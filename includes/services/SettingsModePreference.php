@@ -127,7 +127,6 @@ class ABJ_404_Solution_SettingsModePreference {
             return;
         }
 
-        // @abj404-raw-error-log-allowed: service-resolution-fallback settings mode preference can run before the logger service is available.
-        error_log('404 Solution: ' . $message);
+        abj404_logPhpFallback('service-resolution-fallback', $message);
     }
 }
