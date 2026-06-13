@@ -133,17 +133,18 @@ class ABJ_404_Solution_LogsReadQueries {
     /**
      * Admin logs page read with allow-listed orderby + pagination.
      *
-     * @param array<string, mixed> $tableOptions
+     * @param array<string, mixed> $tableOptions Boundary-normalized callers pass typed
+     *                                            log/page values; this method keeps
+     *                                            query-specific allowlists and bounds.
      * @return array<int, array<string, mixed>>
      */
     public function getLogRecords($tableOptions) {
-        $abj404logic = abj_service('plugin_logic');
         $logsid_included = '';
         $logsid = '';
-        $rawLogsId = $tableOptions['logsid'];
-        if ($rawLogsId != 0) {
+        $logsIdValue = $this->positiveIntOption($tableOptions, 'logsid', 0);
+        if ($logsIdValue > 0) {
             $logsid_included = 'specific logs id included. */';
-            $logsid = esc_sql($abj404logic->settingsUpdate()->sanitizeForSQL(is_scalar($rawLogsId) ? (string)$rawLogsId : ''));
+            $logsid = (string)$logsIdValue;
         }
         $orderbyExpressionByName = array(
             'timestamp'     => '{wp_abj404_logsv2}.timestamp',
@@ -152,19 +153,15 @@ class ABJ_404_Solution_LogsReadQueries {
             'id'            => '{wp_abj404_logsv2}.id',
             'min_log_id'    => '{wp_abj404_logsv2}.min_log_id',
         );
-        $rawOrderByVal = $tableOptions['orderby'];
-        $orderby = sanitize_text_field($abj404logic->settingsUpdate()->sanitizeForSQL(is_string($rawOrderByVal) ? $rawOrderByVal : ''));
+        $orderby = $this->stringOption($tableOptions, 'orderby', '');
         $orderby = array_key_exists($orderby, $orderbyExpressionByName) ? $orderby : 'timestamp';
         $orderbyExpression = $orderbyExpressionByName[$orderby];
-        $rawOrderVal2 = $tableOptions['order'];
-        $order = strtoupper(sanitize_text_field($abj404logic->settingsUpdate()->sanitizeForSQL(is_string($rawOrderVal2) ? $rawOrderVal2 : '')));
+        $order = strtoupper($this->stringOption($tableOptions, 'order', ''));
         if (!in_array($order, array('ASC', 'DESC'), true)) {
             $order = 'DESC';
         }
-        $paged = absint(is_scalar($tableOptions['paged'] ?? 1) ? ($tableOptions['paged'] ?? 1) : 1);
-        if ($paged < 1) { $paged = 1; }
-        $perpage = absint(is_scalar($tableOptions['perpage'] ?? ABJ404_OPTION_DEFAULT_PERPAGE) ? ($tableOptions['perpage'] ?? ABJ404_OPTION_DEFAULT_PERPAGE) : ABJ404_OPTION_DEFAULT_PERPAGE);
-        if ($perpage < 1) { $perpage = ABJ404_OPTION_DEFAULT_PERPAGE; }
+        $paged = $this->positiveIntOption($tableOptions, 'paged', 1);
+        $perpage = $this->positiveIntOption($tableOptions, 'perpage', ABJ404_OPTION_DEFAULT_PERPAGE);
         $start = ($paged - 1) * $perpage;
         $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/../sql/getLogRecords.sql");
         $query = $this->f->str_replace('{logsid_included}', $logsid_included, $query);
@@ -176,6 +173,30 @@ class ABJ_404_Solution_LogsReadQueries {
         $results = $this->dbCore->queryAndGetResults($query);
         $rawRows = $results['rows'];
         return is_array($rawRows) ? $rawRows : array();
+    }
+
+    /**
+     * @param array<string, mixed> $options
+     */
+    private function positiveIntOption(array $options, string $key, int $default): int {
+        $raw = $options[$key] ?? $default;
+        if (!is_scalar($raw)) {
+            return $default;
+        }
+        $raw = trim((string)$raw);
+        if ($raw === '' || preg_match('/^\d+$/', $raw) !== 1) {
+            return $default;
+        }
+        $value = intval($raw);
+        return $value > 0 ? $value : $default;
+    }
+
+    /**
+     * @param array<string, mixed> $options
+     */
+    private function stringOption(array $options, string $key, string $default): string {
+        $raw = $options[$key] ?? $default;
+        return is_string($raw) ? $raw : $default;
     }
 
     /**

@@ -106,7 +106,7 @@ class ABJ_404_Solution_TableViewOptionsResolver {
             $tableOptions['_abj404_force_view_rebuild'] = $forceRebuild;
         }
 
-        return $this->sanitize($tableOptions);
+        return $this->normalizeResolvedTypes($this->sanitize($tableOptions));
     }
 
     /**
@@ -240,25 +240,29 @@ class ABJ_404_Solution_TableViewOptionsResolver {
         return 'ASC';
     }
 
-    /** @return string */
-    private function resolvePaged(): string {
+    /** @return int */
+    private function resolvePaged(): int {
         $paged = $this->f->getPostOrGetSanitize('paged', '');
         if ($paged === '') {
             $paged = $this->readScalarFromRequestUriQuery('paged');
         }
-        return ($paged === '') ? '1' : $paged;
+        return $this->positiveIntOrDefault($paged, 1);
     }
 
     /**
      * @param array<string, mixed> $options
-     * @return string
+     * @return int
      */
-    private function resolvePerPage(array $options): string {
+    private function resolvePerPage(array $options): int {
         $perPageOption = ABJ404_OPTION_DEFAULT_PERPAGE;
         if (isset($options['perpage'])) {
             $perPageOption = max(absint(is_scalar($options['perpage']) ? $options['perpage'] : 0), ABJ404_OPTION_MIN_PERPAGE);
         }
-        return $this->f->getPostOrGetSanitize('perpage', (string)$perPageOption);
+        $rawPerPage = $this->f->getPostOrGetSanitize('perpage', '');
+        if ($rawPerPage === '') {
+            return $perPageOption;
+        }
+        return max($this->positiveIntOrDefault($rawPerPage, $perPageOption), ABJ404_OPTION_MIN_PERPAGE);
     }
 
     /** @return int */
@@ -267,11 +271,11 @@ class ABJ_404_Solution_TableViewOptionsResolver {
             return 0;
         }
         $logId = (string)$this->f->getPostOrGetSanitize('id', '');
-        if ($this->f->regexMatch('[0-9]+', $logId)) {
+        if (preg_match('/^\d+$/', $logId) === 1) {
             return absint($logId);
         }
         $redirectToDataFieldId = (string)$this->f->getPostOrGetSanitize('redirect_to_data_field_id', '');
-        if ($this->f->regexMatch('[0-9]+', $redirectToDataFieldId)) {
+        if (preg_match('/^\d+$/', $redirectToDataFieldId) === 1) {
             return absint($redirectToDataFieldId);
         }
         return 0;
@@ -340,5 +344,53 @@ class ABJ_404_Solution_TableViewOptionsResolver {
             }
         }
         return $tableOptions;
+    }
+
+    /**
+     * @param mixed $raw
+     */
+    private function positiveIntOrDefault($raw, int $default): int {
+        if (!is_scalar($raw)) {
+            return $default;
+        }
+        $raw = trim((string)$raw);
+        if ($raw === '' || preg_match('/^\d+$/', $raw) !== 1) {
+            return $default;
+        }
+        $value = intval($raw);
+        return $value > 0 ? $value : $default;
+    }
+
+    /**
+     * The legacy sanitizer returns scalar values as strings. Re-assert the
+     * table-options contract at this boundary so downstream readers receive
+     * typed numeric values.
+     *
+     * @param array<string, mixed> $tableOptions
+     * @return array<string, mixed>
+     */
+    private function normalizeResolvedTypes(array $tableOptions): array {
+        $tableOptions['filter'] = $this->positiveIntOrZero($tableOptions['filter'] ?? 0);
+        $tableOptions['paged'] = $this->positiveIntOrDefault($tableOptions['paged'] ?? 1, 1);
+        $tableOptions['perpage'] = $this->positiveIntOrDefault(
+            $tableOptions['perpage'] ?? ABJ404_OPTION_DEFAULT_PERPAGE,
+            ABJ404_OPTION_DEFAULT_PERPAGE
+        );
+        $tableOptions['logsid'] = $this->positiveIntOrZero($tableOptions['logsid'] ?? 0);
+        return $tableOptions;
+    }
+
+    /**
+     * @param mixed $raw
+     */
+    private function positiveIntOrZero($raw): int {
+        if (!is_scalar($raw)) {
+            return 0;
+        }
+        $raw = trim((string)$raw);
+        if ($raw === '' || preg_match('/^\d+$/', $raw) !== 1) {
+            return 0;
+        }
+        return intval($raw);
     }
 }
