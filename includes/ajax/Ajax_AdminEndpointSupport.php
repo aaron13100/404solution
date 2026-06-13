@@ -16,8 +16,8 @@ if (!defined('ABSPATH')) {
  *
  * Extracted from ABJ_404_Solution_ViewUpdater so each per-endpoint handler
  * can own a single endpoint's logic in its own file. ViewUpdater itself
- * retains thin back-compat forwarders for these statics because tests and
- * one external caller (ViewBuildStageRunner) reach in through that name.
+     * retains thin back-compat forwarders for these statics because tests and
+     * legacy AJAX call sites reach in through that name.
  */
 class ABJ_404_Solution_Ajax_AdminEndpointSupport {
 

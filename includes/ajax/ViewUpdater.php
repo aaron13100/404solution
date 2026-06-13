@@ -21,8 +21,8 @@ if (!defined('ABSPATH')) {
  * (`buildAjaxErrorResponse`, `sendJsonResponseAndExit`, `isFatalErrorType`,
  * `markInflightStage`, `adminNonceActions`, and the reflected
  * `extractViewQueryDiagnostics`) forward to
- * ABJ_404_Solution_Ajax_AdminEndpointSupport so external callers
- * (`ViewBuildStageRunner`, `ErrorHandler`, tests) keep the same surface.
+     * ABJ_404_Solution_Ajax_AdminEndpointSupport so external callers
+     * (`ErrorHandler`, tests, legacy AJAX code) keep the same surface.
  */
 class ABJ_404_Solution_ViewUpdater {
 

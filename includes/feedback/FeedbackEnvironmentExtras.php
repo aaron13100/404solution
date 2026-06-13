@@ -95,12 +95,9 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras {
         // is read-only, no plugin tables involved.
         $this->recordProbe($extras, 'mysql_globals', function () use ($db) { return $db->collectMysqlGlobals(); }, array());
 
-        // MySQL session-variable probe persisted by the staged view-build
-        // (ViewBuildHostEnvironmentProbe). Already covers
-        // tmp_table_size, max_heap_table_size, innodb_lock_wait_timeout,
-        // wait_timeout, innodb_flush_method, character_set_server.
-        // Reading the option instead of re-querying keeps the support
-        // request cheap and reflects the state of the most recent build.
+        // MySQL session-variable probe persisted by older builds. Reading the
+        // option instead of re-querying keeps the support request cheap when
+        // historical probe data is present.
         $this->recordProbe($extras, 'mysql_session_probe', function () use ($db) { return $db->loadViewBuildSessionEnvProbe(); }, array());
 
         // Disk headroom on the WP uploads directory (where the plugin's

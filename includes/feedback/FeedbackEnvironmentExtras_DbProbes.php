@@ -104,10 +104,9 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras_DbProbes {
     }
 
     /**
-     * Read the persisted session-variable probe written at S1 entry by
-     * the staged view-build pipeline (ViewBuildHostEnvironmentProbe).
-     * Reflects the most recent build's MySQL session settings without
-     * paying for a fresh SHOW SESSION VARIABLES on the support-request path.
+     * Read persisted session-variable probe data written by older builds.
+     * This preserves historical support-request context without paying for
+     * a fresh SHOW SESSION VARIABLES query.
      *
      * @return array<string, mixed>
      */

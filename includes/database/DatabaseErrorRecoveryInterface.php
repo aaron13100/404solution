@@ -10,11 +10,9 @@ if (!defined('ABSPATH')) {
  * auto_increment IDs, recover from collation mismatches, and the test seam
  * for the injected clock.
  *
- * View-build staged-failure routing (the 'resumable'/'skip'/'halt'/'rethrow'
- * classifier) intentionally lives outside this database-layer interface:
- * those tokens are view-build pipeline vocabulary. The concrete
- * DatabaseStagedFailureClassifier (which view-build callers reach via
- * ViewBuildDataBoundary) owns that surface.
+ * Legacy view-build staged-failure routing (the 'resumable'/'skip'/'halt'
+ * /'rethrow' classifier) intentionally lives outside this database-layer
+ * interface: those tokens are not database recovery vocabulary.
  */
 interface ABJ_404_Solution_DatabaseErrorRecoveryInterface {
 

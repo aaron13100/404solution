@@ -246,9 +246,10 @@ class ABJ_404_Solution_DatabaseCore implements
     }
 
     /**
-     * Classify a view-build pipeline stage failure into 'resumable',
-     * 'skip', 'halt', or 'rethrow'. Not part of any sub-interface;
-     * view-build callers reach this via ViewBuildDataBoundary.
+     * Classify a legacy view-build stage failure into 'resumable',
+     * 'skip', 'halt', or 'rethrow'. Retained for older diagnostics; the
+     * direct rebuild workflow no longer routes failures through staged
+     * collaborators.
      *
      * @param int $stageNumber
      * @param string $errorText
