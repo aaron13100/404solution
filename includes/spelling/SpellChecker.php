@@ -342,7 +342,7 @@ class ABJ_404_Solution_SpellChecker {
 			ABJ_404_Solution_SuggestionTransient::completeArray(
 				$normalizedURL,
 				$permalinksPacket,
-				time(),
+				abj_clock()->now(),
 				''
 			),
 			300
@@ -375,7 +375,7 @@ class ABJ_404_Solution_SpellChecker {
 				$normalizedURL,
 				$token,
 				0,
-				time()
+				abj_clock()->now()
 			),
 			120
 		); // 2 minute TTL

@@ -152,7 +152,7 @@ class ABJ_404_Solution_RedirectDispatcher {
 
         if ($isRedirectToCustom404Page) {
             $this->previousRequestCookieTracker->setCookieWithPreviousRequest();
-            setcookie(ABJ404_PP . '_STATUS_404', 'true', time() + 20, '/');
+            setcookie(ABJ404_PP . '_STATUS_404', 'true', abj_clock()->now() + 20, '/');
 
             $urlSlugOnly = $this->logic->urlNormalization()->removeHomeDirectory($requestedURL);
             $spellChecker = abj_service('spell_checker');
@@ -235,7 +235,7 @@ class ABJ_404_Solution_RedirectDispatcher {
      * @return bool
      */
     function tryRegexRedirect(array $options, string $requestedURL, ABJ_404_Solution_FrontendPipelineTrace $trace): bool {
-        $lookupStart = microtime(true);
+        $lookupStart = abj_clock()->nowFloat();
         $regexPermalink = $this->spellChecker->getPermalinkUsingRegEx($requestedURL, $options);
         $this->telemetry->recordRedirectLookupTiming($lookupStart);
         if (!empty($regexPermalink)) {

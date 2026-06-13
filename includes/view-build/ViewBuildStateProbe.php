@@ -151,7 +151,7 @@ class ABJ_404_Solution_ViewBuildStateProbe extends ABJ_404_Solution_ViewBuildCol
         if ($builtAt <= 0) {
             return false;
         }
-        return (time() - $builtAt) < ABJ_404_Solution_ViewBuildConfig::VIEW_DONE_FRESHNESS_TTL_SECONDS;
+        return (abj_clock()->now() - $builtAt) < ABJ_404_Solution_ViewBuildConfig::VIEW_DONE_FRESHNESS_TTL_SECONDS;
     }
 
     /**

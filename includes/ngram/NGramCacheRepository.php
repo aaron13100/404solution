@@ -101,7 +101,7 @@ class ABJ_404_Solution_NGramCacheRepository {
                 $urlNormalized,
                 $ngramJson,
                 $ngramCount,
-                current_time('mysql'),
+                abj_clock()->wpNowMysql(),
             ]]
         );
 

@@ -359,7 +359,7 @@ class ABJ_404_Solution_PluginLogicPageOrdering {
         $body .= 'To stop getting these emails, update the settings at <a href="' . $generalSettings . '">' .
                 $generalSettings . '</a>, or contact the site administrator.' . "<BR/>\n";
         // inline-html-approved: legacy notification email body is assembled inline in this method.
-        $body .= "<BR/><BR/>\n\nSent " . date('Y/m/d h:i:s T') . "<BR/>\n" . "PHP version: " . PHP_VERSION .
+        $body .= "<BR/><BR/>\n\nSent " . date('Y/m/d h:i:s T', abj_clock()->now()) . "<BR/>\n" . "PHP version: " . PHP_VERSION .
                 ", <BR/>\nPlugin version: " . ABJ404_VERSION;
         $headers = array('Content-Type: text/html; charset=UTF-8');
         $adminEmail = get_option('admin_email');

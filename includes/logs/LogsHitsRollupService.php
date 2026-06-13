@@ -135,8 +135,8 @@ class ABJ_404_Solution_LogsHitsRollupService implements ABJ_404_Solution_LogsHit
         if ($currentMaxLogId <= $storedMaxLogId) { $this->clearLogsHitsRollupStaleSignal(); return; }
         $rawFirstStale = $this->noticeState->getRuntimeFlag(self::HITS_TABLE_FIRST_STALE_DETECTED_FLAG);
         $firstStale = is_scalar($rawFirstStale) ? (int)$rawFirstStale : 0;
-        if ($firstStale <= 0) { $this->noticeState->setRuntimeFlag(self::HITS_TABLE_FIRST_STALE_DETECTED_FLAG, time(), 86400); return; }
-        $age = time() - $firstStale;
+        if ($firstStale <= 0) { $this->noticeState->setRuntimeFlag(self::HITS_TABLE_FIRST_STALE_DETECTED_FLAG, abj_clock()->now(), 86400); return; }
+        $age = abj_clock()->now() - $firstStale;
         if ($age >= self::HITS_TABLE_STALE_NOTICE_THRESHOLD_SECONDS) { $this->setLogsHitsRollupStaleNotice($age); }
     }
 
@@ -157,7 +157,7 @@ class ABJ_404_Solution_LogsHitsRollupService implements ABJ_404_Solution_LogsHit
                 : 'The 404 Solution redirects-hits rollup has been behind MAX(logsv2.id) for at least %d hour(s). The cron-driven rebuild event (abj404_updateLogsHitsTableAction) does not appear to be firing, so the redirects list will show stale "hits" and "last hit" columns until cron resumes. To resolve: if DISABLE_WP_CRON is set in wp-config.php either remove it, or configure a system cron job that requests wp-cron.php periodically. To force a rebuild right now in your browser, open the 404 Solution Redirects page with ?abj404_force_view_rebuild=1 appended to the URL.',
             $hours
         );
-        $payload = array('type' => 'logs_hits_rollup_stale', 'message' => $message, 'timestamp' => time(), 'error_string' => '', 'age_hours' => $hours);
+        $payload = array('type' => 'logs_hits_rollup_stale', 'message' => $message, 'timestamp' => abj_clock()->now(), 'error_string' => '', 'age_hours' => $hours);
         // allow-cache-empty: intentional notice payload; error_string is empty by definition for stale-rollup state.
         set_transient($key, $payload, 86400);
     }
@@ -172,7 +172,7 @@ class ABJ_404_Solution_LogsHitsRollupService implements ABJ_404_Solution_LogsHit
         $currentMaxId = $this->getMaxLogId();
         if ($currentMaxId != $storedMaxId) { $this->logger->debugMessage(__FUNCTION__ . " rebuild=yes (max_id changed: stored=$storedMaxId, current=$currentMaxId)"); return true; }
         $lastUpdated = $this->getLogsHitsTableLastUpdated();
-        if ($lastUpdated !== null) { $age = time() - $lastUpdated; if ($age > self::HITS_TABLE_MAX_AGE_SECONDS) { $this->logger->debugMessage(__FUNCTION__ . " rebuild=yes (stale: age={$age}s > " . self::HITS_TABLE_MAX_AGE_SECONDS . "s)"); return true; } }
+        if ($lastUpdated !== null) { $age = abj_clock()->now() - $lastUpdated; if ($age > self::HITS_TABLE_MAX_AGE_SECONDS) { $this->logger->debugMessage(__FUNCTION__ . " rebuild=yes (stale: age={$age}s > " . self::HITS_TABLE_MAX_AGE_SECONDS . "s)"); return true; } }
         $this->logger->debugMessage(__FUNCTION__ . " rebuild=no (max_id=$currentMaxId unchanged, not stale)");
         return false;
     }
@@ -220,7 +220,7 @@ class ABJ_404_Solution_LogsHitsRollupService implements ABJ_404_Solution_LogsHit
     public function getLogsHitsTableLastUpdatedHuman() {
         $timestamp = $this->getLogsHitsTableLastUpdated();
         if ($timestamp === null) { return ''; }
-        $diff = time() - $timestamp;
+        $diff = abj_clock()->now() - $timestamp;
         if ($diff < 60) { return __('Just now', '404-solution'); }
         elseif ($diff < 3600) { $minutes = (int)floor($diff / 60); return sprintf(_n('%d minute ago', '%d minutes ago', $minutes, '404-solution'), $minutes); }
         elseif ($diff < 86400) { $hours = (int)floor($diff / 3600); return sprintf(_n('%d hour ago', '%d hours ago', $hours, '404-solution'), $hours); }
@@ -273,7 +273,7 @@ class ABJ_404_Solution_LogsHitsRollupService implements ABJ_404_Solution_LogsHit
             $this->dbCore->queryAndGetResults(sprintf("ALTER TABLE %s COMMENT '%s'", $tempDestTable, $comment));
             $statements = array("drop table if exists " . $finalDestTable, "rename table " . $tempDestTable . ' to ' . $finalDestTable);
             $this->dbCore->executeAsTransaction($statements);
-            $this->noticeState->setRuntimeFlag(self::HITS_TABLE_LAST_REFRESHED_FLAG, time(), 86400);
+            $this->noticeState->setRuntimeFlag(self::HITS_TABLE_LAST_REFRESHED_FLAG, abj_clock()->now(), 86400);
             $this->recordHitsRebuildSuccess($chunkSize);
             $this->clearLogsHitsRollupStaleSignal();
             $wasRefreshed = true;
@@ -304,7 +304,7 @@ class ABJ_404_Solution_LogsHitsRollupService implements ABJ_404_Solution_LogsHit
         $logsv2Table = $this->dbCore->doTableNameReplacements("{wp_abj404_logsv2}");
         $redirectsTable = $this->dbCore->doTableNameReplacements("{wp_abj404_redirects}");
         $resolvedCollation = $this->resolveHitsJoinCollation();
-        $startTime = microtime(true);
+        $startTime = abj_clock()->nowFloat();
         $this->dbCore->queryAndGetResults("drop table if exists " . $preAggTable);
         $createPreAggQuery = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/../sql/createLogsHitsPreAggTempTable.sql");
         $createPreAggQuery = $this->dbCore->doTableNameReplacements($createPreAggQuery);
@@ -324,7 +324,7 @@ class ABJ_404_Solution_LogsHitsRollupService implements ABJ_404_Solution_LogsHit
         $joinRhs = $this->joinHelper->buildPhase2JoinRhs($resolvedCollation);
         $phase2Query = "/* abj404:src=LogsHitsRollupService::hitsTableInsertChunked#phase2Aggregate */ INSERT INTO " . $tempDestTable . " (requested_url, logsid, last_used, logshits, failed_hits) SELECT a.requested_url, MIN(a.logsid), MAX(a.last_used), SUM(a.logshits), SUM(a.failed_hits) FROM " . $preAggTable . " a INNER JOIN " . $redirectsTable . " r ON a.requested_url = " . $joinRhs . " GROUP BY a.requested_url";
         $results = $this->dbCore->queryAndGetResults($phase2Query, array('log_too_slow' => false, 'timeout' => 60));
-        $results['elapsed_time'] = round(microtime(true) - $startTime, 3);
+        $results['elapsed_time'] = round(abj_clock()->nowFloat() - $startTime, 3);
         $this->dbCore->queryAndGetResults("drop table if exists " . $preAggTable);
         return $results;
     }
@@ -399,9 +399,9 @@ class ABJ_404_Solution_LogsHitsRollupService implements ABJ_404_Solution_LogsHit
             if ($this->isHitsTableRebuildLocked()) { $this->logger->debugMessage(__FUNCTION__ . " skipping scheduling because another rebuild is already running."); $this->noticeState->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'running', 86400); return; }
             $rawScheduledFlag = $this->noticeState->getRuntimeFlag(self::HITS_TABLE_LAST_SCHEDULED_FLAG);
             $lastScheduled = is_scalar($rawScheduledFlag) ? (int)$rawScheduledFlag : 0;
-            if ($lastScheduled > 0 && (time() - $lastScheduled) < self::HITS_TABLE_SCHEDULE_COOLDOWN_SECONDS) { $this->logger->debugMessage(__FUNCTION__ . " skipping scheduling due to cooldown."); $this->noticeState->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'cooldown', 86400); return; }
+            if ($lastScheduled > 0 && (abj_clock()->now() - $lastScheduled) < self::HITS_TABLE_SCHEDULE_COOLDOWN_SECONDS) { $this->logger->debugMessage(__FUNCTION__ . " skipping scheduling due to cooldown."); $this->noticeState->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'cooldown', 86400); return; }
             self::$hitsTableRebuildScheduled = true;
-            $this->noticeState->setRuntimeFlag(self::HITS_TABLE_LAST_SCHEDULED_FLAG, time(), 86400);
+            $this->noticeState->setRuntimeFlag(self::HITS_TABLE_LAST_SCHEDULED_FLAG, abj_clock()->now(), 86400);
             $this->noticeState->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'scheduled', 86400);
             if ($this->shouldScheduleHitsTableRebuildViaCron()) { $this->logger->debugMessage(__FUNCTION__ . " scheduling hits table rebuild via WP-Cron."); abj_cron_scheduler()->scheduleSingle(ABJ_404_Solution_CronScheduler::HOOK_UPDATE_LOGS_HITS_TABLE, 5); return; }
             $this->logger->debugMessage(__FUNCTION__ . " scheduling hits table rebuild for shutdown hook.");
@@ -427,7 +427,7 @@ class ABJ_404_Solution_LogsHitsRollupService implements ABJ_404_Solution_LogsHit
         if ($lockValue === false || $lockValue === null || $lockValue === '') { return false; }
         if (!is_numeric($lockValue)) { if (function_exists('delete_option')) { delete_option($this->getHitsTableRebuildLockOptionName()); } return false; }
         $lockTimestamp = (int)$lockValue;
-        if ($lockTimestamp > 0 && (time() - $lockTimestamp) > self::HITS_TABLE_REBUILD_LOCK_TTL_SECONDS) { if (function_exists('delete_option')) { delete_option($this->getHitsTableRebuildLockOptionName()); } return false; }
+        if ($lockTimestamp > 0 && (abj_clock()->now() - $lockTimestamp) > self::HITS_TABLE_REBUILD_LOCK_TTL_SECONDS) { if (function_exists('delete_option')) { delete_option($this->getHitsTableRebuildLockOptionName()); } return false; }
         return true;
     }
 
@@ -435,9 +435,9 @@ class ABJ_404_Solution_LogsHitsRollupService implements ABJ_404_Solution_LogsHit
     private function acquireHitsTableRebuildLock(): bool {
         if (!function_exists('add_option')) { return true; }
         $lockName = $this->getHitsTableRebuildLockOptionName();
-        if (add_option($lockName, (string)time(), '', false)) { return true; }
+        if (add_option($lockName, (string)abj_clock()->now(), '', false)) { return true; }
         if ($this->isHitsTableRebuildLocked()) { return false; }
-        return (bool)add_option($lockName, (string)time(), '', false);
+        return (bool)add_option($lockName, (string)abj_clock()->now(), '', false);
     }
 
     /** @return void */

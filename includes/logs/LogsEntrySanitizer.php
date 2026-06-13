@@ -41,8 +41,8 @@ class ABJ_404_Solution_LogsEntrySanitizer {
         };
 
         $sanitized = array();
-        $tsVal = $entry['timestamp'] ?? time();
-        $sanitized['timestamp'] = absint(is_scalar($tsVal) ? $tsVal : time());
+        $tsVal = $entry['timestamp'] ?? abj_clock()->now();
+        $sanitized['timestamp'] = absint(is_scalar($tsVal) ? $tsVal : abj_clock()->now());
         $sanitized['user_ip'] = $normalizeString($entry['user_ip'], 512);
         $sanitized['referrer'] = $normalizeString($entry['referrer'], 512);
         $sanitized['dest_url'] = $normalizeString($entry['dest_url'], 512);

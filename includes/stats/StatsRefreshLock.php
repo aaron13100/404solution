@@ -27,7 +27,7 @@ class ABJ_404_Solution_StatsRefreshLock {
         }
 
         $lockKey = $this->getOptionName($cacheKey);
-        if (add_option($lockKey, time(), '', false)) {
+        if (add_option($lockKey, abj_clock()->now(), '', false)) {
             return true;
         }
 
@@ -37,15 +37,15 @@ class ABJ_404_Solution_StatsRefreshLock {
 
         $lockValue = get_option($lockKey, false);
         if ($lockValue === false || $lockValue === '' || $lockValue === null) {
-            return (bool)add_option($lockKey, time(), '', false);
+            return (bool)add_option($lockKey, abj_clock()->now(), '', false);
         }
 
         $lockTs = is_numeric($lockValue) ? (int)$lockValue : 0;
-        if ($lockTs > 0 && (time() - $lockTs) > self::REFRESH_LOCK_COOLDOWN_SECONDS) {
+        if ($lockTs > 0 && (abj_clock()->now() - $lockTs) > self::REFRESH_LOCK_COOLDOWN_SECONDS) {
             if (function_exists('delete_option')) {
                 delete_option($lockKey);
             }
-            return (bool)add_option($lockKey, time(), '', false);
+            return (bool)add_option($lockKey, abj_clock()->now(), '', false);
         }
 
         return false;

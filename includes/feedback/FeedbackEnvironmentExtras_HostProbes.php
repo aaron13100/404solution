@@ -130,7 +130,8 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras_HostProbes {
         }
         try {
             $tz = new \DateTimeZone($out['php_timezone'] !== '' ? $out['php_timezone'] : 'UTC');
-            $dt = new \DateTime('now', $tz);
+            $dt = new \DateTime('@' . abj_clock()->now());
+            $dt->setTimezone($tz);
             $out['server_utc_offset_seconds'] = (int)$tz->getOffset($dt);
         } catch (\Throwable $e) {
             // allow-silent-catch: server_utc_offset is best-effort; an invalid tz string leaves the default zero in place

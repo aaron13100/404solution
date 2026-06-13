@@ -69,10 +69,10 @@ class ABJ_404_Solution_DatabaseUpgradeCanonicalUrlBackfill extends ABJ_404_Solut
 
         $chunkSize = (int)$this->getCanonicalUrlBackfillChunkSize();
         $timeBudget = (float)$this->getCanonicalUrlBackfillTimeBudgetSec();
-        $start = microtime(true);
+        $start = abj_clock()->nowFloat();
         $totalUpdated = 0;
 
-        while ((microtime(true) - $start) < $timeBudget) {
+        while ((abj_clock()->nowFloat() - $start) < $timeBudget) {
             $query = "UPDATE " . $redirectsTable .
                 " SET canonical_url = CONCAT('/', TRIM(BOTH '/' FROM url))" .
                 " WHERE canonical_url IS NULL" .
@@ -97,7 +97,7 @@ class ABJ_404_Solution_DatabaseUpgradeCanonicalUrlBackfill extends ABJ_404_Solut
             $this->logger->infoMessage(sprintf(
                 "backfillRedirectsCanonicalUrl: populated canonical_url on %d redirect rows in %.2fs.",
                 $totalUpdated,
-                microtime(true) - $start
+                abj_clock()->nowFloat() - $start
             ));
         }
 
@@ -187,10 +187,10 @@ class ABJ_404_Solution_DatabaseUpgradeCanonicalUrlBackfill extends ABJ_404_Solut
 
         $chunkSize = (int)$this->getCanonicalUrlBackfillChunkSize();
         $timeBudget = (float)$this->getLogsv2CanonicalUrlBackfillTimeBudgetSec();
-        $start = microtime(true);
+        $start = abj_clock()->nowFloat();
         $totalUpdated = 0;
 
-        while ((microtime(true) - $start) < $timeBudget) {
+        while ((abj_clock()->nowFloat() - $start) < $timeBudget) {
             $query = "UPDATE " . $logsTable .
                 " SET canonical_url = CONCAT('/', TRIM(BOTH '/' FROM requested_url))" .
                 " WHERE canonical_url IS NULL" .
@@ -215,7 +215,7 @@ class ABJ_404_Solution_DatabaseUpgradeCanonicalUrlBackfill extends ABJ_404_Solut
             $this->logger->infoMessage(sprintf(
                 "backfillLogsv2CanonicalUrl: populated canonical_url on %d logsv2 rows in %.2fs.",
                 $totalUpdated,
-                microtime(true) - $start
+                abj_clock()->nowFloat() - $start
             ));
         }
 

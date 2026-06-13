@@ -108,7 +108,7 @@ class ABJ_404_Solution_RedirectsRetentionService implements ABJ_404_Solution_Red
         $abj404logic = abj_service('plugin_logic');
 
         $options = abj_service('options_repository')->getOptions(true);
-        $now = time();
+        $now = abj_clock()->now();
         $manually_fired = $this->isManualMaintenanceRun();
 
         $upgradesEtc = abj_service('database_upgrades');
@@ -353,6 +353,6 @@ class ABJ_404_Solution_RedirectsRetentionService implements ABJ_404_Solution_Red
     public function expireOldAutoRedirects(): int {
         $options = abj_service('options_repository')->getOptions();
         $days = $this->retentionPolicy->daysFromOptions(is_array($options) ? $options : array(), 'auto_302_expiration_days');
-        return $this->cleanupRepository->expireOldAutoRedirects($days, time());
+        return $this->cleanupRepository->expireOldAutoRedirects($days, abj_clock()->now());
     }
 }

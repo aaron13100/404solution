@@ -155,9 +155,9 @@ class ABJ_404_Solution_FeedbackTransport {
         }
         ABJ_404_Solution_FeedbackPayloadSchemaGuard::logContractWarnings($payload, $type);
         $payload = ABJ_404_Solution_FeedbackPayloadSchemaGuard::redact($payload);
-        $started = microtime(true);
+        $started = abj_clock()->nowFloat();
         $result = ABJ_404_Solution_FeedbackHttpClient::send($payload);
-        $elapsedMs = (int) round((microtime(true) - $started) * 1000);
+        $elapsedMs = (int) round((abj_clock()->nowFloat() - $started) * 1000);
 
         $statusStr = isset($result['status']) && is_scalar($result['status']) ? (string)$result['status'] : '';
         $reasonStr = isset($result['reason']) && is_scalar($result['reason']) ? (string)$result['reason'] : '';

@@ -56,7 +56,7 @@ class ABJ_404_Solution_StatsDashboardSnapshotCache {
     public function refresh($force = false) {
         $cached = $this->getFromCache();
         $hasCachedData = ($cached !== null && !empty($cached['data']));
-        $cachedAge = $hasCachedData ? max(0, time() - (is_scalar($cached['refreshed_at'] ?? 0) ? intval($cached['refreshed_at'] ?? 0) : 0)) : PHP_INT_MAX;
+        $cachedAge = $hasCachedData ? max(0, abj_clock()->now() - (is_scalar($cached['refreshed_at'] ?? 0) ? intval($cached['refreshed_at'] ?? 0) : 0)) : PHP_INT_MAX;
 
         if (!$force && $hasCachedData && $cachedAge < self::STATS_DASHBOARD_REFRESH_COOLDOWN_SECONDS) {
             return $cached;
@@ -71,7 +71,7 @@ class ABJ_404_Solution_StatsDashboardSnapshotCache {
         try {
             $data = $this->statsReadRepository->buildStatsDashboardSnapshotData();
             $payload = array(
-                'refreshed_at' => time(),
+                'refreshed_at' => abj_clock()->now(),
                 'hash' => $this->hash($data),
                 'data' => $data,
             );

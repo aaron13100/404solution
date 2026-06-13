@@ -59,7 +59,7 @@ class ABJ_404_Solution_ErrorEmailBodyFormatter {
         $isMultisite = !empty($payload['is_multisite']);
 
         $lines = array();
-        $lines[] = $subject . ". Sent " . date('Y/m/d h:i:s T');
+        $lines[] = $subject . ". Sent " . date('Y/m/d h:i:s T', abj_clock()->now());
         $lines[] = " ";
         $lines[] = "Error: " . $errorLineMessage;
         $lines[] = " ";

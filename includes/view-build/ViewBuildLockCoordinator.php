@@ -124,7 +124,7 @@ class ABJ_404_Solution_ViewBuildLockCoordinator extends ABJ_404_Solution_ViewBui
             return false;
         }
         $optionName = $this->transientFallbackLockOptionName($name);
-        $now = time();
+        $now = abj_clock()->now();
         $ttl = ABJ_404_Solution_ViewBuildConfig::VIEW_BUILD_TRANSIENT_LOCK_TTL_SECONDS;
         $expiresAt = $now + $ttl;
 
@@ -173,7 +173,7 @@ class ABJ_404_Solution_ViewBuildLockCoordinator extends ABJ_404_Solution_ViewBui
                     'reason'  => $this->lastNamedLockUnsupportedReason !== ''
                         ? $this->lastNamedLockUnsupportedReason : 'unknown',
                     'error'   => substr($this->lastNamedLockUnsupportedError, 0, 500),
-                    'when'    => time(),
+                    'when'    => abj_clock()->now(),
                     'message' => function_exists('__') ? __('This database does not support session-scoped GET_LOCK named locks. The plugin is using a WordPress option-row fallback to coordinate the staged view-build. Common on PlanetScale, Vitess, and split-routing ProxySQL deployments.', '404-solution') : 'This database does not support session-scoped GET_LOCK named locks. The plugin is using a WordPress option-row fallback to coordinate the staged view-build. Common on PlanetScale, Vitess, and split-routing ProxySQL deployments.',
                 ),
                 ABJ_404_Solution_ViewBuildConfig::VIEW_BUILD_DEGRADED_NOTICE_TTL_SECONDS
@@ -212,7 +212,7 @@ class ABJ_404_Solution_ViewBuildLockCoordinator extends ABJ_404_Solution_ViewBui
             try {
                 $nonce = bin2hex(random_bytes(8));
             } catch (\Throwable $t) { // allow-silent-catch: random_bytes unavailable on some hosts; mt_rand fallback is sufficient for a disposable write-probe nonce
-                $nonce = (string)mt_rand() . '_' . (string)microtime(true);
+                $nonce = (string)mt_rand() . '_' . (string)abj_clock()->nowFloat();
             }
             update_option($optionName, $nonce, false);
             $readBack = get_option($optionName, '');

@@ -59,7 +59,8 @@ class ABJ_404_Solution_NGramCoveragePolicy {
      * @return void
      */
     public function invalidateCoverageCaches() {
-        set_transient(self::COVERAGE_VERSION_KEY, time(), self::COVERAGE_VERSION_TTL);
+        // allow-cache-empty: timestamp marker versions coverage caches after invalidation; not a cached query payload.
+        set_transient(self::COVERAGE_VERSION_KEY, abj_clock()->now(), self::COVERAGE_VERSION_TTL);
         delete_transient(self::COVERAGE_RATIO_KEY);
         $this->coverageRatioMemo = null;
     }

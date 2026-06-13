@@ -55,7 +55,7 @@ class ABJ_404_Solution_ViewBuildRebuildReconcile extends ABJ_404_Solution_ViewBu
             return;
         }
 
-        $this->sweepExpiredInflightTransients($wpdb, time());
+        $this->sweepExpiredInflightTransients($wpdb, abj_clock()->now());
         $this->clearExpiredViewCacheCleanupMarker();
         $this->dropOrphanedRebuildTables();
     }
@@ -309,7 +309,7 @@ class ABJ_404_Solution_ViewBuildRebuildReconcile extends ABJ_404_Solution_ViewBu
         $currentStage = $this->host->stageServices()->progressOptions()->readProgressOption('current_stage', 0);
         $lastStartedStage = $this->host->stageServices()->progressOptions()->readProgressOption('last_started_stage', 0);
         $resumeWindowOk = $startedAt > 0
-            && (time() - $startedAt) <= ABJ_404_Solution_ViewBuildConfig::VIEW_BUILD_RESUME_TTL_SECONDS;
+            && (abj_clock()->now() - $startedAt) <= ABJ_404_Solution_ViewBuildConfig::VIEW_BUILD_RESUME_TTL_SECONDS;
         if ($resumeWindowOk && ($currentStage > 0 || $lastStartedStage > 0)) {
             return $action;
         }
@@ -377,7 +377,7 @@ class ABJ_404_Solution_ViewBuildRebuildReconcile extends ABJ_404_Solution_ViewBu
                 // from "multi-tab/cron lock contention orphaning each
                 // partial build" without asking for another debug zip.
                 $lastCompletedStage = $this->host->stageServices()->progressOptions()->readProgressOption('last_completed_stage', 0);
-                $age = $startedAt > 0 ? max(0, time() - $startedAt) : 0;
+                $age = $startedAt > 0 ? max(0, abj_clock()->now() - $startedAt) : 0;
                 $this->host->dataBoundary()->logger()->warn(sprintf(
                     '[staged] reconcile: dropped orphan view_build `%s` (view_done is live; previous run halted before swap); '
                     . 'current_stage=%d last_started_stage=%d last_completed_stage=%d started_at=%d age=%ds',

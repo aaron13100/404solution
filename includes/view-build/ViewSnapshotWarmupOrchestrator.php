@@ -110,7 +110,7 @@ class ABJ_404_Solution_ViewSnapshotWarmupOrchestrator {
         $shapeKey = $this->snapshotStore->getViewSnapshotCacheKey('abj404_view_table', $sub, $tableOptions);
         $optionName = $this->warmupStatePolicy->getViewWarmupStateOptionName($shapeKey);
         $state = $this->warmupStatePolicy->getViewWarmupState($optionName);
-        $now = time();
+        $now = abj_clock()->now();
 
         if ($host->viewTableSnapshotAvailable($sub, $tableOptions)) {
             $state['status'] = 'ready';
@@ -195,7 +195,7 @@ class ABJ_404_Solution_ViewSnapshotWarmupOrchestrator {
             ));
         }
 
-        $startMs = microtime(true);
+        $startMs = abj_clock()->nowFloat();
         try {
             $attempts[$stage] = $attemptCount + 1;
             $state['status'] = 'running';
@@ -213,8 +213,8 @@ class ABJ_404_Solution_ViewSnapshotWarmupOrchestrator {
 
             $ctx = ABJ_404_Solution_ViewSnapshotWarmupContext::create($host, $sub, $tableOptions, $stageOptions);
             $this->dispatchWarmupStage($ctx, $stage, $state);
-            $elapsedMs = (int)round((microtime(true) - $startMs) * 1000);
-            $state['stage_completed_at'] = time();
+            $elapsedMs = (int)round((abj_clock()->nowFloat() - $startMs) * 1000);
+            $state['stage_completed_at'] = abj_clock()->now();
             $state['last_error'] = '';
 
             $timingsByStage = is_array($state['timings_by_stage'] ?? null) ? $state['timings_by_stage'] : array();
@@ -237,10 +237,10 @@ class ABJ_404_Solution_ViewSnapshotWarmupOrchestrator {
             $this->warmupStatePolicy->setViewWarmupState($optionName, $state);
             return $this->warmupStatePolicy->formatViewWarmupResponse($state, $state['status'] === 'ready');
         } catch (Throwable $e) {
-            $elapsedMs = (int)round((microtime(true) - $startMs) * 1000);
+            $elapsedMs = (int)round((abj_clock()->nowFloat() - $startMs) * 1000);
             $errorMessage = $e->getMessage();
             $state['last_error'] = $errorMessage;
-            $state['stage_completed_at'] = time();
+            $state['stage_completed_at'] = abj_clock()->now();
             $currentAttempts = $attempts[$stage] ?? 0;
             if ($this->warmupStatePolicy->forgiveWarmupAttemptIfBuildProgressed($state, $stage)) {
                 $attempts = is_array($state['attempts_by_stage']) ? $state['attempts_by_stage'] : $attempts;

@@ -229,7 +229,7 @@ class ABJ_404_Solution_View_Shared extends ABJ_404_Solution_ViewComponent {
 	 * @return string
 	 */
 	public function formatTimeAgo($timestamp) {
-		$diff = time() - absint($timestamp);
+		$diff = abj_clock()->now() - absint($timestamp);
 		if ($diff < 60) {
 			return __('Just now', '404-solution');
 		}

@@ -45,7 +45,7 @@ class ABJ_404_Solution_GscSearchAnalyticsClient {
         $allRows = $this->doFetchFromApi($urls, $days);
         // allow-cache-empty: empty GSC result sets are valid recent fetches and drive the explicit no-data UI state.
         set_transient(ABJ_404_Solution_GscConfig::TRANSIENT_KEY, $allRows, ABJ_404_Solution_GscConfig::TRANSIENT_TTL);
-        update_option(ABJ_404_Solution_GscConfig::LAST_FETCH_OPTION_KEY, time(), false);
+        update_option(ABJ_404_Solution_GscConfig::LAST_FETCH_OPTION_KEY, abj_clock()->now(), false);
         return $allRows;
     }
 
@@ -74,7 +74,7 @@ class ABJ_404_Solution_GscSearchAnalyticsClient {
             $allRows = $this->doFetchFromApi($urls);
             // allow-cache-empty: empty GSC result sets are valid recent fetches and drive the explicit no-data UI state.
             set_transient(ABJ_404_Solution_GscConfig::TRANSIENT_KEY, $allRows, ABJ_404_Solution_GscConfig::TRANSIENT_TTL);
-            update_option(ABJ_404_Solution_GscConfig::LAST_FETCH_OPTION_KEY, time(), false);
+            update_option(ABJ_404_Solution_GscConfig::LAST_FETCH_OPTION_KEY, abj_clock()->now(), false);
         } finally {
             delete_transient(ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY);
         }
@@ -98,7 +98,7 @@ class ABJ_404_Solution_GscSearchAnalyticsClient {
     public function isRefreshNeeded(): bool {
         $lastFetch = get_option(ABJ_404_Solution_GscConfig::LAST_FETCH_OPTION_KEY, 0);
         $lastFetchTime = is_numeric($lastFetch) ? (int)$lastFetch : 0;
-        return (time() - $lastFetchTime) > ABJ_404_Solution_GscConfig::STALE_THRESHOLD;
+        return (abj_clock()->now() - $lastFetchTime) > ABJ_404_Solution_GscConfig::STALE_THRESHOLD;
     }
 
     /**
@@ -148,8 +148,9 @@ class ABJ_404_Solution_GscSearchAnalyticsClient {
         }
 
         $siteUrl = $s['site_url'];
-        $endDate = date('Y-m-d');
-        $startTimestamp = strtotime("-{$days} days");
+        $now = abj_clock()->now();
+        $endDate = date('Y-m-d', $now);
+        $startTimestamp = strtotime("-{$days} days", $now);
         $startDate = date('Y-m-d', $startTimestamp !== false ? $startTimestamp : 0);
 
         $urls = array_slice($urls, 0, 500);

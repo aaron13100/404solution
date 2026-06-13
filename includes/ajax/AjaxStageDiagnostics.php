@@ -54,7 +54,7 @@ class ABJ_404_Solution_AjaxStageDiagnostics {
             'stage' => (string)$stage,
             'query_label' => $diagnostics['query_label'],
             'what_happening' => $diagnostics['what_happening'],
-            'time_ms' => (int)round(microtime(true) * 1000),
+            'time_ms' => (int)round(abj_clock()->nowFloat() * 1000),
         );
         $events = array();
         if (function_exists('get_transient')) {

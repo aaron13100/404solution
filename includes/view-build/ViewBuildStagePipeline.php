@@ -169,7 +169,7 @@ class ABJ_404_Solution_ViewBuildStagePipeline extends ABJ_404_Solution_ViewBuild
         $startedAt = $this->host->stageServices()->progressOptions()->readProgressOption('started_at', 0);
         $bufferExists = $this->host->stageServices()->stateProbe()->stagedTableExists($this->viewBuildTableName());
         $isResuming = $startedAt > 0
-            && (time() - $startedAt) <= ABJ_404_Solution_ViewBuildConfig::VIEW_BUILD_RESUME_TTL_SECONDS
+            && (abj_clock()->now() - $startedAt) <= ABJ_404_Solution_ViewBuildConfig::VIEW_BUILD_RESUME_TTL_SECONDS
             && $bufferExists;
 
         $currentStage = $this->host->stageServices()->progressOptions()->readProgressOption('current_stage', 0);
@@ -181,7 +181,7 @@ class ABJ_404_Solution_ViewBuildStagePipeline extends ABJ_404_Solution_ViewBuild
 
         $this->host->dataBoundary()->logger()->infoMessage(sprintf(
             '[staged] runStagedBuildOnce: resuming (started_at=%d, %ds ago); current_stage=%d',
-            $startedAt, time() - $startedAt, $currentStage
+            $startedAt, abj_clock()->now() - $startedAt, $currentStage
         ));
         $this->host->stageServices()->stageCallbacks()->dropDeletemeTable();
     }
@@ -193,7 +193,7 @@ class ABJ_404_Solution_ViewBuildStagePipeline extends ABJ_404_Solution_ViewBuild
             : (!$bufferExists
                 ? 'buffer table missing (prior crash or fresh install)'
                 : ('prior build older than resume TTL ('
-                    . (time() - $startedAt) . 's elapsed)'));
+                    . (abj_clock()->now() - $startedAt) . 's elapsed)'));
         $this->host->dataBoundary()->logger()->infoMessage(sprintf(
             '[staged] runStagedBuildOnce: fresh start (%s); current_stage=%d',
             $reason, $currentStage
@@ -215,7 +215,7 @@ class ABJ_404_Solution_ViewBuildStagePipeline extends ABJ_404_Solution_ViewBuild
         });
         if (!$this->stageResultCompleted($result)) { return false; }
         if ($this->host->stageServices()->progressOptions()->readProgressOption('started_at', 0) === 0) {
-            $this->host->stageServices()->progressOptions()->writeProgressOption('started_at', time());
+            $this->host->stageServices()->progressOptions()->writeProgressOption('started_at', abj_clock()->now());
         }
         $this->host->stageServices()->progressOptions()->writeProgressOption('current_stage', 1);
         return true;

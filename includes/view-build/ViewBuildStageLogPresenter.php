@@ -61,7 +61,7 @@ class ABJ_404_Solution_ViewBuildStageLogPresenter extends ABJ_404_Solution_ViewB
      * @return void
      */
     public function logTimedViewBuildStage(int $stageNumber, string $stageKey, string $status, float $started): void {
-        $elapsedMs = (int)round((microtime(true) - $started) * 1000);
+        $elapsedMs = (int)round((abj_clock()->nowFloat() - $started) * 1000);
         $markerDetail = $status . ' in ' . $elapsedMs . ' ms';
         if (($status === 'yielded' || $status === 'killed_resumable')
             && $this->runtimeState->lastBatchProgressDetail() !== '') {

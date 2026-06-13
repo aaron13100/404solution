@@ -69,7 +69,7 @@ class ABJ_404_Solution_AjaxFailureLogger {
      * @return void
      */
     public function safeLogAjaxFailure($summary, $details = null, $throwable = null) {
-        $line = date('c') . ' (ERROR): ' . $summary;
+        $line = date('c', abj_clock()->now()) . ' (ERROR): ' . $summary;
         if ($details !== null) {
             $line .= ' Details: ' . $this->safeJsonEncode($details);
         }

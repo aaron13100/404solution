@@ -237,7 +237,7 @@ class ABJ_404_Solution_NGramFilter {
      * @return array<int, float>
      */
     public function findSimilarPages($url404, $minSimilarity = 0.4, $maxCandidates = 100) {
-        $startTime = microtime(true);
+        $startTime = abj_clock()->nowFloat();
 
         $url404Normalized = $this->f->strtolower(trim($url404));
         $queryNGrams = $this->extractor->extractNGrams($url404Normalized);
@@ -320,7 +320,7 @@ class ABJ_404_Solution_NGramFilter {
             $similarities = array_slice($similarities, 0, $maxCandidates, true);
         }
 
-        $duration = (microtime(true) - $startTime) * 1000;
+        $duration = (abj_clock()->nowFloat() - $startTime) * 1000;
 
         $this->logger->debugMessage(sprintf(
             "N-gram filtering: %d total, %d examined -> %d candidates (>=%.2f similarity) in %.2fms",

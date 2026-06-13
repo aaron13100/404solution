@@ -309,7 +309,7 @@ class ABJ_404_Solution_Functions {
     function getExecutionTime() {
         $startTime = $this->requestContext()->process_start_time;
         if ($startTime !== null) {
-            $elapsedTime = microtime(true) - $startTime;
+            $elapsedTime = abj_clock()->nowFloat() - $startTime;
             
             return $elapsedTime;
         }

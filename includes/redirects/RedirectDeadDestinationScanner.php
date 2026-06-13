@@ -66,7 +66,7 @@ class ABJ_404_Solution_RedirectDeadDestinationScanner {
         $sql = $this->dbCore->doTableNameReplacements($sql);
 
         $result = $this->dbCore->queryAndGetResults($sql, array(
-            'query_params' => array(time() - 7 * 86400),
+            'query_params' => array(abj_clock()->now() - 7 * 86400),
             'timeout' => 30,
         ));
 

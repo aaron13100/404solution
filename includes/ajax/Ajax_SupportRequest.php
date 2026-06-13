@@ -90,7 +90,7 @@ class ABJ_404_Solution_Ajax_SupportRequest {
         // prevention, not abuse from random users.
         $cooldownStartedAt = get_transient(self::COOLDOWN_TRANSIENT);
         if (is_scalar($cooldownStartedAt) && (int)$cooldownStartedAt > 0) {
-            $remaining = self::COOLDOWN_SECONDS - (time() - (int)$cooldownStartedAt);
+            $remaining = self::COOLDOWN_SECONDS - (abj_clock()->now() - (int)$cooldownStartedAt);
             if ($remaining > 0) {
                 wp_send_json_error(array(
                     'message' => __('Please wait before sending another support request.', '404-solution'),
@@ -143,7 +143,8 @@ class ABJ_404_Solution_Ajax_SupportRequest {
         // Mark cooldown BEFORE dispatch so a slow / hung HTTP transport
         // can't be exploited to bypass the rate limit by a user mashing
         // the button while the request is in flight.
-        set_transient(self::COOLDOWN_TRANSIENT, time(), self::COOLDOWN_SECONDS);
+        // allow-cache-empty: timestamp marker starts a support-request cooldown; not a cached fetch result.
+        set_transient(self::COOLDOWN_TRANSIENT, abj_clock()->now(), self::COOLDOWN_SECONDS);
 
         $ok = ABJ_404_Solution_FeedbackTransport::sendNow($payload, 'support_request');
         $fallbackUsed = ABJ_404_Solution_FeedbackTransport::lastSendUsedFallback();
@@ -276,7 +277,7 @@ class ABJ_404_Solution_Ajax_SupportRequest {
      * @return string
      */
     private static function generateReferenceId(): string {
-        $timestamp = gmdate('Y-m-d-H-i-s');
+        $timestamp = gmdate('Y-m-d-H-i-s', abj_clock()->now());
         try {
             $suffix = substr(bin2hex(random_bytes(4)), 0, 7);
             return $timestamp . '-' . $suffix;

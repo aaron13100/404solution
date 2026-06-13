@@ -94,7 +94,7 @@ class ABJ_404_Solution_DatabaseUpgradeDailyMaintenance extends ABJ_404_Solution_
         // The timeout row contains the expiration timestamp
         // We delete both the value and timeout rows for expired transients
 
-        $currentTime = time();
+        $currentTime = abj_clock()->now();
 
         // Find all expired rate limit timeout keys
         // DAO-bypass-approved: WP-core wp_options probe; $wpdb->prepare is read-only string formatting, executed via $wpdb->get_col below

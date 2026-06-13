@@ -43,20 +43,20 @@ class ABJ_404_Solution_PreviousRequestCookieTracker {
         $cookieName = ABJ404_PP . '_REQUEST_URI';
         $cookieNameShort = $cookieName . '_SHORT';
         try {
-            setcookie($cookieName, $requestedUrl, time() + (60 * 4), "/");
-            setcookie($cookieNameShort, $requestedUrl, time() + (5), "/");
+            setcookie($cookieName, $requestedUrl, abj_clock()->now() + (60 * 4), "/");
+            setcookie($cookieNameShort, $requestedUrl, abj_clock()->now() + (5), "/");
 
             if (!isset($_COOKIE[$cookieName . '_UPDATE_URL']) ||
                     empty($_COOKIE[$cookieName . '_UPDATE_URL'])) {
                 $updateUrlRaw = abj_service('sanitizer')->normalizeUrlString($requestUri);
                 $updateUrlCleaned = preg_replace('/\?.*$/', '', $updateUrlRaw);
                 $updateUrl = is_string($updateUrlCleaned) ? $updateUrlCleaned : $updateUrlRaw;
-                setcookie($cookieName . '_UPDATE_URL', $updateUrl, time() + (60 * 4), "/");
+                setcookie($cookieName . '_UPDATE_URL', $updateUrl, abj_clock()->now() + (60 * 4), "/");
             }
 
         } catch (Exception $e) {
             $this->logger->debugMessage("There was an issue setting a cookie: " . $e->getMessage());
-            $expireTime = date("D, d M Y H:i:s T", time() + (60 * 4));
+            $expireTime = date("D, d M Y H:i:s T", abj_clock()->now() + (60 * 4));
             $c = "\n" . '<script>document.cookie = "' . $cookieName . '=' .
                 esc_js($requestedUrl) .
                 '; expires=' . $expireTime . '";</script>' . "\n";

@@ -43,7 +43,7 @@ class ABJ_404_Solution_AjaxFatalErrorResponder {
 
         $bufferedOutput = $this->captureAndClearBufferedOutput($context);
         $details = $this->buildDetails($lasterror, $context, $bufferedOutput);
-        $line = date('c') . ' (ERROR): AJAX fatal error in ajaxUpdatePaginationLinks. Details: ' .
+        $line = date('c', abj_clock()->now()) . ' (ERROR): AJAX fatal error in ajaxUpdatePaginationLinks. Details: ' .
             $this->diagnostics->safeJsonEncode($details);
         $this->diagnostics->writeLine($line);
 

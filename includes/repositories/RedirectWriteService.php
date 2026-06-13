@@ -108,7 +108,7 @@ class ABJ_404_Solution_RedirectWriteService {
         $insertId = 0;
 
         if (!abj_service('request_context')->ignore_doprocess) {
-            $now = time();
+            $now = abj_clock()->now();
             $redirectsTable = $this->dbCore->doTableNameReplacements("{wp_abj404_redirects}");
             $fromURL = $this->urlNormalization()->normalizeToRelativePath($fromURL);
 

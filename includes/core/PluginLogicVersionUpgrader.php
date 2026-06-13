@@ -341,7 +341,7 @@ class ABJ_404_Solution_PluginLogicVersionUpgrader {
         }
 
         // @cache-write-audit: opt-out - stores a setup-completion date marker, not a query result
-        update_option('abj404_setup_completed', gmdate('Y-m-d'));
+        update_option('abj404_setup_completed', gmdate('Y-m-d', abj_clock()->now()));
         $this->logger->infoMessage('Marked setup wizard as completed for existing user.');
     }
 

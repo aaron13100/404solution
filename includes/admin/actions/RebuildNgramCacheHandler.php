@@ -35,7 +35,8 @@ class ABJ_404_Solution_RebuildNgramCacheHandler implements ABJ_404_Solution_Admi
             return __('N-gram cache rebuild is already scheduled or in progress. Please wait for it to complete.', '404-solution');
         }
 
-        set_transient($transientKey, time(), 10);
+        // allow-cache-empty: timestamp marker throttles duplicate rebuild clicks; not a cached query payload.
+        set_transient($transientKey, abj_clock()->now(), 10);
 
         $dbUpgrades = abj_service('database_upgrades');
         $scheduled = $dbUpgrades->scheduleNGramCacheRebuild();

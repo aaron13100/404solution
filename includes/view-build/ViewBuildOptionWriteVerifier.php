@@ -104,7 +104,7 @@ class ABJ_404_Solution_ViewBuildOptionWriteVerifier extends ABJ_404_Solution_Vie
                     'option'   => $optionName,
                     'expected' => is_scalar($expected) ? (string)$expected : 'non-scalar',
                     'observed' => is_scalar($retry) ? (string)$retry : 'non-scalar',
-                    'when'     => time(),
+                    'when'     => abj_clock()->now(),
                 ),
                 86400
             );

@@ -126,6 +126,23 @@ function abj_cron_scheduler(): ABJ_404_Solution_CronScheduler {
 }
 
 /**
+ * Typed accessor for the project clock service.
+ *
+ * Production resolves the container's SystemClock; tests can bind a
+ * FrozenClock to the same service and drive time-sensitive behavior without
+ * direct wall-clock calls.
+ *
+ * @return ABJ_404_Solution_Clock
+ */
+function abj_clock(): ABJ_404_Solution_Clock {
+    $clock = abj_service('clock');
+    if ($clock instanceof ABJ_404_Solution_Clock) {
+        return $clock;
+    }
+    return new ABJ_404_Solution_SystemClock();
+}
+
+/**
  * Return the singleton-installed instance for a given service name when
  * one is set, else null. Exists so abj_service() can route around the
  * container cache for services that expose a `peekInstance()` reflection

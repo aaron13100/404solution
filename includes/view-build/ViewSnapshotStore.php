@@ -122,7 +122,7 @@ class ABJ_404_Solution_ViewSnapshotStore {
             return false;
         }
         $lockTs = is_numeric($lockValue) ? (int)$lockValue : 0;
-        if ($lockTs > 0 && (time() - $lockTs) > ABJ_404_Solution_ViewReadRuntimeState::VIEW_SNAPSHOT_REFRESH_COOLDOWN_SECONDS) {
+        if ($lockTs > 0 && (abj_clock()->now() - $lockTs) > ABJ_404_Solution_ViewReadRuntimeState::VIEW_SNAPSHOT_REFRESH_COOLDOWN_SECONDS) {
             if (function_exists('delete_option')) {
                 delete_option($lockKey);
             }
@@ -137,13 +137,13 @@ class ABJ_404_Solution_ViewSnapshotStore {
             return true;
         }
         $lockKey = $this->getViewSnapshotLockOptionName($cacheKey);
-        if (add_option($lockKey, time(), '', false)) {
+        if (add_option($lockKey, abj_clock()->now(), '', false)) {
             return true;
         }
         if ($this->isViewSnapshotRefreshLocked($cacheKey)) {
             return false;
         }
-        return (bool)add_option($lockKey, time(), '', false);
+        return (bool)add_option($lockKey, abj_clock()->now(), '', false);
     }
 
     /** @param string $cacheKey @return void */
@@ -186,7 +186,7 @@ class ABJ_404_Solution_ViewSnapshotStore {
         $refreshedAtRaw = $row['refreshed_at'] ?? 0;
         $expiresAt = is_scalar($expiresAtRaw) ? intval($expiresAtRaw) : 0;
         $refreshedAt = is_scalar($refreshedAtRaw) ? intval($refreshedAtRaw) : 0;
-        $now = time();
+        $now = abj_clock()->now();
         $isFresh = ($expiresAt > $now);
         $recentEnough = ($refreshedAt > 0 && ($now - $refreshedAt) <= ABJ_404_Solution_ViewReadRuntimeState::VIEW_SNAPSHOT_REFRESH_COOLDOWN_SECONDS);
         if (!$allowExpired && !$isFresh) {
@@ -219,7 +219,7 @@ class ABJ_404_Solution_ViewSnapshotStore {
         if ($bytes > ABJ_404_Solution_ViewReadRuntimeState::VIEW_SNAPSHOT_MAX_PAYLOAD_BYTES) {
             return;
         }
-        $now = time();
+        $now = abj_clock()->now();
         $expiresAt = $now + max(1, intval($ttlSeconds));
         $query = "INSERT INTO {wp_abj404_view_cache}
             (cache_key, subpage, payload, payload_bytes, refreshed_at, expires_at, updated_at)
@@ -244,8 +244,8 @@ class ABJ_404_Solution_ViewSnapshotStore {
      * @return array<int|string, mixed>|null
      */
     public function waitForViewRowsSnapshotFromTable(string $cacheKey, int $timeoutMs = 4000) {
-        $deadline = microtime(true) + (max(100, intval($timeoutMs)) / 1000);
-        while (microtime(true) < $deadline) {
+        $deadline = abj_clock()->nowFloat() + (max(100, intval($timeoutMs)) / 1000);
+        while (abj_clock()->nowFloat() < $deadline) {
             $rows = $this->getViewRowsSnapshotFromTable($cacheKey, false, false);
             if (is_array($rows)) {
                 return $rows;
@@ -264,10 +264,11 @@ class ABJ_404_Solution_ViewSnapshotStore {
         if ($marker !== false) {
             return;
         }
-        set_transient('abj404_view_cache_cleanup_marker', time(), 1800);
+        // allow-cache-empty: timestamp marker rate-limits expired snapshot cleanup; not a cached query payload.
+        set_transient('abj404_view_cache_cleanup_marker', abj_clock()->now(), 1800);
         $query = "DELETE FROM {wp_abj404_view_cache} WHERE expires_at < %d";
         $this->dbCore->queryAndGetResults($query, array(
-            'query_params' => array(time() - ABJ_404_Solution_ViewReadRuntimeState::VIEW_SNAPSHOT_REFRESH_COOLDOWN_SECONDS),
+            'query_params' => array(abj_clock()->now() - ABJ_404_Solution_ViewReadRuntimeState::VIEW_SNAPSHOT_REFRESH_COOLDOWN_SECONDS),
             'log_errors' => false,
         ));
     }

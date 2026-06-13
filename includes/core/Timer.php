@@ -27,7 +27,7 @@ class ABJ_404_Solution_Timer {
      */
     public function __construct(?callable $currentTime = null) {
         $this->currentTime = $currentTime ?: static function (): float {
-            return microtime(true);
+            return abj_clock()->nowFloat();
         };
         $this->start();
     }

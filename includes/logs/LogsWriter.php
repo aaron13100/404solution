@@ -87,7 +87,7 @@ class ABJ_404_Solution_LogsWriter {
         global $wpdb;
         $abj404logic = abj_service('plugin_logic');
         $logTableName = $this->dbCore->doTableNameReplacements("{wp_abj404_logsv2}");
-        $now = time();
+        $now = abj_clock()->now();
         $requested_url = preg_replace('/[\x00-\x1F\x7F]/u', '', $requested_url) ?? $requested_url;
         $requested_url = $abj404logic->urlNormalization()->normalizeToRelativePath($requested_url);
 

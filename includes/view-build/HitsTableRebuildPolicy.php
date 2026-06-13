@@ -53,7 +53,7 @@ class ABJ_404_Solution_HitsTableRebuildPolicy {
     public function maybeUpdateRedirectsForViewHitsTable(): void {
         $this->dbCore->noticeState()->setRuntimeFlag(
             ABJ_404_Solution_ViewReadRuntimeState::HITS_TABLE_LAST_CHECKED_FLAG,
-            time(),
+            abj_clock()->now(),
             86400
         );
 

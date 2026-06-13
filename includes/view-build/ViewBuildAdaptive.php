@@ -94,8 +94,8 @@ class ABJ_404_Solution_ViewBuildAdaptive extends ABJ_404_Solution_ViewBuildColla
         }
         $start = isset($_SERVER['REQUEST_TIME_FLOAT']) && is_numeric($_SERVER['REQUEST_TIME_FLOAT'])
             ? (float)$_SERVER['REQUEST_TIME_FLOAT']
-            : (float)microtime(true);
-        $elapsed = max(0.0, microtime(true) - $start);
+            : (float)abj_clock()->nowFloat();
+        $elapsed = max(0.0, abj_clock()->nowFloat() - $start);
         return max(0.0, (float)$limit - $elapsed);
     }
 

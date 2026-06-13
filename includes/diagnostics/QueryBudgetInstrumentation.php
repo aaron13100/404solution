@@ -177,7 +177,7 @@ class ABJ_404_Solution_QueryBudgetInstrumentation {
             'sql' => $sqlInfo,
             'elapsed_ms' => max(0.0, $elapsedMs),
             'timeout_s' => max(0, $timeoutSeconds),
-            'ts' => microtime(true),
+            'ts' => abj_clock()->nowFloat(),
         );
         self::$state = $state;
     }
@@ -187,7 +187,7 @@ class ABJ_404_Solution_QueryBudgetInstrumentation {
         self::$state = array(
             'queries' => array(),
             'request_budget_ms' => self::requestBudgetMs(),
-            'started_at' => microtime(true),
+            'started_at' => abj_clock()->nowFloat(),
         );
     }
 
@@ -265,7 +265,7 @@ class ABJ_404_Solution_QueryBudgetInstrumentation {
             return null;
         }
         return array(
-            'ts' => gmdate('Y-m-d\TH:i:s\Z'),
+            'ts' => gmdate('Y-m-d\TH:i:s\Z', abj_clock()->now()),
             'uri' => self::currentRequestUri(),
             'request_total_ms' => round($totalMs, 2),
             'request_budget_ms' => $budgetMs,

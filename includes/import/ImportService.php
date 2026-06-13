@@ -353,7 +353,7 @@ class ABJ_404_Solution_ImportService {
                 'overwritten_count' => $this->stateInt($state, 'overwritten'),
                 'issues'            => $this->stateIssues($state),
                 'last_error'        => $e->getMessage(),
-                'paused_at'         => time(),
+                'paused_at'         => abj_clock()->now(),
             ));
         }
         $this->logger->warn(sprintf(

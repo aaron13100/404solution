@@ -17,13 +17,13 @@ class ABJ_404_Solution_ViewBuildForegroundLease extends ABJ_404_Solution_ViewBui
     public function claimForegroundViewBuildLease(): void {
         if (!function_exists('update_option')) { return; }
         update_option($this->host->dataBoundary()->getLowercasePrefix() . 'abj404_view_build_foreground_until',
-            time() + ABJ_404_Solution_ViewBuildConfig::VIEW_BUILD_FOREGROUND_LEASE_SECONDS, false);
+            abj_clock()->now() + ABJ_404_Solution_ViewBuildConfig::VIEW_BUILD_FOREGROUND_LEASE_SECONDS, false);
     }
 
     /** @return bool */
     public function foregroundViewBuildLeaseActive(): bool {
         if (!function_exists('get_option')) { return false; }
         $until = get_option($this->host->dataBoundary()->getLowercasePrefix() . 'abj404_view_build_foreground_until', 0);
-        return is_scalar($until) && intval($until) > time();
+        return is_scalar($until) && intval($until) > abj_clock()->now();
     }
 }

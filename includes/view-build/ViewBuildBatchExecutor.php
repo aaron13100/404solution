@@ -34,7 +34,7 @@ class ABJ_404_Solution_ViewBuildBatchExecutor extends ABJ_404_Solution_ViewBuild
      */
     public function stageInsertRedirectsBatched(): bool {
         $this->host->stageServices()->stageLogPresenter()->markBuildStage('staged_build_s2_insert');
-        $deadline = microtime(true) + $this->host->stageServices()->stagePipeline()->viewBuildPerStageBudgetSeconds();
+        $deadline = abj_clock()->nowFloat() + $this->host->stageServices()->stagePipeline()->viewBuildPerStageBudgetSeconds();
         // Pre-flight check uses the SQL hint (smaller than the wall-clock
         // budget by design), not the budget itself. This is the worst-case
         // time a single batch can take before SET STATEMENT max_statement_time
@@ -57,7 +57,7 @@ class ABJ_404_Solution_ViewBuildBatchExecutor extends ABJ_404_Solution_ViewBuild
             }
             // Wall-clock yield (Path A): per-stage budget exhausted. NOT a
             // batch-size problem; do not shrink.
-            if (microtime(true) >= $deadline) {
+            if (abj_clock()->nowFloat() >= $deadline) {
                 $this->host->stageServices()->stageLogPresenter()->markBuildStage('staged_build_s2_insert',
                     'batch ' . $this->humanBatchProgress($copiedSoFar, $totalCount) . ' (yielded)');
                 return false;
@@ -215,7 +215,7 @@ class ABJ_404_Solution_ViewBuildBatchExecutor extends ABJ_404_Solution_ViewBuild
      */
     public function runIdRangeBatchedUpdate(string $stageKey, string $highWaterKey, string $sqlFile): bool {
         $this->host->stageServices()->stageLogPresenter()->markBuildStage($stageKey);
-        $deadline = microtime(true) + $this->host->stageServices()->stagePipeline()->viewBuildPerStageBudgetSeconds();
+        $deadline = abj_clock()->nowFloat() + $this->host->stageServices()->stagePipeline()->viewBuildPerStageBudgetSeconds();
         $perQueryLimit = max(1.0, (float)$this->host->stageServices()->adaptive()->intelligentStagedQueryTimeoutSeconds());
         // s4_high_water -> s4_batch_size; s5_high_water -> s5_batch_size.
         $batchSizeKey = str_replace('_high_water', '_batch_size', $highWaterKey);
@@ -241,7 +241,7 @@ class ABJ_404_Solution_ViewBuildBatchExecutor extends ABJ_404_Solution_ViewBuild
         $batchNumber = 0;
         while ($highWater < $totalMaxId) {
             // Wall-clock yield (Path A); not a batch-size problem.
-            if (microtime(true) >= $deadline) {
+            if (abj_clock()->nowFloat() >= $deadline) {
                 $this->host->stageServices()->stageLogPresenter()->markBuildStage($stageKey,
                     'batch ' . $this->humanBatchProgress($highWater, $totalMaxId) . ' (yielded)');
                 return false;

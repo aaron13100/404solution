@@ -128,7 +128,7 @@ class ABJ_404_Solution_FileSystemService {
     			}
 
     			if (file_exists($directory) || file_exists(rtrim($directory, '/'))) {
-    				error_log("ABJ-404-SOLUTION (ERROR) " . date('Y-m-d H:i:s T') . ": Error creating the directory " .
+					error_log("ABJ-404-SOLUTION (ERROR) " . date('Y-m-d H:i:s T', abj_clock()->now()) . ": Error creating the directory " .
     						$directory . ". A file with that name already exists" .
     						($unlinkErr !== null ? " and unlink() failed: " . $unlinkErr : "") .
     						". Action: aborting directory creation, returning false.");
@@ -138,7 +138,7 @@ class ABJ_404_Solution_FileSystemService {
     		} else if (!@mkdir($directory, 0755, true)) {
     			$lastErr = error_get_last();
     			$mkdirErr = is_array($lastErr) ? $lastErr['message'] : 'unknown';
-    			error_log("ABJ-404-SOLUTION (ERROR) " . date('Y-m-d H:i:s T') . ": Error creating the directory " .
+					error_log("ABJ-404-SOLUTION (ERROR) " . date('Y-m-d H:i:s T', abj_clock()->now()) . ": Error creating the directory " .
     					$directory . ". mkdir() failed: " . $mkdirErr .
     					". Action: aborting directory creation, returning false.");
     			return false;

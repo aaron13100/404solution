@@ -89,7 +89,7 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras_DebugLogSignatures {
         if ($tail === '') {
             return $out;
         }
-        $cutoff = time() - 7 * 86400;
+        $cutoff = abj_clock()->now() - 7 * 86400;
         $byKey = array();
         $lines = preg_split('/\r?\n/', $tail);
         if (!is_array($lines)) {

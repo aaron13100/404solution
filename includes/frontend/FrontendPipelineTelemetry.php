@@ -54,7 +54,7 @@ class ABJ_404_Solution_FrontendPipelineTelemetry {
         if (!function_exists('abj404_benchmark_record_redirect_lookup')) {
             return;
         }
-        $elapsedMs = (microtime(true) - (float)$startTime) * 1000.0;
+        $elapsedMs = (abj_clock()->nowFloat() - (float)$startTime) * 1000.0;
         abj404_benchmark_record_redirect_lookup($elapsedMs);
     }
 

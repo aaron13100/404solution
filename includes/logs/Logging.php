@@ -220,7 +220,8 @@ class ABJ_404_Solution_Logging {
         $timezoneString = is_string($timezoneStringRaw) ? $timezoneStringRaw : '';
 
         if (!empty($timezoneString)) {
-            $date = new DateTime("now", new DateTimeZone($timezoneString));
+            $date = new DateTime('@' . abj_clock()->now());
+            $date->setTimezone(new DateTimeZone($timezoneString));
         } else {
             $gmtOffsetRaw = get_option('gmt_offset');
             // WordPress's gmt_offset is hours and may be fractional
@@ -232,13 +233,15 @@ class ABJ_404_Solution_Logging {
             $tzString = sprintf('%s%02d:%02d', $sign, intdiv($absMinutes, 60), $absMinutes % 60);
 
             try {
-                $date = new DateTime("now", new DateTimeZone($tzString));
+                $date = new DateTime('@' . abj_clock()->now());
+                $date->setTimezone(new DateTimeZone($tzString));
             } catch (Exception $e) {
                 // Use error_log (not $this->warn) because this method is part
                 // of the logging path; calling warn here would risk recursion
                 // if the timezone failure also breaks warn's own DateTime use.
                 @error_log('404 Solution: timezone constructor failed (' . $e->getMessage() . '); using server default');
-                $date = new DateTime();
+                $date = new DateTime('@' . abj_clock()->now());
+                $date->setTimezone(new DateTimeZone(date_default_timezone_get()));
             }
         }
         

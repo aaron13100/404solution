@@ -226,7 +226,8 @@ class ABJ_404_Solution_RedirectsCleanupRepository {
         if (get_transient($transientKey) !== false) {
             return 0;
         }
-        set_transient($transientKey, time(), HOUR_IN_SECONDS);
+        // allow-cache-empty: timestamp marker rate-limits automatic trash cleanup; not a cached query payload.
+        set_transient($transientKey, abj_clock()->now(), HOUR_IN_SECONDS);
 
         $patternsRaw = $options['auto_trash_junk_patterns'] ?? '';
         $patternsStr = is_string($patternsRaw) ? $patternsRaw : '';
@@ -258,7 +259,7 @@ class ABJ_404_Solution_RedirectsCleanupRepository {
         $affected = $result['rows_affected'] ?? 0;
         $totalTrashed += is_numeric($affected) ? (int)$affected : 0;
 
-        $cutoff = time() - (14 * DAY_IN_SECONDS);
+        $cutoff = abj_clock()->now() - (14 * DAY_IN_SECONDS);
         // DAO-bypass-approved: $wpdb->prepare is read-only string formatting; result goes through queryAndGetResults
         $query = $wpdb->prepare("UPDATE {wp_abj404_redirects} r
             SET r.disabled = 1

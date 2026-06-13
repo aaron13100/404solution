@@ -147,7 +147,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
             }
         }
 
-        abj_service('request_context')->process_start_time = microtime(true);
+        abj_service('request_context')->process_start_time = abj_clock()->nowFloat();
         $userRequest = ABJ_404_Solution_UserRequest::getInstance();
         if ($userRequest === null) {
             // SAFE_BAIL: no user request context - cannot resolve a URL to look up.

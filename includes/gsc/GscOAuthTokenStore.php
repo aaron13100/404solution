@@ -61,7 +61,7 @@ class ABJ_404_Solution_GscOAuthTokenStore {
             return false;
         }
         $expiresAt = $this->payloadInt($token, 'expires_at', 0);
-        if ($expiresAt > 0 && $expiresAt < time()) {
+        if ($expiresAt > 0 && $expiresAt < abj_clock()->now()) {
             return $this->refreshToken();
         }
         return true;
@@ -112,7 +112,7 @@ class ABJ_404_Solution_GscOAuthTokenStore {
         $token = array(
             'access_token'  => $accessToken,
             'token_type'    => 'Bearer',
-            'expires_at'    => $expiresIn > 0 ? (time() + $expiresIn - 60) : 0,
+            'expires_at'    => $expiresIn > 0 ? (abj_clock()->now() + $expiresIn - 60) : 0,
             'refresh_token' => $refreshToken,
         );
         update_option(ABJ_404_Solution_GscConfig::TOKEN_OPTION_KEY, $token, false);
@@ -297,6 +297,6 @@ class ABJ_404_Solution_GscOAuthTokenStore {
     /** @param array<string, mixed> $body */
     private function expiresAtFromBody(array $body): int {
         $expiresIn = $this->payloadInt($body, 'expires_in', 0);
-        return $expiresIn > 0 ? time() + $expiresIn - 60 : 0;
+        return $expiresIn > 0 ? abj_clock()->now() + $expiresIn - 60 : 0;
     }
 }

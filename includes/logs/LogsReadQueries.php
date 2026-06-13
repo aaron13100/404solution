@@ -205,7 +205,7 @@ class ABJ_404_Solution_LogsReadQueries {
         $cacheKey = 'abj404_trend_v1_' . $blogId . '_' . $days . '_' . $maxLogId;
         if (function_exists('get_transient')) { $cached = get_transient($cacheKey); if (is_array($cached)) { return $cached; } }
         $logsTable = $this->dbCore->doTableNameReplacements('{wp_abj404_logsv2}');
-        $cutoff = time() - ($days * 86400);
+        $cutoff = abj_clock()->now() - ($days * 86400);
         $notFoundDest = '404';
         $query = "SELECT DATE(FROM_UNIXTIME(`timestamp`)) AS `date`, SUM(CASE WHEN `dest_url` = %s THEN 1 ELSE 0 END) AS `hits_404`, SUM(CASE WHEN `dest_url` <> %s THEN 1 ELSE 0 END) AS `hits_redirect` FROM " . $logsTable . " WHERE `timestamp` >= " . intval($cutoff) . " GROUP BY DATE(FROM_UNIXTIME(`timestamp`)) ORDER BY `date` ASC";
         $result = $this->dbCore->queryAndGetResults($query, array('query_params' => array($notFoundDest, $notFoundDest)));
@@ -220,7 +220,7 @@ class ABJ_404_Solution_LogsReadQueries {
         }
         $output = array();
         for ($i = $days - 1; $i >= 0; $i--) {
-            $d = date('Y-m-d', time() - ($i * 86400));
+            $d = date('Y-m-d', abj_clock()->now() - ($i * 86400));
             $output[] = isset($byDate[$d]) ? $byDate[$d] : array('date' => $d, 'hits_404' => 0, 'hits_redirect' => 0, 'new_captures' => 0);
         }
         if (!$hadError && function_exists('set_transient')) { set_transient($cacheKey, $output, self::TREND_DATA_CACHE_TTL_SECONDS); }

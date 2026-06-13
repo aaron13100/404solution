@@ -82,7 +82,7 @@ class ABJ_404_Solution_EmailDigest {
      */
     public function generateDigestHTML(array $topCaptured, array $stats, string $dateRange = '', bool $rollupAvailable = true): string {
         if ($dateRange === '') {
-            $dateRange = date('Y-m-d');
+            $dateRange = date('Y-m-d', abj_clock()->now());
         }
 
         $adminUrl = function_exists('admin_url')
@@ -167,7 +167,7 @@ class ABJ_404_Solution_EmailDigest {
             'resolutionPct' => $resolutionPct, 'progressBarFill' => $progressBarFill,
             'progressBarEmpty' => $progressBarEmpty,
             'pluginVersion' => defined('ABJ404_VERSION') ? ABJ404_VERSION : '',
-            'phpVersion' => PHP_VERSION, 'sentAt' => date('Y-m-d H:i T'),
+            'phpVersion' => PHP_VERSION, 'sentAt' => date('Y-m-d H:i T', abj_clock()->now()),
         ];
     }
 
@@ -303,7 +303,7 @@ class ABJ_404_Solution_EmailDigest {
             return 'Digest skipped: no captured 404s to report.';
         }
 
-        $dateRange = date('Y-m-d');
+        $dateRange = date('Y-m-d', abj_clock()->now());
         $body = $this->generateDigestHTML($topCaptured, $stats, $dateRange, $rollupAvailable);
 
         $subject = sprintf(
@@ -324,7 +324,7 @@ class ABJ_404_Solution_EmailDigest {
         $this->logger->debugMessage('404 digest email sent.');
 
         if (function_exists('update_option')) {
-            update_option('admin_notification_last_sent', time());
+            update_option('admin_notification_last_sent', abj_clock()->now());
         }
 
         return 'Digest email sent to: ' . $to;

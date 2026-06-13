@@ -99,7 +99,7 @@ class ABJ_404_Solution_ExistingRedirectLookup {
      * @return array<string, mixed>
      */
     private function lookup(string $requestedURL, bool $degradedMode): array {
-        $lookupStart = microtime(true);
+        $lookupStart = abj_clock()->nowFloat();
         $redirect = $this->redirectsRepository->getActiveRedirectForURL($requestedURL, $degradedMode);
         $this->telemetry->recordRedirectLookupTiming($lookupStart);
         return is_array($redirect) ? $redirect : array('id' => '0', 'final_dest' => '0');

@@ -129,9 +129,10 @@ class ABJ_404_Solution_StatsReadRepository {
      * @return array{today:array<string,int>,month:array<string,int>,year:array<string,int>,all:array<string,int>}
      */
     public function getPeriodicStatsSummariesCached($notFoundDest = '404') {
-        $today = mktime(0, 0, 0, abs(intval(date('m'))), abs(intval(date('d'))), abs(intval(date('Y'))));
-        $firstm = mktime(0, 0, 0, abs(intval(date('m'))), 1, abs(intval(date('Y'))));
-        $firsty = mktime(0, 0, 0, 1, 1, abs(intval(date('Y'))));
+        $now = abj_clock()->now();
+        $today = mktime(0, 0, 0, abs(intval(date('m', $now))), abs(intval(date('d', $now))), abs(intval(date('Y', $now))));
+        $firstm = mktime(0, 0, 0, abs(intval(date('m', $now))), 1, abs(intval(date('Y', $now))));
+        $firsty = mktime(0, 0, 0, 1, 1, abs(intval(date('Y', $now))));
 
         $thresholds = array(
             'today' => intval($today),
@@ -157,7 +158,7 @@ class ABJ_404_Solution_StatsReadRepository {
 
         if ($isCachedValid) {
             $refreshedAt = $this->toInt($cached['refreshed_at'] ?? 0, 0);
-            $ageSeconds = max(0, time() - $refreshedAt);
+            $ageSeconds = max(0, abj_clock()->now() - $refreshedAt);
             $cachedMaxLogId = $this->toInt($cached['max_log_id'] ?? -1, -1);
             if ($currentMaxLogId >= 0 && $cachedMaxLogId === $currentMaxLogId) {
                 return $cachedPeriods;
@@ -185,7 +186,7 @@ class ABJ_404_Solution_StatsReadRepository {
                 set_transient(
                     $cacheKey,
                     array(
-                        'refreshed_at' => time(),
+                        'refreshed_at' => abj_clock()->now(),
                         'max_log_id' => $currentMaxLogId,
                         'periods' => $result,
                     ),
@@ -262,10 +263,11 @@ class ABJ_404_Solution_StatsReadRepository {
             array(ABJ404_STATUS_CAPTURED, ABJ404_STATUS_IGNORED, ABJ404_STATUS_LATER)
         );
 
+        $now = abj_clock()->now();
         $thresholds = array(
-            'today' => (int)mktime(0, 0, 0, abs(intval(date('m'))), abs(intval(date('d'))), abs(intval(date('Y')))),
-            'month' => (int)mktime(0, 0, 0, abs(intval(date('m'))), 1, abs(intval(date('Y')))),
-            'year' => (int)mktime(0, 0, 0, 1, 1, abs(intval(date('Y')))),
+            'today' => (int)mktime(0, 0, 0, abs(intval(date('m', $now))), abs(intval(date('d', $now))), abs(intval(date('Y', $now)))),
+            'month' => (int)mktime(0, 0, 0, abs(intval(date('m', $now))), 1, abs(intval(date('Y', $now)))),
+            'year' => (int)mktime(0, 0, 0, 1, 1, abs(intval(date('Y', $now)))),
             'all' => 0,
         );
         $periods = array();

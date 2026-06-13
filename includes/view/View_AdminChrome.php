@@ -59,7 +59,7 @@ class ABJ_404_Solution_View_AdminChrome extends ABJ_404_Solution_ViewComponent {
         if ($builtAt <= 0) {
             return 'n/a';
         }
-        $age = time() - $builtAt;
+        $age = abj_clock()->now() - $builtAt;
         if ($age < 0) {
             return 'n/a';
         }

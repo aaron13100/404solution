@@ -95,7 +95,7 @@ class ABJ_404_Solution_ViewBuildStageCallbacks extends ABJ_404_Solution_ViewBuil
         $opts = $this->host->stageServices()->stagedSqlExecutor()->stagedQueryOptions();
         $opts['log_errors'] = false;
         foreach ($attempts as $engineLabel => $sql) {
-            $attemptStarted = microtime(true);
+            $attemptStarted = abj_clock()->nowFloat();
             $this->host->dataBoundary()->logger()->debugMessage(sprintf(
                 '[staged] S1 createViewBuildTable attempt starting: engine=%s',
                 $engineLabel
@@ -104,7 +104,7 @@ class ABJ_404_Solution_ViewBuildStageCallbacks extends ABJ_404_Solution_ViewBuil
             $err = isset($result['last_error']) && is_string($result['last_error'])
                 ? trim($result['last_error']) : '';
             $timedOut = !empty($result['timed_out']);
-            $elapsedMs = (int)round((microtime(true) - $attemptStarted) * 1000);
+            $elapsedMs = (int)round((abj_clock()->nowFloat() - $attemptStarted) * 1000);
             $this->host->dataBoundary()->logger()->debugMessage(sprintf(
                 '[staged] S1 createViewBuildTable attempt finished: engine=%s elapsed_ms=%d timed_out=%s last_error=%s',
                 $engineLabel,

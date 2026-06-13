@@ -111,7 +111,7 @@ class ABJ_404_Solution_SynchronizationUtils {
      * @return string
      */
     private function createUniqueID($keyFromUser) {
-        return microtime(true) . "_" . $keyFromUser . '_' . $this->uniqidReal() . uniqid('', true);
+        return abj_clock()->nowFloat() . "_" . $keyFromUser . '_' . $this->uniqidReal() . uniqid('', true);
     }
 
     /** Returns an empty string if the lock is not acquired.
@@ -161,7 +161,7 @@ class ABJ_404_Solution_SynchronizationUtils {
         
         $createTime = $uniqueIDInfo[0];
         
-        $timePassed = microtime(true) - (float)$createTime;
+        $timePassed = abj_clock()->nowFloat() - (float)$createTime;
         
         $maxExecutionTime = ini_get('max_execution_time');
         if (empty($maxExecutionTime) || $maxExecutionTime < 1) {
@@ -187,7 +187,7 @@ class ABJ_404_Solution_SynchronizationUtils {
             $logger->errorMessage("Forcibly removed synchronization after " . 
             		$timePassed . " seconds for the " . "key " . $internalSynchronizedKey . 
             		" with value: " . $uniqueID . ', value after delete: ' . $valueAfterDelete . 
-            		", microtime: " . microtime(true) . ", unique ID for debugging: " . 
+                    ", microtime: " . abj_clock()->nowFloat() . ", unique ID for debugging: " .
                     $uniqueIDForDebugging . ", File sync mode: " . json_encode($this->isFileMode()));
         }
     }

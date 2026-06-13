@@ -27,7 +27,7 @@ class ABJ_404_Solution_ViewBuildReadGateway extends ABJ_404_Solution_ViewBuildCo
         }
         $builtAt = $this->host->stageServices()->viewDoneState()->viewDoneBuiltAt();
         $isFresh = $builtAt > 0
-            && (time() - $builtAt) < ABJ_404_Solution_ViewBuildConfig::VIEW_DONE_FRESHNESS_TTL_SECONDS
+            && (abj_clock()->now() - $builtAt) < ABJ_404_Solution_ViewBuildConfig::VIEW_DONE_FRESHNESS_TTL_SECONDS
             && $this->host->stageServices()->viewDoneState()->viewDoneIsServeable();
 
         if ($isFresh) {
@@ -72,7 +72,7 @@ class ABJ_404_Solution_ViewBuildReadGateway extends ABJ_404_Solution_ViewBuildCo
         $this->setReadQueryTimeout($tableOptions);
         $builtAt = $this->host->stageServices()->viewDoneState()->viewDoneBuiltAt();
         $isFresh = $builtAt > 0
-            && (time() - $builtAt) < ABJ_404_Solution_ViewBuildConfig::VIEW_DONE_FRESHNESS_TTL_SECONDS
+            && (abj_clock()->now() - $builtAt) < ABJ_404_Solution_ViewBuildConfig::VIEW_DONE_FRESHNESS_TTL_SECONDS
             && $this->host->stageServices()->viewDoneState()->viewDoneIsServeable();
 
         if (!$this->host->stageServices()->viewDoneState()->viewDoneIsServeable()) {

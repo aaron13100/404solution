@@ -91,7 +91,7 @@ class ABJ_404_Solution_NotFoundResponseService {
 
                 $this->logsRepo->logRedirectHit($requestedURL, $pLink, 'user specified 404 page. ' . $reason);
 
-                setcookie(ABJ404_PP . '_STATUS_404', 'true', time() + 20, "/");
+                setcookie(ABJ404_PP . '_STATUS_404', 'true', abj_clock()->now() + 20, "/");
 
                 $this->forceRedirect(esc_url($pLink), (int)$defRedir);
                 exit;

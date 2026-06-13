@@ -118,10 +118,10 @@ class ABJ_404_Solution_ReviewFeedback {
                 update_user_meta(get_current_user_id(), 'abj404_review_step', 'show_feedback');
                 delete_user_meta(get_current_user_id(), 'abj404_review_remind_later');
             } elseif ($response === 'ask_later') {
-                update_user_meta(get_current_user_id(), 'abj404_review_remind_later', time() + (self::ASK_LATER_DELAY_DAYS * 86400));
+                update_user_meta(get_current_user_id(), 'abj404_review_remind_later', abj_clock()->now() + (self::ASK_LATER_DELAY_DAYS * 86400));
                 delete_user_meta(get_current_user_id(), 'abj404_review_step');
             } elseif ($response === 'close_x') {
-                update_user_meta(get_current_user_id(), 'abj404_review_remind_later', time() + (self::CLOSE_X_SNOOZE_DAYS * 86400));
+                update_user_meta(get_current_user_id(), 'abj404_review_remind_later', abj_clock()->now() + (self::CLOSE_X_SNOOZE_DAYS * 86400));
                 delete_user_meta(get_current_user_id(), 'abj404_review_step');
             } elseif ($response === 'never') {
                 update_user_meta(get_current_user_id(), 'abj404_review_dismissed', 'permanent');
@@ -163,7 +163,7 @@ class ABJ_404_Solution_ReviewFeedback {
             $feedback_details = sanitize_textarea_field(ABJ_404_Solution_RequestInputNormalizer::normalizeScalar($feedbackDetailsRaw));
 
             $feedback_data = array(
-                'timestamp' => current_time('mysql'),
+                'timestamp' => abj_clock()->wpNowMysql(),
                 'user_id' => get_current_user_id(),
                 'site_url' => get_site_url(),
                 'issues' => $issues,
@@ -210,18 +210,20 @@ class ABJ_404_Solution_ReviewFeedback {
         }
 
         $remind_later = get_user_meta(get_current_user_id(), 'abj404_review_remind_later', true);
-        if ($remind_later && time() < $remind_later) {
+        $remindLaterUntil = is_numeric($remind_later) ? (int)$remind_later : 0;
+        if ($remindLaterUntil > 0 && abj_clock()->now() < $remindLaterUntil) {
             return;
         }
 
-        $installed_time = get_option('abj404_installed_time');
-        if (!$installed_time) {
-            $installed_time = time();
-            update_option('abj404_installed_time', $installed_time);
+        $installedTimeRaw = get_option('abj404_installed_time');
+        $installedTime = is_numeric($installedTimeRaw) ? (int)$installedTimeRaw : 0;
+        if ($installedTime <= 0) {
+            $installedTime = abj_clock()->now();
+            update_option('abj404_installed_time', $installedTime);
             return;
         }
 
-        $days_installed = (time() - $installed_time) / 86400;
+        $days_installed = (abj_clock()->now() - $installedTime) / 86400;
         if ($days_installed < self::INITIAL_DELAY_DAYS) {
             return;
         }

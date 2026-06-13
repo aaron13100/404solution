@@ -211,7 +211,7 @@ class ABJ_404_Solution_AdminFatalErrorResponder {
             }
         }
 
-        return time();
+        return abj_clock()->now();
     }
 
     /** @return bool */

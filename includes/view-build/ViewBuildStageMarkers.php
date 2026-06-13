@@ -40,7 +40,7 @@ class ABJ_404_Solution_ViewBuildStageMarkers extends ABJ_404_Solution_ViewBuildC
      * @return void
      */
     public function markViewBuildStageStarted(int $stageNumber, string $stageKey): void {
-        $now = time();
+        $now = abj_clock()->now();
         $this->runtimeState->resetBatchProgressDetail();
         if ($this->host->stageServices()->progressOptions()->readProgressOption('started_at', 0) === 0) {
             $this->host->stageServices()->progressOptions()->writeProgressOption('started_at', $now);
@@ -61,6 +61,6 @@ class ABJ_404_Solution_ViewBuildStageMarkers extends ABJ_404_Solution_ViewBuildC
      */
     public function markViewBuildStageCompleted(int $stageNumber): void {
         $this->host->stageServices()->progressOptions()->writeProgressOption('last_completed_stage', $stageNumber);
-        $this->host->stageServices()->progressOptions()->writeProgressOption('last_completed_at', time());
+        $this->host->stageServices()->progressOptions()->writeProgressOption('last_completed_at', abj_clock()->now());
     }
 }

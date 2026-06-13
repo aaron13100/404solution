@@ -38,7 +38,7 @@ class ABJ_404_Solution_NGramUsageTelemetry {
             'total_candidates_returned' => 0,
             'total_duration_ms' => 0,
             'avg_reduction_percent' => 0,
-            'last_reset' => time(),
+            'last_reset' => abj_clock()->now(),
         ];
         $statsRaw = get_option(self::OPTION_KEY, $defaultStats);
         /** @var array<string, mixed> $stats */
@@ -56,7 +56,7 @@ class ABJ_404_Solution_NGramUsageTelemetry {
             $stats['avg_reduction_percent'] = (($prevAvgReduction * ($totalQueries - 1)) + $reductionPercent) / $totalQueries;
         }
 
-        $monthAgo = time() - self::RESET_INTERVAL_SECONDS;
+        $monthAgo = abj_clock()->now() - self::RESET_INTERVAL_SECONDS;
         $lastReset = (isset($stats['last_reset']) && is_numeric($stats['last_reset'])) ? (int)$stats['last_reset'] : 0;
         if ($lastReset < $monthAgo) {
             $stats = [
@@ -65,7 +65,7 @@ class ABJ_404_Solution_NGramUsageTelemetry {
                 'total_candidates_returned' => $candidates,
                 'total_duration_ms' => $duration,
                 'avg_reduction_percent' => ($totalInCache > 0) ? (($totalInCache - $examined) / $totalInCache) * 100 : 0,
-                'last_reset' => time(),
+                'last_reset' => abj_clock()->now(),
             ];
         }
 
@@ -84,7 +84,7 @@ class ABJ_404_Solution_NGramUsageTelemetry {
             'total_candidates_returned' => 0,
             'total_duration_ms' => 0,
             'avg_reduction_percent' => 0,
-            'last_reset' => time(),
+            'last_reset' => abj_clock()->now(),
         ];
         $statsRaw = get_option(self::OPTION_KEY, $defaultStats);
         /** @var array<string, mixed> $stats */

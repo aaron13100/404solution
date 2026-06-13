@@ -51,7 +51,7 @@ class ABJ_404_Solution_ViewBuildStageRunner extends ABJ_404_Solution_ViewBuildCo
      * @return mixed
      */
     public function runTimedViewBuildStage(int $stageNumber, string $stageKey, callable $callback) {
-        $started = microtime(true);
+        $started = abj_clock()->nowFloat();
         try {
             $this->host->stageServices()->stageMarkers()->markViewBuildStageStarted($stageNumber, $stageKey);
             // Public extension point. Sites can hook this for telemetry, custom

@@ -74,7 +74,7 @@ class ABJ_404_Solution_DatabaseUpgradePluginUpdate extends ABJ_404_Solution_Data
             return $results;
         }
 
-        $startTime = microtime(true);
+        $startTime = abj_clock()->nowFloat();
         $redirectsTable = $this->dbCore->tableNameResolver()->getPrefixedTableName('abj404_redirects');
 
         $abj404logging->infoMessage("Migrating redirects table to relative paths...");
@@ -130,7 +130,7 @@ class ABJ_404_Solution_DatabaseUpgradePluginUpdate extends ABJ_404_Solution_Data
         } else {
             $results['redirects_updated'] = $updateResult;
 
-            $duration = microtime(true) - $startTime;
+            $duration = abj_clock()->nowFloat() - $startTime;
             $abj404logging->infoMessage(sprintf(
                 "Migrated %d redirects in %.4f seconds.",
                 $results['redirects_updated'],
@@ -261,7 +261,7 @@ class ABJ_404_Solution_DatabaseUpgradePluginUpdate extends ABJ_404_Solution_Data
         // check the latest date to see if it's been long enough to update.
         $lastUpdated = isset($pluginInfo['last_updated']) && is_string($pluginInfo['last_updated']) ? $pluginInfo['last_updated'] : '';
         $lastReleaseDate = new DateTime($lastUpdated);
-        $todayDate = new DateTime();
+        $todayDate = new DateTime('@' . abj_clock()->now());
         $dateInterval = $lastReleaseDate->diff($todayDate);
         $daysDifference = $dateInterval->days;
         

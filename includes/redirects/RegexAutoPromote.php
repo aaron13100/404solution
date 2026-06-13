@@ -141,7 +141,7 @@ class ABJ_404_Solution_RegexAutoPromote {
             'original_url' => (string)$originalURL,
             'new_url' => (string)$newURL,
             'url_rewritten' => (bool)$urlRewritten,
-            'created_at' => time(),
+            'created_at' => abj_clock()->now(),
         );
         $ttl = defined('HOUR_IN_SECONDS') ? HOUR_IN_SECONDS : 3600;
         // allow-cache-empty: $payload built locally from method args, never a failure-derived empty/null.

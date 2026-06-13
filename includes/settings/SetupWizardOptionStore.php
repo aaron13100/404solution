@@ -27,7 +27,7 @@ class ABJ_404_Solution_SetupWizardOptionStore {
      * @return void
      */
     public static function markCompleteToday(): void {
-        update_option(ABJ_404_Solution_SetupWizard::OPTION_NAME, gmdate('Y-m-d'));
+        update_option(ABJ_404_Solution_SetupWizard::OPTION_NAME, gmdate('Y-m-d', abj_clock()->now()));
     }
 
     /**
