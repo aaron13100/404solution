@@ -172,19 +172,6 @@ class ABJ_404_Solution_DatabaseNoticeStateHolder {
     }
 
     /**
-     * Localize a string via WordPress __() when available, else return as-is.
-     *
-     * @param string $text Source (untranslated) string.
-     * @return string Translated string, or the original when __() is unavailable.
-     */
-    public function localizeOrDefault(string $text): string {
-        if (function_exists('__')) {
-            return __($text, '404-solution');
-        }
-        return $text;
-    }
-
-    /**
      * @return bool True when a write-block cooldown is active (disk full or read-only).
      */
     public function isWriteBlockActive(): bool {

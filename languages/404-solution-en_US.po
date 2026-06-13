@@ -3823,6 +3823,10 @@ msgstr "Please wait before sending another support request."
 msgid "Invalid support request source."
 msgstr "Invalid support request source."
 
+#: includes/ajax/AjaxRequestContractValidator.php
+msgid "Invalid AJAX request."
+msgstr "Invalid AJAX request."
+
 #: includes/ajax/Ajax_SupportRequest.php
 msgid "Failed to send support request. Please try again later."
 msgstr "Failed to send support request. Please try again later."

@@ -138,7 +138,7 @@ class ABJ_404_Solution_AjaxRequestContractValidator {
      * @param array<int, string> $violations
      */
     private static function sendValidationError(string $contractId, array $violations): void {
-        $message = function_exists('__') ? __(self::MESSAGE, '404-solution') : self::MESSAGE;
+        $message = function_exists('__') ? __('Invalid AJAX request.', '404-solution') : self::MESSAGE;
         wp_send_json_error(array(
             'message' => $message,
             'contract' => $contractId,

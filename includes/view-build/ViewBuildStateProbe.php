@@ -154,19 +154,4 @@ class ABJ_404_Solution_ViewBuildStateProbe extends ABJ_404_Solution_ViewBuildCol
         return (abj_clock()->now() - $builtAt) < ABJ_404_Solution_ViewBuildConfig::VIEW_DONE_FRESHNESS_TTL_SECONDS;
     }
 
-    /**
-     * Localize an admin-notice template via WordPress when loaded, else
-     * return the raw English. Used by sibling collaborators that build
-     * notice payloads (cron-stuck / cron-schedule-failed) without
-     * reaching into DataAccess's private localizeOrDefault().
-     *
-     * @param string $text
-     * @return string
-     */
-    public function localizeOrDefaultViewBuildNotice(string $text): string {
-        if (function_exists('__')) {
-            return __($text, '404-solution');
-        }
-        return $text;
-    }
 }

@@ -3773,6 +3773,10 @@ msgstr "Veuillez patienter avant d'envoyer une autre demande d'assistance."
 msgid "Invalid support request source."
 msgstr "Source de la demande d'assistance non valide."
 
+#: includes/ajax/AjaxRequestContractValidator.php
+msgid "Invalid AJAX request."
+msgstr "Requête AJAX invalide."
+
 #: includes/ajax/Ajax_SupportRequest.php
 msgid "Failed to send support request. Please try again later."
 msgstr "Échec de l'envoi de la demande d'assistance. Veuillez réessayer plus tard."

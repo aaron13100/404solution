@@ -3776,6 +3776,10 @@ msgstr "Por favor, espere antes de enviar otra solicitud de soporte."
 msgid "Invalid support request source."
 msgstr "Origen de la solicitud de soporte no válido."
 
+#: includes/ajax/AjaxRequestContractValidator.php
+msgid "Invalid AJAX request."
+msgstr "Solicitud AJAX no válida."
+
 #: includes/ajax/Ajax_SupportRequest.php
 msgid "Failed to send support request. Please try again later."
 msgstr "Error al enviar la solicitud de soporte. Por favor, inténtelo de nuevo más tarde."

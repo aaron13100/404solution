@@ -3786,6 +3786,10 @@ msgstr "Пожалуйста, подождите перед отправкой �
 msgid "Invalid support request source."
 msgstr "Недопустимый источник запроса в поддержку."
 
+#: includes/ajax/AjaxRequestContractValidator.php
+msgid "Invalid AJAX request."
+msgstr "Недопустимый AJAX-запрос."
+
 #: includes/ajax/Ajax_SupportRequest.php
 msgid "Failed to send support request. Please try again later."
 msgstr "Не удалось отправить запрос в поддержку. Попробуйте позже."

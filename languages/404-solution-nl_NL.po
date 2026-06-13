@@ -3779,6 +3779,10 @@ msgstr "Wacht even voordat u nog een ondersteuningsverzoek verzendt."
 msgid "Invalid support request source."
 msgstr "Ongeldige bron voor ondersteuningsverzoek."
 
+#: includes/ajax/AjaxRequestContractValidator.php
+msgid "Invalid AJAX request."
+msgstr "Ongeldig AJAX-verzoek."
+
 #: includes/ajax/Ajax_SupportRequest.php
 msgid "Failed to send support request. Please try again later."
 msgstr "Versturen van ondersteuningsverzoek mislukt. Probeer het later opnieuw."

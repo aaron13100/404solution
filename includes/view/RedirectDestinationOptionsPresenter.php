@@ -38,7 +38,8 @@ class ABJ_404_Solution_RedirectDestinationOptionsPresenter {
                     $content[] = "\n" . '</optgroup>' . "\n";
                 }
 
-                $content[] = "\n" . '<optgroup label="' . esc_attr(__(ucwords($row->post_type), '404-solution')) . '">' . "\n";
+                $postTypeLabel = $this->postTypeLabel((string)$row->post_type);
+                $content[] = "\n" . '<optgroup label="' . esc_attr($postTypeLabel) . '">' . "\n";
                 $currentPostType = $row->post_type;
             }
 
@@ -53,7 +54,7 @@ class ABJ_404_Solution_RedirectDestinationOptionsPresenter {
                 $content[] = "&nbsp;&nbsp;&nbsp;";
             }
 
-            $content[] = esc_html(__(ucwords($row->post_type), '404-solution'));
+            $content[] = esc_html($this->postTypeLabel((string)$row->post_type));
             $content[] = ": ";
             $content[] = esc_html($theTitle);
             $content[] = "</option>";
@@ -145,5 +146,20 @@ class ABJ_404_Solution_RedirectDestinationOptionsPresenter {
         $selected = ($thisval == $dest) ? " selected" : "";
         return "\n<option value=\"" . esc_attr($thisval) . "\"" . $selected . ">" .
                 esc_html($label) . ": " . esc_html($title) . "</option>";
+    }
+
+    private function postTypeLabel(string $postType): string {
+        if (function_exists('get_post_type_object')) {
+            $postTypeObject = get_post_type_object($postType);
+            if (is_object($postTypeObject) && property_exists($postTypeObject, 'labels') && is_object($postTypeObject->labels)) {
+                $labels = $postTypeObject->labels;
+                $label = $labels->singular_name ?? $labels->name ?? '';
+                if (is_scalar($label) && (string)$label !== '') {
+                    return (string)$label;
+                }
+            }
+        }
+
+        return ucwords(str_replace(array('_', '-'), ' ', $postType));
     }
 }

@@ -3785,6 +3785,10 @@ msgstr "请稍候，再发送下一个支持请求。"
 msgid "Invalid support request source."
 msgstr "无效的支持请求来源。"
 
+#: includes/ajax/AjaxRequestContractValidator.php
+msgid "Invalid AJAX request."
+msgstr "无效的 AJAX 请求。"
+
 #: includes/ajax/Ajax_SupportRequest.php
 msgid "Failed to send support request. Please try again later."
 msgstr "支持请求发送失败。请稍后重试。"

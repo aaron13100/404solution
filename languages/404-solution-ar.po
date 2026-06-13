@@ -3808,6 +3808,10 @@ msgstr "يُرجى الانتظار قبل إرسال طلب دعم آخر."
 msgid "Invalid support request source."
 msgstr "مصدر طلب الدعم غير صالح."
 
+#: includes/ajax/AjaxRequestContractValidator.php
+msgid "Invalid AJAX request."
+msgstr "طلب AJAX غير صالح."
+
 #: includes/ajax/Ajax_SupportRequest.php
 msgid "Failed to send support request. Please try again later."
 msgstr "فشل إرسال طلب الدعم. يُرجى المحاولة مرة أخرى لاحقًا."

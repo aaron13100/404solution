@@ -239,6 +239,10 @@ msgstr ""
 msgid "Invalid support request source."
 msgstr ""
 
+#: includes/ajax/AjaxRequestContractValidator.php
+msgid "Invalid AJAX request."
+msgstr ""
+
 #. translators: %d = numeric HTTP status code returned by the developer endpoint.
 #: includes/ajax/Ajax_SupportRequest.php:195
 #, php-format

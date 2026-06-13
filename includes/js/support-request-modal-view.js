@@ -124,7 +124,62 @@
 
     function t(key) {
         if (window.wp && window.wp.i18n && typeof window.wp.i18n.__ === 'function') {
-            return window.wp.i18n.__(I18N_FALLBACK[key], '404-solution');
+            switch (key) {
+                case 'button':
+                    return window.wp.i18n.__('Send debug log to developer', '404-solution');
+                case 'modalTitle':
+                    return window.wp.i18n.__('Send debug log to developer', '404-solution');
+                case 'explainer':
+                    return window.wp.i18n.__('This sends a one-time diagnostic report to the plugin developer so they can investigate the issue you are seeing.', '404-solution');
+                case 'categoriesHeading':
+                    return window.wp.i18n.__('This report includes:', '404-solution');
+                case 'categorySiteUrl':
+                    return window.wp.i18n.__('Site URL', '404-solution');
+                case 'categoryVersions':
+                    return window.wp.i18n.__('Plugin, PHP, WordPress, and database versions', '404-solution');
+                case 'categoryActivePlugins':
+                    return window.wp.i18n.__('List of active plugins', '404-solution');
+                case 'categoryDebugLog':
+                    return window.wp.i18n.__('Recent debug log excerpt', '404-solution');
+                case 'categoryUserMessage':
+                    return window.wp.i18n.__('Optional message and reply email you provide below', '404-solution');
+                case 'showPayloadOpen':
+                    return window.wp.i18n.__("Show what's in this report", '404-solution');
+                case 'showPayloadClose':
+                    return window.wp.i18n.__('Hide report contents', '404-solution');
+                case 'loadingPreview':
+                    return window.wp.i18n.__('Loading report contents...', '404-solution');
+                case 'previewError':
+                    return window.wp.i18n.__('Could not load preview. The full report is still safe to send.', '404-solution');
+                case 'userMessageLabel':
+                    return window.wp.i18n.__('What went wrong? (optional, helps us diagnose)', '404-solution');
+                case 'replyEmailLabel':
+                    return window.wp.i18n.__('Where should we reply? (optional)', '404-solution');
+                case 'consent':
+                    return window.wp.i18n.__('By clicking Send report, you consent to transmitting the information above to the plugin developer for support purposes. The data is used only to diagnose your issue and is not shared with third parties.', '404-solution');
+                case 'send':
+                    return window.wp.i18n.__('Send report', '404-solution');
+                case 'cancel':
+                    return window.wp.i18n.__('Cancel', '404-solution');
+                case 'sending':
+                    return window.wp.i18n.__('Sending...', '404-solution');
+                case 'retry':
+                    return window.wp.i18n.__('Retry', '404-solution');
+                case 'close':
+                    return window.wp.i18n.__('Close', '404-solution');
+                case 'successPrefix':
+                    return window.wp.i18n.__('Sent. Reference: ', '404-solution');
+                case 'successSuffix':
+                    return window.wp.i18n.__('. Thank you.', '404-solution');
+                case 'cooldownTemplate':
+                    return window.wp.i18n.__('You already sent a report recently. Try again in {minutes} minute(s).', '404-solution');
+                case 'networkError':
+                    return window.wp.i18n.__('Network error: could not reach the server. Check your internet connection and try again.', '404-solution');
+                case 'genericError':
+                    return window.wp.i18n.__('Could not send report. Please try again later.', '404-solution');
+                default:
+                    return I18N_FALLBACK[key];
+            }
         }
         return I18N_FALLBACK[key];
     }

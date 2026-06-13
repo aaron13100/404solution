@@ -3779,6 +3779,10 @@ msgstr "Harap tunggu sebelum mengirim permintaan dukungan lain."
 msgid "Invalid support request source."
 msgstr "Sumber permintaan dukungan tidak valid."
 
+#: includes/ajax/AjaxRequestContractValidator.php
+msgid "Invalid AJAX request."
+msgstr "Permintaan AJAX tidak valid."
+
 #: includes/ajax/Ajax_SupportRequest.php
 msgid "Failed to send support request. Please try again later."
 msgstr "Gagal mengirim permintaan dukungan. Silakan coba lagi nanti."

@@ -3792,6 +3792,10 @@ msgstr "別のサポートリクエストを送信する前にしばらくお待
 msgid "Invalid support request source."
 msgstr "サポートリクエストの送信元が無効です。"
 
+#: includes/ajax/AjaxRequestContractValidator.php
+msgid "Invalid AJAX request."
+msgstr "無効な AJAX リクエストです。"
+
 #: includes/ajax/Ajax_SupportRequest.php
 msgid "Failed to send support request. Please try again later."
 msgstr "サポートリクエストの送信に失敗しました。後ほどもう一度お試しください。"
