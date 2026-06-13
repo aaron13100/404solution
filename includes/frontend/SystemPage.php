@@ -259,7 +259,7 @@ class ABJ_404_Solution_SystemPage {
             return;
         }
 
-        if (!current_user_can('manage_options')) {
+        if (!ABJ_404_Solution_PluginAdminAccessPolicy::currentUserCanAccessPluginAdmin()) {
             return;
         }
 
@@ -353,7 +353,7 @@ class ABJ_404_Solution_SystemPage {
             return;
         }
 
-        if (!is_user_logged_in() || !current_user_can('manage_options')) {
+        if (!is_user_logged_in() || !ABJ_404_Solution_PluginAdminAccessPolicy::currentUserCanAccessPluginAdmin()) {
             return;
         }
 

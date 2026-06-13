@@ -224,7 +224,7 @@ class ABJ_404_Solution_RestApiController {
      * @return bool
      */
     public function permissionCheck($request) {
-        return current_user_can('manage_options');
+        return ABJ_404_Solution_PluginAdminAccessPolicy::currentUserCanAccessPluginAdmin();
     }
 
     /**

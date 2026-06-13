@@ -68,6 +68,32 @@ class ABJ_404_Solution_PluginAdminAccessPolicy {
     }
 
     /**
+     * Resolve the registered policy and return the current plugin-admin decision.
+     *
+     * Production call sites should use this accessor instead of reading
+     * WordPress capabilities directly. The method fails closed when service
+     * resolution is unavailable and logs the underlying context where possible.
+     *
+     * @return bool
+     */
+    public static function currentUserCanAccessPluginAdmin(): bool {
+        try {
+            $policy = function_exists('abj_service') ? abj_service('admin_access_policy') : null;
+            if (is_object($policy) && method_exists($policy, 'isPluginAdmin')) {
+                return (bool)$policy->isPluginAdmin();
+            }
+
+            self::warnStaticPolicyResolutionFailure(
+                'plugin admin access policy resolution failed because admin_access_policy is unavailable.'
+            );
+            return false;
+        } catch (\Throwable $e) {
+            self::warnStaticPolicyResolutionFailure('plugin admin access policy resolution failed', $e);
+            return false;
+        }
+    }
+
+    /**
      * Whether the current WP user qualifies as a 404 Solution admin.
      *
      * Capability sources, ORed together:
@@ -270,6 +296,22 @@ class ABJ_404_Solution_PluginAdminAccessPolicy {
 
         // @abj404-raw-error-log-allowed: service-resolution-fallback admin access checks must remain observable if logger resolution fails.
         error_log('404 Solution: ' . $message);
+    }
+
+    private static function warnStaticPolicyResolutionFailure(string $message, ?\Throwable $throwable = null): void {
+        if (function_exists('abj404_logRuntimeWarning')) {
+            abj404_logRuntimeWarning($message, $throwable);
+            return;
+        }
+
+        $line = $message;
+        if ($throwable !== null) {
+            $line .= ' (code ' . (string)$throwable->getCode() . ') at ' .
+                $throwable->getFile() . ':' . (string)$throwable->getLine() .
+                ': ' . $throwable->getMessage();
+        }
+        // @abj404-raw-error-log-allowed: policy static accessor can be called before the runtime warning helper is loaded.
+        error_log('404 Solution: ' . $line);
     }
 
     /**

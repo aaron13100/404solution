@@ -101,8 +101,8 @@ class ABJ_404_Solution_SetupWizard {
             );
         }
 
-        // Verify user capabilities with error feedback (Bug #10 fix)
-        if (!current_user_can('manage_options')) {
+        // Verify plugin-admin access with error feedback (Bug #10 fix)
+        if (!ABJ_404_Solution_PluginAdminAccessPolicy::currentUserCanAccessPluginAdmin()) {
             wp_die(
                 esc_html__('You do not have permission to access this page.', '404-solution'),
                 esc_html__('Error', '404-solution'),
@@ -158,8 +158,8 @@ class ABJ_404_Solution_SetupWizard {
             return;
         }
 
-        // Only for users who can manage options
-        if (!current_user_can('manage_options')) {
+        // Only for users authorized for this plugin admin surface.
+        if (!ABJ_404_Solution_PluginAdminAccessPolicy::currentUserCanAccessPluginAdmin()) {
             return;
         }
 

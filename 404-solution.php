@@ -294,6 +294,33 @@ function abj404_logRuntimeWarning(string $context, ?\Throwable $throwable = null
 }
 }
 
+if (!function_exists('abj404_current_user_is_plugin_admin')) {
+/**
+ * Root-file policy gate for admin callbacks declared before normal classes run.
+ *
+ * Degraded boot screens still use direct WordPress capabilities because the
+ * policy class can be among the missing files. Runtime admin callbacks should
+ * call this helper so delegated plugin admins follow the same authorization
+ * decision everywhere.
+ *
+ * @return bool
+ */
+function abj404_current_user_is_plugin_admin(): bool {
+    try {
+        if (class_exists('ABJ_404_Solution_PluginAdminAccessPolicy')) {
+            return ABJ_404_Solution_PluginAdminAccessPolicy::currentUserCanAccessPluginAdmin();
+        }
+        abj404_logRuntimeWarning(
+            'plugin admin access policy resolution failed because PluginAdminAccessPolicy is unavailable.'
+        );
+    } catch (\Throwable $e) {
+        abj404_logRuntimeWarning('plugin admin access policy resolution failed', $e);
+    }
+
+    return false;
+}
+}
+
 
 add_action('doing_it_wrong_run', function($function_name, $message, $version) {
 	if (strpos($message, '404-solution') !== false &&
@@ -944,7 +971,7 @@ if (!function_exists('abj404_admin_page_callback')) {
 	 * @return void
 	 */
 	function abj404_render_last_admin_fatal_notice() {
-		if (!function_exists('current_user_can') || !current_user_can('manage_options')) {
+		if (!abj404_current_user_is_plugin_admin()) {
 			return;
 		}
 
@@ -1379,7 +1406,7 @@ add_filter('plugin_locale', 'abj404_override_plugin_locale', 999, 2);
 if (!function_exists('abj404_show_runtime_integrity_notice')) {
 	/** @return void */
 	function abj404_show_runtime_integrity_notice() {
-		if (!is_admin() || !current_user_can('manage_options')) {
+		if (!is_admin() || !abj404_current_user_is_plugin_admin()) {
 			return;
 		}
 		$page = isset($_GET['page']) ? sanitize_text_field($_GET['page']) : '';
@@ -1400,7 +1427,7 @@ add_action('admin_notices', 'abj404_show_runtime_integrity_notice');
 if (!function_exists('abj404_show_plugin_db_notice')) {
 	/** @return void */
 	function abj404_show_plugin_db_notice() {
-		if (!is_admin() || !current_user_can('manage_options')) {
+		if (!is_admin() || !abj404_current_user_is_plugin_admin()) {
 			return;
 		}
 		$page = isset($_GET['page']) ? sanitize_text_field($_GET['page']) : '';
@@ -1444,7 +1471,7 @@ if (!function_exists('abj404_show_view_build_cron_notices')) {
 	 * @return void
 	 */
 	function abj404_show_view_build_cron_notices() {
-		if (!is_admin() || !current_user_can('manage_options')) {
+		if (!is_admin() || !abj404_current_user_is_plugin_admin()) {
 			return;
 		}
 		$page = isset($_GET['page']) ? sanitize_text_field($_GET['page']) : '';
@@ -1661,7 +1688,7 @@ function abj404_loadSomethingWhenWordPressIsReady() {
 			$action = null;
 		}
 	}
-	if ($isAdminRequest && abj404_is_local_debug_host() && current_user_can('manage_options') && isset($_GET['abj404_set_sim_db_ms'])) {
+	if ($isAdminRequest && abj404_is_local_debug_host() && abj404_current_user_is_plugin_admin() && isset($_GET['abj404_set_sim_db_ms'])) {
 		$nonceOk = isset($_GET['_wpnonce']) ? wp_verify_nonce($_GET['_wpnonce'], 'abj404_set_sim_db_ms') : false;
 		if ($nonceOk) {
 			$newMs = max(0, min(5000, absint($_GET['abj404_set_sim_db_ms'])));
@@ -1729,7 +1756,7 @@ function abj404_maybePageLoadFallbackAdvance() {
     if ($currentPage !== 'abj404_solution') {
         return;
     }
-    if (!function_exists('current_user_can') || !current_user_can('manage_options')) {
+    if (!abj404_current_user_is_plugin_admin()) {
         return;
     }
     try {

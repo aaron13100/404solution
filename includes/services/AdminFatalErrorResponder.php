@@ -105,12 +105,7 @@ class ABJ_404_Solution_AdminFatalErrorResponder {
     /** @return bool */
     private function canShowDetails(): bool {
         try {
-            if (function_exists('current_user_can') && current_user_can('manage_options')) {
-                return true;
-            }
-            if (function_exists('is_super_admin') && is_super_admin()) {
-                return true;
-            }
+            return ABJ_404_Solution_PluginAdminAccessPolicy::currentUserCanAccessPluginAdmin();
         } catch (Throwable $e) {
             // @abj404-raw-error-log-allowed: fatal-handler-fallback admin fatal rendering must not depend on the normal plugin logger.
             error_log('404 Solution: admin fatal capability detection failed (code ' .

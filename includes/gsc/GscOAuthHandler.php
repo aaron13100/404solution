@@ -19,7 +19,7 @@ class ABJ_404_Solution_GscOAuthHandler {
      * @return void
      */
     public static function handleCallback() {
-        if (!current_user_can('manage_options')) {
+        if (!ABJ_404_Solution_PluginAdminAccessPolicy::currentUserCanAccessPluginAdmin()) {
             wp_die(__('Insufficient permissions.', '404-solution'), 403);
         }
 
@@ -187,7 +187,8 @@ class ABJ_404_Solution_GscOAuthHandler {
      * @return void
      */
     public static function handleRevoke() {
-        if (!current_user_can('manage_options') || !check_admin_referer('abj404_gsc_revoke')) {
+        if (!ABJ_404_Solution_PluginAdminAccessPolicy::currentUserCanAccessPluginAdmin() ||
+                !check_admin_referer('abj404_gsc_revoke')) {
             wp_die(__('Security check failed.', '404-solution'), 403);
         }
 
