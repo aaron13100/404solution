@@ -26,13 +26,18 @@ class ABJ_404_Solution_CrossPluginImporter {
     /** @var ABJ_404_Solution_Logging */
     private $logger;
 
+    /** @var ABJ_404_Solution_DatabaseQueryInterface|null */
+    private $dbQuery;
+
     /**
      * @param ABJ_404_Solution_RedirectsRepositoryInterface $redirectsRepository
      * @param ABJ_404_Solution_Logging $logger
+     * @param ABJ_404_Solution_DatabaseQueryInterface|null $dbQuery
      */
-    public function __construct($redirectsRepository, $logger) {
+    public function __construct($redirectsRepository, $logger, $dbQuery = null) {
         $this->redirectsRepository = $redirectsRepository;
         $this->logger = $logger;
+        $this->dbQuery = $this->resolveDatabaseQuery($redirectsRepository, $dbQuery);
     }
 
     /**
@@ -178,17 +183,11 @@ class ABJ_404_Solution_CrossPluginImporter {
             return array();
         }
 
-        // DAO-bypass-approved: Reading external plugin's table (Rank Math) — DAO would auto-CREATE
-        $rows = $wpdb->get_results(
+        $rows = $this->querySourceRows(
             "SELECT source_url, dest_url, redirect_type, regex_flag
              FROM `{$tableName}`
-             WHERE status = 'active'",
-            ARRAY_A
+             WHERE status = 'active'"
         );
-
-        if (!is_array($rows)) {
-            return array();
-        }
 
         $result = array();
         foreach ($rows as $row) {
@@ -229,16 +228,10 @@ class ABJ_404_Solution_CrossPluginImporter {
             return array();
         }
 
-        // DAO-bypass-approved: Reading external plugin's table (Yoast) — DAO would auto-CREATE
-        $rows = $wpdb->get_results(
+        $rows = $this->querySourceRows(
             "SELECT origin, target, redirect_type
-             FROM `{$tableName}`",
-            ARRAY_A
+             FROM `{$tableName}`"
         );
-
-        if (!is_array($rows)) {
-            return array();
-        }
 
         $result = array();
         foreach ($rows as $row) {
@@ -278,17 +271,11 @@ class ABJ_404_Solution_CrossPluginImporter {
             return array();
         }
 
-        // DAO-bypass-approved: Reading external plugin's table (AIOSEO) — DAO would auto-CREATE
-        $rows = $wpdb->get_results(
+        $rows = $this->querySourceRows(
             "SELECT source, target, type
              FROM `{$tableName}`
-             WHERE status = 'active'",
-            ARRAY_A
+             WHERE status = 'active'"
         );
-
-        if (!is_array($rows)) {
-            return array();
-        }
 
         $result = array();
         foreach ($rows as $row) {
@@ -378,17 +365,11 @@ class ABJ_404_Solution_CrossPluginImporter {
             return array();
         }
 
-        // DAO-bypass-approved: Reading external plugin's table (Redirection) — DAO would auto-CREATE
-        $rows = $wpdb->get_results(
+        $rows = $this->querySourceRows(
             "SELECT url, action_data, action_code, regex
              FROM `{$tableName}`
-             WHERE status = 'enabled'",
-            ARRAY_A
+             WHERE status = 'enabled'"
         );
-
-        if (!is_array($rows)) {
-            return array();
-        }
 
         $result = array();
         foreach ($rows as $row) {
@@ -453,20 +434,125 @@ class ABJ_404_Solution_CrossPluginImporter {
      * @return bool
      */
     private function tableExists(string $tableName): bool {
-        global $wpdb;
-
-        if (!$wpdb || !method_exists($wpdb, 'prepare') || !method_exists($wpdb, 'get_var')) {
+        if (!$this->dbQuery instanceof ABJ_404_Solution_DatabaseQueryInterface) {
+            $this->logger->warn(
+                'CrossPluginImporter: cannot check source table "' . $tableName . '" because no database query service is available.'
+            );
             return false;
         }
-        /** @var \wpdb $wpdb */
 
-        // Use get_var so we get null on miss rather than an error.
-        // DAO-bypass-approved: tableExists() probe for external plugin's table
-        $result = $wpdb->get_var(
-            // DAO-bypass-approved: prepare() is part of the external table metadata probe.
-            $wpdb->prepare('SHOW TABLES LIKE %s', $tableName)
+        $result = $this->dbQuery->queryAndGetResults(
+            'SHOW TABLES LIKE %s',
+            array(
+                'query_params' => array($tableName),
+                'result_type' => defined('ARRAY_A') ? ARRAY_A : 'ARRAY_A',
+                'log_errors' => false,
+                'skip_repair' => true,
+            )
         );
 
-        return $result !== null && $result !== false && $result !== '';
+        if ($this->queryFailed($result)) {
+            $this->logger->warn(
+                'CrossPluginImporter: source table probe failed for "' . $tableName . '". Error: ' .
+                $this->queryErrorMessage($result)
+            );
+            return false;
+        }
+
+        return !empty($result['rows']) && is_array($result['rows']);
+    }
+
+    /**
+     * Read external source-plugin rows through the centralized query pipeline.
+     *
+     * @param string $sql
+     * @return array<int, array<string, mixed>>
+     */
+    private function querySourceRows(string $sql): array {
+        if (!$this->dbQuery instanceof ABJ_404_Solution_DatabaseQueryInterface) {
+            $this->logger->warn('CrossPluginImporter: cannot read source rows because no database query service is available.');
+            return array();
+        }
+
+        $result = $this->dbQuery->queryAndGetResults(
+            $sql,
+            array('result_type' => defined('ARRAY_A') ? ARRAY_A : 'ARRAY_A')
+        );
+
+        if ($this->queryFailed($result)) {
+            $this->logger->warn(
+                'CrossPluginImporter: source row query failed. Error: ' . $this->queryErrorMessage($result)
+            );
+            return array();
+        }
+
+        $rows = $result['rows'] ?? array();
+        if (!is_array($rows)) {
+            return array();
+        }
+
+        $normalizedRows = array();
+        foreach ($rows as $row) {
+            if (is_array($row)) {
+                $normalizedRows[] = $row;
+            }
+        }
+        return $normalizedRows;
+    }
+
+    /**
+     * @param array<string, mixed> $result
+     * @return bool
+     */
+    private function queryFailed(array $result): bool {
+        if (($result['timed_out'] ?? false) === true) {
+            return true;
+        }
+        return $this->queryErrorMessage($result) !== '';
+    }
+
+    /**
+     * @param array<string, mixed> $result
+     * @return string
+     */
+    private function queryErrorMessage(array $result): string {
+        if (($result['timed_out'] ?? false) === true) {
+            return 'query timed out';
+        }
+
+        $error = $result['last_error'] ?? '';
+        if ($error === '') {
+            return '';
+        }
+        if (is_scalar($error)) {
+            return (string)$error;
+        }
+        if (is_object($error) && method_exists($error, '__toString')) {
+            return (string)$error;
+        }
+        return 'non-scalar database error of type ' . gettype($error);
+    }
+
+    /**
+     * Resolve the database query service without requiring existing callers
+     * to pass the optional constructor argument.
+     *
+     * @param mixed $redirectsRepository
+     * @param mixed $dbQuery
+     * @return ABJ_404_Solution_DatabaseQueryInterface|null
+     */
+    private function resolveDatabaseQuery($redirectsRepository, $dbQuery) {
+        if ($dbQuery instanceof ABJ_404_Solution_DatabaseQueryInterface) {
+            return $dbQuery;
+        }
+
+        if (is_object($redirectsRepository) && method_exists($redirectsRepository, 'getDbCore')) {
+            $candidate = $redirectsRepository->getDbCore();
+            if ($candidate instanceof ABJ_404_Solution_DatabaseQueryInterface) {
+                return $candidate;
+            }
+        }
+
+        return null;
     }
 }
