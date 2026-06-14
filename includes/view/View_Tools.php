@@ -155,7 +155,13 @@ class ABJ_404_Solution_View_Tools extends ABJ_404_Solution_ViewComponent {
      * @return string
      */
     public function getMigrateFromPluginMarkup(): string {
-        $redirectsRepo = abj_service('redirects_repository');
+        // Use the redirects repository already injected into this component
+        // (ViewComponent::$redirectsRepository) rather than re-resolving it from
+        // the service container. The dependency is in hand; reaching for
+        // abj_service() here would bypass the component's own wiring.
+        $redirectsRepo = is_object($this->redirectsRepository)
+            ? $this->redirectsRepository
+            : abj_service('redirects_repository');
         $logger        = abj_service('logging');
         $importer = new ABJ_404_Solution_CrossPluginImporter($redirectsRepo, $logger);
 

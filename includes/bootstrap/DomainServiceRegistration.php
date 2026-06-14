@@ -53,6 +53,18 @@ class ABJ_404_Solution_DomainServiceRegistration {
         });
 
         $container->set('spell_checker', function($c) {
+            // Honor a test-installed singleton override (via reflection /
+            // setInstance) the same way the plugin_logic factory above does.
+            // Without this peek, abj_service('spell_checker') always builds a
+            // fresh real SpellChecker and silently ignores a swapped-in double,
+            // so handlers that resolve through the container never hit the test's
+            // findMatchingPosts seam.
+            if (class_exists('ABJ_404_Solution_SpellChecker', false)) {
+                $peeked = ABJ_404_Solution_SpellChecker::peekInstance();
+                if ($peeked !== null) {
+                    return $peeked;
+                }
+            }
             return new ABJ_404_Solution_SpellChecker($c->get('functions'), $c->get('plugin_logic'),
                 $c->get('content_repository'), $c->get('logging'), $c->get('permalink_cache'),
                 $c->get('ngram_filter'), $c->get('view_read_service'));

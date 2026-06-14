@@ -80,6 +80,9 @@ class ABJ_404_Solution_ViewBuildWriterLock {
             }
             return;
         }
+        // @utf8-audit: opt-out - $name is lockName(), the table prefix concatenated with the
+        // hardcoded ABJ_404_Solution_ViewBuildConfig::VIEW_DONE_BUILD_LOCK_NAME constant. It is
+        // system-controlled and provably cannot contain user-supplied invalid UTF-8.
         $this->dbCore->queryAndGetResults("SELECT RELEASE_LOCK('" . esc_sql($name) . "')", array('log_errors' => false));
     }
 

@@ -99,6 +99,21 @@ class ABJ_404_Solution_RedirectsRepository implements ABJ_404_Solution_Redirects
             );
     }
 
+    /**
+     * Expose the underlying database-query service. Collaborators that accept a
+     * repository and resolve their own query service (e.g.
+     * ABJ_404_Solution_ForeignRedirectSourceReader::resolveDatabaseQuery())
+     * probe for this accessor; without it they fall back to a null query
+     * service and silently read zero rows. DatabaseCore implements
+     * ABJ_404_Solution_DatabaseQueryInterface, so callers can use the result
+     * directly. Mirrors ABJ_404_Solution_DataAccess::getDbCore().
+     *
+     * @return ABJ_404_Solution_DatabaseCore
+     */
+    public function getDbCore(): ABJ_404_Solution_DatabaseCore {
+        return $this->dbCore;
+    }
+
     /** @return ABJ_404_Solution_RedirectsRetentionService */
     private function retentionService() {
         return new ABJ_404_Solution_RedirectsRetentionService($this->dbCore, $this, $this->f, $this->logger);

@@ -262,6 +262,26 @@ class ABJ_404_Solution_DatabaseUpgradeCollationDrift extends ABJ_404_Solution_Da
             }
         }
 
+        // Exclude the transient staged-build tables (view_build / view_done /
+        // view_deleteme). They are runtime-managed and dropped/recreated by the
+        // staged orchestrator on every build, and are created from the raw DDL
+        // template with no explicit COLLATE clause, so they adopt the server
+        // default (often utf8mb4_general_ci) rather than the target
+        // utf8mb4_unicode_ci. Including them here makes the drift sweep ALTER a
+        // table that is about to be rebuilt anyway, and that ALTER fires
+        // invalidateViewDoneAndScheduleRebuild() below, clobbering a still-fresh
+        // snapshot's built_at on every upgrade (forcing a needless full rebuild
+        // and "Loading redirects" for the admin). Their collation has no
+        // correctness value since the next build owns their shape. This matches
+        // the existing "transient tables are out of scope" treatment in the
+        // permanent-DDL schema-diff sweep (DatabaseUpgradeTableRepair).
+        $abjTableNames = array_values(array_filter(
+            $abjTableNames,
+            static function ($t) {
+                return preg_match('/abj404_view_(build|done|deleteme)$/i', (string)$t) !== 1;
+            }
+        ));
+
         /** @var array<string, array{0: string, 1: string}|null> $tableCollations */
         $tableCollations = [];
         foreach ($abjTableNames as $tableName) {

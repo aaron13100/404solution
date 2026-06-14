@@ -124,6 +124,20 @@ class ABJ_404_Solution_SpellChecker {
 		self::$instance = null;
 	}
 
+	/**
+	 * Return the already-constructed singleton instance without resolving the
+	 * service container or building a new instance. Mirrors the
+	 * `peekInstance()` pattern on PluginLogic / Logging so the `spell_checker`
+	 * container factory can honor a test-installed singleton override (or any
+	 * other code that has populated $instance directly) instead of building a
+	 * fresh real SpellChecker that ignores the override.
+	 *
+	 * @return self|null
+	 */
+	public static function peekInstance(): ?self {
+		return self::$instance;
+	}
+
 	public static function getInstance(): self {
 		if (self::$instance !== null) {
 			return self::$instance;
