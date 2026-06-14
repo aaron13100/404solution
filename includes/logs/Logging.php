@@ -244,13 +244,12 @@ class ABJ_404_Solution_Logging {
     /** for the current timezone. 
      * @return string */
     function getTimestamp() {
-        $date = null;
         $timezoneStringRaw = get_option('timezone_string');
         $timezoneString = is_string($timezoneStringRaw) ? $timezoneStringRaw : '';
 
         if (!empty($timezoneString)) {
-            $date = new DateTime('@' . abj_clock()->now());
-            $date->setTimezone(new DateTimeZone($timezoneString));
+            // WordPress stores an IANA name (e.g. "America/New_York") here.
+            $tzString = $timezoneString;
         } else {
             $gmtOffsetRaw = get_option('gmt_offset');
             // WordPress's gmt_offset is hours and may be fractional
@@ -260,23 +259,28 @@ class ABJ_404_Solution_Logging {
             $sign = $totalMinutes < 0 ? '-' : '+';
             $absMinutes = abs($totalMinutes);
             $tzString = sprintf('%s%02d:%02d', $sign, intdiv($absMinutes, 60), $absMinutes % 60);
-
-            try {
-                $date = new DateTime('@' . abj_clock()->now());
-                $date->setTimezone(new DateTimeZone($tzString));
-            } catch (Exception $e) {
-                // Use the raw fallback sink because this method is part of
-                // the logging path; calling warn here would risk recursion if
-                // timezone failure also breaks warn's own DateTime use.
-                abj404_logPhpFallback(
-                    'logger-internal',
-                    'timezone constructor failed (' . $e->getMessage() . '); using server default'
-                );
-                $date = new DateTime('@' . abj_clock()->now());
-                $date->setTimezone(new DateTimeZone(date_default_timezone_get()));
-            }
         }
-        
+
+        // Both option sources can hold garbage on a corrupted site: a stray
+        // value written into the wrong options row, an out-of-range offset,
+        // etc. A bad value must never fatal the logging path, so the
+        // DateTimeZone construction for EITHER source shares one guarded
+        // fallback to the server default.
+        try {
+            $date = new DateTime('@' . abj_clock()->now());
+            $date->setTimezone(new DateTimeZone($tzString));
+        } catch (Exception $e) {
+            // Use the raw fallback sink because this method is part of
+            // the logging path; calling warn here would risk recursion if
+            // timezone failure also breaks warn's own DateTime use.
+            abj404_logPhpFallback(
+                'logger-internal',
+                'timezone constructor failed (' . $e->getMessage() . '); using server default'
+            );
+            $date = new DateTime('@' . abj_clock()->now());
+            $date->setTimezone(new DateTimeZone(date_default_timezone_get()));
+        }
+
         return $date->format('Y-m-d H:i:s T');
     }
     
