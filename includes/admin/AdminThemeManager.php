@@ -192,7 +192,7 @@ class ABJ_404_Solution_AdminThemeManager {
                 echo $html;
             }
         } catch (Throwable $e) {
-            ABJ_404_Solution_WordPress_Connector::reportAdminRuntimeError('admin_head', $e);
+            ABJ_404_Solution_AdminRuntimeErrorNotice::reportAdminRuntimeError('admin_head', $e);
         }
     }
 }

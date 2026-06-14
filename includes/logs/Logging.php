@@ -134,6 +134,10 @@ class ABJ_404_Solution_Logging {
     private $capabilityDiagnostics = null;
     /** @var ABJ_404_Solution_LoggingFeedbackDispatcher|null */
     private $feedbackDispatcher = null;
+    /** @var ABJ_404_Solution_LogTimestampFormatter|null */
+    private $timestampFormatter = null;
+    /** @var ABJ_404_Solution_LogDebugModeResolver|null */
+    private $debugModeResolver = null;
 
     /** @return ABJ_404_Solution_DebugLogFileStore */
     private function getDebugLogFileStore(): ABJ_404_Solution_DebugLogFileStore {
@@ -204,86 +208,34 @@ class ABJ_404_Solution_Logging {
         }
         return $this->feedbackDispatcher;
     }
-    
+
+    /** @return ABJ_404_Solution_LogTimestampFormatter */
+    private function getTimestampFormatter(): ABJ_404_Solution_LogTimestampFormatter {
+        if ($this->timestampFormatter === null) {
+            $this->timestampFormatter = new ABJ_404_Solution_LogTimestampFormatter();
+        }
+        return $this->timestampFormatter;
+    }
+
+    /** @return ABJ_404_Solution_LogDebugModeResolver */
+    private function getDebugModeResolver(): ABJ_404_Solution_LogDebugModeResolver {
+        if ($this->debugModeResolver === null) {
+            $this->debugModeResolver = new ABJ_404_Solution_LogDebugModeResolver();
+        }
+        return $this->debugModeResolver;
+    }
+
     /** @return boolean true if debug mode is on. false otherwise. */
     function isDebug() {
-        $legacyDebugMode = $this->legacyPluginLogicDebugMode();
-        if ($legacyDebugMode !== null) {
-            return $legacyDebugMode;
-        }
-
-        $options = abj_service('options_repository')->getOptions(true);
-
-        return (array_key_exists('debug_mode', $options) && $options['debug_mode'] == true);
+        return $this->getDebugModeResolver()->isDebug();
     }
 
-    /** @return bool|null */
-    private function legacyPluginLogicDebugMode(): ?bool {
-        if (!class_exists('ABJ_404_Solution_PluginLogic', false)) {
-            return null;
-        }
-        $pluginLogic = ABJ_404_Solution_PluginLogic::peekInstance();
-        if (!is_object($pluginLogic)) {
-            return null;
-        }
-        try {
-            $optionsProperty = new ReflectionProperty('ABJ_404_Solution_PluginLogic', 'options');
-            $options = $optionsProperty->getValue($pluginLogic);
-            if (is_array($options) && array_key_exists('debug_mode', $options)) {
-                return $options['debug_mode'] == true;
-            }
-        } catch (\Throwable $e) {
-            abj404_logPhpFallback(
-                'logger-internal',
-                'could not inspect PluginLogic debug_mode override: ' . $e->getMessage()
-            );
-        }
-        return null;
-    }
-    
-    /** for the current timezone. 
+    /** for the current timezone.
      * @return string */
     function getTimestamp() {
-        $timezoneStringRaw = get_option('timezone_string');
-        $timezoneString = is_string($timezoneStringRaw) ? $timezoneStringRaw : '';
-
-        if (!empty($timezoneString)) {
-            // WordPress stores an IANA name (e.g. "America/New_York") here.
-            $tzString = $timezoneString;
-        } else {
-            $gmtOffsetRaw = get_option('gmt_offset');
-            // WordPress's gmt_offset is hours and may be fractional
-            // (e.g. 5.5 India, 5.75 Nepal, -3.5 Newfoundland).
-            $gmtOffsetHours = is_scalar($gmtOffsetRaw) ? (float)$gmtOffsetRaw : 0.0;
-            $totalMinutes = (int) round($gmtOffsetHours * 60);
-            $sign = $totalMinutes < 0 ? '-' : '+';
-            $absMinutes = abs($totalMinutes);
-            $tzString = sprintf('%s%02d:%02d', $sign, intdiv($absMinutes, 60), $absMinutes % 60);
-        }
-
-        // Both option sources can hold garbage on a corrupted site: a stray
-        // value written into the wrong options row, an out-of-range offset,
-        // etc. A bad value must never fatal the logging path, so the
-        // DateTimeZone construction for EITHER source shares one guarded
-        // fallback to the server default.
-        try {
-            $date = new DateTime('@' . abj_clock()->now());
-            $date->setTimezone(new DateTimeZone($tzString));
-        } catch (Exception $e) {
-            // Use the raw fallback sink because this method is part of
-            // the logging path; calling warn here would risk recursion if
-            // timezone failure also breaks warn's own DateTime use.
-            abj404_logPhpFallback(
-                'logger-internal',
-                'timezone constructor failed (' . $e->getMessage() . '); using server default'
-            );
-            $date = new DateTime('@' . abj_clock()->now());
-            $date->setTimezone(new DateTimeZone(date_default_timezone_get()));
-        }
-
-        return $date->format('Y-m-d H:i:s T');
+        return $this->getTimestampFormatter()->format();
     }
-    
+
     /** Send a message to the log file if debug mode is on.
      * This goes to a file and is used by every other class so it goes here.
      * @param string $message

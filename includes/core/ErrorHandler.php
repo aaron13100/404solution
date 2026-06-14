@@ -139,7 +139,7 @@ class ABJ_404_Solution_ErrorHandler {
         } catch (Throwable $ex) {
             // Last-resort breadcrumb: the inner logging path itself failed,
             // so we can't go through $abj404logging. Match the pattern used
-            // by WordPress_Connector::reportAdminRuntimeError() and
+            // by AdminRuntimeErrorNotice::reportAdminRuntimeError() and
             // Ajax_SuggestionCompute::handleShutdown(). Widening from
             // Exception to Throwable is intentional because Error types are
             // exactly the case the outer handler exists for.

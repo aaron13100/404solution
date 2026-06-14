@@ -210,6 +210,7 @@ function abj404_autoloader($class) {
 			'ABJ_404_Solution_DatabaseUpgradesEtc' => array(
 				'ABJ_404_Solution_DatabaseUpgradeCoordinator',
 				'ABJ_404_Solution_DatabaseUpgradeComponent',
+				'ABJ_404_Solution_DatabaseUpgradeComponentRegistry',
 				'ABJ_404_Solution_DatabaseUpgradeNGram',
 				'ABJ_404_Solution_DatabaseUpgradeEngineNormalization',
 				'ABJ_404_Solution_DatabaseUpgradeCollationDrift',

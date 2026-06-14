@@ -38,7 +38,7 @@ class ABJ_404_Solution_ReviewFeedback {
             return;
         }
 
-        ABJ_404_Solution_WordPress_Connector::echoAdminRuntimeErrorNotice();
+        ABJ_404_Solution_AdminRuntimeErrorNotice::echoAdminRuntimeErrorNotice();
 
         global $pagenow;
         global $abj404view;

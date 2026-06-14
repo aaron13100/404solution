@@ -9,6 +9,7 @@ require_once __DIR__ . '/DatabaseUpgradeCoordinator.php';
 require_once __DIR__ . '/DatabaseUpgradeComponent.php';
 require_once __DIR__ . '/DatabaseUpgradeRuntimeState.php';
 require_once __DIR__ . '/DatabaseUpgradesDependencies.php';
+require_once __DIR__ . '/DatabaseUpgradeComponentRegistry.php';
 require_once __DIR__ . '/DatabaseUpgradeNGram.php';
 require_once __DIR__ . '/DatabaseUpgradeEngineNormalization.php';
 require_once __DIR__ . '/DatabaseUpgradeCollationDrift.php';
@@ -83,44 +84,8 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 	/** @var mixed */
 	private $ngramRebuilder;
 
-	/** @var ABJ_404_Solution_DatabaseUpgradeNGram */
-	private $nGramUpgrade;
-
-	/** @var ABJ_404_Solution_DatabaseUpgradeEngineNormalization */
-	private $engineNormalizationUpgrade;
-
-	/** @var ABJ_404_Solution_DatabaseUpgradeCollationDrift */
-	private $collationDriftUpgrade;
-
-	/** @var ABJ_404_Solution_DatabaseUpgradeSelfHeal */
-	private $selfHealUpgrade;
-
-	/** @var ABJ_404_Solution_DatabaseUpgradeCanonicalUrlBackfill */
-	private $canonicalUrlBackfillUpgrade;
-
-	/** @var ABJ_404_Solution_DatabaseUpgradeDailyMaintenance */
-	private $dailyMaintenanceUpgrade;
-
-	/** @var ABJ_404_Solution_DatabaseUpgradePluginUpdate */
-	private $pluginUpdateUpgrade;
-
-	/** @var ABJ_404_Solution_DatabaseUpgradeTableRepair */
-	private $tableRepairUpgrade;
-
-	/** @var ABJ_404_Solution_DatabaseUpgradeIndexes */
-	private $indexesUpgrade;
-
-	/** @var ABJ_404_Solution_DatabaseUpgradeOrphanAdoption */
-	private $orphanAdoptionUpgrade;
-
-	/** @var ABJ_404_Solution_DatabaseUpgradeMultiSite */
-	private $multiSiteUpgrade;
-
-	/** @var ABJ_404_Solution_DatabaseUpgradeSchemaDiff */
-	private $schemaDiffUpgrade;
-
-	/** @var ABJ_404_Solution_DatabaseUpgradeBootstrap */
-	private $bootstrapUpgrade;
+	/** @var ABJ_404_Solution_DatabaseUpgradeComponentRegistry */
+	private $components;
 
 	/**
 	 * Constructor with dependency injection.
@@ -148,7 +113,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 		$this->viewRead = $this->dao->getViewReadService();
 		$this->logsRepo = $this->dao->getLogsRepo();
 
-		$this->initializeUpgradeComponents();
+		$this->components = new ABJ_404_Solution_DatabaseUpgradeComponentRegistry($this, $this->buildComponentDependencyMap());
 	}
 
 	/**
@@ -211,134 +176,73 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 	}
 
 	/** @return void */
-	private function initializeUpgradeComponents(): void {
-		$deps = $this->buildComponentDependencyMap();
-		$this->nGramUpgrade = new ABJ_404_Solution_DatabaseUpgradeNGram($this, $deps);
-		$this->engineNormalizationUpgrade = new ABJ_404_Solution_DatabaseUpgradeEngineNormalization($this, $deps);
-		$this->collationDriftUpgrade = new ABJ_404_Solution_DatabaseUpgradeCollationDrift($this, $deps);
-		$this->selfHealUpgrade = new ABJ_404_Solution_DatabaseUpgradeSelfHeal($this, $deps);
-		$this->canonicalUrlBackfillUpgrade = new ABJ_404_Solution_DatabaseUpgradeCanonicalUrlBackfill($this, $deps);
-		$this->dailyMaintenanceUpgrade = new ABJ_404_Solution_DatabaseUpgradeDailyMaintenance($this, $deps);
-		$this->pluginUpdateUpgrade = new ABJ_404_Solution_DatabaseUpgradePluginUpdate($this, $deps);
-		$this->tableRepairUpgrade = new ABJ_404_Solution_DatabaseUpgradeTableRepair($this, $deps);
-		$this->indexesUpgrade = new ABJ_404_Solution_DatabaseUpgradeIndexes($this, $deps);
-		$this->orphanAdoptionUpgrade = new ABJ_404_Solution_DatabaseUpgradeOrphanAdoption($this, $deps);
-		$this->multiSiteUpgrade = new ABJ_404_Solution_DatabaseUpgradeMultiSite($this, $deps);
-		$this->schemaDiffUpgrade = new ABJ_404_Solution_DatabaseUpgradeSchemaDiff($this, $deps);
-		$this->bootstrapUpgrade = new ABJ_404_Solution_DatabaseUpgradeBootstrap($this, $deps);
-	}
-
-	/** @return void */
 	public function refreshUpgradeComponentDependencies(): void {
-		$deps = $this->buildComponentDependencyMap();
-		foreach ([
-			$this->nGramUpgrade,
-			$this->engineNormalizationUpgrade,
-			$this->collationDriftUpgrade,
-			$this->selfHealUpgrade,
-			$this->canonicalUrlBackfillUpgrade,
-			$this->dailyMaintenanceUpgrade,
-			$this->pluginUpdateUpgrade,
-			$this->tableRepairUpgrade,
-			$this->indexesUpgrade,
-			$this->orphanAdoptionUpgrade,
-			$this->multiSiteUpgrade,
-			$this->schemaDiffUpgrade,
-			$this->bootstrapUpgrade,
-		] as $component) {
-			$component->replaceDatabaseUpgradeDependencies($deps);
-		}
+		$this->components->refreshDependencies($this->buildComponentDependencyMap());
 	}
 
-	public function nGramUpgrade(): ABJ_404_Solution_DatabaseUpgradeNGram {
-		return $this->nGramUpgrade;
-	}
+	public function nGramUpgrade(): ABJ_404_Solution_DatabaseUpgradeNGram { return $this->components->nGramUpgrade(); }
 
-	public function engineNormalizationUpgrade(): ABJ_404_Solution_DatabaseUpgradeEngineNormalization {
-		return $this->engineNormalizationUpgrade;
-	}
+	public function engineNormalizationUpgrade(): ABJ_404_Solution_DatabaseUpgradeEngineNormalization { return $this->components->engineNormalizationUpgrade(); }
 
-	public function collationDriftUpgrade(): ABJ_404_Solution_DatabaseUpgradeCollationDrift {
-		return $this->collationDriftUpgrade;
-	}
+	public function collationDriftUpgrade(): ABJ_404_Solution_DatabaseUpgradeCollationDrift { return $this->components->collationDriftUpgrade(); }
 
-	public function selfHealUpgrade(): ABJ_404_Solution_DatabaseUpgradeSelfHeal {
-		return $this->selfHealUpgrade;
-	}
+	public function selfHealUpgrade(): ABJ_404_Solution_DatabaseUpgradeSelfHeal { return $this->components->selfHealUpgrade(); }
 
-	public function canonicalUrlBackfillUpgrade(): ABJ_404_Solution_DatabaseUpgradeCanonicalUrlBackfill {
-		return $this->canonicalUrlBackfillUpgrade;
-	}
+	public function canonicalUrlBackfillUpgrade(): ABJ_404_Solution_DatabaseUpgradeCanonicalUrlBackfill { return $this->components->canonicalUrlBackfillUpgrade(); }
 
-	public function dailyMaintenanceUpgrade(): ABJ_404_Solution_DatabaseUpgradeDailyMaintenance {
-		return $this->dailyMaintenanceUpgrade;
-	}
+	public function dailyMaintenanceUpgrade(): ABJ_404_Solution_DatabaseUpgradeDailyMaintenance { return $this->components->dailyMaintenanceUpgrade(); }
 
-	public function pluginUpdateUpgrade(): ABJ_404_Solution_DatabaseUpgradePluginUpdate {
-		return $this->pluginUpdateUpgrade;
-	}
+	public function pluginUpdateUpgrade(): ABJ_404_Solution_DatabaseUpgradePluginUpdate { return $this->components->pluginUpdateUpgrade(); }
 
-	public function tableRepairUpgrade(): ABJ_404_Solution_DatabaseUpgradeTableRepair {
-		return $this->tableRepairUpgrade;
-	}
+	public function tableRepairUpgrade(): ABJ_404_Solution_DatabaseUpgradeTableRepair { return $this->components->tableRepairUpgrade(); }
 
-	public function indexesUpgrade(): ABJ_404_Solution_DatabaseUpgradeIndexes {
-		return $this->indexesUpgrade;
-	}
+	public function indexesUpgrade(): ABJ_404_Solution_DatabaseUpgradeIndexes { return $this->components->indexesUpgrade(); }
 
-	public function orphanAdoptionUpgrade(): ABJ_404_Solution_DatabaseUpgradeOrphanAdoption {
-		return $this->orphanAdoptionUpgrade;
-	}
+	public function orphanAdoptionUpgrade(): ABJ_404_Solution_DatabaseUpgradeOrphanAdoption { return $this->components->orphanAdoptionUpgrade(); }
 
-	public function multiSiteUpgrade(): ABJ_404_Solution_DatabaseUpgradeMultiSite {
-		return $this->multiSiteUpgrade;
-	}
+	public function multiSiteUpgrade(): ABJ_404_Solution_DatabaseUpgradeMultiSite { return $this->components->multiSiteUpgrade(); }
 
-	public function schemaDiffUpgrade(): ABJ_404_Solution_DatabaseUpgradeSchemaDiff {
-		return $this->schemaDiffUpgrade;
-	}
+	public function schemaDiffUpgrade(): ABJ_404_Solution_DatabaseUpgradeSchemaDiff { return $this->components->schemaDiffUpgrade(); }
 
-	public function bootstrapUpgrade(): ABJ_404_Solution_DatabaseUpgradeBootstrap {
-		return $this->bootstrapUpgrade;
-	}
+	public function bootstrapUpgrade(): ABJ_404_Solution_DatabaseUpgradeBootstrap { return $this->components->bootstrapUpgrade(); }
 
 	/**
 	 * @param bool $updatingToNewVersion
 	 * @return void
 	 */
 	public function createDatabaseTables($updatingToNewVersion = false, bool $force = false) {
-		$this->bootstrapUpgrade->createDatabaseTables($updatingToNewVersion, $force);
+		$this->bootstrapUpgrade()->createDatabaseTables($updatingToNewVersion, $force);
 	}
 
 	/** @return void */
 	public function runSelfHealPrologue() {
-		$this->selfHealUpgrade->runSelfHealPrologue();
+		$this->selfHealUpgrade()->runSelfHealPrologue();
 	}
 
 	/** @return void */
 	public function runDatabaseMaintenanceTasks() {
-		$this->dailyMaintenanceUpgrade->runDatabaseMaintenanceTasks();
+		$this->dailyMaintenanceUpgrade()->runDatabaseMaintenanceTasks();
 	}
 
 	/** @return void */
 	public function runDailyInsuranceCheck() {
-		$this->selfHealUpgrade->runDailyInsuranceCheck();
+		$this->selfHealUpgrade()->runDailyInsuranceCheck();
 	}
 
 	/** @return void */
 	public function verifyAndRepairCurrentSite() {
 		$this->refreshUpgradeComponentDependencies();
-		$this->selfHealUpgrade->verifyAndRepairCurrentSite();
+		$this->selfHealUpgrade()->verifyAndRepairCurrentSite();
 	}
 
 	/** @return array<string, mixed> */
 	public function cleanupExpiredRateLimitTransients() {
-		return $this->dailyMaintenanceUpgrade->cleanupExpiredRateLimitTransients();
+		return $this->dailyMaintenanceUpgrade()->cleanupExpiredRateLimitTransients();
 	}
 
 	/** @return bool */
 	public function processMultisiteActivationBatch() {
-		return $this->multiSiteUpgrade->processMultisiteActivationBatch();
+		return $this->multiSiteUpgrade()->processMultisiteActivationBatch();
 	}
 
 	/**
@@ -346,12 +250,12 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 	 * @return void
 	 */
 	public function scheduleBackgroundMultisiteActivation(int $alreadyProcessedBlogId): void {
-		$this->multiSiteUpgrade->scheduleBackgroundMultisiteActivation($alreadyProcessedBlogId);
+		$this->multiSiteUpgrade()->scheduleBackgroundMultisiteActivation($alreadyProcessedBlogId);
 	}
 
 	/** @return bool */
 	public function processMultisiteUpgradeBatch() {
-		return $this->multiSiteUpgrade->processMultisiteUpgradeBatch();
+		return $this->multiSiteUpgrade()->processMultisiteUpgradeBatch();
 	}
 
 	/**
@@ -359,18 +263,18 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 	 * @return void
 	 */
 	public function scheduleBackgroundMultisiteUpgrade(int $alreadyProcessedBlogId): void {
-		$this->multiSiteUpgrade->scheduleBackgroundMultisiteUpgrade($alreadyProcessedBlogId);
+		$this->multiSiteUpgrade()->scheduleBackgroundMultisiteUpgrade($alreadyProcessedBlogId);
 	}
 
 	/** @return void */
 	public function createTablesForAllSites(): void {
-		$this->multiSiteUpgrade->createTablesForAllSites();
+		$this->multiSiteUpgrade()->createTablesForAllSites();
 	}
 
 	/** @return bool */
 	public function scheduleNGramCacheRebuild() {
 		$this->refreshUpgradeComponentDependencies();
-		return $this->nGramUpgrade->scheduleNGramCacheRebuild();
+		return $this->nGramUpgrade()->scheduleNGramCacheRebuild();
 	}
 
 	/**
@@ -379,31 +283,31 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 	 */
 	public function rebuildNGramCacheAsync($offset = 0) {
 		$this->refreshUpgradeComponentDependencies();
-		$this->nGramUpgrade->rebuildNGramCacheAsync($offset);
+		$this->nGramUpgrade()->rebuildNGramCacheAsync($offset);
 	}
 
 	/** @return void */
 	public function scheduleLogsv2CanonicalUrlBackfill() {
-		$this->canonicalUrlBackfillUpgrade->scheduleLogsv2CanonicalUrlBackfill();
+		$this->canonicalUrlBackfillUpgrade()->scheduleLogsv2CanonicalUrlBackfill();
 	}
 
 	/** @return int */
 	public function backfillLogsv2CanonicalUrl() {
-		return $this->canonicalUrlBackfillUpgrade->backfillLogsv2CanonicalUrl();
+		return $this->canonicalUrlBackfillUpgrade()->backfillLogsv2CanonicalUrl();
 	}
 
 	/** @return void */
 	public function correctCollations() {
-		$this->collationDriftUpgrade->correctCollations();
+		$this->collationDriftUpgrade()->correctCollations();
 	}
 
 	/** @return void */
 	public function updatePluginCheck() {
-		$this->pluginUpdateUpgrade->updatePluginCheck();
+		$this->pluginUpdateUpgrade()->updatePluginCheck();
 	}
 
 	/** @return int */
-	public function backfillRedirectsCanonicalUrl() { return $this->canonicalUrlBackfillUpgrade->backfillRedirectsCanonicalUrl(); }
+	public function backfillRedirectsCanonicalUrl() { return $this->canonicalUrlBackfillUpgrade()->backfillRedirectsCanonicalUrl(); }
 
 	/**
 	 * @param int $batchSize
@@ -412,7 +316,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 	 */
 	public function rebuildNGramCache($batchSize = 100, $forceRebuild = false) {
 		$this->refreshUpgradeComponentDependencies();
-		return $this->nGramUpgrade->rebuildNGramCache($batchSize, $forceRebuild);
+		return $this->nGramUpgrade()->rebuildNGramCache($batchSize, $forceRebuild);
 	}
 
 	/**
@@ -421,7 +325,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 	 */
 	public function syncMissingNGrams($batchSize = 50) {
 		$this->refreshUpgradeComponentDependencies();
-		return $this->nGramUpgrade->syncMissingNGrams($batchSize);
+		return $this->nGramUpgrade()->syncMissingNGrams($batchSize);
 	}
 
 	/**
@@ -430,7 +334,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 	 */
 	public function buildNGramsForAllContent($batchSize = 100) {
 		$this->refreshUpgradeComponentDependencies();
-		return $this->nGramUpgrade->buildNGramsForAllContent($batchSize);
+		return $this->nGramUpgrade()->buildNGramsForAllContent($batchSize);
 	}
 
 	/**
@@ -438,19 +342,19 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 	 * @param mixed $default
 	 * @return mixed
 	 */
-	public function getNetworkAwareOption($option_name, $default = false) { return $this->nGramUpgrade->getNetworkAwareOption($option_name, $default); }
+	public function getNetworkAwareOption($option_name, $default = false) { return $this->nGramUpgrade()->getNetworkAwareOption($option_name, $default); }
 
 	/** @return int */
 	public function countTotalPagesForNGramRebuild() {
 		$this->refreshUpgradeComponentDependencies();
-		return $this->nGramUpgrade->countTotalPagesForNGramRebuild();
+		return $this->nGramUpgrade()->countTotalPagesForNGramRebuild();
 	}
 
 	/** @return void */
-	public function updateTableEngineToInnoDB() { $this->engineNormalizationUpgrade->updateTableEngineToInnoDB(); }
+	public function updateTableEngineToInnoDB() { $this->engineNormalizationUpgrade()->updateTableEngineToInnoDB(); }
 
 	/** @return void */
-	public function createIndexes() { $this->indexesUpgrade->createIndexes(); }
+	public function createIndexes() { $this->indexesUpgrade()->createIndexes(); }
 
 	/**
 	 * @param string $tableName
@@ -458,17 +362,17 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 	 * @return void
 	 */
 	public function verifyIndexes($tableName, $createTableStatementGoal) {
-		$this->indexesUpgrade->verifyIndexes($tableName, $createTableStatementGoal);
+		$this->indexesUpgrade()->verifyIndexes($tableName, $createTableStatementGoal);
 	}
 
 	/** @return void */
-	public function runInitialCreateTables() { $this->bootstrapUpgrade->runInitialCreateTables(); }
+	public function runInitialCreateTables() { $this->bootstrapUpgrade()->runInitialCreateTables(); }
 
 	/** @return void */
-	public function renameAbj404TablesToLowerCase() { $this->bootstrapUpgrade->renameAbj404TablesToLowerCase(); }
+	public function renameAbj404TablesToLowerCase() { $this->bootstrapUpgrade()->renameAbj404TablesToLowerCase(); }
 
 	/** @return array<int, array{placeholder: string, bareTableName: string, ddlContent: string}> */
-	public function discoverPermanentDDLFiles(): array { return $this->bootstrapUpgrade->discoverPermanentDDLFiles(); }
+	public function discoverPermanentDDLFiles(): array { return $this->bootstrapUpgrade()->discoverPermanentDDLFiles(); }
 
 	/**
 	 * @param mixed $createTableSql
@@ -478,29 +382,29 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 		if (!is_string($createTableSql)) {
 			return $createTableSql;
 		}
-		return $this->bootstrapUpgrade->applyPluginTableCharsetCollate($createTableSql);
+		return $this->bootstrapUpgrade()->applyPluginTableCharsetCollate($createTableSql);
 	}
 
 	/** @return void */
-	public function correctIssuesBefore() { $this->tableRepairUpgrade->correctIssuesBefore(); }
+	public function correctIssuesBefore() { $this->tableRepairUpgrade()->correctIssuesBefore(); }
 
 	/** @return void */
-	public function correctIssuesAfter() { $this->tableRepairUpgrade->correctIssuesAfter(); }
+	public function correctIssuesAfter() { $this->tableRepairUpgrade()->correctIssuesAfter(); }
 
 	/** @return void */
 	public function repairStrippedViewCacheTable() {
 		$this->refreshUpgradeComponentDependencies();
-		$this->tableRepairUpgrade->repairStrippedViewCacheTable();
+		$this->tableRepairUpgrade()->repairStrippedViewCacheTable();
 	}
 
 	/** @return array<string, mixed> */
-	public function migrateURLsToRelativePaths() { return $this->pluginUpdateUpgrade->migrateURLsToRelativePaths(); }
+	public function migrateURLsToRelativePaths() { return $this->pluginUpdateUpgrade()->migrateURLsToRelativePaths(); }
 
 	/**
 	 * @param array<string, mixed> $pluginInfo
 	 * @return bool
 	 */
-	public function shouldUpdate($pluginInfo) { return $this->pluginUpdateUpgrade->shouldUpdate($pluginInfo); }
+	public function shouldUpdate($pluginInfo) { return $this->pluginUpdateUpgrade()->shouldUpdate($pluginInfo); }
 
 	/**
 	 * @param string $tableName
@@ -509,7 +413,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 	 */
 	public function verifyColumns($tableName, $createTableStatementGoal) {
 		$this->refreshUpgradeComponentDependencies();
-		$this->schemaDiffUpgrade->verifyColumns($tableName, $createTableStatementGoal);
+		$this->schemaDiffUpgrade()->verifyColumns($tableName, $createTableStatementGoal);
 	}
 
 	/**
@@ -519,7 +423,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 	 */
 	public function getTableDifferences($tableName, $createTableStatementGoal) {
 		$this->refreshUpgradeComponentDependencies();
-		return $this->schemaDiffUpgrade->getTableDifferences($tableName, $createTableStatementGoal);
+		return $this->schemaDiffUpgrade()->getTableDifferences($tableName, $createTableStatementGoal);
 	}
 
 	/**
@@ -529,20 +433,20 @@ class ABJ_404_Solution_DatabaseUpgradesEtc implements ABJ_404_Solution_DatabaseU
 	 */
 	public function updateATableBasedOnDifferences($tableName, $tableDifferences) {
 		$this->refreshUpgradeComponentDependencies();
-		$this->schemaDiffUpgrade->updateATableBasedOnDifferences($tableName, $tableDifferences);
+		$this->schemaDiffUpgrade()->updateATableBasedOnDifferences($tableName, $tableDifferences);
 	}
 
 	/**
 	 * @param string|null $createTableDDL
 	 * @return string
 	 */
-	public function removeCommentsFromColumns($createTableDDL) { return $this->schemaDiffUpgrade->removeCommentsFromColumns($createTableDDL); }
+	public function removeCommentsFromColumns($createTableDDL) { return $this->schemaDiffUpgrade()->removeCommentsFromColumns($createTableDDL); }
 
 	/**
 	 * @param mixed $ddl
 	 * @return string
 	 */
-	public function normalizeColumnDDL($ddl) { return $this->schemaDiffUpgrade->normalizeColumnDDL($ddl); }
+	public function normalizeColumnDDL($ddl) { return $this->schemaDiffUpgrade()->normalizeColumnDDL($ddl); }
 
 	/** @return string|null */
 	public function getUpgradeRuntimeId() {
