@@ -76,7 +76,7 @@ class ABJ_404_Solution_Ajax_AdvanceViewBuild {
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit(array(
                     'status' => 'unsupported',
-                    'progress' => array('status' => 'pending', 'stage' => 0, 'of' => 11,
+                    'progress' => array('status' => 'pending', 'stage' => 0, 'of' => ABJ_404_Solution_ViewBuildConfig::totalStages(),
                         'build_started' => 0, 'progress_text' => 'unsupported'),
                 ), 200);
                 return;

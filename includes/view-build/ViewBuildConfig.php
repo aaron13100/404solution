@@ -186,6 +186,21 @@ final class ABJ_404_Solution_ViewBuildConfig {
         return self::STAGE_FAILURE_POLICY[$stageNumber] ?? 'critical';
     }
 
+    /**
+     * Total number of stages in the staged view-build pipeline. This is the
+     * single source of truth for the "of N" denominator in every build-progress
+     * payload (`progress.of`). All progress producers (pending response, advance
+     * loop, freshness short-circuit, paused gate) must report this same total so
+     * the value is internally consistent across the AJAX contract. Derived from
+     * STAGE_FAILURE_POLICY so adding/removing a stage updates the total in one
+     * place.
+     *
+     * @return int  Count of staged build stages (currently 11).
+     */
+    public static function totalStages(): int {
+        return count(self::STAGE_FAILURE_POLICY);
+    }
+
     /** Recommended floor for memory_limit (128M) in the PHP env probe. */
     const PHP_MEMORY_LIMIT_RECOMMENDED_BYTES = 134217728;
 

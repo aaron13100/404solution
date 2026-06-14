@@ -329,7 +329,24 @@ class ABJ_404_Solution_DatabaseUpgradeBootstrap extends ABJ_404_Solution_Databas
                 'ddlContent' => $ddlContent,
             ];
         }
-        return $result;
+        // Extension point: add-ons can register extra permanent abj404_* tables
+        // (same entry shape as above) to join the create/verify loops; malformed
+        // entries from a misbehaving callback are dropped.
+        $filtered = apply_filters('abj404_permanent_ddl_files', $result);
+        if (!is_array($filtered)) {
+            return $result;
+        }
+        $validated = array();
+        foreach ($filtered as $entry) {
+            if (is_array($entry)
+                    && isset($entry['placeholder'], $entry['bareTableName'], $entry['ddlContent'])
+                    && is_string($entry['placeholder']) && is_string($entry['bareTableName'])
+                    && is_string($entry['ddlContent'])) {
+                $validated[] = array('placeholder' => $entry['placeholder'],
+                    'bareTableName' => $entry['bareTableName'], 'ddlContent' => $entry['ddlContent']);
+            }
+        }
+        return $validated;
     }
 
     /** @return void */

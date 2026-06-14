@@ -91,15 +91,28 @@ class ABJ_404_Solution_ViewDoneFreshnessState {
     /** @return array<string, mixed> */
     public function getProgress(): array {
         $serveable = $this->isServeable();
-        return $this->formatProgress($serveable ? 'ready' : 'pending', $serveable ? 'ready' : 'not yet started');
+        // The general build-status query reflects the staged pipeline, so it
+        // reports the staged stage total (matching the other staged-pending
+        // producers). The direct (non-staged) rebuild paths call formatProgress
+        // directly with the default total of 1.
+        return $this->formatProgress(
+            $serveable ? 'ready' : 'pending',
+            $serveable ? 'ready' : 'not yet started',
+            ABJ_404_Solution_ViewBuildConfig::totalStages()
+        );
     }
 
     /**
      * @param string $status
      * @param string $text
+     * @param int    $of     Total number of stages this progress is measured
+     *                       against. Defaults to 1 for the single-shot direct
+     *                       rebuild / lock-held / ready short-circuit paths;
+     *                       staged callers pass
+     *                       ABJ_404_Solution_ViewBuildConfig::totalStages().
      * @return array<string, mixed>
      */
-    public function formatProgress(string $status, string $text): array {
+    public function formatProgress(string $status, string $text, int $of = 1): array {
         $fingerprint = array();
         if ($this->viewReadService instanceof ABJ_404_Solution_ViewReadService) {
             $fingerprint = $this->viewReadService->getViewBuildProgressFingerprint();
@@ -107,7 +120,7 @@ class ABJ_404_Solution_ViewDoneFreshnessState {
         return array(
             'status' => $status,
             'stage' => $status === 'ready' ? 1 : 0,
-            'of' => 1,
+            'of' => $of,
             'build_started' => 0,
             'progress_text' => $text,
             'fingerprint' => $fingerprint,
