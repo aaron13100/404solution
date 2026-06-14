@@ -9,19 +9,68 @@ if (!defined('ABSPATH')) {
  */
 class ABJ_404_Solution_AjaxSecurityGate {
 
-    /** @var object|null */
+    /**
+     * Sentinel for a constructor argument that was not supplied. A dependency
+     * left at this value is resolved lazily from the service container at use
+     * time, instead of being captured at construction. This keeps the gate
+     * from holding a stale admin_access_policy / logging reference when those
+     * services are (re)registered after the gate is first built. The container
+     * caches the gate instance, so a value captured in the constructor would
+     * otherwise never reflect a later re-registration.
+     */
+    const RESOLVE_FROM_CONTAINER = "\0__abj404_resolve_from_container__";
+
+    /** @var object|null|string */
     private $adminAccessPolicy;
 
-    /** @var object|null */
+    /** @var object|null|string */
     private $logger;
 
     /**
-     * @param object|null $adminAccessPolicy Service exposing isPluginAdmin().
-     * @param object|null $logger Service exposing infoMessage().
+     * @param object|null|string $adminAccessPolicy Service exposing isPluginAdmin().
+     *        Omit (or pass RESOLVE_FROM_CONTAINER) to resolve 'admin_access_policy'
+     *        lazily from the container on each authorization.
+     * @param object|null|string $logger Service exposing infoMessage()/warn().
+     *        Omit to resolve 'logging' lazily from the container.
      */
-    public function __construct($adminAccessPolicy, $logger) {
+    public function __construct($adminAccessPolicy = self::RESOLVE_FROM_CONTAINER, $logger = self::RESOLVE_FROM_CONTAINER) {
         $this->adminAccessPolicy = $adminAccessPolicy;
         $this->logger = $logger;
+    }
+
+    /**
+     * Resolve the admin-access policy, honoring an explicitly injected value
+     * (including an explicit null, which means "no policy") and otherwise
+     * pulling the current 'admin_access_policy' service from the container.
+     *
+     * @return object|null
+     */
+    protected function getAdminAccessPolicy() {
+        $policy = $this->adminAccessPolicy;
+        if (is_string($policy)) {
+            // Either the resolve-from-container sentinel or, defensively, any
+            // other raw string (never a valid policy): resolve from the
+            // container in both cases.
+            return abj_service_optional('admin_access_policy');
+        }
+        return $policy;
+    }
+
+    /**
+     * Resolve the logger, honoring an explicitly injected value and otherwise
+     * pulling the current 'logging' service from the container.
+     *
+     * @return object|null
+     */
+    protected function getLogger() {
+        $logger = $this->logger;
+        if (is_string($logger)) {
+            // Either the resolve-from-container sentinel or, defensively, any
+            // other raw string (never a valid logger): resolve from the
+            // container in both cases.
+            return abj_service_optional('logging');
+        }
+        return $logger;
     }
 
     /**
@@ -179,7 +228,7 @@ class ABJ_404_Solution_AjaxSecurityGate {
     }
 
     private function isPluginAdmin(string $action): bool {
-        $adminAccessPolicy = $this->adminAccessPolicy;
+        $adminAccessPolicy = $this->getAdminAccessPolicy();
 
         if (!is_object($adminAccessPolicy)) {
             $this->warn('AJAX authorization failed for ' . $action .
@@ -201,12 +250,13 @@ class ABJ_404_Solution_AjaxSecurityGate {
         }
     }
 
-    private function logAuthorizedAction(string $action): void {
+    protected function logAuthorizedAction(string $action): void {
+        $logger = $this->getLogger();
         try {
-            if (!is_object($this->logger) || !method_exists($this->logger, 'infoMessage')) {
+            if (!is_object($logger) || !method_exists($logger, 'infoMessage')) {
                 throw new RuntimeException('logging service is unavailable');
             }
-            $this->logger->infoMessage('AJAX authorized: ' . $action);
+            $logger->infoMessage('AJAX authorized: ' . $action);
         } catch (\Throwable $e) {
             $this->warn('AJAX authorization logging failed for ' . $action .
                 ' (code ' . $e->getCode() . '): ' . $e->getMessage());
@@ -214,13 +264,14 @@ class ABJ_404_Solution_AjaxSecurityGate {
     }
 
     private function warn(string $message): void {
-        if (is_object($this->logger) && method_exists($this->logger, 'warn')) {
-            $this->logger->warn($message);
+        $logger = $this->getLogger();
+        if (is_object($logger) && method_exists($logger, 'warn')) {
+            $logger->warn($message);
             return;
         }
 
-        if (is_object($this->logger) && method_exists($this->logger, 'errorMessage')) {
-            $this->logger->errorMessage($message);
+        if (is_object($logger) && method_exists($logger, 'errorMessage')) {
+            $logger->errorMessage($message);
             return;
         }
 

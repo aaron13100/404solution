@@ -116,28 +116,28 @@ class ABJ_404_Solution_FrontendLegacyAdapters {
     private function adaptNotFoundResponse($forceRedirect, $sendTo404Page, $thereIsAUserSpecified404Page) {
         return new class($forceRedirect, $sendTo404Page, $thereIsAUserSpecified404Page) extends ABJ_404_Solution_NotFoundResponseService {
             /** @var callable */
-            private $forceRedirect;
+            private $forceRedirectCallback;
             /** @var callable */
-            private $sendTo404Page;
+            private $sendTo404PageCallback;
             /** @var callable */
-            private $thereIsAUserSpecified404Page;
+            private $thereIsAUserSpecified404PageCallback;
 
             function __construct(callable $forceRedirect, callable $sendTo404Page, callable $thereIsAUserSpecified404Page) {
-                $this->forceRedirect = $forceRedirect;
-                $this->sendTo404Page = $sendTo404Page;
-                $this->thereIsAUserSpecified404Page = $thereIsAUserSpecified404Page;
+                $this->forceRedirectCallback = $forceRedirect;
+                $this->sendTo404PageCallback = $sendTo404Page;
+                $this->thereIsAUserSpecified404PageCallback = $thereIsAUserSpecified404Page;
             }
 
             function forceRedirect(string $location, int $status = 302, $type = -1, string $requestedURL = '', bool $isCustom404 = false): bool {
-                return (bool)call_user_func($this->forceRedirect, $location, $status, $type, $requestedURL, $isCustom404);
+                return (bool)call_user_func($this->forceRedirectCallback, $location, $status, $type, $requestedURL, $isCustom404);
             }
 
             function sendTo404Page(string $requestedURL, string $reason = '', bool $useUserSpecified404 = true, $optionsOverride = null): void {
-                call_user_func($this->sendTo404Page, $requestedURL, $reason, $useUserSpecified404, $optionsOverride);
+                call_user_func($this->sendTo404PageCallback, $requestedURL, $reason, $useUserSpecified404, $optionsOverride);
             }
 
             function thereIsAUserSpecified404Page($dest404page): bool {
-                return (bool)call_user_func($this->thereIsAUserSpecified404Page, $dest404page);
+                return (bool)call_user_func($this->thereIsAUserSpecified404PageCallback, $dest404page);
             }
         };
     }
@@ -150,21 +150,21 @@ class ABJ_404_Solution_FrontendLegacyAdapters {
     private function adaptRequestIgnoreNormalizer($initializeIgnoreValues, $tryNormalPostQuery) {
         return new class($initializeIgnoreValues, $tryNormalPostQuery) extends ABJ_404_Solution_RequestIgnoreNormalizer {
             /** @var callable */
-            private $initializeIgnoreValues;
+            private $initializeIgnoreValuesCallback;
             /** @var callable */
-            private $tryNormalPostQuery;
+            private $tryNormalPostQueryCallback;
 
             function __construct(callable $initializeIgnoreValues, callable $tryNormalPostQuery) {
-                $this->initializeIgnoreValues = $initializeIgnoreValues;
-                $this->tryNormalPostQuery = $tryNormalPostQuery;
+                $this->initializeIgnoreValuesCallback = $initializeIgnoreValues;
+                $this->tryNormalPostQueryCallback = $tryNormalPostQuery;
             }
 
             function initializeIgnoreValues(string $urlRequest, string $urlSlugOnly): void {
-                call_user_func($this->initializeIgnoreValues, $urlRequest, $urlSlugOnly);
+                call_user_func($this->initializeIgnoreValuesCallback, $urlRequest, $urlSlugOnly);
             }
 
             function tryNormalPostQuery(array $options): void {
-                call_user_func($this->tryNormalPostQuery, $options);
+                call_user_func($this->tryNormalPostQueryCallback, $options);
             }
         };
     }
@@ -177,22 +177,22 @@ class ABJ_404_Solution_FrontendLegacyAdapters {
     private function adaptPreviousRequestCookieTracker($readCookieWithPreviousRqeuestShort, $setCookieWithPreviousRequest) {
         return new class($readCookieWithPreviousRqeuestShort, $setCookieWithPreviousRequest) extends ABJ_404_Solution_PreviousRequestCookieTracker {
             /** @var callable */
-            private $readCookieWithPreviousRqeuestShort;
+            private $readCookieWithPreviousRqeuestShortCallback;
             /** @var callable */
-            private $setCookieWithPreviousRequest;
+            private $setCookieWithPreviousRequestCallback;
 
             function __construct(callable $readCookieWithPreviousRqeuestShort, callable $setCookieWithPreviousRequest) {
-                $this->readCookieWithPreviousRqeuestShort = $readCookieWithPreviousRqeuestShort;
-                $this->setCookieWithPreviousRequest = $setCookieWithPreviousRequest;
+                $this->readCookieWithPreviousRqeuestShortCallback = $readCookieWithPreviousRqeuestShort;
+                $this->setCookieWithPreviousRequestCallback = $setCookieWithPreviousRequest;
             }
 
             function readCookieWithPreviousRqeuestShort(): string {
-                $value = call_user_func($this->readCookieWithPreviousRqeuestShort);
+                $value = call_user_func($this->readCookieWithPreviousRqeuestShortCallback);
                 return is_string($value) ? $value : '';
             }
 
             function setCookieWithPreviousRequest(): void {
-                call_user_func($this->setCookieWithPreviousRequest);
+                call_user_func($this->setCookieWithPreviousRequestCallback);
             }
         };
     }

@@ -70,7 +70,6 @@ require_once __DIR__ . '/../core/PhpErrorLogFallback.php';
  *     $name is 'matching_engines' ? array<int, object> : (
  *     $name is 'wordpress_connector' ? ABJ_404_Solution_WordPress_Connector : (
  *     $name is 'slug_change_handler' ? ABJ_404_Solution_SlugChangeHandler : (
- *     $name is 'published_posts_provider' ? ABJ_404_Solution_PublishedPostsProvider : (
  *     $name is 'sync_utils' ? ABJ_404_Solution_SynchronizationUtils : (
  *     $name is 'request_context' ? ABJ_404_Solution_RequestContext : (
  *     $name is 'previous_request_cookie_tracker' ? ABJ_404_Solution_PreviousRequestCookieTracker : (
@@ -85,7 +84,7 @@ require_once __DIR__ . '/../core/PhpErrorLogFallback.php';
  *     $name is 'settings_mode_preference' ? ABJ_404_Solution_SettingsModePreference : (
  *     $name is 'not_found_response' ? ABJ_404_Solution_NotFoundResponseService :
  *     mixed
- * ))))))))))))))))))))))))))))))))))))))))))))))))))))
+ * )))))))))))))))))))))))))))))))))))))))))))))))))))
  */
 function abj_service($name) {
     if ($name === 'logging' && class_exists('ABJ_404_Solution_Logging', false)) {

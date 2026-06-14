@@ -31,7 +31,9 @@ class ABJ_404_Solution_LegacyInstanceResolver {
             'ABJ_404_Solution_PermalinkCache' => 'permalink_cache',
             'ABJ_404_Solution_NGramFilter' => 'ngram_filter',
             'ABJ_404_Solution_SlugChangeHandler' => 'slug_change_handler',
-            'ABJ_404_Solution_PublishedPostsProvider' => 'published_posts_provider',
+            // PublishedPostsProvider is intentionally not a shared service; its
+            // getInstance() builds a fresh instance, so legacy resolution falls
+            // through to that below rather than a container lookup.
             'ABJ_404_Solution_SynchronizationUtils' => 'sync_utils',
             'ABJ_404_Solution_View_Suggestions' => 'view_suggestions',
             'ABJ_404_Solution_ShortCode' => 'shortcode',

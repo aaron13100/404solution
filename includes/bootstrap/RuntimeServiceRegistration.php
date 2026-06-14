@@ -47,9 +47,12 @@ class ABJ_404_Solution_RuntimeServiceRegistration implements ABJ_404_Solution_Ab
                 $c->get('redirects_repository'), $c->get('logging'));
         });
 
-        $container->set('published_posts_provider', function($c) {
-            return new ABJ_404_Solution_PublishedPostsProvider($c->get('content_repository'));
-        });
+        // 'published_posts_provider' is intentionally NOT registered as a shared
+        // service. Its only consumer (SpellPostListeners) builds a fresh provider
+        // from the content repository it was injected with, because the provider
+        // is stateful (batch cursor, restricted ids) and must scan the caller's
+        // repository, not a globally-shared one. See
+        // ABJ_404_Solution_SpellPostListeners::initializePublishedPostsProvider.
 
         $container->set('sync_utils', function($c) {
             return new ABJ_404_Solution_SynchronizationUtils();
@@ -65,7 +68,12 @@ class ABJ_404_Solution_RuntimeServiceRegistration implements ABJ_404_Solution_Ab
         });
 
         $container->set('ajax_security_gate', function($c) {
-            return self::buildAjaxSecurityGate($c->get('admin_access_policy'), $c->get('logging'));
+            // Build with no captured dependencies: the gate resolves
+            // admin_access_policy and logging from the container lazily on each
+            // authorization. The container caches this gate instance, so
+            // capturing those services here would pin whatever was registered
+            // at first resolution and ignore any later re-registration.
+            return self::buildAjaxSecurityGate();
         });
 
         $container->set('ajax_failure_logger', function($c) {
@@ -94,11 +102,19 @@ class ABJ_404_Solution_RuntimeServiceRegistration implements ABJ_404_Solution_Ab
     }
 
     /**
-     * @param object|null $adminAccessPolicy Service exposing isPluginAdmin().
-     * @param object|null $logging Service exposing infoMessage().
+     * Build the AJAX security gate. With no arguments the gate resolves
+     * admin_access_policy and logging lazily from the container on each
+     * authorization (the robust default). Explicit dependencies may still be
+     * passed by callers that want a fixed wiring.
+     *
+     * @param object|null|string $adminAccessPolicy Service exposing isPluginAdmin().
+     * @param object|null|string $logging Service exposing infoMessage().
      * @return ABJ_404_Solution_AjaxSecurityGate
      */
-    private static function buildAjaxSecurityGate($adminAccessPolicy, $logging) {
+    private static function buildAjaxSecurityGate(
+        $adminAccessPolicy = ABJ_404_Solution_AjaxSecurityGate::RESOLVE_FROM_CONTAINER,
+        $logging = ABJ_404_Solution_AjaxSecurityGate::RESOLVE_FROM_CONTAINER
+    ) {
         return new ABJ_404_Solution_AjaxSecurityGate($adminAccessPolicy, $logging);
     }
 

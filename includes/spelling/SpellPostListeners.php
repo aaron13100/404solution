@@ -279,13 +279,22 @@ class ABJ_404_Solution_SpellPostListeners {
 
 	function initializePublishedPostsProvider(): void {
 		if ($this->publishedPostsProvider == null) {
-			$provider = class_exists('ABJ_404_Solution_ServiceContainer')
-					&& ABJ_404_Solution_ServiceContainer::safeHas('published_posts_provider')
-				? abj_service('published_posts_provider')
-				: null;
-			$this->publishedPostsProvider = $provider instanceof ABJ_404_Solution_PublishedPostsProvider
-				? $provider
-				: new ABJ_404_Solution_PublishedPostsProvider($this->contentRepository);
+			// Build a FRESH provider from the content repository this collaborator
+			// was constructed with. Two reasons it is not resolved from the
+			// container's shared 'published_posts_provider' service:
+			//   1. Wrong repository. The shared provider is built from the
+			//      container's 'content_repository'; a caller that injected a
+			//      different repository here (a test mock, or a SpellChecker
+			//      constructed with a specific repo) would otherwise scan the
+			//      wrong repository and silently return no candidates.
+			//   2. Stale scan state. PublishedPostsProvider is stateful
+			//      (batch cursor, restricted ids, local-data mode); reusing a
+			//      shared instance that another caller already advanced would
+			//      leak that state into this scan.
+			// Building per-collaborator from the injected repository keeps the
+			// dependency the caller chose authoritative and the scan state clean.
+			$this->publishedPostsProvider =
+				new ABJ_404_Solution_PublishedPostsProvider($this->contentRepository);
 		}
 		$this->permalinkCache->updatePermalinkCache(1);
 	}
