@@ -28,7 +28,11 @@ class ABJ_404_Solution_RedirectDestinationLinkResolver {
             return $handlers[$key]($rowFinalDest);
         }
 
-        $this->logger->errorMessage('Unexpected row type while displaying table: ' . $key);
+        // A corrupt redirect row with an unrecognized type is tolerable bad
+        // data while rendering the table: we degrade to a bare "Visit" link.
+        // Per Defensive Coding Philosophy #8 log this at WARNING level rather
+        // than errorMessage() (which fires a production telemetry report).
+        $this->logger->warn('Unexpected row type while displaying table: ' . $key);
         return array('link' => '', 'title' => __('Visit', '404-solution') . ' ');
     }
 

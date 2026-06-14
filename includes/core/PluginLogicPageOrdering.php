@@ -451,7 +451,11 @@ class ABJ_404_Solution_PluginLogicPageOrdering {
             return '';
         }
 
-        $this->logger->errorMessage("Couldn't get page title. No matching type found for type: " . esc_html($type));
+        // Unrecognized/garbage type on a corrupt redirect row is tolerable
+        // bad data: we just can't title it, so we return ''. Per Defensive
+        // Coding Philosophy #8 this degrades at WARNING level rather than
+        // errorMessage() (which fires a production telemetry report).
+        $this->logger->warn("Couldn't get page title. No matching type found for type: " . esc_html($type));
         return '';
     }
 

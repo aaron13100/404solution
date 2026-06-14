@@ -90,8 +90,15 @@ class ABJ_404_Solution_PermalinkResolver {
             $permalink['link'] = '404';
             $permalink['status'] = 'published';
         } else {
+            // A corrupt/unrecognized redirect row (e.g. empty or garbage type
+            // from a damaged DB record) is a tolerable data condition: the
+            // resolver simply can't resolve it, so the row is left in its
+            // unresolvable 'unknown'/'dunno' state for the caller to skip.
+            // Per Defensive Coding Philosophy #8, bad-data the plugin can
+            // function past is logged at WARNING level -- not errorMessage(),
+            // which fires a production telemetry report / admin error notice.
             $logger = abj_service('logging');
-            $logger->errorMessage("Unrecognized permalink type: " .
+            $logger->warn("Unrecognized permalink type: " .
                 wp_kses_post((string)json_encode($permalink)));
         }
     }
