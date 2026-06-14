@@ -184,7 +184,21 @@ class ABJ_404_Solution_ViewDoneRebuildExecutor {
         if (method_exists($this->f, 'doNormalReplacements')) {
             $sql = $this->f->doNormalReplacements($sql);
         }
-        $result = $this->dbCore->queryAndGetResults($sql, $this->getStagedQueryOptionsForRead());
+        $queryOptions = $this->getStagedQueryOptionsForRead();
+        if ($tolerateDuplicateKey) {
+            // An interrupted prior rebuild can leave the transient build table
+            // already carrying these indexes, so re-running ADD INDEX fails with
+            // errno 1061 / "Duplicate key name". That is EXPECTED and recoverable
+            // for control flow (the index we wanted exists), so suppress the
+            // centralized error log / telemetry report for exactly that benign
+            // string. $result['last_error'] is still populated, so the
+            // tolerate-return check below keeps working, and genuine non-1061
+            // failures still log and throw. Scoped to this tolerated call site
+            // only: a duplicate key elsewhere may be a real bug (prod report #93,
+            // tv503.com, 4.2.0, MySQL 5.7.23).
+            $queryOptions['ignore_errors'] = array('Duplicate key name', 'errno: 1061');
+        }
+        $result = $this->dbCore->queryAndGetResults($sql, $queryOptions);
         $err = isset($result['last_error']) && is_string($result['last_error']) ? trim($result['last_error']) : '';
         if ($err !== '') {
             if ($tolerateDuplicateKey
