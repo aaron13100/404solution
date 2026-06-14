@@ -1844,6 +1844,9 @@ msgstr "Ongeldig beveiligingstoken"
 msgid "Unauthorized"
 msgstr "Niet geautoriseerd"
 
+msgid "Unauthorized: Insufficient permissions"
+msgstr "Niet geautoriseerd: Onvoldoende rechten"
+
 msgid "Invalid mode"
 msgstr "Ongeldige modus"
 
@@ -4050,58 +4053,58 @@ msgid "The \"to\" URL must be a relative path or an http/https URL."
 msgstr "The \"to\" URL must be a relative path or an http/https URL."
 
 msgid "Contact your hosting provider. This is usually caused by a database quota, tablespace limit, or full /tmp partition - not necessarily a full disk."
-msgstr ""
+msgstr "Neem contact op met uw hostingprovider. Dit wordt meestal veroorzaakt door een databasequotum, een tablespace-limiet of een volle /tmp-partitie - niet noodzakelijk door een volle schijf."
 
 msgid "A database lock wait timeout occurred. If this persists, contact your host - another process may be holding a long-running lock."
-msgstr ""
+msgstr "Er is een time-out opgetreden bij het wachten op een databasevergrendeling. Als dit aanhoudt, neem dan contact op met uw host - mogelijk houdt een ander proces een langlopende vergrendeling vast."
 
 msgid "404 Solution cannot function correctly: the database table %s is missing, and the plugin tried to recreate it but the CREATE TABLE statement could not be executed. This almost always means the WordPress database user does not have permission to run CREATE TABLE (and likely ALTER TABLE / CREATE INDEX) on this database. Until this is fixed, the plugin cannot record 404s, serve redirects, or generate suggestions. To fix it: ask your hosting provider or database administrator to grant CREATE, ALTER, and INDEX privileges to the WordPress database user for this site, then reload this page. Alternatively, restore the missing table from a recent database backup."
-msgstr ""
+msgstr "404 Solution kan niet correct functioneren: de databasetabel %s ontbreekt, en de plugin heeft geprobeerd deze opnieuw aan te maken maar de CREATE TABLE-instructie kon niet worden uitgevoerd. Dit betekent vrijwel altijd dat de WordPress-databasegebruiker geen toestemming heeft om CREATE TABLE (en waarschijnlijk ALTER TABLE / CREATE INDEX) uit te voeren op deze database. Totdat dit is opgelost, kan de plugin geen 404's registreren, geen redirects leveren en geen suggesties genereren. Om dit op te lossen: vraag uw hostingprovider of databasebeheerder om de rechten CREATE, ALTER en INDEX toe te kennen aan de WordPress-databasegebruiker voor deze site, en laad daarna deze pagina opnieuw. U kunt ook de ontbrekende tabel herstellen vanuit een recente databaseback-up."
 
 msgid "Original database error: %s"
-msgstr ""
+msgstr "Oorspronkelijke databasefout: %s"
 
 msgid "A database temporary table is corrupted - this is usually caused by a full or failing disk. Please contact your host. (MySQL error 1034)"
-msgstr ""
+msgstr "Een tijdelijke databasetabel is beschadigd - dit wordt meestal veroorzaakt door een volle of falende schijf. Neem contact op met uw host. (MySQL error 1034)"
 
 msgid "Permalink cache appears empty after rebuild - suggestions may be degraded. Try rebuilding again or check available disk space."
-msgstr ""
+msgstr "De permalink-cache lijkt leeg te zijn na het opnieuw opbouwen - suggesties kunnen verminderd zijn. Probeer opnieuw op te bouwen of controleer de beschikbare schijfruimte."
 
 msgid "WordPress cron does not appear to be running. The earliest overdue cron event has been waiting at least %d hours, so cron-dependent plugin features (staged view-build, daily cleanup, log updates, digest emails) are not advancing. To resolve: if DISABLE_WP_CRON is set in wp-config.php either remove it, or configure a system cron job that requests wp-cron.php periodically. To force the redirect view to rebuild right now in your browser (workaround while cron is broken), open the 404 Solution Redirects page with ?abj404_force_view_rebuild=1 appended to the URL."
-msgstr ""
+msgstr "WordPress cron lijkt niet te draaien. De vroegste achterstallige cron-gebeurtenis wacht al minstens %d uur, waardoor cron-afhankelijke pluginfuncties (gefaseerde view-build, dagelijkse opschoning, logupdates, samenvattingsmails) niet vorderen. Om dit op te lossen: als DISABLE_WP_CRON is ingesteld in wp-config.php, verwijder het dan, of configureer een systeem-cronjob die wp-cron.php periodiek aanroept. Om de redirect-view nu meteen in uw browser opnieuw te laten opbouwen (tijdelijke oplossing terwijl cron defect is), opent u de 404 Solution Redirects-pagina met ?abj404_force_view_rebuild=1 toegevoegd aan de URL."
 
 msgid "Scheduling the 404 Solution staged view-build cron event failed. The build will not advance in the background until this clears. This usually indicates the WordPress cron lock is held, the cron option is unwritable, or a custom cron implementation rejected the event. Check your hosting provider and any cron-replacement plugins. To force the redirect view to rebuild right now in your browser (workaround while cron scheduling is failing), open the 404 Solution Redirects page with ?abj404_force_view_rebuild=1 appended to the URL."
-msgstr ""
+msgstr "Het inplannen van de gefaseerde view-build cron-gebeurtenis van 404 Solution is mislukt. De build vordert niet op de achtergrond totdat dit is opgelost. Dit duidt meestal op een vastgehouden WordPress cron-vergrendeling, een niet-beschrijfbare cron-optie, of een aangepaste cron-implementatie die de gebeurtenis weigert. Controleer uw hostingprovider en eventuele cron-vervangende plugins. Om de redirect-view nu meteen in uw browser opnieuw te laten opbouwen (tijdelijke oplossing terwijl het inplannen van cron mislukt), opent u de 404 Solution Redirects-pagina met ?abj404_force_view_rebuild=1 toegevoegd aan de URL."
 
 msgid "Your PHP memory_limit (%s) is below the recommended 128M; the redirect view rebuild may fail on large sites."
-msgstr ""
+msgstr "Uw PHP memory_limit (%s) ligt onder de aanbevolen 128M; het opnieuw opbouwen van de redirect-view kan mislukken op grote sites."
 
 msgid "The 404 Solution view-build pipeline detected filesystem host constraints that may degrade the next rebuild: "
-msgstr ""
+msgstr "De view-build pijplijn van 404 Solution heeft bestandssysteembeperkingen op de host gedetecteerd die de volgende rebuild kunnen verminderen: "
 
 msgid "The 404 Solution view-build pipeline detected MySQL session-variable settings that may degrade the next rebuild: "
-msgstr ""
+msgstr "De view-build pijplijn van 404 Solution heeft MySQL sessie-variabele-instellingen gedetecteerd die de volgende rebuild kunnen verminderen: "
 
 msgid "Original error: %s"
-msgstr ""
+msgstr "Oorspronkelijke fout: %s"
 
 msgid "The 404 Solution view-build pipeline halted at stage %d/11."
-msgstr ""
+msgstr "De view-build pijplijn van 404 Solution is gestopt bij fase %d/11."
 
 msgid "The 404 Solution view-build pipeline skipped optional stage %d/11."
-msgstr ""
+msgstr "De view-build pijplijn van 404 Solution heeft optionele fase %d/11 overgeslagen."
 
 msgid "Ask your host to grant the CREATE TEMPORARY TABLES privilege to your WordPress database user so the hits aggregate column can be populated."
-msgstr ""
+msgstr "Vraag uw host om het recht CREATE TEMPORARY TABLES toe te kennen aan uw WordPress-databasegebruiker, zodat de hits-aggregatiekolom kan worden gevuld."
 
 msgid "Ask your host to grant the ALTER privilege to your WordPress database user."
-msgstr ""
+msgstr "Vraag uw host om het recht ALTER toe te kennen aan uw WordPress-databasegebruiker."
 
 msgid "Ask your host to grant ALTER + DROP + CREATE on the database used by WordPress so the view-build swap can complete."
-msgstr ""
+msgstr "Vraag uw host om ALTER + DROP + CREATE toe te kennen op de database die door WordPress wordt gebruikt, zodat de view-build wisseling kan worden voltooid."
 
 msgid "Ask your host to review your WordPress database user privileges."
-msgstr ""
+msgstr "Vraag uw host om de rechten van uw WordPress-databasegebruiker te controleren."
 
 msgid "This database does not support session-scoped GET_LOCK named locks. The plugin is using a WordPress option-row fallback to coordinate the staged view-build. Common on PlanetScale, Vitess, and split-routing ProxySQL deployments."
-msgstr ""
+msgstr "Deze database ondersteunt geen sessie-gebonden GET_LOCK named locks. De plugin gebruikt een WordPress optie-rij-fallback om de gefaseerde view-build te coordineren. Komt vaak voor bij PlanetScale, Vitess en split-routing ProxySQL-implementaties."

@@ -1853,6 +1853,9 @@ msgstr "安全令牌无效"
 msgid "Unauthorized"
 msgstr "未授权"
 
+msgid "Unauthorized: Insufficient permissions"
+msgstr "未授权：权限不足"
+
 msgid "Invalid mode"
 msgstr "无效模式"
 
@@ -4055,58 +4058,58 @@ msgid "The \"to\" URL must be a relative path or an http/https URL."
 msgstr "The \"to\" URL must be a relative path or an http/https URL."
 
 msgid "Contact your hosting provider. This is usually caused by a database quota, tablespace limit, or full /tmp partition - not necessarily a full disk."
-msgstr ""
+msgstr "请联系您的主机服务提供商。此问题通常由数据库配额、表空间限制或 /tmp 分区已满引起，并不一定意味着磁盘已满。"
 
 msgid "A database lock wait timeout occurred. If this persists, contact your host - another process may be holding a long-running lock."
-msgstr ""
+msgstr "发生了数据库锁等待超时。如果此情况持续出现，请联系您的主机服务商，可能有另一个进程正持有长时间运行的锁。"
 
 msgid "404 Solution cannot function correctly: the database table %s is missing, and the plugin tried to recreate it but the CREATE TABLE statement could not be executed. This almost always means the WordPress database user does not have permission to run CREATE TABLE (and likely ALTER TABLE / CREATE INDEX) on this database. Until this is fixed, the plugin cannot record 404s, serve redirects, or generate suggestions. To fix it: ask your hosting provider or database administrator to grant CREATE, ALTER, and INDEX privileges to the WordPress database user for this site, then reload this page. Alternatively, restore the missing table from a recent database backup."
-msgstr ""
+msgstr "404 Solution 无法正常工作：数据库表 %s 缺失，插件尝试重新创建它，但 CREATE TABLE 语句无法执行。这几乎总是意味着 WordPress 数据库用户没有在此数据库上运行 CREATE TABLE（以及很可能 ALTER TABLE / CREATE INDEX）的权限。在问题解决之前，插件无法记录 404、提供重定向或生成建议。解决方法：请联系您的主机服务提供商或数据库管理员，为本站点的 WordPress 数据库用户授予 CREATE、ALTER 和 INDEX 权限，然后重新加载此页面。或者，从近期的数据库备份中恢复缺失的表。"
 
 msgid "Original database error: %s"
-msgstr ""
+msgstr "原始数据库错误：%s"
 
 msgid "A database temporary table is corrupted - this is usually caused by a full or failing disk. Please contact your host. (MySQL error 1034)"
-msgstr ""
+msgstr "某个数据库临时表已损坏，这通常由磁盘已满或磁盘故障引起。请联系您的主机服务商。（MySQL error 1034）"
 
 msgid "Permalink cache appears empty after rebuild - suggestions may be degraded. Try rebuilding again or check available disk space."
-msgstr ""
+msgstr "重建之后固定链接缓存似乎为空，建议功能可能会受影响。请尝试再次重建，或检查可用的磁盘空间。"
 
 msgid "WordPress cron does not appear to be running. The earliest overdue cron event has been waiting at least %d hours, so cron-dependent plugin features (staged view-build, daily cleanup, log updates, digest emails) are not advancing. To resolve: if DISABLE_WP_CRON is set in wp-config.php either remove it, or configure a system cron job that requests wp-cron.php periodically. To force the redirect view to rebuild right now in your browser (workaround while cron is broken), open the 404 Solution Redirects page with ?abj404_force_view_rebuild=1 appended to the URL."
-msgstr ""
+msgstr "WordPress 计划任务（cron）似乎未在运行。最早的逾期 cron 事件已等待至少 %d 小时，因此依赖 cron 的插件功能（分阶段视图构建、每日清理、日志更新、摘要邮件）无法继续推进。解决办法：如果 wp-config.php 中设置了 DISABLE_WP_CRON，请将其移除，或者配置一个定期请求 wp-cron.php 的系统 cron 任务。若要在浏览器中立即强制重建重定向视图（cron 失效期间的变通办法），请打开 404 Solution 的重定向页面，并在网址末尾追加 ?abj404_force_view_rebuild=1。"
 
 msgid "Scheduling the 404 Solution staged view-build cron event failed. The build will not advance in the background until this clears. This usually indicates the WordPress cron lock is held, the cron option is unwritable, or a custom cron implementation rejected the event. Check your hosting provider and any cron-replacement plugins. To force the redirect view to rebuild right now in your browser (workaround while cron scheduling is failing), open the 404 Solution Redirects page with ?abj404_force_view_rebuild=1 appended to the URL."
-msgstr ""
+msgstr "为 404 Solution 分阶段视图构建安排 cron 事件失败。在此问题解决之前，构建不会在后台继续推进。这通常表示 WordPress cron 锁被占用、cron 选项不可写，或某个自定义 cron 实现拒绝了该事件。请检查您的主机服务提供商以及任何替换 cron 的插件。若要在浏览器中立即强制重建重定向视图（cron 安排失败期间的变通办法），请打开 404 Solution 的重定向页面，并在网址末尾追加 ?abj404_force_view_rebuild=1。"
 
 msgid "Your PHP memory_limit (%s) is below the recommended 128M; the redirect view rebuild may fail on large sites."
-msgstr ""
+msgstr "您的 PHP memory_limit（%s）低于推荐的 128M；在大型站点上重定向视图重建可能会失败。"
 
 msgid "The 404 Solution view-build pipeline detected filesystem host constraints that may degrade the next rebuild: "
-msgstr ""
+msgstr "404 Solution 视图构建流程检测到可能会影响下一次重建的文件系统主机限制: "
 
 msgid "The 404 Solution view-build pipeline detected MySQL session-variable settings that may degrade the next rebuild: "
-msgstr ""
+msgstr "404 Solution 视图构建流程检测到可能会影响下一次重建的 MySQL 会话变量设置: "
 
 msgid "Original error: %s"
-msgstr ""
+msgstr "原始错误：%s"
 
 msgid "The 404 Solution view-build pipeline halted at stage %d/11."
-msgstr ""
+msgstr "404 Solution 视图构建流程在第 %d/11 阶段停止了。"
 
 msgid "The 404 Solution view-build pipeline skipped optional stage %d/11."
-msgstr ""
+msgstr "404 Solution 视图构建流程跳过了可选的第 %d/11 阶段。"
 
 msgid "Ask your host to grant the CREATE TEMPORARY TABLES privilege to your WordPress database user so the hits aggregate column can be populated."
-msgstr ""
+msgstr "请联系您的主机服务商，为您的 WordPress 数据库用户授予 CREATE TEMPORARY TABLES 权限，以便能够填充命中数汇总列。"
 
 msgid "Ask your host to grant the ALTER privilege to your WordPress database user."
-msgstr ""
+msgstr "请联系您的主机服务商，为您的 WordPress 数据库用户授予 ALTER 权限。"
 
 msgid "Ask your host to grant ALTER + DROP + CREATE on the database used by WordPress so the view-build swap can complete."
-msgstr ""
+msgstr "请联系您的主机服务商，在 WordPress 所使用的数据库上授予 ALTER + DROP + CREATE 权限，以便视图构建的切换能够完成。"
 
 msgid "Ask your host to review your WordPress database user privileges."
-msgstr ""
+msgstr "请联系您的主机服务商，复查您的 WordPress 数据库用户权限。"
 
 msgid "This database does not support session-scoped GET_LOCK named locks. The plugin is using a WordPress option-row fallback to coordinate the staged view-build. Common on PlanetScale, Vitess, and split-routing ProxySQL deployments."
-msgstr ""
+msgstr "此数据库不支持会话级别的 GET_LOCK 命名锁。插件正在使用 WordPress 选项行回退机制来协调分阶段视图构建。这在 PlanetScale、Vitess 以及分流路由的 ProxySQL 部署中较为常见。"

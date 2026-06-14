@@ -1844,6 +1844,9 @@ msgstr "Jeton de sécurité invalide"
 msgid "Unauthorized"
 msgstr "Non autorisé"
 
+msgid "Unauthorized: Insufficient permissions"
+msgstr "Non autorisé : permissions insuffisantes"
+
 msgid "Invalid mode"
 msgstr "Mode invalide"
 
@@ -4044,58 +4047,58 @@ msgid "The \"to\" URL must be a relative path or an http/https URL."
 msgstr "The \"to\" URL must be a relative path or an http/https URL."
 
 msgid "Contact your hosting provider. This is usually caused by a database quota, tablespace limit, or full /tmp partition - not necessarily a full disk."
-msgstr ""
+msgstr "Contactez votre hébergeur. Le problème provient généralement d'un quota de base de données, d'une limite d'espace de tables ou d'une partition /tmp saturée - pas nécessairement d'un disque plein."
 
 msgid "A database lock wait timeout occurred. If this persists, contact your host - another process may be holding a long-running lock."
-msgstr ""
+msgstr "Un délai d'attente de verrou de base de données a expiré. Si le problème persiste, contactez votre hébergeur - un autre processus retient peut-être un verrou de longue durée."
 
 msgid "404 Solution cannot function correctly: the database table %s is missing, and the plugin tried to recreate it but the CREATE TABLE statement could not be executed. This almost always means the WordPress database user does not have permission to run CREATE TABLE (and likely ALTER TABLE / CREATE INDEX) on this database. Until this is fixed, the plugin cannot record 404s, serve redirects, or generate suggestions. To fix it: ask your hosting provider or database administrator to grant CREATE, ALTER, and INDEX privileges to the WordPress database user for this site, then reload this page. Alternatively, restore the missing table from a recent database backup."
-msgstr ""
+msgstr "404 Solution ne peut pas fonctionner correctement : la table de base de données %s est absente, et l'extension a tenté de la recréer mais l'instruction CREATE TABLE n'a pas pu être exécutée. Cela signifie presque toujours que l'utilisateur de la base de données WordPress n'a pas l'autorisation d'exécuter CREATE TABLE (et probablement ALTER TABLE / CREATE INDEX) sur cette base. Tant que ce problème n'est pas résolu, l'extension ne peut ni enregistrer les 404, ni servir les redirections, ni générer de suggestions. Pour corriger cela : demandez à votre hébergeur ou à votre administrateur de base de données d'accorder les privilèges CREATE, ALTER et INDEX à l'utilisateur de la base de données WordPress de ce site, puis rechargez cette page. Vous pouvez aussi restaurer la table manquante depuis une sauvegarde récente de la base de données."
 
 msgid "Original database error: %s"
-msgstr ""
+msgstr "Erreur de base de données d'origine : %s"
 
 msgid "A database temporary table is corrupted - this is usually caused by a full or failing disk. Please contact your host. (MySQL error 1034)"
-msgstr ""
+msgstr "Une table temporaire de base de données est corrompue - cela provient généralement d'un disque plein ou défaillant. Veuillez contacter votre hébergeur. (MySQL error 1034)"
 
 msgid "Permalink cache appears empty after rebuild - suggestions may be degraded. Try rebuilding again or check available disk space."
-msgstr ""
+msgstr "Le cache des permaliens semble vide après la reconstruction - les suggestions risquent d'être dégradées. Essayez de reconstruire à nouveau ou vérifiez l'espace disque disponible."
 
 msgid "WordPress cron does not appear to be running. The earliest overdue cron event has been waiting at least %d hours, so cron-dependent plugin features (staged view-build, daily cleanup, log updates, digest emails) are not advancing. To resolve: if DISABLE_WP_CRON is set in wp-config.php either remove it, or configure a system cron job that requests wp-cron.php periodically. To force the redirect view to rebuild right now in your browser (workaround while cron is broken), open the 404 Solution Redirects page with ?abj404_force_view_rebuild=1 appended to the URL."
-msgstr ""
+msgstr "Le cron de WordPress ne semble pas s'exécuter. L'événement cron en retard le plus ancien attend depuis au moins %d heures, de sorte que les fonctionnalités de l'extension dépendant du cron (construction de vue par étapes, nettoyage quotidien, mises à jour des journaux, e-mails de synthèse) n'avancent pas. Pour résoudre : si DISABLE_WP_CRON est défini dans wp-config.php, soit supprimez-le, soit configurez une tâche cron système qui sollicite périodiquement wp-cron.php. Pour forcer immédiatement la reconstruction de la vue des redirections dans votre navigateur (solution de contournement tant que le cron est défaillant), ouvrez la page Redirections de 404 Solution en ajoutant ?abj404_force_view_rebuild=1 à l'URL."
 
 msgid "Scheduling the 404 Solution staged view-build cron event failed. The build will not advance in the background until this clears. This usually indicates the WordPress cron lock is held, the cron option is unwritable, or a custom cron implementation rejected the event. Check your hosting provider and any cron-replacement plugins. To force the redirect view to rebuild right now in your browser (workaround while cron scheduling is failing), open the 404 Solution Redirects page with ?abj404_force_view_rebuild=1 appended to the URL."
-msgstr ""
+msgstr "La planification de l'événement cron de construction de vue par étapes de 404 Solution a échoué. La construction n'avancera pas en arrière-plan tant que ce problème persiste. Cela indique généralement que le verrou cron de WordPress est retenu, que l'option cron n'est pas accessible en écriture, ou qu'une implémentation cron personnalisée a rejeté l'événement. Vérifiez votre hébergeur et tout module de remplacement du cron. Pour forcer immédiatement la reconstruction de la vue des redirections dans votre navigateur (solution de contournement tant que la planification du cron échoue), ouvrez la page Redirections de 404 Solution en ajoutant ?abj404_force_view_rebuild=1 à l'URL."
 
 msgid "Your PHP memory_limit (%s) is below the recommended 128M; the redirect view rebuild may fail on large sites."
-msgstr ""
+msgstr "Votre memory_limit PHP (%s) est inférieur aux 128M recommandés ; la reconstruction de la vue des redirections peut échouer sur les sites volumineux."
 
 msgid "The 404 Solution view-build pipeline detected filesystem host constraints that may degrade the next rebuild: "
-msgstr ""
+msgstr "Le pipeline de construction de vue de 404 Solution a détecté des contraintes liées au système de fichiers de l'hébergeur susceptibles de dégrader la prochaine reconstruction : "
 
 msgid "The 404 Solution view-build pipeline detected MySQL session-variable settings that may degrade the next rebuild: "
-msgstr ""
+msgstr "Le pipeline de construction de vue de 404 Solution a détecté des réglages de variables de session MySQL susceptibles de dégrader la prochaine reconstruction : "
 
 msgid "Original error: %s"
-msgstr ""
+msgstr "Erreur d'origine : %s"
 
 msgid "The 404 Solution view-build pipeline halted at stage %d/11."
-msgstr ""
+msgstr "Le pipeline de construction de vue de 404 Solution s'est arrêté à l'étape %d/11."
 
 msgid "The 404 Solution view-build pipeline skipped optional stage %d/11."
-msgstr ""
+msgstr "Le pipeline de construction de vue de 404 Solution a ignoré l'étape facultative %d/11."
 
 msgid "Ask your host to grant the CREATE TEMPORARY TABLES privilege to your WordPress database user so the hits aggregate column can be populated."
-msgstr ""
+msgstr "Demandez à votre hébergeur d'accorder le privilège CREATE TEMPORARY TABLES à votre utilisateur de base de données WordPress afin que la colonne d'agrégation des hits puisse être renseignée."
 
 msgid "Ask your host to grant the ALTER privilege to your WordPress database user."
-msgstr ""
+msgstr "Demandez à votre hébergeur d'accorder le privilège ALTER à votre utilisateur de base de données WordPress."
 
 msgid "Ask your host to grant ALTER + DROP + CREATE on the database used by WordPress so the view-build swap can complete."
-msgstr ""
+msgstr "Demandez à votre hébergeur d'accorder ALTER + DROP + CREATE sur la base de données utilisée par WordPress afin que l'échange de la construction de vue puisse se terminer."
 
 msgid "Ask your host to review your WordPress database user privileges."
-msgstr ""
+msgstr "Demandez à votre hébergeur de revoir les privilèges de votre utilisateur de base de données WordPress."
 
 msgid "This database does not support session-scoped GET_LOCK named locks. The plugin is using a WordPress option-row fallback to coordinate the staged view-build. Common on PlanetScale, Vitess, and split-routing ProxySQL deployments."
-msgstr ""
+msgstr "Cette base de données ne prend pas en charge les verrous nommés GET_LOCK à portée de session. L'extension utilise une solution de repli basée sur une ligne d'option WordPress pour coordonner la construction de vue par étapes. Courant sur les déploiements PlanetScale, Vitess et ProxySQL à routage réparti."

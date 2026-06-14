@@ -94,6 +94,10 @@ msgstr ""
 msgid "Unauthorized"
 msgstr ""
 
+#: includes/ajax/AjaxSecurityGate.php:96
+msgid "Unauthorized: Insufficient permissions"
+msgstr ""
+
 #: includes/ajax/Ajax_CrossPluginImporter.php:33
 msgid "Invalid source plugin."
 msgstr ""

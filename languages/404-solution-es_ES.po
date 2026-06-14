@@ -1844,6 +1844,9 @@ msgstr "Token de seguridad inválido"
 msgid "Unauthorized"
 msgstr "No autorizado"
 
+msgid "Unauthorized: Insufficient permissions"
+msgstr "No autorizado: permisos insuficientes"
+
 msgid "Invalid mode"
 msgstr "Modo inválido"
 

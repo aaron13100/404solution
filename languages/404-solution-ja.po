@@ -1849,6 +1849,9 @@ msgstr "無効なセキュリティトークン"
 msgid "Unauthorized"
 msgstr "認証されていません"
 
+msgid "Unauthorized: Insufficient permissions"
+msgstr "権限がありません: アクセス権限が不足しています"
+
 msgid "Invalid mode"
 msgstr "無効なモード"
 
@@ -4062,58 +4065,58 @@ msgid "The \"to\" URL must be a relative path or an http/https URL."
 msgstr "The \"to\" URL must be a relative path or an http/https URL."
 
 msgid "Contact your hosting provider. This is usually caused by a database quota, tablespace limit, or full /tmp partition - not necessarily a full disk."
-msgstr ""
+msgstr "ご利用のホスティング業者にお問い合わせください。これは通常、データベースのクォータ、テーブルスペースの上限、または /tmp パーティションの満杯が原因であり、必ずしもディスク全体が満杯とは限りません。"
 
 msgid "A database lock wait timeout occurred. If this persists, contact your host - another process may be holding a long-running lock."
-msgstr ""
+msgstr "データベースのロック待機がタイムアウトしました。この状態が続く場合はホスティング業者にお問い合わせください。別のプロセスが長時間ロックを保持している可能性があります。"
 
 msgid "404 Solution cannot function correctly: the database table %s is missing, and the plugin tried to recreate it but the CREATE TABLE statement could not be executed. This almost always means the WordPress database user does not have permission to run CREATE TABLE (and likely ALTER TABLE / CREATE INDEX) on this database. Until this is fixed, the plugin cannot record 404s, serve redirects, or generate suggestions. To fix it: ask your hosting provider or database administrator to grant CREATE, ALTER, and INDEX privileges to the WordPress database user for this site, then reload this page. Alternatively, restore the missing table from a recent database backup."
-msgstr ""
+msgstr "404 Solution は正しく機能できません。データベーステーブル %s が存在せず、プラグインが再作成を試みましたが、CREATE TABLE 文を実行できませんでした。これはほぼ確実に、WordPress のデータベースユーザーがこのデータベースで CREATE TABLE（およびおそらく ALTER TABLE / CREATE INDEX）を実行する権限を持っていないことを意味します。これが解決されるまで、プラグインは404を記録したり、リダイレクトを提供したり、候補を生成したりできません。解決するには、ホスティング業者またはデータベース管理者に依頼し、このサイトの WordPress データベースユーザーに対して CREATE、ALTER、INDEX の権限を付与してもらってから、このページを再読み込みしてください。あるいは、最近のデータベースバックアップから不足しているテーブルを復元してください。"
 
 msgid "Original database error: %s"
-msgstr ""
+msgstr "元のデータベースエラー: %s"
 
 msgid "A database temporary table is corrupted - this is usually caused by a full or failing disk. Please contact your host. (MySQL error 1034)"
-msgstr ""
+msgstr "データベースの一時テーブルが破損しています。これは通常、ディスクの満杯または障害が原因です。ホスティング業者にお問い合わせください。（MySQL error 1034）"
 
 msgid "Permalink cache appears empty after rebuild - suggestions may be degraded. Try rebuilding again or check available disk space."
-msgstr ""
+msgstr "再構築後もパーマリンクキャッシュが空のようです。候補が劣化している可能性があります。もう一度再構築するか、利用可能なディスク容量をご確認ください。"
 
 msgid "WordPress cron does not appear to be running. The earliest overdue cron event has been waiting at least %d hours, so cron-dependent plugin features (staged view-build, daily cleanup, log updates, digest emails) are not advancing. To resolve: if DISABLE_WP_CRON is set in wp-config.php either remove it, or configure a system cron job that requests wp-cron.php periodically. To force the redirect view to rebuild right now in your browser (workaround while cron is broken), open the 404 Solution Redirects page with ?abj404_force_view_rebuild=1 appended to the URL."
-msgstr ""
+msgstr "WordPress の cron が実行されていないようです。最も古い期限切れの cron イベントが少なくとも %d 時間待機しているため、cron に依存するプラグイン機能（段階的なビュー構築、毎日のクリーンアップ、ログ更新、ダイジェストメール）が進行していません。解決するには、wp-config.php で DISABLE_WP_CRON が設定されている場合はそれを削除するか、wp-cron.php を定期的に呼び出すシステムの cron ジョブを設定してください。cron が壊れている間の回避策として、ブラウザで今すぐリダイレクトビューを再構築するには、404 Solution のリダイレクトページを開き、URL の末尾に ?abj404_force_view_rebuild=1 を追加してください。"
 
 msgid "Scheduling the 404 Solution staged view-build cron event failed. The build will not advance in the background until this clears. This usually indicates the WordPress cron lock is held, the cron option is unwritable, or a custom cron implementation rejected the event. Check your hosting provider and any cron-replacement plugins. To force the redirect view to rebuild right now in your browser (workaround while cron scheduling is failing), open the 404 Solution Redirects page with ?abj404_force_view_rebuild=1 appended to the URL."
-msgstr ""
+msgstr "404 Solution の段階的ビュー構築の cron イベントのスケジュール設定に失敗しました。これが解消されるまで、構築はバックグラウンドで進行しません。これは通常、WordPress の cron ロックが保持されている、cron オプションが書き込み不可、またはカスタムの cron 実装がイベントを拒否したことを示します。ホスティング業者および cron を置き換える各種プラグインをご確認ください。cron のスケジュール設定が失敗している間の回避策として、ブラウザで今すぐリダイレクトビューを再構築するには、404 Solution のリダイレクトページを開き、URL の末尾に ?abj404_force_view_rebuild=1 を追加してください。"
 
 msgid "Your PHP memory_limit (%s) is below the recommended 128M; the redirect view rebuild may fail on large sites."
-msgstr ""
+msgstr "ご利用の PHP memory_limit（%s）が推奨値の 128M を下回っています。大規模なサイトではリダイレクトビューの再構築が失敗する可能性があります。"
 
 msgid "The 404 Solution view-build pipeline detected filesystem host constraints that may degrade the next rebuild: "
-msgstr ""
+msgstr "404 Solution のビュー構築パイプラインが、次回の再構築を劣化させる可能性のあるファイルシステムのホスト制約を検出しました: "
 
 msgid "The 404 Solution view-build pipeline detected MySQL session-variable settings that may degrade the next rebuild: "
-msgstr ""
+msgstr "404 Solution のビュー構築パイプラインが、次回の再構築を劣化させる可能性のある MySQL セッション変数の設定を検出しました: "
 
 msgid "Original error: %s"
-msgstr ""
+msgstr "元のエラー: %s"
 
 msgid "The 404 Solution view-build pipeline halted at stage %d/11."
-msgstr ""
+msgstr "404 Solution のビュー構築パイプラインがステージ %d/11 で停止しました。"
 
 msgid "The 404 Solution view-build pipeline skipped optional stage %d/11."
-msgstr ""
+msgstr "404 Solution のビュー構築パイプラインが任意のステージ %d/11 をスキップしました。"
 
 msgid "Ask your host to grant the CREATE TEMPORARY TABLES privilege to your WordPress database user so the hits aggregate column can be populated."
-msgstr ""
+msgstr "ヒット集計列を設定できるよう、ホスティング業者に依頼して、ご利用の WordPress データベースユーザーに CREATE TEMPORARY TABLES の権限を付与してもらってください。"
 
 msgid "Ask your host to grant the ALTER privilege to your WordPress database user."
-msgstr ""
+msgstr "ホスティング業者に依頼して、ご利用の WordPress データベースユーザーに ALTER の権限を付与してもらってください。"
 
 msgid "Ask your host to grant ALTER + DROP + CREATE on the database used by WordPress so the view-build swap can complete."
-msgstr ""
+msgstr "ビュー構築の入れ替えを完了できるよう、ホスティング業者に依頼して、WordPress が使用するデータベースに対して ALTER + DROP + CREATE を付与してもらってください。"
 
 msgid "Ask your host to review your WordPress database user privileges."
-msgstr ""
+msgstr "ホスティング業者に依頼して、ご利用の WordPress データベースユーザーの権限を確認してもらってください。"
 
 msgid "This database does not support session-scoped GET_LOCK named locks. The plugin is using a WordPress option-row fallback to coordinate the staged view-build. Common on PlanetScale, Vitess, and split-routing ProxySQL deployments."
-msgstr ""
+msgstr "このデータベースはセッションスコープの GET_LOCK 名前付きロックをサポートしていません。プラグインは段階的なビュー構築を調整するために WordPress のオプション行によるフォールバックを使用しています。これは PlanetScale、Vitess、および分割ルーティングの ProxySQL 環境でよく見られます。"

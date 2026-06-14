@@ -1844,6 +1844,9 @@ msgstr "Ogiltig säkerhetstoken"
 msgid "Unauthorized"
 msgstr "Obehörig"
 
+msgid "Unauthorized: Insufficient permissions"
+msgstr "Obehörig: Otillräckliga behörigheter"
+
 msgid "Invalid mode"
 msgstr "Ogiltigt läge"
 
@@ -4050,58 +4053,58 @@ msgid "The \"to\" URL must be a relative path or an http/https URL."
 msgstr "The \"to\" URL must be a relative path or an http/https URL."
 
 msgid "Contact your hosting provider. This is usually caused by a database quota, tablespace limit, or full /tmp partition - not necessarily a full disk."
-msgstr ""
+msgstr "Kontakta din webbhotellsleverantör. Detta orsakas oftast av en databaskvot, en gräns för tabellutrymme eller en full /tmp-partition - inte nödvändigtvis en full disk."
 
 msgid "A database lock wait timeout occurred. If this persists, contact your host - another process may be holding a long-running lock."
-msgstr ""
+msgstr "Tidsgränsen för väntan på ett databaslås överskreds. Om problemet kvarstår, kontakta ditt webbhotell - en annan process kan hålla ett långvarigt lås."
 
 msgid "404 Solution cannot function correctly: the database table %s is missing, and the plugin tried to recreate it but the CREATE TABLE statement could not be executed. This almost always means the WordPress database user does not have permission to run CREATE TABLE (and likely ALTER TABLE / CREATE INDEX) on this database. Until this is fixed, the plugin cannot record 404s, serve redirects, or generate suggestions. To fix it: ask your hosting provider or database administrator to grant CREATE, ALTER, and INDEX privileges to the WordPress database user for this site, then reload this page. Alternatively, restore the missing table from a recent database backup."
-msgstr ""
+msgstr "404 Solution kan inte fungera korrekt: databastabellen %s saknas, och tillägget försökte återskapa den men CREATE TABLE-satsen kunde inte köras. Detta betyder nästan alltid att WordPress databasanvändare saknar behörighet att köra CREATE TABLE (och troligen ALTER TABLE / CREATE INDEX) på denna databas. Tills detta är åtgärdat kan tillägget inte registrera 404:or, leverera omdirigeringar eller generera förslag. För att åtgärda det: be din webbhotellsleverantör eller databasadministratör att ge behörigheterna CREATE, ALTER och INDEX till WordPress databasanvändare för denna webbplats, och ladda sedan om denna sida. Alternativt kan du återställa den saknade tabellen från en nyligen gjord databassäkerhetskopia."
 
 msgid "Original database error: %s"
-msgstr ""
+msgstr "Ursprungligt databasfel: %s"
 
 msgid "A database temporary table is corrupted - this is usually caused by a full or failing disk. Please contact your host. (MySQL error 1034)"
-msgstr ""
+msgstr "En tillfällig databastabell är skadad - detta orsakas oftast av en full eller felande disk. Kontakta ditt webbhotell. (MySQL error 1034)"
 
 msgid "Permalink cache appears empty after rebuild - suggestions may be degraded. Try rebuilding again or check available disk space."
-msgstr ""
+msgstr "Cachen för permalänkar verkar vara tom efter ombyggnaden - förslagen kan vara försämrade. Försök bygga om igen eller kontrollera tillgängligt diskutrymme."
 
 msgid "WordPress cron does not appear to be running. The earliest overdue cron event has been waiting at least %d hours, so cron-dependent plugin features (staged view-build, daily cleanup, log updates, digest emails) are not advancing. To resolve: if DISABLE_WP_CRON is set in wp-config.php either remove it, or configure a system cron job that requests wp-cron.php periodically. To force the redirect view to rebuild right now in your browser (workaround while cron is broken), open the 404 Solution Redirects page with ?abj404_force_view_rebuild=1 appended to the URL."
-msgstr ""
+msgstr "WordPress cron verkar inte köras. Den tidigaste försenade cron-händelsen har väntat i minst %d timmar, så cron-beroende tilläggsfunktioner (stegvis vybyggnad, daglig rensning, logguppdateringar, sammanfattningsmejl) går inte framåt. För att lösa detta: om DISABLE_WP_CRON är inställt i wp-config.php, ta antingen bort det eller konfigurera ett system-cron-jobb som regelbundet anropar wp-cron.php. För att tvinga omdirigeringsvyn att byggas om direkt i din webbläsare (en tillfällig lösning medan cron är trasigt), öppna sidan 404 Solution Redirects med ?abj404_force_view_rebuild=1 tillagt i URL:en."
 
 msgid "Scheduling the 404 Solution staged view-build cron event failed. The build will not advance in the background until this clears. This usually indicates the WordPress cron lock is held, the cron option is unwritable, or a custom cron implementation rejected the event. Check your hosting provider and any cron-replacement plugins. To force the redirect view to rebuild right now in your browser (workaround while cron scheduling is failing), open the 404 Solution Redirects page with ?abj404_force_view_rebuild=1 appended to the URL."
-msgstr ""
+msgstr "Schemaläggningen av cron-händelsen för 404 Solution stegvisa vybyggnad misslyckades. Bygget kommer inte att gå framåt i bakgrunden förrän detta åtgärdas. Detta tyder vanligtvis på att WordPress cron-lås hålls, att cron-alternativet inte går att skriva till, eller att en anpassad cron-implementation avvisade händelsen. Kontrollera din webbhotellsleverantör och eventuella cron-ersättande tillägg. För att tvinga omdirigeringsvyn att byggas om direkt i din webbläsare (en tillfällig lösning medan cron-schemaläggningen misslyckas), öppna sidan 404 Solution Redirects med ?abj404_force_view_rebuild=1 tillagt i URL:en."
 
 msgid "Your PHP memory_limit (%s) is below the recommended 128M; the redirect view rebuild may fail on large sites."
-msgstr ""
+msgstr "Ditt PHP memory_limit (%s) ligger under det rekommenderade 128M; ombyggnaden av omdirigeringsvyn kan misslyckas på stora webbplatser."
 
 msgid "The 404 Solution view-build pipeline detected filesystem host constraints that may degrade the next rebuild: "
-msgstr ""
+msgstr "Bygg-pipelinen för 404 Solution-vyn upptäckte filsystemsbegränsningar hos webbhotellet som kan försämra nästa ombyggnad: "
 
 msgid "The 404 Solution view-build pipeline detected MySQL session-variable settings that may degrade the next rebuild: "
-msgstr ""
+msgstr "Bygg-pipelinen för 404 Solution-vyn upptäckte inställningar för MySQL-sessionsvariabler som kan försämra nästa ombyggnad: "
 
 msgid "Original error: %s"
-msgstr ""
+msgstr "Ursprungligt fel: %s"
 
 msgid "The 404 Solution view-build pipeline halted at stage %d/11."
-msgstr ""
+msgstr "Bygg-pipelinen för 404 Solution-vyn stoppade vid steg %d/11."
 
 msgid "The 404 Solution view-build pipeline skipped optional stage %d/11."
-msgstr ""
+msgstr "Bygg-pipelinen för 404 Solution-vyn hoppade över det valfria steget %d/11."
 
 msgid "Ask your host to grant the CREATE TEMPORARY TABLES privilege to your WordPress database user so the hits aggregate column can be populated."
-msgstr ""
+msgstr "Be ditt webbhotell att ge behörigheten CREATE TEMPORARY TABLES till din WordPress databasanvändare så att den aggregerade kolumnen för träffar kan fyllas i."
 
 msgid "Ask your host to grant the ALTER privilege to your WordPress database user."
-msgstr ""
+msgstr "Be ditt webbhotell att ge behörigheten ALTER till din WordPress databasanvändare."
 
 msgid "Ask your host to grant ALTER + DROP + CREATE on the database used by WordPress so the view-build swap can complete."
-msgstr ""
+msgstr "Be ditt webbhotell att ge ALTER + DROP + CREATE på databasen som WordPress använder så att bytet vid vybyggnaden kan slutföras."
 
 msgid "Ask your host to review your WordPress database user privileges."
-msgstr ""
+msgstr "Be ditt webbhotell att granska behörigheterna för din WordPress databasanvändare."
 
 msgid "This database does not support session-scoped GET_LOCK named locks. The plugin is using a WordPress option-row fallback to coordinate the staged view-build. Common on PlanetScale, Vitess, and split-routing ProxySQL deployments."
-msgstr ""
+msgstr "Denna databas stöder inte sessionsbaserade GET_LOCK-namngivna lås. Tillägget använder en reservlösning med en WordPress option-rad för att samordna den stegvisa vybyggnaden. Vanligt på PlanetScale, Vitess och ProxySQL-distributioner med delad routning."
