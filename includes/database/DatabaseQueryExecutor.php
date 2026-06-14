@@ -114,10 +114,18 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
         // very early-life code paths (fresh-install background workers reaching
         // the DAO before WordPress has populated $wpdb, CLI bootstrap, unit
         // tests that exercise the suggestion pipeline without a real wpdb).
+        //
+        // "Unavailable" is not just null: an object that is not a real wpdb --
+        // one missing prepare()/get_results()/query() -- is equally unusable and
+        // must degrade the same way instead of fataling with
+        // "Call to undefined method ...::prepare()" inside prepareQueryParameters()
+        // / executeWpdbQuery(). This mirrors the method_exists() guard already
+        // used for suppress_errors() below.
+        //
         // The DAO result contract (last_error populated, rows as an empty array)
         // is preserved so queryAndGetResults remains the centralized
         // graceful-degradation seam (Defensive Coding #2/#11).
-        if (!is_object($wpdb)) {
+        if (!$this->wpdbCanRunQueries($wpdb)) {
             return array(
                 'rows' => array(),
                 'rows_affected' => 0,
@@ -231,6 +239,37 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
             }
         }
         return $ignoreErrorStrings;
+    }
+
+    /**
+     * Whether $wpdb is a usable query object for this executor's needs.
+     *
+     * A usable wpdb must be able to bind parameters (prepare()) and run at
+     * least one kind of statement (get_results() for SELECTs, query() for
+     * everything else). A non-object (null during early boot / CLI) -- or an
+     * object that is not a real wpdb and cannot answer those calls -- must
+     * degrade to the empty-result contract rather than fatal with
+     * "Call to undefined method ...". A real wpdb (and every db drop-in:
+     * HyperDB, LudicrousDB, ...) implements all of these, so this is a no-op on
+     * a live site and only changes behavior for a malformed $wpdb.
+     *
+     * We require prepare() plus *either* read method rather than all three so a
+     * legitimate read-only double (a wpdb that only ever runs SELECTs through
+     * this executor) is not rejected, while a bare foreign object with none of
+     * them still is.
+     *
+     * Uses is_callable() rather than method_exists() so it also accepts test
+     * doubles that route methods through __call() (e.g. Mockery wpdb mocks),
+     * while still rejecting a bare object that has neither the methods nor a
+     * __call() handler.
+     *
+     * @param mixed $wpdb
+     * @return bool
+     */
+    private function wpdbCanRunQueries($wpdb): bool {
+        return is_object($wpdb)
+            && is_callable(array($wpdb, 'prepare'))
+            && (is_callable(array($wpdb, 'get_results')) || is_callable(array($wpdb, 'query')));
     }
 
     /**
