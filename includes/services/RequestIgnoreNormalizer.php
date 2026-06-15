@@ -28,20 +28,16 @@ class ABJ_404_Solution_RequestIgnoreNormalizer {
     private $notFoundResponse;
 
     /**
-     * @param mixed $optionsProvider Object exposing getOptions().
-     * @param ABJ_404_Solution_Functions|null $functions
-     * @param ABJ_404_Solution_Logging|null $logging
-     * @param ABJ_404_Solution_RedirectsRepositoryInterface|null $redirectsRepo
-     * @param ABJ_404_Solution_LogsRepositoryInterface|null $logsRepo
-     * @param ABJ_404_Solution_NotFoundResponseService|null $notFoundResponse
+     * @param ABJ_404_Solution_RequestIgnoreNormalizerDependencies|null $deps
      */
-    function __construct($optionsProvider = null, $functions = null, $logging = null, $redirectsRepo = null, $logsRepo = null, $notFoundResponse = null) {
-        $this->optionsProvider = $optionsProvider !== null ? $optionsProvider : abj_service('options_repository');
-        $this->f = $functions !== null ? $functions : abj_service('functions');
-        $this->logger = $logging !== null ? $logging : abj_service('logging');
-        $this->redirectsRepo = $redirectsRepo !== null ? $redirectsRepo : abj_service('redirects_repository');
-        $this->logsRepo = $logsRepo !== null ? $logsRepo : abj_service('logs_repository');
-        $this->notFoundResponse = $notFoundResponse !== null ? $notFoundResponse : abj_service('not_found_response');
+    function __construct(?ABJ_404_Solution_RequestIgnoreNormalizerDependencies $deps = null) {
+        $deps = $deps ?? new ABJ_404_Solution_RequestIgnoreNormalizerDependencies();
+        $this->optionsProvider = $deps->optionsProvider !== null ? $deps->optionsProvider : abj_service('options_repository');
+        $this->f = $deps->functions !== null ? $deps->functions : abj_service('functions');
+        $this->logger = $deps->logging !== null ? $deps->logging : abj_service('logging');
+        $this->redirectsRepo = $deps->redirectsRepo !== null ? $deps->redirectsRepo : abj_service('redirects_repository');
+        $this->logsRepo = $deps->logsRepo !== null ? $deps->logsRepo : abj_service('logs_repository');
+        $this->notFoundResponse = $deps->notFoundResponse !== null ? $deps->notFoundResponse : abj_service('not_found_response');
     }
 
     /**

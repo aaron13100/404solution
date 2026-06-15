@@ -35,12 +35,14 @@ class ABJ_404_Solution_DomainServiceRegistration {
 
         $container->set('request_ignore_normalizer', function($c) {
             return new ABJ_404_Solution_RequestIgnoreNormalizer(
-                $c->get('options_repository'),
-                $c->get('functions'),
-                $c->get('logging'),
-                $c->get('redirects_repository'),
-                $c->get('logs_repository'),
-                $c->get('not_found_response')
+                new ABJ_404_Solution_RequestIgnoreNormalizerDependencies(
+                    $c->get('options_repository'),
+                    $c->get('functions'),
+                    $c->get('logging'),
+                    $c->get('redirects_repository'),
+                    $c->get('logs_repository'),
+                    $c->get('not_found_response')
+                )
             );
         });
 

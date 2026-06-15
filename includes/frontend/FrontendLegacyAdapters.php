@@ -60,14 +60,10 @@ class ABJ_404_Solution_FrontendLegacyAdapters {
 
     /**
      * @param mixed $requestIgnoreNormalizer
-     * @param ABJ_404_Solution_LogsRepositoryInterface|null $logsRepository
-     * @param ABJ_404_Solution_Functions $functions
-     * @param ABJ_404_Solution_Logging $logging
-     * @param ABJ_404_Solution_RedirectsRepositoryInterface $redirectsRepository
-     * @param ABJ_404_Solution_NotFoundResponseService $notFoundResponse
+     * @param ABJ_404_Solution_RequestIgnoreNormalizerDependencies $deps
      * @return ABJ_404_Solution_RequestIgnoreNormalizer
      */
-    function resolveRequestIgnoreNormalizer($requestIgnoreNormalizer, $logsRepository, $functions, $logging, $redirectsRepository, $notFoundResponse) {
+    function resolveRequestIgnoreNormalizer($requestIgnoreNormalizer, ABJ_404_Solution_RequestIgnoreNormalizerDependencies $deps) {
         if ($requestIgnoreNormalizer instanceof ABJ_404_Solution_RequestIgnoreNormalizer) {
             return $requestIgnoreNormalizer;
         }
@@ -78,14 +74,7 @@ class ABJ_404_Solution_FrontendLegacyAdapters {
                 return $this->adaptRequestIgnoreNormalizer($initializeIgnoreValues, $tryNormalPostQuery);
             }
         }
-        return new ABJ_404_Solution_RequestIgnoreNormalizer(
-            abj_service('options_repository'),
-            $functions,
-            $logging,
-            $redirectsRepository,
-            $logsRepository,
-            $notFoundResponse
-        );
+        return new ABJ_404_Solution_RequestIgnoreNormalizer($deps);
     }
 
     /**

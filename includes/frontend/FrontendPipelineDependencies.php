@@ -98,11 +98,14 @@ class ABJ_404_Solution_FrontendPipelineDependencies {
         $normalizerLogsRepo = ($logsRepository instanceof ABJ_404_Solution_LogsRepositoryInterface) ? $logsRepository : null;
         $this->requestIgnoreNormalizer = $adapters->resolveRequestIgnoreNormalizer(
             $requestIgnoreNormalizer,
-            $normalizerLogsRepo,
-            $functions,
-            $logging,
-            $redirectsRepository,
-            $this->notFoundResponse
+            new ABJ_404_Solution_RequestIgnoreNormalizerDependencies(
+                abj_service('options_repository'),
+                $functions,
+                $logging,
+                $redirectsRepository,
+                $normalizerLogsRepo,
+                $this->notFoundResponse
+            )
         );
         $this->previousRequestCookieTracker = $adapters->resolvePreviousRequestCookieTracker($previousRequestCookieTracker, $logging);
         $this->logsRepository = $adapters->resolveLogsRepository($logsRepository, $redirectsRepository);

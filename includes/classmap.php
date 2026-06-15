@@ -289,6 +289,7 @@ return array(
     'ABJ_404_Solution_NotFoundResponseDependencies' => $base . 'includes/services/NotFoundResponseDependencies.php',
     'ABJ_404_Solution_PreviousRequestCookieTracker' => $base . 'includes/services/PreviousRequestCookieTracker.php',
     'ABJ_404_Solution_RequestIgnoreNormalizer' => $base . 'includes/services/RequestIgnoreNormalizer.php',
+    'ABJ_404_Solution_RequestIgnoreNormalizerDependencies' => $base . 'includes/services/RequestIgnoreNormalizerDependencies.php',
     'ABJ_404_Solution_StatsRepositoryInterface' => $base . 'includes/stats/StatsRepositoryInterface.php',
     'ABJ_404_Solution_StatsRefreshLock' => $base . 'includes/stats/StatsRefreshLock.php',
     'ABJ_404_Solution_StatsReadRepository' => $base . 'includes/stats/StatsReadRepository.php',
