@@ -111,44 +111,44 @@ class ABJ_404_Solution_View_Settings extends ABJ_404_Solution_ViewComponent {
 
             // Render each section with card structure and icons
             $contentAutomaticRedirects = $this->settingsSections->getAdminOptionsPageAutoRedirects($options);
-            $this->adminChrome->echoOptionsSection(
+            $this->adminChrome->echoOptionsSection(new ABJ_404_Solution_OptionsSectionView(
                 "abj404-autooptions",
                 "abj404-autooptions",
                 __('Automatic Redirects', '404-solution'),
                 $contentAutomaticRedirects,
                 true,
                 $this->adminChrome->getCardIcon('lightning')
-            );
+            ));
 
             $contentGeneralSettings = $this->settingsSections->getAdminOptionsPageGeneralSettings($options);
-            $this->adminChrome->echoOptionsSection(
+            $this->adminChrome->echoOptionsSection(new ABJ_404_Solution_OptionsSectionView(
                 "abj404-generaloptions",
                 "abj404-generaloptions",
                 __('General Settings', '404-solution'),
                 $contentGeneralSettings,
                 true,
                 $this->adminChrome->getCardIcon('gear')
-            );
+            ));
 
             $contentAdvancedContent = $this->settingsSections->getAdminOptionsPageAdvancedContent($options);
-            $this->adminChrome->echoOptionsSection(
+            $this->adminChrome->echoOptionsSection(new ABJ_404_Solution_OptionsSectionView(
                 "abj404-advanced-content",
                 "abj404-advanced-content",
                 __('Content & URL Filtering', '404-solution'),
                 $contentAdvancedContent,
                 true,
                 $this->adminChrome->getCardIcon('filter')
-            );
+            ));
 
             $contentAdvancedLogging = $this->settingsSections->getAdminOptionsPageAdvancedLogging($options);
-            $this->adminChrome->echoOptionsSection(
+            $this->adminChrome->echoOptionsSection(new ABJ_404_Solution_OptionsSectionView(
                 "abj404-advanced-logging",
                 "abj404-advanced-logging",
                 __('Logging & Privacy', '404-solution'),
                 $contentAdvancedLogging,
                 true,
                 $this->adminChrome->getCardIcon('document')
-            );
+            ));
 
             // "Need help?" support-request section. Anchored at
             // #abj404-support-request so the plugins-page row action
@@ -164,37 +164,37 @@ class ABJ_404_Solution_View_Settings extends ABJ_404_Solution_ViewComponent {
                 '{supportDescription}' => esc_html__('Having trouble? Send your debug log to the developer. This sends a one-time diagnostic report (URLs, PHP/WP/DB versions, a debug log excerpt, active plugins, site URL) so we can diagnose the issue without asking you to copy-paste anything.', '404-solution'),
                 '{supportButton}' => $supportButton,
             ));
-            $this->adminChrome->echoOptionsSection(
+            $this->adminChrome->echoOptionsSection(new ABJ_404_Solution_OptionsSectionView(
                 "abj404-support-request-section",
                 "abj404-support-request-section",
                 __('Need help? Contact the developer', '404-solution'),
                 $supportSectionHtml,
                 true,
                 $this->adminChrome->getCardIcon('lightbulb')
-            );
+            ));
 
             $contentAdvancedSystem = $this->settingsSections->getAdminOptionsPageAdvancedSystem($options);
-            $this->adminChrome->echoOptionsSection(
+            $this->adminChrome->echoOptionsSection(new ABJ_404_Solution_OptionsSectionView(
                 "abj404-advanced-system",
                 "abj404-advanced-system",
                 __('Advanced Configuration', '404-solution'),
                 $contentAdvancedSystem,
                 true,
                 $this->adminChrome->getCardIcon('sliders')
-            );
+            ));
 
             // Only render suggestions section if the suggestions view is available
             if ($abj404viewSuggestions !== null && is_object($abj404viewSuggestions) && method_exists($abj404viewSuggestions, 'getAdminOptionsPage404Suggestions')) {
                 /** @var ABJ_404_Solution_View_Suggestions $abj404viewSuggestions */
                 $content404PageSuggestions = $abj404viewSuggestions->getAdminOptionsPage404Suggestions($options);
-                $this->adminChrome->echoOptionsSection(
+                $this->adminChrome->echoOptionsSection(new ABJ_404_Solution_OptionsSectionView(
                     "abj404-suggestoptions",
                     "abj404-suggestoptions",
                     __('404 Page Suggestions', '404-solution'),
                     $content404PageSuggestions,
                     true,
                     $this->adminChrome->getCardIcon('lightbulb')
-                );
+                ));
             }
         }
 
@@ -205,7 +205,7 @@ class ABJ_404_Solution_View_Settings extends ABJ_404_Solution_ViewComponent {
             // Engine Profiles — outside the main form (uses its own AJAX save)
             $epHtml = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . '/html/engineProfilesSection.html');
             $epHtml = $this->f->doNormalReplacements($epHtml);
-            $this->adminChrome->echoOptionsSection('settings-engine-profiles', 'abj404-engineProfiles', __('Engine Profiles', '404-solution'), $epHtml, false, $this->adminChrome->getCardIcon('filter'));
+            $this->adminChrome->echoOptionsSection(new ABJ_404_Solution_OptionsSectionView('settings-engine-profiles', 'abj404-engineProfiles', __('Engine Profiles', '404-solution'), $epHtml, false, $this->adminChrome->getCardIcon('filter')));
 
             // Google Search Console — deferred via AJAX so the options page shell
             // renders immediately and is not blocked by logs/GSC data fetches.
@@ -214,14 +214,14 @@ class ABJ_404_Solution_View_Settings extends ABJ_404_Solution_ViewComponent {
                 // allow-em-dash: pre-existing translation string with U+2026 ellipsis in published .po files
                 '{labelLoadingGsc}' => esc_html__('Loading Google Search Console section…', '404-solution'),
             ));
-            $this->adminChrome->echoOptionsSection(
+            $this->adminChrome->echoOptionsSection(new ABJ_404_Solution_OptionsSectionView(
                 'settings-gsc',
                 'abj404-gsc-section',
                 __('Google Search Console', '404-solution'),
                 $gscPlaceholder,
                 true,
                 $this->adminChrome->getCardIcon('chart')
-            );
+            ));
         }
 
         // Sticky save bar — outside the form but linked via form="admin-options-page" on the submit button

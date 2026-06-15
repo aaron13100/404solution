@@ -161,6 +161,7 @@ return array(
     'ABJ_404_Solution_View_RedirectTypeUI' => $base . 'includes/view/View_RedirectTypeUI.php',
     'ABJ_404_Solution_View_RedirectConditions' => $base . 'includes/view/View_RedirectConditions.php',
     'ABJ_404_Solution_View_AdminChrome' => $base . 'includes/view/View_AdminChrome.php',
+    'ABJ_404_Solution_OptionsSectionView' => $base . 'includes/view/OptionsSectionView.php',
     'ABJ_404_Solution_View_OptionsPresenter' => $base . 'includes/view/View_OptionsPresenter.php',
     'ABJ_404_Solution_View_Settings' => $base . 'includes/view/View_Settings.php',
     'ABJ_404_Solution_View_SettingsSections' => $base . 'includes/view/View_SettingsSections.php',

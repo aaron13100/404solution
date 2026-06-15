@@ -80,7 +80,7 @@ class ABJ_404_Solution_View_Stats extends ABJ_404_Solution_ViewComponent {
         $content = $this->f->str_replace('{trashed}', esc_html((string)$trashed), $content);
         $content = $this->f->str_replace('{total}', esc_html((string)$total), $content);
         $content = $this->f->doNormalReplacements($content);
-        $abj404view->echoOptionsSection('stats-redirects', 'abj404-redirectStats', __('Redirects', '404-solution'), $content, true, $abj404view->getCardIcon('chart'));
+        $abj404view->echoOptionsSection(new ABJ_404_Solution_OptionsSectionView('stats-redirects', 'abj404-redirectStats', __('Redirects', '404-solution'), $content, true, $abj404view->getCardIcon('chart')));
 
         // Captured URLs Statistics Card
         $capturedStats = (is_array($statsData) && isset($statsData['captured']) && is_array($statsData['captured']))
@@ -98,7 +98,7 @@ class ABJ_404_Solution_View_Stats extends ABJ_404_Solution_ViewComponent {
         $content = $this->f->str_replace('{trashed}', esc_html((string)$trashed), $content);
         $content = $this->f->str_replace('{total}', esc_html((string)$total), $content);
         $content = $this->f->doNormalReplacements($content);
-        $abj404view->echoOptionsSection('stats-captured', 'abj404-capturedStats', __('Captured URLs', '404-solution'), $content, true, $abj404view->getCardIcon('warning'));
+        $abj404view->echoOptionsSection(new ABJ_404_Solution_OptionsSectionView('stats-captured', 'abj404-capturedStats', __('Captured URLs', '404-solution'), $content, true, $abj404view->getCardIcon('warning')));
 
         // Periodic Stats Cards
         $periodicStats = (is_array($statsData) && isset($statsData['periods']) && is_array($statsData['periods']))
@@ -136,7 +136,7 @@ class ABJ_404_Solution_View_Stats extends ABJ_404_Solution_ViewComponent {
             $content = $this->f->str_replace('{distinctvisitors}', esc_html((string)$distinctvisitors), $content);
             $content = $this->f->str_replace('{distinctrefer}', esc_html((string)$distinctrefer), $content);
             $content = $this->f->doNormalReplacements($content);
-            $abj404view->echoOptionsSection('stats-periodic-' . $x, 'abj404-stats' . $x, $title, $content, ($x == 0), $abj404view->getCardIcon('clock'));
+            $abj404view->echoOptionsSection(new ABJ_404_Solution_OptionsSectionView('stats-periodic-' . $x, 'abj404-stats' . $x, $title, $content, ($x == 0), $abj404view->getCardIcon('clock')));
         }
 
         // Match Confidence distribution card (full-width)
@@ -242,14 +242,14 @@ class ABJ_404_Solution_View_Stats extends ABJ_404_Solution_ViewComponent {
         $content = $this->f->str_replace('{low_count}', esc_html((string)$lowCount), $content);
         $content = $this->f->str_replace('{manual_count}', esc_html((string)$manualCount), $content);
 
-        $abj404view->echoOptionsSection(
+        $abj404view->echoOptionsSection(new ABJ_404_Solution_OptionsSectionView(
             'stats-confidence',
             'abj404-confidenceSection',
             __('Match Confidence', '404-solution'),
             $content,
             false,
             $abj404view->getCardIcon('check')
-        );
+        ));
     }
 
     /**
@@ -286,14 +286,14 @@ class ABJ_404_Solution_View_Stats extends ABJ_404_Solution_ViewComponent {
         $trendsContent = $this->f->str_replace('{error_text}', esc_html__('Could not load chart data.', '404-solution'), $trendsContent);
         $trendsContent = $this->f->str_replace('{trends_config}', esc_attr((string)$trendsConfig), $trendsContent);
 
-        $abj404view->echoOptionsSection(
+        $abj404view->echoOptionsSection(new ABJ_404_Solution_OptionsSectionView(
             'stats-trends',
             'abj404-trendsSection',
             __('Trend Analytics', '404-solution'),
             $trendsContent,
             false,
             $abj404view->getCardIcon('chart')
-        );
+        ));
     }
 
     /**
@@ -356,14 +356,14 @@ class ABJ_404_Solution_View_Stats extends ABJ_404_Solution_ViewComponent {
             $content = $this->f->str_replace('{rows}', $rowsHtml, $content);
         }
 
-        $abj404view->echoOptionsSection(
+        $abj404view->echoOptionsSection(new ABJ_404_Solution_OptionsSectionView(
             'stats-broken-links',
             'abj404-brokenLinksSection',
             __('Broken Internal Links', '404-solution'),
             $content,
             false,
             $abj404view->getCardIcon('warning')
-        );
+        ));
     }
 
 }

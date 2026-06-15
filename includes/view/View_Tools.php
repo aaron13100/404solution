@@ -110,20 +110,20 @@ class ABJ_404_Solution_View_Tools extends ABJ_404_Solution_ViewComponent {
         $html = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . "/html/toolsExportForm.html");
         $html = $this->f->str_replace('{toolsExportRedirectsLink}', $link, $html);
         $html = $this->f->doNormalReplacements($html);
-        $view->echoOptionsSection('tools-export', 'abj404-exportRedirects', __('Export', '404-solution'), $html, true, $view->getCardIcon('download'));
+        $view->echoOptionsSection(new ABJ_404_Solution_OptionsSectionView('tools-export', 'abj404-exportRedirects', __('Export', '404-solution'), $html, true, $view->getCardIcon('download')));
 
         $link = wp_nonce_url("?page=" . ABJ404_PP . "&subpage=abj404_tools", "abj404_importRedirectsFile");
         $html = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . "/html/toolsImportForm.html");
         $html = $this->f->str_replace('{toolsImportRedirectsLink}', $link, $html);
         $html = $this->f->doNormalReplacements($html);
-        $view->echoOptionsSection('tools-import', 'abj404-importRedirects', __('Import', '404-solution'), $html, false, $view->getCardIcon('upload'));
+        $view->echoOptionsSection(new ABJ_404_Solution_OptionsSectionView('tools-import', 'abj404-importRedirects', __('Import', '404-solution'), $html, false, $view->getCardIcon('upload')));
 
         $url = "?page=" . ABJ404_PP . "&subpage=abj404_tools";
         $link = wp_nonce_url($url, "abj404_purgeRedirects");
         $html = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . "/html/toolsPurgeForm.html");
         $html = $this->f->str_replace('{toolsPurgeFormActionLink}', $link, $html);
         $html = $this->f->doNormalReplacements($html);
-        $view->echoOptionsSection('tools-purge', 'abj404-purgeRedirects', __('Purge Options', '404-solution'), $html, false, $view->getCardIcon('trash'));
+        $view->echoOptionsSection(new ABJ_404_Solution_OptionsSectionView('tools-purge', 'abj404-purgeRedirects', __('Purge Options', '404-solution'), $html, false, $view->getCardIcon('trash')));
 
         $ngramLink = wp_nonce_url("?page=" . ABJ404_PP . "&subpage=abj404_tools", "abj404_rebuildNgramCache");
         $spellingLink = wp_nonce_url("?page=" . ABJ404_PP . "&subpage=abj404_tools", "abj404_clearSpellingCache");
@@ -131,20 +131,20 @@ class ABJ_404_Solution_View_Tools extends ABJ_404_Solution_ViewComponent {
         $html = $this->f->str_replace('{toolsNgramCacheFormActionLink}', $ngramLink, $html);
         $html = $this->f->str_replace('{toolsSpellingCacheFormActionLink}', $spellingLink, $html);
         $html = $this->f->doNormalReplacements($html);
-        $view->echoOptionsSection('tools-cache', 'abj404-cacheTools', __('Cache Management', '404-solution'), $html, false, $view->getCardIcon('database'));
+        $view->echoOptionsSection(new ABJ_404_Solution_OptionsSectionView('tools-cache', 'abj404-cacheTools', __('Cache Management', '404-solution'), $html, false, $view->getCardIcon('database')));
 
         $html = $this->getToolsDiagnosticsMarkup();
-        $view->echoOptionsSection('tools-diagnostics', 'abj404-diagnosticsTools', __('Diagnostics', '404-solution'), $html, false, $view->getCardIcon('warning'));
+        $view->echoOptionsSection(new ABJ_404_Solution_OptionsSectionView('tools-diagnostics', 'abj404-diagnosticsTools', __('Diagnostics', '404-solution'), $html, false, $view->getCardIcon('warning')));
 
         $link = wp_nonce_url("?page=" . ABJ404_PP . "&subpage=abj404_tools", "abj404_runMaintenance");
         $link .= '&manually_fired=true';
         $html = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . "/html/toolsEtcForm.html");
         $html = $this->f->str_replace('{toolsMaintenanceFormActionLink}', $link, $html);
         $html = $this->f->doNormalReplacements($html);
-        $view->echoOptionsSection('tools-etc', 'abj404-etcTools', __('Etcetera', '404-solution'), $html, false, $view->getCardIcon('cog'));
+        $view->echoOptionsSection(new ABJ_404_Solution_OptionsSectionView('tools-etc', 'abj404-etcTools', __('Etcetera', '404-solution'), $html, false, $view->getCardIcon('cog')));
 
         $html = $this->getMigrateFromPluginMarkup();
-        $view->echoOptionsSection('tools-migrate', 'abj404-migrateFromPlugin', __('Migrate from Another Plugin', '404-solution'), $html, false, $view->getCardIcon('upload'));
+        $view->echoOptionsSection(new ABJ_404_Solution_OptionsSectionView('tools-migrate', 'abj404-migrateFromPlugin', __('Migrate from Another Plugin', '404-solution'), $html, false, $view->getCardIcon('upload')));
 
         echo $this->tpl('viewStatsToolsPageFooter.html');
     }

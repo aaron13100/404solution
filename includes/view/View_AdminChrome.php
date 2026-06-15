@@ -199,24 +199,24 @@ class ABJ_404_Solution_View_AdminChrome extends ABJ_404_Solution_ViewComponent {
         ));
     }
 
-    function echoOptionsSection(string $sectionId, string $postboxId, string $title, string $content, bool $initiallyVisible = false, string $icon = '', string $badge = ''): void {
-        $expandedClass = $initiallyVisible ? ' expanded' : '';
+    function echoOptionsSection(ABJ_404_Solution_OptionsSectionView $section): void {
+        $expandedClass = $section->initiallyVisible ? ' expanded' : '';
         $badgeHtml = '';
-        if ($badge) {
+        if ($section->badge) {
             $badgeHtml = $this->fillTpl('optionsSectionBadge.html', array(
-                'badge' => esc_html($badge),
+                'badge' => esc_html($section->badge),
             ));
         }
 
         echo $this->fillTpl('optionsSection.html', array(
             'expandedClass' => esc_attr($expandedClass),
-            'sectionId'     => esc_attr($sectionId),
-            'postboxId'     => esc_attr($postboxId),
-            'ariaExpanded'  => $initiallyVisible ? 'true' : 'false',
-            'icon'          => (string)$icon,
-            'title'         => esc_html($title),
+            'sectionId'     => esc_attr($section->sectionId),
+            'postboxId'     => esc_attr($section->postboxId),
+            'ariaExpanded'  => $section->initiallyVisible ? 'true' : 'false',
+            'icon'          => (string)$section->icon,
+            'title'         => esc_html($section->title),
             'badge'         => $badgeHtml,
-            'content'       => (string)$content,
+            'content'       => (string)$section->content,
         ));
     }
 
