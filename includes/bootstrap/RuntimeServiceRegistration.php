@@ -39,9 +39,10 @@ class ABJ_404_Solution_RuntimeServiceRegistration implements ABJ_404_Solution_Ab
         });
 
         $container->set('wordpress_connector', function($c) {
-            return new ABJ_404_Solution_WordPress_Connector($c->get('plugin_logic'),
-                $c->get('redirects_repository'), $c->get('logging'), $c->get('functions'),
-                $c->get('spell_checker'), $c->get('logs_repository'), $c->get('stats_repository'));
+            return new ABJ_404_Solution_WordPress_Connector(
+                new ABJ_404_Solution_WordPressConnectorDependencies($c->get('plugin_logic'),
+                    $c->get('redirects_repository'), $c->get('logging'), $c->get('functions'),
+                    $c->get('spell_checker'), $c->get('logs_repository'), $c->get('stats_repository')));
         });
 
         $container->set('slug_change_handler', function($c) {

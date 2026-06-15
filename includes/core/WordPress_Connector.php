@@ -36,23 +36,19 @@ class ABJ_404_Solution_WordPress_Connector {
 	/**
 	 * Constructor with dependency injection.
 	 *
-	 * @param ABJ_404_Solution_PluginLogic|null $pluginLogic Business logic service
-	 * @param ABJ_404_Solution_RedirectsRepository|null $redirectsRepository Redirects repository
-	 * @param ABJ_404_Solution_Logging|null $logging Logging service
-	 * @param ABJ_404_Solution_Functions|null $functions String utilities
-	 * @param ABJ_404_Solution_SpellChecker|null $spellChecker Spell checker service
-	 * @param mixed|null $logsRepository Log writer
-	 * @param mixed|null $statsRepository Stats reader
+	 * @param ABJ_404_Solution_WordPressConnectorDependencies|null $deps
 	 */
-	public function __construct($pluginLogic = null, $redirectsRepository = null, $logging = null, $functions = null, $spellChecker = null, $logsRepository = null, $statsRepository = null) {
-		$this->logic = $pluginLogic !== null ? $pluginLogic : abj_service('plugin_logic');
+	public function __construct(?ABJ_404_Solution_WordPressConnectorDependencies $deps = null) {
+		$deps = $deps ?? new ABJ_404_Solution_WordPressConnectorDependencies();
+		$redirectsRepository = $deps->redirectsRepository;
+		$this->logic = $deps->pluginLogic !== null ? $deps->pluginLogic : abj_service('plugin_logic');
 		$this->redirectsRepository = $redirectsRepository !== null ? $redirectsRepository : abj_service('redirects_repository');
-		$this->logger = $logging !== null ? $logging : abj_service('logging');
-		$this->f = $functions !== null ? $functions : abj_service('functions');
-		$this->spellChecker = $spellChecker !== null ? $spellChecker : abj_service('spell_checker');
-		$this->logsRepository = $logsRepository !== null ? $logsRepository :
+		$this->logger = $deps->logging !== null ? $deps->logging : abj_service('logging');
+		$this->f = $deps->functions !== null ? $deps->functions : abj_service('functions');
+		$this->spellChecker = $deps->spellChecker !== null ? $deps->spellChecker : abj_service('spell_checker');
+		$this->logsRepository = $deps->logsRepository !== null ? $deps->logsRepository :
 			(is_object($redirectsRepository) && method_exists($redirectsRepository, 'logRedirectHit') ? $redirectsRepository : abj_service('logs_repository'));
-		$this->statsRepository = $statsRepository !== null ? $statsRepository :
+		$this->statsRepository = $deps->statsRepository !== null ? $deps->statsRepository :
 			(is_object($redirectsRepository) && method_exists($redirectsRepository, 'getCapturedCountForNotification')
 				? $redirectsRepository
 				: ABJ_404_Solution_StatsRepositoryResolver::resolve(__CLASS__));

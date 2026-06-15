@@ -449,6 +449,7 @@ return array(
     'ABJ_404_Solution_WPUtils' => $base . 'includes/php/wordpress/WPUtils.php',
     'ABJ_404_Solution_WordPressHookRegistrar' => $base . 'includes/core/WordPressHookRegistrar.php',
     'ABJ_404_Solution_WordPress_Connector' => $base . 'includes/core/WordPress_Connector.php',
+    'ABJ_404_Solution_WordPressConnectorDependencies' => $base . 'includes/core/WordPressConnectorDependencies.php',
     'ABJ_404_Solution_AdminThemeManager' => $base . 'includes/admin/AdminThemeManager.php',
     'ABJ_404_Solution_AdminRuntimeErrorNotice' => $base . 'includes/admin/AdminRuntimeErrorNotice.php',
     'ABJ_404_Solution_GscOAuthHandler' => $base . 'includes/gsc/GscOAuthHandler.php',
