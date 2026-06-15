@@ -61,69 +61,10 @@ require_once __DIR__ . '/includes/core/PhpErrorLogFallback.php';
 	$GLOBALS['abj404_missing_files'] = array();
 	$GLOBALS['abj404_boot_error'] = '';
 
-	// Used by multiple classes during early admin initialization (e.g. upgrade/migration paths).
-	// This must be defined before any Loader.php initialization that might touch Logging/SynchronizationUtils.
-	if (!function_exists('abj404_getUploadsDir')) {
-		/** @return string */
-		function abj404_getUploadsDir() {
-			$uploadsDirArray = wp_upload_dir(null, false);
-			$uploadsDir = $uploadsDirArray['basedir'];
-			$uploadsDir .= DIRECTORY_SEPARATOR . 'temp_' . ABJ404_PP . DIRECTORY_SEPARATOR;
-			return $uploadsDir;
-		}
-	}
-
-	if (!function_exists('abj404_get_settings_options')) {
-		/**
-		 * Centralized settings read so call sites don't repeat option-shape checks.
-		 * This is the plugin-root fallback boundary for raw abj404_settings reads:
-		 * ordinary callers must use this helper or options_repository.
-		 *
-		 * @return array<string, mixed>
-		 */
-		function abj404_get_settings_options() {
-			if (function_exists('abj_service_optional')) {
-				$optionsRepository = abj_service_optional('options_repository');
-				if (is_object($optionsRepository) && method_exists($optionsRepository, 'getOptions')) {
-					try {
-						$options = $optionsRepository->getOptions(true);
-						if (is_array($options)) {
-							$normalizedOptions = array();
-							foreach ($options as $key => $value) {
-								if (is_string($key)) {
-									$normalizedOptions[$key] = $value;
-								}
-							}
-							return $normalizedOptions;
-						}
-						if (function_exists('abj404_logRuntimeWarning')) {
-							abj404_logRuntimeWarning('options_repository->getOptions(true) returned ' . gettype($options) . '; falling back to raw bootstrap option read');
-						}
-					} catch (\Throwable $e) {
-						if (function_exists('abj404_logRuntimeWarning')) {
-							abj404_logRuntimeWarning('options_repository->getOptions(true) failed while reading settings options; falling back to raw bootstrap option read', $e);
-						} else {
-							abj404_logPhpFallback(
-								'early-boot',
-								'options_repository->getOptions(true) failed while reading settings options; falling back to raw bootstrap option read (' . $e->getMessage() . ')'
-							);
-						}
-					}
-				}
-			}
-			$options = function_exists('get_option') ? get_option('abj404_settings') : false;
-			if (!is_array($options)) {
-				return array();
-			}
-			$normalizedOptions = array();
-			foreach ($options as $key => $value) {
-				if (is_string($key)) {
-					$normalizedOptions[$key] = $value;
-				}
-			}
-			return $normalizedOptions;
-		}
-	}
+	// Early settings and path helpers (abj404_getUploadsDir, abj404_get_settings_options).
+	// Required before Loader.php because boot-time paths call them before the service
+	// container is available. Defined in includes/root-boot/EarlySettingsAccess.php.
+	require_once __DIR__ . '/includes/root-boot/EarlySettingsAccess.php';
 
 // Debug whitelist - only includes localhost/development environments by default
 // WARNING: Only add trusted domains to this list. External domains could be a security risk.
@@ -136,315 +77,37 @@ if (has_filter('abj404_debug_whitelist')) {
     $GLOBALS['abj404_whitelist'] = apply_filters('abj404_debug_whitelist', $GLOBALS['abj404_whitelist']);
 }
 
-if (!function_exists('abj404_autoloader')) {
-/**
- * @param string $class
- * @return void
- */
-function abj404_autoloader($class) {
-	// some people were having issues with possibly parent classes not being loaded before their children.
-	$childParentMap = [
-		'ABJ_404_Solution_FunctionsMBString' => 'ABJ_404_Solution_Functions',
-		'ABJ_404_Solution_FunctionsPreg' => 'ABJ_404_Solution_Functions',
-		'ABJ_404_Solution_MbStringAdapterMb' => 'ABJ_404_Solution_MbStringAdapter',
-		'ABJ_404_Solution_MbStringAdapterPreg' => 'ABJ_404_Solution_MbStringAdapter',
-		'ABJ_404_Solution_RegexHelperMb' => 'ABJ_404_Solution_RegexHelper',
-		'ABJ_404_Solution_RegexHelperPreg' => 'ABJ_404_Solution_RegexHelper',
-	];
-
-	// only pay attention if it's for us. don't bother for other things.
-	if (substr($class, 0, 16) !== 'ABJ_404_Solution') {
-		return;
-	}
-
-	// Use a deterministic classmap to avoid runtime glob() scans on real sites.
-	static $abj404_autoLoaderClassMap = null;
-	if ($abj404_autoLoaderClassMap === null) {
-		$mapFile = __DIR__ . '/includes/classmap.php';
-		$abj404_autoLoaderClassMap = file_exists($mapFile) ? require $mapFile : array();
-	}
-
-	if (!array_key_exists($class, $abj404_autoLoaderClassMap)) {
-		return;
-	}
-
-	// Composition dependency pre-check: parent facade classes depend on files
-	// being present before they are loaded. Verify those files exist first so
-	// a corrupt install can surface a degraded admin page instead of a fatal.
-	static $traitDependencies = null;
-	if ($traitDependencies === null) {
-		$traitDependencyClasses = array(
-			'ABJ_404_Solution_View' => array(
-				'ABJ_404_Solution_ViewComponent',
-				'ABJ_404_Solution_View_Shared',
-				'ABJ_404_Solution_View_UI',
-				'ABJ_404_Solution_View_Stats',
-				'ABJ_404_Solution_View_Settings',
-				'ABJ_404_Solution_View_Redirects',
-				'ABJ_404_Solution_View_RedirectsTable',
-				'ABJ_404_Solution_View_CapturedURLsTable',
-				'ABJ_404_Solution_View_RedirectForms',
-				'ABJ_404_Solution_View_ListTableChrome',
-				'ABJ_404_Solution_View_RedirectTypeUI',
-				'ABJ_404_Solution_View_RedirectConditions',
-				'ABJ_404_Solution_View_Logs',
-			),
-			'ABJ_404_Solution_DataAccess' => array(
-				'ABJ_404_Solution_DatabaseCore',
-				'ABJ_404_Solution_ContentRepository',
-				'ABJ_404_Solution_RedirectsRepository',
-				'ABJ_404_Solution_LogsRepository',
-				'ABJ_404_Solution_StatsRepository',
-				'ABJ_404_Solution_ViewReadService',
-				'ABJ_404_Solution_ViewBuildOrchestrator',
-			),
-			'ABJ_404_Solution_PluginLogic' => array(
-				'ABJ_404_Solution_PluginLogicUrlNormalization',
-				'ABJ_404_Solution_PluginLogicAdminActions',
-				'ABJ_404_Solution_AdminActionsDependencies',
-				'ABJ_404_Solution_PluginLogicImportExport',
-				'ABJ_404_Solution_PluginLogicSettingsUpdate',
-				'ABJ_404_Solution_PluginLogicPageOrdering',
-				'ABJ_404_Solution_PluginLogicLifecycle',
-			),
-			'ABJ_404_Solution_DatabaseUpgradesEtc' => array(
-				'ABJ_404_Solution_DatabaseUpgradeCoordinator',
-				'ABJ_404_Solution_DatabaseUpgradeComponent',
-				'ABJ_404_Solution_DatabaseUpgradeComponentRegistry',
-				'ABJ_404_Solution_DatabaseUpgradeNGram',
-				'ABJ_404_Solution_DatabaseUpgradeEngineNormalization',
-				'ABJ_404_Solution_DatabaseUpgradeCollationDrift',
-				'ABJ_404_Solution_DatabaseUpgradeSelfHeal',
-				'ABJ_404_Solution_DatabaseUpgradeCanonicalUrlBackfill',
-				'ABJ_404_Solution_DatabaseUpgradeDailyMaintenance',
-				'ABJ_404_Solution_DatabaseUpgradePluginUpdate',
-				'ABJ_404_Solution_DatabaseUpgradeTableRepair',
-				'ABJ_404_Solution_DatabaseUpgradeIndexes',
-				'ABJ_404_Solution_DatabaseUpgradeOrphanAdoption',
-				'ABJ_404_Solution_DatabaseUpgradeMultiSite',
-				'ABJ_404_Solution_DatabaseUpgradeSchemaDiff',
-			),
-			'ABJ_404_Solution_FeedbackTransport' => array(
-				'ABJ_404_Solution_FeedbackEnvironmentExtras',
-				'ABJ_404_Solution_FeedbackEnvironmentExtras_DbProbes',
-				'ABJ_404_Solution_FeedbackEnvironmentExtras_HostProbes',
-				'ABJ_404_Solution_FeedbackEnvironmentExtras_PlatformFingerprint',
-				'ABJ_404_Solution_FeedbackEnvironmentExtras_DebugLogSignatures',
-			),
-			'ABJ_404_Solution_DatabaseCore' => array(
-				'ABJ_404_Solution_DatabaseConnectionManager',
-				'ABJ_404_Solution_DatabaseQueryTimeoutManager',
-				'ABJ_404_Solution_DatabaseErrorClassifier',
-				'ABJ_404_Solution_DatabaseSqlErrorReporter',
-			),
-		);
-		$traitDependencies = array();
-		foreach ($traitDependencyClasses as $hostClass => $dependencyClasses) {
-			$traitDependencies[$hostClass] = array();
-			foreach ($dependencyClasses as $dependencyClass) {
-				if (isset($abj404_autoLoaderClassMap[$dependencyClass])) {
-					$traitDependencies[$hostClass][] = $abj404_autoLoaderClassMap[$dependencyClass];
-				}
-			}
-		}
-	}
-
-	if (isset($traitDependencies[$class])) {
-		foreach ($traitDependencies[$class] as $dependencyFile) {
-			if (!file_exists($dependencyFile)) {
-				$GLOBALS['abj404_missing_files'][] = $dependencyFile;
-				// Don't load the parent class — the compile-time fatal is uncatchable.
-				return;
-			}
-		}
-	}
-
-	// Ensure the parent class is loaded first.
-	if (array_key_exists($class, $childParentMap)) {
-		$parentClass = $childParentMap[$class];
-		if (!class_exists($parentClass, false) && array_key_exists($parentClass, $abj404_autoLoaderClassMap)) {
-			$parentFile = $abj404_autoLoaderClassMap[$parentClass];
-			if (!file_exists($parentFile)) {
-				$GLOBALS['abj404_missing_files'][] = $parentFile;
-				return;
-			}
-			require_once $parentFile;
-		}
-	}
-
-	$classFile = $abj404_autoLoaderClassMap[$class];
-	if (!file_exists($classFile)) {
-		$GLOBALS['abj404_missing_files'][] = $classFile;
-		return;
-	}
-
-	require_once $classFile;
-}
-}
+// The class autoloader (abj404_autoloader) is defined in
+// includes/root-boot/Autoloader.php. Required FIRST (plain require, before any
+// class use) so the function is available to register below; it loads its
+// class->collaborator dependency map from the external data file
+// includes/data/autoloader-trait-dependencies.php.
+require_once __DIR__ . '/includes/root-boot/Autoloader.php';
 spl_autoload_register('abj404_autoloader');
 
-if (!function_exists('abj404_logRuntimeWarning')) {
-/**
- * Route root-file runtime warnings through the plugin logger when available.
- *
- * The root plugin file owns early boot, shutdown, and cron callbacks where the
- * service container may not be available yet. This helper keeps normal runtime
- * failures in the plugin log while preserving a last-resort PHP error log
- * breadcrumb if logger resolution itself fails.
- *
- * @param string $context
- * @param \Throwable|null $throwable
- * @return void
- */
-function abj404_logRuntimeWarning(string $context, ?\Throwable $throwable = null): void {
-    $line = $context;
-    if ($throwable !== null) {
-        $line .= ' (code ' . (string)$throwable->getCode() . ') at ' .
-            $throwable->getFile() . ':' . (string)$throwable->getLine() .
-            ': ' . $throwable->getMessage();
-    }
-
-    $loggerFailure = null;
-    try {
-        $logger = null;
-        if (function_exists('abj_service_optional')) {
-            $logger = abj_service_optional('logging');
-        }
-        if (!is_object($logger) && class_exists('ABJ_404_Solution_Logging', false)) {
-            $logger = ABJ_404_Solution_Logging::getInstance();
-        }
-        if (is_object($logger) && method_exists($logger, 'warn')) {
-            $logger->warn($line);
-            return;
-        }
-        if (is_object($logger) && method_exists($logger, 'errorMessage')) {
-            $logger->errorMessage($line, $throwable instanceof Exception ? $throwable : null);
-            return;
-        }
-    } catch (\Throwable $loggingError) {
-        $loggerFailure = $loggingError;
-    }
-
-    $fallback = $line;
-    if ($loggerFailure !== null) {
-        $fallback .= ' | logger failure (code ' . (string)$loggerFailure->getCode() . ') at ' .
-            $loggerFailure->getFile() . ':' . (string)$loggerFailure->getLine() .
-            ': ' . $loggerFailure->getMessage();
-    }
-    abj404_logPhpFallback('early-boot', $fallback);
-}
-}
-
-if (!function_exists('abj404_resolve_clock')) {
-/**
- * Resolve the project clock from the root plugin bootstrap.
- *
- * The normal service helper is not available until Loader.php pulls in the
- * bootstrap files, but root-file callbacks also run before or after that
- * boundary. This keeps those callbacks on the same clock abstraction without
- * making early boot depend on the fully initialized container.
- *
- * @return object|null
- */
-function abj404_resolve_clock() {
-	static $fallbackClock = null;
-
-		try {
-			if (function_exists('abj_clock')) {
-				return abj_clock();
-			}
-		if (is_object($fallbackClock)) {
-			return $fallbackClock;
-		}
-		if (class_exists('ABJ_404_Solution_SystemClock')) {
-			$fallbackClock = new ABJ_404_Solution_SystemClock();
-			return $fallbackClock;
-		}
-	} catch (\Throwable $e) {
-		abj404_logRuntimeWarning('Clock resolution failed in root bootstrap', $e);
-	}
-
-	return null;
-}
-}
-
-if (!function_exists('abj404_now')) {
-/**
- * Current epoch seconds for root-file callbacks.
- *
- * @return int
- */
-function abj404_now(): int {
-	$clock = abj404_resolve_clock();
-	if (is_object($clock) && method_exists($clock, 'now')) {
-		try {
-			return (int)$clock->now();
-		} catch (\Throwable $e) {
-			abj404_logRuntimeWarning('Clock now() failed in root bootstrap', $e);
-		}
-	}
-
-	static $reportedUnavailable = false;
-	if (!$reportedUnavailable) {
-		abj404_logRuntimeWarning('Clock unavailable in root bootstrap; using zero epoch fallback');
-		$reportedUnavailable = true;
-	}
-	return 0;
-}
-}
-
-if (!function_exists('abj404_now_float')) {
-/**
- * Current epoch seconds with sub-second precision for root-file callbacks.
- *
- * @return float
- */
-function abj404_now_float(): float {
-	$clock = abj404_resolve_clock();
-	if (is_object($clock) && method_exists($clock, 'nowFloat')) {
-		try {
-			return (float)$clock->nowFloat();
-		} catch (\Throwable $e) {
-			abj404_logRuntimeWarning('Clock nowFloat() failed in root bootstrap', $e);
-		}
-	}
-
-	return (float)abj404_now();
-}
-}
-
-if (!function_exists('abj404_current_user_is_plugin_admin')) {
-/**
- * Root-file policy gate for admin callbacks declared before normal classes run.
- *
- * Degraded boot screens still use direct WordPress capabilities because the
- * policy class can be among the missing files. Runtime admin callbacks should
- * call this helper so delegated plugin admins follow the same authorization
- * decision everywhere.
- *
- * @return bool
- */
-function abj404_current_user_is_plugin_admin(): bool {
-    try {
-        if (class_exists('ABJ_404_Solution_PluginAdminAccessPolicy')) {
-            return ABJ_404_Solution_PluginAdminAccessPolicy::currentUserCanAccessPluginAdmin();
-        }
-        abj404_logRuntimeWarning(
-            'plugin admin access policy resolution failed because PluginAdminAccessPolicy is unavailable.'
-        );
-    } catch (\Throwable $e) {
-        abj404_logRuntimeWarning('plugin admin access policy resolution failed', $e);
-    }
-
-    return false;
-}
-}
+// Root-boot procedural functions. Each file only DEFINES functions (the
+// add_action/add_filter/add_shortcode registrations stay below in this file).
+// Requiring them here, right after the autoloader is registered, guarantees
+// every function is defined before any top-level executable statement that
+// references it runs.
+require_once __DIR__ . '/includes/root-boot/RuntimeHelpers.php';
+require_once __DIR__ . '/includes/root-boot/RequestBenchmark.php';
+require_once __DIR__ . '/includes/root-boot/BootGuard.php';
+require_once __DIR__ . '/includes/root-boot/ShortcodeAndIntegrity.php';
+require_once __DIR__ . '/includes/root-boot/DegradedSupportRequest.php';
+require_once __DIR__ . '/includes/root-boot/CronListeners.php';
+require_once __DIR__ . '/includes/root-boot/LocaleAndFrontendOptions.php';
+require_once __DIR__ . '/includes/root-boot/AdminNotices.php';
+require_once __DIR__ . '/includes/root-boot/LocalDebugDiagnostics.php';
+require_once __DIR__ . '/includes/root-boot/AdminInitHandlers.php';
+require_once __DIR__ . '/includes/root-boot/AdminPageCallback.php';
+require_once __DIR__ . '/includes/root-boot/Frontend404Listener.php';
 
 
 add_action('doing_it_wrong_run', function($function_name, $message, $version) {
 	if (strpos($message, '404-solution') !== false &&
 		$function_name == '_load_textdomain_just_in_time') {
-		
+
         try {
             $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
 
@@ -455,11 +118,11 @@ add_action('doing_it_wrong_run', function($function_name, $message, $version) {
             $isOurPlugin = false;
 
             foreach ($backtrace as $index => $frame) {
-                $file = isset($frame['file']) ? $frame['file'] : '[internal function]';
-                $line = isset($frame['line']) ? $frame['line'] : '';
+                $file = isset($frame['file']) && is_string($frame['file']) ? $frame['file'] : '[internal function]';
+                $line = isset($frame['line']) && is_scalar($frame['line']) ? (string)$frame['line'] : '';
                 $func = $frame['function'];
 
-                if (!$isOurPlugin && is_string($file) && strpos($file, $pluginPath) !== false) {
+                if (!$isOurPlugin && $file !== '[internal function]' && strpos($file, $pluginPath) !== false) {
                     $isOurPlugin = true;
                 }
 
@@ -471,8 +134,8 @@ add_action('doing_it_wrong_run', function($function_name, $message, $version) {
 					"Function: $function_name\n" .
 					"Message: $message\n" .
 					"Version: $version\n";
-  
-				if (!isset($GLOBALS['abj404_pending_errors'])) {
+
+				if (!isset($GLOBALS['abj404_pending_errors']) || !is_array($GLOBALS['abj404_pending_errors'])) {
 					$GLOBALS['abj404_pending_errors'] = [];
 				}
 				$GLOBALS['abj404_pending_errors'][] = $header . $logMessage;
@@ -484,280 +147,31 @@ add_action('doing_it_wrong_run', function($function_name, $message, $version) {
     }
 }, 10, 3);
 
-// shortcode
+// shortcode (abj404_shortCodeListener is defined in
+// includes/root-boot/ShortcodeAndIntegrity.php).
 add_shortcode(ABJ404_SHORTCODE_NAME, 'abj404_shortCodeListener');
-if (!function_exists('abj404_shortCodeListener')) {
-	/**
-	 * @param array<string, mixed>|string $atts
-	 * @return string
-	 */
-	function abj404_shortCodeListener($atts) {
-		if (!$GLOBALS['abj404_boot_ok']) {
-			return '';
-		}
-		abj404_load_textdomain_if_needed();
-	    require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
-	    /** @var array<string, mixed> $safeAtts */
-	    $safeAtts = is_array($atts) ? $atts : array();
-	    return ABJ_404_Solution_ShortCode::shortcodePageSuggestions($safeAtts);
-	}
 
-	if (!function_exists('abj404_get_required_runtime_files')) {
-		/**
-		 * Files required for a healthy runtime/plugin package.
-		 * Covers boot-critical PHP files and essential SQL templates.
-		 *
-		 * @return array<int, string>
-		 */
-		function abj404_get_required_runtime_files() {
-			$inc = ABJ404_PATH . 'includes/';
-			$classmapFile = $inc . 'classmap.php';
-			if (!file_exists($classmapFile)) {
-				$classmapFile = __DIR__ . '/includes/classmap.php';
-			}
-				$classmapFiles = array();
-				if (file_exists($classmapFile)) {
-					$classmap = require $classmapFile;
-					if (is_array($classmap)) {
-						foreach ($classmap as $classmapPath) {
-							if (is_string($classmapPath)) {
-								$classmapFiles[] = $classmapPath;
-							}
-						}
-					}
-				}
-
-			$bootFiles = array(
-				$inc . 'Loader.php',
-				$inc . 'bootstrap.php',
-				$inc . 'bootstrap/CoreServiceRegistration.php',
-				$inc . 'bootstrap/DataServiceRegistration.php',
-				$inc . 'bootstrap/DomainServiceRegistration.php',
-				$inc . 'bootstrap/MatchingEngineServiceRegistration.php',
-				$inc . 'bootstrap/RuntimeServiceRegistration.php',
-				$inc . 'bootstrap/LegacyInstanceResolver.php',
-					$inc . 'bootstrap/service-locator.php',
-					$inc . 'classmap.php',
-					$inc . 'ajax/SupportRequest.js',
-					$inc . 'js/support-request-button.js',
-					$inc . 'js/support-request-transport.js',
-					$inc . 'js/support-request-modal-view.js',
-					ABJ404_PATH . 'contracts/schemas/report.schema.json',
-				);
-
-			return array_values(array_unique(array_merge(
-				$bootFiles,
-				$classmapFiles,
-				array(
-				// SQL templates — all files required for correct operation.
-				// A test (SqlFileIntegrityListCompletenessTest) verifies this list
-				// stays in sync with the actual files in includes/sql/.
-				$inc . 'sql/correctLookupTableIssue.sql',
-				$inc . 'sql/createEngineProfilesTable.sql',
-				$inc . 'sql/createLogTable.sql',
-				$inc . 'sql/createLogsHitsPreAggTempTable.sql',
-				$inc . 'sql/createLogsHitsTempTable.sql',
-				$inc . 'sql/createLookupTable.sql',
-				$inc . 'sql/createNGramCacheTable.sql',
-				$inc . 'sql/createPermalinkCacheTable.sql',
-				$inc . 'sql/createRedirectConditionsTable.sql',
-				$inc . 'sql/createRedirectsTable.sql',
-				$inc . 'sql/createSpellingCacheTable.sql',
-				$inc . 'sql/createViewBuildTable.sql',
-				$inc . 'sql/createViewCacheTable.sql',
-				$inc . 'sql/deleteOldLogs.sql',
-				$inc . 'sql/getAdditionalPostData.sql',
-				$inc . 'sql/getIDsNeededForPermalinkCache.sql',
-				$inc . 'sql/getLogRecords.sql',
-				$inc . 'sql/getLogsCount.sql',
-				$inc . 'sql/getDistinctLoggedUrls.sql',
-				$inc . 'sql/getLogsIDandURL.sql',
-				$inc . 'sql/getLogsIDandURLForAjax.sql',
-				$inc . 'sql/getMostUnusedRedirects.sql',
-				$inc . 'sql/getOrphanedAutoRedirects.sql',
-				$inc . 'sql/getPermalinkFromURL.sql',
-				$inc . 'sql/getPostsNeedingContentKeywords.sql',
-				$inc . 'sql/getPublishedCategories.sql',
-				$inc . 'sql/getPublishedImageIDs.sql',
-				$inc . 'sql/getPublishedPagesAndPostsIDs.sql',
-				$inc . 'sql/getPublishedTags.sql',
-				$inc . 'sql/getRedirectsExport.sql',
-				$inc . 'sql/getRedirectsForViewTempTable.sql',
-				$inc . 'sql/getRedirectsWithLogs.sql',
-				$inc . 'sql/importDataFromPluginRedirectioner.sql',
-				$inc . 'sql/insertPermalinkCache.sql',
-				$inc . 'sql/insertSpellingCache.sql',
-				$inc . 'sql/logsSetMinLogID.sql',
-				$inc . 'sql/migrateToNewLogsTable.sql',
-				$inc . 'sql/selectTableEngines.sql',
-				$inc . 'sql/updatePermalinkCache.sql',
-				$inc . 'sql/updatePermalinkCacheParentPages.sql',
-				)
-			)));
-		}
-	}
-
-	if (!function_exists('abj404_verify_runtime_integrity')) {
-		/**
-		 * Validate that required plugin files are present.
-		 *
-		 * @return array<int, string> Missing file paths.
-		 */
-		function abj404_verify_runtime_integrity() {
-			$missing = array();
-			foreach (abj404_get_required_runtime_files() as $path) {
-				if (!file_exists($path)) {
-					$missing[] = $path;
-				}
-			}
-			return $missing;
-		}
-	}
-
-	if (!function_exists('abj404_is_benchmark_request')) {
-		/**
-		 * Benchmark instrumentation is disabled by default and only enabled per-request.
-		 *
-		 * @return bool
-		 */
-		function abj404_is_benchmark_request() {
-			return isset($_GET['abj404_bench']) && (string)$_GET['abj404_bench'] === '1';
-		}
-	}
-
-	if (!function_exists('abj404_benchmark_bootstrap_start')) {
-		/** @return void */
-		function abj404_benchmark_bootstrap_start() {
-			if (!abj404_is_benchmark_request()) {
-				return;
-			}
-			if (!isset($GLOBALS['abj404_benchmark_state']) || !is_array($GLOBALS['abj404_benchmark_state'])) {
-				$GLOBALS['abj404_benchmark_state'] = array(
-					'start' => abj404_now_float(),
-					'bootstrap_done' => 0.0,
-					'db_query_count' => 0,
-					'db_query_ms' => 0.0,
-					'redirect_lookup_ms' => 0.0,
-				);
-			}
-		}
-	}
-
-	if (!function_exists('abj404_benchmark_mark_bootstrap_done')) {
-		/** @return void */
-		function abj404_benchmark_mark_bootstrap_done() {
-			if (!abj404_is_benchmark_request() || !isset($GLOBALS['abj404_benchmark_state'])) {
-				return;
-			}
-			$GLOBALS['abj404_benchmark_state']['bootstrap_done'] = abj404_now_float();
-		}
-	}
-
-	if (!function_exists('abj404_benchmark_record_db_query')) {
-		/**
-		 * @param float $elapsedMs
-		 * @return void
-		 */
-		function abj404_benchmark_record_db_query($elapsedMs) {
-			if (!abj404_is_benchmark_request() || !isset($GLOBALS['abj404_benchmark_state'])) {
-				return;
-			}
-			$elapsedMs = max(0.0, (float)$elapsedMs);
-			$GLOBALS['abj404_benchmark_state']['db_query_count']++;
-			$GLOBALS['abj404_benchmark_state']['db_query_ms'] += $elapsedMs;
-		}
-	}
-
-	if (!function_exists('abj404_benchmark_record_redirect_lookup')) {
-		/**
-		 * @param float $elapsedMs
-		 * @return void
-		 */
-		function abj404_benchmark_record_redirect_lookup($elapsedMs) {
-			if (!abj404_is_benchmark_request() || !isset($GLOBALS['abj404_benchmark_state'])) {
-				return;
-			}
-			$GLOBALS['abj404_benchmark_state']['redirect_lookup_ms'] += max(0.0, (float)$elapsedMs);
-		}
-	}
-
-	if (!function_exists('abj404_benchmark_emit_headers')) {
-		/** @return void */
-		function abj404_benchmark_emit_headers() {
-			if (!abj404_is_benchmark_request() || headers_sent() || !isset($GLOBALS['abj404_benchmark_state'])) {
-				return;
-			}
-			$state = $GLOBALS['abj404_benchmark_state'];
-			$start = isset($state['start']) ? (float)$state['start'] : 0.0;
-			$bootstrapDone = isset($state['bootstrap_done']) ? (float)$state['bootstrap_done'] : 0.0;
-			$now = abj404_now_float();
-			$totalMs = ($start > 0.0) ? (($now - $start) * 1000.0) : 0.0;
-			$bootstrapMs = ($start > 0.0 && $bootstrapDone > 0.0) ? (($bootstrapDone - $start) * 1000.0) : 0.0;
-			$dbQueryCount = isset($state['db_query_count']) ? (int)$state['db_query_count'] : 0;
-			$dbQueryMs = isset($state['db_query_ms']) ? (float)$state['db_query_ms'] : 0.0;
-			$redirectLookupMs = isset($state['redirect_lookup_ms']) ? (float)$state['redirect_lookup_ms'] : 0.0;
-
-			header(
-				'X-ABJ404-Benchmark: ' .
-				'total_ms=' . round($totalMs, 3) . ';' .
-				'bootstrap_ms=' . round($bootstrapMs, 3) . ';' .
-				'db_query_count=' . $dbQueryCount . ';' .
-				'db_query_ms=' . round($dbQueryMs, 3) . ';' .
-				'redirect_lookup_ms=' . round($redirectLookupMs, 3)
-			);
-		}
-	}
-
-	abj404_benchmark_bootstrap_start();
-	if (abj404_is_benchmark_request()) {
-		add_action('send_headers', 'abj404_benchmark_emit_headers', PHP_INT_MAX);
-	}
+// Benchmark instrumentation functions are defined in
+// includes/root-boot/RequestBenchmark.php. Start the per-request timer now and,
+// when benchmarking is active, register the response-header emitter. These
+// executable statements must run unconditionally (they previously sat inside the
+// shortcode-listener function_exists guard).
+abj404_benchmark_bootstrap_start();
+if (abj404_is_benchmark_request()) {
+	add_action('send_headers', 'abj404_benchmark_emit_headers', PHP_INT_MAX);
 }
 
-// Minimal shutdown handler: catches compile/parse fatals in plugin files and
-// stores them in a transient so the degraded admin page can display the error
-// on the next request. This is important for PHP 7.4 where syntax errors in
-// required files produce uncatchable E_COMPILE_ERROR.
-if (!function_exists('abj404_boot_shutdown_handler')) {
-	/** @return void */
-	function abj404_boot_shutdown_handler() {
-		if ($GLOBALS['abj404_boot_ok']) {
-			return;
-		}
-		$error = error_get_last();
-		if ($error === null) {
-			return;
-		}
-		// Only capture fatal/compile errors in our plugin files.
-		$fatalTypes = E_ERROR | E_PARSE | E_COMPILE_ERROR | E_CORE_ERROR;
-		if (!($error['type'] & $fatalTypes)) {
-			return;
-		}
-		$pluginDir = defined('ABJ404_PATH') ? ABJ404_PATH : __DIR__ . '/';
-		if (strpos($error['file'], $pluginDir) === false) {
-			return;
-		}
-		$errorInfo = array(
-			'message' => $error['message'],
-			'file' => $error['file'],
-			'line' => $error['line'],
-			'type' => $error['type'],
-			'time' => abj404_now(),
-		);
-		// Use update_option as a fallback — set_transient might not be available
-		// during a fatal shutdown.
-		if (function_exists('set_transient')) {
-			set_transient('abj404_boot_fatal', $errorInfo, 3600);
-		}
-	}
-}
+// Boot-failure shutdown handler (abj404_boot_shutdown_handler) is defined in
+// includes/root-boot/BootGuard.php. It captures compile/parse fatals in plugin
+// files so the degraded admin page can show them on the next request. Registered
+// here as part of the boot sequence.
 register_shutdown_function('abj404_boot_shutdown_handler');
 
 // Always load Loader.php to ensure plugin constants (ABJ404_TYPE_404_DISPLAYED,
 // ABJ404_STATUS_MANUAL, etc.) are defined in all contexts: admin, REST API, WP-CLI
 // eval, and template_redirect. Without this, direct calls to plugin classes via
 // wp eval fail with "Undefined constant" errors because Loader.php was previously
-// only loaded inside is_admin() — leaving WP-CLI and other non-admin contexts
+// only loaded inside is_admin(), leaving WP-CLI and other non-admin contexts
 // without the constants they need.
 $__abj404_loader_path = plugin_dir_path( __FILE__ ) . "includes/Loader.php";
 if (file_exists($__abj404_loader_path)) {
@@ -787,7 +201,7 @@ if ($GLOBALS['abj404_boot_ok']) {
 			ABJ_404_Solution_WordPress_Connector::init();
 			ABJ_404_Solution_ViewUpdater::init();
 		} catch (\Throwable $e) {
-			// init() failed — fall through to register the degraded admin page
+			// init() failed. Fall through to register the degraded admin page
 			// so the user still has a menu item with error details instead of nothing.
 			$GLOBALS['abj404_boot_ok'] = false;
 			$GLOBALS['abj404_boot_error'] = 'Plugin initialization failed: ' . $e->getMessage();
@@ -797,7 +211,7 @@ if ($GLOBALS['abj404_boot_ok']) {
 		}
 	}
 
-	// REST API — deferred to rest_api_init so DataAccess/PluginLogic are only loaded on actual REST requests.
+	// REST API: deferred to rest_api_init so DataAccess/PluginLogic are only loaded on actual REST requests.
 	add_action('rest_api_init', function() {
 		$dao   = ABJ_404_Solution_DataAccess::getInstance();
 		$logic = ABJ_404_Solution_PluginLogic::getInstance();
@@ -820,361 +234,19 @@ if ($GLOBALS['abj404_boot_ok']) {
 	// boot path so an admin who lands here can still send a debug report.
 	// This is the most valuable placement for the button, because the user
 	// often cannot reach the normal plugin UI from this screen. Deferred
-	// to plugins_loaded so the function (defined below) is available
-	// regardless of source-order; PHP does not hoist function definitions
-	// out of conditional blocks.
+	// to plugins_loaded so the function (defined in DegradedSupportRequest.php)
+	// is available regardless of source-order.
 	if (function_exists('add_action')) {
 		add_action('plugins_loaded', 'abj404_degraded_register_support_request');
 	}
 }
 
-// --- Degraded-mode functions (always defined, no plugin class dependencies) ---
-
-if (!function_exists('abj404_degraded_register_support_request')) {
-	/**
-	 * Wire the support-request flow on the degraded boot path so an admin
-	 * stuck on the corrupt-install screen can still send a debug log. The
-	 * normal registration runs inside WordPress_Connector::registerAdminHooks()
-	 * which only executes on a successful boot; without this helper, the
-	 * AJAX handler that the modal POSTs to does not exist on the degraded
-	 * path and the click silently 400s.
-	 *
-	 * Strictly best-effort. Every step is guarded with file_exists() and
-	 * class_exists() so a corrupted install that is missing any of the
-	 * support-request files just falls back to the mailto link in the
-	 * degraded admin page. We must not throw a fatal here, because we
-	 * already ARE on the degraded path.
-	 *
-	 * @return void
-	 */
-	function abj404_degraded_register_support_request() {
-		$inc = ABJ404_PATH . 'includes/';
-		$supportFiles = array(
-			$inc . 'ajax/AjaxSecurityGate.php',
-			$inc . 'FeedbackTransport.php',
-			$inc . 'SupportRequestButton.php',
-			$inc . 'ajax/Ajax_SupportRequest.php',
-			$inc . 'ajax/Ajax_SupportRequestPreview.php',
-		);
-		foreach ($supportFiles as $file) {
-			if (!file_exists($file)) {
-				return;
-			}
-		}
-		try {
-			foreach ($supportFiles as $file) {
-				require_once $file;
-			}
-		// allow-silent-catch: degraded boot path. If any of the support-request files compile-fatals on require we want to fall through to the mailto fallback rather than crash the corrupt-install screen the user is here to read.
-		} catch (\Throwable $e) {
-			return;
-		}
-		if (!class_exists('ABJ_404_Solution_Ajax_SupportRequest')
-			|| !class_exists('ABJ_404_Solution_Ajax_SupportRequestPreview')) {
-			return;
-		}
-		// Register the AJAX handlers directly. The normal init() path goes
-		// through ABJ_404_Solution_WPUtils::safeAddAction() but that helper
-		// may itself be missing on a corrupt install; falling back to
-		// add_action() avoids that dependency.
-		$supportInstance = ABJ_404_Solution_Ajax_SupportRequest::getInstance();
-		$previewInstance = ABJ_404_Solution_Ajax_SupportRequestPreview::getInstance();
-		add_action('wp_ajax_abj404_support_request', array($supportInstance, 'handleRequest'));
-		add_action('wp_ajax_abj404_support_request_preview', array($previewInstance, 'handleRequest'));
-		// Enqueue the JS assets on the degraded admin page only. Using a
-		// closure keeps this self-contained without registering a new
-		// global function on the corrupted boot path.
-		add_action('admin_enqueue_scripts', function($hook) use ($inc) {
-			$ppSlug = defined('ABJ404_PP') ? ABJ404_PP : 'abj404_solution';
-			$isOurPage = is_string($hook) && (
-				strpos($hook, $ppSlug) !== false
-				|| strpos($hook, 'abj404_solution') !== false
-			);
-			if (!$isOurPage) {
-				return;
-			}
-			$clientJs = $inc . 'ajax/SupportRequest.js';
-			$buttonJs = $inc . 'js/support-request-button.js';
-			$transportJs = $inc . 'js/support-request-transport.js';
-			$modalViewJs = $inc . 'js/support-request-modal-view.js';
-			if (!file_exists($clientJs) || !file_exists($buttonJs)
-				|| !file_exists($transportJs) || !file_exists($modalViewJs)) {
-				return;
-			}
-			$baseUrl = plugin_dir_url(__FILE__) . 'includes/';
-			$ver = defined('ABJ404_VERSION') ? ABJ404_VERSION : (string)abj404_now();
-			wp_enqueue_script('abj404-support-request-client',
-				$baseUrl . 'ajax/SupportRequest.js', array(), $ver, true);
-			wp_enqueue_script('abj404-support-request-transport',
-				$baseUrl . 'js/support-request-transport.js',
-				array('abj404-support-request-client'), $ver, true);
-			wp_enqueue_script('abj404-support-request-modal-view',
-				$baseUrl . 'js/support-request-modal-view.js', array(), $ver, true);
-			wp_enqueue_script('abj404-support-request-button',
-				$baseUrl . 'js/support-request-button.js',
-				array('abj404-support-request-client', 'abj404-support-request-transport', 'abj404-support-request-modal-view'),
-				$ver, true);
-			$supportNonce = wp_create_nonce(ABJ_404_Solution_Ajax_SupportRequest::NONCE_ACTION);
-			$previewNonce = wp_create_nonce(ABJ_404_Solution_Ajax_SupportRequestPreview::NONCE_ACTION);
-			$ajaxUrl = admin_url('admin-ajax.php');
-			$payload = wp_json_encode(array(
-				'ajaxurl' => $ajaxUrl,
-				'nonces' => array(
-					'support_request' => $supportNonce,
-					'support_request_preview' => $previewNonce,
-				),
-			));
-			$bootstrap = 'window.ABJ404=window.ABJ404||{};Object.assign(window.ABJ404,'
-				. (is_string($payload) ? $payload : '{}') . ');';
-			wp_add_inline_script('abj404-support-request-client', $bootstrap, 'before');
-		});
-	}
-}
-
-if (!function_exists('abj404_degraded_admin_menu')) {
-	/** @return void */
-	function abj404_degraded_admin_menu() {
-		$options = abj404_get_settings_options();
-
-		$menuName = '404 Solution';
-		$badge = " <span class='update-plugins count-1'><span class='plugin-count'>!</span></span>";
-
-		if (isset($options['menuLocation']) && $options['menuLocation'] === 'settingsLevel') {
-			add_menu_page('404 Solution', $menuName . $badge, 'manage_options', 'abj404_solution', 'abj404_degraded_admin_page');
-		} else {
-			$ppSlug = defined('ABJ404_PP') ? ABJ404_PP : 'abj404_solution';
-			add_submenu_page('options-general.php', '404 Solution', $menuName . $badge, 'manage_options', $ppSlug, 'abj404_degraded_admin_page');
-		}
-	}
-}
-
-if (!function_exists('abj404_degraded_admin_notice')) {
-	/** @return void */
-	function abj404_degraded_admin_notice() {
-		if (!current_user_can('manage_options')) {
-			return;
-		}
-		echo '<div class="notice notice-error"><p><strong>404 Solution:</strong> ';
-		echo 'Plugin files are missing or corrupt. ';
-		$ppSlug = defined('ABJ404_PP') ? ABJ404_PP : 'abj404_solution';
-		echo '<a href="' . esc_url(admin_url('options-general.php?page=' . $ppSlug)) . '">View details</a>';
-		echo '</p></div>';
-	}
-}
-
-if (!function_exists('abj404_degraded_admin_page')) {
-	/** @return void */
-	function abj404_degraded_admin_page() {
-		if (!current_user_can('manage_options')) {
-			echo '<div class="wrap">';
-			echo '<h1>404 Solution</h1>';
-			echo '<div class="notice notice-error"><p>';
-			echo '<strong>Permission denied.</strong> ';
-			echo 'Your user account does not have permission to access this page.';
-			echo '</p><p>';
-			echo 'Please verify that your WordPress role has the <code>manage_options</code> capability.';
-			echo '</p></div></div>';
-			return;
-		}
-
-		$missingFiles = isset($GLOBALS['abj404_missing_files']) ? $GLOBALS['abj404_missing_files'] : array();
-		$bootError = isset($GLOBALS['abj404_boot_error']) ? $GLOBALS['abj404_boot_error'] : '';
-		$pluginDir = defined('ABJ404_PATH') ? ABJ404_PATH : dirname(__FILE__) . '/';
-
-		// Check for a stored fatal from a previous request.
-		$fatalInfo = function_exists('get_transient') ? get_transient('abj404_boot_fatal') : false;
-
-		echo '<div class="wrap">';
-		echo '<h1>404 Solution &mdash; Plugin Files Missing</h1>';
-
-		echo '<div class="notice notice-error inline"><p>';
-		echo '<strong>The 404 Solution plugin cannot start</strong> because one or more required files are missing or corrupt. ';
-		echo 'This usually happens after a failed plugin update or incomplete file upload.';
-		echo '</p></div>';
-
-		if (!empty($missingFiles)) {
-			echo '<div class="card" style="max-width:800px;">';
-			echo '<h2>Missing Files</h2>';
-			echo '<ul style="list-style:disc;padding-left:20px;">';
-			foreach ($missingFiles as $file) {
-				// Show relative path for readability.
-				$relative = str_replace($pluginDir, '', $file);
-				echo '<li><code>' . esc_html($relative) . '</code></li>';
-			}
-			echo '</ul>';
-			echo '</div>';
-		}
-
-		if ($bootError !== '') {
-			echo '<div class="card" style="max-width:800px;">';
-			echo '<h2>Error Details</h2>';
-			echo '<pre style="white-space:pre-wrap;word-break:break-all;">' . esc_html($bootError) . '</pre>';
-			echo '</div>';
-		}
-
-		if (is_array($fatalInfo) && !empty($fatalInfo['message'])) {
-			echo '<div class="card" style="max-width:800px;">';
-			echo '<h2>Fatal Error (previous request)</h2>';
-			$fatalFile = isset($fatalInfo['file']) ? str_replace($pluginDir, '', $fatalInfo['file']) : 'unknown';
-			$fatalLine = isset($fatalInfo['line']) ? $fatalInfo['line'] : '?';
-			echo '<pre style="white-space:pre-wrap;word-break:break-all;">' . esc_html($fatalInfo['message']) . "\n" . esc_html($fatalFile) . ':' . esc_html((string)$fatalLine) . '</pre>';
-			echo '</div>';
-		}
-
-		echo '<div class="card" style="max-width:800px;">';
-		echo '<h2>How to Fix</h2>';
-		echo '<ol>';
-		echo '<li>Go to <strong>Plugins &rarr; Installed Plugins</strong>, deactivate <strong>404 Solution</strong>, then delete it.</li>';
-		echo '<li>Reinstall from the WordPress plugin directory: ';
-		$installUrl = admin_url('plugin-install.php?s=404+solution&tab=search');
-		echo '<a href="' . esc_url($installUrl) . '" class="button button-primary">Search &ldquo;404 Solution&rdquo;</a>';
-		echo '</li>';
-		echo '<li>Activate the fresh copy. Your redirects and settings are stored in the database and will not be lost.</li>';
-		echo '</ol>';
-		echo '</div>';
-
-		// Support-request card. This is the most valuable placement for
-		// the "Send debug log to developer" button: an admin who reached
-		// this screen needs help and may not be able to navigate the
-		// normal plugin UI. When the SupportRequestButton class is
-		// present (most corruption is partial), render the mount div so
-		// the JS component can take over. Always emit a mailto fallback
-		// underneath in case the JS files are themselves among the
-		// missing files.
-		echo '<div class="card" style="max-width:800px;">';
-		echo '<h2>Need help? Contact the developer</h2>';
-		echo '<p>Send the developer a one-time diagnostic report including the missing-file list above. Your redirects and settings are not shared.</p>';
-		$missingCount = is_array($missingFiles) ? count($missingFiles) : 0;
-		$contextSummary = 'Corrupt install: ' . $missingCount . ' missing file(s)';
-		$bootErrorForSummary = is_scalar($bootError) ? (string)$bootError : '';
-		if ($bootErrorForSummary !== '') {
-			$contextSummary .= '. Boot error: ' . substr($bootErrorForSummary, 0, 200);
-		}
-		if (class_exists('ABJ_404_Solution_SupportRequestButton')) {
-			echo ABJ_404_Solution_SupportRequestButton::render('system_corrupt_install', $contextSummary);
-		}
-		$mailEmail = defined('ABJ404_AUTHOR_EMAIL') ? (string)ABJ404_AUTHOR_EMAIL : '404solution@ajexperience.com';
-		$mailSubject = rawurlencode('404 Solution: corrupt install report');
-		$homeUrlText = '(unknown)';
-		if (function_exists('home_url')) {
-			$homeUrlVal = home_url();
-			$homeUrlText = is_string($homeUrlVal) ? $homeUrlVal : '(unknown)';
-		}
-		$missingFileLines = '';
-		if (is_array($missingFiles)) {
-			$stringMissingFiles = array();
-			foreach ($missingFiles as $entry) {
-				$stringMissingFiles[] = is_scalar($entry) ? (string)$entry : '';
-			}
-			$missingFileLines = implode("\n", $stringMissingFiles);
-		}
-		$bootErrorText = is_scalar($bootError) ? (string)$bootError : '';
-		$mailBody = rawurlencode("Site URL: " . $homeUrlText . "\n"
-			. "Missing files (" . (int)$missingCount . "):\n"
-			. $missingFileLines
-			. "\n\nBoot error:\n" . $bootErrorText);
-		echo '<p style="margin-top:8px;">Or email manually: ';
-		echo '<a href="mailto:' . esc_attr($mailEmail) . '?subject=' . $mailSubject . '&body=' . $mailBody . '">';
-		echo esc_html($mailEmail) . '</a></p>';
-		echo '</div>';
-
-		echo '</div>'; // .wrap
-	}
-}
-
-if (!function_exists('abj404_admin_page_callback')) {
-	/**
-	 * Show one-time admin fatal diagnostics captured during shutdown.
-	 *
-	 * @return void
-	 */
-	function abj404_render_last_admin_fatal_notice() {
-		if (!abj404_current_user_is_plugin_admin()) {
-			return;
-		}
-
-		$fatalInfo = function_exists('get_transient') ? get_transient('abj404_admin_fatal') : false;
-		if ($fatalInfo === false && function_exists('get_option')) {
-			$fatalInfo = get_option('abj404_admin_fatal_fallback', false);
-		}
-		if (!is_array($fatalInfo) || empty($fatalInfo['message'])) {
-			return;
-		}
-
-		if (function_exists('delete_transient')) {
-			delete_transient('abj404_admin_fatal');
-		}
-		if (function_exists('delete_option')) {
-			delete_option('abj404_admin_fatal_fallback');
-		}
-
-		$pluginDir = defined('ABJ404_PATH') ? ABJ404_PATH : __DIR__ . '/';
-		$fatalFile = isset($fatalInfo['file']) ? str_replace($pluginDir, '', (string)$fatalInfo['file']) : '(unknown file)';
-		$fatalLine = isset($fatalInfo['line']) ? (int)$fatalInfo['line'] : 0;
-
-		echo '<div class="wrap">';
-		echo '<div class="notice notice-error">';
-		echo '<p><strong>404 Solution:</strong> A fatal error occurred while rendering the previous admin request.</p>';
-		echo '<details><summary>Show error details</summary>';
-		echo '<pre style="white-space:pre-wrap;word-break:break-all;max-width:100%;margin:6px 0;">' .
-			esc_html((string)$fatalInfo['message'] . "\n" . $fatalFile . ':' . (string)$fatalLine) .
-			'</pre>';
-		echo '</details>';
-		echo '</div>';
-		echo '</div>';
-	}
-
-	/**
-	 * Safe wrapper for the admin page callback. Falls back to the degraded
-	 * page if the View class was not loaded during boot.
-	 *
-	 * @return void
-	 */
-	function abj404_admin_page_callback() {
-		abj404_render_last_admin_fatal_notice();
-
-		// The false parameter avoids triggering the autoloader — if View was not
-		// loaded during boot, we don't want to attempt loading it again here.
-		if (class_exists('ABJ_404_Solution_View', false)) {
-			ob_start();
-			$renderError = null;
-			try {
-				ABJ_404_Solution_View::handleMainAdminPageActionAndDisplay();
-			} catch (\Throwable $e) {
-				$renderError = $e;
-				abj404_logRuntimeWarning('Admin page rendering failed', $e);
-			}
-			$output = ob_get_clean();
-
-			if ($renderError !== null) {
-				echo '<div class="wrap">';
-				echo '<div class="notice notice-error">';
-				echo '<p><strong>404 Solution:</strong> An error occurred while rendering this page.</p>';
-				echo '<details><summary>Show error details</summary>';
-				echo '<pre style="white-space:pre-wrap;word-break:break-all;max-width:100%;margin:6px 0;">' . esc_html($renderError->getMessage() . "\n" . $renderError->getTraceAsString()) . '</pre>';
-				echo '</details>';
-				echo '</div>';
-				echo '</div>';
-			} elseif ($output === '' || $output === false) {
-				// The View class was loaded and didn't throw, but produced zero output.
-				// Show a diagnostic instead of a blank page.
-				echo '<div class="wrap">';
-				echo '<h1>404 Solution</h1>';
-				echo '<div class="notice notice-error"><p>';
-				echo '<strong>This page produced no output.</strong> ';
-				echo 'This can happen when a required dependency failed to initialize or a template file is missing.';
-				echo '</p><p>';
-				echo 'Try deactivating and reactivating the plugin. If the problem persists, ';
-				echo 'delete the plugin and reinstall it from the WordPress plugin directory.';
-				echo '</p></div></div>';
-			} else {
-				echo $output;
-			}
-		} else {
-			abj404_degraded_admin_page();
-		}
-	}
-}
+// --- Degraded-mode and admin-page callbacks ---
+// abj404_degraded_register_support_request, abj404_degraded_admin_menu,
+// abj404_degraded_admin_notice, and abj404_degraded_admin_page are defined in
+// includes/root-boot/DegradedSupportRequest.php. abj404_admin_page_callback and
+// abj404_render_last_admin_fatal_notice are defined in
+// includes/root-boot/AdminPageCallback.php.
 
 // ----
 // get the plugin priority to use before adding the template_redirect action.
@@ -1190,6 +262,7 @@ $GLOBALS['abj404_frontend_runtime_flags'] = array(
 $__abj404_lang_override = isset($__abj404_options['plugin_language_override']) && is_string($__abj404_options['plugin_language_override']) ? $__abj404_options['plugin_language_override'] : '';
 $GLOBALS['abj404_plugin_language_override'] = $__abj404_lang_override;
 
+// abj404_404listener is defined in includes/root-boot/Frontend404Listener.php.
 add_action('template_redirect', 'abj404_404listener', $__abj404_template_redirect_priority);
 
 unset($__abj404_options);
@@ -1197,228 +270,12 @@ unset($__abj404_template_redirect_priority);
 abj404_benchmark_mark_bootstrap_done();
 // ---
 
-// 404
-if (!function_exists('abj404_404listener')) {
-/** @return void */
-function abj404_404listener() {
-	if (!$GLOBALS['abj404_boot_ok']) {
-		return;
-	}
-	$is404 = is_404();
-	if (!$is404) {
-        // Performance: do NOT load the whole plugin on every frontend request unless we must.
-    	if (!empty($GLOBALS['abj404_frontend_runtime_flags']['redirect_all_requests'])) {
-    		require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
-    		$connector = ABJ_404_Solution_WordPress_Connector::getInstance();
-    		$connector->processRedirectAllRequests();
-    		return;
-    	}
-
-		$updateSuggestEnabled = !empty($GLOBALS['abj404_frontend_runtime_flags']['update_suggest_url']);
-		$cookieName404 = ABJ404_PP . '_STATUS_404';
-		$has404StatusCookie = (isset($_COOKIE[$cookieName404]) && $_COOKIE[$cookieName404] == 'true');
-
-		// Fast path: if none of the non-404 features are active, bail immediately.
-		if (!$updateSuggestEnabled && !$has404StatusCookie) {
-			return;
-		}
-
-    	/** If we're currently redirecting to a custom 404 page and we are about to show page
-    	 * suggestions then update the URL displayed to the user. */
-    	$cookieName = ABJ404_PP . '_REQUEST_URI_UPDATE_URL';
-    	$queryParamName = ABJ404_PP . '_ref';
-
-    	$hasUpdateCookie = !empty($_COOKIE[$cookieName]);
-    	$hasUpdateParam = !empty($_GET[$queryParamName]);
-
-    	// Fast path: nothing pending from prior plugin-driven redirects.
-    	if (!$hasUpdateCookie && !$hasUpdateParam && !$has404StatusCookie) {
-    		return;
-    	}
-
-    	if ($has404StatusCookie) {
-   			// clear the cookie
-			setcookie($cookieName404, 'false', abj404_now() - 5, "/");
-    		// we're going to a custom 404 page so set the status to 404.
-	    	status_header(404);
-    	}
-
-    	if (!$updateSuggestEnabled) {
-    		return;
-    	}
-
-    	// Check cookie first, then query param fallback (for 301 redirects where cookies don't survive)
-    	$originalURL = null;
-    	if ($hasUpdateCookie) {
-    		$originalURL = $_COOKIE[$cookieName];
-    	} elseif ($hasUpdateParam) {
-    		$originalURL = urldecode($_GET[$queryParamName]);
-    	}
-
-    	if ($originalURL !== null) {
-			// clear the cookie - sanitize before writing to $_REQUEST
-            $sanitizedOriginal = sanitize_text_field($originalURL);
-			$_REQUEST[ABJ404_PP . '_REQUEST_URI'] = $sanitizedOriginal;
-            $_REQUEST[ABJ404_PP . '_REQUEST_URI_UPDATE_URL'] = $sanitizedOriginal;
-			setcookie($cookieName, '', abj404_now() - 5, "/");
-
-			require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
-			add_action('wp_head', 'ABJ_404_Solution_ShortCode::updateURLbarIfNecessary');
-    	}
-		return;
-    }
-
-	// ignore admin screens and login requests on 404 processing path.
-	// $_SERVER['SCRIPT_NAME'] is not guaranteed (CLI, some test runners, some proxies).
-	// Use a direct script-name check to avoid invoking wp_login_url() filters.
-	$scriptName = $_SERVER['SCRIPT_NAME'] ?? '';
-	$requestUri = $_SERVER['REQUEST_URI'] ?? '';
-	$isLoginScreen = (
-		($scriptName !== '' && stripos($scriptName, 'wp-login.php') !== false) ||
-		($requestUri !== '' && stripos($requestUri, 'wp-login.php') !== false)
-	);
-	if (is_admin() || $isLoginScreen) {
-		return;
-	}
-
-    require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
-    $connector = ABJ_404_Solution_WordPress_Connector::getInstance();
-    $connector->process404();
-}
-}
-
-if (!function_exists('abj404_is_redirect_all_requests_enabled')) {
-	/**
-	 * Small helper for testability and to keep option-parsing logic consistent.
-	 *
-	 * @param mixed $options Value returned by get_option('abj404_settings')
-	 * @return bool
-	 */
-	function abj404_is_redirect_all_requests_enabled($options) {
-		return is_array($options) &&
-			array_key_exists('redirect_all_requests', $options) &&
-			(string)$options['redirect_all_requests'] === '1';
-	}
-}
-
-if (!function_exists('abj404_dailyMaintenanceCronJobListener')) {
-/** @return void */
-function abj404_dailyMaintenanceCronJobListener() {
-    try {
-        require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
-        $retentionService = abj_service('redirects_retention_service');
-        $retentionService->deleteOldRedirectsCron();
-
-        $dbUpgrades = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
-        $dbUpgrades->runDatabaseMaintenanceTasks();
-    } catch (\Throwable $e) {
-        abj404_logRuntimeWarning('Cron maintenance failed', $e);
-    }
-}
-}
-
-if (!function_exists('abj404_updateLogsHitsTableListener')) {
-/** @return void */
-function abj404_updateLogsHitsTableListener() {
-    try {
-        require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
-        $logsRepo = abj_service('logs_repository');
-        $logsRepo->createRedirectsForViewHitsTable();
-    } catch (\Throwable $e) {
-        abj404_logRuntimeWarning('Cron logs/hits refresh failed', $e);
-    }
-}
-}
-if (!function_exists('abj404_logsv2CanonicalUrlBackfillListener')) {
-/** @return void */
-function abj404_logsv2CanonicalUrlBackfillListener() {
-    try {
-        require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
-        $dbUpgrades = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
-        $dbUpgrades->backfillLogsv2CanonicalUrl();
-    } catch (\Throwable $e) {
-        abj404_logRuntimeWarning('Cron log canonical URL backfill failed', $e);
-    }
-}
-}
-if (!function_exists('abj404_updatePermalinkCacheListener')) {
-/**
- * @param int $maxExecutionTime
- * @param int $executionCount
- * @return void
- */
-function abj404_updatePermalinkCacheListener($maxExecutionTime, $executionCount = 1) {
-    try {
-        require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
-        $permalinkCache = ABJ_404_Solution_PermalinkCache::getInstance();
-        $permalinkCache->updatePermalinkCache($maxExecutionTime, $executionCount);
-    } catch (\Throwable $e) {
-        abj404_logRuntimeWarning('Cron permalink cache update failed', $e);
-    }
-}
-}
-if (!function_exists('abj404_rebuildNGramCacheListener')) {
-/**
- * @param int $offset
- * @return void
- */
-function abj404_rebuildNGramCacheListener($offset = 0) {
-    try {
-        require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
-        $dbUpgrades = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
-        $dbUpgrades->rebuildNGramCacheAsync($offset);
-    } catch (\Throwable $e) {
-        abj404_logRuntimeWarning('Cron ngram cache rebuild failed', $e);
-    }
-}
-}
-if (!function_exists('abj404_networkActivationListener')) {
-/** @return void */
-function abj404_networkActivationListener() {
-    try {
-        require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
-        ABJ_404_Solution_PluginLogicLifecycle::networkActivationCronHandler();
-    } catch (\Throwable $e) {
-        abj404_logRuntimeWarning('Cron network activation failed', $e);
-    }
-}
-}
-if (!function_exists('abj404_networkActivationBackgroundListener')) {
-/** @return void */
-function abj404_networkActivationBackgroundListener() {
-    try {
-        require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
-        $upgradesEtc = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
-        $upgradesEtc->processMultisiteActivationBatch();
-    } catch (\Throwable $e) {
-        abj404_logRuntimeWarning('Cron multisite activation batch failed', $e);
-    }
-}
-}
-if (!function_exists('abj404_networkUpgradeBackgroundListener')) {
-/** @return void */
-function abj404_networkUpgradeBackgroundListener() {
-    try {
-        require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
-        $upgradesEtc = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
-        $upgradesEtc->processMultisiteUpgradeBatch();
-    } catch (\Throwable $e) {
-        abj404_logRuntimeWarning('Cron multisite upgrade batch failed', $e);
-    }
-}
-}
-if (!function_exists('abj404_rebuildViewDoneListener')) {
-/** @return void */
-function abj404_rebuildViewDoneListener() {
-    try {
-        require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
-        $viewBuild = abj_service('view_build_orchestrator');
-        $viewBuild->rebuildViewDoneInBackground();
-    } catch (\Throwable $e) {
-        abj404_logRuntimeWarning('Cron view table rebuild failed', $e);
-    }
-}
-}
+// Cron action registrations. The heavy-prologue cron listeners
+// (abj404_dailyMaintenanceCronJobListener, abj404_updateLogsHitsTableListener,
+// abj404_rebuildViewDoneListener, abj404_sendQueuedReportListener) and the
+// secondary cron listeners are all defined in includes/root-boot/CronListeners.php;
+// only their add_action wiring lives here so the entry-point self-heal audit and
+// the deactivate round-trip tests can discover the hook names in one place.
 add_action('abj404_cleanupCronAction', 'abj404_dailyMaintenanceCronJobListener');
 add_action('abj404_updateLogsHitsTableAction', 'abj404_updateLogsHitsTableListener');
 add_action('abj404_logsv2_canonical_backfill', 'abj404_logsv2CanonicalUrlBackfillListener');
@@ -1426,37 +283,6 @@ add_action('abj404_updatePermalinkCacheAction', 'abj404_updatePermalinkCacheList
 add_action('abj404_rebuildViewDone', 'abj404_rebuildViewDoneListener');
 add_action('abj404_send_digest', 'abj404_sendDigestCronListener');
 add_action('abj404_send_queued_report', 'abj404_sendQueuedReportListener', 10, 1);
-if (!function_exists('abj404_sendQueuedReportListener')) {
-/**
- * Cron handler for FeedbackTransport queued sends. Loads Loader.php so the
- * autoloader resolves ABJ_404_Solution_FeedbackTransport, then dispatches.
- *
- * @param string $uuid
- * @return void
- */
-function abj404_sendQueuedReportListener($uuid) {
-    try {
-        require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
-        ABJ_404_Solution_FeedbackTransport::handleQueuedSend(is_string($uuid) ? $uuid : '');
-    } catch (\Throwable $e) {
-        abj404_logRuntimeWarning('Cron feedback transport failed', $e);
-    }
-}
-}
-if (!function_exists('abj404_sendDigestCronListener')) {
-/** @return void */
-function abj404_sendDigestCronListener() {
-    try {
-        require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
-        $dao = ABJ_404_Solution_DataAccess::getInstance();
-        $logger = ABJ_404_Solution_Logging::getInstance();
-        $emailDigest = new ABJ_404_Solution_EmailDigest($dao, $logger);
-        $emailDigest->onCronSendDigest();
-    } catch (\Throwable $e) {
-        abj404_logRuntimeWarning('Cron email digest failed', $e);
-    }
-}
-}
 	add_action('abj404_rebuild_ngram_cache_hook', 'abj404_rebuildNGramCacheListener', 10, 1);
 	add_action('abj404_network_activation_hook', 'abj404_networkActivationListener');
 	add_action('abj404_network_activation_background', 'abj404_networkActivationBackgroundListener');
@@ -1464,433 +290,27 @@ function abj404_sendDigestCronListener() {
 	add_action('abj404_gsc_fetch_cron', 'abj404_gscFetchCronListener');
 	add_action('abj404_gsc_background_refresh', 'abj404_gscBackgroundRefreshListener');
 
-if (!function_exists('abj404_gscFetchCronListener')) {
-/** Nightly cron: fetch GSC data and cache it. @return void */
-function abj404_gscFetchCronListener(): void {
-    try {
-        require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
-        $gscLogger = ABJ_404_Solution_Logging::getInstance();
-        $gsc = new ABJ_404_Solution_GoogleSearchConsole($gscLogger);
-        $gsc->fetchAndCacheGscData();
-    } catch (\Throwable $e) {
-        abj404_logRuntimeWarning('Cron GSC fetch failed', $e);
-    }
-}
-}
-
-if (!function_exists('abj404_gscBackgroundRefreshListener')) {
-/** On-demand background refresh triggered when an admin views the Options tab with stale data. @return void */
-function abj404_gscBackgroundRefreshListener(): void {
-    try {
-        require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
-        $gscLogger = ABJ_404_Solution_Logging::getInstance();
-        $gsc = new ABJ_404_Solution_GoogleSearchConsole($gscLogger);
-        $gsc->fetchAndCacheGscData();
-    } catch (\Throwable $e) {
-        abj404_logRuntimeWarning('Cron GSC background refresh failed', $e);
-    }
-}
-}
-
-	/**
-	 * Override the locale for this plugin if user has configured a language override.
-	 * This allows users to use a different language for the 404 Solution plugin
- * than their WordPress site language or user language preference.
- *
- * @param string $locale The current locale.
- * @param string $domain The text domain.
- * @return string The locale to use for translation loading.
- */
-if (!function_exists('abj404_override_plugin_locale')) {
-/**
- * @param string $locale
- * @param string $domain
- * @return string
- */
-function abj404_override_plugin_locale($locale, $domain) {
-	// Only override for our plugin's text domain.
-	// Use the value cached in $GLOBALS at plugin boot to avoid a redundant get_option() call.
-	if ($domain === '404-solution') {
-		$override = isset($GLOBALS['abj404_plugin_language_override']) && is_string($GLOBALS['abj404_plugin_language_override']) ? $GLOBALS['abj404_plugin_language_override'] : '';
-		if ($override !== '') {
-			return $override;
-		}
-	}
-	return $locale;
-}
-}
+// abj404_override_plugin_locale is defined in
+// includes/root-boot/LocaleAndFrontendOptions.php (along with
+// abj404_is_redirect_all_requests_enabled).
 add_filter('plugin_locale', 'abj404_override_plugin_locale', 999, 2);
 
-if (!function_exists('abj404_show_runtime_integrity_notice')) {
-	/** @return void */
-	function abj404_show_runtime_integrity_notice() {
-		if (!is_admin() || !abj404_current_user_is_plugin_admin()) {
-			return;
-		}
-		$page = isset($_GET['page']) ? sanitize_text_field($_GET['page']) : '';
-		if ($page !== ABJ404_PP) {
-			return;
-		}
-		$missing = get_transient('abj404_runtime_missing_files');
-		if (!is_array($missing) || count($missing) === 0) {
-			return;
-		}
-		echo '<div class="notice notice-error"><p><strong>404 Solution:</strong> ';
-		echo esc_html(__('Some required plugin files are missing. Please reinstall the plugin package.', '404-solution'));
-		echo '</p><p><code>' . esc_html(implode(', ', array_map('basename', $missing))) . '</code></p></div>';
-	}
-}
+// abj404_show_runtime_integrity_notice, abj404_show_plugin_db_notice, and
+// abj404_show_view_build_cron_notices are defined in
+// includes/root-boot/AdminNotices.php.
 add_action('admin_notices', 'abj404_show_runtime_integrity_notice');
-
-if (!function_exists('abj404_show_plugin_db_notice')) {
-	/** @return void */
-	function abj404_show_plugin_db_notice() {
-		if (!is_admin() || !abj404_current_user_is_plugin_admin()) {
-			return;
-		}
-		$page = isset($_GET['page']) ? sanitize_text_field($_GET['page']) : '';
-		if ($page !== ABJ404_PP) {
-			return;
-		}
-		$notice = get_transient('abj404_plugin_db_notice');
-		if (!is_array($notice)) {
-			return;
-		}
-		$type = isset($notice['type']) ? $notice['type'] : '';
-		// Collation issues are developer-level; don't show them to the user.
-		if ($type === 'collation') {
-			return;
-		}
-		$noticeMessage = isset($notice['message']) && is_string($notice['message']) ? $notice['message'] : '';
-		if ($noticeMessage === '') {
-			return;
-		}
-		$guidance = isset($notice['guidance']) && is_string($notice['guidance']) ? $notice['guidance'] : '';
-		echo '<div class="notice notice-error"><p><strong>404 Solution:</strong> ' . esc_html($noticeMessage) . '</p>';
-		if ($guidance !== '') {
-			echo '<p>' . esc_html($guidance) . '</p>';
-		}
-		if (!empty($notice['error_string'])) {
-			echo '<details><summary>' . esc_html(__('Show database error details', '404-solution')) . '</summary>';
-			echo '<pre style="white-space:pre-wrap;word-break:break-all;max-width:100%;margin:6px 0;">' . esc_html($notice['error_string']) . '</pre></details>';
-		}
-		echo '</div>';
-	}
-}
 add_action('admin_notices', 'abj404_show_plugin_db_notice');
-
-if (!function_exists('abj404_show_view_build_cron_notices')) {
-	/**
-	 * Render the staged-view-build cron-stuck and schedule-failure notices.
-	 * Set by DataAccess::scheduleViewDoneRebuild() when WordPress cron has
-	 * stopped advancing (earliest overdue ready-job >= 24h old) or when
-	 * wp_schedule_single_event itself fails. 24h dedup transients.
-	 *
-	 * @return void
-	 */
-	function abj404_show_view_build_cron_notices() {
-		if (!is_admin() || !abj404_current_user_is_plugin_admin()) {
-			return;
-		}
-		$page = isset($_GET['page']) ? sanitize_text_field($_GET['page']) : '';
-		if ($page !== ABJ404_PP) {
-			return;
-		}
-		$keys = array(
-			'abj404_view_build_stuck_wp_cron_disabled',
-			'abj404_view_build_cron_schedule_failed',
-			'abj404_logs_hits_rollup_stale',
-		);
-		if (class_exists('ABJ_404_Solution_ServiceContainer')
-				&& ABJ_404_Solution_ServiceContainer::safeHas('rebuild_health')) {
-			$rebuildHealth = ABJ_404_Solution_ServiceContainer::safeGet('rebuild_health');
-			if ($rebuildHealth instanceof ABJ_404_Solution_RebuildHealthState) {
-				$payload = $rebuildHealth->getNoticePayload();
-				if (is_array($payload)) {
-					$count = isset($payload['failure_count']) ? (int)$payload['failure_count'] : 0;
-					$class = isset($payload['last_failure_class']) && is_string($payload['last_failure_class'])
-						? $payload['last_failure_class']
-						: 'unknown';
-					$nextAllowed = isset($payload['next_allowed_at']) ? (int)$payload['next_allowed_at'] : 0;
-					$seconds = max(0, $nextAllowed - abj404_now());
-					echo '<div class="notice notice-warning"><p><strong>404 Solution:</strong> '
-						. esc_html(sprintf(
-							__('View/hits rebuild paused after %d consecutive failures (class: %s). Next retry in about %d minutes.', '404-solution'),
-							$count,
-							$class,
-							(int)ceil($seconds / 60)
-						)) . '</p>';
-					if (!empty($payload['last_failure_msg']) && is_string($payload['last_failure_msg'])) {
-						echo '<details><summary>' . esc_html(__('Show details', '404-solution'))
-							. '</summary><pre style="white-space:pre-wrap;word-break:break-all;max-width:100%;margin:6px 0;">'
-							. esc_html($payload['last_failure_msg']) . '</pre></details>';
-					}
-					$retryUrl = admin_url('admin.php?page=' . ABJ404_PP . '&subpage=abj404_redirects&abj404_force_view_rebuild=1');
-					echo '<p><a class="button button-secondary" href="' . esc_url($retryUrl) . '">'
-						. esc_html(__('Retry Now', '404-solution')) . '</a></p>';
-					echo '</div>';
-				}
-			}
-		}
-		foreach ($keys as $key) {
-			$notice = get_transient($key);
-			if (!is_array($notice)) {
-				continue;
-			}
-			$noticeMessage = isset($notice['message']) && is_string($notice['message']) ? $notice['message'] : '';
-			if ($noticeMessage === '') {
-				continue;
-			}
-			echo '<div class="notice notice-warning"><p><strong>404 Solution:</strong> '
-				. esc_html($noticeMessage) . '</p>';
-			if (!empty($notice['error_string'])) {
-				$noticeErrorString = is_string($notice['error_string']) ? $notice['error_string'] : '';
-				echo '<details><summary>' . esc_html(__('Show details', '404-solution'))
-					. '</summary><pre style="white-space:pre-wrap;word-break:break-all;max-width:100%;margin:6px 0;">'
-					. esc_html($noticeErrorString) . '</pre></details>';
-			}
-			echo '</div>';
-		}
-	}
-}
 add_action('admin_notices', 'abj404_show_view_build_cron_notices');
 
-if (!function_exists('abj404_get_simulated_db_latency_ms')) {
-	/** @return bool */
-	function abj404_is_local_debug_host() {
-		$serverName = array_key_exists('SERVER_NAME', $_SERVER) ? $_SERVER['SERVER_NAME'] : (array_key_exists('HTTP_HOST', $_SERVER) ? $_SERVER['HTTP_HOST'] : '');
-		$serverName = strtolower(trim((string)$serverName));
-		if ($serverName === '') {
-			return false;
-		}
+// abj404_is_local_debug_host, abj404_get_simulated_db_latency_ms, and
+// abj404_show_diagnostic_latency_notice are defined in
+// includes/root-boot/LocalDebugDiagnostics.php.
 
-		$normalizedHost = $serverName;
-		if (strpos($normalizedHost, '[') === 0) {
-			$endBracket = strpos($normalizedHost, ']');
-			if ($endBracket !== false) {
-				$normalizedHost = substr($normalizedHost, 1, $endBracket - 1);
-			}
-		} else {
-			$colonCount = substr_count($normalizedHost, ':');
-			if ($colonCount === 1 && preg_match('/:\d+$/', $normalizedHost)) {
-				$normalizedHost = preg_replace('/:\d+$/', '', $normalizedHost);
-			}
-		}
-
-		$normalizedHost = rtrim((string)$normalizedHost, '.');
-		return in_array($normalizedHost, array('127.0.0.1', '::1', 'localhost'), true);
-	}
-
-	/** @return int */
-	function abj404_get_simulated_db_latency_ms() {
-		if (!abj404_is_local_debug_host()) {
-			return 0;
-		}
-		if (defined('ABJ404_SIMULATED_DB_LATENCY_MS')) {
-			return max(0, min(5000, absint(ABJ404_SIMULATED_DB_LATENCY_MS)));
-		}
-		$value = get_option('abj404_simulated_db_latency_ms', 0);
-		return max(0, min(5000, absint(is_scalar($value) ? $value : 0)));
-	}
-}
-
-if (!function_exists('abj404_show_diagnostic_latency_notice')) {
-	/** @return void */
-	function abj404_show_diagnostic_latency_notice() {
-		// Intentionally no-op. Simulated latency status is shown in the plugin's
-		// Tools > Diagnostics card to avoid intrusive floating/global notices.
-		return;
-	}
-}
-
-if (!function_exists('abj404_load_textdomain_if_needed')) {
-	/**
-	 * Load plugin translations once, lazily.
-	 *
-	 * @return void
-	 */
-	function abj404_load_textdomain_if_needed() {
-		static $loaded = false;
-		if ($loaded) {
-			return;
-		}
-
-		$override_locale = '';
-		if (!empty($GLOBALS['abj404_plugin_language_override'])) {
-			$override_locale = (string)$GLOBALS['abj404_plugin_language_override'];
-		} else {
-			$options = abj404_get_settings_options();
-			$override_locale = (is_array($options) && !empty($options['plugin_language_override']))
-				? $options['plugin_language_override'] : '';
-		}
-
-		if (!empty($override_locale)) {
-			$mo_file = ABJ404_PATH . 'languages/404-solution-' . $override_locale . '.mo';
-			if (file_exists($mo_file)) {
-				load_textdomain('404-solution', $mo_file);
-			}
-		} else {
-			$lang_dir = dirname(plugin_basename(ABJ404_FILE)) . '/languages';
-			load_plugin_textdomain('404-solution', false, $lang_dir);
-		}
-
-		$loaded = true;
-	}
-}
-
-if (!function_exists('abj404_maybe_refresh_runtime_integrity_cache')) {
-	/**
-	 * Refresh runtime integrity cache at most once per TTL window.
-	 *
-	 * @param int $ttlSeconds
-	 * @return void
-	 */
-	function abj404_maybe_refresh_runtime_integrity_cache($ttlSeconds = 43200) {
-		if (!is_admin()) {
-			return;
-		}
-
-		$checkedRecently = get_transient('abj404_runtime_integrity_checked');
-		if ($checkedRecently) {
-			return;
-		}
-
-		$missingRuntimeFiles = abj404_verify_runtime_integrity();
-		if (count($missingRuntimeFiles) > 0) {
-			set_transient('abj404_runtime_missing_files', $missingRuntimeFiles, $ttlSeconds);
-		} else {
-			delete_transient('abj404_runtime_missing_files');
-		}
-
-		set_transient('abj404_runtime_integrity_checked', 1, $ttlSeconds);
-	}
-}
-
-/** This only runs after WordPress is done enqueuing scripts. */
-if (!function_exists('abj404_loadSomethingWhenWordPressIsReady')) {
-/** @return void */
-function abj404_loadSomethingWhenWordPressIsReady() {
-	// If boot failed (missing files), skip all init that depends on plugin classes.
-	if (!$GLOBALS['abj404_boot_ok']) {
-		return;
-	}
-
-	$isAdminRequest = is_admin();
-	if ($isAdminRequest) {
-		abj404_load_textdomain_if_needed();
-	}
-
-	// make debugging easier on localhost etc
-	if ($isAdminRequest) {
-		$serverName = array_key_exists('SERVER_NAME', $_SERVER) ? $_SERVER['SERVER_NAME'] : (array_key_exists('HTTP_HOST', $_SERVER) ? $_SERVER['HTTP_HOST'] : '(not found)');
-		$serverNameIsInTheWhiteList = in_array($serverName, $GLOBALS['abj404_whitelist']);
-
-		// Keep localhost debug helper on admin screens only; frontend requests stay lean.
-		if ($serverNameIsInTheWhiteList && function_exists('wp_get_current_user')) {
-	    require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
-		if (abj_service('admin_access_policy')->isPluginAdmin()) {
-			$GLOBALS['abj404_display_errors'] = true;
-		}
-	}
-	}
-
-	$action = null;
-	if ($isAdminRequest) {
-		$actionGet = isset($_GET['action']) && is_string($_GET['action']) ? $_GET['action'] : '';
-		$actionPost = isset($_POST['action']) && is_string($_POST['action']) ? $_POST['action'] : '';
-		if ($actionGet !== '') {
-			$action = sanitize_text_field($actionGet);
-		} else if ($actionPost !== '') {
-			$action = sanitize_text_field($actionPost);
-		} else {
-			$action = null;
-		}
-	}
-	if ($isAdminRequest && abj404_is_local_debug_host() && abj404_current_user_is_plugin_admin() && isset($_GET['abj404_set_sim_db_ms'])) {
-		$nonceOk = isset($_GET['_wpnonce']) ? wp_verify_nonce($_GET['_wpnonce'], 'abj404_set_sim_db_ms') : false;
-		if ($nonceOk) {
-			$newMs = max(0, min(5000, absint($_GET['abj404_set_sim_db_ms'])));
-			update_option('abj404_simulated_db_latency_ms', $newMs, false);
-		}
-	}
-
-	$ttl = defined('HOUR_IN_SECONDS') ? (12 * HOUR_IN_SECONDS) : 43200;
-	abj404_maybe_refresh_runtime_integrity_cache($ttl);
-
-	if ($isAdminRequest && $action === 'exportRedirects') {
-	    require_once(plugin_dir_path( __FILE__ ) . "includes/Loader.php");
-		$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
-			$abj404logic->adminActions()->handleActionExport();
-	}
-}
-}
+// abj404_load_textdomain_if_needed, abj404_maybe_refresh_runtime_integrity_cache,
+// abj404_loadSomethingWhenWordPressIsReady, and abj404_maybePageLoadFallbackAdvance
+// are defined in includes/root-boot/AdminInitHandlers.php.
 add_action('admin_init', 'abj404_loadSomethingWhenWordPressIsReady');
 
-if (!function_exists('abj404_maybePageLoadFallbackAdvance')) {
-/**
- * Admin-only, plugin-page-only synchronous fallback that advances the
- * staged view-build by one tick (about 2s) when WP-Cron is broken.
- *
- * Pairs with the cron-stuck admin notice (c374): the notice tells the
- * admin their cron is broken; this fallback unblocks the page in the
- * meantime so they can fix cron without staring at the loading
- * indicator forever. The actual gate logic and budget compression live
- * in ABJ_404_Solution_ViewBuildOrchestrator::runPageLoadFallbackAdvance()
- * so they can be unit-tested directly; this wrapper is the admin_init
- * hook that wires the view-build service into the request lifecycle.
- *
- * Guards (in order, all required):
- *  - boot succeeded (plugin class loadable);
- *  - is_admin() (frontend / REST / heartbeat requests are not in scope);
- *  - not AJAX or cron (those have their own advance paths);
- *  - request is for the plugin admin page (abj404_solution); other
- *    wp-admin pages are unrelated and should not be taxed with build
- *    work on every navigation;
- *  - current user has the plugin admin capability (manage_options) so
- *    an unauthenticated request cannot trigger build work;
- *  - the view-build service exposes runPageLoadFallbackAdvance (defense
- *    for older in-place upgrades whose service graph predates this method).
- *
- * The view-build method itself owns the cron-stuck check, the transient
- * gate, the per-stage budget compression, and the build-lock semantics.
- *
- * @return void
- */
-function abj404_maybePageLoadFallbackAdvance() {
-    if (!$GLOBALS['abj404_boot_ok']) {
-        return;
-    }
-    if (!is_admin()) {
-        return;
-    }
-    if (function_exists('wp_doing_ajax') && wp_doing_ajax()) {
-        return;
-    }
-    if (function_exists('wp_doing_cron') && wp_doing_cron()) {
-        return;
-    }
-    $currentPage = isset($_GET['page']) && is_string($_GET['page'])
-        ? sanitize_text_field((string)$_GET['page']) : '';
-    if ($currentPage !== 'abj404_solution') {
-        return;
-    }
-    if (!abj404_current_user_is_plugin_admin()) {
-        return;
-    }
-    try {
-        require_once(plugin_dir_path(__FILE__) . "includes/Loader.php");
-        $viewBuildOrchestrator = abj_service('view_build_orchestrator');
-        if (is_object($viewBuildOrchestrator) && method_exists($viewBuildOrchestrator, 'runPageLoadFallbackAdvance')) {
-            $viewBuildOrchestrator->runPageLoadFallbackAdvance();
-        }
-    } catch (\Throwable $e) {
-        // Page-load fallback is best-effort. A failure here must not
-        // break admin page rendering. Log at warning level so the failure
-        // is observable without triggering the plugin's dev-email-report path.
-        abj404_logRuntimeWarning('Page-load fallback advance failed', $e);
-    }
-}
-}
 // Priority 20 runs after abj404_loadSomethingWhenWordPressIsReady (default
 // priority 10), so the textdomain is loaded and any pending exportRedirects
 // has run before we burn ~2s of stage budget. Inverting that order would
