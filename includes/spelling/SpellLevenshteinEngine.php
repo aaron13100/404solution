@@ -67,23 +67,17 @@ class ABJ_404_Solution_SpellLevenshteinEngine {
 	private ?ABJ_404_Solution_PublishedPostsProvider $publishedPostsProvider = null;
 
 	/**
-	 * @param ABJ_404_Solution_Functions $functions
-	 * @param ABJ_404_Solution_PluginLogic $logic
-	 * @param ABJ_404_Solution_Logging $logger
-	 * @param ABJ_404_Solution_ContentRepository $contentRepository
-	 * @param ABJ_404_Solution_NGramFilter $ngramFilter
-	 * @param ABJ_404_Solution_SpellURLMatcher $urlMatcher
-	 * @param array<int, string> $separatingCharacters
+	 * @param ABJ_404_Solution_SpellLevenshteinEngineDependencies $deps
 	 */
-	public function __construct($functions, $logic, $logger, $contentRepository, $ngramFilter, $urlMatcher, array $separatingCharacters) {
-		$this->f = $functions;
-		$this->logic = $logic;
-		$this->logger = $logger;
-		$this->contentRepository = $contentRepository;
-		$this->urlMatcher = $urlMatcher;
-		$this->separatingCharacters = $separatingCharacters;
-		$this->ngramPrefilter = new ABJ_404_Solution_SpellNGramPrefilter($ngramFilter, $logger);
-		$this->permalinkLookup = new ABJ_404_Solution_SpellCandidatePermalinkLookup($contentRepository, $urlMatcher);
+	public function __construct(ABJ_404_Solution_SpellLevenshteinEngineDependencies $deps) {
+		$this->f = $deps->functions;
+		$this->logic = $deps->logic;
+		$this->logger = $deps->logger;
+		$this->contentRepository = $deps->contentRepository;
+		$this->urlMatcher = $deps->urlMatcher;
+		$this->separatingCharacters = $deps->separatingCharacters;
+		$this->ngramPrefilter = new ABJ_404_Solution_SpellNGramPrefilter($deps->ngramFilter, $deps->logger);
+		$this->permalinkLookup = new ABJ_404_Solution_SpellCandidatePermalinkLookup($deps->contentRepository, $deps->urlMatcher);
 	}
 
 	/** @param ABJ_404_Solution_PublishedPostsProvider|null $provider */

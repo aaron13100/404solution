@@ -109,8 +109,10 @@ class ABJ_404_Solution_SpellChecker {
 		);
 
 		$this->levenshteinEngine = new ABJ_404_Solution_SpellLevenshteinEngine(
-			$this->f, $this->logic, $this->logger, $this->contentRepository,
-			$ngramFilterResolved, $this->urlMatcher, $this->separatingCharacters
+			new ABJ_404_Solution_SpellLevenshteinEngineDependencies(
+				$this->f, $this->logic, $this->logger, $this->contentRepository,
+				$ngramFilterResolved, $this->urlMatcher, $this->separatingCharacters
+			)
 		);
 
 		$this->candidateFilter = new ABJ_404_Solution_SpellCandidateFilter(
