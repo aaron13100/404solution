@@ -58,7 +58,7 @@ require_once __DIR__ . '/View_Logs.php';
  * @method mixed echoConditionsJavaScript()
  * @method mixed echoConfidenceDistributionSection()
  * @method string buildSubsubsubFilters(string $sub, array<int, array{0: int|string, 1: string}> $items, array<string, mixed> $tableOptions)
- * @method mixed echoEditRedirect($destination, $codeselected, $label, $source_page = null, $filter = null, $orderby = null, $order = null, $startDate = '', $endDate = '')
+ * @method mixed echoEditRedirect(ABJ_404_Solution_EditRedirectFormContext $ctx)
  * @method mixed echoExpandCollapseButton($showSuggestions = true)
  * @method mixed echoFileContents($fileName)
  * @method mixed echoInlineModeToggle()

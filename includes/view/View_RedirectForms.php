@@ -100,18 +100,18 @@ class ABJ_404_Solution_View_RedirectForms extends ABJ_404_Solution_ViewComponent
     }
 
     /** This is used both to add and to edit a redirect.
-     * @param string $destination
-     * @param string $codeselected
-     * @param string $label
-     * @param string|null $source_page
-     * @param string|null $filter
-     * @param string|null $orderby
-     * @param string|null $order
-     * @param string $startDate
-     * @param string $endDate
+     * @param ABJ_404_Solution_EditRedirectFormContext $ctx
      * @return void
      */
-    public function echoEditRedirect($destination, $codeselected, $label, $source_page = null, $filter = null, $orderby = null, $order = null, $startDate = '', $endDate = '') {
+    public function echoEditRedirect(ABJ_404_Solution_EditRedirectFormContext $ctx) {
+        $codeselected = $ctx->codeSelected;
+        $label = $ctx->label;
+        $source_page = $ctx->sourcePage;
+        $filter = $ctx->filter;
+        $orderby = $ctx->orderby;
+        $order = $ctx->order;
+        $startDate = $ctx->startDate;
+        $endDate = $ctx->endDate;
         // allow-em-dash: comment-only context describing button grid section
         // Redirect type button grid with hidden input
         $this->redirectTypeUI->echoRedirectTypeButtonGrid((string)$codeselected);
