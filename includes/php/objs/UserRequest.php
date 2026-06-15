@@ -154,26 +154,22 @@ class ABJ_404_Solution_UserRequest {
         
         /** @var array<string, int|string> $urlPartsSafe */
         $urlPartsSafe = $urlParts;
-        self::$instance = new ABJ_404_Solution_UserRequest($urlToParse, $urlPartsSafe, $urlWithoutCommentPage,
-                $commentPagePart, $queryString);
-            
+        self::$instance = new ABJ_404_Solution_UserRequest(new ABJ_404_Solution_UserRequestParts(
+                $urlToParse, $urlPartsSafe, $urlWithoutCommentPage, $commentPagePart, $queryString));
+
         return true;
     }
     
     /**
-     * @param string $requestURI
-     * @param array<string, int|string> $urlParts
-     * @param string $urlWithoutCommentPage
-     * @param string $commentPagePart
-     * @param string $queryString
+     * @param ABJ_404_Solution_UserRequestParts $parts
      */
-    private function __construct(string $requestURI, array $urlParts, string $urlWithoutCommentPage, string $commentPagePart, string $queryString) {
-        $this->requestURI = $requestURI;
-        $this->urlParts = $urlParts;
-        $this->requestURIWithoutCommentsPage = $urlWithoutCommentPage;
-        $this->commentPagePart = $commentPagePart;
-        
-        $this->queryString = $queryString;
+    private function __construct(ABJ_404_Solution_UserRequestParts $parts) {
+        $this->requestURI = $parts->requestURI;
+        $this->urlParts = $parts->urlParts;
+        $this->requestURIWithoutCommentsPage = $parts->urlWithoutCommentPage;
+        $this->commentPagePart = $parts->commentPagePart;
+
+        $this->queryString = $parts->queryString;
     }
  
     /** @return string|null */

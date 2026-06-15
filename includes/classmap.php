@@ -421,6 +421,7 @@ return array(
     'ABJ_404_Solution_Ajax_UninstallPrefs' => $base . 'includes/ajax/Ajax_UninstallPrefs.php',
     'ABJ_404_Solution_Uninstaller' => $base . 'includes/uninstall/Uninstaller.php',
     'ABJ_404_Solution_UserRequest' => $base . 'includes/php/objs/UserRequest.php',
+    'ABJ_404_Solution_UserRequestParts' => $base . 'includes/php/objs/UserRequestParts.php',
     'ABJ_404_Solution_View' => $base . 'includes/view/View.php',
     'ABJ_404_Solution_ViewBuildPendingException' => $base . 'includes/view-build/ViewBuildPendingException.php',
     'ABJ_404_Solution_ViewBuildPendingResponseBuilder' => $base . 'includes/ajax/ViewBuildPendingResponseBuilder.php',
