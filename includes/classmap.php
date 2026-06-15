@@ -379,6 +379,7 @@ return array(
     'ABJ_404_Solution_NGramCacheRepository' => $base . 'includes/ngram/NGramCacheRepository.php',
     'ABJ_404_Solution_NGramCoveragePolicy' => $base . 'includes/ngram/NGramCoveragePolicy.php',
     'ABJ_404_Solution_NGramRebuilder' => $base . 'includes/ngram/NGramRebuilder.php',
+    'ABJ_404_Solution_NGramRebuilderDependencies' => $base . 'includes/ngram/NGramRebuilderDependencies.php',
     'ABJ_404_Solution_NGramUsageTelemetry' => $base . 'includes/ngram/NGramUsageTelemetry.php',
     'ABJ_404_Solution_PermalinkCache' => $base . 'includes/repositories/PermalinkCache.php',
     'ABJ_404_Solution_PiiRedactor' => $base . 'includes/feedback/PiiRedactor.php',

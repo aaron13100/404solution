@@ -483,12 +483,14 @@ class ABJ_404_Solution_NGramFilter {
         // build a transient rebuilder from already-resolved collaborators so
         // the facade still works without container plumbing.
         return new ABJ_404_Solution_NGramRebuilder(
-            null,
-            $this->logger,
-            $this->f,
-            $this->extractor,
-            $this->repo,
-            $this->coveragePolicy
+            new ABJ_404_Solution_NGramRebuilderDependencies(
+                null,
+                $this->logger,
+                $this->f,
+                $this->extractor,
+                $this->repo,
+                $this->coveragePolicy
+            )
         );
     }
 }

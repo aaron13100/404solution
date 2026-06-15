@@ -381,12 +381,14 @@ class ABJ_404_Solution_DatabaseUpgradeNGram extends ABJ_404_Solution_DatabaseUpg
             return $legacy;
         }
         return new ABJ_404_Solution_NGramRebuilder(
-            $this->typedDbCoreOrNull(),
-            $this->logger,
-            $this->f,
-            $this->resolveConcreteNGramExtractor(),
-            $this->resolveConcreteNGramCacheRepository(),
-            $this->resolveConcreteNGramCoveragePolicy()
+            new ABJ_404_Solution_NGramRebuilderDependencies(
+                $this->typedDbCoreOrNull(),
+                $this->logger,
+                $this->f,
+                $this->resolveConcreteNGramExtractor(),
+                $this->resolveConcreteNGramCacheRepository(),
+                $this->resolveConcreteNGramCoveragePolicy()
+            )
         );
     }
 

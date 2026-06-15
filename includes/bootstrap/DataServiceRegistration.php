@@ -141,12 +141,14 @@ class ABJ_404_Solution_DataServiceRegistration {
 
         $container->set('ngram_rebuilder', function($c) {
             return new ABJ_404_Solution_NGramRebuilder(
-                $c->get('db_core'),
-                $c->get('logging'),
-                $c->get('functions'),
-                $c->get('ngram_extractor'),
-                $c->get('ngram_cache_repository'),
-                $c->get('ngram_coverage_policy')
+                new ABJ_404_Solution_NGramRebuilderDependencies(
+                    $c->get('db_core'),
+                    $c->get('logging'),
+                    $c->get('functions'),
+                    $c->get('ngram_extractor'),
+                    $c->get('ngram_cache_repository'),
+                    $c->get('ngram_coverage_policy')
+                )
             );
         });
 

@@ -35,20 +35,16 @@ class ABJ_404_Solution_NGramRebuilder {
     private $coveragePolicy;
 
     /**
-     * @param ABJ_404_Solution_DatabaseCore|null $dbCore
-     * @param ABJ_404_Solution_Logging|null $logging
-     * @param ABJ_404_Solution_Functions|null $functions
-     * @param ABJ_404_Solution_NGramExtractor|null $extractor
-     * @param ABJ_404_Solution_NGramCacheRepository|null $repo
-     * @param ABJ_404_Solution_NGramCoveragePolicy|null $coveragePolicy
+     * @param ABJ_404_Solution_NGramRebuilderDependencies|null $deps
      */
-    public function __construct($dbCore = null, $logging = null, $functions = null, $extractor = null, $repo = null, $coveragePolicy = null) {
-        $this->dbCore = $dbCore !== null ? $dbCore : abj_service('db_core');
-        $loggingResolved = $logging !== null ? $logging : abj_service('logging');
-        $functionsResolved = $functions !== null ? $functions : abj_service('functions');
-        $extractorResolved = $extractor !== null ? $extractor : abj_service('ngram_extractor');
-        $repoResolved = $repo !== null ? $repo : abj_service('ngram_cache_repository');
-        $coverageResolved = $coveragePolicy !== null ? $coveragePolicy : abj_service('ngram_coverage_policy');
+    public function __construct(?ABJ_404_Solution_NGramRebuilderDependencies $deps = null) {
+        $deps = $deps ?? new ABJ_404_Solution_NGramRebuilderDependencies();
+        $this->dbCore = $deps->dbCore !== null ? $deps->dbCore : abj_service('db_core');
+        $loggingResolved = $deps->logging !== null ? $deps->logging : abj_service('logging');
+        $functionsResolved = $deps->functions !== null ? $deps->functions : abj_service('functions');
+        $extractorResolved = $deps->extractor !== null ? $deps->extractor : abj_service('ngram_extractor');
+        $repoResolved = $deps->repo !== null ? $deps->repo : abj_service('ngram_cache_repository');
+        $coverageResolved = $deps->coveragePolicy !== null ? $deps->coveragePolicy : abj_service('ngram_coverage_policy');
         if (!$loggingResolved instanceof ABJ_404_Solution_Logging
             || !$functionsResolved instanceof ABJ_404_Solution_Functions
             || !$extractorResolved instanceof ABJ_404_Solution_NGramExtractor
