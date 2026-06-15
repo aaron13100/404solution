@@ -182,8 +182,8 @@ class ABJ_404_Solution_LogsRepository implements ABJ_404_Solution_LogsRepository
     // =========================================================================
 
     /** @inheritDoc */
-    function logRedirectHit(string $requested_url, string $action, string $matchReason, ?string $requestedURLDetail = null, ?array $pipelineTrace = null): void {
-        $this->writer->logRedirectHit($requested_url, $action, $matchReason, $requestedURLDetail, $pipelineTrace);
+    function logRedirectHit(ABJ_404_Solution_RedirectHitLogEntry $entry): void {
+        $this->writer->logRedirectHit($entry);
     }
 
     /** @inheritDoc */

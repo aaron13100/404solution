@@ -280,6 +280,7 @@ return array(
     'ABJ_404_Solution_LogsHitsDataPopulator' => $base . 'includes/logs/LogsHitsDataPopulator.php',
     'ABJ_404_Solution_LogsWriteRecoveryPolicy' => $base . 'includes/logs/LogsWriteRecoveryPolicy.php',
     'ABJ_404_Solution_LogsWriter' => $base . 'includes/logs/LogsWriter.php',
+    'ABJ_404_Solution_RedirectHitLogEntry' => $base . 'includes/logs/RedirectHitLogEntry.php',
     'ABJ_404_Solution_LogsRepositoryInterface' => $base . 'includes/logs/LogsRepositoryInterface.php',
     'ABJ_404_Solution_LogsRepository' => $base . 'includes/logs/LogsRepository.php',
     'ABJ_404_Solution_PluginLogicVersionUpgrader' => $base . 'includes/core/PluginLogicVersionUpgrader.php',

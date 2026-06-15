@@ -30,6 +30,6 @@ class ABJ_404_Solution_FrontendHitRecorder {
         if (!is_object($this->logsRepository) || !is_callable(array($this->logsRepository, 'logRedirectHit'))) {
             return;
         }
-        call_user_func(array($this->logsRepository, 'logRedirectHit'), $requestedUrl, $action, $matchReason, $requestedUrlDetail, $pipelineTrace);
+        call_user_func(array($this->logsRepository, 'logRedirectHit'), ABJ_404_Solution_RedirectHitLogEntry::create($requestedUrl, $action, $matchReason, $requestedUrlDetail, $pipelineTrace));
     }
 }

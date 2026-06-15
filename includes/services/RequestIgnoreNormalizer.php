@@ -106,7 +106,7 @@ class ABJ_404_Solution_RequestIgnoreNormalizer {
                         (string)$pageid, $defaultRedirect, 0, 'page ID'
                     ));
                 }
-                $this->logsRepo->logRedirectHit($fromURL, $permalink, 'page ID');
+                $this->logsRepo->logRedirectHit(ABJ_404_Solution_RedirectHitLogEntry::create($fromURL, $permalink, 'page ID'));
                 $this->notFoundResponse->forceRedirect($permalink, (int)$defaultRedirect);
                 exit;
             }

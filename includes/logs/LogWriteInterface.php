@@ -12,14 +12,10 @@ if (!defined('ABSPATH')) {
 interface ABJ_404_Solution_LogWriteInterface {
 
     /**
-     * @param string $requested_url
-     * @param string $action
-     * @param string $matchReason
-     * @param string|null $requestedURLDetail
-     * @param list<array{step: string, outcome: string, detail: string}>|null $pipelineTrace
+     * @param ABJ_404_Solution_RedirectHitLogEntry $entry
      * @return void
      */
-    public function logRedirectHit(string $requested_url, string $action, string $matchReason, ?string $requestedURLDetail = null, ?array $pipelineTrace = null): void;
+    public function logRedirectHit(ABJ_404_Solution_RedirectHitLogEntry $entry): void;
 
     /**
      * @param array<string, mixed> $entry

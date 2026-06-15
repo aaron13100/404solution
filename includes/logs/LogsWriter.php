@@ -83,7 +83,12 @@ class ABJ_404_Solution_LogsWriter {
     /**
      * Capture a redirect or 404 event and enqueue it for write at shutdown.
      */
-    public function logRedirectHit(string $requested_url, string $action, string $matchReason, ?string $requestedURLDetail = null, ?array $pipelineTrace = null): void {
+    public function logRedirectHit(ABJ_404_Solution_RedirectHitLogEntry $entry): void {
+        $requested_url = $entry->requestedUrl;
+        $action = $entry->action;
+        $matchReason = $entry->matchReason;
+        $requestedURLDetail = $entry->requestedUrlDetail;
+        $pipelineTrace = $entry->pipelineTrace;
         global $wpdb;
         $abj404logic = abj_service('plugin_logic');
         $logTableName = $this->dbCore->doTableNameReplacements("{wp_abj404_logsv2}");

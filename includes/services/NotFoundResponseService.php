@@ -85,7 +85,7 @@ class ABJ_404_Solution_NotFoundResponseService {
                     ));
                 }
 
-                $this->logsRepo->logRedirectHit($requestedURL, $pLink, 'user specified 404 page. ' . $reason);
+                $this->logsRepo->logRedirectHit(ABJ_404_Solution_RedirectHitLogEntry::create($requestedURL, $pLink, 'user specified 404 page. ' . $reason));
 
                 setcookie(ABJ404_PP . '_STATUS_404', 'true', abj_clock()->now() + 20, "/");
 
