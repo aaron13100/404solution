@@ -65,26 +65,22 @@ class ABJ_404_Solution_SpellChecker {
 	private $postListeners;
 
 	/**
-	 * @param ABJ_404_Solution_Functions|null $functions
-	 * @param ABJ_404_Solution_PluginLogic|null $pluginLogic
-	 * @param ABJ_404_Solution_ContentRepository|null $contentRepository
-	 * @param ABJ_404_Solution_Logging|null $logging
-	 * @param ABJ_404_Solution_PermalinkCache|null $permalinkCache
-	 * @param ABJ_404_Solution_NGramFilter|null $ngramFilter
-	 * @param ABJ_404_Solution_ViewReadService|null $viewReadService
+	 * @param ABJ_404_Solution_SpellCheckerDependencies|null $deps
 	 */
-	public function __construct($functions = null, $pluginLogic = null, $contentRepository = null, $logging = null, $permalinkCache = null, $ngramFilter = null, $viewReadService = null) {
-		$this->f = $functions !== null ? $functions : abj_service('functions');
-		$this->logic = $pluginLogic !== null ? $pluginLogic : abj_service('plugin_logic');
+	public function __construct(?ABJ_404_Solution_SpellCheckerDependencies $deps = null) {
+		$deps = $deps ?? new ABJ_404_Solution_SpellCheckerDependencies();
+		$contentRepository = $deps->contentRepository;
+		$this->f = $deps->functions !== null ? $deps->functions : abj_service('functions');
+		$this->logic = $deps->pluginLogic !== null ? $deps->pluginLogic : abj_service('plugin_logic');
 		$resolvedNotFoundResponse = function_exists('abj_service_optional')
 			? abj_service_optional('not_found_response') : null;
 		$this->notFoundResponse = $resolvedNotFoundResponse instanceof ABJ_404_Solution_NotFoundResponseService
 			? $resolvedNotFoundResponse : null;
 		$this->contentRepository = $contentRepository !== null ? $contentRepository : abj_service('content_repository');
-		$this->logger = $logging !== null ? $logging : abj_service('logging');
-		$permalinkCacheResolved = $permalinkCache !== null ? $permalinkCache : abj_service('permalink_cache');
-		$ngramFilterResolved = $ngramFilter !== null ? $ngramFilter : abj_service('ngram_filter');
-		$viewReadServiceResolved = $viewReadService !== null ? $viewReadService :
+		$this->logger = $deps->logging !== null ? $deps->logging : abj_service('logging');
+		$permalinkCacheResolved = $deps->permalinkCache !== null ? $deps->permalinkCache : abj_service('permalink_cache');
+		$ngramFilterResolved = $deps->ngramFilter !== null ? $deps->ngramFilter : abj_service('ngram_filter');
+		$viewReadServiceResolved = $deps->viewReadService !== null ? $deps->viewReadService :
 			(is_object($contentRepository) && method_exists($contentRepository, 'getRedirectsWithRegEx') ? $contentRepository : abj_service('view_read_service'));
 
 		$options = abj_service('options_repository')->getOptions(true);

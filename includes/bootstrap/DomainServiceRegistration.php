@@ -67,9 +67,10 @@ class ABJ_404_Solution_DomainServiceRegistration {
                     return $peeked;
                 }
             }
-            return new ABJ_404_Solution_SpellChecker($c->get('functions'), $c->get('plugin_logic'),
+            return new ABJ_404_Solution_SpellChecker(new ABJ_404_Solution_SpellCheckerDependencies(
+                $c->get('functions'), $c->get('plugin_logic'),
                 $c->get('content_repository'), $c->get('logging'), $c->get('permalink_cache'),
-                $c->get('ngram_filter'), $c->get('view_read_service'));
+                $c->get('ngram_filter'), $c->get('view_read_service')));
         });
 
         $container->set('options_repository', function($c) {

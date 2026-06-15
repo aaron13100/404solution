@@ -411,6 +411,7 @@ return array(
     'ABJ_404_Solution_ShortcodeSuggestionsPresenter' => $base . 'includes/view/ShortcodeSuggestionsPresenter.php',
     'ABJ_404_Solution_SlugChangeHandler' => $base . 'includes/frontend/SlugChangeHandler.php',
     'ABJ_404_Solution_SpellChecker' => $base . 'includes/spelling/SpellChecker.php',
+    'ABJ_404_Solution_SpellCheckerDependencies' => $base . 'includes/spelling/SpellCheckerDependencies.php',
     'ABJ_404_Solution_SystemPage' => $base . 'includes/frontend/SystemPage.php',
     'ABJ_404_Solution_SynchronizationUtils' => $base . 'includes/core/SynchronizationUtils.php',
     'ABJ_404_Solution_Timer' => $base . 'includes/core/Timer.php',
