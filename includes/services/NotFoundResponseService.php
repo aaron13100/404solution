@@ -28,21 +28,17 @@ class ABJ_404_Solution_NotFoundResponseService {
     private $previousRequestCookieTracker;
 
     /**
-     * @param ABJ_404_Solution_Functions|null $functions
-     * @param ABJ_404_Solution_RedirectsRepositoryInterface|null $redirectsRepo
-     * @param ABJ_404_Solution_LogsRepositoryInterface|null $logsRepo
-     * @param ABJ_404_Solution_Logging|null $logging
-     * @param ABJ_404_Solution_PluginLogicOptionsResolver|null $optionsRepository
-     * @param ABJ_404_Solution_PreviousRequestCookieTracker|null $previousRequestCookieTracker
+     * @param ABJ_404_Solution_NotFoundResponseDependencies|null $deps
      */
-    function __construct($functions = null, $redirectsRepo = null, $logsRepo = null, $logging = null, $optionsRepository = null, $previousRequestCookieTracker = null) {
-        $this->f = $functions !== null ? $functions : abj_service('functions');
-        $this->redirectsRepo = $redirectsRepo !== null ? $redirectsRepo : abj_service('redirects_repository');
-        $this->logsRepo = $logsRepo !== null ? $logsRepo : abj_service('logs_repository');
-        $this->logger = $logging !== null ? $logging : abj_service('logging');
-        $this->optionsRepository = $optionsRepository !== null ? $optionsRepository : abj_service('options_repository');
-        $this->previousRequestCookieTracker = $previousRequestCookieTracker !== null
-            ? $previousRequestCookieTracker
+    function __construct(?ABJ_404_Solution_NotFoundResponseDependencies $deps = null) {
+        $deps = $deps ?? new ABJ_404_Solution_NotFoundResponseDependencies();
+        $this->f = $deps->functions !== null ? $deps->functions : abj_service('functions');
+        $this->redirectsRepo = $deps->redirectsRepo !== null ? $deps->redirectsRepo : abj_service('redirects_repository');
+        $this->logsRepo = $deps->logsRepo !== null ? $deps->logsRepo : abj_service('logs_repository');
+        $this->logger = $deps->logging !== null ? $deps->logging : abj_service('logging');
+        $this->optionsRepository = $deps->optionsRepository !== null ? $deps->optionsRepository : abj_service('options_repository');
+        $this->previousRequestCookieTracker = $deps->previousRequestCookieTracker !== null
+            ? $deps->previousRequestCookieTracker
             : abj_service('previous_request_cookie_tracker');
     }
 

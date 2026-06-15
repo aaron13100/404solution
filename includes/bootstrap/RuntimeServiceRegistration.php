@@ -27,12 +27,14 @@ class ABJ_404_Solution_RuntimeServiceRegistration implements ABJ_404_Solution_Ab
 
         $container->set('not_found_response', function($c) {
             return new ABJ_404_Solution_NotFoundResponseService(
-                $c->get('functions'),
-                $c->get('redirects_repository'),
-                $c->get('logs_repository'),
-                $c->get('logging'),
-                $c->get('options_repository'),
-                $c->get('previous_request_cookie_tracker')
+                new ABJ_404_Solution_NotFoundResponseDependencies(
+                    $c->get('functions'),
+                    $c->get('redirects_repository'),
+                    $c->get('logs_repository'),
+                    $c->get('logging'),
+                    $c->get('options_repository'),
+                    $c->get('previous_request_cookie_tracker')
+                )
             );
         });
 
