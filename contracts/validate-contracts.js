@@ -12,6 +12,13 @@
 
 const fs = require("fs");
 const path = require("path");
+const {
+  fileExists,
+  loadJson,
+  findJsonSchemaFiles,
+  fileContainsAnnotation,
+  fileContainsParityAnnotation,
+} = require("./contractFileIO");
 
 const args = process.argv.slice(2);
 function getArg(name, fallback) {
@@ -25,44 +32,6 @@ const vendorDir = path.resolve(getArg("vendor-dir", "./vendor-contracts"));
 const errors = [];
 function fail(msg) {
   errors.push(msg);
-}
-
-function fileExists(p) {
-  try {
-    return fs.statSync(p).isFile();
-  } catch {
-    return false; // allow-silent-catch: stat failure means file does not exist
-  }
-}
-
-function loadJson(p) {
-  return JSON.parse(fs.readFileSync(p, "utf8"));
-}
-
-function findJsonSchemaFiles(dir) {
-  const results = [];
-  if (!fs.existsSync(dir)) return results;
-  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      results.push(...findJsonSchemaFiles(full));
-    } else if (entry.name.endsWith(".schema.json")) {
-      results.push(full);
-    }
-  }
-  return results;
-}
-
-function fileContainsAnnotation(filePath, contractId, annotationName = "contract") {
-  const content = fs.readFileSync(filePath, "utf8");
-  const pattern = new RegExp(`@${annotationName}\\s+${contractId.replace(/-/g, "\\-")}\\b`);
-  return pattern.test(content);
-}
-
-function fileContainsParityAnnotation(filePath, contractId) {
-  const content = fs.readFileSync(filePath, "utf8");
-  const pattern = new RegExp(`@parityTest\\s+${contractId.replace(/-/g, "\\-")}\\b`);
-  return pattern.test(content);
 }
 
 function validateSchemaFile(schemaPath, label) {
