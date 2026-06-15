@@ -14,11 +14,100 @@ class ABJ_404_Solution_WPCLIImportExportCommandService {
     /** @var ABJ_404_Solution_Clock */
     private $clock;
 
-    /** @param ABJ_404_Solution_Clock|null $clock */
-    public function __construct($clock = null) {
+    /** @var ABJ_404_Solution_DataAccess|null Injected aggregate root; null => resolve via the service locator. */
+    private $dataAccess;
+
+    /** @var ABJ_404_Solution_Logging|null Injected logger; null => resolve via the service locator. */
+    private $logging;
+
+    /**
+     * @param ABJ_404_Solution_Clock|null $clock
+     * @param ABJ_404_Solution_DataAccess|null $dataAccess Data-access aggregate root. When provided, the
+     *     import/export collaborators (redirects + content repositories, view read service, view build
+     *     orchestrator) are taken from it instead of the global service locator. Defaults to
+     *     abj_service('data_access') so production wiring is unchanged. This injection seam exists so
+     *     callers (WP-CLI, tests) can run the import/export workflow against an explicit DataAccess
+     *     without mutating global container state.
+     * @param ABJ_404_Solution_Logging|null $logging Logger. Defaults to abj_service('logging').
+     */
+    public function __construct($clock = null, $dataAccess = null, $logging = null) {
         $this->clock = $clock instanceof ABJ_404_Solution_Clock
             ? $clock
             : $this->defaultClock();
+        $this->dataAccess = $dataAccess instanceof ABJ_404_Solution_DataAccess ? $dataAccess : null;
+        $this->logging = $logging instanceof ABJ_404_Solution_Logging ? $logging : null;
+    }
+
+    /**
+     * Resolve the redirects repository: from the injected DataAccess when present, else the
+     * service-locator singleton (the exact resolution the original code used). Resolving the
+     * individual collaborator rather than the whole DataAccess aggregate is deliberate: building
+     * the full aggregate would also construct unrelated sub-services (retention/cleanup) that this
+     * workflow never uses, changing construction-time behavior.
+     * @return ABJ_404_Solution_RedirectsRepository
+     */
+    private function redirectsRepository() {
+        if ($this->dataAccess instanceof ABJ_404_Solution_DataAccess) {
+            return $this->dataAccess->getRedirectsRepo();
+        }
+        /** @var ABJ_404_Solution_RedirectsRepository $repo */
+        $repo = abj_service('redirects_repository');
+        return $repo;
+    }
+
+    /**
+     * Resolve the content repository: from the injected DataAccess when present, else the
+     * service-locator singleton.
+     * @return ABJ_404_Solution_ContentRepository
+     */
+    private function contentRepository() {
+        if ($this->dataAccess instanceof ABJ_404_Solution_DataAccess) {
+            return $this->dataAccess->getContentRepo();
+        }
+        /** @var ABJ_404_Solution_ContentRepository $repo */
+        $repo = abj_service('content_repository');
+        return $repo;
+    }
+
+    /**
+     * Resolve the view read service: from the injected DataAccess when present, else the
+     * service-locator singleton.
+     * @return ABJ_404_Solution_ViewReadService
+     */
+    private function viewReadService() {
+        if ($this->dataAccess instanceof ABJ_404_Solution_DataAccess) {
+            return $this->dataAccess->getViewReadService();
+        }
+        /** @var ABJ_404_Solution_ViewReadService $svc */
+        $svc = abj_service('view_read_service');
+        return $svc;
+    }
+
+    /**
+     * Resolve the view build orchestrator: from the injected DataAccess when present, else the
+     * service-locator singleton.
+     * @return ABJ_404_Solution_ViewBuildOrchestrator
+     */
+    private function viewBuildOrchestrator() {
+        if ($this->dataAccess instanceof ABJ_404_Solution_DataAccess) {
+            return $this->dataAccess->getViewBuildOrchestrator();
+        }
+        /** @var ABJ_404_Solution_ViewBuildOrchestrator $orch */
+        $orch = abj_service('view_build_orchestrator');
+        return $orch;
+    }
+
+    /**
+     * Resolve the logger: the injected instance when present, else the service-locator singleton.
+     * @return ABJ_404_Solution_Logging
+     */
+    private function loggingService() {
+        if ($this->logging instanceof ABJ_404_Solution_Logging) {
+            return $this->logging;
+        }
+        /** @var ABJ_404_Solution_Logging $logging */
+        $logging = abj_service('logging');
+        return $logging;
     }
 
     /**
@@ -40,14 +129,14 @@ class ABJ_404_Solution_WPCLIImportExportCommandService {
         }
 
         $svc = new ABJ_404_Solution_ImportService(
-            abj_service('redirects_repository'),
-            abj_service('content_repository'),
-            abj_service('logging')
+            $this->redirectsRepository(),
+            $this->contentRepository(),
+            $this->loggingService()
         );
         $delimiter = $svc->detectCsvDelimiterFromFile($fileHandle);
         rewind($fileHandle);
 
-        $rowResult = abj_service('view_read_service')->runWithDeferredInvalidation(function () use (
+        $rowResult = $this->viewReadService()->runWithDeferredInvalidation(function () use (
                 $svc, $fileHandle, $delimiter, $dryRun) {
             $local = array(
                 'headerColumns' => null,
@@ -119,8 +208,8 @@ class ABJ_404_Solution_WPCLIImportExportCommandService {
             );
         }
 
-        abj_service('view_build_orchestrator')->invalidateViewDoneAndScheduleRebuild();
-        abj_service('view_build_orchestrator')->syncViewDoneWithSource();
+        $this->viewBuildOrchestrator()->invalidateViewDoneAndScheduleRebuild();
+        $this->viewBuildOrchestrator()->syncViewDoneWithSource();
         return $this->success(
             "Import complete. Valid={$validRows}, invalid={$invalidRows}, total={$processedRows}",
             $warnings
@@ -134,9 +223,9 @@ class ABJ_404_Solution_WPCLIImportExportCommandService {
      */
     public function exportRedirects(string $format, string $output): array {
         $svc = new ABJ_404_Solution_ExportService(
-            abj_service('view_read_service'),
-            abj_service('logging'),
-            abj_service('redirects_repository')
+            $this->viewReadService(),
+            $this->loggingService(),
+            $this->redirectsRepository()
         );
 
         $serverGenerators = array(
@@ -160,14 +249,14 @@ class ABJ_404_Solution_WPCLIImportExportCommandService {
         $tempFile = sys_get_temp_dir() . '/abj404_export_' . $this->clock->now() . '.csv';
         if ($format === 'redirection') {
             $nativeTemp = sys_get_temp_dir() . '/abj404_export_native_' . $this->clock->now() . '.csv';
-            abj_service('view_read_service')->doRedirectsExport($nativeTemp);
+            $this->viewReadService()->doRedirectsExport($nativeTemp);
             $error = $svc->convertExportCsvToRedirectionFormat($nativeTemp, $tempFile);
             @unlink($nativeTemp);
             if ($error !== '') {
                 return $this->error("Export conversion failed: {$error}");
             }
         } else {
-            abj_service('view_read_service')->doRedirectsExport($tempFile);
+            $this->viewReadService()->doRedirectsExport($tempFile);
         }
 
         if (!file_exists($tempFile)) {

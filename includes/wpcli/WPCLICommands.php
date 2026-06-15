@@ -11,6 +11,23 @@ if (!defined('ABSPATH')) {
  */
 class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
 
+    /** @var ABJ_404_Solution_WPCLIImportExportCommandService|null Injected service; null => container/new fallback. */
+    private $injectedImportExportService;
+
+    /**
+     * @param ABJ_404_Solution_WPCLIImportExportCommandService|null $importExportService Optional injected
+     *     import/export application service. WP-CLI instantiates this command class with no constructor
+     *     arguments, so the parameter is optional and production wiring is unchanged. The seam exists so
+     *     tests (and any embedder) can drive the import/export workflow against an explicit DataAccess
+     *     without mutating global container state.
+     */
+    public function __construct($importExportService = null) {
+        $this->injectedImportExportService =
+            $importExportService instanceof ABJ_404_Solution_WPCLIImportExportCommandService
+                ? $importExportService
+                : null;
+    }
+
     /**
      * List redirects.
      *
@@ -233,6 +250,9 @@ class ABJ_404_Solution_WPCLICommands extends \WP_CLI_Command {
     }
 
     private function importExportService(): ABJ_404_Solution_WPCLIImportExportCommandService {
+        if ($this->injectedImportExportService instanceof ABJ_404_Solution_WPCLIImportExportCommandService) {
+            return $this->injectedImportExportService;
+        }
         $service = ABJ_404_Solution_ServiceContainer::safeGet('wpcli_import_export_command_service');
         if ($service instanceof ABJ_404_Solution_WPCLIImportExportCommandService) {
             return $service;
