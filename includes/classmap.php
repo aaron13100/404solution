@@ -79,6 +79,7 @@ return array(
     'ABJ_404_Solution_SetupWizardPresenter' => $base . 'includes/admin/SetupWizardPresenter.php',
     'ABJ_404_Solution_RedirectsTableColumns' => $base . 'includes/admin/RedirectsTableColumns.php',
     'ABJ_404_Solution_RedirectDestinationWarningPolicy' => $base . 'includes/admin/RedirectDestinationWarningPolicy.php',
+    'ABJ_404_Solution_RedirectDestinationWarningContext' => $base . 'includes/admin/RedirectDestinationWarningContext.php',
     'ABJ_404_Solution_RedirectDestinationLinkResolver' => $base . 'includes/admin/RedirectDestinationLinkResolver.php',
     'ABJ_404_Solution_RedirectRowActionsPresenter' => $base . 'includes/admin/RedirectRowActionsPresenter.php',
     'ABJ_404_Solution_RedirectRowPresenter' => $base . 'includes/admin/RedirectRowPresenter.php',

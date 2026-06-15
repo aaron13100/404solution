@@ -115,7 +115,7 @@ require_once __DIR__ . '/View_Logs.php';
  * @method mixed renderRegexAutoPromoteNotice(array<mixed> $notice)
  * @method mixed renderSuggestionBlock(array<mixed> $suggestion)
  * @method mixed renderViewFreshnessLabel()
- * @method mixed resolveDestinationWarnings(array<mixed> $row, $rowType, string $rowFinalDest, string $destForView, bool $destinationIsMissing, array<mixed> $deadDestIds)
+ * @method mixed resolveDestinationWarnings(ABJ_404_Solution_RedirectDestinationWarningContext $ctx)
  * @method mixed resolveRedirectDestLink($rowType, string $rowFinalDest)
  * @method mixed resolveRedirectDestinationInfo(array<mixed> $redirect, array<mixed> $options)
  * @method mixed traceOutcomeClass(string $outcome)

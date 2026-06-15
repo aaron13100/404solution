@@ -130,16 +130,12 @@ class ABJ_404_Solution_View_RedirectsTable extends ABJ_404_Solution_ViewComponen
     }
 
     /**
-     * @param array<string, mixed> $row
-     * @param mixed $rowType
-     * @param string $rowFinalDest
-     * @param string $destForView
-     * @param bool $destinationIsMissing
-     * @param array<mixed> $deadDestIds
+     * @param ABJ_404_Solution_RedirectDestinationWarningContext $ctx
      * @return array{exists: string, notExists: string, text: string, destForView: string}
      */
-    public function resolveDestinationWarnings(array $row, $rowType, string $rowFinalDest, string $destForView, bool $destinationIsMissing, array $deadDestIds): array {
-        return $this->warningPolicy()->resolve($row, $rowType, $rowFinalDest, $destForView, $destinationIsMissing, $deadDestIds);
+    public function resolveDestinationWarnings(ABJ_404_Solution_RedirectDestinationWarningContext $ctx): array {
+        return $this->warningPolicy()->resolve($ctx->row, $ctx->rowType, $ctx->rowFinalDest,
+                $ctx->destForView, $ctx->destinationIsMissing, $ctx->deadDestIds);
     }
 
     /**
