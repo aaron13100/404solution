@@ -27,14 +27,18 @@ class ABJ_404_Solution_PermalinkCache {
     /** @var ABJ_404_Solution_Logging */
     private $logger;
 
+    /** @var ABJ_404_Solution_NGramFilter|null */
+    private $ngramFilter;
+
     /**
      * Constructor with dependency injection.
      *
      * @param ABJ_404_Solution_ContentRepository|null $contentRepository Content repository
      * @param ABJ_404_Solution_Logging|null $logging Logging service
      * @param ABJ_404_Solution_StatsRepository|null $statsRepository Stats repository
+     * @param ABJ_404_Solution_NGramFilter|null $ngramFilter NGram filter (null = resolved lazily via abj_service)
      */
-    public function __construct($contentRepository = null, $logging = null, $statsRepository = null) {
+    public function __construct($contentRepository = null, $logging = null, $statsRepository = null, $ngramFilter = null) {
         // Use injected dependencies or fall back to getInstance() for backward compatibility
         $this->contentRepository = $contentRepository !== null ? $contentRepository : abj_service('content_repository');
         $this->logger = $logging !== null ? $logging : abj_service('logging');
@@ -42,6 +46,7 @@ class ABJ_404_Solution_PermalinkCache {
             (is_object($contentRepository) && method_exists($contentRepository, 'getPostsNeedingContentKeywords')
                 ? $contentRepository
                 : call_user_func(array('ABJ_404_Solution_StatsRepositoryResolver', 'resolve'), __CLASS__));
+        $this->ngramFilter = $ngramFilter;
     }
 
     /** @return self */
@@ -117,7 +122,8 @@ class ABJ_404_Solution_PermalinkCache {
 
         // Invalidate coverage ratio if rows were inserted (new permalinks may lack N-grams)
         if ($rowsInserted > 0) {
-            abj_service('ngram_filter')->invalidateCoverageCaches();
+            $ngramFilter = $this->ngramFilter !== null ? $this->ngramFilter : abj_service('ngram_filter');
+            $ngramFilter->invalidateCoverageCaches();
         }
 
         // now we have to update the the pages that have parents to include the parent
