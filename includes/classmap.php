@@ -178,6 +178,7 @@ return array(
     'ABJ_404_Solution_ScoreThresholds' => $base . 'includes/view-build/ScoreThresholds.php',
     'ABJ_404_Solution_ViewDiagnostics' => $base . 'includes/view-build/ViewDiagnostics.php',
     'ABJ_404_Solution_ViewCacheInvalidator' => $base . 'includes/view-build/ViewCacheInvalidator.php',
+    'ABJ_404_Solution_ViewSnapshotCacheHostInterface' => $base . 'includes/view-build/ViewSnapshotCacheHostInterface.php',
     'ABJ_404_Solution_ViewSnapshotStore' => $base . 'includes/view-build/ViewSnapshotStore.php',
     'ABJ_404_Solution_ViewWarmupStatePolicy' => $base . 'includes/view-build/ViewWarmupStatePolicy.php',
     'ABJ_404_Solution_ViewWarmupDiagnostics' => $base . 'includes/view-build/ViewWarmupDiagnostics.php',

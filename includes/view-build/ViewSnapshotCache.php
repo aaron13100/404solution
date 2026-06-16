@@ -4,21 +4,11 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+require_once __DIR__ . '/ViewSnapshotCacheHostInterface.php';
 require_once __DIR__ . '/ViewSnapshotStore.php';
 require_once __DIR__ . '/ViewWarmupStatePolicy.php';
 require_once __DIR__ . '/ViewWarmupDiagnostics.php';
 require_once __DIR__ . '/ViewSnapshotWarmupOrchestrator.php';
-
-interface ABJ_404_Solution_ViewSnapshotCacheHostInterface {
-    /** @param string $sub @param array<string, mixed> $tableOptions @return bool */
-    public function viewTableSnapshotAvailable($sub, array $tableOptions): bool;
-    /** @param string $sub @param array<string, mixed> $tableOptions @return bool */
-    public function viewRowsSnapshotAvailable($sub, array $tableOptions): bool;
-    /** @param string $sub @param array<string, mixed> $tableOptions @return array<int|string, mixed> */
-    public function getRedirectsForView($sub, $tableOptions);
-    /** @param string $sub @param array<string, mixed> $tableOptions @return int */
-    public function getRedirectsForViewCount(string $sub, array $tableOptions): int;
-}
 
 class ABJ_404_Solution_ViewSnapshotCache {
 
