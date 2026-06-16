@@ -10,11 +10,15 @@ require_once __DIR__ . '/GscSearchAnalyticsClient.php';
 require_once __DIR__ . '/GscAdminSectionRenderer.php';
 
 /**
- * Backward-compatible facade for the Google Search Console integration.
+ * Composition root for the Google Search Console integration.
  *
- * The public API stays here for existing callers while OAuth/token state,
- * Search Analytics querying, and admin rendering live in dedicated
- * collaborators.
+ * Wires the three collaborators that do the real work and exposes them through
+ * accessors. OAuth/token state, Search Analytics querying, and admin rendering
+ * live in those collaborators; callers reach the behaviour they need via
+ * {@see oauthStore()}, {@see searchAnalytics()}, and {@see renderer()}.
+ *
+ * Config constants are re-exported here as a stable reference surface for
+ * callers and tests (the values themselves live in ABJ_404_Solution_GscConfig).
  */
 class ABJ_404_Solution_GoogleSearchConsole {
 
@@ -59,236 +63,29 @@ class ABJ_404_Solution_GoogleSearchConsole {
     }
 
     /**
-     * Get the stored GSC settings.
+     * OAuth credentials, token lifecycle, integration state, and last-error storage.
      *
-     * @return array{client_id: string, client_secret: string, site_url: string}
+     * @return ABJ_404_Solution_GscOAuthTokenStore
      */
-    public function getSettings(): array {
-        return $this->oauthStore->getSettings();
+    public function oauthStore(): ABJ_404_Solution_GscOAuthTokenStore {
+        return $this->oauthStore;
     }
 
     /**
-     * Save GSC settings. Returns an error message string or '' on success.
+     * Search Analytics querying, cache reads/writes, fetch locking, and background refresh.
      *
-     * @param array<string, mixed> $postData
-     * @return string
+     * @return ABJ_404_Solution_GscSearchAnalyticsClient
      */
-    public function saveSettings(array $postData): string {
-        return $this->oauthStore->saveSettings($postData);
+    public function searchAnalytics(): ABJ_404_Solution_GscSearchAnalyticsClient {
+        return $this->searchAnalytics;
     }
 
     /**
-     * Whether centralized OAuth mode is active.
+     * Renders the GSC admin settings/status card.
      *
-     * @return bool
+     * @return ABJ_404_Solution_GscAdminSectionRenderer
      */
-    public function isCentralizedMode(): bool {
-        return $this->oauthStore->isCentralizedMode();
-    }
-
-    /**
-     * Is the integration configured.
-     *
-     * @return bool
-     */
-    public function isConfigured(): bool {
-        return $this->oauthStore->isConfigured();
-    }
-
-    /**
-     * Is an access token available and usable.
-     *
-     * @return bool
-     */
-    public function isAuthorized(): bool {
-        return $this->oauthStore->isAuthorized();
-    }
-
-    /**
-     * Build the Google OAuth 2.0 authorization URL.
-     *
-     * @return string
-     */
-    public function buildAuthUrl(): string {
-        return $this->oauthStore->buildAuthUrl();
-    }
-
-    /**
-     * Build the transient key that stores the one-time Worker callback signing secret.
-     *
-     * @param string $nonce WordPress OAuth callback nonce.
-     * @return string
-     */
-    public static function centralizedCallbackSecretTransientKey(string $nonce): string {
-        return ABJ_404_Solution_GscConfig::centralizedCallbackSecretTransientKey($nonce);
-    }
-
-    /**
-     * The OAuth callback URL that must be registered in Google Cloud.
-     *
-     * @return string
-     */
-    public function getCallbackUrl(): string {
-        return $this->oauthStore->getCallbackUrl();
-    }
-
-    /**
-     * Store tokens received directly from the centralized OAuth callback.
-     *
-     * @param string $accessToken
-     * @param string $refreshToken
-     * @param int    $expiresIn Seconds until the access token expires.
-     * @return void
-     */
-    public function storeCentralizedTokens(string $accessToken, string $refreshToken, int $expiresIn): void {
-        $this->oauthStore->storeCentralizedTokens($accessToken, $refreshToken, $expiresIn);
-    }
-
-    /**
-     * Exchange an authorization code for tokens.
-     *
-     * @param string $code
-     * @return string Empty on success, error message on failure.
-     */
-    public function exchangeCodeForToken(string $code): string {
-        return $this->oauthStore->exchangeCodeForToken($code);
-    }
-
-    /**
-     * Revoke authorization and delete stored tokens.
-     *
-     * @return void
-     */
-    public function revokeAuthorization(): void {
-        $this->oauthStore->revokeAuthorization();
-    }
-
-    /**
-     * Fetch search analytics data for a list of URLs.
-     *
-     * @param string[] $urls Relative or absolute URLs to query.
-     * @param int $days Number of days to look back.
-     * @return array<int, array<string, mixed>>
-     */
-    public function getSearchAnalyticsForUrls(array $urls, int $days = 90): array {
-        return $this->searchAnalytics->getSearchAnalyticsForUrls($urls, $days);
-    }
-
-    /**
-     * Fetch GSC data and cache it. Called by cron and background refresh.
-     *
-     * @return void
-     */
-    public function fetchAndCacheGscData(): void {
-        $this->searchAnalytics->fetchAndCacheGscData(function (): array {
-            return $this->getUrlsToQuery();
-        });
-    }
-
-    /**
-     * Recency window scanned by the GSC URL probe (rows from logsv2).
-     * Made explicit at the call site so the cap is visible here, not buried in SQL.
-     */
-    const GSC_URL_PROBE_RECENT_LOG_WINDOW = 5000;
-
-    /** Max distinct URLs the GSC URL probe pulls per fetch. */
-    const GSC_URL_PROBE_DISTINCT_URL_CAP = 500;
-
-    /**
-     * Get the list of 404 URLs to query from the logs table.
-     *
-     * @return string[]
-     */
-    protected function getUrlsToQuery(): array {
-        $logsRepo = abj_service('logs_repository');
-        return $logsRepo->getDistinctLoggedUrls(
-            self::GSC_URL_PROBE_RECENT_LOG_WINDOW,
-            self::GSC_URL_PROBE_DISTINCT_URL_CAP
-        );
-    }
-
-    /**
-     * Return cached GSC data, or false if the cache is empty.
-     *
-     * @return array<int, array<string, mixed>>|false
-     */
-    public function getCachedData() {
-        return $this->searchAnalytics->getCachedData();
-    }
-
-    /**
-     * Whether a background refresh should be triggered.
-     *
-     * @return bool
-     */
-    public function isRefreshNeeded(): bool {
-        return $this->searchAnalytics->isRefreshNeeded();
-    }
-
-    /**
-     * Schedule an immediate single-event background refresh via WP-Cron.
-     *
-     * @return void
-     */
-    public function scheduleBackgroundRefresh(): void {
-        $this->searchAnalytics->scheduleBackgroundRefresh();
-    }
-
-    /**
-     * Fetch top 404 URLs that also have GSC search traffic.
-     *
-     * @param string[] $capturedUrls Array of captured 404 URL strings.
-     * @param int $days Number of days for GSC data.
-     * @return array<int, array<string, mixed>>
-     */
-    public function getTrafficDataForCaptured404s(array $capturedUrls, int $days = 90): array {
-        return $this->searchAnalytics->getTrafficDataForCaptured404s($capturedUrls, $days);
-    }
-
-    /**
-     * Persist an OAuth error so it is visible after redirect.
-     *
-     * @param string $message
-     * @return void
-     */
-    public function setLastOAuthError(string $message): void {
-        $this->oauthStore->setLastOAuthError($message);
-    }
-
-    /**
-     * Retrieve the last stored OAuth error.
-     *
-     * @return string
-     */
-    public function getLastOAuthError(): string {
-        return $this->oauthStore->getLastOAuthError();
-    }
-
-    /**
-     * Clear any stored OAuth error.
-     *
-     * @return void
-     */
-    public function clearLastOAuthError(): void {
-        $this->oauthStore->clearLastOAuthError();
-    }
-
-    /**
-     * Determine the current UI state of the GSC integration.
-     *
-     * @return string 'not_configured'|'configured_not_connected'|'error'|'connected'
-     */
-    public function getState(): string {
-        return $this->oauthStore->getState();
-    }
-
-    /**
-     * Render the inner content for the GSC settings/status card.
-     *
-     * @param string[] $capturedUrls Deprecated; kept for backward compatibility.
-     * @return string HTML.
-     */
-    public function renderAdminSection(array $capturedUrls = []): string {
-        return $this->renderer->renderAdminSection($this->getState());
+    public function renderer(): ABJ_404_Solution_GscAdminSectionRenderer {
+        return $this->renderer;
     }
 }

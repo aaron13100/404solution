@@ -29,7 +29,7 @@ class ABJ_404_Solution_SaveGscSettingsHandler implements ABJ_404_Solution_AdminA
     public function handle(string $action, string &$sub): string {
         $logger = abj_service('logging');
         $gsc = new ABJ_404_Solution_GoogleSearchConsole($logger);
-        $error = $gsc->saveSettings($_POST);
+        $error = $gsc->oauthStore()->saveSettings($_POST);
         return ($error === '')
             ? __('Google Search Console credentials saved.', '404-solution')
             : $error;

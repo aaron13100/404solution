@@ -41,15 +41,15 @@ class ABJ_404_Solution_GscOAuthHandler {
         }
 
         if ($code === '') {
-            $gsc->setLastOAuthError(__('Authorization was denied or cancelled.', '404-solution'));
+            $gsc->oauthStore()->setLastOAuthError(__('Authorization was denied or cancelled.', '404-solution'));
             wp_safe_redirect(admin_url('options-general.php?page=' . ABJ404_PP . '&subpage=abj404_options'));
             exit;
         }
 
-        $error = $gsc->exchangeCodeForToken($code);
+        $error = $gsc->oauthStore()->exchangeCodeForToken($code);
 
         if ($error !== '') {
-            $gsc->setLastOAuthError($error);
+            $gsc->oauthStore()->setLastOAuthError($error);
         }
         wp_safe_redirect(admin_url('options-general.php?page=' . ABJ404_PP . '&subpage=abj404_options'));
         exit;
@@ -72,7 +72,7 @@ class ABJ_404_Solution_GscOAuthHandler {
 
         $error = self::payloadString($payload, 'abj404_gsc_error');
         if ($error !== '') {
-            $gsc->setLastOAuthError($error);
+            $gsc->oauthStore()->setLastOAuthError($error);
             wp_safe_redirect(admin_url('options-general.php?page=' . ABJ404_PP . '&subpage=abj404_options'));
             exit;
         }
@@ -82,12 +82,12 @@ class ABJ_404_Solution_GscOAuthHandler {
         $expiresIn    = self::payloadInt($payload, 'expires_in', 3600);
 
         if ($accessToken === '') {
-            $gsc->setLastOAuthError(__('No access token received from authorization.', '404-solution'));
+            $gsc->oauthStore()->setLastOAuthError(__('No access token received from authorization.', '404-solution'));
             wp_safe_redirect(admin_url('options-general.php?page=' . ABJ404_PP . '&subpage=abj404_options'));
             exit;
         }
 
-        $gsc->storeCentralizedTokens($accessToken, $refreshToken, $expiresIn);
+        $gsc->oauthStore()->storeCentralizedTokens($accessToken, $refreshToken, $expiresIn);
 
         wp_safe_redirect(admin_url('options-general.php?page=' . ABJ404_PP . '&subpage=abj404_options'));
         exit;
@@ -109,7 +109,7 @@ class ABJ_404_Solution_GscOAuthHandler {
             ? sanitize_text_field((string)$rawSignature)
             : '';
 
-        $secretKey = ABJ_404_Solution_GoogleSearchConsole::centralizedCallbackSecretTransientKey($nonce);
+        $secretKey = ABJ_404_Solution_GscConfig::centralizedCallbackSecretTransientKey($nonce);
         $secret = get_transient($secretKey);
 
         if ($encodedPayload === '' || $signature === '' || !is_string($secret) || $secret === '') {
@@ -194,7 +194,7 @@ class ABJ_404_Solution_GscOAuthHandler {
 
         $logger = abj_service('logging');
         $gsc    = new ABJ_404_Solution_GoogleSearchConsole($logger);
-        $gsc->revokeAuthorization();
+        $gsc->oauthStore()->revokeAuthorization();
 
         wp_safe_redirect(admin_url('options-general.php?page=' . ABJ404_PP . '&subpage=abj404_options'));
         exit;

@@ -23,11 +23,11 @@ class ABJ_404_Solution_Ajax_LoadGscSection {
             $gscLogger = abj_service('logging');
             $gsc = new ABJ_404_Solution_GoogleSearchConsole($gscLogger);
 
-            $html = $gsc->renderAdminSection();
+            $html = $gsc->renderer()->renderAdminSection();
 
             $refreshScheduled = false;
-            if ($gsc->getState() === 'connected' && $gsc->isRefreshNeeded()) {
-                $gsc->scheduleBackgroundRefresh();
+            if ($gsc->oauthStore()->getState() === 'connected' && $gsc->searchAnalytics()->isRefreshNeeded()) {
+                $gsc->searchAnalytics()->scheduleBackgroundRefresh();
                 $refreshScheduled = true;
             }
 

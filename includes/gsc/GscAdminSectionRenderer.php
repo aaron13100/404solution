@@ -30,10 +30,19 @@ class ABJ_404_Solution_GscAdminSectionRenderer {
     /**
      * Render the inner content for the GSC settings/status card.
      *
-     * @param string $state Current facade state.
+     * By default the UI state is derived from the OAuth/token store this
+     * renderer already holds, so callers do not have to compute and pass it.
+     * A caller may pass an explicit $state to render a specific branch (used to
+     * exercise states that are unreachable through normal configuration, e.g.
+     * 'not_configured' while centralized mode is active).
+     *
+     * @param string|null $state Force a specific UI state, or null to derive it.
      * @return string HTML.
      */
-    public function renderAdminSection(string $state): string {
+    public function renderAdminSection(?string $state = null): string {
+        if ($state === null) {
+            $state = $this->oauthStore->getState();
+        }
         switch ($state) {
             case 'not_configured':
                 return $this->renderNotConfiguredState();

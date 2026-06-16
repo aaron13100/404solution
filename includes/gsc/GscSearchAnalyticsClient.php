@@ -12,6 +12,15 @@ require_once __DIR__ . '/GscConfig.php';
  */
 class ABJ_404_Solution_GscSearchAnalyticsClient {
 
+    /**
+     * Recency window scanned by the GSC URL probe (rows from logsv2).
+     * Made explicit at the call site so the cap is visible here, not buried in SQL.
+     */
+    const GSC_URL_PROBE_RECENT_LOG_WINDOW = 5000;
+
+    /** Max distinct URLs the GSC URL probe pulls per fetch. */
+    const GSC_URL_PROBE_DISTINCT_URL_CAP = 500;
+
     /** @var ABJ_404_Solution_Logging */
     private $logger;
 
@@ -50,12 +59,11 @@ class ABJ_404_Solution_GscSearchAnalyticsClient {
     }
 
     /**
-     * Fetch GSC data and cache it.
+     * Fetch GSC data and cache it. Called by cron and background refresh.
      *
-     * @param callable(): string[] $urlsProvider Supplies logged 404 URLs after auth and lock checks pass.
      * @return void
      */
-    public function fetchAndCacheGscData(callable $urlsProvider): void {
+    public function fetchAndCacheGscData(): void {
         if (!$this->oauthStore->isAuthorized()) {
             return;
         }
@@ -70,7 +78,7 @@ class ABJ_404_Solution_GscSearchAnalyticsClient {
         );
 
         try {
-            $urls = $urlsProvider();
+            $urls = $this->getUrlsToQuery();
             $allRows = $this->doFetchFromApi($urls);
             // allow-cache-empty: empty GSC result sets are valid recent fetches and drive the explicit no-data UI state.
             set_transient(ABJ_404_Solution_GscConfig::TRANSIENT_KEY, $allRows, ABJ_404_Solution_GscConfig::TRANSIENT_TTL);
@@ -78,6 +86,19 @@ class ABJ_404_Solution_GscSearchAnalyticsClient {
         } finally {
             delete_transient(ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY);
         }
+    }
+
+    /**
+     * Get the list of 404 URLs to query from the logs table.
+     *
+     * @return string[]
+     */
+    protected function getUrlsToQuery(): array {
+        $logsRepo = abj_service('logs_repository');
+        return $logsRepo->getDistinctLoggedUrls(
+            self::GSC_URL_PROBE_RECENT_LOG_WINDOW,
+            self::GSC_URL_PROBE_DISTINCT_URL_CAP
+        );
     }
 
     /**

@@ -178,7 +178,7 @@ function abj404_gscFetchCronListener(): void {
         require_once(plugin_dir_path( ABJ404_FILE ) . "includes/Loader.php");
         $gscLogger = ABJ_404_Solution_Logging::getInstance();
         $gsc = new ABJ_404_Solution_GoogleSearchConsole($gscLogger);
-        $gsc->fetchAndCacheGscData();
+        $gsc->searchAnalytics()->fetchAndCacheGscData();
     } catch (\Throwable $e) {
         abj404_logRuntimeWarning('Cron GSC fetch failed', $e);
     }
@@ -192,7 +192,7 @@ function abj404_gscBackgroundRefreshListener(): void {
         require_once(plugin_dir_path( ABJ404_FILE ) . "includes/Loader.php");
         $gscLogger = ABJ_404_Solution_Logging::getInstance();
         $gsc = new ABJ_404_Solution_GoogleSearchConsole($gscLogger);
-        $gsc->fetchAndCacheGscData();
+        $gsc->searchAnalytics()->fetchAndCacheGscData();
     } catch (\Throwable $e) {
         abj404_logRuntimeWarning('Cron GSC background refresh failed', $e);
     }
