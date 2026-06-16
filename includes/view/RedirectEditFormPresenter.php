@@ -25,40 +25,6 @@ class ABJ_404_Solution_RedirectEditFormPresenter {
     }
 
     /**
-     * Resolve final destination, pageIDAndType, and redirect code from a redirect row.
-     *
-     * @param array<string, mixed> $redirect
-     * @param array<string, mixed> $options
-     * @return array{final: string, pageIDAndType: string, codeSelected: string}
-     */
-    public function resolveRedirectDestinationInfo(array $redirect, array $options): array {
-        $final = "";
-        $pageIDAndType = "";
-        $redirectTypeRaw = $redirect['type'] ?? '';
-        $redirectType = is_scalar($redirectTypeRaw) ? (string)$redirectTypeRaw : '';
-        $redirectFinalDestRaw = $redirect['final_dest'] ?? 0;
-        $redirectFinalDest = is_scalar($redirectFinalDestRaw) ? (string)$redirectFinalDestRaw : '0';
-        if ($redirectType === (string)ABJ404_TYPE_EXTERNAL) {
-            $final = $redirectFinalDest;
-            $pageIDAndType = ABJ404_TYPE_EXTERNAL . "|" . ABJ404_TYPE_EXTERNAL;
-        } else if ($redirectFinalDest != 0) {
-            $pageIDAndType = $redirectFinalDest . "|" . $redirectType;
-        } else if ($redirectType === (string)ABJ404_TYPE_404_DISPLAYED) {
-            $pageIDAndType = ABJ404_TYPE_404_DISPLAYED . "|" . ABJ404_TYPE_404_DISPLAYED;
-        }
-
-        $rawCode = $redirect['code'] ?? '';
-        if ($rawCode == "") {
-            $rawDefault = $options['default_redirect'] ?? '301';
-            $codeSelected = is_string($rawDefault) ? $rawDefault : '301';
-        } else {
-            $codeSelected = is_string($rawCode) ? $rawCode : '301';
-        }
-
-        return array('final' => $final, 'pageIDAndType' => $pageIDAndType, 'codeSelected' => $codeSelected);
-    }
-
-    /**
      * Build the redirect-to autocomplete dropdown HTML from the template.
      *
      * @param string $pageTitle

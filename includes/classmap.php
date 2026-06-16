@@ -151,6 +151,7 @@ return array(
     'ABJ_404_Solution_ViewComponent' => $base . 'includes/view/ViewComponent.php',
     'ABJ_404_Solution_RedirectDestinationOptionsPresenter' => $base . 'includes/view/RedirectDestinationOptionsPresenter.php',
     'ABJ_404_Solution_RedirectEditFormPresenter' => $base . 'includes/view/RedirectEditFormPresenter.php',
+    'ABJ_404_Solution_RedirectDestinationResolver' => $base . 'includes/view/RedirectDestinationResolver.php',
     'ABJ_404_Solution_View_Logs' => $base . 'includes/view/View_Logs.php',
     'ABJ_404_Solution_View_Redirects' => $base . 'includes/view/View_Redirects.php',
     'ABJ_404_Solution_View_RedirectsTable' => $base . 'includes/view/View_RedirectsTable.php',

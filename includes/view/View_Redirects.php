@@ -21,6 +21,9 @@ class ABJ_404_Solution_View_Redirects extends ABJ_404_Solution_ViewComponent {
     /** @var ABJ_404_Solution_RedirectEngineLabeler|null */
     private $engineLabeler = null;
 
+    /** @var ABJ_404_Solution_RedirectDestinationResolver|null */
+    private $destinationResolver = null;
+
     /**
      * @return ABJ_404_Solution_RedirectEditFormPresenter
      */
@@ -66,6 +69,16 @@ class ABJ_404_Solution_View_Redirects extends ABJ_404_Solution_ViewComponent {
 
 
     /**
+     * @return ABJ_404_Solution_RedirectDestinationResolver
+     */
+    private function destinationResolver(): ABJ_404_Solution_RedirectDestinationResolver {
+        if ($this->destinationResolver === null) {
+            $this->destinationResolver = new ABJ_404_Solution_RedirectDestinationResolver();
+        }
+        return $this->destinationResolver;
+    }
+
+    /**
      * Resolve final destination, pageIDAndType, and redirect code from a redirect row.
      *
      * @param array<string, mixed> $redirect
@@ -73,7 +86,7 @@ class ABJ_404_Solution_View_Redirects extends ABJ_404_Solution_ViewComponent {
      * @return array{final: string, pageIDAndType: string, codeSelected: string}
      */
     public function resolveRedirectDestinationInfo(array $redirect, array $options): array {
-        return $this->editFormPresenter()->resolveRedirectDestinationInfo($redirect, $options);
+        return $this->destinationResolver()->resolveRedirectDestinationInfo($redirect, $options);
     }
 
     /**
