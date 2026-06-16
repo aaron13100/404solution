@@ -65,9 +65,9 @@ class ABJ_404_Solution_PluginLogicLifecycle {
         add_option('abj404_settings', '', '', false);
 
         $upgradesEtc = abj_service('database_upgrades');
-        $upgradesEtc->createDatabaseTables();
+        $upgradesEtc->components()->bootstrapUpgrade()->createDatabaseTables();
 
-        $upgradesEtc->runSelfHealPrologue();
+        $upgradesEtc->components()->selfHealUpgrade()->runSelfHealPrologue();
 
         self::doRegisterCrons();
 

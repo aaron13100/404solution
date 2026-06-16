@@ -260,7 +260,7 @@ class ABJ_404_Solution_DatabaseCollationHelper {
                 if (class_exists('ABJ_404_Solution_DatabaseUpgradesEtc')) {
                     $upgrades = abj_service('database_upgrades');
                     if (method_exists($upgrades, 'correctCollations')) {
-                        $upgrades->correctCollations();
+                        $upgrades->components()->collationDriftUpgrade()->correctCollations();
                     }
                 }
             } catch (Throwable $e) {

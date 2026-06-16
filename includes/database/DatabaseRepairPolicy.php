@@ -235,7 +235,7 @@ class ABJ_404_Solution_DatabaseRepairPolicy {
         // without $force would silently return without creating anything, leaving the
         // missing table unrepaired.  Concurrent CREATE TABLE IF NOT EXISTS calls are safe
         // (idempotent), so bypassing the lock here is correct.
-        $upgrades->createDatabaseTables(false, true);
+        $upgrades->components()->bootstrapUpgrade()->createDatabaseTables(false, true);
 
         global $wpdb;
         $wpdb->flush();

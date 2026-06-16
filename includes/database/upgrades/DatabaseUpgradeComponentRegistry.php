@@ -14,9 +14,11 @@ if (!defined('ABSPATH')) {
  *
  * This isolates the 13-component instantiation/refresh lifecycle from
  * {@see ABJ_404_Solution_DatabaseUpgradesEtc}, whose remaining job is to be the
- * public upgrade facade. Constructed by the coordinator only.
+ * public upgrade facade. The registry IS the coordinator passed to each
+ * component, so components reach their siblings through it. Constructed by the
+ * facade only.
  */
-class ABJ_404_Solution_DatabaseUpgradeComponentRegistry {
+class ABJ_404_Solution_DatabaseUpgradeComponentRegistry implements ABJ_404_Solution_DatabaseUpgradeCoordinator {
 
 	/** @var ABJ_404_Solution_DatabaseUpgradeNGram */
 	private $nGramUpgrade;
@@ -58,23 +60,22 @@ class ABJ_404_Solution_DatabaseUpgradeComponentRegistry {
 	private $bootstrapUpgrade;
 
 	/**
-	 * @param ABJ_404_Solution_DatabaseUpgradeCoordinator $owner
 	 * @param array<string, mixed> $deps Shared component dependency map.
 	 */
-	public function __construct(ABJ_404_Solution_DatabaseUpgradeCoordinator $owner, array $deps) {
-		$this->nGramUpgrade = new ABJ_404_Solution_DatabaseUpgradeNGram($owner, $deps);
-		$this->engineNormalizationUpgrade = new ABJ_404_Solution_DatabaseUpgradeEngineNormalization($owner, $deps);
-		$this->collationDriftUpgrade = new ABJ_404_Solution_DatabaseUpgradeCollationDrift($owner, $deps);
-		$this->selfHealUpgrade = new ABJ_404_Solution_DatabaseUpgradeSelfHeal($owner, $deps);
-		$this->canonicalUrlBackfillUpgrade = new ABJ_404_Solution_DatabaseUpgradeCanonicalUrlBackfill($owner, $deps);
-		$this->dailyMaintenanceUpgrade = new ABJ_404_Solution_DatabaseUpgradeDailyMaintenance($owner, $deps);
-		$this->pluginUpdateUpgrade = new ABJ_404_Solution_DatabaseUpgradePluginUpdate($owner, $deps);
-		$this->tableRepairUpgrade = new ABJ_404_Solution_DatabaseUpgradeTableRepair($owner, $deps);
-		$this->indexesUpgrade = new ABJ_404_Solution_DatabaseUpgradeIndexes($owner, $deps);
-		$this->orphanAdoptionUpgrade = new ABJ_404_Solution_DatabaseUpgradeOrphanAdoption($owner, $deps);
-		$this->multiSiteUpgrade = new ABJ_404_Solution_DatabaseUpgradeMultiSite($owner, $deps);
-		$this->schemaDiffUpgrade = new ABJ_404_Solution_DatabaseUpgradeSchemaDiff($owner, $deps);
-		$this->bootstrapUpgrade = new ABJ_404_Solution_DatabaseUpgradeBootstrap($owner, $deps);
+	public function __construct(array $deps) {
+		$this->nGramUpgrade = new ABJ_404_Solution_DatabaseUpgradeNGram($this, $deps);
+		$this->engineNormalizationUpgrade = new ABJ_404_Solution_DatabaseUpgradeEngineNormalization($this, $deps);
+		$this->collationDriftUpgrade = new ABJ_404_Solution_DatabaseUpgradeCollationDrift($this, $deps);
+		$this->selfHealUpgrade = new ABJ_404_Solution_DatabaseUpgradeSelfHeal($this, $deps);
+		$this->canonicalUrlBackfillUpgrade = new ABJ_404_Solution_DatabaseUpgradeCanonicalUrlBackfill($this, $deps);
+		$this->dailyMaintenanceUpgrade = new ABJ_404_Solution_DatabaseUpgradeDailyMaintenance($this, $deps);
+		$this->pluginUpdateUpgrade = new ABJ_404_Solution_DatabaseUpgradePluginUpdate($this, $deps);
+		$this->tableRepairUpgrade = new ABJ_404_Solution_DatabaseUpgradeTableRepair($this, $deps);
+		$this->indexesUpgrade = new ABJ_404_Solution_DatabaseUpgradeIndexes($this, $deps);
+		$this->orphanAdoptionUpgrade = new ABJ_404_Solution_DatabaseUpgradeOrphanAdoption($this, $deps);
+		$this->multiSiteUpgrade = new ABJ_404_Solution_DatabaseUpgradeMultiSite($this, $deps);
+		$this->schemaDiffUpgrade = new ABJ_404_Solution_DatabaseUpgradeSchemaDiff($this, $deps);
+		$this->bootstrapUpgrade = new ABJ_404_Solution_DatabaseUpgradeBootstrap($this, $deps);
 	}
 
 	/**

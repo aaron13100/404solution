@@ -121,7 +121,7 @@ class ABJ_404_Solution_DatabaseUpgradeSelfHeal extends ABJ_404_Solution_Database
 
             // Repair: call the same idempotent routine activation uses
             // This is safe because createDatabaseTables() is idempotent
-            $this->upgrades()->createDatabaseTables(false);  // false = not updating to new version
+            $this->upgrades()->bootstrapUpgrade()->createDatabaseTables(false);  // false = not updating to new version
 
             $this->logger->infoMessage("Table repair complete for site " . get_current_blog_id());
         } else {

@@ -259,7 +259,7 @@ class ABJ_404_Solution_NGramFilter {
             if (!$this->coveragePolicy->isCacheInitialized()) {
                 try {
                     $dbUpgrades = abj_service('database_upgrades');
-                    $dbUpgrades->scheduleNGramCacheRebuild();
+                    $dbUpgrades->components()->nGramUpgrade()->scheduleNGramCacheRebuild();
                     $this->logger->infoMessage("Empty N-gram cache detected during 404 request. Scheduled background rebuild.");
                 } catch (Exception $e) {
                     $this->logger->errorMessage("Failed to schedule N-gram cache rebuild: " . $e->getMessage());

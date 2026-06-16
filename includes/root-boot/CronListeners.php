@@ -27,7 +27,7 @@ function abj404_dailyMaintenanceCronJobListener() {
         $retentionService->deleteOldRedirectsCron();
 
         $dbUpgrades = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
-        $dbUpgrades->runDatabaseMaintenanceTasks();
+        $dbUpgrades->components()->dailyMaintenanceUpgrade()->runDatabaseMaintenanceTasks();
     } catch (\Throwable $e) {
         abj404_logRuntimeWarning('Cron maintenance failed', $e);
     }
@@ -84,7 +84,7 @@ function abj404_logsv2CanonicalUrlBackfillListener() {
     try {
         require_once(plugin_dir_path( ABJ404_FILE ) . "includes/Loader.php");
         $dbUpgrades = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
-        $dbUpgrades->backfillLogsv2CanonicalUrl();
+        $dbUpgrades->components()->canonicalUrlBackfillUpgrade()->backfillLogsv2CanonicalUrl();
     } catch (\Throwable $e) {
         abj404_logRuntimeWarning('Cron log canonical URL backfill failed', $e);
     }
@@ -115,7 +115,7 @@ function abj404_rebuildNGramCacheListener($offset = 0) {
     try {
         require_once(plugin_dir_path( ABJ404_FILE ) . "includes/Loader.php");
         $dbUpgrades = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
-        $dbUpgrades->rebuildNGramCacheAsync($offset);
+        $dbUpgrades->components()->nGramUpgrade()->rebuildNGramCacheAsync($offset);
     } catch (\Throwable $e) {
         abj404_logRuntimeWarning('Cron ngram cache rebuild failed', $e);
     }
@@ -138,7 +138,7 @@ function abj404_networkActivationBackgroundListener() {
     try {
         require_once(plugin_dir_path( ABJ404_FILE ) . "includes/Loader.php");
         $upgradesEtc = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
-        $upgradesEtc->processMultisiteActivationBatch();
+        $upgradesEtc->components()->multiSiteUpgrade()->processMultisiteActivationBatch();
     } catch (\Throwable $e) {
         abj404_logRuntimeWarning('Cron multisite activation batch failed', $e);
     }
@@ -150,7 +150,7 @@ function abj404_networkUpgradeBackgroundListener() {
     try {
         require_once(plugin_dir_path( ABJ404_FILE ) . "includes/Loader.php");
         $upgradesEtc = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance();
-        $upgradesEtc->processMultisiteUpgradeBatch();
+        $upgradesEtc->components()->multiSiteUpgrade()->processMultisiteUpgradeBatch();
     } catch (\Throwable $e) {
         abj404_logRuntimeWarning('Cron multisite upgrade batch failed', $e);
     }

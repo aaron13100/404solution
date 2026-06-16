@@ -183,8 +183,8 @@ class ABJ_404_Solution_PluginLogicVersionUpgrader {
             || !$this->databaseUpgradeServiceCanInvoke($upgradesEtc, 'createDatabaseTables')) {
             throw new \RuntimeException('Service "database_upgrades" does not expose upgrade methods.');
         }
-        $upgradesEtc->runSelfHealPrologue();
-        $upgradesEtc->createDatabaseTables(true);
+        $upgradesEtc->components()->selfHealUpgrade()->runSelfHealPrologue();
+        $upgradesEtc->components()->bootstrapUpgrade()->createDatabaseTables(true);
     }
 
     /** @return void */

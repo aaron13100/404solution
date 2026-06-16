@@ -39,7 +39,7 @@ class ABJ_404_Solution_RebuildNgramCacheHandler implements ABJ_404_Solution_Admi
         set_transient($transientKey, abj_clock()->now(), 10);
 
         $dbUpgrades = abj_service('database_upgrades');
-        $scheduled = $dbUpgrades->scheduleNGramCacheRebuild();
+        $scheduled = $dbUpgrades->components()->nGramUpgrade()->scheduleNGramCacheRebuild();
 
         if ($scheduled) {
             return __('N-gram cache rebuild has been scheduled and will run in the background. This may take several minutes on large sites. You can continue using the plugin normally.', '404-solution');

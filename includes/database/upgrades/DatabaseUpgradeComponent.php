@@ -87,39 +87,39 @@ abstract class ABJ_404_Solution_DatabaseUpgradeComponent {
 
     /** @return string|null */
     protected function getUpgradeRuntimeId() {
-        return $this->owner->getUpgradeRuntimeId();
+        return ABJ_404_Solution_DatabaseUpgradeRuntimeState::getRuntimeId();
     }
 
     protected function isLogsv2CanonicalBackfillScheduled(): bool {
-        return $this->owner->isLogsv2CanonicalBackfillScheduled();
+        return ABJ_404_Solution_DatabaseUpgradeRuntimeState::isLogsv2CanonicalBackfillScheduled();
     }
 
     protected function setLogsv2CanonicalBackfillScheduled(bool $scheduled): void {
-        $this->owner->setLogsv2CanonicalBackfillScheduled($scheduled);
+        ABJ_404_Solution_DatabaseUpgradeRuntimeState::setLogsv2CanonicalBackfillScheduled($scheduled);
     }
 
     protected function getCanonicalUrlBackfillChunkSize(): int {
-        return $this->owner->getCanonicalUrlBackfillChunkSize();
+        return ABJ_404_Solution_DatabaseUpgradeRuntimeState::CANONICAL_URL_BACKFILL_CHUNK_SIZE;
     }
 
     protected function getCanonicalUrlBackfillTimeBudgetSec(): float {
-        return $this->owner->getCanonicalUrlBackfillTimeBudgetSec();
+        return ABJ_404_Solution_DatabaseUpgradeRuntimeState::CANONICAL_URL_BACKFILL_TIME_BUDGET_SEC;
     }
 
     protected function getLogsv2CanonicalUrlBackfillTimeBudgetSec(): float {
-        return $this->owner->getLogsv2CanonicalUrlBackfillTimeBudgetSec();
+        return ABJ_404_Solution_DatabaseUpgradeRuntimeState::LOGSV2_CANONICAL_URL_BACKFILL_TIME_BUDGET_SEC;
     }
 
     protected function getLogsv2CanonicalUrlBackfillCompleteOption(): string {
-        return $this->owner->getLogsv2CanonicalUrlBackfillCompleteOption();
+        return ABJ_404_Solution_DatabaseUpgradeRuntimeState::LOGSV2_CANONICAL_URL_BACKFILL_COMPLETE_OPTION;
     }
 
     protected function getRedirectsCanonicalUrlBackfillCompleteOption(): string {
-        return $this->owner->getRedirectsCanonicalUrlBackfillCompleteOption();
+        return ABJ_404_Solution_DatabaseUpgradeRuntimeState::REDIRECTS_CANONICAL_URL_BACKFILL_COMPLETE_OPTION;
     }
 
     /** @return array<int, string> */
     protected function getPluginTableSuffixes(): array {
-        return $this->owner->getPluginTableSuffixes();
+        return ABJ_404_Solution_DatabaseUpgradeRuntimeState::getPluginTableSuffixes();
     }
 }

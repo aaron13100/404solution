@@ -4,6 +4,18 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+/**
+ * Provides typed access to the 13 database-upgrade components.
+ *
+ * Implemented by {@see ABJ_404_Solution_DatabaseUpgradeComponentRegistry}, which
+ * owns the component instances. Each upgrade component receives the coordinator
+ * so it can reach its sibling components (e.g. the bootstrap upgrade asking the
+ * schema-diff upgrade to run). This interface is intentionally limited to the
+ * component accessors; runtime-state values live on
+ * {@see ABJ_404_Solution_DatabaseUpgradeRuntimeState} and the public operation
+ * surface lives on the components themselves, reached via
+ * {@see ABJ_404_Solution_DatabaseUpgradesEtc::components()}.
+ */
 interface ABJ_404_Solution_DatabaseUpgradeCoordinator {
 
     public function nGramUpgrade(): ABJ_404_Solution_DatabaseUpgradeNGram;
@@ -31,33 +43,4 @@ interface ABJ_404_Solution_DatabaseUpgradeCoordinator {
     public function schemaDiffUpgrade(): ABJ_404_Solution_DatabaseUpgradeSchemaDiff;
 
     public function bootstrapUpgrade(): ABJ_404_Solution_DatabaseUpgradeBootstrap;
-
-    /**
-     * @param bool $updatingToNewVersion
-     * @return void
-     */
-    public function createDatabaseTables($updatingToNewVersion = false, bool $force = false);
-
-    /** @return void */
-    public function runSelfHealPrologue();
-
-    /** @return string|null */
-    public function getUpgradeRuntimeId();
-
-    public function isLogsv2CanonicalBackfillScheduled(): bool;
-
-    public function setLogsv2CanonicalBackfillScheduled(bool $scheduled): void;
-
-    public function getCanonicalUrlBackfillChunkSize(): int;
-
-    public function getCanonicalUrlBackfillTimeBudgetSec(): float;
-
-    public function getLogsv2CanonicalUrlBackfillTimeBudgetSec(): float;
-
-    public function getLogsv2CanonicalUrlBackfillCompleteOption(): string;
-
-    public function getRedirectsCanonicalUrlBackfillCompleteOption(): string;
-
-    /** @return array<int, string> */
-    public function getPluginTableSuffixes(): array;
 }

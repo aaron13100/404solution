@@ -112,7 +112,7 @@ class ABJ_404_Solution_RedirectsRetentionService implements ABJ_404_Solution_Red
         $manually_fired = $this->isManualMaintenanceRun();
 
         $upgradesEtc = abj_service('database_upgrades');
-        $upgradesEtc->createDatabaseTables(false);
+        $upgradesEtc->components()->bootstrapUpgrade()->createDatabaseTables(false);
 
         $this->connectionManager->ensureConnection();
 
@@ -158,11 +158,11 @@ class ABJ_404_Solution_RedirectsRetentionService implements ABJ_404_Solution_Red
         $this->logger->infoMessage($message);
 
         $upgradesEtc = abj_service('database_upgrades');
-        $upgradesEtc->createDatabaseTables();
+        $upgradesEtc->components()->bootstrapUpgrade()->createDatabaseTables();
 
         $this->dbCore->queryAndGetResults("optimize table {wp_abj404_redirects}");
 
-        $upgradesEtc->updatePluginCheck();
+        $upgradesEtc->components()->pluginUpdateUpgrade()->updatePluginCheck();
 
         return $message;
     }
