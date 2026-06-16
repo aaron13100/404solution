@@ -177,6 +177,79 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 		return $this->components;
 	}
 
+	// -------------------------------------------------------------------------
+	// Lifecycle entry points.
+	//
+	// These are the facade's concrete public API: the operations the rest of the
+	// plugin (boot, cron, activation, retention) invokes. Each delegates to the
+	// component that owns the work. They are intentionally explicit methods (not
+	// a __call bridge or string registry) and their presence is enforced by
+	// DatabaseUpgradeCompositionGateTest::testProductionLifecycleMethodsAreConcreteFacadeMethods.
+	// Non-lifecycle component operations are reached through components().
+	// -------------------------------------------------------------------------
+
+	/**
+	 * @param bool $updatingToNewVersion
+	 * @param bool $force
+	 * @return void
+	 */
+	public function createDatabaseTables($updatingToNewVersion = false, bool $force = false) {
+		$this->components()->bootstrapUpgrade()->createDatabaseTables($updatingToNewVersion, $force);
+	}
+
+	/** @return void */
+	public function correctCollations() {
+		$this->components()->collationDriftUpgrade()->correctCollations();
+	}
+
+	/** @return void */
+	public function runSelfHealPrologue() {
+		$this->components()->selfHealUpgrade()->runSelfHealPrologue();
+	}
+
+	/** @return void */
+	public function runDatabaseMaintenanceTasks() {
+		$this->components()->dailyMaintenanceUpgrade()->runDatabaseMaintenanceTasks();
+	}
+
+	/** @return void */
+	public function updatePluginCheck() {
+		$this->components()->pluginUpdateUpgrade()->updatePluginCheck();
+	}
+
+	/** @return mixed */
+	public function scheduleNGramCacheRebuild() {
+		return $this->components()->nGramUpgrade()->scheduleNGramCacheRebuild();
+	}
+
+	/**
+	 * @param int $offset
+	 * @return void
+	 */
+	public function rebuildNGramCacheAsync($offset = 0) {
+		$this->components()->nGramUpgrade()->rebuildNGramCacheAsync($offset);
+	}
+
+	/** @return bool */
+	public function processMultisiteActivationBatch(): bool {
+		return $this->components()->multiSiteUpgrade()->processMultisiteActivationBatch();
+	}
+
+	/** @return bool */
+	public function processMultisiteUpgradeBatch(): bool {
+		return $this->components()->multiSiteUpgrade()->processMultisiteUpgradeBatch();
+	}
+
+	/** @return int */
+	public function backfillLogsv2CanonicalUrl(): int {
+		return $this->components()->canonicalUrlBackfillUpgrade()->backfillLogsv2CanonicalUrl();
+	}
+
+	/** @return void */
+	public function scheduleLogsv2CanonicalUrlBackfill(): void {
+		$this->components()->canonicalUrlBackfillUpgrade()->scheduleLogsv2CanonicalUrlBackfill();
+	}
+
 	/**
 	 * @return array<string, mixed>
 	 */
