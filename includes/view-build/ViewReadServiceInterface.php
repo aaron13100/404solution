@@ -4,23 +4,164 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-require_once __DIR__ . '/ViewStatusCountsInterface.php';
-require_once __DIR__ . '/ViewListReadInterface.php';
-require_once __DIR__ . '/ViewSnapshotReadInterface.php';
-require_once __DIR__ . '/ViewMetadataInterface.php';
-require_once __DIR__ . '/ViewHitsLifecycleInterface.php';
-
 /**
- * Aggregate type that bundles the five view-read sub-interfaces. New code
- * should depend on the narrowest sub-interface it actually uses; this
- * composite stays so DataAccess and existing typed callers keep compiling.
+ * Public surface of the admin view-read service.
  *
- * @see docs/dataaccess-refactor-plan.md Phase 6.
+ * This was previously expressed as five segregated sub-interfaces
+ * (status-counts, list-read, snapshot-read, metadata, hits-lifecycle)
+ * aggregated by this composite. The segregation was never realized: every
+ * typed caller (DataAccess delegate, View, admin tables, REST/AJAX handlers,
+ * the extraction tests) depended on this composite, and no code ever depended
+ * on a narrow sub-interface. The sub-interfaces were therefore unrealized
+ * scaffolding and have been collapsed into this single interface. The method
+ * set is unchanged, so existing typed callers continue to compile.
+ *
+ * Methods are grouped by their former sub-interface for readability:
+ *   - status counts + invalidation hooks
+ *   - redirect-list reads (admin tables / export)
+ *   - snapshot read-side adapter
+ *   - schema / capacity introspection + failure diagnostics
+ *   - hits-table lifecycle hook
  */
-interface ABJ_404_Solution_ViewReadServiceInterface extends
-    ABJ_404_Solution_ViewStatusCountsInterface,
-    ABJ_404_Solution_ViewListReadInterface,
-    ABJ_404_Solution_ViewSnapshotReadInterface,
-    ABJ_404_Solution_ViewMetadataInterface,
-    ABJ_404_Solution_ViewHitsLifecycleInterface {
+interface ABJ_404_Solution_ViewReadServiceInterface {
+
+    /* ---- status counts + invalidation hooks ---- */
+
+    /**
+     * @param bool $bypassCache
+     * @return array<string, int>
+     */
+    public function getRedirectStatusCounts($bypassCache = false): array;
+
+    /**
+     * @param bool $bypassCache
+     * @return array<string, int>
+     */
+    public function getCapturedStatusCounts($bypassCache = false): array;
+
+    /** @return int */
+    public function getHighImpactCapturedCount(): int;
+
+    /** @return string */
+    public function buildHighImpactCapturedCountQuery(): string;
+
+    /**
+     * @template T
+     * @param callable():T $work
+     * @return T
+     */
+    public function runWithDeferredInvalidation(callable $work);
+
+    /** @return void */
+    public function invalidateStatusCountsCache(): void;
+
+    /** @return void */
+    public function invalidateViewSnapshotCache(): void;
+
+    /** @return void */
+    public function clearRegexRedirectsCache(): void;
+
+    /* ---- redirect-list reads (admin tables / export) ---- */
+
+    /**
+     * @param int $logID
+     * @return int
+     */
+    public function getLogsCount($logID);
+
+    /** @return array<int, array<string, mixed>> */
+    public function getRedirectsAll();
+
+    /** @param string $tempFile @return void */
+    public function doRedirectsExport(string $tempFile): void;
+
+    /** @return array<int, array<string, mixed>> */
+    public function getRedirectsWithLogs();
+
+    /** @return array<int, array<string, mixed>> */
+    public function getRedirectsWithRegEx();
+
+    /** @return array<int, array<string, mixed>> */
+    public function getManualRedirectsWithRegexMetachars();
+
+    /**
+     * @param string $sub
+     * @param array<string, mixed> $tableOptions
+     * @return array<int|string, mixed>
+     */
+    public function getRedirectsForView($sub, $tableOptions);
+
+    /**
+     * @param string $sub
+     * @param array<string, mixed> $tableOptions
+     * @return int
+     */
+    public function getRedirectsForViewCount(string $sub, array $tableOptions): int;
+
+    /**
+     * @param array<int, string> $postIDs
+     * @return array<int, mixed>
+     */
+    public function getExtraDataToPermalinkSuggestions(array $postIDs): array;
+
+    /* ---- snapshot read-side adapter ---- */
+
+    /**
+     * @param string $sub
+     * @param array<string, mixed> $tableOptions
+     * @return bool
+     */
+    public function viewRowsSnapshotAvailable($sub, array $tableOptions): bool;
+
+    /**
+     * @param string $sub
+     * @param array<string, mixed> $tableOptions
+     * @return bool
+     */
+    public function viewTableSnapshotAvailable($sub, array $tableOptions): bool;
+
+    /**
+     * @param string $sub
+     * @param array<string, mixed> $tableOptions
+     * @return array<string, mixed>
+     */
+    public function warmViewTableSnapshotStage(string $sub, array $tableOptions): array;
+
+    /* ---- schema / capacity introspection + failure diagnostics ---- */
+
+    /** @return array<string, mixed> */
+    public function getTableEngines();
+
+    /** @return bool */
+    public function isMyISAMSupported(): bool;
+
+    /** @return int */
+    public function getCapturedCount();
+
+    /** @return array<int, string> */
+    public function getAllPostTypes();
+
+    /** @return int */
+    public function getLogDiskUsage();
+
+    /**
+     * @param array<int, int> $types
+     * @param int $trashed
+     * @return int
+     */
+    public function getRecordCount($types = array(), $trashed = 0);
+
+    /**
+     * @param string $sub
+     * @param string $failedQuery
+     * @param array<string, mixed> $tableOptions
+     * @param array<string, mixed> $queryResult
+     * @return array<string, mixed>
+     */
+    public function captureViewQueryFailureDiagnostics(string $sub, string $failedQuery, array $tableOptions, array $queryResult): array;
+
+    /* ---- hits-table lifecycle hook ---- */
+
+    /** @return void */
+    public function maybeUpdateRedirectsForViewHitsTable(): void;
 }
