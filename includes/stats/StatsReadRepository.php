@@ -225,6 +225,66 @@ class ABJ_404_Solution_StatsReadRepository {
         return $this->toInt($value, -1);
     }
 
+    /**
+     * Count redirect rows grouped into match-confidence bands for the stats
+     * page Match Confidence card.
+     *
+     * A NULL score is the "manual" band (no automated scoring took place);
+     * scored rows fall into high/medium/low per
+     * {@see ABJ_404_Solution_ScoreThresholds}. Disabled rows and rows with
+     * status 0 are excluded. Routed through queryAndGetResults() so the
+     * 5x SUM(CASE...) aggregate inherits the centralized 60s SELECT timeout
+     * (the redirects table can be very large on busy sites).
+     *
+     * This is the single owner of the confidence-band SQL and thresholds:
+     * the view layer asks for the counts and only formats them.
+     *
+     * @return array{high:int,medium:int,low:int,manual:int,avg:float|null,total:int}|null
+     *   Band counts plus the rounded average score (avg is null when no scored
+     *   rows exist), or null when the query timed out, errored, or returned no
+     *   aggregate row so the caller can skip rendering the card.
+     */
+    public function getConfidenceBandCounts() {
+        $redirectsTable = $this->dbCore->doTableNameReplacements('{wp_abj404_redirects}');
+
+        $high = ABJ_404_Solution_ScoreThresholds::HIGH;
+        $medium = ABJ_404_Solution_ScoreThresholds::MEDIUM;
+        $sql = "SELECT
+               SUM(CASE WHEN score IS NULL THEN 1 ELSE 0 END) AS manual_count,
+               SUM(CASE WHEN score >= {$high} THEN 1 ELSE 0 END) AS high_count,
+               SUM(CASE WHEN score >= {$medium} AND score < {$high} THEN 1 ELSE 0 END) AS medium_count,
+               SUM(CASE WHEN score IS NOT NULL AND score < {$medium} THEN 1 ELSE 0 END) AS low_count,
+               AVG(score) AS avg_score
+             FROM `{$redirectsTable}`
+             WHERE disabled = %d AND status != %d";
+
+        $result = $this->dbCore->queryAndGetResults($sql, array('query_params' => array(0, 0)));
+        if (!empty($result['timed_out']) || (isset($result['last_error']) && $result['last_error'] != '')) {
+            return null;
+        }
+        $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
+        if (empty($rows) || !is_array($rows[0] ?? null)) {
+            return null;
+        }
+        $row = $rows[0];
+
+        $highCount   = $this->toInt($row['high_count']   ?? 0, 0);
+        $mediumCount = $this->toInt($row['medium_count'] ?? 0, 0);
+        $lowCount    = $this->toInt($row['low_count']    ?? 0, 0);
+        $manualCount = $this->toInt($row['manual_count'] ?? 0, 0);
+        $avgRaw = $row['avg_score'] ?? null;
+        $avgScore = is_numeric($avgRaw) ? round((float)$avgRaw, 1) : null;
+
+        return array(
+            'high'   => $highCount,
+            'medium' => $mediumCount,
+            'low'    => $lowCount,
+            'manual' => $manualCount,
+            'avg'    => $avgScore,
+            'total'  => $highCount + $mediumCount + $lowCount + $manualCount,
+        );
+    }
+
     /** @return array<string, mixed> */
     public function buildStatsDashboardSnapshotData() {
         $redirectsTable = $this->dbCore->doTableNameReplacements("{wp_abj404_redirects}");

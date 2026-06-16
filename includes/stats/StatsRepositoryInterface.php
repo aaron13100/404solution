@@ -78,6 +78,20 @@ interface ABJ_404_Solution_StatsRepositoryInterface {
     public function getEarliestLogTimestamp();
 
     // =========================================================================
+    // Match-confidence distribution
+    // =========================================================================
+
+    /**
+     * Redirect-row counts grouped into match-confidence bands for the stats
+     * page. NULL score = manual; scored rows are high/medium/low per
+     * {@see ABJ_404_Solution_ScoreThresholds}.
+     *
+     * @return array{high:int,medium:int,low:int,manual:int,avg:float|null,total:int}|null
+     *   Band counts plus rounded average score, or null on query failure.
+     */
+    public function getConfidenceBandCounts();
+
+    // =========================================================================
     // Email digest
     // =========================================================================
 

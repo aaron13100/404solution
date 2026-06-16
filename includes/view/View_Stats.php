@@ -154,53 +154,29 @@ class ABJ_404_Solution_View_Stats extends ABJ_404_Solution_ViewComponent {
 
     /**
      * Output the Match Confidence distribution card on the Stats page.
-     * Queries the redirects table for score band counts and renders a Chart.js doughnut.
+     * Asks the stats repository for the score-band counts and renders them
+     * into the Chart.js doughnut card. Presentation only: the SQL, table name,
+     * and HIGH/MEDIUM thresholds live in
+     * ABJ_404_Solution_StatsReadRepository::getConfidenceBandCounts().
      * @return void
      */
     public function echoConfidenceDistributionSection() {
-        global $abj404view, $wpdb;
+        global $abj404view;
 
-        if (!isset($wpdb)) {
+        // Ask the stats repository for the band counts. The repository owns the
+        // table name, the SQL, and the HIGH/MEDIUM thresholds; this view method
+        // only formats the result into the card template.
+        $bands = $this->statsRepository->getConfidenceBandCounts();
+        if (!is_array($bands) || (int)($bands['total'] ?? 0) === 0) {
             return;
         }
 
-        $dbCore = abj_service('db_core');
-        $redirectsTable = $dbCore->doTableNameReplacements('{wp_abj404_redirects}');
-
-        // Query score distribution bands. Route through the DAO so the
-        // 5x SUM(CASE...) aggregate inherits the centralized 60s SELECT
-        // timeout — the redirects table can be very large on busy sites.
-        $high = ABJ_404_Solution_ScoreThresholds::HIGH;
-        $medium = ABJ_404_Solution_ScoreThresholds::MEDIUM;
-        $sql = "SELECT
-               SUM(CASE WHEN score IS NULL THEN 1 ELSE 0 END) AS manual_count,
-               SUM(CASE WHEN score >= {$high} THEN 1 ELSE 0 END) AS high_count,
-               SUM(CASE WHEN score >= {$medium} AND score < {$high} THEN 1 ELSE 0 END) AS medium_count,
-               SUM(CASE WHEN score IS NOT NULL AND score < {$medium} THEN 1 ELSE 0 END) AS low_count,
-               AVG(score) AS avg_score
-             FROM `{$redirectsTable}`
-             WHERE disabled = %d AND status != %d";
-
-        $result = $dbCore->queryAndGetResults($sql, array('query_params' => array(0, 0)));
-        if (!empty($result['timed_out']) || (isset($result['last_error']) && $result['last_error'] != '')) {
-            return;
-        }
-        $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
-        if (empty($rows) || !is_array($rows[0] ?? null)) {
-            return;
-        }
-        $row = $rows[0];
-
-        $highCount   = (int)($row['high_count']   ?? 0);
-        $mediumCount = (int)($row['medium_count'] ?? 0);
-        $lowCount    = (int)($row['low_count']    ?? 0);
-        $manualCount = (int)($row['manual_count'] ?? 0);
-        $avgScore    = ($row['avg_score'] !== null) ? round((float)$row['avg_score'], 1) : null;
-
-        $total = $highCount + $mediumCount + $lowCount + $manualCount;
-        if ($total === 0) {
-            return;
-        }
+        $highCount   = (int)($bands['high']   ?? 0);
+        $mediumCount = (int)($bands['medium'] ?? 0);
+        $lowCount    = (int)($bands['low']    ?? 0);
+        $manualCount = (int)($bands['manual'] ?? 0);
+        $avgRaw      = $bands['avg'] ?? null;
+        $avgScore    = is_numeric($avgRaw) ? (float)$avgRaw : null;
 
         $labelHigh   = esc_html__('High (≥80%)', '404-solution');
         $labelMedium = esc_html__('Medium (50–79%)', '404-solution');

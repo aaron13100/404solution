@@ -39,6 +39,7 @@ class ABJ_404_Solution_UnavailableStatsRepository implements ABJ_404_Solution_St
     public function getStatsDashboardSnapshot($allowStale = true) { $this->unavailable(); }
     public function refreshStatsDashboardSnapshot($force = false) { $this->unavailable(); }
     public function getEarliestLogTimestamp() { $this->unavailable(); }
+    public function getConfidenceBandCounts() { $this->unavailable(); }
     public function getTopCapturedForDigest(int $limit): array { $this->unavailable(); }
     public function buildTopCapturedForDigestQuery(int $limit): string { $this->unavailable(); }
     public function getDigestSummaryStats(): array { $this->unavailable(); }

@@ -110,6 +110,11 @@ class ABJ_404_Solution_StatsRepository implements ABJ_404_Solution_StatsReposito
     }
 
     /** @inheritDoc */
+    function getConfidenceBandCounts() {
+        return $this->statsReadRepository->getConfidenceBandCounts();
+    }
+
+    /** @inheritDoc */
     function getTopCapturedForDigest(int $limit): array {
         return $this->digestDataProvider->getTopCapturedForDigest($limit);
     }
