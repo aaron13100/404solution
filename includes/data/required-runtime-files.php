@@ -23,6 +23,7 @@ if (!defined('ABSPATH')) {
  *
  * @return array{boot: array<int, string>, sql: array<int, string>, root: array<int, string>}
  */
+// allow-no-test-found: static data file (returns boot/sql/root required-file lists, no logic); the lists are verified against the real on-disk files in SqlFileIntegrityListCompletenessTest and BootResilienceTest.
 return array(
 	'boot' => array(
 		'Loader.php',

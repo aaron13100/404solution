@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
  * duck-typed parameters (production and test doubles both supported);
  * $separatingCharacters carries the existing array hint.
  */
+// allow-no-test-found: pure dependency-bundle DTO (public fields, constructor-only assignment, no behavior); fields consumed by ABJ_404_Solution_SpellLevenshteinEngine, driven through the spell-check matching path in SpellCheckerMatchingTest and SpellCheckerAlgorithmTest.
 class ABJ_404_Solution_SpellLevenshteinEngineDependencies {
 
     /** @var ABJ_404_Solution_Functions */

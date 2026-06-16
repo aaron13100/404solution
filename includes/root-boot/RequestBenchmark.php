@@ -16,6 +16,7 @@ if (!defined('ABSPATH')) {
  * timing markers fire in the correct request lifecycle order. This file only
  * defines the functions.
  */
+// allow-no-test-found: boot-time benchmark instrumentation global functions wired into the request lifecycle in 404-solution.php; no same-named unit file. abj404_is_benchmark_request and the abj404_benchmark_* markers are exercised in CompetitiveBenchmarkAssetsTest.
 
 if (!function_exists('abj404_is_benchmark_request')) {
 	/**

@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
  * no-op kept so the admin_notices wiring (if any) has a stable callback; the
  * real status lives on the plugin's Tools > Diagnostics card.
  */
+// allow-no-test-found: boot-time global debug helpers (localhost-only) wired in 404-solution.php; no same-named unit file. abj404_get_simulated_db_latency_ms is exercised in DatabaseQueryDiagnosticsTest, and the helpers are loaded through LoaderLazyLoadTest.
 
 if (!function_exists('abj404_get_simulated_db_latency_ms')) {
 	/** @return bool */

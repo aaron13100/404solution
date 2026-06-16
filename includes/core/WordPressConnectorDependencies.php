@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
  * statsRepository fallbacks (which inspect the raw redirectsRepository).
  * Fields are untyped to preserve the existing null-tolerant parameters.
  */
+// allow-no-test-found: pure dependency-bundle DTO (nullable public fields, constructor-only assignment, no behavior); fields consumed by ABJ_404_Solution_WordPress_Connector, which is constructed and exercised in WordPressConnectorStaticMethodsTest and WordPressConnectorAdminLinkFilterTest.
 class ABJ_404_Solution_WordPressConnectorDependencies {
 
     /** @var ABJ_404_Solution_PluginLogic|null */

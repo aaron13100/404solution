@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
  * `?? abj_service(...)` resolution and the post-resolution type guard. The
  * dbCore field is legitimately null at the NGramFilter call site.
  */
+// allow-no-test-found: pure dependency-bundle DTO (nullable public fields, constructor-only assignment, no behavior); fields consumed by ABJ_404_Solution_NGramRebuilder, driven through the spell-check n-gram prefilter path in SpellCheckerNGramPrefilterTest and SpellCheckerPrefilteringTest.
 class ABJ_404_Solution_NGramRebuilderDependencies {
 
     /** @var ABJ_404_Solution_DatabaseCore|null */

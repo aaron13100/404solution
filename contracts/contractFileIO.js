@@ -12,6 +12,7 @@
  *   fileContainsAnnotation(filePath, id, name?)    -> boolean
  *   fileContainsParityAnnotation(filePath, id)     -> boolean
  */
+// allow-no-test-found: file-IO layer of the contract-validation CLI gate; it is the data-access half of validate-contracts.js (its only consumer) and is exercised whenever that gate runs over the real contracts/schemas tree. There is no isolated JS unit spec because it only wraps fs/path reads, with no business logic to assert in isolation.
 
 const fs = require("fs");
 const path = require("path");

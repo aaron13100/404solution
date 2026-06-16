@@ -16,6 +16,7 @@ if (!defined('ABSPATH')) {
  * resolution. Fields are untyped to preserve the existing null-tolerant
  * parameters (optionsProvider is any object exposing getOptions()).
  */
+// allow-no-test-found: pure dependency-bundle DTO (nullable public fields, constructor-only assignment, no behavior); fields consumed by ABJ_404_Solution_RequestIgnoreNormalizer, constructed and exercised in RequestIgnoreNormalizerTest.
 class ABJ_404_Solution_RequestIgnoreNormalizerDependencies {
 
     /** @var mixed Object exposing getOptions(). */

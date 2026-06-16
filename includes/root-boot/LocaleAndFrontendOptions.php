@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
  * The add_filter('plugin_locale', ...) registration stays in 404-solution.php;
  * this file only defines the functions.
  */
+// allow-no-test-found: boot-time global helpers wired via add_filter in 404-solution.php; no same-named unit file. abj404_is_redirect_all_requests_enabled (the option parser) is exercised in LoaderLazyLoadTest.
 
 if (!function_exists('abj404_is_redirect_all_requests_enabled')) {
 	/**

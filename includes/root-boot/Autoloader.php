@@ -19,6 +19,7 @@ if (!defined('ABSPATH')) {
  * sequence); this file only defines the function. It is required with a plain
  * require FIRST in 404-solution.php, before any class use.
  */
+// allow-no-test-found: boot-time global function (abj404_autoloader) wired via spl_autoload_register in 404-solution.php; no isolated unit-file seam. The classmap+missing-collaborator resolution behavior is exercised in BootResilienceTest (which references abj404_autoloader directly).
 
 if (!function_exists('abj404_autoloader')) {
 /**

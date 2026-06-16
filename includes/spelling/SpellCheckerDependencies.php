@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
  * viewReadService to a raw contentRepository exposing getRedirectsWithRegEx.
  * Fields are untyped to preserve the constructor's null-tolerant parameters.
  */
+// allow-no-test-found: pure dependency-bundle DTO (nullable public fields, constructor-only assignment, no behavior); fields consumed by ABJ_404_Solution_SpellChecker, constructed and exercised in SpellCheckerAlgorithmTest and SpellCheckerHighLevelTest.
 class ABJ_404_Solution_SpellCheckerDependencies {
 
     /** @var ABJ_404_Solution_Functions|null */

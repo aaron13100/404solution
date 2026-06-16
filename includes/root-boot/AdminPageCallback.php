@@ -18,6 +18,7 @@ if (!defined('ABSPATH')) {
  * defines the callbacks. abj404_degraded_admin_page() (the fallback) lives in
  * includes/root-boot/DegradedSupportRequest.php.
  */
+// allow-no-test-found: boot-time global admin-page callback wired via the WP admin menu in 404-solution.php; no same-named unit file. The blank-page fallback behavior of abj404_admin_page_callback is exercised in BlankPagePreventionTest (which references the callback directly).
 
 if (!function_exists('abj404_admin_page_callback')) {
 	/**

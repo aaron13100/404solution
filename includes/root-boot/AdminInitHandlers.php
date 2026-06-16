@@ -19,6 +19,7 @@ if (!defined('ABSPATH')) {
  * 404-solution.php; this file only defines the callbacks. The lazy Loader.php
  * requires use ABJ404_FILE so they resolve to the plugin root.
  */
+// allow-no-test-found: boot-time admin_init global callbacks wired via add_action in 404-solution.php; no same-named unit file. The page-load fallback advance (abj404_maybePageLoadFallbackAdvance / abj404_loadSomethingWhenWordPressIsReady) is exercised in PageLoadFallbackHookRegistrationTest.
 
 if (!function_exists('abj404_load_textdomain_if_needed')) {
 	/**

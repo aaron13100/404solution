@@ -17,6 +17,7 @@ if (!defined('ABSPATH')) {
  * the degraded boot path stay in 404-solution.php; this file only defines the
  * functions.
  */
+// allow-no-test-found: boot-time degraded-path global functions wired via add_action in 404-solution.php; no same-named unit file. The degraded support-request and admin-page behavior is exercised in BlankPagePreventionTest and OpcacheStaleAfterUpgradeTest (both reference abj404_degraded_*).
 
 if (!function_exists('abj404_degraded_register_support_request')) {
 	/**

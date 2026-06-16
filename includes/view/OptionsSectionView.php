@@ -11,6 +11,7 @@ if (!defined('ABSPATH')) {
  * Replaces a 7-positional-parameter method signature (criterion 220
  * Interface Size). Plain data carrier read directly by the consumer.
  */
+// allow-no-test-found: pure parameter-object DTO (typed public fields, constructor-only assignment, no behavior); fields consumed by View_AdminChrome::echoOptionsSection(), exercised when the stats/options page renders in ViewStatsPageTest and StatsRefreshWiringTest.
 class ABJ_404_Solution_OptionsSectionView {
 
     /** @var string */

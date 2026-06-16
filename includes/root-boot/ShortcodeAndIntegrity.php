@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
  * The add_shortcode() registration stays in 404-solution.php; this file only
  * defines the callback and the integrity-check helpers.
  */
+// allow-no-test-found: boot-time global functions (shortcode handler + runtime integrity helpers) wired via add_shortcode in 404-solution.php; no same-named unit file. abj404_get_required_runtime_files and abj404_verify_runtime_integrity are exercised in SqlFileIntegrityListCompletenessTest.
 
 if (!function_exists('abj404_get_required_runtime_files')) {
 	/**

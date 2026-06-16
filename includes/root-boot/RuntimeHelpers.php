@@ -11,6 +11,7 @@ if (!defined('ABSPATH')) {
  * on the same logging/clock/authorization abstractions the rest of the plugin
  * uses, while degrading safely when the container or its classes are missing.
  */
+// allow-no-test-found: boot-time global helper functions (logging/clock/admin-policy gate) required directly by 404-solution.php before the service container exists; no isolated unit-file seam. abj404_logRuntimeWarning is exercised in CatchExceptionCoverageAuditTest and OpcacheStaleAfterUpgradeTest; the clock helpers back the Clock-injection tests.
 
 if (!function_exists('abj404_record_missing_file')) {
 /**

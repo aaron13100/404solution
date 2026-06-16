@@ -12,6 +12,7 @@ if (!defined('ABSPATH')) {
  * Interface Size). Plain data carrier read directly by the consumer.
  * $rowType is untyped to mirror the policy's existing mixed parameter.
  */
+// allow-no-test-found: pure parameter-object DTO (typed public fields, constructor-only assignment, no behavior); fields consumed by View_RedirectsTable::resolveDestinationWarnings().
 class ABJ_404_Solution_RedirectDestinationWarningContext {
 
     /** @var array<string, mixed> */

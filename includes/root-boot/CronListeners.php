@@ -16,6 +16,7 @@ if (!defined('ABSPATH')) {
  * callbacks. Each lazily loads Loader.php via ABJ404_FILE so the autoloader can
  * resolve the plugin classes they dispatch to.
  */
+// allow-no-test-found: boot-time WP-Cron action callbacks wired via add_action in 404-solution.php; no same-named unit file. The cron listener dispatch and wiring are exercised in FeedbackTransportCronListenerTest and CronListenerServiceWiringTest.
 
 if (!function_exists('abj404_dailyMaintenanceCronJobListener')) {
 /** @return void */

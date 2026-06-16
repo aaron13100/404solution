@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
  * `?? abj_service(...)` resolution. Fields are untyped to preserve the
  * constructor's existing null-tolerant interface parameters.
  */
+// allow-no-test-found: pure dependency-bundle DTO (nullable public fields, constructor-only assignment, no behavior); fields consumed by ABJ_404_Solution_NotFoundResponseService, constructed and exercised in NotFoundResponseServiceTest.
 class ABJ_404_Solution_NotFoundResponseDependencies {
 
     /** @var ABJ_404_Solution_Functions|null */

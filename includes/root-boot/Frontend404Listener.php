@@ -16,6 +16,7 @@ if (!defined('ABSPATH')) {
  * registration stays in 404-solution.php (the priority is computed there from
  * settings); this file only defines the callback.
  */
+// allow-no-test-found: boot-time frontend entry point (abj404_404listener) wired via add_action('template_redirect') in 404-solution.php; no same-named unit file. The full 404 dispatch path is exercised end-to-end in FrontendRedirect404PipelineEndToEndTest (which references abj404_404listener).
 
 if (!function_exists('abj404_404listener')) {
 /** @return void */

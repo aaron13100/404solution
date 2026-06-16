@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
  * duck-typed call_user_func forwarders. Plain data carrier read directly by
  * the writer; use {@see self::create()} at call sites.
  */
+// allow-no-test-found: pure parameter-object DTO (typed public fields; create() factory only forwards to the constructor, no behavior); fields consumed by LogWriteInterface::logRedirectHit(), exercised in FrontendRedirect404PipelineEndToEndTest and LogQueueTest.
 class ABJ_404_Solution_RedirectHitLogEntry {
 
     /** @var string */

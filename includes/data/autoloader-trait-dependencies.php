@@ -18,6 +18,7 @@ if (!defined('ABSPATH')) {
  *
  * @return array<string, array<int, string>> host class name => collaborator class names
  */
+// allow-no-test-found: static data file (returns a class-to-collaborator dependency map, no logic); its completeness against the real classes is asserted directly in AutoloaderTraitDependenciesCompletenessTest.
 return array(
     'ABJ_404_Solution_View' => array(
         'ABJ_404_Solution_ViewComponent',

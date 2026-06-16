@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
  * Both are required early (before Loader.php) because boot-time code paths call
  * them before the service container is fully available.
  */
+// allow-no-test-found: boot-time global settings/path helpers required before Loader.php and the service container; no same-named unit file. abj404_get_settings_options (the raw-settings boundary) is exercised in OptionsRepositoryMigrationContractTest::testBootstrapRawSettingsReadsStayIsolatedToHelper.
 
 // Used by multiple classes during early admin initialization (e.g. upgrade/migration paths).
 // This must be defined before any Loader.php initialization that might touch Logging/SynchronizationUtils.

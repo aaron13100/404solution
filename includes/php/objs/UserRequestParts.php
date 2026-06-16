@@ -12,6 +12,7 @@ if (!defined('ABSPATH')) {
  * Size). Fields are read directly by the consumer; this is a plain data
  * carrier with no behavior.
  */
+// allow-no-test-found: pure parameter-object DTO (typed public fields, constructor-only assignment, no behavior); fields consumed by ABJ_404_Solution_UserRequest, exercised in UserRequestTest.
 class ABJ_404_Solution_UserRequestParts {
 
     /** @var string */

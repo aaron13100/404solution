@@ -17,6 +17,7 @@ if (!defined('ABSPATH')) {
  * The add_action('admin_notices', ...) registrations stay in 404-solution.php;
  * this file only defines the renderers.
  */
+// allow-no-test-found: boot-time admin_notices global renderers wired via add_action in 404-solution.php; no same-named unit file. abj404_show_plugin_db_notice (and the other notice renderers) are exercised in CollationAutoRecoveryTest.
 
 if (!function_exists('abj404_show_plugin_db_notice')) {
 	/** @return void */

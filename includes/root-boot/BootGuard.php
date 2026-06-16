@@ -16,6 +16,7 @@ if (!defined('ABSPATH')) {
  * 404-solution.php (it must run as part of the boot sequence, before Loader.php
  * is required). This file only defines the function.
  */
+// allow-no-test-found: boot-time global function (abj404_boot_shutdown_handler) wired via register_shutdown_function in 404-solution.php before the autoloader; it captures uncatchable E_COMPILE_ERROR fatals during real PHP shutdown, which cannot be reproduced in-process, so there is no isolated unit seam.
 
 // Minimal shutdown handler: catches compile/parse fatals in plugin files and
 // stores them in a transient so the degraded admin page can display the error
