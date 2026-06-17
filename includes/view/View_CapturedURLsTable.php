@@ -326,9 +326,15 @@ class ABJ_404_Solution_View_CapturedURLsTable extends ABJ_404_Solution_ViewCompo
      */
     private function buildCapturedBodyRows(string $sub, array $tableOptions, array $rows): string {
         if (count($rows) === 0) {
+            // Same i455 bug class as the redirects table: a pending/errored/
+            // stale-empty staged read must not be shown as "No records" while
+            // the live source count says captured rows exist.
+            $emptyMessage = $this->viewReadService->lastRedirectsViewReadWasIncomplete()
+                ? __('Preparing the captured 404s table. The list is still loading and will appear in a moment.', '404-solution')
+                : __('No Captured 404 Records To Display', '404-solution');
             return $this->f->str_replace(
                 '{message}',
-                __('No Captured 404 Records To Display', '404-solution'),
+                $emptyMessage,
                 $this->tpl('viewRedirectsTableCapturedEmptyRow.html')
             ) . "\n";
         }

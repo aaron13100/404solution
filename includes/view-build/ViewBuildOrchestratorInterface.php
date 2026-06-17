@@ -39,6 +39,9 @@ interface ABJ_404_Solution_ViewBuildOrchestratorInterface {
     /** @return bool */
     public function viewDoneIsServeable(): bool;
 
+    /** @return bool Whether view_done is up to date with the source tables (no rebuild pending). */
+    public function viewDoneIsFresh(): bool;
+
     /** @return int Unix timestamp, or 0. */
     public function getViewDoneBuiltAtTimestamp(): int;
 

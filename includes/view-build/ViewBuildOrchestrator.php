@@ -134,6 +134,11 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
         return $this->freshness->isServeable();
     }
 
+    /** @return bool */
+    public function viewDoneIsFresh(): bool {
+        return $this->freshness->isFresh();
+    }
+
     /** @return int */
     public function getViewDoneBuiltAtTimestamp(): int {
         return $this->freshness->builtAtTimestamp();

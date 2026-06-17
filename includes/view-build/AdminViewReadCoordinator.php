@@ -37,6 +37,9 @@ class ABJ_404_Solution_AdminViewReadCoordinator {
     /** @var array<string, int> */
     private $redirectsForViewCountRequestCache = array();
 
+    /** @var ABJ_404_Solution_ViewReadOutcome Classifier for the last row-read outcome (i455). */
+    private $lastReadOutcome;
+
     /**
      * @param ABJ_404_Solution_DatabaseCore $dbCore
      * @param ABJ_404_Solution_ViewQueryBuilder $queryBuilder
@@ -59,6 +62,7 @@ class ABJ_404_Solution_AdminViewReadCoordinator {
         $this->cacheInvalidator = $cacheInvalidator;
         $this->snapshotCache = $snapshotCache;
         $this->logger = $logger;
+        $this->lastReadOutcome = new ABJ_404_Solution_ViewReadOutcome();
     }
 
     /**
@@ -136,11 +140,13 @@ class ABJ_404_Solution_AdminViewReadCoordinator {
             $snapshotCacheKey = $this->snapshotCache->getViewSnapshotCacheKey('abj404_view_rows', $sub, $tableOptionsArray);
             $cachedRowsFromTable = $this->snapshotCache->getViewRowsSnapshotFromTable($snapshotCacheKey, false, false);
             if (is_array($cachedRowsFromTable)) {
+                $this->finalizeReadStatusForRows($cachedRowsFromTable, (string)$sub, $tableOptionsArray);
                 return $cachedRowsFromTable;
             }
             if (function_exists('get_transient')) {
                 $cachedRows = get_transient($snapshotCacheKey);
                 if (is_array($cachedRows)) {
+                    $this->finalizeReadStatusForRows($cachedRows, (string)$sub, $tableOptionsArray);
                     return $cachedRows;
                 }
             }
@@ -149,12 +155,14 @@ class ABJ_404_Solution_AdminViewReadCoordinator {
         try {
             $rows = $this->requireViewBuildOrchestrator()->runRedirectsForViewStaged((string)$sub, $tableOptionsArray);
         } catch (ABJ_404_Solution_ViewBuildPendingException $pending) {
+            $this->lastReadOutcome->markPending();
             if ($throwOnQueryError) {
                 throw $pending;
             }
             $this->logger->debugMessage('[staged] getRedirectsForView pending: ' . $pending->getMessage());
             return array();
         } catch (Throwable $e) {
+            $this->lastReadOutcome->markErrored();
             if ($throwOnQueryError) {
                 $stagedFailureMarker = '/* staged: ' . $e->getMessage() . ' */';
                 $diagnostics = $this->diagnostics->captureViewQueryFailureDiagnostics(
@@ -179,6 +187,7 @@ class ABJ_404_Solution_AdminViewReadCoordinator {
             count($rows),
             (string)$sub
         ));
+        $this->finalizeReadStatusForRows($rows, (string)$sub, $tableOptionsArray);
 
         if ($canUseSnapshotCache && $snapshotCacheKey === '') {
             $snapshotCacheKey = $this->snapshotCache->getViewSnapshotCacheKey('abj404_view_rows', $sub, $tableOptionsArray);
@@ -193,6 +202,36 @@ class ABJ_404_Solution_AdminViewReadCoordinator {
         }
 
         return $rows;
+    }
+
+    /**
+     * Record how to read the last getRedirectsForView() result (i455). The
+     * live source count is probed lazily, only for empty rows.
+     *
+     * @param array<int|string, mixed> $rows
+     * @param string $sub
+     * @param array<string, mixed> $tableOptions
+     * @return void
+     */
+    private function finalizeReadStatusForRows(array $rows, string $sub, array $tableOptions): void {
+        $this->lastReadOutcome->classifyRows($rows, $tableOptions, function () use ($sub, $tableOptions): int {
+            try {
+                return $this->getRedirectsForViewCount($sub, $tableOptions);
+            } catch (Throwable $e) {
+                $this->logger->debugMessage('[staged] live-count probe for empty read failed: ' . $e->getMessage());
+                return -1;
+            }
+        });
+    }
+
+    /**
+     * Whether the last getRedirectsForView() result is NOT a trustworthy empty
+     * listing (pending/errored/stale-empty). See ABJ_404_Solution_ViewReadOutcome.
+     *
+     * @return bool
+     */
+    public function lastRedirectsViewReadWasIncomplete(): bool {
+        return $this->lastReadOutcome->wasIncomplete();
     }
 
     /**

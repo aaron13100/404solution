@@ -92,6 +92,15 @@ interface ABJ_404_Solution_ViewReadServiceInterface {
     public function getRedirectsForView($sub, $tableOptions);
 
     /**
+     * Whether the most recent getRedirectsForView() result is NOT a trustworthy
+     * "genuinely empty" listing (pending build, errored read, or an empty
+     * snapshot contradicting the live source count).
+     *
+     * @return bool
+     */
+    public function lastRedirectsViewReadWasIncomplete(): bool;
+
+    /**
      * @param string $sub
      * @param array<string, mixed> $tableOptions
      * @return int

@@ -185,6 +185,7 @@ return array(
     'ABJ_404_Solution_ViewSnapshotCache' => $base . 'includes/view-build/ViewSnapshotCache.php',
     'ABJ_404_Solution_ViewSnapshotWarmupOrchestrator' => $base . 'includes/view-build/ViewSnapshotWarmupOrchestrator.php',
     'ABJ_404_Solution_AdminViewReadCoordinator' => $base . 'includes/view-build/AdminViewReadCoordinator.php',
+    'ABJ_404_Solution_ViewReadOutcome' => $base . 'includes/view-build/ViewReadOutcome.php',
     'ABJ_404_Solution_StatusCountsRepository' => $base . 'includes/stats/StatusCountsRepository.php',
     'ABJ_404_Solution_RedirectsBulkReader' => $base . 'includes/redirects/RedirectsBulkReader.php',
     'ABJ_404_Solution_LogsMetricsReader' => $base . 'includes/logs/LogsMetricsReader.php',

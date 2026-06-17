@@ -177,6 +177,18 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
     }
 
     /**
+     * Whether the most recent getRedirectsForView() result is NOT a trustworthy
+     * "genuinely empty" listing (pending build, errored read, or an empty
+     * snapshot contradicting the live source count). Drives the renderer's
+     * "still preparing" state and the AJAX view-build poller re-engagement.
+     *
+     * @return bool
+     */
+    function lastRedirectsViewReadWasIncomplete(): bool {
+        return $this->adminViewReadCoordinator->lastRedirectsViewReadWasIncomplete();
+    }
+
+    /**
      * @param string $sub
      * @param array<string, mixed> $tableOptions
      * @return bool

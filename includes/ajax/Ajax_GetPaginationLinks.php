@@ -93,6 +93,15 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
 
             $data = self::fetchTableDataForSubpage($subpage, $view, $viewReadService, $context);
 
+            // i455: a serveable-but-stale/empty-built view_done passes the
+            // pre-fetch gate yet returns zero rows while the live count is
+            // non-zero. Re-engage the poller for that case (loop-safe; see
+            // sendViewBuildPendingForIncompleteRead).
+            if (self::sendViewBuildPendingForIncompleteRead(
+                    $subpage, $detectOnly, $cacheMode, $viewReadService, $viewBuildOrchestrator, $context)) {
+                return;
+            }
+
             $tableSignature = self::getCurrentTableSignature($view, $subpage);
             $data['tableSignature'] = $tableSignature;
             if ($detectOnly) {
@@ -185,6 +194,70 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
             'progress' => $progress,
             'message' => __('Preparing the redirects view table. Please wait.', '404-solution'),
         ), 200);
+        return true;
+    }
+
+    /**
+     * Re-engage the view-build poller when the row read came back incomplete
+     * even though the pre-fetch serveability gate passed. Loop-safe: only fires
+     * when a rebuild can still change the result (view_done not serveable, or
+     * serveable but not fresh). A serveable+fresh empty read is a genuine
+     * pipeline issue, not a pending build, so it is left for the renderer's
+     * honest "still preparing" row rather than polled forever.
+     *
+     * @param mixed $viewReadService
+     * @param mixed $viewBuildOrchestrator
+     * @param array<string, mixed> $context
+     */
+    private static function sendViewBuildPendingForIncompleteRead(
+        string $subpage, bool $detectOnly, string $cacheMode,
+        $viewReadService, $viewBuildOrchestrator, array &$context
+    ): bool {
+        if (!self::isViewTableSubpage($subpage) || $detectOnly) {
+            return false;
+        }
+        if (!self::lastRedirectsViewReadWasIncomplete($viewReadService)) {
+            return false;
+        }
+        $serveable = self::viewDoneIsServeable($viewBuildOrchestrator);
+        $fresh = $serveable && self::viewDoneIsFresh($viewBuildOrchestrator);
+        if ($serveable && $fresh) {
+            // Build is current yet the listing is empty while the count is
+            // non-zero: a real pipeline defect (separate task). Do not poll.
+            return false;
+        }
+
+        ABJ_404_Solution_AjaxStageDiagnostics::setStage($context, self::stageForSubpage($subpage));
+        $progress = self::getViewBuildProgress($viewBuildOrchestrator);
+        ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
+        ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
+        ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit(array(
+            'viewBuildPending' => true,
+            'cacheMode' => $cacheMode,
+            'subpage' => $subpage,
+            'progress' => $progress,
+            'message' => __('Preparing the redirects view table. Please wait.', '404-solution'),
+        ), 200);
+        return true;
+    }
+
+    /**
+     * @param mixed $viewReadService
+     */
+    private static function lastRedirectsViewReadWasIncomplete($viewReadService): bool {
+        if (is_object($viewReadService) && method_exists($viewReadService, 'lastRedirectsViewReadWasIncomplete')) {
+            return (bool)$viewReadService->lastRedirectsViewReadWasIncomplete();
+        }
+        return false;
+    }
+
+    /**
+     * @param mixed $viewBuildOrchestrator
+     */
+    private static function viewDoneIsFresh($viewBuildOrchestrator): bool {
+        if (is_object($viewBuildOrchestrator) && method_exists($viewBuildOrchestrator, 'viewDoneIsFresh')) {
+            return (bool)$viewBuildOrchestrator->viewDoneIsFresh();
+        }
         return true;
     }
 
