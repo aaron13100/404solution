@@ -257,7 +257,6 @@ return array(
     'ABJ_404_Solution_RedirectLookupService' => $base . 'includes/redirects/RedirectLookupService.php',
     'ABJ_404_Solution_RedirectSpec' => $base . 'includes/redirects/RedirectSpec.php',
     'ABJ_404_Solution_AdminActionsDependencies' => $base . 'includes/admin/AdminActionsDependencies.php',
-    'ABJ_404_Solution_RedirectsRetentionServiceInterface' => $base . 'includes/redirects/RedirectsRetentionServiceInterface.php',
     'ABJ_404_Solution_RedirectsRetentionPolicy' => $base . 'includes/redirects/RedirectsRetentionPolicy.php',
     'ABJ_404_Solution_RedirectsCleanupRepository' => $base . 'includes/redirects/RedirectsCleanupRepository.php',
     'ABJ_404_Solution_RedirectDeadDestinationStore' => $base . 'includes/redirects/RedirectDeadDestinationStore.php',

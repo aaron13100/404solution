@@ -4,15 +4,20 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-require_once __DIR__ . '/RedirectsRetentionServiceInterface.php';
 require_once __DIR__ . '/RedirectsRetentionPolicy.php';
 require_once __DIR__ . '/RedirectsCleanupRepository.php';
 require_once __DIR__ . '/RedirectDeadDestinationScanner.php';
 
 /**
  * Scheduled-maintenance workflow for the redirects table.
+ *
+ * Owns the redirect/log retention pruning, dead-destination flagging,
+ * auto-redirect expiry, junk auto-trash, orphan cleanup, and the coordinated
+ * cron run. Previously fronted by RedirectsRetentionServiceInterface, but that
+ * interface had a single implementer and no narrowing consumer, so it was
+ * inlined to remove the unrealized abstraction.
  */
-class ABJ_404_Solution_RedirectsRetentionService implements ABJ_404_Solution_RedirectsRetentionServiceInterface {
+class ABJ_404_Solution_RedirectsRetentionService {
 
     /** @var ABJ_404_Solution_DatabaseCore */
     private $dbCore;
@@ -76,7 +81,7 @@ class ABJ_404_Solution_RedirectsRetentionService implements ABJ_404_Solution_Red
             : new ABJ_404_Solution_RedirectDeadDestinationScanner($dbCore, $this->logger);
     }
 
-    /** @inheritDoc */
+    /** @return int Number of orphaned auto redirects removed. */
     public function cleanupOrphanedAutoRedirects(): int {
         return $this->cleanupRepository->cleanupOrphanedAutoRedirects();
     }
@@ -102,7 +107,7 @@ class ABJ_404_Solution_RedirectsRetentionService implements ABJ_404_Solution_Red
         return $this->cleanupRepository->deleteOldLogsByAge($daysToKeep, $now);
     }
 
-    /** @inheritDoc */
+    /** @return string Human-readable summary of the cron run. */
     function deleteOldRedirectsCron() {
         $viewRead = abj_service('view_read_service');
         $abj404logic = abj_service('plugin_logic');
@@ -321,7 +326,7 @@ class ABJ_404_Solution_RedirectsRetentionService implements ABJ_404_Solution_Red
         return $message;
     }
 
-    /** @inheritDoc */
+    /** @return bool Whether the debug log file was rotated. */
     function limitDebugFileSize(): bool {
         $renamed = false;
 
@@ -334,22 +339,33 @@ class ABJ_404_Solution_RedirectsRetentionService implements ABJ_404_Solution_Red
         return $renamed;
     }
 
-    /** @inheritDoc */
+    /** @return int Number of duplicate redirect rows removed. */
     function removeDuplicatesCron(): int {
         return $this->cleanupRepository->removeDuplicatesCron();
     }
 
-    /** @inheritDoc */
+    /**
+     * @param array<string, mixed> $options Plugin options array.
+     * @return int Number of captured URLs auto-trashed.
+     */
     function autoTrashJunkCapturedUrls(array $options): int {
         return $this->cleanupRepository->autoTrashJunkCapturedUrls($options);
     }
 
-    /** @inheritDoc */
+    /**
+     * Flag redirects whose destination URL appears in the 404 log as a recent 404.
+     *
+     * @return void
+     */
     public function flagDeadDestinationRedirects(): void {
         $this->deadDestinationScanner->flagDeadDestinationRedirects();
     }
 
-    /** @inheritDoc */
+    /**
+     * Move auto-created redirects to trash if they are older than the configured expiration.
+     *
+     * @return int Number of redirects moved to trash.
+     */
     public function expireOldAutoRedirects(): int {
         $options = abj_service('options_repository')->getOptions();
         $days = $this->retentionPolicy->daysFromOptions(is_array($options) ? $options : array(), 'auto_302_expiration_days');
