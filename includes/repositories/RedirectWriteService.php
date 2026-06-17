@@ -29,6 +29,9 @@ class ABJ_404_Solution_RedirectWriteService {
     /** @var ABJ_404_Solution_PluginLogicUrlNormalization|null */
     private $urlNormalization;
 
+    /** @var ABJ_404_Solution_RedirectsDenormMaintenanceService|null Memoized Step 3c maintenance service. */
+    private $denormMaintenance = null;
+
     /**
      * Per-instance memoized cache of column-existence probes against the
      * redirects table.
@@ -148,6 +151,13 @@ class ABJ_404_Solution_RedirectWriteService {
             abj_service('view_read_service')->invalidateStatusCountsCache();
             if ($status == ABJ404_STATUS_REGEX) {
                 $this->regexCacheStore->clear();
+            }
+
+            // Step 3c: keep the new row's denorm display columns (dest_for_view
+            // / published_status) current so an off-page sort/filter sees fresh
+            // values immediately, not only after the nightly reconcile.
+            if ($insertId > 0) {
+                $this->recomputeDenormColumns(array($insertId));
             }
         }
 
@@ -272,6 +282,10 @@ class ABJ_404_Solution_RedirectWriteService {
         $this->invalidateRedirectMutationCaches();
 
         $this->moveRedirectsToTrash(absint($idForUpdate), 0);
+
+        // Step 3c: an edit can change the destination type/target, so recompute
+        // the row's denorm display columns from the new final_dest.
+        $this->recomputeDenormColumns(array(absint($idForUpdate)));
 
         return '';
     }
@@ -429,5 +443,25 @@ class ABJ_404_Solution_RedirectWriteService {
     private function invalidateRedirectMutationCaches(): void {
         abj_service('view_read_service')->invalidateStatusCountsCache();
         $this->regexCacheStore->clear();
+    }
+
+    /**
+     * Recompute the dest_for_view / published_status denorm columns for the
+     * given redirect ids via the Step 3c maintenance service, built from this
+     * service's own injected db_core + logger. The maintenance write degrades
+     * gracefully on a schema-drifted / read-only host, so no extra guard is
+     * needed here.
+     *
+     * @param array<int, int> $ids
+     * @return void
+     */
+    private function recomputeDenormColumns(array $ids): void {
+        if ($this->denormMaintenance === null) {
+            $this->denormMaintenance = new ABJ_404_Solution_RedirectsDenormMaintenanceService(
+                $this->dbCore,
+                $this->logger
+            );
+        }
+        $this->denormMaintenance->recomputeByRedirectIds($ids);
     }
 }

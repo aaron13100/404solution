@@ -158,53 +158,19 @@ class ABJ_404_Solution_DatabaseUpgradeRedirectsDenormBackfill extends ABJ_404_So
         $idClause = " AND r.id IN (" . $idList . ")";
         $idClauseBare = " AND id IN (" . $idList . ")";
 
-        $fdInt = "CAST(IF(r.final_dest REGEXP '^[0-9]+$', r.final_dest, '0') AS UNSIGNED)";
-
-        $statements = array();
-
-        // S4: POST-typed redirects resolve against wp_posts.
-        $postsTable = $this->coreTableName('posts');
-        $statements[] = "UPDATE " . $redirectsTable . " r" .
-            " LEFT JOIN " . $postsTable . " p ON p.ID = " . $fdInt .
-            " SET r.dest_for_view = COALESCE(p.post_title, '')," .
-            "     r.published_status = CASE" .
-            "         WHEN p.ID IS NULL THEN 0" .
-            "         WHEN LOWER(p.post_status) = 'publish' THEN 1" .
-            "         ELSE 0 END" .
-            " WHERE r.type = " . (int)ABJ404_TYPE_POST . $idClause;
-
-        // S5: CAT/TAG-typed redirects resolve against wp_terms.
-        $termsTable = $this->coreTableName('terms');
-        $statements[] = "UPDATE " . $redirectsTable . " r" .
-            " LEFT JOIN " . $termsTable . " term ON term.term_id = " . $fdInt .
-            " SET r.dest_for_view = COALESCE(term.name, '')," .
-            "     r.published_status = CASE WHEN term.term_id IS NULL THEN 0 ELSE 1 END" .
-            " WHERE r.type IN (" . (int)ABJ404_TYPE_CAT . ", " . (int)ABJ404_TYPE_TAG . ")" . $idClause;
-
-        // S6: HOME-typed redirects show the site blogname.
-        $optionsTable = $this->coreTableName('options');
-        $statements[] = "UPDATE " . $redirectsTable .
-            " SET dest_for_view = COALESCE((SELECT option_value FROM " . $optionsTable .
-            "         WHERE option_name = 'blogname' LIMIT 1), '')," .
-            "     published_status = 1" .
-            " WHERE type = " . (int)ABJ404_TYPE_HOME . $idClauseBare;
-
-        // S7: EXTERNAL redirects display the destination URL itself.
-        $statements[] = "UPDATE " . $redirectsTable .
-            " SET dest_for_view = final_dest, published_status = 1" .
-            " WHERE type = " . (int)ABJ404_TYPE_EXTERNAL . $idClauseBare;
-
-        // S8: 404-displayed (incl. captured) rows use a render-time label.
-        $statements[] = "UPDATE " . $redirectsTable .
-            " SET dest_for_view = '', published_status = 1" .
-            " WHERE type = " . (int)ABJ404_TYPE_404_DISPLAYED . $idClauseBare;
-
-        // Catch-all: any row whose type matched none of the stages above still
-        // has the NULL sentinel. Resolve it to a valid (empty, broken) state so
-        // the chunk always drains and the backlog probe converges.
-        $statements[] = "UPDATE " . $redirectsTable .
-            " SET dest_for_view = '', published_status = 0" .
-            " WHERE dest_for_view IS NULL" . $idClauseBare;
+        // dest_for_view + published_status are resolved per redirect type by the
+        // shared SQL builder, the single source of truth this backfill and the
+        // real-time Step 3c maintenance both use so the per-type display mapping
+        // (stages S4-S8 plus the catch-all) can never drift between them. The
+        // catch-all here guards on the dest_for_view IS NULL sentinel ($recompute
+        // = false), which is what keeps the chunk draining and the backlog probe
+        // converging.
+        $statements = ABJ_404_Solution_RedirectsDenormColumnSql::buildDestPublishedStatements(
+            $redirectsTable,
+            $idClause,
+            $idClauseBare,
+            false
+        );
 
         foreach ($statements as $statement) {
             if (!$this->runChunkWrite($statement)) {
@@ -305,23 +271,6 @@ class ABJ_404_Solution_DatabaseUpgradeRedirectsDenormBackfill extends ABJ_404_So
             $this->getRedirectsDenormBackfillCompleteOption() .
             "; Step 3b reads can now trust the derived columns."
         );
-    }
-
-    /**
-     * Resolve a WordPress core table name from $wpdb, falling back to
-     * prefix + bare name when the property is absent (e.g. a minimal test
-     * wpdb proxy). Avoids depending on $wpdb->tables being populated.
-     *
-     * @param string $bareName One of 'posts', 'terms', 'options'.
-     * @return string
-     */
-    private function coreTableName(string $bareName): string {
-        global $wpdb;
-        if (isset($wpdb->{$bareName}) && is_scalar($wpdb->{$bareName}) && (string)$wpdb->{$bareName} !== '') {
-            return (string)$wpdb->{$bareName};
-        }
-        $prefix = (isset($wpdb->prefix) && is_scalar($wpdb->prefix)) ? (string)$wpdb->prefix : 'wp_';
-        return $prefix . $bareName;
     }
 
     /**

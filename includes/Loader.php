@@ -85,6 +85,11 @@ ABJ_404_Solution_ErrorHandler::init();
 // Moving it outside is_admin() ensures auto-redirects are created in all contexts.
 ABJ_404_Solution_SlugChangeHandler::init();
 
+// Keep the redirects denorm display columns (dest_for_view / published_status)
+// fresh when a targeted post or term changes. Registered in all contexts
+// (admin, WP-CLI, REST) because content changes outside wp-admin too. (Step 3c.)
+ABJ_404_Solution_RedirectsDenormContentHooks::init();
+
 // System page hooks must fire on both admin and frontend
 ABJ_404_Solution_SystemPage::registerHooks();
 

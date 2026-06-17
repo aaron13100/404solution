@@ -270,6 +270,7 @@ class ABJ_404_Solution_LogsHitsRollupService implements ABJ_404_Solution_LogsHit
             $this->noticeState->setRuntimeFlag(self::HITS_TABLE_LAST_REFRESHED_FLAG, abj_clock()->now(), 86400);
             $this->recordHitsRebuildSuccess($chunkSize);
             $this->clearLogsHitsRollupStaleSignal();
+            $this->writeBackDenormHitsColumns();
             $wasRefreshed = true;
             $this->logger->debugMessage(__FUNCTION__ . " refreshed " . $finalDestTable . " in " . $elapsedTime . " seconds.");
         } catch (Throwable $e) {
@@ -281,6 +282,25 @@ class ABJ_404_Solution_LogsHitsRollupService implements ABJ_404_Solution_LogsHit
             $this->releaseHitsTableRebuildLock();
         }
         return $wasRefreshed;
+    }
+
+    /**
+     * After a successful rollup rebuild, push the freshly rolled-up hit count +
+     * last-used timestamp from wp_abj404_logs_hits back onto the redirects rows
+     * (Denorm Step 3c). This keeps the STORED logshits / last_used columns -
+     * which order the full off-page result set - current in real time instead of
+     * waiting for the nightly reconcile. Delegated to the denorm maintenance
+     * service, resolved lazily so a minimal wiring (or a context where the
+     * service is unregistered) degrades to a no-op rather than fataling.
+     *
+     * @return void
+     */
+    private function writeBackDenormHitsColumns(): void {
+        $maintenance = new ABJ_404_Solution_RedirectsDenormMaintenanceService(
+            $this->dbCore,
+            $this->logger
+        );
+        $maintenance->writeBackLogsHitsColumns();
     }
 
     /** @param string $tempDestTable @return array<string, mixed> */
