@@ -228,8 +228,6 @@ return array(
     'ABJ_404_Solution_DatabaseSqlErrorReporter' => $base . 'includes/database/DatabaseSqlErrorReporter.php',
     'ABJ_404_Solution_ContentRepositoryInterface' => $base . 'includes/repositories/ContentRepositoryInterface.php',
     'ABJ_404_Solution_PublishedContentLookupInterface' => $base . 'includes/repositories/PublishedContentLookupInterface.php',
-    'ABJ_404_Solution_PermalinkCacheRepositoryInterface' => $base . 'includes/repositories/PermalinkCacheRepositoryInterface.php',
-    'ABJ_404_Solution_SpellingCacheRepositoryInterface' => $base . 'includes/repositories/SpellingCacheRepositoryInterface.php',
     'ABJ_404_Solution_OldSlugLookupInterface' => $base . 'includes/repositories/OldSlugLookupInterface.php',
     'ABJ_404_Solution_ViewSnapshotWarmupContext' => $base . 'includes/view-build/ViewSnapshotWarmupContext.php',
     'ABJ_404_Solution_LogReadQueryInterface' => $base . 'includes/logs/LogReadQueryInterface.php',
