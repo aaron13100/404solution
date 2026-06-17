@@ -131,9 +131,17 @@ class ABJ_404_Solution_ViewQueryPolicy {
     /**
      * @param string $sub
      * @param array<string, mixed> $tableOptions
+     * @param bool $singleTable When true, the post-type label predicate resolves
+     *   the matching destination posts via a {wp_posts} subquery on final_dest
+     *   rather than a wp_post_type column reference, because the single-table
+     *   redirects read (Denorm Step 3b) has no denormalized wp_post_type column.
+     * @param bool $destColumnAvailable When false, the destination-title match
+     *   drops the dest_for_view column from the search expression (schema-drift
+     *   tolerance: an old redirects table may lack it). The search then matches
+     *   url/code/labels only.
      * @return string
      */
-    public function buildFilterTextClause(string $sub, array $tableOptions): string {
+    public function buildFilterTextClause(string $sub, array $tableOptions, bool $singleTable = false, bool $destColumnAvailable = true): string {
         $rawFilterText = $tableOptions['filterText'] ?? '';
         $rawFilterText = is_string($rawFilterText) ? $rawFilterText : '';
         if ($rawFilterText === '') {
@@ -144,11 +152,11 @@ class ABJ_404_Solution_ViewQueryPolicy {
         $collation = $this->resolveCollation($tableOptions);
         $needle = $this->normalizedSearchExpression("'%" . $filterText . "%'", $collation);
         if ($sub === 'abj404_redirects') {
-            $predicates = $this->labelPredicatesForFilterText($filterText);
-            $predicates[] = $this->normalizedSearchExpression(
-                "CONCAT(url, '////', dest_for_view, '////', code)",
-                $collation
-            ) . " LIKE " . $needle;
+            $predicates = $this->labelPredicatesForFilterText($filterText, $singleTable);
+            $searchConcat = $destColumnAvailable
+                ? "CONCAT(url, '////', dest_for_view, '////', code)"
+                : "CONCAT(url, '////', code)";
+            $predicates[] = $this->normalizedSearchExpression($searchConcat, $collation) . " LIKE " . $needle;
             return 'AND (' . implode(' OR ', $predicates) . ')';
         }
         if ($sub === 'abj404_captured') {
@@ -206,8 +214,12 @@ class ABJ_404_Solution_ViewQueryPolicy {
         return $wpdbCollate === '' ? 'utf8mb4_unicode_ci' : $wpdbCollate;
     }
 
-    /** @return array<int, string> */
-    private function labelPredicatesForFilterText(string $filterText): array {
+    /**
+     * @param string $filterText
+     * @param bool $singleTable
+     * @return array<int, string>
+     */
+    private function labelPredicatesForFilterText(string $filterText, bool $singleTable = false): array {
         $normalized = $this->normalizeSearchLabel($filterText);
         if ($normalized === '') {
             return array();
@@ -222,7 +234,7 @@ class ABJ_404_Solution_ViewQueryPolicy {
         if (count($typeMatches) > 0) {
             $predicates[] = 'type IN (' . implode(', ', $typeMatches) . ')';
         }
-        $predicates = array_merge($predicates, $this->postTypeLabelPredicates($normalized));
+        $predicates = array_merge($predicates, $this->postTypeLabelPredicates($normalized, $singleTable));
         return $predicates;
     }
 
@@ -263,8 +275,14 @@ class ABJ_404_Solution_ViewQueryPolicy {
         );
     }
 
-    /** @return array<int, string> */
-    private function postTypeLabelPredicates(string $normalized): array {
+    /**
+     * @param string $normalized
+     * @param bool $singleTable When true, match the destination post type via a
+     *   {wp_posts} subquery on final_dest instead of the denormalized
+     *   wp_post_type column (which the single-table redirects read lacks).
+     * @return array<int, string>
+     */
+    private function postTypeLabelPredicates(string $normalized, bool $singleTable = false): array {
         $matchingSlugs = $this->matchingPostTypeSlugs($normalized);
         if (count($matchingSlugs) === 0) {
             return array();
@@ -284,6 +302,16 @@ class ABJ_404_Solution_ViewQueryPolicy {
         }
         if (count($quotedSlugs) === 0) {
             return array();
+        }
+        if ($singleTable) {
+            // No wp_post_type column on wp_abj404_redirects: resolve the matching
+            // destination posts by id. final_dest holds the numeric post id as a
+            // string for POST-typed rows. The subquery only appears for a (rare)
+            // post-type-label search, so it never affects the no-filter
+            // single-table EXPLAIN plan asserted by the scale test.
+            return array('(type = ' . (int)ABJ404_TYPE_POST
+                . ' AND final_dest IN (SELECT ID FROM {wp_posts} WHERE post_type IN ('
+                . implode(', ', $quotedSlugs) . ')))');
         }
         return array('(type = ' . (int)ABJ404_TYPE_POST . ' AND wp_post_type IN (' . implode(', ', $quotedSlugs) . '))');
     }

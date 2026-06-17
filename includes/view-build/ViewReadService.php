@@ -95,6 +95,9 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
     /** @var ABJ_404_Solution_AdminViewReadCoordinator */
     private $adminViewReadCoordinator;
 
+    /** @var ABJ_404_Solution_RedirectsViewLiveResolver */
+    private $liveResolver;
+
     /**
      * @param ABJ_404_Solution_DatabaseCore $dbCore
      * @param ABJ_404_Solution_LogsRepository $logsRepo
@@ -118,6 +121,7 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
             $dbCore, $redirectsRepo, $this->viewDoneFreshnessOptionName()
         );
         $this->queryBuilder = new ABJ_404_Solution_ViewQueryBuilder($dbCore);
+        $this->liveResolver = new ABJ_404_Solution_RedirectsViewLiveResolver($dbCore);
         $this->snapshotCache = new ABJ_404_Solution_ViewSnapshotCache($dbCore, $this->logger);
         $this->snapshotCache->setHost($this);
 
@@ -340,6 +344,34 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
      */
     public function readFromViewDone(string $sub, array $tableOptions): array {
         return $this->queryBuilder->readFromViewDone($sub, $tableOptions);
+    }
+
+    /**
+     * Single-table redirects read for one page (Denorm Step 3b): fetch the
+     * ordered/filtered page off wp_abj404_redirects, then resolve the visible
+     * rows' derived/display values live and write the four denorm columns back.
+     * This is the live read path that replaces the staged view_done read.
+     *
+     * @param string $sub
+     * @param array<string, mixed> $tableOptions
+     * @return array<int, array<string, mixed>>
+     */
+    public function readRedirectsSingleTable(string $sub, array $tableOptions): array {
+        $derivedPresent = $this->liveResolver->derivedColumnsPresent();
+        $rows = $this->queryBuilder->readRedirectsSingleTable($sub, $tableOptions, $derivedPresent);
+        return $this->liveResolver->resolveAndPersistVisibleRows($rows, $derivedPresent);
+    }
+
+    /**
+     * Single-table filtered count against wp_abj404_redirects (Denorm Step 3b).
+     *
+     * @param string $sub
+     * @param array<string, mixed> $tableOptions
+     * @return int
+     */
+    public function countRedirectsSingleTable(string $sub, array $tableOptions): int {
+        return $this->queryBuilder->countRedirectsSingleTable($sub, $tableOptions,
+            $this->liveResolver->derivedColumnsPresent());
     }
 
     /**

@@ -21,8 +21,6 @@ if (!defined('ABSPATH')) {
  */
 class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBuildOrchestratorInterface {
 
-    /** @var ABJ_404_Solution_DatabaseCore */
-    private $dbCore;
     /** @var ABJ_404_Solution_Functions */
     private $f;
     /** @var ABJ_404_Solution_Logging */
@@ -61,7 +59,6 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
         $errorClassifier = null
     ) {
         unset($connectionManager, $errorClassifier);
-        $this->dbCore = $dbCore;
         $this->f = $f instanceof ABJ_404_Solution_Functions ? $f : abj_service('functions');
         $this->logger = $logger instanceof ABJ_404_Solution_Logging ? $logger : abj_service('logging');
         $this->rebuildHealth = $rebuildHealth instanceof ABJ_404_Solution_RebuildHealthState
@@ -111,22 +108,12 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
      */
     public function runRedirectsForViewStaged(string $sub, array $tableOptions): array {
         $this->setReadQueryTimeout($tableOptions);
-        if (!empty($tableOptions['_abj404_force_view_rebuild'])) {
-            $this->forceRestartViewBuild(0);
-        }
-
-        if ($this->freshness->isServeable()) {
-            if (!$this->freshness->isFresh()) {
-                $this->scheduleViewDoneRebuild();
-            }
-            return $this->requireViewReadService()->readFromViewDone($sub, $tableOptions);
-        }
-
-        $this->scheduleViewDoneRebuild();
-        throw new ABJ_404_Solution_ViewBuildPendingException(
-            'View build pending; background rebuild scheduled. Progress: not yet started',
-            'not yet started'
-        );
+        // Denorm Step 3b: reads serve straight off wp_abj404_redirects with the
+        // four derived columns resolved live per visible row. The single-table
+        // read is always serveable (it needs no staged view_done materialization
+        // and works even when the derived columns are still empty right after
+        // upgrade), so there is no pending state and no read-time rebuild gate.
+        return $this->requireViewReadService()->readRedirectsSingleTable($sub, $tableOptions);
     }
 
     /** @return bool */
@@ -218,25 +205,10 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
      */
     public function runRedirectsForViewCountStaged(string $sub, array $tableOptions): int {
         $this->setReadQueryTimeout($tableOptions);
-        if (!$this->freshness->isServeable()) {
-            $this->scheduleViewDoneRebuild();
-            throw new ABJ_404_Solution_ViewBuildPendingException(
-                'View-count build pending; background rebuild scheduled. Progress: not yet started',
-                'not yet started'
-            );
-        }
-        if (!$this->freshness->isFresh()) {
-            $this->scheduleViewDoneRebuild();
-        }
-        $sql = $this->requireViewReadService()->buildViewDoneCountQuery($sub, $tableOptions);
-        $result = $this->dbCore->queryAndGetResults($sql, $this->getStagedQueryOptionsForRead());
-        $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
-        if (empty($rows) || !is_array($rows[0])) {
-            return 0;
-        }
-        $row = $rows[0];
-        $raw = $row['cnt'] ?? reset($row);
-        return is_scalar($raw) ? intval($raw) : 0;
+        // Denorm Step 3b: filtered counts run single-table against
+        // wp_abj404_redirects with the same WHERE the read uses, so a filtered
+        // count always equals the unpaginated row set. No staged gate.
+        return $this->requireViewReadService()->countRedirectsSingleTable($sub, $tableOptions);
     }
 
     /** @return void */

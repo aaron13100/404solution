@@ -176,6 +176,7 @@ return array(
     'ABJ_404_Solution_ViewReadRuntimeState' => $base . 'includes/view-build/ViewReadRuntimeState.php',
     'ABJ_404_Solution_ViewQueryPolicy' => $base . 'includes/view-build/ViewQueryPolicy.php',
     'ABJ_404_Solution_ViewQueryBuilder' => $base . 'includes/view-build/ViewQueryBuilder.php',
+    'ABJ_404_Solution_RedirectsViewLiveResolver' => $base . 'includes/view-build/RedirectsViewLiveResolver.php',
     'ABJ_404_Solution_ScoreThresholds' => $base . 'includes/view-build/ScoreThresholds.php',
     'ABJ_404_Solution_ViewDiagnostics' => $base . 'includes/view-build/ViewDiagnostics.php',
     'ABJ_404_Solution_ViewCacheInvalidator' => $base . 'includes/view-build/ViewCacheInvalidator.php',
