@@ -445,5 +445,6 @@ return array(
     'ABJ_404_Solution_AdminRuntimeErrorNotice' => $base . 'includes/admin/AdminRuntimeErrorNotice.php',
     'ABJ_404_Solution_GscOAuthHandler' => $base . 'includes/gsc/GscOAuthHandler.php',
     'ABJ_404_Solution_ReviewFeedback' => $base . 'includes/core/ReviewFeedback.php',
+    'ABJ_404_Solution_ReviewStateRepository' => $base . 'includes/repositories/ReviewStateRepository.php',
     'ABJ_404_Solution_RebuildHealthState' => $base . 'includes/core/RebuildHealthState.php',
 );

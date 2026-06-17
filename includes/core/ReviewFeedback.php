@@ -20,9 +20,28 @@ class ABJ_404_Solution_ReviewFeedback {
     /** Set to true by handleResponseRedirects() when feedback POST is processed. */
     private static bool $feedbackSubmitted = false;
 
+    /** @var ABJ_404_Solution_ReviewStateRepository|null Lazily-created persistence layer. */
+    private static ?ABJ_404_Solution_ReviewStateRepository $stateRepository = null;
+
     /** Reset static state between tests. */
     public static function resetForTests(): void {
         self::$feedbackSubmitted = false;
+        self::$stateRepository = null;
+    }
+
+    /**
+     * Review-state persistence layer (user meta + feedback option store).
+     *
+     * The repository is stateless, so a single lazily-created instance is reused
+     * across this request. resetForTests() clears it for isolation.
+     *
+     * @return ABJ_404_Solution_ReviewStateRepository
+     */
+    private static function stateRepository(): ABJ_404_Solution_ReviewStateRepository {
+        if (self::$stateRepository === null) {
+            self::$stateRepository = new ABJ_404_Solution_ReviewStateRepository();
+        }
+        return self::$stateRepository;
     }
 
     /**
@@ -99,93 +118,143 @@ class ABJ_404_Solution_ReviewFeedback {
         }
 
         if (isset($_GET['abj404_review_response'])) {
-            $rawResponseNonce = isset($_GET['_wpnonce']) ? $_GET['_wpnonce'] : '';
-            $responseNonce = sanitize_text_field(ABJ_404_Solution_RequestInputNormalizer::normalizeScalar($rawResponseNonce));
-            if ($responseNonce === '' || !wp_verify_nonce($responseNonce, 'abj404_review_response')) {
-                return;
-            }
-
-            $response = sanitize_text_field(ABJ_404_Solution_RequestInputNormalizer::normalizeScalar($_GET['abj404_review_response']));
-            $allowedResponses = array('yes', 'not_yet', 'ask_later', 'close_x', 'never');
-            if (!in_array($response, $allowedResponses, true)) {
-                return;
-            }
-
-            if ($response === 'yes') {
-                update_user_meta(get_current_user_id(), 'abj404_review_step', 'show_review_link');
-                delete_user_meta(get_current_user_id(), 'abj404_review_remind_later');
-            } elseif ($response === 'not_yet') {
-                update_user_meta(get_current_user_id(), 'abj404_review_step', 'show_feedback');
-                delete_user_meta(get_current_user_id(), 'abj404_review_remind_later');
-            } elseif ($response === 'ask_later') {
-                update_user_meta(get_current_user_id(), 'abj404_review_remind_later', abj_clock()->now() + (self::ASK_LATER_DELAY_DAYS * 86400));
-                delete_user_meta(get_current_user_id(), 'abj404_review_step');
-            } elseif ($response === 'close_x') {
-                update_user_meta(get_current_user_id(), 'abj404_review_remind_later', abj_clock()->now() + (self::CLOSE_X_SNOOZE_DAYS * 86400));
-                delete_user_meta(get_current_user_id(), 'abj404_review_step');
-            } elseif ($response === 'never') {
-                update_user_meta(get_current_user_id(), 'abj404_review_dismissed', 'permanent');
-                delete_user_meta(get_current_user_id(), 'abj404_review_step');
-                delete_user_meta(get_current_user_id(), 'abj404_review_remind_later');
-            }
-
-            wp_safe_redirect(remove_query_arg(array('abj404_review_response', '_wpnonce')));
-            exit;
+            self::handleReviewQualificationResponse();
+            return;
         }
 
-        if (isset($_GET['abj404_leaving_review'])) {
-            $rawLeavingReviewNonce = isset($_GET['_wpnonce']) ? $_GET['_wpnonce'] : '';
-            $leavingReviewNonce = sanitize_text_field(ABJ_404_Solution_RequestInputNormalizer::normalizeScalar($rawLeavingReviewNonce));
-            if ($leavingReviewNonce !== '' && wp_verify_nonce($leavingReviewNonce, 'abj404_leaving_review')) {
-                update_user_meta(get_current_user_id(), 'abj404_review_dismissed', 'permanent');
-                delete_user_meta(get_current_user_id(), 'abj404_review_step');
-                delete_user_meta(get_current_user_id(), 'abj404_review_remind_later');
-
-                $html = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . "/html/reviewRedirectScript.html");
-                $f = abj_service('functions');
-                $html = $f->str_replace('{review_url}', esc_js('https://wordpress.org/support/plugin/404-solution/reviews/#new-post'), $html);
-                echo $html;
-                wp_safe_redirect(remove_query_arg(array('abj404_leaving_review', '_wpnonce')));
-                exit;
-            }
+        // An invalid leaving-review nonce falls through to the feedback check,
+        // matching the original control flow.
+        if (isset($_GET['abj404_leaving_review']) && self::handleLeavingReviewClick()) {
+            return;
         }
 
+        self::handleFeedbackSubmission();
+    }
+
+    /**
+     * Decode and apply the review qualification response (yes / not_yet /
+     * ask_later / close_x / never), then redirect. Terminates this request leg.
+     *
+     * @return void
+     */
+    private static function handleReviewQualificationResponse(): void {
+        $rawResponseNonce = isset($_GET['_wpnonce']) ? $_GET['_wpnonce'] : '';
+        $responseNonce = sanitize_text_field(ABJ_404_Solution_RequestInputNormalizer::normalizeScalar($rawResponseNonce));
+        if ($responseNonce === '' || !wp_verify_nonce($responseNonce, 'abj404_review_response')) {
+            return;
+        }
+
+        $response = sanitize_text_field(ABJ_404_Solution_RequestInputNormalizer::normalizeScalar($_GET['abj404_review_response']));
+        $allowedResponses = array('yes', 'not_yet', 'ask_later', 'close_x', 'never');
+        if (!in_array($response, $allowedResponses, true)) {
+            return;
+        }
+
+        self::applyQualificationResponse($response);
+
+        wp_safe_redirect(remove_query_arg(array('abj404_review_response', '_wpnonce')));
+        exit;
+    }
+
+    /**
+     * Persist the state transition implied by a validated qualification
+     * response. (Persistence is delegated to the review-state repository.)
+     *
+     * @param string $response one of yes|not_yet|ask_later|close_x|never
+     * @return void
+     */
+    private static function applyQualificationResponse(string $response): void {
+        $repo = self::stateRepository();
+        switch ($response) {
+            case 'yes':
+                $repo->advanceToReviewLinkStep();
+                break;
+            case 'not_yet':
+                $repo->advanceToFeedbackStep();
+                break;
+            case 'ask_later':
+                $repo->snoozeReminderUntil(abj_clock()->now() + (self::ASK_LATER_DELAY_DAYS * 86400));
+                break;
+            case 'close_x':
+                $repo->snoozeReminderUntil(abj_clock()->now() + (self::CLOSE_X_SNOOZE_DAYS * 86400));
+                break;
+            case 'never':
+                $repo->dismissPermanently();
+                break;
+        }
+    }
+
+    /**
+     * Decode the leaving-review click; on a valid nonce permanently dismiss the
+     * request, render the review-redirect script, and redirect (terminating the
+     * request). Returns false on an invalid nonce so the caller falls through to
+     * the feedback check, preserving the original control flow.
+     *
+     * @return bool true when the click was handled, false to fall through
+     */
+    private static function handleLeavingReviewClick(): bool {
+        $rawLeavingReviewNonce = isset($_GET['_wpnonce']) ? $_GET['_wpnonce'] : '';
+        $leavingReviewNonce = sanitize_text_field(ABJ_404_Solution_RequestInputNormalizer::normalizeScalar($rawLeavingReviewNonce));
+        if ($leavingReviewNonce === '' || !wp_verify_nonce($leavingReviewNonce, 'abj404_leaving_review')) {
+            return false;
+        }
+
+        self::stateRepository()->dismissPermanently();
+        self::echoReviewRedirectScript();
+        wp_safe_redirect(remove_query_arg(array('abj404_leaving_review', '_wpnonce')));
+        exit;
+    }
+
+    /**
+     * Decode and persist a feedback-form submission (valid nonce only), email
+     * it to the maintainers, and permanently dismiss the review request.
+     *
+     * @return void
+     */
+    private static function handleFeedbackSubmission(): void {
         $rawFeedbackNonce = isset($_POST['abj404_feedback_nonce']) ? $_POST['abj404_feedback_nonce'] : '';
         $feedbackNonce = sanitize_text_field(ABJ_404_Solution_RequestInputNormalizer::normalizeScalar($rawFeedbackNonce));
-        if (isset($_POST['abj404_submit_feedback']) &&
-            $feedbackNonce !== '' &&
-            wp_verify_nonce($feedbackNonce, 'abj404_submit_feedback')) {
-
-            $issuesRaw = isset($_POST['feedback_issues']) ? $_POST['feedback_issues'] : array();
-            $issues = ABJ_404_Solution_RequestInputNormalizer::sanitizeFeedbackIssues($issuesRaw);
-
-            $feedbackDetailsRaw = isset($_POST['feedback_details']) ? $_POST['feedback_details'] : '';
-            $feedback_details = sanitize_textarea_field(ABJ_404_Solution_RequestInputNormalizer::normalizeScalar($feedbackDetailsRaw));
-
-            $feedback_data = array(
-                'timestamp' => abj_clock()->wpNowMysql(),
-                'user_id' => get_current_user_id(),
-                'site_url' => get_site_url(),
-                'issues' => $issues,
-                'details' => $feedback_details,
-                'wp_version' => get_bloginfo('version'),
-                'plugin_version' => ABJ404_VERSION,
-                'php_version' => PHP_VERSION
-            );
-
-            $all_feedback_raw = get_option('abj404_user_feedback', array());
-            $all_feedback = is_array($all_feedback_raw) ? $all_feedback_raw : array();
-            $all_feedback[] = $feedback_data;
-            update_option('abj404_user_feedback', $all_feedback);
-
-            self::emailFeedback($feedback_data);
-
-            update_user_meta(get_current_user_id(), 'abj404_review_dismissed', 'permanent');
-            delete_user_meta(get_current_user_id(), 'abj404_review_step');
-            delete_user_meta(get_current_user_id(), 'abj404_review_remind_later');
-
-            self::$feedbackSubmitted = true;
+        if (!isset($_POST['abj404_submit_feedback']) ||
+            $feedbackNonce === '' ||
+            !wp_verify_nonce($feedbackNonce, 'abj404_submit_feedback')) {
+            return;
         }
+
+        $issuesRaw = isset($_POST['feedback_issues']) ? $_POST['feedback_issues'] : array();
+        $issues = ABJ_404_Solution_RequestInputNormalizer::sanitizeFeedbackIssues($issuesRaw);
+
+        $feedbackDetailsRaw = isset($_POST['feedback_details']) ? $_POST['feedback_details'] : '';
+        $feedback_details = sanitize_textarea_field(ABJ_404_Solution_RequestInputNormalizer::normalizeScalar($feedbackDetailsRaw));
+
+        $feedback_data = array(
+            'timestamp' => abj_clock()->wpNowMysql(),
+            'user_id' => get_current_user_id(),
+            'site_url' => get_site_url(),
+            'issues' => $issues,
+            'details' => $feedback_details,
+            'wp_version' => get_bloginfo('version'),
+            'plugin_version' => ABJ404_VERSION,
+            'php_version' => PHP_VERSION
+        );
+
+        self::stateRepository()->appendFeedbackEntry($feedback_data);
+        self::emailFeedback($feedback_data);
+        self::stateRepository()->dismissPermanently();
+
+        self::$feedbackSubmitted = true;
+    }
+
+    /**
+     * Render the client-side script that redirects to the wordpress.org review
+     * page. The markup lives in an external template; this only fills it in.
+     *
+     * @return void
+     */
+    private static function echoReviewRedirectScript(): void {
+        $html = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . "/html/reviewRedirectScript.html");
+        $f = abj_service('functions');
+        $html = $f->str_replace('{review_url}', esc_js('https://wordpress.org/support/plugin/404-solution/reviews/#new-post'), $html);
+        echo $html;
     }
 
     /**
@@ -204,22 +273,20 @@ class ABJ_404_Solution_ReviewFeedback {
             return;
         }
 
-        $dismissed = get_user_meta(get_current_user_id(), 'abj404_review_dismissed', true);
-        if ($dismissed === 'permanent') {
+        $repo = self::stateRepository();
+
+        if ($repo->isPermanentlyDismissed()) {
             return;
         }
 
-        $remind_later = get_user_meta(get_current_user_id(), 'abj404_review_remind_later', true);
-        $remindLaterUntil = is_numeric($remind_later) ? (int)$remind_later : 0;
+        $remindLaterUntil = $repo->getReminderTimestamp();
         if ($remindLaterUntil > 0 && abj_clock()->now() < $remindLaterUntil) {
             return;
         }
 
-        $installedTimeRaw = get_option('abj404_installed_time');
-        $installedTime = is_numeric($installedTimeRaw) ? (int)$installedTimeRaw : 0;
+        $installedTime = $repo->getInstalledTime();
         if ($installedTime <= 0) {
-            $installedTime = abj_clock()->now();
-            update_option('abj404_installed_time', $installedTime);
+            $repo->setInstalledTime(abj_clock()->now());
             return;
         }
 
@@ -228,11 +295,11 @@ class ABJ_404_Solution_ReviewFeedback {
             return;
         }
 
-        $review_step = get_user_meta(get_current_user_id(), 'abj404_review_step', true);
+        $review_step = $repo->getCurrentStep();
 
-        if ($review_step === 'show_review_link') {
+        if ($review_step === ABJ_404_Solution_ReviewStateRepository::STEP_REVIEW_LINK) {
             self::showReviewLinkNotice();
-        } elseif ($review_step === 'show_feedback') {
+        } elseif ($review_step === ABJ_404_Solution_ReviewStateRepository::STEP_FEEDBACK) {
             self::showFeedbackFormNotice();
         } else {
             self::showQualificationQuestion();
