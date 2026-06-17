@@ -306,4 +306,79 @@ class ABJ_404_Solution_DatabaseUpgradeIndexes extends ABJ_404_Solution_DatabaseU
 	        }
 	    }
 
+	    /**
+	     * The four denormalized derived columns added to the redirects table in
+	     * Denorm Step 3a (i459), keyed by column name with the exact column DDL
+	     * fragment used in ADD COLUMN. Single source of truth shared by the
+	     * targeted online-DDL add here and the backfill component's
+	     * column-exists guards. Must stay in sync with createRedirectsTable.sql.
+	     *
+	     * @var array<string, string>
+	     */
+	    private const REDIRECTS_DENORM_COLUMN_DDL = array(
+	        'logshits'         => '`logshits` BIGINT(20) NOT NULL DEFAULT 0',
+	        'last_used'        => '`last_used` BIGINT(20) DEFAULT NULL',
+	        'dest_for_view'    => '`dest_for_view` VARCHAR(2048) DEFAULT NULL',
+	        'published_status' => '`published_status` TINYINT(4) DEFAULT NULL',
+	    );
+
+	    /**
+	     * Add the four denormalized derived columns (logshits, last_used,
+	     * dest_for_view, published_status) to the redirects table with online
+	     * DDL when supported.
+	     *
+	     * Sibling of {@see ensureRedirectsCanonicalUrlColumn()}: a small
+	     * idempotent helper that runs ahead of the generic verifyColumns() flow
+	     * so the column adds can use ALGORITHM=INPLACE, LOCK=NONE on InnoDB 5.6
+	     * or newer (no table lock during the rewrite; 21K-row redirects tables
+	     * add in seconds). Only the columns actually missing are added, so
+	     * re-running this on a fully-migrated table is a no-op (each column is
+	     * SHOW COLUMNS-guarded per defensive philosophy #1/#7).
+	     *
+	     * On engines that don't support online DDL for ADD COLUMN the explicit
+	     * ALGORITHM clause causes ER_ALTER_OPERATION_NOT_SUPPORTED; we then fall
+	     * back to a bare ALTER, which is what verifyColumns() also runs as the
+	     * safety net. The derived columns carry sensible defaults (logshits 0;
+	     * the rest NULL) so existing rows are valid immediately;
+	     * backfillRedirectsDenormColumns() populates the real values across
+	     * later cron ticks without ever blocking activation.
+	     *
+	     * @param string $redirectsTable Fully-qualified redirects table name.
+	     * @return void
+	     */
+	    public function ensureRedirectsDenormColumns(string $redirectsTable): void {
+	        $backfill = $this->upgrades()->redirectsDenormBackfillUpgrade();
+	        $missingClauses = array();
+	        foreach (self::REDIRECTS_DENORM_COLUMN_DDL as $columnName => $columnDdl) {
+	            if (!$backfill->columnExists($redirectsTable, $columnName)) {
+	                $missingClauses[] = 'ADD COLUMN ' . $columnDdl;
+	            }
+	        }
+	        if (empty($missingClauses)) {
+	            return;
+	        }
+
+	        $addClause = implode(', ', $missingClauses);
+	        $inplaceQuery = "ALTER TABLE " . $redirectsTable . " " . $addClause .
+	            ", ALGORITHM=INPLACE, LOCK=NONE";
+	        $result = $this->dbCore->queryAndGetResults($inplaceQuery,
+	            array('log_too_slow' => false, 'log_errors' => false));
+	        if (empty($result['last_error'])) {
+	            $this->logger->infoMessage("Added denorm columns to {$redirectsTable} " .
+	                "(ALGORITHM=INPLACE, LOCK=NONE): " . $addClause);
+	            return;
+	        }
+	        // Engine didn't support online DDL for ADD COLUMN, fall back to a
+	        // bare ALTER, same as verifyColumns() would run. On modern InnoDB the
+	        // bare ALTER is itself implicitly INSTANT/INPLACE for ADD COLUMN with
+	        // a default, so this branch only runs on legacy engines.
+	        $bareQuery = "ALTER TABLE " . $redirectsTable . " " . $addClause;
+	        $bare = $this->dbCore->queryAndGetResults($bareQuery,
+	            array('log_too_slow' => false));
+	        if (empty($bare['last_error'])) {
+	            $this->logger->infoMessage("Added denorm columns to {$redirectsTable} " .
+	                "(bare ALTER fallback): " . $addClause);
+	        }
+	    }
+
 }

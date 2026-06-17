@@ -411,6 +411,12 @@ class ABJ_404_Solution_DatabaseUpgradeBootstrap extends ABJ_404_Solution_Databas
             // add closes that window.
             if ($bareTableName === 'abj404_redirects') {
                 $this->upgrades()->indexesUpgrade()->ensureRedirectsCanonicalUrlColumn($tableName);
+                // Denorm Step 3a (i459): same eager online-DDL add for the four
+                // derived columns (logshits, last_used, dest_for_view,
+                // published_status) so they exist before verifyColumns() and
+                // before the chunked backfill reads them. Idempotent: each
+                // column is SHOW COLUMNS-guarded, so this is a no-op once added.
+                $this->upgrades()->indexesUpgrade()->ensureRedirectsDenormColumns($tableName);
             }
             if ($bareTableName === 'abj404_ngram_cache' && !$ngramEpochMigrationSafe) {
                 continue;

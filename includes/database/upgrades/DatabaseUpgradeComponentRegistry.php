@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) {
  * re-pushes a refreshed dependency map to all of them when the coordinator's
  * collaborators change (e.g. after a test swaps in a mock DataAccess).
  *
- * This isolates the 13-component instantiation/refresh lifecycle from
+ * This isolates the 14-component instantiation/refresh lifecycle from
  * {@see ABJ_404_Solution_DatabaseUpgradesEtc}, whose remaining job is to be the
  * public upgrade facade. The registry IS the coordinator passed to each
  * component, so components reach their siblings through it. Constructed by the
@@ -34,6 +34,9 @@ class ABJ_404_Solution_DatabaseUpgradeComponentRegistry implements ABJ_404_Solut
 
 	/** @var ABJ_404_Solution_DatabaseUpgradeCanonicalUrlBackfill */
 	private $canonicalUrlBackfillUpgrade;
+
+	/** @var ABJ_404_Solution_DatabaseUpgradeRedirectsDenormBackfill */
+	private $redirectsDenormBackfillUpgrade;
 
 	/** @var ABJ_404_Solution_DatabaseUpgradeDailyMaintenance */
 	private $dailyMaintenanceUpgrade;
@@ -68,6 +71,7 @@ class ABJ_404_Solution_DatabaseUpgradeComponentRegistry implements ABJ_404_Solut
 		$this->collationDriftUpgrade = new ABJ_404_Solution_DatabaseUpgradeCollationDrift($this, $deps);
 		$this->selfHealUpgrade = new ABJ_404_Solution_DatabaseUpgradeSelfHeal($this, $deps);
 		$this->canonicalUrlBackfillUpgrade = new ABJ_404_Solution_DatabaseUpgradeCanonicalUrlBackfill($this, $deps);
+		$this->redirectsDenormBackfillUpgrade = new ABJ_404_Solution_DatabaseUpgradeRedirectsDenormBackfill($this, $deps);
 		$this->dailyMaintenanceUpgrade = new ABJ_404_Solution_DatabaseUpgradeDailyMaintenance($this, $deps);
 		$this->pluginUpdateUpgrade = new ABJ_404_Solution_DatabaseUpgradePluginUpdate($this, $deps);
 		$this->tableRepairUpgrade = new ABJ_404_Solution_DatabaseUpgradeTableRepair($this, $deps);
@@ -98,6 +102,7 @@ class ABJ_404_Solution_DatabaseUpgradeComponentRegistry implements ABJ_404_Solut
 			$this->collationDriftUpgrade,
 			$this->selfHealUpgrade,
 			$this->canonicalUrlBackfillUpgrade,
+			$this->redirectsDenormBackfillUpgrade,
 			$this->dailyMaintenanceUpgrade,
 			$this->pluginUpdateUpgrade,
 			$this->tableRepairUpgrade,
@@ -118,6 +123,8 @@ class ABJ_404_Solution_DatabaseUpgradeComponentRegistry implements ABJ_404_Solut
 	public function selfHealUpgrade(): ABJ_404_Solution_DatabaseUpgradeSelfHeal { return $this->selfHealUpgrade; }
 
 	public function canonicalUrlBackfillUpgrade(): ABJ_404_Solution_DatabaseUpgradeCanonicalUrlBackfill { return $this->canonicalUrlBackfillUpgrade; }
+
+	public function redirectsDenormBackfillUpgrade(): ABJ_404_Solution_DatabaseUpgradeRedirectsDenormBackfill { return $this->redirectsDenormBackfillUpgrade; }
 
 	public function dailyMaintenanceUpgrade(): ABJ_404_Solution_DatabaseUpgradeDailyMaintenance { return $this->dailyMaintenanceUpgrade; }
 

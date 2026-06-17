@@ -59,6 +59,7 @@ return array(
     'ABJ_404_Solution_DatabaseUpgradeCollationDrift' => $base . 'includes/database/upgrades/DatabaseUpgradeCollationDrift.php',
     'ABJ_404_Solution_DatabaseUpgradeSelfHeal' => $base . 'includes/database/upgrades/DatabaseUpgradeSelfHeal.php',
     'ABJ_404_Solution_DatabaseUpgradeCanonicalUrlBackfill' => $base . 'includes/database/upgrades/DatabaseUpgradeCanonicalUrlBackfill.php',
+    'ABJ_404_Solution_DatabaseUpgradeRedirectsDenormBackfill' => $base . 'includes/database/upgrades/DatabaseUpgradeRedirectsDenormBackfill.php',
     'ABJ_404_Solution_DatabaseUpgradeDailyMaintenance' => $base . 'includes/database/upgrades/DatabaseUpgradeDailyMaintenance.php',
     'ABJ_404_Solution_DatabaseUpgradeNGram' => $base . 'includes/database/upgrades/DatabaseUpgradeNGram.php',
     'ABJ_404_Solution_NGramNetworkOptionStore' => $base . 'includes/ngram/NGramNetworkOptionStore.php',

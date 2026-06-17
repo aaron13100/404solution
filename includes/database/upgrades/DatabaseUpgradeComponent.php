@@ -118,6 +118,18 @@ abstract class ABJ_404_Solution_DatabaseUpgradeComponent {
         return ABJ_404_Solution_DatabaseUpgradeRuntimeState::REDIRECTS_CANONICAL_URL_BACKFILL_COMPLETE_OPTION;
     }
 
+    protected function getRedirectsDenormBackfillChunkSize(): int {
+        return ABJ_404_Solution_DatabaseUpgradeRuntimeState::REDIRECTS_DENORM_BACKFILL_CHUNK_SIZE;
+    }
+
+    protected function getRedirectsDenormBackfillTimeBudgetSec(): float {
+        return ABJ_404_Solution_DatabaseUpgradeRuntimeState::REDIRECTS_DENORM_BACKFILL_TIME_BUDGET_SEC;
+    }
+
+    protected function getRedirectsDenormBackfillCompleteOption(): string {
+        return ABJ_404_Solution_DatabaseUpgradeRuntimeState::REDIRECTS_DENORM_BACKFILL_COMPLETE_OPTION;
+    }
+
     /** @return array<int, string> */
     protected function getPluginTableSuffixes(): array {
         return ABJ_404_Solution_DatabaseUpgradeRuntimeState::getPluginTableSuffixes();

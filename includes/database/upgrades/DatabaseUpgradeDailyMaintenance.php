@@ -62,6 +62,14 @@ class ABJ_404_Solution_DatabaseUpgradeDailyMaintenance extends ABJ_404_Solution_
         // see scheduleLogsv2CanonicalUrlBackfill().
         $this->upgrades()->canonicalUrlBackfillUpgrade()->backfillLogsv2CanonicalUrl();
 
+        // Denorm Step 3a (i459): populate the four derived columns (logshits,
+        // last_used, dest_for_view, published_status) on legacy redirect rows
+        // that pre-date the column add. Chunked + wall-clock-bounded so even a
+        // large redirects table converges across successive daily ticks without
+        // blocking activation. Runs after the canonical_url backfills so the
+        // hits rollup join matches on the freshly populated canonical_url column.
+        $this->upgrades()->redirectsDenormBackfillUpgrade()->backfillRedirectsDenormColumns();
+
         // Nightly internal-link scan: find broken internal links in published content.
         if (class_exists('ABJ_404_Solution_InternalLinkScanner')) {
             $scanner = new ABJ_404_Solution_InternalLinkScanner();
