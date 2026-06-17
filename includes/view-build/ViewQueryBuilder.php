@@ -179,7 +179,7 @@ class ABJ_404_Solution_ViewQueryBuilder {
             . " " . $trashClause . "\n"
             . " " . $scoreRangeClause . "\n"
             . " " . $filterTextClause . "\n"
-            . "ORDER BY published_status ASC, " . $orderBy . " " . $order . ", url ASC, id " . $order . "\n"
+            . "ORDER BY " . $orderBy . " " . $order . ", url ASC, id " . $order . "\n"
             . "LIMIT " . $limitStart . ", " . $perpage;
     }
 

@@ -1,14 +1,19 @@
 
 /* S10: indexes used by the read query against the served view_done table.
    Read filters: status IN (...), disabled = ?, optional score-range,
-   optional filterText LIKE composite. Read sorts: published_status ASC
-   primary, then user-chosen orderby column (url/status/type/code/score/
-   timestamp/logshits/last_used/final_dest), then url ASC, then id.
+   optional filterText LIKE composite. Read sorts: user-chosen orderby
+   column (url/status/type/code/score/timestamp/logshits/last_used/
+   final_dest), then url ASC, then id.
 
-   The composite indexes lead with published_status because that is the
-   first ORDER BY key. Trailing column makes the (sort + LIMIT 0,25) shape
-   plan-friendly: the planner reads directly off the index in order
-   without filesort. status_disabled covers the WHERE filter. */
+   NOTE: these composite indexes lead with published_status, which used to
+   be the forced primary ORDER BY key. published_status is no longer a sort
+   key (it is not user-orderable; it only drives the dead-destination
+   warning at display time), so a leading-published_status index can no
+   longer serve the ORDER BY in index order -- the planner falls back to a
+   filesort over at most N redirect rows. These index definitions are left
+   as-is pending the larger view-build rework that retires this pipeline;
+   re-leading them on the actual sort columns would be churn on DDL that is
+   slated for removal. status_disabled covers the WHERE filter. */
 ALTER TABLE {wp_abj404_view_build}
     ADD INDEX `idx_status_disabled` (`status`, `disabled`),
     ADD INDEX `idx_pub_url`         (`published_status`, `url`(190)),
