@@ -151,96 +151,19 @@ class ABJ_404_Solution_DatabaseUpgradeRedirectsDenormBackfill extends ABJ_404_So
      * @return bool True if the chunk resolved cleanly, false if a write errored.
      */
     private function resolveDenormColumnsForIds(string $redirectsTable, array $ids): bool {
-        $idList = implode(',', array_map('intval', $ids));
-        if ($idList === '') {
-            return true;
-        }
-        $idClause = " AND r.id IN (" . $idList . ")";
-        $idClauseBare = " AND id IN (" . $idList . ")";
-
-        // dest_for_view + published_status are resolved per redirect type by the
-        // shared SQL builder, the single source of truth this backfill and the
-        // real-time Step 3c maintenance both use so the per-type display mapping
-        // (stages S4-S8 plus the catch-all) can never drift between them. The
-        // catch-all here guards on the dest_for_view IS NULL sentinel ($recompute
-        // = false), which is what keeps the chunk draining and the backlog probe
-        // converging.
-        $statements = ABJ_404_Solution_RedirectsDenormColumnSql::buildDestPublishedStatements(
+        // Delegate the per-chunk write (per-type dest/published statements plus
+        // the logsv2 hits rollup) to the shared resolver, the single source of
+        // truth the Step 3d nightly reconcile also uses so the two bulk-write
+        // paths can never drift. $recompute = false: the catch-all guards on the
+        // dest_for_view IS NULL sentinel, which keeps the chunk draining and the
+        // backlog probe converging.
+        return ABJ_404_Solution_RedirectsDenormChunkResolver::resolveChunk(
+            $this->dbCore,
+            $this->logger,
             $redirectsTable,
-            $idClause,
-            $idClauseBare,
+            $ids,
             false
         );
-
-        foreach ($statements as $statement) {
-            if (!$this->runChunkWrite($statement)) {
-                return false;
-            }
-        }
-
-        // logshits + last_used: roll up matching logsv2 rows by canonical URL.
-        // Skipped (columns keep their 0 / NULL defaults) when logsv2 is missing,
-        // so a degraded site still drains the dest_for_view backlog.
-        $hitsStatement = $this->buildHitsRollupStatement($redirectsTable, $idClause);
-        if ($hitsStatement !== null && !$this->runChunkWrite($hitsStatement)) {
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * Build the logshits/last_used rollup UPDATE for a chunk, or null when the
-     * logsv2 table is absent.
-     *
-     * The aggregate subquery groups logsv2 by canonical URL once per chunk and
-     * joins it to the chunk's redirects; far cheaper than a correlated subquery
-     * per redirect row. COALESCE on both sides keeps the match correct while the
-     * canonical_url backfill is still in flight.
-     *
-     * @param string $redirectsTable
-     * @param string $idClause Pre-built " AND r.id IN (...)" fragment.
-     * @return string|null
-     */
-    private function buildHitsRollupStatement(string $redirectsTable, string $idClause): ?string {
-        global $wpdb;
-        $logsTable = $this->dbCore->doTableNameReplacements('{wp_abj404_logsv2}');
-        if (!isset($wpdb)) {
-            return null;
-        }
-        // DAO-bypass-approved: schema existence probe, same shape as above.
-        $found = $wpdb->get_var("SHOW TABLES LIKE '" . esc_sql($logsTable) . "'");
-        if ($found !== $logsTable) {
-            return null;
-        }
-
-        $canonLogs = "COALESCE(canonical_url, CONCAT('/', TRIM(BOTH '/' FROM requested_url)))";
-        $canonRedirect = "COALESCE(r.canonical_url, CONCAT('/', TRIM(BOTH '/' FROM r.url)))";
-
-        return "UPDATE " . $redirectsTable . " r" .
-            " LEFT JOIN (" .
-            "   SELECT " . $canonLogs . " AS cu, COUNT(*) AS hits, MAX(timestamp) AS lu" .
-            "   FROM " . $logsTable .
-            "   GROUP BY cu" .
-            " ) agg ON agg.cu = " . $canonRedirect .
-            " SET r.logshits = COALESCE(agg.hits, 0), r.last_used = COALESCE(agg.lu, 0)" .
-            " WHERE 1 = 1" . $idClause;
-    }
-
-    /**
-     * Execute one chunk write, warning and signalling stop on error.
-     *
-     * @param string $statement
-     * @return bool
-     */
-    private function runChunkWrite(string $statement): bool {
-        $result = $this->dbCore->queryAndGetResults($statement);
-        $lastError = isset($result['last_error']) && is_string($result['last_error']) ? $result['last_error'] : '';
-        if ($lastError !== '') {
-            $this->logger->warn("backfillRedirectsDenormColumns: stopping after write error: " . $lastError);
-            return false;
-        }
-        return true;
     }
 
     /**

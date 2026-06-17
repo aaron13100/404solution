@@ -5,7 +5,7 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Provides typed access to the 14 database-upgrade components.
+ * Provides typed access to the 15 database-upgrade components.
  *
  * Implemented by {@see ABJ_404_Solution_DatabaseUpgradeComponentRegistry}, which
  * owns the component instances. Each upgrade component receives the coordinator
@@ -29,6 +29,8 @@ interface ABJ_404_Solution_DatabaseUpgradeCoordinator {
     public function canonicalUrlBackfillUpgrade(): ABJ_404_Solution_DatabaseUpgradeCanonicalUrlBackfill;
 
     public function redirectsDenormBackfillUpgrade(): ABJ_404_Solution_DatabaseUpgradeRedirectsDenormBackfill;
+
+    public function redirectsDenormReconcileUpgrade(): ABJ_404_Solution_DatabaseUpgradeRedirectsDenormReconcile;
 
     public function dailyMaintenanceUpgrade(): ABJ_404_Solution_DatabaseUpgradeDailyMaintenance;
 

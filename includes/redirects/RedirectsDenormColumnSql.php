@@ -132,6 +132,45 @@ class ABJ_404_Solution_RedirectsDenormColumnSql {
     }
 
     /**
+     * Build the logshits/last_used rollup UPDATE that rolls every matching
+     * logsv2 row up by canonical URL onto the chunk's redirect rows.
+     *
+     * The single source of truth for the rollup SQL the Step 3a backfill and the
+     * Step 3d nightly reconcile both run (via
+     * {@see ABJ_404_Solution_RedirectsDenormChunkResolver}). The aggregate
+     * subquery groups logsv2 once per chunk then joins it to the chunk's
+     * redirects, far cheaper than a correlated subquery per row. COALESCE on both
+     * sides keeps the canonical match correct while the canonical_url backfill is
+     * still in flight; the outer LEFT JOIN resets a no-hit URL to 0/0 rather than
+     * keeping a stale count.
+     *
+     * Pure: the caller resolves and passes the logsv2 table name and the
+     * already-int-sanitized id clause; this method touches no database.
+     *
+     * @param string $redirectsTable Fully-qualified redirects table name.
+     * @param string $logsTable      Fully-qualified logsv2 table name.
+     * @param string $idClause       " AND r.id IN (1,2,3)" fragment, or '' for all rows.
+     * @return string
+     */
+    public static function buildHitsRollupStatement(
+        string $redirectsTable,
+        string $logsTable,
+        string $idClause
+    ): string {
+        $canonLogs = "COALESCE(canonical_url, CONCAT('/', TRIM(BOTH '/' FROM requested_url)))";
+        $canonRedirect = "COALESCE(r.canonical_url, CONCAT('/', TRIM(BOTH '/' FROM r.url)))";
+
+        return "UPDATE " . $redirectsTable . " r" .
+            " LEFT JOIN (" .
+            "   SELECT " . $canonLogs . " AS cu, COUNT(*) AS hits, MAX(timestamp) AS lu" .
+            "   FROM " . $logsTable .
+            "   GROUP BY cu" .
+            " ) agg ON agg.cu = " . $canonRedirect .
+            " SET r.logshits = COALESCE(agg.hits, 0), r.last_used = COALESCE(agg.lu, 0)" .
+            " WHERE 1 = 1" . $idClause;
+    }
+
+    /**
      * Resolve a WordPress core table name from $wpdb, falling back to
      * prefix + bare name when the property is absent (e.g. a minimal test wpdb
      * proxy). Avoids depending on $wpdb->tables being populated.

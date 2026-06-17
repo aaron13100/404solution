@@ -65,6 +65,31 @@ final class ABJ_404_Solution_DatabaseUpgradeRuntimeState {
     public const REDIRECTS_DENORM_BACKFILL_COMPLETE_OPTION = 'abj404_redirects_denorm_backfill_complete';
 
     /**
+     * Rows recomputed per chunk by reconcileRedirectsDenormColumns() (Denorm
+     * Step 3d). Same 1000-row chunk as the backfill: each chunk also runs a
+     * logsv2 GROUP BY rollup join, so a tighter chunk keeps each statement
+     * bounded on a large table.
+     * @var int
+     */
+    public const REDIRECTS_DENORM_RECONCILE_CHUNK_SIZE = 1000;
+
+    /**
+     * Per-invocation wall-clock budget for the nightly redirects denorm
+     * reconcile. A pass that exhausts it persists its id cursor and resumes on
+     * the next nightly tick, so a huge table converges across successive nights.
+     * @var int
+     */
+    public const REDIRECTS_DENORM_RECONCILE_TIME_BUDGET_SEC = 20;
+
+    /**
+     * wp_options key holding the resumable ascending-id cursor for the nightly
+     * full reconcile (Denorm Step 3d): the highest redirect id recomputed in the
+     * current pass, or 0 when no pass is mid-flight (the next tick starts fresh).
+     * @var string
+     */
+    public const REDIRECTS_DENORM_RECONCILE_CURSOR_OPTION = 'abj404_redirects_denorm_reconcile_cursor';
+
+    /**
      * Known plugin table suffixes for adoption.
      * @var array<int, string>
      */

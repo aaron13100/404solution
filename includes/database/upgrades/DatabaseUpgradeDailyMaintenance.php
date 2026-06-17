@@ -10,7 +10,8 @@ if (!defined('ABSPATH')) {
  * Called by abj404_dailyMaintenanceCronJobListener() in 404-solution.php.
  * Coordinates (in order): self-heal prologue, ngram cache sync/cleanup, expired
  * transient cleanup, dead-destination flagging, auto-redirect retention,
- * canonical_url backfill (redirects + logsv2), internal-link scan, and an
+ * canonical_url backfill (redirects + logsv2), redirects denorm backfill (Step
+ * 3a) + nightly full reconcile (Step 3d), internal-link scan, and an
  * inline view_done snapshot refresh. The orchestrator owns the small in-house
  * tasks that only the daily cron triggers (transient cleanup, view-done
  * refresh); everything else routes through the coordinator delegate map.
@@ -69,6 +70,18 @@ class ABJ_404_Solution_DatabaseUpgradeDailyMaintenance extends ABJ_404_Solution_
         // blocking activation. Runs after the canonical_url backfills so the
         // hits rollup join matches on the freshly populated canonical_url column.
         $this->upgrades()->redirectsDenormBackfillUpgrade()->backfillRedirectsDenormColumns();
+
+        // Denorm Step 3d (i462): nightly full reconcile of the same four derived
+        // columns for ALL redirect rows. The Tier-3 floor / backstop: a
+        // brute-force cursor-walked recompute that catches drift from raw-SQL
+        // writers that bypassed the Step 3c real-time hooks (no hook fired, no
+        // timestamp bumped). Chunked + wall-clock-bounded with a resumable id
+        // cursor so a large table converges across successive nightly ticks.
+        // Background-only: never on the read path, never blocks the table view;
+        // a stale value can only delay a refresh by one pass, never blank rows.
+        // Runs after the backfill so a fresh install's one-time population goes
+        // first and the reconcile then keeps the populated columns honest.
+        $this->upgrades()->redirectsDenormReconcileUpgrade()->reconcileRedirectsDenormColumns();
 
         // Nightly internal-link scan: find broken internal links in published content.
         if (class_exists('ABJ_404_Solution_InternalLinkScanner')) {
