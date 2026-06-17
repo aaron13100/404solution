@@ -199,7 +199,7 @@ if ($GLOBALS['abj404_boot_ok']) {
 	if (is_admin()) {
 		try {
 			ABJ_404_Solution_WordPress_Connector::init();
-			ABJ_404_Solution_ViewUpdater::init();
+			ABJ_404_Solution_AjaxAdminEndpointRegistrar::register();
 		} catch (\Throwable $e) {
 			// init() failed. Fall through to register the degraded admin page
 			// so the user still has a menu item with error details instead of nothing.

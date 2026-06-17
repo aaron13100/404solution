@@ -22,7 +22,7 @@ class ABJ_404_Solution_Ajax_RefreshAdminNonces {
             'action' => 'ajaxRefreshAdminNonces',
             'request_uri' => $_SERVER['REQUEST_URI'] ?? '',
             'user_id' => function_exists('get_current_user_id') ? get_current_user_id() : 0,
-        ), 'ViewUpdater::refreshAdminNonces');
+        ), 'Ajax_RefreshAdminNonces::handle');
         try {
             $userIsPluginAdmin = (bool)abj_service('admin_access_policy')->isPluginAdmin();
             if (!$userIsPluginAdmin) {

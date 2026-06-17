@@ -14,10 +14,10 @@ if (!defined('ABSPATH')) {
  * client request-id sanitization, foreground view-build lease, and view
  * instance resolution.
  *
- * Extracted from ABJ_404_Solution_ViewUpdater so each per-endpoint handler
- * can own a single endpoint's logic in its own file. ViewUpdater itself
-     * retains thin back-compat forwarders for these statics because tests and
-     * legacy AJAX call sites reach in through that name.
+ * Shared cross-cutting helpers (error-envelope builder, JSON responder,
+ * fatal-error classifier, debug-context starter, admin-nonce action list)
+ * for the per-endpoint admin-table AJAX handlers, so each handler can own a
+ * single endpoint's logic in its own file while reusing this common surface.
  */
 class ABJ_404_Solution_Ajax_AdminEndpointSupport {
 

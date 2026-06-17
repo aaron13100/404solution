@@ -48,7 +48,7 @@ class ABJ_404_Solution_Ajax_AdvanceViewBuild {
             'request_uri' => array_key_exists('REQUEST_URI', $_SERVER) ? $_SERVER['REQUEST_URI'] : '',
             'user_id' => function_exists('get_current_user_id') ? get_current_user_id() : 0,
         );
-        $context = ABJ_404_Solution_Ajax_AdminEndpointSupport::startAjaxDebugContext($context, 'ViewUpdater::advanceViewBuild');
+        $context = ABJ_404_Solution_Ajax_AdminEndpointSupport::startAjaxDebugContext($context, 'Ajax_AdvanceViewBuild::handle');
 
         try {
             if (!ABJ_404_Solution_Ajax_AdminEndpointSupport::requireAdminWithNonceOrRespond(

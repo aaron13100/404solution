@@ -51,7 +51,7 @@
     /**
      * Map of WP nonce action verb -> selector + attribute name to update on
      * the page when a fresh nonce arrives. Keep this in sync with the
-     * server-side ABJ_404_Solution_ViewUpdater::adminNonceActions().
+     * server-side ABJ_404_Solution_Ajax_AdminEndpointSupport::adminNonceActions().
      */
     var NONCE_DATA_ATTRS = {
         'abj404_updatePaginationLink': [

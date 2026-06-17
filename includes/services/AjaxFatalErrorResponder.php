@@ -36,7 +36,7 @@ class ABJ_404_Solution_AjaxFatalErrorResponder {
      */
     public function process(array $lasterror, array $context): bool {
         $contextSourceOk = array_key_exists('abj404_context_source', $context) &&
-            $context['abj404_context_source'] === 'ViewUpdater::getPaginationLinks';
+            $context['abj404_context_source'] === 'Ajax_GetPaginationLinks::handle';
         if (!$contextSourceOk) {
             return false;
         }

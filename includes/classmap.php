@@ -423,7 +423,7 @@ return array(
     'ABJ_404_Solution_ViewBuildPendingException' => $base . 'includes/view-build/ViewBuildPendingException.php',
     'ABJ_404_Solution_ViewBuildPendingResponseBuilder' => $base . 'includes/ajax/ViewBuildPendingResponseBuilder.php',
     'ABJ_404_Solution_ViewQueryFailureException' => $base . 'includes/view-build/ViewQueryFailureException.php',
-    'ABJ_404_Solution_ViewUpdater' => $base . 'includes/ajax/ViewUpdater.php',
+    'ABJ_404_Solution_AjaxAdminEndpointRegistrar' => $base . 'includes/ajax/AjaxAdminEndpointRegistrar.php',
     'ABJ_404_Solution_Ajax_AdminEndpointSupport' => $base . 'includes/ajax/Ajax_AdminEndpointSupport.php',
     'ABJ_404_Solution_Ajax_GetPaginationLinks' => $base . 'includes/ajax/Ajax_GetPaginationLinks.php',
     'ABJ_404_Solution_Ajax_WarmTableCache' => $base . 'includes/ajax/Ajax_WarmTableCache.php',

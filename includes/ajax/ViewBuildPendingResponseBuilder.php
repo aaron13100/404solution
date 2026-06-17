@@ -20,8 +20,9 @@ if (!defined('ABSPATH')) {
  * picks up the build via `ajaxAdvanceViewBuild` exactly as if the gate
  * had triggered.
  *
- * Extracted from `ABJ_404_Solution_ViewUpdater` to keep that file under
- * the project line-count cap.
+ * A focused collaborator for the admin-table AJAX handlers: it owns the
+ * view-build-pending detection and response shape so each endpoint handler
+ * stays small and single-purpose.
  */
 class ABJ_404_Solution_ViewBuildPendingResponseBuilder {
 
