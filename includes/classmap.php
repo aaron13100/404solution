@@ -173,8 +173,6 @@ return array(
     'ABJ_404_Solution_View_UI' => $base . 'includes/view/View_UI.php',
     'ABJ_404_Solution_ViewReadRuntimeState' => $base . 'includes/view-build/ViewReadRuntimeState.php',
     'ABJ_404_Solution_ViewQueryPolicy' => $base . 'includes/view-build/ViewQueryPolicy.php',
-    'ABJ_404_Solution_ViewDoneQueryBuilder' => $base . 'includes/view-build/ViewDoneQueryBuilder.php',
-    'ABJ_404_Solution_ViewDoneReader' => $base . 'includes/view-build/ViewDoneReader.php',
     'ABJ_404_Solution_ViewQueryBuilder' => $base . 'includes/view-build/ViewQueryBuilder.php',
     'ABJ_404_Solution_ScoreThresholds' => $base . 'includes/view-build/ScoreThresholds.php',
     'ABJ_404_Solution_ViewDiagnostics' => $base . 'includes/view-build/ViewDiagnostics.php',

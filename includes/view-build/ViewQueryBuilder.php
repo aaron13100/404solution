@@ -5,12 +5,15 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Compatibility facade for admin view query construction.
+ * Admin view query construction and staged view_done reads.
  *
- * Focused collaborators own policy decisions, staged view_done SQL, and
- * staged read execution. This facade preserves the public methods used by
- * ViewReadService while the deprecated single-shot redirect-list SQL path is
- * gone.
+ * Builds the SQL for the admin redirect/captured lists (high-impact captured
+ * count, regex redirects, optimized count) and owns the read path against the
+ * staged view_done admin table: it constructs the read/count SQL and executes
+ * the read through the staged-query options supplied by the view-build
+ * orchestrator. The view_done read/count SQL used to live in two single-consumer
+ * leaf classes (ViewDoneReader, ViewDoneQueryBuilder); they were folded in here
+ * to remove a three-file single-consumer chain.
  */
 class ABJ_404_Solution_ViewQueryBuilder {
 
@@ -20,11 +23,8 @@ class ABJ_404_Solution_ViewQueryBuilder {
     /** @var ABJ_404_Solution_ViewQueryPolicy */
     private $policy;
 
-    /** @var ABJ_404_Solution_ViewDoneQueryBuilder */
-    private $viewDoneQueryBuilder;
-
-    /** @var ABJ_404_Solution_ViewDoneReader */
-    private $viewDoneReader;
+    /** @var ABJ_404_Solution_ViewBuildOrchestratorInterface|null */
+    private $viewBuildOrchestrator;
 
     /**
      * @param ABJ_404_Solution_DatabaseCore $dbCore
@@ -32,8 +32,6 @@ class ABJ_404_Solution_ViewQueryBuilder {
     public function __construct(ABJ_404_Solution_DatabaseCore $dbCore) {
         $this->dbCore = $dbCore;
         $this->policy = new ABJ_404_Solution_ViewQueryPolicy();
-        $this->viewDoneQueryBuilder = new ABJ_404_Solution_ViewDoneQueryBuilder($dbCore, $this->policy);
-        $this->viewDoneReader = new ABJ_404_Solution_ViewDoneReader($dbCore, $this->viewDoneQueryBuilder);
     }
 
     /**
@@ -41,7 +39,7 @@ class ABJ_404_Solution_ViewQueryBuilder {
      * @return void
      */
     public function setViewBuildOrchestrator(ABJ_404_Solution_ViewBuildOrchestratorInterface $viewBuildOrchestrator): void {
-        $this->viewDoneReader->setViewBuildOrchestrator($viewBuildOrchestrator);
+        $this->viewBuildOrchestrator = $viewBuildOrchestrator;
     }
 
     /** @return string */
@@ -103,12 +101,18 @@ class ABJ_404_Solution_ViewQueryBuilder {
     }
 
     /**
+     * Execute a staged read against the view_done admin table.
+     *
      * @param string $sub
      * @param array<string, mixed> $tableOptions
      * @return array<int, array<string, mixed>>
      */
     public function readFromViewDone(string $sub, array $tableOptions): array {
-        return $this->viewDoneReader->readFromViewDone($sub, $tableOptions);
+        $query = $this->buildViewDoneReadQuery($sub, $tableOptions);
+        $result = $this->dbCore->queryAndGetResults($query, $this->requireViewBuildOrchestrator()->getStagedQueryOptionsForRead());
+        $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
+        /** @var array<int, array<string, mixed>> $rows */
+        return $rows;
     }
 
     /**
@@ -117,7 +121,17 @@ class ABJ_404_Solution_ViewQueryBuilder {
      * @return string
      */
     public function buildViewDoneCountQuery(string $sub, array $tableOptions): string {
-        return $this->viewDoneQueryBuilder->buildCountQuery($sub, $tableOptions);
+        $statusTypes = $this->policy->resolveStatusTypeList($sub, $tableOptions);
+        $trashClause = 'AND disabled = ' . intval($this->policy->resolveTrashValue($tableOptions));
+        $scoreRangeClause = $this->policy->buildScoreRangeClause($tableOptions, '');
+        $filterTextClause = $this->policy->buildFilterTextClause($sub, $tableOptions);
+
+        return "SELECT COUNT(*) AS cnt\n"
+            . "FROM `" . $this->viewDoneTableName() . "`\n"
+            . "WHERE status IN (" . $statusTypes . ")\n"
+            . " " . $trashClause . "\n"
+            . " " . $scoreRangeClause . "\n"
+            . " " . $filterTextClause;
     }
 
     /**
@@ -135,6 +149,51 @@ class ABJ_404_Solution_ViewQueryBuilder {
      */
     public function resolveOrderByColumn(array $tableOptions): string {
         return $this->policy->resolveOrderByColumn($tableOptions);
+    }
+
+    /**
+     * @param string $sub
+     * @param array<string, mixed> $tableOptions
+     * @return string
+     */
+    private function buildViewDoneReadQuery(string $sub, array $tableOptions): string {
+        $statusTypes = $this->policy->resolveStatusTypeList($sub, $tableOptions);
+        $trashClause = 'AND disabled = ' . intval($this->policy->resolveTrashValue($tableOptions));
+        $scoreRangeClause = $this->policy->buildScoreRangeClause($tableOptions, '');
+        $filterTextClause = $this->policy->buildFilterTextClause($sub, $tableOptions);
+        $orderBy = $this->policy->resolveOrderByColumn($tableOptions);
+        $order = $this->policy->resolveOrderDirection($tableOptions);
+
+        $rawPaged = $tableOptions['paged'] ?? 1;
+        $paged = max(1, is_scalar($rawPaged) ? intval($rawPaged) : 1);
+        $rawPerpage = $tableOptions['perpage'] ?? ABJ404_OPTION_DEFAULT_PERPAGE;
+        $perpage = max(1, is_scalar($rawPerpage) ? intval($rawPerpage) : (int)ABJ404_OPTION_DEFAULT_PERPAGE);
+        $limitStart = ($paged - 1) * $perpage;
+
+        return "SELECT id, url, status, type,\n"
+            . "       final_dest, dest_for_view, published_status, code, timestamp,\n"
+            . "       engine, score, wp_post_id, wp_post_type,\n"
+            . "       logshits, logsid, last_used\n"
+            . "FROM `" . $this->viewDoneTableName() . "`\n"
+            . "WHERE status IN (" . $statusTypes . ")\n"
+            . " " . $trashClause . "\n"
+            . " " . $scoreRangeClause . "\n"
+            . " " . $filterTextClause . "\n"
+            . "ORDER BY published_status ASC, " . $orderBy . " " . $order . ", url ASC, id " . $order . "\n"
+            . "LIMIT " . $limitStart . ", " . $perpage;
+    }
+
+    /** @return string */
+    private function viewDoneTableName(): string {
+        return $this->dbCore->doTableNameReplacements('{wp_abj404_view_done}');
+    }
+
+    /** @return ABJ_404_Solution_ViewBuildOrchestratorInterface */
+    private function requireViewBuildOrchestrator(): ABJ_404_Solution_ViewBuildOrchestratorInterface {
+        if ($this->viewBuildOrchestrator === null) {
+            throw new \RuntimeException('ViewQueryBuilder requires ViewBuildOrchestrator (call setViewBuildOrchestrator first)'); // allow-raw-error: assertion, should never reach user
+        }
+        return $this->viewBuildOrchestrator;
     }
 
 }
