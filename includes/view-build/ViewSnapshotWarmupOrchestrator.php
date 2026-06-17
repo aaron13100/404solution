@@ -112,16 +112,59 @@ class ABJ_404_Solution_ViewSnapshotWarmupOrchestrator {
         $state = $this->warmupStatePolicy->getViewWarmupState($optionName);
         $now = abj_clock()->now();
 
+        // The snapshot is already warm: nothing to do, report ready.
         if ($host->viewTableSnapshotAvailable($sub, $tableOptions)) {
-            $state['status'] = 'ready';
-            $state['stage'] = 'count';
-            $state['query_label'] = 'getRedirectsForViewCount';
-            $state['stage_completed_at'] = $now;
-            $state['last_error'] = '';
-            $this->warmupStatePolicy->setViewWarmupState($optionName, $state);
-            return $this->warmupStatePolicy->formatViewWarmupResponse($state, true);
+            return $this->markWarmupReady($optionName, $state, $now);
         }
 
+        $stage = $this->resolveCurrentStage($host, $sub, $tableOptions, $state);
+
+        // A prior call left this stage marked running: decide whether to keep
+        // waiting, forgive an attempt, block, or fall through and re-run it.
+        if ($state['status'] === 'running') {
+            $staleResponse = $this->handleStaleRunningStage($optionName, $sub, $tableOptions, $state, $stage, $now);
+            if ($staleResponse !== null) {
+                return $staleResponse;
+            }
+        }
+
+        // Retry-limit gate: relax it one notch when there is no diagnostic
+        // error to act on, then block if we are still over the limit.
+        $this->relaxRetryLimitWhenErrorNotDiagnostic($state, $stage);
+        $attemptCount = $this->stageAttemptCount($state, $stage);
+        if ($attemptCount >= ABJ_404_Solution_ViewReadRuntimeState::VIEW_SNAPSHOT_WARMUP_MAX_ATTEMPTS) {
+            return $this->blockWarmupAtRetryLimit($optionName, $sub, $tableOptions, $state, 'Warmup stage reached the retry limit.');
+        }
+
+        return $this->executeWarmupStageUnderLock($host, $optionName, $shapeKey, $sub, $tableOptions, $state, $stage, $attemptCount, $now);
+    }
+
+    /**
+     * Record the snapshot as already warm and return the ready response. The
+     * top-of-function short-circuit when the full table snapshot is visible.
+     *
+     * @param array<string, mixed> $state
+     * @return array<string, mixed>
+     */
+    private function markWarmupReady(string $optionName, array $state, int $now): array {
+        $state['status'] = 'ready';
+        $state['stage'] = 'count';
+        $state['query_label'] = 'getRedirectsForViewCount';
+        $state['stage_completed_at'] = $now;
+        $state['last_error'] = '';
+        $this->warmupStatePolicy->setViewWarmupState($optionName, $state);
+        return $this->warmupStatePolicy->formatViewWarmupResponse($state, true);
+    }
+
+    /**
+     * Pick the stage this call should drive (rows first, then count) based on
+     * which snapshot is already visible, recording the matching stage label
+     * onto the state record. Returns the resolved stage ('rows' or 'count').
+     *
+     * @param array<string, mixed> $tableOptions
+     * @param array<string, mixed> $state
+     */
+    private function resolveCurrentStage(ABJ_404_Solution_ViewSnapshotCacheHostInterface $host, string $sub, array $tableOptions, array &$state): string {
         if ($host->viewRowsSnapshotAvailable($sub, $tableOptions)) {
             $state['stage'] = 'count';
             $state['query_label'] = 'getRedirectsForViewCount';
@@ -129,62 +172,113 @@ class ABJ_404_Solution_ViewSnapshotWarmupOrchestrator {
             $state['stage'] = 'rows';
             $state['query_label'] = 'getRedirectsForView';
         }
+        return (string)$state['stage'];
+    }
 
-        $stage = (string)$state['stage'];
-        $attempts = is_array($state['attempts_by_stage']) ? $state['attempts_by_stage'] : array('rows' => 0, 'count' => 0);
-        $attemptCountRaw = $attempts[$stage] ?? 0;
-        $attemptCount = is_scalar($attemptCountRaw) ? intval($attemptCountRaw) : 0;
+    /**
+     * Read the attempt counter for the given stage off the state record,
+     * tolerating a missing or non-scalar value.
+     *
+     * @param array<string, mixed> $state
+     */
+    private function stageAttemptCount(array $state, string $stage): int {
+        $attempts = is_array($state['attempts_by_stage'] ?? null) ? $state['attempts_by_stage'] : array('rows' => 0, 'count' => 0);
+        $raw = $attempts[$stage] ?? 0;
+        return is_scalar($raw) ? intval($raw) : 0;
+    }
 
-        if ($state['status'] === 'running') {
-            $stageStartedAt = $state['stage_started_at'] ?? 0;
-            $elapsed = $now - (is_scalar($stageStartedAt) ? intval($stageStartedAt) : 0);
-            if ($elapsed <= ABJ_404_Solution_ViewReadRuntimeState::VIEW_SNAPSHOT_WARMUP_STALE_SECONDS) {
-                return $this->warmupStatePolicy->formatViewWarmupResponse($state, false);
-            }
-            $currentBuildProgress = $this->warmupStatePolicy->getViewBuildProgressFingerprint();
-            if ($this->warmupStatePolicy->forgiveWarmupAttemptIfBuildProgressed($state, $stage, $currentBuildProgress)) {
-                $attempts = is_array($state['attempts_by_stage']) ? $state['attempts_by_stage'] : array('rows' => 0, 'count' => 0);
-                $attemptCountRaw = $attempts[$stage] ?? 0;
-                $attemptCount = is_scalar($attemptCountRaw) ? intval($attemptCountRaw) : 0;
-            }
-            if ($attemptCount >= ABJ_404_Solution_ViewReadRuntimeState::VIEW_SNAPSHOT_WARMUP_MAX_ATTEMPTS) {
-                $state['status'] = 'blocked';
-                $previousLastError = $state['last_error'] ?? '';
-                $previousError = is_string($previousLastError) ? trim($previousLastError) : '';
-                $state['last_error'] = 'Previous warmup stage was killed or stalled too many times.'
-                    . ($this->warmupStatePolicy->isViewWarmupErrorDiagnostic($previousError) ? ' Previous error: ' . $previousError : '');
-                $this->warmupDiagnostics->logViewWarmupFailure($sub, $tableOptions, $state);
-                $this->warmupStatePolicy->setViewWarmupState($optionName, $state);
-                return $this->warmupStatePolicy->formatViewWarmupResponse($state, false);
-            }
-            $loggedKey = $stage . ':' . (is_scalar($stageStartedAt) ? intval($stageStartedAt) : 0);
-            $loggedStaleByStage = is_array($state['logged_stale_by_stage'] ?? null) ? $state['logged_stale_by_stage'] : array();
-            if (empty($loggedStaleByStage[$loggedKey])) {
-                $this->warmupDiagnostics->logStaleViewWarmupStage($sub, $tableOptions, $state, $elapsed, $attemptCount);
-                $loggedStaleByStage[$loggedKey] = 1;
-                $state['logged_stale_by_stage'] = $loggedStaleByStage;
-            }
-        }
-
-        if ($attemptCount >= ABJ_404_Solution_ViewReadRuntimeState::VIEW_SNAPSHOT_WARMUP_MAX_ATTEMPTS) {
-            $previousLastError = $state['last_error'] ?? '';
-            $previousError = is_string($previousLastError) ? trim($previousLastError) : '';
-            if (!$this->warmupStatePolicy->isViewWarmupErrorDiagnostic($previousError)) {
-                $attempts[$stage] = ABJ_404_Solution_ViewReadRuntimeState::VIEW_SNAPSHOT_WARMUP_MAX_ATTEMPTS - 1;
-                $state['attempts_by_stage'] = $attempts;
-                $attemptCount = is_scalar($attempts[$stage] ?? 0) ? intval($attempts[$stage]) : 0;
-            }
-        }
-
-        if ($attemptCount >= ABJ_404_Solution_ViewReadRuntimeState::VIEW_SNAPSHOT_WARMUP_MAX_ATTEMPTS) {
-            $state['status'] = 'blocked';
-            $state['last_error'] = 'Warmup stage reached the retry limit.'
-                . ($this->warmupStatePolicy->isViewWarmupErrorDiagnostic($previousError) ? ' Previous error: ' . $previousError : '');
-            $this->warmupDiagnostics->logViewWarmupFailure($sub, $tableOptions, $state);
-            $this->warmupStatePolicy->setViewWarmupState($optionName, $state);
+    /**
+     * Handle a stage that a prior call left marked 'running'. Returns a
+     * response array when the caller should return it immediately (still
+     * within the stale window, or blocked at the retry limit) and null when
+     * the caller should fall through and re-run the stage. Mutates `$state`
+     * (attempt forgiveness, stale-log dedup) in place.
+     *
+     * @param array<string, mixed> $tableOptions
+     * @param array<string, mixed> $state
+     * @return array<string, mixed>|null
+     */
+    private function handleStaleRunningStage(string $optionName, string $sub, array $tableOptions, array &$state, string $stage, int $now): ?array {
+        $stageStartedAt = $state['stage_started_at'] ?? 0;
+        $stageStartedAtInt = is_scalar($stageStartedAt) ? intval($stageStartedAt) : 0;
+        $elapsed = $now - $stageStartedAtInt;
+        if ($elapsed <= ABJ_404_Solution_ViewReadRuntimeState::VIEW_SNAPSHOT_WARMUP_STALE_SECONDS) {
             return $this->warmupStatePolicy->formatViewWarmupResponse($state, false);
         }
 
+        $currentBuildProgress = $this->warmupStatePolicy->getViewBuildProgressFingerprint();
+        $this->warmupStatePolicy->forgiveWarmupAttemptIfBuildProgressed($state, $stage, $currentBuildProgress);
+        $attemptCount = $this->stageAttemptCount($state, $stage);
+
+        if ($attemptCount >= ABJ_404_Solution_ViewReadRuntimeState::VIEW_SNAPSHOT_WARMUP_MAX_ATTEMPTS) {
+            return $this->blockWarmupAtRetryLimit($optionName, $sub, $tableOptions, $state,
+                'Previous warmup stage was killed or stalled too many times.');
+        }
+
+        $loggedKey = $stage . ':' . $stageStartedAtInt;
+        $loggedStaleByStage = is_array($state['logged_stale_by_stage'] ?? null) ? $state['logged_stale_by_stage'] : array();
+        if (empty($loggedStaleByStage[$loggedKey])) {
+            $this->warmupDiagnostics->logStaleViewWarmupStage($sub, $tableOptions, $state, $elapsed, $attemptCount);
+            $loggedStaleByStage[$loggedKey] = 1;
+            $state['logged_stale_by_stage'] = $loggedStaleByStage;
+        }
+        return null;
+    }
+
+    /**
+     * When the stage is at the retry limit but the last error is not a real
+     * diagnostic (just the generic retry-limit marker), step the attempt
+     * counter back one notch so the stage gets one more genuine attempt
+     * instead of staying blocked on a non-actionable error. Mutates `$state`.
+     *
+     * @param array<string, mixed> $state
+     */
+    private function relaxRetryLimitWhenErrorNotDiagnostic(array &$state, string $stage): void {
+        if ($this->stageAttemptCount($state, $stage) < ABJ_404_Solution_ViewReadRuntimeState::VIEW_SNAPSHOT_WARMUP_MAX_ATTEMPTS) {
+            return;
+        }
+        $previousLastError = $state['last_error'] ?? '';
+        $previousError = is_string($previousLastError) ? trim($previousLastError) : '';
+        if ($this->warmupStatePolicy->isViewWarmupErrorDiagnostic($previousError)) {
+            return;
+        }
+        $attempts = is_array($state['attempts_by_stage'] ?? null) ? $state['attempts_by_stage'] : array('rows' => 0, 'count' => 0);
+        $attempts[$stage] = ABJ_404_Solution_ViewReadRuntimeState::VIEW_SNAPSHOT_WARMUP_MAX_ATTEMPTS - 1;
+        $state['attempts_by_stage'] = $attempts;
+    }
+
+    /**
+     * Mark the stage blocked at the retry limit, append the prior diagnostic
+     * error when there is one, log the failure, persist, and return the
+     * blocked response. Single source for both the stale-running and the
+     * top-level retry-limit guards (the message differs, the rest does not).
+     *
+     * @param array<string, mixed> $tableOptions
+     * @param array<string, mixed> $state
+     * @return array<string, mixed>
+     */
+    private function blockWarmupAtRetryLimit(string $optionName, string $sub, array $tableOptions, array $state, string $baseMessage): array {
+        $state['status'] = 'blocked';
+        $previousLastError = $state['last_error'] ?? '';
+        $previousError = is_string($previousLastError) ? trim($previousLastError) : '';
+        $state['last_error'] = $baseMessage
+            . ($this->warmupStatePolicy->isViewWarmupErrorDiagnostic($previousError) ? ' Previous error: ' . $previousError : '');
+        $this->warmupDiagnostics->logViewWarmupFailure($sub, $tableOptions, $state);
+        $this->warmupStatePolicy->setViewWarmupState($optionName, $state);
+        return $this->warmupStatePolicy->formatViewWarmupResponse($state, false);
+    }
+
+    /**
+     * Acquire the site-wide warmup lock and run the current stage. Returns the
+     * locked response when the lock is contended; otherwise runs the stage,
+     * records timings (success path) or the failure (catch path), and always
+     * releases the lock.
+     *
+     * @param array<string, mixed> $tableOptions
+     * @param array<string, mixed> $state
+     * @return array<string, mixed>
+     */
+    private function executeWarmupStageUnderLock(ABJ_404_Solution_ViewSnapshotCacheHostInterface $host, string $optionName, string $shapeKey, string $sub, array $tableOptions, array $state, string $stage, int $attemptCount, int $now): array {
         if (!$this->snapshotStore->acquireViewSnapshotWarmupGlobalLock()) {
             $state['status'] = 'running';
             $state['last_error'] = 'Another table cache warmup is already running for this site.';
@@ -195,6 +289,7 @@ class ABJ_404_Solution_ViewSnapshotWarmupOrchestrator {
             ));
         }
 
+        $attempts = is_array($state['attempts_by_stage'] ?? null) ? $state['attempts_by_stage'] : array('rows' => 0, 'count' => 0);
         $startMs = abj_clock()->nowFloat();
         try {
             $attempts[$stage] = $attemptCount + 1;
