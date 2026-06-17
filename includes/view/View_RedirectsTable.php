@@ -92,25 +92,15 @@ class ABJ_404_Solution_View_RedirectsTable extends ABJ_404_Solution_ViewComponen
             $displayed++;
         }
         if ($displayed == 0) {
-            // Distinguish a genuinely empty listing from a still-preparing one.
-            // When the staged view_done read is pending/errored or returns no
-            // rows while the live source count says rows exist (the i455
-            // "count shows thousands but table empty" release blocker), showing
-            // "No records" is a lie. Render a quiet "still preparing" state
-            // instead; the AJAX endpoint re-engages the view-build poller so
-            // the rows arrive once the build advances.
-            list($emptyTitle, $emptyHelp) = $this->viewReadService->lastRedirectsViewReadWasIncomplete()
-                ? array(
-                    __('Preparing the redirects table', '404-solution'),
-                    __('The list is still loading and will appear in a moment.', '404-solution'),
-                )
-                : array(
-                    __('No Redirect Records To Display', '404-solution'),
-                    __('Redirects will appear here once created.', '404-solution'),
-                );
+            // The single-table denorm read (denorm Step 3b) is always complete
+            // and serveable, so zero displayed rows is a genuinely empty
+            // listing. There is no "still preparing" state to distinguish.
             $bodyRows .= $this->f->str_replace(
                 array('{title}', '{help}'),
-                array($emptyTitle, $emptyHelp),
+                array(
+                    __('No Redirect Records To Display', '404-solution'),
+                    __('Redirects will appear here once created.', '404-solution'),
+                ),
                 $this->tpl('viewRedirectsTableRedirectsEmptyState.html')
             );
         }

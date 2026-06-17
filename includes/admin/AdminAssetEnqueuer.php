@@ -222,29 +222,14 @@ class ABJ_404_Solution_AdminAssetEnqueuer {
             $vuBase . 'view_updater_nonce_refresh.js', array('jquery'));
         $enq('abj404-view-updater-stage-diagnostics',
             $vuBase . 'view_updater_stage_diagnostics.js', array('jquery'));
-        $enq('abj404-view-updater-stage-progress',
-            $vuBase . 'view_updater_stage_progress.js',
-            array('jquery', 'abj404-view-updater-stage-diagnostics',
-                'abj404-view-updater-nonce-refresh'));
         $enq('abj404-view-updater-compare',
             $vuBase . 'view_updater_compare.js', array('jquery'));
         $enq('abj404-view-updater-toast',
             $vuBase . 'view_updater_toast.js', array('jquery'));
         $enq('abj404-view-updater-stats', $vuBase . 'view_updater_stats.js',
             array('jquery', 'abj404-view-updater-toast', 'abj404-view-updater-nonce-refresh'));
-        $enq('abj404-view-updater-build-advance', $vuBase . 'view_updater_build_advance.js',
-            array('jquery', 'abj404-view-updater-nonce-refresh'));
-        $enq('abj404-view-updater-shared-build-state',
-            $vuBase . 'view_updater_shared_build_state.js', array('jquery'));
         $enq('abj404-view-updater-table-init', $vuBase . 'view_updater_table_init.js',
             array('jquery', 'abj404-view-updater-toast', 'abj404-view-updater-stats',
-                'abj404-view-updater-nonce-refresh'));
-        $enq('abj404-view-updater-table-warmup', $vuBase . 'view_updater_table_warmup.js',
-            array('jquery', 'abj404-view-updater-stage-diagnostics',
-                'abj404-view-updater-stage-progress',
-                'abj404-view-updater-build-advance',
-                'abj404-view-updater-shared-build-state',
-                'abj404-view-updater-table-init',
                 'abj404-view-updater-nonce-refresh'));
         $enq('abj404-view-updater-pagination-request',
             $vuBase . 'view_updater_pagination_request.js',
@@ -258,9 +243,8 @@ class ABJ_404_Solution_AdminAssetEnqueuer {
                 'abj404-view-updater-table-init', 'abj404-view-updater-nonce-refresh'));
         $enq('abj404-view-updater-pagination', $vuBase . 'view_updater_pagination.js',
             array('jquery', 'abj404-view-updater-compare', 'abj404-view-updater-stage-diagnostics',
-                'abj404-view-updater-stage-progress',
-                'abj404-view-updater-build-advance', 'abj404-view-updater-table-init',
-                'abj404-view-updater-table-warmup', 'abj404-view-updater-toast',
+                'abj404-view-updater-table-init',
+                'abj404-view-updater-toast',
                 'abj404-view-updater-nonce-refresh',
                 'abj404-view-updater-pagination-request',
                 'abj404-view-updater-pagination-response-apply',
@@ -268,11 +252,10 @@ class ABJ_404_Solution_AdminAssetEnqueuer {
         $enq('abj404-view-updater', $vuBase . 'view_updater.js',
             array('jquery', 'jquery-ui-autocomplete',
                 'abj404-view-updater-stage-diagnostics',
-                'abj404-view-updater-stage-progress',
                 'abj404-view-updater-compare',
                 'abj404-view-updater-toast', 'abj404-view-updater-stats',
-                'abj404-view-updater-build-advance', 'abj404-view-updater-table-init',
-                'abj404-view-updater-table-warmup', 'abj404-view-updater-pagination',
+                'abj404-view-updater-table-init',
+                'abj404-view-updater-pagination',
                 'abj404-view-updater-nonce-refresh'));
     }
 

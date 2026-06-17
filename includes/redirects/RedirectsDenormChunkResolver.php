@@ -109,9 +109,10 @@ class ABJ_404_Solution_RedirectsDenormChunkResolver {
         if (!isset($wpdb)) {
             return null;
         }
-        // DAO-bypass-approved: schema existence probe; routing a SHOW TABLES
-        // through queryAndGetResults would log a benign "table missing" error on
-        // a stripped install before its create-tables flow has run.
+        // Schema existence probe; routing a SHOW TABLES through
+        // queryAndGetResults would log a benign "table missing" error on a
+        // stripped install before its create-tables flow has run.
+        // DAO-bypass-approved: SHOW TABLES schema existence probe.
         $found = $wpdb->get_var("SHOW TABLES LIKE '" . esc_sql($logsTable) . "'");
         if ($found !== $logsTable) {
             return null;

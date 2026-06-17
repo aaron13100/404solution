@@ -1,5 +1,0 @@
-{
-  "_comment": "This fixture MUST fail validation. The subpage value is not in the allowed enum.",
-  "nonce": "abc123def456",
-  "subpage": "abj404_logs"
-}

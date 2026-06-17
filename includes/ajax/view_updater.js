@@ -6,8 +6,6 @@
  *
  *   - getURLParameter / abj404UpdateAjaxDebugLog / abj404GenerateRequestId:
  *     primitives shared with every helper file below.
- *   - abj404StripForceViewRebuildFromUrl + abj404HandleForceViewRebuild:
- *     `?abj404_force_view_rebuild=1` diagnostic flow.
  *   - bindPaginationLinkListeners / bindSearchFieldListeners +
  *     extractPagedFromTrigger / isElementFullyVisible:
  *     event wiring for the pagination links and the search input.
@@ -18,14 +16,10 @@
  * are available before jQuery.ready runs:
  *
  *   - view_updater_stage_diagnostics.js  (label lookup)
- *   - view_updater_stage_progress.js     (inflight stage progress polling)
  *   - view_updater_compare.js            (background-refresh diff)
  *   - view_updater_toast.js              (refresh toast + pill)
  *   - view_updater_stats.js              (stats refresh + cooldown helpers)
- *   - view_updater_build_advance.js      (bounded view-build advance polling)
- *   - view_updater_shared_build_state.js (multi-tab build owner coordination)
  *   - view_updater_table_init.js         (initial-load + bg refresh + healthbar)
- *   - view_updater_table_warmup.js       (warm cache + viewBuildPending bridge)
  *   - view_updater_pagination.js         (paginationLinksChange fetch handler)
  *   - view_updater.js                    (this file: ready boot + utilities)
  */
@@ -38,30 +32,6 @@ if (typeof(getURLParameter) !== "function") {
     }
 }
 
-/**
- * Strip ?abj404_force_view_rebuild=1 from the visible URL so a hard reload
- * doesn't loop the rebuild and so subsequent page-internal flows don't read
- * the flag. Pure cosmetic + idempotency: the JS that consumes the flag has
- * already captured it before this runs.
- *
- * @returns {void}
- */
-function abj404StripForceViewRebuildFromUrl() {
-    if (!window.history || typeof window.history.replaceState !== 'function') {
-        return;
-    }
-    var search = location.search;
-    if (search.indexOf('abj404_force_view_rebuild=') < 0) {
-        return;
-    }
-    search = search
-        .replace(/(^\?|&)abj404_force_view_rebuild=[^&]*/, '$1')
-        .replace(/^\?&/, '?')
-        .replace(/&&+/g, '&')
-        .replace(/[?&]$/, '');
-    if (search === '?') { search = ''; }
-    window.history.replaceState(null, '', location.pathname + search + location.hash);
-}
 
 /**
  * Stores AJAX interaction details for the footer debug section.
@@ -153,13 +123,6 @@ function abj404GenerateRequestId() {
 jQuery(document).ready(function($) {
     bindSearchFieldListeners();
     bindPaginationLinkListeners();
-    // Diagnostic: ?abj404_force_view_rebuild=1 must own the whole rebuild
-    // under a single requestId so every staged sub-stage shows up in the
-    // debug log. Runs first, suppresses the regular initial-load and
-    // background-refresh flows until the rebuild is complete.
-    if (abj404HandleForceViewRebuild()) {
-        return;
-    }
     triggerInitialTableLoadIfNeeded();
     triggerBackgroundTableRefreshIfEnabled();
     triggerStatsBackgroundRefreshIfEnabled();
@@ -169,89 +132,6 @@ jQuery(document).ready(function($) {
     // early when no placeholder is in the DOM.
     refreshHealthBarIfNeeded();
 });
-
-/**
- * Owns the diagnostic `?abj404_force_view_rebuild=1` flow end-to-end. One
- * requestId, one stage-progress poller, one advance poller, sending
- * forceViewRebuild=1 only on the first advance call so the server invalidates
- * view_done exactly once. On `ready`, runs the regular initial-load + refresh
- * flows so the page hydrates as if the user had navigated freshly.
- *
- * Returns true when the force-rebuild flow took ownership of the page (the
- * caller should skip the standard initial-load flow); false otherwise.
- *
- * @returns {boolean}
- */
-function abj404HandleForceViewRebuild() {
-    if (getURLParameter('abj404_force_view_rebuild') !== '1') {
-        return false;
-    }
-    if (window.abj404ForceRebuildHandled === true) {
-        return false;
-    }
-    window.abj404ForceRebuildHandled = true;
-
-    var $ajaxConfigEl = jQuery('[data-pagination-ajax-url]').first();
-    if ($ajaxConfigEl.length === 0) {
-        $ajaxConfigEl = jQuery('.abj404-filter-bar').first();
-    }
-    var url = $ajaxConfigEl.attr('data-pagination-ajax-url') || window.ajaxurl;
-    var inflightNonce = $ajaxConfigEl.attr('data-pagination-inflight-nonce') || '';
-    if (!url || !inflightNonce) {
-        // No advance endpoint config on this page; fall back to normal flow.
-        abj404StripForceViewRebuildFromUrl();
-        return false;
-    }
-    var baseUrl = url.split('?')[0];
-    var subpage = $ajaxConfigEl.attr('data-pagination-ajax-subpage') || getURLParameter('subpage');
-    var requestId = abj404GenerateRequestId();
-
-    abj404StripForceViewRebuildFromUrl();
-    abj404UpdateAjaxDebugLog('Force-rebuild requested', {requestId: requestId, subpage: subpage});
-
-    var stopBuildStagePolling = abj404StartStageProgressPolling({
-        baseUrl: baseUrl,
-        nonce: inflightNonce,
-        requestId: requestId,
-        subpage: subpage,
-        message: 'Force-rebuilding redirects view'
-    });
-
-    // Delegate to the standard initial-load + refresh flows so cachePending,
-    // viewBuildPending, and error retries all reuse the same handlers as a
-    // fresh page navigation. Replicating those branches here is a footgun
-    // (one of them gets forgotten and the table sticks on "Preparing table
-    // data in the background").
-    var resumeNormalFlows = function() {
-        triggerInitialTableLoadIfNeeded();
-        triggerBackgroundTableRefreshIfEnabled();
-        triggerStatsBackgroundRefreshIfEnabled();
-        refreshHealthBarIfNeeded();
-    };
-
-    abj404PollViewBuildAdvance({
-        baseUrl: baseUrl,
-        nonce: inflightNonce,
-        requestId: requestId,
-        subpage: subpage,
-        page: getURLParameter('page') || '',
-        intervalMs: 1000,
-        forceViewRebuild: true,
-        onReady: function() {
-            stopBuildStagePolling(true);
-            jQuery('.abj404-refresh-status').text('');
-            abj404UpdateAjaxDebugLog('Force-rebuild complete');
-            resumeNormalFlows();
-        },
-        onError: function(errorMeta) {
-            stopBuildStagePolling(true);
-            abj404UpdateAjaxDebugLog('Force-rebuild failed', errorMeta || {});
-            resumeNormalFlows();
-        }
-    });
-
-    return true;
-}
 
 function bindPaginationLinkListeners() {
     // Delegate to document so handlers survive table HTML replacement after AJAX refresh.

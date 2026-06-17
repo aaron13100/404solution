@@ -13,13 +13,11 @@ if (!defined('ABSPATH')) {
  * after WordPress finishes enqueuing: it loads translations, enables localhost
  * debug output, refreshes the integrity cache, and handles the export action.
  *
- * abj404_maybePageLoadFallbackAdvance() is the admin-only, plugin-page-only
- * synchronous fallback that advances the staged view-build by one tick when
- * WP-Cron is broken. The add_action('admin_init', ...) registrations stay in
- * 404-solution.php; this file only defines the callbacks. The lazy Loader.php
- * requires use ABJ404_FILE so they resolve to the plugin root.
+ * The add_action('admin_init', ...) registration stays in 404-solution.php;
+ * this file only defines the callbacks. The lazy Loader.php requires use
+ * ABJ404_FILE so they resolve to the plugin root.
  */
-// allow-no-test-found: boot-time admin_init global callbacks wired via add_action in 404-solution.php; no same-named unit file. The page-load fallback advance (abj404_maybePageLoadFallbackAdvance / abj404_loadSomethingWhenWordPressIsReady) is exercised in PageLoadFallbackHookRegistrationTest.
+// allow-no-test-found: boot-time admin_init global callbacks wired via add_action in 404-solution.php; no same-named unit file. abj404_loadSomethingWhenWordPressIsReady is exercised in integration boot coverage.
 
 if (!function_exists('abj404_load_textdomain_if_needed')) {
 	/**
@@ -146,71 +144,5 @@ function abj404_loadSomethingWhenWordPressIsReady() {
 		$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
 			$abj404logic->adminActions()->handleActionExport();
 	}
-}
-}
-
-if (!function_exists('abj404_maybePageLoadFallbackAdvance')) {
-/**
- * Admin-only, plugin-page-only synchronous fallback that advances the
- * staged view-build by one tick (about 2s) when WP-Cron is broken.
- *
- * Pairs with the cron-stuck admin notice (c374): the notice tells the
- * admin their cron is broken; this fallback unblocks the page in the
- * meantime so they can fix cron without staring at the loading
- * indicator forever. The actual gate logic and budget compression live
- * in ABJ_404_Solution_ViewBuildOrchestrator::runPageLoadFallbackAdvance()
- * so they can be unit-tested directly; this wrapper is the admin_init
- * hook that wires the view-build service into the request lifecycle.
- *
- * Guards (in order, all required):
- *  - boot succeeded (plugin class loadable);
- *  - is_admin() (frontend / REST / heartbeat requests are not in scope);
- *  - not AJAX or cron (those have their own advance paths);
- *  - request is for the plugin admin page (abj404_solution); other
- *    wp-admin pages are unrelated and should not be taxed with build
- *    work on every navigation;
- *  - current user has the plugin admin capability (manage_options) so
- *    an unauthenticated request cannot trigger build work;
- *  - the view-build service exposes runPageLoadFallbackAdvance (defense
- *    for older in-place upgrades whose service graph predates this method).
- *
- * The view-build method itself owns the cron-stuck check, the transient
- * gate, the per-stage budget compression, and the build-lock semantics.
- *
- * @return void
- */
-function abj404_maybePageLoadFallbackAdvance() {
-    if (!$GLOBALS['abj404_boot_ok']) {
-        return;
-    }
-    if (!is_admin()) {
-        return;
-    }
-    if (function_exists('wp_doing_ajax') && wp_doing_ajax()) {
-        return;
-    }
-    if (function_exists('wp_doing_cron') && wp_doing_cron()) {
-        return;
-    }
-    $currentPage = isset($_GET['page']) && is_string($_GET['page'])
-        ? sanitize_text_field((string)$_GET['page']) : '';
-    if ($currentPage !== 'abj404_solution') {
-        return;
-    }
-    if (!abj404_current_user_is_plugin_admin()) {
-        return;
-    }
-    try {
-        require_once(plugin_dir_path(ABJ404_FILE) . "includes/Loader.php");
-        $viewBuildOrchestrator = abj_service('view_build_orchestrator');
-        if (is_object($viewBuildOrchestrator) && method_exists($viewBuildOrchestrator, 'runPageLoadFallbackAdvance')) {
-            $viewBuildOrchestrator->runPageLoadFallbackAdvance();
-        }
-    } catch (\Throwable $e) {
-        // Page-load fallback is best-effort. A failure here must not
-        // break admin page rendering. Log at warning level so the failure
-        // is observable without triggering the plugin's dev-email-report path.
-        abj404_logRuntimeWarning('Page-load fallback advance failed', $e);
-    }
 }
 }

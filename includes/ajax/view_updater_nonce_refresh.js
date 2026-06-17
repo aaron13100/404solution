@@ -265,11 +265,7 @@
     function mapAjaxActionToNonceVerb(ajaxAction) {
         switch (ajaxAction) {
             case 'ajaxUpdatePaginationLinks':
-            case 'ajaxWarmTableCache':
                 return 'abj404_updatePaginationLink';
-            case 'ajaxFetchInflightStage':
-            case 'ajaxAdvanceViewBuild':
-                return 'abj404_fetchInflightStage';
             case 'ajaxRefreshStatsDashboard':
                 return 'abj404_refreshStatsDashboard';
             case 'ajaxRefreshHealthBar':

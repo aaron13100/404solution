@@ -1,15 +1,14 @@
 /**
- * Stage diagnostics for the view-build pipeline.
+ * Stage diagnostics for the admin table reads.
  *
- * Maps server-emitted stage codes (e.g. table_redirects, staged_build_s2_insert)
+ * Maps server-emitted stage codes (e.g. table_redirects, paginationLinksTop)
  * to UI-friendly diagnostic objects with queryLabel + whatsHappening + stageNumber.
- * The progress poller and AJAX failure notice both render text from this lookup,
- * so a missed mapping shows up to the admin as "(stage ?, unknown)".
+ * The live AJAX failure notice renders text from this lookup, so a missed
+ * mapping shows up to the admin as "(stage ?, unknown)".
  *
  * Loaded as a sibling of view_updater.js (see WordPress_Connector::my_wp_enq_scrpt).
- * Globals defined here are consumed by view_updater_build_advance.js,
- * view_updater_table_init.js, view_updater_table_warmup.js and
- * view_updater_pagination.js.
+ * abj404AjaxStageDiagnostics is consumed by view_updater_pagination.js and
+ * view_updater_pagination_error_notice.js for the live table-read error path.
  */
 
 function abj404AjaxStageDiagnostics(stage, subpage) {
@@ -158,24 +157,4 @@ function abj404AjaxStageDiagnostics(stage, subpage) {
         whatsHappening: 'Loading Redirects table rows',
         stageNumber: 1
     };
-}
-
-function abj404FormatRefreshingStageMessage(baseMessage, stage, queryLabel, subpage, timingMs, completedStage) {
-    var diagnostics = abj404AjaxStageDiagnostics(stage, subpage);
-    var stageNumber = diagnostics.stageNumber || '?';
-    // Prefer the human-readable whatsHappening text (includes mid-stage detail
-    // like "batch 4/12" for the staged build).  Fall back to queryLabel,
-    // which is what older callers used, when no diagnostics lookup matches
-    // (e.g. stage names emitted by other code paths).
-    var label = diagnostics.whatsHappening
-        || queryLabel
-        || diagnostics.queryLabel
-        || stage
-        || 'unknown';
-    var completedText = '';
-    if (completedStage && timingMs > 0) {
-        var completedDiag = abj404AjaxStageDiagnostics(completedStage === 'rows' ? 'table_cache_rows' : 'table_cache_count', subpage);
-        completedText = 'Stage ' + (completedDiag.stageNumber || '?') + ' complete in ' + timingMs + ' ms. ';
-    }
-    return completedText + (baseMessage || 'Currently refreshing data') + ' (stage ' + stageNumber + ', ' + label + ')';
 }

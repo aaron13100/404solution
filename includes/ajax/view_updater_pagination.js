@@ -14,30 +14,28 @@
  *   - Background detect-only (`backgroundRefresh:true, detectOnly:true`):
  *     never overwrites the visible table; only sets onComplete({hasUpdate})
  *     so the toast/pill code can react.
- *   - Background hydrate (`backgroundRefresh:true, autoHydratePlaceholder:true`):
- *     the placeholder hydration loop calls into this with permission to
- *     replace the table only if `data-table-awaiting-load="1"` is still set.
+ * The single-table denorm read (denorm Step 3b) is always serveable, so a
+ * successful response always carries the rendered table: there is no
+ * `viewBuildPending` / `cachePending` deferral path.
  *
- * On error, the actual notice rendering + inflight-stage follow-up live
- * in view_updater_pagination_error_notice.js. The DOM replacement on a
+ * On error, the actual notice rendering lives in
+ * view_updater_pagination_error_notice.js. The DOM replacement on a
  * successful response lives in view_updater_pagination_response_apply.js.
  * Request payload assembly lives in view_updater_pagination_request.js.
  * This file owns the AJAX lifecycle and the cross-cutting state machine
- * (loading overlay, stage-progress polling, detect-only baseline guard,
- * background-refresh telemetry, mayReplaceVisibleTable check, success/
- * error dispatch).
+ * (loading overlay, detect-only baseline guard, background-refresh
+ * telemetry, mayReplaceVisibleTable check, success/error dispatch), and
+ * defines abj404CollapseEmptyPaginationStrips (the failed-load pagination
+ * strip cleanup consumed in its own error path).
  *
- * Globals defined: paginationLinksChange.
+ * Globals defined: paginationLinksChange, abj404CollapseEmptyPaginationStrips.
  *
  * Depends on view_updater.js (abj404UpdateAjaxDebugLog),
  * view_updater_compare.js (hasBackgroundRefreshUpdateWithBaseline),
  * view_updater_stage_diagnostics.js (abj404AjaxStageDiagnostics),
- * view_updater_stage_progress.js (abj404StartStageProgressPolling),
  * view_updater_table_init.js (isDetectOnlyRefreshInFlight,
  * setDetectOnlyRefreshInFlight, refreshHealthBarIfNeeded,
- * triggerBackgroundTableRefreshIfEnabled,
- * abj404CollapseEmptyPaginationStrips), view_updater_table_warmup.js
- * (tablePlaceholderStillAwaitingLoad), view_updater_toast.js
+ * triggerBackgroundTableRefreshIfEnabled), view_updater_toast.js
  * (hideRefreshAvailablePill), view_updater_nonce_refresh.js
  * (abj404AjaxWithNonceRetry), view_updater_pagination_request.js
  * (abj404BuildPaginationRequest), view_updater_pagination_response_apply.js
@@ -95,17 +93,6 @@ function paginationLinksChange(triggerItem, options) {
         $wrapper.append('<div class="abj404-loading-overlay"><div class="abj404-spinner-container"><div class="abj404-spinner"></div></div></div>');
     }
 
-    var stopStageProgressPolling = function() {};
-    if (options.showStageProgress === true) {
-        stopStageProgressPolling = abj404StartStageProgressPolling({
-            baseUrl: baseUrl,
-            nonce: inflightNonce,
-            requestId: requestId,
-            subpage: subpage,
-            message: options.stageProgressMessage || 'Currently refreshing data'
-        });
-    }
-
     abj404UpdateAjaxDebugLog('Starting AJAX: ' + action + ' for subpage ' + subpage, {
         paged: req.paged,
         filter: req.filter,
@@ -139,40 +126,7 @@ function paginationLinksChange(triggerItem, options) {
         timeout: ajaxTimeoutMs,
         data: req.payload,
         success: function (result) {
-            // Stop WITHOUT flushing here too. The flushed final stage read
-            // re-writes the stage label into .abj404-refresh-status after the
-            // clear below; on a foreground load the strip replace wipes it, but
-            // a background detect-only refresh returns without replacing the
-            // strips, so the re-written "(stage 4)" badge stays stuck.
-            stopStageProgressPolling(false);
             jQuery('.abj404-refresh-status').text('');
-
-            if (result && result.viewBuildPending) {
-                jQuery('.abj404-loading-overlay').remove();
-                var pendingMsg = result.message || 'Preparing the redirects view table. Please wait.';
-                jQuery('.abj404-refresh-status').text(pendingMsg);
-                abj404UpdateAjaxDebugLog('AJAX Success (View Build Pending): ' + pendingMsg, {
-                    progress: result.progress
-                });
-                if (typeof options.onComplete === 'function') {
-                    options.onComplete({
-                        viewBuildPending: true,
-                        progress: result.progress || null
-                    });
-                }
-                return;
-            }
-
-            if (result && result.cachePending) {
-                jQuery('.abj404-loading-overlay').remove();
-                var cachePendingMsg = result.message || 'Preparing table data in the background.';
-                jQuery('.abj404-refresh-status').text(cachePendingMsg);
-                abj404UpdateAjaxDebugLog('AJAX Success (Cache Pending): ' + cachePendingMsg);
-                if (typeof options.onComplete === 'function') {
-                    options.onComplete({cachePending: true});
-                }
-                return;
-            }
 
             abj404UpdateAjaxDebugLog('AJAX Success: ' + action, {
                 durationMs: Date.now() - requestStartedAt, // allow-direct-time: AJAX wall-clock duration for the success debug log entry; preserved verbatim from view_updater_pagination.js pre-i352 split
@@ -212,8 +166,7 @@ function paginationLinksChange(triggerItem, options) {
                 return;
             }
 
-            var mayReplaceVisibleTable = !isBackgroundRefresh ||
-                (options.autoHydratePlaceholder === true && tablePlaceholderStillAwaitingLoad());
+            var mayReplaceVisibleTable = !isBackgroundRefresh;
             if (!mayReplaceVisibleTable) {
                 if (typeof options.onComplete === 'function') {
                     options.onComplete({skippedReplace: true});
@@ -253,16 +206,8 @@ function paginationLinksChange(triggerItem, options) {
             }
         },
         error: function (jqXHR, textStatus, errorThrown) {
-            // Stop WITHOUT flushing. flushFinalEvents=true fires one more async
-            // ajaxFetchInflightStage read whose success handler re-writes the
-            // "stage N" label into .abj404-refresh-status AFTER we clear it just
-            // below, which is what left the "Refreshing data... (stage 4)"
-            // message spinning forever once the fetch failed.
-            stopStageProgressPolling(false);
             jQuery('.abj404-refresh-status').text('');
-            if (typeof abj404CollapseEmptyPaginationStrips === 'function') {
-                abj404CollapseEmptyPaginationStrips();
-            }
+            abj404CollapseEmptyPaginationStrips();
 
             if (isBackgroundRefresh && detectOnly) {
                 setDetectOnlyRefreshInFlight(false);
@@ -298,6 +243,29 @@ function paginationLinksChange(triggerItem, options) {
                 window.abj404BackgroundRefreshState.lastError = textStatus || errorThrown || 'ajax-error';
                 window.abj404BackgroundRefreshState.lastResponseBytes = parsed.responseText ? parsed.responseText.length : 0;
             }
+        }
+    });
+}
+
+/**
+ * Collapse pagination strips that never received real controls.
+ *
+ * On a failed/timed-out table load the top and bottom .abj404-pagination
+ * strips are still just the spinner placeholder the initial render shipped:
+ * the real <nav class="pagination-links"> is injected only by a successful
+ * AJAX response. Left visible they render as empty bordered bars, the bottom
+ * one overlapping the footer/credits. Hide any strip that has no real controls
+ * so the failed page stays clean. Strips that already hold links (a successful
+ * prior render, or an explicit user action that failed without removing them)
+ * are left untouched.
+ *
+ * @returns {void}
+ */
+function abj404CollapseEmptyPaginationStrips() {
+    jQuery('.abj404-pagination').each(function() {
+        var $strip = jQuery(this);
+        if ($strip.find('.pagination-links, .abj404-page-btn').length === 0) {
+            $strip.hide();
         }
     });
 }

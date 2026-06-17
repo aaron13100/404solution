@@ -256,9 +256,10 @@ class ABJ_404_Solution_RedirectsDenormMaintenanceService {
             return false;
         }
         $logsTable = $this->dbCore->doTableNameReplacements('{wp_abj404_logs_hits}');
-        // DAO-bypass-approved: schema existence probe; routing a SHOW TABLES
-        // through queryAndGetResults would log a benign "table missing" error on
-        // a stripped install.
+        // Schema existence probe; routing a SHOW TABLES through
+        // queryAndGetResults would log a benign "table missing" error on a
+        // stripped install.
+        // DAO-bypass-approved: SHOW TABLES schema existence probe.
         $found = $wpdb->get_var("SHOW TABLES LIKE '" . esc_sql($logsTable) . "'");
         return $found === $logsTable;
     }

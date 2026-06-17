@@ -295,25 +295,16 @@ add_action('abj404_send_queued_report', 'abj404_sendQueuedReportListener', 10, 1
 // abj404_is_redirect_all_requests_enabled).
 add_filter('plugin_locale', 'abj404_override_plugin_locale', 999, 2);
 
-// abj404_show_runtime_integrity_notice, abj404_show_plugin_db_notice, and
-// abj404_show_view_build_cron_notices are defined in
-// includes/root-boot/AdminNotices.php.
+// abj404_show_runtime_integrity_notice and abj404_show_plugin_db_notice are
+// defined in includes/root-boot/AdminNotices.php.
 add_action('admin_notices', 'abj404_show_runtime_integrity_notice');
 add_action('admin_notices', 'abj404_show_plugin_db_notice');
-add_action('admin_notices', 'abj404_show_view_build_cron_notices');
 
 // abj404_is_local_debug_host, abj404_get_simulated_db_latency_ms, and
 // abj404_show_diagnostic_latency_notice are defined in
 // includes/root-boot/LocalDebugDiagnostics.php.
 
 // abj404_load_textdomain_if_needed, abj404_maybe_refresh_runtime_integrity_cache,
-// abj404_loadSomethingWhenWordPressIsReady, and abj404_maybePageLoadFallbackAdvance
-// are defined in includes/root-boot/AdminInitHandlers.php.
+// and abj404_loadSomethingWhenWordPressIsReady are defined in
+// includes/root-boot/AdminInitHandlers.php.
 add_action('admin_init', 'abj404_loadSomethingWhenWordPressIsReady');
-
-// Priority 20 runs after abj404_loadSomethingWhenWordPressIsReady (default
-// priority 10), so the textdomain is loaded and any pending exportRedirects
-// has run before we burn ~2s of stage budget. Inverting that order would
-// risk an export action being preceded by inline staged-build work, which
-// changes the apparent latency of the export.
-add_action('admin_init', 'abj404_maybePageLoadFallbackAdvance', 20);

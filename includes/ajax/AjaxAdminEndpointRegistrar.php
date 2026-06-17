@@ -6,15 +6,14 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Registers the seven admin-table AJAX endpoints with WordPress.
+ * Registers the admin-table AJAX endpoints with WordPress.
  *
  * Each `wp_ajax_*` action name maps to a dedicated handler class
- * (Ajax_GetPaginationLinks, Ajax_WarmTableCache, Ajax_RefreshStatsDashboard,
- * Ajax_RefreshHealthBar, Ajax_FetchInflightStage, Ajax_AdvanceViewBuild,
+ * (Ajax_GetPaginationLinks, Ajax_RefreshStatsDashboard, Ajax_RefreshHealthBar,
  * Ajax_RefreshAdminNonces). Each handler owns the logic for its own endpoint.
  *
  * Registration uses a per-hook closure so the handler is constructed lazily,
- * only when its action actually fires, rather than building all seven handler
+ * only when its action actually fires, rather than building all handler
  * objects on every admin page load.
  *
  * Single-responsibility class: it exists only to wire admin-table AJAX
@@ -34,16 +33,10 @@ class ABJ_404_Solution_AjaxAdminEndpointRegistrar {
     public static function register() {
         ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_ajaxUpdatePaginationLinks',
                 function() { (new ABJ_404_Solution_Ajax_GetPaginationLinks())->handle(); });
-        ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_ajaxWarmTableCache',
-                function() { (new ABJ_404_Solution_Ajax_WarmTableCache())->handle(); });
         ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_ajaxRefreshStatsDashboard',
                 function() { (new ABJ_404_Solution_Ajax_RefreshStatsDashboard())->handle(); });
         ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_ajaxRefreshHealthBar',
                 function() { (new ABJ_404_Solution_Ajax_RefreshHealthBar())->handle(); });
-        ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_ajaxFetchInflightStage',
-                function() { (new ABJ_404_Solution_Ajax_FetchInflightStage())->handle(); });
-        ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_ajaxAdvanceViewBuild',
-                function() { (new ABJ_404_Solution_Ajax_AdvanceViewBuild())->handle(); });
         ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_ajaxRefreshAdminNonces',
                 function() { (new ABJ_404_Solution_Ajax_RefreshAdminNonces())->handle(); });
         // wp_ajax_nopriv_ is for normal users; these endpoints are admin-only.

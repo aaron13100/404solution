@@ -11,8 +11,7 @@ if (!defined('ABSPATH')) {
  * AJAX response: debug-context start, response-sent marker, output buffer
  * management, JSON emit + headers + exit, error envelope construction,
  * admin-status fallback resolution, request reader, failure logging shim,
- * client request-id sanitization, foreground view-build lease, and view
- * instance resolution.
+ * client request-id sanitization, and view instance resolution.
  *
  * Shared cross-cutting helpers (error-envelope builder, JSON responder,
  * fatal-error classifier, debug-context starter, admin-nonce action list)
@@ -195,33 +194,6 @@ class ABJ_404_Solution_Ajax_AdminEndpointSupport {
             return '';
         }
         return $raw;
-    }
-
-    /**
-     * Best-effort foreground lease for admin/browser-owned rebuilds. Failure
-     * only means cron may compete for the view-build lock; it must never break
-     * the admin table response itself.
-     *
-     * @param mixed $dao
-     * @return void
-     */
-    public static function tryClaimForegroundViewBuildLease($dao): void {
-        if (!is_object($dao) || !method_exists($dao, 'getViewBuildOrchestrator')) {
-            return;
-        }
-        $vbo = $dao->getViewBuildOrchestrator();
-        if (!is_object($vbo) || !method_exists($vbo, 'claimForegroundViewBuildLease')) {
-            return;
-        }
-        try {
-            $vbo->claimForegroundViewBuildLease();
-        } catch (Throwable $e) {
-            self::safeLogAjaxFailure(
-                'claimForegroundViewBuildLease failed; cron may compete for the build lock.',
-                null,
-                $e
-            );
-        }
     }
 
     /**

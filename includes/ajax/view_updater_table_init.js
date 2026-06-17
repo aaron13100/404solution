@@ -5,8 +5,9 @@
  * rebuild completes):
  *
  *   - triggerInitialTableLoadIfNeeded: hydrates the placeholder rows on
- *     first paint via paginationLinksChange. Falls through to the staged
- *     view-build poller when the server reports `viewBuildPending`.
+ *     first paint via paginationLinksChange. The single-table denorm read
+ *     (denorm Step 3b) is always serveable, so the table renders
+ *     synchronously: there is no view-build / cache-warm fallthrough.
  *   - triggerBackgroundTableRefreshIfEnabled: detect-only refresh that
  *     never overwrites the visible table, only flips the "Refresh
  *     available" pill when content has changed.
@@ -23,8 +24,7 @@
  * triggerInitialTableLoadIfNeeded.
  *
  * Depends on view_updater.js (abj404UpdateAjaxDebugLog, getURLParameter,
- * paginationLinksChange, isElementFullyVisible), view_updater_table_warmup.js
- * (startViewBuildPollingThenRetry, startPlaceholderTableHydration),
+ * paginationLinksChange, isElementFullyVisible),
  * view_updater_toast.js (showRefreshAvailablePill, showRefreshToastStart,
  * showRefreshToastComplete, hideRefreshToast), view_updater_stats.js
  * (markAutoRefreshCompleted, shouldRunAutoRefreshNow).
@@ -312,8 +312,6 @@ function triggerBackgroundTableRefreshIfEnabled() {
         paginationLinksChange(perpageElements[0], {
             backgroundRefresh: true,
             detectOnly: true,
-            showStageProgress: true,
-            stageProgressMessage: startedText,
             onComplete: function(meta) {
                 var $latestConfig = getRefreshStatusHost();
                 var hasUpdate = !!(meta && meta.hasUpdate);
@@ -379,21 +377,10 @@ function triggerInitialTableLoadIfNeeded() {
         paginationLinksChange(perpageElements[0], {
             backgroundRefresh: false,
             detectOnly: false,
-            cacheMode: 'cache_or_pending',
-            onComplete: function(meta) {
-                if (meta && meta.viewBuildPending) {
-                    // Cold start: the staged view_done table is missing or
-                    // invalidated. Poll the bounded build-advance endpoint
-                    // (one resumable tick per call) and retry the fetch when
-                    // the build reports ready.  No HTTP 500 path can fire
-                    // here: the fetch endpoint never builds inline.
-                    startViewBuildPollingThenRetry(perpageElements[0], $config, attemptNumber);
-                    return;
-                }
-                if (meta && meta.cachePending) {
-                    startPlaceholderTableHydration(perpageElements[0]);
-                    return;
-                }
+            cacheMode: 'normal',
+            onComplete: function() {
+                // The single-table denorm read is always serveable, so a
+                // successful response always carries the rendered table.
                 $config.attr('data-pagination-initial-load', '0');
             },
             onError: function(errorMeta) {

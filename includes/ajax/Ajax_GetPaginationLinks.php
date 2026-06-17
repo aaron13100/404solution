@@ -9,11 +9,10 @@ if (!defined('ABSPATH')) {
  * Admin AJAX endpoint: ajaxUpdatePaginationLinks. Serves the admin redirects,
  * captured, and logs tables: fetches the subpage-specific table HTML, status
  * tab counts, pagination links, and the current data signature for client
- * change detection. Honors the view-build gate (responds `viewBuildPending`
- * when view_done is not serveable instead of triggering an inline build) and
- * a cache_or_pending mode that returns `cachePending` when the snapshot is
- * absent. All exceptions route through handlePaginationLinksException for a
- * consistent diagnostics envelope.
+ * change detection. The single-table denorm read (denorm Step 3b) is always
+ * serveable, so there is no view-build gate: the table is rendered
+ * synchronously on every request. All exceptions route through
+ * handlePaginationLinksException for a consistent diagnostics envelope.
  */
 class ABJ_404_Solution_Ajax_GetPaginationLinks {
 
@@ -22,8 +21,6 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
         ABJ_404_Solution_AjaxRequestContractValidator::enforceCurrentRequest('ajax-update-pagination');
 
         $functions = ABJ_404_Solution_Ajax_AdminEndpointSupport::getRequestReader();
-        /** @var ABJ_404_Solution_ViewBuildOrchestratorInterface $viewBuildOrchestrator */
-        $viewBuildOrchestrator = abj_service('view_build_orchestrator');
         /** @var ABJ_404_Solution_ViewReadServiceInterface $viewReadService */
         $viewReadService = abj_service('view_read_service');
         $abj404logic = abj_service('plugin_logic');
@@ -80,27 +77,11 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
             /** @var ABJ_404_Solution_View $view */
             $view = ABJ_404_Solution_Ajax_AdminEndpointSupport::resolveViewInstance($abj404view);
 
-            // View-build gate: never let an AJAX fetch trigger an inline staged build.
-            // If view_done is not serveable, respond with `viewBuildPending` so the JS
-            // poller can advance the build via ajaxAdvanceViewBuild.
-            if (self::sendViewBuildPendingWhenNeeded($subpage, $detectOnly, $cacheMode, $viewBuildOrchestrator, $context)) {
-                return;
-            }
-
-            if (self::sendCachePendingWhenNeeded($cacheMode, $detectOnly, $subpage, $viewReadService, $abj404logic, $context)) {
-                return;
-            }
-
+            // The single-table denorm read (denorm Step 3b) is always
+            // serveable, so the table is rendered synchronously here. No
+            // view-build / cache-warm gate is consulted: an AJAX fetch never
+            // triggers a staged build and never returns a pending response.
             $data = self::fetchTableDataForSubpage($subpage, $view, $viewReadService, $context);
-
-            // i455: a serveable-but-stale/empty-built view_done passes the
-            // pre-fetch gate yet returns zero rows while the live count is
-            // non-zero. Re-engage the poller for that case (loop-safe; see
-            // sendViewBuildPendingForIncompleteRead).
-            if (self::sendViewBuildPendingForIncompleteRead(
-                    $subpage, $detectOnly, $cacheMode, $viewReadService, $viewBuildOrchestrator, $context)) {
-                return;
-            }
 
             $tableSignature = self::getCurrentTableSignature($view, $subpage);
             $data['tableSignature'] = $tableSignature;
@@ -121,7 +102,7 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
         } catch (Throwable $e) {
             // allow-silent-catch: handlePaginationLinksException embeds/logs the throwable in the AJAX response path.
             self::handlePaginationLinksException(
-                $e, $viewBuildOrchestrator, $subpage, $cacheMode, $isPluginAdmin, $context
+                $e, $isPluginAdmin, $context
             );
             return;
         }
@@ -170,184 +151,6 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
         if (method_exists($abj404logic, 'updatePerPageOption')) {
             $abj404logic->updatePerPageOption($rowsPerPage);
         }
-    }
-
-    /**
-     * @param mixed $viewBuildOrchestrator
-     * @param array<string, mixed> $context
-     */
-    private static function sendViewBuildPendingWhenNeeded(
-        string $subpage, bool $detectOnly, string $cacheMode, $viewBuildOrchestrator, array &$context
-    ): bool {
-        if (!self::isViewTableSubpage($subpage) || $detectOnly || self::viewDoneIsServeable($viewBuildOrchestrator)) {
-            return false;
-        }
-
-        ABJ_404_Solution_AjaxStageDiagnostics::setStage($context, self::stageForSubpage($subpage));
-        $progress = self::getViewBuildProgress($viewBuildOrchestrator);
-        ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
-        ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
-        ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit(array(
-            'viewBuildPending' => true,
-            'cacheMode' => $cacheMode,
-            'subpage' => $subpage,
-            'progress' => $progress,
-            'message' => __('Preparing the redirects view table. Please wait.', '404-solution'),
-        ), 200);
-        return true;
-    }
-
-    /**
-     * Re-engage the view-build poller when the row read came back incomplete
-     * even though the pre-fetch serveability gate passed. Loop-safe: only fires
-     * when a rebuild can still change the result (view_done not serveable, or
-     * serveable but not fresh). A serveable+fresh empty read is a genuine
-     * pipeline issue, not a pending build, so it is left for the renderer's
-     * honest "still preparing" row rather than polled forever.
-     *
-     * @param mixed $viewReadService
-     * @param mixed $viewBuildOrchestrator
-     * @param array<string, mixed> $context
-     */
-    private static function sendViewBuildPendingForIncompleteRead(
-        string $subpage, bool $detectOnly, string $cacheMode,
-        $viewReadService, $viewBuildOrchestrator, array &$context
-    ): bool {
-        if (!self::isViewTableSubpage($subpage) || $detectOnly) {
-            return false;
-        }
-        if (!self::lastRedirectsViewReadWasIncomplete($viewReadService)) {
-            return false;
-        }
-        $serveable = self::viewDoneIsServeable($viewBuildOrchestrator);
-        $fresh = $serveable && self::viewDoneIsFresh($viewBuildOrchestrator);
-        if ($serveable && $fresh) {
-            // Build is current yet the listing is empty while the count is
-            // non-zero: a real pipeline defect (separate task). Do not poll.
-            return false;
-        }
-
-        ABJ_404_Solution_AjaxStageDiagnostics::setStage($context, self::stageForSubpage($subpage));
-        $progress = self::getViewBuildProgress($viewBuildOrchestrator);
-        ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
-        ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
-        ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit(array(
-            'viewBuildPending' => true,
-            'cacheMode' => $cacheMode,
-            'subpage' => $subpage,
-            'progress' => $progress,
-            'message' => __('Preparing the redirects view table. Please wait.', '404-solution'),
-        ), 200);
-        return true;
-    }
-
-    /**
-     * @param mixed $viewReadService
-     */
-    private static function lastRedirectsViewReadWasIncomplete($viewReadService): bool {
-        if (is_object($viewReadService) && method_exists($viewReadService, 'lastRedirectsViewReadWasIncomplete')) {
-            return (bool)$viewReadService->lastRedirectsViewReadWasIncomplete();
-        }
-        return false;
-    }
-
-    /**
-     * @param mixed $viewBuildOrchestrator
-     */
-    private static function viewDoneIsFresh($viewBuildOrchestrator): bool {
-        if (is_object($viewBuildOrchestrator) && method_exists($viewBuildOrchestrator, 'viewDoneIsFresh')) {
-            return (bool)$viewBuildOrchestrator->viewDoneIsFresh();
-        }
-        return true;
-    }
-
-    /**
-     * @param mixed $viewReadService
-     * @param mixed $abj404logic
-     * @param array<string, mixed> $context
-     */
-    private static function sendCachePendingWhenNeeded(
-        string $cacheMode, bool $detectOnly, string $subpage,
-        $viewReadService, $abj404logic, array &$context
-    ): bool {
-        if ($cacheMode !== 'cache_or_pending' || $detectOnly || !self::isViewTableSubpage($subpage)) {
-            return false;
-        }
-
-        ABJ_404_Solution_AjaxStageDiagnostics::setStage($context, self::stageForSubpage($subpage));
-        $tableOptions = self::getTableOptions($abj404logic, $subpage);
-        if (self::viewTableSnapshotAvailable($viewReadService, $subpage, $tableOptions)) {
-            return false;
-        }
-
-        ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
-        ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
-        ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit(array(
-            'cachePending' => true,
-            'cacheMode' => $cacheMode,
-            'subpage' => $subpage,
-            'message' => __('Preparing table data in the background.', '404-solution'),
-        ), 200);
-        return true;
-    }
-
-    private static function isViewTableSubpage(string $subpage): bool {
-        return $subpage === 'abj404_redirects' || $subpage === 'abj404_captured';
-    }
-
-    private static function stageForSubpage(string $subpage): string {
-        return ($subpage === 'abj404_captured') ? 'table_captured' : 'table_redirects';
-    }
-
-    /**
-     * @param mixed $abj404logic
-     * @return array<string, mixed>
-     */
-    private static function getTableOptions($abj404logic, string $subpage): array {
-        if (!is_object($abj404logic) || !method_exists($abj404logic, 'settingsUpdate')) {
-            throw new RuntimeException('plugin_logic service does not expose settingsUpdate().');
-        }
-
-        $settingsUpdate = $abj404logic->settingsUpdate();
-        if (!is_object($settingsUpdate) || !method_exists($settingsUpdate, 'getTableOptions')) {
-            throw new RuntimeException('plugin_logic settings service does not expose getTableOptions().');
-        }
-
-        $tableOptions = $settingsUpdate->getTableOptions($subpage);
-        return is_array($tableOptions) ? $tableOptions : array();
-    }
-
-    /**
-     * @param mixed $viewBuildOrchestrator
-     */
-    private static function viewDoneIsServeable($viewBuildOrchestrator): bool {
-        if (is_object($viewBuildOrchestrator) && method_exists($viewBuildOrchestrator, 'viewDoneIsServeable')) {
-            return (bool)$viewBuildOrchestrator->viewDoneIsServeable();
-        }
-        throw new RuntimeException('view_build_orchestrator service does not expose viewDoneIsServeable().');
-    }
-
-    /**
-     * @param mixed $viewBuildOrchestrator
-     * @return array<string, mixed>
-     */
-    private static function getViewBuildProgress($viewBuildOrchestrator): array {
-        if (is_object($viewBuildOrchestrator) && method_exists($viewBuildOrchestrator, 'getViewBuildProgress')) {
-            $progress = $viewBuildOrchestrator->getViewBuildProgress();
-            return is_array($progress) ? $progress : array();
-        }
-        throw new RuntimeException('view_build_orchestrator service does not expose getViewBuildProgress().');
-    }
-
-    /**
-     * @param mixed $viewReadService
-     * @param array<string, mixed> $tableOptions
-     */
-    private static function viewTableSnapshotAvailable($viewReadService, string $subpage, array $tableOptions): bool {
-        if (is_object($viewReadService) && method_exists($viewReadService, 'viewTableSnapshotAvailable')) {
-            return (bool)$viewReadService->viewTableSnapshotAvailable($subpage, $tableOptions);
-        }
-        throw new RuntimeException('view_read_service service does not expose viewTableSnapshotAvailable().');
     }
 
     /**
@@ -422,35 +225,17 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
     }
 
     /**
-     * Handle exceptions thrown during the endpoint. Race recovery for the
-     * viewDoneIsServeable race surfaces the pending response shape; otherwise
-     * emits the standard error envelope with diagnostics for admins.
+     * Handle exceptions thrown during the endpoint. Emits the standard error
+     * envelope with diagnostics for admins.
      *
      * @param Throwable $e
-     * @param mixed $viewBuildOrchestrator
-     * @param string $subpage
-     * @param string $cacheMode
      * @param bool $isPluginAdmin
      * @param array<string, mixed> $context
      * @return void
      */
     private static function handlePaginationLinksException(
-        Throwable $e, $viewBuildOrchestrator, string $subpage, string $cacheMode,
-        bool $isPluginAdmin, array $context
+        Throwable $e, bool $isPluginAdmin, array $context
     ): void {
-        // Race recovery: viewDoneIsServeable() can race with invalidateViewDone();
-        // surface the pending shape the JS poller already handles, never a 500.
-        $pending = ABJ_404_Solution_ViewBuildPendingResponseBuilder::find($e);
-        if ($pending !== null) {
-            ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
-            ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
-            ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit(
-                ABJ_404_Solution_ViewBuildPendingResponseBuilder::fetchResponse($viewBuildOrchestrator, $subpage, $cacheMode, $pending),
-                200
-            );
-            return;
-        }
-
         $isPluginAdmin = ABJ_404_Solution_Ajax_AdminEndpointSupport::resolveIsPluginAdminFallback($isPluginAdmin, true);
         if (isset($GLOBALS['abj404_ajax_context']) && is_array($GLOBALS['abj404_ajax_context'])) {
             $GLOBALS['abj404_ajax_context']['is_plugin_admin'] = $isPluginAdmin;

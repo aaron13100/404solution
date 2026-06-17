@@ -1,5 +1,0 @@
-{
-  "_comment": "This fixture MUST fail validation. The nonce field is missing.",
-  "subpage": "abj404_redirects",
-  "requestId": "abcdef12345678"
-}

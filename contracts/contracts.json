@@ -19,8 +19,12 @@
       },
       "parityTest": "tests/FeedbackTransportE2ERoundTripTest.php",
       "fixtures": {
-        "valid": ["fixtures/error-report.valid.json"],
-        "invalid": ["fixtures/error-report.invalid-missing-debug-log.json"]
+        "valid": [
+          "fixtures/error-report.valid.json"
+        ],
+        "invalid": [
+          "fixtures/error-report.invalid-missing-debug-log.json"
+        ]
       }
     },
     {
@@ -38,8 +42,12 @@
       },
       "parityTest": "tests/FeedbackTransportE2ERoundTripTest.php",
       "fixtures": {
-        "valid": ["fixtures/heartbeat.valid.json"],
-        "invalid": ["fixtures/heartbeat.invalid-missing-version.json"]
+        "valid": [
+          "fixtures/heartbeat.valid.json"
+        ],
+        "invalid": [
+          "fixtures/heartbeat.invalid-missing-version.json"
+        ]
       }
     },
     {
@@ -57,8 +65,12 @@
       },
       "parityTest": "tests/FeedbackTransportE2ERoundTripTest.php",
       "fixtures": {
-        "valid": ["fixtures/uninstall-report.valid.json"],
-        "invalid": ["fixtures/uninstall-report.invalid-missing-version.json"]
+        "valid": [
+          "fixtures/uninstall-report.valid.json"
+        ],
+        "invalid": [
+          "fixtures/uninstall-report.invalid-missing-version.json"
+        ]
       }
     },
     {
@@ -79,8 +91,12 @@
       },
       "parityTest": "tests/FeedbackTransportE2ERoundTripTest.php",
       "fixtures": {
-        "valid": ["fixtures/support-request.valid.json"],
-        "invalid": ["fixtures/support-request.invalid-missing-user-message.json"]
+        "valid": [
+          "fixtures/support-request.valid.json"
+        ],
+        "invalid": [
+          "fixtures/support-request.invalid-missing-user-message.json"
+        ]
       }
     },
     {
@@ -98,27 +114,12 @@
       },
       "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
       "fixtures": {
-        "valid": ["fixtures/ajax-update-pagination.valid.json"],
-        "invalid": ["fixtures/ajax-update-pagination.invalid-missing-subpage.json"]
-      }
-    },
-    {
-      "id": "ajax-warm-table-cache",
-      "description": "Background snapshot warming AJAX request",
-      "schema": "schemas/ajax-warm-table-cache.schema.json",
-      "direction": "client-to-server",
-      "producer": {
-        "file": "includes/ajax/view_updater_table_warmup.js",
-        "test": "tests-js/ajax-response-validation.test.js"
-      },
-      "consumer": {
-        "file": "includes/ajax/ViewUpdater.php",
-        "test": "tests-js/ajax-response-validation.test.js"
-      },
-      "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
-      "fixtures": {
-        "valid": ["fixtures/ajax-warm-table-cache.valid.json"],
-        "invalid": ["fixtures/ajax-warm-table-cache.invalid-bad-subpage.json"]
+        "valid": [
+          "fixtures/ajax-update-pagination.valid.json"
+        ],
+        "invalid": [
+          "fixtures/ajax-update-pagination.invalid-missing-subpage.json"
+        ]
       }
     },
     {
@@ -136,8 +137,12 @@
       },
       "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
       "fixtures": {
-        "valid": ["fixtures/ajax-refresh-stats.valid.json"],
-        "invalid": ["fixtures/ajax-refresh-stats.invalid-missing-nonce.json"]
+        "valid": [
+          "fixtures/ajax-refresh-stats.valid.json"
+        ],
+        "invalid": [
+          "fixtures/ajax-refresh-stats.invalid-missing-nonce.json"
+        ]
       }
     },
     {
@@ -155,46 +160,12 @@
       },
       "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
       "fixtures": {
-        "valid": ["fixtures/ajax-refresh-health-bar.valid.json"],
-        "invalid": ["fixtures/ajax-refresh-health-bar.invalid-missing-nonce.json"]
-      }
-    },
-    {
-      "id": "ajax-fetch-inflight-stage",
-      "description": "Diagnostic stage tracking AJAX request",
-      "schema": "schemas/ajax-fetch-inflight-stage.schema.json",
-      "direction": "client-to-server",
-      "producer": {
-        "file": "includes/ajax/view_updater_build_advance.js",
-        "test": "tests-js/ajax-response-validation.test.js"
-      },
-      "consumer": {
-        "file": "includes/ajax/ViewUpdater.php",
-        "test": "tests-js/ajax-response-validation.test.js"
-      },
-      "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
-      "fixtures": {
-        "valid": ["fixtures/ajax-fetch-inflight-stage.valid.json"],
-        "invalid": ["fixtures/ajax-fetch-inflight-stage.invalid-bad-request-id.json"]
-      }
-    },
-    {
-      "id": "ajax-advance-view-build",
-      "description": "Staged view-build progression AJAX request",
-      "schema": "schemas/ajax-advance-view-build.schema.json",
-      "direction": "client-to-server",
-      "producer": {
-        "file": "includes/ajax/view_updater_build_advance.js",
-        "test": "tests-js/ajax-response-validation.test.js"
-      },
-      "consumer": {
-        "file": "includes/ajax/ViewUpdater.php",
-        "test": "tests-js/ajax-response-validation.test.js"
-      },
-      "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
-      "fixtures": {
-        "valid": ["fixtures/ajax-advance-view-build.valid.json"],
-        "invalid": ["fixtures/ajax-advance-view-build.invalid-missing-nonce.json"]
+        "valid": [
+          "fixtures/ajax-refresh-health-bar.valid.json"
+        ],
+        "invalid": [
+          "fixtures/ajax-refresh-health-bar.invalid-missing-nonce.json"
+        ]
       }
     },
     {
@@ -212,8 +183,12 @@
       },
       "parityTest": "tests-js/support-request-button.test.js",
       "fixtures": {
-        "valid": ["fixtures/ajax-support-request.valid.json"],
-        "invalid": ["fixtures/ajax-support-request.invalid-bad-trigger.json"]
+        "valid": [
+          "fixtures/ajax-support-request.valid.json"
+        ],
+        "invalid": [
+          "fixtures/ajax-support-request.invalid-bad-trigger.json"
+        ]
       }
     },
     {
@@ -231,8 +206,12 @@
       },
       "parityTest": "tests-js/support-request-button.test.js",
       "fixtures": {
-        "valid": ["fixtures/ajax-support-request-preview.valid.json"],
-        "invalid": ["fixtures/ajax-support-request-preview.invalid-missing-trigger.json"]
+        "valid": [
+          "fixtures/ajax-support-request-preview.valid.json"
+        ],
+        "invalid": [
+          "fixtures/ajax-support-request-preview.invalid-missing-trigger.json"
+        ]
       }
     },
     {
@@ -250,8 +229,12 @@
       },
       "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
       "fixtures": {
-        "valid": ["fixtures/ajax-cross-plugin-preview.valid.json"],
-        "invalid": ["fixtures/ajax-cross-plugin-preview.invalid-bad-source.json"]
+        "valid": [
+          "fixtures/ajax-cross-plugin-preview.valid.json"
+        ],
+        "invalid": [
+          "fixtures/ajax-cross-plugin-preview.invalid-bad-source.json"
+        ]
       }
     },
     {
@@ -269,8 +252,12 @@
       },
       "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
       "fixtures": {
-        "valid": ["fixtures/ajax-engine-profiles.valid.json"],
-        "invalid": ["fixtures/ajax-engine-profiles.invalid-missing-nonce.json"]
+        "valid": [
+          "fixtures/ajax-engine-profiles.valid.json"
+        ],
+        "invalid": [
+          "fixtures/ajax-engine-profiles.invalid-missing-nonce.json"
+        ]
       }
     },
     {
@@ -288,8 +275,12 @@
       },
       "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
       "fixtures": {
-        "valid": ["fixtures/ajax-update-options.valid.json"],
-        "invalid": ["fixtures/ajax-update-options.invalid-missing-nonce.json"]
+        "valid": [
+          "fixtures/ajax-update-options.valid.json"
+        ],
+        "invalid": [
+          "fixtures/ajax-update-options.invalid-missing-nonce.json"
+        ]
       }
     },
     {
@@ -307,8 +298,12 @@
       },
       "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
       "fixtures": {
-        "valid": ["fixtures/ajax-restore-defaults.valid.json"],
-        "invalid": ["fixtures/ajax-restore-defaults.invalid-missing-nonce.json"]
+        "valid": [
+          "fixtures/ajax-restore-defaults.valid.json"
+        ],
+        "invalid": [
+          "fixtures/ajax-restore-defaults.invalid-missing-nonce.json"
+        ]
       }
     },
     {
@@ -326,8 +321,12 @@
       },
       "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
       "fixtures": {
-        "valid": ["fixtures/ajax-settings-mode-toggle.valid.json"],
-        "invalid": ["fixtures/ajax-settings-mode-toggle.invalid-bad-mode.json"]
+        "valid": [
+          "fixtures/ajax-settings-mode-toggle.valid.json"
+        ],
+        "invalid": [
+          "fixtures/ajax-settings-mode-toggle.invalid-bad-mode.json"
+        ]
       }
     },
     {
@@ -345,8 +344,12 @@
       },
       "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
       "fixtures": {
-        "valid": ["fixtures/ajax-suggestion-compute.valid.json"],
-        "invalid": ["fixtures/ajax-suggestion-compute.invalid-missing-token.json"]
+        "valid": [
+          "fixtures/ajax-suggestion-compute.valid.json"
+        ],
+        "invalid": [
+          "fixtures/ajax-suggestion-compute.invalid-missing-token.json"
+        ]
       }
     },
     {
@@ -364,8 +367,12 @@
       },
       "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
       "fixtures": {
-        "valid": ["fixtures/ajax-suggestion-polling.valid.json"],
-        "invalid": ["fixtures/ajax-suggestion-polling.invalid-missing-url.json"]
+        "valid": [
+          "fixtures/ajax-suggestion-polling.valid.json"
+        ],
+        "invalid": [
+          "fixtures/ajax-suggestion-polling.invalid-missing-url.json"
+        ]
       }
     },
     {
@@ -383,8 +390,12 @@
       },
       "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
       "fixtures": {
-        "valid": ["fixtures/ajax-trash-link.valid.json"],
-        "invalid": ["fixtures/ajax-trash-link.invalid-missing-id.json"]
+        "valid": [
+          "fixtures/ajax-trash-link.valid.json"
+        ],
+        "invalid": [
+          "fixtures/ajax-trash-link.invalid-missing-id.json"
+        ]
       }
     },
     {
@@ -402,8 +413,12 @@
       },
       "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
       "fixtures": {
-        "valid": ["fixtures/ajax-trend-data.valid.json"],
-        "invalid": ["fixtures/ajax-trend-data.invalid-missing-nonce.json"]
+        "valid": [
+          "fixtures/ajax-trend-data.valid.json"
+        ],
+        "invalid": [
+          "fixtures/ajax-trend-data.invalid-missing-nonce.json"
+        ]
       }
     },
     {
@@ -417,46 +432,12 @@
       },
       "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
       "fixtures": {
-        "valid": ["fixtures/ajax-admin-endpoint-support-helper.valid.json"],
-        "invalid": ["fixtures/ajax-admin-endpoint-support-helper.invalid-missing-success.json"]
-      }
-    },
-    {
-      "id": "ajax-advance-view-build-handler",
-      "description": "Extracted PHP handler for staged view-build progression AJAX",
-      "schema": "schemas/ajax-advance-view-build.schema.json",
-      "direction": "client-to-server",
-      "producer": {
-        "file": "includes/ajax/view_updater_build_advance.js",
-        "test": "tests-js/ajax-response-validation.test.js"
-      },
-      "consumer": {
-        "file": "includes/ajax/Ajax_AdvanceViewBuild.php",
-        "test": "tests/ViewUpdaterAjaxBuildAdvanceE2ETest.php"
-      },
-      "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
-      "fixtures": {
-        "valid": ["fixtures/ajax-advance-view-build.valid.json"],
-        "invalid": ["fixtures/ajax-advance-view-build.invalid-missing-nonce.json"]
-      }
-    },
-    {
-      "id": "ajax-fetch-inflight-stage-handler",
-      "description": "Extracted PHP handler for diagnostic stage tracking AJAX",
-      "schema": "schemas/ajax-fetch-inflight-stage.schema.json",
-      "direction": "client-to-server",
-      "producer": {
-        "file": "includes/ajax/view_updater_build_advance.js",
-        "test": "tests-js/ajax-response-validation.test.js"
-      },
-      "consumer": {
-        "file": "includes/ajax/Ajax_FetchInflightStage.php",
-        "test": "tests/ViewUpdaterAjaxInflightDiagnosticsContractTest.php"
-      },
-      "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
-      "fixtures": {
-        "valid": ["fixtures/ajax-fetch-inflight-stage.valid.json"],
-        "invalid": ["fixtures/ajax-fetch-inflight-stage.invalid-bad-request-id.json"]
+        "valid": [
+          "fixtures/ajax-admin-endpoint-support-helper.valid.json"
+        ],
+        "invalid": [
+          "fixtures/ajax-admin-endpoint-support-helper.invalid-missing-success.json"
+        ]
       }
     },
     {
@@ -474,8 +455,12 @@
       },
       "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
       "fixtures": {
-        "valid": ["fixtures/ajax-update-pagination.valid.json"],
-        "invalid": ["fixtures/ajax-update-pagination.invalid-missing-subpage.json"]
+        "valid": [
+          "fixtures/ajax-update-pagination.valid.json"
+        ],
+        "invalid": [
+          "fixtures/ajax-update-pagination.invalid-missing-subpage.json"
+        ]
       }
     },
     {
@@ -489,8 +474,12 @@
       },
       "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
       "fixtures": {
-        "valid": ["fixtures/ajax-refresh-admin-nonces.valid.json"],
-        "invalid": ["fixtures/ajax-refresh-admin-nonces.invalid-missing-data.json"]
+        "valid": [
+          "fixtures/ajax-refresh-admin-nonces.valid.json"
+        ],
+        "invalid": [
+          "fixtures/ajax-refresh-admin-nonces.invalid-missing-data.json"
+        ]
       }
     },
     {
@@ -508,8 +497,12 @@
       },
       "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
       "fixtures": {
-        "valid": ["fixtures/ajax-refresh-health-bar.valid.json"],
-        "invalid": ["fixtures/ajax-refresh-health-bar.invalid-missing-nonce.json"]
+        "valid": [
+          "fixtures/ajax-refresh-health-bar.valid.json"
+        ],
+        "invalid": [
+          "fixtures/ajax-refresh-health-bar.invalid-missing-nonce.json"
+        ]
       }
     },
     {
@@ -527,8 +520,12 @@
       },
       "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
       "fixtures": {
-        "valid": ["fixtures/ajax-refresh-stats.valid.json"],
-        "invalid": ["fixtures/ajax-refresh-stats.invalid-missing-nonce.json"]
+        "valid": [
+          "fixtures/ajax-refresh-stats.valid.json"
+        ],
+        "invalid": [
+          "fixtures/ajax-refresh-stats.invalid-missing-nonce.json"
+        ]
       }
     },
     {
@@ -546,27 +543,12 @@
       },
       "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
       "fixtures": {
-        "valid": ["fixtures/ajax-uninstall-prefs.valid.json"],
-        "invalid": ["fixtures/ajax-uninstall-prefs.invalid-missing-nonce.json"]
-      }
-    },
-    {
-      "id": "ajax-warm-table-cache-handler",
-      "description": "Extracted PHP handler for background snapshot warming AJAX",
-      "schema": "schemas/ajax-warm-table-cache.schema.json",
-      "direction": "client-to-server",
-      "producer": {
-        "file": "includes/ajax/view_updater_table_warmup.js",
-        "test": "tests-js/ajax-response-validation.test.js"
-      },
-      "consumer": {
-        "file": "includes/ajax/Ajax_WarmTableCache.php",
-        "test": "tests/ViewUpdaterAjaxViewBuildPendingContractTest.php"
-      },
-      "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
-      "fixtures": {
-        "valid": ["fixtures/ajax-warm-table-cache.valid.json"],
-        "invalid": ["fixtures/ajax-warm-table-cache.invalid-bad-subpage.json"]
+        "valid": [
+          "fixtures/ajax-uninstall-prefs.valid.json"
+        ],
+        "invalid": [
+          "fixtures/ajax-uninstall-prefs.invalid-missing-nonce.json"
+        ]
       }
     },
     {
@@ -584,8 +566,12 @@
       },
       "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
       "fixtures": {
-        "valid": ["fixtures/ajax-load-gsc-section.valid.json"],
-        "invalid": ["fixtures/ajax-load-gsc-section.invalid-missing-nonce.json"]
+        "valid": [
+          "fixtures/ajax-load-gsc-section.valid.json"
+        ],
+        "invalid": [
+          "fixtures/ajax-load-gsc-section.invalid-missing-nonce.json"
+        ]
       }
     },
     {
@@ -603,8 +589,12 @@
       },
       "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
       "fixtures": {
-        "valid": ["fixtures/ajax-redirect-destination-autocomplete.valid.json"],
-        "invalid": ["fixtures/ajax-redirect-destination-autocomplete.invalid-bad-include-flag.json"]
+        "valid": [
+          "fixtures/ajax-redirect-destination-autocomplete.valid.json"
+        ],
+        "invalid": [
+          "fixtures/ajax-redirect-destination-autocomplete.invalid-bad-include-flag.json"
+        ]
       }
     },
     {
@@ -622,8 +612,12 @@
       },
       "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
       "fixtures": {
-        "valid": ["fixtures/ajax-update-options.valid.json"],
-        "invalid": ["fixtures/ajax-update-options.invalid-missing-nonce.json"]
+        "valid": [
+          "fixtures/ajax-update-options.valid.json"
+        ],
+        "invalid": [
+          "fixtures/ajax-update-options.invalid-missing-nonce.json"
+        ]
       }
     },
     {
@@ -641,8 +635,12 @@
       },
       "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
       "fixtures": {
-        "valid": ["fixtures/ajax-view-logs.valid.json"],
-        "invalid": ["fixtures/ajax-view-logs.invalid-missing-nonce.json"]
+        "valid": [
+          "fixtures/ajax-view-logs.valid.json"
+        ],
+        "invalid": [
+          "fixtures/ajax-view-logs.invalid-missing-nonce.json"
+        ]
       }
     }
   ]
