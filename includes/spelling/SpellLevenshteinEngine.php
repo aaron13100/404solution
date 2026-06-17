@@ -142,12 +142,7 @@ class ABJ_404_Solution_SpellLevenshteinEngine {
 		}
 		$ngramPrefilterApplied = ($ngramPrefilterResult === 'applied');
 
-		$minDistances = array();
-		$maxDistances = array();
-		for ($currentDistanceIndex = 0; $currentDistanceIndex <= self::MAX_DIST; $currentDistanceIndex++) {
-			$maxDistances[$currentDistanceIndex] = array();
-			$minDistances[$currentDistanceIndex] = array();
-		}
+		list($minDistances, $maxDistances) = $this->initializeDistanceBuckets();
 
 		$requestedURLCleanedLength = $this->f->strlen($requestedURLCleaned);
 		$fullURLspacesLength = $this->f->strlen($fullURLspaces);
@@ -160,13 +155,14 @@ class ABJ_404_Solution_SpellLevenshteinEngine {
 		if ($this->publishedPostsProvider === null) {
 			return array();
 		}
+		$postsProvider = $this->publishedPostsProvider;
 		if (!$ngramPrefilterApplied) {
-			$this->publishedPostsProvider->resetBatch();
+			$postsProvider->resetBatch();
 		}
 		if ($rows != null) {
-			$this->publishedPostsProvider->useThisData($rows);
+			$postsProvider->useThisData($rows);
 		}
-		$currentBatch = $this->publishedPostsProvider->getNextBatch($requestedURLCleanedLength);
+		$currentBatch = $postsProvider->getNextBatch($requestedURLCleanedLength);
 
 		$row = array_pop($currentBatch);
 		while ($row != null) {
@@ -176,106 +172,40 @@ class ABJ_404_Solution_SpellLevenshteinEngine {
 				$this->totalPagesConsidered++;
 			}
 
-			$id = null;
-			$the_permalink = null;
-			$urlParts = null;
-			if ($rowType == 'pages') {
-				$id = $row['id'];
-
-			} else if ($rowType == 'tags') {
-				$id = array_key_exists('term_id', $row) ? $row['term_id'] : null;
-
-			} else if ($rowType == 'categories') {
-				$id = array_key_exists('term_id', $row) ? $row['term_id'] : null;
-
-			} else if ($rowType == 'image') {
-				$id = $row['id'];
-
-			} else {
-				throw new \Exception("Unknown row type ... " . esc_html($rowType)); // allow-raw-error: assertion, should never reach user
-			}
-
+			$id = $this->extractRowCandidateId($row, $rowType);
 			if ($id === null) {
 				$row = array_pop($currentBatch);
 				continue;
 			}
 			$idInt = is_scalar($id) ? (int)$id : 0;
 
-			if (array_key_exists('url', $row)) {
-			    $the_permalink = isset($row['url']) && is_string($row['url']) ? $row['url'] : '';
-			    $the_permalink = abj_service('sanitizer')->normalizeUrlString($the_permalink);
-			    $urlParts = parse_url($the_permalink);
-
-			    if (is_bool($urlParts)) {
-			        $this->contentRepository->removeFromPermalinkCache($idInt);
-			    }
-			}
-			if (!array_key_exists('url', $row) || (isset($urlParts) && is_bool($urlParts))) {
-			    $wasntReadyCount++;
-			    $the_permalink = $this->urlMatcher->getPermalink($idInt, $rowType);
-			    $the_permalink = abj_service('sanitizer')->normalizeUrlString($the_permalink);
-			    $urlParts = parse_url($the_permalink);
-			}
+			$the_permalink = null;
+			$urlPath = null;
+			$this->resolveCandidatePermalinkParts(
+				$row, $idInt, $rowType, $wasntReadyCount, $the_permalink, $urlPath
+			);
 
 			abj_service('request_context')->debug_info = 'Likely match IDs processing permalink: ' .
 				$the_permalink . ', $wasntReadyCount: ' . $wasntReadyCount;
 
-			if (!is_array($urlParts) || !array_key_exists('path', $urlParts)) {
+			if ($urlPath === null) {
 				continue;
 			}
 			if (is_string($the_permalink)) {
 				$observedPermalinksById[$idInt] = $the_permalink;
 			}
-			$existingPageURL = $this->logic->urlNormalization()->removeHomeDirectory($urlParts['path']);
-			$urlParts = null;
 
-			$existingPageURLSpaces = $this->f->str_replace($this->separatingCharacters, " ", $existingPageURL);
-
-			$existingPageURLCleaned = $this->urlMatcher->getLastURLPart($existingPageURLSpaces);
-			$existingPageURLSpaces = null;
-
-			$minDist = abs($this->f->strlen($existingPageURLCleaned) - $requestedURLCleanedLength);
-			if ($fullURLspaces != '') {
-				$minDist = min($minDist, abs($fullURLspacesLength - $requestedURLCleanedLength));
-			}
-			$maxDist = $this->f->strlen($existingPageURLCleaned);
-			if ($fullURLspaces != '') {
-				$maxDist = min($maxDist, $fullURLspacesLength);
-			}
-
-			$existingPageURLCleanedWords = explode(" ", $existingPageURLCleaned);
-			$wordsInCommon = array_intersect($userRequestedURLWords, $existingPageURLCleanedWords);
-			$wordsInCommon = array_merge(array_unique($wordsInCommon, SORT_REGULAR), array());
-			if (count($wordsInCommon) > 0) {
-				array_push($idsWithWordsInCommon, $id);
-				$lengthOfTheLongestWordInCommon = max(array_map(array($this->f,'strlen'), $wordsInCommon));
-				$maxDist = $maxDist - $lengthOfTheLongestWordInCommon;
-			}
-
-			if (isset($minDistances[$minDist])) {
-			    array_push($minDistances[$minDist], $id);
-			} else {
-			    $minDistances[$minDist] = [$id];
-			}
-
-			if ($maxDist < 0) {
-            	$this->logger->errorMessage("maxDist is less than 0 (" . $maxDist .
-            			") for '" . $existingPageURLCleaned . "', wordsInCommon: " .
-            			json_encode($wordsInCommon) . ", ");
-            	$maxDist = 0;
-			} else if ($maxDist > self::MAX_DIST) {
-				$maxDist = self::MAX_DIST;
-			}
-
-			if (is_array($maxDistances[$maxDist])) {
-				array_push($maxDistances[$maxDist], $id);
-			}
+			$this->scoreCandidateIntoDistanceBuckets(
+				$id, $urlPath, $requestedURLCleanedLength,
+				$fullURLspaces, $fullURLspacesLength, $userRequestedURLWords,
+				$minDistances, $maxDistances, $idsWithWordsInCommon
+			);
 
 			$row = array_pop($currentBatch);
 			if ($row == null) {
 				$maxAcceptableDistance = $this->getMaxAcceptableDistance($maxDistances, $onlyNeedThisManyPages);
 
-            	$currentBatch = $this->publishedPostsProvider->getNextBatch(
+            	$currentBatch = $postsProvider->getNextBatch(
             		$requestedURLCleanedLength, 1000, $maxAcceptableDistance);
 				$row = array_pop($currentBatch);
 			}
@@ -294,6 +224,158 @@ class ABJ_404_Solution_SpellLevenshteinEngine {
 		return $this->permalinkLookup->lookup(
 			array_values(array_unique($candidateIds)), $rowType, $observedPermalinksById
 		);
+	}
+
+	/**
+	 * Allocate the empty min/max edit-distance bucket arrays, one slot per
+	 * possible distance from 0 to self::MAX_DIST inclusive.
+	 *
+	 * @return array{0: array<int, array<int, mixed>>, 1: array<int, array<int, mixed>>}
+	 *     [minDistances, maxDistances]
+	 */
+	private function initializeDistanceBuckets(): array {
+		$minDistances = array();
+		$maxDistances = array();
+		for ($currentDistanceIndex = 0; $currentDistanceIndex <= self::MAX_DIST; $currentDistanceIndex++) {
+			$maxDistances[$currentDistanceIndex] = array();
+			$minDistances[$currentDistanceIndex] = array();
+		}
+		return array($minDistances, $maxDistances);
+	}
+
+	/**
+	 * Pull the candidate id out of one published-content row, dispatching on
+	 * the row type. Returns null when the row carries no usable id (the caller
+	 * skips it); throws for an unrecognized row type.
+	 *
+	 * @param array<mixed, mixed> $row
+	 * @param string $rowType
+	 * @return mixed the raw candidate id as stored in the row, or null when absent
+	 */
+	private function extractRowCandidateId(array $row, string $rowType) {
+		if ($rowType == 'pages') {
+			return $row['id'];
+
+		} else if ($rowType == 'tags') {
+			return array_key_exists('term_id', $row) ? $row['term_id'] : null;
+
+		} else if ($rowType == 'categories') {
+			return array_key_exists('term_id', $row) ? $row['term_id'] : null;
+
+		} else if ($rowType == 'image') {
+			return $row['id'];
+		}
+
+		throw new \Exception("Unknown row type ... " . esc_html($rowType)); // allow-raw-error: assertion, should never reach user
+	}
+
+	/**
+	 * Resolve a candidate's permalink and the path portion of its URL. Prefers
+	 * the url carried on the row; falls back to the permalink cache (incrementing
+	 * $wasntReadyCount) when the row has no usable url or the row url failed to
+	 * parse. The permalink and url path are returned through the by-reference
+	 * out-parameters to keep this hot-path step allocation-free. $urlPath is null
+	 * when no parseable path could be resolved (the caller then skips the row).
+	 *
+	 * @param array<mixed, mixed> $row
+	 * @param int $idInt
+	 * @param string $rowType
+	 * @param int $wasntReadyCount incremented by reference on a cache fallback
+	 * @param string|null $the_permalink
+	 * @param string|null $urlPath
+	 * @param-out string|null $the_permalink
+	 * @param-out string|null $urlPath
+	 */
+	private function resolveCandidatePermalinkParts(
+		array $row, int $idInt, string $rowType, int &$wasntReadyCount, &$the_permalink, &$urlPath
+	): void {
+		$the_permalink = null;
+		$urlPath = null;
+		$urlParts = null;
+		if (array_key_exists('url', $row)) {
+		    $the_permalink = isset($row['url']) && is_string($row['url']) ? $row['url'] : '';
+		    $the_permalink = abj_service('sanitizer')->normalizeUrlString($the_permalink);
+		    $urlParts = parse_url($the_permalink);
+
+		    if (is_bool($urlParts)) {
+		        $this->contentRepository->removeFromPermalinkCache($idInt);
+		    }
+		}
+		if (!array_key_exists('url', $row) || (isset($urlParts) && is_bool($urlParts))) {
+		    $wasntReadyCount++;
+		    $the_permalink = $this->urlMatcher->getPermalink($idInt, $rowType);
+		    $the_permalink = abj_service('sanitizer')->normalizeUrlString($the_permalink);
+		    $urlParts = parse_url($the_permalink);
+		}
+
+		if (is_array($urlParts) && array_key_exists('path', $urlParts)) {
+		    $urlPath = $urlParts['path'];
+		}
+	}
+
+	/**
+	 * Pure scoring step: compute the min/max edit-distance bounds for one
+	 * candidate URL and file its id into the distance buckets. No I/O; mutates
+	 * only the by-reference accumulators.
+	 *
+	 * @param mixed $id the raw candidate id, as gathered from the row
+	 * @param string $existingPageURLPath the candidate URL path (urlParts['path'])
+	 * @param int $requestedURLCleanedLength
+	 * @param string $fullURLspaces
+	 * @param int $fullURLspacesLength
+	 * @param array<int, string> $userRequestedURLWords
+	 * @param array<int, array<int, mixed>> $minDistances filed by reference
+	 * @param array<int, array<int, mixed>> $maxDistances filed by reference
+	 * @param array<int, mixed> $idsWithWordsInCommon appended by reference
+	 */
+	private function scoreCandidateIntoDistanceBuckets(
+		$id, string $existingPageURLPath, int $requestedURLCleanedLength,
+		string $fullURLspaces, int $fullURLspacesLength, array $userRequestedURLWords,
+		array &$minDistances, array &$maxDistances, array &$idsWithWordsInCommon
+	): void {
+		$existingPageURL = $this->logic->urlNormalization()->removeHomeDirectory($existingPageURLPath);
+
+		$existingPageURLSpaces = $this->f->str_replace($this->separatingCharacters, " ", $existingPageURL);
+
+		$existingPageURLCleaned = $this->urlMatcher->getLastURLPart($existingPageURLSpaces);
+		$existingPageURLSpaces = null;
+
+		$minDist = abs($this->f->strlen($existingPageURLCleaned) - $requestedURLCleanedLength);
+		if ($fullURLspaces != '') {
+			$minDist = min($minDist, abs($fullURLspacesLength - $requestedURLCleanedLength));
+		}
+		$maxDist = $this->f->strlen($existingPageURLCleaned);
+		if ($fullURLspaces != '') {
+			$maxDist = min($maxDist, $fullURLspacesLength);
+		}
+
+		$existingPageURLCleanedWords = explode(" ", $existingPageURLCleaned);
+		$wordsInCommon = array_intersect($userRequestedURLWords, $existingPageURLCleanedWords);
+		$wordsInCommon = array_merge(array_unique($wordsInCommon, SORT_REGULAR), array());
+		if (count($wordsInCommon) > 0) {
+			array_push($idsWithWordsInCommon, $id);
+			$lengthOfTheLongestWordInCommon = max(array_map(array($this->f,'strlen'), $wordsInCommon));
+			$maxDist = $maxDist - $lengthOfTheLongestWordInCommon;
+		}
+
+		if (isset($minDistances[$minDist])) {
+		    array_push($minDistances[$minDist], $id);
+		} else {
+		    $minDistances[$minDist] = [$id];
+		}
+
+		if ($maxDist < 0) {
+        	$this->logger->errorMessage("maxDist is less than 0 (" . $maxDist .
+        			") for '" . $existingPageURLCleaned . "', wordsInCommon: " .
+        			json_encode($wordsInCommon) . ", ");
+        	$maxDist = 0;
+		} else if ($maxDist > self::MAX_DIST) {
+			$maxDist = self::MAX_DIST;
+		}
+
+		if (is_array($maxDistances[$maxDist])) {
+			array_push($maxDistances[$maxDist], $id);
+		}
 	}
 
 	/**
