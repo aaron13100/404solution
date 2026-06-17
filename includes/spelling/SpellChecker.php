@@ -244,10 +244,6 @@ class ABJ_404_Solution_SpellChecker {
 		return $this->levenshteinEngine->getLikelyMatchIDs($requestedURLCleaned, $fullURLspaces, $rowType, $rows);
 	}
 
-	function getMaxAcceptableDistance(array $maxDistances, int $onlyNeedThisManyPages): int {
-		return $this->levenshteinEngine->getMaxAcceptableDistance($maxDistances, $onlyNeedThisManyPages);
-	}
-
 	function customLevenshtein($str1, $str2) {
 		return $this->levenshteinEngine->customLevenshtein($str1, $str2);
 	}

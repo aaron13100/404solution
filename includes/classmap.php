@@ -146,6 +146,7 @@ return array(
     'ABJ_404_Solution_SpellSuggestionScorer' => $base . 'includes/spelling/SpellSuggestionScorer.php',
     'ABJ_404_Solution_SpellLevenshteinEngine' => $base . 'includes/spelling/SpellLevenshteinEngine.php',
     'ABJ_404_Solution_SpellLevenshteinEngineDependencies' => $base . 'includes/spelling/SpellLevenshteinEngineDependencies.php',
+    'ABJ_404_Solution_SpellCandidateDistanceRanker' => $base . 'includes/spelling/SpellCandidateDistanceRanker.php',
     'ABJ_404_Solution_SpellCandidateFilter' => $base . 'includes/spelling/SpellCandidateFilter.php',
     // View components (converted from former ViewTrait_* family).
     'ABJ_404_Solution_ViewComponent' => $base . 'includes/view/ViewComponent.php',

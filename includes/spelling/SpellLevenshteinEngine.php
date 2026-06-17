@@ -13,10 +13,6 @@ if (!defined('ABSPATH')) {
  */
 class ABJ_404_Solution_SpellLevenshteinEngine {
 
-	const MAX_DIST = 2083;
-
-	const MAX_LIKELY_DISTANCE = 300;
-
 	const NGRAM_PREFILTER_THRESHOLD = 0.3;
 
 	const NGRAM_PREFILTER_MAX_CANDIDATES = 500;
@@ -34,9 +30,6 @@ class ABJ_404_Solution_SpellLevenshteinEngine {
 	/** @var ABJ_404_Solution_Functions */
 	private $f;
 
-	/** @var ABJ_404_Solution_PluginLogic */
-	private $logic;
-
 	/** @var ABJ_404_Solution_Logging */
 	private $logger;
 
@@ -52,8 +45,8 @@ class ABJ_404_Solution_SpellLevenshteinEngine {
 	/** @var ABJ_404_Solution_SpellCandidatePermalinkLookup */
 	private $permalinkLookup;
 
-	/** @var array<int, string> */
-	private array $separatingCharacters;
+	/** @var ABJ_404_Solution_SpellLevenshteinEngineDependencies the bundle reused to build a per-call distance ranker */
+	private $deps;
 
 	private bool $enablePerformanceCounters = false;
 
@@ -70,12 +63,11 @@ class ABJ_404_Solution_SpellLevenshteinEngine {
 	 * @param ABJ_404_Solution_SpellLevenshteinEngineDependencies $deps
 	 */
 	public function __construct(ABJ_404_Solution_SpellLevenshteinEngineDependencies $deps) {
+		$this->deps = $deps;
 		$this->f = $deps->functions;
-		$this->logic = $deps->logic;
 		$this->logger = $deps->logger;
 		$this->contentRepository = $deps->contentRepository;
 		$this->urlMatcher = $deps->urlMatcher;
-		$this->separatingCharacters = $deps->separatingCharacters;
 		$this->ngramPrefilter = new ABJ_404_Solution_SpellNGramPrefilter($deps->ngramFilter, $deps->logger);
 		$this->permalinkLookup = new ABJ_404_Solution_SpellCandidatePermalinkLookup($deps->contentRepository, $deps->urlMatcher);
 	}
@@ -142,13 +134,12 @@ class ABJ_404_Solution_SpellLevenshteinEngine {
 		}
 		$ngramPrefilterApplied = ($ngramPrefilterResult === 'applied');
 
-		list($minDistances, $maxDistances) = $this->initializeDistanceBuckets();
+		$ranker = new ABJ_404_Solution_SpellCandidateDistanceRanker($this->deps, $this->ngramPrefilter);
 
 		$requestedURLCleanedLength = $this->f->strlen($requestedURLCleaned);
 		$fullURLspacesLength = $this->f->strlen($fullURLspaces);
 
 		$userRequestedURLWords = explode(" ", (empty($fullURLspaces) ? $requestedURLCleaned : $fullURLspaces));
-		$idsWithWordsInCommon = array();
 		$observedPermalinksById = array();
 		$wasntReadyCount = 0;
 
@@ -195,15 +186,14 @@ class ABJ_404_Solution_SpellLevenshteinEngine {
 				$observedPermalinksById[$idInt] = $the_permalink;
 			}
 
-			$this->scoreCandidateIntoDistanceBuckets(
+			$ranker->score(
 				$id, $urlPath, $requestedURLCleanedLength,
-				$fullURLspaces, $fullURLspacesLength, $userRequestedURLWords,
-				$minDistances, $maxDistances, $idsWithWordsInCommon
+				$fullURLspaces, $fullURLspacesLength, $userRequestedURLWords
 			);
 
 			$row = array_pop($currentBatch);
 			if ($row == null) {
-				$maxAcceptableDistance = $this->getMaxAcceptableDistance($maxDistances, $onlyNeedThisManyPages);
+				$maxAcceptableDistance = $ranker->getMaxAcceptableDistance($onlyNeedThisManyPages);
 
             	$currentBatch = $postsProvider->getNextBatch(
             		$requestedURLCleanedLength, 1000, $maxAcceptableDistance);
@@ -216,31 +206,13 @@ class ABJ_404_Solution_SpellLevenshteinEngine {
 			$this->logger->infoMessage("The permalink cache wasn't ready for " . $wasntReadyCount . " IDs.");
 		}
 
-		$candidateIds = $this->pruneAndPrioritizeCandidates(
-			$maxDistances, $minDistances, $onlyNeedThisManyPages,
-			$idsWithWordsInCommon, $ngramPrefilterApplied, $requestedURLCleaned
+		$candidateIds = $ranker->prioritize(
+			$onlyNeedThisManyPages, $ngramPrefilterApplied, $requestedURLCleaned
 		);
 
 		return $this->permalinkLookup->lookup(
 			array_values(array_unique($candidateIds)), $rowType, $observedPermalinksById
 		);
-	}
-
-	/**
-	 * Allocate the empty min/max edit-distance bucket arrays, one slot per
-	 * possible distance from 0 to self::MAX_DIST inclusive.
-	 *
-	 * @return array{0: array<int, array<int, mixed>>, 1: array<int, array<int, mixed>>}
-	 *     [minDistances, maxDistances]
-	 */
-	private function initializeDistanceBuckets(): array {
-		$minDistances = array();
-		$maxDistances = array();
-		for ($currentDistanceIndex = 0; $currentDistanceIndex <= self::MAX_DIST; $currentDistanceIndex++) {
-			$maxDistances[$currentDistanceIndex] = array();
-			$minDistances[$currentDistanceIndex] = array();
-		}
-		return array($minDistances, $maxDistances);
 	}
 
 	/**
@@ -311,160 +283,6 @@ class ABJ_404_Solution_SpellLevenshteinEngine {
 		if (is_array($urlParts) && array_key_exists('path', $urlParts)) {
 		    $urlPath = $urlParts['path'];
 		}
-	}
-
-	/**
-	 * Pure scoring step: compute the min/max edit-distance bounds for one
-	 * candidate URL and file its id into the distance buckets. No I/O; mutates
-	 * only the by-reference accumulators.
-	 *
-	 * @param mixed $id the raw candidate id, as gathered from the row
-	 * @param string $existingPageURLPath the candidate URL path (urlParts['path'])
-	 * @param int $requestedURLCleanedLength
-	 * @param string $fullURLspaces
-	 * @param int $fullURLspacesLength
-	 * @param array<int, string> $userRequestedURLWords
-	 * @param array<int, array<int, mixed>> $minDistances filed by reference
-	 * @param array<int, array<int, mixed>> $maxDistances filed by reference
-	 * @param array<int, mixed> $idsWithWordsInCommon appended by reference
-	 */
-	private function scoreCandidateIntoDistanceBuckets(
-		$id, string $existingPageURLPath, int $requestedURLCleanedLength,
-		string $fullURLspaces, int $fullURLspacesLength, array $userRequestedURLWords,
-		array &$minDistances, array &$maxDistances, array &$idsWithWordsInCommon
-	): void {
-		$existingPageURL = $this->logic->urlNormalization()->removeHomeDirectory($existingPageURLPath);
-
-		$existingPageURLSpaces = $this->f->str_replace($this->separatingCharacters, " ", $existingPageURL);
-
-		$existingPageURLCleaned = $this->urlMatcher->getLastURLPart($existingPageURLSpaces);
-		$existingPageURLSpaces = null;
-
-		$minDist = abs($this->f->strlen($existingPageURLCleaned) - $requestedURLCleanedLength);
-		if ($fullURLspaces != '') {
-			$minDist = min($minDist, abs($fullURLspacesLength - $requestedURLCleanedLength));
-		}
-		$maxDist = $this->f->strlen($existingPageURLCleaned);
-		if ($fullURLspaces != '') {
-			$maxDist = min($maxDist, $fullURLspacesLength);
-		}
-
-		$existingPageURLCleanedWords = explode(" ", $existingPageURLCleaned);
-		$wordsInCommon = array_intersect($userRequestedURLWords, $existingPageURLCleanedWords);
-		$wordsInCommon = array_merge(array_unique($wordsInCommon, SORT_REGULAR), array());
-		if (count($wordsInCommon) > 0) {
-			array_push($idsWithWordsInCommon, $id);
-			$lengthOfTheLongestWordInCommon = max(array_map(array($this->f,'strlen'), $wordsInCommon));
-			$maxDist = $maxDist - $lengthOfTheLongestWordInCommon;
-		}
-
-		if (isset($minDistances[$minDist])) {
-		    array_push($minDistances[$minDist], $id);
-		} else {
-		    $minDistances[$minDist] = [$id];
-		}
-
-		if ($maxDist < 0) {
-        	$this->logger->errorMessage("maxDist is less than 0 (" . $maxDist .
-        			") for '" . $existingPageURLCleaned . "', wordsInCommon: " .
-        			json_encode($wordsInCommon) . ", ");
-        	$maxDist = 0;
-		} else if ($maxDist > self::MAX_DIST) {
-			$maxDist = self::MAX_DIST;
-		}
-
-		if (is_array($maxDistances[$maxDist])) {
-			array_push($maxDistances[$maxDist], $id);
-		}
-	}
-
-	/**
-	 * @param array<int, array<int, mixed>> $maxDistances
-	 * @param array<int, array<int, mixed>> $minDistances
-	 * @param int $onlyNeedThisManyPages
-	 * @param array<int, mixed> $idsWithWordsInCommon
-	 * @param bool $ngramPrefilterApplied
-	 * @param string $requestedURLCleaned
-	 * @return array<int, mixed>
-	 */
-	private function pruneAndPrioritizeCandidates(
-		array $maxDistances, array $minDistances, int $onlyNeedThisManyPages,
-		array $idsWithWordsInCommon, bool $ngramPrefilterApplied, string $requestedURLCleaned
-	): array {
-		$pagesSeenSoFar = 0;
-		$maxDistFound = self::MAX_LIKELY_DISTANCE;
-		for ($currentDistanceIndex = 0; $currentDistanceIndex <= self::MAX_LIKELY_DISTANCE; $currentDistanceIndex++) {
-			$pagesSeenSoFar += sizeof($maxDistances[$currentDistanceIndex]);
-			if ($pagesSeenSoFar >= $onlyNeedThisManyPages) {
-				$maxDistFound = $currentDistanceIndex;
-				break;
-			}
-		}
-
-		$listOfIDsToReturn = array();
-		for ($currentDistanceIndex = 0; $currentDistanceIndex <= $maxDistFound; $currentDistanceIndex++) {
-			$listOfMinDistanceIDs = $minDistances[$currentDistanceIndex];
-			$listOfIDsToReturn = array_merge($listOfIDsToReturn, $listOfMinDistanceIDs);
-		}
-
-		$listOfIDsToReturn = $this->normalizeScalarIds($listOfIDsToReturn);
-		$idsWithWordsInCommon = $this->normalizeScalarIds($idsWithWordsInCommon);
-		$idsWithWords = array_intersect($listOfIDsToReturn, $idsWithWordsInCommon);
-		$idsWithoutWords = array_diff($listOfIDsToReturn, $idsWithWordsInCommon);
-		$listOfIDsToReturn = array_merge($idsWithWords, $idsWithoutWords);
-
-		$listOfIDsToReturn = $this->normalizeScalarIds(
-			$this->ngramPrefilter->applySecondaryFilter(
-				$listOfIDsToReturn,
-				$ngramPrefilterApplied,
-				$requestedURLCleaned
-			)
-		);
-
-		if (count($listOfIDsToReturn) > 300 && count($idsWithWordsInCommon) >= $onlyNeedThisManyPages) {
-			$maybeOKguesses = array_intersect($listOfIDsToReturn, $idsWithWordsInCommon);
-			return (count($maybeOKguesses) >= $onlyNeedThisManyPages)
-				? $maybeOKguesses : $idsWithWordsInCommon;
-		}
-		return $listOfIDsToReturn;
-	}
-
-	/**
-	 * @param array<int, mixed> $ids
-	 * @return array<int, int|string>
-	 */
-	private function normalizeScalarIds(array $ids): array {
-		$normalized = array();
-		foreach ($ids as $id) {
-			if (is_int($id) || is_string($id)) {
-				$normalized[] = $id;
-			} else if (is_scalar($id)) {
-				$normalized[] = (string)$id;
-			}
-		}
-		return $normalized;
-	}
-
-	/**
-	 * @param array<int, array<int, mixed>> $maxDistances
-	 * @param int $onlyNeedThisManyPages
-	 * @return int
-	 */
-	function getMaxAcceptableDistance(array $maxDistances, int $onlyNeedThisManyPages): int {
-		$pagesSeenSoFar = 0;
-		$currentDistanceIndex = 0;
-		$maxDistFound = self::MAX_LIKELY_DISTANCE;
-		for ($currentDistanceIndex = 0; $currentDistanceIndex <= self::MAX_LIKELY_DISTANCE; $currentDistanceIndex++) {
-			$pagesSeenSoFar += sizeof($maxDistances[$currentDistanceIndex]);
-
-			if ($pagesSeenSoFar >= $onlyNeedThisManyPages) {
-				$maxDistFound = $currentDistanceIndex;
-				break;
-			}
-		}
-
-		$acceptableDistance = (int)($maxDistFound * 1.1);
-		return $acceptableDistance;
 	}
 
     /**
