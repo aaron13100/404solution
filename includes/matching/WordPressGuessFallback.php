@@ -58,57 +58,92 @@ class ABJ_404_Solution_WordPressGuessFallback {
      */
     function tryFallback(bool $autoRedirectsAreOn, string $requestedURL, array $options, ABJ_404_Solution_FrontendPipelineTrace $trace): void {
         $wpGuessFallbackEnabled = $autoRedirectsAreOn && $this->shouldRunGuess($requestedURL);
-        $wpGuessEngineName = __('wp guess', '404-solution');
-        if ($wpGuessFallbackEnabled && function_exists('redirect_guess_404_permalink')) {
-            $wpGuess = redirect_guess_404_permalink();
-            if ($wpGuess && is_string($wpGuess)) {
-                $normalizedGuess = $this->normalizeGuessedUrlToRequestShape($wpGuess);
-                if ($normalizedGuess !== '' && $normalizedGuess === $requestedURL) {
-                    $trace->add('WordPress URL guess', 'Ignored self-redirect guess', $wpGuess);
-                } else {
-                    $trace->add('WordPress URL guess', 'Matched candidate', $wpGuess);
-                    $defaultRedirect = isset($options['default_redirect']) && is_scalar($options['default_redirect'])
-                        ? (string)$options['default_redirect'] : '301';
-
-                    $wpGuessPostId = '';
-                    $wpGuessType = (string)$this->typePost();
-                    if (function_exists('url_to_postid')) {
-                        $postId = url_to_postid($wpGuess);
-                        if ($postId > 0) {
-                            $wpGuessPostId = (string)$postId;
-                        }
-                    }
-
-                    $wpGuessResult = new ABJ_404_Solution_MatchResult(
-                        $wpGuessPostId !== '' ? $wpGuessPostId : '0',
-                        $wpGuessType,
-                        $wpGuess,
-                        '',
-                        0.0,
-                        $wpGuessEngineName
-                    );
-                    if ($this->exclusionPolicy->isExcluded($wpGuessResult, $options)) {
-                        $trace->add('WordPress URL guess', 'Excluded destination: skipped', $wpGuess);
-                    } else {
-                        $trace->add('WordPress URL guess', 'Matched: redirecting', $wpGuess);
-                        $this->redirectsRepository->setupRedirect(ABJ_404_Solution_RedirectSpec::create(
-                            $requestedURL, (string)ABJ404_STATUS_AUTO,
-                            $wpGuessType, $wpGuessPostId, $defaultRedirect, 0, $wpGuessEngineName
-                        ));
-                        $this->writeHit($requestedURL, $wpGuess, $wpGuessEngineName, null, $trace->getSteps());
-                        $redirectSent = $this->notFoundResponse->forceRedirect(esc_url($wpGuess), (int)$defaultRedirect);
-                        if ($redirectSent !== false) {
-                            exit;
-                        }
-                        $trace->add('WordPress URL guess', 'Redirect blocked: continued', $wpGuess);
-                    }
-                }
-            }
-            $trace->add('WordPress URL guess', 'No match');
-        } elseif (!$wpGuessFallbackEnabled) {
+        if (!$wpGuessFallbackEnabled) {
             $reason = !$autoRedirectsAreOn ? 'auto_redirects off' : 'engine profile/filter';
             $trace->add('WordPress URL guess', 'Skipped: ' . $reason);
+            return;
         }
+
+        // The original branch ran only when redirect_guess_404_permalink() existed and
+        // did nothing (no trace) when it was absent; preserve that silent no-op.
+        if (!function_exists('redirect_guess_404_permalink')) {
+            return;
+        }
+
+        $wpGuess = redirect_guess_404_permalink();
+        if ($wpGuess && is_string($wpGuess)) {
+            // attemptGuessRedirect() either exit()s on a successful redirect or returns
+            // so the shared 'No match' trace below is recorded for every fall-through.
+            $this->attemptGuessRedirect($wpGuess, $requestedURL, $options, $trace);
+        }
+        $trace->add('WordPress URL guess', 'No match');
+    }
+
+    /**
+     * Given a concrete WordPress permalink guess, decide whether to redirect to it and,
+     * if so, record the redirect and emit it (which exits). Each branch (self-redirect,
+     * excluded destination, blocked redirect) records a trace step and returns so the
+     * caller can fall through to the normal-post query / 404 page.
+     *
+     * @param string $wpGuess      The candidate URL returned by redirect_guess_404_permalink().
+     * @param string $requestedURL The normalized requested URL that 404'd.
+     * @param array<string, mixed> $options
+     * @param ABJ_404_Solution_FrontendPipelineTrace $trace
+     */
+    private function attemptGuessRedirect(string $wpGuess, string $requestedURL, array $options, ABJ_404_Solution_FrontendPipelineTrace $trace): void {
+        $wpGuessEngineName = __('wp guess', '404-solution');
+
+        $normalizedGuess = $this->normalizeGuessedUrlToRequestShape($wpGuess);
+        if ($normalizedGuess !== '' && $normalizedGuess === $requestedURL) {
+            $trace->add('WordPress URL guess', 'Ignored self-redirect guess', $wpGuess);
+            return;
+        }
+
+        $trace->add('WordPress URL guess', 'Matched candidate', $wpGuess);
+        $defaultRedirect = isset($options['default_redirect']) && is_scalar($options['default_redirect'])
+            ? (string)$options['default_redirect'] : '301';
+        $wpGuessType = (string)$this->typePost();
+        $wpGuessPostId = $this->resolveGuessPostId($wpGuess);
+
+        $wpGuessResult = new ABJ_404_Solution_MatchResult(
+            $wpGuessPostId !== '' ? $wpGuessPostId : '0',
+            $wpGuessType,
+            $wpGuess,
+            '',
+            0.0,
+            $wpGuessEngineName
+        );
+        if ($this->exclusionPolicy->isExcluded($wpGuessResult, $options)) {
+            $trace->add('WordPress URL guess', 'Excluded destination: skipped', $wpGuess);
+            return;
+        }
+
+        $trace->add('WordPress URL guess', 'Matched: redirecting', $wpGuess);
+        $this->redirectsRepository->setupRedirect(ABJ_404_Solution_RedirectSpec::create(
+            $requestedURL, (string)ABJ404_STATUS_AUTO,
+            $wpGuessType, $wpGuessPostId, $defaultRedirect, 0, $wpGuessEngineName
+        ));
+        $this->writeHit($requestedURL, $wpGuess, $wpGuessEngineName, null, $trace->getSteps());
+        $redirectSent = $this->notFoundResponse->forceRedirect(esc_url($wpGuess), (int)$defaultRedirect);
+        if ($redirectSent !== false) {
+            exit;
+        }
+        $trace->add('WordPress URL guess', 'Redirect blocked: continued', $wpGuess);
+    }
+
+    /**
+     * Resolve a guessed URL to its WordPress post id as a string, or '' when the URL
+     * maps to no post (or url_to_postid() is unavailable).
+     *
+     * @param string $wpGuess
+     * @return string
+     */
+    private function resolveGuessPostId(string $wpGuess): string {
+        if (!function_exists('url_to_postid')) {
+            return '';
+        }
+        $postId = url_to_postid($wpGuess);
+        return $postId > 0 ? (string)$postId : '';
     }
 
     /**
