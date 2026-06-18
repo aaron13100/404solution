@@ -342,6 +342,25 @@ class ABJ_404_Solution_View {
 	}
 
 	/**
+	 * Record the logs_hits rollup staleness diagnostic on plugin admin page
+	 * renders. This deliberately does not schedule a rollup rebuild; rebuild
+	 * arming has other callers, while the diagnostic needs a page-load seam now
+	 * that the old Hits/Last Used tooltip path no longer exists.
+	 *
+	 * @return void
+	 */
+	private function recordLogsHitsRollupStalenessDiagnosticOnAdminPageLoad(): void {
+		try {
+			$this->logsRepository->recordLogsHitsRollupStalenessSignal();
+		} catch (\Throwable $e) {
+			$this->logger->warn(
+				'logs_hits rollup staleness diagnostic failed during admin page render: '
+				. get_class($e) . ' code=' . (string)$e->getCode() . ' message=' . $e->getMessage()
+			);
+		}
+	}
+
+	/**
 	 * Static entry point for WP admin page rendering. Routes admin POST actions
 	 * (trash / delete / ignore / edit / import) to PluginLogic and then renders
 	 * the selected subpage. Needs to live on the View facade itself because it
@@ -391,6 +410,8 @@ class ABJ_404_Solution_View {
 				);
 				return;
 			}
+
+			$instance->recordLogsHitsRollupStalenessDiagnosticOnAdminPageLoad();
 
 			$sub = "";
 
