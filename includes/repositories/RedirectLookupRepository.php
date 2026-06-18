@@ -57,7 +57,16 @@ class ABJ_404_Solution_RedirectLookupRepository {
      * @return array<string, mixed>
      */
     public function getExistingRedirectForNormalizedUrl($url): array {
-        $query = $this->prepare_query_wp('select * from {wp_abj404_redirects} where BINARY url = BINARY {url} ' .
+        // Index-assisted exact match: the plain `url = {url}` predicate is
+        // sargable on the `url`(190) prefix index and narrows to the (typically
+        // one) row sharing this URL ignoring collation; the `BINARY url = BINARY
+        // {url}` refinement then enforces byte-exact equality. BINARY is the
+        // strictest possible comparison, so its match set is always a subset of
+        // the column-collation equality -- the result is identical to the bare
+        // BINARY predicate, but the optimizer can use the index instead of
+        // full-scanning the redirects table on every new-URL capture (a hot path
+        // under scanner-flood 404 traffic).
+        $query = $this->prepare_query_wp('select * from {wp_abj404_redirects} where url = {url} and BINARY url = BINARY {url} ' .
             " and disabled = 0 ", array("url" => $url));
         $results = $this->dbCore->queryAndGetResults($query);
 

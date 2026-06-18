@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS {wp_abj404_redirects} (
     KEY `idx_url_disabled_status` (`url`(190), `disabled`, `status`),
     KEY `idx_status_disabled` (`status`, `disabled`),
     KEY `idx_canonical_url` (`canonical_url`(190)) USING BTREE,
+    KEY `idx_dest_for_view_id` (`dest_for_view`(190), `id`),
     KEY `idx_disabled_logshits_id` (`disabled`, `logshits`, `id`),
     KEY `idx_disabled_last_used_id` (`disabled`, `last_used`, `id`),
     KEY `idx_status_disabled_logshits_id` (`status`, `disabled`, `logshits`, `id`),

@@ -154,11 +154,24 @@ class ABJ_404_Solution_LogsWriter {
         $requestedUrlCharsetLower = isset($requestedUrlCharset) ? strtolower((string)$requestedUrlCharset) : '';
         $canUseUtf8Cast = ($requestedUrlCharsetLower === '' || strpos($requestedUrlCharsetLower, 'utf8') !== false);
         if ($canUseUtf8Cast) {
-            $checkMinIDSql = "SELECT id FROM `" . $logTableName . "` \n WHERE CAST(requested_url AS CHAR CHARACTER SET utf8mb4) COLLATE " . $comparisonCollation . " = %s \n LIMIT 1";
+            // Index-assisted: the bare `requested_url = %s` predicate is sargable
+            // on the requested_url(190) prefix index and narrows to the rows
+            // sharing this URL; the CAST...COLLATE refinement then enforces the
+            // utf8mb4-harmonized comparison (its original purpose -- it equalizes
+            // utf8 vs utf8mb4 charset, not case). Without the bare predicate the
+            // CAST wraps the column and forces a full table scan of logsv2 on
+            // EVERY 404 log write -- the hottest path under scanner-flood traffic
+            // on a large log table. A bound %s is collation-coercible to the
+            // column, so the prefilter neither throws an illegal-mix error nor
+            // changes which row is found (min_log_id only drives the admin logs
+            // unique-URL dropdown, so the comparison need not be byte-exact).
+            $checkMinIDSql = "SELECT id FROM `" . $logTableName . "` \n WHERE requested_url = %s AND CAST(requested_url AS CHAR CHARACTER SET utf8mb4) COLLATE " . $comparisonCollation . " = %s \n LIMIT 1";
+            $checkMinIDParams = array($requested_url, $requested_url);
         } else {
             $checkMinIDSql = "SELECT id FROM `" . $logTableName . "` \n WHERE requested_url = %s \n LIMIT 1";
+            $checkMinIDParams = array($requested_url);
         }
-        $primaryResult = $this->dbCore->queryAndGetResults($checkMinIDSql, array('query_params' => array($requested_url), 'log_errors' => false));
+        $primaryResult = $this->dbCore->queryAndGetResults($checkMinIDSql, array('query_params' => $checkMinIDParams, 'log_errors' => false));
         $checkMinIDQueryResults = is_array($primaryResult['rows'] ?? null) ? $primaryResult['rows'] : array();
         $lastErrorRaw = $primaryResult['last_error'] ?? '';
         $lastError = is_string($lastErrorRaw) ? $lastErrorRaw : '';

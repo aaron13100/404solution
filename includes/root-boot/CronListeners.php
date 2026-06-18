@@ -92,9 +92,11 @@ function abj404_redirectsDenormBackfillListener() {
         require_once(plugin_dir_path( ABJ404_FILE ) . "includes/Loader.php");
         $denorm = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance()
             ->components()->redirectsDenormBackfillUpgrade();
-        $denorm->backfillRedirectsDenormColumns();
-        $denorm->backfillRedirectsDestSortKey();
-        $denorm->backfillRedirectsUrlSortKey();
+        // One shared time budget across the three drains (see
+        // runDeferredDenormBackfillPass): this runs on a shutdown hook / cron
+        // armed by an admin view, so it must not consume 3x the budget back to
+        // back on hosts that do not flush the response before shutdown.
+        $denorm->runDeferredDenormBackfillPass();
     } catch (\Throwable $e) {
         abj404_logRuntimeWarning('Cron redirects denorm backfill failed', $e);
     }
@@ -115,8 +117,10 @@ function abj404_redirectsSortKeyBackfillListener() {
         require_once(plugin_dir_path( ABJ404_FILE ) . "includes/Loader.php");
         $denorm = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance()
             ->components()->redirectsDenormBackfillUpgrade();
-        $denorm->backfillRedirectsDestSortKey();
-        $denorm->backfillRedirectsUrlSortKey();
+        // Shared time budget across both sort-key drains (see
+        // runDeferredSortKeyBackfillPass) so an admin-armed shutdown/cron pass
+        // is capped at one budget, not two back to back.
+        $denorm->runDeferredSortKeyBackfillPass();
     } catch (\Throwable $e) {
         abj404_logRuntimeWarning('Cron redirects sort-key backfill failed', $e);
     }

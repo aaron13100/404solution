@@ -82,9 +82,14 @@ class ABJ_404_Solution_DatabaseUpgradeRedirectsDenormBackfill extends ABJ_404_So
      *   - the dest_for_view column is missing (column add has not happened yet,
      *     e.g. immediately after upgrade before verifyColumns ran).
      *
+     * @param ?float $deadlineFloat Absolute wall-clock deadline (abj_clock
+     *   nowFloat seconds) to stop by. When null, the method uses its own
+     *   REDIRECTS_DENORM_BACKFILL_TIME_BUDGET_SEC budget. A shared deadline lets
+     *   {@see runDeferredDenormBackfillPass()} bound the whole three-drain pass
+     *   by a single budget instead of one budget per drain.
      * @return int Number of redirect rows resolved in this invocation.
      */
-    public function backfillRedirectsDenormColumns(): int {
+    public function backfillRedirectsDenormColumns(?float $deadlineFloat = null): int {
         global $wpdb;
         if (!isset($wpdb)) {
             return 0;
@@ -108,11 +113,11 @@ class ABJ_404_Solution_DatabaseUpgradeRedirectsDenormBackfill extends ABJ_404_So
         if ($chunkSize < 1) {
             $chunkSize = 1;
         }
-        $timeBudget = (float)$this->getRedirectsDenormBackfillTimeBudgetSec();
         $start = abj_clock()->nowFloat();
+        $deadline = $deadlineFloat ?? ($start + (float)$this->getRedirectsDenormBackfillTimeBudgetSec());
         $totalResolved = 0;
 
-        while ((abj_clock()->nowFloat() - $start) < $timeBudget) {
+        while (abj_clock()->nowFloat() < $deadline) {
             $ids = $this->fetchNextBackfillChunkIds($redirectsTable, $chunkSize);
             if ($ids === null) {
                 // Read error already warned about; stop so we don't spin.
@@ -160,12 +165,13 @@ class ABJ_404_Solution_DatabaseUpgradeRedirectsDenormBackfill extends ABJ_404_So
      * could span many nightly passes, leaving the Destination sort ordering a big
      * NULL bucket by id.
      *
+     * @param ?float $deadlineFloat Shared deadline (see backfillRedirectsDenormColumns).
      * @return int Number of redirect rows whose dest_sort_key was populated.
      */
-    public function backfillRedirectsDestSortKey(): int {
+    public function backfillRedirectsDestSortKey(?float $deadlineFloat = null): int {
         // dest_sort_key derives from dest_for_view, which is itself NULL until the
         // main backfill resolves it; the source guard skips not-yet-resolved rows.
-        return $this->drainNarrowSortKey('dest_sort_key', 'dest_for_view', true);
+        return $this->drainNarrowSortKey('dest_sort_key', 'dest_for_view', true, $deadlineFloat);
     }
 
     /**
@@ -184,12 +190,51 @@ class ABJ_404_Solution_DatabaseUpgradeRedirectsDenormBackfill extends ABJ_404_So
      * Shares the chunked, wall-clock-bounded, self-clearing-sentinel mechanics and
      * the daily-cron cadence with the dest_sort_key drain.
      *
+     * @param ?float $deadlineFloat Shared deadline (see backfillRedirectsDenormColumns).
      * @return int Number of redirect rows whose url_sort_key was populated.
      */
-    public function backfillRedirectsUrlSortKey(): int {
+    public function backfillRedirectsUrlSortKey(?float $deadlineFloat = null): int {
         // url is NOT NULL on the schema, so the source guard is always satisfied;
         // it is passed for a single uniform code path with the dest drain.
-        return $this->drainNarrowSortKey('url_sort_key', 'url', true);
+        return $this->drainNarrowSortKey('url_sort_key', 'url', true, $deadlineFloat);
+    }
+
+    /**
+     * Run the full deferred denorm backfill pass (main derived columns + both
+     * narrow sort keys) under ONE shared time budget.
+     *
+     * Why this exists: the three drains run back-to-back from the admin-armed
+     * deferred trigger (shutdown hook on a normal page render, WP-Cron during
+     * AJAX). With a per-call budget the combined pass could consume up to 3x
+     * REDIRECTS_DENORM_BACKFILL_TIME_BUDGET_SEC. On hosts that do not flush the
+     * HTTP response before the shutdown hook fires, that whole span is felt as
+     * page latency on the admin view that armed it. A single shared deadline
+     * caps the pass at one budget; whatever backlog remains drains on the next
+     * armed visit or the daily cron. The daily-maintenance path deliberately
+     * keeps the per-call budgets (it is true cron, never request-blocking, so
+     * faster nightly convergence is preferred there).
+     *
+     * @return void
+     */
+    public function runDeferredDenormBackfillPass(): void {
+        $deadline = abj_clock()->nowFloat() + (float)$this->getRedirectsDenormBackfillTimeBudgetSec();
+        $this->backfillRedirectsDenormColumns($deadline);
+        $this->backfillRedirectsDestSortKey($deadline);
+        $this->backfillRedirectsUrlSortKey($deadline);
+    }
+
+    /**
+     * Run the deferred narrow sort-key backfill pass (dest_sort_key +
+     * url_sort_key) under ONE shared time budget. Sibling of
+     * {@see runDeferredDenormBackfillPass()} for the sort-key-only armed trigger
+     * (used when the main derived columns are already populated).
+     *
+     * @return void
+     */
+    public function runDeferredSortKeyBackfillPass(): void {
+        $deadline = abj_clock()->nowFloat() + (float)$this->getRedirectsDenormBackfillTimeBudgetSec();
+        $this->backfillRedirectsDestSortKey($deadline);
+        $this->backfillRedirectsUrlSortKey($deadline);
     }
 
     /**
@@ -213,9 +258,10 @@ class ABJ_404_Solution_DatabaseUpgradeRedirectsDenormBackfill extends ABJ_404_So
      * @param string $targetColumn The narrow sort-key column to populate.
      * @param string $sourceColumn The wide source column it is LEFT(...)-copied from.
      * @param bool   $guardSourceNotNull Whether to skip rows whose source is NULL.
+     * @param ?float  $deadlineFloat Shared deadline (see backfillRedirectsDenormColumns).
      * @return int Number of rows populated.
      */
-    private function drainNarrowSortKey(string $targetColumn, string $sourceColumn, bool $guardSourceNotNull): int {
+    private function drainNarrowSortKey(string $targetColumn, string $sourceColumn, bool $guardSourceNotNull, ?float $deadlineFloat = null): int {
         global $wpdb;
         if (!isset($wpdb)) {
             return 0;
@@ -254,11 +300,11 @@ class ABJ_404_Solution_DatabaseUpgradeRedirectsDenormBackfill extends ABJ_404_So
         if ($chunkSize < 1) {
             $chunkSize = 1;
         }
-        $timeBudget = (float)$this->getRedirectsDenormBackfillTimeBudgetSec();
         $start = abj_clock()->nowFloat();
+        $deadline = $deadlineFloat ?? ($start + (float)$this->getRedirectsDenormBackfillTimeBudgetSec());
         $totalRepaired = 0;
 
-        while ((abj_clock()->nowFloat() - $start) < $timeBudget) {
+        while (abj_clock()->nowFloat() < $deadline) {
             $ids = $this->fetchNextSortKeyChunkIds($redirectsTable, $targetColumn, $sourceGuard, $chunkSize);
             if ($ids === null) {
                 // Read error already warned about; stop so we don't spin.
@@ -410,9 +456,7 @@ class ABJ_404_Solution_DatabaseUpgradeRedirectsDenormBackfill extends ABJ_404_So
         return abj_cron_scheduler()->scheduleSingleOrShutdown(
             ABJ_404_Solution_CronScheduler::HOOK_REDIRECTS_DENORM_BACKFILL,
             function (): void {
-                $this->backfillRedirectsDenormColumns();
-                $this->backfillRedirectsDestSortKey();
-                $this->backfillRedirectsUrlSortKey();
+                $this->runDeferredDenormBackfillPass();
             },
             $this->shouldScheduleSortKeyBackfillViaCron()
         );
@@ -505,8 +549,7 @@ class ABJ_404_Solution_DatabaseUpgradeRedirectsDenormBackfill extends ABJ_404_So
         return abj_cron_scheduler()->scheduleSingleOrShutdown(
             ABJ_404_Solution_CronScheduler::HOOK_REDIRECTS_SORT_KEY_BACKFILL,
             function (): void {
-                $this->backfillRedirectsDestSortKey();
-                $this->backfillRedirectsUrlSortKey();
+                $this->runDeferredSortKeyBackfillPass();
             },
             $this->shouldScheduleSortKeyBackfillViaCron()
         );
