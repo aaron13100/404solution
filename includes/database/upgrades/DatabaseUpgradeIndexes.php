@@ -42,6 +42,7 @@ class ABJ_404_Solution_DatabaseUpgradeIndexes extends ABJ_404_Solution_DatabaseU
 				$missingIndexNames[] = $indexName;
 			}
 		}
+		$missingIndexNames = $this->prioritizeMissingIndexNames($missingIndexNames);
 
 		if (count($missingIndexNames) > 0) {
 			$this->logger->infoMessage($this->getUpgradeRuntimeId() . ": On {$tableName} I'm adding missing indexes: " . implode(', ', $missingIndexNames));
@@ -88,10 +89,80 @@ class ABJ_404_Solution_DatabaseUpgradeIndexes extends ABJ_404_Solution_DatabaseU
 					$this->contentRepo->deleteSpellingCache();
 				}
 
-			$addStatement = $this->buildAddIndexStatementFromParts($tableName, $spec['name'], $spec['columns'], $spec['unique']);
-			$this->dbCore->queryAndGetResults($addStatement);
-			$this->logger->infoMessage("I added an index: " . $addStatement);
+			$this->addIndexWithOnlineFallback($tableName, $spec['name'], $spec['columns'], $spec['unique']);
 		}
+	    }
+
+	    /**
+	     * Add one missing index. Try online/no-lock DDL first; if the server or
+	     * storage engine rejects those hints, retry the legacy plain ADD INDEX.
+	     *
+	     * @param string $tableName
+	     * @param string $indexName
+	     * @param string $columnsSql
+	     * @param bool $unique
+	     * @return void
+	     */
+	    private function addIndexWithOnlineFallback($tableName, $indexName, $columnsSql, $unique): void {
+	        $addStatement = $this->buildAddIndexStatementFromParts($tableName, $indexName, $columnsSql, $unique, true);
+	        $result = $this->dbCore->queryAndGetResults($addStatement);
+	        $lastError = isset($result['last_error']) && is_scalar($result['last_error']) ? (string)$result['last_error'] : '';
+	        if ($lastError !== '') {
+	            $this->logger->warn("Online index add for {$indexName} on {$tableName} failed; retrying without online DDL hints: " .
+	                $lastError . " (query: {$addStatement})");
+	            $addStatement = $this->buildAddIndexStatementFromParts($tableName, $indexName, $columnsSql, $unique, false);
+	            $result = $this->dbCore->queryAndGetResults($addStatement);
+	            $lastError = isset($result['last_error']) && is_scalar($result['last_error']) ? (string)$result['last_error'] : '';
+	            if ($lastError !== '') {
+	                $this->logger->errorMessage("Failed to add index {$indexName} to {$tableName}: " .
+	                    $lastError . " (query: {$addStatement})");
+	                return;
+	            }
+	        }
+	        $this->logger->infoMessage("I added an index: " . $addStatement);
+	    }
+
+	    /**
+	     * Put redirect admin-view performance indexes before lower-impact recovery
+	     * indexes. Each index is still added by its own ALTER TABLE statement; this
+	     * only controls which missing index is attempted first on weak hosts.
+	     *
+	     * @param array<int, string> $missingIndexNames
+	     * @return array<int, string>
+	     */
+	    private function prioritizeMissingIndexNames(array $missingIndexNames): array {
+	        if (count($missingIndexNames) < 2) {
+	            return $missingIndexNames;
+	        }
+	        $originalPosition = array();
+	        foreach ($missingIndexNames as $i => $name) {
+	            $originalPosition[$name] = $i;
+	        }
+	        $priority = array_flip(array(
+	            'idx_dest_for_view_id',
+	            'idx_status_disabled_url_sort_id',
+	            'idx_disabled_url_sort_id',
+	            'idx_status_disabled_dest_sort_id',
+	            'idx_disabled_dest_sort_id',
+	            'idx_status_disabled_logshits_id',
+	            'idx_disabled_logshits_id',
+	            'idx_status_disabled_last_used_id',
+	            'idx_disabled_last_used_id',
+	            'idx_status_disabled_score_id',
+	            'idx_disabled_score_id',
+	            'idx_status_disabled',
+	            'idx_url_disabled_status',
+	            'idx_canonical_url',
+	        ));
+	        usort($missingIndexNames, function ($a, $b) use ($priority, $originalPosition) {
+	            $pa = array_key_exists($a, $priority) ? $priority[$a] : 1000;
+	            $pb = array_key_exists($b, $priority) ? $priority[$b] : 1000;
+	            if ($pa === $pb) {
+	                return ($originalPosition[$a] ?? 0) <=> ($originalPosition[$b] ?? 0);
+	            }
+	            return $pa <=> $pb;
+	        });
+	        return $missingIndexNames;
 	    }
 
     /**
@@ -173,9 +244,10 @@ class ABJ_404_Solution_DatabaseUpgradeIndexes extends ABJ_404_Solution_DatabaseU
 	     * @param string $indexName
 	     * @param string $columnsSql Must include surrounding parentheses, e.g. "(`a`, `b`(190))"
 	     * @param bool $unique
+	     * @param bool $online Whether to append ALGORITHM=INPLACE, LOCK=NONE.
 	     * @return string
 	     */
-	    private function buildAddIndexStatementFromParts($tableName, $indexName, $columnsSql, $unique) {
+	    private function buildAddIndexStatementFromParts($tableName, $indexName, $columnsSql, $unique, $online = false) {
 	        global $wpdb;
 	        /** @var \wpdb $wpdb */
 	        $serverVersion = is_object($wpdb) && method_exists($wpdb, 'db_version') ? ($wpdb->db_version() ?: '') : '';
@@ -187,8 +259,9 @@ class ABJ_404_Solution_DatabaseUpgradeIndexes extends ABJ_404_Solution_DatabaseU
 
 	        $indexType = $unique ? 'unique index' : 'index';
 	        $ifNotExists = $supportsIfNotExists ? ' if not exists' : '';
+	        $onlineClause = $online ? ', ALGORITHM=INPLACE, LOCK=NONE' : '';
 
-	        return "alter table " . $tableName . " add " . $indexType . $ifNotExists . " `" . $indexName . "` " . trim($columnsSql);
+	        return "alter table " . $tableName . " add " . $indexType . $ifNotExists . " `" . $indexName . "` " . trim($columnsSql) . $onlineClause;
 	    }
 
 	    /**
