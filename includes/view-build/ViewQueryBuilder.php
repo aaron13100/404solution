@@ -5,15 +5,14 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Admin view query construction and staged view_done reads.
+ * Admin view query construction for the redirect/captured lists.
  *
- * Builds the SQL for the admin redirect/captured lists (high-impact captured
- * count, regex redirects, optimized count) and owns the read path against the
- * staged view_done admin table: it constructs the read/count SQL and executes
- * the read through the staged-query options supplied by the view-build
- * orchestrator. The view_done read/count SQL used to live in two single-consumer
- * leaf classes (ViewDoneReader, ViewDoneQueryBuilder); they were folded in here
- * to remove a three-file single-consumer chain.
+ * Builds the SQL for the admin redirect/captured lists: high-impact captured
+ * count, regex redirects, optimized count, and the single-table read/count
+ * against wp_abj404_redirects (Denorm Step 3b). The staged view_done read path
+ * that used to live here was removed when the denorm chain dropped the
+ * wp_abj404_view_done table (Step 3e-D / i467); admin reads now serve straight
+ * off the redirects row.
  */
 class ABJ_404_Solution_ViewQueryBuilder {
 
@@ -219,73 +218,44 @@ class ABJ_404_Solution_ViewQueryBuilder {
     }
 
     /**
-     * Resolve the ORDER BY column for the single-table read, applying the
-     * derived-sort fallback: a sort on a derived column (logshits / last_used /
-     * dest) falls back to the always-correct native url column while the
-     * post-upgrade denorm backfill is still in flight (completion flag not set)
-     * OR when the derived columns are absent entirely (schema drift). Ordering on
-     * a half-populated or missing column would be wrong/erroring; the url
-     * fallback is always correct and never blank. The default url sort is never
-     * affected. Once the backfill completes and the columns exist, derived sorts
-     * use the real column.
+     * Resolve the ORDER BY column for the single-table read.
+     *
+     * A sort on a derived column (logshits / last_used / dest) uses the real
+     * column whenever the four denorm columns exist. The only fallback is
+     * schema-drift tolerance: when the columns are absent entirely (the column-add
+     * ALTER never completed) a derived sort would reference a missing column, so
+     * it falls back to the always-present native url column.
+     *
+     * No backfill-completion flag is consulted. Each derived column degrades
+     * gracefully for not-yet-backfilled rows by construction, so ordering on it is
+     * always meaningful and self-heals as rows are resolved:
+     *   - logshits is NOT NULL and defaults to 0, so an un-backfilled row simply
+     *     sorts as 0 hits and rises into place once the rollup is written;
+     *   - last_used is NULL for no-hit rows, which sort last;
+     *   - the dest_for_view ordering groups NULL/empty destinations last via its
+     *     CASE expression (see ViewQueryPolicy::resolveOrderByColumn).
+     *
+     * The previous implementation gated these sorts on
+     * abj404_redirects_denorm_backfill_complete and fell back to url order until
+     * it flipped. That flag is flipped only when no row has dest_for_view NULL, a
+     * condition a live 404 site never reaches: every newly captured 404 is
+     * inserted with dest_for_view NULL, so the flag stayed false forever and the
+     * Hits / Last Used / Destination columns were permanently sorted by url
+     * instead of by their own values (the rendered Hits column looked random).
      *
      * @param array<string, mixed> $tableOptions
-     * @param bool $derivedPresent
+     * @param bool $derivedPresent Whether the four denorm columns exist on the
+     *   table. False (schema drift) is the only case that forces the url fallback.
      * @return string
      */
     private function resolveSingleTableOrderByColumn(array $tableOptions, bool $derivedPresent = true): string {
         $rawOrderByValue = $tableOptions['orderby'] ?? '';
         $rawOrderBy = strtolower(is_string($rawOrderByValue) ? $rawOrderByValue : '');
         $derivedSorts = array('logshits', 'last_used', 'dest', 'final_dest');
-        if (in_array($rawOrderBy, $derivedSorts, true) && (!$derivedPresent || !$this->denormBackfillComplete())) {
+        if (in_array($rawOrderBy, $derivedSorts, true) && !$derivedPresent) {
             return 'url';
         }
         return $this->policy->resolveOrderByColumn($tableOptions);
-    }
-
-    /** @return bool Whether the post-upgrade denorm backfill has fully populated the derived columns. */
-    private function denormBackfillComplete(): bool {
-        if (!function_exists('get_option')) {
-            return false;
-        }
-        return (bool) get_option(
-            ABJ_404_Solution_DatabaseUpgradeRuntimeState::REDIRECTS_DENORM_BACKFILL_COMPLETE_OPTION,
-            false
-        );
-    }
-
-    /**
-     * Execute a staged read against the view_done admin table.
-     *
-     * @param string $sub
-     * @param array<string, mixed> $tableOptions
-     * @return array<int, array<string, mixed>>
-     */
-    public function readFromViewDone(string $sub, array $tableOptions): array {
-        $query = $this->buildViewDoneReadQuery($sub, $tableOptions);
-        $result = $this->dbCore->queryAndGetResults($query, array());
-        $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
-        /** @var array<int, array<string, mixed>> $rows */
-        return $rows;
-    }
-
-    /**
-     * @param string $sub
-     * @param array<string, mixed> $tableOptions
-     * @return string
-     */
-    public function buildViewDoneCountQuery(string $sub, array $tableOptions): string {
-        $statusTypes = $this->policy->resolveStatusTypeList($sub, $tableOptions);
-        $trashClause = 'AND disabled = ' . intval($this->policy->resolveTrashValue($tableOptions));
-        $scoreRangeClause = $this->policy->buildScoreRangeClause($tableOptions, '');
-        $filterTextClause = $this->policy->buildFilterTextClause($sub, $tableOptions);
-
-        return "SELECT COUNT(*) AS cnt\n"
-            . "FROM `" . $this->viewDoneTableName() . "`\n"
-            . "WHERE status IN (" . $statusTypes . ")\n"
-            . " " . $trashClause . "\n"
-            . " " . $scoreRangeClause . "\n"
-            . " " . $filterTextClause;
     }
 
     /**
@@ -303,43 +273,6 @@ class ABJ_404_Solution_ViewQueryBuilder {
      */
     public function resolveOrderByColumn(array $tableOptions): string {
         return $this->policy->resolveOrderByColumn($tableOptions);
-    }
-
-    /**
-     * @param string $sub
-     * @param array<string, mixed> $tableOptions
-     * @return string
-     */
-    private function buildViewDoneReadQuery(string $sub, array $tableOptions): string {
-        $statusTypes = $this->policy->resolveStatusTypeList($sub, $tableOptions);
-        $trashClause = 'AND disabled = ' . intval($this->policy->resolveTrashValue($tableOptions));
-        $scoreRangeClause = $this->policy->buildScoreRangeClause($tableOptions, '');
-        $filterTextClause = $this->policy->buildFilterTextClause($sub, $tableOptions);
-        $orderBy = $this->policy->resolveOrderByColumn($tableOptions);
-        $order = $this->policy->resolveOrderDirection($tableOptions);
-
-        $rawPaged = $tableOptions['paged'] ?? 1;
-        $paged = max(1, is_scalar($rawPaged) ? intval($rawPaged) : 1);
-        $rawPerpage = $tableOptions['perpage'] ?? ABJ404_OPTION_DEFAULT_PERPAGE;
-        $perpage = max(1, is_scalar($rawPerpage) ? intval($rawPerpage) : (int)ABJ404_OPTION_DEFAULT_PERPAGE);
-        $limitStart = ($paged - 1) * $perpage;
-
-        return "SELECT id, url, status, type,\n"
-            . "       final_dest, dest_for_view, published_status, code, timestamp,\n"
-            . "       engine, score, wp_post_id, wp_post_type,\n"
-            . "       logshits, logsid, last_used\n"
-            . "FROM `" . $this->viewDoneTableName() . "`\n"
-            . "WHERE status IN (" . $statusTypes . ")\n"
-            . " " . $trashClause . "\n"
-            . " " . $scoreRangeClause . "\n"
-            . " " . $filterTextClause . "\n"
-            . "ORDER BY " . $orderBy . " " . $order . ", url ASC, id " . $order . "\n"
-            . "LIMIT " . $limitStart . ", " . $perpage;
-    }
-
-    /** @return string */
-    private function viewDoneTableName(): string {
-        return $this->dbCore->doTableNameReplacements('{wp_abj404_view_done}');
     }
 
 }

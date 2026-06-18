@@ -283,15 +283,6 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
     }
 
     /**
-     * @param string $sub
-     * @param array<string, mixed> $tableOptions
-     * @return array<int, array<string, mixed>>
-     */
-    public function readFromViewDone(string $sub, array $tableOptions): array {
-        return $this->queryBuilder->readFromViewDone($sub, $tableOptions);
-    }
-
-    /**
      * Single-table redirects read for one page (Denorm Step 3b): fetch the
      * ordered/filtered page off wp_abj404_redirects, then resolve the visible
      * rows' derived/display values live and write the four denorm columns back.
@@ -314,15 +305,6 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
      */
     public function countRedirectsSingleTable(string $sub, array $tableOptions): int {
         return $this->adminViewReadCoordinator->countRedirectsSingleTable($sub, $tableOptions);
-    }
-
-    /**
-     * @param string $sub
-     * @param array<string, mixed> $tableOptions
-     * @return string
-     */
-    public function buildViewDoneCountQuery(string $sub, array $tableOptions): string {
-        return $this->queryBuilder->buildViewDoneCountQuery($sub, $tableOptions);
     }
 
     // =========================================================================
