@@ -148,7 +148,20 @@ class ABJ_404_Solution_RedirectWriteService {
             $insertIdRaw = $insertResult['insert_id'] ?? 0;
             $insertId = is_scalar($insertIdRaw) ? (int)$insertIdRaw : 0;
 
-            abj_service('view_read_service')->invalidateStatusCountsCache();
+            // A captured-404 insert is the high-frequency frontend path: on a
+            // busy site it fires continuously and only changes the captured +
+            // high-impact counts. Use the debounced, captured-scoped invalidation
+            // so the SUM(CASE) status-count aggregate is not cold-recomputed on
+            // every admin load and the unrelated redirect-count cache stays warm
+            // (report.md Finding 4). Admin-driven inserts (manual / auto / regex,
+            // e.g. Add Redirect or a slug-change auto-redirect) are low-frequency
+            // and keep the immediate full invalidation so the admin sees the
+            // count change at once.
+            if ($statusAsInt === ABJ404_STATUS_CAPTURED) {
+                ABJ_404_Solution_ViewCacheInvalidator::invalidateCapturedStatusCountsCacheDebounced();
+            } else {
+                abj_service('view_read_service')->invalidateStatusCountsCache();
+            }
             if ($status == ABJ404_STATUS_REGEX) {
                 $this->regexCacheStore->clear();
             }

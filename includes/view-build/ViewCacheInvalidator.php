@@ -77,6 +77,41 @@ class ABJ_404_Solution_ViewCacheInvalidator {
     }
 
     /**
+     * Debounced, captured-scoped status-count invalidation for the
+     * high-frequency captured-insert path (report.md Finding 4).
+     *
+     * A captured 404 insert only changes the captured + high-impact counts; it
+     * never changes the redirect (manual/auto/regex) counts, so this leaves the
+     * REDIRECT status-count cache intact (the redirects tab stays warm through a
+     * capture burst). It also collapses a burst into at most one invalidation per
+     * cooldown window, so the SUM(CASE) captured-count aggregate is recomputed at
+     * most once per window instead of cold on every admin load.
+     *
+     * It does NOT clear the view snapshot: the admin table read is live off
+     * wp_abj404_redirects (Denorm Step 3b -- no snapshot result cache), so a new
+     * captured row appears on the next read regardless. The detect-only poll
+     * (Finding 3) reads the same live source, so staleness is still detected.
+     *
+     * Static + pure transient ops: holds no instance state, so the
+     * frontend-capture hot path can call it without a fully-wired invalidator.
+     *
+     * @return void
+     */
+    public static function invalidateCapturedStatusCountsCacheDebounced(): void {
+        if (ABJ_404_Solution_ViewReadRuntimeState::$bulkMutationInProgress) {
+            return;
+        }
+        $cooldownKey = ABJ_404_Solution_ViewReadRuntimeState::CACHE_KEY_CAPTURED_COUNT_INVALIDATE_COOLDOWN;
+        if (get_transient($cooldownKey)) {
+            return;
+        }
+        set_transient($cooldownKey, 1,
+            ABJ_404_Solution_ViewReadRuntimeState::CAPTURED_COUNT_INVALIDATE_COOLDOWN_SECONDS);
+        delete_transient(ABJ_404_Solution_ViewReadRuntimeState::CACHE_KEY_CAPTURED_STATUS);
+        delete_transient(ABJ_404_Solution_ViewReadRuntimeState::CACHE_KEY_HIGH_IMPACT_CAPTURED);
+    }
+
+    /**
      * Clear the view snapshot cache.
      *
      * @return void

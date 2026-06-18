@@ -22,6 +22,17 @@ final class ABJ_404_Solution_ViewReadRuntimeState {
     const VIEW_SNAPSHOT_MAX_PAYLOAD_BYTES = 2097152;
     const LOGS_COUNT_CACHE_TTL_SECONDS = 60;
 
+    /**
+     * Debounce window for the high-frequency captured-insert path. A busy 404
+     * site captures continuously; invalidating the captured status-count cache
+     * on every insert keeps the SUM(CASE) aggregate permanently cold (report.md
+     * Finding 4). A captured insert clears the captured cache at most once per
+     * this window; the count is therefore at most this many seconds stale.
+     * Matched to the view-snapshot refresh cooldown / client detect-poll cadence.
+     */
+    const CACHE_KEY_CAPTURED_COUNT_INVALIDATE_COOLDOWN = 'abj404_captured_count_invalidate_cooldown';
+    const CAPTURED_COUNT_INVALIDATE_COOLDOWN_SECONDS = 30;
+
     /** @var bool Per-request bulk mutation deferral flag. */
     public static $bulkMutationInProgress = false;
 }
