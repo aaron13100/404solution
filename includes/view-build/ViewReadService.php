@@ -4,7 +4,6 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-require_once __DIR__ . '/ViewSnapshotCache.php';
 require_once __DIR__ . '/AdminViewReadCoordinator.php';
 
 /**
@@ -20,8 +19,7 @@ require_once __DIR__ . '/AdminViewReadCoordinator.php';
  *   - ABJ_404_Solution_RedirectsBulkReader     -- non-paginated redirect reads
  *   - ABJ_404_Solution_LogsMetricsReader       -- logs row count + disk usage
  *   - ABJ_404_Solution_DatabaseMetadataReader  -- engine + post-type metadata
- *   - ABJ_404_Solution_ViewQueryBuilder        -- staged SQL construction
- *   - ABJ_404_Solution_ViewSnapshotCache       -- snapshot CRUD + warmup
+ *   - ABJ_404_Solution_ViewQueryBuilder        -- single-table SQL construction
  *   - ABJ_404_Solution_ViewCacheInvalidator    -- invalidation primitives
  *   - ABJ_404_Solution_ViewDiagnostics         -- failure diagnostics
  *
@@ -32,21 +30,13 @@ require_once __DIR__ . '/AdminViewReadCoordinator.php';
  *
  * @see docs/dataaccess-refactor-plan.md Phase 6.
  */
-class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServiceInterface, ABJ_404_Solution_ViewSnapshotCacheHostInterface {
-    /** @var bool Legacy reflection bridge for tests and old diagnostics. */
-    private static $viewSnapshotTableEnsured = false;
+class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServiceInterface {
 
     const CACHE_KEY_REDIRECT_STATUS = ABJ_404_Solution_ViewReadRuntimeState::CACHE_KEY_REDIRECT_STATUS;
     const CACHE_KEY_CAPTURED_STATUS = ABJ_404_Solution_ViewReadRuntimeState::CACHE_KEY_CAPTURED_STATUS;
     const CACHE_KEY_HIGH_IMPACT_CAPTURED = ABJ_404_Solution_ViewReadRuntimeState::CACHE_KEY_HIGH_IMPACT_CAPTURED;
     const STATUS_CACHE_TTL = ABJ_404_Solution_ViewReadRuntimeState::STATUS_CACHE_TTL;
     const STATUS_CACHE_TIMEOUT_SELFHEAL_TTL = ABJ_404_Solution_ViewReadRuntimeState::STATUS_CACHE_TIMEOUT_SELFHEAL_TTL;
-    const VIEW_SNAPSHOT_CACHE_TTL_SECONDS = ABJ_404_Solution_ViewReadRuntimeState::VIEW_SNAPSHOT_CACHE_TTL_SECONDS;
-    const VIEW_SNAPSHOT_REFRESH_COOLDOWN_SECONDS = ABJ_404_Solution_ViewReadRuntimeState::VIEW_SNAPSHOT_REFRESH_COOLDOWN_SECONDS;
-    const VIEW_SNAPSHOT_WARMUP_STAGE_TIMEOUT_SECONDS = ABJ_404_Solution_ViewReadRuntimeState::VIEW_SNAPSHOT_WARMUP_STAGE_TIMEOUT_SECONDS;
-    const VIEW_SNAPSHOT_WARMUP_STALE_SECONDS = ABJ_404_Solution_ViewReadRuntimeState::VIEW_SNAPSHOT_WARMUP_STALE_SECONDS;
-    const VIEW_SNAPSHOT_WARMUP_MAX_ATTEMPTS = ABJ_404_Solution_ViewReadRuntimeState::VIEW_SNAPSHOT_WARMUP_MAX_ATTEMPTS;
-    const VIEW_SNAPSHOT_MAX_PAYLOAD_BYTES = ABJ_404_Solution_ViewReadRuntimeState::VIEW_SNAPSHOT_MAX_PAYLOAD_BYTES;
     const HITS_TABLE_LAST_CHECKED_FLAG = ABJ_404_Solution_ViewReadRuntimeState::HITS_TABLE_LAST_CHECKED_FLAG;
     const HITS_TABLE_LAST_DECISION_FLAG = ABJ_404_Solution_ViewReadRuntimeState::HITS_TABLE_LAST_DECISION_FLAG;
     const LOGS_COUNT_CACHE_TTL_SECONDS = ABJ_404_Solution_LogsMetricsReader::LOGS_COUNT_CACHE_TTL_SECONDS;
@@ -73,9 +63,6 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
 
     /** @var ABJ_404_Solution_ViewCacheInvalidator */
     private $cacheInvalidator;
-
-    /** @var ABJ_404_Solution_ViewSnapshotCache */
-    private $snapshotCache;
 
     /** @var ABJ_404_Solution_StatusCountsRepository */
     private $statusCounts;
@@ -122,8 +109,6 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
         );
         $this->queryBuilder = new ABJ_404_Solution_ViewQueryBuilder($dbCore);
         $this->liveResolver = new ABJ_404_Solution_RedirectsViewLiveResolver($dbCore);
-        $this->snapshotCache = new ABJ_404_Solution_ViewSnapshotCache($dbCore, $this->logger);
-        $this->snapshotCache->setHost($this);
 
         $this->statusCounts = new ABJ_404_Solution_StatusCountsRepository($dbCore, $logsRepo, $this->queryBuilder);
         $this->redirectsBulkReader = new ABJ_404_Solution_RedirectsBulkReader($dbCore, $this->queryBuilder, $this->f);
@@ -135,7 +120,7 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
             $this->queryBuilder,
             $this->diagnostics,
             $this->cacheInvalidator,
-            $this->snapshotCache,
+            $this->liveResolver,
             $this->logger
         );
     }
@@ -147,19 +132,6 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
     public function setViewBuildOrchestrator(ABJ_404_Solution_ViewBuildOrchestratorInterface $viewBuildOrchestrator): void {
         $this->cacheInvalidator->setViewBuildOrchestrator($viewBuildOrchestrator);
         $this->queryBuilder->setViewBuildOrchestrator($viewBuildOrchestrator);
-        $this->snapshotCache->setViewBuildOrchestrator($viewBuildOrchestrator);
-        $this->adminViewReadCoordinator->setViewBuildOrchestrator($viewBuildOrchestrator);
-    }
-
-    /** @param bool $value @return void */
-    public static function setViewSnapshotTableEnsured(bool $value): void {
-        self::$viewSnapshotTableEnsured = $value;
-        ABJ_404_Solution_ViewSnapshotCache::setViewSnapshotTableEnsured($value);
-    }
-
-    /** @return bool */
-    public static function isViewSnapshotTableEnsured(): bool {
-        return self::$viewSnapshotTableEnsured;
     }
 
     /** @return string */
@@ -190,24 +162,6 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
      */
     function lastRedirectsViewReadWasIncomplete(): bool {
         return $this->adminViewReadCoordinator->lastRedirectsViewReadWasIncomplete();
-    }
-
-    /**
-     * @param string $sub
-     * @param array<string, mixed> $tableOptions
-     * @return bool
-     */
-    function viewRowsSnapshotAvailable($sub, array $tableOptions): bool {
-        return $this->adminViewReadCoordinator->viewRowsSnapshotAvailable($sub, $tableOptions);
-    }
-
-    /**
-     * @param string $sub
-     * @param array<string, mixed> $tableOptions
-     * @return bool
-     */
-    function viewTableSnapshotAvailable($sub, array $tableOptions): bool {
-        return $this->adminViewReadCoordinator->viewTableSnapshotAvailable($sub, $tableOptions);
     }
 
     /**
@@ -357,9 +311,7 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
      * @return array<int, array<string, mixed>>
      */
     public function readRedirectsSingleTable(string $sub, array $tableOptions): array {
-        $derivedPresent = $this->liveResolver->derivedColumnsPresent();
-        $rows = $this->queryBuilder->readRedirectsSingleTable($sub, $tableOptions, $derivedPresent);
-        return $this->liveResolver->resolveAndPersistVisibleRows($rows, $derivedPresent);
+        return $this->adminViewReadCoordinator->readRedirectsSingleTable($sub, $tableOptions);
     }
 
     /**
@@ -370,8 +322,7 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
      * @return int
      */
     public function countRedirectsSingleTable(string $sub, array $tableOptions): int {
-        return $this->queryBuilder->countRedirectsSingleTable($sub, $tableOptions,
-            $this->liveResolver->derivedColumnsPresent());
+        return $this->adminViewReadCoordinator->countRedirectsSingleTable($sub, $tableOptions);
     }
 
     /**
@@ -424,23 +375,5 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
      */
     public function captureViewQueryFailureDiagnostics(string $sub, string $failedQuery, array $tableOptions, array $queryResult): array {
         return $this->diagnostics->captureViewQueryFailureDiagnostics($sub, $failedQuery, $tableOptions, $queryResult);
-    }
-
-    // =========================================================================
-    // Delegated: ViewSnapshotCache
-    // =========================================================================
-
-    /**
-     * @param string $sub
-     * @param array<string, mixed> $tableOptions
-     * @return array<string, mixed>
-     */
-    function warmViewTableSnapshotStage(string $sub, array $tableOptions): array {
-        return $this->snapshotCache->warmViewTableSnapshotStage($sub, $tableOptions);
-    }
-
-    /** @return array<string, int> */
-    public function getViewBuildProgressFingerprint(): array {
-        return $this->snapshotCache->getViewBuildProgressFingerprint();
     }
 }

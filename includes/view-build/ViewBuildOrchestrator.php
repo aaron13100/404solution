@@ -390,7 +390,6 @@ class ABJ_404_Solution_ViewBuildOrchestrator implements ABJ_404_Solution_ViewBui
     /** @param ABJ_404_Solution_ViewReadService $viewReadService @return void */
     public function setViewReadService(ABJ_404_Solution_ViewReadService $viewReadService): void {
         $this->viewReadService = $viewReadService;
-        $this->freshness->setViewReadService($viewReadService);
     }
 
     /** @param ABJ_404_Solution_LogsRepository $logsRepo @return void */

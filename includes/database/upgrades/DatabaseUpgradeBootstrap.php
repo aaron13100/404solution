@@ -428,9 +428,6 @@ class ABJ_404_Solution_DatabaseUpgradeBootstrap extends ABJ_404_Solution_Databas
         // Table-specific post-creation steps.
         $logsTable = $this->dbCore->doTableNameReplacements("{wp_abj404_logsv2}");
         $this->upgrades()->indexesUpgrade()->ensureLogsCompositeIndex($logsTable);
-
-        // Mark view cache table as ensured so ensureViewSnapshotTableExists() skips redundant DDL.
-        ABJ_404_Solution_ViewReadService::setViewSnapshotTableEnsured(true);
     }
 
     /**

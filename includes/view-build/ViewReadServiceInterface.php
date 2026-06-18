@@ -19,7 +19,6 @@ if (!defined('ABSPATH')) {
  * Methods are grouped by their former sub-interface for readability:
  *   - status counts + invalidation hooks
  *   - redirect-list reads (admin tables / export)
- *   - snapshot read-side adapter
  *   - schema / capacity introspection + failure diagnostics
  *   - hits-table lifecycle hook
  */
@@ -112,29 +111,6 @@ interface ABJ_404_Solution_ViewReadServiceInterface {
      * @return array<int, mixed>
      */
     public function getExtraDataToPermalinkSuggestions(array $postIDs): array;
-
-    /* ---- snapshot read-side adapter ---- */
-
-    /**
-     * @param string $sub
-     * @param array<string, mixed> $tableOptions
-     * @return bool
-     */
-    public function viewRowsSnapshotAvailable($sub, array $tableOptions): bool;
-
-    /**
-     * @param string $sub
-     * @param array<string, mixed> $tableOptions
-     * @return bool
-     */
-    public function viewTableSnapshotAvailable($sub, array $tableOptions): bool;
-
-    /**
-     * @param string $sub
-     * @param array<string, mixed> $tableOptions
-     * @return array<string, mixed>
-     */
-    public function warmViewTableSnapshotStage(string $sub, array $tableOptions): array;
 
     /* ---- schema / capacity introspection + failure diagnostics ---- */
 

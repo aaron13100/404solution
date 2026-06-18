@@ -20,8 +20,6 @@ class ABJ_404_Solution_ViewDoneFreshnessState {
     private $dbCore;
     /** @var ABJ_404_Solution_ViewBuildTableNames */
     private $tableNames;
-    /** @var ABJ_404_Solution_ViewReadService|null */
-    private $viewReadService;
     /** @var bool|null */
     private $serveableCache = null;
 
@@ -32,11 +30,6 @@ class ABJ_404_Solution_ViewDoneFreshnessState {
     public function __construct($dbCore, ABJ_404_Solution_ViewBuildTableNames $tableNames) {
         $this->dbCore = $dbCore;
         $this->tableNames = $tableNames;
-    }
-
-    /** @param ABJ_404_Solution_ViewReadService $viewReadService @return void */
-    public function setViewReadService(ABJ_404_Solution_ViewReadService $viewReadService): void {
-        $this->viewReadService = $viewReadService;
     }
 
     /** @return bool */
@@ -113,17 +106,13 @@ class ABJ_404_Solution_ViewDoneFreshnessState {
      * @return array<string, mixed>
      */
     public function formatProgress(string $status, string $text, int $of = 1): array {
-        $fingerprint = array();
-        if ($this->viewReadService instanceof ABJ_404_Solution_ViewReadService) {
-            $fingerprint = $this->viewReadService->getViewBuildProgressFingerprint();
-        }
         return array(
             'status' => $status,
             'stage' => $status === 'ready' ? 1 : 0,
             'of' => $of,
             'build_started' => 0,
             'progress_text' => $text,
-            'fingerprint' => $fingerprint,
+            'fingerprint' => array(),
         );
     }
 
