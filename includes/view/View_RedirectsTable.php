@@ -72,20 +72,25 @@ class ABJ_404_Solution_View_RedirectsTable extends ABJ_404_Solution_ViewComponen
      * captured tab WITHOUT rendering the table HTML, status counts, or
      * pagination.
      *
-     * This is the cheap path the background detect-only refresh uses
-     * (report.md Finding 3): it runs the SAME read the full render runs --
-     * getTableOptions -> getRedirectsForView -> rememberTableDataSignature -- so
-     * the signature it returns is byte-identical to the one a full render would
-     * stamp (same rows, same live resolution), but it skips the HTML build, the
-     * status-count aggregates, and the two pagination-link builds an idle poll
-     * has no use for. Both the redirects and captured tabs read through
-     * getRedirectsForView, so this one method serves both subpages.
+     * This is the renderless, READ-ONLY path the background detect-only refresh
+     * uses (report.md Finding 3, report3.md Finding 2). It is not metadata-only:
+     * it runs the SAME one-page read the full render runs -- getTableOptions ->
+     * getRedirectsForView -> rememberTableDataSignature -- so the signature it
+     * returns is byte-identical to the one a full render would stamp (same rows,
+     * same live resolution). What it skips is all the foreground work an idle
+     * poll has no use for: the HTML build, the status-count aggregates, the two
+     * pagination-link builds, AND the live denorm write-back (suppressed via the
+     * _abj404_suppress_denorm_writeback flag below) -- a change-detection probe
+     * must observe, never mutate. The full render still persists, so the stored
+     * denorm values stay fresh. Both tabs read through getRedirectsForView, so
+     * this one method serves both subpages.
      *
      * @param string $sub 'abj404_redirects' or 'abj404_captured'.
      * @return string The remembered signature for $sub.
      */
     public function computeTableDataSignature($sub) {
         $tableOptions = $this->logic->settingsUpdate()->getTableOptions($sub);
+        $tableOptions['_abj404_suppress_denorm_writeback'] = true;
         $rows = $this->viewReadService->getRedirectsForView($sub, $tableOptions);
         /** @var array<int, array<string, mixed>> $typedRows */
         $typedRows = array_values(array_filter($rows, 'is_array'));

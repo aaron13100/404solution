@@ -73,6 +73,13 @@ class ABJ_404_Solution_AdminViewReadCoordinator {
      * the single source of truth for the live single-table read (ViewReadService
      * delegates its readRedirectsSingleTable() here).
      *
+     * The derived columns are still READ (and live-resolved for display) when
+     * present, but the live write-back can be suppressed per-request via the
+     * `_abj404_suppress_denorm_writeback` tableOptions flag: a change-detection
+     * probe (the detect-only signature poll) resolves values to compute its
+     * signature but must not mutate rows. The full-render path leaves the flag
+     * unset, so it still persists fresh values (the freshness mechanism).
+     *
      * @param string $sub
      * @param array<string, mixed> $tableOptions
      * @return array<int, array<string, mixed>>
@@ -80,7 +87,8 @@ class ABJ_404_Solution_AdminViewReadCoordinator {
     public function readRedirectsSingleTable(string $sub, array $tableOptions): array {
         $derivedPresent = $this->liveResolver->derivedColumnsPresent();
         $rows = $this->queryBuilder->readRedirectsSingleTable($sub, $tableOptions, $derivedPresent);
-        return $this->liveResolver->resolveAndPersistVisibleRows($rows, $derivedPresent);
+        $persist = $derivedPresent && empty($tableOptions['_abj404_suppress_denorm_writeback']);
+        return $this->liveResolver->resolveAndPersistVisibleRows($rows, $persist);
     }
 
     /**
