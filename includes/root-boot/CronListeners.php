@@ -47,19 +47,6 @@ function abj404_updateLogsHitsTableListener() {
 }
 }
 
-if (!function_exists('abj404_rebuildViewDoneListener')) {
-/** @return void */
-function abj404_rebuildViewDoneListener() {
-    try {
-        require_once(plugin_dir_path( ABJ404_FILE ) . "includes/Loader.php");
-        $viewBuild = abj_service('view_build_orchestrator');
-        $viewBuild->rebuildViewDoneInBackground();
-    } catch (\Throwable $e) {
-        abj404_logRuntimeWarning('Cron view table rebuild failed', $e);
-    }
-}
-}
-
 if (!function_exists('abj404_sendQueuedReportListener')) {
 /**
  * Cron handler for FeedbackTransport queued sends. Loads Loader.php so the

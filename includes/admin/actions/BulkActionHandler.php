@@ -54,10 +54,6 @@ class ABJ_404_Solution_BulkActionHandler implements ABJ_404_Solution_AdminAction
             }
         }
         $message = $this->doBulkAction($action, $ids);
-        $viewBuild = $this->parent->getViewBuild();
-        $viewBuild->invalidateViewDoneAndScheduleRebuild();
-        $viewBuild->rebuildViewDoneInBackground();
-        $viewBuild->syncViewDoneWithSource();
         return $message;
     }
 

@@ -53,7 +53,6 @@ return array(
 		'sql/createRedirectConditionsTable.sql',
 		'sql/createRedirectsTable.sql',
 		'sql/createSpellingCacheTable.sql',
-		'sql/createViewBuildTable.sql',
 		'sql/createViewCacheTable.sql',
 		'sql/deleteOldLogs.sql',
 		'sql/getAdditionalPostData.sql',

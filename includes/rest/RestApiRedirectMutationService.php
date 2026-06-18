@@ -12,19 +12,14 @@ final class ABJ_404_Solution_RestApiRedirectMutationService {
     /** @var ABJ_404_Solution_RedirectsRepositoryInterface */
     private $redirectsRepo;
 
-    /** @var ABJ_404_Solution_ViewBuildOrchestratorInterface */
-    private $viewBuild;
-
     /** @var ABJ_404_Solution_RestApiResponsePresenter */
     private $presenter;
 
     /**
      * @param ABJ_404_Solution_RedirectsRepositoryInterface $redirectsRepo
-     * @param ABJ_404_Solution_ViewBuildOrchestratorInterface $viewBuild
      */
-    public function __construct($redirectsRepo, $viewBuild, ABJ_404_Solution_RestApiResponsePresenter $presenter) {
+    public function __construct($redirectsRepo, ABJ_404_Solution_RestApiResponsePresenter $presenter) {
         $this->redirectsRepo = $redirectsRepo;
-        $this->viewBuild = $viewBuild;
         $this->presenter = $presenter;
     }
 
@@ -52,8 +47,6 @@ final class ABJ_404_Solution_RestApiRedirectMutationService {
             return $this->presenter->createFailed();
         }
 
-        $this->viewBuild->invalidateViewDoneAndScheduleRebuild();
-        $this->viewBuild->syncViewDoneWithSource();
         return $this->presenter->redirectCreated((int)$insertedId, $input['from'], $input['to'], $input['code'], $status);
     }
 
@@ -78,8 +71,6 @@ final class ABJ_404_Solution_RestApiRedirectMutationService {
             return $this->presenter->updateFailed((string)$error);
         }
 
-        $this->viewBuild->invalidateViewDoneAndScheduleRebuild();
-        $this->viewBuild->syncViewDoneWithSource();
         return $this->presenter->redirectUpdated($input['id'], $input['from'], $input['to'], $input['code'], $statusType);
     }
 
@@ -94,8 +85,6 @@ final class ABJ_404_Solution_RestApiRedirectMutationService {
             return $this->presenter->trashFailed((string)$error);
         }
 
-        $this->viewBuild->invalidateViewDoneAndScheduleRebuild();
-        $this->viewBuild->syncViewDoneWithSource();
         return $this->presenter->redirectTrashed($input['id']);
     }
 
@@ -129,8 +118,6 @@ final class ABJ_404_Solution_RestApiRedirectMutationService {
             return $this->presenter->updateFailed((string)$error);
         }
 
-        $this->viewBuild->invalidateViewDoneAndScheduleRebuild();
-        $this->viewBuild->syncViewDoneWithSource();
         return $this->presenter->capturedPromoted($input['id'], $from, $input['to'], $input['code']);
     }
 

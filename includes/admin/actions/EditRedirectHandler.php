@@ -222,16 +222,6 @@ class ABJ_404_Solution_EditRedirectHandler {
         if ($id > 0) {
             $redirectsRepo->saveRedirectConditions($id, $this->sanitizeRedirectConditions());
         }
-        $viewBuild = $this->parent->getViewBuild();
-        $viewBuild->invalidateViewDoneAndScheduleRebuild();
-        // Mirror AddRedirectHandler: run the staged rebuild inline so the
-        // post-edit admin navigation (often a filterText lookup for the
-        // edited URL, or for a URL the edit just changed) reads fresh
-        // view_done data instead of the pre-edit snapshot. Without this
-        // the URL-rename case in particular leaves the new URL invisible
-        // to filtered queries until the background cron tick lands.
-        $viewBuild->rebuildViewDoneInBackground();
-        $viewBuild->syncViewDoneWithSource();
         return '';
     }
 
@@ -241,7 +231,6 @@ class ABJ_404_Solution_EditRedirectHandler {
      */
     private function updateMultipleRedirects(array $idsMultiple, array $context): string {
         $message = "";
-        $updatedAny = false;
         $redirectsRepo = $this->parent->getRedirectsRepo();
         $redirectsMultiple = $redirectsRepo->getRedirectsByIDs($idsMultiple);
         foreach ($redirectsMultiple as $redirect) {
@@ -260,15 +249,6 @@ class ABJ_404_Solution_EditRedirectHandler {
                 $message .= $this->formatUpdateRedirectError($errorCode) . "<BR/>";
                 continue;
             }
-            $updatedAny = true;
-        }
-        if ($updatedAny) {
-            $viewBuild = $this->parent->getViewBuild();
-            $viewBuild->invalidateViewDoneAndScheduleRebuild();
-            // Mirror the single-edit path: run the staged rebuild inline so
-            // the post-bulk-edit admin navigation reads fresh view_done.
-            $viewBuild->rebuildViewDoneInBackground();
-            $viewBuild->syncViewDoneWithSource();
         }
         return $message;
     }

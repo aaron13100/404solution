@@ -272,7 +272,7 @@ abj404_benchmark_mark_bootstrap_done();
 
 // Cron action registrations. The heavy-prologue cron listeners
 // (abj404_dailyMaintenanceCronJobListener, abj404_updateLogsHitsTableListener,
-// abj404_rebuildViewDoneListener, abj404_sendQueuedReportListener) and the
+// abj404_sendQueuedReportListener) and the
 // secondary cron listeners are all defined in includes/root-boot/CronListeners.php;
 // only their add_action wiring lives here so the entry-point self-heal audit and
 // the deactivate round-trip tests can discover the hook names in one place.
@@ -280,7 +280,6 @@ add_action('abj404_cleanupCronAction', 'abj404_dailyMaintenanceCronJobListener')
 add_action('abj404_updateLogsHitsTableAction', 'abj404_updateLogsHitsTableListener');
 add_action('abj404_logsv2_canonical_backfill', 'abj404_logsv2CanonicalUrlBackfillListener');
 add_action('abj404_updatePermalinkCacheAction', 'abj404_updatePermalinkCacheListener', 10, 2);
-add_action('abj404_rebuildViewDone', 'abj404_rebuildViewDoneListener');
 add_action('abj404_send_digest', 'abj404_sendDigestCronListener');
 add_action('abj404_send_queued_report', 'abj404_sendQueuedReportListener', 10, 1);
 	add_action('abj404_rebuild_ngram_cache_hook', 'abj404_rebuildNGramCacheListener', 10, 1);

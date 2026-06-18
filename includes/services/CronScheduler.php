@@ -16,7 +16,6 @@ class ABJ_404_Solution_CronScheduler {
     const HOOK_CLEANUP = 'abj404_cleanupCronAction';
     const HOOK_GSC_FETCH = 'abj404_gsc_fetch_cron';
     const HOOK_GSC_BACKGROUND_REFRESH = 'abj404_gsc_background_refresh';
-    const HOOK_REBUILD_VIEW_DONE = 'abj404_rebuildViewDone';
     const HOOK_UPDATE_PERMALINK_CACHE = 'abj404_updatePermalinkCacheAction';
     const HOOK_UPDATE_LOGS_HITS_TABLE = 'abj404_updateLogsHitsTableAction';
     const HOOK_SEND_DIGEST = 'abj404_send_digest';
@@ -198,7 +197,6 @@ class ABJ_404_Solution_CronScheduler {
             self::HOOK_CLEANUP,
             self::HOOK_GSC_FETCH,
             self::HOOK_GSC_BACKGROUND_REFRESH,
-            self::HOOK_REBUILD_VIEW_DONE,
             self::HOOK_UPDATE_PERMALINK_CACHE,
             self::HOOK_UPDATE_LOGS_HITS_TABLE,
             self::HOOK_SEND_DIGEST,

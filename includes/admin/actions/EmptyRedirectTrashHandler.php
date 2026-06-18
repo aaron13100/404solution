@@ -32,12 +32,6 @@ class ABJ_404_Solution_EmptyRedirectTrashHandler implements ABJ_404_Solution_Adm
 
     public function handle(string $action, string &$sub): string {
         $this->parent->doEmptyTrash('abj404_redirects');
-        // Surgical reconciliation of view_done with the source-table
-        // mutation. See the matching comment in
-        // EmptyCapturedTrashHandler::handle() for the full rationale.
-        $viewBuild = $this->parent->getViewBuild();
-        $viewBuild->invalidateViewDoneAndScheduleRebuild();
-        $viewBuild->syncViewDoneWithSource();
         return __('All trashed URLs have been deleted!', '404-solution');
     }
 }

@@ -93,8 +93,6 @@ class ABJ_404_Solution_WPCLIRedirectCommandService {
             return $this->error('Failed to create redirect. Check that the source URL is unique.', $warnings);
         }
 
-        abj_service('view_build_orchestrator')->invalidateViewDoneAndScheduleRebuild();
-        abj_service('view_build_orchestrator')->syncViewDoneWithSource();
         $displayDest = $isTerminalCode ? '(none ' . "\xE2\x80\x94" . " {$code})" : $to;
         return $this->success("Redirect created (ID: {$insertedId}): {$from} " . "\xE2\x86\x92" . " {$displayDest} [{$code}]", $warnings);
     }
@@ -129,8 +127,6 @@ class ABJ_404_Solution_WPCLIRedirectCommandService {
             return $this->error("No redirect with ID {$id} found, or database error: {$error}", array(), $messages);
         }
 
-        abj_service('view_build_orchestrator')->invalidateViewDoneAndScheduleRebuild();
-        abj_service('view_build_orchestrator')->syncViewDoneWithSource();
         return $this->success("Redirect ID {$id} moved to trash.", array(), $messages);
     }
 

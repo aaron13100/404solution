@@ -39,9 +39,6 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
 	/** @var ABJ_404_Solution_RedirectsRepositoryInterface */
 	private $redirectsRepo;
 
-	/** @var ABJ_404_Solution_ViewBuildOrchestratorInterface */
-	private $viewBuild;
-
 	/** @var ABJ_404_Solution_ViewReadServiceInterface */
 	private $viewRead;
 
@@ -162,7 +159,6 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
 
         if ($this->dao instanceof ABJ_404_Solution_DataAccess && get_class($this->dao) === ABJ_404_Solution_DataAccess::class) {
     	    $this->redirectsRepo = $this->dao->getRedirectsRepo();
-    	    $this->viewBuild = $this->dao->getViewBuildOrchestrator();
     	    $this->viewRead = $this->dao->getViewReadService();
     	    $this->contentRepo = $this->dao->getContentRepo();
             $this->statsRepo = $this->resolveStatsRepository($statsRepository);
@@ -220,7 +216,7 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
 
     	$this->adminActions = new ABJ_404_Solution_PluginLogicAdminActions(
     	    new ABJ_404_Solution_AdminActionsDependencies(
-    	        $this->f, $this->logger, $this->redirectsRepo, $this->viewBuild, $this->viewRead,
+    	        $this->f, $this->logger, $this->redirectsRepo, $this->viewRead,
     	        $this->contentRepo, $this->dbCore, $this->dao, $this->urlNormalization, $this
     	    )
     	);
@@ -235,7 +231,6 @@ class ABJ_404_Solution_PluginLogic implements ABJ_404_Solution_PluginLogicInterf
     private function resolveDaoAccessorsForTestMock(): void {
         $accessors = [
             'redirectsRepo' => 'getRedirectsRepo',
-            'viewBuild' => 'getViewBuildOrchestrator',
             'viewRead' => 'getViewReadService',
             'contentRepo' => 'getContentRepo',
             'dbCore' => 'getDbCore',

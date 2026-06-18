@@ -23,8 +23,8 @@ class ABJ_404_Solution_WPCLIImportExportCommandService {
     /**
      * @param ABJ_404_Solution_Clock|null $clock
      * @param ABJ_404_Solution_DataAccess|null $dataAccess Data-access aggregate root. When provided, the
-     *     import/export collaborators (redirects + content repositories, view read service, view build
-     *     orchestrator) are taken from it instead of the global service locator. Defaults to
+     *     import/export collaborators (redirects + content repositories, view read service) are taken
+     *     from it instead of the global service locator. Defaults to
      *     abj_service('data_access') so production wiring is unchanged. This injection seam exists so
      *     callers (WP-CLI, tests) can run the import/export workflow against an explicit DataAccess
      *     without mutating global container state.
@@ -81,20 +81,6 @@ class ABJ_404_Solution_WPCLIImportExportCommandService {
         /** @var ABJ_404_Solution_ViewReadService $svc */
         $svc = abj_service('view_read_service');
         return $svc;
-    }
-
-    /**
-     * Resolve the view build orchestrator: from the injected DataAccess when present, else the
-     * service-locator singleton.
-     * @return ABJ_404_Solution_ViewBuildOrchestrator
-     */
-    private function viewBuildOrchestrator() {
-        if ($this->dataAccess instanceof ABJ_404_Solution_DataAccess) {
-            return $this->dataAccess->getViewBuildOrchestrator();
-        }
-        /** @var ABJ_404_Solution_ViewBuildOrchestrator $orch */
-        $orch = abj_service('view_build_orchestrator');
-        return $orch;
     }
 
     /**
@@ -208,8 +194,6 @@ class ABJ_404_Solution_WPCLIImportExportCommandService {
             );
         }
 
-        $this->viewBuildOrchestrator()->invalidateViewDoneAndScheduleRebuild();
-        $this->viewBuildOrchestrator()->syncViewDoneWithSource();
         return $this->success(
             "Import complete. Valid={$validRows}, invalid={$invalidRows}, total={$processedRows}",
             $warnings

@@ -49,7 +49,6 @@ require_once __DIR__ . '/../core/PhpErrorLogFallback.php';
  *     $name is 'stats_repository' ? ABJ_404_Solution_StatsRepository : (
  *     $name is 'plugin_update_metadata_repository' ? ABJ_404_Solution_PluginUpdateMetadataRepository : (
  *     $name is 'view_read_service' ? ABJ_404_Solution_ViewReadService : (
- *     $name is 'view_build_orchestrator' ? ABJ_404_Solution_ViewBuildOrchestrator : (
  *     $name is 'data_access' ? ABJ_404_Solution_DataAccess : (
  *     $name is 'database_upgrades' ? ABJ_404_Solution_DatabaseUpgradesEtc : (
  *     $name is 'permalink_cache' ? ABJ_404_Solution_PermalinkCache : (
@@ -84,7 +83,7 @@ require_once __DIR__ . '/../core/PhpErrorLogFallback.php';
  *     $name is 'settings_mode_preference' ? ABJ_404_Solution_SettingsModePreference : (
  *     $name is 'not_found_response' ? ABJ_404_Solution_NotFoundResponseService :
  *     mixed
- * )))))))))))))))))))))))))))))))))))))))))))))))))))
+ * ))))))))))))))))))))))))))))))))))))))))))))))))))
  */
 function abj_service($name) {
     if ($name === 'logging' && class_exists('ABJ_404_Solution_Logging', false)) {

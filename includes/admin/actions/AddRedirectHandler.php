@@ -66,7 +66,6 @@ class ABJ_404_Solution_AddRedirectHandler implements ABJ_404_Solution_AdminActio
         $urlNormalization = $this->parent->getUrlNormalization();
         $redirectsRepo = $this->parent->getRedirectsRepo();
         $logger = $this->parent->getLogger();
-        $viewBuild = $this->parent->getViewBuild();
 
         if (!isset($_POST['manual_redirect_url']) || $_POST['manual_redirect_url'] == "") {
             $message .= __('Error: URL is a required field.', '404-solution') . "<BR/>";
@@ -117,32 +116,6 @@ class ABJ_404_Solution_AddRedirectHandler implements ABJ_404_Solution_AdminActio
             if ($autoPromoteAdd['autoPromoted']) {
                 $this->resolver->saveRegexAutoPromoteNotice((int)$newRedirectId, $originalManualURL, $manualURL, $autoPromoteAdd['urlRewritten']);
             }
-            $viewBuild->invalidateViewDoneAndScheduleRebuild();
-            // Run the staged rebuild inline so the post-add admin navigation
-            // (often a filterText lookup for the just-added URL) reads fresh
-            // view_done data instead of the pre-add snapshot. Without this
-            // the cron-scheduled rebuild can lose the race against the
-            // user's next request and the new row stays invisible to
-            // filtered queries until the background tick lands. Same shape
-            // as 119cfbda (CSV import) -- the CSV fix's sibling-search
-            // labelled this path "safe via PRG to unfiltered", but the
-            // modal-add flow stays on a filterable list and the user
-            // (and the e2e suite) immediately filters by the new URL.
-            // Safe to call inline: the build pipeline yields per-stage
-            // on time pressure and the lock is non-blocking, so a
-            // concurrent worker just returns control here without
-            // doubling work.
-            $viewBuild->rebuildViewDoneInBackground();
-            // Write-through cache reconciliation. The staged pipeline
-            // yields between stages so a single inline rebuildInBackground
-            // call rarely completes S1..S11 in the same request -- the
-            // new redirect's row stays missing from view_done until the
-            // next cron tick lands and the S11 swap publishes the buffer.
-            // syncViewDoneWithSource() closes the visibility gap surgically
-            // (INSERT IGNORE + DELETE LEFT JOIN + UPDATE INNER JOIN against
-            // the live source table). The next S11 swap atomically replaces
-            // view_done with the fully-derived buffer.
-            $viewBuild->syncViewDoneWithSource();
 
         } else {
             $message .= __('Error: Data not formatted properly.', '404-solution') . "<BR/>";

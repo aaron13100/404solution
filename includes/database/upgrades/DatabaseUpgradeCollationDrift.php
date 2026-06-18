@@ -262,19 +262,14 @@ class ABJ_404_Solution_DatabaseUpgradeCollationDrift extends ABJ_404_Solution_Da
             }
         }
 
-        // Exclude the transient staged-build tables (view_build / view_done /
-        // view_deleteme). They are runtime-managed and dropped/recreated by the
-        // staged orchestrator on every build, and are created from the raw DDL
-        // template with no explicit COLLATE clause, so they adopt the server
-        // default (often utf8mb4_general_ci) rather than the target
-        // utf8mb4_unicode_ci. Including them here makes the drift sweep ALTER a
-        // table that is about to be rebuilt anyway, and that ALTER fires
-        // invalidateViewDoneAndScheduleRebuild() below, clobbering a still-fresh
-        // snapshot's built_at on every upgrade (forcing a needless full rebuild
-        // and "Loading redirects" for the admin). Their collation has no
-        // correctness value since the next build owns their shape. This matches
-        // the existing "transient tables are out of scope" treatment in the
-        // permanent-DDL schema-diff sweep (DatabaseUpgradeTableRepair).
+        // Exclude the vestigial staged-build tables (view_build / view_done /
+        // view_deleteme). They are no longer read or maintained (the denorm
+        // columns on wp_abj404_redirects are the live source) and are slated
+        // for removal in the final denorm step. ALTERing tables that nothing
+        // reads and that are about to be dropped has no correctness value.
+        // This matches the existing "transient tables are out of scope"
+        // treatment in the permanent-DDL schema-diff sweep
+        // (DatabaseUpgradeTableRepair).
         $abjTableNames = array_values(array_filter(
             $abjTableNames,
             static function ($t) {
@@ -296,16 +291,6 @@ class ABJ_404_Solution_DatabaseUpgradeCollationDrift extends ABJ_404_Solution_Da
 
         $targetCharset = 'utf8mb4';
         $targetCollation = $this->resolveTargetUtf8mb4Collation($abjTableNames, $tableCollations);
-
-        // Track whether any ALTER actually fired. Drift correction can change
-        // the byte-level representation of redirect URLs (latin1 -> utf8mb4),
-        // which means a snapshot built against the pre-correction encoding
-        // could mis-compare against post-correction lookups. When at least
-        // one ALTER lands, we trigger view_done invalidation + rebuild once
-        // at the end (single invalidate per handler regardless of how many
-        // tables ALTERed) so the next read serves a snapshot consistent
-        // with the corrected source.
-        $anyAlterFired = false;
 
         foreach ($abjTableNames as $tableName) {
             $abjTableData = $tableCollations[$tableName] ?? null;
@@ -358,29 +343,16 @@ class ABJ_404_Solution_DatabaseUpgradeCollationDrift extends ABJ_404_Solution_Da
                     $this->logger->warn("Charset/collation retry for $tableName failed: " . $retryLastError);
                 } else {
                     $this->logger->infoMessage("Successfully changed charset/collation of $tableName after retry.");
-                    $anyAlterFired = true;
                 }
 
             } else if (empty($results['last_error'])) {
                 $this->logger->infoMessage("Successfully changed charset/collation of $tableName to {$targetCharset}/{$targetCollation}");
-                $anyAlterFired = true;
             } else {
                 $resultLastError = isset($results['last_error']) && is_scalar($results['last_error'])
                     ? (string)$results['last_error']
                     : '';
                 $this->logger->warn("Charset/collation change for $tableName failed: " . $resultLastError);
             }
-        }
-
-        if ($anyAlterFired) {
-            // Post-correction state may render or compare differently from the
-            // pre-correction view_done snapshot. Invalidate the freshness
-            // signal and schedule a background rebuild so the next admin
-            // read serves stale-but-present data while the rebuild catches
-            // up against the corrected source. Collation is metadata, not
-            // row data, so we explicitly invalidate here rather than
-            // relying on redirect-row mutation paths.
-            $this->viewBuild->invalidateViewDoneAndScheduleRebuild();
         }
     }
 

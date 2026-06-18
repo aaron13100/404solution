@@ -47,9 +47,6 @@ class ABJ_404_Solution_PluginLogicAdminActions {
     /** @var ABJ_404_Solution_RedirectsRepositoryInterface */
     private $redirectsRepo;
 
-    /** @var ABJ_404_Solution_ViewBuildOrchestratorInterface */
-    private $viewBuild;
-
     /** @var ABJ_404_Solution_ViewReadServiceInterface */
     private $viewRead;
 
@@ -119,7 +116,6 @@ class ABJ_404_Solution_PluginLogicAdminActions {
         $this->f = $deps->getFunctions();
         $this->logger = $deps->getLogger();
         $this->redirectsRepo = $deps->getRedirectsRepo();
-        $this->viewBuild = $deps->getViewBuild();
         $this->viewRead = $deps->getViewRead();
         $this->contentRepo = $deps->getContentRepo();
         $this->dbCore = $deps->getDbCore();
@@ -145,11 +141,6 @@ class ABJ_404_Solution_PluginLogicAdminActions {
     /** @return ABJ_404_Solution_Logging */
     public function getLogger() {
         return $this->logger;
-    }
-
-    /** @return ABJ_404_Solution_ViewBuildOrchestratorInterface */
-    public function getViewBuild() {
-        return $this->viewBuild;
     }
 
     /** @return ABJ_404_Solution_RedirectsRepositoryInterface */

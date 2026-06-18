@@ -318,23 +318,5 @@ class ABJ_404_Solution_PluginLogicLifecycle {
         $scheduler = abj_cron_scheduler();
         $scheduler->scheduleDailyInWindowIfMissing(ABJ_404_Solution_CronScheduler::HOOK_CLEANUP, 0, 5);
         $scheduler->scheduleDailyInWindowIfMissing(ABJ_404_Solution_CronScheduler::HOOK_GSC_FETCH, 1, 4);
-
-        self::scheduleViewDoneWarmup();
-    }
-
-    /** @return void */
-    private static function scheduleViewDoneWarmup(): void {
-        if (class_exists('ABJ_404_Solution_ServiceContainer')
-                && ABJ_404_Solution_ServiceContainer::safeHas('rebuild_health')) {
-            $rebuildHealth = ABJ_404_Solution_ServiceContainer::safeGet('rebuild_health');
-            if ($rebuildHealth instanceof ABJ_404_Solution_RebuildHealthState
-                    && !$rebuildHealth->mayStartExpensiveRebuild()) {
-                return;
-            }
-        }
-        abj_cron_scheduler()->scheduleSingleIfMissing(
-            ABJ_404_Solution_CronScheduler::HOOK_REBUILD_VIEW_DONE,
-            5
-        );
     }
 }

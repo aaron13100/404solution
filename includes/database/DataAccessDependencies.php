@@ -23,7 +23,6 @@ class ABJ_404_Solution_DataAccessDependencies {
         'logsRepo' => true,
         'statsRepo' => true,
         'viewReadService' => true,
-        'viewBuildOrchestrator' => true,
     );
 
     /** @var array<string, mixed> */
@@ -114,12 +113,6 @@ class ABJ_404_Solution_DataAccessDependencies {
     public function viewReadService(): ?ABJ_404_Solution_ViewReadService {
         $value = $this->get('viewReadService');
         return $value instanceof ABJ_404_Solution_ViewReadService ? $value : null;
-    }
-
-    /** @return ABJ_404_Solution_ViewBuildOrchestrator|null */
-    public function viewBuildOrchestrator(): ?ABJ_404_Solution_ViewBuildOrchestrator {
-        $value = $this->get('viewBuildOrchestrator');
-        return $value instanceof ABJ_404_Solution_ViewBuildOrchestrator ? $value : null;
     }
 
     /**

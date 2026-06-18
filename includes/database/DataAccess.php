@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) {
  * Exposes typed accessors so callers obtain a concrete collaborator
  * (DatabaseCore, ContentRepository, RedirectsRepository,
  * RedirectsRetentionService, LogsRepository, StatsRepository,
- * ViewReadService, ViewBuildOrchestrator) without depending on this class
+ * ViewReadService) without depending on this class
  * to dispatch unrelated work for them. Collaborators are resolved on demand
  * by the plugin classmap autoloader registered in 404-solution.php
  * (production) and tests/bootstrap.php (tests); manual require_once wiring
@@ -78,9 +78,6 @@ class ABJ_404_Solution_DataAccess {
     /** @var ABJ_404_Solution_ViewReadService The extracted view read service (Phase 6). */
     private $viewReadService;
 
-    /** @var ABJ_404_Solution_ViewBuildOrchestrator The extracted view build orchestrator (Phase 7). */
-    private $viewBuildOrchestrator;
-
     /** @var ABJ_404_Solution_Functions */
     private $f;
 
@@ -138,16 +135,6 @@ class ABJ_404_Solution_DataAccess {
                 $this->dbCore, $this->logsRepo, $this->redirectsRepo, $this->f, $this->logger
             );
         }
-
-        $viewBuildOrchestrator = $dependencies->viewBuildOrchestrator();
-        $this->viewBuildOrchestrator = $viewBuildOrchestrator !== null
-            ? $viewBuildOrchestrator
-            : new ABJ_404_Solution_ViewBuildOrchestrator(
-                $this->dbCore, $this->f, $this->logger, $this->resolveRebuildHealthState()
-            );
-        $this->viewBuildOrchestrator->setViewReadService($this->viewReadService);
-        $this->viewBuildOrchestrator->setLogsRepository($this->logsRepo);
-        $this->viewReadService->setViewBuildOrchestrator($this->viewBuildOrchestrator);
     }
 
     /**
@@ -175,7 +162,7 @@ class ABJ_404_Solution_DataAccess {
         // drops the spy and DAO sub-services capture the production singleton
         // instead, making warn() / errorMessage() invisible to the test.
         // The chain below ($contentRepo, $redirectsRepo, $logsRepo,
-        // $statsRepo, $viewReadService, $viewBuildOrchestrator, and DbCore
+        // $statsRepo, $viewReadService, and DbCore
         // including its recovery sub-services) accept untyped $logger
         // parameters, so the spy reaches all of them.
         if (is_object($logging) && method_exists($logging, 'warn') && method_exists($logging, 'errorMessage')) {
@@ -196,18 +183,6 @@ class ABJ_404_Solution_DataAccess {
             $this->dbCore = new ABJ_404_Solution_DatabaseCore($this->f, $this->logger);
         }
         return $this->dbCore;
-    }
-
-    /** @return ABJ_404_Solution_RebuildHealthState|null */
-    private function resolveRebuildHealthState() {
-        if (class_exists('ABJ_404_Solution_ServiceContainer')
-                && ABJ_404_Solution_ServiceContainer::safeHas('rebuild_health')) {
-            $service = ABJ_404_Solution_ServiceContainer::safeGet('rebuild_health');
-            if ($service instanceof ABJ_404_Solution_RebuildHealthState) {
-                return $service;
-            }
-        }
-        return null;
     }
 
     /** @return ABJ_404_Solution_ContentRepository */
@@ -275,23 +250,8 @@ class ABJ_404_Solution_DataAccess {
             $this->viewReadService = new ABJ_404_Solution_ViewReadService(
                 $this->getDbCore(), $this->getLogsRepo(), $this->getRedirectsRepo(), $this->f, $this->logger
             );
-            if ($this->viewBuildOrchestrator !== null) {
-                $this->viewReadService->setViewBuildOrchestrator($this->viewBuildOrchestrator);
-            }
         }
         return $this->viewReadService;
-    }
-
-    /** @return ABJ_404_Solution_ViewBuildOrchestrator */
-    public function getViewBuildOrchestrator(): ABJ_404_Solution_ViewBuildOrchestrator {
-        if ($this->viewBuildOrchestrator === null) {
-            $this->viewBuildOrchestrator = new ABJ_404_Solution_ViewBuildOrchestrator(
-                $this->getDbCore(), $this->f, $this->logger, $this->resolveRebuildHealthState()
-            );
-            $this->viewBuildOrchestrator->setViewReadService($this->getViewReadService());
-            $this->viewBuildOrchestrator->setLogsRepository($this->getLogsRepo());
-        }
-        return $this->viewBuildOrchestrator;
     }
 
     /**

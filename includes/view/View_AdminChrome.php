@@ -37,36 +37,9 @@ class ABJ_404_Solution_View_AdminChrome extends ABJ_404_Solution_ViewComponent {
     function echoAdminFooter(): void {
         $html = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . "/html/adminFooter.html");
         $html = $this->f->str_replace('{JAPANESE_FLASHCARDS_URL}', ABJ404_FC_URL, $html);
-        $html = $this->f->str_replace(
-            '{ABJ404_VIEW_FRESHNESS}',
-            $this->renderViewFreshnessLabel(),
-            $html
-        );
 
         $html = $this->f->doNormalReplacements($html);
         echo $html;
-    }
-
-    public function renderViewFreshnessLabel(): string {
-        if (!is_object($this->viewBuildOrchestrator) || !method_exists($this->viewBuildOrchestrator, 'getViewDoneBuiltAtTimestamp')) {
-            return 'n/a';
-        }
-        try {
-            $builtAt = (int)$this->viewBuildOrchestrator->getViewDoneBuiltAtTimestamp();
-        } catch (\Throwable $e) { // allow-silent-catch: freshness label is a footer cosmetic; DAO stub failures must never block page render
-            return 'n/a';
-        }
-        if ($builtAt <= 0) {
-            return 'n/a';
-        }
-        $age = abj_clock()->now() - $builtAt;
-        if ($age < 0) {
-            return 'n/a';
-        }
-        if ($age < 60)    { return $age . 's'; }
-        if ($age < 3600)  { return intval($age / 60) . 'm'; }
-        if ($age < 86400) { return intval($age / 3600) . 'h'; }
-        return intval($age / 86400) . 'd';
     }
 
     function outputAdminHeaderTabs(string $sub = 'list', string $message = ''): void {

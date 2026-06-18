@@ -39,7 +39,6 @@ class ABJ_404_Solution_RestApiController {
             $dao = $daoOrLogic;
             $this->logic = $logic;
             $viewRead = $dao->getViewReadService();
-            $viewBuild = $dao->getViewBuildOrchestrator();
             $redirectsRepo = $dao->getRedirectsRepo();
             $logsRepo = $dao->getLogsRepo();
             $statsRepo = $this->resolveStatsRepository($statsRepository, $dao);
@@ -52,8 +51,6 @@ class ABJ_404_Solution_RestApiController {
             $fallbackDao = abj_service('data_access');
             $viewReadService = abj_service('view_read_service');
             $viewRead = $viewReadService instanceof ABJ_404_Solution_ViewReadServiceInterface ? $viewReadService : $fallbackDao->getViewReadService();
-            $viewBuildService = abj_service('view_build_orchestrator');
-            $viewBuild = $viewBuildService instanceof ABJ_404_Solution_ViewBuildOrchestratorInterface ? $viewBuildService : $fallbackDao->getViewBuildOrchestrator();
             $redirectsService = abj_service('redirects_repository');
             $redirectsRepo = $redirectsService instanceof ABJ_404_Solution_RedirectsRepositoryInterface ? $redirectsService : $fallbackDao->getRedirectsRepo();
             $logsService = abj_service('logs_repository');
@@ -74,7 +71,6 @@ class ABJ_404_Solution_RestApiController {
         );
         $this->mutationService = new ABJ_404_Solution_RestApiRedirectMutationService(
             $redirectsRepo,
-            $viewBuild,
             $presenter
         );
     }

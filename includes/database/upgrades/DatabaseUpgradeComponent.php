@@ -21,9 +21,6 @@ abstract class ABJ_404_Solution_DatabaseUpgradeComponent {
     /** @var ABJ_404_Solution_ContentRepositoryInterface */
     protected $contentRepo;
 
-    /** @var ABJ_404_Solution_ViewBuildOrchestratorInterface */
-    protected $viewBuild;
-
     /** @var ABJ_404_Solution_ViewReadServiceInterface */
     protected $viewRead;
 

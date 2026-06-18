@@ -21,8 +21,6 @@ class ABJ_404_Solution_Ajax_TrashLink {
         $functions = $container->has('functions') ? $container->get('functions') : abj_service('functions');
         /** @var ABJ_404_Solution_RedirectsRepositoryInterface $redirectsRepository */
         $redirectsRepository = abj_service('redirects_repository');
-        /** @var ABJ_404_Solution_ViewBuildOrchestratorInterface $viewBuildOrchestrator */
-        $viewBuildOrchestrator = abj_service('view_build_orchestrator');
         /** @var ABJ_404_Solution_ViewReadServiceInterface $viewReadService */
         $viewReadService = abj_service('view_read_service');
         $abj404logic = abj_service('plugin_logic');
@@ -41,13 +39,6 @@ class ABJ_404_Solution_Ajax_TrashLink {
         
         $data = array();
         $data['resultset'] = $redirectsRepository->moveRedirectsToTrash((int)$idToTrash, (int)$trashAction);
-        if (empty($data['resultset'])) {
-            // Mark view_done as needing a rebuild so the next admin AJAX
-            // fetch lands on fresh data that reflects this trash action.
-            $viewBuildOrchestrator->invalidateViewDoneAndScheduleRebuild();
-            $viewBuildOrchestrator->rebuildViewDoneInBackground();
-            $viewBuildOrchestrator->syncViewDoneWithSource();
-        }
 
         // Return fresh tab counts so the JS can update the tab badges.
         // Bypass cache since the trash action just changed the counts.

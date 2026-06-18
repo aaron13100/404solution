@@ -55,9 +55,6 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 	/** @var ABJ_404_Solution_ContentRepositoryInterface */
 	private $contentRepo;
 
-	/** @var ABJ_404_Solution_ViewBuildOrchestratorInterface */
-	private $viewBuild;
-
 	/** @var ABJ_404_Solution_ViewReadServiceInterface */
 	private $viewRead;
 
@@ -119,7 +116,6 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 
 		$this->dbCore = $this->dao->getDbCore();
 		$this->contentRepo = $this->dao->getContentRepo();
-		$this->viewBuild = $this->dao->getViewBuildOrchestrator();
 		$this->viewRead = $this->dao->getViewReadService();
 		$this->logsRepo = $this->dao->getLogsRepo();
 
@@ -258,7 +254,6 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 			'dao' => $this->dao,
 			'dbCore' => $this->dbCore,
 			'contentRepo' => $this->contentRepo,
-			'viewBuild' => $this->viewBuild,
 			'viewRead' => $this->viewRead,
 			'logsRepo' => $this->logsRepo,
 			'logger' => $this->logger,

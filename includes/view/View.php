@@ -114,7 +114,6 @@ require_once __DIR__ . '/View_Logs.php';
  * @method mixed renderBulkRedirectFormFields(array<mixed> $recnums_multiple)
  * @method mixed renderRegexAutoPromoteNotice(array<mixed> $notice)
  * @method mixed renderSuggestionBlock(array<mixed> $suggestion)
- * @method mixed renderViewFreshnessLabel()
  * @method mixed resolveDestinationWarnings(ABJ_404_Solution_RedirectDestinationWarningContext $ctx)
  * @method mixed resolveRedirectDestLink($rowType, string $rowFinalDest)
  * @method mixed resolveRedirectDestinationInfo(array<mixed> $redirect, array<mixed> $options)
@@ -138,9 +137,6 @@ class ABJ_404_Solution_View {
 
 	/** @var ABJ_404_Solution_ViewReadServiceInterface */
 	private $viewReadService;
-
-	/** @var ABJ_404_Solution_ViewBuildOrchestratorInterface */
-	private $viewBuildOrchestrator;
 
 	/** @var ABJ_404_Solution_LogsRepositoryInterface */
 	private $logsRepository;
@@ -180,9 +176,8 @@ class ABJ_404_Solution_View {
 			&& (method_exists($dao, 'getRedirectsForView') || $dao instanceof ABJ_404_Solution_DataAccess));
 
 		if ($isLegacyDao) {
-			/** @var ABJ_404_Solution_ViewReadServiceInterface&ABJ_404_Solution_ViewBuildOrchestratorInterface&ABJ_404_Solution_RedirectsRepositoryInterface&ABJ_404_Solution_StatsRepositoryInterface $dao */
+			/** @var ABJ_404_Solution_ViewReadServiceInterface&ABJ_404_Solution_RedirectsRepositoryInterface&ABJ_404_Solution_StatsRepositoryInterface $dao */
 			$this->viewReadService = $dao;
-			$this->viewBuildOrchestrator = $dao;
 			// Resolve typed repository surfaces off the DataAccess facade so the
 			// View talks to the real LogsRepository / ContentRepository objects.
 			// Pass-throughs for these repos have been removed from DataAccess,
@@ -199,9 +194,6 @@ class ABJ_404_Solution_View {
 			/** @var ABJ_404_Solution_ViewReadServiceInterface $vrs */
 			$vrs = abj_service('view_read_service');
 			$this->viewReadService = $vrs;
-			/** @var ABJ_404_Solution_ViewBuildOrchestratorInterface $vbo */
-			$vbo = abj_service('view_build_orchestrator');
-			$this->viewBuildOrchestrator = $vbo;
 			/** @var ABJ_404_Solution_LogsRepositoryInterface $lr */
 			$lr = abj_service('logs_repository');
 			$this->logsRepository = $lr;
@@ -269,7 +261,6 @@ class ABJ_404_Solution_View {
 			$this->logic,
 			$this->logger,
 			$this->viewReadService,
-			$this->viewBuildOrchestrator,
 			$this->logsRepository,
 			$this->redirectsRepository,
 			$this->contentRepository,

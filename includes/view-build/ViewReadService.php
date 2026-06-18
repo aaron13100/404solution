@@ -125,15 +125,6 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
         );
     }
 
-    /**
-     * @param ABJ_404_Solution_ViewBuildOrchestratorInterface $viewBuildOrchestrator
-     * @return void
-     */
-    public function setViewBuildOrchestrator(ABJ_404_Solution_ViewBuildOrchestratorInterface $viewBuildOrchestrator): void {
-        $this->cacheInvalidator->setViewBuildOrchestrator($viewBuildOrchestrator);
-        $this->queryBuilder->setViewBuildOrchestrator($viewBuildOrchestrator);
-    }
-
     /** @return string */
     private function viewDoneFreshnessOptionName(): string {
         return $this->dbCore->tableNameResolver()->getLowercasePrefix() . 'abj404_view_done_built_at';

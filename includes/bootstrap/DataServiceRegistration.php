@@ -64,9 +64,6 @@ class ABJ_404_Solution_DataServiceRegistration {
         $container->set('view_read_service', function($c) use ($daoModuleDeps) {
             return self::createViewReadService($c, $daoModuleDeps);
         });
-        $container->set('view_build_orchestrator', function($c) {
-            return self::createViewBuildOrchestrator($c);
-        });
         $container->set('data_access', function($c) {
             return new ABJ_404_Solution_DataAccess(new ABJ_404_Solution_DataAccessDependencies(array(
                 'functions' => $c->get('functions'),
@@ -78,7 +75,6 @@ class ABJ_404_Solution_DataServiceRegistration {
                 'logsRepo' => $c->get('logs_repository'),
                 'statsRepo' => $c->get('stats_repository'),
                 'viewReadService' => $c->get('view_read_service'),
-                'viewBuildOrchestrator' => $c->get('view_build_orchestrator'),
             )));
         });
 
@@ -181,33 +177,5 @@ class ABJ_404_Solution_DataServiceRegistration {
         return new ABJ_404_Solution_ViewReadService(
             $d[0], $logsRepository, $redirectsRepository, $d[1], $d[2]
         );
-    }
-
-    /**
-     * @param ABJ_404_Solution_ServiceContainer $container
-     * @return ABJ_404_Solution_ViewBuildOrchestrator
-     */
-    private static function createViewBuildOrchestrator($container) {
-        /** @var ABJ_404_Solution_DatabaseCore $dbCore */
-        $dbCore = $container->get('db_core');
-        /** @var ABJ_404_Solution_Functions $functions */
-        $functions = $container->get('functions');
-        /** @var ABJ_404_Solution_Logging $logging */
-        $logging = $container->get('logging');
-        /** @var ABJ_404_Solution_ViewReadService $viewReadService */
-        $viewReadService = $container->get('view_read_service');
-        /** @var ABJ_404_Solution_LogsRepository $logsRepository */
-        $logsRepository = $container->get('logs_repository');
-        $rebuildHealth = $container->get('rebuild_health');
-        $svc = new ABJ_404_Solution_ViewBuildOrchestrator(
-            $dbCore,
-            $functions,
-            $logging,
-            $rebuildHealth instanceof ABJ_404_Solution_RebuildHealthState ? $rebuildHealth : null
-        );
-        $svc->setViewReadService($viewReadService);
-        $svc->setLogsRepository($logsRepository);
-        $viewReadService->setViewBuildOrchestrator($svc);
-        return $svc;
     }
 }

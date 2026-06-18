@@ -42,7 +42,6 @@ return array(
         'ABJ_404_Solution_LogsRepository',
         'ABJ_404_Solution_StatsRepository',
         'ABJ_404_Solution_ViewReadService',
-        'ABJ_404_Solution_ViewBuildOrchestrator',
     ),
     'ABJ_404_Solution_PluginLogic' => array(
         'ABJ_404_Solution_PluginLogicUrlNormalization',

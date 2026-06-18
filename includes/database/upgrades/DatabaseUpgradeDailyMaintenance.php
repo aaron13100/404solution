@@ -88,8 +88,6 @@ class ABJ_404_Solution_DatabaseUpgradeDailyMaintenance extends ABJ_404_Solution_
             $scanner = new ABJ_404_Solution_InternalLinkScanner();
             $scanner->runNightlyScan();
         }
-
-        $this->refreshViewDoneSnapshotInline();
     }
 
     /**
@@ -164,46 +162,4 @@ class ABJ_404_Solution_DatabaseUpgradeDailyMaintenance extends ABJ_404_Solution_
         return $stats;
     }
 
-    /**
-     * Invalidate the staged view_done snapshot and drive the staged build to
-     * completion inline so admin tables on quiet sites still see at most a
-     * 24-hour-old snapshot. Bounded by an iteration cap so a build that yields
-     * indefinitely (lease contention, transient lock failures) cannot stall
-     * the daily maintenance window.
-     *
-     * Runs after the other daily tasks so canonical_url backfills, dead-dest
-     * flagging, and auto-redirect expiry are already reflected in the freshly
-     * rebuilt view_done.
-     *
-     * @return void
-     */
-    public function refreshViewDoneSnapshotInline(): void {
-        $viewRead = abj_service('view_read_service');
-        $viewBuild = abj_service('view_build_orchestrator');
-        $rebuildHealth = null;
-        if (class_exists('ABJ_404_Solution_ServiceContainer')
-                && ABJ_404_Solution_ServiceContainer::safeHas('rebuild_health')) {
-            $service = ABJ_404_Solution_ServiceContainer::safeGet('rebuild_health');
-            $rebuildHealth = $service instanceof ABJ_404_Solution_RebuildHealthState ? $service : null;
-        }
-        if ($rebuildHealth instanceof ABJ_404_Solution_RebuildHealthState
-                && !$rebuildHealth->beginDailyMaintenanceRebuildAttempt()) {
-            return;
-        }
-        if (!is_object($viewRead)
-                || !method_exists($viewRead, 'invalidateViewSnapshotCache')
-                || !is_object($viewBuild)
-                || !method_exists($viewBuild, 'advanceViewBuildOnce')) {
-            return;
-        }
-        $viewRead->invalidateViewSnapshotCache();
-        // 11 staged sub-stages with up to a few yields each on resumable
-        // stages (S2/S4/S5); 30 ticks comfortably covers a full rebuild.
-        for ($i = 0; $i < 30; $i++) {
-            $progress = $viewBuild->advanceViewBuildOnce();
-            if (!is_array($progress)) { break; }
-            if (($progress['status'] ?? '') === 'ready') { break; }
-            if (!empty($progress['locked'])) { break; }
-        }
-    }
 }

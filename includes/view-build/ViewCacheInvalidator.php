@@ -20,9 +20,6 @@ class ABJ_404_Solution_ViewCacheInvalidator {
     /** @var string */
     private $viewDoneFreshnessOptionName;
 
-    /** @var ABJ_404_Solution_ViewBuildOrchestratorInterface|null */
-    private $viewBuildOrchestrator;
-
     /**
      * @param ABJ_404_Solution_DatabaseCore $dbCore
      * @param ABJ_404_Solution_RedirectsRepository $redirectsRepo
@@ -36,38 +33,6 @@ class ABJ_404_Solution_ViewCacheInvalidator {
         $this->dbCore = $dbCore;
         $this->redirectsRepo = $redirectsRepo;
         $this->viewDoneFreshnessOptionName = $viewDoneFreshnessOptionName;
-    }
-
-    /**
-     * @param ABJ_404_Solution_ViewBuildOrchestratorInterface $viewBuildOrchestrator
-     * @return void
-     */
-    public function setViewBuildOrchestrator(ABJ_404_Solution_ViewBuildOrchestratorInterface $viewBuildOrchestrator): void {
-        $this->viewBuildOrchestrator = $viewBuildOrchestrator;
-    }
-
-    /** @return ABJ_404_Solution_ViewBuildOrchestratorInterface|null */
-    private function viewBuildOrchestratorOrNull() {
-        if ($this->viewBuildOrchestrator instanceof ABJ_404_Solution_ViewBuildOrchestratorInterface) {
-            return $this->viewBuildOrchestrator;
-        }
-        $resolved = function_exists('abj_service_optional') ? abj_service_optional('view_build_orchestrator') : null;
-        if ($resolved instanceof ABJ_404_Solution_ViewBuildOrchestratorInterface) {
-            $this->viewBuildOrchestrator = $resolved;
-            return $resolved;
-        }
-        $this->warn('View cache invalidation skipped because ViewBuildOrchestrator is not wired.');
-        return null;
-    }
-
-    private function warn(string $message): void {
-        $logger = function_exists('abj_service_optional') ? abj_service_optional('logging') : null;
-        if (is_object($logger) && method_exists($logger, 'warn')) {
-            $logger->warn($message);
-            return;
-        }
-
-        abj404_logPhpFallback('service-resolution-fallback', $message);
     }
 
     /** @return void */
@@ -119,11 +84,6 @@ class ABJ_404_Solution_ViewCacheInvalidator {
     public function invalidateViewSnapshotCache(): void {
         if (function_exists('delete_option')) {
             delete_option($this->viewDoneFreshnessOptionName);
-        }
-        $viewBuildOrchestrator = $this->viewBuildOrchestratorOrNull();
-        if ($viewBuildOrchestrator instanceof ABJ_404_Solution_ViewBuildOrchestratorInterface) {
-            $viewBuildOrchestrator->invalidateViewDoneServeableCacheBridge();
-            $viewBuildOrchestrator->scheduleViewDoneRebuild();
         }
 
         $query = "DELETE FROM {wp_abj404_view_cache} WHERE 1=1";

@@ -32,8 +32,6 @@ final class ABJ_404_Solution_AdminActionsDependencies {
     private $logger;
     /** @var ABJ_404_Solution_RedirectsRepositoryInterface */
     private $redirectsRepo;
-    /** @var ABJ_404_Solution_ViewBuildOrchestratorInterface */
-    private $viewBuild;
     /** @var ABJ_404_Solution_ViewReadServiceInterface */
     private $viewRead;
     /** @var ABJ_404_Solution_ContentRepositoryInterface */
@@ -53,7 +51,6 @@ final class ABJ_404_Solution_AdminActionsDependencies {
      * @param ABJ_404_Solution_Functions $f
      * @param ABJ_404_Solution_Logging $logger
      * @param ABJ_404_Solution_RedirectsRepositoryInterface $redirectsRepo
-     * @param ABJ_404_Solution_ViewBuildOrchestratorInterface $viewBuild
      * @param ABJ_404_Solution_ViewReadServiceInterface $viewRead
      * @param ABJ_404_Solution_ContentRepositoryInterface $contentRepo
      * @param ABJ_404_Solution_DatabaseCoreInterface&ABJ_404_Solution_DatabaseQueryInterface $dbCore
@@ -66,7 +63,6 @@ final class ABJ_404_Solution_AdminActionsDependencies {
         $f,
         $logger,
         $redirectsRepo,
-        $viewBuild,
         $viewRead,
         $contentRepo,
         $dbCore,
@@ -78,7 +74,6 @@ final class ABJ_404_Solution_AdminActionsDependencies {
         $this->f = $f;
         $this->logger = $logger;
         $this->redirectsRepo = $redirectsRepo;
-        $this->viewBuild = $viewBuild;
         $this->viewRead = $viewRead;
         $this->contentRepo = $contentRepo;
         $this->dbCore = $dbCore;
@@ -96,9 +91,6 @@ final class ABJ_404_Solution_AdminActionsDependencies {
 
     /** @return ABJ_404_Solution_RedirectsRepositoryInterface */
     public function getRedirectsRepo() { return $this->redirectsRepo; }
-
-    /** @return ABJ_404_Solution_ViewBuildOrchestratorInterface */
-    public function getViewBuild() { return $this->viewBuild; }
 
     /** @return ABJ_404_Solution_ViewReadServiceInterface */
     public function getViewRead() { return $this->viewRead; }

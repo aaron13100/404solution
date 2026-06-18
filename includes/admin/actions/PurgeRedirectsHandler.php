@@ -46,13 +46,6 @@ class ABJ_404_Solution_PurgeRedirectsHandler implements ABJ_404_Solution_AdminAc
             ? (int)$result['rows_affected']
             : 0;
 
-        if ($status === 'redirects_purged') {
-            $viewBuild = $this->parent->getViewBuild();
-            $viewBuild->invalidateViewDoneAndScheduleRebuild();
-            $viewBuild->rebuildViewDoneInBackground();
-            $viewBuild->syncViewDoneWithSource();
-        }
-
         return $this->messageForStatus($status, $rowsAffected);
     }
 

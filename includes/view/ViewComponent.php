@@ -36,9 +36,6 @@ abstract class ABJ_404_Solution_ViewComponent {
     /** @var ABJ_404_Solution_ViewReadServiceInterface */
     protected $viewReadService;
 
-    /** @var ABJ_404_Solution_ViewBuildOrchestratorInterface */
-    protected $viewBuildOrchestrator;
-
     /** @var ABJ_404_Solution_LogsRepositoryInterface */
     protected $logsRepository;
 
@@ -108,7 +105,6 @@ abstract class ABJ_404_Solution_ViewComponent {
      * @param ABJ_404_Solution_PluginLogic $pluginLogic
      * @param ABJ_404_Solution_Logging $logging
      * @param ABJ_404_Solution_ViewReadServiceInterface $viewReadService
-     * @param ABJ_404_Solution_ViewBuildOrchestratorInterface $viewBuildOrchestrator
      * @param ABJ_404_Solution_LogsRepositoryInterface $logsRepository
      * @param ABJ_404_Solution_RedirectsRepositoryInterface $redirectsRepository
      * @param ABJ_404_Solution_ContentRepositoryInterface $contentRepository
@@ -120,7 +116,6 @@ abstract class ABJ_404_Solution_ViewComponent {
         $pluginLogic,
         $logging,
         $viewReadService,
-        $viewBuildOrchestrator,
         $logsRepository,
         $redirectsRepository,
         $contentRepository,
@@ -131,7 +126,6 @@ abstract class ABJ_404_Solution_ViewComponent {
         $this->logic = $pluginLogic;
         $this->logger = $logging;
         $this->viewReadService = $viewReadService;
-        $this->viewBuildOrchestrator = $viewBuildOrchestrator;
         $this->logsRepository = $logsRepository;
         $this->redirectsRepository = $redirectsRepository;
         $this->contentRepository = $contentRepository;
