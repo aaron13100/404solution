@@ -56,8 +56,12 @@ class ABJ_404_Solution_DatabaseUpgradeRedirectsDenormBackfill extends ABJ_404_So
     const SCHEDULE_SKIPPED_LATCHED = 'skipped-latched';
     const SCHEDULE_SKIPPED_NO_TABLE = 'skipped-no-table';
     const SCHEDULE_SKIPPED_NO_BACKLOG = 'skipped-no-backlog';
-    const SCHEDULE_VIA_CRON = 'scheduled-cron';
-    const SCHEDULE_VIA_SHUTDOWN = 'scheduled-shutdown';
+    // Arming outcomes mirror the centralized CronScheduler deferral vocabulary so
+    // a DISABLE_WP_CRON / refused-cron fallback to shutdown is observable here too.
+    const SCHEDULE_VIA_CRON = ABJ_404_Solution_CronScheduler::DEFER_VIA_CRON;
+    const SCHEDULE_VIA_SHUTDOWN = ABJ_404_Solution_CronScheduler::DEFER_VIA_SHUTDOWN;
+    const SCHEDULE_VIA_SHUTDOWN_CRON_UNAVAILABLE = ABJ_404_Solution_CronScheduler::DEFER_VIA_SHUTDOWN_CRON_UNAVAILABLE;
+    const SCHEDULE_VIA_SHUTDOWN_CRON_REFUSED = ABJ_404_Solution_CronScheduler::DEFER_VIA_SHUTDOWN_CRON_REFUSED;
 
     /**
      * Resolve the four derived columns for any redirect rows still carrying the
@@ -435,20 +439,17 @@ class ABJ_404_Solution_DatabaseUpgradeRedirectsDenormBackfill extends ABJ_404_So
         }
 
         ABJ_404_Solution_DatabaseUpgradeRuntimeState::setRedirectsSortKeyBackfillScheduled(true);
-        if ($this->shouldScheduleSortKeyBackfillViaCron()) {
-            abj_cron_scheduler()->scheduleSingleIfMissing(
-                ABJ_404_Solution_CronScheduler::HOOK_REDIRECTS_SORT_KEY_BACKFILL,
-                5
-            );
-            return self::SCHEDULE_VIA_CRON;
-        }
-        if (function_exists('add_action')) {
-            add_action('shutdown', function (): void {
+        // Centralized cron-or-shutdown arming: degrades to a shutdown drain when
+        // WP-Cron is disabled or refuses the event, so the narrow sort keys still
+        // converge within seconds of the first visit on weak hosting.
+        return abj_cron_scheduler()->scheduleSingleOrShutdown(
+            ABJ_404_Solution_CronScheduler::HOOK_REDIRECTS_SORT_KEY_BACKFILL,
+            function (): void {
                 $this->backfillRedirectsDestSortKey();
                 $this->backfillRedirectsUrlSortKey();
-            });
-        }
-        return self::SCHEDULE_VIA_SHUTDOWN;
+            },
+            $this->shouldScheduleSortKeyBackfillViaCron()
+        );
     }
 
     /**

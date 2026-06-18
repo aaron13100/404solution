@@ -303,17 +303,14 @@ class ABJ_404_Solution_DatabaseUpgradeCanonicalUrlBackfill extends ABJ_404_Solut
         }
 
         $this->setLogsv2CanonicalBackfillScheduled(true);
-        if ($this->shouldScheduleLogsv2CanonicalBackfillViaCron()) {
-            abj_cron_scheduler()->scheduleSingle(
-                ABJ_404_Solution_CronScheduler::HOOK_LOGSV2_CANONICAL_BACKFILL,
-                5
-            );
-            return;
-        }
-
-        if (function_exists('add_action')) {
-            add_action('shutdown', function (): void { $this->backfillLogsv2CanonicalUrl(); });
-        }
+        // Centralized cron-or-shutdown arming with a DISABLE_WP_CRON / refused-cron
+        // fallback to shutdown, so the canonical-url backlog converges within
+        // seconds of the first visit even on weak hosting (issues 2/3).
+        abj_cron_scheduler()->scheduleSingleOrShutdown(
+            ABJ_404_Solution_CronScheduler::HOOK_LOGSV2_CANONICAL_BACKFILL,
+            function (): void { $this->backfillLogsv2CanonicalUrl(); },
+            $this->shouldScheduleLogsv2CanonicalBackfillViaCron()
+        );
     }
 
     /** @return bool */
