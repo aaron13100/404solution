@@ -130,6 +130,7 @@ class ABJ_404_Solution_RedirectsDenormChunkResolver {
         // queryAndGetResults would log a benign "table missing" error on a
         // stripped install before its create-tables flow has run.
         // DAO-bypass-approved: SHOW TABLES schema existence probe.
+        // @utf8-audit: opt-out - $logsHitsTable is an internally resolved plugin table name (doTableNameReplacements); system-controlled, cannot contain invalid UTF-8.
         $found = $wpdb->get_var("SHOW TABLES LIKE '" . esc_sql($logsHitsTable) . "'");
         if ($found !== $logsHitsTable) {
             return null;

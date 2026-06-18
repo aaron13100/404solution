@@ -113,7 +113,7 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
             $dbCore, $redirectsRepo, $this->viewDoneFreshnessOptionName()
         );
         $this->queryBuilder = new ABJ_404_Solution_ViewQueryBuilder($dbCore);
-        $this->liveResolver = new ABJ_404_Solution_RedirectsViewLiveResolver($dbCore);
+        $this->liveResolver = new ABJ_404_Solution_RedirectsViewLiveResolver($dbCore, $this->f);
 
         $this->statusCounts = new ABJ_404_Solution_StatusCountsRepository($dbCore, $logsRepo, $this->queryBuilder);
         $this->redirectsBulkReader = new ABJ_404_Solution_RedirectsBulkReader($dbCore, $this->queryBuilder, $this->f);

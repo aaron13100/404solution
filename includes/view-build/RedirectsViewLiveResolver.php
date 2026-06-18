@@ -34,6 +34,10 @@ class ABJ_404_Solution_RedirectsViewLiveResolver {
     /** @var ABJ_404_Solution_DatabaseCore */
     private $dbCore;
 
+    /** @var ABJ_404_Solution_Functions Used to strip invalid UTF-8 from
+     *  capture-derived URLs before they reach esc_sql() (Pattern 10). */
+    private $f;
+
     /** @var string|null Memoized blogname for HOME-typed rows (per request). */
     private $blognameCache = null;
 
@@ -53,9 +57,12 @@ class ABJ_404_Solution_RedirectsViewLiveResolver {
      * centralized DAO error handler), so no logger dependency is held here.
      *
      * @param ABJ_404_Solution_DatabaseCore $dbCore
+     * @param ABJ_404_Solution_Functions|null $f UTF-8 sanitizer source; falls
+     *   back to the Functions singleton when not injected (e.g. older callers).
      */
-    public function __construct(ABJ_404_Solution_DatabaseCore $dbCore) {
+    public function __construct(ABJ_404_Solution_DatabaseCore $dbCore, $f = null) {
         $this->dbCore = $dbCore;
+        $this->f = $f !== null ? $f : ABJ_404_Solution_Functions::getInstance();
     }
 
     /**
@@ -349,7 +356,10 @@ class ABJ_404_Solution_RedirectsViewLiveResolver {
         }
         $quoted = array();
         foreach (array_keys($canonicals) as $canonical) {
-            $quoted[] = "'" . esc_sql($canonical) . "'";
+            // Capture-derived URLs can carry invalid UTF-8 bytes; strip them
+            // before esc_sql() so the IN() prefilter cannot break the query
+            // (Pattern 10). The exact match below still uses the stored value.
+            $quoted[] = "'" . esc_sql($this->f->sanitizeInvalidUTF8($canonical)) . "'";
         }
         $query = "SELECT requested_url, SUM(logshits) AS logshits, MAX(logsid) AS logsid,"
             . " MAX(last_used) AS last_used FROM {wp_abj404_logs_hits}"
@@ -649,6 +659,7 @@ class ABJ_404_Solution_RedirectsViewLiveResolver {
         // queryAndGetResults would log a benign "table missing" error on a
         // stripped install.
         // DAO-bypass-approved: SHOW TABLES schema existence probe.
+        // @utf8-audit: opt-out - $logsTable is an internally resolved plugin table name (doTableNameReplacements); system-controlled, cannot contain invalid UTF-8.
         $found = $wpdb->get_var("SHOW TABLES LIKE '" . esc_sql($logsTable) . "'");
         return $found === $logsTable;
     }

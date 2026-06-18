@@ -35,6 +35,15 @@ class ABJ_404_Solution_RedirectsDenormContentHooks {
     private $maintenance;
 
     /**
+     * Post IDs whose denorm recompute already ran in the current request.
+     * WordPress fires save_post 2-4 times per save; this prevents the
+     * final_dest reverse lookup + denorm UPDATE from running that many times
+     * for one save (canonical d1a315e6 SlugChangeHandler shape).
+     * @var array<int, bool>
+     */
+    private static $processedPosts = [];
+
+    /**
      * @param ABJ_404_Solution_RedirectsDenormMaintenanceService|null $maintenance
      */
     public function __construct($maintenance = null) {
@@ -85,6 +94,11 @@ class ABJ_404_Solution_RedirectsDenormContentHooks {
         if (function_exists('wp_is_post_autosave') && wp_is_post_autosave($id)) {
             return;
         }
+        // Request-level dedup: save_post fires 2-4 times per save.
+        if (isset(self::$processedPosts[$id])) {
+            return;
+        }
+        self::$processedPosts[$id] = true;
         $this->maintenance()->recomputeForChangedPost($id);
     }
 
