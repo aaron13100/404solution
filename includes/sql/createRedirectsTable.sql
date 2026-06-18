@@ -13,8 +13,8 @@ CREATE TABLE IF NOT EXISTS {wp_abj404_redirects} (
     `start_ts` bigint(20) DEFAULT NULL COMMENT 'Unix timestamp when redirect becomes active (NULL = always)',
     `end_ts` bigint(20) DEFAULT NULL COMMENT 'Unix timestamp when redirect expires (NULL = never)',
     `canonical_url` varchar(2048) DEFAULT NULL COMMENT 'Cached CONCAT(/, TRIM(BOTH / FROM url)) so the captured-page JOIN to logs_hits.requested_url is index-friendly. NULL until backfilled by buildRedirectsCanonicalUrlChunk().',
-    `logshits` bigint(20) NOT NULL DEFAULT 0 COMMENT 'Denormalized rolled-up 404 hit count for this redirect URL (COUNT of matching logsv2 rows by canonical_url). Maintained by real-time write-back + nightly reconcile; backfilled by backfillRedirectsDenormColumns(). 0 until backfilled.',
-    `last_used` bigint(20) DEFAULT NULL COMMENT 'Denormalized MAX(logsv2.timestamp) for this redirect URL (last hit). NULL until backfilled.',
+    `logshits` bigint(20) NOT NULL DEFAULT 0 COMMENT 'Denormalized rolled-up 404 hit count for this redirect URL, copied from the wp_abj404_logs_hits rollup (the materialized COUNT-by-canonical-requested_url aggregate of logsv2) keyed on canonical_url. Maintained by real-time write-back + nightly reconcile; backfilled by backfillRedirectsDenormColumns(). 0 until backfilled. Do NOT re-aggregate raw logsv2 here: read logs_hits (report.md Finding 2).',
+    `last_used` bigint(20) DEFAULT NULL COMMENT 'Denormalized last-hit timestamp for this redirect URL, copied from the wp_abj404_logs_hits rollup (its MAX(timestamp)-by-canonical-requested_url aggregate) keyed on canonical_url. NULL until backfilled.',
     `dest_for_view` varchar(2048) DEFAULT NULL COMMENT 'Denormalized resolved destination title/label for admin display + filterText search. NULL is the not-yet-backfilled sentinel; a backfilled row is always non-NULL (empty string at minimum).',
     `published_status` tinyint(4) DEFAULT NULL COMMENT 'Denormalized resolved publish state of the destination (1 = published/valid, 0 = broken/unpublished). NULL until backfilled.',
     PRIMARY KEY  (`id`),
@@ -29,6 +29,8 @@ CREATE TABLE IF NOT EXISTS {wp_abj404_redirects} (
     KEY `idx_status_disabled` (`status`, `disabled`),
     KEY `idx_canonical_url` (`canonical_url`(190)) USING BTREE,
     KEY `idx_disabled_logshits_id` (`disabled`, `logshits`, `id`),
-    KEY `idx_disabled_last_used_id` (`disabled`, `last_used`, `id`)
+    KEY `idx_disabled_last_used_id` (`disabled`, `last_used`, `id`),
+    KEY `idx_status_disabled_logshits_id` (`status`, `disabled`, `logshits`, `id`),
+    KEY `idx_status_disabled_last_used_id` (`status`, `disabled`, `last_used`, `id`)
 ) COMMENT='404 Solution Plugin Redirects Table' AUTO_INCREMENT=1
 
