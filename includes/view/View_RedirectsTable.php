@@ -169,7 +169,7 @@ class ABJ_404_Solution_View_RedirectsTable extends ABJ_404_Solution_ViewComponen
 
     private function columns(): ABJ_404_Solution_RedirectsTableColumns {
         if (!($this->redirectsTableColumns instanceof ABJ_404_Solution_RedirectsTableColumns)) {
-            $this->redirectsTableColumns = new ABJ_404_Solution_RedirectsTableColumns($this->shared);
+            $this->redirectsTableColumns = new ABJ_404_Solution_RedirectsTableColumns();
         }
         return $this->redirectsTableColumns;
     }

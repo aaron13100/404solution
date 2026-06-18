@@ -271,13 +271,12 @@ class ABJ_404_Solution_View_CapturedURLsTable extends ABJ_404_Solution_ViewCompo
 
     /** @param array<string, mixed> $tableOptions */
     private function buildCapturedHeaderCells(array $tableOptions): string {
-        $hitsTooltip = $this->shared->getHitsColumnTooltip($tableOptions);
         $columns = array(
             array('title' => __('URL', '404-solution'), 'orderby' => 'url'),
             array('title' => __('Status', '404-solution'), 'orderby' => 'status'),
-            array('title' => __('Hits', '404-solution'), 'orderby' => 'logshits', 'title_attr_html' => $hitsTooltip),
+            array('title' => __('Hits', '404-solution'), 'orderby' => 'logshits'),
             array('title' => __('Created', '404-solution'), 'orderby' => 'timestamp', 'class' => 'hide-on-tablet'),
-            array('title' => __('Last Used', '404-solution'), 'orderby' => 'last_used', 'title_attr_html' => $hitsTooltip),
+            array('title' => __('Last Used', '404-solution'), 'orderby' => 'last_used'),
         );
 
         $headerCells = '';

@@ -9,20 +9,11 @@ if (!defined('ABSPATH')) {
  */
 class ABJ_404_Solution_RedirectsTableColumns {
 
-    /** @var ABJ_404_Solution_View_Shared */
-    private $shared;
-
-    public function __construct(ABJ_404_Solution_View_Shared $shared) {
-        $this->shared = $shared;
-    }
-
     /**
      * @param array<string, mixed> $tableOptions
      * @return array<string, array<string, string>>
      */
     public function build(array $tableOptions): array {
-        $hitsTooltip = $this->shared->getHitsColumnTooltip($tableOptions);
-
         return array(
             'url' => array(
                 'title' => __('URL', '404-solution'),
@@ -59,7 +50,6 @@ class ABJ_404_Solution_RedirectsTableColumns {
                 'title' => __('Hits', '404-solution'),
                 'orderby' => 'logshits',
                 'width' => '5%',
-                'title_attr_html' => $hitsTooltip,
             ),
             'timestamp' => array(
                 'title' => __('Created', '404-solution'),
@@ -71,7 +61,6 @@ class ABJ_404_Solution_RedirectsTableColumns {
                 'title' => __('Last Used', '404-solution'),
                 'orderby' => 'last_used',
                 'width' => '10%',
-                'title_attr_html' => $hitsTooltip,
             ),
         );
     }

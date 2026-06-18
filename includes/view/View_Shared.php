@@ -169,90 +169,6 @@ class ABJ_404_Solution_View_Shared extends ABJ_404_Solution_ViewComponent {
 	}
 
 	/**
-	 * Get the tooltip HTML for Hits/Last Used columns when those values may lag.
-	 *
-	 * We only show this for views sorted by hits/last_used because those modes may
-	 * rely on the aggregated logs-hits table. Other sorts use live per-row lookup,
-	 * so showing an aggregation timestamp there is misleading.
-	 *
-	 * @param array<string, mixed> $tableOptions Current table options.
-	 * @return string Tooltip HTML (not escaped - contains data attributes)
-	 */
-	public function getHitsColumnTooltip($tableOptions = array()) {
-		$rawOrderby = $tableOptions['orderby'] ?? '';
-		$orderby = strtolower(is_string($rawOrderby) ? $rawOrderby : '');
-		$isAggregatedMode = ($orderby === 'logshits' || $orderby === 'last_used');
-		if (!$isAggregatedMode) {
-			return '';
-		}
-
-		// Ensure the "last checked"/"refresh scheduled" tooltip state is computed for this request.
-		// This runs cheap checks and (when needed) schedules the expensive rebuild for shutdown.
-		if (is_object($this->viewReadService) && method_exists($this->viewReadService, 'maybeUpdateRedirectsForViewHitsTable')) {
-			$this->viewReadService->maybeUpdateRedirectsForViewHitsTable();
-		}
-
-		$timestamp = $this->logsRepository->getLogsHitsTableLastUpdated();
-		$lines = array();
-		$timeAgoTemplate = $this->readTemplate('viewSharedTimeAgo.html');
-		if ($timestamp !== null) {
-			$lastUpdated = $this->logsRepository->getLogsHitsTableLastUpdatedHuman();
-			$timeHtml = $this->f->str_replace(
-				array('{timestamp}', '{label}'),
-				array(esc_attr((string)$timestamp), esc_html($lastUpdated)),
-				$timeAgoTemplate
-			);
-			$lines[] = sprintf(__('Last updated: %s', '404-solution'), $timeHtml);
-		}
-
-		$checkedAt = $this->logsRepository->getLogsHitsTableLastCheckedAt();
-		if ($checkedAt !== null) {
-			$checkedHtml = $this->f->str_replace(
-				array('{timestamp}', '{label}'),
-				array(esc_attr((string)$checkedAt), esc_html($this->formatTimeAgo($checkedAt))),
-				$timeAgoTemplate
-			);
-			$lines[] = sprintf(__('Last checked: %s', '404-solution'), $checkedHtml);
-		}
-
-			$decision = $this->logsRepository->getLogsHitsTableLastDecision();
-			// Treat "cooldown" as "scheduled recently" from a user perspective.
-			if ($decision === 'scheduled' || $decision === 'cooldown') {
-				$lines[] = __('Refresh scheduled', '404-solution');
-			} else if ($decision === 'running') {
-				$lines[] = __('Refresh running', '404-solution');
-			} else if ($decision === 'paused') {
-				$lines[] = __('Refresh paused', '404-solution');
-			}
-
-		return implode('<br>', array_filter($lines));
-	}
-
-	/**
-	 * Small, dependency-free time-ago formatter for tooltip use.
-	 * (We don't want to rely on WP human_time_diff() in unit tests.)
-	 *
-	 * @param int $timestamp
-	 * @return string
-	 */
-	public function formatTimeAgo($timestamp) {
-		$diff = abj_clock()->now() - absint($timestamp);
-		if ($diff < 60) {
-			return __('Just now', '404-solution');
-		}
-		if ($diff < 3600) {
-			$minutes = (int)floor($diff / 60);
-			return sprintf(_n('%d minute ago', '%d minutes ago', $minutes, '404-solution'), $minutes);
-		}
-		if ($diff < 86400) {
-			$hours = (int)floor($diff / 3600);
-			return sprintf(_n('%d hour ago', '%d hours ago', $hours, '404-solution'), $hours);
-		}
-		$days = (int)floor($diff / 86400);
-		return sprintf(_n('%d day ago', '%d days ago', $days, '404-solution'), $days);
-	}
-
-	/**
 	 * Build shared sort state for table headers.
 	 *
 	 * @param array<string, mixed> $tableOptions
@@ -385,14 +301,6 @@ class ABJ_404_Solution_View_Shared extends ABJ_404_Solution_ViewComponent {
 		$result['ajaxTrashLink'] .= "&trash=1";
 		$result['trashtitle'] = __('Trash', '404-solution');
 		return $result;
-	}
-
-	/**
-	 * @param string $name
-	 * @return string
-	 */
-	private function readTemplate(string $name): string {
-		return ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . '/html/' . $name, false);
 	}
 
 	/**
