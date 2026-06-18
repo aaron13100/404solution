@@ -180,6 +180,13 @@ class ABJ_404_Solution_SpellLevenshteinEngine {
 				$the_permalink . ', $wasntReadyCount: ' . $wasntReadyCount;
 
 			if ($urlPath === null) {
+				// Skip this candidate (no parseable path) AND advance to the next
+				// row, exactly like the $id === null skip above. A bare `continue`
+				// here would re-evaluate the SAME row forever -- a per-request
+				// infinite loop that hangs the 404 response until PHP's
+				// max_execution_time kills it (the worst "not fast" outcome on a
+				// large/diverse site where some candidate has an unparseable URL).
+				$row = array_pop($currentBatch);
 				continue;
 			}
 			if (is_string($the_permalink)) {
