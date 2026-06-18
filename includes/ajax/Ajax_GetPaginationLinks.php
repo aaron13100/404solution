@@ -77,6 +77,28 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
             /** @var ABJ_404_Solution_View $view */
             $view = ABJ_404_Solution_Ajax_AdminEndpointSupport::resolveViewInstance($abj404view);
 
+            // Background detect-only refresh: a "did anything change?" poll the
+            // client fires every ~30s while the admin is idle. It must NOT do the
+            // foreground work -- table HTML render, status-count aggregates, and
+            // the two pagination-link builds. For the redirects / captured tabs
+            // we compute ONLY the table-data signature off the same one-page read
+            // a full render uses (so the signature still matches), and return
+            // {tableSignature, hasUpdate}. The logs tab keeps the full path
+            // (bounded, append-only; not the constant-write pressure case).
+            if ($detectOnly && self::detectOnlyCanComputeCheapSignature($subpage)
+                    && is_object($view) && method_exists($view, 'computeTableDataSignature')) {
+                ABJ_404_Solution_AjaxStageDiagnostics::setStage($context, 'detectOnlySignature');
+                $tableSignature = (string)$view->computeTableDataSignature($subpage);
+                $data = array(
+                    'tableSignature' => $tableSignature,
+                    'hasUpdate' => self::hasSignatureUpdate($currentSignature, $tableSignature),
+                );
+                ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
+                ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
+                ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit($data, 200);
+                return;
+            }
+
             // The single-table denorm read (denorm Step 3b) is always
             // serveable, so the table is rendered synchronously here. No
             // view-build / cache-warm gate is consulted: an AJAX fetch never
@@ -161,6 +183,16 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
             return (string)$view->getCurrentTableDataSignature($subpage);
         }
         return '';
+    }
+
+    /**
+     * Whether a subpage supports the cheap detect-only signature path. The
+     * redirects and captured tabs both read through getRedirectsForView, so the
+     * View can compute their signature from a single one-page read. The logs tab
+     * reads a different source and keeps the full path.
+     */
+    private static function detectOnlyCanComputeCheapSignature(string $subpage): bool {
+        return $subpage === 'abj404_redirects' || $subpage === 'abj404_captured';
     }
 
     private static function hasSignatureUpdate(string $currentSignature, string $tableSignature): bool {

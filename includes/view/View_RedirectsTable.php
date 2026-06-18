@@ -68,6 +68,32 @@ class ABJ_404_Solution_View_RedirectsTable extends ABJ_404_Solution_ViewComponen
     }
 
     /**
+     * Compute (and remember) the table-data signature for the redirects or
+     * captured tab WITHOUT rendering the table HTML, status counts, or
+     * pagination.
+     *
+     * This is the cheap path the background detect-only refresh uses
+     * (report.md Finding 3): it runs the SAME read the full render runs --
+     * getTableOptions -> getRedirectsForView -> rememberTableDataSignature -- so
+     * the signature it returns is byte-identical to the one a full render would
+     * stamp (same rows, same live resolution), but it skips the HTML build, the
+     * status-count aggregates, and the two pagination-link builds an idle poll
+     * has no use for. Both the redirects and captured tabs read through
+     * getRedirectsForView, so this one method serves both subpages.
+     *
+     * @param string $sub 'abj404_redirects' or 'abj404_captured'.
+     * @return string The remembered signature for $sub.
+     */
+    public function computeTableDataSignature($sub) {
+        $tableOptions = $this->logic->settingsUpdate()->getTableOptions($sub);
+        $rows = $this->viewReadService->getRedirectsForView($sub, $tableOptions);
+        /** @var array<int, array<string, mixed>> $typedRows */
+        $typedRows = array_values(array_filter($rows, 'is_array'));
+        $this->shared->rememberTableDataSignature($sub, $typedRows);
+        return $this->shared->getCurrentTableDataSignature($sub);
+    }
+
+    /**
      * @param string $sub
      * @return string
      */

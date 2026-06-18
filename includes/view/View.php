@@ -88,6 +88,7 @@ require_once __DIR__ . '/View_Logs.php';
  * @method mixed getCapturedURLSPageTable($sub)
  * @method string getCardIcon(string $iconName)
  * @method mixed getCheckedAttr($options, $key)
+ * @method string computeTableDataSignature($sub)
  * @method string getCurrentTableDataSignature($sub)
  * @method mixed getDashboardNotificationCaptured($captured)
  * @method mixed getFallbackOptionDefaults()
