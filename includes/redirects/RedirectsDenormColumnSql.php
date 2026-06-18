@@ -128,6 +128,17 @@ class ABJ_404_Solution_RedirectsDenormColumnSql {
             " SET dest_for_view = '', published_status = 0" .
             " WHERE " . $catchAllPredicate . $idClauseBare;
 
+        // Derive the indexable Destination sort key from the dest_for_view value
+        // the statements above just set. dest_for_view is varchar(2048) (prefix-
+        // indexable only, so ORDER BY on it always filesorts); dest_sort_key is a
+        // narrow LEFT(...,191) copy that the (disabled, dest_sort_key, id) /
+        // (status, disabled, dest_sort_key, id) composites can fully order. This
+        // runs last so every row in scope already has its final dest_for_view.
+        // dest_for_view IS NOT NULL skips rows the type statements did not touch.
+        $statements[] = "UPDATE " . $redirectsTable .
+            " SET dest_sort_key = LEFT(dest_for_view, 191)" .
+            " WHERE dest_for_view IS NOT NULL" . $idClauseBare;
+
         return $statements;
     }
 

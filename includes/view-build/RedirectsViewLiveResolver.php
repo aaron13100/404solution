@@ -37,8 +37,10 @@ class ABJ_404_Solution_RedirectsViewLiveResolver {
     /** @var string|null Memoized blogname for HOME-typed rows (per request). */
     private $blognameCache = null;
 
-    /** @var bool|null Memoized "are the four denorm columns present on redirects". */
-    private $derivedColumnsPresentCache = null;
+    /** @var array<string,bool>|null Memoized lowercased column-name set of the
+     *  redirects table (one SHOW COLUMNS per request), consulted by both
+     *  derivedColumnsPresent() and destSortKeyColumnPresent(). */
+    private $redirectsColumnSetCache = null;
 
     /**
      * Error logging is intentionally delegated to queryAndGetResults (the
@@ -86,28 +88,53 @@ class ABJ_404_Solution_RedirectsViewLiveResolver {
      * @return bool
      */
     public function derivedColumnsPresent(): bool {
-        if ($this->derivedColumnsPresentCache !== null) {
-            return $this->derivedColumnsPresentCache;
+        return isset($this->redirectsColumnSet()['dest_for_view']);
+    }
+
+    /**
+     * Whether the indexable Destination sort key column (dest_sort_key, added
+     * after the Step 3a four) exists on wp_abj404_redirects. The admin read uses
+     * it for an index-ordered Destination sort; when it is absent (an install
+     * mid-upgrade, before the column-add ALTER ran) the read falls back to the
+     * CASE-on-dest_for_view filesort. Memoized via the shared column-set probe.
+     *
+     * @return bool
+     */
+    public function destSortKeyColumnPresent(): bool {
+        return isset($this->redirectsColumnSet()['dest_sort_key']);
+    }
+
+    /**
+     * The lowercased column-name set of wp_abj404_redirects, fetched once per
+     * request via a single SHOW COLUMNS. Schema-drift tolerance (defensive
+     * philosophy #1/#7): a site whose column-add ALTER never completed is served
+     * off whatever columns it does have. An empty/failed probe yields an empty
+     * set, so every presence check degrades to false (the safe fallback).
+     *
+     * @return array<string,bool>
+     */
+    private function redirectsColumnSet(): array {
+        if ($this->redirectsColumnSetCache !== null) {
+            return $this->redirectsColumnSetCache;
         }
         $table = $this->dbCore->doTableNameReplacements('{wp_abj404_redirects}');
         $result = $this->dbCore->queryAndGetResults("SHOW COLUMNS FROM " . $table,
             array('log_errors' => false));
         $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
-        $present = false;
+        $set = array();
         foreach ($rows as $row) {
             if (!is_array($row)) {
                 continue;
             }
             foreach ($row as $key => $value) {
-                if (strtolower((string)$key) === 'field' && is_scalar($value)
-                        && strtolower((string)$value) === 'dest_for_view') {
-                    $present = true;
-                    break 2;
+                if (strtolower((string)$key) === 'field' && is_scalar($value)) {
+                    $set[strtolower((string)$value)] = true;
+                    break;
                 }
             }
         }
-        $this->derivedColumnsPresentCache = $present;
-        return $present;
+        $this->redirectsColumnSetCache = $set;
+        return $set;
     }
 
     /**
@@ -329,7 +356,7 @@ class ABJ_404_Solution_RedirectsViewLiveResolver {
      *
      * @param array<string, mixed> $original The row as read off the table.
      * @param array<string, mixed> $resolved The row after live resolution.
-     * @return array{id:int, dest_for_view:string, published_status:int, logshits:int, last_used:int|null}|null
+     * @return array{id:int, dest_for_view:string, dest_sort_key:string, published_status:int, logshits:int, last_used:int|null}|null
      */
     private function persistValuesIfChanged(array $original, array $resolved): ?array {
         $id = $this->intFieldOrNull($resolved, 'id');
@@ -354,9 +381,19 @@ class ABJ_404_Solution_RedirectsViewLiveResolver {
             return null;
         }
 
+        // dest_sort_key is a pure function of dest_for_view (the indexable narrow
+        // copy LEFT(dest_for_view, 191)); it rides along on the dest_for_view
+        // change rather than being its own change trigger. The bulk backfill is
+        // the populator for the pre-backfill NULL window. mb_substr counts
+        // characters, matching the SQL LEFT(...,191).
+        $destSortKey = function_exists('mb_substr')
+            ? (string) mb_substr($dest, 0, 191)
+            : (string) substr($dest, 0, 191);
+
         return array(
             'id' => $id,
             'dest_for_view' => $dest,
+            'dest_sort_key' => $destSortKey,
             'published_status' => $published,
             'logshits' => $logshits,
             'last_used' => $lastUsed,
@@ -368,7 +405,7 @@ class ABJ_404_Solution_RedirectsViewLiveResolver {
      * Skipped entirely when a write block (read-only replica / disk full) is
      * active so a degraded host still renders without an errored write.
      *
-     * @param array<int, array{id:int, dest_for_view:string, published_status:int, logshits:int, last_used:int|null}> $writeBacks
+     * @param array<int, array{id:int, dest_for_view:string, dest_sort_key:string, published_status:int, logshits:int, last_used:int|null}> $writeBacks
      * @return void
      */
     private function persistResolvedColumns(array $writeBacks): void {
@@ -376,8 +413,14 @@ class ABJ_404_Solution_RedirectsViewLiveResolver {
             return;
         }
 
+        // dest_sort_key is written only when the column exists (added after the
+        // Step 3a four); on an install still missing it, skip that one assignment
+        // so the write-back of the other columns still succeeds (schema drift).
+        $writeDestSortKey = $this->destSortKeyColumnPresent();
+
         $ids = array();
         $destCases = '';
+        $destSortCases = '';
         $publishedCases = '';
         $logshitsCases = '';
         $lastUsedCases = '';
@@ -385,6 +428,7 @@ class ABJ_404_Solution_RedirectsViewLiveResolver {
             $id = (int)$wb['id'];
             $ids[] = $id;
             $destCases .= ' WHEN ' . $id . " THEN '" . esc_sql($wb['dest_for_view']) . "'";
+            $destSortCases .= ' WHEN ' . $id . " THEN '" . esc_sql($wb['dest_sort_key']) . "'";
             $publishedCases .= ' WHEN ' . $id . ' THEN ' . (int)$wb['published_status'];
             $logshitsCases .= ' WHEN ' . $id . ' THEN ' . (int)$wb['logshits'];
             $lastUsedCases .= ' WHEN ' . $id . ' THEN '
@@ -394,6 +438,7 @@ class ABJ_404_Solution_RedirectsViewLiveResolver {
         $idList = implode(',', $ids);
         $query = "UPDATE {wp_abj404_redirects} SET"
             . " dest_for_view = CASE id" . $destCases . " END,"
+            . ($writeDestSortKey ? " dest_sort_key = CASE id" . $destSortCases . " END," : "")
             . " published_status = CASE id" . $publishedCases . " END,"
             . " logshits = CASE id" . $logshitsCases . " END,"
             . " last_used = CASE id" . $lastUsedCases . " END"

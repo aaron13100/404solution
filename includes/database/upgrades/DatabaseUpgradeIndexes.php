@@ -319,6 +319,7 @@ class ABJ_404_Solution_DatabaseUpgradeIndexes extends ABJ_404_Solution_DatabaseU
 	        'logshits'         => '`logshits` BIGINT(20) NOT NULL DEFAULT 0',
 	        'last_used'        => '`last_used` BIGINT(20) DEFAULT NULL',
 	        'dest_for_view'    => '`dest_for_view` VARCHAR(2048) DEFAULT NULL',
+	        'dest_sort_key'    => '`dest_sort_key` VARCHAR(191) DEFAULT NULL',
 	        'published_status' => '`published_status` TINYINT(4) DEFAULT NULL',
 	    );
 

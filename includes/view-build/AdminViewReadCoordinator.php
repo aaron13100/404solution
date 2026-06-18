@@ -86,6 +86,11 @@ class ABJ_404_Solution_AdminViewReadCoordinator {
      */
     public function readRedirectsSingleTable(string $sub, array $tableOptions): array {
         $derivedPresent = $this->liveResolver->derivedColumnsPresent();
+        // Tell the query builder whether the indexable Destination sort key exists
+        // so a Destination sort can ORDER BY dest_sort_key (index-served) instead
+        // of the CASE-on-dest_for_view filesort fallback. Same _abj404_* option
+        // convention as the timeout / suppress-writeback flags.
+        $tableOptions['_abj404_dest_sort_key_present'] = $this->liveResolver->destSortKeyColumnPresent();
         $rows = $this->queryBuilder->readRedirectsSingleTable($sub, $tableOptions, $derivedPresent);
         $persist = $derivedPresent && empty($tableOptions['_abj404_suppress_denorm_writeback']);
         return $this->liveResolver->resolveAndPersistVisibleRows($rows, $persist);

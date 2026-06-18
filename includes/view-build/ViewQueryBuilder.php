@@ -263,6 +263,19 @@ class ABJ_404_Solution_ViewQueryBuilder {
         if (in_array($rawOrderBy, $derivedSorts, true) && !$derivedPresent) {
             return 'url';
         }
+        // Destination sort: ORDER BY the narrow indexable dest_sort_key
+        // (uniform direction -> (disabled, dest_sort_key, id) /
+        // (status, disabled, dest_sort_key, id) serve it without a filesort) when
+        // the column exists. Blank/NULL destinations then sort naturally (first
+        // ascending, last descending) rather than the old always-last CASE, which
+        // was the very thing that forced a filesort (computed expression over a
+        // varchar(2048) prefix-only column). When the column is absent (an install
+        // mid-upgrade), fall back to the CASE-on-dest_for_view filesort so the
+        // sort still works -- just unindexed -- until the column-add completes.
+        if (($rawOrderBy === 'dest' || $rawOrderBy === 'final_dest')
+                && !empty($tableOptions['_abj404_dest_sort_key_present'])) {
+            return 'dest_sort_key';
+        }
         return $this->policy->resolveOrderByColumn($tableOptions);
     }
 
