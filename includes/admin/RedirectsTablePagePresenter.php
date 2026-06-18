@@ -60,8 +60,6 @@ class ABJ_404_Solution_RedirectsTablePagePresenter {
             '{data-pagination-current-paged}' => esc_attr((string)$paginationState['paged']),
             '{data-pagination-current-score-range}' => esc_attr($paginationState['scoreRange']),
             '{data-pagination-auto-refresh}' => esc_attr('1'),
-            '{data-pagination-refresh-started-text}' => esc_attr($refresh['started']),
-            '{data-pagination-refresh-finished-text}' => esc_attr($refresh['finished']),
             '{data-pagination-refresh-available-text}' => esc_attr($refresh['available']),
             '{search_placeholder}' => esc_attr__('Type to filter redirects... (press Enter)', '404-solution'),
             '{filter_text}' => esc_attr($this->filterText($tableOptions)),

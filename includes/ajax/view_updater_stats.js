@@ -20,7 +20,7 @@
  * getAutoRefreshCacheKey, shouldRunAutoRefreshNow, markAutoRefreshCompleted.
  *
  * Depends on view_updater.js (abj404UpdateAjaxDebugLog, getURLParameter) and
- * view_updater_toast.js (showRefreshAvailablePill).
+ * view_updater_refresh_pill.js (showRefreshAvailablePill).
  */
 
 function getStatsRefreshConfigHost() {

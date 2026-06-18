@@ -35,7 +35,7 @@
  * view_updater_stage_diagnostics.js (abj404AjaxStageDiagnostics),
  * view_updater_table_init.js (isDetectOnlyRefreshInFlight,
  * setDetectOnlyRefreshInFlight, refreshHealthBarIfNeeded,
- * triggerBackgroundTableRefreshIfEnabled), view_updater_toast.js
+ * triggerBackgroundTableRefreshIfEnabled), view_updater_refresh_pill.js
  * (hideRefreshAvailablePill), view_updater_nonce_refresh.js
  * (abj404AjaxWithNonceRetry), view_updater_pagination_request.js
  * (abj404BuildPaginationRequest), view_updater_pagination_response_apply.js

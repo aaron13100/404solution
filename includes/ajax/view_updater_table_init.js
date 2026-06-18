@@ -25,8 +25,7 @@
  *
  * Depends on view_updater.js (abj404UpdateAjaxDebugLog, getURLParameter,
  * paginationLinksChange, isElementFullyVisible),
- * view_updater_toast.js (showRefreshAvailablePill, showRefreshToastStart,
- * showRefreshToastComplete, hideRefreshToast), view_updater_stats.js
+ * view_updater_refresh_pill.js (showRefreshAvailablePill), view_updater_stats.js
  * (markAutoRefreshCompleted, shouldRunAutoRefreshNow).
  */
 
@@ -299,12 +298,12 @@ function triggerBackgroundTableRefreshIfEnabled() {
         return;
     }
 
-    // allow-em-dash: visible horizontal-ellipsis preserved verbatim from the original toast text
-    var startedText = $config.attr('data-pagination-refresh-started-text') || 'Refreshing data in background…';
-    showRefreshToastStart(startedText);
-    var refreshStartedAt = Date.now();
-
-    // Run a detect-only check in the background. Never overwrite the visible table automatically.
+    // Run a detect-only check in the background. It never overwrites the
+    // visible table and shows no progress/success chrome: the table already
+    // rendered live from the single denorm read, so a poll that finds nothing
+    // changed is a no-op the user should never see. The only surface is the
+    // "Refresh available" pill, and only when the data actually changed since
+    // this page loaded (e.g. new 404s arrived while the admin was reading).
     var runRefresh = function() {
         if (isDetectOnlyRefreshInFlight()) {
             return;
@@ -315,33 +314,20 @@ function triggerBackgroundTableRefreshIfEnabled() {
             onComplete: function(meta) {
                 var $latestConfig = getRefreshStatusHost();
                 var hasUpdate = !!(meta && meta.hasUpdate);
-                var finishedText = $latestConfig.attr('data-pagination-refresh-finished-text') || 'Data refreshed';
-                var elapsed = Date.now() - refreshStartedAt;
-                var minimumVisibleMs = 850;
-                var showFinished = function() {
-                    if (hasUpdate) {
-                        var availableText = $latestConfig.attr('data-pagination-refresh-available-text') || 'Refresh available';
-                        showRefreshAvailablePill(availableText, 5000);
-                    }
-                    showRefreshToastComplete(finishedText);
-                    window.setTimeout(hideRefreshToast, 3500);
-                };
-                if (elapsed < minimumVisibleMs) {
-                    window.setTimeout(showFinished, minimumVisibleMs - elapsed);
-                } else {
-                    showFinished();
+                if (hasUpdate) {
+                    var availableText = $latestConfig.attr('data-pagination-refresh-available-text') || 'Refresh available';
+                    showRefreshAvailablePill(availableText, 5000);
                 }
                 if (window.abj404BackgroundRefreshState) {
-                    window.abj404BackgroundRefreshState.finishedAt = Date.now();
+                    window.abj404BackgroundRefreshState.finishedAt = Date.now(); // allow-direct-time: telemetry finishedAt timestamp; browser admin script, no client-side clock adapter exists in this plugin
                     window.abj404BackgroundRefreshState.hasUpdateAvailable = hasUpdate;
                 }
                 markAutoRefreshCompleted($latestConfig);
             },
             onError: function() {
-                hideRefreshToast();
                 if (window.abj404BackgroundRefreshState) {
                     window.abj404BackgroundRefreshState.lastError = 'background-refresh-failed';
-                    window.abj404BackgroundRefreshState.finishedAt = Date.now();
+                    window.abj404BackgroundRefreshState.finishedAt = Date.now(); // allow-direct-time: telemetry finishedAt timestamp; browser admin script, no client-side clock adapter exists in this plugin
                     window.abj404BackgroundRefreshState.hasUpdateAvailable = false;
                 }
             }

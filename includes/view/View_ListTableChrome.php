@@ -57,16 +57,16 @@ class ABJ_404_Solution_View_ListTableChrome extends ABJ_404_Solution_ViewCompone
     }
 
     /**
-     * Build the i18n strings for pagination data-* attrs.
+     * Build the i18n string for the pagination "Refresh available" pill
+     * data-* attr. The pill is the only background-refresh surface: the table
+     * always renders live from the denorm read, so there is no "refreshing /
+     * data refreshed" progress toast (and no started/finished strings).
      *
-     * @return array{started:string, finished:string, available:string}
+     * @return array{available:string}
      */
     public function paginationRefreshStrings(): array {
-        // allow-em-dash: pre-existing translation string with U+2026 ellipsis in published .po files; replacing the char would break translations
-        $started = __('Refreshing data in background…', '404-solution');
-        $finished = __('Data refreshed', '404-solution');
         $available = __('Refresh available', '404-solution');
-        return array('started' => $started, 'finished' => $finished, 'available' => $available);
+        return array('available' => $available);
     }
 
     /** Build the Confidence-filter <option> list for the Redirects table. */

@@ -17,7 +17,7 @@
  *
  *   - view_updater_stage_diagnostics.js  (label lookup)
  *   - view_updater_compare.js            (background-refresh diff)
- *   - view_updater_toast.js              (refresh toast + pill)
+ *   - view_updater_refresh_pill.js       (refresh-available pill)
  *   - view_updater_stats.js              (stats refresh + cooldown helpers)
  *   - view_updater_table_init.js         (initial-load + bg refresh + healthbar)
  *   - view_updater_pagination.js         (paginationLinksChange fetch handler)

@@ -140,8 +140,6 @@ class ABJ_404_Solution_View_CapturedURLsTable extends ABJ_404_Solution_ViewCompo
             '{data-pagination-current-paged}' => esc_attr((string)$currentPaged),
             '{data-pagination-current-score-range}' => esc_attr($currentScoreRange),
             '{data-pagination-auto-refresh}' => esc_attr($autoRefresh),
-            '{data-pagination-refresh-started-text}' => esc_attr($refresh['started']),
-            '{data-pagination-refresh-finished-text}' => esc_attr($refresh['finished']),
             '{data-pagination-refresh-available-text}' => esc_attr($refresh['available']),
             '{search_placeholder}' => esc_attr__('Type to filter URLs... (press Enter)', '404-solution'),
             '{filter_text}' => esc_attr($filterText),
