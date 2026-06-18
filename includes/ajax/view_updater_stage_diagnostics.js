@@ -111,8 +111,8 @@ function abj404AjaxStageDiagnostics(stage, subpage) {
             stageNumber: 10
         },
         staged_build_s11_swap: {
-            queryLabel: 'RENAME TABLE wp_abj404_view_build TO wp_abj404_view_done',
-            whatsHappening: 'Atomic table swap (11/11)',
+            queryLabel: 'Finalize admin table refresh',
+            whatsHappening: 'Finalizing admin table refresh (11/11)',
             stageNumber: 11
         }
     };
