@@ -139,6 +139,18 @@ class ABJ_404_Solution_RedirectsDenormColumnSql {
             " SET dest_sort_key = LEFT(dest_for_view, 191)" .
             " WHERE dest_for_view IS NOT NULL" . $idClauseBare;
 
+        // Derive the indexable URL sort key the same way. url is varchar(2048)
+        // (prefix-indexable only, so ORDER BY url always filesorts even when every
+        // value is short, because MySQL will not order by a prefix index); this
+        // narrow LEFT(...,191) copy is what the (disabled, url_sort_key, id) /
+        // (status, disabled, url_sort_key, id) composites order so the URL sort is
+        // index-ordered on the captured tab too. url is NOT NULL, so unlike
+        // dest_sort_key this populates on every row in scope (no IS NOT NULL gate
+        // needed); the WHERE 1 = 1 keeps the bare id clause well-formed.
+        $statements[] = "UPDATE " . $redirectsTable .
+            " SET url_sort_key = LEFT(url, 191)" .
+            " WHERE 1 = 1" . $idClauseBare;
+
         return $statements;
     }
 

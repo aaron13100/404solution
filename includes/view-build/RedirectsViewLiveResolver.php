@@ -105,6 +105,19 @@ class ABJ_404_Solution_RedirectsViewLiveResolver {
     }
 
     /**
+     * Whether the indexable URL sort key column (url_sort_key) exists on
+     * wp_abj404_redirects. The admin read uses it for an index-ordered URL sort;
+     * when it is absent (an install mid-upgrade, before the column-add ALTER ran)
+     * the read falls back to the raw-url filesort. Memoized via the shared
+     * column-set probe.
+     *
+     * @return bool
+     */
+    public function urlSortKeyColumnPresent(): bool {
+        return isset($this->redirectsColumnSet()['url_sort_key']);
+    }
+
+    /**
      * The lowercased column-name set of wp_abj404_redirects, fetched once per
      * request via a single SHOW COLUMNS. Schema-drift tolerance (defensive
      * philosophy #1/#7): a site whose column-add ALTER never completed is served

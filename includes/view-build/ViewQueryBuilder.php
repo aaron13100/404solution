@@ -276,6 +276,17 @@ class ABJ_404_Solution_ViewQueryBuilder {
                 && !empty($tableOptions['_abj404_dest_sort_key_present'])) {
             return 'dest_sort_key';
         }
+        // URL sort (incl. the Page Redirects default): ORDER BY the narrow
+        // indexable url_sort_key so (disabled, url_sort_key, id) /
+        // (status, disabled, url_sort_key, id) serve it without a filesort. url is
+        // varchar(2048), prefix-only, so ORDER BY url itself always filesorts even
+        // when every value is short (MySQL will not order by a prefix index). When
+        // the column is absent (an install mid-upgrade) fall back to raw url so the
+        // sort still works -- unindexed -- until the column-add completes. URLs
+        // longer than 191 chars sharing a 191-char prefix tie-break by id.
+        if ($rawOrderBy === 'url' && !empty($tableOptions['_abj404_url_sort_key_present'])) {
+            return 'url_sort_key';
+        }
         return $this->policy->resolveOrderByColumn($tableOptions);
     }
 

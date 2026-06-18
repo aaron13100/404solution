@@ -39,9 +39,10 @@ class ABJ_404_Solution_RedirectsDenormChunkResolver {
      *
      * dest_for_view + published_status are resolved per redirect type, mirroring
      * staged-build stages S4-S8, with a catch-all that drains any unmatched row.
-     * logshits + last_used are rolled up from logsv2 by canonical URL when the
-     * logs table exists; when it is absent the columns keep their 0 / NULL
-     * defaults so a degraded site still resolves dest_for_view.
+     * logshits + last_used are rolled up from the wp_abj404_logs_hits rollup by
+     * canonical URL (NOT raw logsv2: report.md Finding 2) when that rollup table
+     * exists; when it is absent the columns keep their 0 / NULL defaults so a
+     * degraded site still resolves dest_for_view.
      *
      * Idempotent: re-running on the same ids recomputes the same values from the
      * same sources.

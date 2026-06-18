@@ -24,8 +24,9 @@ if (!defined('ABSPATH')) {
  *
  * Each chunk resolves dest_for_view + published_status with the same per-type
  * logic the staged pipeline used (stages S4-S8: posts, terms, home, external,
- * 404-displayed) and rolls up logshits + last_used from logsv2 by canonical
- * URL. The whole run is bounded by row count
+ * 404-displayed) and rolls up logshits + last_used from the wp_abj404_logs_hits
+ * rollup by canonical URL (NOT raw logsv2: report.md Finding 2). The whole run is
+ * bounded by row count
  * (REDIRECTS_DENORM_BACKFILL_CHUNK_SIZE) and wall clock
  * (REDIRECTS_DENORM_BACKFILL_TIME_BUDGET_SEC) so a large site converges across
  * successive daily cron ticks without ever blocking a request.
@@ -110,6 +111,200 @@ class ABJ_404_Solution_DatabaseUpgradeRedirectsDenormBackfill extends ABJ_404_So
     }
 
     /**
+     * One-time drain that populates dest_sort_key on rows whose denorm columns
+     * were backfilled BEFORE the dest_sort_key column existed.
+     *
+     * The Destination sort orders by the narrow indexable dest_sort_key =
+     * LEFT(dest_for_view, 191) (report3.md Finding 3). A fresh row gets its sort
+     * key during the main backfill (the type-resolution chunk appends the
+     * LEFT(...) UPDATE). But an install upgraded across the column add already
+     * has dest_for_view populated, so the main backfill's `dest_for_view IS NULL`
+     * sentinel skips it, and the converged-row live write-back never fires; the
+     * sort key would stay NULL until the nightly full reconcile happened to walk
+     * that row (report5.md Finding 1). On a large captured-heavy table that window
+     * could span many nightly passes, leaving the Destination sort ordering a big
+     * NULL bucket by id.
+     *
+     * @return int Number of redirect rows whose dest_sort_key was populated.
+     */
+    public function backfillRedirectsDestSortKey(): int {
+        // dest_sort_key derives from dest_for_view, which is itself NULL until the
+        // main backfill resolves it; the source guard skips not-yet-resolved rows.
+        return $this->drainNarrowSortKey('dest_sort_key', 'dest_for_view', true);
+    }
+
+    /**
+     * One-time drain that populates url_sort_key on rows that pre-date the
+     * url_sort_key column add.
+     *
+     * The URL sort orders by the narrow indexable url_sort_key = LEFT(url, 191)
+     * (report6.md). A new/edited row gets its sort key in real time (the Step 3c
+     * recompute runs the same buildDestPublishedStatements that appends the
+     * url_sort_key UPDATE). But an install upgraded across the column add already
+     * has its rows, so without this drain the sort key would stay NULL on legacy
+     * rows until the nightly full reconcile happened to walk them, leaving the URL
+     * sort ordering a NULL bucket by id in the meantime. url is NOT NULL, so the
+     * drain converges every legacy row.
+     *
+     * Shares the chunked, wall-clock-bounded, self-clearing-sentinel mechanics and
+     * the daily-cron cadence with the dest_sort_key drain.
+     *
+     * @return int Number of redirect rows whose url_sort_key was populated.
+     */
+    public function backfillRedirectsUrlSortKey(): int {
+        // url is NOT NULL on the schema, so the source guard is always satisfied;
+        // it is passed for a single uniform code path with the dest drain.
+        return $this->drainNarrowSortKey('url_sort_key', 'url', true);
+    }
+
+    /**
+     * Shared chunked drain for a narrow LEFT(<source>, 191) sort-key column.
+     *
+     * Cheap narrow UPDATE (no per-type joins, unlike the main backfill) keyed on
+     * the self-clearing `<target> IS NULL [AND <source> IS NOT NULL]` sentinel: a
+     * processed row gets a non-NULL sort key (empty string at minimum) and no
+     * longer matches, so the predicate is both the chunk selector and the
+     * completion probe. Chunked + wall-clock-bounded, sharing the main backfill's
+     * chunk-size / time-budget settings.
+     *
+     * Skips silently (returns 0) when $wpdb is unavailable, the redirects table is
+     * missing, or either column is missing (column add not yet run) so a
+     * mid-upgrade install never errors on the column.
+     *
+     * $targetColumn / $sourceColumn are class-internal literals (never request
+     * input), so interpolating them is safe, the same way the table name and id
+     * list are interpolated throughout this class.
+     *
+     * @param string $targetColumn The narrow sort-key column to populate.
+     * @param string $sourceColumn The wide source column it is LEFT(...)-copied from.
+     * @param bool   $guardSourceNotNull Whether to skip rows whose source is NULL.
+     * @return int Number of rows populated.
+     */
+    private function drainNarrowSortKey(string $targetColumn, string $sourceColumn, bool $guardSourceNotNull): int {
+        global $wpdb;
+        if (!isset($wpdb)) {
+            return 0;
+        }
+        $redirectsTable = $this->dbCore->doTableNameReplacements('{wp_abj404_redirects}');
+
+        // SHOW TABLES existence probe, same shape as the main backfill: routing
+        // through queryAndGetResults would log a benign "table doesn't exist"
+        // error on a freshly-installed site before create-tables ran.
+        // DAO-bypass-approved: schema existence probe, see comment above.
+        $found = $wpdb->get_var("SHOW TABLES LIKE '" . esc_sql($redirectsTable) . "'");
+        if ($found !== $redirectsTable) {
+            return 0;
+        }
+        // Both columns must exist: source is read, target is written. Either
+        // missing means the column-add ALTER has not completed, so there is
+        // nothing to drain yet (schema-drift tolerance).
+        if (!$this->columnExists($redirectsTable, $sourceColumn)
+            || !$this->columnExists($redirectsTable, $targetColumn)) {
+            return 0;
+        }
+
+        $sourceGuard = $guardSourceNotNull ? (' AND ' . $sourceColumn . ' IS NOT NULL') : '';
+        $chunkSize = (int)$this->getRedirectsDenormBackfillChunkSize();
+        if ($chunkSize < 1) {
+            $chunkSize = 1;
+        }
+        $timeBudget = (float)$this->getRedirectsDenormBackfillTimeBudgetSec();
+        $start = abj_clock()->nowFloat();
+        $totalRepaired = 0;
+
+        while ((abj_clock()->nowFloat() - $start) < $timeBudget) {
+            $ids = $this->fetchNextSortKeyChunkIds($redirectsTable, $targetColumn, $sourceGuard, $chunkSize);
+            if ($ids === null) {
+                // Read error already warned about; stop so we don't spin.
+                return $totalRepaired;
+            }
+            if (empty($ids)) {
+                break;
+            }
+            if (!$this->populateSortKeyForIds($redirectsTable, $targetColumn, $sourceColumn, $sourceGuard, $ids)) {
+                return $totalRepaired;
+            }
+            $totalRepaired += count($ids);
+            if (count($ids) < $chunkSize) {
+                break;
+            }
+        }
+
+        if ($totalRepaired > 0) {
+            $this->logger->infoMessage(sprintf(
+                "drainNarrowSortKey(%s): populated %d redirect sort keys in %.2fs.",
+                $targetColumn,
+                $totalRepaired,
+                abj_clock()->nowFloat() - $start
+            ));
+        }
+
+        return $totalRepaired;
+    }
+
+    /**
+     * Read the next chunk of redirect ids whose narrow sort key still needs
+     * populating (NULL target, source present per the guard).
+     *
+     * @param string $redirectsTable
+     * @param string $targetColumn Class-internal literal column name.
+     * @param string $sourceGuard  Pre-built " AND <source> IS NOT NULL" or ''.
+     * @param int    $chunkSize
+     * @return array<int, int>|null List of ids (possibly empty), or null on a query error.
+     */
+    private function fetchNextSortKeyChunkIds(string $redirectsTable, string $targetColumn, string $sourceGuard, int $chunkSize): ?array {
+        $result = $this->dbCore->queryAndGetResults(
+            "SELECT id FROM " . $redirectsTable .
+            " WHERE " . $targetColumn . " IS NULL" . $sourceGuard .
+            " ORDER BY id ASC LIMIT " . $chunkSize
+        );
+        $lastError = isset($result['last_error']) && is_string($result['last_error']) ? $result['last_error'] : '';
+        if ($lastError !== '') {
+            $this->logger->warn("drainNarrowSortKey(" . $targetColumn . "): stopping after read error: " . $lastError);
+            return null;
+        }
+        $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
+        $ids = array();
+        foreach ($rows as $row) {
+            if (is_array($row) && isset($row['id']) && is_numeric($row['id'])) {
+                $ids[] = (int)$row['id'];
+            }
+        }
+        return $ids;
+    }
+
+    /**
+     * Populate <target> = LEFT(<source>, 191) for an explicit chunk of ids.
+     * Mirrors the sort-key statements {@see
+     * ABJ_404_Solution_RedirectsDenormColumnSql::buildDestPublishedStatements}
+     * appends, so the one-time drain and the per-chunk write stay in lockstep.
+     *
+     * @param string          $redirectsTable
+     * @param string          $targetColumn Class-internal literal column name.
+     * @param string          $sourceColumn Class-internal literal column name.
+     * @param string          $sourceGuard  Pre-built " AND <source> IS NOT NULL" or ''.
+     * @param array<int, int> $ids
+     * @return bool True if the chunk wrote cleanly, false if the write errored.
+     */
+    private function populateSortKeyForIds(string $redirectsTable, string $targetColumn, string $sourceColumn, string $sourceGuard, array $ids): bool {
+        $idList = implode(',', array_map('intval', $ids));
+        if ($idList === '') {
+            return true;
+        }
+        $result = $this->dbCore->queryAndGetResults(
+            "UPDATE " . $redirectsTable .
+            " SET " . $targetColumn . " = LEFT(" . $sourceColumn . ", 191)" .
+            " WHERE 1 = 1" . $sourceGuard . " AND id IN (" . $idList . ")"
+        );
+        $lastError = isset($result['last_error']) && is_string($result['last_error']) ? $result['last_error'] : '';
+        if ($lastError !== '') {
+            $this->logger->warn("drainNarrowSortKey(" . $targetColumn . "): stopping after write error: " . $lastError);
+            return false;
+        }
+        return true;
+    }
+
+    /**
      * Read the next chunk of redirect ids that still need backfilling.
      *
      * @param string $redirectsTable
@@ -143,7 +338,8 @@ class ABJ_404_Solution_DatabaseUpgradeRedirectsDenormBackfill extends ABJ_404_So
      * staged-build stages S4-S8. Any row whose type matches none of those stages
      * is caught by a final UPDATE so the chunk always drains (no row keeps the
      * dest_for_view IS NULL sentinel). logshits + last_used are rolled up from
-     * logsv2 by canonical URL when the logs table exists.
+     * the wp_abj404_logs_hits rollup by canonical URL (NOT raw logsv2: report.md
+     * Finding 2) when that rollup table exists.
      *
      * @param string         $redirectsTable
      * @param array<int, int> $ids
@@ -151,7 +347,7 @@ class ABJ_404_Solution_DatabaseUpgradeRedirectsDenormBackfill extends ABJ_404_So
      */
     private function resolveDenormColumnsForIds(string $redirectsTable, array $ids): bool {
         // Delegate the per-chunk write (per-type dest/published statements plus
-        // the logsv2 hits rollup) to the shared resolver, the single source of
+        // the logs_hits rollup) to the shared resolver, the single source of
         // truth the Step 3d nightly reconcile also uses so the two bulk-write
         // paths can never drift. $recompute = false: the catch-all guards on the
         // dest_for_view IS NULL sentinel, which keeps the chunk draining and the

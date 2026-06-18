@@ -71,6 +71,24 @@ class ABJ_404_Solution_DatabaseUpgradeDailyMaintenance extends ABJ_404_Solution_
         // hits rollup join matches on the freshly populated canonical_url column.
         $this->upgrades()->redirectsDenormBackfillUpgrade()->backfillRedirectsDenormColumns();
 
+        // report5.md Finding 1: an install upgraded ACROSS the dest_sort_key
+        // column add already has dest_for_view populated, so the main backfill's
+        // dest_for_view IS NULL sentinel skips it and the converged-row live
+        // write-back never fires; the indexable Destination sort key would stay
+        // NULL until the nightly reconcile below happened to walk that row. This
+        // cheap narrow drain (no per-type joins) closes that window directly,
+        // keyed on the self-clearing dest_sort_key IS NULL AND dest_for_view IS
+        // NOT NULL sentinel. Runs after the main backfill so freshly-resolved rows
+        // (which already got their sort key) are skipped, and converges to a no-op.
+        $this->upgrades()->redirectsDenormBackfillUpgrade()->backfillRedirectsDestSortKey();
+
+        // report6.md: same one-time drain for url_sort_key (the indexable URL sort
+        // key, LEFT(url, 191)). New/edited rows get it in real time via the Step 3c
+        // recompute; this converges legacy rows that pre-date the column add so the
+        // URL sort is index-ordered on the captured tab too, without waiting for the
+        // nightly reconcile below.
+        $this->upgrades()->redirectsDenormBackfillUpgrade()->backfillRedirectsUrlSortKey();
+
         // Denorm Step 3d (i462): nightly full reconcile of the same four derived
         // columns for ALL redirect rows. The Tier-3 floor / backstop: a
         // brute-force cursor-walked recompute that catches drift from raw-SQL

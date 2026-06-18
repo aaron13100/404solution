@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS {wp_abj404_redirects} (
     `last_used` bigint(20) DEFAULT NULL COMMENT 'Denormalized last-hit timestamp for this redirect URL, copied from the wp_abj404_logs_hits rollup (its MAX(timestamp)-by-canonical-requested_url aggregate) keyed on canonical_url. NULL until backfilled.',
     `dest_for_view` varchar(2048) DEFAULT NULL COMMENT 'Denormalized resolved destination title/label for admin display + filterText search. NULL is the not-yet-backfilled sentinel; a backfilled row is always non-NULL (empty string at minimum).',
     `dest_sort_key` varchar(191) DEFAULT NULL COMMENT 'Indexable sort key for the admin Destination sort: LEFT(dest_for_view, 191). dest_for_view is varchar(2048) -> only prefix-indexable -> ORDER BY on it always filesorts; this narrow copy is fully indexable so the Destination sort is index-ordered like Hits/Last Used. Maintained alongside dest_for_view (live resolver + backfill/reconcile). NULL until backfilled (sorts first ascending, self-heals).',
+    `url_sort_key` varchar(191) DEFAULT NULL COMMENT 'Indexable sort key for the admin URL sort: LEFT(url, 191). url is varchar(2048) -> only prefix-indexable -> ORDER BY url always filesorts (MySQL will not order by a prefix index even when every value is short); this narrow copy is fully indexable so the URL sort is index-ordered on the captured tab too. Maintained alongside url (set on every insert/edit via the Step 3c recompute, plus backfill/reconcile). NULL until backfilled (sorts first ascending, self-heals). url > 191 chars sharing a 191-char prefix tie-break by id.',
     `published_status` tinyint(4) DEFAULT NULL COMMENT 'Denormalized resolved publish state of the destination (1 = published/valid, 0 = broken/unpublished). NULL until backfilled.',
     PRIMARY KEY  (`id`),
     KEY `status` (`status`),
@@ -34,6 +35,10 @@ CREATE TABLE IF NOT EXISTS {wp_abj404_redirects} (
     KEY `idx_status_disabled_logshits_id` (`status`, `disabled`, `logshits`, `id`),
     KEY `idx_status_disabled_last_used_id` (`status`, `disabled`, `last_used`, `id`),
     KEY `idx_disabled_dest_sort_id` (`disabled`, `dest_sort_key`, `id`),
-    KEY `idx_status_disabled_dest_sort_id` (`status`, `disabled`, `dest_sort_key`, `id`)
+    KEY `idx_status_disabled_dest_sort_id` (`status`, `disabled`, `dest_sort_key`, `id`),
+    KEY `idx_disabled_url_sort_id` (`disabled`, `url_sort_key`, `id`),
+    KEY `idx_status_disabled_url_sort_id` (`status`, `disabled`, `url_sort_key`, `id`),
+    KEY `idx_disabled_score_id` (`disabled`, `score`, `id`),
+    KEY `idx_status_disabled_score_id` (`status`, `disabled`, `score`, `id`)
 ) COMMENT='404 Solution Plugin Redirects Table' AUTO_INCREMENT=1
 

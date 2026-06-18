@@ -91,6 +91,9 @@ class ABJ_404_Solution_AdminViewReadCoordinator {
         // of the CASE-on-dest_for_view filesort fallback. Same _abj404_* option
         // convention as the timeout / suppress-writeback flags.
         $tableOptions['_abj404_dest_sort_key_present'] = $this->liveResolver->destSortKeyColumnPresent();
+        // Same for the URL sort key: lets a url sort ORDER BY url_sort_key
+        // (index-served) instead of the raw-url filesort fallback.
+        $tableOptions['_abj404_url_sort_key_present'] = $this->liveResolver->urlSortKeyColumnPresent();
         $rows = $this->queryBuilder->readRedirectsSingleTable($sub, $tableOptions, $derivedPresent);
         $persist = $derivedPresent && empty($tableOptions['_abj404_suppress_denorm_writeback']);
         return $this->liveResolver->resolveAndPersistVisibleRows($rows, $persist);
