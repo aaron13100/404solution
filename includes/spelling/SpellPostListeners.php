@@ -90,6 +90,29 @@ class ABJ_404_Solution_SpellPostListeners {
     }
 
 	/**
+	 * created_term / edited_term / delete_term listener. A category or tag
+	 * create/rename/delete changes what a spelling lookup can match
+	 * (findMatchingPosts matches on categories and tags too), so the spelling
+	 * cache -- including memoized no-match results -- must be invalidated.
+	 * Restricted to the built-in category/post_tag taxonomies so unrelated
+	 * taxonomy churn (menus, link categories, plugin taxonomies) does not keep
+	 * truncating the cache.
+	 *
+	 * @param int $term_id
+	 * @param int $tt_id
+	 * @param string $taxonomy
+	 */
+	function term_changedListener(int $term_id, int $tt_id = 0, string $taxonomy = ''): void {
+		if ($taxonomy !== '' && !in_array($taxonomy, array('category', 'post_tag'), true)) {
+			return;
+		}
+		$this->contentRepository->deleteSpellingCache();
+		$this->logger->debugMessage(__CLASS__ . "/" . __FUNCTION__ .
+			": Spelling cache invalidated by term change. term_id: " . $term_id .
+			", taxonomy: " . $taxonomy);
+	}
+
+	/**
 	 * @param int $post_id
 	 * @param \WP_Post|mixed $post
 	 * @param bool $update

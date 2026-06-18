@@ -257,6 +257,10 @@ class ABJ_404_Solution_SpellChecker {
 		$this->postListeners->delete_postListener($post_id, $post);
 	}
 
+	function term_changedListener(int $term_id, int $tt_id = 0, string $taxonomy = ''): void {
+		$this->postListeners->term_changedListener($term_id, $tt_id, $taxonomy);
+	}
+
 	function savePostHandler($post_id, $post, $update, $saveOrDelete): void {
 		$this->postListeners->savePostHandler($post_id, $post, $update, $saveOrDelete);
 	}
@@ -283,6 +287,26 @@ class ABJ_404_Solution_SpellChecker {
 		add_action('updated_option', array($me,'permalinkStructureChanged'), 10, 2);
 		add_action('save_post', array($me,'save_postListener'), 10, 3);
 		add_action('delete_post', array($me,'delete_postListener'), 10, 2);
+		// A category/tag create/rename/delete changes spelling-match results, so
+		// invalidate the spelling cache (including memoized no-match entries).
+		add_action('created_term', array($me,'term_changedListener'), 10, 3);
+		add_action('edited_term', array($me,'term_changedListener'), 10, 3);
+		add_action('delete_term', array($me,'term_changedListener'), 10, 3);
+	}
+
+	/**
+	 * True only for a cached confirmed no-match: a [permalinks, rowType] packet
+	 * whose permalink list is an empty array. A cache miss (empty array()), a
+	 * positive result, and any malformed payload all return false so the caller
+	 * recomputes -- the negative short-circuit can never emit a destination.
+	 *
+	 * @param mixed $cachedPacket the getFromPermalinkCache() return value
+	 * @return bool
+	 */
+	private function isCachedNoMatchResult($cachedPacket): bool {
+		return is_array($cachedPacket) && count($cachedPacket) === 2
+			&& array_key_exists(0, $cachedPacket) && is_array($cachedPacket[0])
+			&& empty($cachedPacket[0]);
 	}
 
 	/**
@@ -296,6 +320,29 @@ class ABJ_404_Solution_SpellChecker {
 		if (@$options['auto_redirects'] == '1') {
             $autoCats = isset($options['auto_cats']) && is_string($options['auto_cats']) ? $options['auto_cats'] : '1';
             $autoTags = isset($options['auto_tags']) && is_string($options['auto_tags']) ? $options['auto_tags'] : '1';
+
+            // Negative-result memoization. A repeated 404 to a URL with no
+            // spelling match would otherwise re-run the full Levenshtein scan
+            // on every hit: captured rows are excluded from the pre-match
+            // redirect lookup (status/type filter in getPermalinkFromURL.sql),
+            // so an already-seen no-match URL never short-circuits before this
+            // point. We short-circuit ONLY on a cached no-match (an empty
+            // permalink list). The outcome is identical to recomputing a
+            // no-match (return null), so a stale entry can at worst miss a
+            // redirect (graceful 404), never cause a wrong one. The spelling
+            // cache is invalidated on any content change (SpellPostListeners:
+            // save/delete post, created/edited/deleted category or tag), so a
+            // URL that becomes matchable is recomputed on its next hit. A
+            // cached POSITIVE result is intentionally ignored and recomputed
+            // fresh so a deleted or unpublished destination can never be
+            // served from cache. Positive matches do not recur here in any
+            // case: a successful match is promoted to a stored AUTO redirect,
+            // so the next hit short-circuits at getActiveRedirectForURL.
+            $cachedPacket = $abj404spellChecker->getFromPermalinkCache($requestedURL);
+            if ($this->isCachedNoMatchResult($cachedPacket)) {
+                return null;
+            }
+
             $permalinksPacket = $abj404spellChecker->findMatchingPosts($requestedURL,
                     $autoCats, $autoTags);
 
