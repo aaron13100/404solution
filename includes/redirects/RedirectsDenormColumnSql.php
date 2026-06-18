@@ -132,41 +132,46 @@ class ABJ_404_Solution_RedirectsDenormColumnSql {
     }
 
     /**
-     * Build the logshits/last_used rollup UPDATE that rolls every matching
-     * logsv2 row up by canonical URL onto the chunk's redirect rows.
+     * Build the logshits/last_used rollup UPDATE that copies the pre-aggregated
+     * wp_abj404_logs_hits rollup (keyed by canonical requested_url) onto the
+     * matching redirect rows.
      *
-     * The single source of truth for the rollup SQL the Step 3a backfill and the
-     * Step 3d nightly reconcile both run (via
-     * {@see ABJ_404_Solution_RedirectsDenormChunkResolver}). The aggregate
-     * subquery groups logsv2 once per chunk then joins it to the chunk's
-     * redirects, far cheaper than a correlated subquery per row. COALESCE on both
-     * sides keeps the canonical match correct while the canonical_url backfill is
-     * still in flight; the outer LEFT JOIN resets a no-hit URL to 0/0 rather than
-     * keeping a stale count.
+     * The single source of truth for the rollup SQL the Step 3a backfill, the
+     * Step 3d nightly reconcile (both via
+     * {@see ABJ_404_Solution_RedirectsDenormChunkResolver}), and the real-time
+     * Step 3c write-back ({@see ABJ_404_Solution_RedirectsDenormMaintenanceService})
+     * all run.
      *
-     * Pure: the caller resolves and passes the logsv2 table name and the
+     * It reads logs_hits, NOT raw logsv2 (report.md Finding 2): logs_hits is the
+     * materialized COUNT/MAX(timestamp)-by-canonical-URL rollup, so this is a
+     * scoped index-friendly join with no per-chunk `GROUP BY` over the whole log
+     * table -- the repeated full-table aggregate that timed out on busy sites.
+     * It is also the consistent source: the write-back already overwrites
+     * r.logshits from logs_hits after every rollup, so any value the old
+     * logsv2-GROUP BY produced was transient anyway. h.requested_url is the
+     * canonical key, so the join matches on COALESCE(canonical_url, CONCAT/TRIM)
+     * to stay correct while the redirects-side canonical_url backfill is still in
+     * flight. The outer LEFT JOIN resets a no-hit URL to 0/0 rather than keeping
+     * a stale count.
+     *
+     * Pure: the caller resolves and passes the logs_hits table name and the
      * already-int-sanitized id clause; this method touches no database.
      *
      * @param string $redirectsTable Fully-qualified redirects table name.
-     * @param string $logsTable      Fully-qualified logsv2 table name.
+     * @param string $logsHitsTable  Fully-qualified logs_hits rollup table name.
      * @param string $idClause       " AND r.id IN (1,2,3)" fragment, or '' for all rows.
      * @return string
      */
-    public static function buildHitsRollupStatement(
+    public static function buildHitsRollupFromRollupTableStatement(
         string $redirectsTable,
-        string $logsTable,
+        string $logsHitsTable,
         string $idClause
     ): string {
-        $canonLogs = "COALESCE(canonical_url, CONCAT('/', TRIM(BOTH '/' FROM requested_url)))";
         $canonRedirect = "COALESCE(r.canonical_url, CONCAT('/', TRIM(BOTH '/' FROM r.url)))";
 
         return "UPDATE " . $redirectsTable . " r" .
-            " LEFT JOIN (" .
-            "   SELECT " . $canonLogs . " AS cu, COUNT(*) AS hits, MAX(timestamp) AS lu" .
-            "   FROM " . $logsTable .
-            "   GROUP BY cu" .
-            " ) agg ON agg.cu = " . $canonRedirect .
-            " SET r.logshits = COALESCE(agg.hits, 0), r.last_used = COALESCE(agg.lu, 0)" .
+            " LEFT JOIN " . $logsHitsTable . " h ON h.requested_url = " . $canonRedirect .
+            " SET r.logshits = COALESCE(h.logshits, 0), r.last_used = COALESCE(h.last_used, 0)" .
             " WHERE 1 = 1" . $idClause;
     }
 

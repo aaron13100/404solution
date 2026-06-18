@@ -92,7 +92,14 @@ class ABJ_404_Solution_RedirectsDenormChunkResolver {
 
     /**
      * Build the logshits/last_used rollup UPDATE for a chunk, or null when the
-     * logsv2 table is absent (a stripped install rolls nothing up).
+     * logs_hits rollup table is absent (a stripped install, or one whose first
+     * rollup rebuild has not run yet, rolls nothing up and keeps the 0 defaults).
+     *
+     * Reads the pre-aggregated logs_hits rollup, NOT raw logsv2 (report.md
+     * Finding 2): the old logsv2 `GROUP BY` ran in full once per chunk and timed
+     * out on busy sites. logs_hits is keyed by canonical requested_url and is the
+     * same source the real-time write-back uses, so the chunk values stay
+     * consistent with what the write-back would set.
      *
      * @param ABJ_404_Solution_DatabaseCore $dbCore
      * @param string $redirectsTable
@@ -105,7 +112,7 @@ class ABJ_404_Solution_RedirectsDenormChunkResolver {
         string $idClause
     ): ?string {
         global $wpdb;
-        $logsTable = $dbCore->doTableNameReplacements('{wp_abj404_logsv2}');
+        $logsHitsTable = $dbCore->doTableNameReplacements('{wp_abj404_logs_hits}');
         if (!isset($wpdb)) {
             return null;
         }
@@ -113,13 +120,13 @@ class ABJ_404_Solution_RedirectsDenormChunkResolver {
         // queryAndGetResults would log a benign "table missing" error on a
         // stripped install before its create-tables flow has run.
         // DAO-bypass-approved: SHOW TABLES schema existence probe.
-        $found = $wpdb->get_var("SHOW TABLES LIKE '" . esc_sql($logsTable) . "'");
-        if ($found !== $logsTable) {
+        $found = $wpdb->get_var("SHOW TABLES LIKE '" . esc_sql($logsHitsTable) . "'");
+        if ($found !== $logsHitsTable) {
             return null;
         }
-        return ABJ_404_Solution_RedirectsDenormColumnSql::buildHitsRollupStatement(
+        return ABJ_404_Solution_RedirectsDenormColumnSql::buildHitsRollupFromRollupTableStatement(
             $redirectsTable,
-            $logsTable,
+            $logsHitsTable,
             $idClause
         );
     }

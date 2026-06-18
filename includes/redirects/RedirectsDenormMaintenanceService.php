@@ -198,15 +198,16 @@ class ABJ_404_Solution_RedirectsDenormMaintenanceService {
 
         $redirectsTable = $this->dbCore->doTableNameReplacements('{wp_abj404_redirects}');
         $logsHitsTable = $this->dbCore->doTableNameReplacements('{wp_abj404_logs_hits}');
-        $canonRedirect = "COALESCE(r.canonical_url, CONCAT('/', TRIM(BOTH '/' FROM r.url)))";
 
-        // LEFT JOIN so a redirect URL with no hits resets to 0 / 0 rather than
-        // keeping a stale count. Mirrors the rollup table's own semantics
-        // (requested_url is the canonical key, logshits / last_used the rolled
-        // values).
-        $query = "UPDATE " . $redirectsTable . " r" .
-            " LEFT JOIN " . $logsHitsTable . " h ON h.requested_url = " . $canonRedirect .
-            " SET r.logshits = COALESCE(h.logshits, 0), r.last_used = COALESCE(h.last_used, 0)";
+        // Same rollup SQL the backfill / reconcile chunk resolver runs (single
+        // source of truth in RedirectsDenormColumnSql): LEFT JOIN logs_hits so a
+        // redirect URL with no hits resets to 0/0 rather than keeping a stale
+        // count. '' = all rows (full-table write-back).
+        $query = ABJ_404_Solution_RedirectsDenormColumnSql::buildHitsRollupFromRollupTableStatement(
+            $redirectsTable,
+            $logsHitsTable,
+            ''
+        );
         $this->dbCore->queryAndGetResults($query);
     }
 
