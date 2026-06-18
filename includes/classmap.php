@@ -65,6 +65,7 @@ return array(
     'ABJ_404_Solution_NGramLastUpdatedEpochMigration' => $base . 'includes/ngram/NGramLastUpdatedEpochMigration.php',
     'ABJ_404_Solution_DatabaseUpgradePluginUpdate' => $base . 'includes/database/upgrades/DatabaseUpgradePluginUpdate.php',
     'ABJ_404_Solution_DatabaseUpgradeTableRepair' => $base . 'includes/database/upgrades/DatabaseUpgradeTableRepair.php',
+    'ABJ_404_Solution_DatabaseUpgradeDropStagedViewTables' => $base . 'includes/database/upgrades/DatabaseUpgradeDropStagedViewTables.php',
     'ABJ_404_Solution_DatabaseUpgradeOrphanAdoption' => $base . 'includes/database/upgrades/DatabaseUpgradeOrphanAdoption.php',
     'ABJ_404_Solution_DatabaseUpgradeMultiSite' => $base . 'includes/database/upgrades/DatabaseUpgradeMultiSite.php',
     'ABJ_404_Solution_DatabaseUpgradeSchemaDiff' => $base . 'includes/database/upgrades/DatabaseUpgradeSchemaDiff.php',

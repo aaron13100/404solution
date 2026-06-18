@@ -5,7 +5,7 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Provides typed access to the 15 database-upgrade components.
+ * Provides typed access to the 16 database-upgrade components.
  *
  * Implemented by {@see ABJ_404_Solution_DatabaseUpgradeComponentRegistry}, which
  * owns the component instances. Each upgrade component receives the coordinator
@@ -37,6 +37,8 @@ interface ABJ_404_Solution_DatabaseUpgradeCoordinator {
     public function pluginUpdateUpgrade(): ABJ_404_Solution_DatabaseUpgradePluginUpdate;
 
     public function tableRepairUpgrade(): ABJ_404_Solution_DatabaseUpgradeTableRepair;
+
+    public function dropStagedViewTablesUpgrade(): ABJ_404_Solution_DatabaseUpgradeDropStagedViewTables;
 
     public function indexesUpgrade(): ABJ_404_Solution_DatabaseUpgradeIndexes;
 

@@ -48,7 +48,18 @@ class ABJ_404_Solution_DatabaseUpgradeTableRepair extends ABJ_404_Solution_Datab
 	function correctIssuesAfter() {
 	$this->correctMatchData();
 	$this->recoverMissingLogsHitsTable();
-	$this->dropTranslatedViewLabelColumns();
+
+	// Denorm Step 3e-D (i467): drop the transient staged view-build tables
+	// (view_build, view_done, view_deleteme) wholesale. The denorm chain
+	// moved the admin redirect-list read onto derived columns on
+	// abj404_redirects, so these tables (and the idx_pub_* per-sort indexes
+	// that only ever lived on view_build) are pure residue. Dropping the
+	// tables supersedes the old per-column cleanup that dropped the
+	// translated *_for_view label columns: there is no point altering
+	// columns on a table we drop in the same pass. Idempotent + cron-guarded
+	// inside the component; CronReachableDestructiveSqlLintTest Rule G proves
+	// the DROP is unreachable from cron.
+	$this->upgrades()->dropStagedViewTablesUpgrade()->dropStagedViewTables();
 
 	// t_260523_224315_207: drop the deprecated mutation watermark side
 	// table. Redirect changes now use direct rebuild invalidation instead
@@ -56,34 +67,6 @@ class ABJ_404_Solution_DatabaseUpgradeTableRepair extends ABJ_404_Solution_Datab
 	// a fresh install (no legacy table) and a re-upgrade (already dropped)
 	// are both no-ops. See docs/design-lesson-watermark-overengineering.md.
 	$this->dropDeprecatedMutationWatermarkTable();
-    }
-
-    /**
-     * Remove legacy translated label columns from runtime view tables.
-     *
-     * view_build and view_done are transient runtime tables, so the permanent
-     * DDL diff sweep intentionally skips them. This targeted cleanup keeps
-     * existing snapshots compatible with render-time translation while leaving
-     * missing or already-migrated tables untouched.
-     *
-     * @return void
-     */
-    function dropTranslatedViewLabelColumns() {
-        $tablePlaceholders = array('{wp_abj404_view_done}', '{wp_abj404_view_build}');
-        $legacyColumns = array('status_for_view', 'type_for_view');
-
-        foreach ($tablePlaceholders as $placeholder) {
-            $tableName = $this->dbCore->doTableNameReplacements($placeholder);
-            foreach ($legacyColumns as $columnName) {
-                if (!$this->upgrades()->canonicalUrlBackfillUpgrade()->columnExists($tableName, $columnName)) {
-                    continue;
-                }
-                // @utf8-audit: opt-out - $tableName comes from doTableNameReplacements() of a fixed internal placeholder; system-controlled, cannot contain invalid UTF-8.
-                $query = 'ALTER TABLE `' . esc_sql($tableName) . '` DROP COLUMN `' . $columnName . '`';
-                $this->dbCore->queryAndGetResults($query);
-                $this->logger->infoMessage('Dropped legacy translated view label column: ' . $query);
-            }
-        }
     }
 
     /**

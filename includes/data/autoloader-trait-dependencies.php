@@ -64,6 +64,7 @@ return array(
         'ABJ_404_Solution_DatabaseUpgradeDailyMaintenance',
         'ABJ_404_Solution_DatabaseUpgradePluginUpdate',
         'ABJ_404_Solution_DatabaseUpgradeTableRepair',
+        'ABJ_404_Solution_DatabaseUpgradeDropStagedViewTables',
         'ABJ_404_Solution_DatabaseUpgradeIndexes',
         'ABJ_404_Solution_DatabaseUpgradeOrphanAdoption',
         'ABJ_404_Solution_DatabaseUpgradeMultiSite',

@@ -50,6 +50,9 @@ class ABJ_404_Solution_DatabaseUpgradeComponentRegistry implements ABJ_404_Solut
 	/** @var ABJ_404_Solution_DatabaseUpgradeTableRepair */
 	private $tableRepairUpgrade;
 
+	/** @var ABJ_404_Solution_DatabaseUpgradeDropStagedViewTables */
+	private $dropStagedViewTablesUpgrade;
+
 	/** @var ABJ_404_Solution_DatabaseUpgradeIndexes */
 	private $indexesUpgrade;
 
@@ -79,6 +82,7 @@ class ABJ_404_Solution_DatabaseUpgradeComponentRegistry implements ABJ_404_Solut
 		$this->dailyMaintenanceUpgrade = new ABJ_404_Solution_DatabaseUpgradeDailyMaintenance($this, $deps);
 		$this->pluginUpdateUpgrade = new ABJ_404_Solution_DatabaseUpgradePluginUpdate($this, $deps);
 		$this->tableRepairUpgrade = new ABJ_404_Solution_DatabaseUpgradeTableRepair($this, $deps);
+		$this->dropStagedViewTablesUpgrade = new ABJ_404_Solution_DatabaseUpgradeDropStagedViewTables($this, $deps);
 		$this->indexesUpgrade = new ABJ_404_Solution_DatabaseUpgradeIndexes($this, $deps);
 		$this->orphanAdoptionUpgrade = new ABJ_404_Solution_DatabaseUpgradeOrphanAdoption($this, $deps);
 		$this->multiSiteUpgrade = new ABJ_404_Solution_DatabaseUpgradeMultiSite($this, $deps);
@@ -111,6 +115,7 @@ class ABJ_404_Solution_DatabaseUpgradeComponentRegistry implements ABJ_404_Solut
 			$this->dailyMaintenanceUpgrade,
 			$this->pluginUpdateUpgrade,
 			$this->tableRepairUpgrade,
+			$this->dropStagedViewTablesUpgrade,
 			$this->indexesUpgrade,
 			$this->orphanAdoptionUpgrade,
 			$this->multiSiteUpgrade,
@@ -138,6 +143,8 @@ class ABJ_404_Solution_DatabaseUpgradeComponentRegistry implements ABJ_404_Solut
 	public function pluginUpdateUpgrade(): ABJ_404_Solution_DatabaseUpgradePluginUpdate { return $this->pluginUpdateUpgrade; }
 
 	public function tableRepairUpgrade(): ABJ_404_Solution_DatabaseUpgradeTableRepair { return $this->tableRepairUpgrade; }
+
+	public function dropStagedViewTablesUpgrade(): ABJ_404_Solution_DatabaseUpgradeDropStagedViewTables { return $this->dropStagedViewTablesUpgrade; }
 
 	public function indexesUpgrade(): ABJ_404_Solution_DatabaseUpgradeIndexes { return $this->indexesUpgrade; }
 
