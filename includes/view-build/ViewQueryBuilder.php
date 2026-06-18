@@ -172,11 +172,19 @@ class ABJ_404_Solution_ViewQueryBuilder {
         $derivedProjection = $derivedPresent
             ? ",\n       dest_for_view, published_status, logshits, last_used" : "";
 
+        // Tie-break on the PK id in the sort direction (not on url): url is
+        // varchar(2048) and only prefix-indexable, so an `ORDER BY <col>, url`
+        // can never be index-ordered and always filesorts. With `id <dir>` a
+        // single ascending composite index (disabled, <col>, id) serves both
+        // ASC and DESC scans, so the Hits / Last Used sorts stop after one page
+        // instead of sorting the whole active-redirect set. See
+        // RedirectsDerivedSortExplainPlanTest. id is unique, so the ordering is
+        // still fully deterministic for pagination.
         return "SELECT id, url, status, type, final_dest, code, timestamp, engine, score"
             . $derivedProjection . "\n"
             . "FROM {wp_abj404_redirects}\n"
             . $this->buildSingleTableWhere($sub, $tableOptions, $derivedPresent)
-            . "ORDER BY " . $orderBy . " " . $order . ", url ASC, id " . $order . "\n"
+            . "ORDER BY " . $orderBy . " " . $order . ", id " . $order . "\n"
             . "LIMIT " . $limitStart . ", " . $perpage;
     }
 
