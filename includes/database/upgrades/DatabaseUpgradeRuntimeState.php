@@ -81,6 +81,21 @@ final class ABJ_404_Solution_DatabaseUpgradeRuntimeState {
     public const REDIRECTS_DENORM_RECONCILE_CURSOR_OPTION = 'abj404_redirects_denorm_reconcile_cursor';
 
     /**
+     * wp_options key holding the ascending-id cursor for the one-time redirects
+     * denorm backfill (Denorm Step 3a). It prevents each daily/on-demand chunk
+     * from repeatedly scanning the already-drained low-id prefix on large hosts.
+     * @var string
+     */
+    public const REDIRECTS_DENORM_BACKFILL_CURSOR_OPTION = 'abj404_redirects_denorm_backfill_cursor';
+
+    /**
+     * wp_options key holding a short "do not re-arm before" timestamp for the
+     * on-demand redirects denorm backfill trigger.
+     * @var string
+     */
+    public const REDIRECTS_DENORM_BACKFILL_ARMED_UNTIL_OPTION = 'abj404_redirects_denorm_backfill_armed_until';
+
+    /**
      * Known plugin table suffixes for adoption.
      * @var array<int, string>
      */
@@ -105,6 +120,9 @@ final class ABJ_404_Solution_DatabaseUpgradeRuntimeState {
 
     /** @var bool */
     private static $redirectsSortKeyBackfillScheduled = false;
+
+    /** @var bool */
+    private static $redirectsDenormBackfillScheduled = false;
 
     /** @return void */
     public static function initializeRuntimeId(): void {
@@ -159,6 +177,24 @@ final class ABJ_404_Solution_DatabaseUpgradeRuntimeState {
     /** @return void */
     public static function resetRedirectsSortKeyBackfillScheduledFlagForTests(): void {
         self::$redirectsSortKeyBackfillScheduled = false;
+    }
+
+    /** @return bool */
+    public static function isRedirectsDenormBackfillScheduled(): bool {
+        return self::$redirectsDenormBackfillScheduled;
+    }
+
+    /**
+     * @param bool $scheduled
+     * @return void
+     */
+    public static function setRedirectsDenormBackfillScheduled(bool $scheduled): void {
+        self::$redirectsDenormBackfillScheduled = $scheduled;
+    }
+
+    /** @return void */
+    public static function resetRedirectsDenormBackfillScheduledFlagForTests(): void {
+        self::$redirectsDenormBackfillScheduled = false;
     }
 
     /** @return array<int, string> */

@@ -290,6 +290,8 @@ class ABJ_404_Solution_PluginLogicLifecycle {
                 'abj404_gsc_background_refresh',
                 'abj404_send_digest',
                 'abj404_logsv2_canonical_backfill',
+                'abj404_redirects_denorm_backfill',
+                'abj404_redirects_sort_key_backfill',
                 'abj404_send_queued_report',
             );
 

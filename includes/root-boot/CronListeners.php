@@ -77,6 +77,29 @@ function abj404_logsv2CanonicalUrlBackfillListener() {
     }
 }
 }
+if (!function_exists('abj404_redirectsDenormBackfillListener')) {
+/**
+ * On-demand drain of the main redirects denorm backlog (dest_for_view,
+ * published_status, logshits, last_used), armed by an admin redirect-table
+ * render when legacy NULL dest_for_view rows exist. The sort-key drains run
+ * immediately after so Destination/URL sort gates can open in the same deferred
+ * pass once the main source columns are populated.
+ *
+ * @return void
+ */
+function abj404_redirectsDenormBackfillListener() {
+    try {
+        require_once(plugin_dir_path( ABJ404_FILE ) . "includes/Loader.php");
+        $denorm = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance()
+            ->components()->redirectsDenormBackfillUpgrade();
+        $denorm->backfillRedirectsDenormColumns();
+        $denorm->backfillRedirectsDestSortKey();
+        $denorm->backfillRedirectsUrlSortKey();
+    } catch (\Throwable $e) {
+        abj404_logRuntimeWarning('Cron redirects denorm backfill failed', $e);
+    }
+}
+}
 if (!function_exists('abj404_redirectsSortKeyBackfillListener')) {
 /**
  * On-demand drain of the redirects narrow sort-key columns (dest_sort_key /

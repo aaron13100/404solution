@@ -56,12 +56,16 @@ class ABJ_404_Solution_DatabaseUpgradeRedirectsDenormBackfill extends ABJ_404_So
     const SCHEDULE_SKIPPED_LATCHED = 'skipped-latched';
     const SCHEDULE_SKIPPED_NO_TABLE = 'skipped-no-table';
     const SCHEDULE_SKIPPED_NO_BACKLOG = 'skipped-no-backlog';
+    const SCHEDULE_SKIPPED_THROTTLED = 'skipped-throttled';
     // Arming outcomes mirror the centralized CronScheduler deferral vocabulary so
     // a DISABLE_WP_CRON / refused-cron fallback to shutdown is observable here too.
     const SCHEDULE_VIA_CRON = ABJ_404_Solution_CronScheduler::DEFER_VIA_CRON;
     const SCHEDULE_VIA_SHUTDOWN = ABJ_404_Solution_CronScheduler::DEFER_VIA_SHUTDOWN;
     const SCHEDULE_VIA_SHUTDOWN_CRON_UNAVAILABLE = ABJ_404_Solution_CronScheduler::DEFER_VIA_SHUTDOWN_CRON_UNAVAILABLE;
     const SCHEDULE_VIA_SHUTDOWN_CRON_REFUSED = ABJ_404_Solution_CronScheduler::DEFER_VIA_SHUTDOWN_CRON_REFUSED;
+
+    /** Five-minute guard against re-probing/re-arming the same legacy backlog on every admin read. */
+    private const DENORM_ARM_THROTTLE_SECONDS = 300;
 
     /**
      * Resolve the four derived columns for any redirect rows still carrying the
@@ -120,6 +124,10 @@ class ABJ_404_Solution_DatabaseUpgradeRedirectsDenormBackfill extends ABJ_404_So
             if (!$this->resolveDenormColumnsForIds($redirectsTable, $ids)) {
                 return $totalResolved;
             }
+            $this->writeCursorOption(
+                ABJ_404_Solution_DatabaseUpgradeRuntimeState::REDIRECTS_DENORM_BACKFILL_CURSOR_OPTION,
+                (int)max($ids)
+            );
             $totalResolved += count($ids);
             if (count($ids) < $chunkSize) {
                 break;
@@ -262,6 +270,7 @@ class ABJ_404_Solution_DatabaseUpgradeRedirectsDenormBackfill extends ABJ_404_So
             if (!$this->populateSortKeyForIds($redirectsTable, $targetColumn, $sourceColumn, $sourceGuard, $ids)) {
                 return $totalRepaired;
             }
+            $this->writeCursorOption($this->sortKeyCursorOption($targetColumn), (int)max($ids));
             $totalRepaired += count($ids);
             if (count($ids) < $chunkSize) {
                 break;
@@ -356,6 +365,57 @@ class ABJ_404_Solution_DatabaseUpgradeRedirectsDenormBackfill extends ABJ_404_So
                 $this->markSortKeyLatchIfComplete($redirectsTable, $targetColumn);
             }
         }
+    }
+
+    /**
+     * On-demand trigger for the main redirects denorm backlog. This closes the
+     * Bruno-style post-upgrade window where Destination sort cannot switch to
+     * dest_sort_key because legacy rows still have dest_for_view NULL. The job is
+     * deferred and time-budgeted; the admin read only arms it.
+     *
+     * A short persistent throttle prevents repeated admin table polls from
+     * re-running the same backlog probe or registering shutdown work on every
+     * request while a large shared-host table converges.
+     *
+     * @return string One of the SCHEDULE_* outcome constants.
+     */
+    public function scheduleRedirectsDenormBackfill(): string {
+        if (ABJ_404_Solution_DatabaseUpgradeRuntimeState::isRedirectsDenormBackfillScheduled()) {
+            return self::SCHEDULE_SKIPPED_ALREADY;
+        }
+        if ($this->redirectsDenormBackfillArmingIsThrottled()) {
+            return self::SCHEDULE_SKIPPED_THROTTLED;
+        }
+
+        global $wpdb;
+        if (!isset($wpdb)) {
+            return self::SCHEDULE_SKIPPED_NO_TABLE;
+        }
+        $redirectsTable = $this->dbCore->doTableNameReplacements('{wp_abj404_redirects}');
+        // DAO-bypass-approved: schema existence probe, same shape as the drains.
+        $found = $wpdb->get_var("SHOW TABLES LIKE '" . esc_sql($redirectsTable) . "'");
+        if ($found !== $redirectsTable) {
+            return self::SCHEDULE_SKIPPED_NO_TABLE;
+        }
+        if (!$this->columnExists($redirectsTable, 'dest_for_view')) {
+            return self::SCHEDULE_SKIPPED_NO_BACKLOG;
+        }
+        if (!$this->redirectsDenormBackfillNeedsDrain($redirectsTable)) {
+            return self::SCHEDULE_SKIPPED_NO_BACKLOG;
+        }
+
+        ABJ_404_Solution_DatabaseUpgradeRuntimeState::setRedirectsDenormBackfillScheduled(true);
+        $this->markRedirectsDenormBackfillArmed();
+
+        return abj_cron_scheduler()->scheduleSingleOrShutdown(
+            ABJ_404_Solution_CronScheduler::HOOK_REDIRECTS_DENORM_BACKFILL,
+            function (): void {
+                $this->backfillRedirectsDenormColumns();
+                $this->backfillRedirectsDestSortKey();
+                $this->backfillRedirectsUrlSortKey();
+            },
+            $this->shouldScheduleSortKeyBackfillViaCron()
+        );
     }
 
     /**
@@ -519,6 +579,48 @@ class ABJ_404_Solution_DatabaseUpgradeRedirectsDenormBackfill extends ABJ_404_So
     }
 
     /**
+     * @param string $redirectsTable
+     * @return bool
+     */
+    private function redirectsDenormBackfillNeedsDrain(string $redirectsTable): bool {
+        $probe = $this->dbCore->queryAndGetResults(
+            "SELECT id FROM " . $redirectsTable . " WHERE dest_for_view IS NULL ORDER BY id ASC LIMIT 1",
+            array('log_too_slow' => false)
+        );
+        $err = isset($probe['last_error']) && is_string($probe['last_error']) ? $probe['last_error'] : '';
+        if ($err !== '') {
+            return false;
+        }
+        $rows = is_array($probe['rows'] ?? null) ? $probe['rows'] : array();
+        return !empty($rows);
+    }
+
+    /** @return bool */
+    private function redirectsDenormBackfillArmingIsThrottled(): bool {
+        if (!function_exists('get_option')) {
+            return false;
+        }
+        $rawUntil = get_option(
+            ABJ_404_Solution_DatabaseUpgradeRuntimeState::REDIRECTS_DENORM_BACKFILL_ARMED_UNTIL_OPTION,
+            0
+        );
+        $until = is_scalar($rawUntil) ? (int)$rawUntil : 0;
+        return $until > abj_clock()->now();
+    }
+
+    /** @return void */
+    private function markRedirectsDenormBackfillArmed(): void {
+        if (!function_exists('update_option')) {
+            return;
+        }
+        update_option(
+            ABJ_404_Solution_DatabaseUpgradeRuntimeState::REDIRECTS_DENORM_BACKFILL_ARMED_UNTIL_OPTION,
+            (string)(abj_clock()->now() + self::DENORM_ARM_THROTTLE_SECONDS),
+            false
+        );
+    }
+
+    /**
      * Read the next chunk of redirect ids whose narrow sort key still needs
      * populating (NULL target, source present per the guard).
      *
@@ -529,9 +631,34 @@ class ABJ_404_Solution_DatabaseUpgradeRedirectsDenormBackfill extends ABJ_404_So
      * @return array<int, int>|null List of ids (possibly empty), or null on a query error.
      */
     private function fetchNextSortKeyChunkIds(string $redirectsTable, string $targetColumn, string $sourceGuard, int $chunkSize): ?array {
+        $cursorOption = $this->sortKeyCursorOption($targetColumn);
+        $cursor = $this->readCursorOption($cursorOption);
+        $ids = $this->querySortKeyChunkIds($redirectsTable, $targetColumn, $sourceGuard, $chunkSize, $cursor);
+        if ($ids === null) {
+            return null;
+        }
+        if (empty($ids) && $cursor > 0) {
+            $this->writeCursorOption($cursorOption, 0);
+            $ids = $this->querySortKeyChunkIds($redirectsTable, $targetColumn, $sourceGuard, $chunkSize, 0);
+            if ($ids === null) {
+                return null;
+            }
+        }
+        return $ids;
+    }
+
+    /**
+     * @param string $redirectsTable
+     * @param string $targetColumn
+     * @param string $sourceGuard
+     * @param int $chunkSize
+     * @param int $afterId
+     * @return array<int, int>|null
+     */
+    private function querySortKeyChunkIds(string $redirectsTable, string $targetColumn, string $sourceGuard, int $chunkSize, int $afterId): ?array {
         $result = $this->dbCore->queryAndGetResults(
             "SELECT id FROM " . $redirectsTable .
-            " WHERE " . $targetColumn . " IS NULL" . $sourceGuard .
+            " WHERE id > " . (int)$afterId . " AND " . $targetColumn . " IS NULL" . $sourceGuard .
             " ORDER BY id ASC LIMIT " . $chunkSize
         );
         $lastError = isset($result['last_error']) && is_string($result['last_error']) ? $result['last_error'] : '';
@@ -588,9 +715,32 @@ class ABJ_404_Solution_DatabaseUpgradeRedirectsDenormBackfill extends ABJ_404_So
      * @return array<int, int>|null List of ids (possibly empty), or null on a query error.
      */
     private function fetchNextBackfillChunkIds(string $redirectsTable, int $chunkSize): ?array {
+        $cursorOption = ABJ_404_Solution_DatabaseUpgradeRuntimeState::REDIRECTS_DENORM_BACKFILL_CURSOR_OPTION;
+        $cursor = $this->readCursorOption($cursorOption);
+        $ids = $this->queryBackfillChunkIds($redirectsTable, $chunkSize, $cursor);
+        if ($ids === null) {
+            return null;
+        }
+        if (empty($ids) && $cursor > 0) {
+            $this->writeCursorOption($cursorOption, 0);
+            $ids = $this->queryBackfillChunkIds($redirectsTable, $chunkSize, 0);
+            if ($ids === null) {
+                return null;
+            }
+        }
+        return $ids;
+    }
+
+    /**
+     * @param string $redirectsTable
+     * @param int $chunkSize
+     * @param int $afterId
+     * @return array<int, int>|null
+     */
+    private function queryBackfillChunkIds(string $redirectsTable, int $chunkSize, int $afterId): ?array {
         $result = $this->dbCore->queryAndGetResults(
             "SELECT id FROM " . $redirectsTable .
-            " WHERE dest_for_view IS NULL ORDER BY id ASC LIMIT " . $chunkSize
+            " WHERE id > " . (int)$afterId . " AND dest_for_view IS NULL ORDER BY id ASC LIMIT " . $chunkSize
         );
         $lastError = isset($result['last_error']) && is_string($result['last_error']) ? $result['last_error'] : '';
         if ($lastError !== '') {
@@ -605,6 +755,38 @@ class ABJ_404_Solution_DatabaseUpgradeRedirectsDenormBackfill extends ABJ_404_So
             }
         }
         return $ids;
+    }
+
+    /**
+     * @param string $targetColumn
+     * @return string
+     */
+    private function sortKeyCursorOption(string $targetColumn): string {
+        return 'abj404_' . $targetColumn . '_backfill_cursor';
+    }
+
+    /**
+     * @param string $option
+     * @return int
+     */
+    private function readCursorOption(string $option): int {
+        if ($option === '' || !function_exists('get_option')) {
+            return 0;
+        }
+        $raw = get_option($option, 0);
+        return max(0, is_scalar($raw) ? (int)$raw : 0);
+    }
+
+    /**
+     * @param string $option
+     * @param int $cursor
+     * @return void
+     */
+    private function writeCursorOption(string $option, int $cursor): void {
+        if ($option === '' || !function_exists('update_option')) {
+            return;
+        }
+        update_option($option, (string)max(0, $cursor), false);
     }
 
     /**

@@ -78,7 +78,16 @@ class ABJ_404_Solution_LazyDenormBackfillArmer {
             }
             $components = $upgrades->components();
             $components->canonicalUrlBackfillUpgrade()->scheduleLogsv2CanonicalUrlBackfill();
-            $components->redirectsDenormBackfillUpgrade()->scheduleRedirectsSortKeyBackfill();
+            $denorm = $components->redirectsDenormBackfillUpgrade();
+            $denormStatus = $denorm->scheduleRedirectsDenormBackfill();
+            if ($denormStatus === ABJ_404_Solution_DatabaseUpgradeRedirectsDenormBackfill::SCHEDULE_VIA_CRON
+                || $denormStatus === ABJ_404_Solution_DatabaseUpgradeRedirectsDenormBackfill::SCHEDULE_VIA_SHUTDOWN
+                || $denormStatus === ABJ_404_Solution_DatabaseUpgradeRedirectsDenormBackfill::SCHEDULE_VIA_SHUTDOWN_CRON_UNAVAILABLE
+                || $denormStatus === ABJ_404_Solution_DatabaseUpgradeRedirectsDenormBackfill::SCHEDULE_VIA_SHUTDOWN_CRON_REFUSED
+                || $denormStatus === ABJ_404_Solution_DatabaseUpgradeRedirectsDenormBackfill::SCHEDULE_SKIPPED_THROTTLED) {
+                return;
+            }
+            $denorm->scheduleRedirectsSortKeyBackfill();
         } catch (\Throwable $e) {
             // Arming is best-effort maintenance: a failure here must never break
             // an admin view read, and the daily maintenance cron remains the
