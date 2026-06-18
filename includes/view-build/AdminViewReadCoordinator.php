@@ -86,17 +86,41 @@ class ABJ_404_Solution_AdminViewReadCoordinator {
      */
     public function readRedirectsSingleTable(string $sub, array $tableOptions): array {
         $derivedPresent = $this->liveResolver->derivedColumnsPresent();
-        // Tell the query builder whether the indexable Destination sort key exists
-        // so a Destination sort can ORDER BY dest_sort_key (index-served) instead
-        // of the CASE-on-dest_for_view filesort fallback. Same _abj404_* option
+        // Tell the query builder whether a narrow sort key is SAFE to ORDER BY:
+        // the column must exist AND its one-time legacy-row backfill must have
+        // converged (the drain set the latch). Right after the column-add ALTER
+        // but before the drain runs, every legacy row carries a NULL sort key, so
+        // ordering by it would bucket every row as equal and fall to the id
+        // tie-break -- i.e. order the table by id, not by URL/destination. Until
+        // the latch is set the query builder falls back to the wide source column
+        // (raw url / CASE-on-dest_for_view): correct order, filesort, and on the
+        // Page Redirects tab the filesort is bounded to the status-filtered
+        // minority so the default load stays fast. Same _abj404_* option
         // convention as the timeout / suppress-writeback flags.
-        $tableOptions['_abj404_dest_sort_key_present'] = $this->liveResolver->destSortKeyColumnPresent();
-        // Same for the URL sort key: lets a url sort ORDER BY url_sort_key
-        // (index-served) instead of the raw-url filesort fallback.
-        $tableOptions['_abj404_url_sort_key_present'] = $this->liveResolver->urlSortKeyColumnPresent();
+        $tableOptions['_abj404_dest_sort_key_present'] = $this->sortKeyReady('dest_sort_key',
+            $this->liveResolver->destSortKeyColumnPresent());
+        $tableOptions['_abj404_url_sort_key_present'] = $this->sortKeyReady('url_sort_key',
+            $this->liveResolver->urlSortKeyColumnPresent());
         $rows = $this->queryBuilder->readRedirectsSingleTable($sub, $tableOptions, $derivedPresent);
         $persist = $derivedPresent && empty($tableOptions['_abj404_suppress_denorm_writeback']);
         return $this->liveResolver->resolveAndPersistVisibleRows($rows, $persist);
+    }
+
+    /**
+     * Whether a narrow sort-key column is safe to ORDER BY: present on the table
+     * AND its backfill latch set (the legacy-row drain has converged so no row
+     * still carries a NULL key). A column with no latch contract is never ready.
+     *
+     * @param string $targetColumn dest_sort_key or url_sort_key.
+     * @param bool   $columnPresent Whether the column exists on the table.
+     * @return bool
+     */
+    private function sortKeyReady(string $targetColumn, bool $columnPresent): bool {
+        if (!$columnPresent) {
+            return false;
+        }
+        $latchOption = ABJ_404_Solution_RedirectsDenormColumnSql::sortKeyBackfillLatchOption($targetColumn);
+        return $latchOption !== '' && get_option($latchOption) === '1';
     }
 
     /**

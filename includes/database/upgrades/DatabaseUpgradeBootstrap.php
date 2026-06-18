@@ -121,6 +121,16 @@ class ABJ_404_Solution_DatabaseUpgradeBootstrap extends ABJ_404_Solution_Databas
             $this->upgrades()->canonicalUrlBackfillUpgrade()->backfillRedirectsCanonicalUrl();
         }
 
+        // Open the narrow-sort-key read gate immediately for installs that are
+        // already fully populated (a fresh activation has no legacy rows; an
+        // upgrade from a build that already carried the column has its keys set).
+        // Activation-safe: this only flips the latch when no NULL key remains, it
+        // never runs the time-budgeted drain (that stays on the daily cron), so a
+        // large fresh-upgrade table never blocks activation. Until the cron drain
+        // converges on such a table the admin read falls back to the wide source
+        // column (correct order, filesort bounded to the Page Redirects minority).
+        $this->upgrades()->redirectsDenormBackfillUpgrade()->refreshSortKeyBackfillLatches();
+
         // Adopt orphaned tables AFTER target tables exist (rename handles prefix mismatches).
         $this->renameAbj404TablesToLowerCase();
 

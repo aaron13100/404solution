@@ -185,6 +185,17 @@ class ABJ_404_Solution_DatabaseUpgradeRedirectsDenormBackfill extends ABJ_404_So
         if (!isset($wpdb)) {
             return 0;
         }
+
+        // The latch is a one-way ratchet: once the backlog has drained to zero it
+        // is set, and the read path may order by the narrow key. Short-circuit on
+        // a set latch so the nightly cron stops re-running the drain SELECT
+        // forever after convergence (raw-SQL writers that NULL a key are re-healed
+        // by the Step 3d reconcile, which repopulates every row's sort key).
+        $latchOption = ABJ_404_Solution_RedirectsDenormColumnSql::sortKeyBackfillLatchOption($targetColumn);
+        if ($latchOption !== '' && get_option($latchOption) === '1') {
+            return 0;
+        }
+
         $redirectsTable = $this->dbCore->doTableNameReplacements('{wp_abj404_redirects}');
 
         // SHOW TABLES existence probe, same shape as the main backfill: routing
@@ -239,7 +250,85 @@ class ABJ_404_Solution_DatabaseUpgradeRedirectsDenormBackfill extends ABJ_404_So
             ));
         }
 
+        // Reaching here means the loop exited cleanly (drained to empty or hit the
+        // time budget), not via an early read/write-error return. Set the latch
+        // only if no NULL key remains, which opens the read gate.
+        $this->markSortKeyLatchIfComplete($redirectsTable, $targetColumn);
+
         return $totalRepaired;
+    }
+
+    /**
+     * Set the <target> backfill latch when no row still carries a NULL sort key,
+     * so the admin read path may switch from the wide-column fallback to the
+     * index-ordered narrow-key sort.
+     *
+     * No-op when the latch is already set, the column has no latch contract, or
+     * the probe errors / still finds a NULL key. The probe is UNGUARDED (no
+     * source-NOT-NULL filter): for dest_sort_key that means the latch waits for
+     * the MAIN backfill too (a row whose dest_for_view is still NULL has a NULL
+     * dest_sort_key the guarded drain deliberately skips), so the gate never opens
+     * while any row would order into the wrong bucket. One bounded SELECT, run at
+     * most once per drain invocation and never again once the latch is set.
+     *
+     * @param string $redirectsTable
+     * @param string $targetColumn Class-internal literal column name.
+     * @return void
+     */
+    private function markSortKeyLatchIfComplete(string $redirectsTable, string $targetColumn): void {
+        $latchOption = ABJ_404_Solution_RedirectsDenormColumnSql::sortKeyBackfillLatchOption($targetColumn);
+        if ($latchOption === '' || get_option($latchOption) === '1') {
+            return;
+        }
+        $result = $this->dbCore->queryAndGetResults(
+            "SELECT id FROM " . $redirectsTable . " WHERE " . $targetColumn . " IS NULL LIMIT 1"
+        );
+        $lastError = isset($result['last_error']) && is_string($result['last_error']) ? $result['last_error'] : '';
+        if ($lastError !== '') {
+            // Could not confirm convergence; leave the latch for a later run.
+            return;
+        }
+        $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
+        if (empty($rows)) {
+            // autoload=false: this latch is read only on admin redirect-table
+            // loads, never on the front end, so it must not bloat the autoload
+            // payload of every request.
+            update_option($latchOption, '1', false);
+        }
+    }
+
+    /**
+     * Activation-safe, in-band latch refresh for both narrow sort-key columns.
+     *
+     * Unlike {@see backfillRedirectsDestSortKey()} / {@see backfillRedirectsUrlSortKey()},
+     * this NEVER runs the populate loop (which can consume the full time budget on
+     * a large fresh-upgrade table and stall activation). It only flips the latch
+     * when the column is already fully populated -- so an install that already has
+     * every sort key (a small site, or one upgraded from a build that already
+     * carried the column) switches to the index-ordered sort immediately on
+     * upgrade instead of waiting for the first daily-cron drain. A site with a
+     * real backlog is left for the cron drain; until then the read path falls back
+     * to the wide source column (correct order, filesort), so there is no
+     * correctness gap either way.
+     *
+     * @return void
+     */
+    public function refreshSortKeyBackfillLatches(): void {
+        global $wpdb;
+        if (!isset($wpdb)) {
+            return;
+        }
+        $redirectsTable = $this->dbCore->doTableNameReplacements('{wp_abj404_redirects}');
+        // DAO-bypass-approved: schema existence probe, same shape as the drains.
+        $found = $wpdb->get_var("SHOW TABLES LIKE '" . esc_sql($redirectsTable) . "'");
+        if ($found !== $redirectsTable) {
+            return;
+        }
+        foreach (array('dest_sort_key', 'url_sort_key') as $targetColumn) {
+            if ($this->columnExists($redirectsTable, $targetColumn)) {
+                $this->markSortKeyLatchIfComplete($redirectsTable, $targetColumn);
+            }
+        }
     }
 
     /**

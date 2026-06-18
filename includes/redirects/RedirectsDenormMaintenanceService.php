@@ -42,8 +42,10 @@ class ABJ_404_Solution_RedirectsDenormMaintenanceService {
     /** @var ABJ_404_Solution_Logging */
     private $logger;
 
-    /** @var bool|null Memoized "are the four denorm columns present on redirects". */
-    private $denormColumnsPresentCache = null;
+    /** @var array<string,bool>|null Memoized lowercased column-name set of the
+     *  redirects table (one SHOW COLUMNS per instance), the source for both the
+     *  dest_for_view presence check and the narrow sort-key presence gates. */
+    private $redirectsColumnSetCache = null;
 
     /**
      * Redirect-id batch size for the chunked logs_hits write-back. A full-table
@@ -100,11 +102,18 @@ class ABJ_404_Solution_RedirectsDenormMaintenanceService {
 
         $redirectsTable = $this->dbCore->doTableNameReplacements('{wp_abj404_redirects}');
         $idList = implode(',', array_values($cleanIds));
+        // Gate the narrow sort-key UPDATEs on column presence: those columns are
+        // added by a separate ALTER that can lag the dest_for_view add, and an
+        // UPDATE against a missing column would error (logged as a warning by
+        // queryAndGetResults) and skip the rest of the recompute for this id.
+        $columns = $this->redirectsColumnSet();
         $statements = ABJ_404_Solution_RedirectsDenormColumnSql::buildDestPublishedStatements(
             $redirectsTable,
             " AND r.id IN (" . $idList . ")",
             " AND id IN (" . $idList . ")",
-            true
+            true,
+            isset($columns['dest_sort_key']),
+            isset($columns['url_sort_key'])
         );
         foreach ($statements as $statement) {
             // queryAndGetResults is the centralized error handler: a write
@@ -270,14 +279,27 @@ class ABJ_404_Solution_RedirectsDenormMaintenanceService {
     }
 
     /**
-     * Whether the four Step 3a denorm columns exist on wp_abj404_redirects.
-     * Memoized per instance so the SHOW COLUMNS probe runs at most once.
+     * Whether the four Step 3a denorm columns exist on wp_abj404_redirects
+     * (probed via the dest_for_view sentinel column). Derived from the memoized
+     * column-set probe.
      *
      * @return bool
      */
     private function denormColumnsPresent(): bool {
-        if ($this->denormColumnsPresentCache !== null) {
-            return $this->denormColumnsPresentCache;
+        return isset($this->redirectsColumnSet()['dest_for_view']);
+    }
+
+    /**
+     * Lowercased column-name set of wp_abj404_redirects via one SHOW COLUMNS,
+     * memoized per instance. A failed/empty probe yields an empty set, so every
+     * presence check (dest_for_view, dest_sort_key, url_sort_key) degrades to
+     * false -- the safe schema-drift fallback (skip the write / omit the UPDATE).
+     *
+     * @return array<string, bool>
+     */
+    private function redirectsColumnSet(): array {
+        if ($this->redirectsColumnSetCache !== null) {
+            return $this->redirectsColumnSetCache;
         }
         $table = $this->dbCore->doTableNameReplacements('{wp_abj404_redirects}');
         $result = $this->dbCore->queryAndGetResults(
@@ -285,21 +307,20 @@ class ABJ_404_Solution_RedirectsDenormMaintenanceService {
             array('log_errors' => false)
         );
         $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
-        $present = false;
+        $set = array();
         foreach ($rows as $row) {
             if (!is_array($row)) {
                 continue;
             }
             foreach ($row as $key => $value) {
-                if (strtolower((string)$key) === 'field' && is_scalar($value)
-                        && strtolower((string)$value) === 'dest_for_view') {
-                    $present = true;
-                    break 2;
+                if (strtolower((string)$key) === 'field' && is_scalar($value)) {
+                    $set[strtolower((string)$value)] = true;
+                    break;
                 }
             }
         }
-        $this->denormColumnsPresentCache = $present;
-        return $present;
+        $this->redirectsColumnSetCache = $set;
+        return $set;
     }
 
     /**

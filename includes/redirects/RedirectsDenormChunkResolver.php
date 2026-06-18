@@ -71,11 +71,20 @@ class ABJ_404_Solution_RedirectsDenormChunkResolver {
         $idClause = " AND r.id IN (" . $idList . ")";
         $idClauseBare = " AND id IN (" . $idList . ")";
 
+        // Probe the narrow sort-key columns once per chunk (same shape as the
+        // logs_hits SHOW TABLES probe below): their column-add ALTER runs
+        // separately from the dest_for_view add and may lag it, so emitting an
+        // UPDATE against a still-missing column would error and abort the chunk
+        // before the hits rollup -- stranding the row with dest_for_view set but
+        // its hit counts unrolled.
+        $columns = self::redirectsColumnSet($dbCore, $redirectsTable);
         $statements = ABJ_404_Solution_RedirectsDenormColumnSql::buildDestPublishedStatements(
             $redirectsTable,
             $idClause,
             $idClauseBare,
-            $recompute
+            $recompute,
+            isset($columns['dest_sort_key']),
+            isset($columns['url_sort_key'])
         );
         foreach ($statements as $statement) {
             if (!self::runChunkWrite($dbCore, $logger, $statement)) {
@@ -130,6 +139,35 @@ class ABJ_404_Solution_RedirectsDenormChunkResolver {
             $logsHitsTable,
             $idClause
         );
+    }
+
+    /**
+     * Lowercased column-name set of the redirects table via one SHOW COLUMNS,
+     * used to gate the optional narrow sort-key UPDATEs. A failed/empty probe
+     * yields an empty set so every sort-key gate degrades to "omit" (the safe
+     * fallback: the read path still orders by the wide source column).
+     *
+     * @param ABJ_404_Solution_DatabaseCore $dbCore
+     * @param string $redirectsTable
+     * @return array<string, bool>
+     */
+    private static function redirectsColumnSet(ABJ_404_Solution_DatabaseCore $dbCore, string $redirectsTable): array {
+        $result = $dbCore->queryAndGetResults("SHOW COLUMNS FROM " . $redirectsTable,
+            array('log_errors' => false));
+        $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
+        $set = array();
+        foreach ($rows as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            foreach ($row as $key => $value) {
+                if (strtolower((string)$key) === 'field' && is_scalar($value)) {
+                    $set[strtolower((string)$value)] = true;
+                    break;
+                }
+            }
+        }
+        return $set;
     }
 
     /**

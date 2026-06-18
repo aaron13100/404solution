@@ -32,6 +32,38 @@ if (!defined('ABSPATH')) {
 class ABJ_404_Solution_RedirectsDenormColumnSql {
 
     /**
+     * wp_options latch names recording that the one-time legacy-row backfill of a
+     * narrow sort-key column has fully converged (no row still carries a NULL
+     * key). The chunked drain
+     * ({@see ABJ_404_Solution_DatabaseUpgradeRedirectsDenormBackfill}) sets the
+     * latch; the admin read path
+     * ({@see ABJ_404_Solution_AdminViewReadCoordinator}) consults it before
+     * ordering by the sort key. A freshly-upgraded table has the column added but
+     * its legacy rows not yet drained (NULL keys), so ordering by the key would
+     * bucket every legacy row as equal and fall to id order -- the wrong order.
+     * Until the latch is set the read path keeps ordering by the wide source
+     * column (correct order, filesort), then switches to the index-ordered key.
+     * Co-located with the SQL that populates these columns so the two never drift.
+     *
+     * @var array<string, string>
+     */
+    const SORT_KEY_BACKFILL_LATCH_OPTIONS = array(
+        'dest_sort_key' => 'abj404_dest_sort_key_backfilled',
+        'url_sort_key'  => 'abj404_url_sort_key_backfilled',
+    );
+
+    /**
+     * The wp_options latch name for a narrow sort-key column, or '' for a column
+     * with no latch (so callers skip the read gate / never set a latch for it).
+     *
+     * @param string $targetColumn One of the SORT_KEY_BACKFILL_LATCH_OPTIONS keys.
+     * @return string
+     */
+    public static function sortKeyBackfillLatchOption(string $targetColumn): string {
+        return self::SORT_KEY_BACKFILL_LATCH_OPTIONS[$targetColumn] ?? '';
+    }
+
+    /**
      * Redirect types that one of the type-specific UPDATE statements resolves.
      * Any row whose type is outside this set is drained by the catch-all to the
      * broken/empty state, exactly as the staged pipeline's else-branch did.
@@ -66,13 +98,24 @@ class ABJ_404_Solution_RedirectsDenormColumnSql {
      *   statements did not set: false (backfill) guards on the dest_for_view IS NULL
      *   sentinel; true (recompute) guards on "type NOT IN (knownTypes)" so already
      *   populated rows of an unknown type are still re-drained.
+     * @param bool   $includeDestSortKey Emit the dest_sort_key UPDATE only when the
+     *   column exists. The dest_sort_key / url_sort_key column-add ALTER runs
+     *   SEPARATELY from the dest_for_view column-add and can lag it; on such a
+     *   schema-drifted table emitting an UPDATE against the missing column errors
+     *   and aborts the chunk before the hits rollup, stranding the row with
+     *   dest_for_view set (so the backfill's NULL sentinel skips it) but its hit
+     *   counts unrolled. Callers probe column presence and pass false to omit.
+     * @param bool   $includeUrlSortKey  Emit the url_sort_key UPDATE only when the
+     *   column exists (same schema-drift reasoning as $includeDestSortKey).
      * @return array<int, string>
      */
     public static function buildDestPublishedStatements(
         string $redirectsTable,
         string $idClause,
         string $idClauseBare,
-        bool $recompute
+        bool $recompute,
+        bool $includeDestSortKey = true,
+        bool $includeUrlSortKey = true
     ): array {
         // Numeric final_dest as an unsigned id; non-numeric collapses to 0 (no
         // match), mirroring the staged fd_int REGEXP guard.
@@ -135,9 +178,14 @@ class ABJ_404_Solution_RedirectsDenormColumnSql {
         // (status, disabled, dest_sort_key, id) composites can fully order. This
         // runs last so every row in scope already has its final dest_for_view.
         // dest_for_view IS NOT NULL skips rows the type statements did not touch.
-        $statements[] = "UPDATE " . $redirectsTable .
-            " SET dest_sort_key = LEFT(dest_for_view, 191)" .
-            " WHERE dest_for_view IS NOT NULL" . $idClauseBare;
+        // Gated on column presence: the dest_sort_key column-add ALTER runs
+        // separately and may lag the dest_for_view add. Emitting this against a
+        // missing column would error and abort the chunk before the hits rollup.
+        if ($includeDestSortKey) {
+            $statements[] = "UPDATE " . $redirectsTable .
+                " SET dest_sort_key = LEFT(dest_for_view, 191)" .
+                " WHERE dest_for_view IS NOT NULL" . $idClauseBare;
+        }
 
         // Derive the indexable URL sort key the same way. url is varchar(2048)
         // (prefix-indexable only, so ORDER BY url always filesorts even when every
@@ -146,10 +194,13 @@ class ABJ_404_Solution_RedirectsDenormColumnSql {
         // (status, disabled, url_sort_key, id) composites order so the URL sort is
         // index-ordered on the captured tab too. url is NOT NULL, so unlike
         // dest_sort_key this populates on every row in scope (no IS NOT NULL gate
-        // needed); the WHERE 1 = 1 keeps the bare id clause well-formed.
-        $statements[] = "UPDATE " . $redirectsTable .
-            " SET url_sort_key = LEFT(url, 191)" .
-            " WHERE 1 = 1" . $idClauseBare;
+        // needed); the WHERE 1 = 1 keeps the bare id clause well-formed. Gated on
+        // column presence for the same schema-drift reason as dest_sort_key.
+        if ($includeUrlSortKey) {
+            $statements[] = "UPDATE " . $redirectsTable .
+                " SET url_sort_key = LEFT(url, 191)" .
+                " WHERE 1 = 1" . $idClauseBare;
+        }
 
         return $statements;
     }
