@@ -107,6 +107,28 @@ interface ABJ_404_Solution_ViewReadServiceInterface {
     public function getRedirectsForViewCount(string $sub, array $tableOptions): int;
 
     /**
+     * Whether ordering the admin list by $orderby can be served index-ordered now
+     * (a narrow sort-key-backed sort whose column exists and whose backfill latch
+     * is set; non-key-backed sorts are always ready). The admin header uses this
+     * to disable the URL / Destination sort links on the captured tab during the
+     * post-upgrade backfill window.
+     *
+     * @param string $orderby UI orderby alias (url, final_dest, logshits, ...).
+     * @return bool
+     */
+    public function isSortReadyForOrderby(string $orderby): bool;
+
+    /**
+     * Backfill progress (0..100) for $orderby's narrow sort key, for the admin
+     * "building the index" tooltip. Cheap: cursor wp_options read over an O(1)
+     * MAX(id) probe, never a COUNT over the captured rows.
+     *
+     * @param string $orderby UI orderby alias.
+     * @return int
+     */
+    public function sortBackfillPercentForOrderby(string $orderby): int;
+
+    /**
      * @param array<int, string> $postIDs
      * @return array<int, mixed>
      */

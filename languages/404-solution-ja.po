@@ -4086,3 +4086,7 @@ msgstr "このデータベースはセッションスコープの GET_LOCK 名�
 #: includes/view/View_CapturedURLsTable.php:332
 msgid "Preparing the captured 404s table. The list is still loading and will appear in a moment."
 msgstr "Preparing the captured 404s table. The list is still loading and will appear in a moment."
+
+#: includes/admin/AdminTableColumnHeaders.php:178
+msgid "Sorting by this column is being prepared for your number of URLs (%d%% complete). The list shows newest first until it is ready."
+msgstr "この列での並べ替えを、あなたのURL数に合わせて準備しています（%d%% 完了）。準備が整うまで、新しいものから順に表示します。"

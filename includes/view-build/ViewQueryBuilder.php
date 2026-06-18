@@ -155,8 +155,9 @@ class ABJ_404_Solution_ViewQueryBuilder {
      * @return string
      */
     public function buildRedirectsSingleTableReadQuery(string $sub, array $tableOptions, bool $derivedPresent = true): string {
-        $orderBy = $this->resolveSingleTableOrderByColumn($tableOptions, $derivedPresent);
-        $order = $this->policy->resolveOrderDirection($tableOptions);
+        $effectiveSort = $this->resolveEffectiveSort($sub, $tableOptions, $derivedPresent);
+        $orderBy = $effectiveSort['orderby'];
+        $order = $effectiveSort['order'];
 
         $rawPaged = $tableOptions['paged'] ?? 1;
         $paged = max(1, is_scalar($rawPaged) ? intval($rawPaged) : 1);
@@ -223,6 +224,68 @@ class ABJ_404_Solution_ViewQueryBuilder {
             . " " . $trashClause . "\n"
             . " " . $scoreRangeClause . "\n"
             . " " . $filterTextClause . "\n";
+    }
+
+    /**
+     * Effective (orderby column, direction) for the single-table read ORDER BY.
+     *
+     * On the Captured (majority) tab, a URL or Destination sort requested before
+     * the narrow sort-key backfill has converged cannot be served index-ordered:
+     * the narrow key is all-NULL (every row ties, falling to id order), so the
+     * only correct ordering is a filesort over the wide source column
+     * (varchar(2048), prefix-only) across the whole captured set. On a large
+     * captured table (Bruno: ~250k captured rows) that scan can exceed a shared
+     * host's max_statement_time, the server kills the query, and the tab is stuck
+     * on its loading placeholder every load. Until the latch flips we therefore
+     * serve the always-indexed safe default (timestamp DESC, "newest first")
+     * instead. This is display-only: the user's saved sort preference is left
+     * untouched and resumes automatically once the backfill completes -- and the
+     * column header is rendered non-sortable with a progress tooltip meanwhile
+     * (see ABJ_404_Solution_AdminTableColumnHeaders).
+     *
+     * Scoped to the Captured tab on purpose. The Page Redirects (minority) tab
+     * keeps the raw-column fallback (see resolveSingleTableOrderByColumn): its
+     * filesort is bounded by the status filter to the redirect count, which stays
+     * cheap even on captured-heavy sites, so substituting there would needlessly
+     * degrade a working sort on its default (url) view.
+     *
+     * @param string $sub
+     * @param array<string, mixed> $tableOptions
+     * @param bool $derivedPresent
+     * @return array{orderby: string, order: string}
+     */
+    private function resolveEffectiveSort(string $sub, array $tableOptions, bool $derivedPresent): array {
+        $rawOrderBy = strtolower(is_string($tableOptions['orderby'] ?? null) ? $tableOptions['orderby'] : '');
+        if ($sub === 'abj404_captured' && $this->wideColumnSortPendingBackfill($rawOrderBy, $tableOptions)) {
+            return array('orderby' => 'timestamp', 'order' => 'DESC');
+        }
+        return array(
+            'orderby' => $this->resolveSingleTableOrderByColumn($tableOptions, $derivedPresent),
+            'order' => $this->policy->resolveOrderDirection($tableOptions),
+        );
+    }
+
+    /**
+     * Whether the requested sort targets a narrow sort-key-backed column
+     * (url -> url_sort_key, dest -> dest_sort_key) whose backfill has NOT yet
+     * converged. The coordinator sets the matching _abj404_*_sort_key_present
+     * flag true only when the column exists AND its drain latch is set; a falsey
+     * flag means the only available ordering is a wide-column filesort. Sorts on
+     * real always-populated columns (logshits, last_used, score, code, type,
+     * status, timestamp) are never pending and are not substituted.
+     *
+     * @param string $rawOrderBy Lowercased requested orderby.
+     * @param array<string, mixed> $tableOptions
+     * @return bool
+     */
+    private function wideColumnSortPendingBackfill(string $rawOrderBy, array $tableOptions): bool {
+        if ($rawOrderBy === 'url') {
+            return empty($tableOptions['_abj404_url_sort_key_present']);
+        }
+        if ($rawOrderBy === 'dest' || $rawOrderBy === 'final_dest') {
+            return empty($tableOptions['_abj404_dest_sort_key_present']);
+        }
+        return false;
     }
 
     /**

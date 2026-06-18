@@ -4071,3 +4071,7 @@ msgstr "Questo database non supporta i blocchi denominati GET_LOCK con ambito di
 #: includes/view/View_CapturedURLsTable.php:332
 msgid "Preparing the captured 404s table. The list is still loading and will appear in a moment."
 msgstr "Preparing the captured 404s table. The list is still loading and will appear in a moment."
+
+#: includes/admin/AdminTableColumnHeaders.php:178
+msgid "Sorting by this column is being prepared for your number of URLs (%d%% complete). The list shows newest first until it is ready."
+msgstr "L'ordinamento per questa colonna è in fase di preparazione per il tuo numero di URL (%d%% completato). Nel frattempo l'elenco mostra prima i più recenti."

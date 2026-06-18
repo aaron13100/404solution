@@ -64,6 +64,24 @@ class ABJ_404_Solution_RedirectsDenormColumnSql {
     }
 
     /**
+     * The wp_options name recording how far the chunked legacy-row drain of a
+     * narrow sort-key column has progressed: the highest redirect id drained so
+     * far. The drain
+     * ({@see ABJ_404_Solution_DatabaseUpgradeRedirectsDenormBackfill}) advances
+     * this as it walks the id space and resets it to 0 once the column converges
+     * (it sets the latch instead). Reading cursor / MAX(id) gives the admin
+     * "building the index" tooltip a cheap progress fraction WITHOUT a per-load
+     * COUNT over the captured majority. Co-located with the latch option above so
+     * the drain writer and the progress reader can never drift.
+     *
+     * @param string $targetColumn One of the SORT_KEY_BACKFILL_LATCH_OPTIONS keys.
+     * @return string
+     */
+    public static function sortKeyBackfillCursorOption(string $targetColumn): string {
+        return 'abj404_' . $targetColumn . '_backfill_cursor';
+    }
+
+    /**
      * Redirect types that one of the type-specific UPDATE statements resolves.
      * Any row whose type is outside this set is drained by the catch-all to the
      * broken/empty state, exactly as the staged pipeline's else-branch did.

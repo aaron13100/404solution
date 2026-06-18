@@ -120,7 +120,8 @@ class ABJ_404_Solution_View_Logs extends ABJ_404_Solution_ViewComponent {
 
     private function columnHeaders(): ABJ_404_Solution_AdminTableColumnHeaders {
         if ($this->columnHeaders === null) {
-            $this->columnHeaders = new ABJ_404_Solution_AdminTableColumnHeaders($this->f, $this->logic, $this->shared);
+            $this->columnHeaders = new ABJ_404_Solution_AdminTableColumnHeaders(
+                $this->f, $this->logic, $this->shared, $this->viewReadService);
         }
         return $this->columnHeaders;
     }

@@ -805,7 +805,9 @@ class ABJ_404_Solution_DatabaseUpgradeRedirectsDenormBackfill extends ABJ_404_So
      * @return string
      */
     private function sortKeyCursorOption(string $targetColumn): string {
-        return 'abj404_' . $targetColumn . '_backfill_cursor';
+        // Canonical name lives with the latch option in RedirectsDenormColumnSql so
+        // this drain writer and the admin progress-tooltip reader never drift.
+        return ABJ_404_Solution_RedirectsDenormColumnSql::sortKeyBackfillCursorOption($targetColumn);
     }
 
     /**

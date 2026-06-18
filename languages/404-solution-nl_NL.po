@@ -4074,3 +4074,7 @@ msgstr "Deze database ondersteunt geen sessie-gebonden GET_LOCK named locks. De 
 #: includes/view/View_CapturedURLsTable.php:332
 msgid "Preparing the captured 404s table. The list is still loading and will appear in a moment."
 msgstr "Preparing the captured 404s table. The list is still loading and will appear in a moment."
+
+#: includes/admin/AdminTableColumnHeaders.php:178
+msgid "Sorting by this column is being prepared for your number of URLs (%d%% complete). The list shows newest first until it is ready."
+msgstr "Sorteren op deze kolom wordt voorbereid voor jouw aantal URL's (%d%% voltooid). Tot die tijd toont de lijst de nieuwste eerst."

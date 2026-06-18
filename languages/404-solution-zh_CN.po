@@ -4079,3 +4079,7 @@ msgstr "此数据库不支持会话级别的 GET_LOCK 命名锁。插件正在�
 #: includes/view/View_CapturedURLsTable.php:332
 msgid "Preparing the captured 404s table. The list is still loading and will appear in a moment."
 msgstr "Preparing the captured 404s table. The list is still loading and will appear in a moment."
+
+#: includes/admin/AdminTableColumnHeaders.php:178
+msgid "Sorting by this column is being prepared for your number of URLs (%d%% complete). The list shows newest first until it is ready."
+msgstr "正在根据您的网址数量准备按此列排序（已完成 %d%%）。在准备就绪之前，列表会先显示最新的内容。"

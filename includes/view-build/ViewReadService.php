@@ -160,6 +160,109 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
     }
 
     /**
+     * Map a UI orderby alias to the narrow sort-key column that backs it, or ''
+     * for a sort that is not sort-key-backed (it orders by a real always-present
+     * column and is therefore always available).
+     *
+     * @var array<string, string>
+     */
+    const ORDERBY_TO_SORT_KEY = array(
+        'url'        => 'url_sort_key',
+        'dest'       => 'dest_sort_key',
+        'final_dest' => 'dest_sort_key',
+    );
+
+    /** @var int|null Per-request memo of MAX(id) for the progress denominator. */
+    private $sortKeyMaxIdMemo = null;
+
+    /**
+     * Whether ordering the admin list by $orderby can be served index-ordered
+     * right now. For a narrow-sort-key-backed column (URL, Destination) that
+     * means the column exists AND its one-time legacy-row drain has converged
+     * (the latch is set) -- the SAME condition the read path uses before ordering
+     * by the key (see ViewQueryBuilder::wideColumnSortPendingBackfill /
+     * AdminViewReadCoordinator). Sorts on real always-populated columns
+     * (logshits, last_used, score, timestamp, ...) are always ready.
+     *
+     * The admin header uses this to disable the URL / Destination sort links on
+     * the captured tab during the post-upgrade window, where ordering by those
+     * columns would otherwise filesort the captured majority over the wide
+     * varchar(2048) source column and risk the host's max_statement_time.
+     *
+     * @param string $orderby UI orderby alias (url, final_dest, logshits, ...).
+     * @return bool
+     */
+    public function isSortReadyForOrderby(string $orderby): bool {
+        $column = self::ORDERBY_TO_SORT_KEY[strtolower($orderby)] ?? '';
+        if ($column === '') {
+            return true;
+        }
+        if (!$this->sortKeyColumnPresent($column)) {
+            return false;
+        }
+        $latch = ABJ_404_Solution_RedirectsDenormColumnSql::sortKeyBackfillLatchOption($column);
+        return $latch !== '' && function_exists('get_option') && get_option($latch) === '1';
+    }
+
+    /**
+     * Backfill progress for $orderby's narrow sort key as a 0..100 integer, for
+     * the admin "building the index" tooltip. 100 once ready (or when the sort is
+     * not sort-key-backed). Otherwise derived from the drain cursor (highest
+     * redirect id drained) over MAX(id): a wp_options read plus an O(1)
+     * primary-key probe, NEVER a COUNT over the captured rows. Capped at 99 until
+     * the latch flips so the tooltip never claims 100% before the sort is
+     * actually available.
+     *
+     * @param string $orderby UI orderby alias.
+     * @return int
+     */
+    public function sortBackfillPercentForOrderby(string $orderby): int {
+        if ($this->isSortReadyForOrderby($orderby)) {
+            return 100;
+        }
+        $column = self::ORDERBY_TO_SORT_KEY[strtolower($orderby)] ?? '';
+        if ($column === '' || !function_exists('get_option')) {
+            return 0;
+        }
+        $cursorOption = ABJ_404_Solution_RedirectsDenormColumnSql::sortKeyBackfillCursorOption($column);
+        $cursorRaw = get_option($cursorOption);
+        $cursor = is_numeric($cursorRaw) ? (int) $cursorRaw : 0;
+        $maxId = $this->sortKeyMaxId();
+        if ($maxId <= 0 || $cursor <= 0) {
+            return 0;
+        }
+        return max(0, min(99, (int) floor(100 * $cursor / $maxId)));
+    }
+
+    /**
+     * @param string $column url_sort_key | dest_sort_key
+     * @return bool
+     */
+    private function sortKeyColumnPresent(string $column): bool {
+        if ($column === 'url_sort_key') {
+            return $this->liveResolver->urlSortKeyColumnPresent();
+        }
+        if ($column === 'dest_sort_key') {
+            return $this->liveResolver->destSortKeyColumnPresent();
+        }
+        return false;
+    }
+
+    /** @return int MAX(id) on the redirects table (O(1) PK probe), memoized per request. */
+    private function sortKeyMaxId(): int {
+        if ($this->sortKeyMaxIdMemo !== null) {
+            return $this->sortKeyMaxIdMemo;
+        }
+        $table = $this->dbCore->doTableNameReplacements('{wp_abj404_redirects}');
+        $result = $this->dbCore->queryAndGetResults('SELECT MAX(id) AS max_id FROM ' . $table);
+        $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
+        $firstRow = is_array($rows[0] ?? null) ? $rows[0] : array();
+        $raw = $firstRow['max_id'] ?? 0;
+        $this->sortKeyMaxIdMemo = is_numeric($raw) ? max(0, (int) $raw) : 0;
+        return $this->sortKeyMaxIdMemo;
+    }
+
+    /**
      * Whether the most recent getRedirectsForView() result is NOT a trustworthy
      * "genuinely empty" listing (pending build, errored read, or an empty
      * snapshot contradicting the live source count). Drives the renderer's

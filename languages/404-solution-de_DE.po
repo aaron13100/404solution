@@ -4072,3 +4072,7 @@ msgstr "Diese Datenbank unterstutzt keine sitzungsbezogenen GET_LOCK-Namenssperr
 #: includes/view/View_CapturedURLsTable.php:332
 msgid "Preparing the captured 404s table. The list is still loading and will appear in a moment."
 msgstr "Preparing the captured 404s table. The list is still loading and will appear in a moment."
+
+#: includes/admin/AdminTableColumnHeaders.php:178
+msgid "Sorting by this column is being prepared for your number of URLs (%d%% complete). The list shows newest first until it is ready."
+msgstr "Die Sortierung nach dieser Spalte wird fur Ihre Anzahl an URLs vorbereitet (%d%% abgeschlossen). Bis dahin zeigt die Liste die neuesten Eintrage zuerst."

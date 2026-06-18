@@ -4107,3 +4107,7 @@ msgstr "لا تدعم قاعدة البيانات هذه أقفال GET_LOCK ا�
 #: includes/view/View_CapturedURLsTable.php:332
 msgid "Preparing the captured 404s table. The list is still loading and will appear in a moment."
 msgstr "Preparing the captured 404s table. The list is still loading and will appear in a moment."
+
+#: includes/admin/AdminTableColumnHeaders.php:178
+msgid "Sorting by this column is being prepared for your number of URLs (%d%% complete). The list shows newest first until it is ready."
+msgstr "يتم الآن تجهيز الترتيب حسب هذا العمود ليناسب عدد عناوين URL لديك (%d%% مكتمل). تعرض القائمة الأحدث أولاً حتى يصبح جاهزاً."
