@@ -46,6 +46,15 @@ class ABJ_404_Solution_RedirectsDenormMaintenanceService {
     private $denormColumnsPresentCache = null;
 
     /**
+     * Redirect-id batch size for the chunked logs_hits write-back. A full-table
+     * UPDATE JOIN over every redirect row can lock / heavily load the redirects
+     * table on slow shared hosting exactly while the admin is reading it
+     * (report.md Finding 5); chunking by id bounds each statement's row count and
+     * lock duration. Matches the backfill/reconcile chunk size.
+     */
+    const WRITE_BACK_CHUNK_SIZE = 1000;
+
+    /**
      * @param ABJ_404_Solution_DatabaseCore $dbCore
      * @param ABJ_404_Solution_Logging|null $logging
      */
@@ -199,16 +208,65 @@ class ABJ_404_Solution_RedirectsDenormMaintenanceService {
         $redirectsTable = $this->dbCore->doTableNameReplacements('{wp_abj404_redirects}');
         $logsHitsTable = $this->dbCore->doTableNameReplacements('{wp_abj404_logs_hits}');
 
-        // Same rollup SQL the backfill / reconcile chunk resolver runs (single
-        // source of truth in RedirectsDenormColumnSql): LEFT JOIN logs_hits so a
-        // redirect URL with no hits resets to 0/0 rather than keeping a stale
-        // count. '' = all rows (full-table write-back).
-        $query = ABJ_404_Solution_RedirectsDenormColumnSql::buildHitsRollupFromRollupTableStatement(
-            $redirectsTable,
-            $logsHitsTable,
-            ''
+        // Chunk by redirect id (report.md Finding 5): a single full-table UPDATE
+        // JOIN over every redirect row can lock / heavily load the redirects table
+        // on slow shared hosting while the admin is reading it. Walk the ids with
+        // a cursor (so sparse ids after heavy deletion never produce empty range
+        // passes) and roll each batch through the same single-source-of-truth
+        // builder the backfill / reconcile chunk resolver uses (LEFT JOIN
+        // logs_hits, so a no-hit URL resets to 0/0 rather than keeping a stale
+        // count). A write error stops the walk; the next rollup / nightly
+        // reconcile retries from the start (queryAndGetResults logs it).
+        $cursor = 0;
+        while (true) {
+            $ids = $this->nextRedirectIdChunk($redirectsTable, $cursor, self::WRITE_BACK_CHUNK_SIZE);
+            if (empty($ids)) {
+                break;
+            }
+            $cursor = (int)max($ids);
+            $idClause = ' AND r.id IN (' . implode(',', $ids) . ')';
+            $query = ABJ_404_Solution_RedirectsDenormColumnSql::buildHitsRollupFromRollupTableStatement(
+                $redirectsTable,
+                $logsHitsTable,
+                $idClause
+            );
+            $result = $this->dbCore->queryAndGetResults($query);
+            $lastError = isset($result['last_error']) && is_string($result['last_error']) ? $result['last_error'] : '';
+            if ($lastError !== '') {
+                $this->logger->debugMessage(__FUNCTION__ . ' stopped after a write error past id ' . $cursor
+                    . '; the next rollup / reconcile will retry.');
+                break;
+            }
+            if (count($ids) < self::WRITE_BACK_CHUNK_SIZE) {
+                break;
+            }
+        }
+    }
+
+    /**
+     * Fetch the next batch of redirect ids strictly greater than $afterId, in id
+     * order, capped at $limit. The cursor walk over the PRIMARY key visits only
+     * rows that exist, so a table with sparse ids (heavy deletion) never wastes a
+     * pass on an empty id range.
+     *
+     * @param string $redirectsTable
+     * @param int $afterId
+     * @param int $limit
+     * @return array<int, int>
+     */
+    private function nextRedirectIdChunk(string $redirectsTable, int $afterId, int $limit): array {
+        $result = $this->dbCore->queryAndGetResults(
+            'SELECT id FROM ' . $redirectsTable . ' WHERE id > ' . (int)$afterId
+            . ' ORDER BY id ASC LIMIT ' . (int)$limit
         );
-        $this->dbCore->queryAndGetResults($query);
+        $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
+        $ids = array();
+        foreach ($rows as $row) {
+            if (is_array($row) && isset($row['id']) && is_numeric($row['id'])) {
+                $ids[] = (int)$row['id'];
+            }
+        }
+        return $ids;
     }
 
     /**
