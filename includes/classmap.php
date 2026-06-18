@@ -58,6 +58,7 @@ return array(
     'ABJ_404_Solution_DatabaseUpgradeRedirectsDenormReconcile' => $base . 'includes/database/upgrades/DatabaseUpgradeRedirectsDenormReconcile.php',
     'ABJ_404_Solution_DatabaseUpgradeDailyMaintenance' => $base . 'includes/database/upgrades/DatabaseUpgradeDailyMaintenance.php',
     'ABJ_404_Solution_DatabaseUpgradeNGram' => $base . 'includes/database/upgrades/DatabaseUpgradeNGram.php',
+    'ABJ_404_Solution_DatabaseUpgradeNGramCacheInitializer' => $base . 'includes/database/upgrades/DatabaseUpgradeNGramCacheInitializer.php',
     'ABJ_404_Solution_NGramNetworkOptionStore' => $base . 'includes/ngram/NGramNetworkOptionStore.php',
     'ABJ_404_Solution_NGramCacheRebuildScheduler' => $base . 'includes/ngram/NGramCacheRebuildScheduler.php',
     'ABJ_404_Solution_NGramCacheSyncRebuilder' => $base . 'includes/ngram/NGramCacheSyncRebuilder.php',

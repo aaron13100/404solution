@@ -12,7 +12,9 @@ if (!defined('ABSPATH')) {
  *  - reallyCreateDatabaseTables() orchestrator that walks the per-site path
  *    (single site vs network activation vs network upgrade), runs the
  *    permanent-DDL bootstrap, ensures collations / engine / indexes, and
- *    schedules the canonical_url backfill + n-gram cache rebuild.
+ *    schedules the canonical_url backfill. One-time n-gram cache rebuild
+ *    scheduling is delegated to
+ *    ABJ_404_Solution_DatabaseUpgradeNGramCacheInitializer.
  *  - Per-DDL-file discovery (discoverPermanentDDLFiles), post-CREATE
  *    materialization verification (verifyTableMaterialized), charset/collation
  *    rewriting (applyPluginTableCharsetCollate), lowercase rename pass
@@ -138,28 +140,10 @@ class ABJ_404_Solution_DatabaseUpgradeBootstrap extends ABJ_404_Solution_Databas
         // but it doesn't take long anyway so we do it every night.
         $this->permalinkCache->updatePermalinkCache(1);
 
-        // One-time N-gram cache initialization (async via WP-Cron to prevent blocking)
-        // MULTISITE: Use network-aware option getter to check initialization status
-        if ($this->upgrades()->nGramUpgrade()->getNetworkAwareOption('abj404_ngram_cache_initialized') !== '1') {
-            $this->logger->debugMessage("N-gram cache not initialized. Scheduling background build...");
-
-            // Schedule async rebuild via WP-Cron instead of blocking activation
-            $this->upgrades()->nGramUpgrade()->scheduleNGramCacheRebuild();
-
-            // Show admin notice that build is scheduled
-            if ($updatingToNewVersion && function_exists('add_settings_error')) {
-                $context = is_multisite() && $this->upgrades()->nGramUpgrade()->isNetworkActivated() ? ' across all sites in the network' : '';
-                $message = sprintf(
-                    __('404 Solution: N-gram spell check cache is being built in the background%s to optimize performance. This may take a few minutes on large sites.', '404-solution'),
-                    $context
-                );
-                add_settings_error('abj404_settings', 'ngram_cache_scheduled', $message, 'updated');
-            }
-
-            $this->logger->infoMessage("N-gram cache rebuild scheduled via WP-Cron.");
-        } else {
-            $this->logger->debugMessage("N-gram cache already initialized. Skipping rebuild.");
-        }
+        // One-time N-gram cache initialization (async via WP-Cron to prevent
+        // blocking). Owned by the dedicated initializer collaborator.
+        (new ABJ_404_Solution_DatabaseUpgradeNGramCacheInitializer($this->upgrades(), $this->logger))
+            ->scheduleRebuildIfUninitialized($updatingToNewVersion);
 
         // Run one-time migration to relative paths (Issue #24)
         if (get_option('abj404_migrated_to_relative_paths') !== '1') {
