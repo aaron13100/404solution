@@ -37,6 +37,29 @@ if (!defined('ABSPATH')) {
 class ABJ_404_Solution_DatabaseUpgradeRedirectsDenormBackfill extends ABJ_404_Solution_DatabaseUpgradeComponent {
 
     /**
+     * Narrow LEFT(<source>, 191) sort-key columns this component drains, mapped
+     * to the wide source column each is copied from. Single source of truth for
+     * the per-column drains, the in-band latch refresh, and the on-demand
+     * scheduler so the three paths can never drift on which columns exist.
+     *
+     * @var array<string, string>
+     */
+    private const SORT_KEY_COLUMNS = array(
+        'dest_sort_key' => 'dest_for_view',
+        'url_sort_key'  => 'url',
+    );
+
+    // Outcomes of scheduleRedirectsSortKeyBackfill(), returned so the decision is
+    // observable without spying on WP cron/shutdown internals (the callers ignore
+    // the value; the integration tests assert on it).
+    const SCHEDULE_SKIPPED_ALREADY = 'skipped-already';
+    const SCHEDULE_SKIPPED_LATCHED = 'skipped-latched';
+    const SCHEDULE_SKIPPED_NO_TABLE = 'skipped-no-table';
+    const SCHEDULE_SKIPPED_NO_BACKLOG = 'skipped-no-backlog';
+    const SCHEDULE_VIA_CRON = 'scheduled-cron';
+    const SCHEDULE_VIA_SHUTDOWN = 'scheduled-shutdown';
+
+    /**
      * Resolve the four derived columns for any redirect rows still carrying the
      * dest_for_view IS NULL sentinel, one chunk at a time.
      *
@@ -324,11 +347,174 @@ class ABJ_404_Solution_DatabaseUpgradeRedirectsDenormBackfill extends ABJ_404_So
         if ($found !== $redirectsTable) {
             return;
         }
-        foreach (array('dest_sort_key', 'url_sort_key') as $targetColumn) {
+        foreach (array_keys(self::SORT_KEY_COLUMNS) as $targetColumn) {
             if ($this->columnExists($redirectsTable, $targetColumn)) {
                 $this->markSortKeyLatchIfComplete($redirectsTable, $targetColumn);
             }
         }
+    }
+
+    /**
+     * On-demand trigger that arms the narrow sort-key drains within seconds of an
+     * admin redirect-table render, instead of leaving them to the daily cron.
+     *
+     * Why this exists (report6.md follow-up): the read path falls back to the wide
+     * source column (correct order, filesort) until the per-column backfill latch
+     * is set. {@see refreshSortKeyBackfillLatches()} flips the latch in-band on
+     * upgrade ONLY when the column is already fully populated; an install with a
+     * real legacy backlog would otherwise wait up to a full day for the first
+     * daily-cron drain. That window is harmless for the default loads (Page
+     * Redirects url ASC stays bounded to the status-filtered minority; Captured
+     * defaults to the timestamp index) but a MANUAL URL/Destination sort on the
+     * captured-heavy tab would filesort the majority for the whole window. This
+     * trigger shrinks the window to "within seconds of the first admin visit".
+     *
+     * Mirrors {@see ABJ_404_Solution_DatabaseUpgradeCanonicalUrlBackfill::scheduleLogsv2CanonicalUrlBackfill()}:
+     * WP-Cron during AJAX (some hosts hold the response open until shutdown work
+     * finishes), shutdown otherwise (always fires, independent of DISABLE_WP_CRON).
+     * Never runs the populate loop inline; it only ARMS the deferred drain.
+     *
+     * Pre-flight gates (cheapest first):
+     *   1. Request-scoped dedup flag -- skip if already armed this request.
+     *   2. Both latches set -- skip permanently (read gates already open).
+     *   3. $wpdb / redirects table existence.
+     *   4. Per not-yet-latched column: skip if the column is absent (column-add
+     *      ALTER not run). Probe for a DRAINABLE backlog (target NULL AND source
+     *      NOT NULL -- the exact predicate the drain acts on). If the column is
+     *      fully drained but the latch was never flipped, flip it in place and do
+     *      not arm. Only a real drainable backlog arms the deferred drain.
+     *
+     * @return string One of the SCHEDULE_* outcome constants.
+     */
+    public function scheduleRedirectsSortKeyBackfill(): string {
+        if (ABJ_404_Solution_DatabaseUpgradeRuntimeState::isRedirectsSortKeyBackfillScheduled()) {
+            return self::SCHEDULE_SKIPPED_ALREADY;
+        }
+        if (!function_exists('get_option')) {
+            return self::SCHEDULE_SKIPPED_NO_BACKLOG;
+        }
+
+        // All read gates already open -> nothing to arm. A stray NULL key behind a
+        // set latch is re-healed by the Step 3d nightly reconcile, not here.
+        $allLatched = true;
+        foreach (array_keys(self::SORT_KEY_COLUMNS) as $targetColumn) {
+            $latch = ABJ_404_Solution_RedirectsDenormColumnSql::sortKeyBackfillLatchOption($targetColumn);
+            if ($latch === '' || get_option($latch) !== '1') {
+                $allLatched = false;
+                break;
+            }
+        }
+        if ($allLatched) {
+            return self::SCHEDULE_SKIPPED_LATCHED;
+        }
+
+        global $wpdb;
+        if (!isset($wpdb)) {
+            return self::SCHEDULE_SKIPPED_NO_TABLE;
+        }
+        $redirectsTable = $this->dbCore->doTableNameReplacements('{wp_abj404_redirects}');
+        // DAO-bypass-approved: schema existence probe, same shape as the drains.
+        $found = $wpdb->get_var("SHOW TABLES LIKE '" . esc_sql($redirectsTable) . "'");
+        if ($found !== $redirectsTable) {
+            return self::SCHEDULE_SKIPPED_NO_TABLE;
+        }
+
+        $backlog = false;
+        foreach (self::SORT_KEY_COLUMNS as $targetColumn => $sourceColumn) {
+            $latch = ABJ_404_Solution_RedirectsDenormColumnSql::sortKeyBackfillLatchOption($targetColumn);
+            if ($latch === '' || get_option($latch) === '1') {
+                continue;
+            }
+            if ($this->sortKeyColumnNeedsDrain($redirectsTable, $targetColumn, $sourceColumn)) {
+                $backlog = true;
+            }
+        }
+
+        if (!$backlog) {
+            return self::SCHEDULE_SKIPPED_NO_BACKLOG;
+        }
+
+        ABJ_404_Solution_DatabaseUpgradeRuntimeState::setRedirectsSortKeyBackfillScheduled(true);
+        if ($this->shouldScheduleSortKeyBackfillViaCron()) {
+            abj_cron_scheduler()->scheduleSingleIfMissing(
+                ABJ_404_Solution_CronScheduler::HOOK_REDIRECTS_SORT_KEY_BACKFILL,
+                5
+            );
+            return self::SCHEDULE_VIA_CRON;
+        }
+        if (function_exists('add_action')) {
+            add_action('shutdown', function (): void {
+                $this->backfillRedirectsDestSortKey();
+                $this->backfillRedirectsUrlSortKey();
+            });
+        }
+        return self::SCHEDULE_VIA_SHUTDOWN;
+    }
+
+    /**
+     * Whether to arm the sort-key drain via WP-Cron (true) or a shutdown hook
+     * (false). Mirrors the canonical backfill's decision: during admin-ajax some
+     * hosts/proxies hold the HTTP response open until shutdown work finishes, so
+     * use WP-Cron there to keep table AJAX from timing out behind the drain; on a
+     * normal page render shutdown is preferable because it always fires (even on
+     * DISABLE_WP_CRON sites) after the response is already sent.
+     *
+     * @return bool
+     */
+    public function shouldScheduleSortKeyBackfillViaCron(): bool {
+        if (function_exists('wp_doing_ajax') && wp_doing_ajax()) {
+            return true;
+        }
+        $scriptName = isset($_SERVER['SCRIPT_NAME']) && is_string($_SERVER['SCRIPT_NAME'])
+            ? $_SERVER['SCRIPT_NAME'] : '';
+        if ($scriptName !== '' && basename($scriptName) === 'admin-ajax.php') {
+            return true;
+        }
+        $pagenow = isset($GLOBALS['pagenow']) && is_string($GLOBALS['pagenow'])
+            ? $GLOBALS['pagenow'] : '';
+        return $pagenow === 'admin-ajax.php';
+    }
+
+    /**
+     * Whether one narrow sort-key column has a DRAINABLE backlog worth arming a
+     * deferred drain for, used by {@see scheduleRedirectsSortKeyBackfill()}.
+     *
+     * Returns false (no drain needed) when:
+     *   - either column is absent (column-add ALTER not run yet; schema drift),
+     *   - the backlog probe errors (leave it for the daily cron),
+     *   - no row carries the drainable sentinel. In that last case the column is
+     *     already drained, so the unguarded latch probe is run to flip the latch
+     *     in place (opens the read gate without arming a drain).
+     *
+     * The probe predicate `target IS NULL AND source IS NOT NULL` is exactly what
+     * the drain acts on, so a true result guarantees the deferred drain can make
+     * progress (it never arms a no-op drain).
+     *
+     * @param string $redirectsTable
+     * @param string $targetColumn Class-internal literal sort-key column.
+     * @param string $sourceColumn Class-internal literal wide source column.
+     * @return bool
+     */
+    private function sortKeyColumnNeedsDrain(string $redirectsTable, string $targetColumn, string $sourceColumn): bool {
+        if (!$this->columnExists($redirectsTable, $targetColumn)
+            || !$this->columnExists($redirectsTable, $sourceColumn)) {
+            return false;
+        }
+        $probe = $this->dbCore->queryAndGetResults(
+            "SELECT 1 FROM " . $redirectsTable .
+            " WHERE " . $targetColumn . " IS NULL AND " . $sourceColumn . " IS NOT NULL LIMIT 1",
+            array('log_too_slow' => false)
+        );
+        $err = isset($probe['last_error']) && is_string($probe['last_error']) ? $probe['last_error'] : '';
+        if ($err !== '') {
+            return false;
+        }
+        $rows = is_array($probe['rows'] ?? null) ? $probe['rows'] : array();
+        if (empty($rows)) {
+            $this->markSortKeyLatchIfComplete($redirectsTable, $targetColumn);
+            return false;
+        }
+        return true;
     }
 
     /**

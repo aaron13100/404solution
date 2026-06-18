@@ -77,6 +77,28 @@ function abj404_logsv2CanonicalUrlBackfillListener() {
     }
 }
 }
+if (!function_exists('abj404_redirectsSortKeyBackfillListener')) {
+/**
+ * On-demand drain of the redirects narrow sort-key columns (dest_sort_key /
+ * url_sort_key), armed by an admin redirect-table render when a legacy backlog
+ * exists. Light-path: the drains route through queryAndGetResults and no-op on
+ * a missing/empty table, so a fresh-install or deactivated-but-installed state
+ * degrades gracefully. See scheduleRedirectsSortKeyBackfill().
+ *
+ * @return void
+ */
+function abj404_redirectsSortKeyBackfillListener() {
+    try {
+        require_once(plugin_dir_path( ABJ404_FILE ) . "includes/Loader.php");
+        $denorm = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance()
+            ->components()->redirectsDenormBackfillUpgrade();
+        $denorm->backfillRedirectsDestSortKey();
+        $denorm->backfillRedirectsUrlSortKey();
+    } catch (\Throwable $e) {
+        abj404_logRuntimeWarning('Cron redirects sort-key backfill failed', $e);
+    }
+}
+}
 if (!function_exists('abj404_updatePermalinkCacheListener')) {
 /**
  * @param int $maxExecutionTime

@@ -56,6 +56,12 @@ class ABJ_404_Solution_HitsTableRebuildPolicy {
             if (is_object($upgradesEtc) && method_exists($upgradesEtc, 'scheduleLogsv2CanonicalUrlBackfill')) {
                 $upgradesEtc->components()->canonicalUrlBackfillUpgrade()->scheduleLogsv2CanonicalUrlBackfill();
             }
+            // report6 follow-up: arm the narrow sort-key drains on the same admin
+            // render so a legacy url_sort_key / dest_sort_key backlog clears within
+            // seconds of the first visit instead of waiting for the daily cron.
+            if (is_object($upgradesEtc) && method_exists($upgradesEtc, 'components')) {
+                $upgradesEtc->components()->redirectsDenormBackfillUpgrade()->scheduleRedirectsSortKeyBackfill();
+            }
         }
 
         if ($this->dbCore->noticeState()->shouldSkipNonEssentialDbWrites()) {

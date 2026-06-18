@@ -21,6 +21,7 @@ class ABJ_404_Solution_CronScheduler {
     const HOOK_SEND_DIGEST = 'abj404_send_digest';
     const HOOK_REBUILD_NGRAM_CACHE = 'abj404_rebuild_ngram_cache_hook';
     const HOOK_LOGSV2_CANONICAL_BACKFILL = 'abj404_logsv2_canonical_backfill';
+    const HOOK_REDIRECTS_SORT_KEY_BACKFILL = 'abj404_redirects_sort_key_backfill';
     const HOOK_SEND_QUEUED_REPORT = 'abj404_send_queued_report';
     const HOOK_NETWORK_ACTIVATION = 'abj404_network_activation_hook';
     const HOOK_NETWORK_ACTIVATION_BACKGROUND = 'abj404_network_activation_background';
@@ -202,6 +203,7 @@ class ABJ_404_Solution_CronScheduler {
             self::HOOK_SEND_DIGEST,
             self::HOOK_REBUILD_NGRAM_CACHE,
             self::HOOK_LOGSV2_CANONICAL_BACKFILL,
+            self::HOOK_REDIRECTS_SORT_KEY_BACKFILL,
             self::HOOK_SEND_QUEUED_REPORT,
             self::HOOK_NETWORK_ACTIVATION,
             self::HOOK_NETWORK_ACTIVATION_BACKGROUND,
