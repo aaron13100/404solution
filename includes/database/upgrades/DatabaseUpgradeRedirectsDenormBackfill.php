@@ -106,7 +106,6 @@ class ABJ_404_Solution_DatabaseUpgradeRedirectsDenormBackfill extends ABJ_404_So
             ));
         }
 
-        $this->maybeFlipDenormBackfillCompleteFlag($redirectsTable);
         return $totalResolved;
     }
 
@@ -163,36 +162,6 @@ class ABJ_404_Solution_DatabaseUpgradeRedirectsDenormBackfill extends ABJ_404_So
             $redirectsTable,
             $ids,
             false
-        );
-    }
-
-    /**
-     * Flip the completion option once no redirect row still carries the
-     * dest_for_view IS NULL sentinel, so Step 3b reads can trust the derived
-     * columns. Cheap LIMIT 1 probe.
-     *
-     * @param string $redirectsTable
-     * @return void
-     */
-    private function maybeFlipDenormBackfillCompleteFlag(string $redirectsTable): void {
-        if (!function_exists('get_option')
-            || get_option($this->getRedirectsDenormBackfillCompleteOption())) {
-            return;
-        }
-        $remainingProbe = $this->dbCore->queryAndGetResults(
-            "SELECT 1 FROM " . $redirectsTable . " WHERE dest_for_view IS NULL LIMIT 1"
-        );
-        $remainingRows = is_array($remainingProbe['rows'] ?? null) ? $remainingProbe['rows'] : array();
-        $remainingError = isset($remainingProbe['last_error']) && is_string($remainingProbe['last_error'])
-            ? $remainingProbe['last_error'] : '';
-        if ($remainingError !== '' || !empty($remainingRows) || !function_exists('update_option')) {
-            return;
-        }
-        update_option($this->getRedirectsDenormBackfillCompleteOption(), '1', false);
-        $this->logger->infoMessage(
-            "backfillRedirectsDenormColumns: backlog cleared, flipped " .
-            $this->getRedirectsDenormBackfillCompleteOption() .
-            "; Step 3b reads can now trust the derived columns."
         );
     }
 

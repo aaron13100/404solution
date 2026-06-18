@@ -235,13 +235,13 @@ class ABJ_404_Solution_ViewQueryBuilder {
      *   - the dest_for_view ordering groups NULL/empty destinations last via its
      *     CASE expression (see ViewQueryPolicy::resolveOrderByColumn).
      *
-     * The previous implementation gated these sorts on
-     * abj404_redirects_denorm_backfill_complete and fell back to url order until
-     * it flipped. That flag is flipped only when no row has dest_for_view NULL, a
-     * condition a live 404 site never reaches: every newly captured 404 is
-     * inserted with dest_for_view NULL, so the flag stayed false forever and the
-     * Hits / Last Used / Destination columns were permanently sorted by url
-     * instead of by their own values (the rendered Hits column looked random).
+     * The previous implementation gated these sorts on the obsolete denorm
+     * backfill-complete option and fell back to url order until it flipped. That
+     * option was flipped only when no row had dest_for_view NULL, a condition a
+     * live 404 site never reaches: every newly captured 404 is inserted with
+     * dest_for_view NULL, so the option stayed false forever and the Hits / Last
+     * Used / Destination columns were permanently sorted by url instead of by
+     * their own values (the rendered Hits column looked random).
      *
      * @param array<string, mixed> $tableOptions
      * @param bool $derivedPresent Whether the four denorm columns exist on the

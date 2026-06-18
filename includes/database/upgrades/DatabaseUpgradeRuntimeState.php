@@ -56,15 +56,6 @@ final class ABJ_404_Solution_DatabaseUpgradeRuntimeState {
     public const REDIRECTS_DENORM_BACKFILL_TIME_BUDGET_SEC = 20;
 
     /**
-     * wp_options key flipped when every redirects row has its four derived
-     * columns (logshits, last_used, dest_for_view, published_status) populated,
-     * i.e. no row still has the dest_for_view IS NULL not-backfilled sentinel.
-     * Denorm Step 3a (i459).
-     * @var string
-     */
-    public const REDIRECTS_DENORM_BACKFILL_COMPLETE_OPTION = 'abj404_redirects_denorm_backfill_complete';
-
-    /**
      * Rows recomputed per chunk by reconcileRedirectsDenormColumns() (Denorm
      * Step 3d). Same 1000-row chunk as the backfill: each chunk also runs a
      * logsv2 GROUP BY rollup join, so a tighter chunk keeps each statement
