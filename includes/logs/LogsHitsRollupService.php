@@ -6,6 +6,7 @@ if (!defined('ABSPATH')) {
 
 require_once __DIR__ . '/LogsHitsRollupServiceInterface.php';
 require_once __DIR__ . '/LogsHitsCanonicalUrlJoinHelper.php';
+require_once __DIR__ . '/LogsHitsTableRebuilder.php';
 
 /**
  * wp_abj404_logs_hits rollup lifecycle (existence checks, scheduling,
@@ -26,10 +27,10 @@ class ABJ_404_Solution_LogsHitsRollupService implements ABJ_404_Solution_LogsHit
     const HITS_TABLE_SCHEDULE_COOLDOWN_SECONDS = 30;
     /** @var int Cross-request lock timeout for logs-hits rebuild jobs. */
     const HITS_TABLE_REBUILD_LOCK_TTL_SECONDS = 180;
-    /** @var int Number of logsv2 IDs to process per chunk during pre-aggregation. */
-    const HITS_TABLE_PREAGG_CHUNK_SIZE = 100000;
-    /** @var int Direct-path threshold for hits-table rebuild. */
-    const HITS_TABLE_DIRECT_PATH_THRESHOLD = 5000;
+    /** @var int Number of logsv2 IDs to process per chunk during pre-aggregation. Canonical home is the rebuild engine; aliased here for backward-compatible forwarding via LogsRepository. */
+    const HITS_TABLE_PREAGG_CHUNK_SIZE = ABJ_404_Solution_LogsHitsTableRebuilder::HITS_TABLE_PREAGG_CHUNK_SIZE;
+    /** @var int Direct-path threshold for hits-table rebuild. Canonical home is the rebuild engine; aliased here for backward-compatible forwarding via LogsRepository. */
+    const HITS_TABLE_DIRECT_PATH_THRESHOLD = ABJ_404_Solution_LogsHitsTableRebuilder::HITS_TABLE_DIRECT_PATH_THRESHOLD;
 
     /** @var string Runtime flag: last time we checked whether logs-hits needs rebuild. */
     const HITS_TABLE_LAST_CHECKED_FLAG = 'abj404_logs_hits_last_checked_at';
@@ -75,6 +76,9 @@ class ABJ_404_Solution_LogsHitsRollupService implements ABJ_404_Solution_LogsHit
     /** @var ABJ_404_Solution_LogsHitsCanonicalUrlJoinHelper */
     private $joinHelper;
 
+    /** @var ABJ_404_Solution_LogsHitsTableRebuilder */
+    private $rebuilder;
+
     /**
      * @param ABJ_404_Solution_DatabaseCore $dbCore
      * @param ABJ_404_Solution_Logging|null $logging
@@ -94,6 +98,12 @@ class ABJ_404_Solution_LogsHitsRollupService implements ABJ_404_Solution_LogsHit
             : $this->resolveRebuildHealthState();
         $this->noticeState = $noticeState !== null ? $noticeState : $dbCore->noticeState();
         $this->joinHelper = new ABJ_404_Solution_LogsHitsCanonicalUrlJoinHelper($dbCore);
+        $this->rebuilder = new ABJ_404_Solution_LogsHitsTableRebuilder(
+            $this->dbCore,
+            $this->logger,
+            $this->rebuildHealth,
+            $this->joinHelper
+        );
     }
 
     /** @return ABJ_404_Solution_RebuildHealthState|null */
@@ -225,9 +235,17 @@ class ABJ_404_Solution_LogsHitsRollupService implements ABJ_404_Solution_LogsHit
     // Rebuild pipeline (direct + chunked)
     // =========================================================================
 
-    /** @inheritDoc */
+    /**
+     * @inheritDoc
+     *
+     * Coordinates a rollup rebuild: enforces the health gate, write cooldown,
+     * and cross-request lock, snapshots the logsv2 id range (so the tracking
+     * test subclass and the pre-insert watermark both observe the same values),
+     * then delegates the materialize-and-swap SQL to the rebuild engine. On a
+     * successful refresh it stamps the freshness flag, clears the staleness
+     * signal, and writes the denorm hit columns back onto the redirects rows.
+     */
     public function createRedirectsForViewHitsTable(): bool {
-        $wasRefreshed = false;
         if ($this->rebuildHealth !== null && !$this->rebuildHealth->beginExpensiveRebuildAttempt()) {
             $this->logger->debugMessage(__FUNCTION__ . " skipped because rebuild health gate is closed.");
             $this->noticeState->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'paused', 86400);
@@ -235,53 +253,30 @@ class ABJ_404_Solution_LogsHitsRollupService implements ABJ_404_Solution_LogsHit
         }
         if ($this->noticeState->shouldSkipNonEssentialDbWrites()) { $this->logger->debugMessage(__FUNCTION__ . " skipped due to temporary DB write cooldown."); $this->noticeState->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'paused', 86400); return false; }
         if (!$this->acquireHitsTableRebuildLock()) { $this->logger->debugMessage(__FUNCTION__ . " skipped because rebuild lock is already held."); $this->noticeState->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'running', 86400); return false; }
-        $preAggTable = $this->dbCore->doTableNameReplacements("{wp_abj404_logs_hits}_preagg");
         try {
-            $finalDestTable = $this->dbCore->doTableNameReplacements("{wp_abj404_logs_hits}");
-            $tempDestTable = $this->dbCore->doTableNameReplacements("{wp_abj404_logs_hits}_temp");
-            $this->dbCore->queryAndGetResults("drop table if exists " . $tempDestTable);
-            $resolvedCollation = $this->resolveHitsJoinCollation();
-            $createTempTableQuery = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/../sql/createLogsHitsTempTable.sql");
-            $createTempTableQuery = $this->dbCore->doTableNameReplacements($createTempTableQuery);
-            $createTempTableQuery = str_replace('{COLLATION}', $resolvedCollation, $createTempTableQuery);
-            $this->dbCore->queryAndGetResults($createTempTableQuery);
-            // @cache-write-audit: opt-out - truncates an unpublished temp table before rebuilding it.
-            $this->dbCore->queryAndGetResults("truncate table " . $tempDestTable);
             $maxLogIdSnapshot = $this->getMaxLogId();
             $minLogId = $this->getMinLogId();
-            $idRange = $maxLogIdSnapshot - $minLogId;
-            $chunkSize = $this->getHitsRebuildChunkSize($idRange);
-            if ($idRange <= self::HITS_TABLE_DIRECT_PATH_THRESHOLD) { $results = $this->hitsTableInsertDirect($tempDestTable); } else { $results = $this->hitsTableInsertChunked($tempDestTable, $preAggTable, $minLogId, $maxLogIdSnapshot, $chunkSize); }
-            if ($results === false || !empty($results['timed_out']) || !empty($results['last_error'])) {
-                $errorMessage = $results === false ? 'Hits rebuild phase 1 chunk failed.' : (string)($results['last_error'] ?? 'Hits rebuild timed out.');
-                $this->recordHitsRebuildFailure($errorMessage);
-                if ($idRange > self::HITS_TABLE_DIRECT_PATH_THRESHOLD && $results !== false && (!empty($results['timed_out']) || !empty($results['last_error']))) {
-                    $this->recordHitsChunkFailure();
-                }
-                $this->dbCore->queryAndGetResults("drop table if exists " . $tempDestTable); $this->logger->debugMessage(__FUNCTION__ . " INSERT timed out or errored; aborting rebuild."); $this->noticeState->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'paused', 86400); return false;
+            $result = $this->rebuilder->rebuildAndSwap($minLogId, $maxLogIdSnapshot);
+            if (!$result['refreshed']) {
+                $this->noticeState->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'paused', 86400);
+                return false;
             }
-            $elapsedTime = $results['elapsed_time'];
-            $comment = $elapsedTime . '|' . $maxLogIdSnapshot;
-            // @utf8-audit: opt-out - rebuild table comment is synthesized from numeric timing and ID values.
-            $comment = substr(esc_sql($comment), 0, 2048);
-            $this->dbCore->queryAndGetResults(sprintf("ALTER TABLE %s COMMENT '%s'", $tempDestTable, $comment));
-            $statements = array("drop table if exists " . $finalDestTable, "rename table " . $tempDestTable . ' to ' . $finalDestTable);
-            $this->dbCore->executeAsTransaction($statements);
             $this->noticeState->setRuntimeFlag(self::HITS_TABLE_LAST_REFRESHED_FLAG, abj_clock()->now(), 86400);
-            $this->recordHitsRebuildSuccess($chunkSize);
             $this->clearLogsHitsRollupStaleSignal();
             $this->writeBackDenormHitsColumns();
-            $wasRefreshed = true;
-            $this->logger->debugMessage(__FUNCTION__ . " refreshed " . $finalDestTable . " in " . $elapsedTime . " seconds.");
+            return true;
         } catch (Throwable $e) {
-            $this->recordHitsRebuildFailure($e->getMessage());
-            $this->logger->errorMessage(__FUNCTION__ . " failed: " . $e->getMessage(), $e instanceof \Exception ? $e : null);
+            // The rebuild engine self-handles its own SQL/Throwable failures and
+            // signals them via the return value; reaching here means a post-swap
+            // bookkeeping step (freshness flag, staleness clear, denorm write-back)
+            // threw. Degrade to a paused decision rather than letting the
+            // exception escape the cron / shutdown listener.
+            $this->logger->errorMessage(__FUNCTION__ . " post-rebuild step failed: " . $e->getMessage(), $e instanceof \Exception ? $e : null);
             $this->noticeState->setRuntimeFlag(self::HITS_TABLE_LAST_DECISION_FLAG, 'paused', 86400);
+            return false;
         } finally {
-            $this->dbCore->queryAndGetResults("drop table if exists " . $preAggTable);
             $this->releaseHitsTableRebuildLock();
         }
-        return $wasRefreshed;
     }
 
     /**
@@ -301,78 +296,6 @@ class ABJ_404_Solution_LogsHitsRollupService implements ABJ_404_Solution_LogsHit
             $this->logger
         );
         $maintenance->writeBackLogsHitsColumns();
-    }
-
-    /** @param string $tempDestTable @return array<string, mixed> */
-    private function hitsTableInsertDirect(string $tempDestTable): array {
-        $ttSelectQuery = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/../sql/getRedirectsForViewTempTable.sql");
-        if ($this->joinHelper->isLogsv2CanonicalUrlBackfillComplete()) { $ttSelectQuery = $this->joinHelper->dropLogsv2CanonicalCoalesceWrap($ttSelectQuery); }
-        if ($this->joinHelper->isRedirectsCanonicalUrlBackfillComplete()) { $ttSelectQuery = $this->joinHelper->dropRedirectsCanonicalCoalesceWrap($ttSelectQuery); }
-        $ttSelectQuery = $this->dbCore->doTableNameReplacements($ttSelectQuery);
-        $ttInsertQuery = "/* abj404:src=LogsHitsRollupService::hitsTableInsertDirect */ insert into " . $tempDestTable . " (requested_url, logsid, last_used, logshits, failed_hits) \n " . $ttSelectQuery;
-        return $this->dbCore->queryAndGetResults($ttInsertQuery, array('log_too_slow' => false, 'timeout' => 60));
-    }
-
-    /** @return array<string, mixed>|false */
-    private function hitsTableInsertChunked(string $tempDestTable, string $preAggTable, int $minId, int $maxId, int $chunkSize) {
-        $logsv2Table = $this->dbCore->doTableNameReplacements("{wp_abj404_logsv2}");
-        $redirectsTable = $this->dbCore->doTableNameReplacements("{wp_abj404_redirects}");
-        $resolvedCollation = $this->resolveHitsJoinCollation();
-        $startTime = abj_clock()->nowFloat();
-        $this->dbCore->queryAndGetResults("drop table if exists " . $preAggTable);
-        $createPreAggQuery = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/../sql/createLogsHitsPreAggTempTable.sql");
-        $createPreAggQuery = $this->dbCore->doTableNameReplacements($createPreAggQuery);
-        $createPreAggQuery = str_replace('{COLLATION}', $resolvedCollation, $createPreAggQuery);
-        $this->dbCore->queryAndGetResults($createPreAggQuery);
-        $logsv2CanonicalExpr = $this->joinHelper->isLogsv2CanonicalUrlBackfillComplete() ? "canonical_url" : "COALESCE(canonical_url, CONCAT('/', TRIM(BOTH '/' FROM requested_url)))";
-        for ($start = $minId; $start <= $maxId; $start += $chunkSize) {
-            $end = $start + $chunkSize;
-            $chunkQuery = "/* abj404:src=LogsHitsRollupService::hitsTableInsertChunked#phase1Chunk */ INSERT INTO " . $preAggTable . " (requested_url, logsid, last_used, logshits, failed_hits) SELECT " . $logsv2CanonicalExpr . ", MIN(id), MAX(timestamp), COUNT(*), SUM(CASE WHEN dest_url = '' OR dest_url IS NULL THEN 1 ELSE 0 END) FROM " . $logsv2Table . " WHERE id >= %d AND id < %d GROUP BY " . $logsv2CanonicalExpr;
-            $chunkResult = $this->dbCore->queryAndGetResults($chunkQuery, array('log_too_slow' => false, 'timeout' => 10, 'query_params' => array($start, $end)));
-            if (!empty($chunkResult['timed_out']) || !empty($chunkResult['last_error'])) { $this->recordHitsChunkFailure(); $this->logger->debugMessage(__FUNCTION__ . " Phase 1 chunk failed at id range [{$start}, {$end}); aborting."); return false; }
-        }
-        // Defensive form covers legacy and in-progress installs; optimized
-        // form lets idx_canonical_url serve the JOIN probe and gets the
-        // rebuild under the host's 60s max_statement_time on Bruno-class
-        // data (i359). See LogsHitsCanonicalUrlJoinHelper::buildPhase2JoinRhs.
-        $joinRhs = $this->joinHelper->buildPhase2JoinRhs($resolvedCollation);
-        $phase2Query = "/* abj404:src=LogsHitsRollupService::hitsTableInsertChunked#phase2Aggregate */ INSERT INTO " . $tempDestTable . " (requested_url, logsid, last_used, logshits, failed_hits) SELECT a.requested_url, MIN(a.logsid), MAX(a.last_used), SUM(a.logshits), SUM(a.failed_hits) FROM " . $preAggTable . " a INNER JOIN " . $redirectsTable . " r ON a.requested_url = " . $joinRhs . " GROUP BY a.requested_url";
-        $results = $this->dbCore->queryAndGetResults($phase2Query, array('log_too_slow' => false, 'timeout' => 60));
-        $results['elapsed_time'] = round(abj_clock()->nowFloat() - $startTime, 3);
-        $this->dbCore->queryAndGetResults("drop table if exists " . $preAggTable);
-        return $results;
-    }
-
-    /** @param int $idRange @return int */
-    private function getHitsRebuildChunkSize(int $idRange): int {
-        if ($this->rebuildHealth === null) {
-            return self::HITS_TABLE_PREAGG_CHUNK_SIZE;
-        }
-        return $this->rebuildHealth->getHitsChunkSize($idRange);
-    }
-
-    /** @return void */
-    private function recordHitsChunkFailure(): void {
-        if ($this->rebuildHealth !== null) {
-            $this->rebuildHealth->recordHitsChunkFailure();
-        }
-    }
-
-    /** @param int $chunkSize @return void */
-    private function recordHitsRebuildSuccess(int $chunkSize): void {
-        if ($this->rebuildHealth === null) {
-            return;
-        }
-        $this->rebuildHealth->recordFullRebuildSuccess($chunkSize);
-        $this->rebuildHealth->recordSuccess();
-    }
-
-    /** @param string $message @return void */
-    private function recordHitsRebuildFailure(string $message): void {
-        if ($this->rebuildHealth === null) {
-            return;
-        }
-        $this->rebuildHealth->recordFailure($message, $this->rebuildHealth->classifyError($message));
     }
 
     // =========================================================================

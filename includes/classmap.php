@@ -259,6 +259,7 @@ return array(
     'ABJ_404_Solution_RedirectsRetentionService' => $base . 'includes/redirects/RedirectsRetentionService.php',
     'ABJ_404_Solution_LogsHitsRollupServiceInterface' => $base . 'includes/logs/LogsHitsRollupServiceInterface.php',
     'ABJ_404_Solution_LogsHitsRollupService' => $base . 'includes/logs/LogsHitsRollupService.php',
+    'ABJ_404_Solution_LogsHitsTableRebuilder' => $base . 'includes/logs/LogsHitsTableRebuilder.php',
     'ABJ_404_Solution_LogsLookupRepository' => $base . 'includes/logs/LogsLookupRepository.php',
     'ABJ_404_Solution_LogsPrivacyService' => $base . 'includes/logs/LogsPrivacyService.php',
     'ABJ_404_Solution_LogsReadQueries' => $base . 'includes/logs/LogsReadQueries.php',
