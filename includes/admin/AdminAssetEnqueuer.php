@@ -89,18 +89,6 @@ class ABJ_404_Solution_AdminAssetEnqueuer {
             if ($isListPage || $isEditPage) {
                 ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-table-interactions', $includesUrl . 'js/tableInteractions.js',
                         array('jquery'));
-
-                wp_localize_script('abj404-table-interactions', 'abj404_time_ago', array(
-                    'second'  => __('second', '404-solution'),
-                    'seconds' => __('seconds', '404-solution'),
-                    'minute'  => __('minute', '404-solution'),
-                    'minutes' => __('minutes', '404-solution'),
-                    'hour'    => __('hour', '404-solution'),
-                    'hours'   => __('hours', '404-solution'),
-                    'day'     => __('day', '404-solution'),
-                    'days'    => __('days', '404-solution'),
-                    'ago'     => __('ago', '404-solution'),
-                ));
             }
 
             if ($isListPage || $isStatsPage) {

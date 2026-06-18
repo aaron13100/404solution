@@ -22,9 +22,6 @@ interface ABJ_404_Solution_LogHitsRebuildInterface {
      */
     public function getLogsHitsTableLastUpdated();
 
-    /** @return string */
-    public function getLogsHitsTableLastUpdatedHuman();
-
     /** @return bool */
     public function createRedirectsForViewHitsTable(): bool;
 }

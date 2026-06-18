@@ -9,9 +9,9 @@ if (!defined('ABSPATH')) {
  * rebuild before the admin redirect-list view renders a hits/last-used column.
  *
  * The decision short-circuits in four cases:
- *   1. Non-essential DB writes are in cooldown -- bail with "paused" marker.
+ *   1. Non-essential DB writes are in cooldown.
  *   2. Hits table is missing -- defer creation to the rebuild scheduler.
- *   3. logsRepo reports no rebuild needed -- bail with "not_needed" marker.
+ *   3. logsRepo reports no rebuild needed.
  *   4. Otherwise, ask logsRepo to schedule the deferred rebuild.
  *
  * Extracted from ViewReadService (i858 / design-audit-2026-06-04 M201) so the
@@ -45,18 +45,12 @@ class ABJ_404_Solution_HitsTableRebuildPolicy {
     }
 
     /**
-     * Record that the hits table was checked this request, then schedule a
-     * rebuild only if logsRepo reports the rollup is stale relative to logsv2.
+     * Schedule a rebuild only if logsRepo reports the rollup is stale
+     * relative to logsv2.
      *
      * @return void
      */
     public function maybeUpdateRedirectsForViewHitsTable(): void {
-        $this->dbCore->noticeState()->setRuntimeFlag(
-            ABJ_404_Solution_ViewReadRuntimeState::HITS_TABLE_LAST_CHECKED_FLAG,
-            abj_clock()->now(),
-            86400
-        );
-
         if (function_exists('abj_service_optional')) {
             $upgradesEtc = abj_service_optional('database_upgrades');
             if (is_object($upgradesEtc) && method_exists($upgradesEtc, 'scheduleLogsv2CanonicalUrlBackfill')) {
@@ -66,11 +60,6 @@ class ABJ_404_Solution_HitsTableRebuildPolicy {
 
         if ($this->dbCore->noticeState()->shouldSkipNonEssentialDbWrites()) {
             $this->logger->debugMessage(__METHOD__ . ' skipped due to temporary DB write cooldown.');
-            $this->dbCore->noticeState()->setRuntimeFlag(
-                ABJ_404_Solution_ViewReadRuntimeState::HITS_TABLE_LAST_DECISION_FLAG,
-                'paused',
-                86400
-            );
             return;
         }
 
@@ -83,11 +72,6 @@ class ABJ_404_Solution_HitsTableRebuildPolicy {
         $this->logsRepo->recordLogsHitsRollupStalenessSignal();
 
         if (!$this->logsRepo->hitsTableNeedsRebuild()) {
-            $this->dbCore->noticeState()->setRuntimeFlag(
-                ABJ_404_Solution_ViewReadRuntimeState::HITS_TABLE_LAST_DECISION_FLAG,
-                'not_needed',
-                86400
-            );
             return;
         }
 

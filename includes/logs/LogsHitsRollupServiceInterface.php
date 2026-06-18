@@ -14,7 +14,7 @@ if (!defined('ABSPATH')) {
  *   - cross-request rebuild locking
  *   - staleness signaling (admin notice when cron is not running)
  *   - logsv2 max/min/stored-max id reads used by drift detection and read paths
- *   - last-checked / last-scheduled / last-refreshed / last-decision flags
+ *   - last-scheduled / last-refreshed flags
  *
  * Log writes, log read queries, GDPR anonymization, and lookup-table CRUD
  * stay on LogsRepository. LogsRepository forwards the rollup-lifecycle
@@ -30,9 +30,6 @@ interface ABJ_404_Solution_LogsHitsRollupServiceInterface {
 
     /** @return int|null Unix timestamp of last update, or null if table doesn't exist */
     public function getLogsHitsTableLastUpdated();
-
-    /** @return string */
-    public function getLogsHitsTableLastUpdatedHuman();
 
     /** @return bool */
     public function createRedirectsForViewHitsTable(): bool;
@@ -53,11 +50,5 @@ interface ABJ_404_Solution_LogsHitsRollupServiceInterface {
     public function getStoredMaxLogId();
 
     /** @return int|null */
-    public function getLogsHitsTableLastCheckedAt();
-
-    /** @return int|null */
     public function getLogsHitsTableLastScheduledAt();
-
-    /** @return string */
-    public function getLogsHitsTableLastDecision(): string;
 }

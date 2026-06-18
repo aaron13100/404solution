@@ -45,9 +45,7 @@ class ABJ_404_Solution_LogsRepository implements ABJ_404_Solution_LogsRepository
     const HITS_TABLE_REBUILD_LOCK_TTL_SECONDS = ABJ_404_Solution_LogsHitsRollupService::HITS_TABLE_REBUILD_LOCK_TTL_SECONDS;
     const HITS_TABLE_PREAGG_CHUNK_SIZE = ABJ_404_Solution_LogsHitsRollupService::HITS_TABLE_PREAGG_CHUNK_SIZE;
     const HITS_TABLE_DIRECT_PATH_THRESHOLD = ABJ_404_Solution_LogsHitsRollupService::HITS_TABLE_DIRECT_PATH_THRESHOLD;
-    const HITS_TABLE_LAST_CHECKED_FLAG = ABJ_404_Solution_LogsHitsRollupService::HITS_TABLE_LAST_CHECKED_FLAG;
     const HITS_TABLE_LAST_SCHEDULED_FLAG = ABJ_404_Solution_LogsHitsRollupService::HITS_TABLE_LAST_SCHEDULED_FLAG;
-    const HITS_TABLE_LAST_DECISION_FLAG = ABJ_404_Solution_LogsHitsRollupService::HITS_TABLE_LAST_DECISION_FLAG;
     const HITS_TABLE_LAST_REFRESHED_FLAG = ABJ_404_Solution_LogsHitsRollupService::HITS_TABLE_LAST_REFRESHED_FLAG;
     const HITS_TABLE_FIRST_STALE_DETECTED_FLAG = ABJ_404_Solution_LogsHitsRollupService::HITS_TABLE_FIRST_STALE_DETECTED_FLAG;
     const HITS_TABLE_STALE_NOTICE_TRANSIENT = ABJ_404_Solution_LogsHitsRollupService::HITS_TABLE_STALE_NOTICE_TRANSIENT;
@@ -283,9 +281,6 @@ class ABJ_404_Solution_LogsRepository implements ABJ_404_Solution_LogsRepository
     function getLogsHitsTableLastUpdated() { return $this->rollup->getLogsHitsTableLastUpdated(); }
 
     /** @inheritDoc */
-    function getLogsHitsTableLastUpdatedHuman() { return $this->rollup->getLogsHitsTableLastUpdatedHuman(); }
-
-    /** @inheritDoc */
     function createRedirectsForViewHitsTable(): bool { return $this->rollup->createRedirectsForViewHitsTable(); }
 
     /** @inheritDoc */
@@ -304,13 +299,7 @@ class ABJ_404_Solution_LogsRepository implements ABJ_404_Solution_LogsRepository
     function getStoredMaxLogId() { return $this->rollup->getStoredMaxLogId(); }
 
     /** @inheritDoc */
-    function getLogsHitsTableLastCheckedAt() { return $this->rollup->getLogsHitsTableLastCheckedAt(); }
-
-    /** @inheritDoc */
     function getLogsHitsTableLastScheduledAt() { return $this->rollup->getLogsHitsTableLastScheduledAt(); }
-
-    /** @inheritDoc */
-    function getLogsHitsTableLastDecision(): string { return $this->rollup->getLogsHitsTableLastDecision(); }
 
     /**
      * Backwards-compatible accessor used by some integration tests that need

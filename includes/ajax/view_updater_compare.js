@@ -4,8 +4,8 @@
  * The detect-only background refresh decides whether to surface a
  * "Refresh available" pill by comparing the current visible table to the
  * incoming server response. These helpers normalize away cosmetic
- * differences (entity encodings, time-ago timestamps, nonce churn,
- * SVG self-closing variations) before diffing semantic row + cell text.
+ * differences (entity encodings, nonce churn, SVG self-closing variations)
+ * before diffing semantic row + cell text.
  *
  * Globals defined: normalizeHtmlForBackgroundComparison,
  * hasBackgroundRefreshUpdate, getComparableTableHtml,
@@ -23,9 +23,6 @@ function normalizeHtmlForBackgroundComparison(html) {
             // (e.g., <path .../> vs <path ...></path>) without any data change.
             .replace(/<svg\b[\s\S]*?<\/svg>/gi, '')
             .replace(/<span class="abj404-refresh-status"[^>]*>[\s\S]*?<\/span>/g, '')
-            .replace(/(<span class="abj404-time-ago"[^>]*>)[\s\S]*?(<\/span>)/g, '$1$2')
-            // "time-ago" markers are freshness metadata; timestamp drift alone should not signal table-data change.
-            .replace(/\sdata-timestamp="[^"]*"/gi, '')
             .replace(/\sdata-previous-value="[^"]*"/g, '')
             // Search input is initially rendered disabled and then enabled client-side;
             // ignore this client-only attribute drift for no-change detection.

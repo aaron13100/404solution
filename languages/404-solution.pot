@@ -2730,16 +2730,6 @@ msgstr ""
 msgid "Select a page"
 msgstr ""
 
-#: includes/ViewTrait_Shared.php:356
-#, php-format
-msgid "Last updated: %s"
-msgstr ""
-
-#: includes/ViewTrait_Shared.php:362
-#, php-format
-msgid "Last checked: %s"
-msgstr ""
-
 #: includes/ViewTrait_Shared.php:368
 msgid "Refresh scheduled"
 msgstr ""
@@ -3362,38 +3352,6 @@ msgstr ""
 msgid "Choose at least one URL"
 msgstr ""
 
-#: includes/WordPress_Connector.php:322
-msgid "second"
-msgstr ""
-
-#: includes/WordPress_Connector.php:323
-msgid "seconds"
-msgstr ""
-
-#: includes/WordPress_Connector.php:324
-msgid "minute"
-msgstr ""
-
-#: includes/WordPress_Connector.php:325
-msgid "minutes"
-msgstr ""
-
-#: includes/WordPress_Connector.php:326
-msgid "hour"
-msgstr ""
-
-#: includes/WordPress_Connector.php:327
-msgid "hours"
-msgstr ""
-
-#: includes/WordPress_Connector.php:328
-msgid "day"
-msgstr ""
-
-#: includes/WordPress_Connector.php:330
-msgid "ago"
-msgstr ""
-
 #: includes/WordPress_Connector.php:373
 msgid "Collapse All"
 msgstr ""
@@ -3503,4 +3461,8 @@ msgid "Ask your host to review your WordPress database user privileges."
 msgstr ""
 
 msgid "This database does not support session-scoped GET_LOCK named locks. The plugin is using a WordPress option-row fallback to coordinate the staged view-build. Common on PlanetScale, Vitess, and split-routing ProxySQL deployments."
+msgstr ""
+
+#: includes/view/View_CapturedURLsTable.php:332
+msgid "Preparing the captured 404s table. The list is still loading and will appear in a moment."
 msgstr ""

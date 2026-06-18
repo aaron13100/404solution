@@ -2087,13 +2087,6 @@ msgid "Data may not be immediately updated. Refresh to see latest changes."
 msgstr "Les données peuvent ne pas être immédiatement mises à jour. Actualisez pour voir les dernières modifications."
 
 #: includes/View.php
-msgid "Last updated: %s"
-msgstr "Dernière mise à jour : %s"
-#: includes/View.php
-msgid "Last checked: %s"
-msgstr "Derniere verification: %s"
-
-#: includes/View.php
 msgid "Refresh scheduled"
 msgstr "Actualisation planifiee"
 
@@ -2104,38 +2097,6 @@ msgstr "Actualisation en cours"
 #: includes/View.php
 msgid "Refresh paused"
 msgstr "Actualisation en pause"
-
-#: includes/WordPress_Connector.php
-msgid "second"
-msgstr "seconde"
-
-#: includes/WordPress_Connector.php
-msgid "seconds"
-msgstr "secondes"
-
-#: includes/WordPress_Connector.php
-msgid "minute"
-msgstr "minute:"
-
-#: includes/WordPress_Connector.php
-msgid "minutes"
-msgstr "minutes"
-
-#: includes/WordPress_Connector.php
-msgid "hour"
-msgstr "heure"
-
-#: includes/WordPress_Connector.php
-msgid "hours"
-msgstr "heures"
-
-#: includes/WordPress_Connector.php
-msgid "day"
-msgstr "jour"
-
-#: includes/WordPress_Connector.php
-msgid "ago"
-msgstr "il y a"
 
 #: includes/SetupWizard.php
 msgid "Security check failed. Please try again."
@@ -4102,3 +4063,8 @@ msgstr "Demandez à votre hébergeur de revoir les privilèges de votre utilisat
 
 msgid "This database does not support session-scoped GET_LOCK named locks. The plugin is using a WordPress option-row fallback to coordinate the staged view-build. Common on PlanetScale, Vitess, and split-routing ProxySQL deployments."
 msgstr "Cette base de données ne prend pas en charge les verrous nommés GET_LOCK à portée de session. L'extension utilise une solution de repli basée sur une ligne d'option WordPress pour coordonner la construction de vue par étapes. Courant sur les déploiements PlanetScale, Vitess et ProxySQL à routage réparti."
+
+# translation-verified: en-fallback awaiting native pass (t_260618_093531_671)
+#: includes/view/View_CapturedURLsTable.php:332
+msgid "Preparing the captured 404s table. The list is still loading and will appear in a moment."
+msgstr "Preparing the captured 404s table. The list is still loading and will appear in a moment."

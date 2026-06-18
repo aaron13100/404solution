@@ -2087,13 +2087,6 @@ msgid "Data may not be immediately updated. Refresh to see latest changes."
 msgstr "Data may not be immediately updated. Refresh to see latest changes."
 
 #: includes/View.php
-msgid "Last updated: %s"
-msgstr "Last updated: %s"
-#: includes/View.php
-msgid "Last checked: %s"
-msgstr "Senast kontrollerad: %s"
-
-#: includes/View.php
 msgid "Refresh scheduled"
 msgstr "Uppdatering schemalagd"
 
@@ -2104,38 +2097,6 @@ msgstr "Uppdatering paagar"
 #: includes/View.php
 msgid "Refresh paused"
 msgstr "Uppdatering pausad"
-
-#: includes/WordPress_Connector.php
-msgid "second"
-msgstr "second"
-
-#: includes/WordPress_Connector.php
-msgid "seconds"
-msgstr "seconds"
-
-#: includes/WordPress_Connector.php
-msgid "minute"
-msgstr "minute"
-
-#: includes/WordPress_Connector.php
-msgid "minutes"
-msgstr "minutes"
-
-#: includes/WordPress_Connector.php
-msgid "hour"
-msgstr "hour"
-
-#: includes/WordPress_Connector.php
-msgid "hours"
-msgstr "hours"
-
-#: includes/WordPress_Connector.php
-msgid "day"
-msgstr "day"
-
-#: includes/WordPress_Connector.php
-msgid "ago"
-msgstr "ago"
 
 #: includes/SetupWizard.php
 msgid "Security check failed. Please try again."
@@ -4108,3 +4069,8 @@ msgstr "Be ditt webbhotell att granska behörigheterna för din WordPress databa
 
 msgid "This database does not support session-scoped GET_LOCK named locks. The plugin is using a WordPress option-row fallback to coordinate the staged view-build. Common on PlanetScale, Vitess, and split-routing ProxySQL deployments."
 msgstr "Denna databas stöder inte sessionsbaserade GET_LOCK-namngivna lås. Tillägget använder en reservlösning med en WordPress option-rad för att samordna den stegvisa vybyggnaden. Vanligt på PlanetScale, Vitess och ProxySQL-distributioner med delad routning."
+
+# translation-verified: en-fallback awaiting native pass (t_260618_093531_671)
+#: includes/view/View_CapturedURLsTable.php:332
+msgid "Preparing the captured 404s table. The list is still loading and will appear in a moment."
+msgstr "Preparing the captured 404s table. The list is still loading and will appear in a moment."

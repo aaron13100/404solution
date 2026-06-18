@@ -6,8 +6,7 @@ if (!defined('ABSPATH')) {
 
 /**
  * Cron / runtime hooks around the hits-table lifecycle: existence probe,
- * rebuild scheduling, min/max log IDs, and the decision metadata cron uses
- * to schedule the next pass.
+ * rebuild scheduling, and min/max log IDs used by drift checks.
  */
 interface ABJ_404_Solution_LogHitsLifecycleInterface {
 
@@ -27,11 +26,5 @@ interface ABJ_404_Solution_LogHitsLifecycleInterface {
     public function getStoredMaxLogId();
 
     /** @return int|null */
-    public function getLogsHitsTableLastCheckedAt();
-
-    /** @return int|null */
     public function getLogsHitsTableLastScheduledAt();
-
-    /** @return string */
-    public function getLogsHitsTableLastDecision(): string;
 }

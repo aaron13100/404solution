@@ -20,8 +20,6 @@ final class ABJ_404_Solution_ViewReadRuntimeState {
     const VIEW_SNAPSHOT_WARMUP_STALE_SECONDS = 35;
     const VIEW_SNAPSHOT_WARMUP_MAX_ATTEMPTS = 3;
     const VIEW_SNAPSHOT_MAX_PAYLOAD_BYTES = 2097152;
-    const HITS_TABLE_LAST_CHECKED_FLAG = 'abj404_logs_hits_last_checked_at';
-    const HITS_TABLE_LAST_DECISION_FLAG = 'abj404_logs_hits_last_decision';
     const LOGS_COUNT_CACHE_TTL_SECONDS = 60;
 
     /** @var bool Per-request bulk mutation deferral flag. */

@@ -67,9 +67,6 @@ function abj404ApplyPaginationSuccessResponse(result) {
     }
     jQuery('.abj404-filter-bar').attr('data-pagination-initial-load', '0');
     bindSearchFieldListeners();
-    if (typeof window.abj404InitTimeAgo === 'function') {
-        window.abj404InitTimeAgo();
-    }
     jQuery('input[name=searchFilter]').val(currentFieldValue);
     jQuery('input[name=searchFilter]').attr("data-previous-value", currentFieldValue);
 

@@ -12,14 +12,12 @@
     var selectedCount = 0;
     var allCheckboxes = [];
     var selectAllCheckbox = null;
-    var timeAgoIntervalHandle = null;
 
     $(document).ready(function() {
         window.abj404InitTableInteractions();
         initModal();
         initFilterBar();
         initRowActions();
-        initTimeAgo();
     });
 
     /**
@@ -261,6 +259,7 @@
 
             $btn.addClass('loading').prop('disabled', true);
 
+            // ajax-direct-approved: legacy row-action URL is rendered per button; response shape is validated before use below.
             $.ajax({
                 url: url,
                 type: 'POST',
@@ -349,83 +348,5 @@
             $toggle.text('(Hide Info)');
         }
     };
-
-    /**
-     * Initialize dynamic time-ago updates
-     * Updates elements with class 'abj404-time-ago' and data-timestamp attribute
-     */
-    function initTimeAgo() {
-        var $timeElements = $('.abj404-time-ago[data-timestamp]');
-        if (!$timeElements.length) return;
-
-        // Update immediately and then every N seconds
-        updateTimeAgo($timeElements);
-        if (timeAgoIntervalHandle !== null) {
-            return;
-        }
-        timeAgoIntervalHandle = setInterval(function() {
-            updateTimeAgo($('.abj404-time-ago[data-timestamp]'));
-        }, 10000);
-    }
-
-    // Expose re-init hook for AJAX table replacements.
-    window.abj404InitTimeAgo = initTimeAgo;
-
-    /**
-     * Update time-ago text for all matching elements
-     */
-    function updateTimeAgo($elements) {
-        var now = Math.floor(Date.now() / 1000);
-
-        $elements.each(function() {
-            var $el = $(this);
-            var timestamp = parseInt($el.attr('data-timestamp'), 10);
-            if (!timestamp || isNaN(timestamp)) return;
-
-            var diff = now - timestamp;
-            // Handle negative diff (future timestamp due to clock skew)
-            if (diff < 0) diff = 0;
-
-            var text = formatTimeAgo(diff);
-            $el.text(text);
-        });
-    }
-
-    /**
-     * Format seconds difference as human-readable time ago
-     * Uses localized strings from abj404_time_ago if available
-     */
-    function formatTimeAgo(seconds) {
-        // Get localized strings or use English defaults
-        var strings = window.abj404_time_ago || {
-            second: 'second',
-            seconds: 'seconds',
-            minute: 'minute',
-            minutes: 'minutes',
-            hour: 'hour',
-            hours: 'hours',
-            day: 'day',
-            days: 'days',
-            ago: 'ago'
-        };
-
-        var value, unit;
-
-        if (seconds < 60) {
-            value = seconds;
-            unit = (value === 1) ? strings.second : strings.seconds;
-        } else if (seconds < 3600) {
-            value = Math.floor(seconds / 60);
-            unit = (value === 1) ? strings.minute : strings.minutes;
-        } else if (seconds < 86400) {
-            value = Math.floor(seconds / 3600);
-            unit = (value === 1) ? strings.hour : strings.hours;
-        } else {
-            value = Math.floor(seconds / 86400);
-            unit = (value === 1) ? strings.day : strings.days;
-        }
-
-        return value + ' ' + unit + ' ' + strings.ago;
-    }
 
 })(jQuery);
