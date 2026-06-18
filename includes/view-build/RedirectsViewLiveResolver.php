@@ -42,6 +42,12 @@ class ABJ_404_Solution_RedirectsViewLiveResolver {
      *  derivedColumnsPresent() and destSortKeyColumnPresent(). */
     private $redirectsColumnSetCache = null;
 
+    /** @var array<string,bool>|null Memoized lowercased index-name (Key_name) set
+     *  of the redirects table (one SHOW INDEX per request), consulted by
+     *  sortKeyReadyForColumn() to confirm the composite indexes backing a narrow
+     *  sort key were actually created before the read orders by it. */
+    private $redirectsIndexSetCache = null;
+
     /**
      * Error logging is intentionally delegated to queryAndGetResults (the
      * centralized DAO error handler), so no logger dependency is held here.
@@ -115,6 +121,97 @@ class ABJ_404_Solution_RedirectsViewLiveResolver {
      */
     public function urlSortKeyColumnPresent(): bool {
         return isset($this->redirectsColumnSet()['url_sort_key']);
+    }
+
+    /**
+     * The single authority for "may the admin read ORDER BY this narrow sort-key
+     * column right now, index-ordered?" -- consulted by BOTH the query path
+     * (AdminViewReadCoordinator, which sets the _abj404_*_sort_key_present table
+     * options the ViewQueryBuilder reads) AND the header UI (ViewReadService::
+     * isSortReadyForOrderby, which disables the sort link with a progress tooltip).
+     * Centralised here so those two paths cannot drift: a sort the query refuses
+     * to order by must also be the one the header disables, and vice versa.
+     *
+     * Ready requires ALL THREE, because a filesort on the captured majority can
+     * exceed a shared host's max_statement_time:
+     *   1. the column exists (the column-add ALTER ran);
+     *   2. EVERY composite index backing it exists (the index-add ALTER ran -- it
+     *      can fail or lag independently of the column-add and the drain, e.g.
+     *      disk full or online-DDL refused, leaving an ORDER BY on the key as an
+     *      unindexed filesort); and
+     *   3. the one-time legacy-row drain has converged (the backfill latch is set,
+     *      so no row still carries a NULL key that would bucket to id order).
+     * Any one missing means the only correct serve is the wide-column filesort, so
+     * the read falls back to the safe default instead of ordering by the key.
+     *
+     * @param string $column url_sort_key | dest_sort_key.
+     * @return bool
+     */
+    public function sortKeyReadyForColumn(string $column): bool {
+        if (!isset($this->redirectsColumnSet()[$column])) {
+            return false;
+        }
+        if (!$this->sortKeyCompositeIndexesPresent($column)) {
+            return false;
+        }
+        $latch = ABJ_404_Solution_RedirectsDenormColumnSql::sortKeyBackfillLatchOption($column);
+        return $latch !== '' && function_exists('get_option') && get_option($latch) === '1';
+    }
+
+    /**
+     * Whether every composite index registered for a narrow sort-key column
+     * exists on the redirects table. A column with no registered composites is
+     * treated as never index-ready (the safe default).
+     *
+     * @param string $column url_sort_key | dest_sort_key.
+     * @return bool
+     */
+    private function sortKeyCompositeIndexesPresent(string $column): bool {
+        $required = ABJ_404_Solution_RedirectsDenormColumnSql::sortKeyCompositeIndexNames($column);
+        if (empty($required)) {
+            return false;
+        }
+        $present = $this->redirectsIndexSet();
+        foreach ($required as $indexName) {
+            if (!isset($present[strtolower($indexName)])) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * The lowercased index-name (Key_name) set of wp_abj404_redirects, fetched
+     * once per request via a single SHOW INDEX. Same per-request memoization and
+     * schema-drift tolerance as redirectsColumnSet(): an empty/failed probe yields
+     * an empty set, so every index-presence check degrades to false (the safe
+     * fallback). Runs only when the admin redirects view is rendered -- not on the
+     * frontend 404 hot path.
+     *
+     * @return array<string,bool>
+     */
+    private function redirectsIndexSet(): array {
+        if ($this->redirectsIndexSetCache !== null) {
+            return $this->redirectsIndexSetCache;
+        }
+        $table = $this->dbCore->doTableNameReplacements('{wp_abj404_redirects}');
+        $result = $this->dbCore->queryAndGetResults("SHOW INDEX FROM " . $table,
+            array('log_errors' => false));
+        $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
+        $set = array();
+        foreach ($rows as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            foreach ($row as $key => $value) {
+                if (strtolower((string)$key) === 'key_name' && is_scalar($value)) {
+                    $set[strtolower((string)$value)] = true;
+                    break;
+                }
+            }
+        }
+        $this->redirectsIndexSetCache = $set;
+        return $set;
     }
 
     /**

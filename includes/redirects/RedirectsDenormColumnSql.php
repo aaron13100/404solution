@@ -64,6 +64,36 @@ class ABJ_404_Solution_RedirectsDenormColumnSql {
     }
 
     /**
+     * The composite indexes that make an ORDER BY on each narrow sort-key column
+     * index-ordered rather than a filesort. Both must exist for the key to be
+     * safe to sort by: the (disabled, key, id) composite serves the unfiltered /
+     * multi-status views, and the (status, disabled, key, id) composite serves a
+     * single-status-filtered view. These names mirror createRedirectsTable.sql
+     * exactly -- the DDL is the source of truth, this is the read-path's record of
+     * which indexes back each key so readiness can verify they were actually
+     * created (the column-add ALTER and the index-add ALTER can succeed or fail
+     * independently of the drain that flips the backfill latch).
+     *
+     * @var array<string, array<int, string>>
+     */
+    const SORT_KEY_COMPOSITE_INDEXES = array(
+        'dest_sort_key' => array('idx_disabled_dest_sort_id', 'idx_status_disabled_dest_sort_id'),
+        'url_sort_key'  => array('idx_disabled_url_sort_id', 'idx_status_disabled_url_sort_id'),
+    );
+
+    /**
+     * The composite index names that back an index-ordered sort on a narrow
+     * sort-key column, or an empty array for a column with no registered
+     * composites. Readiness requires every returned index to exist on the table.
+     *
+     * @param string $targetColumn One of the SORT_KEY_COMPOSITE_INDEXES keys.
+     * @return array<int, string>
+     */
+    public static function sortKeyCompositeIndexNames(string $targetColumn): array {
+        return self::SORT_KEY_COMPOSITE_INDEXES[$targetColumn] ?? array();
+    }
+
+    /**
      * The wp_options name recording how far the chunked legacy-row drain of a
      * narrow sort-key column has progressed: the highest redirect id drained so
      * far. The drain

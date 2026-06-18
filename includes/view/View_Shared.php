@@ -211,6 +211,42 @@ class ABJ_404_Solution_View_Shared extends ABJ_404_Solution_ViewComponent {
 	}
 
 	/**
+	 * The hover-tooltip text for a URL / Destination header whose narrow sort key
+	 * cannot yet be served index-ordered, or '' when the sort is available now,
+	 * the column is not sort-key-backed, or no readiness service was supplied.
+	 *
+	 * Single source of truth for the pending-sort message, shared by both header
+	 * renderers (ABJ_404_Solution_AdminTableColumnHeaders for the Page Redirects
+	 * tab and ABJ_404_Solution_View_CapturedURLsTable for the captured tab) so the
+	 * two cannot drift. Each renderer still decides WHICH tabs the gate applies to
+	 * (the Logs tab sorts a different table) and how to render the non-sortable
+	 * cell; this only owns the readiness + percentage + message string. Readiness
+	 * and the build percentage come from the centralized predicate
+	 * (RedirectsViewLiveResolver::sortKeyReadyForColumn via the read service).
+	 *
+	 * @param string $orderby UI orderby alias (url, dest, final_dest, ...).
+	 * @param ABJ_404_Solution_ViewReadServiceInterface|null $viewReadService
+	 * @return string
+	 */
+	public function pendingSortTooltipText(string $orderby, $viewReadService): string {
+		if ($viewReadService === null) {
+			return '';
+		}
+		if ($orderby !== 'url' && $orderby !== 'dest' && $orderby !== 'final_dest') {
+			return '';
+		}
+		if ($viewReadService->isSortReadyForOrderby($orderby)) {
+			return '';
+		}
+		$percent = $viewReadService->sortBackfillPercentForOrderby($orderby);
+		return sprintf(
+			/* translators: %d: index-build completion percentage */
+			__('Sorting by this column is being prepared for your number of URLs (%d%% complete). The list shows newest first until it is ready.', '404-solution'),
+			$percent
+		);
+	}
+
+	/**
 	 * Build action links for table rows (edit, logs, trash, delete, etc.)
 	 *
 	 * @param array<string, mixed> $row The data row from the database

@@ -154,6 +154,7 @@ return array(
     'ABJ_404_Solution_View_Redirects' => $base . 'includes/view/View_Redirects.php',
     'ABJ_404_Solution_View_RedirectsTable' => $base . 'includes/view/View_RedirectsTable.php',
     'ABJ_404_Solution_View_CapturedURLsTable' => $base . 'includes/view/View_CapturedURLsTable.php',
+    'ABJ_404_Solution_CapturedTableHeaderRenderer' => $base . 'includes/view/CapturedTableHeaderRenderer.php',
     'ABJ_404_Solution_View_RedirectForms' => $base . 'includes/view/View_RedirectForms.php',
     'ABJ_404_Solution_EditRedirectFormContext' => $base . 'includes/view/EditRedirectFormContext.php',
     'ABJ_404_Solution_View_ListTableChrome' => $base . 'includes/view/View_ListTableChrome.php',

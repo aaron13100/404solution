@@ -155,7 +155,7 @@ class ABJ_404_Solution_ViewQueryBuilder {
      * @return string
      */
     public function buildRedirectsSingleTableReadQuery(string $sub, array $tableOptions, bool $derivedPresent = true): string {
-        $effectiveSort = $this->resolveEffectiveSort($sub, $tableOptions, $derivedPresent);
+        $effectiveSort = $this->resolveEffectiveSort($tableOptions, $derivedPresent);
         $orderBy = $effectiveSort['orderby'];
         $order = $effectiveSort['order'];
 
@@ -229,34 +229,32 @@ class ABJ_404_Solution_ViewQueryBuilder {
     /**
      * Effective (orderby column, direction) for the single-table read ORDER BY.
      *
-     * On the Captured (majority) tab, a URL or Destination sort requested before
-     * the narrow sort-key backfill has converged cannot be served index-ordered:
-     * the narrow key is all-NULL (every row ties, falling to id order), so the
-     * only correct ordering is a filesort over the wide source column
-     * (varchar(2048), prefix-only) across the whole captured set. On a large
-     * captured table (Bruno: ~250k captured rows) that scan can exceed a shared
-     * host's max_statement_time, the server kills the query, and the tab is stuck
-     * on its loading placeholder every load. Until the latch flips we therefore
-     * serve the always-indexed safe default (timestamp DESC, "newest first")
-     * instead. This is display-only: the user's saved sort preference is left
-     * untouched and resumes automatically once the backfill completes -- and the
-     * column header is rendered non-sortable with a progress tooltip meanwhile
-     * (see ABJ_404_Solution_AdminTableColumnHeaders).
+     * On EITHER tab, a URL or Destination sort that cannot be served index-ordered
+     * right now (its narrow sort key is not ready: column missing, composite index
+     * missing, or the legacy-row drain not yet converged -- see
+     * RedirectsViewLiveResolver::sortKeyReadyForColumn) would force a filesort over
+     * the wide source column (varchar(2048), prefix-only). On a large table that
+     * scan can exceed a shared host's max_statement_time, the server kills the
+     * query, and the tab is stuck on its loading placeholder every load. Until the
+     * sort key is ready we therefore serve the always-indexed safe default
+     * (timestamp DESC, "newest first") instead. This is display-only: the user's
+     * saved sort preference is left untouched and resumes automatically once the
+     * sort key is ready -- and the column header is rendered non-sortable with a
+     * progress tooltip meanwhile (captured tab: View_CapturedURLsTable; Page
+     * Redirects tab: ABJ_404_Solution_AdminTableColumnHeaders).
      *
-     * Scoped to the Captured tab on purpose. The Page Redirects (minority) tab
-     * keeps the raw-column fallback (see resolveSingleTableOrderByColumn): its
-     * filesort is bounded by the status filter to the redirect count, which stays
-     * cheap even on captured-heavy sites, so substituting there would needlessly
-     * degrade a working sort on its default (url) view.
+     * Applied to BOTH tabs (the literal "no wide-column filesort" rule): the
+     * Page Redirects status filter does not make the wide-url filesort safe at
+     * scale, and the readiness predicate self-heals so the real sort resumes the
+     * moment the key is index-ordered.
      *
-     * @param string $sub
      * @param array<string, mixed> $tableOptions
      * @param bool $derivedPresent
      * @return array{orderby: string, order: string}
      */
-    private function resolveEffectiveSort(string $sub, array $tableOptions, bool $derivedPresent): array {
+    private function resolveEffectiveSort(array $tableOptions, bool $derivedPresent): array {
         $rawOrderBy = strtolower(is_string($tableOptions['orderby'] ?? null) ? $tableOptions['orderby'] : '');
-        if ($sub === 'abj404_captured' && $this->wideColumnSortPendingBackfill($rawOrderBy, $tableOptions)) {
+        if ($this->wideColumnSortPendingBackfill($rawOrderBy, $tableOptions)) {
             return array('orderby' => 'timestamp', 'order' => 'DESC');
         }
         return array(
@@ -267,12 +265,14 @@ class ABJ_404_Solution_ViewQueryBuilder {
 
     /**
      * Whether the requested sort targets a narrow sort-key-backed column
-     * (url -> url_sort_key, dest -> dest_sort_key) whose backfill has NOT yet
-     * converged. The coordinator sets the matching _abj404_*_sort_key_present
-     * flag true only when the column exists AND its drain latch is set; a falsey
-     * flag means the only available ordering is a wide-column filesort. Sorts on
-     * real always-populated columns (logshits, last_used, score, code, type,
-     * status, timestamp) are never pending and are not substituted.
+     * (url -> url_sort_key, dest -> dest_sort_key) that cannot be served
+     * index-ordered yet. The coordinator sets the matching
+     * _abj404_*_sort_key_present flag true only when the column exists AND its
+     * composite indexes exist AND its drain latch is set
+     * (RedirectsViewLiveResolver::sortKeyReadyForColumn); a falsey flag means the
+     * only available ordering is a wide-column filesort. Sorts on real
+     * always-populated columns (logshits, last_used, score, code, type, status,
+     * timestamp) are never pending and are not substituted.
      *
      * @param string $rawOrderBy Lowercased requested orderby.
      * @param array<string, mixed> $tableOptions

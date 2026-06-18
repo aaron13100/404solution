@@ -157,36 +157,28 @@ class ABJ_404_Solution_AdminTableColumnHeaders {
     }
 
     /**
-     * The hover-tooltip text for a captured-tab URL / Destination header whose
-     * narrow sort-key backfill has not finished, or '' when the sort is available
-     * now, this is not the captured tab, or no readiness service was supplied.
-     * The message names the column as "being optimized" and shows the build
-     * percentage, so the admin sees progress rather than a dead non-sortable
-     * header. See ViewQueryBuilder::resolveEffectiveSort for the matching
-     * query-side substitution (the list shows newest-first meanwhile).
+     * The hover-tooltip text for a URL / Destination header on a redirects-table
+     * tab whose narrow sort key cannot yet be served index-ordered, or '' when the
+     * sort is available, this is the Logs tab (a different table, not backed by the
+     * redirects sort keys), or no readiness service was supplied. Delegates the
+     * readiness + percentage + message to View_Shared::pendingSortTooltipText so
+     * the captured-tab renderer (View_CapturedURLsTable) shares the same source.
+     * See ViewQueryBuilder::resolveEffectiveSort for the matching query-side
+     * substitution (the list shows newest-first meanwhile).
      *
      * @param string $sub
      * @param string $orderby
      * @return string
      */
     private function pendingSortTooltip(string $sub, string $orderby): string {
-        if ($this->viewReadService === null || $sub !== 'abj404_captured') {
+        // The narrow sort keys back the redirects table (Page Redirects + Captured
+        // tabs). The Logs tab sorts a different table, so its url/dest columns are
+        // never gated by sort-key readiness. (This renderer serves Page Redirects
+        // and Logs; the captured tab uses View_CapturedURLsTable.)
+        if ($sub === 'abj404_logs') {
             return '';
         }
-        if ($orderby !== 'url' && $orderby !== 'dest' && $orderby !== 'final_dest') {
-            return '';
-        }
-        if ($this->viewReadService->isSortReadyForOrderby($orderby)) {
-            return '';
-        }
-        $percent = $this->viewReadService->sortBackfillPercentForOrderby($orderby);
-        // Translators: %d is the 0-100 completion percentage of the one-time
-        // index build that makes this sort fast on large sites.
-        return sprintf(
-            /* translators: %d: index-build completion percentage */
-            __('Sorting by this column is being prepared for your number of URLs (%d%% complete). The list shows newest first until it is ready.', '404-solution'),
-            $percent
-        );
+        return $this->shared->pendingSortTooltipText($orderby, $this->viewReadService);
     }
 
     /** @param array<string, string> $column */

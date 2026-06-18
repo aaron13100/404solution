@@ -197,11 +197,9 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
         if ($column === '') {
             return true;
         }
-        if (!$this->sortKeyColumnPresent($column)) {
-            return false;
-        }
-        $latch = ABJ_404_Solution_RedirectsDenormColumnSql::sortKeyBackfillLatchOption($column);
-        return $latch !== '' && function_exists('get_option') && get_option($latch) === '1';
+        // Single source of truth shared with the query path
+        // (AdminViewReadCoordinator): column + composite indexes + drain latch.
+        return $this->liveResolver->sortKeyReadyForColumn($column);
     }
 
     /**
@@ -232,20 +230,6 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
             return 0;
         }
         return max(0, min(99, (int) floor(100 * $cursor / $maxId)));
-    }
-
-    /**
-     * @param string $column url_sort_key | dest_sort_key
-     * @return bool
-     */
-    private function sortKeyColumnPresent(string $column): bool {
-        if ($column === 'url_sort_key') {
-            return $this->liveResolver->urlSortKeyColumnPresent();
-        }
-        if ($column === 'dest_sort_key') {
-            return $this->liveResolver->destSortKeyColumnPresent();
-        }
-        return false;
     }
 
     /** @return int MAX(id) on the redirects table (O(1) PK probe), memoized per request. */

@@ -86,41 +86,21 @@ class ABJ_404_Solution_AdminViewReadCoordinator {
      */
     public function readRedirectsSingleTable(string $sub, array $tableOptions): array {
         $derivedPresent = $this->liveResolver->derivedColumnsPresent();
-        // Tell the query builder whether a narrow sort key is SAFE to ORDER BY:
-        // the column must exist AND its one-time legacy-row backfill must have
-        // converged (the drain set the latch). Right after the column-add ALTER
-        // but before the drain runs, every legacy row carries a NULL sort key, so
-        // ordering by it would bucket every row as equal and fall to the id
-        // tie-break -- i.e. order the table by id, not by URL/destination. Until
-        // the latch is set the query builder falls back to the wide source column
-        // (raw url / CASE-on-dest_for_view): correct order, filesort, and on the
-        // Page Redirects tab the filesort is bounded to the status-filtered
-        // minority so the default load stays fast. Same _abj404_* option
-        // convention as the timeout / suppress-writeback flags.
-        $tableOptions['_abj404_dest_sort_key_present'] = $this->sortKeyReady('dest_sort_key',
-            $this->liveResolver->destSortKeyColumnPresent());
-        $tableOptions['_abj404_url_sort_key_present'] = $this->sortKeyReady('url_sort_key',
-            $this->liveResolver->urlSortKeyColumnPresent());
+        // Tell the query builder whether each narrow sort key is SAFE to ORDER BY,
+        // index-ordered. The single authority is RedirectsViewLiveResolver::
+        // sortKeyReadyForColumn (column exists AND its composite indexes exist AND
+        // the legacy-row drain latch is set). The header UI consults the same
+        // predicate via ViewReadService::isSortReadyForOrderby, so the sort the
+        // query refuses to order by is exactly the one the header disables. When a
+        // key is not ready the query builder serves the safe default instead of a
+        // wide-column filesort that, on a large captured table, can exceed a shared
+        // host's max_statement_time. Same _abj404_* option convention as the
+        // timeout / suppress-writeback flags.
+        $tableOptions['_abj404_dest_sort_key_present'] = $this->liveResolver->sortKeyReadyForColumn('dest_sort_key');
+        $tableOptions['_abj404_url_sort_key_present'] = $this->liveResolver->sortKeyReadyForColumn('url_sort_key');
         $rows = $this->queryBuilder->readRedirectsSingleTable($sub, $tableOptions, $derivedPresent);
         $persist = $derivedPresent && empty($tableOptions['_abj404_suppress_denorm_writeback']);
         return $this->liveResolver->resolveAndPersistVisibleRows($rows, $persist);
-    }
-
-    /**
-     * Whether a narrow sort-key column is safe to ORDER BY: present on the table
-     * AND its backfill latch set (the legacy-row drain has converged so no row
-     * still carries a NULL key). A column with no latch contract is never ready.
-     *
-     * @param string $targetColumn dest_sort_key or url_sort_key.
-     * @param bool   $columnPresent Whether the column exists on the table.
-     * @return bool
-     */
-    private function sortKeyReady(string $targetColumn, bool $columnPresent): bool {
-        if (!$columnPresent) {
-            return false;
-        }
-        $latchOption = ABJ_404_Solution_RedirectsDenormColumnSql::sortKeyBackfillLatchOption($targetColumn);
-        return $latchOption !== '' && get_option($latchOption) === '1';
     }
 
     /**

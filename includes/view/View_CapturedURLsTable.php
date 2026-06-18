@@ -15,6 +15,9 @@ if (!defined('ABSPATH')) {
  */
 class ABJ_404_Solution_View_CapturedURLsTable extends ABJ_404_Solution_ViewComponent {
 
+    /** @var ABJ_404_Solution_CapturedTableHeaderRenderer|null */
+    private $capturedTableHeaderRenderer = null;
+
     private function tpl(string $name): string {
         $raw = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . '/html/' . $name, false);
         return rtrim((string)$raw, "\n");
@@ -269,52 +272,18 @@ class ABJ_404_Solution_View_CapturedURLsTable extends ABJ_404_Solution_ViewCompo
 
     /** @param array<string, mixed> $tableOptions */
     private function buildCapturedHeaderCells(array $tableOptions): string {
-        $columns = array(
-            array('title' => __('URL', '404-solution'), 'orderby' => 'url'),
-            array('title' => __('Status', '404-solution'), 'orderby' => 'status'),
-            array('title' => __('Hits', '404-solution'), 'orderby' => 'logshits'),
-            array('title' => __('Created', '404-solution'), 'orderby' => 'timestamp', 'class' => 'hide-on-tablet'),
-            array('title' => __('Last Used', '404-solution'), 'orderby' => 'last_used'),
-        );
-
-        $headerCells = '';
-        foreach ($columns as $col) {
-            $headerCells .= $this->capturedHeaderCell($tableOptions, $col) . "\n";
-        }
-        return $headerCells;
+        return $this->capturedTableHeaderRenderer()->render($tableOptions);
     }
 
-    /**
-     * @param array<string, mixed> $tableOptions
-     * @param array<string, mixed> $col
-     */
-    private function capturedHeaderCell(array $tableOptions, array $col): string {
-        $rawFilter = $tableOptions['filter'] ?? 0;
-        $currentFilter = is_scalar($rawFilter) ? $rawFilter : 0;
-        $orderby = (string)($col['orderby'] ?? '');
-        $sortUrl = "?page=" . ABJ404_PP . "&subpage=abj404_captured&filter=" . $currentFilter;
-        $sortUrl .= "&orderby=" . $orderby;
-        $sortState = $this->shared->getHeaderSortState($tableOptions, $orderby, false);
-        $sortUrl .= "&order=" . $sortState['nextOrder'];
-
-        $extraClass = isset($col['class']) ? ' ' . esc_attr((string)$col['class']) : '';
-        $sortClass = trim($sortState['thClass'] . $extraClass);
-        $classAttr = $sortClass ? ' class="' . trim($sortClass) . '"' : '';
-
-        $tooltipHtml = '';
-        if (isset($col['title_attr_html']) && !empty($col['title_attr_html'])) {
-            $tooltipHtml = $this->f->str_replace(
-                array('{more_info_label}', '{tooltip_body}'),
-                array(esc_attr__('More info', '404-solution'), (string)$col['title_attr_html']),
-                $this->tpl('viewRedirectsTableHeaderTooltip.html')
+    private function capturedTableHeaderRenderer(): ABJ_404_Solution_CapturedTableHeaderRenderer {
+        if ($this->capturedTableHeaderRenderer === null) {
+            $this->capturedTableHeaderRenderer = new ABJ_404_Solution_CapturedTableHeaderRenderer(
+                $this->f,
+                $this->shared,
+                $this->viewReadService
             );
         }
-
-        return $this->f->str_replace(
-            array('{class_attr}', '{sort_url}', '{title}', '{sort_indicator}', '{tooltip_html}'),
-            array($classAttr, esc_url($sortUrl), esc_html((string)$col['title']), $sortState['indicator'], $tooltipHtml),
-            $this->tpl('viewRedirectsTableCapturedSortableHeader.html')
-        );
+        return $this->capturedTableHeaderRenderer;
     }
 
     /**
