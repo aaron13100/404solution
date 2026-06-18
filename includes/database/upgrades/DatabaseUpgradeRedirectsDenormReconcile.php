@@ -207,17 +207,4 @@ class ABJ_404_Solution_DatabaseUpgradeRedirectsDenormReconcile extends ABJ_404_S
     private function resetReconcileCursor(): void {
         $this->writeReconcileCursor(0);
     }
-
-    /**
-     * Case-insensitive "does this column exist" probe. Delegates to the
-     * canonical-url backfill component's implementation so the SHOW COLUMNS probe
-     * has a single source of truth (same delegation the Step 3a backfill uses).
-     *
-     * @param string $tableName  Fully-qualified table name.
-     * @param string $columnName Column to look for.
-     * @return bool
-     */
-    public function columnExists(string $tableName, string $columnName): bool {
-        return $this->upgrades()->canonicalUrlBackfillUpgrade()->columnExists($tableName, $columnName);
-    }
 }

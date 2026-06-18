@@ -85,7 +85,8 @@ class ABJ_404_Solution_AdminViewReadCoordinator {
      * @return array<int, array<string, mixed>>
      */
     public function readRedirectsSingleTable(string $sub, array $tableOptions): array {
-        $derivedPresent = $this->liveResolver->derivedColumnsPresent();
+        $readiness = $this->liveResolver->schemaReadiness();
+        $derivedPresent = $readiness->derivedColumnsPresent();
         // Tell the query builder whether each narrow sort key is SAFE to ORDER BY,
         // index-ordered. The single authority is RedirectsViewLiveResolver::
         // sortKeyReadyForColumn (column exists AND its composite indexes exist AND
@@ -96,8 +97,8 @@ class ABJ_404_Solution_AdminViewReadCoordinator {
         // wide-column filesort that, on a large captured table, can exceed a shared
         // host's max_statement_time. Same _abj404_* option convention as the
         // timeout / suppress-writeback flags.
-        $tableOptions['_abj404_dest_sort_key_present'] = $this->liveResolver->sortKeyReadyForColumn('dest_sort_key');
-        $tableOptions['_abj404_url_sort_key_present'] = $this->liveResolver->sortKeyReadyForColumn('url_sort_key');
+        $tableOptions['_abj404_dest_sort_key_present'] = $readiness->sortKeyReadyForColumn('dest_sort_key');
+        $tableOptions['_abj404_url_sort_key_present'] = $readiness->sortKeyReadyForColumn('url_sort_key');
         $rows = $this->queryBuilder->readRedirectsSingleTable($sub, $tableOptions, $derivedPresent);
         $persist = $derivedPresent && empty($tableOptions['_abj404_suppress_denorm_writeback']);
         return $this->liveResolver->resolveAndPersistVisibleRows($rows, $persist);
@@ -112,7 +113,7 @@ class ABJ_404_Solution_AdminViewReadCoordinator {
      */
     public function countRedirectsSingleTable(string $sub, array $tableOptions): int {
         return $this->queryBuilder->countRedirectsSingleTable($sub, $tableOptions,
-            $this->liveResolver->derivedColumnsPresent());
+            $this->liveResolver->schemaReadiness()->derivedColumnsPresent());
     }
 
     /**

@@ -199,7 +199,7 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
         }
         // Single source of truth shared with the query path
         // (AdminViewReadCoordinator): column + composite indexes + drain latch.
-        return $this->liveResolver->sortKeyReadyForColumn($column);
+        return $this->liveResolver->schemaReadiness()->sortKeyReadyForColumn($column);
     }
 
     /**

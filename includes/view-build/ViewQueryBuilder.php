@@ -232,7 +232,7 @@ class ABJ_404_Solution_ViewQueryBuilder {
      * On EITHER tab, a URL or Destination sort that cannot be served index-ordered
      * right now (its narrow sort key is not ready: column missing, composite index
      * missing, or the legacy-row drain not yet converged -- see
-     * RedirectsViewLiveResolver::sortKeyReadyForColumn) would force a filesort over
+     * RedirectsDenormSchemaReadiness::sortKeyReadyForColumn) would force a filesort over
      * the wide source column (varchar(2048), prefix-only). On a large table that
      * scan can exceed a shared host's max_statement_time, the server kills the
      * query, and the tab is stuck on its loading placeholder every load. Until the
@@ -269,7 +269,7 @@ class ABJ_404_Solution_ViewQueryBuilder {
      * index-ordered yet. The coordinator sets the matching
      * _abj404_*_sort_key_present flag true only when the column exists AND its
      * composite indexes exist AND its drain latch is set
-     * (RedirectsViewLiveResolver::sortKeyReadyForColumn); a falsey flag means the
+     * (RedirectsDenormSchemaReadiness::sortKeyReadyForColumn); a falsey flag means the
      * only available ordering is a wide-column filesort. Sorts on real
      * always-populated columns (logshits, last_used, score, code, type, status,
      * timestamp) are never pending and are not substituted.

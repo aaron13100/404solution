@@ -87,7 +87,7 @@ class ABJ_404_Solution_LazyDenormBackfillArmer {
                 || $denormStatus === ABJ_404_Solution_DatabaseUpgradeRedirectsDenormBackfill::SCHEDULE_SKIPPED_THROTTLED) {
                 return;
             }
-            $denorm->scheduleRedirectsSortKeyBackfill();
+            $components->redirectsSortKeyBackfillUpgrade()->scheduleRedirectsSortKeyBackfill();
         } catch (\Throwable $e) {
             // Arming is best-effort maintenance: a failure here must never break
             // an admin view read, and the daily maintenance cron remains the

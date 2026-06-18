@@ -115,12 +115,12 @@ if (!function_exists('abj404_redirectsSortKeyBackfillListener')) {
 function abj404_redirectsSortKeyBackfillListener() {
     try {
         require_once(plugin_dir_path( ABJ404_FILE ) . "includes/Loader.php");
-        $denorm = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance()
-            ->components()->redirectsDenormBackfillUpgrade();
+        $sortKey = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance()
+            ->components()->redirectsSortKeyBackfillUpgrade();
         // Shared time budget across both sort-key drains (see
         // runDeferredSortKeyBackfillPass) so an admin-armed shutdown/cron pass
         // is capped at one budget, not two back to back.
-        $denorm->runDeferredSortKeyBackfillPass();
+        $sortKey->runDeferredSortKeyBackfillPass();
     } catch (\Throwable $e) {
         abj404_logRuntimeWarning('Cron redirects sort-key backfill failed', $e);
     }

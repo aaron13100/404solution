@@ -129,7 +129,7 @@ class ABJ_404_Solution_DatabaseUpgradeBootstrap extends ABJ_404_Solution_Databas
         // large fresh-upgrade table never blocks activation. Until the cron drain
         // converges on such a table the admin read falls back to the wide source
         // column (correct order, filesort bounded to the Page Redirects minority).
-        $this->upgrades()->redirectsDenormBackfillUpgrade()->refreshSortKeyBackfillLatches();
+        $this->upgrades()->redirectsSortKeyBackfillUpgrade()->refreshSortKeyBackfillLatches();
 
         // Adopt orphaned tables AFTER target tables exist (rename handles prefix mismatches).
         $this->renameAbj404TablesToLowerCase();

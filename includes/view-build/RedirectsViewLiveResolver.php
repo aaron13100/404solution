@@ -34,23 +34,18 @@ class ABJ_404_Solution_RedirectsViewLiveResolver {
     /** @var ABJ_404_Solution_DatabaseCore */
     private $dbCore;
 
-    /** @var ABJ_404_Solution_Functions Used to strip invalid UTF-8 from
-     *  capture-derived URLs before they reach esc_sql() (Pattern 10). */
-    private $f;
-
     /** @var string|null Memoized blogname for HOME-typed rows (per request). */
     private $blognameCache = null;
 
-    /** @var array<string,bool>|null Memoized lowercased column-name set of the
-     *  redirects table (one SHOW COLUMNS per request), consulted by both
-     *  derivedColumnsPresent() and destSortKeyColumnPresent(). */
-    private $redirectsColumnSetCache = null;
+    /** @var ABJ_404_Solution_RedirectsDenormSchemaReadiness Live introspection of
+     *  the denorm columns / sort-key indexes, composed and shared so the resolver,
+     *  the read coordinator, and the header UI see the same per-request memoized
+     *  probes. */
+    private $schemaReadiness;
 
-    /** @var array<string,bool>|null Memoized lowercased index-name (Key_name) set
-     *  of the redirects table (one SHOW INDEX per request), consulted by
-     *  sortKeyReadyForColumn() to confirm the composite indexes backing a narrow
-     *  sort key were actually created before the read orders by it. */
-    private $redirectsIndexSetCache = null;
+    /** @var ABJ_404_Solution_RedirectsHitsRollupReader Rolls up wp_abj404_logs_hits
+     *  for the visible page (S9-equivalent). */
+    private $hitsRollupReader;
 
     /**
      * Error logging is intentionally delegated to queryAndGetResults (the
@@ -62,7 +57,22 @@ class ABJ_404_Solution_RedirectsViewLiveResolver {
      */
     public function __construct(ABJ_404_Solution_DatabaseCore $dbCore, $f = null) {
         $this->dbCore = $dbCore;
-        $this->f = $f !== null ? $f : ABJ_404_Solution_Functions::getInstance();
+        $f = $f !== null ? $f : ABJ_404_Solution_Functions::getInstance();
+        $this->schemaReadiness = new ABJ_404_Solution_RedirectsDenormSchemaReadiness($dbCore);
+        $this->hitsRollupReader = new ABJ_404_Solution_RedirectsHitsRollupReader($dbCore, $f);
+    }
+
+    /**
+     * The shared live schema/index readiness introspector for the redirects
+     * table. Returned (not mirrored by per-method delegators) so the read
+     * coordinator and the header UI consult the SAME per-request memoized probes
+     * this resolver uses, keeping the query path and the header from drifting on
+     * which sorts are index-ready.
+     *
+     * @return ABJ_404_Solution_RedirectsDenormSchemaReadiness
+     */
+    public function schemaReadiness(): ABJ_404_Solution_RedirectsDenormSchemaReadiness {
+        return $this->schemaReadiness;
     }
 
     /**
@@ -91,170 +101,6 @@ class ABJ_404_Solution_RedirectsViewLiveResolver {
     }
 
     /**
-     * Whether the four Step 3a denorm columns exist on wp_abj404_redirects.
-     *
-     * Schema-drift tolerance (defensive philosophy #1/#7): a site whose
-     * column-add ALTER never completed serves off the base columns alone (the
-     * write-back is then skipped, with nowhere to write). Memoized per instance
-     * so the SHOW COLUMNS probe runs at most once per request.
-     *
-     * @return bool
-     */
-    public function derivedColumnsPresent(): bool {
-        return isset($this->redirectsColumnSet()['dest_for_view']);
-    }
-
-    /**
-     * Whether the indexable Destination sort key column (dest_sort_key, added
-     * after the Step 3a four) exists on wp_abj404_redirects. The admin read uses
-     * it for an index-ordered Destination sort; when it is absent (an install
-     * mid-upgrade, before the column-add ALTER ran) the read falls back to the
-     * CASE-on-dest_for_view filesort. Memoized via the shared column-set probe.
-     *
-     * @return bool
-     */
-    public function destSortKeyColumnPresent(): bool {
-        return isset($this->redirectsColumnSet()['dest_sort_key']);
-    }
-
-    /**
-     * Whether the indexable URL sort key column (url_sort_key) exists on
-     * wp_abj404_redirects. The admin read uses it for an index-ordered URL sort;
-     * when it is absent (an install mid-upgrade, before the column-add ALTER ran)
-     * the read falls back to the raw-url filesort. Memoized via the shared
-     * column-set probe.
-     *
-     * @return bool
-     */
-    public function urlSortKeyColumnPresent(): bool {
-        return isset($this->redirectsColumnSet()['url_sort_key']);
-    }
-
-    /**
-     * The single authority for "may the admin read ORDER BY this narrow sort-key
-     * column right now, index-ordered?" -- consulted by BOTH the query path
-     * (AdminViewReadCoordinator, which sets the _abj404_*_sort_key_present table
-     * options the ViewQueryBuilder reads) AND the header UI (ViewReadService::
-     * isSortReadyForOrderby, which disables the sort link with a progress tooltip).
-     * Centralised here so those two paths cannot drift: a sort the query refuses
-     * to order by must also be the one the header disables, and vice versa.
-     *
-     * Ready requires ALL THREE, because a filesort on the captured majority can
-     * exceed a shared host's max_statement_time:
-     *   1. the column exists (the column-add ALTER ran);
-     *   2. EVERY composite index backing it exists (the index-add ALTER ran -- it
-     *      can fail or lag independently of the column-add and the drain, e.g.
-     *      disk full or online-DDL refused, leaving an ORDER BY on the key as an
-     *      unindexed filesort); and
-     *   3. the one-time legacy-row drain has converged (the backfill latch is set,
-     *      so no row still carries a NULL key that would bucket to id order).
-     * Any one missing means the only correct serve is the wide-column filesort, so
-     * the read falls back to the safe default instead of ordering by the key.
-     *
-     * @param string $column url_sort_key | dest_sort_key.
-     * @return bool
-     */
-    public function sortKeyReadyForColumn(string $column): bool {
-        if (!isset($this->redirectsColumnSet()[$column])) {
-            return false;
-        }
-        if (!$this->sortKeyCompositeIndexesPresent($column)) {
-            return false;
-        }
-        $latch = ABJ_404_Solution_RedirectsDenormColumnSql::sortKeyBackfillLatchOption($column);
-        return $latch !== '' && function_exists('get_option') && get_option($latch) === '1';
-    }
-
-    /**
-     * Whether every composite index registered for a narrow sort-key column
-     * exists on the redirects table. A column with no registered composites is
-     * treated as never index-ready (the safe default).
-     *
-     * @param string $column url_sort_key | dest_sort_key.
-     * @return bool
-     */
-    private function sortKeyCompositeIndexesPresent(string $column): bool {
-        $required = ABJ_404_Solution_RedirectsDenormColumnSql::sortKeyCompositeIndexNames($column);
-        if (empty($required)) {
-            return false;
-        }
-        $present = $this->redirectsIndexSet();
-        foreach ($required as $indexName) {
-            if (!isset($present[strtolower($indexName)])) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    /**
-     * The lowercased index-name (Key_name) set of wp_abj404_redirects, fetched
-     * once per request via a single SHOW INDEX. Same per-request memoization and
-     * schema-drift tolerance as redirectsColumnSet(): an empty/failed probe yields
-     * an empty set, so every index-presence check degrades to false (the safe
-     * fallback). Runs only when the admin redirects view is rendered -- not on the
-     * frontend 404 hot path.
-     *
-     * @return array<string,bool>
-     */
-    private function redirectsIndexSet(): array {
-        if ($this->redirectsIndexSetCache !== null) {
-            return $this->redirectsIndexSetCache;
-        }
-        $table = $this->dbCore->doTableNameReplacements('{wp_abj404_redirects}');
-        $result = $this->dbCore->queryAndGetResults("SHOW INDEX FROM " . $table,
-            array('log_errors' => false));
-        $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
-        $set = array();
-        foreach ($rows as $row) {
-            if (!is_array($row)) {
-                continue;
-            }
-            foreach ($row as $key => $value) {
-                if (strtolower((string)$key) === 'key_name' && is_scalar($value)) {
-                    $set[strtolower((string)$value)] = true;
-                    break;
-                }
-            }
-        }
-        $this->redirectsIndexSetCache = $set;
-        return $set;
-    }
-
-    /**
-     * The lowercased column-name set of wp_abj404_redirects, fetched once per
-     * request via a single SHOW COLUMNS. Schema-drift tolerance (defensive
-     * philosophy #1/#7): a site whose column-add ALTER never completed is served
-     * off whatever columns it does have. An empty/failed probe yields an empty
-     * set, so every presence check degrades to false (the safe fallback).
-     *
-     * @return array<string,bool>
-     */
-    private function redirectsColumnSet(): array {
-        if ($this->redirectsColumnSetCache !== null) {
-            return $this->redirectsColumnSetCache;
-        }
-        $table = $this->dbCore->doTableNameReplacements('{wp_abj404_redirects}');
-        $result = $this->dbCore->queryAndGetResults("SHOW COLUMNS FROM " . $table,
-            array('log_errors' => false));
-        $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
-        $set = array();
-        foreach ($rows as $row) {
-            if (!is_array($row)) {
-                continue;
-            }
-            foreach ($row as $key => $value) {
-                if (strtolower((string)$key) === 'field' && is_scalar($value)) {
-                    $set[strtolower((string)$value)] = true;
-                    break;
-                }
-            }
-        }
-        $this->redirectsColumnSetCache = $set;
-        return $set;
-    }
-
-    /**
      * Resolve the derived/display columns for the visible rows LIVE, overwrite
      * the rendered values on each row, and persist the four denorm columns back.
      *
@@ -271,7 +117,7 @@ class ABJ_404_Solution_RedirectsViewLiveResolver {
 
         $postsMap = $this->resolvePostsMap($rows);
         $termsMap = $this->resolveTermsMap($rows);
-        $hitsMap = $this->resolveHitsMap($rows);
+        $hitsMap = $this->hitsRollupReader->resolveHitsMap($rows);
 
         $resolved = array();
         $writeBacks = array();
@@ -329,58 +175,6 @@ class ABJ_404_Solution_RedirectsViewLiveResolver {
         }
         $query = "SELECT term_id, name FROM {wp_terms} WHERE term_id IN (" . implode(',', $ids) . ")";
         return $this->indexRowsBy($this->dbCore->queryAndGetResults($query), 'term_id');
-    }
-
-    /**
-     * Roll up wp_abj404_logs_hits for every visible row's canonical URL in one
-     * grouped query. Mirrors S9: SUM(logshits), MAX(logsid), MAX(last_used) by
-     * requested_url. Returns an empty map (degraded path) when the logs_hits
-     * table is absent, so a read on a stripped-down install still renders.
-     *
-     * @param array<int, array<string, mixed>> $rows
-     * @return array<string, array{logshits:int, logsid:int|null, last_used:int|null}>
-     */
-    private function resolveHitsMap(array $rows): array {
-        if (!$this->logsHitsTableExists()) {
-            return array();
-        }
-        $canonicals = array();
-        foreach ($rows as $row) {
-            if (!is_array($row)) {
-                continue;
-            }
-            $canonicals[$this->canonicalUrl($this->strField($row, 'url'))] = true;
-        }
-        if (empty($canonicals)) {
-            return array();
-        }
-        $quoted = array();
-        foreach (array_keys($canonicals) as $canonical) {
-            // Capture-derived URLs can carry invalid UTF-8 bytes; strip them
-            // before esc_sql() so the IN() prefilter cannot break the query
-            // (Pattern 10). The exact match below still uses the stored value.
-            $quoted[] = "'" . esc_sql($this->f->sanitizeInvalidUTF8($canonical)) . "'";
-        }
-        $query = "SELECT requested_url, SUM(logshits) AS logshits, MAX(logsid) AS logsid,"
-            . " MAX(last_used) AS last_used FROM {wp_abj404_logs_hits}"
-            . " WHERE requested_url IN (" . implode(',', $quoted) . ") GROUP BY requested_url";
-        $result = $this->dbCore->queryAndGetResults($query);
-        $rowsOut = is_array($result['rows'] ?? null) ? $result['rows'] : array();
-
-        $map = array();
-        foreach ($rowsOut as $hitRow) {
-            if (!is_array($hitRow) || !isset($hitRow['requested_url'])) {
-                continue;
-            }
-            // Exact-string match in PHP keeps the binary-collation semantics the
-            // staged S9 JOIN used; the IN() above is only a coarse prefilter.
-            $map[$this->strField($hitRow, 'requested_url')] = array(
-                'logshits' => $this->intFieldOrNull($hitRow, 'logshits') ?? 0,
-                'logsid' => $this->intFieldOrNull($hitRow, 'logsid'),
-                'last_used' => $this->intFieldOrNull($hitRow, 'last_used'),
-            );
-        }
-        return $map;
     }
 
     /**
@@ -536,7 +330,7 @@ class ABJ_404_Solution_RedirectsViewLiveResolver {
         // dest_sort_key is written only when the column exists (added after the
         // Step 3a four); on an install still missing it, skip that one assignment
         // so the write-back of the other columns still succeeds (schema drift).
-        $writeDestSortKey = $this->destSortKeyColumnPresent();
+        $writeDestSortKey = $this->schemaReadiness->destSortKeyColumnPresent();
 
         $ids = array();
         $destCases = '';
@@ -646,21 +440,5 @@ class ABJ_404_Solution_RedirectsViewLiveResolver {
         }
         $this->blognameCache = $value;
         return $value;
-    }
-
-    /** @return bool */
-    private function logsHitsTableExists(): bool {
-        global $wpdb;
-        if (!isset($wpdb) || !is_object($wpdb) || !method_exists($wpdb, 'get_var')) {
-            return false;
-        }
-        $logsTable = $this->dbCore->doTableNameReplacements('{wp_abj404_logs_hits}');
-        // Schema existence probe; routing a SHOW TABLES through
-        // queryAndGetResults would log a benign "table missing" error on a
-        // stripped install.
-        // DAO-bypass-approved: SHOW TABLES schema existence probe.
-        // @utf8-audit: opt-out - $logsTable is an internally resolved plugin table name (doTableNameReplacements); system-controlled, cannot contain invalid UTF-8.
-        $found = $wpdb->get_var("SHOW TABLES LIKE '" . esc_sql($logsTable) . "'");
-        return $found === $logsTable;
     }
 }

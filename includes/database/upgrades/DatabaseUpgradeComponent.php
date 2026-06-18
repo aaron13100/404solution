@@ -82,6 +82,52 @@ abstract class ABJ_404_Solution_DatabaseUpgradeComponent {
         return $this->owner;
     }
 
+    /**
+     * Case-insensitive "does this column exist" probe. Delegates to the
+     * canonical-url backfill component's implementation so the SHOW COLUMNS
+     * probe has a single source of truth. Components that own the real probe
+     * (the canonical-url backfill) override this; every other component inherits
+     * this shared delegator.
+     *
+     * @param string $tableName  Fully-qualified table name.
+     * @param string $columnName Column to look for.
+     * @return bool
+     */
+    public function columnExists(string $tableName, string $columnName): bool {
+        return $this->upgrades()->canonicalUrlBackfillUpgrade()->columnExists($tableName, $columnName);
+    }
+
+    /**
+     * Read a resumable id cursor from a WordPress option, clamped to a
+     * non-negative int. Shared by the chunked backfill drains so the cursor I/O
+     * has one definition.
+     *
+     * @param string $option
+     * @return int
+     */
+    protected function readCursorOption(string $option): int {
+        if ($option === '' || !function_exists('get_option')) {
+            return 0;
+        }
+        $raw = get_option($option, 0);
+        return max(0, is_scalar($raw) ? (int)$raw : 0);
+    }
+
+    /**
+     * Persist a resumable id cursor to a WordPress option (autoload=false,
+     * non-negative). Shared by the chunked backfill drains.
+     *
+     * @param string $option
+     * @param int $cursor
+     * @return void
+     */
+    protected function writeCursorOption(string $option, int $cursor): void {
+        if ($option === '' || !function_exists('update_option')) {
+            return;
+        }
+        update_option($option, (string)max(0, $cursor), false);
+    }
+
     /** @return string|null */
     protected function getUpgradeRuntimeId() {
         return ABJ_404_Solution_DatabaseUpgradeRuntimeState::getRuntimeId();

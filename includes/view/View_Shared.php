@@ -222,7 +222,7 @@ class ABJ_404_Solution_View_Shared extends ABJ_404_Solution_ViewComponent {
 	 * (the Logs tab sorts a different table) and how to render the non-sortable
 	 * cell; this only owns the readiness + percentage + message string. Readiness
 	 * and the build percentage come from the centralized predicate
-	 * (RedirectsViewLiveResolver::sortKeyReadyForColumn via the read service).
+	 * (RedirectsDenormSchemaReadiness::sortKeyReadyForColumn via the read service).
 	 *
 	 * @param string $orderby UI orderby alias (url, dest, final_dest, ...).
 	 * @param ABJ_404_Solution_ViewReadServiceInterface|null $viewReadService
