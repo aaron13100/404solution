@@ -410,17 +410,7 @@ class ABJ_404_Solution_DatabaseUpgradeRedirectsSortKeyBackfill extends ABJ_404_S
      * @return bool
      */
     public function shouldScheduleSortKeyBackfillViaCron(): bool {
-        if (function_exists('wp_doing_ajax') && wp_doing_ajax()) {
-            return true;
-        }
-        $scriptName = isset($_SERVER['SCRIPT_NAME']) && is_string($_SERVER['SCRIPT_NAME'])
-            ? $_SERVER['SCRIPT_NAME'] : '';
-        if ($scriptName !== '' && basename($scriptName) === 'admin-ajax.php') {
-            return true;
-        }
-        $pagenow = isset($GLOBALS['pagenow']) && is_string($GLOBALS['pagenow'])
-            ? $GLOBALS['pagenow'] : '';
-        return $pagenow === 'admin-ajax.php';
+        return $this->isAdminAjaxRequest();
     }
 
     /**

@@ -185,4 +185,29 @@ abstract class ABJ_404_Solution_DatabaseUpgradeComponent {
     protected function getPluginTableSuffixes(): array {
         return ABJ_404_Solution_DatabaseUpgradeRuntimeState::getPluginTableSuffixes();
     }
+
+    /**
+     * Whether the current request is a WordPress admin-ajax request, detected
+     * three ways for host portability: wp_doing_ajax(), the SCRIPT_NAME
+     * basename, and the $pagenow global. Single source of truth for the
+     * deferred-backfill components, which arm their drain via WP-Cron (rather
+     * than a shutdown hook) on admin-ajax: some hosts/proxies hold the HTTP
+     * response open until shutdown work finishes, which would stall table AJAX
+     * behind the drain's time budget.
+     *
+     * @return bool
+     */
+    protected function isAdminAjaxRequest(): bool {
+        if (function_exists('wp_doing_ajax') && wp_doing_ajax()) {
+            return true;
+        }
+        $scriptName = isset($_SERVER['SCRIPT_NAME']) && is_string($_SERVER['SCRIPT_NAME'])
+            ? basename($_SERVER['SCRIPT_NAME']) : '';
+        if ($scriptName === 'admin-ajax.php') {
+            return true;
+        }
+        $pagenow = isset($GLOBALS['pagenow']) && is_string($GLOBALS['pagenow'])
+            ? $GLOBALS['pagenow'] : '';
+        return $pagenow === 'admin-ajax.php';
+    }
 }
