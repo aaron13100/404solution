@@ -4072,3 +4072,7 @@ msgstr "Preparing the captured 404s table. The list is still loading and will ap
 #: includes/admin/AdminTableColumnHeaders.php:178
 msgid "Sorting by this column is being prepared for your number of URLs (%d%% complete). The list shows newest first until it is ready."
 msgstr "Le tri par cette colonne est en cours de préparation pour votre nombre d'URL (%d%% terminé). En attendant, la liste affiche les plus récentes en premier."
+
+#: includes/view/View_Shared.php:247
+msgid "Sorting by this column is unavailable on this site. The list shows newest first."
+msgstr "Le tri par cette colonne n'est pas disponible sur ce site. La liste affiche les plus récentes en premier."
