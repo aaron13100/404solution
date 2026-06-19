@@ -9,8 +9,15 @@
     }
 
     var ACTION = 'abj404_run_lazy_backfill';
-    var pollIntervalMs = 1000;
-    var maxAttempts = 20;
+    // Each poll runs a short, bounded server-side drain (the AJAX handler caps
+    // its per-pass time budget well under the request timeout below), so the
+    // loop is paced for a multi-minute convergence window rather than a tight
+    // burst: poll every POLL_INTERVAL_MS, up to MAX_ATTEMPTS, which on a large
+    // site spans a few minutes per page visit. The cursor/latch are resumable,
+    // so any residual continues on the next admin visit and the daily cron.
+    var POLL_INTERVAL_MS = 5000;
+    var ERROR_BACKOFF_MS = 15000;
+    var MAX_ATTEMPTS = 36;
 
     function configHost() {
         return $('.abj404-filter-bar[data-lazy-backfill-ajax-url], .abj404-pagination-right[data-lazy-backfill-ajax-url]').first();
@@ -61,9 +68,18 @@
         global.paginationLinksChange($host.get(0));
     }
 
+    function scheduleNextPoll(attempt, delayMs) {
+        if (attempt >= MAX_ATTEMPTS) {
+            return;
+        }
+        global.setTimeout(function () {
+            runLazyBackfillPoll(attempt + 1);
+        }, delayMs);
+    }
+
     function runLazyBackfillPoll(attempt) {
         var $host = configHost();
-        if (!$host.length || !pendingTooltips().length || attempt > maxAttempts) {
+        if (!$host.length || !pendingTooltips().length || attempt > MAX_ATTEMPTS) {
             return;
         }
 
@@ -98,9 +114,7 @@
                     refreshTableWithoutPageReload($host);
                     return;
                 }
-                global.setTimeout(function () {
-                    runLazyBackfillPoll(attempt + 1);
-                }, pollIntervalMs);
+                scheduleNextPoll(attempt, POLL_INTERVAL_MS);
             },
             error: function (jqXHR, textStatus, errorThrown) {
                 if (global.console && typeof global.console.error === 'function') {
@@ -110,6 +124,12 @@
                         errorThrown: errorThrown
                     });
                 }
+                // A transient failure (timeout on a long drain, network blip,
+                // a 503) must NOT kill the loop -- the backfill only converges
+                // while the browser keeps driving it. Back off and retry,
+                // bounded by MAX_ATTEMPTS so a persistently-failing endpoint
+                // can't hammer forever.
+                scheduleNextPoll(attempt, ERROR_BACKOFF_MS);
             }
         });
     }

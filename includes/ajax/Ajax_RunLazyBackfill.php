@@ -11,6 +11,18 @@ class ABJ_404_Solution_Ajax_RunLazyBackfill {
 
     public const NONCE_ACTION = 'abj404_runLazyBackfill';
 
+    /**
+     * Per-pass wall-clock budget (seconds) for EACH browser-driven drain in a
+     * single AJAX poll. Deliberately small: the handler runs two drains (logsv2
+     * canonical + the denorm/sort-key pass), so the whole request stays at most
+     * ~2x this, comfortably under the JS poller's 30s client timeout. That keeps
+     * each poll light (smooth percent updates, no gateway/client timeout on large
+     * sites). The daily cron path keeps the large 15s/20s budgets for fast
+     * unattended convergence -- only the browser path shrinks. The cursor/latch
+     * are resumable, so successive polls (and the next admin visit) accumulate.
+     */
+    private const BROWSER_PASS_BUDGET_SEC = 3.0;
+
     /** @return void */
     public function handle(): void {
         if (!ABJ_404_Solution_AjaxRequestContractValidator::requireValidCurrentRequest('ajax-run-lazy-backfill')) {
@@ -130,13 +142,13 @@ class ABJ_404_Solution_Ajax_RunLazyBackfill {
         if (is_object($components) && method_exists($components, 'canonicalUrlBackfillUpgrade')) {
             $canonical = $components->canonicalUrlBackfillUpgrade();
             if (is_object($canonical) && method_exists($canonical, 'backfillLogsv2CanonicalUrl')) {
-                $canonical->backfillLogsv2CanonicalUrl();
+                $canonical->backfillLogsv2CanonicalUrl(self::BROWSER_PASS_BUDGET_SEC);
             }
         }
         if (is_object($components) && method_exists($components, 'redirectsDenormBackfillUpgrade')) {
             $denorm = $components->redirectsDenormBackfillUpgrade();
             if (is_object($denorm) && method_exists($denorm, 'runDeferredDenormBackfillPass')) {
-                $denorm->runDeferredDenormBackfillPass();
+                $denorm->runDeferredDenormBackfillPass(self::BROWSER_PASS_BUDGET_SEC);
             }
         }
 

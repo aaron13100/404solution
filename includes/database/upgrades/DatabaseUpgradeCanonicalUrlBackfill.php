@@ -159,9 +159,13 @@ class ABJ_404_Solution_DatabaseUpgradeCanonicalUrlBackfill extends ABJ_404_Solut
      *     yet, e.g. immediately after upgrade before verifyColumns ran)
      *   - the previous run errored -- repair flow surfaces the error
      *
+     * @param ?float $timeBudgetSec Wall-clock budget for this invocation. When
+     *   null (the daily-cron path), uses LOGSV2_CANONICAL_URL_BACKFILL_TIME_BUDGET_SEC
+     *   (15s) for fast unattended convergence. The browser-driven AJAX poller
+     *   passes a small value so each request stays well under its client timeout.
      * @return int Number of rows updated in this invocation.
      */
-    public function backfillLogsv2CanonicalUrl(): int {
+    public function backfillLogsv2CanonicalUrl(?float $timeBudgetSec = null): int {
         global $wpdb;
         if (!isset($wpdb)) {
             return 0;
@@ -182,7 +186,9 @@ class ABJ_404_Solution_DatabaseUpgradeCanonicalUrlBackfill extends ABJ_404_Solut
         }
 
         $chunkSize = (int)$this->getCanonicalUrlBackfillChunkSize();
-        $timeBudget = (float)$this->getLogsv2CanonicalUrlBackfillTimeBudgetSec();
+        $timeBudget = $timeBudgetSec !== null
+            ? max(0.0, $timeBudgetSec)
+            : (float)$this->getLogsv2CanonicalUrlBackfillTimeBudgetSec();
         $start = abj_clock()->nowFloat();
         $totalUpdated = 0;
 
