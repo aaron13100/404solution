@@ -142,8 +142,8 @@ class ABJ_404_Solution_DatabaseUpgradeDropStagedViewTables extends ABJ_404_Solut
         if (!isset($wpdb)) {
             return false;
         }
-        // DAO-bypass-approved: schema existence probe (SHOW TABLES); see method docblock.
         // @utf8-audit: opt-out - $tableName is a fully-qualified, lowercase-prefixed plugin table name from doTableNameReplacements(); system-controlled, cannot contain invalid UTF-8.
+        // DAO-bypass-approved: schema existence probe (SHOW TABLES); see method docblock.
         $found = $wpdb->get_var("SHOW TABLES LIKE '" . esc_sql($tableName) . "'");
         return $found === $tableName;
     }

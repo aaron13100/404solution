@@ -290,8 +290,8 @@ class ABJ_404_Solution_DatabaseUpgradeRedirectsSortKeyBackfill extends ABJ_404_S
             return;
         }
         $redirectsTable = $this->dbCore->doTableNameReplacements('{wp_abj404_redirects}');
-        // DAO-bypass-approved: schema existence probe, same shape as the drains.
         // @utf8-audit: opt-out - $redirectsTable is doTableNameReplacements() of a fixed internal placeholder (lowercase prefix + literal suffix); system-controlled, cannot contain invalid UTF-8.
+        // DAO-bypass-approved: schema existence probe, same shape as the drains.
         $found = $wpdb->get_var("SHOW TABLES LIKE '" . esc_sql($redirectsTable) . "'");
         if ($found !== $redirectsTable) {
             return;
@@ -362,8 +362,8 @@ class ABJ_404_Solution_DatabaseUpgradeRedirectsSortKeyBackfill extends ABJ_404_S
             return self::SCHEDULE_SKIPPED_NO_TABLE;
         }
         $redirectsTable = $this->dbCore->doTableNameReplacements('{wp_abj404_redirects}');
-        // DAO-bypass-approved: schema existence probe, same shape as the drains.
         // @utf8-audit: opt-out - $redirectsTable is doTableNameReplacements() of a fixed internal placeholder (lowercase prefix + literal suffix); system-controlled, cannot contain invalid UTF-8.
+        // DAO-bypass-approved: schema existence probe, same shape as the drains.
         $found = $wpdb->get_var("SHOW TABLES LIKE '" . esc_sql($redirectsTable) . "'");
         if ($found !== $redirectsTable) {
             return self::SCHEDULE_SKIPPED_NO_TABLE;

@@ -103,8 +103,8 @@ class ABJ_404_Solution_RedirectsHitsRollupReader {
         // Schema existence probe; routing a SHOW TABLES through
         // queryAndGetResults would log a benign "table missing" error on a
         // stripped install.
-        // DAO-bypass-approved: SHOW TABLES schema existence probe.
         // @utf8-audit: opt-out - $logsTable is an internally resolved plugin table name (doTableNameReplacements); system-controlled, cannot contain invalid UTF-8.
+        // DAO-bypass-approved: SHOW TABLES schema existence probe.
         $found = $wpdb->get_var("SHOW TABLES LIKE '" . esc_sql($logsTable) . "'");
         return $found === $logsTable;
     }
