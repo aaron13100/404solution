@@ -1422,6 +1422,17 @@ th:nth-last-child(-n+3) .lefty-tooltiptext {
     white-space: nowrap;
 }
 
+/* Each sticky th (z-index:10, opaque background) is its own stacking context,
+   so a header tooltip's z-index:1000 only ranks WITHIN its own th and is
+   painted over by later sibling th cells (the dropped-down tooltip lands behind
+   the next columns). Raise the active header above its siblings while its
+   tooltip is open so the popup escapes over the adjacent headers. :focus-within
+   covers keyboard access to the "?" affordance. */
+.abj404-table th:hover,
+.abj404-table th:focus-within {
+    z-index: 11;
+}
+
 @media screen and (max-width: 782px) {
     .abj404-table th {
         top: 46px;  /* taller mobile admin bar */
