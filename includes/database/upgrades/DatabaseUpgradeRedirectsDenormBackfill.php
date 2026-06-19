@@ -44,24 +44,6 @@ if (!defined('ABSPATH')) {
  */
 class ABJ_404_Solution_DatabaseUpgradeRedirectsDenormBackfill extends ABJ_404_Solution_DatabaseUpgradeComponent {
 
-    // Outcomes of scheduleRedirectsDenormBackfill(), returned so the decision is
-    // observable without spying on WP cron/shutdown internals (the callers ignore
-    // the value; the integration tests assert on it).
-    const SCHEDULE_SKIPPED_ALREADY = 'skipped-already';
-    const SCHEDULE_SKIPPED_LATCHED = 'skipped-latched';
-    const SCHEDULE_SKIPPED_NO_TABLE = 'skipped-no-table';
-    const SCHEDULE_SKIPPED_NO_BACKLOG = 'skipped-no-backlog';
-    const SCHEDULE_SKIPPED_THROTTLED = 'skipped-throttled';
-    // Arming outcomes mirror the centralized CronScheduler deferral vocabulary so
-    // a DISABLE_WP_CRON / refused-cron fallback to shutdown is observable here too.
-    const SCHEDULE_VIA_CRON = ABJ_404_Solution_CronScheduler::DEFER_VIA_CRON;
-    const SCHEDULE_VIA_SHUTDOWN = ABJ_404_Solution_CronScheduler::DEFER_VIA_SHUTDOWN;
-    const SCHEDULE_VIA_SHUTDOWN_CRON_UNAVAILABLE = ABJ_404_Solution_CronScheduler::DEFER_VIA_SHUTDOWN_CRON_UNAVAILABLE;
-    const SCHEDULE_VIA_SHUTDOWN_CRON_REFUSED = ABJ_404_Solution_CronScheduler::DEFER_VIA_SHUTDOWN_CRON_REFUSED;
-
-    /** Five-minute guard against re-probing/re-arming the same legacy backlog on every admin read. */
-    private const DENORM_ARM_THROTTLE_SECONDS = 300;
-
     /**
      * Resolve the four derived columns for any redirect rows still carrying the
      * dest_for_view IS NULL sentinel, one chunk at a time.
@@ -149,16 +131,14 @@ class ABJ_404_Solution_DatabaseUpgradeRedirectsDenormBackfill extends ABJ_404_So
      * Run the full deferred denorm backfill pass (main derived columns + both
      * narrow sort keys) under ONE shared time budget.
      *
-     * Why this exists: the three drains run back-to-back from the admin-armed
-     * deferred trigger (shutdown hook on a normal page render, WP-Cron during
-     * AJAX). With a per-call budget the combined pass could consume up to 3x
-     * REDIRECTS_DENORM_BACKFILL_TIME_BUDGET_SEC. On hosts that do not flush the
-     * HTTP response before the shutdown hook fires, that whole span is felt as
-     * page latency on the admin view that armed it. A single shared deadline
-     * caps the pass at one budget; whatever backlog remains drains on the next
-     * armed visit or the daily cron. The daily-maintenance path deliberately
-     * keeps the per-call budgets (it is true cron, never request-blocking, so
-     * faster nightly convergence is preferred there).
+     * Why this exists: browser-triggered admin AJAX runs the three drains
+     * back-to-back after the table has rendered. With a per-call budget the
+     * combined pass could consume up to 3x REDIRECTS_DENORM_BACKFILL_TIME_BUDGET_SEC.
+     * A single shared deadline caps the post-load request at one budget;
+     * whatever backlog remains drains on the next browser poll or daily cron.
+     * The daily-maintenance path deliberately keeps the per-call budgets (it is
+     * true cron, never request-blocking, so faster nightly convergence is
+     * preferred there).
      *
      * @param ?float $timeBudgetSec Wall-clock budget for the shared pass. When
      *   null, uses REDIRECTS_DENORM_BACKFILL_TIME_BUDGET_SEC.
@@ -171,98 +151,6 @@ class ABJ_404_Solution_DatabaseUpgradeRedirectsDenormBackfill extends ABJ_404_So
         $sortKey = $this->upgrades()->redirectsSortKeyBackfillUpgrade();
         $sortKey->backfillRedirectsDestSortKey($deadline);
         $sortKey->backfillRedirectsUrlSortKey($deadline);
-    }
-
-    /**
-     * On-demand trigger for the main redirects denorm backlog. This closes the
-     * Bruno-style post-upgrade window where Destination sort cannot switch to
-     * dest_sort_key because legacy rows still have dest_for_view NULL. The job is
-     * deferred and time-budgeted; the admin read only arms it.
-     *
-     * A short persistent throttle prevents repeated admin table polls from
-     * re-running the same backlog probe or registering shutdown work on every
-     * request while a large shared-host table converges.
-     *
-     * @return string One of the SCHEDULE_* outcome constants.
-     */
-    public function scheduleRedirectsDenormBackfill(): string {
-        if (ABJ_404_Solution_DatabaseUpgradeRuntimeState::isRedirectsDenormBackfillScheduled()) {
-            return self::SCHEDULE_SKIPPED_ALREADY;
-        }
-        if ($this->redirectsDenormBackfillArmingIsThrottled()) {
-            return self::SCHEDULE_SKIPPED_THROTTLED;
-        }
-
-        global $wpdb;
-        if (!isset($wpdb)) {
-            return self::SCHEDULE_SKIPPED_NO_TABLE;
-        }
-        $redirectsTable = $this->dbCore->doTableNameReplacements('{wp_abj404_redirects}');
-        // @utf8-audit: opt-out - $redirectsTable is doTableNameReplacements() of a fixed internal placeholder (lowercase prefix + literal suffix); system-controlled, cannot contain invalid UTF-8.
-        // DAO-bypass-approved: schema existence probe, same shape as the drains.
-        $found = $wpdb->get_var("SHOW TABLES LIKE '" . esc_sql($redirectsTable) . "'");
-        if ($found !== $redirectsTable) {
-            return self::SCHEDULE_SKIPPED_NO_TABLE;
-        }
-        if (!$this->columnExists($redirectsTable, 'dest_for_view')) {
-            return self::SCHEDULE_SKIPPED_NO_BACKLOG;
-        }
-        if (!$this->redirectsDenormBackfillNeedsDrain($redirectsTable)) {
-            return self::SCHEDULE_SKIPPED_NO_BACKLOG;
-        }
-
-        ABJ_404_Solution_DatabaseUpgradeRuntimeState::setRedirectsDenormBackfillScheduled(true);
-        $this->markRedirectsDenormBackfillArmed();
-
-        return abj_cron_scheduler()->scheduleSingleOrShutdown(
-            ABJ_404_Solution_CronScheduler::HOOK_REDIRECTS_DENORM_BACKFILL,
-            function (): void {
-                $this->runDeferredDenormBackfillPass();
-            },
-            $this->upgrades()->redirectsSortKeyBackfillUpgrade()->shouldScheduleSortKeyBackfillViaCron()
-        );
-    }
-
-    /**
-     * @param string $redirectsTable
-     * @return bool
-     */
-    private function redirectsDenormBackfillNeedsDrain(string $redirectsTable): bool {
-        $probe = $this->dbCore->queryAndGetResults(
-            "SELECT id FROM " . $redirectsTable . " WHERE dest_for_view IS NULL ORDER BY id ASC LIMIT 1",
-            array('log_too_slow' => false)
-        );
-        $err = isset($probe['last_error']) && is_string($probe['last_error']) ? $probe['last_error'] : '';
-        if ($err !== '') {
-            return false;
-        }
-        $rows = is_array($probe['rows'] ?? null) ? $probe['rows'] : array();
-        return !empty($rows);
-    }
-
-    /** @return bool */
-    private function redirectsDenormBackfillArmingIsThrottled(): bool {
-        if (!function_exists('get_option')) {
-            return false;
-        }
-        $rawUntil = get_option(
-            ABJ_404_Solution_DatabaseUpgradeRuntimeState::REDIRECTS_DENORM_BACKFILL_ARMED_UNTIL_OPTION,
-            0
-        );
-        $until = is_scalar($rawUntil) ? (int)$rawUntil : 0;
-        return $until > abj_clock()->now();
-    }
-
-    /** @return void */
-    private function markRedirectsDenormBackfillArmed(): void {
-        if (!function_exists('update_option')) {
-            return;
-        }
-        update_option(
-            ABJ_404_Solution_DatabaseUpgradeRuntimeState::REDIRECTS_DENORM_BACKFILL_ARMED_UNTIL_OPTION,
-            (string)(abj_clock()->now() + self::DENORM_ARM_THROTTLE_SECONDS),
-            false
-        );
     }
 
     /**

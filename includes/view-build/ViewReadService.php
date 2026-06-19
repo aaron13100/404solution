@@ -77,9 +77,6 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
     /** @var ABJ_404_Solution_HitsTableRebuildPolicy */
     private $hitsTableRebuildPolicy;
 
-    /** @var ABJ_404_Solution_LazyDenormBackfillArmer */
-    private $lazyDenormBackfillArmer;
-
     /** @var ABJ_404_Solution_AdminViewReadCoordinator */
     private $adminViewReadCoordinator;
 
@@ -92,17 +89,13 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
      * @param ABJ_404_Solution_RedirectsRepository $redirectsRepo
      * @param ABJ_404_Solution_Functions|null $f Falls back to abj_service('functions')
      * @param ABJ_404_Solution_Logging|null $logger Falls back to abj_service('logging')
-     * @param ABJ_404_Solution_LazyDenormBackfillArmer|null $lazyDenormBackfillArmer
-     *   Injected only by tests; production builds the default (resolves the
-     *   database_upgrades service lazily via abj_service_optional).
      */
     public function __construct(
         ABJ_404_Solution_DatabaseCore $dbCore,
         ABJ_404_Solution_LogsRepository $logsRepo,
         ABJ_404_Solution_RedirectsRepository $redirectsRepo,
         $f = null,
-        $logger = null,
-        $lazyDenormBackfillArmer = null
+        $logger = null
     ) {
         $this->dbCore = $dbCore;
         $this->f = $f !== null ? $f : abj_service('functions');
@@ -120,9 +113,6 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
         $this->logsMetricsReader = new ABJ_404_Solution_LogsMetricsReader($dbCore, $logsRepo, $this->f, $this->logger);
         $this->dbMetadataReader = new ABJ_404_Solution_DatabaseMetadataReader($dbCore);
         $this->hitsTableRebuildPolicy = new ABJ_404_Solution_HitsTableRebuildPolicy($dbCore, $logsRepo, $this->logger);
-        $this->lazyDenormBackfillArmer = $lazyDenormBackfillArmer !== null
-            ? $lazyDenormBackfillArmer
-            : new ABJ_404_Solution_LazyDenormBackfillArmer($this->logger);
         $this->adminViewReadCoordinator = new ABJ_404_Solution_AdminViewReadCoordinator(
             $dbCore,
             $this->queryBuilder,
@@ -148,14 +138,6 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
      * @return array<int|string, mixed>
      */
     function getRedirectsForView($sub, $tableOptions) {
-        // Arm the lazy denorm backfills on every admin view read (cheap +
-        // request-deduped, exception-safe): their read-path index gates open
-        // within seconds of the first visit instead of waiting for the daily
-        // maintenance cron. Arming reaches the database_upgrades subsystem, never
-        // the read path's own DAO, so it cannot perturb the read or its failure
-        // contract. (Rollup-rebuild maintenance deliberately stays OFF this seam:
-        // it does row reads against this DAO and belongs on an admin-page seam.)
-        $this->lazyDenormBackfillArmer->armOnAdminViewRead();
         return $this->adminViewReadCoordinator->getRedirectsForView($sub, $tableOptions);
     }
 

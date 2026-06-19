@@ -241,11 +241,6 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 		return $this->components()->canonicalUrlBackfillUpgrade()->backfillLogsv2CanonicalUrl();
 	}
 
-	/** @return void */
-	public function scheduleLogsv2CanonicalUrlBackfill(): void {
-		$this->components()->canonicalUrlBackfillUpgrade()->scheduleLogsv2CanonicalUrlBackfill();
-	}
-
 	/**
 	 * @return array<string, mixed>
 	 */

@@ -5,18 +5,17 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Chunked, time-budgeted backfill of canonical_url on legacy redirect/logsv2 rows,
- * plus deferred-scheduling helpers for the Captured-404s admin tab.
+ * Chunked, time-budgeted backfill of canonical_url on legacy redirect/logsv2 rows.
  *
  * Legacy rows (pre-4.1.x) lack canonical_url, so the view-build JOIN between
  * redirects.canonical_url and logsv2.canonical_url has to fall back to
  * CONCAT/TRIM and cannot use idx_canonical_url. This component drains the NULL
- * backlog across successive daily cron ticks (and shutdown-hook visits to the
- * Captured-404s tab on admin pages) until every row has been populated, at which
- * point reads can drop the COALESCE fallback entirely.
+ * backlog across successive daily cron ticks and browser-triggered admin AJAX
+ * drains until every row has been populated, at which point reads can drop the
+ * COALESCE fallback entirely.
  *
  * Reached by {@see ABJ_404_Solution_DatabaseUpgradeDailyMaintenance} (daily cron)
- * and the Captured-404s admin tab via {@see scheduleLogsv2CanonicalUrlBackfill}.
+ * and the browser-triggered lazy-backfill AJAX endpoint.
  */
 class ABJ_404_Solution_DatabaseUpgradeCanonicalUrlBackfill extends ABJ_404_Solution_DatabaseUpgradeComponent {
 
@@ -144,13 +143,10 @@ class ABJ_404_Solution_DatabaseUpgradeCanonicalUrlBackfill extends ABJ_404_Solut
      *   WHERE canonical_url IS NULL LIMIT N
      *
      * Mirrors backfillRedirectsCanonicalUrl() with one budget difference --
-     * 15-second wall budget (vs 25 for redirects) because this function is
-     * also reachable from the Captured-404s admin tab via
-     * scheduleLogsv2CanonicalUrlBackfill(), and the shutdown hook holds a
-     * PHP-FPM worker for the full budget. 15s leaves enough headroom for
-     * concurrent traffic on shared hosts. On a Bruno-class 250K-row backlog
-     * this converges in ~3-10 days on daily cron alone, faster if the admin
-     * regularly visits the tab.
+     * 15-second wall budget (vs 25 for redirects) so browser-triggered AJAX
+     * drains stay bounded while the daily cron remains the silent backstop. On
+     * a Bruno-class 250K-row backlog this converges in ~3-10 days on daily cron
+     * alone, faster if the admin regularly visits the tab.
      *
      * Once the backlog is fully cleared (no rows where canonical_url IS NULL),
      * sets the abj404_logsv2_canonical_url_backfill_complete option so reads
@@ -241,81 +237,6 @@ class ABJ_404_Solution_DatabaseUpgradeCanonicalUrlBackfill extends ABJ_404_Solut
         }
 
         return $totalUpdated;
-    }
-
-    /**
-     * Register a deferred backfill of logsv2.canonical_url, deduped per
-     * request. Called from the Captured-404s admin tab render so the
-     * legacy NULL backlog clears on each visit (15-second budget per
-     * invocation, ~25K-75K rows per invocation on shared hosting).
-     *
-     * Why shutdown outside AJAX and WP-Cron during AJAX:
-     *   - shutdown always fires; wp-cron silently doesn't on
-     *     DISABLE_WP_CRON=true sites without a server-side cron worker
-     *     (a real subset of WP installs).
-     *   - On normal page requests, shutdown keeps convergence independent of
-     *     wp-cron and the response has already been rendered.
-     *   - On admin-ajax.php, some hosts/proxies still hold the HTTP response
-     *     open until shutdown work finishes. Use WP-Cron there so table AJAX
-     *     cannot time out behind the 15-second backfill budget.
-     *
-     * Pre-flight gates (in order, cheapest first):
-     *   1. Static request-scoped flag -- skip if already scheduled.
-     *   2. Backfill-complete option -- skip permanently once flipped.
-     *   3. Column existence -- skip on pre-upgrade installs.
-     *   4. Cheap "any NULL rows?" probe (LIMIT 1, indexed) -- skip if
-     *      backlog is already drained but the flag wasn't flipped (e.g.
-     *      first time we observe a clean backlog).
-     *
-     * @return void
-     */
-    public function scheduleLogsv2CanonicalUrlBackfill(): void {
-        if ($this->isLogsv2CanonicalBackfillScheduled()) {
-            return;
-        }
-        if (function_exists('get_option') && get_option($this->getLogsv2CanonicalUrlBackfillCompleteOption())) {
-            return;
-        }
-
-        global $wpdb;
-        if (!isset($wpdb)) {
-            return;
-        }
-
-        $logsTable = $this->dbCore->doTableNameReplacements('{wp_abj404_logsv2}');
-        if (!$this->columnExists($logsTable, 'canonical_url')) {
-            return;
-        }
-
-        $probe = $this->dbCore->queryAndGetResults(
-            "SELECT 1 FROM " . $logsTable . " WHERE canonical_url IS NULL LIMIT 1",
-            array('log_too_slow' => false)
-        );
-        $rows = is_array($probe['rows'] ?? null) ? $probe['rows'] : [];
-        $probeError = isset($probe['last_error']) && is_string($probe['last_error']) ? $probe['last_error'] : '';
-        if ($probeError === '' && empty($rows)) {
-            // No NULL rows but flag wasn't set yet -- flip it now to skip
-            // future probes on this and later requests.
-            if (function_exists('update_option')) {
-                update_option($this->getLogsv2CanonicalUrlBackfillCompleteOption(), '1', false);
-            }
-            return;
-        }
-
-        $this->setLogsv2CanonicalBackfillScheduled(true);
-        // Centralized cron-or-shutdown arming with a DISABLE_WP_CRON / refused-cron
-        // fallback to shutdown, so the canonical-url backlog converges within
-        // seconds of the first visit even on weak hosting (issues 2/3).
-        abj_cron_scheduler()->scheduleSingleOrShutdown(
-            ABJ_404_Solution_CronScheduler::HOOK_LOGSV2_CANONICAL_BACKFILL,
-            function (): void { $this->backfillLogsv2CanonicalUrl(); },
-            $this->shouldScheduleLogsv2CanonicalBackfillViaCron()
-        );
-    }
-
-    /** @return bool */
-    public function shouldScheduleLogsv2CanonicalBackfillViaCron(): bool {
-        return $this->isAdminAjaxRequest();
     }
 
     /**

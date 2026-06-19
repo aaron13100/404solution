@@ -89,13 +89,6 @@ final class ABJ_404_Solution_DatabaseUpgradeRuntimeState {
     public const REDIRECTS_DENORM_BACKFILL_CURSOR_OPTION = 'abj404_redirects_denorm_backfill_cursor';
 
     /**
-     * wp_options key holding a short "do not re-arm before" timestamp for the
-     * on-demand redirects denorm backfill trigger.
-     * @var string
-     */
-    public const REDIRECTS_DENORM_BACKFILL_ARMED_UNTIL_OPTION = 'abj404_redirects_denorm_backfill_armed_until';
-
-    /**
      * Known plugin table suffixes for adoption.
      * @var array<int, string>
      */
@@ -115,15 +108,6 @@ final class ABJ_404_Solution_DatabaseUpgradeRuntimeState {
     /** @var string|null */
     private static $runtimeId = null;
 
-    /** @var bool */
-    private static $logsv2CanonicalBackfillScheduled = false;
-
-    /** @var bool */
-    private static $redirectsSortKeyBackfillScheduled = false;
-
-    /** @var bool */
-    private static $redirectsDenormBackfillScheduled = false;
-
     /** @return void */
     public static function initializeRuntimeId(): void {
         if (self::$runtimeId === null) {
@@ -139,62 +123,6 @@ final class ABJ_404_Solution_DatabaseUpgradeRuntimeState {
     /** @return void */
     public static function resetRuntimeIdForTests(): void {
         self::$runtimeId = null;
-    }
-
-    public static function isLogsv2CanonicalBackfillScheduled(): bool {
-        return self::$logsv2CanonicalBackfillScheduled;
-    }
-
-    public static function setLogsv2CanonicalBackfillScheduled(bool $scheduled): void {
-        self::$logsv2CanonicalBackfillScheduled = $scheduled;
-    }
-
-    /** @return void */
-    public static function resetLogsv2CanonicalBackfillScheduledFlagForTests(): void {
-        self::$logsv2CanonicalBackfillScheduled = false;
-    }
-
-    /**
-     * Request-scoped dedup flag for the on-demand redirects sort-key drain
-     * scheduler (scheduleRedirectsSortKeyBackfill). Mirrors the logsv2 canonical
-     * flag: set once per request after the drain is scheduled so repeated admin
-     * redirect-table renders in the same request do not re-probe or re-schedule.
-     *
-     * @return bool
-     */
-    public static function isRedirectsSortKeyBackfillScheduled(): bool {
-        return self::$redirectsSortKeyBackfillScheduled;
-    }
-
-    /**
-     * @param bool $scheduled
-     * @return void
-     */
-    public static function setRedirectsSortKeyBackfillScheduled(bool $scheduled): void {
-        self::$redirectsSortKeyBackfillScheduled = $scheduled;
-    }
-
-    /** @return void */
-    public static function resetRedirectsSortKeyBackfillScheduledFlagForTests(): void {
-        self::$redirectsSortKeyBackfillScheduled = false;
-    }
-
-    /** @return bool */
-    public static function isRedirectsDenormBackfillScheduled(): bool {
-        return self::$redirectsDenormBackfillScheduled;
-    }
-
-    /**
-     * @param bool $scheduled
-     * @return void
-     */
-    public static function setRedirectsDenormBackfillScheduled(bool $scheduled): void {
-        self::$redirectsDenormBackfillScheduled = $scheduled;
-    }
-
-    /** @return void */
-    public static function resetRedirectsDenormBackfillScheduledFlagForTests(): void {
-        self::$redirectsDenormBackfillScheduled = false;
     }
 
     /** @return array<int, string> */

@@ -189,7 +189,6 @@ return array(
     'ABJ_404_Solution_LogsMetricsReader' => $base . 'includes/logs/LogsMetricsReader.php',
     'ABJ_404_Solution_DatabaseMetadataReader' => $base . 'includes/database/DatabaseMetadataReader.php',
     'ABJ_404_Solution_HitsTableRebuildPolicy' => $base . 'includes/view-build/HitsTableRebuildPolicy.php',
-    'ABJ_404_Solution_LazyDenormBackfillArmer' => $base . 'includes/view-build/LazyDenormBackfillArmer.php',
     'ABJ_404_Solution_Ajax_CrossPluginImporter' => $base . 'includes/ajax/Ajax_CrossPluginImporter.php',
     'ABJ_404_Solution_Ajax_Php' => $base . 'includes/ajax/Ajax_Php.php',
     'ABJ_404_Solution_Ajax_ServiceResolver' => $base . 'includes/ajax/AjaxServiceResolver.php',

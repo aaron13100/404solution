@@ -35,13 +35,6 @@ class ABJ_404_Solution_CronScheduler {
     // deactivation must defensively clear it (matches deleteBlogData + Uninstaller).
     const HOOK_REBUILD_VIEW_DONE_LEGACY = 'abj404_rebuildViewDone';
 
-    // Outcomes of scheduleSingleOrShutdown(), returned so the caller (and tests)
-    // can observe which deferral mechanism was actually used.
-    const DEFER_VIA_CRON = 'cron';
-    const DEFER_VIA_SHUTDOWN = 'shutdown';
-    const DEFER_VIA_SHUTDOWN_CRON_UNAVAILABLE = 'shutdown-cron-unavailable';
-    const DEFER_VIA_SHUTDOWN_CRON_REFUSED = 'shutdown-cron-refused';
-
     /** @var ABJ_404_Solution_Clock */
     private $clock;
 
@@ -92,81 +85,6 @@ class ABJ_404_Solution_CronScheduler {
             return true;
         }
         return $this->scheduleSingle($hook, $delaySeconds, $args);
-    }
-
-    /**
-     * Whether WP-Cron events can be expected to auto-fire on this site.
-     *
-     * False when DISABLE_WP_CRON is truthy: such sites only run cron when an
-     * external system cron requests wp-cron.php, so a scheduled event will not
-     * fire promptly (if at all) off page loads. Callers that need near-term
-     * execution should degrade to a shutdown hook instead.
-     *
-     * @return bool
-     */
-    public function wpCronAvailable(): bool {
-        return !(defined('DISABLE_WP_CRON') && DISABLE_WP_CRON);
-    }
-
-    /**
-     * Arm a one-shot deferred job either via WP-Cron or via a shutdown hook,
-     * degrading to shutdown whenever WP-Cron cannot be relied upon to run it.
-     *
-     * This centralizes the cron-or-shutdown decision shared by the lazy-backfill
-     * schedulers so the "runs within seconds" guarantee survives weak hosting:
-     *   - $preferCron === false (a normal page render): always shutdown -- it
-     *     fires right after the response is sent, independent of WP-Cron.
-     *   - DISABLE_WP_CRON site: shutdown, because a scheduled event would not
-     *     auto-fire promptly. The drain is time-budgeted and idempotent, so the
-     *     bounded response-hold is preferable to never converging in-session.
-     *   - WP-Cron refuses the event (wp_schedule_single_event returns false / a
-     *     WP_Error): shutdown, rather than silently reporting success.
-     *   - Otherwise: WP-Cron, so an AJAX table load is not held open behind the
-     *     drain budget. Browser-triggered admin AJAX drives visible convergence
-     *     for the redirects table when loopback cron is blocked.
-     *
-     * The shutdown fallback runs in the SAME request that is already serving the
-     * admin, so $preferCron is normally true only on admin-ajax.php (where some
-     * hosts hold the response open until shutdown finishes) -- that is the one
-     * case WP-Cron is genuinely preferable, and the caller passes $preferCron
-     * accordingly.
-     *
-     * @param string        $hook            Registered cron hook to schedule.
-     * @param callable():void $shutdownFallback Runs the drain inline at shutdown.
-     * @param bool          $preferCron      Whether this request context favors
-     *                                       WP-Cron over an inline shutdown drain.
-     * @param int           $delaySeconds    Cron delay when WP-Cron is used.
-     * @return string One of the DEFER_* outcome constants.
-     */
-    public function scheduleSingleOrShutdown(
-        string $hook,
-        callable $shutdownFallback,
-        bool $preferCron,
-        int $delaySeconds = 5
-    ): string {
-        if (!$preferCron) {
-            $this->registerShutdownDrain($shutdownFallback);
-            return self::DEFER_VIA_SHUTDOWN;
-        }
-        if (!$this->wpCronAvailable()) {
-            $this->registerShutdownDrain($shutdownFallback);
-            return self::DEFER_VIA_SHUTDOWN_CRON_UNAVAILABLE;
-        }
-        if ($this->scheduleSingleIfMissing($hook, $delaySeconds)) {
-            return self::DEFER_VIA_CRON;
-        }
-        $this->registerShutdownDrain($shutdownFallback);
-        return self::DEFER_VIA_SHUTDOWN_CRON_REFUSED;
-    }
-
-    /**
-     * @param callable():void $shutdownFallback
-     * @return void
-     */
-    private function registerShutdownDrain(callable $shutdownFallback): void {
-        if (function_exists('add_action')) {
-            add_action('shutdown', $shutdownFallback);
-        }
     }
 
     /**

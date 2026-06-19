@@ -59,8 +59,7 @@ class ABJ_404_Solution_DatabaseUpgradeDailyMaintenance extends ABJ_404_Solution_
         // idx_canonical_url. Chunked + rate-limited so even a multi-hundred-K
         // logsv2 backlog converges across successive cron ticks. Tighter
         // 15-second budget (vs redirects' 25) because this same function is
-        // also reachable from the Captured-404s tab shutdown hook --
-        // see scheduleLogsv2CanonicalUrlBackfill().
+        // also reachable from the browser-triggered lazy-backfill AJAX endpoint.
         $this->upgrades()->canonicalUrlBackfillUpgrade()->backfillLogsv2CanonicalUrl();
 
         // Denorm Step 3a (i459): populate the four derived columns (logshits,

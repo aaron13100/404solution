@@ -93,9 +93,9 @@ function abj404_redirectsDenormBackfillListener() {
         $denorm = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance()
             ->components()->redirectsDenormBackfillUpgrade();
         // One shared time budget across the three drains (see
-        // runDeferredDenormBackfillPass): this runs on a shutdown hook / cron
-        // armed by an admin view, so it must not consume 3x the budget back to
-        // back on hosts that do not flush the response before shutdown.
+        // runDeferredDenormBackfillPass): this cron listener and the
+        // browser-triggered AJAX drain must not consume 3x the budget back to
+        // back.
         $denorm->runDeferredDenormBackfillPass();
     } catch (\Throwable $e) {
         abj404_logRuntimeWarning('Cron redirects denorm backfill failed', $e);
@@ -104,11 +104,10 @@ function abj404_redirectsDenormBackfillListener() {
 }
 if (!function_exists('abj404_redirectsSortKeyBackfillListener')) {
 /**
- * On-demand drain of the redirects narrow sort-key columns (dest_sort_key /
- * url_sort_key), armed by an admin redirect-table render when a legacy backlog
- * exists. Light-path: the drains route through queryAndGetResults and no-op on
- * a missing/empty table, so a fresh-install or deactivated-but-installed state
- * degrades gracefully. See scheduleRedirectsSortKeyBackfill().
+     * Drain of the redirects narrow sort-key columns (dest_sort_key /
+     * url_sort_key). Light-path: the drains route through queryAndGetResults and
+     * no-op on a missing/empty table, so a fresh-install or
+     * deactivated-but-installed state degrades gracefully.
  *
  * @return void
  */
@@ -118,7 +117,7 @@ function abj404_redirectsSortKeyBackfillListener() {
         $sortKey = ABJ_404_Solution_DatabaseUpgradesEtc::getInstance()
             ->components()->redirectsSortKeyBackfillUpgrade();
         // Shared time budget across both sort-key drains (see
-        // runDeferredSortKeyBackfillPass) so an admin-armed shutdown/cron pass
+        // runDeferredSortKeyBackfillPass) so a browser-triggered or cron pass
         // is capped at one budget, not two back to back.
         $sortKey->runDeferredSortKeyBackfillPass();
     } catch (\Throwable $e) {
