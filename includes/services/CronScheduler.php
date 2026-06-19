@@ -30,6 +30,10 @@ class ABJ_404_Solution_CronScheduler {
     const HOOK_DUPLICATE_LEGACY = 'abj404_duplicateCronAction';
     const HOOK_REMOVE_DUPLICATES_LEGACY = 'removeDuplicatesCron';
     const HOOK_DELETE_OLD_REDIRECTS_LEGACY = 'deleteOldRedirectsCron';
+    // The staged view_done rebuild cron was removed in the denorm chain, but
+    // sites upgrading from a build that scheduled it may still carry the event;
+    // deactivation must defensively clear it (matches deleteBlogData + Uninstaller).
+    const HOOK_REBUILD_VIEW_DONE_LEGACY = 'abj404_rebuildViewDone';
 
     // Outcomes of scheduleSingleOrShutdown(), returned so the caller (and tests)
     // can observe which deferral mechanism was actually used.
@@ -294,6 +298,7 @@ class ABJ_404_Solution_CronScheduler {
             self::HOOK_DUPLICATE_LEGACY,
             self::HOOK_REMOVE_DUPLICATES_LEGACY,
             self::HOOK_DELETE_OLD_REDIRECTS_LEGACY,
+            self::HOOK_REBUILD_VIEW_DONE_LEGACY,
         );
     }
 
