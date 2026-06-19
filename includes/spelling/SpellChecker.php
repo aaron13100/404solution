@@ -64,6 +64,9 @@ class ABJ_404_Solution_SpellChecker {
 	/** @var ABJ_404_Solution_SpellPostListeners */
 	private $postListeners;
 
+	/** @var ABJ_404_Solution_SpellSuggestionShortcodeDetector */
+	private $shortcodeDetector;
+
 	/**
 	 * @param ABJ_404_Solution_SpellCheckerDependencies|null $deps
 	 */
@@ -115,6 +118,10 @@ class ABJ_404_Solution_SpellChecker {
 			$this->f, $this->logic, $this->logger, $this->contentRepository,
 			$this->urlMatcher, $this->levenshteinEngine, $this->postListeners,
 			$custom404PageIDResolved, $this->separatingCharacters, $this->separatingCharactersForImages
+		);
+
+		$this->shortcodeDetector = new ABJ_404_Solution_SpellSuggestionShortcodeDetector(
+			$this->notFoundResponse
 		);
 	}
 
@@ -486,28 +493,7 @@ class ABJ_404_Solution_SpellChecker {
 	}
 
 	public function does404PageHaveSuggestionsShortcode() {
-		$options = abj_service('options_repository')->getOptions();
-		$dest404pageRaw = isset($options['dest404page']) ? $options['dest404page'] : null;
-		$dest404page = is_string($dest404pageRaw) ? $dest404pageRaw : null;
-
-		if (!$this->notFoundResponse instanceof ABJ_404_Solution_NotFoundResponseService
-				|| !$this->notFoundResponse->thereIsAUserSpecified404Page($dest404page)) {
-			return false;
-		}
-
-		$parts = explode('|', $dest404page ?? '');
-		$page404Id = isset($parts[0]) ? intval($parts[0]) : 0;
-
-		if ($page404Id <= 0) {
-			return false;
-		}
-
-		$page = get_post($page404Id);
-		if (!$page) {
-			return false;
-		}
-
-		return has_shortcode($page->post_content, ABJ404_SHORTCODE_NAME);
+		return $this->shortcodeDetector->does404PageHaveSuggestionsShortcode();
 	}
 
 }
