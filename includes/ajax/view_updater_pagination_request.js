@@ -115,10 +115,14 @@ function abj404BuildPaginationRequest(triggerItem, options) {
         };
     }
 
-    // Keep the client-side budget tight for both visible and detect-only
-    // refreshes so a stalled request reaches the terminal error/complete path
-    // before the loading overlay can linger for tens of seconds.
-    var ajaxTimeoutMs = 15000;
+    // Background detect-only refreshes use a tight 15s budget so a stalled
+    // silent poll never lingers in the background. Explicit user actions use
+    // 45s so a cold-cache table query (large redirects/logs tables) has time
+    // to complete before the placeholder turns into an error notice. The
+    // foreground overlay is pointer-transparent and always removed on AJAX
+    // complete, so a longer budget can no longer block clicks regardless of
+    // how long the request runs.
+    var ajaxTimeoutMs = isDetectOnlyBackground ? 15000 : 45000;
 
     var payload = {
         action: action,
