@@ -181,6 +181,7 @@ return array(
     'ABJ_404_Solution_RedirectsHitsRollupReader' => $base . 'includes/view-build/RedirectsHitsRollupReader.php',
     'ABJ_404_Solution_ScoreThresholds' => $base . 'includes/view-build/ScoreThresholds.php',
     'ABJ_404_Solution_ViewDiagnostics' => $base . 'includes/view-build/ViewDiagnostics.php',
+    'ABJ_404_Solution_ViewQueryExplainDiagnostics' => $base . 'includes/view-build/ViewQueryExplainDiagnostics.php',
     'ABJ_404_Solution_ViewCacheInvalidator' => $base . 'includes/view-build/ViewCacheInvalidator.php',
     'ABJ_404_Solution_AdminViewReadCoordinator' => $base . 'includes/view-build/AdminViewReadCoordinator.php',
     'ABJ_404_Solution_ViewReadOutcome' => $base . 'includes/view-build/ViewReadOutcome.php',

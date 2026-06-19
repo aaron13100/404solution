@@ -19,13 +19,20 @@ class ABJ_404_Solution_ViewDiagnostics {
     /** @var ABJ_404_Solution_DatabaseQueryDiagnostics */
     private $queryDiagnostics;
 
+    /** @var ABJ_404_Solution_ViewQueryExplainDiagnostics */
+    private $explainDiagnostics;
+
     /**
      * @param ABJ_404_Solution_DatabaseCore $dbCore
      * @param ABJ_404_Solution_DatabaseQueryDiagnostics|null $queryDiagnostics
+     * @param ABJ_404_Solution_ViewQueryExplainDiagnostics|null $explainDiagnostics
      */
-    public function __construct(ABJ_404_Solution_DatabaseCore $dbCore, $queryDiagnostics = null) {
+    public function __construct(ABJ_404_Solution_DatabaseCore $dbCore, $queryDiagnostics = null, $explainDiagnostics = null) {
         $this->dbCore = $dbCore;
         $this->queryDiagnostics = $queryDiagnostics !== null ? $queryDiagnostics : $dbCore->queryDiagnostics();
+        $this->explainDiagnostics = $explainDiagnostics !== null
+            ? $explainDiagnostics
+            : new ABJ_404_Solution_ViewQueryExplainDiagnostics($dbCore);
     }
 
     /**
@@ -95,7 +102,7 @@ class ABJ_404_Solution_ViewDiagnostics {
         $logsv2Table = $this->dbCore->doTableNameReplacements('{wp_abj404_logsv2}');
         $postsTable = $this->resolvePostsTableName();
 
-        $diag['explain'] = $this->safeProbeExplain($failedQuery);
+        $diag['explain'] = $this->explainDiagnostics->collect($sub, $failedQuery, $queryResult);
         $diag['db_version'] = $this->safeProbeDbVersion();
 
         $diag['redirects_count']['active'] = $this->safeProbeCount(
@@ -208,52 +215,6 @@ class ABJ_404_Solution_ViewDiagnostics {
         } catch (Throwable $e) {
             return 'error: ' . $e->getMessage();
         }
-    }
-
-    /**
-     * @param string $failedQuery
-     * @return array<int, array<string,mixed>>|string
-     */
-    private function safeProbeExplain(string $failedQuery) {
-        if ($failedQuery === '') {
-            return 'error: no query supplied';
-        }
-        $stripped = $this->stripWrappersForExplain($failedQuery);
-        try {
-            $result = $this->dbCore->queryAndGetResults('EXPLAIN ' . $stripped, array(
-                'timeout' => 5,
-                'log_errors' => false,
-                'skip_repair' => true,
-            ));
-            $lastErrorRaw = $result['last_error'] ?? '';
-            $err = is_string($lastErrorRaw) ? $lastErrorRaw : '';
-            if ($err !== '' || !empty($result['timed_out'])) {
-                return 'error: ' . ($err !== '' ? $err : 'timed out');
-            }
-            $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
-            $clean = array();
-            foreach ($rows as $row) {
-                if (is_array($row)) {
-                    $clean[] = $row;
-                } else if (is_object($row)) {
-                    $clean[] = (array)$row;
-                }
-            }
-            return $clean;
-        } catch (Throwable $e) {
-            return 'error: ' . $e->getMessage();
-        }
-    }
-
-    /**
-     * @param string $query
-     * @return string
-     */
-    private function stripWrappersForExplain(string $query): string {
-        $q = trim($query);
-        $q = preg_replace('/^\\s*\\/\\*\\+[^*]*\\*\\/\\s*/', '', $q) ?? $q;
-        $q = preg_replace('/^\\s*SET\\s+STATEMENT\\s+max_statement_time\\s*=\\s*\\d+\\s+FOR\\s+/i', '', $q) ?? $q;
-        return $q;
     }
 
     /** @return string */
