@@ -81,6 +81,16 @@ function paginationLinksChange(triggerItem, options) {
         window.abj404BackgroundRefreshState.hasUpdateAvailable = false;
     }
 
+    var $foregroundTableWrapper = null;
+    var removeForegroundLoadingOverlay = function() {
+        if (isBackgroundRefresh || !$foregroundTableWrapper || $foregroundTableWrapper.length === 0) {
+            return;
+        }
+        $foregroundTableWrapper.find('.abj404-loading-overlay').fadeOut(200, function() {
+            jQuery(this).remove();
+        });
+    };
+
     if (!isBackgroundRefresh) {
         hideRefreshAvailablePill();
         // Show loading overlay on the table for explicit user actions only.
@@ -88,9 +98,9 @@ function paginationLinksChange(triggerItem, options) {
         if (!$table.parent().hasClass('abj404-table-wrapper')) {
             $table.wrap('<div class="abj404-table-wrapper"></div>');
         }
-        var $wrapper = $table.parent();
-        $wrapper.find('.abj404-loading-overlay').remove();
-        $wrapper.append('<div class="abj404-loading-overlay"><div class="abj404-spinner-container"><div class="abj404-spinner"></div></div></div>');
+        $foregroundTableWrapper = $table.parent();
+        $foregroundTableWrapper.find('.abj404-loading-overlay').remove();
+        $foregroundTableWrapper.append('<div class="abj404-loading-overlay"><div class="abj404-spinner-container"><div class="abj404-spinner"></div></div></div>');
     }
 
     abj404UpdateAjaxDebugLog('Starting AJAX: ' + action + ' for subpage ' + subpage, {
@@ -212,9 +222,6 @@ function paginationLinksChange(triggerItem, options) {
             if (isBackgroundRefresh && detectOnly) {
                 setDetectOnlyRefreshInFlight(false);
             }
-            // Remove the loading overlay on error
-            jQuery('.abj404-loading-overlay').remove();
-
             var parsed = abj404HandlePaginationAjaxError(errorCtx, jqXHR, textStatus, errorThrown);
 
             if (typeof options.onError === 'function') {
@@ -243,6 +250,9 @@ function paginationLinksChange(triggerItem, options) {
                 window.abj404BackgroundRefreshState.lastError = textStatus || errorThrown || 'ajax-error';
                 window.abj404BackgroundRefreshState.lastResponseBytes = parsed.responseText ? parsed.responseText.length : 0;
             }
+        },
+        complete: function () {
+            removeForegroundLoadingOverlay();
         }
     });
 }

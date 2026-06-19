@@ -70,10 +70,5 @@ function abj404ApplyPaginationSuccessResponse(result) {
     jQuery('input[name=searchFilter]').val(currentFieldValue);
     jQuery('input[name=searchFilter]').attr("data-previous-value", currentFieldValue);
 
-    // Remove the loading overlay
-    jQuery('.abj404-loading-overlay').fadeOut(200, function() {
-        jQuery(this).remove();
-    });
-
     bindTrashLinkListeners();
 }

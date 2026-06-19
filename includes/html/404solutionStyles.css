@@ -1901,6 +1901,7 @@ th:nth-last-child(-n+3) .lefty-tooltiptext {
     border-radius: 8px;
     animation: abj404-fade-in 0.2s ease-out;
     overflow: hidden;
+    pointer-events: none;
 }
 
 @keyframes abj404-fade-in {

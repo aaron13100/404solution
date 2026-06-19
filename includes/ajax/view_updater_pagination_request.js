@@ -115,11 +115,10 @@ function abj404BuildPaginationRequest(triggerItem, options) {
         };
     }
 
-    // Background detect-only refreshes use a tight 15s budget so a stalled
-    // refresh never lingers in the background; explicit user actions use 45s
-    // so a cold-cache table query (large redirects/logs tables) has time to
-    // complete before the placeholder turns into an error notice.
-    var ajaxTimeoutMs = (isBackgroundRefresh && detectOnly) ? 15000 : 45000;
+    // Keep the client-side budget tight for both visible and detect-only
+    // refreshes so a stalled request reaches the terminal error/complete path
+    // before the loading overlay can linger for tens of seconds.
+    var ajaxTimeoutMs = 15000;
 
     var payload = {
         action: action,
