@@ -13,6 +13,7 @@ require_once __DIR__ . '/NGramCacheRepository.php';
 require_once __DIR__ . '/NGramCoveragePolicy.php';
 require_once __DIR__ . '/NGramRebuilder.php';
 require_once __DIR__ . '/NGramUsageTelemetry.php';
+require_once __DIR__ . '/NGramFilterCollaboratorResolver.php';
 
 /**
  * Candidate selection orchestrator: maps a 404 URL to a ranked subset of
@@ -110,111 +111,11 @@ class ABJ_404_Solution_NGramFilter {
         // load NGramFilter standalone without bootstrap. The new collaborators
         // are pure composition over $dbCore/$logger/$f already, so direct
         // construction is equivalent.
-        $this->extractor = self::resolveExtractor($extractor, $this->f, $this->logger);
-        $this->similarity = self::resolveSimilarity($similarity);
-        $this->repo = self::resolveRepo($repo, $dbCore, $this->logger, $this->similarity);
-        $this->coveragePolicy = self::resolveCoveragePolicy($coveragePolicy, $dbCore);
-        $this->telemetry = self::resolveTelemetry($telemetry);
-    }
-
-    /**
-     * @param mixed $explicit
-     * @param ABJ_404_Solution_Functions $f
-     * @param ABJ_404_Solution_Logging $logger
-     * @return ABJ_404_Solution_NGramExtractor
-     */
-    private static function resolveExtractor($explicit, $f, $logger) {
-        if ($explicit instanceof ABJ_404_Solution_NGramExtractor) {
-            return $explicit;
-        }
-        $resolved = self::resolveFromContainer('ngram_extractor');
-        if ($resolved instanceof ABJ_404_Solution_NGramExtractor) {
-            return $resolved;
-        }
-        return new ABJ_404_Solution_NGramExtractor($f, $logger);
-    }
-
-    /**
-     * @param mixed $explicit
-     * @return ABJ_404_Solution_NGramSimilarity
-     */
-    private static function resolveSimilarity($explicit) {
-        if ($explicit instanceof ABJ_404_Solution_NGramSimilarity) {
-            return $explicit;
-        }
-        $resolved = self::resolveFromContainer('ngram_similarity');
-        if ($resolved instanceof ABJ_404_Solution_NGramSimilarity) {
-            return $resolved;
-        }
-        return new ABJ_404_Solution_NGramSimilarity();
-    }
-
-    /**
-     * @param mixed $explicit
-     * @param mixed $dbCore
-     * @param ABJ_404_Solution_Logging $logger
-     * @param ABJ_404_Solution_NGramSimilarity $similarity
-     * @return ABJ_404_Solution_NGramCacheRepository
-     */
-    private static function resolveRepo($explicit, $dbCore, $logger, $similarity) {
-        if ($explicit instanceof ABJ_404_Solution_NGramCacheRepository) {
-            return $explicit;
-        }
-        $resolved = self::resolveFromContainer('ngram_cache_repository');
-        if ($resolved instanceof ABJ_404_Solution_NGramCacheRepository) {
-            return $resolved;
-        }
-        $dbCoreTyped = $dbCore instanceof ABJ_404_Solution_DatabaseCore ? $dbCore : null;
-        return new ABJ_404_Solution_NGramCacheRepository($dbCoreTyped, $logger, $similarity, null);
-    }
-
-    /**
-     * @param mixed $explicit
-     * @param mixed $dbCore
-     * @return ABJ_404_Solution_NGramCoveragePolicy
-     */
-    private static function resolveCoveragePolicy($explicit, $dbCore) {
-        if ($explicit instanceof ABJ_404_Solution_NGramCoveragePolicy) {
-            return $explicit;
-        }
-        $resolved = self::resolveFromContainer('ngram_coverage_policy');
-        if ($resolved instanceof ABJ_404_Solution_NGramCoveragePolicy) {
-            return $resolved;
-        }
-        $dbCoreTyped = $dbCore instanceof ABJ_404_Solution_DatabaseCore ? $dbCore : null;
-        return new ABJ_404_Solution_NGramCoveragePolicy($dbCoreTyped);
-    }
-
-    /**
-     * @param mixed $explicit
-     * @return ABJ_404_Solution_NGramUsageTelemetry
-     */
-    private static function resolveTelemetry($explicit) {
-        if ($explicit instanceof ABJ_404_Solution_NGramUsageTelemetry) {
-            return $explicit;
-        }
-        $resolved = self::resolveFromContainer('ngram_usage_telemetry');
-        if ($resolved instanceof ABJ_404_Solution_NGramUsageTelemetry) {
-            return $resolved;
-        }
-        return new ABJ_404_Solution_NGramUsageTelemetry();
-    }
-
-    /**
-     * Silent container lookup: skips abj_service()'s error_log fallback.
-     *
-     * @param string $serviceName
-     * @return mixed
-     */
-    private static function resolveFromContainer($serviceName) {
-        if (!class_exists('ABJ_404_Solution_ServiceContainer')) {
-            return null;
-        }
-        $container = ABJ_404_Solution_ServiceContainer::getInstance();
-        if (!$container->has($serviceName)) {
-            return null;
-        }
-        return $container->get($serviceName);
+        $this->extractor = ABJ_404_Solution_NGramFilterCollaboratorResolver::resolveExtractor($extractor, $this->f, $this->logger);
+        $this->similarity = ABJ_404_Solution_NGramFilterCollaboratorResolver::resolveSimilarity($similarity);
+        $this->repo = ABJ_404_Solution_NGramFilterCollaboratorResolver::resolveRepo($repo, $dbCore, $this->logger, $this->similarity);
+        $this->coveragePolicy = ABJ_404_Solution_NGramFilterCollaboratorResolver::resolveCoveragePolicy($coveragePolicy, $dbCore);
+        $this->telemetry = ABJ_404_Solution_NGramFilterCollaboratorResolver::resolveTelemetry($telemetry);
     }
 
     /** @return self */
@@ -237,6 +138,41 @@ class ABJ_404_Solution_NGramFilter {
      * @return array<int, float>
      */
     public function findSimilarPages($url404, $minSimilarity = 0.4, $maxCandidates = 100) {
+        return $this->findSimilar($url404, $minSimilarity, $maxCandidates, null);
+    }
+
+    /**
+     * Find taxonomy terms (categories or tags) similar to a 404 URL using the
+     * same N-gram filtering posts use, but restricted to a single cache type
+     * so post ids never collide with term ids.
+     *
+     * Returns [termId => similarity_score] sorted descending. The caller
+     * (SpellSuggestionScorer / CategoryTagMatchingEngine) is responsible for
+     * only invoking this when the term coverage policy reports the type's
+     * cache is trustworthy; on a cold cache it falls back to the full
+     * getPublishedCategories()/getPublishedTags() scan.
+     *
+     * @param string $url404
+     * @param string $type Cache type to restrict to: 'category' or 'tag'.
+     * @param float $minSimilarity Minimum Dice coefficient.
+     * @param int $maxCandidates Maximum candidates to return.
+     * @return array<int, float>
+     */
+    public function findSimilarTermIds($url404, $type, $minSimilarity = 0.4, $maxCandidates = 100) {
+        return $this->findSimilar($url404, $minSimilarity, $maxCandidates, (string)$type);
+    }
+
+    /**
+     * Shared candidate-selection pipeline for both the all-types post path
+     * (type=null) and the single-type term path (type='category'|'tag').
+     *
+     * @param string $url404
+     * @param float $minSimilarity
+     * @param int $maxCandidates
+     * @param string|null $type Null = historical all-types scan (posts).
+     * @return array<int, float>
+     */
+    private function findSimilar($url404, $minSimilarity, $maxCandidates, $type) {
         $startTime = abj_clock()->nowFloat();
 
         $url404Normalized = $this->f->strtolower(trim($url404));
@@ -248,24 +184,17 @@ class ABJ_404_Solution_NGramFilter {
             return [];
         }
 
-        $totalCount = $this->repo->getCacheCount();
+        $totalCount = ($type !== null) ? $this->repo->getCacheCountForType($type) : $this->repo->getCacheCount();
 
         if ($totalCount == 0) {
-            $this->logger->debugMessage("N-gram cache is empty.");
+            $this->logger->debugMessage("N-gram cache is empty" . ($type !== null ? " for type '{$type}'." : "."));
 
-            // Schedule background rebuild if not already initialized/scheduled.
-            // Uses multisite-aware init check so network-activated installs
-            // read get_site_option correctly on frontend 404 dispatch.
-            if (!$this->coveragePolicy->isCacheInitialized()) {
-                try {
-                    $dbUpgrades = abj_service('database_upgrades');
-                    $dbUpgrades->components()->nGramUpgrade()->scheduleNGramCacheRebuild();
-                    $this->logger->infoMessage("Empty N-gram cache detected during 404 request. Scheduled background rebuild.");
-                } catch (Exception $e) {
-                    $this->logger->errorMessage("Failed to schedule N-gram cache rebuild: " . $e->getMessage());
-                }
-            } else {
-                $this->logger->debugMessage("N-gram cache rebuild already initialized or scheduled.");
+            // Only the all-types (post) path schedules a rebuild on an empty
+            // cache. The term path is gated upstream by the coverage policy
+            // and falls back to a full taxonomy scan when cold, so it must not
+            // trigger rebuild scheduling here.
+            if ($type === null) {
+                $this->scheduleRebuildIfNeeded();
             }
 
             return [];
@@ -277,9 +206,9 @@ class ABJ_404_Solution_NGramFilter {
 
         if ($totalCount > ABJ_404_Solution_NGramCacheRepository::CACHE_LOAD_LIMIT) {
             $this->logger->debugMessage("Using database-side filtering for {$totalCount} entries");
-            $cachedPages = $this->repo->getCachedNGramsFiltered($minCount, $maxCount, ABJ_404_Solution_NGramCacheRepository::CACHE_LOAD_LIMIT, $queryCombinedCount);
+            $cachedPages = $this->repo->getCachedNGramsFiltered($minCount, $maxCount, ABJ_404_Solution_NGramCacheRepository::CACHE_LOAD_LIMIT, $queryCombinedCount, $type);
         } else {
-            $cachedPages = $this->repo->getAllCachedNGrams();
+            $cachedPages = $this->repo->getAllCachedNGrams($type);
         }
 
         if (empty($cachedPages)) {
@@ -287,6 +216,40 @@ class ABJ_404_Solution_NGramFilter {
             return [];
         }
 
+        $similarities = $this->scoreCachedRows($cachedPages, $queryNGrams, $queryCombinedCount, $minSimilarity);
+
+        arsort($similarities);
+
+        if (count($similarities) > $maxCandidates) {
+            $similarities = array_slice($similarities, 0, $maxCandidates, true);
+        }
+
+        $duration = (abj_clock()->nowFloat() - $startTime) * 1000;
+
+        $this->logger->debugMessage(sprintf(
+            "N-gram filtering: %d total, %d examined -> %d candidates (>=%.2f similarity) in %.2fms",
+            $totalCount,
+            count($cachedPages),
+            count($similarities),
+            $minSimilarity,
+            $duration
+        ));
+
+        $this->telemetry->trackNGramUsage($totalCount, count($cachedPages), count($similarities), $duration);
+
+        return $similarities;
+    }
+
+    /**
+     * Per-row Dice scoring loop shared by the post and term paths.
+     *
+     * @param array<int, mixed> $cachedPages Rows from the cache repository (ngrams already decoded).
+     * @param array{bi: array<int, string>, tri: array<int, string>} $queryNGrams
+     * @param int $queryCombinedCount
+     * @param float $minSimilarity
+     * @return array<int, float> [id => similarity]
+     */
+    private function scoreCachedRows(array $cachedPages, array $queryNGrams, $queryCombinedCount, $minSimilarity) {
         $similarities = [];
         foreach ($cachedPages as $page) {
             if (!is_array($page)) {
@@ -313,27 +276,28 @@ class ABJ_404_Solution_NGramFilter {
                 $similarities[$pageId] = $sim;
             }
         }
-
-        arsort($similarities);
-
-        if (count($similarities) > $maxCandidates) {
-            $similarities = array_slice($similarities, 0, $maxCandidates, true);
-        }
-
-        $duration = (abj_clock()->nowFloat() - $startTime) * 1000;
-
-        $this->logger->debugMessage(sprintf(
-            "N-gram filtering: %d total, %d examined -> %d candidates (>=%.2f similarity) in %.2fms",
-            $totalCount,
-            count($cachedPages),
-            count($similarities),
-            $minSimilarity,
-            $duration
-        ));
-
-        $this->telemetry->trackNGramUsage($totalCount, count($cachedPages), count($similarities), $duration);
-
         return $similarities;
+    }
+
+    /**
+     * Schedule a background N-gram rebuild when the all-types cache is empty
+     * and not already initialized. Multisite-aware init check so
+     * network-activated installs read get_site_option on frontend dispatch.
+     *
+     * @return void
+     */
+    private function scheduleRebuildIfNeeded() {
+        if (!$this->coveragePolicy->isCacheInitialized()) {
+            try {
+                $dbUpgrades = abj_service('database_upgrades');
+                $dbUpgrades->components()->nGramUpgrade()->scheduleNGramCacheRebuild();
+                $this->logger->infoMessage("Empty N-gram cache detected during 404 request. Scheduled background rebuild.");
+            } catch (Exception $e) {
+                $this->logger->errorMessage("Failed to schedule N-gram cache rebuild: " . $e->getMessage());
+            }
+        } else {
+            $this->logger->debugMessage("N-gram cache rebuild already initialized or scheduled.");
+        }
     }
 
     /**
@@ -416,6 +380,14 @@ class ABJ_404_Solution_NGramFilter {
     /** @return int */
     public function getCacheCount() {
         return $this->repo->getCacheCount();
+    }
+
+    /**
+     * @param string $type
+     * @return int
+     */
+    public function getCacheCountForType($type) {
+        return $this->repo->getCacheCountForType((string)$type);
     }
 
     /** @return array<string, mixed> */

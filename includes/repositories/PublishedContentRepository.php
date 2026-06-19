@@ -401,6 +401,38 @@ class ABJ_404_Solution_PublishedContentRepository {
     }
 
     /**
+     * Cheap published-tag count using the SAME taxonomy filter as
+     * getPublishedTags(), but COUNT(*) only (no rows loaded). Feeds the term
+     * n-gram coverage readiness gate.
+     *
+     * @return int
+     */
+    public function getPublishedTagCount(): int {
+        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/../sql/getPublishedTagCount.sql");
+        $query = $this->dbCore->doTableNameReplacements($query);
+        return $this->dbCore->queryScalarInt($query, array('log_errors' => false));
+    }
+
+    /**
+     * Cheap published-category count using the SAME taxonomy filter as
+     * getPublishedCategories(), but COUNT(*) only (no rows loaded). Feeds the
+     * term n-gram coverage readiness gate.
+     *
+     * @return int
+     */
+    public function getPublishedCategoryCount(): int {
+        $options = $this->getRuntimeOptions();
+        $recognizedCategories = $this->dbCore->tableNameResolver()->buildCategorySqlList($options);
+        if ($recognizedCategories === '') {
+            $recognizedCategories = "''";
+        }
+        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/../sql/getPublishedCategoryCount.sql");
+        $query = $this->f->str_replace('{recognizedCategories}', $recognizedCategories, $query);
+        $query = $this->dbCore->doTableNameReplacements($query);
+        return $this->dbCore->queryScalarInt($query, array('log_errors' => false));
+    }
+
+    /**
      * @param array<int, object> $rows
      * @return array<int, object>
      */

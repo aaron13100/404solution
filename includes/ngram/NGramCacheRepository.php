@@ -171,12 +171,17 @@ class ABJ_404_Solution_NGramCacheRepository {
      * Loads entire table into memory; only safe for small caches. Above
      * CACHE_LOAD_LIMIT (1000) callers should use getCachedNGramsFiltered().
      *
+     * @param string|null $type When non-null, restrict the load to a single
+     *        entity type ('post', 'category', 'tag', ...). Null preserves the
+     *        historical all-types scan (the posts path is unaffected).
      * @return array<int, array<string, mixed>>
      */
-    public function getAllCachedNGrams() {
+    public function getAllCachedNGrams($type = null) {
         $table = $this->dbCore->tableNameResolver()->getPrefixedTableName('abj404_ngram_cache');
 
-        $count = $this->dbCore->queryScalarInt("SELECT COUNT(*) AS c FROM {$table}");
+        $count = ($type !== null)
+            ? $this->getCacheCountForType((string)$type)
+            : $this->dbCore->queryScalarInt("SELECT COUNT(*) AS c FROM {$table}");
         if ($count > 10000) {
             $this->logger->errorMessage("CRITICAL: N-gram cache has {$count} entries. Cannot load into memory. Feature disabled for this request.");
             return [];
@@ -186,9 +191,16 @@ class ABJ_404_Solution_NGramCacheRepository {
             $this->logger->infoMessage("WARNING: N-gram cache has {$count} entries. This may cause memory issues.");
         }
 
-        $listResult = $this->dbCore->queryAndGetResults(
-            "SELECT id, url, url_normalized, ngrams, ngram_count FROM {$table}"
-        );
+        if ($type !== null) {
+            $listResult = $this->dbCore->queryAndGetResults(
+                "SELECT id, url, url_normalized, ngrams, ngram_count FROM {$table} WHERE type = %s",
+                ['query_params' => [(string)$type]]
+            );
+        } else {
+            $listResult = $this->dbCore->queryAndGetResults(
+                "SELECT id, url, url_normalized, ngrams, ngram_count FROM {$table}"
+            );
+        }
         $results = isset($listResult['rows']) && is_array($listResult['rows']) ? $listResult['rows'] : [];
 
         if (empty($results)) {
@@ -222,9 +234,11 @@ class ABJ_404_Solution_NGramCacheRepository {
      * @param int $maxNgramCount
      * @param int $limit
      * @param int|null $targetNgramCount
+     * @param string|null $type When non-null, restrict to a single entity type
+     *        ('post', 'category', 'tag', ...). Null preserves the all-types scan.
      * @return array<int, array<string, mixed>>
      */
-    public function getCachedNGramsFiltered($minNgramCount, $maxNgramCount, $limit = 1000, $targetNgramCount = null) {
+    public function getCachedNGramsFiltered($minNgramCount, $maxNgramCount, $limit = 1000, $targetNgramCount = null, $type = null) {
         $table = $this->dbCore->tableNameResolver()->getPrefixedTableName('abj404_ngram_cache');
 
         $orderTarget = ($targetNgramCount !== null)
@@ -233,22 +247,22 @@ class ABJ_404_Solution_NGramCacheRepository {
 
         $halfLimit = (int)ceil($limit / 2);
 
-        $resultsBelow = $this->fetchBelowTarget($table, $minNgramCount, $orderTarget, $halfLimit);
+        $resultsBelow = $this->fetchBelowTarget($table, $minNgramCount, $orderTarget, $halfLimit, 0, $type);
         $belowCount = count($resultsBelow);
         $aboveLimit = $limit - $belowCount;
-        $resultsAbove = $this->fetchAboveTarget($table, $orderTarget, $maxNgramCount, $aboveLimit);
+        $resultsAbove = $this->fetchAboveTarget($table, $orderTarget, $maxNgramCount, $aboveLimit, 0, $type);
         $aboveCount = count($resultsAbove);
 
         $totalFetched = $belowCount + $aboveCount;
         // Balance for skewed distributions: if one side hit its cap and the
         // other has headroom, pull more from the saturated side.
         if ($totalFetched < $limit && $belowCount === $halfLimit) {
-            $extra = $this->fetchBelowTarget($table, $minNgramCount, $orderTarget, $limit - $totalFetched, $belowCount);
+            $extra = $this->fetchBelowTarget($table, $minNgramCount, $orderTarget, $limit - $totalFetched, $belowCount, $type);
             $resultsBelow = array_merge($resultsBelow, $extra);
             $totalFetched = count($resultsBelow) + $aboveCount;
         }
         if ($totalFetched < $limit && $aboveCount === $aboveLimit) {
-            $extra = $this->fetchAboveTarget($table, $orderTarget, $maxNgramCount, $limit - $totalFetched, $aboveCount);
+            $extra = $this->fetchAboveTarget($table, $orderTarget, $maxNgramCount, $limit - $totalFetched, $aboveCount, $type);
             $resultsAbove = array_merge($resultsAbove, $extra);
         }
 
@@ -262,28 +276,22 @@ class ABJ_404_Solution_NGramCacheRepository {
      * @param int $orderTarget
      * @param int $limit
      * @param int $offset
+     * @param string|null $type Optional single-type restriction.
      * @return array<int, mixed>
      */
-    private function fetchBelowTarget($table, $minNgramCount, $orderTarget, $limit, $offset = 0) {
-        if ($offset > 0) {
-            $result = $this->dbCore->queryAndGetResults(
-                "SELECT id, url, url_normalized, ngrams, ngram_count
-                 FROM {$table}
-                 WHERE ngram_count >= %d AND ngram_count <= %d
-                 ORDER BY ngram_count DESC
-                 LIMIT %d OFFSET %d",
-                ['query_params' => [$minNgramCount, $orderTarget, $limit, $offset]]
-            );
-        } else {
-            $result = $this->dbCore->queryAndGetResults(
-                "SELECT id, url, url_normalized, ngrams, ngram_count
-                 FROM {$table}
-                 WHERE ngram_count >= %d AND ngram_count <= %d
-                 ORDER BY ngram_count DESC
-                 LIMIT %d",
-                ['query_params' => [$minNgramCount, $orderTarget, $limit]]
-            );
-        }
+    private function fetchBelowTarget($table, $minNgramCount, $orderTarget, $limit, $offset = 0, $type = null) {
+        $typeClause = ($type !== null) ? " AND type = %s" : '';
+        $params = ($type !== null)
+            ? [$minNgramCount, $orderTarget, (string)$type, $limit, $offset]
+            : [$minNgramCount, $orderTarget, $limit, $offset];
+        $result = $this->dbCore->queryAndGetResults(
+            "SELECT id, url, url_normalized, ngrams, ngram_count
+             FROM {$table}
+             WHERE ngram_count >= %d AND ngram_count <= %d{$typeClause}
+             ORDER BY ngram_count DESC
+             LIMIT %d OFFSET %d",
+            ['query_params' => $params]
+        );
         return isset($result['rows']) && is_array($result['rows']) ? $result['rows'] : [];
     }
 
@@ -293,28 +301,22 @@ class ABJ_404_Solution_NGramCacheRepository {
      * @param int $maxNgramCount
      * @param int $limit
      * @param int $offset
+     * @param string|null $type Optional single-type restriction.
      * @return array<int, mixed>
      */
-    private function fetchAboveTarget($table, $orderTarget, $maxNgramCount, $limit, $offset = 0) {
-        if ($offset > 0) {
-            $result = $this->dbCore->queryAndGetResults(
-                "SELECT id, url, url_normalized, ngrams, ngram_count
-                 FROM {$table}
-                 WHERE ngram_count > %d AND ngram_count <= %d
-                 ORDER BY ngram_count ASC
-                 LIMIT %d OFFSET %d",
-                ['query_params' => [$orderTarget, $maxNgramCount, $limit, $offset]]
-            );
-        } else {
-            $result = $this->dbCore->queryAndGetResults(
-                "SELECT id, url, url_normalized, ngrams, ngram_count
-                 FROM {$table}
-                 WHERE ngram_count > %d AND ngram_count <= %d
-                 ORDER BY ngram_count ASC
-                 LIMIT %d",
-                ['query_params' => [$orderTarget, $maxNgramCount, $limit]]
-            );
-        }
+    private function fetchAboveTarget($table, $orderTarget, $maxNgramCount, $limit, $offset = 0, $type = null) {
+        $typeClause = ($type !== null) ? " AND type = %s" : '';
+        $params = ($type !== null)
+            ? [$orderTarget, $maxNgramCount, (string)$type, $limit, $offset]
+            : [$orderTarget, $maxNgramCount, $limit, $offset];
+        $result = $this->dbCore->queryAndGetResults(
+            "SELECT id, url, url_normalized, ngrams, ngram_count
+             FROM {$table}
+             WHERE ngram_count > %d AND ngram_count <= %d{$typeClause}
+             ORDER BY ngram_count ASC
+             LIMIT %d OFFSET %d",
+            ['query_params' => $params]
+        );
         return isset($result['rows']) && is_array($result['rows']) ? $result['rows'] : [];
     }
 
@@ -394,6 +396,25 @@ class ABJ_404_Solution_NGramCacheRepository {
     }
 
     /**
+     * Count cache entries of a single type ('post', 'category', 'tag', ...).
+     *
+     * Used by the type-scoped term prefilter to make its load-limit decision
+     * and to feed the term coverage policy's readiness gate. Not memoized:
+     * the term path calls this at most twice per request (count + ratio),
+     * both against the indexed `type` column.
+     *
+     * @param string $type
+     * @return int
+     */
+    public function getCacheCountForType(string $type): int {
+        $table = $this->dbCore->tableNameResolver()->getPrefixedTableName('abj404_ngram_cache');
+        return $this->dbCore->queryScalarInt(
+            "SELECT COUNT(*) AS c FROM {$table} WHERE type = %s",
+            ['query_params' => [$type]]
+        );
+    }
+
+    /**
      * Reset per-request memoization.
      *
      * Used after bulk operations that bypass storeNGrams() (e.g. TRUNCATE
@@ -414,18 +435,9 @@ class ABJ_404_Solution_NGramCacheRepository {
         $table = $this->dbCore->tableNameResolver()->getPrefixedTableName('abj404_ngram_cache');
 
         $totalEntries = $this->dbCore->queryScalarInt("SELECT COUNT(*) AS c FROM {$table}");
-        $postsEntries = $this->dbCore->queryScalarInt(
-            "SELECT COUNT(*) AS c FROM {$table} WHERE type = %s",
-            ['query_params' => ['post']]
-        );
-        $categoryEntries = $this->dbCore->queryScalarInt(
-            "SELECT COUNT(*) AS c FROM {$table} WHERE type = %s",
-            ['query_params' => ['category']]
-        );
-        $tagEntries = $this->dbCore->queryScalarInt(
-            "SELECT COUNT(*) AS c FROM {$table} WHERE type = %s",
-            ['query_params' => ['tag']]
-        );
+        $postsEntries = $this->getCacheCountForType('post');
+        $categoryEntries = $this->getCacheCountForType('category');
+        $tagEntries = $this->getCacheCountForType('tag');
         $lastUpdatedResult = $this->dbCore->queryAndGetResults(
             "SELECT MAX(last_updated) AS m FROM {$table}"
         );

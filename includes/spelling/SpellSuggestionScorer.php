@@ -18,9 +18,6 @@ class ABJ_404_Solution_SpellSuggestionScorer {
 	/** @var ABJ_404_Solution_Logging */
 	private $logger;
 
-	/** @var ABJ_404_Solution_ContentRepository */
-	private $contentRepository;
-
 	/** @var ABJ_404_Solution_SpellURLMatcher */
 	private $urlMatcher;
 
@@ -33,6 +30,9 @@ class ABJ_404_Solution_SpellSuggestionScorer {
 	/** @var array<int, string> */
 	private array $separatingCharactersForImages;
 
+	/** @var ABJ_404_Solution_TermCandidateSource Sources cats/tags candidate rows (bounded prefilter or full scan). */
+	private $termCandidateSource;
+
 	/**
 	 * @param ABJ_404_Solution_Functions $functions
 	 * @param ABJ_404_Solution_PluginLogic $logic
@@ -42,19 +42,23 @@ class ABJ_404_Solution_SpellSuggestionScorer {
 	 * @param ABJ_404_Solution_SpellLevenshteinEngine $levenshteinEngine
 	 * @param array<int, string> $separatingCharacters
 	 * @param array<int, string> $separatingCharactersForImages
+	 * @param ABJ_404_Solution_TermCandidateSource|null $termCandidateSource When null, a full-scan-only source is built from $contentRepository.
 	 */
 	public function __construct(
 		$functions, $logic, $logger, $contentRepository, $urlMatcher, $levenshteinEngine,
-		array $separatingCharacters, array $separatingCharactersForImages
+		array $separatingCharacters, array $separatingCharactersForImages,
+		$termCandidateSource = null
 	) {
 		$this->f = $functions;
 		$this->logic = $logic;
 		$this->logger = $logger;
-		$this->contentRepository = $contentRepository;
 		$this->urlMatcher = $urlMatcher;
 		$this->levenshteinEngine = $levenshteinEngine;
 		$this->separatingCharacters = $separatingCharacters;
 		$this->separatingCharactersForImages = $separatingCharactersForImages;
+		$this->termCandidateSource = $termCandidateSource instanceof ABJ_404_Solution_TermCandidateSource
+			? $termCandidateSource
+			: new ABJ_404_Solution_TermCandidateSource($contentRepository);
 	}
 
 	/**
@@ -64,7 +68,7 @@ class ABJ_404_Solution_SpellSuggestionScorer {
 	 * @return array<string, string>
 	 */
 	public function matchOnCats(array $permalinks, string $requestedURLCleaned, string $fullURLspacesCleaned): array {
-		$rows = $this->contentRepository->getPublishedCategories();
+		$rows = $this->termCandidateSource->getCandidateTermRows('category', $requestedURLCleaned);
 		$rows = $this->urlMatcher->getOnlyIDandTermID($rows);
 
 		return $this->scoreTaxonomyCandidates(
@@ -85,7 +89,7 @@ class ABJ_404_Solution_SpellSuggestionScorer {
 	 * @return array<string, string>
 	 */
 	public function matchOnTags(array $permalinks, string $requestedURLCleaned, string $fullURLspacesCleaned): array {
-		$rows = $this->contentRepository->getPublishedTags();
+		$rows = $this->termCandidateSource->getCandidateTermRows('tag', $requestedURLCleaned);
 		$rows = $this->urlMatcher->getOnlyIDandTermID($rows);
 
 		return $this->scoreTaxonomyCandidates(

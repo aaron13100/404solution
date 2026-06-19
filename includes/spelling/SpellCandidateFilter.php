@@ -63,10 +63,46 @@ class ABJ_404_Solution_SpellCandidateFilter {
 		$this->exclusionPolicy = new ABJ_404_Solution_SpellSuggestionExclusionPolicy(
 			$functions, $logic, $logger, $urlMatcher, $custom404PageID
 		);
+		// Build the term candidate source around THIS scorer's own
+		// $contentRepository (its full-scan fallback target), pulling only the
+		// n-gram collaborators from the container. Resolving a fully
+		// container-wired source instead would bind the fallback to the
+		// container's content_repository, which can differ from the repository
+		// this scorer was constructed with (e.g. test doubles).
+		$ngramFilterResolved = self::resolveOptionalService('ngram_filter');
+		$publishedTermsProviderResolved = self::resolveOptionalService('published_terms_provider');
+		$termCoveragePolicyResolved = self::resolveOptionalService('term_ngram_coverage_policy');
+		$termCandidateSource = new ABJ_404_Solution_TermCandidateSource(
+			$contentRepository,
+			$ngramFilterResolved instanceof ABJ_404_Solution_NGramFilter ? $ngramFilterResolved : null,
+			$publishedTermsProviderResolved instanceof ABJ_404_Solution_PublishedTermsProvider ? $publishedTermsProviderResolved : null,
+			$termCoveragePolicyResolved instanceof ABJ_404_Solution_TermNGramCoveragePolicy ? $termCoveragePolicyResolved : null
+		);
 		$this->suggestionScorer = new ABJ_404_Solution_SpellSuggestionScorer(
 			$functions, $logic, $logger, $contentRepository, $urlMatcher, $levenshteinEngine,
-			$separatingCharacters, $separatingCharactersForImages
+			$separatingCharacters, $separatingCharactersForImages,
+			$termCandidateSource
 		);
+	}
+
+	/**
+	 * Silent container lookup for an optional collaborator. Returns the
+	 * registered service or null when the container or service is absent
+	 * (e.g. unit tests that construct SpellCandidateFilter without bootstrap).
+	 * The scorer degrades to the full taxonomy scan when these are null.
+	 *
+	 * @param string $serviceName
+	 * @return mixed
+	 */
+	private static function resolveOptionalService(string $serviceName) {
+		if (!class_exists('ABJ_404_Solution_ServiceContainer')) {
+			return null;
+		}
+		$container = ABJ_404_Solution_ServiceContainer::getInstance();
+		if (!$container->has($serviceName)) {
+			return null;
+		}
+		return $container->get($serviceName);
 	}
 
     /**

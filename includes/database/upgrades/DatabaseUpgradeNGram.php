@@ -8,7 +8,6 @@ require_once __DIR__ . '/../../ngram/NGramNetworkOptionStore.php';
 require_once __DIR__ . '/../../ngram/NGramCacheRebuildScheduler.php';
 require_once __DIR__ . '/../../ngram/NGramCacheSyncRebuilder.php';
 require_once __DIR__ . '/../../ngram/NGramCacheReconciler.php';
-require_once __DIR__ . '/../../ngram/NGramTaxonomyBuilder.php';
 require_once __DIR__ . '/../../ngram/NGramLastUpdatedEpochMigration.php';
 
 /**
@@ -23,8 +22,8 @@ require_once __DIR__ . '/../../ngram/NGramLastUpdatedEpochMigration.php';
  *   - NGramCacheRebuildScheduler: WP-Cron driven async rebuild loop.
  *   - NGramCacheSyncRebuilder: synchronous TRUNCATE+rebuild used by
  *     manual rebuild tools and the all-content composer.
- *   - NGramCacheReconciler: incremental sync-missing + cleanup-orphaned.
- *   - NGramTaxonomyBuilder: build n-grams for category/tag terms.
+ *   - NGramCacheReconciler: incremental sync-missing + cleanup-orphaned
+ *     (posts, categories, and tags).
  *
  * Lock ownership lives here on the public entry points: the three
  * write paths (rebuildNGramCache, rebuildNGramCacheAsync,
@@ -174,50 +173,6 @@ class ABJ_404_Solution_DatabaseUpgradeNGram extends ABJ_404_Solution_DatabaseUpg
     }
 
     /**
-     * @param int $batchSize
-     * @return array{processed:int, success:int, failed:int}
-     */
-    function buildNGramsForCategories($batchSize = 50) {
-        return $this->newTaxonomyBuilder()->buildForCategories($batchSize);
-    }
-
-    /**
-     * @param int $batchSize
-     * @return array{processed:int, success:int, failed:int}
-     */
-    function buildNGramsForTags($batchSize = 50) {
-        return $this->newTaxonomyBuilder()->buildForTags($batchSize);
-    }
-
-    /**
-     * Build n-grams for posts, categories, and tags. Used by the
-     * Tools page comprehensive rebuild.
-     *
-     * @param int $batchSize
-     * @return array<string, mixed>
-     */
-    function buildNGramsForAllContent($batchSize = 100) {
-        $this->logger->infoMessage("Starting comprehensive N-gram cache build for all content types...");
-
-        $postsStats = $this->rebuildNGramCache($batchSize, true);
-        $categoriesStats = $this->buildNGramsForCategories($batchSize);
-        $tagsStats = $this->buildNGramsForTags($batchSize);
-
-        $totalStats = [
-            'posts' => $postsStats,
-            'categories' => $categoriesStats,
-            'tags' => $tagsStats,
-            'total_processed' => $this->numericStat($postsStats, 'processed') + $this->numericStat($categoriesStats, 'processed') + $this->numericStat($tagsStats, 'processed'),
-            'total_success' => $this->numericStat($postsStats, 'success') + $this->numericStat($categoriesStats, 'success') + $this->numericStat($tagsStats, 'success'),
-            'total_failed' => $this->numericStat($postsStats, 'failed') + $this->numericStat($categoriesStats, 'failed') + $this->numericStat($tagsStats, 'failed'),
-        ];
-
-        $this->logger->infoMessage("Comprehensive N-gram build complete: {$totalStats['total_processed']} total processed, {$totalStats['total_success']} success, {$totalStats['total_failed']} failed.");
-
-        return $totalStats;
-    }
-
-    /**
      * Cross-component contract: DatabaseUpgradeBootstrap and others
      * reach this via the upgrade dispatcher to learn whether the
      * plugin is network-activated.
@@ -262,15 +217,6 @@ class ABJ_404_Solution_DatabaseUpgradeNGram extends ABJ_404_Solution_DatabaseUpg
         return $this->newScheduler()->countTotalPagesForRebuild();
     }
 
-    /**
-     * @param array<string, mixed> $stats
-     * @return int
-     */
-    private function numericStat(array $stats, string $key): int {
-        $value = $stats[$key] ?? 0;
-        return is_numeric($value) ? (int)$value : 0;
-    }
-
     private function newOptionStore(): ABJ_404_Solution_NGramNetworkOptionStore {
         return new ABJ_404_Solution_NGramNetworkOptionStore();
     }
@@ -300,16 +246,6 @@ class ABJ_404_Solution_DatabaseUpgradeNGram extends ABJ_404_Solution_DatabaseUpg
             $this->resolveNGramExtractor(),
             $this->resolveNGramCacheRepository(),
             $this->resolveNGramCoveragePolicy(),
-            $this->contentRepo,
-            $this->f,
-            $this->logger
-        );
-    }
-
-    private function newTaxonomyBuilder(): ABJ_404_Solution_NGramTaxonomyBuilder {
-        return new ABJ_404_Solution_NGramTaxonomyBuilder(
-            $this->resolveNGramExtractor(),
-            $this->resolveNGramCacheRepository(),
             $this->contentRepo,
             $this->f,
             $this->logger

@@ -79,13 +79,13 @@ class ABJ_404_Solution_NGramCacheReconciler {
      *                       per call (categories are processed in full
      *                       because the published category set is
      *                       small).
-     * @return array<string, mixed> ['posts_added' => int, 'posts_failed' => int, 'categories_added' => int, 'categories_failed' => int]
+     * @return array<string, mixed> ['posts_added' => int, 'posts_failed' => int, 'categories_added' => int, 'categories_failed' => int, 'tags_added' => int, 'tags_failed' => int]
      */
     public function syncMissing($batchSize = 50) {
         $ngramTable = $this->dbCore->tableNameResolver()->getPrefixedTableName('abj404_ngram_cache');
         $permalinkCacheTable = $this->dbCore->tableNameResolver()->getPrefixedTableName('abj404_permalink_cache');
 
-        $stats = ['posts_added' => 0, 'posts_failed' => 0, 'categories_added' => 0, 'categories_failed' => 0];
+        $stats = ['posts_added' => 0, 'posts_failed' => 0, 'categories_added' => 0, 'categories_failed' => 0, 'tags_added' => 0, 'tags_failed' => 0];
 
         $postsResult = $this->syncMissingPosts($ngramTable, $permalinkCacheTable, $batchSize);
         if (isset($postsResult['error'])) {
@@ -94,11 +94,15 @@ class ABJ_404_Solution_NGramCacheReconciler {
         $stats['posts_added'] = $postsResult['added'];
         $stats['posts_failed'] = $postsResult['failed'];
 
-        $categoriesResult = $this->syncMissingCategories($ngramTable);
+        $categoriesResult = $this->syncMissingTerms($ngramTable, 'category', $this->contentRepo->getPublishedCategories());
         $stats['categories_added'] = $categoriesResult['added'];
         $stats['categories_failed'] = $categoriesResult['failed'];
 
-        $this->logger->infoMessage("Ngram sync complete: {$stats['posts_added']} posts added, {$stats['posts_failed']} posts failed, {$stats['categories_added']} categories added, {$stats['categories_failed']} categories failed.");
+        $tagsResult = $this->syncMissingTerms($ngramTable, 'tag', $this->contentRepo->getPublishedTags());
+        $stats['tags_added'] = $tagsResult['added'];
+        $stats['tags_failed'] = $tagsResult['failed'];
+
+        $this->logger->infoMessage("Ngram sync complete: {$stats['posts_added']} posts added, {$stats['posts_failed']} posts failed, {$stats['categories_added']} categories added, {$stats['categories_failed']} categories failed, {$stats['tags_added']} tags added, {$stats['tags_failed']} tags failed.");
 
         return $stats;
     }
@@ -106,7 +110,7 @@ class ABJ_404_Solution_NGramCacheReconciler {
     /**
      * Delete n-gram rows whose source no longer exists.
      *
-     * @return array{posts_deleted:int, categories_deleted:int, errors:int}|array<string, mixed>
+     * @return array{posts_deleted:int, categories_deleted:int, tags_deleted:int, errors:int}|array<string, mixed>
      */
     public function cleanupOrphaned() {
         $ngramTable = $this->dbCore->tableNameResolver()->getPrefixedTableName('abj404_ngram_cache');
@@ -114,7 +118,7 @@ class ABJ_404_Solution_NGramCacheReconciler {
 
         $this->logger->debugMessage("Checking for orphaned ngram entries...");
 
-        $stats = ['posts_deleted' => 0, 'categories_deleted' => 0, 'errors' => 0];
+        $stats = ['posts_deleted' => 0, 'categories_deleted' => 0, 'tags_deleted' => 0, 'errors' => 0];
 
         $postsResult = $this->cleanupOrphanedPosts($ngramTable, $permalinkCacheTable);
         if (isset($postsResult['error'])) {
@@ -123,11 +127,15 @@ class ABJ_404_Solution_NGramCacheReconciler {
         $stats['posts_deleted'] = $postsResult['deleted'];
         $stats['errors'] += $postsResult['errors'];
 
-        $categoriesResult = $this->cleanupOrphanedCategories($ngramTable);
+        $categoriesResult = $this->cleanupOrphanedTerms($ngramTable, 'category', $this->contentRepo->getPublishedCategories());
         $stats['categories_deleted'] = $categoriesResult['deleted'];
         $stats['errors'] += $categoriesResult['errors'];
 
-        $this->logger->infoMessage("Orphaned ngram cleanup complete: {$stats['posts_deleted']} posts deleted, {$stats['categories_deleted']} categories deleted, {$stats['errors']} errors.");
+        $tagsResult = $this->cleanupOrphanedTerms($ngramTable, 'tag', $this->contentRepo->getPublishedTags());
+        $stats['tags_deleted'] = $tagsResult['deleted'];
+        $stats['errors'] += $tagsResult['errors'];
+
+        $this->logger->infoMessage("Orphaned ngram cleanup complete: {$stats['posts_deleted']} posts deleted, {$stats['categories_deleted']} categories deleted, {$stats['tags_deleted']} tags deleted, {$stats['errors']} errors.");
 
         return $stats;
     }
@@ -174,50 +182,57 @@ class ABJ_404_Solution_NGramCacheReconciler {
     }
 
     /**
+     * Add n-gram entries for published terms of one taxonomy type
+     * ('category' or 'tag') that are missing from the cache. Category and tag
+     * sync are identical apart from the type label and source rows, so they
+     * share this one implementation.
+     *
+     * @param string $ngramTable
+     * @param string $type 'category' or 'tag'.
+     * @param array<int, object> $terms Published terms of this type (term_id, url).
      * @return array{added:int, failed:int}
      */
-    private function syncMissingCategories(string $ngramTable): array {
+    private function syncMissingTerms(string $ngramTable, string $type, array $terms): array {
         $stats = ['added' => 0, 'failed' => 0];
 
-        $categories = $this->contentRepo->getPublishedCategories();
-        if (empty($categories)) {
+        if (empty($terms)) {
             return $stats;
         }
 
-        $missingCategories = [];
-        foreach ($categories as $category) {
-            /** @var object{term_id: int, url: string} $category */
-            $termId = (int)$category->term_id;
+        $missing = [];
+        foreach ($terms as $term) {
+            /** @var object{term_id: int, url: string} $term */
+            $termId = (int)$term->term_id;
             $exists = $this->dbCore->queryScalarInt(
-                "SELECT COUNT(*) AS c FROM {$ngramTable} WHERE id = %d AND type = 'category'",
-                ['query_params' => [$termId]]
+                "SELECT COUNT(*) AS c FROM {$ngramTable} WHERE id = %d AND type = %s",
+                ['query_params' => [$termId, $type]]
             );
             if ($exists == 0) {
-                $missingCategories[] = $category;
+                $missing[] = $term;
             }
         }
 
-        if (empty($missingCategories)) {
-            $this->logger->debugMessage("No missing category ngram entries found. All categories are synced.");
+        if (empty($missing)) {
+            $this->logger->debugMessage("No missing {$type} ngram entries found. All {$type}s are synced.");
             return $stats;
         }
 
-        $this->logger->infoMessage("Found " . count($missingCategories) . " categories missing ngram entries. Adding...");
+        $this->logger->infoMessage("Found " . count($missing) . " {$type}s missing ngram entries. Adding...");
 
-        foreach ($missingCategories as $category) {
+        foreach ($missing as $term) {
             try {
-                /** @var object{term_id: int, url: string} $category */
-                $termId = (int)$category->term_id;
-                $url = (string)$category->url;
+                /** @var object{term_id: int, url: string} $term */
+                $termId = (int)$term->term_id;
+                $url = (string)$term->url;
 
                 if (empty($url) || $url === 'in code') {
-                    $this->logger->debugMessage("Skipping category {$termId} - no valid URL");
+                    $this->logger->debugMessage("Skipping {$type} {$termId} - no valid URL");
                     continue;
                 }
 
                 $urlNormalized = $this->f->strtolower(trim($url));
                 $ngrams = $this->extractNGrams($urlNormalized);
-                $success = $this->storeNGrams($termId, $url, $urlNormalized, $ngrams, 'category');
+                $success = $this->storeNGrams($termId, $url, $urlNormalized, $ngrams, $type);
 
                 if ($success) {
                     $stats['added']++;
@@ -225,7 +240,7 @@ class ABJ_404_Solution_NGramCacheReconciler {
                     $stats['failed']++;
                 }
             } catch (Exception $e) {
-                $this->logger->errorMessage("Failed to add ngram for category {$termId}: " . $e->getMessage());
+                $this->logger->errorMessage("Failed to add ngram for {$type} {$termId}: " . $e->getMessage());
                 $stats['failed']++;
             }
         }
@@ -295,60 +310,64 @@ class ABJ_404_Solution_NGramCacheReconciler {
     }
 
     /**
+     * Delete n-gram rows of one taxonomy type ('category' or 'tag') whose
+     * source term is no longer published. Category and tag cleanup are
+     * identical apart from the type label and source rows, so they share this
+     * one implementation.
+     *
+     * @param string $ngramTable
+     * @param string $type 'category' or 'tag'.
+     * @param array<int, object> $publishedTerms Currently-published terms of this type.
      * @return array{deleted:int, errors:int}
      */
-    private function cleanupOrphanedCategories(string $ngramTable): array {
-        $publishedCategories = $this->contentRepo->getPublishedCategories();
-        $publishedCategoryIds = [];
-
-        if (!empty($publishedCategories)) {
-            foreach ($publishedCategories as $category) {
-                /** @var object{term_id: int, url: string} $category */
-                $publishedCategoryIds[] = (int)$category->term_id;
-            }
+    private function cleanupOrphanedTerms(string $ngramTable, string $type, array $publishedTerms): array {
+        $publishedIds = [];
+        foreach ($publishedTerms as $term) {
+            /** @var object{term_id: int, url: string} $term */
+            $publishedIds[] = (int)$term->term_id;
         }
 
-        $catEntriesResult = $this->dbCore->queryAndGetResults(
-            "SELECT DISTINCT id FROM {$ngramTable} WHERE type = 'category'",
-            ['result_type' => OBJECT]
+        $entriesResult = $this->dbCore->queryAndGetResults(
+            "SELECT DISTINCT id FROM {$ngramTable} WHERE type = %s",
+            ['query_params' => [$type], 'result_type' => OBJECT]
         );
-        $categoryNGramEntries = isset($catEntriesResult['rows']) && is_array($catEntriesResult['rows']) ? $catEntriesResult['rows'] : [];
+        $ngramEntries = isset($entriesResult['rows']) && is_array($entriesResult['rows']) ? $entriesResult['rows'] : [];
 
-        if (empty($categoryNGramEntries)) {
+        if (empty($ngramEntries)) {
             return ['deleted' => 0, 'errors' => 0];
         }
 
-        $orphanedCategories = [];
-        foreach ($categoryNGramEntries as $entry) {
+        $orphaned = [];
+        foreach ($ngramEntries as $entry) {
             if (!is_object($entry)) {
                 continue;
             }
             /** @var object{id: int} $entry */
             $entId = (int)$entry->id;
-            if (!in_array($entId, $publishedCategoryIds)) {
-                $orphanedCategories[] = $entId;
+            if (!in_array($entId, $publishedIds)) {
+                $orphaned[] = $entId;
             }
         }
 
-        if (empty($orphanedCategories)) {
-            $this->logger->debugMessage("No orphaned category ngram entries found.");
+        if (empty($orphaned)) {
+            $this->logger->debugMessage("No orphaned {$type} ngram entries found.");
             return ['deleted' => 0, 'errors' => 0];
         }
 
-        $this->logger->infoMessage("Found " . count($orphanedCategories) . " orphaned category ngram entries. Deleting...");
+        $this->logger->infoMessage("Found " . count($orphaned) . " orphaned {$type} ngram entries. Deleting...");
 
         $deleted = 0;
         $errors = 0;
-        foreach ($orphanedCategories as $categoryId) {
-            $catDeleteResult = $this->dbCore->queryAndGetResults(
+        foreach ($orphaned as $termId) {
+            $deleteResult = $this->dbCore->queryAndGetResults(
                 "DELETE FROM {$ngramTable} WHERE id = %d AND type = %s",
-                ['query_params' => [$categoryId, 'category']]
+                ['query_params' => [$termId, $type]]
             );
 
-            $catDeleteError = isset($catDeleteResult['last_error']) && is_string($catDeleteResult['last_error']) ? $catDeleteResult['last_error'] : '';
-            if ($catDeleteError !== '') {
-                if (!$this->dbCore->errorClassifier()->classifyAndHandleInfrastructureError($catDeleteError)) {
-                    $this->logger->errorMessage("Failed to delete orphaned category ngram entry ID {$categoryId}: " . $catDeleteError);
+            $deleteError = isset($deleteResult['last_error']) && is_string($deleteResult['last_error']) ? $deleteResult['last_error'] : '';
+            if ($deleteError !== '') {
+                if (!$this->dbCore->errorClassifier()->classifyAndHandleInfrastructureError($deleteError)) {
+                    $this->logger->errorMessage("Failed to delete orphaned {$type} ngram entry ID {$termId}: " . $deleteError);
                 }
                 $errors++;
             } else {

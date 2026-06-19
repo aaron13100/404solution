@@ -38,7 +38,8 @@ class ABJ_404_Solution_MatchingEngineServiceRegistration {
             return new ABJ_404_Solution_CategoryTagMatchingEngine(
                 $c->get('content_repository'),
                 $c->get('functions'),
-                $c->get('logging')
+                $c->get('logging'),
+                $c->get('term_candidate_source')
             );
         });
 

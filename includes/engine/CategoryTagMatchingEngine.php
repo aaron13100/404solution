@@ -55,19 +55,32 @@ class ABJ_404_Solution_CategoryTagMatchingEngine implements ABJ_404_Solution_Mat
     /** @var ABJ_404_Solution_Logging */
     private $logger;
 
+    /** @var ABJ_404_Solution_TermCandidateSource Sources cats/tags candidate rows (bounded prefilter or full scan). */
+    private $termCandidateSource;
+
     /**
+     * $termCandidateSource is optional so legacy/unit construction (content
+     * repo + functions + logger only) still works; when absent, a default
+     * full-scan-only source is built from the content repo. Production injects
+     * a source wired with the n-gram prefilter via the service factory.
+     *
      * @param ABJ_404_Solution_ContentRepositoryInterface $contentRepo
      * @param ABJ_404_Solution_Functions $f
      * @param ABJ_404_Solution_Logging $logger
+     * @param ABJ_404_Solution_TermCandidateSource|null $termCandidateSource
      */
     public function __construct(
         ABJ_404_Solution_ContentRepositoryInterface $contentRepo,
         ABJ_404_Solution_Functions $f,
-        ABJ_404_Solution_Logging $logger
+        ABJ_404_Solution_Logging $logger,
+        $termCandidateSource = null
     ) {
         $this->contentRepo = $contentRepo;
         $this->f = $f;
         $this->logger = $logger;
+        $this->termCandidateSource = $termCandidateSource instanceof ABJ_404_Solution_TermCandidateSource
+            ? $termCandidateSource
+            : new ABJ_404_Solution_TermCandidateSource($contentRepo);
     }
 
     /** @return string */
@@ -240,8 +253,10 @@ class ABJ_404_Solution_CategoryTagMatchingEngine implements ABJ_404_Solution_Mat
         /** @var string|null $bestType */
         $bestType = null;
 
+        $prefilterQuery = $request->getUrlSlugOnly();
+
         if ($autoCats === '1') {
-            $categories = $this->contentRepo->getPublishedCategories();
+            $categories = $this->termCandidateSource->getCandidateTermRows('category', $prefilterQuery);
             foreach ($categories as $cat) {
                 $name = isset($cat->name) && is_string($cat->name) ? $cat->name : '';
                 if ($name === '') {
@@ -257,7 +272,7 @@ class ABJ_404_Solution_CategoryTagMatchingEngine implements ABJ_404_Solution_Mat
         }
 
         if ($autoTags === '1') {
-            $tags = $this->contentRepo->getPublishedTags();
+            $tags = $this->termCandidateSource->getCandidateTermRows('tag', $prefilterQuery);
             foreach ($tags as $tag) {
                 $name = isset($tag->name) && is_string($tag->name) ? $tag->name : '';
                 if ($name === '') {

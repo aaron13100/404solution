@@ -160,6 +160,31 @@ class ABJ_404_Solution_DataServiceRegistration {
                 $c->get('ngram_usage_telemetry')
             );
         });
+
+        $container->set('published_terms_provider', function($c) {
+            return new ABJ_404_Solution_PublishedTermsProvider(
+                $c->get('db_core'),
+                $c->get('functions'),
+                $c->get('logging')
+            );
+        });
+
+        $container->set('term_ngram_coverage_policy', function($c) {
+            return new ABJ_404_Solution_TermNGramCoveragePolicy(
+                $c->get('ngram_filter'),
+                $c->get('content_repository'),
+                $c->get('logging')
+            );
+        });
+
+        $container->set('term_candidate_source', function($c) {
+            return new ABJ_404_Solution_TermCandidateSource(
+                $c->get('content_repository'),
+                $c->get('ngram_filter'),
+                $c->get('published_terms_provider'),
+                $c->get('term_ngram_coverage_policy')
+            );
+        });
     }
 
     /**
