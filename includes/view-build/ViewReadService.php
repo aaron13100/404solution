@@ -207,9 +207,12 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
      * the admin "building the index" tooltip. 100 once ready (or when the sort is
      * not sort-key-backed). Otherwise derived from the drain cursor (highest
      * redirect id drained) over MAX(id): a wp_options read plus an O(1)
-     * primary-key probe, NEVER a COUNT over the captured rows. Capped at 99 until
-     * the latch flips so the tooltip never claims 100% before the sort is
-     * actually available.
+     * primary-key probe, NEVER a COUNT over the captured rows. This is a
+     * high-water estimate over the id space, not an exact row-count fraction, so
+     * sparse ids are acceptable. Capped at 99 until the latch flips so the
+     * tooltip never claims 100% before the sort is actually available. A wrapped
+     * cursor of 0 is shown as 0% until the latch flips or the next drain advances
+     * it again.
      *
      * @param string $orderby UI orderby alias.
      * @return int
@@ -229,7 +232,7 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
         if ($maxId <= 0 || $cursor <= 0) {
             return 0;
         }
-        return max(0, min(99, (int) floor(100 * $cursor / $maxId)));
+        return max(1, min(99, (int) floor(100 * $cursor / $maxId)));
     }
 
     /** @return int MAX(id) on the redirects table (O(1) PK probe), memoized per request. */
