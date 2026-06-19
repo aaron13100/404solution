@@ -54,7 +54,7 @@ class ABJ_404_Solution_Ajax_UpdateOptions {
             (string)$_POST['encodedData']
         );
         if (!is_array($postData) ||
-                !ABJ_404_Solution_AjaxRequestContractValidator::requireValidPayload(
+                !ABJ_404_Solution_AjaxRequestContractValidator::requireValidLivePayload(
                     'ajax-update-options',
                     $postData
                 )) {

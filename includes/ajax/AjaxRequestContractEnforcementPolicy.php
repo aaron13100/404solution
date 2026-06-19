@@ -6,22 +6,30 @@ if (!defined('ABSPATH')) {
 
 /**
  * Decides whether live admin-ajax contract violations may proceed.
+ *
+ * A non-foreign violation (a substantive value breach OR a structural problem
+ * such as a missing/corrupt schema file) is tolerated on production sites:
+ * logged and allowed through, because the downstream nonce, capability, and
+ * input-sanitization checks still guard the request, and the alternative is
+ * bricking a core feature for real users over a deployment fault. Off
+ * production the same violation fails fast so the gap is caught in dev/CI.
+ * Foreign-plugin keys in shared superglobals are tolerated everywhere.
+ *
+ * History: structural schema failures used to hard-fail on every environment.
+ * Incident 2026-06-19 (the WordPress.org release shipped without contracts/,
+ * so every schema lookup returned "schema not found" and contract-validated
+ * AJAX died with "Invalid AJAX request.") showed that a missing schema file
+ * must degrade gracefully in production rather than block the user.
  */
 class ABJ_404_Solution_AjaxRequestContractEnforcementPolicy {
 
     const UNEXPECTED_FIELD_PREFIX = 'unexpected field: ';
     const SCHEMA_NOT_FOUND_PREFIX = 'schema not found or invalid for contract: ';
-    const TOP_LEVEL_SCHEMA_SUFFIX = ': top-level schema type must be object';
-    const UNRECOGNIZED_TYPE_FRAGMENT = ' schema has unrecognized type: ';
 
     /**
      * @param array<int, string> $violations
      */
     public function shouldProceedDespiteViolations(string $contractId, array $violations): bool {
-        if ($this->hasStructuralViolations($violations)) {
-            return false;
-        }
-
         $substantive = $this->substantiveViolations($violations);
         if (empty($substantive)) {
             return true;
@@ -29,24 +37,6 @@ class ABJ_404_Solution_AjaxRequestContractEnforcementPolicy {
         if ($this->isProductionEnvironment()) {
             $this->logToleratedViolations($contractId, $substantive);
             return true;
-        }
-        return false;
-    }
-
-    /**
-     * @param array<int, string> $violations
-     */
-    private function hasStructuralViolations(array $violations): bool {
-        foreach ($violations as $violation) {
-            if (strncmp($violation, self::SCHEMA_NOT_FOUND_PREFIX, strlen(self::SCHEMA_NOT_FOUND_PREFIX)) === 0) {
-                return true;
-            }
-            if (substr($violation, -strlen(self::TOP_LEVEL_SCHEMA_SUFFIX)) === self::TOP_LEVEL_SCHEMA_SUFFIX) {
-                return true;
-            }
-            if (strpos($violation, self::UNRECOGNIZED_TYPE_FRAGMENT) !== false) {
-                return true;
-            }
         }
         return false;
     }

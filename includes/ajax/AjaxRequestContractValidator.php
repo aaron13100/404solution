@@ -22,10 +22,16 @@ class ABJ_404_Solution_AjaxContractViolationException extends RuntimeException {
  * Public runtime adapter for the vendored admin-ajax request contracts.
  *
  * The pure requireValidPayload() path validates caller-supplied payloads
- * strictly. The live current-request path tolerates foreign-plugin keys in
- * shared superglobals and tolerates substantive value breaches only on
- * production sites, where downstream handlers sanitize their own inputs.
- * Structural schema failures never use production tolerance.
+ * strictly and is used by tests and internal callers that want a hard failure
+ * on any breach. The live paths -- requireValidCurrentRequest() (reads the
+ * superglobals) and requireValidLivePayload() (validates a decoded packed
+ * payload, e.g. the settings-save handler) -- both apply the production
+ * tolerance encoded in ABJ_404_Solution_AjaxRequestContractEnforcementPolicy:
+ * foreign-plugin keys in shared superglobals are tolerated everywhere, and any
+ * other breach (a substantive value breach OR a missing/corrupt schema file)
+ * is logged-and-allowed on production while still failing fast off production.
+ * That keeps a deployment fault (a lost schema file) from bricking a core
+ * feature for real users while preserving the dev/CI signal.
  */
 class ABJ_404_Solution_AjaxRequestContractValidator {
 
@@ -77,6 +83,28 @@ class ABJ_404_Solution_AjaxRequestContractValidator {
             return true;
         }
 
+        self::sendValidationError($contractId, $result['violations']);
+        return false;
+    }
+
+    /**
+     * Live-request variant of requireValidPayload() for handlers that validate a
+     * decoded packed payload rather than the superglobals directly (the
+     * settings-save handler decodes $_POST['encodedData'] first). Applies the
+     * same production tolerance as requireValidCurrentRequest() so a missing or
+     * corrupt schema degrades gracefully in production instead of bricking the
+     * feature; off production it still fails fast.
+     *
+     * @param array<mixed, mixed> $payload
+     */
+    public static function requireValidLivePayload(string $contractId, array $payload): bool {
+        $result = self::validate($contractId, $payload);
+        if ($result['valid']) {
+            return true;
+        }
+        if (self::enforcementPolicy()->shouldProceedDespiteViolations($contractId, $result['violations'])) {
+            return true;
+        }
         self::sendValidationError($contractId, $result['violations']);
         return false;
     }
