@@ -4,6 +4,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+// allow-no-test-found: exercised by RedirectsDenormSortKeyGatingTest and RedirectsDenormHitsRollupSourceTest
+
 /**
  * Single source of truth for the per-redirect-type SQL that resolves the
  * dest_for_view + published_status denorm columns on wp_abj404_redirects.

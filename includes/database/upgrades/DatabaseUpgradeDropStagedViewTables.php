@@ -4,6 +4,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+// allow-no-test-found: exercised by DropStagedViewTablesUpgradeTest
+
 /**
  * Denorm Step 3e-D (the one-way door): physically drop the transient staged
  * view-build tables (view_build, view_done, view_deleteme) on upgrade.

@@ -4,6 +4,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+// allow-no-test-found: exercised by RedirectsDenormBackfillIntegrationTest (the sort-key drains run its per-chunk SQL)
+
 /**
  * Data-access for the narrow LEFT(<source>, 191) sort-key columns
  * (dest_sort_key, url_sort_key) on wp_abj404_redirects, one explicit chunk of

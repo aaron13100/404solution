@@ -4,6 +4,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+// allow-no-test-found: exercised by RedirectsDenormMaintenanceIntegrationTest
+
 /**
  * Real-time maintenance of the four denormalized derived columns on
  * wp_abj404_redirects (Denorm Step 3c, i461).

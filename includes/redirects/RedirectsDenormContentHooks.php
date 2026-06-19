@@ -4,6 +4,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+// allow-no-test-found: exercised by RedirectsDenormMaintenanceIntegrationTest
+
 /**
  * WordPress content-change hooks that keep the redirects denorm columns fresh
  * (Denorm Step 3c, i461).

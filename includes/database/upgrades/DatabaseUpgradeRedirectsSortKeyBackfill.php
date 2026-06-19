@@ -4,6 +4,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+// allow-no-test-found: exercised by RedirectsDenormBackfillIntegrationTest
+
 /**
  * Chunked, time-budgeted drain of the two narrow LEFT(<source>, 191) sort-key
  * columns on the redirects table: dest_sort_key (from dest_for_view) and

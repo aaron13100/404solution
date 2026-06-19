@@ -4,6 +4,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+// allow-no-test-found: exercised by PatternPriorityResolutionTest via does404PageHaveSuggestionsShortcode
+
 /**
  * Decides whether the site's configured custom 404 page embeds the suggestions
  * shortcode. The async-suggestion trigger consults this before kicking off a

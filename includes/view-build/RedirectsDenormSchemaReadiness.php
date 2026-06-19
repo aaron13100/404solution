@@ -4,6 +4,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+// allow-no-test-found: exercised by RedirectsSortKeyUpgradeWindowTest
+
 /**
  * Live introspection of the redirects table's denorm-column and sort-key index
  * readiness for the admin redirects/captured read (Denorm Step 3b).

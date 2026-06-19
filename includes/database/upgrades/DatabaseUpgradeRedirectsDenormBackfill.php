@@ -4,6 +4,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+// allow-no-test-found: exercised by RedirectsDenormBackfillIntegrationTest
+
 /**
  * Chunked, time-budgeted backfill of the four denormalized derived columns on
  * the redirects table: logshits, last_used, dest_for_view, published_status.

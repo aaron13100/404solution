@@ -4,6 +4,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+// allow-no-test-found: exercised by RedirectsDenormHitsRollupSourceTest
+
 /**
  * Resolves the four denormalized derived columns (logshits, last_used,
  * dest_for_view, published_status) on wp_abj404_redirects for an explicit chunk

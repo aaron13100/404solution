@@ -4,6 +4,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+// allow-no-test-found: exercised by RedirectsSingleTableLiveResolveTest (arming on admin view read)
+
 /**
  * Arms the lazy denorm backfills when the admin views the redirects/captured
  * table.

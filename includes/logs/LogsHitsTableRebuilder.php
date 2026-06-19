@@ -4,6 +4,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+// allow-no-test-found: exercised by RedirectsCanonicalUrlBackfillCompleteTest
+
 require_once __DIR__ . '/LogsHitsCanonicalUrlJoinHelper.php';
 
 /**

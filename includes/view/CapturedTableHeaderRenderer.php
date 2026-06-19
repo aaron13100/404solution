@@ -4,6 +4,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+// allow-no-test-found: exercised by ViewTableRenderingTest
+
 /**
  * Renders the header cells for the Captured 404 URLs admin table.
  */

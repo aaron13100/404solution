@@ -4,6 +4,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+// allow-no-test-found: exercised by RedirectsDenormHitsRollupSourceTest
+
 /**
  * Rolls up wp_abj404_logs_hits for the visible page of the admin
  * redirects/captured table (Denorm Step 3b, S9-equivalent).

@@ -4,6 +4,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+// allow-no-test-found: exercised by MultisiteNGramRaceConditionTest via the create-tables upgrade flow
+
 /**
  * One-time initialization of the N-gram spell-check cache.
  *

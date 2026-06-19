@@ -1,3 +1,4 @@
+// allow-no-test-found: exercised by background-refresh-detect-only.spec.js (E2E)
 /**
  * "Refresh available" pill UI.
  *

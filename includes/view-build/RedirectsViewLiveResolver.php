@@ -4,6 +4,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+// allow-no-test-found: exercised by RedirectsSingleTableLiveResolveTest
+
 /**
  * Live resolver for the denormalized derived columns on the visible page of the
  * admin redirects/captured table (Denorm Step 3b, i460).
