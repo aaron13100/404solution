@@ -217,6 +217,7 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 * Fixed a duplicate-accessible-name accessibility warning on the redirects list. The "Add Redirect" submit button inside the modal is now labeled "Add", which removes the collision with the page-level "Add Redirect" action button.
 * Fixed a fatal that could occur on the Plugins admin screen when `wp-admin/includes/plugin-install.php` was unavailable on hardened hosts (the include is now guarded with `is_readable`).
 * Fixed a fail-open default in the REST captured-404s status filter that could return rows from an unintended status when an unknown filter value was supplied.
+* Fixed the URL and Destination column-sort "being prepared" progress indicator that could stay stuck at 0% on large sites where a security plugin blocks the WordPress cron loopback. The one-time sort-key preparation is now driven by the admin's own page view in the background, with a longer and gentler retry window, so column sorting becomes available without depending on WP-cron, and a transient timeout no longer halts the progress.
 
 **Improvements**
 
@@ -500,12 +501,3 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 
 * Added all SQL files to the boot integrity check, ensuring corrupted or missing schema files are detected during plugin startup.
 
-= Version 4.1.1 (Apr 9, 2026) =
-
-**Bug Fixes**
-
-* Fixed statistics page showing all zeros even when the logs page had data. Three separate bugs combined to cause this: the trend chart SQL was comparing `dest_url IS NULL` instead of `dest_url = '404'` (never matching real 404 entries); the stats dashboard returned an empty placeholder on first load instead of computing real data; and `getStatsCount()` threw an exception on empty query results, causing cascading failures that zeroed out all stats.
-
-**New Features**
-
-* Added heartbeat debug log emails for opted-in sites. Sites with the "send error logs" option enabled now have a 1-in-100 daily chance of sending their full debug zip even when no errors are detected, confirming the error-reporting pipeline is working. Subject line reads "heartbeat" instead of "error" for easy filtering.

@@ -16,6 +16,7 @@
 * Fixed a duplicate-accessible-name accessibility warning on the redirects list. The "Add Redirect" submit button inside the modal is now labeled "Add", which removes the collision with the page-level "Add Redirect" action button.
 * Fixed a fatal that could occur on the Plugins admin screen when `wp-admin/includes/plugin-install.php` was unavailable on hardened hosts (the include is now guarded with `is_readable`).
 * Fixed a fail-open default in the REST captured-404s status filter that could return rows from an unintended status when an unknown filter value was supplied.
+* Fixed the URL and Destination column-sort "being prepared" progress indicator that could stay stuck at 0% on large sites where a security plugin blocks the WordPress cron loopback. The one-time sort-key preparation is now driven by the admin's own page view in the background, with a longer and gentler retry window, so column sorting becomes available without depending on WP-cron, and a transient timeout no longer halts the progress.
 
 **Improvements**
 
