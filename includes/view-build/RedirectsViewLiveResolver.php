@@ -53,11 +53,11 @@ class ABJ_404_Solution_RedirectsViewLiveResolver {
      *
      * @param ABJ_404_Solution_DatabaseCore $dbCore
      * @param ABJ_404_Solution_Functions|null $f UTF-8 sanitizer source; falls
-     *   back to the Functions singleton when not injected (e.g. older callers).
+     *   back to the container's functions service when not injected.
      */
     public function __construct(ABJ_404_Solution_DatabaseCore $dbCore, $f = null) {
         $this->dbCore = $dbCore;
-        $f = $f !== null ? $f : ABJ_404_Solution_Functions::getInstance();
+        $f = $f !== null ? $f : abj_service('functions');
         $this->schemaReadiness = new ABJ_404_Solution_RedirectsDenormSchemaReadiness($dbCore);
         $this->hitsRollupReader = new ABJ_404_Solution_RedirectsHitsRollupReader($dbCore, $f);
     }

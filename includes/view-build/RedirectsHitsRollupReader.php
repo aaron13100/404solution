@@ -34,11 +34,11 @@ class ABJ_404_Solution_RedirectsHitsRollupReader {
      *
      * @param ABJ_404_Solution_DatabaseCore $dbCore
      * @param ABJ_404_Solution_Functions|null $f UTF-8 sanitizer source; falls
-     *   back to the Functions singleton when not injected (e.g. older callers).
+     *   back to the container's functions service when not injected.
      */
     public function __construct(ABJ_404_Solution_DatabaseCore $dbCore, $f = null) {
         $this->dbCore = $dbCore;
-        $this->f = $f !== null ? $f : ABJ_404_Solution_Functions::getInstance();
+        $this->f = $f !== null ? $f : abj_service('functions');
     }
 
     /**
