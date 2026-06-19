@@ -71,4 +71,7 @@ function abj404ApplyPaginationSuccessResponse(result) {
     jQuery('input[name=searchFilter]').attr("data-previous-value", currentFieldValue);
 
     bindTrashLinkListeners();
+    if (typeof window.abj404RunLazyBackfillPoll === 'function') {
+        window.abj404RunLazyBackfillPoll(1);
+    }
 }

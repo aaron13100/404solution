@@ -13,7 +13,7 @@
     var maxAttempts = 20;
 
     function configHost() {
-        return $('.abj404-pagination-right[data-lazy-backfill-ajax-url]').first();
+        return $('.abj404-filter-bar[data-lazy-backfill-ajax-url], .abj404-pagination-right[data-lazy-backfill-ajax-url]').first();
     }
 
     function pendingTooltips() {
