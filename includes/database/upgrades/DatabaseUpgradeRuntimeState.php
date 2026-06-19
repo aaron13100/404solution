@@ -56,6 +56,13 @@ final class ABJ_404_Solution_DatabaseUpgradeRuntimeState {
     public const REDIRECTS_DENORM_BACKFILL_TIME_BUDGET_SEC = 20;
 
     /**
+     * Short post-response shutdown budget for admin-ajax backstops when a cron
+     * event was accepted but host loopback cron may never run.
+     * @var int
+     */
+    public const REDIRECTS_DENORM_SHUTDOWN_BACKSTOP_TIME_BUDGET_SEC = 3;
+
+    /**
      * Rows recomputed per chunk by reconcileRedirectsDenormColumns() (Denorm
      * Step 3d). Same 1000-row chunk as the backfill: each chunk also runs a
      * logsv2 GROUP BY rollup join, so a tighter chunk keeps each statement

@@ -115,12 +115,27 @@ class ABJ_404_Solution_DatabaseUpgradeRedirectsSortKeyBackfill extends ABJ_404_S
      * for the sort-key-only armed trigger (used when the main derived columns are
      * already populated).
      *
+     * @param ?float $timeBudgetSec Wall-clock budget for the shared pass. When
+     *   null, uses REDIRECTS_DENORM_BACKFILL_TIME_BUDGET_SEC for the cron/full
+     *   deferred path. The admin-ajax shutdown backstop passes a smaller budget.
      * @return void
      */
-    public function runDeferredSortKeyBackfillPass(): void {
-        $deadline = abj_clock()->nowFloat() + (float)$this->getRedirectsDenormBackfillTimeBudgetSec();
+    public function runDeferredSortKeyBackfillPass(?float $timeBudgetSec = null): void {
+        $budget = $timeBudgetSec ?? (float)$this->getRedirectsDenormBackfillTimeBudgetSec();
+        $deadline = abj_clock()->nowFloat() + $budget;
         $this->backfillRedirectsDestSortKey($deadline);
         $this->backfillRedirectsUrlSortKey($deadline);
+    }
+
+    /**
+     * Run the admin-ajax shutdown backstop with a smaller budget than the cron
+     * drain so broken loopback cron can converge over repeated admin loads
+     * without holding non-FPM responses behind the full cron-sized pass.
+     *
+     * @return void
+     */
+    public function runDeferredSortKeyBackfillShutdownBackstopPass(): void {
+        $this->runDeferredSortKeyBackfillPass((float)$this->getRedirectsDenormShutdownBackstopTimeBudgetSec());
     }
 
     /**
@@ -395,7 +410,11 @@ class ABJ_404_Solution_DatabaseUpgradeRedirectsSortKeyBackfill extends ABJ_404_S
             function (): void {
                 $this->runDeferredSortKeyBackfillPass();
             },
-            $this->shouldScheduleSortKeyBackfillViaCron()
+            $this->shouldScheduleSortKeyBackfillViaCron(),
+            5,
+            function (): void {
+                $this->runDeferredSortKeyBackfillShutdownBackstopPass();
+            }
         );
     }
 

@@ -160,14 +160,29 @@ class ABJ_404_Solution_DatabaseUpgradeRedirectsDenormBackfill extends ABJ_404_So
      * keeps the per-call budgets (it is true cron, never request-blocking, so
      * faster nightly convergence is preferred there).
      *
+     * @param ?float $timeBudgetSec Wall-clock budget for the shared pass. When
+     *   null, uses REDIRECTS_DENORM_BACKFILL_TIME_BUDGET_SEC for the cron/full
+     *   deferred path. The admin-ajax shutdown backstop passes a smaller budget.
      * @return void
      */
-    public function runDeferredDenormBackfillPass(): void {
-        $deadline = abj_clock()->nowFloat() + (float)$this->getRedirectsDenormBackfillTimeBudgetSec();
+    public function runDeferredDenormBackfillPass(?float $timeBudgetSec = null): void {
+        $budget = $timeBudgetSec ?? (float)$this->getRedirectsDenormBackfillTimeBudgetSec();
+        $deadline = abj_clock()->nowFloat() + $budget;
         $this->backfillRedirectsDenormColumns($deadline);
         $sortKey = $this->upgrades()->redirectsSortKeyBackfillUpgrade();
         $sortKey->backfillRedirectsDestSortKey($deadline);
         $sortKey->backfillRedirectsUrlSortKey($deadline);
+    }
+
+    /**
+     * Run the admin-ajax shutdown backstop with a smaller budget than the cron
+     * drain so broken loopback cron can converge over repeated admin loads
+     * without holding non-FPM responses behind the full cron-sized pass.
+     *
+     * @return void
+     */
+    public function runDeferredDenormBackfillShutdownBackstopPass(): void {
+        $this->runDeferredDenormBackfillPass((float)$this->getRedirectsDenormShutdownBackstopTimeBudgetSec());
     }
 
     /**
@@ -216,7 +231,11 @@ class ABJ_404_Solution_DatabaseUpgradeRedirectsDenormBackfill extends ABJ_404_So
             function (): void {
                 $this->runDeferredDenormBackfillPass();
             },
-            $this->upgrades()->redirectsSortKeyBackfillUpgrade()->shouldScheduleSortKeyBackfillViaCron()
+            $this->upgrades()->redirectsSortKeyBackfillUpgrade()->shouldScheduleSortKeyBackfillViaCron(),
+            5,
+            function (): void {
+                $this->runDeferredDenormBackfillShutdownBackstopPass();
+            }
         );
     }
 
