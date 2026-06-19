@@ -195,6 +195,7 @@ return array(
     'ABJ_404_Solution_Ajax_ServiceResolver' => $base . 'includes/ajax/AjaxServiceResolver.php',
     'ABJ_404_Solution_Ajax_SearchFeedback' => $base . 'includes/ajax/AjaxSearchFeedback.php',
     'ABJ_404_Solution_Ajax_UpdateOptions' => $base . 'includes/ajax/Ajax_UpdateOptions.php',
+    'ABJ_404_Solution_Ajax_RunLazyBackfill' => $base . 'includes/ajax/Ajax_RunLazyBackfill.php',
     'ABJ_404_Solution_Ajax_LoadGscSection' => $base . 'includes/ajax/Ajax_LoadGscSection.php',
     'ABJ_404_Solution_Ajax_ViewLogs' => $base . 'includes/ajax/Ajax_ViewLogs.php',
     'ABJ_404_Solution_Ajax_RedirectDestinationAutocomplete' => $base . 'includes/ajax/Ajax_RedirectDestinationAutocomplete.php',

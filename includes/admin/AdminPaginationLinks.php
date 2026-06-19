@@ -178,6 +178,8 @@ class ABJ_404_Solution_AdminPaginationLinks {
         $html = $this->f->str_replace('{data-pagination-ajax-action}', esc_attr('ajaxUpdatePaginationLinks'), $html);
         $html = $this->f->str_replace('{data-pagination-ajax-subpage}', esc_attr($sub), $html);
         $html = $this->f->str_replace('{data-pagination-ajax-nonce}', esc_attr(wp_create_nonce('abj404_updatePaginationLink')), $html);
+        $html = $this->f->str_replace('{data-lazy-backfill-ajax-url}', esc_attr(admin_url('admin-ajax.php')), $html);
+        $html = $this->f->str_replace('{data-lazy-backfill-nonce}', esc_attr(wp_create_nonce('abj404_runLazyBackfill')), $html);
         $html = $this->f->str_replace('{data-pagination-inflight-nonce}', esc_attr(wp_create_nonce('abj404_fetchInflightStage')), $html);
         $html = $this->f->str_replace('{data-pagination-current-signature}', esc_attr($this->shared->getCurrentTableDataSignature($sub)), $html);
         $html = $this->f->str_replace('{data-pagination-current-orderby}', esc_attr($orderby), $html);

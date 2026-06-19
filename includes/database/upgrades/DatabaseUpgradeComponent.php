@@ -169,10 +169,6 @@ abstract class ABJ_404_Solution_DatabaseUpgradeComponent {
         return ABJ_404_Solution_DatabaseUpgradeRuntimeState::REDIRECTS_DENORM_BACKFILL_TIME_BUDGET_SEC;
     }
 
-    protected function getRedirectsDenormShutdownBackstopTimeBudgetSec(): float {
-        return ABJ_404_Solution_DatabaseUpgradeRuntimeState::REDIRECTS_DENORM_SHUTDOWN_BACKSTOP_TIME_BUDGET_SEC;
-    }
-
     protected function getRedirectsDenormReconcileChunkSize(): int {
         return ABJ_404_Solution_DatabaseUpgradeRuntimeState::REDIRECTS_DENORM_RECONCILE_CHUNK_SIZE;
     }

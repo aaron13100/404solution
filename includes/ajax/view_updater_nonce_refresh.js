@@ -66,6 +66,9 @@
         'abj404_refreshHealthBar': [
             ['[data-health-bar-nonce]', 'data-health-bar-nonce']
         ],
+        'abj404_runLazyBackfill': [
+            ['[data-lazy-backfill-nonce]', 'data-lazy-backfill-nonce']
+        ],
         'abj404_trendData': [
             ['[data-trend-nonce]', 'data-trend-nonce']
         ]
@@ -150,6 +153,7 @@
             return inFlightRefresh;
         }
         inFlightRefresh = new Promise(function (resolve, reject) {
+            // ajax-direct-approved: nonce refresh is the low-level transport wrapper that other admin AJAX calls depend on.
             $.ajax({
                 url: resolveAjaxUrl(),
                 type: 'POST',
@@ -193,10 +197,12 @@
      */
     function withNonceRetry(originalOpts) {
         if (!originalOpts || typeof originalOpts !== 'object') {
+            // ajax-direct-approved: preserve $.ajax-compatible fallback for malformed wrapper inputs.
             return $.ajax(originalOpts);
         }
         if (originalOpts._abj404NonceRetry === true) {
             // Already a retry - loop guard.
+            // ajax-direct-approved: retry guard must dispatch the caller's original $.ajax options without recursive wrapping.
             return $.ajax(originalOpts);
         }
 
@@ -205,6 +211,7 @@
         var userComplete = originalOpts.complete;
         var firedTerminal = false;
         var attempt = function (opts) {
+            // ajax-direct-approved: this helper is the central nonce-retry wrapper around raw admin AJAX requests.
             return $.ajax($.extend({}, opts, {
                 success: function (data, textStatus, jqXHR) {
                     firedTerminal = true;

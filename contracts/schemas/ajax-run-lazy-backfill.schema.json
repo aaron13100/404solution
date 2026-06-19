@@ -1,0 +1,12 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "abj404RunLazyBackfill",
+  "description": "Browser-driven admin lazy backfill AJAX request from view_updater_lazy_backfill.js",
+  "type": "object",
+  "required": ["nonce"],
+  "additionalProperties": false,
+  "properties": {
+    "nonce": { "type": "string", "minLength": 1 },
+    "subpage": { "type": "string", "enum": ["", "abj404_redirects", "abj404_captured"] }
+  }
+}

@@ -17,9 +17,11 @@ if (!defined('ABSPATH')) {
  * site a manual URL/Destination sort on a captured-heavy table filesorts the
  * majority until the daily cron catches up -- up to a 24h window.
  *
- * This collaborator arms (schedules, never runs inline) those drains from the
- * admin redirects-table read, shrinking the window to within seconds of the
- * first visit. It is invoked from
+ * This collaborator arms (schedules, never runs inline) those drains from
+ * non-AJAX admin redirects-table reads, shrinking the window to within seconds
+ * of the first visit. Admin-ajax table reads are intentionally left to the
+ * browser post-load lazy-backfill endpoint, because server loopback cron can be
+ * blocked while browser admin-ajax is still reachable. It is invoked from
  * ABJ_404_Solution_ViewReadService::getRedirectsForView(), the single seam both
  * admin tabs and the REST read actually hit.
  *
@@ -74,6 +76,9 @@ class ABJ_404_Solution_LazyDenormBackfillArmer {
      */
     public function armOnAdminViewRead(): void {
         try {
+            if ($this->isAdminAjaxRequest()) {
+                return;
+            }
             $upgrades = ($this->upgradesProvider)();
             if ($upgrades === null) {
                 return;
@@ -92,5 +97,19 @@ class ABJ_404_Solution_LazyDenormBackfillArmer {
                 );
             }
         }
+    }
+
+    private function isAdminAjaxRequest(): bool {
+        if (function_exists('wp_doing_ajax') && wp_doing_ajax()) {
+            return true;
+        }
+        $scriptName = isset($_SERVER['SCRIPT_NAME']) && is_string($_SERVER['SCRIPT_NAME'])
+            ? basename($_SERVER['SCRIPT_NAME']) : '';
+        if ($scriptName === 'admin-ajax.php') {
+            return true;
+        }
+        $pagenow = isset($GLOBALS['pagenow']) && is_string($GLOBALS['pagenow'])
+            ? $GLOBALS['pagenow'] : '';
+        return $pagenow === 'admin-ajax.php';
     }
 }

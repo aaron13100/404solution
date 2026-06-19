@@ -126,10 +126,19 @@ class ABJ_404_Solution_CapturedTableHeaderRenderer {
             array(esc_attr__('More info', '404-solution'), esc_html($tooltipBody)),
             $this->tpl('viewRedirectsTableHeaderTooltip.html')
         );
+        $tooltipHtml = $this->tagPendingSortTooltip($tooltipHtml, $this->columnScalar($col, 'orderby'));
         return $this->f->str_replace(
             array('{class_attr}', '{title}', '{tooltip_html}'),
             array($classAttr, esc_html($titleValue), $tooltipHtml),
             $this->tpl('viewRedirectsTableCapturedPendingHeader.html')
+        );
+    }
+
+    private function tagPendingSortTooltip(string $tooltipHtml, string $orderby): string {
+        return str_replace(
+            'class="abj404-header-tooltip lefty-tooltip"',
+            'class="abj404-header-tooltip lefty-tooltip" data-abj404-pending-sort="' . esc_attr($orderby) . '"',
+            $tooltipHtml
         );
     }
 

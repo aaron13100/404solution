@@ -51,6 +51,8 @@ class ABJ_404_Solution_RedirectsTablePagePresenter {
             '{add_redirect_button}' => $this->addRedirectButtonHtml($currentFilter),
             '{subsubsub}' => $this->subsubsubHtml($sub, $tableOptions),
             '{data-pagination-ajax-url}' => esc_attr(admin_url('admin-ajax.php')),
+            '{data-lazy-backfill-ajax-url}' => esc_attr(admin_url('admin-ajax.php')),
+            '{data-lazy-backfill-nonce}' => esc_attr(wp_create_nonce('abj404_runLazyBackfill')),
             '{data-pagination-ajax-subpage}' => esc_attr($sub),
             '{data-pagination-ajax-nonce}' => esc_attr(wp_create_nonce('abj404_updatePaginationLink')),
             '{data-pagination-inflight-nonce}' => esc_attr(wp_create_nonce('abj404_fetchInflightStage')),

@@ -121,10 +121,9 @@ class ABJ_404_Solution_CronScheduler {
      *     bounded response-hold is preferable to never converging in-session.
      *   - WP-Cron refuses the event (wp_schedule_single_event returns false / a
      *     WP_Error): shutdown, rather than silently reporting success.
-     *   - Otherwise: WP-Cron plus a shutdown backstop, because a successfully
-     *     scheduled event still may never execute on hosts with blocked loopback
-     *     cron. The backstop runs from the current request's shutdown after
-     *     trying to flush the response first.
+     *   - Otherwise: WP-Cron, so an AJAX table load is not held open behind the
+     *     drain budget. Browser-triggered admin AJAX drives visible convergence
+     *     for the redirects table when loopback cron is blocked.
      *
      * The shutdown fallback runs in the SAME request that is already serving the
      * admin, so $preferCron is normally true only on admin-ajax.php (where some
@@ -137,18 +136,13 @@ class ABJ_404_Solution_CronScheduler {
      * @param bool          $preferCron      Whether this request context favors
      *                                       WP-Cron over an inline shutdown drain.
      * @param int           $delaySeconds    Cron delay when WP-Cron is used.
-     * @param callable():void|null $cronAcceptedShutdownBackstop Optional bounded
-     *                                       shutdown drain registered instead of
-     *                                       $shutdownFallback when cron scheduling
-     *                                       succeeds.
      * @return string One of the DEFER_* outcome constants.
      */
     public function scheduleSingleOrShutdown(
         string $hook,
         callable $shutdownFallback,
         bool $preferCron,
-        int $delaySeconds = 5,
-        ?callable $cronAcceptedShutdownBackstop = null
+        int $delaySeconds = 5
     ): string {
         if (!$preferCron) {
             $this->registerShutdownDrain($shutdownFallback);
@@ -159,7 +153,6 @@ class ABJ_404_Solution_CronScheduler {
             return self::DEFER_VIA_SHUTDOWN_CRON_UNAVAILABLE;
         }
         if ($this->scheduleSingleIfMissing($hook, $delaySeconds)) {
-            $this->registerShutdownDrain($cronAcceptedShutdownBackstop ?? $shutdownFallback);
             return self::DEFER_VIA_CRON;
         }
         $this->registerShutdownDrain($shutdownFallback);
@@ -172,19 +165,7 @@ class ABJ_404_Solution_CronScheduler {
      */
     private function registerShutdownDrain(callable $shutdownFallback): void {
         if (function_exists('add_action')) {
-            add_action('shutdown', function () use ($shutdownFallback): void {
-                $this->finishFastCgiResponseIfPossible();
-                $shutdownFallback();
-            });
-        }
-    }
-
-    /**
-     * @return void
-     */
-    private function finishFastCgiResponseIfPossible(): void {
-        if (function_exists('fastcgi_finish_request')) {
-            fastcgi_finish_request();
+            add_action('shutdown', $shutdownFallback);
         }
     }
 

@@ -37,7 +37,7 @@ class ABJ_404_Solution_Ajax_Php {
 	 * @return bool True if rate limit exceeded, false otherwise
 	 */
 	static function consumeRateLimit($action, $max_requests = 100, $time_window = 60) {
-		$user_id = get_current_user_id();
+		$user_id = function_exists('get_current_user_id') ? get_current_user_id() : 0;
 		if ($user_id) {
 			$identifier = 'user_' . $user_id;
 		} else {

@@ -28,7 +28,8 @@ class ABJ_404_Solution_Ajax_AdminEndpointSupport {
      */
     public static function adminNonceActions(): array {
         return array('abj404_updatePaginationLink', 'abj404_fetchInflightStage',
-            'abj404_refreshStatsDashboard', 'abj404_refreshHealthBar', 'abj404_trendData');
+            'abj404_refreshStatsDashboard', 'abj404_refreshHealthBar',
+            'abj404_runLazyBackfill', 'abj404_trendData');
     }
 
     /**

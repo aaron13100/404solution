@@ -169,6 +169,35 @@
       }
     },
     {
+      "id": "ajax-run-lazy-backfill",
+      "description": "Admin table page-load lazy denorm and sort-key backfill request",
+      "schema": "schemas/ajax-run-lazy-backfill.schema.json",
+      "direction": "client-to-server",
+      "producer": {
+        "file": "includes/ajax/view_updater_lazy_backfill.js",
+        "test": [
+          "tests/HealthBarAjaxDecouplingTest.php",
+          "tests-js/lazy-backfill-polling.test.js"
+        ]
+      },
+      "consumer": {
+        "file": "includes/ajax/Ajax_RunLazyBackfill.php",
+        "test": [
+          "tests/RedirectsDenormBackfillIntegrationTest.php",
+          "tests/AjaxRuntimeContractValidationTest.php"
+        ]
+      },
+      "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
+      "fixtures": {
+        "valid": [
+          "fixtures/ajax-run-lazy-backfill.valid.json"
+        ],
+        "invalid": [
+          "fixtures/ajax-run-lazy-backfill.invalid-missing-nonce.json"
+        ]
+      }
+    },
+    {
       "id": "ajax-support-request",
       "description": "Support request FormData AJAX from admin modal",
       "schema": "schemas/ajax-support-request.schema.json",

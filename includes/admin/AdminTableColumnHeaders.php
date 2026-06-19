@@ -105,6 +105,7 @@ class ABJ_404_Solution_AdminTableColumnHeaders {
         if ($pendingTooltip !== '') {
             $sortState['isSortable'] = false;
             $column['title_attr'] = $pendingTooltip;
+            $column['pending_sort_orderby'] = (string)$orderby;
             unset($column['title_attr_html']);
         }
 
@@ -195,11 +196,19 @@ class ABJ_404_Solution_AdminTableColumnHeaders {
             ) . "\n";
         }
         if (array_key_exists('title_attr', $column) && !empty($column['title_attr'])) {
-            return $this->f->str_replace(
+            $tooltipHtml = $this->f->str_replace(
                 array('{more_info_label}', '{tooltip_body}'),
                 array(esc_attr__('More info', '404-solution'), esc_html($column['title_attr'])),
                 $this->tpl('viewLogsColumnsHeaderTooltip.html')
-            ) . "\n";
+            );
+            if (array_key_exists('pending_sort_orderby', $column) && is_scalar($column['pending_sort_orderby'])) {
+                $tooltipHtml = str_replace(
+                    'class="abj404-header-tooltip lefty-tooltip"',
+                    'class="abj404-header-tooltip lefty-tooltip" data-abj404-pending-sort="' . esc_attr((string)$column['pending_sort_orderby']) . '"',
+                    $tooltipHtml
+                );
+            }
+            return $tooltipHtml . "\n";
         }
 
         return '';

@@ -72,6 +72,7 @@ class ABJ_404_Solution_View_CapturedURLsTable extends ABJ_404_Solution_ViewCompo
 
         $paginationNonce = wp_create_nonce('abj404_updatePaginationLink');
         $inflightNonce = wp_create_nonce('abj404_fetchInflightStage');
+        $lazyBackfillNonce = wp_create_nonce('abj404_runLazyBackfill');
         $autoRefresh = '1';
         $rawFilter = $tableOptions['filter'] ?? 0;
         $currentFilter = is_scalar($rawFilter) ? $rawFilter : 0;
@@ -134,6 +135,8 @@ class ABJ_404_Solution_View_CapturedURLsTable extends ABJ_404_Solution_ViewCompo
             '{subtitle}' => $subtitleHtml,
             '{subsubsub}' => $subsubsubHtml,
             '{data-pagination-ajax-url}' => esc_attr(admin_url('admin-ajax.php')),
+            '{data-lazy-backfill-ajax-url}' => esc_attr(admin_url('admin-ajax.php')),
+            '{data-lazy-backfill-nonce}' => esc_attr($lazyBackfillNonce),
             '{data-pagination-ajax-subpage}' => esc_attr($sub),
             '{data-pagination-ajax-nonce}' => esc_attr($paginationNonce),
             '{data-pagination-inflight-nonce}' => esc_attr($inflightNonce),
