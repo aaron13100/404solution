@@ -135,6 +135,10 @@ class ABJ_404_Solution_RedirectsBulkReader {
     }
 
     /** @return array<int, array<string, mixed>> */
+    // DESIGN-AUDIT-OK(2026-06-19, owner): status=MANUAL AND disabled=0 seeks via
+    //   idx_status_disabled to the few hand-made MANUAL rows first, so INSTR() runs only
+    //   over that bounded subset, not a full table scan. A LIMIT would drop valid manual
+    //   regex redirects (changes results), so no cap. Reviewed + accepted 2026-06-18.
     public function getManualRedirectsWithRegexMetachars(): array {
         $query = "select \n  {wp_abj404_redirects}.id,\n  {wp_abj404_redirects}.url,\n  {wp_abj404_redirects}.status,\n"
                 . "  {wp_abj404_redirects}.type,\n  {wp_abj404_redirects}.final_dest,\n  {wp_abj404_redirects}.code,\n"
