@@ -145,6 +145,10 @@ class ABJ_404_Solution_AdminTableColumnHeaders {
             $rawFilter = $tableOptions['filter'] ?? 0;
             $url .= '&filter=' . (is_scalar($rawFilter) ? (string)$rawFilter : '0');
         }
+        $rawFilterText = $tableOptions['filterText'] ?? '';
+        if (is_scalar($rawFilterText) && (string)$rawFilterText !== '') {
+            $url .= '&filterText=' . rawurlencode((string)$rawFilterText);
+        }
         $rawNextOrder = $sortState['nextOrder'] ?? '';
         $nextOrder = is_scalar($rawNextOrder) ? (string)$rawNextOrder : '';
         $url .= '&orderby=' . $orderby . '&order=' . $nextOrder;

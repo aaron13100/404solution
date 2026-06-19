@@ -76,6 +76,10 @@ class ABJ_404_Solution_CapturedTableHeaderRenderer {
         }
 
         $sortUrl = "?page=" . ABJ404_PP . "&subpage=abj404_captured&filter=" . $currentFilter;
+        $rawFilterText = $tableOptions['filterText'] ?? '';
+        if (is_scalar($rawFilterText) && (string)$rawFilterText !== '') {
+            $sortUrl .= "&filterText=" . rawurlencode((string)$rawFilterText);
+        }
         $sortUrl .= "&orderby=" . $orderby;
         $sortState = $this->shared->getHeaderSortState($tableOptions, $orderby, false);
         $sortUrl .= "&order=" . $sortState['nextOrder'];
