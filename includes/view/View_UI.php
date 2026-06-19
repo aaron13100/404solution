@@ -149,7 +149,7 @@ class ABJ_404_Solution_View_UI extends ABJ_404_Solution_ViewComponent {
         $abj404view->outputAdminHeaderTabs($sub, $message);
 
         $abj404action = $this->shared->viewGetPostOrGetSanitize('abj404action');
-        if (($action == 'editRedirect') || ($abj404action == 'editRedirect') || ($sub == 'abj404_edit')) {
+        if ($this->isEditRedirectScreen($action, $sub, $abj404action)) {
             $abj404view->echoAdminEditRedirectPage();
         } else if ($sub == 'abj404_redirects') {
             $abj404view->echoAdminRedirectsPage();
@@ -171,6 +171,31 @@ class ABJ_404_Solution_View_UI extends ABJ_404_Solution_ViewComponent {
         }
         
         $abj404view->echoAdminFooter();
+    }
+
+    /**
+     * Identify all request shapes that should render the edit redirect form.
+     *
+     * @param string $action Current request action.
+     * @param string $sub Current plugin subpage.
+     * @param string $bulkAction Current list-table bulk action.
+     * @return bool
+     */
+    private function isEditRedirectScreen(string $action, string $sub, string $bulkAction): bool {
+        if ($action == 'editRedirect' || $bulkAction == 'editRedirect' || $sub == 'abj404_edit') {
+            return true;
+        }
+
+        $requestAction = $action !== '' ? $action : (string)$this->shared->viewGetPostOrGetSanitize('action');
+        if ($requestAction !== 'edit') {
+            return false;
+        }
+
+        if (!in_array($sub, array('abj404_redirects', 'abj404_captured'), true)) {
+            return false;
+        }
+
+        return isset($_GET['id']) || isset($_POST['id']) || isset($_GET['idnum']) || isset($_POST['idnum']);
     }
     
 }

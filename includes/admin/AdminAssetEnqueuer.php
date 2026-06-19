@@ -26,22 +26,19 @@ class ABJ_404_Solution_AdminAssetEnqueuer {
 
         try {
             $includesUrl = ABJ404_URL . 'includes/';
-            $subpage = '';
-            if (array_key_exists('subpage', $_GET)) {
-                $subpage = sanitize_text_field(ABJ_404_Solution_RequestInputNormalizer::normalizeScalar($_GET['subpage']));
-            }
+            $subpage = self::requestStringParam('subpage');
             // Default plugin landing is redirects when subpage is not specified.
             if ($subpage === '') {
                 $subpage = 'abj404_redirects';
             }
+            $isEditPage = self::isEditPageRequest($subpage);
 
             $isOptionsPage = ($subpage === 'abj404_options');
             $isStatsPage = ($subpage === 'abj404_stats');
             $isToolsPage = ($subpage === 'abj404_tools');
             $isCardAccordionPage = in_array($subpage, array('abj404_options', 'abj404_tools', 'abj404_stats'), true);
             $isLogsPage = ($subpage === 'abj404_logs');
-            $isListPage = in_array($subpage, array('abj404_redirects', 'abj404_captured', 'abj404_logs'), true);
-            $isEditPage = ($subpage === 'abj404_edit');
+            $isListPage = !$isEditPage && in_array($subpage, array('abj404_redirects', 'abj404_captured', 'abj404_logs'), true);
             $needsDestinationAutocomplete = in_array($subpage, array('abj404_redirects', 'abj404_captured', 'abj404_options', 'abj404_edit'), true);
 
             // remove the "thank you for creating with wordpress" message
@@ -180,6 +177,40 @@ class ABJ_404_Solution_AdminAssetEnqueuer {
         } catch (Throwable $e) {
             call_user_func($errorReporter, 'admin_enqueue_scripts', $e);
         }
+    }
+
+    /**
+     * Read a scalar GET parameter as sanitized text.
+     *
+     * @param string $name
+     * @return string
+     */
+    private static function requestStringParam(string $name): string {
+        return array_key_exists($name, $_GET)
+            ? sanitize_text_field(ABJ_404_Solution_RequestInputNormalizer::normalizeScalar($_GET[$name]))
+            : '';
+    }
+
+    /**
+     * Identify request shapes that need edit-form assets instead of list-table assets.
+     *
+     * @param string $subpage
+     * @return bool
+     */
+    private static function isEditPageRequest(string $subpage): bool {
+        if ($subpage === 'abj404_edit') {
+            return true;
+        }
+
+        if (self::requestStringParam('action') !== 'edit') {
+            return false;
+        }
+
+        if (!in_array($subpage, array('abj404_redirects', 'abj404_captured'), true)) {
+            return false;
+        }
+
+        return array_key_exists('id', $_GET) || array_key_exists('idnum', $_GET);
     }
 
     /**
