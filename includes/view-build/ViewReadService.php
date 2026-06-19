@@ -193,13 +193,28 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
      * @return bool
      */
     public function isSortReadyForOrderby(string $orderby): bool {
+        return $this->sortReadinessStatusForOrderby($orderby)
+            === ABJ_404_Solution_ViewReadServiceInterface::SORT_READINESS_READY;
+    }
+
+    /**
+     * @param string $orderby UI orderby alias (url, final_dest, logshits, ...).
+     * @return string One of ABJ_404_Solution_ViewReadServiceInterface::SORT_READINESS_*.
+     */
+    public function sortReadinessStatusForOrderby(string $orderby): string {
         $column = self::ORDERBY_TO_SORT_KEY[strtolower($orderby)] ?? '';
         if ($column === '') {
-            return true;
+            return ABJ_404_Solution_ViewReadServiceInterface::SORT_READINESS_READY;
         }
-        // Single source of truth shared with the query path
-        // (AdminViewReadCoordinator): column + composite indexes + drain latch.
-        return $this->liveResolver->schemaReadiness()->sortKeyReadyForColumn($column);
+
+        $readiness = $this->liveResolver->schemaReadiness();
+        if (!$readiness->sortKeySchemaAvailableForColumn($column)) {
+            return ABJ_404_Solution_ViewReadServiceInterface::SORT_READINESS_SCHEMA_UNAVAILABLE;
+        }
+        if ($readiness->sortKeyReadyForColumn($column)) {
+            return ABJ_404_Solution_ViewReadServiceInterface::SORT_READINESS_READY;
+        }
+        return ABJ_404_Solution_ViewReadServiceInterface::SORT_READINESS_BACKFILL_PENDING;
     }
 
     /**

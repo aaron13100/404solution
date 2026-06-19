@@ -235,8 +235,16 @@ class ABJ_404_Solution_View_Shared extends ABJ_404_Solution_ViewComponent {
 		if ($orderby !== 'url' && $orderby !== 'dest' && $orderby !== 'final_dest') {
 			return '';
 		}
-		if ($viewReadService->isSortReadyForOrderby($orderby)) {
+		$status = method_exists($viewReadService, 'sortReadinessStatusForOrderby')
+			? $viewReadService->sortReadinessStatusForOrderby($orderby)
+			: ($viewReadService->isSortReadyForOrderby($orderby)
+				? ABJ_404_Solution_ViewReadServiceInterface::SORT_READINESS_READY
+				: ABJ_404_Solution_ViewReadServiceInterface::SORT_READINESS_BACKFILL_PENDING);
+		if ($status === ABJ_404_Solution_ViewReadServiceInterface::SORT_READINESS_READY) {
 			return '';
+		}
+		if ($status === ABJ_404_Solution_ViewReadServiceInterface::SORT_READINESS_SCHEMA_UNAVAILABLE) {
+			return __('Sorting by this column is unavailable on this site. The list shows newest first.', '404-solution');
 		}
 		$percent = $viewReadService->sortBackfillPercentForOrderby($orderby);
 		return sprintf(

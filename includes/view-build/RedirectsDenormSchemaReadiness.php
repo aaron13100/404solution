@@ -115,14 +115,27 @@ class ABJ_404_Solution_RedirectsDenormSchemaReadiness {
      * @return bool
      */
     public function sortKeyReadyForColumn(string $column): bool {
-        if (!isset($this->redirectsColumnSet()[$column])) {
-            return false;
-        }
-        if (!$this->sortKeyCompositeIndexesPresent($column)) {
+        if (!$this->sortKeySchemaAvailableForColumn($column)) {
             return false;
         }
         $latch = ABJ_404_Solution_RedirectsDenormColumnSql::sortKeyBackfillLatchOption($column);
         return $latch !== '' && function_exists('get_option') && get_option($latch) === '1';
+    }
+
+    /**
+     * Whether the backing schema for a narrow sort-key column exists: the column
+     * itself and every composite index that can serve the ORDER BY. This is the
+     * permanent-vs-temporary half of readiness; a false result means no drain can
+     * make the sort ready until the upgrade/self-heal DDL repairs the table.
+     *
+     * @param string $column url_sort_key | dest_sort_key.
+     * @return bool
+     */
+    public function sortKeySchemaAvailableForColumn(string $column): bool {
+        if (!isset($this->redirectsColumnSet()[$column])) {
+            return false;
+        }
+        return $this->sortKeyCompositeIndexesPresent($column);
     }
 
     /**

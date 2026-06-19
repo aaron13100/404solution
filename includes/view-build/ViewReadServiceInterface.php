@@ -23,6 +23,9 @@ if (!defined('ABSPATH')) {
  *   - hits-table lifecycle hook
  */
 interface ABJ_404_Solution_ViewReadServiceInterface {
+    const SORT_READINESS_READY = 'ready';
+    const SORT_READINESS_BACKFILL_PENDING = 'backfill-pending';
+    const SORT_READINESS_SCHEMA_UNAVAILABLE = 'schema-unavailable';
 
     /* ---- status counts + invalidation hooks ---- */
 
@@ -117,6 +120,17 @@ interface ABJ_404_Solution_ViewReadServiceInterface {
      * @return bool
      */
     public function isSortReadyForOrderby(string $orderby): bool;
+
+    /**
+     * Readiness status for ordering the admin list by $orderby. Sort-key-backed
+     * URL / Destination sorts can be ready, temporarily pending a backfill, or
+     * structurally unavailable because the backing column/index schema is absent.
+     * Non-key-backed sorts are always ready.
+     *
+     * @param string $orderby UI orderby alias (url, final_dest, logshits, ...).
+     * @return string One of the SORT_READINESS_* constants.
+     */
+    public function sortReadinessStatusForOrderby(string $orderby): string;
 
     /**
      * Backfill progress (0..100) for $orderby's narrow sort key, for the admin
