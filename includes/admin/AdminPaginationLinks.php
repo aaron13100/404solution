@@ -97,7 +97,11 @@ class ABJ_404_Solution_AdminPaginationLinks {
         }
         $url .= '&orderby=' . sanitize_text_field($orderby);
         $url .= '&order=' . sanitize_text_field($order);
-        $url .= '&filter=' . absint($filter);
+        // Emit the signed filter value: the trash (-1) and handled (-2) views
+        // are negative sentinels. absint() would fold -1 -> 1 (Manual) and
+        // -2 -> 2 (Auto), so paginating within Trash/Handled would silently jump
+        // to a different tab. $filter is already an int from paginationState().
+        $url .= '&filter=' . (int)$filter;
         return $url;
     }
 

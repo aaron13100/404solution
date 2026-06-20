@@ -370,7 +370,7 @@ class ABJ_404_Solution_TableViewOptionsResolver {
      * @return array<string, mixed>
      */
     private function normalizeResolvedTypes(array $tableOptions): array {
-        $tableOptions['filter'] = $this->positiveIntOrZero($tableOptions['filter'] ?? 0);
+        $tableOptions['filter'] = $this->normalizeFilter($tableOptions['filter'] ?? 0);
         $tableOptions['paged'] = $this->positiveIntOrDefault($tableOptions['paged'] ?? 1, 1);
         $tableOptions['perpage'] = $this->positiveIntOrDefault(
             $tableOptions['perpage'] ?? ABJ404_OPTION_DEFAULT_PERPAGE,
@@ -378,6 +378,29 @@ class ABJ_404_Solution_TableViewOptionsResolver {
         );
         $tableOptions['logsid'] = $this->positiveIntOrZero($tableOptions['logsid'] ?? 0);
         return $tableOptions;
+    }
+
+    /**
+     * Normalize the status-filter value. Unlike paged/perpage/logsid, the
+     * filter legitimately carries negative sentinels alongside non-negative
+     * status/type codes: ABJ404_TRASH_FILTER (-1, the Trash tab) and
+     * ABJ404_HANDLED_FILTER (-2, the Captured "Handled" view). It must NOT pass
+     * through the positive-only sanitizer, which rejects the leading minus via
+     * its /^\d+$/ guard and silently coerces the sentinel to 0 (All) -- the
+     * defect that broke every Trash/Handled tab (incident 2026-06-20). Any
+     * other negative or non-numeric value still fails closed to 0.
+     *
+     * @param mixed $raw
+     */
+    private function normalizeFilter($raw): int {
+        if (!is_scalar($raw)) {
+            return 0;
+        }
+        $value = intval(trim((string)$raw));
+        if ($value === ABJ404_TRASH_FILTER || $value === ABJ404_HANDLED_FILTER) {
+            return $value;
+        }
+        return $value > 0 ? $value : 0;
     }
 
     /**
