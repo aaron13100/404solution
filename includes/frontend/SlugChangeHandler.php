@@ -27,6 +27,17 @@ class ABJ_404_Solution_SlugChangeHandler {
     private static $processedPosts = [];
 
     /**
+     * Test seam: clear the per-request processed-post guard set without
+     * private-field reflection. Resets to the empty-array default (not null)
+     * so production loops over the property stay valid (M105 singleton-reset).
+     *
+     * @return void
+     */
+    public static function resetForTests() {
+        self::$processedPosts = [];
+    }
+
+    /**
      * @param ABJ_404_Solution_ContentRepository|null $contentRepository Content repository
      * @param ABJ_404_Solution_RedirectsRepository|null $redirectsRepository Redirects repository
      * @param ABJ_404_Solution_Logging|null $logging Logging service

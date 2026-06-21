@@ -9,7 +9,17 @@ class ABJ_404_Solution_WPNotices {
     
     /** @var array<ABJ_404_Solution_WPNotice> */
     private static $adminNotices = array();
-    
+
+    /**
+     * Test seam: clear the accumulated admin-notice queue without private-field
+     * reflection. Resets to the empty-array default (M105 singleton-reset seam).
+     *
+     * @return void
+     */
+    public static function resetForTests(): void {
+        self::$adminNotices = array();
+    }
+
     /** Display a message with the specified importance level.
      * @param string $noticeLevel see ABJ_404_Solution_WPNotice for notice levels.
      * @param string $message

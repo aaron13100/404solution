@@ -10,6 +10,19 @@ class ABJ_404_Solution_Functions {
 
     /** @var self|null */
     private static $instance = null;
+    /**
+     * Test seam: install or clear the cached singleton instance without
+     * private-field reflection. Pass null to reset between tests; pass a
+     * configured instance (or double) to install it. Mirrors the setInstance()
+     * contract on DataAccess / PluginLogic (M105 singleton-reset seam).
+     *
+     * @param self|null $instance
+     * @return void
+     */
+    public static function setInstance($instance) {
+        self::$instance = $instance;
+    }
+
 
     /** @var ABJ_404_Solution_Logging|null */
     protected $injectedLogging = null;

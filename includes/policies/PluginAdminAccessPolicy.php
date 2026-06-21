@@ -56,8 +56,15 @@ class ABJ_404_Solution_PluginAdminAccessPolicy {
         return self::$instance;
     }
 
-    /** Test-seam: install an externally-constructed instance. @return void */
-    public static function setInstance(self $instance): void {
+    /**
+     * Test-seam: install an externally-constructed instance, or pass null to
+     * clear the cached singleton. Accepting null keeps a uniform contract with
+     * the other singletons' setInstance() seams (M105 singleton-reset).
+     *
+     * @param self|null $instance
+     * @return void
+     */
+    public static function setInstance(?self $instance): void {
         self::$instance = $instance;
     }
 

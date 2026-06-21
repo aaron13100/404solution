@@ -59,6 +59,19 @@ class ABJ_404_Solution_LogsWriter {
     /** @var bool Prevent re-entrancy during flush */
     private static $isFlushingLogQueue = false;
 
+    /**
+     * Test seam: clear all cached static state (the pending log queue, the
+     * shutdown-hook-registered latch, and the flush re-entrancy guard) without
+     * private-field reflection (M105 singleton-reset seam).
+     *
+     * @return void
+     */
+    public static function resetForTests() {
+        self::$logQueue = [];
+        self::$shutdownHookRegistered = false;
+        self::$isFlushingLogQueue = false;
+    }
+
     public function __construct(
         ABJ_404_Solution_DatabaseCore $dbCore,
         ABJ_404_Solution_Functions $f,

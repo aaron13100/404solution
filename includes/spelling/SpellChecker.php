@@ -125,18 +125,19 @@ class ABJ_404_Solution_SpellChecker {
 		);
 	}
 
-	public static function resetForTests(): void {
-		self::$instance = null;
+	/**
+	 * Test seam (M105): install the cached singleton; pass null to clear it.
+	 * @param self|null $instance
+	 * @return void
+	 */
+	public static function setInstance($instance) {
+		self::$instance = $instance;
 	}
 
 	/**
-	 * Return the already-constructed singleton instance without resolving the
-	 * service container or building a new instance. Mirrors the
-	 * `peekInstance()` pattern on PluginLogic / Logging so the `spell_checker`
-	 * container factory can honor a test-installed singleton override (or any
-	 * other code that has populated $instance directly) instead of building a
-	 * fresh real SpellChecker that ignores the override.
-	 *
+	 * Return the already-built singleton without resolving the container or
+	 * building a new one, so the `spell_checker` factory can honor a
+	 * test-installed override. Mirrors PluginLogic / Logging peekInstance().
 	 * @return self|null
 	 */
 	public static function peekInstance(): ?self {

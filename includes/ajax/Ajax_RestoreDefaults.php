@@ -17,6 +17,18 @@ class ABJ_404_Solution_Ajax_RestoreDefaults {
 
     /** @var self|null */
     private static $instance = null;
+    /**
+     * Test seam: install or clear the cached singleton instance without
+     * private-field reflection. Pass null to reset between tests; pass a
+     * configured instance (or double) to install it (M105 singleton-reset seam).
+     *
+     * @param self|null $instance
+     * @return void
+     */
+    public static function setInstance($instance) {
+        self::$instance = $instance;
+    }
+
 
     /** @return self */
     public static function getInstance(): self {
