@@ -100,9 +100,16 @@ class ABJ_404_Solution_ErrorHandler {
                 }
             }
 
+            // PHP emits this warning in two forms: with a "by (output started
+            // at /file:line)" suffix when it can attribute the earlier output,
+            // and without that suffix (bare "...headers already sent") when it
+            // cannot. Match the stable prefix so both forms downgrade to a
+            // warning. The " by" variant alone missed the bare form, which then
+            // reached error level and triggered a feedback report (production
+            // report 104, chasalford.com, PHP 8.4).
             if ($errno == 2 &&
                 $f->strpos($errstr,
-                        "Cannot modify header information - headers already sent by") !== false) {
+                        "Cannot modify header information - headers already sent") !== false) {
 
                 $onlyAWarning = true;
             }
