@@ -41,6 +41,18 @@ class ABJ_404_Solution_PostEditorIntegration {
      */
     private static $processedExclusionPosts = [];
 
+    /**
+     * Clear the per-request save-post dedup map. The map is naturally empty at
+     * the start of every real WordPress request; this seam lets tests restore
+     * that fresh-per-request state between cases (each test is a fresh
+     * "request") without reaching into the private static via reflection.
+     *
+     * @return void
+     */
+    public static function resetProcessedExclusionPostsForTests() {
+        self::$processedExclusionPosts = [];
+    }
+
     /** @return self */
     public static function getInstance() {
         if (self::$instance === null) {
