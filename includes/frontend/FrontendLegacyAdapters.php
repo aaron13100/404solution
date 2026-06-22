@@ -104,11 +104,11 @@ class ABJ_404_Solution_FrontendLegacyAdapters {
      */
     private function adaptNotFoundResponse($forceRedirect, $sendTo404Page, $thereIsAUserSpecified404Page) {
         return new class($forceRedirect, $sendTo404Page, $thereIsAUserSpecified404Page) extends ABJ_404_Solution_NotFoundResponseService {
-            /** @var callable */
+            /** @var callable(string, int, mixed, string, bool): bool */
             private $forceRedirectCallback;
-            /** @var callable */
+            /** @var callable(string, string, bool, mixed): void */
             private $sendTo404PageCallback;
-            /** @var callable */
+            /** @var callable(mixed): bool */
             private $thereIsAUserSpecified404PageCallback;
 
             function __construct(callable $forceRedirect, callable $sendTo404Page, callable $thereIsAUserSpecified404Page) {
@@ -138,9 +138,9 @@ class ABJ_404_Solution_FrontendLegacyAdapters {
      */
     private function adaptRequestIgnoreNormalizer($initializeIgnoreValues, $tryNormalPostQuery) {
         return new class($initializeIgnoreValues, $tryNormalPostQuery) extends ABJ_404_Solution_RequestIgnoreNormalizer {
-            /** @var callable */
+            /** @var callable(string, string): void */
             private $initializeIgnoreValuesCallback;
-            /** @var callable */
+            /** @var callable(array<string, mixed>): void */
             private $tryNormalPostQueryCallback;
 
             function __construct(callable $initializeIgnoreValues, callable $tryNormalPostQuery) {
@@ -165,9 +165,9 @@ class ABJ_404_Solution_FrontendLegacyAdapters {
      */
     private function adaptPreviousRequestCookieTracker($readCookieWithPreviousRqeuestShort, $setCookieWithPreviousRequest) {
         return new class($readCookieWithPreviousRqeuestShort, $setCookieWithPreviousRequest) extends ABJ_404_Solution_PreviousRequestCookieTracker {
-            /** @var callable */
+            /** @var callable(): string */
             private $readCookieWithPreviousRqeuestShortCallback;
-            /** @var callable */
+            /** @var callable(): void */
             private $setCookieWithPreviousRequestCallback;
 
             function __construct(callable $readCookieWithPreviousRqeuestShort, callable $setCookieWithPreviousRequest) {
