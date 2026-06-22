@@ -91,6 +91,9 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 	/** @var mixed */
 	private $ngramRebuilder;
 
+	/** @var ABJ_404_Solution_CronScheduler|null */
+	private $cronScheduler;
+
 	/** @var ABJ_404_Solution_DatabaseUpgradeComponentRegistry */
 	private $components;
 
@@ -113,6 +116,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 		$this->ngramCacheRepository = $dependencies->getNGramCacheRepository();
 		$this->ngramCoveragePolicy = $dependencies->getNGramCoveragePolicy();
 		$this->ngramRebuilder = $dependencies->getNGramRebuilder();
+		$this->cronScheduler = $dependencies->getCronScheduler();
 
 		$this->dbCore = $this->dao->getDbCore();
 		$this->contentRepo = $this->dao->getContentRepo();
@@ -261,6 +265,7 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 			'ngramCacheRepository' => $this->ngramCacheRepository,
 			'ngramCoveragePolicy' => $this->ngramCoveragePolicy,
 			'ngramRebuilder' => $this->ngramRebuilder,
+			'cronScheduler' => $this->cronScheduler,
 		];
 	}
 

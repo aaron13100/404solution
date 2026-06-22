@@ -60,6 +60,9 @@ abstract class ABJ_404_Solution_DatabaseUpgradeComponent {
     /** @var mixed */
     protected $ngramRebuilder;
 
+    /** @var ABJ_404_Solution_CronScheduler|null Optional injected cron scheduler; null falls back to abj_cron_scheduler(). */
+    protected $cronScheduler;
+
     /**
      * @param array<string, mixed> $deps
      */

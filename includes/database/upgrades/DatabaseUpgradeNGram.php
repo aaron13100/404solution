@@ -226,7 +226,8 @@ class ABJ_404_Solution_DatabaseUpgradeNGram extends ABJ_404_Solution_DatabaseUpg
             $this->dbCore,
             $this->resolveNGramRebuilder(),
             $this->logger,
-            $this->newOptionStore()
+            $this->newOptionStore(),
+            $this->cronScheduler instanceof ABJ_404_Solution_CronScheduler ? $this->cronScheduler : null
         );
     }
 

@@ -38,12 +38,14 @@ final class ABJ_404_Solution_DatabaseUpgradesDependencies {
     private $ngramCoveragePolicy;
     /** @var mixed */
     private $ngramRebuilder;
+    /** @var ABJ_404_Solution_CronScheduler|null */
+    private $cronScheduler;
 
     /**
      * @param array<string, mixed> $overrides Optional collaborators keyed by
      *        dataAccess, logging, functions, permalinkCache, syncUtils,
      *        pluginLogic, ngramFilter, ngramExtractor, ngramCacheRepository,
-     *        ngramCoveragePolicy, and ngramRebuilder.
+     *        ngramCoveragePolicy, ngramRebuilder, and cronScheduler.
      */
     public function __construct(array $overrides = array()) {
         $this->dataAccessInjected = array_key_exists('dataAccess', $overrides) && $overrides['dataAccess'] !== null;
@@ -58,6 +60,8 @@ final class ABJ_404_Solution_DatabaseUpgradesDependencies {
         $this->ngramCacheRepository = $overrides['ngramCacheRepository'] ?? null;
         $this->ngramCoveragePolicy = $overrides['ngramCoveragePolicy'] ?? null;
         $this->ngramRebuilder = $overrides['ngramRebuilder'] ?? null;
+        $cronScheduler = $overrides['cronScheduler'] ?? null;
+        $this->cronScheduler = $cronScheduler instanceof ABJ_404_Solution_CronScheduler ? $cronScheduler : null;
     }
 
     /**
@@ -114,4 +118,14 @@ final class ABJ_404_Solution_DatabaseUpgradesDependencies {
 
     /** @return mixed */
     public function getNGramRebuilder() { return $this->ngramRebuilder; }
+
+    /**
+     * Optional cron scheduler override. Null in production so the n-gram
+     * rebuild scheduler falls back to abj_cron_scheduler(); tests inject a
+     * recording double to assert (or suppress) WP-Cron scheduling without
+     * touching the WordPress cron API.
+     *
+     * @return ABJ_404_Solution_CronScheduler|null
+     */
+    public function getCronScheduler() { return $this->cronScheduler; }
 }
