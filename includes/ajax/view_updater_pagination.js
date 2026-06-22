@@ -69,6 +69,20 @@ function paginationLinksChange(triggerItem, options) {
     if (req.isDetectOnlyBackground) {
         setDetectOnlyRefreshInFlight(true);
     }
+
+    // Last-write-wins guard for foreground table loads. Two foreground
+    // (non-background) requests can be in flight at once: the on-ready
+    // initial-load hydration (empty filter) and a user-driven filter/sort/
+    // pagination request issued immediately after. Whichever response landed
+    // LAST used to win, so a slow stale hydration could resolve after the
+    // newer filtered response and silently revert the table to the unfiltered
+    // view. Stamp each foreground request with its unique requestId and record
+    // the most recent one; the success handler then drops any response whose
+    // request was already superseded. Detect-only background refreshes never
+    // replace the visible table, so they are excluded from the token.
+    if (!isBackgroundRefresh) {
+        window.abj404LatestForegroundRequestId = requestId;
+    }
     if (window.abj404BackgroundRefreshState && isBackgroundRefresh) {
         window.abj404BackgroundRefreshState.requestCount = (window.abj404BackgroundRefreshState.requestCount || 0) + 1;
         window.abj404BackgroundRefreshState.lastSubpage = subpage;
@@ -177,9 +191,17 @@ function paginationLinksChange(triggerItem, options) {
             }
 
             var mayReplaceVisibleTable = !isBackgroundRefresh;
-            if (!mayReplaceVisibleTable) {
+
+            // Drop a superseded foreground response: if a newer foreground
+            // request was issued while this one was in flight, applying this
+            // (now stale) response would clobber the newer request's view.
+            var supersededByNewerForeground = !isBackgroundRefresh &&
+                typeof window.abj404LatestForegroundRequestId === 'string' &&
+                window.abj404LatestForegroundRequestId !== requestId;
+
+            if (!mayReplaceVisibleTable || supersededByNewerForeground) {
                 if (typeof options.onComplete === 'function') {
-                    options.onComplete({skippedReplace: true});
+                    options.onComplete({skippedReplace: true, superseded: supersededByNewerForeground});
                 }
                 return;
             }
