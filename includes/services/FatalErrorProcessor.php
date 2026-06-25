@@ -4,6 +4,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+require_once __DIR__ . '/../diagnostics/CrashBeaconStore.php';
+
 /**
  * Orchestrates shutdown-time fatal-error handling.
  */
@@ -45,6 +47,17 @@ class ABJ_404_Solution_FatalErrorProcessor {
 
         $lasterror = $this->truncateLargeMessage($lasterror);
         $ctx = $this->currentAjaxContext();
+
+        // Crash beacon: for a plugin-scope fatal (including OOM), release the
+        // memory reserve on ALL requests (previously admin-only, which is why a
+        // front-end OOM had no headroom) and write a tiny breadcrumb file FIRST,
+        // before any heavier handling below, so the post-mortem survives even if
+        // a later step in this handler fatals again. Self-contained and best
+        // effort; never throws.
+        if ($this->isPluginScopeFatal($lasterror)) {
+            ABJ_404_Solution_ErrorHandler::releaseReservedMemory();
+            $this->captureCrashBeacon($lasterror);
+        }
 
         $isPluginAdminPage = $this->adminResponder->isPluginAdminPageRequest();
         if ($isPluginAdminPage) {
@@ -103,9 +116,7 @@ class ABJ_404_Solution_FatalErrorProcessor {
     private function logDefaultFatal(array $lasterror, bool $isPluginAdminPage): void {
         try {
             $errno = $lasterror['type'];
-            $errfile = is_string($lasterror['file']) ? $lasterror['file'] : '';
-            $pluginFolder = $this->pluginFolder();
-            $isPluginScopeFatal = (strpos($errfile, $pluginFolder) !== false);
+            $isPluginScopeFatal = $this->isPluginScopeFatal($lasterror);
 
             if (!$isPluginScopeFatal && !$isPluginAdminPage) {
                 return;
@@ -170,5 +181,54 @@ class ABJ_404_Solution_FatalErrorProcessor {
         $slashPos = strpos(ABJ404_NAME, '/');
         $pluginFolder = substr(ABJ404_NAME, 0, ($slashPos !== false ? $slashPos : strlen(ABJ404_NAME)));
         return is_string($pluginFolder) ? $pluginFolder : (string)ABJ404_NAME;
+    }
+
+    /**
+     * Whether the fatal occurred in one of this plugin's files. Pure string
+     * containment on the existing plugin-folder marker, so it is safe to call
+     * during an OOM shutdown.
+     *
+     * @param array<string,mixed> $lasterror
+     * @return bool
+     */
+    private function isPluginScopeFatal(array $lasterror): bool {
+        $errfile = isset($lasterror['file']) && is_string($lasterror['file']) ? $lasterror['file'] : '';
+        if ($errfile === '') {
+            return false;
+        }
+        return strpos($errfile, $this->pluginFolder()) !== false;
+    }
+
+    /**
+     * Write a crash beacon for a plugin-scope fatal using ONLY the path
+     * precomputed at healthy boot (ABJ_404_Solution_ErrorHandler::precomputeCrashBeaconPath)
+     * plus primitives. No wp_upload_dir()/options/container/clock calls here:
+     * this runs in the fatal handler where memory may be exhausted, so it must
+     * not re-enter the failure class it is reporting. Best effort; never throws.
+     *
+     * @param array<string,mixed> $lasterror
+     * @return void
+     */
+    private function captureCrashBeacon(array $lasterror): void {
+        try {
+            $path = isset($GLOBALS['abj404_crash_beacon_path']) && is_string($GLOBALS['abj404_crash_beacon_path'])
+                ? $GLOBALS['abj404_crash_beacon_path'] : '';
+            if ($path === '') {
+                return;
+            }
+            $version = defined('ABJ404_VERSION') ? (string)ABJ404_VERSION : '';
+            $pluginRoot = defined('ABJ404_PATH') ? (string)ABJ404_PATH : '';
+            // Clock service for the informational capture timestamp. Safe during
+            // shutdown: the clock has no settings/logging/uploads dependencies
+            // (the re-entry classes this capture avoids) and is near-certainly
+            // already resolved this request; the surrounding try/catch makes the
+            // whole capture best-effort if it is somehow unavailable.
+            $now = abj_clock()->now();
+            $beacon = ABJ_404_Solution_CrashBeacon::fromLastError($lasterror, $version, $pluginRoot, $now);
+            $store = new ABJ_404_Solution_CrashBeaconStore($path);
+            $store->recordIfAbsent($beacon);
+        } catch (\Throwable $e) {
+            abj404_logPhpFallback('crash-beacon-capture', 'capture failed: ' . $e->getMessage());
+        }
     }
 }

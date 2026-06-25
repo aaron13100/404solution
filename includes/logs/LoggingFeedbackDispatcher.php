@@ -109,6 +109,23 @@ class ABJ_404_Solution_LoggingFeedbackDispatcher {
     }
 
     /**
+     * Drain any pending crash beacon and report it as a post-mortem `error`
+     * report. Runs in the same async maintenance context as the error-log and
+     * heartbeat dispatch (and under the same send_error_logs opt-in), so a fatal
+     * or OOM that could not phone home at the time gets reported on the next
+     * healthy maintenance run (after a plugin update, for an every-request OOM).
+     *
+     * Delegates to FeedbackTransport (the Core telemetry facade this dispatcher
+     * already routes error/heartbeat sends through) so the crash-beacon reporter
+     * lives beside the other transports in the Core layer.
+     *
+     * @return bool True if a crash beacon was reported.
+     */
+    public function drainCrashBeaconIfNecessary(): bool {
+        return ABJ_404_Solution_FeedbackTransport::drainCrashBeacon();
+    }
+
+    /**
      * @return ABJ_404_Solution_ErrorEmailDedupeState
      */
     private function getDedupeState(): ABJ_404_Solution_ErrorEmailDedupeState {

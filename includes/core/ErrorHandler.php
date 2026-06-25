@@ -10,6 +10,7 @@ require_once __DIR__ . '/../services/ErrorDiagnosticsReporter.php';
 require_once __DIR__ . '/../services/AdminFatalErrorResponder.php';
 require_once __DIR__ . '/../services/AjaxFatalErrorResponder.php';
 require_once __DIR__ . '/../services/FatalErrorProcessor.php';
+require_once __DIR__ . '/../diagnostics/CrashBeaconStore.php';
 
 /* Functions in this class should only be for plugging into WordPress listeners (filters, actions, etc).  */
 
@@ -41,6 +42,7 @@ class ABJ_404_Solution_ErrorHandler {
             // Keep a small memory reserve so shutdown handling can render a fallback page on memory exhaustion.
             self::$reservedMemory = str_repeat('R', 262144);
         }
+        self::precomputeCrashBeaconPath();
         register_shutdown_function('ABJ_404_Solution_ErrorHandler::FatalErrorHandler');
     }
 
@@ -178,6 +180,34 @@ class ABJ_404_Solution_ErrorHandler {
      */
     public static function releaseReservedMemory(): void {
         self::$reservedMemory = null;
+    }
+
+    /**
+     * Resolve the crash-beacon file path while the request is HEALTHY and cache
+     * it in a primitive global, so the fatal handler can write the beacon using
+     * only that string (the fatal handler must NOT call wp_upload_dir()/options/
+     * the service container during an OOM shutdown; doing so risks re-entering
+     * the exact failure class it is trying to report). Ensures the directory
+     * exists now, while there is memory to do so.
+     *
+     * @return void
+     */
+    private static function precomputeCrashBeaconPath(): void {
+        try {
+            if (!function_exists('abj404_getUploadsDir')) {
+                return;
+            }
+            $dir = abj404_getUploadsDir();
+            if (function_exists('wp_mkdir_p')) {
+                wp_mkdir_p($dir);
+            }
+            $GLOBALS['abj404_crash_beacon_path'] = rtrim($dir, '/\\') . DIRECTORY_SEPARATOR
+                . ABJ_404_Solution_CrashBeaconStore::FILE_NAME;
+        } catch (\Throwable $e) {
+            // Precompute is best-effort: if it fails the fatal handler simply
+            // skips beacon capture (it never resolves the path itself).
+            abj404_logPhpFallback('crash-beacon-precompute', $e->getMessage());
+        }
     }
 
     /**

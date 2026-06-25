@@ -10,6 +10,7 @@ require_once __DIR__ . '/FeedbackEmailFallback.php';
 require_once __DIR__ . '/FeedbackPayloadBuilder.php';
 require_once __DIR__ . '/FeedbackPayloadSchemaGuard.php';
 require_once __DIR__ . '/ReportPayloadJsonSchemaValidator.php';
+require_once __DIR__ . '/../diagnostics/CrashBeaconReporter.php';
 
 /**
  * Orchestrates feedback report sends. Owns the queue/cron lifecycle and the
@@ -273,6 +274,21 @@ class ABJ_404_Solution_FeedbackTransport {
      */
     public static function buildPayload(string $type, array $extra = array()): array {
         return ABJ_404_Solution_FeedbackPayloadBuilder::build($type, $extra);
+    }
+
+    /**
+     * Drain any pending crash beacon and report it as a post-mortem `error`
+     * report. A crash beacon is written by the fatal shutdown handler when a
+     * fatal/OOM kills a request before it can phone home; this reports it on a
+     * later healthy request. Lives here, beside the other transports, so the
+     * Core crash-beacon reporter is reached within the Core layer.
+     *
+     * @return bool True if a crash beacon was reported.
+     */
+    public static function drainCrashBeacon(): bool {
+        $reporter = new ABJ_404_Solution_CrashBeaconReporter(
+            ABJ_404_Solution_CrashBeaconStore::forCurrentSite());
+        return $reporter->drainAndReport();
     }
 
     /**

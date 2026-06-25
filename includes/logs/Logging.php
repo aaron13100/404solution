@@ -325,6 +325,17 @@ class ABJ_404_Solution_Logging {
     }
 
     /**
+     * Drain a pending crash beacon (a fatal/OOM that could not phone home at the
+     * time) and report it as a post-mortem `error` report. Called during daily
+     * maintenance for opted-in sites.
+     *
+     * @return bool True if a crash beacon was reported.
+     */
+    function drainCrashBeaconIfNecessary(): bool {
+        return $this->getFeedbackDispatcher()->drainCrashBeaconIfNecessary();
+    }
+
+    /**
      * Lazily-constructed body-formatter collaborator. Pure presentation, no
      * dependencies, kept as a field only so it isn't reallocated every send.
      *

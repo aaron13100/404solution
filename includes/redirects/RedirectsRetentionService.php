@@ -315,6 +315,13 @@ class ABJ_404_Solution_RedirectsRetentionService {
             return $message;
         }
 
+        // Drain any pending crash beacon first: a fatal/OOM that could not phone
+        // home at the time is the highest-value signal, and it is independent of
+        // whether there is also a fresh error line to email this run.
+        if ($this->logger->drainCrashBeaconIfNecessary()) {
+            $message .= ", Crash beacon reported to developer.";
+        }
+
         if ($this->logger->emailErrorLogIfNecessary()) {
             return $message . ", Log file emailed to developer.";
         }
