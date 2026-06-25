@@ -55,6 +55,7 @@ interface ABJ_404_Solution_Abj404ServiceRegistrationContract {
         'version_upgrade',
         'spell_checker',
         'options_repository',
+        'logging_state_store',
         'admin_access_policy',
         'settings_mode_preference',
     );
@@ -120,6 +121,7 @@ interface ABJ_404_Solution_Abj404ServiceRegistrationContract {
         'version_upgrade',
         'spell_checker',
         'options_repository',
+        'logging_state_store',
         'admin_access_policy',
         'settings_mode_preference',
         'engine_slug',

@@ -157,8 +157,7 @@ class ABJ_404_Solution_Logging {
         if ($this->debugLogFileStore === null) {
             $this->debugLogFileStore = new ABJ_404_Solution_DebugLogFileStore(
                 array($this, 'sanitizeLogLine'),
-                self::DEBUG_FILE_KEY,
-                self::LAST_SENT_LINE);
+                ABJ_404_Solution_LoggingStateStore::resolve());
         }
         return $this->debugLogFileStore;
     }

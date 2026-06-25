@@ -23,12 +23,14 @@ class ABJ_404_Solution_LogDebugModeResolver {
             return $legacyDebugMode;
         }
 
-        // Raw read only. isDebug() is on the logging write path; reading via
-        // getOptions() runs the normalize pipeline, which logs on validation
-        // failure and re-enters logging -- the 4.3.0 logging<->options OOM.
-        $optionsRepo = abj_service('options_repository');
-        if (is_object($optionsRepo) && method_exists($optionsRepo, 'getRawSettingValue')) {
-            return $optionsRepo->getRawSettingValue('debug_mode') == true;
+        // Raw read only via the recursion-safe logging state store. isDebug()
+        // is on the logging write path; reading via getOptions() runs the
+        // normalize pipeline, which logs on validation failure and re-enters
+        // logging -- the 4.3.0 logging<->options OOM. The store reads debug_mode
+        // with the raw, non-normalizing, non-logging accessor.
+        $store = abj_service_optional('logging_state_store');
+        if (is_object($store) && method_exists($store, 'isDebugMode')) {
+            return $store->isDebugMode();
         }
 
         return false;

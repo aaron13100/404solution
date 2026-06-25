@@ -13,9 +13,12 @@ if (!defined('ABSPATH')) {
  *
  *   1. The on-disk sentinel file (abj404_debug_sent_line.txt) -- authoritative
  *      across requests and survives cron restarts.
- *   2. The plugin options row (LAST_SENT_LINE key) -- fallback when the
- *      sentinel file is absent or unreadable, and the only durable copy on
- *      hosts with ephemeral filesystems.
+ *   2. The logging state store (the last-sent-line scalar inside the
+ *      abj404_settings row) -- fallback when the sentinel file is absent or
+ *      unreadable, and the only durable copy on hosts with ephemeral
+ *      filesystems. Reached ONLY through ABJ_404_Solution_LoggingStateStore,
+ *      whose raw accessors never re-enter the settings normalize-and-log
+ *      pipeline (the 4.3.0 logging<->options recursion guard).
  *   3. Request-local statics -- prevent a single PHP request that triggers
  *      multiple emailErrorLogIfNecessary() calls (e.g. via shutdown handlers)
  *      from emitting duplicate sends before the on-disk pointer has caught up.
@@ -26,13 +29,6 @@ if (!defined('ABSPATH')) {
  */
 class ABJ_404_Solution_ErrorEmailDedupeState {
 
-    /**
-     * Options-array key under which the most-recently-sent error line number
-     * is persisted. Shared with ABJ_404_Solution_Logging::LAST_SENT_LINE so
-     * older deployments that still write to that key continue to be read here.
-     */
-    const LAST_SENT_LINE_KEY = 'last_sent_line';
-
     /** @var int Latest error-log line emailed during this PHP request. */
     private static $lastSentErrorLineThisRequest = 0;
     /** @var string Latest error signature emailed during this PHP request. */
@@ -40,35 +36,40 @@ class ABJ_404_Solution_ErrorEmailDedupeState {
     /** @var string Debug file path associated with the request-local dedupe state. */
     private static $lastSentDebugFilePathThisRequest = '';
 
-    /** @var object Options repository providing getOptions(bool)/updateOptions(array). */
-    private $optionsRepo;
+    /**
+     * Recursion-safe accessor for the durable last-sent-line scalar. Owns the
+     * storage key; reads/writes only via its raw accessors so the dedupe
+     * pointer never passes through the settings normalize pipeline.
+     *
+     * @var ABJ_404_Solution_LoggingStateStore
+     */
+    private $loggingStateStore;
 
-    /** @param object $optionsRepo */
-    public function __construct($optionsRepo) {
-        $this->optionsRepo = $optionsRepo;
+    /** @param ABJ_404_Solution_LoggingStateStore $loggingStateStore */
+    public function __construct($loggingStateStore) {
+        $this->loggingStateStore = $loggingStateStore;
     }
 
     /**
      * Read the latest known "last sent error line" pointer from disk, falling
-     * back to the options copy. Request-local statics are merged in
-     * isAlreadySent() so a fresh read from this method always reflects only
-     * the durable state.
+     * back to the durable copy in the logging state store. Request-local
+     * statics are merged in isAlreadySent() so a fresh read from this method
+     * always reflects only the durable state.
      *
-     * @param array<string, mixed> $options Already-loaded options array (the
-     *        caller has a copy in hand for other purposes; avoiding a second
-     *        getOptions() round-trip).
+     * Precedence: the on-disk sentinel file first (when present and >= 1), else
+     * the logging state store's last-sent-line scalar, else -1.
+     *
      * @param string $sentinelFilePath
      * @return int Last-sent line number, or -1 when no record exists.
      */
-    public function readSentLine(array $options, string $sentinelFilePath): int {
+    public function readSentLine(string $sentinelFilePath): int {
         $sentLine = -1;
         if (file_exists($sentinelFilePath)) {
             $sentLine = absint(
                 ABJ_404_Solution_FileSystemService::readFileContents($sentinelFilePath, false));
         }
-        if ($sentLine < 1 && array_key_exists(self::LAST_SENT_LINE_KEY, $options)) {
-            $sentLine = is_scalar($options[self::LAST_SENT_LINE_KEY])
-                ? (int)$options[self::LAST_SENT_LINE_KEY] : -1;
+        if ($sentLine < 1) {
+            $sentLine = $this->loggingStateStore->getLastSentLine();
         }
         return $sentLine;
     }
@@ -111,10 +112,8 @@ class ABJ_404_Solution_ErrorEmailDedupeState {
 
     /**
      * Record the just-sent error line forward across all three layers:
-     * options row, sentinel file, request-local statics.
+     * logging state store, sentinel file, request-local statics.
      *
-     * @param array<string, mixed> $options Options snapshot to be updated and
-     *        persisted via $this->optionsRepo->updateOptions().
      * @param string $sentinelFilePath
      * @param string $debugFilePath
      * @param array{num: int, line: string|null, total_error_count?: int} $latestErrorLineFound
@@ -123,18 +122,15 @@ class ABJ_404_Solution_ErrorEmailDedupeState {
      *              dedupe-pointer regression on the next cron tick); true
      *              otherwise.
      */
-    public function recordSent(array $options, string $sentinelFilePath, string $debugFilePath, array $latestErrorLineFound): bool {
+    public function recordSent(string $sentinelFilePath, string $debugFilePath, array $latestErrorLineFound): bool {
         $latestNum = (int)($latestErrorLineFound['num'] ?? -1);
         $latestSignature = (string)($latestErrorLineFound['line'] ?? '');
 
-        $options[self::LAST_SENT_LINE_KEY] = $latestNum;
         self::$lastSentErrorLineThisRequest = $latestNum;
         self::$lastSentErrorSignatureThisRequest = $latestSignature;
         self::$lastSentDebugFilePathThisRequest = $debugFilePath;
 
-        if (is_object($this->optionsRepo) && method_exists($this->optionsRepo, 'updateOptions')) {
-            $this->optionsRepo->updateOptions($options);
-        }
+        $this->loggingStateStore->setLastSentLine($latestNum);
 
         @file_put_contents($sentinelFilePath, (string)$latestNum);
         $fileContents = @file_get_contents($sentinelFilePath);

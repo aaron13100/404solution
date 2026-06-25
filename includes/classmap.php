@@ -42,6 +42,7 @@ return array(
     'ABJ_404_Solution_DeveloperLogMailer' => $base . 'includes/diagnostics/DeveloperLogMailer.php',
     'ABJ_404_Solution_LoggingCapabilityDiagnostics' => $base . 'includes/logs/LoggingCapabilityDiagnostics.php',
     'ABJ_404_Solution_LoggingFeedbackDispatcher' => $base . 'includes/logs/LoggingFeedbackDispatcher.php',
+    'ABJ_404_Solution_LoggingStateStore' => $base . 'includes/logs/LoggingStateStore.php',
     'ABJ_404_Solution_LoggingMessageWriter' => $base . 'includes/logs/LoggingMessageWriter.php',
     'ABJ_404_Solution_LogTimestampFormatter' => $base . 'includes/logs/LogTimestampFormatter.php',
     'ABJ_404_Solution_LogDebugModeResolver' => $base . 'includes/logs/LogDebugModeResolver.php',

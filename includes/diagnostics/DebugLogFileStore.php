@@ -20,11 +20,8 @@ class ABJ_404_Solution_DebugLogFileStore {
     /** @var callable */
     private $sanitizeLogLine;
 
-    /** @var string */
-    private $debugFileKeyOptionName;
-
-    /** @var string */
-    private $lastSentLineOptionName;
+    /** @var ABJ_404_Solution_LoggingStateStore The single recursion-safe chokepoint for logging-owned scalars. */
+    private $stateStore;
 
     /**
      * Per-request memo of the resolved debug filename. Logging writes one file
@@ -41,13 +38,12 @@ class ABJ_404_Solution_DebugLogFileStore {
 
     /**
      * @param callable $sanitizeLogLine Receives a raw line and returns the sanitized line to write.
-     * @param string $debugFileKeyOptionName Option key that stores the debug-file suffix.
-     * @param string $lastSentLineOptionName Option key that stores the last sent debug-log line.
+     * @param ABJ_404_Solution_LoggingStateStore $stateStore Recursion-safe accessor for the
+     *        debug-file suffix and last-sent-line scalars (raw read/write only).
      */
-    public function __construct(callable $sanitizeLogLine, string $debugFileKeyOptionName, string $lastSentLineOptionName) {
+    public function __construct(callable $sanitizeLogLine, ABJ_404_Solution_LoggingStateStore $stateStore) {
         $this->sanitizeLogLine = $sanitizeLogLine;
-        $this->debugFileKeyOptionName = $debugFileKeyOptionName;
-        $this->lastSentLineOptionName = $lastSentLineOptionName;
+        $this->stateStore = $stateStore;
     }
 
     /**
@@ -83,18 +79,14 @@ class ABJ_404_Solution_DebugLogFileStore {
             return $this->cachedDebugFilename;
         }
         try {
-            $optionsRepo = abj_service('options_repository');
             // Logging MUST read its metadata via the raw, side-effect-free
-            // accessor, never getOptions(). getOptions() runs the normalize
+            // state store, never getOptions(). getOptions() runs the normalize
             // pipeline, which logs a warning on any schema-validation failure;
             // that warning re-enters this method and recurses without bound
             // until memory is exhausted (the 4.3.0 "broken sites after the
-            // latest update" OOM at PluginLogicOptionsResolver line ~250).
-            if (!is_object($optionsRepo) || !method_exists($optionsRepo, 'getRawSettingValue')) {
-                return 'abj404_debug.txt';
-            }
-            $rawKey = $optionsRepo->getRawSettingValue($this->debugFileKeyOptionName);
-            $debugFileKey = is_string($rawKey) ? $rawKey : null;
+            // latest update" OOM at PluginLogicOptionsResolver line ~250). The
+            // store reaches storage with the raw accessor only.
+            $debugFileKey = $this->stateStore->getDebugFileKey();
 
             if ($debugFileKey === null || trim($debugFileKey) === '') {
                 $this->deleteDebugFile();
@@ -104,9 +96,7 @@ class ABJ_404_Solution_DebugLogFileStore {
                     return 'abj404_debug.txt';
                 }
                 $debugFileKey = $syncUtils->uniqidReal();
-                if (method_exists($optionsRepo, 'setRawSettingValue')) {
-                    $optionsRepo->setRawSettingValue($this->debugFileKeyOptionName, $debugFileKey);
-                }
+                $this->stateStore->setDebugFileKey($debugFileKey);
             }
 
             $this->cachedDebugFilename = 'abj404_debug_' . $debugFileKey . '.txt';
@@ -163,12 +153,10 @@ class ABJ_404_Solution_DebugLogFileStore {
 
     /** @return void */
     public function removeLastSentErrorLineFromDatabase(): void {
-        $optionsRepo = abj_service('options_repository');
-        // Raw write only -- logging metadata must not pass through the
-        // getOptions()/updateOptions() normalize-and-log pipeline (recursion).
-        if (is_object($optionsRepo) && method_exists($optionsRepo, 'setRawSettingValue')) {
-            $optionsRepo->setRawSettingValue($this->lastSentLineOptionName, 0);
-        }
+        // Raw write only via the recursion-safe state store -- logging metadata
+        // must not pass through the getOptions()/updateOptions() normalize-and-
+        // log pipeline (recursion).
+        $this->stateStore->setLastSentLine(0);
     }
 
     /** @return bool true if every matching debug file was deleted. */
@@ -193,15 +181,13 @@ class ABJ_404_Solution_DebugLogFileStore {
             }
         }
 
-        // Raw write only -- clearing the debug-file key must not pass through
-        // getOptions()/updateOptions(), whose normalize step logs on validation
-        // failure and would re-enter logging from this delete-during-logging
-        // path (the 4.3.0 recursion). The in-request filename memo is dropped
-        // too so the next getDebugFilename() re-derives the key.
-        $optionsRepo = abj_service('options_repository');
-        if (is_object($optionsRepo) && method_exists($optionsRepo, 'setRawSettingValue')) {
-            $optionsRepo->setRawSettingValue($this->debugFileKeyOptionName, null);
-        }
+        // Raw write only via the recursion-safe state store -- clearing the
+        // debug-file key must not pass through getOptions()/updateOptions(),
+        // whose normalize step logs on validation failure and would re-enter
+        // logging from this delete-during-logging path (the 4.3.0 recursion).
+        // The in-request filename memo is dropped too so the next
+        // getDebugFilename() re-derives the key.
+        $this->stateStore->setDebugFileKey(null);
         $this->cachedDebugFilename = null;
 
         return $allIsWell;

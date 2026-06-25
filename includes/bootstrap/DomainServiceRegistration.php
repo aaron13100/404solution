@@ -77,6 +77,10 @@ class ABJ_404_Solution_DomainServiceRegistration {
             return new ABJ_404_Solution_PluginLogicOptionsResolver();
         });
 
+        $container->set('logging_state_store', function($c) {
+            return new ABJ_404_Solution_LoggingStateStore($c->get('options_repository'));
+        });
+
         $container->set('admin_access_policy', function($c) {
             return new ABJ_404_Solution_PluginAdminAccessPolicy(
                 $c->get('options_repository'),

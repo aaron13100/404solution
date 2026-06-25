@@ -48,11 +48,9 @@ class ABJ_404_Solution_LoggingFeedbackDispatcher {
             return false;
         }
 
-        $optionsRepo = abj_service('options_repository');
-        $options = $optionsRepo->getOptions(true);
         $dedupe = $this->getDedupeState();
         $sentinelFilePath = $this->logging->getDebugFilePathSentFile();
-        $sentLine = $dedupe->readSentLine($options, $sentinelFilePath);
+        $sentLine = $dedupe->readSentLine($sentinelFilePath);
         $this->logging->debugMessage("Dedupe pointer: sentLine=" . $sentLine);
 
         if ($dedupe->isAlreadySent($sentLine, $latestErrorLineFound, $debugFilePath)) {
@@ -66,7 +64,7 @@ class ABJ_404_Solution_LoggingFeedbackDispatcher {
             return false;
         }
 
-        if (!$dedupe->recordSent($options, $sentinelFilePath, $debugFilePath, $latestErrorLineFound)) {
+        if (!$dedupe->recordSent($sentinelFilePath, $debugFilePath, $latestErrorLineFound)) {
             $this->logging->errorMessage("There was an issue writing to the file " . $sentinelFilePath);
             return false;
         }
@@ -131,7 +129,7 @@ class ABJ_404_Solution_LoggingFeedbackDispatcher {
     private function getDedupeState(): ABJ_404_Solution_ErrorEmailDedupeState {
         if ($this->dedupeState === null) {
             $this->dedupeState = new ABJ_404_Solution_ErrorEmailDedupeState(
-                abj_service('options_repository'));
+                ABJ_404_Solution_LoggingStateStore::resolve());
         }
         return $this->dedupeState;
     }
