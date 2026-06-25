@@ -211,6 +211,17 @@ class ABJ_404_Solution_FatalErrorProcessor {
      */
     private function captureCrashBeacon(array $lasterror): void {
         try {
+            // Guarantee headroom for the post-OOM beacon write. Raising
+            // memory_limit inside the shutdown handler is honored by PHP even
+            // after a memory-exhaustion fatal, so the tiny json_encode/fwrite
+            // below cannot itself fail for want of memory (the exact case the
+            // beacon exists to capture). Bump to current usage plus a small
+            // fixed margin and only ever raise -- bounded, not unlimited, so a
+            // constrained or shared host is never pushed into an OS-level OOM
+            // kill. Complements the released memory reserve.
+            $headroom = memory_get_usage(true) + (4 * 1024 * 1024);
+            @ini_set('memory_limit', (string) $headroom);
+
             $path = isset($GLOBALS['abj404_crash_beacon_path']) && is_string($GLOBALS['abj404_crash_beacon_path'])
                 ? $GLOBALS['abj404_crash_beacon_path'] : '';
             if ($path === '') {

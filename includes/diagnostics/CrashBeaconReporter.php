@@ -131,7 +131,16 @@ class ABJ_404_Solution_CrashBeaconReporter {
             }
             return $sent;
         } catch (\Throwable $e) {
-            abj404_logRuntimeWarning('Crash beacon drain failed', $e);
+            // The drain is a best-effort recovery path and must never fatal --
+            // including for want of a runtime helper that a degraded or isolated
+            // bootstrap has not loaded yet (every other abj404_logRuntimeWarning
+            // caller guards the same way). Fall back to the inert PHP-error-log
+            // sink, then to nothing.
+            if (function_exists('abj404_logRuntimeWarning')) {
+                abj404_logRuntimeWarning('Crash beacon drain failed', $e);
+            } elseif (function_exists('abj404_logPhpFallback')) {
+                abj404_logPhpFallback('crash-beacon', 'drain failed: ' . $e->getMessage());
+            }
             return false;
         }
     }
