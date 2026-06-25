@@ -39,6 +39,7 @@ require_once __DIR__ . '/../core/PhpErrorLogFallback.php';
  *     $name is 'sanitizer' ? ABJ_404_Solution_Sanitizer : (
  *     $name is 'query_string_helper' ? ABJ_404_Solution_QueryStringHelper : (
  *     $name is 'logging' ? ABJ_404_Solution_Logging : (
+ *     $name is 'logging_state_store' ? ABJ_404_Solution_LoggingStateStore : (
  *     $name is 'clock' ? ABJ_404_Solution_Clock : (
  *     $name is 'error_handler' ? class-string : (
  *     $name is 'db_core' ? ABJ_404_Solution_DatabaseCore : (
@@ -83,7 +84,7 @@ require_once __DIR__ . '/../core/PhpErrorLogFallback.php';
  *     $name is 'settings_mode_preference' ? ABJ_404_Solution_SettingsModePreference : (
  *     $name is 'not_found_response' ? ABJ_404_Solution_NotFoundResponseService :
  *     mixed
- * ))))))))))))))))))))))))))))))))))))))))))))))))))
+ * )))))))))))))))))))))))))))))))))))))))))))))))))))
  */
 function abj_service($name) {
     if ($name === 'logging' && class_exists('ABJ_404_Solution_Logging', false)) {
