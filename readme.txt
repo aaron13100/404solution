@@ -5,7 +5,7 @@ Tags: 404, redirect, 404 redirect, broken links, spell check
 Requires at least: 5.0
 Requires PHP: 7.4
 Tested up to: 7.0
-Stable tag: 4.3.0
+Stable tag: 4.3.1
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -200,6 +200,17 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 6. **Email Digest** — Weekly HTML email summarizing captured 404s, resolution rate, and a ranked table of top 404 URLs with color-coded hit badges.
 
 == Changelog ==
+
+= Version 4.3.1 (June 26, 2026) =
+
+**Bug Fixes**
+
+* Fixed an out-of-memory error that could make every page of a site fail to load after updating, on installations whose saved settings did not match the new version's format. The fix removes the internal loop between the plugin's logging and its settings that could otherwise repeat without end.
+* Fixed possible out-of-memory errors during scheduled maintenance on very large sites (hundreds of thousands of redirects). Cleanup of expired, unused, and orphaned redirects now runs in bounded batches instead of loading the entire set into memory at once.
+
+**Improvements**
+
+* Added automatic post-mortem reporting for fatal errors. If a crash or out-of-memory condition ever stops the plugin from running, it is now recorded and reported on the next healthy maintenance run instead of going unnoticed, and the reporter is hardened so it cannot itself fail at the moment it is needed.
 
 = Version 4.3.0 (June 12, 2026) =
 
@@ -487,17 +498,4 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 
 * Fixed spell checker throwing `get_object_vars()` TypeError on PHP 8+ when `get_term()` returns a non-object value (e.g. from a corrupted object cache). The tag and category matching branches now use `is_object()` guards before accessing term properties.
 * Fixed Google Search Console integration returning HTTP 400 errors — the API does not support `groupType: 'or'` in dimension filter groups. Each URL is now queried individually.
-
-= Version 4.1.2 (Apr 16, 2026) =
-
-**Bug Fixes**
-
-* Fixed spell checker consuming ~61MB of memory on large sites — restructured the algorithm to use ~16KB regardless of site size.
-* Fixed a race condition in the `start_ts` column migration that could cause errors when multiple processes triggered the upgrade simultaneously.
-* Fixed HOME type pages displaying the wrong title in the suggestion results.
-* Fixed admin settings page showing a blank page instead of a visible error when the current user lacks the required permission.
-
-**Improvements**
-
-* Added all SQL files to the boot integrity check, ensuring corrupted or missing schema files are detected during plugin startup.
 

@@ -1,5 +1,16 @@
 # Changelog #
 
+## Version 4.3.1 (June 26, 2026) ##
+
+**Bug Fixes**
+
+* Fixed an out-of-memory error that could make every page of a site fail to load after updating, on installations whose saved settings did not match the new version's format. The fix removes the internal loop between the plugin's logging and its settings that could otherwise repeat without end.
+* Fixed possible out-of-memory errors during scheduled maintenance on very large sites (hundreds of thousands of redirects). Cleanup of expired, unused, and orphaned redirects now runs in bounded batches instead of loading the entire set into memory at once.
+
+**Improvements**
+
+* Added automatic post-mortem reporting for fatal errors. If a crash or out-of-memory condition ever stops the plugin from running, it is now recorded and reported on the next healthy maintenance run instead of going unnoticed, and the reporter is hardened so it cannot itself fail at the moment it is needed.
+
 ## Version 4.3.0 (June 12, 2026) ##
 
 **Bug Fixes**
