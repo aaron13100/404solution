@@ -52,9 +52,6 @@ interface ABJ_404_Solution_ContentRepositoryInterface extends
      */
     public function getPermalinkEtcFromCache($id);
 
-    /** @return array<int, array<string, mixed>>|null */
-    public function getIDsNeededForPermalinkCache();
-
     /** @return array<string, mixed> */
     public function updatePermalinkCache();
 

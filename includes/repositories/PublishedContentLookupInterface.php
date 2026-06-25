@@ -22,9 +22,6 @@ interface ABJ_404_Solution_PublishedContentLookupInterface {
     public function getPublishedPagesAndPostsIDs($slug = '', $searchTerm = '',
         $limitResults = '', $orderResults = '', $extraWhereClause = '');
 
-    /** @return array<int, object> */
-    public function getPublishedImagesIDs();
-
     /**
      * @param string|null $slug
      * @param int|null $limit

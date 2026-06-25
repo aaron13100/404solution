@@ -72,7 +72,7 @@ class ABJ_404_Solution_ContentRepository implements ABJ_404_Solution_ContentRepo
             );
         $this->permalinkCacheRepository = $permalinkCacheRepository !== null
             ? $permalinkCacheRepository
-            : new ABJ_404_Solution_PermalinkCacheRepository($dbCore, $f, $optionsProvider);
+            : new ABJ_404_Solution_PermalinkCacheRepository($dbCore);
         $this->spellingCacheRepository = $spellingCacheRepository !== null
             ? $spellingCacheRepository
             : new ABJ_404_Solution_SpellingCacheRepository($dbCore, $f);
@@ -91,11 +91,6 @@ class ABJ_404_Solution_ContentRepository implements ABJ_404_Solution_ContentRepo
             $orderResults,
             $extraWhereClause
         );
-    }
-
-    /** @inheritDoc */
-    public function getPublishedImagesIDs() {
-        return $this->publishedContentRepository->getPublishedImagesIDs();
     }
 
     /** @inheritDoc */
@@ -136,11 +131,6 @@ class ABJ_404_Solution_ContentRepository implements ABJ_404_Solution_ContentRepo
     /** @inheritDoc */
     public function getPermalinkEtcFromCache($id) {
         return $this->permalinkCacheRepository->getPermalinkEtcFromCache($id);
-    }
-
-    /** @inheritDoc */
-    public function getIDsNeededForPermalinkCache() {
-        return $this->permalinkCacheRepository->getIDsNeededForPermalinkCache();
     }
 
     /** @inheritDoc */

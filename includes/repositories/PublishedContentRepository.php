@@ -344,27 +344,6 @@ class ABJ_404_Solution_PublishedContentRepository {
         return $objects;
     }
 
-    /** @return array<int, object> */
-    public function getPublishedImagesIDs() {
-        $options = $this->getRuntimeOptions();
-        $recognizedPostTypes = $this->dbCore->tableNameResolver()->buildPostTypeSqlList($options);
-        if ($recognizedPostTypes === '') {
-            return array();
-        }
-
-        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/../sql/getPublishedImageIDs.sql");
-        $query = $this->dbCore->doTableNameReplacements($query);
-        $query = $this->f->str_replace('{recognizedPostTypes}', $recognizedPostTypes, $query);
-
-        $result = $this->dbCore->queryAndGetResults($query, array('result_type' => OBJECT));
-        $queryError = is_string($result['last_error'] ?? '') ? ($result['last_error'] ?? '') : '';
-        if ($queryError && !$this->errorClassifier->classifyAndHandleInfrastructureError($queryError)) {
-            $this->logger->errorMessage("Error executing query. Err: " . $queryError . ", Query: " . $query);
-        }
-
-        return $this->objectRows($result['rows'] ?? array());
-    }
-
     /**
      * @param string|null $slug
      * @param int|null $limit
