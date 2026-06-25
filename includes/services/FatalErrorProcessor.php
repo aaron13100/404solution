@@ -215,12 +215,16 @@ class ABJ_404_Solution_FatalErrorProcessor {
             // memory_limit inside the shutdown handler is honored by PHP even
             // after a memory-exhaustion fatal, so the tiny json_encode/fwrite
             // below cannot itself fail for want of memory (the exact case the
-            // beacon exists to capture). Bump to current usage plus a small
-            // fixed margin and only ever raise -- bounded, not unlimited, so a
-            // constrained or shared host is never pushed into an OS-level OOM
-            // kill. Complements the released memory reserve.
-            $headroom = memory_get_usage(true) + (4 * 1024 * 1024);
-            @ini_set('memory_limit', (string) $headroom);
+            // beacon exists to capture). ONLY ever raise (current limit + a
+            // small fixed margin); never lower, and leave an unlimited (-1) or
+            // unparseable limit untouched -- so this can never shrink a healthy
+            // request's budget. Bounded (not unlimited) so a constrained or
+            // shared host is never pushed into an OS-level OOM kill. Complements
+            // the released memory reserve.
+            $currentLimitBytes = $this->currentMemoryLimitBytes();
+            if ($currentLimitBytes > 0) {
+                @ini_set('memory_limit', (string) ($currentLimitBytes + (8 * 1024 * 1024)));
+            }
 
             $path = isset($GLOBALS['abj404_crash_beacon_path']) && is_string($GLOBALS['abj404_crash_beacon_path'])
                 ? $GLOBALS['abj404_crash_beacon_path'] : '';
@@ -241,5 +245,30 @@ class ABJ_404_Solution_FatalErrorProcessor {
         } catch (\Throwable $e) {
             abj404_logPhpFallback('crash-beacon-capture', 'capture failed: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Current PHP memory_limit in bytes: -1 for unlimited, 0 when unset or
+     * unparseable, otherwise the positive byte count. Minimal and
+     * dependency-free (no WordPress helpers) so it is safe to call from inside
+     * the fatal handler after a memory-exhaustion fatal.
+     *
+     * @return int
+     */
+    private function currentMemoryLimitBytes(): int {
+        $raw = trim((string) @ini_get('memory_limit'));
+        if ($raw === '') {
+            return 0;
+        }
+        if ($raw === '-1') {
+            return -1;
+        }
+        $value = (int) $raw;
+        switch (strtoupper(substr($raw, -1))) {
+            case 'G': $value *= 1024 * 1024 * 1024; break;
+            case 'M': $value *= 1024 * 1024; break;
+            case 'K': $value *= 1024; break;
+        }
+        return $value > 0 ? $value : 0;
     }
 }
