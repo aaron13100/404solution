@@ -43,6 +43,7 @@ class ABJ_404_Solution_PermalinkCacheRepository {
      */
     public function getPermalinkFromCache($id) {
         $id = absint($id);
+        // allow-unbounded-select: bounded keyset: WHERE id = <pk> / id IN (<caller ids>) single/few-row lookup
         $query = "select url from {wp_abj404_permalink_cache} where id = " . $id;
         $results = $this->dbCore->queryAndGetResults($query);
 
@@ -65,6 +66,7 @@ class ABJ_404_Solution_PermalinkCacheRepository {
         }
         $sanitized = array_map('absint', $ids);
         $placeholders = implode(',', $sanitized);
+        // allow-unbounded-select: bounded keyset: WHERE id = <pk> / id IN (<caller ids>) single/few-row lookup
         $query = "select id, url from {wp_abj404_permalink_cache} where id in (" . $placeholders . ")";
         $query = $this->dbCore->doTableNameReplacements($query);
         $results = $this->dbCore->queryAndGetResults($query);
@@ -77,6 +79,7 @@ class ABJ_404_Solution_PermalinkCacheRepository {
      */
     public function getPermalinkEtcFromCache($id) {
         $id = absint($id);
+        // allow-unbounded-select: bounded keyset: WHERE id = <pk> / id IN (<caller ids>) single/few-row lookup
         $query = "select id, url, meta, url_length, post_parent from {wp_abj404_permalink_cache} where id = " . $id;
         $results = $this->dbCore->queryAndGetResults($query);
 

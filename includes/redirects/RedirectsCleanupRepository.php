@@ -221,6 +221,7 @@ class ABJ_404_Solution_RedirectsCleanupRepository {
 
     public function removeDuplicatesCron(): int {
         $rowsDeleted = 0;
+        // allow-unbounded-select: LIMIT appended at runtime by runBatchedCleanup (batched); dedup collapses each url so the match set drains
         $query = "SELECT COUNT(id) as repetitions, url FROM {wp_abj404_redirects} GROUP BY url HAVING repetitions > 1 ";
 
         // Bound the duplicate-group SELECT with a LIMIT and loop until exhausted
@@ -351,6 +352,7 @@ class ABJ_404_Solution_RedirectsCleanupRepository {
             return 0;
         }
 
+        // allow-unbounded-select: LIMIT %d appended at runtime by runBatchedCleanup (batched cron cleanup)
         $sql = "SELECT id FROM `{$redirectsTable}`
              WHERE status = %d
                AND disabled = 0

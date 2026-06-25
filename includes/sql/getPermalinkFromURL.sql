@@ -1,5 +1,6 @@
 
-select r.* 
+/* UNBOUNDED-OK: bounded keyset: WHERE url IN (2 url variants); returns at most a handful of redirect rows */
+select r.*
 from {wp_abj404_redirects} r
 
 left outer join {wp_posts} p

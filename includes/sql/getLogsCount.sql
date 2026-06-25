@@ -1,4 +1,5 @@
 
+/* UNBOUNDED-OK: aggregate: SELECT COUNT(id) returns exactly one row */
 select count(id) from {wp_abj404_logsv2} where 1
 
 /* {SPECIFIC_ID}

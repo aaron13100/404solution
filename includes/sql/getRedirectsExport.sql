@@ -1,4 +1,5 @@
 
+/* UNBOUNDED-OK: streamed row-at-a-time via mysqli_fetch in RedirectsBulkReader::doRedirectsExport; never accumulated into a PHP array */
 SELECT r.url as from_url,
 	   CASE
        		when r.status = 1 then 'Manual'

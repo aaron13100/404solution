@@ -22,6 +22,7 @@
    logsv2 rows where dest_url is empty/NULL. Used by
    flagDeadDestinationRedirects() to find redirects whose final_dest
    itself is 404'ing, without scanning raw logsv2 in cron. */
+/* UNBOUNDED-OK: consumed only as INSERT...SELECT by LogsHitsTableRebuilder::hitsTableInsertDirect; aggregates DB-side into a temp table, no PHP row load */
 SELECT  COALESCE({wp_abj404_logsv2}.canonical_url,
                  CONCAT('/', TRIM(BOTH '/' FROM {wp_abj404_logsv2}.requested_url))) AS requested_url,
         MIN({wp_abj404_logsv2}.id) AS logsid,

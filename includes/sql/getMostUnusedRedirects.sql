@@ -1,4 +1,5 @@
 
+/* UNBOUNDED-OK: LIMIT appended at runtime by RedirectsCleanupRepository::runBatchedCleanup (batched cron cleanup) */
 select inner_table.*,
        FROM_UNIXTIME(inner_table.most_recent) as last_used_formatted,
        COALESCE(dest_url, permalink) as best_guess_dest

@@ -1,4 +1,5 @@
 
+/* UNBOUNDED-OK: LIMIT appended at runtime by RedirectsCleanupRepository::runBatchedCleanup (batched cron cleanup) */
 SELECT r.id, r.url, r.final_dest
 FROM {wp_abj404_redirects} r
 LEFT JOIN {wp_posts} p ON r.final_dest = p.ID

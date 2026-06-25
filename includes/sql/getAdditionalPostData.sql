@@ -1,4 +1,5 @@
 
+/* UNBOUNDED-OK: bounded keyset: WHERE id IN ({IDS_TO_INCLUDE}); caller (getExtraDataToPermalinkSuggestions) passes a small suggestion id set */
 SELECT
     wp_posts.ID                                        AS post_id,
     null                                               AS term_id,
