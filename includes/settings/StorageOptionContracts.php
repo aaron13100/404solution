@@ -362,14 +362,20 @@ class ABJ_404_Solution_StorageOptionContracts {
         return $violations;
     }
 
+    /**
+     * Record a read-normalization fallback.
+     *
+     * Deliberately logs ONLY to the inert PHP error-log fallback, never the
+     * runtime logger or the service container. normalizeForRead() runs inside
+     * the settings-read path; the runtime logger reads settings to locate its
+     * own log file, so logging a read issue through it re-enters this read and
+     * recurses without bound (the 4.3.0 "broken sites after the latest update"
+     * OOM). Hard rule: normalized settings reads must never call runtime
+     * logging. See PluginLogicOptionsResolver::getRawSettingValue() and
+     * scripts/lint/lint-logging-settings-cycle.sh.
+     */
     private static function logReadIssue(string $optionName, string $detail): void {
         $message = 'Storage contract read fallback for ' . $optionName . ': ' . $detail;
-        $logger = function_exists('abj_service_optional') ? abj_service_optional('logging') : null;
-        if (is_object($logger) && method_exists($logger, 'warn')) {
-            $logger->warn($message);
-            return;
-        }
-
         abj404_logPhpFallback('service-resolution-fallback', $message);
     }
 }

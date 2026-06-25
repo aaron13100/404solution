@@ -62,6 +62,44 @@ class ABJ_404_Solution_ServiceNotRegisteredException extends RuntimeException {
     }
 }
 
+/**
+ * Thrown when a service factory transitively re-requests the service it is
+ * mid-construction of. Carries the resolution chain so the offending cycle is
+ * diagnosable from the message alone.
+ */
+class ABJ_404_Solution_ServiceResolutionCycleException extends RuntimeException {
+
+    /** @var string */
+    private $serviceName;
+
+    /** @var string */
+    private $chain;
+
+    /**
+     * @param string $serviceName The service whose factory re-entered.
+     * @param string $chain Human-readable resolution chain (a -> b -> a).
+     */
+    public function __construct($serviceName, $chain) {
+        $this->serviceName = (string)$serviceName;
+        $this->chain = (string)$chain;
+        parent::__construct(
+            'Service resolution cycle detected while building "' . $this->serviceName
+            . '": ' . $this->chain
+            . '. A factory must not request the service it is constructing.'
+        );
+    }
+
+    /** @return string */
+    public function getServiceName() {
+        return $this->serviceName;
+    }
+
+    /** @return string */
+    public function getChain() {
+        return $this->chain;
+    }
+}
+
 class ABJ_404_Solution_ServiceContainer {
 
     /**
@@ -91,6 +129,14 @@ class ABJ_404_Solution_ServiceContainer {
      * @var array<string, mixed>
      */
     private $instances = array();
+
+    /**
+     * Names whose factory is currently executing, in resolution order. Used to
+     * detect a service-resolution cycle (a factory that transitively re-requests
+     * itself) before it recurses into a stack overflow. Empty except mid-get().
+     * @var array<string, true>
+     */
+    private $resolving = array();
 
     /**
      * When true, registration fills gaps without replacing factories that a
@@ -173,9 +219,23 @@ class ABJ_404_Solution_ServiceContainer {
             throw new Exception("Service '$name' is not registered in the container"); // allow-raw-error: programmer assertion, callers either expect the throw or use safeGet()/abj_service_optional() which catch it
         }
 
+        // Detect a resolution cycle before it recurses into a stack overflow.
+        // The instance is cached only AFTER its factory returns, so a factory
+        // that transitively re-requests the same service would otherwise re-run
+        // forever (a structural sibling of the 4.3.0 logging<->options OOM).
+        if (isset($this->resolving[$name])) {
+            $chain = implode(' -> ', array_keys($this->resolving)) . ' -> ' . $name;
+            throw new ABJ_404_Solution_ServiceResolutionCycleException($name, $chain);
+        }
+
         // Create the instance using the factory
         $factory = $this->services[$name];
-        $instance = $factory($this);
+        $this->resolving[$name] = true;
+        try {
+            $instance = $factory($this);
+        } finally {
+            unset($this->resolving[$name]);
+        }
 
         // Store the instance for future requests (singleton behavior)
         $this->instances[$name] = $instance;

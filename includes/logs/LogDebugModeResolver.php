@@ -23,9 +23,15 @@ class ABJ_404_Solution_LogDebugModeResolver {
             return $legacyDebugMode;
         }
 
-        $options = abj_service('options_repository')->getOptions(true);
+        // Raw read only. isDebug() is on the logging write path; reading via
+        // getOptions() runs the normalize pipeline, which logs on validation
+        // failure and re-enters logging -- the 4.3.0 logging<->options OOM.
+        $optionsRepo = abj_service('options_repository');
+        if (is_object($optionsRepo) && method_exists($optionsRepo, 'getRawSettingValue')) {
+            return $optionsRepo->getRawSettingValue('debug_mode') == true;
+        }
 
-        return (array_key_exists('debug_mode', $options) && $options['debug_mode'] == true);
+        return false;
     }
 
     /** @return bool|null */

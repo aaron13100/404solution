@@ -85,6 +85,58 @@ class ABJ_404_Solution_PluginLogicOptionsResolver {
     }
 
     /**
+     * Raw, side-effect-free read of a single stored setting, bypassing the
+     * entire getOptions() pipeline: no normalize-for-read, no schema-fallback
+     * logging, no version upgrade, no default merge, no service resolution, no
+     * cache mutation.
+     *
+     * This is the ONLY read path logging infrastructure may use to fetch the
+     * few scalars it needs (the debug-file key, the debug-mode flag). Routing
+     * those reads through getOptions() created an unbounded logging<->options
+     * recursion: a stored value that fails StorageOptionContracts validation
+     * logs a warning, and getDebugFilename()/isDebug() then re-read options to
+     * find the log file, re-entering normalizeForRead() and re-logging without
+     * bound -- the 4.3.0 "broken sites after the latest update" OOM at this
+     * file's line ~250. Reading raw keeps logging strictly downstream of the
+     * settings repository and can never re-enter it.
+     *
+     * @param string $key Setting key inside abj404_settings.
+     * @param mixed $default Returned when storage is unusable or the key is absent.
+     * @return mixed The raw stored value, or $default.
+     */
+    public function getRawSettingValue(string $key, $default = null) {
+        $raw = get_option('abj404_settings');
+        if (is_array($raw) && array_key_exists($key, $raw)) {
+            return $raw[$key];
+        }
+        return $default;
+    }
+
+    /**
+     * Raw, side-effect-free write of a single stored setting, bypassing the
+     * storage write contract (no prepareForWrite, no schema validation, no
+     * default merge) and, critically, the runtime logger. Used only by logging
+     * infrastructure to persist its own metadata keys (debug-file key, last-
+     * sent-line counter) without re-entering the settings pipeline. Other keys
+     * in the row are preserved (read-modify-write of the single key).
+     *
+     * @param string $key Setting key inside abj404_settings.
+     * @param mixed $value Value to store.
+     * @return void
+     */
+    public function setRawSettingValue(string $key, $value): void {
+        $raw = get_option('abj404_settings');
+        if (!is_array($raw)) {
+            $raw = array();
+        }
+        $raw[$key] = $value;
+        update_option('abj404_settings', $raw);
+        // A later full getOptions() must re-read the row rather than serve a
+        // snapshot taken before this raw write.
+        $this->clearCache();
+    }
+
+    /**
      * Resolve the current plugin options. With $skip_db_check=true, the
      * DB_VERSION pipeline is skipped (used during the version-upgrade
      * sequence itself and from contexts that must not trigger upgrades).
@@ -300,13 +352,15 @@ class ABJ_404_Solution_PluginLogicOptionsResolver {
         }
     }
 
+    /**
+     * Record a resolver-internal warning. Logs ONLY to the inert PHP error-log
+     * sink, never the runtime logger: this class IS the settings-read path, and
+     * the runtime logger reads settings to locate its own log file, so warning
+     * through it during a read re-enters the read and recurses without bound
+     * (the 4.3.0 "broken sites after the latest update" OOM). Hard rule:
+     * normalized settings reads must never call runtime logging.
+     */
     private function warn(string $message): void {
-        $logger = function_exists('abj_service_optional') ? abj_service_optional('logging') : null;
-        if (is_object($logger) && method_exists($logger, 'warn')) {
-            $logger->warn($message);
-            return;
-        }
-
         abj404_logPhpFallback('service-resolution-fallback', $message);
     }
 }
