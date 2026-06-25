@@ -71,14 +71,8 @@ interface ABJ_404_Solution_ViewReadServiceInterface {
      */
     public function getLogsCount($logID);
 
-    /** @return array<int, array<string, mixed>> */
-    public function getRedirectsAll();
-
     /** @param string $tempFile @return void */
     public function doRedirectsExport(string $tempFile): void;
-
-    /** @return array<int, array<string, mixed>> */
-    public function getRedirectsWithLogs();
 
     /** @return array<int, array<string, mixed>> */
     public function getRedirectsWithRegEx();

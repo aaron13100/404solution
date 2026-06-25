@@ -75,7 +75,6 @@ return array(
 		'sql/getPublishedTermsByIds.sql',
 		'sql/getRedirectsExport.sql',
 		'sql/getRedirectsForViewTempTable.sql',
-		'sql/getRedirectsWithLogs.sql',
 		'sql/importDataFromPluginRedirectioner.sql',
 		'sql/insertPermalinkCache.sql',
 		'sql/insertSpellingCache.sql',

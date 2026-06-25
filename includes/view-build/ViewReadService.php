@@ -313,19 +313,9 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
     // Delegated: RedirectsBulkReader
     // =========================================================================
 
-    /** @return array<int, array<string, mixed>> */
-    function getRedirectsAll() {
-        return $this->redirectsBulkReader->getRedirectsAll();
-    }
-
     /** @param string $tempFile @return void */
     function doRedirectsExport(string $tempFile): void {
         $this->redirectsBulkReader->doRedirectsExport($tempFile);
-    }
-
-    /** @return array<int, array<string, mixed>> */
-    function getRedirectsWithLogs() {
-        return $this->redirectsBulkReader->getRedirectsWithLogs();
     }
 
     /** @return array<int, array<string, mixed>> */

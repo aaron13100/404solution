@@ -9,9 +9,7 @@ if (!defined('ABSPATH')) {
  * don't go through the staged admin-list pipeline.
  *
  * Owns:
- *   - getRedirectsAll: id+url ordered listing (import preview, CSV browse)
  *   - doRedirectsExport: stream the redirects table to a CSV temp file
- *   - getRedirectsWithLogs: redirects joined with the logsv2 rollup
  *   - getRedirectsWithRegEx: regex redirects with a static request-scoped cache
  *   - getManualRedirectsWithRegexMetachars: manual redirects whose URL
  *     contains regex metacharacters (for the matcher's wildcard fallback)
@@ -45,17 +43,6 @@ class ABJ_404_Solution_RedirectsBulkReader {
         $this->dbCore = $dbCore;
         $this->queryBuilder = $queryBuilder;
         $this->f = $f;
-    }
-
-    /** @return array<int, array<string, mixed>> */
-    public function getRedirectsAll(): array {
-        $query = "select id, url from {wp_abj404_redirects} order by url";
-        $result = $this->dbCore->queryAndGetResults($query);
-        if (!empty($result['timed_out']) || (isset($result['last_error']) && $result['last_error'] != '')) {
-            return array();
-        }
-        $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
-        return $rows;
     }
 
     /**
@@ -97,17 +84,6 @@ class ABJ_404_Solution_RedirectsBulkReader {
             fclose($fh);
             mysqli_free_result($result);
         }
-    }
-
-    /** @return array<int, array<string, mixed>> */
-    public function getRedirectsWithLogs(): array {
-        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/../sql/getRedirectsWithLogs.sql");
-        $result = $this->dbCore->queryAndGetResults($query);
-        if (!empty($result['timed_out']) || (isset($result['last_error']) && $result['last_error'] != '')) {
-            return array();
-        }
-        $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
-        return $rows;
     }
 
     /** @return array<int, array<string, mixed>> */
