@@ -1,7 +1,9 @@
-/* UNBOUNDED-OK: runtime LIMIT via the {limit-results} placeholder (injected by
-   the comment-break templating trick below); every caller passes a real LIMIT
-   or a constraining post_name slug, so the read never returns the whole posts
-   table -- verified across all callers. */
+/* UNBOUNDED-OK: runtime LIMIT injected by the comment-break templating trick
+   below (see the limit-results slot near the end of this file). Do NOT write a
+   placeholder token in braces inside this comment: the repository replaces such
+   tokens globally, which would split this comment and inject stray text as SQL.
+   Every caller passes a real LIMIT or a constraining post_name slug, so the read
+   never returns the whole posts table. Verified across all callers. */
 select wp_posts.id,
        wp_posts.post_type,
        wp_posts.post_parent,

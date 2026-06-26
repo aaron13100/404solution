@@ -1,5 +1,8 @@
 
-/* UNBOUNDED-OK: bounded keyset: WHERE id IN ({IDS_TO_INCLUDE}); caller (getExtraDataToPermalinkSuggestions) passes a small suggestion id set */
+/* UNBOUNDED-OK: bounded keyset, WHERE id IN (a small explicit id list); caller
+   (getExtraDataToPermalinkSuggestions) passes a small suggestion id set. Do NOT
+   write a placeholder token in braces inside this comment: the repository
+   replaces such tokens globally, which would rewrite this comment too. */
 SELECT
     wp_posts.ID                                        AS post_id,
     null                                               AS term_id,
