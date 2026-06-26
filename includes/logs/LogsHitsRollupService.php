@@ -367,6 +367,7 @@ class ABJ_404_Solution_LogsHitsRollupService implements ABJ_404_Solution_LogsHit
 
     /** @inheritDoc */
     public function getMaxLogId() {
+        // allow-unbounded-select: MAX(id) aggregate; returns a single row
         $query = "SELECT MAX(id) FROM {wp_abj404_logsv2}";
         $query = $this->dbCore->doTableNameReplacements($query);
         $results = $this->dbCore->queryAndGetResults($query);
@@ -379,6 +380,7 @@ class ABJ_404_Solution_LogsHitsRollupService implements ABJ_404_Solution_LogsHit
 
     /** @inheritDoc */
     public function getMinLogId() {
+        // allow-unbounded-select: MIN(id) aggregate; returns a single row
         $query = "SELECT MIN(id) FROM {wp_abj404_logsv2}";
         $query = $this->dbCore->doTableNameReplacements($query);
         $results = $this->dbCore->queryAndGetResults($query);

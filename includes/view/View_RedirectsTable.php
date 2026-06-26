@@ -4,7 +4,6 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-require_once __DIR__ . '/../redirects/RedirectDeadDestinationStore.php';
 require_once __DIR__ . '/../admin/RedirectsTableColumns.php';
 require_once __DIR__ . '/../admin/RedirectDestinationWarningPolicy.php';
 require_once __DIR__ . '/../admin/RedirectDestinationLinkResolver.php';
@@ -108,12 +107,21 @@ class ABJ_404_Solution_View_RedirectsTable extends ABJ_404_Solution_ViewComponen
 
         $headerColumns = $this->logs->getTableColumns($sub, $columns);
 
-        $deadDestIds = (new ABJ_404_Solution_RedirectDeadDestinationStore())->getIds();
-
         $rows = $this->viewReadService->getRedirectsForView($sub, $tableOptions);
         /** @var array<int, array<string, mixed>> $typedRedirectRows */
         $typedRedirectRows = array_values(array_filter($rows, 'is_array'));
         $this->shared->rememberTableDataSignature($sub, $typedRedirectRows);
+
+        // Bounded dead-destination check: pass only the ids on this page so the
+        // rollup read scales with the page size (~25), never the whole table.
+        $displayedRedirectIds = array();
+        foreach ($typedRedirectRows as $row) {
+            if (isset($row['id']) && is_scalar($row['id'])) {
+                $displayedRedirectIds[] = (int) $row['id'];
+            }
+        }
+        $deadDestIds = abj_service('redirect_dead_destination_checker')->findDeadDestinationIds($displayedRedirectIds);
+
         $displayed = 0;
         $y = 1;
         $bodyRows = '';

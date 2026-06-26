@@ -79,6 +79,7 @@ class ABJ_404_Solution_StatsDigestDataProvider {
         $limit = max(1, $limit);
         // Plain equality gives the optimizer an indexable requested_url probe;
         // the BINARY predicate keeps exact-match URL semantics.
+        // allow-unbounded-select: bounded by a runtime LIMIT (the query string is split across an ABJ404_STATUS_CAPTURED concatenation; the LIMIT $limit clause follows in the next literal)
         $query = "SELECT r.url, COALESCE(h.logshits, 0) AS logshits, r.timestamp AS created
             FROM {wp_abj404_redirects} r
             LEFT JOIN {wp_abj404_logs_hits} h

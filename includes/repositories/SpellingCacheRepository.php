@@ -54,6 +54,7 @@ class ABJ_404_Solution_SpellingCacheRepository {
      */
     public function getSpellingPermalinksFromCache(string $requestedURLRaw) {
         $requestedURLRaw = $this->f->sanitizeInvalidUTF8($requestedURLRaw);
+        // allow-unbounded-select: single-URL equality lookup (where url = one exact value); returns only the cache rows for that one URL
         $query = "select id, url, matchdata from {wp_abj404_spelling_cache} where url = '" . esc_sql($requestedURLRaw) . "'";
         $results = $this->dbCore->queryAndGetResults($query);
 

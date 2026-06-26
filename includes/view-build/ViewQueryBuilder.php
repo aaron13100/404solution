@@ -34,6 +34,7 @@ class ABJ_404_Solution_ViewQueryBuilder {
     public function buildHighImpactCapturedCountQuery(): string {
         // Plain equality gives the optimizer an indexable requested_url probe;
         // the BINARY predicate keeps exact-match URL semantics.
+        // allow-unbounded-select: COUNT(*) aggregate; returns a single row
         $query = "SELECT COUNT(*) AS cnt
             FROM {wp_abj404_redirects} r
             INNER JOIN {wp_abj404_logs_hits} h

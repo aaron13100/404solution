@@ -36,6 +36,12 @@ class ABJ_404_Solution_DataServiceRegistration {
                 $c->get('logging')
             );
         });
+        $container->set('redirect_dead_destination_checker', function($c) {
+            return new ABJ_404_Solution_RedirectDeadDestinationChecker(
+                $c->get('db_core'),
+                $c->get('logging')
+            );
+        });
         $container->set('logs_repository', function($c) {
             $rollup = new ABJ_404_Solution_LogsHitsRollupService(
                 $c->get('db_core'),

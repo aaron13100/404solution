@@ -66,6 +66,7 @@ class ABJ_404_Solution_RedirectLookupRepository {
         // BINARY predicate, but the optimizer can use the index instead of
         // full-scanning the redirects table on every new-URL capture (a hot path
         // under scanner-flood 404 traffic).
+        // allow-unbounded-select: single-URL equality lookup on a hot capture path; returns the few rows matching one URL
         $query = $this->prepare_query_wp('select * from {wp_abj404_redirects} where url = {url} and BINARY url = BINARY {url} ' .
             " and disabled = 0 ", array("url" => $url));
         $results = $this->dbCore->queryAndGetResults($query);

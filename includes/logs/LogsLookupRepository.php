@@ -46,6 +46,7 @@ class ABJ_404_Solution_LogsLookupRepository {
      * @return int
      */
     public function getLookupIDForUser($userName) {
+        // allow-unbounded-select: single lkup_value equality; only the first row is used
         $query = "select id from {wp_abj404_lookup} where lkup_value = %s";
         $results = $this->dbCore->queryAndGetResults($query, array('query_params' => array($userName)));
         $lookupRows = is_array($results['rows']) ? $results['rows'] : array();

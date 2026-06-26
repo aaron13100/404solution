@@ -314,6 +314,7 @@ class ABJ_404_Solution_RedirectWriteService {
         $validids = array_map('absint', $ids);
         $multipleIds = implode(',', $validids);
 
+        // allow-unbounded-select: caller-supplied id keyset (where id IN an absint-filtered list); bounded by the explicit id list
         $query = "select id, url, type, status, final_dest, code, COALESCE(engine, '') as engine, start_ts, end_ts from {wp_abj404_redirects} " .
                 "where id in (" . $multipleIds . ")";
         $result = $this->dbCore->queryAndGetResults($query);

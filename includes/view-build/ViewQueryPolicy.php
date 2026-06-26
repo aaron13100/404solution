@@ -309,6 +309,7 @@ class ABJ_404_Solution_ViewQueryPolicy {
             // string for POST-typed rows. The subquery only appears for a (rare)
             // post-type-label search, so it never affects the no-filter
             // single-table EXPLAIN plan asserted by the scale test.
+            // allow-unbounded-select: wp_posts SELECT is a subquery consumed DB-side inside a final_dest IN (...) predicate; never read into PHP
             return array('(type = ' . (int)ABJ404_TYPE_POST
                 . ' AND final_dest IN (SELECT ID FROM {wp_posts} WHERE post_type IN ('
                 . implode(', ', $quotedSlugs) . ')))');

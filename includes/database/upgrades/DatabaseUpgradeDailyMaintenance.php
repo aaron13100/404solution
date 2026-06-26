@@ -9,7 +9,7 @@ if (!defined('ABSPATH')) {
  *
  * Called by abj404_dailyMaintenanceCronJobListener() in 404-solution.php.
  * Coordinates (in order): self-heal prologue, ngram cache sync/cleanup, expired
- * transient cleanup, dead-destination flagging, auto-redirect retention,
+ * transient cleanup, auto-redirect retention,
  * canonical_url backfill (redirects + logsv2), redirects denorm backfill (Step
  * 3a) + nightly full reconcile (Step 3d), internal-link scan, and an
  * inline view_done snapshot refresh. The orchestrator owns the small in-house
@@ -41,9 +41,6 @@ class ABJ_404_Solution_DatabaseUpgradeDailyMaintenance extends ABJ_404_Solution_
 
         // Clean up expired rate limit transients to prevent wp_options bloat
         $this->cleanupExpiredRateLimitTransients();
-
-        // Flag redirects whose destination URL is generating 404s (drives redirect suspension)
-        abj_service('redirects_retention_service')->flagDeadDestinationRedirects();
 
         // Expire auto-created redirects that exceed the configured age threshold
         abj_service('redirects_retention_service')->expireOldAutoRedirects();

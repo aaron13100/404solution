@@ -190,6 +190,7 @@ class ABJ_404_Solution_StatusCountsRepository {
 
     /** @return int */
     public function getCapturedCount(): int {
+        // allow-unbounded-select: COUNT aggregate; returns a single row
         $query = "select count(id) from {wp_abj404_redirects} where status = " . absint(ABJ404_STATUS_CAPTURED);
         $result = $this->dbCore->queryAndGetResults($query);
         if (!empty($result['timed_out']) || (isset($result['last_error']) && $result['last_error'] != '')) {
@@ -215,6 +216,7 @@ class ABJ_404_Solution_StatusCountsRepository {
         }
         $filteredTypes = array_map('absint', $types);
         $typesForSQL = implode(', ', $filteredTypes);
+        // allow-unbounded-select: COUNT aggregate; returns a single row
         $query = "select count(id) as count from {wp_abj404_redirects} where 1 and (status in ("
             . $typesForSQL . "))"
             . " and disabled = " . absint($trashed);

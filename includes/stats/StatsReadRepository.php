@@ -204,6 +204,7 @@ class ABJ_404_Solution_StatsReadRepository {
 
     /** @return int */
     public function getEarliestLogTimestamp() {
+        // allow-unbounded-select: MIN(timestamp) aggregate; returns a single row
         $query = 'SELECT min(timestamp) as timestamp FROM {wp_abj404_logsv2}';
 
         $result = $this->dbCore->queryAndGetResults($query);

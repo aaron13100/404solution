@@ -6,14 +6,13 @@ if (!defined('ABSPATH')) {
 
 require_once __DIR__ . '/RedirectsRetentionPolicy.php';
 require_once __DIR__ . '/RedirectsCleanupRepository.php';
-require_once __DIR__ . '/RedirectDeadDestinationScanner.php';
 
 /**
  * Scheduled-maintenance workflow for the redirects table.
  *
- * Owns the redirect/log retention pruning, dead-destination flagging,
- * auto-redirect expiry, junk auto-trash, orphan cleanup, and the coordinated
- * cron run. Previously fronted by RedirectsRetentionServiceInterface, but that
+ * Owns the redirect/log retention pruning, auto-redirect expiry, junk
+ * auto-trash, orphan cleanup, and the coordinated cron run. Previously fronted
+ * by RedirectsRetentionServiceInterface, but that
  * interface had a single implementer and no narrowing consumer, so it was
  * inlined to remove the unrealized abstraction.
  */
@@ -37,9 +36,6 @@ class ABJ_404_Solution_RedirectsRetentionService {
     /** @var ABJ_404_Solution_RedirectsCleanupRepository */
     private $cleanupRepository;
 
-    /** @var ABJ_404_Solution_RedirectDeadDestinationScanner */
-    private $deadDestinationScanner;
-
     /**
      * @param ABJ_404_Solution_DatabaseCore $dbCore
      * @param ABJ_404_Solution_RedirectsRepositoryInterface $redirectsRepo
@@ -48,7 +44,6 @@ class ABJ_404_Solution_RedirectsRetentionService {
      * @param ABJ_404_Solution_DatabaseConnectionManager|null $connectionManager
      * @param ABJ_404_Solution_RedirectsRetentionPolicy|null $retentionPolicy
      * @param ABJ_404_Solution_RedirectsCleanupRepository|null $cleanupRepository
-     * @param ABJ_404_Solution_RedirectDeadDestinationScanner|null $deadDestinationScanner
      */
     public function __construct(
         ABJ_404_Solution_DatabaseCore $dbCore,
@@ -57,8 +52,7 @@ class ABJ_404_Solution_RedirectsRetentionService {
         $logging = null,
         $connectionManager = null,
         ?ABJ_404_Solution_RedirectsRetentionPolicy $retentionPolicy = null,
-        ?ABJ_404_Solution_RedirectsCleanupRepository $cleanupRepository = null,
-        ?ABJ_404_Solution_RedirectDeadDestinationScanner $deadDestinationScanner = null
+        ?ABJ_404_Solution_RedirectsCleanupRepository $cleanupRepository = null
     ) {
         $this->dbCore = $dbCore;
         $this->f = $functions !== null ? $functions : abj_service('functions');
@@ -76,9 +70,6 @@ class ABJ_404_Solution_RedirectsRetentionService {
                 $this->logger,
                 $this->retentionPolicy
             );
-        $this->deadDestinationScanner = $deadDestinationScanner !== null
-            ? $deadDestinationScanner
-            : new ABJ_404_Solution_RedirectDeadDestinationScanner($dbCore, $this->logger);
     }
 
     /** @return int Number of orphaned auto redirects removed. */
@@ -150,8 +141,6 @@ class ABJ_404_Solution_RedirectsRetentionService {
 
         $message = $this->appendAdminNotificationMessage($message, $options, $manually_fired, $abj404logic);
         $message = $this->appendDeveloperLogMessage($message, $options);
-
-        $this->flagDeadDestinationRedirects();
 
         $abj404permalinkCache = abj_service('permalink_cache');
         $rowsUpdated = $abj404permalinkCache->updatePermalinkCache(15);
@@ -357,15 +346,6 @@ class ABJ_404_Solution_RedirectsRetentionService {
      */
     function autoTrashJunkCapturedUrls(array $options): int {
         return $this->cleanupRepository->autoTrashJunkCapturedUrls($options);
-    }
-
-    /**
-     * Flag redirects whose destination URL appears in the 404 log as a recent 404.
-     *
-     * @return void
-     */
-    public function flagDeadDestinationRedirects(): void {
-        $this->deadDestinationScanner->flagDeadDestinationRedirects();
     }
 
     /**

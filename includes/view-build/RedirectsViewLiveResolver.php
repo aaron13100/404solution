@@ -156,6 +156,7 @@ class ABJ_404_Solution_RedirectsViewLiveResolver {
         if (empty($ids)) {
             return array();
         }
+        // allow-unbounded-select: caller-supplied ID keyset (where ID IN the current page's rows); page-bounded
         $query = "SELECT ID, post_title, post_status, post_type FROM {wp_posts} WHERE ID IN ("
             . implode(',', $ids) . ")";
         return $this->indexRowsBy($this->dbCore->queryAndGetResults($query), 'ID');

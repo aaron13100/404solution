@@ -4,13 +4,12 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-require_once __DIR__ . '/../redirects/RedirectDeadDestinationStore.php';
-
 /**
  * Decides whether an already-fetched redirect row is actionable. Three checks:
  *   1. Row well-formed (id != 0, final_dest != 0 unless type=HOME).
- *   2. Destination not on the transient "dead destinations" list
- *      (set by the destination-health watcher when a 5xx pattern emerges).
+ *   2. Destination not dead -- a bounded on-demand check asks the
+ *      redirect_dead_destination_checker whether THIS redirect's destination
+ *      shows recent failed hits in the logs_hits rollup.
  *   3. RedirectConditionEvaluator passes (any per-row conditions like
  *      time-of-day, country, user-agent, referrer rules).
  *
@@ -57,9 +56,9 @@ class ABJ_404_Solution_RedirectCandidateEvaluator {
         $trace->add('Redirect lookup' . $labelSuffix, 'Found existing redirect',
             'rule #' . (is_scalar($redirect['id']) ? (string)$redirect['id'] : '?'));
 
-        $deadIds = (new ABJ_404_Solution_RedirectDeadDestinationStore())->getIds();
-        $redirectIdStr = isset($redirect['id']) && is_scalar($redirect['id']) ? (string)$redirect['id'] : '0';
-        if (in_array($redirectIdStr, $deadIds, true)) {
+        $redirectIdForCheck = is_scalar($redirect['id']) ? (int) $redirect['id'] : 0;
+        $deadIds = abj_service('redirect_dead_destination_checker')->findDeadDestinationIds(array($redirectIdForCheck));
+        if (!empty($deadIds)) {
             $trace->add('Health check' . $labelSuffix, 'Destination unreachable - skipped');
             return null;
         }

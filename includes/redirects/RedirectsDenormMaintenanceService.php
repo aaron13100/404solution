@@ -177,6 +177,7 @@ class ABJ_404_Solution_RedirectsDenormMaintenanceService {
             return array();
         }
         $result = $this->dbCore->queryAndGetResults(
+            // allow-unbounded-select: bounded by single final_dest equality (only the few redirects sharing one destination); a LIMIT here would corrupt denorm consistency by dropping siblings
             "SELECT id FROM {wp_abj404_redirects} WHERE type IN (" . $typeList . ") AND final_dest = %s",
             array('query_params' => array((string)$finalDestId))
         );
