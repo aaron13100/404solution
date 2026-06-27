@@ -116,6 +116,9 @@ class ABJ_404_Solution_ReviewFeedback {
         if (!isset($_GET['page']) || $_GET['page'] !== ABJ404_PP) {
             return;
         }
+        if (!ABJ_404_Solution_PluginAdminAccessPolicy::currentUserCanAccessPluginAdmin()) {
+            return;
+        }
 
         if (isset($_GET['abj404_review_response'])) {
             self::handleReviewQualificationResponse();
