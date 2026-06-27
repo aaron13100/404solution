@@ -222,6 +222,14 @@ class ABJ_404_Solution_DatabaseUpgradeBootstrap extends ABJ_404_Solution_Databas
             return;
         }
 
+        // Tenant isolation: a sibling subsite owns and lowercases its own
+        // tables. Never rename tables that belong to a DIFFERENT active
+        // multisite blog (same whole-schema-scan class as the orphan-adoption
+        // finding). A migrated old prefix with no live blog is absent from the
+        // active-blog set and is still renamed so adoption can recover it.
+        $currentPrefix = $this->dbCore->tableNameResolver()->getLowercasePrefix();
+        $activeBlogPrefixes = $this->getActiveBlogPrefixesLowercase();
+
         foreach ($results['rows'] as $row) {
             if (!is_array($row)) {
                 continue;
@@ -241,6 +249,12 @@ class ABJ_404_Solution_DatabaseUpgradeBootstrap extends ABJ_404_Solution_Databas
 
                 // Check if the table name is already lowercase, skip if it is
                 if ($tableName !== $lowercaseName) {
+                    $tablePrefix = $this->prefixOfAbj404Table($lowercaseName);
+                    if ($tablePrefix !== null && $tablePrefix !== $currentPrefix
+                            && in_array($tablePrefix, $activeBlogPrefixes, true)) {
+                        // Belongs to a different active subsite. Leave it alone.
+                        continue;
+                    }
                     // Rename the table to lowercase
                     $renameQuery = "RENAME TABLE `{$tableName}` TO `{$lowercaseName}`";
                     $this->dbCore->queryAndGetResults($renameQuery,
@@ -255,6 +269,23 @@ class ABJ_404_Solution_DatabaseUpgradeBootstrap extends ABJ_404_Solution_Databas
 
         // After renaming, check for orphaned tables under old prefixes.
         $this->upgrades()->orphanAdoptionUpgrade()->adoptOrphanedTables();
+    }
+
+    /**
+     * Extract the table prefix from a lowercase plugin table name: everything
+     * before the first "abj404" segment (e.g. "wp_2_abj404_redirects" -> "wp_2_").
+     * Returns null when the name has no abj404 segment.
+     *
+     * @param string $lowercaseTableName
+     * @return string|null
+     */
+    private function prefixOfAbj404Table(string $lowercaseTableName): ?string {
+        $pos = strpos($lowercaseTableName, 'abj404');
+        if ($pos === false) {
+            return null;
+        }
+        $prefix = substr($lowercaseTableName, 0, $pos);
+        return is_string($prefix) ? $prefix : null;
     }
 
     /** When certain columns are created we have to populate data.

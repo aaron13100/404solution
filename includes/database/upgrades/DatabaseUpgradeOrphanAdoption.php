@@ -39,38 +39,20 @@ class ABJ_404_Solution_DatabaseUpgradeOrphanAdoption extends ABJ_404_Solution_Da
 		$currentPrefix = $this->dbCore->tableNameResolver()->getLowercasePrefix();
 
 		// Group tables by their prefix (everything before 'abj404_').
-		/** @var array<string, array<string>> prefix => [table_name, ...] */
-		$tablesByPrefix = [];
-		$rows = is_array($results['rows'] ?? null) ? $results['rows'] : [];
-		foreach ($rows as $row) {
-			if (!is_array($row)) {
-				continue;
-			}
-			$tableName = null;
-			foreach ($row as $key => $value) {
-				if (strtolower((string)$key) === 'table_name' && is_scalar($value)) {
-					$tableName = strtolower((string)$value);
-					break;
-				}
-			}
-			if ($tableName === null) {
-				continue;
-			}
-
-			$abj404Pos = strpos($tableName, 'abj404_');
-			if ($abj404Pos === false) {
-				continue;
-			}
-
-			$prefix = substr($tableName, 0, $abj404Pos);
-			$tablesByPrefix[$prefix][] = $tableName;
-		}
+		$tablesByPrefix = $this->groupAbj404TablesByPrefix($results['rows']);
 
 		// Skip prefixes we've already adopted.
 		$adoptedPrefixes = get_option('abj404_adopted_prefixes', array());
 		if (!is_array($adoptedPrefixes)) {
 			$adoptedPrefixes = array();
 		}
+
+		// Authoritative tenant-isolation boundary: any prefix that belongs to an
+		// active multisite blog (a sibling subsite) is NEVER an orphan to adopt,
+		// regardless of how well its content happens to match this site. The
+		// slug-match heuristic below is only a tie-breaker among genuine
+		// migration leftovers, never the authorization boundary.
+		$activeBlogPrefixes = $this->getActiveBlogPrefixesLowercase();
 
 		// Process each OLD prefix (not the current one).
 		foreach ($tablesByPrefix as $oldPrefix => $tables) {
@@ -79,6 +61,14 @@ class ABJ_404_Solution_DatabaseUpgradeOrphanAdoption extends ABJ_404_Solution_Da
 				continue;
 			}
 			if (in_array($oldPrefix, $adoptedPrefixes, true)) {
+				continue;
+			}
+			if (in_array($oldPrefix, $activeBlogPrefixes, true)) {
+				$this->logger->infoMessage(
+					"Orphaned tables under prefix '{$oldPrefix}' belong to an active "
+					. "multisite blog (sibling subsite). Skipping adoption to preserve "
+					. "tenant isolation."
+				);
 				continue;
 			}
 
@@ -116,9 +106,50 @@ class ABJ_404_Solution_DatabaseUpgradeOrphanAdoption extends ABJ_404_Solution_Da
 				continue;
 			}
 
-			// Ownership positively verified — adopt the data.
+			// Ownership positively verified. Adopt the data.
 			$this->adoptDataFromPrefix($oldPrefix, $currentPrefix, $tables);
 		}
+	}
+
+	/**
+	 * Parse information_schema rows into a prefix => [lowercase table name, ...]
+	 * map. Each table name is lowercased and grouped by the substring before its
+	 * 'abj404_' segment; rows without a recognizable table_name or abj404_
+	 * segment are skipped. Extracted from adoptOrphanedTables() so that method's
+	 * branching stays within the cyclomatic-complexity budget.
+	 *
+	 * @param array<array-key, mixed> $rows
+	 * @return array<string, array<int, string>>
+	 */
+	private function groupAbj404TablesByPrefix(array $rows): array {
+		$tablesByPrefix = [];
+		foreach ($rows as $row) {
+			if (!is_array($row)) {
+				continue;
+			}
+			$tableName = null;
+			foreach ($row as $key => $value) {
+				if (strtolower((string)$key) === 'table_name' && is_scalar($value)) {
+					$tableName = strtolower((string)$value);
+					break;
+				}
+			}
+			if ($tableName === null) {
+				continue;
+			}
+
+			$abj404Pos = strpos($tableName, 'abj404_');
+			if ($abj404Pos === false) {
+				continue;
+			}
+
+			$prefix = substr($tableName, 0, $abj404Pos);
+			if (!is_string($prefix)) {
+				continue;
+			}
+			$tablesByPrefix[$prefix][] = $tableName;
+		}
+		return $tablesByPrefix;
 	}
 
 	/**

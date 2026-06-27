@@ -181,4 +181,49 @@ abstract class ABJ_404_Solution_DatabaseUpgradeComponent {
         return ABJ_404_Solution_DatabaseUpgradeRuntimeState::getPluginTableSuffixes();
     }
 
+    /**
+     * Lowercased table prefixes of every active site on a multisite network,
+     * including the current site. On single-site this is just the current
+     * prefix.
+     *
+     * This is the authoritative tenant-isolation boundary for the cross-prefix
+     * maintenance paths (orphan-table adoption and the mixed-case lowercase
+     * rename). A live blog's tables are never an "orphan" to adopt or a table
+     * the current site should rename: a sibling subsite lowercases and owns its
+     * own tables. A genuinely orphaned old prefix (left by a prefix migration)
+     * has NO corresponding live blog, so it is absent from this set and remains
+     * eligible.
+     *
+     * When the WordPress multisite APIs are unavailable the multisite branch is
+     * skipped and only the current prefix is returned; callers must treat that
+     * as "could not enumerate siblings" and fall back to their content
+     * heuristic, never as "no siblings exist".
+     *
+     * @return array<int, string> Distinct lowercase prefixes, e.g. ['wp_', 'wp_2_'].
+     */
+    protected function getActiveBlogPrefixesLowercase(): array {
+        global $wpdb;
+        $prefixes = array();
+
+        if (is_object($wpdb) && isset($wpdb->prefix) && is_string($wpdb->prefix) && $wpdb->prefix !== '') {
+            $prefixes[] = strtolower($wpdb->prefix);
+        }
+
+        if (function_exists('is_multisite') && is_multisite()
+                && function_exists('get_sites')
+                && is_object($wpdb) && is_callable(array($wpdb, 'get_blog_prefix'))) {
+            $siteIds = get_sites(array('number' => 0, 'fields' => 'ids'));
+            if (is_array($siteIds)) {
+                foreach ($siteIds as $siteId) {
+                    $prefix = $wpdb->get_blog_prefix((int)$siteId);
+                    if (is_string($prefix) && $prefix !== '') {
+                        $prefixes[] = strtolower($prefix);
+                    }
+                }
+            }
+        }
+
+        return array_values(array_unique($prefixes));
+    }
+
 }
