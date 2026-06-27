@@ -93,10 +93,16 @@ class ABJ_404_Solution_AdminAssetEnqueuer {
             }
 
             if ($isStatsPage) {
+                // Chart.js is bundled with the plugin (includes/js/lib/) and enqueued
+                // as a hard dependency of both chart scripts. It used to be fetched from a
+                // third-party CDN at runtime, which is a WordPress.org guideline violation
+                // and a supply-chain risk in the authenticated admin context.
+                ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-chartjs',
+                    ABJ404_URL . 'includes/js/lib/chart.umd.min.js', array());
                 ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-stats-confidence-chart',
-                    ABJ404_URL . 'includes/js/statsConfidenceChart.js', array());
+                    ABJ404_URL . 'includes/js/statsConfidenceChart.js', array('abj404-chartjs'));
                 ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-stats-trends',
-                    ABJ404_URL . 'includes/js/statsTrends.js', array());
+                    ABJ404_URL . 'includes/js/statsTrends.js', array('abj404-chartjs'));
             }
 
             if ($isToolsPage) {

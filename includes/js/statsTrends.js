@@ -1,7 +1,8 @@
 /**
  * Stats page: Trend Analytics line charts.
  *
- * Loads Chart.js from CDN on demand, then fetches abj404getTrendData
+ * Uses Chart.js (bundled with the plugin at includes/js/lib/ and enqueued
+ * as a hard dependency by AdminAssetEnqueuer), then fetches abj404getTrendData
  * for the selected period (7 / 30 / 90 days) and renders three line
  * charts: 404 hits, redirects, new captures.
  *
@@ -34,23 +35,21 @@
     var chartInstances = {};
 
     function loadChartJs(cb) {
+        // Chart.js is bundled with the plugin and enqueued as a hard dependency
+        // (see AdminAssetEnqueuer::addScripts), so window.Chart is already
+        // defined by the time this runs. We dispatch abj404ChartJsLoaded so
+        // statsConfidenceChart.js renders too, regardless of script order.
         if (window.Chart) {
+            document.dispatchEvent(new Event('abj404ChartJsLoaded'));
             cb();
             return;
         }
-        var s = document.createElement('script');
-        s.src = 'https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js';
-        s.onload = function () {
-            document.dispatchEvent(new Event('abj404ChartJsLoaded'));
-            cb();
-        };
-        s.onerror = function () {
-            var loadEl = document.querySelector('.abj404-trends-loading');
-            if (loadEl) { loadEl.style.display = 'none'; }
-            var errEl = document.getElementById('abj404-trends-error');
-            if (errEl) { errEl.style.display = ''; }
-        };
-        document.head.appendChild(s);
+        // Defensive: if the bundled library somehow failed to load, surface the
+        // trends error panel instead of silently rendering nothing.
+        var loadEl = document.querySelector('.abj404-trends-loading');
+        if (loadEl) { loadEl.style.display = 'none'; }
+        var errEl = document.getElementById('abj404-trends-error');
+        if (errEl) { errEl.style.display = ''; }
     }
 
     function buildChart(canvasId, label, color, labels, values) {

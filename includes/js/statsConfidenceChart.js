@@ -5,9 +5,10 @@
  * canvas element's `data-abj404-confidence` attribute, so the PHP
  * render path doesn't need to inline any JS.
  *
- * Renders into #abj404-chart-confidence using Chart.js. If Chart.js
- * isn't loaded yet, waits for the `abj404ChartJsLoaded` event that
- * statsTrends.js dispatches after fetching the CDN script.
+ * Renders into #abj404-chart-confidence using Chart.js (bundled with the
+ * plugin and enqueued as a hard dependency, so window.Chart is normally
+ * already defined). As a fallback it also waits for the `abj404ChartJsLoaded`
+ * event that statsTrends.js dispatches, in case of script-order differences.
  */
 (function () {
     'use strict';
