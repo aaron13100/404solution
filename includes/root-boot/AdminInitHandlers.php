@@ -139,10 +139,10 @@ function abj404_loadSomethingWhenWordPressIsReady() {
 	$ttl = defined('HOUR_IN_SECONDS') ? (12 * HOUR_IN_SECONDS) : 43200;
 	abj404_maybe_refresh_runtime_integrity_cache($ttl);
 
-	if ($isAdminRequest && $action === 'exportRedirects') {
-	    require_once(plugin_dir_path( ABJ404_FILE ) . "includes/Loader.php");
+	if ($isAdminRequest && $action === 'exportRedirects' && abj404_current_user_is_plugin_admin()) {
+		require_once(plugin_dir_path( ABJ404_FILE ) . "includes/Loader.php");
 		$abj404logic = ABJ_404_Solution_PluginLogic::getInstance();
-			$abj404logic->adminActions()->handleActionExport();
+		$abj404logic->adminActions()->handleActionExport();
 	}
 }
 }
