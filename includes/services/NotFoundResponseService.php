@@ -151,75 +151,25 @@ class ABJ_404_Solution_NotFoundResponseService {
      */
     function forceRedirect(string $location, int $status = 302, $type = -1, string $requestedURL = '', bool $isCustom404 = false): bool {
         if ($status === 410) {
-            status_header(410);
-            $templatePath = dirname(__DIR__) . '/html/gone410.html';
-            if (file_exists($templatePath)) {
-                $siteName = function_exists('get_bloginfo') ? get_bloginfo('name') : '';
-                $siteUrl  = function_exists('home_url') ? home_url('/') : '/';
-                $templateContent = file_get_contents($templatePath);
-                if (is_string($templateContent)) {
-                    $templateContent = str_replace(
-                        array('{site_name}', '{site_url}', '{heading}', '{message}', '{back_home}'),
-                        array(
-                            esc_html($siteName),
-                            esc_url($siteUrl),
-                            esc_html__('This content has been permanently removed.', '404-solution'),
-                            esc_html__('The page you requested no longer exists and has not been moved to a new location.', '404-solution'),
-                            esc_html__('Back to home page', '404-solution'),
-                        ),
-                        $templateContent
-                    );
-                    echo $templateContent;
-                }
-            }
-            exit;
+            $this->sendGoneStatusResponse(
+                410,
+                'gone410.html',
+                esc_html__('This content has been permanently removed.', '404-solution'),
+                esc_html__('The page you requested no longer exists and has not been moved to a new location.', '404-solution')
+            );
         }
 
         if ($status === 451) {
-            status_header(451);
-            $templatePath = dirname(__DIR__) . '/html/gone451.html';
-            if (file_exists($templatePath)) {
-                $siteName = function_exists('get_bloginfo') ? get_bloginfo('name') : '';
-                $siteUrl  = function_exists('home_url') ? home_url('/') : '/';
-                $templateContent = file_get_contents($templatePath);
-                if (is_string($templateContent)) {
-                    $templateContent = str_replace(
-                        array('{site_name}', '{site_url}', '{heading}', '{message}', '{back_home}'),
-                        array(
-                            esc_html($siteName),
-                            esc_url($siteUrl),
-                            esc_html__('451 Unavailable For Legal Reasons', '404-solution'),
-                            esc_html__('This content is unavailable due to a legal demand.', '404-solution'),
-                            esc_html__('Back to home page', '404-solution'),
-                        ),
-                        $templateContent
-                    );
-                    echo $templateContent;
-                }
-            }
-            exit;
+            $this->sendGoneStatusResponse(
+                451,
+                'gone451.html',
+                esc_html__('451 Unavailable For Legal Reasons', '404-solution'),
+                esc_html__('This content is unavailable due to a legal demand.', '404-solution')
+            );
         }
 
         if ($status === 0 && $location !== '') {
-            status_header(200);
-            $templatePath = dirname(__DIR__) . '/html/metaRefresh.html';
-            if (file_exists($templatePath)) {
-                $templateContent = file_get_contents($templatePath);
-                if (is_string($templateContent)) {
-                    $templateContent = str_replace(
-                        array('{url}', '{delay}', '{title}', '{message}'),
-                        array(
-                            esc_url($location),
-                            '0',
-                            esc_html__('Redirecting...', '404-solution'),
-                            esc_html__('You are being redirected. Click the link if not redirected automatically.', '404-solution'),
-                        ),
-                        $templateContent
-                    );
-                    echo $templateContent;
-                }
-            }
-            exit;
+            $this->sendMetaRefreshResponse($location);
         }
 
         $pluginLogic = abj_service('plugin_logic');
@@ -230,32 +180,11 @@ class ABJ_404_Solution_NotFoundResponseService {
             $finalDestination = (string)$location . $this->getCommentPartAndQueryPartOfRequest();
         }
 
-        $previousRequest = is_object($this->previousRequestCookieTracker)
-            ? $this->previousRequestCookieTracker->readCookieWithPreviousRqeuestShort()
-            : '';
-        $schemePos = $this->f->strpos($finalDestination, '://');
-        $finalDestNoHome = ($schemePos !== false)
-            ? $this->f->substr($finalDestination, $schemePos + 3) : $finalDestination;
-        $slashPos = $this->f->strpos($finalDestNoHome, '/');
-        $finalDestNoHome = ($slashPos !== false)
-            ? $this->f->substr($finalDestNoHome, $slashPos) : '/';
-
-        $schemePos2 = $this->f->strpos($location, '://');
-        $locationNoHome = ($schemePos2 !== false)
-            ? $this->f->substr($location, $schemePos2 + 3) : $location;
-        $slashPos2 = $this->f->strpos($locationNoHome, '/');
-        $locationNoHome = ($slashPos2 !== false)
-            ? $this->f->substr($locationNoHome, $slashPos2) : '/';
-        if (!empty($previousRequest)) {
-            if ($previousRequest == $finalDestNoHome && $previousRequest != $locationNoHome) {
-                $this->logger->infoMessage("Maybe avoided infite redirects to/from: " . $previousRequest);
-                $finalDestination = $location;
-
-            } else if ($previousRequest == $finalDestination) {
-                $this->logger->infoMessage("Avoided infite redirects to/from: " . $previousRequest);
-                return false;
-            }
+        $loopSafeDestination = $this->avoidInfiniteRedirect($finalDestination, $location);
+        if ($loopSafeDestination === false) {
+            return false;
         }
+        $finalDestination = $loopSafeDestination;
 
         if ($type == ABJ404_TYPE_404_DISPLAYED) {
             $this->sendTo404Page($requestedURL, '', false);
@@ -266,37 +195,135 @@ class ABJ_404_Solution_NotFoundResponseService {
             $this->previousRequestCookieTracker->setCookieWithPreviousRequest();
         }
         if (!headers_sent()) {
-            if (function_exists('abj404_benchmark_emit_headers')) {
-                try {
-                    abj404_benchmark_emit_headers();
-                } catch (Throwable $e) {
-                    $this->warnBenchmarkHeaderFailure($e);
-                }
+            return $this->sendHeaderRedirect($finalDestination, $status);
+        }
+
+        return $this->sendJavaScriptRedirectFallback($finalDestination);
+    }
+
+    private function sendGoneStatusResponse(int $status, string $templateFile, string $heading, string $message): void {
+        status_header($status);
+        $templatePath = dirname(__DIR__) . '/html/' . $templateFile;
+        if (file_exists($templatePath)) {
+            $siteName = function_exists('get_bloginfo') ? get_bloginfo('name') : '';
+            $siteUrl  = function_exists('home_url') ? home_url('/') : '/';
+            $templateContent = file_get_contents($templatePath);
+            if (is_string($templateContent)) {
+                echo str_replace(
+                    array('{site_name}', '{site_url}', '{heading}', '{message}', '{back_home}'),
+                    array(
+                        esc_html($siteName),
+                        esc_url($siteUrl),
+                        $heading,
+                        $message,
+                        esc_html__('Back to home page', '404-solution'),
+                    ),
+                    $templateContent
+                );
             }
-            $useSafe = false;
-            if (function_exists('wp_safe_redirect')) {
-                $destHost = parse_url($finalDestination, PHP_URL_HOST);
-                if ($destHost === null || $destHost === false || $destHost === '') {
-                    $useSafe = true;
-                } else {
-                    $homeHost = parse_url(home_url(), PHP_URL_HOST);
-                    if (is_string($homeHost) && $homeHost !== '' && strtolower($homeHost) === strtolower($destHost)) {
-                        $useSafe = true;
+        }
+        exit;
+    }
+
+    private function sendMetaRefreshResponse(string $location): void {
+        status_header(200);
+        $templatePath = dirname(__DIR__) . '/html/metaRefresh.html';
+        if (file_exists($templatePath)) {
+            $templateContent = file_get_contents($templatePath);
+            if (is_string($templateContent)) {
+                echo str_replace(
+                    array('{url}', '{delay}', '{title}', '{message}'),
+                    array(
+                        esc_url($location),
+                        '0',
+                        esc_html__('Redirecting...', '404-solution'),
+                        esc_html__('You are being redirected. Click the link if not redirected automatically.', '404-solution'),
+                    ),
+                    $templateContent
+                );
+            }
+        }
+        exit;
+    }
+
+    /**
+     * @return string|false
+     */
+    private function avoidInfiniteRedirect(string $finalDestination, string $location) {
+        $previousRequest = is_object($this->previousRequestCookieTracker)
+            ? $this->previousRequestCookieTracker->readCookieWithPreviousRqeuestShort()
+            : '';
+        if (empty($previousRequest)) {
+            return $finalDestination;
+        }
+
+        $finalDestNoHome = $this->redirectPathOnly($finalDestination);
+        $locationNoHome = $this->redirectPathOnly($location);
+        if ($previousRequest == $finalDestNoHome && $previousRequest != $locationNoHome) {
+            $this->logger->infoMessage("Maybe avoided infite redirects to/from: " . $previousRequest);
+            return $location;
+        }
+
+        if ($previousRequest == $finalDestination) {
+            $this->logger->infoMessage("Avoided infite redirects to/from: " . $previousRequest);
+            return false;
+        }
+
+        return $finalDestination;
+    }
+
+    private function redirectPathOnly(string $url): string {
+        $schemePos = $this->f->strpos($url, '://');
+        $withoutHost = ($schemePos !== false)
+            ? $this->f->substr($url, $schemePos + 3) : $url;
+        $slashPos = $this->f->strpos($withoutHost, '/');
+        return ($slashPos !== false) ? $this->f->substr($withoutHost, $slashPos) : '/';
+    }
+
+    private function sendHeaderRedirect(string $finalDestination, int $status): bool {
+        if (function_exists('abj404_benchmark_emit_headers')) {
+            try {
+                abj404_benchmark_emit_headers();
+            } catch (Throwable $e) {
+                $this->warnBenchmarkHeaderFailure($e);
+            }
+        }
+
+        $allowedRedirectHostFilter = $this->addAllowedRedirectHostFilter($finalDestination);
+        wp_safe_redirect($finalDestination, $status, ABJ404_NAME);
+        if ($allowedRedirectHostFilter !== null) {
+            remove_filter('allowed_redirect_hosts', $allowedRedirectHostFilter, 10);
+        }
+        if (!apply_filters('abj404_should_exit', true, array('source' => 'forceRedirect_header'))) {
+            return false;
+        }
+        exit;
+    }
+
+    private function addAllowedRedirectHostFilter(string $finalDestination): ?callable {
+        $destHost = parse_url($finalDestination, PHP_URL_HOST);
+        if (!is_string($destHost) || $destHost === '') {
+            return null;
+        }
+
+        $allowedRedirectHostFilter = static function($hosts) use ($destHost) {
+            $normalizedHosts = array();
+            if (is_array($hosts)) {
+                foreach ($hosts as $host) {
+                    if (is_scalar($host) || $host === null || (is_object($host) && method_exists($host, '__toString'))) {
+                        $normalizedHosts[] = (string)$host;
                     }
                 }
             }
+            $normalizedHosts[] = strtolower($destHost);
+            return array_values(array_unique($normalizedHosts));
+        };
+        add_filter('allowed_redirect_hosts', $allowedRedirectHostFilter, 10, 1);
 
-            if ($useSafe) {
-                wp_safe_redirect($finalDestination, $status, ABJ404_NAME);
-            } else {
-                wp_redirect($finalDestination, $status, ABJ404_NAME);
-            }
-            if (!apply_filters('abj404_should_exit', true, array('source' => 'forceRedirect_header'))) {
-                return false;
-            }
-            exit;
-        }
+        return $allowedRedirectHostFilter;
+    }
 
+    private function sendJavaScriptRedirectFallback(string $finalDestination): bool {
         if (function_exists('abj404_benchmark_emit_headers')) {
             abj404_benchmark_emit_headers();
         }
