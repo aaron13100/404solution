@@ -103,7 +103,7 @@ class ABJ_404_Solution_OldPermalinkStructureResolver {
         }
 
         preg_match_all('/%[a-z_]+%/', $structure, $tokenMatches);
-        $tokens = $tokenMatches[0] ?? array();
+        $tokens = $tokenMatches[0];
         if (!in_array('%post_id%', $tokens, true)
                 && !in_array('%postname%', $tokens, true)
                 && !in_array('%pagename%', $tokens, true)) {
@@ -123,7 +123,7 @@ class ABJ_404_Solution_OldPermalinkStructureResolver {
         $compiledSegments = array();
         foreach ($segments as $segment) {
             preg_match_all('/%[a-z_]+%/', $segment, $segmentTokens);
-            if (count($segmentTokens[0] ?? array()) > 1) {
+            if (count($segmentTokens[0]) > 1) {
                 return null;
             }
             $compiledSegments[] = $this->compileSegment($segment);
@@ -363,16 +363,16 @@ class ABJ_404_Solution_OldPermalinkStructureResolver {
      * @return int
      */
     private function idFromRow($row): int {
-        if (is_object($row) && isset($row->id)) {
+        if (is_object($row) && isset($row->id) && is_scalar($row->id)) {
             return absint($row->id);
         }
-        if (is_object($row) && isset($row->ID)) {
+        if (is_object($row) && isset($row->ID) && is_scalar($row->ID)) {
             return absint($row->ID);
         }
-        if (is_array($row) && isset($row['id'])) {
+        if (is_array($row) && isset($row['id']) && is_scalar($row['id'])) {
             return absint($row['id']);
         }
-        if (is_array($row) && isset($row['ID'])) {
+        if (is_array($row) && isset($row['ID']) && is_scalar($row['ID'])) {
             return absint($row['ID']);
         }
         return 0;

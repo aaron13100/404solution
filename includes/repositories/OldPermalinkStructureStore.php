@@ -108,10 +108,6 @@ class ABJ_404_Solution_OldPermalinkStructureStore {
             $structure = $path;
         }
 
-        if ($structure === '') {
-            return '';
-        }
-
         if ($structure[0] !== '/') {
             $structure = '/' . $structure;
         }
