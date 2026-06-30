@@ -49,6 +49,7 @@ require_once __DIR__ . '/../core/PhpErrorLogFallback.php';
  *     $name is 'redirect_dead_destination_checker' ? ABJ_404_Solution_RedirectDeadDestinationChecker : (
  *     $name is 'logs_repository' ? ABJ_404_Solution_LogsRepository : (
  *     $name is 'stats_repository' ? ABJ_404_Solution_StatsRepository : (
+ *     $name is 'internal_source_evidence_repository' ? ABJ_404_Solution_InternalSourceEvidenceRepository : (
  *     $name is 'plugin_update_metadata_repository' ? ABJ_404_Solution_PluginUpdateMetadataRepository : (
  *     $name is 'view_read_service' ? ABJ_404_Solution_ViewReadService : (
  *     $name is 'data_access' ? ABJ_404_Solution_DataAccess : (
@@ -61,6 +62,9 @@ require_once __DIR__ . '/../core/PhpErrorLogFallback.php';
  *     $name is 'plugin_logic' ? ABJ_404_Solution_PluginLogic : (
  *     $name is 'request_ignore_normalizer' ? ABJ_404_Solution_RequestIgnoreNormalizer : (
  *     $name is 'spell_checker' ? ABJ_404_Solution_SpellChecker : (
+ *     $name is 'old_permalink_structure_store' ? ABJ_404_Solution_OldPermalinkStructureStore : (
+ *     $name is 'old_permalink_structure_resolver' ? ABJ_404_Solution_OldPermalinkStructureResolver : (
+ *     $name is 'engine_old_permalink_structure' ? ABJ_404_Solution_OldPermalinkStructureEngine : (
  *     $name is 'engine_slug' ? ABJ_404_Solution_SlugMatchingEngine : (
  *     $name is 'engine_url_fix' ? ABJ_404_Solution_UrlFixEngine : (
  *     $name is 'engine_title' ? ABJ_404_Solution_TitleMatchingEngine : (
@@ -85,7 +89,7 @@ require_once __DIR__ . '/../core/PhpErrorLogFallback.php';
  *     $name is 'settings_mode_preference' ? ABJ_404_Solution_SettingsModePreference : (
  *     $name is 'not_found_response' ? ABJ_404_Solution_NotFoundResponseService :
  *     mixed
- * ))))))))))))))))))))))))))))))))))))))))))))))))))))
+ * ))))))))))))))))))))))))))))))))))))))))))))))))))))))))
  */
 function abj_service($name) {
     if ($name === 'logging' && class_exists('ABJ_404_Solution_Logging', false)) {

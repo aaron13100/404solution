@@ -30,6 +30,9 @@ class ABJ_404_Solution_PermalinkCache {
     /** @var ABJ_404_Solution_NGramFilter|null */
     private $ngramFilter;
 
+    /** @var ABJ_404_Solution_OldPermalinkStructureStore */
+    private $oldPermalinkStructureStore;
+
     /**
      * Constructor with dependency injection.
      *
@@ -37,8 +40,15 @@ class ABJ_404_Solution_PermalinkCache {
      * @param ABJ_404_Solution_Logging|null $logging Logging service
      * @param ABJ_404_Solution_StatsRepository|null $statsRepository Stats repository
      * @param ABJ_404_Solution_NGramFilter|null $ngramFilter NGram filter (null = resolved lazily via abj_service)
+     * @param ABJ_404_Solution_OldPermalinkStructureStore|null $oldPermalinkStructureStore Previous structure store
      */
-    public function __construct($contentRepository = null, $logging = null, $statsRepository = null, $ngramFilter = null) {
+    public function __construct(
+        $contentRepository = null,
+        $logging = null,
+        $statsRepository = null,
+        $ngramFilter = null,
+        $oldPermalinkStructureStore = null
+    ) {
         // Use injected dependencies or fall back to getInstance() for backward compatibility
         $this->contentRepository = $contentRepository !== null ? $contentRepository : abj_service('content_repository');
         $this->logger = $logging !== null ? $logging : abj_service('logging');
@@ -47,6 +57,9 @@ class ABJ_404_Solution_PermalinkCache {
                 ? $contentRepository
                 : call_user_func(array('ABJ_404_Solution_StatsRepositoryResolver', 'resolve'), __CLASS__));
         $this->ngramFilter = $ngramFilter;
+        $this->oldPermalinkStructureStore = $oldPermalinkStructureStore !== null
+            ? $oldPermalinkStructureStore
+            : new ABJ_404_Solution_OldPermalinkStructureStore();
     }
 
     /** @return self */
@@ -75,29 +88,39 @@ class ABJ_404_Solution_PermalinkCache {
     static function init(): void {
         $me = abj_service('permalink_cache');
         
-        add_action('updated_option', array($me, 'permalinkStructureChanged'), 10, 2);
+        add_action('updated_option', array($me, 'permalinkStructureChanged'), 10, 3);
     }
 
     /** If the permalink structure changes then truncate the cache table and update some values.
      * @global type $abj404logging
      * @param string $var1
-     * @param string $newStructure
+     * @param mixed $oldStructure
+     * @param mixed|null $newStructure
      */
     /**
      * @param string $var1
-     * @param string $newStructure
+     * @param mixed $oldStructure
+     * @param mixed|null $newStructure
      * @return void
      */
-    function permalinkStructureChanged($var1, $newStructure): void {
+    function permalinkStructureChanged($var1, $oldStructure, $newStructure = null): void {
         if ($var1 != 'permalink_structure') {
             return;
+        }
+
+        $previousStructure = $newStructure === null ? '' : (is_scalar($oldStructure) ? (string)$oldStructure : '');
+        $currentStructure = $newStructure === null
+            ? (is_scalar($oldStructure) ? (string)$oldStructure : '')
+            : (is_scalar($newStructure) ? (string)$newStructure : '');
+        if ($previousStructure !== '' && $previousStructure !== $currentStructure) {
+            $this->oldPermalinkStructureStore->recordPreviousStructure($previousStructure);
         }
         
         // we need to truncate the permlink cache since the structure changed
         
         $this->logger->debugMessage(__CLASS__ . "/" . __FUNCTION__ . 
                 ": Truncating and updating permalink cache because the permalink structure changed to " . 
-                $newStructure);
+                $currentStructure);
         
         $this->contentRepository->truncatePermalinkCacheTable();
 

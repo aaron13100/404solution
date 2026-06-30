@@ -308,9 +308,10 @@ class ABJ_404_Solution_View_CapturedURLsTable extends ABJ_404_Solution_ViewCompo
             ) . "\n";
         }
 
+        $sourceEvidenceByUrl = $this->sourceEvidenceByVisibleUrl($rows);
         $bodyRows = '';
         foreach ($rows as $row) {
-            $bodyRows .= $this->capturedBodyRow($sub, $tableOptions, $row);
+            $bodyRows .= $this->capturedBodyRow($sub, $tableOptions, $row, $sourceEvidenceByUrl);
         }
         return $bodyRows;
     }
@@ -318,13 +319,14 @@ class ABJ_404_Solution_View_CapturedURLsTable extends ABJ_404_Solution_ViewCompo
     /**
      * @param array<string, mixed> $tableOptions
      * @param array<string, mixed> $row
+     * @param array<string, array<string, mixed>> $sourceEvidenceByUrl
      */
-    private function capturedBodyRow(string $sub, array $tableOptions, array $row): string {
+    private function capturedBodyRow(string $sub, array $tableOptions, array $row, array $sourceEvidenceByUrl): string {
         $hits = is_scalar($row['logshits'] ?? 0) ? (int)($row['logshits'] ?? 0) : 0;
         $lastUsed = $this->capturedLastUsedPresentation($row);
         $status = $this->capturedStatusPresentation($row);
         $btns = $this->capturedActionButtons($sub, $tableOptions, $row);
-        $vars = $this->capturedRowTemplateVars($row, $hits, $lastUsed, $status, $btns);
+        $vars = $this->capturedRowTemplateVars($row, $hits, $lastUsed, $status, $btns, $sourceEvidenceByUrl);
 
         $tempHtml = $this->f->str_replace(
             array_keys($vars),
@@ -411,14 +413,19 @@ class ABJ_404_Solution_View_CapturedURLsTable extends ABJ_404_Solution_ViewCompo
      * @param array{date: string, class: string} $lastUsed
      * @param array{class: string, text: string, title: string} $status
      * @param array{edit: string, logs: string, trash: string, delete: string, ignore: string, later: string} $btns
+     * @param array<string, array<string, mixed>> $sourceEvidenceByUrl
      * @return array<string, string>
      */
-    private function capturedRowTemplateVars(array $row, int $hits, array $lastUsed, array $status, array $btns): array {
+    private function capturedRowTemplateVars(array $row, int $hits, array $lastUsed, array $status, array $btns,
+            array $sourceEvidenceByUrl): array {
         $capturedRowUrl = is_string($row['url'] ?? '') ? (string)($row['url'] ?? '') : '';
         $capturedRowId = is_scalar($row['id'] ?? '') ? (string)($row['id'] ?? '') : '';
         $capturedEngine = is_string($row['engine'] ?? '') ? trim((string)($row['engine'] ?? '')) : '';
         $capturedEngineHTML = ($capturedEngine !== '') ? '<br><span class="abj404-engine-label">' . esc_html($capturedEngine) . '</span>' : '';
         $createdTimestamp = is_scalar($row['timestamp'] ?? 0) ? intval($row['timestamp'] ?? 0) : 0;
+        $sourceEvidence = isset($sourceEvidenceByUrl[$capturedRowUrl]) && is_array($sourceEvidenceByUrl[$capturedRowUrl])
+            ? $sourceEvidenceByUrl[$capturedRowUrl] : array();
+        $sourceHtml = $this->capturedSourceEvidenceHtml($capturedRowId, $sourceEvidence);
 
         $vars = array(
             '{rowid}' => $capturedRowId,
@@ -439,7 +446,113 @@ class ABJ_404_Solution_View_CapturedURLsTable extends ABJ_404_Solution_ViewCompo
             '{deleteBtnHTML}' => $btns['delete'],
             '{ignoreBtnHTML}' => $btns['ignore'],
             '{laterBtnHTML}' => $btns['later'],
+            '{internal_sources_trigger}' => $sourceHtml['trigger'],
+            '{internal_sources_panel}' => $sourceHtml['panel'],
         );
         return $vars;
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $rows
+     * @return array<string, array<string, mixed>>
+     */
+    private function sourceEvidenceByVisibleUrl(array $rows): array {
+        $urls = array();
+        foreach ($rows as $row) {
+            if (isset($row['url']) && is_string($row['url']) && $row['url'] !== '') {
+                $urls[] = $row['url'];
+            }
+        }
+        if (empty($urls)) {
+            return array();
+        }
+
+        $repo = $this->internalSourceEvidenceRepository();
+        if (!is_object($repo) || !method_exists($repo, 'getEvidenceForCapturedUrls')) {
+            return array();
+        }
+        $evidence = $repo->getEvidenceForCapturedUrls($urls, 5);
+        if (!is_array($evidence)) {
+            return array();
+        }
+
+        $typedEvidence = array();
+        foreach ($evidence as $url => $rowEvidence) {
+            if (is_string($url) && is_array($rowEvidence)) {
+                $typedEvidence[$url] = $rowEvidence;
+            }
+        }
+        return $typedEvidence;
+    }
+
+    /** @return mixed */
+    private function internalSourceEvidenceRepository() {
+        return abj_service('internal_source_evidence_repository');
+    }
+
+    /**
+     * @param array<string, mixed> $evidence
+     * @return array{trigger:string,panel:string}
+     */
+    private function capturedSourceEvidenceHtml(string $rowId, array $evidence): array {
+        $sourceCount = isset($evidence['source_count']) && is_numeric($evidence['source_count'])
+            ? (int)$evidence['source_count'] : 0;
+        $sources = isset($evidence['sources']) && is_array($evidence['sources']) ? $evidence['sources'] : array();
+        if ($sourceCount <= 0 || empty($sources)) {
+            return array('trigger' => '', 'panel' => '');
+        }
+
+        $panelId = 'abj404-source-panel-' . sanitize_key($rowId);
+        $trigger = '<button type="button" class="abj404-source-trigger" aria-expanded="false"'
+            . ' aria-controls="' . esc_attr($panelId) . '" data-abj404-source-toggle="' . esc_attr($rowId) . '">'
+            . esc_html(sprintf(__('Sources (%d)', '404-solution'), $sourceCount)) . '</button>';
+
+        $sourceRows = '';
+        foreach ($sources as $source) {
+            if (!is_array($source)) {
+                continue;
+            }
+            $sourceRows .= $this->capturedSourceRowHtml($source);
+        }
+        if ($sourceRows === '') {
+            return array('trigger' => '', 'panel' => '');
+        }
+
+        $displayedCount = isset($evidence['displayed_source_count']) && is_numeric($evidence['displayed_source_count'])
+            ? (int)$evidence['displayed_source_count'] : count($sources);
+        $truncation = '';
+        if ($sourceCount > $displayedCount) {
+            $truncation = '<p class="abj404-source-truncation">'
+                . esc_html(sprintf(__('Showing %1$d of %2$d sources.', '404-solution'), $displayedCount, $sourceCount))
+                . '</p>';
+        }
+
+        $panel = $this->fillTpl('capturedSourcesPanel.html', array(
+            '{panel_id}' => esc_attr($panelId),
+            '{heading}' => esc_html__('Linked from', '404-solution'),
+            '{source_rows}' => $sourceRows,
+            '{truncation}' => $truncation,
+        ));
+
+        return array('trigger' => $trigger, 'panel' => $panel);
+    }
+
+    /** @param array<array-key, mixed> $source */
+    private function capturedSourceRowHtml(array $source): string {
+        $title = isset($source['post_title']) && is_scalar($source['post_title']) ? trim((string)$source['post_title']) : '';
+        $referrerUrl = isset($source['referrer_url']) && is_scalar($source['referrer_url']) ? (string)$source['referrer_url'] : '';
+        $label = $title !== '' ? $title : $referrerUrl;
+        $editUrl = isset($source['edit_url']) && is_scalar($source['edit_url']) ? (string)$source['edit_url'] : '';
+        $editLink = $editUrl !== ''
+            ? '<a class="abj404-source-edit" href="' . esc_url($editUrl) . '" target="_blank" rel="noopener noreferrer">'
+                . esc_html__('Edit', '404-solution') . '</a>'
+            : '';
+
+        return $this->fillTpl('capturedSourcesRow.html', array(
+            '{source_label}' => esc_html($label),
+            '{hit_count}' => esc_html((string)(isset($source['hit_count']) && is_numeric($source['hit_count'])
+                ? (int)$source['hit_count'] : 0)),
+            '{edit_link}' => $editLink,
+        ));
     }
 }

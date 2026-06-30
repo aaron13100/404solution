@@ -62,6 +62,12 @@ class ABJ_404_Solution_DataServiceRegistration {
                 $c->get('functions'), $c->get('logging')
             );
         });
+        $container->set('internal_source_evidence_repository', function($c) {
+            return new ABJ_404_Solution_InternalSourceEvidenceRepository(
+                $c->get('db_core'),
+                $c->get('functions')
+            );
+        });
         $container->set('plugin_update_metadata_repository', function($c) {
             return new ABJ_404_Solution_PluginUpdateMetadataRepository(
                 $c->get('db_core'), $c->get('functions'), $c->get('logging')

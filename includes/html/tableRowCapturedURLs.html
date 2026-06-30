@@ -3,7 +3,11 @@
         <input type="checkbox" name="idnum[]" value="{rowid}" onchange="enableDisableApplyButton();">
     </td>
     <td class="abj404-url-cell" title="{url}">
-        <a href="{visitorURL}" target="_blank" title="{Visit URL}">{url}</a>
+        <div class="abj404-captured-url-line">
+            <a href="{visitorURL}" target="_blank" title="{Visit URL}">{url}</a>
+            {internal_sources_trigger}
+        </div>
+        {internal_sources_panel}
         <div class="abj404-row-actions">
             {editBtnHTML} | {logsBtnHTML} | {trashBtnHTML}{deleteBtnHTML}{ignoreBtnHTML}{laterBtnHTML}
         </div>

@@ -62,6 +62,9 @@ interface ABJ_404_Solution_Abj404ServiceRegistrationContract {
     );
 
     public const MATCHING_ENGINE_SERVICE_NAMES = array(
+        'old_permalink_structure_store',
+        'old_permalink_structure_resolver',
+        'engine_old_permalink_structure',
         'engine_slug',
         'engine_url_fix',
         'engine_title',
@@ -126,6 +129,9 @@ interface ABJ_404_Solution_Abj404ServiceRegistrationContract {
         'logging_state_store',
         'admin_access_policy',
         'settings_mode_preference',
+        'old_permalink_structure_store',
+        'old_permalink_structure_resolver',
+        'engine_old_permalink_structure',
         'engine_slug',
         'engine_url_fix',
         'engine_title',

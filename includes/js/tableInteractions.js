@@ -12,12 +12,14 @@
     var selectedCount = 0;
     var allCheckboxes = [];
     var selectAllCheckbox = null;
+    var sourcePanelsInitialized = false;
 
     $(document).ready(function() {
         window.abj404InitTableInteractions();
         initModal();
         initFilterBar();
         initRowActions();
+        initSourcePanels();
     });
 
     /**
@@ -299,6 +301,72 @@
                 }
             });
         });
+    }
+
+    /**
+     * Initialize captured-404 source evidence panels.
+     *
+     * The handlers are delegated because the list table body can be replaced by
+     * AJAX pagination without reloading this script.
+     */
+    function initSourcePanels() {
+        if (sourcePanelsInitialized) return;
+        sourcePanelsInitialized = true;
+
+        $(document).on('click', '[data-abj404-source-toggle]', function(e) {
+            e.preventDefault();
+            toggleSourcePanel(this);
+        });
+
+        $(document).on('keydown', function(e) {
+            if (e.key !== 'Escape') return;
+            var openTrigger = document.querySelector('[data-abj404-source-toggle][aria-expanded="true"]');
+            if (!openTrigger) return;
+            closeSourcePanel(openTrigger, true);
+        });
+    }
+
+    function toggleSourcePanel(trigger) {
+        var expanded = trigger.getAttribute('aria-expanded') === 'true';
+        if (expanded) {
+            closeSourcePanel(trigger, false);
+            return;
+        }
+
+        closeAllSourcePanels();
+        openSourcePanel(trigger);
+    }
+
+    function openSourcePanel(trigger) {
+        var panel = sourcePanelForTrigger(trigger);
+        if (!panel) return;
+
+        trigger.setAttribute('aria-expanded', 'true');
+        panel.removeAttribute('hidden');
+    }
+
+    function closeSourcePanel(trigger, restoreFocus) {
+        var panel = sourcePanelForTrigger(trigger);
+        trigger.setAttribute('aria-expanded', 'false');
+        if (panel) {
+            panel.setAttribute('hidden', 'hidden');
+        }
+        if (restoreFocus && typeof trigger.focus === 'function') {
+            trigger.focus();
+        }
+    }
+
+    function closeAllSourcePanels() {
+        var triggers = document.querySelectorAll('[data-abj404-source-toggle][aria-expanded="true"]');
+        Array.prototype.forEach.call(triggers, function(trigger) {
+            closeSourcePanel(trigger, false);
+        });
+    }
+
+    function sourcePanelForTrigger(trigger) {
+        var panelId = trigger.getAttribute('aria-controls');
+        if (!panelId) return null;
+        return document.getElementById(panelId);
     }
 
     /**
