@@ -48,7 +48,7 @@ class ABJ_404_Solution_InternalSourceEvidenceRepository {
             return array();
         }
 
-        $aggregateRows = $this->queryAggregateRows(array_keys($visibleUrls), $maxSources);
+        $aggregateRows = $this->queryAggregateRows(array_keys($visibleUrls));
         $grouped = $this->groupRowsByCapturedUrl($aggregateRows, $visibleUrls);
 
         $evidence = array();
@@ -96,20 +96,18 @@ class ABJ_404_Solution_InternalSourceEvidenceRepository {
      * @param array<int, string> $visibleUrls
      * @return array<int, array<string, mixed>>
      */
-    private function queryAggregateRows(array $visibleUrls, int $maxSources): array {
+    private function queryAggregateRows(array $visibleUrls): array {
         $quoted = array();
         foreach ($visibleUrls as $url) {
             $quoted[] = "'" . esc_sql($this->sanitizeSqlString($url)) . "'";
         }
 
-        $limit = max(1, count($visibleUrls)) * max(1, $maxSources) * 20;
         $query = "SELECT requested_url, referrer, COUNT(*) AS hit_count, MAX(timestamp) AS last_seen"
             . " FROM {wp_abj404_logsv2}"
             . " WHERE requested_url IN (" . implode(',', $quoted) . ")"
             . " AND referrer IS NOT NULL AND referrer != ''"
             . " GROUP BY requested_url, referrer"
-            . " ORDER BY requested_url ASC, hit_count DESC, last_seen DESC"
-            . " LIMIT " . (int)$limit;
+            . " ORDER BY requested_url ASC, hit_count DESC, last_seen DESC";
 
         $result = $this->db->queryAndGetResults($query);
         $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
