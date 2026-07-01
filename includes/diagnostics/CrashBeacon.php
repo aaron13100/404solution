@@ -133,6 +133,13 @@ final class ABJ_404_Solution_CrashBeacon {
      * non-printable/invalid-UTF-8 bytes (so json_encode cannot fail on the
      * message), then fold long digit runs.
      *
+     * The digit fold exempts a run immediately followed by "bytes": PHP's own
+     * OOM message ("Allowed memory size of N bytes exhausted (tried to
+     * allocate N bytes)") is the single most common message this captures,
+     * and a byte count is never PII -- it is the memory_limit/allocation-size
+     * diagnostic this whole crash-beacon feature exists to report. Folding it
+     * away defeated the feature for its primary case.
+     *
      * @param string $msg
      * @return string
      */
@@ -144,7 +151,7 @@ final class ABJ_404_Solution_CrashBeacon {
         $msg = is_string($msg) ? $msg : '';
         $msg = preg_replace('/[^\x20-\x7E]/', '', $msg);
         $msg = is_string($msg) ? $msg : '';
-        $msg = preg_replace('/\b\d{4,}\b/', 'N', $msg);
+        $msg = preg_replace('/\b\d{4,}\b(?!\s*bytes\b)/i', 'N', $msg);
         return is_string($msg) ? trim($msg) : '';
     }
 

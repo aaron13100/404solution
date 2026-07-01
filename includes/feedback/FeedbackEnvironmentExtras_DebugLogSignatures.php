@@ -130,6 +130,17 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras_DebugLogSignatures {
      * tests/F6UrlFragmentLeakIntoErrorSignatureTest can pin the
      * PII-stripping behavior directly.
      *
+     * Mirrors ABJ_404_Solution_CrashBeacon::lightRedact() (the cheap
+     * capture-time version run inside the fatal handler) and is also run
+     * again on an already-lightRedact'd message at report time
+     * (CrashBeaconReporter::buildSignature()), so the digit fold here must
+     * use the same "bytes" exemption or the capture-time fix has no effect
+     * on the final reported text. See lightRedact()'s docblock: a byte
+     * count is never PII and is the memory_limit/allocation-size
+     * diagnostic the crash-beacon feature exists to report. It is also
+     * stable per site (memory_limit does not change between requests), so
+     * exempting it does not hurt the grouping this function exists for.
+     *
      * @param string $msg
      * @return string
      */
@@ -139,7 +150,7 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras_DebugLogSignatures {
         $s = preg_replace('#/[A-Za-z0-9_\-\./]+/([A-Za-z0-9_\-]+\.php)#', '$1', $s) ?? $s;
         // Collapse memory addresses, hex, and digit sequences.
         $s = preg_replace('/\b0x[0-9a-fA-F]+\b/', '0xN', $s) ?? $s;
-        $s = preg_replace('/\b\d{4,}\b/', 'N', $s) ?? $s;
+        $s = preg_replace('/\b\d{4,}\b(?!\s*bytes\b)/i', 'N', $s) ?? $s;
         // Collapse runs of whitespace.
         $s = preg_replace('/\s+/', ' ', $s) ?? $s;
         return trim($s);

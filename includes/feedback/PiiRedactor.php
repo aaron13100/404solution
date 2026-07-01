@@ -64,14 +64,22 @@ class ABJ_404_Solution_PiiRedactor {
     // URL / query-string stripping
     // =========================================================================
 
-    /** @param string $text @return string */
+    /**
+     * @param string $text @return string
+     *
+     * The query-string match excludes closing quote/bracket characters in
+     * addition to whitespace: a URL quoted in log text (e.g. `Captured 404
+     * for "/page?utm_source=x" creating a record.`) was matching greedily
+     * past the query string's end and swallowing the closing quote too,
+     * corrupting the rest of the sentence.
+     */
     private function stripUrlQueryStrings(string $text): string {
-        return preg_replace('/(https?:\/\/[^\s?]+)\?[^\s]*/', '$1', $text) ?? $text;
+        return preg_replace('/(https?:\/\/[^\s?]+)\?[^\s"\'\)\]\}]*/', '$1', $text) ?? $text;
     }
 
     /** @param string $text @return string */
     private function stripPathQueryStrings(string $text): string {
-        return preg_replace('/(?<![A-Za-z0-9:@])(\/[^\s?#]*)\?\S*/', '$1', $text) ?? $text;
+        return preg_replace('/(?<![A-Za-z0-9:@])(\/[^\s?#]*)\?[^\s"\'\)\]\}]*/', '$1', $text) ?? $text;
     }
 
     // =========================================================================
@@ -240,21 +248,31 @@ class ABJ_404_Solution_PiiRedactor {
     // Database identifiers (name + prefix)
     // =========================================================================
 
-    /** @param string $text @return string */
+    /**
+     * @param string $text @return string
+     *
+     * Both lookbehinds exclude a preceding '/' (in addition to identifier
+     * characters) so a DB name or table prefix that happens to also be a
+     * substring of a file path is not redacted -- e.g. this plugin's own
+     * dev environment sets DB_NAME to '404-solution', identical to its
+     * slug, so without the '/' exclusion "/plugins/404-solution/
+     * 404-solution.php" was redacted to ".../dbname.php", destroying the
+     * actual filename in stack traces and log lines.
+     */
     private function redactDatabaseIdentifiers(string $text): string {
         $dbname = $this->getActualDatabaseNameForRedaction();
         if ($dbname !== '' && strlen($dbname) >= 3 && $dbname !== 'dbname') {
             $text = preg_replace(
-                '/(?<![A-Za-z0-9_-])' . preg_quote($dbname, '/') . '(?=[.`])/',
+                '/(?<![A-Za-z0-9_\/-])' . preg_quote($dbname, '/') . '(?=[.`])/',
                 'dbname',
                 $text
             ) ?? $text;
         }
 
         $prefix = $this->getActualPrefixForRedaction();
-        if ($prefix !== '' && $prefix !== 'wp_') {
+        if ($prefix !== '' && strlen($prefix) >= 3 && $prefix !== 'wp_') {
             $text = preg_replace(
-                '/(?<![A-Za-z0-9_-])' . preg_quote($prefix, '/') . '(?=[A-Za-z])/',
+                '/(?<![A-Za-z0-9_\/-])' . preg_quote($prefix, '/') . '(?=[A-Za-z])/',
                 'wp_',
                 $text
             ) ?? $text;
@@ -272,10 +290,32 @@ class ABJ_404_Solution_PiiRedactor {
         return preg_replace_callback(
             '/\b([A-Za-z0-9_-]{40,})\b/',
             function ($matches) {
+                if (self::looksLikeOwnIdentifier($matches[1])) {
+                    return $matches[1];
+                }
                 return 'token-' . substr(md5($matches[1]), 0, 8);
             },
             $text
         ) ?? $text;
+    }
+
+    /**
+     * This plugin uses two long-running naming conventions that routinely
+     * exceed the 40-char long-token threshold above: PascalCase classes
+     * (ABJ_404_Solution_ + a descriptive suffix, e.g. fatal-error messages
+     * like "Class ABJ_404_Solution_RedirectsDenormMaintenanceService not
+     * found") and lowercase option/transient/filter/hook names (abj404_ +
+     * a descriptive suffix, e.g. "Option
+     * abj404_error_handler_allow_admin_fatal_detection_in_cli was not
+     * found"). Both were being redacted into useless 'token-XXXXXXXX'
+     * noise. Real secrets never coincidentally start with either exact
+     * literal prefix, so exempting them does not weaken the redaction.
+     *
+     * @param string $token
+     * @return bool
+     */
+    private static function looksLikeOwnIdentifier(string $token): bool {
+        return strpos($token, 'ABJ_404_Solution_') === 0 || strpos($token, 'abj404_') === 0;
     }
 
     /** @param string $text @return string */
