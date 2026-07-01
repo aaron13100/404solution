@@ -115,6 +115,17 @@ class ABJ_404_Solution_LogsQueueFlusher {
             if ($result === false && !empty($wpdb->last_error)) {
                 $this->recoverFailedBatch($tableName, $columnList, $prepared, $sql, $flattenedValues, $sanitizedEntries, $validatedColumns, (string)$wpdb->last_error);
             }
+        } catch (\Throwable $e) {
+            // This runs on the 'shutdown' action, which fires on every
+            // request that queued a log entry. finally (below) already
+            // resets the queue/flags; without this catch, an uncaught
+            // throwable here would propagate out of do_action('shutdown')
+            // and abort any other plugin's later shutdown cleanup too, not
+            // just lose this batch of log rows.
+            $this->logger->errorMessage(
+                'flushLogQueue failed: ' . get_class($e) . ': ' . $e->getMessage(),
+                $e instanceof \Exception ? $e : null
+            );
         } finally {
             $queue = [];
             $shutdownHookRegistered = false;

@@ -338,17 +338,30 @@ class ABJ_404_Solution_PluginAdminAccessPolicy {
             return $allcaps;
         }
 
-        $policy = abj_service('admin_access_policy');
-        if (!is_object($policy) || !method_exists($policy, 'isPluginAdmin')) {
-            return $allcaps;
-        }
+        try {
+            $policy = abj_service('admin_access_policy');
+            if (!is_object($policy) || !method_exists($policy, 'isPluginAdmin')) {
+                return $allcaps;
+            }
 
-        if (!$policy->isPluginAdmin()) {
-            return $allcaps;
-        }
+            if (!$policy->isPluginAdmin()) {
+                return $allcaps;
+            }
 
-        if (self::isRequestForPluginAdminPage()) {
-            $allcaps['manage_options'] = true;
+            if (self::isRequestForPluginAdminPage()) {
+                $allcaps['manage_options'] = true;
+            }
+        } catch (\Throwable $e) {
+            // user_has_cap fires on every current_user_can() check across
+            // all of wp-admin, often many times per page load. A transient
+            // failure resolving this plugin's services must not fatal the
+            // whole admin page for an unrelated capability check; returning
+            // $allcaps unchanged is also the safe failure mode for an
+            // authorization filter (it withholds the extra grant rather
+            // than risking one).
+            if (function_exists('abj404_logRuntimeWarning')) {
+                abj404_logRuntimeWarning('wpUserHasCapFilter failed', $e);
+            }
         }
 
         return $allcaps;

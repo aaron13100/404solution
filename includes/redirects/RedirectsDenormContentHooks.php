@@ -101,7 +101,9 @@ class ABJ_404_Solution_RedirectsDenormContentHooks {
             return;
         }
         self::$processedPosts[$id] = true;
-        $this->maintenance()->recomputeForChangedPost($id);
+        $this->safelyRecompute(function () use ($id) {
+            $this->maintenance()->recomputeForChangedPost($id);
+        }, 'onSavePost(post=' . $id . ')');
     }
 
     /**
@@ -126,7 +128,9 @@ class ABJ_404_Solution_RedirectsDenormContentHooks {
         if ($id <= 0) {
             return;
         }
-        $this->maintenance()->recomputeForChangedPost($id);
+        $this->safelyRecompute(function () use ($id) {
+            $this->maintenance()->recomputeForChangedPost($id);
+        }, 'onTransitionPostStatus(post=' . $id . ')');
     }
 
     /**
@@ -141,7 +145,9 @@ class ABJ_404_Solution_RedirectsDenormContentHooks {
         if ($id <= 0) {
             return;
         }
-        $this->maintenance()->recomputeForChangedPost($id);
+        $this->safelyRecompute(function () use ($id) {
+            $this->maintenance()->recomputeForChangedPost($id);
+        }, 'onDeletedPost(post=' . $id . ')');
     }
 
     /**
@@ -156,6 +162,32 @@ class ABJ_404_Solution_RedirectsDenormContentHooks {
         if ($id <= 0) {
             return;
         }
-        $this->maintenance()->recomputeForChangedTerm($id);
+        $this->safelyRecompute(function () use ($id) {
+            $this->maintenance()->recomputeForChangedTerm($id);
+        }, 'onEditedTerm(term=' . $id . ')');
+    }
+
+    /**
+     * Run a denorm-recompute call without letting a failure escape this
+     * hook. These callbacks fire on core WordPress content-change hooks
+     * (save_post, transition_post_status, ...) registered for every request,
+     * including wp-cron.php runs that may also be executing other plugins'
+     * scheduled tasks. A transient failure here (most commonly: the plugin's
+     * own classmap racing a concurrent self-update, see the VRMU incident in
+     * project memory) must not crash the whole cron request out from under
+     * unrelated tasks.
+     *
+     * @param callable $work fn(): void
+     * @param string $context Logged on failure, e.g. 'onSavePost(post=123)'.
+     * @return void
+     */
+    private function safelyRecompute(callable $work, string $context): void {
+        try {
+            $work();
+        } catch (\Throwable $e) {
+            if (function_exists('abj404_logRuntimeWarning')) {
+                abj404_logRuntimeWarning('RedirectsDenormContentHooks: ' . $context . ' failed', $e);
+            }
+        }
     }
 }

@@ -31,8 +31,20 @@ function abj404_404listener() {
         // Performance: do NOT load the whole plugin on every frontend request unless we must.
     	if (!empty($runtimeFlags['redirect_all_requests'])) {
     		require_once(plugin_dir_path( ABJ404_FILE ) . "includes/Loader.php");
-    		$connector = ABJ_404_Solution_WordPress_Connector::getInstance();
-    		$connector->processRedirectAllRequests();
+    		try {
+    			$connector = ABJ_404_Solution_WordPress_Connector::getInstance();
+    			$connector->processRedirectAllRequests();
+    		} catch (\Throwable $e) {
+    			// This runs on every front-end request when "redirect all
+    			// requests" is enabled. A transient failure resolving the
+    			// plugin's services (the VRMU incident: a class momentarily
+    			// missing during a plugin self-update racing a live request)
+    			// must degrade to "serve this request normally" rather than
+    			// a fatal error page for a real visitor.
+    			if (function_exists('abj404_logRuntimeWarning')) {
+    				abj404_logRuntimeWarning('abj404_404listener: processRedirectAllRequests failed', $e);
+    			}
+    		}
     		return;
     	}
 
@@ -107,7 +119,19 @@ function abj404_404listener() {
 	}
 
     require_once(plugin_dir_path( ABJ404_FILE ) . "includes/Loader.php");
-    $connector = ABJ_404_Solution_WordPress_Connector::getInstance();
-    $connector->process404();
+    try {
+        $connector = ABJ_404_Solution_WordPress_Connector::getInstance();
+        $connector->process404();
+    } catch (\Throwable $e) {
+        // This is the plugin's core entry point, hit on every genuine 404 a
+        // real visitor triggers. A transient failure resolving the plugin's
+        // services (the VRMU incident: a class momentarily missing during a
+        // plugin self-update racing a live request) must degrade to "let
+        // WordPress show its normal 404 page" rather than a fatal error
+        // page for that visitor.
+        if (function_exists('abj404_logRuntimeWarning')) {
+            abj404_logRuntimeWarning('abj404_404listener: process404 failed', $e);
+        }
+    }
 }
 }

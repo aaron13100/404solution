@@ -118,6 +118,29 @@ class ABJ_404_Solution_SlugChangeHandler {
      * @return void
      */
     function save_postHandler($post_id, $post, $update) {
+        try {
+            $this->save_postHandlerImpl($post_id, $post, $update);
+        } catch (\Throwable $e) {
+            // save_post fires on every post save site-wide (admin, REST,
+            // import, other plugins' programmatic wp_insert_post() calls).
+            // A transient failure resolving this plugin's services (the
+            // VRMU incident: a class momentarily missing during a plugin
+            // self-update racing a live request) must not crash the
+            // save/request that triggered it.
+            $this->logger->errorMessage(
+                'save_postHandler failed: ' . get_class($e) . ': ' . $e->getMessage(),
+                $e instanceof \Exception ? $e : null
+            );
+        }
+    }
+
+    /**
+     * @param int $post_id
+     * @param \WP_Post $post
+     * @param bool $update
+     * @return void
+     */
+    private function save_postHandlerImpl($post_id, $post, $update): void {
         $abj404logging = $this->logger;
 
         // Prevent duplicate processing within same request
@@ -236,6 +259,26 @@ class ABJ_404_Solution_SlugChangeHandler {
      * @return void
      */
     function postStatusTransitionHandler($new_status, $old_status, $post) {
+        try {
+            $this->postStatusTransitionHandlerImpl($new_status, $old_status, $post);
+        } catch (\Throwable $e) {
+            // Same reasoning as save_postHandler(): this fires on every
+            // post status change site-wide and must not crash the request
+            // that triggered it.
+            $this->logger->errorMessage(
+                'postStatusTransitionHandler failed: ' . get_class($e) . ': ' . $e->getMessage(),
+                $e instanceof \Exception ? $e : null
+            );
+        }
+    }
+
+    /**
+     * @param string $new_status
+     * @param string $old_status
+     * @param \WP_Post $post
+     * @return void
+     */
+    private function postStatusTransitionHandlerImpl($new_status, $old_status, $post): void {
         // Only care about published posts being trashed.
         if ($old_status !== 'publish' || $new_status !== 'trash') {
             return;
@@ -290,6 +333,25 @@ class ABJ_404_Solution_SlugChangeHandler {
      * @return void
      */
     function beforeDeletePostHandler($post_id, $post) {
+        try {
+            $this->beforeDeletePostHandlerImpl($post_id, $post);
+        } catch (\Throwable $e) {
+            // Same reasoning as save_postHandler(): this fires on every
+            // post deletion site-wide and must not crash the request that
+            // triggered it.
+            $this->logger->errorMessage(
+                'beforeDeletePostHandler failed: ' . get_class($e) . ': ' . $e->getMessage(),
+                $e instanceof \Exception ? $e : null
+            );
+        }
+    }
+
+    /**
+     * @param int $post_id
+     * @param \WP_Post $post
+     * @return void
+     */
+    private function beforeDeletePostHandlerImpl($post_id, $post): void {
         if (!is_object($post) || !property_exists($post, 'post_status')) {
             return;
         }
