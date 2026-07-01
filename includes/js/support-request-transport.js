@@ -69,7 +69,24 @@
             credentials: 'same-origin',
             body: formData
         }).then(function (response) {
-            return response.json().then(function (json) {
+            // Clone before reading: a Response body can only be consumed
+            // once, and a JSON-parse failure needs the raw text (WAF block
+            // page, gateway timeout HTML, PHP fatal output) so the failure
+            // is diagnosable instead of surfacing only a raw SyntaxError.
+            return response.clone().text().then(function (rawText) {
+                var json;
+                try {
+                    json = JSON.parse(rawText);
+                } catch (parseError) {
+                    if (window.console && window.console.error) {
+                        window.console.error('404 Solution: support request preview response was not valid JSON', {
+                            status: response.status,
+                            bodySnippet: rawText.slice(0, 500),
+                            parseError: parseError.message
+                        });
+                    }
+                    throw new Error('preview failed'); // allow-raw-error: internal sentinel; view's preview expander renders t('previewError') from its own catch
+                }
                 if (json && json.success === true && json.data) {
                     return json.data;
                 }

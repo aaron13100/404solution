@@ -16,9 +16,15 @@ jQuery(document).ready(function($) {
 })
 
 function striphtml(html) {
-    var tmp = document.createElement("DIV");
-    tmp.innerHTML = html;
-    return tmp.textContent || tmp.innerText || "";
+    // A regex strip (not a real HTML parser) so this can never load a
+    // resource or run an event-handler attribute (e.g. <img onerror=...>)
+    // that an HTML parser boundary would otherwise create, even on an
+    // element never attached to the document. The only caller uses this
+    // purely to make a JSON.stringify()'d payload readable in a console.log.
+    if (typeof html !== 'string') {
+        return '';
+    }
+    return html.replace(/<[^>]*>/g, '');
 }
 
 function submitOptions(e) {

@@ -55,15 +55,30 @@
             formData.append('reply_email', args.reply_email);
         }
 
-        return fetch(resolveAjaxUrl(), {
+        return fetch(resolveAjaxUrl(), { // allow-direct-network: this IS the dedicated fetch-based API client for the support-request endpoint
             method: 'POST',
             credentials: 'same-origin',
             body: formData
         }).then(function (response) {
-            return response.json().then(function (json) {
+            // Clone before reading: a Response body can only be consumed
+            // once, and a JSON-parse failure needs the raw text (WAF block
+            // page, gateway timeout HTML, PHP fatal output) so the failure
+            // is diagnosable instead of collapsing into a generic message.
+            return response.clone().text().then(function (rawText) {
+                var json;
+                try {
+                    json = JSON.parse(rawText);
+                } catch (parseError) {
+                    if (window.console && window.console.error) {
+                        window.console.error('404 Solution: support request response was not valid JSON', {
+                            status: response.status,
+                            bodySnippet: rawText.slice(0, 500),
+                            parseError: parseError.message
+                        });
+                    }
+                    return { status: response.status, body: null };
+                }
                 return { status: response.status, body: json };
-            }).catch(function () {
-                return { status: response.status, body: null };
             });
         }).then(function (wrapped) {
             var body = wrapped.body || {};
