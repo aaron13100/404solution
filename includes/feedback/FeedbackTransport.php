@@ -128,9 +128,16 @@ class ABJ_404_Solution_FeedbackTransport {
      * Synchronously POST and fall back to wp_mail() on failure. Used by paths
      * already in cron context (nightly maintenance).
      *
+     * The email fallback is intentionally skipped for type='heartbeat': a
+     * heartbeat is a low-value, high-frequency signal, and mailing its full
+     * payload to the developer on every transport hiccup would flood the
+     * inbox with noise. type='error' (and the interactive types) keep the
+     * fallback since those reports are the ones actually worth not losing.
+     *
      * @param array<string, mixed> $payload
      * @param string $type
-     * @return bool true if any transport (HTTP or email) succeeded.
+     * @return bool true if any transport (HTTP or email) succeeded, or if
+     *              type='heartbeat' and the HTTP POST itself succeeded.
      */
     public static function sendNow(array $payload, string $type): bool {
         self::$lastSendUsedFallback = false;
@@ -183,6 +190,18 @@ class ABJ_404_Solution_FeedbackTransport {
         }
 
         $statusLabel = $statusStr !== '' ? $statusStr : ($reasonStr !== '' ? $reasonStr : 'unknown');
+
+        if ($type === 'heartbeat') {
+            ABJ_404_Solution_FeedbackTransportLog::log('warn', sprintf(
+                'abj404_transport: type=%s http_status=%s fallback_used=false (heartbeat never falls back) ms_elapsed=%d detail=%s',
+                $type,
+                $statusLabel,
+                $elapsedMs,
+                $detailStr
+            ));
+            return false;
+        }
+
         ABJ_404_Solution_FeedbackTransportLog::log('warn', sprintf(
             'abj404_transport: type=%s http_status=%s fallback_used=true ms_elapsed=%d detail=%s',
             $type,

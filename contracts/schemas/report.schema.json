@@ -59,6 +59,17 @@
     "redirects_regex_count": { "type": ["integer", "null"], "minimum": 0 },
     "redirects_trashed_count": { "type": ["integer", "null"], "minimum": 0 },
 
+    "redirect_hit_count_histogram": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "properties": {
+        "zero_hits": { "type": "integer", "minimum": 0 },
+        "one_to_ten_hits": { "type": "integer", "minimum": 0 },
+        "eleven_to_hundred_hits": { "type": "integer", "minimum": 0 },
+        "over_hundred_hits": { "type": "integer", "minimum": 0 }
+      }
+    },
+
     "captured_404s_active_total": { "type": ["integer", "null"], "minimum": 0 },
     "captured_404s_new_count": { "type": ["integer", "null"], "minimum": 0 },
     "captured_404s_ignored_count": { "type": ["integer", "null"], "minimum": 0 },
