@@ -22,31 +22,52 @@ class ABJ_404_Solution_ReportPayloadJsonSchemaValidator {
      */
     public static function validate(array $payload): array {
         if (!self::ensureOpisLoaded()) {
-            return self::invalid(
-                'Opis JSON Schema validator is unavailable; install opis/json-schema and load vendor/autoload.php'
-            );
+            // opis/json-schema is a dev/test-only dependency (declared in
+            // tests/composer.json, never bundled into the shipped plugin --
+            // vendoring a third-party Composer package into a WordPress
+            // plugin risks a global-namespace class collision with another
+            // active plugin bundling a different version of the same
+            // library). This is the expected state on every production
+            // site, not an error condition: this check is an optional
+            // fail-fast pre-flight, and the real source of truth is the
+            // live server's own schema validation, which the transport
+            // layer already falls back to email for on rejection. Treating
+            // "can't run the optional check" as "payload is invalid" used
+            // to throw out of FeedbackPayloadSchemaGuard::assert() and
+            // silently drop every error/heartbeat/uninstall/support_request
+            // report on any site without a coincidental Opis class
+            // collision -- see project memory
+            // project_opis_missing_breaks_telemetry.md for the incident.
+            return self::skipped();
         }
 
         $schema = self::loadSchema();
         if (!$schema instanceof \stdClass) {
-            return self::invalid('Could not load ' . self::SCHEMA_RELATIVE_PATH);
+            // Same reasoning as above: the schema file itself failing to
+            // load is an environment problem with the optional local
+            // pre-flight, not evidence the payload is malformed.
+            return self::skipped();
         }
 
         $data = self::payloadToJsonData(self::toWirePayload($payload));
         if (!$data instanceof \stdClass) {
-            return self::invalid('Could not convert payload to JSON object for ' . self::SCHEMA_RELATIVE_PATH);
+            return self::skipped();
         }
 
         try {
             $result = (new \Opis\JsonSchema\Validator())->validate($data, $schema);
         } catch (\Throwable $e) {
-            return self::invalid('Opis validator threw while checking ' . self::SCHEMA_RELATIVE_PATH . ': ' . $e->getMessage());
+            return self::skipped();
         }
 
         if ($result->isValid()) {
             return array('valid' => true, 'reason' => '', 'detail' => '');
         }
 
+        // The validator ran successfully and found a real contract
+        // violation -- this is the one case that should still fail closed,
+        // since it is the producer-drift bug this check exists to catch
+        // (in CI/dev, where Opis is available via tests/composer.json).
         return self::invalid(self::formatValidationError($result->error()));
     }
 
@@ -69,16 +90,27 @@ class ABJ_404_Solution_ReportPayloadJsonSchemaValidator {
     }
 
     private static function ensureOpisLoaded(): bool {
-        if (class_exists('\Opis\JsonSchema\Validator') && class_exists('\Opis\JsonSchema\Errors\ErrorFormatter')) {
-            return true;
+        $available = class_exists('\Opis\JsonSchema\Validator') && class_exists('\Opis\JsonSchema\Errors\ErrorFormatter');
+
+        if (!$available) {
+            $autoload = dirname(__DIR__) . '/vendor/autoload.php';
+            if (file_exists($autoload)) {
+                require_once $autoload;
+            }
+            $available = class_exists('\Opis\JsonSchema\Validator') && class_exists('\Opis\JsonSchema\Errors\ErrorFormatter');
         }
 
-        $autoload = dirname(__DIR__) . '/vendor/autoload.php';
-        if (file_exists($autoload)) {
-            require_once $autoload;
+        // Real extension point (a site could force this optional pre-flight
+        // off) that doubles as the test seam for simulating "Opis
+        // unavailable": once a PHP process has autoloaded Opis the classes
+        // stay defined for the rest of its lifetime, so a normal PHPUnit run
+        // (which loads tests/composer.json's Opis dependency at bootstrap)
+        // can never otherwise exercise this branch.
+        if (function_exists('apply_filters')) {
+            $available = (bool) apply_filters('abj404_report_schema_validator_available', $available);
         }
 
-        return class_exists('\Opis\JsonSchema\Validator') && class_exists('\Opis\JsonSchema\Errors\ErrorFormatter');
+        return $available;
     }
 
     private static function loadSchema(): ?\stdClass {
@@ -190,5 +222,17 @@ class ABJ_404_Solution_ReportPayloadJsonSchemaValidator {
             'reason' => self::REASON_VALIDATION_FAILED,
             'detail' => $detail,
         );
+    }
+
+    /**
+     * The optional local pre-flight could not run (missing Opis, unreadable
+     * schema, encoding failure). Treated as valid -- not "the payload is
+     * bad", just "this site cannot double-check it locally" -- so the
+     * payload still reaches the real check on the server.
+     *
+     * @return array{valid: bool, reason: string, detail: string}
+     */
+    private static function skipped(): array {
+        return array('valid' => true, 'reason' => '', 'detail' => '');
     }
 }

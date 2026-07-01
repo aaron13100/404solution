@@ -150,7 +150,20 @@ class ABJ_404_Solution_Ajax_SupportRequest {
             'debug_log_excerpt' => $debugLogExcerpt,
         );
 
-        $payload = ABJ_404_Solution_FeedbackTransport::buildPayload('support_request', $extras);
+        try {
+            $payload = ABJ_404_Solution_FeedbackTransport::buildPayload('support_request', $extras);
+        } catch (\Throwable $e) {
+            // buildPayload() throws if the assembled payload fails its
+            // schema contract. The user is actively waiting on this
+            // request, so surface the real detail rather than failing
+            // silently or letting an uncaught exception reach them as a
+            // generic PHP error.
+            wp_send_json_error(array(
+                /* translators: %s = the underlying error message. */
+                'message' => sprintf(__('Could not prepare the report (%s).', '404-solution'), $e->getMessage()),
+            ), 500);
+            return; // @phpstan-ignore deadCode.unreachable
+        }
 
         // Mark cooldown BEFORE dispatch so a slow / hung HTTP transport
         // can't be exploited to bypass the rate limit by a user mashing

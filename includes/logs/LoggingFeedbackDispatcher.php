@@ -69,12 +69,26 @@ class ABJ_404_Solution_LoggingFeedbackDispatcher {
             return false;
         }
 
-        $payload = ABJ_404_Solution_FeedbackTransport::buildPayload('error', array(
-            'error_signature' => (string)($latestErrorLineFound['line'] ?? ''),
-            'previously_sent_line' => (int)$sentLine,
-            'error_count_in_log' => (int)$latestErrorLineFound['total_error_count'],
-        ));
-        return ABJ_404_Solution_FeedbackTransport::sendNow($payload, 'error');
+        try {
+            $payload = ABJ_404_Solution_FeedbackTransport::buildPayload('error', array(
+                'error_signature' => (string)($latestErrorLineFound['line'] ?? ''),
+                'previously_sent_line' => (int)$sentLine,
+                'error_count_in_log' => (int)$latestErrorLineFound['total_error_count'],
+            ));
+            return ABJ_404_Solution_FeedbackTransport::sendNow($payload, 'error');
+        } catch (\Throwable $e) {
+            // buildPayload() throws if the payload fails its schema
+            // contract; a build/transport failure must never escape this
+            // cron-context call and crash the rest of the maintenance run.
+            // errorMessage()'s second param only accepts Exception (not the
+            // wider Throwable an \Error also matches), so the message/class
+            // are folded into the log line itself rather than dropped.
+            $this->logging->errorMessage(
+                'emailErrorLogIfNecessary: report build/send failed: ' . get_class($e) . ': ' . $e->getMessage(),
+                $e instanceof \Exception ? $e : null
+            );
+            return false;
+        }
     }
 
     /**
@@ -97,12 +111,22 @@ class ABJ_404_Solution_LoggingFeedbackDispatcher {
         $this->logging->debugMessage("Heartbeat dice roll hit (1-in-{$oneInN}). Sending heartbeat log.");
         $errorInfo = $this->logging->getLatestErrorLine();
 
-        $payload = ABJ_404_Solution_FeedbackTransport::buildPayload('heartbeat', array(
-            'error_signature' => 'Heartbeat: no errors to report.',
-            'previously_sent_line' => 0,
-            'error_count_in_log' => (int)$errorInfo['total_error_count'],
-        ));
-        ABJ_404_Solution_FeedbackTransport::sendNow($payload, 'heartbeat');
+        try {
+            $payload = ABJ_404_Solution_FeedbackTransport::buildPayload('heartbeat', array(
+                'error_signature' => 'Heartbeat: no errors to report.',
+                'previously_sent_line' => 0,
+                'error_count_in_log' => (int)$errorInfo['total_error_count'],
+            ));
+            ABJ_404_Solution_FeedbackTransport::sendNow($payload, 'heartbeat');
+        } catch (\Throwable $e) {
+            // Same reasoning as emailErrorLogIfNecessary(): a build/transport
+            // failure on the heartbeat must never escape this cron-context
+            // call and crash the rest of the maintenance run.
+            $this->logging->errorMessage(
+                'sendHeartbeatIfDueRandom: report build/send failed: ' . get_class($e) . ': ' . $e->getMessage(),
+                $e instanceof \Exception ? $e : null
+            );
+        }
         return true;
     }
 

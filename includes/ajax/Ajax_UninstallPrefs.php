@@ -146,10 +146,20 @@ class ABJ_404_Solution_Ajax_UninstallPrefs {
             // site-identifying field. The minimal-payload builder keeps the
             // payload schema-valid (server still accepts the feedback) while
             // suppressing every diagnostic row.
-            $payload = $includeDiagnostics
-                ? ABJ_404_Solution_FeedbackTransport::buildPayload('uninstall', $extras)
-                : ABJ_404_Solution_FeedbackTransport::buildMinimalPayload('uninstall', $extras);
-            ABJ_404_Solution_FeedbackTransport::queue($payload, 'uninstall');
+            // The preferences above are already saved at this point; a
+            // failure building/queuing the feedback report must not turn a
+            // successful deactivation save into an error response.
+            try {
+                $payload = $includeDiagnostics
+                    ? ABJ_404_Solution_FeedbackTransport::buildPayload('uninstall', $extras)
+                    : ABJ_404_Solution_FeedbackTransport::buildMinimalPayload('uninstall', $extras);
+                ABJ_404_Solution_FeedbackTransport::queue($payload, 'uninstall');
+            } catch (\Throwable $e) {
+                ABJ_404_Solution_FeedbackTransportLog::log(
+                    'warn',
+                    'Uninstall feedback report build/queue failed: ' . $e->getMessage()
+                );
+            }
 
             $message = __('Thanks for the feedback!', '404-solution');
         } else {

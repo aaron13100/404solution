@@ -123,14 +123,35 @@ class ABJ_404_Solution_Ajax_SupportRequestPreview {
 
         $previousPreviewReadOnly = $GLOBALS['abj404_feedback_preview_readonly'] ?? null;
         $GLOBALS['abj404_feedback_preview_readonly'] = true;
+        $buildError = null;
         try {
             $payload = ABJ_404_Solution_FeedbackTransport::buildPayload('support_request', $extras);
+        } catch (\Throwable $e) {
+            // Captured, not re-thrown here: wp_send_json_error() below exits
+            // the request, which would skip this finally block (PHP does not
+            // run finally past an exit()/die()) and leave the global flag
+            // stuck set for the rest of the process. Reporting the error
+            // after the finally runs keeps the cleanup unconditional.
+            $buildError = $e;
+            $payload = array();
         } finally {
             if ($previousPreviewReadOnly === null) {
                 unset($GLOBALS['abj404_feedback_preview_readonly']);
             } else {
                 $GLOBALS['abj404_feedback_preview_readonly'] = $previousPreviewReadOnly;
             }
+        }
+
+        if ($buildError !== null) {
+            // buildPayload() throws if the assembled payload fails its
+            // schema contract. This is a read-only preview the user is
+            // actively waiting on, so surface the real detail rather than
+            // letting an uncaught exception reach them as a generic error.
+            wp_send_json_error(array(
+                /* translators: %s = the underlying error message. */
+                'message' => sprintf(__('Could not prepare the preview (%s).', '404-solution'), $buildError->getMessage()),
+            ), 500);
+            return; // @phpstan-ignore deadCode.unreachable
         }
 
         // Defensive belt-and-braces: even if buildPayload changes later to
