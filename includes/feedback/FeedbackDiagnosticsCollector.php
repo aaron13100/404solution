@@ -30,6 +30,7 @@ class ABJ_404_Solution_FeedbackDiagnosticsCollector {
         $payload['redirects_automatic_count'] = $this->pluckInt($redirectCounts, 'auto');
         $payload['redirects_regex_count']     = $this->pluckInt($redirectCounts, 'regex');
         $payload['redirects_trashed_count']   = $this->pluckInt($redirectCounts, 'trash');
+        $payload['redirect_hit_count_histogram'] = $this->redirectHitCountHistogram();
 
         $capturedCounts = $this->tryArray(function () { return $this->capturedCountsRaw(); });
         $payload['captured_404s_active_total']  = $this->pluckInt($capturedCounts, 'all');
@@ -182,6 +183,47 @@ class ABJ_404_Solution_FeedbackDiagnosticsCollector {
         $raw = $viewReadService->getCapturedStatusCounts(true);
         if (!is_array($raw)) {
             throw new \RuntimeException('getCapturedStatusCounts returned non-array');
+        }
+        $out = array();
+        foreach ($raw as $k => $v) {
+            if (is_string($k) && is_scalar($v)) {
+                $out[$k] = (int)$v;
+            }
+        }
+        return $out;
+    }
+
+    /**
+     * @return array<string, int>|null
+     */
+    private function redirectHitCountHistogram(): ?array {
+        $histogram = $this->tryArray(function () { return $this->redirectHitCountHistogramRaw(); });
+        if (empty($histogram)) {
+            return null;
+        }
+        $buckets = array(
+            'zero_hits' => 0,
+            'one_to_ten_hits' => 0,
+            'eleven_to_hundred_hits' => 0,
+            'over_hundred_hits' => 0,
+        );
+        foreach ($buckets as $key => $_default) {
+            $buckets[$key] = $this->pluckInt($histogram, $key) ?? 0;
+        }
+        return $buckets;
+    }
+
+    /**
+     * @return array<string, int>
+     */
+    private function redirectHitCountHistogramRaw(): array {
+        $viewReadService = $this->viewReadService();
+        if ($viewReadService === null || !method_exists($viewReadService, 'getRedirectHitCountHistogram')) {
+            throw new \RuntimeException('ViewReadService::getRedirectHitCountHistogram unavailable');
+        }
+        $raw = $viewReadService->getRedirectHitCountHistogram();
+        if (!is_array($raw)) {
+            throw new \RuntimeException('getRedirectHitCountHistogram returned non-array');
         }
         $out = array();
         foreach ($raw as $k => $v) {

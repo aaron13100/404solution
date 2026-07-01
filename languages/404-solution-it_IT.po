@@ -653,8 +653,8 @@ msgstr "Vai alla pagina successiva"
 msgid "Go to previous page"
 msgstr "Vai alla pagina precedente"
 
-msgid "Help the developer by sending error logs"
-msgstr "Aiuta lo sviluppatore inviando i log degli errori"
+msgid "Help the developer with error logs and usage stats"
+msgstr "Aiuta lo sviluppatore con log degli errori e statistiche di utilizzo"
 
 msgid "Here are some other great pages"
 msgstr "Ecco alcune altre ottime pagine"
@@ -1642,8 +1642,8 @@ msgid "Error: Invalid language selected"
 msgstr "Errore: Lingua non valida selezionata"
 
 #: includes/html/adminOptionsGeneral.html
-msgid "When the plugin detects an error, it transmits a copy of the debug log to the developer for diagnosis. Transmission may be by email or by HTTPS upload to a developer-operated server; the contents are the same. This is not required for the plugin to work, but it helps the developer fix bugs in future versions. The report includes: everything in the debug log, the admin email address, installed PHP extensions, active plugins, PHP version, WordPress version, MySQL version, total published pages and posts, etc. (everything asked for when a support issue is opened). Reports are checked daily when maintenance runs."
-msgstr "Quando il plugin rileva un errore, trasmette una copia del registro di debug allo sviluppatore per la diagnosi. La trasmissione può avvenire tramite email o tramite caricamento HTTPS verso un server gestito dallo sviluppatore; il contenuto è lo stesso. Questo non è necessario per il funzionamento del plugin, ma aiuta lo sviluppatore a correggere i bug nelle versioni future. Il rapporto include: tutto ciò che è nel registro di debug, l'indirizzo email dell'amministratore, le estensioni PHP installate, i plugin attivi, la versione di PHP, la versione di WordPress, la versione di MySQL, il totale di pagine e articoli pubblicati, ecc. (tutto ciò che viene richiesto all'apertura di una richiesta di assistenza). I rapporti vengono controllati quotidianamente durante l'esecuzione della manutenzione."
+msgid "Sends the developer your debug log when an error occurs, plus a status ping at most once a week (once the plugin's been active 5+ days) with your site's version, URL, and 404/redirect counts. Counts are aggregate only, never per-URL. Optional — helps fix bugs and prioritize development. Reports are reviewed daily."
+msgstr "Invia allo sviluppatore il tuo log di debug quando si verifica un errore, più un ping di stato al massimo una volta alla settimana dopo che il plugin è attivo da oltre 5 giorni, con versione, URL e conteggi 404/reindirizzamenti del sito. I conteggi sono solo aggregati, mai per URL. Facoltativo — aiuta a correggere bug e a dare priorità allo sviluppo. I report vengono controllati ogni giorno."
 
 #: includes/html/viewSuggestions.html
 msgid "Display the closest matching pages by using the shortcode [abj404_solution_page_suggestions]."
@@ -4079,3 +4079,21 @@ msgstr "L'ordinamento per questa colonna è in fase di preparazione per il tuo n
 #: includes/view/View_Shared.php:247
 msgid "Sorting by this column is unavailable on this site. The list shows newest first."
 msgstr "L'ordinamento per questa colonna non è disponibile su questo sito. L'elenco mostra prima i più recenti."
+
+msgid "Sources (%d)"
+msgstr "Fonti (%d)"
+
+msgid "Showing %1$d of %2$d sources."
+msgstr "Visualizzazione di %1$d di %2$d fonti."
+
+msgid "Linked from"
+msgstr "Collegato da"
+
+msgid "old permalink structure"
+msgstr "vecchia struttura dei permalink"
+
+msgid "Could not prepare the preview (%s)."
+msgstr "Impossibile preparare l'anteprima (%s)."
+
+msgid "Could not prepare the report (%s)."
+msgstr "Impossibile preparare il report (%s)."

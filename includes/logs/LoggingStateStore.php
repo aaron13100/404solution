@@ -6,14 +6,15 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Single recursion-safe chokepoint for the three logging-owned scalars stored
+ * Single recursion-safe chokepoint for logging-owned scalars stored
  * as keys inside the abj404_settings option row.
  *
  * Every logging code path that needs the debug-file suffix, the last-emailed
- * debug-log line, or the user debug-mode flag goes through this adapter. The
- * adapter reaches storage ONLY through the raw, non-normalizing, non-logging
- * accessors getRawSettingValue()/setRawSettingValue() on the options
- * repository. It never calls getOptions()/updateOptions()/normalizeForRead().
+ * debug-log line, the weekly heartbeat timestamp, or the user debug-mode flag
+ * goes through this adapter. The adapter reaches storage ONLY through the raw,
+ * non-normalizing, non-logging accessors getRawSettingValue()/
+ * setRawSettingValue() on the options repository. It never calls
+ * getOptions()/updateOptions()/normalizeForRead().
  *
  * Why this matters (4.3.0 "broken sites after the latest update" OOM): the
  * runtime logger reads settings to locate its own debug-log file. Routing those
@@ -25,8 +26,8 @@ if (!defined('ABSPATH')) {
  * access here makes that property a structural invariant of one small class
  * rather than a convention scattered across the logging subsystem.
  *
- * No storage migration: the three scalars live where they always have, as keys
- * inside the abj404_settings option row.
+ * No storage migration: the scalars live as keys inside the abj404_settings
+ * option row.
  */
 class ABJ_404_Solution_LoggingStateStore {
 
@@ -35,6 +36,9 @@ class ABJ_404_Solution_LoggingStateStore {
 
     /** abj404_settings key holding the last-emailed debug-log line. */
     const LAST_SENT_LINE = 'last_sent_line';
+
+    /** abj404_settings key holding the last successful weekly heartbeat send time. */
+    const LAST_HEARTBEAT_SENT_AT = 'last_heartbeat_sent_at';
 
     /** abj404_settings key holding the user debug-mode flag (user config; read-only here). */
     const DEBUG_MODE = 'debug_mode';
@@ -116,6 +120,26 @@ class ABJ_404_Solution_LoggingStateStore {
      */
     public function setLastSentLine(int $line): void {
         $this->rawSet(self::LAST_SENT_LINE, $line);
+    }
+
+    /**
+     * Last successful weekly heartbeat send time, or 0 when unset / not scalar.
+     *
+     * @return int
+     */
+    public function getLastHeartbeatSentAt(): int {
+        $v = $this->rawGet(self::LAST_HEARTBEAT_SENT_AT);
+        return is_scalar($v) ? (int)$v : 0;
+    }
+
+    /**
+     * Persist the last successful weekly heartbeat send time.
+     *
+     * @param int $timestamp Unix seconds.
+     * @return void
+     */
+    public function setLastHeartbeatSentAt(int $timestamp): void {
+        $this->rawSet(self::LAST_HEARTBEAT_SENT_AT, $timestamp);
     }
 
     /**

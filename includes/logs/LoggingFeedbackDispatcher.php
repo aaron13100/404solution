@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) {
  *
  * Owns the cron-context decisions for developer error reports and heartbeat
  * reports: debug-file presence checks, latest-error dedupe state, update
- * eligibility, FeedbackTransport payload construction, and heartbeat dice
+ * eligibility, FeedbackTransport payload construction, and weekly heartbeat
  * guarding. File reading/writing and transport delivery remain delegated to
  * their existing collaborators.
  */
@@ -22,6 +22,11 @@ class ABJ_404_Solution_LoggingFeedbackDispatcher {
     private $logging;
     /** @var ABJ_404_Solution_ErrorEmailDedupeState|null */
     private $dedupeState = null;
+    /** @var ABJ_404_Solution_LoggingStateStore|null */
+    private $loggingStateStore = null;
+
+    private const HEARTBEAT_MIN_INSTALL_AGE_SECONDS = 5 * 86400;
+    private const HEARTBEAT_INTERVAL_SECONDS = 7 * 86400;
 
     /**
      * @param ABJ_404_Solution_Logging $logging Stable facade used for public-path behavior.
@@ -92,23 +97,39 @@ class ABJ_404_Solution_LoggingFeedbackDispatcher {
     }
 
     /**
-     * Roll a 1-in-N dice and send a heartbeat debug log if it hits.
+     * Send a heartbeat at most once per week after the plugin has been active
+     * for five days. The timestamp is persisted only after a successful
+     * transport send so failed reports retry on the next maintenance run.
      *
-     * @param int $oneInN Probability denominator.
-     * @return bool True if a heartbeat was sent.
+     * @return bool True if a heartbeat was sent successfully.
      */
-    public function sendHeartbeatIfDueRandom(int $oneInN = 200): bool {
-        if ($oneInN < 1) {
-            $this->logging->debugMessage("Invalid heartbeat denominator: " . $oneInN . ". Skipping heartbeat log.");
+    public function sendHeartbeatIfDueWeekly(): bool {
+        $now = abj_clock()->now();
+        $installedAt = $this->installedAt();
+        if ($installedAt <= 0) {
+            $this->logging->debugMessage("Weekly heartbeat skipped: installed time unavailable.");
             return false;
         }
+
+        $installAgeSeconds = $now - $installedAt;
+        if ($installAgeSeconds < self::HEARTBEAT_MIN_INSTALL_AGE_SECONDS) {
+            $this->logging->debugMessage("Weekly heartbeat skipped: plugin active for {$installAgeSeconds}s (< " .
+                self::HEARTBEAT_MIN_INSTALL_AGE_SECONDS . "s).");
+            return false;
+        }
+
+        $state = $this->getLoggingStateStore();
+        $lastSentAt = $state->getLastHeartbeatSentAt();
+        if ($lastSentAt > 0 && ($now - $lastSentAt) < self::HEARTBEAT_INTERVAL_SECONDS) {
+            $this->logging->debugMessage("Weekly heartbeat skipped: last sent at {$lastSentAt}.");
+            return false;
+        }
+
         if (!file_exists($this->logging->getDebugFilePath())) {
             return false;
         }
-        if (mt_rand(1, $oneInN) !== 1) {
-            return false;
-        }
-        $this->logging->debugMessage("Heartbeat dice roll hit (1-in-{$oneInN}). Sending heartbeat log.");
+
+        $this->logging->debugMessage("Weekly heartbeat due. Sending heartbeat log.");
         $errorInfo = $this->logging->getLatestErrorLine();
 
         try {
@@ -117,17 +138,18 @@ class ABJ_404_Solution_LoggingFeedbackDispatcher {
                 'previously_sent_line' => 0,
                 'error_count_in_log' => (int)$errorInfo['total_error_count'],
             ));
-            ABJ_404_Solution_FeedbackTransport::sendNow($payload, 'heartbeat');
+            $sent = ABJ_404_Solution_FeedbackTransport::sendNow($payload, 'heartbeat');
+            if ($sent) {
+                $state->setLastHeartbeatSentAt($now);
+            }
+            return $sent;
         } catch (\Throwable $e) {
-            // Same reasoning as emailErrorLogIfNecessary(): a build/transport
-            // failure on the heartbeat must never escape this cron-context
-            // call and crash the rest of the maintenance run.
             $this->logging->errorMessage(
-                'sendHeartbeatIfDueRandom: report build/send failed: ' . get_class($e) . ': ' . $e->getMessage(),
+                'sendHeartbeatIfDueWeekly: report build/send failed: ' . get_class($e) . ': ' . $e->getMessage(),
                 $e instanceof \Exception ? $e : null
             );
+            return false;
         }
-        return true;
     }
 
     /**
@@ -153,8 +175,23 @@ class ABJ_404_Solution_LoggingFeedbackDispatcher {
     private function getDedupeState(): ABJ_404_Solution_ErrorEmailDedupeState {
         if ($this->dedupeState === null) {
             $this->dedupeState = new ABJ_404_Solution_ErrorEmailDedupeState(
-                ABJ_404_Solution_LoggingStateStore::resolve());
+                $this->getLoggingStateStore());
         }
         return $this->dedupeState;
+    }
+
+    private function getLoggingStateStore(): ABJ_404_Solution_LoggingStateStore {
+        if ($this->loggingStateStore === null) {
+            $this->loggingStateStore = ABJ_404_Solution_LoggingStateStore::resolve();
+        }
+        return $this->loggingStateStore;
+    }
+
+    private function installedAt(): int {
+        if (!function_exists('get_option')) {
+            return 0;
+        }
+        $installedAt = get_option('abj404_installed_time', null);
+        return is_scalar($installedAt) && is_numeric($installedAt) ? (int)$installedAt : 0;
     }
 }

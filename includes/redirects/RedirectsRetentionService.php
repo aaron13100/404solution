@@ -315,7 +315,7 @@ class ABJ_404_Solution_RedirectsRetentionService {
             return $message . ", Log file emailed to developer.";
         }
 
-        if ($this->logger->sendHeartbeatIfDueRandom(200)) {
+        if ($this->logger->sendHeartbeatIfDueWeekly()) {
             return $message . ", Heartbeat log emailed to developer.";
         }
 

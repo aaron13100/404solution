@@ -121,6 +121,12 @@ return (function (): array {
         'redirects_automatic_count' => ['type' => 'int|null'],
         'redirects_regex_count'     => ['type' => 'int|null'],
         'redirects_trashed_count'   => ['type' => 'int|null'],
+        'redirect_hit_count_histogram' => [
+            'type' => 'object|null',
+            'key_type' => 'string',
+            'value_type' => 'int',
+            'description' => 'Aggregate active-redirect hit-count buckets only: zero_hits, one_to_ten_hits, eleven_to_hundred_hits, over_hundred_hits. Never per-redirect URLs.',
+        ],
 
         // Captured-404 status counts.
         'captured_404s_active_total'  => ['type' => 'int|null'],

@@ -653,8 +653,8 @@ msgstr "Gå till nästa sida"
 msgid "Go to previous page"
 msgstr "Gå till föregående sida"
 
-msgid "Help the developer by sending error logs"
-msgstr "Hjälp utvecklaren genom att skicka felloggar"
+msgid "Help the developer with error logs and usage stats"
+msgstr "Hjälp utvecklaren med felloggar och användningsstatistik"
 
 msgid "Here are some other great pages"
 msgstr "Här är några andra bra sidor"
@@ -1658,8 +1658,8 @@ msgid "Error: Invalid language selected"
 msgstr "Fel: Ogiltigt språk valt"
 
 #: includes/html/adminOptionsGeneral.html
-msgid "When the plugin detects an error, it transmits a copy of the debug log to the developer for diagnosis. Transmission may be by email or by HTTPS upload to a developer-operated server; the contents are the same. This is not required for the plugin to work, but it helps the developer fix bugs in future versions. The report includes: everything in the debug log, the admin email address, installed PHP extensions, active plugins, PHP version, WordPress version, MySQL version, total published pages and posts, etc. (everything asked for when a support issue is opened). Reports are checked daily when maintenance runs."
-msgstr "När pluginet upptäcker ett fel skickar det en kopia av felsökningsloggen till utvecklaren för diagnos. Överföringen kan ske via e-post eller via HTTPS-uppladdning till en server som drivs av utvecklaren; innehållet är detsamma. Detta är inte nödvändigt för att pluginet ska fungera, men det hjälper utvecklaren att åtgärda buggar i framtida versioner. Rapporten innehåller: allt i felsökningsloggen, administratörens e-postadress, installerade PHP-tillägg, aktiva plugins, PHP-version, WordPress-version, MySQL-version, totalt antal publicerade sidor och inlägg och så vidare (allt som efterfrågas när ett supportärende öppnas). Rapporter granskas dagligen när underhåll körs."
+msgid "Sends the developer your debug log when an error occurs, plus a status ping at most once a week (once the plugin's been active 5+ days) with your site's version, URL, and 404/redirect counts. Counts are aggregate only, never per-URL. Optional — helps fix bugs and prioritize development. Reports are reviewed daily."
+msgstr "Skickar din felsökningslogg till utvecklaren när ett fel inträffar, plus en statusping högst en gång i veckan när tillägget har varit aktivt i mer än 5 dagar, med webbplatsens version, URL och antal 404:or/omdirigeringar. Antalen är endast aggregerade, aldrig per URL. Valfritt — hjälper till att rätta fel och prioritera utveckling. Rapporter granskas dagligen."
 
 #: includes/html/viewSuggestions.html
 msgid "Display the closest matching pages by using the shortcode [abj404_solution_page_suggestions]."
@@ -4082,3 +4082,21 @@ msgstr "Sortering efter den här kolumnen förbereds för ditt antal webbadresse
 #: includes/view/View_Shared.php:247
 msgid "Sorting by this column is unavailable on this site. The list shows newest first."
 msgstr "Sortering efter den här kolumnen är inte tillgänglig på den här webbplatsen. Listan visar de nyaste först."
+
+msgid "Sources (%d)"
+msgstr "Källor (%d)"
+
+msgid "Showing %1$d of %2$d sources."
+msgstr "Visar %1$d av %2$d källor."
+
+msgid "Linked from"
+msgstr "Länkad från"
+
+msgid "old permalink structure"
+msgstr "gammal permalänkstruktur"
+
+msgid "Could not prepare the preview (%s)."
+msgstr "Kunde inte förbereda förhandsgranskningen (%s)."
+
+msgid "Could not prepare the report (%s)."
+msgstr "Kunde inte förbereda rapporten (%s)."

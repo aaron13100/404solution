@@ -653,8 +653,8 @@ msgstr "Ke halaman berikutnya"
 msgid "Go to previous page"
 msgstr "Ke halaman sebelumnya"
 
-msgid "Help the developer by sending error logs"
-msgstr "Bantu pengembang dengan mengirim log kesalahan"
+msgid "Help the developer with error logs and usage stats"
+msgstr "Bantu pengembang dengan log error dan statistik penggunaan"
 
 msgid "Here are some other great pages"
 msgstr "Berikut adalah beberapa halaman hebat lainnya"
@@ -1642,8 +1642,8 @@ msgid "Error: Invalid language selected"
 msgstr "Kesalahan: Bahasa yang dipilih tidak valid"
 
 #: includes/html/adminOptionsGeneral.html
-msgid "When the plugin detects an error, it transmits a copy of the debug log to the developer for diagnosis. Transmission may be by email or by HTTPS upload to a developer-operated server; the contents are the same. This is not required for the plugin to work, but it helps the developer fix bugs in future versions. The report includes: everything in the debug log, the admin email address, installed PHP extensions, active plugins, PHP version, WordPress version, MySQL version, total published pages and posts, etc. (everything asked for when a support issue is opened). Reports are checked daily when maintenance runs."
-msgstr "Ketika plugin mendeteksi kesalahan, plugin mengirimkan salinan log debug kepada pengembang untuk diagnosis. Pengiriman dapat dilakukan melalui email atau melalui unggahan HTTPS ke server yang dioperasikan oleh pengembang; isinya sama. Ini tidak diperlukan agar plugin berfungsi, tetapi membantu pengembang memperbaiki bug pada versi mendatang. Laporan mencakup: semua yang ada di log debug, alamat email administrator, ekstensi PHP yang terpasang, plugin yang aktif, versi PHP, versi WordPress, versi MySQL, total halaman dan kiriman yang diterbitkan, dan sebagainya (semua yang ditanyakan ketika membuka tiket dukungan). Laporan diperiksa setiap hari saat pemeliharaan dijalankan."
+msgid "Sends the developer your debug log when an error occurs, plus a status ping at most once a week (once the plugin's been active 5+ days) with your site's version, URL, and 404/redirect counts. Counts are aggregate only, never per-URL. Optional — helps fix bugs and prioritize development. Reports are reviewed daily."
+msgstr "Mengirim log debug Anda kepada pengembang saat terjadi error, ditambah ping status paling sering seminggu sekali setelah plugin aktif lebih dari 5 hari, berisi versi situs, URL, serta jumlah 404/pengalihan. Jumlah hanya berupa agregat, tidak pernah per URL. Opsional — membantu memperbaiki bug dan memprioritaskan pengembangan. Laporan ditinjau setiap hari."
 
 #: includes/html/viewSuggestions.html
 msgid "Display the closest matching pages by using the shortcode [abj404_solution_page_suggestions]."
@@ -4082,3 +4082,21 @@ msgstr "Pengurutan berdasarkan kolom ini sedang disiapkan untuk jumlah URL Anda 
 #: includes/view/View_Shared.php:247
 msgid "Sorting by this column is unavailable on this site. The list shows newest first."
 msgstr "Pengurutan berdasarkan kolom ini tidak tersedia di situs ini. Daftar menampilkan yang terbaru lebih dulu."
+
+msgid "Sources (%d)"
+msgstr "Sumber (%d)"
+
+msgid "Showing %1$d of %2$d sources."
+msgstr "Menampilkan %1$d dari %2$d sumber."
+
+msgid "Linked from"
+msgstr "Ditautkan dari"
+
+msgid "old permalink structure"
+msgstr "struktur permalink lama"
+
+msgid "Could not prepare the preview (%s)."
+msgstr "Tidak dapat menyiapkan pratinjau (%s)."
+
+msgid "Could not prepare the report (%s)."
+msgstr "Tidak dapat menyiapkan laporan (%s)."

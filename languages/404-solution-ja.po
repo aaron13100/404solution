@@ -654,8 +654,8 @@ msgstr "次のページへ"
 msgid "Go to previous page"
 msgstr "前のページへ"
 
-msgid "Help the developer by sending error logs"
-msgstr "エラーログを送信して開発者を支援"
+msgid "Help the developer with error logs and usage stats"
+msgstr "エラーログと使用状況統計で開発者を支援する"
 
 msgid "Here are some other great pages"
 msgstr "他の優良なページはこちら"
@@ -1648,8 +1648,8 @@ msgid "Error: Invalid language selected"
 msgstr "エラー：無効な言語が選択されました"
 
 #: includes/html/adminOptionsGeneral.html
-msgid "When the plugin detects an error, it transmits a copy of the debug log to the developer for diagnosis. Transmission may be by email or by HTTPS upload to a developer-operated server; the contents are the same. This is not required for the plugin to work, but it helps the developer fix bugs in future versions. The report includes: everything in the debug log, the admin email address, installed PHP extensions, active plugins, PHP version, WordPress version, MySQL version, total published pages and posts, etc. (everything asked for when a support issue is opened). Reports are checked daily when maintenance runs."
-msgstr "プラグインがエラーを検出すると、診断のためにデバッグログのコピーを開発者に送信します。送信方法はメールまたは開発者が運営するサーバーへのHTTPSアップロードのいずれかで、内容は同じです。これはプラグインの動作に必須ではありませんが、開発者が将来のバージョンで不具合を修正するのに役立ちます。レポートには次のものが含まれます：デバッグログのすべての内容、管理者のメールアドレス、インストール済みのPHP拡張機能、有効なプラグイン、PHPのバージョン、WordPressのバージョン、MySQLのバージョン、公開されたページと投稿の総数など（サポート問い合わせを開く際に尋ねられるすべての情報）。レポートはメンテナンスの実行時に毎日確認されます。"
+msgid "Sends the developer your debug log when an error occurs, plus a status ping at most once a week (once the plugin's been active 5+ days) with your site's version, URL, and 404/redirect counts. Counts are aggregate only, never per-URL. Optional — helps fix bugs and prioritize development. Reports are reviewed daily."
+msgstr "エラー発生時にデバッグログを開発者へ送信し、プラグインが5日以上有効になった後は、週1回までステータス ping としてサイトのバージョン、URL、404件数、リダイレクト件数を送信します。件数は集計のみで、URLごとのデータは送信しません。任意です — バグ修正と開発優先度の判断に役立ちます。レポートは毎日確認されます。"
 
 #: includes/html/viewSuggestions.html
 msgid "Display the closest matching pages by using the shortcode [abj404_solution_page_suggestions]."
@@ -4094,3 +4094,21 @@ msgstr "この列での並べ替えを、あなたのURL数に合わせて準備
 #: includes/view/View_Shared.php:247
 msgid "Sorting by this column is unavailable on this site. The list shows newest first."
 msgstr "この列での並べ替えは、このサイトでは利用できません。リストは新しいものから順に表示します。"
+
+msgid "Sources (%d)"
+msgstr "ソース（%d）"
+
+msgid "Showing %1$d of %2$d sources."
+msgstr "%2$d件中%1$d件のソースを表示しています。"
+
+msgid "Linked from"
+msgstr "リンク元"
+
+msgid "old permalink structure"
+msgstr "古いパーマリンク構造"
+
+msgid "Could not prepare the preview (%s)."
+msgstr "プレビューを準備できませんでした（%s）。"
+
+msgid "Could not prepare the report (%s)."
+msgstr "レポートを準備できませんでした（%s）。"

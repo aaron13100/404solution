@@ -654,8 +654,8 @@ msgstr "Перейти на следующую страницу"
 msgid "Go to previous page"
 msgstr "Перейти на предыдущую страницу"
 
-msgid "Help the developer by sending error logs"
-msgstr "Помочь разработчику, отправляя журналы ошибок"
+msgid "Help the developer with error logs and usage stats"
+msgstr "Помочь разработчику журналами ошибок и статистикой использования"
 
 msgid "Here are some other great pages"
 msgstr "Вот несколько других отличных страниц"
@@ -1645,8 +1645,8 @@ msgid "Error: Invalid language selected"
 msgstr "Ошибка: Выбран недопустимый язык"
 
 #: includes/html/adminOptionsGeneral.html
-msgid "When the plugin detects an error, it transmits a copy of the debug log to the developer for diagnosis. Transmission may be by email or by HTTPS upload to a developer-operated server; the contents are the same. This is not required for the plugin to work, but it helps the developer fix bugs in future versions. The report includes: everything in the debug log, the admin email address, installed PHP extensions, active plugins, PHP version, WordPress version, MySQL version, total published pages and posts, etc. (everything asked for when a support issue is opened). Reports are checked daily when maintenance runs."
-msgstr "Когда плагин обнаруживает ошибку, он передаёт копию журнала отладки разработчику для диагностики. Передача может осуществляться по электронной почте или путём загрузки по протоколу HTTPS на сервер, управляемый разработчиком; содержимое одинаковое. Это не требуется для работы плагина, но помогает разработчику исправлять ошибки в будущих версиях. Отчёт включает: всё содержимое журнала отладки, адрес электронной почты администратора, установленные расширения PHP, активные плагины, версию PHP, версию WordPress, версию MySQL, общее количество опубликованных страниц и записей и так далее (всё, что запрашивается при открытии заявки в службу поддержки). Отчёты проверяются ежедневно при выполнении обслуживания."
+msgid "Sends the developer your debug log when an error occurs, plus a status ping at most once a week (once the plugin's been active 5+ days) with your site's version, URL, and 404/redirect counts. Counts are aggregate only, never per-URL. Optional — helps fix bugs and prioritize development. Reports are reviewed daily."
+msgstr "Отправляет разработчику ваш журнал отладки при возникновении ошибки, а также статусный пинг не чаще одного раза в неделю после того, как плагин активен более 5 дней, с версией сайта, URL и счетчиками 404/перенаправлений. Счетчики передаются только в агрегированном виде, никогда по отдельным URL. Необязательно — помогает исправлять ошибки и расставлять приоритеты разработки. Отчеты просматриваются ежедневно."
 
 #: includes/html/viewSuggestions.html
 msgid "Display the closest matching pages by using the shortcode [abj404_solution_page_suggestions]."
@@ -4090,3 +4090,21 @@ msgstr "Сортировка по этому столбцу подготавли
 #: includes/view/View_Shared.php:247
 msgid "Sorting by this column is unavailable on this site. The list shows newest first."
 msgstr "Сортировка по этому столбцу недоступна на этом сайте. Список показывает сначала самые новые."
+
+msgid "Sources (%d)"
+msgstr "Источники (%d)"
+
+msgid "Showing %1$d of %2$d sources."
+msgstr "Показано %1$d из %2$d источников."
+
+msgid "Linked from"
+msgstr "Ссылка с"
+
+msgid "old permalink structure"
+msgstr "старая структура постоянных ссылок"
+
+msgid "Could not prepare the preview (%s)."
+msgstr "Не удалось подготовить предварительный просмотр (%s)."
+
+msgid "Could not prepare the report (%s)."
+msgstr "Не удалось подготовить отчет (%s)."

@@ -285,6 +285,11 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
         return $this->statusCounts->getRedirectStatusCounts((bool)$bypassCache);
     }
 
+    /** @return array<string, int> */
+    function getRedirectHitCountHistogram(): array {
+        return $this->statusCounts->getRedirectHitCountHistogram();
+    }
+
     /** @param bool $bypassCache @return array<string, int> */
     function getCapturedStatusCounts($bypassCache = false): array {
         return $this->statusCounts->getCapturedStatusCounts((bool)$bypassCache);

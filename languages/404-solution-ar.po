@@ -657,8 +657,8 @@ msgstr "الانتقال إلى الصفحة التالية"
 msgid "Go to previous page"
 msgstr "الانتقال إلى الصفحة السابقة"
 
-msgid "Help the developer by sending error logs"
-msgstr "ساعد المطور بإرسال سجلات الأخطاء"
+msgid "Help the developer with error logs and usage stats"
+msgstr "ساعد المطور بسجلات الأخطاء وإحصاءات الاستخدام"
 
 msgid "Here are some other great pages"
 msgstr "إليك بعض الصفحات الرائعة الأخرى"
@@ -1670,8 +1670,8 @@ msgid "Error: Invalid language selected"
 msgstr "خطأ: تم اختيار لغة غير صالحة"
 
 #: includes/html/adminOptionsGeneral.html
-msgid "When the plugin detects an error, it transmits a copy of the debug log to the developer for diagnosis. Transmission may be by email or by HTTPS upload to a developer-operated server; the contents are the same. This is not required for the plugin to work, but it helps the developer fix bugs in future versions. The report includes: everything in the debug log, the admin email address, installed PHP extensions, active plugins, PHP version, WordPress version, MySQL version, total published pages and posts, etc. (everything asked for when a support issue is opened). Reports are checked daily when maintenance runs."
-msgstr "عندما تكتشف الإضافة خطأً، تُرسل نسخة من سجل التصحيح إلى المطوّر لأغراض التشخيص. قد يتم الإرسال عبر البريد الإلكتروني أو عبر رفع HTTPS إلى خادم يديره المطوّر؛ والمحتوى هو نفسه. هذا ليس مطلوباً لكي تعمل الإضافة، لكنه يساعد المطوّر على إصلاح الأخطاء البرمجية في الإصدارات المستقبلية. يتضمّن التقرير: كل شيء في سجل التصحيح، عنوان البريد الإلكتروني للمدير، إضافات PHP المثبّتة، الإضافات النشطة، إصدار PHP، إصدار ووردبريس، إصدار MySQL، إجمالي الصفحات والمنشورات المنشورة، وما إلى ذلك (كل ما يُطلب عند فتح طلب دعم). تتم مراجعة التقارير يومياً عند تشغيل الصيانة."
+msgid "Sends the developer your debug log when an error occurs, plus a status ping at most once a week (once the plugin's been active 5+ days) with your site's version, URL, and 404/redirect counts. Counts are aggregate only, never per-URL. Optional — helps fix bugs and prioritize development. Reports are reviewed daily."
+msgstr "يرسل إلى المطور سجل التصحيح الخاص بك عند حدوث خطأ، بالإضافة إلى إشارة حالة لا تتجاوز مرة واحدة في الأسبوع بعد أن تكون الإضافة نشطة لأكثر من 5 أيام، وتتضمن إصدار موقعك وعنوان URL وعدد أخطاء 404 وعمليات إعادة التوجيه. الأعداد إجمالية فقط، وليست حسب كل عنوان URL. اختياري — يساعد على إصلاح الأخطاء وتحديد أولويات التطوير. تتم مراجعة التقارير يوميًا."
 
 #: includes/html/viewSuggestions.html
 msgid "Display the closest matching pages by using the shortcode [abj404_solution_page_suggestions]."
@@ -4115,3 +4115,21 @@ msgstr "يتم الآن تجهيز الترتيب حسب هذا العمود ل�
 #: includes/view/View_Shared.php:247
 msgid "Sorting by this column is unavailable on this site. The list shows newest first."
 msgstr "الترتيب حسب هذا العمود غير متاح على هذا الموقع. تعرض القائمة الأحدث أولاً."
+
+msgid "Sources (%d)"
+msgstr "المصادر (%d)"
+
+msgid "Showing %1$d of %2$d sources."
+msgstr "عرض %1$d من أصل %2$d مصدر."
+
+msgid "Linked from"
+msgstr "مرتبط من"
+
+msgid "old permalink structure"
+msgstr "بنية الروابط الدائمة القديمة"
+
+msgid "Could not prepare the preview (%s)."
+msgstr "تعذر إعداد المعاينة (%s)."
+
+msgid "Could not prepare the report (%s)."
+msgstr "تعذر إعداد التقرير (%s)."

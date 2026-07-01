@@ -351,18 +351,14 @@ class ABJ_404_Solution_Logging {
     private $bodyFormatter = null;
 
     /**
-     * Roll a 1-in-N dice and send a full debug zip as a heartbeat if it hits.
-     * Called during daily maintenance for opted-in sites when no error email was sent.
+     * Send the weekly status heartbeat when its deterministic cadence is due.
+     * Called during daily maintenance for opted-in sites when no error email
+     * was sent.
      *
-     * Dispatches via FeedbackTransport::sendNow() (HTTP POST + email fallback)
-     * with type='heartbeat' so the same payload shape is shared with the error
-     * path.
-     *
-     * @param int $oneInN Probability denominator (default 200 = ~once per 6 months).
-     * @return bool True if a heartbeat was sent.
+     * @return bool True if a heartbeat was sent successfully.
      */
-    function sendHeartbeatIfDueRandom(int $oneInN = 200): bool {
-        return $this->getFeedbackDispatcher()->sendHeartbeatIfDueRandom($oneInN);
+    function sendHeartbeatIfDueWeekly(): bool {
+        return $this->getFeedbackDispatcher()->sendHeartbeatIfDueWeekly();
     }
 
     /**

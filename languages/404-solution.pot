@@ -3466,3 +3466,29 @@ msgstr ""
 #: includes/view/View_CapturedURLsTable.php:332
 msgid "Preparing the captured 404s table. The list is still loading and will appear in a moment."
 msgstr ""
+
+#: includes/html/adminOptionsGeneral.html
+msgid "Help the developer with error logs and usage stats"
+msgstr ""
+
+#: includes/html/adminOptionsGeneral.html
+msgid "Sends the developer your debug log when an error occurs, plus a status ping at most once a week (once the plugin's been active 5+ days) with your site's version, URL, and 404/redirect counts. Counts are aggregate only, never per-URL. Optional — helps fix bugs and prioritize development. Reports are reviewed daily."
+msgstr ""
+
+msgid "Sources (%d)"
+msgstr ""
+
+msgid "Showing %1$d of %2$d sources."
+msgstr ""
+
+msgid "Linked from"
+msgstr ""
+
+msgid "old permalink structure"
+msgstr ""
+
+msgid "Could not prepare the preview (%s)."
+msgstr ""
+
+msgid "Could not prepare the report (%s)."
+msgstr ""

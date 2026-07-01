@@ -653,8 +653,8 @@ msgstr "Ga naar volgende pagina"
 msgid "Go to previous page"
 msgstr "Ga naar vorige pagina"
 
-msgid "Help the developer by sending error logs"
-msgstr "Help de ontwikkelaar door foutlogs te verzenden"
+msgid "Help the developer with error logs and usage stats"
+msgstr "Help de ontwikkelaar met foutlogs en gebruiksstatistieken"
 
 msgid "Here are some other great pages"
 msgstr "Hier zijn enkele andere geweldige pagina's"
@@ -1642,8 +1642,8 @@ msgid "Error: Invalid language selected"
 msgstr "Fout: Ongeldige taal geselecteerd"
 
 #: includes/html/adminOptionsGeneral.html
-msgid "When the plugin detects an error, it transmits a copy of the debug log to the developer for diagnosis. Transmission may be by email or by HTTPS upload to a developer-operated server; the contents are the same. This is not required for the plugin to work, but it helps the developer fix bugs in future versions. The report includes: everything in the debug log, the admin email address, installed PHP extensions, active plugins, PHP version, WordPress version, MySQL version, total published pages and posts, etc. (everything asked for when a support issue is opened). Reports are checked daily when maintenance runs."
-msgstr "Wanneer de plugin een fout detecteert, verzendt deze een kopie van het foutopsporingslogboek naar de ontwikkelaar voor diagnose. Verzending kan plaatsvinden per e-mail of via HTTPS-upload naar een door de ontwikkelaar beheerde server; de inhoud is hetzelfde. Dit is niet vereist voor de werking van de plugin, maar het helpt de ontwikkelaar om fouten in toekomstige versies te verhelpen. Het rapport bevat: alles in het foutopsporingslogboek, het e-mailadres van de beheerder, geïnstalleerde PHP-extensies, actieve plugins, PHP-versie, WordPress-versie, MySQL-versie, totaal aantal gepubliceerde pagina's en berichten, enzovoort (alles wat wordt gevraagd bij het openen van een ondersteuningsverzoek). Rapporten worden dagelijks gecontroleerd wanneer onderhoud wordt uitgevoerd."
+msgid "Sends the developer your debug log when an error occurs, plus a status ping at most once a week (once the plugin's been active 5+ days) with your site's version, URL, and 404/redirect counts. Counts are aggregate only, never per-URL. Optional — helps fix bugs and prioritize development. Reports are reviewed daily."
+msgstr "Stuurt je debuglog naar de ontwikkelaar wanneer er een fout optreedt, plus maximaal één keer per week een statusping zodra de plugin meer dan 5 dagen actief is, met de versie, URL en 404-/redirectaantallen van je site. Aantallen zijn alleen geaggregeerd, nooit per URL. Optioneel — helpt bugs op te lossen en ontwikkeling te prioriteren. Rapporten worden dagelijks bekeken."
 
 #: includes/html/viewSuggestions.html
 msgid "Display the closest matching pages by using the shortcode [abj404_solution_page_suggestions]."
@@ -4082,3 +4082,21 @@ msgstr "Sorteren op deze kolom wordt voorbereid voor jouw aantal URL's (%d%% vol
 #: includes/view/View_Shared.php:247
 msgid "Sorting by this column is unavailable on this site. The list shows newest first."
 msgstr "Sorteren op deze kolom is niet beschikbaar op deze site. De lijst toont de nieuwste eerst."
+
+msgid "Sources (%d)"
+msgstr "Bronnen (%d)"
+
+msgid "Showing %1$d of %2$d sources."
+msgstr "%1$d van %2$d bronnen worden getoond."
+
+msgid "Linked from"
+msgstr "Gelinkt vanaf"
+
+msgid "old permalink structure"
+msgstr "oude permalinkstructuur"
+
+msgid "Could not prepare the preview (%s)."
+msgstr "Kon de preview niet voorbereiden (%s)."
+
+msgid "Could not prepare the report (%s)."
+msgstr "Kon het rapport niet voorbereiden (%s)."

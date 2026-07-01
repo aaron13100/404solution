@@ -657,8 +657,8 @@ msgstr "转到下一页"
 msgid "Go to previous page"
 msgstr "转到上一页"
 
-msgid "Help the developer by sending error logs"
-msgstr "通过发送错误日志帮助开发者"
+msgid "Help the developer with error logs and usage stats"
+msgstr "通过错误日志和使用统计帮助开发者"
 
 msgid "Here are some other great pages"
 msgstr "这里有一些其他优质页面"
@@ -1651,8 +1651,8 @@ msgid "Error: Invalid language selected"
 msgstr "错误：选择了无效的语言"
 
 #: includes/html/adminOptionsGeneral.html
-msgid "When the plugin detects an error, it transmits a copy of the debug log to the developer for diagnosis. Transmission may be by email or by HTTPS upload to a developer-operated server; the contents are the same. This is not required for the plugin to work, but it helps the developer fix bugs in future versions. The report includes: everything in the debug log, the admin email address, installed PHP extensions, active plugins, PHP version, WordPress version, MySQL version, total published pages and posts, etc. (everything asked for when a support issue is opened). Reports are checked daily when maintenance runs."
-msgstr "当插件检测到错误时，会将调试日志的副本传输给开发者以进行诊断。传输方式可以是电子邮件，也可以通过HTTPS上传到由开发者运营的服务器；其内容是相同的。这不是插件正常运行所必需的，但有助于开发者在未来版本中修复缺陷。报告包括：调试日志中的所有内容、管理员电子邮件地址、已安装的PHP扩展、活动的插件、PHP版本、WordPress版本、MySQL版本、已发布的页面和文章的总数等（开启支持工单时所询问的所有内容）。报告在每日维护运行时进行检查。"
+msgid "Sends the developer your debug log when an error occurs, plus a status ping at most once a week (once the plugin's been active 5+ days) with your site's version, URL, and 404/redirect counts. Counts are aggregate only, never per-URL. Optional — helps fix bugs and prioritize development. Reports are reviewed daily."
+msgstr "当发生错误时，将您的调试日志发送给开发者；插件启用超过5天后，还会最多每周发送一次状态 ping，包含您网站的版本、URL 以及 404/重定向计数。计数仅为汇总数据，绝不按 URL 逐条发送。此项可选 — 有助于修复问题并确定开发优先级。报告每天都会审核。"
 
 #: includes/html/viewSuggestions.html
 # translation-verified: Technical shortcode name [abj404_solution_page_suggestions] intentionally in English
@@ -4087,3 +4087,21 @@ msgstr "正在根据您的网址数量准备按此列排序（已完成 %d%%）�
 #: includes/view/View_Shared.php:247
 msgid "Sorting by this column is unavailable on this site. The list shows newest first."
 msgstr "此网站不支持按此列排序。列表会先显示最新的内容。"
+
+msgid "Sources (%d)"
+msgstr "来源（%d）"
+
+msgid "Showing %1$d of %2$d sources."
+msgstr "正在显示 %2$d 个来源中的 %1$d 个。"
+
+msgid "Linked from"
+msgstr "链接来源"
+
+msgid "old permalink structure"
+msgstr "旧的固定链接结构"
+
+msgid "Could not prepare the preview (%s)."
+msgstr "无法准备预览（%s）。"
+
+msgid "Could not prepare the report (%s)."
+msgstr "无法准备报告（%s）。"

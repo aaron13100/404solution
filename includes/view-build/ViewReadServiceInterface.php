@@ -36,6 +36,11 @@ interface ABJ_404_Solution_ViewReadServiceInterface {
     public function getRedirectStatusCounts($bypassCache = false): array;
 
     /**
+     * @return array<string, int>
+     */
+    public function getRedirectHitCountHistogram(): array;
+
+    /**
      * @param bool $bypassCache
      * @return array<string, int>
      */
