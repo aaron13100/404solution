@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) {
 	Author:      Aaron J
 	Author URI:  https://www.ajexperience.com/404-solution/
 
-	Version: 4.3.1
+	Version: 4.3.2
 	Requires at least: 5.0
 	Requires PHP: 7.4
 
@@ -213,10 +213,22 @@ if ($GLOBALS['abj404_boot_ok']) {
 
 	// REST API: deferred to rest_api_init so DataAccess/PluginLogic are only loaded on actual REST requests.
 	add_action('rest_api_init', function() {
-		$dao   = ABJ_404_Solution_DataAccess::getInstance();
-		$logic = ABJ_404_Solution_PluginLogic::getInstance();
-		$restController = new ABJ_404_Solution_RestApiController($dao, $logic);
-		$restController->registerRoutes();
+		try {
+			$dao   = ABJ_404_Solution_DataAccess::getInstance();
+			$logic = ABJ_404_Solution_PluginLogic::getInstance();
+			$restController = new ABJ_404_Solution_RestApiController($dao, $logic);
+			$restController->registerRoutes();
+		} catch (\Throwable $e) {
+			// rest_api_init is a shared WordPress hook every plugin's REST
+			// routes register on; an uncaught error here aborts the whole
+			// request and would also block other plugins' route
+			// registration, not just ours. A transient failure resolving
+			// this plugin's services (the VRMU incident: a class
+			// momentarily missing during a plugin self-update racing a
+			// live request) must degrade to "skip registering our routes
+			// this request" instead.
+			abj404_logRuntimeWarning('rest_api_init: route registration failed', $e);
+		}
 	});
 
 	// WP-CLI commands.
