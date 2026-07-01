@@ -154,8 +154,14 @@ class ABJ_404_Solution_RedirectLookupRepository {
 
         $columns = [];
         foreach ($rows as $row) {
-            if (is_array($row) && isset($row['Field']) && is_string($row['Field'])) {
-                $columns[] = $row['Field'];
+            if (!is_array($row)) {
+                continue;
+            }
+            // Case-insensitive: MySQL drivers return SHOW COLUMNS metadata
+            // key casing inconsistently (Field vs field).
+            $row = array_change_key_case($row, CASE_LOWER);
+            if (isset($row['field']) && is_string($row['field'])) {
+                $columns[] = $row['field'];
             }
         }
         return $columns;

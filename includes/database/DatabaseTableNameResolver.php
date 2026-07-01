@@ -71,8 +71,14 @@ class ABJ_404_Solution_DatabaseTableNameResolver {
         if (!is_array($rows) || !empty($wpdb->last_error)) { return []; }
         $columns = [];
         foreach ($rows as $row) {
-            if (is_array($row) && isset($row['Field']) && is_scalar($row['Field'])) {
-                $columns[] = (string)$row['Field'];
+            if (!is_array($row)) {
+                continue;
+            }
+            // Case-insensitive: MySQL drivers return SHOW COLUMNS metadata
+            // key casing inconsistently (Field vs field).
+            $row = array_change_key_case($row, CASE_LOWER);
+            if (isset($row['field']) && is_scalar($row['field'])) {
+                $columns[] = (string)$row['field'];
             }
         }
         return $columns;
