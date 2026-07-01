@@ -15,6 +15,22 @@
     var ajaxUrl  = abj404EngineProfiles.ajaxUrl;
     var editingId = 0;
 
+    // Corrupt enabled_engines (DB tampering, interrupted migration) must not
+    // throw and must not vanish silently: fall back to the safe "all engines"
+    // empty-array reading (matches the PHP-side fail-open behavior in
+    // EngineProfileResolver::parseEnabledEngines) but log it so it is
+    // diagnosable instead of masquerading as a normal empty profile.
+    function parseEnabledEngines(rawValue, profileId) {
+        try {
+            return JSON.parse(rawValue || '[]');
+        } catch (e) {
+            if (window.console && window.console.warn) {
+                window.console.warn('404 Solution: enabled_engines is not valid JSON for profile id ' + profileId, rawValue);
+            }
+            return [];
+        }
+    }
+
     // ── Load profiles ───────────────────────────────────────────────────────
 
     function loadProfiles() {
@@ -59,8 +75,7 @@
         $empty.hide();
 
         profiles.forEach(function (p) {
-            var engines = [];
-            try { engines = JSON.parse(p.enabled_engines || '[]'); } catch (e) {}
+            var engines = parseEnabledEngines(p.enabled_engines, p.id);
             var engineLabels = engines.map(function (cls) {
                 return cls.replace(/^ABJ_404_Solution_/, '').replace(/Engine$/, '').replace(/MatchingEngine$/, '');
             }).join(', ');
@@ -146,8 +161,7 @@
             $('#abj404-profile-priority').val(profile.priority);
             $('#abj404-profile-status').prop('checked', profile.status === '1' || profile.status === 1);
 
-            var engines = [];
-            try { engines = JSON.parse(profile.enabled_engines || '[]'); } catch (e) {}
+            var engines = parseEnabledEngines(profile.enabled_engines, profile.id);
             engines.forEach(function (cls) {
                 $('.abj404-engine-cb[value="' + cls + '"]').prop('checked', true);
             });

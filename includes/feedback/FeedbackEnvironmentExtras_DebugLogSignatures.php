@@ -11,7 +11,7 @@ if (!defined('ABSPATH')) {
  * Two responsibilities both anchored to the debug log:
  *   1. probeRecentErrorSignatures(): tail-read the plugin debug log
  *      (capped at 256 KB), parse lines matching the canonical
- *      "YYYY-MM-DD HH:MM:SS (LEVEL): ..." shape that Logging.php emits,
+ *      "YYYY-MM-DD HH:MM:SS [TZ] (LEVEL): ..." shape that Logging.php emits,
  *      keep only [ERROR]/[WARN] entries within the last 7 days, group
  *      by coarse signature, return the top 5 by count.
  *   2. normalizeErrorSignature(): the PII-stripping transform that
@@ -36,7 +36,7 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras_DebugLogSignatures {
      * different and would never reach the email-on-first-error path.
      *
      * Bounded cost: reads the tail 256 KB of the debug file, parses
-     * lines matching the canonical "YYYY-MM-DD HH:MM:SS (LEVEL): ..."
+     * lines matching the canonical "YYYY-MM-DD HH:MM:SS [TZ] (LEVEL): ..."
      * shape, keeps only [ERROR]/[WARN] entries within the last 7 days,
      * groups by a coarse signature (first 200 chars after the level),
      * keeps the top 5 by count. Returns an empty array on any read
@@ -92,12 +92,25 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras_DebugLogSignatures {
         }
         foreach ($lines as $line) {
             if (!is_string($line) || $line === '') { continue; }
-            // Match "YYYY-MM-DD HH:MM:SS (LEVEL): tail..." per Logging.php format.
-            if (!preg_match('/^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) \((ERROR|WARN)\):\s*(.*)$/', $line, $m)) {
+            // Match "YYYY-MM-DD HH:MM:SS [TZ] (LEVEL): tail..." per
+            // LogTimestampFormatter's actual 'Y-m-d H:i:s T' output (the
+            // trailing timezone abbreviation/offset is optional in the
+            // pattern so older or hand-edited log lines without one still
+            // match).
+            if (!preg_match('/^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})(?:\s+\S+)?\s+\((ERROR|WARN)\):\s*(.*)$/', $line, $m)) {
                 continue;
             }
-            $ts = strtotime($m[1]);
-            if ($ts === false || $ts < $cutoff) { continue; }
+            // The captured datetime is in the WP site's configured timezone
+            // (LogTimestampFormatter's contract), not PHP's default timezone,
+            // so it must be interpreted the same way here before comparing
+            // against the true-UTC $cutoff -- otherwise a non-UTC site's
+            // recent errors are silently miscounted as too old (or too new).
+            try {
+                $ts = (new DateTimeImmutable($m[1], ABJ_404_Solution_SiteTimezone::resolve()))->getTimestamp();
+            } catch (Exception $e) {
+                continue;
+            }
+            if ($ts < $cutoff) { continue; }
             $level = $m[2];
             $msg = trim($m[3]);
             if ($msg === '') { continue; }

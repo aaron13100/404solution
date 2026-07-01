@@ -167,10 +167,8 @@ class ABJ_404_Solution_EditRedirectHandler {
 
         $startDateRaw = isset($_POST['redirect_start_date']) && is_string($_POST['redirect_start_date']) ? trim($_POST['redirect_start_date']) : '';
         $endDateRaw = isset($_POST['redirect_end_date']) && is_string($_POST['redirect_end_date']) ? trim($_POST['redirect_end_date']) : '';
-        $startTs = ($startDateRaw !== '') ? strtotime($startDateRaw . ' 00:00:00') : null;
-        $endTs = ($endDateRaw !== '') ? strtotime($endDateRaw . ' 23:59:59') : null;
-        if ($startTs === false) { $startTs = null; }
-        if ($endTs === false) { $endTs = null; }
+        $startTs = ABJ_404_Solution_RedirectScheduleTimezone::toEpoch($startDateRaw, '00:00:00');
+        $endTs = ABJ_404_Solution_RedirectScheduleTimezone::toEpoch($endDateRaw, '23:59:59');
 
         return array(
             'tdTypeRaw' => $tdTypeRaw,

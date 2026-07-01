@@ -1,12 +1,5 @@
 const EXCL_SEPARATOR_CHAR = '|\\|';
 
-// Escape HTML entities to prevent XSS
-function escapeHtml(text) {
-    var div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
 jQuery(document).ready(function($) {
     var field = jQuery('#add_exclude_page_field');
     field.keyup(function() {
@@ -166,10 +159,32 @@ function addPageToExcludeToList(item) {
 }
 
 function insertExcludePage(ulToAddTo, label, category, value) {
-    // Escape all user-controlled data to prevent XSS
-    ulToAddTo.insertAdjacentHTML('afterbegin', '<li>' + escapeHtml(label) +
-    		'<span class="exclude-pages-page-type"> (' + escapeHtml(category) + ')</span>' +
-    		'<input type="hidden" name="excludePages[]" id="exlucdePages" value="' + escapeHtml(value) +
-    		'"/><span class="close i-am-a-close-button">x</span></li>');
+    // Build with DOM APIs rather than an HTML string: escapeHtml() only
+    // encodes for a text-node position (it leaves '"' untouched), which is
+    // the wrong boundary for the input's value="..." attribute -- a page
+    // title containing a double quote could break out of that attribute.
+    // Assigning to .textContent / .value never parses HTML, so no escaping
+    // function is needed at all here.
+    var li = document.createElement('li');
+    li.appendChild(document.createTextNode(label));
+
+    var categorySpan = document.createElement('span');
+    categorySpan.className = 'exclude-pages-page-type';
+    categorySpan.appendChild(document.createTextNode(' (' + category + ')'));
+    li.appendChild(categorySpan);
+
+    var hiddenInput = document.createElement('input');
+    hiddenInput.type = 'hidden';
+    hiddenInput.name = 'excludePages[]';
+    hiddenInput.id = 'exlucdePages';
+    hiddenInput.value = value;
+    li.appendChild(hiddenInput);
+
+    var closeSpan = document.createElement('span');
+    closeSpan.className = 'close i-am-a-close-button';
+    closeSpan.textContent = 'x';
+    li.appendChild(closeSpan);
+
+    ulToAddTo.insertBefore(li, ulToAddTo.firstChild);
 }
 

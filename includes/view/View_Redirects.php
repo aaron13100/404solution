@@ -350,8 +350,8 @@ class ABJ_404_Solution_View_Redirects extends ABJ_404_Solution_ViewComponent {
             'redirect' => $redirect,
             'redirects_multiple' => $redirects_multiple,
             'redirectUrl' => $redirectUrl,
-            'startDate' => $startTs > 0 ? date('Y-m-d', $startTs) : '',
-            'endDate' => $endTs > 0 ? date('Y-m-d', $endTs) : '',
+            'startDate' => $startTs > 0 ? ABJ_404_Solution_RedirectScheduleTimezone::toDateString($startTs) : '',
+            'endDate' => $endTs > 0 ? ABJ_404_Solution_RedirectScheduleTimezone::toDateString($endTs) : '',
             'hiddenInputs' => $hiddenInputs,
             'formRows' => $formRows,
         );

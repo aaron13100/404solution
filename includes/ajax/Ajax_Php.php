@@ -59,6 +59,18 @@ class ABJ_404_Solution_Ajax_Php {
 			$identifier = 'ip_' . md5($remote);
 		}
 
+		if (function_exists('wp_using_ext_object_cache') && wp_using_ext_object_cache()) {
+			return self::consumeRateLimitAtomic($action, $identifier, $max_requests, $time_window);
+		}
+
+		// Fallback for sites without a persistent object cache (the common
+		// case on shared hosting): transients are DB-backed and portable
+		// everywhere, but get_transient()+set_transient() is a read-then-write
+		// pair, not atomic. Concurrent requests can read the same pre-write
+		// count and all pass the check. Accepted residual risk here: these
+		// endpoints are admin-only AJAX abuse guards, not a public attack
+		// surface, and this is the same portable mechanism the rest of the
+		// plugin already relies on for hosts with no persistent cache.
 		$transient_key = 'abj404_rate_limit_' . $action . '_' . $identifier;
 		$request_count = get_transient($transient_key);
 
@@ -71,6 +83,38 @@ class ABJ_404_Solution_Ajax_Php {
 			set_transient($transient_key, $request_count + 1, $time_window);
 			return false;
 		}
+	}
+
+	/**
+	 * Atomic rate-limit counter for sites with a persistent object cache
+	 * (Redis/Memcached). wp_cache_add() + wp_cache_incr() are true
+	 * compare-and-swap / atomic-increment primitives at the cache backend
+	 * level, so concurrent requests each get a distinct, correctly
+	 * incremented count -- unlike a get_transient()/set_transient() pair.
+	 *
+	 * @param string $action
+	 * @param string $identifier
+	 * @param int $max_requests
+	 * @param int $time_window
+	 * @return bool True if rate limit exceeded, false otherwise
+	 */
+	private static function consumeRateLimitAtomic($action, $identifier, $max_requests, $time_window) {
+		$key = $action . '_' . $identifier;
+		$group = 'abj404_ratelimit';
+
+		// No-op if another concurrent request already created the key; either
+		// way, the key is guaranteed to exist by the time incr() runs below.
+		wp_cache_add($key, 0, $group, $time_window);
+		$count = wp_cache_incr($key, 1, $group);
+
+		if ($count === false) {
+			// The key expired/was evicted between add() and incr(). Start a
+			// fresh window rather than blocking the request.
+			wp_cache_add($key, 1, $group, $time_window);
+			$count = 1;
+		}
+
+		return $count > $max_requests;
 	}
 
 	/**

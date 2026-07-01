@@ -143,6 +143,33 @@ function abj404RenderAjaxErrorNotice(options) {
 }
 
 /**
+ * Build the health-bar's status-dot + message (+ optional "View" link) as
+ * real DOM nodes. Assigning `link.href` and `.textContent` are DOM property
+ * writes, not HTML parsing, so `message` and `viewLink` cannot break out of
+ * an attribute or inject markup regardless of their content.
+ *
+ * @param {string} dotClass
+ * @param {string} message
+ * @param {string|null} viewLink Relative URL for the "View" link, or null to omit it.
+ * @return {DocumentFragment}
+ */
+function abj404BuildHealthBarFragment(dotClass, message, viewLink) {
+    var fragment = document.createDocumentFragment();
+    var dot = document.createElement('span');
+    dot.className = dotClass;
+    fragment.appendChild(dot);
+    fragment.appendChild(document.createTextNode(' ' + message));
+    if (viewLink) {
+        fragment.appendChild(document.createTextNode(' '));
+        var link = document.createElement('a');
+        link.href = viewLink;
+        link.textContent = 'View';
+        fragment.appendChild(link);
+    }
+    return fragment;
+}
+
+/**
  * Hydrate the redirects-page health bar via a dedicated AJAX call so the
  * slow getHighImpactCapturedCount() query never blocks the table render.
  *
@@ -203,21 +230,27 @@ function refreshHealthBarIfNeeded() {
             var active = (result.statusCounts.all || 0) - (result.statusCounts.trash || 0);
             var rollupAvailable = result.rollupAvailable !== false && result.highImpactCapturedCount !== null;
             var high = result.highImpactCapturedCount || 0;
-            var html;
+            var fragment;
             if (!rollupAvailable) {
-                html = '<span class="abj404-health-dot abj404-health-gray"></span>' +
-                    jQuery('<span>').text(active + ' redirects active, URL attention status unavailable while logs rebuild').html();
+                fragment = abj404BuildHealthBarFragment('abj404-health-dot abj404-health-gray',
+                    active + ' redirects active, URL attention status unavailable while logs rebuild', null);
             } else if (high === 0) {
-                html = '<span class="abj404-health-dot abj404-health-green"></span>' +
-                    jQuery('<span>').text(active + ' redirects active, no URLs need attention').html();
+                fragment = abj404BuildHealthBarFragment('abj404-health-dot abj404-health-green',
+                    active + ' redirects active, no URLs need attention', null);
             } else {
-                html = '<span class="abj404-health-dot abj404-health-yellow"></span>' +
+                // getURLParameter('page') is a raw, unencoded slice of the browser's
+                // current location.search -- fully attacker-controlled via a crafted
+                // admin-panel link -- and _capturedFilter comes from server JSON.
+                // Both are percent-encoded and assigned via the DOM `.href` property
+                // (never parsed as HTML) so neither can break out of the attribute
+                // or change the link's scheme (the '?page=' prefix is a literal).
+                var viewLink = '?page=' + encodeURIComponent(getURLParameter('page') || 'abj404_solution') +
+                    '&subpage=abj404_captured&filter=' + encodeURIComponent(result.statusCounts._capturedFilter || '');
+                fragment = abj404BuildHealthBarFragment('abj404-health-dot abj404-health-yellow',
                     // allow-em-dash: visible em-dash separator preserved verbatim from the original health-bar copy
-                    jQuery('<span>').text(active + ' redirects active — ' + high + ' captured URLs have repeat visitors').html() +
-                    ' <a href="?page=' + (getURLParameter('page') || 'abj404_solution') + '&subpage=abj404_captured&filter=' +
-                    (result.statusCounts._capturedFilter || '') + '">View</a>';
+                    active + ' redirects active — ' + high + ' captured URLs have repeat visitors', viewLink);
             }
-            $bar.html(html);
+            $bar.empty().append(fragment);
             $bar.removeAttr('data-health-bar-placeholder');
         },
         error: function(jqXHR, textStatus, errorThrown) {
