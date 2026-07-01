@@ -81,6 +81,23 @@
     "error_count_in_log": { "type": ["integer", "null"], "minimum": 0 },
     "debug_file_size_bytes": { "type": ["integer", "null"], "minimum": 0 },
 
+    "environment_extras": {
+      "type": ["object", "null"],
+      "additionalProperties": true,
+      "properties": {
+        "hosting_class": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "host": { "type": "string" },
+            "server_class": { "type": "string" },
+            "panel": { "type": "string" },
+            "matched_marker": { "type": "string" }
+          }
+        }
+      }
+    },
+
     "debug_log": { "type": "string", "maxLength": 262144 },
 
     "uninstall_reason": { "type": ["string", "null"], "maxLength": 255 },
