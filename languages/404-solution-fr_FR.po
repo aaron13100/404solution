@@ -1659,7 +1659,7 @@ msgstr "Erreur : Langue invalide sélectionnée"
 
 #: includes/html/adminOptionsGeneral.html
 msgid "Sends the developer your debug log when an error occurs, plus a status ping at most once a week (once the plugin's been active 5+ days) with your site's version, URL, and 404/redirect counts. Counts are aggregate only, never per-URL. Optional - helps fix bugs and prioritize development. Reports are reviewed daily."
-msgstr "Envoie au développeur votre journal de débogage lorsqu'une erreur se produit, ainsi qu'un ping d'état au maximum une fois par semaine, une fois l'extension active depuis plus de 5 jours, avec la version, l'URL et les compteurs 404/redirections de votre site. Les compteurs sont uniquement agrégés, jamais par URL. Facultatif — aide à corriger les bogues et à prioriser le développement. Les rapports sont examinés chaque jour."
+msgstr "Envoie au développeur votre journal de débogage lorsqu'une erreur se produit, ainsi qu'un ping d'état au maximum une fois par semaine, une fois l'extension active depuis plus de 5 jours, avec la version, l'URL et les compteurs 404/redirections de votre site. Les compteurs sont uniquement agrégés, jamais par URL. Facultatif, aide à corriger les bogues et à prioriser le développement. Les rapports sont examinés chaque jour."
 
 #: includes/html/viewSuggestions.html
 msgid "Display the closest matching pages by using the shortcode [abj404_solution_page_suggestions]."

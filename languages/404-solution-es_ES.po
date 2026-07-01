@@ -1643,7 +1643,7 @@ msgstr "Error: Idioma inválido seleccionado"
 
 #: includes/html/adminOptionsGeneral.html
 msgid "Sends the developer your debug log when an error occurs, plus a status ping at most once a week (once the plugin's been active 5+ days) with your site's version, URL, and 404/redirect counts. Counts are aggregate only, never per-URL. Optional - helps fix bugs and prioritize development. Reports are reviewed daily."
-msgstr "Envía al desarrollador tu registro de depuración cuando se produce un error, además de un ping de estado como máximo una vez por semana cuando el plugin lleve más de 5 días activo, con la versión, la URL y los recuentos de 404/redirecciones de tu sitio. Los recuentos son solo agregados, nunca por URL. Opcional — ayuda a corregir errores y priorizar el desarrollo. Los informes se revisan a diario."
+msgstr "Envía al desarrollador tu registro de depuración cuando se produce un error, además de un ping de estado como máximo una vez por semana cuando el plugin lleve más de 5 días activo, con la versión, la URL y los recuentos de 404/redirecciones de tu sitio. Los recuentos son solo agregados, nunca por URL. Opcional, ayuda a corregir errores y priorizar el desarrollo. Los informes se revisan a diario."
 
 #: includes/html/viewSuggestions.html
 msgid "Display the closest matching pages by using the shortcode [abj404_solution_page_suggestions]."

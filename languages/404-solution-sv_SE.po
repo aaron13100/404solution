@@ -1659,7 +1659,7 @@ msgstr "Fel: Ogiltigt språk valt"
 
 #: includes/html/adminOptionsGeneral.html
 msgid "Sends the developer your debug log when an error occurs, plus a status ping at most once a week (once the plugin's been active 5+ days) with your site's version, URL, and 404/redirect counts. Counts are aggregate only, never per-URL. Optional - helps fix bugs and prioritize development. Reports are reviewed daily."
-msgstr "Skickar din felsökningslogg till utvecklaren när ett fel inträffar, plus en statusping högst en gång i veckan när tillägget har varit aktivt i mer än 5 dagar, med webbplatsens version, URL och antal 404:or/omdirigeringar. Antalen är endast aggregerade, aldrig per URL. Valfritt — hjälper till att rätta fel och prioritera utveckling. Rapporter granskas dagligen."
+msgstr "Skickar din felsökningslogg till utvecklaren när ett fel inträffar, plus en statusping högst en gång i veckan när tillägget har varit aktivt i mer än 5 dagar, med webbplatsens version, URL och antal 404:or/omdirigeringar. Antalen är endast aggregerade, aldrig per URL. Valfritt, hjälper till att rätta fel och prioritera utveckling. Rapporter granskas dagligen."
 
 #: includes/html/viewSuggestions.html
 msgid "Display the closest matching pages by using the shortcode [abj404_solution_page_suggestions]."

@@ -1643,7 +1643,7 @@ msgstr "Fout: Ongeldige taal geselecteerd"
 
 #: includes/html/adminOptionsGeneral.html
 msgid "Sends the developer your debug log when an error occurs, plus a status ping at most once a week (once the plugin's been active 5+ days) with your site's version, URL, and 404/redirect counts. Counts are aggregate only, never per-URL. Optional - helps fix bugs and prioritize development. Reports are reviewed daily."
-msgstr "Stuurt je debuglog naar de ontwikkelaar wanneer er een fout optreedt, plus maximaal één keer per week een statusping zodra de plugin meer dan 5 dagen actief is, met de versie, URL en 404-/redirectaantallen van je site. Aantallen zijn alleen geaggregeerd, nooit per URL. Optioneel — helpt bugs op te lossen en ontwikkeling te prioriteren. Rapporten worden dagelijks bekeken."
+msgstr "Stuurt je debuglog naar de ontwikkelaar wanneer er een fout optreedt, plus maximaal één keer per week een statusping zodra de plugin meer dan 5 dagen actief is, met de versie, URL en 404-/redirectaantallen van je site. Aantallen zijn alleen geaggregeerd, nooit per URL. Optioneel, helpt bugs op te lossen en ontwikkeling te prioriteren. Rapporten worden dagelijks bekeken."
 
 #: includes/html/viewSuggestions.html
 msgid "Display the closest matching pages by using the shortcode [abj404_solution_page_suggestions]."

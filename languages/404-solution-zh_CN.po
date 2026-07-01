@@ -1652,7 +1652,7 @@ msgstr "错误：选择了无效的语言"
 
 #: includes/html/adminOptionsGeneral.html
 msgid "Sends the developer your debug log when an error occurs, plus a status ping at most once a week (once the plugin's been active 5+ days) with your site's version, URL, and 404/redirect counts. Counts are aggregate only, never per-URL. Optional - helps fix bugs and prioritize development. Reports are reviewed daily."
-msgstr "当发生错误时，将您的调试日志发送给开发者；插件启用超过5天后，还会最多每周发送一次状态 ping，包含您网站的版本、URL 以及 404/重定向计数。计数仅为汇总数据，绝不按 URL 逐条发送。此项可选 — 有助于修复问题并确定开发优先级。报告每天都会审核。"
+msgstr "当发生错误时，将您的调试日志发送给开发者；插件启用超过5天后，还会最多每周发送一次状态 ping，包含您网站的版本、URL 以及 404/重定向计数。计数仅为汇总数据，绝不按 URL 逐条发送。此项可选，有助于修复问题并确定开发优先级。报告每天都会审核。"
 
 #: includes/html/viewSuggestions.html
 # translation-verified: Technical shortcode name [abj404_solution_page_suggestions] intentionally in English
