@@ -1642,7 +1642,7 @@ msgid "Error: Invalid language selected"
 msgstr "Errore: Lingua non valida selezionata"
 
 #: includes/html/adminOptionsGeneral.html
-msgid "Sends the developer your debug log when an error occurs, plus a status ping at most once a week (once the plugin's been active 5+ days) with your site's version, URL, and 404/redirect counts. Counts are aggregate only, never per-URL. Optional — helps fix bugs and prioritize development. Reports are reviewed daily."
+msgid "Sends the developer your debug log when an error occurs, plus a status ping at most once a week (once the plugin's been active 5+ days) with your site's version, URL, and 404/redirect counts. Counts are aggregate only, never per-URL. Optional - helps fix bugs and prioritize development. Reports are reviewed daily."
 msgstr "Invia allo sviluppatore il tuo log di debug quando si verifica un errore, più un ping di stato al massimo una volta alla settimana dopo che il plugin è attivo da oltre 5 giorni, con versione, URL e conteggi 404/reindirizzamenti del sito. I conteggi sono solo aggregati, mai per URL. Facoltativo — aiuta a correggere bug e a dare priorità allo sviluppo. I report vengono controllati ogni giorno."
 
 #: includes/html/viewSuggestions.html
