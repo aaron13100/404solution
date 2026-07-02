@@ -1,0 +1,17 @@
+<style>
+.abj404-diagnostic-data-card p { margin-top: 0; }
+.abj404-diagnostic-data-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 0; }
+.abj404-diagnostic-data-actions .button[disabled] { cursor: default; }
+.abj404-diagnostic-data-notice .notice,
+.abj404-diagnostic-data-modal-notice .notice { margin: 12px 0 0; }
+.abj404-diagnostic-data-empty-note { margin-top: 8px; }
+.abj404-diagnostic-data-modal[hidden] { display: none; }
+.abj404-diagnostic-data-modal.active { display: block; }
+@media screen and (max-width: 600px) {
+    .abj404-diagnostic-data-actions { display: block; }
+    .abj404-diagnostic-data-actions .button { display: block; width: 100%; margin: 0 0 8px; text-align: center; }
+}
+</style>
+<div class="abj404-diagnostic-data-card" data-download-date="{downloadDate}" data-export-nonce="{exportNonce}" data-delete-nonce="{deleteNonce}" data-has-token="{hasToken}">
+{body}
+</div>

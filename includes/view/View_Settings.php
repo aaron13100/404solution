@@ -150,6 +150,16 @@ class ABJ_404_Solution_View_Settings extends ABJ_404_Solution_ViewComponent {
                 $this->adminChrome->getCardIcon('document')
             ));
 
+            $diagnosticDataSectionHtml = $this->settingsSections->getAdminOptionsPageDiagnosticData($options);
+            $this->adminChrome->echoOptionsSection(new ABJ_404_Solution_OptionsSectionView(
+                "abj404-diagnostic-data",
+                "abj404-diagnostic-data",
+                __('Your Diagnostic Data', '404-solution'),
+                $diagnosticDataSectionHtml,
+                true,
+                $this->adminChrome->getCardIcon('download')
+            ));
+
             // "Need help?" support-request section. Anchored at
             // #abj404-support-request so the plugins-page row action
             // (which appends that fragment) lands the admin right here

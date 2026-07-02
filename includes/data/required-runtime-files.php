@@ -40,6 +40,7 @@ return array(
 		'js/support-request-button.js',
 		'js/support-request-transport.js',
 		'js/support-request-modal-view.js',
+		'js/diagnosticDataCard.js',
 	),
 	'sql' => array(
 		'sql/correctLookupTableIssue.sql',

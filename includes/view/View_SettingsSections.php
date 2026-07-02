@@ -9,6 +9,15 @@ if (!defined('ABSPATH')) {
  */
 class ABJ_404_Solution_View_SettingsSections extends ABJ_404_Solution_ViewComponent {
 
+    /** @param array<string,string> $vars */
+    private function fillSettingsTemplate(string $templateName, array $vars): string {
+        $html = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . '/html/' . $templateName);
+        foreach ($vars as $key => $value) {
+            $html = $this->f->str_replace('{' . $key . '}', $value, $html);
+        }
+        return (string)$html;
+    }
+
     /** @param array<string, mixed> $options */
     function getAdminOptionsPageAutoRedirects(array $options): string {
         $options = $this->optionsPresenter->normalizeOptionsForView($options);
@@ -254,5 +263,57 @@ class ABJ_404_Solution_View_SettingsSections extends ABJ_404_Solution_ViewCompon
         $html = $this->f->doNormalReplacements($html);
 
         return $html;
+    }
+
+    /** @param array<string, mixed> $options */
+    function getAdminOptionsPageDiagnosticData(array $options): string {
+        if (!class_exists('ABJ_404_Solution_FeedbackSiteTokenStore')) {
+            require_once dirname(__DIR__) . '/feedback/FeedbackSiteTokenStore.php';
+        }
+        if (!class_exists('ABJ_404_Solution_Ajax_PrivacyExport')) {
+            require_once dirname(__DIR__) . '/ajax/Ajax_PrivacyExport.php';
+        }
+        if (!class_exists('ABJ_404_Solution_Ajax_PrivacyDelete')) {
+            require_once dirname(__DIR__) . '/ajax/Ajax_PrivacyDelete.php';
+        }
+
+        $rawToken = get_option(ABJ_404_Solution_FeedbackSiteTokenStore::TOKEN_OPTION, '');
+        $hasToken = is_string($rawToken) && $rawToken !== '';
+        $exportNonce = wp_create_nonce(ABJ_404_Solution_Ajax_PrivacyExport::NONCE_ACTION);
+        $deleteNonce = wp_create_nonce(ABJ_404_Solution_Ajax_PrivacyDelete::NONCE_ACTION);
+
+        if (!$hasToken) {
+            $body = $this->fillSettingsTemplate('viewSettingsDiagnosticDataNoToken.html', array(
+                'emptyDescription' => esc_html__('Diagnostic reporting has never been enabled for this site, so there is nothing stored on the developer\'s server for you to download or delete.', '404-solution'),
+            ));
+        } else {
+            $sendErrorLogs = $options['send_error_logs'] ?? '0';
+            $enabled = $sendErrorLogs === '1' || $sendErrorLogs === 1 || $sendErrorLogs === true;
+            $state = $enabled ? esc_html__('enabled', '404-solution') : esc_html__('disabled', '404-solution');
+            $description = sprintf(
+                esc_html__('This site has diagnostic reporting %s. You can download everything stored on the developer\'s server for this site, or permanently delete it.', '404-solution'),
+                $state
+            );
+            $body = $this->fillSettingsTemplate('viewSettingsDiagnosticDataActions.html', array(
+                'description'      => $description,
+                'exportNonce'      => esc_attr($exportNonce),
+                'deleteNonce'      => esc_attr($deleteNonce),
+                'downloadLabel'    => esc_html__('Download my data', '404-solution'),
+                'deleteLabel'      => esc_html__('Delete my data', '404-solution'),
+                'emptyAfterDelete' => esc_html__('Nothing currently stored.', '404-solution'),
+                'modalTitle'       => esc_html__('Delete your diagnostic data?', '404-solution'),
+                'modalBody'        => esc_html__('This permanently deletes every diagnostic report this site has ever sent. This cannot be undone. Your redirects and settings are not affected -- only diagnostic/telemetry history is removed.', '404-solution'),
+                'cancelLabel'      => esc_html__('Cancel', '404-solution'),
+                'confirmLabel'     => esc_html__('Yes, delete permanently', '404-solution'),
+            ));
+        }
+
+        return $this->fillSettingsTemplate('viewSettingsDiagnosticDataSection.html', array(
+            'downloadDate' => esc_attr(gmdate('Y-m-d')),
+            'exportNonce'  => esc_attr($exportNonce),
+            'deleteNonce'  => esc_attr($deleteNonce),
+            'hasToken'     => $hasToken ? '1' : '0',
+            'body'         => $body,
+        ));
     }
 }

@@ -25,7 +25,7 @@ class ABJ_404_Solution_FeedbackDsrClient {
      * @return array{ok: true, status: int, data: array<string, mixed>}|array{ok: false, status: int, message: string}
      */
     public static function exportRows(string $token): array {
-        $result = self::postJson('/api/v1/dsr/export', array(), $token);
+        $result = self::postJson('/api/v1/dsr/export', new stdClass(), $token);
         if (empty($result['ok'])) {
             return $result;
         }
@@ -60,10 +60,10 @@ class ABJ_404_Solution_FeedbackDsrClient {
     }
 
     /**
-     * @param array<string, mixed> $payload
+     * @param array<string, mixed>|stdClass $payload
      * @return array{ok: true, status: int, body: string}|array{ok: false, status: int, message: string}
      */
-    private static function postJson(string $path, array $payload, string $token): array {
+    private static function postJson(string $path, $payload, string $token): array {
         $json = function_exists('wp_json_encode') ? wp_json_encode($payload) : json_encode($payload);
         if (!is_string($json)) {
             return self::failure('json_encode_failed', 500);
@@ -155,6 +155,9 @@ class ABJ_404_Solution_FeedbackDsrClient {
     private static function isListArray($value): bool {
         if (!is_array($value)) {
             return false;
+        }
+        if (count($value) === 0) {
+            return true;
         }
         return array_keys($value) === range(0, count($value) - 1);
     }

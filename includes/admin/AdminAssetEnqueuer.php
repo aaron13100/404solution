@@ -127,6 +127,8 @@ class ABJ_404_Solution_AdminAssetEnqueuer {
                     array('jquery'));
                 ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-restore-defaults', $includesUrl . 'ajax/RestoreDefaults.js',
                     array('jquery'));
+                ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-diagnostic-data-card',
+                    $includesUrl . 'js/diagnosticDataCard.js', array('jquery', 'abj404-admin-ajax'));
                 ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-behavior-tiles', ABJ404_URL . 'includes/js/behaviorTiles.js',
                     array());
                 ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-settings-deferred', ABJ404_URL . 'includes/js/settingsDeferred.js',
