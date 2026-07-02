@@ -1,0 +1,11 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "abj404_privacy_export",
+  "description": "Self-service diagnostic data export AJAX from the plugin privacy UI to Ajax_PrivacyExport.php",
+  "type": "object",
+  "required": ["nonce"],
+  "additionalProperties": true,
+  "properties": {
+    "nonce": { "type": "string", "minLength": 1 }
+  }
+}

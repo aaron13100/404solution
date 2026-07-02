@@ -336,6 +336,52 @@
       }
     },
     {
+      "id": "ajax-privacy-export",
+      "description": "Self-service diagnostic data export AJAX from the plugin privacy UI",
+      "schema": "schemas/ajax-privacy-export.schema.json",
+      "direction": "client-to-server",
+      "producer": {
+        "file": "includes/ajax/Ajax_PrivacyExport.php",
+        "test": "tests/AjaxPrivacyDsrTest.php"
+      },
+      "consumer": {
+        "file": "includes/ajax/Ajax_PrivacyExport.php",
+        "test": "tests/AjaxPrivacyDsrTest.php"
+      },
+      "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
+      "fixtures": {
+        "valid": [
+          "fixtures/ajax-privacy-export.valid.json"
+        ],
+        "invalid": [
+          "fixtures/ajax-privacy-export.invalid-missing-nonce.json"
+        ]
+      }
+    },
+    {
+      "id": "ajax-privacy-delete",
+      "description": "Self-service diagnostic data deletion AJAX from the plugin privacy UI",
+      "schema": "schemas/ajax-privacy-delete.schema.json",
+      "direction": "client-to-server",
+      "producer": {
+        "file": "includes/ajax/Ajax_PrivacyDelete.php",
+        "test": "tests/AjaxPrivacyDsrTest.php"
+      },
+      "consumer": {
+        "file": "includes/ajax/Ajax_PrivacyDelete.php",
+        "test": "tests/AjaxPrivacyDsrTest.php"
+      },
+      "parityTest": "tests/AjaxRuntimeContractValidationTest.php",
+      "fixtures": {
+        "valid": [
+          "fixtures/ajax-privacy-delete.valid.json"
+        ],
+        "invalid": [
+          "fixtures/ajax-privacy-delete.invalid-missing-confirm.json"
+        ]
+      }
+    },
+    {
       "id": "ajax-settings-mode-toggle",
       "description": "Simple/Advanced settings mode toggle AJAX",
       "schema": "schemas/ajax-settings-mode-toggle.schema.json",

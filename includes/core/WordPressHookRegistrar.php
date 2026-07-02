@@ -75,6 +75,8 @@ class ABJ_404_Solution_WordPressHookRegistrar {
         ABJ_404_Solution_Ajax_EngineProfiles::registerActions();
         ABJ_404_Solution_Ajax_SettingsModeToggle::init();
         ABJ_404_Solution_Ajax_RestoreDefaults::init();
+        ABJ_404_Solution_Ajax_PrivacyExport::init();
+        ABJ_404_Solution_Ajax_PrivacyDelete::init();
         ABJ_404_Solution_Ajax_SupportRequest::init();
         ABJ_404_Solution_Ajax_SupportRequestPreview::init();
         ABJ_404_Solution_UninstallModal::init();

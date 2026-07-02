@@ -1,0 +1,12 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "abj404_privacy_delete",
+  "description": "Self-service diagnostic data delete AJAX from the plugin privacy UI to Ajax_PrivacyDelete.php",
+  "type": "object",
+  "required": ["nonce", "confirm"],
+  "additionalProperties": true,
+  "properties": {
+    "nonce": { "type": "string", "minLength": 1 },
+    "confirm": { "type": "string", "enum": ["1"] }
+  }
+}
