@@ -174,11 +174,14 @@ return (function (): array {
         'previously_sent_line' => ['type' => 'int'],
         'debug_log'            => [
             'type' => 'string',
-            'description' => 'Sanitized plugin debug-log tail emitted by FeedbackTransport::debugLogPayload() for opted-in error/heartbeat diagnostics. Server contract accepts this field as debug_log.',
+            'description' => 'Sanitized plugin debug-log tail emitted by FeedbackTransport::debugLogPayload() for opted-in error diagnostics. Server contract accepts this field as debug_log. Not sent for heartbeat: a heartbeat has no error to diagnose, and recent_error_signatures already covers the no-error case in normalized, aggregate form.',
         ],
     ];
 
-    $heartbeatExtras = $errorExtras;
+    $heartbeatExtras = [
+        'error_signature'      => ['type' => 'string'],
+        'previously_sent_line' => ['type' => 'int'],
+    ];
 
     $uninstallExtras = [
         'uninstall_reason'    => ['type' => 'string'],

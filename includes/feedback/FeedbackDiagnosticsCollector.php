@@ -303,7 +303,13 @@ class ABJ_404_Solution_FeedbackDiagnosticsCollector {
      * @return array{debug_log?: string}
      */
     private function debugLogPayload(string $type): array {
-        if ($type !== 'error' && $type !== 'heartbeat') {
+        // Only 'error' reports need the raw log tail for reproduction context.
+        // A heartbeat has no error to diagnose; recent_error_signatures
+        // (environment_extras) already surfaces any ERROR/WARN lines from the
+        // same window in normalized form, so shipping up to 262144 raw bytes
+        // on every weekly heartbeat is PII/bandwidth over-collection with no
+        // offsetting diagnostic value.
+        if ($type !== 'error') {
             return array();
         }
         return array('debug_log' => $this->tryString(function () { return $this->debugLogTail(); }));
