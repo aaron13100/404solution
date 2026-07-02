@@ -23,6 +23,7 @@ return array(
     'ABJ_404_Solution_FeedbackEnvironmentExtras_HostProbes' => $base . 'includes/feedback/FeedbackEnvironmentExtras_HostProbes.php',
     'ABJ_404_Solution_FeedbackEnvironmentExtras_PlatformFingerprint' => $base . 'includes/feedback/FeedbackEnvironmentExtras_PlatformFingerprint.php',
     'ABJ_404_Solution_FeedbackEnvironmentExtras_DebugLogSignatures' => $base . 'includes/feedback/FeedbackEnvironmentExtras_DebugLogSignatures.php',
+    'ABJ_404_Solution_FeedbackSiteTokenStore' => $base . 'includes/feedback/FeedbackSiteTokenStore.php',
     'ABJ_404_Solution_FeedbackReportUuid' => $base . 'includes/feedback/FeedbackReportUuid.php',
     'ABJ_404_Solution_FeedbackRuntimeEnvironment' => $base . 'includes/feedback/FeedbackRuntimeEnvironment.php',
     'ABJ_404_Solution_FeedbackWordPressInventory' => $base . 'includes/feedback/FeedbackWordPressInventory.php',

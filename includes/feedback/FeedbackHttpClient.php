@@ -6,6 +6,7 @@ if (!defined('ABSPATH')) {
 
 require_once __DIR__ . '/ReportPayloadJsonSchemaValidator.php';
 require_once __DIR__ . '/FeedbackTransportLog.php';
+require_once __DIR__ . '/FeedbackSiteTokenStore.php';
 
 /**
  * HTTP transport for feedback reports. Serializes a payload as gzipped JSON,
@@ -28,6 +29,49 @@ class ABJ_404_Solution_FeedbackHttpClient {
      */
     public static function send(array $payload): array {
         $endpoint = self::resolveEndpoint();
+        $token = ABJ_404_Solution_FeedbackSiteTokenStore::storedToken();
+        if ($token === '') {
+            $token = self::registerSiteToken($endpoint);
+        }
+        $result = self::sendReportRequest($endpoint, $payload, $token);
+        if (!empty($result['ok'])) {
+            self::persistRotationTokenFromResponse($result);
+            return $result;
+        }
+        if (($result['status'] ?? null) !== 401 || $token === '') {
+            return $result;
+        }
+
+        $freshToken = ABJ_404_Solution_FeedbackSiteTokenStore::freshStoredToken();
+        if ($freshToken !== '' && $freshToken !== $token) {
+            $freshResult = self::sendReportRequest($endpoint, $payload, $freshToken);
+            if (!empty($freshResult['ok'])) {
+                self::persistRotationTokenFromResponse($freshResult);
+                return $freshResult;
+            }
+            if (($freshResult['status'] ?? null) !== 401) {
+                return $freshResult;
+            }
+        }
+
+        $recoveredToken = self::registerSiteToken($endpoint);
+        if ($recoveredToken !== '') {
+            ABJ_404_Solution_FeedbackSiteTokenStore::recordIdentityRecoveryNotice();
+            $recoveredResult = self::sendReportRequest($endpoint, $payload, $recoveredToken);
+            if (!empty($recoveredResult['ok'])) {
+                self::persistRotationTokenFromResponse($recoveredResult);
+            }
+            return $recoveredResult;
+        }
+
+        return self::sendReportRequest($endpoint, $payload, '');
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     * @return array<string, mixed>
+     */
+    private static function sendReportRequest(string $endpoint, array $payload, string $token): array {
         $wirePayload = ABJ_404_Solution_ReportPayloadJsonSchemaValidator::toWirePayload($payload);
         $json = function_exists('wp_json_encode') ? wp_json_encode($wirePayload) : json_encode($wirePayload);
         if (!is_string($json) || $json === '') {
@@ -39,14 +83,19 @@ class ABJ_404_Solution_FeedbackHttpClient {
             return array('ok' => false, 'reason' => 'gzencode_failed');
         }
 
+        $headers = array(
+            'Content-Type' => 'application/json',
+            'Content-Encoding' => 'gzip',
+        );
+        if ($token !== '') {
+            $headers['Authorization'] = 'Bearer ' . $token;
+        }
+
         $response = wp_remote_post($endpoint, array(
             'timeout' => self::HTTP_TIMEOUT,
             'redirection' => 0,
             'blocking' => true,
-            'headers' => array(
-                'Content-Type' => 'application/json',
-                'Content-Encoding' => 'gzip',
-            ),
+            'headers' => $headers,
             'body' => $body,
         ));
 
@@ -57,17 +106,130 @@ class ABJ_404_Solution_FeedbackHttpClient {
         }
 
         $code = function_exists('wp_remote_retrieve_response_code') ? (int)wp_remote_retrieve_response_code($response) : 0;
+        $rawBody = function_exists('wp_remote_retrieve_body') ? wp_remote_retrieve_body($response) : '';
+        $bodyString = is_string($rawBody) ? $rawBody : '';
         if ($code >= 200 && $code < 300) {
-            return array('ok' => true, 'status' => $code);
+            return array('ok' => true, 'status' => $code, 'body' => $bodyString);
         }
         // Surface the server's structured error message in `detail`. The dev
         // endpoint's setErrorHandler returns
         // {statusCode, error: 'validation_failed', message: '<human>', field?}
         // on schema rejections; without this extraction the admin only sees
         // "HTTP 400" and has no way to tell which field was wrong.
-        $rawBody = function_exists('wp_remote_retrieve_body') ? wp_remote_retrieve_body($response) : '';
-        $detail = self::extractServerErrorDetail(is_string($rawBody) ? $rawBody : '');
+        $detail = self::extractServerErrorDetail($bodyString);
         return array('ok' => false, 'reason' => 'http_' . $code, 'status' => $code, 'detail' => $detail);
+    }
+
+    private static function registerSiteToken(string $reportEndpoint): string {
+        $endpoint = self::resolveRegisterEndpoint($reportEndpoint);
+        $siteUrl = '';
+        if (function_exists('home_url')) {
+            $raw = home_url();
+            $siteUrl = is_scalar($raw) ? (string)$raw : '';
+        }
+        $body = array();
+        if ($siteUrl !== '' && strlen($siteUrl) <= 255) {
+            $body['site_url'] = $siteUrl;
+        }
+        $json = function_exists('wp_json_encode') ? wp_json_encode($body) : json_encode($body);
+        if (!is_string($json)) {
+            ABJ_404_Solution_FeedbackTransportLog::log(
+                'warn',
+                'abj404_transport: registration payload JSON encoding failed; sending report without token'
+            );
+            return '';
+        }
+
+        $response = wp_remote_post($endpoint, array(
+            'timeout' => self::HTTP_TIMEOUT,
+            'redirection' => 0,
+            'blocking' => true,
+            'headers' => array(
+                'Content-Type' => 'application/json',
+            ),
+            'body' => $json,
+        ));
+
+        if (function_exists('is_wp_error') && is_wp_error($response)) {
+            $raw = $response->get_error_message();
+            $msg = is_scalar($raw) ? (string)$raw : '';
+            ABJ_404_Solution_FeedbackTransportLog::log(
+                'warn',
+                'abj404_transport: registration failed with wp_error; sending report without token. detail=' . $msg
+            );
+            return '';
+        }
+
+        $code = function_exists('wp_remote_retrieve_response_code') ? (int)wp_remote_retrieve_response_code($response) : 0;
+        $rawBody = function_exists('wp_remote_retrieve_body') ? wp_remote_retrieve_body($response) : '';
+        $bodyString = is_string($rawBody) ? $rawBody : '';
+        if ($code < 200 || $code >= 300) {
+            ABJ_404_Solution_FeedbackTransportLog::log(
+                'warn',
+                'abj404_transport: registration failed with http_' . $code . '; sending report without token'
+            );
+            return '';
+        }
+
+        $decoded = json_decode($bodyString, true);
+        $token = is_array($decoded) && isset($decoded['token']) ? $decoded['token'] : null;
+        if (!is_string($token) || !ABJ_404_Solution_FeedbackSiteTokenStore::isValidToken($token)) {
+            ABJ_404_Solution_FeedbackTransportLog::log(
+                'warn',
+                'abj404_transport: registration returned malformed token; sending report without token'
+            );
+            return '';
+        }
+
+        ABJ_404_Solution_FeedbackSiteTokenStore::persistToken($token);
+        return $token;
+    }
+
+    /**
+     * @param array<string, mixed> $result
+     */
+    private static function persistRotationTokenFromResponse(array $result): void {
+        $body = isset($result['body']) && is_string($result['body']) ? $result['body'] : '';
+        if ($body === '') {
+            return;
+        }
+        $decoded = json_decode($body, true);
+        if (!is_array($decoded) || !array_key_exists('rotation', $decoded)) {
+            return;
+        }
+        $rotation = $decoded['rotation'];
+        if (!is_array($rotation) || !array_key_exists('token', $rotation)) {
+            return;
+        }
+        $token = $rotation['token'];
+        if (!ABJ_404_Solution_FeedbackSiteTokenStore::isValidToken($token)) {
+            ABJ_404_Solution_FeedbackTransportLog::log(
+                'warn',
+                'abj404_transport: rotation token was malformed; keeping the previous site token'
+            );
+            return;
+        }
+        ABJ_404_Solution_FeedbackSiteTokenStore::persistToken($token);
+    }
+
+    private static function resolveRegisterEndpoint(string $reportEndpoint): string {
+        $default = 'https://404solution.ajexperience.com/api/v1/register';
+        if (substr($reportEndpoint, -15) === '/api/v1/reports') {
+            $default = substr($reportEndpoint, 0, -7) . 'register';
+        }
+        if (function_exists('apply_filters')) {
+            $filtered = apply_filters('abj404_register_endpoint', $default);
+            if (is_string($filtered) && $filtered !== '' && self::isHttpUrl($filtered)) {
+                return $filtered;
+            }
+            if ($filtered !== $default) {
+                ABJ_404_Solution_FeedbackTransportLog::log('warn', sprintf(
+                    'abj404_transport: abj404_register_endpoint filter returned an invalid value; using default. got=%s',
+                    is_scalar($filtered) ? (string)$filtered : gettype($filtered)
+                ));
+            }
+        }
+        return $default;
     }
 
     /**
