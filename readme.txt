@@ -207,6 +207,7 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 * FIX: Fixed a rare issue where saving, publishing, or deleting content, or changing a category, during a plugin update could interrupt a scheduled background maintenance task.
 * Improvement: Hardened several internal WordPress integration points (404 handling, REST API setup, log maintenance, and permission checks) so an unexpected internal error in one can no longer interrupt that request or affect other plugins.
 * Improvement: Out-of-memory diagnostic reports now preserve the exact memory sizes involved, making them easier to diagnose.
+* New: Added a "Your Diagnostic Data" card to the Options tab so you can download or delete the automatic error/heartbeat data this plugin has reported for your site, in line with GDPR data access and erasure rights.
 
 = Version 4.3.1 (June 26, 2026) =
 * FIX: Fixed an out-of-memory error (thanks to johnegg and kalshyre for reporting this).
@@ -492,11 +493,4 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 **Improvements**
 
 * The daily maintenance cron now checks and converts table engines back to InnoDB, fixing persistent MyISAM reversions caused by hosting environments that reset the storage engine between plugin upgrades.
-
-= Version 4.1.3 (Apr 17, 2026) =
-
-**Bug Fixes**
-
-* Fixed spell checker throwing `get_object_vars()` TypeError on PHP 8+ when `get_term()` returns a non-object value (e.g. from a corrupted object cache). The tag and category matching branches now use `is_object()` guards before accessing term properties.
-* Fixed Google Search Console integration returning HTTP 400 errors — the API does not support `groupType: 'or'` in dimension filter groups. Each URL is now queried individually.
 
