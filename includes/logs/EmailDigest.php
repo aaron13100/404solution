@@ -329,12 +329,28 @@ class ABJ_404_Solution_EmailDigest {
         );
 
         $this->logger->debugMessage('Sending 404 digest email to: ' . $to);
-        wp_mail($to, $subject, $body, $headers);
+        $sent = wp_mail($to, $subject, $body, $headers);
+
+        if (!$sent) {
+            // Do not stamp admin_notification_last_sent on a failed send:
+            // that would suppress the cooldown gate's retry for up to a
+            // week even though nothing actually went out. A hosting-level
+            // mail failure is a warning (the plugin can still function),
+            // not an error -- the next daily-maintenance-cron trigger
+            // retries naturally since last_sent is unchanged.
+            $this->logger->warn('404 digest email failed to send to: ' . $to . ' (wp_mail() reported failure).');
+            return 'Digest email failed to send to: ' . $to;
+        }
+
         $this->logger->debugMessage('404 digest email sent.');
 
-        if (function_exists('update_option')) {
-            update_option('admin_notification_last_sent', abj_clock()->now());
-        }
+        // Write through the options repository (into the bundled
+        // abj404_settings option), NOT a bare update_option() call: this
+        // must land in the SAME storage location cooldownSkipMessage()
+        // reads via getOptions(), or the cooldown gate silently never
+        // engages (the storage-mismatch half of WP.org support topic
+        // weekly-digest-3 -- see EmailDigestCadenceRealStorageRoundTripTest).
+        abj_service('options_repository')->setRawSettingValue('admin_notification_last_sent', abj_clock()->now());
 
         return 'Digest email sent to: ' . $to;
     }
@@ -376,7 +392,7 @@ class ABJ_404_Solution_EmailDigest {
             return;
         }
 
-        $scheduler->scheduleRecurringIfMissing($hook, 'daily');
+        $scheduler->scheduleDailyMigratingStaleRecurrence($hook);
     }
 
     /** @param array<string, mixed> $options */

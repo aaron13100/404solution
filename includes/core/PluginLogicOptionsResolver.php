@@ -115,10 +115,14 @@ class ABJ_404_Solution_PluginLogicOptionsResolver {
     /**
      * Raw, side-effect-free write of a single stored setting, bypassing the
      * storage write contract (no prepareForWrite, no schema validation, no
-     * default merge) and, critically, the runtime logger. Used only by logging
-     * infrastructure to persist its own metadata keys (debug-file key, last-
-     * sent-line counter) without re-entering the settings pipeline. Other keys
-     * in the row are preserved (read-modify-write of the single key).
+     * default merge) and, critically, the runtime logger. Used by logging
+     * infrastructure to persist its own metadata keys (debug-file key,
+     * last-sent-line counter) without re-entering the settings pipeline,
+     * and by any caller that needs to update a single bookkeeping key
+     * (e.g. EmailDigest's admin_notification_last_sent cadence timestamp)
+     * without a full getOptions()/updateOptions() round trip that could
+     * clobber an unrelated concurrent write. Other keys in the row are
+     * preserved (read-modify-write of the single key).
      *
      * @param string $key Setting key inside abj404_settings.
      * @param mixed $value Value to store.

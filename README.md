@@ -204,6 +204,7 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 ## Changelog ##
 
 ## Version 4.3.2 (July 26, 2026) ##
+* FIX: Fixed the email digest sending every day even when the notification frequency was set to Weekly (thanks to gardendarts for reporting this). The weekly/daily cadence is now enforced against the time the last digest was actually sent, and changing the frequency in Settings now takes effect on the very next save instead of the next unrelated one.
 * FIX: Fixed automatic error and heartbeat reports silently failing to send on some sites when an internal reporting component was unavailable.
 * FIX: Fixed debug logs and automatic reports sometimes over-redacting the plugin's own file names, option names, and URLs, including incorrectly truncating URLs that contained a query string.
 * FIX: Fixed a rare issue where saving, publishing, or deleting content, or changing a category, during a plugin update could interrupt a scheduled background maintenance task.
