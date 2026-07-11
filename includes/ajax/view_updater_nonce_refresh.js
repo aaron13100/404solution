@@ -57,9 +57,6 @@
         'abj404_updatePaginationLink': [
             ['[data-pagination-ajax-nonce]', 'data-pagination-ajax-nonce']
         ],
-        'abj404_fetchInflightStage': [
-            ['[data-pagination-inflight-nonce]', 'data-pagination-inflight-nonce']
-        ],
         'abj404_refreshStatsDashboard': [
             ['[data-stats-refresh-nonce]', 'data-stats-refresh-nonce']
         ],
@@ -221,11 +218,6 @@
                 },
                 error: function (jqXHR, textStatus, errorThrown) {
                     if (!opts._abj404NonceRetry && looksLikeExpiredNonce(jqXHR)) {
-                        if (global.abj404UpdateAjaxDebugLog) {
-                            global.abj404UpdateAjaxDebugLog('Nonce expired; attempting transparent refresh + retry', {
-                                action: (opts.data && opts.data.action) || ''
-                            });
-                        }
                         fetchFresh().then(function (nonces) {
                             var retryOpts = $.extend({}, opts);
                             retryOpts._abj404NonceRetry = true;

@@ -11,7 +11,7 @@ if (!defined('ABSPATH')) {
  * AJAX response: debug-context start, response-sent marker, output buffer
  * management, JSON emit + headers + exit, error envelope construction,
  * admin-status fallback resolution, request reader, failure logging shim,
- * client request-id sanitization, and view instance resolution.
+ * and view instance resolution.
  *
  * Shared cross-cutting helpers (error-envelope builder, JSON responder,
  * fatal-error classifier, debug-context starter, admin-nonce action list)
@@ -27,7 +27,7 @@ class ABJ_404_Solution_Ajax_AdminEndpointSupport {
      * @return string[]
      */
     public static function adminNonceActions(): array {
-        return array('abj404_updatePaginationLink', 'abj404_fetchInflightStage',
+        return array('abj404_updatePaginationLink',
             'abj404_refreshStatsDashboard', 'abj404_refreshHealthBar',
             'abj404_runLazyBackfill', 'abj404_trendData');
     }
@@ -39,14 +39,6 @@ class ABJ_404_Solution_Ajax_AdminEndpointSupport {
     public static function isFatalErrorType($type) {
         $fatalTypes = array(E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR);
         return in_array($type, $fatalTypes, true);
-    }
-
-    /**
-     * @param string $stage
-     * @return void
-     */
-    public static function markInflightStage($stage) {
-        ABJ_404_Solution_AjaxStageDiagnostics::markInflightStage($stage);
     }
 
     /**
@@ -139,9 +131,6 @@ class ABJ_404_Solution_Ajax_AdminEndpointSupport {
                 if (array_key_exists('subpage', $ctx) && is_string($ctx['subpage']) && $ctx['subpage'] !== '') {
                     header('X-ABJ404-Subpage: ' . preg_replace('/[\r\n]+/', '', $ctx['subpage']));
                 }
-                if (array_key_exists('requestId', $ctx) && is_string($ctx['requestId']) && $ctx['requestId'] !== '') {
-                    header('X-ABJ404-Request-Id: ' . preg_replace('/[^a-zA-Z0-9]/', '', $ctx['requestId']));
-                }
             }
             header('Content-type: application/json; charset=UTF-8');
             if (function_exists('status_header')) {
@@ -172,29 +161,6 @@ class ABJ_404_Solution_Ajax_AdminEndpointSupport {
         }
 
         exit;
-    }
-
-    /**
-     * Validate a client-supplied request id used as the transient suffix for
-     * in-flight stage tracking. Only ever written into a transient key
-     * (`abj404_inflight_<id>`), never executed or logged verbatim, but we
-     * constrain it to alphanumerics so a malformed payload cannot collide with
-     * other plugins' transients or blow past WP's 172-char option-name limit.
-     *
-     * @return string Sanitized id, or '' if missing/invalid.
-     */
-    public static function readClientRequestId() {
-        $raw = '';
-        if (isset($_REQUEST['requestId'])) {
-            $raw = $_REQUEST['requestId'];
-        }
-        if (!is_string($raw) || $raw === '') {
-            return '';
-        }
-        if (!preg_match('/\A[a-zA-Z0-9]{8,64}\z/', $raw)) {
-            return '';
-        }
-        return $raw;
     }
 
     /**
@@ -265,10 +231,6 @@ class ABJ_404_Solution_Ajax_AdminEndpointSupport {
         $context['ajax_expected_json'] = true;
         $context['response_sent'] = false;
         $context['ob_level_before'] = ob_get_level();
-        // Client-supplied request id for in-flight stage diagnostics. The
-        // browser generates this so it has a key to look up the stage even
-        // when a pure timeout means no response/header ever arrived.
-        $context['requestId'] = self::readClientRequestId();
 
         // Prevent WordPress's "critical error" HTML page from masking details for AJAX calls.
         if (!headers_sent()) {
@@ -277,9 +239,6 @@ class ABJ_404_Solution_Ajax_AdminEndpointSupport {
             }
             if (array_key_exists('subpage', $context) && is_string($context['subpage']) && $context['subpage'] !== '') {
                 header('X-ABJ404-Subpage: ' . preg_replace('/[\r\n]+/', '', $context['subpage']));
-            }
-            if ($context['requestId'] !== '') {
-                header('X-ABJ404-Request-Id: ' . $context['requestId']);
             }
             @ini_set('display_errors', '0');
         }

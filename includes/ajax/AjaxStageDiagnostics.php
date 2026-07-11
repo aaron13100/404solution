@@ -7,23 +7,19 @@ if (!defined('ABSPATH')) {
 /**
  * Tracks which phase an AJAX request is in for timeout diagnostics.
  *
- * When an admin AJAX request times out (no response reaches the browser),
- * the JS error handler calls fetchInflightStage to read the last stage
- * label from a short-lived transient. This class manages that transient
- * and the stage-to-label mapping.
+ * The current stage/query-label/what-happening trio is threaded through
+ * $context and mirrored onto $GLOBALS['abj404_ajax_context'] so that if the
+ * request ends in an error response, ajaxUpdatePaginationLinks can attach
+ * it under data.details.context for the admin-facing failure notice
+ * (see view_updater_pagination_error_notice.js).
  */
 class ABJ_404_Solution_AjaxStageDiagnostics {
 
-    private const INFLIGHT_STAGE_EVENT_LIMIT = 5000;
-
     /**
-     * Update the in-flight stage marker for the current AJAX request.  Sets
-     * `$context['stage']` and, when a client requestId is present, also
-     * writes a short-lived transient so a follow-up `ajaxFetchInflightStage`
-     * call can read which phase the server was in when a client-side timeout
-     * fired (no response, no body, no headers reach the browser).
-     *
-     * Transient TTL is intentionally short (60s).
+     * Update the in-flight stage marker for the current AJAX request: sets
+     * `$context['stage']` (plus query_label/what_happening) and mirrors it
+     * onto $GLOBALS['abj404_ajax_context'] so an error response emitted
+     * later in the same request can attach the last-known stage.
      *
      * @param array<string, mixed> $context  Passed by reference; mutated in place.
      * @param string $stage  Stage label (e.g. 'table_captured', 'paginationLinksTop').
@@ -42,45 +38,6 @@ class ABJ_404_Solution_AjaxStageDiagnostics {
             $GLOBALS['abj404_ajax_context']['query_label'] = $diagnostics['query_label'];
             $GLOBALS['abj404_ajax_context']['what_happening'] = $diagnostics['what_happening'];
         }
-
-        $requestId = isset($context['requestId']) && is_string($context['requestId']) ? $context['requestId'] : '';
-        if ($requestId === '') {
-            return;
-        }
-        if (!function_exists('set_transient')) {
-            return;
-        }
-        $event = array(
-            'stage' => (string)$stage,
-            'query_label' => $diagnostics['query_label'],
-            'what_happening' => $diagnostics['what_happening'],
-            'time_ms' => (int)round(abj_clock()->nowFloat() * 1000),
-        );
-        $events = array();
-        if (function_exists('get_transient')) {
-            $existing = @get_transient('abj404_inflight_' . $requestId);
-            if (is_array($existing) && is_array($existing['events'] ?? null)) {
-                $events = $existing['events'];
-            }
-        }
-        $lastEvent = !empty($events) ? $events[count($events) - 1] : null;
-        $lastStage = is_array($lastEvent) && isset($lastEvent['stage']) && is_string($lastEvent['stage'])
-            ? $lastEvent['stage'] : '';
-        if ($lastStage !== (string)$stage) {
-            $events[] = $event;
-            if (count($events) > self::INFLIGHT_STAGE_EVENT_LIMIT) {
-                $events = array_slice($events, -self::INFLIGHT_STAGE_EVENT_LIMIT);
-            }
-        }
-        // Diagnostics: best effort. Never let a transient write failure
-        // mask the real query error we're trying to diagnose.
-        // allow-cache-empty: inflight diagnostics snapshot intentionally stores error context, not query data.
-        @set_transient('abj404_inflight_' . $requestId, array(
-            'stage' => (string)$stage,
-            'query_label' => $diagnostics['query_label'],
-            'what_happening' => $diagnostics['what_happening'],
-            'events' => $events,
-        ), 60);
     }
 
     /**
@@ -193,30 +150,5 @@ class ABJ_404_Solution_AjaxStageDiagnostics {
             'query_label' => (string)$stage,
             'what_happening' => 'Running AJAX stage ' . (string)$stage,
         );
-    }
-
-    /**
-     * Public entry point for code paths (e.g. the staged view-build pipeline)
-     * that run beneath DataAccess and don't have $context threaded through.
-     *
-     * Best-effort: if no AJAX context exists (background cron, CLI), this is
-     * a no-op.
-     *
-     * @param string $stage  Stage label or `<key>:<detail>`.
-     * @return void
-     */
-    public static function markInflightStage($stage) {
-        if (!isset($GLOBALS['abj404_ajax_context']) || !is_array($GLOBALS['abj404_ajax_context'])) {
-            return;
-        }
-        $rawContext = $GLOBALS['abj404_ajax_context'];
-        $context = array();
-        foreach ($rawContext as $key => $value) {
-            if (is_string($key)) {
-                $context[$key] = $value;
-            }
-        }
-        self::setStage($context, (string)$stage);
-        $GLOBALS['abj404_ajax_context'] = $context;
     }
 }

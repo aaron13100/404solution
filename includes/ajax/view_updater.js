@@ -4,7 +4,7 @@
  * Bootstraps the pagination + background-refresh flows on jQuery.ready
  * and owns the cross-cutting helpers used by every sibling module:
  *
- *   - getURLParameter / abj404UpdateAjaxDebugLog / abj404GenerateRequestId:
+ *   - getURLParameter / abj404GenerateRequestId:
  *     primitives shared with every helper file below.
  *   - bindPaginationLinkListeners / bindSearchFieldListeners +
  *     extractPagedFromTrigger / isElementFullyVisible:
@@ -34,79 +34,14 @@ if (typeof(getURLParameter) !== "function") {
 
 
 /**
- * Stores AJAX interaction details for the footer debug section.
- * @type {string[]}
- */
-window.abj404AjaxInteractionLogs = [];
-window.abj404AjaxInteractionLogLimit = 5000;
-
-/**
- * Append a message to the AJAX debug log in the footer.
- *
- * @param {string} message
- * @param {object|null} details
- * @returns {void}
- */
-function abj404UpdateAjaxDebugLog(message, details) {
-    if (!message) {
-        return;
-    }
-    var d = new Date();
-    var hours = String(d.getHours());
-    if (hours.length < 2) { hours = '0' + hours; }
-    var minutes = String(d.getMinutes());
-    if (minutes.length < 2) { minutes = '0' + minutes; }
-    var seconds = String(d.getSeconds());
-    if (seconds.length < 2) { seconds = '0' + seconds; }
-    var ms = String(d.getMilliseconds());
-    while (ms.length < 3) { ms = '0' + ms; }
-
-    var timestamp = hours + ':' + minutes + ':' + seconds + '.' + ms;
-    var logEntry = '[' + timestamp + '] ' + message;
-    if (details && typeof details === 'object') {
-        try {
-            logEntry += ' ' + JSON.stringify(details);
-        } catch (e) {
-            // allow-silent-catch: serialization failures (cyclic objects, etc.) must not block the user-visible debug log entry
-        }
-    }
-
-    window.abj404AjaxInteractionLogs.push(logEntry);
-    if (window.abj404AjaxInteractionLogs.length > window.abj404AjaxInteractionLogLimit) {
-        window.abj404AjaxInteractionLogs.splice(0, window.abj404AjaxInteractionLogs.length - window.abj404AjaxInteractionLogLimit);
-    }
-
-    var $container = jQuery('#abj404-ajax-debug-info');
-    var $log = jQuery('#abj404-ajax-debug-log');
-
-    if ($container.length > 0) {
-        $container.show();
-    }
-
-    if ($log.length > 0) {
-        var $entry = jQuery('<div>').text(logEntry).css({
-            marginBottom: '4px',
-            borderBottom: '1px solid #e0e0e0',
-            paddingBottom: '2px'
-        });
-        $log.append($entry);
-        while ($log.children().length > window.abj404AjaxInteractionLogLimit) {
-            $log.children().first().remove();
-        }
-        // auto-scroll to bottom
-        $log.scrollTop($log[0].scrollHeight);
-    }
-}
-
-/**
- * Generate a short alphanumeric id used by the server to key an in-flight
- * stage transient (see ViewUpdater::setStage).  Generated client-side so the
- * id is known to the JS error handler even when a pure network timeout means
- * no response, header, or body ever arrives, which is the only path the
- * follow-up `ajaxFetchInflightStage` call can recover diagnostics for.
+ * Generate a short alphanumeric id that uniquely tags each foreground
+ * pagination request. window.abj404LatestForegroundRequestId records the
+ * most recently issued one so a stale response (e.g. a slow initial-load
+ * hydration that resolves after a newer filter/sort request) can be
+ * detected and dropped instead of clobbering the visible table.
  *
  * Server validates: `[a-zA-Z0-9]{8,64}`.  16 hex-ish chars is plenty of
- * entropy to avoid transient-key collisions across concurrent admin tabs.
+ * entropy to avoid collisions across concurrent admin tabs.
  *
  * @returns {string}
  */

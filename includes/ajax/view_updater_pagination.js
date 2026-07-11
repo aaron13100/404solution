@@ -30,8 +30,7 @@
  *
  * Globals defined: paginationLinksChange, abj404CollapseEmptyPaginationStrips.
  *
- * Depends on view_updater.js (abj404UpdateAjaxDebugLog),
- * view_updater_compare.js (hasBackgroundRefreshUpdateWithBaseline),
+ * Depends on view_updater_compare.js (hasBackgroundRefreshUpdateWithBaseline),
  * view_updater_stage_diagnostics.js (abj404AjaxStageDiagnostics),
  * view_updater_table_init.js (isDetectOnlyRefreshInFlight,
  * setDetectOnlyRefreshInFlight, refreshHealthBarIfNeeded,
@@ -57,7 +56,6 @@ function paginationLinksChange(triggerItem, options) {
     var requestStartedAt = req.requestStartedAt;
     var requestId = req.requestId;
     var baselineComparison = req.baselineComparison;
-    var inflightNonce = req.inflightNonce;
     var ajaxTimeoutMs = req.ajaxTimeoutMs;
 
     if (req.isDetectOnlyBackground && isDetectOnlyRefreshInFlight()) {
@@ -117,22 +115,11 @@ function paginationLinksChange(triggerItem, options) {
         $foregroundTableWrapper.append('<div class="abj404-loading-overlay"><div class="abj404-spinner-container"><div class="abj404-spinner"></div></div></div>');
     }
 
-    abj404UpdateAjaxDebugLog('Starting AJAX: ' + action + ' for subpage ' + subpage, {
-        paged: req.paged,
-        filter: req.filter,
-        filterText: req.filterText,
-        rowsPerPage: req.rowsPerPage,
-        detectOnly: detectOnly,
-        cacheMode: req.cacheMode
-    });
-
     var errorCtx = {
         baseUrl: baseUrl,
         action: action,
         subpage: subpage,
         isBackgroundRefresh: isBackgroundRefresh,
-        inflightNonce: inflightNonce,
-        requestId: requestId,
         requestStartedAt: requestStartedAt,
         ajaxTimeoutMs: ajaxTimeoutMs
     };
@@ -151,12 +138,6 @@ function paginationLinksChange(triggerItem, options) {
         data: req.payload,
         success: function (result) {
             jQuery('.abj404-refresh-status').text('');
-
-            abj404UpdateAjaxDebugLog('AJAX Success: ' + action, {
-                durationMs: Date.now() - requestStartedAt, // allow-direct-time: AJAX wall-clock duration for the success debug log entry; preserved verbatim from view_updater_pagination.js pre-i352 split
-                tableLength: (result && result.table) ? result.table.length : 0,
-                hasUpdate: result && result.hasUpdate
-            });
 
             if (isBackgroundRefresh && detectOnly) {
                 setDetectOnlyRefreshInFlight(false);

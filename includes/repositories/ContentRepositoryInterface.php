@@ -17,8 +17,8 @@ require_once __DIR__ . '/OldSlugLookupInterface.php';
  * caller ever narrowed to a single segment, so they were folded back here to
  * remove unrealized-ISP indirection. New code should depend on the smallest
  * sub-interface it actually uses; this composite is preserved so existing typed
- * callers (e.g. DataAccess delegate, AdminViewBuild, the ContentRepository
- * constructor) continue to compile.
+ * callers (e.g. DataAccess delegate, the ContentRepository constructor)
+ * continue to compile.
  */
 interface ABJ_404_Solution_ContentRepositoryInterface extends
     ABJ_404_Solution_PublishedContentLookupInterface,

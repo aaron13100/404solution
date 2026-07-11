@@ -8,10 +8,9 @@
  *
  * The descriptor returned contains both the raw AJAX payload sent to
  * ajaxUpdatePaginationLinks and the cross-cutting fields the
- * orchestrator needs for telemetry, the detect-only baseline
- * comparison, and the inflight-stage follow-up (baseUrl, action,
- * subpage, nonces, requestId, requestStartedAt, baselineComparison,
- * ajaxTimeoutMs, mode flags).
+ * orchestrator needs for telemetry and the detect-only baseline
+ * comparison (baseUrl, action, subpage, nonces, requestId,
+ * requestStartedAt, baselineComparison, ajaxTimeoutMs, mode flags).
  *
  * Returns null when no AJAX URL can be located on the page; the caller
  * treats that as an abort and emits the same console warning the legacy
@@ -93,9 +92,6 @@ function abj404BuildPaginationRequest(triggerItem, options) {
         var nonceMatch = url.match(/[?&]nonce=([^&]+)/);
         nonce = nonceMatch ? nonceMatch[1] : '';
     }
-    // Inflight-stage nonce is optional: older page renders won't have it,
-    // and the timeout follow-up call simply skips when missing.
-    var inflightNonce = $ajaxConfigEl.attr('data-pagination-inflight-nonce') || '';
 
     // Use a clean admin-ajax base URL; always send 'action' in the payload for
     // compatibility with security plugins.
@@ -150,7 +146,6 @@ function abj404BuildPaginationRequest(triggerItem, options) {
         subpage: subpage,
         action: action,
         nonce: nonce,
-        inflightNonce: inflightNonce,
         requestStartedAt: requestStartedAt,
         requestId: requestId,
         baselineComparison: baselineComparison,

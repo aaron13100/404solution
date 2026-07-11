@@ -55,7 +55,6 @@ class ABJ_404_Solution_RedirectsTablePagePresenter {
             '{data-lazy-backfill-nonce}' => esc_attr(wp_create_nonce('abj404_runLazyBackfill')),
             '{data-pagination-ajax-subpage}' => esc_attr($sub),
             '{data-pagination-ajax-nonce}' => esc_attr(wp_create_nonce('abj404_updatePaginationLink')),
-            '{data-pagination-inflight-nonce}' => esc_attr(wp_create_nonce('abj404_fetchInflightStage')),
             '{data-pagination-current-orderby}' => esc_attr($paginationState['orderby']),
             '{data-pagination-current-order}' => esc_attr($paginationState['order']),
             '{data-pagination-current-filter}' => esc_attr((string)$currentFilter),

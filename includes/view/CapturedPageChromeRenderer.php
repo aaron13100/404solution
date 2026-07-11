@@ -53,7 +53,6 @@ class ABJ_404_Solution_CapturedPageChromeRenderer {
         $display = $this->readDisplayOptions($tableOptions);
 
         $paginationNonce = wp_create_nonce('abj404_updatePaginationLink');
-        $inflightNonce = wp_create_nonce('abj404_fetchInflightStage');
         $lazyBackfillNonce = wp_create_nonce('abj404_runLazyBackfill');
 
         $subtitleHtml = $this->buildSubtitleHtml($isSimpleMode);
@@ -79,7 +78,6 @@ class ABJ_404_Solution_CapturedPageChromeRenderer {
             '{data-lazy-backfill-nonce}' => esc_attr($lazyBackfillNonce),
             '{data-pagination-ajax-subpage}' => esc_attr($sub),
             '{data-pagination-ajax-nonce}' => esc_attr($paginationNonce),
-            '{data-pagination-inflight-nonce}' => esc_attr($inflightNonce),
             '{data-pagination-current-orderby}' => esc_attr($display['currentOrderBy']),
             '{data-pagination-current-order}' => esc_attr($display['currentOrder']),
             '{data-pagination-current-filter}' => esc_attr((string)$display['currentFilter']),

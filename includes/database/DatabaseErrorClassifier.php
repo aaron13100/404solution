@@ -7,10 +7,9 @@ if (!defined('ABSPATH')) {
  * Coordinates database error response: applies notice and runtime-flag side
  * effects on top of focused error-classification collaborators.
  *
- * The pure error vocabulary lives in the four collaborators exposed via
+ * The pure error vocabulary lives in the three collaborators exposed via
  * accessor methods:
  *   - taxonomy(): string-pattern matchers (is*Error()).
- *   - stagedFailures(): staged-build failure policy (classifyStageFailure() etc).
  *   - tableInspector(): table name extraction + InnoDB engine probe.
  *   - prefixDiagnostics(): prefix-mismatch + multisite cross-prefix detection.
  *
@@ -38,9 +37,6 @@ class ABJ_404_Solution_DatabaseErrorClassifier {
     /** @var ABJ_404_Solution_DatabaseInfrastructureErrorTaxonomy */
     private $taxonomy;
 
-    /** @var ABJ_404_Solution_DatabaseStagedFailureClassifier */
-    private $stagedFailures;
-
     /** @var ABJ_404_Solution_DatabaseErrorTableInspector */
     private $tableInspector;
 
@@ -56,7 +52,6 @@ class ABJ_404_Solution_DatabaseErrorClassifier {
         $this->core = $core;
         $this->logger = $logger;
         $this->taxonomy = new ABJ_404_Solution_DatabaseInfrastructureErrorTaxonomy($functions);
-        $this->stagedFailures = new ABJ_404_Solution_DatabaseStagedFailureClassifier($this->taxonomy);
         $this->tableInspector = new ABJ_404_Solution_DatabaseErrorTableInspector($logger);
         $this->prefixDiagnostics = new ABJ_404_Solution_DatabasePrefixDiagnostics($core, $logger);
     }
@@ -64,11 +59,6 @@ class ABJ_404_Solution_DatabaseErrorClassifier {
     /** @return ABJ_404_Solution_DatabaseInfrastructureErrorTaxonomy */
     public function taxonomy(): ABJ_404_Solution_DatabaseInfrastructureErrorTaxonomy {
         return $this->taxonomy;
-    }
-
-    /** @return ABJ_404_Solution_DatabaseStagedFailureClassifier */
-    public function stagedFailures(): ABJ_404_Solution_DatabaseStagedFailureClassifier {
-        return $this->stagedFailures;
     }
 
     /** @return ABJ_404_Solution_DatabaseErrorTableInspector */

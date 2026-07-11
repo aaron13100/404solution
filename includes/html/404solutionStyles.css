@@ -1879,13 +1879,13 @@ th:nth-last-child(-n+3) .lefty-tooltiptext {
 }
 
 /*
- * Inline progress badge shown by the page-redirects AJAX pipeline while a
- * cold-cache build is running (case-a). The same `.abj404-refresh-status`
- * span sits in both the filter row and the bottom pagination strip and is
- * populated by view_updater_build_advance.js / view_updater_table_warmup.js
- * via jQuery.text(). When empty it stays out of the layout so the existing
- * case-b toast (which collapses to a 28px spinner after 2s) remains the
- * dominant signal once the table is already visible.
+ * Inline status badge shown by the page-redirects AJAX pipeline. The same
+ * `.abj404-refresh-status` span sits in both the filter row and the bottom
+ * pagination strip and is populated by view_updater_stats.js's
+ * setRefreshStatus()/clearRefreshStatus() via jQuery.text(). When empty it
+ * stays out of the layout so the existing toast (which collapses to a 28px
+ * spinner after 2s) remains the dominant signal once the table is already
+ * visible.
  */
 .abj404-refresh-status {
     display: inline-flex;

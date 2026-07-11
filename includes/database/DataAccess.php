@@ -28,9 +28,10 @@ if (!defined('ABSPATH')) {
  *   2. getPostOrGetSanitize / getPostOrGetSanitizeUrl request-sanitization
  *      fallbacks. The authoritative implementation lives on Functions; no
  *      production caller routed through DataAccess.
- *   3. stageFailurePolicy() vestigial classifier marker. The actual
- *      per-stage policy is owned by
- *      ABJ_404_Solution_DatabaseStagedFailureClassifier::classifyStageFailure().
+ *   3. stageFailurePolicy() vestigial classifier marker. The staged
+ *      view-build pipeline it classified for was itself removed (denorm
+ *      Step 3e-A); the classifier and its policy config were deleted
+ *      as dead code rather than re-exported here.
  * The __call() rejector below is the structural guard preventing ad-hoc
  * pass-throughs from being re-added.
  */

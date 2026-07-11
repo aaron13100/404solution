@@ -33,7 +33,6 @@ class ABJ_404_Solution_AdminLogsPageShell {
         $orderby = array_key_exists('orderby', $tableOptions) && is_string($tableOptions['orderby']) ? $tableOptions['orderby'] : 'timestamp';
         $order = array_key_exists('order', $tableOptions) && is_string($tableOptions['order']) ? $tableOptions['order'] : 'DESC';
         $paginationNonce = wp_create_nonce('abj404_updatePaginationLink');
-        $inflightNonce = wp_create_nonce('abj404_fetchInflightStage');
 
         $perpageOptionsHtml = $this->renderPerPageOptions($perpage);
         $searchForm = $this->renderSearchForm();
@@ -41,7 +40,7 @@ class ABJ_404_Solution_AdminLogsPageShell {
 
         return $this->f->str_replace(
             $this->wrapperTokens(),
-            $this->wrapperValues($sub, $paginationNonce, $inflightNonce, $orderby, $order,
+            $this->wrapperValues($sub, $paginationNonce, $orderby, $order,
                 $searchForm, $perpageOptionsHtml, $warmup),
             $this->tpl('viewLogsPageWrapper.html')
         );
@@ -54,7 +53,6 @@ class ABJ_404_Solution_AdminLogsPageShell {
             '{data-pagination-ajax-url}',
             '{data-pagination-ajax-subpage}',
             '{data-pagination-ajax-nonce}',
-            '{data-pagination-inflight-nonce}',
             '{data-pagination-current-orderby}',
             '{data-pagination-current-order}',
             '{data-pagination-current-logsid}',
@@ -68,7 +66,7 @@ class ABJ_404_Solution_AdminLogsPageShell {
     }
 
     /** @return array<int, mixed> */
-    private function wrapperValues(string $sub, string $paginationNonce, string $inflightNonce, string $orderby,
+    private function wrapperValues(string $sub, string $paginationNonce, string $orderby,
             string $order, string $searchForm, string $perpageOptionsHtml, string $warmup): array {
         $currentLogsId = $this->shared->viewGetPostOrGetSanitize('redirect_to_data_field_id');
         return array(
@@ -76,7 +74,6 @@ class ABJ_404_Solution_AdminLogsPageShell {
             esc_attr(admin_url('admin-ajax.php')),
             esc_attr($sub),
             esc_attr($paginationNonce),
-            esc_attr($inflightNonce),
             esc_attr($orderby),
             esc_attr($order),
             esc_attr(is_scalar($currentLogsId) ? (string)$currentLogsId : ''),

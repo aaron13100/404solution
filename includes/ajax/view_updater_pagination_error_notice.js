@@ -2,21 +2,19 @@
  * Pagination AJAX error notice renderer.
  *
  * Owns everything the orchestrator does after ajaxUpdatePaginationLinks
- * fails: parse the failure response, write a structured entry to the
- * debug log, and render a non-blocking admin notice with diagnostic
- * details (foreground only).
+ * fails: parse the failure response and render a non-blocking admin
+ * notice with diagnostic details (foreground only).
  *
  * Returns the parsed error fields to the caller so the orchestrator's
  * `onError` callback and background-refresh telemetry can forward
  * normalized data without re-parsing responseJson.
  *
- * Background refreshes silently parse + log + telemeter; only
- * foreground calls render the notice.
+ * Background refreshes silently parse + telemeter; only foreground
+ * calls render the notice.
  *
  * Globals defined: abj404HandlePaginationAjaxError.
  *
- * Depends on view_updater.js (abj404UpdateAjaxDebugLog),
- * view_updater_stage_diagnostics.js (abj404AjaxStageDiagnostics),
+ * Depends on view_updater_stage_diagnostics.js (abj404AjaxStageDiagnostics),
  * view_updater_table_init.js (abj404FormatAjaxFailureDetails,
  * abj404RenderAjaxErrorNotice).
  */
@@ -24,19 +22,6 @@ function abj404HandlePaginationAjaxError(ctx, jqXHR, textStatus, errorThrown) {
     var status = jqXHR && jqXHR.status ? jqXHR.status : '';
     var responseText = jqXHR && jqXHR.responseText ? String(jqXHR.responseText) : '';
     var responseJson = jqXHR && jqXHR.responseJSON ? jqXHR.responseJSON : null;
-    var responsePreview = responseText;
-    if (responsePreview.length > 2000) {
-        // allow-em-dash: visible truncation marker preserved verbatim from the original debug-log preview
-        responsePreview = responsePreview.slice(0, 2000) + "\n…(truncated)…";
-    }
-
-    abj404UpdateAjaxDebugLog('AJAX Error: ' + ctx.action, {
-        status: status,
-        textStatus: textStatus,
-        errorThrown: errorThrown,
-        durationMs: Date.now() - ctx.requestStartedAt // allow-direct-time: AJAX wall-clock duration for the failure debug log entry; preserved verbatim from view_updater_pagination.js pre-i352 split
-    });
-
     // Always log full details to the console for easier debugging.
     if (window && window.console && window.console.error) {
         window.console.error('404 Solution AJAX error', {
@@ -96,10 +81,7 @@ function abj404HandlePaginationAjaxError(ctx, jqXHR, textStatus, errorThrown) {
 }
 
 /**
- * Build and emit the foreground admin notice describing the AJAX failure,
- * and (when the failure was a pure client-side timeout) kick off the
- * inflight-stage follow-up AJAX so the notice can pick up the stage label
- * the server stamped just before the client gave up.
+ * Build and emit the foreground admin notice describing the AJAX failure.
  *
  * Internal to view_updater_pagination_error_notice.js; called by
  * abj404HandlePaginationAjaxError only.
@@ -130,12 +112,6 @@ function abj404RenderPaginationErrorNoticeForeground(ctx, parsed, textStatus, er
         lastQueryRedacted: parsed.lastQueryRedacted
     };
     var detailLines = abj404FormatAjaxFailureDetails(detailMeta);
-    var shouldFetchInflightStage = (
-        textStatus === 'timeout' && !parsed.stageFromServer && !!ctx.inflightNonce
-    );
-    if (shouldFetchInflightStage) {
-        detailLines.push('Inflight stage: (looking up...)');
-    }
     var $detailsEl = jQuery('<pre></pre>')
         .css({whiteSpace: 'pre-wrap', margin: '0 0 8px 0'})
         .text(detailLines.join('\n'));
@@ -168,72 +144,5 @@ function abj404RenderPaginationErrorNoticeForeground(ctx, parsed, textStatus, er
         $detailsEl: $detailsEl,
         triggeredFromSlug: triggeredFromSlug,
         contextSummary: contextSummary
-    });
-    if (shouldFetchInflightStage) {
-        abj404FollowUpInflightStage(ctx, detailLines, $detailsEl);
-    }
-}
-
-/**
- * Read the server-stamped inflight-stage transient and patch the pending
- * notice diagnostic lines once the lookup returns.
- *
- * @param {Object} ctx Pagination error context.
- * @param {Array<string>} detailLines Rendered diagnostic lines.
- * @param {Object} $detailsEl jQuery-wrapped diagnostic <pre>.
- * @returns {void}
- */
-function abj404FollowUpInflightStage(ctx, detailLines, $detailsEl) {
-    var inflightAjaxRunner = (typeof abj404AjaxWithNonceRetry === 'function')
-        ? abj404AjaxWithNonceRetry : jQuery.ajax; // ajax-direct-approved: documented fallback when view_updater_nonce_refresh.js is not yet loaded; canonical pattern in every view_updater_*.js dispatch site, preserved verbatim from view_updater_pagination.js pre-i352 split
-    inflightAjaxRunner({
-        url: ctx.baseUrl,
-        type: 'POST',
-        dataType: 'json',
-        timeout: 5000,
-        data: {
-            action: 'ajaxFetchInflightStage',
-            nonce: ctx.inflightNonce,
-            requestId: ctx.requestId
-        }
-    }).done(function(stageResult) {
-        var inflightStage = '';
-        var inflightQueryLabel = '';
-        var inflightWhatsHappening = '';
-        if (stageResult && typeof stageResult.stage === 'string' && stageResult.stage !== '') {
-            inflightStage = stageResult.stage;
-        }
-        if (stageResult && typeof stageResult.queryLabel === 'string' && stageResult.queryLabel !== '') {
-            inflightQueryLabel = stageResult.queryLabel;
-        }
-        if (stageResult && typeof stageResult.whatsHappening === 'string' && stageResult.whatsHappening !== '') {
-            inflightWhatsHappening = stageResult.whatsHappening;
-        }
-        var lookupLine = inflightStage
-            ? 'Inflight stage: ' + inflightStage
-            : 'Inflight stage: (unknown)';
-        var lookupDiagnostics = abj404AjaxStageDiagnostics(inflightStage, ctx.subpage);
-        var updated = detailLines.slice();
-        for (var i = 0; i < updated.length; i++) {
-            if (updated[i].indexOf('What was happening:') === 0) {
-                updated[i] = 'What was happening: ' + (inflightWhatsHappening || lookupDiagnostics.whatsHappening);
-            }
-            if (updated[i].indexOf('Query:') === 0) {
-                updated[i] = 'Query: ' + (inflightQueryLabel || lookupDiagnostics.queryLabel);
-            }
-            if (updated[i].indexOf('Inflight stage:') === 0) {
-                updated[i] = lookupLine;
-            }
-        }
-        $detailsEl.text(updated.join('\n'));
-    }).fail(function() {
-        var updated = detailLines.slice();
-        for (var i = 0; i < updated.length; i++) {
-            if (updated[i].indexOf('Inflight stage:') === 0) {
-                updated[i] = 'Inflight stage: (lookup failed)';
-                break;
-            }
-        }
-        $detailsEl.text(updated.join('\n'));
     });
 }

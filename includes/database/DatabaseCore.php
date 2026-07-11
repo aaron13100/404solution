@@ -10,7 +10,6 @@ require_once __DIR__ . '/DatabaseRuntimeState.php';
 require_once __DIR__ . '/DatabaseConnectionManager.php';
 require_once __DIR__ . '/DatabaseQueryTimeoutManager.php';
 require_once __DIR__ . '/DatabaseInfrastructureErrorTaxonomy.php';
-require_once __DIR__ . '/DatabaseStagedFailureClassifier.php';
 require_once __DIR__ . '/DatabaseErrorTableInspector.php';
 require_once __DIR__ . '/DatabasePrefixDiagnostics.php';
 require_once __DIR__ . '/DatabaseErrorClassifier.php';
@@ -243,20 +242,6 @@ class ABJ_404_Solution_DatabaseCore implements
     /** @inheritDoc */
     public function doTableNameReplacements($query): string {
         return $this->tableNameResolver->doTableNameReplacements($query);
-    }
-
-    /**
-     * Classify a legacy view-build stage failure into 'resumable',
-     * 'skip', 'halt', or 'rethrow'. Retained for older diagnostics; the
-     * direct rebuild workflow no longer routes failures through staged
-     * collaborators.
-     *
-     * @param int $stageNumber
-     * @param string $errorText
-     * @return string
-     */
-    public function classifyStageFailure(int $stageNumber, string $errorText): string {
-        return $this->recoveryServices->errorClassifier()->stagedFailures()->classifyStageFailure($stageNumber, $errorText);
     }
 
     /** @inheritDoc */

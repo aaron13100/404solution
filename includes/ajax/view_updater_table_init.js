@@ -23,8 +23,8 @@
  * setDetectOnlyRefreshInFlight, triggerBackgroundTableRefreshIfEnabled,
  * triggerInitialTableLoadIfNeeded.
  *
- * Depends on view_updater.js (abj404UpdateAjaxDebugLog, getURLParameter,
- * paginationLinksChange, isElementFullyVisible),
+ * Depends on view_updater.js (getURLParameter, paginationLinksChange,
+ * isElementFullyVisible),
  * view_updater_refresh_pill.js (showRefreshAvailablePill), view_updater_stats.js
  * (markAutoRefreshCompleted, shouldRunAutoRefreshNow).
  */
@@ -202,8 +202,6 @@ function refreshHealthBarIfNeeded() {
 
     $bar.attr('data-health-bar-loading', '1');
 
-    abj404UpdateAjaxDebugLog('Starting Health Bar AJAX: ' + action);
-
     var healthBarAjaxRunner = (typeof abj404AjaxWithNonceRetry === 'function')
         // ajax-direct-approved: fallback when abj404AjaxWithNonceRetry helper not yet loaded in this bundle
         ? abj404AjaxWithNonceRetry : jQuery.ajax;
@@ -219,9 +217,6 @@ function refreshHealthBarIfNeeded() {
         },
         success: function(result) {
             $bar.removeAttr('data-health-bar-loading');
-            abj404UpdateAjaxDebugLog('Health Bar AJAX Success: ' + action, {
-                highImpactCapturedCount: result ? result.highImpactCapturedCount : null
-            });
             if (!result || typeof result.highImpactCapturedCount === 'undefined' || !result.statusCounts) {
                 $bar.removeAttr('data-health-bar-placeholder');
                 $bar.empty();
@@ -260,12 +255,6 @@ function refreshHealthBarIfNeeded() {
             $bar.removeAttr('data-health-bar-loading');
             $bar.removeAttr('data-health-bar-placeholder');
             $bar.empty();
-
-            abj404UpdateAjaxDebugLog('Health Bar AJAX Error: ' + action, {
-                status: jqXHR ? jqXHR.status : '',
-                textStatus: textStatus,
-                errorThrown: errorThrown
-            });
         }
     });
 }
