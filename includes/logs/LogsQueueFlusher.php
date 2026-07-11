@@ -62,6 +62,7 @@ class ABJ_404_Solution_LogsQueueFlusher {
             return;
         }
         $isFlushingLogQueue = true;
+        $batchDatabaseError = '';
 
         try {
             if (empty($queue)) {
@@ -113,7 +114,8 @@ class ABJ_404_Solution_LogsQueueFlusher {
             $result = $wpdb->query($prepared);
 
             if ($result === false && !empty($wpdb->last_error)) {
-                $this->recoverFailedBatch($tableName, $columnList, $prepared, $sql, $flattenedValues, $sanitizedEntries, $validatedColumns, (string)$wpdb->last_error);
+                $batchDatabaseError = (string)$wpdb->last_error;
+                $this->recoverFailedBatch($tableName, $columnList, $prepared, $sql, $flattenedValues, $sanitizedEntries, $validatedColumns, $batchDatabaseError);
             }
         } catch (\Throwable $e) {
             // This runs on the 'shutdown' action, which fires on every
@@ -122,10 +124,15 @@ class ABJ_404_Solution_LogsQueueFlusher {
             // throwable here would propagate out of do_action('shutdown')
             // and abort any other plugin's later shutdown cleanup too, not
             // just lose this batch of log rows.
-            $this->logger->errorMessage(
-                'flushLogQueue failed: ' . get_class($e) . ': ' . $e->getMessage(),
-                $e instanceof \Exception ? $e : null
-            );
+            $failureMessage = 'flushLogQueue failed: ' . get_class($e) . ': ' . $e->getMessage();
+            if ($batchDatabaseError !== '' && $this->dbCore->errorClassifier()->classifyAndHandleInfrastructureError($batchDatabaseError)) {
+                $this->logger->warn($failureMessage . ' | database_error=' . $batchDatabaseError);
+            } else {
+                $this->logger->errorMessage(
+                    $failureMessage,
+                    $e instanceof \Exception ? $e : null
+                );
+            }
         } finally {
             $queue = [];
             $shutdownHookRegistered = false;
