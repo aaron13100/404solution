@@ -335,6 +335,10 @@ class ABJ_404_Solution_PluginLogicPageOrdering {
             ? $options['admin_notification_frequency']
             : 'instant';
 
+        if ($frequency === 'never') {
+            return 'Email notifications disabled: frequency is never.';
+        }
+
         if ($frequency !== 'instant') {
             $emailDigest = new ABJ_404_Solution_EmailDigest(
                 abj_service('logs_repository'),

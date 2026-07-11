@@ -156,113 +156,107 @@ class ABJ_404_Solution_View_SettingsSections extends ABJ_404_Solution_ViewCompon
     function getAdminOptionsPageGeneralSettings(array $options): string {
         $options = $this->optionsPresenter->normalizeOptionsForView($options);
 
-        $selectedDefaultRedirect301 = ($options['default_redirect'] == '301') ? ' selected' : '';
-        $selectedDefaultRedirect302 = ($options['default_redirect'] == '302') ? ' selected' : '';
-        $selectedDefaultRedirect307 = ($options['default_redirect'] == '307') ? ' selected' : '';
-        $selectedDefaultRedirect308 = ($options['default_redirect'] == '308') ? ' selected' : '';
+        $viewData = array_merge(
+            $this->generalSettingsFieldState($options),
+            $this->generalSettingsRuntimeDisplayData(),
+            array(
+                'admin_notification' => esc_attr($this->optionsPresenter->optStr($options, 'admin_notification')),
+                'capture_deletion' => esc_attr($this->optionsPresenter->optStr($options, 'capture_deletion')),
+                'manual_deletion' => esc_attr($this->optionsPresenter->optStr($options, 'manual_deletion')),
+                'maximum_log_disk_usage' => esc_attr($this->optionsPresenter->optStr($options, 'maximum_log_disk_usage')),
+                'admin_notification_email' => esc_attr($this->optionsPresenter->optStr($options, 'admin_notification_email')),
+                'PHP_VERSION' => PHP_VERSION,
+            )
+        );
 
-        $selectedCapture404 = $this->optionsPresenter->getCheckedAttr($options, 'capture_404');
-        $selectedSendErrorLogs = $this->optionsPresenter->getCheckedAttr($options, 'send_error_logs');
-
-        $selectedUnderSettings = "";
-        $selecteSsettingsLevel = "";
-        if ($options['menuLocation'] == 'settingsLevel') {
-            $selecteSsettingsLevel = " selected";
-        } else {
-            $selectedUnderSettings = " selected";
-        }
-
-        $adminTheme = isset($options['admin_theme']) ? $options['admin_theme'] : 'default';
-        $selectedThemeDefault = ($adminTheme == 'default') ? " selected" : "";
-        $selectedThemeCalm = ($adminTheme == 'calm') ? " selected" : "";
-        $selectedThemeMono = ($adminTheme == 'mono') ? " selected" : "";
-        $selectedThemeNeon = ($adminTheme == 'neon') ? " selected" : "";
-        $selectedThemeObsidian = ($adminTheme == 'obsidian') ? " selected" : "";
-        $themeDefault = __('Default', '404-solution');
-
-        $pluginLanguage = isset($options['plugin_language_override']) ? $options['plugin_language_override'] : '';
-        $selectedLanguageDefault = ($pluginLanguage == '') ? " selected" : "";
-        $selectedLanguageEnUS = ($pluginLanguage == 'en_US') ? " selected" : "";
-        $selectedLanguageDeDE = ($pluginLanguage == 'de_DE') ? " selected" : "";
-        $selectedLanguageEsES = ($pluginLanguage == 'es_ES') ? " selected" : "";
-        $selectedLanguageFrFR = ($pluginLanguage == 'fr_FR') ? " selected" : "";
-        $selectedLanguageItIT = ($pluginLanguage == 'it_IT') ? " selected" : "";
-        $selectedLanguagePtBR = ($pluginLanguage == 'pt_BR') ? " selected" : "";
-        $selectedLanguageNlNL = ($pluginLanguage == 'nl_NL') ? " selected" : "";
-        $selectedLanguageRuRU = ($pluginLanguage == 'ru_RU') ? " selected" : "";
-        $selectedLanguageJa = ($pluginLanguage == 'ja') ? " selected" : "";
-        $selectedLanguageZhCN = ($pluginLanguage == 'zh_CN') ? " selected" : "";
-        $selectedLanguageIdID = ($pluginLanguage == 'id_ID') ? " selected" : "";
-        $selectedLanguageSvSE = ($pluginLanguage == 'sv_SE') ? " selected" : "";
-        $disableAutoDarkMode = isset($options['disable_auto_dark_mode']) && $options['disable_auto_dark_mode'] == '1';
-        $disableAutoDarkModeChecked = $disableAutoDarkMode ? " checked" : "";
-
-        $logSizeBytes = $this->viewReadService->getLogDiskUsage();
-        $logSizeMB = round($logSizeBytes / (1024 * 1000), 2);
-        $totalLogLines = $this->viewReadService->getLogsCount(0);
-
-        $timeToDisplay = $this->statsRepository->getEarliestLogTimestamp();
-        $earliestLogDate = 'N/A';
-        if ($timeToDisplay >= 0) {
-            $earliestLogDate = date('Y/m/d', $timeToDisplay) . ' ' . date('h:i:s', $timeToDisplay) . '&nbsp;' .
-            date('A', $timeToDisplay);
-        }
-
-        $selectedRemoveMatches = $this->optionsPresenter->getCheckedAttr($options, 'remove_matches');
-        $notifyFrequency = isset($options['admin_notification_frequency']) ? (string)(is_scalar($options['admin_notification_frequency']) ? $options['admin_notification_frequency'] : 'instant') : 'instant';
-        $selectedNotifyInstant = ($notifyFrequency === 'instant') ? ' selected' : '';
-        $selectedNotifyDaily   = ($notifyFrequency === 'daily')   ? ' selected' : '';
-        $selectedNotifyWeekly  = ($notifyFrequency === 'weekly')  ? ' selected' : '';
-
-        $html = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . "/html/adminOptionsGeneral.html");
-        $html = $this->f->str_replace('{selectedSendErrorLogs}', $selectedSendErrorLogs, $html);
-        $html = $this->f->str_replace('{selectedDefaultRedirect301}', $selectedDefaultRedirect301, $html);
-        $html = $this->f->str_replace('{selectedDefaultRedirect302}', $selectedDefaultRedirect302, $html);
-        $html = $this->f->str_replace('{selectedDefaultRedirect307}', $selectedDefaultRedirect307, $html);
-        $html = $this->f->str_replace('{selectedDefaultRedirect308}', $selectedDefaultRedirect308, $html);
-        $html = $this->f->str_replace('{selectedCapture404}', $selectedCapture404, $html);
-        $html = $this->f->str_replace('{admin_notification}', esc_attr($this->optionsPresenter->optStr($options, 'admin_notification')), $html);
-        $html = $this->f->str_replace('{capture_deletion}', esc_attr($this->optionsPresenter->optStr($options, 'capture_deletion')), $html);
-        $html = $this->f->str_replace('{manual_deletion}', esc_attr($this->optionsPresenter->optStr($options, 'manual_deletion')), $html);
-        $html = $this->f->str_replace('{maximum_log_disk_usage}', esc_attr($this->optionsPresenter->optStr($options, 'maximum_log_disk_usage')), $html);
-        $html = $this->f->str_replace('{logCurrentSizeDiskUsage}', (string)$logSizeMB, $html);
-        $html = $this->f->str_replace('{logCurrentRowCount}', (string)$totalLogLines, $html);
-        $html = $this->f->str_replace('{earliestLogDate}', $earliestLogDate, $html);
-        $html = $this->f->str_replace('{selectedRemoveMatches}', $selectedRemoveMatches, $html);
-        $html = $this->f->str_replace('{selectedUnderSettings}', $selectedUnderSettings, $html);
-        $html = $this->f->str_replace('{selecteSsettingsLevel}', $selecteSsettingsLevel, $html);
-        $html = $this->f->str_replace('{selectedThemeDefault}', $selectedThemeDefault, $html);
-        $html = $this->f->str_replace('{selectedThemeCalm}', $selectedThemeCalm, $html);
-        $html = $this->f->str_replace('{selectedThemeMono}', $selectedThemeMono, $html);
-        $html = $this->f->str_replace('{selectedThemeNeon}', $selectedThemeNeon, $html);
-        $html = $this->f->str_replace('{selectedThemeObsidian}', $selectedThemeObsidian, $html);
-        $html = $this->f->str_replace('{theme_default}', $themeDefault, $html);
-        $html = $this->f->str_replace('{selectedLanguageDefault}', $selectedLanguageDefault, $html);
-        $html = $this->f->str_replace('{selectedLanguageEnUS}', $selectedLanguageEnUS, $html);
-        $html = $this->f->str_replace('{selectedLanguageDeDE}', $selectedLanguageDeDE, $html);
-        $html = $this->f->str_replace('{selectedLanguageEsES}', $selectedLanguageEsES, $html);
-        $html = $this->f->str_replace('{selectedLanguageFrFR}', $selectedLanguageFrFR, $html);
-        $html = $this->f->str_replace('{selectedLanguageItIT}', $selectedLanguageItIT, $html);
-        $html = $this->f->str_replace('{selectedLanguagePtBR}', $selectedLanguagePtBR, $html);
-        $html = $this->f->str_replace('{selectedLanguageNlNL}', $selectedLanguageNlNL, $html);
-        $html = $this->f->str_replace('{selectedLanguageRuRU}', $selectedLanguageRuRU, $html);
-        $html = $this->f->str_replace('{selectedLanguageJa}', $selectedLanguageJa, $html);
-        $html = $this->f->str_replace('{selectedLanguageZhCN}', $selectedLanguageZhCN, $html);
-        $html = $this->f->str_replace('{selectedLanguageIdID}', $selectedLanguageIdID, $html);
-        $html = $this->f->str_replace('{selectedLanguageSvSE}', $selectedLanguageSvSE, $html);
-        $html = $this->f->str_replace('{disableAutoDarkModeChecked}', $disableAutoDarkModeChecked, $html);
-        $html = $this->f->str_replace('{admin_notification_email}', esc_attr($this->optionsPresenter->optStr($options, 'admin_notification_email')), $html);
-        $adminEmail = get_option('admin_email');
-        $html = $this->f->str_replace('{default_wordpress_admin_email}', is_string($adminEmail) ? $adminEmail : '', $html);
-        $html = $this->f->str_replace('{PHP_VERSION}', PHP_VERSION, $html);
-        $html = $this->f->str_replace('{selectedNotifyInstant}', $selectedNotifyInstant, $html);
-        $html = $this->f->str_replace('{selectedNotifyDaily}', $selectedNotifyDaily, $html);
-        $html = $this->f->str_replace('{selectedNotifyWeekly}', $selectedNotifyWeekly, $html);
-        $selectedAutoTrashJunk = $this->optionsPresenter->getCheckedAttr($options, 'auto_trash_junk_urls');
-        $html = $this->f->str_replace('{selectedAutoTrashJunk}', $selectedAutoTrashJunk, $html);
+        $html = $this->fillSettingsTemplate('adminOptionsGeneral.html', $viewData);
         $html = $this->f->doNormalReplacements($html);
 
         return $html;
+    }
+
+    /**
+     * Build selected and checked attributes for the general settings template.
+     *
+     * @param array<string, mixed> $options
+     * @return array<string, string>
+     */
+    private function generalSettingsFieldState(array $options): array {
+        $viewData = array(
+            'selectedDefaultRedirect301' => ($options['default_redirect'] == '301') ? ' selected' : '',
+            'selectedDefaultRedirect302' => ($options['default_redirect'] == '302') ? ' selected' : '',
+            'selectedDefaultRedirect307' => ($options['default_redirect'] == '307') ? ' selected' : '',
+            'selectedDefaultRedirect308' => ($options['default_redirect'] == '308') ? ' selected' : '',
+            'selectedCapture404' => $this->optionsPresenter->getCheckedAttr($options, 'capture_404'),
+            'selectedSendErrorLogs' => $this->optionsPresenter->getCheckedAttr($options, 'send_error_logs'),
+            'selectedRemoveMatches' => $this->optionsPresenter->getCheckedAttr($options, 'remove_matches'),
+            'selectedAutoTrashJunk' => $this->optionsPresenter->getCheckedAttr($options, 'auto_trash_junk_urls'),
+            'selectedUnderSettings' => ($options['menuLocation'] == 'settingsLevel') ? '' : ' selected',
+            'selecteSsettingsLevel' => ($options['menuLocation'] == 'settingsLevel') ? ' selected' : '',
+            'theme_default' => __('Default', '404-solution'),
+            'disableAutoDarkModeChecked' => isset($options['disable_auto_dark_mode']) && $options['disable_auto_dark_mode'] == '1'
+                ? ' checked'
+                : '',
+        );
+
+        $adminTheme = isset($options['admin_theme']) ? $options['admin_theme'] : 'default';
+        foreach (array(
+            'selectedThemeDefault' => 'default',
+            'selectedThemeCalm' => 'calm',
+            'selectedThemeMono' => 'mono',
+            'selectedThemeNeon' => 'neon',
+            'selectedThemeObsidian' => 'obsidian',
+        ) as $placeholder => $theme) {
+            $viewData[$placeholder] = ($adminTheme == $theme) ? ' selected' : '';
+        }
+
+        $pluginLanguage = isset($options['plugin_language_override']) ? $options['plugin_language_override'] : '';
+        foreach (array(
+            'selectedLanguageDefault' => '',
+            'selectedLanguageEnUS' => 'en_US',
+            'selectedLanguageDeDE' => 'de_DE',
+            'selectedLanguageEsES' => 'es_ES',
+            'selectedLanguageFrFR' => 'fr_FR',
+            'selectedLanguageItIT' => 'it_IT',
+            'selectedLanguagePtBR' => 'pt_BR',
+            'selectedLanguageNlNL' => 'nl_NL',
+            'selectedLanguageRuRU' => 'ru_RU',
+            'selectedLanguageJa' => 'ja',
+            'selectedLanguageZhCN' => 'zh_CN',
+            'selectedLanguageIdID' => 'id_ID',
+            'selectedLanguageSvSE' => 'sv_SE',
+        ) as $placeholder => $language) {
+            $viewData[$placeholder] = ($pluginLanguage == $language) ? ' selected' : '';
+        }
+
+        $notifyFrequencyRaw = $options['admin_notification_frequency'] ?? 'instant';
+        $notifyFrequency = is_scalar($notifyFrequencyRaw) ? (string)$notifyFrequencyRaw : 'instant';
+        foreach (array(
+            'selectedNotifyInstant' => 'instant',
+            'selectedNotifyDaily' => 'daily',
+            'selectedNotifyWeekly' => 'weekly',
+            'selectedNotifyNever' => 'never',
+        ) as $placeholder => $frequency) {
+            $viewData[$placeholder] = ($notifyFrequency === $frequency) ? ' selected' : '';
+        }
+
+        return $viewData;
+    }
+
+    /** @return array<string, string> */
+    private function generalSettingsRuntimeDisplayData(): array {
+        $timeToDisplay = $this->statsRepository->getEarliestLogTimestamp();
+        $earliestLogDate = $timeToDisplay >= 0
+            ? date('Y/m/d', $timeToDisplay) . ' ' . date('h:i:s', $timeToDisplay) . '&nbsp;' . date('A', $timeToDisplay)
+            : 'N/A';
+        $adminEmail = get_option('admin_email');
+
+        return array(
+            'logCurrentSizeDiskUsage' => (string)round($this->viewReadService->getLogDiskUsage() / (1024 * 1000), 2),
+            'logCurrentRowCount' => (string)$this->viewReadService->getLogsCount(0),
+            'earliestLogDate' => $earliestLogDate,
+            'default_wordpress_admin_email' => is_string($adminEmail) ? $adminEmail : '',
+        );
     }
 
     /** @param array<string, mixed> $options */

@@ -34,6 +34,7 @@ class ABJ_404_Solution_View_SimpleSettings extends ABJ_404_Solution_ViewComponen
         $selectedNotifyInstant = ($notifyFrequency === 'instant') ? 'selected' : '';
         $selectedNotifyDaily   = ($notifyFrequency === 'daily')   ? 'selected' : '';
         $selectedNotifyWeekly  = ($notifyFrequency === 'weekly')  ? 'selected' : '';
+        $selectedNotifyNever   = ($notifyFrequency === 'never')   ? 'selected' : '';
 
         $html = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . "/html/adminOptionsSimple.html");
         $html = $this->f->str_replace('{behaviorTiles}', $behaviorTilesHtml, $html);
@@ -89,10 +90,12 @@ class ABJ_404_Solution_View_SimpleSettings extends ABJ_404_Solution_ViewComponen
         $html = $this->f->str_replace('{selectedNotifyInstant}', $selectedNotifyInstant, $html);
         $html = $this->f->str_replace('{selectedNotifyDaily}', $selectedNotifyDaily, $html);
         $html = $this->f->str_replace('{selectedNotifyWeekly}', $selectedNotifyWeekly, $html);
+        $html = $this->f->str_replace('{selectedNotifyNever}', $selectedNotifyNever, $html);
         $html = $this->f->str_replace('{Email notification frequency}', __('Email notification frequency', '404-solution'), $html);
         $html = $this->f->str_replace('{Instant (when threshold exceeded)}', __('Instant (when threshold exceeded)', '404-solution'), $html);
         $html = $this->f->str_replace('{Daily digest}', __('Daily digest', '404-solution'), $html);
         $html = $this->f->str_replace('{Weekly digest}', __('Weekly digest', '404-solution'), $html);
+        $html = $this->f->str_replace('{Never}', __('Never', '404-solution'), $html);
         $html = $this->f->str_replace('{Choose how often to receive email notifications about captured 404s.}', __('Choose how often to receive email notifications about captured 404s.', '404-solution'), $html);
         $html = $this->f->str_replace('{Temporary 307 (preserve method)}', __('Temporary 307 (preserve method)', '404-solution'), $html);
         $html = $this->f->str_replace('{Permanent 308 (preserve method)}', __('Permanent 308 (preserve method)', '404-solution'), $html);

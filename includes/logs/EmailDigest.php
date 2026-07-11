@@ -257,8 +257,8 @@ class ABJ_404_Solution_EmailDigest {
         $options = $this->getOptions();
         $frequency = $this->readFrequencyOption($options);
 
-        if ($frequency === 'instant') {
-            return 'Digest skipped: frequency is instant.';
+        if ($frequency === 'instant' || $frequency === 'never') {
+            return 'Digest skipped: frequency is ' . $frequency . '.';
         }
 
         // Centralized cadence gate: sendDigest() is reachable from more than
@@ -387,7 +387,7 @@ class ABJ_404_Solution_EmailDigest {
         $scheduler = abj_cron_scheduler();
         $hook = ABJ_404_Solution_CronScheduler::HOOK_SEND_DIGEST;
 
-        if ($frequency === 'instant') {
+        if ($frequency === 'instant' || $frequency === 'never') {
             $scheduler->clearHook($hook);
             return;
         }
