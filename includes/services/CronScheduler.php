@@ -128,40 +128,6 @@ class ABJ_404_Solution_CronScheduler {
     }
 
     /**
-     * Ensures a recurring event exists with EXACTLY the given recurrence.
-     * Unlike scheduleRecurringIfMissing(), this detects a recurrence change
-     * on an already-scheduled hook (e.g. an admin switching a digest from
-     * `daily` to `weekly`) and replaces the event instead of silently
-     * leaving the old cadence in place -- scheduleRecurringIfMissing's
-     * `!wp_next_scheduled` guard only checks whether ANY event exists for
-     * the hook, not whether it matches the requested recurrence.
-     *
-     * @param array<int, mixed> $args
-     * @return bool
-     */
-    public function scheduleRecurringReplacingIfChanged(string $hook, string $recurrence, int $delaySeconds = 0, array $args = array()): bool {
-        $current = $this->currentRecurrence($hook, $args);
-        if ($current === $recurrence) {
-            return true;
-        }
-        if ($current !== null) {
-            $this->clearHook($hook, $args);
-        }
-        return $this->scheduleRecurringAt($hook, $recurrence, $this->timestampAfter($delaySeconds), $args);
-    }
-
-    /**
-     * @param array<int, mixed> $args
-     */
-    private function currentRecurrence(string $hook, array $args = array()): ?string {
-        if (!function_exists('wp_get_schedule')) {
-            return null;
-        }
-        $schedule = empty($args) ? wp_get_schedule($hook) : wp_get_schedule($hook, $this->listArgs($args));
-        return is_string($schedule) && $schedule !== '' ? $schedule : null;
-    }
-
-    /**
      * @return bool
      */
     public function scheduleDailyInWindowIfMissing(string $hook, int $startHour, int $endHour): bool {

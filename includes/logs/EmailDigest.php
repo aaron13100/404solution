@@ -343,12 +343,26 @@ class ABJ_404_Solution_EmailDigest {
      * Schedule the next digest send based on the frequency option.
      * Reschedules or clears WP-Cron as needed.
      *
+     * The dedicated `abj404_send_digest` WP-Cron event always runs at a
+     * fixed `daily` recurrence, regardless of the configured
+     * admin_notification_frequency (daily/weekly). WP-Cron only fires
+     * opportunistically on page loads with no guaranteed exact timing, so
+     * tying this event's OWN recurrence to the desired send interval means
+     * a single missed `weekly`-recurrence firing silently doubles the wait
+     * to two weeks. cooldownSkipMessage() (called from sendDigest(), the
+     * actual send boundary) is the single source of truth for cadence,
+     * keyed off `admin_notification_last_sent`. A daily trigger just needs
+     * to check in often enough that a missed firing costs at most a day,
+     * never a week -- the same pattern LoggingFeedbackDispatcher uses for
+     * its weekly heartbeat (frequent trigger, elapsed-time gate).
+     *
      * @param string|null $frequencyOverride When provided, used instead of
      *     re-reading the option. Callers that just validated and are about
      *     to persist a new frequency value (e.g. SettingsNotificationPolicy)
      *     must pass it explicitly: the options repository write happens
      *     later in the same request, so a re-fetch here would read the
-     *     stale pre-save value and reschedule against the wrong frequency.
+     *     stale pre-save value and could incorrectly clear/schedule against
+     *     the wrong instant-vs-not state.
      * @return void
      */
     public function scheduleNextDigest(?string $frequencyOverride = null): void {
@@ -362,8 +376,7 @@ class ABJ_404_Solution_EmailDigest {
             return;
         }
 
-        $recurrence = ($frequency === 'weekly') ? 'weekly' : 'daily';
-        $scheduler->scheduleRecurringReplacingIfChanged($hook, $recurrence);
+        $scheduler->scheduleRecurringIfMissing($hook, 'daily');
     }
 
     /** @param array<string, mixed> $options */
