@@ -201,13 +201,15 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 
 == Changelog ==
 
-= Version 4.3.2 (July 26, 2026) =
+= Version 4.3.2 (July 11, 2026) =
 * FIX: Fixed the email digest sending every day even when the notification frequency was set to Weekly (thanks to gardendarts for reporting this). The weekly/daily cadence is now enforced against the time the last digest was actually sent, and changing the frequency in Settings now takes effect on the very next save instead of the next unrelated one.
 * FIX: Fixed automatic error and heartbeat reports silently failing to send on some sites when an internal reporting component was unavailable.
 * FIX: Fixed debug logs and automatic reports sometimes over-redacting the plugin's own file names, option names, and URLs, including incorrectly truncating URLs that contained a query string.
 * FIX: Fixed a rare issue where saving, publishing, or deleting content, or changing a category, during a plugin update could interrupt a scheduled background maintenance task.
 * Improvement: Hardened several internal WordPress integration points (404 handling, REST API setup, log maintenance, and permission checks) so an unexpected internal error in one can no longer interrupt that request or affect other plugins.
 * Improvement: Out-of-memory diagnostic reports now preserve the exact memory sizes involved, making them easier to diagnose.
+* Improvement: Removed an internal AJAX diagnostics footer that no longer reflected real admin activity.
+* New: Added a "Never" option to the Email notification frequency dropdown, so you can fully turn off 404 email notifications without switching to Instant mode and separately zeroing the threshold.
 * New: Added a "Your Diagnostic Data" card to the Options tab so you can download or delete the diagnostic data this plugin has reported for your site, in line with GDPR data access and erasure rights.
 
 = Version 4.3.1 (June 26, 2026) =
