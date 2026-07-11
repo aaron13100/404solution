@@ -119,10 +119,17 @@ class ABJ_404_Solution_PluginLogicOptionsResolver {
      * infrastructure to persist its own metadata keys (debug-file key,
      * last-sent-line counter) without re-entering the settings pipeline,
      * and by any caller that needs to update a single bookkeeping key
-     * (e.g. EmailDigest's admin_notification_last_sent cadence timestamp)
-     * without a full getOptions()/updateOptions() round trip that could
-     * clobber an unrelated concurrent write. Other keys in the row are
-     * preserved (read-modify-write of the single key).
+     * (e.g. EmailDigest's admin_notification_last_sent cadence timestamp).
+     * Other keys already in the row are preserved (read-modify-write of the
+     * single key), so it narrows the write to just this one key instead of
+     * writing back a whole options snapshot a caller may have read much
+     * earlier (e.g. at the top of a slow request). This is NOT atomic: the
+     * read and the write here are still two separate WordPress option
+     * calls, so a write from another request landing in between is still
+     * possible in principle, just a far smaller window than a caller doing
+     * its own getOptions()-then-updateOptions() round trip. Acceptable for
+     * low-stakes bookkeeping keys; do not use this for values a lost update
+     * would meaningfully harm.
      *
      * @param string $key Setting key inside abj404_settings.
      * @param mixed $value Value to store.
