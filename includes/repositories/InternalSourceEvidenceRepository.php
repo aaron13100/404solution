@@ -34,8 +34,17 @@ class ABJ_404_Solution_InternalSourceEvidenceRepository {
     /** @var array<string, array<string, mixed>> */
     private $resolutionMemo = array();
 
-    /** @var string|null */
-    private $homeHost = null;
+    /**
+     * Same-site referrer host, in lowercase. Resolved once at construction
+     * time rather than lazily memoized on first use: home_url() does not
+     * change mid-request, so there is no benefit to deferring the read, and
+     * resolving it eagerly keeps this a plain immutable value instead of a
+     * query-shaped accessor with a mutation side effect (CQS violation --
+     * see homeHost() removal, c308).
+     *
+     * @var string
+     */
+    private $homeHost;
 
     /**
      * @param ABJ_404_Solution_DatabaseQueryInterface $db
@@ -51,6 +60,7 @@ class ABJ_404_Solution_InternalSourceEvidenceRepository {
     public function __construct(ABJ_404_Solution_DatabaseQueryInterface $db, $functions = null) {
         $this->db = $db;
         $this->functions = $functions !== null ? $functions : abj_service('functions');
+        $this->homeHost = $this->resolveHomeHost();
     }
 
     /**
@@ -199,7 +209,7 @@ class ABJ_404_Solution_InternalSourceEvidenceRepository {
                 return null;
             }
             $host = isset($parts['host']) && is_string($parts['host']) ? strtolower($parts['host']) : '';
-            if ($host === '' || $host !== $this->homeHost()) {
+            if ($host === '' || $host !== $this->homeHost) {
                 return null;
             }
             $path = isset($parts['path']) && is_string($parts['path']) ? $parts['path'] : '';
@@ -216,14 +226,10 @@ class ABJ_404_Solution_InternalSourceEvidenceRepository {
         return $path;
     }
 
-    private function homeHost(): string {
-        if ($this->homeHost !== null) {
-            return $this->homeHost;
-        }
+    private function resolveHomeHost(): string {
         $home = function_exists('home_url') ? (string)home_url('/') : '';
         $host = parse_url($home, PHP_URL_HOST);
-        $this->homeHost = is_string($host) ? strtolower($host) : '';
-        return $this->homeHost;
+        return is_string($host) ? strtolower($host) : '';
     }
 
     private function isExcludedPath(string $path): bool {
@@ -238,6 +244,15 @@ class ABJ_404_Solution_InternalSourceEvidenceRepository {
     }
 
     /**
+     * Resolves raw post identity data for a same-site referrer path only:
+     * post_id and post_title. Authorization (current_user_can('edit_post'))
+     * and the edit_url presentation link are NOT this repository's concern
+     * -- a data-access repository must not make authorization decisions or
+     * build admin-link HTML (CLAUDE.md "Strict layer separation"). The
+     * caller that renders source-evidence rows
+     * (ABJ_404_Solution_CapturedSourceEvidenceRenderer::editLinkHtml()) owns
+     * that decision, using the post_id returned here (c308).
+     *
      * @return array<string, mixed>
      */
     private function resolveSource(string $sourcePath): array {
@@ -246,20 +261,12 @@ class ABJ_404_Solution_InternalSourceEvidenceRepository {
         }
 
         $postId = $this->resolvePostId($sourcePath);
-        $title = '';
-        $editUrl = '';
-        if ($postId > 0) {
-            $title = function_exists('get_the_title') ? (string)get_the_title($postId) : '';
-            if (function_exists('current_user_can') && current_user_can('edit_post', $postId) && function_exists('get_edit_post_link')) {
-                $editUrl = (string)get_edit_post_link($postId);
-            }
-        }
+        $title = $postId > 0 && function_exists('get_the_title') ? (string)get_the_title($postId) : '';
 
         $this->resolutionMemo[$sourcePath] = array(
             'referrer_url' => $sourcePath,
             'post_id' => $postId,
             'post_title' => $title,
-            'edit_url' => $editUrl,
             'hit_count' => 0,
             'last_seen' => 0,
         );
@@ -296,6 +303,7 @@ class ABJ_404_Solution_InternalSourceEvidenceRepository {
         }
 
         $placeholders = implode(',', array_fill(0, count($cleanVariants), '%s'));
+        // allow-unbounded-select: literal "LIMIT 1" lands in a separate concatenated string than SELECT/FROM (audit blind spot #1); $cleanVariants is also a fixed <=4-element set, not visitor-controlled cardinality.
         $query = "SELECT id FROM {wp_abj404_permalink_cache} WHERE url IN (" . $placeholders . ") LIMIT 1";
         $result = $this->db->queryAndGetResults($query, array('query_params' => $cleanVariants));
         $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();

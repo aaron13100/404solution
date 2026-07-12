@@ -123,17 +123,45 @@ class ABJ_404_Solution_CapturedSourceEvidenceRenderer {
         $title = isset($source['post_title']) && is_scalar($source['post_title']) ? trim((string)$source['post_title']) : '';
         $referrerUrl = isset($source['referrer_url']) && is_scalar($source['referrer_url']) ? (string)$source['referrer_url'] : '';
         $label = $title !== '' ? $title : $referrerUrl;
-        $editUrl = isset($source['edit_url']) && is_scalar($source['edit_url']) ? (string)$source['edit_url'] : '';
-        $editLink = $editUrl !== ''
-            ? '<a class="abj404-source-edit" href="' . esc_url($editUrl) . '" target="_blank" rel="noopener noreferrer">'
-                . esc_html__('Edit', '404-solution') . '</a>'
-            : '';
+        $postId = isset($source['post_id']) && is_numeric($source['post_id']) ? (int)$source['post_id'] : 0;
 
         return $this->fillTpl('capturedSourcesRow.html', array(
             '{source_label}' => esc_html($label),
             '{hit_count}' => esc_html((string)(isset($source['hit_count']) && is_numeric($source['hit_count'])
                 ? (int)$source['hit_count'] : 0)),
-            '{edit_link}' => $editLink,
+            '{edit_link}' => $this->editLinkHtml($postId),
+        ));
+    }
+
+    /**
+     * Builds the "Edit" admin link for a resolved source post, gated on the
+     * current user's edit capability for that specific post.
+     *
+     * Authorization (current_user_can()) and edit-link construction
+     * (get_edit_post_link()) live here -- the caller that renders
+     * source-evidence rows -- rather than in
+     * ABJ_404_Solution_InternalSourceEvidenceRepository, which is a
+     * data-access repository and must return only raw post_id/post_title
+     * data (CLAUDE.md "Strict layer separation"; c308).
+     */
+    private function editLinkHtml(int $postId): string {
+        if ($postId <= 0) {
+            return '';
+        }
+        if (!function_exists('current_user_can') || !current_user_can('edit_post', $postId)) {
+            return '';
+        }
+        if (!function_exists('get_edit_post_link')) {
+            return '';
+        }
+        $editUrl = (string)get_edit_post_link($postId);
+        if ($editUrl === '') {
+            return '';
+        }
+
+        return $this->fillTpl('capturedSourceEditLink.html', array(
+            '{edit_url}' => esc_url($editUrl),
+            '{edit_label}' => esc_html__('Edit', '404-solution'),
         ));
     }
 }
