@@ -96,18 +96,7 @@ class ABJ_404_Solution_OldPermalinkPostResolver {
             return null;
         }
 
-        // Named locally (rather than passed as bare positional literals) so the
-        // call site self-documents which of getPublishedPagesAndPostsIDs()'s
-        // five same-type string params each argument fills, and a future edit
-        // can't silently transpose them. No search-term filter is applied
-        // here (slug lookup only); the limit is capped just above the
-        // ambiguity threshold below (more than 1 match) so a single query can
-        // both find the match and detect ambiguity without an unbounded scan.
-        $noSearchTermFilter = '';
-        $limitJustAboveAmbiguityThreshold = '11';
-        $rows = $this->contentRepository->getPublishedPagesAndPostsIDs(
-            $slug, $noSearchTermFilter, $limitJustAboveAmbiguityThreshold
-        );
+        $rows = $this->findCandidatePagesAndPostsBySlug($slug);
         $matches = array();
         foreach ($rows as $row) {
             $postId = $this->idFromRow($row);
@@ -130,6 +119,29 @@ class ABJ_404_Solution_OldPermalinkPostResolver {
 
         $this->logger->debugMessage('Old permalink structure resolved by slug: ' . $slug);
         return (int)$matches[0];
+    }
+
+    /**
+     * Sole call site for ContentRepositoryInterface::getPublishedPagesAndPostsIDs()'s
+     * risky multi-positional-string signature (5 same-type params, no PHP 7.4
+     * named-argument support). Contained here, behind a single-argument
+     * wrapper, so resolveBySlug() itself cannot silently transpose the other
+     * four params: this method takes only $slug and hardcodes the rest.
+     *
+     * No search-term filter is applied (slug lookup only); the limit is
+     * capped just above the ambiguity threshold in resolveBySlug() (more
+     * than 1 match) so a single query can both find the match and detect
+     * ambiguity without an unbounded scan.
+     *
+     * @param string $slug
+     * @return array<int, object>
+     */
+    private function findCandidatePagesAndPostsBySlug(string $slug): array {
+        $noSearchTermFilter = '';
+        $limitJustAboveAmbiguityThreshold = '11';
+        return $this->contentRepository->getPublishedPagesAndPostsIDs(
+            $slug, $noSearchTermFilter, $limitJustAboveAmbiguityThreshold
+        );
     }
 
     /**
@@ -188,9 +200,19 @@ class ABJ_404_Solution_OldPermalinkPostResolver {
             return false;
         }
 
+        // Positive-evidence check: when the captured old permalink specifies
+        // a slug segment, the candidate post must actually carry a matching
+        // post_name, not merely "no post_name to contradict it". The DB
+        // query in getPublishedPagesAndPostsIDs() usually pre-filters by
+        // slug, but for a UTF8MB4 slug it drops the SQL-level slug clause
+        // entirely (PublishedContentRepository::buildPostSlugClause()) and
+        // returns every published post/page of the recognized types -- this
+        // check is the only remaining filter in that path. An empty
+        // post_name must not be treated as "no evidence against a match";
+        // it must be treated as "no evidence for one".
         $postName = isset($post->post_name) ? (string)$post->post_name : '';
         $slugCapture = $captures['postname'] ?? ($captures['pagename'] ?? null);
-        if ($slugCapture !== null && $postName !== '' && $postName !== $slugCapture) {
+        if ($slugCapture !== null && $postName !== $slugCapture) {
             return false;
         }
 
