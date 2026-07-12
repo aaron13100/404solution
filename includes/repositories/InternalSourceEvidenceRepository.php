@@ -127,6 +127,16 @@ class ABJ_404_Solution_InternalSourceEvidenceRepository {
             if (!is_string($url) || $url === '') {
                 continue;
             }
+            // Same per-URL length bound the capture path itself enforces
+            // (UserRequest::getPath(), SettingsRedirectPolicy, etc.). This
+            // repository is a separate trust boundary from whatever called
+            // it with $capturedUrls, so it must not assume the caller
+            // already enforced the invariant: MAX_CAPTURED_URLS above only
+            // bounds the count, not the size of each accepted string, and
+            // every accepted URL is later bound into a SQL IN() clause.
+            if (defined('ABJ404_MAX_URL_LENGTH') && strlen($url) > ABJ404_MAX_URL_LENGTH) {
+                continue;
+            }
             $set[$url] = true;
             if (count($set) >= self::MAX_CAPTURED_URLS) {
                 break;

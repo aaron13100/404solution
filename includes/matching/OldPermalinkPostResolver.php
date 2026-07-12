@@ -96,7 +96,18 @@ class ABJ_404_Solution_OldPermalinkPostResolver {
             return null;
         }
 
-        $rows = $this->contentRepository->getPublishedPagesAndPostsIDs($slug, '', '11');
+        // Named locally (rather than passed as bare positional literals) so the
+        // call site self-documents which of getPublishedPagesAndPostsIDs()'s
+        // five same-type string params each argument fills, and a future edit
+        // can't silently transpose them. No search-term filter is applied
+        // here (slug lookup only); the limit is capped just above the
+        // ambiguity threshold below (more than 1 match) so a single query can
+        // both find the match and detect ambiguity without an unbounded scan.
+        $noSearchTermFilter = '';
+        $limitJustAboveAmbiguityThreshold = '11';
+        $rows = $this->contentRepository->getPublishedPagesAndPostsIDs(
+            $slug, $noSearchTermFilter, $limitJustAboveAmbiguityThreshold
+        );
         $matches = array();
         foreach ($rows as $row) {
             $postId = $this->idFromRow($row);

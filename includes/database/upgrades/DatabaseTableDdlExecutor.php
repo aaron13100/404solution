@@ -118,7 +118,8 @@ class ABJ_404_Solution_DatabaseTableDdlExecutor {
         foreach ($filtered as $entry) {
             if (is_array($entry)
                     && isset($entry['placeholder'], $entry['bareTableName'], $entry['ddlContent'])
-                    && is_string($entry['placeholder']) && is_string($entry['bareTableName'])
+                    && is_string($entry['placeholder']) && trim($entry['placeholder']) !== ''
+                    && is_string($entry['bareTableName']) && trim($entry['bareTableName']) !== ''
                     && is_string($entry['ddlContent']) && trim($entry['ddlContent']) !== '') {
                 $validated[] = array('placeholder' => $entry['placeholder'],
                     'bareTableName' => $entry['bareTableName'], 'ddlContent' => $entry['ddlContent']);
