@@ -206,7 +206,7 @@ class ABJ_404_Solution_DatabaseUpgradeBootstrap extends ABJ_404_Solution_Databas
      * @return void
      */
     function handleSpecificCases($tableName, $colName) {
-        $this->ddlExecutor()->handleSpecificCases($tableName, $colName);
+        $this->ddlExecutor()->handleSpecificCases(array('tableName' => $tableName, 'colName' => $colName));
     }
 
     /**

@@ -25,14 +25,26 @@ class ABJ_404_Solution_InternalSourceEvidenceRepository {
      */
     const MAX_AGGREGATE_ROWS = 5000;
 
+    /**
+     * Hard upper bound on how many caller-supplied captured URLs this
+     * repository will accept per call. $capturedUrls is meant to be "URLs
+     * visible on the current admin table page" (well under 100 in practice,
+     * matching RestApiRequestParser's per_page cap of 100), but the method
+     * is public and does not otherwise validate cardinality; every accepted
+     * URL drives a SQL IN() placeholder and bound parameter in
+     * queryAggregateRows(), so an unbounded caller-supplied array would
+     * still cost memory and query-planning work before MAX_AGGREGATE_ROWS'
+     * LIMIT ever applies. Extra accepted URLs beyond this bound are dropped,
+     * not errored, consistent with this repository degrading gracefully
+     * rather than failing the admin table render.
+     */
+    const MAX_CAPTURED_URLS = 200;
+
     /** @var ABJ_404_Solution_DatabaseQueryInterface */
     private $db;
 
     /** @var ABJ_404_Solution_Functions */
     private $functions;
-
-    /** @var array<string, array<string, mixed>> */
-    private $resolutionMemo = array();
 
     /**
      * Same-site referrer host, in lowercase. Resolved once at construction
@@ -116,6 +128,9 @@ class ABJ_404_Solution_InternalSourceEvidenceRepository {
                 continue;
             }
             $set[$url] = true;
+            if (count($set) >= self::MAX_CAPTURED_URLS) {
+                break;
+            }
         }
         return $set;
     }
@@ -164,6 +179,15 @@ class ABJ_404_Solution_InternalSourceEvidenceRepository {
      */
     private function groupRowsByCapturedUrl(array $rows, array $visibleUrls): array {
         $grouped = array();
+        // Call-scoped memo, not instance state: resolveSource() does a
+        // url_to_postid()/permalink-cache lookup per unique source path, and
+        // the same source path commonly repeats across rows within one
+        // top-level call. Keeping the memo local (rather than an instance
+        // property mutated by a "read" method) avoids a command-query
+        // separation violation and stale-across-calls results if this
+        // repository instance is ever reused for a second page render (see
+        // homeHost() eager-resolve fix above for the same class of issue).
+        $resolvedSources = array();
         foreach ($rows as $row) {
             if (!is_array($row)) {
                 continue;
@@ -180,7 +204,7 @@ class ABJ_404_Solution_InternalSourceEvidenceRepository {
             }
 
             if (!isset($grouped[$capturedUrl][$sourcePath])) {
-                $grouped[$capturedUrl][$sourcePath] = $this->resolveSource($sourcePath);
+                $grouped[$capturedUrl][$sourcePath] = $this->resolveSource($sourcePath, $resolvedSources);
             }
 
             $currentSource = $grouped[$capturedUrl][$sourcePath];
@@ -253,24 +277,29 @@ class ABJ_404_Solution_InternalSourceEvidenceRepository {
      * (ABJ_404_Solution_CapturedSourceEvidenceRenderer::editLinkHtml()) owns
      * that decision, using the post_id returned here (c308).
      *
+     * @param array<string, array<string, mixed>> $resolvedSources Call-scoped
+     *     memo, keyed and updated by reference so repeat source paths within
+     *     the same top-level call skip the post-id lookup. See
+     *     groupRowsByCapturedUrl() for why this is a parameter rather than
+     *     instance state.
      * @return array<string, mixed>
      */
-    private function resolveSource(string $sourcePath): array {
-        if (isset($this->resolutionMemo[$sourcePath])) {
-            return $this->resolutionMemo[$sourcePath];
+    private function resolveSource(string $sourcePath, array &$resolvedSources): array {
+        if (isset($resolvedSources[$sourcePath])) {
+            return $resolvedSources[$sourcePath];
         }
 
         $postId = $this->resolvePostId($sourcePath);
         $title = $postId > 0 && function_exists('get_the_title') ? (string)get_the_title($postId) : '';
 
-        $this->resolutionMemo[$sourcePath] = array(
+        $resolvedSources[$sourcePath] = array(
             'referrer_url' => $sourcePath,
             'post_id' => $postId,
             'post_title' => $title,
             'hit_count' => 0,
             'last_seen' => 0,
         );
-        return $this->resolutionMemo[$sourcePath];
+        return $resolvedSources[$sourcePath];
     }
 
     private function resolvePostId(string $sourcePath): int {

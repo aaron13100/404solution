@@ -166,7 +166,7 @@ class ABJ_404_Solution_DatabaseTableDdlExecutor {
             // without an explicit existence check. Log per-table so the debug
             // log identifies which DDL didn't materialize and why downstream
             // auto-repair attempts will keep failing.
-            if (!$this->verifyTableMaterialized($tableName, $placeholder)) {
+            if (!$this->verifyTableMaterialized(array('tableName' => $tableName, 'placeholder' => $placeholder))) {
                 // Don't abort the loop. Other tables can still get created.
                 continue;
             }
@@ -218,11 +218,18 @@ class ABJ_404_Solution_DatabaseTableDdlExecutor {
      * queryAndGetResults, prefix drift between request and table_prefix in
      * wp-config, or missing CREATE TABLE privileges on the DB user.
      *
-     * @param string $tableName  Fully-qualified table name (with prefix).
-     * @param string $placeholder Original placeholder (e.g. "{wp_abj404_redirects}") for diagnostic context.
+     * Takes a single associative array (rather than two positional strings)
+     * so the fully-qualified table name and the original placeholder --
+     * both plain strings -- cannot be silently transposed at the call site.
+     *
+     * @param array{tableName: string, placeholder: string} $context
+     *   tableName: Fully-qualified table name (with prefix).
+     *   placeholder: Original placeholder (e.g. "{wp_abj404_redirects}") for diagnostic context.
      * @return bool True if table exists post-CREATE, false otherwise.
      */
-    private function verifyTableMaterialized(string $tableName, string $placeholder): bool {
+    private function verifyTableMaterialized(array $context): bool {
+        $tableName = isset($context['tableName']) && is_string($context['tableName']) ? $context['tableName'] : '';
+        $placeholder = isset($context['placeholder']) && is_string($context['placeholder']) ? $context['placeholder'] : '';
         global $wpdb;
         if (!isset($wpdb)) {
             return false;
@@ -271,13 +278,20 @@ class ABJ_404_Solution_DatabaseTableDdlExecutor {
         return rtrim($createTableSql) . " DEFAULT CHARACTER SET utf8mb4 COLLATE {$collate}";
     }
 
-    /** When certain columns are created we have to populate data.
-     * @param string $tableName
-     * @param string $colName
+    /**
+     * When certain columns are created we have to populate data.
+     *
+     * Takes a single associative array (rather than two positional strings)
+     * so the table name and column name -- both plain strings -- cannot be
+     * silently transposed at the call site.
+     *
+     * @param array{tableName: string, colName: string} $context
      * @return void
      */
-    public function handleSpecificCases($tableName, $colName) {
-        if (empty($tableName) || !is_string($tableName)) {
+    public function handleSpecificCases(array $context) {
+        $tableName = isset($context['tableName']) && is_string($context['tableName']) ? $context['tableName'] : '';
+        $colName = isset($context['colName']) && is_string($context['colName']) ? $context['colName'] : '';
+        if (empty($tableName)) {
             return;
         }
 
