@@ -24,17 +24,26 @@ class ABJ_404_Solution_DebugLogFileStore {
     private $stateStore;
 
     /**
-     * Per-request memo of the resolved debug filename. Logging writes one file
-     * for the lifetime of the request, so the key is read/generated once and
-     * reused; this also keeps the filename stable when the underlying option
-     * write does not round-trip within the request (e.g. a deferred object
-     * cache), which would otherwise make getDebugFilename() regenerate the key
-     * and have deleteDebugFile() wipe a file just written. Cleared by
-     * deleteDebugFile().
+     * Per-blog memo of the resolved debug filename. Logging writes one file
+     * for the lifetime of a single blog context, so the key is read/generated
+     * once per blog and reused; this also keeps the filename stable when the
+     * underlying option write does not round-trip within the request (e.g. a
+     * deferred object cache), which would otherwise make getDebugFilename()
+     * regenerate the key and have deleteDebugFile() wipe a file just written.
+     * Cleared by deleteDebugFile(). Scoped to the blog id active at cache time
+     * (not just the request) because the underlying debug_file_key lives in
+     * abj404_settings, a per-blog option: a multisite background batch that
+     * switch_to_blog()s mid-request would otherwise permanently pin the
+     * memoized filename to whichever blog happened to trigger the first
+     * resolution, silently splitting the debug log across two files once the
+     * blog context restores.
      *
      * @var string|null
      */
     private $cachedDebugFilename = null;
+
+    /** @var int|null Blog id $cachedDebugFilename was resolved for. */
+    private $cachedDebugFilenameBlogId = null;
 
     /**
      * @param callable $sanitizeLogLine Receives a raw line and returns the sanitized line to write.
@@ -75,9 +84,18 @@ class ABJ_404_Solution_DebugLogFileStore {
 
     /** @return string */
     public function getDebugFilename(): string {
-        if ($this->cachedDebugFilename !== null) {
+        $currentBlogId = function_exists('get_current_blog_id') ? (int)get_current_blog_id() : 0;
+        if ($this->cachedDebugFilename !== null && $this->cachedDebugFilenameBlogId === $currentBlogId) {
             return $this->cachedDebugFilename;
         }
+        // A blog switch mid-request (multisite background batch) re-derives the
+        // filename for the newly-active blog without wiping files: the glob
+        // delete below is orphan cleanup for a genuinely fresh boot, not a
+        // routine step of every blog switch. On a shared-uploads-dir multisite
+        // config (the UPLOADS constant), the glob is not blog-scoped the way
+        // abj404_getUploadsDir() usually is, so running it on every keyless
+        // blog visited mid-request could delete another blog's in-use file.
+        $isFirstResolutionThisRequest = ($this->cachedDebugFilename === null);
         try {
             // Logging MUST read its metadata via the raw, side-effect-free
             // state store, never getOptions(). getOptions() runs the normalize
@@ -89,7 +107,9 @@ class ABJ_404_Solution_DebugLogFileStore {
             $debugFileKey = $this->stateStore->getDebugFileKey();
 
             if ($debugFileKey === null || trim($debugFileKey) === '') {
-                $this->deleteDebugFile();
+                if ($isFirstResolutionThisRequest) {
+                    $this->deleteDebugFile();
+                }
 
                 $syncUtils = abj_service('sync_utils');
                 if (!is_object($syncUtils) || !method_exists($syncUtils, 'uniqidReal')) {
@@ -100,6 +120,7 @@ class ABJ_404_Solution_DebugLogFileStore {
             }
 
             $this->cachedDebugFilename = 'abj404_debug_' . $debugFileKey . '.txt';
+            $this->cachedDebugFilenameBlogId = $currentBlogId;
             return $this->cachedDebugFilename;
         } catch (\Throwable $e) { // allow-silent-catch: debug filename derivation; fallback name keeps logging available during degraded boot
             return 'abj404_debug.txt';
@@ -189,6 +210,7 @@ class ABJ_404_Solution_DebugLogFileStore {
         // getDebugFilename() re-derives the key.
         $this->stateStore->setDebugFileKey(null);
         $this->cachedDebugFilename = null;
+        $this->cachedDebugFilenameBlogId = null;
 
         return $allIsWell;
     }
