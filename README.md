@@ -211,6 +211,7 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 * Improvement: Hardened several internal WordPress integration points (404 handling, REST API setup, log maintenance, and permission checks) so an unexpected internal error in one can no longer interrupt that request or affect other plugins.
 * Improvement: Out-of-memory diagnostic reports now preserve the exact memory sizes involved, making them easier to diagnose.
 * Improvement: Removed an internal AJAX diagnostics footer that no longer reflected real admin activity.
+* Improvement: If you've opted in to "Help the developer with error logs and usage stats," the optional weekly status ping now sends on a predictable weekly cadence (once the plugin's been active 5+ days) instead of a rare random daily chance that averaged about once every 6 months. Same opt-in checkbox and same aggregate-only data (site version, URL, 404/redirect counts); just a steadier heartbeat.
 * New: Added a "Never" option to the Email notification frequency dropdown, so you can fully turn off 404 email notifications without switching to Instant mode and separately zeroing the threshold.
 * New: Added a "Your Diagnostic Data" card to the Options tab so you can download or delete the diagnostic data this plugin has reported for your site, in line with GDPR data access and erasure rights.
 
