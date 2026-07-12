@@ -130,16 +130,7 @@ class ABJ_404_Solution_StatsReadRepository {
      */
     public function getPeriodicStatsSummariesCached($notFoundDest = '404') {
         $now = abj_clock()->now();
-        $today = mktime(0, 0, 0, abs(intval(date('m', $now))), abs(intval(date('d', $now))), abs(intval(date('Y', $now))));
-        $firstm = mktime(0, 0, 0, abs(intval(date('m', $now))), 1, abs(intval(date('Y', $now))));
-        $firsty = mktime(0, 0, 0, 1, 1, abs(intval(date('Y', $now))));
-
-        $thresholds = array(
-            'today' => intval($today),
-            'month' => intval($firstm),
-            'year' => intval($firsty),
-            'all' => 0,
-        );
+        $thresholds = $this->computePeriodicThresholds($now);
 
         $emptyPayload = $this->emptyPeriodicPayload();
         $cacheKey = 'abj404_stats_periodic_v1_' . $this->currentBlogId() . '_' . md5(
@@ -325,12 +316,7 @@ class ABJ_404_Solution_StatsReadRepository {
         );
 
         $now = abj_clock()->now();
-        $thresholds = array(
-            'today' => (int)mktime(0, 0, 0, abs(intval(date('m', $now))), abs(intval(date('d', $now))), abs(intval(date('Y', $now)))),
-            'month' => (int)mktime(0, 0, 0, abs(intval(date('m', $now))), 1, abs(intval(date('Y', $now)))),
-            'year' => (int)mktime(0, 0, 0, 1, 1, abs(intval(date('Y', $now)))),
-            'all' => 0,
-        );
+        $thresholds = $this->computePeriodicThresholds($now);
         $periods = array();
         foreach ($thresholds as $periodKey => $ts) {
             $periods[$periodKey] = $this->getPeriodicStatsSummary($ts, '404');
@@ -350,6 +336,44 @@ class ABJ_404_Solution_StatsReadRepository {
                 'trashed' => intval($trashedCaptured),
             ),
             'periods' => $periods,
+        );
+    }
+
+    /**
+     * 'today'/'month'/'year' period-start boundaries, anchored to the WP
+     * site's configured timezone (SiteTimezone) rather than PHP's implicit
+     * default timezone -- matching the convention established by
+     * RedirectScheduleTimezone and CronScheduler::scheduleDailyInWindowIfMissing().
+     * getPeriodicStatsSummary() compares these thresholds against `timestamp`,
+     * a true-UTC DB column, so deriving them with date()/mktime() (which read
+     * and reconstruct calendar fields using PHP's default timezone) silently
+     * picks the wrong local day/month/year start whenever the host's PHP
+     * default timezone differs from the site's configured timezone.
+     *
+     * @param int $now Unix epoch (true UTC) to anchor the boundaries to.
+     * @return array{today:int,month:int,year:int,all:int}
+     */
+    private function computePeriodicThresholds(int $now): array {
+        $siteTimezone = ABJ_404_Solution_SiteTimezone::resolve();
+        try {
+            $siteNow = (new DateTimeImmutable('@' . $now))->setTimezone($siteTimezone);
+            $today = (new DateTimeImmutable($siteNow->format('Y-m-d') . ' 00:00:00', $siteTimezone))->getTimestamp();
+            $firstOfMonth = (new DateTimeImmutable($siteNow->format('Y-m') . '-01 00:00:00', $siteTimezone))->getTimestamp();
+            $firstOfYear = (new DateTimeImmutable($siteNow->format('Y') . '-01-01 00:00:00', $siteTimezone))->getTimestamp();
+        } catch (Exception $e) {
+            // $siteNow->format() output is always a well-formed date string,
+            // so this is unreachable in practice; degrade to UTC-anchored
+            // boundaries rather than let a periodic stats read fail entirely.
+            $today = gmmktime(0, 0, 0, (int)gmdate('m', $now), (int)gmdate('d', $now), (int)gmdate('Y', $now));
+            $firstOfMonth = gmmktime(0, 0, 0, (int)gmdate('m', $now), 1, (int)gmdate('Y', $now));
+            $firstOfYear = gmmktime(0, 0, 0, 1, 1, (int)gmdate('Y', $now));
+        }
+
+        return array(
+            'today' => (int)$today,
+            'month' => (int)$firstOfMonth,
+            'year' => (int)$firstOfYear,
+            'all' => 0,
         );
     }
 
