@@ -32,8 +32,24 @@ class ABJ_404_Solution_EngineProfileResolver {
     }
 
 
-    /** @var array<int, object>|null Cached profile rows for current request */
+    /**
+     * Per-blog memo of the resolved profile rows. Scoped to the blog id active
+     * at cache time (not just the request) because wp_abj404_engine_profiles is
+     * a genuinely per-blog table (getTableName() derives it from $wpdb->prefix,
+     * which switch_to_blog() changes): a multisite background batch that
+     * switch_to_blog()s mid-request (DatabaseUpgradeMultiSite::processMultisiteBatch(),
+     * NGramCacheRebuildScheduler, network-wide deactivation/uninstall) would
+     * otherwise permanently pin the memoized profile list to whichever blog
+     * happened to trigger the first resolution, silently applying blog A's
+     * engine-filtering profile to blog B's 404 matching once the blog context
+     * changes. Cleared by saveProfile()/deleteProfile()/clearCache().
+     *
+     * @var array<int, object>|null Cached profile rows for current request
+     */
     private $cachedProfiles = null;
+
+    /** @var int|null Blog id $cachedProfiles was resolved for. */
+    private $cachedProfilesBlogId = null;
 
     /** @var ABJ_404_Solution_DataAccess|null Lazy DAO accessor for centralized query handling. */
     /** @var ABJ_404_Solution_DatabaseCore|null */
@@ -146,7 +162,8 @@ class ABJ_404_Solution_EngineProfileResolver {
      * @return array<int, object>
      */
     private function getActiveProfiles(): array {
-        if ($this->cachedProfiles !== null) {
+        $currentBlogId = function_exists('get_current_blog_id') ? (int)get_current_blog_id() : 0;
+        if ($this->cachedProfiles !== null && $this->cachedProfilesBlogId === $currentBlogId) {
             return $this->cachedProfiles;
         }
 
@@ -154,6 +171,7 @@ class ABJ_404_Solution_EngineProfileResolver {
 
         if (!$this->tableExists($table)) {
             $this->cachedProfiles = [];
+            $this->cachedProfilesBlogId = $currentBlogId;
             return $this->cachedProfiles;
         }
 
@@ -168,6 +186,7 @@ class ABJ_404_Solution_EngineProfileResolver {
         $rows = $queryResult['rows'] ?? [];
 
         $this->cachedProfiles = is_array($rows) ? $rows : [];
+        $this->cachedProfilesBlogId = $currentBlogId;
         return $this->cachedProfiles;
     }
 
@@ -348,6 +367,7 @@ class ABJ_404_Solution_EngineProfileResolver {
                 ['query_params' => [$name, $urlPattern, $isRegex, $enabledEngines, $priority, $status, $id]]
             );
             $this->cachedProfiles = null;
+            $this->cachedProfilesBlogId = null;
             $updateError = isset($queryResult['last_error']) && is_string($queryResult['last_error']) ? $queryResult['last_error'] : '';
             return $updateError === '' ? $id : false;
         }
@@ -358,6 +378,7 @@ class ABJ_404_Solution_EngineProfileResolver {
             ['query_params' => [$name, $urlPattern, $isRegex, $enabledEngines, $priority, $status]]
         );
         $this->cachedProfiles = null;
+        $this->cachedProfilesBlogId = null;
         $lastError = isset($queryResult['last_error']) && is_string($queryResult['last_error']) ? $queryResult['last_error'] : '';
         if ($lastError !== '') {
             return false;
@@ -379,6 +400,7 @@ class ABJ_404_Solution_EngineProfileResolver {
             ['query_params' => [$id]]
         );
         $this->cachedProfiles = null;
+        $this->cachedProfilesBlogId = null;
         $deleteError = isset($queryResult['last_error']) && is_string($queryResult['last_error']) ? $queryResult['last_error'] : '';
         return $deleteError === '';
     }
@@ -412,5 +434,6 @@ class ABJ_404_Solution_EngineProfileResolver {
      */
     public function clearCache(): void {
         $this->cachedProfiles = null;
+        $this->cachedProfilesBlogId = null;
     }
 }

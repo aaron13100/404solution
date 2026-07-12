@@ -14,6 +14,23 @@ class ABJ_404_Solution_SynchronizationUtils {
 	/** @var bool|null */
 	static $usingFileMode = null;
 
+	/**
+	 * Blog id self::$usingFileMode was decided for. isFileMode() derives the
+	 * decision from per-blog state (abj404_getUploadsDir() -> wp_upload_dir(),
+	 * and a get_option()/update_option()/delete_option() round-trip against
+	 * the per-blog options table), but the decision itself is cached in a
+	 * bare static for the lifetime of the process. Multisite background
+	 * batches (e.g. ABJ_404_Solution_DatabaseUpgradeMultiSite's per-site
+	 * work) switch_to_blog()/restore_current_blog() around per-site work in
+	 * the SAME request/singleton lifetime; without this blog-id check, a
+	 * decision minted for one blog (e.g. "file mode" because that blog's
+	 * options table round-trip failed) would silently be reused for a
+	 * different, healthy blog's lock operations.
+	 *
+	 * @var int|null
+	 */
+	static $usingFileModeBlogId = null;
+
 	/** @var self|null */
 	private static $instance = null;
 	/**
@@ -38,6 +55,7 @@ class ABJ_404_Solution_SynchronizationUtils {
 	public static function resetForTests() {
 	    self::$instance = null;
 	    self::$usingFileMode = null;
+	    self::$usingFileModeBlogId = null;
 	}
 
 
@@ -62,7 +80,9 @@ class ABJ_404_Solution_SynchronizationUtils {
 	
 	/** @return bool */
 	private function isFileMode() {
-		if (self::$usingFileMode == null) {
+		$currentBlogId = function_exists('get_current_blog_id') ? (int)get_current_blog_id() : 0;
+
+		if (self::$usingFileMode == null || self::$usingFileModeBlogId !== $currentBlogId) {
 			$fileModePath = $this->getFileModePath();
 			$optionsModePath = $this->getOptionsModePath();
 			if (file_exists($fileModePath) && file_exists($optionsModePath)) {
@@ -106,14 +126,16 @@ class ABJ_404_Solution_SynchronizationUtils {
 				}
 			}
 			self::$usingFileMode = $usingFileMode;
+			self::$usingFileModeBlogId = $currentBlogId;
 		}
-		
+
 		return self::$usingFileMode;
 	}
-	
+
 	/** @return void */
 	function switchToFileSyncMode() {
 		self::$usingFileMode = true;
+		self::$usingFileModeBlogId = function_exists('get_current_blog_id') ? (int)get_current_blog_id() : 0;
 		$optionsModePath = $this->getOptionsModePath();
 		ABJ_404_Solution_FileSystemService::safeUnlink($optionsModePath);
 
