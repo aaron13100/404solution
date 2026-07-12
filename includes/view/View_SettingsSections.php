@@ -303,7 +303,7 @@ class ABJ_404_Solution_View_SettingsSections extends ABJ_404_Solution_ViewCompon
         }
 
         return $this->fillSettingsTemplate('viewSettingsDiagnosticDataSection.html', array(
-            'downloadDate' => esc_attr(gmdate('Y-m-d')),
+            'downloadDate' => esc_attr(gmdate('Y-m-d', abj_clock()->now())),
             'exportNonce'  => esc_attr($exportNonce),
             'deleteNonce'  => esc_attr($deleteNonce),
             'hasToken'     => $hasToken ? '1' : '0',

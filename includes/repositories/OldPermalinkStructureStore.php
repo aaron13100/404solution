@@ -117,19 +117,6 @@ class ABJ_404_Solution_OldPermalinkStructureStore {
 
     /** @return int */
     private function now(): int {
-        if (function_exists('abj_clock')) {
-            try {
-                return (int)abj_clock()->now();
-            } catch (\Throwable $e) {
-                $logger = function_exists('abj_service_optional') ? abj_service_optional('logging') : null;
-                if (is_object($logger) && method_exists($logger, 'warn')) {
-                    $logger->warn(
-                        'old permalink structure capture fell back to time() because abj_clock()->now() failed: '
-                        . $e->getMessage()
-                    );
-                }
-            }
-        }
-        return time();
+        return abj_clock()->now();
     }
 }
