@@ -225,7 +225,12 @@
                     closeModal();
                 }
             });
-            document.addEventListener('keydown', function (event) {
+            // Scoped to the modal element itself (not document): the listener's
+            // lifetime is tied to the modal node's own lifetime, so if the card's
+            // DOM node is ever discarded and replaced (admin page re-render / AJAX
+            // content swap), the old listener is discarded along with it instead
+            // of leaking on document forever.
+            modal.addEventListener('keydown', function (event) {
                 if (event.key === 'Escape' && !modal.hidden) {
                     closeModal();
                 }
