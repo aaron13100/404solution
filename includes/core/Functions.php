@@ -375,7 +375,7 @@ class ABJ_404_Solution_Functions {
         foreach ($stringsToReplace[1] as $stringToReplace) {
         	$regexSearchString = '{' . $stringToReplace . '}';
             // External HTML template placeholders are extracted and checked by
-            // TranslationCoverageTest because they do not live in PHP call sites.
+            // HtmlTemplateTranslationCoverageTest because they do not live in PHP call sites.
             $translated = function_exists('translate') ? translate($stringToReplace, '404-solution') : $stringToReplace;
             $text = $this->str_replace($regexSearchString, $translated, $text);
         }
