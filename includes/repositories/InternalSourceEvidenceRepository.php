@@ -17,7 +17,7 @@ class ABJ_404_Solution_InternalSourceEvidenceRepository {
     /** @var ABJ_404_Solution_DatabaseQueryInterface */
     private $db;
 
-    /** @var ABJ_404_Solution_Functions|null */
+    /** @var ABJ_404_Solution_Functions */
     private $functions;
 
     /** @var array<string, array<string, mixed>> */
@@ -29,10 +29,15 @@ class ABJ_404_Solution_InternalSourceEvidenceRepository {
     /**
      * @param ABJ_404_Solution_DatabaseQueryInterface $db
      * @param ABJ_404_Solution_Functions|null $functions UTF-8 sanitizer source.
+     *     Defaults to the `functions` service so every call site (including
+     *     tests that omit this argument) still gets real UTF-8 sanitization
+     *     before values reach esc_sql() -- see queryAggregateRows() and
+     *     resolvePostIdFromPermalinkCache(), which both take visitor-supplied
+     *     captured 404 URLs.
      */
     public function __construct(ABJ_404_Solution_DatabaseQueryInterface $db, $functions = null) {
         $this->db = $db;
-        $this->functions = $functions;
+        $this->functions = $functions !== null ? $functions : abj_service('functions');
     }
 
     /**
@@ -99,7 +104,12 @@ class ABJ_404_Solution_InternalSourceEvidenceRepository {
     private function queryAggregateRows(array $visibleUrls): array {
         $quoted = array();
         foreach ($visibleUrls as $url) {
-            $quoted[] = "'" . esc_sql($this->sanitizeSqlString($url)) . "'";
+            // Captured 404 URLs are visitor-supplied (bots routinely deliver
+            // garbage bytes through the request path); sanitize invalid
+            // UTF-8 before it reaches esc_sql(), which does not validate
+            // encoding on its own.
+            $cleanUrl = $this->functions->sanitizeInvalidUTF8($url);
+            $quoted[] = "'" . esc_sql($cleanUrl) . "'";
         }
 
         $query = "SELECT requested_url, referrer, COUNT(*) AS hit_count, MAX(timestamp) AS last_seen"
@@ -258,7 +268,11 @@ class ABJ_404_Solution_InternalSourceEvidenceRepository {
             if ($variant === '') {
                 continue;
             }
-            $quoted[] = "'" . esc_sql($this->sanitizeSqlString($variant)) . "'";
+            // $sourcePath is derived from the HTTP Referer header (see
+            // normalizeSameSiteReferrer()), which is visitor-supplied and can
+            // carry invalid UTF-8 byte sequences; sanitize before esc_sql().
+            $cleanVariant = $this->functions->sanitizeInvalidUTF8($variant);
+            $quoted[] = "'" . esc_sql($cleanVariant) . "'";
         }
         if (empty($quoted)) {
             return 0;
@@ -272,13 +286,6 @@ class ABJ_404_Solution_InternalSourceEvidenceRepository {
         $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
         $row = is_array($rows[0] ?? null) ? $rows[0] : array();
         return $this->intField($row, 'id');
-    }
-
-    private function sanitizeSqlString(string $value): string {
-        if ($this->functions !== null && method_exists($this->functions, 'sanitizeInvalidUTF8')) {
-            return (string)$this->functions->sanitizeInvalidUTF8($value);
-        }
-        return $value;
     }
 
     /** @param array<string, mixed> $row */
