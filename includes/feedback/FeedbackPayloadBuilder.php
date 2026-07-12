@@ -116,11 +116,12 @@ class ABJ_404_Solution_FeedbackPayloadBuilder {
             'categories_count'      => null,
             'tags_count'            => null,
 
-            'redirects_active_total'    => null,
-            'redirects_manual_count'    => null,
-            'redirects_automatic_count' => null,
-            'redirects_regex_count'     => null,
-            'redirects_trashed_count'   => null,
+            'redirects_active_total'       => null,
+            'redirects_manual_count'       => null,
+            'redirects_automatic_count'    => null,
+            'redirects_regex_count'        => null,
+            'redirects_trashed_count'      => null,
+            'redirect_hit_count_histogram' => null,
 
             'captured_404s_active_total'  => null,
             'captured_404s_new_count'     => null,
