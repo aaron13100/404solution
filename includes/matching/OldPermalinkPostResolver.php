@@ -224,6 +224,18 @@ class ABJ_404_Solution_OldPermalinkPostResolver {
     }
 
     /**
+     * $post->post_date is a WP-stored value expressed in the site's
+     * configured timezone (Settings > General), the same convention WP
+     * core uses to generate the %year%/%monthnum%/%day% permalink tags
+     * these captures came from. Parsing and formatting it both anchor to
+     * the WP site timezone (SiteTimezone) rather than PHP's implicit
+     * default timezone, matching the convention established by
+     * RedirectScheduleTimezone -- raw strtotime()/date() would parse and
+     * re-format using PHP's default timezone instead, which is fragile:
+     * it only stays a no-op because parsing and formatting happen to use
+     * the same implicit zone today, a coupling a future refactor could
+     * easily break.
+     *
      * @param object $post
      * @param array<string, string> $captures
      * @return bool
@@ -236,17 +248,18 @@ class ABJ_404_Solution_OldPermalinkPostResolver {
         if ($date === '') {
             return false;
         }
-        $timestamp = strtotime($date);
-        if ($timestamp === false) {
+        try {
+            $postDateTime = new DateTimeImmutable($date, ABJ_404_Solution_SiteTimezone::resolve());
+        } catch (Exception $e) {
             return false;
         }
-        if (isset($captures['year']) && date('Y', $timestamp) !== $captures['year']) {
+        if (isset($captures['year']) && $postDateTime->format('Y') !== $captures['year']) {
             return false;
         }
-        if (isset($captures['monthnum']) && date('m', $timestamp) !== $captures['monthnum']) {
+        if (isset($captures['monthnum']) && $postDateTime->format('m') !== $captures['monthnum']) {
             return false;
         }
-        if (isset($captures['day']) && date('d', $timestamp) !== $captures['day']) {
+        if (isset($captures['day']) && $postDateTime->format('d') !== $captures['day']) {
             return false;
         }
         return true;

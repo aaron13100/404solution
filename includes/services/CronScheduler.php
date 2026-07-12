@@ -264,15 +264,26 @@ class ABJ_404_Solution_CronScheduler {
             random_int(10, 59),
             random_int(10, 59)
         );
-        $timestamp = strtotime($timeForEvent);
-        if ($timestamp === false) {
-            $this->logScheduleFailure('recurring', $hook, 'daily', 0, array(), 'failed to calculate daily schedule timestamp');
+        // The requested [$startHour, $endHour] window is a WP-site-local
+        // off-peak window (e.g. "0-5am, when this site has the least
+        // traffic"). wp_schedule_event() below compares the resulting
+        // timestamp against WP-Cron's true-UTC clock, so the wall-clock
+        // hour must be anchored to the site's configured timezone
+        // (SiteTimezone) rather than PHP's implicit default timezone --
+        // otherwise the "local off-peak" window silently lands at the
+        // wrong local hour whenever the two timezones differ (e.g. a
+        // managed host running PHP in UTC for a site configured to
+        // America/Los_Angeles).
+        try {
+            $timestamp = (new DateTimeImmutable('today ' . $timeForEvent, ABJ_404_Solution_SiteTimezone::resolve()))->getTimestamp();
+        } catch (Exception $e) {
+            $this->logScheduleFailure('recurring', $hook, 'daily', 0, array(), 'failed to calculate daily schedule timestamp: ' . $e->getMessage());
             return false;
         }
         if ($this->nextScheduled($hook) !== false) {
             return true;
         }
-        return $this->scheduleRecurringAt($hook, 'daily', (int)$timestamp);
+        return $this->scheduleRecurringAt($hook, 'daily', $timestamp);
     }
 
     /**
