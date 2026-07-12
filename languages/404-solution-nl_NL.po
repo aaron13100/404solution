@@ -4157,3 +4157,12 @@ msgstr "Diagnostische identiteit is nog niet geregistreerd."
 
 msgid "Confirm diagnostic data deletion before continuing."
 msgstr "Bevestig het verwijderen van diagnostische gegevens voordat u doorgaat."
+
+msgid "Diagnostic reporting has never been enabled for this site, so there is nothing stored on the developer's server for you to download or delete."
+msgstr "Diagnostische rapportage is nooit ingeschakeld voor deze site, dus er is niets opgeslagen op de server van de ontwikkelaar om te downloaden of te verwijderen."
+
+msgid "This site has diagnostic reporting %s. You can download everything stored on the developer's server for this site, or permanently delete it."
+msgstr "Deze site heeft diagnostische rapportage %s. U kunt alles downloaden dat is opgeslagen op de server van de ontwikkelaar voor deze site, of het permanent verwijderen."
+
+msgid "When checked, the text is treated as a regular expression. Note that including a bad regular expression or one that takes too long will break your website. So please use caution and test them elsewhere before trying them here. If you don't know what you're doing please don't use this option (as it's not necessary for the functioning of the plugin)."
+msgstr "Wanneer aangevinkt, wordt de tekst behandeld als een reguliere expressie. Let op: een foutieve of te trage reguliere expressie zal uw website breken. Wees daarom voorzichtig en test ze eerst elders voordat u ze hier probeert. Als u niet weet wat u doet, gebruik deze optie dan niet (deze is niet nodig voor het functioneren van de plugin)."

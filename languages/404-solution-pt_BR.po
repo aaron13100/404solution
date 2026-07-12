@@ -4157,3 +4157,12 @@ msgstr "A identidade de diagnóstico ainda não está registrada."
 
 msgid "Confirm diagnostic data deletion before continuing."
 msgstr "Confirme a exclusão dos dados de diagnóstico antes de continuar."
+
+msgid "Diagnostic reporting has never been enabled for this site, so there is nothing stored on the developer's server for you to download or delete."
+msgstr "A geração de relatórios de diagnóstico nunca foi ativada para este site, portanto não há nada armazenado no servidor do desenvolvedor para você baixar ou excluir."
+
+msgid "This site has diagnostic reporting %s. You can download everything stored on the developer's server for this site, or permanently delete it."
+msgstr "Este site tem a geração de relatórios de diagnóstico %s. Você pode baixar tudo o que está armazenado no servidor do desenvolvedor para este site, ou excluí-lo permanentemente."
+
+msgid "When checked, the text is treated as a regular expression. Note that including a bad regular expression or one that takes too long will break your website. So please use caution and test them elsewhere before trying them here. If you don't know what you're doing please don't use this option (as it's not necessary for the functioning of the plugin)."
+msgstr "Quando marcado, o texto é tratado como uma expressão regular. Observe que uma expressão regular incorreta ou muito lenta IRÁ quebrar seu site. Portanto, use cautela e teste-as em outro lugar antes de experimentá-las aqui. Se você não sabe o que está fazendo, por favor não use esta opção (ela não é necessária para o funcionamento do plugin)."

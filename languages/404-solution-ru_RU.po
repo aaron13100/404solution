@@ -4165,3 +4165,12 @@ msgstr "Диагностическая идентичность ещё не за
 
 msgid "Confirm diagnostic data deletion before continuing."
 msgstr "Подтвердите удаление диагностических данных перед продолжением."
+
+msgid "Diagnostic reporting has never been enabled for this site, so there is nothing stored on the developer's server for you to download or delete."
+msgstr "Диагностическая отчетность никогда не была включена для этого сайта, поэтому на сервере разработчика нет ничего сохраненного для скачивания или удаления."
+
+msgid "This site has diagnostic reporting %s. You can download everything stored on the developer's server for this site, or permanently delete it."
+msgstr "Для этого сайта диагностическая отчетность %s. Вы можете скачать все, что хранится на сервере разработчика для этого сайта, или удалить это навсегда."
+
+msgid "When checked, the text is treated as a regular expression. Note that including a bad regular expression or one that takes too long will break your website. So please use caution and test them elsewhere before trying them here. If you don't know what you're doing please don't use this option (as it's not necessary for the functioning of the plugin)."
+msgstr "Если отмечено, текст обрабатывается как регулярное выражение. Обратите внимание, что неправильное или слишком медленное регулярное выражение нарушит работу вашего сайта. Поэтому, пожалуйста, соблюдайте осторожность и протестируйте их в другом месте, прежде чем пробовать здесь. Если вы не знаете, что делаете, пожалуйста, не используйте эту опцию (она не требуется для работы плагина)."

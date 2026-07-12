@@ -4169,3 +4169,12 @@ msgstr "診断用識別子はまだ登録されていません。"
 
 msgid "Confirm diagnostic data deletion before continuing."
 msgstr "続行する前に診断データの削除を確認してください。"
+
+msgid "Diagnostic reporting has never been enabled for this site, so there is nothing stored on the developer's server for you to download or delete."
+msgstr "このサイトでは診断レポートが一度も有効になっていないため、開発者のサーバーにはダウンロードまたは削除できるデータは何も保存されていません。"
+
+msgid "This site has diagnostic reporting %s. You can download everything stored on the developer's server for this site, or permanently delete it."
+msgstr "このサイトの診断レポートは%sです。このサイト用に開発者のサーバーに保存されているすべてのデータをダウンロードするか、完全に削除できます。"
+
+msgid "When checked, the text is treated as a regular expression. Note that including a bad regular expression or one that takes too long will break your website. So please use caution and test them elsewhere before trying them here. If you don't know what you're doing please don't use this option (as it's not necessary for the functioning of the plugin)."
+msgstr "チェックすると、テキストは正規表現として扱われます。不正な正規表現や処理に時間がかかりすぎる正規表現は、サイトが正常に動作しなくなる原因になることに注意してください。ここで試す前に、必ず別の場所で慎重にテストしてください。自分が何をしているのか分からない場合は、このオプションを使用しないでください（プラグインの動作に必須ではありません）。"

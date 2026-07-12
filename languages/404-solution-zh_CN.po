@@ -4162,3 +4162,12 @@ msgstr "诊断身份尚未注册。"
 
 msgid "Confirm diagnostic data deletion before continuing."
 msgstr "请在继续之前确认删除诊断数据。"
+
+msgid "Diagnostic reporting has never been enabled for this site, so there is nothing stored on the developer's server for you to download or delete."
+msgstr "此站点从未启用过诊断报告，因此开发者服务器上没有任何可供您下载或删除的数据。"
+
+msgid "This site has diagnostic reporting %s. You can download everything stored on the developer's server for this site, or permanently delete it."
+msgstr "此站点的诊断报告已%s。您可以下载此站点在开发者服务器上存储的所有数据，或将其永久删除。"
+
+msgid "When checked, the text is treated as a regular expression. Note that including a bad regular expression or one that takes too long will break your website. So please use caution and test them elsewhere before trying them here. If you don't know what you're doing please don't use this option (as it's not necessary for the functioning of the plugin)."
+msgstr "选中后，文本将被视为正则表达式。请注意，错误的或运行过慢的正则表达式将会破坏您的网站。因此请谨慎操作，在别处测试后再在此处尝试。如果您不知道自己在做什么，请不要使用此选项（插件的正常运行并不需要它）。"
