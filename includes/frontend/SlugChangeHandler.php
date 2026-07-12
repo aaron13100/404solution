@@ -119,6 +119,18 @@ class ABJ_404_Solution_SlugChangeHandler {
      */
     function save_postHandler($post_id, $post, $update) {
         try {
+            // Prevent duplicate processing within same request.
+            // WordPress fires save_post multiple times per save operation;
+            // the guard must live directly in the registered hook callback
+            // (not delegated to a private *Impl() method) so a static audit
+            // of the registered handler can verify it holds without having
+            // to follow call graphs. See HookLifecycleAuditTest (Pattern 11).
+            if (isset(self::$processedPosts[$post_id])) {
+                $this->logger->debugMessage(__CLASS__ . "/" . __FUNCTION__ .
+                    ": Already processed post ID " . $post_id . " in this request (skipped).");
+                return;
+            }
+
             $this->save_postHandlerImpl($post_id, $post, $update);
         } catch (\Throwable $e) {
             // save_post fires on every post save site-wide (admin, REST,
@@ -143,13 +155,10 @@ class ABJ_404_Solution_SlugChangeHandler {
     private function save_postHandlerImpl($post_id, $post, $update): void {
         $abj404logging = $this->logger;
 
-        // Prevent duplicate processing within same request
-        // WordPress fires save_post multiple times per save operation
-        if (isset(self::$processedPosts[$post_id])) {
-            $abj404logging->debugMessage(__CLASS__ . "/" . __FUNCTION__ .
-                ": Already processed post ID " . $post_id . " in this request (skipped).");
-            return;
-        }
+        // Request-level dedup is enforced by the caller, save_postHandler(),
+        // before this method is ever invoked (self::$processedPosts[$post_id]
+        // guard). Not re-checked here since this method is private and has
+        // exactly one call site.
 
         // Defensive: WordPress hook may pass unexpected types at runtime.
         if (!is_object($post) || !property_exists($post, 'post_name')) {
