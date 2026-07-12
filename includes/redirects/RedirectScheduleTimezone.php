@@ -40,6 +40,15 @@ final class ABJ_404_Solution_RedirectScheduleTimezone {
         try {
             $dt = new DateTimeImmutable($dateRaw . ' ' . $time, ABJ_404_Solution_SiteTimezone::resolve());
         } catch (Exception $e) {
+            // $dateRaw is non-empty here (the empty-string case returns
+            // above) but failed to parse as a date -- a real, unexpected
+            // input shape (the admin's date-picker should only ever submit
+            // "Y-m-d"), not the routine "no schedule bound" case. Silently
+            // dropping the schedule with zero trace would leave an admin
+            // wondering why their Active From/Until didn't take effect.
+            if (function_exists('abj404_logRuntimeWarning')) {
+                abj404_logRuntimeWarning('RedirectScheduleTimezone: unparseable schedule date "' . $dateRaw . '"', $e);
+            }
             return null;
         }
         return $dt->getTimestamp();

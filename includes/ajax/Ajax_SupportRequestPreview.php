@@ -127,11 +127,15 @@ class ABJ_404_Solution_Ajax_SupportRequestPreview {
         try {
             $payload = ABJ_404_Solution_FeedbackTransport::buildPayload('support_request', $extras);
         } catch (\Throwable $e) {
-            // Captured, not re-thrown here: wp_send_json_error() below exits
-            // the request, which would skip this finally block (PHP does not
-            // run finally past an exit()/die()) and leave the global flag
-            // stuck set for the rest of the process. Reporting the error
-            // after the finally runs keeps the cleanup unconditional.
+            // allow-silent-catch: not swallowed, deferred. $e is captured into $buildError
+            // rather than embedded/logged inline because wp_send_json_error() below exits
+            // the request in production, which would skip this finally block (PHP does not
+            // run finally past an exit()/die()) and leave the global flag stuck set for the
+            // rest of the process; deferring the report until after the finally block keeps
+            // the cleanup unconditional. $buildError->getMessage() is embedded in the
+            // wp_send_json_error() call ~15 lines below, and the explicit return; immediately
+            // after that call halts execution even if a test double's wp_send_json_error()
+            // stub does not itself exit -- so the exception detail always reaches the caller.
             $buildError = $e;
             $payload = array();
         } finally {

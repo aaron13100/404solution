@@ -57,6 +57,15 @@ class ABJ_404_Solution_ReportPayloadJsonSchemaValidator {
         try {
             $result = (new \Opis\JsonSchema\Validator())->validate($data, $schema);
         } catch (\Throwable $e) {
+            // Unlike the "optional pre-flight unavailable" skips above (Opis
+            // missing, schema unreadable), this is the validator itself
+            // throwing during a call that should have succeeded -- the
+            // library was loaded and the schema/data both decoded fine.
+            // That is unexpected enough (e.g. a schema-authoring bug in
+            // report.schema.json) that it should be visible to a maintainer,
+            // not just silently treated as "can't check locally".
+            ABJ_404_Solution_FeedbackTransportLog::log('warn',
+                'ReportPayloadJsonSchemaValidator: Opis validator threw during validate(): ' . $e->getMessage());
             return self::skipped();
         }
 

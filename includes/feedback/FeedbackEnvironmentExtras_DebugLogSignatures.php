@@ -108,6 +108,16 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras_DebugLogSignatures {
             try {
                 $ts = (new DateTimeImmutable($m[1], ABJ_404_Solution_SiteTimezone::resolve()))->getTimestamp();
             } catch (Exception $e) {
+                // The regex above validates digit *shape* (\d{4}-\d{2}-\d{2}
+                // \d{2}:\d{2}:\d{2}) but not calendar validity, so a
+                // corrupted or hand-edited log line (e.g. month 13) can still
+                // reach here. Rare, but a run of these would indicate log
+                // corruption or a LogTimestampFormatter regression, so make
+                // it visible in diagnostics instead of dropping it with zero
+                // trace. Delegated to a helper (rather than inlined here) to
+                // keep this already-complex parsing loop's branch count from
+                // growing further.
+                $this->logUnparseableTimestamp($log, $m[1], $e);
                 continue;
             }
             if ($ts < $cutoff) { continue; }
@@ -133,6 +143,27 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras_DebugLogSignatures {
             return $b['last_seen_at'] - $a['last_seen_at'];
         });
         return array_slice($list, 0, 5);
+    }
+
+    /**
+     * Report a log line whose timestamp matched the digit-shape regex but
+     * failed to parse as a real calendar date/time (e.g. month 13). Debug
+     * mode gated (via Logging::debugMessage()'s own contract) since this can
+     * run once per matched line in the tail and a corrupted log could
+     * otherwise flood the debug log on every probe call.
+     *
+     * @param object $log Already validated as an object with getDebugFilePath()
+     *                     by the caller; debugMessage() itself is checked here
+     *                     since not every logger double implements it.
+     * @param string $rawTimestamp The unparseable captured group, for context.
+     * @param \Exception $e
+     * @return void
+     */
+    private function logUnparseableTimestamp($log, string $rawTimestamp, \Exception $e): void {
+        if (method_exists($log, 'debugMessage')) {
+            $log->debugMessage('FeedbackEnvironmentExtras_DebugLogSignatures: unparseable log timestamp "' .
+                $rawTimestamp . '": ' . $e->getMessage());
+        }
     }
 
     /**
