@@ -212,11 +212,15 @@ class ABJ_404_Solution_OldPermalinkPostResolver {
             return sanitize_key((string)$type);
         }, $types)));
 
+        if (empty($types)) {
+            $types = array('page', 'post', 'product');
+        }
+
         if (!empty($candidatePostTypes)) {
             $types = array_values(array_intersect($types, $candidatePostTypes));
         }
 
-        return empty($types) ? array('page', 'post', 'product') : $types;
+        return $types;
     }
 
     /**
@@ -260,7 +264,7 @@ class ABJ_404_Solution_OldPermalinkPostResolver {
     /** @param int $postId @param string $categoryPath @return bool */
     private function categoryMatches(int $postId, string $categoryPath): bool {
         if (!function_exists('has_category')) {
-            return true;
+            return false;
         }
         $segments = array_values(array_filter(explode('/', $categoryPath)));
         if (empty($segments)) {
