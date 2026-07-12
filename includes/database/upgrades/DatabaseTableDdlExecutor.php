@@ -296,16 +296,28 @@ class ABJ_404_Solution_DatabaseTableDdlExecutor {
         }
 
         if (strpos($tableName, 'abj404_logsv2') !== false && $colName == 'min_log_id') {
-            global $wpdb;
-            $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/../../sql/logsSetMinLogID.sql");
-            $this->dbCore->queryAndGetResults($query);
-            // Ensure composite index exists after backfilling min_log_id.
-            $this->coordinator->indexesUpgrade()->ensureLogsCompositeIndex($tableName);
+            $this->backfillLogsMinLogId($tableName);
         }
         if (strpos($tableName, 'abj404_permalink_cache') !== false && $colName == 'url_length') {
             // clear the permalink cache so that the url length column will be populated.
             // this could be more efficient but I'll assume that's not necessary.
             $this->contentRepo->truncatePermalinkCacheTable();
         }
+    }
+
+    /**
+     * One-time backfill for the abj404_logsv2.min_log_id column: runs the
+     * seed SQL, then ensures the composite index that depends on it exists.
+     * Extracted out of handleSpecificCases() so that method stays a plain
+     * column-name dispatcher; the data-access step (SQL file load + execute)
+     * lives in its own method instead of inline in the dispatch logic.
+     *
+     * @param string $tableName
+     * @return void
+     */
+    private function backfillLogsMinLogId($tableName) {
+        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/../../sql/logsSetMinLogID.sql");
+        $this->dbCore->queryAndGetResults($query);
+        $this->coordinator->indexesUpgrade()->ensureLogsCompositeIndex($tableName);
     }
 }
