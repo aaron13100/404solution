@@ -119,7 +119,7 @@ class ABJ_404_Solution_DatabaseTableDdlExecutor {
             if (is_array($entry)
                     && isset($entry['placeholder'], $entry['bareTableName'], $entry['ddlContent'])
                     && is_string($entry['placeholder']) && is_string($entry['bareTableName'])
-                    && is_string($entry['ddlContent'])) {
+                    && is_string($entry['ddlContent']) && trim($entry['ddlContent']) !== '') {
                 $validated[] = array('placeholder' => $entry['placeholder'],
                     'bareTableName' => $entry['bareTableName'], 'ddlContent' => $entry['ddlContent']);
             }
@@ -230,14 +230,26 @@ class ABJ_404_Solution_DatabaseTableDdlExecutor {
     private function verifyTableMaterialized(array $context): bool {
         $tableName = isset($context['tableName']) && is_string($context['tableName']) ? $context['tableName'] : '';
         $placeholder = isset($context['placeholder']) && is_string($context['placeholder']) ? $context['placeholder'] : '';
-        global $wpdb;
-        if (!isset($wpdb)) {
+        if ($tableName === '') {
             return false;
         }
+        // Routed through queryAndGetResults() (same pattern as
+        // DatabaseUpgradeCollationDrift::correctCollations()) rather than a
+        // raw $wpdb->get_var() so this metadata probe carries the DAO's
+        // query-timeout wrapper: a concurrent CREATE/ALTER/DROP racing this
+        // freshly-run CREATE TABLE can hold a metadata lock that SHOW TABLES
+        // waits on, and an unbounded wait here would block schema bootstrap
+        // indefinitely instead of surfacing as a logged, recoverable error.
         // @utf8-audit: opt-out - $tableName is fully-qualified plugin table
         // name from doTableNameReplacements / $wpdb->prefix; never user input.
-        // DAO-bypass-approved: Schema-bootstrap inside verifyTableMaterialized(). Verifies CREATE TABLE actually materialized; DAO timeout wrapper is irrelevant for DDL existence probe.
-        $found = $wpdb->get_var("SHOW TABLES LIKE '" . esc_sql($tableName) . "'");
+        $result = $this->dbCore->queryAndGetResults(
+            "SHOW TABLES LIKE '" . esc_sql($tableName) . "'"
+        );
+        $found = null;
+        if (isset($result['rows']) && is_array($result['rows']) && isset($result['rows'][0])) {
+            $row = $result['rows'][0];
+            $found = is_array($row) ? reset($row) : $row;
+        }
         if ($found === $tableName) {
             return true;
         }
@@ -279,7 +291,13 @@ class ABJ_404_Solution_DatabaseTableDdlExecutor {
     }
 
     /**
-     * When certain columns are created we have to populate data.
+     * Post-creation, column-triggered one-time data backfills. Dispatches
+     * on (tableName, colName) to exactly two cases:
+     *  - abj404_logsv2.min_log_id: runs the seed SQL (backfillLogsMinLogId)
+     *    and ensures the composite index that depends on it.
+     *  - abj404_permalink_cache.url_length: truncates the permalink cache
+     *    so the new column gets populated on next rebuild.
+     * Any other (tableName, colName) pair is a no-op.
      *
      * Takes a single associative array (rather than two positional strings)
      * so the table name and column name -- both plain strings -- cannot be
