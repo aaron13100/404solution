@@ -14,6 +14,17 @@ if (!defined('ABSPATH')) {
  */
 class ABJ_404_Solution_InternalSourceEvidenceRepository {
 
+    /**
+     * Hard upper bound on aggregate rows returned per queryAggregateRows()
+     * call. Referrer cardinality for a captured URL is visitor-supplied and
+     * unbounded (bots and open redirects can drive arbitrarily many distinct
+     * Referer values at one captured URL); this caps the SQL-level result
+     * set so the query itself cannot pull unbounded rows into memory before
+     * the PHP-side $maxSources slice in getEvidenceForCapturedUrls() runs.
+     * Matches ABJ_404_Solution_ContentKeywordsRepository::MAX_LIMIT.
+     */
+    const MAX_AGGREGATE_ROWS = 5000;
+
     /** @var ABJ_404_Solution_DatabaseQueryInterface */
     private $db;
 
@@ -31,9 +42,11 @@ class ABJ_404_Solution_InternalSourceEvidenceRepository {
      * @param ABJ_404_Solution_Functions|null $functions UTF-8 sanitizer source.
      *     Defaults to the `functions` service so every call site (including
      *     tests that omit this argument) still gets real UTF-8 sanitization
-     *     before values reach esc_sql() -- see queryAggregateRows() and
-     *     resolvePostIdFromPermalinkCache(), which both take visitor-supplied
-     *     captured 404 URLs.
+     *     before values reach $wpdb->prepare() -- see queryAggregateRows()
+     *     and resolvePostIdFromPermalinkCache(), which both take
+     *     visitor-supplied captured 404 URLs. prepare() escapes quote and
+     *     percent characters but does not validate or repair encoding, so
+     *     sanitization must still happen before values become bound params.
      */
     public function __construct(ABJ_404_Solution_DatabaseQueryInterface $db, $functions = null) {
         $this->db = $db;
@@ -102,24 +115,28 @@ class ABJ_404_Solution_InternalSourceEvidenceRepository {
      * @return array<int, array<string, mixed>>
      */
     private function queryAggregateRows(array $visibleUrls): array {
-        $quoted = array();
+        $cleanUrls = array();
         foreach ($visibleUrls as $url) {
             // Captured 404 URLs are visitor-supplied (bots routinely deliver
             // garbage bytes through the request path); sanitize invalid
-            // UTF-8 before it reaches esc_sql(), which does not validate
-            // encoding on its own.
-            $cleanUrl = $this->functions->sanitizeInvalidUTF8($url);
-            $quoted[] = "'" . esc_sql($cleanUrl) . "'";
+            // UTF-8 before it reaches $wpdb->prepare(), which does not
+            // validate encoding on its own.
+            $cleanUrls[] = $this->functions->sanitizeInvalidUTF8($url);
+        }
+        if (empty($cleanUrls)) {
+            return array();
         }
 
+        $placeholders = implode(',', array_fill(0, count($cleanUrls), '%s'));
         $query = "SELECT requested_url, referrer, COUNT(*) AS hit_count, MAX(timestamp) AS last_seen"
             . " FROM {wp_abj404_logsv2}"
-            . " WHERE requested_url IN (" . implode(',', $quoted) . ")"
+            . " WHERE requested_url IN (" . $placeholders . ")"
             . " AND referrer IS NOT NULL AND referrer != ''"
             . " GROUP BY requested_url, referrer"
-            . " ORDER BY requested_url ASC, hit_count DESC, last_seen DESC";
+            . " ORDER BY requested_url ASC, hit_count DESC, last_seen DESC"
+            . " LIMIT " . self::MAX_AGGREGATE_ROWS;
 
-        $result = $this->db->queryAndGetResults($query);
+        $result = $this->db->queryAndGetResults($query, array('query_params' => $cleanUrls));
         $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
         $typedRows = array();
         foreach ($rows as $row) {
@@ -263,26 +280,24 @@ class ABJ_404_Solution_InternalSourceEvidenceRepository {
     private function resolvePostIdFromPermalinkCache(string $sourcePath): int {
         $trimmed = trim($sourcePath, '/');
         $variants = array_values(array_unique(array($sourcePath, '/' . $trimmed, $trimmed, '/' . $trimmed . '/')));
-        $quoted = array();
+        $cleanVariants = array();
         foreach ($variants as $variant) {
             if ($variant === '') {
                 continue;
             }
             // $sourcePath is derived from the HTTP Referer header (see
             // normalizeSameSiteReferrer()), which is visitor-supplied and can
-            // carry invalid UTF-8 byte sequences; sanitize before esc_sql().
-            $cleanVariant = $this->functions->sanitizeInvalidUTF8($variant);
-            $quoted[] = "'" . esc_sql($cleanVariant) . "'";
+            // carry invalid UTF-8 byte sequences; sanitize before
+            // $wpdb->prepare().
+            $cleanVariants[] = $this->functions->sanitizeInvalidUTF8($variant);
         }
-        if (empty($quoted)) {
+        if (empty($cleanVariants)) {
             return 0;
         }
 
-        $query = sprintf(
-            "SELECT id FROM {wp_abj404_permalink_cache} WHERE url IN (%s) LIMIT 1",
-            implode(',', $quoted)
-        );
-        $result = $this->db->queryAndGetResults($query);
+        $placeholders = implode(',', array_fill(0, count($cleanVariants), '%s'));
+        $query = "SELECT id FROM {wp_abj404_permalink_cache} WHERE url IN (" . $placeholders . ") LIMIT 1";
+        $result = $this->db->queryAndGetResults($query, array('query_params' => $cleanVariants));
         $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
         $row = is_array($rows[0] ?? null) ? $rows[0] : array();
         return $this->intField($row, 'id');
