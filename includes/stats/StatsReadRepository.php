@@ -364,6 +364,8 @@ class ABJ_404_Solution_StatsReadRepository {
             // $siteNow->format() output is always a well-formed date string,
             // so this is unreachable in practice; degrade to UTC-anchored
             // boundaries rather than let a periodic stats read fail entirely.
+            $this->logger->warn('StatsReadRepository: failed to compute site-timezone-anchored ' .
+                'periodic thresholds, falling back to UTC: ' . $e->getMessage());
             $today = gmmktime(0, 0, 0, (int)gmdate('m', $now), (int)gmdate('d', $now), (int)gmdate('Y', $now));
             $firstOfMonth = gmmktime(0, 0, 0, (int)gmdate('m', $now), 1, (int)gmdate('Y', $now));
             $firstOfYear = gmmktime(0, 0, 0, 1, 1, (int)gmdate('Y', $now));

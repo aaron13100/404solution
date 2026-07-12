@@ -251,6 +251,8 @@ class ABJ_404_Solution_OldPermalinkPostResolver {
         try {
             $postDateTime = new DateTimeImmutable($date, ABJ_404_Solution_SiteTimezone::resolve());
         } catch (Exception $e) {
+            $this->logger->warn('OldPermalinkPostResolver: unparseable post_date "' . $date .
+                '" on post ID ' . (isset($post->ID) ? (string)$post->ID : 'unknown') . ': ' . $e->getMessage());
             return false;
         }
         if (isset($captures['year']) && $postDateTime->format('Y') !== $captures['year']) {
