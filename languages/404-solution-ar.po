@@ -4133,3 +4133,60 @@ msgstr "تعذر إعداد المعاينة (%s)."
 
 msgid "Could not prepare the report (%s)."
 msgstr "تعذر إعداد التقرير (%s)."
+
+msgid "Unauthorized (401)"
+msgstr "غير مصرح به (401)"
+
+msgid "Rate limited (429). Try again later."
+msgstr "تم تقييد المعدل (429). حاول مرة أخرى لاحقاً."
+
+msgid "Timed out after %ds"
+msgstr "انتهت المهلة بعد %ds"
+
+msgid "Network request failed (%s)"
+msgstr "فشل طلب الشبكة (%s)"
+
+msgid "Could not prepare the diagnostic data request."
+msgstr "تعذر إعداد طلب بيانات التشخيص."
+
+msgid "The reports server returned an unexpected response."
+msgstr "أعاد خادم التقارير استجابة غير متوقعة."
+
+msgid "Reports server error (%d)"
+msgstr "خطأ في خادم التقارير (%d)"
+
+msgid "Reports server returned HTTP %d"
+msgstr "أعاد خادم التقارير HTTP %d"
+
+msgid "Your Diagnostic Data"
+msgstr "بيانات التشخيص الخاصة بك"
+
+msgid "enabled"
+msgstr "مُفعّل"
+
+msgid "disabled"
+msgstr "مُعطّل"
+
+msgid "Download my data"
+msgstr "تنزيل بياناتي"
+
+msgid "Delete my data"
+msgstr "حذف بياناتي"
+
+msgid "Nothing currently stored."
+msgstr "لا يوجد شيء مخزّن حالياً."
+
+msgid "Delete your diagnostic data?"
+msgstr "هل تريد حذف بيانات التشخيص الخاصة بك؟"
+
+msgid "This permanently deletes every diagnostic report this site has ever sent. This cannot be undone. Your redirects and settings are not affected -- only diagnostic/telemetry history is removed."
+msgstr "يؤدي هذا إلى الحذف الدائم لكل تقرير تشخيصي أرسله هذا الموقع من قبل، ولا يمكن التراجع عن هذا الإجراء. لا تتأثر عمليات إعادة التوجيه والإعدادات الخاصة بك، حيث تتم إزالة سجل التشخيص والقياس عن بُعد فقط."
+
+msgid "Yes, delete permanently"
+msgstr "نعم، احذف نهائياً"
+
+msgid "Diagnostic identity is not registered yet."
+msgstr "لم يتم تسجيل هوية التشخيص بعد."
+
+msgid "Confirm diagnostic data deletion before continuing."
+msgstr "أكّد حذف بيانات التشخيص قبل المتابعة."

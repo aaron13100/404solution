@@ -4094,3 +4094,60 @@ msgstr "Impossible de préparer l'aperçu (%s)."
 
 msgid "Could not prepare the report (%s)."
 msgstr "Impossible de préparer le rapport (%s)."
+
+msgid "Unauthorized (401)"
+msgstr "Non autorisé (401)"
+
+msgid "Rate limited (429). Try again later."
+msgstr "Limite de requêtes atteinte (429). Réessayez plus tard."
+
+msgid "Timed out after %ds"
+msgstr "Délai dépassé après %ds"
+
+msgid "Network request failed (%s)"
+msgstr "Échec de la requête réseau (%s)"
+
+msgid "Could not prepare the diagnostic data request."
+msgstr "Impossible de préparer la requête de données de diagnostic."
+
+msgid "The reports server returned an unexpected response."
+msgstr "Le serveur de rapports a renvoyé une réponse inattendue."
+
+msgid "Reports server error (%d)"
+msgstr "Erreur du serveur de rapports (%d)"
+
+msgid "Reports server returned HTTP %d"
+msgstr "Le serveur de rapports a renvoyé HTTP %d"
+
+msgid "Your Diagnostic Data"
+msgstr "Vos données de diagnostic"
+
+msgid "enabled"
+msgstr "activé"
+
+msgid "disabled"
+msgstr "désactivé"
+
+msgid "Download my data"
+msgstr "Télécharger mes données"
+
+msgid "Delete my data"
+msgstr "Supprimer mes données"
+
+msgid "Nothing currently stored."
+msgstr "Rien n'est actuellement stocké."
+
+msgid "Delete your diagnostic data?"
+msgstr "Supprimer vos données de diagnostic ?"
+
+msgid "This permanently deletes every diagnostic report this site has ever sent. This cannot be undone. Your redirects and settings are not affected -- only diagnostic/telemetry history is removed."
+msgstr "Cette action supprime définitivement chaque rapport de diagnostic jamais envoyé par ce site. Cette action est irréversible. Vos redirections et vos paramètres ne sont pas affectés : seul l'historique des données de diagnostic et de télémétrie est supprimé."
+
+msgid "Yes, delete permanently"
+msgstr "Oui, supprimer définitivement"
+
+msgid "Diagnostic identity is not registered yet."
+msgstr "L'identité de diagnostic n'est pas encore enregistrée."
+
+msgid "Confirm diagnostic data deletion before continuing."
+msgstr "Confirmez la suppression des données de diagnostic avant de continuer."

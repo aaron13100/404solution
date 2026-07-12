@@ -4123,3 +4123,60 @@ msgstr "Could not prepare the preview (%s)."
 
 msgid "Could not prepare the report (%s)."
 msgstr "Could not prepare the report (%s)."
+
+msgid "Unauthorized (401)"
+msgstr "Unauthorized (401)"
+
+msgid "Rate limited (429). Try again later."
+msgstr "Rate limited (429). Try again later."
+
+msgid "Timed out after %ds"
+msgstr "Timed out after %ds"
+
+msgid "Network request failed (%s)"
+msgstr "Network request failed (%s)"
+
+msgid "Could not prepare the diagnostic data request."
+msgstr "Could not prepare the diagnostic data request."
+
+msgid "The reports server returned an unexpected response."
+msgstr "The reports server returned an unexpected response."
+
+msgid "Reports server error (%d)"
+msgstr "Reports server error (%d)"
+
+msgid "Reports server returned HTTP %d"
+msgstr "Reports server returned HTTP %d"
+
+msgid "Your Diagnostic Data"
+msgstr "Your Diagnostic Data"
+
+msgid "enabled"
+msgstr "enabled"
+
+msgid "disabled"
+msgstr "disabled"
+
+msgid "Download my data"
+msgstr "Download my data"
+
+msgid "Delete my data"
+msgstr "Delete my data"
+
+msgid "Nothing currently stored."
+msgstr "Nothing currently stored."
+
+msgid "Delete your diagnostic data?"
+msgstr "Delete your diagnostic data?"
+
+msgid "This permanently deletes every diagnostic report this site has ever sent. This cannot be undone. Your redirects and settings are not affected -- only diagnostic/telemetry history is removed."
+msgstr "This permanently deletes every diagnostic report this site has ever sent. This cannot be undone. Your redirects and settings are not affected -- only diagnostic/telemetry history is removed."
+
+msgid "Yes, delete permanently"
+msgstr "Yes, delete permanently"
+
+msgid "Diagnostic identity is not registered yet."
+msgstr "Diagnostic identity is not registered yet."
+
+msgid "Confirm diagnostic data deletion before continuing."
+msgstr "Confirm diagnostic data deletion before continuing."

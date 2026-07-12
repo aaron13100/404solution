@@ -4105,3 +4105,60 @@ msgstr "无法准备预览（%s）。"
 
 msgid "Could not prepare the report (%s)."
 msgstr "无法准备报告（%s）。"
+
+msgid "Unauthorized (401)"
+msgstr "未授权（401）"
+
+msgid "Rate limited (429). Try again later."
+msgstr "已达到速率限制（429）。请稍后重试。"
+
+msgid "Timed out after %ds"
+msgstr "%ds 后超时"
+
+msgid "Network request failed (%s)"
+msgstr "网络请求失败（%s）"
+
+msgid "Could not prepare the diagnostic data request."
+msgstr "无法准备诊断数据请求。"
+
+msgid "The reports server returned an unexpected response."
+msgstr "报告服务器返回了意外的响应。"
+
+msgid "Reports server error (%d)"
+msgstr "报告服务器错误（%d）"
+
+msgid "Reports server returned HTTP %d"
+msgstr "报告服务器返回了 HTTP %d"
+
+msgid "Your Diagnostic Data"
+msgstr "您的诊断数据"
+
+msgid "enabled"
+msgstr "已启用"
+
+msgid "disabled"
+msgstr "已禁用"
+
+msgid "Download my data"
+msgstr "下载我的数据"
+
+msgid "Delete my data"
+msgstr "删除我的数据"
+
+msgid "Nothing currently stored."
+msgstr "当前没有存储任何内容。"
+
+msgid "Delete your diagnostic data?"
+msgstr "删除您的诊断数据？"
+
+msgid "This permanently deletes every diagnostic report this site has ever sent. This cannot be undone. Your redirects and settings are not affected -- only diagnostic/telemetry history is removed."
+msgstr "此操作将永久删除本站点发送过的所有诊断报告，且无法撤销。您的重定向和设置不受影响，仅删除诊断和遥测历史记录。"
+
+msgid "Yes, delete permanently"
+msgstr "是的，永久删除"
+
+msgid "Diagnostic identity is not registered yet."
+msgstr "诊断身份尚未注册。"
+
+msgid "Confirm diagnostic data deletion before continuing."
+msgstr "请在继续之前确认删除诊断数据。"

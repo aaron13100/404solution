@@ -4100,3 +4100,60 @@ msgstr "Tidak dapat menyiapkan pratinjau (%s)."
 
 msgid "Could not prepare the report (%s)."
 msgstr "Tidak dapat menyiapkan laporan (%s)."
+
+msgid "Unauthorized (401)"
+msgstr "Tidak diotorisasi (401)"
+
+msgid "Rate limited (429). Try again later."
+msgstr "Dibatasi lajunya (429). Coba lagi nanti."
+
+msgid "Timed out after %ds"
+msgstr "Waktu habis setelah %ds"
+
+msgid "Network request failed (%s)"
+msgstr "Permintaan jaringan gagal (%s)"
+
+msgid "Could not prepare the diagnostic data request."
+msgstr "Tidak dapat menyiapkan permintaan data diagnostik."
+
+msgid "The reports server returned an unexpected response."
+msgstr "Server laporan mengembalikan respons yang tidak terduga."
+
+msgid "Reports server error (%d)"
+msgstr "Kesalahan server laporan (%d)"
+
+msgid "Reports server returned HTTP %d"
+msgstr "Server laporan mengembalikan HTTP %d"
+
+msgid "Your Diagnostic Data"
+msgstr "Data Diagnostik Anda"
+
+msgid "enabled"
+msgstr "diaktifkan"
+
+msgid "disabled"
+msgstr "dinonaktifkan"
+
+msgid "Download my data"
+msgstr "Unduh data saya"
+
+msgid "Delete my data"
+msgstr "Hapus data saya"
+
+msgid "Nothing currently stored."
+msgstr "Saat ini tidak ada yang tersimpan."
+
+msgid "Delete your diagnostic data?"
+msgstr "Hapus data diagnostik Anda?"
+
+msgid "This permanently deletes every diagnostic report this site has ever sent. This cannot be undone. Your redirects and settings are not affected -- only diagnostic/telemetry history is removed."
+msgstr "Tindakan ini menghapus secara permanen setiap laporan diagnostik yang pernah dikirim situs ini. Tindakan ini tidak dapat dibatalkan. Pengalihan dan pengaturan Anda tidak terpengaruh: hanya riwayat diagnostik dan telemetri yang dihapus."
+
+msgid "Yes, delete permanently"
+msgstr "Ya, hapus secara permanen"
+
+msgid "Diagnostic identity is not registered yet."
+msgstr "Identitas diagnostik belum terdaftar."
+
+msgid "Confirm diagnostic data deletion before continuing."
+msgstr "Konfirmasi penghapusan data diagnostik sebelum melanjutkan."

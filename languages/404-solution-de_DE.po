@@ -4098,3 +4098,60 @@ msgstr "Die Vorschau konnte nicht vorbereitet werden (%s)."
 
 msgid "Could not prepare the report (%s)."
 msgstr "Der Bericht konnte nicht vorbereitet werden (%s)."
+
+msgid "Unauthorized (401)"
+msgstr "Nicht autorisiert (401)"
+
+msgid "Rate limited (429). Try again later."
+msgstr "Rate-Limit erreicht (429). Bitte versuchen Sie es später erneut."
+
+msgid "Timed out after %ds"
+msgstr "Zeitüberschreitung nach %ds"
+
+msgid "Network request failed (%s)"
+msgstr "Netzwerkanfrage fehlgeschlagen (%s)"
+
+msgid "Could not prepare the diagnostic data request."
+msgstr "Die Anfrage für Diagnosedaten konnte nicht vorbereitet werden."
+
+msgid "The reports server returned an unexpected response."
+msgstr "Der Berichtsserver hat eine unerwartete Antwort zurückgegeben."
+
+msgid "Reports server error (%d)"
+msgstr "Fehler des Berichtsservers (%d)"
+
+msgid "Reports server returned HTTP %d"
+msgstr "Der Berichtsserver hat HTTP %d zurückgegeben"
+
+msgid "Your Diagnostic Data"
+msgstr "Ihre Diagnosedaten"
+
+msgid "enabled"
+msgstr "aktiviert"
+
+msgid "disabled"
+msgstr "deaktiviert"
+
+msgid "Download my data"
+msgstr "Meine Daten herunterladen"
+
+msgid "Delete my data"
+msgstr "Meine Daten löschen"
+
+msgid "Nothing currently stored."
+msgstr "Derzeit nichts gespeichert."
+
+msgid "Delete your diagnostic data?"
+msgstr "Ihre Diagnosedaten löschen?"
+
+msgid "This permanently deletes every diagnostic report this site has ever sent. This cannot be undone. Your redirects and settings are not affected -- only diagnostic/telemetry history is removed."
+msgstr "Dies löscht dauerhaft jeden Diagnosebericht, den diese Website jemals gesendet hat. Dies kann nicht rückgängig gemacht werden. Ihre Weiterleitungen und Einstellungen sind davon nicht betroffen: Es wird nur der Diagnose- und Telemetrieverlauf entfernt."
+
+msgid "Yes, delete permanently"
+msgstr "Ja, dauerhaft löschen"
+
+msgid "Diagnostic identity is not registered yet."
+msgstr "Die Diagnoseidentität ist noch nicht registriert."
+
+msgid "Confirm diagnostic data deletion before continuing."
+msgstr "Bestätigen Sie die Löschung der Diagnosedaten, bevor Sie fortfahren."

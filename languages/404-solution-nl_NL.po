@@ -4100,3 +4100,60 @@ msgstr "Kon de preview niet voorbereiden (%s)."
 
 msgid "Could not prepare the report (%s)."
 msgstr "Kon het rapport niet voorbereiden (%s)."
+
+msgid "Unauthorized (401)"
+msgstr "Niet geautoriseerd (401)"
+
+msgid "Rate limited (429). Try again later."
+msgstr "Snelheidslimiet bereikt (429). Probeer het later opnieuw."
+
+msgid "Timed out after %ds"
+msgstr "Time-out na %ds"
+
+msgid "Network request failed (%s)"
+msgstr "Netwerkverzoek mislukt (%s)"
+
+msgid "Could not prepare the diagnostic data request."
+msgstr "Kon het verzoek om diagnostische gegevens niet voorbereiden."
+
+msgid "The reports server returned an unexpected response."
+msgstr "De rapportenserver gaf een onverwacht antwoord terug."
+
+msgid "Reports server error (%d)"
+msgstr "Fout van de rapportenserver (%d)"
+
+msgid "Reports server returned HTTP %d"
+msgstr "De rapportenserver gaf HTTP %d terug"
+
+msgid "Your Diagnostic Data"
+msgstr "Uw diagnostische gegevens"
+
+msgid "enabled"
+msgstr "ingeschakeld"
+
+msgid "disabled"
+msgstr "uitgeschakeld"
+
+msgid "Download my data"
+msgstr "Mijn gegevens downloaden"
+
+msgid "Delete my data"
+msgstr "Mijn gegevens verwijderen"
+
+msgid "Nothing currently stored."
+msgstr "Momenteel niets opgeslagen."
+
+msgid "Delete your diagnostic data?"
+msgstr "Uw diagnostische gegevens verwijderen?"
+
+msgid "This permanently deletes every diagnostic report this site has ever sent. This cannot be undone. Your redirects and settings are not affected -- only diagnostic/telemetry history is removed."
+msgstr "Dit verwijdert permanent elk diagnostisch rapport dat deze site ooit heeft verzonden. Dit kan niet ongedaan worden gemaakt. Uw omleidingen en instellingen worden niet beïnvloed: alleen de diagnostische en telemetriegeschiedenis wordt verwijderd."
+
+msgid "Yes, delete permanently"
+msgstr "Ja, definitief verwijderen"
+
+msgid "Diagnostic identity is not registered yet."
+msgstr "Diagnostische identiteit is nog niet geregistreerd."
+
+msgid "Confirm diagnostic data deletion before continuing."
+msgstr "Bevestig het verwijderen van diagnostische gegevens voordat u doorgaat."

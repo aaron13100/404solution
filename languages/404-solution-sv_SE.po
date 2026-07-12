@@ -4100,3 +4100,60 @@ msgstr "Kunde inte förbereda förhandsgranskningen (%s)."
 
 msgid "Could not prepare the report (%s)."
 msgstr "Kunde inte förbereda rapporten (%s)."
+
+msgid "Unauthorized (401)"
+msgstr "Ej auktoriserad (401)"
+
+msgid "Rate limited (429). Try again later."
+msgstr "Hastighetsbegränsning nådd (429). Försök igen senare."
+
+msgid "Timed out after %ds"
+msgstr "Tidsgräns överskreds efter %ds"
+
+msgid "Network request failed (%s)"
+msgstr "Nätverksförfrågan misslyckades (%s)"
+
+msgid "Could not prepare the diagnostic data request."
+msgstr "Kunde inte förbereda begäran om diagnostikdata."
+
+msgid "The reports server returned an unexpected response."
+msgstr "Rapportservern returnerade ett oväntat svar."
+
+msgid "Reports server error (%d)"
+msgstr "Fel från rapportservern (%d)"
+
+msgid "Reports server returned HTTP %d"
+msgstr "Rapportservern returnerade HTTP %d"
+
+msgid "Your Diagnostic Data"
+msgstr "Dina diagnostikdata"
+
+msgid "enabled"
+msgstr "aktiverad"
+
+msgid "disabled"
+msgstr "inaktiverad"
+
+msgid "Download my data"
+msgstr "Ladda ner mina data"
+
+msgid "Delete my data"
+msgstr "Ta bort mina data"
+
+msgid "Nothing currently stored."
+msgstr "Inget lagrat för närvarande."
+
+msgid "Delete your diagnostic data?"
+msgstr "Ta bort dina diagnostikdata?"
+
+msgid "This permanently deletes every diagnostic report this site has ever sent. This cannot be undone. Your redirects and settings are not affected -- only diagnostic/telemetry history is removed."
+msgstr "Detta tar bort varje diagnostikrapport som webbplatsen någonsin har skickat permanent. Detta kan inte ångras. Dina omdirigeringar och inställningar påverkas inte: endast diagnostik- och telemetrihistoriken tas bort."
+
+msgid "Yes, delete permanently"
+msgstr "Ja, ta bort permanent"
+
+msgid "Diagnostic identity is not registered yet."
+msgstr "Diagnostikidentiteten är ännu inte registrerad."
+
+msgid "Confirm diagnostic data deletion before continuing."
+msgstr "Bekräfta borttagning av diagnostikdata innan du fortsätter."

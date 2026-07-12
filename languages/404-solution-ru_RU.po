@@ -4108,3 +4108,60 @@ msgstr "Не удалось подготовить предварительны�
 
 msgid "Could not prepare the report (%s)."
 msgstr "Не удалось подготовить отчет (%s)."
+
+msgid "Unauthorized (401)"
+msgstr "Не авторизовано (401)"
+
+msgid "Rate limited (429). Try again later."
+msgstr "Превышен лимит запросов (429). Повторите попытку позже."
+
+msgid "Timed out after %ds"
+msgstr "Истекло время ожидания после %ds"
+
+msgid "Network request failed (%s)"
+msgstr "Сбой сетевого запроса (%s)"
+
+msgid "Could not prepare the diagnostic data request."
+msgstr "Не удалось подготовить запрос диагностических данных."
+
+msgid "The reports server returned an unexpected response."
+msgstr "Сервер отчётов вернул неожиданный ответ."
+
+msgid "Reports server error (%d)"
+msgstr "Ошибка сервера отчётов (%d)"
+
+msgid "Reports server returned HTTP %d"
+msgstr "Сервер отчётов вернул HTTP %d"
+
+msgid "Your Diagnostic Data"
+msgstr "Ваши диагностические данные"
+
+msgid "enabled"
+msgstr "включено"
+
+msgid "disabled"
+msgstr "отключено"
+
+msgid "Download my data"
+msgstr "Скачать мои данные"
+
+msgid "Delete my data"
+msgstr "Удалить мои данные"
+
+msgid "Nothing currently stored."
+msgstr "В настоящее время ничего не сохранено."
+
+msgid "Delete your diagnostic data?"
+msgstr "Удалить ваши диагностические данные?"
+
+msgid "This permanently deletes every diagnostic report this site has ever sent. This cannot be undone. Your redirects and settings are not affected -- only diagnostic/telemetry history is removed."
+msgstr "Это навсегда удалит каждый диагностический отчёт, когда-либо отправленный этим сайтом. Это действие нельзя отменить. Ваши редиректы и настройки не затрагиваются: удаляется только история диагностики и телеметрии."
+
+msgid "Yes, delete permanently"
+msgstr "Да, удалить навсегда"
+
+msgid "Diagnostic identity is not registered yet."
+msgstr "Диагностическая идентичность ещё не зарегистрирована."
+
+msgid "Confirm diagnostic data deletion before continuing."
+msgstr "Подтвердите удаление диагностических данных перед продолжением."

@@ -4112,3 +4112,60 @@ msgstr "プレビューを準備できませんでした（%s）。"
 
 msgid "Could not prepare the report (%s)."
 msgstr "レポートを準備できませんでした（%s）。"
+
+msgid "Unauthorized (401)"
+msgstr "認証されていません（401）"
+
+msgid "Rate limited (429). Try again later."
+msgstr "レート制限に達しました（429）。しばらくしてから再試行してください。"
+
+msgid "Timed out after %ds"
+msgstr "%ds後にタイムアウトしました"
+
+msgid "Network request failed (%s)"
+msgstr "ネットワークリクエストが失敗しました（%s）"
+
+msgid "Could not prepare the diagnostic data request."
+msgstr "診断データのリクエストを準備できませんでした。"
+
+msgid "The reports server returned an unexpected response."
+msgstr "レポートサーバーが予期しない応答を返しました。"
+
+msgid "Reports server error (%d)"
+msgstr "レポートサーバーエラー（%d）"
+
+msgid "Reports server returned HTTP %d"
+msgstr "レポートサーバーが HTTP %d を返しました"
+
+msgid "Your Diagnostic Data"
+msgstr "あなたの診断データ"
+
+msgid "enabled"
+msgstr "有効"
+
+msgid "disabled"
+msgstr "無効"
+
+msgid "Download my data"
+msgstr "自分のデータをダウンロード"
+
+msgid "Delete my data"
+msgstr "自分のデータを削除"
+
+msgid "Nothing currently stored."
+msgstr "現在保存されているものはありません。"
+
+msgid "Delete your diagnostic data?"
+msgstr "診断データを削除しますか？"
+
+msgid "This permanently deletes every diagnostic report this site has ever sent. This cannot be undone. Your redirects and settings are not affected -- only diagnostic/telemetry history is removed."
+msgstr "この操作は、このサイトがこれまでに送信したすべての診断レポートを完全に削除します。この操作は元に戻せません。リダイレクトと設定には影響しません。削除されるのは診断とテレメトリーの履歴のみです。"
+
+msgid "Yes, delete permanently"
+msgstr "はい、完全に削除します"
+
+msgid "Diagnostic identity is not registered yet."
+msgstr "診断用識別子はまだ登録されていません。"
+
+msgid "Confirm diagnostic data deletion before continuing."
+msgstr "続行する前に診断データの削除を確認してください。"
