@@ -82,9 +82,11 @@ class ABJ_404_Solution_CapturedSourceEvidenceRenderer {
         }
 
         $panelId = 'abj404-source-panel-' . sanitize_key($rowId);
-        $trigger = '<button type="button" class="abj404-source-trigger" aria-expanded="false"'
-            . ' aria-controls="' . esc_attr($panelId) . '" data-abj404-source-toggle="' . esc_attr($rowId) . '">'
-            . esc_html(sprintf(__('Sources (%d)', '404-solution'), $sourceCount)) . '</button>';
+        $trigger = $this->fillTpl('capturedSourceTrigger.html', array(
+            '{panel_id}' => esc_attr($panelId),
+            '{row_id}' => esc_attr($rowId),
+            '{trigger_label}' => esc_html(sprintf(__('Sources (%d)', '404-solution'), $sourceCount)),
+        ));
 
         $sourceRows = '';
         foreach ($sources as $source) {
@@ -101,9 +103,9 @@ class ABJ_404_Solution_CapturedSourceEvidenceRenderer {
             ? (int)$evidence['displayed_source_count'] : count($sources);
         $truncation = '';
         if ($sourceCount > $displayedCount) {
-            $truncation = '<p class="abj404-source-truncation">'
-                . esc_html(sprintf(__('Showing %1$d of %2$d sources.', '404-solution'), $displayedCount, $sourceCount))
-                . '</p>';
+            $truncation = $this->fillTpl('capturedSourceTruncation.html', array(
+                '{truncation_text}' => esc_html(sprintf(__('Showing %1$d of %2$d sources.', '404-solution'), $displayedCount, $sourceCount)),
+            ));
         }
 
         $panel = $this->fillTpl('capturedSourcesPanel.html', array(
