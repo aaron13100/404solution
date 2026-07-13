@@ -12,15 +12,13 @@ if (!defined('ABSPATH')) {
 interface ABJ_404_Solution_PublishedContentLookupInterface {
 
     /**
-     * @param string $slug
-     * @param string $searchTerm
-     * @param string $limitResults
-     * @param string $orderResults
-     * @param string $extraWhereClause
+     * Find published posts and pages using named query criteria.
+     * Unknown keys and non-scalar values are ignored for forward compatibility.
+     *
+     * @param array{slug?: string, search_term?: string, limit_results?: string, order_results?: string, extra_where_clause?: string} $criteria
      * @return array<int, object>
      */
-    public function getPublishedPagesAndPostsIDs($slug = '', $searchTerm = '',
-        $limitResults = '', $orderResults = '', $extraWhereClause = '');
+    public function getPublishedPagesAndPostsIDs(array $criteria = array());
 
     /**
      * @param string|null $slug

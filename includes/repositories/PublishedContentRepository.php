@@ -82,16 +82,20 @@ class ABJ_404_Solution_PublishedContentRepository {
     }
 
     /**
-     * @param string $slug
-     * @param string $searchTerm
-     * @param string $limitResults
-     * @param string $orderResults
-     * @param string $extraWhereClause
+     * Find published posts and pages using named query criteria.
+     * Unknown keys and non-scalar values are ignored for forward compatibility.
+     *
+     * @param array{slug?: string, search_term?: string, limit_results?: string, order_results?: string, extra_where_clause?: string} $criteria
      * @return array<int, object>
      */
-    public function getPublishedPagesAndPostsIDs($slug = '', $searchTerm = '',
-        $limitResults = '', $orderResults = '', $extraWhereClause = '') {
+    public function getPublishedPagesAndPostsIDs(array $criteria = array()) {
         $postsTableName = $this->getPostsTableName();
+
+        $slug = $this->publishedCriteriaString($criteria, 'slug');
+        $searchTerm = $this->publishedCriteriaString($criteria, 'search_term');
+        $limitResults = $this->publishedCriteriaString($criteria, 'limit_results');
+        $orderResults = $this->publishedCriteriaString($criteria, 'order_results');
+        $extraWhereClause = $this->publishedCriteriaString($criteria, 'extra_where_clause');
 
         $options = $this->getRuntimeOptions();
         $recognizedPostTypes = $this->dbCore->tableNameResolver()->buildPostTypeSqlList($options);
@@ -124,6 +128,16 @@ class ABJ_404_Solution_PublishedContentRepository {
         $this->handlePublishedPagesQueryError($fallback['queryError'], $query);
 
         return $fallback['rows'];
+    }
+
+    /**
+     * @param array<string, mixed> $criteria
+     * @param string $key
+     * @return string
+     */
+    private function publishedCriteriaString(array $criteria, string $key): string {
+        $value = $criteria[$key] ?? '';
+        return is_scalar($value) ? (string)$value : '';
     }
 
     /**

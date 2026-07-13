@@ -148,7 +148,11 @@ class ABJ_404_Solution_PublishedPostsProvider {
     		$extraWhereClause .= " and wp_posts.id IN (" . $idList . ")";
     	}
 
-    	$rows = $this->contentRepository->getPublishedPagesAndPostsIDs('', '', $limit, $orderBy, $extraWhereClause);
+		$rows = $this->contentRepository->getPublishedPagesAndPostsIDs(array(
+			'limit_results' => $limit,
+			'order_results' => $orderBy,
+			'extra_where_clause' => $extraWhereClause,
+		));
 
     	$this->currentLowRowNumber += $batchSize;
 

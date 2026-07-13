@@ -101,7 +101,10 @@ class ABJ_404_Solution_TitleMatchingEngine implements ABJ_404_Solution_MatchingE
         }
 
         $extraWhere = $this->buildWhereClause($keywords);
-        $rows = $this->contentRepo->getPublishedPagesAndPostsIDs('', '', '0,' . self::QUERY_LIMIT, '', $extraWhere);
+        $rows = $this->contentRepo->getPublishedPagesAndPostsIDs(array(
+            'limit_results' => '0,' . self::QUERY_LIMIT,
+            'extra_where_clause' => $extraWhere,
+        ));
 
         if (empty($rows)) {
             $this->logger->debugMessage("Title engine: no candidates for keywords [" .

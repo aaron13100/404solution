@@ -102,7 +102,10 @@ class ABJ_404_Solution_ContentMatchingEngine implements ABJ_404_Solution_Matchin
         }
 
         $extraWhere = $this->buildWhereClause($keywords);
-        $rows = $this->contentRepo->getPublishedPagesAndPostsIDs('', '', '0,' . self::QUERY_LIMIT, '', $extraWhere);
+        $rows = $this->contentRepo->getPublishedPagesAndPostsIDs(array(
+            'limit_results' => '0,' . self::QUERY_LIMIT,
+            'extra_where_clause' => $extraWhere,
+        ));
 
         if (empty($rows)) {
             $this->logger->debugMessage("Content engine: no candidates for keywords [" .

@@ -167,7 +167,7 @@ class ABJ_404_Solution_ImportRedirectRowProcessor {
      */
     private function resolveSlugDestination(string $finalDest): array {
         $slug = trim($finalDest, '/');
-        $postsFromSlugRows = $this->contentRepository->getPublishedPagesAndPostsIDs($slug);
+        $postsFromSlugRows = $this->contentRepository->getPublishedPagesAndPostsIDs(array('slug' => $slug));
         $postsFromCategoryRows = $this->contentRepository->getPublishedCategories(null, $slug);
         $postsFromTagRows = $this->contentRepository->getPublishedTags($slug);
 

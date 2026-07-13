@@ -82,15 +82,8 @@ class ABJ_404_Solution_ContentRepository implements ABJ_404_Solution_ContentRepo
     }
 
     /** @inheritDoc */
-    public function getPublishedPagesAndPostsIDs($slug = '', $searchTerm = '',
-        $limitResults = '', $orderResults = '', $extraWhereClause = '') {
-        return $this->publishedContentRepository->getPublishedPagesAndPostsIDs(
-            $slug,
-            $searchTerm,
-            $limitResults,
-            $orderResults,
-            $extraWhereClause
-        );
+    public function getPublishedPagesAndPostsIDs(array $criteria = array()) {
+        return $this->publishedContentRepository->getPublishedPagesAndPostsIDs($criteria);
     }
 
     /** @inheritDoc */

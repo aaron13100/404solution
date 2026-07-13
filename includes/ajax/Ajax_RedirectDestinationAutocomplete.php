@@ -41,7 +41,10 @@ class ABJ_404_Solution_Ajax_RedirectDestinationAutocomplete {
 
         $specialPages = self::getDefaultRedirectDestinations($includeDefault404Page, $includeSpecial);
 
-        $rowsOtherTypes = $contentRepository->getPublishedPagesAndPostsIDs('', $term, (string)ABJ404_MAX_AJAX_DROPDOWN_SIZE);
+        $rowsOtherTypes = $contentRepository->getPublishedPagesAndPostsIDs(array(
+            'search_term' => $term,
+            'limit_results' => (string)ABJ404_MAX_AJAX_DROPDOWN_SIZE,
+        ));
         $rowsOtherTypes = $abj404logic->pageOrdering()->orderPageResults($rowsOtherTypes, true);
         /** @var array<int, object{post_title: string, post_type: string, id: int|string, depth: int|string}> $rowsOtherTypesTyped */
         $rowsOtherTypesTyped = $rowsOtherTypes;

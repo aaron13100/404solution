@@ -96,7 +96,10 @@ class ABJ_404_Solution_OldPermalinkPostResolver {
             return null;
         }
 
-        $rows = $this->findCandidatePagesAndPostsBySlug($slug);
+        $rows = $this->contentRepository->getPublishedPagesAndPostsIDs(array(
+            'slug' => $slug,
+            'limit_results' => '11',
+        ));
         $matches = array();
         foreach ($rows as $row) {
             $postId = $this->idFromRow($row);
@@ -119,29 +122,6 @@ class ABJ_404_Solution_OldPermalinkPostResolver {
 
         $this->logger->debugMessage('Old permalink structure resolved by slug: ' . $slug);
         return (int)$matches[0];
-    }
-
-    /**
-     * Sole call site for ContentRepositoryInterface::getPublishedPagesAndPostsIDs()'s
-     * risky multi-positional-string signature (5 same-type params, no PHP 7.4
-     * named-argument support). Contained here, behind a single-argument
-     * wrapper, so resolveBySlug() itself cannot silently transpose the other
-     * four params: this method takes only $slug and hardcodes the rest.
-     *
-     * No search-term filter is applied (slug lookup only); the limit is
-     * capped just above the ambiguity threshold in resolveBySlug() (more
-     * than 1 match) so a single query can both find the match and detect
-     * ambiguity without an unbounded scan.
-     *
-     * @param string $slug
-     * @return array<int, object>
-     */
-    private function findCandidatePagesAndPostsBySlug(string $slug): array {
-        $noSearchTermFilter = '';
-        $limitJustAboveAmbiguityThreshold = '11';
-        return $this->contentRepository->getPublishedPagesAndPostsIDs(
-            $slug, $noSearchTermFilter, $limitJustAboveAmbiguityThreshold
-        );
     }
 
     /**

@@ -206,7 +206,7 @@ class ABJ_404_Solution_SpellURLMatcher {
 			return null;
 		}
 		$postSlug = end($exploded);
-		$postsBySlugRows = $this->contentRepository->getPublishedPagesAndPostsIDs($postSlug);
+		$postsBySlugRows = $this->contentRepository->getPublishedPagesAndPostsIDs(array('slug' => $postSlug));
 		if (count($postsBySlugRows) == 1) {
 			$post = reset($postsBySlugRows);
 			$postId = (is_object($post) && property_exists($post, 'id')) ? $post->id : null;

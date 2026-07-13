@@ -115,7 +115,7 @@ class ABJ_404_Solution_PluginLogicPageOrdering {
                         continue;
                     }
                     $parentPageSlug = $postParent->post_name;
-                    $parentPage = $this->contentRepo->getPublishedPagesAndPostsIDs($parentPageSlug);
+                    $parentPage = $this->contentRepo->getPublishedPagesAndPostsIDs(array('slug' => $parentPageSlug));
                     if (count($parentPage) != 0) {
                         $pages[] = $parentPage[0];
                     }
