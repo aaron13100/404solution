@@ -362,8 +362,16 @@ class ABJ_404_Solution_DatabaseTableDdlExecutor {
             return;
         }
         $result = $this->dbCore->queryAndGetResults($query);
-        $lastError = isset($result['last_error']) && is_scalar($result['last_error'])
-            ? (string) $result['last_error'] : '';
+        $lastErrorValue = $result['last_error'] ?? null;
+        if (!is_string($lastErrorValue)) {
+            $this->logger->errorMessage(
+                'min_log_id backfill query returned invalid last_error type ('
+                . gettype($lastErrorValue) . ') for ' . $tableName
+                . '. Skipping composite index creation this run; will retry on the next upgrade check.'
+            );
+            return;
+        }
+        $lastError = $lastErrorValue;
         if ($lastError !== '') {
             // Don't create the composite index on the strength of a backfill
             // that didn't actually run: the index exists to make min_log_id
