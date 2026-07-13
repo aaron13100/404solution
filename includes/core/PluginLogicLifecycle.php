@@ -240,14 +240,19 @@ class ABJ_404_Solution_PluginLogicLifecycle {
             $dbCore = abj_service('db_core');
             $prefix = $dbCore->tableNameResolver()->getLowercasePrefix();
 
-            // DAO-bypass-approved: deleteBlogData() runs during multisite blog teardown after switch_to_blog()
-            $tables = $wpdb->get_results(
-                // DAO-bypass-approved: prepare() argument to the get_results above
-                $wpdb->prepare("SHOW TABLES LIKE %s", $wpdb->esc_like($prefix . 'abj404_') . '%'),
-                ARRAY_N
+            $tableResult = $dbCore->queryAndGetResults(
+                'SHOW TABLES LIKE %s',
+                array(
+                    'query_params' => array($wpdb->esc_like($prefix . 'abj404_') . '%'),
+                    'result_type' => defined('ARRAY_A') ? ARRAY_A : 'ARRAY_A',
+                    'log_errors' => false,
+                )
             );
+            $tables = isset($tableResult['rows']) && is_array($tableResult['rows'])
+                ? $tableResult['rows'] : array();
             foreach ($tables as $tableRow) {
-                $tblName = is_array($tableRow) && isset($tableRow[0]) ? $tableRow[0] : '';
+                $rawTableName = is_array($tableRow) ? reset($tableRow) : null;
+                $tblName = is_string($rawTableName) ? $rawTableName : '';
                 if (preg_match('/^[a-zA-Z0-9_]+$/', $tblName) && strpos($tblName, 'abj404') !== false) {
                     // DAO-bypass-approved: deleteBlogData(), DDL drop during blog teardown
                     $wpdb->query("DROP TABLE IF EXISTS `{$tblName}`");

@@ -56,25 +56,21 @@ class ABJ_404_Solution_DatabaseUpgradeRedirectsDenormReconcile extends ABJ_404_S
      * chunk at a time, bounded by the per-invocation time budget.
      *
      * Skips silently (returns 0) when:
-     *   - $wpdb is unavailable,
-     *   - the redirects table is missing (degraded site state),
+     *   - the DAO cannot confirm the redirects table exists (degraded site state),
      *   - the dest_for_view column is missing (column add has not happened yet),
      *   - a DB write block is active (read-only replica / disk full).
      *
      * @return int Number of redirect rows recomputed in this invocation.
      */
     public function reconcileRedirectsDenormColumns(): int {
-        global $wpdb;
-        if (!isset($wpdb)) {
-            return 0;
-        }
         $redirectsTable = $this->dbCore->doTableNameReplacements('{wp_abj404_redirects}');
 
-        // SHOW TABLES existence probe, same shape as the Step 3a backfill.
-        // Routing through queryAndGetResults would log a benign "table doesn't
-        // exist" error on freshly-installed sites before create-tables has run.
-        // DAO-bypass-approved: schema existence probe, see comment above.
-        $found = $wpdb->get_var("SHOW TABLES LIKE '" . esc_sql($redirectsTable) . "'");
+        $tableResult = $this->dbCore->queryAndGetResults(
+            "SHOW TABLES LIKE '" . esc_sql($redirectsTable) . "'"
+        );
+        $tableRow = isset($tableResult['rows']) && is_array($tableResult['rows'])
+            && isset($tableResult['rows'][0]) ? $tableResult['rows'][0] : null;
+        $found = is_array($tableRow) ? reset($tableRow) : $tableRow;
         if ($found !== $redirectsTable) {
             return 0;
         }

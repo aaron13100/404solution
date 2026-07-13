@@ -97,17 +97,14 @@ class ABJ_404_Solution_RedirectsHitsRollupReader {
 
     /** @return bool */
     private function logsHitsTableExists(): bool {
-        global $wpdb;
-        if (!isset($wpdb) || !is_object($wpdb) || !method_exists($wpdb, 'get_var')) {
-            return false;
-        }
         $logsTable = $this->dbCore->doTableNameReplacements('{wp_abj404_logs_hits}');
-        // Schema existence probe; routing a SHOW TABLES through
-        // queryAndGetResults would log a benign "table missing" error on a
-        // stripped install.
         // @utf8-audit: opt-out - $logsTable is an internally resolved plugin table name (doTableNameReplacements); system-controlled, cannot contain invalid UTF-8.
-        // DAO-bypass-approved: SHOW TABLES schema existence probe.
-        $found = $wpdb->get_var("SHOW TABLES LIKE '" . esc_sql($logsTable) . "'");
+        $tableResult = $this->dbCore->queryAndGetResults(
+            "SHOW TABLES LIKE '" . esc_sql($logsTable) . "'"
+        );
+        $tableRow = isset($tableResult['rows']) && is_array($tableResult['rows'])
+            && isset($tableResult['rows'][0]) ? $tableResult['rows'][0] : null;
+        $found = is_array($tableRow) ? reset($tableRow) : $tableRow;
         return $found === $logsTable;
     }
 

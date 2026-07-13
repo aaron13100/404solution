@@ -46,14 +46,12 @@ class ABJ_404_Solution_DatabaseTableNameResolver {
      * @return bool
      */
     public function tableExists($tableName): bool {
-        global $wpdb;
-        if (!isset($wpdb) || !is_object($wpdb) || !is_callable(array($wpdb, 'get_var'))) {
-            return false;
-        }
         // @utf8-audit: opt-out - tableExists receives system-generated plugin table names from DAO/core callers.
-        // DAO-bypass-approved: metadata table existence probe for system-generated plugin table names.
-        $table = $wpdb->get_var("SHOW TABLES LIKE '" . esc_sql($tableName) . "'");
-        return ($table == $tableName);
+        $result = ($this->queryRunner)("SHOW TABLES LIKE '" . esc_sql($tableName) . "'", array());
+        $row = isset($result['rows']) && is_array($result['rows']) && isset($result['rows'][0])
+            ? $result['rows'][0] : null;
+        $found = is_array($row) ? reset($row) : $row;
+        return $found === $tableName;
     }
 
     /**

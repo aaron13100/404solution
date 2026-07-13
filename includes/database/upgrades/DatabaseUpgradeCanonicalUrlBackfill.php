@@ -46,19 +46,12 @@ class ABJ_404_Solution_DatabaseUpgradeCanonicalUrlBackfill extends ABJ_404_Solut
      * @return int Number of rows updated in this invocation.
      */
     public function backfillRedirectsCanonicalUrl(): int {
-        global $wpdb;
-        if (!isset($wpdb)) {
-            return 0;
-        }
         $redirectsTable = $this->dbCore->doTableNameReplacements('{wp_abj404_redirects}');
 
-        // SHOW TABLES existence probe -- same shape as verifyTableMaterialized()
-        // in DatabaseUpgradesEtc.php:854. The DAO's tableExists() helper is
-        // private so we can't reach it from here, and routing through
-        // queryAndGetResults() would log a benign "table doesn't exist" error
-        // on freshly-installed sites before runInitialCreateTables() has run.
-        // DAO-bypass-approved: schema existence probe -- see comment above.
-        $found = $wpdb->get_var("SHOW TABLES LIKE '" . esc_sql($redirectsTable) . "'");
+        $tableResult = $this->dbCore->queryAndGetResults(
+            "SHOW TABLES LIKE '" . esc_sql($redirectsTable) . "'"
+        );
+        $found = $this->firstColumnValue($tableResult);
         if ($found !== $redirectsTable) {
             return 0;
         }
@@ -166,18 +159,12 @@ class ABJ_404_Solution_DatabaseUpgradeCanonicalUrlBackfill extends ABJ_404_Solut
      * @return int Number of rows updated in this invocation.
      */
     public function backfillLogsv2CanonicalUrl(?float $timeBudgetSec = null): int {
-        global $wpdb;
-        if (!isset($wpdb)) {
-            return 0;
-        }
         $logsTable = $this->dbCore->doTableNameReplacements('{wp_abj404_logsv2}');
 
-        // SHOW TABLES existence probe -- same shape as in
-        // backfillRedirectsCanonicalUrl(). Routing through queryAndGetResults
-        // would log a benign "table doesn't exist" error on freshly-installed
-        // sites before runInitialCreateTables() has run.
-        // DAO-bypass-approved: schema existence probe -- see comment above.
-        $found = $wpdb->get_var("SHOW TABLES LIKE '" . esc_sql($logsTable) . "'");
+        $tableResult = $this->dbCore->queryAndGetResults(
+            "SHOW TABLES LIKE '" . esc_sql($logsTable) . "'"
+        );
+        $found = $this->firstColumnValue($tableResult);
         if ($found !== $logsTable) {
             return 0;
         }
@@ -243,6 +230,20 @@ class ABJ_404_Solution_DatabaseUpgradeCanonicalUrlBackfill extends ABJ_404_Solut
         }
 
         return $totalUpdated;
+    }
+
+    /**
+     * Read the first column of the first DAO result row.
+     *
+     * @param array<string, mixed> $result
+     * @return mixed Scalar row value, or null when the result has no usable row.
+     */
+    private function firstColumnValue(array $result) {
+        if (!isset($result['rows']) || !is_array($result['rows']) || !isset($result['rows'][0])) {
+            return null;
+        }
+        $row = $result['rows'][0];
+        return is_array($row) ? reset($row) : $row;
     }
 
     /**

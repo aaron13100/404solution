@@ -19,8 +19,20 @@ class ABJ_404_Solution_UninstallStatisticsReader {
 
         $tableName = $this->redirectsTableName();
 
-        // DAO-bypass-approved: Diagnostic table-existence probe for redirect-count display
-        $tableExists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $tableName)) === $tableName;
+        if (!function_exists('abj_service')) {
+            return 0;
+        }
+        $dbCore = abj_service('db_core');
+        if (!$dbCore instanceof ABJ_404_Solution_DatabaseQueryInterface) {
+            return 0;
+        }
+        $tableResult = $dbCore->queryAndGetResults(
+            'SHOW TABLES LIKE %s',
+            array('query_params' => array($tableName), 'log_errors' => false)
+        );
+        $tableRow = isset($tableResult['rows']) && is_array($tableResult['rows'])
+            && isset($tableResult['rows'][0]) ? $tableResult['rows'][0] : null;
+        $tableExists = (is_array($tableRow) ? reset($tableRow) : $tableRow) === $tableName;
         if (!$tableExists) {
             return 0;
         }

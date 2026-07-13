@@ -65,19 +65,29 @@ class ABJ_404_Solution_UninstallCollationSnapshotPresenter {
             $escapedPrefix = addcslashes($prefix . 'abj404_', '_%\\');
         }
 
-        // DAO-bypass-approved: Diagnostic table enumeration needs SHOW TABLES metadata directly.
-        $rawTables = $wpdb->get_results(
-            // DAO-bypass-approved: prepare() is part of diagnostic SHOW TABLES metadata enumeration.
-            $wpdb->prepare("SHOW TABLES LIKE %s", $escapedPrefix . '%'),
-            ARRAY_N
+        $tableResult = $dbCore->queryAndGetResults(
+            'SHOW TABLES LIKE %s',
+            array(
+                'query_params' => array($escapedPrefix . '%'),
+                'result_type' => ARRAY_A,
+                'log_errors' => false,
+            )
         );
-        $pluginTables = array();
-        foreach ($rawTables as $row) {
-            $fullName = $row[0];
-            $pluginTables[$fullName] = $fullName;
+        $rawTables = $tableResult['rows'] ?? array();
+        if (!is_array($rawTables)) {
+            $rawTables = array();
         }
+        $pluginTables = array_values(array_filter(
+            array_map(static function($row) {
+                return is_array($row) ? reset($row) : null;
+            }, $rawTables),
+            static function($tableName): bool {
+                return is_string($tableName) && $tableName !== '';
+            }
+        ));
 
-        foreach ($pluginTables as $label => $tableName) {
+        foreach ($pluginTables as $tableName) {
+            $label = $tableName;
             $tableInfo = $this->metadataReader->getTableInfo($tableName);
 
             if (isset($tableInfo['error'])) {
