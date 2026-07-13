@@ -130,20 +130,23 @@ class ABJ_404_Solution_DatabaseUpgradeDropStagedViewTables extends ABJ_404_Solut
 
     /**
      * Case-sensitive SHOW TABLES existence probe for a transient staged table.
-     * Routes through the DAO so metadata-lock stalls inherit the centralized
-     * timeout, retry, and error-reporting behavior.
+     *
+     * Bypasses the DAO on purpose: routing a "does this table exist" probe
+     * through queryAndGetResults would log a benign "table doesn't exist" line
+     * on every fresh-install upgrade (the common case, where the residue was
+     * never present). Same probe shape the denorm backfill/reconcile use.
      *
      * @param string $tableName Fully-qualified, lowercase-prefixed table name.
      * @return bool
      */
     private function stagedTableExists(string $tableName): bool {
+        global $wpdb;
+        if (!isset($wpdb)) {
+            return false;
+        }
         // @utf8-audit: opt-out - $tableName is a fully-qualified, lowercase-prefixed plugin table name from doTableNameReplacements(); system-controlled, cannot contain invalid UTF-8.
-        $tableResult = $this->dbCore->queryAndGetResults(
-            "SHOW TABLES LIKE '" . esc_sql($tableName) . "'"
-        );
-        $tableRow = isset($tableResult['rows']) && is_array($tableResult['rows'])
-            && isset($tableResult['rows'][0]) ? $tableResult['rows'][0] : null;
-        $found = is_array($tableRow) ? reset($tableRow) : $tableRow;
+        // DAO-bypass-approved: schema existence probe (SHOW TABLES); see method docblock.
+        $found = $wpdb->get_var("SHOW TABLES LIKE '" . esc_sql($tableName) . "'");
         return $found === $tableName;
     }
 }

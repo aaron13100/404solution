@@ -123,14 +123,17 @@ class ABJ_404_Solution_RedirectsDenormChunkResolver {
         string $redirectsTable,
         string $idClause
     ): ?string {
+        global $wpdb;
         $logsHitsTable = $dbCore->doTableNameReplacements('{wp_abj404_logs_hits}');
+        if (!isset($wpdb)) {
+            return null;
+        }
+        // Schema existence probe; routing a SHOW TABLES through
+        // queryAndGetResults would log a benign "table missing" error on a
+        // stripped install before its create-tables flow has run.
         // @utf8-audit: opt-out - $logsHitsTable is an internally resolved plugin table name (doTableNameReplacements); system-controlled, cannot contain invalid UTF-8.
-        $tableResult = $dbCore->queryAndGetResults(
-            "SHOW TABLES LIKE '" . esc_sql($logsHitsTable) . "'"
-        );
-        $tableRow = isset($tableResult['rows']) && is_array($tableResult['rows'])
-            && isset($tableResult['rows'][0]) ? $tableResult['rows'][0] : null;
-        $found = is_array($tableRow) ? reset($tableRow) : $tableRow;
+        // DAO-bypass-approved: SHOW TABLES schema existence probe.
+        $found = $wpdb->get_var("SHOW TABLES LIKE '" . esc_sql($logsHitsTable) . "'");
         if ($found !== $logsHitsTable) {
             return null;
         }

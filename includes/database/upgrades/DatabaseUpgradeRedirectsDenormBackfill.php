@@ -54,7 +54,8 @@ class ABJ_404_Solution_DatabaseUpgradeRedirectsDenormBackfill extends ABJ_404_So
      * cleanly on the next invocation.
      *
      * Skips silently (returns 0) when:
-     *   - the DAO cannot confirm the redirects table exists (degraded site state),
+     *   - $wpdb is unavailable,
+     *   - the redirects table is missing (degraded site state),
      *   - the dest_for_view column is missing (column add has not happened yet,
      *     e.g. immediately after upgrade before verifyColumns ran).
      *
@@ -66,14 +67,18 @@ class ABJ_404_Solution_DatabaseUpgradeRedirectsDenormBackfill extends ABJ_404_So
      * @return int Number of redirect rows resolved in this invocation.
      */
     public function backfillRedirectsDenormColumns(?float $deadlineFloat = null): int {
+        global $wpdb;
+        if (!isset($wpdb)) {
+            return 0;
+        }
         $redirectsTable = $this->dbCore->doTableNameReplacements('{wp_abj404_redirects}');
 
-        $tableResult = $this->dbCore->queryAndGetResults(
-            "SHOW TABLES LIKE '" . esc_sql($redirectsTable) . "'"
-        );
-        $tableRow = isset($tableResult['rows']) && is_array($tableResult['rows'])
-            && isset($tableResult['rows'][0]) ? $tableResult['rows'][0] : null;
-        $found = is_array($tableRow) ? reset($tableRow) : $tableRow;
+        // SHOW TABLES existence probe, same shape as the canonical-url backfill.
+        // Routing through queryAndGetResults would log a benign "table doesn't
+        // exist" error on freshly-installed sites before the create-tables flow
+        // has run.
+        // DAO-bypass-approved: schema existence probe, see comment above.
+        $found = $wpdb->get_var("SHOW TABLES LIKE '" . esc_sql($redirectsTable) . "'");
         if ($found !== $redirectsTable) {
             return 0;
         }

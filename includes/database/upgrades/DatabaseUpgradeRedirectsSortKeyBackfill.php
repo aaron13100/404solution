@@ -121,9 +121,9 @@ class ABJ_404_Solution_DatabaseUpgradeRedirectsSortKeyBackfill extends ABJ_404_S
      * completion probe. Chunked + wall-clock-bounded, sharing the main backfill's
      * chunk-size / time-budget settings.
      *
-     * Skips silently (returns 0) when the DAO cannot confirm the redirects table,
-     * or either column is missing (column add not yet run), so a mid-upgrade
-     * install never errors on the column.
+     * Skips silently (returns 0) when $wpdb is unavailable, the redirects table is
+     * missing, or either column is missing (column add not yet run) so a
+     * mid-upgrade install never errors on the column.
      *
      * $targetColumn / $sourceColumn are class-internal literals (never request
      * input), so interpolating them is safe, the same way the table name and id
@@ -136,6 +136,11 @@ class ABJ_404_Solution_DatabaseUpgradeRedirectsSortKeyBackfill extends ABJ_404_S
      * @return int Number of rows populated.
      */
     private function drainNarrowSortKey(string $targetColumn, string $sourceColumn, bool $guardSourceNotNull, ?float $deadlineFloat = null): int {
+        global $wpdb;
+        if (!isset($wpdb)) {
+            return 0;
+        }
+
         // The latch is a one-way ratchet: once the backlog has drained to zero it
         // is set, and the read path may order by the narrow key. Short-circuit on
         // a set latch so the nightly cron stops re-running the drain SELECT
@@ -148,12 +153,11 @@ class ABJ_404_Solution_DatabaseUpgradeRedirectsSortKeyBackfill extends ABJ_404_S
 
         $redirectsTable = $this->dbCore->doTableNameReplacements('{wp_abj404_redirects}');
 
-        $tableResult = $this->dbCore->queryAndGetResults(
-            "SHOW TABLES LIKE '" . esc_sql($redirectsTable) . "'"
-        );
-        $tableRow = isset($tableResult['rows']) && is_array($tableResult['rows'])
-            && isset($tableResult['rows'][0]) ? $tableResult['rows'][0] : null;
-        $found = is_array($tableRow) ? reset($tableRow) : $tableRow;
+        // SHOW TABLES existence probe, same shape as the main backfill: routing
+        // through queryAndGetResults would log a benign "table doesn't exist"
+        // error on a freshly-installed site before create-tables ran.
+        // DAO-bypass-approved: schema existence probe, see comment above.
+        $found = $wpdb->get_var("SHOW TABLES LIKE '" . esc_sql($redirectsTable) . "'");
         if ($found !== $redirectsTable) {
             return 0;
         }
@@ -271,14 +275,14 @@ class ABJ_404_Solution_DatabaseUpgradeRedirectsSortKeyBackfill extends ABJ_404_S
      * @return void
      */
     public function refreshSortKeyBackfillLatches(): void {
+        global $wpdb;
+        if (!isset($wpdb)) {
+            return;
+        }
         $redirectsTable = $this->dbCore->doTableNameReplacements('{wp_abj404_redirects}');
         // @utf8-audit: opt-out - $redirectsTable is doTableNameReplacements() of a fixed internal placeholder (lowercase prefix + literal suffix); system-controlled, cannot contain invalid UTF-8.
-        $tableResult = $this->dbCore->queryAndGetResults(
-            "SHOW TABLES LIKE '" . esc_sql($redirectsTable) . "'"
-        );
-        $tableRow = isset($tableResult['rows']) && is_array($tableResult['rows'])
-            && isset($tableResult['rows'][0]) ? $tableResult['rows'][0] : null;
-        $found = is_array($tableRow) ? reset($tableRow) : $tableRow;
+        // DAO-bypass-approved: schema existence probe, same shape as the drains.
+        $found = $wpdb->get_var("SHOW TABLES LIKE '" . esc_sql($redirectsTable) . "'");
         if ($found !== $redirectsTable) {
             return;
         }
