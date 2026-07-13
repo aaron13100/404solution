@@ -144,6 +144,22 @@ class ABJ_404_Solution_DatabaseTableDdlExecutor {
         $ngramEpochMigrationSafe = $this->coordinator->nGramUpgrade()->ensureLastUpdatedEpochColumn($ngramTable);
 
         $ddlEntries = $this->discoverPermanentDDLFiles();
+        if (empty($ddlEntries)) {
+            // Zero DDL files discovered means no plugin table can be created
+            // or repaired this run -- the plugin cannot function. Per the
+            // defensive-coding standard ("Can the plugin still do its job
+            // after this failure?"), this is a real error, not a warning:
+            // silently doing nothing here would leave a fresh install with
+            // no tables and no diagnostic trail explaining why.
+            $this->logger->errorMessage(
+                'discoverPermanentDDLFiles() found zero permanent CREATE-TABLE '
+                . 'files (glob: includes/sql/create*Table.sql). No plugin tables '
+                . 'can be created or repaired until this is resolved. Likely '
+                . 'causes: a corrupted/incomplete plugin installation, the '
+                . 'includes/sql/ directory missing or unreadable, or glob() '
+                . 'disabled via php.ini disable_functions.'
+            );
+        }
         foreach ($ddlEntries as $ddlEntry) {
             if (!is_array($ddlEntry)) {
                 continue;
@@ -335,8 +351,31 @@ class ABJ_404_Solution_DatabaseTableDdlExecutor {
      * @return void
      */
     private function backfillLogsMinLogId($tableName) {
-        $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/../../sql/logsSetMinLogID.sql");
-        $this->dbCore->queryAndGetResults($query);
+        try {
+            $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/../../sql/logsSetMinLogID.sql");
+        } catch (Exception $e) {
+            $this->logger->errorMessage(
+                'Could not read logsSetMinLogID.sql backfill file for ' . $tableName
+                . ': ' . $e->getMessage() . '. Skipping min_log_id backfill and composite '
+                . 'index creation this run; will retry on the next upgrade check.'
+            );
+            return;
+        }
+        $result = $this->dbCore->queryAndGetResults($query);
+        $lastError = isset($result['last_error']) && is_scalar($result['last_error'])
+            ? (string) $result['last_error'] : '';
+        if ($lastError !== '') {
+            // Don't create the composite index on the strength of a backfill
+            // that didn't actually run: the index exists to make min_log_id
+            // lookups fast, and building it now would just lock in whatever
+            // stale/default values the column already has. Skipping is safe
+            // (idempotent) -- the next upgrade check retries both steps.
+            $this->logger->errorMessage(
+                'min_log_id backfill query failed for ' . $tableName . ': ' . $lastError
+                . '. Skipping composite index creation this run; will retry on the next upgrade check.'
+            );
+            return;
+        }
         $this->coordinator->indexesUpgrade()->ensureLogsCompositeIndex($tableName);
     }
 }
