@@ -387,7 +387,16 @@ class ABJ_404_Solution_FileSystemService {
         // Fallback to file_put_contents if curl didn't work or isn't available
         self::safeUnlink($filePath);
         try {
-            $fileHandle = @fopen($url, 'r');
+            // Bound the stream-wrapper fallback the same way the curl path
+            // above is bounded (CURLOPT_TIMEOUT, 10s): without a stream
+            // context timeout, a stalled remote peer holds fopen() open
+            // indefinitely (PHP's http:// wrapper defaults to
+            // default_socket_timeout, typically 60s, and applies to https://
+            // too since the https wrapper reuses the http context options).
+            $streamContext = stream_context_create(array(
+                'http' => array('timeout' => 10),
+            ));
+            $fileHandle = @fopen($url, 'r', false, $streamContext);
             if ($fileHandle === false) {
                 $abj404logging->errorMessage("Failed to open URL for reading: " . $url);
                 return;
