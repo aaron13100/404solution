@@ -350,7 +350,25 @@ class ABJ_404_Solution_EmailDigest {
         // reads via getOptions(), or the cooldown gate silently never
         // engages (the storage-mismatch half of WP.org support topic
         // weekly-digest-3 -- see EmailDigestCadenceRealStorageRoundTripTest).
-        abj_service('options_repository')->setRawSettingValue('admin_notification_last_sent', abj_clock()->now());
+        $lastSent = abj_clock()->now();
+        abj_service('options_repository')->setRawSettingValue('admin_notification_last_sent', $lastSent);
+
+        // Compatibility-window dual-write: 4.3.1 (already shipped to
+        // production) persisted this same value as a STANDALONE WP option
+        // via a bare update_option('admin_notification_last_sent', ...)
+        // call. External integrations (other plugins, monitoring scripts,
+        // site-owner custom code) may read that released contract via
+        // get_option('admin_notification_last_sent'). The options_repository
+        // write above does not touch that standalone option -- it lands
+        // inside abj404_settings instead -- so without this second write,
+        // any such external reader would silently stop receiving updates
+        // after upgrading to 4.3.2+ (design-audit category 110 Contract
+        // Compatibility finding). Keep both writes: the repository write is
+        // load-bearing for this class's own cooldown gate, and this one
+        // preserves the public contract for everyone else.
+        if (function_exists('update_option')) {
+            update_option('admin_notification_last_sent', $lastSent);
+        }
 
         return 'Digest email sent to: ' . $to;
     }
