@@ -13,16 +13,18 @@
 (function () {
     'use strict';
 
-    // Translates str via wp.i18n when its locale data is available, else
-    // returns str as-is. Mirrors the guard already established in
-    // support-request-modal-view.js for the same situation: a user-facing
-    // string needed on a failure path where the normal PHP-supplied,
-    // pre-translated config (cfg) is unavailable.
-    function t(str) {
+    // Returns the translated chart-data-unusable message when wp.i18n's
+    // locale data is available, else the English fallback. The literal must
+    // be passed directly to wp.i18n.__() (not through a variable) so
+    // make-pot can statically extract it; mirrors the switch-dispatched
+    // literal pattern in support-request-modal-view.js's t(key) for the same
+    // situation: a user-facing string needed on a failure path where the
+    // normal PHP-supplied, pre-translated config (cfg) is unavailable.
+    function chartDataUnusableMessage() {
         if (window.wp && window.wp.i18n && typeof window.wp.i18n.__ === 'function') {
-            return window.wp.i18n.__(str, '404-solution');
+            return window.wp.i18n.__('Could not load chart data. Reload this page and try again.', '404-solution');
         }
-        return str;
+        return 'Could not load chart data. Reload this page and try again.';
     }
 
     function readConfig(canvas) {
@@ -42,7 +44,7 @@
             if (window.console && window.console.error) {
                 window.console.error('404 Solution: abj404-chart-confidence data-abj404-confidence attribute is not valid JSON', raw, e);
             }
-            canvas.title = t('Could not load chart data. Reload this page and try again.');
+            canvas.title = chartDataUnusableMessage();
             return null;
         }
     }
