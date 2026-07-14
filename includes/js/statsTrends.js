@@ -26,6 +26,18 @@
         try {
             return JSON.parse(raw);
         } catch (e) {
+            // Malformed config JSON (encoding issue, WAF/proxy mangling the
+            // attribute) previously left the panel stuck on "Loading chart
+            // data..." forever with nothing in the console to diagnose. Log
+            // for diagnosis and surface the same recoverable error panel
+            // fetchAndRender()/loadChartJs() use for other failure modes.
+            if (window.console && window.console.error) {
+                window.console.error('404 Solution: abj404-trends-config data-abj404-trends attribute is not valid JSON', raw, e);
+            }
+            var loadEl = document.querySelector('.abj404-trends-loading');
+            if (loadEl) { loadEl.style.display = 'none'; }
+            var errEl = document.getElementById('abj404-trends-error');
+            if (errEl) { errEl.style.display = ''; }
             return null;
         }
     }

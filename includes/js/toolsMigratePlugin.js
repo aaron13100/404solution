@@ -9,6 +9,18 @@
 (function () {
     'use strict';
 
+    // Translates str via wp.i18n when its locale data is available, else
+    // returns str as-is. Mirrors the guard already established in
+    // support-request-modal-view.js for the same situation: a user-facing
+    // string needed on a failure path where the normal PHP-supplied,
+    // pre-translated config (cfg) is unavailable.
+    function t(str) {
+        if (window.wp && window.wp.i18n && typeof window.wp.i18n.__ === 'function') {
+            return window.wp.i18n.__(str, '404-solution');
+        }
+        return str;
+    }
+
     function readConfig() {
         var el = document.getElementById('abj404-migrate-config');
         if (!el) { return null; }
@@ -17,6 +29,14 @@
         try {
             return JSON.parse(raw);
         } catch (e) {
+            // Malformed config JSON leaves ajaxUrl/nonce/messages entirely
+            // unavailable, so Preview Import cannot function at all. Log for
+            // diagnosis; the caller disables the control with a safe,
+            // non-cfg-dependent message instead of wiring a click handler
+            // that would silently do nothing.
+            if (window.console && window.console.error) {
+                window.console.error('404 Solution: abj404-migrate-config data-abj404-migrate attribute is not valid JSON', raw, e);
+            }
             return null;
         }
     }
@@ -55,10 +75,21 @@
     }
 
     document.addEventListener('DOMContentLoaded', function () {
-        cfg = readConfig();
-        if (!cfg) { return; }
-
         var previewBtn = document.getElementById('abj404-migrate-preview-btn');
+        cfg = readConfig();
+        if (!cfg) {
+            // Config is unusable (missing feature, or the catch branch in
+            // readConfig() already logged a parse failure): the preview
+            // button has nowhere to send its AJAX request, so disable it
+            // with an explanation instead of leaving a click handler
+            // silently never wired.
+            if (previewBtn) {
+                previewBtn.disabled = true;
+                previewBtn.title = t('Could not load the migration tool configuration. Reload this page and try again.');
+            }
+            return;
+        }
+
         var backBtn    = document.getElementById('abj404-migrate-back-btn');
         var backBtn2   = document.getElementById('abj404-migrate-back-btn2');
         if (previewBtn) {
