@@ -63,30 +63,32 @@ class ABJ_404_Solution_RedirectConditionsRepository {
     }
 
     /**
+     * Replace the full condition set for a redirect: the prior rows are
+     * deleted and the new set inserted inside a single database transaction
+     * (routed through DatabaseTransactionExecutor via
+     * dbCore->executeAsTransaction()) so a DB failure partway through
+     * (the DELETE, or any one INSERT) rolls back the whole replacement
+     * instead of leaving stale, missing, or partial condition rows while
+     * reporting success. An empty $conditions array still runs the DELETE
+     * inside the same transaction, so a failed delete-only replacement is
+     * now surfaced too (previously it returned success unconditionally).
+     *
      * @param int $redirectId
      * @param array<int, array<string, mixed>> $conditions
-     * @return void
+     * @return string Error message on failure ('' on success).
      */
-    public function saveRedirectConditions(int $redirectId, array $conditions): void {
+    public function saveRedirectConditions(int $redirectId, array $conditions): string {
         $table = $this->dbCore->doTableNameReplacements('{wp_abj404_redirect_conditions}');
 
         if (!$this->dbCore->tableNameResolver()->tableExists($table)) {
             $this->logger->warn("saveRedirectConditions: conditions table missing, skipping save for redirect_id={$redirectId}.");
-            return;
+            return '';
         }
 
-        $deleteResult = $this->dbCore->queryAndGetResults(
-            "DELETE FROM `{$table}` WHERE redirect_id = %d",
-            array('query_params' => array($redirectId), 'log_errors' => false)
-        );
-        $deleteError = isset($deleteResult['last_error']) && is_string($deleteResult['last_error']) ? $deleteResult['last_error'] : '';
-        if ($deleteError !== '') {
-            $this->logger->warn("saveRedirectConditions: error deleting old conditions for redirect_id={$redirectId}: " . $deleteError);
-        }
-
-        if (empty($conditions)) {
-            return;
-        }
+        global $wpdb;
+        $statements = array();
+        // DAO-bypass-approved: $wpdb->prepare is read-only string formatting; the built statements execute together through dbCore->executeAsTransaction().
+        $statements[] = $wpdb->prepare("DELETE FROM `{$table}` WHERE redirect_id = %d", $redirectId);
 
         foreach ($conditions as $index => $cond) {
             $normalized = $this->normalizeConditionForInsert($cond, $index);
@@ -94,26 +96,31 @@ class ABJ_404_Solution_RedirectConditionsRepository {
                 continue;
             }
 
-            $insertResult = $this->dbCore->queryAndGetResults(
+            // DAO-bypass-approved: $wpdb->prepare is read-only string formatting; the built statements execute together through dbCore->executeAsTransaction().
+            $statements[] = $wpdb->prepare(
                 "INSERT INTO `{$table}` (`redirect_id`, `logic`, `condition_type`, `operator`, `value`, `sort_order`)
                  VALUES (%d, %s, %s, %s, %s, %d)",
-                array(
-                    'query_params' => array(
-                        $redirectId,
-                        $normalized['logic'],
-                        $normalized['type'],
-                        $normalized['operator'],
-                        $normalized['value'],
-                        $normalized['sort_order'],
-                    ),
-                    'log_errors' => false,
-                )
+                $redirectId,
+                $normalized['logic'],
+                $normalized['type'],
+                $normalized['operator'],
+                $normalized['value'],
+                $normalized['sort_order']
             );
-            $insertError = isset($insertResult['last_error']) && is_string($insertResult['last_error']) ? $insertResult['last_error'] : '';
-            if ($insertError !== '') {
-                $this->logger->warn("saveRedirectConditions: error inserting condition #{$index} for redirect_id={$redirectId}: " . $insertError);
-            }
         }
+
+        try {
+            // executeAsTransaction() (DatabaseTransactionExecutor) already logs
+            // a genuine (non-infrastructure) SQL error via errorMessage() and
+            // handles infrastructure errors (disk full / read-only) as a
+            // degrade-gracefully warning -- no redundant logging needed here.
+            $this->dbCore->executeAsTransaction($statements);
+        } catch (Throwable $e) {
+            $message = $e->getMessage();
+            return $message !== '' ? $message : 'saveRedirectConditions: transaction failed';
+        }
+
+        return '';
     }
 
     /**

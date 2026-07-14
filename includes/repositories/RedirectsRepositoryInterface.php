@@ -78,11 +78,15 @@ interface ABJ_404_Solution_RedirectsRepositoryInterface {
     public function getRedirectConditions(int $redirectId): array;
 
     /**
+     * Replace the full condition set for a redirect. The delete + inserts run
+     * inside a single transaction so a mid-replacement DB failure cannot leave
+     * a partial condition set.
+     *
      * @param int $redirectId
      * @param array<int, array<string, mixed>> $conditions
-     * @return void
+     * @return string Error message on failure ('' on success).
      */
-    public function saveRedirectConditions(int $redirectId, array $conditions): void;
+    public function saveRedirectConditions(int $redirectId, array $conditions): string;
 
     // =========================================================================
     // Redirect updates (from DataAccessTrait_Stats)

@@ -120,8 +120,23 @@ class ABJ_404_Solution_RedirectsDenormMaintenanceService {
         foreach ($statements as $statement) {
             // queryAndGetResults is the centralized error handler: a write
             // failure on a read-only / disk-full host is logged there as a
-            // warning and never surfaced.
-            $this->dbCore->queryAndGetResults($statement);
+            // warning and never surfaced. Stop after the first failing
+            // statement (same stop-on-first-error shape as the sibling chunk
+            // writer, RedirectsDenormChunkResolver::runChunkWrite(), and this
+            // class's own writeBackLogsHitsColumns()) rather than continuing
+            // to hammer a table that is already erroring; the next edit or
+            // the nightly Step 3d reconcile retries the recompute from a
+            // clean state. This is a best-effort DISPLAY/sort cache, not
+            // authoritative row data, so a transaction is unnecessary here --
+            // unlike RedirectConditionsRepository/RedirectWriteService, a
+            // partial write just means a stale sort key until the next
+            // recompute, not lost or hybrid user data.
+            $result = $this->dbCore->queryAndGetResults($statement);
+            $lastError = isset($result['last_error']) && is_string($result['last_error']) ? $result['last_error'] : '';
+            if ($lastError !== '') {
+                $this->logger->debugMessage(__FUNCTION__ . ' stopped after a write error: ' . $lastError);
+                break;
+            }
         }
     }
 

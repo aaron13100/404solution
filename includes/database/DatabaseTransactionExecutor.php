@@ -48,9 +48,13 @@ class ABJ_404_Solution_DatabaseTransactionExecutor {
                 foreach ($statementArray as $statement) {
                     // DAO-bypass-approved: transaction executor must preserve same-connection transaction state and last_error per statement.
                     $wpdb->query($statement);
-                    if ($wpdb->last_error != null && trim((string)$wpdb->last_error) !== '') {
+                    // Null-safe read (matches DataAccess.php/StatsRepository.php/NGramFilter.php):
+                    // a partial test double or a future custom wpdb drop-in that omits
+                    // last_error must not raise an "undefined property" notice here.
+                    $statementError = trim((string)($wpdb->last_error ?? ''));
+                    if ($statementError !== '') {
                         $allIsWell = false;
-                        $lastError = (string)$wpdb->last_error;
+                        $lastError = $statementError;
                         if (!$this->core->errorClassifier()->classifyAndHandleInfrastructureError($lastError)) {
                             $this->logger->errorMessage("Error executing SQL transaction: " . $lastError);
                             $this->logger->errorMessage("SQL causing the transaction error: " . $statement);

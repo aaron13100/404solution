@@ -218,7 +218,10 @@ class ABJ_404_Solution_EditRedirectHandler {
         }
 
         if ($id > 0) {
-            $redirectsRepo->saveRedirectConditions($id, $this->sanitizeRedirectConditions());
+            $conditionsError = $redirectsRepo->saveRedirectConditions($id, $this->sanitizeRedirectConditions());
+            if ($conditionsError !== '') {
+                return $this->formatSaveConditionsError($conditionsError) . "<BR/>";
+            }
         }
         return '';
     }
@@ -259,6 +262,17 @@ class ABJ_404_Solution_EditRedirectHandler {
         return sprintf(
             __('Error: Unable to update redirect data. Repository result: %s', '404-solution'),
             esc_html($errorCode)
+        );
+    }
+
+    /**
+     * @param string $errorMessage Underlying DB/transaction error text (per
+     *     the Error visibility philosophy, surfaced rather than genericized).
+     */
+    private function formatSaveConditionsError(string $errorMessage): string {
+        return sprintf(
+            __('Error: Unable to save redirect conditions. Repository result: %s', '404-solution'),
+            esc_html($errorMessage)
         );
     }
 

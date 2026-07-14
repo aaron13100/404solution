@@ -273,23 +273,33 @@ class ABJ_404_Solution_RedirectWriteService {
             $setFragments[] = '`' . $col . '` = ' . $format;
             $idx++;
         }
+
+        // Explicit NULL clearing folded into the same SET clause as the rest
+        // of the row (single merged UPDATE, not a second independent
+        // statement): these carry no bound placeholder (NULL is a SQL
+        // literal here, never passed through %d, which would coerce it to
+        // 0), so appending them after the placeholder fragments does not
+        // shift $updateParams' positional alignment. One statement means
+        // there is nothing for a mid-request DB failure to leave half
+        // applied.
+        if ($startTs === null) {
+            $setFragments[] = '`start_ts` = NULL';
+        }
+        if ($endTs === null) {
+            $setFragments[] = '`end_ts` = NULL';
+        }
+
         $updateSql = "UPDATE `" . $redirectsTable . "` SET " . implode(', ', $setFragments) .
             " WHERE `id` = %d";
         $updateParams = array_values($updateData);
         $updateParams[] = absint($idForUpdate);
-        $this->dbCore->queryAndGetResults($updateSql, array('query_params' => $updateParams));
-
-        $nullParts = [];
-        if ($startTs === null) {
-            $nullParts[] = '`start_ts` = NULL';
-        }
-        if ($endTs === null) {
-            $nullParts[] = '`end_ts` = NULL';
-        }
-        if (!empty($nullParts)) {
-            $nullSql = "UPDATE `" . $redirectsTable . "` SET " . implode(', ', $nullParts) .
-                " WHERE id = %d";
-            $this->dbCore->queryAndGetResults($nullSql, array('query_params' => array(absint($idForUpdate))));
+        $updateResult = $this->dbCore->queryAndGetResults($updateSql, array('query_params' => $updateParams));
+        $updateError = isset($updateResult['last_error']) && is_string($updateResult['last_error']) ? $updateResult['last_error'] : '';
+        if ($updateError !== '') {
+            // queryAndGetResults() already logged this (centralized DAO error
+            // handler) -- reject before any downstream cache invalidation /
+            // denorm recompute runs against a row that may not have changed.
+            return 'db_update_failed';
         }
 
         $this->invalidateRedirectMutationCaches();

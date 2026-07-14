@@ -227,8 +227,8 @@ class ABJ_404_Solution_RedirectsRepository implements ABJ_404_Solution_Redirects
     }
 
     /** @inheritDoc */
-    public function saveRedirectConditions(int $redirectId, array $conditions): void {
-        $this->conditionsRepository->saveRedirectConditions($redirectId, $conditions);
+    public function saveRedirectConditions(int $redirectId, array $conditions): string {
+        return $this->conditionsRepository->saveRedirectConditions($redirectId, $conditions);
     }
 
     // =========================================================================
