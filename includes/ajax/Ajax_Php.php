@@ -64,25 +64,146 @@ class ABJ_404_Solution_Ajax_Php {
 		}
 
 		// Fallback for sites without a persistent object cache (the common
-		// case on shared hosting): transients are DB-backed and portable
-		// everywhere, but get_transient()+set_transient() is a read-then-write
-		// pair, not atomic. Concurrent requests can read the same pre-write
-		// count and all pass the check. Accepted residual risk here: these
-		// endpoints are admin-only AJAX abuse guards, not a public attack
-		// surface, and this is the same portable mechanism the rest of the
-		// plugin already relies on for hosts with no persistent cache.
-		$transient_key = 'abj404_rate_limit_' . $action . '_' . $identifier;
-		$request_count = get_transient($transient_key);
+		// case on shared hosting). These rate limits guard BOTH admin-only
+		// AJAX endpoints and public, unauthenticated endpoints -- e.g.
+		// Ajax_SuggestionPolling (registered for wp_ajax_nopriv_* and
+		// reachable by any anonymous visitor landing on a 404 page) calls
+		// consumeRateLimit('poll_suggestions', ...) through this exact path.
+		// This is a real public attack surface, not an admin-only guard.
+		// consumeRateLimitDbFallback() closes the TOCTOU race a plain
+		// get_transient()/set_transient() pair would have here (concurrent
+		// requests reading the same pre-write count and all passing the
+		// check) by routing the increment through an atomic SQL upsert.
+		return self::consumeRateLimitDbFallback($action, $identifier, $max_requests, $time_window);
+	}
 
-		if ($request_count === false) {
-			set_transient($transient_key, 1, $time_window);
-			return false;
-		} elseif ($request_count >= $max_requests) {
-			return true;
-		} else {
-			set_transient($transient_key, $request_count + 1, $time_window);
+	/**
+	 * Atomic rate-limit counter for sites WITHOUT a persistent object cache.
+	 * Bypasses the WP Transients API's own get_transient()/set_transient()
+	 * pair -- a non-atomic read-then-write that lets concurrent requests
+	 * observe the same pre-increment count and all pass the check -- in
+	 * favor of raw SQL against the same wp_options rows a transient would
+	 * use. `INSERT ... ON DUPLICATE KEY UPDATE` is MySQL/MariaDB's atomic
+	 * upsert primitive: concurrent callers serialize on the option_name
+	 * unique key under an engine-level row lock, so each gets a distinct,
+	 * correctly incremented count -- the same property consumeRateLimitAtomic()
+	 * gets from wp_cache_incr(), just for the no-persistent-cache case.
+	 *
+	 * Storage shape mirrors get_transient()/set_transient() exactly
+	 * (`_transient_{key}` for the count, `_transient_timeout_{key}` for the
+	 * expiry) so the existing daily-cron sweep
+	 * (DatabaseUpgradeDailyMaintenance::cleanupExpiredRateLimitTransients())
+	 * keeps finding and reaping these rows without any change on its side.
+	 *
+	 * @param string $action
+	 * @param string $identifier
+	 * @param int $max_requests
+	 * @param int $time_window
+	 * @return bool True if rate limit exceeded, false otherwise
+	 */
+	private static function consumeRateLimitDbFallback($action, $identifier, $max_requests, $time_window) {
+		$dbCore = ABJ_404_Solution_Ajax_ServiceResolver::optional('db_core');
+		if (!($dbCore instanceof ABJ_404_Solution_DatabaseQueryInterface)) {
+			// Defensive Coding #2 (Check before you query) / #8 (infrastructure
+			// failures are warnings, not bugs unless the plugin can't
+			// function): no DAO available (very early boot / degraded
+			// container). Fail toward allowing the request rather than
+			// blocking every visitor because the rate limiter itself is
+			// unavailable.
 			return false;
 		}
+
+		$now = abj_clock()->now();
+		$base_key = 'abj404_rate_limit_' . $action . '_' . $identifier;
+		$value_option = '_transient_' . $base_key;
+		$timeout_option = '_transient_timeout_' . $base_key;
+
+		// Step 1: clear a stale window, atomically. A single multi-table
+		// DELETE gated on the CURRENT (server-side, re-validated) timeout
+		// value, so it either removes both rows together or neither -- there
+		// is no intermediate state where a concurrent caller could observe a
+		// stale count row whose paired timeout row has already been cleared
+		// (or vice versa). Safe to run unconditionally on every call: a
+		// no-op when the window hasn't expired yet, or the key doesn't exist
+		// at all yet.
+		$deleteResult = $dbCore->queryAndGetResults(
+			"DELETE o FROM {wp_options} o, "
+			. "(SELECT option_value FROM {wp_options} WHERE option_name = %s) t "
+			. "WHERE o.option_name IN (%s, %s) AND t.option_value < %d",
+			array('query_params' => array($timeout_option, $value_option, $timeout_option, $now))
+		);
+		if (!empty($deleteResult['last_error'])) {
+			// Infrastructure failure: queryAndGetResults() already logged it
+			// (CLAUDE.md: queryAndGetResults is the centralized error
+			// handler). Degrade past it rather than blocking legitimate
+			// traffic on a broken rate limiter.
+			return false;
+		}
+
+		// Step 2: atomic insert-or-increment. `INSERT ... ON DUPLICATE KEY
+		// UPDATE option_value = option_value + 1` is a single statement:
+		// MySQL/MariaDB serializes concurrent callers on the option_name
+		// unique key via an engine-level row lock for the duration of the
+		// statement, so two concurrent callers can never both read the same
+		// pre-increment value and both write the same post-increment value
+		// -- the property a get_transient()/set_transient() pair lacks.
+		//
+		// The immediate follow-up SELECT (same connection) reads back the
+		// count this call is responsible for. This was verified empirically
+		// against a real MariaDB engine to be necessary: the tempting
+		// alternative -- forcing $wpdb->insert_id via a LAST_INSERT_ID(expr)
+		// literal in the upsert itself (the trick
+		// LogsLookupRepository::insertLookupValueAndGetID() uses) -- does
+		// NOT work here, because wp_options already has its own genuine
+		// AUTO_INCREMENT column (option_id): on the INSERT branch (a real
+		// new row), MySQL's mysql_insert_id()/$wpdb->insert_id reports the
+		// real auto-generated option_id instead of the LAST_INSERT_ID(expr)
+		// override. LogsLookupRepository's table has no such conflict --
+		// its auto_increment column IS the value it wants back. A same-
+		// connection SELECT immediately after a write always observes at
+		// least that write (MySQL read-your-own-writes), so this can only
+		// ever see this call's own count or a higher one from a concurrent
+		// caller that landed in between -- never lower, and never a value
+		// that lets more than max_requests through undetected.
+		$upsertResult = $dbCore->queryAndGetResults(
+			"INSERT INTO {wp_options} (option_name, option_value, autoload) "
+			. "VALUES (%s, '1', 'no') "
+			. "ON DUPLICATE KEY UPDATE option_value = option_value + 1",
+			array('query_params' => array($value_option))
+		);
+		if (!empty($upsertResult['last_error'])) {
+			return false;
+		}
+		$readResult = $dbCore->queryAndGetResults(
+			"SELECT option_value FROM {wp_options} WHERE option_name = %s",
+			array('query_params' => array($value_option))
+		);
+		$readRows = isset($readResult['rows']) && is_array($readResult['rows']) ? $readResult['rows'] : array();
+		$firstRow = isset($readRows[0]) && is_array($readRows[0]) ? $readRows[0] : array();
+		$rawCount = reset($firstRow);
+		$count = is_scalar($rawCount) && is_numeric($rawCount) ? (int)$rawCount : 0;
+		if (!empty($readResult['last_error']) || $count <= 0) {
+			// Could not read back a valid count; don't block on an
+			// unreliable read (fail toward allowing, per Defensive Coding #8).
+			return false;
+		}
+
+		// Step 3: best-effort GC-hint row. INSERT IGNORE only takes effect
+		// the first time this key is ever written (or the first write after
+		// step 1 cleared an expired window) -- every later call within the
+		// same window no-ops, leaving the original expiry untouched. This is
+		// the "expiry set once" requirement from the finding: the window's
+		// lifetime is fixed at creation and never extended by later
+		// requests, unlike the old set_transient() fallback which refreshed
+		// the TTL on every increment. Failure here is non-fatal: it only
+		// delays the daily-cron GC sweep finding this key, never affects the
+		// rate-limit decision above.
+		$dbCore->queryAndGetResults(
+			"INSERT IGNORE INTO {wp_options} (option_name, option_value, autoload) VALUES (%s, %d, 'no')",
+			array('query_params' => array($timeout_option, $now + $time_window))
+		);
+
+		return $count > $max_requests;
 	}
 
 	/**
