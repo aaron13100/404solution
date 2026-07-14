@@ -12,7 +12,11 @@
  *     Rejects with Error('missing nonce') when the nonce was not
  *     primed (degraded admin path), Error('preview failed') when the
  *     server returns success=false, and the native fetch TypeError
- *     when the network call fails.
+ *     when the network call fails. A stalled response past
+ *     PREVIEW_TIMEOUT_MS is aborted, rejecting with the AbortError
+ *     DOMException; the view's preview expander catch is already
+ *     generic (renders t('previewError') for any rejection reason),
+ *     so no new branch is needed to handle it.
  *
  *   sendReport({triggered_from, user_message, reply_email})
  *     Delegates to window.abj404SupportRequest.send() so the cooldown
@@ -48,6 +52,12 @@
         return '';
     }
 
+    // Preview is a one-shot admin action; a generous bound avoids a
+    // false-positive abort on a slow-but-working shared host while still
+    // guaranteeing the preview expander cannot stay stuck on "Loading
+    // report contents..." forever if admin-ajax never responds (M501).
+    var PREVIEW_TIMEOUT_MS = 30000;
+
     /**
      * @param {string} triggeredFrom
      * @param {string} userMessage
@@ -63,12 +73,16 @@
         formData.append('nonce', nonce);
         formData.append('triggered_from', triggeredFrom);
         formData.append('user_message', userMessage || '');
+        var controller = new AbortController();
+        var timeoutId = setTimeout(function () { controller.abort(); }, PREVIEW_TIMEOUT_MS);
         // ajax-direct-approved: no jQuery dependency (component runs on fatal-fallback pages where jQuery may not load)
         return fetch(getAjaxUrl(), { // allow-direct-network: this module IS the support-request API client; no project-wide adapter exists for this AJAX surface
             method: 'POST',
             credentials: 'same-origin',
-            body: formData
+            body: formData,
+            signal: controller.signal
         }).then(function (response) {
+            clearTimeout(timeoutId);
             // Clone before reading: a Response body can only be consumed
             // once, and a JSON-parse failure needs the raw text (WAF block
             // page, gateway timeout HTML, PHP fatal output) so the failure
@@ -92,6 +106,15 @@
                 }
                 throw new Error('preview failed'); // allow-raw-error: internal sentinel; view's preview expander renders t('previewError') from its own catch
             });
+        }).catch(function (err) {
+            // Clear on the failure path too (parse failure above, a real
+            // network TypeError, or the AbortError from a timed-out
+            // request). The preview expander's own catch is already
+            // generic -- it renders t('previewError') for any rejection
+            // reason -- so the timeout needs no new branch here; just
+            // preserve the existing rejection behavior.
+            clearTimeout(timeoutId);
+            throw err;
         });
     }
 

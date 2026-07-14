@@ -9,6 +9,13 @@
 (function () {
     'use strict';
 
+    // Migration preview is a one-shot admin action (reads the source
+    // plugin's tables and counts rows to migrate). A generous bound avoids
+    // false-positive aborts on a slow-but-working host while still
+    // guaranteeing the spinner/disabled state cannot hang forever if
+    // admin-ajax never responds (M501).
+    var PREVIEW_TIMEOUT_MS = 30000;
+
     // Returns the translated config-unusable message when wp.i18n's locale
     // data is available, else the English fallback. The literal must be
     // passed directly to wp.i18n.__() (not through a variable) so make-pot
@@ -106,9 +113,15 @@
                 fd.append('action', 'abj404_crossPluginPreview');
                 fd.append('nonce', cfg.nonce);
                 fd.append('import_source', source);
+                // A stalled admin-ajax response must not leave the button
+                // disabled and the spinner visible forever (M501); abort and
+                // let the existing generic .catch() below show msgError,
+                // exactly as it already does for any other fetch failure.
+                var controller = new AbortController();
+                var timeoutId = setTimeout(function () { controller.abort(); }, PREVIEW_TIMEOUT_MS);
                 // ajax-direct-approved: cross-plugin migration preview posts FormData and manages the two-step UI state locally.
-                fetch(cfg.ajaxUrl, { method: 'POST', body: fd, credentials: 'same-origin' })
-                    .then(function (r) { return r.json(); })
+                fetch(cfg.ajaxUrl, { method: 'POST', body: fd, credentials: 'same-origin', signal: controller.signal }) // allow-direct-network: cross-plugin migration preview; no project-wide adapter exists for this AJAX surface
+                    .then(function (r) { clearTimeout(timeoutId); return r.json(); })
                     .then(function (resp) {
                         if (spinner) { spinner.style.display = 'none'; }
                         previewBtn.disabled = false;
@@ -119,6 +132,7 @@
                         }
                     })
                     .catch(function () {
+                        clearTimeout(timeoutId);
                         if (spinner) { spinner.style.display = 'none'; }
                         previewBtn.disabled = false;
                         showError();

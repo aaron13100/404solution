@@ -46,6 +46,13 @@
     var nonce = '';
     var chartInstances = {};
 
+    // Trend data is a lighter read (three small aggregate series) than the
+    // one-shot admin actions elsewhere in this bundle, so a shorter bound is
+    // reasonable while still tolerating a slow-but-working shared host. A
+    // stalled response must not hold the loading state / browser resources
+    // open forever (M501).
+    var TREND_DATA_TIMEOUT_MS = 20000;
+
     function loadChartJs(cb) {
         // Chart.js is bundled with the plugin and enqueued as a hard dependency
         // (see AdminAssetEnqueuer::addScripts), so window.Chart is already
@@ -109,9 +116,17 @@
     }
 
     function fetchTrendData(days, allowRetry) {
+        // Each call (including the nonce-refresh retry below) gets its own
+        // bounded controller so a stalled admin-ajax response cannot hold
+        // the loading state open forever (M501). Abort surfaces as a
+        // rejection that flows through the same generic .catch() in
+        // fetchAndRender() already used for every other fetch failure.
+        var controller = new AbortController();
+        var timeoutId = setTimeout(function () { controller.abort(); }, TREND_DATA_TIMEOUT_MS);
         // ajax-direct-approved: trend chart endpoint streams a GET response and owns nonce-refresh retry handling locally.
-        return fetch(cfg.ajaxUrl + '?action=abj404getTrendData&nonce=' + encodeURIComponent(nonce) + '&days=' + days)
+        return fetch(cfg.ajaxUrl + '?action=abj404getTrendData&nonce=' + encodeURIComponent(nonce) + '&days=' + days, { signal: controller.signal }) // allow-direct-network: trend chart endpoint; no project-wide adapter exists for this AJAX surface
             .then(function (r) {
+                clearTimeout(timeoutId);
                 // B20: a 12-24h-idle nonce expires; admin-ajax replies 403.
                 // Mint a fresh nonce via the shared refresh helper (if loaded)
                 // and retry once. allowRetry guards against an infinite loop.
@@ -124,6 +139,10 @@
                     });
                 }
                 return r.json();
+            })
+            .catch(function (e) {
+                clearTimeout(timeoutId);
+                throw e;
             });
     }
 
