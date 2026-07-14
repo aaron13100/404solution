@@ -66,23 +66,33 @@ class ABJ_404_Solution_RedirectsBulkReader {
         if ($result instanceof \mysqli_result) {
             $fh = fopen($tempFile, 'w');
             if ($fh === false) {
+                mysqli_free_result($result);
                 return;
             }
-            fputcsv($fh, array('from_url', 'status', 'type', 'to_url', 'wp_type', 'engine', 'code'), ',', '"', '\\');
+            // try/finally: mysqli's default error mode (MYSQLI_REPORT_ERROR |
+            // MYSQLI_REPORT_STRICT since PHP 8.1) throws mysqli_sql_exception
+            // on a dropped connection mid-fetch. Without a guaranteed close
+            // here, that exception would skip fclose($fh) and leak the file
+            // handle. Same resource-lifecycle shape as
+            // includes/import/ImportService.php::doImportFile().
+            try {
+                fputcsv($fh, array('from_url', 'status', 'type', 'to_url', 'wp_type', 'engine', 'code'), ',', '"', '\\');
 
-            while (($row = mysqli_fetch_array($result, MYSQLI_ASSOC))) {
-                fputcsv($fh, array(
-                    $row['from_url'],
-                    $row['status'],
-                    $row['type'],
-                    $row['to_url'],
-                    $row['type_wp'],
-                    isset($row['engine']) ? $row['engine'] : '',
-                    isset($row['code']) ? $row['code'] : '301'
-                ), ',', '"', '\\');
+                while (($row = mysqli_fetch_array($result, MYSQLI_ASSOC))) {
+                    fputcsv($fh, array(
+                        $row['from_url'],
+                        $row['status'],
+                        $row['type'],
+                        $row['to_url'],
+                        $row['type_wp'],
+                        isset($row['engine']) ? $row['engine'] : '',
+                        isset($row['code']) ? $row['code'] : '301'
+                    ), ',', '"', '\\');
+                }
+            } finally {
+                fclose($fh);
+                mysqli_free_result($result);
             }
-            fclose($fh);
-            mysqli_free_result($result);
         }
     }
 

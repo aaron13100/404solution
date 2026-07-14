@@ -66,10 +66,16 @@ class ABJ_404_Solution_DebugLogReader {
             }
         } catch (Exception $e) {
             call_user_func($this->errorLogger, "Error reading log file. (2)", $e);
-        }
-
-        if ($handle != null) {
-            fclose($handle);
+        } finally {
+            // finally (not "after the try/catch") so the handle still
+            // closes if a Throwable that isn't an Exception (e.g. a
+            // TypeError/Error from $f->regexMatch()) escapes the loop --
+            // the previous unconditional-looking cleanup below the
+            // try/catch was skipped in that case. Same resource-lifecycle
+            // shape as includes/import/ImportService.php::doImportFile().
+            if ($handle != null) {
+                fclose($handle);
+            }
         }
 
         return $latestErrorLineFound;
@@ -113,24 +119,33 @@ class ABJ_404_Solution_DebugLogReader {
             return array('readable' => false, 'error_entries' => array(), 'recent_lines' => array());
         }
 
-        while (($line = fgets($handle)) !== false) {
-            $this->collectSupportExcerptLine(
-                (string)$line,
-                $errorEntries,
-                $recentLines,
-                $currentEntry,
-                $collectingEntry
+        // try/finally (not a bare fclose() after the loop) so the handle
+        // still closes if collectSupportExcerptLine()/storeCurrentSupportEntry()
+        // throw. The caller (getSanitizedLogExcerptForSupport()) only catches
+        // Exception, not Throwable, so without this the handle would leak on
+        // an Error subtype. Same resource-lifecycle shape as
+        // includes/import/ImportService.php::doImportFile().
+        try {
+            while (($line = fgets($handle)) !== false) {
+                $this->collectSupportExcerptLine(
+                    (string)$line,
+                    $errorEntries,
+                    $recentLines,
+                    $currentEntry,
+                    $collectingEntry
+                );
+            }
+
+            $this->storeCurrentSupportEntry($errorEntries, $currentEntry);
+
+            return array(
+                'readable' => true,
+                'error_entries' => $errorEntries,
+                'recent_lines' => $recentLines,
             );
+        } finally {
+            fclose($handle);
         }
-
-        $this->storeCurrentSupportEntry($errorEntries, $currentEntry);
-        fclose($handle);
-
-        return array(
-            'readable' => true,
-            'error_entries' => $errorEntries,
-            'recent_lines' => $recentLines,
-        );
     }
 
     /**

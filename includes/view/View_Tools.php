@@ -83,10 +83,16 @@ class ABJ_404_Solution_View_Tools extends ABJ_404_Solution_ViewComponent {
 
             } catch (Exception $e) {
                 $this->logger->errorMessage("Error while reading debug file.", $e);
-            }
-
-            if ($handle != null) {
-                fclose($handle);
+            } finally {
+                // finally (not "after the try/catch") so the handle still
+                // closes if a Throwable that isn't an Exception escapes the
+                // loop -- the previous unconditional-looking cleanup below
+                // the try/catch was skipped in that case. Same
+                // resource-lifecycle shape as
+                // includes/import/ImportService.php::doImportFile().
+                if ($handle != null) {
+                    fclose($handle);
+                }
             }
 
         } else {

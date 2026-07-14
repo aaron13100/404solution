@@ -119,64 +119,73 @@ class ABJ_404_Solution_WPCLIImportExportCommandService {
             $this->contentRepository(),
             $this->loggingService()
         );
-        $delimiter = $svc->detectCsvDelimiterFromFile($fileHandle);
-        rewind($fileHandle);
+        // The file handle must close even if detectCsvDelimiterFromFile(),
+        // the deferred-invalidation callback, or loadDataArrayFromFile()
+        // (called per-row below with no per-row exception guard, unlike the
+        // browser-upload path in ImportService::processDataArray()) throws.
+        // See includes/import/ImportService.php::doImportFile() for the
+        // reference fix of this same resource-lifecycle shape.
+        try {
+            $delimiter = $svc->detectCsvDelimiterFromFile($fileHandle);
+            rewind($fileHandle);
 
-        $rowResult = $this->viewReadService()->runWithDeferredInvalidation(function () use (
-                $svc, $fileHandle, $delimiter, $dryRun) {
-            $local = array(
-                'headerColumns' => null,
-                'processedRows' => 0,
-                'validRows' => 0,
-                'invalidRows' => 0,
-                'anyIssuesToNote' => array(),
-                'error' => null,
-            );
+            $rowResult = $this->viewReadService()->runWithDeferredInvalidation(function () use (
+                    $svc, $fileHandle, $delimiter, $dryRun) {
+                $local = array(
+                    'headerColumns' => null,
+                    'processedRows' => 0,
+                    'validRows' => 0,
+                    'invalidRows' => 0,
+                    'anyIssuesToNote' => array(),
+                    'error' => null,
+                );
 
-            while (($row = fgetcsv($fileHandle, 0, $delimiter, '"', '\\')) !== false) {
-                if (!is_array($row)) {
-                    $local['error'] = 'Could not parse CSV row.';
-                    return $local;
+                while (($row = fgetcsv($fileHandle, 0, $delimiter, '"', '\\')) !== false) {
+                    if (!is_array($row)) {
+                        $local['error'] = 'Could not parse CSV row.';
+                        return $local;
+                    }
+                    $data = array_map(function($value) {
+                        return trim((string)$value);
+                    }, $row);
+
+                    if (count($data) === 1 && $data[0] === '') {
+                        continue;
+                    }
+
+                    if ($local['headerColumns'] === null && $svc->isCompatibleImportHeaderRow($data)) {
+                        $local['headerColumns'] = $svc->normalizeImportHeaders($data);
+                        continue;
+                    }
+
+                    $dataArray = ($local['headerColumns'] !== null)
+                        ? $svc->mapImportRowByHeaders($data, $local['headerColumns'])
+                        : $svc->mapImportRowWithoutHeaders($data);
+
+                    if (isset($dataArray['error'])) {
+                        $local['error'] = $dataArray['error'];
+                        return $local;
+                    }
+
+                    if (isset($dataArray['from_url']) &&
+                            ($dataArray['from_url'] === 'from_url' || $dataArray['from_url'] === 'request')) {
+                        continue;
+                    }
+
+                    $local['processedRows']++;
+                    $issues = $svc->loadDataArrayFromFile($dataArray, $dryRun);
+                    if (count($issues) > 0) {
+                        $local['invalidRows']++;
+                    } else {
+                        $local['validRows']++;
+                    }
+                    $local['anyIssuesToNote'] = array_merge($local['anyIssuesToNote'], $issues);
                 }
-                $data = array_map(function($value) {
-                    return trim((string)$value);
-                }, $row);
-
-                if (count($data) === 1 && $data[0] === '') {
-                    continue;
-                }
-
-                if ($local['headerColumns'] === null && $svc->isCompatibleImportHeaderRow($data)) {
-                    $local['headerColumns'] = $svc->normalizeImportHeaders($data);
-                    continue;
-                }
-
-                $dataArray = ($local['headerColumns'] !== null)
-                    ? $svc->mapImportRowByHeaders($data, $local['headerColumns'])
-                    : $svc->mapImportRowWithoutHeaders($data);
-
-                if (isset($dataArray['error'])) {
-                    $local['error'] = $dataArray['error'];
-                    return $local;
-                }
-
-                if (isset($dataArray['from_url']) &&
-                        ($dataArray['from_url'] === 'from_url' || $dataArray['from_url'] === 'request')) {
-                    continue;
-                }
-
-                $local['processedRows']++;
-                $issues = $svc->loadDataArrayFromFile($dataArray, $dryRun);
-                if (count($issues) > 0) {
-                    $local['invalidRows']++;
-                } else {
-                    $local['validRows']++;
-                }
-                $local['anyIssuesToNote'] = array_merge($local['anyIssuesToNote'], $issues);
-            }
-            return $local;
-        });
-        fclose($fileHandle);
+                return $local;
+            });
+        } finally {
+            fclose($fileHandle);
+        }
 
         if (!empty($rowResult['error'])) {
             return $this->error((string)$rowResult['error']);

@@ -104,22 +104,25 @@ class ABJ_404_Solution_ImportService {
             return __('Error opening the file.', '404-solution');
         }
 
-        $hashResult = hash_file('sha256', $tmpName);
-        $contentHash = ($dryRun || !is_string($hashResult)) ? '' : $hashResult;
-        $runState = $this->applyResumeProgress($contentHash, $dryRun, $this->emptyRunState());
+        try {
+            $hashResult = hash_file('sha256', $tmpName);
+            $contentHash = ($dryRun || !is_string($hashResult)) ? '' : $hashResult;
+            $runState = $this->applyResumeProgress($contentHash, $dryRun, $this->emptyRunState());
 
-        $delimiter = $this->parser->detectCsvDelimiterFromFile($file_handle);
-        rewind($file_handle);
-        $runState = $this->processFileRows(
-            $file_handle,
-            $delimiter,
-            $this->stateInt($runState, 'resume_from'),
-            $dryRun,
-            $overwriteExisting,
-            $contentHash,
-            $runState
-        );
-        fclose($file_handle);
+            $delimiter = $this->parser->detectCsvDelimiterFromFile($file_handle);
+            rewind($file_handle);
+            $runState = $this->processFileRows(
+                $file_handle,
+                $delimiter,
+                $this->stateInt($runState, 'resume_from'),
+                $dryRun,
+                $overwriteExisting,
+                $contentHash,
+                $runState
+            );
+        } finally {
+            fclose($file_handle);
+        }
 
         if (isset($runState['abort_message']) && is_string($runState['abort_message'])) {
             return $runState['abort_message'];
