@@ -54,8 +54,11 @@ if (!function_exists('abj404_degraded_register_support_request')) {
 			foreach ($supportFiles as $file) {
 				require_once $file;
 			}
-		// allow-silent-catch: degraded boot path. If any of the support-request files compile-fatals on require we want to fall through to the mailto fallback rather than crash the corrupt-install screen the user is here to read.
+		// allow-silent-catch: degraded boot path. If any of the support-request files compile-fatals on require we want to fall through to the mailto fallback rather than crash the corrupt-install screen the user is here to read. The exception is NOT dropped: abj404_logRuntimeWarning() records it (plugin logger if resolvable, else the PHP fallback logger) before we fall through.
 		} catch (\Throwable $e) {
+			if (function_exists('abj404_logRuntimeWarning')) {
+				abj404_logRuntimeWarning('abj404_degraded_register_support_request: support-request file require failed', $e);
+			}
 			return;
 		}
 		if (!class_exists('ABJ_404_Solution_Ajax_SupportRequest')
