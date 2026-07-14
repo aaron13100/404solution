@@ -212,6 +212,7 @@ return array(
     'ABJ_404_Solution_Ajax_TrendData' => $base . 'includes/ajax/Ajax_TrendData.php',
     'ABJ_404_Solution_CrossPluginImporter' => $base . 'includes/import/CrossPluginImporter.php',
     'ABJ_404_Solution_ForeignRedirectSourceReader' => $base . 'includes/import/ForeignRedirectSourceReader.php',
+    'ABJ_404_Solution_ForeignSourceQueryGateway' => $base . 'includes/import/ForeignSourceQueryGateway.php',
     'ABJ_404_Solution_GscConfig' => $base . 'includes/gsc/GscConfig.php',
     'ABJ_404_Solution_GscOAuthTokenStore' => $base . 'includes/gsc/GscOAuthTokenStore.php',
     'ABJ_404_Solution_GscSearchAnalyticsClient' => $base . 'includes/gsc/GscSearchAnalyticsClient.php',

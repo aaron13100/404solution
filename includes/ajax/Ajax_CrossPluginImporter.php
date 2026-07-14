@@ -41,9 +41,9 @@ class ABJ_404_Solution_Ajax_CrossPluginImporter {
         $logger = abj_service('logging');
         $importer = new ABJ_404_Solution_CrossPluginImporter($redirectsRepository, $logger);
 
-        // Pass a very large limit so getImportPreview returns all rows — we only need the count.
-        $preview = $importer->getImportPreview($source, PHP_INT_MAX);
-        $count   = count($preview);
+        // Count-only path: never materializes the full row set (see
+        // CrossPluginImporter::countImportable() / ForeignRedirectSourceReader::countSource()).
+        $count = $importer->countImportable($source);
 
         // This array lists all allowed sources — $source has already been validated above.
         $pluginLabels = array(

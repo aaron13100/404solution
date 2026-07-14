@@ -70,6 +70,22 @@ class ABJ_404_Solution_CrossPluginImporter {
     }
 
     /**
+     * Count redirects available from the given source plugin without
+     * materializing the full row set. Used by the AJAX preview handler,
+     * which only needs a number to display, not actual rows -- unlike
+     * getImportPreview() above, this never reads more than the source
+     * plugin's own storage needs to answer "how many" (see
+     * {@see ABJ_404_Solution_ForeignRedirectSourceReader::countSource()}).
+     *
+     * @param string $source One of 'rankmath', 'yoast', 'aioseo',
+     *                       'safe-redirect-manager', 'redirection'
+     * @return int
+     */
+    public function countImportable(string $source): int {
+        return $this->sourceReader->countSource($source);
+    }
+
+    /**
      * Import all redirects from the given source plugin.
      * Returns the number of redirects successfully imported.
      *
