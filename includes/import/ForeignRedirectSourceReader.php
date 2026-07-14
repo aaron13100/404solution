@@ -28,6 +28,15 @@ if (!defined('ABSPATH')) {
  */
 class ABJ_404_Solution_ForeignRedirectSourceReader {
 
+    /**
+     * Row/post count per page for every paginated foreign-source read (M502,
+     * 2026-07-14): `LIMIT`/`OFFSET` for table-backed readers, `posts_per_page`
+     * for the CPT-backed Safe Redirect Manager reader. 500 keeps a page's PHP
+     * array well within shared-hosting memory limits even at VARCHAR(2048)
+     * source/dest width, while still finishing typical sites in 1-2 pages.
+     */
+    public const IMPORT_PAGE_SIZE = 500;
+
     /** @var ABJ_404_Solution_Logging */
     private $logger;
 
@@ -79,29 +88,43 @@ class ABJ_404_Solution_ForeignRedirectSourceReader {
     }
 
     /**
-     * Read and normalize all redirect rows from the given source plugin.
+     * Read and normalize redirect rows from the given source plugin as a
+     * generator that yields one normalized row at a time.
+     *
+     * Each per-source reader pages in IMPORT_PAGE_SIZE-row chunks (table-
+     * backed: `LIMIT`/`OFFSET`; CPT-backed Safe Redirect Manager: paged
+     * get_posts()) rather than one unbounded read (M502, 2026-07-14: a
+     * source table with tens of thousands of rows previously materialized
+     * the entire result set in PHP memory before a row was written). The
+     * caller ({@see ABJ_404_Solution_CrossPluginImporter::importFrom()})
+     * consumes this row-by-row, so at most one page is ever held in memory.
      *
      * @param string $source One of 'rankmath', 'yoast', 'aioseo',
      *                       'safe-redirect-manager', 'redirection'
-     * @return array<int, array<string, mixed>>
+     * @return \Generator<int, array<string, mixed>>
      */
-    public function readSource(string $source): array {
+    public function readSource(string $source): \Generator {
         switch ($source) {
             case 'rankmath':
-                return $this->readRankMath();
+                yield from $this->readRankMath();
+                return;
             case 'yoast':
-                return $this->readYoast();
+                yield from $this->readYoast();
+                return;
             case 'aioseo':
-                return $this->readAIOSEO();
+                yield from $this->readAIOSEO();
+                return;
             case 'safe-redirect-manager':
-                return $this->readSafeRedirectManager();
+                yield from $this->readSafeRedirectManager();
+                return;
             case 'redirection':
-                return $this->readRedirection();
+                yield from $this->readRedirection();
+                return;
             default:
                 $this->logger->debugMessage(
                     'CrossPluginImporter: unknown source "' . $source . '". Returning empty.'
                 );
-                return array();
+                return;
         }
     }
 
@@ -148,26 +171,65 @@ class ABJ_404_Solution_ForeignRedirectSourceReader {
     }
 
     /**
+     * Page through a table-backed SELECT in IMPORT_PAGE_SIZE-row chunks,
+     * appending `ORDER BY \`id\` ASC LIMIT <n> OFFSET <n>` to $baseSql and
+     * re-issuing the query until a page returns fewer than IMPORT_PAGE_SIZE
+     * rows. Centralizes the pagination loop so every table-backed reader
+     * below shares one implementation (M502: previously each reader issued
+     * its own single unbounded SELECT with no LIMIT).
+     *
+     * Every source table this class reads from (rank_math_redirections,
+     * yoast_seo_redirects, aioseo_redirects, redirection_items) has an
+     * auto-increment `id` primary key, so ORDER BY id ASC gives stable,
+     * gap-free paging.
+     *
+     * IMPORT_PAGE_SIZE and $offset are internally-generated integers (never
+     * derived from request input), so inlining them into the SQL string is
+     * safe; {@see ABJ_404_Solution_ForeignSourceQueryGateway::queryRows()}
+     * takes a plain SQL string with no placeholder/param support.
+     *
+     * @param string $baseSql SELECT ... FROM ... [WHERE ...], without ORDER BY/LIMIT/OFFSET
+     * @return \Generator<int, array<string, mixed>> Raw (un-normalized) rows
+     */
+    private function pageTableQuery(string $baseSql): \Generator {
+        $offset = 0;
+        while (true) {
+            $sql = $baseSql . ' ORDER BY `id` ASC LIMIT ' . (int)self::IMPORT_PAGE_SIZE . ' OFFSET ' . (int)$offset;
+            $rows = $this->queryGateway->queryRows($sql);
+
+            if (empty($rows)) {
+                return;
+            }
+
+            foreach ($rows as $row) {
+                yield $row;
+            }
+
+            if (count($rows) < self::IMPORT_PAGE_SIZE) {
+                return;
+            }
+            $offset += self::IMPORT_PAGE_SIZE;
+        }
+    }
+
+    /**
      * Read Rank Math redirections from rank_math_redirections table.
      *
-     * @return array<int, array<string, mixed>>
+     * @return \Generator<int, array<string, mixed>>
      */
-    private function readRankMath(): array {
+    private function readRankMath(): \Generator {
         global $wpdb;
 
         $tableName = $wpdb->prefix . 'rank_math_redirections';
         if (!$this->queryGateway->tableExists($tableName)) {
-            return array();
+            return;
         }
 
-        $rows = $this->queryGateway->queryRows(
+        foreach ($this->pageTableQuery(
             "SELECT source_url, dest_url, redirect_type, regex_flag
              FROM `{$tableName}`
              WHERE status = 'active'"
-        );
-
-        $result = array();
-        foreach ($rows as $row) {
+        ) as $row) {
             if (!is_array($row)) {
                 continue;
             }
@@ -181,37 +243,32 @@ class ABJ_404_Solution_ForeignRedirectSourceReader {
             if ($sourceUrl === '' || $destUrl === '') {
                 continue;
             }
-            $result[] = array(
+            yield array(
                 'source_url' => $sourceUrl,
                 'dest_url'   => $destUrl,
                 'code'       => $code,
                 'is_regex'   => $isRegex,
             );
         }
-
-        return $result;
     }
 
     /**
      * Read Yoast SEO Premium redirects from yoast_seo_redirects table.
      *
-     * @return array<int, array<string, mixed>>
+     * @return \Generator<int, array<string, mixed>>
      */
-    private function readYoast(): array {
+    private function readYoast(): \Generator {
         global $wpdb;
 
         $tableName = $wpdb->prefix . 'yoast_seo_redirects';
         if (!$this->queryGateway->tableExists($tableName)) {
-            return array();
+            return;
         }
 
-        $rows = $this->queryGateway->queryRows(
+        foreach ($this->pageTableQuery(
             "SELECT origin, target, redirect_type
              FROM `{$tableName}`"
-        );
-
-        $result = array();
-        foreach ($rows as $row) {
+        ) as $row) {
             if (!is_array($row)) {
                 continue;
             }
@@ -224,38 +281,33 @@ class ABJ_404_Solution_ForeignRedirectSourceReader {
             if ($sourceUrl === '' || $destUrl === '') {
                 continue;
             }
-            $result[] = array(
+            yield array(
                 'source_url' => $sourceUrl,
                 'dest_url'   => $destUrl,
                 'code'       => $code,
                 'is_regex'   => false,
             );
         }
-
-        return $result;
     }
 
     /**
      * Read AIOSEO redirects from aioseo_redirects table.
      *
-     * @return array<int, array<string, mixed>>
+     * @return \Generator<int, array<string, mixed>>
      */
-    private function readAIOSEO(): array {
+    private function readAIOSEO(): \Generator {
         global $wpdb;
 
         $tableName = $wpdb->prefix . 'aioseo_redirects';
         if (!$this->queryGateway->tableExists($tableName)) {
-            return array();
+            return;
         }
 
-        $rows = $this->queryGateway->queryRows(
+        foreach ($this->pageTableQuery(
             "SELECT source, target, type
              FROM `{$tableName}`
              WHERE status = 'active'"
-        );
-
-        $result = array();
-        foreach ($rows as $row) {
+        ) as $row) {
             if (!is_array($row)) {
                 continue;
             }
@@ -266,90 +318,98 @@ class ABJ_404_Solution_ForeignRedirectSourceReader {
             if ($sourceUrl === '' || $destUrl === '') {
                 continue;
             }
-            $result[] = array(
+            yield array(
                 'source_url' => $sourceUrl,
                 'dest_url'   => $destUrl,
                 'code'       => $code,
                 'is_regex'   => false,
             );
         }
-
-        return $result;
     }
 
     /**
-     * Read Safe Redirect Manager redirects via the redirect_rule custom post type.
+     * Read Safe Redirect Manager redirects via the redirect_rule custom post
+     * type, one IMPORT_PAGE_SIZE page of posts at a time (M502: previously
+     * `posts_per_page => -1` loaded every published redirect_rule post --
+     * plus a get_post_meta() lookup per post -- into memory in one call).
+     * Pages via WP_Query's standard `paged` parameter until a page returns
+     * fewer posts than the page size.
      *
-     * @return array<int, array<string, mixed>>
+     * @return \Generator<int, array<string, mixed>>
      */
-    private function readSafeRedirectManager(): array {
+    private function readSafeRedirectManager(): \Generator {
         if (!function_exists('get_posts')) {
-            return array();
+            return;
         }
 
-        $posts = get_posts(array(
-            'post_type'      => 'redirect_rule',
-            'posts_per_page' => -1,
-            'post_status'    => 'publish',
-        ));
+        $paged = 1;
+        while (true) {
+            $posts = get_posts(array(
+                'post_type'      => 'redirect_rule',
+                'posts_per_page' => self::IMPORT_PAGE_SIZE,
+                'paged'          => $paged,
+                'post_status'    => 'publish',
+                'orderby'        => 'ID',
+                'order'          => 'ASC',
+            ));
 
-        if (!is_array($posts)) {
-            return array();
+            if (!is_array($posts) || empty($posts)) {
+                return;
+            }
+
+            foreach ($posts as $post) {
+                if (!is_object($post)) {
+                    continue;
+                }
+                $postId = (int)$post->ID;
+                if ($postId === 0) {
+                    continue;
+                }
+
+                $from = get_post_meta($postId, '_redirect_rule_from', true);
+                $to   = get_post_meta($postId, '_redirect_rule_to', true);
+                $code = get_post_meta($postId, '_redirect_rule_status_code', true);
+
+                $from = is_string($from) ? trim($from) : '';
+                $to   = is_string($to)   ? trim($to)   : '';
+                $code = is_numeric($code) ? (int)$code : 301;
+
+                if ($from === '' || $to === '') {
+                    continue;
+                }
+                yield array(
+                    'source_url' => $from,
+                    'dest_url'   => $to,
+                    'code'       => $code,
+                    'is_regex'   => false,
+                );
+            }
+
+            if (count($posts) < self::IMPORT_PAGE_SIZE) {
+                return;
+            }
+            $paged++;
         }
-
-        $result = array();
-        foreach ($posts as $post) {
-            if (!is_object($post)) {
-                continue;
-            }
-            $postId = (int)$post->ID;
-            if ($postId === 0) {
-                continue;
-            }
-
-            $from = get_post_meta($postId, '_redirect_rule_from', true);
-            $to   = get_post_meta($postId, '_redirect_rule_to', true);
-            $code = get_post_meta($postId, '_redirect_rule_status_code', true);
-
-            $from = is_string($from) ? trim($from) : '';
-            $to   = is_string($to)   ? trim($to)   : '';
-            $code = is_numeric($code) ? (int)$code : 301;
-
-            if ($from === '' || $to === '') {
-                continue;
-            }
-            $result[] = array(
-                'source_url' => $from,
-                'dest_url'   => $to,
-                'code'       => $code,
-                'is_regex'   => false,
-            );
-        }
-
-        return $result;
     }
 
     /**
      * Read Redirection plugin redirects from redirection_items table.
      *
-     * @return array<int, array<string, mixed>>
+     * @return \Generator<int, array<string, mixed>>
      */
-    private function readRedirection(): array {
+    private function readRedirection(): \Generator {
         global $wpdb;
 
         $tableName = $wpdb->prefix . 'redirection_items';
         if (!$this->queryGateway->tableExists($tableName)) {
-            return array();
+            return;
         }
 
-        $rows = $this->queryGateway->queryRows(
+        foreach ($this->pageTableQuery(
             "SELECT url, action_data, action_code, regex
              FROM `{$tableName}`
              WHERE status = 'enabled'"
-        );
-
-        $result = array();
-        foreach ($rows as $row) {
+        ) as $row) {
             if (!is_array($row)) {
                 continue;
             }
@@ -363,15 +423,13 @@ class ABJ_404_Solution_ForeignRedirectSourceReader {
             if ($sourceUrl === '' || $destUrl === '') {
                 continue;
             }
-            $result[] = array(
+            yield array(
                 'source_url' => $sourceUrl,
                 'dest_url'   => $destUrl,
                 'code'       => $code,
                 'is_regex'   => $isRegex,
             );
         }
-
-        return $result;
     }
 
     /**

@@ -60,13 +60,30 @@ class ABJ_404_Solution_CrossPluginImporter {
     /**
      * Return a preview of redirects available from the given source plugin.
      *
+     * Consumes {@see ABJ_404_Solution_ForeignRedirectSourceReader::readSource()}
+     * as a generator and stops as soon as $previewLimit rows are collected,
+     * rather than materializing the full source (M502, 2026-07-14) --
+     * readSource() only fetches one IMPORT_PAGE_SIZE page of rows per query,
+     * so a small $previewLimit (the AJAX preview UI's default) typically
+     * needs only a single page fetch regardless of the source's true size.
+     *
      * @param string $source       One of 'rankmath', 'yoast', 'aioseo', 'safe-redirect-manager', 'redirection'
      * @param int    $previewLimit Maximum rows to return for preview
      * @return array<int, array<string, mixed>>
      */
     public function getImportPreview(string $source, int $previewLimit = 10): array {
-        $rows = $this->sourceReader->readSource($source);
-        return array_slice($rows, 0, $previewLimit);
+        if ($previewLimit <= 0) {
+            return array();
+        }
+
+        $preview = array();
+        foreach ($this->sourceReader->readSource($source) as $row) {
+            $preview[] = $row;
+            if (count($preview) >= $previewLimit) {
+                break;
+            }
+        }
+        return $preview;
     }
 
     /**
@@ -89,18 +106,18 @@ class ABJ_404_Solution_CrossPluginImporter {
      * Import all redirects from the given source plugin.
      * Returns the number of redirects successfully imported.
      *
+     * Consumes {@see ABJ_404_Solution_ForeignRedirectSourceReader::readSource()}
+     * row-by-row as a generator rather than requiring a fully materialized
+     * array upfront (M502, 2026-07-14): each row is written via
+     * setupRedirect() as soon as it is read, so at most one source page is
+     * ever held in memory regardless of how many rows the source plugin has.
+     *
      * @param string $source
      * @return int
      */
     public function importFrom(string $source): int {
-        $rows = $this->sourceReader->readSource($source);
-
-        if (empty($rows)) {
-            return 0;
-        }
-
         $imported = 0;
-        foreach ($rows as $row) {
+        foreach ($this->sourceReader->readSource($source) as $row) {
             $sourceUrl = isset($row['source_url']) && is_string($row['source_url']) ? $row['source_url'] : '';
             $destUrl   = isset($row['dest_url'])   && is_string($row['dest_url'])   ? $row['dest_url']   : '';
             $code      = isset($row['code'])        && is_numeric($row['code'])      ? (int)$row['code']  : 301;
