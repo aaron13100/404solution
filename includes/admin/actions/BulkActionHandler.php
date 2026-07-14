@@ -8,8 +8,10 @@ if (!defined('ABSPATH')) {
  * Handles any action whose verb starts with 'bulk' (bulktrash,
  * bulk_trash_delete_permanently, bulk_trash_restore, bulkignore, bulklater,
  * bulkcaptured). Validates that $_POST['idnum'] is present (echoes an error
- * and returns '' if not, matching pre-refactor behavior), then iterates ids
- * and applies the per-row status/trash/delete operation.
+ * and returns '' if not, matching pre-refactor behavior) and that it does not
+ * exceed MAX_BULK_ACTION_IDS (echoes an error and returns '' without running
+ * any mutation if it does), then iterates ids and applies the per-row
+ * status/trash/delete operation.
  *
  * Registered in the dispatcher's prefix-match map (not the exact-match map).
  *
@@ -19,6 +21,22 @@ if (!defined('ABSPATH')) {
  * existing tests/callers do not break.
  */
 class ABJ_404_Solution_BulkActionHandler implements ABJ_404_Solution_AdminActionHandlerInterface {
+
+    /**
+     * Maximum number of ids accepted in a single bulk action POST. The
+     * admin redirects/captured tables only ever render bulk-select
+     * checkboxes for rows on the CURRENT page (see
+     * includes/html/tableRowPageRedirects.html and
+     * tableRowCapturedURLs.html) -- there is no "select all across pages"
+     * feature -- so the largest legitimate submission is bounded by the
+     * table's own page-size cap (ABJ404_OPTION_MAX_PERPAGE = 500, defined
+     * in includes/Loader.php). This constant sits well above that (2x
+     * headroom) so a legitimate max-page-size selection always passes,
+     * while a forged or accidental oversized POST (e.g. 100,000 ids)
+     * cannot monopolize PHP execution time or hammer the database with
+     * that many mutation queries in a single request.
+     */
+    const MAX_BULK_ACTION_IDS = 1000;
 
     /** @var ABJ_404_Solution_PluginLogicAdminActions */
     private $parent;
@@ -45,6 +63,15 @@ class ABJ_404_Solution_BulkActionHandler implements ABJ_404_Solution_AdminAction
                 "No ID(s) specified for bulk action: " . esc_html($action));
             echo sprintf(__("Error: No ID(s) specified for bulk action. (%s)", '404-solution'),
                 esc_html($action));
+            return '';
+        }
+        if (count($_POST['idnum']) > self::MAX_BULK_ACTION_IDS) {
+            $this->parent->getLogger()->debugMessage(
+                "Too many ID(s) specified for bulk action (" . count($_POST['idnum']) .
+                ", max " . self::MAX_BULK_ACTION_IDS . "): " . esc_html($action));
+            echo sprintf(
+                __("Error: Too many ID(s) specified for bulk action (maximum %d). (%s)", '404-solution'),
+                self::MAX_BULK_ACTION_IDS, esc_html($action));
             return '';
         }
         $ids = array();
