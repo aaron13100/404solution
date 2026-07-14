@@ -331,8 +331,14 @@
             if (hash === '#abj404-support-request') {
                 return true;
             }
-        // allow-silent-catch: defensive guard for non-browser test harnesses where window.location is mocked or absent; auto-open is a UX nicety and must never throw on the boot path
         } catch (e) {
+            // Auto-open is a UX nicety and must never throw on the boot
+            // path (e.g. non-browser test harnesses where window.location
+            // is mocked or absent). Log so a real bug here is diagnosable
+            // instead of invisible.
+            if (window.console && window.console.warn) {
+                window.console.warn('404 Solution: autoOpenRequested failed to read window.location', e);
+            }
             return false;
         }
         return false;
@@ -352,8 +358,15 @@
             if (match) {
                 return decodeURIComponent(match[1]);
             }
-        // allow-silent-catch: defensive guard for non-browser test harnesses where window.location is mocked or absent; trigger hint is optional and must never throw on the boot path
         } catch (e) {
+            // The trigger hint is optional and must never throw on the
+            // boot path (e.g. non-browser test harnesses where
+            // window.location is mocked or absent, or a malformed
+            // percent-encoding in the query string). Log so a real bug
+            // here is diagnosable instead of invisible.
+            if (window.console && window.console.warn) {
+                window.console.warn('404 Solution: readAutoOpenTrigger failed to parse window.location', e);
+            }
             return '';
         }
         return '';

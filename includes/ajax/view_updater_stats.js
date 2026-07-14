@@ -55,7 +55,12 @@ function markStatsAutoRefreshCompleted($config) {
         var key = getStatsAutoRefreshCacheKey($config);
         localStorage.setItem(key, String(Date.now()));
     } catch (e) {
-        // allow-silent-catch: best-effort cooldown timestamp; storage failures must not block the page
+        // Best-effort cooldown timestamp; storage failures must not block
+        // the page. Log so a real bug here is diagnosable instead of
+        // invisible.
+        if (window.console && window.console.warn) {
+            window.console.warn('404 Solution: markStatsAutoRefreshCompleted failed to write localStorage', e);
+        }
     }
 }
 
@@ -212,6 +217,11 @@ function markAutoRefreshCompleted($config) {
         var key = getAutoRefreshCacheKey($config);
         localStorage.setItem(key, String(Date.now()));
     } catch (e) {
-        // allow-silent-catch: best-effort cooldown timestamp; storage failures must not block the page
+        // Best-effort cooldown timestamp; storage failures must not block
+        // the page. Log so a real bug here is diagnosable instead of
+        // invisible.
+        if (window.console && window.console.warn) {
+            window.console.warn('404 Solution: markAutoRefreshCompleted failed to write localStorage', e);
+        }
     }
 }

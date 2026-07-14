@@ -87,9 +87,14 @@
                                 }
                             }
                         }
-                    // allow-silent-catch: response shape extraction is best-effort cosmetic; the alert() fallback below still surfaces a user-visible failure with a generic message and the original jqXHR is observable in the network panel
                     } catch (e2) {
-                        // fall through to the generic alert
+                        // Response-shape extraction is best-effort cosmetic; the
+                        // alert() fallback below still surfaces a user-visible
+                        // failure with a generic message. Log so the underlying
+                        // parse/shape issue is diagnosable instead of invisible.
+                        if (window.console && window.console.warn) {
+                            window.console.warn('404 Solution: RestoreDefaults error-response shape extraction failed', e2);
+                        }
                     }
                     alert(errMsg);
                     $confirm.prop('disabled', false).removeClass('loading');
