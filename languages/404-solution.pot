@@ -899,6 +899,11 @@ msgstr ""
 msgid "Error: No ID(s) specified for bulk action. (%s)"
 msgstr ""
 
+#: includes/admin/actions/BulkActionHandler.php:73
+#, php-format
+msgid "Error: Too many ID(s) specified for bulk action (maximum %d). (%s)"
+msgstr ""
+
 #: includes/PluginLogicTrait_AdminActions.php:195
 msgid "Error: Bad trash operation specified."
 msgstr ""

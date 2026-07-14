@@ -533,6 +533,10 @@ msgstr "Fehler: Keine ID(s) für Bearbeitungsanforderung gefunden."
 msgid "Error: No ID(s) specified for bulk action. (%s)"
 msgstr "Fehler: Keine ID(s) für Massenaktion angegeben. (%s)"
 
+# translation-verified: en-fallback awaiting native pass
+msgid "Error: Too many ID(s) specified for bulk action (maximum %d). (%s)"
+msgstr "Error: Too many ID(s) specified for bulk action (maximum %d). (%s)"
+
 msgid "Error: No records were imported. SQL result: %s"
 msgstr "Fehler: Keine Datensätze wurden importiert. SQL-Ergebnis: %s"
 

@@ -536,6 +536,10 @@ msgstr "Erreur : Aucun ID trouvé pour la modification."
 msgid "Error: No ID(s) specified for bulk action. (%s)"
 msgstr "Erreur : Aucun ID spécifié pour l'action groupée. (%s)"
 
+# translation-verified: en-fallback awaiting native pass
+msgid "Error: Too many ID(s) specified for bulk action (maximum %d). (%s)"
+msgstr "Error: Too many ID(s) specified for bulk action (maximum %d). (%s)"
+
 msgid "Error: No records were imported. SQL result: %s"
 msgstr "Erreur : Aucun enregistrement importé. Résultat SQL : %s"
 

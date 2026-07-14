@@ -534,6 +534,10 @@ msgstr "Ошибка: Не найдены ID для запроса редакт�
 msgid "Error: No ID(s) specified for bulk action. (%s)"
 msgstr "Ошибка: Не указаны ID для массового действия. (%s)"
 
+# translation-verified: en-fallback awaiting native pass
+msgid "Error: Too many ID(s) specified for bulk action (maximum %d). (%s)"
+msgstr "Error: Too many ID(s) specified for bulk action (maximum %d). (%s)"
+
 msgid "Error: No records were imported. SQL result: %s"
 msgstr "Ошибка: Записи не были импортированы. Результат SQL: %s"
 

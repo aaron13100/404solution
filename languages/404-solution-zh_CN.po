@@ -537,6 +537,10 @@ msgstr "错误：未找到编辑请求的 ID。"
 msgid "Error: No ID(s) specified for bulk action. (%s)"
 msgstr "错误：未为批量操作指定 ID。(%s)"
 
+# translation-verified: en-fallback awaiting native pass
+msgid "Error: Too many ID(s) specified for bulk action (maximum %d). (%s)"
+msgstr "Error: Too many ID(s) specified for bulk action (maximum %d). (%s)"
+
 msgid "Error: No records were imported. SQL result: %s"
 msgstr "错误：未导入任何记录。SQL 结果：%s"
 

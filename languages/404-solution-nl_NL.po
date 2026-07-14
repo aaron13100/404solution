@@ -533,6 +533,10 @@ msgstr "Fout: Geen ID('s) gevonden voor bewerkingsverzoek."
 msgid "Error: No ID(s) specified for bulk action. (%s)"
 msgstr "Fout: Geen ID('s) opgegeven voor bulkactie. (%s)"
 
+# translation-verified: en-fallback awaiting native pass
+msgid "Error: Too many ID(s) specified for bulk action (maximum %d). (%s)"
+msgstr "Error: Too many ID(s) specified for bulk action (maximum %d). (%s)"
+
 msgid "Error: No records were imported. SQL result: %s"
 msgstr "Fout: Geen records geïmporteerd. SQL-resultaat: %s"
 

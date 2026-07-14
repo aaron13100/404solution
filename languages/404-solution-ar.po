@@ -537,6 +537,10 @@ msgstr "خطأ: لم يتم العثور على معرف(ات) لطلب التع
 msgid "Error: No ID(s) specified for bulk action. (%s)"
 msgstr "خطأ: لم يتم تحديد معرف(ات) للإجراء الجماعي. (%s)"
 
+# translation-verified: en-fallback awaiting native pass
+msgid "Error: Too many ID(s) specified for bulk action (maximum %d). (%s)"
+msgstr "Error: Too many ID(s) specified for bulk action (maximum %d). (%s)"
+
 msgid "Error: No records were imported. SQL result: %s"
 msgstr "خطأ: لم يتم استيراد أي سجلات. نتيجة SQL: %s"
 

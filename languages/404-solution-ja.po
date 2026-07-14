@@ -534,6 +534,10 @@ msgstr "エラー：編集リクエストのIDが見つかりません。"
 msgid "Error: No ID(s) specified for bulk action. (%s)"
 msgstr "エラー：一括アクションのIDが指定されていません。（%s）"
 
+# translation-verified: en-fallback awaiting native pass
+msgid "Error: Too many ID(s) specified for bulk action (maximum %d). (%s)"
+msgstr "Error: Too many ID(s) specified for bulk action (maximum %d). (%s)"
+
 msgid "Error: No records were imported. SQL result: %s"
 msgstr "エラー：レコードがインポートされませんでした。SQL結果：%s"
 

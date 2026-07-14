@@ -533,6 +533,10 @@ msgstr "Error: No se encontró(aron) ID(s) para la solicitud de edición."
 msgid "Error: No ID(s) specified for bulk action. (%s)"
 msgstr "Error: No se especificó(aron) ID(s) para la acción masiva. (%s)"
 
+# translation-verified: en-fallback awaiting native pass
+msgid "Error: Too many ID(s) specified for bulk action (maximum %d). (%s)"
+msgstr "Error: Too many ID(s) specified for bulk action (maximum %d). (%s)"
+
 msgid "Error: No records were imported. SQL result: %s"
 msgstr "Error: No se importaron registros. Resultado SQL: %s"
 

@@ -557,6 +557,9 @@ msgstr "Error: No ID(s) found for edit request."
 msgid "Error: No ID(s) specified for bulk action. (%s)"
 msgstr "Error: No ID(s) specified for bulk action. (%s)"
 
+msgid "Error: Too many ID(s) specified for bulk action (maximum %d). (%s)"
+msgstr "Error: Too many ID(s) specified for bulk action (maximum %d). (%s)"
+
 msgid "Error: No records were imported. SQL result: %s"
 msgstr "Error: No records were imported. SQL result: %s"
 
