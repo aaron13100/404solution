@@ -3982,6 +3982,10 @@ msgid "Error: Unable to update redirect data. Repository result: %s"
 msgstr "Error: Unable to update redirect data. Repository result: %s"
 
 #: includes/
+msgid "Error: Unable to save redirect conditions. Repository result: %s"
+msgstr "Error: Unable to save redirect conditions. Repository result: %s"
+
+#: includes/
 msgid "Loading status..."
 msgstr "Loading status..."
 

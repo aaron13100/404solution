@@ -3942,6 +3942,10 @@ msgstr "%s redirect entries were moved to the trash."
 msgid "Error: Unable to update redirect data. Repository result: %s"
 msgstr "Error: Unable to update redirect data. Repository result: %s"
 
+#: includes/
+msgid "Error: Unable to save redirect conditions. Repository result: %s"
+msgstr "Error: Unable to save redirect conditions. Repository result: %s"
+
 # translation-verified: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Loading status..."
