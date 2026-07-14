@@ -14,7 +14,7 @@ if (!defined('ABSPATH')) {
  * verifying each CREATE actually materialized the table on disk
  * (verifyTableMaterialized), and reacting to specific table/column
  * post-creation cases that require a one-time data backfill
- * (handleSpecificCases).
+ * (applyColumnAddedBackfillsAndCacheInvalidation).
  *
  * Extracted from the table-bootstrap orchestrator (DatabaseUpgradeBootstrap)
  * for the same reason as the lowercase-rename collaborator: DDL execution is
@@ -85,9 +85,26 @@ class ABJ_404_Solution_DatabaseTableDdlExecutor {
             }
             $ddlContent = ABJ_404_Solution_FileSystemService::readFileContents($file);
             if (!is_string($ddlContent) || trim($ddlContent) === '') {
+                // Tie the diagnostic to this specific file: the zero-entries
+                // guard in runInitialCreateTables() only fires when EVERY
+                // file fails, so a lone empty/unreadable file among otherwise
+                // healthy ones would otherwise leave its table missing with
+                // no trail explaining why.
+                $this->logger->errorMessage(
+                    'discoverPermanentDDLFiles() found ' . basename($file) . ' empty or '
+                    . 'unreadable. The table this file defines will not be created or '
+                    . 'repaired until the file is restored. Likely cause: a corrupted or '
+                    . 'incomplete plugin installation.'
+                );
                 continue;
             }
             if (!preg_match('/\{(wp_(abj404_\w+))\}/', $ddlContent, $m)) {
+                $this->logger->errorMessage(
+                    'discoverPermanentDDLFiles() found ' . basename($file) . ' malformed: '
+                    . 'no {wp_abj404_*} table-name placeholder found. The table this file '
+                    . 'defines will not be created or repaired until the file is restored. '
+                    . 'Likely cause: a corrupted or incomplete plugin installation.'
+                );
                 continue;
             }
             // Transient staged-build tables (view_build, view_done, view_deleteme)
@@ -323,7 +340,7 @@ class ABJ_404_Solution_DatabaseTableDdlExecutor {
      * @param array{tableName: string, colName: string} $context
      * @return void
      */
-    public function handleSpecificCases(array $context) {
+    public function applyColumnAddedBackfillsAndCacheInvalidation(array $context) {
         $tableName = isset($context['tableName']) && is_string($context['tableName']) ? $context['tableName'] : '';
         $colName = isset($context['colName']) && is_string($context['colName']) ? $context['colName'] : '';
         if (empty($tableName)) {
@@ -343,7 +360,7 @@ class ABJ_404_Solution_DatabaseTableDdlExecutor {
     /**
      * One-time backfill for the abj404_logsv2.min_log_id column: runs the
      * seed SQL, then ensures the composite index that depends on it exists.
-     * Extracted out of handleSpecificCases() so that method stays a plain
+     * Extracted out of applyColumnAddedBackfillsAndCacheInvalidation() so that method stays a plain
      * column-name dispatcher; the data-access step (SQL file load + execute)
      * lives in its own method instead of inline in the dispatch logic.
      *

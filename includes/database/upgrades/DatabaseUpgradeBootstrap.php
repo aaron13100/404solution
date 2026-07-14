@@ -19,7 +19,7 @@ if (!defined('ABSPATH')) {
  * Permanent-DDL file discovery/execution/verification and charset/collation
  * rewriting are delegated to ABJ_404_Solution_DatabaseTableDdlExecutor
  * (discoverPermanentDDLFiles, runInitialCreateTables,
- * applyPluginTableCharsetCollate, handleSpecificCases remain here only as
+ * applyPluginTableCharsetCollate, applyColumnAddedBackfillsAndCacheInvalidation remain here only as
  * thin delegating facades so the ~50+ existing call sites keep working).
  * The lowercase-table-rename / orphan-adoption-trigger pass is delegated to
  * ABJ_404_Solution_DatabaseTableLowercaseRenamer (renameAbj404TablesToLowerCase
@@ -205,8 +205,8 @@ class ABJ_404_Solution_DatabaseUpgradeBootstrap extends ABJ_404_Solution_Databas
      * @param string $colName
      * @return void
      */
-    function handleSpecificCases($tableName, $colName) {
-        $this->ddlExecutor()->handleSpecificCases(array('tableName' => $tableName, 'colName' => $colName));
+    function applyColumnAddedBackfillsAndCacheInvalidation($tableName, $colName) {
+        $this->ddlExecutor()->applyColumnAddedBackfillsAndCacheInvalidation(array('tableName' => $tableName, 'colName' => $colName));
     }
 
     /**
