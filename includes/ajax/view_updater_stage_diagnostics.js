@@ -14,7 +14,7 @@
 function abj404AjaxStageDiagnostics(stage, subpage) {
     var map = {
         table_redirects: {
-            queryLabel: 'getAdminRedirectsPageTable() -> read redirects rows from staged view snapshot',
+            queryLabel: 'getAdminRedirectsPageTable() -> read redirects rows from wp_abj404_redirects (single-table live read)',
             whatsHappening: 'Loading Redirects table rows',
             stageNumber: 1
         },
@@ -24,7 +24,7 @@ function abj404AjaxStageDiagnostics(stage, subpage) {
             stageNumber: 2
         },
         table_captured: {
-            queryLabel: 'getCapturedURLSPageTable() -> read captured rows from staged view snapshot',
+            queryLabel: 'getCapturedURLSPageTable() -> read captured rows from wp_abj404_redirects (single-table live read)',
             whatsHappening: 'Loading Captured 404 URLs table rows',
             stageNumber: 1
         },
@@ -39,12 +39,12 @@ function abj404AjaxStageDiagnostics(stage, subpage) {
             stageNumber: 1
         },
         paginationLinksTop: {
-            queryLabel: 'getPaginationLinks(top) -> read top pagination count from staged view snapshot',
+            queryLabel: 'getPaginationLinks(top) -> read top pagination count from wp_abj404_redirects (single-table live read)',
             whatsHappening: 'Rendering top pagination links',
             stageNumber: 3
         },
         paginationLinksBottom: {
-            queryLabel: 'getPaginationLinks(bottom) -> read bottom pagination count from staged view snapshot',
+            queryLabel: 'getPaginationLinks(bottom) -> read bottom pagination count from wp_abj404_redirects (single-table live read)',
             whatsHappening: 'Rendering bottom pagination links',
             stageNumber: 4
         },
@@ -140,7 +140,7 @@ function abj404AjaxStageDiagnostics(stage, subpage) {
     }
     if (subpage === 'abj404_captured') {
         return {
-            queryLabel: 'getCapturedURLSPageTable() -> read captured rows from staged view snapshot',
+            queryLabel: 'getCapturedURLSPageTable() -> read captured rows from wp_abj404_redirects (single-table live read)',
             whatsHappening: 'Loading Captured 404 URLs table rows',
             stageNumber: 1
         };
@@ -153,7 +153,7 @@ function abj404AjaxStageDiagnostics(stage, subpage) {
         };
     }
     return {
-        queryLabel: 'getAdminRedirectsPageTable() -> read redirects rows from staged view snapshot',
+        queryLabel: 'getAdminRedirectsPageTable() -> read redirects rows from wp_abj404_redirects (single-table live read)',
         whatsHappening: 'Loading Redirects table rows',
         stageNumber: 1
     };
