@@ -66,11 +66,11 @@ function abj404RequestPaginationPart(req, part, callbacks) {
             type: 'POST',
             dataType: 'json',
             timeout: req.ajaxTimeoutMs,
-            data: jQuery.extend({}, req.payload, { part: part }),
+            data: jQuery.extend({}, req.payload, { part: part, retryCount: attemptIndex }),
             success: function(result) {
                 settled = true;
                 if (typeof callbacks.onSuccess === 'function') {
-                    callbacks.onSuccess(result, part);
+                    callbacks.onSuccess(result, part, attemptIndex);
                 }
             },
             error: function(jqXHR, textStatus, errorThrown) {
@@ -84,12 +84,12 @@ function abj404RequestPaginationPart(req, part, callbacks) {
                     return;
                 }
                 if (typeof callbacks.onTerminalError === 'function') {
-                    callbacks.onTerminalError(jqXHR, textStatus, errorThrown, part);
+                    callbacks.onTerminalError(jqXHR, textStatus, errorThrown, part, attemptIndex);
                 }
             },
             complete: function(jqXHR, textStatus) {
                 if (!settled && typeof callbacks.onTerminalError === 'function') {
-                    callbacks.onTerminalError(jqXHR || {}, textStatus || 'abort', 'request incomplete', part);
+                    callbacks.onTerminalError(jqXHR || {}, textStatus || 'abort', 'request incomplete', part, attemptIndex);
                 }
             }
         });

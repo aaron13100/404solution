@@ -35,10 +35,14 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
         $page = $functions->getPostOrGetSanitize('page', '');
         $filterText = $functions->getPostOrGetSanitize('filterText', '');
         $filter = $functions->getPostOrGetSanitize('filter', '');
+        $orderby = $functions->getPostOrGetSanitize('orderby', '');
         $detectOnly = ((string)$functions->getPostOrGetSanitize('detectOnly', '0') === '1');
         $part = self::normalizePart((string)$functions->getPostOrGetSanitize('part', 'all'));
         $cacheMode = self::normalizeCacheMode((string)$functions->getPostOrGetSanitize('cacheMode', 'normal'));
         $currentSignature = self::normalizeCurrentSignature((string)$functions->getPostOrGetSanitize('currentSignature', ''));
+        $requestId = (string)$functions->getPostOrGetSanitize('requestId', 'unknown00');
+        $requestId = preg_match('/^[A-Za-z0-9]{8,64}$/', $requestId) === 1 ? $requestId : 'unknown00';
+        $retryCount = min(2, absint($functions->getPostOrGetSanitize('retryCount', '0')));
 
         $isPluginAdmin = false;
         $context = array(
@@ -48,7 +52,10 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
             'rowsPerPage' => $rowsPerPage,
             'filterText_length' => strlen((string)$filterText),
             'filter' => $filter,
+            'orderby' => $orderby,
             'part' => $part,
+            'request_id' => $requestId,
+            'retry_count' => $retryCount,
             'detectOnly' => $detectOnly ? 1 : 0,
             'cacheMode' => $cacheMode,
             'currentSignature_length' => strlen($currentSignature),
@@ -74,6 +81,7 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
             if (!self::checkRateLimitOrRespond($maxRequestsPerMinute, $context)) {
                 return;
             }
+            ABJ_404_Solution_AjaxStageDiagnostics::beginRequest($context);
 
             // Update the perpage option (but only if provided). Some environments may omit
             // rowsPerPage on Enter key events; avoid unnecessary option writes.
@@ -94,15 +102,20 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
             // (bounded, append-only; not the constant-write pressure case).
             if ($detectOnly && self::detectOnlyCanComputeCheapSignature($subpage)
                     && is_object($view) && method_exists($view, 'computeTableDataSignature')) {
-                ABJ_404_Solution_AjaxStageDiagnostics::setStage($context, 'detectOnlySignature');
-                $tableSignature = (string)$view->computeTableDataSignature(
-                    $subpage,
-                    self::queryBudgetOptions(true)
+                $tableSignature = (string)ABJ_404_Solution_AjaxStageDiagnostics::runStage(
+                    $context,
+                    'detectOnlySignature',
+                    static function () use ($view, $subpage) {
+                        return $view->computeTableDataSignature($subpage, self::queryBudgetOptions(true));
+                    }
                 );
                 $data = array(
                     'tableSignature' => $tableSignature,
                     'hasUpdate' => self::hasSignatureUpdate($currentSignature, $tableSignature),
+                    'requestId' => $requestId,
+                    'retryCount' => $retryCount,
                 );
+                ABJ_404_Solution_AjaxStageDiagnostics::finishRequest('complete');
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit($data, 200);
@@ -120,7 +133,10 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
                 $tableSignature = is_scalar($data['tableSignature']) ? (string)$data['tableSignature'] : '';
                 $data['hasUpdate'] = self::hasSignatureUpdate($currentSignature, $tableSignature);
             }
+            $data['requestId'] = $requestId;
+            $data['retryCount'] = $retryCount;
 
+            ABJ_404_Solution_AjaxStageDiagnostics::finishRequest('complete');
             ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
             ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
             ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit($data, 200);
@@ -128,6 +144,7 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
 
         } catch (Throwable $e) {
             // allow-silent-catch: handlePaginationLinksException embeds/logs the throwable in the AJAX response path.
+            ABJ_404_Solution_AjaxStageDiagnostics::finishRequest('error');
             self::handlePaginationLinksException(
                 $e, $isPluginAdmin, $context
             );
@@ -261,7 +278,6 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
      * @return array<string, mixed>
      */
     private static function buildTablePart(string $subpage, $view, $viewReadService, array &$context): array {
-        unset($viewReadService);
         $renderers = array(
             'abj404_redirects' => array('stage' => 'table_redirects', 'method' => 'getAdminRedirectsPageTable'),
             'abj404_captured' => array('stage' => 'table_captured', 'method' => 'getCapturedURLSPageTable'),
@@ -271,11 +287,24 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
             return array('table' => 'Error: Unexpected subpage requested.');
         }
         $renderer = $renderers[$subpage];
-        ABJ_404_Solution_AjaxStageDiagnostics::setStage($context, $renderer['stage']);
         $method = $renderer['method'];
-        return array(
-            'table' => $view->$method($subpage, self::queryBudgetOptions()),
-            'tableSignature' => self::getCurrentTableSignature($view, $subpage),
+        return ABJ_404_Solution_AjaxStageDiagnostics::runStage(
+            $context,
+            $renderer['stage'],
+            static function () use ($subpage, $view, $viewReadService, $method, &$context) {
+                if (($subpage === 'abj404_redirects' || $subpage === 'abj404_captured')
+                        && is_object($viewReadService)
+                        && method_exists($viewReadService, 'sortReadinessStatusForOrderby')) {
+                    $orderby = is_scalar($context['orderby'] ?? null) ? (string)$context['orderby'] : '';
+                    ABJ_404_Solution_AjaxStageDiagnostics::addStageMetadata(array(
+                        'sort_readiness' => $viewReadService->sortReadinessStatusForOrderby($orderby),
+                    ));
+                }
+                return array(
+                    'table' => $view->$method($subpage, self::queryBudgetOptions()),
+                    'tableSignature' => self::getCurrentTableSignature($view, $subpage),
+                );
+            }
         );
     }
 
@@ -289,8 +318,17 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
         unset($view);
         $queryOptions = self::queryBudgetOptions();
         if ($subpage === 'abj404_redirects') {
-            ABJ_404_Solution_AjaxStageDiagnostics::setStage($context, 'redirect_status_counts');
-            $counts = $viewReadService->getRedirectStatusCounts(false, $queryOptions);
+            $counts = ABJ_404_Solution_AjaxStageDiagnostics::runStage(
+                $context,
+                'redirect_status_counts',
+                static function () use ($viewReadService, $queryOptions) {
+                    $result = $viewReadService->getRedirectStatusCounts(false, $queryOptions);
+                    ABJ_404_Solution_AjaxStageDiagnostics::addStageMetadata(array(
+                        'cache' => !empty($result['_incomplete']) ? 'miss' : 'hit',
+                    ));
+                    return $result;
+                }
+            );
             if (!empty($counts['_incomplete'])) {
                 return array('countsIncomplete' => true);
             }
@@ -304,8 +342,17 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
         if ($subpage !== 'abj404_captured') {
             return array();
         }
-        ABJ_404_Solution_AjaxStageDiagnostics::setStage($context, 'captured_status_counts');
-        $counts = $viewReadService->getCapturedStatusCounts(false, $queryOptions);
+        $counts = ABJ_404_Solution_AjaxStageDiagnostics::runStage(
+            $context,
+            'captured_status_counts',
+            static function () use ($viewReadService, $queryOptions) {
+                $result = $viewReadService->getCapturedStatusCounts(false, $queryOptions);
+                ABJ_404_Solution_AjaxStageDiagnostics::addStageMetadata(array(
+                    'cache' => !empty($result['_incomplete']) ? 'miss' : 'hit',
+                ));
+                return $result;
+            }
+        );
         if (!empty($counts['_incomplete'])) {
             return array('countsIncomplete' => true);
         }
@@ -331,12 +378,19 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
     private static function buildPaginationPart(string $subpage, $view, $viewReadService, array &$context): array {
         unset($viewReadService);
         $queryOptions = self::queryBudgetOptions();
-        ABJ_404_Solution_AjaxStageDiagnostics::setStage($context, 'paginationLinksTop');
-        $top = $view->getPaginationLinks($subpage, true, $queryOptions);
-        ABJ_404_Solution_AjaxStageDiagnostics::setStage($context, 'paginationLinksBottom');
+        $top = ABJ_404_Solution_AjaxStageDiagnostics::runStage(
+            $context,
+            'paginationLinksTop',
+            static fn() => $view->getPaginationLinks($subpage, true, $queryOptions)
+        );
+        $bottom = ABJ_404_Solution_AjaxStageDiagnostics::runStage(
+            $context,
+            'paginationLinksBottom',
+            static fn() => $view->getPaginationLinks($subpage, false, $queryOptions)
+        );
         return array(
             'paginationLinksTop' => $top,
-            'paginationLinksBottom' => $view->getPaginationLinks($subpage, false, $queryOptions),
+            'paginationLinksBottom' => $bottom,
         );
     }
 
@@ -392,6 +446,11 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
             $details,
             $isPluginAdmin
         );
+        $responseRequestId = $context['request_id'] ?? null;
+        $responseRetryCount = $context['retry_count'] ?? null;
+        $payload['requestId'] = is_string($responseRequestId) ? $responseRequestId : 'unknown00';
+        $payload['retryCount'] = is_numeric($responseRetryCount)
+            ? max(0, min(2, (int)$responseRetryCount)) : 0;
         ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit($payload, 500);
     }
 }

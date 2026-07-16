@@ -38,6 +38,7 @@ return array(
     'ABJ_404_Solution_CrashBeacon' => $base . 'includes/diagnostics/CrashBeacon.php',
     'ABJ_404_Solution_CrashBeaconStore' => $base . 'includes/diagnostics/CrashBeaconStore.php',
     'ABJ_404_Solution_CrashBeaconReporter' => $base . 'includes/diagnostics/CrashBeaconReporter.php',
+    'ABJ_404_Solution_AjaxRequestTrace' => $base . 'includes/diagnostics/AjaxRequestTrace.php',
     'ABJ_404_Solution_DebugLogFileStore' => $base . 'includes/diagnostics/DebugLogFileStore.php',
     'ABJ_404_Solution_DebugLogReader' => $base . 'includes/diagnostics/DebugLogReader.php',
     'ABJ_404_Solution_DebugLogArchiveBuilder' => $base . 'includes/diagnostics/DebugLogArchiveBuilder.php',

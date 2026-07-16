@@ -40,6 +40,24 @@ class ABJ_404_Solution_DatabaseQueryDiagnostics {
     }
 
     /**
+     * Attach the strongest DB-level timeout mode observed during the active
+     * AJAX stage. MariaDB's persisted wrapper-rejection state is explicitly
+     * recorded as unwrapped because its MAX_EXECUTION_TIME comment is ignored.
+     */
+    public function recordAjaxTimeoutMode(string $query): void {
+        $mode = 'none';
+        if (class_exists('ABJ_404_Solution_DatabaseRuntimeState')
+                && ABJ_404_Solution_DatabaseRuntimeState::isSetStatementWrapperUnsupported()) {
+            $mode = 'unwrapped';
+        } else if (preg_match('/MAX_EXECUTION_TIME|max_statement_time/i', $query) === 1) {
+            $mode = 'wrapped';
+        }
+        if (class_exists('ABJ_404_Solution_AjaxStageDiagnostics')) {
+            ABJ_404_Solution_AjaxStageDiagnostics::addStageMetadata(array('db_timeout_mode' => $mode));
+        }
+    }
+
+    /**
      * @param string $query
      * @param mixed $rows
      * @return void

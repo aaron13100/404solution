@@ -138,9 +138,9 @@ class ABJ_404_Solution_Ajax_SupportRequest {
             $userMessage = substr($userMessage, 0, self::MAX_USER_MESSAGE_LENGTH);
         }
 
-        // Pull a sanitized log excerpt via the existing helper. Best-effort:
-        // a missing log file or unavailable Logging service must not block
-        // sending the support request.
+        // Pull the sanitized debug-log excerpt plus the bounded PII-safe AJAX
+        // trace tail. Best-effort: unavailable diagnostics must not block the
+        // support request.
         $debugLogExcerpt = self::resolveDebugLogExcerpt();
 
         $extras = array(
@@ -264,29 +264,32 @@ class ABJ_404_Solution_Ajax_SupportRequest {
     }
 
     /**
-     * Best-effort lookup of a sanitized log excerpt. Returns empty string
-     * if the Logging service or its helper isn't reachable in this context.
+     * Best-effort lookup of sanitized debug-log and AJAX-trace excerpts.
      *
      * @return string
      */
     private static function resolveDebugLogExcerpt(): string {
-        if (!function_exists('abj_service_optional')) {
-            return '';
-        }
-        $logger = abj_service_optional('logging');
-        if (is_object($logger) && method_exists($logger, 'getSanitizedLogExcerptForSupport')) {
-            try {
-                $excerpt = $logger->getSanitizedLogExcerptForSupport();
-                return is_string($excerpt) ? $excerpt : '';
-            } catch (\Throwable $e) {
-                ABJ_404_Solution_FeedbackTransportLog::log(
-                    'warn',
-                    'Support request debug-log excerpt unavailable: ' . $e->getMessage()
-                );
-                return '';
+        $excerpt = '';
+        if (function_exists('abj_service_optional')) {
+            $logger = abj_service_optional('logging');
+            if (is_object($logger) && method_exists($logger, 'getSanitizedLogExcerptForSupport')) {
+                try {
+                    $loggerExcerpt = $logger->getSanitizedLogExcerptForSupport();
+                    $excerpt = is_string($loggerExcerpt) ? $loggerExcerpt : '';
+                } catch (\Throwable $e) {
+                    ABJ_404_Solution_FeedbackTransportLog::log(
+                        'warn',
+                        'Support request debug-log excerpt unavailable: ' . $e->getMessage()
+                    );
+                }
             }
         }
-        return '';
+        $traceExcerpt = class_exists('ABJ_404_Solution_AjaxRequestTrace')
+            ? ABJ_404_Solution_AjaxRequestTrace::readRecentJournalForSupport() : '';
+        if ($traceExcerpt === '') {
+            return $excerpt;
+        }
+        return $excerpt === '' ? $traceExcerpt : rtrim($excerpt) . "\n\n" . $traceExcerpt;
     }
 
     /**

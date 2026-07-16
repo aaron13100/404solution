@@ -120,10 +120,10 @@ function abj404RunProgressivePaginationRequest(req, options, removeLoadingOverla
                 );
                 runPart(partIndex + 1);
             },
-            onTerminalError: function(jqXHR, textStatus, errorThrown, failedPart) {
+            onTerminalError: function(jqXHR, textStatus, errorThrown, failedPart, retryCount) {
                 abj404HandlePaginationPartFailure(
                     req, options, removeLoadingOverlay,
-                    failedPart, jqXHR, textStatus, errorThrown
+                    failedPart, jqXHR, textStatus, errorThrown, retryCount
                 );
                 runPart(partIndex + 1);
             }
@@ -183,7 +183,7 @@ function abj404HandlePaginationPartSuccess(req, options, removeLoadingOverlay, p
  * @returns {void}
  */
 function abj404HandlePaginationPartFailure(
-    req, options, removeLoadingOverlay, part, jqXHR, textStatus, errorThrown
+    req, options, removeLoadingOverlay, part, jqXHR, textStatus, errorThrown, retryCount
 ) {
     jQuery('.abj404-refresh-status').text('');
     if (part === 'pagination') {
@@ -194,6 +194,8 @@ function abj404HandlePaginationPartFailure(
         action: req.action,
         subpage: req.subpage,
         part: part,
+        requestId: req.requestId,
+        retryCount: retryCount,
         isBackgroundRefresh: false,
         requestStartedAt: req.requestStartedAt,
         ajaxTimeoutMs: req.ajaxTimeoutMs
@@ -223,7 +225,9 @@ function abj404PaginationErrorMeta(req, parsed, textStatus, errorThrown) {
         stage: parsed.stageFromServer,
         queryLabel: parsed.queryLabelFromServer || inferred.queryLabel,
         whatsHappening: parsed.whatsHappeningFromServer || inferred.whatsHappening,
-        lastQueryRedacted: parsed.lastQueryRedacted
+        lastQueryRedacted: parsed.lastQueryRedacted,
+        requestId: req.requestId,
+        retryCount: parsed.retryCount
     };
 }
 
@@ -240,11 +244,12 @@ function abj404RunDetectOnlyPaginationRequest(req, options) {
             }
             abj404FinishPaginationBackgroundTelemetry(req, 200, result, '', hasUpdate);
         },
-        onTerminalError: function(jqXHR, textStatus, errorThrown) {
+        onTerminalError: function(jqXHR, textStatus, errorThrown, part, retryCount) {
             setDetectOnlyRefreshInFlight(false);
             var errorCtx = {
                 baseUrl: req.baseUrl, action: req.action, subpage: req.subpage,
                 part: 'table', isBackgroundRefresh: true,
+                requestId: req.requestId, retryCount: retryCount,
                 requestStartedAt: req.requestStartedAt, ajaxTimeoutMs: req.ajaxTimeoutMs
             };
             var parsed = abj404HandlePaginationAjaxError(errorCtx, jqXHR, textStatus, errorThrown);

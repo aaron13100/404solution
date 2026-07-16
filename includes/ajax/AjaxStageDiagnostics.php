@@ -16,6 +16,72 @@ if (!defined('ABSPATH')) {
 class ABJ_404_Solution_AjaxStageDiagnostics {
 
     /**
+     * Start the durable request trace after authorization/rate limiting.
+     *
+     * @param array<string, mixed> $context
+     * @return void
+     */
+    public static function beginRequest(array $context): void {
+        $traceContext = array(
+            'request_id' => $context['request_id'] ?? '',
+            'action' => $context['action'] ?? '',
+            'subpage' => $context['subpage'] ?? '',
+            'part' => $context['part'] ?? 'all',
+            'retry_count' => $context['retry_count'] ?? 0,
+        );
+        $GLOBALS['abj404_ajax_request_trace'] = ABJ_404_Solution_AjaxRequestTrace::start($traceContext);
+    }
+
+    /**
+     * Run one endpoint stage with a flushed start record and a matching end.
+     *
+     * @template T
+     * @param array<string, mixed> $context
+     * @param string $stage
+     * @param callable():T $work
+     * @return T
+     */
+    public static function runStage(array &$context, string $stage, callable $work) {
+        self::setStage($context, $stage);
+        $trace = self::activeTrace();
+        if ($trace !== null) {
+            $trace->beginStage($stage);
+        }
+        $completed = false;
+        try {
+            $result = $work();
+            $completed = true;
+            return $result;
+        } finally {
+            if ($trace !== null) {
+                $trace->endStage($completed ? 'complete' : 'error');
+            }
+        }
+    }
+
+    /** @param array<string, scalar> $metadata @return void */
+    public static function addStageMetadata(array $metadata): void {
+        $trace = self::activeTrace();
+        if ($trace !== null) {
+            $trace->addStageMetadata($metadata);
+        }
+    }
+
+    /** Finish and detach the current request trace. */
+    public static function finishRequest(string $status = 'complete'): void {
+        $trace = self::activeTrace();
+        if ($trace !== null) {
+            $trace->finish($status);
+        }
+        unset($GLOBALS['abj404_ajax_request_trace']);
+    }
+
+    private static function activeTrace(): ?ABJ_404_Solution_AjaxRequestTrace {
+        $trace = $GLOBALS['abj404_ajax_request_trace'] ?? null;
+        return $trace instanceof ABJ_404_Solution_AjaxRequestTrace ? $trace : null;
+    }
+
+    /**
      * Update the in-flight stage marker for the current AJAX request: sets
      * `$context['stage']` (plus query_label/what_happening) and mirrors it
      * onto $GLOBALS['abj404_ajax_context'] so an error response emitted

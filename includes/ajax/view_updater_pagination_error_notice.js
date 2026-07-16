@@ -44,6 +44,8 @@ function abj404HandlePaginationAjaxError(ctx, jqXHR, textStatus, errorThrown) {
         queryLabelFromServer: '',
         whatsHappeningFromServer: '',
         lastQueryRedacted: '',
+        requestId: ctx.requestId || '',
+        retryCount: parseInt(ctx.retryCount, 10) || 0,
         responseText: responseText
     };
     if (responseJson && responseJson.data) {
@@ -109,7 +111,9 @@ function abj404RenderPaginationErrorNoticeForeground(ctx, parsed, textStatus, er
         timeoutMs: ctx.ajaxTimeoutMs,
         stage: parsed.stageFromServer,
         message: parsed.messageFromServer,
-        lastQueryRedacted: parsed.lastQueryRedacted
+        lastQueryRedacted: parsed.lastQueryRedacted,
+        requestId: parsed.requestId,
+        retryCount: parsed.retryCount
     };
     var detailLines = abj404FormatAjaxFailureDetails(detailMeta);
     var $detailsEl = jQuery('<pre></pre>')
@@ -138,6 +142,9 @@ function abj404RenderPaginationErrorNoticeForeground(ctx, parsed, textStatus, er
     stageDiagnosticForPayload += (parsed.queryLabelFromServer || inferredDiagnostics.queryLabel || '');
     if (stageDiagnosticForPayload) {
         contextSummary += ' [' + stageDiagnosticForPayload + ']';
+    }
+    if (parsed.requestId) {
+        contextSummary += ' [request ' + parsed.requestId + ']';
     }
     abj404RenderAjaxErrorNotice({
         noticeTitle: noticeTitle,

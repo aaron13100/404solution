@@ -40,7 +40,9 @@ function abj404FormatAjaxFailureDetails(meta) {
         'textStatus: ' + (meta.textStatus || ''),
         'errorThrown: ' + (meta.errorThrown || ''),
         'action: ' + (meta.action || ''),
-        'subpage: ' + (meta.subpage || '')
+        'subpage: ' + (meta.subpage || ''),
+        'Request ID: ' + (meta.requestId || ''),
+        'Retry count: ' + (parseInt(meta.retryCount, 10) || 0)
     ];
     if (!isNaN(elapsed)) {
         lines.push('Elapsed: ' + elapsed + 'ms');

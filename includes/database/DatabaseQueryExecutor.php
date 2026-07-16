@@ -144,6 +144,7 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
         $timeoutSeconds = $timeoutRaw > 0 ? $timeoutRaw : 60;
         $query = $this->core->queryTimeoutManager()->applyQueryTimeout($query, $timeoutSeconds);
 
+        $this->queryDiagnostics->recordAjaxTimeoutMode($query);
         $this->queryDiagnostics->applyDiagnosticLatencyIfConfigured();
 
         $timer = new ABJ_404_Solution_Timer();

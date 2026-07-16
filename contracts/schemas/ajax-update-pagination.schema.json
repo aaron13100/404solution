@@ -28,6 +28,7 @@
     "detectOnly": { "type": "string", "enum": ["0", "1"] },
     "cacheMode": { "type": "string", "enum": ["normal", "cache_or_pending", "refresh_cache"] },
     "currentSignature": { "type": "string", "maxLength": 128 },
-    "requestId": { "type": "string", "pattern": "^[a-zA-Z0-9]{8,64}$" }
+    "requestId": { "type": "string", "pattern": "^[a-zA-Z0-9]{8,64}$" },
+    "retryCount": { "type": "integer", "minimum": 0, "maximum": 2 }
   }
 }

@@ -285,6 +285,11 @@ class ABJ_404_Solution_DatabaseQueryTimeoutManager {
         // Cache the negative result locally and across requests so the host
         // does not repeatedly pay for the same known-failing capability probe.
         ABJ_404_Solution_DatabaseRuntimeState::setSetStatementWrapperUnsupported(true);
+        if (class_exists('ABJ_404_Solution_AjaxStageDiagnostics')) {
+            ABJ_404_Solution_AjaxStageDiagnostics::addStageMetadata(array(
+                'db_timeout_mode' => 'unwrapped',
+            ));
+        }
         $this->logger->warn(
             'SET STATEMENT timeout wrapper rejected by server; '
             . 'retrying query without a DB-level timeout and caching the '
