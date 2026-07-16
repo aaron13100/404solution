@@ -11,8 +11,11 @@ final class ABJ_404_Solution_ViewReadRuntimeState {
 
     const CACHE_KEY_REDIRECT_STATUS = 'abj404_redirect_status_counts';
     const CACHE_KEY_CAPTURED_STATUS = 'abj404_captured_status_counts';
+    const CACHE_KEY_REDIRECT_STATUS_LAST_KNOWN = 'abj404_redirect_status_counts_last_known';
+    const CACHE_KEY_CAPTURED_STATUS_LAST_KNOWN = 'abj404_captured_status_counts_last_known';
     const CACHE_KEY_HIGH_IMPACT_CAPTURED = 'abj404_high_impact_captured';
     const STATUS_CACHE_TTL = 86400;
+    const STATUS_LAST_KNOWN_CACHE_TTL = 2592000;
     const STATUS_CACHE_TIMEOUT_SELFHEAL_TTL = 300;
     const VIEW_SNAPSHOT_CACHE_TTL_SECONDS = 120;
     const VIEW_SNAPSHOT_REFRESH_COOLDOWN_SECONDS = 30;

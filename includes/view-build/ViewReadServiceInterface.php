@@ -30,8 +30,8 @@ interface ABJ_404_Solution_ViewReadServiceInterface {
     /* ---- status counts + invalidation hooks ---- */
 
     /**
-     * @param bool $bypassCache
-     * @param array<string, mixed> $tableOptions Internal per-request read options.
+     * @param bool $bypassCache Retained for compatibility; foreground reads are always cache-only.
+     * @param array<string, mixed> $tableOptions Retained for compatibility; never enables a foreground query.
      * @return array<string, int>
      */
     public function getRedirectStatusCounts($bypassCache = false, array $tableOptions = array()): array;
@@ -42,8 +42,8 @@ interface ABJ_404_Solution_ViewReadServiceInterface {
     public function getRedirectHitCountHistogram(): array;
 
     /**
-     * @param bool $bypassCache
-     * @param array<string, mixed> $tableOptions Internal per-request read options.
+     * @param bool $bypassCache Retained for compatibility; foreground reads are always cache-only.
+     * @param array<string, mixed> $tableOptions Retained for compatibility; never enables a foreground query.
      * @return array<string, int>
      */
     public function getCapturedStatusCounts($bypassCache = false, array $tableOptions = array()): array;

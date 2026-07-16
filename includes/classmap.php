@@ -50,6 +50,7 @@ return array(
     'ABJ_404_Solution_LogDebugModeResolver' => $base . 'includes/logs/LogDebugModeResolver.php',
     'ABJ_404_Solution_ViewReadServiceInterface' => $base . 'includes/view-build/ViewReadServiceInterface.php',
     'ABJ_404_Solution_ViewReadService' => $base . 'includes/view-build/ViewReadService.php',
+    'ABJ_404_Solution_StatusCountsRefreshCoordinator' => $base . 'includes/view-build/StatusCountsRefreshCoordinator.php',
     'ABJ_404_Solution_DatabaseUpgradeCoordinator' => $base . 'includes/database/upgrades/DatabaseUpgradeCoordinator.php',
     'ABJ_404_Solution_DatabaseUpgradeComponent' => $base . 'includes/database/upgrades/DatabaseUpgradeComponent.php',
     'ABJ_404_Solution_DatabaseUpgradeComponentRegistry' => $base . 'includes/database/upgrades/DatabaseUpgradeComponentRegistry.php',

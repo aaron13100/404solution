@@ -47,6 +47,26 @@ function abj404_updateLogsHitsTableListener() {
 }
 }
 
+if (!function_exists('abj404_refreshStatusCountsListener')) {
+/**
+ * Recompute one status-count cache outside the foreground admin request.
+ *
+ * @param mixed $scope
+ */
+function abj404_refreshStatusCountsListener($scope): void {
+    try {
+        require_once(plugin_dir_path( ABJ404_FILE ) . "includes/Loader.php");
+        if (!is_string($scope)) {
+            throw new \InvalidArgumentException('Status-count refresh scope must be a string.');
+        }
+        $viewReadService = abj_service('view_read_service');
+        $viewReadService->refreshStatusCounts($scope);
+    } catch (\Throwable $e) {
+        abj404_logRuntimeWarning('Cron status-count refresh failed', $e);
+    }
+}
+}
+
 if (!function_exists('abj404_sendQueuedReportListener')) {
 /**
  * Cron handler for FeedbackTransport queued sends. Loads Loader.php so the

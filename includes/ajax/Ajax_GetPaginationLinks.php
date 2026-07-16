@@ -291,6 +291,9 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
         if ($subpage === 'abj404_redirects') {
             ABJ_404_Solution_AjaxStageDiagnostics::setStage($context, 'redirect_status_counts');
             $counts = $viewReadService->getRedirectStatusCounts(false, $queryOptions);
+            if (!empty($counts['_incomplete'])) {
+                return array('countsIncomplete' => true);
+            }
             return array('tabCounts' => array(
                 '0' => $counts['all'] ?? 0,
                 (string)ABJ404_STATUS_MANUAL => $counts['manual'] ?? 0,
@@ -303,6 +306,9 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
         }
         ABJ_404_Solution_AjaxStageDiagnostics::setStage($context, 'captured_status_counts');
         $counts = $viewReadService->getCapturedStatusCounts(false, $queryOptions);
+        if (!empty($counts['_incomplete'])) {
+            return array('countsIncomplete' => true);
+        }
         return array(
             'statusCounts' => $counts,
             'tabCounts' => array(

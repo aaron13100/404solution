@@ -290,6 +290,7 @@ abj404_benchmark_mark_bootstrap_done();
 // the deactivate round-trip tests can discover the hook names in one place.
 add_action('abj404_cleanupCronAction', 'abj404_dailyMaintenanceCronJobListener');
 add_action('abj404_updateLogsHitsTableAction', 'abj404_updateLogsHitsTableListener');
+add_action('abj404_refresh_status_counts', 'abj404_refreshStatusCountsListener', 10, 1);
 add_action('abj404_logsv2_canonical_backfill', 'abj404_logsv2CanonicalUrlBackfillListener');
 add_action('abj404_redirects_denorm_backfill', 'abj404_redirectsDenormBackfillListener');
 add_action('abj404_redirects_sort_key_backfill', 'abj404_redirectsSortKeyBackfillListener');

@@ -24,6 +24,7 @@ class ABJ_404_Solution_CronScheduler {
     const HOOK_REDIRECTS_DENORM_BACKFILL = 'abj404_redirects_denorm_backfill';
     const HOOK_REDIRECTS_SORT_KEY_BACKFILL = 'abj404_redirects_sort_key_backfill';
     const HOOK_SEND_QUEUED_REPORT = 'abj404_send_queued_report';
+    const HOOK_REFRESH_STATUS_COUNTS = 'abj404_refresh_status_counts';
     const HOOK_NETWORK_ACTIVATION = 'abj404_network_activation_hook';
     const HOOK_NETWORK_ACTIVATION_BACKGROUND = 'abj404_network_activation_background';
     const HOOK_NETWORK_UPGRADE_BACKGROUND = 'abj404_network_upgrade_background';
@@ -342,6 +343,7 @@ class ABJ_404_Solution_CronScheduler {
             self::HOOK_REDIRECTS_DENORM_BACKFILL,
             self::HOOK_REDIRECTS_SORT_KEY_BACKFILL,
             self::HOOK_SEND_QUEUED_REPORT,
+            self::HOOK_REFRESH_STATUS_COUNTS,
             self::HOOK_NETWORK_ACTIVATION,
             self::HOOK_NETWORK_ACTIVATION_BACKGROUND,
             self::HOOK_NETWORK_UPGRADE_BACKGROUND,

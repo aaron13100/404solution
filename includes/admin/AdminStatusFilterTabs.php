@@ -52,13 +52,18 @@ class ABJ_404_Solution_AdminStatusFilterTabs {
         $filterState = $this->filterState($sub);
         $types = $filterState['types'];
         $counts = $filterState['counts'];
+        $countsIncomplete = !empty($counts['_incomplete']);
 
-        $html = $this->tpl('viewLogsTabFiltersListOpen.html');
+        $html = $this->f->str_replace(
+            '{placeholder_attr}',
+            $countsIncomplete ? ' data-tab-counts-placeholder="1"' : '',
+            $this->tpl('viewLogsTabFiltersListOpen.html')
+        );
         if ($sub != 'abj404_captured') {
-            $html .= $this->filterItem('', $url, ($filter == 0) ? ' class="current"' : '', __('All', '404-solution'), (int)($counts['all'] ?? 0));
+            $html .= $this->filterItem('', $url, ($filter == 0) ? ' class="current"' : '', __('All', '404-solution'), $this->displayCount($counts['all'] ?? 0, $countsIncomplete));
         }
         foreach ($types as $type) {
-            $item = $this->typedFilterItem($sub, $url, $filter, (int)$type, $counts);
+            $item = $this->typedFilterItem($sub, $url, $filter, (int)$type, $counts, $countsIncomplete);
             if ($item !== '') {
                 $html .= $item;
             }
@@ -66,7 +71,7 @@ class ABJ_404_Solution_AdminStatusFilterTabs {
 
         $trashurl = $url . '&filter=' . ABJ404_TRASH_FILTER;
         $trashClass = (($tableOptions['filter'] ?? 0) == ABJ404_TRASH_FILTER) ? ' class="current"' : '';
-        $html .= $this->filterItem(' | ', $trashurl, $trashClass, __('Trash', '404-solution'), (int)($counts['trash'] ?? 0));
+        $html .= $this->filterItem(' | ', $trashurl, $trashClass, __('Trash', '404-solution'), $this->displayCount($counts['trash'] ?? 0, $countsIncomplete));
         $html .= $this->tpl('viewLogsTabFiltersListClose.html');
         $html .= $this->tpl('viewLogsTabFiltersFormGap.html');
 
@@ -149,7 +154,7 @@ class ABJ_404_Solution_AdminStatusFilterTabs {
     }
 
     /** @param array<string, int> $counts */
-    private function typedFilterItem(string $sub, string $url, int $filter, int $type, array $counts): string {
+    private function typedFilterItem(string $sub, string $url, int $filter, int $type, array $counts, bool $countsIncomplete): string {
         if ($type == ABJ404_STATUS_REGEX) {
             return '';
         }
@@ -161,7 +166,13 @@ class ABJ_404_Solution_AdminStatusFilterTabs {
 
         $prefix = ($sub != 'abj404_captured' || $type != ABJ404_STATUS_CAPTURED) ? ' | ' : '';
         $class = ($filter == $type) ? ' class="current"' : '';
-        return $this->filterItem($prefix, $url . '&filter=' . $type, $class, $definition['title'], $definition['count']);
+        return $this->filterItem(
+            $prefix,
+            $url . '&filter=' . $type,
+            $class,
+            $definition['title'],
+            $this->displayCount($definition['count'], $countsIncomplete)
+        );
     }
 
     /**
@@ -194,12 +205,18 @@ class ABJ_404_Solution_AdminStatusFilterTabs {
         return $definitions[$type] ?? null;
     }
 
-    private function filterItem(string $prefix, string $url, string $class, string $title, int $count): string {
+    /** @param int|string $count */
+    private function filterItem(string $prefix, string $url, string $class, string $title, $count): string {
         return $this->f->str_replace(
             array('{prefix}', '{url}', '{class_attr}', '{title}', '{count}'),
             array($prefix, esc_url($url), $class, $title, esc_html((string)$count)),
             $this->tpl('viewLogsTabFilterItem.html')
         );
+    }
+
+    /** @param mixed $count */
+    private function displayCount($count, bool $incomplete): string {
+        return $incomplete ? '...' : (string)intval(is_scalar($count) ? $count : 0);
     }
 
     private function tpl(string $name): string {

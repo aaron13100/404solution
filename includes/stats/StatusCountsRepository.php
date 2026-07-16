@@ -22,8 +22,11 @@ class ABJ_404_Solution_StatusCountsRepository {
 
     const CACHE_KEY_REDIRECT_STATUS = ABJ_404_Solution_ViewReadRuntimeState::CACHE_KEY_REDIRECT_STATUS;
     const CACHE_KEY_CAPTURED_STATUS = ABJ_404_Solution_ViewReadRuntimeState::CACHE_KEY_CAPTURED_STATUS;
+    const CACHE_KEY_REDIRECT_STATUS_LAST_KNOWN = ABJ_404_Solution_ViewReadRuntimeState::CACHE_KEY_REDIRECT_STATUS_LAST_KNOWN;
+    const CACHE_KEY_CAPTURED_STATUS_LAST_KNOWN = ABJ_404_Solution_ViewReadRuntimeState::CACHE_KEY_CAPTURED_STATUS_LAST_KNOWN;
     const CACHE_KEY_HIGH_IMPACT_CAPTURED = ABJ_404_Solution_ViewReadRuntimeState::CACHE_KEY_HIGH_IMPACT_CAPTURED;
     const STATUS_CACHE_TTL = ABJ_404_Solution_ViewReadRuntimeState::STATUS_CACHE_TTL;
+    const STATUS_LAST_KNOWN_CACHE_TTL = ABJ_404_Solution_ViewReadRuntimeState::STATUS_LAST_KNOWN_CACHE_TTL;
     const STATUS_CACHE_TIMEOUT_SELFHEAL_TTL = ABJ_404_Solution_ViewReadRuntimeState::STATUS_CACHE_TIMEOUT_SELFHEAL_TTL;
 
     /** @var ABJ_404_Solution_DatabaseQueryInterface */
@@ -51,18 +54,19 @@ class ABJ_404_Solution_StatusCountsRepository {
     }
 
     /**
-     * @param bool $bypassCache
-     * @param array<string, mixed> $tableOptions Internal per-request read options.
-     * @return array<string, int>
+     * Read redirect counts without touching the database.
+     *
+     * @return array{counts: array<string, int>, needs_refresh: bool, incomplete: bool}
      */
-    public function getRedirectStatusCounts(bool $bypassCache = false, array $tableOptions = array()): array {
-        if (!$bypassCache) {
-            $cached = get_transient(self::CACHE_KEY_REDIRECT_STATUS);
-            if ($cached !== false && is_array($cached)) {
-                /** @var array<string, int> $cached */
-                return $cached;
-            }
-        }
+    public function readRedirectStatusCountsCache(): array {
+        return $this->readStatusCountsCache(
+            self::CACHE_KEY_REDIRECT_STATUS,
+            self::CACHE_KEY_REDIRECT_STATUS_LAST_KNOWN
+        );
+    }
+
+    /** Recompute redirect counts from the cron-only refresh entry point. */
+    public function recomputeRedirectStatusCounts(): bool {
 
         $query = "SELECT
             SUM(CASE WHEN disabled = 0 THEN 1 ELSE 0 END) as active_count,
@@ -74,9 +78,7 @@ class ABJ_404_Solution_StatusCountsRepository {
             WHERE status IN (" . ABJ404_STATUS_MANUAL . ", " . ABJ404_STATUS_AUTO . ", " . ABJ404_STATUS_REGEX . ")";
         $query = $this->dbCore->doTableNameReplacements($query);
 
-        $timeout = is_numeric($tableOptions['_abj404_query_timeout'] ?? null)
-            ? max(1, intval($tableOptions['_abj404_query_timeout'])) : 0;
-        $result = $this->dbCore->queryAndGetResults($query, $timeout > 0 ? array('timeout' => $timeout) : array());
+        $result = $this->dbCore->queryAndGetResults($query, array('timeout' => 20));
         $hadError = !empty($result['last_error']) || !empty($result['timed_out']);
         $rows = is_array($result['rows']) ? $result['rows'] : array();
 
@@ -92,11 +94,13 @@ class ABJ_404_Solution_StatusCountsRepository {
             );
         }
 
-        if (!$hadError && !$bypassCache) {
-            set_transient(self::CACHE_KEY_REDIRECT_STATUS, $counts, self::STATUS_CACHE_TTL);
+        if ($hadError) {
+            return false;
         }
 
-        return $counts;
+        set_transient(self::CACHE_KEY_REDIRECT_STATUS, $counts, self::STATUS_CACHE_TTL);
+        set_transient(self::CACHE_KEY_REDIRECT_STATUS_LAST_KNOWN, $counts, self::STATUS_LAST_KNOWN_CACHE_TTL);
+        return true;
     }
 
     /**
@@ -133,18 +137,19 @@ class ABJ_404_Solution_StatusCountsRepository {
     }
 
     /**
-     * @param bool $bypassCache
-     * @param array<string, mixed> $tableOptions Internal per-request read options.
-     * @return array<string, int>
+     * Read captured counts without touching the database.
+     *
+     * @return array{counts: array<string, int>, needs_refresh: bool, incomplete: bool}
      */
-    public function getCapturedStatusCounts(bool $bypassCache = false, array $tableOptions = array()): array {
-        if (!$bypassCache) {
-            $cached = get_transient(self::CACHE_KEY_CAPTURED_STATUS);
-            if ($cached !== false && is_array($cached)) {
-                /** @var array<string, int> $cached */
-                return $cached;
-            }
-        }
+    public function readCapturedStatusCountsCache(): array {
+        return $this->readStatusCountsCache(
+            self::CACHE_KEY_CAPTURED_STATUS,
+            self::CACHE_KEY_CAPTURED_STATUS_LAST_KNOWN
+        );
+    }
+
+    /** Recompute captured counts from the cron-only refresh entry point. */
+    public function recomputeCapturedStatusCounts(): bool {
 
         $query = "SELECT
             COUNT(*) as total,
@@ -157,9 +162,7 @@ class ABJ_404_Solution_StatusCountsRepository {
             WHERE status IN (" . ABJ404_STATUS_CAPTURED . ", " . ABJ404_STATUS_IGNORED . ", " . ABJ404_STATUS_LATER . ")";
         $query = $this->dbCore->doTableNameReplacements($query);
 
-        $timeout = is_numeric($tableOptions['_abj404_query_timeout'] ?? null)
-            ? max(1, intval($tableOptions['_abj404_query_timeout'])) : 0;
-        $result = $this->dbCore->queryAndGetResults($query, $timeout > 0 ? array('timeout' => $timeout) : array());
+        $result = $this->dbCore->queryAndGetResults($query, array('timeout' => 20));
         $hadError = !empty($result['last_error']) || !empty($result['timed_out']);
         $rows = is_array($result['rows']) ? $result['rows'] : array();
 
@@ -175,11 +178,32 @@ class ABJ_404_Solution_StatusCountsRepository {
             );
         }
 
-        if (!$hadError && !$bypassCache) {
-            set_transient(self::CACHE_KEY_CAPTURED_STATUS, $counts, self::STATUS_CACHE_TTL);
+        if ($hadError) {
+            return false;
         }
 
-        return $counts;
+        set_transient(self::CACHE_KEY_CAPTURED_STATUS, $counts, self::STATUS_CACHE_TTL);
+        set_transient(self::CACHE_KEY_CAPTURED_STATUS_LAST_KNOWN, $counts, self::STATUS_LAST_KNOWN_CACHE_TTL);
+        return true;
+    }
+
+    /**
+     * @return array{counts: array<string, int>, needs_refresh: bool, incomplete: bool}
+     */
+    private function readStatusCountsCache(string $currentKey, string $lastKnownKey): array {
+        $current = get_transient($currentKey);
+        if (is_array($current)) {
+            /** @var array<string, int> $current */
+            return array('counts' => $current, 'needs_refresh' => false, 'incomplete' => false);
+        }
+
+        $lastKnown = get_transient($lastKnownKey);
+        if (is_array($lastKnown)) {
+            /** @var array<string, int> $lastKnown */
+            return array('counts' => $lastKnown, 'needs_refresh' => true, 'incomplete' => false);
+        }
+
+        return array('counts' => array(), 'needs_refresh' => true, 'incomplete' => true);
     }
 
     /**

@@ -65,6 +65,9 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
     /** @var ABJ_404_Solution_StatusCountsRepository */
     private $statusCounts;
 
+    /** @var ABJ_404_Solution_StatusCountsRefreshCoordinator */
+    private $statusCountsRefreshCoordinator;
+
     /** @var ABJ_404_Solution_RedirectsBulkReader */
     private $redirectsBulkReader;
 
@@ -109,6 +112,13 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
         $this->liveResolver = new ABJ_404_Solution_RedirectsViewLiveResolver($dbCore, $this->f);
 
         $this->statusCounts = new ABJ_404_Solution_StatusCountsRepository($dbCore, $logsRepo, $this->queryBuilder);
+        $this->statusCountsRefreshCoordinator = new ABJ_404_Solution_StatusCountsRefreshCoordinator(
+            $this->statusCounts,
+            new ABJ_404_Solution_StatsRefreshLock($dbCore),
+            function(string $message): void {
+                $this->logger->warn($message);
+            }
+        );
         $this->redirectsBulkReader = new ABJ_404_Solution_RedirectsBulkReader($dbCore, $this->queryBuilder, $this->f);
         $this->logsMetricsReader = new ABJ_404_Solution_LogsMetricsReader($dbCore, $logsRepo, $this->f, $this->logger);
         $this->dbMetadataReader = new ABJ_404_Solution_DatabaseMetadataReader($dbCore);
@@ -281,12 +291,13 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
     // =========================================================================
 
     /**
-     * @param bool $bypassCache
-     * @param array<string, mixed> $tableOptions Internal per-request read options.
+     * @param bool $bypassCache Retained for compatibility; foreground reads are always cache-only.
+     * @param array<string, mixed> $tableOptions Retained for compatibility; never enables a foreground query.
      * @return array<string, int>
      */
     function getRedirectStatusCounts($bypassCache = false, array $tableOptions = array()): array {
-        return $this->statusCounts->getRedirectStatusCounts((bool)$bypassCache, $tableOptions);
+        unset($bypassCache, $tableOptions);
+        return $this->statusCountsRefreshCoordinator->getRedirectStatusCounts();
     }
 
     /** @return array<string, int> */
@@ -295,12 +306,21 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
     }
 
     /**
-     * @param bool $bypassCache
-     * @param array<string, mixed> $tableOptions Internal per-request read options.
+     * @param bool $bypassCache Retained for compatibility; foreground reads are always cache-only.
+     * @param array<string, mixed> $tableOptions Retained for compatibility; never enables a foreground query.
      * @return array<string, int>
      */
     function getCapturedStatusCounts($bypassCache = false, array $tableOptions = array()): array {
-        return $this->statusCounts->getCapturedStatusCounts((bool)$bypassCache, $tableOptions);
+        unset($bypassCache, $tableOptions);
+        return $this->statusCountsRefreshCoordinator->getCapturedStatusCounts();
+    }
+
+    /**
+     * Cron-only status-count recomputation. Foreground callers can only enqueue
+     * the work, which prevents a cache miss from entering an aggregate query.
+     */
+    public function refreshStatusCounts(string $scope): void {
+        $this->statusCountsRefreshCoordinator->refresh($scope);
     }
 
     /** @return int */
