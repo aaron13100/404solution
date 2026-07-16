@@ -9,8 +9,14 @@ if (!defined('ABSPATH')) {
  */
 class ABJ_404_Solution_StatsRefreshLock {
 
-    /** @var int Cooldown for distributed refresh locks. */
-    const REFRESH_LOCK_COOLDOWN_SECONDS = 30;
+    /**
+     * Distributed lock lifetime. This must exceed the longest guarded query
+     * budget (the 60-second high-impact count) so a live worker is never
+     * mistaken for a stale lock while its query is still running.
+     *
+     * @var int
+     */
+    const REFRESH_LOCK_COOLDOWN_SECONDS = 120;
 
     /** @var ABJ_404_Solution_DatabaseCoreInterface */
     private $dbCore;

@@ -72,7 +72,7 @@ class ABJ_404_Solution_Ajax_RefreshHealthBar {
             ABJ_404_Solution_AjaxStageDiagnostics::setStage($context, 'high_impact_count');
             $rollupAvailable = $logsRepository->logsHitsTableExists();
             if ($rollupAvailable) {
-                $highImpactCapturedCount = (int)$viewReadService->getHighImpactCapturedCount();
+                $highImpactCapturedCount = $viewReadService->getHighImpactCapturedCount();
             } else {
                 $logsRepository->scheduleHitsTableRebuild();
                 $highImpactCapturedCount = null;

@@ -11,6 +11,7 @@ class ABJ_404_Solution_StatusCountsRefreshCoordinator {
 
     const SCOPE_REDIRECTS = 'redirects';
     const SCOPE_CAPTURED = 'captured';
+    const SCOPE_HIGH_IMPACT = 'high-impact';
 
     /** @var ABJ_404_Solution_StatusCountsRepository */
     private $statusCounts;
@@ -47,6 +48,15 @@ class ABJ_404_Solution_StatusCountsRefreshCoordinator {
         );
     }
 
+    /** @return int|null */
+    public function getHighImpactCapturedCount(): ?int {
+        $state = $this->statusCounts->readHighImpactCapturedCountCache();
+        if ($state['needs_refresh']) {
+            $this->scheduleRefresh(self::SCOPE_HIGH_IMPACT);
+        }
+        return $state['count'];
+    }
+
     /**
      * Cron-only recomputation. A direct foreground call can only enqueue work.
      */
@@ -59,6 +69,10 @@ class ABJ_404_Solution_StatusCountsRefreshCoordinator {
             self::SCOPE_CAPTURED => array(
                 'cache_key' => ABJ_404_Solution_ViewReadRuntimeState::CACHE_KEY_CAPTURED_STATUS,
                 'callback' => array($this->statusCounts, 'recomputeCapturedStatusCounts'),
+            ),
+            self::SCOPE_HIGH_IMPACT => array(
+                'cache_key' => ABJ_404_Solution_ViewReadRuntimeState::CACHE_KEY_HIGH_IMPACT_CAPTURED,
+                'callback' => array($this->statusCounts, 'recomputeHighImpactCapturedCount'),
             ),
         );
         if (!isset($refreshers[$scope])) {

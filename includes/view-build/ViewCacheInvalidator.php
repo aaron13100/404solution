@@ -70,9 +70,21 @@ class ABJ_404_Solution_ViewCacheInvalidator {
         if (ABJ_404_Solution_ViewReadRuntimeState::$bulkMutationInProgress) {
             return;
         }
-        delete_transient(ABJ_404_Solution_ViewReadRuntimeState::CACHE_KEY_REDIRECT_STATUS);
-        delete_transient(ABJ_404_Solution_ViewReadRuntimeState::CACHE_KEY_CAPTURED_STATUS);
-        delete_transient(ABJ_404_Solution_ViewReadRuntimeState::CACHE_KEY_HIGH_IMPACT_CAPTURED);
+        self::markTransientStale(array(
+            'current' => ABJ_404_Solution_ViewReadRuntimeState::CACHE_KEY_REDIRECT_STATUS,
+            'last_known' => ABJ_404_Solution_ViewReadRuntimeState::CACHE_KEY_REDIRECT_STATUS_LAST_KNOWN,
+            'kind' => 'array',
+        ));
+        self::markTransientStale(array(
+            'current' => ABJ_404_Solution_ViewReadRuntimeState::CACHE_KEY_CAPTURED_STATUS,
+            'last_known' => ABJ_404_Solution_ViewReadRuntimeState::CACHE_KEY_CAPTURED_STATUS_LAST_KNOWN,
+            'kind' => 'array',
+        ));
+        self::markTransientStale(array(
+            'current' => ABJ_404_Solution_ViewReadRuntimeState::CACHE_KEY_HIGH_IMPACT_CAPTURED,
+            'last_known' => ABJ_404_Solution_ViewReadRuntimeState::CACHE_KEY_HIGH_IMPACT_CAPTURED_LAST_KNOWN,
+            'kind' => 'count',
+        ));
         $this->invalidateViewSnapshotCache();
     }
 
@@ -107,8 +119,46 @@ class ABJ_404_Solution_ViewCacheInvalidator {
         }
         set_transient($cooldownKey, 1,
             ABJ_404_Solution_ViewReadRuntimeState::CAPTURED_COUNT_INVALIDATE_COOLDOWN_SECONDS);
-        delete_transient(ABJ_404_Solution_ViewReadRuntimeState::CACHE_KEY_CAPTURED_STATUS);
-        delete_transient(ABJ_404_Solution_ViewReadRuntimeState::CACHE_KEY_HIGH_IMPACT_CAPTURED);
+        self::invalidateCapturedStatusCountsCache();
+    }
+
+    /**
+     * Mark captured-scoped count caches stale without applying a debounce.
+     */
+    public static function invalidateCapturedStatusCountsCache(): void {
+        if (ABJ_404_Solution_ViewReadRuntimeState::$bulkMutationInProgress) {
+            return;
+        }
+        self::markTransientStale(array(
+            'current' => ABJ_404_Solution_ViewReadRuntimeState::CACHE_KEY_CAPTURED_STATUS,
+            'last_known' => ABJ_404_Solution_ViewReadRuntimeState::CACHE_KEY_CAPTURED_STATUS_LAST_KNOWN,
+            'kind' => 'array',
+        ));
+        self::markTransientStale(array(
+            'current' => ABJ_404_Solution_ViewReadRuntimeState::CACHE_KEY_HIGH_IMPACT_CAPTURED,
+            'last_known' => ABJ_404_Solution_ViewReadRuntimeState::CACHE_KEY_HIGH_IMPACT_CAPTURED_LAST_KNOWN,
+            'kind' => 'count',
+        ));
+    }
+
+    /**
+     * Preserve a trustworthy current value before expiring its fresh cache key.
+     *
+     * @param array{current:string,last_known:string,kind:'array'|'count'} $cache
+     */
+    private static function markTransientStale(array $cache): void {
+        $current = get_transient($cache['current']);
+        $isTrustworthy = ($cache['kind'] === 'array' && is_array($current))
+            || ($cache['kind'] === 'count' && is_numeric($current));
+        if ($isTrustworthy) {
+            // allow-cache-empty: numeric zero is a trustworthy computed count and shaped all-zero status arrays still contain their named keys.
+            set_transient(
+                $cache['last_known'],
+                $cache['kind'] === 'count' ? intval($current) : $current,
+                ABJ_404_Solution_ViewReadRuntimeState::STATUS_LAST_KNOWN_CACHE_TTL
+            );
+        }
+        delete_transient($cache['current']);
     }
 
     /**

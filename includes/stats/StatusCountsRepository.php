@@ -25,9 +25,9 @@ class ABJ_404_Solution_StatusCountsRepository {
     const CACHE_KEY_REDIRECT_STATUS_LAST_KNOWN = ABJ_404_Solution_ViewReadRuntimeState::CACHE_KEY_REDIRECT_STATUS_LAST_KNOWN;
     const CACHE_KEY_CAPTURED_STATUS_LAST_KNOWN = ABJ_404_Solution_ViewReadRuntimeState::CACHE_KEY_CAPTURED_STATUS_LAST_KNOWN;
     const CACHE_KEY_HIGH_IMPACT_CAPTURED = ABJ_404_Solution_ViewReadRuntimeState::CACHE_KEY_HIGH_IMPACT_CAPTURED;
+    const CACHE_KEY_HIGH_IMPACT_CAPTURED_LAST_KNOWN = ABJ_404_Solution_ViewReadRuntimeState::CACHE_KEY_HIGH_IMPACT_CAPTURED_LAST_KNOWN;
     const STATUS_CACHE_TTL = ABJ_404_Solution_ViewReadRuntimeState::STATUS_CACHE_TTL;
     const STATUS_LAST_KNOWN_CACHE_TTL = ABJ_404_Solution_ViewReadRuntimeState::STATUS_LAST_KNOWN_CACHE_TTL;
-    const STATUS_CACHE_TIMEOUT_SELFHEAL_TTL = ABJ_404_Solution_ViewReadRuntimeState::STATUS_CACHE_TIMEOUT_SELFHEAL_TTL;
 
     /** @var ABJ_404_Solution_DatabaseQueryInterface */
     private $dbCore;
@@ -207,18 +207,29 @@ class ABJ_404_Solution_StatusCountsRepository {
     }
 
     /**
-     * @return int Cached count; on timeout returns 0 and schedules a hits-table rebuild
-     *             (the cached 0 is overwritten with the real value once rebuild completes).
+     * Read the high-impact count without touching the database.
+     *
+     * @return array{count:?int,needs_refresh:bool}
      */
-    public function getHighImpactCapturedCount(): int {
-        $cached = get_transient(self::CACHE_KEY_HIGH_IMPACT_CAPTURED);
-        if ($cached !== false) {
-            return intval(is_scalar($cached) ? $cached : 0);
+    public function readHighImpactCapturedCountCache(): array {
+        $current = get_transient(self::CACHE_KEY_HIGH_IMPACT_CAPTURED);
+        if (is_numeric($current)) {
+            return array('count' => intval($current), 'needs_refresh' => false);
         }
 
+        $lastKnown = get_transient(self::CACHE_KEY_HIGH_IMPACT_CAPTURED_LAST_KNOWN);
+        if (is_numeric($lastKnown)) {
+            return array('count' => intval($lastKnown), 'needs_refresh' => true);
+        }
+
+        return array('count' => null, 'needs_refresh' => true);
+    }
+
+    /** Recompute the high-impact count from the cron-only refresh entry point. */
+    public function recomputeHighImpactCapturedCount(): bool {
         if (!$this->logsRepo->logsHitsTableExists()) {
             $this->logsRepo->scheduleHitsTableRebuild();
-            return 0;
+            return false;
         }
 
         $query = $this->queryBuilder->buildHighImpactCapturedCountQuery();
@@ -232,23 +243,22 @@ class ABJ_404_Solution_StatusCountsRepository {
 
         if ($timedOut) {
             $this->logsRepo->scheduleHitsTableRebuild();
-            // allow-cache-empty: timeout self-heal sentinel, 5-minute window. Real value returns once the rebuild completes and the short cache expires.
-            set_transient(self::CACHE_KEY_HIGH_IMPACT_CAPTURED, 0, self::STATUS_CACHE_TIMEOUT_SELFHEAL_TTL);
-            return 0;
+            return false;
         }
 
         if ($hadError) {
-            return 0;
+            return false;
         }
 
         if ($count === 0 && $this->isHitsTableEmpty()) {
             $this->logsRepo->scheduleHitsTableRebuild();
-            return 0;
+            return false;
         }
 
         set_transient(self::CACHE_KEY_HIGH_IMPACT_CAPTURED, $count, self::STATUS_CACHE_TTL);
+        set_transient(self::CACHE_KEY_HIGH_IMPACT_CAPTURED_LAST_KNOWN, $count, self::STATUS_LAST_KNOWN_CACHE_TTL);
 
-        return $count;
+        return true;
     }
 
     /** @return int */

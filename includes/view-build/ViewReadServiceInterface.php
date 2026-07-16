@@ -48,8 +48,8 @@ interface ABJ_404_Solution_ViewReadServiceInterface {
      */
     public function getCapturedStatusCounts($bypassCache = false, array $tableOptions = array()): array;
 
-    /** @return int */
-    public function getHighImpactCapturedCount(): int;
+    /** @return int|null Null until the background count has been computed. */
+    public function getHighImpactCapturedCount(): ?int;
 
     /** @return string */
     public function buildHighImpactCapturedCountQuery(): string;

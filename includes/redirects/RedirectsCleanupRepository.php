@@ -334,7 +334,7 @@ class ABJ_404_Solution_RedirectsCleanupRepository {
 
         if ($totalTrashed > 0) {
             $this->logger->infoMessage("Auto-trashed " . $totalTrashed . " junk/stale captured URLs during maintenance.");
-            delete_transient(ABJ_404_Solution_ViewReadRuntimeState::CACHE_KEY_CAPTURED_STATUS);
+            ABJ_404_Solution_ViewCacheInvalidator::invalidateCapturedStatusCountsCache();
         }
 
         return $totalTrashed;

@@ -36,7 +36,6 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
     const CACHE_KEY_CAPTURED_STATUS = ABJ_404_Solution_ViewReadRuntimeState::CACHE_KEY_CAPTURED_STATUS;
     const CACHE_KEY_HIGH_IMPACT_CAPTURED = ABJ_404_Solution_ViewReadRuntimeState::CACHE_KEY_HIGH_IMPACT_CAPTURED;
     const STATUS_CACHE_TTL = ABJ_404_Solution_ViewReadRuntimeState::STATUS_CACHE_TTL;
-    const STATUS_CACHE_TIMEOUT_SELFHEAL_TTL = ABJ_404_Solution_ViewReadRuntimeState::STATUS_CACHE_TIMEOUT_SELFHEAL_TTL;
     const LOGS_COUNT_CACHE_TTL_SECONDS = ABJ_404_Solution_LogsMetricsReader::LOGS_COUNT_CACHE_TTL_SECONDS;
 
     /** @var bool Per-request "bulk mutation in progress" flag. */
@@ -323,9 +322,9 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
         $this->statusCountsRefreshCoordinator->refresh($scope);
     }
 
-    /** @return int */
-    function getHighImpactCapturedCount(): int {
-        return $this->statusCounts->getHighImpactCapturedCount();
+    /** @return int|null */
+    function getHighImpactCapturedCount(): ?int {
+        return $this->statusCountsRefreshCoordinator->getHighImpactCapturedCount();
     }
 
     /** @return int */
