@@ -140,6 +140,7 @@ class ABJ_404_Solution_DatabaseUpgradeIndexes extends ABJ_404_Solution_DatabaseU
 	        }
 	        $priority = array_flip(array(
 	            'idx_dest_for_view_id',
+	            'idx_status_disabled_timestamp_id',
 	            'idx_status_disabled_url_sort_id',
 	            'idx_disabled_url_sort_id',
 	            'idx_status_disabled_dest_sort_id',

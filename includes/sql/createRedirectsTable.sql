@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS {wp_abj404_redirects} (
     KEY `idx_disabled_last_used_id` (`disabled`, `last_used`, `id`),
     KEY `idx_status_disabled_logshits_id` (`status`, `disabled`, `logshits`, `id`),
     KEY `idx_status_disabled_last_used_id` (`status`, `disabled`, `last_used`, `id`),
+    KEY `idx_status_disabled_timestamp_id` (`status`, `disabled`, `timestamp`, `id`),
     KEY `idx_disabled_dest_sort_id` (`disabled`, `dest_sort_key`, `id`),
     KEY `idx_status_disabled_dest_sort_id` (`status`, `disabled`, `dest_sort_key`, `id`),
     KEY `idx_disabled_url_sort_id` (`disabled`, `url_sort_key`, `id`),
