@@ -113,13 +113,42 @@ class ABJ_404_Solution_ViewCacheInvalidator {
         if (ABJ_404_Solution_ViewReadRuntimeState::$bulkMutationInProgress) {
             return;
         }
-        $cooldownKey = ABJ_404_Solution_ViewReadRuntimeState::CACHE_KEY_CAPTURED_COUNT_INVALIDATE_COOLDOWN;
-        if (get_transient($cooldownKey)) {
+        if (!self::claimCapturedCountInvalidateCooldown()) {
             return;
         }
-        set_transient($cooldownKey, 1,
-            ABJ_404_Solution_ViewReadRuntimeState::CAPTURED_COUNT_INVALIDATE_COOLDOWN_SECONDS);
         self::invalidateCapturedStatusCountsCache();
+    }
+
+    /**
+     * Single-flight claim on the captured-count invalidation cooldown.
+     * Returns true only for the caller that wins the race.
+     *
+     * A plain get_transient()/set_transient() pair is check-then-act: under
+     * a burst of near-simultaneous captured-URL inserts (bot-scanner flood
+     * traffic across parallel PHP-FPM workers -- the exact profile this
+     * debounce exists for), multiple requests can each read an empty
+     * cooldown before any of them writes it, so the "collapse a burst to
+     * one invalidation" guarantee silently fails under real concurrency.
+     * Same TOCTOU shape as Ajax_Php::consumeRateLimit(), fixed the same way:
+     * wp_cache_add() only succeeds in creating the key if it doesn't already
+     * exist, so concurrent callers on a persistent object cache serialize on
+     * that add. Sites without a persistent object cache keep the narrower
+     * pre-existing transient race rather than gain a DB dependency in this
+     * intentionally zero-dependency method (called from the frontend
+     * capture hot path without a wired invalidator instance).
+     */
+    private static function claimCapturedCountInvalidateCooldown(): bool {
+        $key = ABJ_404_Solution_ViewReadRuntimeState::CACHE_KEY_CAPTURED_COUNT_INVALIDATE_COOLDOWN;
+        $ttl = ABJ_404_Solution_ViewReadRuntimeState::CAPTURED_COUNT_INVALIDATE_COOLDOWN_SECONDS;
+        if (function_exists('wp_using_ext_object_cache') && wp_using_ext_object_cache()
+            && function_exists('wp_cache_add')) {
+            return (bool)wp_cache_add($key, 1, 'abj404_view_cache_invalidate', $ttl);
+        }
+        if (get_transient($key)) {
+            return false;
+        }
+        set_transient($key, 1, $ttl);
+        return true;
     }
 
     /**
