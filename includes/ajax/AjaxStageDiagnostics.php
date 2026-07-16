@@ -152,50 +152,6 @@ class ABJ_404_Solution_AjaxStageDiagnostics {
                 'query_label' => 'getHighImpactCapturedCount()',
                 'what_happening' => 'Counting high-impact captured URLs',
             ),
-            'staged_build_s1_create' => array(
-                'query_label' => 'CREATE TABLE wp_abj404_view_build', // allow-prefix-literal: display-only diagnostic label.
-                'what_happening' => 'Creating build buffer (1/11)',
-            ),
-            'staged_build_s2_insert' => array(
-                'query_label' => 'INSERT INTO wp_abj404_view_build SELECT FROM wp_abj404_redirects', // allow-prefix-literal: display-only diagnostic label.
-                'what_happening' => 'Bulk-loading redirects into build buffer (2/11)',
-            ),
-            'staged_build_s3_index_fd' => array(
-                'query_label' => 'ALTER TABLE wp_abj404_view_build ADD INDEX idx_fd_int', // allow-prefix-literal: display-only diagnostic label.
-                'what_happening' => 'Adding pre-join indexes (3/11)',
-            ),
-            'staged_build_s4_update_posts' => array(
-                'query_label' => 'UPDATE wp_abj404_view_build LEFT JOIN wp_posts', // allow-prefix-literal: display-only diagnostic label.
-                'what_happening' => 'Filling published-status from wp_posts (4/11)',
-            ),
-            'staged_build_s5_update_terms' => array(
-                'query_label' => 'UPDATE wp_abj404_view_build LEFT JOIN wp_terms', // allow-prefix-literal: display-only diagnostic label.
-                'what_happening' => 'Filling published-status from wp_terms (5/11)',
-            ),
-            'staged_build_s6_update_home' => array(
-                'query_label' => 'UPDATE wp_abj404_view_build (HOME)', // allow-prefix-literal: display-only diagnostic label.
-                'what_happening' => 'Filling HOME-typed redirects (6/11)',
-            ),
-            'staged_build_s7_update_external' => array(
-                'query_label' => 'UPDATE wp_abj404_view_build (EXTERNAL)', // allow-prefix-literal: display-only diagnostic label.
-                'what_happening' => 'Filling EXTERNAL-typed redirects (7/11)',
-            ),
-            'staged_build_s8_update_special' => array(
-                'query_label' => 'UPDATE wp_abj404_view_build (404-displayed)', // allow-prefix-literal: display-only diagnostic label.
-                'what_happening' => 'Filling 404-displayed redirects (8/11)',
-            ),
-            'staged_build_s9_update_hits' => array(
-                'query_label' => 'UPDATE wp_abj404_view_build LEFT JOIN wp_abj404_logs_hits', // allow-prefix-literal: display-only diagnostic label.
-                'what_happening' => 'Filling hit counts (9/11)',
-            ),
-            'staged_build_s10_index_sort' => array(
-                'query_label' => 'ALTER TABLE wp_abj404_view_build ADD INDEX (sort indexes)', // allow-prefix-literal: display-only diagnostic label.
-                'what_happening' => 'Adding read-side sort indexes (10/11)',
-            ),
-            'staged_build_s11_swap' => array(
-                'query_label' => 'Finalize admin table refresh',
-                'what_happening' => 'Finalizing admin table refresh (11/11)',
-            ),
         );
         if (array_key_exists($stage, $map)) {
             return $map[$stage];
