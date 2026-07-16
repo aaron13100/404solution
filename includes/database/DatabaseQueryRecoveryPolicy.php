@@ -70,7 +70,7 @@ class ABJ_404_Solution_DatabaseQueryRecoveryPolicy {
         $this->repairMissingTableIfNeeded($query, $result, $options);
         $this->retryInvalidDataIfNeeded($query, $result);
         $this->retryDeadlockIfNeeded($query, $result, $resultType, $producesRows);
-        $this->recoverCollationIfNeeded($query, $result, $resultType, $producesRows);
+        $this->recoverCollationIfNeeded($result);
         $this->handleTimeoutIfNeeded($query, $result, $timeoutSeconds);
         $this->noteDatabaseIssueIfNeeded($result);
         return $producesRows;
@@ -169,16 +169,13 @@ class ABJ_404_Solution_DatabaseQueryRecoveryPolicy {
     }
 
     /**
-     * @param string $query
      * @param array<string, mixed> $result
-     * @param 'OBJECT'|'OBJECT_K'|'ARRAY_A'|'ARRAY_N' $resultType
-     * @param bool $producesRows
      * @return void
      */
-    private function recoverCollationIfNeeded(string $query, array &$result, string $resultType, bool $producesRows): void {
+    private function recoverCollationIfNeeded(array $result): void {
         $lastError = $this->lastErrorFromResult($result);
         if ($lastError !== '' && $this->core->errorClassifier()->taxonomy()->schema()->isCollationError($lastError)) {
-            $this->core->collationHelper()->recoverFromCollationMismatchAndRetry($query, $result, $producesRows, $resultType);
+            $this->core->collationHelper()->scheduleCollationRecovery();
         }
     }
 

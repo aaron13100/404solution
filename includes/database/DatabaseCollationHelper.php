@@ -17,9 +17,8 @@ if (!defined('ABSPATH')) {
  *   2. Discovering the effective table-level and column-level collation via
  *      SHOW CREATE TABLE and information_schema, with safe fallbacks.
  *   3. Resolving the preferred utf8mb4 collation from the wpdb connection.
- *   4. Auto-recovering from a collation-mismatch error at query time: under a
- *      static recursion guard plus a 1-hour cooldown, run correctCollations()
- *      and retry the failing query.
+ *   4. Responding to a query-time collation mismatch by scheduling a
+ *      schema-wide correction outside the foreground request.
  *
  * This class holds no DatabaseCore back-reference. It receives:
  *   - a query-runner callable bound over DatabaseCore::queryAndGetResults
@@ -28,8 +27,6 @@ if (!defined('ABSPATH')) {
  *     (signature: function(string): string);
  *   - getter/setter callables for runtime flags
  *     (signatures: function(string): mixed, function(string, mixed, int): void);
- *   - a result-harvester callable bound over DatabaseWpdbResultHarvester
- *     (signature: function(array<string,mixed>): void, by-reference);
  *   - the plugin logger and an optional clock.
  *
  * The recursion guard is a static property on this class (it must survive across
@@ -41,8 +38,8 @@ class ABJ_404_Solution_DatabaseCollationHelper {
     /** @var int Cooldown after a collation-recovery attempt (seconds). */
     const COLLATION_RECOVERY_COOLDOWN_SECONDS = 3600;
 
-    /** @var bool Prevent recursive collation auto-recovery within one request. */
-    private static $collationRecoveryInProgress = false;
+    /** @var bool Prevent recursive collation-repair scheduling within one request. */
+    private static $collationSchedulingInProgress = false;
 
     /** @var callable(string, array<string,mixed>): array<string,mixed> */
     private $queryRunner;
@@ -55,9 +52,6 @@ class ABJ_404_Solution_DatabaseCollationHelper {
 
     /** @var callable(string, mixed, int): void */
     private $runtimeFlagSetter;
-
-    /** @var callable(array<string,mixed>): void */
-    private $resultHarvester;
 
     /** @var ABJ_404_Solution_Logging */
     private $logger;
@@ -75,9 +69,6 @@ class ABJ_404_Solution_DatabaseCollationHelper {
      *   Returns the current value of a runtime flag (transient with option fallback).
      * @param callable(string, mixed, int): void $runtimeFlagSetter
      *   Persists a runtime-flag value with a TTL.
-     * @param callable(array<string,mixed>): void $resultHarvester
-     *   Copies wpdb->last_error / rows_affected / insert_id into the result array,
-     *   by reference. Bound by DatabaseCore over DatabaseWpdbResultHarvester.
      * @param ABJ_404_Solution_Logging $logger
      * @param ABJ_404_Solution_Clock|null $clock Optional; lazily resolved when null.
      */
@@ -86,7 +77,6 @@ class ABJ_404_Solution_DatabaseCollationHelper {
         callable $ddlReader,
         callable $runtimeFlagGetter,
         callable $runtimeFlagSetter,
-        callable $resultHarvester,
         $logger,
         $clock = null
     ) {
@@ -94,7 +84,6 @@ class ABJ_404_Solution_DatabaseCollationHelper {
         $this->ddlReader = $ddlReader;
         $this->runtimeFlagGetter = $runtimeFlagGetter;
         $this->runtimeFlagSetter = $runtimeFlagSetter;
-        $this->resultHarvester = $resultHarvester;
         $this->logger = $logger;
         $this->clock = $clock;
     }
@@ -105,7 +94,7 @@ class ABJ_404_Solution_DatabaseCollationHelper {
      * @return void
      */
     public static function resetRecursionGuardForTests(): void {
-        self::$collationRecoveryInProgress = false;
+        self::$collationSchedulingInProgress = false;
     }
 
     /**
@@ -232,20 +221,19 @@ class ABJ_404_Solution_DatabaseCollationHelper {
     }
 
     /**
-     * Auto-recover from a collation mismatch detected at query time.
+     * Schedule broad collation correction outside the foreground request.
      *
-     * Under a static recursion guard and a 1-hour cooldown, invokes
-     * correctCollations() to converge plugin-table collations, then flushes
-     * the wpdb connection and retries the original query.
+     * correctCollations() discovers every plugin table and may issue ALTER
+     * TABLE ... CONVERT for each drifted table. Running that work inline can
+     * exhaust an admin AJAX request on large sites, so the query that detected
+     * the mismatch keeps its normal degraded error result while a dedicated,
+     * deduplicated WP-Cron event performs the repair. Scheduler failures remain
+     * retryable and are logged with the adapter's underlying failure detail.
      *
-     * @param string $query
-     * @param array<string, mixed> $result Passed by reference.
-     * @param bool $producesRows Whether the query returns result rows.
-     * @param 'OBJECT'|'OBJECT_K'|'ARRAY_A'|'ARRAY_N' $resultType wpdb output type for get_results().
      * @return void
      */
-    public function recoverFromCollationMismatchAndRetry(string $query, array &$result, bool $producesRows, string $resultType): void {
-        if (self::$collationRecoveryInProgress) {
+    public function scheduleCollationRecovery(): void {
+        if (self::$collationSchedulingInProgress) {
             return;
         }
 
@@ -253,41 +241,37 @@ class ABJ_404_Solution_DatabaseCollationHelper {
         $cooldownUntil = ($this->runtimeFlagGetter)($cooldownKey);
         $onCooldown = is_scalar($cooldownUntil) && (int)$cooldownUntil > $this->clock()->now();
 
-        if (!$onCooldown) {
-            self::$collationRecoveryInProgress = true;
-            try {
-                $this->logger->infoMessage("Collation mismatch detected: running correctCollations() to converge plugin tables."); // allow-em-dash: original string from DataAccessTrait_Maintenance had em dash, replaced with colon
-                if (class_exists('ABJ_404_Solution_DatabaseUpgradesEtc')) {
-                    $upgrades = abj_service('database_upgrades');
-                    if (method_exists($upgrades, 'correctCollations')) {
-                        $upgrades->components()->collationDriftUpgrade()->correctCollations();
-                    }
-                }
-            } catch (Throwable $e) {
-                $this->logger->warn("correctCollations() threw during collation auto-recovery: " . $e->getMessage());
-            } finally {
-                self::$collationRecoveryInProgress = false;
+        if ($onCooldown) {
+            return;
+        }
+
+        self::$collationSchedulingInProgress = true;
+        try {
+            $scheduler = abj_cron_scheduler();
+            $scheduled = $scheduler->scheduleSingleIfMissing(
+                ABJ_404_Solution_CronScheduler::HOOK_REPAIR_COLLATIONS,
+                1
+            );
+            if ($scheduled) {
                 ($this->runtimeFlagSetter)(
                     $cooldownKey,
                     $this->clock()->now() + self::COLLATION_RECOVERY_COOLDOWN_SECONDS,
                     self::COLLATION_RECOVERY_COOLDOWN_SECONDS
                 );
+                $this->logger->infoMessage(
+                    'Collation mismatch detected: schema correction scheduled for background repair.'
+                );
+                return;
             }
-        }
-
-        global $wpdb;
-        /** @var wpdb $wpdb */
-        $wpdb->flush();
-        if ($producesRows) {
-            $result['rows'] = $wpdb->get_results($query, $resultType);
-        } else {
-            $wpdb->query($query);
-            $result['rows'] = array();
-        }
-        ($this->resultHarvester)($result);
-
-        if ($result['last_error'] === '') {
-            $this->logger->debugMessage("Collation auto-recovery succeeded; query retry passed.");
+            $this->logger->warn(
+                'Could not schedule background collation repair: ' . $scheduler->lastFailureDetail()
+            );
+        } catch (Throwable $e) {
+            $this->logger->warn(
+                'Could not schedule background collation repair: ' . $e->getMessage()
+            );
+        } finally {
+            self::$collationSchedulingInProgress = false;
         }
     }
 

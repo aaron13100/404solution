@@ -48,18 +48,11 @@ interface ABJ_404_Solution_DatabaseErrorRecoveryInterface {
     public function repairDuplicateIDs(string $errorMessage, string $sqlThatWasRun): void;
 
     /**
-     * Auto-recover from collation mismatches by running correctCollations()
-     * then retrying the original query.
+     * Schedule schema-wide collation recovery outside the foreground request.
      *
-     * @param string $query The SQL query to retry.
-     * @param array<string, mixed> $result Passed by reference; updated on successful retry.
-     * @param bool $producesRows Whether the query returns result rows.
-     * @param string $resultType wpdb output type (ARRAY_A or OBJECT).
      * @return void
      */
-    public function recoverFromCollationMismatchAndRetry(
-        string $query, array &$result, bool $producesRows, string $resultType
-    ): void;
+    public function scheduleCollationRecovery(): void;
 
     /**
      * Inject the clock instance for testability.

@@ -257,8 +257,8 @@ class ABJ_404_Solution_DatabaseQueryTimeoutManager {
      * requests skip the known-unsupported wrapper until the capability is
      * probed again.
      *
-     * Result harvest mirrors the other recovery paths
-     * (recoverFromCollationMismatchAndRetry, attemptMissingTableRepairAndRetry):
+     * Result harvest mirrors retrying recovery paths such as
+     * attemptMissingTableRepairAndRetry():
      * write into $result by reference so the caller's downstream branches see
      * the retry's outcome instead of the original error.
      *
@@ -305,7 +305,7 @@ class ABJ_404_Solution_DatabaseQueryTimeoutManager {
         // wrapper. Using queryProducesResultRows on the unwrapped query keeps
         // the routing correct for INSERT/UPDATE/DELETE/DDL.
         // SET STATEMENT wrapper-rejection recovery is a DAO-internal primitive
-        // (parallel to recoverFromCollationMismatchAndRetry). It must call
+        // (parallel to attemptMissingTableRepairAndRetry). It must call
         // $wpdb directly: re-routing through queryAndGetResults() would
         // re-enter the same SET STATEMENT detection path, deepening the call
         // stack on every retry. Per-bypass approval markers are inline below.

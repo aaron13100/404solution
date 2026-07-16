@@ -293,6 +293,7 @@ class ABJ_404_Solution_PluginLogicLifecycle {
                 'abj404_redirects_denorm_backfill',
                 'abj404_redirects_sort_key_backfill',
                 'abj404_send_queued_report',
+                'abj404_repair_collations',
             );
 
             foreach ($cron_hooks as $hook) {

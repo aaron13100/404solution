@@ -155,7 +155,7 @@ class ABJ_404_Solution_DatabaseErrorClassifier {
             return;
         }
         if ($this->taxonomy->schema()->isCollationError($errorText)) {
-            $this->logger->debugMessage("Collation mismatch detected (auto-recovery will run): " . $errorText);
+            $this->logger->debugMessage("Collation mismatch detected (background repair will be scheduled): " . $errorText);
         }
     }
 

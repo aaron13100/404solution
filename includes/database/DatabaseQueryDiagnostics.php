@@ -100,7 +100,7 @@ class ABJ_404_Solution_DatabaseQueryDiagnostics {
             'attemptInvalidDataRetry' => true,
             'attemptMissingTableRepairAndRetry' => true,
             'repairCorruptedTableAndRetry' => true,
-            'recoverFromCollationMismatchAndRetry' => true,
+            'scheduleCollationRecovery' => true,
             'call_user_func_array' => true,
             'call_user_func' => true,
             '__call' => true,

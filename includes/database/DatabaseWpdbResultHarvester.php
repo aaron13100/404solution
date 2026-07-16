@@ -9,7 +9,7 @@ if (!defined('ABSPATH')) {
  *
  * The query pipeline and recovery paths all need the same fields after each
  * initial query or retry. Centralizing the adapter keeps the result contract
- * consistent across SELECT, mutation, timeout fallback, collation recovery,
+ * consistent across SELECT, mutation, timeout fallback, table recovery,
  * and table-repair retry paths.
  */
 class ABJ_404_Solution_DatabaseWpdbResultHarvester {

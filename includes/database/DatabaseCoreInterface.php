@@ -34,7 +34,7 @@ require_once __DIR__ . '/DatabaseCollationHelper.php';
  * DatabaseErrorClassifier (classifyAndHandleInfrastructureError,
  * isOutOfMemoryError via taxonomy()->hostState()), DatabaseTableRepairer
  * (repairTable, repairDuplicateIDs), and DatabaseCollationHelper
- * (recoverFromCollationMismatchAndRetry). Reach them via
+ * (scheduleCollationRecovery). Reach them via
  * DatabaseCore::errorClassifier()->...(), tableRepairer()->...(), and
  * collationHelper()->...(). Test clock injection goes through the
  * ServiceContainer 'clock' binding (see clock_injection_pattern.md).

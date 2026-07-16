@@ -47,6 +47,18 @@ function abj404_updateLogsHitsTableListener() {
 }
 }
 
+if (!function_exists('abj404_repairCollationsListener')) {
+/** Run schema-wide plugin-table collation correction outside foreground requests. @return void */
+function abj404_repairCollationsListener(): void {
+    try {
+        require_once(plugin_dir_path( ABJ404_FILE ) . "includes/Loader.php");
+        abj_service('database_upgrades')->correctCollations();
+    } catch (\Throwable $e) {
+        abj404_logRuntimeWarning('Cron collation repair failed', $e);
+    }
+}
+}
+
 if (!function_exists('abj404_refreshStatusCountsListener')) {
 /**
  * Recompute one status-count cache outside the foreground admin request.

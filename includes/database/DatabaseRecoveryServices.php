@@ -79,9 +79,6 @@ class ABJ_404_Solution_DatabaseRecoveryServices {
             function (string $key, $value, int $ttl) use ($noticeState): void {
                 $noticeState->setRuntimeFlag($key, $value, $ttl);
             },
-            function (array &$result) use ($resultHarvester): void {
-                $resultHarvester->harvestWpdbResult($result);
-            },
             $logger
         );
         $this->tableRepairer = new ABJ_404_Solution_DatabaseTableRepairer(
