@@ -216,7 +216,7 @@ class ABJ_404_Solution_AdminStatusFilterTabs {
 
     /** @param mixed $count */
     private function displayCount($count, bool $incomplete): string {
-        return $incomplete ? '...' : (string)intval(is_scalar($count) ? $count : 0);
+        return $incomplete ? '-' : (string)intval(is_scalar($count) ? $count : 0);
     }
 
     private function tpl(string $name): string {

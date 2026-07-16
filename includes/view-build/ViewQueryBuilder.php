@@ -137,16 +137,32 @@ class ABJ_404_Solution_ViewQueryBuilder {
      * @param array<string, mixed> $tableOptions
      * @param bool $derivedPresent
      * @return int
+     * @throws ABJ_404_Solution_ViewQueryFailureException When the aggregate is unavailable or malformed.
      */
     public function countRedirectsSingleTable(string $sub, array $tableOptions, bool $derivedPresent = true): int {
         $query = $this->buildRedirectsSingleTableCountQuery($sub, $tableOptions, $derivedPresent);
         $result = $this->dbCore->queryAndGetResults($query, $this->resolveReadTimeoutOptions($tableOptions));
+        $lastErrorRaw = $result['last_error'] ?? '';
+        $lastError = is_scalar($lastErrorRaw) ? trim((string)$lastErrorRaw) : '';
+        if (!empty($result['timed_out']) || $lastError !== '') {
+            $message = !empty($result['timed_out'])
+                ? 'Filtered redirect count query timed out.'
+                : 'Filtered redirect count query failed: ' . $lastError;
+            throw new ABJ_404_Solution_ViewQueryFailureException($message);
+        }
         $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
         if (empty($rows) || !is_array($rows[0])) {
-            return 0;
+            throw new ABJ_404_Solution_ViewQueryFailureException(
+                'Filtered redirect count query returned no aggregate row.'
+            );
         }
         $raw = $rows[0]['cnt'] ?? reset($rows[0]);
-        return is_scalar($raw) ? intval($raw) : 0;
+        if (!is_numeric($raw)) {
+            throw new ABJ_404_Solution_ViewQueryFailureException(
+                'Filtered redirect count query returned a nonnumeric aggregate.'
+            );
+        }
+        return intval($raw);
     }
 
     /**

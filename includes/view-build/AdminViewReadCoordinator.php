@@ -191,7 +191,7 @@ class ABJ_404_Solution_AdminViewReadCoordinator {
     /**
      * @param string $sub
      * @param array<string, mixed> $tableOptions
-     * @return int
+     * @return int Negative when the count query was incomplete or unavailable.
      */
     public function getRedirectsForViewCount(string $sub, array $tableOptions): int {
         $queryTimeout = isset($tableOptions['_abj404_query_timeout']) && is_numeric($tableOptions['_abj404_query_timeout'])
@@ -288,29 +288,29 @@ class ABJ_404_Solution_AdminViewReadCoordinator {
         $lastErrorRaw = $results['last_error'] ?? '';
         $lastError = is_string($lastErrorRaw) ? $lastErrorRaw : '';
 
-        if ($throwOnQueryError && (!empty($results['timed_out']) || $lastError !== '')) {
-            $message = $this->diagnostics->formatViewQueryFailureMessage('getRedirectsForViewCount', $query, $results);
-            $diagnostics = $this->diagnostics->captureViewQueryFailureDiagnostics($sub, $query, $tableOptions, $results);
-            $diagnostics['failed_query_label'] = 'getRedirectsForViewCount';
-            throw new ABJ_404_Solution_ViewQueryFailureException($message, $diagnostics);
-        }
-
-        if ($lastError != '' && trim($lastError) != '') {
-            $diagnostics = $this->diagnostics->captureViewQueryFailureDiagnostics($sub, $query, $tableOptions, $results);
-            $diagnostics['failed_query_label'] = 'getRedirectsForViewCount';
-            throw new ABJ_404_Solution_ViewQueryFailureException(
-                "Error getting redirect count: " . esc_html($lastError),
-                $diagnostics
-            );
+        $queryFailed = !empty($results['timed_out']) || trim($lastError) !== '';
+        if ($queryFailed) {
+            if ($throwOnQueryError) {
+                $message = $this->diagnostics->formatViewQueryFailureMessage('getRedirectsForViewCount', $query, $results);
+                $diagnostics = $this->diagnostics->captureViewQueryFailureDiagnostics($sub, $query, $tableOptions, $results);
+                $diagnostics['failed_query_label'] = 'getRedirectsForViewCount';
+                throw new ABJ_404_Solution_ViewQueryFailureException($message, $diagnostics);
+            }
+            $this->redirectsForViewCountRequestCache[$requestCountCacheKey] = -1;
+            return -1;
         }
         $rows = is_array($results['rows']) ? $results['rows'] : array();
-        if (empty($rows)) {
+        if (empty($rows) || !is_array($rows[0])) {
             $this->redirectsForViewCountRequestCache[$requestCountCacheKey] = -1;
             return -1;
         }
         $row = is_array($rows[0] ?? null) ? $rows[0] : array();
         $rawCount = $row['count'] ?? $row['COUNT(*)'] ?? reset($row);
-        $countValue = intval(is_scalar($rawCount) ? $rawCount : 0);
+        if (!is_numeric($rawCount)) {
+            $this->redirectsForViewCountRequestCache[$requestCountCacheKey] = -1;
+            return -1;
+        }
+        $countValue = intval($rawCount);
         $this->redirectsForViewCountRequestCache[$requestCountCacheKey] = $countValue;
         return $countValue;
     }

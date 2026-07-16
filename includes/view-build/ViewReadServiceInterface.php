@@ -106,7 +106,7 @@ interface ABJ_404_Solution_ViewReadServiceInterface {
     /**
      * @param string $sub
      * @param array<string, mixed> $tableOptions
-     * @return int
+     * @return int Negative when the count query was incomplete or unavailable.
      */
     public function getRedirectsForViewCount(string $sub, array $tableOptions): int;
 

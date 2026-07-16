@@ -270,7 +270,7 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
     /**
      * @param string $sub
      * @param array<string, mixed> $tableOptions
-     * @return int
+     * @return int Negative when the count query was incomplete or unavailable.
      */
     function getRedirectsForViewCount(string $sub, array $tableOptions): int {
         return $this->adminViewReadCoordinator->getRedirectsForViewCount($sub, $tableOptions);
