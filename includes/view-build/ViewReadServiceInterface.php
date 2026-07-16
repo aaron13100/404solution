@@ -31,9 +31,10 @@ interface ABJ_404_Solution_ViewReadServiceInterface {
 
     /**
      * @param bool $bypassCache
+     * @param array<string, mixed> $tableOptions Internal per-request read options.
      * @return array<string, int>
      */
-    public function getRedirectStatusCounts($bypassCache = false): array;
+    public function getRedirectStatusCounts($bypassCache = false, array $tableOptions = array()): array;
 
     /**
      * @return array<string, int>
@@ -42,9 +43,10 @@ interface ABJ_404_Solution_ViewReadServiceInterface {
 
     /**
      * @param bool $bypassCache
+     * @param array<string, mixed> $tableOptions Internal per-request read options.
      * @return array<string, int>
      */
-    public function getCapturedStatusCounts($bypassCache = false): array;
+    public function getCapturedStatusCounts($bypassCache = false, array $tableOptions = array()): array;
 
     /** @return int */
     public function getHighImpactCapturedCount(): int;

@@ -11,6 +11,11 @@
       "type": "string",
       "enum": ["abj404_redirects", "abj404_captured", "abj404_logs"]
     },
+    "part": {
+      "type": "string",
+      "enum": ["all", "table", "counts", "pagination"],
+      "description": "Optional progressive response part; omitted requests retain the legacy all-in-one response"
+    },
     "page": { "type": "string" },
     "rowsPerPage": { "type": ["string", "integer"], "description": "Sent as string from JS, parsed via absint()" },
     "filterText": { "type": "string" },

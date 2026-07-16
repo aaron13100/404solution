@@ -46,8 +46,10 @@ class ABJ_404_Solution_View_CapturedURLsTable extends ABJ_404_Solution_ViewCompo
         return $this->pageChromeRenderer;
     }
 
-    public function getCapturedURLSPageTable(string $sub): string {
+    /** @param array<string, mixed> $tableOptionOverrides Internal per-request read options. */
+    public function getCapturedURLSPageTable(string $sub, array $tableOptionOverrides = array()): string {
         $tableOptions = $this->logic->settingsUpdate()->getTableOptions($sub);
+        $tableOptions = array_replace($tableOptions, $tableOptionOverrides);
         $rows = $this->viewReadService->getRedirectsForView($sub, $tableOptions);
         /** @var array<int, array<string, mixed>> $typedRows */
         $typedRows = array_values(array_filter($rows, 'is_array'));

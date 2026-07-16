@@ -261,6 +261,9 @@ class ABJ_404_Solution_AdminAssetEnqueuer {
         $enq('abj404-view-updater-pagination-request',
             $vuBase . 'view_updater_pagination_request.js',
             array('jquery', 'abj404-view-updater-compare'));
+        $enq('abj404-view-updater-pagination-transport',
+            $vuBase . 'view_updater_pagination_transport.js',
+            array('jquery', 'abj404-view-updater-nonce-refresh'));
         $enq('abj404-view-updater-lazy-backfill',
             $vuBase . 'view_updater_lazy_backfill.js',
             array('jquery', 'abj404-view-updater-nonce-refresh'));
@@ -277,6 +280,7 @@ class ABJ_404_Solution_AdminAssetEnqueuer {
                 'abj404-view-updater-refresh-pill',
                 'abj404-view-updater-nonce-refresh',
                 'abj404-view-updater-pagination-request',
+                'abj404-view-updater-pagination-transport',
                 'abj404-view-updater-pagination-response-apply',
                 'abj404-view-updater-pagination-error-notice'));
         $enq('abj404-view-updater', $vuBase . 'view_updater.js',

@@ -28,18 +28,21 @@ class ABJ_404_Solution_AdminPaginationLinks {
         $this->viewReadService = $viewReadService;
     }
 
-    public function render(string $sub): string {
-        $state = $this->paginationState($sub);
+    /** @param array<string, mixed> $tableOptionOverrides Internal per-request read options. */
+    public function render(string $sub, array $tableOptionOverrides = array()): string {
+        $state = $this->paginationState($sub, $tableOptionOverrides);
         return $this->renderTemplate($sub, $state);
     }
 
     /**
+     * @param array<string, mixed> $tableOptionOverrides Internal per-request read options.
      * @return array{tableOptions: array<string, mixed>, logsid: string, orderby: string, order: string,
      *     filter: string, paged: int, perpage: int, totalPages: int, numRecords: int, filterText: string,
      *     urls: array{first: string, previous: string, next: string, last: string}}
      */
-    private function paginationState(string $sub): array {
+    private function paginationState(string $sub, array $tableOptionOverrides = array()): array {
         $tableOptions = $this->logic->settingsUpdate()->getTableOptions($sub);
+        $tableOptions = array_replace($tableOptions, $tableOptionOverrides);
         $logsid = array_key_exists('logsid', $tableOptions) && is_scalar($tableOptions['logsid']) ? $tableOptions['logsid'] : 0;
         $orderby = array_key_exists('orderby', $tableOptions) && is_string($tableOptions['orderby']) ? $tableOptions['orderby'] : 'url';
         $order = array_key_exists('order', $tableOptions) && is_string($tableOptions['order']) ? $tableOptions['order'] : 'ASC';

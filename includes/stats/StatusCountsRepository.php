@@ -52,9 +52,10 @@ class ABJ_404_Solution_StatusCountsRepository {
 
     /**
      * @param bool $bypassCache
+     * @param array<string, mixed> $tableOptions Internal per-request read options.
      * @return array<string, int>
      */
-    public function getRedirectStatusCounts(bool $bypassCache = false): array {
+    public function getRedirectStatusCounts(bool $bypassCache = false, array $tableOptions = array()): array {
         if (!$bypassCache) {
             $cached = get_transient(self::CACHE_KEY_REDIRECT_STATUS);
             if ($cached !== false && is_array($cached)) {
@@ -73,7 +74,9 @@ class ABJ_404_Solution_StatusCountsRepository {
             WHERE status IN (" . ABJ404_STATUS_MANUAL . ", " . ABJ404_STATUS_AUTO . ", " . ABJ404_STATUS_REGEX . ")";
         $query = $this->dbCore->doTableNameReplacements($query);
 
-        $result = $this->dbCore->queryAndGetResults($query);
+        $timeout = is_numeric($tableOptions['_abj404_query_timeout'] ?? null)
+            ? max(1, intval($tableOptions['_abj404_query_timeout'])) : 0;
+        $result = $this->dbCore->queryAndGetResults($query, $timeout > 0 ? array('timeout' => $timeout) : array());
         $hadError = !empty($result['last_error']) || !empty($result['timed_out']);
         $rows = is_array($result['rows']) ? $result['rows'] : array();
 
@@ -131,9 +134,10 @@ class ABJ_404_Solution_StatusCountsRepository {
 
     /**
      * @param bool $bypassCache
+     * @param array<string, mixed> $tableOptions Internal per-request read options.
      * @return array<string, int>
      */
-    public function getCapturedStatusCounts(bool $bypassCache = false): array {
+    public function getCapturedStatusCounts(bool $bypassCache = false, array $tableOptions = array()): array {
         if (!$bypassCache) {
             $cached = get_transient(self::CACHE_KEY_CAPTURED_STATUS);
             if ($cached !== false && is_array($cached)) {
@@ -153,7 +157,9 @@ class ABJ_404_Solution_StatusCountsRepository {
             WHERE status IN (" . ABJ404_STATUS_CAPTURED . ", " . ABJ404_STATUS_IGNORED . ", " . ABJ404_STATUS_LATER . ")";
         $query = $this->dbCore->doTableNameReplacements($query);
 
-        $result = $this->dbCore->queryAndGetResults($query);
+        $timeout = is_numeric($tableOptions['_abj404_query_timeout'] ?? null)
+            ? max(1, intval($tableOptions['_abj404_query_timeout'])) : 0;
+        $result = $this->dbCore->queryAndGetResults($query, $timeout > 0 ? array('timeout' => $timeout) : array());
         $hadError = !empty($result['last_error']) || !empty($result['timed_out']);
         $rows = is_array($result['rows']) ? $result['rows'] : array();
 

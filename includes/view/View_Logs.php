@@ -34,9 +34,13 @@ class ABJ_404_Solution_View_Logs extends ABJ_404_Solution_ViewComponent {
         echo $this->pageShell()->render();
     }
 
-    /** @param string $sub */
-    function getAdminLogsPageTable($sub): string {
+    /**
+     * @param string $sub
+     * @param array<string, mixed> $tableOptionOverrides Internal per-request read options.
+     */
+    function getAdminLogsPageTable($sub, array $tableOptionOverrides = array()): string {
         $tableOptions = $this->logic->settingsUpdate()->getTableOptions((string)$sub);
+        $tableOptions = array_replace($tableOptions, $tableOptionOverrides);
         return $this->logsTable()->render((string)$sub, $tableOptions);
     }
 
@@ -68,10 +72,11 @@ class ABJ_404_Solution_View_Logs extends ABJ_404_Solution_ViewComponent {
     /**
      * @param string $sub
      * @param bool $showSearchFilter Preserved for backward compatibility; pagination strips no longer render filters.
+     * @param array<string, mixed> $tableOptionOverrides Internal per-request read options.
      * @return string
      */
-    function getPaginationLinks($sub, $showSearchFilter = true): string {
-        return $this->paginationLinks()->render((string)$sub);
+    function getPaginationLinks($sub, $showSearchFilter = true, array $tableOptionOverrides = array()): string {
+        return $this->paginationLinks()->render((string)$sub, $tableOptionOverrides);
     }
 
     /**

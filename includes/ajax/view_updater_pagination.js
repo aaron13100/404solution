@@ -1,45 +1,13 @@
 /**
- * paginationLinksChange orchestrator.
+ * Progressive ajaxUpdatePaginationLinks orchestrator.
  *
- * One AJAX call per user-driven table action (search, sort, perpage,
- * pagination link, force-rebuild follow-up, background detect-only
- * refresh). The action is named ajaxUpdatePaginationLinks server-side.
- *
- * Three orthogonal modes share this code path:
- *
- *   - Foreground (default): shows a loading overlay, replaces the table
- *     and pagination markup on success, surfaces an admin notice on
- *     error. Triggers a follow-up detect-only background refresh so the
- *     "Refresh available" pill stays accurate.
- *   - Background detect-only (`backgroundRefresh:true, detectOnly:true`):
- *     never overwrites the visible table; only sets onComplete({hasUpdate})
- *     so the toast/pill code can react.
- * The single-table denorm read (denorm Step 3b) is always serveable, so a
- * successful response always carries the rendered table: there is no
- * `viewBuildPending` / `cachePending` deferral path.
- *
- * On error, the actual notice rendering lives in
- * view_updater_pagination_error_notice.js. The DOM replacement on a
- * successful response lives in view_updater_pagination_response_apply.js.
- * Request payload assembly lives in view_updater_pagination_request.js.
- * This file owns the AJAX lifecycle and the cross-cutting state machine
- * (loading overlay, detect-only baseline guard, background-refresh
- * telemetry, mayReplaceVisibleTable check, success/error dispatch), and
- * defines abj404CollapseEmptyPaginationStrips (the failed-load pagination
- * strip cleanup consumed in its own error path).
+ * Foreground actions issue independent table, counts, and pagination requests
+ * in priority order, with at most one database-bound request in flight. Each
+ * response updates its own DOM section. The transport module owns finite
+ * transient retry; this module owns visible state, last-write-wins protection,
+ * loading overlay lifetime, callbacks, and background detect-only telemetry.
  *
  * Globals defined: paginationLinksChange, abj404CollapseEmptyPaginationStrips.
- *
- * Depends on view_updater_compare.js (hasBackgroundRefreshUpdateWithBaseline),
- * view_updater_stage_diagnostics.js (abj404AjaxStageDiagnostics),
- * view_updater_table_init.js (isDetectOnlyRefreshInFlight,
- * setDetectOnlyRefreshInFlight, refreshHealthBarIfNeeded,
- * triggerBackgroundTableRefreshIfEnabled), view_updater_refresh_pill.js
- * (hideRefreshAvailablePill), view_updater_nonce_refresh.js
- * (abj404AjaxWithNonceRetry), view_updater_pagination_request.js
- * (abj404BuildPaginationRequest), view_updater_pagination_response_apply.js
- * (abj404ApplyPaginationSuccessResponse), and
- * view_updater_pagination_error_notice.js (abj404HandlePaginationAjaxError).
  */
 
 function paginationLinksChange(triggerItem, options) {
@@ -48,229 +16,274 @@ function paginationLinksChange(triggerItem, options) {
     if (req === null) {
         return;
     }
-    var isBackgroundRefresh = req.isBackgroundRefresh;
-    var detectOnly = req.detectOnly;
-    var subpage = req.subpage;
-    var action = req.action;
-    var baseUrl = req.baseUrl;
-    var requestStartedAt = req.requestStartedAt;
-    var requestId = req.requestId;
-    var baselineComparison = req.baselineComparison;
-    var ajaxTimeoutMs = req.ajaxTimeoutMs;
 
     if (req.isDetectOnlyBackground && isDetectOnlyRefreshInFlight()) {
         if (typeof options.onComplete === 'function') {
-            options.onComplete({hasUpdate: false, skipped: true});
+            options.onComplete({ hasUpdate: false, skipped: true });
         }
         return;
     }
     if (req.isDetectOnlyBackground) {
         setDetectOnlyRefreshInFlight(true);
     }
-
-    // Last-write-wins guard for foreground table loads. Two foreground
-    // (non-background) requests can be in flight at once: the on-ready
-    // initial-load hydration (empty filter) and a user-driven filter/sort/
-    // pagination request issued immediately after. Whichever response landed
-    // LAST used to win, so a slow stale hydration could resolve after the
-    // newer filtered response and silently revert the table to the unfiltered
-    // view. Stamp each foreground request with its unique requestId and record
-    // the most recent one; the success handler then drops any response whose
-    // request was already superseded. Detect-only background refreshes never
-    // replace the visible table, so they are excluded from the token.
-    if (!isBackgroundRefresh) {
-        window.abj404LatestForegroundRequestId = requestId;
+    if (!req.isBackgroundRefresh) {
+        window.abj404LatestForegroundRequestId = req.requestId;
     }
-    if (window.abj404BackgroundRefreshState && isBackgroundRefresh) {
-        window.abj404BackgroundRefreshState.requestCount = (window.abj404BackgroundRefreshState.requestCount || 0) + 1;
-        window.abj404BackgroundRefreshState.lastSubpage = subpage;
-        window.abj404BackgroundRefreshState.lastAction = action;
-        window.abj404BackgroundRefreshState.lastRowsPerPage = parseInt(req.rowsPerPage, 10) || 0;
-        window.abj404BackgroundRefreshState.lastFilterTextLength = (req.filterText || '').length;
-        window.abj404BackgroundRefreshState.lastError = null;
-        window.abj404BackgroundRefreshState.lastStatusCode = null;
-        window.abj404BackgroundRefreshState.lastResponseBytes = null;
-        window.abj404BackgroundRefreshState.hasUpdateAvailable = false;
-    }
+    abj404RecordPaginationRequestStart(req);
 
-    var $foregroundTableWrapper = null;
-    var removeForegroundLoadingOverlay = function() {
-        if (isBackgroundRefresh || !$foregroundTableWrapper || $foregroundTableWrapper.length === 0) {
-            return;
+    if (req.isDetectOnlyBackground) {
+        abj404RunDetectOnlyPaginationRequest(req, options);
+        return;
+    }
+    if (req.isBackgroundRefresh) {
+        if (typeof options.onComplete === 'function') {
+            options.onComplete({ skippedReplace: true });
         }
-        $foregroundTableWrapper.find('.abj404-loading-overlay').fadeOut(200, function() {
-            jQuery(this).remove();
+        return;
+    }
+
+    hideRefreshAvailablePill();
+    var removeLoadingOverlay = abj404ShowPaginationLoadingOverlay(req);
+    abj404RunProgressivePaginationRequest(req, options, removeLoadingOverlay);
+}
+
+/** @param {object} req @returns {void} */
+function abj404RecordPaginationRequestStart(req) {
+    if (!window.abj404BackgroundRefreshState || !req.isBackgroundRefresh) {
+        return;
+    }
+    var state = window.abj404BackgroundRefreshState;
+    state.requestCount = (state.requestCount || 0) + 1;
+    state.lastSubpage = req.subpage;
+    state.lastAction = req.action;
+    state.lastRowsPerPage = parseInt(req.rowsPerPage, 10) || 0;
+    state.lastFilterTextLength = (req.filterText || '').length;
+    state.lastError = null;
+    state.lastStatusCode = null;
+    state.lastResponseBytes = null;
+    state.hasUpdateAvailable = false;
+}
+
+/**
+ * Show one request-owned table overlay and return its safe remover.
+ *
+ * @param {object} req
+ * @returns {function(): void}
+ */
+function abj404ShowPaginationLoadingOverlay(req) {
+    var $table = jQuery(req.tableSelector);
+    if (!$table.parent().hasClass('abj404-table-wrapper')) {
+        $table.wrap('<div class="abj404-table-wrapper"></div>');
+    }
+    var $wrapper = $table.parent();
+    $wrapper.find('.abj404-loading-overlay').remove();
+    $wrapper.append(
+        '<div class="abj404-loading-overlay" data-abj404-request-id="' + req.requestId + '">' +
+        '<div class="abj404-spinner-container"><div class="abj404-spinner"></div></div></div>'
+    );
+    return function() {
+        $wrapper.find('.abj404-loading-overlay').each(function() {
+            var $overlay = jQuery(this);
+            if ($overlay.attr('data-abj404-request-id') === req.requestId) {
+                $overlay.fadeOut(200, function() { jQuery(this).remove(); });
+            }
         });
     };
+}
 
-    if (!isBackgroundRefresh) {
-        hideRefreshAvailablePill();
-        // Show loading overlay on the table for explicit user actions only.
-        var $table = jQuery(req.tableSelector);
-        if (!$table.parent().hasClass('abj404-table-wrapper')) {
-            $table.wrap('<div class="abj404-table-wrapper"></div>');
+/**
+ * @param {object} req
+ * @param {object} options
+ * @param {function(): void} removeLoadingOverlay
+ * @returns {void}
+ */
+function abj404RunProgressivePaginationRequest(req, options, removeLoadingOverlay) {
+    var parts = Array.isArray(req.parts) ? req.parts : ['table', 'counts', 'pagination'];
+    var runPart = function(partIndex) {
+        if (partIndex >= parts.length || abj404PaginationRequestIsSuperseded(req)) {
+            return;
         }
-        $foregroundTableWrapper = $table.parent();
-        $foregroundTableWrapper.find('.abj404-loading-overlay').remove();
-        $foregroundTableWrapper.append('<div class="abj404-loading-overlay"><div class="abj404-spinner-container"><div class="abj404-spinner"></div></div></div>');
+        var part = parts[partIndex];
+        abj404RequestPaginationPart(req, part, {
+            shouldAbort: function() { return abj404PaginationRequestIsSuperseded(req); },
+            onAbort: function(abortedPart) {
+                if (abortedPart === 'table') {
+                    removeLoadingOverlay();
+                    if (typeof options.onComplete === 'function') {
+                        options.onComplete({ skippedReplace: true, superseded: true });
+                    }
+                }
+            },
+            onSuccess: function(result, successfulPart) {
+                abj404HandlePaginationPartSuccess(
+                    req, options, removeLoadingOverlay, successfulPart, result
+                );
+                runPart(partIndex + 1);
+            },
+            onTerminalError: function(jqXHR, textStatus, errorThrown, failedPart) {
+                abj404HandlePaginationPartFailure(
+                    req, options, removeLoadingOverlay,
+                    failedPart, jqXHR, textStatus, errorThrown
+                );
+                runPart(partIndex + 1);
+            }
+        });
+    };
+    runPart(0);
+}
+
+/** @param {object} req @returns {boolean} */
+function abj404PaginationRequestIsSuperseded(req) {
+    return typeof window.abj404LatestForegroundRequestId === 'string' &&
+        window.abj404LatestForegroundRequestId !== req.requestId;
+}
+
+/**
+ * @param {object} req
+ * @param {object} options
+ * @param {function(): void} removeLoadingOverlay
+ * @param {string} part
+ * @param {object} result
+ * @returns {void}
+ */
+function abj404HandlePaginationPartSuccess(req, options, removeLoadingOverlay, part, result) {
+    jQuery('.abj404-refresh-status').text('');
+    if (abj404PaginationRequestIsSuperseded(req)) {
+        if (part === 'table') {
+            removeLoadingOverlay();
+            if (typeof options.onComplete === 'function') {
+                options.onComplete({ skippedReplace: true, superseded: true });
+            }
+        }
+        return;
+    }
+    abj404ApplyPaginationPartResponse(part, result);
+    if (part !== 'table') {
+        return;
     }
 
+    removeLoadingOverlay();
+    if (typeof options.onComplete === 'function') {
+        options.onComplete();
+    }
+    if (typeof triggerBackgroundTableRefreshIfEnabled === 'function') {
+        window.abj404InitialTableRefreshTriggered = false;
+        window.setTimeout(function() { triggerBackgroundTableRefreshIfEnabled(); }, 0);
+    }
+}
+
+/**
+ * @param {object} req
+ * @param {object} options
+ * @param {function(): void} removeLoadingOverlay
+ * @param {string} part
+ * @param {object} jqXHR
+ * @param {string} textStatus
+ * @param {string} errorThrown
+ * @returns {void}
+ */
+function abj404HandlePaginationPartFailure(
+    req, options, removeLoadingOverlay, part, jqXHR, textStatus, errorThrown
+) {
+    jQuery('.abj404-refresh-status').text('');
+    if (part === 'pagination') {
+        abj404CollapseEmptyPaginationStrips();
+    }
     var errorCtx = {
-        baseUrl: baseUrl,
-        action: action,
-        subpage: subpage,
-        isBackgroundRefresh: isBackgroundRefresh,
-        requestStartedAt: requestStartedAt,
-        ajaxTimeoutMs: ajaxTimeoutMs
+        baseUrl: req.baseUrl,
+        action: req.action,
+        subpage: req.subpage,
+        part: part,
+        isBackgroundRefresh: false,
+        requestStartedAt: req.requestStartedAt,
+        ajaxTimeoutMs: req.ajaxTimeoutMs
     };
+    var parsed = abj404HandlePaginationAjaxError(errorCtx, jqXHR, textStatus, errorThrown);
+    if (part !== 'table') {
+        return;
+    }
+    removeLoadingOverlay();
+    if (typeof options.onError === 'function') {
+        options.onError(abj404PaginationErrorMeta(req, parsed, textStatus, errorThrown));
+    }
+}
 
-    var ajaxRunner = (typeof abj404AjaxWithNonceRetry === 'function')
-        ? abj404AjaxWithNonceRetry : jQuery.ajax; // ajax-direct-approved: documented fallback when view_updater_nonce_refresh.js is not yet loaded; canonical pattern in every view_updater_*.js dispatch site, preserved verbatim from view_updater_pagination.js pre-i352 split
-    ajaxRunner({
-        url: baseUrl,
-        type: 'POST',
-        dataType: "json",
-        // Without a client-side timeout, a slow server (e.g. while
-        // attemptMissingTableRepairAndRetry runs createDatabaseTables) can leave
-        // the table stuck on its loading placeholder forever. onError never
-        // fires and the retry/fallback path never engages.
-        timeout: ajaxTimeoutMs,
-        data: req.payload,
-        success: function (result) {
-            jQuery('.abj404-refresh-status').text('');
+/** @returns {object} */
+function abj404PaginationErrorMeta(req, parsed, textStatus, errorThrown) {
+    var inferred = abj404AjaxStageDiagnostics(parsed.stageFromServer, req.subpage);
+    return {
+        status: parsed.status,
+        textStatus: textStatus,
+        errorThrown: errorThrown,
+        message: parsed.messageFromServer,
+        action: req.action,
+        subpage: req.subpage,
+        elapsedMs: Date.now() - req.requestStartedAt, // allow-direct-time: elapsed time reported to the admin error callback
+        timeoutMs: req.ajaxTimeoutMs,
+        stage: parsed.stageFromServer,
+        queryLabel: parsed.queryLabelFromServer || inferred.queryLabel,
+        whatsHappening: parsed.whatsHappeningFromServer || inferred.whatsHappening,
+        lastQueryRedacted: parsed.lastQueryRedacted
+    };
+}
 
-            if (isBackgroundRefresh && detectOnly) {
-                setDetectOnlyRefreshInFlight(false);
-                var hasUpdate;
-                if (result && typeof result.hasUpdate === 'boolean') {
-                    hasUpdate = !!result.hasUpdate;
-                } else {
-                    // Backward-compatible fallback for older server responses.
-                    hasUpdate = hasBackgroundRefreshUpdateWithBaseline(result, baselineComparison);
-                }
-                if (typeof options.onComplete === 'function') {
-                    options.onComplete({hasUpdate: hasUpdate});
-                }
-                if (window.abj404BackgroundRefreshState) {
-                    var bgDurationMs = Date.now() - requestStartedAt; // allow-direct-time: background-refresh duration telemetry; preserved verbatim from view_updater_pagination.js pre-i352 split
-                    var bgResultSize = 0;
-                    if (result) {
-                        try {
-                            bgResultSize = JSON.stringify(result).length;
-                        } catch (e) {
-                            bgResultSize = 0;
-                        }
-                    }
-                    window.abj404BackgroundRefreshState.finishedAt = Date.now(); // allow-direct-time: telemetry finishedAt timestamp; preserved verbatim from view_updater_pagination.js pre-i352 split
-                    window.abj404BackgroundRefreshState.durationMs = bgDurationMs;
-                    window.abj404BackgroundRefreshState.difference = bgDurationMs;
-                    window.abj404BackgroundRefreshState.lastStatusCode = 200;
-                    window.abj404BackgroundRefreshState.lastResponseBytes = bgResultSize;
-                    window.abj404BackgroundRefreshState.hasUpdateAvailable = hasUpdate;
-                }
-                return;
-            }
-
-            var mayReplaceVisibleTable = !isBackgroundRefresh;
-
-            // Drop a superseded foreground response: if a newer foreground
-            // request was issued while this one was in flight, applying this
-            // (now stale) response would clobber the newer request's view.
-            var supersededByNewerForeground = !isBackgroundRefresh &&
-                typeof window.abj404LatestForegroundRequestId === 'string' &&
-                window.abj404LatestForegroundRequestId !== requestId;
-
-            if (!mayReplaceVisibleTable || supersededByNewerForeground) {
-                if (typeof options.onComplete === 'function') {
-                    options.onComplete({skippedReplace: true, superseded: supersededByNewerForeground});
-                }
-                return;
-            }
-
-            abj404ApplyPaginationSuccessResponse(result);
-
+/** @param {object} req @param {object} options @returns {void} */
+function abj404RunDetectOnlyPaginationRequest(req, options) {
+    abj404RequestPaginationPart(req, 'table', {
+        onSuccess: function(result) {
+            setDetectOnlyRefreshInFlight(false);
+            var hasUpdate = result && typeof result.hasUpdate === 'boolean'
+                ? !!result.hasUpdate
+                : hasBackgroundRefreshUpdateWithBaseline(result, req.baselineComparison);
             if (typeof options.onComplete === 'function') {
-                options.onComplete();
+                options.onComplete({ hasUpdate: hasUpdate });
             }
-            if (!isBackgroundRefresh && typeof triggerBackgroundTableRefreshIfEnabled === 'function') {
-                // Re-arm one detect-only refresh for the newly loaded table state.
-                // Without this, manual AJAX navigation can suppress update detection
-                // for the rest of the current page session.
-                window.abj404InitialTableRefreshTriggered = false;
-                window.setTimeout(function() {
-                    triggerBackgroundTableRefreshIfEnabled();
-                }, 0);
-            }
-            if (window.abj404BackgroundRefreshState && isBackgroundRefresh) {
-                var durationMs = Date.now() - requestStartedAt; // allow-direct-time: hydrate-path duration telemetry; preserved verbatim from view_updater_pagination.js pre-i352 split
-                var resultSize = 0;
-                if (result) {
-                    try {
-                        resultSize = JSON.stringify(result).length;
-                    } catch (e) {
-                        resultSize = 0;
-                    }
-                }
-                window.abj404BackgroundRefreshState.finishedAt = Date.now(); // allow-direct-time: telemetry finishedAt timestamp; preserved verbatim from view_updater_pagination.js pre-i352 split
-                window.abj404BackgroundRefreshState.durationMs = durationMs;
-                window.abj404BackgroundRefreshState.difference = durationMs;
-                window.abj404BackgroundRefreshState.lastStatusCode = 200;
-                window.abj404BackgroundRefreshState.lastResponseBytes = resultSize;
-            }
+            abj404FinishPaginationBackgroundTelemetry(req, 200, result, '', hasUpdate);
         },
-        error: function (jqXHR, textStatus, errorThrown) {
-            jQuery('.abj404-refresh-status').text('');
-            abj404CollapseEmptyPaginationStrips();
-
-            if (isBackgroundRefresh && detectOnly) {
-                setDetectOnlyRefreshInFlight(false);
-            }
+        onTerminalError: function(jqXHR, textStatus, errorThrown) {
+            setDetectOnlyRefreshInFlight(false);
+            var errorCtx = {
+                baseUrl: req.baseUrl, action: req.action, subpage: req.subpage,
+                part: 'table', isBackgroundRefresh: true,
+                requestStartedAt: req.requestStartedAt, ajaxTimeoutMs: req.ajaxTimeoutMs
+            };
             var parsed = abj404HandlePaginationAjaxError(errorCtx, jqXHR, textStatus, errorThrown);
-
             if (typeof options.onError === 'function') {
-                var inferred = abj404AjaxStageDiagnostics(parsed.stageFromServer, subpage);
-                options.onError({
-                    status: parsed.status,
-                    textStatus: textStatus,
-                    errorThrown: errorThrown,
-                    message: parsed.messageFromServer,
-                    action: action,
-                    subpage: subpage,
-                    elapsedMs: Date.now() - requestStartedAt, // allow-direct-time: elapsed-ms reported to the onError callback; preserved verbatim from view_updater_pagination.js pre-i352 split
-                    timeoutMs: ajaxTimeoutMs,
-                    stage: parsed.stageFromServer,
-                    queryLabel: parsed.queryLabelFromServer || inferred.queryLabel,
-                    whatsHappening: parsed.whatsHappeningFromServer || inferred.whatsHappening,
-                    lastQueryRedacted: parsed.lastQueryRedacted
-                });
+                options.onError(abj404PaginationErrorMeta(req, parsed, textStatus, errorThrown));
             }
-            if (window.abj404BackgroundRefreshState && isBackgroundRefresh) {
-                var durationMs = Date.now() - requestStartedAt; // allow-direct-time: failure-path duration telemetry; preserved verbatim from view_updater_pagination.js pre-i352 split
-                window.abj404BackgroundRefreshState.finishedAt = Date.now(); // allow-direct-time: telemetry finishedAt timestamp; preserved verbatim from view_updater_pagination.js pre-i352 split
-                window.abj404BackgroundRefreshState.durationMs = durationMs;
-                window.abj404BackgroundRefreshState.difference = durationMs;
-                window.abj404BackgroundRefreshState.lastStatusCode = parsed.status || null;
-                window.abj404BackgroundRefreshState.lastError = textStatus || errorThrown || 'ajax-error';
-                window.abj404BackgroundRefreshState.lastResponseBytes = parsed.responseText ? parsed.responseText.length : 0;
-            }
-        },
-        complete: function () {
-            removeForegroundLoadingOverlay();
+            abj404FinishPaginationBackgroundTelemetry(
+                req, parsed.status || 0, null, textStatus || errorThrown || 'ajax-error', false
+            );
         }
     });
 }
 
+/** @returns {void} */
+function abj404FinishPaginationBackgroundTelemetry(req, status, result, error, hasUpdate) {
+    if (!window.abj404BackgroundRefreshState) {
+        return;
+    }
+    var resultSize = 0;
+    if (result) {
+        try {
+            resultSize = JSON.stringify(result).length;
+        } catch (serializationError) {
+            console.warn('404 Solution: could not measure background response size', serializationError);
+        }
+    }
+    var state = window.abj404BackgroundRefreshState;
+    state.finishedAt = Date.now(); // allow-direct-time: browser telemetry completion timestamp
+    state.durationMs = Date.now() - req.requestStartedAt; // allow-direct-time: browser telemetry duration
+    state.difference = state.durationMs;
+    state.lastStatusCode = status || null;
+    state.lastResponseBytes = resultSize;
+    state.lastError = error || null;
+    state.hasUpdateAvailable = !!hasUpdate;
+}
+
 /**
- * Collapse pagination strips that never received real controls.
- *
- * On a failed/timed-out table load the top and bottom .abj404-pagination
- * strips are still just the spinner placeholder the initial render shipped:
- * the real <nav class="pagination-links"> is injected only by a successful
- * AJAX response. Left visible they render as empty bordered bars, the bottom
- * one overlapping the footer/credits. Hide any strip that has no real controls
- * so the failed page stays clean. Strips that already hold links (a successful
- * prior render, or an explicit user action that failed without removing them)
- * are left untouched.
+ * Hide placeholder-only pagination strips after their part exhausts retries.
+ * Existing real controls remain visible.
  *
  * @returns {void}
  */

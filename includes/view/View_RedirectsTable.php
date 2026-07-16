@@ -85,10 +85,12 @@ class ABJ_404_Solution_View_RedirectsTable extends ABJ_404_Solution_ViewComponen
      * this one method serves both subpages.
      *
      * @param string $sub 'abj404_redirects' or 'abj404_captured'.
+     * @param array<string, mixed> $tableOptionOverrides Internal per-request read options.
      * @return string The remembered signature for $sub.
      */
-    public function computeTableDataSignature($sub) {
+    public function computeTableDataSignature($sub, array $tableOptionOverrides = array()) {
         $tableOptions = $this->logic->settingsUpdate()->getTableOptions($sub);
+        $tableOptions = array_replace($tableOptions, $tableOptionOverrides);
         $tableOptions['_abj404_suppress_denorm_writeback'] = true;
         $rows = $this->viewReadService->getRedirectsForView($sub, $tableOptions);
         /** @var array<int, array<string, mixed>> $typedRows */
@@ -99,10 +101,12 @@ class ABJ_404_Solution_View_RedirectsTable extends ABJ_404_Solution_ViewComponen
 
     /**
      * @param string $sub
+     * @param array<string, mixed> $tableOptionOverrides Internal per-request read options.
      * @return string
      */
-    public function getAdminRedirectsPageTable($sub) {
+    public function getAdminRedirectsPageTable($sub, array $tableOptionOverrides = array()) {
         $tableOptions = $this->logic->settingsUpdate()->getTableOptions($sub);
+        $tableOptions = array_replace($tableOptions, $tableOptionOverrides);
         $columns = $this->buildRedirectsColumnDefs($tableOptions);
 
         $headerColumns = $this->logs->getTableColumns($sub, $columns);

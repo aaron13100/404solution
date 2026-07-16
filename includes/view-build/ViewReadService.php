@@ -280,9 +280,13 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
     // Delegated: StatusCountsRepository
     // =========================================================================
 
-    /** @param bool $bypassCache @return array<string, int> */
-    function getRedirectStatusCounts($bypassCache = false): array {
-        return $this->statusCounts->getRedirectStatusCounts((bool)$bypassCache);
+    /**
+     * @param bool $bypassCache
+     * @param array<string, mixed> $tableOptions Internal per-request read options.
+     * @return array<string, int>
+     */
+    function getRedirectStatusCounts($bypassCache = false, array $tableOptions = array()): array {
+        return $this->statusCounts->getRedirectStatusCounts((bool)$bypassCache, $tableOptions);
     }
 
     /** @return array<string, int> */
@@ -290,9 +294,13 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
         return $this->statusCounts->getRedirectHitCountHistogram();
     }
 
-    /** @param bool $bypassCache @return array<string, int> */
-    function getCapturedStatusCounts($bypassCache = false): array {
-        return $this->statusCounts->getCapturedStatusCounts((bool)$bypassCache);
+    /**
+     * @param bool $bypassCache
+     * @param array<string, mixed> $tableOptions Internal per-request read options.
+     * @return array<string, int>
+     */
+    function getCapturedStatusCounts($bypassCache = false, array $tableOptions = array()): array {
+        return $this->statusCounts->getCapturedStatusCounts((bool)$bypassCache, $tableOptions);
     }
 
     /** @return int */
