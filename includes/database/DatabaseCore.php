@@ -98,13 +98,6 @@ class ABJ_404_Solution_DatabaseCore implements
     private $queryServices;
 
     /**
-     * @var bool Per-request cache: this server rejected the
-     *  `SET STATEMENT max_statement_time=N FOR ...` timeout wrapper, so
-     *  applyQueryTimeout() must skip wrapping for the rest of the request.
-     */
-    private static $setStatementWrapperUnsupported = false;
-
-    /**
      * @param ABJ_404_Solution_Functions|null $functions
      * @param ABJ_404_Solution_Logging|null $logging
      */
@@ -291,19 +284,18 @@ class ABJ_404_Solution_DatabaseCore implements
     }
 
     /**
-     * Reset the per-request "SET STATEMENT wrapper unsupported" cache.
+     * Update the request-local "SET STATEMENT wrapper unsupported" cache.
+     * Confirmed rejection is also transient-backed across requests.
      *
      * @param bool $value
      * @return void
      */
     public static function setSetStatementWrapperUnsupported(bool $value): void {
-        self::$setStatementWrapperUnsupported = $value;
         ABJ_404_Solution_DatabaseRuntimeState::setSetStatementWrapperUnsupported($value);
     }
 
     /** @return bool */
     public static function isSetStatementWrapperUnsupported(): bool {
-        return self::$setStatementWrapperUnsupported
-            || ABJ_404_Solution_DatabaseRuntimeState::isSetStatementWrapperUnsupported();
+        return ABJ_404_Solution_DatabaseRuntimeState::isSetStatementWrapperUnsupported();
     }
 }

@@ -170,9 +170,9 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
             throw $e;
         }
 
-        $result['elapsed_time'] = $timer->stop();
-        $elapsedMs = ((float)$result['elapsed_time']) * 1000.0;
-        $this->queryDiagnostics->recordQueryBudgetIfEnabled($query, $elapsedMs, $timeoutSeconds);
+        // Preserve the first-attempt duration for the observed-error log while
+        // keeping the timer running through every retry/recovery branch below.
+        $result['elapsed_time'] = $timer->getElapsedTime();
         $this->resultHarvester->harvestWpdbResult($result);
         $lastErrorForObservedLog = is_string($result['last_error'] ?? null) ? $result['last_error'] : '';
         if ($lastErrorForObservedLog === '' || !$this->core->errorClassifier()->taxonomy()->connectivity()->isTransientConnectionError($lastErrorForObservedLog)) {
@@ -183,9 +183,14 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
             $this->queryDiagnostics->logMalformedRowsIfNeeded($query, $result['rows']);
         }
 
+        $queryForBudget = $query;
         $producesRows = $this->queryRecoveryPolicy->recoverQueryResult(
             $query, $result, $options, $resultType, $producesRows, $timeoutSeconds
         );
+
+        $result['elapsed_time'] = $timer->stop();
+        $elapsedMs = ((float)$result['elapsed_time']) * 1000.0;
+        $this->queryDiagnostics->recordQueryBudgetIfEnabled($queryForBudget, $elapsedMs, $timeoutSeconds);
 
         if ($suppressWpdbErrors) {
             /** @var wpdb $wpdb */

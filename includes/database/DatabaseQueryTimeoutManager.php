@@ -252,9 +252,10 @@ class ABJ_404_Solution_DatabaseQueryTimeoutManager {
     /**
      * Re-execute a query without the `SET STATEMENT max_statement_time=N FOR `
      * wrapper after the server rejected the wrapper itself (privilege denied
-     * or syntax not understood). Caches the result in
-     * ABJ_404_Solution_DatabaseCore::$setStatementWrapperUnsupported so every
-     * subsequent timeout-wrapped query in this request skips the wrapper too.
+     * or syntax not understood). Caches the result in request-local state and
+     * a short-lived WordPress transient so subsequent queries and fresh PHP
+     * requests skip the known-unsupported wrapper until the capability is
+     * probed again.
      *
      * Result harvest mirrors the other recovery paths
      * (recoverFromCollationMismatchAndRetry, attemptMissingTableRepairAndRetry):
@@ -281,13 +282,13 @@ class ABJ_404_Solution_DatabaseQueryTimeoutManager {
             return;
         }
         $unwrapped = $this->stripSetStatementWrapper($query);
-        // Cache the negative result for the rest of the request so we don't
-        // wrap-then-fail on every subsequent query. Reset between requests.
+        // Cache the negative result locally and across requests so the host
+        // does not repeatedly pay for the same known-failing capability probe.
         ABJ_404_Solution_DatabaseRuntimeState::setSetStatementWrapperUnsupported(true);
-        $this->logger->infoMessage(
+        $this->logger->warn(
             'SET STATEMENT timeout wrapper rejected by server; '
-            . 'retrying query without wrapper and caching unsupported flag '
-            . 'for the rest of this request.'
+            . 'retrying query without a DB-level timeout and caching the '
+            . 'unsupported capability for one hour.'
         );
 
         global $wpdb;
