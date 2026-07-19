@@ -155,6 +155,13 @@ class ABJ_404_Solution_RedirectsCleanupRepository {
         $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/../sql/getMostUnusedRedirects.sql");
         $query = $this->f->str_replace('{status_list}', $statusList, $query);
         $query = $this->f->str_replace('{timelimit}', (string)$then, $query);
+        $logsHitsTable = $this->dbCore->doTableNameReplacements('{wp_abj404_logs_hits}');
+        $redirectUrlExpression = "COALESCE(r.canonical_url, r.url)";
+        $comparableRedirectUrl = $this->dbCore->collationHelper()->coerceExpressionToColumnCollation(
+            $redirectUrlExpression,
+            array('table' => $logsHitsTable, 'column' => 'requested_url')
+        );
+        $query = $this->f->str_replace('{logs_hits_url_rhs}', $comparableRedirectUrl, $query);
 
         // Bound the SELECT with a LIMIT and loop until exhausted so the unused
         // redirect match set never loads into PHP memory all at once. Each
@@ -313,6 +320,11 @@ class ABJ_404_Solution_RedirectsCleanupRepository {
         $totalTrashed += is_numeric($affected) ? (int)$affected : 0;
 
         $cutoff = abj_clock()->now() - (14 * DAY_IN_SECONDS);
+        $logsTable = $this->dbCore->doTableNameReplacements('{wp_abj404_logsv2}');
+        $comparableRedirectUrl = $this->dbCore->collationHelper()->coerceExpressionToColumnCollation(
+            'r.url',
+            array('table' => $logsTable, 'column' => 'requested_url')
+        );
         // DAO-bypass-approved: $wpdb->prepare is read-only string formatting; result goes through queryAndGetResults
         $query = $wpdb->prepare("UPDATE {wp_abj404_redirects} r
             SET r.disabled = 1
@@ -321,7 +333,7 @@ class ABJ_404_Solution_RedirectsCleanupRepository {
             AND r.timestamp < %d
             AND NOT EXISTS (
                 SELECT 1 FROM {wp_abj404_logsv2} l
-                WHERE l.requested_url = r.url
+                WHERE l.requested_url = " . $comparableRedirectUrl . "
                 LIMIT 1
             )",
             $cutoff

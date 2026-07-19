@@ -234,6 +234,11 @@ class ABJ_404_Solution_RedirectsDenormMaintenanceService {
 
         $redirectsTable = $this->dbCore->doTableNameReplacements('{wp_abj404_redirects}');
         $logsHitsTable = $this->dbCore->doTableNameReplacements('{wp_abj404_logs_hits}');
+        $canonicalRedirectUrl = "COALESCE(r.canonical_url, CONCAT('/', TRIM(BOTH '/' FROM r.url)))";
+        $comparableRedirectUrl = $this->dbCore->collationHelper()->coerceExpressionToColumnCollation(
+            $canonicalRedirectUrl,
+            array('table' => $logsHitsTable, 'column' => 'requested_url')
+        );
 
         // Chunk by redirect id (report.md Finding 5): a single full-table UPDATE
         // JOIN over every redirect row can lock / heavily load the redirects table
@@ -253,9 +258,12 @@ class ABJ_404_Solution_RedirectsDenormMaintenanceService {
             $cursor = (int)max($ids);
             $idClause = ' AND r.id IN (' . implode(',', $ids) . ')';
             $query = ABJ_404_Solution_RedirectsDenormColumnSql::buildHitsRollupFromRollupTableStatement(
-                $redirectsTable,
-                $logsHitsTable,
-                $idClause
+                array(
+                    'redirects_table' => $redirectsTable,
+                    'logs_hits_table' => $logsHitsTable,
+                    'id_clause' => $idClause,
+                    'comparable_redirect_url' => $comparableRedirectUrl,
+                )
             );
             $result = $this->dbCore->queryAndGetResults($query);
             $lastError = isset($result['last_error']) && is_string($result['last_error']) ? $result['last_error'] : '';

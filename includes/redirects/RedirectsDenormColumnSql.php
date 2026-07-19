@@ -281,20 +281,17 @@ class ABJ_404_Solution_RedirectsDenormColumnSql {
      * Pure: the caller resolves and passes the logs_hits table name and the
      * already-int-sanitized id clause; this method touches no database.
      *
-     * @param string $redirectsTable Fully-qualified redirects table name.
-     * @param string $logsHitsTable  Fully-qualified logs_hits rollup table name.
-     * @param string $idClause       " AND r.id IN (1,2,3)" fragment, or '' for all rows.
+     * @param array{redirects_table: string, logs_hits_table: string, id_clause: string, comparable_redirect_url: string} $options
      * @return string
      */
-    public static function buildHitsRollupFromRollupTableStatement(
-        string $redirectsTable,
-        string $logsHitsTable,
-        string $idClause
-    ): string {
-        $canonRedirect = "COALESCE(r.canonical_url, CONCAT('/', TRIM(BOTH '/' FROM r.url)))";
+    public static function buildHitsRollupFromRollupTableStatement(array $options): string {
+        $redirectsTable = $options['redirects_table'];
+        $logsHitsTable = $options['logs_hits_table'];
+        $idClause = $options['id_clause'];
+        $comparableRedirectUrl = $options['comparable_redirect_url'];
 
         return "UPDATE " . $redirectsTable . " r" .
-            " LEFT JOIN " . $logsHitsTable . " h ON h.requested_url = " . $canonRedirect .
+            " LEFT JOIN " . $logsHitsTable . " h ON h.requested_url = " . $comparableRedirectUrl .
             " SET r.logshits = COALESCE(h.logshits, 0), r.last_used = COALESCE(h.last_used, 0)" .
             " WHERE 1 = 1" . $idClause;
     }

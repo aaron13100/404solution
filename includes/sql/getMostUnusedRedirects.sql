@@ -36,7 +36,7 @@ from (
 
     FROM {wp_abj404_redirects} r
          left outer join {wp_abj404_logs_hits} h
-            on h.requested_url = COALESCE(r.canonical_url, r.url)
+            on h.requested_url = {logs_hits_url_rhs}
 
          left outer join {wp_abj404_logsv2} l
             on l.id = h.logsid

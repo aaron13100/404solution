@@ -70,7 +70,8 @@ class ABJ_404_Solution_StatsRepository implements ABJ_404_Solution_StatsReposito
             $dbCore,
             $logsRepo,
             $this->statsReadRepository,
-            $logger
+            $logger,
+            $dbCore->collationHelper()
         );
         $this->contentKeywordsRepository = new ABJ_404_Solution_ContentKeywordsRepository(
             $dbCore,

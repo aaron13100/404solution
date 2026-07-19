@@ -36,8 +36,7 @@ FROM    {wp_abj404_logsv2}
         INNER JOIN {wp_abj404_redirects}
         ON COALESCE({wp_abj404_logsv2}.canonical_url,
                     CONCAT('/', TRIM(BOTH '/' FROM {wp_abj404_logsv2}.requested_url))) =
-           COALESCE({wp_abj404_redirects}.canonical_url,
-                    CONCAT('/', TRIM(BOTH '/' FROM {wp_abj404_redirects}.url)))
+           {redirects_canonical_url_join_rhs}
 
 GROUP BY COALESCE({wp_abj404_logsv2}.canonical_url,
                   CONCAT('/', TRIM(BOTH '/' FROM {wp_abj404_logsv2}.requested_url)))

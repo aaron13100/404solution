@@ -119,13 +119,6 @@ class ABJ_404_Solution_LogsHitsCanonicalUrlJoinHelper {
         return is_string($result) ? $result : $sql;
     }
 
-    /** @param string $sql @return string */
-    public function dropRedirectsCanonicalCoalesceWrap(string $sql): string {
-        $pattern = '/COALESCE\(\{wp_abj404_redirects\}\.canonical_url,\s*CONCAT\(\'\/\',\s*TRIM\(BOTH\s+\'\/\'\s+FROM\s+\{wp_abj404_redirects\}\.url\)\)\)/';
-        $result = preg_replace($pattern, '{wp_abj404_redirects}.canonical_url', $sql);
-        return is_string($result) ? $result : $sql;
-    }
-
     /**
      * Assemble the phase2 JOIN's right-hand side, applying both
      * simplifications when their preconditions hold:
@@ -155,6 +148,24 @@ class ABJ_404_Solution_LogsHitsCanonicalUrlJoinHelper {
         return $collateClause === ''
             ? $redirectsCanonicalExpr
             : "(" . $redirectsCanonicalExpr . $collateClause . ")";
+    }
+
+    /**
+     * Build the redirects operand for the direct logsv2-to-redirects rebuild.
+     * The logsv2 canonical_url column remains bare and indexable; the redirects
+     * expression is converted to that column's actual runtime collation.
+     *
+     * @return string
+     */
+    public function buildDirectJoinRhs(): string {
+        $redirectsCanonicalExpr = $this->isRedirectsCanonicalUrlBackfillComplete()
+            ? '{wp_abj404_redirects}.canonical_url'
+            : "COALESCE({wp_abj404_redirects}.canonical_url, CONCAT('/', TRIM(BOTH '/' FROM {wp_abj404_redirects}.url)))";
+        $logsv2Table = $this->dbCore->doTableNameReplacements('{wp_abj404_logsv2}');
+        return $this->dbCore->collationHelper()->coerceExpressionToColumnCollation(
+            $redirectsCanonicalExpr,
+            array('table' => $logsv2Table, 'column' => 'canonical_url')
+        );
     }
 
     /**

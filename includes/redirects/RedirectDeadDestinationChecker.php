@@ -134,11 +134,17 @@ class ABJ_404_Solution_RedirectDeadDestinationChecker {
      */
     private function queryDeadDestinationIds(array $ids): ?array {
         $idList = implode(',', array_map('intval', array_values($ids)));
+        $logsHitsTable = $this->dbCore->doTableNameReplacements('{wp_abj404_logs_hits}');
+        $destinationUrl = "CONCAT('/', TRIM(BOTH '/' FROM r.final_dest))";
+        $comparableDestinationUrl = $this->dbCore->collationHelper()->coerceExpressionToColumnCollation(
+            $destinationUrl,
+            array('table' => $logsHitsTable, 'column' => 'requested_url')
+        );
         // allow-unbounded-select: bounded by the caller's r.id IN (...) working set -- the Page Redirects tab passes the page's row ids, live matching passes the single matched redirect id
         $sql = "SELECT DISTINCT r.id
              FROM {wp_abj404_redirects} r
              INNER JOIN {wp_abj404_logs_hits} h
-                 ON h.requested_url = CONCAT('/', TRIM(BOTH '/' FROM r.final_dest))
+                 ON h.requested_url = " . $comparableDestinationUrl . "
                 AND BINARY h.requested_url = BINARY CONCAT('/', TRIM(BOTH '/' FROM r.final_dest))
              WHERE r.id IN (" . $idList . ")
                AND h.last_used > %d

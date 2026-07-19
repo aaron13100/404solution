@@ -34,12 +34,17 @@ class ABJ_404_Solution_ViewQueryBuilder {
     public function buildHighImpactCapturedCountQuery(): string {
         // Plain equality gives the optimizer an indexable requested_url probe;
         // the BINARY predicate keeps exact-match URL semantics.
+        $logsHitsTable = $this->dbCore->doTableNameReplacements('{wp_abj404_logs_hits}');
+        $canonicalRedirectUrl = "COALESCE(r.canonical_url, CONCAT('/', TRIM(BOTH '/' FROM r.url)))";
+        $comparableRedirectUrl = $this->dbCore->collationHelper()->coerceExpressionToColumnCollation(
+            $canonicalRedirectUrl,
+            array('table' => $logsHitsTable, 'column' => 'requested_url')
+        );
         // allow-unbounded-select: COUNT(*) aggregate; returns a single row
         $query = "SELECT COUNT(*) AS cnt
             FROM {wp_abj404_redirects} r
             INNER JOIN {wp_abj404_logs_hits} h
-                ON h.requested_url =
-                   COALESCE(r.canonical_url, CONCAT('/', TRIM(BOTH '/' FROM r.url)))
+                ON h.requested_url = " . $comparableRedirectUrl . "
                AND BINARY h.requested_url = BINARY
                    COALESCE(r.canonical_url, CONCAT('/', TRIM(BOTH '/' FROM r.url)))
             WHERE r.status = " . ABJ404_STATUS_CAPTURED . " AND r.disabled = 0

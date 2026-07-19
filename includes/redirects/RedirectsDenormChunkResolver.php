@@ -137,10 +137,18 @@ class ABJ_404_Solution_RedirectsDenormChunkResolver {
         if ($found !== $logsHitsTable) {
             return null;
         }
+        $canonicalRedirectUrl = "COALESCE(r.canonical_url, CONCAT('/', TRIM(BOTH '/' FROM r.url)))";
+        $comparableRedirectUrl = $dbCore->collationHelper()->coerceExpressionToColumnCollation(
+            $canonicalRedirectUrl,
+            array('table' => $logsHitsTable, 'column' => 'requested_url')
+        );
         return ABJ_404_Solution_RedirectsDenormColumnSql::buildHitsRollupFromRollupTableStatement(
-            $redirectsTable,
-            $logsHitsTable,
-            $idClause
+            array(
+                'redirects_table' => $redirectsTable,
+                'logs_hits_table' => $logsHitsTable,
+                'id_clause' => $idClause,
+                'comparable_redirect_url' => $comparableRedirectUrl,
+            )
         );
     }
 

@@ -202,6 +202,37 @@ class ABJ_404_Solution_DatabaseCollationHelper {
     }
 
     /**
+     * Coerce a SQL expression to the charset and collation of an indexed
+     * comparison column without wrapping that indexed column.
+     *
+     * Mixed-collation sites are common during upgrades and partial restores.
+     * Applying CONVERT/COLLATE only to the non-indexed operand makes the
+     * equality deterministic while leaving the target column sargable.
+     * Callers must supply an internally constructed SQL expression; this
+     * method sanitizes metadata identifiers, not arbitrary SQL text.
+     *
+     * @param string $expression SQL expression used opposite the target column.
+     * @param array{table: string, column: string} $targetColumn Indexed target column metadata.
+     * @return string
+     */
+    public function coerceExpressionToColumnCollation(string $expression, array $targetColumn): string {
+        $tableName = $targetColumn['table'] ?? '';
+        $columnName = $targetColumn['column'] ?? '';
+        if ($tableName === '' || $columnName === '') {
+            throw new InvalidArgumentException('Target table and column are required for a collation-safe SQL comparison.');
+        }
+
+        $collation = $this->getColumnCollationString($tableName, $columnName);
+        $charsetParts = explode('_', $collation, 2);
+        $charset = $this->sanitizeCollationIdentifier($charsetParts[0] ?? '');
+        if ($charset === '' || $collation === '') {
+            throw new InvalidArgumentException('Target column collation could not be converted to a safe SQL identifier.');
+        }
+
+        return 'CONVERT(' . $expression . ' USING ' . $charset . ') COLLATE ' . $collation;
+    }
+
+    /**
      * Return the preferred utf8mb4 collation for this wpdb connection.
      *
      * If wpdb->collate already names a utf8mb4_* collation, use it; otherwise

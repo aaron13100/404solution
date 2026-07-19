@@ -140,7 +140,7 @@ class ABJ_404_Solution_LogsHitsTableRebuilder {
     private function hitsTableInsertDirect(string $tempDestTable): array {
         $ttSelectQuery = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/../sql/getRedirectsForViewTempTable.sql");
         if ($this->joinHelper->isLogsv2CanonicalUrlBackfillComplete()) { $ttSelectQuery = $this->joinHelper->dropLogsv2CanonicalCoalesceWrap($ttSelectQuery); }
-        if ($this->joinHelper->isRedirectsCanonicalUrlBackfillComplete()) { $ttSelectQuery = $this->joinHelper->dropRedirectsCanonicalCoalesceWrap($ttSelectQuery); }
+        $ttSelectQuery = str_replace('{redirects_canonical_url_join_rhs}', $this->joinHelper->buildDirectJoinRhs(), $ttSelectQuery);
         $ttSelectQuery = $this->dbCore->doTableNameReplacements($ttSelectQuery);
         $ttInsertQuery = "/* abj404:src=LogsHitsTableRebuilder::hitsTableInsertDirect */ insert into " . $tempDestTable . " (requested_url, logsid, last_used, logshits, failed_hits) \n " . $ttSelectQuery;
         return $this->dbCore->queryAndGetResults($ttInsertQuery, array('log_too_slow' => false, 'timeout' => 60));
