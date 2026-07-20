@@ -80,15 +80,20 @@ class ABJ_404_Solution_PluginLogicVersionUpgrader {
     }
 
     /**
-     * Synchronized entry point: refresh opcache, acquire lock, run the
-     * upgrade action, then refresh the permalink cache.
+     * Synchronized entry point: acquire the lock, run the upgrade action, then
+     * refresh the permalink cache.
+     *
+     * Deliberately does NOT touch opcache. Stale post-upgrade bytecode has to
+     * be flushed before the autoloader links anything, which is strictly
+     * earlier than this method can ever run -- by the time the booted plugin
+     * calls it, a mismatched parent/subclass pair has already fataled. That
+     * flush now lives in includes/root-boot/OpcacheUpgradeGuard.php, invoked
+     * from 404-solution.php ahead of spl_autoload_register().
      *
      * @param array<string, mixed> $options
      * @return array<string, mixed>
      */
     public function upgradeIfNeeded(array $options) {
-        self::invalidateOpcacheForCriticalFiles();
-
         $syncUtils = self::syncUtils();
 
         $synchronizedKeyFromUser = 'update_db_version';
@@ -454,41 +459,5 @@ class ABJ_404_Solution_PluginLogicVersionUpgrader {
             throw new \RuntimeException('PluginLogicVersionUpgrader requires a database service object.');
         }
         return $dbCore;
-    }
-
-    /**
-     * Invalidate opcache for files whose APIs callers depend on across an
-     * upgrade. Runs BEFORE the synchronizer lock so a stale opcache copy of
-     * Functions.php cannot survive the upgrade and cause a fatal in the next
-     * request.
-     *
-     * @return string[] File paths that were successfully invalidated.
-     */
-    public static function invalidateOpcacheForCriticalFiles(): array {
-        if (!function_exists('opcache_invalidate')) {
-            return [];
-        }
-
-        $files = [
-            ABJ404_PATH . 'includes/core/Functions.php',
-            ABJ404_PATH . 'includes/php/MbStringAdapter.php',
-            ABJ404_PATH . 'includes/php/MbStringAdapterMb.php',
-            ABJ404_PATH . 'includes/php/MbStringAdapterPreg.php',
-            ABJ404_PATH . 'includes/core/RegexHelper.php',
-            ABJ404_PATH . 'includes/core/RegexHelperMb.php',
-            ABJ404_PATH . 'includes/core/RegexHelperPreg.php',
-            ABJ404_PATH . 'includes/core/QueryStringHelper.php',
-            ABJ404_PATH . 'includes/php/FunctionsMBString.php',
-            ABJ404_PATH . 'includes/php/FunctionsPreg.php',
-        ];
-
-        $invalidated = [];
-        foreach ($files as $file) {
-            if (is_file($file) && @opcache_invalidate($file, true)) {
-                $invalidated[] = $file;
-            }
-        }
-
-        return $invalidated;
     }
 }

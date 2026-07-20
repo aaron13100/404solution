@@ -46,6 +46,43 @@ if (!defined('ABJ404_FILE')) {
 if (!defined('ABJ404_PATH')) {
 	define('ABJ404_PATH', plugin_dir_path(ABJ404_FILE));
 }
+
+// The plugin version is read from this file's own header (single source of
+// truth) and is defined HERE rather than in Loader.php because the
+// post-upgrade opcache guard below needs it before any other plugin file
+// loads. Loader.php keeps its own guarded define for loaders that reach it
+// without going through this entry point; it becomes a no-op in normal boots.
+// get_file_data() reads from disk, so the version is correct even when this
+// entry point is itself being served from stale bytecode.
+if (!defined('ABJ404_VERSION') && function_exists('get_file_data')) {
+	$__abj404_header = get_file_data(ABJ404_FILE, array('Version' => 'Version'));
+	define('ABJ404_VERSION', isset($__abj404_header['Version']) ? $__abj404_header['Version'] : '');
+	unset($__abj404_header);
+}
+
+// POST-UPGRADE OPCACHE GUARD -- must stay the FIRST plugin file required, ahead
+// of every other require and ahead of spl_autoload_register() below.
+//
+// PHP revalidates cached bytecode per file on its own schedule, so for a few
+// seconds after an update the class graph can be MIXED: a file at a path that
+// is new in this release compiles fresh from disk while a file whose path did
+// not change is still the previous release's bytecode. When a parent and its
+// subclass land on opposite sides of that split and a signature changed, PHP
+// raises an uncatchable E_ERROR while LINKING them -- which is exactly what
+// killed requests on a real 4.2.0 -> 4.3.1 upgrade (see the file header of
+// includes/root-boot/OpcacheUpgradeGuard.php for the incident detail).
+//
+// Because the fatal happens at class-linking time, the flush is only useful if
+// it runs before the autoloader can link anything. Anything later (the old
+// PluginLogicVersionUpgrader::invalidateOpcacheForCriticalFiles(), which ran
+// inside the booted plugin) is structurally incapable of saving the request
+// that dies. The call is gated on a persisted version stamp -- the
+// `abj404_opcache_version` option, which doubles as the support-visible record
+// of when this last ran -- so the work happens once per upgrade, not once per
+// request. There is no logger this early in the boot, by construction.
+require_once __DIR__ . '/includes/root-boot/OpcacheUpgradeGuard.php';
+abj404_opcache_refresh_after_upgrade();
+
 require_once __DIR__ . '/includes/core/PhpErrorLogFallback.php';
 	if (!defined('ABJ404_SHORTCODE_NAME')) {
 		define('ABJ404_SHORTCODE_NAME', 'abj404_solution_page_suggestions');
