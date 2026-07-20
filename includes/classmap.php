@@ -406,6 +406,8 @@ return array(
     'ABJ_404_Solution_NGramUsageTelemetry' => $base . 'includes/ngram/NGramUsageTelemetry.php',
     'ABJ_404_Solution_PermalinkCache' => $base . 'includes/repositories/PermalinkCache.php',
     'ABJ_404_Solution_PiiRedactor' => $base . 'includes/feedback/PiiRedactor.php',
+    'ABJ_404_Solution_RequestCredentialRedactor' => $base . 'includes/feedback/RequestCredentialRedactor.php',
+    'ABJ_404_Solution_SensitiveValueMask' => $base . 'includes/feedback/SensitiveValueMask.php',
     'ABJ_404_Solution_PluginLogic' => $base . 'includes/core/PluginLogic.php',
     'ABJ_404_Solution_PluginLogicInterface' => $base . 'includes/core/PluginLogicInterface.php',
     'ABJ_404_Solution_StopWords' => $base . 'includes/spelling/StopWords.php',

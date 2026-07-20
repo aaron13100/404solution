@@ -10,13 +10,43 @@ if (!defined('ABSPATH')) {
  *
  * Every string that leaves the plugin (debug file, error_log, HTTP report,
  * email fallback, admin-screen excerpts) passes through redact() before
- * reaching its destination. The class owns the regex catalog and masking
- * helpers; callers never build their own PII patterns.
+ * reaching its destination. This class owns the patterns that must RECOGNIZE
+ * an unlabeled shape in free-form text -- an address, an IP, a path, a
+ * database identifier, an opaque token -- and the order they run in. Callers
+ * never build their own PII patterns.
+ *
+ * Two collaborators own the parts that are not shape recognition:
+ * ABJ_404_Solution_RequestCredentialRedactor masks the values that request
+ * text labels by name (headers, cookies, form fields, nonces), and
+ * ABJ_404_Solution_SensitiveValueMask decides what a masked value looks like.
  *
  * Configurable via $options passed to redact():
  *   'redact_ips' => bool  (default true, controls IP address hashing)
  */
 class ABJ_404_Solution_PiiRedactor {
+
+    /**
+     * Final filename extensions that are NOT delegated top-level domains, so a
+     * token ending in one cannot be a deliverable email address no matter how
+     * email-shaped it looks. Checked against the IANA root zone
+     * (data.iana.org/TLD/tlds-alpha-by-domain.txt, version 2026062302).
+     *
+     * Membership here is the one thing standing between a real address and the
+     * log file, so the list may only ever grow with extensions that are absent
+     * from the root zone. Several obvious candidates are deliberately missing
+     * because they ARE real gTLDs: .zip, .mov, .app, .dev, .page, .link, .map,
+     * and .md. Entries must be lowercase and letters-only; the email pattern
+     * only matches a letters-only final label, so anything else is unreachable
+     * (a '@2x.woff2' URL never matches the pattern in the first place).
+     *
+     * @var array<int, string>
+     */
+    const NON_TLD_FILE_EXTENSIONS = array(
+        'png', 'jpg', 'jpeg', 'gif', 'webp', 'avif', 'bmp', 'ico', 'svg', 'tif', 'tiff', 'heic',
+        'css', 'js', 'mjs', 'scss', 'less', 'json', 'xml', 'txt', 'html', 'htm', 'php',
+        'woff', 'ttf', 'otf', 'eot',
+        'pdf', 'csv', 'webm', 'ogg', 'wav',
+    );
 
     /** @var ABJ_404_Solution_Functions */
     private $f;
@@ -40,9 +70,7 @@ class ABJ_404_Solution_PiiRedactor {
 
         $text = $this->stripUrlQueryStrings($text);
         $text = $this->stripPathQueryStrings($text);
-        $text = $this->redactAuthorizationHeaders($text);
-        $text = $this->redactCookieValues($text);
-        $text = $this->redactSensitiveFormFields($text);
+        $text = ABJ_404_Solution_RequestCredentialRedactor::redact($text);
         $text = $this->redactEmails($text);
 
         if ($redactIps) {
@@ -51,11 +79,11 @@ class ABJ_404_Solution_PiiRedactor {
         }
 
         $text = $this->redactUsernames($text);
+        $text = $this->redactDatabaseAccountNames($text);
         $text = $this->redactDisplayNames($text);
         $text = $this->redactAbsolutePaths($text);
         $text = $this->redactDatabaseIdentifiers($text);
         $text = $this->redactLongTokens($text);
-        $text = $this->redactNonces($text);
 
         return $text;
     }
@@ -83,89 +111,68 @@ class ABJ_404_Solution_PiiRedactor {
     }
 
     // =========================================================================
-    // Authorization headers
-    // =========================================================================
-
-    /** @param string $text @return string */
-    private function redactAuthorizationHeaders(string $text): string {
-        $text = preg_replace(
-            '/\b(Authorization:\s*)(Bearer|Basic|Digest|Token)\s+\S+/i',
-            '$1$2 [REDACTED]',
-            $text
-        ) ?? $text;
-
-        $text = preg_replace(
-            '/\b(X-API-Key|X-Auth-Token|X-Access-Token):\s*\S+/i',
-            '$1: [REDACTED]',
-            $text
-        ) ?? $text;
-
-        return $text;
-    }
-
-    // =========================================================================
-    // Cookie values
-    // =========================================================================
-
-    /** @param string $text @return string */
-    private function redactCookieValues(string $text): string {
-        $text = preg_replace(
-            '/\b(Cookie|Set-Cookie):\s*\S[^\r\n]*/i',
-            '$1: [REDACTED]',
-            $text
-        ) ?? $text;
-
-        $text = preg_replace(
-            '/(\$_COOKIE\s*\[\s*[\'"][^\'"]*[\'"]\s*\])\s*=\s*[\'"][^\'"]*[\'"]/i',
-            '$1 = \'[REDACTED]\'',
-            $text
-        ) ?? $text;
-
-        return $text;
-    }
-
-    // =========================================================================
-    // Sensitive form / request-body fields
-    // =========================================================================
-
-    /** @param string $text @return string */
-    private function redactSensitiveFormFields(string $text): string {
-        $sensitiveKeys = 'password|passwd|pwd|secret|credit_card|card_number|cvv|ssn|api_key|private_key|access_token|refresh_token';
-
-        $text = preg_replace(
-            '/\b(' . $sensitiveKeys . ')\s*=\s*(?:([\'"])[^\'"]*\2|\S+)/i',
-            '$1=[REDACTED]',
-            $text
-        ) ?? $text;
-
-        $text = preg_replace(
-            '/(\$_(?:POST|GET|REQUEST)\s*\[\s*[\'"](?:' . $sensitiveKeys . ')[\'"]\s*\])\s*(?:=\s*[\'"][^\'"]*[\'"])?/i',
-            '$1=[REDACTED]',
-            $text
-        ) ?? $text;
-
-        $text = preg_replace(
-            '/"(' . $sensitiveKeys . ')"\s*:\s*"[^"]*"/i',
-            '"$1":"[REDACTED]"',
-            $text
-        ) ?? $text;
-
-        return $text;
-    }
-
-    // =========================================================================
     // Email addresses
     // =========================================================================
 
-    /** @param string $text @return string */
+    /**
+     * @param string $text @return string
+     *
+     * The pattern must be email-SHAPED, not merely '\S+@\S+'. The old form
+     * matched from the first non-space character to the last, so the most
+     * common '@' in a WordPress URL -- a retina asset such as
+     * '/wp-content/uploads/logo@2x.png' -- was rewritten to '/wp***@2***-hash'
+     * in the debug log and the crash report, destroying the very URL a 404
+     * plugin exists to diagnose.
+     *
+     * The grammar is WordPress's own: the local-part class and the per-label
+     * domain class are the two character classes is_email() applies, and the
+     * requirement that the domain carry at least two labels is is_email()'s
+     * `2 > count( $subs )` rule. Anything WordPress would refuse to call an
+     * email address is therefore not treated as one here either. Only '/' is
+     * withheld from is_email()'s local-part class, because it is a path
+     * separator in the text this class processes; '@' is added so that a
+     * multi-'@' token is masked whole rather than leaving its head in the
+     * clear.
+     *
+     * Being email-shaped is necessary but not sufficient: '2x.png' is a
+     * perfectly good domain shape. The final label therefore also has to be a
+     * plausible TLD, which is what NON_TLD_FILE_EXTENSIONS decides. Narrowing
+     * must never cost a redaction that used to happen, so the domain still
+     * accepts a bare IPv4 literal ('root@192.168.0.5') and a trailing sentence
+     * period is still allowed to follow the address.
+     */
     private function redactEmails(string $text): string {
+        $local = '[A-Za-z0-9!#$%&\'*+=?^_`{|}~.@-]+';
+        $fqdn = '(?:[A-Za-z0-9-]+\.)+[A-Za-z]{2,63}';
+        $ipv4Literal = '(?:\d{1,3}\.){3}\d{1,3}';
+
         return preg_replace_callback(
-            '/\S+@\S+/',
+            '/' . $local . '@(?:' . $fqdn . '|' . $ipv4Literal . ')(?![A-Za-z0-9-])/',
             function ($matches) {
-                return $this->maskEmailAdaptive($matches[0]);
+                if (self::endsWithNonTldFileExtension($matches[0])) {
+                    return $matches[0];
+                }
+                return ABJ_404_Solution_SensitiveValueMask::maskEmail($matches[0]);
             },
             $text
         ) ?? $text;
+    }
+
+    /**
+     * @param string $token an email-shaped token
+     * @return bool true when the token's final label is a file extension that
+     *   no registry has delegated, which makes the token a filename rather than
+     *   an address.
+     */
+    private static function endsWithNonTldFileExtension(string $token): bool {
+        $lastDot = strrpos($token, '.');
+        if ($lastDot === false) {
+            return false;
+        }
+
+        $extension = strtolower(substr($token, $lastDot + 1));
+
+        return in_array($extension, self::NON_TLD_FILE_EXTENSIONS, true);
     }
 
     // =========================================================================
@@ -238,7 +245,7 @@ class ABJ_404_Solution_PiiRedactor {
     }
 
     // =========================================================================
-    // Usernames and display names
+    // Usernames, database account names, and display names
     // =========================================================================
 
     /** @param string $text @return string */
@@ -247,7 +254,35 @@ class ABJ_404_Solution_PiiRedactor {
             '/\b(current\s+)?user(name)?:\s*(\S+)/i',
             function ($matches) {
                 $prefix = $matches[1] . 'user' . $matches[2] . ': ';
-                return $prefix . $this->maskTextAdaptive($matches[3]);
+                return $prefix . ABJ_404_Solution_SensitiveValueMask::maskText($matches[3]);
+            },
+            $text
+        ) ?? $text;
+    }
+
+    /**
+     * @param string $text @return string
+     *
+     * MySQL names an account as 'user'@'host' and quotes both halves in its
+     * "Access denied for user 'wpuser'@'localhost'" error, which lands in the
+     * debug log and the crash report verbatim. The old email pattern masked
+     * that form only by accident (it matched any two non-space runs joined by
+     * '@'), and narrowing the email pattern to WordPress's is_email() grammar
+     * would silently drop the masking with it. The account name is kept masked
+     * here instead, deliberately and in the layer that already masks the other
+     * database identifiers. The host half stays readable: 'localhost' versus a
+     * remote host is the diagnostic the error exists to carry, and this class
+     * already lets the site's own hostname through elsewhere.
+     *
+     * Both quotes are required. Without them the pattern would re-mask an
+     * address the email pass has already masked, since redact() runs this
+     * after redactEmails().
+     */
+    private function redactDatabaseAccountNames(string $text): string {
+        return preg_replace_callback(
+            "/'([^'@\\s]{1,80})'@'([^'@\\s]{0,255})'/",
+            function ($matches) {
+                return "'" . ABJ_404_Solution_SensitiveValueMask::maskText($matches[1]) . "'@'" . $matches[2] . "'";
             },
             $text
         ) ?? $text;
@@ -258,7 +293,7 @@ class ABJ_404_Solution_PiiRedactor {
         return preg_replace_callback(
             '/\bdisplay\s+name:\s*([^\n,]+)/i',
             function ($matches) {
-                return 'display name: ' . $this->maskTextAdaptive(trim($matches[1]));
+                return 'display name: ' . ABJ_404_Solution_SensitiveValueMask::maskText(trim($matches[1]));
             },
             $text
         ) ?? $text;
@@ -325,7 +360,7 @@ class ABJ_404_Solution_PiiRedactor {
     }
 
     // =========================================================================
-    // Tokens and nonces
+    // Opaque tokens
     // =========================================================================
 
     /** @param string $text @return string */
@@ -359,106 +394,6 @@ class ABJ_404_Solution_PiiRedactor {
      */
     private static function looksLikeOwnIdentifier(string $token): bool {
         return strpos($token, 'ABJ_404_Solution_') === 0 || strpos($token, 'abj404_') === 0;
-    }
-
-    /** @param string $text @return string */
-    private function redactNonces(string $text): string {
-        return preg_replace_callback(
-            '/_wpnonce=([A-Za-z0-9]+)/',
-            function ($matches) {
-                return '_wpnonce=nonce-' . substr(md5($matches[1]), 0, 8);
-            },
-            $text
-        ) ?? $text;
-    }
-
-    // =========================================================================
-    // Masking helpers
-    // =========================================================================
-
-    /**
-     * @param string $email
-     * @return string
-     */
-    public function maskEmailAdaptive($email) {
-        if (empty($email) || strpos($email, '@') === false) {
-            return $email;
-        }
-
-        $parts = explode('@', $email);
-        if (count($parts) != 2) {
-            return $this->maskTextAdaptive($email);
-        }
-
-        list($username, $fullDomain) = $parts;
-
-        $domainParts = explode('.', $fullDomain);
-        if (count($domainParts) > 1) {
-            if (in_array(end($domainParts), array('uk', 'au', 'nz', 'za'))) {
-                array_pop($domainParts);
-                array_pop($domainParts);
-            } else {
-                array_pop($domainParts);
-            }
-        }
-        $domain = implode('.', $domainParts);
-
-        $usernameLen = strlen($username);
-        if ($usernameLen <= 4) {
-            $usernameVisible = 1;
-        } elseif ($usernameLen <= 9) {
-            $usernameVisible = 2;
-        } else {
-            $usernameVisible = 3;
-        }
-
-        $domainLen = strlen($domain);
-        $domainVisible = max(1, (int)ceil($domainLen * 0.3));
-
-        $maskedUsername = substr($username, 0, $usernameVisible) . '***';
-        $maskedDomain = empty($domain) ? '' : substr($domain, 0, $domainVisible) . '***';
-
-        if (defined('AUTH_SALT')) {
-            $hash = substr(md5(AUTH_SALT . $email), 0, 4);
-        } else {
-            $hash = substr(md5($email), 0, 4);
-        }
-
-        if (!empty($maskedDomain)) {
-            return $maskedUsername . '@' . $maskedDomain . '-' . $hash;
-        }
-        return $maskedUsername . '@-' . $hash;
-    }
-
-    /**
-     * @param string $text
-     * @return string
-     */
-    public function maskTextAdaptive($text) {
-        if (empty($text)) {
-            return $text;
-        }
-
-        $text = trim($text);
-        $textLen = strlen($text);
-
-        if ($textLen <= 4) {
-            $visible = 1;
-        } elseif ($textLen <= 9) {
-            $visible = 2;
-        } else {
-            $visible = 3;
-        }
-
-        $masked = substr($text, 0, $visible) . '***';
-
-        if (defined('AUTH_SALT')) {
-            $hash = substr(md5(AUTH_SALT . $text), 0, 4);
-        } else {
-            $hash = substr(md5($text), 0, 4);
-        }
-
-        return $masked . '-' . $hash;
     }
 
     // =========================================================================
