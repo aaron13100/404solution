@@ -290,6 +290,7 @@ return array(
     'ABJ_404_Solution_LogsReadQueries' => $base . 'includes/logs/LogsReadQueries.php',
     'ABJ_404_Solution_LogsHitsDataPopulator' => $base . 'includes/logs/LogsHitsDataPopulator.php',
     'ABJ_404_Solution_LogsWriteRecoveryPolicy' => $base . 'includes/logs/LogsWriteRecoveryPolicy.php',
+    'ABJ_404_Solution_LockOwnerStore' => $base . 'includes/core/LockOwnerStore.php',
     'ABJ_404_Solution_LogsWriter' => $base . 'includes/logs/LogsWriter.php',
     'ABJ_404_Solution_RedirectHitLogEntry' => $base . 'includes/logs/RedirectHitLogEntry.php',
     'ABJ_404_Solution_LogsRepositoryInterface' => $base . 'includes/logs/LogsRepositoryInterface.php',
