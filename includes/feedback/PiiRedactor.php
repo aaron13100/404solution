@@ -172,10 +172,27 @@ class ABJ_404_Solution_PiiRedactor {
     // IP addresses
     // =========================================================================
 
-    /** @param string $text @return string */
+    /**
+     * @param string $text @return string
+     *
+     * Two constraints keep this from matching ordinary dotted runs that are
+     * not network data. Each octet is range-checked (0-255), so a decimal
+     * sequence like "1024.768.900.640" is not an address; and the match may
+     * not be adjacent to another dotted-number segment, so "1.2.3.4.5" is
+     * left whole instead of having its fourth segment hashed. The trailing
+     * guard deliberately still allows a plain sentence period, so
+     * "blocked 203.0.113.42." is redacted normally.
+     *
+     * The octet accepts leading zeros ("010.000.000.001") because some
+     * proxies and legacy access logs zero-pad. Narrowing the range must
+     * never cost a redaction that used to happen: over-redaction is
+     * fail-safe here, under-redaction leaks an address.
+     */
     private function redactIpv4(string $text): string {
+        $octet = '(?:25[0-5]|2[0-4]\d|[01]?\d?\d)';
+
         return preg_replace_callback(
-            '/\b(?:\d{1,3}\.){3}\d{1,3}\b/',
+            '/(?<![\w.])(?:' . $octet . '\.){3}' . $octet . '(?!\w)(?!\.\d)/',
             function ($matches) {
                 return $this->f->md5lastOctet($matches[0]);
             },
@@ -183,10 +200,36 @@ class ABJ_404_Solution_PiiRedactor {
         ) ?? $text;
     }
 
-    /** @param string $text @return string */
+    /**
+     * @param string $text @return string
+     *
+     * The alternation must not accept a bare '::', and the boundary guards
+     * must exclude ordinary identifier characters rather than only hex digits
+     * and colons. Without both, every PHP static-call frame in a stack trace
+     * ('ABJ_404_Solution_ErrorHandler::processFatalError') matched as an IPv6
+     * address and had its method name replaced with a hash on the way into
+     * the debug log and the crash report -- destroying exactly the
+     * identifiers a crash needs to be triaged. A bare '::' is the
+     * unspecified address and identifies nobody, so declining to redact it
+     * costs no privacy; every form that names a host is still matched,
+     * including the loopback '::1'.
+     */
     private function redactIpv6(string $text): string {
+        $group = '[0-9a-fA-F]{1,4}';
+
+        $address =
+            '(?:' . $group . ':){7}' . $group
+            . '|(?:' . $group . ':){1,7}:'
+            . '|(?:' . $group . ':){1,6}:' . $group
+            . '|(?:' . $group . ':){1,5}(?::' . $group . '){1,2}'
+            . '|(?:' . $group . ':){1,4}(?::' . $group . '){1,3}'
+            . '|(?:' . $group . ':){1,3}(?::' . $group . '){1,4}'
+            . '|(?:' . $group . ':){1,2}(?::' . $group . '){1,5}'
+            . '|' . $group . ':(?::' . $group . '){1,6}'
+            . '|:(?::' . $group . '){1,7}';
+
         return preg_replace_callback(
-            '/(?<![0-9A-Fa-f:])(?:(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}|(?:[0-9a-fA-F]{1,4}:){1,7}:|(?:[0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|(?:[0-9a-fA-F]{1,4}:){1,5}(?::[0-9a-fA-F]{1,4}){1,2}|(?:[0-9a-fA-F]{1,4}:){1,4}(?::[0-9a-fA-F]{1,4}){1,3}|(?:[0-9a-fA-F]{1,4}:){1,3}(?::[0-9a-fA-F]{1,4}){1,4}|(?:[0-9a-fA-F]{1,4}:){1,2}(?::[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:(?::[0-9a-fA-F]{1,4}){1,6}|:(?:(?::[0-9a-fA-F]{1,4}){1,7}|:))(?![0-9A-Fa-f:])/',
+            '/(?<![0-9A-Za-z_:])(?:' . $address . ')(?![0-9A-Za-z_:])/',
             function ($matches) {
                 return $this->f->md5lastOctet($matches[0]);
             },
