@@ -363,37 +363,29 @@ class ABJ_404_Solution_PiiRedactor {
     // Opaque tokens
     // =========================================================================
 
-    /** @param string $text @return string */
+    /**
+     * @param string $text @return string
+     *
+     * This pass recognizes the SHAPE -- a long run of token characters -- and
+     * decides what a secret is replaced with. Whether a given candidate is
+     * actually key material rather than a post slug or a plugin identifier is
+     * a calibrated policy question, and it belongs to
+     * ABJ_404_Solution_OpaqueTokenClassifier; the length bar is read from that
+     * class so the pattern and the policy cannot disagree about it.
+     */
     private function redactLongTokens(string $text): string {
+        $minimumLength = ABJ_404_Solution_OpaqueTokenClassifier::MIN_SECRET_LENGTH;
+
         return preg_replace_callback(
-            '/\b([A-Za-z0-9_-]{40,})\b/',
+            '/\b([A-Za-z0-9_-]{' . $minimumLength . ',})\b/',
             function ($matches) {
-                if (self::looksLikeOwnIdentifier($matches[1])) {
+                if (!ABJ_404_Solution_OpaqueTokenClassifier::isOpaqueSecret($matches[1])) {
                     return $matches[1];
                 }
                 return 'token-' . substr(md5($matches[1]), 0, 8);
             },
             $text
         ) ?? $text;
-    }
-
-    /**
-     * This plugin uses two long-running naming conventions that routinely
-     * exceed the 40-char long-token threshold above: PascalCase classes
-     * (ABJ_404_Solution_ + a descriptive suffix, e.g. fatal-error messages
-     * like "Class ABJ_404_Solution_RedirectsDenormMaintenanceService not
-     * found") and lowercase option/transient/filter/hook names (abj404_ +
-     * a descriptive suffix, e.g. "Option
-     * abj404_error_handler_allow_admin_fatal_detection_in_cli was not
-     * found"). Both were being redacted into useless 'token-XXXXXXXX'
-     * noise. Real secrets never coincidentally start with either exact
-     * literal prefix, so exempting them does not weaken the redaction.
-     *
-     * @param string $token
-     * @return bool
-     */
-    private static function looksLikeOwnIdentifier(string $token): bool {
-        return strpos($token, 'ABJ_404_Solution_') === 0 || strpos($token, 'abj404_') === 0;
     }
 
     // =========================================================================
