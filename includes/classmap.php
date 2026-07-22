@@ -45,6 +45,8 @@ return array(
     'ABJ_404_Solution_AjaxQueryTimeline' => $base . 'includes/diagnostics/AjaxQueryTimeline.php',
     'ABJ_404_Solution_AjaxRowLoopProgress' => $base . 'includes/diagnostics/AjaxRowLoopProgress.php',
     'ABJ_404_Solution_AjaxTraceJournal' => $base . 'includes/diagnostics/AjaxTraceJournal.php',
+    'ABJ_404_Solution_ShutdownEnvironmentInventory' => $base . 'includes/diagnostics/ShutdownEnvironmentInventory.php',
+    'ABJ_404_Solution_ShutdownTeardownBracket' => $base . 'includes/diagnostics/ShutdownTeardownBracket.php',
     'ABJ_404_Solution_DiagnosticJournalExcerpt' => $base . 'includes/diagnostics/DiagnosticJournalExcerpt.php',
     'ABJ_404_Solution_DiagnosticEvidencePriority' => $base . 'includes/diagnostics/DiagnosticEvidencePriority.php',
     'ABJ_404_Solution_DiagnosticRequestGroup' => $base . 'includes/diagnostics/DiagnosticRequestGroup.php',

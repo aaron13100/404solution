@@ -21,6 +21,15 @@ final class ABJ_404_Solution_AjaxRequestTrace {
     const SHUTDOWN_INVENTORY_MARKER = 'abj404_ajax_shutdown_inventory.marker';
     const SCHEMA_VERSION = 1;
 
+    /** Teardown sentinel armed with register_shutdown_function(): runs BELOW WordPress. */
+    const MECHANISM_SHUTDOWN_FUNCTION = 'php_shutdown_function';
+    /** Teardown sentinel armed as a WordPress 'shutdown' action callback. */
+    const MECHANISM_WP_ACTION = 'wp_shutdown_action';
+    /** Sentinel registered when the AJAX handler was entered. */
+    const ARMED_HANDLER_ENTRY = 'handler_entry';
+    /** Sentinel registered when the response was emitted, in finish(). */
+    const ARMED_RESPONSE_TIME = 'response_time';
+
     /** @var array<string, scalar> */
     private $context;
     /** @var ABJ_404_Solution_Clock */
@@ -41,6 +50,8 @@ final class ABJ_404_Solution_AjaxRequestTrace {
     private $active = true;
     /** @var float|null Set when finish() runs; lets the teardown recorder measure PHP-shutdown lag after the response was logically complete. */
     private $responseEmittedAt = null;
+    /** @var ABJ_404_Solution_ShutdownTeardownBracket Splits shutdown time into WordPress-action vs below-WordPress. */
+    private $teardownBracket;
     /**
      * Guards the one-time-per-rotation $wp_filter['shutdown'] inventory.
      * Keyed by trace directory (not a single scalar) so unrelated trace
@@ -97,6 +108,7 @@ final class ABJ_404_Solution_AjaxRequestTrace {
     private function __construct(array $context, string $directory, ABJ_404_Solution_Clock $clock) {
         $this->clock = $clock;
         $this->directory = $directory;
+        $this->teardownBracket = new ABJ_404_Solution_ShutdownTeardownBracket();
         $this->requestStartedAt = $clock->nowFloat();
         $this->context = $this->normalizeContext($context);
         $stamp = str_replace('.', '', sprintf('%.6f', $this->requestStartedAt));
@@ -241,44 +253,52 @@ final class ABJ_404_Solution_AjaxRequestTrace {
      * in the timeout matrix).
      */
     public function recordShutdown(): void {
-        $this->recordTeardown('shutdown');
+        $this->recordTeardown('shutdown', self::MECHANISM_SHUTDOWN_FUNCTION, self::ARMED_HANDLER_ENTRY);
     }
 
     /** Response-time teardown sentinel; armed a second time in finish(). */
     public function recordShutdownAtResponseTime(): void {
-        $this->recordTeardown('shutdown_response_time');
+        $this->recordTeardown('shutdown_response_time', self::MECHANISM_SHUTDOWN_FUNCTION, self::ARMED_RESPONSE_TIME);
     }
 
     /**
      * WP 'shutdown' action at PHP_INT_MIN: the earliest possible read on
      * shutdown-time state, before any other plugin's own shutdown hook has
-     * had a chance to run. Also captures the one-time-per-rotation
-     * $wp_filter['shutdown'] callback roster.
+     * had a chance to run. Opens the WordPress-shutdown-action bracket; see
+     * ABJ_404_Solution_ShutdownTeardownBracket.
      */
     public function recordShutdownActionEarly(): void {
-        $this->recordTeardown('shutdown_action_min');
-        $this->maybeRecordShutdownFilterInventory();
+        $this->teardownBracket->noteWpActionStart($this->clock->nowFloat());
+        $this->recordTeardown('shutdown_action_min', self::MECHANISM_WP_ACTION, self::ARMED_HANDLER_ENTRY);
     }
 
     /**
      * WP 'shutdown' action at PHP_INT_MAX: fires after every other plugin's
      * default-priority shutdown hook has already run, so it can catch delay
      * or damage they caused that recordShutdownActionEarly could not see.
+     * Closes the WordPress-shutdown-action bracket.
      */
     public function recordShutdownActionLate(): void {
-        $this->recordTeardown('shutdown_action_max');
+        $this->teardownBracket->noteWpActionEnd($this->clock->nowFloat());
+        $this->recordTeardown('shutdown_action_max', self::MECHANISM_WP_ACTION, self::ARMED_HANDLER_ENTRY);
     }
 
     /**
      * Shared teardown body for every shutdown-time sentinel. Never disarmed
      * by finish() and never throws -- a teardown recorder that itself can
      * fatal would defeat its own purpose.
+     *
+     * @param string $mechanism  One of the MECHANISM_* constants: which of the
+     *                           two shutdown mechanisms invoked this sentinel.
+     * @param string $armedAt    One of the ARMED_* constants: where the callback
+     *                           was registered, which is what fixes its position
+     *                           in PHP's registration-ordered shutdown queue.
      */
-    private function recordTeardown(string $event): void {
+    private function recordTeardown(string $event, string $mechanism, string $armedAt): void {
         try {
             $lastError = error_get_last();
             $now = $this->clock->nowFloat();
-            $record = array(
+            $record = array_merge(array(
                 'event' => $event,
                 'elapsed_ms' => max(0, (int)round(($now - $this->requestStartedAt) * 1000)),
                 'elapsed_since_response_emitted_ms' => $this->responseEmittedAt !== null
@@ -288,28 +308,43 @@ final class ABJ_404_Solution_AjaxRequestTrace {
                 'current_stage' => $this->currentStage,
                 'peak_memory_bytes' => memory_get_peak_usage(true),
                 'connection_aborted' => function_exists('connection_aborted') ? connection_aborted() : 0,
+                // connection_status() carries the TIMEOUT bit that
+                // connection_aborted() cannot express, and session_status()
+                // turning ACTIVE between request_start and teardown is the
+                // evidence for a session write at shutdown (cause class G).
+                'connection_status' => function_exists('connection_status') ? connection_status() : null,
+                'session_status' => function_exists('session_status') ? session_status() : null,
                 'php_error_type' => is_array($lastError) ? (int)$lastError['type'] : 0,
                 'php_error_message' => is_array($lastError) ? substr((string)$lastError['message'], 0, 500) : '',
                 'php_error_file' => is_array($lastError) ? (string)$lastError['file'] : '',
                 'php_error_line' => is_array($lastError) ? (int)$lastError['line'] : 0,
-            );
+            ), $this->teardownBracket->attribution(
+                $mechanism, $armedAt, $mechanism === self::MECHANISM_SHUTDOWN_FUNCTION, $now));
             $this->appendRecord($record);
             $this->active = false;
             $this->journal->promote();
+            $this->maybeRecordShutdownEnvironmentInventory();
         } catch (Throwable $e) {
             self::reportStaticFailure('AJAX teardown recorder failed (' . $event . '): ' . $e->getMessage());
         }
     }
 
     /**
-     * Capture the full $wp_filter['shutdown'] callback roster once per
-     * journal rotation rather than on every request: the roster is static
-     * within a deploy, so per-request capture would only bloat the journal.
-     * The rotated file's mtime stands in for "which rotation" -- a marker
-     * file records the last rotation actually inventoried, and a
-     * same-process static short-circuits repeat requests inside one worker.
+     * Capture the shutdown-time environment
+     * (ABJ_404_Solution_ShutdownEnvironmentInventory) once per journal rotation
+     * rather than on every request: the roster and extension list are static
+     * within a deploy, so per-request capture would only bloat the journal. The
+     * rotated file's mtime stands in for "which rotation" -- a marker file
+     * records the last rotation actually inventoried, and a same-process static
+     * short-circuits repeat requests inside one worker.
+     *
+     * Called from every teardown sentinel, not just the WordPress-action one:
+     * the case this inventory exists to explain (shutdown work that is not a
+     * WordPress shutdown-action callback) includes the case where the
+     * WordPress shutdown action never runs at all, and an inventory only that
+     * action can write would be missing exactly then.
      */
-    private function maybeRecordShutdownFilterInventory(): void {
+    private function maybeRecordShutdownEnvironmentInventory(): void {
         $rotatedPath = $this->directory . ABJ_404_Solution_AjaxTraceJournal::ROTATED_FILE;
         $rotationMtime = @filemtime($rotatedPath);
         $rotationKey = is_int($rotationMtime) ? (string)$rotationMtime : 'never-rotated';
@@ -323,57 +358,15 @@ final class ABJ_404_Solution_AjaxRequestTrace {
             return;
         }
         self::$shutdownInventoryCapturedForRotation[$this->directory] = $rotationKey;
-        $this->appendRecord(array(
+        $this->appendRecord(array_merge(array(
             'event' => 'shutdown_hook_inventory',
             'rotation_key' => $rotationKey,
-            'callbacks' => self::describeShutdownCallbacks(),
-        ));
+        ), ABJ_404_Solution_ShutdownEnvironmentInventory::capture()));
         @file_put_contents($markerPath, $rotationKey, LOCK_EX);
-    }
-
-    /** @return array<int, string> */
-    private static function describeShutdownCallbacks(): array {
-        $wpFilter = $GLOBALS['wp_filter'] ?? null;
-        $hook = is_array($wpFilter) ? ($wpFilter['shutdown'] ?? null) : null;
-        $callbacks = null;
-        if (is_object($hook) && isset($hook->callbacks) && is_array($hook->callbacks)) {
-            $callbacks = $hook->callbacks;
-        } elseif (is_array($hook)) {
-            $callbacks = $hook;
-        }
-        if ($callbacks === null) {
-            return array('unavailable');
-        }
-        $described = array();
-        foreach ($callbacks as $priority => $priorityCallbacks) {
-            if (!is_array($priorityCallbacks)) {
-                continue;
-            }
-            foreach ($priorityCallbacks as $entry) {
-                $function = is_array($entry) ? ($entry['function'] ?? null) : null;
-                $described[] = $priority . ':' . self::describeCallable($function);
-            }
-        }
-        return $described;
-    }
-
-    /** @param mixed $function */
-    private static function describeCallable($function): string {
-        if (is_string($function)) {
-            return $function;
-        }
-        if (is_array($function) && count($function) === 2) {
-            $target = $function[0];
-            $targetName = is_object($target) ? get_class($target) : (is_string($target) ? $target : 'unknown');
-            return $targetName . '::' . (is_string($function[1]) ? $function[1] : 'unknown');
-        }
-        if ($function instanceof Closure) {
-            return 'Closure';
-        }
-        if (is_object($function)) {
-            return get_class($function);
-        }
-        return 'unknown';
+        // Promote here rather than relying on a later sentinel: the sentinel
+        // that writes this may be the last one to run, and an unpromoted spool
+        // waits 300 seconds for another request to recover it.
+        $this->journal->promote();
     }
 
     /**
