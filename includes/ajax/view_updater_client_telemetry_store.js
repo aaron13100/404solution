@@ -33,6 +33,8 @@
 
     var STORAGE_KEY = 'abj404:client_transport_telemetry';
     var STATE_VERSION = 1;
+    var SESSION_ID_KEY = 'abj404:client_session_id';
+    var SESSION_ID_PATTERN = /^[a-z0-9]{8,64}$/;
 
     /** Last-run timestamp for the adaptive canary ladder (Bruno matrix req. 7). */
     var CANARY_LADDER_KEY = 'abj404:canary_ladder_last_run';
@@ -46,6 +48,8 @@
      * be the reason another admin script fails to write.
      */
     var MAX_BYTES = 48000;
+    var sessionId = '';
+    var fallbackIdCounter = 0;
 
     /**
      * @param {string} message
@@ -264,6 +268,27 @@
         return minted;
     }
 
+    /** @returns {string} stable identifier for this browser tab. */
+    function getSessionId() {
+        if (sessionId !== '') {
+            return sessionId;
+        }
+        sessionId = tabScopedValue(SESSION_ID_KEY, mintSessionId, SESSION_ID_PATTERN);
+        return sessionId;
+    }
+
+    /** @returns {string} */
+    function mintSessionId() {
+        if (typeof global.abj404GenerateRequestId === 'function') {
+            return global.abj404GenerateRequestId();
+        }
+        fallbackIdCounter++;
+        var monotonic = global.performance && typeof global.performance.now === 'function'
+            ? global.performance.now() : Date.now(); // allow-direct-time: fallback session uniqueness when performance.now is absent
+        return ('f' + Date.now().toString(36) + fallbackIdCounter.toString(36) + // allow-direct-time: session uniqueness source when the shared generator is absent
+            Math.round(monotonic).toString(36)).slice(0, 32);
+    }
+
     /**
      * Whether the adaptive canary ladder is allowed to run right now: at
      * most once per cooldown window per browser (a same-origin proxy for
@@ -326,6 +351,7 @@
         drainAll: drainAll,
         clear: clear,
         tabScopedValue: tabScopedValue,
+        sessionId: getSessionId,
         canaryLadderEligible: canaryLadderEligible,
         markCanaryLadderRan: markCanaryLadderRan,
         STORAGE_KEY: STORAGE_KEY,

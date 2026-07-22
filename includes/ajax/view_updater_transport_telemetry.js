@@ -48,6 +48,7 @@
 
     /** In-memory index of this page's attempts, for the error notice timeline. */
     var attemptsByRequestId = {};
+    var PAGE_TRANSPORT_FINGERPRINT = transportFingerprint();
 
     /** @param {string} message @param {*} error @returns {void} */
     function warn(message, error) {
@@ -133,6 +134,7 @@
             durationMs: null,
             rt: null,
             rtState: 'not-looked-up',
+            transport: PAGE_TRANSPORT_FINGERPRINT,
             env: null
         };
         if (pageEnv) {
@@ -272,6 +274,30 @@
         return typeof value === 'number' && isFinite(value) ? value : fallback;
     }
 
+    /** @param {*} candidate @returns {string} native|wrapped|missing|unreadable */
+    function functionState(candidate) {
+        if (typeof candidate !== 'function') {
+            return 'missing';
+        }
+        try {
+            return /\[native code\]/.test(Function.prototype.toString.call(candidate))
+                ? 'native' : 'wrapped';
+        } catch (sourceError) {
+            warn('could not fingerprint a page transport function', sourceError);
+            return 'unreadable';
+        }
+    }
+
+    /** @returns {object} */
+    function transportFingerprint() {
+        var prototype = global.XMLHttpRequest && global.XMLHttpRequest.prototype;
+        return {
+            xhrOpen: functionState(prototype && prototype.open),
+            xhrSend: functionState(prototype && prototype.send),
+            fetch: functionState(global.fetch)
+        };
+    }
+
     /**
      * @param {object} record
      * @param {object} xhr
@@ -319,11 +345,20 @@
                     continue;
                 }
                 record.rt = {
+                    workerStart: round(entries[i].workerStart),
+                    redirectStart: round(entries[i].redirectStart),
+                    redirectEnd: round(entries[i].redirectEnd),
                     fetchStart: round(entries[i].fetchStart),
+                    domainLookupStart: round(entries[i].domainLookupStart),
+                    domainLookupEnd: round(entries[i].domainLookupEnd),
+                    connectStart: round(entries[i].connectStart),
+                    secureConnectionStart: round(entries[i].secureConnectionStart),
+                    connectEnd: round(entries[i].connectEnd),
                     requestStart: round(entries[i].requestStart),
                     responseStart: round(entries[i].responseStart),
                     responseEnd: round(entries[i].responseEnd),
                     duration: round(entries[i].duration),
+                    responseStatus: numberOr(entries[i].responseStatus, -1),
                     transferSize: numberOr(entries[i].transferSize, -1),
                     encodedBodySize: numberOr(entries[i].encodedBodySize, -1),
                     decodedBodySize: numberOr(entries[i].decodedBodySize, -1),

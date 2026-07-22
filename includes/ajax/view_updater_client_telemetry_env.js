@@ -27,8 +27,7 @@
  *
  * Globals defined: abj404ClientTelemetryEnv, abj404ClientBuildProbe.
  *
- * Depends on view_updater_client_telemetry_store.js (tabScopedValue) and
- * view_updater.js (abj404GenerateRequestId).
+ * Depends on view_updater_client_telemetry_store.js (sessionId).
  */
 (function (global) {
     'use strict';
@@ -42,20 +41,25 @@
     /** Bounded histories: enough to cover a 25-second attempt, never unbounded. */
     var MAX_LONG_TASKS = 64;
     var MAX_LIFECYCLE_EVENTS = 40;
+    var MAX_PAGE_ERRORS = 40;
     var DRIFT_SAMPLE_INTERVAL_MS = 1000;
-    var SESSION_ID_KEY = 'abj404:client_session_id';
-    var SESSION_ID_PATTERN = /^[a-z0-9]{8,64}$/;
+    var MODULE_INSTANCE_KEY = '__abj404ClientTelemetryEnvInstanceCount';
+    var JQUERY_PROBE_KEY = '__abj404AjaxRegistrationProbe';
 
     var inFlight = {};
     var longTasks = [];
     var lifecycleEvents = [];
+    var pageErrors = [];
     var driftMaxMs = 0;
     var driftSamples = 0;
     var driftTimer = null;
     var observersInstalled = false;
     var longTaskObserverState = 'not-started';
-    var sessionId = '';
-    var fallbackIdCounter = 0;
+
+    var priorModuleInstances = parseInt(global[MODULE_INSTANCE_KEY], 10);
+    global[MODULE_INSTANCE_KEY] = isFinite(priorModuleInstances) && priorModuleInstances > 0
+        ? priorModuleInstances + 1 : 1;
+    installJQueryRegistrationProbe();
 
     /** @returns {number} monotonic milliseconds since page load where available. */
     function nowMs() {
@@ -74,6 +78,79 @@
         if (global.console && global.console.warn) {
             global.console.warn('404 Solution: ' + message, error);
         }
+    }
+
+    /**
+     * jQuery keeps its AJAX registries in closure-private objects. Wrapping
+     * the public registration functions counts only post-probe registrations,
+     * without misrepresenting the already-private entries as enumerable.
+     * @returns {void}
+     */
+    function installJQueryRegistrationProbe() {
+        var jq = global.jQuery;
+        if (typeof jq !== 'function') {
+            return;
+        }
+        var probe = jq[JQUERY_PROBE_KEY];
+        if (!probe || typeof probe !== 'object') {
+            probe = { prefilters: 0, transports: 0 };
+            jq[JQUERY_PROBE_KEY] = probe;
+        }
+        var methods = ['ajaxPrefilter', 'ajaxTransport'];
+        var counters = ['prefilters', 'transports'];
+        for (var i = 0; i < methods.length; i++) {
+            if (typeof jq[methods[i]] === 'function' &&
+                    jq[methods[i]].__abj404RegistrationProbe !== true) {
+                wrapJQueryRegistration(jq, probe, methods[i], counters[i]);
+            }
+        }
+    }
+
+    /** @param {Function} jq @param {object} probe @param {string} method @param {string} counter @returns {void} */
+    function wrapJQueryRegistration(jq, probe, method, counter) {
+        var original = jq[method];
+        var wrapped = function () {
+            var result = original.apply(this, arguments);
+            var callback = typeof arguments[0] === 'function' ? arguments[0] : arguments[1];
+            probe[counter] += typeof callback === 'function' ? 1 : 0;
+            return result;
+        };
+        wrapped.__abj404RegistrationProbe = true;
+        jq[method] = wrapped;
+    }
+
+    /** @returns {object} */
+    function jqueryFingerprint() {
+        var instances = [];
+        var versions = [];
+        var candidates = [];
+        var names = Object.getOwnPropertyNames(global);
+        for (var nameIndex = 0; nameIndex < names.length; nameIndex++) {
+            try {
+                candidates.push(global[names[nameIndex]]);
+            } catch (propertyError) {
+                warn('could not inspect page global ' + names[nameIndex], propertyError);
+            }
+        }
+        for (var i = 0; i < candidates.length; i++) {
+            var candidate = candidates[i];
+            if (typeof candidate !== 'function' || !candidate.fn ||
+                    typeof candidate.fn.jquery !== 'string' || instances.indexOf(candidate) >= 0) {
+                continue;
+            }
+            instances.push(candidate);
+            versions.push(candidate.fn.jquery);
+        }
+        versions.sort();
+        var jq = global.jQuery;
+        var probe = typeof jq === 'function' ? jq[JQUERY_PROBE_KEY] : null;
+        return {
+            versions: versions,
+            instances: instances.length,
+            ajaxPrefiltersObserved: probe ? probe.prefilters : -1,
+            ajaxTransportsObserved: probe ? probe.transports : -1,
+            registrationScope: probe ? 'after-probe' : 'unavailable'
+        };
     }
 
     /**
@@ -113,39 +190,12 @@
     }
 
     /**
-     * One id generator for the whole client, borrowed from view_updater.js
-     * rather than duplicated here. The deterministic fallback only runs if
-     * that module failed to load, in which case a per-tab-unique value still
-     * beats an empty session field.
-     *
-     * @returns {string}
-     */
-    function mintId() {
-        if (typeof global.abj404GenerateRequestId === 'function') {
-            return global.abj404GenerateRequestId();
-        }
-        fallbackIdCounter++;
-        return ('f' + Date.now().toString(36) + fallbackIdCounter.toString(36) + // allow-direct-time: id uniqueness source when the shared generator is absent
-            Math.round(nowMs()).toString(36)).slice(0, 32);
-    }
-
-    /**
-     * Per-tab session identifier. Persisted through the telemetry storage
-     * adapter so the whole tab (including a reload) reports one session, which
-     * is what joins the "same tab retried three times, then reloaded and failed
-     * again" story server-side.
-     *
+     * Per-tab identity belongs to the storage adapter that persists it.
      * @returns {string}
      */
     function getSessionId() {
-        if (sessionId !== '') {
-            return sessionId;
-        }
         var store = global.abj404ClientTelemetryStore;
-        sessionId = (store && typeof store.tabScopedValue === 'function')
-            ? store.tabScopedValue(SESSION_ID_KEY, mintId, SESSION_ID_PATTERN)
-            : mintId();
-        return sessionId;
+        return store && typeof store.sessionId === 'function' ? store.sessionId() : 'storemissing';
     }
 
     /** @param {string} name @returns {void} */
@@ -164,6 +214,40 @@
         observersInstalled = true;
         installLongTaskObserver();
         installLifecycleListeners();
+        installPageErrorListeners();
+    }
+
+    /** @returns {void} */
+    function installPageErrorListeners() {
+        if (!global || typeof global.addEventListener !== 'function') {
+            return;
+        }
+        global.addEventListener('error', function (event) {
+            recordPageError('error', event || {});
+        });
+        global.addEventListener('unhandledrejection', function (event) {
+            recordPageError('unhandledrejection', event || {});
+        });
+    }
+
+    /** @param {string} type @param {object} event @returns {void} */
+    function recordPageError(type, event) {
+        var reason = event.reason;
+        var rawMessage = type === 'unhandledrejection'
+            ? (reason && typeof reason.message !== 'undefined' ? reason.message : reason)
+            : event.message;
+        pageErrors.push({
+            type: type,
+            message: String(rawMessage == null ? '' : rawMessage)
+                .replace(/([?&][^=\s&#]{1,64})=([^&\s#]*)/g, '$1=[redacted]').slice(0, 240),
+            source: String(event.filename || '').split(/[?#]/)[0].split(/[\\/]/).pop().slice(0, 160),
+            line: typeof event.lineno === 'number' && isFinite(event.lineno) ? event.lineno : null,
+            column: typeof event.colno === 'number' && isFinite(event.colno) ? event.colno : null,
+            t: Math.round(nowMs())
+        });
+        while (pageErrors.length > MAX_PAGE_ERRORS) {
+            pageErrors.shift();
+        }
     }
 
     /**
@@ -354,7 +438,10 @@
      * @returns {object}
      */
     function snapshot(startedAtMs) {
-        var windowStart = typeof startedAtMs === 'number' ? startedAtMs : 0;
+        // Stored observation timestamps are integer milliseconds. Floor the
+        // attempt boundary to the same precision so events emitted during
+        // the attempt's first fractional millisecond are not filtered out.
+        var windowStart = typeof startedAtMs === 'number' ? Math.floor(startedAtMs) : 0;
         var tasks = 0;
         var totalMs = 0;
         var maxMs = 0;
@@ -371,6 +458,12 @@
                 lifecycle.push(lifecycleEvents[j]);
             }
         }
+        var errors = [];
+        for (var k = 0; k < pageErrors.length; k++) {
+            if (pageErrors[k].t >= windowStart) {
+                errors.push(pageErrors[k]);
+            }
+        }
         return {
             inflight: { count: inFlightIds().length, ids: inFlightIds() },
             longtasks: {
@@ -381,6 +474,9 @@
             },
             drift: { maxMs: driftMaxMs, samples: driftSamples },
             lifecycle: lifecycle,
+            pageErrors: errors,
+            jquery: jqueryFingerprint(),
+            moduleInstances: global[MODULE_INSTANCE_KEY],
             sw: serviceWorkerId(),
             vis: visibilityState()
         };
