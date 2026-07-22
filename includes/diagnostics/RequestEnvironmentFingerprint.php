@@ -7,15 +7,11 @@ if (!defined('ABSPATH')) {
 /**
  * What process, what code, and what runtime state is serving this request.
  *
- * When a request is slow or vanishes, the first question is not "which of
- * our queries was slow" but "is this even the code we think it is, on a
- * healthy process". This class answers that: how long the process had
- * already been alive before we got control, which SAPI and host and PID
- * served it, the content hash / mtime / inode of every plugin file actually
- * loaded (so an opcode cache serving bytecode from a prior deploy is visible
- * rather than inferred), what output buffers and session state were already
- * in place, how long a single object-cache read took, and the raw resource
- * counters.
+ * When a request is slow or vanishes, the first question is not "which query
+ * was slow" but "is this the expected code on a healthy process". This class
+ * captures prior process lifetime, SAPI/host/PID, disk and opcode-cache file
+ * fingerprints, size-only request/admin-user state, output buffers, session
+ * state, one timed object-cache read, and raw resource counters.
  *
  * Every probe degrades independently: a platform without getrusage() loses
  * that one field, never the whole capture.
@@ -38,6 +34,8 @@ final class ABJ_404_Solution_RequestEnvironmentFingerprint {
      */
     public function capture(?string $handlerClass, string $cacheProbeKey): array {
         $loadedFiles = $this->loadedFileFingerprints($handlerClass);
+        $opcacheCapture = $this->opcacheCapture($loadedFiles);
+        $loadedFiles = $opcacheCapture['loaded_files'];
         $cacheProbe = $this->timedCacheProbe($cacheProbeKey);
         $obInventory = function_exists('ob_get_status') ? ob_get_status(true) : array();
         $rusage = function_exists('getrusage') ? getrusage() : null;
@@ -54,6 +52,9 @@ final class ABJ_404_Solution_RequestEnvironmentFingerprint {
             'pid' => getmypid(),
             'plugin_build_hash' => $this->computeBuildHash($loadedFiles),
             'loaded_files' => $loadedFiles,
+            'opcache' => $opcacheCapture['summary'],
+            'request_shape' => $this->requestShape(),
+            'admin_user_state' => $this->adminUserState(),
             'ob_inventory' => $obInventory,
             'session_status' => function_exists('session_status') ? session_status() : null,
             'cache_probe_ms' => $cacheProbe['elapsed_ms'],
@@ -175,6 +176,265 @@ final class ABJ_404_Solution_RequestEnvironmentFingerprint {
             'inode' => $isFile ? @fileinode($path) : null,
             'size' => $isFile ? @filesize($path) : null,
         );
+    }
+
+    /**
+     * Reconcile loaded-file disk mtimes with OPcache timestamps; a differing
+     * positive timestamp proves executable and filesystem generations differ.
+     * @param array<int, array<string, mixed>> $loadedFiles
+     * @return array{loaded_files: array<int, array<string, mixed>>, summary: array<string, mixed>}
+     */
+    private function opcacheCapture(array $loadedFiles): array {
+        $summary = array(
+            'reason' => 'opcache-unavailable',
+            'validate_timestamps' => $this->iniBoolean(ini_get('opcache.validate_timestamps')),
+            'revalidate_freq' => $this->numericInteger(ini_get('opcache.revalidate_freq')),
+            'restart_pending' => null,
+            'restart_in_progress' => null,
+            'start_time' => null,
+            'last_restart_time' => null,
+            'restart_counts' => array('oom' => null, 'hash' => null, 'manual' => null),
+        );
+        $loadedFiles = $this->withUnknownOpcacheState($loadedFiles);
+
+        $restrictApi = ini_get('opcache.restrict_api');
+        $apiRestricted = function_exists('abj404_opcache_api_is_restricted')
+            ? abj404_opcache_api_is_restricted($restrictApi, __FILE__)
+            : (is_string($restrictApi) && trim($restrictApi) !== '');
+        if ($apiRestricted) {
+            $summary['reason'] = 'opcache-api-restricted';
+            return array('loaded_files' => $loadedFiles, 'summary' => $summary);
+        }
+        if (!function_exists('opcache_get_status')) {
+            return array('loaded_files' => $loadedFiles, 'summary' => $summary);
+        }
+
+        $status = @opcache_get_status(true);
+        if (!is_array($status) || (array_key_exists('opcache_enabled', $status) && !$status['opcache_enabled'])) {
+            return array('loaded_files' => $loadedFiles, 'summary' => $summary);
+        }
+
+        $summary = $this->opcacheSummaryFromStatus($summary, $status);
+        $loadedFiles = $this->withOpcacheScriptState($loadedFiles, $status['scripts'] ?? array());
+        return array('loaded_files' => $loadedFiles, 'summary' => $summary);
+    }
+
+    /**
+     * @param array<string, mixed> $summary
+     * @param array<string, mixed> $status
+     * @return array<string, mixed>
+     */
+    private function opcacheSummaryFromStatus(array $summary, array $status): array {
+        $statistics = is_array($status['opcache_statistics'] ?? null) ? $status['opcache_statistics'] : array();
+        $summary['reason'] = 'available';
+        $summary['restart_pending'] = isset($status['restart_pending']) ? (bool)$status['restart_pending'] : null;
+        $summary['restart_in_progress'] = isset($status['restart_in_progress']) ? (bool)$status['restart_in_progress'] : null;
+        $summary['start_time'] = $this->numericInteger($statistics['start_time'] ?? null);
+        $summary['last_restart_time'] = $this->numericInteger($statistics['last_restart_time'] ?? null);
+        $summary['restart_counts'] = array(
+            'oom' => $this->numericInteger($statistics['oom_restarts'] ?? null),
+            'hash' => $this->numericInteger($statistics['hash_restarts'] ?? null),
+            'manual' => $this->numericInteger($statistics['manual_restarts'] ?? null),
+        );
+        return $summary;
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $loadedFiles
+     * @param mixed $scripts
+     * @return array<int, array<string, mixed>>
+     */
+    private function withOpcacheScriptState(array $loadedFiles, $scripts): array {
+        $scripts = is_array($scripts) ? $scripts : array();
+        foreach ($loadedFiles as &$file) {
+            $path = is_string($file['path'] ?? null) ? $file['path'] : '';
+            $metadata = $path !== '' ? ($scripts[$path] ?? null) : null;
+            if (!is_array($metadata)) {
+                $file['opcache_cached'] = false;
+                continue;
+            }
+            $timestamp = $this->numericInteger($metadata['timestamp'] ?? null);
+            $mtime = $this->numericInteger($file['mtime'] ?? null);
+            $file['opcache_cached'] = true;
+            $file['opcache_timestamp'] = $timestamp;
+            $file['opcache_timestamp_matches_file'] = ($timestamp !== null && $timestamp > 0 && $mtime !== null)
+                ? ($timestamp === $mtime) : null;
+        }
+        unset($file);
+        return $loadedFiles;
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $loadedFiles
+     * @return array<int, array<string, mixed>>
+     */
+    private function withUnknownOpcacheState(array $loadedFiles): array {
+        foreach ($loadedFiles as &$file) {
+            $file['opcache_cached'] = null;
+            $file['opcache_timestamp'] = null;
+            $file['opcache_timestamp_matches_file'] = null;
+        }
+        unset($file);
+        return $loadedFiles;
+    }
+
+    /** @param mixed $value */
+    private function iniBoolean($value): ?bool {
+        if ($value === false || $value === null || $value === '' || !is_scalar($value)) {
+            return null;
+        }
+        return filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+    }
+
+    /** @param mixed $value */
+    private function numericInteger($value): ?int {
+        return is_numeric($value) ? (int)$value : null;
+    }
+
+    /**
+     * Approximate the received HTTP header block exactly as `Name: value` CRLF
+     * lines, plus raw cookie bytes and pair count. Values never leave memory.
+     *
+     * @return array{header_bytes: int, header_count: int, cookie_header_bytes: int, cookie_count: int}
+     */
+    private function requestShape(): array {
+        $headerBytes = 0;
+        $headerCount = 0;
+        foreach ($_SERVER as $key => $value) {
+            if (!is_string($key) || !is_scalar($value)) {
+                continue;
+            }
+            if (strpos($key, 'HTTP_') === 0) {
+                $name = str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($key, 5)))));
+            } elseif ($key === 'CONTENT_TYPE' || $key === 'CONTENT_LENGTH') {
+                $name = str_replace('_', '-', ucwords(strtolower($key), '_'));
+            } else {
+                continue;
+            }
+            $headerBytes += strlen($name . ': ' . (string)$value . "\r\n");
+            $headerCount++;
+        }
+
+        $cookieHeader = is_scalar($_SERVER['HTTP_COOKIE'] ?? null)
+            ? (string)$_SERVER['HTTP_COOKIE'] : '';
+        $cookieCount = 0;
+        foreach (explode(';', $cookieHeader) as $cookiePair) {
+            if (trim($cookiePair) !== '') {
+                $cookieCount++;
+            }
+        }
+        return array(
+            'header_bytes' => $headerBytes,
+            'header_count' => $headerCount,
+            'cookie_header_bytes' => strlen($cookieHeader),
+            'cookie_count' => $cookieCount,
+        );
+    }
+
+    /**
+     * Fingerprint the current administrator's potentially pathological state.
+     * Only aggregate byte sizes and SHA-256 hashes are returned; meta keys and
+     * values remain local to the request.
+     *
+     * @return array<string, mixed>
+     */
+    private function adminUserState(): array {
+        $state = array(
+            'reason' => 'user-api-unavailable',
+            'wp_user_settings_bytes' => null,
+            'wp_user_settings_hash' => null,
+            'screen_option_meta_count' => null,
+            'screen_option_meta_bytes' => null,
+            'screen_option_meta_hash' => null,
+            'locale' => null,
+        );
+        try {
+            $userId = function_exists('get_current_user_id') ? (int)get_current_user_id() : 0;
+        } catch (Throwable $e) {
+            $this->reportProbeFailure('current-user-id', $e);
+            $state['reason'] = 'user-api-exception:' . get_class($e);
+            return $state;
+        }
+        $state['locale'] = $this->resolvedUserLocale($userId);
+        if ($userId < 1) {
+            $state['reason'] = 'no-current-user';
+            return $state;
+        }
+        if (!function_exists('get_user_meta')) {
+            return $state;
+        }
+
+        try {
+            $allMeta = get_user_meta($userId);
+        } catch (Throwable $e) {
+            $this->reportProbeFailure('admin-user-state', $e);
+            $state['reason'] = 'user-meta-exception:' . get_class($e);
+            return $state;
+        }
+        if (!is_array($allMeta)) {
+            $state['reason'] = 'user-meta-invalid-shape';
+            return $state;
+        }
+
+        $wpSettings = $allMeta['wp_user-settings'] ?? array();
+        $wpSettingsBytes = $this->metaValueBytes($wpSettings);
+        if ($wpSettingsBytes > 0) {
+            $state['wp_user_settings_bytes'] = $wpSettingsBytes;
+            $state['wp_user_settings_hash'] = hash('sha256', serialize($wpSettings));
+        }
+
+        $screenOptions = array();
+        foreach ($allMeta as $key => $values) {
+            if (is_string($key) && $this->isScreenOptionMetaKey($key)) {
+                $screenOptions[$key] = $values;
+            }
+        }
+        ksort($screenOptions);
+        $state['screen_option_meta_count'] = count($screenOptions);
+        $state['screen_option_meta_bytes'] = $this->metaValueBytes($screenOptions);
+        $state['screen_option_meta_hash'] = $screenOptions !== array()
+            ? hash('sha256', serialize($screenOptions)) : null;
+        $state['reason'] = 'available';
+        return $state;
+    }
+
+    private function resolvedUserLocale(int $userId): ?string {
+        try {
+            if ($userId > 0 && function_exists('get_user_locale')) {
+                $locale = get_user_locale($userId);
+            } elseif (function_exists('get_locale')) {
+                $locale = get_locale();
+            } else {
+                return null;
+            }
+            return is_scalar($locale) ? substr((string)$locale, 0, 32) : null;
+        } catch (Throwable $e) {
+            $this->reportProbeFailure('user-locale', $e);
+            return null;
+        }
+    }
+
+    private function isScreenOptionMetaKey(string $key): bool {
+        return preg_match('/(?:_per_page$|^screen_layout_|^metaboxhidden_|^closedpostboxes_|^meta-box-order_|^manage.*columnshidden$)/', $key) === 1;
+    }
+
+    /** @param mixed $value */
+    private function metaValueBytes($value): int {
+        if (is_array($value)) {
+            $bytes = 0;
+            foreach ($value as $item) {
+                $bytes += $this->metaValueBytes($item);
+            }
+            return $bytes;
+        }
+        return is_scalar($value) ? strlen((string)$value) : strlen(serialize($value));
+    }
+
+    private function reportProbeFailure(string $probe, Throwable $error): void {
+        if (function_exists('abj404_logPhpFallback')) {
+            abj404_logPhpFallback('request-environment', $probe . ' probe failed: '
+                . get_class($error) . ' code=' . $error->getCode() . ' message=' . $error->getMessage());
+        }
     }
 
     /**
