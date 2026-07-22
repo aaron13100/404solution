@@ -420,6 +420,13 @@ class ABJ_404_Solution_Functions {
     // =========================================================================
 
     /**
+     * Read one request parameter, unslashed and sanitized.
+     *
+     * wp_magic_quotes() slash-escapes every superglobal at boot and
+     * sanitize_text_field() does not undo it, so an unslashed read hands back
+     * {\"v\":1,...} for JSON and O\'Brien for a search. Hence core's
+     * sanitize_text_field( wp_unslash( ... ) ) order.
+     *
      * @param string $name The key to retrieve the value for.
      * @param string|null $defaultValue The value to return if the value is not set.
      * @return string The sanitized value.
@@ -431,6 +438,7 @@ class ABJ_404_Solution_Functions {
         }
         $returnValue = self::applyBulkActionFallback($name, $returnValue);
         if ($returnValue !== null) {
+            $returnValue = ABJ_404_Solution_RequestInputNormalizer::safeWpUnslash($returnValue);
             if (is_array($returnValue)) {
                 $returnValue = array_map('sanitize_text_field', $returnValue);
             } else {
@@ -478,19 +486,14 @@ class ABJ_404_Solution_Functions {
         }
 
         $sanitizer = abj_service('sanitizer');
-        $unslash = function($value) {
-            return function_exists('wp_unslash') ? wp_unslash($value) : $value;
-        };
-
         if (is_array($returnValue)) {
-            return array_map(function($value) use ($sanitizer, $unslash) {
-                $value = $unslash($value);
-                return $sanitizer->normalizeUrlString($value);
+            return array_map(static function($value) use ($sanitizer) {
+                return $sanitizer->normalizeUrlString(
+                    ABJ_404_Solution_RequestInputNormalizer::safeWpUnslash($value));
             }, $returnValue);
         }
-
-        $returnValue = $unslash($returnValue);
-        return $sanitizer->normalizeUrlString($returnValue);
+        return $sanitizer->normalizeUrlString(
+            ABJ_404_Solution_RequestInputNormalizer::safeWpUnslash($returnValue));
     }
 
 }

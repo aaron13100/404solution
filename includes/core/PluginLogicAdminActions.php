@@ -250,8 +250,12 @@ class ABJ_404_Solution_PluginLogicAdminActions {
      * @return string
      */
     function handlePluginAction($action, &$sub) {
+        // wp_unslash first, matching verifyHandlerNonce() above: this message is
+        // a plugin-authored status string round-tripped through a hidden field,
+        // and several translations contain an apostrophe. WordPress escapes it
+        // on the way back in, so without unslashing the admin sees "Couldn\'t".
         $message = array_key_exists('display-this-message', $_POST) ?
-            sanitize_text_field($_POST['display-this-message']) : '';
+            sanitize_text_field(wp_unslash($_POST['display-this-message'])) : '';
 
         $handler = $this->adminActionRegistry()->resolve((string)$action);
         if ($handler === null) {
