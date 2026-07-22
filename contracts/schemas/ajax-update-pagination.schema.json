@@ -29,6 +29,9 @@
     "cacheMode": { "type": "string", "enum": ["normal", "cache_or_pending", "refresh_cache"] },
     "currentSignature": { "type": "string", "maxLength": 128 },
     "requestId": { "type": "string", "pattern": "^[a-zA-Z0-9]{8,64}$" },
-    "retryCount": { "type": "integer", "minimum": 0, "maximum": 2 }
+    "retryCount": { "type": "integer", "minimum": 0, "maximum": 2 },
+    "sessionId": { "type": "string", "maxLength": 64, "description": "Immutable request ledger: joins retried requests from the same browser tab/session." },
+    "retryParentId": { "type": "string", "pattern": "^[a-zA-Z0-9]{8,64}$", "description": "Immutable request ledger: requestId of the attempt this retry is following up on." },
+    "clientSentAt": { "type": "string", "maxLength": 64, "description": "Immutable request ledger: client-side send timestamp, for boot-delta/queueing diagnostics." }
   }
 }

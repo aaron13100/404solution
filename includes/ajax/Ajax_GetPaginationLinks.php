@@ -24,9 +24,23 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
         ABJ_404_Solution_AjaxRequestContractValidator::enforceCurrentRequest('ajax-update-pagination');
 
         $functions = ABJ_404_Solution_Ajax_AdminEndpointSupport::getRequestReader();
+        // Read+normalize the request ID before any service resolution so the
+        // checkpoint pairs below (matrix coverage req. 2) can be correlated
+        // to this request from their very first boundary.
+        $requestId = ABJ_404_Solution_AjaxRequestLedger::normalizeId(
+            $functions->getPostOrGetSanitize('requestId', ABJ_404_Solution_AjaxRequestLedger::UNKNOWN_ID));
+
         /** @var ABJ_404_Solution_ViewReadServiceInterface $viewReadService */
-        $viewReadService = abj_service('view_read_service');
-        $abj404logic = abj_service('plugin_logic');
+        $viewReadService = ABJ_404_Solution_AjaxCheckpointLogger::around(
+            $requestId,
+            'service_resolve_view_read_service',
+            static fn() => abj_service('view_read_service')
+        );
+        $abj404logic = ABJ_404_Solution_AjaxCheckpointLogger::around(
+            $requestId,
+            'service_resolve_plugin_logic',
+            static fn() => abj_service('plugin_logic')
+        );
         global $abj404view;
 
         $rowsPerPage = absint($functions->getPostOrGetSanitize('rowsPerPage'));
@@ -40,12 +54,16 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
         $part = self::normalizePart((string)$functions->getPostOrGetSanitize('part', 'all'));
         $cacheMode = self::normalizeCacheMode((string)$functions->getPostOrGetSanitize('cacheMode', 'normal'));
         $currentSignature = self::normalizeCurrentSignature((string)$functions->getPostOrGetSanitize('currentSignature', ''));
-        $requestId = (string)$functions->getPostOrGetSanitize('requestId', 'unknown00');
-        $requestId = preg_match('/^[A-Za-z0-9]{8,64}$/', $requestId) === 1 ? $requestId : 'unknown00';
         $retryCount = min(2, absint($functions->getPostOrGetSanitize('retryCount', '0')));
+        // Immutable request ledger (matrix coverage req. 1): session ID and
+        // retry-parent ID ride the same POST-body/query-string channel as
+        // requestId; the client side of sending them is a separate task
+        // (client transport telemetry), so these default to empty until
+        // that ships -- reading them here now is forward-compatible.
+        $ledger = ABJ_404_Solution_AjaxRequestLedger::readFields($functions);
 
         $isPluginAdmin = false;
-        $context = array(
+        $context = array_merge(array(
             'action' => 'ajaxUpdatePaginationLinks',
             'page' => $page,
             'subpage' => $subpage,
@@ -61,8 +79,12 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
             'currentSignature_length' => strlen($currentSignature),
             'request_uri' => array_key_exists('REQUEST_URI', $_SERVER) ? $_SERVER['REQUEST_URI'] : '',
             'user_id' => function_exists('get_current_user_id') ? get_current_user_id() : 0,
-        );
+            'handler_class' => __CLASS__,
+        ), $ledger);
         $context = ABJ_404_Solution_Ajax_AdminEndpointSupport::startAjaxDebugContext($context, 'Ajax_GetPaginationLinks::handle');
+
+        ABJ_404_Solution_AjaxRequestLedger::recordHeaderMismatchIfAny(
+            $requestId, (string)$ledger['header_request_id']);
 
         try {
             if (!ABJ_404_Solution_Ajax_AdminEndpointSupport::requireAdminWithNonceOrRespond(
@@ -84,9 +106,17 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
             ABJ_404_Solution_AjaxStageDiagnostics::beginRequest($context);
 
             // Update the perpage option (but only if provided). Some environments may omit
-            // rowsPerPage on Enter key events; avoid unnecessary option writes.
+            // rowsPerPage on Enter key events; avoid unnecessary option writes. Wrapped as
+            // its own checkpoint pair: the elapsed time includes any update_option hook
+            // callbacks other plugins have registered (matrix coverage req. 2).
             if ($part === 'all' || $part === 'table') {
-                self::updatePerPageOption($abj404logic, $rowsPerPage);
+                ABJ_404_Solution_AjaxCheckpointLogger::around(
+                    $requestId,
+                    'update_per_page_option',
+                    static function () use ($abj404logic, $rowsPerPage) {
+                        self::updatePerPageOption($abj404logic, $rowsPerPage);
+                    }
+                );
             }
 
             /** @var ABJ_404_Solution_View $view */
@@ -183,10 +213,19 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
      * @param array<string, mixed> $context
      */
     private static function checkRateLimitOrRespond(int $maxRequestsPerMinute, array $context): bool {
-        if (!ABJ_404_Solution_Ajax_Php::consumeRateLimit('update_pagination', $maxRequestsPerMinute, 60)) {
+        $checkpointRequestId = ABJ_404_Solution_AjaxRequestLedger::instrumentedRequestId($context);
+        $rateLimited = ABJ_404_Solution_AjaxCheckpointLogger::around(
+            $checkpointRequestId,
+            'rate_limit_check',
+            static fn() => ABJ_404_Solution_Ajax_Php::consumeRateLimit('update_pagination', $maxRequestsPerMinute, 60)
+        );
+        if (!$rateLimited) {
             return true;
         }
 
+        ABJ_404_Solution_AjaxCheckpointLogger::record($checkpointRequestId, 'rate_limit_branch', array(
+            'max_requests_per_minute' => $maxRequestsPerMinute,
+        ));
         ABJ_404_Solution_Ajax_AdminEndpointSupport::safeLogAjaxFailure('AJAX rate limit in ajaxUpdatePaginationLinks.', $context);
         ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
         $payload = ABJ_404_Solution_Ajax_AdminEndpointSupport::buildAjaxErrorResponse('Rate limit exceeded. Please try again later.', null, false);

@@ -84,7 +84,7 @@ class ABJ_404_Solution_SynchronizationUtils {
 	    ABJ_404_Solution_LockOwnerStore::resetForTests();
 	}
 
-	public function __construct(ABJ_404_Solution_LockOwnerStore $ownerStore = null) {
+	public function __construct(?ABJ_404_Solution_LockOwnerStore $ownerStore = null) {
 		$this->ownerStore = $ownerStore !== null ? $ownerStore : new ABJ_404_Solution_LockOwnerStore();
 	}
 

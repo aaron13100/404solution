@@ -285,7 +285,7 @@ class ABJ_404_Solution_Ajax_SupportRequest {
             }
         }
         $traceExcerpt = class_exists('ABJ_404_Solution_AjaxRequestTrace')
-            ? ABJ_404_Solution_AjaxRequestTrace::readRecentJournalForSupport() : '';
+            ? ABJ_404_Solution_AjaxTraceJournal::readRecentForSupport() : '';
         if ($traceExcerpt === '') {
             return $excerpt;
         }

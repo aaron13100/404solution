@@ -76,8 +76,10 @@ class ABJ_404_Solution_Ajax_AdminEndpointSupport {
         string $handlerName,
         array $options = array()
     ): bool {
+        $checkpointRequestId = ABJ_404_Solution_AjaxRequestLedger::instrumentedRequestId($context);
         $gate = function_exists('abj_service_optional') ? abj_service_optional('ajax_security_gate') : null;
         if (!is_object($gate) || !method_exists($gate, 'authorizeAdminWithNonce')) {
+            ABJ_404_Solution_AjaxCheckpointLogger::record($checkpointRequestId, 'auth_service_unavailable_branch', array('handler' => $handlerName));
             self::safeLogAjaxFailure('AJAX authorization service unavailable in ' . $handlerName . '.', $context);
             self::markAjaxResponseSent();
             self::getAndClearAjaxBufferedOutput();
@@ -88,7 +90,11 @@ class ABJ_404_Solution_Ajax_AdminEndpointSupport {
             return false;
         }
 
-        $result = $gate->authorizeAdminWithNonce($nonceAction, $options);
+        $result = ABJ_404_Solution_AjaxCheckpointLogger::around(
+            $checkpointRequestId,
+            'auth_check',
+            static fn() => $gate->authorizeAdminWithNonce($nonceAction, $options)
+        );
         if (is_array($result) && !empty($result['ok'])) {
             if (isset($GLOBALS['abj404_ajax_context']) && is_array($GLOBALS['abj404_ajax_context'])) {
                 $GLOBALS['abj404_ajax_context']['is_plugin_admin'] = true;
@@ -106,6 +112,7 @@ class ABJ_404_Solution_Ajax_AdminEndpointSupport {
         $summary = $code === 'invalid_nonce'
             ? 'AJAX invalid nonce in ' . $handlerName . '.'
             : 'AJAX unauthorized in ' . $handlerName . '.';
+        ABJ_404_Solution_AjaxCheckpointLogger::record($checkpointRequestId, 'auth_failure_branch', array('code' => $code, 'status' => $status));
         self::safeLogAjaxFailure($summary, $context);
         self::markAjaxResponseSent();
         self::getAndClearAjaxBufferedOutput();
@@ -122,6 +129,9 @@ class ABJ_404_Solution_Ajax_AdminEndpointSupport {
      * @return void
      */
     public static function sendJsonResponseAndExit($payload, $httpStatus = 200) {
+        $checkpointRequestId = ABJ_404_Solution_AjaxRequestLedger::instrumentedRequestIdFromGlobalContext();
+        $ledgerRequestId = ABJ_404_Solution_AjaxRequestLedger::requestIdFromGlobalContext();
+        $payload = ABJ_404_Solution_AjaxRequestLedger::stampOnPayload($payload, $ledgerRequestId);
         if (!headers_sent()) {
             if (isset($GLOBALS['abj404_ajax_context']) && is_array($GLOBALS['abj404_ajax_context'])) {
                 $ctx = $GLOBALS['abj404_ajax_context'];
@@ -131,6 +141,15 @@ class ABJ_404_Solution_Ajax_AdminEndpointSupport {
                 if (array_key_exists('subpage', $ctx) && is_string($ctx['subpage']) && $ctx['subpage'] !== '') {
                     header('X-ABJ404-Subpage: ' . preg_replace('/[\r\n]+/', '', $ctx['subpage']));
                 }
+                // Immutable request ledger (matrix coverage req. 1): echo the
+                // request ID back as a response header so it is recoverable
+                // from the client/proxy side even when the JSON body itself
+                // never arrives. Normalized to the ledger format, so no
+                // header-splitting scrub is needed and no raw client value
+                // is ever reflected.
+                if ($ledgerRequestId !== '') {
+                    header('X-ABJ404-Request-ID: ' . $ledgerRequestId);
+                }
             }
             header('Content-type: application/json; charset=UTF-8');
             if (function_exists('status_header')) {
@@ -139,28 +158,103 @@ class ABJ_404_Solution_Ajax_AdminEndpointSupport {
                 http_response_code($httpStatus);
             }
         }
-        echo json_encode($payload);
+        self::checkpointedEncodeAndEcho($payload, $checkpointRequestId);
 
         // Test hook: tests register `abj404_should_exit` returning false to skip exit.
         if (!apply_filters('abj404_should_exit', true, array('source' => 'viewUpdater_emitJson'))) {
             return;
         }
 
-        // Flush so shutdown hooks (e.g. hits table rebuild) don't block the HTTP
-        // connection, which would let reverse proxies like Cloudflare time out (524).
+        self::checkpointedFlushAndFinish($checkpointRequestId);
+
+        exit;
+    }
+
+    /**
+     * json_encode + echo as one measured boundary (matrix coverage req. 2):
+     * bytes, a content hash, and json_last_error() so a truncated or
+     * pathological payload is directly visible instead of inferred from a
+     * client-side parse failure. $checkpointRequestId === '' means this
+     * response is outside the Bruno table-AJAX endpoint; skip the
+     * instrumentation but keep behavior identical.
+     *
+     * @param mixed $payload
+     */
+    private static function checkpointedEncodeAndEcho($payload, string $checkpointRequestId): void {
+        if ($checkpointRequestId === '') {
+            echo json_encode($payload);
+            return;
+        }
+        $json = json_encode($payload);
+        ABJ_404_Solution_AjaxCheckpointLogger::record($checkpointRequestId, 'json_encode', array(
+            'bytes' => is_string($json) ? strlen($json) : 0,
+            'hash' => is_string($json) ? md5($json) : null,
+            'json_last_error' => json_last_error(),
+            'json_last_error_msg' => json_last_error() === JSON_ERROR_NONE ? '' : json_last_error_msg(),
+        ));
+        ABJ_404_Solution_AjaxCheckpointLogger::around(
+            $checkpointRequestId,
+            'echo',
+            static function () use ($json) {
+                echo $json;
+            },
+            array('bytes' => is_string($json) ? strlen($json) : 0)
+        );
+    }
+
+    /**
+     * The output-buffer flush / connection-detach / exit tail (matrix
+     * coverage req. 2): each ob_end_flush() close (handler name + bytes),
+     * flush(), which finish-request function exists and its result, and a
+     * final exit sentinel immediately before the caller calls exit. Kept as
+     * its own method (rather than inlined before `exit;`) so it is a real,
+     * directly callable unit: the literal `exit;` a few lines below it in
+     * sendJsonResponseAndExit() can never run inside a PHPUnit process, but
+     * this method's own logic can be exercised and asserted on directly.
+     */
+    private static function checkpointedFlushAndFinish(string $checkpointRequestId): void {
         if (function_exists('ob_end_flush')) {
             while (ob_get_level() > 0) {
+                $status = ob_get_status();
+                if ($checkpointRequestId !== '') {
+                    ABJ_404_Solution_AjaxCheckpointLogger::record($checkpointRequestId, 'ob_close', array(
+                        'handler' => is_string($status['name'] ?? null) ? $status['name'] : 'unknown',
+                        'bytes' => ob_get_length(),
+                    ));
+                }
                 ob_end_flush();
             }
         }
         if (function_exists('flush')) {
-            flush();
+            if ($checkpointRequestId !== '') {
+                ABJ_404_Solution_AjaxCheckpointLogger::around($checkpointRequestId, 'flush', static function () {
+                    flush();
+                });
+            } else {
+                flush();
+            }
         }
-        if (function_exists('fastcgi_finish_request')) {
-            fastcgi_finish_request();
+        $hasFastcgiFinish = function_exists('fastcgi_finish_request');
+        $hasLitespeedFinish = function_exists('litespeed_finish_request');
+        if ($checkpointRequestId !== '') {
+            ABJ_404_Solution_AjaxCheckpointLogger::record($checkpointRequestId, 'finish_request', array(
+                'fastcgi_finish_request_exists' => $hasFastcgiFinish,
+                'litespeed_finish_request_exists' => $hasLitespeedFinish,
+                'sapi' => PHP_SAPI,
+            ));
         }
-
-        exit;
+        if ($hasFastcgiFinish) {
+            $result = fastcgi_finish_request();
+            if ($checkpointRequestId !== '') {
+                ABJ_404_Solution_AjaxCheckpointLogger::record($checkpointRequestId, 'finish_request_result', array(
+                    'function' => 'fastcgi_finish_request',
+                    'result' => $result,
+                ));
+            }
+        }
+        if ($checkpointRequestId !== '') {
+            ABJ_404_Solution_AjaxCheckpointLogger::record($checkpointRequestId, 'exit_sentinel');
+        }
     }
 
     /**

@@ -7,22 +7,18 @@ if (!defined('ABSPATH')) {
 /**
  * Durable write-ahead journal for one admin AJAX request.
  *
- * Each stage is appended and flushed to a request-local pending file before
- * work starts. Fast successful requests delete that spool; slow, failed, and
- * shutdown requests are promoted into one bounded, rotated JSONL journal.
+ * Each stage -- starting with request_start, the very first flushed write --
+ * is appended and flushed to a request-local pending file before work
+ * starts. Every request is ALWAYS promoted into one bounded, rotated JSONL
+ * journal (matrix coverage req. 4): there is no fast-complete deletion, so a
+ * successful request under the retention threshold cannot silently vanish
+ * the way beta.1's trace did. Rotation is the only bound on retention.
  * A hard worker kill can skip PHP shutdown, so stale pending files are recovered
  * into the journal by a later request instead of losing the last started stage.
  */
 final class ABJ_404_Solution_AjaxRequestTrace {
 
-    const JOURNAL_FILE = 'abj404_ajax_stage_trace.jsonl';
-    const ROTATED_FILE = 'abj404_ajax_stage_trace.old.jsonl';
-    const LOCK_FILE = 'abj404_ajax_stage_trace.lock';
-    const RETAIN_AFTER_SECONDS = 10.0;
-    const RECOVER_PENDING_AFTER_SECONDS = 300;
-    const MAX_JOURNAL_BYTES = 524288;
-    const MAX_PENDING_BYTES = 32768;
-    const MAX_SUPPORT_EXCERPT_BYTES = 32768;
+    const SHUTDOWN_INVENTORY_MARKER = 'abj404_ajax_shutdown_inventory.marker';
     const SCHEMA_VERSION = 1;
 
     /** @var array<string, scalar> */
@@ -31,8 +27,8 @@ final class ABJ_404_Solution_AjaxRequestTrace {
     private $clock;
     /** @var string */
     private $directory;
-    /** @var string */
-    private $pendingPath;
+    /** @var ABJ_404_Solution_AjaxTraceJournal Durable storage + retention for this request's records. */
+    private $journal;
     /** @var float */
     private $requestStartedAt;
     /** @var float|null */
@@ -43,8 +39,16 @@ final class ABJ_404_Solution_AjaxRequestTrace {
     private $stageMetadata = array();
     /** @var bool */
     private $active = true;
-    /** @var bool */
-    private $failureReported = false;
+    /** @var float|null Set when finish() runs; lets the teardown recorder measure PHP-shutdown lag after the response was logically complete. */
+    private $responseEmittedAt = null;
+    /**
+     * Guards the one-time-per-rotation $wp_filter['shutdown'] inventory.
+     * Keyed by trace directory (not a single scalar) so unrelated trace
+     * directories -- distinct sites, or distinct tests in the same worker
+     * process -- never share a dedup decision.
+     * @var array<string, string>
+     */
+    private static $shutdownInventoryCapturedForRotation = array();
 
     /**
      * Start tracing for an authorized AJAX request. Failure is non-fatal.
@@ -67,68 +71,23 @@ final class ABJ_404_Solution_AjaxRequestTrace {
                 return null;
             }
             $trace = new self($context, rtrim($directory, '/\\') . DIRECTORY_SEPARATOR, abj_clock());
-            $trace->recoverAbandonedPendingFiles();
+            $trace->journal->recoverAbandoned();
+            // Handler-entry teardown sentinels. Multiple independent shutdown-time
+            // hooks (two register_shutdown_function callbacks -- one armed here,
+            // one armed again in finish() at response time -- plus WP 'shutdown'
+            // action callbacks at the earliest and latest possible priority) so
+            // that if one mechanism is itself skipped or broken, another still
+            // produces evidence. None of them are disarmed by finish(); see
+            // recordShutdown()'s docblock for the beta.1 defect this replaces.
             register_shutdown_function(array($trace, 'recordShutdown'));
+            if (function_exists('add_action')) {
+                add_action('shutdown', array($trace, 'recordShutdownActionEarly'), PHP_INT_MIN);
+                add_action('shutdown', array($trace, 'recordShutdownActionLate'), PHP_INT_MAX);
+            }
             return $trace;
         } catch (Throwable $e) {
             self::reportStaticFailure('AJAX trace initialization failed: ' . $e->getMessage());
             return null;
-        }
-    }
-
-    /**
-     * Return bounded recent journal lines for the existing support-request
-     * payload. Trace records contain only the normalized PII-safe schema.
-     */
-    public static function readRecentJournalForSupport(): string {
-        try {
-            $directory = function_exists('abj404_getUploadsDir') ? abj404_getUploadsDir() : '';
-            if (function_exists('apply_filters')) {
-                $directory = (string)apply_filters('abj404_ajax_trace_directory', $directory, array());
-            }
-            if ($directory === '') {
-                return '';
-            }
-            $directory = rtrim($directory, '/\\') . DIRECTORY_SEPARATOR;
-            $paths = array(
-                $directory . self::ROTATED_FILE,
-                $directory . self::JOURNAL_FILE,
-            );
-            $pendingPaths = glob($directory . 'abj404_ajax_trace_*.pending.jsonl');
-            if (is_array($pendingPaths)) {
-                $paths = array_merge($paths, $pendingPaths);
-            }
-            $files = array();
-            foreach ($paths as $path) {
-                $modified = @filemtime($path);
-                if (is_int($modified)) {
-                    $files[] = array('path' => $path, 'modified' => $modified);
-                }
-            }
-            usort($files, static function (array $left, array $right): int {
-                if ($left['modified'] === $right['modified']) {
-                    return strcmp($left['path'], $right['path']);
-                }
-                return $left['modified'] <=> $right['modified'];
-            });
-            $files = array_slice($files, -8);
-            if ($files === array()) {
-                return '';
-            }
-            $header = "Recent AJAX stage traces (JSONL):\n";
-            $contentBudget = self::MAX_SUPPORT_EXCERPT_BYTES - strlen($header) - count($files);
-            $perFileLimit = max(1, intdiv($contentBudget, count($files)));
-            $parts = array();
-            foreach ($files as $file) {
-                $tail = self::readFileTail($file['path'], $perFileLimit);
-                if ($tail !== '') {
-                    $parts[] = $tail;
-                }
-            }
-            return $parts === array() ? '' : $header . implode("\n", $parts);
-        } catch (Throwable $e) {
-            self::reportStaticFailure('AJAX trace support excerpt failed: ' . $e->getMessage());
-            return '';
         }
     }
 
@@ -141,9 +100,43 @@ final class ABJ_404_Solution_AjaxRequestTrace {
         $this->requestStartedAt = $clock->nowFloat();
         $this->context = $this->normalizeContext($context);
         $stamp = str_replace('.', '', sprintf('%.6f', $this->requestStartedAt));
-        $this->pendingPath = $directory . 'abj404_ajax_trace_'
+        $pendingPath = $directory . 'abj404_ajax_trace_'
             . $this->context['request_id'] . '_' . $this->context['part'] . '_'
             . $this->context['retry_count'] . '_' . getmypid() . '_' . $stamp . '.pending.jsonl';
+        $this->journal = new ABJ_404_Solution_AjaxTraceJournal($directory, $pendingPath, $clock);
+
+        // request_start MUST be the first flushed write for this request: it is
+        // the evidence that the trace even started, before any stage runs. If
+        // gathering the full field set itself throws, still flush a minimal
+        // record rather than silently losing the "we got this far" signal.
+        try {
+            $this->appendRecord($this->buildRequestStartRecord($context));
+        } catch (Throwable $e) {
+            $this->appendRecord(array(
+                'event' => 'request_start',
+                'request_start_error' => substr($e->getMessage(), 0, 300),
+            ));
+        }
+    }
+
+    /**
+     * The request_start record: the ledger/event fields this class owns,
+     * merged with the process/build/runtime capture that
+     * ABJ_404_Solution_RequestEnvironmentFingerprint owns.
+     *
+     * @param array<string, mixed> $rawContext
+     * @return array<string, mixed>
+     */
+    private function buildRequestStartRecord(array $rawContext): array {
+        $clientSentAtRaw = $rawContext['client_sent_at'] ?? '';
+        $handlerClassRaw = $rawContext['handler_class'] ?? '';
+        $handlerClass = is_scalar($handlerClassRaw) && (string)$handlerClassRaw !== '' ? (string)$handlerClassRaw : null;
+        $environment = new ABJ_404_Solution_RequestEnvironmentFingerprint($this->clock);
+
+        return array_merge(array(
+            'event' => 'request_start',
+            'client_sent_at' => is_scalar($clientSentAtRaw) ? substr((string)$clientSentAtRaw, 0, 64) : '',
+        ), $environment->capture($handlerClass, 'abj404_trace_probe_' . $this->context['request_id']));
     }
 
     /** Begin and flush a stage before its work runs. */
@@ -157,7 +150,7 @@ final class ABJ_404_Solution_AjaxRequestTrace {
         $this->currentStage = substr($stage, 0, 128);
         $this->stageStartedAt = $this->clock->nowFloat();
         $this->stageMetadata = array();
-        $this->appendPending(array('event' => 'stage_start', 'stage' => $this->currentStage));
+        $this->appendRecord(array('event' => 'stage_start', 'stage' => $this->currentStage));
     }
 
     /** @param array<string, scalar> $metadata */
@@ -182,7 +175,7 @@ final class ABJ_404_Solution_AjaxRequestTrace {
         }
         if ($changed !== array()) {
             $startedAt = $this->stageStartedAt ?? $this->clock->nowFloat();
-            $this->appendPending(array_merge(array(
+            $this->appendRecord(array_merge(array(
                 'event' => 'stage_metadata',
                 'stage' => $this->currentStage,
                 'elapsed_ms' => max(0, (int)round(($this->clock->nowFloat() - $startedAt) * 1000)),
@@ -201,13 +194,19 @@ final class ABJ_404_Solution_AjaxRequestTrace {
             'status' => substr($status, 0, 32),
             'elapsed_ms' => max(0, (int)round(($this->clock->nowFloat() - $startedAt) * 1000)),
         ), $this->stageMetadata);
-        $this->appendPending($record);
+        $this->appendRecord($record);
         $this->currentStage = '';
         $this->stageStartedAt = null;
         $this->stageMetadata = array();
     }
 
-    /** Complete the request and retain only slow or failed traces. */
+    /**
+     * Complete the request. Always promoted into the durable journal now
+     * (matrix coverage req. 4): the prior <10s fast-complete delete is
+     * removed permanently, so a rotation-bounded journal is the only bound
+     * on retention. Arms a second, response-time-anchored teardown sentinel;
+     * see recordShutdownAtResponseTime().
+     */
     public function finish(string $status): void {
         if (!$this->active) {
             return;
@@ -215,8 +214,10 @@ final class ABJ_404_Solution_AjaxRequestTrace {
         if ($this->currentStage !== '') {
             $this->endStage($status === 'complete' ? 'complete' : 'error');
         }
-        $elapsedMs = max(0, (int)round(($this->clock->nowFloat() - $this->requestStartedAt) * 1000));
-        $this->appendPending(array(
+        $now = $this->clock->nowFloat();
+        $elapsedMs = max(0, (int)round(($now - $this->requestStartedAt) * 1000));
+        $this->responseEmittedAt = $now;
+        $this->appendRecord(array(
             'event' => 'request_end',
             'status' => substr($status, 0, 32),
             'elapsed_ms' => $elapsedMs,
@@ -224,175 +225,166 @@ final class ABJ_404_Solution_AjaxRequestTrace {
             'connection_aborted' => function_exists('connection_aborted') ? connection_aborted() : 0,
         ));
         $this->active = false;
-        if ($status === 'complete' && $elapsedMs < (int)(self::RETAIN_AFTER_SECONDS * 1000)) {
-            $this->removePending();
-            return;
-        }
-        $this->promotePending();
+        $this->journal->promote();
+        register_shutdown_function(array($this, 'recordShutdownAtResponseTime'));
     }
 
-    /** PHP shutdown entry point; no-op after finish(). */
+    /**
+     * Handler-entry teardown sentinel, armed once in start(). Beta.1's
+     * defect: this no-op'd once finish() had run (`if (!$this->active)
+     * return;`), so a slow sibling shutdown hook or a lingering
+     * client-abort that stalled the worker AFTER the response was handed
+     * off produced zero evidence -- exactly the gap that made beta.1's
+     * trace come back empty. It always writes now; already_finished and
+     * elapsed_since_response_emitted_ms tell a reader whether shutdown ran
+     * promptly after finish() or something held the process open (cause G
+     * in the timeout matrix).
+     */
     public function recordShutdown(): void {
-        if (!$this->active) {
-            return;
-        }
-        $lastError = error_get_last();
-        $record = array(
-            'event' => 'shutdown',
-            'elapsed_ms' => max(0, (int)round(($this->clock->nowFloat() - $this->requestStartedAt) * 1000)),
-            'current_stage' => $this->currentStage,
-            'peak_memory_bytes' => memory_get_peak_usage(true),
-            'connection_aborted' => function_exists('connection_aborted') ? connection_aborted() : 0,
-            'php_error_type' => is_array($lastError) ? (int)$lastError['type'] : 0,
-        );
-        $this->appendPending($record);
-        $this->active = false;
-        $this->promotePending();
+        $this->recordTeardown('shutdown');
     }
 
-    /** @param array<string, mixed> $record */
-    private function appendPending(array $record): void {
-        if (@is_file($this->pendingPath)) {
-            $size = @filesize($this->pendingPath);
-            if (is_int($size) && $size >= self::MAX_PENDING_BYTES) {
-                $this->reportFailure('AJAX pending trace reached its size limit: ' . $this->pendingPath);
-                return;
-            }
-        }
-        $this->appendJsonLine($this->pendingPath, array_merge($this->baseRecord(), $record));
+    /** Response-time teardown sentinel; armed a second time in finish(). */
+    public function recordShutdownAtResponseTime(): void {
+        $this->recordTeardown('shutdown_response_time');
     }
 
-    /** @param array<string, mixed> $record */
-    private function appendJsonLine(string $path, array $record): bool {
-        $json = json_encode($record, JSON_UNESCAPED_SLASHES);
-        if (!is_string($json)) {
-            $this->reportFailure('AJAX trace JSON encoding failed.');
-            return false;
-        }
-        $handle = @fopen($path, 'ab');
-        if ($handle === false) {
-            $this->reportFailure('AJAX trace file could not be opened: ' . $path);
-            return false;
-        }
-        $ok = false;
+    /**
+     * WP 'shutdown' action at PHP_INT_MIN: the earliest possible read on
+     * shutdown-time state, before any other plugin's own shutdown hook has
+     * had a chance to run. Also captures the one-time-per-rotation
+     * $wp_filter['shutdown'] callback roster.
+     */
+    public function recordShutdownActionEarly(): void {
+        $this->recordTeardown('shutdown_action_min');
+        $this->maybeRecordShutdownFilterInventory();
+    }
+
+    /**
+     * WP 'shutdown' action at PHP_INT_MAX: fires after every other plugin's
+     * default-priority shutdown hook has already run, so it can catch delay
+     * or damage they caused that recordShutdownActionEarly could not see.
+     */
+    public function recordShutdownActionLate(): void {
+        $this->recordTeardown('shutdown_action_max');
+    }
+
+    /**
+     * Shared teardown body for every shutdown-time sentinel. Never disarmed
+     * by finish() and never throws -- a teardown recorder that itself can
+     * fatal would defeat its own purpose.
+     */
+    private function recordTeardown(string $event): void {
         try {
-            if (!@flock($handle, LOCK_EX)) {
-                $this->reportFailure('AJAX trace file lock failed: ' . $path);
-                return false;
-            }
-            $written = @fwrite($handle, $json . "\n");
-            $flushed = @fflush($handle);
-            $ok = $written !== false && $flushed;
-            if (!$ok) {
-                $this->reportFailure('AJAX trace append/flush failed: ' . $path);
-            }
-            @flock($handle, LOCK_UN);
-        } finally {
-            @fclose($handle);
-        }
-        return $ok;
-    }
-
-    private function promotePending(): void {
-        if (!@is_file($this->pendingPath)) {
-            return;
-        }
-        $lock = @fopen($this->directory . self::LOCK_FILE, 'cb');
-        if ($lock === false || !@flock($lock, LOCK_EX)) {
-            if (is_resource($lock)) {
-                @fclose($lock);
-            }
-            $this->reportFailure('AJAX trace journal lock failed. Pending evidence remains at ' . $this->pendingPath);
-            return;
-        }
-        try {
-            $contents = @file_get_contents($this->pendingPath);
-            if (!is_string($contents)) {
-                $this->reportFailure('AJAX pending trace could not be read: ' . $this->pendingPath);
-                return;
-            }
-            $journal = $this->directory . self::JOURNAL_FILE;
-            $size = @filesize($journal);
-            if (is_int($size) && ($size + strlen($contents)) > self::MAX_JOURNAL_BYTES) {
-                $old = $this->directory . self::ROTATED_FILE;
-                if (@is_file($old) && !@unlink($old)) {
-                    $this->reportFailure('AJAX rotated trace could not be removed: ' . $old);
-                    return;
-                }
-                if (@is_file($journal) && !@rename($journal, $old)) {
-                    $this->reportFailure('AJAX trace journal rotation failed: ' . $journal);
-                    return;
-                }
-            }
-            $written = @file_put_contents($journal, $contents, FILE_APPEND | LOCK_EX);
-            if ($written === false) {
-                $this->reportFailure('AJAX trace journal append failed: ' . $journal);
-                return;
-            }
-            $this->removePending();
-        } finally {
-            @flock($lock, LOCK_UN);
-            @fclose($lock);
+            $lastError = error_get_last();
+            $now = $this->clock->nowFloat();
+            $record = array(
+                'event' => $event,
+                'elapsed_ms' => max(0, (int)round(($now - $this->requestStartedAt) * 1000)),
+                'elapsed_since_response_emitted_ms' => $this->responseEmittedAt !== null
+                    ? max(0, (int)round(($now - $this->responseEmittedAt) * 1000))
+                    : null,
+                'already_finished' => !$this->active,
+                'current_stage' => $this->currentStage,
+                'peak_memory_bytes' => memory_get_peak_usage(true),
+                'connection_aborted' => function_exists('connection_aborted') ? connection_aborted() : 0,
+                'php_error_type' => is_array($lastError) ? (int)$lastError['type'] : 0,
+                'php_error_message' => is_array($lastError) ? substr((string)$lastError['message'], 0, 500) : '',
+                'php_error_file' => is_array($lastError) ? (string)$lastError['file'] : '',
+                'php_error_line' => is_array($lastError) ? (int)$lastError['line'] : 0,
+            );
+            $this->appendRecord($record);
+            $this->active = false;
+            $this->journal->promote();
+        } catch (Throwable $e) {
+            self::reportStaticFailure('AJAX teardown recorder failed (' . $event . '): ' . $e->getMessage());
         }
     }
 
-    private function recoverAbandonedPendingFiles(): void {
-        $matches = glob($this->directory . 'abj404_ajax_trace_*.pending.jsonl');
-        $cutoff = $this->clock->now() - self::RECOVER_PENDING_AFTER_SECONDS;
-        foreach (is_array($matches) ? $matches : array() as $path) {
-            $modified = @filemtime($path);
-            if ($modified === false || $modified > $cutoff) {
+    /**
+     * Capture the full $wp_filter['shutdown'] callback roster once per
+     * journal rotation rather than on every request: the roster is static
+     * within a deploy, so per-request capture would only bloat the journal.
+     * The rotated file's mtime stands in for "which rotation" -- a marker
+     * file records the last rotation actually inventoried, and a
+     * same-process static short-circuits repeat requests inside one worker.
+     */
+    private function maybeRecordShutdownFilterInventory(): void {
+        $rotatedPath = $this->directory . ABJ_404_Solution_AjaxTraceJournal::ROTATED_FILE;
+        $rotationMtime = @filemtime($rotatedPath);
+        $rotationKey = is_int($rotationMtime) ? (string)$rotationMtime : 'never-rotated';
+        if ((self::$shutdownInventoryCapturedForRotation[$this->directory] ?? null) === $rotationKey) {
+            return;
+        }
+        $markerPath = $this->directory . self::SHUTDOWN_INVENTORY_MARKER;
+        $existingMarker = @file_get_contents($markerPath);
+        if ($existingMarker === $rotationKey) {
+            self::$shutdownInventoryCapturedForRotation[$this->directory] = $rotationKey;
+            return;
+        }
+        self::$shutdownInventoryCapturedForRotation[$this->directory] = $rotationKey;
+        $this->appendRecord(array(
+            'event' => 'shutdown_hook_inventory',
+            'rotation_key' => $rotationKey,
+            'callbacks' => self::describeShutdownCallbacks(),
+        ));
+        @file_put_contents($markerPath, $rotationKey, LOCK_EX);
+    }
+
+    /** @return array<int, string> */
+    private static function describeShutdownCallbacks(): array {
+        $wpFilter = $GLOBALS['wp_filter'] ?? null;
+        $hook = is_array($wpFilter) ? ($wpFilter['shutdown'] ?? null) : null;
+        $callbacks = null;
+        if (is_object($hook) && isset($hook->callbacks) && is_array($hook->callbacks)) {
+            $callbacks = $hook->callbacks;
+        } elseif (is_array($hook)) {
+            $callbacks = $hook;
+        }
+        if ($callbacks === null) {
+            return array('unavailable');
+        }
+        $described = array();
+        foreach ($callbacks as $priority => $priorityCallbacks) {
+            if (!is_array($priorityCallbacks)) {
                 continue;
             }
-            $original = $this->pendingPath;
-            $this->pendingPath = $path;
-            $handle = @fopen($path, 'rb');
-            $firstLine = is_resource($handle) ? @fgets($handle) : false;
-            if (is_resource($handle)) {
-                @fclose($handle);
+            foreach ($priorityCallbacks as $entry) {
+                $function = is_array($entry) ? ($entry['function'] ?? null) : null;
+                $described[] = $priority . ':' . self::describeCallable($function);
             }
-            $originalContext = is_string($firstLine) ? json_decode($firstLine, true) : null;
-            if (is_array($originalContext)) {
-                unset($originalContext['event'], $originalContext['stage'], $originalContext['elapsed_ms']);
-                $this->appendJsonLine($path, array_merge($originalContext, array(
-                    'ts' => $this->clock->nowFloat(),
-                    'event' => 'abandoned_recovered',
-                    'status' => 'worker-ended-without-shutdown',
-                )));
-            } else {
-                $this->reportFailure('Abandoned AJAX trace context could not be parsed: ' . $path);
-            }
-            $this->promotePending();
-            $this->pendingPath = $original;
         }
+        return $described;
     }
 
-    private function removePending(): void {
-        if (@is_file($this->pendingPath) && !@unlink($this->pendingPath)) {
-            $this->reportFailure('AJAX pending trace could not be removed: ' . $this->pendingPath);
+    /** @param mixed $function */
+    private static function describeCallable($function): string {
+        if (is_string($function)) {
+            return $function;
         }
+        if (is_array($function) && count($function) === 2) {
+            $target = $function[0];
+            $targetName = is_object($target) ? get_class($target) : (is_string($target) ? $target : 'unknown');
+            return $targetName . '::' . (is_string($function[1]) ? $function[1] : 'unknown');
+        }
+        if ($function instanceof Closure) {
+            return 'Closure';
+        }
+        if (is_object($function)) {
+            return get_class($function);
+        }
+        return 'unknown';
     }
 
-    private static function readFileTail(string $path, int $limit): string {
-        if ($limit <= 0 || !@is_file($path)) {
-            return '';
-        }
-        $size = @filesize($path);
-        if (!is_int($size)) {
-            self::reportStaticFailure('AJAX trace journal size could not be read: ' . $path);
-            return '';
-        }
-        $offset = max(0, $size - $limit);
-        $contents = @file_get_contents($path, false, null, $offset, $limit);
-        if (!is_string($contents)) {
-            self::reportStaticFailure('AJAX trace journal could not be read: ' . $path);
-            return '';
-        }
-        if ($offset > 0) {
-            $newline = strpos($contents, "\n");
-            $contents = $newline === false ? '' : substr($contents, $newline + 1);
-        }
-        return trim($contents);
+    /**
+     * Wrap a record in this request's envelope (schema version, timestamp,
+     * ledger context) and hand it to durable storage. Deciding what the
+     * envelope contains is the trace's job; writing it durably is not.
+     *
+     * @param array<string, mixed> $record
+     */
+    private function appendRecord(array $record): void {
+        $this->journal->append(array_merge($this->baseRecord(), $record));
     }
 
     /** @return array<string, scalar> */
@@ -408,37 +400,44 @@ final class ABJ_404_Solution_AjaxRequestTrace {
      * @return array{request_id: string, plugin_version: string, action: string, subpage: string, part: string, retry_count: int}
      */
     private function normalizeContext(array $context): array {
-        $requestIdRaw = $context['request_id'] ?? '';
-        $requestId = is_scalar($requestIdRaw) ? (string)$requestIdRaw : '';
-        $actionRaw = $context['action'] ?? '';
-        $action = is_scalar($actionRaw) ? (string)$actionRaw : '';
-        $subpageRaw = $context['subpage'] ?? '';
-        $subpage = is_scalar($subpageRaw) ? (string)$subpageRaw : '';
-        $partRaw = $context['part'] ?? 'all';
-        $part = is_scalar($partRaw) ? (string)$partRaw : 'all';
+        $part = self::readScalarString($context, 'part', 'all');
         $retryCountRaw = $context['retry_count'] ?? 0;
         $retryCount = is_numeric($retryCountRaw) ? (int)$retryCountRaw : 0;
         return array(
-            'request_id' => preg_match('/^[A-Za-z0-9]{8,64}$/', $requestId) ? $requestId : 'unknown00',
+            // Immutable request ledger (matrix coverage req. 1): the trace journal
+            // is one of the channels a request ID must be recoverable from; the
+            // others are the POST body / query string, the X-ABJ404-Request-ID
+            // request/response headers, and error payloads (Ajax_GetPaginationLinks
+            // + Ajax_AdminEndpointSupport). session_id and retry_parent_id ride
+            // along so a retried request can be joined back to its parent attempt.
+            'request_id' => self::readIdField($context, 'request_id', 'unknown00'),
             'plugin_version' => defined('ABJ404_VERSION') ? (string)ABJ404_VERSION : 'unknown',
-            'action' => substr($action, 0, 64),
-            'subpage' => substr($subpage, 0, 64),
+            'action' => substr(self::readScalarString($context, 'action'), 0, 64),
+            'subpage' => substr(self::readScalarString($context, 'subpage'), 0, 64),
             'part' => substr($part, 0, 32),
             'retry_count' => max(0, min(2, $retryCount)),
+            'session_id' => substr(self::readScalarString($context, 'session_id'), 0, 64),
+            'retry_parent_id' => self::readIdField($context, 'retry_parent_id', ''),
+            'header_request_id' => self::readIdField($context, 'header_request_id', ''),
+            'cf_ray' => substr(self::readScalarString($context, 'cf_ray'), 0, 64),
         );
+    }
+
+    /** @param array<string, mixed> $context */
+    private static function readScalarString(array $context, string $key, string $default = ''): string {
+        $raw = $context[$key] ?? $default;
+        return is_scalar($raw) ? (string)$raw : $default;
+    }
+
+    /** @param array<string, mixed> $context */
+    private static function readIdField(array $context, string $key, string $fallback): string {
+        $candidate = self::readScalarString($context, $key);
+        return preg_match('/^[A-Za-z0-9]{8,64}$/', $candidate) === 1 ? $candidate : $fallback;
     }
 
     private function strongestTimeoutMode(string $current, string $incoming): string {
         $rank = array('' => 0, 'none' => 1, 'wrapped' => 2, 'unwrapped' => 3);
         return ($rank[$incoming] ?? 0) >= ($rank[$current] ?? 0) ? $incoming : $current;
-    }
-
-    private function reportFailure(string $message): void {
-        if ($this->failureReported) {
-            return;
-        }
-        $this->failureReported = true;
-        self::reportStaticFailure($message);
     }
 
     private static function reportStaticFailure(string $message): void {

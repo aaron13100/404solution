@@ -18,18 +18,42 @@ class ABJ_404_Solution_AjaxStageDiagnostics {
     /**
      * Start the durable request trace after authorization/rate limiting.
      *
+     * Runs the per-request trace self-test sentinel first (matrix coverage
+     * req. 5), independent of whether trace construction itself succeeds --
+     * it journals through ABJ_404_Solution_AjaxCheckpointLogger, not through
+     * the trace class it is proving. Trace construction itself is wrapped in
+     * a checkpoint pair (matrix coverage req. 2) so a stall inside
+     * ABJ_404_Solution_AjaxRequestTrace::start() is directly measurable even
+     * though the trace it would have produced does not exist yet.
+     *
      * @param array<string, mixed> $context
      * @return void
      */
     public static function beginRequest(array $context): void {
+        $requestId = ABJ_404_Solution_AjaxRequestLedger::normalizeId($context['request_id'] ?? '');
+
+        ABJ_404_Solution_AjaxCheckpointLogger::runSelfTest($requestId);
+
         $traceContext = array(
-            'request_id' => $context['request_id'] ?? '',
+            'request_id' => $requestId,
             'action' => $context['action'] ?? '',
             'subpage' => $context['subpage'] ?? '',
             'part' => $context['part'] ?? 'all',
             'retry_count' => $context['retry_count'] ?? 0,
+            'client_sent_at' => $context['client_sent_at'] ?? '',
+            'handler_class' => $context['handler_class'] ?? '',
+            'session_id' => $context['session_id'] ?? '',
+            'retry_parent_id' => $context['retry_parent_id'] ?? '',
+            'header_request_id' => $context['header_request_id'] ?? '',
+            'cf_ray' => $context['cf_ray'] ?? '',
         );
-        $GLOBALS['abj404_ajax_request_trace'] = ABJ_404_Solution_AjaxRequestTrace::start($traceContext);
+        $GLOBALS['abj404_ajax_request_trace'] = ABJ_404_Solution_AjaxCheckpointLogger::around(
+            $requestId,
+            'trace_construct',
+            static function () use ($traceContext) {
+                return ABJ_404_Solution_AjaxRequestTrace::start($traceContext);
+            }
+        );
     }
 
     /**
@@ -67,11 +91,17 @@ class ABJ_404_Solution_AjaxStageDiagnostics {
         }
     }
 
-    /** Finish and detach the current request trace. */
+    /** Finish and detach the current request trace, wrapped in a trace_finish checkpoint pair. */
     public static function finishRequest(string $status = 'complete'): void {
         $trace = self::activeTrace();
         if ($trace !== null) {
-            $trace->finish($status);
+            ABJ_404_Solution_AjaxCheckpointLogger::around(
+                self::currentRequestIdForCheckpoints(),
+                'trace_finish',
+                static function () use ($trace, $status) {
+                    $trace->finish($status);
+                }
+            );
         }
         unset($GLOBALS['abj404_ajax_request_trace']);
     }
@@ -79,6 +109,16 @@ class ABJ_404_Solution_AjaxStageDiagnostics {
     private static function activeTrace(): ?ABJ_404_Solution_AjaxRequestTrace {
         $trace = $GLOBALS['abj404_ajax_request_trace'] ?? null;
         return $trace instanceof ABJ_404_Solution_AjaxRequestTrace ? $trace : null;
+    }
+
+    /**
+     * Best-effort request ID for checkpoint correlation, read from the
+     * shared AJAX debug context global. Used by call sites (finishRequest)
+     * that do not otherwise have the raw request context in hand.
+     */
+    private static function currentRequestIdForCheckpoints(): string {
+        $ctx = $GLOBALS['abj404_ajax_context'] ?? null;
+        return ABJ_404_Solution_AjaxRequestLedger::normalizeId(is_array($ctx) ? ($ctx['request_id'] ?? '') : '');
     }
 
     /**
