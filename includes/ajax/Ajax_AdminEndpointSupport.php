@@ -205,8 +205,9 @@ class ABJ_404_Solution_Ajax_AdminEndpointSupport {
     /**
      * The output-buffer flush / connection-detach / exit tail (matrix
      * coverage req. 2): each ob_end_flush() close (handler name + bytes),
-     * flush(), which finish-request function exists and its result, and a
-     * final exit sentinel immediately before the caller calls exit. Kept as
+     * flush(), which finish-request function exists, which one was selected
+     * and what it returned, and a final exit sentinel immediately before the
+     * caller calls exit. Kept as
      * its own method (rather than inlined before `exit;`) so it is a real,
      * directly callable unit: the literal `exit;` a few lines below it in
      * sendJsonResponseAndExit() can never run inside a PHPUnit process, but
@@ -234,23 +235,46 @@ class ABJ_404_Solution_Ajax_AdminEndpointSupport {
                 flush();
             }
         }
+        // Detach the response before shutdown work runs. fastcgi_finish_request()
+        // is FPM-only: php-src deliberately disabled the alias under the
+        // litespeed SAPI (commit ccf051c3), so on a LiteSpeed/LSAPI host the
+        // FPM-only guard is a silent no-op and the HTTP connection stays open
+        // through WP's 'shutdown' action, this plugin's log-queue flush and
+        // lock reclaim, and every other plugin's shutdown callbacks. LSAPI's
+        // equivalent is litespeed_finish_request(). Preference order matches
+        // Symfony HttpFoundation Response::send() (symfony/symfony#42293):
+        // fastcgi, then litespeed, then neither. Which one was selected, and
+        // what it returned, is journaled either way -- including the 'none'
+        // case, so "did not detach" is positive evidence rather than a gap.
         $hasFastcgiFinish = function_exists('fastcgi_finish_request');
         $hasLitespeedFinish = function_exists('litespeed_finish_request');
+        $finishFunction = 'none';
+        if ($hasFastcgiFinish) {
+            $finishFunction = 'fastcgi_finish_request';
+        } else if ($hasLitespeedFinish) {
+            $finishFunction = 'litespeed_finish_request';
+        }
+        // Recorded BEFORE the call: if the detach itself stalls or the worker
+        // is killed inside it, the journal still names what was about to run.
         if ($checkpointRequestId !== '') {
             ABJ_404_Solution_AjaxCheckpointLogger::record($checkpointRequestId, 'finish_request', array(
                 'fastcgi_finish_request_exists' => $hasFastcgiFinish,
                 'litespeed_finish_request_exists' => $hasLitespeedFinish,
+                'selected' => $finishFunction,
                 'sapi' => PHP_SAPI,
             ));
         }
-        if ($hasFastcgiFinish) {
+        $result = null;
+        if ($finishFunction === 'fastcgi_finish_request') {
             $result = fastcgi_finish_request();
-            if ($checkpointRequestId !== '') {
-                ABJ_404_Solution_AjaxCheckpointLogger::record($checkpointRequestId, 'finish_request_result', array(
-                    'function' => 'fastcgi_finish_request',
-                    'result' => $result,
-                ));
-            }
+        } else if ($finishFunction === 'litespeed_finish_request') {
+            $result = litespeed_finish_request();
+        }
+        if ($checkpointRequestId !== '') {
+            ABJ_404_Solution_AjaxCheckpointLogger::record($checkpointRequestId, 'finish_request_result', array(
+                'function' => $finishFunction,
+                'result' => $result,
+            ));
         }
         if ($checkpointRequestId !== '') {
             ABJ_404_Solution_AjaxCheckpointLogger::record($checkpointRequestId, 'exit_sentinel');

@@ -112,7 +112,14 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras {
         // (long-lived worker, opcache hot). max_input_vars caps how
         // many POST fields the importer can accept. realpath_cache
         // size matters for sites with many include paths.
-        $extras['php_sapi'] = function_exists('php_sapi_name') ? (string)php_sapi_name() : '';
+        // PHP_SAPI, not php_sapi_name(): the constant is defined by the engine
+        // on every SAPI and cannot be removed, while the function is on the
+        // disable_functions hardening lists some shared/CloudLinux hosts ship,
+        // where the guarded call silently degrades to ''. This is the field
+        // that identified Bruno's litespeed SAPI (and with it the FPM-only
+        // fastcgi_finish_request() no-op), so losing it loses the diagnosis.
+        // Same accessor the flight recorder uses (RequestEnvironmentFingerprint).
+        $extras['php_sapi'] = PHP_SAPI;
         $extras['php_memory_peak_bytes'] = function_exists('memory_get_peak_usage') ? (int)memory_get_peak_usage(true) : 0;
         $extras['php_opcache_enabled'] = $host->opcacheEnabled();
         $extras['php_max_input_vars'] = function_exists('ini_get') ? (int)ini_get('max_input_vars') : 0;
