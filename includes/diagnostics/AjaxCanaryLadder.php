@@ -159,4 +159,89 @@ final class ABJ_404_Solution_AjaxCanaryLadder {
             'streamingBufferCausal' => !$ok($stream) && $streamGapMs > 2000,
         );
     }
+
+    /**
+     * The decisive-measurement rule for the detach A/B experiment (Bruno
+     * timeout cause matrix, gap G9 / c434;
+     * ABJ_404_Solution_AjaxRequestLedger::resolveDetachAbMode() picks the
+     * mode, ABJ_404_Solution_Ajax_AdminEndpointSupport::checkpointedFlushAndFinish()
+     * records it per request ID). Kept as its own pure function rather than
+     * folded into interpretResults(): two independent verdicts computed from
+     * disjoint inputs -- the seven-step ladder's canary observations vs. the
+     * real table endpoint's own A/B attempts -- can never confound each
+     * other, whereas merging them into one matrix would let an ambiguous
+     * quadrant in one leak into the other's conclusion.
+     *
+     * If every 'on' attempt completed and every 'off' attempt did not, the
+     * detach fix is causal. If both modes completed uniformly, detach was
+     * never the cause and a transient (or one of the other three things
+     * beta.2 also ships) is the better explanation. If neither mode ever
+     * completed, something else dominates regardless of detach. Anything
+     * else -- mixed outcomes within a mode, or fewer than one full pair
+     * observed -- is honestly inconclusive rather than forced into one of
+     * the three clean verdicts.
+     *
+     * @param array<int, array{mode?: mixed, ok?: mixed}> $attempts
+     *   Chronological per-request outcomes for the real table endpoint's own
+     *   A/B attempts within one session (mode 'on'/'off' as journaled by
+     *   detach_ab_mode; ok = whether that attempt completed from the
+     *   client's own point of view).
+     * @return array<string, mixed>
+     */
+    public static function interpretDetachAbResults(array $attempts): array {
+        $tally = self::tallyDetachAbAttempts($attempts);
+        $onCount = $tally['on'];
+        $onOkCount = $tally['onOk'];
+        $offCount = $tally['off'];
+        $offOkCount = $tally['offOk'];
+
+        $haveBothModes = $onCount > 0 && $offCount > 0;
+        $allOnOk = $onCount > 0 && $onOkCount === $onCount;
+        $noneOnOk = $onCount > 0 && $onOkCount === 0;
+        $allOffOk = $offCount > 0 && $offOkCount === $offCount;
+        $noneOffOk = $offCount > 0 && $offOkCount === 0;
+
+        $detachCausal = $haveBothModes && $allOnOk && $noneOffOk;
+        $transientCausal = $haveBothModes && $allOnOk && $allOffOk;
+        $neitherModeHelps = $haveBothModes && $noneOnOk && $noneOffOk;
+
+        return array(
+            'detachCausal' => $detachCausal,
+            'transientCausal' => $transientCausal,
+            'neitherModeHelps' => $neitherModeHelps,
+            'inconclusive' => !$detachCausal && !$transientCausal && !$neitherModeHelps,
+            'onCount' => $onCount,
+            'onOkCount' => $onOkCount,
+            'offCount' => $offCount,
+            'offOkCount' => $offOkCount,
+        );
+    }
+
+    /**
+     * Count per-mode attempts and completions, split out of
+     * interpretDetachAbResults() purely to keep that method's cyclomatic
+     * complexity within the project's ceiling -- this loop is one
+     * self-contained tally, not logic that needs to be inlined at the call
+     * site.
+     *
+     * @param array<int, array{mode?: mixed, ok?: mixed}> $attempts
+     * @return array{on: int, onOk: int, off: int, offOk: int}
+     */
+    private static function tallyDetachAbAttempts(array $attempts): array {
+        $tally = array('on' => 0, 'onOk' => 0, 'off' => 0, 'offOk' => 0);
+        foreach ($attempts as $attempt) {
+            if (!is_array($attempt)) {
+                continue;
+            }
+            $mode = is_scalar($attempt['mode'] ?? null) ? (string)$attempt['mode'] : '';
+            if ($mode !== 'on' && $mode !== 'off') {
+                continue;
+            }
+            $tally[$mode]++;
+            if (!empty($attempt['ok'])) {
+                $tally[$mode . 'Ok']++;
+            }
+        }
+        return $tally;
+    }
 }

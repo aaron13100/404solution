@@ -475,6 +475,7 @@ return array(
     'ABJ_404_Solution_ViewQueryFailureException' => $base . 'includes/view-build/ViewQueryFailureException.php',
     'ABJ_404_Solution_AjaxAdminEndpointRegistrar' => $base . 'includes/ajax/AjaxAdminEndpointRegistrar.php',
     'ABJ_404_Solution_Ajax_AdminEndpointSupport' => $base . 'includes/ajax/Ajax_AdminEndpointSupport.php',
+    'ABJ_404_Solution_AjaxResponseEmitter' => $base . 'includes/ajax/AjaxResponseEmitter.php',
     'ABJ_404_Solution_Ajax_GetPaginationLinks' => $base . 'includes/ajax/Ajax_GetPaginationLinks.php',
     'ABJ_404_Solution_Ajax_RefreshStatsDashboard' => $base . 'includes/ajax/Ajax_RefreshStatsDashboard.php',
     'ABJ_404_Solution_Ajax_RefreshHealthBar' => $base . 'includes/ajax/Ajax_RefreshHealthBar.php',

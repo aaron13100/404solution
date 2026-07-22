@@ -81,7 +81,7 @@ class ABJ_404_Solution_Ajax_CanaryLadder {
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
                 $payload = ABJ_404_Solution_Ajax_AdminEndpointSupport::buildAjaxErrorResponse('Unknown canary step.', null, false);
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
-                ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit($payload, 400);
+                ABJ_404_Solution_AjaxResponseEmitter::sendJsonResponseAndExit($payload, 400);
                 return;
             }
 
@@ -99,7 +99,7 @@ class ABJ_404_Solution_Ajax_CanaryLadder {
             ABJ_404_Solution_AjaxStageDiagnostics::finishRequest('complete');
             ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
             ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
-            ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit($data, 200);
+            ABJ_404_Solution_AjaxResponseEmitter::sendJsonResponseAndExit($data, 200);
             return;
 
         } catch (Throwable $e) {
@@ -120,7 +120,7 @@ class ABJ_404_Solution_Ajax_CanaryLadder {
         ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
         $payload = ABJ_404_Solution_Ajax_AdminEndpointSupport::buildAjaxErrorResponse('Rate limit exceeded. Please try again later.', null, false);
         ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
-        ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit($payload, 429);
+        ABJ_404_Solution_AjaxResponseEmitter::sendJsonResponseAndExit($payload, 429);
         return false;
     }
 
@@ -265,6 +265,6 @@ class ABJ_404_Solution_Ajax_CanaryLadder {
         );
         $responseRequestId = $context['request_id'] ?? null;
         $payload['requestId'] = is_string($responseRequestId) ? $responseRequestId : 'unknown00';
-        ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit($payload, 500);
+        ABJ_404_Solution_AjaxResponseEmitter::sendJsonResponseAndExit($payload, 500);
     }
 }

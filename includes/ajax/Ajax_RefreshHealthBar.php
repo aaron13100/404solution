@@ -60,7 +60,7 @@ class ABJ_404_Solution_Ajax_RefreshHealthBar {
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
                 $payload = ABJ_404_Solution_Ajax_AdminEndpointSupport::buildAjaxErrorResponse('Rate limit exceeded. Please try again later.', null, false);
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
-                ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit($payload, 429);
+                ABJ_404_Solution_AjaxResponseEmitter::sendJsonResponseAndExit($payload, 429);
                 return;
             }
 
@@ -86,7 +86,7 @@ class ABJ_404_Solution_Ajax_RefreshHealthBar {
 
             ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
             ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
-            ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit($response, 200);
+            ABJ_404_Solution_AjaxResponseEmitter::sendJsonResponseAndExit($response, 200);
             return;
 
         } catch (Throwable $e) {
@@ -113,7 +113,7 @@ class ABJ_404_Solution_Ajax_RefreshHealthBar {
                 $details,
                 $isPluginAdmin
             );
-            ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit($payload, 500);
+            ABJ_404_Solution_AjaxResponseEmitter::sendJsonResponseAndExit($payload, 500);
             return;
         }
     }

@@ -28,13 +28,13 @@ class ABJ_404_Solution_Ajax_RefreshAdminNonces {
             if (!$userIsPluginAdmin) {
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::safeLogAjaxFailure('AJAX unauthorized in ajaxRefreshAdminNonces.', $ctx);
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
-                ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit(ABJ_404_Solution_Ajax_AdminEndpointSupport::buildAjaxErrorResponse('Unauthorized', null, false), 403);
+                ABJ_404_Solution_AjaxResponseEmitter::sendJsonResponseAndExit(ABJ_404_Solution_Ajax_AdminEndpointSupport::buildAjaxErrorResponse('Unauthorized', null, false), 403);
                 return;
             }
             if (ABJ_404_Solution_Ajax_Php::consumeRateLimit('refresh_admin_nonces', 60, 60)) {
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::safeLogAjaxFailure('AJAX rate limit in ajaxRefreshAdminNonces.', $ctx);
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
-                ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit(ABJ_404_Solution_Ajax_AdminEndpointSupport::buildAjaxErrorResponse(
+                ABJ_404_Solution_AjaxResponseEmitter::sendJsonResponseAndExit(ABJ_404_Solution_Ajax_AdminEndpointSupport::buildAjaxErrorResponse(
                     'Rate limit exceeded. Please try again later.', null, false), 429);
                 return;
             }
@@ -43,12 +43,12 @@ class ABJ_404_Solution_Ajax_RefreshAdminNonces {
                 $nonces[$action] = wp_create_nonce($action);
             }
             ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
-            ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit(array('success' => true,
+            ABJ_404_Solution_AjaxResponseEmitter::sendJsonResponseAndExit(array('success' => true,
                 'data' => array('nonces' => $nonces)), 200);
         } catch (Throwable $e) {
             ABJ_404_Solution_Ajax_AdminEndpointSupport::safeLogAjaxFailure('AJAX exception in ajaxRefreshAdminNonces.', $ctx, $e);
             ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
-            ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit(ABJ_404_Solution_Ajax_AdminEndpointSupport::buildAjaxErrorResponse(
+            ABJ_404_Solution_AjaxResponseEmitter::sendJsonResponseAndExit(ABJ_404_Solution_Ajax_AdminEndpointSupport::buildAjaxErrorResponse(
                 'Server error while refreshing nonces.', null, false), 500);
         }
     }

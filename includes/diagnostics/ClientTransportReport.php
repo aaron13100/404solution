@@ -257,7 +257,7 @@ final class ABJ_404_Solution_ClientTransportReport {
         ABJ_404_Solution_AjaxStageDiagnostics::finishRequest('complete');
         ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
         ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
-        ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit(
+        ABJ_404_Solution_AjaxResponseEmitter::sendJsonResponseAndExit(
             array('clientReportReceived' => true, 'requestId' => $requestId), 200);
         return true;
     }

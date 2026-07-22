@@ -65,7 +65,7 @@ class ABJ_404_Solution_Ajax_RunLazyBackfill {
                     false
                 );
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
-                ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit($payload, 429);
+                ABJ_404_Solution_AjaxResponseEmitter::sendJsonResponseAndExit($payload, 429);
                 return;
             }
 
@@ -77,7 +77,7 @@ class ABJ_404_Solution_Ajax_RunLazyBackfill {
                     $isPluginAdmin
                 );
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
-                ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit($payload, 500);
+                ABJ_404_Solution_AjaxResponseEmitter::sendJsonResponseAndExit($payload, 500);
                 return;
             }
 
@@ -90,7 +90,7 @@ class ABJ_404_Solution_Ajax_RunLazyBackfill {
 
             ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
             ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
-            ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit(
+            ABJ_404_Solution_AjaxResponseEmitter::sendJsonResponseAndExit(
                 array('success' => true, 'data' => $response),
                 200
             );
@@ -121,7 +121,7 @@ class ABJ_404_Solution_Ajax_RunLazyBackfill {
                 $details,
                 $isPluginAdmin
             );
-            ABJ_404_Solution_Ajax_AdminEndpointSupport::sendJsonResponseAndExit($payload, 500);
+            ABJ_404_Solution_AjaxResponseEmitter::sendJsonResponseAndExit($payload, 500);
         }
     }
 

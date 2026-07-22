@@ -197,6 +197,120 @@ final class ABJ_404_Solution_AjaxRequestLedger {
     }
 
     /**
+     * Bruno timeout cause matrix, gap G9 (c434): a beta.2 SUCCESS is
+     * unattributable unless something inside the same session separates the
+     * detach fix (`607307c5`) from the other three things beta.2 also ships
+     * (carried develop fixes, new instrumentation, or a transient that
+     * simply passed). This alternates whether
+     * Ajax_AdminEndpointSupport::checkpointedFlushAndFinish() actually calls
+     * the detach function across the real table endpoint's own requests --
+     * ON for one, deliberately skipped for the next -- so a clean separation
+     * (ON completes, OFF times out) proves the detach fix causal instead of
+     * merely correlated. AjaxCanaryLadder::interpretDetachAbResults() reads
+     * the resulting per-request evidence.
+     *
+     * Bounded to a small number of pairs and gated behind two independent
+     * opt-in signals, so a normal install never pays for this: the
+     * `abj404_should_run_detach_ab_diagnostic` filter (default false --
+     * nobody flips this on except a deliberately targeted diagnostic
+     * session), AND a non-empty session ID, which only a beta-instrumented
+     * client (view_updater_client_telemetry_env.js) ever sends. An older or
+     * non-diagnostic client leaves the ledger's session_id empty and the
+     * experiment inert regardless of the filter. This is "the diagnostic
+     * mode the beta already gates on": callers only ever resolve this for
+     * $checkpointRequestId !== '', the same INSTRUMENTED_ACTION scoping that
+     * already keeps every checkpoint in this file off every handler but the
+     * real table endpoint -- so the canary ladder's own requests never reach
+     * this code at all, and its seven-step interpretation matrix can never
+     * be confounded by it.
+     */
+    const AB_DETACH_MAX_PAIRS = 3;
+
+    /** Total toggled attempts one session may consume: AB_DETACH_MAX_PAIRS ON/OFF pairs. */
+    const AB_DETACH_MAX_ATTEMPTS = self::AB_DETACH_MAX_PAIRS * 2;
+
+    /**
+     * Whether a deployment has explicitly opted a diagnostic session into the
+     * detach A/B experiment. False on every ordinary install: nobody wires
+     * this filter except a deliberately targeted support session, so a
+     * beta.2 install never randomly degrades a real admin's table load as a
+     * side effect of merely shipping the beta.
+     */
+    public static function isDetachAbDiagnosticEnabled(): bool {
+        return (bool)apply_filters('abj404_should_run_detach_ab_diagnostic', false, array());
+    }
+
+    /**
+     * Pure alternation rule: attempt 0 is 'on', 1 is 'off', 2 is 'on', ...
+     * Once a session has consumed AB_DETACH_MAX_ATTEMPTS slots the
+     * experiment is over for that session and every later request reverts to
+     * 'default' (the ordinary best-available detach, unmodified by this
+     * feature) -- a diagnostic probe never permanently degrades a session.
+     */
+    public static function detachAbModeForAttempt(int $attemptIndex): string {
+        if ($attemptIndex < 0 || $attemptIndex >= self::AB_DETACH_MAX_ATTEMPTS) {
+            return 'default';
+        }
+        return ($attemptIndex % 2 === 0) ? 'on' : 'off';
+    }
+
+    /** The transient key one session's A/B attempt counter is stored under. */
+    public static function detachAbTransientKey(string $sessionId): string {
+        return 'abj404_ab_detach_' . md5($sessionId);
+    }
+
+    /**
+     * Consume the next attempt slot for one session's A/B counter. Backed by
+     * the WordPress transient API rather than the atomic wp_cache/DB-upsert
+     * machinery ABJ_404_Solution_Ajax_Php::consumeRateLimit() uses: this is a
+     * bounded diagnostic sequence, not a security ceiling, so a rare race
+     * under concurrent tabs degrading to one extra or one skipped sample is
+     * harmless, while pulling in the DAO layer here would give this
+     * identity-only class a storage dependency it does not otherwise need.
+     * Returns -1 when there is no session to key on, or the transient API is
+     * unavailable (very early boot) -- both mean "nothing to pair against".
+     */
+    public static function nextDetachAbAttemptIndex(string $sessionId): int {
+        if ($sessionId === '' || !function_exists('get_transient') || !function_exists('set_transient')) {
+            return -1;
+        }
+        $key = self::detachAbTransientKey($sessionId);
+        $current = get_transient($key);
+        $index = is_numeric($current) ? (int)$current : 0;
+        $ttl = defined('HOUR_IN_SECONDS') ? HOUR_IN_SECONDS : 3600;
+        // allow-cache-empty: locally computed attempt counter (always a
+        // valid non-negative int), not a fetched query result.
+        set_transient($key, $index + 1, $ttl);
+        return $index;
+    }
+
+    /**
+     * The full decision for one request: gate + counter + the pure
+     * alternation rule, in one call so every caller gets the same
+     * opt-in-twice guarantee. 'inert' means the experiment did not run for
+     * this request at all -- recorded as positive evidence by the caller,
+     * the same principle checkpointedFlushAndFinish() already applies to the
+     * finish-function 'none' case: absence must never be inferred.
+     *
+     * @return array{mode: string, attempt_index: int, diagnostic_enabled: bool}
+     */
+    public static function resolveDetachAbMode(string $sessionId): array {
+        $diagnosticEnabled = self::isDetachAbDiagnosticEnabled();
+        if (!$diagnosticEnabled) {
+            return array('mode' => 'inert', 'attempt_index' => -1, 'diagnostic_enabled' => false);
+        }
+        $attemptIndex = self::nextDetachAbAttemptIndex($sessionId);
+        if ($attemptIndex < 0) {
+            return array('mode' => 'inert', 'attempt_index' => -1, 'diagnostic_enabled' => true);
+        }
+        return array(
+            'mode' => self::detachAbModeForAttempt($attemptIndex),
+            'attempt_index' => $attemptIndex,
+            'diagnostic_enabled' => true,
+        );
+    }
+
+    /**
      * Stamp the ledger ID onto an outbound payload that does not already
      * carry one.
      *
