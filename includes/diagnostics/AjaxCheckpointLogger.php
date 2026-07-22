@@ -22,10 +22,13 @@ if (!defined('ABSPATH')) {
  */
 final class ABJ_404_Solution_AjaxCheckpointLogger {
 
-    const CHECKPOINT_FILE = 'abj404_ajax_checkpoints.jsonl';
-    const ROTATED_FILE = 'abj404_ajax_checkpoints.old.jsonl';
-    const LOCK_FILE = 'abj404_ajax_checkpoints.lock';
-    const MAX_CHECKPOINT_BYTES = 524288;
+    const CHECKPOINT_FILE = ABJ_404_Solution_CheckpointJournalWriter::CHECKPOINT_FILE;
+    const ROTATED_FILE = ABJ_404_Solution_CheckpointJournalWriter::ROTATED_FILE;
+    const LOCK_FILE = ABJ_404_Solution_CheckpointJournalWriter::LOCK_FILE;
+    const MAX_CHECKPOINT_BYTES = ABJ_404_Solution_CheckpointJournalWriter::MAX_CHECKPOINT_BYTES;
+
+    /** @var array<string, mixed>|null */
+    private static $previousWriteTelemetry = null;
 
     /**
      * Share of the support payload's excerpt field this journal may claim.
@@ -44,8 +47,9 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
      * 2: the diagnostic subset of it (see envelope()), which halves the cost
      *    of a record and therefore doubles how much of a failing session fits
      *    inside the support payload.
+     * 3: host-pressure probes plus the preceding checkpoint write's own cost.
      */
-    const SCHEMA_VERSION = 2;
+    const SCHEMA_VERSION = 3;
 
     /**
      * getrusage() keys worth carrying on every checkpoint, mapped to the names
@@ -294,6 +298,10 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
             'ts' => microtime(true),
             'hrtime_ns' => function_exists('hrtime') ? hrtime(true) : null,
             'rusage' => self::resourceUsage(),
+            'host_pressure' => class_exists('ABJ_404_Solution_HostPressureSampler')
+                ? ABJ_404_Solution_HostPressureSampler::capture()
+                : array('status' => 'unavailable', 'reason' => 'sampler_class_unavailable'),
+            'previous_checkpoint_write' => self::previousWriteTelemetry($requestId),
             'request_id' => $requestId,
             'event' => $event,
             'pid' => getmypid(),
@@ -342,56 +350,18 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
         return ($seconds * 1000000) + $micros;
     }
 
+    /** @return array<string, mixed> */
+    private static function previousWriteTelemetry(string $requestId): array {
+        $previous = self::$previousWriteTelemetry;
+        if (!is_array($previous) || ($previous['request_id'] ?? '') !== $requestId) {
+            return array('status' => 'unavailable', 'reason' => 'no_previous_write');
+        }
+        return $previous;
+    }
+
     /** @param array<string, mixed> $record */
     private static function writeRecord(string $directory, array $record): void {
-        $json = json_encode($record, JSON_UNESCAPED_SLASHES);
-        if (!is_string($json)) {
-            self::reportFailure('AJAX checkpoint JSON encoding failed.');
-            return;
-        }
-        $line = $json . "\n";
-        $path = $directory . self::CHECKPOINT_FILE;
-
-        $lock = @fopen($directory . self::LOCK_FILE, 'cb');
-        if ($lock === false) {
-            self::reportFailure('AJAX checkpoint lock file could not be opened: ' . $directory . self::LOCK_FILE);
-            return;
-        }
-        try {
-            if (!@flock($lock, LOCK_EX)) {
-                self::reportFailure('AJAX checkpoint lock failed: ' . $path);
-                return;
-            }
-            $size = @filesize($path);
-            if (is_int($size) && ($size + strlen($line)) > self::MAX_CHECKPOINT_BYTES) {
-                $old = $directory . self::ROTATED_FILE;
-                if (@is_file($old)) {
-                    @unlink($old);
-                }
-                if (@is_file($path)) {
-                    @rename($path, $old);
-                }
-            }
-            $handle = @fopen($path, 'ab');
-            if ($handle === false) {
-                self::reportFailure('AJAX checkpoint file could not be opened: ' . $path);
-                return;
-            }
-            $writeOk = false;
-            try {
-                $written = @fwrite($handle, $line);
-                $flushed = @fflush($handle);
-                $writeOk = $written !== false && $flushed;
-            } finally {
-                @fclose($handle);
-            }
-            if (!$writeOk) {
-                self::reportFailure('AJAX checkpoint append/flush failed: ' . $path);
-            }
-        } finally {
-            @flock($lock, LOCK_UN);
-            @fclose($lock);
-        }
+        self::$previousWriteTelemetry = ABJ_404_Solution_CheckpointJournalWriter::append($directory, $record);
     }
 
     private static function reportFailure(string $message): void {

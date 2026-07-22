@@ -62,6 +62,7 @@ final class ABJ_404_Solution_RequestEnvironmentFingerprint {
             'hrtime_ns' => function_exists('hrtime') ? hrtime(true) : null,
             'wall_clock' => $this->clock->nowFloat(),
             'rusage' => is_array($rusage) ? $rusage : null,
+            'host_pressure' => ABJ_404_Solution_HostPressureSampler::capture(),
             'cron_doing_transient' => $this->cronDoingTransient(),
             'cron_disable_wp_cron' => defined('DISABLE_WP_CRON') && DISABLE_WP_CRON,
             'cron_alternate_wp_cron' => defined('ALTERNATE_WP_CRON') && ALTERNATE_WP_CRON,

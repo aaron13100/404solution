@@ -7,8 +7,10 @@
  * browser/network, Cloudflare, LiteSpeed/LVE admission, WordPress boot, the
  * rate limiter, the real query path, response size, compression, or output
  * buffering. After the first foreground table failure in a session, this
- * module runs seven small, ordered probes and lets the pattern of successes
- * and failures answer that question directly, rather than guessing.
+ * module launches one lightweight control beside the first real table
+ * attempt, then runs seven ordered probes after a failure. The paired control
+ * distinguishes request content from a transient that cleared before the
+ * sequential ladder began.
  *
  * Rate-limited to at most one ladder run per hour per browser (the cooldown
  * lives in view_updater_client_telemetry_store.js, the one file allowed to
@@ -190,6 +192,24 @@
     }
 
     /**
+     * Launch one auth-only control beside the real table attempt. The real
+     * attempt id is the retryParentId, so both server journals can be joined
+     * even when either response never reaches the browser.
+     *
+     * @param {object} ctx {baseUrl, nonce, subpage, requestId}
+     * @returns {Promise<object>}
+     */
+    function runConcurrentControl(ctx) {
+        ctx = ctx || {};
+        return postStep(ctx, 'concurrent_control', {
+            controlForRequestId: ctx.requestId || ''
+        }, ctx.requestId || '').catch(function (controlError) {
+            warn('concurrent canary control failed', controlError);
+            return { ok: false, requestId: '', textStatus: 'diagnostic-error' };
+        });
+    }
+
+    /**
      * The most recently observed byte size of the REAL table response for
      * this request, when the transport telemetry module recorded one.
      * Falls back to a representative default so the size-comparison canaries
@@ -309,6 +329,7 @@
 
     global.abj404CanaryLadder = {
         maybeTrigger: maybeTrigger,
+        runConcurrentControl: runConcurrentControl,
         runLadder: runLadder,
         COOLDOWN_MS: COOLDOWN_MS
     };

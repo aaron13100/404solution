@@ -180,6 +180,22 @@ function abj404RequestPaginationPart(req, part, callbacks) {
             subpage: req.subpage,
             timeoutMs: req.ajaxTimeoutMs
         });
+        if (part === 'table' && attemptIndex === 0 && !req.isBackgroundRefresh &&
+                window.abj404CanaryLadder &&
+                typeof window.abj404CanaryLadder.runConcurrentControl === 'function') {
+            try {
+                window.abj404CanaryLadder.runConcurrentControl({
+                    baseUrl: req.baseUrl,
+                    nonce: req.nonce,
+                    subpage: req.subpage,
+                    requestId: record.id
+                });
+            } catch (controlError) {
+                if (window.console && window.console.warn) {
+                    window.console.warn('404 Solution: concurrent canary control could not start', controlError);
+                }
+            }
+        }
         ajaxRunner({
             url: abj404PaginationAttemptUrl(req, part, attemptIndex, record.id),
             type: 'POST',

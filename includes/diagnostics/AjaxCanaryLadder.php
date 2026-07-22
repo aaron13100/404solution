@@ -33,6 +33,7 @@ final class ABJ_404_Solution_AjaxCanaryLadder {
      */
     const NONCE_ACTION = 'abj404_updatePaginationLink';
 
+    const STEP_CONCURRENT_CONTROL = 'concurrent_control';
     const STEP_AUTH_ONLY = 'auth_only';
     const STEP_POST_LIMITER = 'post_limiter';
     const STEP_SUMMARY = 'summary';
@@ -44,7 +45,8 @@ final class ABJ_404_Solution_AjaxCanaryLadder {
 
     /** Every server-dispatched step. Step 1 (static asset) never reaches PHP by design and so is not listed here. */
     const STEPS = array(
-        self::STEP_AUTH_ONLY, self::STEP_POST_LIMITER, self::STEP_SUMMARY,
+        self::STEP_CONCURRENT_CONTROL, self::STEP_AUTH_ONLY,
+        self::STEP_POST_LIMITER, self::STEP_SUMMARY,
         self::STEP_INERT, self::STEP_COMPRESS_ON, self::STEP_COMPRESS_OFF,
         self::STEP_STREAM, self::STEP_INTERPRET,
     );

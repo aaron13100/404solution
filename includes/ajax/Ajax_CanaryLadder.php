@@ -20,6 +20,8 @@ if (!defined('ABSPATH')) {
  * Step order and what each isolates (client-driven; the client decides
  * whether/when to run each one and supplies its own client-side static-asset
  * fetch as step 1, which never reaches PHP):
+ *   concurrent_control - boot + auth + delivery, launched beside the first
+ *                        real table attempt under the same host conditions.
  *   2. auth_only      - boot + auth + delivery, bypasses the rate limiter
  *                        and the table path entirely.
  *   3. post_limiter   - identical to auth_only but placed after a rate-limit
@@ -129,11 +131,12 @@ class ABJ_404_Solution_Ajax_CanaryLadder {
      */
     private static function runStep(string $step, $functions, string $requestId, string $subpage, array &$context): array {
         switch ($step) {
+            case ABJ_404_Solution_AjaxCanaryLadder::STEP_CONCURRENT_CONTROL:
             case ABJ_404_Solution_AjaxCanaryLadder::STEP_AUTH_ONLY:
-                return ABJ_404_Solution_AjaxStageDiagnostics::runStage($context, 'canary_auth_only',
-                    static function () use ($requestId) {
+                return ABJ_404_Solution_AjaxStageDiagnostics::runStage($context, 'canary_' . $step,
+                    static function () use ($requestId, $step) {
                         return ABJ_404_Solution_AjaxCanaryLadder::buildFillerPayload(
-                            $requestId, ABJ_404_Solution_AjaxCanaryLadder::STEP_AUTH_ONLY,
+                            $requestId, $step,
                             ABJ_404_Solution_AjaxCanaryLadder::AUTH_ONLY_BYTES);
                     });
 
