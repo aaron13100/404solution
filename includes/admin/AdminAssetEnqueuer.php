@@ -261,9 +261,27 @@ class ABJ_404_Solution_AdminAssetEnqueuer {
         $enq('abj404-view-updater-pagination-request',
             $vuBase . 'view_updater_pagination_request.js',
             array('jquery', 'abj404-view-updater-compare'));
+        // Client transport telemetry (storage -> page observations -> attempt
+        // records -> delivery). Loaded before the transport that records
+        // through them; each degrades to a no-op if it fails to load.
+        $enq('abj404-view-updater-client-telemetry-store',
+            $vuBase . 'view_updater_client_telemetry_store.js', array());
+        $enq('abj404-view-updater-client-telemetry-env',
+            $vuBase . 'view_updater_client_telemetry_env.js',
+            array('abj404-view-updater-client-telemetry-store'));
+        $enq('abj404-view-updater-transport-telemetry',
+            $vuBase . 'view_updater_transport_telemetry.js',
+            array('jquery', 'abj404-view-updater-client-telemetry-store',
+                'abj404-view-updater-client-telemetry-env'));
+        $enq('abj404-view-updater-transport-telemetry-delivery',
+            $vuBase . 'view_updater_transport_telemetry_delivery.js',
+            array('abj404-view-updater-client-telemetry-store',
+                'abj404-view-updater-transport-telemetry'));
         $enq('abj404-view-updater-pagination-transport',
             $vuBase . 'view_updater_pagination_transport.js',
-            array('jquery', 'abj404-view-updater-nonce-refresh'));
+            array('jquery', 'abj404-view-updater-nonce-refresh',
+                'abj404-view-updater-transport-telemetry',
+                'abj404-view-updater-transport-telemetry-delivery'));
         $enq('abj404-view-updater-lazy-backfill',
             $vuBase . 'view_updater_lazy_backfill.js',
             array('jquery', 'abj404-view-updater-nonce-refresh'));
@@ -280,6 +298,7 @@ class ABJ_404_Solution_AdminAssetEnqueuer {
                 'abj404-view-updater-refresh-pill',
                 'abj404-view-updater-nonce-refresh',
                 'abj404-view-updater-pagination-request',
+                'abj404-view-updater-transport-telemetry-delivery',
                 'abj404-view-updater-pagination-transport',
                 'abj404-view-updater-pagination-response-apply',
                 'abj404-view-updater-pagination-error-notice'));
@@ -296,8 +315,15 @@ class ABJ_404_Solution_AdminAssetEnqueuer {
 
     /** @return void */
     private static function registerSupportRequestAssets(): void {
+        // The support client drains the client transport telemetry buffer, so
+        // the storage adapter has to be present wherever the button is -- the
+        // plugins-page button included, since the records it reads outlive the
+        // admin screen that produced them.
+        ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-view-updater-client-telemetry-store',
+            ABJ404_URL . 'includes/ajax/view_updater_client_telemetry_store.js', array());
         ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-support-request-client',
-            ABJ404_URL . 'includes/ajax/SupportRequest.js', array());
+            ABJ404_URL . 'includes/ajax/SupportRequest.js',
+            array('abj404-view-updater-client-telemetry-store'));
         ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-support-request-transport',
             ABJ404_URL . 'includes/js/support-request-transport.js',
             array('abj404-support-request-client'));

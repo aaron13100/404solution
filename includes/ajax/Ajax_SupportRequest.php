@@ -29,6 +29,13 @@ class ABJ_404_Solution_Ajax_SupportRequest {
     /** Hard cap on user_message length (matches sanitize step). */
     const MAX_USER_MESSAGE_LENGTH = 2000;
 
+    /**
+     * Hard cap on the drained client transport telemetry. The buffer is bounded
+     * on the browser side too; this is the server refusing to append more than
+     * that to the report regardless of what arrives.
+     */
+    const MAX_CLIENT_TELEMETRY_LENGTH = 32768;
+
     /** Nonce action used by both wp_create_nonce() and wp_verify_nonce(). */
     const NONCE_ACTION = 'abj404_support_request';
 
@@ -142,6 +149,7 @@ class ABJ_404_Solution_Ajax_SupportRequest {
         // trace tail. Best-effort: unavailable diagnostics must not block the
         // support request.
         $debugLogExcerpt = self::resolveDebugLogExcerpt();
+        $debugLogExcerpt = self::appendClientTransportTelemetry($debugLogExcerpt);
 
         $extras = array(
             'user_message' => $userMessage,
@@ -290,6 +298,35 @@ class ABJ_404_Solution_Ajax_SupportRequest {
             return $excerpt;
         }
         return $excerpt === '' ? $traceExcerpt : rtrim($excerpt) . "\n\n" . $traceExcerpt;
+    }
+
+    /**
+     * Append the browser's drained transport-attempt buffer to the excerpt.
+     *
+     * This is the only channel that carries attempts the server never saw at
+     * all: a request that never reached PHP leaves no server-side trace to
+     * pair with, and beta.1 came back with exactly that -- three client
+     * timeouts and no evidence. The records are transport measurements
+     * (timings, byte counts, readyState, protocol); they carry no URL, no SQL
+     * and no user text, which is why they can ride the same opt-in field as
+     * the sanitized log tail.
+     *
+     * Malformed input is reported rather than dropped: "the client sent
+     * something we could not parse" is itself a finding about the client.
+     */
+    private static function appendClientTransportTelemetry(string $excerpt): string {
+        $raw = isset($_POST['client_telemetry']) && is_scalar($_POST['client_telemetry'])
+            ? (string)$_POST['client_telemetry'] : '';
+        if ($raw === '') {
+            return $excerpt;
+        }
+        $bounded = substr($raw, 0, self::MAX_CLIENT_TELEMETRY_LENGTH);
+        $decoded = json_decode($bounded, true);
+        $block = is_array($decoded)
+            ? "Client transport telemetry (JSON):\n" . $bounded
+            : "Client transport telemetry (unparseable, " . strlen($raw) . " bytes, "
+                . json_last_error_msg() . "):\n" . substr($bounded, 0, 500);
+        return $excerpt === '' ? $block : rtrim($excerpt) . "\n\n" . $block;
     }
 
     /**

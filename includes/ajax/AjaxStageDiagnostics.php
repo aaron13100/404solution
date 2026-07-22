@@ -34,6 +34,13 @@ class ABJ_404_Solution_AjaxStageDiagnostics {
 
         ABJ_404_Solution_AjaxCheckpointLogger::runSelfTest($requestId);
 
+        // The browser's account of the PREVIOUS attempt rides this request's
+        // params (matrix coverage req. 6). Journaled here, at the same point
+        // the server's own trace opens, so the client and server views of a
+        // failure land in one file joined by request id even when the admin
+        // never sends a support request.
+        ABJ_404_Solution_ClientTransportReport::journal($requestId);
+
         $traceContext = array(
             'request_id' => $requestId,
             'action' => $context['action'] ?? '',

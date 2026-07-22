@@ -198,7 +198,8 @@ function abj404HandlePaginationPartFailure(
         retryCount: retryCount,
         isBackgroundRefresh: false,
         requestStartedAt: req.requestStartedAt,
-        ajaxTimeoutMs: req.ajaxTimeoutMs
+        ajaxTimeoutMs: req.ajaxTimeoutMs,
+        attemptTimeline: abj404PaginationAttemptTimeline(req)
     };
     var parsed = abj404HandlePaginationAjaxError(errorCtx, jqXHR, textStatus, errorThrown);
     if (part !== 'table') {
@@ -210,10 +211,25 @@ function abj404HandlePaginationPartFailure(
     }
 }
 
+/**
+ * Browser-side timeline of every attempt made for this request, one compact
+ * line each. Empty when the telemetry module did not load.
+ *
+ * @param {object} req
+ * @returns {Array<string>}
+ */
+function abj404PaginationAttemptTimeline(req) {
+    if (!window.abj404TransportTelemetryDelivery) {
+        return [];
+    }
+    return window.abj404TransportTelemetryDelivery.timelineLines(req.requestId);
+}
+
 /** @returns {object} */
 function abj404PaginationErrorMeta(req, parsed, textStatus, errorThrown) {
     var inferred = abj404AjaxStageDiagnostics(parsed.stageFromServer, req.subpage);
     return {
+        attemptTimeline: abj404PaginationAttemptTimeline(req),
         status: parsed.status,
         textStatus: textStatus,
         errorThrown: errorThrown,
@@ -250,7 +266,8 @@ function abj404RunDetectOnlyPaginationRequest(req, options) {
                 baseUrl: req.baseUrl, action: req.action, subpage: req.subpage,
                 part: 'table', isBackgroundRefresh: true,
                 requestId: req.requestId, retryCount: retryCount,
-                requestStartedAt: req.requestStartedAt, ajaxTimeoutMs: req.ajaxTimeoutMs
+                requestStartedAt: req.requestStartedAt, ajaxTimeoutMs: req.ajaxTimeoutMs,
+                attemptTimeline: abj404PaginationAttemptTimeline(req)
             };
             var parsed = abj404HandlePaginationAjaxError(errorCtx, jqXHR, textStatus, errorThrown);
             if (typeof options.onError === 'function') {

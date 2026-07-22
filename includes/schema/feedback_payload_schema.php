@@ -219,7 +219,7 @@ return (function (): array {
             ],
             'description' => 'Which admin surface launched the request. Pinned enum; mirror of Ajax_SupportRequest::ALLOWED_TRIGGER_SOURCES.',
         ],
-        'debug_log_excerpt' => ['type' => 'string', 'description' => 'Best-effort sanitized debug-log tail plus bounded PII-safe AJAX stage-trace JSONL via Ajax_SupportRequest::resolveDebugLogExcerpt(). Empty string when neither source is available.'],
+        'debug_log_excerpt' => ['type' => 'string', 'description' => 'Best-effort sanitized debug-log tail, plus bounded PII-safe AJAX stage-trace JSONL via Ajax_SupportRequest::resolveDebugLogExcerpt(), plus the browser transport-attempt buffer drained by SupportRequest.js (timings, byte counts, readyState, protocol; no URL, user text, or identifiers). Empty string when no source is available.'],
     ];
 
     return [

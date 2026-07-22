@@ -59,6 +59,15 @@ function abj404FormatAjaxFailureDetails(meta) {
     if (meta.lastQueryRedacted) {
         lines.push('Last query (redacted): ' + meta.lastQueryRedacted);
     }
+    // Browser-side transport timeline, one line per attempt. It joins the
+    // existing diagnostic block rather than adding a new notice surface, and
+    // it is what separates "never left the browser" from "headers arrived and
+    // the body stalled" when the server side reports nothing at all.
+    if (Array.isArray(meta.attemptTimeline)) {
+        for (var i = 0; i < meta.attemptTimeline.length; i++) {
+            lines.push('Transport: ' + meta.attemptTimeline[i]);
+        }
+    }
     return lines;
 }
 

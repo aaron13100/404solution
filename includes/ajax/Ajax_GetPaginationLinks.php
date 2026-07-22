@@ -104,6 +104,9 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
                 return;
             }
             ABJ_404_Solution_AjaxStageDiagnostics::beginRequest($context);
+            if (ABJ_404_Solution_ClientTransportReport::respondIfReportOnly($requestId)) {
+                return;
+            }
 
             // Update the perpage option (but only if provided). Some environments may omit
             // rowsPerPage on Enter key events; avoid unnecessary option writes. Wrapped as

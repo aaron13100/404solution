@@ -43,6 +43,41 @@
     var SEND_TIMEOUT_MS = 30000;
 
     /**
+     * Hard bound on the drained client transport telemetry. The server caps
+     * the same value again; this keeps a pathological buffer from inflating
+     * the request before it is even sent.
+     */
+    var MAX_TELEMETRY_CHARS = 32000;
+
+    /**
+     * Drain the browser's transport-attempt buffer into the support payload.
+     *
+     * This is the only channel that carries records the server never saw:
+     * attempts whose retry never happened because the admin gave up, and
+     * attempts from a page that was closed before the next request went out.
+     * Returns '' when the telemetry module is absent or the buffer is empty.
+     *
+     * @return {string}
+     */
+    function drainClientTelemetry() {
+        try {
+            if (!window.abj404ClientTelemetryStore) {
+                return '';
+            }
+            var records = window.abj404ClientTelemetryStore.drainAll();
+            if (!records || records.length === 0) {
+                return '';
+            }
+            return JSON.stringify(records).slice(0, MAX_TELEMETRY_CHARS);
+        } catch (drainError) {
+            if (window.console && window.console.warn) {
+                window.console.warn('404 Solution: could not drain client transport telemetry', drainError);
+            }
+            return '';
+        }
+    }
+
+    /**
      * Send a support request. Returns a Promise.
      *
      * @param {Object} args
@@ -64,6 +99,10 @@
         }
         if (typeof args.reply_email === 'string') {
             formData.append('reply_email', args.reply_email);
+        }
+        var clientTelemetry = drainClientTelemetry();
+        if (clientTelemetry !== '') {
+            formData.append('client_telemetry', clientTelemetry);
         }
 
         var controller = new AbortController();

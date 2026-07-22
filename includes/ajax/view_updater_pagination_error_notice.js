@@ -113,7 +113,8 @@ function abj404RenderPaginationErrorNoticeForeground(ctx, parsed, textStatus, er
         message: parsed.messageFromServer,
         lastQueryRedacted: parsed.lastQueryRedacted,
         requestId: parsed.requestId,
-        retryCount: parsed.retryCount
+        retryCount: parsed.retryCount,
+        attemptTimeline: ctx.attemptTimeline
     };
     var detailLines = abj404FormatAjaxFailureDetails(detailMeta);
     var $detailsEl = jQuery('<pre></pre>')

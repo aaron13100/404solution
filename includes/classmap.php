@@ -43,6 +43,8 @@ return array(
     'ABJ_404_Solution_AjaxRequestLedger' => $base . 'includes/diagnostics/AjaxRequestLedger.php',
     'ABJ_404_Solution_AjaxTraceJournal' => $base . 'includes/diagnostics/AjaxTraceJournal.php',
     'ABJ_404_Solution_RequestEnvironmentFingerprint' => $base . 'includes/diagnostics/RequestEnvironmentFingerprint.php',
+    'ABJ_404_Solution_ClientBuildFingerprint' => $base . 'includes/diagnostics/ClientBuildFingerprint.php',
+    'ABJ_404_Solution_ClientTransportReport' => $base . 'includes/diagnostics/ClientTransportReport.php',
     'ABJ_404_Solution_DebugLogFileStore' => $base . 'includes/diagnostics/DebugLogFileStore.php',
     'ABJ_404_Solution_DebugLogReader' => $base . 'includes/diagnostics/DebugLogReader.php',
     'ABJ_404_Solution_DebugLogArchiveBuilder' => $base . 'includes/diagnostics/DebugLogArchiveBuilder.php',
