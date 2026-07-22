@@ -292,6 +292,12 @@ class ABJ_404_Solution_AdminAssetEnqueuer {
             $vuBase . 'view_updater_pagination_error_notice.js',
             array('jquery', 'abj404-view-updater-stage-diagnostics',
                 'abj404-view-updater-table-init', 'abj404-view-updater-nonce-refresh'));
+        $enq('abj404-view-updater-canary-ladder',
+            $vuBase . 'view_updater_canary_ladder.js',
+            array('jquery', 'abj404-view-updater-nonce-refresh',
+                'abj404-view-updater-client-telemetry-store',
+                'abj404-view-updater-client-telemetry-env',
+                'abj404-view-updater-transport-telemetry'));
         $enq('abj404-view-updater-pagination', $vuBase . 'view_updater_pagination.js',
             array('jquery', 'abj404-view-updater-compare', 'abj404-view-updater-stage-diagnostics',
                 'abj404-view-updater-table-init',
@@ -301,7 +307,8 @@ class ABJ_404_Solution_AdminAssetEnqueuer {
                 'abj404-view-updater-transport-telemetry-delivery',
                 'abj404-view-updater-pagination-transport',
                 'abj404-view-updater-pagination-response-apply',
-                'abj404-view-updater-pagination-error-notice'));
+                'abj404-view-updater-pagination-error-notice',
+                'abj404-view-updater-canary-ladder'));
         $enq('abj404-view-updater', $vuBase . 'view_updater.js',
             array('jquery', 'jquery-ui-autocomplete',
                 'abj404-view-updater-stage-diagnostics',
@@ -344,6 +351,10 @@ class ABJ_404_Solution_AdminAssetEnqueuer {
                 'support_request' => $supportNonce,
                 'support_request_preview' => $previewNonce,
             ),
+            // Canary ladder step 1 (Bruno matrix req. 7): a same-host static
+            // asset URL the client fetches directly, no admin-ajax involved,
+            // to test delivery with no PHP in the path at all.
+            'canaryStaticAssetUrl' => ABJ404_URL . 'includes/diagnostics/assets/canary-1kb.txt',
         ));
         $bootstrap = 'window.ABJ404=window.ABJ404||{};Object.assign(window.ABJ404,'
             . (is_string($payload) ? $payload : '{}') . ');';

@@ -1,0 +1,5 @@
+{
+  "_comment": "Invalid: nonce is required for every canary ladder step -- every step re-authenticates.",
+  "canaryStep": "auth_only",
+  "requestId": "canaryreq0001aa"
+}

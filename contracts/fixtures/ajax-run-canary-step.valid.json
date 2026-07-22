@@ -1,0 +1,5 @@
+{
+  "nonce": "abc123def456",
+  "canaryStep": "auth_only",
+  "requestId": "canaryreq0001aa"
+}

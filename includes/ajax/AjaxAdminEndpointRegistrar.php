@@ -41,6 +41,8 @@ class ABJ_404_Solution_AjaxAdminEndpointRegistrar {
                 function() { (new ABJ_404_Solution_Ajax_RefreshAdminNonces())->handle(); });
         ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_abj404_run_lazy_backfill',
                 function() { (new ABJ_404_Solution_Ajax_RunLazyBackfill())->handle(); });
+        ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_ajaxRunCanaryStep',
+                function() { (new ABJ_404_Solution_Ajax_CanaryLadder())->handle(); });
         // wp_ajax_nopriv_ is for normal users; these endpoints are admin-only.
     }
 }

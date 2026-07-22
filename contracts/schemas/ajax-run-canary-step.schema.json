@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ajaxRunCanaryStep",
+  "description": "Adaptive canary ladder step request from view_updater_canary_ladder.js to Ajax_CanaryLadder.php (Bruno timeout cause matrix, coverage req. 7).",
+  "type": "object",
+  "required": ["nonce", "canaryStep", "requestId"],
+  "additionalProperties": false,
+  "properties": {
+    "nonce": { "type": "string", "minLength": 1 },
+    "canaryStep": {
+      "type": "string",
+      "enum": ["auth_only", "post_limiter", "summary", "inert", "compress_on", "compress_off", "stream", "interpret"]
+    },
+    "requestId": { "type": "string", "minLength": 1 },
+    "retryParentId": { "type": "string" },
+    "sessionId": { "type": "string" },
+    "subpage": { "type": "string" },
+    "payloadBytes": { "type": "string" },
+    "observations": { "type": "string" },
+    "realRequestFailed": { "type": "string" }
+  }
+}

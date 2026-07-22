@@ -717,6 +717,29 @@
           "fixtures/ajax-view-logs.invalid-missing-nonce.json"
         ]
       }
+    },
+    {
+      "id": "ajax-run-canary-step-handler",
+      "description": "Adaptive canary ladder AJAX step (Bruno timeout cause matrix, coverage req. 7): isolates browser/network, boot/auth, the rate limiter, query cost, response size, compression, and output buffering as candidate causes for a failed admin table request.",
+      "schema": "schemas/ajax-run-canary-step.schema.json",
+      "direction": "client-to-server",
+      "producer": {
+        "file": "includes/ajax/view_updater_canary_ladder.js",
+        "test": "tests-js/canary-ladder-runner.test.js"
+      },
+      "consumer": {
+        "file": "includes/ajax/Ajax_CanaryLadder.php",
+        "test": "tests/AjaxCanaryLadderHandlerTest.php"
+      },
+      "parityTest": "tests/AjaxCanaryLadderHandlerTest.php",
+      "fixtures": {
+        "valid": [
+          "fixtures/ajax-run-canary-step.valid.json"
+        ],
+        "invalid": [
+          "fixtures/ajax-run-canary-step.invalid-missing-nonce.json"
+        ]
+      }
     }
   ]
 }

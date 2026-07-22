@@ -205,10 +205,34 @@ function abj404HandlePaginationPartFailure(
     if (part !== 'table') {
         return;
     }
+    abj404MaybeRunCanaryLadderAfterTableFailure(req);
     removeLoadingOverlay();
     if (typeof options.onError === 'function') {
         options.onError(abj404PaginationErrorMeta(req, parsed, textStatus, errorThrown));
     }
+}
+
+/**
+ * Fire the adaptive canary ladder (Bruno matrix req. 7) after the FIRST
+ * foreground table failure in a session; the ladder's own cooldown (at most
+ * once per hour) makes every later failure in the same hour a no-op call.
+ * Fire-and-forget: the ladder runs on its own timeline and must never delay
+ * or affect the error notice the admin sees for the failure that triggered
+ * it.
+ *
+ * @param {object} req
+ * @returns {void}
+ */
+function abj404MaybeRunCanaryLadderAfterTableFailure(req) {
+    if (!window.abj404CanaryLadder || typeof window.abj404CanaryLadder.maybeTrigger !== 'function') {
+        return;
+    }
+    window.abj404CanaryLadder.maybeTrigger({
+        baseUrl: req.baseUrl,
+        nonce: req.nonce,
+        subpage: req.subpage,
+        requestId: req.requestId
+    });
 }
 
 /**

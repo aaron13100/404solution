@@ -34,6 +34,9 @@
     var STORAGE_KEY = 'abj404:client_transport_telemetry';
     var STATE_VERSION = 1;
 
+    /** Last-run timestamp for the adaptive canary ladder (Bruno matrix req. 7). */
+    var CANARY_LADDER_KEY = 'abj404:canary_ladder_last_run';
+
     /** Records kept at once. Three attempts per part, three parts, plus headroom. */
     var MAX_RECORDS = 16;
 
@@ -261,13 +264,72 @@
         return minted;
     }
 
+    /**
+     * Whether the adaptive canary ladder is allowed to run right now: at
+     * most once per cooldown window per browser (a same-origin proxy for
+     * "per site" -- localStorage is already scoped to this origin). Fails
+     * CLOSED (never eligible) when storage is unavailable, since without a
+     * durable "already ran" marker every table failure would re-trigger the
+     * ladder, turning a rate-limited diagnostic into an unbounded one.
+     *
+     * @param {number} nowMs
+     * @param {number} cooldownMs
+     * @returns {boolean}
+     */
+    function canaryLadderEligible(nowMs, cooldownMs) {
+        var store = storage();
+        if (store === null) {
+            return false;
+        }
+        try {
+            var raw = store.getItem(CANARY_LADDER_KEY);
+            if (raw === null) {
+                return true;
+            }
+            var lastRun = parseInt(raw, 10);
+            if (!isFinite(lastRun) || isNaN(lastRun)) {
+                return true;
+            }
+            return (nowMs - lastRun) >= cooldownMs;
+        } catch (readError) {
+            warn('could not read the canary ladder cooldown marker', readError);
+            return false;
+        }
+    }
+
+    /**
+     * Record that the ladder just ran, starting a fresh cooldown window.
+     * Called immediately before the ladder's first request goes out (not
+     * after it finishes) so a burst of near-simultaneous table failures
+     * cannot each see "eligible" and each start their own ladder run.
+     *
+     * @param {number} nowMs
+     * @returns {boolean} true when the marker was persisted.
+     */
+    function markCanaryLadderRan(nowMs) {
+        var store = storage();
+        if (store === null) {
+            return false;
+        }
+        try {
+            store.setItem(CANARY_LADDER_KEY, String(nowMs));
+            return true;
+        } catch (writeError) {
+            warn('could not persist the canary ladder cooldown marker', writeError);
+            return false;
+        }
+    }
+
     global.abj404ClientTelemetryStore = {
         put: put,
         takeUndelivered: takeUndelivered,
         drainAll: drainAll,
         clear: clear,
         tabScopedValue: tabScopedValue,
+        canaryLadderEligible: canaryLadderEligible,
+        markCanaryLadderRan: markCanaryLadderRan,
         STORAGE_KEY: STORAGE_KEY,
-        MAX_RECORDS: MAX_RECORDS
+        MAX_RECORDS: MAX_RECORDS,
+        CANARY_LADDER_KEY: CANARY_LADDER_KEY
     };
 })(typeof window !== 'undefined' ? window : this);
