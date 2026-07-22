@@ -26,8 +26,49 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
     const ROTATED_FILE = 'abj404_ajax_checkpoints.old.jsonl';
     const LOCK_FILE = 'abj404_ajax_checkpoints.lock';
     const MAX_CHECKPOINT_BYTES = 524288;
-    const MAX_SUPPORT_EXCERPT_BYTES = 32768;
-    const SCHEMA_VERSION = 1;
+
+    /**
+     * Share of the support payload's excerpt field this journal may claim.
+     *
+     * Sized against a measured session, not chosen for tidiness: one table
+     * request costs 26-27 records, so 32 KB (the previous value, further
+     * halved by an even per-file split) bought about ONE request while a
+     * failing session is six failing attempts plus a canary ladder plus polls.
+     * The per-section budgets are proven to sum inside the report contract by
+     * SupportExcerptBudgetContractTest.
+     */
+    const MAX_SUPPORT_EXCERPT_BYTES = 131072;
+
+    /**
+     * 1: full getrusage() array on every record.
+     * 2: the diagnostic subset of it (see envelope()), which halves the cost
+     *    of a record and therefore doubles how much of a failing session fits
+     *    inside the support payload.
+     */
+    const SCHEMA_VERSION = 2;
+
+    /**
+     * getrusage() keys worth carrying on every checkpoint, mapped to the names
+     * they are written under.
+     *
+     * The full 17-key array was the single largest thing in the journal: 305
+     * of the 545 bytes an average record occupied, repeated on all 27 records
+     * of every request, most of it fields that are structurally zero on Linux
+     * (ixrss/idrss/isrss/nswap) or irrelevant to a stall (msgsnd/msgrcv/
+     * nsignals). What survives is what a stall is actually diagnosed with:
+     * the user/system CPU split (CPU burn vs blocked), resident memory,
+     * voluntary vs involuntary context switches (blocked-on-IO vs preempted,
+     * the signature of host-level throttling), page faults, and block IO.
+     */
+    const RUSAGE_FIELDS = array(
+        'maxrss' => 'ru_maxrss',
+        'minflt' => 'ru_minflt',
+        'majflt' => 'ru_majflt',
+        'nvcsw' => 'ru_nvcsw',
+        'nivcsw' => 'ru_nivcsw',
+        'inblock' => 'ru_inblock',
+        'oublock' => 'ru_oublock',
+    );
 
     /**
      * Resolve the same directory ABJ_404_Solution_AjaxRequestTrace uses, via
@@ -194,18 +235,83 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
         );
     }
 
+    /**
+     * Existing journal files, for a channel that carries them WHOLE.
+     *
+     * The support excerpt is bounded by a byte budget and a ranking, and a
+     * budget decision must never again be the single point of loss for a
+     * session we only get once. The developer log archive has no such bound,
+     * so it carries both journals in full alongside the debug logs.
+     *
+     * @return array<int, string>
+     */
+    public static function supportArchivePaths(): array {
+        $directory = self::resolveDirectory();
+        if ($directory === '') {
+            return array();
+        }
+        $paths = array();
+        foreach (array(self::CHECKPOINT_FILE, self::ROTATED_FILE) as $name) {
+            if (@is_file($directory . $name)) {
+                $paths[] = $directory . $name;
+            }
+        }
+        return $paths;
+    }
+
     /** @return array<string, mixed> */
     private static function envelope(string $requestId, string $event): array {
-        $rusage = function_exists('getrusage') ? getrusage() : null;
         return array(
             'schema_version' => self::SCHEMA_VERSION,
             'ts' => microtime(true),
             'hrtime_ns' => function_exists('hrtime') ? hrtime(true) : null,
-            'rusage' => is_array($rusage) ? $rusage : null,
+            'rusage' => self::resourceUsage(),
             'request_id' => $requestId,
             'event' => $event,
             'pid' => getmypid(),
         );
+    }
+
+    /**
+     * The diagnostic subset of getrusage(), or null where it is unavailable.
+     *
+     * Absolute counters rather than deltas against a previous record: the
+     * excerpt that carries these is allowed to drop records it cannot afford,
+     * and a delta chain with a hole in it is unreadable, while an absolute
+     * sample stays interpretable on its own. CPU times are folded into single
+     * microsecond fields so the tv_sec/tv_usec pairs do not have to be
+     * recombined by hand at read time.
+     *
+     * @return array<string, int>|null
+     */
+    private static function resourceUsage(): ?array {
+        $rusage = function_exists('getrusage') ? getrusage() : null;
+        if (!is_array($rusage)) {
+            return null;
+        }
+        $usage = array(
+            'utime_us' => self::microseconds($rusage, 'ru_utime'),
+            'stime_us' => self::microseconds($rusage, 'ru_stime'),
+        );
+        foreach (self::RUSAGE_FIELDS as $name => $key) {
+            if (isset($rusage[$key]) && is_numeric($rusage[$key])) {
+                $usage[$name] = (int)$rusage[$key];
+            }
+        }
+        return $usage;
+    }
+
+    /**
+     * One getrusage() tv_sec/tv_usec pair as microseconds.
+     *
+     * @param array<string, mixed> $rusage
+     */
+    private static function microseconds(array $rusage, string $prefix): int {
+        $seconds = isset($rusage[$prefix . '.tv_sec']) && is_numeric($rusage[$prefix . '.tv_sec'])
+            ? (int)$rusage[$prefix . '.tv_sec'] : 0;
+        $micros = isset($rusage[$prefix . '.tv_usec']) && is_numeric($rusage[$prefix . '.tv_usec'])
+            ? (int)$rusage[$prefix . '.tv_usec'] : 0;
+        return ($seconds * 1000000) + $micros;
     }
 
     /** @param array<string, mixed> $record */

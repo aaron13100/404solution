@@ -39,6 +39,20 @@ final class ABJ_404_Solution_ClientTransportReport {
     const MAX_REPORT_BYTES = 4096;
 
     /**
+     * Hard bound on the raw drained buffer BEFORE it is parsed. Only an input
+     * guard against an absurd POST; the shipping bound is the caller's budget.
+     */
+    const MAX_DRAINED_BUFFER_INPUT_BYTES = 131072;
+
+    /**
+     * The only attempt outcome that means "did not fail". An allowlist, not a
+     * deny-list: 'pending' is an attempt that never finished (the hung request
+     * itself) and an unrecognised or absent outcome is an unknown, which is
+     * worth more than a known success when something has to be dropped.
+     */
+    const HEALTHY_OUTCOMES = array('success');
+
+    /**
      * Read, bound, and journal whatever the browser said about a previous
      * attempt, plus the build identity of the JavaScript that said it. Never
      * throws: a malformed or absent report must not affect the request that
@@ -121,6 +135,109 @@ final class ABJ_404_Solution_ClientTransportReport {
         $report['decoded'] = true;
         $report['truncated_on_arrival'] = $truncated;
         return $report;
+    }
+
+    /**
+     * Fit the browser's drained attempt buffer inside a byte budget WITHOUT
+     * destroying it.
+     *
+     * The buffer is a JSON array of per-attempt records, and it can exceed
+     * what the support payload will carry: the browser store holds up to 16
+     * records / 48 KB. Cutting the serialized array at a byte offset -- which
+     * is what both ends used to do -- leaves invalid JSON, so an overflowing
+     * buffer arrived as "unparseable" and EVERY attempt was lost rather than
+     * the least interesting one. That is the same defect the journal excerpt
+     * had, on the one channel that can describe attempts the server never saw
+     * at all.
+     *
+     * So whole records are dropped, not bytes, and the ones kept are chosen:
+     * attempts that did not succeed first (oldest first, because the first
+     * failure is the one without retry effects), then the rest newest first.
+     *
+     * @param string $raw The raw POSTed buffer.
+     * @param int $budgetBytes Ceiling for the returned JSON.
+     * @return array{json: string, parsed: bool, kept: int, dropped: int, raw_length: int, error: string}
+     */
+    public static function boundDrainedBuffer(string $raw, int $budgetBytes): array {
+        $rawLength = strlen($raw);
+        $unparseable = array(
+            'json' => '', 'parsed' => false, 'kept' => 0, 'dropped' => 0,
+            'raw_length' => $rawLength, 'error' => '',
+        );
+        if ($raw === '') {
+            return $unparseable;
+        }
+        $decoded = json_decode(substr($raw, 0, self::MAX_DRAINED_BUFFER_INPUT_BYTES), true);
+        if (!is_array($decoded)) {
+            $unparseable['error'] = json_last_error_msg();
+            return $unparseable;
+        }
+        $records = array();
+        foreach ($decoded as $record) {
+            $records[] = $record;
+        }
+        if ($rawLength <= self::MAX_DRAINED_BUFFER_INPUT_BYTES && $rawLength <= $budgetBytes) {
+            return array(
+                'json' => $raw, 'parsed' => true, 'kept' => count($records), 'dropped' => 0,
+                'raw_length' => $rawLength, 'error' => '',
+            );
+        }
+
+        $kept = self::keepWithinBudget($records, $budgetBytes);
+        $json = json_encode($kept, JSON_UNESCAPED_SLASHES);
+        if (!is_string($json) || strlen($json) > $budgetBytes) {
+            $unparseable['error'] = 'buffer could not be reduced to the support budget';
+            return $unparseable;
+        }
+        return array(
+            'json' => $json, 'parsed' => true, 'kept' => count($kept),
+            'dropped' => count($records) - count($kept), 'raw_length' => $rawLength, 'error' => '',
+        );
+    }
+
+    /**
+     * The records that fit, in their original order, failures first.
+     *
+     * @param array<int, mixed> $records
+     * @return array<int, mixed>
+     */
+    private static function keepWithinBudget(array $records, int $budgetBytes): array {
+        $failed = array();
+        $healthy = array();
+        foreach ($records as $position => $record) {
+            $outcome = is_array($record) && isset($record['outcome']) && is_scalar($record['outcome'])
+                ? (string)$record['outcome'] : '';
+            if (in_array($outcome, self::HEALTHY_OUTCOMES, true)) {
+                $healthy[] = $position;
+            } else {
+                $failed[] = $position;
+            }
+        }
+        $order = array_merge($failed, array_reverse($healthy));
+
+        // Two brackets and the commas between the records; charged up front so
+        // the encoded result cannot creep past the budget on the last record.
+        $used = 2;
+        $keepPositions = array();
+        foreach ($order as $position) {
+            $encoded = json_encode($records[$position], JSON_UNESCAPED_SLASHES);
+            if (!is_string($encoded)) {
+                continue;
+            }
+            $cost = strlen($encoded) + ($keepPositions === array() ? 0 : 1);
+            if ($used + $cost > $budgetBytes) {
+                continue;
+            }
+            $used += $cost;
+            $keepPositions[] = $position;
+        }
+        sort($keepPositions);
+
+        $kept = array();
+        foreach ($keepPositions as $position) {
+            $kept[] = $records[$position];
+        }
+        return $kept;
     }
 
     /**

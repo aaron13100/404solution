@@ -65,7 +65,8 @@ class ABJ_404_Solution_DeveloperLogMailer {
         call_user_func($this->debugLogger, "Creating zip file of error log file. " .
             "Previously sent error line: " . $previouslySentLine);
 
-        $logFileZip = $this->archiveBuilder->build($zipFilePath, $debugFilePath, $oldDebugFilePath);
+        $logFileZip = $this->archiveBuilder->build($zipFilePath, $debugFilePath, $oldDebugFilePath,
+            $this->diagnosticJournalPaths());
         $subject = $this->formatter->buildSubject($payload);
         $body = $this->formatter->buildBody($payload, $subject, $debugFilename);
 
@@ -93,5 +94,25 @@ class ABJ_404_Solution_DeveloperLogMailer {
                 "Recipient: " . $to . ". Subject: " . $subject);
         }
         return (bool)$result;
+    }
+
+    /**
+     * Both AJAX diagnostic journals, whole, for the archive.
+     *
+     * The support payload can only carry a ranked, budgeted excerpt of these;
+     * the archive is the channel where a budget decision cannot lose evidence.
+     * Each journal names its own files, so no path string is duplicated here.
+     *
+     * @return array<int, string>
+     */
+    private function diagnosticJournalPaths(): array {
+        $paths = array();
+        if (class_exists('ABJ_404_Solution_AjaxCheckpointLogger')) {
+            $paths = array_merge($paths, ABJ_404_Solution_AjaxCheckpointLogger::supportArchivePaths());
+        }
+        if (class_exists('ABJ_404_Solution_AjaxTraceJournal')) {
+            $paths = array_merge($paths, ABJ_404_Solution_AjaxTraceJournal::supportArchivePaths());
+        }
+        return $paths;
     }
 }

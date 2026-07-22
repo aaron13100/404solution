@@ -17,14 +17,22 @@ if (!defined('ABSPATH')) {
 class ABJ_404_Solution_DebugLogArchiveBuilder {
 
     /**
-     * Create a zip containing the current and rotated debug logs.
+     * Create a zip containing the current and rotated debug logs, plus any
+     * additional diagnostic files the caller wants carried WHOLE.
+     *
+     * The additional-paths channel exists because the support payload's
+     * diagnostic journals ride a byte budget and a ranking: whatever that
+     * budget decides to drop is gone, and the failing session is one we only
+     * get once. The archive has no such bound, so it is the out-of-band copy.
      *
      * @param string $zipPath
      * @param string $debugFilePath
      * @param string $oldDebugFilePath
+     * @param array<int, string> $additionalPaths Absolute paths; missing ones are skipped.
      * @return string The requested zip path, or an empty string when ZipArchive is unavailable.
      */
-    public function build(string $zipPath, string $debugFilePath, string $oldDebugFilePath): string {
+    public function build(string $zipPath, string $debugFilePath, string $oldDebugFilePath,
+            array $additionalPaths = array()): string {
         if (file_exists($zipPath)) {
             ABJ_404_Solution_FileSystemService::safeUnlink($zipPath);
         }
@@ -44,6 +52,11 @@ class ABJ_404_Solution_DebugLogArchiveBuilder {
             }
             if (file_exists($oldDebugFilePath)) {
                 $zip->addFile($oldDebugFilePath, basename($oldDebugFilePath));
+            }
+            foreach ($additionalPaths as $additionalPath) {
+                if (is_string($additionalPath) && $additionalPath !== '' && file_exists($additionalPath)) {
+                    $zip->addFile($additionalPath, basename($additionalPath));
+                }
             }
             if (!$zip->close()) {
                 abj404_logPhpFallback('logger-internal', 'debug log zip close failed for ' . $zipPath);

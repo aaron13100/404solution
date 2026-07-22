@@ -36,6 +36,25 @@ class ABJ_404_Solution_Ajax_SupportRequest {
      */
     const MAX_CLIENT_TELEMETRY_LENGTH = 32768;
 
+    /**
+     * The report contract's own bound on debug_log_excerpt
+     * (contracts/schemas/report.schema.json, maxLength). Every section written
+     * into that field is bounded so their sum provably fits underneath this,
+     * which is what stops a bigger diagnostic budget from turning "the journal
+     * reader dropped the evidence" into "the endpoint rejected the payload".
+     * SupportExcerptBudgetContractTest proves the arithmetic; the clamp in
+     * resolveDebugLogExcerpt() is the backstop that makes it unconditional.
+     */
+    const MAX_DEBUG_LOG_EXCERPT_BYTES = 262144;
+
+    /**
+     * Hard cap on the sanitized debug-log tail. It is assembled from a bounded
+     * NUMBER of entries (15 errors plus 20 recent lines), not a bounded number
+     * of BYTES, so a single site that logs a large blob could otherwise push
+     * the assembled excerpt past the contract on its own.
+     */
+    const MAX_LOGGER_EXCERPT_LENGTH = 32768;
+
     /** Nonce action used by both wp_create_nonce() and wp_verify_nonce(). */
     const NONCE_ACTION = 'abj404_support_request';
 
@@ -293,7 +312,26 @@ class ABJ_404_Solution_Ajax_SupportRequest {
         if (class_exists('ABJ_404_Solution_AjaxCheckpointLogger')) {
             $sections[] = ABJ_404_Solution_AjaxCheckpointLogger::readRecentForSupport();
         }
-        return self::joinSections($sections);
+        return self::boundToContract(self::joinSections($sections));
+    }
+
+    /**
+     * Last line of defence on the report contract's maxLength.
+     *
+     * The section budgets are chosen to sum well under the bound, so this can
+     * only fire if one of them is later raised without the arithmetic being
+     * rechecked. It cuts rather than letting buildPayload() reject the whole
+     * report, and it says so in the payload instead of silently shortening it:
+     * a truncation nobody can see is how evidence gets lost in transit, which
+     * is the exact failure this whole path was rebuilt to prevent.
+     */
+    private static function boundToContract(string $excerpt): string {
+        if (strlen($excerpt) <= self::MAX_DEBUG_LOG_EXCERPT_BYTES) {
+            return $excerpt;
+        }
+        $note = "\n\n[404 Solution] Support excerpt truncated from " . strlen($excerpt)
+            . ' bytes to fit the report contract.';
+        return substr($excerpt, 0, self::MAX_DEBUG_LOG_EXCERPT_BYTES - strlen($note)) . $note;
     }
 
     /** @return string */
@@ -307,7 +345,11 @@ class ABJ_404_Solution_Ajax_SupportRequest {
         }
         try {
             $loggerExcerpt = $logger->getSanitizedLogExcerptForSupport();
-            return is_string($loggerExcerpt) ? $loggerExcerpt : '';
+            if (!is_string($loggerExcerpt)) {
+                return '';
+            }
+            return strlen($loggerExcerpt) > self::MAX_LOGGER_EXCERPT_LENGTH
+                ? substr($loggerExcerpt, -self::MAX_LOGGER_EXCERPT_LENGTH) : $loggerExcerpt;
         } catch (\Throwable $e) {
             ABJ_404_Solution_FeedbackTransportLog::log(
                 'warn',
@@ -359,6 +401,12 @@ class ABJ_404_Solution_Ajax_SupportRequest {
      * at boot, so a JSON buffer taken straight out of $_POST can never parse
      * and every real support request would report its own telemetry as
      * unparseable.
+     *
+     * Over-budget input is reduced a RECORD at a time by ClientTransportReport
+     * rather than cut at a byte offset. The browser store holds more than this
+     * budget carries, and cutting the serialized array mid-record left invalid
+     * JSON -- so a busy session, which is exactly the interesting kind, used to
+     * deliver its whole client-side story as "unparseable".
      */
     private static function appendClientTransportTelemetry(string $excerpt): string {
         $raw = isset($_POST['client_telemetry'])
@@ -366,12 +414,18 @@ class ABJ_404_Solution_Ajax_SupportRequest {
         if ($raw === '') {
             return $excerpt;
         }
-        $bounded = substr($raw, 0, self::MAX_CLIENT_TELEMETRY_LENGTH);
-        $decoded = json_decode($bounded, true);
-        $block = is_array($decoded)
-            ? "Client transport telemetry (JSON):\n" . $bounded
-            : "Client transport telemetry (unparseable, " . strlen($raw) . " bytes, "
-                . json_last_error_msg() . "):\n" . substr($bounded, 0, 500);
+        $bounded = ABJ_404_Solution_ClientTransportReport::boundDrainedBuffer(
+            $raw, self::MAX_CLIENT_TELEMETRY_LENGTH);
+        if (!$bounded['parsed']) {
+            $block = 'Client transport telemetry (unparseable, ' . $bounded['raw_length'] . ' bytes, '
+                . $bounded['error'] . "):\n" . substr($raw, 0, 500);
+        } else {
+            $label = $bounded['dropped'] > 0
+                ? 'Client transport telemetry (JSON, ' . $bounded['kept'] . ' of '
+                    . ($bounded['kept'] + $bounded['dropped']) . ' attempts, failures kept first):'
+                : 'Client transport telemetry (JSON):';
+            $block = $label . "\n" . $bounded['json'];
+        }
         return $excerpt === '' ? $block : rtrim($excerpt) . "\n\n" . $block;
     }
 

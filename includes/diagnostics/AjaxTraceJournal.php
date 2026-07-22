@@ -29,7 +29,14 @@ final class ABJ_404_Solution_AjaxTraceJournal {
     const RECOVER_PENDING_AFTER_SECONDS = 300;
     const MAX_JOURNAL_BYTES = 524288;
     const MAX_PENDING_BYTES = 32768;
-    const MAX_SUPPORT_EXCERPT_BYTES = 32768;
+
+    /**
+     * Share of the support payload's excerpt field this journal may claim.
+     * Smaller than the checkpoint journal's because a request costs ~11 stage
+     * records here against ~27 checkpoints. The per-section budgets are proven
+     * to sum inside the report contract by SupportExcerptBudgetContractTest.
+     */
+    const MAX_SUPPORT_EXCERPT_BYTES = 49152;
 
     /** @var string Trace directory, with a trailing separator. */
     private $directory;
@@ -160,14 +167,10 @@ final class ABJ_404_Solution_AjaxTraceJournal {
      */
     public static function readRecentForSupport(): string {
         try {
-            $directory = function_exists('abj404_getUploadsDir') ? abj404_getUploadsDir() : '';
-            if (function_exists('apply_filters')) {
-                $directory = (string)apply_filters('abj404_ajax_trace_directory', $directory, array());
-            }
+            $directory = self::resolveSupportDirectory();
             if ($directory === '') {
                 return '';
             }
-            $directory = rtrim($directory, '/\\') . DIRECTORY_SEPARATOR;
             $paths = array(
                 $directory . self::ROTATED_FILE,
                 $directory . self::JOURNAL_FILE,
@@ -185,6 +188,49 @@ final class ABJ_404_Solution_AjaxTraceJournal {
             self::reportStaticFailure('AJAX trace support excerpt failed: ' . $e->getMessage());
             return '';
         }
+    }
+
+    /**
+     * Existing journal and pending-spool files, for a channel that carries
+     * them WHOLE. See AjaxCheckpointLogger::supportArchivePaths().
+     *
+     * @return array<int, string>
+     */
+    public static function supportArchivePaths(): array {
+        try {
+            $directory = self::resolveSupportDirectory();
+            if ($directory === '') {
+                return array();
+            }
+            $paths = array();
+            foreach (array(self::JOURNAL_FILE, self::ROTATED_FILE) as $name) {
+                if (@is_file($directory . $name)) {
+                    $paths[] = $directory . $name;
+                }
+            }
+            $pendingPaths = glob($directory . self::PENDING_GLOB);
+            return is_array($pendingPaths) ? array_merge($paths, $pendingPaths) : $paths;
+        } catch (Throwable $e) {
+            self::reportStaticFailure('AJAX trace archive path resolution failed: ' . $e->getMessage());
+            return array();
+        }
+    }
+
+    /**
+     * The trace directory as the read-side callers see it, with a trailing
+     * separator, or '' when unavailable. Resolved through the same filter the
+     * writer uses so a site that relocates the directory relocates every
+     * reader with it.
+     */
+    private static function resolveSupportDirectory(): string {
+        $directory = function_exists('abj404_getUploadsDir') ? abj404_getUploadsDir() : '';
+        if (function_exists('apply_filters')) {
+            $directory = (string)apply_filters('abj404_ajax_trace_directory', $directory, array());
+        }
+        if ($directory === '') {
+            return '';
+        }
+        return rtrim($directory, '/\\') . DIRECTORY_SEPARATOR;
     }
 
     /** @param array<string, mixed> $record */
