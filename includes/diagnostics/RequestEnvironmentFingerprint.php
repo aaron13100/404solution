@@ -37,20 +37,12 @@ final class ABJ_404_Solution_RequestEnvironmentFingerprint {
      * @return array<string, mixed>
      */
     public function capture(?string $handlerClass, string $cacheProbeKey): array {
-        $requestTimeFloatRaw = $_SERVER['REQUEST_TIME_FLOAT'] ?? null;
-        $requestTimeFloat = is_numeric($requestTimeFloatRaw) ? (float)$requestTimeFloatRaw : null;
-        $bootDeltaMs = $requestTimeFloat !== null
-            ? max(0, (int)round(($this->clock->nowFloat() - $requestTimeFloat) * 1000))
-            : null;
-
         $loadedFiles = $this->loadedFileFingerprints($handlerClass);
         $cacheProbe = $this->timedCacheProbe($cacheProbeKey);
         $obInventory = function_exists('ob_get_status') ? ob_get_status(true) : array();
         $rusage = function_exists('getrusage') ? getrusage() : null;
 
-        return array(
-            'request_time_float' => $requestTimeFloat,
-            'boot_delta_ms' => $bootDeltaMs,
+        return array_merge(self::bootDelta($this->clock->nowFloat()), array(
             'sapi' => PHP_SAPI,
             // gethostname() is a core PHP function (always available, no WP
             // dependency), so this is a plain false-check, not a
@@ -69,7 +61,83 @@ final class ABJ_404_Solution_RequestEnvironmentFingerprint {
             'hrtime_ns' => function_exists('hrtime') ? hrtime(true) : null,
             'wall_clock' => $this->clock->nowFloat(),
             'rusage' => is_array($rusage) ? $rusage : null,
+            'cron_doing_transient' => $this->cronDoingTransient(),
+            'cron_disable_wp_cron' => defined('DISABLE_WP_CRON') && DISABLE_WP_CRON,
+            'cron_alternate_wp_cron' => defined('ALTERNATE_WP_CRON') && ALTERNATE_WP_CRON,
+            'cron_due_event_count' => $this->cronDueEventCount(),
+        ));
+    }
+
+    /**
+     * Delta in milliseconds from REQUEST_TIME_FLOAT to `$nowFloat`, and the
+     * raw REQUEST_TIME_FLOAT itself. Static and dependency-free (no Clock
+     * instance) so boot-phase checkpoints -- recorded before the service
+     * container exists, let alone this class's constructor dependency --
+     * share the exact same formula as capture()'s own boot_delta_ms instead
+     * of a second copy that could silently drift from it (see
+     * ABJ_404_Solution_AjaxCheckpointLogger::recordBootWaypoint()).
+     *
+     * @return array{request_time_float: float|null, boot_delta_ms: int|null}
+     */
+    public static function bootDelta(float $nowFloat): array {
+        $requestTimeFloatRaw = $_SERVER['REQUEST_TIME_FLOAT'] ?? null;
+        $requestTimeFloat = is_numeric($requestTimeFloatRaw) ? (float)$requestTimeFloatRaw : null;
+        return array(
+            'request_time_float' => $requestTimeFloat,
+            'boot_delta_ms' => $requestTimeFloat !== null
+                ? max(0, (int)round(($nowFloat - $requestTimeFloat) * 1000))
+                : null,
         );
+    }
+
+    /**
+     * The `doing_cron` transient's raw value (a float timestamp) when a cron
+     * run is in progress or was recently spawned, or null otherwise. Bruno
+     * timeout matrix cause D: WP hooks wp_cron() on `init` for admin-ajax
+     * requests too, and a loopback spawn is a known failure class for this
+     * project on a Cloudflare + LiteSpeed stack (see the "Sort-prep tooltip
+     * 0%: wp-cron loopback 403" incident). This makes "this request paid for
+     * a cron spawn" a readable fact instead of an inference.
+     *
+     * @return float|null
+     */
+    private function cronDoingTransient(): ?float {
+        if (!function_exists('get_transient')) {
+            return null;
+        }
+        $value = get_transient('doing_cron');
+        return $value !== false && is_numeric($value) ? (float)$value : null;
+    }
+
+    /**
+     * Count of scheduled cron events whose timestamp is already due, or null
+     * when wp_get_ready_cron_jobs() is unavailable (added in WP 5.1; this
+     * plugin's minimum is WP 5.0). Every probe here degrades independently:
+     * an exception or a malformed filtered return from a third-party plugin
+     * (see the `pre_get_ready_cron_jobs` filter) must not break the capture.
+     */
+    private function cronDueEventCount(): ?int {
+        if (!function_exists('wp_get_ready_cron_jobs')) {
+            return null;
+        }
+        try {
+            $due = wp_get_ready_cron_jobs();
+        } catch (Throwable $e) {
+            return null;
+        }
+        if (!is_array($due)) {
+            return null;
+        }
+        $count = 0;
+        foreach ($due as $cronHooks) {
+            if (!is_array($cronHooks)) {
+                continue;
+            }
+            foreach ($cronHooks as $instances) {
+                $count += is_array($instances) ? count($instances) : 1;
+            }
+        }
+        return $count;
     }
 
     /**

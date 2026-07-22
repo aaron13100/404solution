@@ -118,6 +118,34 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
     }
 
     /**
+     * Record one boot lifecycle waypoint (Bruno timeout cause matrix, gap
+     * G3): our own plugin file's first executable line, `plugins_loaded`,
+     * `init`, `admin_init`, or admin-ajax action dispatch. Every record
+     * carries the delta from REQUEST_TIME_FLOAT (via
+     * ABJ_404_Solution_RequestEnvironmentFingerprint::bootDelta(), the same
+     * formula request_start uses), so the gaps between consecutive
+     * waypoints localize a slow boot to a phase instead of a single total,
+     * and a request that dies before trace construction still has its boot
+     * cost attributable from whichever waypoints it reached.
+     *
+     * Scope is gated by ABJ_404_Solution_AjaxRequestLedger::bootWaypointRequestId()
+     * to our own table-AJAX and canary-ladder requests: never for ordinary
+     * front-end page views, where the write cost would land on the hot 404
+     * path. Never throws.
+     */
+    public static function recordBootWaypoint(string $event): void {
+        try {
+            $requestId = ABJ_404_Solution_AjaxRequestLedger::bootWaypointRequestId();
+            if ($requestId === '') {
+                return;
+            }
+            self::record($requestId, $event, ABJ_404_Solution_RequestEnvironmentFingerprint::bootDelta(microtime(true)));
+        } catch (Throwable $e) {
+            self::reportFailure('AJAX boot waypoint record failed (' . $event . '): ' . $e->getMessage());
+        }
+    }
+
+    /**
      * Record a checkpoint pair (`${label}_start` / `${label}_end`) around a
      * unit of work and return its result. The end record always fires (a
      * finally block), and always carries elapsed_ms and status; the work's

@@ -122,6 +122,34 @@ if (has_filter('abj404_debug_whitelist')) {
 require_once __DIR__ . '/includes/root-boot/Autoloader.php';
 spl_autoload_register('abj404_autoloader');
 
+// Boot lifecycle waypoint checkpoints (Bruno timeout cause matrix, gap G3):
+// boot_delta_ms used to be the ONLY boot measurement, and it was written at
+// trace construction -- AFTER auth and the rate limiter -- so a slow boot and
+// a slow auth/DB path were indistinguishable. These checkpoints localize a
+// slow boot to a phase instead of a total. Gated to our own table-AJAX and
+// canary-ladder requests only (see
+// ABJ_404_Solution_AjaxRequestLedger::bootWaypointRequestId()); the frontend
+// 404 path is hot and must never pay this write cost.
+//
+// 'muplugins_loaded' is not separately hooked here: WordPress fires that
+// action (wp-settings.php, do_action('muplugins_loaded')) BEFORE a regular
+// (non-mu) plugin's file is even require()'d, so a normal plugin can never
+// observe it firing -- registering a callback for it here would silently
+// never run. This waypoint, the earliest point our own code can reach the
+// checkpoint logger, is therefore the honest measurement of that entire
+// pre-active-plugin window: mu-plugins, every listener on muplugins_loaded,
+// and any plugin that loads ahead of us in the active-plugins list.
+ABJ_404_Solution_AjaxCheckpointLogger::recordBootWaypoint('boot_plugin_entry');
+add_action('plugins_loaded', static function () {
+	ABJ_404_Solution_AjaxCheckpointLogger::recordBootWaypoint('plugins_loaded');
+}, PHP_INT_MIN);
+add_action('init', static function () {
+	ABJ_404_Solution_AjaxCheckpointLogger::recordBootWaypoint('init');
+}, PHP_INT_MIN);
+add_action('admin_init', static function () {
+	ABJ_404_Solution_AjaxCheckpointLogger::recordBootWaypoint('admin_init');
+}, PHP_INT_MIN);
+
 // Root-boot procedural functions. Each file only DEFINES functions (the
 // add_action/add_filter/add_shortcode registrations stay below in this file).
 // Requiring them here, right after the autoloader is registered, guarantees
