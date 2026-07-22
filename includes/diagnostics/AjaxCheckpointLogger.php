@@ -48,8 +48,21 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
      *    of a record and therefore doubles how much of a failing session fits
      *    inside the support payload.
      * 3: host-pressure probes plus the preceding checkpoint write's own cost.
+     * 4: a second record kind (see recordFrequent()) for the intra-stage
+     *    per-query and per-row-batch channels, and an explicit `envelope`
+     *    field on every record so which kind it is never has to be inferred.
      */
-    const SCHEMA_VERSION = 3;
+    const SCHEMA_VERSION = 4;
+
+    /** A boundary record: the full environment sample described by envelope(). */
+    const ENVELOPE_FULL = 'full';
+
+    /**
+     * A high-frequency record: identity and timing only. Named on the record
+     * rather than left to inference, so a missing `rusage` reads as "this kind
+     * of record does not carry one" and never as "getrusage() was unavailable".
+     */
+    const ENVELOPE_FREQUENT = 'frequent';
 
     /**
      * getrusage() keys worth carrying on every checkpoint, mapped to the names
@@ -118,6 +131,38 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
             self::writeRecord($directory, array_merge(self::envelope($requestId, $event), $fields));
         } catch (Throwable $e) {
             self::reportFailure('AJAX checkpoint record failed: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Append one HIGH-FREQUENCY checkpoint record. Never throws.
+     *
+     * The intra-stage channels (per-query attribution, row-loop progress) emit
+     * tens of records per request where the boundary channel emits one, so
+     * they cannot afford the boundary envelope. Every full record samples
+     * getrusage() AND ABJ_404_Solution_HostPressureSampler, which reads two
+     * /proc files and scans $_SERVER twice; paying that per query would add
+     * measurable syscall load to the very path being measured -- the exact
+     * observer effect gap G2 raised about the recorder itself -- and would add
+     * several hundred bytes per record to a support excerpt that is already
+     * the scarce resource.
+     *
+     * What is kept is what a stall is actually read from: the two clocks, the
+     * request ID that joins the record to everything else, the event name, and
+     * the PID. Host pressure is still sampled ~27 times across the same
+     * request by the boundary records these sit between.
+     *
+     * @param array<string, mixed> $fields
+     */
+    public static function recordFrequent(string $requestId, string $event, array $fields = array()): void {
+        try {
+            $directory = self::resolveDirectory();
+            if ($directory === '') {
+                return;
+            }
+            self::writeRecord($directory, array_merge(self::frequentEnvelope($requestId, $event), $fields));
+        } catch (Throwable $e) {
+            self::reportFailure('AJAX frequent checkpoint record failed: ' . $e->getMessage());
         }
     }
 
@@ -295,6 +340,7 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
     private static function envelope(string $requestId, string $event): array {
         return array(
             'schema_version' => self::SCHEMA_VERSION,
+            'envelope' => self::ENVELOPE_FULL,
             'ts' => microtime(true),
             'hrtime_ns' => function_exists('hrtime') ? hrtime(true) : null,
             'rusage' => self::resourceUsage(),
@@ -302,6 +348,23 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
                 ? ABJ_404_Solution_HostPressureSampler::capture()
                 : array('status' => 'unavailable', 'reason' => 'sampler_class_unavailable'),
             'previous_checkpoint_write' => self::previousWriteTelemetry($requestId),
+            'request_id' => $requestId,
+            'event' => $event,
+            'pid' => getmypid(),
+        );
+    }
+
+    /**
+     * The reduced envelope described by recordFrequent().
+     *
+     * @return array<string, mixed>
+     */
+    private static function frequentEnvelope(string $requestId, string $event): array {
+        return array(
+            'schema_version' => self::SCHEMA_VERSION,
+            'envelope' => self::ENVELOPE_FREQUENT,
+            'ts' => microtime(true),
+            'hrtime_ns' => function_exists('hrtime') ? hrtime(true) : null,
             'request_id' => $requestId,
             'event' => $event,
             'pid' => getmypid(),

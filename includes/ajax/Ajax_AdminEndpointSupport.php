@@ -132,6 +132,12 @@ class ABJ_404_Solution_Ajax_AdminEndpointSupport {
         $checkpointRequestId = ABJ_404_Solution_AjaxRequestLedger::instrumentedRequestIdFromGlobalContext();
         $ledgerRequestId = ABJ_404_Solution_AjaxRequestLedger::requestIdFromGlobalContext();
         $payload = ABJ_404_Solution_AjaxRequestLedger::stampOnPayload($payload, $ledgerRequestId);
+        // Close the per-query attribution timeline here rather than in the
+        // stage runner: this is the one choke point every exit passes through,
+        // including the rate-limit 429 and auth-failure 403 branches that
+        // return before any stage opens. All database work for the request is
+        // finished by now; encoding and echoing do none.
+        ABJ_404_Solution_AjaxQueryTimeline::flushSummary($checkpointRequestId);
         if (!headers_sent()) {
             if (isset($GLOBALS['abj404_ajax_context']) && is_array($GLOBALS['abj404_ajax_context'])) {
                 $ctx = $GLOBALS['abj404_ajax_context'];

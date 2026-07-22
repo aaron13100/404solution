@@ -147,6 +147,11 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
         $this->queryDiagnostics->recordAjaxTimeoutMode($query);
         $this->queryDiagnostics->applyDiagnosticLatencyIfConfigured();
 
+        // Announced before the timer starts, and therefore before the query
+        // can block: a stalled statement leaves this record as the last thing
+        // on disk, which is what names the SQL shape that hung.
+        $this->queryDiagnostics->recordQueryTimelineStart($query, $timeoutSeconds);
+
         $timer = new ABJ_404_Solution_Timer();
 
         $suppressWpdbErrors = !$options['log_errors'] && method_exists($wpdb, 'suppress_errors');
@@ -163,6 +168,7 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
             $result = $this->executeWpdbQuery($query, $resultType, $producesRows);
         } catch (Throwable $e) {
             $result['elapsed_time'] = $timer->stop();
+            $this->queryDiagnostics->recordQueryTimelineEnd(((float)$result['elapsed_time']) * 1000.0);
             $this->core->sqlErrorReporter()->logSqlThrowable($query, $e, $options, $producesRows);
             if ($suppressWpdbErrors) {
                 /** @var wpdb $wpdb */
@@ -191,6 +197,7 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
 
         $result['elapsed_time'] = $timer->stop();
         $elapsedMs = ((float)$result['elapsed_time']) * 1000.0;
+        $this->queryDiagnostics->recordQueryTimelineEnd($elapsedMs);
         $this->queryDiagnostics->recordQueryBudgetIfEnabled($queryForBudget, $elapsedMs, $timeoutSeconds);
 
         if ($suppressWpdbErrors) {

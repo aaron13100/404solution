@@ -33,11 +33,29 @@ final class ABJ_404_Solution_DiagnosticJournalExcerpt {
 
     /**
      * Ceiling on the bytes read from disk before ranking, across all files.
-     * Both journals are rotation-bounded well under this; the cap exists so a
-     * file that grew past its own bound (a rotation that could not rename)
-     * cannot turn a support click into an out-of-memory admin request.
+     *
+     * The allowance is spent NEWEST first, so whatever it cannot cover is the
+     * OLDEST bytes -- which in a failing session are the first failures, the
+     * most diagnostic records there are. That makes an undersized read bound a
+     * SECOND, independent place a session can be lost, on top of rotation, and
+     * the two compound in the worst possible way: immediately after a
+     * rotation, the head of the rotated file is exactly the oldest evidence
+     * and the current file's bytes are spent before it.
+     *
+     * So this is sized to hold a whole retained journal pair rather than to a
+     * session length: 2x ABJ_404_Solution_CheckpointJournalWriter's 4 MB
+     * rotation bound. Whatever survived rotation is then always fully read,
+     * and retention has one owner (the rotation bound) instead of two.
+     * Written as a literal rather than derived from that constant so this
+     * class stays usable by any journal, not only the checkpoint one.
+     *
+     * The ceiling still exists for its original reason: a file that grew past
+     * its own bound (a rotation that could not rename) must not turn a support
+     * click into an out-of-memory admin request. Decoded records are dropped
+     * per line by the ranking pass, so the live cost is the raw lines, not a
+     * parsed copy of them.
      */
-    const MAX_TOTAL_READ_BYTES = 2097152;
+    const MAX_TOTAL_READ_BYTES = 8388608;
 
     /** Bytes held back from the content budget for the accounting line and its newline. */
     const SUMMARY_RESERVE_BYTES = 512;

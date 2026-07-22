@@ -19,11 +19,26 @@ final class ABJ_404_Solution_CheckpointJournalWriter {
     const LOCK_FILE = 'abj404_ajax_checkpoints.lock';
     /**
      * One current plus one rotated file retain a measured worst-case session.
-     * Schema 3 adds host pressure and recorder cost to every checkpoint; the
-     * former 512 KB cap rotated twice during that session and deleted the
-     * first six failures before support extraction could prioritize them.
+     *
+     * Sized against the measurement, not chosen for tidiness, and raised once
+     * per schema that adds per-record volume -- because the failure mode of an
+     * undersized cap is not "less detail", it is rotation DELETING the first
+     * failures of a session before support extraction can ever rank them.
+     * Schema 3 added host pressure and recorder cost and forced the move from
+     * 512 KB to 1 MB. Schema 4 adds the intra-stage per-query and per-row
+     * channels, which take a table request from 26-27 records (~13-16 KB) to
+     * ~59 records (~30 KB); the worst-case session this project calibrates
+     * against -- six failing attempts, the seven-step canary ladder, and sixty
+     * detect-only polls, 69 requests in all -- measures 2,096,927 bytes, so a
+     * 1 MB cap rotated twice and deleted every one of the six failures.
+     *
+     * Retention worst case is ONE cap's worth (immediately after a rotation
+     * the current file is empty), so the cap itself, not cap*2, is what has to
+     * exceed a whole session. 4 MB leaves roughly 1.9x headroom over the
+     * measured one. SupportEvidenceWorstCaseVolumeTest is that measurement
+     * turned into a gate, and it fails if this drifts back under it.
      */
-    const MAX_CHECKPOINT_BYTES = 1048576;
+    const MAX_CHECKPOINT_BYTES = 4194304;
     const LOCK_WAIT_TIMEOUT_US = 50000;
 
     /**

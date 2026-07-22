@@ -40,6 +40,49 @@ class ABJ_404_Solution_DatabaseQueryDiagnostics {
     }
 
     /**
+     * Announce a query to the per-request attribution timeline BEFORE it runs
+     * (Bruno timeout cause matrix, cause class F).
+     *
+     * Emitted ahead of execution on purpose: a query that blocks and never
+     * returns cannot be described by a record written on completion, and
+     * naming the SQL shape that was in flight is what separates "the stage
+     * hung in the database" from "the stage hung in PHP after the database
+     * came back". See ABJ_404_Solution_AjaxQueryTimeline.
+     *
+     * The call-site label is resolved only when the timeline is armed, since
+     * extractSqlFilename() falls back to a debug_backtrace() walk.
+     *
+     * @param string $query The final SQL the server will receive.
+     * @param int $timeoutSeconds
+     * @return void
+     */
+    public function recordQueryTimelineStart(string $query, int $timeoutSeconds): void {
+        if (!class_exists('ABJ_404_Solution_AjaxQueryTimeline')
+                || !ABJ_404_Solution_AjaxQueryTimeline::isArmed()) {
+            return;
+        }
+        ABJ_404_Solution_AjaxQueryTimeline::beginQuery($query, $this->extractSqlFilename($query), $timeoutSeconds);
+    }
+
+    /**
+     * Close the in-flight timeline entry with the duration the executor
+     * measured. In-memory only; the value is carried out by the next probe and
+     * by the request's closing summary.
+     *
+     * Deliberately called from BOTH the normal and the throwing path of
+     * queryAndGetResults: a query that raised is still a query that ended, and
+     * an unclosed entry would make every duration after it unreadable.
+     *
+     * @param float $elapsedMs
+     * @return void
+     */
+    public function recordQueryTimelineEnd(float $elapsedMs): void {
+        if (class_exists('ABJ_404_Solution_AjaxQueryTimeline', false)) {
+            ABJ_404_Solution_AjaxQueryTimeline::endQuery($elapsedMs);
+        }
+    }
+
+    /**
      * Attach the strongest DB-level timeout mode observed during the active
      * AJAX stage. MariaDB's persisted wrapper-rejection state is explicitly
      * recorded as unwrapped because its MAX_EXECUTION_TIME comment is ignored.

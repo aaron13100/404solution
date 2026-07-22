@@ -103,9 +103,12 @@ class ABJ_404_Solution_View_CapturedURLsTable extends ABJ_404_Solution_ViewCompo
 
         $sourceEvidenceByUrl = $this->sourceEvidenceByVisibleUrl($rows);
         $bodyRows = '';
+        $progress = ABJ_404_Solution_AjaxRowLoopProgress::begin('captured_rows', count($rows));
         foreach ($rows as $row) {
+            $progress->tick($row);
             $bodyRows .= $this->capturedBodyRow($sub, $tableOptions, $row, $sourceEvidenceByUrl);
         }
+        $progress->finish();
         return $bodyRows;
     }
 

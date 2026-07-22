@@ -42,6 +42,8 @@ return array(
     'ABJ_404_Solution_AjaxCheckpointLogger' => $base . 'includes/diagnostics/AjaxCheckpointLogger.php',
     'ABJ_404_Solution_CheckpointJournalWriter' => $base . 'includes/diagnostics/CheckpointJournalWriter.php',
     'ABJ_404_Solution_AjaxRequestLedger' => $base . 'includes/diagnostics/AjaxRequestLedger.php',
+    'ABJ_404_Solution_AjaxQueryTimeline' => $base . 'includes/diagnostics/AjaxQueryTimeline.php',
+    'ABJ_404_Solution_AjaxRowLoopProgress' => $base . 'includes/diagnostics/AjaxRowLoopProgress.php',
     'ABJ_404_Solution_AjaxTraceJournal' => $base . 'includes/diagnostics/AjaxTraceJournal.php',
     'ABJ_404_Solution_DiagnosticJournalExcerpt' => $base . 'includes/diagnostics/DiagnosticJournalExcerpt.php',
     'ABJ_404_Solution_DiagnosticEvidencePriority' => $base . 'includes/diagnostics/DiagnosticEvidencePriority.php',

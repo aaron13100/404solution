@@ -86,11 +86,14 @@ class ABJ_404_Solution_AdminLogsTable {
     private function renderBodyRows(array $rows): string {
         $displayed = 0;
         $bodyRows = '';
+        $progress = ABJ_404_Solution_AjaxRowLoopProgress::begin('logs_rows', count($rows));
         foreach ($rows as $row) {
+            $progress->tick($row);
             $rendered = $this->renderLogRow($row);
             $bodyRows .= $rendered['row_html'] . $rendered['trace_html'];
             $displayed++;
         }
+        $progress->finish();
 
         $this->logger->debugMessage($displayed . ' log records displayed on the page.');
         if ($displayed === 0) {

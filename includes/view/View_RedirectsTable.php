@@ -129,11 +129,14 @@ class ABJ_404_Solution_View_RedirectsTable extends ABJ_404_Solution_ViewComponen
         $displayed = 0;
         $y = 1;
         $bodyRows = '';
+        $progress = ABJ_404_Solution_AjaxRowLoopProgress::begin('redirects_rows', count($typedRedirectRows));
         foreach ($typedRedirectRows as $row) {
+            $progress->tick($row);
             $bodyRows .= $this->buildRedirectRowHTML($row, $sub, $tableOptions, $deadDestIds, $y);
             $y = ($y === 0) ? 1 : 0;
             $displayed++;
         }
+        $progress->finish();
         if ($displayed == 0) {
             // The single-table denorm read (denorm Step 3b) is always complete
             // and serveable, so zero displayed rows is a genuinely empty
