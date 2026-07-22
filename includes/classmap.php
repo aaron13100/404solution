@@ -42,6 +42,7 @@ return array(
     'ABJ_404_Solution_AjaxCheckpointLogger' => $base . 'includes/diagnostics/AjaxCheckpointLogger.php',
     'ABJ_404_Solution_AjaxRequestLedger' => $base . 'includes/diagnostics/AjaxRequestLedger.php',
     'ABJ_404_Solution_AjaxTraceJournal' => $base . 'includes/diagnostics/AjaxTraceJournal.php',
+    'ABJ_404_Solution_DiagnosticJournalExcerpt' => $base . 'includes/diagnostics/DiagnosticJournalExcerpt.php',
     'ABJ_404_Solution_RequestEnvironmentFingerprint' => $base . 'includes/diagnostics/RequestEnvironmentFingerprint.php',
     'ABJ_404_Solution_ClientBuildFingerprint' => $base . 'includes/diagnostics/ClientBuildFingerprint.php',
     'ABJ_404_Solution_ClientTransportReport' => $base . 'includes/diagnostics/ClientTransportReport.php',

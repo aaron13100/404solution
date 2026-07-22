@@ -272,32 +272,73 @@ class ABJ_404_Solution_Ajax_SupportRequest {
     }
 
     /**
-     * Best-effort lookup of sanitized debug-log and AJAX-trace excerpts.
+     * Best-effort lookup of the sanitized debug-log tail plus BOTH durable AJAX
+     * diagnostic journals.
+     *
+     * The stage trace and the checkpoint log are separate channels on purpose
+     * (a defect in the trace must not be able to erase the evidence about it),
+     * so draining only one of them reintroduces the beta.1 failure mode from
+     * the read side: a request that never reached its first stage writes
+     * nothing to the trace, and its whole story lives in the checkpoints.
+     * Both are appended, each labeled and independently bounded, so a failure
+     * to read one still yields the other.
      *
      * @return string
      */
     private static function resolveDebugLogExcerpt(): string {
-        $excerpt = '';
-        if (function_exists('abj_service_optional')) {
-            $logger = abj_service_optional('logging');
-            if (is_object($logger) && method_exists($logger, 'getSanitizedLogExcerptForSupport')) {
-                try {
-                    $loggerExcerpt = $logger->getSanitizedLogExcerptForSupport();
-                    $excerpt = is_string($loggerExcerpt) ? $loggerExcerpt : '';
-                } catch (\Throwable $e) {
-                    ABJ_404_Solution_FeedbackTransportLog::log(
-                        'warn',
-                        'Support request debug-log excerpt unavailable: ' . $e->getMessage()
-                    );
-                }
+        $sections = array(self::resolveLoggerExcerpt());
+        if (class_exists('ABJ_404_Solution_AjaxRequestTrace')) {
+            $sections[] = ABJ_404_Solution_AjaxTraceJournal::readRecentForSupport();
+        }
+        if (class_exists('ABJ_404_Solution_AjaxCheckpointLogger')) {
+            $sections[] = ABJ_404_Solution_AjaxCheckpointLogger::readRecentForSupport();
+        }
+        return self::joinSections($sections);
+    }
+
+    /** @return string */
+    private static function resolveLoggerExcerpt(): string {
+        if (!function_exists('abj_service_optional')) {
+            return '';
+        }
+        $logger = abj_service_optional('logging');
+        if (!is_object($logger) || !method_exists($logger, 'getSanitizedLogExcerptForSupport')) {
+            return '';
+        }
+        try {
+            $loggerExcerpt = $logger->getSanitizedLogExcerptForSupport();
+            return is_string($loggerExcerpt) ? $loggerExcerpt : '';
+        } catch (\Throwable $e) {
+            ABJ_404_Solution_FeedbackTransportLog::log(
+                'warn',
+                'Support request debug-log excerpt unavailable: ' . $e->getMessage()
+            );
+            return '';
+        }
+    }
+
+    /**
+     * Join the non-empty excerpt sections with a blank line between them.
+     *
+     * A lone section is returned byte-for-byte: the sanitized debug log is
+     * usually the only one present, and trimming it here would silently change
+     * what the developer receives for every ordinary support request.
+     *
+     * @param array<int, string> $sections
+     * @return string
+     */
+    private static function joinSections(array $sections): string {
+        $present = array();
+        foreach ($sections as $section) {
+            if (is_string($section) && trim($section) !== '') {
+                $present[] = $section;
             }
         }
-        $traceExcerpt = class_exists('ABJ_404_Solution_AjaxRequestTrace')
-            ? ABJ_404_Solution_AjaxTraceJournal::readRecentForSupport() : '';
-        if ($traceExcerpt === '') {
-            return $excerpt;
+        if (count($present) < 2) {
+            return $present === array() ? '' : $present[0];
         }
-        return $excerpt === '' ? $traceExcerpt : rtrim($excerpt) . "\n\n" . $traceExcerpt;
+        $last = array_pop($present);
+        return implode("\n\n", array_map('rtrim', $present)) . "\n\n" . $last;
     }
 
     /**
@@ -313,10 +354,15 @@ class ABJ_404_Solution_Ajax_SupportRequest {
      *
      * Malformed input is reported rather than dropped: "the client sent
      * something we could not parse" is itself a finding about the client.
+     * Read through RequestInputNormalizer for the same reason
+     * Functions::getPostOrGetSanitize() is: WordPress escapes every superglobal
+     * at boot, so a JSON buffer taken straight out of $_POST can never parse
+     * and every real support request would report its own telemetry as
+     * unparseable.
      */
     private static function appendClientTransportTelemetry(string $excerpt): string {
-        $raw = isset($_POST['client_telemetry']) && is_scalar($_POST['client_telemetry'])
-            ? (string)$_POST['client_telemetry'] : '';
+        $raw = isset($_POST['client_telemetry'])
+            ? ABJ_404_Solution_RequestInputNormalizer::normalizeScalar($_POST['client_telemetry']) : '';
         if ($raw === '') {
             return $excerpt;
         }

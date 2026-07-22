@@ -441,10 +441,7 @@ final class ABJ_404_Solution_AjaxRequestTrace {
     }
 
     private static function reportStaticFailure(string $message): void {
-        if (function_exists('abj404_logPhpFallback')) {
-            abj404_logPhpFallback('ajax-trace', $message);
-            return;
-        }
-        error_log('404 Solution AJAX trace: ' . $message);
+        // Unconditional; see AjaxCheckpointLogger::reportFailure().
+        abj404_logPhpFallback('ajax-trace', $message);
     }
 }

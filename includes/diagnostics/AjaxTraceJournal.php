@@ -176,34 +176,11 @@ final class ABJ_404_Solution_AjaxTraceJournal {
             if (is_array($pendingPaths)) {
                 $paths = array_merge($paths, $pendingPaths);
             }
-            $files = array();
-            foreach ($paths as $path) {
-                $modified = @filemtime($path);
-                if (is_int($modified)) {
-                    $files[] = array('path' => $path, 'modified' => $modified);
-                }
-            }
-            usort($files, static function (array $left, array $right): int {
-                if ($left['modified'] === $right['modified']) {
-                    return strcmp($left['path'], $right['path']);
-                }
-                return $left['modified'] <=> $right['modified'];
-            });
-            $files = array_slice($files, -8);
-            if ($files === array()) {
-                return '';
-            }
-            $header = "Recent AJAX stage traces (JSONL):\n";
-            $contentBudget = self::MAX_SUPPORT_EXCERPT_BYTES - strlen($header) - count($files);
-            $perFileLimit = max(1, intdiv($contentBudget, count($files)));
-            $parts = array();
-            foreach ($files as $file) {
-                $tail = self::readFileTail($file['path'], $perFileLimit);
-                if ($tail !== '') {
-                    $parts[] = $tail;
-                }
-            }
-            return $parts === array() ? '' : $header . implode("\n", $parts);
+            return ABJ_404_Solution_DiagnosticJournalExcerpt::compose(
+                $paths,
+                self::MAX_SUPPORT_EXCERPT_BYTES,
+                "Recent AJAX stage traces (JSONL):\n"
+            );
         } catch (Throwable $e) {
             self::reportStaticFailure('AJAX trace support excerpt failed: ' . $e->getMessage());
             return '';
@@ -247,29 +224,6 @@ final class ABJ_404_Solution_AjaxTraceJournal {
         }
     }
 
-    /** Last $limit bytes of a file, trimmed to whole lines. */
-    private static function readFileTail(string $path, int $limit): string {
-        if ($limit <= 0 || !@is_file($path)) {
-            return '';
-        }
-        $size = @filesize($path);
-        if (!is_int($size)) {
-            self::reportStaticFailure('AJAX trace journal size could not be read: ' . $path);
-            return '';
-        }
-        $offset = max(0, $size - $limit);
-        $contents = @file_get_contents($path, false, null, $offset, $limit);
-        if (!is_string($contents)) {
-            self::reportStaticFailure('AJAX trace journal could not be read: ' . $path);
-            return '';
-        }
-        if ($offset > 0) {
-            $newline = strpos($contents, "\n");
-            $contents = $newline === false ? '' : substr($contents, $newline + 1);
-        }
-        return trim($contents);
-    }
-
     private function reportFailure(string $message): void {
         if ($this->failureReported) {
             return;
@@ -279,10 +233,7 @@ final class ABJ_404_Solution_AjaxTraceJournal {
     }
 
     private static function reportStaticFailure(string $message): void {
-        if (function_exists('abj404_logPhpFallback')) {
-            abj404_logPhpFallback('ajax-trace', $message);
-            return;
-        }
-        error_log('404 Solution AJAX trace: ' . $message);
+        // Unconditional; see AjaxCheckpointLogger::reportFailure().
+        abj404_logPhpFallback('ajax-trace', $message);
     }
 }

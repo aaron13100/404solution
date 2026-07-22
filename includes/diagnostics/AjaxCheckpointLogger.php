@@ -26,6 +26,7 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
     const ROTATED_FILE = 'abj404_ajax_checkpoints.old.jsonl';
     const LOCK_FILE = 'abj404_ajax_checkpoints.lock';
     const MAX_CHECKPOINT_BYTES = 524288;
+    const MAX_SUPPORT_EXCERPT_BYTES = 32768;
     const SCHEMA_VERSION = 1;
 
     /**
@@ -166,6 +167,33 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
         }
     }
 
+    /**
+     * Bounded recent checkpoint lines for the support-request payload.
+     *
+     * Without this the checkpoints are written and never read by anyone: the
+     * support payload carried only the stage trace, so a request that died
+     * BEFORE its first stage -- the exact beta.1 failure -- reached the
+     * developer as an empty excerpt. Every pre-stage boundary (auth, rate
+     * limit, trace construction, service resolution) and every post-stage
+     * boundary (encode, echo, each ob close, flush, finish-request, exit) is
+     * recorded only here, so this is the channel that makes "nothing after
+     * authorized" a readable fact instead of an absence.
+     *
+     * The rotated file is included: a session busy enough to rotate is a
+     * session whose oldest evidence is still the most interesting.
+     */
+    public static function readRecentForSupport(): string {
+        $directory = self::resolveDirectory();
+        if ($directory === '') {
+            return '';
+        }
+        return ABJ_404_Solution_DiagnosticJournalExcerpt::compose(
+            array($directory . self::ROTATED_FILE, $directory . self::CHECKPOINT_FILE),
+            self::MAX_SUPPORT_EXCERPT_BYTES,
+            "Recent AJAX request checkpoints (JSONL):\n"
+        );
+    }
+
     /** @return array<string, mixed> */
     private static function envelope(string $requestId, string $event): array {
         $rusage = function_exists('getrusage') ? getrusage() : null;
@@ -233,10 +261,10 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
     }
 
     private static function reportFailure(string $message): void {
-        if (function_exists('abj404_logPhpFallback')) {
-            abj404_logPhpFallback('ajax-checkpoint', $message);
-            return;
-        }
-        error_log('404 Solution AJAX checkpoint: ' . $message);
+        // Unconditional: abj404_logPhpFallback() is defined at plugin entry
+        // (404-solution.php), before any class here can be autoloaded, so a raw
+        // error_log() second sink was unreachable and made this file an
+        // offender in the centralized-error-log audit.
+        abj404_logPhpFallback('ajax-checkpoint', $message);
     }
 }
