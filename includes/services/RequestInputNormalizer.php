@@ -66,4 +66,85 @@ class ABJ_404_Solution_RequestInputNormalizer {
         }
         return $issues;
     }
+
+    /**
+     * Read one request parameter, unslashed and sanitized.
+     *
+     * wp_magic_quotes() slash-escapes every superglobal at boot and
+     * sanitize_text_field() does not undo it, so an unslashed read hands back
+     * {\"v\":1,...} for JSON and O\'Brien for a search. Hence core's
+     * sanitize_text_field( wp_unslash( ... ) ) order.
+     *
+     * Called from {@see ABJ_404_Solution_Functions::getPostOrGetSanitize()},
+     * which stays the public entry point so DI-based test doubles can
+     * substitute request values without touching real superglobals.
+     *
+     * @param string $name The key to retrieve the value for.
+     * @param string|null $defaultValue The value to return if the value is not set.
+     * @return string The sanitized value.
+     */
+    public static function getPostOrGetSanitize($name, $defaultValue = null) {
+        $returnValue = isset($_GET[$name]) ? $_GET[$name] : (isset($_POST[$name]) ? $_POST[$name] : null);
+        if ($returnValue === null && $name === 'action') {
+            $returnValue = isset($_GET['abj404action']) ? $_GET['abj404action'] : (isset($_POST['abj404action']) ? $_POST['abj404action'] : null);
+        }
+        $returnValue = self::applyBulkActionFallback($name, $returnValue);
+        if ($returnValue !== null) {
+            $returnValue = self::safeWpUnslash($returnValue);
+            if (is_array($returnValue)) {
+                $returnValue = array_map('sanitize_text_field', $returnValue);
+            } else {
+                $returnValue = sanitize_text_field($returnValue);
+            }
+        }
+        $finalValue = $returnValue ?? $defaultValue;
+        return is_string($finalValue) ? $finalValue : (is_string($defaultValue) ? $defaultValue : '');
+    }
+
+    /**
+     * Native WP_List_Table renders bulk-action <select>s at top and bottom of
+     * the table using name="action" and name="action2". The 404 Solution
+     * wrappers mirror this with abj404action (top) and abj404action2 (bottom).
+     * When the top select is empty (default placeholder), fall back to the
+     * bottom select's value so Apply submits from either utility row.
+     *
+     * @param string $name
+     * @param mixed $current
+     * @return mixed
+     */
+    private static function applyBulkActionFallback($name, $current) {
+        if ($name !== 'abj404action') {
+            return $current;
+        }
+        if ($current !== null && $current !== '' && $current !== '-1') {
+            return $current;
+        }
+        $alt = isset($_GET['abj404action2']) ? $_GET['abj404action2'] : (isset($_POST['abj404action2']) ? $_POST['abj404action2'] : null);
+        if ($alt === null || $alt === '' || $alt === '-1') {
+            return $current;
+        }
+        return $alt;
+    }
+
+    /**
+     * @param string $name The key to retrieve the value for.
+     * @param string|null $defaultValue The value to return if the value is not set.
+     * @return string|array<string>|null The normalized URL value.
+     */
+    public static function getPostOrGetSanitizeUrl($name, $defaultValue = null) {
+        $returnValue = isset($_GET[$name]) ? $_GET[$name] : (isset($_POST[$name]) ? $_POST[$name] : null);
+        if ($returnValue === null) {
+            return $defaultValue;
+        }
+
+        $sanitizer = abj_service('sanitizer');
+        if (is_array($returnValue)) {
+            return array_map(static function($value) use ($sanitizer) {
+                return $sanitizer->normalizeUrlString(
+                    ABJ_404_Solution_RequestInputNormalizer::safeWpUnslash($value));
+            }, $returnValue);
+        }
+        return $sanitizer->normalizeUrlString(
+            ABJ_404_Solution_RequestInputNormalizer::safeWpUnslash($returnValue));
+    }
 }
