@@ -107,8 +107,8 @@ class ABJ_404_Solution_DeveloperLogMailer {
      */
     private function diagnosticJournalPaths(): array {
         $paths = array();
-        if (class_exists('ABJ_404_Solution_AjaxCheckpointLogger')) {
-            $paths = array_merge($paths, ABJ_404_Solution_AjaxCheckpointLogger::supportArchivePaths());
+        if (class_exists('ABJ_404_Solution_CheckpointJournalReader')) {
+            $paths = array_merge($paths, ABJ_404_Solution_CheckpointJournalReader::supportArchivePaths());
         }
         if (class_exists('ABJ_404_Solution_AjaxTraceJournal')) {
             $paths = array_merge($paths, ABJ_404_Solution_AjaxTraceJournal::supportArchivePaths());

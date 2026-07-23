@@ -100,7 +100,7 @@ final class ABJ_404_Solution_DetachAbEvidence {
                 $record['status'] = self::STATUS_NOT_ARMED;
                 return $record;
             }
-            $source = ABJ_404_Solution_AjaxCheckpointLogger::supportCollectionSource();
+            $source = ABJ_404_Solution_CheckpointJournalReader::supportCollectionSource();
             $lines = ABJ_404_Solution_DiagnosticJournalExcerpt::readAllLines($source['paths']);
             return self::decide($record, self::attemptsIn($lines, $sessionKey), count($lines));
         } catch (Throwable $e) {

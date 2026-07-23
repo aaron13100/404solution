@@ -234,7 +234,7 @@ final class ABJ_404_Solution_AjaxTraceJournal {
 
     /**
      * Existing journal and pending-spool files, for a channel that carries
-     * them WHOLE. See AjaxCheckpointLogger::supportArchivePaths().
+     * them WHOLE. See CheckpointJournalReader::supportArchivePaths().
      *
      * @return array<int, string>
      */

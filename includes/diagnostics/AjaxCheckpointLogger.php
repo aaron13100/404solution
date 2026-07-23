@@ -19,6 +19,11 @@ if (!defined('ABSPATH')) {
  * Every public method is failure-safe: it never lets an internal write
  * failure escape as an exception. around() re-throws only the wrapped
  * work's own exception, never a logging failure.
+ *
+ * This class is the journal's WRITER only. The read side -- the bounded
+ * support excerpt, the collection-manifest source, and the whole-file
+ * archive paths -- lives in ABJ_404_Solution_CheckpointJournalReader, which
+ * depends on this class's directory resolution; nothing here ever calls it.
  */
 final class ABJ_404_Solution_AjaxCheckpointLogger {
 
@@ -29,18 +34,6 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
 
     /** @var array<string, mixed>|null */
     private static $previousWriteTelemetry = null;
-
-    /**
-     * Share of the support payload's excerpt field this journal may claim.
-     *
-     * Sized against a measured session, not chosen for tidiness: one table
-     * request costs 26-27 records, so 32 KB (the previous value, further
-     * halved by an even per-file split) bought about ONE request while a
-     * failing session is six failing attempts plus a canary ladder plus polls.
-     * The per-section budgets are proven to sum inside the report contract by
-     * SupportExcerptBudgetContractTest.
-     */
-    const MAX_SUPPORT_EXCERPT_BYTES = 131072;
 
     /**
      * 1: full getrusage() array on every record.
@@ -121,8 +114,10 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
      * is still NAMEABLE in the support-collection manifest. Collapsing an
      * unusable path to '' is what made "the collector resolved somewhere it
      * cannot write" indistinguishable from "there was nothing to read".
+     * Public for exactly that consumer:
+     * ABJ_404_Solution_CheckpointJournalReader::supportCollectionSource().
      */
-    private static function resolveDirectoryPath(): string {
+    public static function resolveDirectoryPath(): string {
         $directory = function_exists('abj404_getUploadsDir') ? abj404_getUploadsDir() : '';
         if (function_exists('apply_filters')) {
             $directory = (string)apply_filters('abj404_ajax_trace_directory', $directory, array());
@@ -243,102 +238,6 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
                 'elapsed_ms' => self::elapsedMs($startedAt),
             ));
         }
-    }
-
-    /**
-     * Bounded recent checkpoint lines for the support-request payload.
-     *
-     * Without this the checkpoints are written and never read by anyone: the
-     * support payload carried only the stage trace, so a request that died
-     * BEFORE its first stage -- the exact beta.1 failure -- reached the
-     * developer as an empty excerpt. Every pre-stage boundary (auth, rate
-     * limit, trace construction, service resolution) and every post-stage
-     * boundary (encode, echo, each ob close, flush, finish-request, exit) is
-     * recorded only here, so this is the channel that makes "nothing after
-     * authorized" a readable fact instead of an absence.
-     *
-     * The rotated file is included: a session busy enough to rotate is a
-     * session whose oldest evidence is still the most interesting.
-     *
-     * @param array<string, bool> $knownFailingIds Requests condemned across every
-     *   journal, so this excerpt and the stage-trace one rank identically. This
-     *   journal already contains its own verdicts; passing the union in is what
-     *   makes the two agree rather than each ranking off what it happens to hold.
-     */
-    public static function readRecentForSupport(array $knownFailingIds = array()): string {
-        $directory = self::resolveDirectory();
-        if ($directory === '') {
-            return '';
-        }
-        return ABJ_404_Solution_DiagnosticJournalExcerpt::compose(
-            self::supportExcerptPaths($directory),
-            self::MAX_SUPPORT_EXCERPT_BYTES,
-            "Recent AJAX request checkpoints (JSONL):\n",
-            $knownFailingIds
-        );
-    }
-
-    /**
-     * What readRecentForSupport() will look at, whether or not any of it
-     * exists, for ABJ_404_Solution_DiagnosticCollectionManifest. The candidate
-     * list is the reader's own, so the manifest can never describe a different
-     * set of files than the one that was actually read.
-     *
-     * The directory is reported even when it turned out to be unusable: which
-     * path this channel tried is exactly the fact a wrong-node or unwritable
-     * uploads directory is diagnosed from.
-     *
-     * @return array{channel: string, directory: string, usable: bool, paths: array<int, string>}
-     */
-    public static function supportCollectionSource(): array {
-        try {
-            $directory = self::resolveDirectory();
-            $usable = $directory !== '';
-            return array(
-                'channel' => 'ajax_checkpoints',
-                'directory' => $usable ? $directory : self::resolveDirectoryPath(),
-                'usable' => $usable,
-                'paths' => $usable ? self::supportExcerptPaths($directory) : array(),
-            );
-        } catch (Throwable $e) {
-            self::reportFailure('AJAX checkpoint support source resolution failed: ' . $e->getMessage());
-            return array('channel' => 'ajax_checkpoints', 'directory' => '', 'usable' => false, 'paths' => array());
-        }
-    }
-
-    /**
-     * Rotated file then current journal: oldest first, the order the excerpt
-     * reader breaks mtime ties on.
-     *
-     * @param string $directory With a trailing separator.
-     * @return array<int, string>
-     */
-    private static function supportExcerptPaths(string $directory): array {
-        return array($directory . self::ROTATED_FILE, $directory . self::CHECKPOINT_FILE);
-    }
-
-    /**
-     * Existing journal files, for a channel that carries them WHOLE.
-     *
-     * The support excerpt is bounded by a byte budget and a ranking, and a
-     * budget decision must never again be the single point of loss for a
-     * session we only get once. The developer log archive has no such bound,
-     * so it carries both journals in full alongside the debug logs.
-     *
-     * @return array<int, string>
-     */
-    public static function supportArchivePaths(): array {
-        $directory = self::resolveDirectory();
-        if ($directory === '') {
-            return array();
-        }
-        $paths = array();
-        foreach (array(self::CHECKPOINT_FILE, self::ROTATED_FILE) as $name) {
-            if (@is_file($directory . $name)) {
-                $paths[] = $directory . $name;
-            }
-        }
-        return $paths;
     }
 
     /** @return array<string, mixed> */

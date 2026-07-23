@@ -105,7 +105,8 @@ $abj404ClassesByDirectory = array(
     ),
     'diagnostics' => array(
         'CrashBeacon', 'CrashBeaconStore', 'CrashBeaconReporter', 'AjaxRequestTrace',
-        'AjaxCheckpointLogger', 'CheckpointJournalWriter', 'AjaxRequestLedger',
+        'AjaxCheckpointLogger', 'CheckpointJournalWriter', 'CheckpointJournalReader',
+        'AjaxRequestLedger',
         'AjaxQueryTimeline', 'AjaxRowLoopProgress', 'AjaxTraceJournal', 'AjaxStageDiagnostics',
         'ShutdownEnvironmentInventory', 'ShutdownTeardownBracket', 'DiagnosticJournalExcerpt',
         'DiagnosticClientVerdict', 'DiagnosticCollectionManifest', 'DiagnosticDirectoryProbe',

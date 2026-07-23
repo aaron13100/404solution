@@ -154,8 +154,8 @@ final class ABJ_404_Solution_SupportEvidenceExcerpt {
     private static function collectChannels(): array {
         $trace = class_exists('ABJ_404_Solution_AjaxRequestTrace')
             ? ABJ_404_Solution_AjaxTraceJournal::supportCollectionSource() : null;
-        $checkpoints = class_exists('ABJ_404_Solution_AjaxCheckpointLogger')
-            ? ABJ_404_Solution_AjaxCheckpointLogger::supportCollectionSource() : null;
+        $checkpoints = class_exists('ABJ_404_Solution_CheckpointJournalReader')
+            ? ABJ_404_Solution_CheckpointJournalReader::supportCollectionSource() : null;
 
         // Built per channel rather than from one merged path list: each
         // channel's read is bounded by its own file count and byte allowance,
@@ -177,7 +177,7 @@ final class ABJ_404_Solution_SupportEvidenceExcerpt {
         }
         if ($checkpoints !== null) {
             $checkpoints['collected'] =
-                ABJ_404_Solution_AjaxCheckpointLogger::readRecentForSupport($failingIds);
+                ABJ_404_Solution_CheckpointJournalReader::readRecentForSupport($failingIds);
             $channels[] = $checkpoints;
         }
         return $channels;

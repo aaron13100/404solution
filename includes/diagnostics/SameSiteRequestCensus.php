@@ -276,7 +276,7 @@ final class ABJ_404_Solution_SameSiteRequestCensus {
      * Not terseness for its own sake: this reading rides the checkpoint
      * channel, and the support excerpt's byte budget is the scarce resource
      * that decides how much of a FAILING session reaches the developer at all
-     * (see AjaxCheckpointLogger::MAX_SUPPORT_EXCERPT_BYTES and the rusage trim
+     * (see CheckpointJournalReader::MAX_SUPPORT_EXCERPT_BYTES and the rusage trim
      * that preceded it). Everything omitted here is omitted only at its
      * documented default and reappears the moment it is not: the entries and
      * the TTL their ages are read against when there IS other traffic,
