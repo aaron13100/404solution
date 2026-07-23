@@ -76,6 +76,7 @@ class ABJ_404_Solution_ErrorHandler {
 
         $abj404logging = abj_service('logging');
         $f = abj_service('functions');
+        $errorTypeClassifier = new ABJ_404_Solution_ErrorTypeClassifier();
         $onlyAWarning = false;
 
         try {
@@ -102,19 +103,17 @@ class ABJ_404_Solution_ErrorHandler {
                 }
             }
 
-            // PHP emits this warning in two forms: with a "by (output started
-            // at /file:line)" suffix when it can attribute the earlier output,
-            // and without that suffix (bare "...headers already sent") when it
-            // cannot. Match the stable prefix so both forms downgrade to a
-            // warning. The " by" variant alone missed the bare form, which then
-            // reached error level and triggered a feedback report (production
-            // report 104, chasalford.com, PHP 8.4).
-            if ($errno == 2 &&
-                $f->strpos($errstr,
-                        "Cannot modify header information - headers already sent") !== false) {
-
-                $onlyAWarning = true;
-            }
+            // Recoverable host/infrastructure warnings (headers-already-sent,
+            // open_basedir restriction, ...) are E_WARNINGs the plugin can only
+            // degrade past, never fix -- the host itself forbids the operation.
+            // Downgrade them below error level so getLatestErrorLine() does not
+            // count them and the plugin does not phone home a type='error'
+            // report about a server-side condition only the site owner can
+            // resolve. The allowlist lives in the classifier so a future
+            // host-only warning is added in one place, not as another special
+            // case here (ErrorTypeClassifier::isRecoverableHostWarning: report
+            // 104 headers-already-sent, report 149 open_basedir).
+            $onlyAWarning = $errorTypeClassifier->isRecoverableHostWarning($errno, $errstr);
 
             $extraInfo = "(none)";
             $ctxDebugInfo = abj_service('request_context')->debug_info;
