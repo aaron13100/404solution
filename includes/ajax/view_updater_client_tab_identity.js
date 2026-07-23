@@ -11,7 +11,12 @@
  *
  * Globals defined: abj404ClientTabIdentity.
  */
-(function (global) {
+(function (global, abj404Module) {
+    if (global.abj404ClientBuildRegistry) {
+        global.abj404ClientBuildRegistry.register('tab_identity', abj404Module);
+    }
+    abj404Module(global);
+}(typeof window !== 'undefined' ? window : this, /* abj404-client-module:start */ function (global) {
     'use strict';
 
     var SESSION_ID_KEY = 'abj404:client_session_id';
@@ -101,4 +106,4 @@
         scopedValue: scopedValue,
         SESSION_ID_KEY: SESSION_ID_KEY
     };
-})(typeof window !== 'undefined' ? window : this);
+} /* abj404-client-module:end */));

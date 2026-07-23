@@ -16,7 +16,12 @@
  * Callers do NOT have to pass the nonce; it is injected automatically.
  */
 
-(function (window) {
+(function (window, abj404Module) {
+    if (window.abj404ClientBuildRegistry) {
+        window.abj404ClientBuildRegistry.register('support_request', abj404Module);
+    }
+    abj404Module(window);
+}(window, /* abj404-client-module:start */ function (window) {
     'use strict';
 
     function resolveNonce() {
@@ -231,4 +236,4 @@
 
     window.abj404SupportRequest = { send: send };
 
-})(window);
+} /* abj404-client-module:end */));

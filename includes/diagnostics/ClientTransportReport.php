@@ -69,6 +69,7 @@ final class ABJ_404_Solution_ClientTransportReport {
         try {
             $reader = ABJ_404_Solution_Ajax_AdminEndpointSupport::getRequestReader();
             $build = (string)$reader->getPostOrGetSanitize('clientBuild', '');
+            $buildModules = (string)$reader->getPostOrGetSanitize('clientBuildModules', '');
             $inflight = (string)$reader->getPostOrGetSanitize('clientInflight', '');
             $tabs = (string)$reader->getPostOrGetSanitize('clientTabs', '');
             $foreignInflight = (string)$reader->getPostOrGetSanitize('clientForeignInflight', '');
@@ -87,7 +88,7 @@ final class ABJ_404_Solution_ClientTransportReport {
                     $requestId,
                     'client_send_state',
                     array_merge(
-                        ABJ_404_Solution_ClientBuildFingerprint::compare($build),
+                        ABJ_404_Solution_ClientBuildFingerprint::compare($build, $buildModules),
                         array(
                             'inflight' => ctype_digit($inflight) ? (int)$inflight : null,
                             'inflight_ids' => substr(

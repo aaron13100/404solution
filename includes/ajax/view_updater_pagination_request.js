@@ -167,3 +167,13 @@ function abj404BuildPaginationRequest(triggerItem, options) {
         filter: trashFilter
     };
 }
+
+// Build identity (Bruno timeout cause matrix, gap GF): this module is flat
+// top-level declarations rather than an IIFE, so it hands the registry its
+// functions in file order and the server extracts the same ones by name out
+// of this file. See view_updater_client_build_registry.js.
+if (typeof window !== 'undefined' && window.abj404ClientBuildRegistry) {
+    window.abj404ClientBuildRegistry.registerFunctions('pagination_request', [
+        abj404BuildPaginationRequest
+    ]);
+}

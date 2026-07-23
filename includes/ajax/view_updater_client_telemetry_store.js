@@ -49,7 +49,12 @@
  * Depends on view_updater_client_tab_identity.js (which tab's buffer this is)
  * and view_updater_client_tab_presence.js (which tabs are still open).
  */
-(function (global) {
+(function (global, abj404Module) {
+    if (global.abj404ClientBuildRegistry) {
+        global.abj404ClientBuildRegistry.register('telemetry_store', abj404Module);
+    }
+    abj404Module(global);
+}(typeof window !== 'undefined' ? window : this, /* abj404-client-module:start */ function (global) {
     'use strict';
 
     /**
@@ -477,4 +482,4 @@
         MAX_TAB_BUFFERS: MAX_TAB_BUFFERS,
         CANARY_LADDER_KEY: CANARY_LADDER_KEY
     };
-})(typeof window !== 'undefined' ? window : this);
+} /* abj404-client-module:end */));

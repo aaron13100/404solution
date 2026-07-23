@@ -136,6 +136,13 @@ function abj404PaginationAttemptData(req, part, attemptIndex, record, parentAtte
     if (record.build) {
         data.clientBuild = record.build;
     }
+    // Which modules produced that combined hash, compactly (gap GF). Sent on
+    // every instrumented attempt rather than only on a mismatch, because the
+    // client cannot know it mismatches -- only the server holds the shipped
+    // bytes to compare against.
+    if (record.buildModules) {
+        data.clientBuildModules = String(record.buildModules).slice(0, 1024);
+    }
     if (typeof record.inflightAtSend === 'number') {
         data.clientInflight = String(record.inflightAtSend);
     }
@@ -269,4 +276,21 @@ function abj404PaginationOutcome(textStatus) {
         return textStatus;
     }
     return 'error';
+}
+
+// Build identity (Bruno timeout cause matrix, gap GF). The transport is the
+// module a stalled table request spends its browser-side life in, so proving
+// THESE bytes are the shipped bytes is the point of the whole probe. See
+// view_updater_client_build_registry.js.
+if (typeof window !== 'undefined' && window.abj404ClientBuildRegistry) {
+    window.abj404ClientBuildRegistry.registerFunctions('pagination_transport', [
+        abj404PaginationResponseHasStructuredError,
+        abj404PaginationFailureIsTransient,
+        abj404PaginationTelemetry,
+        abj404PaginationTelemetryDelivery,
+        abj404PaginationAttemptUrl,
+        abj404PaginationAttemptData,
+        abj404RequestPaginationPart,
+        abj404PaginationOutcome
+    ]);
 }

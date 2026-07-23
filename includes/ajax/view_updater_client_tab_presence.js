@@ -21,7 +21,12 @@
  *
  * Depends on view_updater_client_tab_identity.js.
  */
-(function (global) {
+(function (global, abj404Module) {
+    if (global.abj404ClientBuildRegistry) {
+        global.abj404ClientBuildRegistry.register('tab_presence', abj404Module);
+    }
+    abj404Module(global);
+}(typeof window !== 'undefined' ? window : this, /* abj404-client-module:start */ function (global) {
     'use strict';
 
     /** One entry per tab: the wall-clock time that tab was last active. */
@@ -249,4 +254,4 @@
         PRESENCE_PREFIX: PRESENCE_PREFIX,
         PRESENCE_TTL_MS: PRESENCE_TTL_MS
     };
-})(typeof window !== 'undefined' ? window : this);
+} /* abj404-client-module:end */));

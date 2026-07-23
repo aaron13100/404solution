@@ -99,3 +99,11 @@ function abj404AjaxStageDiagnostics(stage, subpage) {
         stageNumber: 1
     };
 }
+
+// Build identity (Bruno timeout cause matrix, gap GF). See
+// view_updater_client_build_registry.js.
+if (typeof window !== 'undefined' && window.abj404ClientBuildRegistry) {
+    window.abj404ClientBuildRegistry.registerFunctions('stage_diagnostics', [
+        abj404AjaxStageDiagnostics
+    ]);
+}

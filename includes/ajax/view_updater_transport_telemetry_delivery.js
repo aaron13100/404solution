@@ -23,7 +23,12 @@
  *
  * Globals defined: abj404TransportTelemetryDelivery.
  */
-(function (global) {
+(function (global, abj404Module) {
+    if (global.abj404ClientBuildRegistry) {
+        global.abj404ClientBuildRegistry.register('telemetry_delivery', abj404Module);
+    }
+    abj404Module(global);
+}(typeof window !== 'undefined' ? window : this, /* abj404-client-module:start */ function (global) {
     'use strict';
 
     /** Prior-attempt reports ride a request param, so they carry a hard bound. */
@@ -277,4 +282,4 @@
         describeAttempt: describeAttempt,
         MAX_REPORT_CHARS: MAX_REPORT_CHARS
     };
-})(typeof window !== 'undefined' ? window : this);
+} /* abj404-client-module:end */));

@@ -245,10 +245,17 @@ class ABJ_404_Solution_AdminAssetEnqueuer {
      */
     private static function enqueueViewUpdaterModules(string $vuBase): void {
         $enq = array('ABJ_404_Solution_WPUtils', 'my_wp_enq_scrpt');
+        // Client build identity (Bruno timeout cause matrix, gap GF). Loaded
+        // ahead of every diagnostic module so each can hand it the source of
+        // its own executing body; a module that ran before it would silently
+        // shrink the manifest, which is the blind spot this closes.
+        $enq('abj404-view-updater-client-build-registry',
+            $vuBase . 'view_updater_client_build_registry.js', array());
         $enq('abj404-view-updater-nonce-refresh',
             $vuBase . 'view_updater_nonce_refresh.js', array('jquery'));
         $enq('abj404-view-updater-stage-diagnostics',
-            $vuBase . 'view_updater_stage_diagnostics.js', array('jquery'));
+            $vuBase . 'view_updater_stage_diagnostics.js',
+            array('jquery', 'abj404-view-updater-client-build-registry'));
         $enq('abj404-view-updater-compare',
             $vuBase . 'view_updater_compare.js', array('jquery'));
         $enq('abj404-view-updater-refresh-pill',
@@ -260,44 +267,51 @@ class ABJ_404_Solution_AdminAssetEnqueuer {
                 'abj404-view-updater-nonce-refresh'));
         $enq('abj404-view-updater-pagination-request',
             $vuBase . 'view_updater_pagination_request.js',
-            array('jquery', 'abj404-view-updater-compare'));
+            array('jquery', 'abj404-view-updater-compare', 'abj404-view-updater-client-build-registry'));
         // Client transport telemetry (tab identity -> cross-tab presence and
         // page AJAX activity -> storage -> page observations -> attempt
         // records -> delivery). Loaded before the transport that records
         // through them; each degrades to a no-op if it fails to load.
         $enq('abj404-view-updater-client-tab-identity',
-            $vuBase . 'view_updater_client_tab_identity.js', array());
+            $vuBase . 'view_updater_client_tab_identity.js', array('abj404-view-updater-client-build-registry'));
         $enq('abj404-view-updater-client-tab-presence',
             $vuBase . 'view_updater_client_tab_presence.js',
-            array('abj404-view-updater-client-tab-identity'));
+            array('abj404-view-updater-client-tab-identity', 'abj404-view-updater-client-build-registry'));
         $enq('abj404-view-updater-page-ajax-activity',
-            $vuBase . 'view_updater_page_ajax_activity.js', array('jquery'));
+            $vuBase . 'view_updater_page_ajax_activity.js',
+            array('jquery', 'abj404-view-updater-client-build-registry'));
         $enq('abj404-view-updater-client-attempt-buffer',
-            $vuBase . 'view_updater_client_attempt_buffer.js', array());
+            $vuBase . 'view_updater_client_attempt_buffer.js', array('abj404-view-updater-client-build-registry'));
         $enq('abj404-view-updater-client-telemetry-store',
             $vuBase . 'view_updater_client_telemetry_store.js',
             array('abj404-view-updater-client-tab-identity',
                 'abj404-view-updater-client-tab-presence',
-                'abj404-view-updater-client-attempt-buffer'));
+                'abj404-view-updater-client-attempt-buffer', 'abj404-view-updater-client-build-registry'));
+        $enq('abj404-view-updater-client-main-thread-observations',
+            $vuBase . 'view_updater_client_main_thread_observations.js', array('abj404-view-updater-client-build-registry'));
+        $enq('abj404-view-updater-client-resource-timing',
+            $vuBase . 'view_updater_client_resource_timing.js', array('abj404-view-updater-client-build-registry'));
         $enq('abj404-view-updater-client-telemetry-env',
             $vuBase . 'view_updater_client_telemetry_env.js',
             array('abj404-view-updater-client-telemetry-store',
                 'abj404-view-updater-client-tab-identity',
                 'abj404-view-updater-client-tab-presence',
-                'abj404-view-updater-page-ajax-activity'));
+                'abj404-view-updater-page-ajax-activity',
+                'abj404-view-updater-client-main-thread-observations', 'abj404-view-updater-client-build-registry'));
         $enq('abj404-view-updater-transport-telemetry',
             $vuBase . 'view_updater_transport_telemetry.js',
             array('jquery', 'abj404-view-updater-client-telemetry-store',
-                'abj404-view-updater-client-telemetry-env'));
+                'abj404-view-updater-client-telemetry-env',
+                'abj404-view-updater-client-resource-timing', 'abj404-view-updater-client-build-registry'));
         $enq('abj404-view-updater-transport-telemetry-delivery',
             $vuBase . 'view_updater_transport_telemetry_delivery.js',
             array('abj404-view-updater-client-telemetry-store',
-                'abj404-view-updater-transport-telemetry'));
+                'abj404-view-updater-transport-telemetry', 'abj404-view-updater-client-build-registry'));
         $enq('abj404-view-updater-pagination-transport',
             $vuBase . 'view_updater_pagination_transport.js',
             array('jquery', 'abj404-view-updater-nonce-refresh',
                 'abj404-view-updater-transport-telemetry',
-                'abj404-view-updater-transport-telemetry-delivery'));
+                'abj404-view-updater-transport-telemetry-delivery', 'abj404-view-updater-client-build-registry'));
         $enq('abj404-view-updater-lazy-backfill',
             $vuBase . 'view_updater_lazy_backfill.js',
             array('jquery', 'abj404-view-updater-nonce-refresh'));
@@ -313,7 +327,7 @@ class ABJ_404_Solution_AdminAssetEnqueuer {
             array('jquery', 'abj404-view-updater-nonce-refresh',
                 'abj404-view-updater-client-telemetry-store',
                 'abj404-view-updater-client-telemetry-env',
-                'abj404-view-updater-transport-telemetry'));
+                'abj404-view-updater-transport-telemetry', 'abj404-view-updater-client-build-registry'));
         $enq('abj404-view-updater-pagination', $vuBase . 'view_updater_pagination.js',
             array('jquery', 'abj404-view-updater-compare', 'abj404-view-updater-stage-diagnostics',
                 'abj404-view-updater-table-init',
@@ -344,14 +358,21 @@ class ABJ_404_Solution_AdminAssetEnqueuer {
         // admin screen that produced them. It reads every tab's buffer, and it
         // keys its own by tab, so the identity module rides along; presence is
         // not needed here (nothing on this screen writes a record).
+        // The build registry rides along for the same reason it does on the
+        // table screens: the support client is itself one of the modules whose
+        // shipped bytes have to be provable (gap GF), and it is the module
+        // that collects the evidence, so a stale copy of it is the worst case.
+        ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-view-updater-client-build-registry',
+            ABJ404_URL . 'includes/ajax/view_updater_client_build_registry.js', array());
         ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-view-updater-client-tab-identity',
-            ABJ404_URL . 'includes/ajax/view_updater_client_tab_identity.js', array());
+            ABJ404_URL . 'includes/ajax/view_updater_client_tab_identity.js',
+            array('abj404-view-updater-client-build-registry'));
         ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-view-updater-client-telemetry-store',
             ABJ404_URL . 'includes/ajax/view_updater_client_telemetry_store.js',
-            array('abj404-view-updater-client-tab-identity'));
+            array('abj404-view-updater-client-tab-identity', 'abj404-view-updater-client-build-registry'));
         ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-support-request-client',
             ABJ404_URL . 'includes/ajax/SupportRequest.js',
-            array('abj404-view-updater-client-telemetry-store'));
+            array('abj404-view-updater-client-telemetry-store', 'abj404-view-updater-client-build-registry'));
         ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-support-request-transport',
             ABJ404_URL . 'includes/js/support-request-transport.js',
             array('abj404-support-request-client'));

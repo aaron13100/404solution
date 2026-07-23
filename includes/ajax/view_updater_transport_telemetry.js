@@ -25,7 +25,12 @@
  * Depends on view_updater_client_telemetry_env.js (page observations, build
  * identity) and view_updater_client_telemetry_store.js (durable buffer).
  */
-(function (global) {
+(function (global, abj404Module) {
+    if (global.abj404ClientBuildRegistry) {
+        global.abj404ClientBuildRegistry.register('transport_telemetry', abj404Module);
+    }
+    abj404Module(global);
+}(typeof window !== 'undefined' ? window : this, /* abj404-client-module:start */ function (global) {
     'use strict';
 
     var RECORD_VERSION = 1;
@@ -110,6 +115,12 @@
             subpage: String(ctx.subpage || ''),
             attempt: parseInt(ctx.attemptIndex, 10) || 0,
             build: pageEnv ? pageEnv.clientBuildHash() : '',
+            // Per-module build hashes (gap GF). The combined hash above proves
+            // only that SOMETHING in the client differs from what shipped;
+            // this names the module, which is what turns "the client is
+            // stale" into "the canary ladder is stale and nothing else is".
+            buildModules: pageEnv && typeof pageEnv.clientBuildModules === 'function'
+                ? pageEnv.clientBuildModules() : '',
             assets: pageEnv ? pageEnv.scriptVersions() : {},
             timeoutMs: parseInt(ctx.timeoutMs, 10) || 0,
             sentAt: Date.now(), // allow-direct-time: wall-clock send time, paired server-side with REQUEST_TIME_FLOAT
@@ -337,59 +348,24 @@
     }
 
     /**
-     * PerformanceResourceTiming for this attempt, matched on the attempt id
-     * that was placed in the query string. That id makes the match exact even
-     * when several table requests are in flight against the same endpoint.
+     * Fold this attempt's connection-phase timeline into its record, from the
+     * module that owns reading it (view_updater_client_resource_timing.js).
      *
      * @param {object} record
      * @returns {boolean} true when an entry was found.
      */
     function readResourceTiming(record) {
-        try {
-            if (!global.performance || typeof global.performance.getEntriesByType !== 'function') {
-                record.rtState = 'unsupported';
-                return false;
-            }
-            var entries = global.performance.getEntriesByType('resource');
-            for (var i = entries.length - 1; i >= 0; i--) {
-                if (String(entries[i].name || '').indexOf(record.id) < 0) {
-                    continue;
-                }
-                record.rt = {
-                    workerStart: round(entries[i].workerStart),
-                    redirectStart: round(entries[i].redirectStart),
-                    redirectEnd: round(entries[i].redirectEnd),
-                    fetchStart: round(entries[i].fetchStart),
-                    domainLookupStart: round(entries[i].domainLookupStart),
-                    domainLookupEnd: round(entries[i].domainLookupEnd),
-                    connectStart: round(entries[i].connectStart),
-                    secureConnectionStart: round(entries[i].secureConnectionStart),
-                    connectEnd: round(entries[i].connectEnd),
-                    requestStart: round(entries[i].requestStart),
-                    responseStart: round(entries[i].responseStart),
-                    responseEnd: round(entries[i].responseEnd),
-                    duration: round(entries[i].duration),
-                    responseStatus: numberOr(entries[i].responseStatus, -1),
-                    transferSize: numberOr(entries[i].transferSize, -1),
-                    encodedBodySize: numberOr(entries[i].encodedBodySize, -1),
-                    decodedBodySize: numberOr(entries[i].decodedBodySize, -1),
-                    nextHopProtocol: String(entries[i].nextHopProtocol || '')
-                };
-                record.rtState = 'found';
-                return true;
-            }
-            record.rtState = 'missing';
-            return false;
-        } catch (timingError) {
-            warn('could not read resource timing for the table request', timingError);
-            record.rtState = 'error';
+        var timing = global.abj404ClientResourceTiming;
+        if (!timing || typeof timing.forAttempt !== 'function') {
+            record.rtState = 'unavailable';
             return false;
         }
-    }
-
-    /** @param {*} value @returns {number|null} */
-    function round(value) {
-        return typeof value === 'number' && isFinite(value) ? Math.round(value * 100) / 100 : null;
+        var result = timing.forAttempt(record.id);
+        record.rtState = result.state;
+        if (result.timing !== null) {
+            record.rt = result.timing;
+        }
+        return result.state === 'found';
     }
 
     /**
@@ -489,4 +465,4 @@
         finishAttempt: finishAttempt,
         attemptsFor: attemptsFor
     };
-})(typeof window !== 'undefined' ? window : this);
+} /* abj404-client-module:end */));

@@ -27,46 +27,33 @@
  * server census's job, not this one's.
  *
  * Client build identity (matrix requirement 6, cause A8 "stale/duplicated
- * client JS"): abj404ClientBuildProbe() below is a source-identity probe. The
- * browser hashes the probe's own executing source via Function.prototype
- * .toString(); the server independently hashes the same function's text out of
- * the shipped .js file (ABJ_404_Solution_ClientBuildFingerprint). Equal hashes
- * prove the browser is running the bytes this install shipped. Unequal hashes
- * prove it is not, whether that is a stale browser/edge cache, a second copy of
- * the plugin's JS, or an optimizer rewriting the bundle in flight. Nothing has
- * to be kept in sync by hand for that comparison to hold.
+ * client JS", gap GF): this module used to carry a one-function source probe
+ * and hash only that. It now reports what view_updater_client_build_registry.js
+ * collected from EVERY diagnostic module the page loaded -- request driver,
+ * transport, storage, delivery, canary, support -- because a stale edge copy
+ * of any one of those was invisible to a probe that covered one function in
+ * one file. This module registers its own body with that registry like all the
+ * others (see the wrapper below) and reads the combined and per-module hashes
+ * back out for the attempt record.
  *
- * Globals defined: abj404ClientTelemetryEnv, abj404ClientBuildProbe.
+ * Globals defined: abj404ClientTelemetryEnv.
  *
- * Depends on view_updater_client_tab_identity.js (this tab's id),
+ * Depends on view_updater_client_build_registry.js (build identity),
+ * view_updater_client_tab_identity.js (this tab's id),
  * view_updater_client_tab_presence.js (open-tab count) and
  * view_updater_page_ajax_activity.js (other code's AJAX on this page).
  */
-(function (global) {
+(function (global, abj404Module) {
+    if (global.abj404ClientBuildRegistry) {
+        global.abj404ClientBuildRegistry.register('telemetry_env', abj404Module);
+    }
+    abj404Module(global);
+}(typeof window !== 'undefined' ? window : this, /* abj404-client-module:start */ function (global) {
     'use strict';
 
-    /* abj404-client-build-probe:start */
-    function abj404ClientBuildProbe() {
-        return 'abj404-client-transport-telemetry-v1';
-    }
-    /* abj404-client-build-probe:end */
-
-    /** Bounded histories: enough to cover a 25-second attempt, never unbounded. */
-    var MAX_LONG_TASKS = 64;
-    var MAX_LIFECYCLE_EVENTS = 40;
-    var MAX_PAGE_ERRORS = 40;
-    var DRIFT_SAMPLE_INTERVAL_MS = 1000;
     var MODULE_INSTANCE_KEY = '__abj404ClientTelemetryEnvInstanceCount';
 
     var inFlight = {};
-    var longTasks = [];
-    var lifecycleEvents = [];
-    var pageErrors = [];
-    var driftMaxMs = 0;
-    var driftSamples = 0;
-    var driftTimer = null;
-    var observersInstalled = false;
-    var longTaskObserverState = 'not-started';
 
     var priorModuleInstances = parseInt(global[MODULE_INSTANCE_KEY], 10);
     global[MODULE_INSTANCE_KEY] = isFinite(priorModuleInstances) && priorModuleInstances > 0
@@ -147,37 +134,87 @@
 
 
     /**
-     * FNV-1a, 32-bit, lowercase hex. Chosen because the server side has to
-     * reproduce it byte for byte over the same source text in PHP, so the
-     * algorithm has to be small enough to be obviously identical in both
-     * languages (see ABJ_404_Solution_ClientBuildFingerprint::hashOf).
+     * Main-thread and page-lifecycle observation, from the module that owns
+     * those observers. An inert stand-in when it failed to load, so a table
+     * request never breaks over a missing diagnostic collaborator; the empty
+     * window then says the channel was unavailable rather than that the page
+     * was quiet.
+     *
+     * @returns {object}
+     */
+    function observations() {
+        return global.abj404ClientMainThreadObservations || {
+            install: function () {},
+            startDrift: function () {},
+            stopDrift: function () {},
+            visibilityState: function () { return 'unknown'; },
+            since: function () {
+                return {
+                    longtasks: { state: 'module_missing', count: 0, totalMs: 0, maxMs: 0 },
+                    drift: { maxMs: 0, samples: 0 },
+                    lifecycle: [], pageErrors: [], vis: 'unknown'
+                };
+            }
+        };
+    }
+
+    /**
+     * The build registry, or null when it failed to load. Every read below
+     * degrades to an empty answer rather than throwing: an unhashable build
+     * is a smaller proof, never a broken table request.
+     *
+     * @returns {object|null}
+     */
+    function buildRegistry() {
+        return global.abj404ClientBuildRegistry || null;
+    }
+
+    /**
+     * FNV-1a, 32-bit, lowercase hex, from the one place that owns it (see
+     * view_updater_client_build_registry.js and its PHP twin
+     * ABJ_404_Solution_ClientBuildFingerprint::hashOf). Kept on this module's
+     * public surface because callers already reach it here; '' when the
+     * registry is absent, so a missing hash reads as unknown rather than as
+     * a value that could be compared.
      *
      * @param {string} text
      * @returns {string}
      */
     function fnv1a32(text) {
-        var hash = 0x811c9dc5;
-        for (var i = 0; i < text.length; i++) {
-            hash ^= text.charCodeAt(i) & 0xff;
-            // 16777619 expressed as shift-and-add: a plain multiply overflows
-            // the exactly-representable range and stops matching PHP's result.
-            hash = (hash + ((hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24))) >>> 0;
-        }
-        return ('0000000' + hash.toString(16)).slice(-8);
+        var registry = buildRegistry();
+        return registry && typeof registry.fnv1a32 === 'function' ? registry.fnv1a32(text) : '';
     }
 
     /**
-     * Hash of the browser's actually-executing probe source, with carriage
-     * returns stripped so a checkout with CRLF endings still matches the
-     * server's hash of the same file.
+     * One hash over the executing source of every diagnostic module this page
+     * loaded. Compared server-side against the same modules' shipped bytes.
      *
      * @returns {string}
      */
     function clientBuildHash() {
         try {
-            return fnv1a32(String(abj404ClientBuildProbe).replace(/\r/g, ''));
+            var registry = buildRegistry();
+            return registry ? registry.digest().combined : '';
         } catch (probeError) {
-            warn('could not hash the client build probe', probeError);
+            warn('could not hash the client build', probeError);
+            return '';
+        }
+    }
+
+    /**
+     * The per-module hashes as the compact `name:hash,name:hash` wire string.
+     * The combined hash above says THAT the client drifted; this says WHICH
+     * module did, which is what makes a mismatch actionable instead of
+     * merely alarming.
+     *
+     * @returns {string}
+     */
+    function clientBuildModules() {
+        try {
+            var registry = buildRegistry();
+            return registry ? registry.wireString() : '';
+        } catch (probeError) {
+            warn('could not list the client build modules', probeError);
             return '';
         }
     }
@@ -191,177 +228,26 @@
         return identity && typeof identity.id === 'function' ? identity.id() : 'identitymissing';
     }
 
-    /** @param {string} name @returns {void} */
-    function recordLifecycle(name) {
-        lifecycleEvents.push({ e: name, t: Math.round(nowMs()) });
-        if (lifecycleEvents.length > MAX_LIFECYCLE_EVENTS) {
-            lifecycleEvents.shift();
-        }
-    }
-
-    /** @returns {void} */
-    function installObservers() {
-        if (observersInstalled) {
-            return;
-        }
-        observersInstalled = true;
-        installLongTaskObserver();
-        installLifecycleListeners();
-        installPageErrorListeners();
-    }
-
-    /** @returns {void} */
-    function installPageErrorListeners() {
-        if (!global || typeof global.addEventListener !== 'function') {
-            return;
-        }
-        global.addEventListener('error', function (event) {
-            recordPageError('error', event || {});
-        });
-        global.addEventListener('unhandledrejection', function (event) {
-            recordPageError('unhandledrejection', event || {});
-        });
-    }
-
-    /** @param {string} type @param {object} event @returns {void} */
-    function recordPageError(type, event) {
-        var reason = event.reason;
-        var rawMessage = type === 'unhandledrejection'
-            ? (reason && typeof reason.message !== 'undefined' ? reason.message : reason)
-            : event.message;
-        pageErrors.push({
-            type: type,
-            message: String(rawMessage == null ? '' : rawMessage)
-                .replace(/([?&][^=\s&#]{1,64})=([^&\s#]*)/g, '$1=[redacted]').slice(0, 240),
-            source: String(event.filename || '').split(/[?#]/)[0].split(/[\\/]/).pop().slice(0, 160),
-            line: typeof event.lineno === 'number' && isFinite(event.lineno) ? event.lineno : null,
-            column: typeof event.colno === 'number' && isFinite(event.colno) ? event.colno : null,
-            t: Math.round(nowMs())
-        });
-        while (pageErrors.length > MAX_PAGE_ERRORS) {
-            pageErrors.shift();
-        }
-    }
-
-    /**
-     * Long tasks are the decisive measurement for "the browser received the
-     * response but could not run the completion callback" (matrix cause A6/A7).
-     *
-     * @returns {void}
-     */
-    function installLongTaskObserver() {
-        if (typeof global.PerformanceObserver !== 'function') {
-            longTaskObserverState = 'unsupported';
-            return;
-        }
-        try {
-            var observer = new global.PerformanceObserver(function (list) {
-                var entries = list.getEntries();
-                for (var i = 0; i < entries.length; i++) {
-                    longTasks.push({
-                        start: Math.round(entries[i].startTime),
-                        dur: Math.round(entries[i].duration)
-                    });
-                }
-                while (longTasks.length > MAX_LONG_TASKS) {
-                    longTasks.shift();
-                }
-            });
-            observer.observe({ type: 'longtask', buffered: true });
-            longTaskObserverState = 'observing';
-        } catch (observerError) {
-            // Firefox and Safari do not implement the longtask entry type and
-            // throw here. That is a browser fact worth recording, not an error
-            // to hide: the record then says why the field is empty, and the
-            // timer-drift sampler covers the same question in those browsers.
-            longTaskObserverState = 'unavailable';
-            warn('long-task observer unavailable', observerError);
-        }
-    }
-
-    /** @returns {void} */
-    function installLifecycleListeners() {
-        var events = ['visibilitychange', 'pagehide', 'pageshow', 'freeze', 'resume', 'online', 'offline'];
-        for (var i = 0; i < events.length; i++) {
-            bindLifecycle(events[i]);
-        }
-    }
-
-    /** @param {string} name @returns {void} */
-    function bindLifecycle(name) {
-        try {
-            var target = (name === 'visibilitychange' || name === 'freeze' || name === 'resume')
-                ? global.document : global;
-            if (!target || typeof target.addEventListener !== 'function') {
-                return;
-            }
-            target.addEventListener(name, function () {
-                recordLifecycle(name === 'visibilitychange'
-                    ? 'visibilitychange:' + visibilityState() : name);
-            });
-        } catch (bindError) {
-            warn('could not observe the ' + name + ' page-lifecycle event', bindError);
-        }
-    }
-
-    /** @returns {string} */
-    function visibilityState() {
-        return (global.document && typeof global.document.visibilityState === 'string')
-            ? global.document.visibilityState : 'unknown';
-    }
-
-    /**
-     * Sample timer drift only while a request is in flight. Drift measures the
-     * same starvation a long-task observer sees, but works in the browsers
-     * that do not implement the longtask entry type.
-     *
-     * @returns {void}
-     */
-    function startDriftSampler() {
-        if (driftTimer !== null) {
-            return;
-        }
-        var expected = nowMs() + DRIFT_SAMPLE_INTERVAL_MS;
-        driftTimer = global.setInterval(function () {
-            var actual = nowMs();
-            var drift = Math.max(0, Math.round(actual - expected));
-            expected = actual + DRIFT_SAMPLE_INTERVAL_MS;
-            driftSamples++;
-            if (drift > driftMaxMs) {
-                driftMaxMs = drift;
-            }
-        }, DRIFT_SAMPLE_INTERVAL_MS);
-    }
-
-    /** @returns {void} */
-    function stopDriftSampler() {
-        if (driftTimer === null) {
-            return;
-        }
-        global.clearInterval(driftTimer);
-        driftTimer = null;
-    }
-
     /**
      * @param {string} attemptId
      * @param {object} meta
      * @returns {void}
      */
     function registerInFlight(attemptId, meta) {
-        installObservers();
+        observations().install();
         inFlight[attemptId] = {
             part: (meta && meta.part) || '',
             requestId: (meta && meta.requestId) || '',
             startedAt: Math.round(nowMs())
         };
-        startDriftSampler();
+        observations().startDrift();
     }
 
     /** @param {string} attemptId @returns {void} */
     function releaseInFlight(attemptId) {
         delete inFlight[attemptId];
         if (inFlightIds().length === 0) {
-            stopDriftSampler();
+            observations().stopDrift();
         }
     }
 
@@ -435,52 +321,26 @@
         // attempt boundary to the same precision so events emitted during
         // the attempt's first fractional millisecond are not filtered out.
         var windowStart = typeof startedAtMs === 'number' ? Math.floor(startedAtMs) : 0;
-        var tasks = 0;
-        var totalMs = 0;
-        var maxMs = 0;
-        for (var i = 0; i < longTasks.length; i++) {
-            if (longTasks[i].start + longTasks[i].dur >= windowStart) {
-                tasks++;
-                totalMs += longTasks[i].dur;
-                maxMs = Math.max(maxMs, longTasks[i].dur);
-            }
-        }
-        var lifecycle = [];
-        for (var j = 0; j < lifecycleEvents.length; j++) {
-            if (lifecycleEvents[j].t >= windowStart) {
-                lifecycle.push(lifecycleEvents[j]);
-            }
-        }
-        var errors = [];
-        for (var k = 0; k < pageErrors.length; k++) {
-            if (pageErrors[k].t >= windowStart) {
-                errors.push(pageErrors[k]);
-            }
-        }
+        var observed = observations().since(windowStart);
         return {
             inflight: { count: inFlightIds().length, ids: inFlightIds() },
             foreignAjax: foreignAjax(windowStart),
             tabs: openTabs(),
-            longtasks: {
-                state: longTaskObserverState,
-                count: tasks,
-                totalMs: totalMs,
-                maxMs: maxMs
-            },
-            drift: { maxMs: driftMaxMs, samples: driftSamples },
-            lifecycle: lifecycle,
-            pageErrors: errors,
+            longtasks: observed.longtasks,
+            drift: observed.drift,
+            lifecycle: observed.lifecycle,
+            pageErrors: observed.pageErrors,
             jquery: jqueryFingerprint(),
             moduleInstances: global[MODULE_INSTANCE_KEY],
             sw: serviceWorkerId(),
-            vis: visibilityState()
+            vis: observed.vis
         };
     }
 
-    global.abj404ClientBuildProbe = abj404ClientBuildProbe;
     global.abj404ClientTelemetryEnv = {
         sessionId: getSessionId,
         clientBuildHash: clientBuildHash,
+        clientBuildModules: clientBuildModules,
         registerInFlight: registerInFlight,
         releaseInFlight: releaseInFlight,
         inFlightIds: inFlightIds,
@@ -491,4 +351,4 @@
         snapshot: snapshot,
         fnv1a32: fnv1a32
     };
-})(typeof window !== 'undefined' ? window : this);
+} /* abj404-client-module:end */));

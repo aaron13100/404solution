@@ -20,7 +20,12 @@
  *
  * Globals defined: abj404PageAjaxActivity.
  */
-(function (global) {
+(function (global, abj404Module) {
+    if (global.abj404ClientBuildRegistry) {
+        global.abj404ClientBuildRegistry.register('page_ajax_activity', abj404Module);
+    }
+    abj404Module(global);
+}(typeof window !== 'undefined' ? window : this, /* abj404-client-module:start */ function (global) {
     'use strict';
 
     var OBSERVATION_KEY = '__abj404ForeignAjaxObservation';
@@ -298,4 +303,4 @@
         jqueryFingerprint: jqueryFingerprint,
         snapshot: snapshot
     };
-})(typeof window !== 'undefined' ? window : this);
+} /* abj404-client-module:end */));

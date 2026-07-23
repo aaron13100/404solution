@@ -48,7 +48,13 @@
  * jQuery itself, did not load -- a missing diagnostic module must never
  * affect the table the admin is trying to use.
  */
-(function (global, $) {
+(function (global, $, abj404Module) {
+    if (global.abj404ClientBuildRegistry) {
+        global.abj404ClientBuildRegistry.register('canary_ladder', abj404Module);
+    }
+    abj404Module(global, $);
+}(typeof window !== 'undefined' ? window : this, typeof jQuery !== 'undefined' ? jQuery : null,
+    /* abj404-client-module:start */ function (global, $) {
     'use strict';
 
     if (!$) {
@@ -474,4 +480,4 @@
         runLadder: runLadder,
         COOLDOWN_MS: COOLDOWN_MS
     };
-})(typeof window !== 'undefined' ? window : this, typeof jQuery !== 'undefined' ? jQuery : null);
+} /* abj404-client-module:end */));

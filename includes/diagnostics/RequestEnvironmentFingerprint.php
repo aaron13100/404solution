@@ -33,9 +33,16 @@ final class ABJ_404_Solution_RequestEnvironmentFingerprint {
      * @return array<string, mixed>
      */
     public function capture(?string $handlerClass, string $cacheProbeKey): array {
-        $loadedFiles = $this->loadedFileFingerprints($handlerClass);
-        $opcacheCapture = $this->opcacheCapture($loadedFiles);
-        $loadedFiles = $opcacheCapture['loaded_files'];
+        // One opcode-cache read for the whole request: see
+        // ABJ_404_Solution_OpcacheGenerationProbe. The two detailed file
+        // fingerprints below and the whole-path module manifest both
+        // reconcile against it, so the most expensive probe in this class
+        // runs once rather than per consumer.
+        $opcache = ABJ_404_Solution_OpcacheGenerationProbe::read();
+        $loadedFiles = $opcache->annotate($this->loadedFileFingerprints($handlerClass));
+        // The whole diagnostic path, not just this file and the handler:
+        // see ABJ_404_Solution_DiagnosticModuleManifest.
+        $buildManifest = ABJ_404_Solution_DiagnosticModuleManifest::capture($opcache);
         $cacheProbe = $this->timedCacheProbe($cacheProbeKey);
         $obInventory = function_exists('ob_get_status') ? ob_get_status(true) : array();
         $rusage = function_exists('getrusage') ? getrusage() : null;
@@ -50,9 +57,10 @@ final class ABJ_404_Solution_RequestEnvironmentFingerprint {
                 ? (string)gethostname()
                 : (is_scalar($_SERVER['SERVER_NAME'] ?? null) ? (string)$_SERVER['SERVER_NAME'] : ''),
             'pid' => getmypid(),
-            'plugin_build_hash' => $this->computeBuildHash($loadedFiles),
+            'plugin_build_hash' => $this->computeBuildHash($loadedFiles, $buildManifest),
             'loaded_files' => $loadedFiles,
-            'opcache' => $opcacheCapture['summary'],
+            'build_manifest' => $buildManifest,
+            'opcache' => $opcache->summary(),
             'request_shape' => $this->requestShape(),
             'admin_user_state' => $this->adminUserState(),
             'ob_inventory' => $obInventory,
@@ -177,119 +185,6 @@ final class ABJ_404_Solution_RequestEnvironmentFingerprint {
             'inode' => $isFile ? @fileinode($path) : null,
             'size' => $isFile ? @filesize($path) : null,
         );
-    }
-
-    /**
-     * Reconcile loaded-file disk mtimes with OPcache timestamps; a differing
-     * positive timestamp proves executable and filesystem generations differ.
-     * @param array<int, array<string, mixed>> $loadedFiles
-     * @return array{loaded_files: array<int, array<string, mixed>>, summary: array<string, mixed>}
-     */
-    private function opcacheCapture(array $loadedFiles): array {
-        $summary = array(
-            'reason' => 'opcache-unavailable',
-            'validate_timestamps' => $this->iniBoolean(ini_get('opcache.validate_timestamps')),
-            'revalidate_freq' => $this->numericInteger(ini_get('opcache.revalidate_freq')),
-            'restart_pending' => null,
-            'restart_in_progress' => null,
-            'start_time' => null,
-            'last_restart_time' => null,
-            'restart_counts' => array('oom' => null, 'hash' => null, 'manual' => null),
-        );
-        $loadedFiles = $this->withUnknownOpcacheState($loadedFiles);
-
-        $restrictApi = ini_get('opcache.restrict_api');
-        $apiRestricted = function_exists('abj404_opcache_api_is_restricted')
-            ? abj404_opcache_api_is_restricted($restrictApi, __FILE__)
-            : (is_string($restrictApi) && trim($restrictApi) !== '');
-        if ($apiRestricted) {
-            $summary['reason'] = 'opcache-api-restricted';
-            return array('loaded_files' => $loadedFiles, 'summary' => $summary);
-        }
-        if (!function_exists('opcache_get_status')) {
-            return array('loaded_files' => $loadedFiles, 'summary' => $summary);
-        }
-
-        $status = @opcache_get_status(true);
-        if (!is_array($status) || (array_key_exists('opcache_enabled', $status) && !$status['opcache_enabled'])) {
-            return array('loaded_files' => $loadedFiles, 'summary' => $summary);
-        }
-
-        $summary = $this->opcacheSummaryFromStatus($summary, $status);
-        $loadedFiles = $this->withOpcacheScriptState($loadedFiles, $status['scripts'] ?? array());
-        return array('loaded_files' => $loadedFiles, 'summary' => $summary);
-    }
-
-    /**
-     * @param array<string, mixed> $summary
-     * @param array<string, mixed> $status
-     * @return array<string, mixed>
-     */
-    private function opcacheSummaryFromStatus(array $summary, array $status): array {
-        $statistics = is_array($status['opcache_statistics'] ?? null) ? $status['opcache_statistics'] : array();
-        $summary['reason'] = 'available';
-        $summary['restart_pending'] = isset($status['restart_pending']) ? (bool)$status['restart_pending'] : null;
-        $summary['restart_in_progress'] = isset($status['restart_in_progress']) ? (bool)$status['restart_in_progress'] : null;
-        $summary['start_time'] = $this->numericInteger($statistics['start_time'] ?? null);
-        $summary['last_restart_time'] = $this->numericInteger($statistics['last_restart_time'] ?? null);
-        $summary['restart_counts'] = array(
-            'oom' => $this->numericInteger($statistics['oom_restarts'] ?? null),
-            'hash' => $this->numericInteger($statistics['hash_restarts'] ?? null),
-            'manual' => $this->numericInteger($statistics['manual_restarts'] ?? null),
-        );
-        return $summary;
-    }
-
-    /**
-     * @param array<int, array<string, mixed>> $loadedFiles
-     * @param mixed $scripts
-     * @return array<int, array<string, mixed>>
-     */
-    private function withOpcacheScriptState(array $loadedFiles, $scripts): array {
-        $scripts = is_array($scripts) ? $scripts : array();
-        foreach ($loadedFiles as &$file) {
-            $path = is_string($file['path'] ?? null) ? $file['path'] : '';
-            $metadata = $path !== '' ? ($scripts[$path] ?? null) : null;
-            if (!is_array($metadata)) {
-                $file['opcache_cached'] = false;
-                continue;
-            }
-            $timestamp = $this->numericInteger($metadata['timestamp'] ?? null);
-            $mtime = $this->numericInteger($file['mtime'] ?? null);
-            $file['opcache_cached'] = true;
-            $file['opcache_timestamp'] = $timestamp;
-            $file['opcache_timestamp_matches_file'] = ($timestamp !== null && $timestamp > 0 && $mtime !== null)
-                ? ($timestamp === $mtime) : null;
-        }
-        unset($file);
-        return $loadedFiles;
-    }
-
-    /**
-     * @param array<int, array<string, mixed>> $loadedFiles
-     * @return array<int, array<string, mixed>>
-     */
-    private function withUnknownOpcacheState(array $loadedFiles): array {
-        foreach ($loadedFiles as &$file) {
-            $file['opcache_cached'] = null;
-            $file['opcache_timestamp'] = null;
-            $file['opcache_timestamp_matches_file'] = null;
-        }
-        unset($file);
-        return $loadedFiles;
-    }
-
-    /** @param mixed $value */
-    private function iniBoolean($value): ?bool {
-        if ($value === false || $value === null || $value === '' || !is_scalar($value)) {
-            return null;
-        }
-        return filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
-    }
-
-    /** @param mixed $value */
-    private function numericInteger($value): ?int {
-        return is_numeric($value) ? (int)$value : null;
     }
 
     /**
@@ -440,20 +335,31 @@ final class ABJ_404_Solution_RequestEnvironmentFingerprint {
 
     /**
      * One combined hash summarizing "what code is actually loaded for this
-     * request" (plugin version plus the content hash + mtime of every
-     * fingerprinted file). A build hash that differs between two requests
-     * hitting the same deployed version is direct proof of opcache/deploy
-     * staleness (cause D in the timeout matrix).
+     * request" (plugin version, the content hash + mtime of every
+     * fingerprinted file, and the whole diagnostic module manifest). A build
+     * hash that differs between two requests hitting the same deployed
+     * version is direct proof of opcache/deploy staleness (cause D in the
+     * timeout matrix).
+     *
+     * The manifest hash is folded in rather than left as a separate scalar so
+     * this ONE field answers the question it claims to answer. Before gap GF
+     * it covered two files, which meant a stale or half-deployed request
+     * driver, journal, response emitter, canary, or support collector left
+     * plugin_build_hash completely unchanged -- a build fingerprint that
+     * agreed with itself while the code under investigation had drifted.
      *
      * @param array<int, array<string, mixed>> $files
+     * @param array<string, mixed> $buildManifest
      */
-    private function computeBuildHash(array $files): string {
+    private function computeBuildHash(array $files, array $buildManifest): string {
         $parts = array(defined('ABJ404_VERSION') ? (string)ABJ404_VERSION : 'unknown');
         foreach ($files as $file) {
             $hash = $file['hash'] ?? '';
             $mtime = $file['mtime'] ?? '';
             $parts[] = (is_scalar($hash) ? (string)$hash : '') . ':' . (is_scalar($mtime) ? (string)$mtime : '');
         }
+        $manifestHash = $buildManifest['hash'] ?? '';
+        $parts[] = 'manifest:' . (is_scalar($manifestHash) ? (string)$manifestHash : '');
         return sha1(implode('|', $parts));
     }
 

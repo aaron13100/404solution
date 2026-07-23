@@ -18,7 +18,12 @@
  *
  * Globals defined: abj404ClientAttemptBuffer.
  */
-(function (global) {
+(function (global, abj404Module) {
+    if (global.abj404ClientBuildRegistry) {
+        global.abj404ClientBuildRegistry.register('attempt_buffer', abj404Module);
+    }
+    abj404Module(global);
+}(typeof window !== 'undefined' ? window : this, /* abj404-client-module:start */ function (global) {
     'use strict';
 
     /** 1: single shared buffer. 2: per-tab buffer, with a last-write stamp. */
@@ -201,4 +206,4 @@
         empty: emptyState,
         MAX_RECORDS: MAX_RECORDS
     };
-})(typeof window !== 'undefined' ? window : this);
+} /* abj404-client-module:end */));
