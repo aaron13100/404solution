@@ -414,37 +414,5 @@ class ABJ_404_Solution_Functions {
 
     	return ($this->substr($haystack, -$length) == $needle);
     }
-    
-    // =========================================================================
-    // Request parameter sanitization - delegated to ABJ_404_Solution_RequestInputNormalizer
-    // =========================================================================
-
-    /**
-     * Read one request parameter, unslashed and sanitized.
-     *
-     * Stays an instance method (rather than callers invoking
-     * RequestInputNormalizer directly) so DI-based test doubles can
-     * substitute request values without touching real superglobals --
-     * see ABJ404_ProgrammableFunctions and the anonymous-class doubles
-     * across tests/ that override this method.
-     *
-     * @param string $name The key to retrieve the value for.
-     * @param string|null $defaultValue The value to return if the value is not set.
-     * @return string The sanitized value.
-     * @see ABJ_404_Solution_RequestInputNormalizer::getPostOrGetSanitize()
-     */
-    function getPostOrGetSanitize($name, $defaultValue = null) {
-        return ABJ_404_Solution_RequestInputNormalizer::getPostOrGetSanitize($name, $defaultValue);
-    }
-
-    /**
-     * @param string $name The key to retrieve the value for.
-     * @param string|null $defaultValue The value to return if the value is not set.
-     * @return string|array<string>|null The normalized URL value.
-     * @see ABJ_404_Solution_RequestInputNormalizer::getPostOrGetSanitizeUrl()
-     */
-    function getPostOrGetSanitizeUrl($name, $defaultValue = null) {
-        return ABJ_404_Solution_RequestInputNormalizer::getPostOrGetSanitizeUrl($name, $defaultValue);
-    }
 
 }

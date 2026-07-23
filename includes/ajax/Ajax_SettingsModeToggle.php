@@ -56,10 +56,12 @@ class ABJ_404_Solution_Ajax_SettingsModeToggle {
         abj_service('ajax_security_gate')->requireAdminWithNonce('abj404_mode_toggle');
 
         $container = ABJ_404_Solution_ServiceContainer::getInstance();
-        /** @var ABJ_404_Solution_Functions $functions */
-        $functions = $container->has('functions') ? $container->get('functions') : abj_service('functions');
+        /** @var ABJ_404_Solution_RequestInputNormalizer $requestReader */
+        $requestReader = $container->has('request_input_normalizer')
+            ? $container->get('request_input_normalizer')
+            : abj_service('request_input_normalizer');
 
-        $mode = $functions->getPostOrGetSanitize('mode');
+        $mode = $requestReader->getPostOrGetSanitize('mode');
 
         // Validate mode
         if ($mode !== 'simple' && $mode !== 'advanced') {

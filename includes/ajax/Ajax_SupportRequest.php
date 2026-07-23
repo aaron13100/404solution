@@ -277,7 +277,7 @@ class ABJ_404_Solution_Ajax_SupportRequest {
      * The browser's drained transport-attempt buffer as it was actually sent.
      *
      * Read through RequestInputNormalizer for the same reason
-     * Functions::getPostOrGetSanitize() is: WordPress escapes every superglobal
+     * RequestInputNormalizer::getPostOrGetSanitize() always is: WordPress escapes every superglobal
      * at boot, so a JSON buffer taken straight out of $_POST can never parse
      * and every real support request would report its own telemetry as
      * unparseable.

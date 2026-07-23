@@ -17,8 +17,10 @@ class ABJ_404_Solution_Ajax_TrashLink {
         }
 
         $container = ABJ_404_Solution_ServiceContainer::getInstance();
-        /** @var ABJ_404_Solution_Functions $functions */
-        $functions = $container->has('functions') ? $container->get('functions') : abj_service('functions');
+        /** @var ABJ_404_Solution_RequestInputNormalizer $requestReader */
+        $requestReader = $container->has('request_input_normalizer')
+            ? $container->get('request_input_normalizer')
+            : abj_service('request_input_normalizer');
         /** @var ABJ_404_Solution_RedirectsRepositoryInterface $redirectsRepository */
         $redirectsRepository = abj_service('redirects_repository');
         /** @var ABJ_404_Solution_ViewReadServiceInterface $viewReadService */
@@ -33,9 +35,9 @@ class ABJ_404_Solution_Ajax_TrashLink {
 
         abj_service('ajax_security_gate')->requireAdminWithNonce('abj404_ajaxTrash', '_wpnonce');
         
-        $idToTrash = $functions->getPostOrGetSanitize('id');
-        $trashAction = $functions->getPostOrGetSanitize('trash');
-        $subpage = $functions->getPostOrGetSanitize('subpage');
+        $idToTrash = $requestReader->getPostOrGetSanitize('id');
+        $trashAction = $requestReader->getPostOrGetSanitize('trash');
+        $subpage = $requestReader->getPostOrGetSanitize('subpage');
         
         $data = array();
         $data['resultset'] = $redirectsRepository->moveRedirectsToTrash((int)$idToTrash, (int)$trashAction);

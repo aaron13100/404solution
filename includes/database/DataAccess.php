@@ -26,8 +26,9 @@ if (!defined('ABSPATH')) {
  *      RedirectsRepository, ViewReadRuntimeState, DatabaseRuntimeState}.
  *      Tests now reach the owning class directly.
  *   2. getPostOrGetSanitize / getPostOrGetSanitizeUrl request-sanitization
- *      fallbacks. The authoritative implementation lives on Functions; no
- *      production caller routed through DataAccess.
+ *      fallbacks. The authoritative implementation lives on
+ *      RequestInputNormalizer; no production caller routed through
+ *      DataAccess.
  *   3. stageFailurePolicy() vestigial classifier marker. The staged
  *      view-build pipeline it classified for was itself removed (denorm
  *      Step 3e-A); the classifier and its policy config were deleted

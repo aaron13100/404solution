@@ -19,13 +19,13 @@ class ABJ_404_Solution_Ajax_RefreshStatsDashboard {
             return;
         }
 
-        $functions = ABJ_404_Solution_Ajax_AdminEndpointSupport::getRequestReader();
+        $requestReader = ABJ_404_Solution_Ajax_AdminEndpointSupport::getRequestReader();
         $statsRepository = ABJ_404_Solution_StatsRepositoryResolver::resolve(__CLASS__);
         $abj404logic = abj_service('plugin_logic');
 
-        $page = $functions->getPostOrGetSanitize('page', '');
-        $subpage = $functions->getPostOrGetSanitize('subpage', '');
-        $currentHash = $functions->getPostOrGetSanitize('currentHash', '');
+        $page = $requestReader->getPostOrGetSanitize('page', '');
+        $subpage = $requestReader->getPostOrGetSanitize('subpage', '');
+        $currentHash = $requestReader->getPostOrGetSanitize('currentHash', '');
 
         $isPluginAdmin = false;
         $context = array(

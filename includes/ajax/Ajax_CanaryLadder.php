@@ -44,12 +44,12 @@ class ABJ_404_Solution_Ajax_CanaryLadder {
 
     /** @return void */
     public function handle() {
-        $functions = ABJ_404_Solution_Ajax_AdminEndpointSupport::getRequestReader();
+        $requestReader = ABJ_404_Solution_Ajax_AdminEndpointSupport::getRequestReader();
         $requestId = ABJ_404_Solution_AjaxRequestLedger::normalizeId(
-            $functions->getPostOrGetSanitize('requestId', ABJ_404_Solution_AjaxRequestLedger::UNKNOWN_ID));
-        $step = ABJ_404_Solution_AjaxCanaryLadder::normalizeStep($functions->getPostOrGetSanitize('canaryStep', ''));
-        $subpage = (string)$functions->getPostOrGetSanitize('subpage', 'abj404_redirects');
-        $ledger = ABJ_404_Solution_AjaxRequestLedger::readFields($functions);
+            $requestReader->getPostOrGetSanitize('requestId', ABJ_404_Solution_AjaxRequestLedger::UNKNOWN_ID));
+        $step = ABJ_404_Solution_AjaxCanaryLadder::normalizeStep($requestReader->getPostOrGetSanitize('canaryStep', ''));
+        $subpage = (string)$requestReader->getPostOrGetSanitize('subpage', 'abj404_redirects');
+        $ledger = ABJ_404_Solution_AjaxRequestLedger::readFields($requestReader);
 
         $isPluginAdmin = false;
         $context = array_merge(array(
@@ -84,7 +84,7 @@ class ABJ_404_Solution_Ajax_CanaryLadder {
             // receipts off the final `interpret` POST is that they survive a
             // request that does not complete normally.
             self::journalPriorStepReceipts(
-                $requestId, $functions->getPostOrGetSanitize('canaryStepReceipts', ''));
+                $requestId, $requestReader->getPostOrGetSanitize('canaryStepReceipts', ''));
 
             if ($step === '') {
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::safeLogAjaxFailure('AJAX unknown canary step in ajaxRunCanaryStep.', $context);
@@ -102,7 +102,7 @@ class ABJ_404_Solution_Ajax_CanaryLadder {
 
             ABJ_404_Solution_AjaxStageDiagnostics::beginRequest($context);
 
-            $data = self::runStep($step, $functions, $requestId, $subpage, $context);
+            $data = self::runStep($step, $requestReader, $requestId, $subpage, $context);
             $data['requestId'] = $requestId;
             $data['canaryStep'] = $step;
 
@@ -165,11 +165,11 @@ class ABJ_404_Solution_Ajax_CanaryLadder {
     }
 
     /**
-     * @param ABJ_404_Solution_Functions $functions
+     * @param ABJ_404_Solution_RequestInputNormalizer $requestReader
      * @param array<string, mixed> $context
      * @return array<string, mixed>
      */
-    private static function runStep(string $step, $functions, string $requestId, string $subpage, array &$context): array {
+    private static function runStep(string $step, $requestReader, string $requestId, string $subpage, array &$context): array {
         switch ($step) {
             case ABJ_404_Solution_AjaxCanaryLadder::STEP_CONCURRENT_CONTROL:
             case ABJ_404_Solution_AjaxCanaryLadder::STEP_AUTH_ONLY:
@@ -205,7 +205,7 @@ class ABJ_404_Solution_Ajax_CanaryLadder {
                     });
 
             case ABJ_404_Solution_AjaxCanaryLadder::STEP_INERT:
-                $bytes = ABJ_404_Solution_AjaxCanaryLadder::clampTargetBytes($functions->getPostOrGetSanitize('payloadBytes', ''));
+                $bytes = ABJ_404_Solution_AjaxCanaryLadder::clampTargetBytes($requestReader->getPostOrGetSanitize('payloadBytes', ''));
                 return ABJ_404_Solution_AjaxStageDiagnostics::runStage($context, 'canary_inert',
                     static function () use ($requestId, $bytes) {
                         return ABJ_404_Solution_AjaxCanaryLadder::buildFillerPayload(
@@ -214,7 +214,7 @@ class ABJ_404_Solution_Ajax_CanaryLadder {
 
             case ABJ_404_Solution_AjaxCanaryLadder::STEP_COMPRESS_ON:
             case ABJ_404_Solution_AjaxCanaryLadder::STEP_COMPRESS_OFF:
-                $bytes = ABJ_404_Solution_AjaxCanaryLadder::clampTargetBytes($functions->getPostOrGetSanitize('payloadBytes', ''));
+                $bytes = ABJ_404_Solution_AjaxCanaryLadder::clampTargetBytes($requestReader->getPostOrGetSanitize('payloadBytes', ''));
                 return ABJ_404_Solution_AjaxStageDiagnostics::runStage($context, 'canary_' . $step,
                     static function () use ($requestId, $step, $bytes) {
                         if ($step === ABJ_404_Solution_AjaxCanaryLadder::STEP_COMPRESS_OFF) {
@@ -281,7 +281,7 @@ class ABJ_404_Solution_Ajax_CanaryLadder {
                     });
 
             case ABJ_404_Solution_AjaxCanaryLadder::STEP_INTERPRET:
-                return self::runInterpretStep($functions, $requestId, $context);
+                return self::runInterpretStep($requestReader, $requestId, $context);
 
             default:
                 return array();
@@ -312,15 +312,15 @@ class ABJ_404_Solution_Ajax_CanaryLadder {
      * other's conclusion, which is the same reason the pure rules are
      * separate functions.
      *
-     * @param ABJ_404_Solution_Functions $functions
+     * @param ABJ_404_Solution_RequestInputNormalizer $requestReader
      * @param array<string, mixed> $context
      * @return array<string, mixed>
      */
-    private static function runInterpretStep($functions, string $requestId, array &$context): array {
-        $raw = (string)$functions->getPostOrGetSanitize('observations', '');
+    private static function runInterpretStep($requestReader, string $requestId, array &$context): array {
+        $raw = (string)$requestReader->getPostOrGetSanitize('observations', '');
         $decoded = $raw !== '' ? json_decode(substr($raw, 0, 8192), true) : null;
         $observations = is_array($decoded) ? $decoded : array();
-        $realFailed = (string)$functions->getPostOrGetSanitize('realRequestFailed', '1') !== '0';
+        $realFailed = (string)$requestReader->getPostOrGetSanitize('realRequestFailed', '1') !== '0';
         $rawSessionId = $context['session_id'] ?? '';
         $sessionId = is_scalar($rawSessionId) ? (string)$rawSessionId : '';
 

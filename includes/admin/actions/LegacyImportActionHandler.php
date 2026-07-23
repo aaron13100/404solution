@@ -20,15 +20,15 @@ class ABJ_404_Solution_LegacyImportActionHandler {
     /** @return void */
     public function handleActionChangeItemsPerRow(): void {
         $userIsPluginAdmin = abj_service('admin_access_policy')->isPluginAdmin();
-        if ($this->parent->getFunctions()->getPostOrGetSanitize('action') == 'changeItemsPerRow' && $userIsPluginAdmin) {
+        if (ABJ_404_Solution_RequestInputNormalizer::getPostOrGetSanitize('action') == 'changeItemsPerRow' && $userIsPluginAdmin) {
             check_admin_referer('abj404_changeItemsPerRow');
-            $this->parent->updatePerPageOption(absint($this->parent->getFunctions()->getPostOrGetSanitize('perpage')));
+            $this->parent->updatePerPageOption(absint(ABJ_404_Solution_RequestInputNormalizer::getPostOrGetSanitize('perpage')));
         }
     }
 
     /** @return void */
     public function handleActionExport(): void {
-        if (($this->parent->getFunctions()->getPostOrGetSanitize('action') == 'exportRedirects') && abj_service('admin_access_policy')->isPluginAdmin()) {
+        if ((ABJ_404_Solution_RequestInputNormalizer::getPostOrGetSanitize('action') == 'exportRedirects') && abj_service('admin_access_policy')->isPluginAdmin()) {
             check_admin_referer('abj404_exportRedirects');
             $this->parent->getPluginLogic()->importExport()->doExport();
         }
@@ -36,7 +36,7 @@ class ABJ_404_Solution_LegacyImportActionHandler {
 
     /** @return string|null */
     public function handleActionImportFile() {
-        if (($this->parent->getFunctions()->getPostOrGetSanitize('action') == 'importRedirectsFile') && abj_service('admin_access_policy')->isPluginAdmin()) {
+        if ((ABJ_404_Solution_RequestInputNormalizer::getPostOrGetSanitize('action') == 'importRedirectsFile') && abj_service('admin_access_policy')->isPluginAdmin()) {
             check_admin_referer('abj404_importRedirectsFile');
             $result = $this->parent->getPluginLogic()->importExport()->doImportFile();
             return $result;
@@ -51,8 +51,8 @@ class ABJ_404_Solution_LegacyImportActionHandler {
     public function handleActionImportRedirects(): string {
         $message = "";
 
-        if ($this->parent->getFunctions()->getPostOrGetSanitize('action') == 'importRedirects') {
-            if ($this->parent->getFunctions()->getPostOrGetSanitize('sanity_404redirected') != '1') {
+        if (ABJ_404_Solution_RequestInputNormalizer::getPostOrGetSanitize('action') == 'importRedirects') {
+            if (ABJ_404_Solution_RequestInputNormalizer::getPostOrGetSanitize('sanity_404redirected') != '1') {
                 return __("Error: You didn't check the I understand checkbox. No importing for you!", '404-solution');
             }
 

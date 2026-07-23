@@ -66,8 +66,8 @@ class ABJ_404_Solution_EditRedirectHandler {
         }
 
         $f = $this->parent->getFunctions();
-        $id = $f->getPostOrGetSanitize('id');
-        $ids = $f->getPostOrGetSanitize('ids_multiple');
+        $id = ABJ_404_Solution_RequestInputNormalizer::getPostOrGetSanitize('id');
+        $ids = ABJ_404_Solution_RequestInputNormalizer::getPostOrGetSanitize('ids_multiple');
         if ($id === '' && $ids === '') {
             return $message;
         }
@@ -296,30 +296,29 @@ class ABJ_404_Solution_EditRedirectHandler {
      * @return array{source_page: string, redirect_url: string}
      */
     private function buildPostEditRedirect(): array {
-        $f = $this->parent->getFunctions();
         $valid_tabs = array('abj404_redirects', 'abj404_captured', 'abj404_logs',
                           'abj404_stats', 'abj404_tools', 'abj404_options');
-        $source_page = $f->getPostOrGetSanitize('source_page');
+        $source_page = ABJ_404_Solution_RequestInputNormalizer::getPostOrGetSanitize('source_page');
         if ($source_page === '' || !in_array($source_page, $valid_tabs)) {
             $source_page = 'abj404_redirects';
         }
 
         $redirect_url = "?page=" . ABJ404_PP . "&subpage=" . $source_page . "&updated=1";
 
-        $source_filter = $f->getPostOrGetSanitize('source_filter', '');
+        $source_filter = ABJ_404_Solution_RequestInputNormalizer::getPostOrGetSanitize('source_filter', '');
         if ($source_filter !== '' && $source_filter !== '0') {
             $redirect_url .= "&filter=" . urlencode($source_filter);
         }
 
-        $source_orderby = $f->getPostOrGetSanitize('source_orderby', '');
-        $source_order = $f->getPostOrGetSanitize('source_order', '');
+        $source_orderby = ABJ_404_Solution_RequestInputNormalizer::getPostOrGetSanitize('source_orderby', '');
+        $source_order = ABJ_404_Solution_RequestInputNormalizer::getPostOrGetSanitize('source_order', '');
         if ($source_orderby !== '' && $source_order !== ''
                 && !($source_orderby === "url" && $source_order === "ASC")) {
             $redirect_url .= "&orderby=" . urlencode($source_orderby);
             $redirect_url .= "&order=" . urlencode($source_order);
         }
 
-        $source_paged = $f->getPostOrGetSanitize('source_paged', '');
+        $source_paged = ABJ_404_Solution_RequestInputNormalizer::getPostOrGetSanitize('source_paged', '');
         if ($source_paged !== '' && (int)$source_paged > 1) {
             $redirect_url .= "&paged=" . urlencode($source_paged);
         }

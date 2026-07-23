@@ -67,8 +67,8 @@ final class ABJ_404_Solution_Ajax_ClientReportBeacon {
      * riding the attempt's own id) and "this client named one we cannot use"
      * are different findings about the client.
      *
-     * @param ABJ_404_Solution_Functions $reader Docblock-typed only: tests
-     *   substitute request-reader doubles that are not literally that class.
+     * @param ABJ_404_Solution_RequestInputNormalizer $reader Docblock-typed only:
+     *   tests substitute request-reader doubles that are not literally that class.
      */
     private static function reportedAttemptId($reader): string {
         $raw = $reader->getPostOrGetSanitize('reportedAttemptId', '');

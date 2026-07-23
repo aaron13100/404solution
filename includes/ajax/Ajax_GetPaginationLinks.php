@@ -23,12 +23,12 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
     public function handle() {
         ABJ_404_Solution_AjaxRequestContractValidator::enforceCurrentRequest('ajax-update-pagination');
 
-        $functions = ABJ_404_Solution_Ajax_AdminEndpointSupport::getRequestReader();
+        $requestReader = ABJ_404_Solution_Ajax_AdminEndpointSupport::getRequestReader();
         // Read+normalize the request ID before any service resolution so the
         // checkpoint pairs below (matrix coverage req. 2) can be correlated
         // to this request from their very first boundary.
         $requestId = ABJ_404_Solution_AjaxRequestLedger::normalizeId(
-            $functions->getPostOrGetSanitize('requestId', ABJ_404_Solution_AjaxRequestLedger::UNKNOWN_ID));
+            $requestReader->getPostOrGetSanitize('requestId', ABJ_404_Solution_AjaxRequestLedger::UNKNOWN_ID));
 
         /** @var ABJ_404_Solution_ViewReadServiceInterface $viewReadService */
         $viewReadService = ABJ_404_Solution_AjaxCheckpointLogger::around(
@@ -43,24 +43,24 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
         );
         global $abj404view;
 
-        $rowsPerPage = absint($functions->getPostOrGetSanitize('rowsPerPage'));
-        $subpage = $functions->getPostOrGetSanitize('subpage');
-        $nonce = $functions->getPostOrGetSanitize('nonce');
-        $page = $functions->getPostOrGetSanitize('page', '');
-        $filterText = $functions->getPostOrGetSanitize('filterText', '');
-        $filter = $functions->getPostOrGetSanitize('filter', '');
-        $orderby = $functions->getPostOrGetSanitize('orderby', '');
-        $detectOnly = ((string)$functions->getPostOrGetSanitize('detectOnly', '0') === '1');
-        $part = self::normalizePart((string)$functions->getPostOrGetSanitize('part', 'all'));
-        $cacheMode = self::normalizeCacheMode((string)$functions->getPostOrGetSanitize('cacheMode', 'normal'));
-        $currentSignature = self::normalizeCurrentSignature((string)$functions->getPostOrGetSanitize('currentSignature', ''));
-        $retryCount = min(2, absint($functions->getPostOrGetSanitize('retryCount', '0')));
+        $rowsPerPage = absint($requestReader->getPostOrGetSanitize('rowsPerPage'));
+        $subpage = $requestReader->getPostOrGetSanitize('subpage');
+        $nonce = $requestReader->getPostOrGetSanitize('nonce');
+        $page = $requestReader->getPostOrGetSanitize('page', '');
+        $filterText = $requestReader->getPostOrGetSanitize('filterText', '');
+        $filter = $requestReader->getPostOrGetSanitize('filter', '');
+        $orderby = $requestReader->getPostOrGetSanitize('orderby', '');
+        $detectOnly = ((string)$requestReader->getPostOrGetSanitize('detectOnly', '0') === '1');
+        $part = self::normalizePart((string)$requestReader->getPostOrGetSanitize('part', 'all'));
+        $cacheMode = self::normalizeCacheMode((string)$requestReader->getPostOrGetSanitize('cacheMode', 'normal'));
+        $currentSignature = self::normalizeCurrentSignature((string)$requestReader->getPostOrGetSanitize('currentSignature', ''));
+        $retryCount = min(2, absint($requestReader->getPostOrGetSanitize('retryCount', '0')));
         // Immutable request ledger (matrix coverage req. 1): session ID and
         // retry-parent ID ride the same POST-body/query-string channel as
         // requestId; the client side of sending them is a separate task
         // (client transport telemetry), so these default to empty until
         // that ships -- reading them here now is forward-compatible.
-        $ledger = ABJ_404_Solution_AjaxRequestLedger::readFields($functions);
+        $ledger = ABJ_404_Solution_AjaxRequestLedger::readFields($requestReader);
 
         $isPluginAdmin = false;
         $context = array_merge(array(

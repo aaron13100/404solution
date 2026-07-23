@@ -37,6 +37,10 @@ class ABJ_404_Solution_CoreServiceRegistration {
             );
         });
 
+        $container->set('request_input_normalizer', function($c) {
+            return new ABJ_404_Solution_RequestInputNormalizer();
+        });
+
         $container->set('pii_redactor', function($c) {
             return new ABJ_404_Solution_PiiRedactor($c->get('functions'));
         });

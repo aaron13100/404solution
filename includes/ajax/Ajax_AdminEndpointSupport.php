@@ -282,17 +282,17 @@ class ABJ_404_Solution_Ajax_AdminEndpointSupport {
         return $out;
     }
 
-    /** @return ABJ_404_Solution_Functions */
+    /** @return ABJ_404_Solution_RequestInputNormalizer */
     public static function getRequestReader() {
         $container = ABJ_404_Solution_ServiceContainer::getInstance();
-        if ($container->has('functions')) {
-            /** @var ABJ_404_Solution_Functions $functions */
-            $functions = $container->get('functions');
-            return $functions;
+        if ($container->has('request_input_normalizer')) {
+            /** @var ABJ_404_Solution_RequestInputNormalizer $requestReader */
+            $requestReader = $container->get('request_input_normalizer');
+            return $requestReader;
         }
-        /** @var ABJ_404_Solution_Functions $functions */
-        $functions = abj_service('functions');
-        return $functions;
+        /** @var ABJ_404_Solution_RequestInputNormalizer $requestReader */
+        $requestReader = abj_service('request_input_normalizer');
+        return $requestReader;
     }
 
     /**

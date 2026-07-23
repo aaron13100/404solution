@@ -23,15 +23,15 @@ class ABJ_404_Solution_Ajax_RefreshHealthBar {
             return;
         }
 
-        $functions = ABJ_404_Solution_Ajax_AdminEndpointSupport::getRequestReader();
+        $requestReader = ABJ_404_Solution_Ajax_AdminEndpointSupport::getRequestReader();
         /** @var ABJ_404_Solution_ViewReadServiceInterface $viewReadService */
         $viewReadService = abj_service('view_read_service');
         /** @var ABJ_404_Solution_LogsRepositoryInterface $logsRepository */
         $logsRepository = abj_service('logs_repository');
         $abj404logic = abj_service('plugin_logic');
 
-        $page = $functions->getPostOrGetSanitize('page', '');
-        $subpage = $functions->getPostOrGetSanitize('subpage', '');
+        $page = $requestReader->getPostOrGetSanitize('page', '');
+        $subpage = $requestReader->getPostOrGetSanitize('subpage', '');
 
         $isPluginAdmin = false;
         $context = array(

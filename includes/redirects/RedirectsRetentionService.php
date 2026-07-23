@@ -162,7 +162,7 @@ class ABJ_404_Solution_RedirectsRetentionService {
     }
 
     private function isManualMaintenanceRun(): bool {
-        $manuallyFired = abj_service('functions')->getPostOrGetSanitize('manually_fired', 'false');
+        $manuallyFired = ABJ_404_Solution_RequestInputNormalizer::getPostOrGetSanitize('manually_fired', 'false');
         return $this->f->strtolower($manuallyFired) == 'true';
     }
 

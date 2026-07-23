@@ -29,8 +29,8 @@ class ABJ_404_Solution_Ajax_RunLazyBackfill {
             return;
         }
 
-        $functions = ABJ_404_Solution_Ajax_AdminEndpointSupport::getRequestReader();
-        $subpage = $functions->getPostOrGetSanitize('subpage', '');
+        $requestReader = ABJ_404_Solution_Ajax_AdminEndpointSupport::getRequestReader();
+        $subpage = $requestReader->getPostOrGetSanitize('subpage', '');
         $context = array(
             'action' => 'abj404_run_lazy_backfill',
             'subpage' => $subpage,

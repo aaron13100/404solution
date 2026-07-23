@@ -78,10 +78,10 @@ final class ABJ_404_Solution_AjaxRequestLedger {
      * timestamp (for queue/boot-delta math), the validated request-ID
      * header, and Cloudflare's own per-request trace ID.
      *
-     * @param ABJ_404_Solution_Functions $requestReader Docblock-typed only
-     *   (no native parameter type): tests substitute request-reader doubles
-     *   that are not literally ABJ_404_Solution_Functions, and a native type
-     *   declaration would TypeError on those at call time.
+     * @param ABJ_404_Solution_RequestInputNormalizer $requestReader Docblock-typed
+     *   only (no native parameter type): tests substitute request-reader doubles
+     *   that are not literally ABJ_404_Solution_RequestInputNormalizer, and a
+     *   native type declaration would TypeError on those at call time.
      * @return array{session_id: string, retry_parent_id: string, client_sent_at: string, header_request_id: string, cf_ray: string}
      */
     public static function readFields($requestReader): array {

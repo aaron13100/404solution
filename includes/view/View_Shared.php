@@ -14,33 +14,18 @@ class ABJ_404_Solution_View_Shared extends ABJ_404_Solution_ViewComponent {
 
 	/**
 	 * Sanitize a GET or POST parameter.
-	 * Delegates to Functions::getPostOrGetSanitize() when available,
-	 * falls back to direct $_GET/$_POST read for test environments
-	 * where the Functions mock may not have this method stubbed.
+	 *
+	 * View-layer callers go through this method rather than
+	 * ABJ_404_Solution_RequestInputNormalizer directly so the View classes
+	 * stay decoupled from where request-parameter reading lives.
 	 *
 	 * @param string $name The parameter name.
 	 * @param string|null $defaultValue Default value when not found.
 	 * @return string
 	 */
 	public function viewGetPostOrGetSanitize($name, $defaultValue = null) {
-		if (is_object($this->f)) {
-			try {
-				// DI resolver call: delegate to the injected Functions service
-				$result = $this->f->getPostOrGetSanitize($name, $defaultValue);
-				return is_string($result) ? $result : (is_scalar($result) ? (string)$result : '');
-            } catch (\Throwable $e) {
-                // allow-silent-catch: DI-injected service may not implement getPostOrGetSanitize.
-                // DI-injected service may not implement getPostOrGetSanitize
-                // (legacy mock). Fall through to inline GET/POST reader.
-				$val = null;
-			}
-		}
-		// Inline fallback for test contexts without the Functions mock expectation
-		$val = isset($_GET[$name]) ? $_GET[$name] : (isset($_POST[$name]) ? $_POST[$name] : null);
-		if ($val !== null && is_scalar($val)) {
-			return function_exists('sanitize_text_field') ? sanitize_text_field((string)$val) : (string)$val;
-		}
-		return is_string($defaultValue) ? $defaultValue : '';
+		$result = ABJ_404_Solution_RequestInputNormalizer::getPostOrGetSanitize($name, $defaultValue);
+		return is_string($result) ? $result : (is_scalar($result) ? (string)$result : '');
 	}
 
 	/**

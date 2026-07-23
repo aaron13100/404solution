@@ -83,7 +83,7 @@ class ABJ_404_Solution_RedirectFormResolver {
         }
 
         if ($_POST['redirect_to_data_field_id'] == ABJ404_TYPE_EXTERNAL . '|' . ABJ404_TYPE_EXTERNAL) {
-            $rawEnteredURLResult = $this->f->getPostOrGetSanitizeUrl('redirect_to_user_field');
+            $rawEnteredURLResult = ABJ_404_Solution_RequestInputNormalizer::getPostOrGetSanitizeUrl('redirect_to_user_field');
             $rawEnteredURL = is_string($rawEnteredURLResult) ? $rawEnteredURLResult : null;
             $userEnteredURL = $this->urlNormalization->normalizeExternalDestinationUrl($rawEnteredURL);
             $userEnteredURL = esc_url($userEnteredURL, array('http', 'https'));

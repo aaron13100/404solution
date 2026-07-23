@@ -142,12 +142,12 @@ final class ABJ_404_Solution_ClientTransportReport {
      * that class made a recorder depend on the presentation surface it exists
      * to observe.
      *
-     * @return ABJ_404_Solution_Functions
+     * @return ABJ_404_Solution_RequestInputNormalizer
      */
     private static function requestReader() {
-        /** @var ABJ_404_Solution_Functions $functions */
-        $functions = abj_service('functions');
-        return $functions;
+        /** @var ABJ_404_Solution_RequestInputNormalizer $requestReader */
+        $requestReader = abj_service('request_input_normalizer');
+        return $requestReader;
     }
 
     /**
@@ -156,8 +156,8 @@ final class ABJ_404_Solution_ClientTransportReport {
      * decoded: "the client sent something unparseable" is itself a finding
      * about the transport and must not be silently dropped.
      *
-     * @param ABJ_404_Solution_Functions $reader Docblock-typed only: tests
-     *   substitute request-reader doubles that are not literally that class.
+     * @param ABJ_404_Solution_RequestInputNormalizer $reader Docblock-typed only:
+     *   tests substitute request-reader doubles that are not literally that class.
      * @return array<string, mixed>|null
      */
     private static function readReport($reader): ?array {
