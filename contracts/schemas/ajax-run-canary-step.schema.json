@@ -17,6 +17,10 @@
     "subpage": { "type": "string" },
     "payloadBytes": { "type": "string" },
     "observations": { "type": "string" },
-    "realRequestFailed": { "type": "string" }
+    "realRequestFailed": { "type": "string" },
+    "canaryStepReceipts": {
+      "type": "string",
+      "description": "JSON array of the browser's receipt confirmations for ladder steps that finished before this request, riding forward until the server has demonstrably received them (gap-hunt iteration 2 gap GE). Each record: {step, requestId, ok, ms, bytes, textStatus}. Absent on the first request of a run."
+    }
   }
 }

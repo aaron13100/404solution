@@ -33,6 +33,13 @@ final class ABJ_404_Solution_AjaxCanaryLadder {
      */
     const NONCE_ACTION = 'abj404_updatePaginationLink';
 
+    /**
+     * The client-side probe that deliberately never reaches PHP. It is not a
+     * dispatchable step, but the browser can still report having received it,
+     * so it is a legal step name on a receipt and nowhere else.
+     */
+    const STEP_STATIC_ASSET = 'static_asset';
+
     const STEP_CONCURRENT_CONTROL = 'concurrent_control';
     const STEP_AUTH_ONLY = 'auth_only';
     const STEP_POST_LIMITER = 'post_limiter';
@@ -63,6 +70,23 @@ final class ABJ_404_Solution_AjaxCanaryLadder {
         self::STEP_COMPRESS_OFF, self::STEP_STREAM,
     );
 
+    /**
+     * Hard bound on the raw `canaryStepReceipts` parameter BEFORE it is
+     * parsed. The client caps itself at ten fixed-shape records (~1.8 KB
+     * worst case); this is the server refusing to parse more than that
+     * regardless of what actually arrives.
+     */
+    const MAX_STEP_RECEIPTS_BYTES = 4096;
+
+    /** Hard bound on how many receipts one request is allowed to carry. */
+    const MAX_STEP_RECEIPTS = 12;
+
+    /** Longest transport status string kept on a receipt ('parsererror' etc). */
+    const MAX_TEXT_STATUS_CHARS = 32;
+
+    /** Longest step name kept verbatim when this build does not recognise it. */
+    const MAX_REPORTED_STEP_CHARS = 32;
+
     const AUTH_ONLY_BYTES = 1024;
     const STREAM_WHITESPACE_BYTES = 2048;
     const MIN_INERT_BYTES = 64;
@@ -91,6 +115,106 @@ final class ABJ_404_Solution_AjaxCanaryLadder {
             $value = $default;
         }
         return max(self::MIN_INERT_BYTES, min(self::MAX_INERT_BYTES, $value));
+    }
+
+    /**
+     * The browser's receipt confirmations for ladder steps that finished
+     * BEFORE the request carrying them (Bruno timeout cause matrix, gap-hunt
+     * iteration 2 gap GE / Codex #7).
+     *
+     * Each ladder step is already its own traced PHP request, so the server
+     * can always prove a step EXECUTED. What only the browser can supply is
+     * whether that step's response ever arrived, and that used to reach here
+     * solely inside the final `interpret` POST -- so one lost request (a hang
+     * on the very host under diagnosis, a closed tab, an interrupted script)
+     * erased the receipt side of the evidence for the whole ladder at once.
+     * Riding each receipt on the NEXT step's request is the same route
+     * ABJ_404_Solution_ClientTransportReport already uses for table requests.
+     *
+     * The payload is untrusted text throughout: length-bounded, parsed
+     * defensively, count-bounded, and never echoed back to any client. An
+     * input that cannot be decoded returns a diagnostic stand-in rather than
+     * an empty list -- "the browser sent something unreadable" is a finding
+     * about the transport under investigation, and silently dropping it is
+     * the exact evidence-loss shape this whole mechanism exists to end.
+     *
+     * @param mixed $raw The raw POSTed parameter.
+     * @return array<int, array<string, mixed>> Normalized receipts, in the
+     *   order the browser reported them.
+     */
+    public static function parseStepReceipts($raw): array {
+        $text = is_scalar($raw) ? (string)$raw : '';
+        if ($text === '') {
+            return array();
+        }
+        $truncated = strlen($text) > self::MAX_STEP_RECEIPTS_BYTES;
+        $decoded = json_decode(substr($text, 0, self::MAX_STEP_RECEIPTS_BYTES), true);
+        if (!is_array($decoded)) {
+            return array(array(
+                'decoded' => false,
+                'json_error' => json_last_error_msg(),
+                'raw_length' => strlen($text),
+                'raw_head' => substr($text, 0, 200),
+            ));
+        }
+        // A single receipt sent unwrapped is accepted as readily as a list:
+        // an older or hand-modified client that sends one record is a
+        // tolerable input, not a reason to discard the only evidence it had
+        // (Defensive Coding #10, fix the consumer rather than the input).
+        if (array_key_exists('step', $decoded)) {
+            $decoded = array($decoded);
+        }
+        $receipts = array();
+        foreach ($decoded as $entry) {
+            if (!is_array($entry)) {
+                continue;
+            }
+            $receipts[] = self::normalizeStepReceipt($entry, $truncated);
+            if (count($receipts) >= self::MAX_STEP_RECEIPTS) {
+                break;
+            }
+        }
+        return $receipts;
+    }
+
+    /**
+     * One receipt, rebuilt field by field from whatever the browser sent.
+     *
+     * Nothing is passed through: the decoded value's keys and types are only
+     * assumed until they are made so here, and a field that cannot be read as
+     * what it claims to be becomes null rather than zero -- an unreadable
+     * duration and a zero-millisecond step are opposite findings.
+     *
+     * @param array<mixed, mixed> $entry
+     * @return array<string, mixed>
+     */
+    private static function normalizeStepReceipt(array $entry, bool $truncated): array {
+        $rawStep = isset($entry['step']) && is_scalar($entry['step']) ? (string)$entry['step'] : '';
+        $known = $rawStep === self::STEP_STATIC_ASSET || in_array($rawStep, self::STEPS, true);
+        $requestId = isset($entry['requestId']) && is_scalar($entry['requestId']) ? (string)$entry['requestId'] : '';
+        // The wire contract's own request-id shape. A value that cannot be a
+        // server request id cannot be reconciled against one, and letting
+        // arbitrary browser text become a journal key would let a client
+        // forge the identity of its own evidence.
+        if (preg_match('/^[a-zA-Z0-9]{1,64}$/', $requestId) !== 1) {
+            $requestId = '';
+        }
+        $status = isset($entry['textStatus']) && is_scalar($entry['textStatus']) ? (string)$entry['textStatus'] : '';
+        return array(
+            'decoded' => true,
+            'step' => $known ? $rawStep : '',
+            // What the browser actually claimed, kept bounded even when this
+            // build has never heard of it: a step name from a newer or older
+            // client is version-skew evidence, and erasing it would turn a
+            // readable mismatch into an unexplained blank.
+            'reported_step' => substr($rawStep, 0, self::MAX_REPORTED_STEP_CHARS),
+            'step_request_id' => $requestId,
+            'ok' => !empty($entry['ok']),
+            'ms' => isset($entry['ms']) && is_numeric($entry['ms']) ? (int)$entry['ms'] : null,
+            'bytes' => isset($entry['bytes']) && is_numeric($entry['bytes']) ? (int)$entry['bytes'] : null,
+            'text_status' => substr($status, 0, self::MAX_TEXT_STATUS_CHARS),
+            'truncated_on_arrival' => $truncated,
+        );
     }
 
     /**

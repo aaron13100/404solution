@@ -1,0 +1,9 @@
+{
+  "nonce": "abc123def456",
+  "canaryStep": "post_limiter",
+  "requestId": "canaryreq01",
+  "retryParentId": "ladderid1",
+  "sessionId": "sess0001",
+  "subpage": "abj404_redirects",
+  "canaryStepReceipts": "[{\"step\":\"static_asset\",\"requestId\":\"\",\"ok\":true,\"ms\":11,\"bytes\":1024,\"textStatus\":\"\"},{\"step\":\"auth_only\",\"requestId\":\"ladderid1\",\"ok\":false,\"ms\":15002,\"bytes\":0,\"textStatus\":\"timeout\"}]"
+}

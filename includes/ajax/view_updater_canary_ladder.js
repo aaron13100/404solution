@@ -19,6 +19,16 @@
  * ajaxRunCanaryStep, joined back to the failure that triggered it through
  * the ordinary retryParentId chain every attempt already carries.
  *
+ * Each step is its own POST, so the server already has independent trace
+ * evidence that every step's PHP execution happened. The one thing only the
+ * browser can supply is whether each step's RESPONSE actually arrived, and
+ * that confirmation rides the NEXT step's request (see createReceiptRelay --
+ * the same "ride the next request" route ClientTransportReport uses for
+ * table requests). It used to be bundled solely into the final `interpret`
+ * POST, which meant one lost request -- a hang on the very host under
+ * diagnosis, a closed tab, an interrupted script -- erased the receipt side
+ * of the evidence for the entire ladder at once.
+ *
  * Step order (step 1 never reaches PHP; steps 2-8 are ajaxRunCanaryStep):
  *   1. static_asset   - same-host 1KB static file, no PHP at all.
  *   2. auth_only      - boot + auth + delivery, bypasses the rate limiter.
@@ -50,6 +60,19 @@
     var STATIC_ASSET_TIMEOUT_MS = 10000;
     var STEP_TIMEOUT_MS = 15000;
     var DEFAULT_TARGET_BYTES = 50000;
+
+    /**
+     * Ceiling on how many not-yet-delivered step receipts one request may
+     * carry. A ladder run has nine steps, so this can only ever be reached by
+     * a run whose requests keep failing -- exactly the case worth bounding,
+     * and the bound is on RECORDS rather than on the serialized string so a
+     * trimmed payload always arrives as valid JSON (the byte-slice shape gap
+     * G1/GG removed from the other client channels).
+     */
+    var MAX_PENDING_RECEIPTS = 10;
+
+    /** Longest transport status string kept on a receipt ('parsererror' etc). */
+    var MAX_TEXT_STATUS_CHARS = 32;
 
     /** @param {string} message @param {*} error @returns {void} */
     function warn(message, error) {
@@ -142,6 +165,83 @@
     }
 
     /**
+     * The browser's receipt confirmation for one finished step, shaped for
+     * the wire. Deliberately tiny and fixed-shape: it exists to answer "did
+     * this step's response reach the browser, how long did it take, and how
+     * many bytes arrived", which is precisely what no server-side trace can
+     * say. The step's own payload is never included.
+     *
+     * @param {string} step
+     * @param {object} observation the value postStep/runStaticAssetCanary resolved with.
+     * @returns {object}
+     */
+    function stepReceipt(step, observation) {
+        observation = observation || {};
+        return {
+            step: step,
+            // The step's OWN server request id, so the receipt joins that
+            // step's server-side trace group rather than the group of
+            // whichever request happened to carry it.
+            requestId: typeof observation.requestId === 'string' ? observation.requestId : '',
+            ok: !!observation.ok,
+            ms: typeof observation.ms === 'number' ? Math.round(observation.ms) : -1,
+            bytes: typeof observation.bytes === 'number' ? observation.bytes : -1,
+            textStatus: String(observation.textStatus || '').slice(0, MAX_TEXT_STATUS_CHARS)
+        };
+    }
+
+    /**
+     * Carries finished steps' receipts forward onto later requests until the
+     * server has demonstrably received them.
+     *
+     * A receipt is only cleared once the request that carried it came BACK,
+     * because a request that never returned is exactly the case where the
+     * server may never have seen it. So an undelivered receipt simply rides
+     * the next request instead of being dropped, and the ladder can lose any
+     * single request without losing the evidence that request was carrying.
+     *
+     * @returns {object}
+     */
+    function createReceiptRelay() {
+        var pending = [];
+        var carried = 0;
+        return {
+            /**
+             * Record one finished step's own outcome for later delivery.
+             * @param {string} step @param {object} observation @returns {void}
+             */
+            hold: function (step, observation) {
+                pending.push(stepReceipt(step, observation));
+                while (pending.length > MAX_PENDING_RECEIPTS) {
+                    pending.shift();
+                }
+            },
+            /**
+             * Attach everything still undelivered to an outgoing request.
+             * @param {object} data @returns {void}
+             */
+            attach: function (data) {
+                carried = pending.length;
+                if (carried > 0) {
+                    data.canaryStepReceipts = JSON.stringify(pending);
+                }
+            },
+            /**
+             * Resolve what the carrying request's outcome means for the
+             * receipts it took with it.
+             * @param {boolean} delivered whether that request came back.
+             * @returns {void}
+             */
+            settled: function (delivered) {
+                if (delivered) {
+                    pending = pending.slice(carried);
+                }
+                carried = 0;
+            }
+        };
+    }
+
+    /**
      * One ajaxRunCanaryStep POST. Always resolves (never rejects): a failed
      * canary is itself a result the interpretation matrix consumes, not an
      * error the ladder run should abort on.
@@ -150,9 +250,12 @@
      * @param {string} step
      * @param {object} extra
      * @param {string} parentId
+     * @param {object} [relay] the run's receipt relay, when this POST belongs
+     *   to a ladder run. Omitted for the standalone concurrent control, which
+     *   runs beside the real table attempt and has no preceding step.
      * @returns {Promise<object>}
      */
-    function postStep(ctx, step, extra, parentId) {
+    function postStep(ctx, step, extra, parentId, relay) {
         return new Promise(function (resolve) {
             var requestId = mintId();
             var started = nowMs();
@@ -165,15 +268,23 @@
                 nonce: ctx.nonce,
                 subpage: ctx.subpage
             }, extra || {});
+            if (relay) {
+                relay.attach(data);
+            }
             var settle = function (ok, result, textStatus) {
-                resolve({
+                var observation = {
                     ok: ok,
                     ms: nowMs() - started,
                     bytes: result ? JSON.stringify(result).length : 0,
                     requestId: requestId,
                     textStatus: textStatus || '',
                     result: result || null
-                });
+                };
+                if (relay) {
+                    relay.settled(ok);
+                    relay.hold(step, observation);
+                }
+                resolve(observation);
             };
             ajaxRunner()({
                 url: resolveAjaxUrl(ctx.baseUrl),
@@ -238,6 +349,28 @@
     }
 
     /**
+     * A step poster bound to one ladder run's receipt relay.
+     *
+     * Binding rather than passing the relay at each call site is what makes
+     * the incremental reporting structural: every ladder request necessarily
+     * goes through this one function, so a step added later cannot forget to
+     * carry the previous step's receipt and silently reintroduce the
+     * batched-until-interpret loss.
+     *
+     * @param {object} ctx {baseUrl, nonce, subpage, requestId}
+     * @returns {function(string, object, string): Promise<object>} with a
+     *   .hold(step, observation) for the one step that never reaches PHP.
+     */
+    function ladderPoster(ctx) {
+        var relay = createReceiptRelay();
+        var post = function (step, extra, parentId) {
+            return postStep(ctx, step, extra, parentId, relay);
+        };
+        post.hold = relay.hold;
+        return post;
+    }
+
+    /**
      * Run the full ladder for one triggering context. Never throws; a
      * broken diagnostic module must never surface to the admin.
      *
@@ -248,43 +381,51 @@
         ctx = ctx || {};
         var ladderRunId = mintId();
         var observations = {};
+        var post = ladderPoster(ctx);
 
         return runStaticAssetCanary(ladderRunId)
             .then(function (staticResult) {
                 observations.static_asset = staticResult;
-                return postStep(ctx, 'auth_only', {}, ctx.requestId || '');
+                // The one step with no request of its own to be reported on,
+                // so its receipt is handed to the relay directly.
+                post.hold('static_asset', staticResult);
+                return post('auth_only', {}, ctx.requestId || '');
             })
             .then(function (authResult) {
                 observations.auth_only = authResult;
-                return postStep(ctx, 'post_limiter', {}, authResult.requestId);
+                return post('post_limiter', {}, authResult.requestId);
             })
             .then(function (limiterResult) {
                 observations.post_limiter = limiterResult;
-                return postStep(ctx, 'summary', {}, limiterResult.requestId);
+                return post('summary', {}, limiterResult.requestId);
             })
             .then(function (summaryResult) {
                 observations.summary = summaryResult;
                 var bytes = targetPayloadBytes(ctx);
-                return postStep(ctx, 'inert', { payloadBytes: bytes }, summaryResult.requestId)
+                return post('inert', { payloadBytes: bytes }, summaryResult.requestId)
                     .then(function (inertResult) {
                         observations.inert = inertResult;
                         return bytes;
                     });
             })
             .then(function (bytes) {
-                return postStep(ctx, 'compress_on', { payloadBytes: bytes }, observations.inert.requestId)
+                return post('compress_on', { payloadBytes: bytes }, observations.inert.requestId)
                     .then(function (onResult) {
                         observations.compress_on = onResult;
-                        return postStep(ctx, 'compress_off', { payloadBytes: bytes }, onResult.requestId);
+                        return post('compress_off', { payloadBytes: bytes }, onResult.requestId);
                     });
             })
             .then(function (offResult) {
                 observations.compress_off = offResult;
-                return postStep(ctx, 'stream', {}, offResult.requestId);
+                return post('stream', {}, offResult.requestId);
             })
             .then(function (streamResult) {
                 observations.stream = streamResult;
-                return postStep(ctx, 'interpret', {
+                // The full observation set still rides interpret: the
+                // interpretation matrix needs every step at once. The
+                // per-step receipts already delivered above are the
+                // durable floor under it, not a replacement for it.
+                return post('interpret', {
                     observations: JSON.stringify(observations),
                     realRequestFailed: '1'
                 }, streamResult.requestId);

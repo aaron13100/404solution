@@ -76,6 +76,16 @@ class ABJ_404_Solution_Ajax_CanaryLadder {
             }
             $isPluginAdmin = true;
 
+            // The browser's receipt confirmation for every step that finished
+            // before this one rides this request's params. Journaled HERE --
+            // above the unknown-step gate, above the rate limiter, and above
+            // this step's own work -- because every one of those is a way for
+            // this request to end early, and the whole point of moving the
+            // receipts off the final `interpret` POST is that they survive a
+            // request that does not complete normally.
+            self::journalPriorStepReceipts(
+                $requestId, $functions->getPostOrGetSanitize('canaryStepReceipts', ''));
+
             if ($step === '') {
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::safeLogAjaxFailure('AJAX unknown canary step in ajaxRunCanaryStep.', $context);
                 ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
@@ -106,6 +116,36 @@ class ABJ_404_Solution_Ajax_CanaryLadder {
             ABJ_404_Solution_AjaxStageDiagnostics::finishRequest('error');
             self::handleCanaryException($e, $isPluginAdmin, $context);
             return;
+        }
+    }
+
+    /**
+     * Journal what the browser said about steps that completed before this
+     * one (Bruno timeout cause matrix, gap-hunt iteration 2 gap GE).
+     *
+     * Filed under the REPORTED step's own request id, so the receipt lands in
+     * the same journal group as that step's own server-side trace and the two
+     * halves of "the server ran it / the browser got it" read as one story.
+     * Keying it to the carrying request instead would produce the orphaned
+     * evidence gap GA had to fix elsewhere. A receipt for the static-asset
+     * probe has no server request of its own and falls back to the carrying
+     * id, which is the only id it can honestly be filed under.
+     *
+     * Never throws: ABJ_404_Solution_AjaxCheckpointLogger::record() is
+     * failure-safe by contract, and a malformed report must not affect the
+     * canary step that carried it.
+     *
+     * @param mixed $raw
+     */
+    private static function journalPriorStepReceipts(string $carrierRequestId, $raw): void {
+        foreach (ABJ_404_Solution_AjaxCanaryLadder::parseStepReceipts($raw) as $receipt) {
+            $stepRequestId = isset($receipt['step_request_id']) && is_string($receipt['step_request_id'])
+                ? $receipt['step_request_id'] : '';
+            ABJ_404_Solution_AjaxCheckpointLogger::record(
+                $stepRequestId !== '' ? $stepRequestId : $carrierRequestId,
+                'canary_step_client_receipt',
+                array_merge($receipt, array('carried_by' => $carrierRequestId))
+            );
         }
     }
 

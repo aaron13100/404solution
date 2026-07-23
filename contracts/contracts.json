@@ -734,7 +734,8 @@
       "parityTest": "tests/AjaxCanaryLadderHandlerTest.php",
       "fixtures": {
         "valid": [
-          "fixtures/ajax-run-canary-step.valid.json"
+          "fixtures/ajax-run-canary-step.valid.json",
+          "fixtures/ajax-run-canary-step.valid-with-step-receipts.json"
         ],
         "invalid": [
           "fixtures/ajax-run-canary-step.invalid-missing-nonce.json"
