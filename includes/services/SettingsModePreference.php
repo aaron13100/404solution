@@ -54,7 +54,11 @@ class ABJ_404_Solution_SettingsModePreference {
         try {
             $userId = get_current_user_id();
         } catch (\Throwable $e) {
-            // allow-silent-catch: delegated to logUserLookupFailure(), which preserves the error once per process to avoid parallel-test stderr floods.
+            // Delegated to logUserLookupFailure(), which preserves the error
+            // once per process to avoid parallel-test stderr floods. No
+            // allow-silent-catch marker: the delegate call is what makes this
+            // catch non-silent, and a marker here would keep the audit green
+            // if that call were ever removed.
             $this->logUserLookupFailure($e);
             return self::MODE_SIMPLE;
         }
@@ -88,7 +92,11 @@ class ABJ_404_Solution_SettingsModePreference {
         try {
             $userId = get_current_user_id();
         } catch (\Throwable $e) {
-            // allow-silent-catch: delegated to logUserLookupFailure(), which preserves the error once per process to avoid parallel-test stderr floods.
+            // Delegated to logUserLookupFailure(), which preserves the error
+            // once per process to avoid parallel-test stderr floods. No
+            // allow-silent-catch marker: the delegate call is what makes this
+            // catch non-silent, and a marker here would keep the audit green
+            // if that call were ever removed.
             $this->logUserLookupFailure($e);
             return false;
         }

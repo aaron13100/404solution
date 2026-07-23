@@ -44,6 +44,7 @@ final class ABJ_404_Solution_RequestEnvironmentFingerprint {
         // see ABJ_404_Solution_DiagnosticModuleManifest.
         $buildManifest = ABJ_404_Solution_DiagnosticModuleManifest::capture($opcache);
         $cacheProbe = $this->timedCacheProbe($cacheProbeKey);
+        $cronDue = $this->cronDueEvents();
         $obInventory = function_exists('ob_get_status') ? ob_get_status(true) : array();
         $rusage = function_exists('getrusage') ? getrusage() : null;
 
@@ -74,7 +75,8 @@ final class ABJ_404_Solution_RequestEnvironmentFingerprint {
             'cron_doing_transient' => $this->cronDoingTransient(),
             'cron_disable_wp_cron' => defined('DISABLE_WP_CRON') && DISABLE_WP_CRON,
             'cron_alternate_wp_cron' => defined('ALTERNATE_WP_CRON') && ALTERNATE_WP_CRON,
-            'cron_due_event_count' => $this->cronDueEventCount(),
+            'cron_due_event_count' => $cronDue['count'],
+            'cron_due_event_error' => $cronDue['error'],
         ));
     }
 
@@ -120,23 +122,36 @@ final class ABJ_404_Solution_RequestEnvironmentFingerprint {
     }
 
     /**
-     * Count of scheduled cron events whose timestamp is already due, or null
-     * when wp_get_ready_cron_jobs() is unavailable (added in WP 5.1; this
-     * plugin's minimum is WP 5.0). Every probe here degrades independently:
-     * an exception or a malformed filtered return from a third-party plugin
-     * (see the `pre_get_ready_cron_jobs` filter) must not break the capture.
+     * Count of scheduled cron events whose timestamp is already due, plus why
+     * that count is unavailable when it is.
+     *
+     * Every probe here degrades independently: an exception or a malformed
+     * filtered return from a third-party plugin (see the
+     * `pre_get_ready_cron_jobs` filter) must not break the capture. But
+     * degrading is not the same as forgetting -- a `count` of null on a WP 5.0
+     * site (wp_get_ready_cron_jobs() arrived in 5.1; this plugin supports 5.0)
+     * and a null because a foreign cron filter threw are opposite findings,
+     * and the second one is itself cause-D evidence. `error` is what tells
+     * them apart, so the reason rides in the payload next to the outcome
+     * rather than only in a log the reader may not have.
+     *
+     * @return array{count: int|null, error: string|null}
      */
-    private function cronDueEventCount(): ?int {
+    private function cronDueEvents(): array {
         if (!function_exists('wp_get_ready_cron_jobs')) {
-            return null;
+            return array('count' => null, 'error' => 'wp_get_ready_cron_jobs-unavailable');
         }
         try {
             $due = wp_get_ready_cron_jobs();
         } catch (Throwable $e) {
-            return null;
+            $this->reportProbeFailure('cron-due-events', $e);
+            return array(
+                'count' => null,
+                'error' => get_class($e) . ': ' . substr($e->getMessage(), 0, 200),
+            );
         }
         if (!is_array($due)) {
-            return null;
+            return array('count' => null, 'error' => 'unexpected-shape:' . gettype($due));
         }
         $count = 0;
         foreach ($due as $cronHooks) {
@@ -147,7 +162,7 @@ final class ABJ_404_Solution_RequestEnvironmentFingerprint {
                 $count += is_array($instances) ? count($instances) : 1;
             }
         }
-        return $count;
+        return array('count' => $count, 'error' => null);
     }
 
     /**
@@ -372,7 +387,15 @@ final class ABJ_404_Solution_RequestEnvironmentFingerprint {
                 $hit = wp_cache_get($cacheProbeKey, 'abj404');
                 $result = $hit === false ? 'miss' : 'hit';
             } catch (Throwable $e) {
-                $result = 'error';
+                // Naming the class keeps this field's small readable domain
+                // ('unavailable' / 'miss' / 'hit') intact while telling a
+                // thrown drop-in apart from every other way the read can
+                // fail -- the same 'user-api-exception:' . get_class($e)
+                // convention adminUserState() uses above. The full message
+                // and code go to the PHP error log, which is the channel
+                // that can carry them without a size or PII budget.
+                $this->reportProbeFailure('object-cache-read', $e);
+                $result = 'error:' . get_class($e);
             }
         }
         return array(

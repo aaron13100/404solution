@@ -176,7 +176,6 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
             return;
 
         } catch (Throwable $e) {
-            // allow-silent-catch: handlePaginationLinksException embeds/logs the throwable in the AJAX response path.
             ABJ_404_Solution_AjaxStageDiagnostics::finishRequest('error');
             self::handlePaginationLinksException(
                 $e, $isPluginAdmin, $context
