@@ -32,6 +32,35 @@
     /** Events kept when a report has to be trimmed to fit the bound. */
     var TRIMMED_EVENT_COUNT = 12;
 
+    /**
+     * Fields dropped whole, in order, when trimming the events array is not
+     * enough to fit the bound -- an env.pageErrors array alone (up to 40
+     * entries) or the other environment/asset detail can outweigh the
+     * timeline. Each entry is a path into the record; the field is deleted
+     * entirely rather than partially cut, so the result stays valid JSON at
+     * every step. Ordered least-diagnostic-value first: page-environment
+     * detail and response headers before the event timeline itself, which is
+     * dropped last of the optional fields. Identity/outcome fields (id, rid,
+     * part, attempt, subpage, outcome, durationMs, rs, status, bytes) are
+     * never in this list -- which attempt this was and how it ended matter
+     * more than any detail field, per the docstring on serializeBounded().
+     */
+    var TRIM_FIELD_ORDER = [
+        ['assets'],
+        ['inflightIdsAtSend'],
+        ['rt'],
+        ['env', 'moduleInstances'],
+        ['env', 'lifecycle'],
+        ['env', 'pageErrors'],
+        ['env', 'longtasks'],
+        ['env', 'foreignAjax'],
+        ['env', 'inflight'],
+        ['env', 'tabs'],
+        ['headers'],
+        ['env'],
+        ['events']
+    ];
+
     /** @param {string} message @param {*} error @returns {void} */
     function warn(message, error) {
         if (global.console && global.console.warn) {
@@ -45,9 +74,62 @@
     }
 
     /**
+     * Delete one field (or nested field) from a record in place.
+     *
+     * @param {object} record
+     * @param {Array<string>} path
+     * @returns {boolean} true when a field was actually removed.
+     */
+    function dropField(record, path) {
+        var target = record;
+        for (var i = 0; i < path.length - 1; i++) {
+            if (!target[path[i]] || typeof target[path[i]] !== 'object') {
+                return false;
+            }
+            target = target[path[i]];
+        }
+        var key = path[path.length - 1];
+        if (!target || !Object.prototype.hasOwnProperty.call(target, key)) {
+            return false;
+        }
+        delete target[key];
+        return true;
+    }
+
+    /**
+     * Last-resort record: only the scalar identity/outcome fields, which are
+     * already known to be small and bounded. Reached only if dropping every
+     * field in TRIM_FIELD_ORDER still left the record over budget.
+     *
+     * @param {object} record
+     * @returns {string}
+     */
+    function minimalIdentityRecord(record) {
+        return JSON.stringify({
+            v: record.v,
+            id: record.id,
+            rid: record.rid,
+            sid: record.sid,
+            part: record.part,
+            subpage: record.subpage,
+            attempt: record.attempt,
+            outcome: record.outcome,
+            durationMs: record.durationMs,
+            rs: record.rs,
+            status: record.status,
+            bytes: record.bytes,
+            fieldsDropped: 'all-but-identity'
+        });
+    }
+
+    /**
      * Serialize one record within the request-param bound. When it does not
-     * fit, the timeline is trimmed rather than the identity: which attempt
-     * this was, and how it ended, matter more than its middle events.
+     * fit, structural boundaries are cut -- never the serialized string
+     * itself, which can land mid-token and hand the server invalid JSON. The
+     * event timeline is trimmed first (which attempt this was, and how it
+     * ended, matter more than its middle events); if that alone is not
+     * enough, whole fields are dropped in a fixed priority order until the
+     * JSON.stringify output fits.
      *
      * @param {object} record
      * @returns {string}
@@ -63,7 +145,18 @@
             trimmed.eventsDropped = (trimmed.eventsDropped || 0) +
                 Math.max(0, events.length - TRIMMED_EVENT_COUNT);
             trimmed.events = events.slice(-TRIMMED_EVENT_COUNT);
-            return JSON.stringify(trimmed).slice(0, MAX_REPORT_CHARS);
+            serialized = JSON.stringify(trimmed);
+            if (serialized.length <= MAX_REPORT_CHARS) {
+                return serialized;
+            }
+            trimmed.fieldsDropped = [];
+            for (var i = 0; i < TRIM_FIELD_ORDER.length && serialized.length > MAX_REPORT_CHARS; i++) {
+                if (dropField(trimmed, TRIM_FIELD_ORDER[i])) {
+                    trimmed.fieldsDropped.push(TRIM_FIELD_ORDER[i].join('.'));
+                    serialized = JSON.stringify(trimmed);
+                }
+            }
+            return serialized.length <= MAX_REPORT_CHARS ? serialized : minimalIdentityRecord(trimmed);
         } catch (serializeError) {
             warn('could not serialize a transport telemetry record', serializeError);
             return '';
