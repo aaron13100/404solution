@@ -108,26 +108,13 @@ class ABJ_404_Solution_Ajax_UninstallPrefs {
         // blocks on the network, even on slow SMTP / WAN paths.
         if ($preferences['send_feedback']) {
             $includeDiagnostics = !empty($preferences['include_diagnostics']);
-            $debugLog = '';
-            // Only fetch the log excerpt when the user opted into diagnostics.
-            // Missing logging is an optional degraded path; failures inside
-            // the excerpt reader are logged and omitted below.
-            if ($includeDiagnostics && function_exists('abj_service_optional')) {
-                $logger = abj_service_optional('logging');
-                if (is_object($logger) && method_exists($logger, 'getSanitizedLogExcerptForSupport')) {
-                    try {
-                        $excerpt = $logger->getSanitizedLogExcerptForSupport();
-                        if (is_string($excerpt)) {
-                            $debugLog = $excerpt;
-                        }
-                    } catch (\Throwable $e) {
-                        ABJ_404_Solution_FeedbackTransportLog::log(
-                            'warn',
-                            'Uninstall diagnostics debug-log excerpt unavailable: ' . $e->getMessage()
-                        );
-                    }
-                }
-            }
+            // Only fetch the log excerpt when the user opted into diagnostics:
+            // opted out is the one case where an EMPTY value is the honest
+            // answer. When they did opt in, a log we could not read reports the
+            // reason rather than arriving as the same empty string, which would
+            // read to the developer exactly like an opt-out.
+            $debugLog = $includeDiagnostics
+                ? ABJ_404_Solution_SupportLogExcerpt::resolve('Uninstall diagnostics') : '';
 
             $extras = array(
                 'uninstall_reason'    => $preferences['uninstall_reason'],

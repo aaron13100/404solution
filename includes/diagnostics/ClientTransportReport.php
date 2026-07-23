@@ -53,6 +53,13 @@ final class ABJ_404_Solution_ClientTransportReport {
     const HEALTHY_OUTCOMES = array('success');
 
     /**
+     * Attempt ids carried into the support-collection manifest. The browser's
+     * own ring buffer holds 16 records, so this is that ceiling plus headroom
+     * for a buffer that arrives from an older or a modified client.
+     */
+    const MAX_ATTEMPT_IDS_REPORTED = 32;
+
+    /**
      * Read, bound, and journal whatever the browser said about a previous
      * attempt, plus the build identity of the JavaScript that said it. Never
      * throws: a malformed or absent report must not affect the request that
@@ -135,6 +142,57 @@ final class ABJ_404_Solution_ClientTransportReport {
         $report['decoded'] = true;
         $report['truncated_on_arrival'] = $truncated;
         return $report;
+    }
+
+    /**
+     * The attempt ids the browser says its drained buffer describes.
+     *
+     * The support payload is the one place both halves of the request ledger
+     * meet, so "the browser is reporting attempt X and the collected journals
+     * never mention X" is a decisive fact about the COLLECTION rather than
+     * about the request -- and it is only available if the ids the browser
+     * named are read before the buffer is bounded down to fit the payload.
+     * Parsing lives here, next to boundDrainedBuffer(), because this class
+     * already owns every rule about what that buffer is; the manifest that
+     * consumes this owns none of them.
+     *
+     * The three statuses are kept distinct on purpose: "the browser sent
+     * nothing" and "the browser sent something we could not read" are
+     * different findings, and collapsing the second into an empty id list is
+     * the same silent-empty defect this whole manifest exists to end.
+     *
+     * @param string $raw The raw POSTed buffer, already unslashed.
+     * @return array{status: string, ids: array<int, string>, records: int}
+     *   status: `absent`, `unparseable`, or `parsed`.
+     */
+    public static function attemptIdsInDrainedBuffer(string $raw): array {
+        if ($raw === '') {
+            return array('status' => 'absent', 'ids' => array(), 'records' => 0);
+        }
+        $decoded = json_decode(substr($raw, 0, self::MAX_DRAINED_BUFFER_INPUT_BYTES), true);
+        if (!is_array($decoded)) {
+            return array('status' => 'unparseable', 'ids' => array(), 'records' => 0);
+        }
+        $ids = array();
+        foreach ($decoded as $record) {
+            if (!is_array($record) || !isset($record['id']) || !is_scalar($record['id'])) {
+                continue;
+            }
+            $id = (string)$record['id'];
+            // The wire contract's own request-id shape. An id that cannot be a
+            // server request id cannot be reconciled against one, and letting
+            // arbitrary browser text into the manifest would put an unbounded
+            // string in a bounded record.
+            if (preg_match('/^[a-zA-Z0-9]{1,64}$/', $id) !== 1) {
+                continue;
+            }
+            $ids[$id] = true;
+        }
+        return array(
+            'status' => 'parsed',
+            'ids' => array_slice(array_keys($ids), 0, self::MAX_ATTEMPT_IDS_REPORTED),
+            'records' => count($decoded),
+        );
     }
 
     /**

@@ -171,16 +171,8 @@ final class ABJ_404_Solution_AjaxTraceJournal {
             if ($directory === '') {
                 return '';
             }
-            $paths = array(
-                $directory . self::ROTATED_FILE,
-                $directory . self::JOURNAL_FILE,
-            );
-            $pendingPaths = glob($directory . self::PENDING_GLOB);
-            if (is_array($pendingPaths)) {
-                $paths = array_merge($paths, $pendingPaths);
-            }
             return ABJ_404_Solution_DiagnosticJournalExcerpt::compose(
-                $paths,
+                self::supportExcerptPaths($directory),
                 self::MAX_SUPPORT_EXCERPT_BYTES,
                 "Recent AJAX stage traces (JSONL):\n"
             );
@@ -188,6 +180,48 @@ final class ABJ_404_Solution_AjaxTraceJournal {
             self::reportStaticFailure('AJAX trace support excerpt failed: ' . $e->getMessage());
             return '';
         }
+    }
+
+    /**
+     * What readRecentForSupport() will look at, whether or not any of it
+     * exists, so ABJ_404_Solution_DiagnosticCollectionManifest can state what
+     * was checked even when the answer is "nothing was there".
+     *
+     * The candidate list comes from the same private helper the reader itself
+     * uses: a manifest that described a DIFFERENT set of files than the read
+     * would be worse than no manifest at all.
+     *
+     * @return array{channel: string, directory: string, usable: bool, paths: array<int, string>}
+     */
+    public static function supportCollectionSource(): array {
+        try {
+            $directory = self::resolveSupportDirectory();
+            return array(
+                'channel' => 'ajax_stage_trace',
+                'directory' => $directory,
+                'usable' => $directory !== '',
+                'paths' => $directory === '' ? array() : self::supportExcerptPaths($directory),
+            );
+        } catch (Throwable $e) {
+            self::reportStaticFailure('AJAX trace support source resolution failed: ' . $e->getMessage());
+            return array('channel' => 'ajax_stage_trace', 'directory' => '', 'usable' => false, 'paths' => array());
+        }
+    }
+
+    /**
+     * Rotated file, current journal, then any live pending spools -- oldest
+     * first, which is the order the excerpt reader breaks mtime ties on.
+     *
+     * @param string $directory With a trailing separator.
+     * @return array<int, string>
+     */
+    private static function supportExcerptPaths(string $directory): array {
+        $paths = array(
+            $directory . self::ROTATED_FILE,
+            $directory . self::JOURNAL_FILE,
+        );
+        $pendingPaths = glob($directory . self::PENDING_GLOB);
+        return is_array($pendingPaths) ? array_merge($paths, $pendingPaths) : $paths;
     }
 
     /**

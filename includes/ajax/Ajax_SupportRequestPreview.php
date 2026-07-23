@@ -211,30 +211,15 @@ class ABJ_404_Solution_Ajax_SupportRequestPreview {
     }
 
     /**
-     * Best-effort lookup of a sanitized log excerpt. Mirrors the helper
-     * in Ajax_SupportRequest so preview and send both anchor on the same
-     * source of truth. Returns empty string if the Logging service or
-     * its helper isn't reachable in this context.
+     * Lookup of a sanitized log excerpt. Shares one implementation with
+     * Ajax_SupportRequest so preview and send anchor on the same source of
+     * truth, including when there is nothing to show: an unreachable Logging
+     * service produces a stated reason, never a blank pane the admin has to
+     * guess at.
      *
      * @return string
      */
     private static function resolveDebugLogExcerpt(): string {
-        if (!function_exists('abj_service_optional')) {
-            return '';
-        }
-        $logger = abj_service_optional('logging');
-        if (is_object($logger) && method_exists($logger, 'getSanitizedLogExcerptForSupport')) {
-            try {
-                $excerpt = $logger->getSanitizedLogExcerptForSupport();
-                return is_string($excerpt) ? $excerpt : '';
-            } catch (\Throwable $e) {
-                ABJ_404_Solution_FeedbackTransportLog::log(
-                    'warn',
-                    'Support request preview debug-log excerpt unavailable: ' . $e->getMessage()
-                );
-                return '';
-            }
-        }
-        return '';
+        return ABJ_404_Solution_SupportLogExcerpt::resolve('Support request preview');
     }
 }

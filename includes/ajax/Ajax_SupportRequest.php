@@ -13,6 +13,13 @@ if (!defined('ABSPATH')) {
  * request per 5 minutes) to prevent a frustrated admin (or a malicious one)
  * from flooding the developer endpoint with click-spam.
  *
+ * This class owns the endpoint: authentication, the cooldown, input
+ * validation, dispatch, and the answer the browser gets. WHAT the report
+ * carries as evidence, and the byte contract that evidence lives under, is
+ * ABJ_404_Solution_SupportEvidenceExcerpt's -- a separate job with entirely
+ * different failure modes, and the one the beta.1 evidence losses all
+ * happened in.
+ *
  * Wired in WordPressHookRegistrar::registerAdminHooks() under the action name
  * 'wp_ajax_abj404_support_request'. The matching client lives at
  * includes/ajax/SupportRequest.js. The UI buttons that call it are added in
@@ -28,32 +35,6 @@ class ABJ_404_Solution_Ajax_SupportRequest {
 
     /** Hard cap on user_message length (matches sanitize step). */
     const MAX_USER_MESSAGE_LENGTH = 2000;
-
-    /**
-     * Hard cap on the drained client transport telemetry. The buffer is bounded
-     * on the browser side too; this is the server refusing to append more than
-     * that to the report regardless of what arrives.
-     */
-    const MAX_CLIENT_TELEMETRY_LENGTH = 32768;
-
-    /**
-     * The report contract's own bound on debug_log_excerpt
-     * (contracts/schemas/report.schema.json, maxLength). Every section written
-     * into that field is bounded so their sum provably fits underneath this,
-     * which is what stops a bigger diagnostic budget from turning "the journal
-     * reader dropped the evidence" into "the endpoint rejected the payload".
-     * SupportExcerptBudgetContractTest proves the arithmetic; the clamp in
-     * resolveDebugLogExcerpt() is the backstop that makes it unconditional.
-     */
-    const MAX_DEBUG_LOG_EXCERPT_BYTES = 262144;
-
-    /**
-     * Hard cap on the sanitized debug-log tail. It is assembled from a bounded
-     * NUMBER of entries (15 errors plus 20 recent lines), not a bounded number
-     * of BYTES, so a single site that logs a large blob could otherwise push
-     * the assembled excerpt past the contract on its own.
-     */
-    const MAX_LOGGER_EXCERPT_LENGTH = 32768;
 
     /** Nonce action used by both wp_create_nonce() and wp_verify_nonce(). */
     const NONCE_ACTION = 'abj404_support_request';
@@ -164,11 +145,10 @@ class ABJ_404_Solution_Ajax_SupportRequest {
             $userMessage = substr($userMessage, 0, self::MAX_USER_MESSAGE_LENGTH);
         }
 
-        // Pull the sanitized debug-log excerpt plus the bounded PII-safe AJAX
-        // trace tail. Best-effort: unavailable diagnostics must not block the
-        // support request.
-        $debugLogExcerpt = self::resolveDebugLogExcerpt();
-        $debugLogExcerpt = self::appendClientTransportTelemetry($debugLogExcerpt);
+        // The evidence the report carries. Best-effort by construction:
+        // unavailable diagnostics are reported inside the excerpt, never by
+        // blocking the support request the admin is waiting on.
+        $debugLogExcerpt = ABJ_404_Solution_SupportEvidenceExcerpt::assemble(self::readClientTelemetry());
 
         $extras = array(
             'user_message' => $userMessage,
@@ -291,142 +271,23 @@ class ABJ_404_Solution_Ajax_SupportRequest {
     }
 
     /**
-     * Best-effort lookup of the sanitized debug-log tail plus BOTH durable AJAX
-     * diagnostic journals.
+     * The browser's drained transport-attempt buffer as it was actually sent.
      *
-     * The stage trace and the checkpoint log are separate channels on purpose
-     * (a defect in the trace must not be able to erase the evidence about it),
-     * so draining only one of them reintroduces the beta.1 failure mode from
-     * the read side: a request that never reached its first stage writes
-     * nothing to the trace, and its whole story lives in the checkpoints.
-     * Both are appended, each labeled and independently bounded, so a failure
-     * to read one still yields the other.
-     *
-     * @return string
-     */
-    private static function resolveDebugLogExcerpt(): string {
-        $sections = array(self::resolveLoggerExcerpt());
-        if (class_exists('ABJ_404_Solution_AjaxRequestTrace')) {
-            $sections[] = ABJ_404_Solution_AjaxTraceJournal::readRecentForSupport();
-        }
-        if (class_exists('ABJ_404_Solution_AjaxCheckpointLogger')) {
-            $sections[] = ABJ_404_Solution_AjaxCheckpointLogger::readRecentForSupport();
-        }
-        return self::boundToContract(self::joinSections($sections));
-    }
-
-    /**
-     * Last line of defence on the report contract's maxLength.
-     *
-     * The section budgets are chosen to sum well under the bound, so this can
-     * only fire if one of them is later raised without the arithmetic being
-     * rechecked. It cuts rather than letting buildPayload() reject the whole
-     * report, and it says so in the payload instead of silently shortening it:
-     * a truncation nobody can see is how evidence gets lost in transit, which
-     * is the exact failure this whole path was rebuilt to prevent.
-     */
-    private static function boundToContract(string $excerpt): string {
-        if (strlen($excerpt) <= self::MAX_DEBUG_LOG_EXCERPT_BYTES) {
-            return $excerpt;
-        }
-        $note = "\n\n[404 Solution] Support excerpt truncated from " . strlen($excerpt)
-            . ' bytes to fit the report contract.';
-        return substr($excerpt, 0, self::MAX_DEBUG_LOG_EXCERPT_BYTES - strlen($note)) . $note;
-    }
-
-    /** @return string */
-    private static function resolveLoggerExcerpt(): string {
-        if (!function_exists('abj_service_optional')) {
-            return '';
-        }
-        $logger = abj_service_optional('logging');
-        if (!is_object($logger) || !method_exists($logger, 'getSanitizedLogExcerptForSupport')) {
-            return '';
-        }
-        try {
-            $loggerExcerpt = $logger->getSanitizedLogExcerptForSupport();
-            if (!is_string($loggerExcerpt)) {
-                return '';
-            }
-            return strlen($loggerExcerpt) > self::MAX_LOGGER_EXCERPT_LENGTH
-                ? substr($loggerExcerpt, -self::MAX_LOGGER_EXCERPT_LENGTH) : $loggerExcerpt;
-        } catch (\Throwable $e) {
-            ABJ_404_Solution_FeedbackTransportLog::log(
-                'warn',
-                'Support request debug-log excerpt unavailable: ' . $e->getMessage()
-            );
-            return '';
-        }
-    }
-
-    /**
-     * Join the non-empty excerpt sections with a blank line between them.
-     *
-     * A lone section is returned byte-for-byte: the sanitized debug log is
-     * usually the only one present, and trimming it here would silently change
-     * what the developer receives for every ordinary support request.
-     *
-     * @param array<int, string> $sections
-     * @return string
-     */
-    private static function joinSections(array $sections): string {
-        $present = array();
-        foreach ($sections as $section) {
-            if (is_string($section) && trim($section) !== '') {
-                $present[] = $section;
-            }
-        }
-        if (count($present) < 2) {
-            return $present === array() ? '' : $present[0];
-        }
-        $last = array_pop($present);
-        return implode("\n\n", array_map('rtrim', $present)) . "\n\n" . $last;
-    }
-
-    /**
-     * Append the browser's drained transport-attempt buffer to the excerpt.
-     *
-     * This is the only channel that carries attempts the server never saw at
-     * all: a request that never reached PHP leaves no server-side trace to
-     * pair with, and beta.1 came back with exactly that -- three client
-     * timeouts and no evidence. The records are transport measurements
-     * (timings, byte counts, readyState, protocol); they carry no URL, no SQL
-     * and no user text, which is why they can ride the same opt-in field as
-     * the sanitized log tail.
-     *
-     * Malformed input is reported rather than dropped: "the client sent
-     * something we could not parse" is itself a finding about the client.
      * Read through RequestInputNormalizer for the same reason
      * Functions::getPostOrGetSanitize() is: WordPress escapes every superglobal
      * at boot, so a JSON buffer taken straight out of $_POST can never parse
      * and every real support request would report its own telemetry as
      * unparseable.
      *
-     * Over-budget input is reduced a RECORD at a time by ClientTransportReport
-     * rather than cut at a byte offset. The browser store holds more than this
-     * budget carries, and cutting the serialized array mid-record left invalid
-     * JSON -- so a busy session, which is exactly the interesting kind, used to
-     * deliver its whole client-side story as "unparseable".
+     * The request boundary stays here rather than inside
+     * ABJ_404_Solution_SupportEvidenceExcerpt: reading it once and passing it
+     * in is what lets the same assembly run from a context that has no $_POST
+     * at all, and it guarantees the attempt ids the manifest reconciles are the
+     * ids in the buffer the payload actually carries.
      */
-    private static function appendClientTransportTelemetry(string $excerpt): string {
-        $raw = isset($_POST['client_telemetry'])
+    private static function readClientTelemetry(): string {
+        return isset($_POST['client_telemetry'])
             ? ABJ_404_Solution_RequestInputNormalizer::normalizeScalar($_POST['client_telemetry']) : '';
-        if ($raw === '') {
-            return $excerpt;
-        }
-        $bounded = ABJ_404_Solution_ClientTransportReport::boundDrainedBuffer(
-            $raw, self::MAX_CLIENT_TELEMETRY_LENGTH);
-        if (!$bounded['parsed']) {
-            $block = 'Client transport telemetry (unparseable, ' . $bounded['raw_length'] . ' bytes, '
-                . $bounded['error'] . "):\n" . substr($raw, 0, 500);
-        } else {
-            $label = $bounded['dropped'] > 0
-                ? 'Client transport telemetry (JSON, ' . $bounded['kept'] . ' of '
-                    . ($bounded['kept'] + $bounded['dropped']) . ' attempts, failures kept first):'
-                : 'Client transport telemetry (JSON):';
-            $block = $label . "\n" . $bounded['json'];
-        }
-        return $excerpt === '' ? $block : rtrim($excerpt) . "\n\n" . $block;
     }
 
     /**

@@ -63,8 +63,17 @@ final class ABJ_404_Solution_DiagnosticJournalExcerpt {
     /**
      * Compose one labeled excerpt block from the newest of the given paths.
      *
-     * Paths that do not exist are skipped silently: a journal that was never
-     * written is a normal state, not a failure.
+     * Paths that do not exist are skipped: a journal that was never written is
+     * a normal state, not a failure. That silence is only READABLE because the
+     * support collector states, separately and unconditionally, which
+     * directories and files it checked -- see
+     * ABJ_404_Solution_DiagnosticCollectionManifest. Without that manifest an
+     * empty return here is indistinguishable from a wrong directory, a wrong
+     * node, or a regression in this reader, which is precisely how beta.1's
+     * "the journal came back empty" ended up undiagnosable. Do NOT make this
+     * method the place that explains itself: a reader is the last component
+     * that can be trusted to describe its own failure, which is why the
+     * manifest stats the files independently instead.
      *
      * @param array<int, string> $paths Candidate files, any order; missing ones are ignored.
      * @param int $budgetBytes Hard ceiling for the returned string, header included.

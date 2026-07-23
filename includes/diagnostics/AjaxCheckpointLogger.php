@@ -98,14 +98,10 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
      */
     public static function resolveDirectory(): string {
         try {
-            $directory = function_exists('abj404_getUploadsDir') ? abj404_getUploadsDir() : '';
-            if (function_exists('apply_filters')) {
-                $directory = (string)apply_filters('abj404_ajax_trace_directory', $directory, array());
-            }
+            $directory = self::resolveDirectoryPath();
             if ($directory === '') {
                 return '';
             }
-            $directory = rtrim($directory, '/\\') . DIRECTORY_SEPARATOR;
             if (!class_exists('ABJ_404_Solution_FileSystemService')
                     || !ABJ_404_Solution_FileSystemService::createDirectoryWithErrorMessages($directory)) {
                 return '';
@@ -115,6 +111,24 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
             self::reportFailure('AJAX checkpoint directory resolution failed: ' . $e->getMessage());
             return '';
         }
+    }
+
+    /**
+     * The path this channel resolves to BEFORE the usability check, with a
+     * trailing separator, or '' when even the uploads directory is unknown.
+     *
+     * Split out of resolveDirectory() so a directory that could not be created
+     * is still NAMEABLE in the support-collection manifest. Collapsing an
+     * unusable path to '' is what made "the collector resolved somewhere it
+     * cannot write" indistinguishable from "there was nothing to read".
+     */
+    private static function resolveDirectoryPath(): string {
+        $directory = function_exists('abj404_getUploadsDir') ? abj404_getUploadsDir() : '';
+        if (function_exists('apply_filters')) {
+            $directory = (string)apply_filters('abj404_ajax_trace_directory', $directory, array());
+        }
+        $directory = (string)$directory;
+        return $directory === '' ? '' : rtrim($directory, '/\\') . DIRECTORY_SEPARATOR;
     }
 
     /**
@@ -306,10 +320,49 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
             return '';
         }
         return ABJ_404_Solution_DiagnosticJournalExcerpt::compose(
-            array($directory . self::ROTATED_FILE, $directory . self::CHECKPOINT_FILE),
+            self::supportExcerptPaths($directory),
             self::MAX_SUPPORT_EXCERPT_BYTES,
             "Recent AJAX request checkpoints (JSONL):\n"
         );
+    }
+
+    /**
+     * What readRecentForSupport() will look at, whether or not any of it
+     * exists, for ABJ_404_Solution_DiagnosticCollectionManifest. The candidate
+     * list is the reader's own, so the manifest can never describe a different
+     * set of files than the one that was actually read.
+     *
+     * The directory is reported even when it turned out to be unusable: which
+     * path this channel tried is exactly the fact a wrong-node or unwritable
+     * uploads directory is diagnosed from.
+     *
+     * @return array{channel: string, directory: string, usable: bool, paths: array<int, string>}
+     */
+    public static function supportCollectionSource(): array {
+        try {
+            $directory = self::resolveDirectory();
+            $usable = $directory !== '';
+            return array(
+                'channel' => 'ajax_checkpoints',
+                'directory' => $usable ? $directory : self::resolveDirectoryPath(),
+                'usable' => $usable,
+                'paths' => $usable ? self::supportExcerptPaths($directory) : array(),
+            );
+        } catch (Throwable $e) {
+            self::reportFailure('AJAX checkpoint support source resolution failed: ' . $e->getMessage());
+            return array('channel' => 'ajax_checkpoints', 'directory' => '', 'usable' => false, 'paths' => array());
+        }
+    }
+
+    /**
+     * Rotated file then current journal: oldest first, the order the excerpt
+     * reader breaks mtime ties on.
+     *
+     * @param string $directory With a trailing separator.
+     * @return array<int, string>
+     */
+    private static function supportExcerptPaths(string $directory): array {
+        return array($directory . self::ROTATED_FILE, $directory . self::CHECKPOINT_FILE);
     }
 
     /**
