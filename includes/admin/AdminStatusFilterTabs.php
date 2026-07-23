@@ -129,17 +129,15 @@ class ABJ_404_Solution_AdminStatusFilterTabs {
         if (!is_array($candidate)) {
             return $defaults;
         }
-        $values = array_values($candidate);
-        foreach ($values as $value) {
-            if (!is_int($value) && !(is_string($value) && ctype_digit($value))) {
-                return $defaults;
-            }
-        }
-        if (empty($values)) {
-            return $defaults;
-        }
+        // One pass: validate and convert together. Two passes (validate
+        // everything, then convert everything) left the conversion loop's own
+        // guards provably dead -- it could only ever see values the first loop
+        // had already accepted -- so its `return $defaults` was unreachable
+        // code standing in for a check that had already happened. Appending to
+        // $ints also reindexes, which is what the array_values() call the
+        // first pass needed was for.
         $ints = array();
-        foreach ($values as $value) {
+        foreach ($candidate as $value) {
             if (is_int($value)) {
                 $ints[] = $value;
                 continue;
@@ -148,6 +146,9 @@ class ABJ_404_Solution_AdminStatusFilterTabs {
                 $ints[] = intval($value);
                 continue;
             }
+            return $defaults;
+        }
+        if (empty($ints)) {
             return $defaults;
         }
         return $ints;

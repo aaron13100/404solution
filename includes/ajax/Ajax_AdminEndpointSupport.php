@@ -105,12 +105,9 @@ class ABJ_404_Solution_Ajax_AdminEndpointSupport {
             return true;
         }
 
-        $code = isset($result['code']) && is_string($result['code'])
-            ? $result['code'] : 'unauthorized';
-        $message = isset($result['message']) && is_string($result['message'])
-            ? $result['message'] : 'Unauthorized';
-        $status = isset($result['status']) && is_scalar($result['status'])
-            ? intval($result['status']) : 403;
+        $code = self::authResultString($result, 'code', 'unauthorized');
+        $message = self::authResultString($result, 'message', 'Unauthorized');
+        $status = self::authResultStatus($result, 403);
 
         $summary = $code === 'invalid_nonce'
             ? 'AJAX invalid nonce in ' . $handlerName . '.'
@@ -124,6 +121,45 @@ class ABJ_404_Solution_Ajax_AdminEndpointSupport {
             $status
         );
         return false;
+    }
+
+    /**
+     * Read one string field out of an authorization result, falling back when
+     * it is absent or the wrong type.
+     *
+     * $result is deliberately typed `mixed` rather than the authorizer's
+     * declared `array{ok: bool, code: string, ...}` shape, because that shape
+     * is not what this code can count on at runtime: the gate is resolved from
+     * the service container and accepted on nothing stronger than
+     * is_object() + method_exists(), so any object exposing the method name
+     * reaches this branch and may return whatever it likes. Inlined at the
+     * call site the guards read as dead code -- the declared shape guarantees
+     * the keys -- and static analysis says so; taking the value through a
+     * `mixed` parameter is what makes the check honest instead of removing it
+     * from an authorization failure path.
+     *
+     * @param mixed $result
+     */
+    private static function authResultString($result, string $key, string $fallback): string {
+        if (!is_array($result) || !isset($result[$key]) || !is_string($result[$key])) {
+            return $fallback;
+        }
+        return $result[$key];
+    }
+
+    /**
+     * The HTTP status from an authorization result, or $fallback when it is
+     * absent or non-scalar. Separate from authResultString() because the
+     * accepted input is wider (any scalar, intval()'d) and the output type is
+     * different; see that method for why $result is typed `mixed`.
+     *
+     * @param mixed $result
+     */
+    private static function authResultStatus($result, int $fallback): int {
+        if (!is_array($result) || !isset($result['status']) || !is_scalar($result['status'])) {
+            return $fallback;
+        }
+        return intval($result['status']);
     }
 
     /**

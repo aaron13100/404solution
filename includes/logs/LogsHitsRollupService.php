@@ -213,7 +213,17 @@ class ABJ_404_Solution_LogsHitsRollupService implements ABJ_404_Solution_LogsHit
         if ($query === null) { return array(); }
         $results = $this->dbCore->queryAndGetResults($query, array('log_errors' => false));
         if (!is_array($results['rows']) || empty($results['rows']) || !is_array($results['rows'][0])) { return array(); }
-        return array_change_key_case($results['rows'][0], CASE_LOWER);
+        // Lower-cased explicitly rather than through array_change_key_case(),
+        // which is typed as preserving the input's (here unknown) key type and
+        // so cannot satisfy this method's declared string-keyed contract.
+        // MySQL and MariaDB disagree on the case of SHOW TABLE STATUS column
+        // names, which is the whole reason the keys are normalized at all
+        // (defensive philosophy #5, case-insensitive metadata access).
+        $row = array();
+        foreach ($results['rows'][0] as $column => $value) {
+            $row[strtolower((string)$column)] = $value;
+        }
+        return $row;
     }
 
     // =========================================================================
