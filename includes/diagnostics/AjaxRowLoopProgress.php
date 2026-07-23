@@ -101,7 +101,7 @@ final class ABJ_404_Solution_AjaxRowLoopProgress {
         $this->label = substr($label, 0, 64);
         $this->total = max(0, $totalRows);
         $this->interval = max(1, (int)ceil($this->total / self::MAX_PROGRESS_RECORDS));
-        $this->startedAt = microtime(true);
+        $this->startedAt = abj_clock()->nowFloat();
         $this->requestId = self::resolveRequestId();
     }
 
@@ -192,7 +192,7 @@ final class ABJ_404_Solution_AjaxRowLoopProgress {
     }
 
     private static function elapsedMs(float $startedAt): int {
-        return max(0, (int)round((microtime(true) - $startedAt) * 1000));
+        return max(0, (int)round((abj_clock()->nowFloat() - $startedAt) * 1000));
     }
 
     private static function reportFailure(string $message): void {

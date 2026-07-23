@@ -202,7 +202,14 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
             if ($requestId === '') {
                 return;
             }
-            self::record($requestId, $event, ABJ_404_Solution_RequestEnvironmentFingerprint::bootDelta(microtime(true)));
+            $now = self::nowFloat();
+            // A waypoint with no clock is still worth recording: WHICH boot
+            // phase was reached is the measurement, and the delta is the
+            // refinement. Sending a stand-in number into bootDelta() would
+            // publish a boot duration that no clock produced.
+            self::record($requestId, $event, $now === null
+                ? array('request_time_float' => null, 'boot_delta_ms' => null)
+                : ABJ_404_Solution_RequestEnvironmentFingerprint::bootDelta($now));
         } catch (Throwable $e) {
             self::reportFailure('AJAX boot waypoint record failed (' . $event . '): ' . $e->getMessage());
         }
@@ -212,7 +219,9 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
      * Record a checkpoint pair (`${label}_start` / `${label}_end`) around a
      * unit of work and return its result. The end record always fires (a
      * finally block), and always carries elapsed_ms and status; the work's
-     * own exception (if any) propagates to the caller unchanged.
+     * own exception (if any) propagates to the caller unchanged. elapsed_ms
+     * is null only when this process has no clock at all (see nowFloat()),
+     * which is a different finding from a stage that took no measurable time.
      *
      * @template T
      * @param callable():T $work
@@ -220,7 +229,7 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
      * @return T
      */
     public static function around(string $requestId, string $label, callable $work, array $startFields = array()) {
-        $startedAt = microtime(true);
+        $startedAt = self::nowFloat();
         self::record($requestId, $label . '_start', $startFields);
         $status = 'complete';
         try {
@@ -231,7 +240,7 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
         } finally {
             self::record($requestId, $label . '_end', array(
                 'status' => $status,
-                'elapsed_ms' => max(0, (int)round((microtime(true) - $startedAt) * 1000)),
+                'elapsed_ms' => self::elapsedMs($startedAt),
             ));
         }
     }
@@ -337,7 +346,7 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
         $envelope = array(
             'schema_version' => self::SCHEMA_VERSION,
             'envelope' => self::ENVELOPE_FULL,
-            'ts' => microtime(true),
+            'ts' => self::nowFloat(),
             'hrtime_ns' => function_exists('hrtime') ? hrtime(true) : null,
             'rusage' => self::resourceUsage(),
             'host_pressure' => class_exists('ABJ_404_Solution_HostPressureSampler')
@@ -369,7 +378,7 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
         return array(
             'schema_version' => self::SCHEMA_VERSION,
             'envelope' => self::ENVELOPE_FREQUENT,
-            'ts' => microtime(true),
+            'ts' => self::nowFloat(),
             'hrtime_ns' => function_exists('hrtime') ? hrtime(true) : null,
             'request_id' => $requestId,
             'event' => $event,
@@ -431,6 +440,50 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
     /** @param array<string, mixed> $record */
     private static function writeRecord(string $directory, array $record): void {
         self::$previousWriteTelemetry = ABJ_404_Solution_CheckpointJournalWriter::append($directory, $record);
+    }
+
+    /**
+     * Seconds as a float from the clock seam, or null when this process has
+     * no clock at all. Three states, because this logger runs in all three:
+     *
+     *  1. Container up: abj_clock(), so FrozenClock drives it in tests.
+     *  2. Boot window: 404-solution.php records `boot_plugin_entry` right
+     *     after spl_autoload_register(), long before Loader.php requires
+     *     service-locator.php. SystemClock is what abj_clock() would return
+     *     there anyway, so this is the same reading, not a second source.
+     *  3. Neither: a corrupt plugin directory (the safe autoloader returns
+     *     SILENTLY for a missing class) or the response-tail subprocess
+     *     probe, whose file set has no clock in it. Constructing SystemClock
+     *     fatals there, and a logger built to keep recording while the rest
+     *     of the stack is broken must not be what kills the request. Null
+     *     instead, so an absent `ts` reads as "no clock was reachable"
+     *     rather than as a fabricated timestamp; hrtime_ns, pid and the
+     *     request id still identify the record.
+     *
+     * Mirrors ABJ_404_Solution_SameSiteRequestCensus::nowFloat(), and is
+     * deliberately inline rather than a shared helper class: such a class
+     * would be one more file that has to exist for state 3 to work.
+     */
+    /**
+     * Milliseconds since $startedAt, or null when either end of the interval
+     * had no clock to read. Never a number derived from only one reading.
+     */
+    private static function elapsedMs(?float $startedAt): ?int {
+        if ($startedAt === null) {
+            return null;
+        }
+        $now = self::nowFloat();
+        return $now === null ? null : max(0, (int)round(($now - $startedAt) * 1000));
+    }
+
+    private static function nowFloat(): ?float {
+        if (function_exists('abj_clock')) {
+            return abj_clock()->nowFloat();
+        }
+        if (class_exists('ABJ_404_Solution_SystemClock')) {
+            return (new ABJ_404_Solution_SystemClock())->nowFloat();
+        }
+        return null;
     }
 
     private static function reportFailure(string $message): void {

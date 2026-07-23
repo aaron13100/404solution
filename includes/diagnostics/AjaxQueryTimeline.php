@@ -54,7 +54,7 @@ if (!defined('ABSPATH')) {
  * quoted literals and numbers become `?` before anything is written, so a
  * user's URLs never reach the journal.
  *
- * @phpstan-type AbjOpenQuery array{q: int, started_at: float}
+ * @phpstan-type AbjOpenQuery array{q: int, started_at: float|null}
  * @phpstan-type AbjSlowestQuery array{q: int, ms: float}
  * @phpstan-type AbjTimelineState array{request_id: string, count: int, recorded: int,
  *     db_ms: float, last_ms: float|null, open: AbjOpenQuery|null,
@@ -146,7 +146,7 @@ final class ABJ_404_Solution_AjaxQueryTimeline {
             $state['count']++;
 
             $previous = self::previousQueryFields($state);
-            $state['open'] = array('q' => $state['count'], 'started_at' => microtime(true));
+            $state['open'] = array('q' => $state['count'], 'started_at' => self::nowFloat());
 
             if ($state['count'] > self::MAX_RECORDED_QUERIES) {
                 if (!$state['capped']) {
@@ -246,8 +246,7 @@ final class ABJ_404_Solution_AjaxQueryTimeline {
             // reported its completion. Stated rather than smoothed over: it
             // changes how every duration above it should be read.
             $summary['open_query'] = $state['open'] === null ? null : $state['open']['q'];
-            $summary['open_ms'] = $state['open'] === null
-                ? null : round((microtime(true) - $state['open']['started_at']) * 1000.0, 3);
+            $summary['open_ms'] = self::openMs($state['open']);
             ABJ_404_Solution_AjaxCheckpointLogger::recordFrequent($requestId, 'query_timeline_summary', $summary);
         } catch (Throwable $e) {
             self::reportFailure('query timeline summary failed: ' . $e->getMessage());
@@ -345,6 +344,42 @@ final class ABJ_404_Solution_AjaxQueryTimeline {
             self::$redactor = new ABJ_404_Solution_AjaxFailureLogger();
         }
         return self::$redactor;
+    }
+
+    /**
+     * Milliseconds an unfinished query has been open, or null when there is
+     * no open query or no clock to measure it with.
+     *
+     * @param array{q: int, started_at: float|null}|null $open
+     */
+    private static function openMs($open): ?float {
+        if ($open === null || $open['started_at'] === null) {
+            return null;
+        }
+        $now = self::nowFloat();
+        return $now === null ? null : round(($now - $open['started_at']) * 1000.0, 3);
+    }
+
+    /**
+     * Seconds as a float from the clock seam, or null when this process has
+     * no clock.
+     *
+     * flushSummary() is called from ABJ_404_Solution_AjaxResponseEmitter, and
+     * that path is exercised by the response-tail subprocess probe, which
+     * hand-requires a deliberately minimal file set with no service locator
+     * and no autoloader. The same shape covers a corrupt plugin directory,
+     * where the safe autoloader returns silently for a missing class. Reading
+     * the clock must not be able to kill the response it is instrumenting.
+     * See ABJ_404_Solution_AjaxCheckpointLogger::nowFloat().
+     */
+    private static function nowFloat(): ?float {
+        if (function_exists('abj_clock')) {
+            return abj_clock()->nowFloat();
+        }
+        if (class_exists('ABJ_404_Solution_SystemClock')) {
+            return (new ABJ_404_Solution_SystemClock())->nowFloat();
+        }
+        return null;
     }
 
     private static function reportFailure(string $message): void {

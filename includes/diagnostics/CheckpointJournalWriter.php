@@ -209,8 +209,22 @@ final class ABJ_404_Solution_CheckpointJournalWriter {
         return $result;
     }
 
+    /**
+     * A monotonic nanosecond counter, or 0 when the host has none.
+     *
+     * This measures the writer's OWN cost, so the reading has to be monotonic:
+     * a wall clock can step backwards under NTP and would report a write that
+     * took a full second as instantaneous. hrtime() has been core since PHP
+     * 7.3 and this plugin requires 7.4, so the only way it is missing is an
+     * explicit `disable_functions`. On such a host the honest answer is that
+     * the writer's cost is unmeasurable -- both readings return 0, so
+     * elapsedMicroseconds() reports 0 -- rather than a number fabricated from
+     * a different, non-monotonic time source. Keeping this class free of the
+     * clock service is deliberate: it is the last writer standing when the
+     * rest of the diagnostic stack is what is broken.
+     */
     private static function monotonicNanoseconds(): int {
-        return function_exists('hrtime') ? (int)hrtime(true) : (int)round(microtime(true) * 1000000000);
+        return function_exists('hrtime') ? (int)hrtime(true) : 0;
     }
 
     private static function elapsedMicroseconds(int $startedNs): int {
