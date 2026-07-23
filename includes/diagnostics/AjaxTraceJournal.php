@@ -164,8 +164,15 @@ final class ABJ_404_Solution_AjaxTraceJournal {
      * newest files last. Pending spools are included on purpose: a request
      * that is hung RIGHT NOW has written nothing to the journal yet, and it
      * is the most interesting request in the file.
+     *
+     * This journal holds no client verdicts of its own -- they are written to
+     * the checkpoint journal -- so a caller that omits $knownFailingIds gets an
+     * excerpt that cannot tell a browser-lost request from a healthy one. See
+     * ABJ_404_Solution_DiagnosticJournalExcerpt::failureIndex().
+     *
+     * @param array<string, bool> $knownFailingIds
      */
-    public static function readRecentForSupport(): string {
+    public static function readRecentForSupport(array $knownFailingIds = array()): string {
         try {
             $directory = self::resolveSupportDirectory();
             if ($directory === '') {
@@ -174,7 +181,8 @@ final class ABJ_404_Solution_AjaxTraceJournal {
             return ABJ_404_Solution_DiagnosticJournalExcerpt::compose(
                 self::supportExcerptPaths($directory),
                 self::MAX_SUPPORT_EXCERPT_BYTES,
-                "Recent AJAX stage traces (JSONL):\n"
+                "Recent AJAX stage traces (JSONL):\n",
+                $knownFailingIds
             );
         } catch (Throwable $e) {
             self::reportStaticFailure('AJAX trace support excerpt failed: ' . $e->getMessage());

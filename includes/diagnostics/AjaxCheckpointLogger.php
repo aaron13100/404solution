@@ -12,9 +12,9 @@ if (!defined('ABSPATH')) {
  * There is no pending/promotion state machine and no in-memory batching, so
  * a bug in the trace class under test (a stuck pending file, a rotation
  * failure, a construction exception) cannot erase this evidence. It is also
- * the channel the trace's own per-request self-test sentinel journals
- * through (see runSelfTest()), so a bug in the trace journal itself cannot
- * hide the sentinel's result.
+ * the channel ABJ_404_Solution_DiagnosticDirectoryProbe journals its
+ * per-request round trip through, so a bug in the trace journal itself
+ * cannot hide the probe's result.
  *
  * Every public method is failure-safe: it never lets an internal write
  * failure escape as an exception. around() re-throws only the wrapped
@@ -237,69 +237,6 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
     }
 
     /**
-     * Per-request trace self-test sentinel: create, append, flush, stat,
-     * glob, read, and delete a request-specific file, journaling every
-     * step's outcome through this independent channel. Proves the same
-     * directory the trace journal depends on is actually writable and
-     * readable for THIS request, not just that a directory path resolved.
-     * Never throws.
-     */
-    public static function runSelfTest(string $requestId): void {
-        try {
-            $directory = self::resolveDirectory();
-            if ($directory === '') {
-                self::record($requestId, 'selftest', array('ok' => false, 'step' => 'resolve_directory'));
-                return;
-            }
-            $path = $directory . 'abj404_checkpoint_selftest_' . $requestId . '_' . getmypid() . '.tmp';
-            $payload = 'abj404-selftest-' . $requestId;
-
-            $handle = @fopen($path, 'wb');
-            if ($handle === false) {
-                self::record($requestId, 'selftest', array('ok' => false, 'step' => 'create'));
-                return;
-            }
-            $written = @fwrite($handle, $payload);
-            $flushed = @fflush($handle);
-            @fclose($handle);
-            if ($written === false || !$flushed) {
-                self::record($requestId, 'selftest', array('ok' => false, 'step' => 'append_flush'));
-                return;
-            }
-
-            $size = @filesize($path);
-            if (!is_int($size) || $size !== strlen($payload)) {
-                self::record($requestId, 'selftest', array('ok' => false, 'step' => 'stat', 'size' => $size));
-                return;
-            }
-
-            $globMatches = @glob($directory . 'abj404_checkpoint_selftest_*');
-            $globCount = is_array($globMatches) ? count($globMatches) : 0;
-            if ($globCount < 1) {
-                self::record($requestId, 'selftest', array('ok' => false, 'step' => 'glob', 'glob_count' => $globCount));
-                return;
-            }
-
-            $readBack = @file_get_contents($path);
-            if ($readBack !== $payload) {
-                self::record($requestId, 'selftest', array('ok' => false, 'step' => 'read'));
-                return;
-            }
-
-            $deleted = @unlink($path);
-            if (!$deleted) {
-                self::record($requestId, 'selftest', array('ok' => false, 'step' => 'delete'));
-                return;
-            }
-
-            self::record($requestId, 'selftest', array('ok' => true, 'step' => 'complete', 'glob_count' => $globCount));
-        } catch (Throwable $e) {
-            self::reportFailure('AJAX checkpoint self-test failed: ' . $e->getMessage());
-            self::record($requestId, 'selftest', array('ok' => false, 'step' => 'exception', 'message' => substr($e->getMessage(), 0, 200)));
-        }
-    }
-
-    /**
      * Bounded recent checkpoint lines for the support-request payload.
      *
      * Without this the checkpoints are written and never read by anyone: the
@@ -313,8 +250,13 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
      *
      * The rotated file is included: a session busy enough to rotate is a
      * session whose oldest evidence is still the most interesting.
+     *
+     * @param array<string, bool> $knownFailingIds Requests condemned across every
+     *   journal, so this excerpt and the stage-trace one rank identically. This
+     *   journal already contains its own verdicts; passing the union in is what
+     *   makes the two agree rather than each ranking off what it happens to hold.
      */
-    public static function readRecentForSupport(): string {
+    public static function readRecentForSupport(array $knownFailingIds = array()): string {
         $directory = self::resolveDirectory();
         if ($directory === '') {
             return '';
@@ -322,7 +264,8 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
         return ABJ_404_Solution_DiagnosticJournalExcerpt::compose(
             self::supportExcerptPaths($directory),
             self::MAX_SUPPORT_EXCERPT_BYTES,
-            "Recent AJAX request checkpoints (JSONL):\n"
+            "Recent AJAX request checkpoints (JSONL):\n",
+            $knownFailingIds
         );
     }
 

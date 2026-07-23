@@ -32,7 +32,7 @@ class ABJ_404_Solution_AjaxStageDiagnostics {
     public static function beginRequest(array $context): void {
         $requestId = ABJ_404_Solution_AjaxRequestLedger::normalizeId($context['request_id'] ?? '');
 
-        ABJ_404_Solution_AjaxCheckpointLogger::runSelfTest($requestId);
+        ABJ_404_Solution_DiagnosticDirectoryProbe::run($requestId);
 
         // The browser's account of the PREVIOUS attempt rides this request's
         // params (matrix coverage req. 6). Journaled here, at the same point

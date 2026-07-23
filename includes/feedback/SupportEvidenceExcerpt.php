@@ -101,19 +101,44 @@ final class ABJ_404_Solution_SupportEvidenceExcerpt {
      * because the manifest below has to describe the read that actually
      * happened, not a second guess at what it would have read.
      *
+     * Every channel is sourced BEFORE any of them is read, because the two
+     * excerpts are ranked from one shared failure index and the index has to
+     * be complete before the first read spends its budget. The browser writes
+     * its verdicts to the checkpoint journal only, so without this the stage
+     * trace ranks a request PHP completed and the browser never received as
+     * ordinary healthy context -- and that request's stage timings are the
+     * evidence for where the response was built before it failed to arrive.
+     *
      * @return array<int, array{channel: string, directory: string, usable: bool, paths: array<int, string>, collected: string}>
      */
     private static function collectChannels(): array {
-        $channels = array();
-        if (class_exists('ABJ_404_Solution_AjaxRequestTrace')) {
-            $source = ABJ_404_Solution_AjaxTraceJournal::supportCollectionSource();
-            $source['collected'] = ABJ_404_Solution_AjaxTraceJournal::readRecentForSupport();
-            $channels[] = $source;
+        $trace = class_exists('ABJ_404_Solution_AjaxRequestTrace')
+            ? ABJ_404_Solution_AjaxTraceJournal::supportCollectionSource() : null;
+        $checkpoints = class_exists('ABJ_404_Solution_AjaxCheckpointLogger')
+            ? ABJ_404_Solution_AjaxCheckpointLogger::supportCollectionSource() : null;
+
+        // Built per channel rather than from one merged path list: each
+        // channel's read is bounded by its own file count and byte allowance,
+        // and an index assembled over a merged list would silently drop the
+        // files that fell off the far end of a combined bound.
+        $failingIds = array();
+        if (class_exists('ABJ_404_Solution_DiagnosticJournalExcerpt')) {
+            foreach (array($trace, $checkpoints) as $source) {
+                if ($source !== null) {
+                    $failingIds += ABJ_404_Solution_DiagnosticJournalExcerpt::failureIndex($source['paths']);
+                }
+            }
         }
-        if (class_exists('ABJ_404_Solution_AjaxCheckpointLogger')) {
-            $source = ABJ_404_Solution_AjaxCheckpointLogger::supportCollectionSource();
-            $source['collected'] = ABJ_404_Solution_AjaxCheckpointLogger::readRecentForSupport();
-            $channels[] = $source;
+
+        $channels = array();
+        if ($trace !== null) {
+            $trace['collected'] = ABJ_404_Solution_AjaxTraceJournal::readRecentForSupport($failingIds);
+            $channels[] = $trace;
+        }
+        if ($checkpoints !== null) {
+            $checkpoints['collected'] =
+                ABJ_404_Solution_AjaxCheckpointLogger::readRecentForSupport($failingIds);
+            $channels[] = $checkpoints;
         }
         return $channels;
     }

@@ -14,6 +14,8 @@
  *   2. navigator.sendBeacon, after the final attempt of a request fails.
  *      Supplemental only: a beacon may be queued behind the very connection
  *      that is stalling, so it can add evidence but must never be relied on.
+ *      It is its own HTTP request and travels under its own carrier id (see
+ *      beaconCarrierId), naming the attempt it reports on separately.
  *   3. The admin failure notice, as one compact line per attempt inside the
  *      diagnostic block the notice already renders.
  *
@@ -185,6 +187,54 @@
     }
 
     /**
+     * The ledger id shape the server accepts for a request id
+     * (ABJ_404_Solution_AjaxRequestLedger::ID_PATTERN, declared identically in
+     * contracts/schemas/ajax-update-pagination.schema.json). Anything outside
+     * it is degraded server-side to the unknown-id sentinel, which is the one
+     * outcome that would make a carrier's records unjoinable.
+     */
+    var MIN_LEDGER_ID_CHARS = 8;
+    var MAX_LEDGER_ID_CHARS = 64;
+
+    /** Beacons this page has sent, so each one gets a carrier id of its own. */
+    var beaconsSent = 0;
+
+    /**
+     * The id a beacon's OWN HTTP request travels under.
+     *
+     * A beacon is a second request -- one that succeeds, does no table work,
+     * and exists to talk about a first one that failed. Sending it under the
+     * failed attempt's id put the beacon's own lifecycle records (its
+     * report-only branch, its request end, its exit sentinel) inside that
+     * attempt's journal group, with two costs: the attempt appeared to have
+     * reached an orderly end when in fact only its messenger had, and the
+     * messenger's records were charged against the attempt's reserved share of
+     * a bounded support payload. So the carrier gets an id of its own and
+     * names the attempt separately, in reportedAttemptId.
+     *
+     * Derived from the attempt id rather than freshly random, so the pair
+     * still reads together at a glance ('...t2' is reported by '...t2b000')
+     * and so a truncated payload that keeps only one of them still names the
+     * other. The sequence suffix is fixed-width: two beacons that padded into
+     * the same id would re-create the commingling one directional step over.
+     *
+     * @param {object} record
+     * @returns {string}
+     */
+    function beaconCarrierId(record) {
+        var sequence = String(beaconsSent++);
+        while (sequence.length < 3) {
+            sequence = '0' + sequence;
+        }
+        var suffix = 'b' + sequence;
+        var base = String((record && record.id) || '').replace(/[^A-Za-z0-9]/g, '');
+        while (base.length + suffix.length < MIN_LEDGER_ID_CHARS) {
+            base += '0';
+        }
+        return base.slice(0, MAX_LEDGER_ID_CHARS - suffix.length) + suffix;
+    }
+
+    /**
      * Supplemental last-chance delivery after the final attempt of a request
      * fails. The same record is already in durable storage and will ride the
      * next request, so a beacon the browser drops costs nothing.
@@ -204,7 +254,15 @@
             var form = new global.FormData();
             form.append('action', 'ajaxUpdatePaginationLinks');
             form.append('clientReportOnly', '1');
-            form.append('requestId', String(record.id || ''));
+            form.append('requestId', beaconCarrierId(record));
+            var reportedAttemptId = String(record.id || '');
+            if (reportedAttemptId !== '') {
+                // Omitted rather than sent empty when the record names no
+                // attempt: the field is ledger-shaped on the wire, and the
+                // server states the absence as an empty reported_attempt_id of
+                // its own, so nothing is silently lost by leaving it off.
+                form.append('reportedAttemptId', reportedAttemptId);
+            }
             form.append('sessionId', String(record.sid || ''));
             form.append('nonce', String(nonce || ''));
             form.append('subpage', String(record.subpage || ''));

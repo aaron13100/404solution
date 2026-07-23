@@ -78,9 +78,13 @@ final class ABJ_404_Solution_DiagnosticJournalExcerpt {
      * @param array<int, string> $paths Candidate files, any order; missing ones are ignored.
      * @param int $budgetBytes Hard ceiling for the returned string, header included.
      * @param string $header Section label, e.g. "Recent AJAX stage traces (JSONL):\n".
+     * @param array<string, bool> $knownFailingIds Requests condemned in ANOTHER journal,
+     *   from failureIndex(). Without them this excerpt ranks only on what its own
+     *   files say, and the browser says it in one journal and not the other.
      * @return string Empty string when nothing readable was found.
      */
-    public static function compose(array $paths, int $budgetBytes, string $header): string {
+    public static function compose(array $paths, int $budgetBytes, string $header,
+            array $knownFailingIds = array()): string {
         try {
             $files = self::oldestFirstExisting($paths);
             if ($files === array()) {
@@ -94,7 +98,8 @@ final class ABJ_404_Solution_DiagnosticJournalExcerpt {
             if ($read['lines'] === array()) {
                 return '';
             }
-            $selected = ABJ_404_Solution_DiagnosticEvidencePriority::select($read['lines'], $contentBudget);
+            $selected = ABJ_404_Solution_DiagnosticEvidencePriority::select(
+                $read['lines'], $contentBudget, $knownFailingIds);
             if ($selected['lines'] === array()) {
                 return '';
             }
@@ -107,6 +112,38 @@ final class ABJ_404_Solution_DiagnosticJournalExcerpt {
         } catch (Throwable $e) {
             self::reportFailure('Diagnostic journal excerpt failed: ' . $e->getMessage());
             return '';
+        }
+    }
+
+    /**
+     * Every request id the browser condemned in one channel's journals.
+     *
+     * Read as its own pass, BEFORE any excerpt is composed, because the answer
+     * has to be available to a journal that does not contain it: the browser's
+     * verdicts live only in the checkpoint journal, and the stage trace has to
+     * rank the same requests as failing or it spends a browser-lost request's
+     * stage timings on budget as ordinary context. Callers build the index per
+     * channel and pass the union into every compose() call -- one index, both
+     * journals, so the two can never disagree about which requests failed.
+     *
+     * Bounded exactly like the composing read (same file selection, same byte
+     * allowance), so the index describes the same universe the excerpt draws
+     * from rather than a larger one it could point outside of.
+     *
+     * @param array<int, string> $paths One channel's candidate files, as compose() takes them.
+     * @return array<string, bool> Condemned request ids, keyed by id; empty when unreadable.
+     */
+    public static function failureIndex(array $paths): array {
+        try {
+            $files = self::oldestFirstExisting($paths);
+            if ($files === array()) {
+                return array();
+            }
+            $read = self::readLines($files);
+            return ABJ_404_Solution_DiagnosticClientVerdict::requestIdsIn($read['lines']);
+        } catch (Throwable $e) {
+            self::reportFailure('Diagnostic failure index failed: ' . $e->getMessage());
+            return array();
         }
     }
 

@@ -25,6 +25,13 @@ if (!defined('ABSPATH')) {
  *   3. Everything else, newest first. Healthy traffic and canary probes are
  *      context; they are spent last and they can never evict tier 1.
  *
+ * Tier 1 is decided from ONE index across every journal, not from each file's
+ * own contents: the browser's verdicts are written to the checkpoint journal
+ * alone, and a request PHP completed but the browser never received looks
+ * exactly like healthy traffic anywhere else. Resolving and collecting those
+ * verdicts is ABJ_404_Solution_DiagnosticClientVerdict's; this class only
+ * receives the resulting ids and promotes the groups it already holds.
+ *
  * Within tiers 1 and 2 the order is OLDEST first: the first failure happened
  * without the confounding effect of retries, warmed caches, or an already
  * degraded host, so it is the most diagnostic single request in the file.
@@ -63,17 +70,6 @@ final class ABJ_404_Solution_DiagnosticEvidencePriority {
         'abandoned_recovered',
     );
 
-    /**
-     * The only client-reported outcome that means an attempt did not fail.
-     *
-     * Deliberately a one-element allowlist rather than a deny-list of known
-     * failure words. 'pending' is an attempt that never finished, which is the
-     * hung request itself; an absent or unrecognised outcome is an unknown,
-     * and an unknown is more interesting than a known success. Over-including
-     * evidence costs budget; under-including it costs the whole investigation.
-     */
-    const HEALTHY_CLIENT_OUTCOMES = array('success');
-
     /** Bucket for records that carry no usable request id (torn writes, foreign lines). */
     const UNJOINABLE_KEY = "\0unjoinable";
 
@@ -82,10 +78,14 @@ final class ABJ_404_Solution_DiagnosticEvidencePriority {
      *
      * @param array<int, string> $lines JSONL lines, oldest first, newline-free.
      * @param int $budgetBytes Hard ceiling for the returned lines including their newlines.
+     * @param array<string, bool> $knownFailingIds Request ids condemned in a DIFFERENT
+     *   journal, keyed by id, from
+     *   ABJ_404_Solution_DiagnosticClientVerdict::requestIdsIn().
      * @return array{lines: array<int, string>, summary: array<string, int>}
      */
-    public static function select(array $lines, int $budgetBytes): array {
+    public static function select(array $lines, int $budgetBytes, array $knownFailingIds = array()): array {
         $groups = self::group($lines);
+        self::applyKnownFailures($groups, $knownFailingIds);
         $failingIds = self::classifyFailures($groups);
         $ordered = self::orderByPriority($groups, $failingIds);
 
@@ -131,26 +131,18 @@ final class ABJ_404_Solution_DiagnosticEvidencePriority {
     }
 
     /**
-     * Fold the browser's verdict about a DIFFERENT attempt into that other
-     * attempt's group.
+     * Fold a record's verdict about another request into that request's group.
      *
-     * The client's account of a previous attempt rides a LATER request, so
-     * this record condemns an id other than the one whose envelope carries it.
-     * That indirection is the most authoritative failure signal there is: only
-     * the browser can see a request that produced no response at all.
+     * The verdict always names an id other than the one whose envelope carries
+     * it, so a record can condemn a group these lines have not reached yet, or
+     * one they never reach at all.
      *
      * @param array<string, ABJ_404_Solution_DiagnosticRequestGroup> $groups
      * @param array<array-key, mixed> $record
      */
     private static function applyClientVerdict(array &$groups, array $record): void {
-        $event = isset($record['event']) && is_scalar($record['event']) ? (string)$record['event'] : '';
-        if ($event !== 'client_prior_attempt' || !isset($record['report']) || !is_array($record['report'])) {
-            return;
-        }
-        $report = $record['report'];
-        $outcome = isset($report['outcome']) && is_scalar($report['outcome']) ? (string)$report['outcome'] : '';
-        $reportedId = self::journalKeyOfReportedAttempt($report);
-        if ($reportedId === '' || in_array($outcome, self::HEALTHY_CLIENT_OUTCOMES, true)) {
+        $reportedId = ABJ_404_Solution_DiagnosticClientVerdict::condemnedRequestId($record);
+        if ($reportedId === '') {
             return;
         }
         if (!isset($groups[$reportedId])) {
@@ -163,38 +155,27 @@ final class ABJ_404_Solution_DiagnosticEvidencePriority {
     }
 
     /**
-     * The journal key the browser's report is talking about, or '' when it
-     * named nothing usable.
+     * Fold verdicts found in OTHER journals into the groups this one holds.
      *
-     * Every group here is keyed by whatever the browser sent as the wire
-     * `requestId`, normalized by the ledger on arrival. The browser sends its
-     * PER-ATTEMPT composite id there whenever the attempt recorder is running
-     * (`record.id`, e.g. `abc123t2`), and falls back to the LOGICAL request id
-     * (`record.rid`, `abc123` -- the prefix every retry of one part shares)
-     * only when the recorder did not load and no attempt id exists. So the key
-     * is resolved in exactly that order, through exactly that normalization.
+     * Only groups that exist here are promoted; a condemned id this journal
+     * never recorded mints nothing. That asymmetry with the in-journal pass is
+     * deliberate: a request that died before its first stage legitimately
+     * writes nothing to the stage trace, so minting a placeholder for it there
+     * would report a failing request the excerpt could never carry and make
+     * the accounting claim evidence was lost when none ever existed. The
+     * journal that DID record the verdict still mints its own placeholder, so
+     * the "condemned and completely absent" case stays stated exactly once.
      *
-     * Reading the logical id alone was a join that could never land: while the
-     * recorder runs, no group is ever keyed by it, so the verdict minted an
-     * empty placeholder and the attempt that actually failed stayed ranked as
-     * healthy context. That silently defeated the one case only the browser
-     * can report -- PHP completed the request and the response never arrived.
-     *
-     * @param array<array-key, mixed> $report
+     * @param array<string, ABJ_404_Solution_DiagnosticRequestGroup> $groups
+     * @param array<string, bool> $knownFailingIds
      */
-    private static function journalKeyOfReportedAttempt(array $report): string {
-        foreach (array('id', 'rid') as $field) {
-            $raw = $report[$field] ?? null;
-            if (!is_scalar($raw) || (string)$raw === '') {
-                continue;
+    private static function applyKnownFailures(array $groups, array $knownFailingIds): void {
+        foreach (array_keys($knownFailingIds) as $id) {
+            $id = (string)$id;
+            if (isset($groups[$id]) && $groups[$id]->hasRecords()) {
+                $groups[$id]->markFailed();
             }
-            // Normalized, not compared raw: an id the ledger refuses was
-            // journaled under its unknown-id sentinel, so that sentinel is the
-            // group this verdict belongs to. A raw comparison against an
-            // already-normalized key can only ever miss.
-            return ABJ_404_Solution_AjaxRequestLedger::normalizeId($raw);
         }
-        return '';
     }
 
     /**
