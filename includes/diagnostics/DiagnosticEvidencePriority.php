@@ -131,8 +131,8 @@ final class ABJ_404_Solution_DiagnosticEvidencePriority {
     }
 
     /**
-     * Fold the browser's verdict about a DIFFERENT request into that other
-     * request's group.
+     * Fold the browser's verdict about a DIFFERENT attempt into that other
+     * attempt's group.
      *
      * The client's account of a previous attempt rides a LATER request, so
      * this record condemns an id other than the one whose envelope carries it.
@@ -148,18 +148,53 @@ final class ABJ_404_Solution_DiagnosticEvidencePriority {
             return;
         }
         $report = $record['report'];
-        $reportedId = isset($report['rid']) && is_scalar($report['rid']) ? (string)$report['rid'] : '';
         $outcome = isset($report['outcome']) && is_scalar($report['outcome']) ? (string)$report['outcome'] : '';
+        $reportedId = self::journalKeyOfReportedAttempt($report);
         if ($reportedId === '' || in_array($outcome, self::HEALTHY_CLIENT_OUTCOMES, true)) {
             return;
         }
         if (!isset($groups[$reportedId])) {
-            // The condemned request wrote nothing here at all -- it may never
+            // The condemned attempt wrote nothing here at all -- it may never
             // have reached PHP. Recorded as a known-failing id with no records
             // so the summary can say so out loud instead of it being absent.
             $groups[$reportedId] = new ABJ_404_Solution_DiagnosticRequestGroup($reportedId, true);
         }
         $groups[$reportedId]->markFailed();
+    }
+
+    /**
+     * The journal key the browser's report is talking about, or '' when it
+     * named nothing usable.
+     *
+     * Every group here is keyed by whatever the browser sent as the wire
+     * `requestId`, normalized by the ledger on arrival. The browser sends its
+     * PER-ATTEMPT composite id there whenever the attempt recorder is running
+     * (`record.id`, e.g. `abc123t2`), and falls back to the LOGICAL request id
+     * (`record.rid`, `abc123` -- the prefix every retry of one part shares)
+     * only when the recorder did not load and no attempt id exists. So the key
+     * is resolved in exactly that order, through exactly that normalization.
+     *
+     * Reading the logical id alone was a join that could never land: while the
+     * recorder runs, no group is ever keyed by it, so the verdict minted an
+     * empty placeholder and the attempt that actually failed stayed ranked as
+     * healthy context. That silently defeated the one case only the browser
+     * can report -- PHP completed the request and the response never arrived.
+     *
+     * @param array<array-key, mixed> $report
+     */
+    private static function journalKeyOfReportedAttempt(array $report): string {
+        foreach (array('id', 'rid') as $field) {
+            $raw = $report[$field] ?? null;
+            if (!is_scalar($raw) || (string)$raw === '') {
+                continue;
+            }
+            // Normalized, not compared raw: an id the ledger refuses was
+            // journaled under its unknown-id sentinel, so that sentinel is the
+            // group this verdict belongs to. A raw comparison against an
+            // already-normalized key can only ever miss.
+            return ABJ_404_Solution_AjaxRequestLedger::normalizeId($raw);
+        }
+        return '';
     }
 
     /**
