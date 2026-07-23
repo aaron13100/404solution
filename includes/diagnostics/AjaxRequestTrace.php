@@ -53,6 +53,25 @@ final class ABJ_404_Solution_AjaxRequestTrace {
     /** @var ABJ_404_Solution_ShutdownTeardownBracket Splits shutdown time into WordPress-action vs below-WordPress. */
     private $teardownBracket;
     /**
+     * True once this trace's process lifecycle has been retired by the test
+     * harness (see disarmTeardownSentinelsForTests()). Checked by
+     * recordTeardown() so a sentinel PHP will still invoke at process exit --
+     * register_shutdown_function() cannot be unregistered -- writes nothing.
+     * Never set in production.
+     * @var bool
+     */
+    private $teardownSentinelsDisarmed = false;
+    /**
+     * Every trace in this process whose PHP-shutdown sentinels are still
+     * armed. The shutdown queue itself already keeps each of these traces
+     * alive until process exit, so this registry adds no retention beyond
+     * what register_shutdown_function() imposes; it exists so the test
+     * harness can retire the sentinels of traces whose "request" (one
+     * PHPUnit test) has already ended.
+     * @var array<int, self>
+     */
+    private static $tracesWithArmedSentinels = array();
+    /**
      * Guards the one-time-per-rotation $wp_filter['shutdown'] inventory.
      * Keyed by trace directory (not a single scalar) so unrelated trace
      * directories -- distinct sites, or distinct tests in the same worker
@@ -90,7 +109,11 @@ final class ABJ_404_Solution_AjaxRequestTrace {
             // that if one mechanism is itself skipped or broken, another still
             // produces evidence. None of them are disarmed by finish(); see
             // recordShutdown()'s docblock for the beta.1 defect this replaces.
+            // (The PHPUnit harness, whose one process outlives many requests
+            // AND their trace directories, retires them between tests through
+            // disarmTeardownSentinelsForTests() -- production never does.)
             register_shutdown_function(array($trace, 'recordShutdown'));
+            self::$tracesWithArmedSentinels[] = $trace;
             if (function_exists('add_action')) {
                 add_action('shutdown', array($trace, 'recordShutdownActionEarly'), PHP_INT_MIN);
                 add_action('shutdown', array($trace, 'recordShutdownActionLate'), PHP_INT_MAX);
@@ -284,6 +307,33 @@ final class ABJ_404_Solution_AjaxRequestTrace {
     }
 
     /**
+     * Test-harness end-of-request: mark every armed teardown sentinel in this
+     * process inert.
+     *
+     * In production a trace and its shutdown sentinels live exactly as long
+     * as one request, and the trace directory outlives them both, so the
+     * sentinels are deliberately NEVER disarmed there (see recordShutdown()
+     * for the beta.1 defect that rule replaced) and nothing in production
+     * calls this. A PHPUnit worker breaks the premise the sentinels rely on:
+     * it replays hundreds of requests in one process, each against a
+     * per-test temp directory that tearDown deletes, while
+     * register_shutdown_function() keeps every test's trace queued until the
+     * whole process exits. Without this seam each of those traces flushes
+     * into its deleted directory at process exit and reports 'AJAX trace
+     * file could not be opened' to stderr -- noise that buries real
+     * trace-write failures. Wired into ABJ404_RequestScopedStateReset next
+     * to the request-context resets that exist for the same reason.
+     *
+     * @return void
+     */
+    public static function disarmTeardownSentinelsForTests(): void {
+        foreach (self::$tracesWithArmedSentinels as $trace) {
+            $trace->teardownSentinelsDisarmed = true;
+        }
+        self::$tracesWithArmedSentinels = array();
+    }
+
+    /**
      * Shared teardown body for every shutdown-time sentinel. Never disarmed
      * by finish() and never throws -- a teardown recorder that itself can
      * fatal would defeat its own purpose.
@@ -295,6 +345,12 @@ final class ABJ_404_Solution_AjaxRequestTrace {
      *                           in PHP's registration-ordered shutdown queue.
      */
     private function recordTeardown(string $event, string $mechanism, string $armedAt): void {
+        if ($this->teardownSentinelsDisarmed) {
+            // Retired by the test harness: this trace's "request" (one PHPUnit
+            // test) already ended and its journal directory was deleted with
+            // that test, so a flush here could only report a vanished path.
+            return;
+        }
         try {
             $lastError = error_get_last();
             $now = $this->clock->nowFloat();
