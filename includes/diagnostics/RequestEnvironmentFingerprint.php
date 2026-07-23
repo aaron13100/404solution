@@ -258,6 +258,7 @@ final class ABJ_404_Solution_RequestEnvironmentFingerprint {
             'screen_option_meta_bytes' => null,
             'screen_option_meta_hash' => null,
             'locale' => null,
+            'locale_error' => null,
         );
         try {
             $userId = function_exists('get_current_user_id') ? (int)get_current_user_id() : 0;
@@ -266,7 +267,9 @@ final class ABJ_404_Solution_RequestEnvironmentFingerprint {
             $state['reason'] = 'user-api-exception:' . get_class($e);
             return $state;
         }
-        $state['locale'] = $this->resolvedUserLocale($userId);
+        $resolvedLocale = $this->resolvedUserLocale($userId);
+        $state['locale'] = $resolvedLocale['locale'];
+        $state['locale_error'] = $resolvedLocale['error'];
         if ($userId < 1) {
             $state['reason'] = 'no-current-user';
             return $state;
@@ -309,20 +312,41 @@ final class ABJ_404_Solution_RequestEnvironmentFingerprint {
         return $state;
     }
 
-    private function resolvedUserLocale(int $userId): ?string {
+    /**
+     * The locale WordPress would render this request in, plus why it is
+     * unavailable when it is.
+     *
+     * Same two-channel convention as cronDueEvents() and timedCacheProbe(),
+     * for the same reason: a bare null cannot tell "this site has no locale
+     * API at all" apart from "a plugin's locale filter is fatal here", and
+     * the second is a finding rather than a shrug. `locale` keeps its own
+     * narrow domain (a locale code, or null) so no reader has to parse a
+     * failure out of it; the reason travels beside it in `error`, and the
+     * full message and code go to the PHP error log via
+     * reportProbeFailure().
+     *
+     * @return array{locale: string|null, error: string|null}
+     */
+    private function resolvedUserLocale(int $userId): array {
         try {
             if ($userId > 0 && function_exists('get_user_locale')) {
                 $locale = get_user_locale($userId);
             } elseif (function_exists('get_locale')) {
                 $locale = get_locale();
             } else {
-                return null;
+                return array('locale' => null, 'error' => 'locale-api-unavailable');
             }
-            return is_scalar($locale) ? substr((string)$locale, 0, 32) : null;
         } catch (Throwable $e) {
             $this->reportProbeFailure('user-locale', $e);
-            return null;
+            return array(
+                'locale' => null,
+                'error' => get_class($e) . ': ' . substr($e->getMessage(), 0, 200),
+            );
         }
+        if (!is_scalar($locale)) {
+            return array('locale' => null, 'error' => 'unexpected-shape:' . gettype($locale));
+        }
+        return array('locale' => substr((string)$locale, 0, 32), 'error' => null);
     }
 
     private function isScreenOptionMetaKey(string $key): bool {
