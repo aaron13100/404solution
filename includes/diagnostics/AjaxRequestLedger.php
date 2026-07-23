@@ -210,13 +210,13 @@ final class ABJ_404_Solution_AjaxRequestLedger {
      * the resulting per-request evidence.
      *
      * Bounded to a small number of pairs and gated behind two independent
-     * opt-in signals, so a normal install never pays for this: the
-     * `abj404_should_run_detach_ab_diagnostic` filter (default false --
-     * nobody flips this on except a deliberately targeted diagnostic
-     * session), AND a non-empty session ID, which only a beta-instrumented
-     * client (view_updater_client_telemetry_env.js) ever sends. An older or
+     * opt-in signals, so a normal install never pays for this: a pre-release
+     * build (ABJ_404_Solution_PluginReleaseChannel, overridable in either
+     * direction through the `abj404_should_run_detach_ab_diagnostic` filter),
+     * AND a non-empty session ID, which only a beta-instrumented client
+     * (view_updater_client_telemetry_env.js) ever sends. An older or
      * non-diagnostic client leaves the ledger's session_id empty and the
-     * experiment inert regardless of the filter. This is "the diagnostic
+     * experiment inert regardless of the build. This is "the diagnostic
      * mode the beta already gates on": callers only ever resolve this for
      * $checkpointRequestId !== '', the same INSTRUMENTED_ACTION scoping that
      * already keeps every checkpoint in this file off every handler but the
@@ -230,14 +230,29 @@ final class ABJ_404_Solution_AjaxRequestLedger {
     const AB_DETACH_MAX_ATTEMPTS = self::AB_DETACH_MAX_PAIRS * 2;
 
     /**
-     * Whether a deployment has explicitly opted a diagnostic session into the
-     * detach A/B experiment. False on every ordinary install: nobody wires
-     * this filter except a deliberately targeted support session, so a
-     * beta.2 install never randomly degrades a real admin's table load as a
-     * side effect of merely shipping the beta.
+     * Whether this build may run the detach A/B experiment. True on a
+     * pre-release build and false on every ordinary released install, so a
+     * wp.org release never degrades a real admin's table load while the beta
+     * handed to one consenting user produces the evidence it was built for.
+     *
+     * The default is DERIVED from the build's own version rather than set by
+     * a wiring step somewhere, because a wiring step is exactly what failed
+     * here: this method previously returned a hardcoded false through the
+     * filter, nothing in the codebase or the packaging steps ever registered
+     * a callback, and the entire experiment shipped inert -- a no-op that
+     * every existing test passed, because each one registered the filter
+     * itself. Deriving it from ABJ404_VERSION means the beta cannot be built
+     * without arming it, and the release cannot be built without disarming
+     * it, in one step nobody has to remember.
+     *
+     * The filter remains, and now overrides in BOTH directions: a targeted
+     * support session on a released install can turn the experiment on, and a
+     * beta tester who needs the detach every time can turn it off, neither
+     * requiring a new build.
      */
     public static function isDetachAbDiagnosticEnabled(): bool {
-        return (bool)apply_filters('abj404_should_run_detach_ab_diagnostic', false, array());
+        $preRelease = ABJ_404_Solution_PluginReleaseChannel::isPreRelease();
+        return (bool)apply_filters('abj404_should_run_detach_ab_diagnostic', $preRelease, array());
     }
 
     /**
@@ -292,21 +307,31 @@ final class ABJ_404_Solution_AjaxRequestLedger {
      * the same principle checkpointedFlushAndFinish() already applies to the
      * finish-function 'none' case: absence must never be inferred.
      *
-     * @return array{mode: string, attempt_index: int, diagnostic_enabled: bool}
+     * build_channel travels with every decision for the same reason: 'inert'
+     * on a released build is the system working, 'inert' on a pre-release
+     * build is the experiment failing to arm, and those two read identically
+     * in a support payload unless the record says which build produced it.
+     * That ambiguity is what let the experiment ship as a no-op unnoticed.
+     *
+     * @return array{mode: string, attempt_index: int, diagnostic_enabled: bool, build_channel: string}
      */
     public static function resolveDetachAbMode(string $sessionId): array {
+        $buildChannel = ABJ_404_Solution_PluginReleaseChannel::currentChannel();
         $diagnosticEnabled = self::isDetachAbDiagnosticEnabled();
         if (!$diagnosticEnabled) {
-            return array('mode' => 'inert', 'attempt_index' => -1, 'diagnostic_enabled' => false);
+            return array('mode' => 'inert', 'attempt_index' => -1,
+                'diagnostic_enabled' => false, 'build_channel' => $buildChannel);
         }
         $attemptIndex = self::nextDetachAbAttemptIndex($sessionId);
         if ($attemptIndex < 0) {
-            return array('mode' => 'inert', 'attempt_index' => -1, 'diagnostic_enabled' => true);
+            return array('mode' => 'inert', 'attempt_index' => -1,
+                'diagnostic_enabled' => true, 'build_channel' => $buildChannel);
         }
         return array(
             'mode' => self::detachAbModeForAttempt($attemptIndex),
             'attempt_index' => $attemptIndex,
             'diagnostic_enabled' => true,
+            'build_channel' => $buildChannel,
         );
     }
 

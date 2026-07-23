@@ -443,6 +443,7 @@ return array(
     'ABJ_404_Solution_ServiceContainer' => $base . 'includes/core/ServiceContainer.php',
     'ABJ_404_Solution_Clock' => $base . 'includes/core/Clock.php',
     'ABJ_404_Solution_SiteTimezone' => $base . 'includes/core/SiteTimezone.php',
+    'ABJ_404_Solution_PluginReleaseChannel' => $base . 'includes/core/PluginReleaseChannel.php',
     'ABJ_404_Solution_SystemClock' => $base . 'includes/core/Clock.php',
     'ABJ_404_Solution_FrozenClock' => $base . 'includes/core/Clock.php',
     'ABJ_404_Solution_SetupWizardOptionStore' => $base . 'includes/settings/SetupWizardOptionStore.php',
