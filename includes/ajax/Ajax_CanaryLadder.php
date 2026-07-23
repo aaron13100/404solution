@@ -196,9 +196,6 @@ class ABJ_404_Solution_Ajax_CanaryLadder {
                 return ABJ_404_Solution_AjaxStageDiagnostics::runStage($context, 'canary_stream',
                     static function () use ($requestId) {
                         echo str_repeat(' ', ABJ_404_Solution_AjaxCanaryLadder::STREAM_WHITESPACE_BYTES);
-                        ABJ_404_Solution_AjaxCheckpointLogger::record($requestId, 'canary_stream_first_flush', array(
-                            'bytes' => ABJ_404_Solution_AjaxCanaryLadder::STREAM_WHITESPACE_BYTES,
-                        ));
                         // Routed through the same output-buffer-management
                         // filter every other flush in this codebase respects
                         // (Ajax_AdminEndpointSupport::checkpointedFlushAndFinish),
@@ -207,12 +204,37 @@ class ABJ_404_Solution_Ajax_CanaryLadder {
                         // unaffected: this is a real mid-response flush only
                         // in production, never a premature one in test output
                         // buffering.
-                        if (apply_filters('abj404_should_manage_output_buffer', true, array('source' => 'canaryLadder_stream'))) {
-                            if (ob_get_level() > 0) {
-                                @ob_flush();
-                            }
-                            @flush();
-                        }
+                        //
+                        // around()-bracketed rather than announced by a bare
+                        // pre-call record (gap-hunt iteration 2, the same
+                        // Codex gap #5 shape fixed in AjaxResponseEmitter's
+                        // ob_close): a stall inside ob_flush()/flush() behind
+                        // a buffering intermediary is exactly what this canary
+                        // step exists to detect, and a record with no matching
+                        // end could only ever prove a flush was ATTEMPTED.
+                        // 'flushed' keeps the skip branch positive evidence
+                        // instead of an absence -- without it an elapsed of 0
+                        // reads as an instant flush rather than no flush.
+                        $manageOutputBuffer = (bool)apply_filters(
+                            'abj404_should_manage_output_buffer', true, array('source' => 'canaryLadder_stream'));
+                        ABJ_404_Solution_AjaxCheckpointLogger::around(
+                            $requestId,
+                            'canary_stream_first_flush',
+                            static function () use ($manageOutputBuffer) {
+                                if (!$manageOutputBuffer) {
+                                    return;
+                                }
+                                if (ob_get_level() > 0) {
+                                    @ob_flush();
+                                }
+                                @flush();
+                            },
+                            array(
+                                'bytes' => ABJ_404_Solution_AjaxCanaryLadder::STREAM_WHITESPACE_BYTES,
+                                'flushed' => $manageOutputBuffer,
+                                'ob_level' => ob_get_level(),
+                            )
+                        );
                         return ABJ_404_Solution_AjaxCanaryLadder::buildFillerPayload(
                             $requestId, ABJ_404_Solution_AjaxCanaryLadder::STEP_STREAM,
                             ABJ_404_Solution_AjaxCanaryLadder::AUTH_ONLY_BYTES);
