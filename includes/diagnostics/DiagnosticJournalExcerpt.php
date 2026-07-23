@@ -135,14 +135,37 @@ final class ABJ_404_Solution_DiagnosticJournalExcerpt {
      */
     public static function failureIndex(array $paths): array {
         try {
+            return ABJ_404_Solution_DiagnosticClientVerdict::requestIdsIn(self::readAllLines($paths));
+        } catch (Throwable $e) {
+            self::reportFailure('Diagnostic failure index failed: ' . $e->getMessage());
+            return array();
+        }
+    }
+
+    /**
+     * One channel's journals as a single oldest-first stream of whole lines.
+     *
+     * Every whole-journal pass runs through here rather than re-deriving the
+     * file selection and the byte allowance: failureIndex() above builds the
+     * cross-journal failure index from it, and
+     * ABJ_404_Solution_DetachAbEvidence joins the detach A/B's per-request
+     * modes to the browser's per-attempt verdicts from it. A second reader
+     * with its own bound would answer questions about a different universe of
+     * records than the excerpt a developer actually receives, which is exactly
+     * how a verdict and the evidence under it come to disagree.
+     *
+     * @param array<int, string> $paths One channel's candidate files, as compose() takes them.
+     * @return array<int, string> Empty when nothing readable was found.
+     */
+    public static function readAllLines(array $paths): array {
+        try {
             $files = self::oldestFirstExisting($paths);
             if ($files === array()) {
                 return array();
             }
-            $read = self::readLines($files);
-            return ABJ_404_Solution_DiagnosticClientVerdict::requestIdsIn($read['lines']);
+            return self::readLines($files)['lines'];
         } catch (Throwable $e) {
-            self::reportFailure('Diagnostic failure index failed: ' . $e->getMessage());
+            self::reportFailure('Diagnostic journal read failed: ' . $e->getMessage());
             return array();
         }
     }

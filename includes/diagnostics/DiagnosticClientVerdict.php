@@ -70,16 +70,38 @@ final class ABJ_404_Solution_DiagnosticClientVerdict {
      * @param array<array-key, mixed> $record One decoded JSONL record.
      */
     public static function condemnedRequestId(array $record): string {
+        $reported = self::reportedOutcome($record);
+        return $reported['ok'] ? '' : $reported['id'];
+    }
+
+    /**
+     * What one journal record says about the attempt it names, or an empty id
+     * when it names none.
+     *
+     * Split out of condemnedRequestId() because two callers need opposite
+     * halves of the same answer: ranking only cares which attempts FAILED,
+     * while the detach A/B verdict (ABJ_404_Solution_DetachAbEvidence) needs
+     * the successes too -- an experiment that separates "ON completed" from
+     * "OFF did not" cannot be decided from failures alone. Resolved once here
+     * so the two can never disagree about which attempt a report is about.
+     *
+     * @param array<array-key, mixed> $record One decoded JSONL record.
+     * @return array{id: string, ok: bool} ok is true only for an outcome that
+     *   positively means the attempt completed.
+     */
+    public static function reportedOutcome(array $record): array {
         $event = isset($record['event']) && is_scalar($record['event']) ? (string)$record['event'] : '';
         if ($event === self::PRIOR_ATTEMPT_EVENT) {
             if (!isset($record['report']) || !is_array($record['report'])) {
-                return '';
+                return array('id' => '', 'ok' => false);
             }
             $report = $record['report'];
             $outcome = isset($report['outcome']) && is_scalar($report['outcome'])
                 ? (string)$report['outcome'] : '';
-            return in_array($outcome, self::HEALTHY_OUTCOMES, true)
-                ? '' : self::journalKeyOfReportedAttempt($report);
+            return array(
+                'id' => self::journalKeyOfReportedAttempt($report),
+                'ok' => in_array($outcome, self::HEALTHY_OUTCOMES, true),
+            );
         }
         if ($event === self::BEACON_BRANCH_EVENT) {
             // No outcome to weigh: the beacon fires only from the transport's
@@ -87,9 +109,45 @@ final class ABJ_404_Solution_DiagnosticClientVerdict {
             // names failed. Older clients name nothing and condemn nothing --
             // their beacon still rides the attempt's own id, and the report it
             // carries is the verdict, exactly as before.
-            return self::journalKeyOf($record['reported_attempt_id'] ?? null);
+            return array('id' => self::journalKeyOf($record['reported_attempt_id'] ?? null), 'ok' => false);
         }
-        return '';
+        return array('id' => '', 'ok' => false);
+    }
+
+    /**
+     * Every attempt the browser reported on anywhere in a stream of records,
+     * keyed by the journal key that attempt was recorded under.
+     *
+     * An attempt absent from the returned map is one the browser has not
+     * spoken about, which is a different thing from one it reported as failed:
+     * callers that tally outcomes must treat the absence as unknown, never as
+     * a failure. A failure, once reported, is sticky -- a later duplicate or
+     * reordered report cannot un-fail an attempt, and between two reports the
+     * failing one is always the more interesting finding.
+     *
+     * @param array<int, string> $lines JSONL lines, any order.
+     * @return array<string, bool> true = the browser saw that attempt complete.
+     */
+    public static function reportedOutcomesIn(array $lines): array {
+        $outcomes = array();
+        foreach ($lines as $line) {
+            if (strpos($line, self::PRIOR_ATTEMPT_EVENT) === false
+                    && strpos($line, self::BEACON_BRANCH_EVENT) === false) {
+                continue;
+            }
+            $record = json_decode($line, true);
+            if (!is_array($record)) {
+                continue;
+            }
+            $reported = self::reportedOutcome($record);
+            if ($reported['id'] === '') {
+                continue;
+            }
+            if (!array_key_exists($reported['id'], $outcomes) || !$reported['ok']) {
+                $outcomes[$reported['id']] = $reported['ok'];
+            }
+        }
+        return $outcomes;
     }
 
     /**

@@ -281,20 +281,64 @@ class ABJ_404_Solution_Ajax_CanaryLadder {
                     });
 
             case ABJ_404_Solution_AjaxCanaryLadder::STEP_INTERPRET:
-                $raw = (string)$functions->getPostOrGetSanitize('observations', '');
-                $decoded = $raw !== '' ? json_decode(substr($raw, 0, 8192), true) : null;
-                $observations = is_array($decoded) ? $decoded : array();
-                $realFailed = (string)$functions->getPostOrGetSanitize('realRequestFailed', '1') !== '0';
-                return ABJ_404_Solution_AjaxStageDiagnostics::runStage($context, 'canary_interpret',
-                    static function () use ($observations, $realFailed) {
-                        $interpretation = ABJ_404_Solution_AjaxCanaryLadder::interpretResults($observations, $realFailed);
-                        ABJ_404_Solution_AjaxStageDiagnostics::addStageMetadata($interpretation);
-                        return array('interpretation' => $interpretation, 'received' => true);
-                    });
+                return self::runInterpretStep($functions, $requestId, $context);
 
             default:
                 return array();
         }
+    }
+
+    /**
+     * The ladder's closing step: two independent verdicts, both journaled.
+     *
+     * The seven-step interpretation matrix is computed by the BROWSER (it is
+     * the only side that saw every step) and journaled here. The detach A/B
+     * verdict is computed HERE, from the durable journal, because its two
+     * halves never meet on the client: the server chose each real table
+     * request's detach mode, the browser reported whether that request
+     * completed, and until this call site existed nothing joined them --
+     * ABJ_404_Solution_AjaxCanaryLadder::interpretDetachAbResults() was a
+     * decision rule with no production caller, so the verdict a beta session
+     * exists to produce depended on a human joining two record kinds by hand.
+     *
+     * The A/B verdict is written through the checkpoint channel rather than
+     * only into the stage trace: its source evidence lives in that same
+     * journal, so verdict and evidence travel together into the support
+     * payload and the developer log archive, and a defect in the trace class
+     * cannot erase the conclusion drawn about it.
+     *
+     * The two verdicts stay separate records computed from disjoint inputs.
+     * Merging them would let an ambiguous quadrant in one leak into the
+     * other's conclusion, which is the same reason the pure rules are
+     * separate functions.
+     *
+     * @param ABJ_404_Solution_Functions $functions
+     * @param array<string, mixed> $context
+     * @return array<string, mixed>
+     */
+    private static function runInterpretStep($functions, string $requestId, array &$context): array {
+        $raw = (string)$functions->getPostOrGetSanitize('observations', '');
+        $decoded = $raw !== '' ? json_decode(substr($raw, 0, 8192), true) : null;
+        $observations = is_array($decoded) ? $decoded : array();
+        $realFailed = (string)$functions->getPostOrGetSanitize('realRequestFailed', '1') !== '0';
+        $rawSessionId = $context['session_id'] ?? '';
+        $sessionId = is_scalar($rawSessionId) ? (string)$rawSessionId : '';
+
+        return ABJ_404_Solution_AjaxStageDiagnostics::runStage($context, 'canary_interpret',
+            static function () use ($observations, $realFailed, $requestId, $sessionId) {
+                $interpretation = ABJ_404_Solution_AjaxCanaryLadder::interpretResults($observations, $realFailed);
+                ABJ_404_Solution_AjaxStageDiagnostics::addStageMetadata($interpretation);
+
+                $detachAb = ABJ_404_Solution_DetachAbEvidence::verdictForSession($sessionId);
+                ABJ_404_Solution_AjaxCheckpointLogger::record(
+                    $requestId, ABJ_404_Solution_DetachAbEvidence::VERDICT_EVENT, $detachAb);
+
+                return array(
+                    'interpretation' => $interpretation,
+                    'detachAb' => $detachAb,
+                    'received' => true,
+                );
+            });
     }
 
     /**

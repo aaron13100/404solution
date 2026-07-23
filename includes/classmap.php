@@ -108,7 +108,7 @@ $abj404ClassesByDirectory = array(
         'AjaxQueryTimeline', 'AjaxRowLoopProgress', 'AjaxTraceJournal',
         'ShutdownEnvironmentInventory', 'ShutdownTeardownBracket', 'DiagnosticJournalExcerpt',
         'DiagnosticClientVerdict', 'DiagnosticCollectionManifest', 'DiagnosticDirectoryProbe',
-        'DiagnosticEvidencePriority',
+        'DiagnosticEvidencePriority', 'DetachAbEvidence',
         'DiagnosticRequestGroup',
         'HostPressureSampler', 'SameSiteRequestCensus', 'SameSiteRequestRegistry',
         'RequestEnvironmentFingerprint', 'ClientBuildFingerprint', 'DiagnosticModuleManifest',

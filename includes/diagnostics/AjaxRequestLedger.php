@@ -275,6 +275,27 @@ final class ABJ_404_Solution_AjaxRequestLedger {
     }
 
     /**
+     * The session identity carried on every journaled A/B decision, so an
+     * attempt can be joined back to the counter that produced its slot.
+     *
+     * The checkpoint journal is site-wide while the counter above is per
+     * session, so two admin tabs write two independent 0,1,2 sequences into
+     * one file. Without this field on the record, reading a verdict out of
+     * that file means tallying both tabs together and inventing ON/OFF pairs
+     * that never existed (ABJ_404_Solution_DetachAbEvidence).
+     *
+     * Hashed rather than raw for the same reason the transient key is: the
+     * session id is a browser-supplied opaque value and the journal has no
+     * need for it in the clear to do the join. Empty stays empty, because
+     * "this client sent no session" is a fact about the client and must not
+     * be turned into the hash of the empty string, which would look like a
+     * real session every sessionless request shared.
+     */
+    public static function detachAbSessionKey(string $sessionId): string {
+        return $sessionId === '' ? '' : md5($sessionId);
+    }
+
+    /**
      * Consume the next attempt slot for one session's A/B counter. Backed by
      * the WordPress transient API rather than the atomic wp_cache/DB-upsert
      * machinery ABJ_404_Solution_Ajax_Php::consumeRateLimit() uses: this is a
@@ -313,25 +334,33 @@ final class ABJ_404_Solution_AjaxRequestLedger {
      * in a support payload unless the record says which build produced it.
      * That ambiguity is what let the experiment ship as a no-op unnoticed.
      *
-     * @return array{mode: string, attempt_index: int, diagnostic_enabled: bool, build_channel: string}
+     * session_key travels with every decision so the record can be joined back
+     * to the per-session counter that produced its attempt_index; see
+     * detachAbSessionKey(). It is present on the 'inert' records too, which is
+     * what lets "this session ran and the experiment was inert for it" be read
+     * as a statement about that session rather than about the site.
+     *
+     * @return array{mode: string, attempt_index: int, diagnostic_enabled: bool, build_channel: string, session_key: string}
      */
     public static function resolveDetachAbMode(string $sessionId): array {
         $buildChannel = ABJ_404_Solution_PluginReleaseChannel::currentChannel();
+        $sessionKey = self::detachAbSessionKey($sessionId);
         $diagnosticEnabled = self::isDetachAbDiagnosticEnabled();
         if (!$diagnosticEnabled) {
-            return array('mode' => 'inert', 'attempt_index' => -1,
-                'diagnostic_enabled' => false, 'build_channel' => $buildChannel);
+            return array('mode' => 'inert', 'attempt_index' => -1, 'diagnostic_enabled' => false,
+                'build_channel' => $buildChannel, 'session_key' => $sessionKey);
         }
         $attemptIndex = self::nextDetachAbAttemptIndex($sessionId);
         if ($attemptIndex < 0) {
-            return array('mode' => 'inert', 'attempt_index' => -1,
-                'diagnostic_enabled' => true, 'build_channel' => $buildChannel);
+            return array('mode' => 'inert', 'attempt_index' => -1, 'diagnostic_enabled' => true,
+                'build_channel' => $buildChannel, 'session_key' => $sessionKey);
         }
         return array(
             'mode' => self::detachAbModeForAttempt($attemptIndex),
             'attempt_index' => $attemptIndex,
             'diagnostic_enabled' => true,
             'build_channel' => $buildChannel,
+            'session_key' => $sessionKey,
         );
     }
 
