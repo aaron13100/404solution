@@ -1,0 +1,8 @@
+{
+  "_comment": "This fixture MUST fail validation. reportedAttemptId is the ledger-shaped id of the attempt the beacon reports ON; a value carrying punctuation does not match the ledger pattern and must be rejected at the boundary rather than reaching the journal as a key nothing can be joined to.",
+  "nonce": "abc123def456",
+  "subpage": "abj404_redirects",
+  "clientReportOnly": "1",
+  "requestId": "beaconcarrier01",
+  "reportedAttemptId": "not-a-ledger-id!"
+}

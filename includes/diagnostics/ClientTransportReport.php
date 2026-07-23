@@ -67,7 +67,7 @@ final class ABJ_404_Solution_ClientTransportReport {
      */
     public static function journal(string $requestId): void {
         try {
-            $reader = ABJ_404_Solution_Ajax_AdminEndpointSupport::getRequestReader();
+            $reader = self::requestReader();
             $build = (string)$reader->getPostOrGetSanitize('clientBuild', '');
             $buildModules = (string)$reader->getPostOrGetSanitize('clientBuildModules', '');
             $inflight = (string)$reader->getPostOrGetSanitize('clientInflight', '');
@@ -130,6 +130,24 @@ final class ABJ_404_Solution_ClientTransportReport {
      */
     private static function signedCountOrNull(string $raw): ?int {
         return preg_match('/^-?\d{1,9}$/', $raw) === 1 ? (int)$raw : null;
+    }
+
+    /**
+     * The request reader, straight from the container.
+     *
+     * Resolved here rather than through
+     * ABJ_404_Solution_Ajax_AdminEndpointSupport::getRequestReader(), which
+     * returns this same service and belongs to the endpoint layer. Reading
+     * request parameters is not an endpoint-only need, and routing through
+     * that class made a recorder depend on the presentation surface it exists
+     * to observe.
+     *
+     * @return ABJ_404_Solution_Functions
+     */
+    private static function requestReader() {
+        /** @var ABJ_404_Solution_Functions $functions */
+        $functions = abj_service('functions');
+        return $functions;
     }
 
     /**
@@ -322,58 +340,5 @@ final class ABJ_404_Solution_ClientTransportReport {
             $kept[] = $records[$position];
         }
         return $kept;
-    }
-
-    /**
-     * A telemetry beacon carries no table request: journal it and answer at
-     * once. Returns true when this request was report-only and a response has
-     * already been sent, so the caller must stop.
-     *
-     * Called only after the same nonce and capability gate every other table
-     * request passes, so this is not a new unauthenticated write surface.
-     */
-    public static function respondIfReportOnly(string $requestId): bool {
-        $reader = ABJ_404_Solution_Ajax_AdminEndpointSupport::getRequestReader();
-        if ((string)$reader->getPostOrGetSanitize('clientReportOnly', '0') !== '1') {
-            return false;
-        }
-        // Which attempt this carrier exists to talk about. Recorded on the
-        // branch record rather than merged into the report, because it is a
-        // fact about the ENVELOPE: the report is the browser's own bounded,
-        // trimmable payload, and this has to survive a payload that arrives
-        // truncated or unreadable. A beacon fires only after the final attempt
-        // of a request failed, so naming an attempt here is itself a verdict --
-        // see ABJ_404_Solution_DiagnosticClientVerdict::condemnedRequestId().
-        ABJ_404_Solution_AjaxCheckpointLogger::record($requestId, 'client_report_only_branch', array(
-            'reported_attempt_id' => self::reportedAttemptId($reader),
-        ));
-        ABJ_404_Solution_AjaxStageDiagnostics::finishRequest('complete');
-        ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
-        ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
-        ABJ_404_Solution_AjaxResponseEmitter::sendJsonResponseAndExit(
-            array('clientReportReceived' => true, 'requestId' => $requestId), 200);
-        return true;
-    }
-
-    /**
-     * The attempt a beacon is reporting on, or '' when it named none.
-     *
-     * Normalized through the ledger for the same reason every other id is: an
-     * attempt whose own id the ledger refuses was journaled under the ledger's
-     * unknown-id sentinel, so that sentinel IS the group the beacon points at,
-     * and a raw value compared against an already-normalized journal key could
-     * only ever miss. An absent parameter stays '' rather than becoming the
-     * sentinel -- "this client named no attempt" (an older client, still
-     * riding the attempt's own id) and "this client named one we cannot use"
-     * are different findings about the client.
-     *
-     * @param ABJ_404_Solution_Functions $reader Docblock-typed only; see readReport().
-     */
-    private static function reportedAttemptId($reader): string {
-        $raw = $reader->getPostOrGetSanitize('reportedAttemptId', '');
-        if (!is_scalar($raw) || (string)$raw === '') {
-            return '';
-        }
-        return ABJ_404_Solution_AjaxRequestLedger::normalizeId($raw);
     }
 }

@@ -1,0 +1,9 @@
+{
+  "nonce": "abc123def456",
+  "subpage": "abj404_redirects",
+  "clientReportOnly": "1",
+  "requestId": "beaconcarrier01",
+  "reportedAttemptId": "attempt00000001",
+  "sessionId": "sess0000000001",
+  "clientReport": "{\"v\":1,\"id\":\"attempt00000001\",\"outcome\":\"timeout\"}"
+}

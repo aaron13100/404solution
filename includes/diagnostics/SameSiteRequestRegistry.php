@@ -192,12 +192,22 @@ final class ABJ_404_Solution_SameSiteRequestRegistry {
             'truncated' => false);
     }
 
-    /** @return ABJ_404_Solution_DatabaseQueryInterface|null */
+    /**
+     * Read straight from the container rather than through
+     * ABJ_404_Solution_Ajax_ServiceResolver, which is a two-line pass-through
+     * to this same call that exists to serve the AJAX endpoint adapters. The
+     * census runs on every in-scope request, not only AJAX ones, so borrowing
+     * the endpoint layer's accessor was both an indirection with nothing in it
+     * and a dependency pointing the wrong way: instrumentation must not need
+     * the presentation surface to be loaded in order to read a service.
+     *
+     * @return ABJ_404_Solution_DatabaseQueryInterface|null
+     */
     private static function dbCore() {
-        if (!class_exists('ABJ_404_Solution_Ajax_ServiceResolver')) {
+        if (!class_exists('ABJ_404_Solution_ServiceContainer')) {
             return null;
         }
-        $dbCore = ABJ_404_Solution_Ajax_ServiceResolver::optional('db_core');
+        $dbCore = ABJ_404_Solution_ServiceContainer::safeGet('db_core');
         return ($dbCore instanceof ABJ_404_Solution_DatabaseQueryInterface) ? $dbCore : null;
     }
 }

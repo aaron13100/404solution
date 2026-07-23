@@ -539,6 +539,29 @@
       }
     },
     {
+      "id": "ajax-client-report-beacon",
+      "description": "Report-only telemetry beacon branch of ajaxUpdatePaginationLinks: same action, same nonce and same request schema as the table request, but the server journals the client's report and answers immediately instead of doing table work.",
+      "schema": "schemas/ajax-update-pagination.schema.json",
+      "direction": "client-to-server",
+      "producer": {
+        "file": "includes/ajax/view_updater_transport_telemetry_delivery.js",
+        "test": "tests-js/transport-telemetry-attempt-record.test.js"
+      },
+      "consumer": {
+        "file": "includes/ajax/Ajax_ClientReportBeacon.php",
+        "test": "tests/ClientTransportReportTest.php"
+      },
+      "parityTest": "tests/ClientTransportReportTest.php",
+      "fixtures": {
+        "valid": [
+          "fixtures/ajax-client-report-beacon.valid.json"
+        ],
+        "invalid": [
+          "fixtures/ajax-client-report-beacon.invalid-bad-reported-attempt-id.json"
+        ]
+      }
+    },
+    {
       "id": "ajax-refresh-admin-nonces-handler",
       "description": "Extracted PHP handler for refreshing admin AJAX nonces",
       "schema": "schemas/ajax-refresh-admin-nonces.schema.json",

@@ -58,7 +58,10 @@ final class ABJ_404_Solution_DiagnosticModuleManifest {
         'ajax/Ajax_Php.php',
         'ajax/Ajax_AdminEndpointSupport.php',
         'ajax/Ajax_GetPaginationLinks.php',
-        'ajax/AjaxStageDiagnostics.php',
+        // AjaxStageDiagnostics.php is deliberately absent: it now lives under
+        // diagnostics/ and is therefore picked up automatically.
+        // The report-only beacon branch of the table endpoint.
+        'ajax/Ajax_ClientReportBeacon.php',
         // Response emission and connection detach.
         'ajax/AjaxResponseEmitter.php',
         // Canary ladder and support collection endpoints.

@@ -104,7 +104,7 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
                 return;
             }
             ABJ_404_Solution_AjaxStageDiagnostics::beginRequest($context);
-            if (ABJ_404_Solution_ClientTransportReport::respondIfReportOnly($requestId)) {
+            if (ABJ_404_Solution_Ajax_ClientReportBeacon::respondIfReportOnly($requestId)) {
                 return;
             }
 
