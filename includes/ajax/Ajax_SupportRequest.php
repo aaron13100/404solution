@@ -148,7 +148,10 @@ class ABJ_404_Solution_Ajax_SupportRequest {
         // The evidence the report carries. Best-effort by construction:
         // unavailable diagnostics are reported inside the excerpt, never by
         // blocking the support request the admin is waiting on.
-        $debugLogExcerpt = ABJ_404_Solution_SupportEvidenceExcerpt::assemble(self::readClientTelemetry());
+        $debugLogExcerpt = ABJ_404_Solution_SupportEvidenceExcerpt::assemble(array(
+            'telemetry' => self::readClientTelemetry(),
+            'session_id' => self::readClientSessionId(),
+        ));
 
         $extras = array(
             'user_message' => $userMessage,
@@ -288,6 +291,26 @@ class ABJ_404_Solution_Ajax_SupportRequest {
     private static function readClientTelemetry(): string {
         return isset($_POST['client_telemetry'])
             ? ABJ_404_Solution_RequestInputNormalizer::normalizeScalar($_POST['client_telemetry']) : '';
+    }
+
+    /**
+     * The browser session this report is being sent from.
+     *
+     * It is what scopes the detach A/B verdict: the checkpoint journal is
+     * site-wide while the experiment's attempt counter is per session, so two
+     * admin tabs write two independent A/B sequences into one file and only the
+     * clicking tab's own sequence is a measurement of anything.
+     *
+     * Bounded to the same 64 characters ABJ_404_Solution_AjaxRequestLedger's
+     * own readFields() gives the field on every other request, so a session id
+     * joins across channels rather than matching itself only here. The value is
+     * never echoed, never queried with, and only ever hashed into a session
+     * key, so bounding it is the whole of the sanitization it needs.
+     */
+    private static function readClientSessionId(): string {
+        return isset($_POST['sessionId'])
+            ? substr(ABJ_404_Solution_RequestInputNormalizer::normalizeScalar($_POST['sessionId']), 0, 64)
+            : '';
     }
 
     /**

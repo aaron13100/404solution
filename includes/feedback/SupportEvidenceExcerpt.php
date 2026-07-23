@@ -8,24 +8,29 @@ if (!defined('ABSPATH')) {
  * Everything a support report carries in its `debug_log_excerpt` field, and
  * the byte contract that field has to stay inside.
  *
- * Four independent sources feed one string: a manifest of what the collector
- * looked for, the sanitized debug-log tail, the two durable AJAX diagnostic
+ * Five independent sources feed one string: a manifest of what the collector
+ * looked for, the detach A/B experiment's verdict for the session that
+ * clicked, the sanitized debug-log tail, the two durable AJAX diagnostic
  * journals, and the browser's own drained transport buffer. Deciding which of
  * those a report carries, in what order, and how the sum stays under the wire
  * contract is a different job from answering an AJAX request, and it is the
  * job with the interesting failure modes: every one of beta.1's evidence
  * losses happened here, not in the endpoint.
  *
- * Two ordering rules are load-bearing rather than cosmetic:
+ * Three ordering rules are load-bearing rather than cosmetic:
  *
  *   1. The collection manifest goes FIRST, because bound() cuts the tail. The
  *      one section that must survive a saturated payload is the one that says
  *      what was looked for.
- *   2. The journals follow in read order, so a reader walks the session the
+ *   2. The detach A/B verdict follows, ahead of every evidence section, for
+ *      the same reason: it is the conclusion drawn FROM that evidence, and a
+ *      conclusion that gets cut off the end of a busy session's payload is
+ *      exactly the manual join it exists to replace.
+ *   3. The journals follow in read order, so a reader walks the session the
  *      same way the journals were written.
  *
- * The class takes the browser's buffer as an argument rather than reading
- * $_POST: the request boundary belongs to the handler, and passing it in is
+ * The class takes the browser's own inputs as an argument rather than reading
+ * $_POST: the request boundary belongs to the handler, and passing them in is
  * what lets the same assembly run from anywhere (the report preview, a future
  * CLI dump) without a fabricated superglobal.
  */
@@ -67,15 +72,37 @@ final class ABJ_404_Solution_SupportEvidenceExcerpt {
     const MAX_COLLECTION_MANIFEST_BYTES = 8192;
 
     /**
+     * Hard cap on the detach A/B verdict block. It is a decision plus the
+     * bounded list of attempts it was decided from, so it is small by
+     * construction; the cap is what keeps it small no matter what a long-lived
+     * session put in the journal, and renderDetachAbVerdict() sheds the attempt
+     * list to fit rather than being cut mid-record.
+     */
+    const MAX_DETACH_AB_VERDICT_BYTES = 2048;
+
+    /** The one JSON key the verdict hangs under, so a reader can grep for it. */
+    const DETACH_AB_VERDICT_KEY = 'abj404_detach_ab_verdict';
+
+    /**
      * The whole excerpt, ready for the payload.
      *
-     * @param string $clientTelemetry The browser's drained attempt buffer, already unslashed.
+     * The browser's two contributions arrive as one named bag rather than as
+     * two positional strings: both are opaque browser-supplied text, and a
+     * swapped pair would silently produce a verdict about a session id that is
+     * really a telemetry buffer while reporting the buffer as unparseable.
+     *
+     * @param array{telemetry?: string, session_id?: string} $client
+     *   telemetry: the drained attempt buffer, already unslashed.
+     *   session_id: the browser session id this request was sent from, which is
+     *   what the detach A/B verdict is scoped to.
      * @return string
      */
-    public static function assemble(string $clientTelemetry): string {
+    public static function assemble(array $client): string {
+        $clientTelemetry = self::clientField($client, 'telemetry');
         $channels = self::collectChannels();
         $sections = array(
             self::collectionManifest($channels, $clientTelemetry),
+            self::detachAbVerdict(self::clientField($client, 'session_id')),
             self::loggerExcerpt(),
         );
         foreach ($channels as $channel) {
@@ -83,6 +110,19 @@ final class ABJ_404_Solution_SupportEvidenceExcerpt {
         }
         return self::bound(
             self::appendClientTransportTelemetry(self::joinSections($sections), $clientTelemetry));
+    }
+
+    /**
+     * One field of the client bag as a string, or '' when it is absent or not
+     * scalar. Assembly is total by construction: a caller that omits a field
+     * gets the section that field feeds saying so, never a type error inside a
+     * support request the admin is waiting on.
+     *
+     * @param array{telemetry?: string, session_id?: string} $client
+     */
+    private static function clientField(array $client, string $field): string {
+        $value = $client[$field] ?? null;
+        return is_scalar($value) ? (string)$value : '';
     }
 
     /**
@@ -170,6 +210,114 @@ final class ABJ_404_Solution_SupportEvidenceExcerpt {
             ABJ_404_Solution_ClientTransportReport::attemptIdsInDrainedBuffer($clientTelemetry),
             self::MAX_COLLECTION_MANIFEST_BYTES
         );
+    }
+
+    /**
+     * The detach A/B experiment's verdict for the session that clicked.
+     *
+     * The experiment's two halves are produced in different places and never in
+     * the same record: the server chose each table request's detach mode, and
+     * the browser later said whether that request completed. Joining them is
+     * ABJ_404_Solution_DetachAbEvidence's job, and until this call site existed
+     * the only trigger for it was the canary ladder -- which runs ONLY after a
+     * foreground table failure. That covers a session where the OFF attempt
+     * hung and leaves the primary question uncovered: when a beta session goes
+     * WELL, nothing fails, no ladder runs, and the developer received the raw
+     * halves and had to join them by hand. Support-request assembly is the one
+     * moment that happens in healthy and failing sessions alike.
+     *
+     * Guarded twice, because a support request is the last thing that may be
+     * blocked by its own diagnostics: a partially recovered install can be
+     * missing any plugin file (see the safe-autoloader work for error 18), and
+     * a journal read that throws must degrade to a stated reason rather than to
+     * a fatal in the request the admin is waiting on.
+     */
+    private static function detachAbVerdict(string $sessionId): string {
+        if (!class_exists('ABJ_404_Solution_DetachAbEvidence')) {
+            return 'Detach A/B verdict unavailable: ABJ_404_Solution_DetachAbEvidence could not be'
+                . ' loaded on this install, so the experiment could not be decided here.';
+        }
+        try {
+            return self::renderDetachAbVerdict(
+                ABJ_404_Solution_DetachAbEvidence::verdictForSession($sessionId));
+        } catch (Throwable $e) {
+            return 'Detach A/B verdict could not be computed: ' . substr($e->getMessage(), 0, 200);
+        }
+    }
+
+    /**
+     * The verdict as a scannable header line plus one JSON record.
+     *
+     * Over-budget input sheds the attempt LIST -- the one reducible part -- and
+     * then falls back to the decision alone, rather than being cut at a byte
+     * offset: a record cut mid-JSON is unreadable by machine and misleading to
+     * a human, which is the same failure the drained client buffer already
+     * taught this file (see appendClientTransportTelemetry).
+     *
+     * @param array<string, mixed> $record ABJ_404_Solution_DetachAbEvidence::verdictForSession().
+     */
+    private static function renderDetachAbVerdict(array $record): string {
+        $header = 'Detach A/B verdict -- ' . self::detachAbSummary($record) . " (JSON):\n";
+        $reduced = $record;
+        $reduced['attempts'] = array();
+        $reduced['attempts_reduced'] = 'over_budget';
+        $minimal = array(
+            'status' => self::textOf($record, 'status'),
+            'session_key' => self::textOf($record, 'session_key'),
+            'verdict' => $record['verdict'] ?? array(),
+            'reduced' => 'over_budget',
+        );
+        foreach (array($record, $reduced, $minimal) as $candidate) {
+            $line = json_encode(array(self::DETACH_AB_VERDICT_KEY => $candidate));
+            if (is_string($line) && strlen($header) + strlen($line) <= self::MAX_DETACH_AB_VERDICT_BYTES) {
+                return $header . $line;
+            }
+        }
+        return $header . 'The verdict record could not be encoded for this payload.';
+    }
+
+    /**
+     * The one-line version, so the first thing a reader sees is the decision
+     * and how much evidence it was drawn from. The counts are part of the
+     * summary rather than decoration: a verdict of 'inconclusive' over zero
+     * attempts and one over six attempts are entirely different findings.
+     *
+     * @param array<string, mixed> $record
+     */
+    private static function detachAbSummary(array $record): string {
+        $verdict = isset($record['verdict']) && is_array($record['verdict'])
+            ? $record['verdict'] : array();
+        $named = 'inconclusive';
+        foreach (array('detachCausal', 'transientCausal', 'neitherModeHelps') as $quadrant) {
+            if (!empty($verdict[$quadrant])) {
+                $named = $quadrant;
+                break;
+            }
+        }
+        return self::textOf($record, 'status') . ': ' . $named . '; '
+            . self::countOf($record, 'attempts_with_mode') . ' attempt(s) with a mode, '
+            . self::countOf($record, 'attempts_resolved') . ' resolved by the browser, '
+            . self::countOf($record, 'attempts_unresolved') . ' still unreported';
+    }
+
+    /**
+     * One record field as a string, or '' when it is absent or not scalar.
+     *
+     * @param array<string, mixed> $record
+     */
+    private static function textOf(array $record, string $field): string {
+        $value = $record[$field] ?? null;
+        return is_scalar($value) ? (string)$value : '';
+    }
+
+    /**
+     * One record field as an integer, or 0 when it is absent or not scalar.
+     *
+     * @param array<string, mixed> $record
+     */
+    private static function countOf(array $record, string $field): int {
+        $value = $record[$field] ?? null;
+        return is_scalar($value) ? (int)$value : 0;
     }
 
     /**

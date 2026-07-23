@@ -13,6 +13,7 @@
     },
     "user_message": { "type": "string", "maxLength": 2000 },
     "reply_email": { "type": "string", "maxLength": 254 },
-    "client_telemetry": { "type": "string", "maxLength": 32768, "description": "Drained client transport-attempt buffer (JSON array of per-attempt browser timeline records). Appended to debug_log_excerpt server-side." }
+    "client_telemetry": { "type": "string", "maxLength": 32768, "description": "Drained client transport-attempt buffer (JSON array of per-attempt browser timeline records). Appended to debug_log_excerpt server-side." },
+    "sessionId": { "type": "string", "maxLength": 64, "description": "Immutable request ledger: the browser tab/session this report is sent from. Scopes the detach A/B verdict computed into debug_log_excerpt server-side." }
   }
 }

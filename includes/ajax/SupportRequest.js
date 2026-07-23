@@ -144,6 +144,32 @@
     }
 
     /**
+     * The browser session (tab) this report is being sent from.
+     *
+     * Every table request already carries this id, and the server journals the
+     * detach A/B mode it chose under it. Sending it here is what lets the
+     * server decide the experiment for THIS tab at harvest time: the checkpoint
+     * journal is site-wide, so without the id a second admin tab's attempts
+     * would be indistinguishable from this one's. Returns '' when the telemetry
+     * modules are not on the page (the plugins-list row action, a corrupt
+     * install's degraded screen), which the server reports as "no session"
+     * rather than as a measured result.
+     *
+     * @return {string}
+     */
+    function browserSessionId() {
+        try {
+            var env = window.abj404ClientTelemetryEnv;
+            return env && typeof env.sessionId === 'function' ? String(env.sessionId()) : '';
+        } catch (sessionError) {
+            if (window.console && window.console.warn) {
+                window.console.warn('404 Solution: could not read the client session id', sessionError);
+            }
+            return '';
+        }
+    }
+
+    /**
      * Send a support request. Returns a Promise.
      *
      * @param {Object} args
@@ -169,6 +195,10 @@
         var clientTelemetry = drainClientTelemetry();
         if (clientTelemetry !== '') {
             formData.append('client_telemetry', clientTelemetry);
+        }
+        var sessionId = browserSessionId();
+        if (sessionId !== '') {
+            formData.append('sessionId', sessionId);
         }
 
         var controller = new AbortController();
