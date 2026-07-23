@@ -70,11 +70,19 @@ final class ABJ_404_Solution_ClientTransportReport {
             $reader = ABJ_404_Solution_Ajax_AdminEndpointSupport::getRequestReader();
             $build = (string)$reader->getPostOrGetSanitize('clientBuild', '');
             $inflight = (string)$reader->getPostOrGetSanitize('clientInflight', '');
-            if ($build !== '' || $inflight !== '') {
+            $tabs = (string)$reader->getPostOrGetSanitize('clientTabs', '');
+            $foreignInflight = (string)$reader->getPostOrGetSanitize('clientForeignInflight', '');
+            if ($build !== '' || $inflight !== '' || $tabs !== '' || $foreignInflight !== '') {
                 // What the client said about ITSELF at send time: which
-                // JavaScript is executing, and how many other plugin requests
-                // that tab already had open. The previous attempt's story is a
-                // separate record below.
+                // JavaScript is executing, how many other plugin requests that
+                // tab already had open, how many admin tabs of the page are
+                // open at all, and how much non-plugin AJAX the tab had
+                // outstanding. The last two are the browser's half of the
+                // same-site contention the server counts in
+                // ABJ_404_Solution_SameSiteRequestCensus; neither used to be
+                // recorded anywhere, so a cross-tab cause could not even be
+                // suspected from the evidence that survived. The previous
+                // attempt's story is a separate record below.
                 ABJ_404_Solution_AjaxCheckpointLogger::record(
                     $requestId,
                     'client_send_state',
@@ -84,6 +92,12 @@ final class ABJ_404_Solution_ClientTransportReport {
                             'inflight' => ctype_digit($inflight) ? (int)$inflight : null,
                             'inflight_ids' => substr(
                                 (string)$reader->getPostOrGetSanitize('clientInflightIds', ''), 0, 256),
+                            // -1 is the client's own "could not observe this",
+                            // and it is preserved rather than folded into null:
+                            // an unobservable channel and an absent parameter
+                            // are different findings about the client.
+                            'open_tabs' => self::signedCountOrNull($tabs),
+                            'foreign_inflight' => self::signedCountOrNull($foreignInflight),
                         )
                     )
                 );
@@ -104,6 +118,17 @@ final class ABJ_404_Solution_ClientTransportReport {
                 'message' => substr($e->getMessage(), 0, 200),
             ));
         }
+    }
+
+    /**
+     * A client-sent count that is allowed to be -1 ("this browser could not
+     * observe it"), or null when the parameter was absent or not a count at
+     * all. Kept separate from ctype_digit() because -1 is a real reading here
+     * and silently discarding it would turn a declared blind spot into a
+     * missing field.
+     */
+    private static function signedCountOrNull(string $raw): ?int {
+        return preg_match('/^-?\d{1,9}$/', $raw) === 1 ? (int)$raw : null;
     }
 
     /**

@@ -8,48 +8,70 @@
  * so every other telemetry module stays stateless with respect to persistence
  * and there is exactly one place where a quota or policy failure is handled.
  *
- * It owns two durable surfaces: the cross-page ring buffer of attempt records
- * (localStorage) and the per-tab session identity that joins them
- * (sessionStorage, so a reload keeps reporting one session while a second tab
- * reports its own).
+ * It owns two durable surfaces: the per-tab ring buffer of attempt records and
+ * the adaptive canary ladder's per-origin cooldown marker. The tab's identity
+ * (view_updater_client_tab_identity.js) and the cross-tab presence registry
+ * (view_updater_client_tab_presence.js) are separate modules it reads: this
+ * one keys and bounds buffers, they answer who and how many.
+ *
+ * ONE BUFFER PER TAB, never one shared buffer. localStorage is shared by every
+ * same-origin tab, and a shared key written with the obvious
+ * get-parse-mutate-stringify-set sequence loses records: two tabs that both
+ * read before either writes leave only the second tab's version behind, and
+ * the record that disappears is as likely as not the failing attempt the admin
+ * is about to report. Keying the buffer by tab makes that impossible by
+ * construction rather than merely unlikely -- no tab ever writes a key another
+ * tab writes. Reads (drainAll) union every tab's buffer, so a support request
+ * still carries the whole origin's evidence; writes and delivery marking stay
+ * strictly local to the writing tab. Chrome's "duplicate tab" copies
+ * sessionStorage, which can give two live tabs the same identity, so a write
+ * additionally merges against whatever is in its own key at write time.
  *
  * Two consumers drain it:
  *   1. The next outgoing table request carries the newest not-yet-delivered
- *      record in its params (takeUndelivered), so the server pairs the client
- *      and server views of a failure even when no support request is sent.
- *   2. The support request drains everything (drainAll) into the payload.
+ *      record THIS TAB produced in its params (takeUndelivered), so the server
+ *      pairs the client and server views of a failure even when no support
+ *      request is sent. Delivery is never marked on another tab's record: a
+ *      record flagged delivered by a request that did not carry it is evidence
+ *      recorded as sent that the server never received.
+ *   2. The support request drains everything, from every tab (drainAll).
  *
  * Retention rule (matrix requirement 4, "never outcome-delete telemetry"):
  * nothing is dropped because it succeeded or because it was already reported.
- * Capacity is the only bound. When the cap is reached the OLDEST SUCCESS is
- * evicted first and a failure is evicted only when the buffer holds nothing
- * but failures, so a quiet hour of successful polls can never push the one
- * failure the user is about to report out of the buffer.
+ * Capacity is the only bound, at two levels. Inside one tab's buffer the
+ * OLDEST SUCCESS is evicted first and a failure only when nothing but failures
+ * remain. Across tabs, buffers left behind by tabs that are gone are reaped
+ * only once the origin holds more than MAX_TAB_BUFFERS of them, and the ones
+ * holding no failure go first.
  *
  * Globals defined: abj404ClientTelemetryStore.
+ *
+ * Depends on view_updater_client_tab_identity.js (which tab's buffer this is)
+ * and view_updater_client_tab_presence.js (which tabs are still open).
  */
 (function (global) {
     'use strict';
 
-    var STORAGE_KEY = 'abj404:client_transport_telemetry';
-    var STATE_VERSION = 1;
-    var SESSION_ID_KEY = 'abj404:client_session_id';
-    var SESSION_ID_PATTERN = /^[a-z0-9]{8,64}$/;
+    /**
+     * The pre-per-tab single shared key. Read-only from here on: it may still
+     * hold records written by a previous build, and those are reported like
+     * any other, but nothing writes it again.
+     */
+    var LEGACY_KEY = 'abj404:client_transport_telemetry';
+
+    /** One attempt buffer per tab, suffixed with that tab's session id. */
+    var TAB_KEY_PREFIX = 'abj404:client_transport_telemetry:tab:';
 
     /** Last-run timestamp for the adaptive canary ladder (Bruno matrix req. 7). */
     var CANARY_LADDER_KEY = 'abj404:canary_ladder_last_run';
 
-    /** Records kept at once. Three attempts per part, three parts, plus headroom. */
-    var MAX_RECORDS = 16;
-
     /**
-     * Serialized byte ceiling. localStorage is a shared 5 MB-ish origin quota,
-     * so the diagnostic buffer stays a rounding error against it and can never
-     * be the reason another admin script fails to write.
+     * Attempt buffers kept for the whole origin. Every tab that is opened and
+     * closed leaves one behind (a closed tab cannot clean up after itself), so
+     * without a ceiling an admin who works in tabs would eventually spend the
+     * origin quota on evidence from sessions nobody will ever ask about.
      */
-    var MAX_BYTES = 48000;
-    var sessionId = '';
-    var fallbackIdCounter = 0;
+    var MAX_TAB_BUFFERS = 8;
 
     /**
      * @param {string} message
@@ -60,11 +82,6 @@
         if (global.console && global.console.warn) {
             global.console.warn('404 Solution: ' + message, error);
         }
-    }
-
-    /** @returns {{v: number, records: Array<object>}} */
-    function emptyState() {
-        return { v: STATE_VERSION, records: [] };
     }
 
     /** @returns {object|null} */
@@ -79,99 +96,199 @@
         }
     }
 
-    /** @returns {object|null} */
-    function tabStorage() {
-        try {
-            return global.sessionStorage || null; // allow-direct-storage: this IS the telemetry storage adapter
-        } catch (accessError) {
-            warn('sessionStorage is unavailable for transport telemetry', accessError);
-            return null;
-        }
-    }
-
-    /** @returns {{v: number, records: Array<object>}} */
-    function readState() {
-        var store = storage();
-        if (store === null) {
-            return emptyState();
-        }
-        try {
-            var raw = store.getItem(STORAGE_KEY);
-            if (!raw) {
-                return emptyState();
-            }
-            var parsed = JSON.parse(raw);
-            if (!parsed || typeof parsed !== 'object' || !Array.isArray(parsed.records)) {
-                return emptyState();
-            }
-            return { v: STATE_VERSION, records: parsed.records };
-        } catch (readError) {
-            warn('could not read the transport telemetry buffer', readError);
-            return emptyState();
-        }
-    }
-
     /**
-     * Index of the oldest record whose outcome was a success, or -1 when the
-     * buffer holds only failures.
+     * One buffer's parsed state, or null when the key is absent, unreadable or
+     * corrupt, from the module that owns what is inside a buffer.
      *
-     * @param {Array<object>} records
-     * @returns {number}
+     * @param {string} key
+     * @returns {{v: number, t: number, records: Array<object>}|null}
      */
-    function indexOfOldestSuccess(records) {
-        for (var i = 0; i < records.length; i++) {
-            if (records[i] && records[i].outcome === 'success') {
-                return i;
-            }
-        }
-        return -1;
+    function readStateAt(key) {
+        var buffer = global.abj404ClientAttemptBuffer;
+        return buffer && typeof buffer.read === 'function' ? buffer.read(key) : null;
     }
 
     /**
-     * Enforce the capacity bound, evicting successes before failures.
-     *
+     * @param {string} key
      * @param {{records: Array<object>}} state
-     * @returns {string} the serialized state that fits the bound.
-     */
-    function trimToCapacity(state) {
-        var serialized = JSON.stringify(state);
-        while (state.records.length > 1 &&
-                (state.records.length > MAX_RECORDS || serialized.length > MAX_BYTES)) {
-            var evictIndex = indexOfOldestSuccess(state.records);
-            state.records.splice(evictIndex < 0 ? 0 : evictIndex, 1);
-            serialized = JSON.stringify(state);
-        }
-        return serialized;
-    }
-
-    /**
-     * @param {{v: number, records: Array<object>}} state
      * @returns {boolean} true when the state reached storage.
      */
-    function writeState(state) {
-        var store = storage();
-        if (store === null) {
+    function writeStateAt(key, state) {
+        var buffer = global.abj404ClientAttemptBuffer;
+        if (!buffer || typeof buffer.write !== 'function') {
             return false;
         }
-        try {
-            store.setItem(STORAGE_KEY, trimToCapacity(state));
-            return true;
-        } catch (writeError) {
-            // Quota exhaustion and private-mode write blocks both land here.
-            // The in-request telemetry path does not depend on this write, so
-            // a failure is logged and the attempt record still rides the next
-            // retry from memory.
-            warn('could not persist a transport telemetry record', writeError);
-            return false;
+        var written = buffer.write(key, state);
+        if (!written) {
+            // The write failed with the buffer already at its own bound, so
+            // the space it is competing with is the buffers left behind by
+            // tabs that are gone. Reclaim the least valuable one and retry.
+            written = reapAbandonedBuffers(1) > 0 && buffer.write(key, state);
+        }
+        return written;
+    }
+
+    /** @returns {{v: number, t: number, records: Array<object>}} an empty buffer state. */
+    function emptyState() {
+        var buffer = global.abj404ClientAttemptBuffer;
+        return buffer && typeof buffer.empty === 'function'
+            ? buffer.empty() : { v: 2, t: 0, records: [] };
+    }
+
+    /** @returns {string} this tab's identity, from the module that owns it. */
+    function tabId() {
+        var identity = global.abj404ClientTabIdentity;
+        return identity && typeof identity.id === 'function' ? identity.id() : 'identitymissing';
+    }
+
+    /** @returns {object} tab ids with a live presence entry, mapped to their age. */
+    function liveTabIds() {
+        var presence = global.abj404ClientTabPresence;
+        return presence && typeof presence.liveTabIds === 'function' ? presence.liveTabIds() : {};
+    }
+
+    /**
+     * Announce this tab as active. Called on every write because a tab that is
+     * producing telemetry is by definition open, and the buffer reaper below
+     * must never mistake it for one that is gone.
+     *
+     * @returns {void}
+     */
+    function announceThisTab() {
+        var presence = global.abj404ClientTabPresence;
+        if (presence && typeof presence.announce === 'function') {
+            presence.announce();
         }
     }
 
     /**
-     * Persist one finalized attempt record, replacing any earlier revision of
-     * the same attempt. Upsert rather than append because a record is written
-     * when the attempt settles and rewritten if late-arriving resource timing
-     * patches it; two revisions of one attempt in the buffer would look like
-     * two attempts to whoever reads the report.
+     * Every localStorage key starting with the given prefix, collected before
+     * anything is removed (removing during an index walk skips entries).
+     *
+     * @param {string} prefix
+     * @returns {Array<string>}
+     */
+    function keysWithPrefix(prefix) {
+        var names = [];
+        var store = storage();
+        if (store === null) {
+            return names;
+        }
+        try {
+            var total = typeof store.length === 'number' ? store.length : 0;
+            for (var i = 0; i < total; i++) {
+                var name = store.key(i);
+                if (typeof name === 'string' && name.indexOf(prefix) === 0) {
+                    names.push(name);
+                }
+            }
+        } catch (enumerateError) {
+            warn('could not enumerate the transport telemetry buffers', enumerateError);
+        }
+        return names;
+    }
+
+    /** @returns {string} the localStorage key holding THIS tab's attempt buffer. */
+    function ownBufferKey() {
+        return TAB_KEY_PREFIX + tabId();
+    }
+
+    /** @returns {{v: number, t: number, records: Array<object>}} this tab's buffer. */
+    function readOwnState() {
+        var state = readStateAt(ownBufferKey());
+        return state === null ? emptyState() : state;
+    }
+
+    /**
+     * Attempt buffers belonging to tabs that are demonstrably gone (no live
+     * presence entry), never this tab's own, ordered least-valuable first:
+     * buffers holding no failure before buffers holding one, then oldest
+     * last-write before newest.
+     *
+     * @returns {Array<string>}
+     */
+    function abandonedBufferKeys() {
+        var live = liveTabIds();
+        var own = ownBufferKey();
+        var candidates = [];
+        var keys = keysWithPrefix(TAB_KEY_PREFIX);
+        for (var i = 0; i < keys.length; i++) {
+            var tabId = keys[i].slice(TAB_KEY_PREFIX.length);
+            if (keys[i] === own || Object.prototype.hasOwnProperty.call(live, tabId)) {
+                continue;
+            }
+            var state = readStateAt(keys[i]);
+            candidates.push({
+                key: keys[i],
+                failures: state === null ? 0 : countFailures(state.records),
+                t: state === null ? 0 : state.t
+            });
+        }
+        candidates.sort(function (left, right) {
+            if (left.failures !== right.failures) {
+                return left.failures - right.failures;
+            }
+            return left.t - right.t;
+        });
+        var ordered = [];
+        for (var j = 0; j < candidates.length; j++) {
+            ordered.push(candidates[j].key);
+        }
+        return ordered;
+    }
+
+    /** @param {Array<object>} records @returns {number} */
+    function countFailures(records) {
+        var failures = 0;
+        for (var i = 0; i < records.length; i++) {
+            if (records[i] && records[i].outcome !== 'success') {
+                failures++;
+            }
+        }
+        return failures;
+    }
+
+    /**
+     * Remove up to `count` abandoned buffers. Removing another tab's key is
+     * safe only because the tab is gone; a live tab's buffer is never a
+     * candidate, and removeItem is idempotent when two tabs reap the same
+     * dead key at once.
+     *
+     * @param {number} count
+     * @returns {number} how many were removed.
+     */
+    function reapAbandonedBuffers(count) {
+        var store = storage();
+        if (store === null || count <= 0) {
+            return 0;
+        }
+        var keys = abandonedBufferKeys();
+        var removed = 0;
+        for (var i = 0; i < keys.length && removed < count; i++) {
+            try {
+                store.removeItem(keys[i]);
+                removed++;
+            } catch (removeError) {
+                warn('could not reclaim an abandoned transport telemetry buffer', removeError);
+            }
+        }
+        return removed;
+    }
+
+    /** @returns {void} */
+    function enforceBufferBudget() {
+        var overflow = keysWithPrefix(TAB_KEY_PREFIX).length - MAX_TAB_BUFFERS;
+        if (overflow > 0) {
+            reapAbandonedBuffers(overflow);
+        }
+    }
+
+    /**
+     * Persist one finalized attempt record into THIS tab's buffer, replacing
+     * any earlier revision of the same attempt. Upsert rather than append
+     * because a record is written when the attempt settles and rewritten if
+     * late-arriving resource timing patches it; two revisions of one attempt
+     * in the buffer would look like two attempts to whoever reads the report.
      *
      * @param {object} record
      * @returns {boolean}
@@ -180,34 +297,47 @@
         if (!record || typeof record !== 'object') {
             return false;
         }
-        var state = readState();
+        announceThisTab();
+        var key = ownBufferKey();
+        var state = readOwnState();
+        var replaced = false;
         for (var i = 0; i < state.records.length; i++) {
             if (state.records[i] && record.id && state.records[i].id === record.id) {
                 // Keep the delivered flag: a patch must not make an already
                 // reported record ride another request a second time.
                 record.delivered = record.delivered || state.records[i].delivered;
                 state.records[i] = record;
-                return writeState(state);
+                replaced = true;
+                break;
             }
         }
-        state.records.push(record);
-        return writeState(state);
+        if (!replaced) {
+            state.records.push(record);
+        }
+        var written = writeStateAt(key, state);
+        enforceBufferBudget();
+        return written;
     }
 
     /**
-     * Newest record that has not yet ridden a request to the server, marked
-     * delivered as it is handed out. Returns null when everything stored has
-     * already been reported.
+     * Newest record THIS TAB produced that has not yet ridden a request to the
+     * server, marked delivered as it is handed out. Returns null when
+     * everything this tab stored has already been reported.
+     *
+     * Deliberately scoped to this tab's own buffer: marking another tab's
+     * record delivered would retire evidence that this request is not
+     * carrying, and that tab will carry it on its own next request.
      *
      * @returns {object|null}
      */
     function takeUndelivered() {
-        var state = readState();
+        var key = ownBufferKey();
+        var state = readOwnState();
         for (var i = state.records.length - 1; i >= 0; i--) {
             var record = state.records[i];
             if (record && record.delivered !== true) {
                 record.delivered = true;
-                writeState(state);
+                writeStateAt(key, state);
                 return record;
             }
         }
@@ -215,79 +345,61 @@
     }
 
     /**
-     * Every stored record, oldest first. Used by the support request; it does
-     * NOT clear the buffer, so a failed send can be retried and a second
-     * support request still carries the same history.
+     * Every stored record from every tab of this origin, oldest first by send
+     * time. Used by the support request; it does NOT clear anything, so a
+     * failed send can be retried and a second support request still carries
+     * the same history.
      *
      * @returns {Array<object>}
      */
     function drainAll() {
-        return readState().records;
+        var sources = [LEGACY_KEY].concat(keysWithPrefix(TAB_KEY_PREFIX));
+        var records = [];
+        for (var i = 0; i < sources.length; i++) {
+            var state = readStateAt(sources[i]);
+            if (state === null) {
+                continue;
+            }
+            for (var j = 0; j < state.records.length; j++) {
+                records.push(state.records[j]);
+            }
+        }
+        // Stable by construction: records the browser never stamped (an
+        // older build, or a hand-written buffer) sort as 0 and keep the order
+        // they were read in rather than being shuffled to the front.
+        return records.sort(function (left, right) {
+            return sentAtOf(left) - sentAtOf(right);
+        });
     }
 
-    /** @returns {void} */
+    /** @param {object} record @returns {number} */
+    function sentAtOf(record) {
+        return record && typeof record.sentAt === 'number' && isFinite(record.sentAt)
+            ? record.sentAt : 0;
+    }
+
+    /**
+     * Drop every attempt buffer this origin holds, this tab's included.
+     * Presence entries are left alone: they are not telemetry payload, and
+     * clearing them would make every other open tab look closed.
+     *
+     * @returns {void}
+     */
     function clear() {
         var store = storage();
         if (store === null) {
             return;
         }
-        try {
-            store.removeItem(STORAGE_KEY);
-        } catch (removeError) {
-            warn('could not clear the transport telemetry buffer', removeError);
-        }
-    }
-
-    /**
-     * Read a per-tab value, minting and persisting it via mintValue() on first
-     * use. Used for the session identity that joins every attempt made from
-     * one browser tab, including across reloads. Falls back to the freshly
-     * minted value (without persistence) when sessionStorage is unavailable,
-     * so the field is never empty.
-     *
-     * @param {string} key
-     * @param {function(): string} mintValue
-     * @param {RegExp} validPattern rejects a corrupt or foreign stored value.
-     * @returns {string}
-     */
-    function tabScopedValue(key, mintValue, validPattern) {
-        var minted = mintValue();
-        var store = tabStorage();
-        if (store === null) {
-            return minted;
-        }
-        try {
-            var stored = store.getItem(key);
-            if (typeof stored === 'string' && validPattern.test(stored)) {
-                return stored;
+        var keys = [LEGACY_KEY].concat(keysWithPrefix(TAB_KEY_PREFIX));
+        for (var i = 0; i < keys.length; i++) {
+            try {
+                store.removeItem(keys[i]);
+            } catch (removeError) {
+                warn('could not clear the transport telemetry buffer ' + keys[i], removeError);
             }
-            store.setItem(key, minted);
-        } catch (tabError) {
-            warn('could not persist the per-tab telemetry session id', tabError);
         }
-        return minted;
     }
 
-    /** @returns {string} stable identifier for this browser tab. */
-    function getSessionId() {
-        if (sessionId !== '') {
-            return sessionId;
-        }
-        sessionId = tabScopedValue(SESSION_ID_KEY, mintSessionId, SESSION_ID_PATTERN);
-        return sessionId;
-    }
-
-    /** @returns {string} */
-    function mintSessionId() {
-        if (typeof global.abj404GenerateRequestId === 'function') {
-            return global.abj404GenerateRequestId();
-        }
-        fallbackIdCounter++;
-        var monotonic = global.performance && typeof global.performance.now === 'function'
-            ? global.performance.now() : Date.now(); // allow-direct-time: fallback session uniqueness when performance.now is absent
-        return ('f' + Date.now().toString(36) + fallbackIdCounter.toString(36) + // allow-direct-time: session uniqueness source when the shared generator is absent
-            Math.round(monotonic).toString(36)).slice(0, 32);
-    }
 
     /**
      * Whether the adaptive canary ladder is allowed to run right now: at
@@ -297,11 +409,11 @@
      * durable "already ran" marker every table failure would re-trigger the
      * ladder, turning a rate-limited diagnostic into an unbounded one.
      *
-     * @param {number} nowMs
+     * @param {number} nowMsValue
      * @param {number} cooldownMs
      * @returns {boolean}
      */
-    function canaryLadderEligible(nowMs, cooldownMs) {
+    function canaryLadderEligible(nowMsValue, cooldownMs) {
         var store = storage();
         if (store === null) {
             return false;
@@ -315,7 +427,7 @@
             if (!isFinite(lastRun) || isNaN(lastRun)) {
                 return true;
             }
-            return (nowMs - lastRun) >= cooldownMs;
+            return (nowMsValue - lastRun) >= cooldownMs;
         } catch (readError) {
             warn('could not read the canary ladder cooldown marker', readError);
             return false;
@@ -328,16 +440,16 @@
      * after it finishes) so a burst of near-simultaneous table failures
      * cannot each see "eligible" and each start their own ladder run.
      *
-     * @param {number} nowMs
+     * @param {number} nowMsValue
      * @returns {boolean} true when the marker was persisted.
      */
-    function markCanaryLadderRan(nowMs) {
+    function markCanaryLadderRan(nowMsValue) {
         var store = storage();
         if (store === null) {
             return false;
         }
         try {
-            store.setItem(CANARY_LADDER_KEY, String(nowMs));
+            store.setItem(CANARY_LADDER_KEY, String(nowMsValue));
             return true;
         } catch (writeError) {
             warn('could not persist the canary ladder cooldown marker', writeError);
@@ -345,17 +457,24 @@
         }
     }
 
+
+    /** @returns {number} the per-buffer record ceiling the buffer module enforces. */
+    function maxRecords() {
+        var buffer = global.abj404ClientAttemptBuffer;
+        return buffer && typeof buffer.MAX_RECORDS === 'number' ? buffer.MAX_RECORDS : 0;
+    }
+
     global.abj404ClientTelemetryStore = {
         put: put,
         takeUndelivered: takeUndelivered,
         drainAll: drainAll,
         clear: clear,
-        tabScopedValue: tabScopedValue,
-        sessionId: getSessionId,
         canaryLadderEligible: canaryLadderEligible,
         markCanaryLadderRan: markCanaryLadderRan,
-        STORAGE_KEY: STORAGE_KEY,
-        MAX_RECORDS: MAX_RECORDS,
+        LEGACY_KEY: LEGACY_KEY,
+        TAB_KEY_PREFIX: TAB_KEY_PREFIX,
+        MAX_RECORDS: maxRecords(),
+        MAX_TAB_BUFFERS: MAX_TAB_BUFFERS,
         CANARY_LADDER_KEY: CANARY_LADDER_KEY
     };
 })(typeof window !== 'undefined' ? window : this);

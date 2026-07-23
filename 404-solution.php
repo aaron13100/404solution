@@ -142,6 +142,24 @@ spl_autoload_register('abj404_autoloader');
 ABJ_404_Solution_AjaxCheckpointLogger::recordBootWaypoint('boot_plugin_entry');
 add_action('plugins_loaded', static function () {
 	ABJ_404_Solution_AjaxCheckpointLogger::recordBootWaypoint('plugins_loaded');
+	// Same-site concurrency census (Bruno timeout cause matrix, gap GC).
+	// Registered here rather than at the plugin file's first line because it
+	// needs the service container, which Loader.php builds further down this
+	// file; 'plugins_loaded' is the earliest hook that is guaranteed to run
+	// after that for EVERY request, including the wp-cron loopbacks and the
+	// other plugins' admin-ajax polls whose contention is the thing being
+	// counted. The census itself decides which requests are in scope (see
+	// ABJ_404_Solution_SameSiteRequestCensus::channelForThisRequest); the hot
+	// front-end 404 path is not one of them.
+	//
+	// class_exists() first (Defensive Coding #1): the safe autoloader returns
+	// SILENTLY for a missing class file, so an install with a corrupt or
+	// partially-updated plugin directory would turn this diagnostic into a
+	// fatal on every admin request. A missing diagnostic is the correct
+	// degradation; a broken admin screen is not.
+	if (class_exists('ABJ_404_Solution_SameSiteRequestCensus')) {
+		ABJ_404_Solution_SameSiteRequestCensus::join();
+	}
 }, PHP_INT_MIN);
 add_action('init', static function () {
 	ABJ_404_Solution_AjaxCheckpointLogger::recordBootWaypoint('init');

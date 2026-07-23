@@ -261,14 +261,30 @@ class ABJ_404_Solution_AdminAssetEnqueuer {
         $enq('abj404-view-updater-pagination-request',
             $vuBase . 'view_updater_pagination_request.js',
             array('jquery', 'abj404-view-updater-compare'));
-        // Client transport telemetry (storage -> page observations -> attempt
+        // Client transport telemetry (tab identity -> cross-tab presence and
+        // page AJAX activity -> storage -> page observations -> attempt
         // records -> delivery). Loaded before the transport that records
         // through them; each degrades to a no-op if it fails to load.
+        $enq('abj404-view-updater-client-tab-identity',
+            $vuBase . 'view_updater_client_tab_identity.js', array());
+        $enq('abj404-view-updater-client-tab-presence',
+            $vuBase . 'view_updater_client_tab_presence.js',
+            array('abj404-view-updater-client-tab-identity'));
+        $enq('abj404-view-updater-page-ajax-activity',
+            $vuBase . 'view_updater_page_ajax_activity.js', array('jquery'));
+        $enq('abj404-view-updater-client-attempt-buffer',
+            $vuBase . 'view_updater_client_attempt_buffer.js', array());
         $enq('abj404-view-updater-client-telemetry-store',
-            $vuBase . 'view_updater_client_telemetry_store.js', array());
+            $vuBase . 'view_updater_client_telemetry_store.js',
+            array('abj404-view-updater-client-tab-identity',
+                'abj404-view-updater-client-tab-presence',
+                'abj404-view-updater-client-attempt-buffer'));
         $enq('abj404-view-updater-client-telemetry-env',
             $vuBase . 'view_updater_client_telemetry_env.js',
-            array('abj404-view-updater-client-telemetry-store'));
+            array('abj404-view-updater-client-telemetry-store',
+                'abj404-view-updater-client-tab-identity',
+                'abj404-view-updater-client-tab-presence',
+                'abj404-view-updater-page-ajax-activity'));
         $enq('abj404-view-updater-transport-telemetry',
             $vuBase . 'view_updater_transport_telemetry.js',
             array('jquery', 'abj404-view-updater-client-telemetry-store',
@@ -325,9 +341,14 @@ class ABJ_404_Solution_AdminAssetEnqueuer {
         // The support client drains the client transport telemetry buffer, so
         // the storage adapter has to be present wherever the button is -- the
         // plugins-page button included, since the records it reads outlive the
-        // admin screen that produced them.
+        // admin screen that produced them. It reads every tab's buffer, and it
+        // keys its own by tab, so the identity module rides along; presence is
+        // not needed here (nothing on this screen writes a record).
+        ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-view-updater-client-tab-identity',
+            ABJ404_URL . 'includes/ajax/view_updater_client_tab_identity.js', array());
         ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-view-updater-client-telemetry-store',
-            ABJ404_URL . 'includes/ajax/view_updater_client_telemetry_store.js', array());
+            ABJ404_URL . 'includes/ajax/view_updater_client_telemetry_store.js',
+            array('abj404-view-updater-client-tab-identity'));
         ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-support-request-client',
             ABJ404_URL . 'includes/ajax/SupportRequest.js',
             array('abj404-view-updater-client-telemetry-store'));

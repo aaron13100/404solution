@@ -15,6 +15,17 @@
  * a page that never issues a table request pays nothing, and the timer-drift
  * sampler runs only while at least one request is in flight.
  *
+ * Same-site contention (Bruno matrix bucket C, "another request took the
+ * worker slot"): the in-flight registry below only ever knew about requests
+ * THIS plugin issued, so the Heartbeat poll every admin screen runs, another
+ * plugin's polling AJAX, and a second tab's own table request were all
+ * invisible. Two collaborators close that and are folded into the snapshot
+ * here: view_updater_page_ajax_activity.js (what other AJAX this page is
+ * doing) and view_updater_client_tab_presence.js (how many admin tabs are
+ * open). Each names its own scope in the record, because neither can see
+ * everything -- cron loopbacks and other tabs' server-side traffic are the
+ * server census's job, not this one's.
+ *
  * Client build identity (matrix requirement 6, cause A8 "stale/duplicated
  * client JS"): abj404ClientBuildProbe() below is a source-identity probe. The
  * browser hashes the probe's own executing source via Function.prototype
@@ -27,7 +38,9 @@
  *
  * Globals defined: abj404ClientTelemetryEnv, abj404ClientBuildProbe.
  *
- * Depends on view_updater_client_telemetry_store.js (sessionId).
+ * Depends on view_updater_client_tab_identity.js (this tab's id),
+ * view_updater_client_tab_presence.js (open-tab count) and
+ * view_updater_page_ajax_activity.js (other code's AJAX on this page).
  */
 (function (global) {
     'use strict';
@@ -44,7 +57,6 @@
     var MAX_PAGE_ERRORS = 40;
     var DRIFT_SAMPLE_INTERVAL_MS = 1000;
     var MODULE_INSTANCE_KEY = '__abj404ClientTelemetryEnvInstanceCount';
-    var JQUERY_PROBE_KEY = '__abj404AjaxRegistrationProbe';
 
     var inFlight = {};
     var longTasks = [];
@@ -59,7 +71,6 @@
     var priorModuleInstances = parseInt(global[MODULE_INSTANCE_KEY], 10);
     global[MODULE_INSTANCE_KEY] = isFinite(priorModuleInstances) && priorModuleInstances > 0
         ? priorModuleInstances + 1 : 1;
-    installJQueryRegistrationProbe();
 
     /** @returns {number} monotonic milliseconds since page load where available. */
     function nowMs() {
@@ -81,77 +92,59 @@
     }
 
     /**
-     * jQuery keeps its AJAX registries in closure-private objects. Wrapping
-     * the public registration functions counts only post-probe registrations,
-     * without misrepresenting the already-private entries as enumerable.
-     * @returns {void}
+     * How many admin tabs of this page are open, from the module that owns the
+     * cross-tab presence registry.
+     *
+     * @returns {object}
      */
-    function installJQueryRegistrationProbe() {
-        var jq = global.jQuery;
-        if (typeof jq !== 'function') {
-            return;
-        }
-        var probe = jq[JQUERY_PROBE_KEY];
-        if (!probe || typeof probe !== 'object') {
-            probe = { prefilters: 0, transports: 0 };
-            jq[JQUERY_PROBE_KEY] = probe;
-        }
-        var methods = ['ajaxPrefilter', 'ajaxTransport'];
-        var counters = ['prefilters', 'transports'];
-        for (var i = 0; i < methods.length; i++) {
-            if (typeof jq[methods[i]] === 'function' &&
-                    jq[methods[i]].__abj404RegistrationProbe !== true) {
-                wrapJQueryRegistration(jq, probe, methods[i], counters[i]);
-            }
-        }
+    function openTabs() {
+        var presence = global.abj404ClientTabPresence;
+        return presence && typeof presence.openTabs === 'function'
+            ? presence.openTabs()
+            : { status: 'unavailable', reason: 'presence_module_missing', count: -1, ages: [] };
     }
 
-    /** @param {Function} jq @param {object} probe @param {string} method @param {string} counter @returns {void} */
-    function wrapJQueryRegistration(jq, probe, method, counter) {
-        var original = jq[method];
-        var wrapped = function () {
-            var result = original.apply(this, arguments);
-            var callback = typeof arguments[0] === 'function' ? arguments[0] : arguments[1];
-            probe[counter] += typeof callback === 'function' ? 1 : 0;
-            return result;
-        };
-        wrapped.__abj404RegistrationProbe = true;
-        jq[method] = wrapped;
+    /**
+     * The same count as a plain integer for the attempt record, or -1 when it
+     * could not be observed. -1 rather than 0 so a blind spot can never be
+     * read as a page with one tab open.
+     *
+     * @returns {number}
+     */
+    function openTabCount() {
+        var tabs = openTabs();
+        return tabs && typeof tabs.count === 'number' ? tabs.count : -1;
     }
 
-    /** @returns {object} */
+    /**
+     * What OTHER code's AJAX is doing on this page, from the module that
+     * observes it.
+     *
+     * @param {number} windowStart
+     * @returns {object}
+     */
+    function foreignAjax(windowStart) {
+        var activity = global.abj404PageAjaxActivity;
+        return activity && typeof activity.snapshot === 'function'
+            ? activity.snapshot(windowStart)
+            : { state: 'unavailable', scope: 'jquery-ajax-this-tab', inflight: 0,
+                heartbeatInflight: false, requests: [] };
+    }
+
+    /**
+     * Which jQuery instances the page has and who registered AJAX hooks on
+     * them, from the same module.
+     *
+     * @returns {object}
+     */
     function jqueryFingerprint() {
-        var instances = [];
-        var versions = [];
-        var candidates = [];
-        var names = Object.getOwnPropertyNames(global);
-        for (var nameIndex = 0; nameIndex < names.length; nameIndex++) {
-            try {
-                candidates.push(global[names[nameIndex]]);
-            } catch (propertyError) {
-                warn('could not inspect page global ' + names[nameIndex], propertyError);
-            }
-        }
-        for (var i = 0; i < candidates.length; i++) {
-            var candidate = candidates[i];
-            if (typeof candidate !== 'function' || !candidate.fn ||
-                    typeof candidate.fn.jquery !== 'string' || instances.indexOf(candidate) >= 0) {
-                continue;
-            }
-            instances.push(candidate);
-            versions.push(candidate.fn.jquery);
-        }
-        versions.sort();
-        var jq = global.jQuery;
-        var probe = typeof jq === 'function' ? jq[JQUERY_PROBE_KEY] : null;
-        return {
-            versions: versions,
-            instances: instances.length,
-            ajaxPrefiltersObserved: probe ? probe.prefilters : -1,
-            ajaxTransportsObserved: probe ? probe.transports : -1,
-            registrationScope: probe ? 'after-probe' : 'unavailable'
-        };
+        var activity = global.abj404PageAjaxActivity;
+        return activity && typeof activity.jqueryFingerprint === 'function'
+            ? activity.jqueryFingerprint()
+            : { versions: [], instances: 0, ajaxPrefiltersObserved: -1,
+                ajaxTransportsObserved: -1, registrationScope: 'unavailable' };
     }
+
 
     /**
      * FNV-1a, 32-bit, lowercase hex. Chosen because the server side has to
@@ -190,12 +183,12 @@
     }
 
     /**
-     * Per-tab identity belongs to the storage adapter that persists it.
+     * Per-tab identity belongs to the module that persists it.
      * @returns {string}
      */
     function getSessionId() {
-        var store = global.abj404ClientTelemetryStore;
-        return store && typeof store.sessionId === 'function' ? store.sessionId() : 'storemissing';
+        var identity = global.abj404ClientTabIdentity;
+        return identity && typeof identity.id === 'function' ? identity.id() : 'identitymissing';
     }
 
     /** @param {string} name @returns {void} */
@@ -466,6 +459,8 @@
         }
         return {
             inflight: { count: inFlightIds().length, ids: inFlightIds() },
+            foreignAjax: foreignAjax(windowStart),
+            tabs: openTabs(),
             longtasks: {
                 state: longTaskObserverState,
                 count: tasks,
@@ -489,6 +484,9 @@
         registerInFlight: registerInFlight,
         releaseInFlight: releaseInFlight,
         inFlightIds: inFlightIds,
+        openTabs: openTabs,
+        foreignAjax: foreignAjax,
+        openTabCount: openTabCount,
         scriptVersions: scriptVersions,
         snapshot: snapshot,
         fnv1a32: fnv1a32

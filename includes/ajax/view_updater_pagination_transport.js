@@ -142,6 +142,15 @@ function abj404PaginationAttemptData(req, part, attemptIndex, record, parentAtte
     if (Array.isArray(record.inflightIdsAtSend) && record.inflightIdsAtSend.length > 0) {
         data.clientInflightIds = record.inflightIdsAtSend.join(',').slice(0, 250);
     }
+    // Same-site contention the browser can see. Sent even when the value is
+    // -1 (not observable) so the server can tell a blind spot from a quiet
+    // page -- the distinction the whole cause-elimination pass turns on.
+    if (typeof record.tabsAtSend === 'number') {
+        data.clientTabs = String(record.tabsAtSend);
+    }
+    if (typeof record.foreignInflightAtSend === 'number') {
+        data.clientForeignInflight = String(record.foreignInflightAtSend);
+    }
     var priorReport = abj404PaginationTelemetryDelivery().priorReportParam();
     if (priorReport !== '') {
         data.clientReport = priorReport;

@@ -121,6 +121,17 @@
             // origin that stopped answering.
             inflightAtSend: pageEnv ? pageEnv.inFlightIds().length : 0,
             inflightIdsAtSend: pageEnv ? pageEnv.inFlightIds() : [],
+            // Same-site contention at SEND time, from the two things the
+            // browser can see: how many admin tabs of this page are open, and
+            // how much non-plugin AJAX this tab already had outstanding. Both
+            // ride the request itself (see abj404PaginationAttemptData), so the
+            // server holds them even when no support request is ever sent.
+            // -1 means "could not be observed", never "none": the difference
+            // decides whether an empty reading is evidence or a blind spot.
+            tabsAtSend: pageEnv && typeof pageEnv.openTabCount === 'function'
+                ? pageEnv.openTabCount() : -1,
+            foreignInflightAtSend: pageEnv && typeof pageEnv.foreignAjax === 'function'
+                ? pageEnv.foreignAjax(nowMs()).inflight : -1,
             transports: 0,
             events: [],
             eventsDropped: 0,

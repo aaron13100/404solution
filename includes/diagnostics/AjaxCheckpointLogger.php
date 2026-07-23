@@ -391,7 +391,7 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
 
     /** @return array<string, mixed> */
     private static function envelope(string $requestId, string $event): array {
-        return array(
+        $envelope = array(
             'schema_version' => self::SCHEMA_VERSION,
             'envelope' => self::ENVELOPE_FULL,
             'ts' => microtime(true),
@@ -400,11 +400,21 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
             'host_pressure' => class_exists('ABJ_404_Solution_HostPressureSampler')
                 ? ABJ_404_Solution_HostPressureSampler::capture()
                 : array('status' => 'unavailable', 'reason' => 'sampler_class_unavailable'),
-            'previous_checkpoint_write' => self::previousWriteTelemetry($requestId),
-            'request_id' => $requestId,
-            'event' => $event,
-            'pid' => getmypid(),
         );
+        // Host-WIDE pressure above; THIS SITE's own concurrency next. A
+        // per-account worker cap (LiteSpeed/CloudLinux LVE) throttles a site
+        // whose box looks idle, so the two answer different questions and a
+        // record carrying only the first cannot tell them apart. The census
+        // owns the shape of its own contribution; see
+        // ABJ_404_Solution_SameSiteRequestCensus::checkpointFields().
+        $envelope += class_exists('ABJ_404_Solution_SameSiteRequestCensus')
+            ? ABJ_404_Solution_SameSiteRequestCensus::checkpointFields()
+            : array('same_site_requests' => -1);
+        $envelope['previous_checkpoint_write'] = self::previousWriteTelemetry($requestId);
+        $envelope['request_id'] = $requestId;
+        $envelope['event'] = $event;
+        $envelope['pid'] = getmypid();
+        return $envelope;
     }
 
     /**
