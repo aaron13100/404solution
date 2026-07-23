@@ -16,8 +16,27 @@ if (!defined('ABSPATH')) {
  * response emission is its own cohesive responsibility with its own heavy
  * external caller list: every per-endpoint handler in
  * includes/ajax/Ajax_*.php calls sendJsonResponseAndExit() directly.
+ *
+ * Every micro-step in this path is bracketed with a start/end checkpoint
+ * pair, not just a post-hoc record: gap-hunt iteration 2 (Codex gaps #4 and
+ * #5, 2026-07-22) found that json_encode() ran raw and each ob_end_flush()
+ * close had only a pre-call record, so a hang or fatal INSIDE either call
+ * was indistinguishable from a stall in the preceding uninstrumented setup.
+ * Header emission and the status_header()/http_response_code() call were not
+ * measured at all. All four are now around()-bracketed like echo already was.
  */
 final class ABJ_404_Solution_AjaxResponseEmitter {
+
+    /**
+     * Maximum recursion depth payloadShapeFields() will walk into.
+     * Bounded so this diagnostic itself cannot become the next unmeasured
+     * hang on a pathological (deeply nested or huge) payload -- exactly the
+     * failure mode this instrumentation exists to catch.
+     */
+    private const PAYLOAD_SHAPE_MAX_DEPTH = 32;
+
+    /** Maximum number of array/object elements payloadShapeFields() will visit. */
+    private const PAYLOAD_SHAPE_MAX_ELEMENTS = 5000;
 
     /**
      * @param mixed $payload
@@ -35,8 +54,38 @@ final class ABJ_404_Solution_AjaxResponseEmitter {
         // finished by now; encoding and echoing do none.
         ABJ_404_Solution_AjaxQueryTimeline::flushSummary($checkpointRequestId);
         if (!headers_sent()) {
-            if (isset($GLOBALS['abj404_ajax_context']) && is_array($GLOBALS['abj404_ajax_context'])) {
-                $ctx = $GLOBALS['abj404_ajax_context'];
+            self::checkpointedEmitHeaders($checkpointRequestId, $ledgerRequestId, $httpStatus);
+        }
+        self::checkpointedEncodeAndEcho($payload, $checkpointRequestId);
+
+        // Test hook: tests register `abj404_should_exit` returning false to skip exit.
+        if (!apply_filters('abj404_should_exit', true, array('source' => 'viewUpdater_emitJson'))) {
+            return;
+        }
+
+        self::checkpointedFlushAndFinish($checkpointRequestId);
+
+        exit;
+    }
+
+    /**
+     * Response headers as two measured boundaries (gap-hunt iteration 2,
+     * Codex gap #5): the X-ABJ404 and Content-type header() calls, then
+     * separately the status_header()/http_response_code() call. Neither was
+     * measured before this fix, so a blocking header filter (e.g. an
+     * optimizer plugin hooked on `status_header`) left `trace_finish_end`
+     * followed by nothing, indistinguishable from a worker kill.
+     * $checkpointRequestId === '' means this response is outside the Bruno
+     * table-AJAX endpoint; skip the instrumentation but keep behavior
+     * identical.
+     *
+     * @param int $httpStatus
+     */
+    private static function checkpointedEmitHeaders(string $checkpointRequestId, string $ledgerRequestId, $httpStatus): void {
+        $ctx = isset($GLOBALS['abj404_ajax_context']) && is_array($GLOBALS['abj404_ajax_context'])
+            ? $GLOBALS['abj404_ajax_context'] : array();
+        $emitHeaders = static function () use ($ctx, $ledgerRequestId) {
+            if ($ctx !== array()) {
                 if (array_key_exists('action', $ctx) && is_string($ctx['action'])) {
                     header('X-ABJ404-Ajax: ' . preg_replace('/[\r\n]+/', '', $ctx['action']));
                 }
@@ -54,31 +103,40 @@ final class ABJ_404_Solution_AjaxResponseEmitter {
                 }
             }
             header('Content-type: application/json; charset=UTF-8');
+        };
+        if ($checkpointRequestId === '') {
+            $emitHeaders();
+        } else {
+            ABJ_404_Solution_AjaxCheckpointLogger::around($checkpointRequestId, 'headers', $emitHeaders);
+        }
+
+        $emitStatus = static function () use ($httpStatus) {
             if (function_exists('status_header')) {
                 status_header($httpStatus);
             } else if (function_exists('http_response_code')) {
                 http_response_code($httpStatus);
             }
+        };
+        if ($checkpointRequestId === '') {
+            $emitStatus();
+        } else {
+            ABJ_404_Solution_AjaxCheckpointLogger::around(
+                $checkpointRequestId, 'status_header', $emitStatus, array('http_status' => $httpStatus));
         }
-        self::checkpointedEncodeAndEcho($payload, $checkpointRequestId);
-
-        // Test hook: tests register `abj404_should_exit` returning false to skip exit.
-        if (!apply_filters('abj404_should_exit', true, array('source' => 'viewUpdater_emitJson'))) {
-            return;
-        }
-
-        self::checkpointedFlushAndFinish($checkpointRequestId);
-
-        exit;
     }
 
     /**
-     * json_encode + echo as one measured boundary (matrix coverage req. 2):
-     * bytes, a content hash, and json_last_error() so a truncated or
-     * pathological payload is directly visible instead of inferred from a
-     * client-side parse failure. $checkpointRequestId === '' means this
-     * response is outside the Bruno table-AJAX endpoint; skip the
-     * instrumentation but keep behavior identical.
+     * json_encode + echo as measured boundaries (matrix coverage req. 2,
+     * gap-hunt iteration 2 Codex gap #4): the encode call itself is now
+     * bracketed with json_encode_start/_end (payload shape on start, elapsed
+     * on end) so a hang or fatal INSIDE json_encode() on a pathological
+     * payload is attributable instead of vanishing into the preceding
+     * uninstrumented gap. The post-hoc 'json_encode' record (bytes, content
+     * hash, json_last_error()) is unchanged -- it still needs the encoded
+     * result, which only exists after the bracketed call returns.
+     * $checkpointRequestId === '' means this response is outside the Bruno
+     * table-AJAX endpoint; skip the instrumentation but keep behavior
+     * identical.
      *
      * @param mixed $payload
      */
@@ -87,7 +145,15 @@ final class ABJ_404_Solution_AjaxResponseEmitter {
             echo json_encode($payload);
             return;
         }
-        $json = json_encode($payload);
+        $json = null;
+        ABJ_404_Solution_AjaxCheckpointLogger::around(
+            $checkpointRequestId,
+            'json_encode',
+            static function () use ($payload, &$json) {
+                $json = json_encode($payload);
+            },
+            self::payloadShapeFields($payload)
+        );
         ABJ_404_Solution_AjaxCheckpointLogger::record($checkpointRequestId, 'json_encode', array(
             'bytes' => is_string($json) ? strlen($json) : 0,
             'hash' => is_string($json) ? md5($json) : null,
@@ -105,6 +171,57 @@ final class ABJ_404_Solution_AjaxResponseEmitter {
     }
 
     /**
+     * A best-effort structural fingerprint of the payload BEFORE
+     * json_encode() runs: max nesting depth, element count, and total string
+     * bytes. Recorded on json_encode_start so a stall or fatal inside the
+     * encode call is attributable to a payload shape instead of an absence.
+     *
+     * @param mixed $payload
+     * @return array{depth: int, element_count: int, string_byte_total: int, truncated: bool}
+     */
+    private static function payloadShapeFields($payload): array {
+        $stats = array('depth' => 0, 'element_count' => 0, 'string_byte_total' => 0, 'truncated' => false);
+        self::walkPayloadShape($payload, 0, $stats);
+        return $stats;
+    }
+
+    /**
+     * @param mixed $value
+     * @param array{depth: int, element_count: int, string_byte_total: int, truncated: bool} $stats
+     */
+    private static function walkPayloadShape($value, int $currentDepth, array &$stats): void {
+        if ($stats['truncated']) {
+            return;
+        }
+        $stats['depth'] = max($stats['depth'], $currentDepth);
+        if ($currentDepth >= self::PAYLOAD_SHAPE_MAX_DEPTH) {
+            $stats['truncated'] = true;
+            return;
+        }
+        if (is_string($value)) {
+            $stats['string_byte_total'] += strlen($value);
+            return;
+        }
+        $children = null;
+        if (is_array($value)) {
+            $children = $value;
+        } else if (is_object($value)) {
+            $children = get_object_vars($value);
+        }
+        if ($children === null) {
+            return;
+        }
+        foreach ($children as $child) {
+            $stats['element_count']++;
+            if ($stats['element_count'] >= self::PAYLOAD_SHAPE_MAX_ELEMENTS) {
+                $stats['truncated'] = true;
+                return;
+            }
+            self::walkPayloadShape($child, $currentDepth + 1, $stats);
+        }
+    }
+
+    /**
      * The output-buffer flush / connection-detach / exit tail (matrix
      * coverage req. 2): each ob_end_flush() close (handler name + bytes),
      * flush(), which finish-request function exists, which one was selected
@@ -118,14 +235,7 @@ final class ABJ_404_Solution_AjaxResponseEmitter {
     private static function checkpointedFlushAndFinish(string $checkpointRequestId): void {
         if (function_exists('ob_end_flush')) {
             while (ob_get_level() > 0) {
-                $status = ob_get_status();
-                if ($checkpointRequestId !== '') {
-                    ABJ_404_Solution_AjaxCheckpointLogger::record($checkpointRequestId, 'ob_close', array(
-                        'handler' => is_string($status['name'] ?? null) ? $status['name'] : 'unknown',
-                        'bytes' => ob_get_length(),
-                    ));
-                }
-                ob_end_flush();
+                self::checkpointedObEndFlush($checkpointRequestId);
             }
         }
         if (function_exists('flush')) {
@@ -200,6 +310,35 @@ final class ABJ_404_Solution_AjaxResponseEmitter {
         if ($checkpointRequestId !== '') {
             ABJ_404_Solution_AjaxCheckpointLogger::record($checkpointRequestId, 'exit_sentinel');
         }
+    }
+
+    /**
+     * One ob_end_flush() close as a measured boundary (gap-hunt iteration 2,
+     * Codex gap #5): handler name and byte count are captured before the
+     * call (a stalled or killed close still leaves them on record), and the
+     * call itself is now around()-bracketed so a slow output handler shows a
+     * matched ob_close_start/_end pair with elapsed time instead of only "a
+     * close was attempted" with no proof it returned. Split out of
+     * checkpointedFlushAndFinish() so the while-loop body stays a single
+     * call, not inlined branching.
+     */
+    private static function checkpointedObEndFlush(string $checkpointRequestId): void {
+        if ($checkpointRequestId === '') {
+            ob_end_flush();
+            return;
+        }
+        $status = ob_get_status();
+        ABJ_404_Solution_AjaxCheckpointLogger::around(
+            $checkpointRequestId,
+            'ob_close',
+            static function () {
+                ob_end_flush();
+            },
+            array(
+                'handler' => is_string($status['name'] ?? null) ? $status['name'] : 'unknown',
+                'bytes' => ob_get_length(),
+            )
+        );
     }
 
     /**
