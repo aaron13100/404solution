@@ -177,6 +177,56 @@ final class ABJ_404_Solution_DecisiveRecordManifest {
             'reserve' => null,
             'sentinel' => 'row_operation_instrumentation.status',
         ),
+        // Every canonical table render resolves this fixed pre-row operation
+        // list. A load or resolver stall leaves its start unmatched.
+        'table_prelude_operation' => array(
+            'emitter' => 'ABJ_404_Solution_TableRendererPreludeTracer',
+            'events' => array('table_prelude_operation_start', 'table_prelude_operation_end'),
+            'presence' => self::PRESENCE_ALWAYS,
+            'reserve' => array(
+                'start' => 'table_prelude_operation_start',
+                'end' => 'table_prelude_operation_end',
+            ),
+            'sentinel' => null,
+        ),
+        // The callback census is always emitted even when the hook registry
+        // or the WordPress JIT translation loader is unavailable.
+        'table_prelude_instrumentation' => array(
+            'emitter' => 'ABJ_404_Solution_TableRendererPreludeTracer',
+            'events' => array('table_prelude_instrumentation'),
+            'presence' => self::PRESENCE_ALWAYS,
+            'reserve' => null,
+            'sentinel' => null,
+        ),
+        // Locale/translation callbacks only exist when another component has
+        // registered them; the census states how many were wrapped.
+        'table_prelude_hook_callback' => array(
+            'emitter' => 'ABJ_404_Solution_TableRendererPreludeTracer',
+            'events' => array(
+                'table_prelude_hook_callback_start',
+                'table_prelude_hook_callback_end',
+            ),
+            'presence' => self::PRESENCE_CONDITIONAL,
+            'reserve' => array(
+                'start' => 'table_prelude_hook_callback_start',
+                'end' => 'table_prelude_hook_callback_end',
+            ),
+            'sentinel' => 'table_prelude_instrumentation.callbacks_wrapped',
+        ),
+        'table_prelude_hook_callback_unavailable' => array(
+            'emitter' => 'ABJ_404_Solution_TableRendererPreludeTracer',
+            'events' => array('table_prelude_hook_callback_unavailable'),
+            'presence' => self::PRESENCE_CONDITIONAL,
+            'reserve' => null,
+            'sentinel' => 'table_prelude_instrumentation.callbacks_unavailable',
+        ),
+        'table_prelude_hook_callback_capped' => array(
+            'emitter' => 'ABJ_404_Solution_TableRendererPreludeTracer',
+            'events' => array('table_prelude_hook_callback_capped'),
+            'presence' => self::PRESENCE_CONDITIONAL,
+            'reserve' => null,
+            'sentinel' => 'table_prelude_instrumentation.max_callback_records',
+        ),
     );
 
     /**

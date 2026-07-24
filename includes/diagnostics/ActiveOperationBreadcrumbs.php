@@ -25,6 +25,16 @@ final class ABJ_404_Solution_ActiveOperationBreadcrumbs {
     const MAX_RECORDS = 32;
     const MAX_RECORD_BYTES = 2048;
     const LOCK_WAIT_TIMEOUT_US = 50000;
+    /** @var array<string, array<int, string>> */
+    private const BOUNDARY_FIELDS = array(
+        'query' => array('q', 'stage', 'src', 'sql_id', 'sql_len', 'timeout_s'),
+        'row_operation' => array(
+            'operation_id', 'kind', 'operation', 'key', 'group', 'hook', 'callback', 'source',
+        ),
+        'table_prelude_hook_callback' => array(
+            'operation_id', 'hook', 'callback', 'source', 'locale',
+        ),
+    );
 
     /**
      * Replace the latest record for one request/boundary pair.
@@ -86,9 +96,7 @@ final class ABJ_404_Solution_ActiveOperationBreadcrumbs {
      * @return array<string, mixed>
      */
     public static function selectFields(string $boundary, array $fields): array {
-        $allowed = $boundary === 'query'
-            ? array('q', 'stage', 'src', 'sql_id', 'sql_len', 'timeout_s')
-            : array('operation_id', 'kind', 'operation', 'key', 'group', 'hook', 'callback', 'source');
+        $allowed = self::BOUNDARY_FIELDS[$boundary] ?? array();
         $safe = array();
         foreach ($allowed as $field) {
             if (array_key_exists($field, $fields)
@@ -111,7 +119,7 @@ final class ABJ_404_Solution_ActiveOperationBreadcrumbs {
             self::reportFailure('active-operation record has an invalid request id.');
             return self::failure('invalid_request_id');
         }
-        if (!in_array($boundary, array('query', 'row_operation'), true)) {
+        if (!is_string($boundary) || !array_key_exists($boundary, self::BOUNDARY_FIELDS)) {
             self::reportFailure('active-operation record has an invalid boundary.');
             return self::failure('invalid_boundary');
         }

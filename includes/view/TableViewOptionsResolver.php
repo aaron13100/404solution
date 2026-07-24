@@ -79,70 +79,103 @@ class ABJ_404_Solution_TableViewOptionsResolver {
      * @return array<string, mixed>
      */
     function resolve(string $pageBeingViewed): array {
-        $tableOptions = array();
-
-        $tableOptions['translations'] = $this->translationTokens();
-
-        $tableOptions['filter'] = $this->resolveFilter();
-        $tableOptions['filterText'] = $this->resolveFilterText();
-
-        $orderbyInput = ABJ_404_Solution_RequestInputNormalizer::getPostOrGetSanitize('orderby', '');
-        $orderInput = strtoupper(ABJ_404_Solution_RequestInputNormalizer::getPostOrGetSanitize('order', ''));
-        $sortPreferenceRequested = in_array($pageBeingViewed, array('abj404_redirects', 'abj404_captured'), true)
-            && (
-                ($orderbyInput !== '' && in_array($orderbyInput, self::$allowedOrderbyColumns, true))
-                || ($orderInput !== '' && in_array($orderInput, self::$allowedOrderValues, true))
-            );
-        $tracer = $sortPreferenceRequested
-            ? ABJ_404_Solution_OptionPersistenceTracer::begin()
-            : null;
+        $preludeTracer = ABJ_404_Solution_TableRendererPreludeTracer::begin();
         try {
-            $optionsRead = static function (): array {
-                return abj_service('options_repository')->getOptions(true);
-            };
-            $options = $tracer === null
-                ? $optionsRead()
-                : $tracer->traceOperation('sort_preference_options_read', $optionsRead);
-
-            $tableOptions['orderby'] = $this->resolveOrderby($orderbyInput, $pageBeingViewed, $options);
-            $tableOptions['order'] = $this->resolveOrder(
-                $orderInput,
-                $tableOptions['orderby'],
-                $pageBeingViewed,
-                $options
-            );
-
-            $sortPreferenceWrite = function () use (
-                $orderbyInput,
-                $orderInput,
-                $pageBeingViewed,
-                $options
-            ): void {
-                $this->rememberSortPreference($orderbyInput, $orderInput, $pageBeingViewed, $options);
-            };
-            if ($tracer === null) {
-                $sortPreferenceWrite();
-            } else {
-                $tracer->traceOperation('sort_preference_write', $sortPreferenceWrite);
+            if ($preludeTracer !== null) {
+                $preludeTracer->prepareTranslationDomain();
             }
+            $tableOptions = array();
+            $tableOptions['translations'] = $this->tracePrelude(
+                $preludeTracer, 'translation_tokens', fn() => $this->translationTokens());
+            $tableOptions['filter'] = $this->tracePrelude(
+                $preludeTracer, 'filter_resolution', fn() => $this->resolveFilter());
+            $tableOptions['filterText'] = $this->tracePrelude(
+                $preludeTracer, 'filter_text_resolution', fn() => $this->resolveFilterText());
+
+            $orderbyInput = ABJ_404_Solution_RequestInputNormalizer::getPostOrGetSanitize('orderby', '');
+            $orderInput = strtoupper(ABJ_404_Solution_RequestInputNormalizer::getPostOrGetSanitize('order', ''));
+            $sortPreferenceRequested = in_array($pageBeingViewed, array('abj404_redirects', 'abj404_captured'), true)
+                && (
+                    ($orderbyInput !== '' && in_array($orderbyInput, self::$allowedOrderbyColumns, true))
+                    || ($orderInput !== '' && in_array($orderInput, self::$allowedOrderValues, true))
+                );
+            $optionTracer = $sortPreferenceRequested
+                ? ABJ_404_Solution_OptionPersistenceTracer::begin()
+                : null;
+            try {
+                $optionsRead = static function (): array {
+                    return abj_service('options_repository')->getOptions(true);
+                };
+                $options = $this->tracePrelude(
+                    $preludeTracer,
+                    'options_read',
+                    static fn() => $optionTracer === null
+                        ? $optionsRead()
+                        : $optionTracer->traceOperation('sort_preference_options_read', $optionsRead)
+                );
+
+                $tableOptions['orderby'] = $this->tracePrelude(
+                    $preludeTracer,
+                    'orderby_resolution',
+                    fn() => $this->resolveOrderby($orderbyInput, $pageBeingViewed, $options)
+                );
+                $tableOptions['order'] = $this->tracePrelude(
+                    $preludeTracer,
+                    'order_resolution',
+                    fn() => $this->resolveOrder(
+                        $orderInput, $tableOptions['orderby'], $pageBeingViewed, $options)
+                );
+                $sortPreferenceWrite = function () use (
+                    $orderbyInput, $orderInput, $pageBeingViewed, $options
+                ): void {
+                    $this->rememberSortPreference($orderbyInput, $orderInput, $pageBeingViewed, $options);
+                };
+                $this->tracePrelude(
+                    $preludeTracer,
+                    'sort_preference_write',
+                    static fn() => $optionTracer === null
+                        ? $sortPreferenceWrite()
+                        : $optionTracer->traceOperation('sort_preference_write', $sortPreferenceWrite)
+                );
+            } finally {
+                if ($optionTracer !== null) {
+                    $optionTracer->finish();
+                }
+            }
+
+            $tableOptions['paged'] = $this->tracePrelude(
+                $preludeTracer, 'paged_resolution', fn() => $this->resolvePaged());
+            $tableOptions['perpage'] = $this->tracePrelude(
+                $preludeTracer, 'perpage_resolution', fn() => $this->resolvePerPage($options));
+            $tableOptions['logsid'] = $this->tracePrelude(
+                $preludeTracer, 'logsid_resolution', fn() => $this->resolveLogsId());
+            $tableOptions['score_range'] = $this->tracePrelude(
+                $preludeTracer, 'score_range_resolution', fn() => $this->resolveScoreRange());
+
+            $forceRebuild = $this->tracePrelude(
+                $preludeTracer, 'force_view_rebuild_resolution', fn() => $this->resolveForceViewRebuild());
+            if ($forceRebuild !== null) {
+                $tableOptions['_abj404_force_view_rebuild'] = $forceRebuild;
+            }
+            $sanitized = $this->tracePrelude(
+                $preludeTracer, 'sanitize', fn() => $this->sanitize($tableOptions));
+            return $this->tracePrelude(
+                $preludeTracer, 'normalize_types', fn() => $this->normalizeResolvedTypes($sanitized));
         } finally {
-            if ($tracer !== null) {
-                $tracer->finish();
+            if ($preludeTracer !== null) {
+                $preludeTracer->finish();
             }
         }
+    }
 
-        $tableOptions['paged'] = $this->resolvePaged();
-        $tableOptions['perpage'] = $this->resolvePerPage($options);
-
-        $tableOptions['logsid'] = $this->resolveLogsId();
-        $tableOptions['score_range'] = $this->resolveScoreRange();
-
-        $forceRebuild = $this->resolveForceViewRebuild();
-        if ($forceRebuild !== null) {
-            $tableOptions['_abj404_force_view_rebuild'] = $forceRebuild;
-        }
-
-        return $this->normalizeResolvedTypes($this->sanitize($tableOptions));
+    /**
+     * @template T
+     * @param ABJ_404_Solution_TableRendererPreludeTracer|null $tracer
+     * @param callable():T $work
+     * @return T
+     */
+    private function tracePrelude($tracer, string $operation, callable $work) {
+        return $tracer === null ? $work() : $tracer->traceOperation($operation, $work);
     }
 
     /**
