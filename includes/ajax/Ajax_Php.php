@@ -59,7 +59,15 @@ class ABJ_404_Solution_Ajax_Php {
 			$identifier = 'ip_' . md5($remote);
 		}
 
-		if (function_exists('wp_using_ext_object_cache') && wp_using_ext_object_cache()) {
+		$usePersistentCache = ABJ_404_Solution_RateLimitOperationTracer::selectBackend(
+			static function (): bool {
+				return function_exists('wp_using_ext_object_cache')
+					&& wp_using_ext_object_cache()
+					&& function_exists('wp_cache_add')
+					&& function_exists('wp_cache_incr');
+			}
+		);
+		if ($usePersistentCache) {
 			return self::consumeRateLimitAtomic($action, $identifier, $max_requests, $time_window);
 		}
 
@@ -225,13 +233,28 @@ class ABJ_404_Solution_Ajax_Php {
 
 		// No-op if another concurrent request already created the key; either
 		// way, the key is guaranteed to exist by the time incr() runs below.
-		wp_cache_add($key, 0, $group, $time_window);
-		$count = wp_cache_incr($key, 1, $group);
+		ABJ_404_Solution_RateLimitOperationTracer::cacheCommand(
+			'cache_add_initial',
+			$key,
+			$group,
+			static fn() => wp_cache_add($key, 0, $group, $time_window)
+		);
+		$count = ABJ_404_Solution_RateLimitOperationTracer::cacheCommand(
+			'cache_increment',
+			$key,
+			$group,
+			static fn() => wp_cache_incr($key, 1, $group)
+		);
 
 		if ($count === false) {
 			// The key expired/was evicted between add() and incr(). Start a
 			// fresh window rather than blocking the request.
-			wp_cache_add($key, 1, $group, $time_window);
+			ABJ_404_Solution_RateLimitOperationTracer::cacheCommand(
+				'cache_add_fallback',
+				$key,
+				$group,
+				static fn() => wp_cache_add($key, 1, $group, $time_window)
+			);
 			$count = 1;
 		}
 
