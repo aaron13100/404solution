@@ -41,6 +41,8 @@ final class ABJ_404_Solution_OptionPersistenceTracer {
     private $recording = false;
     /** @var ABJ_404_Solution_HookCallbackInstrumenter<array{fields: array<string, mixed>, started_at: float|null}|null> */
     private $hookInstrumenter;
+    /** @var ABJ_404_Solution_HookInstrumentationLifecycleTracer */
+    private $lifecycleTracer;
 
     public static function begin(): ?self {
         $requestId = self::currentRequestId();
@@ -57,6 +59,10 @@ final class ABJ_404_Solution_OptionPersistenceTracer {
 
     private function __construct(string $requestId) {
         $this->requestId = $requestId;
+        $this->lifecycleTracer = new ABJ_404_Solution_HookInstrumentationLifecycleTracer(
+            $requestId,
+            'option_persistence'
+        );
         $this->hookInstrumenter = new ABJ_404_Solution_HookCallbackInstrumenter(
             function (
                 string $registeredHook,
@@ -68,7 +74,8 @@ final class ABJ_404_Solution_OptionPersistenceTracer {
             },
             function ($token): void {
                 $this->finishHookCallback($token);
-            }
+            },
+            $this->lifecycleTracer
         );
     }
 
@@ -137,45 +144,35 @@ final class ABJ_404_Solution_OptionPersistenceTracer {
     }
 
     private function installHookCallbacks(): void {
-        $filters = $GLOBALS['wp_filter'] ?? null;
-        if (!is_array($filters)) {
-            $this->write('option_hook_instrumentation', array(
-                'status' => 'unavailable',
-                'reason' => 'hook_registry_unavailable',
-                'hooks_scanned' => count(self::OPTION_HOOKS),
-                'callbacks_wrapped' => 0,
-                'callbacks_marked' => 0,
-                'callbacks_attributed' => 0,
-                'callbacks_unavailable' => 0,
-            ));
-            return;
-        }
-
         $wrappedCount = 0;
         $markedCount = 0;
         $unavailableCount = 0;
+        $registryUnavailable = false;
+        $reason = '';
         foreach (self::OPTION_HOOKS as $hookName) {
-            $hookObject = $filters[$hookName] ?? null;
-            if ($hookObject === null) {
-                continue;
-            }
-            if (!is_object($hookObject)) {
-                $unavailableCount++;
-                continue;
-            }
-            $counts = $this->hookInstrumenter->instrument($hookName, $hookObject);
+            $counts = $this->hookInstrumenter->instrument($hookName);
             $wrappedCount += $counts['callbacks_wrapped'];
             $markedCount += $counts['callbacks_marked'];
             $unavailableCount += $counts['callbacks_unavailable'];
+            if ($counts['registry_status'] === 'unavailable') {
+                $registryUnavailable = true;
+                $reason = (string)($counts['registry_reason'] ?? 'hook_registry_unavailable');
+            }
         }
-        $this->write('option_hook_instrumentation', array(
-            'status' => $unavailableCount === 0 ? 'ready' : 'partial',
+        $status = array(
+            'status' => $registryUnavailable
+                ? 'unavailable'
+                : ($unavailableCount === 0 ? 'ready' : 'partial'),
             'hooks_scanned' => count(self::OPTION_HOOKS),
             'callbacks_wrapped' => $wrappedCount,
             'callbacks_marked' => $markedCount,
             'callbacks_attributed' => $wrappedCount + $markedCount,
             'callbacks_unavailable' => $unavailableCount,
-        ));
+        );
+        if ($reason !== '') {
+            $status['reason'] = $reason;
+        }
+        $this->write('option_hook_instrumentation', $status);
     }
 
     /**
@@ -187,7 +184,7 @@ final class ABJ_404_Solution_OptionPersistenceTracer {
         int $priority,
         array $identity
     ): ?array {
-        if ($this->recording) {
+        if ($this->recording || $this->lifecycleTracer->isRecording()) {
             return null;
         }
         $fields = array(

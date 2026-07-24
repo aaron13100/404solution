@@ -71,6 +71,25 @@ final class ABJ_404_Solution_DecisiveRecordManifest {
      * }>
      */
     private const RECORDS = array(
+        // Registry lookup, traversal, reflection, mutation, and restoration
+        // happen before callback and table-operation boundaries can identify
+        // themselves. The lifecycle start is therefore written first and
+        // advanced with the same operation id before each callback position.
+        // An unmatched start distinguishes instrumentation self-interference
+        // from a foreign callback or the surrounding table operation.
+        'hook_instrumentation_lifecycle' => array(
+            'emitter' => 'ABJ_404_Solution_HookInstrumentationLifecycleTracer',
+            'events' => array(
+                'hook_instrumentation_lifecycle_start',
+                'hook_instrumentation_lifecycle_end',
+            ),
+            'presence' => self::PRESENCE_ALWAYS,
+            'reserve' => array(
+                'start' => 'hook_instrumentation_lifecycle_start',
+                'end' => 'hook_instrumentation_lifecycle_end',
+            ),
+            'sentinel' => null,
+        ),
         // The medium-high Redis / Object-Cache-Pro-during-rate-limiter
         // discriminator. backend_selection runs on EVERY table request via
         // Ajax_Php::consumeRateLimit, so the start/end pair is always present;

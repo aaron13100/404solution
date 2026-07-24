@@ -50,6 +50,8 @@ final class ABJ_404_Solution_RowRenderOperationTracer {
     private $cacheProxy;
     /** @var ABJ_404_Solution_HookCallbackInstrumenter<array{mode: string, record: array<string, mixed>}|null> */
     private $hookInstrumenter;
+    /** @var ABJ_404_Solution_HookInstrumentationLifecycleTracer */
+    private $lifecycleTracer;
 
     public static function begin(string $requestId): self {
         $tracer = new self($requestId);
@@ -59,6 +61,10 @@ final class ABJ_404_Solution_RowRenderOperationTracer {
 
     private function __construct(string $requestId) {
         $this->requestId = $requestId;
+        $this->lifecycleTracer = new ABJ_404_Solution_HookInstrumentationLifecycleTracer(
+            $requestId,
+            'row_render'
+        );
         $this->hookInstrumenter = new ABJ_404_Solution_HookCallbackInstrumenter(
             function (
                 string $registeredHook,
@@ -70,7 +76,8 @@ final class ABJ_404_Solution_RowRenderOperationTracer {
             },
             function ($token): void {
                 $this->finishOperation($token);
-            }
+            },
+            $this->lifecycleTracer
         );
     }
 
@@ -81,14 +88,13 @@ final class ABJ_404_Solution_RowRenderOperationTracer {
             'callbacks_marked' => 0,
             'callbacks_unavailable' => 0,
         );
-        if (function_exists('add_filter') && is_array($GLOBALS['wp_filter'] ?? null)) {
+        if (function_exists('add_filter')) {
             try {
-                $allHook = $GLOBALS['wp_filter']['all'] ?? null;
-                if (is_object($allHook)) {
-                    $allHookCounts = $this->hookInstrumenter->instrument('all', $allHook);
+                $allHookCounts = $this->hookInstrumenter->instrument('all');
+                if ($allHookCounts['registry_status'] !== 'unavailable') {
+                    add_filter('all', array($this, 'prepareHookCallbacks'), PHP_INT_MIN, 1);
+                    $hookBoundary = 'ready';
                 }
-                add_filter('all', array($this, 'prepareHookCallbacks'), PHP_INT_MIN, 1);
-                $hookBoundary = 'ready';
             } catch (Throwable $e) {
                 self::reportFailure('hook boundary install failed: ' . $e->getMessage());
             }
@@ -141,16 +147,11 @@ final class ABJ_404_Solution_RowRenderOperationTracer {
      */
     public function prepareHookCallbacks($hookName) {
         if (!$this->rowActive || $this->suspended || $this->recording
+                || $this->lifecycleTracer->isRecording()
                 || !is_string($hookName) || $hookName === 'all') {
             return $hookName;
         }
-        $filters = $GLOBALS['wp_filter'] ?? null;
-        $hookObject = is_array($filters) ? ($filters[$hookName] ?? null) : null;
-        if (!$hookObject instanceof ArrayAccess || !$hookObject instanceof Traversable) {
-            return $hookName;
-        }
-
-        $counts = $this->hookInstrumenter->instrument($hookName, $hookObject);
+        $counts = $this->hookInstrumenter->instrument($hookName);
         if ($counts['callbacks_unavailable'] > 0) {
             $this->recordUnavailableHookOnce($hookName, $counts['callbacks_unavailable']);
         }
@@ -216,7 +217,8 @@ final class ABJ_404_Solution_RowRenderOperationTracer {
      * @return array{mode: string, record: array<string, mixed>}|null
      */
     private function beginOperation(array $fields): ?array {
-        if (!$this->rowActive || $this->suspended || $this->recording) {
+        if (!$this->rowActive || $this->suspended || $this->recording
+                || $this->lifecycleTracer->isRecording()) {
             return null;
         }
         $operationId = substr(hash(

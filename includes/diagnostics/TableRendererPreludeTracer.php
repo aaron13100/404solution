@@ -47,6 +47,8 @@ final class ABJ_404_Solution_TableRendererPreludeTracer {
     private $scopeFailed = false;
     /** @var ABJ_404_Solution_HookCallbackInstrumenter<array{mode: string, fields: array<string, mixed>, started_at?: float|null}|null> */
     private $hookInstrumenter;
+    /** @var ABJ_404_Solution_HookInstrumentationLifecycleTracer */
+    private $lifecycleTracer;
 
     public static function begin(): ?self {
         $requestId = class_exists('ABJ_404_Solution_AjaxRequestLedger')
@@ -91,6 +93,10 @@ final class ABJ_404_Solution_TableRendererPreludeTracer {
     private function __construct(string $requestId, string $locale) {
         $this->requestId = $requestId;
         $this->locale = $locale;
+        $this->lifecycleTracer = new ABJ_404_Solution_HookInstrumentationLifecycleTracer(
+            $requestId,
+            'table_renderer_prelude'
+        );
         $this->hookInstrumenter = new ABJ_404_Solution_HookCallbackInstrumenter(
             function (
                 string $registeredHook,
@@ -102,7 +108,8 @@ final class ABJ_404_Solution_TableRendererPreludeTracer {
             },
             function ($token): void {
                 $this->finishHookCallback($token);
-            }
+            },
+            $this->lifecycleTracer
         );
     }
 
@@ -135,43 +142,35 @@ final class ABJ_404_Solution_TableRendererPreludeTracer {
      * @return array{status: string, reason?: string, hooks_scanned: int, callbacks_wrapped: int, callbacks_marked?: int, callbacks_attributed?: int, callbacks_unavailable: int}
      */
     private function installHookCallbacks(): array {
-        $filters = $GLOBALS['wp_filter'] ?? null;
-        if (!is_array($filters)) {
-            return array(
-                'status' => 'unavailable',
-                'reason' => 'hook_registry_unavailable',
-                'hooks_scanned' => count(self::TRANSLATION_HOOKS),
-                'callbacks_wrapped' => 0,
-                'callbacks_marked' => 0,
-                'callbacks_attributed' => 0,
-                'callbacks_unavailable' => 0,
-            );
-        }
         $wrapped = 0;
         $marked = 0;
         $unavailable = 0;
+        $registryUnavailable = false;
+        $reason = '';
         foreach (self::TRANSLATION_HOOKS as $hookName) {
-            $hookObject = $filters[$hookName] ?? null;
-            if ($hookObject === null) {
-                continue;
-            }
-            if (!is_object($hookObject)) {
-                $unavailable++;
-                continue;
-            }
-            $counts = $this->hookInstrumenter->instrument($hookName, $hookObject);
+            $counts = $this->hookInstrumenter->instrument($hookName);
             $wrapped += $counts['callbacks_wrapped'];
             $marked += $counts['callbacks_marked'];
             $unavailable += $counts['callbacks_unavailable'];
+            if ($counts['registry_status'] === 'unavailable') {
+                $registryUnavailable = true;
+                $reason = (string)($counts['registry_reason'] ?? 'hook_registry_unavailable');
+            }
         }
-        return array(
-            'status' => $unavailable === 0 ? 'ready' : 'partial',
+        $status = array(
+            'status' => $registryUnavailable
+                ? 'unavailable'
+                : ($unavailable === 0 ? 'ready' : 'partial'),
             'hooks_scanned' => count(self::TRANSLATION_HOOKS),
             'callbacks_wrapped' => $wrapped,
             'callbacks_marked' => $marked,
             'callbacks_attributed' => $wrapped + $marked,
             'callbacks_unavailable' => $unavailable,
         );
+        if ($reason !== '') {
+            $status['reason'] = $reason;
+        }
+        return $status;
     }
 
     /**
@@ -183,7 +182,7 @@ final class ABJ_404_Solution_TableRendererPreludeTracer {
         int $priority,
         array $identity
     ): ?array {
-        if ($this->recording) {
+        if ($this->recording || $this->lifecycleTracer->isRecording()) {
             return null;
         }
         $fields = array(

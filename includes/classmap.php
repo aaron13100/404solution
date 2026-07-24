@@ -111,7 +111,7 @@ $abj404ClassesByDirectory = array(
         'CheckpointJournalReader', 'RequiredCheckpointEvidence', 'DecisiveRecordManifest',
         'AjaxRequestLedger',
         'AjaxQueryTimeline', 'AjaxRowLoopProgress', 'RateLimitOperationTracer',
-        'HookCallbackIdentity', 'HookCallbackInstrumenter',
+        'HookCallbackIdentity', 'HookInstrumentationLifecycleTracer', 'HookCallbackInstrumenter',
         'OptionPersistenceTracer', 'RowRenderOperationTracer',
         'TableRendererPreludeTracer',
         'InstrumentedObjectCache',
