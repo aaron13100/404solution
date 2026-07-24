@@ -8,16 +8,18 @@ if (!defined('ABSPATH')) {
  * Everything a support report carries in its `debug_log_excerpt` field, and
  * the byte contract that field has to stay inside.
  *
- * Five independent sources feed one string: a manifest of what the collector
+ * Six independent sources feed one string: a manifest of what the collector
  * looked for, the detach A/B experiment's verdict for the session that
- * clicked, the sanitized debug-log tail, the two durable AJAX diagnostic
- * journals, and the browser's own drained transport buffer. Deciding which of
- * those a report carries, in what order, and how the sum stays under the wire
- * contract is a different job from answering an AJAX request, and it is the
- * job with the interesting failure modes: every one of beta.1's evidence
- * losses happened here, not in the endpoint.
+ * clicked, the per-failing-session diagnostics for the session(s) that
+ * actually failed (ABJ_404_Solution_FailingSessionSupportSection), the
+ * sanitized debug-log tail, the two durable AJAX diagnostic journals, and the
+ * browser's own drained transport buffer. Deciding which of those a report
+ * carries, in what order, and how the sum stays under the wire contract is a
+ * different job from answering an AJAX request, and it is the job with the
+ * interesting failure modes: every one of beta.1's evidence losses happened
+ * here, not in the endpoint.
  *
- * Three ordering rules are load-bearing rather than cosmetic:
+ * Four ordering rules are load-bearing rather than cosmetic:
  *
  *   1. The collection manifest goes FIRST, because bound() cuts the tail. The
  *      one section that must survive a saturated payload is the one that says
@@ -26,7 +28,11 @@ if (!defined('ABSPATH')) {
  *      the same reason: it is the conclusion drawn FROM that evidence, and a
  *      conclusion that gets cut off the end of a busy session's payload is
  *      exactly the manual join it exists to replace.
- *   3. The journals follow in read order, so a reader walks the session the
+ *   3. The per-failing-session diagnostics follow the click-session verdict,
+ *      still ahead of the evidence: they are the same experiment's conclusion
+ *      computed for the session(s) that actually failed rather than the tab
+ *      that clicked, and they state whether those are even the same session.
+ *   4. The journals follow in read order, so a reader walks the session the
  *      same way the journals were written.
  *
  * The class takes the browser's own inputs as an argument rather than reading
@@ -101,10 +107,12 @@ final class ABJ_404_Solution_SupportEvidenceExcerpt {
         $clientTelemetry = self::clientField($client, 'telemetry');
         $clientAttempts = ABJ_404_Solution_ClientTransportReport::attemptOutcomesInDrainedBuffer(
             $clientTelemetry);
+        $clientSessionId = self::clientField($client, 'session_id');
         $channels = self::collectChannels($clientAttempts);
         $sections = array(
             self::collectionManifest($channels, $clientAttempts),
-            self::detachAbVerdict(self::clientField($client, 'session_id')),
+            self::detachAbVerdict($clientSessionId),
+            self::failingSessionDiagnostics($clientAttempts, $clientSessionId),
             self::loggerExcerpt(),
         );
         foreach ($channels as $channel) {
@@ -266,6 +274,28 @@ final class ABJ_404_Solution_SupportEvidenceExcerpt {
         } catch (Throwable $e) {
             return 'Detach A/B verdict could not be computed: ' . substr($e->getMessage(), 0, 200);
         }
+    }
+
+    /**
+     * The per-failing-session diagnostics section: the detach verdict and
+     * encoded-size basis for the session(s) that actually failed, not just the
+     * tab that clicked. The whole section -- sourcing the journals, deriving the
+     * failing sessions, computing each verdict, and rendering the bounded block
+     * -- lives in ABJ_404_Solution_FailingSessionSupportSection so this
+     * composer stays a section list rather than a grab bag of section bodies.
+     *
+     * Guarded here the same way every other section is: a support request is the
+     * last thing that may be blocked by its own diagnostics, and a corrupt
+     * install can be missing any plugin file (safe-autoloader work for error 18).
+     *
+     * @param array{status: string, ids: array<int, string>, records: int, outcomes: array<string, bool>} $clientAttempts
+     */
+    private static function failingSessionDiagnostics(array $clientAttempts, string $clientSessionId): string {
+        if (!class_exists('ABJ_404_Solution_FailingSessionSupportSection')) {
+            return 'Failing-session diagnostics unavailable: ABJ_404_Solution_FailingSessionSupportSection'
+                . ' could not be loaded on this install, so per-session verdicts were not computed here.';
+        }
+        return ABJ_404_Solution_FailingSessionSupportSection::compose($clientAttempts, $clientSessionId);
     }
 
     /**
