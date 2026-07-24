@@ -28,9 +28,6 @@ if (!defined('ABSPATH')) {
  */
 final class ABJ_404_Solution_DiagnosticJournalExcerpt {
 
-    /** Newest files a single excerpt will draw from. Older ones are dropped whole. */
-    const MAX_FILES = 8;
-
     /**
      * Ceiling on the bytes read from disk before ranking, across all files.
      *
@@ -83,12 +80,19 @@ final class ABJ_404_Solution_DiagnosticJournalExcerpt {
      *   files say, and the browser says it in one journal and not the other.
      * @param callable(array<int, string>):array<int, string>|null $lineTransform
      *   Channel-specific normalization applied before evidence ranking.
+     * @param array{paths: array<int, string>, manifest: array<string, mixed>}|null $fileSelection
+     *   A selection produced by DiagnosticJournalFileSelector. Passing it
+     *   keeps the excerpt and collection manifest on one decision.
      * @return string Empty string when nothing readable was found.
      */
     public static function compose(array $paths, int $budgetBytes, string $header,
-            array $knownFailingIds = array(), ?callable $lineTransform = null): string {
+            array $knownFailingIds = array(), ?callable $lineTransform = null,
+            ?array $fileSelection = null): string {
         try {
-            $files = self::oldestFirstExisting($paths);
+            $selection = $fileSelection
+                ?? ABJ_404_Solution_DiagnosticJournalFileSelector::select($paths, $knownFailingIds);
+            $files = isset($selection['paths']) && is_array($selection['paths'])
+                ? $selection['paths'] : array();
             if ($files === array()) {
                 return '';
             }
@@ -113,6 +117,8 @@ final class ABJ_404_Solution_DiagnosticJournalExcerpt {
                 'files_read' => $read['filesRead'],
                 'files_skipped' => $read['filesSkipped'],
                 'bytes_unread' => $read['bytesUnread'],
+                'files_dropped_by_cap' => self::selectionCount($selection, 'dropped_files'),
+                'known_failure_files' => self::selectionCount($selection, 'known_failure_files'),
             ));
             return $header . self::summaryLine($summary) . "\n" . implode("\n", $selected['lines']);
         } catch (Throwable $e) {
@@ -132,16 +138,17 @@ final class ABJ_404_Solution_DiagnosticJournalExcerpt {
      * channel and pass the union into every compose() call -- one index, both
      * journals, so the two can never disagree about which requests failed.
      *
-     * Bounded exactly like the composing read (same file selection, same byte
-     * allowance), so the index describes the same universe the excerpt draws
-     * from rather than a larger one it could point outside of.
+     * This narrow pass scans every candidate before file selection and retains
+     * only verdict lines. Applying the excerpt's file cap first would erase the
+     * IDs needed to pin the older evidence file.
      *
      * @param array<int, string> $paths One channel's candidate files, as compose() takes them.
      * @return array<string, bool> Condemned request ids, keyed by id; empty when unreadable.
      */
     public static function failureIndex(array $paths): array {
         try {
-            return ABJ_404_Solution_DiagnosticClientVerdict::requestIdsIn(self::readAllLines($paths));
+            return ABJ_404_Solution_DiagnosticClientVerdict::requestIdsIn(
+                self::failureVerdictLines($paths));
         } catch (Throwable $e) {
             self::reportFailure('Diagnostic failure index failed: ' . $e->getMessage());
             return array();
@@ -151,21 +158,16 @@ final class ABJ_404_Solution_DiagnosticJournalExcerpt {
     /**
      * One channel's journals as a single oldest-first stream of whole lines.
      *
-     * Every whole-journal pass runs through here rather than re-deriving the
-     * file selection and the byte allowance: failureIndex() above builds the
-     * cross-journal failure index from it, and
-     * ABJ_404_Solution_DetachAbEvidence joins the detach A/B's per-request
-     * modes to the browser's per-attempt verdicts from it. A second reader
-     * with its own bound would answer questions about a different universe of
-     * records than the excerpt a developer actually receives, which is exactly
-     * how a verdict and the evidence under it come to disagree.
+     * Whole-journal consumers share the same ordinary-file selection and byte
+     * allowance as an excerpt with no externally known failures.
      *
      * @param array<int, string> $paths One channel's candidate files, as compose() takes them.
      * @return array<int, string> Empty when nothing readable was found.
      */
     public static function readAllLines(array $paths): array {
         try {
-            $files = self::oldestFirstExisting($paths);
+            $selection = ABJ_404_Solution_DiagnosticJournalFileSelector::select($paths);
+            $files = $selection['paths'];
             if ($files === array()) {
                 return array();
             }
@@ -177,42 +179,52 @@ final class ABJ_404_Solution_DiagnosticJournalExcerpt {
     }
 
     /**
-     * The existing paths, oldest modification time first so a reader walks the
-     * session forwards.
+     * Browser-verdict lines from every existing candidate, before file capping.
      *
-     * Ties break on the CALLER'S order, never on the path. Callers list their
-     * files oldest-first (rotated, then current, then any live spool), and
-     * filemtime() has one-second granularity, so a journal that rotates and is
-     * appended to inside the same second reports both files as equally old.
-     * Sorting those by name put `abj404_ajax_checkpoints.jsonl` ahead of
-     * `abj404_ajax_checkpoints.old.jsonl` -- 'j' before 'o' -- which reversed
-     * the session and made the ranking treat the newest requests as the
-     * oldest. Ordering is load-bearing now that it decides which requests are
-     * "recent context", so it may not rest on a filename coincidence.
+     * This pass deliberately has no file-count or byte-budget decision: it
+     * stores only the two event shapes that can condemn another request, so a
+     * later file selection cannot erase the IDs needed to pin their evidence.
      *
-     * @param array<int, string> $paths Oldest first, as the caller understands them.
+     * @param array<int, string> $paths
      * @return array<int, string>
      */
-    private static function oldestFirstExisting(array $paths): array {
-        $files = array();
-        foreach (array_values($paths) as $order => $path) {
-            $modified = @filemtime($path);
-            if (is_int($modified)) {
-                $files[] = array('path' => $path, 'modified' => $modified, 'order' => $order);
+    private static function failureVerdictLines(array $paths): array {
+        $lines = array();
+        foreach ($paths as $path) {
+            if (!@is_file($path)) {
+                continue;
+            }
+            $handle = @fopen($path, 'rb');
+            if ($handle === false) {
+                self::reportFailure('Diagnostic failure index could not scan: ' . $path);
+                continue;
+            }
+            try {
+                while (($line = @fgets($handle)) !== false) {
+                    if (strpos($line, ABJ_404_Solution_DiagnosticClientVerdict::PRIOR_ATTEMPT_EVENT) === false
+                            && strpos($line,
+                                ABJ_404_Solution_DiagnosticClientVerdict::BEACON_BRANCH_EVENT) === false) {
+                        continue;
+                    }
+                    $line = trim($line);
+                    if ($line !== '') {
+                        $lines[] = $line;
+                    }
+                }
+            } finally {
+                @fclose($handle);
             }
         }
-        usort($files, static function (array $left, array $right): int {
-            if ($left['modified'] === $right['modified']) {
-                return $left['order'] <=> $right['order'];
-            }
-            return $left['modified'] <=> $right['modified'];
-        });
-        $files = array_slice($files, -self::MAX_FILES);
-        $ordered = array();
-        foreach ($files as $file) {
-            $ordered[] = $file['path'];
-        }
-        return $ordered;
+        return $lines;
+    }
+
+    /**
+     * @param array{manifest?: array<string, mixed>} $selection
+     */
+    private static function selectionCount(array $selection, string $field): int {
+        $manifest = isset($selection['manifest']) && is_array($selection['manifest'])
+            ? $selection['manifest'] : array();
+        return is_numeric($manifest[$field] ?? null) ? (int)$manifest[$field] : 0;
     }
 
     /**

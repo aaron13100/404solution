@@ -149,7 +149,7 @@ final class ABJ_404_Solution_SupportEvidenceExcerpt {
      * ordinary healthy context -- and that request's stage timings are the
      * evidence for where the response was built before it failed to arrive.
      *
-     * @return array<int, array{channel: string, directory: string, usable: bool, paths: array<int, string>, collected: string}>
+     * @return array<int, array{channel: string, directory: string, usable: bool, paths: array<int, string>, collected: string, file_selection: array<string, mixed>}>
      */
     private static function collectChannels(): array {
         $trace = class_exists('ABJ_404_Solution_AjaxRequestTrace')
@@ -172,12 +172,20 @@ final class ABJ_404_Solution_SupportEvidenceExcerpt {
 
         $channels = array();
         if ($trace !== null) {
-            $trace['collected'] = ABJ_404_Solution_AjaxTraceJournal::readRecentForSupport($failingIds);
+            $selection = ABJ_404_Solution_DiagnosticJournalFileSelector::select(
+                $trace['paths'], $failingIds);
+            $trace['file_selection'] = $selection['manifest'];
+            $trace['collected'] = ABJ_404_Solution_AjaxTraceJournal::readRecentForSupport(
+                $failingIds, $selection);
             $channels[] = $trace;
         }
         if ($checkpoints !== null) {
+            $selection = ABJ_404_Solution_DiagnosticJournalFileSelector::select(
+                $checkpoints['paths'], $failingIds);
+            $checkpoints['file_selection'] = $selection['manifest'];
             $checkpoints['collected'] =
-                ABJ_404_Solution_CheckpointJournalReader::readRecentForSupport($failingIds);
+                ABJ_404_Solution_CheckpointJournalReader::readRecentForSupport(
+                    $failingIds, $selection);
             $channels[] = $checkpoints;
         }
         return $channels;
@@ -197,7 +205,7 @@ final class ABJ_404_Solution_SupportEvidenceExcerpt {
      * in the payload rather than silently skipped: an absent manifest is
      * exactly the ambiguity this section exists to remove.
      *
-     * @param array<int, array{channel: string, directory: string, usable: bool, paths: array<int, string>, collected: string}> $channels
+     * @param array<int, array{channel: string, directory: string, usable: bool, paths: array<int, string>, collected: string, file_selection: array<string, mixed>}> $channels
      */
     private static function collectionManifest(array $channels, string $clientTelemetry): string {
         if (!class_exists('ABJ_404_Solution_DiagnosticCollectionManifest')

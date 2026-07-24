@@ -60,8 +60,13 @@ final class ABJ_404_Solution_CheckpointJournalReader {
      *   journal, so this excerpt and the stage-trace one rank identically. This
      *   journal already contains its own verdicts; passing the union in is what
      *   makes the two agree rather than each ranking off what it happens to hold.
+     * @param array{paths: array<int, string>, manifest: array<string, mixed>}|null $fileSelection
+     *   Shared selection plan used by the primary support manifest.
      */
-    public static function readRecentForSupport(array $knownFailingIds = array()): string {
+    public static function readRecentForSupport(
+        array $knownFailingIds = array(),
+        ?array $fileSelection = null
+    ): string {
         $directory = self::journalDirectory();
         if ($directory === '') {
             return '';
@@ -73,7 +78,8 @@ final class ABJ_404_Solution_CheckpointJournalReader {
             $knownFailingIds,
             static function (array $lines): array {
                 return self::compactForSupport($lines);
-            }
+            },
+            $fileSelection
         );
     }
 

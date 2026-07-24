@@ -171,8 +171,13 @@ final class ABJ_404_Solution_AjaxTraceJournal {
      * ABJ_404_Solution_DiagnosticJournalExcerpt::failureIndex().
      *
      * @param array<string, bool> $knownFailingIds
+     * @param array{paths: array<int, string>, manifest: array<string, mixed>}|null $fileSelection
+     *   Shared selection plan used by the primary support manifest.
      */
-    public static function readRecentForSupport(array $knownFailingIds = array()): string {
+    public static function readRecentForSupport(
+        array $knownFailingIds = array(),
+        ?array $fileSelection = null
+    ): string {
         try {
             $directory = self::resolveSupportDirectory();
             if ($directory === '') {
@@ -182,7 +187,9 @@ final class ABJ_404_Solution_AjaxTraceJournal {
                 self::supportExcerptPaths($directory),
                 self::MAX_SUPPORT_EXCERPT_BYTES,
                 "Recent AJAX stage traces (JSONL):\n",
-                $knownFailingIds
+                $knownFailingIds,
+                null,
+                $fileSelection
             );
         } catch (Throwable $e) {
             self::reportStaticFailure('AJAX trace support excerpt failed: ' . $e->getMessage());

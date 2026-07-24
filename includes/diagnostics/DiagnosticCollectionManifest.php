@@ -50,7 +50,7 @@ final class ABJ_404_Solution_DiagnosticCollectionManifest {
      * that could not be built says so, because "no manifest" is the exact
      * silence this class exists to end.
      *
-     * @param array<int, array{channel: string, directory: string, usable: bool, paths: array<int, string>, collected: string}> $channels
+     * @param array<int, array{channel: string, directory: string, usable: bool, paths: array<int, string>, collected: string, file_selection?: array<string, mixed>}> $channels
      *   One entry per journal the collector actually read, carrying the
      *   candidate paths it used and the text it got back.
      * @param array{status: string, ids: array<int, string>, records: int} $clientAttempts
@@ -107,13 +107,15 @@ final class ABJ_404_Solution_DiagnosticCollectionManifest {
      * One channel's read attempt, described from the filesystem rather than
      * from whatever the reader reported about itself.
      *
-     * @param array{channel: string, directory: string, usable: bool, paths: array<int, string>, collected: string} $channel
+     * @param array{channel: string, directory: string, usable: bool, paths: array<int, string>, collected: string, file_selection?: array<string, mixed>} $channel
      * @return array<string, mixed>
      */
     private static function describeChannel(array $channel): array {
         $directory = isset($channel['directory']) ? (string)$channel['directory'] : '';
         $collected = isset($channel['collected']) ? (string)$channel['collected'] : '';
         $paths = isset($channel['paths']) && is_array($channel['paths']) ? $channel['paths'] : array();
+        $fileSelection = isset($channel['file_selection']) && is_array($channel['file_selection'])
+            ? $channel['file_selection'] : array();
 
         $files = array();
         $found = 0;
@@ -137,6 +139,7 @@ final class ABJ_404_Solution_DiagnosticCollectionManifest {
                 'candidates_checked' => count($files),
                 'candidates_found' => $found,
                 'files' => $files,
+                'file_selection' => $fileSelection,
                 'collected_bytes' => strlen($collected),
                 'collected_lines' => self::countLines($collected),
             )
@@ -340,6 +343,10 @@ final class ABJ_404_Solution_DiagnosticCollectionManifest {
         foreach (self::arrayOf($manifest['channels'] ?? null) as $channel) {
             $described = self::arrayOf($channel);
             unset($described['files']);
+            $selection = self::arrayOf($described['file_selection'] ?? null);
+            $selection['dropped_file_names'] = array();
+            $selection['dropped_request_ids'] = array();
+            $described['file_selection'] = $selection;
             $channels[] = $described;
         }
         $manifest['channels'] = $channels;
@@ -357,12 +364,24 @@ final class ABJ_404_Solution_DiagnosticCollectionManifest {
         $channels = array();
         foreach (self::arrayOf($manifest['channels'] ?? null) as $channel) {
             $described = self::arrayOf($channel);
+            $selection = self::arrayOf($described['file_selection'] ?? null);
             $channels[] = array(
                 'channel' => self::stringOf($described['channel'] ?? 'unknown'),
                 'directory_usable' => !empty($described['directory_usable']),
                 'candidates_checked' => self::intOf($described['candidates_checked'] ?? 0),
                 'candidates_found' => self::intOf($described['candidates_found'] ?? 0),
                 'collected_bytes' => self::intOf($described['collected_bytes'] ?? 0),
+                'file_selection' => array(
+                    'policy' => self::stringOf($selection['policy'] ?? ''),
+                    'existing_files' => self::intOf($selection['existing_files'] ?? 0),
+                    'selected_files' => self::intOf($selection['selected_files'] ?? 0),
+                    'known_failure_files' => self::intOf($selection['known_failure_files'] ?? 0),
+                    'dropped_files' => self::intOf($selection['dropped_files'] ?? 0),
+                    'dropped_file_names_omitted' =>
+                        self::intOf($selection['dropped_file_names_omitted'] ?? 0),
+                    'dropped_request_ids_omitted' =>
+                        self::intOf($selection['dropped_request_ids_omitted'] ?? 0),
+                ),
             );
         }
         return array(
