@@ -25,16 +25,48 @@ final class ABJ_404_Solution_ActiveOperationBreadcrumbs {
     const MAX_RECORDS = 32;
     const MAX_RECORD_BYTES = 2048;
     const LOCK_WAIT_TIMEOUT_US = 50000;
-    /** @var array<string, array<int, string>> */
-    private const BOUNDARY_FIELDS = array(
-        'query' => array('q', 'stage', 'src', 'sql_id', 'sql_len', 'timeout_s'),
+    /**
+     * One boundary catalog shared by persistence and support reservation.
+     *
+     * `fields` is the default-deny privacy allowlist written to disk.
+     * `required_evidence_fields` is the minimum discriminator identity an
+     * active record must carry before support collection reserves it.
+     *
+     * @var array<string, array{
+     *   fields: array<int, string>,
+     *   required_evidence_fields: array<int, string>
+     * }>
+     */
+    private const BOUNDARY_MANIFEST = array(
+        'query' => array(
+            'fields' => array('q', 'stage', 'src', 'sql_id', 'sql_len', 'timeout_s'),
+            'required_evidence_fields' => array('q', 'src', 'sql_id'),
+        ),
         'row_operation' => array(
-            'operation_id', 'kind', 'operation', 'key', 'group', 'hook', 'callback', 'source',
+            'fields' => array(
+                'operation_id', 'kind', 'operation', 'key', 'group', 'hook', 'callback', 'source',
+            ),
+            'required_evidence_fields' => array('operation_id', 'kind'),
         ),
         'table_prelude_hook_callback' => array(
-            'operation_id', 'hook', 'callback', 'source', 'locale',
+            'fields' => array('operation_id', 'hook', 'callback', 'source', 'locale'),
+            'required_evidence_fields' => array(
+                'operation_id', 'hook', 'callback', 'source', 'locale',
+            ),
         ),
     );
+
+    /**
+     * The canonical allowed/reserved active-operation boundary contract.
+     *
+     * @return array<string, array{
+     *   fields: array<int, string>,
+     *   required_evidence_fields: array<int, string>
+     * }>
+     */
+    public static function boundaryManifest(): array {
+        return self::BOUNDARY_MANIFEST;
+    }
 
     /**
      * Replace the latest record for one request/boundary pair.
@@ -96,7 +128,8 @@ final class ABJ_404_Solution_ActiveOperationBreadcrumbs {
      * @return array<string, mixed>
      */
     public static function selectFields(string $boundary, array $fields): array {
-        $allowed = self::BOUNDARY_FIELDS[$boundary] ?? array();
+        $boundaryContract = self::BOUNDARY_MANIFEST[$boundary] ?? array();
+        $allowed = $boundaryContract['fields'] ?? array();
         $safe = array();
         foreach ($allowed as $field) {
             if (array_key_exists($field, $fields)
@@ -119,7 +152,7 @@ final class ABJ_404_Solution_ActiveOperationBreadcrumbs {
             self::reportFailure('active-operation record has an invalid request id.');
             return self::failure('invalid_request_id');
         }
-        if (!is_string($boundary) || !array_key_exists($boundary, self::BOUNDARY_FIELDS)) {
+        if (!is_string($boundary) || !array_key_exists($boundary, self::BOUNDARY_MANIFEST)) {
             self::reportFailure('active-operation record has an invalid boundary.');
             return self::failure('invalid_boundary');
         }

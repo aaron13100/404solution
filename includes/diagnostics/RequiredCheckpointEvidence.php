@@ -108,7 +108,7 @@ final class ABJ_404_Solution_RequiredCheckpointEvidence {
             if (!is_array($record) || !is_string($line)) {
                 continue;
             }
-            if (self::isActiveQuery($record) || self::isActiveRowOperation($record)) {
+            if (self::isReservedActiveOperation($record)) {
                 $required[] = $line;
             }
         }
@@ -232,7 +232,11 @@ final class ABJ_404_Solution_RequiredCheckpointEvidence {
             ? (string)$record['request_id'] : '';
         $boundary = is_scalar($record['boundary'] ?? null)
             ? (string)$record['boundary'] : '';
-        if ($requestId === '' || !in_array($boundary, array('query', 'row_operation'), true)) {
+        $state = is_scalar($record['state'] ?? null) ? (string)$record['state'] : '';
+        $manifest = self::activeBoundaryManifest();
+        if ($requestId === ''
+                || !array_key_exists($boundary, $manifest)
+                || !in_array($state, array('active', 'complete'), true)) {
             return '';
         }
         return $requestId . '|' . $boundary;
@@ -298,22 +302,32 @@ final class ABJ_404_Solution_RequiredCheckpointEvidence {
     }
 
     /** @param array<mixed, mixed> $record */
-    private static function isActiveQuery(array $record): bool {
-        return self::isActiveOperation($record, 'query')
-            && self::hasKeys($record, array('q', 'src', 'sql_id'));
+    private static function isReservedActiveOperation(array $record): bool {
+        if (($record['event'] ?? '') !== 'active_operation_breadcrumb'
+                || ($record['state'] ?? '') !== 'active') {
+            return false;
+        }
+        $boundary = is_scalar($record['boundary'] ?? null)
+            ? (string)$record['boundary'] : '';
+        $manifest = self::activeBoundaryManifest();
+        $requiredFields = $manifest[$boundary]['required_evidence_fields'] ?? array();
+        return $requiredFields !== array()
+            && self::hasNonEmptyScalarKeys($record, $requiredFields);
     }
 
-    /** @param array<mixed, mixed> $record */
-    private static function isActiveRowOperation(array $record): bool {
-        return self::isActiveOperation($record, 'row_operation')
-            && self::hasKeys($record, array('operation_id', 'kind'));
-    }
-
-    /** @param array<mixed, mixed> $record */
-    private static function isActiveOperation(array $record, string $boundary): bool {
-        return ($record['event'] ?? '') === 'active_operation_breadcrumb'
-            && ($record['boundary'] ?? '') === $boundary
-            && ($record['state'] ?? '') === 'active';
+    /**
+     * Missing diagnostics files must degrade to no reserved active evidence
+     * instead of breaking the support-request path on a corrupt install.
+     *
+     * @return array<string, array{
+     *   fields: array<int, string>,
+     *   required_evidence_fields: array<int, string>
+     * }>
+     */
+    private static function activeBoundaryManifest(): array {
+        return class_exists('ABJ_404_Solution_ActiveOperationBreadcrumbs')
+            ? ABJ_404_Solution_ActiveOperationBreadcrumbs::boundaryManifest()
+            : array();
     }
 
     /** @param array<mixed, mixed> $record */
@@ -383,6 +397,20 @@ final class ABJ_404_Solution_RequiredCheckpointEvidence {
     private static function hasKeys(array $record, array $fields): bool {
         foreach ($fields as $field) {
             if (!array_key_exists($field, $record)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * @param array<mixed, mixed> $record
+     * @param array<int, string> $fields
+     */
+    private static function hasNonEmptyScalarKeys(array $record, array $fields): bool {
+        foreach ($fields as $field) {
+            $value = $record[$field] ?? null;
+            if (!is_scalar($value) || (string)$value === '') {
                 return false;
             }
         }
