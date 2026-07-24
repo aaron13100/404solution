@@ -25,6 +25,9 @@ final class ABJ_404_Solution_CheckpointJournalReader {
     /** Recorder calls slower than this keep their full phase map in support. */
     const RECORDER_PHASE_DETAIL_THRESHOLD_US = 5000;
 
+    /** Completed browser receipt that must survive the bounded support excerpt. */
+    const REQUIRED_CLIENT_RECEIPT_EVENT = 'canary_step_client_receipt';
+
     /**
      * Share of the support payload's excerpt field this journal may claim.
      *
@@ -71,9 +74,16 @@ final class ABJ_404_Solution_CheckpointJournalReader {
         if ($directory === '') {
             return '';
         }
-        return ABJ_404_Solution_DiagnosticJournalExcerpt::compose(
-            self::supportExcerptPaths($directory),
-            self::MAX_SUPPORT_EXCERPT_BYTES,
+        $paths = self::supportExcerptPaths($directory);
+        $required = self::requiredSupportReceipt($paths);
+        $requiredBlock = $required === ''
+            ? ''
+            : "Required AJAX checkpoint evidence (JSONL):\n" . $required;
+        $rankedBudget = self::MAX_SUPPORT_EXCERPT_BYTES
+            - ($requiredBlock === '' ? 0 : strlen($requiredBlock) + 1);
+        $ranked = ABJ_404_Solution_DiagnosticJournalExcerpt::compose(
+            $paths,
+            max(0, $rankedBudget),
             "Recent AJAX request checkpoints (JSONL):\n",
             $knownFailingIds,
             static function (array $lines): array {
@@ -81,6 +91,42 @@ final class ABJ_404_Solution_CheckpointJournalReader {
             },
             $fileSelection
         );
+        if ($requiredBlock === '') {
+            return $ranked;
+        }
+        return $ranked === '' ? $requiredBlock : $requiredBlock . "\n" . $ranked;
+    }
+
+    /**
+     * Latest completed receipt with both request joins intact.
+     *
+     * Request-level ranking can legitimately elide a healthy canary group
+     * when the journal is busy. This one record is the browser-to-server proof
+     * that the ladder response arrived, so reserve its own bytes before the
+     * ordinary ranking rather than letting an intent marker impersonate it.
+     *
+     * @param array<int, string> $paths
+     */
+    private static function requiredSupportReceipt(array $paths): string {
+        $lines = ABJ_404_Solution_DiagnosticJournalExcerpt::readAllLines($paths);
+        foreach (array_reverse($lines) as $line) {
+            if (strpos($line, '"' . self::REQUIRED_CLIENT_RECEIPT_EVENT . '"') === false) {
+                continue;
+            }
+            $record = json_decode($line, true);
+            if (!is_array($record)
+                    || ($record['envelope'] ?? '') !== ABJ_404_Solution_CheckpointRecordFactory::ENVELOPE_FULL
+                    || ($record['event'] ?? '') !== self::REQUIRED_CLIENT_RECEIPT_EVENT
+                    || !is_string($record['step_request_id'] ?? null)
+                    || $record['step_request_id'] === ''
+                    || !is_string($record['carried_by'] ?? null)
+                    || $record['carried_by'] === '') {
+                continue;
+            }
+            $compacted = self::compactRoutinePhaseMaps(array($line));
+            return isset($compacted[0]) && is_string($compacted[0]) ? $compacted[0] : $line;
+        }
+        return '';
     }
 
     /**

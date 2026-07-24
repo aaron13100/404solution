@@ -46,6 +46,15 @@ final class ABJ_404_Solution_DiagnosticCollectionManifest {
     const OUTCOME_COLLECTED = 'evidence_collected';
 
     /**
+     * Evidence whose absence must be stated rather than inferred from silence.
+     *
+     * The detach verdict is assembled independently ahead of this manifest,
+     * so this catalog covers the journal-sourced browser receipt whose loss
+     * could otherwise look exactly like a ladder that never ran.
+     */
+    const REQUIRED_EVIDENCE_RECORDS = array('canary_step_client_receipt');
+
+    /**
      * Compose the manifest block. Never returns an empty string: a manifest
      * that could not be built says so, because "no manifest" is the exact
      * silence this class exists to end.
@@ -70,6 +79,7 @@ final class ABJ_404_Solution_DiagnosticCollectionManifest {
                 'collector' => self::collector(),
                 'channels' => $described,
                 'client_expected_attempts' => self::reconcileAttempts($clientAttempts, $collected),
+                'required_evidence_records' => self::reconcileRequiredEvidence($collected),
                 'outcome' => self::outcome($described),
             );
             return self::render($manifest, $budgetBytes);
@@ -243,6 +253,40 @@ final class ABJ_404_Solution_DiagnosticCollectionManifest {
     }
 
     /**
+     * @return array<string, array{status: string, reason?: string}>
+     */
+    private static function reconcileRequiredEvidence(string $collected): array {
+        $records = array();
+        $available = array();
+        foreach (explode("\n", $collected) as $line) {
+            if (strpos($line, '"event":"canary_step_client_receipt"') === false) {
+                continue;
+            }
+            $record = json_decode(trim($line), true);
+            if (is_array($record)
+                    && ($record['envelope'] ?? '') === 'full'
+                    && ($record['event'] ?? '') === 'canary_step_client_receipt'
+                    && is_string($record['step_request_id'] ?? null)
+                    && $record['step_request_id'] !== ''
+                    && is_string($record['carried_by'] ?? null)
+                    && $record['carried_by'] !== '') {
+                $available['canary_step_client_receipt'] = true;
+            }
+        }
+        foreach (self::REQUIRED_EVIDENCE_RECORDS as $name) {
+            if (isset($available[$name])) {
+                $records[$name] = array('status' => 'available');
+                continue;
+            }
+            $records[$name] = array(
+                'status' => 'unavailable',
+                'reason' => 'record_not_collected',
+            );
+        }
+        return $records;
+    }
+
+    /**
      * @param array<int, array<string, mixed>> $described
      */
     private static function outcome(array $described): string {
@@ -388,6 +432,8 @@ final class ABJ_404_Solution_DiagnosticCollectionManifest {
             'reduced' => 'channel_detail_dropped_for_budget',
             'collector' => self::arrayOf($manifest['collector'] ?? null),
             'channels' => $channels,
+            'required_evidence_records' =>
+                self::arrayOf($manifest['required_evidence_records'] ?? null),
             'outcome' => self::stringOf($manifest['outcome'] ?? self::OUTCOME_EMPTY),
         );
     }
