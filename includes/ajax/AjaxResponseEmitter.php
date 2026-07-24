@@ -269,12 +269,13 @@ final class ABJ_404_Solution_AjaxResponseEmitter {
 
         // Bruno timeout cause matrix, gap G9 (c434): within a bounded,
         // opt-in-twice diagnostic session (AjaxRequestLedger::resolveDetachAbMode()),
-        // alternate whether the detach below actually runs, so a beta.2
+        // counterbalance whether the detach below actually runs within
+        // matched workload pairs, so a beta.2
         // SUCCESS can be attributed to the detach fix rather than merely
         // correlated with it. Scoped to $checkpointRequestId !== '' -- the
         // same INSTRUMENTED_ACTION gate every other checkpoint here already
         // uses -- so the canary ladder's own requests never reach this branch
-        // and its seven-step interpretation matrix can never be confounded
+        // and its interpretation matrix can never be confounded
         // by it. The 'inert'/'default' cases behave exactly like before this
         // feature existed; only 'off' changes anything.
         $abDetachSkipped = self::resolveAndRecordDetachAbSkip($checkpointRequestId);
@@ -356,11 +357,18 @@ final class ABJ_404_Solution_AjaxResponseEmitter {
             return false;
         }
         $sessionId = '';
+        $part = 'all';
+        $payloadKey = '';
         if (isset($GLOBALS['abj404_ajax_context']) && is_array($GLOBALS['abj404_ajax_context'])) {
             $rawSessionId = $GLOBALS['abj404_ajax_context']['session_id'] ?? '';
             $sessionId = is_scalar($rawSessionId) ? (string)$rawSessionId : '';
+            $rawPart = $GLOBALS['abj404_ajax_context']['part'] ?? 'all';
+            $part = is_scalar($rawPart) ? (string)$rawPart : 'all';
+            $rawPayloadKey = $GLOBALS['abj404_ajax_context']['detach_ab_payload_key'] ?? '';
+            $payloadKey = is_scalar($rawPayloadKey) ? (string)$rawPayloadKey : '';
         }
-        $abDetachMode = ABJ_404_Solution_AjaxRequestLedger::resolveDetachAbMode($sessionId);
+        $abDetachMode = ABJ_404_Solution_AjaxRequestLedger::resolveDetachAbMode(
+            $sessionId, $part, $payloadKey);
         ABJ_404_Solution_AjaxCheckpointLogger::record($checkpointRequestId, 'detach_ab_mode', $abDetachMode);
         return $abDetachMode['mode'] === 'off';
     }

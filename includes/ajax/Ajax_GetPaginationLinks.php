@@ -1,6 +1,5 @@
 <?php
 
-
 if (!defined('ABSPATH')) {
     exit;
 }
@@ -55,11 +54,14 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
         $cacheMode = self::normalizeCacheMode((string)$requestReader->getPostOrGetSanitize('cacheMode', 'normal'));
         $currentSignature = self::normalizeCurrentSignature((string)$requestReader->getPostOrGetSanitize('currentSignature', ''));
         $retryCount = min(2, absint($requestReader->getPostOrGetSanitize('retryCount', '0')));
-        // Immutable request ledger (matrix coverage req. 1): session ID and
-        // retry-parent ID ride the same POST-body/query-string channel as
-        // requestId; the client side of sending them is a separate task
-        // (client transport telemetry), so these default to empty until
-        // that ships -- reading them here now is forward-compatible.
+        $detachAbPayloadKey = ABJ_404_Solution_AjaxRequestLedger::detachAbPayloadKey(array(
+            'subpage' => (string)$subpage, 'page' => (string)$page,
+            'rows_per_page' => $rowsPerPage, 'filter_text' => (string)$filterText,
+            'filter' => (string)$filter, 'orderby' => (string)$orderby,
+            'detect_only' => $detectOnly ? 1 : 0, 'cache_mode' => $cacheMode,
+            'current_signature' => $currentSignature,
+        ));
+        // Ledger identity fields join this workload fingerprint to the browser session.
         $ledger = ABJ_404_Solution_AjaxRequestLedger::readFields($requestReader);
 
         $isPluginAdmin = false;
@@ -72,6 +74,7 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
             'filter' => $filter,
             'orderby' => $orderby,
             'part' => $part,
+            'detach_ab_payload_key' => $detachAbPayloadKey,
             'request_id' => $requestId,
             'retry_count' => $retryCount,
             'detectOnly' => $detectOnly ? 1 : 0,

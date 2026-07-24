@@ -201,13 +201,14 @@ final class ABJ_404_Solution_AjaxRequestLedger {
      * unattributable unless something inside the same session separates the
      * detach fix (`607307c5`) from the other three things beta.2 also ships
      * (carried develop fixes, new instrumentation, or a transient that
-     * simply passed). This alternates whether
+     * simply passed). This counterbalances whether
      * Ajax_AdminEndpointSupport::checkpointedFlushAndFinish() actually calls
-     * the detach function across the real table endpoint's own requests --
-     * ON for one, deliberately skipped for the next -- so a clean separation
-     * (ON completes, OFF times out) proves the detach fix causal instead of
-     * merely correlated. AjaxCanaryLadder::interpretDetachAbResults() reads
-     * the resulting per-request evidence.
+     * the detach function within matched request-part and payload pairs. Each
+     * pair contains one ON and one OFF request, and the next pair reverses
+     * their order, so a clean separation (ON completes, OFF times out) cannot
+     * be manufactured by workload or monotonic time drift.
+     * AjaxCanaryLadder::interpretDetachAbResults() reads the resulting
+     * per-request evidence.
      *
      * Bounded to a small number of pairs and gated behind two independent
      * opt-in signals, so a normal install never pays for this: a pre-release
@@ -256,22 +257,80 @@ final class ABJ_404_Solution_AjaxRequestLedger {
     }
 
     /**
-     * Pure alternation rule: attempt 0 is 'on', 1 is 'off', 2 is 'on', ...
-     * Once a session has consumed AB_DETACH_MAX_ATTEMPTS slots the
+     * Deterministic counterbalanced rule. Each adjacent pair contains one ON
+     * and one OFF request, while successive pairs reverse which mode runs
+     * first (AB then BA). A stable seed decides the first pair's order so
+     * assignment is reproducible without making ON systematically first.
+     *
+     * Once a workload scope has consumed AB_DETACH_MAX_ATTEMPTS slots the
      * experiment is over for that session and every later request reverts to
      * 'default' (the ordinary best-available detach, unmodified by this
      * feature) -- a diagnostic probe never permanently degrades a session.
      */
-    public static function detachAbModeForAttempt(int $attemptIndex): string {
+    public static function detachAbModeForAttempt(int $attemptIndex, string $assignmentSeed = ''): string {
         if ($attemptIndex < 0 || $attemptIndex >= self::AB_DETACH_MAX_ATTEMPTS) {
             return 'default';
         }
-        return ($attemptIndex % 2 === 0) ? 'on' : 'off';
+        $pairOrdinal = intdiv($attemptIndex, 2);
+        $position = $attemptIndex % 2;
+        $seedByte = hexdec(substr(md5($assignmentSeed), 0, 2));
+        $onFirst = (($seedByte + $pairOrdinal) % 2) === 0;
+        if ($position === 1) {
+            $onFirst = !$onFirst;
+        }
+        return $onFirst ? 'on' : 'off';
     }
 
-    /** The transient key one session's A/B attempt counter is stored under. */
-    public static function detachAbTransientKey(string $sessionId): string {
-        return 'abj404_ab_detach_' . md5($sessionId);
+    /**
+     * A stable, privacy-safe fingerprint for request-shaping payload fields.
+     *
+     * The caller supplies only fields that affect the work or response shape,
+     * never transport identity (request id, session id, nonce). Sorting before
+     * encoding makes the fingerprint independent of PHP insertion order.
+     *
+     * @param array<string, scalar|null> $payload
+     */
+    public static function detachAbPayloadKey(array $payload): string {
+        ksort($payload);
+        return sha1(serialize($payload));
+    }
+
+    /** Normalize a supplied payload fingerprint without ever journaling its raw input. */
+    private static function normalizeDetachAbPayloadKey(string $payloadKey): string {
+        return preg_match('/^[a-f0-9]{40}$/', $payloadKey) === 1
+            ? $payloadKey : sha1($payloadKey === '' ? 'legacy-payload' : $payloadKey);
+    }
+
+    /** Normalize the real table endpoint's finite request-part catalog. */
+    private static function normalizeDetachAbPart(string $part): string {
+        return in_array($part, array('all', 'table', 'counts', 'pagination'), true) ? $part : 'all';
+    }
+
+    /** The transient key one session+part+payload A/B counter is stored under. */
+    public static function detachAbTransientKey(
+        string $sessionId,
+        string $part = 'all',
+        string $payloadKey = ''
+    ): string {
+        $scope = implode('|', array(
+            self::detachAbSessionKey($sessionId),
+            self::normalizeDetachAbPart($part),
+            self::normalizeDetachAbPayloadKey($payloadKey),
+        ));
+        return 'abj404_ab_detach_v2_' . md5($scope);
+    }
+
+    /** Stable seed deciding which mode runs first in one workload scope. */
+    public static function detachAbAssignmentSeed(
+        string $sessionId,
+        string $part,
+        string $payloadKey
+    ): string {
+        return md5(implode('|', array(
+            self::detachAbSessionKey($sessionId),
+            self::normalizeDetachAbPart($part),
+            self::normalizeDetachAbPayloadKey($payloadKey),
+        )));
     }
 
     /**
@@ -296,7 +355,7 @@ final class ABJ_404_Solution_AjaxRequestLedger {
     }
 
     /**
-     * Consume the next attempt slot for one session's A/B counter. Backed by
+     * Consume the next attempt slot for one session and workload scope. Backed by
      * the WordPress transient API rather than the atomic wp_cache/DB-upsert
      * machinery ABJ_404_Solution_Ajax_Php::consumeRateLimit() uses: this is a
      * bounded diagnostic sequence, not a security ceiling, so a rare race
@@ -306,11 +365,15 @@ final class ABJ_404_Solution_AjaxRequestLedger {
      * Returns -1 when there is no session to key on, or the transient API is
      * unavailable (very early boot) -- both mean "nothing to pair against".
      */
-    public static function nextDetachAbAttemptIndex(string $sessionId): int {
+    public static function nextDetachAbAttemptIndex(
+        string $sessionId,
+        string $part = 'all',
+        string $payloadKey = ''
+    ): int {
         if ($sessionId === '' || !function_exists('get_transient') || !function_exists('set_transient')) {
             return -1;
         }
-        $key = self::detachAbTransientKey($sessionId);
+        $key = self::detachAbTransientKey($sessionId, $part, $payloadKey);
         $current = get_transient($key);
         $index = is_numeric($current) ? (int)$current : 0;
         $ttl = defined('HOUR_IN_SECONDS') ? HOUR_IN_SECONDS : 3600;
@@ -321,8 +384,8 @@ final class ABJ_404_Solution_AjaxRequestLedger {
     }
 
     /**
-     * The full decision for one request: gate + counter + the pure
-     * alternation rule, in one call so every caller gets the same
+     * The full decision for one request: gate + scoped counter + the pure
+     * counterbalancing rule, in one call so every caller gets the same
      * opt-in-twice guarantee. 'inert' means the experiment did not run for
      * this request at all -- recorded as positive evidence by the caller,
      * the same principle checkpointedFlushAndFinish() already applies to the
@@ -334,33 +397,50 @@ final class ABJ_404_Solution_AjaxRequestLedger {
      * in a support payload unless the record says which build produced it.
      * That ambiguity is what let the experiment ship as a no-op unnoticed.
      *
-     * session_key travels with every decision so the record can be joined back
-     * to the per-session counter that produced its attempt_index; see
-     * detachAbSessionKey(). It is present on the 'inert' records too, which is
-     * what lets "this session ran and the experiment was inert for it" be read
-     * as a statement about that session rather than about the site.
+     * session_key, part, payload_key, and ordinal travel with every decision
+     * so the record can be joined back to the exact workload-scoped counter
+     * that produced it. They are present on 'inert' records too, which lets
+     * "this session and workload ran but the experiment was inert" be read as
+     * positive evidence rather than inferred from missing fields.
      *
-     * @return array{mode: string, attempt_index: int, diagnostic_enabled: bool, build_channel: string, session_key: string}
+     * @return array<string, mixed>
      */
-    public static function resolveDetachAbMode(string $sessionId): array {
+    public static function resolveDetachAbMode(
+        string $sessionId,
+        string $part = 'all',
+        string $payloadKey = ''
+    ): array {
         $buildChannel = ABJ_404_Solution_PluginReleaseChannel::currentChannel();
         $sessionKey = self::detachAbSessionKey($sessionId);
+        $part = self::normalizeDetachAbPart($part);
+        $payloadKey = self::normalizeDetachAbPayloadKey($payloadKey);
         $diagnosticEnabled = self::isDetachAbDiagnosticEnabled();
         if (!$diagnosticEnabled) {
             return array('mode' => 'inert', 'attempt_index' => -1, 'diagnostic_enabled' => false,
-                'build_channel' => $buildChannel, 'session_key' => $sessionKey);
+                'build_channel' => $buildChannel, 'session_key' => $sessionKey,
+                'part' => $part, 'payload_key' => $payloadKey, 'ordinal' => -1,
+                'pair_ordinal' => -1, 'pair_position' => -1, 'assignment_seed' => '');
         }
-        $attemptIndex = self::nextDetachAbAttemptIndex($sessionId);
+        $attemptIndex = self::nextDetachAbAttemptIndex($sessionId, $part, $payloadKey);
         if ($attemptIndex < 0) {
             return array('mode' => 'inert', 'attempt_index' => -1, 'diagnostic_enabled' => true,
-                'build_channel' => $buildChannel, 'session_key' => $sessionKey);
+                'build_channel' => $buildChannel, 'session_key' => $sessionKey,
+                'part' => $part, 'payload_key' => $payloadKey, 'ordinal' => -1,
+                'pair_ordinal' => -1, 'pair_position' => -1, 'assignment_seed' => '');
         }
+        $assignmentSeed = self::detachAbAssignmentSeed($sessionId, $part, $payloadKey);
         return array(
-            'mode' => self::detachAbModeForAttempt($attemptIndex),
+            'mode' => self::detachAbModeForAttempt($attemptIndex, $assignmentSeed),
             'attempt_index' => $attemptIndex,
             'diagnostic_enabled' => true,
             'build_channel' => $buildChannel,
             'session_key' => $sessionKey,
+            'part' => $part,
+            'payload_key' => $payloadKey,
+            'ordinal' => $attemptIndex,
+            'pair_ordinal' => intdiv($attemptIndex, 2),
+            'pair_position' => $attemptIndex % 2,
+            'assignment_seed' => $assignmentSeed,
         );
     }
 

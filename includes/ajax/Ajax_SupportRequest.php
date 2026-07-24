@@ -297,9 +297,9 @@ class ABJ_404_Solution_Ajax_SupportRequest {
      * The browser session this report is being sent from.
      *
      * It is what scopes the detach A/B verdict: the checkpoint journal is
-     * site-wide while the experiment's attempt counter is per session, so two
-     * admin tabs write two independent A/B sequences into one file and only the
-     * clicking tab's own sequence is a measurement of anything.
+     * site-wide while the experiment's attempt counters are per session and
+     * workload scope, so two admin tabs write independent A/B sequences into
+     * one file and only the clicking tab's own matched pairs are evidence.
      *
      * Bounded to the same 64 characters ABJ_404_Solution_AjaxRequestLedger's
      * own readFields() gives the field on every other request, so a session id

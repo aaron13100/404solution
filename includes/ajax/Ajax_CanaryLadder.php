@@ -22,6 +22,8 @@ if (!defined('ABSPATH')) {
  * fetch as step 1, which never reaches PHP):
  *   concurrent_control - boot + auth + delivery, launched beside the first
  *                        real table attempt under the same host conditions.
+ *   baseline_control - repeated fixed-size boot + auth + delivery reference
+ *                        interleaved between measured steps on pre-releases.
  *   2. auth_only      - boot + auth + delivery, bypasses the rate limiter
  *                        and the table path entirely.
  *   3. post_limiter   - identical to auth_only but placed after a rate-limit
@@ -180,6 +182,36 @@ class ABJ_404_Solution_Ajax_CanaryLadder {
                             ABJ_404_Solution_AjaxCanaryLadder::AUTH_ONLY_BYTES);
                     });
 
+            case ABJ_404_Solution_AjaxCanaryLadder::STEP_BASELINE_CONTROL:
+                $rawOrdinal = $requestReader->getPostOrGetSanitize('baselineOrdinal', '0');
+                $ordinal = is_numeric($rawOrdinal) ? max(0, min(20, (int)$rawOrdinal)) : 0;
+                return ABJ_404_Solution_AjaxStageDiagnostics::runStage(
+                    $context,
+                    'canary_baseline_control',
+                    static function () use ($requestId, $ordinal) {
+                        $payload = ABJ_404_Solution_AjaxCanaryLadder::buildFillerPayload(
+                            $requestId,
+                            ABJ_404_Solution_AjaxCanaryLadder::STEP_BASELINE_CONTROL,
+                            ABJ_404_Solution_AjaxCanaryLadder::AUTH_ONLY_BYTES
+                        );
+                        $payload['baselineOrdinal'] = $ordinal;
+                        $encodedBytes = strlen((string)json_encode($payload));
+                        $excessBytes = max(
+                            0,
+                            $encodedBytes - ABJ_404_Solution_AjaxCanaryLadder::AUTH_ONLY_BYTES
+                        );
+                        if ($excessBytes > 0) {
+                            $filler = $payload['filler'];
+                            $payload['filler'] = substr(
+                                $filler,
+                                0,
+                                max(0, strlen($filler) - $excessBytes)
+                            );
+                        }
+                        return $payload;
+                    }
+                );
+
             case ABJ_404_Solution_AjaxCanaryLadder::STEP_POST_LIMITER:
                 return ABJ_404_Solution_AjaxStageDiagnostics::runStage($context, 'canary_post_limiter',
                     static function () use ($requestId) {
@@ -291,7 +323,7 @@ class ABJ_404_Solution_Ajax_CanaryLadder {
     /**
      * The ladder's closing step: two independent verdicts, both journaled.
      *
-     * The seven-step interpretation matrix is computed by the BROWSER (it is
+     * The ladder interpretation matrix is computed by the BROWSER (it is
      * the only side that saw every step) and journaled here. The detach A/B
      * verdict is computed HERE, from the durable journal, because its two
      * halves never meet on the client: the server chose each real table
@@ -327,7 +359,13 @@ class ABJ_404_Solution_Ajax_CanaryLadder {
         return ABJ_404_Solution_AjaxStageDiagnostics::runStage($context, 'canary_interpret',
             static function () use ($observations, $realFailed, $requestId, $sessionId) {
                 $interpretation = ABJ_404_Solution_AjaxCanaryLadder::interpretResults($observations, $realFailed);
-                ABJ_404_Solution_AjaxStageDiagnostics::addStageMetadata($interpretation);
+                $stageMetadata = array();
+                foreach ($interpretation as $key => $value) {
+                    if (is_scalar($value)) {
+                        $stageMetadata[$key] = $value;
+                    }
+                }
+                ABJ_404_Solution_AjaxStageDiagnostics::addStageMetadata($stageMetadata);
 
                 $detachAb = ABJ_404_Solution_DetachAbEvidence::verdictForSession($sessionId);
                 ABJ_404_Solution_AjaxCheckpointLogger::record(

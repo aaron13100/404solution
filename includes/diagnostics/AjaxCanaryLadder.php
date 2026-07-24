@@ -13,8 +13,9 @@ if (!defined('ABSPATH')) {
  * prove which EXTERNAL system between them is responsible: browser/network,
  * Cloudflare, LiteSpeed/LVE admission, WordPress boot, the rate limiter, the
  * real query path, response size, compression, or output buffering. The
- * ladder answers that by running seven small, ordered probes after the first
- * failure in a session and comparing which ones succeed.
+ * ladder answers that by running small ordered probes after the first
+ * failure in a session and comparing which ones succeed. Armed pre-releases
+ * interleave a repeated fixed-size baseline to expose time drift.
  *
  * This class owns the step catalog, byte-size shaping, and the pure
  * interpretation matrix. It owns no transport, no auth and no journaling --
@@ -41,6 +42,7 @@ final class ABJ_404_Solution_AjaxCanaryLadder {
     const STEP_STATIC_ASSET = 'static_asset';
 
     const STEP_CONCURRENT_CONTROL = 'concurrent_control';
+    const STEP_BASELINE_CONTROL = 'baseline_control';
     const STEP_AUTH_ONLY = 'auth_only';
     const STEP_POST_LIMITER = 'post_limiter';
     const STEP_SUMMARY = 'summary';
@@ -52,7 +54,7 @@ final class ABJ_404_Solution_AjaxCanaryLadder {
 
     /** Every server-dispatched step. Step 1 (static asset) never reaches PHP by design and so is not listed here. */
     const STEPS = array(
-        self::STEP_CONCURRENT_CONTROL, self::STEP_AUTH_ONLY,
+        self::STEP_CONCURRENT_CONTROL, self::STEP_BASELINE_CONTROL, self::STEP_AUTH_ONLY,
         self::STEP_POST_LIMITER, self::STEP_SUMMARY,
         self::STEP_INERT, self::STEP_COMPRESS_ON, self::STEP_COMPRESS_OFF,
         self::STEP_STREAM, self::STEP_INTERPRET,
@@ -223,7 +225,7 @@ final class ABJ_404_Solution_AjaxCanaryLadder {
      * repeated content -- the ladder measures size and transport behavior,
      * never anything resembling real redirect/URL data.
      *
-     * @return array<string, mixed>
+     * @return array{requestId: string, canaryStep: string, filler: string}
      */
     public static function buildFillerPayload(string $requestId, string $step, int $targetBytes): array {
         $envelope = array('requestId' => $requestId, 'canaryStep' => $step, 'filler' => '');
@@ -246,7 +248,7 @@ final class ABJ_404_Solution_AjaxCanaryLadder {
      *   (the ladder only ever runs after a real failure); kept as an
      *   explicit parameter rather than a hard-coded assumption so the
      *   content-inspection rule stays honestly conditional and testable.
-     * @return array<string, bool>
+     * @return array<string, mixed>
      */
     public static function interpretResults(array $observations, bool $realRequestFailed = true): array {
         $entry = static function (array $obs, string $step): array {
@@ -267,7 +269,7 @@ final class ABJ_404_Solution_AjaxCanaryLadder {
         $stream = $entry($observations, self::STEP_STREAM);
         $streamGapMs = isset($stream['gapMs']) && is_numeric($stream['gapMs']) ? (int)$stream['gapMs'] : 0;
 
-        return array(
+        return array_merge(array(
             'browserOrNetworkCausal' => !$ok($staticAsset),
             'bootAuthOrDeliveryCausal' => $ok($staticAsset) && !$ok($authOnly),
             'limiterCausal' => $ok($authOnly) && !$ok($postLimiter),
@@ -281,6 +283,45 @@ final class ABJ_404_Solution_AjaxCanaryLadder {
             'contentInspectionCausal' => $ok($inert) && $realRequestFailed,
             'compressionCausal' => $ok($compressOff) && !$ok($compressOn),
             'streamingBufferCausal' => !$ok($stream) && $streamGapMs > 2000,
+        ), self::baselineTrend($observations));
+    }
+
+    /**
+     * Summarize the repeated fixed-size controls in chronological order.
+     * A changing control is reported as drift, never reinterpreted as a step effect.
+     * @param array<string, mixed> $observations
+     * @return array<string, int>
+     */
+    private static function baselineTrend(array $observations): array {
+        $raw = $observations[self::STEP_BASELINE_CONTROL] ?? array();
+        $baselines = is_array($raw) ? $raw : array();
+        $count = 0;
+        $okCount = 0;
+        $firstMs = null;
+        $lastMs = null;
+        foreach ($baselines as $baseline) {
+            if (!is_array($baseline)) {
+                continue;
+            }
+            $count++;
+            if (!empty($baseline['ok'])) {
+                $okCount++;
+            }
+            if (isset($baseline['ms']) && is_numeric($baseline['ms'])) {
+                $ms = (int)$baseline['ms'];
+                if ($firstMs === null) {
+                    $firstMs = $ms;
+                }
+                $lastMs = $ms;
+            }
+        }
+        return array(
+            'baselineControlCount' => $count,
+            'baselineControlOkCount' => $okCount,
+            'baselineControlFirstMs' => $firstMs ?? -1,
+            'baselineControlLastMs' => $lastMs ?? -1,
+            'baselineControlTrendMs' => $firstMs !== null && $lastMs !== null
+                ? $lastMs - $firstMs : 0,
         );
     }
 
@@ -291,7 +332,7 @@ final class ABJ_404_Solution_AjaxCanaryLadder {
      * mode, ABJ_404_Solution_Ajax_AdminEndpointSupport::checkpointedFlushAndFinish()
      * records it per request ID). Kept as its own pure function rather than
      * folded into interpretResults(): two independent verdicts computed from
-     * disjoint inputs -- the seven-step ladder's canary observations vs. the
+     * disjoint inputs -- the ladder's canary observations vs. the
      * real table endpoint's own A/B attempts -- can never confound each
      * other, whereas merging them into one matrix would let an ambiguous
      * quadrant in one leak into the other's conclusion.
@@ -305,11 +346,11 @@ final class ABJ_404_Solution_AjaxCanaryLadder {
      * observed -- is honestly inconclusive rather than forced into one of
      * the three clean verdicts.
      *
-     * @param array<int, array{mode?: mixed, ok?: mixed}> $attempts
+     * @param array<int, array<string, mixed>> $attempts
      *   Chronological per-request outcomes for the real table endpoint's own
-     *   A/B attempts within one session (mode 'on'/'off' as journaled by
-     *   detach_ab_mode; ok = whether that attempt completed from the
-     *   client's own point of view).
+     *   workload-matched A/B attempts (mode 'on'/'off', workload scope, and
+     *   ordinal as journaled by detach_ab_mode; ok = whether that attempt
+     *   completed from the client's own point of view).
      * @return array<string, mixed>
      */
     public static function interpretDetachAbResults(array $attempts): array {
@@ -319,15 +360,28 @@ final class ABJ_404_Solution_AjaxCanaryLadder {
         $offCount = $tally['off'];
         $offOkCount = $tally['offOk'];
 
-        $haveBothModes = $onCount > 0 && $offCount > 0;
-        $allOnOk = $onCount > 0 && $onOkCount === $onCount;
-        $noneOnOk = $onCount > 0 && $onOkCount === 0;
-        $allOffOk = $offCount > 0 && $offOkCount === $offCount;
-        $noneOffOk = $offCount > 0 && $offOkCount === 0;
+        $pairs = self::matchedDetachAbPairs($attempts);
+        $pairCount = count($pairs);
+        $onFirstPairs = 0;
+        $offFirstPairs = 0;
+        $detachPairs = 0;
+        $transientPairs = 0;
+        $neitherPairs = 0;
+        foreach ($pairs as $pair) {
+            $pair['on_first'] ? $onFirstPairs++ : $offFirstPairs++;
+            if ($pair['on_ok'] && !$pair['off_ok']) {
+                $detachPairs++;
+            } else if ($pair['on_ok'] && $pair['off_ok']) {
+                $transientPairs++;
+            } else if (!$pair['on_ok'] && !$pair['off_ok']) {
+                $neitherPairs++;
+            }
+        }
 
-        $detachCausal = $haveBothModes && $allOnOk && $noneOffOk;
-        $transientCausal = $haveBothModes && $allOnOk && $allOffOk;
-        $neitherModeHelps = $haveBothModes && $noneOnOk && $noneOffOk;
+        $orderCounterbalanced = $onFirstPairs > 0 && $offFirstPairs > 0;
+        $detachCausal = $pairCount >= 2 && $orderCounterbalanced && $detachPairs === $pairCount;
+        $transientCausal = $pairCount > 0 && $transientPairs === $pairCount;
+        $neitherModeHelps = $pairCount > 0 && $neitherPairs === $pairCount;
 
         return array(
             'detachCausal' => $detachCausal,
@@ -338,6 +392,81 @@ final class ABJ_404_Solution_AjaxCanaryLadder {
             'onOkCount' => $onOkCount,
             'offCount' => $offCount,
             'offOkCount' => $offOkCount,
+            'matchedPairCount' => $pairCount,
+            'onFirstPairCount' => $onFirstPairs,
+            'offFirstPairCount' => $offFirstPairs,
+            'orderCounterbalanced' => $orderCounterbalanced,
+        );
+    }
+
+    /**
+     * Complete, workload-matched pairs only. Missing partners, legacy records
+     * without scope fields, duplicated positions, and malformed mode pairs
+     * remain visible in raw attempt accounting but cannot decide causality.
+     *
+     * @param array<int, array<string, mixed>> $attempts
+     * @return array<int, array{on_ok: bool, off_ok: bool, on_first: bool}>
+     */
+    private static function matchedDetachAbPairs(array $attempts): array {
+        $grouped = array();
+        $duplicates = array();
+        foreach ($attempts as $attempt) {
+            $slot = self::detachAbPairSlot($attempt);
+            if ($slot === null) {
+                continue;
+            }
+            if (isset($grouped[$slot['key']][$slot['position']])) {
+                $duplicates[$slot['key']] = true;
+                continue;
+            }
+            $grouped[$slot['key']][$slot['position']] = array(
+                'mode' => $slot['mode'],
+                'ok' => $slot['ok'],
+            );
+        }
+
+        $pairs = array();
+        foreach ($grouped as $key => $positions) {
+            if (isset($duplicates[$key]) || !isset($positions[0], $positions[1])
+                    || $positions[0]['mode'] === $positions[1]['mode']) {
+                continue;
+            }
+            $on = $positions[0]['mode'] === 'on' ? $positions[0] : $positions[1];
+            $off = $positions[0]['mode'] === 'off' ? $positions[0] : $positions[1];
+            $pairs[] = array(
+                'on_ok' => $on['ok'],
+                'off_ok' => $off['ok'],
+                'on_first' => $positions[0]['mode'] === 'on',
+            );
+        }
+        return $pairs;
+    }
+
+    /**
+     * Validate one evidence record and derive pair coordinates from ordinal.
+     * Supplemental pair metadata is journaled but never overrides the ordinal.
+     * @param mixed $attempt
+     * @return array{key: string, position: int, mode: string, ok: bool}|null
+     */
+    private static function detachAbPairSlot($attempt): ?array {
+        if (!is_array($attempt)) {
+            return null;
+        }
+        $part = is_scalar($attempt['part'] ?? null) ? (string)$attempt['part'] : '';
+        $payloadKey = is_scalar($attempt['payload_key'] ?? null)
+            ? (string)$attempt['payload_key'] : '';
+        $ordinal = isset($attempt['ordinal']) && is_numeric($attempt['ordinal'])
+            ? (int)$attempt['ordinal'] : -1;
+        $mode = is_scalar($attempt['mode'] ?? null) ? (string)$attempt['mode'] : '';
+        if ($part === '' || $payloadKey === '' || $ordinal < 0
+                || ($mode !== 'on' && $mode !== 'off')) {
+            return null;
+        }
+        return array(
+            'key' => $part . '|' . $payloadKey . '|' . intdiv($ordinal, 2),
+            'position' => $ordinal % 2,
+            'mode' => $mode,
+            'ok' => !empty($attempt['ok']),
         );
     }
 

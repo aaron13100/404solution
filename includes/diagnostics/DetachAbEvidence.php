@@ -30,13 +30,16 @@ if (!defined('ABSPATH')) {
  * AjaxCanaryLadder, where the pure quadrant logic is already tested), no
  * transport, and no formatting.
  *
- * Two properties are load-bearing rather than defensive:
+ * Three properties are load-bearing rather than defensive:
  *
  *   1. Session scoping. The checkpoint journal is site-wide while the A/B
- *      attempt counter is PER SESSION, so two admin tabs write two independent
- *      0,1,2 sequences into one file. Tallying them together would invent
- *      ON/OFF pairs that never existed.
- *   2. Unknown is not failure. An attempt the browser has not reported on is
+ *      attempt counter is per session and workload scope, so two admin tabs
+ *      write independent sequences into one file. Tallying them together
+ *      would invent ON/OFF pairs that never existed.
+ *   2. Workload matching. A part and payload fingerprint stay attached to
+ *      every attempt, so faster counts requests cannot be paired with slower
+ *      table requests and mistaken for a treatment effect.
+ *   3. Unknown is not failure. An attempt the browser has not reported on is
  *      excluded from the tally and counted separately. Treating silence as
  *      "did not complete" would manufacture a detach-causal verdict out of
  *      evidence that has merely not arrived yet, which is worse than no
@@ -63,12 +66,11 @@ final class ABJ_404_Solution_DetachAbEvidence {
     const STATUS_ERROR = 'error';
 
     /**
-     * Attempts listed verbatim on the journaled record. One experiment run is
-     * ABJ_404_Solution_AjaxRequestLedger::AB_DETACH_MAX_ATTEMPTS attempts, so
-     * this is that ceiling with headroom for a session whose counter transient
-     * expired and restarted mid-journal. The TALLY is never bounded by this --
-     * only the human-readable copy on the record is, so one long-lived session
-     * cannot turn a decision record into a large one.
+     * Attempts listed verbatim on the journaled record. One workload scope is
+     * ABJ_404_Solution_AjaxRequestLedger::AB_DETACH_MAX_ATTEMPTS attempts.
+     * This copy has headroom for a restarted scope, but the TALLY is never
+     * bounded by it: only the human-readable copy is, so one long-lived
+     * session cannot turn a decision record into a large one.
      */
     const MAX_ATTEMPTS_ON_RECORD = 12;
 
@@ -185,7 +187,7 @@ final class ABJ_404_Solution_DetachAbEvidence {
 
         $attempts = array();
         $unresolved = 0;
-        foreach ($modes as $requestId => $mode) {
+        foreach ($modes as $requestId => $modeRecord) {
             $requestId = (string)$requestId;
             $resolved = array_key_exists($requestId, $outcomes);
             if (!$resolved) {
@@ -193,7 +195,12 @@ final class ABJ_404_Solution_DetachAbEvidence {
             }
             $attempts[] = array(
                 'request_id' => $requestId,
-                'mode' => $mode,
+                'mode' => $modeRecord['mode'],
+                'part' => $modeRecord['part'],
+                'payload_key' => $modeRecord['payload_key'],
+                'ordinal' => $modeRecord['ordinal'],
+                'pair_ordinal' => $modeRecord['pair_ordinal'],
+                'pair_position' => $modeRecord['pair_position'],
                 // null, never false: "the browser has not said" and "the
                 // browser said it failed" are opposite findings, and only one
                 // of them belongs in the tally.
@@ -212,7 +219,7 @@ final class ABJ_404_Solution_DetachAbEvidence {
      * them in would compare the experiment against itself.
      *
      * @param array<int, string> $lines
-     * @return array<string, string>
+     * @return array<string, array<string, mixed>>
      */
     private static function modesInSession(array $lines, string $sessionKey): array {
         $modes = array();
@@ -235,7 +242,22 @@ final class ABJ_404_Solution_DetachAbEvidence {
             if (($mode !== 'on' && $mode !== 'off') || $requestId === '') {
                 continue;
             }
-            $modes[$requestId] = $mode;
+            $part = self::scalarField($record, 'part');
+            $payloadKey = self::scalarField($record, 'payload_key');
+            $ordinal = isset($record['ordinal']) && is_numeric($record['ordinal'])
+                ? (int)$record['ordinal'] : -1;
+            $pairOrdinal = isset($record['pair_ordinal']) && is_numeric($record['pair_ordinal'])
+                ? (int)$record['pair_ordinal'] : -1;
+            $pairPosition = isset($record['pair_position']) && is_numeric($record['pair_position'])
+                ? (int)$record['pair_position'] : -1;
+            $modes[$requestId] = array(
+                'mode' => $mode,
+                'part' => $part,
+                'payload_key' => $payloadKey,
+                'ordinal' => $ordinal,
+                'pair_ordinal' => $pairOrdinal,
+                'pair_position' => $pairPosition,
+            );
         }
         return $modes;
     }

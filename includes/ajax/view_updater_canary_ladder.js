@@ -6,11 +6,9 @@
  * neither can prove which EXTERNAL system between them is responsible:
  * browser/network, Cloudflare, LiteSpeed/LVE admission, WordPress boot, the
  * rate limiter, the real query path, response size, compression, or output
- * buffering. After the first foreground table failure in a session, this
- * module launches one lightweight control beside the first real table
- * attempt, then runs seven ordered probes after a failure. The paired control
- * distinguishes request content from a transient that cleared before the
- * sequential ladder began.
+ * buffering. After a foreground table failure, this runs ordered probes plus
+ * a concurrent control. Armed pre-releases also interleave a fixed baseline
+ * so host time trends are not attributed to step order.
  *
  * Rate-limited to at most one ladder run per hour per browser (the cooldown
  * lives in view_updater_client_telemetry_store.js, the one file allowed to
@@ -29,15 +27,9 @@
  * diagnosis, a closed tab, an interrupted script -- erased the receipt side
  * of the evidence for the entire ladder at once.
  *
- * Step order (step 1 never reaches PHP; steps 2-8 are ajaxRunCanaryStep):
- *   1. static_asset   - same-host 1KB static file, no PHP at all.
- *   2. auth_only      - boot + auth + delivery, bypasses the rate limiter.
- *   3. post_limiter   - identical, placed after a rate-limit check.
- *   4. summary        - the real table path's own DB work, tiny response.
- *   5. inert          - filler response of the real payload's byte size.
- *   6. compress_on/off - the same filler, with/without a no-transform hint.
- *   7. stream         - a flushed leading-whitespace block before the JSON.
- *   8. interpret      - journals the client-computed interpretation matrix.
+ * Order: static asset; auth; limiter; summary; inert size; compression on/off;
+ * stream; then interpret. Pre-releases place a 1 KB baseline after each
+ * measured server step. The static asset is the only step that bypasses PHP.
  *
  * Globals defined: abj404CanaryLadder.
  *
@@ -66,11 +58,12 @@
     var STATIC_ASSET_TIMEOUT_MS = 10000;
     var STEP_TIMEOUT_MS = 15000;
     var DEFAULT_TARGET_BYTES = 50000;
+    var BASELINE_BYTES = 1024;
 
     /**
      * Ceiling on how many not-yet-delivered step receipts one request may
-     * carry. A ladder run has nine steps, so this can only ever be reached by
-     * a run whose requests keep failing -- exactly the case worth bounding,
+     * carry. This can only be reached by a run whose requests keep failing --
+     * exactly the case worth bounding,
      * and the bound is on RECORDS rather than on the serialized string so a
      * trimmed payload always arrives as valid JSON (the byte-slice shape gap
      * G1/GG removed from the other client channels).
@@ -109,6 +102,11 @@
     function sessionId() {
         return (global.abj404ClientTelemetryEnv && typeof global.abj404ClientTelemetryEnv.sessionId === 'function')
             ? global.abj404ClientTelemetryEnv.sessionId() : '';
+    }
+
+    /** @returns {boolean} */
+    function baselineControlEnabled() {
+        return !!(global.ABJ404 && global.ABJ404.detachAbDiagnosticEnabled === true);
     }
 
     /** @param {string} baseUrl @returns {string} */
@@ -376,6 +374,22 @@
         return post;
     }
 
+    /** Run a measured step plus its gated fixed baseline, preserving the request chain. */
+    function postMeasuredStep(post, observations, step, extra, parentId, baselineOrdinal) {
+        return post(step, extra, parentId).then(function (result) {
+            observations[step] = result;
+            if (!baselineControlEnabled()) {
+                return { result: result, requestId: result.requestId };
+            }
+            return post('baseline_control', { payloadBytes: BASELINE_BYTES,
+                baselineOrdinal: baselineOrdinal }, result.requestId).then(function (baselineResult) {
+                observations.baseline_control = observations.baseline_control || [];
+                observations.baseline_control.push(baselineResult);
+                return { result: result, requestId: baselineResult.requestId };
+            });
+        });
+    }
+
     /**
      * Run the full ladder for one triggering context. Never throws; a
      * broken diagnostic module must never surface to the admin.
@@ -395,38 +409,35 @@
                 // The one step with no request of its own to be reported on,
                 // so its receipt is handed to the relay directly.
                 post.hold('static_asset', staticResult);
-                return post('auth_only', {}, ctx.requestId || '');
+                return postMeasuredStep(post, observations, 'auth_only', {}, ctx.requestId || '', 0);
             })
-            .then(function (authResult) {
-                observations.auth_only = authResult;
-                return post('post_limiter', {}, authResult.requestId);
+            .then(function (authStage) {
+                return postMeasuredStep(post, observations, 'post_limiter', {}, authStage.requestId, 1);
             })
-            .then(function (limiterResult) {
-                observations.post_limiter = limiterResult;
-                return post('summary', {}, limiterResult.requestId);
+            .then(function (limiterStage) {
+                return postMeasuredStep(post, observations, 'summary', {}, limiterStage.requestId, 2);
             })
-            .then(function (summaryResult) {
-                observations.summary = summaryResult;
+            .then(function (summaryStage) {
                 var bytes = targetPayloadBytes(ctx);
-                return post('inert', { payloadBytes: bytes }, summaryResult.requestId)
-                    .then(function (inertResult) {
-                        observations.inert = inertResult;
-                        return bytes;
-                    });
+                return postMeasuredStep(post, observations, 'inert', { payloadBytes: bytes },
+                    summaryStage.requestId, 3).then(function (inertStage) {
+                    return { bytes: bytes, requestId: inertStage.requestId };
+                });
             })
-            .then(function (bytes) {
-                return post('compress_on', { payloadBytes: bytes }, observations.inert.requestId)
-                    .then(function (onResult) {
-                        observations.compress_on = onResult;
-                        return post('compress_off', { payloadBytes: bytes }, onResult.requestId);
-                    });
+            .then(function (inertStage) {
+                return postMeasuredStep(post, observations, 'compress_on',
+                    { payloadBytes: inertStage.bytes }, inertStage.requestId, 4).then(function (onStage) {
+                    return { bytes: inertStage.bytes, requestId: onStage.requestId };
+                });
             })
-            .then(function (offResult) {
-                observations.compress_off = offResult;
-                return post('stream', {}, offResult.requestId);
+            .then(function (onStage) {
+                return postMeasuredStep(post, observations, 'compress_off',
+                    { payloadBytes: onStage.bytes }, onStage.requestId, 5);
             })
-            .then(function (streamResult) {
-                observations.stream = streamResult;
+            .then(function (offStage) {
+                return postMeasuredStep(post, observations, 'stream', {}, offStage.requestId, 6);
+            })
+            .then(function (streamStage) {
                 // The full observation set still rides interpret: the
                 // interpretation matrix needs every step at once. The
                 // per-step receipts already delivered above are the
@@ -434,7 +445,7 @@
                 return post('interpret', {
                     observations: JSON.stringify(observations),
                     realRequestFailed: '1'
-                }, streamResult.requestId);
+                }, streamStage.requestId);
             })
             .then(function (interpretResult) {
                 observations.interpret = interpretResult;
