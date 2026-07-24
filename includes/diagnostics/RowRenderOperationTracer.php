@@ -197,16 +197,28 @@ final class ABJ_404_Solution_RowRenderOperationTracer {
         if (!$this->rowActive || $this->suspended || $this->recording) {
             return $work();
         }
-        if ($this->recordCount + 2 > self::MAX_OPERATION_RECORDS) {
-            $this->recordCappedOnce();
-            return $work();
-        }
 
         $operationId = substr(hash(
             'sha256',
             $this->requestId . '|' . (++$this->operationSequence) . '|' . serialize($fields)
         ), 0, 12);
         $record = array_merge(array('operation_id' => $operationId), $fields);
+        if ($this->recordCount + 2 > self::MAX_OPERATION_RECORDS) {
+            $this->recordCappedOnce();
+            ABJ_404_Solution_AjaxCheckpointLogger::recordActiveOperation(
+                $this->requestId, 'row_operation', 'active', $record);
+            try {
+                $result = $work();
+            } catch (Throwable $e) {
+                $this->suspended = true;
+                $this->restore();
+                throw $e;
+            }
+            ABJ_404_Solution_AjaxCheckpointLogger::recordActiveOperation(
+                $this->requestId, 'row_operation', 'complete', $record);
+            return $result;
+        }
+
         $this->write('row_operation_start', $record, true);
         try {
             $result = $work();

@@ -25,6 +25,11 @@ final class ABJ_404_Solution_RequiredCheckpointEvidence {
         'concurrent_control' => 'isConcurrentControlReceipt',
         'same_site_census' => 'isSameSiteCensus',
         'row_loop_activity' => 'isRowLoopActivity',
+        'query_identity' => 'isQueryIdentity',
+        'query_cap' => 'isQueryCap',
+        'row_operation_normal' => 'isRowOperationNormal',
+        'row_operation_cap' => 'isRowOperationCap',
+        'row_operation_unavailable' => 'isRowOperationUnavailable',
         'browser_attempt' => 'isBrowserAttempt',
         'browser_storage_unavailable' => 'isBrowserStorageUnavailable',
         'browser_table_storage_unavailable' => 'isBrowserTableStorageUnavailable',
@@ -71,6 +76,14 @@ final class ABJ_404_Solution_RequiredCheckpointEvidence {
      */
     public static function select(array $lines): array {
         $selected = array_fill_keys(array_keys(self::SELECTORS), '');
+        $operationState = array();
+        foreach ($lines as $line) {
+            $record = json_decode($line, true);
+            $operationKey = is_array($record) ? self::activeOperationKey($record) : '';
+            if ($operationKey !== '') {
+                $operationState[$operationKey] = array('line' => $line, 'record' => $record);
+            }
+        }
         foreach (array_reverse($lines) as $line) {
             $record = json_decode($line, true);
             if (!is_array($record)) {
@@ -85,10 +98,76 @@ final class ABJ_404_Solution_RequiredCheckpointEvidence {
                 break;
             }
         }
-        return array_values(array_unique(array_filter(
+        $required = array_filter(
             $selected,
             static fn(string $line): bool => $line !== ''
-        )));
+        );
+        foreach ($operationState as $latest) {
+            $record = $latest['record'] ?? null;
+            $line = $latest['line'] ?? null;
+            if (!is_array($record) || !is_string($line)) {
+                continue;
+            }
+            if (self::isActiveQuery($record) || self::isActiveRowOperation($record)) {
+                $required[] = $line;
+            }
+        }
+        foreach (self::unmatchedOperationLines($lines) as $line) {
+            $required[] = $line;
+        }
+        return array_values(array_unique($required));
+    }
+
+    /**
+     * Starts whose matching completion never reached disk.
+     *
+     * @param array<int, string> $lines
+     * @return array<int, string>
+     */
+    private static function unmatchedOperationLines(array $lines): array {
+        $rowStarts = array();
+        $lastQueries = array();
+        foreach ($lines as $line) {
+            $record = json_decode($line, true);
+            if (!is_array($record)) {
+                continue;
+            }
+            $requestId = is_scalar($record['request_id'] ?? null)
+                ? (string)$record['request_id'] : '';
+            $event = $record['event'] ?? '';
+            if ($event === 'row_operation_start') {
+                $operationId = is_scalar($record['operation_id'] ?? null)
+                    ? (string)$record['operation_id'] : '';
+                if ($requestId !== '' && $operationId !== '') {
+                    $rowStarts[$requestId . '|' . $operationId] = $line;
+                }
+            } elseif ($event === 'row_operation_end') {
+                $operationId = is_scalar($record['operation_id'] ?? null)
+                    ? (string)$record['operation_id'] : '';
+                unset($rowStarts[$requestId . '|' . $operationId]);
+            } elseif ($event === 'query_probe' && $requestId !== '') {
+                $lastQueries[$requestId] = $line;
+            } elseif ($event === 'query_timeline_summary' && $requestId !== ''
+                    && ($record['open_query'] ?? null) === null) {
+                unset($lastQueries[$requestId]);
+            }
+        }
+        return array_merge(array_values($rowStarts), array_values($lastQueries));
+    }
+
+    /** @param array<mixed, mixed> $record */
+    private static function activeOperationKey(array $record): string {
+        if (($record['event'] ?? '') !== 'active_operation_breadcrumb') {
+            return '';
+        }
+        $requestId = is_scalar($record['request_id'] ?? null)
+            ? (string)$record['request_id'] : '';
+        $boundary = is_scalar($record['boundary'] ?? null)
+            ? (string)$record['boundary'] : '';
+        if ($requestId === '' || !in_array($boundary, array('query', 'row_operation'), true)) {
+            return '';
+        }
+        return $requestId . '|' . $boundary;
     }
 
     /** @param array<mixed, mixed> $record */
@@ -118,6 +197,55 @@ final class ABJ_404_Solution_RequiredCheckpointEvidence {
     private static function isRowLoopActivity(array $record): bool {
         return ($record['event'] ?? '') === 'row_loop_progress'
             && self::hasKeys($record, self::ROW_ACTIVITY_FIELDS);
+    }
+
+    /** @param array<mixed, mixed> $record */
+    private static function isQueryIdentity(array $record): bool {
+        return ($record['event'] ?? '') === 'query_probe'
+            && self::hasKeys($record, array('q', 'src', 'sql_id'));
+    }
+
+    /** @param array<mixed, mixed> $record */
+    private static function isQueryCap(array $record): bool {
+        return ($record['event'] ?? '') === 'query_probe_capped'
+            && self::hasKeys($record, array('q', 'limit'));
+    }
+
+    /** @param array<mixed, mixed> $record */
+    private static function isRowOperationNormal(array $record): bool {
+        return ($record['event'] ?? '') === 'row_operation_end'
+            && self::hasKeys($record, array('operation_id', 'kind'));
+    }
+
+    /** @param array<mixed, mixed> $record */
+    private static function isRowOperationCap(array $record): bool {
+        return ($record['event'] ?? '') === 'row_operation_capped'
+            && self::hasKeys($record, array('recorded', 'max_records'));
+    }
+
+    /** @param array<mixed, mixed> $record */
+    private static function isRowOperationUnavailable(array $record): bool {
+        return ($record['event'] ?? '') === 'row_operation_unavailable'
+            && self::hasKeys($record, array('kind', 'reason'));
+    }
+
+    /** @param array<mixed, mixed> $record */
+    private static function isActiveQuery(array $record): bool {
+        return self::isActiveOperation($record, 'query')
+            && self::hasKeys($record, array('q', 'src', 'sql_id'));
+    }
+
+    /** @param array<mixed, mixed> $record */
+    private static function isActiveRowOperation(array $record): bool {
+        return self::isActiveOperation($record, 'row_operation')
+            && self::hasKeys($record, array('operation_id', 'kind'));
+    }
+
+    /** @param array<mixed, mixed> $record */
+    private static function isActiveOperation(array $record, string $boundary): bool {
+        return ($record['event'] ?? '') === 'active_operation_breadcrumb'
+            && ($record['boundary'] ?? '') === $boundary
+            && ($record['state'] ?? '') === 'active';
     }
 
     /** @param array<mixed, mixed> $record */

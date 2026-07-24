@@ -77,15 +77,21 @@ final class ABJ_404_Solution_CheckpointJournalReader {
             : "Required AJAX checkpoint evidence (JSONL):\n" . $required;
         $rankedBudget = self::MAX_SUPPORT_EXCERPT_BYTES
             - ($requiredBlock === '' ? 0 : strlen($requiredBlock) + 1);
-        $ranked = ABJ_404_Solution_DiagnosticJournalExcerpt::compose(
+        $activePath = self::activeOperationPath($source['directory']);
+        $rankedPaths = array_values(array_filter(
             $paths,
+            static fn(string $path): bool => $path !== $activePath
+        ));
+        $rankedSelection = self::withoutPathFromSelection($fileSelection, $activePath);
+        $ranked = ABJ_404_Solution_DiagnosticJournalExcerpt::compose(
+            $rankedPaths,
             max(0, $rankedBudget),
             "Recent AJAX request checkpoints (JSONL):\n",
             $knownFailingIds,
             static function (array $lines): array {
                 return self::compactForSupport($lines);
             },
-            $fileSelection
+            $rankedSelection
         );
         if ($requiredBlock === '') {
             return $ranked;
@@ -106,6 +112,32 @@ final class ABJ_404_Solution_CheckpointJournalReader {
         $lines = ABJ_404_Solution_DiagnosticJournalExcerpt::readAllLines($paths);
         $required = ABJ_404_Solution_RequiredCheckpointEvidence::select($lines);
         return implode("\n", self::compactRoutinePhaseMaps($required));
+    }
+
+    private static function activeOperationPath(string $directory): string {
+        return $directory !== '' && class_exists('ABJ_404_Solution_ActiveOperationBreadcrumbs')
+            ? ABJ_404_Solution_ActiveOperationBreadcrumbs::path($directory) : '';
+    }
+
+    /**
+     * The active-state file is reserved in full, so ranking it again would
+     * duplicate culprits and spend the lifecycle budget twice.
+     *
+     * @param array{paths: array<int, string>, manifest: array<string, mixed>}|null $selection
+     * @return array{paths: array<int, string>, manifest: array<string, mixed>}|null
+     */
+    private static function withoutPathFromSelection(?array $selection, string $excludedPath): ?array {
+        if ($selection === null || $excludedPath === '') {
+            return $selection;
+        }
+        $selection['paths'] = array_values(array_filter(
+            is_array($selection['paths'] ?? null) ? $selection['paths'] : array(),
+            static fn(string $path): bool => $path !== $excludedPath
+        ));
+        if (is_array($selection['manifest'] ?? null)) {
+            $selection['manifest']['selected_files'] = count($selection['paths']);
+        }
+        return $selection;
     }
 
     /**
@@ -203,7 +235,20 @@ final class ABJ_404_Solution_CheckpointJournalReader {
             $decodedByIndex[$index] = $record;
         }
         foreach ($decodedByIndex as $index => $record) {
-            if (!is_array($record) || !is_array($record['previous_checkpoint_write'] ?? null)) {
+            if (!is_array($record)) {
+                continue;
+            }
+            if (($record['event'] ?? '') === 'query_probe') {
+                // Support needs source + shape hash, not even redacted SQL
+                // text. This also keeps one unmatched probe per failed
+                // request from displacing that request's lifecycle.
+                unset($record['sql']);
+            }
+            if (!is_array($record['previous_checkpoint_write'] ?? null)) {
+                $encoded = json_encode($record, JSON_UNESCAPED_SLASHES);
+                if (is_string($encoded)) {
+                    $lines[$index] = $encoded;
+                }
                 continue;
             }
             $previous = $record['previous_checkpoint_write'];
@@ -360,7 +405,13 @@ final class ABJ_404_Solution_CheckpointJournalReader {
             $directory = self::journalDirectory();
             $journalUsable = $directory !== '';
             $paths = $journalUsable
-                ? array_merge($fallbackPaths, self::supportExcerptPaths($directory))
+                ? array_merge(
+                    $fallbackPaths,
+                    self::supportExcerptPaths($directory),
+                    class_exists('ABJ_404_Solution_ActiveOperationBreadcrumbs')
+                        ? array(ABJ_404_Solution_ActiveOperationBreadcrumbs::path($directory))
+                        : array()
+                )
                 : $fallbackPaths;
             return array(
                 'channel' => 'ajax_checkpoints',

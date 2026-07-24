@@ -54,7 +54,8 @@ if (!defined('ABSPATH')) {
  * quoted literals and numbers become `?` before anything is written, so a
  * user's URLs never reach the journal.
  *
- * @phpstan-type AbjOpenQuery array{q: int, started_at: float|null}
+ * @phpstan-type AbjOpenQuery array{q: int, started_at: float|null,
+ *     breadcrumb: array<string, mixed>|null}
  * @phpstan-type AbjSlowestQuery array{q: int, ms: float}
  * @phpstan-type AbjTimelineState array{request_id: string, count: int, recorded: int,
  *     db_ms: float, last_ms: float|null, open: AbjOpenQuery|null,
@@ -146,9 +147,28 @@ final class ABJ_404_Solution_AjaxQueryTimeline {
             $state['count']++;
 
             $previous = self::previousQueryFields($state);
-            $state['open'] = array('q' => $state['count'], 'started_at' => self::nowFloat());
+            $breadcrumb = null;
+            $shape = null;
 
             if ($state['count'] > self::MAX_RECORDED_QUERIES) {
+                $shape = self::shapeFields($preparedQuery);
+                $breadcrumb = array_merge(array(
+                    'q' => $state['count'],
+                    'stage' => self::currentStage(),
+                    'src' => substr($sourceLabel === '' ? 'unknown-source' : $sourceLabel, 0, 200),
+                    'timeout_s' => max(0, $timeoutSeconds),
+                ), array(
+                    'sql_id' => $shape['sql_id'],
+                    'sql_len' => $shape['sql_len'],
+                ));
+                $state['open'] = array(
+                    'q' => $state['count'],
+                    'started_at' => self::nowFloat(),
+                    'breadcrumb' => $breadcrumb,
+                );
+                self::$state = $state;
+                ABJ_404_Solution_AjaxCheckpointLogger::recordActiveOperation(
+                    $requestId, 'query', 'active', $breadcrumb);
                 if (!$state['capped']) {
                     $state['capped'] = true;
                     self::$state = $state;
@@ -162,6 +182,11 @@ final class ABJ_404_Solution_AjaxQueryTimeline {
                 return;
             }
 
+            $state['open'] = array(
+                'q' => $state['count'],
+                'started_at' => self::nowFloat(),
+                'breadcrumb' => null,
+            );
             $state['recorded']++;
             self::$state = $state;
             ABJ_404_Solution_AjaxCheckpointLogger::recordFrequent($requestId, 'query_probe', array_merge(array(
@@ -201,6 +226,10 @@ final class ABJ_404_Solution_AjaxQueryTimeline {
                 // probe record that carries the same `q`, so repeating it here
                 // would pay for the same bytes twice.
                 $state['slowest'] = array('q' => $open['q'], 'ms' => round($elapsedMs, 3));
+            }
+            if ($open !== null && is_array($open['breadcrumb'] ?? null)) {
+                ABJ_404_Solution_AjaxCheckpointLogger::recordActiveOperation(
+                    $state['request_id'], 'query', 'complete', $open['breadcrumb']);
             }
             $state['open'] = null;
             self::$state = $state;
@@ -350,7 +379,7 @@ final class ABJ_404_Solution_AjaxQueryTimeline {
      * Milliseconds an unfinished query has been open, or null when there is
      * no open query or no clock to measure it with.
      *
-     * @param array{q: int, started_at: float|null}|null $open
+     * @param array{q: int, started_at: float|null, breadcrumb: array<string, mixed>|null}|null $open
      */
     private static function openMs($open): ?float {
         if ($open === null || $open['started_at'] === null) {
