@@ -119,6 +119,10 @@ final class ABJ_404_Solution_DiagnosticJournalExcerpt {
                 'bytes_unread' => $read['bytesUnread'],
                 'files_dropped_by_cap' => self::selectionCount($selection, 'dropped_files'),
                 'known_failure_files' => self::selectionCount($selection, 'known_failure_files'),
+                'server_failure_files' => self::selectionCount($selection, 'server_failure_files'),
+                'classification_issue_files' =>
+                    self::selectionCount($selection, 'classification_issue_files'),
+                'pinned_files' => self::selectionCount($selection, 'pinned_files'),
             ));
             return $header . self::summaryLine($summary) . "\n" . implode("\n", $selected['lines']);
         } catch (Throwable $e) {

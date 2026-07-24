@@ -430,23 +430,24 @@ final class ABJ_404_Solution_DiagnosticCollectionManifest {
         foreach (self::arrayOf($manifest['channels'] ?? null) as $channel) {
             $described = self::arrayOf($channel);
             $selection = self::arrayOf($described['file_selection'] ?? null);
+            $minimalSelection = array(
+                'policy' => self::stringOf($selection['policy'] ?? ''),
+            );
+            foreach (array(
+                'existing_files', 'selected_files', 'known_failure_files',
+                'server_failure_files', 'classification_issue_files', 'pinned_files',
+                'classification_issues_omitted', 'dropped_files',
+                'dropped_file_names_omitted', 'dropped_request_ids_omitted',
+            ) as $field) {
+                $minimalSelection[$field] = self::intOf($selection[$field] ?? 0);
+            }
             $channels[] = array(
                 'channel' => self::stringOf($described['channel'] ?? 'unknown'),
                 'directory_usable' => !empty($described['directory_usable']),
                 'candidates_checked' => self::intOf($described['candidates_checked'] ?? 0),
                 'candidates_found' => self::intOf($described['candidates_found'] ?? 0),
                 'collected_bytes' => self::intOf($described['collected_bytes'] ?? 0),
-                'file_selection' => array(
-                    'policy' => self::stringOf($selection['policy'] ?? ''),
-                    'existing_files' => self::intOf($selection['existing_files'] ?? 0),
-                    'selected_files' => self::intOf($selection['selected_files'] ?? 0),
-                    'known_failure_files' => self::intOf($selection['known_failure_files'] ?? 0),
-                    'dropped_files' => self::intOf($selection['dropped_files'] ?? 0),
-                    'dropped_file_names_omitted' =>
-                        self::intOf($selection['dropped_file_names_omitted'] ?? 0),
-                    'dropped_request_ids_omitted' =>
-                        self::intOf($selection['dropped_request_ids_omitted'] ?? 0),
-                ),
+                'file_selection' => $minimalSelection,
             );
         }
         return array(
