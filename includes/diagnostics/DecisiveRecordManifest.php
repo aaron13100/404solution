@@ -1,0 +1,302 @@
+<?php
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+/**
+ * The canonical catalog of decisive tracer records, and the single source the
+ * completeness gates and the support-reservation policy derive from. (Bruno
+ * timeout cause matrix, gap-hunt iteration 6, convergence of gaps O1 + O2.)
+ *
+ * The failure this class exists to end is structural. Three durability
+ * consumers -- the server completeness gate, the browser completeness gate,
+ * and ABJ_404_Solution_RequiredCheckpointEvidence -- each used to hardcode
+ * their own list of required and reserved record types. Every iteration that
+ * added a decisive record (rate-limit backend attribution, option-hook
+ * instrumentation) had to hand-edit all three, and any omission was invisible
+ * until the next gap-hunt pass rediscovered it. That exact shape recurred five
+ * times (GF/c444, c473, c479, c489): a record emitted in production but
+ * asserted by no gate and reserved by no policy, so a worst-case failing
+ * session could drop the one record carrying its discriminator (the G1 shape).
+ *
+ * The fix mirrors ABJ_404_Solution_DiagnosticModuleManifest: coverage is
+ * DERIVED, not maintained by memory. This class is the one list; the two gates
+ * and the reservation policy read their expectations from it, and
+ * DecisiveRecordManifestTest source-scans every *Tracer in includes/diagnostics
+ * and FAILS if any record type a tracer can emit is absent here. A diagnostics
+ * tracer that gains a record next month cannot ship un-gated and un-reserved:
+ * the meta-test forces its enrollment before the completeness gate can pass.
+ *
+ * Each family declares:
+ *  - emitter: the tracer class whose source the meta-test scans for the events.
+ *  - events:  the journal `event` names in the family.
+ *  - presence:
+ *      PRESENCE_ALWAYS       the record (or, for start/end pairs, the pair) is
+ *                            emitted for every canonical ordinary table request,
+ *                            so both completeness gates must require it.
+ *      PRESENCE_CONDITIONAL  the record only appears under a specific condition
+ *                            (a persistent object cache, external work inside a
+ *                            row, a callback registered on an option hook). Its
+ *                            absence is not a hole because an always-present
+ *                            SENTINEL record states the condition's outcome
+ *                            (see `sentinel`), so the gates must not require it.
+ *  - reserve: a {start,end} event pair whose START must survive bounded support
+ *             ranking even when its END never reached disk (the hung operation
+ *             whose completion the worker died before writing). Null when the
+ *             family has no unmatched-start hazard.
+ */
+final class ABJ_404_Solution_DecisiveRecordManifest {
+
+    /** Bumped when the catalog's shape changes, so an old reader stays valid. */
+    const SCHEMA_VERSION = 1;
+
+    const PRESENCE_ALWAYS = 'always-present';
+    const PRESENCE_CONDITIONAL = 'conditional-with-sentinel';
+
+    /**
+     * The authoritative catalog, keyed by family name.
+     *
+     * Order is not significant. New records added by later gap-hunt iterations
+     * (translation prelude, excluded-callback breadcrumbs, sort-write option
+     * records) enroll here, and the meta-test forces their coverage so the
+     * gap-hunt loop converges.
+     *
+     * @var array<string, array{
+     *   emitter: string,
+     *   events: array<int, string>,
+     *   presence: string,
+     *   reserve: array{start: string, end: string}|null,
+     *   sentinel: string|null
+     * }>
+     */
+    private const RECORDS = array(
+        // The medium-high Redis / Object-Cache-Pro-during-rate-limiter
+        // discriminator. backend_selection runs on EVERY table request via
+        // Ajax_Php::consumeRateLimit, so the start/end pair is always present;
+        // the three cache commands only run when a persistent object cache is
+        // selected, and when it is not, the always-present backend_selection
+        // record's result field reads 'database_fallback' -- the sentinel that
+        // makes their absence a stated fact rather than a hole.
+        'rate_limit_operation' => array(
+            'emitter' => 'ABJ_404_Solution_RateLimitOperationTracer',
+            'events' => array('rate_limit_operation_start', 'rate_limit_operation_end'),
+            'presence' => self::PRESENCE_ALWAYS,
+            'reserve' => array(
+                'start' => 'rate_limit_operation_start',
+                'end' => 'rate_limit_operation_end',
+            ),
+            'sentinel' => 'backend_selection result=database_fallback when no persistent object cache; '
+                . 'cache_add_initial/cache_increment/cache_add_fallback are the conditional commands',
+        ),
+        // The matrix-cause-37 foreign-option-callback census. Emitted for every
+        // option storage write (even the hook-registry-unavailable branch
+        // writes the record), so it is always present and both gates require it.
+        'option_hook_instrumentation' => array(
+            'emitter' => 'ABJ_404_Solution_OptionPersistenceTracer',
+            'events' => array('option_hook_instrumentation'),
+            'presence' => self::PRESENCE_ALWAYS,
+            'reserve' => null,
+            'sentinel' => null,
+        ),
+        // The fine-grained option-persistence boundaries (normalization, read,
+        // storage write, cache refresh). Always emitted while the tracer is
+        // active during ajaxUpdatePaginationLinks. A boundary that hangs leaves
+        // its start unmatched, so the start is reserved.
+        'option_operation' => array(
+            'emitter' => 'ABJ_404_Solution_OptionPersistenceTracer',
+            'events' => array('option_operation_start', 'option_operation_end'),
+            'presence' => self::PRESENCE_ALWAYS,
+            'reserve' => array(
+                'start' => 'option_operation_start',
+                'end' => 'option_operation_end',
+            ),
+            'sentinel' => null,
+        ),
+        // Each foreign callback registered on an option lifecycle hook, wrapped
+        // for per-callback attribution. Conditional on such callbacks existing;
+        // the always-present option_hook_instrumentation record's
+        // callbacks_wrapped count is the census that states how many there were.
+        // A foreign callback that hangs (the literal matrix-cause-37 symptom)
+        // leaves its start unmatched, so the start is reserved.
+        'option_hook_callback' => array(
+            'emitter' => 'ABJ_404_Solution_OptionPersistenceTracer',
+            'events' => array('option_hook_callback_start', 'option_hook_callback_end'),
+            'presence' => self::PRESENCE_CONDITIONAL,
+            'reserve' => array(
+                'start' => 'option_hook_callback_start',
+                'end' => 'option_hook_callback_end',
+            ),
+            'sentinel' => 'option_hook_instrumentation.callbacks_wrapped',
+        ),
+        // A callback that cannot be safely wrapped (a by-reference parameter).
+        // Conditional; its census is option_hook_instrumentation.callbacks_unavailable.
+        'option_hook_callback_unavailable' => array(
+            'emitter' => 'ABJ_404_Solution_OptionPersistenceTracer',
+            'events' => array('option_hook_callback_unavailable'),
+            'presence' => self::PRESENCE_CONDITIONAL,
+            'reserve' => null,
+            'sentinel' => 'option_hook_instrumentation.callbacks_unavailable',
+        ),
+        // External work (a cache call or a hook callback) inside a rendered
+        // table row. Conditional on the row performing such work; a row that
+        // never returns leaves its start unmatched, so the start is reserved.
+        'row_operation' => array(
+            'emitter' => 'ABJ_404_Solution_RowRenderOperationTracer',
+            'events' => array('row_operation_start', 'row_operation_end'),
+            'presence' => self::PRESENCE_CONDITIONAL,
+            'reserve' => array(
+                'start' => 'row_operation_start',
+                'end' => 'row_operation_end',
+            ),
+            'sentinel' => 'row_operation_instrumentation.status',
+        ),
+        // The census that row-render attribution was installed. Always emitted
+        // when the row-render tracer runs for a table request.
+        'row_operation_instrumentation' => array(
+            'emitter' => 'ABJ_404_Solution_RowRenderOperationTracer',
+            'events' => array('row_operation_instrumentation'),
+            'presence' => self::PRESENCE_ALWAYS,
+            'reserve' => null,
+            'sentinel' => null,
+        ),
+        // The record budget for row operations was exhausted. Conditional.
+        'row_operation_capped' => array(
+            'emitter' => 'ABJ_404_Solution_RowRenderOperationTracer',
+            'events' => array('row_operation_capped'),
+            'presence' => self::PRESENCE_CONDITIONAL,
+            'reserve' => null,
+            'sentinel' => 'row_operation_instrumentation.status',
+        ),
+        // A row operation could not be attributed (unwrappable callback / cache).
+        // Conditional.
+        'row_operation_unavailable' => array(
+            'emitter' => 'ABJ_404_Solution_RowRenderOperationTracer',
+            'events' => array('row_operation_unavailable'),
+            'presence' => self::PRESENCE_CONDITIONAL,
+            'reserve' => null,
+            'sentinel' => 'row_operation_instrumentation.status',
+        ),
+    );
+
+    /**
+     * The full catalog.
+     *
+     * @return array<string, array{emitter: string, events: array<int, string>, presence: string, reserve: array{start: string, end: string}|null, sentinel: string|null}>
+     */
+    public static function records(): array {
+        return self::RECORDS;
+    }
+
+    /**
+     * Every journal `event` name enrolled, across all families.
+     *
+     * @return array<int, string>
+     */
+    public static function allEvents(): array {
+        $events = array();
+        foreach (self::RECORDS as $family) {
+            foreach ($family['events'] as $event) {
+                $events[$event] = true;
+            }
+        }
+        return array_keys($events);
+    }
+
+    /**
+     * Events belonging to always-present families. Both completeness gates must
+     * require every one of these; a build that stops emitting one can come back
+     * evidence-free for that discriminator, which is the whole failure mode.
+     *
+     * @return array<int, string>
+     */
+    public static function alwaysPresentEvents(): array {
+        return self::eventsWithPresence(self::PRESENCE_ALWAYS);
+    }
+
+    /**
+     * Events belonging to conditional families. Gates must NOT require these;
+     * their always-present sentinel records the condition's outcome instead.
+     *
+     * @return array<int, string>
+     */
+    public static function conditionalEvents(): array {
+        return self::eventsWithPresence(self::PRESENCE_CONDITIONAL);
+    }
+
+    /**
+     * The start/end pairs whose unmatched start the support-reservation policy
+     * must preserve. Keyed matching is by request_id + operation_id, the field
+     * every enrolled tracer stamps onto both records of a pair.
+     *
+     * @return array<int, array{start: string, end: string}>
+     */
+    public static function reservedOperationPairs(): array {
+        $pairs = array();
+        foreach (self::RECORDS as $family) {
+            if (is_array($family['reserve'])) {
+                $pairs[] = $family['reserve'];
+            }
+        }
+        return $pairs;
+    }
+
+    /**
+     * The start events whose unmatched instance is reserved.
+     *
+     * @return array<int, string>
+     */
+    public static function reservedStartEvents(): array {
+        return array_map(
+            static fn(array $pair): string => $pair['start'],
+            self::reservedOperationPairs()
+        );
+    }
+
+    /**
+     * The tracer classes that emit enrolled records. The meta-test scans each
+     * of these plus any *Tracer file it finds on disk.
+     *
+     * @return array<int, string>
+     */
+    public static function emitterClasses(): array {
+        $classes = array();
+        foreach (self::RECORDS as $family) {
+            $classes[$family['emitter']] = true;
+        }
+        return array_keys($classes);
+    }
+
+    /**
+     * Events attributed to a given emitter class.
+     *
+     * @return array<int, string>
+     */
+    public static function eventsForEmitter(string $emitter): array {
+        $events = array();
+        foreach (self::RECORDS as $family) {
+            if ($family['emitter'] === $emitter) {
+                foreach ($family['events'] as $event) {
+                    $events[$event] = true;
+                }
+            }
+        }
+        return array_keys($events);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private static function eventsWithPresence(string $presence): array {
+        $events = array();
+        foreach (self::RECORDS as $family) {
+            if ($family['presence'] !== $presence) {
+                continue;
+            }
+            foreach ($family['events'] as $event) {
+                $events[$event] = true;
+            }
+        }
+        return array_keys($events);
+    }
+}

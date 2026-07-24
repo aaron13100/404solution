@@ -121,11 +121,89 @@ final class ABJ_404_Solution_RequiredCheckpointEvidence {
     /**
      * Starts whose matching completion never reached disk.
      *
+     * The start/end pairs to reserve are DERIVED from the decisive-record
+     * manifest, not hardcoded here: every operation family the manifest marks
+     * `reserve` (row-render, rate-limit backend/cache, option persistence,
+     * option-hook callback) is preserved by the same request_id + operation_id
+     * matching. Enrolling a new decisive record in the manifest extends this
+     * reservation automatically, which is the structural fix for the recurring
+     * "emitted but un-reserved" gap. The query timeline keeps its own start /
+     * clear semantics (a summary with open_query === null cancels the reserve).
+     *
      * @param array<int, string> $lines
      * @return array<int, string>
      */
     private static function unmatchedOperationLines(array $lines): array {
-        $rowStarts = array();
+        return array_merge(
+            self::unmatchedReservedStartLines($lines),
+            self::unmatchedQueryLines($lines)
+        );
+    }
+
+    /**
+     * Reserved operation starts (from the manifest) whose matching end never
+     * reached disk. Each family's start/end pair is matched by request_id +
+     * operation_id; an end removes its start, so what remains is the hung set.
+     *
+     * @param array<int, string> $lines
+     * @return array<int, string>
+     */
+    private static function unmatchedReservedStartLines(array $lines): array {
+        $startEvents = array();
+        $endToStart = array();
+        foreach (ABJ_404_Solution_DecisiveRecordManifest::reservedOperationPairs() as $pair) {
+            $startEvents[$pair['start']] = true;
+            $endToStart[$pair['end']] = $pair['start'];
+        }
+
+        $openStarts = array();
+        foreach ($lines as $line) {
+            $record = json_decode($line, true);
+            if (!is_array($record)) {
+                continue;
+            }
+            $event = is_scalar($record['event'] ?? null) ? (string)$record['event'] : '';
+            $isStart = isset($startEvents[$event]);
+            if (!$isStart && !isset($endToStart[$event])) {
+                continue;
+            }
+            $key = self::operationKey($record, $isStart ? $event : $endToStart[$event]);
+            if ($key === '') {
+                continue;
+            }
+            if ($isStart) {
+                $openStarts[$key] = $line;
+            } else {
+                unset($openStarts[$key]);
+            }
+        }
+        return array_values($openStarts);
+    }
+
+    /**
+     * The reservation key for a start/end record: its start-event namespace
+     * plus request_id and operation_id. Empty when either identifier is absent,
+     * so an unattributable record is never reserved.
+     *
+     * @param array<mixed, mixed> $record
+     */
+    private static function operationKey(array $record, string $startEvent): string {
+        $requestId = is_scalar($record['request_id'] ?? null) ? (string)$record['request_id'] : '';
+        $operationId = is_scalar($record['operation_id'] ?? null) ? (string)$record['operation_id'] : '';
+        if ($requestId === '' || $operationId === '') {
+            return '';
+        }
+        return $startEvent . '|' . $requestId . '|' . $operationId;
+    }
+
+    /**
+     * The last query probe per request whose timeline never closed (no summary
+     * with open_query === null). A killed worker mid-query leaves exactly this.
+     *
+     * @param array<int, string> $lines
+     * @return array<int, string>
+     */
+    private static function unmatchedQueryLines(array $lines): array {
         $lastQueries = array();
         foreach ($lines as $line) {
             $record = json_decode($line, true);
@@ -134,25 +212,15 @@ final class ABJ_404_Solution_RequiredCheckpointEvidence {
             }
             $requestId = is_scalar($record['request_id'] ?? null)
                 ? (string)$record['request_id'] : '';
-            $event = $record['event'] ?? '';
-            if ($event === 'row_operation_start') {
-                $operationId = is_scalar($record['operation_id'] ?? null)
-                    ? (string)$record['operation_id'] : '';
-                if ($requestId !== '' && $operationId !== '') {
-                    $rowStarts[$requestId . '|' . $operationId] = $line;
-                }
-            } elseif ($event === 'row_operation_end') {
-                $operationId = is_scalar($record['operation_id'] ?? null)
-                    ? (string)$record['operation_id'] : '';
-                unset($rowStarts[$requestId . '|' . $operationId]);
-            } elseif ($event === 'query_probe' && $requestId !== '') {
+            $event = is_scalar($record['event'] ?? null) ? (string)$record['event'] : '';
+            if ($event === 'query_probe' && $requestId !== '') {
                 $lastQueries[$requestId] = $line;
             } elseif ($event === 'query_timeline_summary' && $requestId !== ''
                     && ($record['open_query'] ?? null) === null) {
                 unset($lastQueries[$requestId]);
             }
         }
-        return array_merge(array_values($rowStarts), array_values($lastQueries));
+        return array_values($lastQueries);
     }
 
     /** @param array<mixed, mixed> $record */
