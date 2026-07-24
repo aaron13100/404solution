@@ -76,7 +76,11 @@ final class ABJ_404_Solution_DecisiveRecordManifest {
         // themselves. The lifecycle start is therefore written first and
         // advanced with the same operation id before each callback position.
         // An unmatched start distinguishes instrumentation self-interference
-        // from a foreign callback or the surrounding table operation.
+        // from a foreign callback or the surrounding table operation. The same
+        // start/end pair also brackets the atomic add_filter / remove_filter a
+        // tracer runs to register or remove its own `all` hook entry (phase
+        // registration / removal), so a stall inside WordPress's registration
+        // or removal path is reserved and attributed just like a traversal.
         'hook_instrumentation_lifecycle' => array(
             'emitter' => 'ABJ_404_Solution_HookInstrumentationLifecycleTracer',
             'events' => array(

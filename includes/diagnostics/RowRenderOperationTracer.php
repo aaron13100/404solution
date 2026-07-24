@@ -92,7 +92,18 @@ final class ABJ_404_Solution_RowRenderOperationTracer {
             try {
                 $allHookCounts = $this->hookInstrumenter->instrument('all');
                 if ($allHookCounts['registry_status'] !== 'unavailable') {
-                    add_filter('all', array($this, 'prepareHookCallbacks'), PHP_INT_MIN, 1);
+                    // The raw add_filter itself traverses and mutates the `all`
+                    // registry inside WordPress, after instrument()'s traversal
+                    // lifecycle has already closed. Bracket it so a stall inside
+                    // registration leaves a durable, reserved boundary rather
+                    // than an unattributable hang.
+                    $this->lifecycleTracer->traceBoundary(
+                        ABJ_404_Solution_HookInstrumentationLifecycleTracer::PHASE_REGISTRATION,
+                        'all',
+                        function (): void {
+                            add_filter('all', array($this, 'prepareHookCallbacks'), PHP_INT_MIN, 1);
+                        }
+                    );
                     $hookBoundary = 'ready';
                 }
             } catch (Throwable $e) {
@@ -298,7 +309,16 @@ final class ABJ_404_Solution_RowRenderOperationTracer {
     private function restore(bool $scopeCompleted = true): void {
         if (function_exists('remove_filter')) {
             try {
-                remove_filter('all', array($this, 'prepareHookCallbacks'), PHP_INT_MIN);
+                // Mirror of install(): remove_filter traverses and mutates the
+                // `all` registry before the traversal restore lifecycle begins,
+                // so bracket the atomic removal on its own boundary phase.
+                $this->lifecycleTracer->traceBoundary(
+                    ABJ_404_Solution_HookInstrumentationLifecycleTracer::PHASE_REMOVAL,
+                    'all',
+                    function (): void {
+                        remove_filter('all', array($this, 'prepareHookCallbacks'), PHP_INT_MIN);
+                    }
+                );
             } catch (Throwable $e) {
                 self::reportFailure('hook boundary removal failed: ' . $e->getMessage());
             }

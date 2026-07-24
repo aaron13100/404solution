@@ -13,6 +13,14 @@ if (!defined('ABSPATH')) {
  * a traversal never returns. Callback values and arguments never enter these
  * records.
  *
+ * The same start/end pair also brackets an atomic registry mutation that is
+ * NOT a traversal: the raw add_filter / remove_filter a tracer performs to
+ * register or remove its own diagnostic hook entry (see traceBoundary). Those
+ * calls traverse and mutate the target registry inside WordPress, so a
+ * malformed or plugin-modified registry can stall there just as a traversal
+ * can; the boundary phases (PHASE_REGISTRATION / PHASE_REMOVAL) distinguish
+ * them from the surrounding install/restore traversal in support evidence.
+ *
  * allow-no-test-found: exercised through the real table AJAX entry point in tests/TableRendererPreludeTracerTest.php, tests/OptionPersistenceTracerTest.php, and tests/AjaxQueryAttributionTest.php
  *
  * @phpstan-type LifecycleToken array{
@@ -25,6 +33,31 @@ if (!defined('ABSPATH')) {
  * }
  */
 final class ABJ_404_Solution_HookInstrumentationLifecycleTracer {
+
+    /** Registry traversal while installing callback instrumentation. */
+    const PHASE_INSTALL = 'install';
+
+    /** Registry traversal while restoring callback instrumentation. */
+    const PHASE_RESTORE = 'restore';
+
+    /**
+     * The atomic add_filter that registers a diagnostic-owned hook entry. Its
+     * WordPress path traverses and mutates the target registry, so a malformed
+     * or plugin-modified registry can stall inside registration with no other
+     * durable start identifying the diagnostic boundary.
+     */
+    const PHASE_REGISTRATION = 'registration';
+
+    /** The atomic remove_filter that removes that diagnostic-owned entry. */
+    const PHASE_REMOVAL = 'removal';
+
+    /** @var array<int, string> The controlled phase vocabulary. */
+    private const PHASES = array(
+        self::PHASE_INSTALL,
+        self::PHASE_RESTORE,
+        self::PHASE_REGISTRATION,
+        self::PHASE_REMOVAL,
+    );
 
     /** @var string */
     private $requestId;
@@ -56,13 +89,14 @@ final class ABJ_404_Solution_HookInstrumentationLifecycleTracer {
      */
     public function begin(string $phase, string $hook): array {
         $this->sequence++;
+        $normalizedPhase = in_array($phase, self::PHASES, true) ? $phase : self::PHASE_INSTALL;
         $token = array(
             'operation_id' => substr(hash(
                 'sha256',
                 $this->requestId . '|' . $this->component . '|' . $this->sequence
-                    . '|' . $phase . '|' . $hook
+                    . '|' . $normalizedPhase . '|' . $hook
             ), 0, 12),
-            'phase' => $phase === 'restore' ? 'restore' : 'install',
+            'phase' => $normalizedPhase,
             'component' => $this->component,
             'hook' => ABJ_404_Solution_HookCallbackIdentity::hookName($hook),
             'priority' => null,
@@ -70,6 +104,30 @@ final class ABJ_404_Solution_HookInstrumentationLifecycleTracer {
         );
         $this->write('hook_instrumentation_lifecycle_start', $token);
         return $token;
+    }
+
+    /**
+     * Bracket an atomic registry registration or removal (a raw add_filter /
+     * remove_filter) whose own WordPress path traverses and mutates the hook
+     * registry. The start is persisted before the operation runs, so a call
+     * that never returns leaves a durable, support-reserved boundary naming the
+     * diagnostic that stalled. A throw is recorded as a failed end and
+     * rethrown, so the caller's existing recovery is unchanged.
+     *
+     * @template T
+     * @param callable(): T $operation
+     * @return T
+     */
+    public function traceBoundary(string $phase, string $hook, callable $operation) {
+        $token = $this->begin($phase, $hook);
+        try {
+            $result = $operation();
+        } catch (Throwable $e) {
+            $this->complete($token, 'failed', get_class($e));
+            throw $e;
+        }
+        $this->complete($token, 'complete');
+        return $result;
     }
 
     /**
