@@ -40,7 +40,7 @@ final class ABJ_404_Solution_RegexSourcePatternValidator {
         });
         try {
             $this->functions->regexMatch($pattern, '');
-        } catch (Throwable $error) {
+        } catch (Throwable $error) { // allow-silent-catch: the original regex engine error is returned in detail below.
             $warning = $error->getMessage();
         } finally {
             restore_error_handler();
