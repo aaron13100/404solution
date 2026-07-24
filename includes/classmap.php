@@ -196,7 +196,7 @@ $abj404ClassesByDirectory = array(
         'RedirectsRetentionService', 'RedirectRow', 'RedirectUpdate', 'RedirectCanonicalUrl',
         'RedirectScheduleTimezone', 'ExistingRedirectLookup', 'AutoRedirectHandler',
         'RedirectExclusionPolicy', 'RedirectDispatcher', 'RedirectConditionEvaluator',
-        'RegexAutoPromote',
+        'RegexAutoPromote', 'RegexDestinationTemplateValidator',
     ),
     'repositories' => array(
         'ContentRepositoryInterface', 'PublishedContentLookupInterface', 'OldSlugLookupInterface',

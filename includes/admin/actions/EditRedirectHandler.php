@@ -108,7 +108,24 @@ class ABJ_404_Solution_EditRedirectHandler {
         $message = $target['message'];
         $logger = $this->parent->getLogger();
 
-        $typeAndDest = $this->resolver->getRedirectTypeAndDest();
+        $statusTypeForValidation = ABJ404_STATUS_MANUAL;
+        if (isset($_POST['is_regex_url']) && $_POST['is_regex_url'] != '0') {
+            $statusTypeForValidation = ABJ404_STATUS_REGEX;
+        }
+        $sourcePatternForValidation = $target['fromURL'];
+        if ($sourcePatternForValidation !== '') {
+            $autoPromoteForValidation = $this->resolver->maybeAutoPromoteRegex(
+                $statusTypeForValidation,
+                $sourcePatternForValidation
+            );
+            $statusTypeForValidation = $autoPromoteForValidation['statusType'];
+            $sourcePatternForValidation = $autoPromoteForValidation['url'];
+        }
+
+        $typeAndDest = $this->resolver->getRedirectTypeAndDest(array(
+            'isRegex' => $statusTypeForValidation === ABJ404_STATUS_REGEX,
+            'sourcePattern' => $sourcePatternForValidation,
+        ));
         $typeAndDestMessage = is_string($typeAndDest['message']) ? $typeAndDest['message'] : '';
         if ($typeAndDestMessage != "") {
             return $typeAndDestMessage;

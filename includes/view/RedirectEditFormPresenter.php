@@ -145,7 +145,7 @@ class ABJ_404_Solution_RedirectEditFormPresenter {
         $body = $this->functions->str_replace('{regex_explain_link}', esc_html__('(Explain)', '404-solution'), $body);
         $body = $this->functions->str_replace('{regex_explain_text}', esc_html__('When checked, the text is treated as a regular expression. Note that including a bad regular expression or one that takes too long will break your website. So please use caution and test them elsewhere before trying them here. If you don\'t know what you\'re doing please don\'t use this option (as it\'s not necessary for the functioning of the plugin).', '404-solution'), $body);
         $body = $this->functions->str_replace('{regex_example_label}', esc_html__('Example:', '404-solution'), $body);
-        $body = $this->functions->str_replace('{regex_example_text}', esc_html__('/events/(.+) will match any URL that begins with /events/ and redirect to the specified page. Since a capture group is used, you can use a $1 replacement in the destination string of an external URL.', '404-solution'), $body);
+        $body = $this->functions->str_replace('{regex_example_text}', esc_html__('/events/(.+) will match any URL that begins with /events/. Use $1 in the destination to insert the captured text. Site-relative paths such as /archive/$1 and full HTTP(S) URLs are supported.', '404-solution'), $body);
         return $this->buildFieldRowHtml('is_regex_url', '&nbsp;', $body);
     }
 

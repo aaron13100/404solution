@@ -155,13 +155,9 @@ class ABJ_404_Solution_SpellURLMatcher {
 				if ($hasCaptureGroup && $hasReplacementToken) {
 					$results = array();
 					@$this->f->regexMatch($regexURLStr, $requestedURL, $results);
+					$results = is_array($results) ? $results : array();
 
-					$final = $permLinkStr;
-					for ($x = 1; $x < count($results); $x++) {
-						$final = $this->f->str_replace('$' . $x, $results[$x], $final);
-					}
-
-					$permalink['link'] = $final;
+					$permalink['link'] = $this->substituteRegexDestination($permLinkStr, $results);
 				}
 
 				if ($isDebug) {
@@ -179,6 +175,23 @@ class ABJ_404_Solution_SpellURLMatcher {
 		}
 
 		return null;
+	}
+
+	/**
+	 * @param array<int|string, string> $results
+	 */
+	private function substituteRegexDestination(string $template, array $results): string {
+		$substituted = preg_replace_callback(
+			'/\\$([1-9][0-9]*)/',
+			static function(array $tokenMatch) use ($results): string {
+				$groupNumber = (int)$tokenMatch[1];
+				return array_key_exists($groupNumber, $results)
+					? (string)$results[$groupNumber]
+					: '';
+			},
+			$template
+		);
+		return is_string($substituted) ? $substituted : $template;
 	}
 
 	/**

@@ -148,6 +148,7 @@ Yes. IP addresses are hashed using a one-way algorithm before storage — the or
 ### Does it support regex? ###
 
 Yes. Manual redirect rules support full regular expression syntax for source URLs.
+Capture-group replacements can use either full HTTP(S) destination URLs or site-relative paths such as `/archive/$1`.
 
 ### Does it work with WPML, Polylang, or TranslatePress? ###
 

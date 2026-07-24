@@ -48,7 +48,7 @@ class ABJ_404_Solution_RedirectAddModalPresenter {
             '{explain_label}' => esc_html__('(Explain)', '404-solution'),
             '{regex_help_1}' => esc_html__('When checked, the text is treated as a regular expression. Note that including a bad regular expression or one that takes too long will break your website. So please use caution and test them elsewhere before trying them here. If you don\'t know what you\'re doing please don\'t use this option (as it\'s not necessary for the functioning of the plugin).', '404-solution'),
             '{example_label}' => esc_html__('Example:', '404-solution'),
-            '{regex_help_2}' => esc_html__('/events/(.+) will match any URL that begins with /events/ and redirect to the specified page. Since a capture group is used, you can use a $1 replacement in the destination string of an external URL.', '404-solution'),
+            '{regex_help_2}' => esc_html__('/events/(.+) will match any URL that begins with /events/. Use $1 in the destination to insert the captured text. Site-relative paths such as /archive/$1 and full HTTP(S) URLs are supported.', '404-solution'),
             '{regex_help_3}' => esc_html__('First, all of the normal "exact match" URLs are checked, then all of the regular expression URLs are checked.', '404-solution'),
             '{redirect_to_html}' => $this->redirectToHtml(),
             '{redirect_type_grid}' => $this->redirectTypeGrid($options),

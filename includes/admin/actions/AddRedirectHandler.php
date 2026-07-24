@@ -79,7 +79,20 @@ class ABJ_404_Solution_AddRedirectHandler implements ABJ_404_Solution_AdminActio
             return $message;
         }
 
-        $typeAndDest = $this->resolver->getRedirectTypeAndDest();
+        $statusType = ABJ404_STATUS_MANUAL;
+        if (isset($_POST['is_regex_url']) && $_POST['is_regex_url'] != '0') {
+            $statusType = ABJ404_STATUS_REGEX;
+        }
+
+        $originalManualURL = $manualURL;
+        $autoPromoteAdd = $this->resolver->maybeAutoPromoteRegex($statusType, $manualURL);
+        $statusType = $autoPromoteAdd['statusType'];
+        $manualURL = $autoPromoteAdd['url'];
+
+        $typeAndDest = $this->resolver->getRedirectTypeAndDest(array(
+            'isRegex' => $statusType === ABJ404_STATUS_REGEX,
+            'sourcePattern' => $manualURL,
+        ));
 
         $tdMsg = is_string($typeAndDest['message']) ? $typeAndDest['message'] : '';
         if ($tdMsg != "") {
@@ -91,19 +104,7 @@ class ABJ_404_Solution_AddRedirectHandler implements ABJ_404_Solution_AdminActio
         $postedCodeForCheck2 = isset($_POST['code']) && is_scalar($_POST['code']) ? (string)$_POST['code'] : '';
         $code410 = $postedCodeForCheck2 === '410' || $postedCodeForCheck2 === '451';
         if ($tdType2 != "" && ($tdDest2 !== "" || $code410)) {
-            $statusType = ABJ404_STATUS_MANUAL;
-            if (isset($_POST['is_regex_url']) &&
-                $_POST['is_regex_url'] != '0') {
-
-                $statusType = ABJ404_STATUS_REGEX;
-            }
-
             $code = isset($_POST['code']) && is_scalar($_POST['code']) && (string)$_POST['code'] !== '' ? (string)$_POST['code'] : '301';
-
-            $originalManualURL = $manualURL;
-            $autoPromoteAdd = $this->resolver->maybeAutoPromoteRegex($statusType, $manualURL);
-            $statusType = $autoPromoteAdd['statusType'];
-            $manualURL = $autoPromoteAdd['url'];
 
             $newRedirectId = $redirectsRepo->setupRedirect(ABJ_404_Solution_RedirectSpec::fromArray(array(
                 'fromURL' => $manualURL,

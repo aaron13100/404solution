@@ -157,6 +157,7 @@ Yes. IP addresses are hashed using a one-way algorithm before storage; the origi
 = Does it support regex? =
 
 Yes. Manual redirect rules support full regular expression syntax for source URLs.
+Capture-group replacements can use either full HTTP(S) destination URLs or site-relative paths such as `/archive/$1`.
 
 = Does it work with WPML, Polylang, or TranslatePress? =
 
@@ -484,4 +485,3 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 
 * Added Simple mode Phase 3 strings to all 17 locale PO files.
 * Added missing admin error message translations across all locale PO files.
-
