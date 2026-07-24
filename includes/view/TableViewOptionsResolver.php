@@ -80,7 +80,6 @@ class ABJ_404_Solution_TableViewOptionsResolver {
      */
     function resolve(string $pageBeingViewed): array {
         $tableOptions = array();
-        $options = abj_service('options_repository')->getOptions(true);
 
         $tableOptions['translations'] = $this->translationTokens();
 
@@ -88,12 +87,49 @@ class ABJ_404_Solution_TableViewOptionsResolver {
         $tableOptions['filterText'] = $this->resolveFilterText();
 
         $orderbyInput = ABJ_404_Solution_RequestInputNormalizer::getPostOrGetSanitize('orderby', '');
-        $tableOptions['orderby'] = $this->resolveOrderby($orderbyInput, $pageBeingViewed, $options);
-
         $orderInput = strtoupper(ABJ_404_Solution_RequestInputNormalizer::getPostOrGetSanitize('order', ''));
-        $tableOptions['order'] = $this->resolveOrder($orderInput, $tableOptions['orderby'], $pageBeingViewed, $options);
+        $sortPreferenceRequested = in_array($pageBeingViewed, array('abj404_redirects', 'abj404_captured'), true)
+            && (
+                ($orderbyInput !== '' && in_array($orderbyInput, self::$allowedOrderbyColumns, true))
+                || ($orderInput !== '' && in_array($orderInput, self::$allowedOrderValues, true))
+            );
+        $tracer = $sortPreferenceRequested
+            ? ABJ_404_Solution_OptionPersistenceTracer::begin()
+            : null;
+        try {
+            $optionsRead = static function (): array {
+                return abj_service('options_repository')->getOptions(true);
+            };
+            $options = $tracer === null
+                ? $optionsRead()
+                : $tracer->traceOperation('sort_preference_options_read', $optionsRead);
 
-        $this->rememberSortPreference($orderbyInput, $orderInput, $pageBeingViewed, $options);
+            $tableOptions['orderby'] = $this->resolveOrderby($orderbyInput, $pageBeingViewed, $options);
+            $tableOptions['order'] = $this->resolveOrder(
+                $orderInput,
+                $tableOptions['orderby'],
+                $pageBeingViewed,
+                $options
+            );
+
+            $sortPreferenceWrite = function () use (
+                $orderbyInput,
+                $orderInput,
+                $pageBeingViewed,
+                $options
+            ): void {
+                $this->rememberSortPreference($orderbyInput, $orderInput, $pageBeingViewed, $options);
+            };
+            if ($tracer === null) {
+                $sortPreferenceWrite();
+            } else {
+                $tracer->traceOperation('sort_preference_write', $sortPreferenceWrite);
+            }
+        } finally {
+            if ($tracer !== null) {
+                $tracer->finish();
+            }
+        }
 
         $tableOptions['paged'] = $this->resolvePaged();
         $tableOptions['perpage'] = $this->resolvePerPage($options);

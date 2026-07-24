@@ -5,13 +5,14 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Durable attribution for rows-per-page option persistence.
+ * Durable attribution for table-preference option persistence.
  *
- * The tracer is active only during ajaxUpdatePaginationLinks. It brackets
- * preference normalization, option reads, storage-contract normalization,
- * WordPress storage/cache work, repository cache refresh, and every callback
- * registered on the relevant option lifecycle hooks. Values and callback
- * arguments are never inspected or persisted.
+ * The tracer is active only during ajaxUpdatePaginationLinks rows-per-page or
+ * sort-preference writes. It brackets preference normalization, option reads,
+ * storage-contract normalization, WordPress storage/cache work, repository
+ * cache refresh, and every callback registered on the relevant option
+ * lifecycle hooks. Values and callback arguments are never inspected or
+ * persisted.
  *
  * A callback or operation that does not return leaves its start record
  * unmatched. Every decorated callback is restored in a finally path without
