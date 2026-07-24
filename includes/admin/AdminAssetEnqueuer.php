@@ -58,8 +58,13 @@ class ABJ_404_Solution_AdminAssetEnqueuer {
             ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-admin-ajax',
                 ABJ404_URL . 'includes/js/abj404-admin-ajax.js', array('jquery'));
 
-            wp_register_script('abj404-redirect_to_ajax', $includesUrl . 'ajax/redirect_to_ajax.js',
-                    array('jquery', 'jquery-ui-autocomplete'));
+            $redirectToScriptUrl = $includesUrl . 'ajax/redirect_to_ajax.js';
+            wp_register_script(
+                'abj404-redirect_to_ajax',
+                $redirectToScriptUrl,
+                array('jquery', 'jquery-ui-autocomplete'),
+                ABJ_404_Solution_WPUtils::createUpdatedVersionNumber($redirectToScriptUrl)
+            );
             wp_register_script('abj404-exclude_pages_ajax', $includesUrl . 'ajax/exclude_pages_ajax.js',
                 array('jquery', 'jquery-ui-autocomplete', 'abj404-redirect_to_ajax'));
             $translation_array = array(
