@@ -325,19 +325,19 @@ class ABJ_404_Solution_RedirectsCleanupRepository {
             'r.url',
             array('table' => $logsTable, 'column' => 'requested_url')
         );
-        // DAO-bypass-approved: $wpdb->prepare is read-only string formatting; result goes through queryAndGetResults
-        $query = $wpdb->prepare("UPDATE {wp_abj404_redirects} r
+        $query = "UPDATE {wp_abj404_redirects} r
             SET r.disabled = 1
             WHERE r.status = " . ABJ404_STATUS_CAPTURED . "
             AND r.disabled = 0
             AND r.timestamp < %d
             AND NOT EXISTS (
                 SELECT 1 FROM {wp_abj404_logsv2} l
-                WHERE l.requested_url = " . $comparableRedirectUrl . "
+                WHERE l.requested_url = {logs_url_rhs}
                 LIMIT 1
-            )",
-            $cutoff
-        );
+            )";
+        $query = $this->f->str_replace('{logs_url_rhs}', $comparableRedirectUrl, $query);
+        // DAO-bypass-approved: $wpdb->prepare is read-only string formatting; result goes through queryAndGetResults
+        $query = $wpdb->prepare($query, $cutoff);
         $query = $this->dbCore->doTableNameReplacements($query);
 
         $result = $this->dbCore->queryAndGetResults($query);
