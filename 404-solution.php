@@ -46,6 +46,11 @@ if (!defined('ABJ404_FILE')) {
 if (!defined('ABJ404_PATH')) {
 	define('ABJ404_PATH', plugin_dir_path(ABJ404_FILE));
 }
+// Content-addressed release marker compiled into the earliest boot file.
+// DiagnosticModuleManifestTest recomputes it from every covered PHP module.
+if (!defined('ABJ404_DIAGNOSTIC_BUILD_ID')) {
+	define('ABJ404_DIAGNOSTIC_BUILD_ID', '2d849b6da3f248b1f50b7a776b9b7b1425c7e78b');
+}
 
 // The plugin version is read from this file's own header (single source of
 // truth) and is defined HERE rather than in Loader.php because the
@@ -139,9 +144,17 @@ spl_autoload_register('abj404_autoloader');
 // checkpoint logger, is therefore the honest measurement of that entire
 // pre-active-plugin window: mu-plugins, every listener on muplugins_loaded,
 // and any plugin that loads ahead of us in the active-plugins list.
-ABJ_404_Solution_AjaxCheckpointLogger::recordBootWaypoint('boot_plugin_entry');
+ABJ_404_Solution_AjaxCheckpointLogger::recordBootWaypoint('boot_plugin_entry', array(
+	'module' => '404-solution',
+	'path' => __FILE__,
+	'build_id' => ABJ404_DIAGNOSTIC_BUILD_ID,
+));
 add_action('plugins_loaded', static function () {
-	ABJ_404_Solution_AjaxCheckpointLogger::recordBootWaypoint('plugins_loaded');
+	ABJ_404_Solution_AjaxCheckpointLogger::recordBootWaypoint('plugins_loaded', array(
+		'module' => '404-solution',
+		'path' => __FILE__,
+		'build_id' => ABJ404_DIAGNOSTIC_BUILD_ID,
+	));
 	// Same-site concurrency census (Bruno timeout cause matrix, gap GC).
 	// Registered here rather than at the plugin file's first line because it
 	// needs the service container, which Loader.php builds further down this
@@ -162,10 +175,18 @@ add_action('plugins_loaded', static function () {
 	}
 }, PHP_INT_MIN);
 add_action('init', static function () {
-	ABJ_404_Solution_AjaxCheckpointLogger::recordBootWaypoint('init');
+	ABJ_404_Solution_AjaxCheckpointLogger::recordBootWaypoint('init', array(
+		'module' => '404-solution',
+		'path' => __FILE__,
+		'build_id' => ABJ404_DIAGNOSTIC_BUILD_ID,
+	));
 }, PHP_INT_MIN);
 add_action('admin_init', static function () {
-	ABJ_404_Solution_AjaxCheckpointLogger::recordBootWaypoint('admin_init');
+	ABJ_404_Solution_AjaxCheckpointLogger::recordBootWaypoint('admin_init', array(
+		'module' => '404-solution',
+		'path' => __FILE__,
+		'build_id' => ABJ404_DIAGNOSTIC_BUILD_ID,
+	));
 }, PHP_INT_MIN);
 
 // Root-boot procedural functions. Each file only DEFINES functions (the

@@ -52,6 +52,8 @@ final class ABJ_404_Solution_DiagnosticModuleManifest {
      * up automatically and must NOT be listed here.
      */
     const EXTERNAL_MODULES = array(
+        // The plugin entry point owns the earliest compiled build marker.
+        '../404-solution.php',
         // Request path: dispatch -> auth -> rate limit -> handler -> stages.
         'ajax/AjaxAdminEndpointRegistrar.php',
         'ajax/AjaxSecurityGate.php',
@@ -128,6 +130,22 @@ final class ABJ_404_Solution_DiagnosticModuleManifest {
     }
 
     /**
+     * Content-addressed build ID embedded into the early boot modules.
+     *
+     * Marker literals are normalized before hashing so the ID can be embedded
+     * into the files it covers without becoming a self-referential hash. The
+     * release-consistency test recomputes this value and fails whenever a
+     * covered module changes without refreshing the compiled marker.
+     */
+    public static function releaseBuildId(): string {
+        $parts = array();
+        foreach (self::modulePaths() as $name => $path) {
+            $parts[] = $name . ':' . self::canonicalSourceHash($path);
+        }
+        return sha1(implode('|', $parts));
+    }
+
+    /**
      * Hash every module, reconcile each against the opcode cache, and return
      * the compact manifest for request_start.
      *
@@ -144,10 +162,15 @@ final class ABJ_404_Solution_DiagnosticModuleManifest {
         $cached = 0;
         $unknown = 0;
         $parts = array(defined('ABJ404_VERSION') ? (string)ABJ404_VERSION : 'unknown');
+        $releaseParts = array();
 
         foreach (self::modulePaths() as $name => $path) {
-            $hash = @is_file($path) ? @md5_file($path) : false;
+            $source = @file_get_contents($path);
+            $hash = is_string($source) ? md5($source) : false;
             $mtime = @is_file($path) ? @filemtime($path) : false;
+            $releaseParts[] = $name . ':' . (
+                is_string($source) ? self::canonicalSourceHashOf($source) : 'missing'
+            );
             if (!is_string($hash)) {
                 $unreadable[] = $name;
                 $parts[] = $name . ':missing';
@@ -175,9 +198,16 @@ final class ABJ_404_Solution_DiagnosticModuleManifest {
             }
         }
 
+        $releaseBuildId = sha1(implode('|', $releaseParts));
+        $precomputedBuildId = defined('ABJ404_DIAGNOSTIC_BUILD_ID')
+            ? (string)ABJ404_DIAGNOSTIC_BUILD_ID : '';
         return array(
             'schema' => self::SCHEMA_VERSION,
             'hash' => sha1(implode('|', $parts)),
+            'diagnostic_build_id' => $releaseBuildId,
+            'precomputed_build_id' => $precomputedBuildId,
+            'precomputed_build_matches_files' => $precomputedBuildId !== ''
+                ? hash_equals($releaseBuildId, $precomputedBuildId) : null,
             'module_count' => count($files) + count($unreadable),
             'unreadable' => $unreadable,
             'opcache' => array(
@@ -188,5 +218,25 @@ final class ABJ_404_Solution_DiagnosticModuleManifest {
             ),
             'files' => $files,
         );
+    }
+
+    private static function canonicalSourceHash(string $path): string {
+        $source = @file_get_contents($path);
+        if (!is_string($source)) {
+            return 'missing';
+        }
+        return self::canonicalSourceHashOf($source);
+    }
+
+    private static function canonicalSourceHashOf(string $source): string {
+        $canonical = preg_replace(
+            array(
+                "/(ABJ404_DIAGNOSTIC_BUILD_ID'\\s*,\\s*')[0-9a-f]{40}(')/",
+                "/(const\\s+DIAGNOSTIC_BUILD_ID\\s*=\\s*')[0-9a-f]{40}(')/",
+            ),
+            '$1<diagnostic-build-id>$2',
+            $source
+        );
+        return sha1(is_string($canonical) ? $canonical : $source);
     }
 }

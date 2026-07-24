@@ -84,6 +84,39 @@ final class ABJ_404_Solution_OpcacheGenerationProbe {
     }
 
     /**
+     * Constant-cost OPcache evidence for one boundary module.
+     *
+     * The full request_start probe walks the host's complete script map.
+     * Early boot checkpoints cannot pay that unbounded cost, so they record
+     * only whether this one module is cached plus the timestamp-validation
+     * policy that controls its freshness. The compiled build marker beside
+     * this snapshot provides the exact generation comparison.
+     *
+    * @return array<string, bool|int|string|null>
+     */
+    public static function boundarySnapshot(string $path): array {
+        $reason = 'opcache-unavailable';
+        $restrictApi = ini_get('opcache.restrict_api');
+        $apiRestricted = function_exists('abj404_opcache_api_is_restricted')
+            ? abj404_opcache_api_is_restricted($restrictApi, __FILE__)
+            : (is_string($restrictApi) && trim($restrictApi) !== '');
+        if ($apiRestricted) {
+            $reason = 'opcache-api-restricted';
+        }
+        $cached = null;
+        if (!$apiRestricted && function_exists('opcache_is_script_cached')) {
+            $cached = @opcache_is_script_cached($path);
+            $reason = 'available';
+        }
+        return array(
+            'reason' => $reason,
+            'cached' => $cached,
+            'validate_timestamps' => self::iniBoolean(ini_get('opcache.validate_timestamps')),
+            'revalidate_freq' => self::numericInteger(ini_get('opcache.revalidate_freq')),
+        );
+    }
+
+    /**
      * The per-script map with its keys made string-typed. Array keys are int
      * or string, and a file path that looks numeric ("/8080.php" cannot, but a
      * relative "8080" key from a filtered value can) would otherwise arrive as

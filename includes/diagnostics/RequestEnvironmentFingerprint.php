@@ -58,6 +58,9 @@ final class ABJ_404_Solution_RequestEnvironmentFingerprint {
                 ? (string)gethostname()
                 : (is_scalar($_SERVER['SERVER_NAME'] ?? null) ? (string)$_SERVER['SERVER_NAME'] : ''),
             'pid' => getmypid(),
+            'diagnostic_build_id' => defined('ABJ404_DIAGNOSTIC_BUILD_ID')
+                ? (string)ABJ404_DIAGNOSTIC_BUILD_ID
+                : ABJ_404_Solution_AjaxCheckpointLogger::DIAGNOSTIC_BUILD_ID,
             'plugin_build_hash' => $this->computeBuildHash($loadedFiles, $buildManifest),
             'loaded_files' => $loadedFiles,
             'build_manifest' => $buildManifest,
