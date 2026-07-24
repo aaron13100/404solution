@@ -59,7 +59,17 @@ final class ABJ_404_Solution_AjaxResponseEmitter {
         self::checkpointedEncodeAndEcho($payload, $checkpointRequestId);
 
         // Test hook: tests register `abj404_should_exit` returning false to skip exit.
-        if (!apply_filters('abj404_should_exit', true, array('source' => 'viewUpdater_emitJson'))) {
+        // This filter runs foreign WordPress callbacks (named + `all`) after the
+        // echo boundary and before the first flush checkpoint. On the instrumented
+        // table endpoint the dispatch is bracketed and every callback attributed;
+        // off it, traceDispatch() is a byte-identical pass-through.
+        $shouldExit = ABJ_404_Solution_ResponseControlFilterTracer::traceDispatch(
+            'abj404_should_exit',
+            static function () {
+                return apply_filters('abj404_should_exit', true, array('source' => 'viewUpdater_emitJson'));
+            }
+        );
+        if (!$shouldExit) {
             return;
         }
 

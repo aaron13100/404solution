@@ -249,6 +249,47 @@ final class ABJ_404_Solution_DecisiveRecordManifest {
             'reserve' => null,
             'sentinel' => 'table_prelude_instrumentation.max_callback_records',
         ),
+        // The two response-control filter dispatches on the instrumented
+        // response tail (gap-hunt iteration 8). getAndClearAjaxBufferedOutput()
+        // dispatches abj404_should_manage_output_buffer and
+        // sendJsonResponseAndExit() dispatches abj404_should_exit; both run on
+        // EVERY ajaxUpdatePaginationLinks response, so the bracket pair is always
+        // present. The start is written before any registry access, so a worker
+        // killed inside a foreign callback still names the boundary -- the start
+        // is reserved. The end carries the callbacks_attributed census that is
+        // the sentinel for the conditional per-callback family below.
+        'response_control_filter_dispatch' => array(
+            'emitter' => 'ABJ_404_Solution_ResponseControlFilterTracer',
+            'events' => array(
+                'response_control_filter_dispatch_start',
+                'response_control_filter_dispatch_end',
+            ),
+            'presence' => self::PRESENCE_ALWAYS,
+            'reserve' => array(
+                'start' => 'response_control_filter_dispatch_start',
+                'end' => 'response_control_filter_dispatch_end',
+            ),
+            'sentinel' => null,
+        ),
+        // Each foreign callback registered on a response-control filter or on
+        // WordPress's global `all` hook, wrapped for per-callback attribution.
+        // Conditional on such callbacks existing; the always-present
+        // response_control_filter_dispatch_end record's callbacks_attributed
+        // count is the census stating how many there were. A callback that hangs
+        // (the literal gap symptom) leaves its start unmatched, so it is reserved.
+        'response_control_filter_callback' => array(
+            'emitter' => 'ABJ_404_Solution_ResponseControlFilterTracer',
+            'events' => array(
+                'response_control_filter_callback_start',
+                'response_control_filter_callback_end',
+            ),
+            'presence' => self::PRESENCE_CONDITIONAL,
+            'reserve' => array(
+                'start' => 'response_control_filter_callback_start',
+                'end' => 'response_control_filter_callback_end',
+            ),
+            'sentinel' => 'response_control_filter_dispatch_end.callbacks_attributed',
+        ),
     );
 
     /**

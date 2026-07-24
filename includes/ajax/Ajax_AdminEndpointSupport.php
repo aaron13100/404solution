@@ -258,7 +258,17 @@ class ABJ_404_Solution_Ajax_AdminEndpointSupport {
 
     /** @return string */
     public static function getAndClearAjaxBufferedOutput() {
-        if (!apply_filters('abj404_should_manage_output_buffer', true, array('source' => 'viewUpdater_getAndClearAjaxBufferedOutput'))) {
+        // This filter dispatches foreign WordPress callbacks (named + `all`)
+        // before the output buffer is read or drained. On the instrumented
+        // table endpoint the dispatch is bracketed and every callback attributed;
+        // off it, traceDispatch() is a byte-identical pass-through.
+        $shouldManageBuffer = ABJ_404_Solution_ResponseControlFilterTracer::traceDispatch(
+            'abj404_should_manage_output_buffer',
+            static function () {
+                return apply_filters('abj404_should_manage_output_buffer', true, array('source' => 'viewUpdater_getAndClearAjaxBufferedOutput'));
+            }
+        );
+        if (!$shouldManageBuffer) {
             return '';
         }
 
