@@ -10,9 +10,8 @@
  * a concurrent control. Armed pre-releases also interleave a fixed baseline
  * so host time trends are not attributed to step order.
  *
- * Rate-limited to at most one ladder run per hour per browser (the cooldown
- * lives in view_updater_client_telemetry_store.js, the one file allowed to
- * touch storage). Zero new visible UI: the ladder runs silently and its
+ * Rate-limited to at most one ladder run per hour per browser by
+ * view_updater_canary_cooldown.js. Zero new visible UI: the ladder runs silently and its
  * results land in the server flight-recorder journal via
  * ajaxRunCanaryStep, joined back to the failure that triggered it through
  * the ordinary retryParentId chain every attempt already carries.
@@ -35,7 +34,7 @@
  *
  * Globals defined: abj404CanaryLadder.
  *
- * Depends on view_updater_client_telemetry_store.js (cooldown gate),
+ * Depends on view_updater_canary_cooldown.js (cooldown gate),
  * view_updater_client_telemetry_env.js (session id), and
  * view_updater_transport_telemetry.js (the real request's observed byte
  * size fallback), plus view_updater_canary_measurements.js (wire/decoded
@@ -75,8 +74,8 @@
     }
 
     /** @returns {object|null} */
-    function telemetryStore() {
-        return global.abj404ClientTelemetryStore || null;
+    function canaryCooldown() {
+        return global.abj404CanaryCooldown || null;
     }
 
     /** @returns {string} */
@@ -418,15 +417,15 @@
      */
     function maybeTrigger(ctx) {
         try {
-            var store = telemetryStore();
-            if (!store || typeof store.canaryLadderEligible !== 'function' || typeof store.markCanaryLadderRan !== 'function') {
+            var cooldown = canaryCooldown();
+            if (!cooldown || typeof cooldown.eligible !== 'function' || typeof cooldown.markRan !== 'function') {
                 return false;
             }
             var now = nowMs();
-            if (!store.canaryLadderEligible(now, COOLDOWN_MS)) {
+            if (!cooldown.eligible(now, COOLDOWN_MS)) {
                 return false;
             }
-            store.markCanaryLadderRan(now);
+            cooldown.markRan(now);
             runLadder(ctx);
             return true;
         } catch (triggerError) {

@@ -105,6 +105,7 @@
     function beginAttempt(ctx) {
         ctx = ctx || {};
         var pageEnv = env();
+        var attemptStore = store();
         var record = {
             v: RECORD_VERSION,
             id: attemptId(ctx.requestId, ctx.part, ctx.attemptIndex),
@@ -143,6 +144,18 @@
                 ? pageEnv.openTabCount() : -1,
             foreignInflightAtSend: pageEnv && typeof pageEnv.foreignAjax === 'function'
                 ? pageEnv.foreignAjax(nowMs()).inflight : -1,
+            // Positive evidence for the recorder itself. Without this, a
+            // browser whose localStorage rejected the attempt looked exactly
+            // like a browser that observed nothing.
+            storage_health: attemptStore && typeof attemptStore.storageHealth === 'function'
+                ? attemptStore.storageHealth() : {
+                    status: 'unavailable',
+                    accessible: false,
+                    writable: false,
+                    quota: 'unknown',
+                    last_write_ok: false,
+                    fallback: 'memory'
+                },
             transports: 0,
             events: [],
             eventsDropped: 0,

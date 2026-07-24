@@ -332,10 +332,13 @@ class ABJ_404_Solution_AdminAssetEnqueuer {
             array('abj404-view-updater-client-resource-timing',
                 'abj404-view-updater-transport-telemetry',
                 'abj404-view-updater-client-build-registry'));
+        $enq('abj404-view-updater-canary-cooldown',
+            $vuBase . 'view_updater_canary_cooldown.js',
+            array('abj404-view-updater-client-build-registry'));
         $enq('abj404-view-updater-canary-ladder',
             $vuBase . 'view_updater_canary_ladder.js',
             array('jquery', 'abj404-view-updater-nonce-refresh',
-                'abj404-view-updater-client-telemetry-store',
+                'abj404-view-updater-canary-cooldown',
                 'abj404-view-updater-client-telemetry-env',
                 'abj404-view-updater-transport-telemetry',
                 'abj404-view-updater-canary-measurements',
@@ -379,9 +382,14 @@ class ABJ_404_Solution_AdminAssetEnqueuer {
         ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-view-updater-client-tab-identity',
             ABJ404_URL . 'includes/ajax/view_updater_client_tab_identity.js',
             array('abj404-view-updater-client-build-registry'));
+        ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-view-updater-client-attempt-buffer',
+            ABJ404_URL . 'includes/ajax/view_updater_client_attempt_buffer.js',
+            array('abj404-view-updater-client-build-registry'));
         ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-view-updater-client-telemetry-store',
             ABJ404_URL . 'includes/ajax/view_updater_client_telemetry_store.js',
-            array('abj404-view-updater-client-tab-identity', 'abj404-view-updater-client-build-registry'));
+            array('abj404-view-updater-client-tab-identity',
+                'abj404-view-updater-client-attempt-buffer',
+                'abj404-view-updater-client-build-registry'));
         ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-support-request-client',
             ABJ404_URL . 'includes/ajax/SupportRequest.js',
             array('abj404-view-updater-client-telemetry-store', 'abj404-view-updater-client-build-registry'));

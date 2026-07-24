@@ -73,7 +73,9 @@ final class ABJ_404_Solution_ClientTransportReport {
             $inflight = (string)$reader->getPostOrGetSanitize('clientInflight', '');
             $tabs = (string)$reader->getPostOrGetSanitize('clientTabs', '');
             $foreignInflight = (string)$reader->getPostOrGetSanitize('clientForeignInflight', '');
-            if ($build !== '' || $inflight !== '' || $tabs !== '' || $foreignInflight !== '') {
+            $storageHealth = (string)$reader->getPostOrGetSanitize('clientStorageHealth', '');
+            if ($build !== '' || $inflight !== '' || $tabs !== '' || $foreignInflight !== '' ||
+                    $storageHealth !== '') {
                 // What the client said about ITSELF at send time: which
                 // JavaScript is executing, how many other plugin requests that
                 // tab already had open, how many admin tabs of the page are
@@ -99,6 +101,7 @@ final class ABJ_404_Solution_ClientTransportReport {
                             // are different findings about the client.
                             'open_tabs' => self::signedCountOrNull($tabs),
                             'foreign_inflight' => self::signedCountOrNull($foreignInflight),
+                            'storage_health' => self::parseStorageHealth($storageHealth),
                         )
                     )
                 );
@@ -130,6 +133,38 @@ final class ABJ_404_Solution_ClientTransportReport {
      */
     private static function signedCountOrNull(string $raw): ?int {
         return preg_match('/^-?\d{1,9}$/', $raw) === 1 ? (int)$raw : null;
+    }
+
+    /**
+     * The browser storage adapter's bounded health result. Rebuild the shape
+     * field by field because this is untrusted request data; malformed input
+     * remains a positive "unparseable" finding rather than blocking the table.
+     *
+     * @return array<string, mixed>
+     */
+    private static function parseStorageHealth(string $raw): array {
+        if ($raw === '') {
+            return array('status' => 'absent', 'raw_length' => 0);
+        }
+        $decoded = json_decode(substr($raw, 0, 512), true);
+        if (!is_array($decoded)) {
+            return array('status' => 'unparseable', 'raw_length' => strlen($raw));
+        }
+        $status = isset($decoded['status']) && is_scalar($decoded['status'])
+            ? (string)$decoded['status'] : 'unknown';
+        $quota = isset($decoded['quota']) && is_scalar($decoded['quota'])
+            ? (string)$decoded['quota'] : 'unknown';
+        $fallback = isset($decoded['fallback']) && is_scalar($decoded['fallback'])
+            ? (string)$decoded['fallback'] : 'memory';
+        return array(
+            'status' => in_array($status, array('available', 'unavailable'), true) ? $status : 'unknown',
+            'accessible' => is_bool($decoded['accessible'] ?? null) ? $decoded['accessible'] : null,
+            'writable' => is_bool($decoded['writable'] ?? null) ? $decoded['writable'] : null,
+            'quota' => in_array($quota, array('ok', 'exceeded', 'unknown'), true) ? $quota : 'unknown',
+            'last_write_ok' => is_bool($decoded['last_write_ok'] ?? null)
+                ? $decoded['last_write_ok'] : null,
+            'fallback' => in_array($fallback, array('none', 'memory'), true) ? $fallback : 'memory',
+        );
     }
 
     /**

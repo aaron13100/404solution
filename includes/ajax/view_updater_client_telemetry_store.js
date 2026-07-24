@@ -8,11 +8,10 @@
  * so every other telemetry module stays stateless with respect to persistence
  * and there is exactly one place where a quota or policy failure is handled.
  *
- * It owns two durable surfaces: the per-tab ring buffer of attempt records and
- * the adaptive canary ladder's per-origin cooldown marker. The tab's identity
- * (view_updater_client_tab_identity.js) and the cross-tab presence registry
- * (view_updater_client_tab_presence.js) are separate modules it reads: this
- * one keys and bounds buffers, they answer who and how many.
+ * The tab's identity (view_updater_client_tab_identity.js) and the cross-tab
+ * presence registry (view_updater_client_tab_presence.js) are separate
+ * modules it reads: this one keys and bounds buffers, they answer who and how
+ * many.
  *
  * ONE BUFFER PER TAB, never one shared buffer. localStorage is shared by every
  * same-origin tab, and a shared key written with the obvious
@@ -67,9 +66,6 @@
     /** One attempt buffer per tab, suffixed with that tab's session id. */
     var TAB_KEY_PREFIX = 'abj404:client_transport_telemetry:tab:';
 
-    /** Last-run timestamp for the adaptive canary ladder (Bruno matrix req. 7). */
-    var CANARY_LADDER_KEY = 'abj404:canary_ladder_last_run';
-
     /**
      * Attempt buffers kept for the whole origin. Every tab that is opened and
      * closed leaves one behind (a closed tab cannot clean up after itself), so
@@ -116,21 +112,46 @@
     /**
      * @param {string} key
      * @param {{records: Array<object>}} state
-     * @returns {boolean} true when the state reached storage.
+     * @returns {{stored: boolean, persisted: boolean, health: object}}
      */
     function writeStateAt(key, state) {
         var buffer = global.abj404ClientAttemptBuffer;
         if (!buffer || typeof buffer.write !== 'function') {
-            return false;
+            return {
+                stored: false,
+                persisted: false,
+                health: unavailableStorageHealth()
+            };
         }
-        var written = buffer.write(key, state);
-        if (!written) {
+        var result = buffer.write(key, state);
+        if (!result.persisted && result.health && result.health.quota === 'exceeded') {
             // The write failed with the buffer already at its own bound, so
             // the space it is competing with is the buffers left behind by
             // tabs that are gone. Reclaim the least valuable one and retry.
-            written = reapAbandonedBuffers(1) > 0 && buffer.write(key, state);
+            if (reapAbandonedBuffers(1) > 0) {
+                result = buffer.write(key, state);
+            }
         }
-        return written;
+        return result;
+    }
+
+    /** @returns {object} */
+    function unavailableStorageHealth() {
+        return {
+            status: 'unavailable',
+            accessible: false,
+            writable: false,
+            quota: 'unknown',
+            last_write_ok: false,
+            fallback: 'memory'
+        };
+    }
+
+    /** @returns {object} */
+    function storageHealth() {
+        var buffer = global.abj404ClientAttemptBuffer;
+        return buffer && typeof buffer.health === 'function'
+            ? buffer.health(ownBufferKey()) : unavailableStorageHealth();
     }
 
     /** @returns {{v: number, t: number, records: Array<object>}} an empty buffer state. */
@@ -302,6 +323,7 @@
         if (!record || typeof record !== 'object') {
             return false;
         }
+        record.storage_health = storageHealth();
         announceThisTab();
         var key = ownBufferKey();
         var state = readOwnState();
@@ -319,9 +341,10 @@
         if (!replaced) {
             state.records.push(record);
         }
-        var written = writeStateAt(key, state);
+        var result = writeStateAt(key, state);
+        record.storage_health = result.health;
         enforceBufferBudget();
-        return written;
+        return result.stored;
     }
 
     /**
@@ -359,6 +382,10 @@
      */
     function drainAll() {
         var sources = [LEGACY_KEY].concat(keysWithPrefix(TAB_KEY_PREFIX));
+        var own = ownBufferKey();
+        if (sources.indexOf(own) < 0) {
+            sources.push(own);
+        }
         var records = [];
         for (var i = 0; i < sources.length; i++) {
             var state = readStateAt(sources[i]);
@@ -392,76 +419,25 @@
      */
     function clear() {
         var store = storage();
-        if (store === null) {
-            return;
-        }
         var keys = [LEGACY_KEY].concat(keysWithPrefix(TAB_KEY_PREFIX));
+        var own = ownBufferKey();
+        if (keys.indexOf(own) < 0) {
+            keys.push(own);
+        }
         for (var i = 0; i < keys.length; i++) {
-            try {
-                store.removeItem(keys[i]);
-            } catch (removeError) {
-                warn('could not clear the transport telemetry buffer ' + keys[i], removeError);
+            if (store !== null) {
+                try {
+                    store.removeItem(keys[i]);
+                } catch (removeError) {
+                    warn('could not clear the transport telemetry buffer ' + keys[i], removeError);
+                }
+            }
+            var buffer = global.abj404ClientAttemptBuffer;
+            if (buffer && typeof buffer.clearMemory === 'function') {
+                buffer.clearMemory(keys[i]);
             }
         }
     }
-
-
-    /**
-     * Whether the adaptive canary ladder is allowed to run right now: at
-     * most once per cooldown window per browser (a same-origin proxy for
-     * "per site" -- localStorage is already scoped to this origin). Fails
-     * CLOSED (never eligible) when storage is unavailable, since without a
-     * durable "already ran" marker every table failure would re-trigger the
-     * ladder, turning a rate-limited diagnostic into an unbounded one.
-     *
-     * @param {number} nowMsValue
-     * @param {number} cooldownMs
-     * @returns {boolean}
-     */
-    function canaryLadderEligible(nowMsValue, cooldownMs) {
-        var store = storage();
-        if (store === null) {
-            return false;
-        }
-        try {
-            var raw = store.getItem(CANARY_LADDER_KEY);
-            if (raw === null) {
-                return true;
-            }
-            var lastRun = parseInt(raw, 10);
-            if (!isFinite(lastRun) || isNaN(lastRun)) {
-                return true;
-            }
-            return (nowMsValue - lastRun) >= cooldownMs;
-        } catch (readError) {
-            warn('could not read the canary ladder cooldown marker', readError);
-            return false;
-        }
-    }
-
-    /**
-     * Record that the ladder just ran, starting a fresh cooldown window.
-     * Called immediately before the ladder's first request goes out (not
-     * after it finishes) so a burst of near-simultaneous table failures
-     * cannot each see "eligible" and each start their own ladder run.
-     *
-     * @param {number} nowMsValue
-     * @returns {boolean} true when the marker was persisted.
-     */
-    function markCanaryLadderRan(nowMsValue) {
-        var store = storage();
-        if (store === null) {
-            return false;
-        }
-        try {
-            store.setItem(CANARY_LADDER_KEY, String(nowMsValue));
-            return true;
-        } catch (writeError) {
-            warn('could not persist the canary ladder cooldown marker', writeError);
-            return false;
-        }
-    }
-
 
     /** @returns {number} the per-buffer record ceiling the buffer module enforces. */
     function maxRecords() {
@@ -474,12 +450,10 @@
         takeUndelivered: takeUndelivered,
         drainAll: drainAll,
         clear: clear,
-        canaryLadderEligible: canaryLadderEligible,
-        markCanaryLadderRan: markCanaryLadderRan,
+        storageHealth: storageHealth,
         LEGACY_KEY: LEGACY_KEY,
         TAB_KEY_PREFIX: TAB_KEY_PREFIX,
         MAX_RECORDS: maxRecords(),
-        MAX_TAB_BUFFERS: MAX_TAB_BUFFERS,
-        CANARY_LADDER_KEY: CANARY_LADDER_KEY
+        MAX_TAB_BUFFERS: MAX_TAB_BUFFERS
     };
 } /* abj404-client-module:end */));

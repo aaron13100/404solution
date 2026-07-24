@@ -40,6 +40,48 @@
      */
     var MAX_BYTES = 48000;
 
+    /** Page-lifetime fallback states, keyed exactly like their localStorage counterparts. */
+    var memoryStates = {};
+
+    /** Most recent round-trip storage result for this page. */
+    var lastStorageHealth = unavailableHealth(false, 'unknown');
+
+    /**
+     * @param {boolean} accessible
+     * @param {string} quota
+     * @returns {object}
+     */
+    function unavailableHealth(accessible, quota) {
+        return {
+            status: 'unavailable',
+            accessible: accessible,
+            writable: false,
+            quota: quota,
+            last_write_ok: false,
+            fallback: 'memory'
+        };
+    }
+
+    /** @returns {object} */
+    function availableHealth() {
+        return {
+            status: 'available',
+            accessible: true,
+            writable: true,
+            quota: 'ok',
+            last_write_ok: true,
+            fallback: 'none'
+        };
+    }
+
+    /** @param {*} error @returns {string} */
+    function quotaState(error) {
+        var name = error && typeof error.name === 'string' ? error.name : '';
+        var code = error && typeof error.code === 'number' ? error.code : 0;
+        return name === 'QuotaExceededError' || name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
+            code === 22 || code === 1014 ? 'exceeded' : 'unknown';
+    }
+
     /**
      * @param {string} message
      * @param {*} error
@@ -63,9 +105,37 @@
         } catch (accessError) {
             // Reading window.localStorage itself throws when storage is
             // blocked by policy (third-party-cookie style restrictions).
+            lastStorageHealth = unavailableHealth(false, 'unknown');
             warn('localStorage is unavailable for transport telemetry', accessError);
             return null;
         }
+    }
+
+    /**
+     * Prove storage can round-trip a value now. Access alone is insufficient:
+     * private mode and full quotas commonly expose localStorage but reject
+     * setItem(), while a corrupt adapter can accept a write but fail its read.
+     *
+     * @param {string} key
+     * @returns {object}
+     */
+    function storageHealthAt(key) {
+        var store = storage();
+        if (store === null) {
+            return lastStorageHealth;
+        }
+        var probeKey = key + ':health_probe';
+        try {
+            store.setItem(probeKey, '1');
+            var roundTrip = store.getItem(probeKey);
+            store.removeItem(probeKey);
+            lastStorageHealth = roundTrip === '1'
+                ? availableHealth() : unavailableHealth(true, 'unknown');
+        } catch (probeError) {
+            lastStorageHealth = unavailableHealth(true, quotaState(probeError));
+            warn('localStorage failed the transport telemetry health check', probeError);
+        }
+        return lastStorageHealth;
     }
 
     /** @returns {{v: number, t: number, records: Array<object>}} */
@@ -82,6 +152,9 @@
      * @returns {{v: number, t: number, records: Array<object>}|null}
      */
     function readStateAt(key) {
+        if (Object.prototype.hasOwnProperty.call(memoryStates, key)) {
+            return memoryStates[key];
+        }
         var store = storage();
         if (store === null) {
             return null;
@@ -182,28 +255,42 @@
      *
      * @param {string} key
      * @param {{records: Array<object>}} state
-     * @returns {boolean} true when the state reached storage.
+     * @returns {{stored: boolean, persisted: boolean, health: object}}
      */
     function writeStateAt(key, state) {
+        var reconciled = reconcileWithStored(key, state);
+        var serialized = trimToCapacity(reconciled);
+        var health = storageHealthAt(key);
         var store = storage();
-        if (store === null) {
-            return false;
+        if (store === null || health.status !== 'available') {
+            memoryStates[key] = reconciled;
+            return { stored: true, persisted: false, health: health };
         }
         try {
-            store.setItem(key, trimToCapacity(reconcileWithStored(key, state)));
-            return true;
+            store.setItem(key, serialized);
+            delete memoryStates[key];
+            lastStorageHealth = availableHealth();
+            return { stored: true, persisted: true, health: lastStorageHealth };
         } catch (writeError) {
             // Quota exhaustion and private-mode write blocks both land here.
+            lastStorageHealth = unavailableHealth(true, quotaState(writeError));
+            memoryStates[key] = reconciled;
             warn('could not persist a transport telemetry record', writeError);
-            return false;
+            return { stored: true, persisted: false, health: lastStorageHealth };
         }
     }
 
+    /** @param {string} key @returns {void} */
+    function clearMemoryAt(key) {
+        delete memoryStates[key];
+    }
 
     global.abj404ClientAttemptBuffer = {
         read: readStateAt,
         write: writeStateAt,
         empty: emptyState,
+        health: storageHealthAt,
+        clearMemory: clearMemoryAt,
         MAX_RECORDS: MAX_RECORDS
     };
 } /* abj404-client-module:end */));

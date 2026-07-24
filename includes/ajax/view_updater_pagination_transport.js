@@ -158,6 +158,9 @@ function abj404PaginationAttemptData(req, part, attemptIndex, record, parentAtte
     if (typeof record.foreignInflightAtSend === 'number') {
         data.clientForeignInflight = String(record.foreignInflightAtSend);
     }
+    if (record.storage_health && typeof record.storage_health === 'object') {
+        data.clientStorageHealth = JSON.stringify(record.storage_health).slice(0, 512);
+    }
     var priorReport = abj404PaginationTelemetryDelivery().priorReportParam();
     if (priorReport !== '') {
         data.clientReport = priorReport;
