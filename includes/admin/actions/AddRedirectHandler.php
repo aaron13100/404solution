@@ -62,7 +62,6 @@ class ABJ_404_Solution_AddRedirectHandler implements ABJ_404_Solution_AdminActio
      */
     public function addAdminRedirect(): string {
         $message = "";
-        $f = $this->parent->getFunctions();
         $urlNormalization = $this->parent->getUrlNormalization();
         $redirectsRepo = $this->parent->getRedirectsRepo();
         $logger = $this->parent->getLogger();
@@ -72,20 +71,14 @@ class ABJ_404_Solution_AddRedirectHandler implements ABJ_404_Solution_AdminActio
             return $message;
         }
 
-        $manualURL = isset($_POST['manual_redirect_url']) ? wp_unslash($_POST['manual_redirect_url']) : '';
-        $manualURL = $urlNormalization->normalizeUserProvidedPath($manualURL);
-        if ($f->substr($manualURL, 0, 1) != "/") {
-            $message .= __('Error: URL must start with /', '404-solution') . "<BR/>";
-            return $message;
-        }
-
         $statusType = ABJ404_STATUS_MANUAL;
         if (isset($_POST['is_regex_url']) && $_POST['is_regex_url'] != '0') {
             $statusType = ABJ404_STATUS_REGEX;
         }
 
-        $originalManualURL = $manualURL;
-        $autoPromoteAdd = $this->resolver->maybeAutoPromoteRegex($statusType, $manualURL);
+        $postedManualURL = $this->postedManualUrl();
+        $originalManualURL = $urlNormalization->sanitizeRedirectSource($postedManualURL);
+        $autoPromoteAdd = $this->resolver->resolveSource($statusType, $originalManualURL);
         $statusType = $autoPromoteAdd['statusType'];
         $manualURL = $autoPromoteAdd['url'];
 
@@ -125,5 +118,14 @@ class ABJ_404_Solution_AddRedirectHandler implements ABJ_404_Solution_AdminActio
         }
 
         return $message;
+    }
+
+    private function postedManualUrl(): string {
+        if (!isset($_POST['manual_redirect_url']) || !is_scalar($_POST['manual_redirect_url'])) {
+            return '';
+        }
+
+        $unslashed = wp_unslash((string)$_POST['manual_redirect_url']);
+        return is_string($unslashed) ? $unslashed : '';
     }
 }

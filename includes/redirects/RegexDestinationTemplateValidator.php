@@ -13,14 +13,19 @@ if (!defined('ABSPATH')) {
  */
 class ABJ_404_Solution_RegexDestinationTemplateValidator {
 
-    /** @var ABJ_404_Solution_Functions */
-    private $functions;
+    /** @var ABJ_404_Solution_RegexSourcePatternValidator */
+    private $sourceValidator;
 
     /**
      * @param ABJ_404_Solution_Functions $functions
      */
-    public function __construct($functions) {
-        $this->functions = $functions;
+    public function __construct(
+        $functions,
+        ?ABJ_404_Solution_RegexSourcePatternValidator $sourceValidator = null
+    ) {
+        $this->sourceValidator = $sourceValidator !== null
+            ? $sourceValidator
+            : new ABJ_404_Solution_RegexSourcePatternValidator($functions);
     }
 
     /**
@@ -85,12 +90,9 @@ class ABJ_404_Solution_RegexDestinationTemplateValidator {
             );
         }
 
-        $compileError = $this->regexCompileError($sourcePattern);
-        if ($compileError !== '') {
-            return $this->invalid(
-                __('Error: Source regular expression is invalid.', '404-solution'),
-                $compileError
-            );
+        $sourceValidation = $this->validateSourcePattern($sourcePattern);
+        if (!$sourceValidation['valid']) {
+            return $sourceValidation;
         }
 
         $tokenResult = $this->replacementTokens($destination);
@@ -120,29 +122,25 @@ class ABJ_404_Solution_RegexDestinationTemplateValidator {
         return array('valid' => true, 'message' => '', 'detail' => '');
     }
 
-    private function containsControlCharacters(string $value): bool {
-        return preg_match('/[\x00-\x1F\x7F]/', $value) === 1;
+    /**
+     * Validate the source independently of destination type so selecting an
+     * internal page cannot bypass regex compilation checks.
+     *
+     * @return array{valid: bool, message: string, detail: string}
+     */
+    public function validateSourcePattern(string $sourcePattern): array {
+        $validation = $this->sourceValidator->validate($sourcePattern);
+        if (!$validation['valid']) {
+            return $this->invalid(
+                __('Error: Source regular expression is invalid.', '404-solution'),
+                $validation['detail']
+            );
+        }
+        return array('valid' => true, 'message' => '', 'detail' => '');
     }
 
-    private function regexCompileError(string $pattern): string {
-        if ($pattern === '') {
-            return '';
-        }
-
-        $warning = '';
-        set_error_handler(static function($severity, $message) use (&$warning) {
-            $warning = $message;
-            return true;
-        });
-        try {
-            $this->functions->regexMatch($pattern, '');
-        } catch (Throwable $error) {
-            $warning = $error->getMessage();
-        } finally {
-            restore_error_handler();
-        }
-
-        return $warning;
+    private function containsControlCharacters(string $value): bool {
+        return preg_match('/[\x00-\x1F\x7F]/', $value) === 1;
     }
 
     /**

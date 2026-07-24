@@ -127,12 +127,48 @@ class ABJ_404_Solution_PluginLogicUrlNormalization {
      * @return string
      */
     function normalizeUserProvidedPath($url) {
-        $url = abj_service('sanitizer')->normalizeUrlString($url);
+        $url = $this->sanitizeRedirectSource($url);
         if ($url === '') {
             return '';
         }
 
         return $this->normalizeToRelativePath($url);
+    }
+
+    /**
+     * Sanitize a redirect source without imposing ordinary URL-path syntax.
+     *
+     * Regex patterns must retain leading anchors and other metacharacters, so
+     * callers deciding whether a source is regex use this before applying any
+     * path normalization.
+     *
+     * @param string|null $url
+     * @return string
+     */
+    function sanitizeRedirectSource($url): string {
+        return abj_service('sanitizer')->normalizeUrlString($url);
+    }
+
+    /**
+     * Normalize a redirect source according to its persisted status.
+     *
+     * Ordinary redirects match canonical site-relative paths. Regex redirects
+     * are programs, not paths: adding, removing, or collapsing slashes changes
+     * their meaning (for example ^/ becomes /^/ and can never match).
+     *
+     * @param string|null $url
+     * @param int|string $status
+     * @return string
+     */
+    function normalizeRedirectSourceForStatus($url, $status): string {
+        $source = $this->sanitizeRedirectSource($url);
+        if ($source === '') {
+            return '';
+        }
+        if ((int)$status === ABJ404_STATUS_REGEX) {
+            return $source;
+        }
+        return $this->normalizeToRelativePath($source);
     }
 
     /**

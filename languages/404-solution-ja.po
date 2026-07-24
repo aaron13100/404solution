@@ -4187,3 +4187,55 @@ msgstr "このサイトの診断レポートは%sです。このサイト用に�
 
 msgid "When checked, the text is treated as a regular expression. Note that including a bad regular expression or one that takes too long will break your website. So please use caution and test them elsewhere before trying them here. If you don't know what you're doing please don't use this option (as it's not necessary for the functioning of the plugin)."
 msgstr "チェックすると、テキストは正規表現として扱われます。不正な正規表現や処理に時間がかかりすぎる正規表現は、サイトが正常に動作しなくなる原因になることに注意してください。ここで試す前に、必ず別の場所で慎重にテストしてください。自分が何をしているのか分からない場合は、このオプションを使用しないでください（プラグインの動作に必須ではありません）。"
+
+# translation-verified: en-fallback awaiting native pass
+msgid "/events/(.+) will match any URL that begins with /events/. Use $1 in the destination to insert the captured text. Site-relative paths such as /archive/$1 and full HTTP(S) URLs are supported."
+msgstr "/events/(.+) will match any URL that begins with /events/. Use $1 in the destination to insert the captured text. Site-relative paths such as /archive/$1 and full HTTP(S) URLs are supported."
+
+# translation-verified: en-fallback awaiting native pass
+msgid "Use $1 in the destination to insert the captured text. Site-relative paths such as /archive/$1 and full HTTP(S) URLs are supported."
+msgstr "Use $1 in the destination to insert the captured text. Site-relative paths such as /archive/$1 and full HTTP(S) URLs are supported."
+
+# translation-verified: en-fallback awaiting native pass
+msgid "Error: Regex destination contains control characters."
+msgstr "Error: Regex destination contains control characters."
+
+# translation-verified: en-fallback awaiting native pass
+msgid "Error: Regex destination must be an HTTP(S) URL or a site-relative path starting with /."
+msgstr "Error: Regex destination must be an HTTP(S) URL or a site-relative path starting with /."
+
+# translation-verified: en-fallback awaiting native pass
+msgid "Error: A site-relative regex destination must start with a single /. URLs beginning with // are not allowed."
+msgstr "Error: A site-relative regex destination must start with a single /. URLs beginning with // are not allowed."
+
+# translation-verified: en-fallback awaiting native pass
+msgid "Error: Regex destination must not contain spaces. Use URL encoding such as %20 instead."
+msgstr "Error: Regex destination must not contain spaces. Use URL encoding such as %20 instead."
+
+# translation-verified: en-fallback awaiting native pass
+msgid "Error: Regex destination contains invalid percent encoding."
+msgstr "Error: Regex destination contains invalid percent encoding."
+
+# translation-verified: en-fallback awaiting native pass
+msgid "Error: Regex destination contains characters that are not safe in a redirect URL."
+msgstr "Error: Regex destination contains characters that are not safe in a redirect URL."
+
+# translation-verified: en-fallback awaiting native pass
+msgid "Error: Regex destination must not contain . or .. path segments."
+msgstr "Error: Regex destination must not contain . or .. path segments."
+
+# translation-verified: en-fallback awaiting native pass
+msgid "Error: Source regular expression is invalid."
+msgstr "Error: Source regular expression is invalid."
+
+# translation-verified: en-fallback awaiting native pass
+msgid "Error: Regex destination contains unsupported replacement syntax. Use $1, $2, and so on."
+msgstr "Error: Regex destination contains unsupported replacement syntax. Use $1, $2, and so on."
+
+# translation-verified: en-fallback awaiting native pass
+msgid "Error: Relative regex destinations support numbered capture groups written as (...). Named and branch-reset groups are not supported."
+msgstr "Error: Relative regex destinations support numbered capture groups written as (...). Named and branch-reset groups are not supported."
+
+# translation-verified: en-fallback awaiting native pass
+msgid "Error: Regex destination references $%1$d, but the source pattern defines %2$d capture group(s)."
+msgstr "Error: Regex destination references $%1$d, but the source pattern defines %2$d capture group(s)."

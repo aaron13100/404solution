@@ -100,6 +100,10 @@ class ABJ_404_Solution_RedirectWriteService {
         $statusAsInt = is_numeric($status) ? absint($status) : -1;
         $typeAsInt = is_numeric($type) ? absint($type) : -1;
 
+        if ($statusAsInt === ABJ404_STATUS_REGEX && !$this->regexSourceIsValid($fromURL)) {
+            return 0;
+        }
+
         if ($statusAsInt === ABJ404_STATUS_AUTO &&
                 !$this->isValidAutomaticRedirectDestination($typeAsInt, $finalDest)) {
             $this->logger->debugMessage("Skipping automatic redirect with invalid destination. " .
@@ -113,7 +117,7 @@ class ABJ_404_Solution_RedirectWriteService {
         if (!abj_service('request_context')->ignore_doprocess) {
             $now = abj_clock()->now();
             $redirectsTable = $this->dbCore->doTableNameReplacements("{wp_abj404_redirects}");
-            $fromURL = $this->urlNormalization()->normalizeToRelativePath($fromURL);
+            $fromURL = $this->urlNormalization()->normalizeRedirectSourceForStatus($fromURL, $statusAsInt);
 
             $insertData = array(
                 'url' => $fromURL,
@@ -243,14 +247,23 @@ class ABJ_404_Solution_RedirectWriteService {
             return 'bad_update_request';
         }
 
+        $statusType = $update->getStatusType();
+        if ((int)$statusType === ABJ404_STATUS_REGEX && !$this->regexSourceIsValid($update->getFromUrl())) {
+            return 'invalid_regex_source';
+        }
+
         $startTs = $update->getStartTs();
         $endTs = $update->getEndTs();
+        $fromUrl = $this->urlNormalization()->normalizeRedirectSourceForStatus(
+            $update->getFromUrl(),
+            $statusType
+        );
 
         $redirectsTable = $this->dbCore->doTableNameReplacements("{wp_abj404_redirects}");
 
         $updateData = array(
-            'url' => $update->getFromUrl(),
-            'status' => $update->getStatusType(),
+            'url' => $fromUrl,
+            'status' => $statusType,
             'type' => absint($type),
             'final_dest' => $update->getDestination(),
             'code' => esc_attr($update->getCode()),
@@ -311,6 +324,18 @@ class ABJ_404_Solution_RedirectWriteService {
         $this->recomputeDenormColumns(array(absint($idForUpdate)));
 
         return '';
+    }
+
+    private function regexSourceIsValid(string $source): bool {
+        $validator = new ABJ_404_Solution_RegexSourcePatternValidator($this->f);
+        $validation = $validator->validate($source);
+        if ($validation['valid']) {
+            return true;
+        }
+
+        $detail = $validation['detail'] !== '' ? ' ' . $validation['detail'] : '';
+        $this->logger->warn('Invalid regex source pattern.' . $detail);
+        return false;
     }
 
     /**
@@ -433,34 +458,14 @@ class ABJ_404_Solution_RedirectWriteService {
             return true;
         }
         $redirectsTable = $this->dbCore->doTableNameReplacements("{wp_abj404_redirects}");
-        // @utf8-audit: opt-out - redirectsTableHasColumn probes an internally resolved plugin table name.
-        $result = $this->dbCore->queryAndGetResults(
-            "SHOW COLUMNS FROM `" . esc_sql($redirectsTable) . "`",
-            array('log_errors' => false, 'log_too_slow' => false)
+        $columns = $this->dbCore->tableNameResolver()->getTableColumnNames($redirectsTable);
+        if ($columns === array()) {
+            return true;
+        }
+        $this->redirectsTableColumnsCache = array_fill_keys(
+            array_map('strtolower', $columns),
+            true
         );
-        $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
-        if ($rows === array()) {
-            return true;
-        }
-        $primed = array();
-        foreach ($rows as $row) {
-            if (!is_array($row)) {
-                continue;
-            }
-            foreach ($row as $field => $value) {
-                if (strtolower((string)$field) !== 'field') {
-                    continue;
-                }
-                if (!is_scalar($value)) {
-                    continue;
-                }
-                $primed[strtolower((string)$value)] = true;
-            }
-        }
-        if ($primed === array()) {
-            return true;
-        }
-        $this->redirectsTableColumnsCache = $primed;
         return isset($this->redirectsTableColumnsCache[$key]);
     }
 

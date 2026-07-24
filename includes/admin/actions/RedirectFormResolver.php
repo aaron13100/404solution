@@ -84,6 +84,14 @@ class ABJ_404_Solution_RedirectFormResolver {
         $sourcePattern = isset($context['sourcePattern']) && is_string($context['sourcePattern'])
             ? $context['sourcePattern'] : '';
 
+        if ($isRegex && $sourcePattern !== '') {
+            $sourceValidation = $this->regexDestinationValidator->validateSourcePattern($sourcePattern);
+            if (!$sourceValidation['valid']) {
+                $response['message'] = $this->regexValidationMessage($sourceValidation);
+                return $response;
+            }
+        }
+
         $postedCode = isset($_POST['code']) && is_scalar($_POST['code']) ? (string)$_POST['code'] : '';
         if ($postedCode === '410' || $postedCode === '451') {
             $response['type'] = (string)ABJ404_TYPE_HOME;
@@ -209,6 +217,24 @@ class ABJ_404_Solution_RedirectFormResolver {
             $this->logger->warn('Regex redirect validation failed: ' . $validation['detail']);
         }
         return $validation['message'] . "<BR/>";
+    }
+
+    /**
+     * Sanitize, classify, and normalize a redirect source without allowing
+     * ordinary path normalization to alter regex syntax.
+     *
+     * @param int $statusTypeIn
+     * @param string $fromURL
+     * @return array{statusType: int, url: string, autoPromoted: bool, urlRewritten: bool}
+     */
+    public function resolveSource($statusTypeIn, $fromURL): array {
+        $source = $this->urlNormalization->sanitizeRedirectSource($fromURL);
+        $result = $this->maybeAutoPromoteRegex($statusTypeIn, $source);
+        $result['url'] = $this->urlNormalization->normalizeRedirectSourceForStatus(
+            $result['url'],
+            $result['statusType']
+        );
+        return $result;
     }
 
     /**
