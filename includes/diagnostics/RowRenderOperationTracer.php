@@ -142,7 +142,7 @@ final class ABJ_404_Solution_RowRenderOperationTracer {
                         && $callback === $this->hookWrappers[$mapKey]['wrapper']) {
                     continue;
                 }
-                $identity = self::callbackIdentity($callback);
+                $identity = ABJ_404_Solution_HookCallbackIdentity::describe($callback);
                 if ($identity['has_reference']) {
                     $this->recordUnsafeHookOnce($hookName, $identity);
                     continue;
@@ -151,7 +151,7 @@ final class ABJ_404_Solution_RowRenderOperationTracer {
                     return $this->trace(
                         array(
                             'kind' => 'hook',
-                            'hook' => self::redactedName($hookName, 'hook'),
+                            'hook' => ABJ_404_Solution_HookCallbackIdentity::hookName($hookName),
                             'callback' => $identity['callback'],
                             'source' => $identity['source'],
                         ),
@@ -228,7 +228,7 @@ final class ABJ_404_Solution_RowRenderOperationTracer {
         $this->write('row_operation_unavailable', array(
             'kind' => 'hook',
             'reason' => 'callback_has_reference_parameter',
-            'hook' => self::redactedName($hookName, 'hook'),
+            'hook' => ABJ_404_Solution_HookCallbackIdentity::hookName($hookName),
             'callback' => $identity['callback'],
             'source' => $identity['source'],
         ), false);
@@ -294,74 +294,6 @@ final class ABJ_404_Solution_RowRenderOperationTracer {
         if ($this->cacheProxy !== null && ($GLOBALS['wp_object_cache'] ?? null) === $this->cacheProxy) {
             $GLOBALS['wp_object_cache'] = $this->originalCache;
         }
-    }
-
-    /**
-     * @param callable $callback
-     * @return array{callback: string, source: string, has_reference: bool}
-     */
-    private static function callbackIdentity(callable $callback): array {
-        $descriptor = 'callable';
-        $source = 'runtime';
-        $hasReference = false;
-        try {
-            if (is_array($callback)) {
-                $owner = is_object($callback[0]) ? get_class($callback[0]) : (string)$callback[0];
-                $descriptor = $owner . '::' . (string)$callback[1];
-                $reflection = new ReflectionMethod($callback[0], (string)$callback[1]);
-            } elseif (is_string($callback) && strpos($callback, '::') !== false) {
-                $descriptor = $callback;
-                $reflection = new ReflectionMethod($callback);
-            } elseif (is_string($callback)) {
-                $descriptor = $callback;
-                $reflection = new ReflectionFunction($callback);
-            } elseif ($callback instanceof Closure) {
-                $descriptor = 'closure';
-                $reflection = new ReflectionFunction($callback);
-            } elseif (is_object($callback)) {
-                $descriptor = get_class($callback) . '::__invoke';
-                $reflection = new ReflectionMethod($callback, '__invoke');
-            } else {
-                $reflection = new ReflectionFunction(Closure::fromCallable($callback));
-            }
-            foreach ($reflection->getParameters() as $parameter) {
-                $hasReference = $hasReference || $parameter->isPassedByReference();
-            }
-            $source = self::sourceIdentity((string)$reflection->getFileName());
-            $descriptor .= '|' . (string)$reflection->getStartLine() . '|' . $source;
-        } catch (Throwable $e) {
-            self::reportFailure(
-                'callback reflection failed (' . get_class($e) . '): ' . $e->getMessage()
-            );
-            $descriptor .= '|reflection-unavailable|' . get_class($e);
-            $source = 'unavailable';
-        }
-        return array(
-            'callback' => 'cb#' . substr(hash('sha256', $descriptor), 0, 12),
-            'source' => $source,
-            'has_reference' => $hasReference,
-        );
-    }
-
-    private static function sourceIdentity(string $file): string {
-        $normalized = str_replace('\\', '/', $file);
-        foreach (array('plugins' => 'plugin', 'mu-plugins' => 'mu', 'themes' => 'theme') as $part => $label) {
-            if (preg_match('#/wp-content/' . $part . '/([^/]+)#i', $normalized, $match) === 1) {
-                return $label . '#' . substr(hash('sha256', strtolower($match[1])), 0, 12);
-            }
-        }
-        if (strpos($normalized, '/wp-includes/') !== false || strpos($normalized, '/wp-admin/') !== false) {
-            return 'wordpress-core';
-        }
-        return $normalized === '' ? 'php-runtime'
-            : 'source#' . substr(hash('sha256', $normalized), 0, 12);
-    }
-
-    private static function redactedName(string $value, string $prefix): string {
-        if (preg_match('/^[A-Za-z_][A-Za-z0-9_.:-]{0,63}$/', $value) === 1) {
-            return preg_replace('/[0-9]+/', '#', $value) ?? '';
-        }
-        return $prefix . '#' . substr(hash('sha256', $value), 0, 12);
     }
 
     /** @param mixed $value */

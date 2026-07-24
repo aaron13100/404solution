@@ -249,15 +249,29 @@ class ABJ_404_Solution_PluginLogicOptionsResolver {
      * @return void
      */
     public function updateOptions(array $options): void {
-        $options = array_merge(ABJ_404_Solution_PluginLogicDefaults::defaults(), $options);
-        $options = ABJ_404_Solution_StorageOptionContracts::prepareForWrite(
-            ABJ_404_Solution_StorageOptionContracts::OPTION_SETTINGS,
-            $options
+        $options = ABJ_404_Solution_OptionPersistenceTracer::traceCurrent(
+            'options_normalization',
+            static function () use ($options): array {
+                $merged = array_merge(ABJ_404_Solution_PluginLogicDefaults::defaults(), $options);
+                return ABJ_404_Solution_StorageOptionContracts::prepareForWrite(
+                    ABJ_404_Solution_StorageOptionContracts::OPTION_SETTINGS,
+                    $merged
+                );
+            }
         );
-        update_option('abj404_settings', $options);
-        $this->rawCache = $options;
-        $this->resolvedSkipDbCheck = null;
-        $this->resolvedWithDbCheck = null;
+        ABJ_404_Solution_OptionPersistenceTracer::traceCurrentStorageWrite(
+            static function () use ($options): void {
+                update_option('abj404_settings', $options);
+            }
+        );
+        ABJ_404_Solution_OptionPersistenceTracer::traceCurrent(
+            'repository_cache_refresh',
+            function () use ($options): void {
+                $this->rawCache = $options;
+                $this->resolvedSkipDbCheck = null;
+                $this->resolvedWithDbCheck = null;
+            }
+        );
     }
 
     /**
