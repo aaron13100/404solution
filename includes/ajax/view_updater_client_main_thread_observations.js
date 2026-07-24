@@ -31,13 +31,13 @@
     var MAX_LONG_TASKS = 64;
     var MAX_LIFECYCLE_EVENTS = 40;
     var MAX_PAGE_ERRORS = 40;
+    var MAX_DRIFT_SAMPLES = 64;
     var DRIFT_SAMPLE_INTERVAL_MS = 1000;
 
     var longTasks = [];
     var lifecycleEvents = [];
     var pageErrors = [];
-    var driftMaxMs = 0;
-    var driftSamples = 0;
+    var driftHistory = [];
     var driftTimer = null;
     var observersInstalled = false;
     var longTaskObserverState = 'not-started';
@@ -196,9 +196,9 @@
             var actual = nowMs();
             var drift = Math.max(0, Math.round(actual - expected));
             expected = actual + DRIFT_SAMPLE_INTERVAL_MS;
-            driftSamples++;
-            if (drift > driftMaxMs) {
-                driftMaxMs = drift;
+            driftHistory.push({ t: Math.round(actual), ms: drift });
+            while (driftHistory.length > MAX_DRIFT_SAMPLES) {
+                driftHistory.shift();
             }
         }, DRIFT_SAMPLE_INTERVAL_MS);
     }
@@ -221,6 +221,7 @@
      * @returns {object}
      */
     function since(windowStart) {
+        var windowEnd = Math.round(nowMs());
         var tasks = 0;
         var totalMs = 0;
         var maxMs = 0;
@@ -241,6 +242,14 @@
         for (var k = 0; k < pageErrors.length; k++) {
             if (pageErrors[k].t >= windowStart) {
                 errors.push(pageErrors[k]);
+            }
+        }
+        var driftMaxMs = 0;
+        var driftSamples = 0;
+        for (var l = 0; l < driftHistory.length; l++) {
+            if (driftHistory[l].t >= windowStart && driftHistory[l].t <= windowEnd) {
+                driftSamples++;
+                driftMaxMs = Math.max(driftMaxMs, driftHistory[l].ms);
             }
         }
         return {
