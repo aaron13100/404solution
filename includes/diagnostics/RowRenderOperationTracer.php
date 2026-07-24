@@ -43,15 +43,13 @@ final class ABJ_404_Solution_RowRenderOperationTracer {
     /** @var bool */
     private $cappedRecorded = false;
     /** @var bool */
-    private $unsafeHookRecorded = false;
+    private $unavailableHookRecorded = false;
     /** @var object|null */
     private $originalCache;
     /** @var ABJ_404_Solution_InstrumentedObjectCache|null */
     private $cacheProxy;
-    /**
-     * @var array<string, array{hook: string, priority: int, id: string, original: callable, wrapper: callable}>
-     */
-    private $hookWrappers = array();
+    /** @var ABJ_404_Solution_HookCallbackInstrumenter<array{mode: string, record: array<string, mixed>}|null> */
+    private $hookInstrumenter;
 
     public static function begin(string $requestId): self {
         $tracer = new self($requestId);
@@ -61,12 +59,34 @@ final class ABJ_404_Solution_RowRenderOperationTracer {
 
     private function __construct(string $requestId) {
         $this->requestId = $requestId;
+        $this->hookInstrumenter = new ABJ_404_Solution_HookCallbackInstrumenter(
+            function (
+                string $registeredHook,
+                string $actualHook,
+                int $priority,
+                array $identity
+            ) {
+                return $this->beginHookCallback($actualHook, $priority, $identity);
+            },
+            function ($token): void {
+                $this->finishOperation($token);
+            }
+        );
     }
 
     private function install(): void {
         $hookBoundary = 'unavailable';
+        $allHookCounts = array(
+            'callbacks_wrapped' => 0,
+            'callbacks_marked' => 0,
+            'callbacks_unavailable' => 0,
+        );
         if (function_exists('add_filter') && is_array($GLOBALS['wp_filter'] ?? null)) {
             try {
+                $allHook = $GLOBALS['wp_filter']['all'] ?? null;
+                if (is_object($allHook)) {
+                    $allHookCounts = $this->hookInstrumenter->instrument('all', $allHook);
+                }
                 add_filter('all', array($this, 'prepareHookCallbacks'), PHP_INT_MIN, 1);
                 $hookBoundary = 'ready';
             } catch (Throwable $e) {
@@ -85,6 +105,11 @@ final class ABJ_404_Solution_RowRenderOperationTracer {
         $this->write('row_operation_instrumentation', array(
             'hook_boundary' => $hookBoundary,
             'cache_boundary' => $cacheBoundary,
+            'all_callbacks_wrapped' => $allHookCounts['callbacks_wrapped'],
+            'all_callbacks_marked' => $allHookCounts['callbacks_marked'],
+            'all_callbacks_attributed' => $allHookCounts['callbacks_wrapped']
+                + $allHookCounts['callbacks_marked'],
+            'all_callbacks_unavailable' => $allHookCounts['callbacks_unavailable'],
             'max_records' => self::MAX_OPERATION_RECORDS,
         ), false);
     }
@@ -125,50 +150,9 @@ final class ABJ_404_Solution_RowRenderOperationTracer {
             return $hookName;
         }
 
-        foreach ($hookObject as $priority => $entries) {
-            if (!is_array($entries)) {
-                continue;
-            }
-            foreach ($entries as $id => $entry) {
-                if (!is_array($entry)) {
-                    continue;
-                }
-                $callback = $entry['function'] ?? null;
-                if (!is_callable($callback)) {
-                    continue;
-                }
-                $mapKey = $hookName . '|' . (string)$priority . '|' . (string)$id;
-                if (isset($this->hookWrappers[$mapKey])
-                        && $callback === $this->hookWrappers[$mapKey]['wrapper']) {
-                    continue;
-                }
-                $identity = ABJ_404_Solution_HookCallbackIdentity::describe($callback);
-                if ($identity['has_reference']) {
-                    $this->recordUnsafeHookOnce($hookName, $identity);
-                    continue;
-                }
-                $wrapper = function (...$args) use ($hookName, $callback, $identity) {
-                    return $this->trace(
-                        array(
-                            'kind' => 'hook',
-                            'hook' => ABJ_404_Solution_HookCallbackIdentity::hookName($hookName),
-                            'callback' => $identity['callback'],
-                            'source' => $identity['source'],
-                        ),
-                        static fn() => call_user_func_array($callback, $args)
-                    );
-                };
-                $entry['function'] = $wrapper;
-                $entries[$id] = $entry;
-                $hookObject[$priority] = $entries;
-                $this->hookWrappers[$mapKey] = array(
-                    'hook' => $hookName,
-                    'priority' => (int)$priority,
-                    'id' => (string)$id,
-                    'original' => $callback,
-                    'wrapper' => $wrapper,
-                );
-            }
+        $counts = $this->hookInstrumenter->instrument($hookName, $hookObject);
+        if ($counts['callbacks_unavailable'] > 0) {
+            $this->recordUnavailableHookOnce($hookName, $counts['callbacks_unavailable']);
         }
         return $hookName;
     }
@@ -194,10 +178,47 @@ final class ABJ_404_Solution_RowRenderOperationTracer {
      * @return mixed
      */
     private function trace(array $fields, callable $work) {
-        if (!$this->rowActive || $this->suspended || $this->recording) {
+        $token = $this->beginOperation($fields);
+        if ($token === null) {
             return $work();
         }
+        try {
+            $result = $work();
+        } catch (Throwable $e) {
+            $this->suspended = true;
+            $this->restore(false);
+            throw $e;
+        }
+        $this->finishOperation($token);
+        return $result;
+    }
 
+    /**
+     * @param array{callback: string, source: string, has_reference: bool} $identity
+     * @return array{mode: string, record: array<string, mixed>}|null
+     */
+    private function beginHookCallback(
+        string $actualHook,
+        int $priority,
+        array $identity
+    ): ?array {
+        return $this->beginOperation(array(
+            'kind' => 'hook',
+            'hook' => ABJ_404_Solution_HookCallbackIdentity::hookName($actualHook),
+            'callback' => $identity['callback'],
+            'source' => $identity['source'],
+            'priority' => $priority,
+        ));
+    }
+
+    /**
+     * @param array<string, mixed> $fields
+     * @return array{mode: string, record: array<string, mixed>}|null
+     */
+    private function beginOperation(array $fields): ?array {
+        if (!$this->rowActive || $this->suspended || $this->recording) {
+            return null;
+        }
         $operationId = substr(hash(
             'sha256',
             $this->requestId . '|' . (++$this->operationSequence) . '|' . serialize($fields)
@@ -207,42 +228,39 @@ final class ABJ_404_Solution_RowRenderOperationTracer {
             $this->recordCappedOnce();
             ABJ_404_Solution_AjaxCheckpointLogger::recordActiveOperation(
                 $this->requestId, 'row_operation', 'active', $record);
-            try {
-                $result = $work();
-            } catch (Throwable $e) {
-                $this->suspended = true;
-                $this->restore();
-                throw $e;
-            }
-            ABJ_404_Solution_AjaxCheckpointLogger::recordActiveOperation(
-                $this->requestId, 'row_operation', 'complete', $record);
-            return $result;
+            return array('mode' => 'active', 'record' => $record);
         }
-
         $this->write('row_operation_start', $record, true);
-        try {
-            $result = $work();
-        } catch (Throwable $e) {
-            $this->suspended = true;
-            $this->restore();
-            throw $e;
-        }
-        $this->write('row_operation_end', $record, true);
-        return $result;
+        return array('mode' => 'journal', 'record' => $record);
     }
 
-    /** @param array{callback: string, source: string, has_reference: bool} $identity */
-    private function recordUnsafeHookOnce(string $hookName, array $identity): void {
-        if (!$this->rowActive || $this->unsafeHookRecorded) {
+    /** @param array{mode: string, record: array<string, mixed>}|null $token */
+    private function finishOperation($token): void {
+        if (!is_array($token)) {
             return;
         }
-        $this->unsafeHookRecorded = true;
+        if ($token['mode'] === 'active') {
+            ABJ_404_Solution_AjaxCheckpointLogger::recordActiveOperation(
+                $this->requestId,
+                'row_operation',
+                'complete',
+                $token['record']
+            );
+            return;
+        }
+        $this->write('row_operation_end', $token['record'], true);
+    }
+
+    private function recordUnavailableHookOnce(string $hookName, int $count): void {
+        if (!$this->rowActive || $this->unavailableHookRecorded) {
+            return;
+        }
+        $this->unavailableHookRecorded = true;
         $this->write('row_operation_unavailable', array(
             'kind' => 'hook',
-            'reason' => 'callback_has_reference_parameter',
+            'reason' => 'hook_callback_entry_unavailable',
             'hook' => ABJ_404_Solution_HookCallbackIdentity::hookName($hookName),
-            'callback' => $identity['callback'],
-            'source' => $identity['source'],
+            'callbacks_unavailable' => $count,
         ), false);
     }
 
@@ -275,7 +293,7 @@ final class ABJ_404_Solution_RowRenderOperationTracer {
         }
     }
 
-    private function restore(): void {
+    private function restore(bool $scopeCompleted = true): void {
         if (function_exists('remove_filter')) {
             try {
                 remove_filter('all', array($this, 'prepareHookCallbacks'), PHP_INT_MIN);
@@ -283,26 +301,7 @@ final class ABJ_404_Solution_RowRenderOperationTracer {
                 self::reportFailure('hook boundary removal failed: ' . $e->getMessage());
             }
         }
-        foreach ($this->hookWrappers as $wrapped) {
-            $filters = $GLOBALS['wp_filter'] ?? null;
-            $hookObject = is_array($filters) ? ($filters[$wrapped['hook']] ?? null) : null;
-            if (!$hookObject instanceof ArrayAccess || !isset($hookObject[$wrapped['priority']])) {
-                continue;
-            }
-            $entries = $hookObject[$wrapped['priority']];
-            if (!is_array($entries)) {
-                continue;
-            }
-            $entry = $entries[$wrapped['id']] ?? null;
-            $current = is_array($entry) ? ($entry['function'] ?? null) : null;
-            if ($current !== $wrapped['wrapper'] || !is_array($entry)) {
-                continue;
-            }
-            $entry['function'] = $wrapped['original'];
-            $entries[$wrapped['id']] = $entry;
-            $hookObject[$wrapped['priority']] = $entries;
-        }
-        $this->hookWrappers = array();
+        $this->hookInstrumenter->restore($scopeCompleted);
         if ($this->cacheProxy !== null && ($GLOBALS['wp_object_cache'] ?? null) === $this->cacheProxy) {
             $GLOBALS['wp_object_cache'] = $this->originalCache;
         }

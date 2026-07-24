@@ -43,10 +43,10 @@ final class ABJ_404_Solution_TableRendererPreludeTracer {
     private $recording = false;
     /** @var bool */
     private $callbackCapRecorded = false;
-    /**
-     * @var array<string, array{hook: string, priority: int, id: string, original: callable, wrapper: callable}>
-     */
-    private $hookWrappers = array();
+    /** @var bool */
+    private $scopeFailed = false;
+    /** @var ABJ_404_Solution_HookCallbackInstrumenter<array{mode: string, fields: array<string, mixed>, started_at?: float|null}|null> */
+    private $hookInstrumenter;
 
     public static function begin(): ?self {
         $requestId = class_exists('ABJ_404_Solution_AjaxRequestLedger')
@@ -59,13 +59,15 @@ final class ABJ_404_Solution_TableRendererPreludeTracer {
         try {
             $hookStatus = $tracer->installHookCallbacks();
         } catch (Throwable $e) {
-            $tracer->restoreHookCallbacks();
+            $tracer->restoreHookCallbacks(false);
             self::reportFailure('hook registry scan failed: ' . $e->getMessage());
             $hookStatus = array(
                 'status' => 'unavailable',
                 'reason' => 'hook_registry_scan_failed',
                 'hooks_scanned' => count(self::TRANSLATION_HOOKS),
                 'callbacks_wrapped' => 0,
+                'callbacks_marked' => 0,
+                'callbacks_attributed' => 0,
                 'callbacks_unavailable' => 0,
             );
         }
@@ -75,7 +77,7 @@ final class ABJ_404_Solution_TableRendererPreludeTracer {
                 static fn(): string => self::normalizeLocale(determine_locale())
             );
         } catch (Throwable $e) {
-            $tracer->restoreHookCallbacks();
+            $tracer->restoreHookCallbacks(false);
             throw $e;
         }
         $tracer->write('table_prelude_instrumentation', array_merge($hookStatus, array(
@@ -89,10 +91,23 @@ final class ABJ_404_Solution_TableRendererPreludeTracer {
     private function __construct(string $requestId, string $locale) {
         $this->requestId = $requestId;
         $this->locale = $locale;
+        $this->hookInstrumenter = new ABJ_404_Solution_HookCallbackInstrumenter(
+            function (
+                string $registeredHook,
+                string $actualHook,
+                int $priority,
+                array $identity
+            ) {
+                return $this->beginHookCallback($actualHook, $priority, $identity);
+            },
+            function ($token): void {
+                $this->finishHookCallback($token);
+            }
+        );
     }
 
     public function finish(): void {
-        $this->restoreHookCallbacks();
+        $this->restoreHookCallbacks(!$this->scopeFailed);
     }
 
     /** Force WordPress's JIT textdomain load into its own durable boundary. */
@@ -112,13 +127,12 @@ final class ABJ_404_Solution_TableRendererPreludeTracer {
         return $this->trace(
             'table_prelude_operation',
             array('operation' => substr($operation, 0, 64)),
-            $work,
-            false
+            $work
         );
     }
 
     /**
-     * @return array{status: string, reason?: string, hooks_scanned: int, callbacks_wrapped: int, callbacks_unavailable: int}
+     * @return array{status: string, reason?: string, hooks_scanned: int, callbacks_wrapped: int, callbacks_marked?: int, callbacks_attributed?: int, callbacks_unavailable: int}
      */
     private function installHookCallbacks(): array {
         $filters = $GLOBALS['wp_filter'] ?? null;
@@ -128,86 +142,100 @@ final class ABJ_404_Solution_TableRendererPreludeTracer {
                 'reason' => 'hook_registry_unavailable',
                 'hooks_scanned' => count(self::TRANSLATION_HOOKS),
                 'callbacks_wrapped' => 0,
+                'callbacks_marked' => 0,
+                'callbacks_attributed' => 0,
                 'callbacks_unavailable' => 0,
             );
         }
         $wrapped = 0;
+        $marked = 0;
         $unavailable = 0;
         foreach (self::TRANSLATION_HOOKS as $hookName) {
             $hookObject = $filters[$hookName] ?? null;
             if ($hookObject === null) {
                 continue;
             }
-            if (!$hookObject instanceof ArrayAccess || !$hookObject instanceof Traversable) {
+            if (!is_object($hookObject)) {
                 $unavailable++;
                 continue;
             }
-            foreach ($hookObject as $priority => $entries) {
-                if (!is_array($entries)) {
-                    $unavailable++;
-                    continue;
-                }
-                foreach ($entries as $id => $entry) {
-                    $callback = is_array($entry) ? ($entry['function'] ?? null) : null;
-                    if (!is_callable($callback)) {
-                        $unavailable++;
-                        continue;
-                    }
-                    $identity = ABJ_404_Solution_HookCallbackIdentity::describe($callback);
-                    if ($identity['has_reference']) {
-                        $unavailable++;
-                        $this->write('table_prelude_hook_callback_unavailable', array(
-                            'hook' => ABJ_404_Solution_HookCallbackIdentity::hookName($hookName),
-                            'callback' => $identity['callback'],
-                            'source' => $identity['source'],
-                            'locale' => $this->locale,
-                            'reason' => 'callback_has_reference_parameter',
-                        ));
-                        continue;
-                    }
-                    $wrapper = $this->callbackWrapper($hookName, (int)$priority, $callback, $identity);
-                    $entry['function'] = $wrapper;
-                    $entries[$id] = $entry;
-                    $hookObject[$priority] = $entries;
-                    $key = $hookName . '|' . (string)$priority . '|' . (string)$id;
-                    $this->hookWrappers[$key] = array(
-                        'hook' => $hookName, 'priority' => (int)$priority, 'id' => (string)$id,
-                        'original' => $callback, 'wrapper' => $wrapper,
-                    );
-                    $wrapped++;
-                }
-            }
+            $counts = $this->hookInstrumenter->instrument($hookName, $hookObject);
+            $wrapped += $counts['callbacks_wrapped'];
+            $marked += $counts['callbacks_marked'];
+            $unavailable += $counts['callbacks_unavailable'];
         }
         return array(
             'status' => $unavailable === 0 ? 'ready' : 'partial',
             'hooks_scanned' => count(self::TRANSLATION_HOOKS),
             'callbacks_wrapped' => $wrapped,
+            'callbacks_marked' => $marked,
+            'callbacks_attributed' => $wrapped + $marked,
             'callbacks_unavailable' => $unavailable,
         );
     }
 
     /**
      * @param array{callback: string, source: string, has_reference: bool} $identity
+     * @return array{mode: string, fields: array<string, mixed>, started_at?: float|null}|null
      */
-    private function callbackWrapper(
+    private function beginHookCallback(
         string $hook,
         int $priority,
-        callable $callback,
         array $identity
-    ): callable {
-        return function (...$args) use ($hook, $priority, $callback, $identity) {
-            return $this->trace(
+    ): ?array {
+        if ($this->recording) {
+            return null;
+        }
+        $fields = array(
+            'hook' => ABJ_404_Solution_HookCallbackIdentity::hookName($hook),
+            'callback' => $identity['callback'],
+            'source' => $identity['source'],
+            'priority' => $priority,
+            'locale' => $this->locale,
+        );
+        $fields['operation_id'] = $this->operationId('table_prelude_hook_callback', $fields);
+        if ($this->callbackRecordCount + 2 > self::MAX_CALLBACK_RECORDS) {
+            $this->recordCallbackCapOnce();
+            ABJ_404_Solution_AjaxCheckpointLogger::recordActiveOperation(
+                $this->requestId,
                 'table_prelude_hook_callback',
-                array(
-                    'hook' => ABJ_404_Solution_HookCallbackIdentity::hookName($hook),
-                    'callback' => $identity['callback'],
-                    'source' => $identity['source'],
-                    'priority' => $priority,
-                ),
-                static fn() => call_user_func_array($callback, $args),
-                true
+                'active',
+                $fields
             );
-        };
+            return array('mode' => 'active', 'fields' => $fields);
+        }
+        $this->write('table_prelude_hook_callback_start', $fields);
+        $this->callbackRecordCount++;
+        return array(
+            'mode' => 'journal',
+            'fields' => $fields,
+            'started_at' => function_exists('abj_clock') ? abj_clock()->nowFloat() : null,
+        );
+    }
+
+    /**
+     * @param array{mode: string, fields: array<string, mixed>, started_at?: float|null}|null $token
+     */
+    private function finishHookCallback($token): void {
+        if (!is_array($token)) {
+            return;
+        }
+        if ($token['mode'] === 'active') {
+            ABJ_404_Solution_AjaxCheckpointLogger::recordActiveOperation(
+                $this->requestId,
+                'table_prelude_hook_callback',
+                'complete',
+                $token['fields']
+            );
+            return;
+        }
+        $startedAt = $token['started_at'] ?? null;
+        $this->write('table_prelude_hook_callback_end', array_merge($token['fields'], array(
+            'status' => 'complete',
+            'elapsed_ms' => $startedAt === null ? null
+                : max(0, (int)round((abj_clock()->nowFloat() - $startedAt) * 1000)),
+        )));
+        $this->callbackRecordCount++;
     }
 
     /**
@@ -216,35 +244,25 @@ final class ABJ_404_Solution_TableRendererPreludeTracer {
      * @param callable():T $work
      * @return T
      */
-    private function trace(string $eventPrefix, array $fields, callable $work, bool $boundedCallback) {
+    private function trace(string $eventPrefix, array $fields, callable $work) {
         if ($this->recording) {
             return $work();
         }
         $fields['locale'] = $this->locale;
         $fields['operation_id'] = $this->operationId($eventPrefix, $fields);
-        if ($boundedCallback && $this->callbackRecordCount + 2 > self::MAX_CALLBACK_RECORDS) {
-            $this->recordCallbackCapOnce();
-            ABJ_404_Solution_AjaxCheckpointLogger::recordActiveOperation(
-                $this->requestId, $eventPrefix, 'active', $fields);
-            $result = $work();
-            ABJ_404_Solution_AjaxCheckpointLogger::recordActiveOperation(
-                $this->requestId, $eventPrefix, 'complete', $fields);
-            return $result;
-        }
         $this->write($eventPrefix . '_start', $fields);
-        if ($boundedCallback) {
-            $this->callbackRecordCount++;
-        }
         $startedAt = function_exists('abj_clock') ? abj_clock()->nowFloat() : null;
-        $result = $work();
+        try {
+            $result = $work();
+        } catch (Throwable $e) {
+            $this->scopeFailed = true;
+            throw $e;
+        }
         $this->write($eventPrefix . '_end', array_merge($fields, array(
             'status' => 'complete',
             'elapsed_ms' => $startedAt === null ? null
                 : max(0, (int)round((abj_clock()->nowFloat() - $startedAt) * 1000)),
         )));
-        if ($boundedCallback) {
-            $this->callbackRecordCount++;
-        }
         return $result;
     }
 
@@ -283,23 +301,8 @@ final class ABJ_404_Solution_TableRendererPreludeTracer {
         }
     }
 
-    private function restoreHookCallbacks(): void {
-        foreach ($this->hookWrappers as $wrapped) {
-            $filters = $GLOBALS['wp_filter'] ?? null;
-            $hookObject = is_array($filters) ? ($filters[$wrapped['hook']] ?? null) : null;
-            if (!$hookObject instanceof ArrayAccess || !isset($hookObject[$wrapped['priority']])) {
-                continue;
-            }
-            $entries = $hookObject[$wrapped['priority']];
-            $entry = is_array($entries) ? ($entries[$wrapped['id']] ?? null) : null;
-            if (!is_array($entry) || ($entry['function'] ?? null) !== $wrapped['wrapper']) {
-                continue;
-            }
-            $entry['function'] = $wrapped['original'];
-            $entries[$wrapped['id']] = $entry;
-            $hookObject[$wrapped['priority']] = $entries;
-        }
-        $this->hookWrappers = array();
+    private function restoreHookCallbacks(bool $scopeCompleted = true): void {
+        $this->hookInstrumenter->restore($scopeCompleted);
     }
 
     private static function initialLocaleHint(): string {

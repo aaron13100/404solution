@@ -43,6 +43,7 @@ final class ABJ_404_Solution_HookCallbackIdentity {
             } else {
                 $reflection = new ReflectionFunction(Closure::fromCallable($callback));
             }
+            $hasReference = $reflection->returnsReference();
             foreach ($reflection->getParameters() as $parameter) {
                 $hasReference = $hasReference || $parameter->isPassedByReference();
             }
@@ -52,6 +53,10 @@ final class ABJ_404_Solution_HookCallbackIdentity {
             self::reportFailure(
                 'callback reflection failed (' . get_class($e) . '): ' . $e->getMessage()
             );
+            // An unknown signature must take the marker path. Wrapping it would
+            // risk erasing reference semantics that reflection could not prove
+            // absent.
+            $hasReference = true;
             $descriptor .= '|reflection-unavailable|' . get_class($e);
             $source = 'unavailable';
         }

@@ -39,10 +39,8 @@ final class ABJ_404_Solution_OptionPersistenceTracer {
     private $scopeDepth = 1;
     /** @var bool */
     private $recording = false;
-    /**
-     * @var array<string, array{hook: string, priority: int, id: string, original: callable, wrapper: callable}>
-     */
-    private $hookWrappers = array();
+    /** @var ABJ_404_Solution_HookCallbackInstrumenter<array{fields: array<string, mixed>, started_at: float|null}|null> */
+    private $hookInstrumenter;
 
     public static function begin(): ?self {
         $requestId = self::currentRequestId();
@@ -59,6 +57,19 @@ final class ABJ_404_Solution_OptionPersistenceTracer {
 
     private function __construct(string $requestId) {
         $this->requestId = $requestId;
+        $this->hookInstrumenter = new ABJ_404_Solution_HookCallbackInstrumenter(
+            function (
+                string $registeredHook,
+                string $actualHook,
+                int $priority,
+                array $identity
+            ) {
+                return $this->beginHookCallback($actualHook, $priority, $identity);
+            },
+            function ($token): void {
+                $this->finishHookCallback($token);
+            }
+        );
     }
 
     public function finish(): void {
@@ -116,10 +127,13 @@ final class ABJ_404_Solution_OptionPersistenceTracer {
     private function traceStorageWrite(callable $work) {
         $this->installHookCallbacks();
         try {
-            return $this->traceOperation('storage_write_cache_invalidation', $work);
-        } finally {
-            $this->restoreHookCallbacks();
+            $result = $this->traceOperation('storage_write_cache_invalidation', $work);
+        } catch (Throwable $e) {
+            $this->restoreHookCallbacks(false);
+            throw $e;
         }
+        $this->restoreHookCallbacks(true);
+        return $result;
     }
 
     private function installHookCallbacks(): void {
@@ -129,99 +143,73 @@ final class ABJ_404_Solution_OptionPersistenceTracer {
                 'status' => 'unavailable',
                 'reason' => 'hook_registry_unavailable',
                 'hooks_scanned' => count(self::OPTION_HOOKS),
+                'callbacks_wrapped' => 0,
+                'callbacks_marked' => 0,
+                'callbacks_attributed' => 0,
+                'callbacks_unavailable' => 0,
             ));
             return;
         }
 
         $wrappedCount = 0;
+        $markedCount = 0;
         $unavailableCount = 0;
         foreach (self::OPTION_HOOKS as $hookName) {
             $hookObject = $filters[$hookName] ?? null;
             if ($hookObject === null) {
                 continue;
             }
-            if (!$hookObject instanceof ArrayAccess || !$hookObject instanceof Traversable) {
+            if (!is_object($hookObject)) {
                 $unavailableCount++;
                 continue;
             }
-            foreach ($hookObject as $priority => $entries) {
-                if (!is_array($entries)) {
-                    $unavailableCount++;
-                    continue;
-                }
-                foreach ($entries as $id => $entry) {
-                    $callback = is_array($entry) ? ($entry['function'] ?? null) : null;
-                    if (!is_callable($callback)) {
-                        $unavailableCount++;
-                        continue;
-                    }
-                    $identity = ABJ_404_Solution_HookCallbackIdentity::describe($callback);
-                    if ($identity['has_reference']) {
-                        $unavailableCount++;
-                        $this->write('option_hook_callback_unavailable', array(
-                            'reason' => 'callback_has_reference_parameter',
-                            'hook' => ABJ_404_Solution_HookCallbackIdentity::hookName($hookName),
-                            'callback' => $identity['callback'],
-                            'source' => $identity['source'],
-                        ));
-                        continue;
-                    }
-                    $wrapper = $this->callbackWrapper(
-                        $hookName,
-                        (int)$priority,
-                        $callback,
-                        $identity
-                    );
-                    $entry['function'] = $wrapper;
-                    $entries[$id] = $entry;
-                    $hookObject[$priority] = $entries;
-                    $mapKey = $hookName . '|' . (string)$priority . '|' . (string)$id;
-                    $this->hookWrappers[$mapKey] = array(
-                        'hook' => $hookName,
-                        'priority' => (int)$priority,
-                        'id' => (string)$id,
-                        'original' => $callback,
-                        'wrapper' => $wrapper,
-                    );
-                    $wrappedCount++;
-                }
-            }
+            $counts = $this->hookInstrumenter->instrument($hookName, $hookObject);
+            $wrappedCount += $counts['callbacks_wrapped'];
+            $markedCount += $counts['callbacks_marked'];
+            $unavailableCount += $counts['callbacks_unavailable'];
         }
         $this->write('option_hook_instrumentation', array(
             'status' => $unavailableCount === 0 ? 'ready' : 'partial',
             'hooks_scanned' => count(self::OPTION_HOOKS),
             'callbacks_wrapped' => $wrappedCount,
+            'callbacks_marked' => $markedCount,
+            'callbacks_attributed' => $wrappedCount + $markedCount,
             'callbacks_unavailable' => $unavailableCount,
         ));
     }
 
     /**
-     * @param callable $callback
      * @param array{callback: string, source: string, has_reference: bool} $identity
-     * @return callable
+     * @return array{fields: array<string, mixed>, started_at: float|null}|null
      */
-    private function callbackWrapper(
-        string $registeredHook,
+    private function beginHookCallback(
+        string $actualHook,
         int $priority,
-        callable $callback,
         array $identity
-    ): callable {
-        return function (...$args) use ($registeredHook, $priority, $callback, $identity) {
-            $actualHook = $registeredHook;
-            if ($registeredHook === 'all' && is_string($args[0] ?? null)) {
-                $actualHook = $args[0];
-            }
-            return $this->trace(
-                'option_hook_callback',
-                array(
-                    'hook' => ABJ_404_Solution_HookCallbackIdentity::hookName($actualHook),
-                    'callback' => $identity['callback'],
-                    'source' => $identity['source'],
-                    'priority' => $priority,
-                ),
-                static fn() => call_user_func_array($callback, $args)
-            );
-        };
+    ): ?array {
+        if ($this->recording) {
+            return null;
+        }
+        $fields = array(
+            'hook' => ABJ_404_Solution_HookCallbackIdentity::hookName($actualHook),
+            'callback' => $identity['callback'],
+            'source' => $identity['source'],
+            'priority' => $priority,
+        );
+        $fields['operation_id'] = $this->operationId('option_hook_callback', $fields);
+        $this->write('option_hook_callback_start', $fields);
+        return array('fields' => $fields, 'started_at' => self::nowFloat());
+    }
+
+    /** @param array{fields: array<string, mixed>, started_at: float|null}|null $token */
+    private function finishHookCallback($token): void {
+        if (!is_array($token)) {
+            return;
+        }
+        $this->write('option_hook_callback_end', array_merge($token['fields'], array(
+            'status' => 'complete',
+            'elapsed_ms' => self::elapsedMilliseconds($token['started_at']),
+        )));
     }
 
     /**
@@ -277,24 +265,8 @@ final class ABJ_404_Solution_OptionPersistenceTracer {
         }
     }
 
-    private function restoreHookCallbacks(): void {
-        foreach ($this->hookWrappers as $wrapped) {
-            $filters = $GLOBALS['wp_filter'] ?? null;
-            $hookObject = is_array($filters) ? ($filters[$wrapped['hook']] ?? null) : null;
-            if (!$hookObject instanceof ArrayAccess || !isset($hookObject[$wrapped['priority']])) {
-                continue;
-            }
-            $entries = $hookObject[$wrapped['priority']];
-            $entry = is_array($entries) ? ($entries[$wrapped['id']] ?? null) : null;
-            $current = is_array($entry) ? ($entry['function'] ?? null) : null;
-            if ($current !== $wrapped['wrapper'] || !is_array($entry)) {
-                continue;
-            }
-            $entry['function'] = $wrapped['original'];
-            $entries[$wrapped['id']] = $entry;
-            $hookObject[$wrapped['priority']] = $entries;
-        }
-        $this->hookWrappers = array();
+    private function restoreHookCallbacks(bool $scopeCompleted = true): void {
+        $this->hookInstrumenter->restore($scopeCompleted);
     }
 
     private static function currentRequestId(): string {

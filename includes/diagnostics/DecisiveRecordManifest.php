@@ -116,7 +116,7 @@ final class ABJ_404_Solution_DecisiveRecordManifest {
         // Each foreign callback registered on an option lifecycle hook, wrapped
         // for per-callback attribution. Conditional on such callbacks existing;
         // the always-present option_hook_instrumentation record's
-        // callbacks_wrapped count is the census that states how many there were.
+        // callbacks_attributed count is the census that states how many there were.
         // A foreign callback that hangs (the literal matrix-cause-37 symptom)
         // leaves its start unmatched, so the start is reserved.
         'option_hook_callback' => array(
@@ -127,16 +127,7 @@ final class ABJ_404_Solution_DecisiveRecordManifest {
                 'start' => 'option_hook_callback_start',
                 'end' => 'option_hook_callback_end',
             ),
-            'sentinel' => 'option_hook_instrumentation.callbacks_wrapped',
-        ),
-        // A callback that cannot be safely wrapped (a by-reference parameter).
-        // Conditional; its census is option_hook_instrumentation.callbacks_unavailable.
-        'option_hook_callback_unavailable' => array(
-            'emitter' => 'ABJ_404_Solution_OptionPersistenceTracer',
-            'events' => array('option_hook_callback_unavailable'),
-            'presence' => self::PRESENCE_CONDITIONAL,
-            'reserve' => null,
-            'sentinel' => 'option_hook_instrumentation.callbacks_unavailable',
+            'sentinel' => 'option_hook_instrumentation.callbacks_attributed',
         ),
         // External work (a cache call or a hook callback) inside a rendered
         // table row. Conditional on the row performing such work; a row that
@@ -168,8 +159,8 @@ final class ABJ_404_Solution_DecisiveRecordManifest {
             'reserve' => null,
             'sentinel' => 'row_operation_instrumentation.status',
         ),
-        // A row operation could not be attributed (unwrappable callback / cache).
-        // Conditional.
+        // A malformed hook registry entry could not be attributed. Conditional;
+        // reference signatures are attributed by markers and do not use this.
         'row_operation_unavailable' => array(
             'emitter' => 'ABJ_404_Solution_RowRenderOperationTracer',
             'events' => array('row_operation_unavailable'),
@@ -211,14 +202,7 @@ final class ABJ_404_Solution_DecisiveRecordManifest {
                 'start' => 'table_prelude_hook_callback_start',
                 'end' => 'table_prelude_hook_callback_end',
             ),
-            'sentinel' => 'table_prelude_instrumentation.callbacks_wrapped',
-        ),
-        'table_prelude_hook_callback_unavailable' => array(
-            'emitter' => 'ABJ_404_Solution_TableRendererPreludeTracer',
-            'events' => array('table_prelude_hook_callback_unavailable'),
-            'presence' => self::PRESENCE_CONDITIONAL,
-            'reserve' => null,
-            'sentinel' => 'table_prelude_instrumentation.callbacks_unavailable',
+            'sentinel' => 'table_prelude_instrumentation.callbacks_attributed',
         ),
         'table_prelude_hook_callback_capped' => array(
             'emitter' => 'ABJ_404_Solution_TableRendererPreludeTracer',
