@@ -42,6 +42,76 @@ final class ABJ_404_Solution_CheckpointJournalWriter {
     const LOCK_WAIT_TIMEOUT_US = 50000;
 
     /**
+     * Append the minimal pre-enrichment intent without waiting on the journal
+     * rotation lock. The intent is deliberately below the locked writer: its
+     * purpose is to prove where a recorder stalled, so making it wait on the
+     * recorder's own lock would recreate the blind spot before the breadcrumb.
+     *
+     * O_APPEND is the same emergency-write shape used after a lock timeout.
+     * The next normal append owns rotation and restores the size bound.
+     *
+     * @param array<string, mixed> $record
+     * @return array<string, mixed>
+     */
+    public static function appendIntent(string $directory, array $record): array {
+        $startedNs = self::monotonicNanoseconds();
+        $event = is_string($record['event'] ?? null) ? $record['event'] : 'checkpoint_intent';
+        $requestId = is_string($record['request_id'] ?? null) ? $record['request_id'] : 'unknown00';
+        $path = $directory . self::CHECKPOINT_FILE;
+        $json = json_encode($record, JSON_UNESCAPED_SLASHES);
+        if (!is_string($json)) {
+            self::reportFailure('AJAX checkpoint intent JSON encoding failed.');
+            return self::result(array('status' => 'failed', 'reason' => 'json_encode_failed',
+                'request_id' => $requestId, 'event' => $event, 'started_ns' => $startedNs));
+        }
+        $line = $json . "\n";
+        $size = @filesize($path);
+        if (is_int($size) && ($size + strlen($line)) > self::MAX_CHECKPOINT_BYTES) {
+            $lock = @fopen($directory . self::LOCK_FILE, 'cb');
+            if ($lock !== false) {
+                $locked = @flock($lock, LOCK_EX | LOCK_NB);
+                if ($locked) {
+                    try {
+                        $outcome = self::appendUnderLock(array(
+                            'directory' => $directory,
+                            'path' => $path,
+                            'line' => $line,
+                        ));
+                    } finally {
+                        @flock($lock, LOCK_UN);
+                        @fclose($lock);
+                    }
+                    return self::result(array('status' => $outcome['status'],
+                        'reason' => $outcome['reason'], 'request_id' => $requestId,
+                        'event' => $event, 'started_ns' => $startedNs));
+                }
+                @fclose($lock);
+            }
+        }
+        $handle = @fopen($path, 'ab');
+        if ($handle === false) {
+            self::reportFailure('AJAX checkpoint intent journal could not be opened: ' . $path);
+            return self::result(array('status' => 'failed', 'reason' => 'journal_open_failed',
+                'request_id' => $requestId, 'event' => $event, 'started_ns' => $startedNs));
+        }
+        try {
+            $written = @fwrite($handle, $line);
+            $flushed = @fflush($handle);
+        } finally {
+            @fclose($handle);
+        }
+        $status = 'complete';
+        $reason = '';
+        if ($written !== strlen($line) || !$flushed) {
+            $status = 'failed';
+            $reason = 'append_flush_failed';
+            self::reportFailure('AJAX checkpoint intent append/flush failed: ' . $path);
+        }
+        return self::result(array('status' => $status, 'reason' => $reason,
+            'request_id' => $requestId, 'event' => $event, 'started_ns' => $startedNs));
+    }
+
+    /**
      * @param array<string, mixed> $record
      * @return array<string, mixed> Measured write result for the next record.
      */

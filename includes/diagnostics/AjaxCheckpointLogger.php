@@ -35,6 +35,9 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
     /** @var array<string, mixed>|null */
     private static $previousWriteTelemetry = null;
 
+    /** @var int */
+    private static $checkpointSequence = 0;
+
     /**
      * 1: full getrusage() array on every record.
      * 2: the diagnostic subset of it (see envelope()), which halves the cost
@@ -44,41 +47,24 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
      * 4: a second record kind (see recordFrequent()) for the intra-stage
      *    per-query and per-row-batch channels, and an explicit `envelope`
      *    field on every record so which kind it is never has to be inferred.
+     * 5: pre-enrichment intent records and whole-call phase telemetry, so the
+     *    recorder cannot charge its own probes to the operation under test or
+     *    disappear without evidence when enrichment itself stalls.
      */
-    const SCHEMA_VERSION = 4;
+    const SCHEMA_VERSION = ABJ_404_Solution_CheckpointRecordFactory::SCHEMA_VERSION;
 
     /** A boundary record: the full environment sample described by envelope(). */
-    const ENVELOPE_FULL = 'full';
+    const ENVELOPE_FULL = ABJ_404_Solution_CheckpointRecordFactory::ENVELOPE_FULL;
 
     /**
      * A high-frequency record: identity and timing only. Named on the record
      * rather than left to inference, so a missing `rusage` reads as "this kind
      * of record does not carry one" and never as "getrusage() was unavailable".
      */
-    const ENVELOPE_FREQUENT = 'frequent';
+    const ENVELOPE_FREQUENT = ABJ_404_Solution_CheckpointRecordFactory::ENVELOPE_FREQUENT;
 
-    /**
-     * getrusage() keys worth carrying on every checkpoint, mapped to the names
-     * they are written under.
-     *
-     * The full 17-key array was the single largest thing in the journal: 305
-     * of the 545 bytes an average record occupied, repeated on all 27 records
-     * of every request, most of it fields that are structurally zero on Linux
-     * (ixrss/idrss/isrss/nswap) or irrelevant to a stall (msgsnd/msgrcv/
-     * nsignals). What survives is what a stall is actually diagnosed with:
-     * the user/system CPU split (CPU burn vs blocked), resident memory,
-     * voluntary vs involuntary context switches (blocked-on-IO vs preempted,
-     * the signature of host-level throttling), page faults, and block IO.
-     */
-    const RUSAGE_FIELDS = array(
-        'maxrss' => 'ru_maxrss',
-        'minflt' => 'ru_minflt',
-        'majflt' => 'ru_majflt',
-        'nvcsw' => 'ru_nvcsw',
-        'nivcsw' => 'ru_nivcsw',
-        'inblock' => 'ru_inblock',
-        'oublock' => 'ru_oublock',
-    );
+    /** A minimal record written before full-envelope enrichment begins. */
+    const ENVELOPE_INTENT = ABJ_404_Solution_CheckpointRecordFactory::ENVELOPE_INTENT;
 
     /**
      * Resolve the same directory ABJ_404_Solution_AjaxRequestTrace uses, via
@@ -133,11 +119,69 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
      */
     public static function record(string $requestId, string $event, array $fields = array()): void {
         try {
-            $directory = self::resolveDirectory();
+            $callStartedNs = self::monotonicNanoseconds();
+            $phaseStartedNs = self::monotonicNanoseconds();
+            $directory = self::resolveDirectoryPath();
+            $phases = array(
+                'directory_resolve' => self::elapsedMicroseconds($phaseStartedNs),
+            );
             if ($directory === '') {
                 return;
             }
-            self::writeRecord($directory, array_merge(self::envelope($requestId, $event), $fields));
+            $phaseStartedNs = self::monotonicNanoseconds();
+            if (!class_exists('ABJ_404_Solution_FileSystemService')
+                    || !ABJ_404_Solution_FileSystemService::createDirectoryWithErrorMessages($directory)) {
+                return;
+            }
+            $phases['directory_create'] = self::elapsedMicroseconds($phaseStartedNs);
+
+            $checkpointId = self::checkpointId($callStartedNs);
+            $intentWrite = ABJ_404_Solution_CheckpointJournalWriter::appendIntent(
+                $directory,
+                ABJ_404_Solution_CheckpointRecordFactory::intent(array(
+                    'request_id' => $requestId,
+                    'event' => $event,
+                    'checkpoint_id' => $checkpointId,
+                    'hrtime_ns' => function_exists('hrtime') ? (int)hrtime(true) : null,
+                    'pid' => getmypid(),
+                ))
+            );
+            $phases['intent_append'] = self::nonNegativeInt($intentWrite['elapsed_us'] ?? null);
+
+            $phaseStartedNs = self::monotonicNanoseconds();
+            $hostPressure = class_exists('ABJ_404_Solution_HostPressureSampler')
+                ? ABJ_404_Solution_HostPressureSampler::capture()
+                : array('status' => 'unavailable', 'reason' => 'sampler_class_unavailable');
+            $phases['host_pressure_probe'] = self::elapsedMicroseconds($phaseStartedNs);
+
+            $phaseStartedNs = self::monotonicNanoseconds();
+            $record = array_merge(
+                ABJ_404_Solution_CheckpointRecordFactory::full(array(
+                    'ts' => self::nowFloat(),
+                    'hrtime_ns' => function_exists('hrtime') ? (int)hrtime(true) : null,
+                    'host_pressure' => $hostPressure,
+                    'previous_checkpoint_write' => self::previousWriteTelemetry($requestId),
+                    'request_id' => $requestId,
+                    'event' => $event,
+                    'checkpoint_id' => $checkpointId,
+                    'pid' => getmypid(),
+                )),
+                $fields
+            );
+            $phases['envelope_build'] = self::elapsedMicroseconds($phaseStartedNs);
+
+            $writeTelemetry = ABJ_404_Solution_CheckpointJournalWriter::append($directory, $record);
+            $phases['append'] = self::nonNegativeInt($writeTelemetry['elapsed_us'] ?? null);
+            self::$previousWriteTelemetry =
+                ABJ_404_Solution_CheckpointRecordFactory::completedWriteTelemetry(array(
+                'write' => $writeTelemetry,
+                'intent' => $intentWrite,
+                'request_id' => $requestId,
+                'event' => $event,
+                'checkpoint_id' => $checkpointId,
+                'total_us' => self::elapsedMicroseconds($callStartedNs),
+                'phases_us' => $phases,
+            ));
         } catch (Throwable $e) {
             self::reportFailure('AJAX checkpoint record failed: ' . $e->getMessage());
         }
@@ -169,7 +213,16 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
             if ($directory === '') {
                 return;
             }
-            self::writeRecord($directory, array_merge(self::frequentEnvelope($requestId, $event), $fields));
+            ABJ_404_Solution_CheckpointJournalWriter::append($directory, array_merge(
+                ABJ_404_Solution_CheckpointRecordFactory::frequent(array(
+                    'ts' => self::nowFloat(),
+                    'hrtime_ns' => function_exists('hrtime') ? (int)hrtime(true) : null,
+                    'request_id' => $requestId,
+                    'event' => $event,
+                    'pid' => getmypid(),
+                )),
+                $fields
+            ));
         } catch (Throwable $e) {
             self::reportFailure('AJAX frequent checkpoint record failed: ' . $e->getMessage());
         }
@@ -224,8 +277,8 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
      * @return T
      */
     public static function around(string $requestId, string $label, callable $work, array $startFields = array()) {
-        $startedAt = self::nowFloat();
         self::record($requestId, $label . '_start', $startFields);
+        $startedAt = self::nowFloat();
         $status = 'complete';
         try {
             return $work();
@@ -241,93 +294,6 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
     }
 
     /** @return array<string, mixed> */
-    private static function envelope(string $requestId, string $event): array {
-        $envelope = array(
-            'schema_version' => self::SCHEMA_VERSION,
-            'envelope' => self::ENVELOPE_FULL,
-            'ts' => self::nowFloat(),
-            'hrtime_ns' => function_exists('hrtime') ? hrtime(true) : null,
-            'rusage' => self::resourceUsage(),
-            'host_pressure' => class_exists('ABJ_404_Solution_HostPressureSampler')
-                ? ABJ_404_Solution_HostPressureSampler::capture()
-                : array('status' => 'unavailable', 'reason' => 'sampler_class_unavailable'),
-        );
-        // Host-WIDE pressure above; THIS SITE's own concurrency next. A
-        // per-account worker cap (LiteSpeed/CloudLinux LVE) throttles a site
-        // whose box looks idle, so the two answer different questions and a
-        // record carrying only the first cannot tell them apart. The census
-        // owns the shape of its own contribution; see
-        // ABJ_404_Solution_SameSiteRequestCensus::checkpointFields().
-        $envelope += class_exists('ABJ_404_Solution_SameSiteRequestCensus')
-            ? ABJ_404_Solution_SameSiteRequestCensus::checkpointFields()
-            : array('same_site_requests' => -1);
-        $envelope['previous_checkpoint_write'] = self::previousWriteTelemetry($requestId);
-        $envelope['request_id'] = $requestId;
-        $envelope['event'] = $event;
-        $envelope['pid'] = getmypid();
-        return $envelope;
-    }
-
-    /**
-     * The reduced envelope described by recordFrequent().
-     *
-     * @return array<string, mixed>
-     */
-    private static function frequentEnvelope(string $requestId, string $event): array {
-        return array(
-            'schema_version' => self::SCHEMA_VERSION,
-            'envelope' => self::ENVELOPE_FREQUENT,
-            'ts' => self::nowFloat(),
-            'hrtime_ns' => function_exists('hrtime') ? hrtime(true) : null,
-            'request_id' => $requestId,
-            'event' => $event,
-            'pid' => getmypid(),
-        );
-    }
-
-    /**
-     * The diagnostic subset of getrusage(), or null where it is unavailable.
-     *
-     * Absolute counters rather than deltas against a previous record: the
-     * excerpt that carries these is allowed to drop records it cannot afford,
-     * and a delta chain with a hole in it is unreadable, while an absolute
-     * sample stays interpretable on its own. CPU times are folded into single
-     * microsecond fields so the tv_sec/tv_usec pairs do not have to be
-     * recombined by hand at read time.
-     *
-     * @return array<string, int>|null
-     */
-    private static function resourceUsage(): ?array {
-        $rusage = function_exists('getrusage') ? getrusage() : null;
-        if (!is_array($rusage)) {
-            return null;
-        }
-        $usage = array(
-            'utime_us' => self::microseconds($rusage, 'ru_utime'),
-            'stime_us' => self::microseconds($rusage, 'ru_stime'),
-        );
-        foreach (self::RUSAGE_FIELDS as $name => $key) {
-            if (isset($rusage[$key]) && is_numeric($rusage[$key])) {
-                $usage[$name] = (int)$rusage[$key];
-            }
-        }
-        return $usage;
-    }
-
-    /**
-     * One getrusage() tv_sec/tv_usec pair as microseconds.
-     *
-     * @param array<string, mixed> $rusage
-     */
-    private static function microseconds(array $rusage, string $prefix): int {
-        $seconds = isset($rusage[$prefix . '.tv_sec']) && is_numeric($rusage[$prefix . '.tv_sec'])
-            ? (int)$rusage[$prefix . '.tv_sec'] : 0;
-        $micros = isset($rusage[$prefix . '.tv_usec']) && is_numeric($rusage[$prefix . '.tv_usec'])
-            ? (int)$rusage[$prefix . '.tv_usec'] : 0;
-        return ($seconds * 1000000) + $micros;
-    }
-
-    /** @return array<string, mixed> */
     private static function previousWriteTelemetry(string $requestId): array {
         $previous = self::$previousWriteTelemetry;
         if (!is_array($previous) || ($previous['request_id'] ?? '') !== $requestId) {
@@ -336,9 +302,33 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
         return $previous;
     }
 
-    /** @param array<string, mixed> $record */
-    private static function writeRecord(string $directory, array $record): void {
-        self::$previousWriteTelemetry = ABJ_404_Solution_CheckpointJournalWriter::append($directory, $record);
+    private static function checkpointId(int $startedNs): string {
+        self::$checkpointSequence++;
+        $pid = getmypid();
+        return self::alphabeticHex(is_int($pid) ? $pid : 0) . '-'
+            . self::alphabeticHex($startedNs) . '-'
+            . self::alphabeticHex(self::$checkpointSequence);
+    }
+
+    /**
+     * Hex-shaped compactness without decimal substrings that can impersonate
+     * a redacted numeric URL/id in diagnostic leak checks.
+     */
+    private static function alphabeticHex(int $value): string {
+        return strtr(dechex($value), '0123456789abcdef', 'ghijklmnopqrstuv');
+    }
+
+    /** @param mixed $value */
+    private static function nonNegativeInt($value): int {
+        return is_numeric($value) ? max(0, (int)$value) : 0;
+    }
+
+    private static function monotonicNanoseconds(): int {
+        return function_exists('hrtime') ? (int)hrtime(true) : 0;
+    }
+
+    private static function elapsedMicroseconds(int $startedNs): int {
+        return max(0, (int)round((self::monotonicNanoseconds() - $startedNs) / 1000));
     }
 
     /**

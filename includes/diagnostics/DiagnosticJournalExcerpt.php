@@ -81,10 +81,12 @@ final class ABJ_404_Solution_DiagnosticJournalExcerpt {
      * @param array<string, bool> $knownFailingIds Requests condemned in ANOTHER journal,
      *   from failureIndex(). Without them this excerpt ranks only on what its own
      *   files say, and the browser says it in one journal and not the other.
+     * @param callable(array<int, string>):array<int, string>|null $lineTransform
+     *   Channel-specific normalization applied before evidence ranking.
      * @return string Empty string when nothing readable was found.
      */
     public static function compose(array $paths, int $budgetBytes, string $header,
-            array $knownFailingIds = array()): string {
+            array $knownFailingIds = array(), ?callable $lineTransform = null): string {
         try {
             $files = self::oldestFirstExisting($paths);
             if ($files === array()) {
@@ -98,8 +100,12 @@ final class ABJ_404_Solution_DiagnosticJournalExcerpt {
             if ($read['lines'] === array()) {
                 return '';
             }
+            $lines = $lineTransform === null ? $read['lines'] : $lineTransform($read['lines']);
+            if (!is_array($lines) || $lines === array()) {
+                return '';
+            }
             $selected = ABJ_404_Solution_DiagnosticEvidencePriority::select(
-                $read['lines'], $contentBudget, $knownFailingIds);
+                $lines, $contentBudget, $knownFailingIds);
             if ($selected['lines'] === array()) {
                 return '';
             }

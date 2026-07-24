@@ -22,6 +22,9 @@ if (!defined('ABSPATH')) {
  */
 final class ABJ_404_Solution_CheckpointJournalReader {
 
+    /** Recorder calls slower than this keep their full phase map in support. */
+    const RECORDER_PHASE_DETAIL_THRESHOLD_US = 5000;
+
     /**
      * Share of the support payload's excerpt field this journal may claim.
      *
@@ -67,8 +70,132 @@ final class ABJ_404_Solution_CheckpointJournalReader {
             self::supportExcerptPaths($directory),
             self::MAX_SUPPORT_EXCERPT_BYTES,
             "Recent AJAX request checkpoints (JSONL):\n",
-            $knownFailingIds
+            $knownFailingIds,
+            static function (array $lines): array {
+                return self::compactForSupport($lines);
+            }
         );
+    }
+
+    /**
+     * Drop only intents whose exact checkpoint_id has a completed full record.
+     * Unmatched and malformed intents remain: they are the evidence that
+     * enrichment or its final append never completed. Every total call cost
+     * remains. The excerpt keeps every slow/failed phase map plus the single
+     * slowest baseline in the session; routine maps are removed only from the
+     * bounded excerpt, never from the durable journal/archive.
+     *
+     * @param array<int, string> $lines
+     * @return array<int, string>
+     */
+    private static function compactForSupport(array $lines): array {
+        $withoutClosedIntents = self::withoutClosedIntents(
+            $lines,
+            self::closedCheckpointIds($lines)
+        );
+        return self::compactRoutinePhaseMaps($withoutClosedIntents);
+    }
+
+    /**
+     * @param array<int, string> $lines
+     * @return array<string, bool>
+     */
+    private static function closedCheckpointIds(array $lines): array {
+        $closed = array();
+        foreach ($lines as $line) {
+            $record = json_decode($line, true);
+            if (!is_array($record)
+                    || ($record['envelope'] ?? '') === ABJ_404_Solution_CheckpointRecordFactory::ENVELOPE_INTENT) {
+                continue;
+            }
+            $checkpointId = is_string($record['checkpoint_id'] ?? null)
+                ? $record['checkpoint_id'] : '';
+            if ($checkpointId !== '') {
+                $closed[$checkpointId] = true;
+            }
+        }
+        return $closed;
+    }
+
+    /**
+     * @param array<int, string> $lines
+     * @param array<string, bool> $closed
+     * @return array<int, string>
+     */
+    private static function withoutClosedIntents(array $lines, array $closed): array {
+        $result = array();
+        foreach ($lines as $line) {
+            $record = json_decode($line, true);
+            $isIntent = is_array($record)
+                && ($record['envelope'] ?? '') === ABJ_404_Solution_CheckpointRecordFactory::ENVELOPE_INTENT;
+            $checkpointId = $isIntent && is_string($record['checkpoint_id'] ?? null)
+                ? $record['checkpoint_id'] : '';
+            if ($isIntent && $checkpointId !== '' && isset($closed[$checkpointId])) {
+                continue;
+            }
+            $result[] = $line;
+        }
+        return $result;
+    }
+
+    /**
+     * @param array<int, string> $lines
+     */
+    private static function slowestTelemetryIndex(array $lines): int {
+        $slowestIndex = -1;
+        $slowestTotalUs = -1;
+        foreach ($lines as $index => $line) {
+            $record = json_decode($line, true);
+            if (!is_array($record)) {
+                continue;
+            }
+            $previous = $record['previous_checkpoint_write'] ?? null;
+            $totalUs = is_array($previous) && is_numeric($previous['total_us'] ?? null)
+                ? (int)$previous['total_us'] : -1;
+            if ($totalUs > $slowestTotalUs) {
+                $slowestIndex = $index;
+                $slowestTotalUs = $totalUs;
+            }
+        }
+        return $slowestIndex;
+    }
+
+    /**
+     * @param array<int, string> $lines
+     * @return array<int, string>
+     */
+    private static function compactRoutinePhaseMaps(array $lines): array {
+        $slowestIndex = self::slowestTelemetryIndex($lines);
+        $decodedByIndex = array();
+        foreach ($lines as $index => $line) {
+            $record = json_decode($line, true);
+            $decodedByIndex[$index] = $record;
+        }
+        foreach ($decodedByIndex as $index => $record) {
+            if (!is_array($record) || !is_array($record['previous_checkpoint_write'] ?? null)) {
+                continue;
+            }
+            $previous = $record['previous_checkpoint_write'];
+            $totalUs = is_numeric($previous['total_us'] ?? null)
+                ? (int)$previous['total_us'] : -1;
+            $isSlowest = $slowestIndex === $index;
+            $isSlow = $totalUs >= self::RECORDER_PHASE_DETAIL_THRESHOLD_US;
+            $failed = ($previous['status'] ?? '') !== 'complete'
+                || (($previous['intent_status'] ?? 'complete') !== 'complete');
+            if (!$isSlowest && !$isSlow && !$failed && isset($previous['phases_us'])) {
+                unset($record['previous_checkpoint_write']['phases_us']);
+            }
+            // Closed intents are gone at this point, so their correlation IDs
+            // have completed their only job. Keep IDs on unmatched intents,
+            // but do not spend bounded support bytes repeating them here.
+            unset($record['checkpoint_id']);
+            unset($record['previous_checkpoint_write']['checkpoint_id']);
+            $encoded = json_encode($record, JSON_UNESCAPED_SLASHES);
+            if (is_string($encoded)) {
+                $lines[$index] = $encoded;
+            }
+        }
+        return $lines;
     }
 
     /**
