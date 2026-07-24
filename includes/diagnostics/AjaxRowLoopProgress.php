@@ -71,6 +71,21 @@ final class ABJ_404_Solution_AjaxRowLoopProgress {
     /** @var float */
     private $startedAt;
 
+    /** @var float Start of the current activity window. */
+    private $activityStartedAt;
+
+    /** @var int Rows completed when the previous activity snapshot was taken. */
+    private $sampledRows = 0;
+
+    /** @var array<string, int> */
+    private $hookCounts = array();
+
+    /** @var array{src: string, calls: int|null, reads: int|null, writes: int|null, hits: int|null, misses: int|null, ms: float|null} */
+    private $cacheSnapshot;
+
+    /** @var bool Stop calling a metrics surface after it throws once. */
+    private $cacheMetricsFailed = false;
+
     /**
      * Open a progress-tracked row loop. Returns a live tracker on an
      * instrumented admin-AJAX request and an inert one everywhere else, so
@@ -102,7 +117,12 @@ final class ABJ_404_Solution_AjaxRowLoopProgress {
         $this->total = max(0, $totalRows);
         $this->interval = max(1, (int)ceil($this->total / self::MAX_PROGRESS_RECORDS));
         $this->startedAt = abj_clock()->nowFloat();
+        $this->activityStartedAt = $this->startedAt;
         $this->requestId = self::resolveRequestId();
+        if ($this->requestId !== '') {
+            $this->hookCounts = self::currentHookCounts();
+            $this->cacheSnapshot = $this->currentCacheSnapshot();
+        }
     }
 
     /**
@@ -124,13 +144,18 @@ final class ABJ_404_Solution_AjaxRowLoopProgress {
         }
         $this->emitted++;
         try {
-            ABJ_404_Solution_AjaxCheckpointLogger::recordFrequent($this->requestId, 'row_loop_progress', array(
+            $record = array(
                 'loop' => $this->label,
                 'row' => $this->index,
                 'rows' => $this->total,
                 'rid' => self::hashedRowKey($row),
                 'ms' => self::elapsedMs($this->startedAt),
-            ));
+            );
+            ABJ_404_Solution_AjaxCheckpointLogger::recordFrequent(
+                $this->requestId,
+                'row_loop_progress',
+                array_merge($record, $this->activityFields(max(0, $this->index - 1)))
+            );
         } catch (Throwable $e) {
             self::reportFailure('row loop progress failed: ' . $e->getMessage());
         }
@@ -146,12 +171,20 @@ final class ABJ_404_Solution_AjaxRowLoopProgress {
             return;
         }
         try {
-            ABJ_404_Solution_AjaxCheckpointLogger::recordFrequent($this->requestId, 'row_loop_end', array(
+            $record = array(
                 'loop' => $this->label,
                 'rows' => $this->total,
                 'rows_done' => $this->index,
                 'ms' => self::elapsedMs($this->startedAt),
-            ));
+            );
+            if ($this->emitted < self::MAX_PROGRESS_RECORDS) {
+                $record = array_merge($record, $this->activityFields($this->index));
+            }
+            ABJ_404_Solution_AjaxCheckpointLogger::recordFrequent(
+                $this->requestId,
+                'row_loop_end',
+                $record
+            );
         } catch (Throwable $e) {
             self::reportFailure('row loop end failed: ' . $e->getMessage());
         }
@@ -193,6 +226,252 @@ final class ABJ_404_Solution_AjaxRowLoopProgress {
 
     private static function elapsedMs(float $startedAt): int {
         return max(0, (int)round((abj_clock()->nowFloat() - $startedAt) * 1000));
+    }
+
+    /**
+     * Snapshot request-local hook counters and object-cache metrics as deltas
+     * for the rows completed since the previous bounded checkpoint.
+     *
+     * Hook counts are temporal evidence, not callback timers. `chunk_ms` is
+     * the only honest wall-time boundary: WordPress exposes trigger counters
+     * and the active hook stack, but not foreign callback durations.
+     *
+     * @return array<string, mixed>
+     */
+    private function activityFields(int $completedRows): array {
+        $sampledAt = abj_clock()->nowFloat();
+        $currentHooks = self::currentHookCounts();
+        $hookDeltas = array();
+        foreach ($currentHooks as $hook => $count) {
+            $delta = $count - ($this->hookCounts[$hook] ?? 0);
+            if ($delta > 0) {
+                $hookDeltas[$hook] = $delta;
+            }
+        }
+        uksort($hookDeltas, static function (string $left, string $right) use ($hookDeltas): int {
+            $byCount = $hookDeltas[$right] <=> $hookDeltas[$left];
+            return ($byCount !== 0) ? $byCount : strcmp($left, $right);
+        });
+        $hookTop = array();
+        foreach (array_slice($hookDeltas, 0, 1, true) as $hook => $calls) {
+            $redactedHook = self::redactedHookName($hook);
+            $hookTop[$redactedHook] = ($hookTop[$redactedHook] ?? 0) + $calls;
+        }
+
+        $currentCache = $this->currentCacheSnapshot();
+        $sameCacheSource = $currentCache['src'] === $this->cacheSnapshot['src'];
+        $cacheCalls = $sameCacheSource
+            ? self::numericDelta($currentCache['calls'], $this->cacheSnapshot['calls']) : null;
+        $cacheMilliseconds = $sameCacheSource
+            ? self::numericDelta($currentCache['ms'], $this->cacheSnapshot['ms']) : null;
+
+        $fields = array(
+            'chunk_rows' => max(0, $completedRows - $this->sampledRows),
+            'chunk_ms' => max(0, (int)round(($sampledAt - $this->activityStartedAt) * 1000)),
+            'hook_active' => self::activeHookName(),
+            'hook_calls' => array_sum($hookDeltas),
+            'hook_top' => $hookTop,
+            'cache_src' => $currentCache['src'],
+            'cache_calls' => ($cacheCalls === null) ? null : (int)$cacheCalls,
+            'cache_ms' => ($cacheMilliseconds === null) ? null : round($cacheMilliseconds, 3),
+        );
+
+        $this->activityStartedAt = $sampledAt;
+        $this->sampledRows = $completedRows;
+        $this->hookCounts = $currentHooks;
+        $this->cacheSnapshot = $currentCache;
+        return $fields;
+    }
+
+    /** @return array<string, int> */
+    private static function currentHookCounts(): array {
+        $counts = array();
+        foreach (array('wp_filters', 'wp_actions') as $globalName) {
+            $source = $GLOBALS[$globalName] ?? null;
+            if (!is_array($source)) {
+                continue;
+            }
+            foreach ($source as $hook => $count) {
+                if (is_numeric($count) && (int)$count >= 0) {
+                    $name = (string)$hook;
+                    $counts[$name] = ($counts[$name] ?? 0) + (int)$count;
+                }
+            }
+        }
+        return $counts;
+    }
+
+    private static function activeHookName(): string {
+        $stack = $GLOBALS['wp_current_filter'] ?? null;
+        if (!is_array($stack) || empty($stack)) {
+            return '';
+        }
+        $active = end($stack);
+        return is_string($active) ? self::redactedHookName($active) : '';
+    }
+
+    /**
+     * Keep conventional static hook names actionable. Hash dynamic names that
+     * could contain a URL, email, user value, or another site-specific token.
+     */
+    private static function redactedHookName(string $hook): string {
+        if (preg_match('/^[A-Za-z_][A-Za-z0-9_.:-]{0,63}$/', $hook) === 1) {
+            return preg_replace('/[0-9]+/', '#', $hook) ?? '';
+        }
+        return 'hook#' . substr(hash('sha256', $hook), 0, 12);
+    }
+
+    /**
+     * Read Object Cache Pro's cumulative local metrics when available. Its
+     * `store-reads`, `store-writes`, and `ms-cache` values distinguish Redis
+     * backend work from runtime-cache hits without wrapping the cache object.
+     *
+     * @return array{src: string, calls: int|null, reads: int|null, writes: int|null, hits: int|null, misses: int|null, ms: float|null}
+     */
+    private function currentCacheSnapshot(): array {
+        $cache = $GLOBALS['wp_object_cache'] ?? null;
+        if (!is_object($cache)) {
+            return self::emptyCacheSnapshot('none');
+        }
+        if ($this->cacheMetricsFailed) {
+            return self::emptyCacheSnapshot('error');
+        }
+
+        $metricsReader = array($cache, 'metrics');
+        if (is_callable($metricsReader)) {
+            $metricsSnapshot = $this->cacheSnapshotFromMetrics($metricsReader);
+            if ($metricsSnapshot !== null) {
+                return $metricsSnapshot;
+            }
+        }
+        return self::cacheSnapshotFromCounters($cache);
+    }
+
+    /**
+     * @param callable(): mixed $metricsReader
+     * @return array{src: string, calls: int|null, reads: int|null, writes: int|null, hits: int|null, misses: int|null, ms: float|null}|null
+     */
+    private function cacheSnapshotFromMetrics(callable $metricsReader): ?array {
+        try {
+            $metrics = self::numericMetrics(call_user_func($metricsReader));
+            $reads = self::metric($metrics, array('store-reads', 'reads'));
+            $writes = self::metric($metrics, array('store-writes', 'writes'));
+            $hits = self::metric($metrics, array('hits', 'cache-hits'));
+            $misses = self::metric($metrics, array('misses', 'cache-misses'));
+            $milliseconds = self::metric($metrics, array('ms-cache', 'cache-ms', 'cache-time'));
+            if ($reads === null && $writes === null && $hits === null && $misses === null
+                    && $milliseconds === null) {
+                return null;
+            }
+            return array(
+                'src' => 'ocp_metrics',
+                'calls' => self::cacheCallTotal($reads, $writes, $hits, $misses),
+                'reads' => ($reads === null) ? null : (int)$reads,
+                'writes' => ($writes === null) ? null : (int)$writes,
+                'hits' => ($hits === null) ? null : (int)$hits,
+                'misses' => ($misses === null) ? null : (int)$misses,
+                'ms' => $milliseconds,
+            );
+        } catch (Throwable $e) {
+            $this->cacheMetricsFailed = true;
+            self::reportFailure('object cache metrics failed: ' . $e->getMessage());
+            return self::emptyCacheSnapshot('error');
+        }
+    }
+
+    /**
+     * @return array{src: string, calls: int|null, reads: int|null, writes: int|null, hits: int|null, misses: int|null, ms: float|null}
+     */
+    private static function cacheSnapshotFromCounters(object $cache): array {
+        try {
+            $hits = isset($cache->cache_hits) && is_numeric($cache->cache_hits)
+                ? (int)$cache->cache_hits : null;
+            $misses = isset($cache->cache_misses) && is_numeric($cache->cache_misses)
+                ? (int)$cache->cache_misses : null;
+            if ($hits === null && $misses === null) {
+                return self::emptyCacheSnapshot('none');
+            }
+            return array(
+                'src' => 'wp_counters',
+                'calls' => (int)(($hits ?? 0) + ($misses ?? 0)),
+                'reads' => null,
+                'writes' => null,
+                'hits' => $hits,
+                'misses' => $misses,
+                'ms' => null,
+            );
+        } catch (Throwable $e) {
+            self::reportFailure('object cache counters failed: ' . $e->getMessage());
+            return self::emptyCacheSnapshot('error');
+        }
+    }
+
+    /** @return array{src: string, calls: null, reads: null, writes: null, hits: null, misses: null, ms: null} */
+    private static function emptyCacheSnapshot(string $source): array {
+        return array(
+            'src' => $source,
+            'calls' => null,
+            'reads' => null,
+            'writes' => null,
+            'hits' => null,
+            'misses' => null,
+            'ms' => null,
+        );
+    }
+
+    private static function cacheCallTotal(?float $reads, ?float $writes, ?float $hits, ?float $misses): ?int {
+        if ($reads !== null || $writes !== null) {
+            return (int)(($reads ?? 0) + ($writes ?? 0));
+        }
+        return ($hits !== null || $misses !== null) ? (int)(($hits ?? 0) + ($misses ?? 0)) : null;
+    }
+
+    /**
+     * @param float|int|null $current
+     * @param float|int|null $previous
+     */
+    private static function numericDelta($current, $previous): ?float {
+        if ($current === null || $previous === null) {
+            return null;
+        }
+        $delta = (float)$current - (float)$previous;
+        return ($delta >= 0) ? $delta : null;
+    }
+
+    /**
+     * Flatten numeric metrics from array or value-object return shapes.
+     *
+     * @param mixed $value
+     * @return array<string, float>
+     */
+    private static function numericMetrics($value, int $depth = 0): array {
+        if ($depth > 2 || (!is_array($value) && !is_object($value))) {
+            return array();
+        }
+        $out = array();
+        foreach ((array)$value as $key => $metricValue) {
+            $name = strtolower((string)preg_replace('/^.*\x00/', '', (string)$key));
+            $name = str_replace('_', '-', $name);
+            if (is_numeric($metricValue)) {
+                $out[$name] = (float)$metricValue;
+            } elseif (is_array($metricValue) || is_object($metricValue)) {
+                $out = array_replace($out, self::numericMetrics($metricValue, $depth + 1));
+            }
+        }
+        return $out;
+    }
+
+    /**
+     * @param array<string, float> $metrics
+     * @param array<int, string> $names
+     */
+    private static function metric(array $metrics, array $names): ?float {
+        foreach ($names as $name) {
+            if (array_key_exists($name, $metrics)) {
+                return $metrics[$name];
+            }
+        }
+        return null;
     }
 
     private static function reportFailure(string $message): void {

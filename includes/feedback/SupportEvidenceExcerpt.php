@@ -53,7 +53,7 @@ final class ABJ_404_Solution_SupportEvidenceExcerpt {
      * of BYTES, so a single site that logs a large blob could otherwise push
      * the assembled excerpt past the contract on its own.
      */
-    const MAX_LOGGER_EXCERPT_LENGTH = 32768;
+    const MAX_LOGGER_EXCERPT_LENGTH = 16384;
 
     /**
      * Hard cap on the drained client transport telemetry. The buffer is bounded

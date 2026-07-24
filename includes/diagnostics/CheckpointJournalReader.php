@@ -29,10 +29,14 @@ final class ABJ_404_Solution_CheckpointJournalReader {
      * request costs 26-27 records, so 32 KB (the previous value, further
      * halved by an even per-file split) bought about ONE request while a
      * failing session is six failing attempts plus a canary ladder plus polls.
+     * The final 18 KB uses the excerpt contract's remaining section headroom
+     * plus 16 KB reallocated from the generic debug-log tail, so eight bounded
+     * hook/cache activity samples fit across every prioritized attempt without
+     * eliding a failing request's last pre-stall boundary.
      * The per-section budgets are proven to sum inside the report contract by
      * SupportExcerptBudgetContractTest.
      */
-    const MAX_SUPPORT_EXCERPT_BYTES = 131072;
+    const MAX_SUPPORT_EXCERPT_BYTES = 149504;
 
     /**
      * Bounded recent checkpoint lines for the support-request payload.
