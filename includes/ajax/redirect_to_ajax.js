@@ -249,6 +249,23 @@ jQuery(document).ready(function($) {
     abj404_validateAndUpdateFeedback();
 });
 
+/**
+ * Return whether the regex option belonging to the destination field's form
+ * is enabled. The add modal and full-page forms use different element IDs,
+ * so the shared field name is the stable form contract.
+ *
+ * @returns {Boolean} true when this form's regex checkbox is checked.
+ */
+function abj404_isRegexDestinationEnabled() {
+    var destinationField = document.getElementById('redirect_to_user_field');
+    if (destinationField === null || destinationField.form === null) {
+        return false;
+    }
+
+    var regexCheckbox = destinationField.form.querySelector('input[name="is_regex_url"]');
+    return regexCheckbox !== null && regexCheckbox.checked;
+}
+
 /** Validate the selection and update the feedback label.
  * @returns {undefined}
  */
@@ -273,8 +290,7 @@ function abj404_validateAndUpdateFeedback() {
     
     // if we're using a regular expression and the user pressed enter then it's ok.
     } else if (userTypedValue != '' &&
-    		document.getElementById('is_regex_url') != null &&
-    		document.getElementById('is_regex_url').checked) {
+            abj404_isRegexDestinationEnabled()) {
         jQuery("#redirect_to_data_field_title").val(userTypedValue);
         jQuery("#redirect_to_data_field_id").val(ABJ404_TYPE_EXTERNAL + '|' + ABJ404_TYPE_EXTERNAL);
     	
@@ -301,9 +317,8 @@ function abj404_validateAndUpdateFeedback() {
     if ((selectedPageID === null) || (selectedPageID === "")) {
         jQuery(".redirect_to_user_field_explanation").text(tooltip_empty);
         
-    } else if (document.getElementById('is_regex_url') != null &&
-    		document.getElementById('is_regex_url').checked && 
-    		selectedPageID != undefined && selectedPageID.endsWith('|' + ABJ404_TYPE_EXTERNAL)) {
+    } else if (abj404_isRegexDestinationEnabled() &&
+            selectedPageID != undefined && selectedPageID.endsWith('|' + ABJ404_TYPE_EXTERNAL)) {
         jQuery("#redirect_to_user_field_explanation").text(tooltip_custom_string);
     
     } else if (selectedPageID != undefined && selectedPageID.endsWith('|' + ABJ404_TYPE_EXTERNAL)) {
