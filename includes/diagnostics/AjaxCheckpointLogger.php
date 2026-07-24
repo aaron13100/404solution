@@ -30,7 +30,7 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
      * from canonical source and prevents a covered code change from shipping
      * with an old marker.
      */
-    const DIAGNOSTIC_BUILD_ID = '698c1f628fa98ab1a2651d7841f63210f0d701bc';
+    const DIAGNOSTIC_BUILD_ID = '356b777d89c8e5cd82f775a06921b500bddff016';
 
     const CHECKPOINT_FILE = ABJ_404_Solution_CheckpointJournalWriter::CHECKPOINT_FILE;
     const ROTATED_FILE = ABJ_404_Solution_CheckpointJournalWriter::ROTATED_FILE;
@@ -132,15 +132,7 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
         try {
             $callStartedNs = self::monotonicNanoseconds();
             $checkpointId = self::checkpointId($callStartedNs);
-            $intentWrite = ABJ_404_Solution_CheckpointIntentStore::append(
-                ABJ_404_Solution_CheckpointRecordFactory::intent(array(
-                    'request_id' => $requestId,
-                    'event' => $event,
-                    'checkpoint_id' => $checkpointId,
-                    'hrtime_ns' => function_exists('hrtime') ? (int)hrtime(true) : null,
-                    'pid' => getmypid(),
-                ))
-            );
+            $intentWrite = self::appendIntent($requestId, $event, $checkpointId);
             $phaseStartedNs = self::monotonicNanoseconds();
             $directory = self::resolveDirectoryPath();
             $phases = array(
@@ -220,15 +212,7 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
         try {
             $callStartedNs = self::monotonicNanoseconds();
             $checkpointId = self::checkpointId($callStartedNs);
-            ABJ_404_Solution_CheckpointIntentStore::append(
-                ABJ_404_Solution_CheckpointRecordFactory::intent(array(
-                    'request_id' => $requestId,
-                    'event' => $event,
-                    'checkpoint_id' => $checkpointId,
-                    'hrtime_ns' => function_exists('hrtime') ? (int)hrtime(true) : null,
-                    'pid' => getmypid(),
-                ))
-            );
+            self::appendIntent($requestId, $event, $checkpointId);
             $directory = self::resolveDirectoryPath();
             if ($directory === '') {
                 return;
@@ -256,6 +240,12 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
     /**
      * Replace one fixed-size post-cap operation state. Never throws.
      *
+     * The independent intent lands before directory filtering, creation, or
+     * active-state file work. A recorder stall therefore remains distinct
+     * from the late query/callback/cache operation this state identifies.
+     * The active record reuses the intent's checkpoint ID so support
+     * compaction removes only the exact intent that reached its durable end.
+     *
      * The allowlist is the privacy boundary. Callers cannot accidentally put
      * SQL, URLs, cache values, or callback arguments into this file because
      * only the redacted identity fields below cross it.
@@ -274,18 +264,20 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
         }
         self::$recordingActiveOperation = true;
         try {
+            $startedNs = self::monotonicNanoseconds();
+            $checkpointId = self::checkpointId($startedNs);
+            self::appendIntent($requestId, 'active_operation_breadcrumb', $checkpointId);
             $directory = self::resolveDirectoryPath();
             if ($directory === '') {
                 return;
             }
-            $startedNs = self::monotonicNanoseconds();
             $record = array_merge(
                 ABJ_404_Solution_CheckpointRecordFactory::frequent(array(
                     'ts' => self::nowFloat(),
                     'hrtime_ns' => function_exists('hrtime') ? (int)hrtime(true) : null,
                     'request_id' => $requestId,
                     'event' => 'active_operation_breadcrumb',
-                    'checkpoint_id' => self::checkpointId($startedNs),
+                    'checkpoint_id' => $checkpointId,
                     'pid' => getmypid(),
                 )),
                 array('boundary' => $boundary, 'state' => $state),
@@ -406,6 +398,23 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
             return array('status' => 'unavailable', 'reason' => 'no_previous_write');
         }
         return $previous;
+    }
+
+    /** @return array<string, mixed> */
+    private static function appendIntent(
+        string $requestId,
+        string $event,
+        string $checkpointId
+    ): array {
+        return ABJ_404_Solution_CheckpointIntentStore::append(
+            ABJ_404_Solution_CheckpointRecordFactory::intent(array(
+                'request_id' => $requestId,
+                'event' => $event,
+                'checkpoint_id' => $checkpointId,
+                'hrtime_ns' => function_exists('hrtime') ? (int)hrtime(true) : null,
+                'pid' => getmypid(),
+            ))
+        );
     }
 
     private static function checkpointId(int $startedNs): string {

@@ -88,13 +88,16 @@ final class ABJ_404_Solution_CheckpointJournalReader {
             static fn(string $path): bool => $path !== $activePath
         ));
         $rankedSelection = self::withoutPathFromSelection($fileSelection, $activePath);
+        $activeLines = $activePath === '' ? array()
+            : ABJ_404_Solution_DiagnosticJournalExcerpt::readAllLines(array($activePath));
+        $activeClosedIds = self::closedCheckpointIds($activeLines);
         $ranked = ABJ_404_Solution_DiagnosticJournalExcerpt::compose(
             $rankedPaths,
             max(0, $rankedBudget),
             "Recent AJAX request checkpoints (JSONL):\n",
             $knownFailingIds,
-            static function (array $lines): array {
-                return self::compactForSupport($lines);
+            static function (array $lines) use ($activeClosedIds): array {
+                return self::compactForSupport($lines, $activeClosedIds);
             },
             $rankedSelection
         );
@@ -154,12 +157,14 @@ final class ABJ_404_Solution_CheckpointJournalReader {
      * bounded excerpt, never from the durable journal/archive.
      *
      * @param array<int, string> $lines
+     * @param array<string, bool> $additionalClosedIds Exact terminal records
+     *   reserved outside the ranked lines, such as active-operation state.
      * @return array<int, string>
      */
-    private static function compactForSupport(array $lines): array {
+    private static function compactForSupport(array $lines, array $additionalClosedIds = array()): array {
         $withoutClosedIntents = self::withoutClosedIntents(
             $lines,
-            self::closedCheckpointIds($lines)
+            array_merge(self::closedCheckpointIds($lines), $additionalClosedIds)
         );
         return self::compactRoutinePhaseMaps($withoutClosedIntents);
     }
