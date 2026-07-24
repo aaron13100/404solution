@@ -86,6 +86,9 @@ final class ABJ_404_Solution_AjaxRowLoopProgress {
     /** @var bool Stop calling a metrics surface after it throws once. */
     private $cacheMetricsFailed = false;
 
+    /** @var ABJ_404_Solution_RowRenderOperationTracer|null */
+    private $operationTracer = null;
+
     /**
      * Open a progress-tracked row loop. Returns a live tracker on an
      * instrumented admin-AJAX request and an inert one everywhere else, so
@@ -122,6 +125,7 @@ final class ABJ_404_Solution_AjaxRowLoopProgress {
         if ($this->requestId !== '') {
             $this->hookCounts = self::currentHookCounts();
             $this->cacheSnapshot = $this->currentCacheSnapshot();
+            $this->operationTracer = ABJ_404_Solution_RowRenderOperationTracer::begin($this->requestId);
         }
     }
 
@@ -134,12 +138,18 @@ final class ABJ_404_Solution_AjaxRowLoopProgress {
     public function tick(array $row): void {
         $this->index++;
         if ($this->requestId === '' || $this->emitted >= self::MAX_PROGRESS_RECORDS) {
+            if ($this->operationTracer !== null) {
+                $this->operationTracer->enterRow();
+            }
             return;
         }
         // Rows 1, 1+interval, 1+2*interval ... so the FIRST row is always
         // announced: a loop that hangs immediately is otherwise reported as a
         // loop that never started, which points at the wrong half of the stage.
         if (($this->index - 1) % $this->interval !== 0) {
+            if ($this->operationTracer !== null) {
+                $this->operationTracer->enterRow();
+            }
             return;
         }
         $this->emitted++;
@@ -159,6 +169,9 @@ final class ABJ_404_Solution_AjaxRowLoopProgress {
         } catch (Throwable $e) {
             self::reportFailure('row loop progress failed: ' . $e->getMessage());
         }
+        if ($this->operationTracer !== null) {
+            $this->operationTracer->enterRow();
+        }
     }
 
     /**
@@ -169,6 +182,9 @@ final class ABJ_404_Solution_AjaxRowLoopProgress {
     public function finish(): void {
         if ($this->requestId === '') {
             return;
+        }
+        if ($this->operationTracer !== null) {
+            $this->operationTracer->finish();
         }
         try {
             $record = array(
@@ -330,6 +346,9 @@ final class ABJ_404_Solution_AjaxRowLoopProgress {
      */
     private function currentCacheSnapshot(): array {
         $cache = $GLOBALS['wp_object_cache'] ?? null;
+        if ($cache instanceof ABJ_404_Solution_InstrumentedObjectCache) {
+            $cache = $cache->originalCache();
+        }
         if (!is_object($cache)) {
             return self::emptyCacheSnapshot('none');
         }
