@@ -262,24 +262,61 @@ class ABJ_404_Solution_Ajax_AdminEndpointSupport {
             return '';
         }
 
+        $checkpointRequestId = ABJ_404_Solution_AjaxRequestLedger::instrumentedRequestIdFromGlobalContext();
         $out = '';
         if (ob_get_level() > 0) {
-            $out = (string)ob_get_contents();
+            if ($checkpointRequestId === '') {
+                $out = (string)ob_get_contents();
+            } else {
+                $out = (string)ABJ_404_Solution_AjaxCheckpointLogger::around(
+                    $checkpointRequestId,
+                    'ob_read',
+                    static function () {
+                        return ob_get_contents();
+                    },
+                    self::outputBufferCheckpointFields()
+                );
+            }
         }
 
+        $minLevel = 0;
         if (isset($GLOBALS['abj404_ajax_context']) && is_array($GLOBALS['abj404_ajax_context'])) {
             $minLevel = array_key_exists('ob_level_before', $GLOBALS['abj404_ajax_context'])
                 ? intval($GLOBALS['abj404_ajax_context']['ob_level_before']) : 0;
-            while (ob_get_level() > $minLevel) {
+        }
+        while (ob_get_level() > $minLevel) {
+            if ($checkpointRequestId === '') {
                 @ob_end_clean();
+                continue;
             }
-        } else {
-            while (ob_get_level() > 0) {
-                @ob_end_clean();
-            }
+            ABJ_404_Solution_AjaxCheckpointLogger::around(
+                $checkpointRequestId,
+                'ob_clear',
+                static function () {
+                    @ob_end_clean();
+                },
+                self::outputBufferCheckpointFields()
+            );
         }
 
         return $out;
+    }
+
+    /**
+     * Identify the active output-buffer stack before a read or clean call can
+     * invoke a foreign handler. Kept free of buffered content so diagnostics
+     * cannot expose response data.
+     *
+     * @return array{ob_level: int, ob_length: int, ob_handlers: array<int, string>}
+     */
+    private static function outputBufferCheckpointFields(): array {
+        $length = ob_get_length();
+        $handlers = ob_list_handlers();
+        return array(
+            'ob_level' => ob_get_level(),
+            'ob_length' => is_int($length) ? $length : 0,
+            'ob_handlers' => is_array($handlers) ? $handlers : array(),
+        );
     }
 
     /** @return ABJ_404_Solution_RequestInputNormalizer */
