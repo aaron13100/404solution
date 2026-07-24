@@ -24,12 +24,6 @@ final class ABJ_404_Solution_CheckpointJournalReader {
     /** Recorder calls slower than this keep their full phase map in support. */
     const RECORDER_PHASE_DETAIL_THRESHOLD_US = 5000;
 
-    /** Completed browser receipt that must survive the bounded support excerpt. */
-    const REQUIRED_CLIENT_RECEIPT_EVENT = 'canary_step_client_receipt';
-
-    /** Same-phase control receipt that must survive beside the canary receipt. */
-    const REQUIRED_CONCURRENT_CONTROL_RECEIPT_EVENT = 'concurrent_control_client_receipt';
-
     /**
      * Share of the support payload's excerpt field this journal may claim.
      *
@@ -77,7 +71,7 @@ final class ABJ_404_Solution_CheckpointJournalReader {
         if ($paths === array()) {
             return '';
         }
-        $required = self::requiredSupportReceipts($paths);
+        $required = self::requiredSupportEvidence($paths);
         $requiredBlock = $required === ''
             ? ''
             : "Required AJAX checkpoint evidence (JSONL):\n" . $required;
@@ -100,74 +94,18 @@ final class ABJ_404_Solution_CheckpointJournalReader {
     }
 
     /**
-     * Latest completed receipt of each required browser evidence type, with
-     * all of its request joins intact.
+     * Latest complete record of each evidence type that must bypass ordinary
+     * request-group ranking.
      *
-     * Request-level ranking can legitimately elide a healthy canary or
-     * concurrent-control group when the journal is busy. These records are
-     * the browser-to-server proof that the responses arrived, so reserve their
-     * bytes before ordinary ranking rather than letting an intent marker or a
-     * manifest label impersonate transmitted evidence.
+     * The selector owns the record schemas. This reader owns byte accounting
+     * and applies the same support compaction used by the ranked remainder.
      *
      * @param array<int, string> $paths
      */
-    private static function requiredSupportReceipts(array $paths): string {
+    private static function requiredSupportEvidence(array $paths): string {
         $lines = ABJ_404_Solution_DiagnosticJournalExcerpt::readAllLines($paths);
-        $required = array(
-            self::REQUIRED_CLIENT_RECEIPT_EVENT => '',
-            self::REQUIRED_CONCURRENT_CONTROL_RECEIPT_EVENT => '',
-        );
-        foreach (array_reverse($lines) as $line) {
-            $event = self::requiredReceiptEventInLine($line, $required);
-            if ($event === '') {
-                continue;
-            }
-            $record = json_decode($line, true);
-            if (!is_array($record) || !self::receiptHasRequiredJoins($record, $event)) {
-                continue;
-            }
-            $compacted = self::compactRoutinePhaseMaps(array($line));
-            $required[$event] = isset($compacted[0]) && is_string($compacted[0])
-                ? $compacted[0] : $line;
-            if (!in_array('', $required, true)) {
-                break;
-            }
-        }
-        return implode("\n", array_values(array_filter($required, static function ($line): bool {
-            return $line !== '';
-        })));
-    }
-
-    /**
-     * @param array<string, string> $required
-     */
-    private static function requiredReceiptEventInLine(string $line, array $required): string {
-        foreach ($required as $event => $selectedLine) {
-            if ($selectedLine === '' && strpos($line, '"' . $event . '"') !== false) {
-                return $event;
-            }
-        }
-        return '';
-    }
-
-    /**
-     * Reject intent, malformed, and mis-keyed receipts before reserving
-     * support bytes for them.
-     *
-     * @param array<mixed, mixed> $record
-     */
-    private static function receiptHasRequiredJoins(array $record, string $event): bool {
-        if (($record['envelope'] ?? '') !== ABJ_404_Solution_CheckpointRecordFactory::ENVELOPE_FULL
-                || ($record['event'] ?? '') !== $event
-                || !is_string($record['carried_by'] ?? null)
-                || $record['carried_by'] === '') {
-            return false;
-        }
-        if ($event === self::REQUIRED_CLIENT_RECEIPT_EVENT) {
-            return is_string($record['step_request_id'] ?? null)
-                && $record['step_request_id'] !== '';
-        }
-        return ABJ_404_Solution_ClientTransportReport::isCompleteConcurrentControlJournalRecord($record);
+        $required = ABJ_404_Solution_RequiredCheckpointEvidence::select($lines);
+        return implode("\n", self::compactRoutinePhaseMaps($required));
     }
 
     /**
