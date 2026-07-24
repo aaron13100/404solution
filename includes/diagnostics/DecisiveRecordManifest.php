@@ -49,7 +49,7 @@ if (!defined('ABSPATH')) {
 final class ABJ_404_Solution_DecisiveRecordManifest {
 
     /** Bumped when the catalog's shape changes, so an old reader stays valid. */
-    const SCHEMA_VERSION = 1;
+    const SCHEMA_VERSION = 2;
 
     const PRESENCE_ALWAYS = 'always-present';
     const PRESENCE_CONDITIONAL = 'conditional-with-sentinel';
@@ -107,6 +107,21 @@ final class ABJ_404_Solution_DecisiveRecordManifest {
             ),
             'sentinel' => 'backend_selection result=database_fallback when no persistent object cache; '
                 . 'cache_add_initial/cache_increment/cache_add_fallback are the conditional commands',
+        ),
+        // Diagnostics-owned cache capability, metrics, and counter reads.
+        // Conditional because there is no third-party boundary when WordPress
+        // has no object-cache object; row-loop activity's cache_src=none is the
+        // sentinel. A third-party method or magic property that never returns
+        // leaves its start unmatched and must survive support ranking.
+        'cache_metrics_probe' => array(
+            'emitter' => 'ABJ_404_Solution_CacheMetricsProbeTracer',
+            'events' => array('cache_metrics_probe_start', 'cache_metrics_probe_end'),
+            'presence' => self::PRESENCE_CONDITIONAL,
+            'reserve' => array(
+                'start' => 'cache_metrics_probe_start',
+                'end' => 'cache_metrics_probe_end',
+            ),
+            'sentinel' => 'row_loop_progress/row_loop_end.cache_src',
         ),
         // The matrix-cause-37 foreign-option-callback census. Emitted for every
         // option storage write (even the hook-registry-unavailable branch
