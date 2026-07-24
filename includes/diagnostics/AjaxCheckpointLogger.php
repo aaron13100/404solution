@@ -7,14 +7,12 @@ if (!defined('ABSPATH')) {
 /**
  * Independent, minimal JSONL append-only logger for AJAX request checkpoints.
  *
- * Deliberately separate from ABJ_404_Solution_AjaxRequestTrace: every record
- * opens, locks, appends, flushes, unlocks, and closes the file immediately.
- * There is no pending/promotion state machine and no in-memory batching, so
- * a bug in the trace class under test (a stuck pending file, a rotation
- * failure, a construction exception) cannot erase this evidence. It is also
- * the channel ABJ_404_Solution_DiagnosticDirectoryProbe journals its
- * per-request round trip through, so a bug in the trace journal itself
- * cannot hide the probe's result.
+ * Deliberately separate from ABJ_404_Solution_AjaxRequestTrace: every normal
+ * record opens, locks, appends, flushes, unlocks, and closes immediately. A
+ * minimal intent lands first through ABJ_404_Solution_CheckpointIntentStore's
+ * fixed system-temp sink, before uploads resolution can block. There is no
+ * pending/promotion state machine or in-memory batching, so a bug in the trace
+ * class under test cannot erase this evidence.
  *
  * Every public method is failure-safe: it never lets an internal write
  * failure escape as an exception. around() re-throws only the wrapped
@@ -32,7 +30,7 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
      * from canonical source and prevents a covered code change from shipping
      * with an old marker.
      */
-    const DIAGNOSTIC_BUILD_ID = '14c890780faccdab3c70c1bacc03218affbb214c';
+    const DIAGNOSTIC_BUILD_ID = 'abf6985192c6a8b79314a9a3fb6c7006655cb418';
 
     const CHECKPOINT_FILE = ABJ_404_Solution_CheckpointJournalWriter::CHECKPOINT_FILE;
     const ROTATED_FILE = ABJ_404_Solution_CheckpointJournalWriter::ROTATED_FILE;
@@ -57,6 +55,9 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
      * 5: pre-enrichment intent records and whole-call phase telemetry, so the
      *    recorder cannot charge its own probes to the operation under test or
      *    disappear without evidence when enrichment itself stalls.
+     * 6: intents move to the independent system-temp sink before uploads
+     *    resolution/filtering/creation, and frequent records gain exact
+     *    intent correlation.
      */
     const SCHEMA_VERSION = ABJ_404_Solution_CheckpointRecordFactory::SCHEMA_VERSION;
 
@@ -127,9 +128,20 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
     public static function record(string $requestId, string $event, array $fields = array()): void {
         try {
             $callStartedNs = self::monotonicNanoseconds();
+            $checkpointId = self::checkpointId($callStartedNs);
+            $intentWrite = ABJ_404_Solution_CheckpointIntentStore::append(
+                ABJ_404_Solution_CheckpointRecordFactory::intent(array(
+                    'request_id' => $requestId,
+                    'event' => $event,
+                    'checkpoint_id' => $checkpointId,
+                    'hrtime_ns' => function_exists('hrtime') ? (int)hrtime(true) : null,
+                    'pid' => getmypid(),
+                ))
+            );
             $phaseStartedNs = self::monotonicNanoseconds();
             $directory = self::resolveDirectoryPath();
             $phases = array(
+                'intent_append' => self::nonNegativeInt($intentWrite['elapsed_us'] ?? null),
                 'directory_resolve' => self::elapsedMicroseconds($phaseStartedNs),
             );
             if ($directory === '') {
@@ -141,19 +153,6 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
                 return;
             }
             $phases['directory_create'] = self::elapsedMicroseconds($phaseStartedNs);
-
-            $checkpointId = self::checkpointId($callStartedNs);
-            $intentWrite = ABJ_404_Solution_CheckpointJournalWriter::appendIntent(
-                $directory,
-                ABJ_404_Solution_CheckpointRecordFactory::intent(array(
-                    'request_id' => $requestId,
-                    'event' => $event,
-                    'checkpoint_id' => $checkpointId,
-                    'hrtime_ns' => function_exists('hrtime') ? (int)hrtime(true) : null,
-                    'pid' => getmypid(),
-                ))
-            );
-            $phases['intent_append'] = self::nonNegativeInt($intentWrite['elapsed_us'] ?? null);
 
             $phaseStartedNs = self::monotonicNanoseconds();
             $hostPressure = class_exists('ABJ_404_Solution_HostPressureSampler')
@@ -216,8 +215,23 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
      */
     public static function recordFrequent(string $requestId, string $event, array $fields = array()): void {
         try {
-            $directory = self::resolveDirectory();
+            $callStartedNs = self::monotonicNanoseconds();
+            $checkpointId = self::checkpointId($callStartedNs);
+            ABJ_404_Solution_CheckpointIntentStore::append(
+                ABJ_404_Solution_CheckpointRecordFactory::intent(array(
+                    'request_id' => $requestId,
+                    'event' => $event,
+                    'checkpoint_id' => $checkpointId,
+                    'hrtime_ns' => function_exists('hrtime') ? (int)hrtime(true) : null,
+                    'pid' => getmypid(),
+                ))
+            );
+            $directory = self::resolveDirectoryPath();
             if ($directory === '') {
+                return;
+            }
+            if (!class_exists('ABJ_404_Solution_FileSystemService')
+                    || !ABJ_404_Solution_FileSystemService::createDirectoryWithErrorMessages($directory)) {
                 return;
             }
             ABJ_404_Solution_CheckpointJournalWriter::append($directory, array_merge(
@@ -226,6 +240,7 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
                     'hrtime_ns' => function_exists('hrtime') ? (int)hrtime(true) : null,
                     'request_id' => $requestId,
                     'event' => $event,
+                    'checkpoint_id' => $checkpointId,
                     'pid' => getmypid(),
                 )),
                 $fields

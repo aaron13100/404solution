@@ -9,12 +9,11 @@ if (!defined('ABSPATH')) {
  * pipeline is served from it.
  *
  * Split out of ABJ_404_Solution_AjaxCheckpointLogger, which is now the
- * append-only WRITER and nothing else. The dependency stays one-directional
- * by design: this reader resolves the journal's location through the writer
- * (the single owner of the directory contract, kept there so recording works
- * even when nothing ever reads), and the writer never calls back into the
- * reader, so a bug in support collection cannot take checkpoint recording
- * down with it.
+ * checkpoint lifecycle owner and nothing else. The dependency stays
+ * one-directional by design: this reader discovers early intents through
+ * CheckpointIntentStore and resolves the normal journal through the logger;
+ * neither writer calls back into the reader, so a bug in support collection
+ * cannot take checkpoint recording down with it.
  *
  * Consumers: ABJ_404_Solution_SupportEvidenceExcerpt (the bounded support
  * payload), ABJ_404_Solution_DetachAbEvidence (verdicts read straight off the
@@ -73,11 +72,11 @@ final class ABJ_404_Solution_CheckpointJournalReader {
         array $knownFailingIds = array(),
         ?array $fileSelection = null
     ): string {
-        $directory = self::journalDirectory();
-        if ($directory === '') {
+        $source = self::supportCollectionSource();
+        $paths = $source['paths'];
+        if ($paths === array()) {
             return '';
         }
-        $paths = self::supportExcerptPaths($directory);
         $required = self::requiredSupportReceipts($paths);
         $requiredBlock = $required === ''
             ? ''
@@ -172,7 +171,7 @@ final class ABJ_404_Solution_CheckpointJournalReader {
     }
 
     /**
-     * Drop only intents whose exact checkpoint_id has a completed full record.
+     * Drop only intents whose exact checkpoint_id has a terminal non-intent record.
      * Unmatched and malformed intents remain: they are the evidence that
      * enrichment or its final append never completed. Every total call cost
      * remains. The excerpt keeps every slow/failed phase map plus the single
@@ -410,22 +409,32 @@ final class ABJ_404_Solution_CheckpointJournalReader {
      * path this channel tried is exactly the fact a wrong-node or unwritable
      * uploads directory is diagnosed from.
      *
+     * The fixed fallback paths remain available even when the trace directory
+     * cannot be resolved or created.
+     *
      * @return array{channel: string, directory: string, usable: bool, paths: array<int, string>}
      */
     public static function supportCollectionSource(): array {
+        $fallbackPaths = class_exists('ABJ_404_Solution_CheckpointIntentStore')
+            ? ABJ_404_Solution_CheckpointIntentStore::paths()
+            : array();
         try {
             $directory = self::journalDirectory();
-            $usable = $directory !== '';
+            $journalUsable = $directory !== '';
+            $paths = $journalUsable
+                ? array_merge($fallbackPaths, self::supportExcerptPaths($directory))
+                : $fallbackPaths;
             return array(
                 'channel' => 'ajax_checkpoints',
-                'directory' => $usable ? $directory
+                'directory' => $journalUsable ? $directory
                     : ABJ_404_Solution_AjaxCheckpointLogger::resolveDirectoryPath(),
-                'usable' => $usable,
-                'paths' => $usable ? self::supportExcerptPaths($directory) : array(),
+                'usable' => $journalUsable || $fallbackPaths !== array(),
+                'paths' => array_values(array_unique($paths)),
             );
         } catch (Throwable $e) {
             self::reportFailure('AJAX checkpoint support source resolution failed: ' . $e->getMessage());
-            return array('channel' => 'ajax_checkpoints', 'directory' => '', 'usable' => false, 'paths' => array());
+            return array('channel' => 'ajax_checkpoints', 'directory' => '',
+                'usable' => $fallbackPaths !== array(), 'paths' => $fallbackPaths);
         }
     }
 

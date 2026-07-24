@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
  */
 final class ABJ_404_Solution_CheckpointRecordFactory {
 
-    const SCHEMA_VERSION = 5;
+    const SCHEMA_VERSION = 6;
     const ENVELOPE_FULL = 'full';
     const ENVELOPE_FREQUENT = 'frequent';
     const ENVELOPE_INTENT = 'intent';
@@ -103,6 +103,7 @@ final class ABJ_404_Solution_CheckpointRecordFactory {
             'hrtime_ns' => $context['hrtime_ns'] ?? null,
             'request_id' => $context['request_id'],
             'event' => $context['event'],
+            'checkpoint_id' => $context['checkpoint_id'],
             'pid' => $context['pid'],
         );
     }
