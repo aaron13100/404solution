@@ -72,6 +72,8 @@ final class ABJ_404_Solution_ClientBuildFingerprint {
         'telemetry_delivery' => array('file' => 'ajax/view_updater_transport_telemetry_delivery.js', 'functions' => null),
         'canary_measurements' => array(
             'file' => 'ajax/view_updater_canary_measurements.js', 'functions' => null),
+        'concurrent_control_evidence' => array(
+            'file' => 'ajax/view_updater_concurrent_control_evidence.js', 'functions' => null),
         'canary_ladder' => array('file' => 'ajax/view_updater_canary_ladder.js', 'functions' => null),
         'support_request' => array('file' => 'ajax/SupportRequest.js', 'functions' => null),
         'pagination_request' => array(
@@ -85,6 +87,7 @@ final class ABJ_404_Solution_ClientBuildFingerprint {
                 'abj404PaginationFailureIsTransient',
                 'abj404PaginationTelemetry',
                 'abj404PaginationTelemetryDelivery',
+                'abj404ConcurrentControlRelay',
                 'abj404PaginationAttemptUrl',
                 'abj404PaginationAttemptData',
                 'abj404RequestPaginationPart',

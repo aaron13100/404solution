@@ -330,9 +330,17 @@
         var replaced = false;
         for (var i = 0; i < state.records.length; i++) {
             if (state.records[i] && record.id && state.records[i].id === record.id) {
-                // Keep the delivered flag: a patch must not make an already
-                // reported record ride another request a second time.
-                record.delivered = record.delivered || state.records[i].delivered;
+                // Most late patches (for example a table's resource timing)
+                // describe the same delivered revision and must not make it
+                // ride twice. A control receipt is different: its pending
+                // revision is durable but deliberately not deliverable, and
+                // the final outcome/overlap revision must get one real relay.
+                var priorRevision = typeof state.records[i].deliveryRevision === 'number'
+                    ? state.records[i].deliveryRevision : 0;
+                var nextRevision = typeof record.deliveryRevision === 'number'
+                    ? record.deliveryRevision : 0;
+                record.delivered = nextRevision > priorRevision
+                    ? false : (record.delivered || state.records[i].delivered);
                 state.records[i] = record;
                 replaced = true;
                 break;
@@ -361,9 +369,37 @@
     function takeUndelivered() {
         var key = ownBufferKey();
         var state = readOwnState();
+        // The same-phase control is a required diagnostic receipt, not one
+        // ordinary attempt among many. A counts request can settle after the
+        // control and otherwise become the newest record forever one carrier
+        // ahead of it. Prefer the finalized control receipt so the next real
+        // request journals it deterministically.
+        for (var priority = state.records.length - 1; priority >= 0; priority--) {
+            var required = state.records[priority];
+            if (required && required.kind === 'concurrent_control_browser_receipt'
+                    && required.deliverable !== false && required.delivered !== true) {
+                required.delivered = true;
+                writeStateAt(key, state);
+                return required;
+            }
+        }
+        // A finalized control can consume the carrier that historically sent
+        // the table attempt itself. Keep that table record ahead of the newer
+        // counts/pagination records so the two remaining progressive requests
+        // deterministically deliver both halves instead of starving the table
+        // account behind its own follow-up traffic.
+        for (var tablePriority = state.records.length - 1; tablePriority >= 0; tablePriority--) {
+            var tableRecord = state.records[tablePriority];
+            if (tableRecord && tableRecord.part === 'table'
+                    && tableRecord.deliverable !== false && tableRecord.delivered !== true) {
+                tableRecord.delivered = true;
+                writeStateAt(key, state);
+                return tableRecord;
+            }
+        }
         for (var i = state.records.length - 1; i >= 0; i--) {
             var record = state.records[i];
-            if (record && record.delivered !== true) {
+            if (record && record.deliverable !== false && record.delivered !== true) {
                 record.delivered = true;
                 writeStateAt(key, state);
                 return record;

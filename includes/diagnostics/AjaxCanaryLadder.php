@@ -234,6 +234,8 @@ final class ABJ_404_Solution_AjaxCanaryLadder {
         $compressOff = $entry($observations, self::STEP_COMPRESS_OFF);
         $stream = $entry($observations, self::STEP_STREAM);
         $streamGapMs = isset($stream['gapMs']) && is_numeric($stream['gapMs']) ? (int)$stream['gapMs'] : 0;
+        $concurrent = $entry($observations, self::STEP_CONCURRENT_CONTROL);
+        $samePhaseControlFailed = self::samePhaseControlFailed($concurrent, $realRequestFailed);
 
         return array_merge(array(
             'browserOrNetworkCausal' => !$ok($staticAsset),
@@ -242,14 +244,35 @@ final class ABJ_404_Solution_AjaxCanaryLadder {
             // req. 7 matrix rule: all server work completes (summary-ok) but
             // an inert response of the SAME size still fails => the failure
             // tracks response size/bandwidth/buffering, not query cost.
-            'sizeOrDeliveryCausal' => $ok($summary) && !$ok($inert),
+            'sizeOrDeliveryCausal' => !$samePhaseControlFailed && $ok($summary) && !$ok($inert),
             // Mirror rule: a same-size inert filler succeeds while the real,
             // content-bearing request failed => something inspects or mangles
             // the CONTENT (redirect URLs/HTML), not merely its size.
-            'contentInspectionCausal' => $ok($inert) && $realRequestFailed,
+            'contentInspectionCausal' => !$samePhaseControlFailed && $ok($inert) && $realRequestFailed,
+            'samePhaseControlFailed' => $samePhaseControlFailed,
             'compressionCausal' => $ok($compressOff) && !$ok($compressOn),
             'streamingBufferCausal' => !$ok($stream) && $streamGapMs > 2000,
         ), self::baselineTrend($observations));
+    }
+
+    /**
+     * A positive overlap is required before one failed control can veto later
+     * causal claims. Missing or malformed browser evidence remains unknown.
+     *
+     * @param array<string, mixed> $concurrent
+     */
+    private static function samePhaseControlFailed(array $concurrent, bool $realRequestFailed): bool {
+        $receipt = is_array($concurrent['receipt'] ?? null) ? $concurrent['receipt'] : array();
+        $overlap = is_array($concurrent['overlap'] ?? null) ? $concurrent['overlap'] : array();
+        $tableOutcome = is_scalar($concurrent['tableOutcome'] ?? null)
+            ? (string)$concurrent['tableOutcome'] : '';
+        $overlapState = is_scalar($overlap['state'] ?? null) ? (string)$overlap['state'] : '';
+        return $realRequestFailed
+            && $tableOutcome !== 'success'
+            && empty($receipt['ok'])
+            && $overlapState === 'computed'
+            && is_numeric($overlap['durationMs'] ?? null)
+            && (int)$overlap['durationMs'] > 0;
     }
 
     /**

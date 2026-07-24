@@ -88,6 +88,20 @@ function abj404PaginationTelemetryDelivery() {
 }
 
 /**
+ * Start a durable pairing record for the first table attempt's same-phase
+ * control. An unavailable diagnostic module degrades to no recording and
+ * never affects the table request.
+ *
+ * @param {object} record
+ * @returns {object|null}
+ */
+function abj404ConcurrentControlRelay(record) {
+    var evidence = window.abj404ConcurrentControlEvidence;
+    return evidence && typeof evidence.create === 'function'
+        ? evidence.create(record) : null;
+}
+
+/**
  * Request URL for one attempt. The attempt id also travels in the query
  * string so a proxy, CDN, or host access log records which browser attempt a
  * given origin request was, and so PerformanceResourceTiming entries can be
@@ -199,19 +213,33 @@ function abj404RequestPaginationPart(req, part, callbacks) {
             subpage: req.subpage,
             timeoutMs: req.ajaxTimeoutMs
         });
+        var concurrentControlRelay = null;
         if (part === 'table' && attemptIndex === 0 && !req.isBackgroundRefresh &&
                 window.abj404CanaryLadder &&
                 typeof window.abj404CanaryLadder.runConcurrentControl === 'function') {
+            concurrentControlRelay = abj404ConcurrentControlRelay(record);
+            if (concurrentControlRelay) {
+                req.concurrentControlEvidence = concurrentControlRelay.completion();
+            }
             try {
-                window.abj404CanaryLadder.runConcurrentControl({
+                var controlPromise = window.abj404CanaryLadder.runConcurrentControl({
                     baseUrl: req.baseUrl,
                     nonce: req.nonce,
                     subpage: req.subpage,
                     requestId: record.id
                 });
+                if (concurrentControlRelay) {
+                    Promise.resolve(controlPromise).then(
+                        concurrentControlRelay.controlSettled,
+                        concurrentControlRelay.controlRejected
+                    );
+                }
             } catch (controlError) {
                 if (window.console && window.console.warn) {
                     window.console.warn('404 Solution: concurrent canary control could not start', controlError);
+                }
+                if (concurrentControlRelay) {
+                    concurrentControlRelay.controlRejected(controlError);
                 }
             }
         }
@@ -230,6 +258,9 @@ function abj404RequestPaginationPart(req, part, callbacks) {
             success: function(result, textStatus, jqXHR) {
                 settled = true;
                 telemetry.finishAttempt(record, 'success', jqXHR, textStatus);
+                if (concurrentControlRelay) {
+                    concurrentControlRelay.tableSettled(record);
+                }
                 if (typeof callbacks.onSuccess === 'function') {
                     callbacks.onSuccess(result, part, attemptIndex);
                 }
@@ -237,6 +268,9 @@ function abj404RequestPaginationPart(req, part, callbacks) {
             error: function(jqXHR, textStatus, errorThrown) {
                 settled = true;
                 telemetry.finishAttempt(record, abj404PaginationOutcome(textStatus), jqXHR, textStatus);
+                if (concurrentControlRelay) {
+                    concurrentControlRelay.tableSettled(record);
+                }
                 var canRetry = abj404PaginationFailureIsTransient(jqXHR, textStatus) &&
                     attemptIndex < retryDelays.length;
                 if (canRetry) {
@@ -257,6 +291,9 @@ function abj404RequestPaginationPart(req, part, callbacks) {
             complete: function(jqXHR, textStatus) {
                 if (!settled) {
                     telemetry.finishAttempt(record, 'abort', jqXHR, textStatus || 'abort');
+                    if (concurrentControlRelay) {
+                        concurrentControlRelay.tableSettled(record);
+                    }
                     if (typeof callbacks.onTerminalError === 'function') {
                         callbacks.onTerminalError(jqXHR || {}, textStatus || 'abort', 'request incomplete', part, attemptIndex);
                     }
@@ -291,6 +328,7 @@ if (typeof window !== 'undefined' && window.abj404ClientBuildRegistry) {
         abj404PaginationFailureIsTransient,
         abj404PaginationTelemetry,
         abj404PaginationTelemetryDelivery,
+        abj404ConcurrentControlRelay,
         abj404PaginationAttemptUrl,
         abj404PaginationAttemptData,
         abj404RequestPaginationPart,

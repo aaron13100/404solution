@@ -115,6 +115,10 @@ final class ABJ_404_Solution_ClientTransportReport {
             // keys the whole journal is read by, and a client that sent a
             // field with one of those names would otherwise overwrite them and
             // forge the identity of its own evidence.
+            if (($report['kind'] ?? '') === 'concurrent_control_browser_receipt') {
+                self::journalConcurrentControlReceipt($requestId, $report);
+                return;
+            }
             ABJ_404_Solution_AjaxCheckpointLogger::record(
                 $requestId, 'client_prior_attempt', array('report' => $report));
         } catch (Throwable $e) {
@@ -122,6 +126,73 @@ final class ABJ_404_Solution_ClientTransportReport {
                 'message' => substr($e->getMessage(), 0, 200),
             ));
         }
+    }
+
+    /**
+     * File a concurrent-control browser receipt beside that control's own
+     * server trace while retaining which later request delivered it.
+     *
+     * @param array<string, mixed> $report
+     */
+    private static function journalConcurrentControlReceipt(string $carrierRequestId, array $report): void {
+        $controlRequestId = self::ledgerIdOrEmpty($report['controlRequestId'] ?? '');
+        $controlForRequestId = self::ledgerIdOrEmpty($report['controlForRequestId'] ?? '');
+        ABJ_404_Solution_AjaxCheckpointLogger::record(
+            $controlRequestId !== '' ? $controlRequestId : $carrierRequestId,
+            'concurrent_control_client_receipt',
+            array(
+                'carried_by' => $carrierRequestId,
+                'control_for_request_id' => $controlForRequestId,
+                'control_request_id' => $controlRequestId,
+                'report' => $report,
+            )
+        );
+    }
+
+    /**
+     * Whether a journal record is complete enough to serve as the required
+     * concurrent-control evidence in a support payload.
+     *
+     * @param array<mixed, mixed> $record
+     */
+    public static function isCompleteConcurrentControlJournalRecord(array $record): bool {
+        $report = is_array($record['report'] ?? null) ? $record['report'] : array();
+        return self::hasConcurrentControlJournalJoins($record)
+            && self::hasConcurrentControlBrowserEvidence($report);
+    }
+
+    /** @param array<mixed, mixed> $record */
+    private static function hasConcurrentControlJournalJoins(array $record): bool {
+        return ($record['envelope'] ?? '') === ABJ_404_Solution_CheckpointRecordFactory::ENVELOPE_FULL
+            && ($record['event'] ?? '') === 'concurrent_control_client_receipt'
+            && is_string($record['carried_by'] ?? null)
+            && $record['carried_by'] !== ''
+            && is_string($record['control_for_request_id'] ?? null)
+            && $record['control_for_request_id'] !== ''
+            && is_string($record['control_request_id'] ?? null)
+            && $record['control_request_id'] !== ''
+            && ($record['request_id'] ?? '') === $record['control_request_id'];
+    }
+
+    /** @param array<mixed, mixed> $report */
+    private static function hasConcurrentControlBrowserEvidence(array $report): bool {
+        $receipt = is_array($report['receipt'] ?? null) ? $report['receipt'] : array();
+        $overlap = is_array($report['overlap'] ?? null) ? $report['overlap'] : array();
+        $overlapState = $overlap['state'] ?? '';
+        $validOverlap = $overlapState === 'unavailable'
+            || ($overlapState === 'computed'
+                && is_numeric($overlap['durationMs'] ?? null)
+                && (int)$overlap['durationMs'] >= 0);
+        return ($report['kind'] ?? '') === 'concurrent_control_browser_receipt'
+            && $validOverlap
+            && is_string($receipt['resourceTimingState'] ?? null)
+            && $receipt['resourceTimingState'] !== '';
+    }
+
+    /** @param mixed $value */
+    private static function ledgerIdOrEmpty($value): string {
+        $id = is_scalar($value) ? (string)$value : '';
+        return preg_match('/^[a-zA-Z0-9]{8,64}$/', $id) === 1 ? $id : '';
     }
 
     /**

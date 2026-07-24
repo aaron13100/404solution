@@ -231,7 +231,8 @@ function abj404MaybeRunCanaryLadderAfterTableFailure(req) {
         baseUrl: req.baseUrl,
         nonce: req.nonce,
         subpage: req.subpage,
-        requestId: req.requestId
+        requestId: req.requestId,
+        concurrentControlEvidence: req.concurrentControlEvidence || null
     });
 }
 

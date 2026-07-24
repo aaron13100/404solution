@@ -52,7 +52,10 @@ final class ABJ_404_Solution_DiagnosticCollectionManifest {
      * so this catalog covers the journal-sourced browser receipt whose loss
      * could otherwise look exactly like a ladder that never ran.
      */
-    const REQUIRED_EVIDENCE_RECORDS = array('canary_step_client_receipt');
+    const REQUIRED_EVIDENCE_RECORDS = array(
+        'canary_step_client_receipt',
+        'concurrent_control_client_receipt',
+    );
 
     /**
      * Compose the manifest block. Never returns an empty string: a manifest
@@ -259,18 +262,19 @@ final class ABJ_404_Solution_DiagnosticCollectionManifest {
         $records = array();
         $available = array();
         foreach (explode("\n", $collected) as $line) {
-            if (strpos($line, '"event":"canary_step_client_receipt"') === false) {
+            if (strpos($line, '"event":"canary_step_client_receipt"') === false
+                    && strpos($line, '"event":"concurrent_control_client_receipt"') === false) {
                 continue;
             }
             $record = json_decode(trim($line), true);
-            if (is_array($record)
-                    && ($record['envelope'] ?? '') === 'full'
-                    && ($record['event'] ?? '') === 'canary_step_client_receipt'
-                    && is_string($record['step_request_id'] ?? null)
-                    && $record['step_request_id'] !== ''
-                    && is_string($record['carried_by'] ?? null)
-                    && $record['carried_by'] !== '') {
+            if (!is_array($record)) {
+                continue;
+            }
+            if (self::isAvailableCanaryReceipt($record)) {
                 $available['canary_step_client_receipt'] = true;
+            }
+            if (ABJ_404_Solution_ClientTransportReport::isCompleteConcurrentControlJournalRecord($record)) {
+                $available['concurrent_control_client_receipt'] = true;
             }
         }
         foreach (self::REQUIRED_EVIDENCE_RECORDS as $name) {
@@ -284,6 +288,23 @@ final class ABJ_404_Solution_DiagnosticCollectionManifest {
             );
         }
         return $records;
+    }
+
+    /** @param array<mixed, mixed> $record */
+    private static function isAvailableCanaryReceipt(array $record): bool {
+        return self::isFullCarriedReceipt($record, 'canary_step_client_receipt')
+            && is_string($record['step_request_id'] ?? null)
+            && $record['step_request_id'] !== '';
+    }
+
+    /**
+     * @param array<mixed, mixed> $record
+     */
+    private static function isFullCarriedReceipt(array $record, string $event): bool {
+        return ($record['envelope'] ?? '') === 'full'
+            && ($record['event'] ?? '') === $event
+            && is_string($record['carried_by'] ?? null)
+            && $record['carried_by'] !== '';
     }
 
     /**

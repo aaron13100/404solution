@@ -332,6 +332,11 @@ class ABJ_404_Solution_AdminAssetEnqueuer {
             array('abj404-view-updater-client-resource-timing',
                 'abj404-view-updater-transport-telemetry',
                 'abj404-view-updater-client-build-registry'));
+        $enq('abj404-view-updater-concurrent-control-evidence',
+            $vuBase . 'view_updater_concurrent_control_evidence.js',
+            array('abj404-view-updater-client-telemetry-store',
+                'abj404-view-updater-canary-measurements',
+                'abj404-view-updater-client-build-registry'));
         $enq('abj404-view-updater-canary-cooldown',
             $vuBase . 'view_updater_canary_cooldown.js',
             array('abj404-view-updater-client-build-registry'));
@@ -353,6 +358,7 @@ class ABJ_404_Solution_AdminAssetEnqueuer {
                 'abj404-view-updater-pagination-transport',
                 'abj404-view-updater-pagination-response-apply',
                 'abj404-view-updater-pagination-error-notice',
+                'abj404-view-updater-concurrent-control-evidence',
                 'abj404-view-updater-canary-ladder'));
         $enq('abj404-view-updater', $vuBase . 'view_updater.js',
             array('jquery', 'jquery-ui-autocomplete',

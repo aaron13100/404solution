@@ -200,6 +200,8 @@
                 var observation = $.extend({
                     ok: ok,
                     ms: nowMs() - started,
+                    startedAt: started,
+                    endedAt: nowMs(),
                     bytes: result ? JSON.stringify(result).length : 0,
                     requestId: requestId,
                     textStatus: textStatus || '',
@@ -339,7 +341,18 @@
         var observations = {};
         var post = ladderPoster(ctx);
 
-        return runStaticAssetCanary(ladderRunId)
+        var concurrentResult = concurrentControlObservation(ctx);
+        var firstStep;
+        if (concurrentResult && typeof concurrentResult.then === 'function') {
+            firstStep = concurrentResult.then(function (resolvedControl) {
+                observations.concurrent_control = resolvedControl;
+                return runStaticAssetCanary(ladderRunId);
+            });
+        } else {
+            observations.concurrent_control = concurrentResult;
+            firstStep = runStaticAssetCanary(ladderRunId);
+        }
+        return firstStep
             .then(function (staticResult) {
                 observations.static_asset = staticResult;
                 // The one step with no request of its own to be reported on,
@@ -404,6 +417,37 @@
                 warn('canary ladder run failed', ladderError);
                 return observations;
             });
+    }
+
+    /**
+     * The completed same-phase control evidence supplied by pagination
+     * transport. Its promise resolves after both the first table attempt and
+     * its control settle, so interpretation cannot race either callback.
+     *
+     * @param {object} ctx
+     * @returns {Promise<object>|object}
+     */
+    function concurrentControlObservation(ctx) {
+        var evidence = ctx && ctx.concurrentControlEvidence;
+        if (evidence && typeof evidence.then === 'function') {
+            return evidence.catch(function (evidenceError) {
+                warn('concurrent control evidence could not be read', evidenceError);
+                return {
+                    kind: 'concurrent_control_browser_receipt',
+                    outcome: 'error',
+                    tableOutcome: 'unknown',
+                    receipt: { ok: false, textStatus: 'diagnostic-error' },
+                    overlap: { state: 'unavailable', reason: 'evidence_error', durationMs: null }
+                };
+            });
+        }
+        return {
+            kind: 'concurrent_control_browser_receipt',
+            outcome: 'unavailable',
+            tableOutcome: 'unknown',
+            receipt: { ok: false, textStatus: 'diagnostic-unavailable' },
+            overlap: { state: 'unavailable', reason: 'evidence_module_unavailable', durationMs: null }
+        };
     }
 
     /**
