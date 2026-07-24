@@ -99,9 +99,11 @@ final class ABJ_404_Solution_SupportEvidenceExcerpt {
      */
     public static function assemble(array $client): string {
         $clientTelemetry = self::clientField($client, 'telemetry');
-        $channels = self::collectChannels();
+        $clientAttempts = ABJ_404_Solution_ClientTransportReport::attemptOutcomesInDrainedBuffer(
+            $clientTelemetry);
+        $channels = self::collectChannels($clientAttempts);
         $sections = array(
-            self::collectionManifest($channels, $clientTelemetry),
+            self::collectionManifest($channels, $clientAttempts),
             self::detachAbVerdict(self::clientField($client, 'session_id')),
             self::loggerExcerpt(),
         );
@@ -143,15 +145,20 @@ final class ABJ_404_Solution_SupportEvidenceExcerpt {
      *
      * Every channel is sourced BEFORE any of them is read, because the two
      * excerpts are ranked from one shared failure index and the index has to
-     * be complete before the first read spends its budget. The browser writes
-     * its verdicts to the checkpoint journal only, so without this the stage
-     * trace ranks a request PHP completed and the browser never received as
-     * ordinary healthy context -- and that request's stage timings are the
-     * evidence for where the response was built before it failed to arrive.
+     * be complete before the first read spends its budget. Browser verdicts
+     * normally arrive through the checkpoint journal, but a final timeout can
+     * survive only in the drained support-request buffer when neither its
+     * retry nor its report-only beacon reached PHP. Both browser channels are
+     * therefore unioned into the same index before either journal applies its
+     * file cap. Without this, the stage trace ranks a request PHP completed and
+     * the browser never received as ordinary healthy context -- and that
+     * request's stage timings are the evidence for where the response was
+     * built before it failed to arrive.
      *
+     * @param array{status: string, ids: array<int, string>, records: int, outcomes: array<string, bool>} $clientAttempts
      * @return array<int, array{channel: string, directory: string, usable: bool, paths: array<int, string>, collected: string, file_selection: array<string, mixed>}>
      */
-    private static function collectChannels(): array {
+    private static function collectChannels(array $clientAttempts): array {
         $trace = class_exists('ABJ_404_Solution_AjaxRequestTrace')
             ? ABJ_404_Solution_AjaxTraceJournal::supportCollectionSource() : null;
         $checkpoints = class_exists('ABJ_404_Solution_CheckpointJournalReader')
@@ -167,6 +174,13 @@ final class ABJ_404_Solution_SupportEvidenceExcerpt {
                 if ($source !== null) {
                     $failingIds += ABJ_404_Solution_DiagnosticJournalExcerpt::failureIndex($source['paths']);
                 }
+            }
+        }
+        $clientOutcomes = isset($clientAttempts['outcomes']) && is_array($clientAttempts['outcomes'])
+            ? $clientAttempts['outcomes'] : array();
+        foreach ($clientOutcomes as $requestId => $healthy) {
+            if ($healthy === false) {
+                $failingIds[(string)$requestId] = true;
             }
         }
 
@@ -206,8 +220,9 @@ final class ABJ_404_Solution_SupportEvidenceExcerpt {
      * exactly the ambiguity this section exists to remove.
      *
      * @param array<int, array{channel: string, directory: string, usable: bool, paths: array<int, string>, collected: string, file_selection: array<string, mixed>}> $channels
+     * @param array{status: string, ids: array<int, string>, records: int, outcomes: array<string, bool>} $clientAttempts
      */
-    private static function collectionManifest(array $channels, string $clientTelemetry): string {
+    private static function collectionManifest(array $channels, array $clientAttempts): string {
         if (!class_exists('ABJ_404_Solution_DiagnosticCollectionManifest')
                 || !class_exists('ABJ_404_Solution_ClientTransportReport')) {
             return 'Diagnostic collection manifest unavailable: the manifest classes could not be loaded'
@@ -215,7 +230,7 @@ final class ABJ_404_Solution_SupportEvidenceExcerpt {
         }
         return ABJ_404_Solution_DiagnosticCollectionManifest::compose(
             $channels,
-            ABJ_404_Solution_ClientTransportReport::attemptIdsInDrainedBuffer($clientTelemetry),
+            $clientAttempts,
             self::MAX_COLLECTION_MANIFEST_BYTES
         );
     }

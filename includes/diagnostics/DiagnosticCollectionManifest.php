@@ -66,7 +66,7 @@ final class ABJ_404_Solution_DiagnosticCollectionManifest {
      *   One entry per journal the collector actually read, carrying the
      *   candidate paths it used and the text it got back.
      * @param array{status: string, ids: array<int, string>, records: int} $clientAttempts
-     *   ABJ_404_Solution_ClientTransportReport::attemptIdsInDrainedBuffer().
+     *   ABJ_404_Solution_ClientTransportReport::attemptOutcomesInDrainedBuffer().
      * @param int $budgetBytes Hard ceiling for the returned string.
      * @return string
      */

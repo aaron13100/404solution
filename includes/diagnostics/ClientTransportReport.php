@@ -295,7 +295,7 @@ final class ABJ_404_Solution_ClientTransportReport {
     }
 
     /**
-     * The attempt ids the browser says its drained buffer describes.
+     * The attempt outcomes the browser says its drained buffer describes.
      *
      * The support payload is the one place both halves of the request ledger
      * meet, so "the browser is reporting attempt X and the collected journals
@@ -312,18 +312,30 @@ final class ABJ_404_Solution_ClientTransportReport {
      * the same silent-empty defect this whole manifest exists to end.
      *
      * @param string $raw The raw POSTed buffer, already unslashed.
-     * @return array{status: string, ids: array<int, string>, records: int}
+     * A failure is sticky across duplicate records. Browser storage is a
+     * ring buffer and a retry can leave more than one account of an attempt;
+     * a later success must not erase an earlier timeout, and a later timeout
+     * must still override an earlier success. Only the explicit `success`
+     * outcome is healthy, matching the ranking rules used after journaling.
+     *
+     * @return array{status: string, ids: array<int, string>, records: int, outcomes: array<string, bool>}
      *   status: `absent`, `unparseable`, or `parsed`.
      */
-    public static function attemptIdsInDrainedBuffer(string $raw): array {
+    public static function attemptOutcomesInDrainedBuffer(string $raw): array {
         if ($raw === '') {
-            return array('status' => 'absent', 'ids' => array(), 'records' => 0);
+            return array(
+                'status' => 'absent', 'ids' => array(), 'records' => 0, 'outcomes' => array(),
+            );
         }
-        $decoded = json_decode(substr($raw, 0, self::MAX_DRAINED_BUFFER_INPUT_BYTES), true);
-        if (!is_array($decoded)) {
-            return array('status' => 'unparseable', 'ids' => array(), 'records' => 0);
+        $boundedRaw = substr($raw, 0, self::MAX_DRAINED_BUFFER_INPUT_BYTES);
+        $decoded = json_decode($boundedRaw, true);
+        if (!is_array($decoded) || !self::isJsonArrayDocument($boundedRaw)) {
+            return array(
+                'status' => 'unparseable', 'ids' => array(), 'records' => 0, 'outcomes' => array(),
+            );
         }
         $ids = array();
+        $outcomes = array();
         foreach ($decoded as $record) {
             if (!is_array($record) || !isset($record['id']) || !is_scalar($record['id'])) {
                 continue;
@@ -337,11 +349,18 @@ final class ABJ_404_Solution_ClientTransportReport {
                 continue;
             }
             $ids[$id] = true;
+            $outcome = isset($record['outcome']) && is_scalar($record['outcome'])
+                ? (string)$record['outcome'] : '';
+            $healthy = in_array($outcome, self::HEALTHY_OUTCOMES, true);
+            if (!array_key_exists($id, $outcomes) || !$healthy) {
+                $outcomes[$id] = $healthy;
+            }
         }
         return array(
             'status' => 'parsed',
             'ids' => array_slice(array_keys($ids), 0, self::MAX_ATTEMPT_IDS_REPORTED),
             'records' => count($decoded),
+            'outcomes' => $outcomes,
         );
     }
 
@@ -375,9 +394,12 @@ final class ABJ_404_Solution_ClientTransportReport {
         if ($raw === '') {
             return $unparseable;
         }
-        $decoded = json_decode(substr($raw, 0, self::MAX_DRAINED_BUFFER_INPUT_BYTES), true);
-        if (!is_array($decoded)) {
-            $unparseable['error'] = json_last_error_msg();
+        $boundedRaw = substr($raw, 0, self::MAX_DRAINED_BUFFER_INPUT_BYTES);
+        $decoded = json_decode($boundedRaw, true);
+        if (!is_array($decoded) || !self::isJsonArrayDocument($boundedRaw)) {
+            $unparseable['error'] = is_array($decoded)
+                ? 'expected a JSON array of attempt records'
+                : json_last_error_msg();
             return $unparseable;
         }
         $records = array();
@@ -401,6 +423,18 @@ final class ABJ_404_Solution_ClientTransportReport {
             'json' => $json, 'parsed' => true, 'kept' => count($kept),
             'dropped' => count($records) - count($kept), 'raw_length' => $rawLength, 'error' => '',
         );
+    }
+
+    /**
+     * Whether decoded JSON came from the buffer's required top-level array.
+     *
+     * Associative decoding turns both JSON objects and arrays into PHP arrays,
+     * so the decoded type alone cannot enforce the wire contract. Inspecting
+     * the first non-whitespace byte keeps a valid object from being reported as
+     * a successfully parsed empty attempt list.
+     */
+    private static function isJsonArrayDocument(string $raw): bool {
+        return substr(ltrim($raw), 0, 1) === '[';
     }
 
     /**
