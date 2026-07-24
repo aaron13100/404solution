@@ -20,25 +20,28 @@
  * Each step is its own POST, so the server already has independent trace
  * evidence that every step's PHP execution happened. The one thing only the
  * browser can supply is whether each step's RESPONSE actually arrived, and
- * that confirmation rides the NEXT step's request (see createReceiptRelay --
- * the same "ride the next request" route ClientTransportReport uses for
- * table requests). It used to be bundled solely into the final `interpret`
+ * that confirmation rides the NEXT step's request through the measurement
+ * module's relay (the same route ClientTransportReport uses for table
+ * requests). It used to be bundled solely into the final `interpret`
  * POST, which meant one lost request -- a hang on the very host under
  * diagnosis, a closed tab, an interrupted script -- erased the receipt side
  * of the evidence for the entire ladder at once.
  *
- * Order: static asset; auth; limiter; summary; inert size; compression on/off;
- * stream; then interpret. Pre-releases place a 1 KB baseline after each
- * measured server step. The static asset is the only step that bypasses PHP.
+ * Order: static asset; auth; limiter; summary; server size lookup; geometric
+ * matched compressible/incompressible probes; inert size; compression
+ * on/off; stream; then interpret. Pre-releases place a 1 KB baseline after
+ * each measured control step. The static asset is the only step that
+ * bypasses PHP.
  *
  * Globals defined: abj404CanaryLadder.
  *
  * Depends on view_updater_client_telemetry_store.js (cooldown gate),
  * view_updater_client_telemetry_env.js (session id), and
  * view_updater_transport_telemetry.js (the real request's observed byte
- * size, when available). Degrades to doing nothing if any of those, or
- * jQuery itself, did not load -- a missing diagnostic module must never
- * affect the table the admin is trying to use.
+ * size fallback), plus view_updater_canary_measurements.js (wire/decoded
+ * evidence, payload rungs, and receipt relay). Degrades to doing nothing if
+ * any required control module, or jQuery itself, did not load -- a missing
+ * diagnostic module must never affect the table the admin is trying to use.
  */
 (function (global, $, abj404Module) {
     if (global.abj404ClientBuildRegistry) {
@@ -57,21 +60,7 @@
     var COOLDOWN_MS = 60 * 60 * 1000;
     var STATIC_ASSET_TIMEOUT_MS = 10000;
     var STEP_TIMEOUT_MS = 15000;
-    var DEFAULT_TARGET_BYTES = 50000;
     var BASELINE_BYTES = 1024;
-
-    /**
-     * Ceiling on how many not-yet-delivered step receipts one request may
-     * carry. This can only be reached by a run whose requests keep failing --
-     * exactly the case worth bounding,
-     * and the bound is on RECORDS rather than on the serialized string so a
-     * trimmed payload always arrives as valid JSON (the byte-slice shape gap
-     * G1/GG removed from the other client channels).
-     */
-    var MAX_PENDING_RECEIPTS = 10;
-
-    /** Longest transport status string kept on a receipt ('parsererror' etc). */
-    var MAX_TEXT_STATUS_CHARS = 32;
 
     /** @param {string} message @param {*} error @returns {void} */
     function warn(message, error) {
@@ -126,6 +115,12 @@
             ? global.abj404AjaxWithNonceRetry : $.ajax; // ajax-direct-approved: fallback matches the other view_updater transports when the nonce-retry module has not loaded
     }
 
+    /** @returns {object|null} */
+    function measurements() {
+        var module = global.abj404CanaryMeasurements;
+        return module && typeof module.createReceiptRelay === 'function' ? module : null;
+    }
+
     /**
      * Step 1: fetch the same-host static asset. No PHP, no admin-ajax
      * plumbing -- this is deliberately outside the request wrapper because
@@ -143,12 +138,16 @@
             }
             var started = nowMs();
             var settled = false;
-            var finish = function (ok, bytes) {
+            var finish = function (ok, bytes, xhr) {
                 if (settled) {
                     return;
                 }
                 settled = true;
-                resolve({ ok: ok, ms: nowMs() - started, bytes: bytes || 0 });
+                resolve($.extend({
+                    ok: ok,
+                    ms: nowMs() - started,
+                    bytes: bytes || 0
+                }, measurements().responseWireEvidence(cacheBuster, xhr || null)));
             };
             try {
                 var xhr = new global.XMLHttpRequest();
@@ -156,93 +155,16 @@
                 xhr.open('GET', url + sep + 'cb=' + encodeURIComponent(cacheBuster), true);
                 xhr.timeout = STATIC_ASSET_TIMEOUT_MS;
                 xhr.addEventListener('load', function () {
-                    finish(xhr.status >= 200 && xhr.status < 300, (xhr.responseText || '').length);
+                    finish(xhr.status >= 200 && xhr.status < 300, (xhr.responseText || '').length, xhr);
                 });
-                xhr.addEventListener('error', function () { finish(false, 0); });
-                xhr.addEventListener('timeout', function () { finish(false, 0); });
+                xhr.addEventListener('error', function () { finish(false, 0, xhr); });
+                xhr.addEventListener('timeout', function () { finish(false, 0, xhr); });
                 xhr.send();
             } catch (fetchError) {
                 warn('static asset canary could not start', fetchError);
-                finish(false, 0);
+                finish(false, 0, null);
             }
         });
-    }
-
-    /**
-     * The browser's receipt confirmation for one finished step, shaped for
-     * the wire. Deliberately tiny and fixed-shape: it exists to answer "did
-     * this step's response reach the browser, how long did it take, and how
-     * many bytes arrived", which is precisely what no server-side trace can
-     * say. The step's own payload is never included.
-     *
-     * @param {string} step
-     * @param {object} observation the value postStep/runStaticAssetCanary resolved with.
-     * @returns {object}
-     */
-    function stepReceipt(step, observation) {
-        observation = observation || {};
-        return {
-            step: step,
-            // The step's OWN server request id, so the receipt joins that
-            // step's server-side trace group rather than the group of
-            // whichever request happened to carry it.
-            requestId: typeof observation.requestId === 'string' ? observation.requestId : '',
-            ok: !!observation.ok,
-            ms: typeof observation.ms === 'number' ? Math.round(observation.ms) : -1,
-            bytes: typeof observation.bytes === 'number' ? observation.bytes : -1,
-            textStatus: String(observation.textStatus || '').slice(0, MAX_TEXT_STATUS_CHARS)
-        };
-    }
-
-    /**
-     * Carries finished steps' receipts forward onto later requests until the
-     * server has demonstrably received them.
-     *
-     * A receipt is only cleared once the request that carried it came BACK,
-     * because a request that never returned is exactly the case where the
-     * server may never have seen it. So an undelivered receipt simply rides
-     * the next request instead of being dropped, and the ladder can lose any
-     * single request without losing the evidence that request was carrying.
-     *
-     * @returns {object}
-     */
-    function createReceiptRelay() {
-        var pending = [];
-        var carried = 0;
-        return {
-            /**
-             * Record one finished step's own outcome for later delivery.
-             * @param {string} step @param {object} observation @returns {void}
-             */
-            hold: function (step, observation) {
-                pending.push(stepReceipt(step, observation));
-                while (pending.length > MAX_PENDING_RECEIPTS) {
-                    pending.shift();
-                }
-            },
-            /**
-             * Attach everything still undelivered to an outgoing request.
-             * @param {object} data @returns {void}
-             */
-            attach: function (data) {
-                carried = pending.length;
-                if (carried > 0) {
-                    data.canaryStepReceipts = JSON.stringify(pending);
-                }
-            },
-            /**
-             * Resolve what the carrying request's outcome means for the
-             * receipts it took with it.
-             * @param {boolean} delivered whether that request came back.
-             * @returns {void}
-             */
-            settled: function (delivered) {
-                if (delivered) {
-                    pending = pending.slice(carried);
-                }
-                carried = 0;
-            }
-        };
     }
 
     /**
@@ -275,15 +197,26 @@
             if (relay) {
                 relay.attach(data);
             }
-            var settle = function (ok, result, textStatus) {
-                var observation = {
+            var settle = function (ok, result, textStatus, jqXHR) {
+                var observation = $.extend({
                     ok: ok,
                     ms: nowMs() - started,
                     bytes: result ? JSON.stringify(result).length : 0,
                     requestId: requestId,
                     textStatus: textStatus || '',
+                    payloadVariant: String((result && result.payloadVariant)
+                        || (extra && extra.payloadVariant) || ''),
+                    payloadRungPercent: result && typeof result.payloadRungPercent === 'number'
+                        ? result.payloadRungPercent
+                        : (extra && typeof extra.payloadRungPercent === 'number'
+                            ? extra.payloadRungPercent : -1),
+                    targetBytes: result && typeof result.targetBytes === 'number'
+                        ? result.targetBytes
+                        : (extra && typeof extra.payloadBytes === 'number' ? extra.payloadBytes : -1),
+                    targetBytesSource: String((result && result.targetBytesSource)
+                        || (extra && extra.targetBytesSource) || ''),
                     result: result || null
-                };
+                }, measurements().responseWireEvidence(requestId, jqXHR || null));
                 if (relay) {
                     relay.settled(ok);
                     relay.hold(step, observation);
@@ -291,16 +224,17 @@
                 resolve(observation);
             };
             ajaxRunner()({
-                url: resolveAjaxUrl(ctx.baseUrl),
+                url: measurements().requestUrl(resolveAjaxUrl(ctx.baseUrl), requestId),
                 type: 'POST',
                 dataType: 'json',
                 timeout: STEP_TIMEOUT_MS,
                 data: data,
-                success: function (result) {
-                    settle(!!(result && result.canaryStep === step && result.success !== false), result, 'success');
+                success: function (result, textStatus, jqXHR) {
+                    settle(!!(result && result.canaryStep === step && result.success !== false),
+                        result, textStatus || 'success', jqXHR);
                 },
                 error: function (jqXHR, textStatus) {
-                    settle(false, null, textStatus);
+                    settle(false, null, textStatus, jqXHR);
                 }
             });
         });
@@ -316,6 +250,9 @@
      */
     function runConcurrentControl(ctx) {
         ctx = ctx || {};
+        if (!measurements()) {
+            return Promise.resolve({ ok: false, requestId: '', textStatus: 'diagnostic-unavailable' });
+        }
         return postStep(ctx, 'concurrent_control', {
             controlForRequestId: ctx.requestId || ''
         }, ctx.requestId || '').catch(function (controlError) {
@@ -325,31 +262,27 @@
     }
 
     /**
-     * The most recently observed byte size of the REAL table response for
-     * this request, when the transport telemetry module recorded one.
-     * Falls back to a representative default so the size-comparison canaries
-     * (inert, compress_on/off) still run meaningfully when the real request
-     * never received any bytes at all -- exactly Bruno's symptom.
+     * Run the matched geometric probes serially through the same incremental
+     * receipt relay as every other ladder step.
      *
-     * @param {object} ctx
-     * @returns {number}
+     * @param {function(string, object, string): Promise<object>} post
+     * @param {object} observations
+     * @param {{bytes: number, source: string}} target
+     * @param {string} parentId
+     * @returns {Promise<{requestId: string, target: object}>}
      */
-    function targetPayloadBytes(ctx) {
-        try {
-            var telemetry = global.abj404TransportTelemetry;
-            if (!telemetry || typeof telemetry.attemptsFor !== 'function') {
-                return DEFAULT_TARGET_BYTES;
-            }
-            var attempts = telemetry.attemptsFor(ctx.requestId);
-            if (!attempts.length) {
-                return DEFAULT_TARGET_BYTES;
-            }
-            var bytes = attempts[attempts.length - 1].bytes;
-            return (typeof bytes === 'number' && bytes > 0) ? bytes : DEFAULT_TARGET_BYTES;
-        } catch (readError) {
-            warn('could not read the real response size for the canary ladder', readError);
-            return DEFAULT_TARGET_BYTES;
-        }
+    function postSizeProbes(post, observations, target, parentId) {
+        observations.size_probe = [];
+        return measurements().sizeProbePlan(target).reduce(function (chain, probe) {
+            return chain.then(function (previousId) {
+                return post('size_probe', probe, previousId).then(function (result) {
+                    observations.size_probe.push(result);
+                    return result.requestId;
+                });
+            });
+        }, Promise.resolve(parentId)).then(function (lastRequestId) {
+            return { requestId: lastRequestId, target: target };
+        });
     }
 
     /**
@@ -366,7 +299,7 @@
      *   .hold(step, observation) for the one step that never reaches PHP.
      */
     function ladderPoster(ctx) {
-        var relay = createReceiptRelay();
+        var relay = measurements().createReceiptRelay();
         var post = function (step, extra, parentId) {
             return postStep(ctx, step, extra, parentId, relay);
         };
@@ -399,6 +332,10 @@
      */
     function runLadder(ctx) {
         ctx = ctx || {};
+        if (!measurements()) {
+            warn('canary measurement module is unavailable', null);
+            return Promise.resolve({});
+        }
         var ladderRunId = mintId();
         var observations = {};
         var post = ladderPoster(ctx);
@@ -418,24 +355,37 @@
                 return postMeasuredStep(post, observations, 'summary', {}, limiterStage.requestId, 2);
             })
             .then(function (summaryStage) {
-                var bytes = targetPayloadBytes(ctx);
-                return postMeasuredStep(post, observations, 'inert', { payloadBytes: bytes },
-                    summaryStage.requestId, 3).then(function (inertStage) {
-                    return { bytes: bytes, requestId: inertStage.requestId };
+                return postMeasuredStep(post, observations, 'size_target', {},
+                    summaryStage.requestId, 3);
+            })
+            .then(function (targetStage) {
+                var target = measurements().targetPayload(ctx, observations);
+                return postSizeProbes(post, observations, target, targetStage.requestId);
+            })
+            .then(function (sizeStage) {
+                return postMeasuredStep(post, observations, 'inert', {
+                    payloadBytes: sizeStage.target.bytes,
+                    targetBytesSource: sizeStage.target.source
+                }, sizeStage.requestId, 4).then(function (inertStage) {
+                    return { target: sizeStage.target, requestId: inertStage.requestId };
                 });
             })
             .then(function (inertStage) {
                 return postMeasuredStep(post, observations, 'compress_on',
-                    { payloadBytes: inertStage.bytes }, inertStage.requestId, 4).then(function (onStage) {
-                    return { bytes: inertStage.bytes, requestId: onStage.requestId };
+                    { payloadBytes: inertStage.target.bytes,
+                        targetBytesSource: inertStage.target.source },
+                    inertStage.requestId, 5).then(function (onStage) {
+                    return { target: inertStage.target, requestId: onStage.requestId };
                 });
             })
             .then(function (onStage) {
                 return postMeasuredStep(post, observations, 'compress_off',
-                    { payloadBytes: onStage.bytes }, onStage.requestId, 5);
+                    { payloadBytes: onStage.target.bytes,
+                        targetBytesSource: onStage.target.source },
+                    onStage.requestId, 6);
             })
             .then(function (offStage) {
-                return postMeasuredStep(post, observations, 'stream', {}, offStage.requestId, 6);
+                return postMeasuredStep(post, observations, 'stream', {}, offStage.requestId, 7);
             })
             .then(function (streamStage) {
                 // The full observation set still rides interpret: the

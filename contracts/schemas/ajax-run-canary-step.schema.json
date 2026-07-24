@@ -9,18 +9,23 @@
     "nonce": { "type": "string", "minLength": 1 },
     "canaryStep": {
       "type": "string",
-      "enum": ["auth_only", "post_limiter", "summary", "inert", "compress_on", "compress_off", "stream", "interpret"]
+      "enum": ["concurrent_control", "baseline_control", "auth_only", "post_limiter", "summary", "size_target", "size_probe", "inert", "compress_on", "compress_off", "stream", "interpret"]
     },
     "requestId": { "type": "string", "minLength": 1 },
     "retryParentId": { "type": "string" },
     "sessionId": { "type": "string" },
     "subpage": { "type": "string" },
     "payloadBytes": { "type": "string" },
+    "payloadVariant": { "type": "string", "enum": ["compressible", "incompressible"] },
+    "payloadRungPercent": { "type": "string", "pattern": "^([1-9]|[1-9][0-9]|100)$" },
+    "targetBytesSource": { "type": "string", "enum": ["session_json_encode", "browser_response", "default_unavailable"] },
+    "baselineOrdinal": { "type": "string" },
+    "controlForRequestId": { "type": "string" },
     "observations": { "type": "string" },
     "realRequestFailed": { "type": "string" },
     "canaryStepReceipts": {
       "type": "string",
-      "description": "JSON array of the browser's receipt confirmations for ladder steps that finished before this request, riding forward until the server has demonstrably received them (gap-hunt iteration 2 gap GE). Each record: {step, requestId, ok, ms, bytes, textStatus}. Absent on the first request of a run."
+      "description": "JSON array of the browser's receipt confirmations for ladder steps that finished before this request, riding forward until the server has demonstrably received them (gap-hunt iteration 2 gap GE). Each record includes step/request identity, outcome/timing, Content-Encoding, transferred/encoded/decoded body sizes, resource-timing state, and size-probe variant/rung/target provenance. Absent on the first request of a run."
     }
   }
 }

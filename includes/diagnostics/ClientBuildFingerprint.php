@@ -69,6 +69,8 @@ final class ABJ_404_Solution_ClientBuildFingerprint {
             'file' => 'ajax/view_updater_client_resource_timing.js', 'functions' => null),
         'transport_telemetry' => array('file' => 'ajax/view_updater_transport_telemetry.js', 'functions' => null),
         'telemetry_delivery' => array('file' => 'ajax/view_updater_transport_telemetry_delivery.js', 'functions' => null),
+        'canary_measurements' => array(
+            'file' => 'ajax/view_updater_canary_measurements.js', 'functions' => null),
         'canary_ladder' => array('file' => 'ajax/view_updater_canary_ladder.js', 'functions' => null),
         'support_request' => array('file' => 'ajax/SupportRequest.js', 'functions' => null),
         'pagination_request' => array(

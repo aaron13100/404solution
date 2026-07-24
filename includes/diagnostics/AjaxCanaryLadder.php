@@ -17,8 +17,9 @@ if (!defined('ABSPATH')) {
  * failure in a session and comparing which ones succeed. Armed pre-releases
  * interleave a repeated fixed-size baseline to expose time drift.
  *
- * This class owns the step catalog, byte-size shaping, and the pure
- * interpretation matrix. It owns no transport, no auth and no journaling --
+ * This class owns the step catalog and pure interpretation matrix, exposing
+ * compatibility delegates for payload shaping and receipt parsing. It owns
+ * no transport, no auth and no journaling --
  * ABJ_404_Solution_Ajax_CanaryLadder is the AJAX handler that drives each
  * step through the same auth/checkpoint/trace plumbing the real table
  * endpoint uses, so a canary's timing is directly comparable to it.
@@ -46,6 +47,8 @@ final class ABJ_404_Solution_AjaxCanaryLadder {
     const STEP_AUTH_ONLY = 'auth_only';
     const STEP_POST_LIMITER = 'post_limiter';
     const STEP_SUMMARY = 'summary';
+    const STEP_SIZE_TARGET = 'size_target';
+    const STEP_SIZE_PROBE = 'size_probe';
     const STEP_INERT = 'inert';
     const STEP_COMPRESS_ON = 'compress_on';
     const STEP_COMPRESS_OFF = 'compress_off';
@@ -56,6 +59,7 @@ final class ABJ_404_Solution_AjaxCanaryLadder {
     const STEPS = array(
         self::STEP_CONCURRENT_CONTROL, self::STEP_BASELINE_CONTROL, self::STEP_AUTH_ONLY,
         self::STEP_POST_LIMITER, self::STEP_SUMMARY,
+        self::STEP_SIZE_TARGET, self::STEP_SIZE_PROBE,
         self::STEP_INERT, self::STEP_COMPRESS_ON, self::STEP_COMPRESS_OFF,
         self::STEP_STREAM, self::STEP_INTERPRET,
     );
@@ -68,26 +72,33 @@ final class ABJ_404_Solution_AjaxCanaryLadder {
      * ceiling in front of it would blur exactly the thing it isolates.
      */
     const RATE_LIMITED_STEPS = array(
-        self::STEP_SUMMARY, self::STEP_INERT, self::STEP_COMPRESS_ON,
+        self::STEP_SUMMARY, self::STEP_SIZE_TARGET, self::STEP_SIZE_PROBE,
+        self::STEP_INERT, self::STEP_COMPRESS_ON,
         self::STEP_COMPRESS_OFF, self::STEP_STREAM,
     );
 
     /**
      * Hard bound on the raw `canaryStepReceipts` parameter BEFORE it is
-     * parsed. The client caps itself at ten fixed-shape records (~1.8 KB
-     * worst case); this is the server refusing to parse more than that
-     * regardless of what actually arrives.
+     * parsed. The client caps itself at 24 fixed-shape records (including
+     * size/encoding evidence); this is the server refusing to parse more than
+     * that regardless of what actually arrives.
      */
-    const MAX_STEP_RECEIPTS_BYTES = 4096;
+    const MAX_STEP_RECEIPTS_BYTES = 16384;
 
     /** Hard bound on how many receipts one request is allowed to carry. */
-    const MAX_STEP_RECEIPTS = 12;
+    const MAX_STEP_RECEIPTS = 32;
 
     /** Longest transport status string kept on a receipt ('parsererror' etc). */
     const MAX_TEXT_STATUS_CHARS = 32;
 
     /** Longest step name kept verbatim when this build does not recognise it. */
     const MAX_REPORTED_STEP_CHARS = 32;
+
+    const PAYLOAD_VARIANT_COMPRESSIBLE = 'compressible';
+    const PAYLOAD_VARIANT_INCOMPRESSIBLE = 'incompressible';
+    const TARGET_SOURCE_SESSION_JSON = 'session_json_encode';
+    const TARGET_SOURCE_BROWSER = 'browser_response';
+    const TARGET_SOURCE_DEFAULT = 'default_unavailable';
 
     const AUTH_ONLY_BYTES = 1024;
     const STREAM_WHITESPACE_BYTES = 2048;
@@ -112,11 +123,22 @@ final class ABJ_404_Solution_AjaxCanaryLadder {
      * @param mixed $raw
      */
     public static function clampTargetBytes($raw, int $default = self::DEFAULT_INERT_BYTES): int {
-        $value = is_numeric($raw) ? (int)$raw : $default;
-        if ($value <= 0) {
-            $value = $default;
-        }
-        return max(self::MIN_INERT_BYTES, min(self::MAX_INERT_BYTES, $value));
+        return ABJ_404_Solution_AjaxCanaryPayloadFactory::clampTargetBytes($raw, $default);
+    }
+
+    /** @param mixed $raw */
+    public static function normalizePayloadVariant($raw): string {
+        return ABJ_404_Solution_AjaxCanaryPayloadFactory::normalizeVariant($raw);
+    }
+
+    /** @param mixed $raw */
+    public static function normalizePayloadRungPercent($raw): int {
+        return ABJ_404_Solution_AjaxCanaryPayloadFactory::normalizeRungPercent($raw);
+    }
+
+    /** @param mixed $raw */
+    public static function normalizeTargetBytesSource($raw): string {
+        return ABJ_404_Solution_AjaxCanaryPayloadFactory::normalizeTargetSource($raw);
     }
 
     /**
@@ -145,78 +167,7 @@ final class ABJ_404_Solution_AjaxCanaryLadder {
      *   order the browser reported them.
      */
     public static function parseStepReceipts($raw): array {
-        $text = is_scalar($raw) ? (string)$raw : '';
-        if ($text === '') {
-            return array();
-        }
-        $truncated = strlen($text) > self::MAX_STEP_RECEIPTS_BYTES;
-        $decoded = json_decode(substr($text, 0, self::MAX_STEP_RECEIPTS_BYTES), true);
-        if (!is_array($decoded)) {
-            return array(array(
-                'decoded' => false,
-                'json_error' => json_last_error_msg(),
-                'raw_length' => strlen($text),
-                'raw_head' => substr($text, 0, 200),
-            ));
-        }
-        // A single receipt sent unwrapped is accepted as readily as a list:
-        // an older or hand-modified client that sends one record is a
-        // tolerable input, not a reason to discard the only evidence it had
-        // (Defensive Coding #10, fix the consumer rather than the input).
-        if (array_key_exists('step', $decoded)) {
-            $decoded = array($decoded);
-        }
-        $receipts = array();
-        foreach ($decoded as $entry) {
-            if (!is_array($entry)) {
-                continue;
-            }
-            $receipts[] = self::normalizeStepReceipt($entry, $truncated);
-            if (count($receipts) >= self::MAX_STEP_RECEIPTS) {
-                break;
-            }
-        }
-        return $receipts;
-    }
-
-    /**
-     * One receipt, rebuilt field by field from whatever the browser sent.
-     *
-     * Nothing is passed through: the decoded value's keys and types are only
-     * assumed until they are made so here, and a field that cannot be read as
-     * what it claims to be becomes null rather than zero -- an unreadable
-     * duration and a zero-millisecond step are opposite findings.
-     *
-     * @param array<mixed, mixed> $entry
-     * @return array<string, mixed>
-     */
-    private static function normalizeStepReceipt(array $entry, bool $truncated): array {
-        $rawStep = isset($entry['step']) && is_scalar($entry['step']) ? (string)$entry['step'] : '';
-        $known = $rawStep === self::STEP_STATIC_ASSET || in_array($rawStep, self::STEPS, true);
-        $requestId = isset($entry['requestId']) && is_scalar($entry['requestId']) ? (string)$entry['requestId'] : '';
-        // The wire contract's own request-id shape. A value that cannot be a
-        // server request id cannot be reconciled against one, and letting
-        // arbitrary browser text become a journal key would let a client
-        // forge the identity of its own evidence.
-        if (preg_match('/^[a-zA-Z0-9]{1,64}$/', $requestId) !== 1) {
-            $requestId = '';
-        }
-        $status = isset($entry['textStatus']) && is_scalar($entry['textStatus']) ? (string)$entry['textStatus'] : '';
-        return array(
-            'decoded' => true,
-            'step' => $known ? $rawStep : '',
-            // What the browser actually claimed, kept bounded even when this
-            // build has never heard of it: a step name from a newer or older
-            // client is version-skew evidence, and erasing it would turn a
-            // readable mismatch into an unexplained blank.
-            'reported_step' => substr($rawStep, 0, self::MAX_REPORTED_STEP_CHARS),
-            'step_request_id' => $requestId,
-            'ok' => !empty($entry['ok']),
-            'ms' => isset($entry['ms']) && is_numeric($entry['ms']) ? (int)$entry['ms'] : null,
-            'bytes' => isset($entry['bytes']) && is_numeric($entry['bytes']) ? (int)$entry['bytes'] : null,
-            'text_status' => substr($status, 0, self::MAX_TEXT_STATUS_CHARS),
-            'truncated_on_arrival' => $truncated,
-        );
+        return ABJ_404_Solution_AjaxCanaryReceiptParser::parse($raw);
     }
 
     /**
@@ -228,11 +179,26 @@ final class ABJ_404_Solution_AjaxCanaryLadder {
      * @return array{requestId: string, canaryStep: string, filler: string}
      */
     public static function buildFillerPayload(string $requestId, string $step, int $targetBytes): array {
-        $envelope = array('requestId' => $requestId, 'canaryStep' => $step, 'filler' => '');
-        $overhead = strlen((string)json_encode($envelope));
-        $fillerLength = max(0, $targetBytes - $overhead);
-        $envelope['filler'] = str_repeat('a', $fillerLength);
-        return $envelope;
+        return ABJ_404_Solution_AjaxCanaryPayloadFactory::buildFiller($requestId, $step, $targetBytes);
+    }
+
+    /**
+     * A matched-size compressible or high-entropy JSON payload for the
+     * geometric size ladder.
+     *
+     * The incompressible body is deterministic, printable SHA-256 output:
+     * no random source can fail, no invalid UTF-8 can break json_encode, and
+     * unlike one repeated digest it does not introduce a short repeating
+     * period that gzip can collapse. Metadata is part of the envelope before
+     * filler length is calculated, so paired variants differ in
+     * compressibility rather than decoded response size.
+     *
+     * @param array{request_id: string, target_bytes: int, variant: string,
+     *   rung_percent: int, target_source: string} $options
+     * @return array<string, mixed>
+     */
+    public static function buildPayloadVariant(array $options): array {
+        return ABJ_404_Solution_AjaxCanaryPayloadFactory::buildVariant($options);
     }
 
     /**

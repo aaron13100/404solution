@@ -322,12 +322,19 @@ class ABJ_404_Solution_AdminAssetEnqueuer {
             $vuBase . 'view_updater_pagination_error_notice.js',
             array('jquery', 'abj404-view-updater-stage-diagnostics',
                 'abj404-view-updater-table-init', 'abj404-view-updater-nonce-refresh'));
+        $enq('abj404-view-updater-canary-measurements',
+            $vuBase . 'view_updater_canary_measurements.js',
+            array('abj404-view-updater-client-resource-timing',
+                'abj404-view-updater-transport-telemetry',
+                'abj404-view-updater-client-build-registry'));
         $enq('abj404-view-updater-canary-ladder',
             $vuBase . 'view_updater_canary_ladder.js',
             array('jquery', 'abj404-view-updater-nonce-refresh',
                 'abj404-view-updater-client-telemetry-store',
                 'abj404-view-updater-client-telemetry-env',
-                'abj404-view-updater-transport-telemetry', 'abj404-view-updater-client-build-registry'));
+                'abj404-view-updater-transport-telemetry',
+                'abj404-view-updater-canary-measurements',
+                'abj404-view-updater-client-build-registry'));
         $enq('abj404-view-updater-pagination', $vuBase . 'view_updater_pagination.js',
             array('jquery', 'abj404-view-updater-compare', 'abj404-view-updater-stage-diagnostics',
                 'abj404-view-updater-table-init',

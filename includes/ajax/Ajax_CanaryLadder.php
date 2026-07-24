@@ -30,12 +30,17 @@ if (!defined('ABSPATH')) {
  *                        check, isolating the limiter's own overhead.
  *   4. summary        - the real table path's own DB work (status counts),
  *                        but a tiny summary-only response.
- *   5. inert          - a filler response of exactly the real payload's
+ *   5. size_target    - reads the completed server json_encode byte count
+ *                        for this browser session without contaminating the
+ *                        auth-only or summary controls.
+ *   6. size_probe     - geometric matched-size compressible/incompressible
+ *                        responses at 25%, 50%, and 100% of that target.
+ *   7. inert          - a filler response of exactly the real payload's
  *                        observed byte size, no query work at all.
- *   6. compress_on/off - the same sized filler, with a hint to intermediaries
+ *   8. compress_on/off - the same sized filler, with a hint to intermediaries
  *                        not to transform (compress) the response, isolating
  *                        compression/output-handler behavior.
- *   7. stream         - a flushed leading-whitespace block before the JSON,
+ *   9. stream         - a flushed leading-whitespace block before the JSON,
  *                        so the client can observe XHR progress and locate
  *                        downstream buffering.
  *   interpret         - journals the client-computed interpretation matrix
@@ -182,6 +187,20 @@ class ABJ_404_Solution_Ajax_CanaryLadder {
                             ABJ_404_Solution_AjaxCanaryLadder::AUTH_ONLY_BYTES);
                     });
 
+            case ABJ_404_Solution_AjaxCanaryLadder::STEP_SIZE_TARGET:
+                $rawSessionId = $context['session_id'] ?? '';
+                $sessionId = is_scalar($rawSessionId) ? (string)$rawSessionId : '';
+                return ABJ_404_Solution_AjaxStageDiagnostics::runStage($context, 'canary_size_target',
+                    static function () use ($sessionId) {
+                        $target = ABJ_404_Solution_CheckpointJournalReader::latestEncodedTableResponseForSession(
+                            $sessionId);
+                        return array(
+                            'realResponseBytes' => $target['bytes'],
+                            'realResponseBytesSource' => $target['source'],
+                            'realResponseRequestId' => $target['request_id'],
+                        );
+                    });
+
             case ABJ_404_Solution_AjaxCanaryLadder::STEP_BASELINE_CONTROL:
                 $rawOrdinal = $requestReader->getPostOrGetSanitize('baselineOrdinal', '0');
                 $ordinal = is_numeric($rawOrdinal) ? max(0, min(20, (int)$rawOrdinal)) : 0;
@@ -234,6 +253,26 @@ class ABJ_404_Solution_Ajax_CanaryLadder {
                             ? $viewReadService->getCapturedStatusCounts()
                             : $viewReadService->getRedirectStatusCounts();
                         return array('summaryTotal' => (int)($counts['all'] ?? 0));
+                    });
+
+            case ABJ_404_Solution_AjaxCanaryLadder::STEP_SIZE_PROBE:
+                $bytes = ABJ_404_Solution_AjaxCanaryLadder::clampTargetBytes(
+                    $requestReader->getPostOrGetSanitize('payloadBytes', ''));
+                $variant = ABJ_404_Solution_AjaxCanaryLadder::normalizePayloadVariant(
+                    $requestReader->getPostOrGetSanitize('payloadVariant', ''));
+                $rungPercent = ABJ_404_Solution_AjaxCanaryLadder::normalizePayloadRungPercent(
+                    $requestReader->getPostOrGetSanitize('payloadRungPercent', ''));
+                $targetSource = ABJ_404_Solution_AjaxCanaryLadder::normalizeTargetBytesSource(
+                    $requestReader->getPostOrGetSanitize('targetBytesSource', ''));
+                return ABJ_404_Solution_AjaxStageDiagnostics::runStage($context, 'canary_size_probe',
+                    static function () use ($requestId, $bytes, $variant, $rungPercent, $targetSource) {
+                        return ABJ_404_Solution_AjaxCanaryLadder::buildPayloadVariant(array(
+                            'request_id' => $requestId,
+                            'target_bytes' => $bytes,
+                            'variant' => $variant,
+                            'rung_percent' => $rungPercent,
+                            'target_source' => $targetSource,
+                        ));
                     });
 
             case ABJ_404_Solution_AjaxCanaryLadder::STEP_INERT:

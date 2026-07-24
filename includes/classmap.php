@@ -115,7 +115,8 @@ $abj404ClassesByDirectory = array(
         'HostPressureSampler', 'SameSiteRequestCensus', 'SameSiteRequestRegistry',
         'RequestEnvironmentFingerprint', 'ClientBuildFingerprint', 'DiagnosticModuleManifest',
         'OpcacheGenerationProbe',
-        'ClientTransportReport', 'AjaxCanaryLadder', 'DebugLogFileStore', 'DebugLogReader',
+        'ClientTransportReport', 'AjaxCanaryLadder', 'AjaxCanaryPayloadFactory',
+        'AjaxCanaryReceiptParser', 'DebugLogFileStore', 'DebugLogReader',
         'DebugLogArchiveBuilder', 'DeveloperLogMailer', 'ToolsDiagnostics',
     ),
     'engine' => array(

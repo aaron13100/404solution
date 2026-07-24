@@ -5,5 +5,5 @@
   "retryParentId": "ladderid1",
   "sessionId": "sess0001",
   "subpage": "abj404_redirects",
-  "canaryStepReceipts": "[{\"step\":\"static_asset\",\"requestId\":\"\",\"ok\":true,\"ms\":11,\"bytes\":1024,\"textStatus\":\"\"},{\"step\":\"auth_only\",\"requestId\":\"ladderid1\",\"ok\":false,\"ms\":15002,\"bytes\":0,\"textStatus\":\"timeout\"}]"
+  "canaryStepReceipts": "[{\"step\":\"static_asset\",\"requestId\":\"\",\"ok\":true,\"ms\":11,\"bytes\":1024,\"textStatus\":\"\",\"contentEncoding\":\"\",\"transferBytes\":1324,\"encodedBodyBytes\":1024,\"decodedBodyBytes\":1024,\"resourceTimingState\":\"found\",\"payloadVariant\":\"\",\"payloadRungPercent\":-1,\"targetBytes\":-1,\"targetBytesSource\":\"\"},{\"step\":\"auth_only\",\"requestId\":\"ladderid1\",\"ok\":false,\"ms\":15002,\"bytes\":0,\"textStatus\":\"timeout\",\"contentEncoding\":\"br\",\"transferBytes\":970,\"encodedBodyBytes\":650,\"decodedBodyBytes\":1024,\"resourceTimingState\":\"found\",\"payloadVariant\":\"\",\"payloadRungPercent\":-1,\"targetBytes\":-1,\"targetBytesSource\":\"\"}]"
 }
