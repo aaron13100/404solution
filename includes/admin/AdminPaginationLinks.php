@@ -30,11 +30,13 @@ class ABJ_404_Solution_AdminPaginationLinks {
 
     /** @param array<string, mixed> $tableOptionOverrides Internal per-request read options. */
     public function render(string $sub, array $tableOptionOverrides = array()): string {
-        $state = $this->paginationState($sub, $tableOptionOverrides);
         return ABJ_404_Solution_TableRenderTranslationTracer::traceScope(
             'pagination',
-            'Loading|item(s)|page count|navigation|refresh available',
-            fn(): string => $this->renderTemplate($sub, $state)
+            'state|sanitize|Loading|item(s)|page count|navigation|URL|nonce|refresh available',
+            function () use ($sub, $tableOptionOverrides): string {
+                $state = $this->paginationState($sub, $tableOptionOverrides);
+                return $this->renderTemplate($sub, $state);
+            }
         );
     }
 

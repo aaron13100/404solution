@@ -5,7 +5,14 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Attributes foreign translation callbacks in post-options render scopes.
+ * Attributes foreign WordPress callbacks in post-options render scopes.
+ *
+ * The historical record names retain "translation" for support-payload
+ * compatibility. The scope is deliberately broader: an `all` observer runs
+ * before each named WP_Hook and instruments its live callback registry before
+ * WordPress begins that hook. This covers URL, nonce, sanitization, number
+ * formatting, and any future hook reached by the bounded render scope without
+ * another hand-maintained hook list.
  */
 final class ABJ_404_Solution_TableRenderTranslationTracer {
 
@@ -38,6 +45,14 @@ final class ABJ_404_Solution_TableRenderTranslationTracer {
     private $recording = false;
     /** @var bool */
     private $capRecorded = false;
+    /** @var bool */
+    private $scopeActive = false;
+    /** @var int */
+    private $callbacksAttributed = 0;
+    /** @var int */
+    private $callbacksUnavailable = 0;
+    /** @var bool */
+    private $registryUnavailable = false;
     /** @var ABJ_404_Solution_HookCallbackInstrumenter<array{mode: string, fields: array<string, mixed>, started_at?: float|null}|null> */
     private $hookInstrumenter;
     /** @var ABJ_404_Solution_HookInstrumentationLifecycleTracer */
@@ -100,20 +115,23 @@ final class ABJ_404_Solution_TableRenderTranslationTracer {
         $scopeFields = $this->scopeFields();
         $this->write('render_translation_scope_start', $scopeFields);
         try {
-            $status = $this->installCallbacks();
+            $this->installCallbacks();
         } catch (Throwable $e) {
-            $this->hookInstrumenter->restore(false);
+            $this->restoreCallbacks(false);
             throw $e;
         }
+        $this->scopeActive = true;
         $startedAt = self::nowFloat();
         try {
             $result = $render();
         } catch (Throwable $e) {
-            $this->hookInstrumenter->restore(false);
+            $this->scopeActive = false;
+            $this->restoreCallbacks(false);
             throw $e;
         }
-        $this->hookInstrumenter->restore(true);
-        $this->write('render_translation_scope_end', array_merge($scopeFields, $status, array(
+        $this->scopeActive = false;
+        $this->restoreCallbacks(true);
+        $this->write('render_translation_scope_end', array_merge($scopeFields, $this->status(), array(
             'status' => 'complete',
             'elapsed_ms' => self::elapsedMilliseconds($startedAt),
         )));
@@ -121,27 +139,80 @@ final class ABJ_404_Solution_TableRenderTranslationTracer {
     }
 
     /**
-     * @return array{callbacks_attributed: int, callbacks_unavailable: int, registry_status: string}
+     * Install the global observer after wrapping callbacks already registered
+     * directly on `all`. WordPress invokes `all` before the named hook, so the
+     * observer can instrument each named registry just in time.
      */
-    private function installCallbacks(): array {
-        $attributed = 0;
-        $unavailable = 0;
-        $registryUnavailable = false;
+    private function installCallbacks(): void {
         foreach (self::HOOKS as $hook) {
-            $counts = $this->hookInstrumenter->instrument($hook);
-            $attributed += $counts['callbacks_wrapped'] + $counts['callbacks_marked'];
-            $unavailable += $counts['callbacks_unavailable'];
-            if ($counts['registry_status'] === 'unavailable') {
-                $registryUnavailable = true;
+            $this->rememberCounts($this->hookInstrumenter->instrument($hook));
+        }
+
+        if (!function_exists('add_filter')) {
+            $this->registryUnavailable = true;
+            return;
+        }
+        $this->lifecycleTracer->traceBoundary(
+            ABJ_404_Solution_HookInstrumentationLifecycleTracer::PHASE_REGISTRATION,
+            'all',
+            function (): void {
+                add_filter('all', array($this, 'prepareHookCallbacks'), PHP_INT_MIN, 1);
+            }
+        );
+    }
+
+    /**
+     * Runs from WordPress's `all` hook before the named hook starts.
+     *
+     * @param mixed $hookName
+     * @return mixed
+     */
+    public function prepareHookCallbacks($hookName) {
+        if (!$this->scopeActive || $this->recording
+                || $this->lifecycleTracer->isRecording()
+                || !is_string($hookName) || $hookName === 'all') {
+            return $hookName;
+        }
+        $this->rememberCounts($this->hookInstrumenter->instrument($hookName));
+        return $hookName;
+    }
+
+    /** @param array<string, int|string> $counts */
+    private function rememberCounts(array $counts): void {
+        $this->callbacksAttributed += (int)($counts['callbacks_wrapped'] ?? 0)
+            + (int)($counts['callbacks_marked'] ?? 0);
+        $this->callbacksUnavailable += (int)($counts['callbacks_unavailable'] ?? 0);
+        if (($counts['registry_status'] ?? '') === 'unavailable') {
+            $this->registryUnavailable = true;
+        }
+    }
+
+    /** @return array{callbacks_attributed: int, callbacks_unavailable: int, registry_status: string} */
+    private function status(): array {
+        return array(
+            'callbacks_attributed' => $this->callbacksAttributed,
+            'callbacks_unavailable' => $this->callbacksUnavailable,
+            'registry_status' => $this->registryUnavailable
+                ? 'unavailable'
+                : ($this->callbacksUnavailable === 0 ? 'ready' : 'partial'),
+        );
+    }
+
+    private function restoreCallbacks(bool $scopeCompleted): void {
+        if (function_exists('remove_filter')) {
+            try {
+                $this->lifecycleTracer->traceBoundary(
+                    ABJ_404_Solution_HookInstrumentationLifecycleTracer::PHASE_REMOVAL,
+                    'all',
+                    function (): void {
+                        remove_filter('all', array($this, 'prepareHookCallbacks'), PHP_INT_MIN);
+                    }
+                );
+            } catch (Throwable $e) {
+                abj404_logPhpFallback('table-render-translation-tracer', $e->getMessage());
             }
         }
-        return array(
-            'callbacks_attributed' => $attributed,
-            'callbacks_unavailable' => $unavailable,
-            'registry_status' => $registryUnavailable
-                ? 'unavailable'
-                : ($unavailable === 0 ? 'ready' : 'partial'),
-        );
+        $this->hookInstrumenter->restore($scopeCompleted);
     }
 
     /**

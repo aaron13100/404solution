@@ -4,7 +4,12 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-/** Decisive records emitted by post-options render translation tracing. */
+/**
+ * Decisive records emitted by post-options render callback tracing.
+ *
+ * Event names retain "translation" for support-schema compatibility; the
+ * tracer dynamically covers every named WordPress hook reached by its scope.
+ */
 final class ABJ_404_Solution_DecisiveRecordRenderFamilies {
 
     /** @return array<string, array{emitter: string, events: array<int, string>, presence: string, reserve: array{start: string, end: string}|null, sentinel: string|null}> */
