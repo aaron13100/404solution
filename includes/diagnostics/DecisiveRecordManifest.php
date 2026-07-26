@@ -4,6 +4,9 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+require_once __DIR__ . '/DecisiveRecordContractEvaluator.php';
+require_once __DIR__ . '/DecisiveRecordDiscriminatorContract.php';
+
 /**
  * The canonical catalog of decisive tracer records, and the single source the
  * completeness gates and the support-reservation policy derive from. (Bruno
@@ -395,6 +398,35 @@ final class ABJ_404_Solution_DecisiveRecordManifest {
             }
         }
         return array_keys($events);
+    }
+
+    /**
+     * Discriminator-field and conditional-presence contracts used by every
+     * principal beta-cut gate.
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    public static function discriminatorContracts(): array {
+        return ABJ_404_Solution_DecisiveRecordDiscriminatorContract::contracts();
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $records
+     * @param array<int, string> $profiles
+     * @param array<string, mixed> $facts
+     * @return array<int, string>
+     */
+    public static function contractViolations(
+        array $records,
+        array $profiles,
+        array $facts = array()
+    ): array {
+        return ABJ_404_Solution_DecisiveRecordContractEvaluator::violations(
+            self::discriminatorContracts(),
+            $records,
+            $profiles,
+            $facts
+        );
     }
 
     /**
