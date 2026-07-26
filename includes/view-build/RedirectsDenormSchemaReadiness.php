@@ -26,6 +26,9 @@ if (!defined('ABSPATH')) {
  */
 class ABJ_404_Solution_RedirectsDenormSchemaReadiness {
 
+    /** @var callable(string,array<string,mixed>,callable):mixed|null */
+    private static $operationTracer = null;
+
     /** @var ABJ_404_Solution_DatabaseCore */
     private $dbCore;
 
@@ -48,6 +51,11 @@ class ABJ_404_Solution_RedirectsDenormSchemaReadiness {
      */
     public function __construct(ABJ_404_Solution_DatabaseCore $dbCore) {
         $this->dbCore = $dbCore;
+    }
+
+    /** @param callable(string,array<string,mixed>,callable):mixed|null $tracer */
+    public static function setOperationTracer($tracer): void {
+        self::$operationTracer = $tracer;
     }
 
     /**
@@ -115,11 +123,17 @@ class ABJ_404_Solution_RedirectsDenormSchemaReadiness {
      * @return bool
      */
     public function sortKeyReadyForColumn(string $column): bool {
-        if (!$this->sortKeySchemaAvailableForColumn($column)) {
-            return false;
-        }
-        $latch = ABJ_404_Solution_RedirectsDenormColumnSql::sortKeyBackfillLatchOption($column);
-        return $latch !== '' && function_exists('get_option') && get_option($latch) === '1';
+        return self::trace('readiness_evaluation', array('column' => $column), function () use ($column): bool {
+            if (!$this->sortKeySchemaAvailableForColumn($column)) {
+                return false;
+            }
+            $latch = ABJ_404_Solution_RedirectsDenormColumnSql::sortKeyBackfillLatchOption($column);
+            return $latch !== '' && function_exists('get_option') && self::trace(
+                'latch_option_read',
+                array('column' => $column, 'option' => $latch),
+                static fn(): bool => get_option($latch) === '1'
+            );
+        });
     }
 
     /**
@@ -132,10 +146,12 @@ class ABJ_404_Solution_RedirectsDenormSchemaReadiness {
      * @return bool
      */
     public function sortKeySchemaAvailableForColumn(string $column): bool {
-        if (!isset($this->redirectsColumnSet()[$column])) {
-            return false;
-        }
-        return $this->sortKeyCompositeIndexesPresent($column);
+        return self::trace('schema_readiness', array('column' => $column), function () use ($column): bool {
+            if (!isset($this->redirectsColumnSet()[$column])) {
+                return false;
+            }
+            return $this->sortKeyCompositeIndexesPresent($column);
+        });
     }
 
     /**
@@ -174,9 +190,11 @@ class ABJ_404_Solution_RedirectsDenormSchemaReadiness {
         if ($this->redirectsIndexSetCache !== null) {
             return $this->redirectsIndexSetCache;
         }
-        $table = $this->dbCore->doTableNameReplacements('{wp_abj404_redirects}');
-        $result = $this->dbCore->queryAndGetResults("SHOW INDEX FROM " . $table,
-            array('log_errors' => false));
+        $result = self::trace('index_schema_probe', array(), function (): array {
+            $table = $this->dbCore->doTableNameReplacements('{wp_abj404_redirects}');
+            return $this->dbCore->queryAndGetResults("SHOW INDEX FROM " . $table,
+                array('log_errors' => false));
+        });
         $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
         $set = array();
         foreach ($rows as $row) {
@@ -207,9 +225,11 @@ class ABJ_404_Solution_RedirectsDenormSchemaReadiness {
         if ($this->redirectsColumnSetCache !== null) {
             return $this->redirectsColumnSetCache;
         }
-        $table = $this->dbCore->doTableNameReplacements('{wp_abj404_redirects}');
-        $result = $this->dbCore->queryAndGetResults("SHOW COLUMNS FROM " . $table,
-            array('log_errors' => false));
+        $result = self::trace('column_schema_probe', array(), function (): array {
+            $table = $this->dbCore->doTableNameReplacements('{wp_abj404_redirects}');
+            return $this->dbCore->queryAndGetResults("SHOW COLUMNS FROM " . $table,
+                array('log_errors' => false));
+        });
         $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
         $set = array();
         foreach ($rows as $row) {
@@ -225,5 +245,18 @@ class ABJ_404_Solution_RedirectsDenormSchemaReadiness {
         }
         $this->redirectsColumnSetCache = $set;
         return $set;
+    }
+
+    /**
+     * @template T
+     * @param array<string,mixed> $fields
+     * @param callable():T $work
+     * @return T
+     */
+    private static function trace(string $operation, array $fields, callable $work) {
+        if (self::$operationTracer === null) {
+            return $work();
+        }
+        return (self::$operationTracer)($operation, $fields, $work);
     }
 }

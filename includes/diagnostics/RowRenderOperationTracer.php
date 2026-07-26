@@ -23,7 +23,8 @@ if (!defined('ABSPATH')) {
  *
  * allow-no-test-found: exercised through the real AJAX table render entry point in tests/AjaxQueryAttributionTest.php
  */
-final class ABJ_404_Solution_RowRenderOperationTracer {
+final class ABJ_404_Solution_RowRenderOperationTracer
+    implements ABJ_404_Solution_CacheOperationTraceSink {
 
     /** Eight complete operations, with start and end records for each. */
     const MAX_OPERATION_RECORDS = 16;

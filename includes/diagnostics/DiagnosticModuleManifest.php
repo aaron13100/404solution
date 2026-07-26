@@ -72,6 +72,8 @@ final class ABJ_404_Solution_DiagnosticModuleManifest {
         'ajax/Ajax_SupportRequestPreview.php',
         // Local template I/O boundary used by the table renderers.
         'core/FileSystemService.php',
+        // Pre-query sort-readiness schema and option/cache authority.
+        'view-build/RedirectsDenormSchemaReadiness.php',
         // The per-query attribution hook, which lives with the DB layer.
         'database/DatabaseQueryDiagnostics.php',
         // Delivery of the browser-side modules ClientBuildFingerprint hashes.

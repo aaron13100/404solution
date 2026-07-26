@@ -302,6 +302,10 @@ class ABJ_404_Solution_Ajax_AdminEndpointSupport {
             static fn(string $operation, array $fields, callable $work) =>
                 ABJ_404_Solution_RoutineLogTracer::trace($operation, $fields, $work)
         );
+        ABJ_404_Solution_RedirectsDenormSchemaReadiness::setOperationTracer(
+            static fn(string $operation, array $fields, callable $work) =>
+                ABJ_404_Solution_SortReadinessTracer::trace($operation, $fields, $work)
+        );
         return $context;
     }
 

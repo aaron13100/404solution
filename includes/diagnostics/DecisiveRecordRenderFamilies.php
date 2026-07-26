@@ -71,6 +71,26 @@ final class ABJ_404_Solution_DecisiveRecordRenderFamilies {
                 ),
                 'sentinel' => null,
             ),
+            'sort_readiness_operation' => array(
+                'emitter' => 'ABJ_404_Solution_SortReadinessTracer',
+                'events' => array(
+                    'sort_readiness_operation_start',
+                    'sort_readiness_operation_end',
+                ),
+                'presence' => $always,
+                'reserve' => array(
+                    'start' => 'sort_readiness_operation_start',
+                    'end' => 'sort_readiness_operation_end',
+                ),
+                'sentinel' => null,
+            ),
+            'sort_readiness_instrumentation' => array(
+                'emitter' => 'ABJ_404_Solution_SortReadinessTracer',
+                'events' => array('sort_readiness_instrumentation'),
+                'presence' => $conditional,
+                'reserve' => null,
+                'sentinel' => 'sort_readiness_operation_end.operation=schema_readiness,result=false',
+            ),
         );
     }
 
@@ -138,6 +158,25 @@ final class ABJ_404_Solution_DecisiveRecordRenderFamilies {
             }
         }
 
+        $sortIdentity = array('operation_id', 'operation');
+        $sortRequirements = array();
+        foreach (array('readiness_evaluation', 'schema_readiness') as $operation) {
+            foreach (array('start', 'end') as $edge) {
+                $required = $edge === 'end'
+                    ? array_merge($sortIdentity, array('status', 'result'))
+                    : $sortIdentity;
+                $sortRequirements[] = array(
+                    'id' => 'sort_readiness_' . $operation . '_' . $edge,
+                    'event' => 'sort_readiness_operation_' . $edge,
+                    'match' => array('operation' => $operation),
+                    'required_fields' => $required,
+                    'non_empty_fields' => $required,
+                    'all_matches' => true,
+                    'activation' => array('always' => true),
+                );
+            }
+        }
+
         return array(
             'template_file_io' => array(
                 'profiles' => array('template_file_io'),
@@ -161,6 +200,10 @@ final class ABJ_404_Solution_DecisiveRecordRenderFamilies {
             'routine_log_io' => array(
                 'profiles' => array('routine_log_io'),
                 'requirements' => $routineRequirements,
+            ),
+            'sort_readiness_io' => array(
+                'profiles' => array('sort_readiness_io'),
+                'requirements' => $sortRequirements,
             ),
         );
     }

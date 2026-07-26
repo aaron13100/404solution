@@ -5,7 +5,7 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Transparent WordPress object-cache adapter used only during row rendering.
+ * Transparent WordPress object-cache adapter used during a diagnostic scope.
  *
  * Unknown Object Cache Pro methods and public properties pass through without
  * tracing. Standard key operations are bracketed with the tracer's hard
@@ -17,10 +17,13 @@ if (!defined('ABSPATH')) {
 final class ABJ_404_Solution_InstrumentedObjectCache {
     /** @var object */
     private $target;
-    /** @var ABJ_404_Solution_RowRenderOperationTracer */
+    /** @var ABJ_404_Solution_CacheOperationTraceSink */
     private $tracer;
 
-    public function __construct(object $target, ABJ_404_Solution_RowRenderOperationTracer $tracer) {
+    public function __construct(
+        object $target,
+        ABJ_404_Solution_CacheOperationTraceSink $tracer
+    ) {
         $this->target = $target;
         $this->tracer = $tracer;
     }
@@ -174,7 +177,7 @@ final class ABJ_404_Solution_InstrumentedObjectCache {
         $callback = array($this->target, $method);
         if (!is_callable($callback)) {
             abj404_logPhpFallback(
-                'row-render-object-cache',
+                'diagnostic-object-cache',
                 'cache method unavailable: ' . get_class($this->target) . '::' . $method
             );
             return false;
