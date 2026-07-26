@@ -30,7 +30,7 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
      * from canonical source and prevents a covered code change from shipping
      * with an old marker.
      */
-    const DIAGNOSTIC_BUILD_ID = '4fdb57865d079c0417311c7b53ed99974e6ce736';
+    const DIAGNOSTIC_BUILD_ID = '76f71502d361a73a50a7ebb8bbcea6b968d96268';
 
     const CHECKPOINT_FILE = ABJ_404_Solution_CheckpointJournalWriter::CHECKPOINT_FILE;
     const ROTATED_FILE = ABJ_404_Solution_CheckpointJournalWriter::ROTATED_FILE;
@@ -42,9 +42,6 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
 
     /** @var int */
     private static $checkpointSequence = 0;
-
-    /** @var bool Diagnostic persistence must never instrument its own directory filters. */
-    private static $recordingActiveOperation = false;
 
     /**
      * 1: full getrusage() array on every record.
@@ -61,6 +58,8 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
      * 6: intents move to the independent system-temp sink before uploads
      *    resolution/filtering/creation, and frequent records gain exact
      *    intent correlation.
+     * 7: foreign operations carry complete privacy-safe identity through a
+     *    fixed-sink intent, the ordinary sink, and an armed/complete state.
      */
     const SCHEMA_VERSION = ABJ_404_Solution_CheckpointRecordFactory::SCHEMA_VERSION;
 
@@ -258,40 +257,12 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
         string $state,
         array $fields
     ): void {
-        if ($requestId === '' || self::$recordingActiveOperation
-                || !class_exists('ABJ_404_Solution_ActiveOperationBreadcrumbs')) {
-            return;
-        }
-        self::$recordingActiveOperation = true;
-        try {
-            $startedNs = self::monotonicNanoseconds();
-            $checkpointId = self::checkpointId($startedNs);
-            self::appendIntent($requestId, 'active_operation_breadcrumb', $checkpointId);
-            $directory = self::resolveDirectoryPath();
-            if ($directory === '') {
-                return;
-            }
-            $record = array_merge(
-                ABJ_404_Solution_CheckpointRecordFactory::frequent(array(
-                    'ts' => self::nowFloat(),
-                    'hrtime_ns' => function_exists('hrtime') ? (int)hrtime(true) : null,
-                    'request_id' => $requestId,
-                    'event' => 'active_operation_breadcrumb',
-                    'checkpoint_id' => $checkpointId,
-                    'pid' => getmypid(),
-                )),
-                array('boundary' => $boundary, 'state' => $state),
-                ABJ_404_Solution_ActiveOperationBreadcrumbs::selectFields($boundary, $fields)
-            );
-            $result = ABJ_404_Solution_ActiveOperationBreadcrumbs::replace($directory, $record);
-            if (($result['status'] ?? '') !== 'complete') {
-                self::reportFailure('active-operation write failed: ' . ($result['reason'] ?? 'unknown'));
-            }
-        } catch (Throwable $e) {
-            self::reportFailure('active-operation record failed: ' . $e->getMessage());
-        } finally {
-            self::$recordingActiveOperation = false;
-        }
+        ABJ_404_Solution_DurableOperationRecorder::recordActiveOperation(
+            $requestId,
+            $boundary,
+            $state,
+            $fields
+        );
     }
 
     /**

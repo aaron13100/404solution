@@ -98,12 +98,12 @@ final class ABJ_404_Solution_CacheMetricsProbeTracer {
             'source' => $source,
             'phase' => $phase,
         );
-        $this->writeStart($fields);
+        $checkpointId = $this->writeStart($fields);
         $startedAt = self::nowFloat();
         try {
             $value = $work();
         } catch (Throwable $e) {
-            $this->writeEnd(array_merge($fields, array(
+            $this->writeEnd($checkpointId, array_merge($fields, array(
                 'status' => 'error',
                 'elapsed_ms' => self::elapsedMilliseconds($startedAt),
                 'error' => self::errorSummary($e),
@@ -111,7 +111,7 @@ final class ABJ_404_Solution_CacheMetricsProbeTracer {
             self::reportFailure($source . ' probe failed: ' . $e->getMessage());
             return array('ok' => false, 'value' => null);
         }
-        $this->writeEnd(array_merge($fields, array(
+        $this->writeEnd($checkpointId, array_merge($fields, array(
             'status' => 'complete',
             'elapsed_ms' => self::elapsedMilliseconds($startedAt),
             'result' => self::resultSummary($source, $value),
@@ -126,24 +126,26 @@ final class ABJ_404_Solution_CacheMetricsProbeTracer {
     }
 
     /** @param array<string, mixed> $fields */
-    private function writeStart(array $fields): void {
+    private function writeStart(array $fields): string {
         try {
-            ABJ_404_Solution_AjaxCheckpointLogger::recordFrequent(
+            return ABJ_404_Solution_DurableOperationRecorder::recordStart(
                 $this->requestId,
                 'cache_metrics_probe_start',
                 $fields
             );
         } catch (Throwable $e) {
             self::reportFailure('cache metrics probe start failed: ' . $e->getMessage());
+            return '';
         }
     }
 
     /** @param array<string, mixed> $fields */
-    private function writeEnd(array $fields): void {
+    private function writeEnd(string $checkpointId, array $fields): void {
         try {
-            ABJ_404_Solution_AjaxCheckpointLogger::recordFrequent(
+            ABJ_404_Solution_DurableOperationRecorder::recordEnd(
                 $this->requestId,
                 'cache_metrics_probe_end',
+                $checkpointId,
                 $fields
             );
         } catch (Throwable $e) {

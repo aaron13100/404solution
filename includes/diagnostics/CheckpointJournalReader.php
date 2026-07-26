@@ -82,7 +82,9 @@ final class ABJ_404_Solution_CheckpointJournalReader {
             : "Required AJAX checkpoint evidence (JSONL):\n" . $required;
         $rankedBudget = self::MAX_SUPPORT_EXCERPT_BYTES
             - ($requiredBlock === '' ? 0 : strlen($requiredBlock) + 1);
-        $activePath = self::activeOperationPath($source['directory']);
+        $activePath = ABJ_404_Solution_DurableOperationRecorder::activePath(
+            $source['directory']
+        );
         $rankedPaths = array_values(array_filter(
             $paths,
             static fn(string $path): bool => $path !== $activePath
@@ -117,14 +119,11 @@ final class ABJ_404_Solution_CheckpointJournalReader {
      * @param array<int, string> $paths
      */
     private static function requiredSupportEvidence(array $paths): string {
-        $lines = ABJ_404_Solution_DiagnosticJournalExcerpt::readAllLines($paths);
+        $lines = ABJ_404_Solution_DurableOperationRecorder::compactSupportLines(
+            ABJ_404_Solution_DiagnosticJournalExcerpt::readAllLines($paths)
+        );
         $required = ABJ_404_Solution_RequiredCheckpointEvidence::select($lines);
         return implode("\n", self::compactRoutinePhaseMaps($required));
-    }
-
-    private static function activeOperationPath(string $directory): string {
-        return $directory !== '' && class_exists('ABJ_404_Solution_ActiveOperationBreadcrumbs')
-            ? ABJ_404_Solution_ActiveOperationBreadcrumbs::path($directory) : '';
     }
 
     /**
@@ -162,6 +161,7 @@ final class ABJ_404_Solution_CheckpointJournalReader {
      * @return array<int, string>
      */
     private static function compactForSupport(array $lines, array $additionalClosedIds = array()): array {
+        $lines = ABJ_404_Solution_DurableOperationRecorder::compactSupportLines($lines);
         $withoutClosedIntents = self::withoutClosedIntents(
             $lines,
             array_merge(self::closedCheckpointIds($lines), $additionalClosedIds)

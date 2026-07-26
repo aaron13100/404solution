@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
  */
 final class ABJ_404_Solution_CheckpointRecordFactory {
 
-    const SCHEMA_VERSION = 6;
+    const SCHEMA_VERSION = 7;
     const ENVELOPE_FULL = 'full';
     const ENVELOPE_FREQUENT = 'frequent';
     const ENVELOPE_INTENT = 'intent';

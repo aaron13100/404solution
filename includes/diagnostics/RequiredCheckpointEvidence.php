@@ -112,10 +112,40 @@ final class ABJ_404_Solution_RequiredCheckpointEvidence {
                 $required[] = $line;
             }
         }
+        foreach (self::reservedDurableOperationLines($lines) as $line) {
+            $required[] = $line;
+        }
         foreach (self::unmatchedOperationLines($lines) as $line) {
             $required[] = $line;
         }
         return array_values(array_unique($required));
+    }
+
+    /**
+     * Select the latest unresolved fixed-sink state for each operation.
+     *
+     * @param array<int, string> $lines
+     * @return array<int, string>
+     */
+    private static function reservedDurableOperationLines(array $lines): array {
+        $latestByOperation = array();
+        foreach ($lines as $line) {
+            $record = json_decode($line, true);
+            $operationKey = is_array($record) ? self::durableOperationKey($record) : '';
+            if ($operationKey !== '') {
+                $latestByOperation[$operationKey] = array('line' => $line, 'record' => $record);
+            }
+        }
+        $selected = array();
+        foreach ($latestByOperation as $latest) {
+            $record = $latest['record'] ?? null;
+            $line = $latest['line'] ?? null;
+            if (is_array($record) && is_string($line)
+                    && self::isReservedDurableOperation($record)) {
+                $selected[] = $line;
+            }
+        }
+        return $selected;
     }
 
     /**
@@ -243,6 +273,20 @@ final class ABJ_404_Solution_RequiredCheckpointEvidence {
     }
 
     /** @param array<mixed, mixed> $record */
+    private static function durableOperationKey(array $record): string {
+        if (($record['event'] ?? '') !== 'durable_operation_state') {
+            return '';
+        }
+        $requestId = is_scalar($record['request_id'] ?? null)
+            ? (string)$record['request_id'] : '';
+        $checkpointId = is_scalar($record['operation_checkpoint_id'] ?? null)
+            ? (string)$record['operation_checkpoint_id'] : '';
+        return $requestId === '' || $checkpointId === ''
+            ? ''
+            : $requestId . '|' . $checkpointId;
+    }
+
+    /** @param array<mixed, mixed> $record */
     private static function isClientReceipt(array $record): bool {
         return self::hasReceiptJoins($record, 'canary_step_client_receipt');
     }
@@ -313,6 +357,33 @@ final class ABJ_404_Solution_RequiredCheckpointEvidence {
         $requiredFields = $manifest[$boundary]['required_evidence_fields'] ?? array();
         return $requiredFields !== array()
             && self::hasNonEmptyScalarKeys($record, $requiredFields);
+    }
+
+    /** @param array<mixed, mixed> $record */
+    private static function isReservedDurableOperation(array $record): bool {
+        if (($record['event'] ?? '') !== 'durable_operation_state'
+                || !in_array($record['operation_state'] ?? '', array('intent', 'armed'), true)) {
+            return false;
+        }
+        $operationEvent = is_scalar($record['operation_event'] ?? null)
+            ? (string)$record['operation_event'] : '';
+        if ($operationEvent === 'cache_metrics_probe_start') {
+            return self::hasNonEmptyScalarKeys(
+                $record,
+                array('operation_id', 'source', 'phase', 'operation_checkpoint_id')
+            );
+        }
+        if ($operationEvent !== 'active_operation_breadcrumb'
+                || ($record['state'] ?? '') !== 'active') {
+            return false;
+        }
+        $boundary = is_scalar($record['boundary'] ?? null)
+            ? (string)$record['boundary'] : '';
+        $requiredFields = self::activeBoundaryManifest()[$boundary]['required_evidence_fields']
+            ?? array();
+        return $requiredFields !== array()
+            && self::hasNonEmptyScalarKeys($record, $requiredFields)
+            && self::hasNonEmptyScalarKeys($record, array('operation_checkpoint_id'));
     }
 
     /**
