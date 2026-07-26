@@ -79,6 +79,10 @@ final class ABJ_404_Solution_DiagnosticModuleManifest {
         // Query preflight spans these DB collaborators before the first SQL
         // probe. Mixed opcodes in any one would erase or mislabel the gap.
         'database/DatabaseQueryExecutor.php',
+        'database/DatabaseQueryRecoveryPolicy.php',
+        'database/DatabaseRepairPolicy.php',
+        'database/DatabaseTableRepairer.php',
+        'database/DatabaseSqlErrorReporter.php',
         'database/DatabaseConnectionManager.php',
         'database/DatabaseQueryTimeoutManager.php',
         'database/DatabaseRuntimeState.php',

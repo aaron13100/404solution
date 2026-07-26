@@ -159,6 +159,7 @@ class ABJ_404_Solution_DatabaseSqlErrorReporter {
      * @param array<string, mixed> $options
      * @param array<int|string, string> $ignoreErrorStrings
      * @param ABJ_404_Solution_Timer $timer
+     * @param ABJ_404_Solution_DatabaseQueryRecoveryTracer|null $tracer
      * @return void
      */
     public function handleFinalSqlErrorReporting(
@@ -166,13 +167,19 @@ class ABJ_404_Solution_DatabaseSqlErrorReporter {
         array &$result,
         array $options,
         array $ignoreErrorStrings,
-        ABJ_404_Solution_Timer $timer
+        ABJ_404_Solution_Timer $timer,
+        ?ABJ_404_Solution_DatabaseQueryRecoveryTracer $tracer = null
     ): void {
         $lastError = isset($result['last_error']) && is_scalar($result['last_error'])
             ? (string)$result['last_error'] : '';
 
         if ($options['log_errors'] && $lastError !== '') {
-            $this->runRepairHooksForFinalError($query, $result, $lastError);
+            $this->runRepairHooksForFinalError(
+                $query,
+                $result,
+                $lastError,
+                $tracer
+            );
             $lastError = isset($result['last_error']) && is_scalar($result['last_error'])
                 ? (string)$result['last_error'] : '';
             if ($lastError === '') {
@@ -207,18 +214,49 @@ class ABJ_404_Solution_DatabaseSqlErrorReporter {
      * @param string $query
      * @param array<string, mixed> $result
      * @param string $lastError
+     * @param ABJ_404_Solution_DatabaseQueryRecoveryTracer|null $tracer
      * @return void
      */
-    private function runRepairHooksForFinalError(string $query, array &$result, string $lastError): void {
+    private function runRepairHooksForFinalError(
+        string $query,
+        array &$result,
+        string $lastError,
+        ?ABJ_404_Solution_DatabaseQueryRecoveryTracer $tracer = null
+    ): void {
         if (strpos($lastError, " is marked as crashed ") !== false) {
-            $this->core->tableRepairer()->repairTable($lastError);
+            $repair = function () use ($lastError): void {
+                $this->core->tableRepairer()->repairTable($lastError);
+            };
+            if ($tracer === null) {
+                $repair();
+            } else {
+                $tracer->traceBranch('corrupted_table', $repair);
+            }
         }
         if (strpos($lastError, "ALTER TABLE causes auto_increment resequencing") !== false &&
                 strpos($lastError, "resulting in duplicate entry") !== false) {
-            $this->core->tableRepairer()->repairDuplicateIDs($lastError, $query);
+            $repair = function () use ($lastError, $query): void {
+                $this->core->tableRepairer()->repairDuplicateIDs($lastError, $query);
+            };
+            if ($tracer === null) {
+                $repair();
+            } else {
+                $tracer->traceBranch('duplicate_id', $repair);
+            }
         }
         if ($this->core->errorClassifier()->taxonomy()->schema()->isIncorrectKeyFileError($lastError)) {
-            $this->core->tableRepairer()->repairCorruptedTableAndRetry($query, $result);
+            $repair = function () use ($query, &$result, $tracer): void {
+                $this->core->tableRepairer()->repairCorruptedTableAndRetry(
+                    $query,
+                    $result,
+                    $tracer
+                );
+            };
+            if ($tracer === null) {
+                $repair();
+            } else {
+                $tracer->traceBranch('corrupted_table', $repair);
+            }
         }
     }
 

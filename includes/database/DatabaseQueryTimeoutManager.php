@@ -347,12 +347,14 @@ class ABJ_404_Solution_DatabaseQueryTimeoutManager {
      * @param string $query        Passed by reference. Mutated to the unwrapped form.
      * @param array<string, mixed> $result Passed by reference; updated with retry rows / error.
      * @param 'OBJECT'|'OBJECT_K'|'ARRAY_A'|'ARRAY_N' $resultType wpdb output type for get_results().
+     * @param ABJ_404_Solution_DatabaseQueryRecoveryTracer|null $tracer
      * @return void
      */
     public function retryWithoutSetStatementWrapper(
         string &$query,
         array &$result,
-        string $resultType
+        string $resultType,
+        ?ABJ_404_Solution_DatabaseQueryRecoveryTracer $tracer = null
     ): void {
         if (!$this->queryHasSetStatementWrapper($query)) {
             // Defensive: nothing to strip. Caller misclassified the error.
@@ -375,7 +377,17 @@ class ABJ_404_Solution_DatabaseQueryTimeoutManager {
 
         global $wpdb;
         /** @var wpdb $wpdb */
-        $wpdb->flush();
+        if ($tracer === null) {
+            $wpdb->flush();
+        } else {
+            $tracer->traceOperation(
+                'timeout_wrapper',
+                'wpdb_flush',
+                static function () use ($wpdb): void {
+                    $wpdb->flush();
+                }
+            );
+        }
         // Mutate $query so downstream retry paths execute the unwrapped form.
         $query = $unwrapped;
         // Re-route classification past any leading comments and the (now-absent)
@@ -387,14 +399,25 @@ class ABJ_404_Solution_DatabaseQueryTimeoutManager {
         // re-enter the same SET STATEMENT detection path, deepening the call
         // stack on every retry. Per-bypass approval markers are inline below.
         $unwrappedProducesRows = $this->queryProducesResultRows($unwrapped);
-        if ($unwrappedProducesRows) {
-            // DAO-bypass-approved: SET STATEMENT wrapper-rejection retry primitive.
-            $result['rows'] = $wpdb->get_results($unwrapped, $resultType);
-        } else {
-            // DAO-bypass-approved: SET STATEMENT wrapper-rejection retry primitive.
-            $wpdb->query($unwrapped);
-            $result['rows'] = array();
-        }
-        $this->core->resultHarvester()->harvestWpdbResult($result);
+        $retry = function () use ($wpdb, $unwrapped, $resultType, $unwrappedProducesRows): array {
+            if ($unwrappedProducesRows) {
+                // DAO-bypass-approved: SET STATEMENT wrapper-rejection retry primitive.
+                $retried = array('rows' => $wpdb->get_results($unwrapped, $resultType));
+            } else {
+                // DAO-bypass-approved: SET STATEMENT wrapper-rejection retry primitive.
+                $wpdb->query($unwrapped);
+                $retried = array('rows' => array());
+            }
+            $this->core->resultHarvester()->harvestWpdbResult($retried);
+            return $retried;
+        };
+        $retried = $tracer === null
+            ? $retry()
+            : $tracer->traceAttempt(
+                'timeout_wrapper',
+                'timeout_wrapper_rejected',
+                $retry
+            );
+        $result = array_merge($result, $retried);
     }
 }

@@ -33,6 +33,62 @@ final class ABJ_404_Solution_DecisiveRecordQueryFilterFamilies {
                 ),
                 'sentinel' => null,
             ),
+            'query_first_driver_return' => array(
+                'emitter' => 'ABJ_404_Solution_DatabaseQueryRecoveryTracer',
+                'events' => array('query_first_driver_return'),
+                'presence' => $always,
+                'reserve' => null,
+                'sentinel' => null,
+            ),
+            'query_recovery' => array(
+                'emitter' => 'ABJ_404_Solution_DatabaseQueryRecoveryTracer',
+                'events' => array('query_recovery_start', 'query_recovery_end'),
+                'presence' => $always,
+                'reserve' => array(
+                    'start' => 'query_recovery_start',
+                    'end' => 'query_recovery_end',
+                ),
+                'sentinel' => null,
+            ),
+            'query_recovery_branch' => array(
+                'emitter' => 'ABJ_404_Solution_DatabaseQueryRecoveryTracer',
+                'events' => array(
+                    'query_recovery_branch_start',
+                    'query_recovery_branch_end',
+                ),
+                'presence' => $conditional,
+                'reserve' => array(
+                    'start' => 'query_recovery_branch_start',
+                    'end' => 'query_recovery_branch_end',
+                ),
+                'sentinel' => 'query_recovery_end.branches_selected',
+            ),
+            'query_recovery_operation' => array(
+                'emitter' => 'ABJ_404_Solution_DatabaseQueryRecoveryTracer',
+                'events' => array(
+                    'query_recovery_operation_start',
+                    'query_recovery_operation_end',
+                ),
+                'presence' => $conditional,
+                'reserve' => array(
+                    'start' => 'query_recovery_operation_start',
+                    'end' => 'query_recovery_operation_end',
+                ),
+                'sentinel' => 'query_recovery_end.operations_traced',
+            ),
+            'query_recovery_attempt' => array(
+                'emitter' => 'ABJ_404_Solution_DatabaseQueryRecoveryTracer',
+                'events' => array(
+                    'query_recovery_attempt_start',
+                    'query_recovery_attempt_end',
+                ),
+                'presence' => $conditional,
+                'reserve' => array(
+                    'start' => 'query_recovery_attempt_start',
+                    'end' => 'query_recovery_attempt_end',
+                ),
+                'sentinel' => 'query_recovery_end.attempts_traced',
+            ),
             'query_filter_instrumentation' => array(
                 'emitter' => 'ABJ_404_Solution_DatabaseQueryFilterTracer',
                 'events' => array('query_filter_instrumentation'),
@@ -55,7 +111,7 @@ final class ABJ_404_Solution_DecisiveRecordQueryFilterFamilies {
             ),
             'query_driver_entry' => array(
                 'emitter' => 'ABJ_404_Solution_DatabaseQueryFilterTracer',
-                'events' => array('query_driver_entry'),
+                'events' => array('query_driver_entry', 'query_driver_exit'),
                 'presence' => $always,
                 'reserve' => null,
                 'sentinel' => null,
@@ -92,8 +148,7 @@ final class ABJ_404_Solution_DecisiveRecordQueryFilterFamilies {
             'operator' => 'greater_than',
             'value' => 0,
         );
-
-        return array(
+        $contracts = array(
             'database_query_preflight' => array(
                 'profiles' => array('ordinary_table', 'database_query_preflight'),
                 'requirements' => array(
@@ -259,6 +314,180 @@ final class ABJ_404_Solution_DecisiveRecordQueryFilterFamilies {
                         'equals' => true,
                     ),
                 )),
+            ),
+        );
+        return array_merge($contracts, self::recoveryContracts());
+    }
+
+    /** @return array<string, array<string, mixed>> */
+    private static function recoveryContracts(): array {
+        $recoveryFields = array('q', 'sql_id', 'recovery_id');
+        $recoveryOperationFields = array_merge(
+            $recoveryFields,
+            array('operation_id', 'branch')
+        );
+        $attemptFields = array_merge(
+            $recoveryOperationFields,
+            array('attempt_id', 'reason')
+        );
+        return array(
+            'database_query_recovery' => array(
+                'profiles' => array('ordinary_table', 'database_query_recovery'),
+                'requirements' => array(
+                    array(
+                        'id' => 'query_first_driver_return_identity',
+                        'event' => 'query_first_driver_return',
+                        'required_fields' => array_merge($recoveryFields, array('status')),
+                        'non_empty_fields' => array('sql_id', 'recovery_id', 'status'),
+                        'field_types' => array('q' => 'positive_integer'),
+                        'all_matches' => true,
+                        'activation' => array('event' => 'query_probe'),
+                    ),
+                    array(
+                        'id' => 'query_recovery_start_identity',
+                        'event' => 'query_recovery_start',
+                        'required_fields' => array_merge($recoveryFields, array('operation_id')),
+                        'non_empty_fields' => array('sql_id', 'recovery_id', 'operation_id'),
+                        'field_types' => array('q' => 'positive_integer'),
+                        'all_matches' => true,
+                        'activation' => array('event' => 'query_first_driver_return'),
+                    ),
+                    array(
+                        'id' => 'query_recovery_end_identity',
+                        'event' => 'query_recovery_end',
+                        'required_fields' => array_merge(
+                            $recoveryFields,
+                            array(
+                                'operation_id',
+                                'status',
+                                'branches_selected',
+                                'operations_traced',
+                                'attempts_traced',
+                            )
+                        ),
+                        'non_empty_fields' => array(
+                            'sql_id', 'recovery_id', 'operation_id', 'status',
+                        ),
+                        'field_types' => array(
+                            'q' => 'positive_integer',
+                            'branches_selected' => 'non_negative_integer',
+                            'operations_traced' => 'non_negative_integer',
+                            'attempts_traced' => 'non_negative_integer',
+                        ),
+                        'all_matches' => true,
+                        'activation' => array('event' => 'query_recovery_start'),
+                    ),
+                    array(
+                        'id' => 'query_driver_exit_identity',
+                        'event' => 'query_driver_exit',
+                        'required_fields' => array('q', 'sql_id', 'status'),
+                        'non_empty_fields' => array('sql_id', 'status'),
+                        'field_types' => array('q' => 'positive_integer'),
+                        'all_matches' => true,
+                        'activation' => array('event' => 'query_driver_entry'),
+                    ),
+                    array(
+                        'id' => 'query_recovery_branch_start_identity',
+                        'event' => 'query_recovery_branch_start',
+                        'required_fields' => $recoveryOperationFields,
+                        'non_empty_fields' => $recoveryOperationFields,
+                        'field_types' => array('q' => 'positive_integer'),
+                        'all_matches' => true,
+                        'activation' => array('event' => 'query_recovery_branch_start'),
+                    ),
+                    array(
+                        'id' => 'query_recovery_branch_end_identity',
+                        'event' => 'query_recovery_branch_end',
+                        'required_fields' => array_merge(
+                            $recoveryOperationFields,
+                            array('status')
+                        ),
+                        'non_empty_fields' => array_merge(
+                            $recoveryOperationFields,
+                            array('status')
+                        ),
+                        'field_types' => array('q' => 'positive_integer'),
+                        'all_matches' => true,
+                        'activation' => array('event' => 'query_recovery_branch_start'),
+                    ),
+                    array(
+                        'id' => 'query_recovery_attempt_start_identity',
+                        'event' => 'query_recovery_attempt_start',
+                        'required_fields' => $attemptFields,
+                        'non_empty_fields' => $attemptFields,
+                        'field_types' => array('q' => 'positive_integer'),
+                        'all_matches' => true,
+                        'activation' => array('event' => 'query_recovery_attempt_start'),
+                    ),
+                    array(
+                        'id' => 'query_recovery_attempt_end_identity',
+                        'event' => 'query_recovery_attempt_end',
+                        'required_fields' => array_merge(
+                            $attemptFields,
+                            array(
+                                'status',
+                                'result_status',
+                                'row_count',
+                                'rows_affected',
+                            )
+                        ),
+                        'non_empty_fields' => array_merge(
+                            $attemptFields,
+                            array('status', 'result_status')
+                        ),
+                        'field_types' => array(
+                            'q' => 'positive_integer',
+                            'row_count' => 'non_negative_integer',
+                            'rows_affected' => 'non_negative_integer',
+                        ),
+                        'all_matches' => true,
+                        'activation' => array('event' => 'query_recovery_attempt_start'),
+                    ),
+                ),
+            ),
+            'unmatched_database_query_recovery_support' => array(
+                'profiles' => array('unmatched_database_query_recovery_support'),
+                'requirements' => array(
+                    array(
+                        'id' => 'unmatched_query_recovery_identity',
+                        'event' => 'query_recovery_start',
+                        'required_fields' => array_merge($recoveryFields, array('operation_id')),
+                        'non_empty_fields' => array('sql_id', 'recovery_id', 'operation_id'),
+                        'field_types' => array('q' => 'positive_integer'),
+                        'all_matches' => true,
+                        'unmatched_end_event' => 'query_recovery_end',
+                        'activation' => array(
+                            'fact' => 'unmatched_query_recovery_expected',
+                            'equals' => true,
+                        ),
+                    ),
+                    array(
+                        'id' => 'unmatched_query_recovery_branch_identity',
+                        'event' => 'query_recovery_branch_start',
+                        'required_fields' => $recoveryOperationFields,
+                        'non_empty_fields' => $recoveryOperationFields,
+                        'field_types' => array('q' => 'positive_integer'),
+                        'all_matches' => true,
+                        'unmatched_end_event' => 'query_recovery_branch_end',
+                        'activation' => array(
+                            'fact' => 'unmatched_query_recovery_branch_expected',
+                            'equals' => true,
+                        ),
+                    ),
+                    array(
+                        'id' => 'unmatched_query_recovery_attempt_identity',
+                        'event' => 'query_recovery_attempt_start',
+                        'required_fields' => $attemptFields,
+                        'non_empty_fields' => $attemptFields,
+                        'field_types' => array('q' => 'positive_integer'),
+                        'all_matches' => true,
+                        'unmatched_end_event' => 'query_recovery_attempt_end',
+                        'activation' => array(
+                            'fact' => 'unmatched_query_recovery_attempt_expected',
+                            'equals' => true,
+                        ),
+                    ),
+                ),
             ),
         );
     }

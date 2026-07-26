@@ -41,10 +41,22 @@ final class ABJ_404_Solution_DatabaseQueryFilterTracer {
     private $instrumenter;
     /** @var ABJ_404_Solution_HookInstrumentationLifecycleTracer */
     private $lifecycleTracer;
+    /** @var string */
+    private $attemptId;
+    /** @var string */
+    private $recoveryId;
+    /** @var string */
+    private $recoveryBranch;
 
     /**
      * @template T
-     * @param array{q:int,sql_id:string}|null $queryIdentity
+     * @param array{
+     *   q:int,
+     *   sql_id:string,
+     *   attempt_id?:string,
+     *   recovery_id?:string,
+     *   recovery_branch?:string
+     * }|null $queryIdentity
      * @param callable():T $queryCall
      * @return T
      */
@@ -60,6 +72,15 @@ final class ABJ_404_Solution_DatabaseQueryFilterTracer {
                 (int)($queryIdentity['q'] ?? 0),
                 is_string($queryIdentity['sql_id'] ?? null)
                     ? $queryIdentity['sql_id']
+                    : '',
+                is_string($queryIdentity['attempt_id'] ?? null)
+                    ? $queryIdentity['attempt_id']
+                    : '',
+                is_string($queryIdentity['recovery_id'] ?? null)
+                    ? $queryIdentity['recovery_id']
+                    : '',
+                is_string($queryIdentity['recovery_branch'] ?? null)
+                    ? $queryIdentity['recovery_branch']
                     : ''
             );
         } catch (Throwable $e) {
@@ -69,10 +90,20 @@ final class ABJ_404_Solution_DatabaseQueryFilterTracer {
         return $tracer->run($queryCall);
     }
 
-    private function __construct(string $requestId, int $queryOrdinal, string $sqlId) {
+    private function __construct(
+        string $requestId,
+        int $queryOrdinal,
+        string $sqlId,
+        string $attemptId = '',
+        string $recoveryId = '',
+        string $recoveryBranch = ''
+    ) {
         $this->requestId = $requestId;
         $this->queryOrdinal = $queryOrdinal;
         $this->sqlId = $sqlId;
+        $this->attemptId = $attemptId;
+        $this->recoveryId = $recoveryId;
+        $this->recoveryBranch = $recoveryBranch;
         $this->resolvedDirectory =
             ABJ_404_Solution_AjaxFrequentCheckpointWriter::resolvedDirectoryForRequest(
                 $requestId
@@ -161,9 +192,16 @@ final class ABJ_404_Solution_DatabaseQueryFilterTracer {
         try {
             $result = $queryCall();
         } catch (Throwable $e) {
+            $this->write('query_driver_exit', array_merge($this->queryFields(), array(
+                'status' => 'failed',
+                'failure_class' => self::safeClassName(get_class($e)),
+            )));
             $this->restore(false, $sentinelRegistered);
             throw $e;
         }
+        $this->write('query_driver_exit', array_merge($this->queryFields(), array(
+            'status' => 'complete',
+        )));
         $this->restore(true, $sentinelRegistered);
         return $result;
     }
@@ -277,9 +315,15 @@ final class ABJ_404_Solution_DatabaseQueryFilterTracer {
         }
     }
 
-    /** @return array{q:int,sql_id:string} */
+    /** @return array<string, int|string> */
     private function queryFields(): array {
-        return array('q' => $this->queryOrdinal, 'sql_id' => $this->sqlId);
+        $fields = array('q' => $this->queryOrdinal, 'sql_id' => $this->sqlId);
+        if ($this->attemptId !== '') {
+            $fields['attempt_id'] = $this->attemptId;
+            $fields['recovery_id'] = $this->recoveryId;
+            $fields['recovery_branch'] = $this->recoveryBranch;
+        }
+        return $fields;
     }
 
     private function operationId(string $registeredHook, int $ordinal): string {
@@ -345,5 +389,10 @@ final class ABJ_404_Solution_DatabaseQueryFilterTracer {
 
     private static function throwableSummary(Throwable $e): string {
         return get_class($e) . ' code=' . $e->getCode() . ' message=' . $e->getMessage();
+    }
+
+    private static function safeClassName(string $className): string {
+        $safe = preg_replace('/[^A-Za-z0-9_\\\\-]/', '_', $className);
+        return substr(is_string($safe) ? $safe : 'Throwable', 0, 96);
     }
 }

@@ -62,9 +62,14 @@ class ABJ_404_Solution_DatabaseRepairPolicy {
      *
      * @param string $query
      * @param array<string, mixed> $result
+     * @param ABJ_404_Solution_DatabaseQueryRecoveryTracer|null $tracer
      * @return void
      */
-    public function attemptMissingTableRepairAndRetry($query, &$result) {
+    public function attemptMissingTableRepairAndRetry(
+        $query,
+        &$result,
+        ?ABJ_404_Solution_DatabaseQueryRecoveryTracer $tracer = null
+    ) {
         if ($this->core->tableRepairer()->isTableRepairInProgress()) {
             return;
         }
@@ -97,7 +102,7 @@ class ABJ_404_Solution_DatabaseRepairPolicy {
         try {
             $this->runRepairCreateRetryAndReport(
                 $query, $result, $repairCooldownKey, $cooldownTtlSeconds,
-                $originalSqlError, $missingTable
+                $originalSqlError, $missingTable, $tracer
             );
         } catch (Throwable $e) {
             if ($missingTable !== '' && $this->tableMaterializedAfterRepair($missingTable)) {
@@ -219,6 +224,7 @@ class ABJ_404_Solution_DatabaseRepairPolicy {
      * @param int $cooldownTtlSeconds
      * @param string $originalSqlError
      * @param string $missingTable
+     * @param ABJ_404_Solution_DatabaseQueryRecoveryTracer|null $tracer
      * @return void
      */
     public function runRepairCreateRetryAndReport(
@@ -227,7 +233,8 @@ class ABJ_404_Solution_DatabaseRepairPolicy {
         string $repairCooldownKey,
         int $cooldownTtlSeconds,
         string $originalSqlError,
-        string $missingTable
+        string $missingTable,
+        ?ABJ_404_Solution_DatabaseQueryRecoveryTracer $tracer = null
     ): void {
         $upgrades = abj_service('database_upgrades');
         // Pass $force = true so the repair bypasses the concurrency lock. If another
@@ -235,19 +242,51 @@ class ABJ_404_Solution_DatabaseRepairPolicy {
         // without $force would silently return without creating anything, leaving the
         // missing table unrepaired.  Concurrent CREATE TABLE IF NOT EXISTS calls are safe
         // (idempotent), so bypassing the lock here is correct.
-        $upgrades->components()->bootstrapUpgrade()->createDatabaseTables(false, true);
+        $repairCreate = static function () use ($upgrades): void {
+            $upgrades->components()->bootstrapUpgrade()->createDatabaseTables(false, true);
+        };
+        if ($tracer === null) {
+            $repairCreate();
+        } else {
+            $tracer->traceOperation('missing_table', 'repair_create', $repairCreate);
+        }
 
         global $wpdb;
-        $wpdb->flush();
+        if ($tracer === null) {
+            $wpdb->flush();
+        } else {
+            $tracer->traceOperation(
+                'missing_table',
+                'wpdb_flush',
+                static function () use ($wpdb): void {
+                    $wpdb->flush();
+                }
+            );
+        }
 
         // Suppress WP's own error output for the retry. If it also fails, we
         // report it ourselves below.  Without this, WP logs a second
         // "WordPress database error" entry on top of the first, producing
         // duplicate noise in debug.log for every failed cron run.
         $prevSuppressState = $wpdb->suppress_errors(true);
-        $result['rows'] = $wpdb->get_results($query, $this->core->queryExecutor()->getCurrentResultType());
-        $wpdb->suppress_errors($prevSuppressState);
-        $this->core->resultHarvester()->harvestWpdbResult($result);
+        try {
+            $retry = function () use ($wpdb, $query): array {
+                $retried = array(
+                    'rows' => $wpdb->get_results(
+                        $query,
+                        $this->core->queryExecutor()->getCurrentResultType()
+                    ),
+                );
+                $this->core->resultHarvester()->harvestWpdbResult($retried);
+                return $retried;
+            };
+            $retried = $tracer === null
+                ? $retry()
+                : $tracer->traceAttempt('missing_table', 'missing_table', $retry);
+            $result = array_merge($result, $retried);
+        } finally {
+            $wpdb->suppress_errors($prevSuppressState);
+        }
 
         $retryError = isset($result['last_error']) && is_scalar($result['last_error'])
             ? (string)$result['last_error']

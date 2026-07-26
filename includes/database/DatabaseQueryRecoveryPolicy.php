@@ -55,6 +55,7 @@ class ABJ_404_Solution_DatabaseQueryRecoveryPolicy {
      * @param 'OBJECT'|'OBJECT_K'|'ARRAY_A'|'ARRAY_N' $resultType
      * @param bool $producesRows
      * @param int $timeoutSeconds
+     * @param ABJ_404_Solution_DatabaseQueryRecoveryTracer|null $tracer
      * @return bool Updated produces-rows decision after timeout-wrapper fallback.
      */
     public function recoverQueryResult(
@@ -63,16 +64,42 @@ class ABJ_404_Solution_DatabaseQueryRecoveryPolicy {
         array $options,
         string $resultType,
         bool $producesRows,
-        int $timeoutSeconds
+        int $timeoutSeconds,
+        ?ABJ_404_Solution_DatabaseQueryRecoveryTracer $tracer = null
     ): bool {
-        $producesRows = $this->retryWithoutSetStatementIfNeeded($query, $result, $resultType, $producesRows);
-        $this->retryTransientConnectionIfNeeded($query, $result, $resultType, $producesRows);
-        $this->repairMissingTableIfNeeded($query, $result, $options);
-        $this->retryInvalidDataIfNeeded($query, $result);
-        $this->retryDeadlockIfNeeded($query, $result, $resultType, $producesRows);
-        $this->recoverCollationIfNeeded($result);
-        $this->handleTimeoutIfNeeded($query, $result, $timeoutSeconds);
-        $this->noteDatabaseIssueIfNeeded($result);
+        $tracer = $tracer ?? ABJ_404_Solution_DatabaseQueryRecoveryTracer::begin(null);
+        $tracer->startRecovery();
+        try {
+            $producesRows = $this->retryWithoutSetStatementIfNeeded(
+                $query,
+                $result,
+                $resultType,
+                $producesRows,
+                $tracer
+            );
+            $this->retryTransientConnectionIfNeeded(
+                $query,
+                $result,
+                $resultType,
+                $producesRows,
+                $tracer
+            );
+            $this->repairMissingTableIfNeeded($query, $result, $options, $tracer);
+            $this->retryInvalidDataIfNeeded($query, $result, $tracer);
+            $this->retryDeadlockIfNeeded(
+                $query,
+                $result,
+                $resultType,
+                $producesRows,
+                $tracer
+            );
+            $this->recoverCollationIfNeeded($result, $tracer);
+            $this->handleTimeoutIfNeeded($query, $result, $timeoutSeconds, $tracer);
+            $this->noteDatabaseIssueIfNeeded($result, $tracer);
+        } catch (Throwable $e) {
+            $tracer->completeRecovery('failed', $e);
+            throw $e;
+        }
         return $producesRows;
     }
 
@@ -83,7 +110,13 @@ class ABJ_404_Solution_DatabaseQueryRecoveryPolicy {
      * @param bool $producesRows
      * @return bool
      */
-    private function retryWithoutSetStatementIfNeeded(string &$query, array &$result, string $resultType, bool $producesRows): bool {
+    private function retryWithoutSetStatementIfNeeded(
+        string &$query,
+        array &$result,
+        string $resultType,
+        bool $producesRows,
+        ABJ_404_Solution_DatabaseQueryRecoveryTracer $tracer
+    ): bool {
         $lastError = $this->lastErrorFromResult($result);
         if ($lastError === ''
             || !$this->core->errorClassifier()->taxonomy()->hostState()->classifySetStatementFailure($lastError)
@@ -91,7 +124,19 @@ class ABJ_404_Solution_DatabaseQueryRecoveryPolicy {
             return $producesRows;
         }
 
-        $this->core->queryTimeoutManager()->retryWithoutSetStatementWrapper($query, $result, $resultType);
+        $tracer->traceBranch('timeout_wrapper', function () use (
+            &$query,
+            &$result,
+            $resultType,
+            $tracer
+        ): void {
+            $this->core->queryTimeoutManager()->retryWithoutSetStatementWrapper(
+                $query,
+                $result,
+                $resultType,
+                $tracer
+            );
+        });
         return $this->core->queryTimeoutManager()->queryProducesResultRows($query);
     }
 
@@ -102,17 +147,45 @@ class ABJ_404_Solution_DatabaseQueryRecoveryPolicy {
      * @param bool $producesRows
      * @return void
      */
-    private function retryTransientConnectionIfNeeded(string $query, array &$result, string $resultType, bool $producesRows): void {
+    private function retryTransientConnectionIfNeeded(
+        string $query,
+        array &$result,
+        string $resultType,
+        bool $producesRows,
+        ABJ_404_Solution_DatabaseQueryRecoveryTracer $tracer
+    ): void {
         $lastError = $this->lastErrorFromResult($result);
         if ($lastError === '' || !$this->core->errorClassifier()->taxonomy()->connectivity()->isTransientConnectionError($lastError)) {
             return;
         }
 
-        global $wpdb;
-        $this->core->connectionManager()->ensureConnection();
-        $wpdb->flush();
-        $result = array_merge($result, $this->executeWpdbQuery($query, $resultType, $producesRows));
-        $this->resultHarvester->harvestWpdbResult($result);
+        $tracer->traceBranch('transient_connection', function () use (
+            $query,
+            &$result,
+            $resultType,
+            $producesRows,
+            $tracer
+        ): void {
+            global $wpdb;
+            $tracer->traceOperation(
+                'transient_connection',
+                'connection_recovery',
+                fn(): bool => $this->core->connectionManager()->ensureConnection()
+            );
+            $tracer->traceOperation(
+                'transient_connection',
+                'wpdb_flush',
+                static function () use ($wpdb): void {
+                    $wpdb->flush();
+                }
+            );
+            $retried = $tracer->traceAttempt(
+                'transient_connection',
+                'connection_lost',
+                fn(): array => $this->executeWpdbQuery($query, $resultType, $producesRows)
+            );
+            $result = array_merge($result, $retried);
+        });
     }
 
     /**
@@ -121,12 +194,27 @@ class ABJ_404_Solution_DatabaseQueryRecoveryPolicy {
      * @param array<string, mixed> $options
      * @return void
      */
-    private function repairMissingTableIfNeeded(string $query, array &$result, array $options): void {
+    private function repairMissingTableIfNeeded(
+        string $query,
+        array &$result,
+        array $options,
+        ABJ_404_Solution_DatabaseQueryRecoveryTracer $tracer
+    ): void {
         $lastError = $this->lastErrorFromResult($result);
         if ($options['skip_repair'] || $lastError === '' || !$this->core->errorClassifier()->taxonomy()->schema()->isMissingPluginTableError($lastError)) {
             return;
         }
-        $this->core->repairPolicy()->attemptMissingTableRepairAndRetry($query, $result);
+        $tracer->traceBranch('missing_table', function () use (
+            $query,
+            &$result,
+            $tracer
+        ): void {
+            $this->core->repairPolicy()->attemptMissingTableRepairAndRetry(
+                $query,
+                $result,
+                $tracer
+            );
+        });
     }
 
     /**
@@ -134,10 +222,24 @@ class ABJ_404_Solution_DatabaseQueryRecoveryPolicy {
      * @param array<string, mixed> $result
      * @return void
      */
-    private function retryInvalidDataIfNeeded(string $query, array &$result): void {
+    private function retryInvalidDataIfNeeded(
+        string $query,
+        array &$result,
+        ABJ_404_Solution_DatabaseQueryRecoveryTracer $tracer
+    ): void {
         $lastError = $this->lastErrorFromResult($result);
         if ($lastError !== '' && $this->core->errorClassifier()->taxonomy()->schema()->isInvalidDataError($lastError)) {
-            $this->core->tableRepairer()->attemptInvalidDataRetry($query, $result);
+            $tracer->traceBranch('invalid_data', function () use (
+                $query,
+                &$result,
+                $tracer
+            ): void {
+                $this->core->tableRepairer()->attemptInvalidDataRetry(
+                    $query,
+                    $result,
+                    $tracer
+                );
+            });
         }
     }
 
@@ -148,34 +250,75 @@ class ABJ_404_Solution_DatabaseQueryRecoveryPolicy {
      * @param bool $producesRows
      * @return void
      */
-    private function retryDeadlockIfNeeded(string $query, array &$result, string $resultType, bool $producesRows): void {
+    private function retryDeadlockIfNeeded(
+        string $query,
+        array &$result,
+        string $resultType,
+        bool $producesRows,
+        ABJ_404_Solution_DatabaseQueryRecoveryTracer $tracer
+    ): void {
         $lastError = $this->lastErrorFromResult($result);
         if ($lastError === '' || !$this->core->errorClassifier()->taxonomy()->connectivity()->isDeadlockOrLockTimeoutError($lastError)) {
             return;
         }
 
-        usleep(50000);
-        $result = array_merge($result, $this->executeWpdbQuery($query, $resultType, $producesRows));
-        $this->resultHarvester->harvestWpdbResult($result);
-        $lastError = $this->lastErrorFromResult($result);
-        if ($lastError !== '' && $this->core->errorClassifier()->taxonomy()->connectivity()->isDeadlockOrLockTimeoutError($lastError)) {
-            $this->core->noticeState()->setPluginDbNotice(
-                'lock_timeout',
-                function_exists('__') ? __('A database lock wait timeout occurred. If this persists, contact your host - another process may be holding a long-running lock.', '404-solution') : 'A database lock wait timeout occurred. If this persists, contact your host - another process may be holding a long-running lock.',
-                function_exists('__') ? __('A database lock wait timeout occurred. This is usually caused by another process holding a table lock on your database. It may resolve itself automatically, or contact your hosting provider if it persists.', '404-solution') : 'A database lock wait timeout occurred. This is usually caused by another process holding a table lock on your database. It may resolve itself automatically, or contact your hosting provider if it persists.',
-                $lastError
+        $tracer->traceBranch('deadlock', function () use (
+            $query,
+            &$result,
+            $resultType,
+            $producesRows,
+            $tracer
+        ): void {
+            $tracer->traceOperation(
+                'deadlock',
+                'retry_backoff',
+                static function (): void {
+                    usleep(50000);
+                }
             );
-        }
+            $retried = $tracer->traceAttempt(
+                'deadlock',
+                'deadlock_or_lock_timeout',
+                fn(): array => $this->executeWpdbQuery($query, $resultType, $producesRows)
+            );
+            $result = array_merge($result, $retried);
+            $lastError = $this->lastErrorFromResult($result);
+            if ($lastError !== '' && $this->core->errorClassifier()->taxonomy()->connectivity()->isDeadlockOrLockTimeoutError($lastError)) {
+                $tracer->traceOperation(
+                    'deadlock',
+                    'notice_update',
+                    function () use ($lastError): void {
+                        $this->core->noticeState()->setPluginDbNotice(
+                            'lock_timeout',
+                            function_exists('__') ? __('A database lock wait timeout occurred. If this persists, contact your host - another process may be holding a long-running lock.', '404-solution') : 'A database lock wait timeout occurred. If this persists, contact your host - another process may be holding a long-running lock.',
+                            function_exists('__') ? __('A database lock wait timeout occurred. This is usually caused by another process holding a table lock on your database. It may resolve itself automatically, or contact your hosting provider if it persists.', '404-solution') : 'A database lock wait timeout occurred. This is usually caused by another process holding a table lock on your database. It may resolve itself automatically, or contact your hosting provider if it persists.',
+                            $lastError
+                        );
+                    }
+                );
+            }
+        });
     }
 
     /**
      * @param array<string, mixed> $result
      * @return void
      */
-    private function recoverCollationIfNeeded(array $result): void {
+    private function recoverCollationIfNeeded(
+        array $result,
+        ABJ_404_Solution_DatabaseQueryRecoveryTracer $tracer
+    ): void {
         $lastError = $this->lastErrorFromResult($result);
         if ($lastError !== '' && $this->core->errorClassifier()->taxonomy()->schema()->isCollationError($lastError)) {
-            $this->core->collationHelper()->scheduleCollationRecovery();
+            $tracer->traceBranch('collation', function () use ($tracer): void {
+                $tracer->traceOperation(
+                    'collation',
+                    'schedule_recovery',
+                    function (): void {
+                        $this->core->collationHelper()->scheduleCollationRecovery();
+                    }
+                );
+            });
         }
     }
 
@@ -185,29 +328,61 @@ class ABJ_404_Solution_DatabaseQueryRecoveryPolicy {
      * @param int $timeoutSeconds
      * @return void
      */
-    private function handleTimeoutIfNeeded(string $query, array &$result, int $timeoutSeconds): void {
+    private function handleTimeoutIfNeeded(
+        string $query,
+        array &$result,
+        int $timeoutSeconds,
+        ABJ_404_Solution_DatabaseQueryRecoveryTracer $tracer
+    ): void {
         $lastError = $this->lastErrorFromResult($result);
         if ($lastError === '' || !$this->core->errorClassifier()->taxonomy()->connectivity()->isQueryTimeoutError($lastError)) {
             return;
         }
 
-        $sqlInfo = (defined('WP_DEBUG') && WP_DEBUG) ? $query : $this->queryDiagnostics->extractSqlFilename($query);
-        $this->logger->warn(
-            'Query timed out after ' . $timeoutSeconds . 's. ' .
-            'Query: ' . substr(preg_replace('/\s+/', ' ', trim($sqlInfo)) ?? $sqlInfo, 0, 500)
-        );
-        $result['rows'] = array();
-        $result['timed_out'] = true;
+        $tracer->traceBranch('timeout', function () use (
+            $query,
+            &$result,
+            $timeoutSeconds,
+            $tracer
+        ): void {
+            $tracer->traceOperation(
+                'timeout',
+                'timeout_log',
+                function () use ($query, $timeoutSeconds): void {
+                    $sqlInfo = (defined('WP_DEBUG') && WP_DEBUG) ? $query : $this->queryDiagnostics->extractSqlFilename($query);
+                    $this->logger->warn(
+                        'Query timed out after ' . $timeoutSeconds . 's. ' .
+                        'Query: ' . substr(preg_replace('/\s+/', ' ', trim($sqlInfo)) ?? $sqlInfo, 0, 500)
+                    );
+                }
+            );
+            $result['rows'] = array();
+            $result['timed_out'] = true;
+        });
     }
 
     /**
      * @param array<string, mixed> $result
      * @return void
      */
-    private function noteDatabaseIssueIfNeeded(array $result): void {
+    private function noteDatabaseIssueIfNeeded(
+        array $result,
+        ABJ_404_Solution_DatabaseQueryRecoveryTracer $tracer
+    ): void {
         $lastError = $this->lastErrorFromResult($result);
         if ($lastError !== '') {
-            $this->core->errorClassifier()->noteDatabaseIssueFromError($lastError);
+            $tracer->traceBranch('database_issue', function () use (
+                $lastError,
+                $tracer
+            ): void {
+                $tracer->traceOperation(
+                    'database_issue',
+                    'notice_update',
+                    function () use ($lastError): void {
+                        $this->core->errorClassifier()->noteDatabaseIssueFromError($lastError);
+                    }
+                );
+            });
         }
     }
 
@@ -221,12 +396,14 @@ class ABJ_404_Solution_DatabaseQueryRecoveryPolicy {
         global $wpdb;
         if ($producesRows) {
             // DAO-bypass-approved: Recovery retry executes the original SQL outside DAO routing to avoid recursion.
-            return array('rows' => $wpdb->get_results($query, $resultType));
+            $result = array('rows' => $wpdb->get_results($query, $resultType));
+        } else {
+            // DAO-bypass-approved: Recovery retry executes the original SQL outside DAO routing to avoid recursion.
+            $wpdb->query($query);
+            $result = array('rows' => array());
         }
-
-        // DAO-bypass-approved: Recovery retry executes the original SQL outside DAO routing to avoid recursion.
-        $wpdb->query($query);
-        return array('rows' => array());
+        $this->resultHarvester->harvestWpdbResult($result);
+        return $result;
     }
 
     /**

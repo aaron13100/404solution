@@ -207,6 +207,9 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
             $timeoutSeconds,
             $preflight->preflightId()
         );
+        $recoveryTracer = ABJ_404_Solution_DatabaseQueryRecoveryTracer::begin(
+            $queryIdentity
+        );
 
         $timer = new ABJ_404_Solution_Timer();
 
@@ -224,6 +227,9 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
                 fn(): array => $this->executeWpdbQuery($query, $resultType, $producesRows)
             );
         } catch (Throwable $e) {
+            $recoveryTracer->recordFirstDriverReturn('failed', $e);
+            $recoveryTracer->startRecovery();
+            $recoveryTracer->completeRecovery('failed', $e);
             $result['elapsed_time'] = $timer->stop();
             $this->queryDiagnostics->recordQueryTimelineEnd(((float)$result['elapsed_time']) * 1000.0);
             $this->core->sqlErrorReporter()->logSqlThrowable($query, $e, $options, $producesRows);
@@ -233,11 +239,11 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
             }
             throw $e;
         }
-
         // Preserve the first-attempt duration for the observed-error log while
         // keeping the timer running through every retry/recovery branch below.
         $result['elapsed_time'] = $timer->getElapsedTime();
-        $this->resultHarvester->harvestWpdbResult($result);
+        $recoveryTracer->recordFirstDriverReturn();
+        $recoveryTracer->startRecovery();
         $lastErrorForObservedLog = is_string($result['last_error'] ?? null) ? $result['last_error'] : '';
         if ($lastErrorForObservedLog === '' || !$this->core->errorClassifier()->taxonomy()->connectivity()->isTransientConnectionError($lastErrorForObservedLog)) {
             $this->core->sqlErrorReporter()->logObservedSqlError($query, $result, $options, $producesRows);
@@ -249,7 +255,13 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
 
         $queryForBudget = $query;
         $producesRows = $this->queryRecoveryPolicy->recoverQueryResult(
-            $query, $result, $options, $resultType, $producesRows, $timeoutSeconds
+            $query,
+            $result,
+            $options,
+            $resultType,
+            $producesRows,
+            $timeoutSeconds,
+            $recoveryTracer
         );
 
         $result['elapsed_time'] = $timer->stop();
@@ -263,8 +275,14 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
         }
 
         $this->core->sqlErrorReporter()->handleFinalSqlErrorReporting(
-            $query, $result, $options, $ignoreErrorStrings, $timer
+            $query,
+            $result,
+            $options,
+            $ignoreErrorStrings,
+            $timer,
+            $recoveryTracer
         );
+        $recoveryTracer->completeRecovery();
 
         return $result;
     }
@@ -376,11 +394,16 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
     private function executeWpdbQuery(string $query, string $resultType, bool $producesRows): array {
         global $wpdb;
         if ($producesRows) {
-            return array('rows' => $wpdb->get_results($query, $resultType));
+            $result = array('rows' => $wpdb->get_results($query, $resultType));
+        } else {
+            $wpdb->query($query);
+            $result = array('rows' => array());
         }
-
-        $wpdb->query($query);
-        return array('rows' => array());
+        // Snapshot wpdb synchronously before any diagnostic write, hook
+        // restoration, or logger can issue a nested query and overwrite its
+        // mutable result properties.
+        $this->resultHarvester->harvestWpdbResult($result);
+        return $result;
     }
 
 }
