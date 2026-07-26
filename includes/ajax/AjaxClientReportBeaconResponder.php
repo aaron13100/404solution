@@ -1,4 +1,5 @@
 <?php
+// allow-no-test-found: covered through Ajax_GetPaginationLinks by tests/ClientTransportReportTest.php
 
 if (!defined('ABSPATH')) {
     exit;
@@ -22,7 +23,7 @@ if (!defined('ABSPATH')) {
  * channel down with it. The split is enforced by the Diagnostics layer in
  * deptrac.yaml, which is forbidden from depending on Presentation.
  */
-final class ABJ_404_Solution_Ajax_ClientReportBeacon {
+final class ABJ_404_Solution_AjaxClientReportBeaconResponder {
 
     /**
      * Journal the beacon and answer it. Returns true when this request was

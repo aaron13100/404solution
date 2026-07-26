@@ -58,7 +58,7 @@ $abj404ClassesByDirectory = array(
         'Ajax_PrivacyDelete', 'Ajax_SupportRequest', 'Ajax_SupportRequestPreview',
         'Ajax_SuggestionCompute', 'Ajax_SuggestionPolling', 'Ajax_TrashLink',
         'Ajax_EngineProfiles', 'Ajax_UninstallPrefs', 'AjaxAdminEndpointRegistrar',
-        'Ajax_ClientReportBeacon',
+        'AjaxClientReportBeaconResponder',
         'Ajax_AdminEndpointSupport', 'AjaxResponseEmitter', 'Ajax_GetPaginationLinks',
         'Ajax_RefreshStatsDashboard', 'Ajax_RefreshHealthBar', 'Ajax_RefreshAdminNonces',
         'Ajax_CanaryLadder',

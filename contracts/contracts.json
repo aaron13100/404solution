@@ -548,7 +548,7 @@
         "test": "tests-js/transport-telemetry-attempt-record.test.js"
       },
       "consumer": {
-        "file": "includes/ajax/Ajax_ClientReportBeacon.php",
+        "file": "includes/ajax/AjaxClientReportBeaconResponder.php",
         "test": "tests/ClientTransportReportTest.php"
       },
       "parityTest": "tests/ClientTransportReportTest.php",
