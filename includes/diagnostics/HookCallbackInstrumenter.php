@@ -27,7 +27,7 @@ if (!defined('ABSPATH')) {
  */
 final class ABJ_404_Solution_HookCallbackInstrumenter {
 
-    /** @var callable(string, string, int, CallbackIdentity): TToken */
+    /** @var callable(string, string, int, CallbackIdentity, int): TToken */
     private $start;
 
     /** @var callable(TToken): void */
@@ -43,7 +43,7 @@ final class ABJ_404_Solution_HookCallbackInstrumenter {
     private $lifecycleTracer;
 
     /**
-     * @param callable(string, string, int, CallbackIdentity): TToken $start
+     * @param callable(string, string, int, CallbackIdentity, int): TToken $start
      * @param callable(TToken): void $end
      */
     public function __construct(
@@ -371,9 +371,9 @@ final class ABJ_404_Solution_HookCallbackInstrumenter {
         array $identity,
         int $ordinal
     ): array {
-        $wrapper = function (...$args) use ($hook, $priority, $callback, $identity) {
+        $wrapper = function (...$args) use ($hook, $priority, $callback, $identity, $ordinal) {
             $actualHook = self::actualHook($hook, $args);
-            $token = call_user_func($this->start, $hook, $actualHook, $priority, $identity);
+            $token = call_user_func($this->start, $hook, $actualHook, $priority, $identity, $ordinal);
             $result = call_user_func_array($callback, $args);
             call_user_func($this->end, $token);
             return $result;
@@ -413,10 +413,10 @@ final class ABJ_404_Solution_HookCallbackInstrumenter {
         $before = function ($value = null, ...$args) use (
             $hook,
             $priority,
-            $identity
+            $identity, $ordinal
         ) {
             $actualHook = self::actualHook($hook, array_merge(array($value), $args));
-            $token = call_user_func($this->start, $hook, $actualHook, $priority, $identity);
+            $token = call_user_func($this->start, $hook, $actualHook, $priority, $identity, $ordinal);
             if ($token !== null) {
                 $this->pendingTokens[] = $token;
             }

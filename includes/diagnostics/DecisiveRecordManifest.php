@@ -253,12 +253,15 @@ final class ABJ_404_Solution_DecisiveRecordManifest {
             'sentinel' => 'table_prelude_instrumentation.max_callback_records',
         ),
         // The response-control filter dispatches on the instrumented
-        // response tail (gap-hunt iteration 8). getAndClearAjaxBufferedOutput()
+        // response tail (gap-hunt iterations 8 and 9).
+        // getAndClearAjaxBufferedOutput()
         // dispatches abj404_should_manage_output_buffer and
         // sendJsonResponseAndExit() dispatches abj404_should_exit before the
         // flush; AjaxRequestLedger::resolveDetachAbMode() dispatches
-        // abj404_should_run_detach_ab_diagnostic after it. All three run on
-        // EVERY ajaxUpdatePaginationLinks response, so the bracket pair is always
+        // abj404_should_run_detach_ab_diagnostic after it; WordPress
+        // status_header() dispatches its named filter before core header
+        // emission. All four run on every ajaxUpdatePaginationLinks response,
+        // so the bracket pair is always
         // present. The start is written before any registry access, so a worker
         // killed inside a foreign callback still names the boundary -- the start
         // is reserved. The end carries the callbacks_attributed census that is

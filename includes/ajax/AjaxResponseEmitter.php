@@ -122,7 +122,17 @@ final class ABJ_404_Solution_AjaxResponseEmitter {
 
         $emitStatus = static function () use ($httpStatus) {
             if (function_exists('status_header')) {
-                status_header($httpStatus);
+                // WordPress dispatches the foreign `status_header` filter and
+                // global `all` hook before its core header() call. Attribute
+                // those callbacks inside the existing outer status boundary:
+                // completed callbacks followed by a missing status_header_end
+                // then isolate the remaining stall to WordPress/core emission.
+                ABJ_404_Solution_ResponseControlFilterTracer::traceDispatch(
+                    'status_header',
+                    static function () use ($httpStatus) {
+                        status_header($httpStatus);
+                    }
+                );
             } else if (function_exists('http_response_code')) {
                 http_response_code($httpStatus);
             }

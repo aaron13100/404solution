@@ -20,6 +20,38 @@ final class ABJ_404_Solution_DecisiveRecordDiscriminatorContract {
         $operationFields = self::detachOperationFields();
         $transientRequirements = self::detachTransientRequirements($operationFields);
         $probeFields = self::cacheProbeFields();
+        $responseCallbackFields = array(
+            'operation_id',
+            'filter_hook',
+            'registered_hook',
+            'hook',
+            'callback',
+            'source',
+            'priority',
+            'callback_ordinal',
+        );
+        $responseCallbackIdentityFields = array(
+            'operation_id',
+            'filter_hook',
+            'registered_hook',
+            'hook',
+            'callback',
+            'source',
+        );
+        $responseCallbackActivation = array(
+            'any' => array(
+                array(
+                    'event' => 'response_control_filter_dispatch_end',
+                    'field' => 'callbacks_attributed',
+                    'operator' => 'greater_than',
+                    'value' => 0,
+                ),
+                array(
+                    'fact' => 'response_control_filter_callbacks_expected',
+                    'equals' => true,
+                ),
+            ),
+        );
 
         return array(
             'hook_lifecycle_consumers' => array(
@@ -66,6 +98,54 @@ final class ABJ_404_Solution_DecisiveRecordDiscriminatorContract {
                     'unmatched_end_event' => 'cache_metrics_probe_end',
                     'activation' => array(
                         'fact' => 'unmatched_cache_probe_expected',
+                        'equals' => true,
+                    ),
+                )),
+            ),
+            'response_control_filter_callbacks' => array(
+                'profiles' => array('ordinary_table', 'response_control_filter_callbacks'),
+                'requirements' => array(
+                    array(
+                        'id' => 'response_control_filter_callback_start_identity',
+                        'event' => 'response_control_filter_callback_start',
+                        'required_fields' => $responseCallbackFields,
+                        'non_empty_fields' => $responseCallbackIdentityFields,
+                        'field_types' => array(
+                            'priority' => 'integer',
+                            'callback_ordinal' => 'positive_integer',
+                        ),
+                        'all_matches' => true,
+                        'activation' => $responseCallbackActivation,
+                    ),
+                    array(
+                        'id' => 'response_control_filter_callback_end_identity',
+                        'event' => 'response_control_filter_callback_end',
+                        'required_fields' => $responseCallbackFields,
+                        'non_empty_fields' => $responseCallbackIdentityFields,
+                        'field_types' => array(
+                            'priority' => 'integer',
+                            'callback_ordinal' => 'positive_integer',
+                        ),
+                        'all_matches' => true,
+                        'activation' => $responseCallbackActivation,
+                    ),
+                ),
+            ),
+            'unmatched_response_control_callback_support' => array(
+                'profiles' => array('unmatched_response_control_callback_support'),
+                'requirements' => array(array(
+                    'id' => 'unmatched_response_control_callback_identity',
+                    'event' => 'response_control_filter_callback_start',
+                    'required_fields' => $responseCallbackFields,
+                    'non_empty_fields' => $responseCallbackIdentityFields,
+                    'field_types' => array(
+                        'priority' => 'integer',
+                        'callback_ordinal' => 'positive_integer',
+                    ),
+                    'all_matches' => true,
+                    'unmatched_end_event' => 'response_control_filter_callback_end',
+                    'activation' => array(
+                        'fact' => 'unmatched_response_control_callback_expected',
                         'equals' => true,
                     ),
                 )),

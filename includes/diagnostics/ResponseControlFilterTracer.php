@@ -7,9 +7,9 @@ if (!defined('ABSPATH')) {
 /**
  * Durable attribution for the response-control filter dispatches on the
  * instrumented table AJAX response tail (Bruno timeout cause matrix, gap-hunt
- * iteration 8, Codex response-control-filter gap).
+ * iterations 8 and 9, Codex response-control-filter gaps).
  *
- * Three production filters run foreign WordPress callbacks at response-critical
+ * Four production filters run foreign WordPress callbacks at response-critical
  * boundaries that no other tracer covers:
  *
  *   - Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput() dispatches
@@ -21,6 +21,8 @@ if (!defined('ABSPATH')) {
  *   - AjaxRequestLedger::resolveDetachAbMode() dispatches
  *     `abj404_should_run_detach_ab_diagnostic` after the response flush and
  *     before the connection-detach call.
+ *   - WordPress status_header() dispatches `status_header` before core header
+ *     emission while AjaxResponseEmitter is sending the table response.
  *
  * A callback registered on either named filter, or on WordPress's global `all`
  * hook (which fires on every apply_filters), can conditionally block only for
@@ -115,9 +117,16 @@ final class ABJ_404_Solution_ResponseControlFilterTracer {
                 string $registeredHook,
                 string $actualHook,
                 int $priority,
-                array $identity
+                array $identity,
+                int $callbackOrdinal
             ) {
-                return $this->beginHookCallback($actualHook, $priority, $identity);
+                return $this->beginHookCallback(
+                    $registeredHook,
+                    $actualHook,
+                    $priority,
+                    $callbackOrdinal,
+                    $identity
+                );
             },
             function ($token): void {
                 $this->finishHookCallback($token);
@@ -194,8 +203,10 @@ final class ABJ_404_Solution_ResponseControlFilterTracer {
      * @return array{fields: array<string, mixed>, started_at: float|null}|null
      */
     private function beginHookCallback(
+        string $registeredHook,
         string $actualHook,
         int $priority,
+        int $callbackOrdinal,
         array $identity
     ): ?array {
         if ($this->recording || $this->lifecycleTracer->isRecording()) {
@@ -203,10 +214,12 @@ final class ABJ_404_Solution_ResponseControlFilterTracer {
         }
         $fields = array(
             'filter_hook' => $this->filterHook,
+            'registered_hook' => ABJ_404_Solution_HookCallbackIdentity::hookName($registeredHook),
             'hook' => ABJ_404_Solution_HookCallbackIdentity::hookName($actualHook),
             'callback' => $identity['callback'],
             'source' => $identity['source'],
             'priority' => $priority,
+            'callback_ordinal' => $callbackOrdinal,
         );
         $fields['operation_id'] = $this->operationId('response_control_filter_callback');
         $this->write('response_control_filter_callback_start', $fields);

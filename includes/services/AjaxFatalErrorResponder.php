@@ -167,7 +167,12 @@ class ABJ_404_Solution_AjaxFatalErrorResponder {
             }
             header('Content-type: application/json; charset=UTF-8');
             if (function_exists('status_header')) {
-                status_header($httpStatus);
+                ABJ_404_Solution_ResponseControlFilterTracer::traceDispatch(
+                    'status_header',
+                    static function () use ($httpStatus) {
+                        status_header($httpStatus);
+                    }
+                );
             } elseif (function_exists('http_response_code')) {
                 http_response_code($httpStatus);
             }
