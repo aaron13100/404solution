@@ -29,6 +29,9 @@ class ABJ_404_Solution_StatusCountsRepository {
     const STATUS_CACHE_TTL = ABJ_404_Solution_ViewReadRuntimeState::STATUS_CACHE_TTL;
     const STATUS_LAST_KNOWN_CACHE_TTL = ABJ_404_Solution_ViewReadRuntimeState::STATUS_LAST_KNOWN_CACHE_TTL;
 
+    /** @var callable(string,array<string,mixed>,callable):mixed|null */
+    private static $operationTracer = null;
+
     /** @var ABJ_404_Solution_DatabaseQueryInterface */
     private $dbCore;
 
@@ -53,15 +56,28 @@ class ABJ_404_Solution_StatusCountsRepository {
         $this->queryBuilder = $queryBuilder;
     }
 
+    /** @param callable(string,array<string,mixed>,callable):mixed|null $tracer */
+    public static function setOperationTracer($tracer): void {
+        self::$operationTracer = $tracer;
+    }
+
     /**
      * Read redirect counts without touching the database.
      *
      * @return array{counts: array<string, int>, needs_refresh: bool, incomplete: bool}
      */
     public function readRedirectStatusCountsCache(): array {
-        return $this->readStatusCountsCache(
-            self::CACHE_KEY_REDIRECT_STATUS,
-            self::CACHE_KEY_REDIRECT_STATUS_LAST_KNOWN
+        return self::trace(
+            'status_cache_read',
+            array('scope' => 'redirects'),
+            function (): array {
+                return $this->readStatusCountsCache(
+                    self::CACHE_KEY_REDIRECT_STATUS,
+                    self::CACHE_KEY_REDIRECT_STATUS_LAST_KNOWN,
+                    'redirect_current',
+                    'redirect_last_known'
+                );
+            }
         );
     }
 
@@ -142,9 +158,17 @@ class ABJ_404_Solution_StatusCountsRepository {
      * @return array{counts: array<string, int>, needs_refresh: bool, incomplete: bool}
      */
     public function readCapturedStatusCountsCache(): array {
-        return $this->readStatusCountsCache(
-            self::CACHE_KEY_CAPTURED_STATUS,
-            self::CACHE_KEY_CAPTURED_STATUS_LAST_KNOWN
+        return self::trace(
+            'status_cache_read',
+            array('scope' => 'captured'),
+            function (): array {
+                return $this->readStatusCountsCache(
+                    self::CACHE_KEY_CAPTURED_STATUS,
+                    self::CACHE_KEY_CAPTURED_STATUS_LAST_KNOWN,
+                    'captured_current',
+                    'captured_last_known'
+                );
+            }
         );
     }
 
@@ -190,14 +214,27 @@ class ABJ_404_Solution_StatusCountsRepository {
     /**
      * @return array{counts: array<string, int>, needs_refresh: bool, incomplete: bool}
      */
-    private function readStatusCountsCache(string $currentKey, string $lastKnownKey): array {
-        $current = get_transient($currentKey);
+    private function readStatusCountsCache(
+        string $currentKey,
+        string $lastKnownKey,
+        string $currentFamily,
+        string $lastKnownFamily
+    ): array {
+        $current = self::trace(
+            'transient_read',
+            array('family' => $currentFamily, 'expected' => 'array'),
+            static fn() => get_transient($currentKey)
+        );
         if (is_array($current)) {
             /** @var array<string, int> $current */
             return array('counts' => $current, 'needs_refresh' => false, 'incomplete' => false);
         }
 
-        $lastKnown = get_transient($lastKnownKey);
+        $lastKnown = self::trace(
+            'transient_read',
+            array('family' => $lastKnownFamily, 'expected' => 'array'),
+            static fn() => get_transient($lastKnownKey)
+        );
         if (is_array($lastKnown)) {
             /** @var array<string, int> $lastKnown */
             return array('counts' => $lastKnown, 'needs_refresh' => true, 'incomplete' => false);
@@ -212,17 +249,31 @@ class ABJ_404_Solution_StatusCountsRepository {
      * @return array{count:?int,needs_refresh:bool}
      */
     public function readHighImpactCapturedCountCache(): array {
-        $current = get_transient(self::CACHE_KEY_HIGH_IMPACT_CAPTURED);
-        if (is_numeric($current)) {
-            return array('count' => intval($current), 'needs_refresh' => false);
-        }
+        return self::trace(
+            'status_cache_read',
+            array('scope' => 'high_impact'),
+            static function (): array {
+                $current = self::trace(
+                    'transient_read',
+                    array('family' => 'high_impact_current', 'expected' => 'numeric'),
+                    static fn() => get_transient(self::CACHE_KEY_HIGH_IMPACT_CAPTURED)
+                );
+                if (is_numeric($current)) {
+                    return array('count' => intval($current), 'needs_refresh' => false);
+                }
 
-        $lastKnown = get_transient(self::CACHE_KEY_HIGH_IMPACT_CAPTURED_LAST_KNOWN);
-        if (is_numeric($lastKnown)) {
-            return array('count' => intval($lastKnown), 'needs_refresh' => true);
-        }
+                $lastKnown = self::trace(
+                    'transient_read',
+                    array('family' => 'high_impact_last_known', 'expected' => 'numeric'),
+                    static fn() => get_transient(self::CACHE_KEY_HIGH_IMPACT_CAPTURED_LAST_KNOWN)
+                );
+                if (is_numeric($lastKnown)) {
+                    return array('count' => intval($lastKnown), 'needs_refresh' => true);
+                }
 
-        return array('count' => null, 'needs_refresh' => true);
+                return array('count' => null, 'needs_refresh' => true);
+            }
+        );
     }
 
     /** Recompute the high-impact count from the cron-only refresh entry point. */
@@ -326,5 +377,18 @@ class ABJ_404_Solution_StatusCountsRepository {
      */
     private static function scalarToInt($value): int {
         return is_scalar($value) ? intval($value) : 0;
+    }
+
+    /**
+     * @template T
+     * @param array<string,mixed> $fields
+     * @param callable():T $work
+     * @return T
+     */
+    private static function trace(string $operation, array $fields, callable $work) {
+        if (self::$operationTracer === null) {
+            return $work();
+        }
+        return (self::$operationTracer)($operation, $fields, $work);
     }
 }

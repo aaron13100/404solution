@@ -32,10 +32,17 @@ class ABJ_404_Solution_Ajax_RefreshHealthBar {
 
         $page = $requestReader->getPostOrGetSanitize('page', '');
         $subpage = $requestReader->getPostOrGetSanitize('subpage', '');
+        $requestId = ABJ_404_Solution_AjaxRequestLedger::normalizeId(
+            $requestReader->getPostOrGetSanitize(
+                'requestId',
+                ABJ_404_Solution_AjaxRequestLedger::UNKNOWN_ID
+            )
+        );
 
         $isPluginAdmin = false;
         $context = array(
             'action' => 'ajaxRefreshHealthBar',
+            'request_id' => $requestId,
             'page' => $page,
             'subpage' => $subpage,
             'request_uri' => array_key_exists('REQUEST_URI', $_SERVER) ? $_SERVER['REQUEST_URI'] : '',
@@ -79,6 +86,7 @@ class ABJ_404_Solution_Ajax_RefreshHealthBar {
             }
 
             $response = array(
+                'requestId' => $requestId,
                 'highImpactCapturedCount' => $highImpactCapturedCount,
                 'rollupAvailable' => $rollupAvailable,
                 'statusCounts' => $statusCounts,

@@ -37,6 +37,9 @@ class ABJ_404_Solution_CronScheduler {
     // deactivation must defensively clear it (matches deleteBlogData + Uninstaller).
     const HOOK_REBUILD_VIEW_DONE_LEGACY = 'abj404_rebuildViewDone';
 
+    /** @var callable(string,array<string,mixed>,callable):mixed|null */
+    private static $statusCountOperationTracer = null;
+
     /** @var ABJ_404_Solution_Clock */
     private $clock;
 
@@ -55,6 +58,11 @@ class ABJ_404_Solution_CronScheduler {
         $this->logger = $logger;
     }
 
+    /** @param callable(string,array<string,mixed>,callable):mixed|null $tracer */
+    public static function setStatusCountOperationTracer($tracer): void {
+        self::$statusCountOperationTracer = $tracer;
+    }
+
     /** @return int */
     public function now(): int {
         return $this->clock->now();
@@ -71,10 +79,18 @@ class ABJ_404_Solution_CronScheduler {
      * @return int|false
      */
     public function nextScheduled(string $hook, array $args = array()) {
-        if (!function_exists('wp_next_scheduled')) {
-            return false;
-        }
-        return empty($args) ? wp_next_scheduled($hook) : wp_next_scheduled($hook, $this->listArgs($args));
+        return self::traceStatusCountOperation(
+            $hook,
+            'next_scheduled_check',
+            function () use ($hook, $args) {
+                if (!function_exists('wp_next_scheduled')) {
+                    return false;
+                }
+                return empty($args)
+                    ? wp_next_scheduled($hook)
+                    : wp_next_scheduled($hook, $this->listArgs($args));
+            }
+        );
     }
 
     /**
@@ -108,12 +124,42 @@ class ABJ_404_Solution_CronScheduler {
             $this->logScheduleFailure('single', $hook, null, $timestamp, $args, 'wp_schedule_single_event unavailable');
             return false;
         }
-        $scheduled = wp_schedule_single_event($timestamp, $hook, $this->listArgs($args), true);
+        $scheduled = self::traceStatusCountOperation(
+            $hook,
+            'scheduling_write',
+            fn() => wp_schedule_single_event(
+                $timestamp,
+                $hook,
+                $this->listArgs($args),
+                true
+            )
+        );
         if ($scheduled === false || $this->isWpError($scheduled)) {
             $this->logScheduleFailure('single', $hook, null, $timestamp, $args, $this->wpErrorMessage($scheduled));
             return false;
         }
         return true;
+    }
+
+    /**
+     * @template T
+     * @param callable():T $work
+     * @return T
+     */
+    private static function traceStatusCountOperation(
+        string $hook,
+        string $operation,
+        callable $work
+    ) {
+        if ($hook !== self::HOOK_REFRESH_STATUS_COUNTS
+                || self::$statusCountOperationTracer === null) {
+            return $work();
+        }
+        return (self::$statusCountOperationTracer)(
+            $operation,
+            array('family' => 'status_refresh_cron'),
+            $work
+        );
     }
 
     /**

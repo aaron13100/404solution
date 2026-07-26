@@ -7,8 +7,6 @@ if (!defined('ABSPATH')) {
 require_once __DIR__ . '/DecisiveRecordContractEvaluator.php';
 require_once __DIR__ . '/DecisiveRecordDiscriminatorContract.php';
 require_once __DIR__ . '/DecisiveRecordAuthorizationFamilies.php';
-require_once __DIR__ . '/DecisiveRecordRenderFamilies.php';
-require_once __DIR__ . '/DecisiveRecordFailureFamilies.php';
 
 /**
  * The canonical catalog of decisive tracer records, and the single source the
@@ -491,6 +489,8 @@ final class ABJ_404_Solution_DecisiveRecordManifest {
             ABJ_404_Solution_DecisiveRecordAuthorizationFamilies::records(self::PRESENCE_ALWAYS),
             ABJ_404_Solution_DecisiveRecordRenderFamilies::records(
                 self::PRESENCE_ALWAYS, self::PRESENCE_CONDITIONAL),
+            ABJ_404_Solution_DecisiveRecordStatusCountFamilies::records(
+                self::PRESENCE_CONDITIONAL),
             ABJ_404_Solution_DecisiveRecordQueryFilterFamilies::records(
                 self::PRESENCE_ALWAYS, self::PRESENCE_CONDITIONAL),
             ABJ_404_Solution_DecisiveRecordFailureFamilies::records(

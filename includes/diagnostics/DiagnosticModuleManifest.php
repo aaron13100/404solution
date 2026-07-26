@@ -60,6 +60,7 @@ final class ABJ_404_Solution_DiagnosticModuleManifest {
         'ajax/Ajax_Php.php',
         'ajax/Ajax_AdminEndpointSupport.php',
         'ajax/Ajax_GetPaginationLinks.php',
+        'ajax/Ajax_RefreshHealthBar.php',
         // AjaxStageDiagnostics.php is deliberately absent: it now lives under
         // diagnostics/ and is therefore picked up automatically.
         // The report-only beacon branch of the table endpoint.
@@ -74,6 +75,10 @@ final class ABJ_404_Solution_DiagnosticModuleManifest {
         'core/FileSystemService.php',
         // Pre-query sort-readiness schema and option/cache authority.
         'view-build/RedirectsDenormSchemaReadiness.php',
+        // Foreground status-count cache and cron scheduling authorities.
+        'stats/StatusCountsRepository.php',
+        'view-build/StatusCountsRefreshCoordinator.php',
+        'services/CronScheduler.php',
         // The per-query attribution hook, which lives with the DB layer.
         'database/DatabaseQueryDiagnostics.php',
         // Query preflight spans these DB collaborators before the first SQL

@@ -306,6 +306,11 @@ class ABJ_404_Solution_Ajax_AdminEndpointSupport {
             static fn(string $operation, array $fields, callable $work) =>
                 ABJ_404_Solution_SortReadinessTracer::trace($operation, $fields, $work)
         );
+        $statusCountTracer = static fn(string $operation, array $fields, callable $work) =>
+            ABJ_404_Solution_StatusCountsForegroundTracer::trace($operation, $fields, $work);
+        ABJ_404_Solution_StatusCountsRepository::setOperationTracer($statusCountTracer);
+        ABJ_404_Solution_StatusCountsRefreshCoordinator::setOperationTracer($statusCountTracer);
+        ABJ_404_Solution_CronScheduler::setStatusCountOperationTracer($statusCountTracer);
         return $context;
     }
 

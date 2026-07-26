@@ -3,10 +3,11 @@
   "title": "ajaxRefreshHealthBar",
   "description": "Health bar refresh AJAX request from view_updater_stats.js to ViewUpdater.php",
   "type": "object",
-  "required": ["nonce"],
+  "required": ["nonce", "requestId"],
   "additionalProperties": false,
   "properties": {
     "nonce": { "type": "string", "minLength": 1 },
+    "requestId": { "type": "string", "pattern": "^[a-zA-Z0-9]{8,64}$" },
     "page": { "type": "string" },
     "subpage": { "type": "string" }
   }

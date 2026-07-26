@@ -13,6 +13,9 @@ class ABJ_404_Solution_StatusCountsRefreshCoordinator {
     const SCOPE_CAPTURED = 'captured';
     const SCOPE_HIGH_IMPACT = 'high-impact';
 
+    /** @var callable(string,array<string,mixed>,callable):mixed|null */
+    private static $operationTracer = null;
+
     /** @var ABJ_404_Solution_StatusCountsRepository */
     private $statusCounts;
 
@@ -32,29 +35,46 @@ class ABJ_404_Solution_StatusCountsRefreshCoordinator {
         $this->warn = $warn;
     }
 
+    /** @param callable(string,array<string,mixed>,callable):mixed|null $tracer */
+    public static function setOperationTracer($tracer): void {
+        self::$operationTracer = $tracer;
+    }
+
     /** @return array<string, int> */
     public function getRedirectStatusCounts(): array {
-        return $this->resolveRead(
-            self::SCOPE_REDIRECTS,
-            $this->statusCounts->readRedirectStatusCountsCache()
+        return self::trace('status_count_scope', array('scope' => self::SCOPE_REDIRECTS),
+            function (): array {
+                return $this->resolveRead(
+                    self::SCOPE_REDIRECTS,
+                    $this->statusCounts->readRedirectStatusCountsCache()
+                );
+            }
         );
     }
 
     /** @return array<string, int> */
     public function getCapturedStatusCounts(): array {
-        return $this->resolveRead(
-            self::SCOPE_CAPTURED,
-            $this->statusCounts->readCapturedStatusCountsCache()
+        return self::trace('status_count_scope', array('scope' => self::SCOPE_CAPTURED),
+            function (): array {
+                return $this->resolveRead(
+                    self::SCOPE_CAPTURED,
+                    $this->statusCounts->readCapturedStatusCountsCache()
+                );
+            }
         );
     }
 
     /** @return int|null */
     public function getHighImpactCapturedCount(): ?int {
-        $state = $this->statusCounts->readHighImpactCapturedCountCache();
-        if ($state['needs_refresh']) {
-            $this->scheduleRefresh(self::SCOPE_HIGH_IMPACT);
-        }
-        return $state['count'];
+        return self::trace('status_count_scope', array('scope' => self::SCOPE_HIGH_IMPACT),
+            function (): ?int {
+                $state = $this->statusCounts->readHighImpactCapturedCountCache();
+                if ($state['needs_refresh']) {
+                    $this->scheduleRefresh(self::SCOPE_HIGH_IMPACT);
+                }
+                return $state['count'];
+            }
+        );
     }
 
     /**
@@ -117,14 +137,36 @@ class ABJ_404_Solution_StatusCountsRefreshCoordinator {
     }
 
     private function scheduleRefresh(string $scope): void {
-        abj_cron_scheduler()->scheduleSingleIfMissing(
-            ABJ_404_Solution_CronScheduler::HOOK_REFRESH_STATUS_COUNTS,
-            0,
-            array($scope)
+        $scheduler = self::trace(
+            'scheduler_resolution',
+            array('scope' => $scope),
+            static fn() => abj_cron_scheduler()
+        );
+        self::trace(
+            'schedule_if_missing',
+            array('scope' => $scope),
+            static fn() => $scheduler->scheduleSingleIfMissing(
+                ABJ_404_Solution_CronScheduler::HOOK_REFRESH_STATUS_COUNTS,
+                0,
+                array($scope)
+            )
         );
     }
 
     private function isCronRequest(): bool {
         return function_exists('wp_doing_cron') && wp_doing_cron();
+    }
+
+    /**
+     * @template T
+     * @param array<string,mixed> $fields
+     * @param callable():T $work
+     * @return T
+     */
+    private static function trace(string $operation, array $fields, callable $work) {
+        if (self::$operationTracer === null) {
+            return $work();
+        }
+        return (self::$operationTracer)($operation, $fields, $work);
     }
 }

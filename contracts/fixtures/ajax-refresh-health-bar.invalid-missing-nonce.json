@@ -1,4 +1,5 @@
 {
   "_comment": "This fixture MUST fail validation. The nonce field is missing.",
+  "requestId": "healthbar-invalid",
   "subpage": "abj404_redirects"
 }

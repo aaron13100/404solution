@@ -212,6 +212,7 @@ function refreshHealthBarIfNeeded() {
     }
 
     $bar.attr('data-health-bar-loading', '1');
+    var requestId = abj404GenerateRequestId();
 
     var healthBarAjaxRunner = (typeof abj404AjaxWithNonceRetry === 'function')
         // ajax-direct-approved: fallback when abj404AjaxWithNonceRetry helper not yet loaded in this bundle
@@ -224,7 +225,8 @@ function refreshHealthBarIfNeeded() {
             action: action,
             nonce: nonce,
             page: getURLParameter('page') || '',
-            subpage: getURLParameter('subpage') || ''
+            subpage: getURLParameter('subpage') || '',
+            requestId: requestId
         },
         success: function(result) {
             $bar.removeAttr('data-health-bar-loading');

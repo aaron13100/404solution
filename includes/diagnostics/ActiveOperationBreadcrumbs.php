@@ -75,6 +75,14 @@ final class ABJ_404_Solution_ActiveOperationBreadcrumbs {
                 'operation_id', 'q', 'sql_id', 'hook', 'callback', 'source',
             ),
         ),
+        'status_count_operation' => array(
+            'fields' => array(
+                'operation_id', 'operation', 'parent_operation_id', 'scope',
+                'family', 'kind', 'hook', 'callback', 'source', 'priority',
+                'cache_key', 'cache_group',
+            ),
+            'required_evidence_fields' => array('operation_id', 'operation'),
+        ),
     );
 
     /**
