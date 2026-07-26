@@ -8,18 +8,17 @@ require_once __DIR__ . '/DecisiveRecordContractEvaluator.php';
 require_once __DIR__ . '/DecisiveRecordDiscriminatorContract.php';
 require_once __DIR__ . '/DecisiveRecordAuthorizationFamilies.php';
 require_once __DIR__ . '/DecisiveRecordRenderFamilies.php';
+require_once __DIR__ . '/DecisiveRecordFailureFamilies.php';
 
 /**
  * The canonical catalog of decisive tracer records, and the single source the
  * completeness gates and the support-reservation policy derive from. (Bruno
  * timeout cause matrix, gap-hunt iteration 6, convergence of gaps O1 + O2.)
  *
- * The failure this class exists to end is structural. Three durability
- * consumers -- the server completeness gate, the browser completeness gate,
- * and ABJ_404_Solution_RequiredCheckpointEvidence -- each used to hardcode
- * their own list of required and reserved record types. Each new record needed
- * three hand edits; omissions were invisible until the next gap hunt. That
- * recurred five times (GF/c444, c473, c479, c489), allowing a failing session
+ * Three durability consumers -- both completeness gates and
+ * ABJ_404_Solution_RequiredCheckpointEvidence -- used to hardcode their own
+ * required and reserved record types. Omissions stayed invisible until the
+ * next gap hunt (GF/c444, c473, c479, c489), allowing a failing session
  * to drop the record carrying its discriminator (the G1 shape).
  *
  * The fix mirrors ABJ_404_Solution_DiagnosticModuleManifest: coverage is
@@ -493,7 +492,9 @@ final class ABJ_404_Solution_DecisiveRecordManifest {
             ABJ_404_Solution_DecisiveRecordRenderFamilies::records(
                 self::PRESENCE_ALWAYS, self::PRESENCE_CONDITIONAL),
             ABJ_404_Solution_DecisiveRecordQueryFilterFamilies::records(
-                self::PRESENCE_ALWAYS, self::PRESENCE_CONDITIONAL)
+                self::PRESENCE_ALWAYS, self::PRESENCE_CONDITIONAL),
+            ABJ_404_Solution_DecisiveRecordFailureFamilies::records(
+                self::PRESENCE_CONDITIONAL)
         );
     }
 }

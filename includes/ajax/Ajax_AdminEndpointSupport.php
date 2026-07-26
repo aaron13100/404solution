@@ -205,7 +205,50 @@ class ABJ_404_Solution_Ajax_AdminEndpointSupport {
      * @return void
      */
     public static function safeLogAjaxFailure($summary, $details = null, $throwable = null) {
-        self::ajaxFailureLogger()->safeLogAjaxFailure($summary, $details, $throwable);
+        self::safeLogAjaxFailureBranch(
+            'failure_branch',
+            $summary,
+            static fn() => $details,
+            $throwable
+        );
+    }
+
+    /**
+     * Persist a post-authorization failure fingerprint before constructing
+     * details, then trace every shared failure-logging boundary.
+     *
+     * @param string $branch
+     * @param string $summary
+     * @param callable(): mixed $detailsFactory
+     * @param \Throwable|null $throwable
+     * @return mixed The constructed details, for the caller's response path.
+     */
+    public static function safeLogAjaxFailureBranch(
+        string $branch,
+        $summary,
+        callable $detailsFactory,
+        $throwable = null
+    ) {
+        return ABJ_404_Solution_PostAuthorizationFailureTracer::trace(
+            $branch,
+            $throwable,
+            $detailsFactory,
+            static function ($details) use ($summary, $throwable) {
+                $logger = ABJ_404_Solution_PostAuthorizationFailureTracer::aroundOperation(
+                    'logger_resolution',
+                    static fn() => self::ajaxFailureLogger()
+                );
+                $logger->setOperationTracer(
+                    static fn(string $operation, callable $work) =>
+                        ABJ_404_Solution_PostAuthorizationFailureTracer::aroundOperation(
+                            $operation,
+                            $work
+                        )
+                );
+                $logger->safeLogAjaxFailure($summary, $details, $throwable);
+                return $details;
+            }
+        );
     }
 
     /**

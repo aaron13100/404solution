@@ -5,63 +5,77 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Durable attribution for the synchronous successful-authorization log call.
+ * Durable attribution for AJAX failure work reached after authorization.
  *
- * Bruno's affected requests all wrote "AJAX authorized" and then went silent.
- * The existing auth_check pair therefore proves that authorization began but
- * cannot distinguish a logger call that made its line visible before its
- * underlying file operation returned. This tracer reserves an outer pair
- * before logger resolution and, while that call is active, lets the native
- * Logging adapter attribute path resolution and the final write/return.
- *
- * State is a stack rather than a boolean: nested authorization calls cannot
- * clear an outer call's context, and unrelated logging is a pure pass-through.
- * Paths and messages never enter the checkpoint records.
+ * The failure fingerprint is persisted before detail construction or service
+ * lookup. Every later blocking boundary carries the same failure id, while
+ * exception messages, log lines, paths, SQL, and response details remain out
+ * of the diagnostic journal.
  */
-final class ABJ_404_Solution_AuthorizationLogTracer {
+final class ABJ_404_Solution_PostAuthorizationFailureTracer {
 
-    /** @var array<int, array{request_id: string, operation_id: string}> */
+    /** @var array<int, array{request_id:string,failure_id:string,branch:string}> */
     private static $contexts = array();
 
     /** @var int */
     private static $operationSequence = 0;
 
     /**
-     * Trace logger resolution plus the successful authorization audit call.
+     * Record the failure first, then trace detail construction and logging.
      *
      * @template T
-     * @param callable(): T $work
+     * @param Throwable|null $throwable
+     * @param callable(): mixed $detailsFactory
+     * @param callable(mixed): T $logging
      * @return T
      */
-    public static function trace(callable $work) {
+    public static function trace(
+        string $branch,
+        $throwable,
+        callable $detailsFactory,
+        callable $logging
+    ) {
         $requestId = self::requestId();
         if ($requestId === '') {
-            return $work();
+            return $logging($detailsFactory());
         }
 
-        $operationId = self::operationId($requestId, 'authorize_admin_with_nonce');
+        $safeBranch = self::safeBranch($branch);
+        $failureId = self::operationId($requestId, $safeBranch);
         $fields = array(
-            'operation_id' => $operationId,
-            'operation' => 'authorize_admin_with_nonce',
+            'operation_id' => $failureId,
+            'failure_id' => $failureId,
+            'branch' => $safeBranch,
+        );
+        if ($throwable instanceof Throwable) {
+            $fields['error'] = self::errorSummary($throwable);
+        }
+
+        ABJ_404_Solution_AjaxCheckpointLogger::recordFrequent(
+            $requestId,
+            'ajax_failure_branch',
+            $fields
         );
         ABJ_404_Solution_AjaxCheckpointLogger::recordFrequent(
             $requestId,
-            'auth_log_start',
+            'ajax_failure_log_start',
             $fields
         );
         self::$contexts[] = array(
             'request_id' => $requestId,
-            'operation_id' => $operationId,
+            'failure_id' => $failureId,
+            'branch' => $safeBranch,
         );
         $startedAt = self::nowFloat();
 
         try {
-            $result = $work();
+            $details = self::aroundOperation('detail_construction', $detailsFactory);
+            $result = $logging($details);
         } catch (Throwable $error) {
             array_pop(self::$contexts);
             ABJ_404_Solution_AjaxCheckpointLogger::recordFrequent(
                 $requestId,
-                'auth_log_end',
+                'ajax_failure_log_end',
                 array_merge($fields, array(
                     'status' => 'error',
                     'elapsed_ms' => self::elapsedMilliseconds($startedAt),
@@ -74,7 +88,7 @@ final class ABJ_404_Solution_AuthorizationLogTracer {
         array_pop(self::$contexts);
         ABJ_404_Solution_AjaxCheckpointLogger::recordFrequent(
             $requestId,
-            'auth_log_end',
+            'ajax_failure_log_end',
             array_merge($fields, array(
                 'status' => 'complete',
                 'elapsed_ms' => self::elapsedMilliseconds($startedAt),
@@ -84,8 +98,7 @@ final class ABJ_404_Solution_AuthorizationLogTracer {
     }
 
     /**
-     * Attribute one native logging sub-operation while trace() is active.
-     * Outside that scope this is behavior-identical to invoking $work directly.
+     * Trace one failure-logging sub-operation while trace() is active.
      *
      * @template T
      * @param callable(): T $work
@@ -94,25 +107,19 @@ final class ABJ_404_Solution_AuthorizationLogTracer {
     public static function aroundOperation(string $operation, callable $work) {
         $context = self::activeContext();
         if ($context === null) {
-            if (class_exists('ABJ_404_Solution_PostAuthorizationFailureTracer')
-                    && ABJ_404_Solution_PostAuthorizationFailureTracer::isActive()) {
-                return ABJ_404_Solution_PostAuthorizationFailureTracer::aroundNativeOperation(
-                    $operation,
-                    $work
-                );
-            }
             return $work();
         }
 
         $operationId = self::operationId($context['request_id'], $operation);
         $fields = array(
             'operation_id' => $operationId,
-            'parent_operation_id' => $context['operation_id'],
-            'operation' => $operation,
+            'failure_id' => $context['failure_id'],
+            'branch' => $context['branch'],
+            'operation' => self::safeOperation($operation),
         );
         ABJ_404_Solution_AjaxCheckpointLogger::recordFrequent(
             $context['request_id'],
-            'auth_log_operation_start',
+            'ajax_failure_log_operation_start',
             $fields
         );
         $startedAt = self::nowFloat();
@@ -121,7 +128,7 @@ final class ABJ_404_Solution_AuthorizationLogTracer {
         } catch (Throwable $error) {
             ABJ_404_Solution_AjaxCheckpointLogger::recordFrequent(
                 $context['request_id'],
-                'auth_log_operation_end',
+                'ajax_failure_log_operation_end',
                 array_merge($fields, array(
                     'status' => 'error',
                     'elapsed_ms' => self::elapsedMilliseconds($startedAt),
@@ -133,7 +140,7 @@ final class ABJ_404_Solution_AuthorizationLogTracer {
 
         ABJ_404_Solution_AjaxCheckpointLogger::recordFrequent(
             $context['request_id'],
-            'auth_log_operation_end',
+            'ajax_failure_log_operation_end',
             array_merge($fields, array(
                 'status' => 'complete',
                 'elapsed_ms' => self::elapsedMilliseconds($startedAt),
@@ -143,7 +150,25 @@ final class ABJ_404_Solution_AuthorizationLogTracer {
         return $result;
     }
 
-    /** @return array{request_id: string, operation_id: string}|null */
+    /**
+     * Map native Logging operations to explicit failure-path terminology.
+     *
+     * @template T
+     * @param callable(): T $work
+     * @return T
+     */
+    public static function aroundNativeOperation(string $operation, callable $work) {
+        $mapped = $operation === 'path_resolution'
+            ? 'native_path_resolution'
+            : ($operation === 'write' ? 'native_write_flush_return' : 'native_' . $operation);
+        return self::aroundOperation($mapped, $work);
+    }
+
+    public static function isActive(): bool {
+        return self::activeContext() !== null;
+    }
+
+    /** @return array{request_id:string,failure_id:string,branch:string}|null */
     private static function activeContext(): ?array {
         $context = end(self::$contexts);
         return is_array($context) ? $context : null;
@@ -164,11 +189,27 @@ final class ABJ_404_Solution_AuthorizationLogTracer {
         ), 0, 12);
     }
 
+    private static function safeBranch(string $branch): string {
+        if (in_array($branch, array('rate_limit', 'exception_caught', 'failure_branch'), true)) {
+            return $branch;
+        }
+        return 'branch#' . substr(hash('sha256', $branch), 0, 12);
+    }
+
+    private static function safeOperation(string $operation): string {
+        return preg_match('/^[a-z][a-z0-9_]{0,79}$/', $operation) === 1
+            ? $operation
+            : 'operation#' . substr(hash('sha256', $operation), 0, 12);
+    }
+
     /** @return array<string, mixed> */
     private static function errorSummary(Throwable $error): array {
         $message = $error->getMessage();
+        $class = get_class($error);
         return array(
-            'class' => self::safeClassName(get_class($error)),
+            'class' => preg_match('/^[A-Za-z_\\\\][A-Za-z0-9_\\\\]{0,159}$/', $class) === 1
+                ? $class
+                : 'class#' . substr(hash('sha256', $class), 0, 12),
             'code' => is_int($error->getCode()) ? $error->getCode() : 0,
             'message' => 'message#' . substr(hash('sha256', $message), 0, 12),
             'message_length' => strlen($message),
@@ -177,21 +218,19 @@ final class ABJ_404_Solution_AuthorizationLogTracer {
 
     /**
      * @param mixed $result
-     * @return array{type: string, value?: bool|int|float|string|null}
+     * @return array{type:string,value?:bool|int|float|string|null}
      */
     private static function resultSummary($result): array {
         if (is_bool($result) || is_int($result) || is_float($result) || $result === null) {
             return array('type' => gettype($result), 'value' => $result);
         }
-        return array('type' => is_object($result)
-            ? 'object:' . self::safeClassName(get_class($result))
-            : gettype($result));
-    }
-
-    private static function safeClassName(string $class): string {
-        return preg_match('/^[A-Za-z_\\\\][A-Za-z0-9_\\\\]{0,159}$/', $class) === 1
-            ? $class
-            : 'class#' . substr(hash('sha256', $class), 0, 12);
+        if (!is_object($result)) {
+            return array('type' => gettype($result));
+        }
+        $class = get_class($result);
+        return array('type' => preg_match('/^[A-Za-z_\\\\][A-Za-z0-9_\\\\]{0,159}$/', $class) === 1
+            ? 'object:' . $class
+            : 'object:class#' . substr(hash('sha256', $class), 0, 12));
     }
 
     private static function nowFloat(): ?float {

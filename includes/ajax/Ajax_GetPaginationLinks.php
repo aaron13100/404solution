@@ -231,7 +231,11 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
         ABJ_404_Solution_AjaxCheckpointLogger::record($checkpointRequestId, 'rate_limit_branch', array(
             'max_requests_per_minute' => $maxRequestsPerMinute,
         ));
-        ABJ_404_Solution_Ajax_AdminEndpointSupport::safeLogAjaxFailure('AJAX rate limit in ajaxUpdatePaginationLinks.', $context);
+        ABJ_404_Solution_Ajax_AdminEndpointSupport::safeLogAjaxFailureBranch(
+            'rate_limit',
+            'AJAX rate limit in ajaxUpdatePaginationLinks.',
+            static fn() => $context
+        );
         ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
         $payload = ABJ_404_Solution_Ajax_AdminEndpointSupport::buildAjaxErrorResponse('Rate limit exceeded. Please try again later.', null, false);
         ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
@@ -439,9 +443,7 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
     }
 
     /**
-     * Handle exceptions thrown during the endpoint. Emits the standard error
-     * envelope with diagnostics for admins.
-     *
+     * Handle endpoint exceptions with the standard admin diagnostics envelope.
      * @param Throwable $e
      * @param bool $isPluginAdmin
      * @param array<string, mixed> $context
@@ -450,35 +452,31 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
     private static function handlePaginationLinksException(
         Throwable $e, bool $isPluginAdmin, array $context
     ): void {
-        $isPluginAdmin = ABJ_404_Solution_Ajax_AdminEndpointSupport::resolveIsPluginAdminFallback($isPluginAdmin, true);
-        if (isset($GLOBALS['abj404_ajax_context']) && is_array($GLOBALS['abj404_ajax_context'])) {
-            $GLOBALS['abj404_ajax_context']['is_plugin_admin'] = $isPluginAdmin;
-        }
-
-        $details = array(
-            'exception' => array(
-                'message' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-                'trace' => $e->getTraceAsString(),
-            ),
-            'context' => $context,
+        $failure = ABJ_404_Solution_Ajax_AdminEndpointSupport::safeLogAjaxFailureBranch(
+            'exception_caught',
+            'AJAX exception in ajaxUpdatePaginationLinks.',
+            static function () use ($e, $isPluginAdmin, $context): array {
+                $resolvedIsPluginAdmin = ABJ_404_Solution_Ajax_AdminEndpointSupport::
+                    resolveIsPluginAdminFallback($isPluginAdmin, true);
+                if (isset($GLOBALS['abj404_ajax_context'])
+                        && is_array($GLOBALS['abj404_ajax_context'])) {
+                    $GLOBALS['abj404_ajax_context']['is_plugin_admin'] = $resolvedIsPluginAdmin;
+                }
+                $details = ABJ_404_Solution_AjaxFailureDetailsBuilder::pagination($e, $context);
+                return array(
+                    'is_plugin_admin' => $resolvedIsPluginAdmin,
+                    'details' => $details,
+                );
+            },
+            $e
         );
-        if (isset($GLOBALS['wpdb']) && is_object($GLOBALS['wpdb'])) {
-            $lastQuery = $GLOBALS['wpdb']->last_query ?? '';
-            $details['wpdb'] = array(
-                'last_error' => $GLOBALS['wpdb']->last_error ?? '',
-                'last_query_redacted' => ABJ_404_Solution_Ajax_AdminEndpointSupport::redactSqlShape($lastQuery),
-                'last_query_length' => is_string($lastQuery) ? strlen($lastQuery) : 0,
-            );
+        if (!is_array($failure)) {
+            $failure = array();
         }
-        $viewQueryDiagnostics = ABJ_404_Solution_Ajax_AdminEndpointSupport::extractViewQueryDiagnostics($e);
-        if ($viewQueryDiagnostics !== null) {
-            $details['view_query_diagnostics'] = $viewQueryDiagnostics;
-        }
-
-        // Always log to the plugin debug file, regardless of admin status.
-        ABJ_404_Solution_Ajax_AdminEndpointSupport::safeLogAjaxFailure('AJAX exception in ajaxUpdatePaginationLinks.', $details, $e);
+        $isPluginAdmin = (bool)($failure['is_plugin_admin'] ?? $isPluginAdmin);
+        $details = isset($failure['details']) && is_array($failure['details'])
+            ? $failure['details']
+            : array();
         $capturedOutput = ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
         if ($capturedOutput !== '') {
             $details['buffered_output'] = substr($capturedOutput, 0, 8000);

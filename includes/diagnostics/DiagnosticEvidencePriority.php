@@ -65,6 +65,7 @@ final class ABJ_404_Solution_DiagnosticEvidencePriority {
         'auth_failure_branch',
         'auth_service_unavailable_branch',
         'rate_limit_branch',
+        'ajax_failure_branch',
         'client_report_error',
         'request_id_header_mismatch',
         'abandoned_recovered',
