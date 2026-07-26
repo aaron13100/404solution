@@ -157,8 +157,10 @@ final class ABJ_404_Solution_RowRenderOperationTracer {
      * @return mixed The original all-hook value, which WordPress ignores.
      */
     public function prepareHookCallbacks($hookName) {
-        if (!$this->rowActive || $this->suspended || $this->recording
+        if (!$this->rowActive || $this->suspended || $this->recording || $this->cappedRecorded
                 || $this->lifecycleTracer->isRecording()
+                || (class_exists('ABJ_404_Solution_AjaxCheckpointLogger')
+                    && ABJ_404_Solution_AjaxCheckpointLogger::isRecording())
                 || !is_string($hookName) || $hookName === 'all') {
             return $hookName;
         }
@@ -219,7 +221,7 @@ final class ABJ_404_Solution_RowRenderOperationTracer {
             'hook' => ABJ_404_Solution_HookCallbackIdentity::hookName($actualHook),
             'callback' => $identity['callback'],
             'source' => $identity['source'],
-            'priority' => $priority,
+            'priority' => ABJ_404_Solution_HookCallbackIdentity::jsonSafePriority($priority),
         ));
     }
 
@@ -229,7 +231,9 @@ final class ABJ_404_Solution_RowRenderOperationTracer {
      */
     private function beginOperation(array $fields): ?array {
         if (!$this->rowActive || $this->suspended || $this->recording
-                || $this->lifecycleTracer->isRecording()) {
+                || $this->lifecycleTracer->isRecording()
+                || (class_exists('ABJ_404_Solution_AjaxCheckpointLogger')
+                    && ABJ_404_Solution_AjaxCheckpointLogger::isRecording())) {
             return null;
         }
         $operationId = substr(hash(

@@ -200,7 +200,7 @@ final class ABJ_404_Solution_DatabaseQueryFilterTracer {
             'hook' => 'query',
             'callback' => $identity['callback'],
             'source' => $identity['source'],
-            'priority' => $priority,
+            'priority' => ABJ_404_Solution_HookCallbackIdentity::jsonSafePriority($priority),
             'callback_ordinal' => $callbackOrdinal,
         ));
         if (self::$budgetRecordCount + 2 > self::MAX_CALLBACK_RECORDS) {

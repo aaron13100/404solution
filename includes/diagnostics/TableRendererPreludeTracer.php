@@ -189,7 +189,7 @@ final class ABJ_404_Solution_TableRendererPreludeTracer {
             'hook' => ABJ_404_Solution_HookCallbackIdentity::hookName($hook),
             'callback' => $identity['callback'],
             'source' => $identity['source'],
-            'priority' => $priority,
+            'priority' => ABJ_404_Solution_HookCallbackIdentity::jsonSafePriority($priority),
             'locale' => $this->locale,
         );
         $fields['operation_id'] = $this->operationId('table_prelude_hook_callback', $fields);

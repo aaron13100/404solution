@@ -149,7 +149,7 @@ final class ABJ_404_Solution_HookInstrumentationLifecycleTracer {
      * @return LifecycleToken
      */
     public function advance(array $token, ?int $priority, int $callbackOrdinal): array {
-        $token['priority'] = $priority;
+        $token['priority'] = ABJ_404_Solution_HookCallbackIdentity::jsonSafePriority($priority);
         $token['callback_ordinal'] = max(0, $callbackOrdinal);
         $this->write('hook_instrumentation_lifecycle_start', $token);
         return $token;

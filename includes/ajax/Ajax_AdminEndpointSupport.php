@@ -289,6 +289,15 @@ class ABJ_404_Solution_Ajax_AdminEndpointSupport {
         }
 
         $GLOBALS['abj404_ajax_context'] = $context;
+        ABJ_404_Solution_FileSystemService::setOperationTracer(
+            static fn(string $operation, string $path, array $fields, callable $work) =>
+                ABJ_404_Solution_TemplateFileReadTracer::trace(
+                    $operation,
+                    $path,
+                    $fields,
+                    $work
+                )
+        );
         return $context;
     }
 

@@ -23,6 +23,15 @@ class ABJ_404_Solution_FileSystemService {
 
     private const FILE_READ_MAX_ATTEMPTS = 3;
     private const FILE_READ_RETRY_BASE_US = 10000;
+    public const CURL_FILE_READ_TIMEOUT_SECONDS = 5;
+
+    /** @var callable(string,string,array<string,int|string|bool|null>,callable): mixed|null */
+    private static $operationTracer = null;
+
+    /** @param callable(string,string,array<string,int|string|bool|null>,callable): mixed|null $tracer */
+    public static function setOperationTracer($tracer): void {
+        self::$operationTracer = is_callable($tracer) ? $tracer : null;
+    }
 
     /** Returns true if the file does not exist after calling this method.
      * @param string $path
@@ -157,7 +166,13 @@ class ABJ_404_Solution_FileSystemService {
     	// modify what's returned to make debugging easier.
     	$dataSupplement = self::getDataSupplement($path, $appendExtraData);
 
-        if (!file_exists($path)) {
+        $exists = self::traceFileOperation(
+            'stat',
+            (string)$path,
+            array(),
+            static fn(): bool => file_exists($path)
+        );
+        if (!$exists) {
             throw new Exception("Error: Can't find file: " . esc_html($path));
         }
 
@@ -165,9 +180,16 @@ class ABJ_404_Solution_FileSystemService {
         $fileContents = $readResult['contents'];
         if ($fileContents !== false) {
             if (!empty($readResult['warnings'])) {
-                self::logWarning(
-                    'readFileContents recovered after transient file-open failure for '
-                    . $path . '. ' . self::formatFileReadWarnings($readResult['warnings'])
+                self::traceFileOperation(
+                    'warning_log',
+                    (string)$path,
+                    array('warning_count' => count($readResult['warnings'])),
+                    static function () use ($path, $readResult): void {
+                        self::logWarning(
+                            'readFileContents recovered after transient file-open failure for '
+                            . $path . '. ' . self::formatFileReadWarnings($readResult['warnings'])
+                        );
+                    }
                 );
             }
             return $dataSupplement['prefix'] . $fileContents . $dataSupplement['suffix'];
@@ -180,19 +202,45 @@ class ABJ_404_Solution_FileSystemService {
             throw new Exception("Error: Can't read file: " . esc_html($path) .
                     "\n   file_get_contents didn't work and curl is not installed." . $warningDetails);
         }
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, 'file://' . $path);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        $output = curl_exec($ch);
+        $output = self::traceFileOperation(
+            'curl_fallback',
+            (string)$path,
+            array('timeout_seconds' => self::CURL_FILE_READ_TIMEOUT_SECONDS),
+            static function () use ($path) {
+                $ch = curl_init();
+                if ($ch === false) {
+                    return false;
+                }
+                try {
+                    curl_setopt($ch, CURLOPT_URL, 'file://' . $path);
+                    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, self::CURL_FILE_READ_TIMEOUT_SECONDS);
+                    curl_setopt($ch, CURLOPT_TIMEOUT, self::CURL_FILE_READ_TIMEOUT_SECONDS);
+                    if (defined('CURLOPT_NOSIGNAL')) {
+                        curl_setopt($ch, CURLOPT_NOSIGNAL, true);
+                    }
+                    return curl_exec($ch);
+                } finally {
+                    curl_close($ch);
+                }
+            }
+        );
 
-        if ($output == null) {
+        if (!is_string($output)) {
             throw new Exception("Error: Can't read file, even with cURL: " . esc_html($path) . $warningDetails);
         }
 
         if ($warningDetails !== '') {
-            self::logWarning(
-                'readFileContents used cURL fallback after file_get_contents failed for '
-                . $path . '. ' . $warningDetails
+            self::traceFileOperation(
+                'warning_log',
+                (string)$path,
+                array('warning_count' => count($readResult['warnings'])),
+                static function () use ($path, $warningDetails): void {
+                    self::logWarning(
+                        'readFileContents used cURL fallback after file_get_contents failed for '
+                        . $path . '. ' . $warningDetails
+                    );
+                }
             );
         }
 
@@ -228,7 +276,12 @@ class ABJ_404_Solution_FileSystemService {
                 E_WARNING | E_USER_WARNING
             );
             try {
-                $contents = file_get_contents($path);
+                $contents = self::traceFileOperation(
+                    'read_attempt',
+                    (string)$path,
+                    array('attempt' => $attempt),
+                    static fn() => file_get_contents($path)
+                );
             } finally {
                 restore_error_handler();
             }
@@ -246,7 +299,13 @@ class ABJ_404_Solution_FileSystemService {
             }
 
             if ($attempt < self::FILE_READ_MAX_ATTEMPTS) {
-                usleep(self::FILE_READ_RETRY_BASE_US * $attempt);
+                $delayUs = self::FILE_READ_RETRY_BASE_US * $attempt;
+                self::traceFileOperation(
+                    'retry_wait',
+                    (string)$path,
+                    array('attempt' => $attempt, 'delay_us' => $delayUs),
+                    static fn() => usleep($delayUs)
+                );
             }
         }
 
@@ -420,5 +479,21 @@ class ABJ_404_Solution_FileSystemService {
         }
 
         abj404_logPhpFallback('service-resolution-fallback', $message);
+    }
+
+    /** @template T
+     * @param array<string, int|string|bool|null> $fields
+     * @param callable(): T $work
+     * @return T */
+    private static function traceFileOperation(
+        string $operation,
+        string $path,
+        array $fields,
+        callable $work
+    ) {
+        if (!is_callable(self::$operationTracer)) {
+            return $work();
+        }
+        return call_user_func(self::$operationTracer, $operation, $path, $fields, $work);
     }
 }

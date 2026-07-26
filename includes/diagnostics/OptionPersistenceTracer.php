@@ -191,7 +191,7 @@ final class ABJ_404_Solution_OptionPersistenceTracer {
             'hook' => ABJ_404_Solution_HookCallbackIdentity::hookName($actualHook),
             'callback' => $identity['callback'],
             'source' => $identity['source'],
-            'priority' => $priority,
+            'priority' => ABJ_404_Solution_HookCallbackIdentity::jsonSafePriority($priority),
         );
         $fields['operation_id'] = $this->operationId('option_hook_callback', $fields);
         $this->write('option_hook_callback_start', $fields);

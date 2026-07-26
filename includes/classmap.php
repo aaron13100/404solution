@@ -124,7 +124,7 @@ $abj404ClassesByDirectory = array(
         'RateLimitOperationTracer',
         'HookCallbackIdentity', 'HookInstrumentationLifecycleTracer', 'HookCallbackInstrumenter',
         'OptionPersistenceTracer', 'RowRenderOperationTracer',
-        'TableRendererPreludeTracer', 'ResponseControlFilterTracer',
+        'TableRendererPreludeTracer', 'TemplateFileReadTracer', 'ResponseControlFilterTracer',
         'InstrumentedObjectCache',
         'AjaxTraceJournal', 'AjaxStageDiagnostics',
         'ShutdownEnvironmentInventory', 'ShutdownTeardownBracket', 'DiagnosticJournalExcerpt',

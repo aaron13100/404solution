@@ -6,6 +6,7 @@ if (!defined('ABSPATH')) {
 
 require_once __DIR__ . '/DecisiveRecordQueryFilterFamilies.php';
 require_once __DIR__ . '/DecisiveRecordFailureFamilies.php';
+require_once __DIR__ . '/DecisiveRecordRenderFamilies.php';
 
 /**
  * Canonical discriminator-field and conditional-presence contract catalog.
@@ -179,7 +180,8 @@ final class ABJ_404_Solution_DecisiveRecordDiscriminatorContract {
         return array_merge(
             $contracts,
             ABJ_404_Solution_DecisiveRecordQueryFilterFamilies::contracts(),
-            ABJ_404_Solution_DecisiveRecordFailureFamilies::contracts()
+            ABJ_404_Solution_DecisiveRecordFailureFamilies::contracts(),
+            ABJ_404_Solution_DecisiveRecordRenderFamilies::contracts()
         );
     }
 

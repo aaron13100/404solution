@@ -236,7 +236,7 @@ final class ABJ_404_Solution_TableRenderTranslationTracer {
             'hook' => ABJ_404_Solution_HookCallbackIdentity::hookName($actualHook),
             'callback' => $identity['callback'],
             'source' => $identity['source'],
-            'priority' => $priority,
+            'priority' => ABJ_404_Solution_HookCallbackIdentity::jsonSafePriority($priority),
             'callback_ordinal' => $callbackOrdinal,
             'operation_id' => $this->operationId('callback', $callbackOrdinal),
         ));

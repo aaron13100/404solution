@@ -15,6 +15,8 @@ if (!defined('ABSPATH')) {
  */
 final class ABJ_404_Solution_HookCallbackIdentity {
 
+    private const JSON_SAFE_INTEGER_MAX = 9007199254740991;
+
     /**
      * @param callable $callback
      * @return array{callback: string, source: string, has_reference: bool}
@@ -72,6 +74,20 @@ final class ABJ_404_Solution_HookCallbackIdentity {
             return preg_replace('/[0-9]+/', '#', $value) ?? '';
         }
         return 'hook#' . substr(hash('sha256', $value), 0, 12);
+    }
+
+    /**
+     * Preserve a hook priority exactly when diagnostic JSON crosses a
+     * JavaScript reader. WordPress still receives the original priority.
+     */
+    public static function jsonSafePriority(?int $priority): ?int {
+        if ($priority === null || PHP_INT_SIZE < 8) {
+            return $priority;
+        }
+        return max(
+            -self::JSON_SAFE_INTEGER_MAX,
+            min(self::JSON_SAFE_INTEGER_MAX, $priority)
+        );
     }
 
     private static function sourceIdentity(string $file): string {

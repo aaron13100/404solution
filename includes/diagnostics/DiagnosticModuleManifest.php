@@ -70,6 +70,8 @@ final class ABJ_404_Solution_DiagnosticModuleManifest {
         'ajax/Ajax_CanaryLadder.php',
         'ajax/Ajax_SupportRequest.php',
         'ajax/Ajax_SupportRequestPreview.php',
+        // Local template I/O boundary used by the table renderers.
+        'core/FileSystemService.php',
         // The per-query attribution hook, which lives with the DB layer.
         'database/DatabaseQueryDiagnostics.php',
         // Delivery of the browser-side modules ClientBuildFingerprint hashes.
