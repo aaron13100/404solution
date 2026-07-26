@@ -54,12 +54,20 @@ class ABJ_404_Solution_View_CapturedURLsTable extends ABJ_404_Solution_ViewCompo
         /** @var array<int, array<string, mixed>> $typedRows */
         $typedRows = array_values(array_filter($rows, 'is_array'));
         $this->shared->rememberTableDataSignature($sub, $typedRows);
+        $header = ABJ_404_Solution_TableRenderTranslationTracer::traceScope(
+            'captured_header',
+            'Select all|URL|Status|Hits|Created|Last Used',
+            fn(): array => array(
+                'select_all' => esc_attr__('Select all', '404-solution'),
+                'cells' => $this->buildCapturedHeaderCells($tableOptions),
+            )
+        );
 
         return $this->f->str_replace(
             array('{select_all_label}', '{header_cells}', '{body_rows}'),
             array(
-                esc_attr__('Select all', '404-solution'),
-                $this->buildCapturedHeaderCells($tableOptions),
+                $header['select_all'],
+                $header['cells'],
                 $this->buildCapturedBodyRows($sub, $tableOptions, $typedRows),
             ),
             $this->tpl('viewRedirectsTableCapturedTableShell.html')

@@ -54,6 +54,16 @@ final class ABJ_404_Solution_ActiveOperationBreadcrumbs {
                 'operation_id', 'hook', 'callback', 'source', 'locale',
             ),
         ),
+        'render_translation_callback' => array(
+            'fields' => array(
+                'operation_id', 'phase', 'hook', 'callback', 'source', 'locale',
+                'message_set_hash',
+            ),
+            'required_evidence_fields' => array(
+                'operation_id', 'phase', 'hook', 'callback', 'source', 'locale',
+                'message_set_hash',
+            ),
+        ),
     );
 
     /**

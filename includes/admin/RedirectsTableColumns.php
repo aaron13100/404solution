@@ -14,7 +14,10 @@ class ABJ_404_Solution_RedirectsTableColumns {
      * @return array<string, array<string, string>>
      */
     public function build(array $tableOptions): array {
-        return array(
+        return ABJ_404_Solution_TableRenderTranslationTracer::traceScope(
+            'redirect_header',
+            'URL|Status|Type|Destination|Redirect|Confidence|Hits|Created|Last Used',
+            static fn(): array => array(
             'url' => array(
                 'title' => __('URL', '404-solution'),
                 'orderby' => 'url',
@@ -62,6 +65,7 @@ class ABJ_404_Solution_RedirectsTableColumns {
                 'orderby' => 'last_used',
                 'width' => '10%',
             ),
+            )
         );
     }
 }
