@@ -251,12 +251,14 @@ class ABJ_404_Solution_AjaxSecurityGate {
     }
 
     protected function logAuthorizedAction(string $action): void {
-        $logger = $this->getLogger();
         try {
-            if (!is_object($logger) || !method_exists($logger, 'infoMessage')) {
-                throw new RuntimeException('logging service is unavailable');
-            }
-            $logger->infoMessage('AJAX authorized: ' . $action);
+            ABJ_404_Solution_AuthorizationLogTracer::trace(function () use ($action): void {
+                $logger = $this->getLogger();
+                if (!is_object($logger) || !method_exists($logger, 'infoMessage')) {
+                    throw new RuntimeException('logging service is unavailable');
+                }
+                $logger->infoMessage('AJAX authorized: ' . $action);
+            });
         } catch (\Throwable $e) {
             $this->warn('AJAX authorization logging failed for ' . $action .
                 ' (code ' . $e->getCode() . '): ' . $e->getMessage());

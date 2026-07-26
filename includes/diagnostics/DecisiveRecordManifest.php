@@ -6,6 +6,7 @@ if (!defined('ABSPATH')) {
 
 require_once __DIR__ . '/DecisiveRecordContractEvaluator.php';
 require_once __DIR__ . '/DecisiveRecordDiscriminatorContract.php';
+require_once __DIR__ . '/DecisiveRecordAuthorizationFamilies.php';
 
 /**
  * The canonical catalog of decisive tracer records, and the single source the
@@ -340,7 +341,7 @@ final class ABJ_404_Solution_DecisiveRecordManifest {
      * @return array<string, array{emitter: string, events: array<int, string>, presence: string, reserve: array{start: string, end: string}|null, sentinel: string|null}>
      */
     public static function records(): array {
-        return self::RECORDS;
+        return self::recordsCatalog();
     }
 
     /**
@@ -350,7 +351,7 @@ final class ABJ_404_Solution_DecisiveRecordManifest {
      */
     public static function allEvents(): array {
         $events = array();
-        foreach (self::RECORDS as $family) {
+        foreach (self::recordsCatalog() as $family) {
             foreach ($family['events'] as $event) {
                 $events[$event] = true;
             }
@@ -388,7 +389,7 @@ final class ABJ_404_Solution_DecisiveRecordManifest {
      */
     public static function reservedOperationPairs(): array {
         $pairs = array();
-        foreach (self::RECORDS as $family) {
+        foreach (self::recordsCatalog() as $family) {
             if (is_array($family['reserve'])) {
                 $pairs[] = $family['reserve'];
             }
@@ -416,7 +417,7 @@ final class ABJ_404_Solution_DecisiveRecordManifest {
      */
     public static function emitterClasses(): array {
         $classes = array();
-        foreach (self::RECORDS as $family) {
+        foreach (self::recordsCatalog() as $family) {
             $classes[$family['emitter']] = true;
         }
         return array_keys($classes);
@@ -429,7 +430,7 @@ final class ABJ_404_Solution_DecisiveRecordManifest {
      */
     public static function eventsForEmitter(string $emitter): array {
         $events = array();
-        foreach (self::RECORDS as $family) {
+        foreach (self::recordsCatalog() as $family) {
             if ($family['emitter'] === $emitter) {
                 foreach ($family['events'] as $event) {
                     $events[$event] = true;
@@ -473,7 +474,7 @@ final class ABJ_404_Solution_DecisiveRecordManifest {
      */
     private static function eventsWithPresence(string $presence): array {
         $events = array();
-        foreach (self::RECORDS as $family) {
+        foreach (self::recordsCatalog() as $family) {
             if ($family['presence'] !== $presence) {
                 continue;
             }
@@ -482,5 +483,15 @@ final class ABJ_404_Solution_DecisiveRecordManifest {
             }
         }
         return array_keys($events);
+    }
+
+    /**
+     * @return array<string, array{emitter: string, events: array<int, string>, presence: string, reserve: array{start: string, end: string}|null, sentinel: string|null}>
+     */
+    private static function recordsCatalog(): array {
+        return array_merge(
+            self::RECORDS,
+            ABJ_404_Solution_DecisiveRecordAuthorizationFamilies::records(self::PRESENCE_ALWAYS)
+        );
     }
 }

@@ -305,7 +305,13 @@ class ABJ_404_Solution_Logging {
      * @return bool True on success, false on failure
      */
     function writeLineToDebugFile($line) {
-        return $this->getDebugLogFileStore()->writeLine((string)$line, $this->getDebugFilePath());
+        $debugFilePath = ABJ_404_Solution_AuthorizationLogTracer::aroundOperation(
+            'path_resolution', fn() => $this->getDebugFilePath()
+        );
+        return ABJ_404_Solution_AuthorizationLogTracer::aroundOperation(
+            'write',
+            fn() => $this->getDebugLogFileStore()->writeLine((string)$line, $debugFilePath)
+        );
     }
     
     /** Email the log file to the plugin developer.

@@ -287,13 +287,28 @@ final class ABJ_404_Solution_ActiveOperationBreadcrumbs {
         return array('status' => 'failed', 'reason' => $reason);
     }
 
-    private static function monotonicNanoseconds(): int {
-        return function_exists('hrtime')
-            ? (int)hrtime(true) : (int)round(microtime(true) * 1000000000);
+    private static function monotonicNanoseconds(): ?int {
+        if (function_exists('hrtime')) {
+            return (int)hrtime(true);
+        }
+        if (function_exists('abj_clock')) {
+            return (int)round(abj_clock()->nowFloat() * 1000000000);
+        }
+        if (class_exists('ABJ_404_Solution_SystemClock')) {
+            return (int)round((new ABJ_404_Solution_SystemClock())->nowFloat() * 1000000000);
+        }
+        return null;
     }
 
-    private static function elapsedMicroseconds(int $started): int {
-        return max(0, (int)round((self::monotonicNanoseconds() - $started) / 1000));
+    private static function elapsedMicroseconds(?int $started): int {
+        $finished = self::monotonicNanoseconds();
+        if ($started === null || $finished === null) {
+            // No reachable clock must fail the bounded non-blocking lock wait
+            // closed; treating it as zero would turn the loop into an
+            // unbounded wait inside the recorder being used to diagnose stalls.
+            return self::LOCK_WAIT_TIMEOUT_US;
+        }
+        return max(0, (int)round(($finished - $started) / 1000));
     }
 
     private static function reportFailure(string $message): void {
