@@ -248,6 +248,11 @@ final class ABJ_404_Solution_DecisiveRecordDiscriminatorContract {
             );
         }
         $dynamicRegistrations = array(
+            'render_option_io' => array(
+                'event' => 'render_option_io_instrumentation',
+                'field' => 'query_boundary',
+                'value' => 'ready',
+            ),
             'row_render' => array(
                 'event' => 'row_operation_instrumentation',
                 'field' => 'hook_boundary',

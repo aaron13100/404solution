@@ -134,8 +134,33 @@ final class ABJ_404_Solution_HookInstrumentationLifecycleTracer {
             $this->complete($token, 'failed', get_class($e));
             throw $e;
         }
-        $this->complete($token, 'complete');
+        $this->complete(
+            $token,
+            'complete',
+            '',
+            array('result' => self::boundaryResult($result))
+        );
         return $result;
+    }
+
+    /**
+     * Register one diagnostic-owned action inside its durable mutation boundary.
+     *
+     * @return mixed Whatever WordPress add_action() returns.
+     */
+    public function registerAction(
+        string $hook,
+        callable $callback,
+        int $priority,
+        int $acceptedArgs = 1
+    ) {
+        return $this->traceBoundary(
+            ABJ_404_Solution_HookInstrumentationLifecycleTracer::PHASE_REGISTRATION,
+            $hook,
+            static function () use ($hook, $callback, $priority, $acceptedArgs) {
+                return add_action($hook, $callback, $priority, $acceptedArgs);
+            }
+        );
     }
 
     /**
@@ -159,15 +184,29 @@ final class ABJ_404_Solution_HookInstrumentationLifecycleTracer {
      * Close a registry lifecycle after its last access returned.
      *
      * @param LifecycleToken $token
+     * @param array<string, mixed> $resultFields
      */
-    public function complete(array $token, string $status = 'complete', string $reason = ''): void {
-        $fields = array_merge($token, array(
+    public function complete(
+        array $token,
+        string $status = 'complete',
+        string $reason = '',
+        array $resultFields = array()
+    ): void {
+        $fields = array_merge($token, $resultFields, array(
             'status' => substr($status, 0, 32),
         ));
         if ($reason !== '') {
             $fields['reason'] = substr($reason, 0, 64);
         }
         $this->write('hook_instrumentation_lifecycle_end', $fields);
+    }
+
+    /** @param mixed $result */
+    private static function boundaryResult($result): string {
+        if (is_bool($result)) {
+            return $result ? 'true' : 'false';
+        }
+        return $result === null ? 'void' : 'returned';
     }
 
     /** True only while lifecycle evidence itself is being persisted. */

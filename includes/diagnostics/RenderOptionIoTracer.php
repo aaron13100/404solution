@@ -36,6 +36,8 @@ final class ABJ_404_Solution_RenderOptionIoTracer
     private $pendingQuery;
     /** @var ABJ_404_Solution_RenderOptionIoOperationJournal */
     private $journal;
+    /** @var ABJ_404_Solution_HookInstrumentationLifecycleTracer */
+    private $lifecycleTracer;
 
     /**
      * @template T
@@ -73,6 +75,15 @@ final class ABJ_404_Solution_RenderOptionIoTracer
     private function __construct(string $requestId) {
         $this->requestId = $requestId;
         $backend = self::backendIdentity($GLOBALS['wp_object_cache'] ?? null);
+        $resolvedDirectory =
+            ABJ_404_Solution_AjaxFrequentCheckpointWriter::resolvedDirectoryForRequest(
+                $requestId
+            );
+        $this->lifecycleTracer = new ABJ_404_Solution_HookInstrumentationLifecycleTracer(
+            $requestId,
+            'render_option_io',
+            $resolvedDirectory
+        );
         $this->journal = new ABJ_404_Solution_RenderOptionIoOperationJournal(
             $requestId,
             function (): string {
@@ -153,11 +164,17 @@ final class ABJ_404_Solution_RenderOptionIoTracer
         $queryBoundary = 'unavailable';
         if (function_exists('add_filter')) {
             try {
-                $this->queryFilterInstalled = (bool)add_filter(
+                $this->queryFilterInstalled = $this->lifecycleTracer->traceBoundary(
+                    ABJ_404_Solution_HookInstrumentationLifecycleTracer::PHASE_REGISTRATION,
                     'query',
-                    array($this, 'observeQuery'),
-                    PHP_INT_MAX,
-                    1
+                    function (): bool {
+                        return (bool)add_filter(
+                            'query',
+                            array($this, 'observeQuery'),
+                            PHP_INT_MAX,
+                            1
+                        );
+                    }
                 );
                 $queryBoundary = $this->queryFilterInstalled ? 'ready' : 'unavailable';
             } catch (Throwable $error) {
@@ -206,7 +223,17 @@ final class ABJ_404_Solution_RenderOptionIoTracer
         }
         if ($this->queryFilterInstalled && function_exists('remove_filter')) {
             try {
-                remove_filter('query', array($this, 'observeQuery'), PHP_INT_MAX);
+                $this->lifecycleTracer->traceBoundary(
+                    ABJ_404_Solution_HookInstrumentationLifecycleTracer::PHASE_REMOVAL,
+                    'query',
+                    function (): bool {
+                        return (bool)remove_filter(
+                            'query',
+                            array($this, 'observeQuery'),
+                            PHP_INT_MAX
+                        );
+                    }
+                );
             } catch (Throwable $error) {
                 self::reportFailure('query filter removal failed: ' . $error->getMessage());
             }

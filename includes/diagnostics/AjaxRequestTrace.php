@@ -115,8 +115,12 @@ final class ABJ_404_Solution_AjaxRequestTrace {
             register_shutdown_function(array($trace, 'recordShutdown'));
             self::$tracesWithArmedSentinels[] = $trace;
             if (function_exists('add_action')) {
-                add_action('shutdown', array($trace, 'recordShutdownActionEarly'), PHP_INT_MIN);
-                add_action('shutdown', array($trace, 'recordShutdownActionLate'), PHP_INT_MAX);
+                $lifecycle = new ABJ_404_Solution_HookInstrumentationLifecycleTracer(
+                    (string)($trace->context['request_id'] ?? ''), 'ajax_request_trace',
+                    rtrim($directory, '/\\') . DIRECTORY_SEPARATOR
+                );
+                $lifecycle->registerAction('shutdown', array($trace, 'recordShutdownActionEarly'), PHP_INT_MIN);
+                $lifecycle->registerAction('shutdown', array($trace, 'recordShutdownActionLate'), PHP_INT_MAX);
             }
             return $trace;
         } catch (Throwable $e) {
