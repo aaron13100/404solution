@@ -83,6 +83,15 @@ final class ABJ_404_Solution_ActiveOperationBreadcrumbs {
             ),
             'required_evidence_fields' => array('operation_id', 'operation'),
         ),
+        'render_option_io' => array(
+            'fields' => array(
+                'operation_id', 'phase', 'operation', 'cache_key', 'cache_group',
+                'key_family', 'group_family', 'backend', 'backend_class', 'query_id',
+            ),
+            'required_evidence_fields' => array(
+                'operation_id', 'phase', 'operation',
+            ),
+        ),
     );
 
     /**

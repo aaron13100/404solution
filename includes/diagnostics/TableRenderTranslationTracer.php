@@ -70,7 +70,13 @@ final class ABJ_404_Solution_TableRenderTranslationTracer {
         if ($requestId === '') {
             return $render();
         }
-        return (new self($requestId, $phase, $messageSet))->run($render);
+        return ABJ_404_Solution_RenderOptionIoTracer::traceScope(
+            $requestId,
+            $phase,
+            static function () use ($requestId, $phase, $messageSet, $render) {
+                return (new self($requestId, $phase, $messageSet))->run($render);
+            }
+        );
     }
 
     private function __construct(string $requestId, string $phase, string $messageSet) {

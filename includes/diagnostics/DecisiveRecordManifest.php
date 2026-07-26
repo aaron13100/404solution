@@ -12,13 +12,11 @@ require_once __DIR__ . '/DecisiveRecordAuthorizationFamilies.php';
  * The canonical catalog of decisive tracer records, and the single source the
  * completeness gates and the support-reservation policy derive from. (Bruno
  * timeout cause matrix, gap-hunt iteration 6, convergence of gaps O1 + O2.)
- *
  * Three durability consumers -- both completeness gates and
  * ABJ_404_Solution_RequiredCheckpointEvidence -- used to hardcode their own
  * required and reserved record types. Omissions stayed invisible until the
  * next gap hunt (GF/c444, c473, c479, c489), allowing a failing session
  * to drop the record carrying its discriminator (the G1 shape).
- *
  * The fix mirrors ABJ_404_Solution_DiagnosticModuleManifest: coverage is
  * DERIVED, not maintained by memory. This class is the one list; the two gates
  * and the reservation policy read their expectations from it, and
@@ -488,6 +486,8 @@ final class ABJ_404_Solution_DecisiveRecordManifest {
             self::RECORDS,
             ABJ_404_Solution_DecisiveRecordAuthorizationFamilies::records(self::PRESENCE_ALWAYS),
             ABJ_404_Solution_DecisiveRecordRenderFamilies::records(
+                self::PRESENCE_ALWAYS, self::PRESENCE_CONDITIONAL),
+            ABJ_404_Solution_DecisiveRecordRenderOptionIoFamilies::records(
                 self::PRESENCE_ALWAYS, self::PRESENCE_CONDITIONAL),
             ABJ_404_Solution_DecisiveRecordStatusCountFamilies::records(
                 self::PRESENCE_CONDITIONAL),

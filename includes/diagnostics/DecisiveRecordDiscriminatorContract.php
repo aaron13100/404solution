@@ -7,6 +7,7 @@ if (!defined('ABSPATH')) {
 require_once __DIR__ . '/DecisiveRecordQueryFilterFamilies.php';
 require_once __DIR__ . '/DecisiveRecordFailureFamilies.php';
 require_once __DIR__ . '/DecisiveRecordRenderFamilies.php';
+require_once __DIR__ . '/DecisiveRecordRenderOptionIoFamilies.php';
 require_once __DIR__ . '/DecisiveRecordStatusCountFamilies.php';
 
 /**
@@ -183,6 +184,7 @@ final class ABJ_404_Solution_DecisiveRecordDiscriminatorContract {
             ABJ_404_Solution_DecisiveRecordQueryFilterFamilies::contracts(),
             ABJ_404_Solution_DecisiveRecordFailureFamilies::contracts(),
             ABJ_404_Solution_DecisiveRecordRenderFamilies::contracts(),
+            ABJ_404_Solution_DecisiveRecordRenderOptionIoFamilies::contracts(),
             ABJ_404_Solution_DecisiveRecordStatusCountFamilies::contracts()
         );
     }

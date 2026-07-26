@@ -287,6 +287,10 @@ final class ABJ_404_Solution_HookCallbackInstrumenter {
                 $counts['callbacks_unavailable']++;
                 continue;
             }
+            if (self::isInternalDiagnosticObserver($callback)) {
+                $result[$id] = $entry;
+                continue;
+            }
             $identity = ABJ_404_Solution_HookCallbackIdentity::describe($callback);
             if ($identity['has_reference']) {
                 $this->addMarkedEntry(
@@ -328,7 +332,7 @@ final class ABJ_404_Solution_HookCallbackInstrumenter {
         $entry,
         array $entries
     ): bool {
-        $key = self::registrationKey($hook, $priority, $id);
+        $key = ABJ_404_Solution_HookInstrumentationRegistration::key($hook, $priority, $id);
         $registration = $this->registrations[$key] ?? null;
         if (!is_array($registration) || !is_array($entry)) {
             return false;
@@ -356,6 +360,13 @@ final class ABJ_404_Solution_HookCallbackInstrumenter {
         return false;
     }
 
+    /** @param callable $callback */
+    private static function isInternalDiagnosticObserver($callback): bool {
+        return is_array($callback)
+            && is_object($callback[0] ?? null)
+            && $callback[0] instanceof ABJ_404_Solution_DiagnosticInternalHookObserver;
+    }
+
     /**
      * @param array<string, mixed> $entry
      * @param callable $callback
@@ -379,7 +390,7 @@ final class ABJ_404_Solution_HookCallbackInstrumenter {
             return $result;
         };
         $entry['function'] = $wrapper;
-        $key = self::registrationKey($hook, $priority, $id);
+        $key = ABJ_404_Solution_HookInstrumentationRegistration::key($hook, $priority, $id);
         $this->registrations[$key] = array(
             'mode' => 'wrapper',
             'hook' => $hook,
@@ -422,10 +433,17 @@ final class ABJ_404_Solution_HookCallbackInstrumenter {
             }
             return $value;
         };
-        $beforeId = self::markerId('before', $hook, $priority, $id, $existing, $result);
+        $beforeId = ABJ_404_Solution_HookInstrumentationRegistration::markerId(
+            'before',
+            $hook,
+            $priority,
+            $id,
+            $existing,
+            $result
+        );
         $result[$beforeId] = array('function' => $before, 'accepted_args' => 1);
         $result[$id] = $entry;
-        $key = self::registrationKey($hook, $priority, $id);
+        $key = ABJ_404_Solution_HookInstrumentationRegistration::key($hook, $priority, $id);
         $this->registrations[$key] = array(
             'mode' => 'marker',
             'hook' => $hook,
@@ -471,30 +489,4 @@ final class ABJ_404_Solution_HookCallbackInstrumenter {
             : $registeredHook;
     }
 
-    private static function registrationKey(string $hook, int $priority, string $id): string {
-        return $hook . '|' . $priority . '|' . $id;
-    }
-
-    /**
-     * @param array<array-key, mixed> $existing
-     * @param array<array-key, mixed> $result
-     */
-    private static function markerId(
-        string $position,
-        string $hook,
-        int $priority,
-        string $id,
-        array $existing,
-        array $result
-    ): string {
-        $base = 'abj404-trace-' . $position . '-'
-            . substr(hash('sha256', $hook . '|' . $priority . '|' . $id), 0, 16);
-        $candidate = $base;
-        $suffix = 0;
-        while (array_key_exists($candidate, $existing) || array_key_exists($candidate, $result)) {
-            $suffix++;
-            $candidate = $base . '-' . $suffix;
-        }
-        return $candidate;
-    }
 }
