@@ -136,22 +136,31 @@ final class ABJ_404_Solution_AjaxQueryTimeline {
      *   ABJ_404_Solution_DatabaseQueryDiagnostics (SQL filename, `abj404:src`
      *   marker, or Class::method), which is what makes a shape actionable.
      * @param int $timeoutSeconds   The per-query timeout hint actually applied.
+     * @return array{q:int,sql_id:string}|null
      */
-    public static function beginQuery(string $preparedQuery, string $sourceLabel, int $timeoutSeconds): void {
+    public static function beginQuery(
+        string $preparedQuery,
+        string $sourceLabel,
+        int $timeoutSeconds
+    ): ?array {
+        $identity = null;
         try {
             $requestId = self::armedRequestId();
             if ($requestId === '') {
-                return;
+                return null;
             }
             $state = self::stateFor($requestId);
             $state['count']++;
 
             $previous = self::previousQueryFields($state);
             $breadcrumb = null;
-            $shape = null;
+            $shape = self::shapeFields($preparedQuery);
+            $identity = array(
+                'q' => $state['count'],
+                'sql_id' => $shape['sql_id'],
+            );
 
             if ($state['count'] > self::MAX_RECORDED_QUERIES) {
-                $shape = self::shapeFields($preparedQuery);
                 $breadcrumb = array_merge(array(
                     'q' => $state['count'],
                     'stage' => self::currentStage(),
@@ -176,10 +185,10 @@ final class ABJ_404_Solution_AjaxQueryTimeline {
                         'q' => $state['count'],
                         'limit' => self::MAX_RECORDED_QUERIES,
                     ));
-                    return;
+                    return $identity;
                 }
                 self::$state = $state;
-                return;
+                return $identity;
             }
 
             $state['open'] = array(
@@ -195,9 +204,11 @@ final class ABJ_404_Solution_AjaxQueryTimeline {
                 'src' => substr($sourceLabel === '' ? 'unknown-source' : $sourceLabel, 0, 200),
                 'timeout_s' => max(0, $timeoutSeconds),
                 'db_ms' => round($state['db_ms'], 3),
-            ), self::shapeFields($preparedQuery), $previous));
+            ), $shape, $previous));
+            return $identity;
         } catch (Throwable $e) {
             self::reportFailure('query probe failed: ' . $e->getMessage());
+            return $identity;
         }
     }
 
@@ -423,5 +434,11 @@ final class ABJ_404_Solution_AjaxQueryTimeline {
     public static function resetForTests(): void {
         self::$state = null;
         self::$redactor = null;
+        if (class_exists('ABJ_404_Solution_DatabaseQueryFilterTracer', false)) {
+            ABJ_404_Solution_DatabaseQueryFilterTracer::resetForTests();
+        }
+        if (class_exists('ABJ_404_Solution_AjaxFrequentCheckpointWriter', false)) {
+            ABJ_404_Solution_AjaxFrequentCheckpointWriter::resetForTests();
+        }
     }
 }

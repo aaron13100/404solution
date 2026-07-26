@@ -64,6 +64,15 @@ final class ABJ_404_Solution_ActiveOperationBreadcrumbs {
                 'message_set_hash',
             ),
         ),
+        'query_filter_callback' => array(
+            'fields' => array(
+                'operation_id', 'q', 'sql_id', 'registered_hook', 'hook',
+                'callback', 'source', 'priority', 'callback_ordinal',
+            ),
+            'required_evidence_fields' => array(
+                'operation_id', 'q', 'sql_id', 'hook', 'callback', 'source',
+            ),
+        ),
     );
 
     /**

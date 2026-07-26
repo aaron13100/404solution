@@ -54,14 +54,18 @@ class ABJ_404_Solution_DatabaseQueryDiagnostics {
      *
      * @param string $query The final SQL the server will receive.
      * @param int $timeoutSeconds
-     * @return void
+     * @return array{q:int,sql_id:string}|null
      */
-    public function recordQueryTimelineStart(string $query, int $timeoutSeconds): void {
+    public function recordQueryTimelineStart(string $query, int $timeoutSeconds): ?array {
         if (!class_exists('ABJ_404_Solution_AjaxQueryTimeline')
                 || !ABJ_404_Solution_AjaxQueryTimeline::isArmed()) {
-            return;
+            return null;
         }
-        ABJ_404_Solution_AjaxQueryTimeline::beginQuery($query, $this->extractSqlFilename($query), $timeoutSeconds);
+        return ABJ_404_Solution_AjaxQueryTimeline::beginQuery(
+            $query,
+            $this->extractSqlFilename($query),
+            $timeoutSeconds
+        );
     }
 
     /**

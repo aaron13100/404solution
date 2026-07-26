@@ -30,7 +30,7 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
      * from canonical source and prevents a covered code change from shipping
      * with an old marker.
      */
-    const DIAGNOSTIC_BUILD_ID = 'd68b627a031e4f1c139946367d11170281f99d14';
+    const DIAGNOSTIC_BUILD_ID = '991402fb2fb5f55ef5cb4e4bfd15a9f1caa15d58';
 
     const CHECKPOINT_FILE = ABJ_404_Solution_CheckpointJournalWriter::CHECKPOINT_FILE;
     const ROTATED_FILE = ABJ_404_Solution_CheckpointJournalWriter::ROTATED_FILE;
@@ -42,6 +42,18 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
 
     /** @var int */
     private static $checkpointSequence = 0;
+
+    /**
+     * Nesting depth for checkpoint persistence itself.
+     *
+     * Render-scope hook instrumentation uses this to avoid treating the
+     * logger's own path-resolution filters as application render work. Without
+     * the guard, every checkpoint can recursively install another set of hook
+     * instrumentation records and exhaust the bounded evidence channel.
+     *
+     * @var int
+     */
+    private static $recordingDepth = 0;
 
     /**
      * 1: full getrusage() array on every record.
@@ -128,12 +140,17 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
      * @param array<string, mixed> $fields
      */
     public static function record(string $requestId, string $event, array $fields = array()): void {
+        self::$recordingDepth++;
         try {
             $callStartedNs = self::monotonicNanoseconds();
             $checkpointId = self::checkpointId($callStartedNs);
             $intentWrite = self::appendIntent($requestId, $event, $checkpointId);
             $phaseStartedNs = self::monotonicNanoseconds();
             $directory = self::resolveDirectoryPath();
+            ABJ_404_Solution_AjaxFrequentCheckpointWriter::rememberResolvedDirectory(
+                $requestId,
+                $directory
+            );
             $phases = array(
                 'intent_append' => self::nonNegativeInt($intentWrite['elapsed_us'] ?? null),
                 'directory_resolve' => self::elapsedMicroseconds($phaseStartedNs),
@@ -184,6 +201,8 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
             ));
         } catch (Throwable $e) {
             self::reportFailure('AJAX checkpoint record failed: ' . $e->getMessage());
+        } finally {
+            self::$recordingDepth = max(0, self::$recordingDepth - 1);
         }
     }
 
@@ -208,32 +227,30 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
      * @param array<string, mixed> $fields
      */
     public static function recordFrequent(string $requestId, string $event, array $fields = array()): void {
+        self::$recordingDepth++;
         try {
-            $callStartedNs = self::monotonicNanoseconds();
-            $checkpointId = self::checkpointId($callStartedNs);
-            self::appendIntent($requestId, $event, $checkpointId);
             $directory = self::resolveDirectoryPath();
-            if ($directory === '') {
-                return;
-            }
-            if (!class_exists('ABJ_404_Solution_FileSystemService')
-                    || !ABJ_404_Solution_FileSystemService::createDirectoryWithErrorMessages($directory)) {
-                return;
-            }
-            ABJ_404_Solution_CheckpointJournalWriter::append($directory, array_merge(
-                ABJ_404_Solution_CheckpointRecordFactory::frequent(array(
-                    'ts' => self::nowFloat(),
-                    'hrtime_ns' => function_exists('hrtime') ? (int)hrtime(true) : null,
-                    'request_id' => $requestId,
-                    'event' => $event,
-                    'checkpoint_id' => $checkpointId,
-                    'pid' => getmypid(),
-                )),
-                $fields
-            ));
+            ABJ_404_Solution_AjaxFrequentCheckpointWriter::rememberResolvedDirectory(
+                $requestId,
+                $directory
+            );
+            ABJ_404_Solution_AjaxFrequentCheckpointWriter::append(
+                $requestId,
+                $event,
+                $fields,
+                $directory,
+                false
+            );
         } catch (Throwable $e) {
             self::reportFailure('AJAX frequent checkpoint record failed: ' . $e->getMessage());
+        } finally {
+            self::$recordingDepth = max(0, self::$recordingDepth - 1);
         }
+    }
+
+    /** True while this logger is persisting one of its own records. */
+    public static function isRecording(): bool {
+        return self::$recordingDepth > 0;
     }
 
     /**

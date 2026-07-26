@@ -17,13 +17,10 @@ require_once __DIR__ . '/DecisiveRecordRenderFamilies.php';
  * The failure this class exists to end is structural. Three durability
  * consumers -- the server completeness gate, the browser completeness gate,
  * and ABJ_404_Solution_RequiredCheckpointEvidence -- each used to hardcode
- * their own list of required and reserved record types. Every iteration that
- * added a decisive record (rate-limit backend attribution, option-hook
- * instrumentation) had to hand-edit all three, and any omission was invisible
- * until the next gap-hunt pass rediscovered it. That exact shape recurred five
- * times (GF/c444, c473, c479, c489): a record emitted in production but
- * asserted by no gate and reserved by no policy, so a worst-case failing
- * session could drop the one record carrying its discriminator (the G1 shape).
+ * their own list of required and reserved record types. Each new record needed
+ * three hand edits; omissions were invisible until the next gap hunt. That
+ * recurred five times (GF/c444, c473, c479, c489), allowing a failing session
+ * to drop the record carrying its discriminator (the G1 shape).
  *
  * The fix mirrors ABJ_404_Solution_DiagnosticModuleManifest: coverage is
  * DERIVED, not maintained by memory. This class is the one list; the two gates
@@ -494,6 +491,8 @@ final class ABJ_404_Solution_DecisiveRecordManifest {
             self::RECORDS,
             ABJ_404_Solution_DecisiveRecordAuthorizationFamilies::records(self::PRESENCE_ALWAYS),
             ABJ_404_Solution_DecisiveRecordRenderFamilies::records(
+                self::PRESENCE_ALWAYS, self::PRESENCE_CONDITIONAL),
+            ABJ_404_Solution_DecisiveRecordQueryFilterFamilies::records(
                 self::PRESENCE_ALWAYS, self::PRESENCE_CONDITIONAL)
         );
     }

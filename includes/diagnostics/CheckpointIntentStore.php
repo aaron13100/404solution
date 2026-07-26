@@ -55,6 +55,7 @@ final class ABJ_404_Solution_CheckpointIntentStore {
      */
     public static function paths(): array {
         return array_values(array_filter(self::candidatePaths(), static function (string $path): bool {
+            clearstatcache(true, $path);
             return is_file($path);
         }));
     }

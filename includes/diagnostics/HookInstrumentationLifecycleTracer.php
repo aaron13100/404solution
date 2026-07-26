@@ -74,8 +74,16 @@ final class ABJ_404_Solution_HookInstrumentationLifecycleTracer {
     /** @var bool */
     private $recording = false;
 
-    public function __construct(string $requestId, string $component) {
+    /** @var string */
+    private $resolvedDirectory;
+
+    public function __construct(
+        string $requestId,
+        string $component,
+        string $resolvedDirectory = ''
+    ) {
         $this->requestId = $requestId;
+        $this->resolvedDirectory = $resolvedDirectory;
         $normalized = preg_replace('/[^a-z0-9_]/', '_', strtolower($component));
         $componentName = is_string($normalized) ? $normalized : 'unknown';
         $truncated = substr($componentName, 0, 48);
@@ -175,11 +183,21 @@ final class ABJ_404_Solution_HookInstrumentationLifecycleTracer {
         $this->recording = true;
         try {
             $this->recordIndependent($event, $fields);
-            ABJ_404_Solution_AjaxCheckpointLogger::recordFrequent(
-                $this->requestId,
-                $event,
-                $fields
-            );
+            if ($this->resolvedDirectory === '') {
+                ABJ_404_Solution_AjaxCheckpointLogger::recordFrequent(
+                    $this->requestId,
+                    $event,
+                    $fields
+                );
+            } else {
+                ABJ_404_Solution_AjaxFrequentCheckpointWriter::append(
+                    $this->requestId,
+                    $event,
+                    $fields,
+                    $this->resolvedDirectory,
+                    true
+                );
+            }
         } catch (Throwable $e) {
             abj404_logPhpFallback(
                 'hook-instrumentation-lifecycle',

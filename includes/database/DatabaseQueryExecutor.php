@@ -150,7 +150,7 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
         // Announced before the timer starts, and therefore before the query
         // can block: a stalled statement leaves this record as the last thing
         // on disk, which is what names the SQL shape that hung.
-        $this->queryDiagnostics->recordQueryTimelineStart($query, $timeoutSeconds);
+        $queryIdentity = $this->queryDiagnostics->recordQueryTimelineStart($query, $timeoutSeconds);
 
         $timer = new ABJ_404_Solution_Timer();
 
@@ -165,7 +165,10 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
 
         $result = array();
         try {
-            $result = $this->executeWpdbQuery($query, $resultType, $producesRows);
+            $result = ABJ_404_Solution_DatabaseQueryFilterTracer::trace(
+                $queryIdentity,
+                fn(): array => $this->executeWpdbQuery($query, $resultType, $producesRows)
+            );
         } catch (Throwable $e) {
             $result['elapsed_time'] = $timer->stop();
             $this->queryDiagnostics->recordQueryTimelineEnd(((float)$result['elapsed_time']) * 1000.0);

@@ -170,6 +170,8 @@ final class ABJ_404_Solution_TableRenderTranslationTracer {
     public function prepareHookCallbacks($hookName) {
         if (!$this->scopeActive || $this->recording
                 || $this->lifecycleTracer->isRecording()
+                || (class_exists('ABJ_404_Solution_AjaxCheckpointLogger', false)
+                    && ABJ_404_Solution_AjaxCheckpointLogger::isRecording())
                 || !is_string($hookName) || $hookName === 'all') {
             return $hookName;
         }

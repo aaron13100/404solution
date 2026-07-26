@@ -4,6 +4,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+require_once __DIR__ . '/DecisiveRecordQueryFilterFamilies.php';
+
 /**
  * Canonical discriminator-field and conditional-presence contract catalog.
  *
@@ -52,8 +54,7 @@ final class ABJ_404_Solution_DecisiveRecordDiscriminatorContract {
                 ),
             ),
         );
-
-        return array(
+        $contracts = array(
             'hook_lifecycle_consumers' => array(
                 'profiles' => array('ordinary_table'),
                 'requirements' => $hookRequirements,
@@ -174,6 +175,10 @@ final class ABJ_404_Solution_DecisiveRecordDiscriminatorContract {
                 )),
             ),
         );
+        return array_merge(
+            $contracts,
+            ABJ_404_Solution_DecisiveRecordQueryFilterFamilies::contracts()
+        );
     }
 
     /** @return array<int, array<string, mixed>> */
@@ -181,10 +186,22 @@ final class ABJ_404_Solution_DecisiveRecordDiscriminatorContract {
         $positionFields = array(
             'operation_id', 'component', 'phase', 'hook', 'priority', 'callback_ordinal',
         );
-        $hookRequirements = array();
+        $hookRequirements = array(array(
+            'id' => 'all_hook_lifecycle_positions',
+            'event' => 'hook_instrumentation_lifecycle_start',
+            'required_fields' => $positionFields,
+            'all_matches' => true,
+            'activation' => array('event' => 'hook_instrumentation_lifecycle_start'),
+        ));
         $consumers = array(
             'option_persistence' => array('option_hook_instrumentation', 'callbacks_attributed'),
             'table_renderer_prelude' => array('table_prelude_instrumentation', 'callbacks_attributed'),
+            'table_render_translation' => array(
+                'render_translation_scope_end', 'callbacks_attributed',
+            ),
+            'database_query_filter' => array(
+                'query_filter_instrumentation', 'callbacks_attributed',
+            ),
             'row_render' => array('row_operation_instrumentation', 'all_callbacks_attributed'),
             'response_control_filter' => array(
                 'response_control_filter_dispatch_end', 'callbacks_attributed',
@@ -222,19 +239,30 @@ final class ABJ_404_Solution_DecisiveRecordDiscriminatorContract {
                 'activation' => $positionActivation,
             );
         }
-        foreach (array('registration', 'removal') as $phase) {
-            $hookRequirements[] = array(
-                'id' => 'row_render_' . $phase,
-                'event' => 'hook_instrumentation_lifecycle_start',
-                'match' => array('component' => 'row_render', 'phase' => $phase),
-                'required_fields' => $positionFields,
-                'all_matches' => true,
-                'activation' => array(
-                    'event' => 'row_operation_instrumentation',
-                    'field' => 'hook_boundary',
-                    'value' => 'ready',
-                ),
-            );
+        $dynamicRegistrations = array(
+            'row_render' => array(
+                'event' => 'row_operation_instrumentation',
+                'field' => 'hook_boundary',
+                'value' => 'ready',
+            ),
+            'table_render_translation' => array('event' => 'render_translation_scope_end'),
+            'database_query_filter' => array(
+                'event' => 'query_filter_instrumentation',
+                'field' => 'driver_sentinel',
+                'value' => 'registered',
+            ),
+        );
+        foreach ($dynamicRegistrations as $component => $activation) {
+            foreach (array('registration', 'removal') as $phase) {
+                $hookRequirements[] = array(
+                    'id' => $component . '_' . $phase,
+                    'event' => 'hook_instrumentation_lifecycle_start',
+                    'match' => array('component' => $component, 'phase' => $phase),
+                    'required_fields' => $positionFields,
+                    'all_matches' => true,
+                    'activation' => $activation,
+                );
+            }
         }
         return $hookRequirements;
     }
