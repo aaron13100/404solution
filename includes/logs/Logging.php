@@ -34,8 +34,6 @@ class ABJ_404_Solution_Logging {
     public static function setInstance($instance) {
         self::$instance = $instance;
     }
-
-
     /**
      * Return the current singleton instance without consulting the container
      * or building a new one. Used by `abj_service()` to honor a test-installed
@@ -129,7 +127,6 @@ class ABJ_404_Solution_Logging {
 
         return $fresh;
     }
-    
     private function __construct() {
     }
 
@@ -199,7 +196,8 @@ class ABJ_404_Solution_Logging {
                 array($this, 'getTimestamp'),
                 array($this, 'isDebug'),
                 array($this, 'writeLineToDebugFile'),
-                self::$storedDebugMessages
+                self::$storedDebugMessages,
+                array('ABJ_404_Solution_RoutineLoggingBridge', 'trace')
             );
         }
         return $this->messageWriter;
@@ -266,7 +264,6 @@ class ABJ_404_Solution_Logging {
     function infoMessage(string $message): void {
         $this->getMessageWriter()->infoMessage($message);
     }
-    
     /** Send a message to the log.
      * This goes to a file and is used by every other class so it goes here.
      * @param string $message
@@ -305,11 +302,14 @@ class ABJ_404_Solution_Logging {
      * @return bool True on success, false on failure
      */
     function writeLineToDebugFile($line) {
-        $debugFilePath = ABJ_404_Solution_AuthorizationLogTracer::aroundOperation(
-            'path_resolution', fn() => $this->getDebugFilePath()
+        $debugFilePath = ABJ_404_Solution_AuthorizationLogTracer::aroundRoutineOperation(
+            'path_resolution',
+            'path_resolution',
+            fn() => $this->getDebugFilePath()
         );
-        return ABJ_404_Solution_AuthorizationLogTracer::aroundOperation(
+        return ABJ_404_Solution_AuthorizationLogTracer::aroundRoutineOperation(
             'write',
+            'write_flush_return',
             fn() => $this->getDebugLogFileStore()->writeLine((string)$line, $debugFilePath)
         );
     }

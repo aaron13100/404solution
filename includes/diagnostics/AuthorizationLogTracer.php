@@ -143,6 +143,30 @@ final class ABJ_404_Solution_AuthorizationLogTracer {
         return $result;
     }
 
+    /**
+     * @template T
+     * @param callable():T $work
+     * @return T
+     */
+    public static function aroundRoutineOperation(
+        string $authorizationOperation,
+        string $routineOperation,
+        callable $work
+    ) {
+        return self::aroundOperation(
+            $authorizationOperation,
+            static fn() => ABJ_404_Solution_RoutineLoggingBridge::trace(
+                $routineOperation,
+                array(),
+                $work
+            )
+        );
+    }
+
+    public static function isActive(): bool {
+        return self::activeContext() !== null;
+    }
+
     /** @return array{request_id: string, operation_id: string}|null */
     private static function activeContext(): ?array {
         $context = end(self::$contexts);

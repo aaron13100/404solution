@@ -124,7 +124,8 @@ $abj404ClassesByDirectory = array(
         'RateLimitOperationTracer',
         'HookCallbackIdentity', 'HookInstrumentationLifecycleTracer', 'HookCallbackInstrumenter',
         'OptionPersistenceTracer', 'RowRenderOperationTracer',
-        'TableRendererPreludeTracer', 'TemplateFileReadTracer', 'ResponseControlFilterTracer',
+        'TableRendererPreludeTracer', 'TemplateFileReadTracer', 'RoutineLogTracer',
+        'ResponseControlFilterTracer',
         'InstrumentedObjectCache',
         'AjaxTraceJournal', 'AjaxStageDiagnostics',
         'ShutdownEnvironmentInventory', 'ShutdownTeardownBracket', 'DiagnosticJournalExcerpt',
@@ -173,7 +174,7 @@ $abj404ClassesByDirectory = array(
     ),
     'logs' => array(
         'LoggingCapabilityDiagnostics', 'LoggingFeedbackDispatcher', 'LoggingStateStore',
-        'LoggingMessageWriter', 'LogTimestampFormatter', 'LogDebugModeResolver',
+        'LoggingMessageWriter', 'RoutineLoggingBridge', 'LogTimestampFormatter', 'LogDebugModeResolver',
         'LogsMetricsReader', 'LogReadQueryInterface', 'LogPrivacyInterface', 'LogWriteInterface',
         'LogHitsRebuildInterface', 'LogHitsLifecycleInterface', 'LogsHitsRollupServiceInterface',
         'LogsHitsRollupService', 'LogsHitsTableRebuilder', 'LogsLookupRepository',

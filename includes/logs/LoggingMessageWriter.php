@@ -25,23 +25,28 @@ class ABJ_404_Solution_LoggingMessageWriter {
     private $lineWriter;
     /** @var array<int, string> */
     private $storedDebugMessages;
+    /** @var callable|null */
+    private $operationTracer;
 
     /**
      * @param callable $timestampProvider Returns the formatted current timestamp.
      * @param callable $debugModeProvider Returns true when debug mode is enabled.
      * @param callable $lineWriter Receives one fully-formatted log line.
      * @param array<int, string> $storedDebugMessages Shared debug buffer from the facade.
+     * @param callable(string,array<string,mixed>,callable):mixed|null $operationTracer
      */
     public function __construct(
         callable $timestampProvider,
         callable $debugModeProvider,
         callable $lineWriter,
-        array &$storedDebugMessages
+        array &$storedDebugMessages,
+        $operationTracer = null
     ) {
         $this->timestampProvider = $timestampProvider;
         $this->debugModeProvider = $debugModeProvider;
         $this->lineWriter = $lineWriter;
         $this->storedDebugMessages =& $storedDebugMessages;
+        $this->operationTracer = is_callable($operationTracer) ? $operationTracer : null;
     }
 
     /**
@@ -53,18 +58,31 @@ class ABJ_404_Solution_LoggingMessageWriter {
      * @return void
      */
     public function debugMessage(string $message, $e = null): void {
+        $this->traceOperation('message', function () use ($message, $e): void {
+            $this->writeDebugMessage($message, $e);
+        }, array('level' => 'debug'));
+    }
+
+    /** @param \Throwable|null $e */
+    private function writeDebugMessage(string $message, $e): void {
         $stacktrace = "";
         if ($e != null) {
             $stacktrace = ", Stacktrace: " . $e->getTraceAsString();
         }
 
         $line = $this->timestampPrefix('DEBUG') . $message . $stacktrace;
-        if ((bool)call_user_func($this->debugModeProvider)) {
+        $debugEnabled = (bool)$this->traceOperation(
+            'debug_state_resolution',
+            fn() => call_user_func($this->debugModeProvider)
+        );
+        if ($debugEnabled) {
             $this->writeLine($line);
             return;
         }
 
-        $this->storedDebugMessages[] = $line;
+        $this->traceOperation('buffer_append', function () use ($line): void {
+            $this->storedDebugMessages[] = $line;
+        });
     }
 
     /**
@@ -72,7 +90,9 @@ class ABJ_404_Solution_LoggingMessageWriter {
      * @return void
      */
     public function infoMessage(string $message): void {
-        $this->writeLine($this->timestampPrefix('INFO') . $message);
+        $this->traceOperation('message', function () use ($message): void {
+            $this->writeLine($this->timestampPrefix('INFO') . $message);
+        }, array('level' => 'info'));
     }
 
     /**
@@ -80,7 +100,9 @@ class ABJ_404_Solution_LoggingMessageWriter {
      * @return void
      */
     public function warn(string $message): void {
-        $this->writeLine($this->timestampPrefix('WARN') . $message);
+        $this->traceOperation('message', function () use ($message): void {
+            $this->writeLine($this->timestampPrefix('WARN') . $message);
+        }, array('level' => 'warn'));
     }
 
     /**
@@ -92,6 +114,13 @@ class ABJ_404_Solution_LoggingMessageWriter {
      * @return void
      */
     public function errorMessage(string $message, $e = null): void {
+        $this->traceOperation('message', function () use ($message, $e): void {
+            $this->writeErrorMessage($message, $e);
+        }, array('level' => 'error'));
+    }
+
+    /** @param \Exception|null $e */
+    private function writeErrorMessage(string $message, $e): void {
         if ($e == null) {
             $e = new Exception;
         }
@@ -120,7 +149,11 @@ class ABJ_404_Solution_LoggingMessageWriter {
      * @return string
      */
     private function timestampPrefix(string $level): string {
-        return (string)call_user_func($this->timestampProvider) . ' (' . $level . '): ';
+        $timestamp = $this->traceOperation(
+            'timestamp_resolution',
+            fn() => call_user_func($this->timestampProvider)
+        );
+        return (string)$timestamp . ' (' . $level . '): ';
     }
 
     /**
@@ -128,6 +161,20 @@ class ABJ_404_Solution_LoggingMessageWriter {
      * @return void
      */
     private function writeLine(string $line): void {
-        call_user_func($this->lineWriter, $line);
+        $this->traceOperation('line_writer_dispatch', function () use ($line): void {
+            call_user_func($this->lineWriter, $line);
+        });
+    }
+
+    /**
+     * @template T
+     * @param callable():T $work
+     * @param array<string,mixed> $fields
+     * @return T
+     */
+    private function traceOperation(string $operation, callable $work, array $fields = array()) {
+        return is_callable($this->operationTracer)
+            ? call_user_func($this->operationTracer, $operation, $fields, $work)
+            : $work();
     }
 }

@@ -58,6 +58,19 @@ final class ABJ_404_Solution_DecisiveRecordRenderFamilies {
                 ),
                 'sentinel' => null,
             ),
+            'routine_log_operation' => array(
+                'emitter' => 'ABJ_404_Solution_RoutineLogTracer',
+                'events' => array(
+                    'routine_log_operation_start',
+                    'routine_log_operation_end',
+                ),
+                'presence' => $always,
+                'reserve' => array(
+                    'start' => 'routine_log_operation_start',
+                    'end' => 'routine_log_operation_end',
+                ),
+                'sentinel' => null,
+            ),
         );
     }
 
@@ -106,6 +119,25 @@ final class ABJ_404_Solution_DecisiveRecordRenderFamilies {
             }
         }
 
+        $routineIdentity = array('operation_id', 'operation');
+        $routineRequirements = array();
+        foreach (array('message', 'timestamp_resolution', 'debug_state_resolution') as $operation) {
+            foreach (array('start', 'end') as $edge) {
+                $required = $edge === 'end'
+                    ? array_merge($routineIdentity, array('status', 'result'))
+                    : $routineIdentity;
+                $routineRequirements[] = array(
+                    'id' => 'routine_log_' . $operation . '_' . $edge,
+                    'event' => 'routine_log_operation_' . $edge,
+                    'match' => array('operation' => $operation),
+                    'required_fields' => $required,
+                    'non_empty_fields' => $required,
+                    'all_matches' => true,
+                    'activation' => array('always' => true),
+                );
+            }
+        }
+
         return array(
             'template_file_io' => array(
                 'profiles' => array('template_file_io'),
@@ -125,6 +157,10 @@ final class ABJ_404_Solution_DecisiveRecordRenderFamilies {
                         'equals' => true,
                     ),
                 )),
+            ),
+            'routine_log_io' => array(
+                'profiles' => array('routine_log_io'),
+                'requirements' => $routineRequirements,
             ),
         );
     }
