@@ -118,6 +118,7 @@ $abj404ClassesByDirectory = array(
         'AjaxRequestLedger',
         'AuthorizationLogTracer', 'PostAuthorizationFailureTracer',
         'TableRenderTranslationTracer',
+        'DatabaseQueryPreflightTracer',
         'DatabaseQueryFilterTracer',
         'DetachAbResolutionTracer',
         'AjaxQueryTimeline', 'AjaxRowLoopProgress', 'CacheMetricsProbeTracer',

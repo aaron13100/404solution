@@ -76,6 +76,12 @@ final class ABJ_404_Solution_DiagnosticModuleManifest {
         'view-build/RedirectsDenormSchemaReadiness.php',
         // The per-query attribution hook, which lives with the DB layer.
         'database/DatabaseQueryDiagnostics.php',
+        // Query preflight spans these DB collaborators before the first SQL
+        // probe. Mixed opcodes in any one would erase or mislabel the gap.
+        'database/DatabaseQueryExecutor.php',
+        'database/DatabaseConnectionManager.php',
+        'database/DatabaseQueryTimeoutManager.php',
+        'database/DatabaseRuntimeState.php',
         // Delivery of the browser-side modules ClientBuildFingerprint hashes.
         'admin/AdminAssetEnqueuer.php',
     );

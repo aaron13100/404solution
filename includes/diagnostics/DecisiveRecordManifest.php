@@ -50,7 +50,7 @@ require_once __DIR__ . '/DecisiveRecordFailureFamilies.php';
 final class ABJ_404_Solution_DecisiveRecordManifest {
 
     /** Bumped when the catalog's shape changes, so an old reader stays valid. */
-    const SCHEMA_VERSION = 3;
+    const SCHEMA_VERSION = 4;
 
     const PRESENCE_ALWAYS = 'always-present';
     const PRESENCE_CONDITIONAL = 'conditional-with-sentinel';

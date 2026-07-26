@@ -105,43 +105,70 @@ class ABJ_404_Solution_DatabaseQueryTimeoutManager {
      * @param int $timeoutSeconds Maximum execution time in seconds
      * @return string The query with timeout applied (or unchanged if no mechanism)
      */
-    public function applyQueryTimeout(string $query, int $timeoutSeconds): string {
+    public function applyQueryTimeout(
+        string $query,
+        int $timeoutSeconds,
+        ?ABJ_404_Solution_DatabaseQueryPreflightTracer $preflight = null
+    ): string {
         // Skip if a timeout hint is already present (prevents double-wrapping).
         if (preg_match('/MAX_EXECUTION_TIME|max_statement_time/i', $query)) {
             return $query;
         }
 
         if ($this->queryStartsWithSelect($query)) {
-            return $this->applySelectTimeout($query, $timeoutSeconds);
+            return $this->applySelectTimeout($query, $timeoutSeconds, $preflight);
         }
         if (preg_match('/SELECT\s/i', $query)) {
             // INSERT...SELECT, CREATE TABLE...SELECT, etc.
-            return $this->applyNonLeadingSelectTimeout($query, $timeoutSeconds);
+            return $this->applyNonLeadingSelectTimeout($query, $timeoutSeconds, $preflight);
         }
         // Plain INSERT, UPDATE, DELETE, DDL: only MariaDB has a timeout mechanism.
-        return $this->applyStatementTimeout($query, $timeoutSeconds);
+        return $this->applyStatementTimeout($query, $timeoutSeconds, $preflight);
     }
 
     /**
      * Detect the DB engine. Returns true for MariaDB, false for MySQL/unknown.
      * @return bool
      */
-    public function isMariaDB(): bool {
+    public function isMariaDB(
+        ?ABJ_404_Solution_DatabaseQueryPreflightTracer $preflight = null
+    ): bool {
         global $wpdb;
         if (!isset($wpdb) || !is_object($wpdb)) {
             return false;
         }
-        try {
-            if (isset($wpdb->dbh) && function_exists('mysqli_get_server_info') && $wpdb->dbh instanceof \mysqli) {
+        $source = isset($wpdb->dbh)
+            && function_exists('mysqli_get_server_info')
+            && $wpdb->dbh instanceof \mysqli
+                ? 'mysqli_server_info'
+                : 'wpdb_db_version';
+        $detect = static function () use ($wpdb): bool {
+            if (isset($wpdb->dbh) && function_exists('mysqli_get_server_info')
+                    && $wpdb->dbh instanceof \mysqli) {
                 $dbVersion = mysqli_get_server_info($wpdb->dbh);
             } else {
                 /** @var wpdb $wpdb */
                 $dbVersion = $wpdb->db_version() ?? '';
             }
+            return stripos((string)$dbVersion, 'mariadb') !== false;
+        };
+        try {
+            if ($preflight === null) {
+                return $detect();
+            }
+            return $preflight->trace(
+                ABJ_404_Solution_DatabaseQueryPreflightTracer::ENGINE_DETECTION,
+                $detect,
+                array(
+                    'fields' => array('engine_source' => $source),
+                    'result_fields' => static fn(bool $isMariaDb): array => array(
+                        'engine' => $isMariaDb ? 'mariadb' : 'mysql_or_unknown',
+                    ),
+                )
+            );
         } catch (\Throwable $e) { // allow-silent-catch: test doubles / early-boot wpdb may lack db_version(); defaulting to MySQL (no MariaDB timeout syntax) is safe
-            $dbVersion = '';
+            return false;
         }
-        return stripos($dbVersion, 'mariadb') !== false;
     }
 
     /**
@@ -154,8 +181,13 @@ class ABJ_404_Solution_DatabaseQueryTimeoutManager {
      * @param int $timeoutSeconds Maximum execution time in seconds
      * @return string The query with timeout hint applied
      */
-    public function applySelectTimeout(string $query, int $timeoutSeconds): string {
-        if ($this->isMariaDB() && !ABJ_404_Solution_DatabaseRuntimeState::isSetStatementWrapperUnsupported()) {
+    public function applySelectTimeout(
+        string $query,
+        int $timeoutSeconds,
+        ?ABJ_404_Solution_DatabaseQueryPreflightTracer $preflight = null
+    ): string {
+        if ($this->isMariaDB($preflight)
+                && !$this->isSetStatementWrapperUnsupported($preflight)) {
             return "SET STATEMENT max_statement_time=" . $timeoutSeconds . " FOR " . $query;
         }
         // MySQL hint also works for the MariaDB-with-disabled-wrapper case:
@@ -180,8 +212,13 @@ class ABJ_404_Solution_DatabaseQueryTimeoutManager {
      * @param int $timeoutSeconds Maximum execution time in seconds
      * @return string The query with timeout applied
      */
-    public function applyNonLeadingSelectTimeout(string $query, int $timeoutSeconds): string {
-        if ($this->isMariaDB() && !ABJ_404_Solution_DatabaseRuntimeState::isSetStatementWrapperUnsupported()) {
+    public function applyNonLeadingSelectTimeout(
+        string $query,
+        int $timeoutSeconds,
+        ?ABJ_404_Solution_DatabaseQueryPreflightTracer $preflight = null
+    ): string {
+        if ($this->isMariaDB($preflight)
+                && !$this->isSetStatementWrapperUnsupported($preflight)) {
             return "SET STATEMENT max_statement_time=" . $timeoutSeconds . " FOR " . $query;
         }
         $timeoutMs = $timeoutSeconds * 1000;
@@ -204,8 +241,13 @@ class ABJ_404_Solution_DatabaseQueryTimeoutManager {
      * @param int $timeoutSeconds Maximum execution time in seconds
      * @return string The query with timeout applied (unchanged on MySQL)
      */
-    public function applyStatementTimeout(string $query, int $timeoutSeconds): string {
-        if ($this->isMariaDB() && !ABJ_404_Solution_DatabaseRuntimeState::isSetStatementWrapperUnsupported()) {
+    public function applyStatementTimeout(
+        string $query,
+        int $timeoutSeconds,
+        ?ABJ_404_Solution_DatabaseQueryPreflightTracer $preflight = null
+    ): string {
+        if ($this->isMariaDB($preflight)
+                && !$this->isSetStatementWrapperUnsupported($preflight)) {
             return "SET STATEMENT max_statement_time=" . $timeoutSeconds . " FOR " . $query;
         }
         // MySQL has no timeout mechanism for non-SELECT queries. MariaDB hosts
@@ -214,6 +256,41 @@ class ABJ_404_Solution_DatabaseQueryTimeoutManager {
         // staged build's per-tick budget enforcement degrades to the cron
         // tick's own wall-clock deadline rather than per-statement.
         return $query;
+    }
+
+    /**
+     * Read the request-local/persisted wrapper capability under its own
+     * preflight boundary. The result descriptor exposes only hit/miss state.
+     */
+    private function isSetStatementWrapperUnsupported(
+        ?ABJ_404_Solution_DatabaseQueryPreflightTracer $preflight
+    ): bool {
+        if ($preflight === null) {
+            return ABJ_404_Solution_DatabaseRuntimeState::isSetStatementWrapperUnsupported();
+        }
+        $source = ABJ_404_Solution_DatabaseRuntimeState::setStatementWrapperCapabilitySource();
+        return $preflight->trace(
+            ABJ_404_Solution_DatabaseQueryPreflightTracer::TIMEOUT_CAPABILITY_CACHE,
+            static fn(): bool =>
+                ABJ_404_Solution_DatabaseRuntimeState::isSetStatementWrapperUnsupported(),
+            array(
+                'fields' => array('cache_source' => $source),
+                'result_fields' => static function (bool $unsupported) use ($source): array {
+                    if ($source === 'transient') {
+                        return array(
+                            'cache_outcome' => $unsupported
+                                ? 'hit_unsupported'
+                                : 'miss_supported',
+                        );
+                    }
+                    return array(
+                        'cache_outcome' => $unsupported
+                            ? 'request_local_unsupported'
+                            : 'request_local_supported',
+                    );
+                },
+            )
+        );
     }
 
     /**

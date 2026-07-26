@@ -103,54 +103,110 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
     public function queryAndGetResults($query, $options = array()): array {
         global $wpdb;
 
-        $this->core->connectionManager()->ensureConnection();
+        $preflight = $this->queryDiagnostics->beginQueryPreflight(
+            is_string($query) ? $query : '',
+            $wpdb ?? null
+        );
+        try {
+            $this->core->connectionManager()->ensureConnection($preflight);
 
-        $options = $this->normalizeQueryOptions($options);
-        $resultType = $this->normalizeResultType($options['result_type']);
-        $this->currentResultType = $resultType;
+            $options = $this->normalizeQueryOptions($options);
+            $resultType = $this->normalizeResultType($options['result_type']);
+            $this->currentResultType = $resultType;
 
-        // wpdb unavailable: degrade to an empty result rather than crashing on
-        // method_exists(null, ...) or null->method() downstream. Happens in
-        // very early-life code paths (fresh-install background workers reaching
-        // the DAO before WordPress has populated $wpdb, CLI bootstrap, unit
-        // tests that exercise the suggestion pipeline without a real wpdb).
-        //
-        // "Unavailable" is not just null: an object that is not a real wpdb --
-        // one missing prepare()/get_results()/query() -- is equally unusable and
-        // must degrade the same way instead of fataling with
-        // "Call to undefined method ...::prepare()" inside prepareQueryParameters()
-        // / executeWpdbQuery(). This mirrors the method_exists() guard already
-        // used for suppress_errors() below.
-        //
-        // The DAO result contract (last_error populated, rows as an empty array)
-        // is preserved so queryAndGetResults remains the centralized
-        // graceful-degradation seam (Defensive Coding #2/#11).
-        if (!$this->wpdbCanRunQueries($wpdb)) {
-            return array(
-                'rows' => array(),
-                'rows_affected' => 0,
-                'last_error' => 'wpdb unavailable',
-                'elapsed_time' => 0.0,
+            // wpdb unavailable: degrade to an empty result rather than crashing on
+            // method_exists(null, ...) or null->method() downstream. Happens in
+            // very early-life code paths (fresh-install background workers reaching
+            // the DAO before WordPress has populated $wpdb, CLI bootstrap, unit
+            // tests that exercise the suggestion pipeline without a real wpdb).
+            //
+            // "Unavailable" is not just null: an object that is not a real wpdb --
+            // one missing prepare()/get_results()/query() -- is equally unusable and
+            // must degrade the same way instead of fataling with
+            // "Call to undefined method ...::prepare()" inside prepareQueryParameters()
+            // / executeWpdbQuery(). This mirrors the method_exists() guard already
+            // used for suppress_errors() below.
+            //
+            // The DAO result contract (last_error populated, rows as an empty array)
+            // is preserved so queryAndGetResults remains the centralized
+            // graceful-degradation seam (Defensive Coding #2/#11).
+            if (!$this->wpdbCanRunQueries($wpdb)) {
+                $preflight->complete();
+                return array(
+                    'rows' => array(),
+                    'rows_affected' => 0,
+                    'last_error' => 'wpdb unavailable',
+                    'elapsed_time' => 0.0,
+                );
+            }
+
+            $ignoreErrorStrings = $this->normalizeIgnoreErrorStrings($options['ignore_errors']);
+            $queryParameters = is_array($options['query_params']) ? $options['query_params'] : array();
+
+            $query = $preflight->trace(
+                ABJ_404_Solution_DatabaseQueryPreflightTracer::PARAMETER_PREPARATION,
+                function () use ($query, $queryParameters): string {
+                    $replacedQuery = $this->core->doTableNameReplacements($query);
+                    return $this->prepareQueryParameters($replacedQuery, $queryParameters);
+                },
+                array('fields' => array('parameter_count' => count($queryParameters)))
             );
+
+            $timeoutRaw = isset($options['timeout']) && is_numeric($options['timeout'])
+                ? (int)$options['timeout']
+                : 0;
+            $timeoutSeconds = $timeoutRaw > 0 ? $timeoutRaw : 60;
+            $query = $preflight->trace(
+                ABJ_404_Solution_DatabaseQueryPreflightTracer::TIMEOUT_POLICY,
+                function () use ($query, $timeoutSeconds, $preflight): string {
+                    $timedQuery = $this->core->queryTimeoutManager()->applyQueryTimeout(
+                        $query,
+                        $timeoutSeconds,
+                        $preflight
+                    );
+                    $this->queryDiagnostics->recordAjaxTimeoutMode($timedQuery);
+                    return $timedQuery;
+                },
+                array(
+                    'fields' => array('timeout_s' => $timeoutSeconds),
+                    'result_fields' => static fn(string $timedQuery): array => array(
+                        'timeout_mode' => preg_match(
+                            '/MAX_EXECUTION_TIME|max_statement_time/i',
+                            $timedQuery
+                        ) === 1 ? 'wrapped' : 'unwrapped',
+                    ),
+                )
+            );
+
+            $preflight->trace(
+                ABJ_404_Solution_DatabaseQueryPreflightTracer::DIAGNOSTIC_LATENCY,
+                function (): void {
+                    $this->queryDiagnostics->applyDiagnosticLatencyIfConfigured();
+                }
+            );
+            $producesRows = $preflight->trace(
+                ABJ_404_Solution_DatabaseQueryPreflightTracer::RESULT_SHAPE_DETECTION,
+                fn(): bool => $this->core->queryTimeoutManager()->queryProducesResultRows($query),
+                array(
+                    'result_fields' => static fn(bool $rows): array => array(
+                        'result_shape' => $rows ? 'rows' : 'mutation',
+                    ),
+                )
+            );
+            $preflight->complete();
+        } catch (Throwable $e) {
+            $preflight->complete('failed', $e);
+            throw $e;
         }
-
-        $ignoreErrorStrings = $this->normalizeIgnoreErrorStrings($options['ignore_errors']);
-        $queryParameters = is_array($options['query_params']) ? $options['query_params'] : array();
-
-        $query = $this->core->doTableNameReplacements($query);
-        $query = $this->prepareQueryParameters($query, $queryParameters);
-
-        $timeoutRaw = isset($options['timeout']) && is_numeric($options['timeout']) ? (int)$options['timeout'] : 0;
-        $timeoutSeconds = $timeoutRaw > 0 ? $timeoutRaw : 60;
-        $query = $this->core->queryTimeoutManager()->applyQueryTimeout($query, $timeoutSeconds);
-
-        $this->queryDiagnostics->recordAjaxTimeoutMode($query);
-        $this->queryDiagnostics->applyDiagnosticLatencyIfConfigured();
 
         // Announced before the timer starts, and therefore before the query
         // can block: a stalled statement leaves this record as the last thing
         // on disk, which is what names the SQL shape that hung.
-        $queryIdentity = $this->queryDiagnostics->recordQueryTimelineStart($query, $timeoutSeconds);
+        $queryIdentity = $this->queryDiagnostics->recordQueryTimelineStart(
+            $query,
+            $timeoutSeconds,
+            $preflight->preflightId()
+        );
 
         $timer = new ABJ_404_Solution_Timer();
 
@@ -160,8 +216,6 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
             /** @var wpdb $wpdb */
             $previousSuppressState = $wpdb->suppress_errors(true);
         }
-
-        $producesRows = $this->core->queryTimeoutManager()->queryProducesResultRows($query);
 
         $result = array();
         try {

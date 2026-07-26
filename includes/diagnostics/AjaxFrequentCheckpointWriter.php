@@ -37,6 +37,17 @@ final class ABJ_404_Solution_AjaxFrequentCheckpointWriter {
             : '';
     }
 
+    /**
+     * Whether directory resolution already ran for this request.
+     *
+     * Kept separate from resolvedDirectoryForRequest() because an empty
+     * directory is a valid cached failure. Re-running WordPress filters after
+     * that failure can recurse into the same database boundary being traced.
+     */
+    public static function hasResolvedDirectoryForRequest(string $requestId): bool {
+        return $requestId !== '' && $requestId === self::$resolvedRequestId;
+    }
+
     public static function resetForTests(): void {
         self::$resolvedRequestId = '';
         self::$resolvedDirectory = '';

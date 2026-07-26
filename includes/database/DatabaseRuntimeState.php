@@ -69,4 +69,19 @@ final class ABJ_404_Solution_DatabaseRuntimeState {
         }
         return self::$setStatementWrapperUnsupported;
     }
+
+    /**
+     * Name the source the next timeout-capability read will consult.
+     *
+     * This exposes no cache value or key. It exists so query-preflight
+     * diagnostics can distinguish an in-process decision from a WordPress
+     * transient read that may invoke a third-party object-cache drop-in.
+     */
+    public static function setStatementWrapperCapabilitySource(): string {
+        if (self::$setStatementWrapperUnsupported
+                || self::$setStatementWrapperPersistenceChecked) {
+            return 'request_local';
+        }
+        return function_exists('get_transient') ? 'transient' : 'unavailable';
+    }
 }

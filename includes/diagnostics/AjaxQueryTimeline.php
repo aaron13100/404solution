@@ -136,12 +136,14 @@ final class ABJ_404_Solution_AjaxQueryTimeline {
      *   ABJ_404_Solution_DatabaseQueryDiagnostics (SQL filename, `abj404:src`
      *   marker, or Class::method), which is what makes a shape actionable.
      * @param int $timeoutSeconds   The per-query timeout hint actually applied.
+     * @param string $preflightId   The completed preflight that led here.
      * @return array{q:int,sql_id:string}|null
      */
     public static function beginQuery(
         string $preparedQuery,
         string $sourceLabel,
-        int $timeoutSeconds
+        int $timeoutSeconds,
+        string $preflightId = ''
     ): ?array {
         $identity = null;
         try {
@@ -166,6 +168,7 @@ final class ABJ_404_Solution_AjaxQueryTimeline {
                     'stage' => self::currentStage(),
                     'src' => substr($sourceLabel === '' ? 'unknown-source' : $sourceLabel, 0, 200),
                     'timeout_s' => max(0, $timeoutSeconds),
+                    'preflight_id' => substr($preflightId, 0, 12),
                 ), array(
                     'sql_id' => $shape['sql_id'],
                     'sql_len' => $shape['sql_len'],
@@ -203,6 +206,7 @@ final class ABJ_404_Solution_AjaxQueryTimeline {
                 'stage' => self::currentStage(),
                 'src' => substr($sourceLabel === '' ? 'unknown-source' : $sourceLabel, 0, 200),
                 'timeout_s' => max(0, $timeoutSeconds),
+                'preflight_id' => substr($preflightId, 0, 12),
                 'db_ms' => round($state['db_ms'], 3),
             ), $shape, $previous));
             return $identity;
@@ -436,6 +440,9 @@ final class ABJ_404_Solution_AjaxQueryTimeline {
         self::$redactor = null;
         if (class_exists('ABJ_404_Solution_DatabaseQueryFilterTracer', false)) {
             ABJ_404_Solution_DatabaseQueryFilterTracer::resetForTests();
+        }
+        if (class_exists('ABJ_404_Solution_DatabaseQueryPreflightTracer', false)) {
+            ABJ_404_Solution_DatabaseQueryPreflightTracer::resetForTests();
         }
         if (class_exists('ABJ_404_Solution_AjaxFrequentCheckpointWriter', false)) {
             ABJ_404_Solution_AjaxFrequentCheckpointWriter::resetForTests();

@@ -10,6 +10,29 @@ final class ABJ_404_Solution_DecisiveRecordQueryFilterFamilies {
     /** @return array<string, array{emitter:string,events:array<int,string>,presence:string,reserve:array{start:string,end:string}|null,sentinel:string|null}> */
     public static function records(string $always, string $conditional): array {
         return array(
+            'query_preflight' => array(
+                'emitter' => 'ABJ_404_Solution_DatabaseQueryPreflightTracer',
+                'events' => array('query_preflight_start', 'query_preflight_end'),
+                'presence' => $always,
+                'reserve' => array(
+                    'start' => 'query_preflight_start',
+                    'end' => 'query_preflight_end',
+                ),
+                'sentinel' => null,
+            ),
+            'query_preflight_operation' => array(
+                'emitter' => 'ABJ_404_Solution_DatabaseQueryPreflightTracer',
+                'events' => array(
+                    'query_preflight_operation_start',
+                    'query_preflight_operation_end',
+                ),
+                'presence' => $always,
+                'reserve' => array(
+                    'start' => 'query_preflight_operation_start',
+                    'end' => 'query_preflight_operation_end',
+                ),
+                'sentinel' => null,
+            ),
             'query_filter_instrumentation' => array(
                 'emitter' => 'ABJ_404_Solution_DatabaseQueryFilterTracer',
                 'events' => array('query_filter_instrumentation'),
@@ -49,6 +72,13 @@ final class ABJ_404_Solution_DecisiveRecordQueryFilterFamilies {
 
     /** @return array<string, array<string, mixed>> */
     public static function contracts(): array {
+        $preflightFields = array(
+            'operation_id', 'preflight_id', 'src', 'stage',
+        );
+        $preflightStartFields = array_merge($preflightFields, array(
+            'wpdb_class', 'wpdb_kind', 'reconnect_policy',
+        ));
+        $preflightOperationFields = array_merge($preflightFields, array('operation'));
         $callbackFields = array(
             'operation_id', 'q', 'sql_id', 'registered_hook', 'hook',
             'callback', 'source', 'priority', 'callback_ordinal',
@@ -64,6 +94,89 @@ final class ABJ_404_Solution_DecisiveRecordQueryFilterFamilies {
         );
 
         return array(
+            'database_query_preflight' => array(
+                'profiles' => array('ordinary_table', 'database_query_preflight'),
+                'requirements' => array(
+                    array(
+                        'id' => 'query_preflight_start_identity',
+                        'event' => 'query_preflight_start',
+                        'required_fields' => $preflightStartFields,
+                        'non_empty_fields' => array(
+                            'operation_id', 'preflight_id', 'src',
+                            'wpdb_class', 'wpdb_kind', 'reconnect_policy',
+                        ),
+                        'all_matches' => true,
+                        'activation' => array('event' => 'query_probe'),
+                    ),
+                    array(
+                        'id' => 'query_preflight_operation_start_identity',
+                        'event' => 'query_preflight_operation_start',
+                        'required_fields' => $preflightOperationFields,
+                        'non_empty_fields' => array(
+                            'operation_id', 'preflight_id', 'operation', 'src',
+                        ),
+                        'all_matches' => true,
+                        'activation' => array('event' => 'query_preflight_start'),
+                    ),
+                    array(
+                        'id' => 'query_preflight_operation_end_identity',
+                        'event' => 'query_preflight_operation_end',
+                        'required_fields' => array_merge(
+                            $preflightOperationFields,
+                            array('status')
+                        ),
+                        'non_empty_fields' => array(
+                            'operation_id', 'preflight_id', 'operation', 'src', 'status',
+                        ),
+                        'all_matches' => true,
+                        'activation' => array('event' => 'query_preflight_start'),
+                    ),
+                    array(
+                        'id' => 'query_preflight_end_identity',
+                        'event' => 'query_preflight_end',
+                        'required_fields' => array_merge($preflightFields, array('status')),
+                        'non_empty_fields' => array(
+                            'operation_id', 'preflight_id', 'src', 'status',
+                        ),
+                        'all_matches' => true,
+                        'activation' => array('event' => 'query_preflight_start'),
+                    ),
+                ),
+            ),
+            'unmatched_database_query_preflight_support' => array(
+                'profiles' => array('unmatched_database_query_preflight_support'),
+                'requirements' => array(
+                    array(
+                        'id' => 'unmatched_query_preflight_identity',
+                        'event' => 'query_preflight_start',
+                        'required_fields' => $preflightStartFields,
+                        'non_empty_fields' => array(
+                            'operation_id', 'preflight_id', 'src',
+                            'wpdb_class', 'wpdb_kind', 'reconnect_policy',
+                        ),
+                        'all_matches' => true,
+                        'unmatched_end_event' => 'query_preflight_end',
+                        'activation' => array(
+                            'fact' => 'unmatched_query_preflight_expected',
+                            'equals' => true,
+                        ),
+                    ),
+                    array(
+                        'id' => 'unmatched_query_preflight_operation_identity',
+                        'event' => 'query_preflight_operation_start',
+                        'required_fields' => $preflightOperationFields,
+                        'non_empty_fields' => array(
+                            'operation_id', 'preflight_id', 'operation', 'src',
+                        ),
+                        'all_matches' => true,
+                        'unmatched_end_event' => 'query_preflight_operation_end',
+                        'activation' => array(
+                            'fact' => 'unmatched_query_preflight_operation_expected',
+                            'equals' => true,
+                        ),
+                    ),
+                ),
+            ),
             'database_query_filter_callbacks' => array(
                 'profiles' => array('ordinary_table', 'database_query_filter_callbacks'),
                 'requirements' => array(

@@ -40,6 +40,21 @@ class ABJ_404_Solution_DatabaseQueryDiagnostics {
     }
 
     /**
+     * Open the ledger-scoped boundary covering all work before query_probe.
+     *
+     * @param mixed $wpdb
+     */
+    public function beginQueryPreflight(
+        string $query,
+        $wpdb
+    ): ABJ_404_Solution_DatabaseQueryPreflightTracer {
+        return ABJ_404_Solution_DatabaseQueryPreflightTracer::begin(
+            $this->extractSqlFilename($query),
+            $wpdb
+        );
+    }
+
+    /**
      * Announce a query to the per-request attribution timeline BEFORE it runs
      * (Bruno timeout cause matrix, cause class F).
      *
@@ -56,7 +71,11 @@ class ABJ_404_Solution_DatabaseQueryDiagnostics {
      * @param int $timeoutSeconds
      * @return array{q:int,sql_id:string}|null
      */
-    public function recordQueryTimelineStart(string $query, int $timeoutSeconds): ?array {
+    public function recordQueryTimelineStart(
+        string $query,
+        int $timeoutSeconds,
+        string $preflightId = ''
+    ): ?array {
         if (!class_exists('ABJ_404_Solution_AjaxQueryTimeline')
                 || !ABJ_404_Solution_AjaxQueryTimeline::isArmed()) {
             return null;
@@ -64,7 +83,8 @@ class ABJ_404_Solution_DatabaseQueryDiagnostics {
         return ABJ_404_Solution_AjaxQueryTimeline::beginQuery(
             $query,
             $this->extractSqlFilename($query),
-            $timeoutSeconds
+            $timeoutSeconds,
+            $preflightId
         );
     }
 
@@ -143,6 +163,7 @@ class ABJ_404_Solution_DatabaseQueryDiagnostics {
         static $internalMethods = array(
             'extractSqlFilename' => true,
             'resolveCallerFromBacktrace' => true,
+            'beginQueryPreflight' => true,
             'queryAndGetResults' => true,
             'attemptInvalidDataRetry' => true,
             'attemptMissingTableRepairAndRetry' => true,

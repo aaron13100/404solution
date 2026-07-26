@@ -39,7 +39,9 @@ final class ABJ_404_Solution_ActiveOperationBreadcrumbs {
      */
     private const BOUNDARY_MANIFEST = array(
         'query' => array(
-            'fields' => array('q', 'stage', 'src', 'sql_id', 'sql_len', 'timeout_s'),
+            'fields' => array(
+                'q', 'stage', 'src', 'sql_id', 'sql_len', 'timeout_s', 'preflight_id',
+            ),
             'required_evidence_fields' => array('q', 'src', 'sql_id'),
         ),
         'row_operation' => array(

@@ -63,7 +63,9 @@ class ABJ_404_Solution_DatabaseConnectionManager {
      *
      * @return bool True if connection is active, false otherwise
      */
-    public function ensureConnection() {
+    public function ensureConnection(
+        ?ABJ_404_Solution_DatabaseQueryPreflightTracer $preflight = null
+    ) {
         global $wpdb;
 
         if (!isset($wpdb)) {
@@ -71,16 +73,39 @@ class ABJ_404_Solution_DatabaseConnectionManager {
         }
 
         try {
-            $isConnected = $this->safeCheckConnection($wpdb, false);
+            $initialCheck = fn(): bool => $this->safeCheckConnection($wpdb, false);
+            $isConnected = $preflight === null
+                ? $initialCheck()
+                : $preflight->trace(
+                    ABJ_404_Solution_DatabaseQueryPreflightTracer::CONNECTION_CHECK,
+                    $initialCheck,
+                    array('fields' => array('check_attempt' => 'initial'))
+                );
 
             if (!$isConnected) {
                 $this->logger->debugMessage("Database connection lost, attempting to reconnect...");
 
                 if (is_object($wpdb) && method_exists($wpdb, 'db_connect')) {
-                    $wpdb->db_connect();
+                    $reconnect = static fn() => $wpdb->db_connect();
+                    if ($preflight === null) {
+                        $reconnect();
+                    } else {
+                        $preflight->trace(
+                            ABJ_404_Solution_DatabaseQueryPreflightTracer::CONNECTION_RECONNECT,
+                            $reconnect
+                        );
+                    }
                 }
 
-                if ($this->safeCheckConnection($wpdb, false)) {
+                $recheck = fn(): bool => $this->safeCheckConnection($wpdb, false);
+                $reconnected = $preflight === null
+                    ? $recheck()
+                    : $preflight->trace(
+                        ABJ_404_Solution_DatabaseQueryPreflightTracer::CONNECTION_CHECK,
+                        $recheck,
+                        array('fields' => array('check_attempt' => 'post_reconnect'))
+                    );
+                if ($reconnected) {
                     $this->logger->debugMessage("Database reconnection successful");
                     return true;
                 }
