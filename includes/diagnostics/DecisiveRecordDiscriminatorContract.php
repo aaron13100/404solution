@@ -14,6 +14,90 @@ if (!defined('ABSPATH')) {
 final class ABJ_404_Solution_DecisiveRecordDiscriminatorContract {
     /** @return array<string, array<string, mixed>> */
     public static function contracts(): array {
+        $hookRequirements = self::hookRequirements();
+        $cacheRequirements = self::cacheRequirements();
+        $resolutionRequirements = self::detachResolutionRequirements();
+        $operationFields = self::detachOperationFields();
+        $transientRequirements = self::detachTransientRequirements($operationFields);
+        $probeFields = self::cacheProbeFields();
+
+        return array(
+            'hook_lifecycle_consumers' => array(
+                'profiles' => array('ordinary_table'),
+                'requirements' => $hookRequirements,
+            ),
+            'cache_probe_boundaries' => array(
+                'profiles' => array('ordinary_table'),
+                'requirements' => $cacheRequirements,
+            ),
+            'post_cap_translation_callback' => array(
+                'profiles' => array('post_cap_translation_callback'),
+                'requirements' => array(array(
+                    'id' => 'post_cap_translation_callback_identity',
+                    'event' => 'active_operation_breadcrumb',
+                    'match' => array(
+                        'operation_state' => 'armed',
+                        'boundary' => 'table_prelude_hook_callback',
+                        'state' => 'active',
+                    ),
+                    'required_fields' => array(
+                        'operation_id', 'hook', 'callback', 'source', 'locale',
+                    ),
+                    'non_empty_fields' => array(
+                        'operation_id', 'hook', 'callback', 'source', 'locale',
+                    ),
+                    'all_matches' => true,
+                    'activation' => array(
+                        'any' => array(
+                            array('fact' => 'post_cap_translation_callback_expected', 'equals' => true),
+                            array('event' => 'table_prelude_hook_callback_capped'),
+                        ),
+                    ),
+                )),
+            ),
+            'cache_probe_unmatched_support' => array(
+                'profiles' => array('unmatched_cache_probe_support'),
+                'requirements' => array(array(
+                    'id' => 'unmatched_cache_probe_identity',
+                    'event' => 'cache_metrics_probe_start',
+                    'required_fields' => $probeFields,
+                    'non_empty_fields' => $probeFields,
+                    'all_matches' => true,
+                    'unmatched_end_event' => 'cache_metrics_probe_end',
+                    'activation' => array(
+                        'fact' => 'unmatched_cache_probe_expected',
+                        'equals' => true,
+                    ),
+                )),
+            ),
+            'detach_ab_resolution_boundaries' => array(
+                'profiles' => array('ordinary_table'),
+                'requirements' => $resolutionRequirements,
+            ),
+            'detach_ab_transient_operations' => array(
+                'profiles' => array('ordinary_table'),
+                'requirements' => $transientRequirements,
+            ),
+            'unmatched_detach_ab_support' => array(
+                'profiles' => array('unmatched_detach_ab_support'),
+                'requirements' => array(array(
+                    'id' => 'unmatched_detach_ab_operation_identity',
+                    'event' => 'detach_ab_operation_start',
+                    'required_fields' => $operationFields,
+                    'non_empty_fields' => $operationFields,
+                    'all_matches' => true,
+                    'unmatched_end_event' => 'detach_ab_operation_end',
+                    'activation' => array(
+                        'fact' => 'unmatched_detach_ab_expected',
+                        'equals' => true,
+                    ),
+                )),
+            ),
+        );
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    private static function hookRequirements(): array {
         $positionFields = array(
             'operation_id', 'component', 'phase', 'hook', 'priority', 'callback_ordinal',
         );
@@ -72,9 +156,13 @@ final class ABJ_404_Solution_DecisiveRecordDiscriminatorContract {
                 ),
             );
         }
+        return $hookRequirements;
+    }
 
+    /** @return array<int, array<string, mixed>> */
+    private static function cacheRequirements(): array {
         $cacheRequirements = array();
-        $probeFields = array('operation_id', 'source', 'phase');
+        $probeFields = self::cacheProbeFields();
         foreach (array('initial', 'progress', 'finish') as $phase) {
             $cachePresent = array('fact' => 'cache_object_present', 'equals' => true);
             $phaseSentinel = $phase === 'initial'
@@ -157,56 +245,79 @@ final class ABJ_404_Solution_DecisiveRecordDiscriminatorContract {
                 'value' => 'error',
             ),
         );
+        return $cacheRequirements;
+    }
 
+    /** @return array<int, string> */
+    private static function cacheProbeFields(): array {
+        return array('operation_id', 'source', 'phase');
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    private static function detachResolutionRequirements(): array {
+        $resolutionFields = array(
+            'operation_id', 'operation', 'session_state', 'part', 'payload_key',
+        );
         return array(
-            'hook_lifecycle_consumers' => array(
-                'profiles' => array('ordinary_table'),
-                'requirements' => $hookRequirements,
+            array(
+                'id' => 'detach_ab_resolution_start_identity',
+                'event' => 'detach_ab_resolution_start',
+                'required_fields' => $resolutionFields,
+                'non_empty_fields' => $resolutionFields,
+                'all_matches' => true,
+                'activation' => array('event' => 'flush_end'),
             ),
-            'cache_probe_boundaries' => array(
-                'profiles' => array('ordinary_table'),
-                'requirements' => $cacheRequirements,
-            ),
-            'post_cap_translation_callback' => array(
-                'profiles' => array('post_cap_translation_callback'),
-                'requirements' => array(array(
-                    'id' => 'post_cap_translation_callback_identity',
-                    'event' => 'active_operation_breadcrumb',
-                    'match' => array(
-                        'operation_state' => 'armed',
-                        'boundary' => 'table_prelude_hook_callback',
-                        'state' => 'active',
-                    ),
-                    'required_fields' => array(
-                        'operation_id', 'hook', 'callback', 'source', 'locale',
-                    ),
-                    'non_empty_fields' => array(
-                        'operation_id', 'hook', 'callback', 'source', 'locale',
-                    ),
-                    'all_matches' => true,
-                    'activation' => array(
-                        'any' => array(
-                            array('fact' => 'post_cap_translation_callback_expected', 'equals' => true),
-                            array('event' => 'table_prelude_hook_callback_capped'),
-                        ),
-                    ),
+            array(
+                'id' => 'detach_ab_resolution_end_identity',
+                'event' => 'detach_ab_resolution_end',
+                'required_fields' => array_merge($resolutionFields, array(
+                    'status', 'mode', 'diagnostic_enabled', 'counter_status',
                 )),
-            ),
-            'cache_probe_unmatched_support' => array(
-                'profiles' => array('unmatched_cache_probe_support'),
-                'requirements' => array(array(
-                    'id' => 'unmatched_cache_probe_identity',
-                    'event' => 'cache_metrics_probe_start',
-                    'required_fields' => $probeFields,
-                    'non_empty_fields' => $probeFields,
-                    'all_matches' => true,
-                    'unmatched_end_event' => 'cache_metrics_probe_end',
-                    'activation' => array(
-                        'fact' => 'unmatched_cache_probe_expected',
-                        'equals' => true,
-                    ),
+                'non_empty_fields' => array_merge($resolutionFields, array(
+                    'status', 'mode', 'counter_status',
                 )),
+                'all_matches' => true,
+                'activation' => array('event' => 'flush_end'),
             ),
         );
+    }
+
+    /** @return array<int, string> */
+    private static function detachOperationFields(): array {
+        return array(
+            'operation_id', 'operation', 'transient_key', 'cache_backend',
+            'cache_backend_class', 'cache_capabilities',
+        );
+    }
+
+    /**
+     * @param array<int, string> $operationFields
+     * @return array<int, array<string, mixed>>
+     */
+    private static function detachTransientRequirements(array $operationFields): array {
+        $operationActivation = array(
+            'event' => 'detach_ab_resolution_end',
+            'field' => 'counter_status',
+            'value' => 'attempt_resolved',
+        );
+        $transientRequirements = array();
+        foreach (array('get_transient', 'set_transient') as $operation) {
+            foreach (array('start', 'end') as $edge) {
+                $required = $operationFields;
+                if ($edge === 'end') {
+                    $required = array_merge($required, array('status', 'result'));
+                }
+                $transientRequirements[] = array(
+                    'id' => 'detach_ab_' . $operation . '_' . $edge,
+                    'event' => 'detach_ab_operation_' . $edge,
+                    'match' => array('operation' => $operation),
+                    'required_fields' => $required,
+                    'non_empty_fields' => $required,
+                    'all_matches' => true,
+                    'activation' => $operationActivation,
+                );
+            }
+        }
+        return $transientRequirements;
     }
 }

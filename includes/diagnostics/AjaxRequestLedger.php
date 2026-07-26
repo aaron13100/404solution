@@ -253,7 +253,16 @@ final class ABJ_404_Solution_AjaxRequestLedger {
      */
     public static function isDetachAbDiagnosticEnabled(): bool {
         $preRelease = ABJ_404_Solution_PluginReleaseChannel::isPreRelease();
-        return (bool)apply_filters('abj404_should_run_detach_ab_diagnostic', $preRelease, array());
+        return (bool)ABJ_404_Solution_ResponseControlFilterTracer::traceDispatch(
+            'abj404_should_run_detach_ab_diagnostic',
+            static function () use ($preRelease) {
+                return apply_filters(
+                    'abj404_should_run_detach_ab_diagnostic',
+                    $preRelease,
+                    array()
+                );
+            }
+        );
     }
 
     /**
@@ -374,12 +383,26 @@ final class ABJ_404_Solution_AjaxRequestLedger {
             return -1;
         }
         $key = self::detachAbTransientKey($sessionId, $part, $payloadKey);
-        $current = get_transient($key);
+        $current = ABJ_404_Solution_DetachAbResolutionTracer::traceTransientOperation(
+            'get_transient',
+            $key,
+            static function () use ($key) {
+                return get_transient($key);
+            }
+        );
         $index = is_numeric($current) ? (int)$current : 0;
         $ttl = defined('HOUR_IN_SECONDS') ? HOUR_IN_SECONDS : 3600;
         // allow-cache-empty: locally computed attempt counter (always a
         // valid non-negative int), not a fetched query result.
-        set_transient($key, $index + 1, $ttl);
+        ABJ_404_Solution_DetachAbResolutionTracer::traceTransientOperation(
+            'set_transient',
+            $key,
+            static function () use ($key, $index, $ttl) {
+                // allow-cache-empty: the locally computed attempt counter is
+                // always a valid non-negative integer, never a fetched result.
+                return set_transient($key, $index + 1, $ttl);
+            }
+        );
         return $index;
     }
 
@@ -410,37 +433,44 @@ final class ABJ_404_Solution_AjaxRequestLedger {
         string $part = 'all',
         string $payloadKey = ''
     ): array {
-        $buildChannel = ABJ_404_Solution_PluginReleaseChannel::currentChannel();
-        $sessionKey = self::detachAbSessionKey($sessionId);
-        $part = self::normalizeDetachAbPart($part);
-        $payloadKey = self::normalizeDetachAbPayloadKey($payloadKey);
-        $diagnosticEnabled = self::isDetachAbDiagnosticEnabled();
-        if (!$diagnosticEnabled) {
-            return array('mode' => 'inert', 'attempt_index' => -1, 'diagnostic_enabled' => false,
-                'build_channel' => $buildChannel, 'session_key' => $sessionKey,
-                'part' => $part, 'payload_key' => $payloadKey, 'ordinal' => -1,
-                'pair_ordinal' => -1, 'pair_position' => -1, 'assignment_seed' => '');
-        }
-        $attemptIndex = self::nextDetachAbAttemptIndex($sessionId, $part, $payloadKey);
-        if ($attemptIndex < 0) {
-            return array('mode' => 'inert', 'attempt_index' => -1, 'diagnostic_enabled' => true,
-                'build_channel' => $buildChannel, 'session_key' => $sessionKey,
-                'part' => $part, 'payload_key' => $payloadKey, 'ordinal' => -1,
-                'pair_ordinal' => -1, 'pair_position' => -1, 'assignment_seed' => '');
-        }
-        $assignmentSeed = self::detachAbAssignmentSeed($sessionId, $part, $payloadKey);
-        return array(
-            'mode' => self::detachAbModeForAttempt($attemptIndex, $assignmentSeed),
-            'attempt_index' => $attemptIndex,
-            'diagnostic_enabled' => true,
-            'build_channel' => $buildChannel,
-            'session_key' => $sessionKey,
-            'part' => $part,
-            'payload_key' => $payloadKey,
-            'ordinal' => $attemptIndex,
-            'pair_ordinal' => intdiv($attemptIndex, 2),
-            'pair_position' => $attemptIndex % 2,
-            'assignment_seed' => $assignmentSeed,
+        return ABJ_404_Solution_DetachAbResolutionTracer::traceResolution(
+            $sessionId,
+            $part,
+            $payloadKey,
+            static function () use ($sessionId, $part, $payloadKey): array {
+                $buildChannel = ABJ_404_Solution_PluginReleaseChannel::currentChannel();
+                $sessionKey = self::detachAbSessionKey($sessionId);
+                $part = self::normalizeDetachAbPart($part);
+                $payloadKey = self::normalizeDetachAbPayloadKey($payloadKey);
+                $diagnosticEnabled = self::isDetachAbDiagnosticEnabled();
+                if (!$diagnosticEnabled) {
+                    return array('mode' => 'inert', 'attempt_index' => -1, 'diagnostic_enabled' => false,
+                        'build_channel' => $buildChannel, 'session_key' => $sessionKey,
+                        'part' => $part, 'payload_key' => $payloadKey, 'ordinal' => -1,
+                        'pair_ordinal' => -1, 'pair_position' => -1, 'assignment_seed' => '');
+                }
+                $attemptIndex = self::nextDetachAbAttemptIndex($sessionId, $part, $payloadKey);
+                if ($attemptIndex < 0) {
+                    return array('mode' => 'inert', 'attempt_index' => -1, 'diagnostic_enabled' => true,
+                        'build_channel' => $buildChannel, 'session_key' => $sessionKey,
+                        'part' => $part, 'payload_key' => $payloadKey, 'ordinal' => -1,
+                        'pair_ordinal' => -1, 'pair_position' => -1, 'assignment_seed' => '');
+                }
+                $assignmentSeed = self::detachAbAssignmentSeed($sessionId, $part, $payloadKey);
+                return array(
+                    'mode' => self::detachAbModeForAttempt($attemptIndex, $assignmentSeed),
+                    'attempt_index' => $attemptIndex,
+                    'diagnostic_enabled' => true,
+                    'build_channel' => $buildChannel,
+                    'session_key' => $sessionKey,
+                    'part' => $part,
+                    'payload_key' => $payloadKey,
+                    'ordinal' => $attemptIndex,
+                    'pair_ordinal' => intdiv($attemptIndex, 2),
+                    'pair_position' => $attemptIndex % 2,
+                    'assignment_seed' => $assignmentSeed,
+                );
+            }
         );
     }
 

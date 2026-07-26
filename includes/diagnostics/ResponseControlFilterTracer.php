@@ -5,11 +5,11 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Durable attribution for the two response-control filter dispatches on the
+ * Durable attribution for the response-control filter dispatches on the
  * instrumented table AJAX response tail (Bruno timeout cause matrix, gap-hunt
  * iteration 8, Codex response-control-filter gap).
  *
- * Two production filters run foreign WordPress callbacks at response-critical
+ * Three production filters run foreign WordPress callbacks at response-critical
  * boundaries that no other tracer covers:
  *
  *   - Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput() dispatches
@@ -18,6 +18,9 @@ if (!defined('ABSPATH')) {
  *   - AjaxResponseEmitter::sendJsonResponseAndExit() dispatches
  *     `abj404_should_exit` after the echo boundary and before the first flush
  *     checkpoint.
+ *   - AjaxRequestLedger::resolveDetachAbMode() dispatches
+ *     `abj404_should_run_detach_ab_diagnostic` after the response flush and
+ *     before the connection-detach call.
  *
  * A callback registered on either named filter, or on WordPress's global `all`
  * hook (which fires on every apply_filters), can conditionally block only for

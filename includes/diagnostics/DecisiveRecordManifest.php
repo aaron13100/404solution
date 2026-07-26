@@ -52,7 +52,7 @@ require_once __DIR__ . '/DecisiveRecordDiscriminatorContract.php';
 final class ABJ_404_Solution_DecisiveRecordManifest {
 
     /** Bumped when the catalog's shape changes, so an old reader stays valid. */
-    const SCHEMA_VERSION = 2;
+    const SCHEMA_VERSION = 3;
 
     const PRESENCE_ALWAYS = 'always-present';
     const PRESENCE_CONDITIONAL = 'conditional-with-sentinel';
@@ -252,10 +252,12 @@ final class ABJ_404_Solution_DecisiveRecordManifest {
             'reserve' => null,
             'sentinel' => 'table_prelude_instrumentation.max_callback_records',
         ),
-        // The two response-control filter dispatches on the instrumented
+        // The response-control filter dispatches on the instrumented
         // response tail (gap-hunt iteration 8). getAndClearAjaxBufferedOutput()
         // dispatches abj404_should_manage_output_buffer and
-        // sendJsonResponseAndExit() dispatches abj404_should_exit; both run on
+        // sendJsonResponseAndExit() dispatches abj404_should_exit before the
+        // flush; AjaxRequestLedger::resolveDetachAbMode() dispatches
+        // abj404_should_run_detach_ab_diagnostic after it. All three run on
         // EVERY ajaxUpdatePaginationLinks response, so the bracket pair is always
         // present. The start is written before any registry access, so a worker
         // killed inside a foreign callback still names the boundary -- the start
@@ -292,6 +294,40 @@ final class ABJ_404_Solution_DecisiveRecordManifest {
                 'end' => 'response_control_filter_callback_end',
             ),
             'sentinel' => 'response_control_filter_dispatch_end.callbacks_attributed',
+        ),
+        // The full detach A/B resolution after flush_end and before
+        // finish_request. Every instrumented response resolves a mode, including
+        // stable/disabled and no-session requests, so this pair is always
+        // present. A killed filter callback or transient operation leaves the
+        // outer start unmatched and support-reserved.
+        'detach_ab_resolution' => array(
+            'emitter' => 'ABJ_404_Solution_DetachAbResolutionTracer',
+            'events' => array(
+                'detach_ab_resolution_start',
+                'detach_ab_resolution_end',
+            ),
+            'presence' => self::PRESENCE_ALWAYS,
+            'reserve' => array(
+                'start' => 'detach_ab_resolution_start',
+                'end' => 'detach_ab_resolution_end',
+            ),
+            'sentinel' => null,
+        ),
+        // The transient read/write only run after enablement with a usable
+        // session and API. detach_ab_resolution_end.counter_status states why
+        // they are absent on disabled, no-session, or unavailable-API paths.
+        'detach_ab_operation' => array(
+            'emitter' => 'ABJ_404_Solution_DetachAbResolutionTracer',
+            'events' => array(
+                'detach_ab_operation_start',
+                'detach_ab_operation_end',
+            ),
+            'presence' => self::PRESENCE_CONDITIONAL,
+            'reserve' => array(
+                'start' => 'detach_ab_operation_start',
+                'end' => 'detach_ab_operation_end',
+            ),
+            'sentinel' => 'detach_ab_resolution_end.counter_status',
         ),
     );
 
