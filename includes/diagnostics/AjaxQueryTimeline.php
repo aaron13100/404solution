@@ -184,10 +184,18 @@ final class ABJ_404_Solution_AjaxQueryTimeline {
                 if (!$state['capped']) {
                     $state['capped'] = true;
                     self::$state = $state;
-                    ABJ_404_Solution_AjaxCheckpointLogger::recordFrequent($requestId, 'query_probe_capped', array(
-                        'q' => $state['count'],
-                        'limit' => self::MAX_RECORDED_QUERIES,
-                    ));
+                    ABJ_404_Solution_AjaxFrequentCheckpointWriter::append(
+                        $requestId,
+                        'query_probe_capped',
+                        array(
+                            'q' => $state['count'],
+                            'limit' => self::MAX_RECORDED_QUERIES,
+                        ),
+                        ABJ_404_Solution_AjaxFrequentCheckpointWriter::resolvedDirectoryForRequest(
+                            $requestId
+                        ),
+                        true
+                    );
                     return $identity;
                 }
                 self::$state = $state;
@@ -201,14 +209,22 @@ final class ABJ_404_Solution_AjaxQueryTimeline {
             );
             $state['recorded']++;
             self::$state = $state;
-            ABJ_404_Solution_AjaxCheckpointLogger::recordFrequent($requestId, 'query_probe', array_merge(array(
-                'q' => $state['count'],
-                'stage' => self::currentStage(),
-                'src' => substr($sourceLabel === '' ? 'unknown-source' : $sourceLabel, 0, 200),
-                'timeout_s' => max(0, $timeoutSeconds),
-                'preflight_id' => substr($preflightId, 0, 12),
-                'db_ms' => round($state['db_ms'], 3),
-            ), $shape, $previous));
+            ABJ_404_Solution_AjaxFrequentCheckpointWriter::append(
+                $requestId,
+                'query_probe',
+                array_merge(array(
+                    'q' => $state['count'],
+                    'stage' => self::currentStage(),
+                    'src' => substr($sourceLabel === '' ? 'unknown-source' : $sourceLabel, 0, 200),
+                    'timeout_s' => max(0, $timeoutSeconds),
+                    'preflight_id' => substr($preflightId, 0, 12),
+                    'db_ms' => round($state['db_ms'], 3),
+                ), $shape, $previous),
+                ABJ_404_Solution_AjaxFrequentCheckpointWriter::resolvedDirectoryForRequest(
+                    $requestId
+                ),
+                true
+            );
             return $identity;
         } catch (Throwable $e) {
             self::reportFailure('query probe failed: ' . $e->getMessage());

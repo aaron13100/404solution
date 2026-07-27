@@ -379,7 +379,12 @@ final class ABJ_404_Solution_StatusCountOperationJournal
     }
 
     private static function nowFloat(): float {
-        return function_exists('abj_clock') ? abj_clock()->nowFloat() : microtime(true);
+        if (function_exists('abj_clock')) {
+            return abj_clock()->nowFloat();
+        }
+        return class_exists('ABJ_404_Solution_SystemClock')
+            ? (new ABJ_404_Solution_SystemClock())->nowFloat()
+            : 0.0;
     }
 
     private static function elapsedMilliseconds(float $startedAt): int {

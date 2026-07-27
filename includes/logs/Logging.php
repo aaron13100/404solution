@@ -302,12 +302,12 @@ class ABJ_404_Solution_Logging {
      * @return bool True on success, false on failure
      */
     function writeLineToDebugFile($line) {
-        $debugFilePath = ABJ_404_Solution_AuthorizationLogTracer::aroundRoutineOperation(
+        $debugFilePath = ABJ_404_Solution_RoutineLoggingBridge::traceAuthorized(
             'path_resolution',
             'path_resolution',
             fn() => $this->getDebugFilePath()
         );
-        return ABJ_404_Solution_AuthorizationLogTracer::aroundRoutineOperation(
+        return ABJ_404_Solution_RoutineLoggingBridge::traceAuthorized(
             'write',
             'write_flush_return',
             fn() => $this->getDebugLogFileStore()->writeLine((string)$line, $debugFilePath)
