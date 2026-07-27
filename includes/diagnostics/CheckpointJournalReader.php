@@ -92,7 +92,8 @@ final class ABJ_404_Solution_CheckpointJournalReader {
         $rankedSelection = self::withoutPathFromSelection($fileSelection, $activePath);
         $activeLines = $activePath === '' ? array()
             : ABJ_404_Solution_DiagnosticJournalExcerpt::readAllLines(array($activePath));
-        $activeClosedIds = self::closedCheckpointIds($activeLines);
+        $activeClosedIds =
+            ABJ_404_Solution_CheckpointIntentCorrelation::closedCheckpointIds($activeLines);
         $ranked = ABJ_404_Solution_DiagnosticJournalExcerpt::compose(
             $rankedPaths,
             max(0, $rankedBudget),
@@ -162,53 +163,18 @@ final class ABJ_404_Solution_CheckpointJournalReader {
      */
     private static function compactForSupport(array $lines, array $additionalClosedIds = array()): array {
         $lines = ABJ_404_Solution_DurableOperationRecorder::compactSupportLines($lines);
-        $withoutClosedIntents = self::withoutClosedIntents(
+        $withoutClosedIntents = ABJ_404_Solution_CheckpointIntentCorrelation::withoutClosedIntents(
             $lines,
-            array_merge(self::closedCheckpointIds($lines), $additionalClosedIds)
+            array_merge(
+                ABJ_404_Solution_CheckpointIntentCorrelation::closedCheckpointIds($lines),
+                $additionalClosedIds
+            )
         );
-        return self::compactRoutinePhaseMaps($withoutClosedIntents);
-    }
-
-    /**
-     * @param array<int, string> $lines
-     * @return array<string, bool>
-     */
-    private static function closedCheckpointIds(array $lines): array {
-        $closed = array();
-        foreach ($lines as $line) {
-            $record = json_decode($line, true);
-            if (!is_array($record)
-                    || ($record['envelope'] ?? '') === ABJ_404_Solution_CheckpointRecordFactory::ENVELOPE_INTENT) {
-                continue;
-            }
-            $checkpointId = is_string($record['checkpoint_id'] ?? null)
-                ? $record['checkpoint_id'] : '';
-            if ($checkpointId !== '') {
-                $closed[$checkpointId] = true;
-            }
-        }
-        return $closed;
-    }
-
-    /**
-     * @param array<int, string> $lines
-     * @param array<string, bool> $closed
-     * @return array<int, string>
-     */
-    private static function withoutClosedIntents(array $lines, array $closed): array {
-        $result = array();
-        foreach ($lines as $line) {
-            $record = json_decode($line, true);
-            $isIntent = is_array($record)
-                && ($record['envelope'] ?? '') === ABJ_404_Solution_CheckpointRecordFactory::ENVELOPE_INTENT;
-            $checkpointId = $isIntent && is_string($record['checkpoint_id'] ?? null)
-                ? $record['checkpoint_id'] : '';
-            if ($isIntent && $checkpointId !== '' && isset($closed[$checkpointId])) {
-                continue;
-            }
-            $result[] = $line;
-        }
-        return $result;
+        return self::compactRoutinePhaseMaps(
+            ABJ_404_Solution_CheckpointIntentCorrelation::withoutKeyedIntents(
+                $withoutClosedIntents
+            )
+        );
     }
 
     /**

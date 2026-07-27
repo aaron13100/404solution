@@ -62,18 +62,21 @@ final class ABJ_404_Solution_AjaxFrequentCheckpointWriter {
         string $event,
         array $fields,
         string $directory,
-        bool $directoryWasResolved
+        bool $directoryWasResolved,
+        string $checkpointId = ''
     ): void {
-        $checkpointId = self::checkpointId();
-        ABJ_404_Solution_CheckpointIntentStore::append(
-            ABJ_404_Solution_CheckpointRecordFactory::intent(array(
-                'request_id' => $requestId,
-                'event' => $event,
-                'checkpoint_id' => $checkpointId,
-                'hrtime_ns' => function_exists('hrtime') ? (int)hrtime(true) : null,
-                'pid' => getmypid(),
-            ))
-        );
+        if ($checkpointId === '') {
+            $checkpointId = self::checkpointId();
+            ABJ_404_Solution_CheckpointIntentStore::append(
+                ABJ_404_Solution_CheckpointRecordFactory::intent(array(
+                    'request_id' => $requestId,
+                    'event' => $event,
+                    'checkpoint_id' => $checkpointId,
+                    'hrtime_ns' => function_exists('hrtime') ? (int)hrtime(true) : null,
+                    'pid' => getmypid(),
+                ))
+            );
+        }
         if ($directory === '') {
             return;
         }
@@ -83,6 +86,7 @@ final class ABJ_404_Solution_AjaxFrequentCheckpointWriter {
             return;
         }
         ABJ_404_Solution_CheckpointJournalWriter::append($directory, array_merge(
+            $fields,
             ABJ_404_Solution_CheckpointRecordFactory::frequent(array(
                 'ts' => self::nowFloat(),
                 'hrtime_ns' => function_exists('hrtime') ? (int)hrtime(true) : null,
@@ -90,8 +94,7 @@ final class ABJ_404_Solution_AjaxFrequentCheckpointWriter {
                 'event' => $event,
                 'checkpoint_id' => $checkpointId,
                 'pid' => getmypid(),
-            )),
-            $fields
+            ))
         ));
     }
 

@@ -30,7 +30,7 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
      * from canonical source and prevents a covered code change from shipping
      * with an old marker.
      */
-    const DIAGNOSTIC_BUILD_ID = 'd22af243efccfd456c5adcd719ead53907ca7ad0';
+    const DIAGNOSTIC_BUILD_ID = '4381e7c183d5f7fdc0f4e74cb06c6ab4aa3d5eeb';
 
     const CHECKPOINT_FILE = ABJ_404_Solution_CheckpointJournalWriter::CHECKPOINT_FILE;
     const ROTATED_FILE = ABJ_404_Solution_CheckpointJournalWriter::ROTATED_FILE;
@@ -173,6 +173,7 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
 
             $phaseStartedNs = self::monotonicNanoseconds();
             $record = array_merge(
+                $fields,
                 ABJ_404_Solution_CheckpointRecordFactory::full(array(
                     'ts' => self::nowFloat(),
                     'hrtime_ns' => function_exists('hrtime') ? (int)hrtime(true) : null,
@@ -182,8 +183,7 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
                     'event' => $event,
                     'checkpoint_id' => $checkpointId,
                     'pid' => getmypid(),
-                )),
-                $fields
+                ))
             );
             $phases['envelope_build'] = self::elapsedMicroseconds($phaseStartedNs);
 
@@ -229,6 +229,8 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
     public static function recordFrequent(string $requestId, string $event, array $fields = array()): void {
         self::$recordingDepth++;
         try {
+            $checkpointId = self::checkpointId(self::monotonicNanoseconds());
+            self::appendIntent($requestId, $event, $checkpointId);
             $directory = self::resolveDirectoryPath();
             ABJ_404_Solution_AjaxFrequentCheckpointWriter::rememberResolvedDirectory(
                 $requestId,
@@ -239,7 +241,8 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
                 $event,
                 $fields,
                 $directory,
-                false
+                false,
+                $checkpointId
             );
         } catch (Throwable $e) {
             self::reportFailure('AJAX frequent checkpoint record failed: ' . $e->getMessage());

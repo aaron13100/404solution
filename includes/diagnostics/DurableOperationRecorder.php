@@ -267,8 +267,8 @@ final class ABJ_404_Solution_DurableOperationRecorder {
             return ABJ_404_Solution_CheckpointJournalWriter::append(
                 $directory,
                 array_merge(
-                    self::frequentRecord($requestId, $event, $checkpointId),
-                    $fields
+                    $fields,
+                    self::frequentRecord($requestId, $event, $checkpointId)
                 )
             );
         } catch (Throwable $e) {

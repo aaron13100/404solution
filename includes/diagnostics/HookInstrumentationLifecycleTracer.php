@@ -263,6 +263,7 @@ final class ABJ_404_Solution_HookInstrumentationLifecycleTracer {
             ? $fields['operation_id']
             : 'unknown';
         $record = array_merge(
+            $fields,
             ABJ_404_Solution_CheckpointRecordFactory::frequent(array(
                 'ts' => function_exists('abj_clock') ? abj_clock()->nowFloat() : null,
                 'hrtime_ns' => function_exists('hrtime') ? (int)hrtime(true) : null,
@@ -271,8 +272,7 @@ final class ABJ_404_Solution_HookInstrumentationLifecycleTracer {
                 'checkpoint_id' => 'hil-' . $operationId . '-'
                     . $this->recordSequence,
                 'pid' => getmypid(),
-            )),
-            $fields
+            ))
         );
         $result = ABJ_404_Solution_CheckpointIntentStore::append($record);
         if (($result['status'] ?? '') !== 'complete') {

@@ -39,12 +39,13 @@ final class ABJ_404_Solution_DiagnosticJournalExcerpt {
      * rotation, the head of the rotated file is exactly the oldest evidence
      * and the current file's bytes are spent before it.
      *
-     * So this is sized to hold a whole retained journal pair rather than to a
-     * session length: 2x ABJ_404_Solution_CheckpointJournalWriter's 4 MB
-     * rotation bound. Whatever survived rotation is then always fully read,
-     * and retention has one owner (the rotation bound) instead of two.
-     * Written as a literal rather than derived from that constant so this
-     * class stays usable by any journal, not only the checkpoint one.
+     * So this is sized to hold the checkpoint channel's whole retained source:
+     * two 4 MB ordinary generations, two 4 MB fixed-intent generations, and
+     * the 32 x 2 KB active-operation state. Whatever survived rotation is then
+     * always fully read, and retention has one owner (the writer bounds)
+     * instead of a smaller second retention window in the reader. Written as
+     * a literal rather than derived from those constants so this class stays
+     * usable by any journal, not only the checkpoint one.
      *
      * The ceiling still exists for its original reason: a file that grew past
      * its own bound (a rotation that could not rename) must not turn a support
@@ -52,7 +53,7 @@ final class ABJ_404_Solution_DiagnosticJournalExcerpt {
      * per line by the ranking pass, so the live cost is the raw lines, not a
      * parsed copy of them.
      */
-    const MAX_TOTAL_READ_BYTES = 8388608;
+    const MAX_TOTAL_READ_BYTES = 16842752;
 
     /** Bytes held back from the content budget for the accounting line and its newline. */
     const SUMMARY_RESERVE_BYTES = 512;

@@ -118,6 +118,10 @@ final class ABJ_404_Solution_RequiredCheckpointEvidence {
         foreach (self::unmatchedOperationLines($lines) as $line) {
             $required[] = $line;
         }
+        foreach (ABJ_404_Solution_CheckpointIntentCorrelation::unmatchedIntentLines($lines)
+            as $line) {
+            $required[] = $line;
+        }
         return array_values(array_unique($required));
     }
 

@@ -13,7 +13,17 @@ if (!defined('ABSPATH')) {
  */
 final class ABJ_404_Solution_CheckpointIntentStore {
 
-    const MAX_BYTES = 1048576;
+    /**
+     * Retain at least the ordinary checkpoint journal's measured session.
+     *
+     * This sink is deliberately independent of the ordinary writer, so the
+     * value stays literal instead of loading that class before the first
+     * fixed-temp append. CheckpointIntentStoreTest pins the two retention
+     * windows together. A smaller window lets sibling AJAX traffic rotate an
+     * unmatched pre-directory intent away while the same session remains in
+     * the ordinary journal and before a support request can rank it.
+     */
+    const MAX_BYTES = 4194304;
 
     /**
      * Append one intent record. Never throws.
