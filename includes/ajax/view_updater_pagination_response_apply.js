@@ -84,6 +84,9 @@ function abj404ApplyPaginationTablePart(result) {
 /** @param {object} result @returns {void} */
 function abj404ApplyPaginationCountsPart(result) {
     if (!result.tabCounts) {
+        if (result.countsIncomplete) {
+            jQuery('.subsubsub').removeAttr('data-tab-counts-placeholder');
+        }
         return;
     }
     jQuery('.subsubsub a[data-tab-filter]').each(function() {

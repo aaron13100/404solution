@@ -161,8 +161,11 @@ final class ABJ_404_Solution_DecisiveRecordContractEvaluator {
         }
         $field = is_string($predicate['field']) ? $predicate['field'] : '';
         foreach ($matches as $record) {
+            if (!array_key_exists($field, $record)) {
+                continue;
+            }
             if (self::compare(
-                $record[$field] ?? null,
+                $record[$field],
                 is_string($predicate['operator'] ?? null) ? $predicate['operator'] : 'equals',
                 $predicate['value'] ?? null
             )) {
