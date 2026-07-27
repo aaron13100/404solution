@@ -223,7 +223,7 @@ final class ABJ_404_Solution_HookInstrumentationLifecycleTracer {
         try {
             $this->recordIndependent($event, $fields);
             if ($this->resolvedDirectory === '') {
-                ABJ_404_Solution_AjaxCheckpointLogger::recordFrequent(
+                ABJ_404_Solution_AjaxCheckpointBoundaryWriter::record(
                     $this->requestId,
                     $event,
                     $fields

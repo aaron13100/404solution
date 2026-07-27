@@ -292,25 +292,11 @@ final class ABJ_404_Solution_DatabaseQueryPreflightTracer {
             return;
         }
         try {
-            if (ABJ_404_Solution_AjaxFrequentCheckpointWriter::hasResolvedDirectoryForRequest(
-                $this->requestId
-            )) {
-                ABJ_404_Solution_AjaxFrequentCheckpointWriter::append(
-                    $this->requestId,
-                    $event,
-                    $fields,
-                    ABJ_404_Solution_AjaxFrequentCheckpointWriter::resolvedDirectoryForRequest(
-                        $this->requestId
-                    ),
-                    true
-                );
-            } else {
-                ABJ_404_Solution_AjaxCheckpointLogger::recordFrequent(
-                    $this->requestId,
-                    $event,
-                    $fields
-                );
-            }
+            ABJ_404_Solution_AjaxCheckpointBoundaryWriter::record(
+                $this->requestId,
+                $event,
+                $fields
+            );
         } catch (Throwable $e) {
             self::reportFailure('checkpoint-write:' . $event, $e);
         }

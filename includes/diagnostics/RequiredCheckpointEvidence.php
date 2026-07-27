@@ -77,17 +77,14 @@ final class ABJ_404_Solution_RequiredCheckpointEvidence {
     public static function select(array $lines): array {
         $selected = array_fill_keys(array_keys(self::SELECTORS), '');
         $operationState = array();
-        foreach ($lines as $line) {
-            $record = json_decode($line, true);
-            $operationKey = is_array($record) ? self::activeOperationKey($record) : '';
-            if ($operationKey !== '') {
-                $operationState[$operationKey] = array('line' => $line, 'record' => $record);
-            }
-        }
         foreach (array_reverse($lines) as $line) {
             $record = json_decode($line, true);
             if (!is_array($record)) {
                 continue;
+            }
+            $operationKey = self::activeOperationKey($record);
+            if ($operationKey !== '' && !isset($operationState[$operationKey])) {
+                $operationState[$operationKey] = array('line' => $line, 'record' => $record);
             }
             foreach (self::SELECTORS as $identity => $predicate) {
                 if ($selected[$identity] === '' && self::{$predicate}($record)) {
@@ -102,12 +99,13 @@ final class ABJ_404_Solution_RequiredCheckpointEvidence {
             $selected,
             static fn(string $line): bool => $line !== ''
         );
+        $required = array_merge(
+            ABJ_404_Solution_MalformedCheckpointEvidence::select($lines),
+            $required
+        );
         foreach ($operationState as $latest) {
-            $record = $latest['record'] ?? null;
-            $line = $latest['line'] ?? null;
-            if (!is_array($record) || !is_string($line)) {
-                continue;
-            }
+            $record = $latest['record'];
+            $line = $latest['line'];
             if (self::isReservedActiveOperation($record)) {
                 $required[] = $line;
             }
