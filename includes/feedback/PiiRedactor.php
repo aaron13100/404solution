@@ -5,6 +5,17 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+// WordPress keeps the installed plugin's autoloader alive while replacing the
+// plugin directory. Its cached classmap therefore cannot know about helper
+// classes first introduced by the incoming release. PiiRedactor is reachable
+// during the updater's uploaded-attachment cleanup, so load its same-directory
+// collaborators by stable path before declaring the host class. This keeps the
+// in-flight old-classmap/new-code request from fatalling; the ordinary
+// classmap entries remain available for callers that use a helper directly.
+require_once __DIR__ . '/RequestCredentialRedactor.php';
+require_once __DIR__ . '/SensitiveValueMask.php';
+require_once __DIR__ . '/OpaqueTokenClassifier.php';
+
 /**
  * Centralized PII redaction layer for all outgoing logs and reports.
  *
