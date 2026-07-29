@@ -103,12 +103,6 @@ class ABJ_404_Solution_PublishedContentRepository {
             return array();
         }
 
-        if (!$this->dbCore->tableNameResolver()->tableExists($postsTableName)) {
-            $this->logger->errorMessage("WordPress posts table not found: " . $postsTableName .
-                ". This may indicate an incorrect table prefix or database configuration issue.");
-            return array();
-        }
-
         $slugClause = $this->buildPostSlugClause($slug, $postsTableName);
         $queryParts = array(
             'recognizedPostTypes' => $recognizedPostTypes,
