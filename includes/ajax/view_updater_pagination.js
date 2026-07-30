@@ -115,16 +115,35 @@ function abj404RunProgressivePaginationRequest(req, options, removeLoadingOverla
                 }
             },
             onSuccess: function(result, successfulPart) {
-                abj404HandlePaginationPartSuccess(
-                    req, options, removeLoadingOverlay, successfulPart, result
-                );
-                runPart(partIndex + 1);
+                var responseApplied = false;
+                try {
+                    responseApplied = abj404HandlePaginationPartSuccess(
+                        req, options, successfulPart, result
+                    );
+                } finally {
+                    if (successfulPart === 'table') {
+                        // Loading state is infrastructure owned by this
+                        // orchestrator. Guarantee cleanup around every
+                        // fallible response-application callback.
+                        removeLoadingOverlay();
+                    }
+                }
+                if (responseApplied) {
+                    runPart(partIndex + 1);
+                }
             },
             onTerminalError: function(jqXHR, textStatus, errorThrown, failedPart, retryCount) {
-                abj404HandlePaginationPartFailure(
-                    req, options, removeLoadingOverlay,
-                    failedPart, jqXHR, textStatus, errorThrown, retryCount
-                );
+                try {
+                    abj404HandlePaginationPartFailure(
+                        req, options, failedPart, jqXHR, textStatus, errorThrown, retryCount
+                    );
+                } finally {
+                    if (failedPart === 'table') {
+                        // Error presentation, diagnostics, and extension
+                        // callbacks are all fallible boundaries.
+                        removeLoadingOverlay();
+                    }
+                }
                 runPart(partIndex + 1);
             }
         });
@@ -141,28 +160,53 @@ function abj404PaginationRequestIsSuperseded(req) {
 /**
  * @param {object} req
  * @param {object} options
- * @param {function(): void} removeLoadingOverlay
  * @param {string} part
  * @param {object} result
- * @returns {void}
+ * @returns {boolean} Whether the response was applied and lower-priority parts may continue.
  */
-function abj404HandlePaginationPartSuccess(req, options, removeLoadingOverlay, part, result) {
+function abj404HandlePaginationPartSuccess(req, options, part, result) {
     jQuery('.abj404-refresh-status').text('');
     if (abj404PaginationRequestIsSuperseded(req)) {
         if (part === 'table') {
-            removeLoadingOverlay();
             if (typeof options.onComplete === 'function') {
                 options.onComplete({ skippedReplace: true, superseded: true });
             }
         }
-        return;
+        return false;
     }
-    abj404ApplyPaginationPartResponse(part, result);
+    try {
+        abj404ApplyPaginationPartResponse(part, result);
+    } catch (applicationError) {
+        var cause = applicationError && applicationError.message
+            ? applicationError.message : String(applicationError);
+        if (window.console && typeof window.console.error === 'function') {
+            window.console.error('404 Solution: client response application failed', {
+                part: part,
+                requestId: req.requestId,
+                error: applicationError
+            });
+        }
+        abj404HandlePaginationPartFailure(
+            req,
+            options,
+            part,
+            {
+                status: 200,
+                responseJSON: {
+                    success: false,
+                    data: { message: 'Client response application failed: ' + cause }
+                }
+            },
+            'clienterror',
+            cause,
+            0
+        );
+        return false;
+    }
     if (part !== 'table') {
-        return;
+        return true;
     }
 
-    removeLoadingOverlay();
     if (typeof options.onComplete === 'function') {
         options.onComplete();
     }
@@ -170,12 +214,12 @@ function abj404HandlePaginationPartSuccess(req, options, removeLoadingOverlay, p
         window.abj404InitialTableRefreshTriggered = false;
         window.setTimeout(function() { triggerBackgroundTableRefreshIfEnabled(); }, 0);
     }
+    return true;
 }
 
 /**
  * @param {object} req
  * @param {object} options
- * @param {function(): void} removeLoadingOverlay
  * @param {string} part
  * @param {object} jqXHR
  * @param {string} textStatus
@@ -183,7 +227,7 @@ function abj404HandlePaginationPartSuccess(req, options, removeLoadingOverlay, p
  * @returns {void}
  */
 function abj404HandlePaginationPartFailure(
-    req, options, removeLoadingOverlay, part, jqXHR, textStatus, errorThrown, retryCount
+    req, options, part, jqXHR, textStatus, errorThrown, retryCount
 ) {
     jQuery('.abj404-refresh-status').text('');
     if (part === 'pagination') {
@@ -206,7 +250,6 @@ function abj404HandlePaginationPartFailure(
         return;
     }
     abj404MaybeRunCanaryLadderAfterTableFailure(req);
-    removeLoadingOverlay();
     if (typeof options.onError === 'function') {
         options.onError(abj404PaginationErrorMeta(req, parsed, textStatus, errorThrown));
     }

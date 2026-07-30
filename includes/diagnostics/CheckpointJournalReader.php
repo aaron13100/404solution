@@ -38,8 +38,11 @@ final class ABJ_404_Solution_CheckpointJournalReader {
      * was then reallocated to the per-failing-session diagnostics block
      * (ABJ_404_Solution_FailingSessionSupportSection::MAX_FAILING_SESSION_DIAG_BYTES),
      * a computed conclusion about the correct session that is worth more than
-     * the raw checkpoint tail it replaces. The remaining budget is still far
-     * above the whole-failing-session floor
+     * the raw checkpoint tail it replaces. The receipt reconstruction section
+     * is funded from the generic sanitized log tail instead: reducing this
+     * checkpoint floor by another 4 KB evicts the first failing request in the
+     * measured worst-case session. The remaining budget is still far above the
+     * whole-failing-session floor
      * SupportExcerptBudgetContractTest pins, and the per-section budgets are
      * proven to sum inside the report contract by that same test.
      */
@@ -206,6 +209,7 @@ final class ABJ_404_Solution_CheckpointJournalReader {
     private static function compactRoutinePhaseMaps(array $lines): array {
         $slowestIndex = self::slowestTelemetryIndex($lines);
         $decodedByIndex = array();
+        $quotaSnapshotByRequest = array();
         foreach ($lines as $index => $line) {
             $record = json_decode($line, true);
             $decodedByIndex[$index] = $record;
@@ -220,6 +224,10 @@ final class ABJ_404_Solution_CheckpointJournalReader {
                 // request from displacing that request's lifecycle.
                 unset($record['sql']);
             }
+            $record = ABJ_404_Solution_HostPressureSampler::compactRepeatedFilesystemQuotaSnapshot(
+                $record,
+                $quotaSnapshotByRequest
+            );
             if (!is_array($record['previous_checkpoint_write'] ?? null)) {
                 $encoded = json_encode($record, JSON_UNESCAPED_SLASHES);
                 if (is_string($encoded)) {

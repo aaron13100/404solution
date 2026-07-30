@@ -54,8 +54,8 @@ function abj404ApplyPaginationLinksPart(result) {
 
 /** @param {object} result @returns {void} */
 function abj404ApplyPaginationTablePart(result) {
-    if (typeof result.table !== 'string') {
-        return;
+    if (typeof result.table !== 'string' || result.table.trim() === '') {
+        throw new TypeError('Pagination table response did not include non-empty table HTML.');
     }
     var currentFieldValue = jQuery('input[name=searchFilter]').val();
 
