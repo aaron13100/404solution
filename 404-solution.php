@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) {
 	Author:      Aaron J
 	Author URI:  https://www.ajexperience.com/404-solution/
 
-	Version: 4.3.3-beta.3
+	Version: 4.3.3-beta.4
 	Requires at least: 5.0
 	Requires PHP: 7.4
 
@@ -49,7 +49,7 @@ if (!defined('ABJ404_PATH')) {
 // Content-addressed release marker compiled into the earliest boot file.
 // DiagnosticModuleManifestTest recomputes it from every covered PHP module.
 if (!defined('ABJ404_DIAGNOSTIC_BUILD_ID')) {
-	define('ABJ404_DIAGNOSTIC_BUILD_ID', '01341c11b663e2702a213979071136172e266bce');
+	define('ABJ404_DIAGNOSTIC_BUILD_ID', 'e5c45acafd50d050909b06b76aafb72e8d454d09');
 }
 
 // The plugin version is read from this file's own header (single source of

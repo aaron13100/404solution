@@ -71,6 +71,8 @@ final class ABJ_404_Solution_DiagnosticModuleManifest {
         'ajax/Ajax_CanaryLadder.php',
         'ajax/Ajax_SupportRequest.php',
         'ajax/Ajax_SupportRequestPreview.php',
+        // Request parsing is part of the canary interpretation boundary.
+        'services/RequestInputNormalizer.php',
         // Local template I/O boundary used by the table renderers.
         'core/FileSystemService.php',
         // Pre-query sort-readiness schema and option/cache authority.

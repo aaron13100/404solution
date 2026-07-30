@@ -49,6 +49,9 @@ if (!defined('ABSPATH')) {
  */
 class ABJ_404_Solution_Ajax_CanaryLadder {
 
+    /** Maximum browser-observation bytes accepted by the interpretation step. */
+    const MAX_INTERPRETATION_BYTES = 8192;
+
     /** @return void */
     public function handle() {
         $requestReader = ABJ_404_Solution_Ajax_AdminEndpointSupport::getRequestReader();
@@ -389,20 +392,29 @@ class ABJ_404_Solution_Ajax_CanaryLadder {
      */
     private static function runInterpretStep($requestReader, string $requestId, array &$context): array {
         $raw = (string)$requestReader->getPostOrGetSanitize('observations', '');
-        $decoded = $raw !== '' ? json_decode(substr($raw, 0, 8192), true) : null;
-        $observations = is_array($decoded) ? $decoded : array();
+        $parsed = ABJ_404_Solution_RequestInputNormalizer::decodeBoundedJsonArray(array(
+            'raw' => $raw,
+            'max_bytes' => self::MAX_INTERPRETATION_BYTES,
+            'unavailable_label' => 'Interpretation unavailable: observations',
+        ));
         $realFailed = (string)$requestReader->getPostOrGetSanitize('realRequestFailed', '1') !== '0';
         $rawSessionId = $context['session_id'] ?? '';
         $sessionId = is_scalar($rawSessionId) ? (string)$rawSessionId : '';
 
         return ABJ_404_Solution_AjaxStageDiagnostics::runStage($context, 'canary_interpret',
-            static function () use ($observations, $realFailed, $requestId, $sessionId) {
-                $interpretation = ABJ_404_Solution_AjaxCanaryLadder::interpretResults($observations, $realFailed);
+            static function () use ($parsed, $realFailed, $requestId, $sessionId) {
+                $interpretation = null;
                 $stageMetadata = array();
-                foreach ($interpretation as $key => $value) {
-                    if (is_scalar($value)) {
-                        $stageMetadata[$key] = $value;
+                if ($parsed['status'] === 'available') {
+                    $interpretation = ABJ_404_Solution_AjaxCanaryLadder::interpretResults(
+                        $parsed['observations'], $realFailed);
+                    foreach ($interpretation as $key => $value) {
+                        if (is_scalar($value)) {
+                            $stageMetadata[$key] = $value;
+                        }
                     }
+                } else {
+                    $stageMetadata = $parsed['unavailable'];
                 }
                 ABJ_404_Solution_AjaxStageDiagnostics::addStageMetadata($stageMetadata);
 
@@ -412,8 +424,10 @@ class ABJ_404_Solution_Ajax_CanaryLadder {
 
                 return array(
                     'interpretation' => $interpretation,
+                    'interpretationUnavailable' => $parsed['status'] === 'unavailable'
+                        ? $parsed['unavailable'] : null,
                     'detachAb' => $detachAb,
-                    'received' => true,
+                    'received' => $parsed['status'] === 'available',
                 );
             });
     }

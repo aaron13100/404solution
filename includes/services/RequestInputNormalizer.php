@@ -43,6 +43,52 @@ class ABJ_404_Solution_RequestInputNormalizer {
     }
 
     /**
+     * Decode a size-bounded JSON array without truncating valid input into an
+     * invalid document or silently converting parse failure to an empty array.
+     *
+     * @param array{raw: string, max_bytes: int, unavailable_label: string} $options
+     * @return array{status: 'available', observations: array<mixed>}|array{
+     *   status: 'unavailable',
+     *   unavailable: array{code: string, message: string, payloadBytes: int, maxBytes: int}
+     * }
+     */
+    public static function decodeBoundedJsonArray(array $options): array {
+        $raw = $options['raw'];
+        $maxBytes = max(1, $options['max_bytes']);
+        $label = $options['unavailable_label'];
+        $payloadBytes = strlen($raw);
+
+        if ($payloadBytes === 0) {
+            $code = 'payload_missing';
+            $message = $label . ' payload is missing.';
+        } elseif ($payloadBytes > $maxBytes) {
+            $code = 'payload_truncated';
+            $message = $label . ' payload truncated at ' . $maxBytes . ' bytes.';
+        } else {
+            $decoded = json_decode($raw, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                $code = 'invalid_json';
+                $message = $label . ' JSON is invalid (' . json_last_error_msg() . ').';
+            } elseif (!is_array($decoded)) {
+                $code = 'invalid_shape';
+                $message = $label . ' JSON must decode to an array.';
+            } else {
+                return array('status' => 'available', 'observations' => $decoded);
+            }
+        }
+
+        return array(
+            'status' => 'unavailable',
+            'unavailable' => array(
+                'code' => $code,
+                'message' => $message,
+                'payloadBytes' => $payloadBytes,
+                'maxBytes' => $maxBytes,
+            ),
+        );
+    }
+
+    /**
      * Normalize and sanitize feedback issue selections from request data.
      *
      * @param mixed $issuesRaw
