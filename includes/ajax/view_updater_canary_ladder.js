@@ -117,7 +117,8 @@
     /** @returns {object|null} */
     function measurements() {
         var module = global.abj404CanaryMeasurements;
-        return module && typeof module.createReceiptRelay === 'function' ? module : null;
+        return module && typeof module.createReceiptRelay === 'function'
+            && typeof module.interpretationInput === 'function' ? module : null;
     }
 
     /**
@@ -405,7 +406,7 @@
                 // per-step receipts already delivered above are the
                 // durable floor under it, not a replacement for it.
                 return post('interpret', {
-                    observations: JSON.stringify(observations),
+                    observations: JSON.stringify(measurements().interpretationInput(observations)),
                     realRequestFailed: '1'
                 }, streamStage.requestId);
             })

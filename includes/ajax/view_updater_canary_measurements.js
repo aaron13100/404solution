@@ -109,6 +109,48 @@
         };
     }
 
+    /**
+     * Project raw probe responses onto the server interpretation contract.
+     * Full responses can contain megabytes of filler; the server parser is
+     * deliberately bounded because each step is already journaled separately.
+     *
+     * @param {object} observations
+     * @returns {object}
+     */
+    function interpretationInput(observations) {
+        var compact = {};
+        [
+            'static_asset', 'auth_only', 'post_limiter', 'summary', 'inert',
+            'compress_on', 'compress_off', 'stream'
+        ].forEach(function(step) {
+            var raw = observations[step] || {};
+            compact[step] = {
+                ok: raw.ok === true,
+                ms: typeof raw.ms === 'number' ? raw.ms : -1
+            };
+            if (step === 'stream' && typeof raw.gapMs === 'number') {
+                compact[step].gapMs = raw.gapMs;
+            }
+        });
+        compact.baseline_control = (observations.baseline_control || []).map(function(raw) {
+            return {
+                ok: raw && raw.ok === true,
+                ms: raw && typeof raw.ms === 'number' ? raw.ms : -1
+            };
+        });
+        var concurrent = observations.concurrent_control || {};
+        compact.concurrent_control = {
+            tableOutcome: String(concurrent.tableOutcome || ''),
+            receipt: {ok: !!(concurrent.receipt && concurrent.receipt.ok === true)},
+            overlap: {
+                state: String((concurrent.overlap && concurrent.overlap.state) || ''),
+                durationMs: concurrent.overlap && typeof concurrent.overlap.durationMs === 'number'
+                    ? concurrent.overlap.durationMs : null
+            }
+        };
+        return compact;
+    }
+
     /** @param {string} resolvedUrl @param {string} requestId @returns {string} */
     function requestUrl(resolvedUrl, requestId) {
         var separator = resolvedUrl.indexOf('?') >= 0 ? '&' : '?';
@@ -177,6 +219,7 @@
 
     global.abj404CanaryMeasurements = {
         createReceiptRelay: createReceiptRelay,
+        interpretationInput: interpretationInput,
         requestUrl: requestUrl,
         responseWireEvidence: responseWireEvidence,
         sizeProbePlan: sizeProbePlan,
