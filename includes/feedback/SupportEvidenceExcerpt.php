@@ -8,12 +8,13 @@ if (!defined('ABSPATH')) {
  * Everything a support report carries in its `debug_log_excerpt` field, and
  * the byte contract that field has to stay inside.
  *
- * Six independent sources feed one string: a manifest of what the collector
+ * Seven independent sources feed one string: a manifest of what the collector
  * looked for, the detach A/B experiment's verdict for the session that
- * clicked, the per-failing-session diagnostics for the session(s) that
- * actually failed (ABJ_404_Solution_FailingSessionSupportSection), the
- * sanitized debug-log tail, the two durable AJAX diagnostic journals, and the
- * browser's own drained transport buffer. Deciding which of those a report
+ * clicked, the interpretation reconstructed from per-step canary receipts,
+ * the per-failing-session diagnostics for the session(s) that actually failed
+ * (ABJ_404_Solution_FailingSessionSupportSection), the sanitized debug-log
+ * tail, the two durable AJAX diagnostic journals, and the browser's own
+ * drained transport buffer. Deciding which of those a report
  * carries, in what order, and how the sum stays under the wire contract is a
  * different job from answering an AJAX request, and it is the job with the
  * interesting failure modes: every one of beta.1's evidence losses happened
@@ -28,11 +29,14 @@ if (!defined('ABSPATH')) {
  *      the same reason: it is the conclusion drawn FROM that evidence, and a
  *      conclusion that gets cut off the end of a busy session's payload is
  *      exactly the manual join it exists to replace.
- *   3. The per-failing-session diagnostics follow the click-session verdict,
+ *   3. The receipt-derived canary interpretation follows both independent
+ *      conclusions' source ordering: it is derived from the journals but must
+ *      survive any raw-evidence tail clamp.
+ *   4. The per-failing-session diagnostics follow the click-session verdict,
  *      still ahead of the evidence: they are the same experiment's conclusion
  *      computed for the session(s) that actually failed rather than the tab
  *      that clicked, and they state whether those are even the same session.
- *   4. The journals follow in read order, so a reader walks the session the
+ *   5. The journals follow in read order, so a reader walks the session the
  *      same way the journals were written.
  *
  * The class takes the browser's own inputs as an argument rather than reading
@@ -59,7 +63,7 @@ final class ABJ_404_Solution_SupportEvidenceExcerpt {
      * of BYTES, so a single site that logs a large blob could otherwise push
      * the assembled excerpt past the contract on its own.
      */
-    const MAX_LOGGER_EXCERPT_LENGTH = 16384;
+    const MAX_LOGGER_EXCERPT_LENGTH = 12288;
 
     /**
      * Hard cap on the drained client transport telemetry. The buffer is bounded
@@ -112,6 +116,7 @@ final class ABJ_404_Solution_SupportEvidenceExcerpt {
         $sections = array(
             self::collectionManifest($channels, $clientAttempts),
             self::detachAbVerdict($clientSessionId),
+            self::canaryReceiptInterpretation($clientSessionId),
             self::failingSessionDiagnostics($clientAttempts, $clientSessionId),
             self::loggerExcerpt(),
         );
@@ -274,6 +279,24 @@ final class ABJ_404_Solution_SupportEvidenceExcerpt {
         } catch (Throwable $e) {
             return 'Detach A/B verdict could not be computed: ' . substr($e->getMessage(), 0, 200);
         }
+    }
+
+    /**
+     * The beta.3-compatible interpretation reconstructed from durable receipts.
+     *
+     * A partially recovered install can be missing the new section class while
+     * still retaining old journals. State that explicitly instead of allowing
+     * diagnostics to block the support request that reports the corrupt install.
+     */
+    private static function canaryReceiptInterpretation(string $sessionId): string {
+        if ($sessionId === '') {
+            return '';
+        }
+        if (!class_exists('ABJ_404_Solution_CanaryReceiptSupportSection')) {
+            return 'Canary receipt interpretation unavailable: '
+                . 'ABJ_404_Solution_CanaryReceiptSupportSection could not be loaded on this install.';
+        }
+        return ABJ_404_Solution_CanaryReceiptSupportSection::compose($sessionId);
     }
 
     /**
