@@ -209,7 +209,7 @@ final class ABJ_404_Solution_CheckpointJournalReader {
     private static function compactRoutinePhaseMaps(array $lines): array {
         $slowestIndex = self::slowestTelemetryIndex($lines);
         $decodedByIndex = array();
-        $quotaSnapshotByRequest = array();
+        $hostPressureSnapshotByRequest = array();
         foreach ($lines as $index => $line) {
             $record = json_decode($line, true);
             $decodedByIndex[$index] = $record;
@@ -224,9 +224,9 @@ final class ABJ_404_Solution_CheckpointJournalReader {
                 // request from displacing that request's lifecycle.
                 unset($record['sql']);
             }
-            $record = ABJ_404_Solution_HostPressureSampler::compactRepeatedFilesystemQuotaSnapshot(
+            $record = ABJ_404_Solution_HostPressureSampler::compactRepeatedHostPressureSnapshots(
                 $record,
-                $quotaSnapshotByRequest
+                $hostPressureSnapshotByRequest
             );
             if (!is_array($record['previous_checkpoint_write'] ?? null)) {
                 $encoded = json_encode($record, JSON_UNESCAPED_SLASHES);

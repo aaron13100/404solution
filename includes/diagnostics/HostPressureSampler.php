@@ -50,14 +50,16 @@ final class ABJ_404_Solution_HostPressureSampler {
     }
 
     /**
-     * Remove a request-cached quota snapshot already present earlier in the
-     * same support section. Other host-pressure counters remain per-boundary.
+     * Keep the first full host-pressure snapshot for each request, then omit
+     * probes that are byte-identical to that request-local base. Changed and
+     * unencodable probes stay inline, so any selected later record remains
+     * self-describing without a previous-record reference chain.
      *
      * @param array<string, mixed> $record
-     * @param array<string, string> $snapshotByRequest
+     * @param array<string, array<string, string>> $snapshotByRequest
      * @return array<string, mixed>
      */
-    public static function compactRepeatedFilesystemQuotaSnapshot(
+    public static function compactRepeatedHostPressureSnapshots(
         array $record,
         array &$snapshotByRequest
     ): array {
@@ -66,23 +68,59 @@ final class ABJ_404_Solution_HostPressureSampler {
         if ($requestId === '' || !is_array($hostPressure)) {
             return $record;
         }
-        $quotaProbes = $hostPressure['filesystem_quota_probes'] ?? null;
-        if (!is_array($quotaProbes)) {
-            return $record;
+        $namedHostPressure = array();
+        foreach ($hostPressure as $probeName => $probe) {
+            if (!is_string($probeName)) {
+                return $record;
+            }
+            $namedHostPressure[$probeName] = $probe;
         }
-        $encoded = json_encode($quotaProbes, JSON_UNESCAPED_SLASHES);
-        if (!is_string($encoded)) {
-            return $record;
-        }
-        $fingerprint = hash('sha256', $encoded);
-        if (($snapshotByRequest[$requestId] ?? '') !== $fingerprint) {
-            $snapshotByRequest[$requestId] = $fingerprint;
+        $hostPressure = $namedHostPressure;
+
+        if (!array_key_exists($requestId, $snapshotByRequest)) {
+            $snapshotByRequest[$requestId] = self::hostPressureFingerprints($hostPressure);
             return $record;
         }
 
-        unset($hostPressure['filesystem_quota_probes']);
-        $record['host_pressure'] = $hostPressure;
+        $unchanged = array();
+        foreach ($hostPressure as $probeName => $probe) {
+            $encoded = json_encode($probe, JSON_UNESCAPED_SLASHES);
+            if (!is_string($encoded)) {
+                continue;
+            }
+            $fingerprint = hash('sha256', $encoded);
+            if (($snapshotByRequest[$requestId][$probeName] ?? '') !== $fingerprint) {
+                continue;
+            }
+            unset($hostPressure[$probeName]);
+            $unchanged[] = $probeName;
+        }
+        if ($unchanged === array()) {
+            return $record;
+        }
+
+        if ($hostPressure === array()) {
+            unset($record['host_pressure']);
+        } else {
+            $record['host_pressure'] = $hostPressure;
+        }
+        $record['host_pressure_unchanged'] = $unchanged;
         return $record;
+    }
+
+    /**
+     * @param array<string, mixed> $hostPressure
+     * @return array<string, string>
+     */
+    private static function hostPressureFingerprints(array $hostPressure): array {
+        $fingerprints = array();
+        foreach ($hostPressure as $probeName => $probe) {
+            $encoded = json_encode($probe, JSON_UNESCAPED_SLASHES);
+            if (is_string($encoded)) {
+                $fingerprints[$probeName] = hash('sha256', $encoded);
+            }
+        }
+        return $fingerprints;
     }
 
     /** @return array<string, mixed> */
