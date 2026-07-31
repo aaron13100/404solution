@@ -92,6 +92,20 @@ final class ABJ_404_Solution_ActiveOperationBreadcrumbs {
                 'operation_id', 'phase', 'operation',
             ),
         ),
+        'request_phase' => array(
+            'fields' => array('operation_id', 'operation', 'phase', 'threshold_ms'),
+            'required_evidence_fields' => array('operation_id', 'operation', 'phase'),
+        ),
+        'shutdown_callback' => array(
+            'fields' => array(
+                'operation_id', 'hook', 'callback', 'source', 'priority',
+                'callback_ordinal', 'has_reference',
+            ),
+            'required_evidence_fields' => array(
+                'operation_id', 'hook', 'callback', 'source', 'priority',
+                'callback_ordinal',
+            ),
+        ),
     );
 
     /**
@@ -118,6 +132,7 @@ final class ABJ_404_Solution_ActiveOperationBreadcrumbs {
             if ($validated['status'] !== 'complete') {
                 return $validated;
             }
+            $record = self::sanitizeRecord($record);
             if (!class_exists('ABJ_404_Solution_FileSystemService')
                     || !ABJ_404_Solution_FileSystemService::createDirectoryWithErrorMessages($directory)) {
                 return self::failure('directory_unavailable');
@@ -160,6 +175,32 @@ final class ABJ_404_Solution_ActiveOperationBreadcrumbs {
     }
 
     /**
+     * Return the bounded active identities for one ledger request.
+     *
+     * Atomic replacement makes a lock unnecessary for readers: they see the
+     * complete old file or the complete new file. Invalid or corrupt input
+     * fails closed because a threshold report must never invent attribution.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public static function activeForRequest(string $directory, string $requestId): array {
+        if (preg_match('/^[A-Za-z0-9]{8,64}$/', $requestId) !== 1) {
+            return array();
+        }
+        $records = self::readExisting(self::path($directory));
+        if (!is_array($records)) {
+            return array();
+        }
+        return array_values(array_filter(
+            $records,
+            static function (array $record) use ($requestId): bool {
+                return ($record['request_id'] ?? null) === $requestId
+                    && ($record['state'] ?? null) === 'active';
+            }
+        ));
+    }
+
+    /**
      * Keep only scalar, non-sensitive identity fields for one boundary.
      *
      * @param array<string, mixed> $fields
@@ -176,6 +217,21 @@ final class ABJ_404_Solution_ActiveOperationBreadcrumbs {
             }
         }
         return $safe;
+    }
+
+    /**
+     * @param array<string, mixed> $record
+     * @return array<string, mixed>
+     */
+    private static function sanitizeRecord(array $record): array {
+        $boundary = is_string($record['boundary'] ?? null) ? $record['boundary'] : '';
+        $core = array();
+        foreach (array('request_id', 'event', 'boundary', 'state') as $field) {
+            if (array_key_exists($field, $record)) {
+                $core[$field] = $record[$field];
+            }
+        }
+        return array_merge($core, self::selectFields($boundary, $record));
     }
 
     /**

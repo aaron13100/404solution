@@ -45,15 +45,70 @@ final class ABJ_404_Solution_AjaxClientReportBeaconResponder {
         // truncated or unreadable. A beacon fires only after the final attempt
         // of a request failed, so naming an attempt here is itself a verdict --
         // see ABJ_404_Solution_DiagnosticClientVerdict::condemnedRequestId().
+        $reportedAttemptId = self::reportedAttemptId($reader);
+        $rawThresholdMs = $reader->getPostOrGetSanitize('clientThresholdMs', '0');
+        $thresholdMs = is_scalar($rawThresholdMs) && is_numeric($rawThresholdMs)
+            ? (int)$rawThresholdMs
+            : 0;
         ABJ_404_Solution_AjaxCheckpointLogger::record($requestId, 'client_report_only_branch', array(
-            'reported_attempt_id' => self::reportedAttemptId($reader),
+            'reported_attempt_id' => $reportedAttemptId,
+            'client_threshold_ms' => $thresholdMs === 20000 ? $thresholdMs : 0,
         ));
+        if ($thresholdMs === 20000) {
+            self::recordThresholdCrossing($reportedAttemptId, $thresholdMs);
+        }
         ABJ_404_Solution_AjaxStageDiagnostics::finishRequest('complete');
         ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
         ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
         ABJ_404_Solution_AjaxResponseEmitter::sendJsonResponseAndExit(
-            array('clientReportReceived' => true, 'requestId' => $requestId), 200);
+            array(
+                'clientReportReceived' => true,
+                'clientThresholdRecorded' => $thresholdMs === 20000,
+                'requestId' => $requestId,
+            ),
+            200
+        );
         return true;
+    }
+
+    private static function recordThresholdCrossing(string $reportedAttemptId, int $thresholdMs): void {
+        if ($reportedAttemptId === '') {
+            return;
+        }
+        $active = ABJ_404_Solution_ActiveOperationBreadcrumbs::activeForRequest(
+            ABJ_404_Solution_AjaxCheckpointLogger::resolveDirectoryPath(),
+            $reportedAttemptId
+        );
+        usort($active, static function (array $left, array $right): int {
+            $leftSequence = is_int($left['breadcrumb_seq'] ?? null) ? $left['breadcrumb_seq'] : 0;
+            $rightSequence = is_int($right['breadcrumb_seq'] ?? null) ? $right['breadcrumb_seq'] : 0;
+            return $leftSequence <=> $rightSequence;
+        });
+        $operation = $active === array() ? array() : $active[count($active) - 1];
+        $fields = array(
+            'threshold_ms' => $thresholdMs,
+            'active_operation_status' => $operation === array() ? 'unavailable' : 'available',
+        );
+        foreach (array(
+            'boundary' => 'active_boundary',
+            'operation_id' => 'active_operation_id',
+            'operation' => 'active_operation',
+            'phase' => 'active_phase',
+            'hook' => 'active_hook',
+            'callback' => 'active_callback',
+            'source' => 'active_source',
+            'priority' => 'active_priority',
+            'callback_ordinal' => 'active_callback_ordinal',
+        ) as $source => $destination) {
+            if (array_key_exists($source, $operation)) {
+                $fields[$destination] = $operation[$source];
+            }
+        }
+        ABJ_404_Solution_AjaxCheckpointLogger::record(
+            $reportedAttemptId,
+            'client_budget_threshold_crossed',
+            $fields
+        );
     }
 
     /**

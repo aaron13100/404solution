@@ -234,6 +234,22 @@
         return base.slice(0, MAX_LEDGER_ID_CHARS - suffix.length) + suffix;
     }
 
+    /** Build the authenticated carrier envelope shared by telemetry beacons. */
+    function beaconForm(record, nonce) {
+        var form = new global.FormData();
+        form.append('action', 'ajaxUpdatePaginationLinks');
+        form.append('clientReportOnly', '1');
+        form.append('requestId', beaconCarrierId(record));
+        var reportedAttemptId = String(record.id || '');
+        if (reportedAttemptId !== '') {
+            form.append('reportedAttemptId', reportedAttemptId);
+        }
+        form.append('sessionId', String(record.sid || ''));
+        form.append('nonce', String(nonce || ''));
+        form.append('subpage', String(record.subpage || ''));
+        return form;
+    }
+
     /**
      * Supplemental last-chance delivery after the final attempt of a request
      * fails. The same record is already in durable storage and will ride the
@@ -251,25 +267,30 @@
             if (!global.navigator || typeof global.navigator.sendBeacon !== 'function' || !record) {
                 return false;
             }
-            var form = new global.FormData();
-            form.append('action', 'ajaxUpdatePaginationLinks');
-            form.append('clientReportOnly', '1');
-            form.append('requestId', beaconCarrierId(record));
-            var reportedAttemptId = String(record.id || '');
-            if (reportedAttemptId !== '') {
-                // Omitted rather than sent empty when the record names no
-                // attempt: the field is ledger-shaped on the wire, and the
-                // server states the absence as an empty reported_attempt_id of
-                // its own, so nothing is silently lost by leaving it off.
-                form.append('reportedAttemptId', reportedAttemptId);
-            }
-            form.append('sessionId', String(record.sid || ''));
-            form.append('nonce', String(nonce || ''));
-            form.append('subpage', String(record.subpage || ''));
+            var form = beaconForm(record, nonce);
             form.append('clientReport', serializeBounded(record));
             return global.navigator.sendBeacon(url, form) === true;
         } catch (beaconError) {
             warn('could not queue the transport telemetry beacon', beaconError);
+            return false;
+        }
+    }
+
+    /**
+     * Snapshot the server operation while the original request is still
+     * pending, before jQuery's 25-second foreground deadline aborts it.
+     */
+    function sendThresholdBeacon(url, record, nonce, thresholdMs) {
+        try {
+            if (!global.navigator || typeof global.navigator.sendBeacon !== 'function' ||
+                    !record || Number(thresholdMs) !== 20000) {
+                return false;
+            }
+            var form = beaconForm(record, nonce);
+            form.append('clientThresholdMs', '20000');
+            return global.navigator.sendBeacon(url, form) === true;
+        } catch (beaconError) {
+            warn('could not queue the server-operation threshold beacon', beaconError);
             return false;
         }
     }
@@ -336,6 +357,7 @@
     global.abj404TransportTelemetryDelivery = {
         priorReportParam: priorReportParam,
         sendBeacon: sendBeacon,
+        sendThresholdBeacon: sendThresholdBeacon,
         timelineLines: timelineLines,
         describeAttempt: describeAttempt,
         MAX_REPORT_CHARS: MAX_REPORT_CHARS

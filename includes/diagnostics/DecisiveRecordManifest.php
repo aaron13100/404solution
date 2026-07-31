@@ -351,7 +351,6 @@ final class ABJ_404_Solution_DecisiveRecordManifest {
         }
         return array_keys($events);
     }
-
     /**
      * Events belonging to always-present families. Both completeness gates must
      * require every one of these; a build that stops emitting one can come back
@@ -493,8 +492,9 @@ final class ABJ_404_Solution_DecisiveRecordManifest {
                 self::PRESENCE_CONDITIONAL),
             ABJ_404_Solution_DecisiveRecordQueryFilterFamilies::records(
                 self::PRESENCE_ALWAYS, self::PRESENCE_CONDITIONAL),
-            ABJ_404_Solution_DecisiveRecordFailureFamilies::records(
-                self::PRESENCE_CONDITIONAL)
+            ABJ_404_Solution_DecisiveRecordShutdownFamilies::records(self::PRESENCE_ALWAYS,
+                self::PRESENCE_CONDITIONAL),
+            ABJ_404_Solution_DecisiveRecordFailureFamilies::records(self::PRESENCE_CONDITIONAL)
         );
     }
 }

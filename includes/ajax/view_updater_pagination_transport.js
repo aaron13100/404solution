@@ -83,8 +83,14 @@ function abj404PaginationTelemetryDelivery() {
     return {
         priorReportParam: function() { return ''; },
         sendBeacon: function() { return false; },
+        sendThresholdBeacon: function() { return false; },
         timelineLines: function() { return []; }
     };
+}
+
+/** @returns {number} Milliseconds, below the foreground 25-second deadline. */
+function abj404PaginationServerOperationThresholdMs() {
+    return 20000;
 }
 
 /**
@@ -213,6 +219,27 @@ function abj404RequestPaginationPart(req, part, callbacks) {
             subpage: req.subpage,
             timeoutMs: req.ajaxTimeoutMs
         });
+        var thresholdTimer = null;
+        var thresholdMs = abj404PaginationServerOperationThresholdMs();
+        var cancelThresholdReport = function() {
+            if (thresholdTimer !== null) {
+                window.clearTimeout(thresholdTimer);
+                thresholdTimer = null;
+            }
+        };
+        if (req.ajaxTimeoutMs > thresholdMs) {
+            thresholdTimer = window.setTimeout(function() {
+                thresholdTimer = null;
+                if (!settled) {
+                    abj404PaginationTelemetryDelivery().sendThresholdBeacon(
+                        req.baseUrl,
+                        record,
+                        req.nonce,
+                        thresholdMs
+                    );
+                }
+            }, thresholdMs);
+        }
         var concurrentControlRelay = null;
         if (part === 'table' && attemptIndex === 0 && !req.isBackgroundRefresh &&
                 window.abj404CanaryLadder &&
@@ -257,6 +284,7 @@ function abj404RequestPaginationPart(req, part, callbacks) {
             },
             success: function(result, textStatus, jqXHR) {
                 settled = true;
+                cancelThresholdReport();
                 telemetry.finishAttempt(record, 'success', jqXHR, textStatus);
                 if (concurrentControlRelay) {
                     concurrentControlRelay.tableSettled(record);
@@ -267,6 +295,7 @@ function abj404RequestPaginationPart(req, part, callbacks) {
             },
             error: function(jqXHR, textStatus, errorThrown) {
                 settled = true;
+                cancelThresholdReport();
                 telemetry.finishAttempt(record, abj404PaginationOutcome(textStatus), jqXHR, textStatus);
                 if (concurrentControlRelay) {
                     concurrentControlRelay.tableSettled(record);
@@ -289,6 +318,7 @@ function abj404RequestPaginationPart(req, part, callbacks) {
                 }
             },
             complete: function(jqXHR, textStatus) {
+                cancelThresholdReport();
                 if (!settled) {
                     telemetry.finishAttempt(record, 'abort', jqXHR, textStatus || 'abort');
                     if (concurrentControlRelay) {
@@ -328,6 +358,7 @@ if (typeof window !== 'undefined' && window.abj404ClientBuildRegistry) {
         abj404PaginationFailureIsTransient,
         abj404PaginationTelemetry,
         abj404PaginationTelemetryDelivery,
+        abj404PaginationServerOperationThresholdMs,
         abj404ConcurrentControlRelay,
         abj404PaginationAttemptUrl,
         abj404PaginationAttemptData,

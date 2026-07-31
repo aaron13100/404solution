@@ -29,6 +29,7 @@ final class ABJ_404_Solution_AjaxTraceJournal {
     const RECOVER_PENDING_AFTER_SECONDS = 300;
     const MAX_JOURNAL_BYTES = 524288;
     const MAX_PENDING_BYTES = 32768;
+    const PROMOTION_LOCK_WAIT_TIMEOUT_US = 50000;
 
     /**
      * Share of the support payload's excerpt field this journal may claim.
@@ -84,11 +85,15 @@ final class ABJ_404_Solution_AjaxTraceJournal {
             return;
         }
         $lock = @fopen($this->directory . self::LOCK_FILE, 'cb');
-        if ($lock === false || !@flock($lock, LOCK_EX)) {
-            if (is_resource($lock)) {
-                @fclose($lock);
-            }
-            $this->reportFailure('AJAX trace journal lock failed. Pending evidence remains at ' . $this->pendingPath);
+        if ($lock === false) {
+            $this->reportFailure('AJAX trace journal lock could not be opened. Pending evidence remains at '
+                . $this->pendingPath);
+            return;
+        }
+        if (!$this->acquirePromotionLock($lock)) {
+            @fclose($lock);
+            $this->reportFailure('AJAX trace journal lock wait exceeded. Pending evidence remains at '
+                . $this->pendingPath);
             return;
         }
         try {
@@ -317,6 +322,30 @@ final class ABJ_404_Solution_AjaxTraceJournal {
         if (@is_file($this->pendingPath) && !@unlink($this->pendingPath)) {
             $this->reportFailure('AJAX pending trace could not be removed: ' . $this->pendingPath);
         }
+    }
+
+    /** @param resource $lock */
+    private function acquirePromotionLock($lock): bool {
+        $started = $this->monotonicNanoseconds();
+        do {
+            if (@flock($lock, LOCK_EX | LOCK_NB)) {
+                return true;
+            }
+            if ($this->elapsedMicroseconds($started) >= self::PROMOTION_LOCK_WAIT_TIMEOUT_US) {
+                return false;
+            }
+            usleep(1000);
+        } while (true);
+    }
+
+    private function monotonicNanoseconds(): int {
+        return function_exists('hrtime')
+            ? (int)hrtime(true)
+            : (int)round($this->clock->nowFloat() * 1000000000);
+    }
+
+    private function elapsedMicroseconds(int $started): int {
+        return max(0, (int)round(($this->monotonicNanoseconds() - $started) / 1000));
     }
 
     private function reportFailure(string $message): void {

@@ -31,6 +31,7 @@ class ABJ_404_Solution_AjaxStageDiagnostics {
      */
     public static function beginRequest(array $context): void {
         $requestId = ABJ_404_Solution_AjaxRequestLedger::normalizeId($context['request_id'] ?? '');
+        self::recordRequestPhase($requestId, 'request_handler');
 
         ABJ_404_Solution_DiagnosticDirectoryProbe::run($requestId);
 
@@ -100,17 +101,42 @@ class ABJ_404_Solution_AjaxStageDiagnostics {
 
     /** Finish and detach the current request trace, wrapped in a trace_finish checkpoint pair. */
     public static function finishRequest(string $status = 'complete'): void {
+        $requestId = self::currentRequestIdForCheckpoints();
+        self::recordRequestPhase($requestId, 'trace_finish');
         $trace = self::activeTrace();
         if ($trace !== null) {
             ABJ_404_Solution_AjaxCheckpointLogger::around(
-                self::currentRequestIdForCheckpoints(),
+                $requestId,
                 'trace_finish',
                 static function () use ($trace, $status) {
                     $trace->finish($status);
                 }
             );
         }
+        self::recordRequestPhase($requestId, 'response_emission');
         unset($GLOBALS['abj404_ajax_request_trace']);
+    }
+
+    /** Persist the high-level operation that owns the current request window. */
+    public static function recordRequestPhase(
+        string $requestId,
+        string $phase,
+        string $state = 'active'
+    ): void {
+        if ($requestId === '') {
+            return;
+        }
+        ABJ_404_Solution_AjaxCheckpointLogger::recordActiveOperation(
+            $requestId,
+            'request_phase',
+            $state,
+            array(
+                'operation_id' => substr(hash('sha256', $requestId . '|request_phase'), 0, 12),
+                'operation' => 'ajax_request',
+                'phase' => substr($phase, 0, 64),
+                'threshold_ms' => 20000,
+            )
+        );
     }
 
     private static function activeTrace(): ?ABJ_404_Solution_AjaxRequestTrace {

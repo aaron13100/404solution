@@ -87,6 +87,7 @@ final class ABJ_404_Solution_ClientBuildFingerprint {
                 'abj404PaginationFailureIsTransient',
                 'abj404PaginationTelemetry',
                 'abj404PaginationTelemetryDelivery',
+                'abj404PaginationServerOperationThresholdMs',
                 'abj404ConcurrentControlRelay',
                 'abj404PaginationAttemptUrl',
                 'abj404PaginationAttemptData',

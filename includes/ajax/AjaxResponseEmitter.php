@@ -327,6 +327,11 @@ final class ABJ_404_Solution_AjaxResponseEmitter {
                 'function' => $abDetachSkipped ? 'skipped_by_ab_diagnostic' : $finishFunction,
                 'result' => $result,
             ));
+            ABJ_404_Solution_AjaxStageDiagnostics::recordRequestPhase(
+                $checkpointRequestId,
+                'response_emission',
+                'complete'
+            );
         }
         if ($checkpointRequestId !== '') {
             ABJ_404_Solution_AjaxCheckpointLogger::record($checkpointRequestId, 'exit_sentinel');
