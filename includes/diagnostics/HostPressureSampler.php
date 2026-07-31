@@ -27,14 +27,25 @@ final class ABJ_404_Solution_HostPressureSampler {
             }
         }
         $procRoot = rtrim($procRoot, '/\\');
+        $environment = self::processEnvironment();
 
         return array(
             'sys_loadavg' => self::systemLoadAverage(),
             'proc_loadavg' => self::procLoadAverage($procRoot . '/loadavg'),
             'proc_self_status' => self::procSelfStatus($procRoot . '/self/status'),
-            'cloudlinux_lve_server_vars' => self::serverCounters('/^(?:LVE_|CLOUDLINUX_)/i'),
-            'litespeed_server_vars' => self::serverCounters('/^(?:LSAPI_|LITESPEED_|LSWS_)/i'),
-            'filesystem_quota_probes' => self::filesystemQuotaProbes(),
+            'runtime_identity' => self::runtimeIdentity(),
+            'proc_self_limits' => self::procSelfLimits($procRoot . '/self/limits'),
+            'proc_self_cgroup' => self::procSelfCgroup($procRoot . '/self/cgroup'),
+            'same_uid_processes' => self::sameUidProcesses($procRoot),
+            'cloudlinux_lve_server_vars' => self::serverCounters(
+                '/^(?:LVE_|CLOUDLINUX_)/i',
+                $environment
+            ),
+            'litespeed_server_vars' => self::serverCounters(
+                '/^(?:LSAPI_|LITESPEED_|LSWS_)/i',
+                $environment
+            ),
+            'filesystem_quota_probes' => ABJ_404_Solution_HostFilesystemPressureProbe::capture(),
         );
     }
 
@@ -72,127 +83,6 @@ final class ABJ_404_Solution_HostPressureSampler {
         unset($hostPressure['filesystem_quota_probes']);
         $record['host_pressure'] = $hostPressure;
         return $record;
-    }
-
-    /** @return array<string, mixed> */
-    private static function filesystemQuotaProbes(): array {
-        $paths = self::defaultFilesystemProbePaths();
-        if (function_exists('apply_filters')) {
-            try {
-                $filtered = apply_filters('abj404_host_pressure_probe_paths', $paths);
-                $paths = is_array($filtered) ? $filtered : array('configuration' => null);
-            } catch (Throwable $e) {
-                self::reportFailure('filesystem probe-path filter failed: ' . get_class($e) . ' code=' .
-                    $e->getCode() . ' message=' . $e->getMessage());
-                return array(
-                    'configuration' => array(
-                        'status' => 'unavailable',
-                        'reason' => 'path_filter_failed',
-                        'path' => '',
-                    ),
-                );
-            }
-        }
-
-        static $requestCache = array();
-        $cacheKey = hash('sha256', serialize($paths));
-        if (isset($requestCache[$cacheKey])) {
-            return $requestCache[$cacheKey];
-        }
-
-        $probes = array();
-        foreach ($paths as $label => $path) {
-            $probeLabel = is_string($label) && $label !== '' ? $label : 'path_' . count($probes);
-            $probes[$probeLabel] = self::filesystemQuotaProbe($path);
-        }
-        $requestCache[$cacheKey] = $probes;
-        return $probes;
-    }
-
-    /** @return array<string, string> */
-    private static function defaultFilesystemProbePaths(): array {
-        $paths = array();
-        $contentDirectory = defined('WP_CONTENT_DIR')
-            ? rtrim((string)WP_CONTENT_DIR, '/\\')
-            : (defined('ABSPATH') ? rtrim((string)ABSPATH, '/\\') . '/wp-content' : '');
-        if ($contentDirectory !== '') {
-            $paths['wordpress_uploads'] = $contentDirectory . '/uploads';
-            if (is_dir($contentDirectory . '/cache')) {
-                $paths['wordpress_cache'] = $contentDirectory . '/cache';
-            }
-        }
-        if (function_exists('abj404_getUploadsDir')) {
-            try {
-                $pluginUploads = abj404_getUploadsDir();
-                if (is_string($pluginUploads) && $pluginUploads !== '') {
-                    $paths['plugin_diagnostics'] = $pluginUploads;
-                }
-            } catch (Throwable $e) {
-                self::reportFailure('plugin diagnostics path lookup failed: ' . get_class($e) . ' code=' .
-                    $e->getCode() . ' message=' . $e->getMessage());
-            }
-        }
-        return $paths;
-    }
-
-    /**
-     * @param mixed $path
-     * @return array<string, mixed>
-     */
-    private static function filesystemQuotaProbe($path): array {
-        if (!is_string($path) || $path === '') {
-            return array('status' => 'unavailable', 'reason' => 'invalid_path', 'path' => '');
-        }
-        $path = rtrim($path, '/\\');
-        if (!is_dir($path)) {
-            return array('status' => 'unavailable', 'reason' => 'not_directory', 'path' => $path);
-        }
-        $freeBytes = @disk_free_space($path);
-        $totalBytes = @disk_total_space($path);
-        $writeProbe = self::filesystemCreateWriteProbe($path);
-
-        return array(
-            'status' => 'available',
-            'path' => $path,
-            'free_bytes' => is_numeric($freeBytes) ? (int)$freeBytes : null,
-            'total_bytes' => is_numeric($totalBytes) ? (int)$totalBytes : null,
-            'create_write_probe' => $writeProbe,
-        );
-    }
-
-    /** @return array<string, mixed> */
-    private static function filesystemCreateWriteProbe(string $path): array {
-        if (!is_writable($path)) {
-            return self::unavailable('directory_not_writable');
-        }
-        $sentinel = @tempnam($path, 'abj404-pressure-');
-        if (!is_string($sentinel)) {
-            return self::unavailable('create_failed');
-        }
-        $targetDirectory = realpath($path);
-        $createdDirectory = realpath(dirname($sentinel));
-        if ($targetDirectory === false || $createdDirectory !== $targetDirectory) {
-            @unlink($sentinel);
-            return self::unavailable('create_fell_back_outside_target');
-        }
-        $handle = @fopen($sentinel, 'wb');
-        if ($handle === false) {
-            @unlink($sentinel);
-            return self::unavailable('open_failed');
-        }
-        $bytesWritten = @fwrite($handle, 'x');
-        $closed = @fclose($handle);
-        $removed = @unlink($sentinel);
-        if ($bytesWritten !== 1) {
-            return self::unavailable('write_failed');
-        }
-        if (!$closed) {
-            return self::unavailable('close_failed');
-        }
-        if (!$removed) {
-            return self::unavailable('cleanup_failed');
-        }
-        return array('status' => 'available', 'bytes_written' => 1);
     }
 
     /** @return array<string, mixed> */
@@ -262,23 +152,258 @@ final class ABJ_404_Solution_HostPressureSampler {
     }
 
     /** @return array<string, mixed> */
-    private static function serverCounters(string $pattern): array {
-        $values = array();
-        $matched = false;
-        foreach ($_SERVER as $key => $value) {
-            if (!is_string($key) || preg_match($pattern, $key) !== 1) {
+    private static function runtimeIdentity(): array {
+        $sapi = php_sapi_name();
+        $serverSoftware = $_SERVER['SERVER_SOFTWARE'] ?? null;
+        $serverSoftwareProbe = self::unavailable('not_present');
+        if (array_key_exists('SERVER_SOFTWARE', $_SERVER)) {
+            $readable = self::readableScalar($serverSoftware, 128);
+            $serverSoftwareProbe = $readable === null
+                ? self::unavailable('not_readable')
+                : array('status' => 'available', 'value' => self::serverSoftwareClass($readable));
+        }
+        return array(
+            'php_sapi_name' => array('status' => 'available', 'value' => $sapi),
+            'server_software' => $serverSoftwareProbe,
+        );
+    }
+
+    private static function serverSoftwareClass(string $raw): string {
+        $hostMarker = stripos($raw, ' Server at ');
+        $withoutHost = $hostMarker === false ? $raw : substr($raw, 0, $hostMarker);
+        return substr(trim($withoutHost), 0, 100);
+    }
+
+    /** @return array<string, mixed> */
+    private static function processEnvironment(): array {
+        $environment = getenv();
+        $probe = is_array($environment)
+            ? array('status' => 'available', 'values' => $environment)
+            : self::unavailable('getenv_unavailable');
+        if (!function_exists('apply_filters')) {
+            return $probe;
+        }
+        try {
+            $filtered = apply_filters(
+                'abj404_host_pressure_environment',
+                $probe['values'] ?? array()
+            );
+        } catch (Throwable $e) {
+            self::reportFailure('environment filter failed: ' . get_class($e) . ' code=' .
+                $e->getCode() . ' message=' . $e->getMessage());
+            return self::unavailable('environment_filter_failed');
+        }
+        return is_array($filtered)
+            ? array('status' => 'available', 'values' => $filtered)
+            : self::unavailable('environment_filter_invalid');
+    }
+
+    /** @return array<string, mixed> */
+    private static function procSelfLimits(string $path): array {
+        $raw = self::readProbeFile($path);
+        if ($raw === null) {
+            return self::unavailable('not_readable');
+        }
+        $names = array(
+            'Max processes' => 'RLIMIT_NPROC',
+            'Max address space' => 'RLIMIT_AS',
+            'Max open files' => 'RLIMIT_NOFILE',
+        );
+        $limits = array_fill_keys(array_values($names), self::unavailable('not_reported'));
+        $recognized = false;
+        foreach (preg_split('/\R/', $raw) ?: array() as $line) {
+            foreach ($names as $label => $constant) {
+                if (strpos((string)$line, $label) !== 0) {
+                    continue;
+                }
+                $recognized = true;
+                $parts = preg_split('/\s+/', trim(substr((string)$line, strlen($label))));
+                if (!is_array($parts) || count($parts) !== 3
+                        || preg_match('/^(?:unlimited|\d+)$/', $parts[0]) !== 1
+                        || preg_match('/^(?:unlimited|\d+)$/', $parts[1]) !== 1
+                        || preg_match('/^[a-z]+$/i', $parts[2]) !== 1) {
+                    $limits[$constant] = self::unavailable('invalid_format');
+                    continue;
+                }
+                $limits[$constant] = array(
+                    'status' => 'available',
+                    'soft_limit' => $parts[0],
+                    'hard_limit' => $parts[1],
+                    'unit' => $parts[2],
+                );
+            }
+        }
+        if (!$recognized) {
+            return self::unavailable(trim($raw) === '' ? 'empty_file' : 'no_supported_limits');
+        }
+        return array('status' => 'available', 'limits' => $limits);
+    }
+
+    /** @return array<string, mixed> */
+    private static function procSelfCgroup(string $path): array {
+        $raw = self::readProbeFile($path);
+        if ($raw === null) {
+            return self::unavailable('not_readable');
+        }
+        $memberships = array();
+        $invalidLines = 0;
+        foreach (preg_split('/\R/', trim($raw)) ?: array() as $line) {
+            if ($line === '') {
                 continue;
             }
-            $matched = true;
-            if (is_scalar($value) && is_numeric($value)) {
-                $values[$key] = substr((string)$value, 0, 64);
+            $parts = explode(':', (string)$line, 3);
+            $controllers = count($parts) === 3 && $parts[1] !== '' ? explode(',', $parts[1]) : array();
+            $controllersValid = array_filter($controllers, static function ($controller): bool {
+                return preg_match('/^[a-z0-9_.=-]+$/i', (string)$controller) !== 1;
+            }) === array();
+            if (count($parts) !== 3 || preg_match('/^\d+$/', $parts[0]) !== 1
+                    || !$controllersValid || strpos($parts[2], '/') !== 0) {
+                $invalidLines++;
+                continue;
+            }
+            $memberships[] = array(
+                'hierarchy_id' => $parts[0],
+                'controllers' => $controllers,
+                'path' => self::readableScalar($parts[2], 256),
+            );
+        }
+        if ($memberships === array()) {
+            return self::unavailable(trim($raw) === '' ? 'empty_file' : 'invalid_format');
+        }
+        return array(
+            'status' => 'available',
+            'memberships' => $memberships,
+            'invalid_lines' => $invalidLines,
+        );
+    }
+
+    /** @return array<string, mixed> */
+    private static function sameUidProcesses(string $procRoot): array {
+        if (!is_dir($procRoot) || !is_readable($procRoot)) {
+            return self::unavailable('proc_root_not_readable');
+        }
+        $selfStatus = self::readProbeFile($procRoot . '/self/status');
+        if ($selfStatus === null) {
+            return self::unavailable('self_status_not_readable');
+        }
+        $effectiveUid = self::effectiveUidFromStatus($selfStatus);
+        if ($effectiveUid === null) {
+            return self::unavailable('self_effective_uid_unavailable');
+        }
+        $selfPid = self::numericStatusField($selfStatus, 'Pid');
+        if ($selfPid === null) {
+            return self::unavailable('self_pid_unavailable');
+        }
+        $entries = @scandir($procRoot);
+        if (!is_array($entries)) {
+            return self::unavailable('proc_root_scan_failed');
+        }
+        $siblings = 0;
+        $readable = 0;
+        $unreadable = 0;
+        foreach ($entries as $entry) {
+            if (preg_match('/^\d+$/', (string)$entry) !== 1
+                    || !is_dir($procRoot . '/' . $entry)) {
+                continue;
+            }
+            $status = self::readProbeFile($procRoot . '/' . $entry . '/status');
+            $uid = $status === null ? null : self::effectiveUidFromStatus($status);
+            if ($uid === null) {
+                $unreadable++;
+                continue;
+            }
+            $readable++;
+            if ($uid === $effectiveUid && $entry !== $selfPid) {
+                $siblings++;
+            }
+        }
+        if ($readable === 0) {
+            return self::unavailable('no_readable_process_statuses');
+        }
+        return array(
+            'status' => 'available',
+            'effective_uid' => $effectiveUid,
+            'sibling_count' => $siblings,
+            'readable_processes' => $readable,
+            'unreadable_processes' => $unreadable,
+        );
+    }
+
+    private static function effectiveUidFromStatus(string $raw): ?string {
+        foreach (preg_split('/\R/', $raw) ?: array() as $line) {
+            if (strpos((string)$line, 'Uid:') !== 0) {
+                continue;
+            }
+            $uids = preg_split('/\s+/', trim(substr((string)$line, 4)));
+            return is_array($uids) && isset($uids[1]) && preg_match('/^\d+$/', $uids[1]) === 1
+                ? $uids[1]
+                : null;
+        }
+        return null;
+    }
+
+    private static function numericStatusField(string $raw, string $field): ?string {
+        foreach (preg_split('/\R/', $raw) ?: array() as $line) {
+            if (strpos((string)$line, $field . ':') !== 0) {
+                continue;
+            }
+            $value = trim(substr((string)$line, strlen($field) + 1));
+            return preg_match('/^\d+$/', $value) === 1 ? $value : null;
+        }
+        return null;
+    }
+
+    /** @param mixed $value */
+    private static function readableScalar($value, int $maxLength): ?string {
+        if (!is_scalar($value)) {
+            return null;
+        }
+        $string = is_bool($value) ? ($value ? '1' : '0') : (string)$value;
+        $ascii = preg_replace('/[^\x20-\x7E]/', '?', $string);
+        if (!is_string($ascii)) {
+            return null;
+        }
+        $truncated = substr($ascii, 0, $maxLength);
+        return is_string($truncated) ? $truncated : null;
+    }
+
+    /**
+     * @param array<string, mixed> $environment
+     * @return array<string, mixed>
+     */
+    private static function serverCounters(string $pattern, array $environment): array {
+        $values = array();
+        $matched = false;
+        $sources = array($_SERVER);
+        if (($environment['status'] ?? '') === 'available' && is_array($environment['values'] ?? null)) {
+            $sources[] = $environment['values'];
+        }
+        foreach ($sources as $source) {
+            foreach ($source as $key => $value) {
+                if (!is_string($key) || preg_match($pattern, $key) !== 1) {
+                    continue;
+                }
+                $matched = true;
+                $readable = self::readableScalar($value, 64);
+                if ($readable !== null) {
+                    $values[$key] = $readable;
+                }
             }
         }
         ksort($values);
         if ($values !== array()) {
             return array('status' => 'available', 'values' => $values);
         }
-        return self::unavailable($matched ? 'no_readable_counters' : 'no_matching_variables');
+        if ($matched) {
+            return self::unavailable('no_readable_counters');
+        }
+        if (($environment['status'] ?? '') !== 'available') {
+            $reason = $environment['reason'] ?? null;
+            return self::unavailable(is_string($reason) && $reason !== ''
+                ? $reason
+                : 'environment_unavailable');
+        }
+        return self::unavailable('no_matching_variables');
     }
 
     private static function readProbeFile(string $path): ?string {

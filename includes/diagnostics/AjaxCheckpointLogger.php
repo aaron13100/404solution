@@ -213,9 +213,10 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
      * tens of records per request where the boundary channel emits one, so
      * they cannot afford the boundary envelope. Every full record samples
      * getrusage() AND ABJ_404_Solution_HostPressureSampler, which reads two
-     * /proc files and scans $_SERVER twice; paying that per query would add
-     * measurable syscall load to the very path being measured -- the exact
-     * observer effect gap G2 raised about the recorder itself -- and would add
+     * procfs files, scans process environment, and counts same-UID processes;
+     * paying that per query would add measurable syscall load to the path being
+     * measured. That is the observer-effect gap G2 raised about the recorder.
+     * It would also add
      * several hundred bytes per record to a support excerpt that is already
      * the scarce resource.
      *
