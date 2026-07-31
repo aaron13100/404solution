@@ -152,6 +152,9 @@ final class ABJ_404_Solution_AjaxQueryTimeline {
                 return null;
             }
             $state = self::stateFor($requestId);
+            if ($state['summarized']) {
+                return null;
+            }
             $state['count']++;
 
             $previous = self::previousQueryFields($state);

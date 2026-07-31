@@ -163,7 +163,9 @@ final class ABJ_404_Solution_SameSiteRequestCensus {
         try {
             $now = self::nowMs();
             if ($now === null) {
-                return self::unavailable('clock_unavailable');
+                return self::unavailable('clock_unavailable', array(
+                    'abj_clock()->nowFloat()' => 'unavailable',
+                ));
             }
             if (self::$memoSample !== null && ($now - self::$memoTakenAtMs) < self::SAMPLE_MEMO_MS
                     && ($now - self::$memoTakenAtMs) >= 0) {
@@ -177,7 +179,9 @@ final class ABJ_404_Solution_SameSiteRequestCensus {
             return $sample;
         } catch (Throwable $e) {
             self::reportFailure('same-site census sample failed: ' . $e->getMessage());
-            return self::unavailable('sample_exception');
+            return self::unavailable('sample_exception', array(
+                'SameSiteRequestCensus::sample()' => 'exception:' . get_class($e),
+            ));
         }
     }
 
@@ -236,7 +240,9 @@ final class ABJ_404_Solution_SameSiteRequestCensus {
         $registry = ABJ_404_Solution_SameSiteRequestRegistry::readAll();
         $finishedAt = self::nowFloat();
         if ($registry['status'] !== 'available') {
-            return self::unavailable($registry['reason']);
+            return self::unavailable($registry['reason'], array(
+                'SameSiteRequestRegistry::readAll()' => (string)$registry['reason'],
+            ));
         }
 
         $others = array();
@@ -381,11 +387,15 @@ final class ABJ_404_Solution_SameSiteRequestCensus {
         return $now === null ? null : (int)round($now * 1000);
     }
 
-    /** @return array<string, mixed> */
-    private static function unavailable(string $reason): array {
+    /**
+     * @param array<string, string> $attemptedPaths
+     * @return array<string, mixed>
+     */
+    private static function unavailable(string $reason, array $attemptedPaths): array {
         return array(
             'status' => 'unavailable',
             'reason' => $reason,
+            'attempted_paths' => $attemptedPaths,
             'scope' => self::SCOPE,
             // -1, never 0: an unreadable census and a quiet site are opposite
             // findings, and the per-record number has to stay arithmetically

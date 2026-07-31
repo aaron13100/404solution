@@ -144,7 +144,7 @@ $abj404ClassesByDirectory = array(
         'DiagnosticEvidencePriority', 'DetachAbEvidence', 'CanaryReceiptEvidence',
         'FailingSessionEvidence',
         'DiagnosticRequestGroup',
-        'HostFilesystemPressureProbe', 'HostPressureSampler',
+        'HostFilesystemPressureProbe', 'HostPressureSampler', 'HostServerCounterProbe',
         'SameSiteRequestCensus', 'SameSiteRequestRegistry',
         'RequestEnvironmentFingerprint', 'ClientBuildFingerprint', 'DiagnosticModuleManifest',
         'OpcacheGenerationProbe',

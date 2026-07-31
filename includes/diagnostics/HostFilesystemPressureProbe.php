@@ -24,6 +24,10 @@ final class ABJ_404_Solution_HostFilesystemPressureProbe {
                         'status' => 'unavailable',
                         'reason' => 'path_filter_failed',
                         'path' => '',
+                        'attempted_paths' => array(
+                            'apply_filters(abj404_host_pressure_probe_paths)' =>
+                                'exception:' . get_class($e),
+                        ),
                     ),
                 );
             }
@@ -76,11 +80,15 @@ final class ABJ_404_Solution_HostFilesystemPressureProbe {
      */
     private static function probe($path): array {
         if (!is_string($path) || $path === '') {
-            return array('status' => 'unavailable', 'reason' => 'invalid_path', 'path' => '');
+            return self::unavailable('invalid_path', array(
+                'configured_path' => !is_string($path) ? 'not_string' : 'empty',
+            ), '');
         }
         $path = rtrim($path, '/\\');
         if (!is_dir($path)) {
-            return array('status' => 'unavailable', 'reason' => 'not_directory', 'path' => $path);
+            return self::unavailable('not_directory', array(
+                'is_dir(' . $path . ')' => 'not_directory',
+            ), $path);
         }
         $freeBytes = @disk_free_space($path);
         $totalBytes = @disk_total_space($path);
@@ -96,42 +104,70 @@ final class ABJ_404_Solution_HostFilesystemPressureProbe {
 
     /** @return array<string, mixed> */
     private static function createWriteProbe(string $path): array {
+        $attemptedPaths = array();
         if (!is_writable($path)) {
-            return self::unavailable('directory_not_writable');
+            return self::unavailable('directory_not_writable', array(
+                'is_writable(' . $path . ')' => 'false',
+            ));
         }
+        $attemptedPaths['is_writable(target_directory)'] = 'true';
         $sentinel = @tempnam($path, 'abj404-pressure-');
         if (!is_string($sentinel)) {
-            return self::unavailable('create_failed');
+            $attemptedPaths['tempnam(target_directory)'] = 'failed';
+            return self::unavailable('create_failed', $attemptedPaths);
         }
+        $attemptedPaths['tempnam(target_directory)'] = 'created';
         $targetDirectory = realpath($path);
         $createdDirectory = realpath(dirname($sentinel));
         if ($targetDirectory === false || $createdDirectory !== $targetDirectory) {
             @unlink($sentinel);
-            return self::unavailable('create_fell_back_outside_target');
+            $attemptedPaths['realpath(created_directory)'] = 'outside_target';
+            return self::unavailable('create_fell_back_outside_target', $attemptedPaths);
         }
+        $attemptedPaths['realpath(created_directory)'] = 'target_match';
         $handle = @fopen($sentinel, 'wb');
         if ($handle === false) {
             @unlink($sentinel);
-            return self::unavailable('open_failed');
+            $attemptedPaths['fopen(sentinel)'] = 'failed';
+            return self::unavailable('open_failed', $attemptedPaths);
         }
+        $attemptedPaths['fopen(sentinel)'] = 'opened';
         $bytesWritten = @fwrite($handle, 'x');
         $closed = @fclose($handle);
         $removed = @unlink($sentinel);
+        $attemptedPaths['fwrite(sentinel)'] = 'bytes_written:' . (string)$bytesWritten;
+        $attemptedPaths['fclose(sentinel)'] = $closed ? 'true' : 'false';
+        $attemptedPaths['unlink(sentinel)'] = $removed ? 'true' : 'false';
         if ($bytesWritten !== 1) {
-            return self::unavailable('write_failed');
+            return self::unavailable('write_failed', $attemptedPaths);
         }
         if (!$closed) {
-            return self::unavailable('close_failed');
+            return self::unavailable('close_failed', $attemptedPaths);
         }
         if (!$removed) {
-            return self::unavailable('cleanup_failed');
+            return self::unavailable('cleanup_failed', $attemptedPaths);
         }
         return array('status' => 'available', 'bytes_written' => 1);
     }
 
-    /** @return array{status: string, reason: string} */
-    private static function unavailable(string $reason): array {
-        return array('status' => 'unavailable', 'reason' => $reason);
+    /**
+     * @param array<string, string> $attemptedPaths
+     * @return array<string, mixed>
+     */
+    private static function unavailable(
+        string $reason,
+        array $attemptedPaths,
+        ?string $path = null
+    ): array {
+        $reading = array(
+            'status' => 'unavailable',
+            'reason' => $reason,
+            'attempted_paths' => $attemptedPaths,
+        );
+        if ($path !== null) {
+            $reading['path'] = $path;
+        }
+        return $reading;
     }
 
     private static function reportFailure(string $message): void {
