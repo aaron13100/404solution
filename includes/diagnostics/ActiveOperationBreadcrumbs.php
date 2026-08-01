@@ -226,7 +226,7 @@ final class ABJ_404_Solution_ActiveOperationBreadcrumbs {
     private static function sanitizeRecord(array $record): array {
         $boundary = is_string($record['boundary'] ?? null) ? $record['boundary'] : '';
         $core = array();
-        foreach (array('request_id', 'event', 'boundary', 'state') as $field) {
+        foreach (array('request_id', 'event', 'boundary', 'state', 'checkpoint_id') as $field) {
             if (array_key_exists($field, $record)) {
                 $core[$field] = $record[$field];
             }
