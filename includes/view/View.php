@@ -355,19 +355,18 @@ class ABJ_404_Solution_View {
 	}
 
 	/**
-	 * Record the logs_hits rollup staleness diagnostic on plugin admin page
-	 * renders. This deliberately does not schedule a rollup rebuild; rebuild
-	 * arming has other callers, while the diagnostic needs a page-load seam now
-	 * that the old Hits/Last Used tooltip path no longer exists.
+	 * Maintain the logs_hits rollup when a plugin admin page renders. The policy
+	 * records staleness and schedules a rebuild only when the rollup is missing
+	 * or behind the source log table.
 	 *
 	 * @return void
 	 */
-	private function recordLogsHitsRollupStalenessDiagnosticOnAdminPageLoad(): void {
+	private function maintainLogsHitsRollupOnAdminPageLoad(): void {
 		try {
-			$this->logsRepository->recordLogsHitsRollupStalenessSignal();
+			$this->viewReadService->maybeUpdateRedirectsForViewHitsTable();
 		} catch (\Throwable $e) {
 			$this->logger->warn(
-				'logs_hits rollup staleness diagnostic failed during admin page render: '
+				'logs_hits rollup maintenance failed during admin page render: '
 				. get_class($e) . ' code=' . (string)$e->getCode() . ' message=' . $e->getMessage()
 			);
 		}
@@ -424,7 +423,7 @@ class ABJ_404_Solution_View {
 				return;
 			}
 
-			$instance->recordLogsHitsRollupStalenessDiagnosticOnAdminPageLoad();
+			$instance->maintainLogsHitsRollupOnAdminPageLoad();
 
 			$sub = "";
 
