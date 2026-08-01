@@ -30,7 +30,7 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
      * from canonical source and prevents a covered code change from shipping
      * with an old marker.
      */
-    const DIAGNOSTIC_BUILD_ID = 'f8477574fd528f383aad705c1e632369bea3f2bd';
+    const DIAGNOSTIC_BUILD_ID = '28ae2ad563ea6c2bb9ff5b3bff546fadd3a595e5';
 
     const CHECKPOINT_FILE = ABJ_404_Solution_CheckpointJournalWriter::CHECKPOINT_FILE;
     const ROTATED_FILE = ABJ_404_Solution_CheckpointJournalWriter::ROTATED_FILE;
@@ -285,73 +285,6 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
             $state,
             $fields
         );
-    }
-
-    /**
-     * Record one boot lifecycle waypoint (Bruno timeout cause matrix, gap
-     * G3): our own plugin file's first executable line, `plugins_loaded`,
-     * `init`, `admin_init`, or admin-ajax action dispatch. Every record
-     * carries the delta from REQUEST_TIME_FLOAT (via
-     * ABJ_404_Solution_RequestEnvironmentFingerprint::bootDelta(), the same
-     * formula request_start uses), so the gaps between consecutive
-     * waypoints localize a slow boot to a phase instead of a single total,
-     * and a request that dies before trace construction still has its boot
-     * cost attributable from whichever waypoints it reached.
-     *
-     * Scope is gated by ABJ_404_Solution_AjaxRequestLedger::bootWaypointRequestId()
-     * to our own table-AJAX and canary-ladder requests: never for ordinary
-     * front-end page views, where the write cost would land on the hot 404
-     * path. Never throws.
-     *
-     * @param array{module?: string, path?: string, build_id?: string} $boundary
-     */
-    public static function recordBootWaypoint(string $event, array $boundary = array()): void {
-        try {
-            $requestId = ABJ_404_Solution_AjaxRequestLedger::bootWaypointRequestId();
-            if ($requestId === '') {
-                return;
-            }
-            $now = self::nowFloat();
-            $module = is_string($boundary['module'] ?? null) && $boundary['module'] !== ''
-                ? $boundary['module'] : 'AjaxCheckpointLogger';
-            $modulePath = is_string($boundary['path'] ?? null) && $boundary['path'] !== ''
-                ? $boundary['path'] : __FILE__;
-            $boundaryBuildId = $boundary['build_id'] ?? null;
-            $moduleBuildId = self::validBuildId($boundaryBuildId)
-                ? (string)$boundaryBuildId : self::DIAGNOSTIC_BUILD_ID;
-            $rootBuildId = defined('ABJ404_DIAGNOSTIC_BUILD_ID')
-                && self::validBuildId(ABJ404_DIAGNOSTIC_BUILD_ID)
-                    ? (string)ABJ404_DIAGNOSTIC_BUILD_ID : null;
-            $boundaryOpcache = ABJ_404_Solution_OpcacheGenerationProbe::boundarySnapshot($modulePath);
-            $boundaryOpcache['module'] = $module;
-            $boundaryOpcache['compiled_build_id'] = $moduleBuildId;
-            $boundaryOpcache['matches_checkpoint_logger'] = hash_equals(
-                self::DIAGNOSTIC_BUILD_ID,
-                $moduleBuildId
-            );
-            // A waypoint with no clock is still worth recording: WHICH boot
-            // phase was reached is the measurement, and the delta is the
-            // refinement. Sending a stand-in number into bootDelta() would
-            // publish a boot duration that no clock produced.
-            $fields = $now === null
-                ? array('request_time_float' => null, 'boot_delta_ms' => null)
-                : ABJ_404_Solution_RequestEnvironmentFingerprint::bootDelta($now);
-            $fields['diagnostic_build_id'] = $moduleBuildId;
-            $fields['checkpoint_logger_build_id'] = self::DIAGNOSTIC_BUILD_ID;
-            $fields['root_boot_build_id'] = $rootBuildId;
-            $fields['build_generation_consistent'] =
-                $boundaryOpcache['matches_checkpoint_logger']
-                && ($rootBuildId === null || hash_equals(self::DIAGNOSTIC_BUILD_ID, $rootBuildId));
-            $fields['boundary_opcache'] = $boundaryOpcache;
-            self::record($requestId, $event, $fields);
-        } catch (Throwable $e) {
-            self::reportFailure('AJAX boot waypoint record failed (' . $event . '): ' . $e->getMessage());
-        }
-    }
-
-    /** @param mixed $value */
-    private static function validBuildId($value): bool {
-        return is_string($value) && preg_match('/^[0-9a-f]{40}$/', $value) === 1;
     }
 
     /**

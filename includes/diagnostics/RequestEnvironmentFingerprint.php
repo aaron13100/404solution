@@ -90,7 +90,7 @@ final class ABJ_404_Solution_RequestEnvironmentFingerprint {
      * container exists, let alone this class's constructor dependency --
      * share the exact same formula as capture()'s own boot_delta_ms instead
      * of a second copy that could silently drift from it (see
-     * ABJ_404_Solution_AjaxCheckpointLogger::recordBootWaypoint()).
+     * ABJ_404_Solution_BootWaypointRecorder::record()).
      *
      * @return array{request_time_float: float|null, boot_delta_ms: int|null}
      */

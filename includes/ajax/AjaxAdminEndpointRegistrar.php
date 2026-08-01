@@ -25,7 +25,7 @@ if (!defined('ABSPATH')) {
 class ABJ_404_Solution_AjaxAdminEndpointRegistrar {
 
     /** Compiled marker for mixed-generation comparison at AJAX dispatch. */
-    const DIAGNOSTIC_BUILD_ID = 'f8477574fd528f383aad705c1e632369bea3f2bd';
+    const DIAGNOSTIC_BUILD_ID = '28ae2ad563ea6c2bb9ff5b3bff546fadd3a595e5';
 
     /**
      * Wire each admin-table AJAX action to its handler. Safe to call once
@@ -43,7 +43,7 @@ class ABJ_404_Solution_AjaxAdminEndpointRegistrar {
                     // same tag, since ABJ_404_Solution_WPUtils::safeAddAction()
                     // throws if the same tag is registered twice with
                     // different callbacks.
-                    ABJ_404_Solution_AjaxCheckpointLogger::recordBootWaypoint('ajax_dispatch', array(
+                    ABJ_404_Solution_BootWaypointRecorder::record('ajax_dispatch', array(
                         'module' => 'AjaxAdminEndpointRegistrar',
                         'path' => __FILE__,
                         'build_id' => self::DIAGNOSTIC_BUILD_ID,
@@ -61,7 +61,7 @@ class ABJ_404_Solution_AjaxAdminEndpointRegistrar {
         ABJ_404_Solution_WPUtils::safeAddAction('wp_ajax_ajaxRunCanaryStep',
                 function() {
                     // See the ajaxUpdatePaginationLinks closure above.
-                    ABJ_404_Solution_AjaxCheckpointLogger::recordBootWaypoint('ajax_dispatch', array(
+                    ABJ_404_Solution_BootWaypointRecorder::record('ajax_dispatch', array(
                         'module' => 'AjaxAdminEndpointRegistrar',
                         'path' => __FILE__,
                         'build_id' => self::DIAGNOSTIC_BUILD_ID,
