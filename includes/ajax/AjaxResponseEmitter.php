@@ -359,6 +359,31 @@ final class ABJ_404_Solution_AjaxResponseEmitter {
      * close was attempted" with no proof it returned. Split out of
      * checkpointedFlushAndFinish() so the while-loop body stays a single
      * call, not inlined branching.
+     *
+     * `level_before` / `level_after` / `close_result` are what make the close
+     * DECIDABLE rather than merely observed. ABJ_404_Solution_OutputBufferDrain
+     * survives three mutually exclusive mechanisms that need three different
+     * fixes, and handler+bytes+elapsed_ms cannot tell them apart:
+     *
+     *   close_result === false && level_after === level_before
+     *       STUCK. The handler refused deletion (a buffer opened without
+     *       PHP_OUTPUT_HANDLER_REMOVABLE). Retrying can never help.
+     *   close_result === true  && level_after === level_before
+     *       RE-CREATED. The close consumed a buffer and something re-opened
+     *       one before the level could be read -- a foreign callback
+     *       re-entering WordPress while the stack unwinds.
+     *   level_after > level_before
+     *       GROWING. More buffers were opened across the close than it
+     *       closed; the stack is moving away from zero, not toward it.
+     *   close_result === true  && level_after === level_before - 1
+     *       The ordinary close. Nothing to explain.
+     *
+     * close_result === null means ob_end_flush() never returned at all (the
+     * worker died inside it), which is a fifth, distinct finding.
+     *
+     * Both levels are read through ABJ_404_Solution_OutputBufferDrain's own
+     * reader rather than a second raw ob_get_level(), so this record and the
+     * drain's stall verdict can never disagree about the level they saw.
      */
     private static function checkpointedObEndFlush(string $checkpointRequestId): void {
         if ($checkpointRequestId === '') {
@@ -366,16 +391,30 @@ final class ABJ_404_Solution_AjaxResponseEmitter {
             return;
         }
         $status = ob_get_status();
+        $levelBefore = ABJ_404_Solution_OutputBufferDrain::currentLevel();
+        $endFields = array(
+            'level_before' => $levelBefore,
+            'level_after' => null,
+            'close_result' => null,
+        );
         ABJ_404_Solution_AjaxCheckpointLogger::around(
             $checkpointRequestId,
             'ob_close',
-            static function () {
-                ob_end_flush();
+            static function () use (&$endFields) {
+                $endFields['close_result'] = ob_end_flush();
+                $endFields['level_after'] = ABJ_404_Solution_OutputBufferDrain::currentLevel();
             },
             array(
                 'handler' => is_string($status['name'] ?? null) ? $status['name'] : 'unknown',
                 'bytes' => ob_get_length(),
-            )
+                'level_before' => $levelBefore,
+            ),
+            // level_before is repeated on the _end record on purpose. The
+            // journal rotates oldest-first and the support excerpt is
+            // bounded, so the _start of a close can be evicted while its
+            // _end survives; an _end that needs its evicted partner to name
+            // a mechanism decides nothing.
+            $endFields
         );
     }
 

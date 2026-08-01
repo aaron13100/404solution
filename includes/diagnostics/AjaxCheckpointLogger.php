@@ -30,7 +30,7 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
      * from canonical source and prevents a covered code change from shipping
      * with an old marker.
      */
-    const DIAGNOSTIC_BUILD_ID = '1318df261c2464e879113caa43788a4524da2fe5';
+    const DIAGNOSTIC_BUILD_ID = '6a8314b56d38ca6d34af14568fa6ddcefd78e813';
 
     const CHECKPOINT_FILE = ABJ_404_Solution_CheckpointJournalWriter::CHECKPOINT_FILE;
     const ROTATED_FILE = ABJ_404_Solution_CheckpointJournalWriter::ROTATED_FILE;
@@ -365,9 +365,16 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
      * @template T
      * @param callable():T $work
      * @param array<string, mixed> $startFields
+     * @param array<string, mixed>|null $endFields Fields populated by $work for the end record.
      * @return T
      */
-    public static function around(string $requestId, string $label, callable $work, array $startFields = array()) {
+    public static function around(
+        string $requestId,
+        string $label,
+        callable $work,
+        array $startFields = array(),
+        ?array &$endFields = null
+    ) {
         self::record($requestId, $label . '_start', $startFields);
         $startedAt = self::nowFloat();
         $status = 'complete';
@@ -377,10 +384,10 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
             $status = 'error';
             throw $e;
         } finally {
-            self::record($requestId, $label . '_end', array(
+            self::record($requestId, $label . '_end', array_merge($endFields ?? array(), array(
                 'status' => $status,
                 'elapsed_ms' => self::elapsedMs($startedAt),
-            ));
+            )));
         }
     }
 
