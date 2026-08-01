@@ -125,9 +125,11 @@ class ABJ_404_Solution_AdminFatalErrorResponder {
             return;
         }
 
-        while (ob_get_level() > 0) {
+        // Bounded: a close that does not lower the level would otherwise spin
+        // forever inside the handler for a fatal the site has already hit.
+        ABJ_404_Solution_OutputBufferDrain::drainTo(0, static function () {
             @ob_end_clean();
-        }
+        });
     }
 
     /** @return void */

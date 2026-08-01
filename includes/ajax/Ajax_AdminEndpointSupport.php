@@ -370,10 +370,13 @@ class ABJ_404_Solution_Ajax_AdminEndpointSupport {
             $minLevel = array_key_exists('ob_level_before', $GLOBALS['abj404_ajax_context'])
                 ? intval($GLOBALS['abj404_ajax_context']['ob_level_before']) : 0;
         }
-        while (ob_get_level() > $minLevel) {
+        // Bounded with a stall check, for the same reason as the response tail:
+        // each iteration here can cost a checkpoint write, so an unbounded
+        // drain over a buffer that refuses to close burns CPU indefinitely.
+        ABJ_404_Solution_OutputBufferDrain::drainTo($minLevel, static function () use ($checkpointRequestId) {
             if ($checkpointRequestId === '') {
                 @ob_end_clean();
-                continue;
+                return;
             }
             ABJ_404_Solution_AjaxCheckpointLogger::around(
                 $checkpointRequestId,
@@ -383,7 +386,7 @@ class ABJ_404_Solution_Ajax_AdminEndpointSupport {
                 },
                 self::outputBufferCheckpointFields()
             );
-        }
+        });
 
         return $out;
     }

@@ -254,8 +254,20 @@ final class ABJ_404_Solution_AjaxResponseEmitter {
      */
     private static function checkpointedFlushAndFinish(string $checkpointRequestId): void {
         if (function_exists('ob_end_flush')) {
-            while (ob_get_level() > 0) {
+            // Bounded with a stall check: an ob_end_flush() that does not lower
+            // the level (non-removable handler, or a buffer callback that opens
+            // a fresh buffer while we are unwinding) used to spin here forever,
+            // which is what stranded report 193's workers BEFORE the detach
+            // call below. See ABJ_404_Solution_OutputBufferDrain.
+            $drain = ABJ_404_Solution_OutputBufferDrain::drainTo(0, static function () use ($checkpointRequestId) {
                 self::checkpointedObEndFlush($checkpointRequestId);
+            });
+            if ($checkpointRequestId !== '' && ($drain['stalled'] || $drain['budget_exhausted'])) {
+                ABJ_404_Solution_AjaxCheckpointLogger::record(
+                    $checkpointRequestId,
+                    'ob_drain_incomplete',
+                    $drain
+                );
             }
         }
         if (function_exists('flush')) {

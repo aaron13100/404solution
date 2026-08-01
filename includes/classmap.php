@@ -259,7 +259,7 @@ $abj404ClassesByDirectory = array(
         'RequestIgnoreNormalizerDependencies', 'ErrorDiagnosticsReporter',
         'AdminFatalErrorResponder', 'AjaxFatalErrorResponder', 'FatalErrorProcessor',
         'ImportCsvParser', 'ImportProgressStore', 'ImportRedirectRowProcessor',
-        'ImportUploadValidator',
+        'ImportUploadValidator', 'OutputBufferDrain',
     ),
     'settings' => array(
         'SettingsFieldValidator', 'StorageOptionContracts', 'SuggestionTransient',
