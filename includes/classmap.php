@@ -143,7 +143,7 @@ $abj404ClassesByDirectory = array(
         'ShutdownEnvironmentInventory', 'ShutdownTeardownBracket', 'DiagnosticJournalExcerpt',
         'DiagnosticJournalFileSelector',
         'DiagnosticClientVerdict', 'DiagnosticCollectionManifest', 'DiagnosticDirectoryProbe',
-        'DiagnosticEvidencePriority', 'DetachAbEvidence', 'CanaryReceiptEvidence',
+        'DiagnosticEvidencePriority', 'DiagnosticEvidenceBudget', 'DetachAbEvidence', 'CanaryReceiptEvidence',
         'FailingSessionEvidence',
         'DiagnosticRequestGroup',
         'HostFilesystemPressureProbe', 'HostPressureSampler', 'HostServerCounterProbe',

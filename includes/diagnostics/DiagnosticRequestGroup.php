@@ -85,6 +85,22 @@ final class ABJ_404_Solution_DiagnosticRequestGroup {
         return $this->joinable && ($this->failure || !$this->terminal);
     }
 
+    /**
+     * Whether this request's record run must survive INTACT rather than
+     * being trimmed to its two ends.
+     *
+     * A completed request's head and tail really are its two most
+     * informative records, because a "how it ended" record exists at the
+     * tail. A request with no terminal event never wrote one: every record
+     * it still holds, including the middle, is the only account of what it
+     * was doing while it stalled (report 193: the 165-second holder had no
+     * request_end, and trimming it to head+tail dropped exactly the seven
+     * records that showed it was stuck).
+     */
+    public function isMaximallyDecisive(): bool {
+        return $this->joinable && !$this->terminal;
+    }
+
     public function addLine(int $index, int $bytes): void {
         $this->indexes[] = $index;
         $this->bytes += $bytes;
